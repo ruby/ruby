@@ -1,3 +1,13 @@
+Tue Dec 18 17:27:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_freeze): preserve frozen state of immediate
+	  values in internal hash table, a la generic_ivar.
+
+	* object.c (rb_obj_frozen_p): check immediate values too.
+
+	* variable.c (generic_ivar_set): add frozen check fro immediate
+	  values. 
+
 Tue Dec 18 17:04:25 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_str_transcode_bang, rb_str_transcode): set new

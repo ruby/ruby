@@ -697,6 +697,7 @@ rb_obj_infect(VALUE obj1, VALUE obj2)
     OBJ_INFECT(obj1, obj2);
 }
 
+static st_table *immediate_frozen_tbl = 0;
 
 /*
  *  call-seq:
@@ -725,6 +726,12 @@ rb_obj_freeze(VALUE obj)
 	    rb_raise(rb_eSecurityError, "Insecure: can't freeze object");
 	}
 	OBJ_FREEZE(obj);
+	if (SPECIAL_CONST_P(obj)) {
+	    if (!immediate_frozen_tbl) {
+		immediate_frozen_tbl = st_init_numtable();
+	    }
+	    st_insert(immediate_frozen_tbl, obj, (st_data_t)Qtrue);
+	}
     }
     return obj;
 }
@@ -740,10 +747,14 @@ rb_obj_freeze(VALUE obj)
  *     a.frozen?   #=> true
  */
 
-static VALUE
+VALUE
 rb_obj_frozen_p(VALUE obj)
 {
     if (OBJ_FROZEN(obj)) return Qtrue;
+    if (SPECIAL_CONST_P(obj)) {
+	if (!immediate_frozen_tbl) return Qfalse;
+	if (st_lookup(immediate_frozen_tbl, obj, 0)) return Qtrue;
+    }
     return Qfalse;
 }
 

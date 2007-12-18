@@ -385,6 +385,7 @@ VALUE rb_obj_taint(VALUE);
 VALUE rb_obj_tainted(VALUE);
 VALUE rb_obj_untaint(VALUE);
 VALUE rb_obj_freeze(VALUE);
+VALUE rb_obj_frozen_p(VALUE);
 VALUE rb_obj_id(VALUE);
 VALUE rb_obj_class(VALUE);
 VALUE rb_class_real(VALUE);

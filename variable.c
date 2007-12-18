@@ -804,12 +804,12 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     st_data_t data;
 
     if (rb_special_const_p(obj)) {
+	if (rb_obj_frozen_p(obj)) rb_error_frozen("object");
 	special_generic_ivar = 1;
     }
     if (!generic_iv_tbl) {
 	generic_iv_tbl = st_init_numtable();
     }
-
     if (!st_lookup(generic_iv_tbl, obj, &data)) {
 	FL_SET(obj, FL_EXIVAR);
 	tbl = st_init_numtable();
