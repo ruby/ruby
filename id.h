@@ -25,6 +25,8 @@ extern ID idGT;
 extern ID idGE;
 extern ID idEq;
 extern ID idEqq;
+extern ID idNeq;
+extern ID idNot;
 extern ID idBackquote;
 extern ID idEqTilde;
 extern ID idThrowState;

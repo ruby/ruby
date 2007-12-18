@@ -581,26 +581,6 @@ newrange
     val = rb_range_new(low, high, flag);
 }
 
-/**
-  @c put
-  @e put !val.
-  @j !val の結果をスタックにプッシュする。
- */
-DEFINE_INSN
-putnot
-()
-(VALUE obj)
-(VALUE val)
-{
-    if (RTEST(obj)) {
-	val = Qfalse;
-    }
-    else {
-	val = Qtrue;
-    }
-}
-
-
 /**********************************************************/
 /* deal with stack operation                              */
 /**********************************************************/
@@ -1655,51 +1635,13 @@ opt_mod
  */
 DEFINE_INSN
 opt_eq
-()
+(IC ic)
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+    val = opt_eq_func(recv, obj, ic);
 
-	if (a == b) {
-	    val = Qtrue;
-	}
-	else {
-	    val = Qfalse;
-	}
-    }
-    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (0) {
-	}
-	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
-		 HEAP_CLASS_OF(obj) == rb_cFloat &&
-		 BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-	    double a = RFLOAT_VALUE(recv);
-	    double b = RFLOAT_VALUE(obj);
-
-	    if (isnan(a) || isnan(b)) {
-		val = Qfalse;
-	    }
-	    else if (a == b) {
-		val = Qtrue;
-	    }
-	    else {
-		val = Qfalse;
-	    }
-	}
-	else if (HEAP_CLASS_OF(recv) == rb_cString &&
-		 HEAP_CLASS_OF(obj) == rb_cString &&
-		 BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-	    val = rb_str_equal(recv, obj);
-	}
-	else {
-	    goto INSN_LABEL(normal_dispatch);
-	}
-    }
-    else {
-      INSN_LABEL(normal_dispatch):
+    if (val == Qundef) {
 	/* other */
 	PUSH(recv);
 	PUSH(obj);
@@ -1707,6 +1649,36 @@ opt_eq
     }
 }
 
+/**
+  @c optimize
+  @e optimized X!=Y.
+  @j 最適化された X!=Y。
+ */
+DEFINE_INSN
+opt_neq
+(IC ic1, IC ic2)
+(VALUE recv, VALUE obj)
+(VALUE val)
+{
+    extern VALUE rb_obj_not_equal(VALUE obj1, VALUE obj2);
+    NODE *mn = vm_method_search(idNeq, CLASS_OF(recv), ic1);
+    val = Qundef;
+
+    if (check_cfunc(mn, rb_obj_not_equal)) {
+	val = opt_eq_func(recv, obj, ic2);
+
+	if (val != Qundef) {
+	    val = RTEST(val) ? Qfalse : Qtrue;
+	}
+    }
+
+    if (val == Qundef) {
+	/* other */
+	PUSH(recv);
+	PUSH(obj);
+	CALL_SIMPLE_METHOD(1, idNeq, recv);
+    }
+}
 
 /**
   @c optimize
@@ -1991,7 +1963,8 @@ opt_succ
 		 BASIC_OP_UNREDEFINED_P(BOP_SUCC)) {
 	    val = rb_time_succ(recv);
 	}
-	else {
+	else
+	  {
 	    goto INSN_LABEL(normal_dispatch);
 	}
     }
@@ -2001,6 +1974,30 @@ opt_succ
 	CALL_SIMPLE_METHOD(0, idSucc, recv);
     }
 }
+
+/**
+  @c optimize
+  @e optimized not
+  @j 最適化された recv.!()。
+ */
+DEFINE_INSN
+opt_not
+(IC ic)
+(VALUE recv)
+(VALUE val)
+{
+    extern VALUE rb_obj_not(VALUE obj);
+    NODE *mn = vm_method_search(idNot, CLASS_OF(recv), ic);
+
+    if (check_cfunc(mn, rb_obj_not)) {
+	val = RTEST(recv) ? Qfalse : Qtrue;
+    }
+    else {
+	PUSH(recv);
+	CALL_SIMPLE_METHOD(0, idNot, recv);
+    }
+}
+
 
 /**
   @c optimize

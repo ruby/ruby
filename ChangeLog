@@ -1,3 +1,12 @@
+Tue Dec 18 20:58:35 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, insnhelper.ci, insns.def, object.c, vm.c, vm.h:
+	  optimize !@, != method invocation.
+
+	* id.c, id.h: ditto.
+
+	* bootstraptest/test_syntax.rb: add tests for above.
+
 Tue Dec 18 18:10:05 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb: add issues.

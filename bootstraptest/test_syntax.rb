@@ -628,3 +628,18 @@ assert_match /illegal multibyte char/, %q{
   STDERR.reopen(STDOUT)
   eval("\"\xf0".force_encoding("utf-8"))
 }, '[ruby-dev:32429]'
+
+# method ! and !=
+assert_equal 'true', %q{!false}
+assert_equal 'true', %q{1 == 1}
+assert_equal 'true', %q{1 != 2}
+assert_equal 'true', %q{
+  class C; def !=(obj); true; end; end
+  C.new != 1
+}
+assert_equal 'true', %q{
+  class C; def !@; true; end; end
+  !C.new
+}
+
+

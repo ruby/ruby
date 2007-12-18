@@ -1404,3 +1404,66 @@ call_end_proc(VALUE data)
 {
     rb_proc_call(data, rb_ary_new2(0));
 }
+
+static inline int
+check_cfunc(NODE *mn, void *func)
+{
+    if (mn && nd_type(mn->nd_body) == NODE_CFUNC &&
+	mn->nd_body->nd_cfnc == func) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
+static VALUE
+opt_eq_func(VALUE recv, VALUE obj, IC ic)
+{
+    VALUE val = Qundef;
+
+    if (FIXNUM_2_P(recv, obj) &&
+	BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
+	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+
+	if (a == b) {
+	    val = Qtrue;
+	}
+	else {
+	    val = Qfalse;
+	}
+    }
+    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
+	if (HEAP_CLASS_OF(recv) == rb_cFloat &&
+		 HEAP_CLASS_OF(obj) == rb_cFloat &&
+		 BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
+	    double a = RFLOAT_VALUE(recv);
+	    double b = RFLOAT_VALUE(obj);
+
+	    if (isnan(a) || isnan(b)) {
+		val = Qfalse;
+	    }
+	    else if (a == b) {
+		val = Qtrue;
+	    }
+	    else {
+		val = Qfalse;
+	    }
+	}
+	else if (HEAP_CLASS_OF(recv) == rb_cString &&
+		 HEAP_CLASS_OF(obj) == rb_cString &&
+		 BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
+	    val = rb_str_equal(recv, obj);
+	}
+	else {
+	    NODE *mn = vm_method_search(idEq, CLASS_OF(recv), ic);
+	    extern VALUE rb_obj_equal(VALUE obj1, VALUE obj2);
+
+	    if (check_cfunc(mn, rb_obj_equal)) {
+		return recv == obj ? Qtrue : Qfalse;
+	    }
+	}
+    }
+
+    return val;
+}

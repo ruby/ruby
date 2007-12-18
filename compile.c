@@ -1416,6 +1416,21 @@ insn_set_specialized_instruction(INSN *iobj, int insn_id)
     return COMPILE_OK;
 }
 
+static int
+insn_set_specialized_instruction_with_ic(INSN *iobj, int insn_id, int n)
+{
+    int i;
+    iobj->insn_id = insn_id;
+    iobj->operand_size = n;
+
+    /* max of n is 4 */
+    for (i=0; i<n; i++) {
+	iobj->operands[i] = Qnil;
+    }
+
+    return COMPILE_OK;
+}
+
 
 static int
 iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
@@ -1434,6 +1449,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		}
 		else if (mid == idSucc) {
 		    insn_set_specialized_instruction(iobj, BIN(opt_succ));
+		}
+		else if (mid == idNot) {
+		    insn_set_specialized_instruction_with_ic(iobj, BIN(opt_not), 1);
 		}
 	    }
 	    else if (argc == 1) {
@@ -1455,7 +1473,10 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		    insn_set_specialized_instruction(iobj, BIN(opt_mod));
 		}
 		else if (mid == idEq) {
-		    insn_set_specialized_instruction(iobj, BIN(opt_eq));
+		    insn_set_specialized_instruction_with_ic(iobj, BIN(opt_eq), 1);
+		}
+		else if (mid == idNeq) {
+		    insn_set_specialized_instruction_with_ic(iobj, BIN(opt_neq), 2);
 		}
 		else if (mid == idLT) {
 		    insn_set_specialized_instruction(iobj, BIN(opt_lt));

@@ -279,5 +279,7 @@ default:                        \
 #define BOP_SUCC   0x1000
 #define BOP_GT     0x2000
 #define BOP_GE     0x4000
+#define BOP_NOT    0x8000
+#define BOP_NEQ   0x10000
 
 #endif /* RUBY_VM_H */

@@ -38,6 +38,8 @@ Init_id(void)
     idEqq = rb_intern("===");
     idBackquote = rb_intern("`");
     idEqTilde = rb_intern("=~");
+    idNot = rb_intern("!");
+    idNeq = rb_intern("!=");
 
     idAREF = rb_intern("[]");
     idASET = rb_intern("[]=");

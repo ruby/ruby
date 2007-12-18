@@ -89,7 +89,7 @@ rb_eql(VALUE obj1, VALUE obj2)
  *     1.eql? 1.0   #=> false
  */
 
-static VALUE
+VALUE
 rb_obj_equal(VALUE obj1, VALUE obj2)
 {
     if (obj1 == obj2) return Qtrue;
@@ -103,7 +103,7 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
  *  Boolean negate.
  */
 
-static VALUE
+VALUE
 rb_obj_not(VALUE obj)
 {
     return RTEST(obj) ? Qfalse : Qtrue;
@@ -116,7 +116,7 @@ rb_obj_not(VALUE obj)
  *  Returns true if two objects are not-equal, otherwise false.
  */
 
-static VALUE
+VALUE
 rb_obj_not_equal(VALUE obj1, VALUE obj2)
 {
     VALUE result = rb_funcall(obj1, id_eq, 1, obj2);
