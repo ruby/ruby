@@ -2,9 +2,8 @@
 
 require 'test/unit'
 require 'net/http'
-require 'webrick'
-require 'webrick/httpservlet/abstract'
 require 'stringio'
+require File.expand_path("utils", File.dirname(__FILE__))
 
 module TestNetHTTP_version_1_1_methods
 
@@ -261,88 +260,6 @@ module TestNetHTTP_version_1_2_methods
     assert_kind_of String, res.body
     assert_equal data.size, res.body.size
     assert_equal data, res.body
-  end
-end
-
-
-module TestNetHTTPUtils
-  def start(&block)
-    new().start(&block)
-  end
-
-  def new
-    klass = Net::HTTP::Proxy(config('proxy_host'), config('proxy_port'))
-    http = klass.new(config('host'), config('port'))
-    http.set_debug_output logfile()
-    http
-  end
-
-  def config(key)
-    self.class::CONFIG[key]
-  end
-
-  def logfile
-    $DEBUG ? $stderr : NullWriter.new
-  end
-
-  def setup
-    spawn_server
-  end
-
-  def teardown
-    # resume global state
-    Net::HTTP.version_1_2
-  end
-
-  def spawn_server
-    return if $test_net_http_server_running
-    server = WEBrick::HTTPServer.new(
-      :BindAddress => config('host'),
-      :Port => config('port'),
-      :Logger => WEBrick::Log.new(NullWriter.new),
-      :AccessLog => []
-    )
-    server.mount '/', Servlet
-    Signal.trap(:INT) {
-      server.shutdown
-    }
-    Thread.fork {
-      server.start
-    }
-    n_try_max = 5
-    begin
-      TCPSocket.open(config('host'), config('port')).close
-    rescue Errno::ECONNREFUSED
-      sleep 0.2
-      n_try_max -= 1
-      raise 'cannot spawn server; give up' if n_try_max < 0
-      retry
-    end
-    $test_net_http_server_running = true
-  end
-
-  $test_net_http = nil
-  $test_net_http_data = (0...256).to_a.map {|i| i.chr }.join('') * 64
-  $test_net_http_data_type = 'application/octet-stream'
-
-  class Servlet < WEBrick::HTTPServlet::AbstractServlet
-    def do_GET(req, res)
-      res['Content-Type'] = $test_net_http_data_type
-      res.body = $test_net_http_data
-    end
-
-    # echo server
-    def do_POST(req, res)
-      res['Content-Type'] = req['Content-Type']
-      res.body = req.body
-    end
-  end
-
-  class NullWriter
-    def <<(s) end
-    def puts(*args) end
-    def print(*args) end
-    def printf(*args) end
   end
 end
 
