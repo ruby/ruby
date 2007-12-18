@@ -1,3 +1,7 @@
+Tue Dec 18 15:17:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encs, ext/ripper/ripper.c): pass MAKEFLAGS.
+
 Tue Dec 18 14:45:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (op_tbl): remove duplication to avoid symbol aliases.
