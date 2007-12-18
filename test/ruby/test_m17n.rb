@@ -714,6 +714,109 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(nil, u("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")])
     assert_raise(ArgumentError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
 
+    STRINGS.each {|s1|
+      STRINGS.each {|s2|
+        if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+          t = s1[s2]
+          if t != nil
+            assert_equal(s2, t)
+            assert_match(/#{Regexp.escape(s2)}/, s1)
+          end
+        else
+          assert_raise(ArgumentError) { s1[s2] }
+        end
+
+      }
+    }
+  end
+
+  def test_str_aref_range2
+    STRINGS.each {|s|
+      (-2).upto(2) {|first|
+        (-2).upto(2) {|last|
+          t = s[first..last]
+          if first < 0
+            first += s.length
+            if first < 0
+              assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+              next
+            end
+          end
+          if s.length < first
+            assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+            next
+          end
+          if last < 0
+            last += s.length
+          end
+          t2 = ''
+          first.upto(last) {|i|
+            c = s[i]
+            t2 << c if c
+          }
+          assert_equal(t2, t, "#{s.inspect}[#{first}..#{last}]")
+        }
+      }
+    }
+  end
+
+  def test_str_aref_range3
+    STRINGS.each {|s|
+      (-2).upto(2) {|first|
+        (-2).upto(2) {|last|
+          t = s[first...last]
+          if first < 0
+            first += s.length
+            if first < 0
+              assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+              next
+            end
+          end
+          if s.length < first
+            assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+            next
+          end
+          if last < 0
+            last += s.length
+          end
+          t2 = ''
+          first.upto(last-1) {|i|
+            c = s[i]
+            t2 << c if c
+          }
+          assert_equal(t2, t, "#{s.inspect}[#{first}..#{last}]")
+        }
+      }
+    }
+  end
+
+  def encinsp(str)
+    "#{str.inspect}.force_encoding(#{str.encoding.name.inspect})"
+  end
+
+  def test_str_assign
+    STRINGS.each {|s1|
+      STRINGS.each {|s2|
+        (-2).upto(2) {|i|
+          t = s1.dup
+          if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+            if i < -s1.length || s1.length < i
+              assert_raise(IndexError) { t[i] = s2 }
+            else
+              t[i] = s2
+              if i == s1.length && s2.empty?
+                assert_nil(t[i])
+              else
+                assert_equal(s2, t[i], "t = #{encinsp(s1)}; t[#{i}] = #{encinsp(s2)}; t[#{i}]")
+              end
+            end
+          else
+            assert_raise(ArgumentError) { t[i] = s2 }
+          end
+
+        }
+      }
+    }
   end
 
   def test_tr
