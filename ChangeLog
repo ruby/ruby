@@ -1,3 +1,15 @@
+Tue Dec 18 23:27:51 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#accept_client): 
+	  should rescue Errno::EINVAL from TCPServer#accept. this exception
+	  might occur if the server socket is not in ready to listen.
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#accept_client):
+	  don't call TCPServer#close if the :ShutdownSocketWithoutClose is set.
+
+	* lib/webrick/config.rb (WEBrick::Config::General): add new parameter
+	  :ShutdownSocketWithoutClose.
+
 Tue Dec 18 22:51:47 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#shutdown): 

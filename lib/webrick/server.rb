@@ -129,7 +129,10 @@ module WEBrick
           addr = s.addr
           @logger.debug("close TCPSocket(#{addr[2]}, #{addr[1]})")
         end
-        s.close
+        s.shutdown
+        unless @config[:ShutdownSocketWithoutClose]
+          s.close
+        end
       }
       @listeners.clear
     end
@@ -147,9 +150,8 @@ module WEBrick
         sock.sync = true
         Utils::set_non_blocking(sock) 
         Utils::set_close_on_exec(sock)
-      rescue Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPROTO => ex
-        # TCP connection was established but RST segment was sent
-        # from peer before calling TCPServer#accept.
+      rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+             Errno::EPROTO, Errno::EINVAL => ex
       rescue Exception => ex
         msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
         @logger.error msg
