@@ -518,11 +518,27 @@ class TestM17N < Test::Unit::TestCase
     # same byte sequence
     a("\xc2\xa1"), e("\xc2\xa1"), s("\xc2\xa1"), u("\xc2\xa1"),
 
+    s("\x81A"), # mutibyte character which contains "A"
+    s("\x81a"), # mutibyte character which contains "a"
+
     # invalid
     e("\xa1"),
     s("\x81"),
     u("\xc2"),
   ]
+
+  def combination(*args)
+    if args.empty?
+      yield []
+    else
+      arg = args.shift
+      arg.each {|v|
+        combination(*args) {|vs|
+          yield [v, *vs]
+        }
+      }
+    end
+  end
 
   def test_str_new
     STRINGS.each {|s|
@@ -546,16 +562,14 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_plus
-    STRINGS.each {|s1|
-      STRINGS.each {|s2|
-        if s1.encoding != s2.encoding && !is_ascii_only?(s1) && !is_ascii_only?(s2)
-          assert_raise(ArgumentError) { s1 + s2 }
-        else
-          t = s1 + s2
-          assert_equal(a(s1) + a(s2), a(t))
-          assert_str_enc_propagation(t, s1, s2)
-        end
-      }
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if s1.encoding != s2.encoding && !is_ascii_only?(s1) && !is_ascii_only?(s2)
+        assert_raise(ArgumentError) { s1 + s2 }
+      else
+        t = s1 + s2
+        assert_equal(a(s1) + a(s2), a(t))
+        assert_str_enc_propagation(t, s1, s2)
+      end
     }
   end
 
@@ -611,41 +625,37 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_eq
-    STRINGS.each {|s1|
-      STRINGS.each {|s2|
-        if is_ascii_only?(s1) && is_ascii_only?(s2) && a(s1) == a(s2)
-          assert(s1 == s2)
-        elsif s1.encoding == s2.encoding && a(s1) == a(s2)
-          assert(s1 == s2)
-          assert(!(s1 != s2))
-          assert_equal(0, s1 <=> s2)
-        else
-          assert(!(s1 == s2))
-          assert(s1 != s2)
-          assert_not_equal(0, s1 <=> s2)
-        end
-      }
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if is_ascii_only?(s1) && is_ascii_only?(s2) && a(s1) == a(s2)
+        assert(s1 == s2)
+      elsif s1.encoding == s2.encoding && a(s1) == a(s2)
+        assert(s1 == s2)
+        assert(!(s1 != s2))
+        assert_equal(0, s1 <=> s2)
+      else
+        assert(!(s1 == s2))
+        assert(s1 != s2)
+        assert_not_equal(0, s1 <=> s2)
+      end
     }
   end
 
-  def test_str_cmp
+  def test_str_lt
     assert(a("a") < a("\xa1"))
     assert(a("a") < s("\xa1"))
     assert(s("a") < a("\xa1"))
   end
 
   def test_str_concat
-    STRINGS.each {|s1|
-      STRINGS.each {|s2|
-        s = s1.dup
-        if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
-          s << s2
-          assert_equal(a(s), a(s1) + a(s2))
-          assert_str_enc_propagation(s, s1, s2)
-        else
-          assert_raise(ArgumentError) { s << s2 }
-        end
-      }
+    combination(STRINGS, STRINGS) {|s1, s2|
+      s = s1.dup
+      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+        s << s2
+        assert_equal(a(s), a(s1) + a(s2))
+        assert_str_enc_propagation(s, s1, s2)
+      else
+        assert_raise(ArgumentError) { s << s2 }
+      end
     }
   end
 
@@ -714,115 +724,249 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(nil, u("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")])
     assert_raise(ArgumentError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
 
-    STRINGS.each {|s1|
-      STRINGS.each {|s2|
-        if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
-          t = s1[s2]
-          if t != nil
-            assert_equal(s2, t)
-            assert_match(/#{Regexp.escape(s2)}/, s1)
-          end
-        else
-          assert_raise(ArgumentError) { s1[s2] }
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+        t = s1[s2]
+        if t != nil
+          assert_equal(s2, t)
+          assert_match(/#{Regexp.escape(s2)}/, s1)
         end
-
-      }
+      else
+        assert_raise(ArgumentError) { s1[s2] }
+      end
     }
   end
 
   def test_str_aref_range2
-    STRINGS.each {|s|
-      (-2).upto(2) {|first|
-        (-2).upto(2) {|last|
-          t = s[first..last]
-          if first < 0
-            first += s.length
-            if first < 0
-              assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
-              next
-            end
-          end
-          if s.length < first
-            assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
-            next
-          end
-          if last < 0
-            last += s.length
-          end
-          t2 = ''
-          first.upto(last) {|i|
-            c = s[i]
-            t2 << c if c
-          }
-          assert_equal(t2, t, "#{s.inspect}[#{first}..#{last}]")
-        }
+    combination(STRINGS, -2..2, -2..2) {|s, first, last|
+      t = s[first..last]
+      if first < 0
+        first += s.length
+        if first < 0
+          assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+          next
+        end
+      end
+      if s.length < first
+        assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+        next
+      end
+      if last < 0
+        last += s.length
+      end
+      t2 = ''
+      first.upto(last) {|i|
+        c = s[i]
+        t2 << c if c
       }
+      assert_equal(t2, t, "#{s.inspect}[#{first}..#{last}]")
     }
   end
 
   def test_str_aref_range3
-    STRINGS.each {|s|
-      (-2).upto(2) {|first|
-        (-2).upto(2) {|last|
-          t = s[first...last]
-          if first < 0
-            first += s.length
-            if first < 0
-              assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
-              next
+    combination(STRINGS, -2..2, -2..2) {|s, first, last|
+      t = s[first...last]
+      if first < 0
+        first += s.length
+        if first < 0
+          assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+          next
+        end
+      end
+      if s.length < first
+        assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
+        next
+      end
+      if last < 0
+        last += s.length
+      end
+      t2 = ''
+      first.upto(last-1) {|i|
+        c = s[i]
+        t2 << c if c
+      }
+      assert_equal(t2, t, "#{s.inspect}[#{first}..#{last}]")
+    }
+  end
+
+  def encdump(str)
+    "#{str.dump}.force_encoding(#{str.encoding.name.dump})"
+  end
+
+  def test_str_assign
+    combination(STRINGS, STRINGS) {|s1, s2|
+      (-2).upto(2) {|i|
+        t = s1.dup
+        if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+          if i < -s1.length || s1.length < i
+            assert_raise(IndexError) { t[i] = s2 }
+          else
+            t[i] = s2
+            assert(a(t).index(a(s2)))
+            if s1.valid_encoding? && s2.valid_encoding?
+              if i == s1.length && s2.empty?
+                assert_nil(t[i])
+              elsif i < 0
+                assert_equal(s2, t[i-s2.length+1,s2.length],
+                  "t = #{encdump(s1)}; t[#{i}] = #{encdump(s2)}; t[#{i-s2.length+1},#{s2.length}]")
+              else
+                assert_equal(s2, t[i,s2.length],
+                  "t = #{encdump(s1)}; t[#{i}] = #{encdump(s2)}; t[#{i},#{s2.length}]")
+              end
             end
           end
-          if s.length < first
-            assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
-            next
-          end
-          if last < 0
-            last += s.length
-          end
-          t2 = ''
-          first.upto(last-1) {|i|
-            c = s[i]
-            t2 << c if c
-          }
-          assert_equal(t2, t, "#{s.inspect}[#{first}..#{last}]")
-        }
+        else
+          assert_raise(ArgumentError) { t[i] = s2 }
+        end
       }
     }
   end
 
-  def encinsp(str)
-    "#{str.inspect}.force_encoding(#{str.encoding.name.inspect})"
+  def test_str_assign_len
+    combination(STRINGS, STRINGS, -2..2, 0..2) {|s1, s2, i, len|
+      t = s1.dup
+      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+        if i < -s1.length || s1.length < i
+          assert_raise(IndexError) { t[i,len] = s2 }
+        else
+          t[i,len] = s2
+          assert(a(t).index(a(s2)))
+          if s1.valid_encoding? && s2.valid_encoding?
+            if i == s1.length && s2.empty?
+              assert_nil(t[i])
+            elsif i < 0
+              if -i < len
+                len = -i
+              end
+              assert_equal(s2, t[i-s2.length+len,s2.length],
+                "t = #{encdump(s1)}; t[#{i},#{len}] = #{encdump(s2)}; t[#{i-s2.length+len},#{s2.length}]")
+            else
+              assert_equal(s2, t[i,s2.length],
+                "t = #{encdump(s1)}; t[#{i},#{len}] = #{encdump(s2)}; t[#{i},#{s2.length}]")
+            end
+          end
+        end
+      else
+        assert_raise(ArgumentError) { t[i,len] = s2 }
+      end
+    }
   end
 
-  def test_str_assign
-    STRINGS.each {|s1|
-      STRINGS.each {|s2|
-        (-2).upto(2) {|i|
-          t = s1.dup
-          if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
-            if i < -s1.length || s1.length < i
-              assert_raise(IndexError) { t[i] = s2 }
-            else
-              t[i] = s2
-              if !s1.valid_encoding? || !s2.valid_encoding?
-                assert(a(t).index(a(s2)))
-              else
-                if i == s1.length && s2.empty?
-                  assert_nil(t[i])
-                elsif i < 0
-                  assert_equal(s2, t[i-s2.length+1,s2.length],
-                    "t = #{encinsp(s1)}; t[#{i}] = #{encinsp(s2)}; t[#{i-s2.length+1},#{s2.length}]")
-                else
-                  assert_equal(s2, t[i,s2.length],
-                    "t = #{encinsp(s1)}; t[#{i}] = #{encinsp(s2)}; t[#{i},#{s2.length}]")
-                end
-              end
-            end
-          else
-            assert_raise(ArgumentError) { t[i] = s2 }
+  def test_str_assign_substr
+    combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
+      t = s1.dup
+      encs = [
+        !is_ascii_only?(s1) ? s1.encoding : nil,
+        !is_ascii_only?(s2) ? s2.encoding : nil,
+        !is_ascii_only?(s3) ? s3.encoding : nil].uniq.compact
+      if 1 < encs.length
+        assert_raise(ArgumentError, IndexError) { t[s2] = s3 }
+      else
+        if encs.empty?
+          encs = [
+            s1.encoding,
+            s2.encoding,
+            s3.encoding].uniq.reject {|e| e == Encoding.find("ASCII-8BIT") }
+          if encs.empty?
+            encs = [Encoding.find("ASCII-8BIT")]
           end
+        end
+        if !t[s2]
+        else
+          t[s2] = s3
+        end
+      end
+    }
+  end
+
+  def test_str_assign_range2
+    combination(STRINGS, -2..2, -2..2, STRINGS) {|s1, first, last, s2|
+      t = s1.dup
+      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+        if first < -s1.length || s1.length < first
+          assert_raise(RangeError) { t[first..last] = s2 }
+        else
+          t[first..last] = s2
+          assert(a(t).index(a(s2)))
+          if s1.valid_encoding? && s2.valid_encoding?
+            if first < 0
+              assert_equal(s2, t[s1.length+first, s2.length])
+            else
+              assert_equal(s2, t[first, s2.length])
+            end
+          end
+        end
+      else
+        assert_raise(ArgumentError, RangeError,
+                     "t=#{encdump(s1)};t[#{first}..#{last}]=#{encdump(s2)}") {
+          t[first..last] = s2
         }
-      }
+      end
+    }
+  end
+
+  def test_str_assign_range3
+    combination(STRINGS, -2..2, -2..2, STRINGS) {|s1, first, last, s2|
+      t = s1.dup
+      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+        if first < -s1.length || s1.length < first
+          assert_raise(RangeError) { t[first...last] = s2 }
+        else
+          t[first...last] = s2
+          assert(a(t).index(a(s2)))
+          if s1.valid_encoding? && s2.valid_encoding?
+            if first < 0
+              assert_equal(s2, t[s1.length+first, s2.length])
+            else
+              assert_equal(s2, t[first, s2.length])
+            end
+          end
+        end
+      else
+        assert_raise(ArgumentError, RangeError,
+                     "t=#{encdump(s1)};t[#{first}...#{last}]=#{encdump(s2)}") {
+          t[first...last] = s2
+        }
+      end
+    }
+  end
+
+  def test_str_cmp
+    combination(STRINGS, STRINGS) {|s1, s2|
+      r = s1 <=> s2
+      if s1 == s2
+        assert_equal(0, r)
+      else
+        assert_not_equal(0, r)
+      end
+    }
+  end
+
+  def test_str_capitalize
+    STRINGS.each {|s|
+      begin
+        t1 = s.capitalize
+      rescue ArgumentError
+        assert(!s.valid_encoding?)
+        next
+      end
+      t2 = s.dup
+      t2.capitalize!
+      assert_equal(t1, t2)
+      assert_equal(s.downcase.sub(/\A[a-z]/) {|ch| a(ch).upcase }, t1)
+    }
+  end
+
+  def test_str_casecmp
+    combination(STRINGS, STRINGS) {|s1, s2|
+      #puts "#{encdump(s1)}.casecmp(#{encdump(s2)})"
+      begin
+        r = s1.casecmp(s2)
+      rescue ArgumentError
+        assert(!s1.valid_encoding? || !s2.valid_encoding?)
+        next
+      end
+      #assert_equal(s1.upcase <=> s2.upcase, r)
     }
   end
 
