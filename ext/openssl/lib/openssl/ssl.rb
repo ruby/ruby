@@ -153,7 +153,7 @@ module OpenSSL
       end
 
       def shutdown(how=Socket::SHUT_RDWR)
-        @svr.listen(how)
+        @svr.shutdown(how)
       end
 
       def accept
