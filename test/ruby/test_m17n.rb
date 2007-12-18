@@ -804,16 +804,23 @@ class TestM17N < Test::Unit::TestCase
               assert_raise(IndexError) { t[i] = s2 }
             else
               t[i] = s2
-              if i == s1.length && s2.empty?
-                assert_nil(t[i])
+              if !s1.valid_encoding? || !s2.valid_encoding?
+                assert(a(t).index(a(s2)))
               else
-                assert_equal(s2, t[i], "t = #{encinsp(s1)}; t[#{i}] = #{encinsp(s2)}; t[#{i}]")
+                if i == s1.length && s2.empty?
+                  assert_nil(t[i])
+                elsif i < 0
+                  assert_equal(s2, t[i-s2.length+1,s2.length],
+                    "t = #{encinsp(s1)}; t[#{i}] = #{encinsp(s2)}; t[#{i-s2.length+1},#{s2.length}]")
+                else
+                  assert_equal(s2, t[i,s2.length],
+                    "t = #{encinsp(s1)}; t[#{i}] = #{encinsp(s2)}; t[#{i},#{s2.length}]")
+                end
               end
             end
           else
             assert_raise(ArgumentError) { t[i] = s2 }
           end
-
         }
       }
     }
