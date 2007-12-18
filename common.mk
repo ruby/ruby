@@ -340,7 +340,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
 encs: enc.mk
-	$(MAKE) -$(MAKEFLAGS) -f enc.mk
+	$(MAKE) -f enc.mk -$(MAKEFLAGS)
 
 enc.mk: miniruby$(EXEEXT) $(srcdir)/enc/make_encmake.rb \
 	$(srcdir)/enc/Makefile.in $(srcdir)/enc/depend $(srcdir)/lib/mkmf.rb
@@ -655,7 +655,7 @@ docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
 
 $(srcdir)/ext/ripper/ripper.c:
-	cd ext/ripper && exec $(MAKE) -$(MAKEFLAGS) -f depend top_srcdir=../.. srcdir=.
+	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend -$(MAKEFLAGS) top_srcdir=../.. srcdir=.
 
 ##
 

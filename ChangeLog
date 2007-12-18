@@ -1,3 +1,8 @@
+Tue Dec 18 15:43:59 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encs, ext/ripper/ripper.c): other options must come
+	  before MAKEFLAGS in GNU make.
+
 Tue Dec 18 15:19:55 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_rb.rb: Don't call private fail anymore.
