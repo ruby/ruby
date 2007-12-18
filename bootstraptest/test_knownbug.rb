@@ -35,6 +35,23 @@ assert_equal 'ok', %q{
   end
 }
 
+assert_normal_exit %q{
+  eval "0 rescue break"
+}, '[ruby-dev:31372]'
+
+assert_normal_exit %q{
+  eval "while true; return; end rescue p $!"
+}, '[ruby-dev:31663]'
+
+assert_equal 'ok', %q{
+  1.times{
+    eval("break")
+  }
+  :ok
+}, '[ruby-dev:32525]'
+
+## encoding
+
 assert_equal 'ok', %q{
   begin
     if ("\xa1\xa2\xa1\xa3").force_encoding("euc-jp").split(//) ==
