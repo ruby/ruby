@@ -260,4 +260,10 @@ assert_equal 'true', %q{
   "\xa1\xa1".force_encoding("euc-jp")
 }
 
+assert_equal 'a', %q{
+  s = "a".dup.force_encoding("EUC-JP")
+  s.length
+  s[0,2]
+}
+
 
