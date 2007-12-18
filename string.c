@@ -746,26 +746,22 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
 }
 
 static char*
-str_nth(const char *p, const char *e, int nth, rb_encoding *enc, int asc)
+str_nth(char *p, char *e, int nth, rb_encoding *enc, int asc)
 {
     if (asc)
 	p += nth;
     else
 	p = rb_enc_nth(p, e, nth, enc);
-    if (!p) {
-	rb_raise(rb_eArgError, "invalid mbstring sequence");
-    }
-    if (p > e) {
-	rb_raise(rb_eIndexError, "index out of range");
-    }
-    return (char*)p;
+    if (!p) return 0;
+    if (p > e) return e;
+    return p;
 }
 
 static int
-str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int asc)
+str_offset(char *p, char *e, int nth, rb_encoding *enc, int asc)
 {
     const char *pp = str_nth(p, e, nth, enc, asc);
-
+    if (!pp) return e - p;
     return pp - p;
 }
 
@@ -1456,8 +1452,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     if (len - offset < slen) return -1;
     s = RSTRING_PTR(str);
     if (offset) {
-	s = str_nth(s, RSTRING_END(str), offset, enc, IS_7BIT(str));
-	offset = s - RSTRING_PTR(str);
+	offset = str_offset(s, RSTRING_END(str), offset, enc, IS_7BIT(str));
     }
     if (slen == 0) return offset;
     /* need proceed one character at a time */
@@ -1575,6 +1570,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     t = RSTRING_PTR(sub);
     for (;;) {
 	s = str_nth(sbeg, e, pos, enc, asc);
+	if (!s) return -1;
 	if (memcmp(s, t, slen) == 0) {
 	    return pos;
 	}
@@ -2139,7 +2135,9 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
 	len = slen - beg;
     }
     p = str_nth(RSTRING_PTR(str), RSTRING_END(str), beg, enc, asc);
+    if (!p) p = RSTRING_END(str);
     e = str_nth(p, RSTRING_END(str), len, enc, asc);
+    if (!e) e = RSTRING_END(str);
     /* error check */
     beg = p - RSTRING_PTR(str);	/* physical position */
     len = e - p;		/* physical length */

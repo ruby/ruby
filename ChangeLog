@@ -1,3 +1,10 @@
+Tue Dec 18 14:39:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_nth): need not to raise out-of-range exception.
+
+	* test/ruby/test_m17n.rb (TestM17N::test_str_aref_len): removed
+	  debug print.
+
 Tue Dec 18 14:05:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend: get rid of target expanded as empty for nmake.

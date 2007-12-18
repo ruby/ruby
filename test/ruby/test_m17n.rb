@@ -695,7 +695,6 @@ class TestM17N < Test::Unit::TestCase
     STRINGS.each {|s|
       t = ''
       0.step(s.length-1, 2) {|i|
-        p [s,s.encoding,i]
         t << s[i,2]
       }
       assert_equal(t, s)
