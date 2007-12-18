@@ -801,7 +801,7 @@ big2str_find_n1(VALUE x, int base)
     };
     long bits;
 
-    if (base < 2 && 36 < base)
+    if (base < 2 || 36 < base)
         rb_bug("illegal radix %d", base);
 
     if (FIXNUM_P(x)) {
@@ -908,7 +908,7 @@ rb_big2str0(VALUE x, int base, int trim)
         return rb_str_new2("0");
     }
 
-    if (base < 2 && 36 < base)
+    if (base < 2 || 36 < base)
         rb_raise(rb_eArgError, "illegal radix %d", base);
 
     n2 = big2str_find_n1(x, base);

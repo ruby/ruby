@@ -1,3 +1,10 @@
+Wed Dec 19 00:09:19 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cstr_to_inum): wrong radix check.  a patch from
+	  Yusuke ENDOH <mame AT tsg.ne.jp> in [ruby-dev:32628].
+
+	* bignum.c (big2str_find_n1): ditto.
+
 Tue Dec 18 23:53:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): fix for segfault.  [ruby-dev:31372]
