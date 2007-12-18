@@ -570,7 +570,7 @@ EOA
           text << char
           char.succ!
         end
-        base64_content = Base64.encode64(Zlib::Deflate.deflate(text))
+        base64_content = [Zlib::Deflate.deflate(text)].pack("m").delete("\n")
 
         [false, true].each do |with_space|
           xml_content = base64_content

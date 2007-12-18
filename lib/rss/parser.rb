@@ -474,7 +474,7 @@ module RSS
         else
           if klass.have_content?
             if @last_element.need_base64_encode?
-              text = Base64.decode64(text.lstrip)
+              text = text.lstrip.unpack("m").first
             end
             @last_element.content = text
           end

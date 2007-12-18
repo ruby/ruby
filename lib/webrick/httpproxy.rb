@@ -118,8 +118,7 @@ module WEBrick
         proxy_host = proxy.host
         proxy_port = proxy.port
         if proxy.userinfo
-          credentials = "Basic " + [proxy.userinfo].pack("m*")
-          credentials.chomp!
+          credentials = "Basic " + [proxy.userinfo].pack("m").delete("\n")
           header['proxy-authorization'] = credentials
         end
       end
@@ -179,8 +178,7 @@ module WEBrick
       if proxy = proxy_uri(req, res)
         proxy_request_line = "CONNECT #{host}:#{port} HTTP/1.0"
         if proxy.userinfo
-          credentials = "Basic " + [proxy.userinfo].pack("m*")
-          credentials.chomp!
+          credentials = "Basic " + [proxy.userinfo].pack("m").delete("\n")
         end
         host, port = proxy.host, proxy.port
       end

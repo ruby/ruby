@@ -1,3 +1,12 @@
+Tue Dec 18 22:11:50 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/rss/parser.rb, lib/rss/atom.rb, lib/rss/rss.rb,
+	  test/rss/rss-assertions.rb, test/rss/test_atom.rb: use
+	  pack/unpack("m") instead of base64 library.
+
+	* lib/webrick/httpproxy.rb: use delete("\n") instead of chomp/chop
+	  because the result of pack("m") might be multi-line.
+
 Tue Dec 18 22:12:35 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci, vm.c: rewrite sp manipulation around method/block
