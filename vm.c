@@ -550,8 +550,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 
 	rb_vm_set_finish_env(th);
 
-	CHECK_STACK_OVERFLOW(th->cfp, argc);
-	CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
+	CHECK_STACK_OVERFLOW(th->cfp, argc + iseq->stack_max);
 
 	for (i=0; i<argc; i++) {
 	    th->cfp->sp[i] = argv[i];

@@ -1,3 +1,7 @@
+Tue Dec 18 21:09:23 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (invoke_block): merge 2 stack overflow checks.
+
 Tue Dec 18 20:58:35 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insnhelper.ci, insns.def, object.c, vm.c, vm.h:
