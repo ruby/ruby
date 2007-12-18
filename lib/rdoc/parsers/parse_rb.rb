@@ -115,7 +115,7 @@ module RubyToken
     when String, Symbol
       source = token.kind_of?(String) ? TkReading2Token : TkSymbol2Token
       if (tk = source[token]).nil?
-	IRB.fail TkReading2TokenNoKey, token
+        fail TkReading2TokenNoKey, token
       end
       tk = Token(tk[0], value) 
     else 
@@ -270,7 +270,7 @@ module RubyToken
   def RubyToken.def_token(token_n, super_token = Token, reading = nil, *opts)
     token_n = token_n.id2name unless token_n.kind_of?(String)
     if RubyToken.const_defined?(token_n)
-      IRB.fail AlreadyDefinedToken, token_n
+      fail AlreadyDefinedToken, token_n
     end
 
     token_c =  Class.new super_token
@@ -279,7 +279,7 @@ module RubyToken
  
     if reading
       if TkReading2Token[reading]
-	IRB.fail TkReading2TokenDuplicateError, token_n, reading
+        fail TkReading2TokenDuplicateError, token_n, reading
       end
       if opts.empty?
 	TkReading2Token[reading] = [token_c]
@@ -1127,7 +1127,7 @@ class RubyLex
     elsif ch =~ /\W/
       lt = "\""
     else
-      RubyLex.fail SyntaxError, "unknown type of %string ('#{ch}')"
+      fail SyntaxError, "unknown type of %string ('#{ch}')"
     end
 #     if ch !~ /\W/
 #       ungetc
