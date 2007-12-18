@@ -2348,7 +2348,7 @@ Init_Object(void)
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
-    rb_define_method(rb_cBasicObject, "!@", rb_obj_not, 0);
+    rb_define_method(rb_cBasicObject, "!", rb_obj_not, 0);
     rb_define_method(rb_cBasicObject, "!=", rb_obj_not_equal, 1);
 
     rb_define_private_method(rb_cBasicObject, "singleton_method_added", rb_obj_dummy, 1);

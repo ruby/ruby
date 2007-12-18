@@ -1,3 +1,7 @@
+Tue Dec 18 14:45:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (op_tbl): remove duplication to avoid symbol aliases.
+
 Tue Dec 18 14:39:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_nth): need not to raise out-of-range exception.
