@@ -340,6 +340,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
 encs: enc.mk
+	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc"
 	$(MAKE) -f enc.mk -$(MAKEFLAGS)
 
 enc.mk: miniruby$(EXEEXT) $(srcdir)/enc/make_encmake.rb \
