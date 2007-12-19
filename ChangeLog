@@ -1,3 +1,7 @@
+Thu Dec 20 02:50:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/iso8859_{1..16}.c: adjust for ruby.
+
 Thu Dec 20 02:28:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/iso8859_{1..16}.c: imported from Onigiruma 5.9.0.

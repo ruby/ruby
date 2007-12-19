@@ -103,7 +103,8 @@ static const OnigPairCaseFoldCodes CaseFoldMap[] = {
 
 static int
 apply_all_case_fold(OnigCaseFoldType flag,
-		    OnigApplyAllCaseFoldFunc f, void* arg)
+		    OnigApplyAllCaseFoldFunc f, void* arg,
+		    OnigEncoding enc)
 {
   return onigenc_apply_all_case_fold_with_map(
             sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 1,
@@ -111,8 +112,10 @@ apply_all_case_fold(OnigCaseFoldType flag,
 }
 
 static int
-get_case_fold_codes_by_str(OnigCaseFoldType flag, const OnigUChar* p,
-			   const OnigUChar* end, OnigCaseFoldCodeItem items[])
+get_case_fold_codes_by_str(OnigCaseFoldType flag,
+			   const OnigUChar* p, const OnigUChar* end,
+			   OnigCaseFoldCodeItem items[],
+			   OnigEncoding enc)
 {
   if (0x41 <= *p && *p <= 0x5a) {
     items[0].byte_len = 1;
@@ -199,7 +202,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag, const OnigUChar* p,
 
 static int
 mbc_case_fold(OnigCaseFoldType flag, const UChar** pp, const UChar* end,
-	      UChar* lower)
+	      UChar* lower, OnigEncoding enc)
 {
   const UChar* p = *pp;
 
@@ -243,7 +246,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag,
 #endif
 
 static int
-is_code_ctype(OnigCodePoint code, unsigned int ctype)
+is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
   if (code < 256)
     return ENC_IS_ISO_8859_1_CTYPE(code, ctype);
