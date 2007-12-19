@@ -225,14 +225,9 @@ enumerator_allocate(VALUE klass)
 }
 
 static VALUE
-enumerator_each_i(VALUE v, VALUE enum_obj, VALUE argc)
+enumerator_each_i(VALUE v, VALUE enum_obj, int argc, VALUE *argv)
 {
-    if (argc == 1) {
-	return rb_yield(v);
-    }
-    else {
-	return rb_yield_values2(argc, RARRAY_PTR(v));
-    }
+    return rb_yield_values2(argc, argv);
 }
 
 static VALUE

@@ -650,23 +650,18 @@ vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
     if (lambda) {
 	arg = rb_ary_new4(argc, argv);
     }
+    else if (argc == 0) {
+	arg = Qnil;
+    }
     else {
-	if (argc == 1) {
-	    arg = *argv;
-	}
-	else if (argc > 1) {
-	    arg = rb_ary_new4(argc, argv);
-	}
-	else {
-	    arg = rb_ary_new();
-	}
+	arg = argv[0];
     }
 
     vm_push_frame(th, 0, FRAME_MAGIC_IFUNC,
 		  self, (VALUE)block->dfp,
 		  0, th->cfp->sp, block->lfp, 1);
 
-    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, (VALUE) argc);
+    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv);
 
     th->cfp++;
     return val;
