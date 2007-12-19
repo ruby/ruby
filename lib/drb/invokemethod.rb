@@ -20,8 +20,6 @@ module DRb
           end
           if jump_error
             case jump_error.reason
-            when :retry
-              retry
             when :break
               break(jump_error.exit_value)
             else

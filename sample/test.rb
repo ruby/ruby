@@ -916,18 +916,6 @@ end
 test_ok($x.size == 7)
 test_ok($x == [1, 2, 3, 4, 5, 6, 7])
 
-$done = false
-$x = []
-for i in 1 .. 7			# see how retry works in iterator loop
-  if i == 4 and not $done
-    $done = true
-    retry
-  end
-  $x.push(i)
-end
-test_ok($x.size == 10)
-test_ok($x == [1, 2, 3, 1, 2, 3, 4, 5, 6, 7])
-
 # append method to built-in class
 class Array
   def iter_test1
@@ -1887,7 +1875,7 @@ rescue Exception
   false
 end
 
-for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
+for script in Dir["#{dir}{lib,sample,ext,test}/**/*.rb"]
   unless valid_syntax? IO::read(script), script
     STDERR.puts script
     $bad = true

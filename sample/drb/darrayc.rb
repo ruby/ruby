@@ -45,15 +45,3 @@ ro.each do |x|
   puts count
   redo if count == 3
 end
-
-puts "# each, retry"
-retried = false
-ro.each do |x|
-  puts x
-  if x == 4 && !retried
-    puts 'retry'
-    retried = true
-    retry
-  end
-end
-

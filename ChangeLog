@@ -1,3 +1,24 @@
+Wed Dec 19 17:34:50 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): remove "retry" in block.
+	  ("iter{retry}" cause syntax error)
+	  Currently, "begin; ...; rescue; iter{retry}; end" cause
+	  syntax error too.
+
+	* bootstraptest/test_jump.rb: ditto.
+
+	* lib/drb/invokemethod.rb: ditto.
+
+	* sample/drb/darrayc.rb: ditto.
+
+	* sample/test.rb: ditto.
+
+	* test/drb/drbtest.rb: ditto.
+
+	* test/ruby/test_iterator.rb: ditto.
+
+	* sample/test.rb: add a 'test' directory on the SYSTEM test.
+
 Wed Dec 19 17:12:59 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb, test_block.rb: 

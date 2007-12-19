@@ -147,15 +147,15 @@ assert_equal %q{131}, %q{
   }
 }
 assert_equal %q{ok}, %q{
-  def m a
-    yield
-  end
-  
-  i=0
-  m(i+=1){
-    retry if i<10
-    :ok
+begin
+  eval %q{
+    1.times{
+      retry
+    }
   }
+rescue SyntaxError
+  :ok
+end
 }
 assert_equal %q{3}, %q{
   def m

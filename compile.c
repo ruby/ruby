@@ -3078,8 +3078,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_RETRY:{
-	if (iseq->type == ISEQ_TYPE_BLOCK ||
-	    iseq->type == ISEQ_TYPE_RESCUE) {
+	if (iseq->type == ISEQ_TYPE_RESCUE) {
 	    ADD_INSN(ret, nd_line(node), putnil);
 	    ADD_INSN1(ret, nd_line(node), throw,
 		      INT2FIX(0x04) /* TAG_RETRY */ );

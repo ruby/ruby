@@ -305,18 +305,19 @@ module DRbAry
     assert_equal([1, 2, 'III', 'III', 4, 'five', 6], ary)
   end
 
-  def test_04_retry
-    retried = false
-    ary = []
-    @there.each do |x|
-      ary.push x
-      if x == 4 && !retried
-	retried = true
-	retry
-      end
-    end
-    assert_equal([1, 2, 'III', 4, 1, 2, 'III', 4, 'five', 6], ary)
-  end
+  # retry in block is not supported on ruby 1.9
+  #def test_04_retry
+  #  retried = false
+  #  ary = []
+  #  @there.each do |x|
+  #    ary.push x
+  #    if x == 4 && !retried
+  #	retried = true
+  #	retry
+  #    end
+  #  end
+  #  assert_equal([1, 2, 'III', 4, 1, 2, 'III', 4, 'five', 6], ary)
+  #end
 
   def test_05_break
     ary = []
