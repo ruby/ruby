@@ -3,7 +3,8 @@ Wed Dec 19 15:37:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* insnhelper.ci (vm_yield_with_cfunc): call cfunc with
 	   (argv[0], data, argc, argv) to pass all arguments.
 
-	* eval.c (loop_i): adapted to new calling convention.
+	* enumerator.c (enumerator_each_i): adapted to new calling
+	  convention.
 
 Wed Dec 19 15:13:20 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
