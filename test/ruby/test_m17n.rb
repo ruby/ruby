@@ -567,6 +567,7 @@ class TestM17N < Test::Unit::TestCase
         assert_raise(ArgumentError) { s1 + s2 }
       else
         t = s1 + s2
+        assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
         assert_equal(a(s1) + a(s2), a(t))
         assert_str_enc_propagation(t, s1, s2)
       end
@@ -577,6 +578,7 @@ class TestM17N < Test::Unit::TestCase
     STRINGS.each {|s|
       [0,1,2].each {|n|
         t = s * n
+        assert(t.valid_encoding?) if s.valid_encoding?
         assert_strenc(a(s) * n, s.encoding, t)
       }
     }
@@ -651,6 +653,7 @@ class TestM17N < Test::Unit::TestCase
       s = s1.dup
       if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
         s << s2
+        assert(s.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
         assert_equal(a(s), a(s1) + a(s2))
         assert_str_enc_propagation(s, s1, s2)
       else
@@ -674,7 +677,9 @@ class TestM17N < Test::Unit::TestCase
     STRINGS.each {|s|
       t = ''
       0.upto(s.length-1) {|i|
-        t << s[i]
+        u = s[i]
+        assert(u.valid_encoding?) if s.valid_encoding?
+        t << u
       }
       assert_equal(t, s)
     }
@@ -697,7 +702,9 @@ class TestM17N < Test::Unit::TestCase
     STRINGS.each {|s|
       t = ''
       0.upto(s.length-1) {|i|
-        t << s[i,1]
+        u = s[i,1]
+        assert(u.valid_encoding?) if s.valid_encoding?
+        t << u
       }
       assert_equal(t, s)
     }
@@ -705,7 +712,9 @@ class TestM17N < Test::Unit::TestCase
     STRINGS.each {|s|
       t = ''
       0.step(s.length-1, 2) {|i|
-        t << s[i,2]
+        u = s[i,2]
+        assert(u.valid_encoding?) if s.valid_encoding?
+        t << u
       }
       assert_equal(t, s)
     }
@@ -728,6 +737,7 @@ class TestM17N < Test::Unit::TestCase
       if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
         t = s1[s2]
         if t != nil
+          assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
           assert_equal(s2, t)
           assert_match(/#{Regexp.escape(s2)}/, s1)
         end
@@ -751,6 +761,7 @@ class TestM17N < Test::Unit::TestCase
         assert_nil(t, "#{s.inspect}[#{first}..#{last}]")
         next
       end
+      assert(t.valid_encoding?) if s.valid_encoding?
       if last < 0
         last += s.length
       end
@@ -780,6 +791,7 @@ class TestM17N < Test::Unit::TestCase
       if last < 0
         last += s.length
       end
+      assert(t.valid_encoding?) if s.valid_encoding?
       t2 = ''
       first.upto(last-1) {|i|
         c = s[i]
@@ -802,6 +814,7 @@ class TestM17N < Test::Unit::TestCase
             assert_raise(IndexError) { t[i] = s2 }
           else
             t[i] = s2
+            assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
             assert(a(t).index(a(s2)))
             if s1.valid_encoding? && s2.valid_encoding?
               if i == s1.length && s2.empty?
@@ -829,6 +842,7 @@ class TestM17N < Test::Unit::TestCase
         if i < -s1.length || s1.length < i
           assert_raise(IndexError) { t[i,len] = s2 }
         else
+          assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
           t[i,len] = s2
           assert(a(t).index(a(s2)))
           if s1.valid_encoding? && s2.valid_encoding?
@@ -874,6 +888,7 @@ class TestM17N < Test::Unit::TestCase
         if !t[s2]
         else
           t[s2] = s3
+          assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding? && s3.valid_encoding?
         end
       end
     }
@@ -887,6 +902,7 @@ class TestM17N < Test::Unit::TestCase
           assert_raise(RangeError) { t[first..last] = s2 }
         else
           t[first..last] = s2
+          assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
           assert(a(t).index(a(s2)))
           if s1.valid_encoding? && s2.valid_encoding?
             if first < 0
@@ -913,6 +929,7 @@ class TestM17N < Test::Unit::TestCase
           assert_raise(RangeError) { t[first...last] = s2 }
         else
           t[first...last] = s2
+          assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
           assert(a(t).index(a(s2)))
           if s1.valid_encoding? && s2.valid_encoding?
             if first < 0
@@ -950,6 +967,7 @@ class TestM17N < Test::Unit::TestCase
         assert(!s.valid_encoding?)
         next
       end
+      assert(t1.valid_encoding?) if s.valid_encoding?
       t2 = s.dup
       t2.capitalize!
       assert_equal(t1, t2)
@@ -987,6 +1005,7 @@ class TestM17N < Test::Unit::TestCase
         next
       end
       t = s1.center(width, s2)
+      assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
       assert(a(t).index(a(s1)))
       assert_str_enc_propagation(t, s1, s2) if (t != s1)
     }
@@ -1007,6 +1026,7 @@ class TestM17N < Test::Unit::TestCase
         next
       end
       t = s1.ljust(width, s2)
+      assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
       assert(a(t).index(a(s1)))
       assert_str_enc_propagation(t, s1, s2) if (t != s1)
     }
@@ -1027,19 +1047,33 @@ class TestM17N < Test::Unit::TestCase
         next
       end
       t = s1.rjust(width, s2)
+      assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
       assert(a(t).index(a(s1)))
       assert_str_enc_propagation(t, s1, s2) if (t != s1)
     }
   end
 
-  def test_chomp
+  def test_str_chomp
     combination(STRINGS, STRINGS) {|s1, s2|
       if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.chomp(s2) }
         next
       end
       t = s1.chomp(s2)
+      assert(t.valid_encoding?, "#{encdump(s1)}.chomp(#{encdump(s2)})") if s1.valid_encoding? && s2.valid_encoding?
       assert_equal(s1.encoding, t.encoding)
+      t2 = s1.dup
+      t2.chomp!(s2)
+      assert_equal(t, t2)
+    }
+  end
+
+  def test_str_chop
+    STRINGS.each {|s|
+      s = s.dup
+      t = s.chop
+      assert(t.valid_encoding?) if s.valid_encoding?
+      assert(a(s).index(a(t)))
     }
   end
 
