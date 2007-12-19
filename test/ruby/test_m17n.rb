@@ -836,7 +836,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_assign_len
-    combination(STRINGS, STRINGS, -2..2, 0..2) {|s1, s2, i, len|
+    combination(STRINGS, -2..2, 0..2, STRINGS) {|s1, i, len, s2|
       t = s1.dup
       if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
         if i < -s1.length || s1.length < i
@@ -1298,6 +1298,67 @@ class TestM17N < Test::Unit::TestCase
         re = /\A(.{0,#{pos2}})#{Regexp.escape(s2)}/m
         assert(re.match(s1), "#{re.inspect}.match(#{encdump(s1)})")
         assert_equal($1.length, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
+      end
+    }
+  end
+
+  def test_str_insert
+    combination(STRINGS, -2..2, STRINGS) {|s1, nth, s2|
+      t1 = s1.dup
+      t2 = s1.dup
+      begin
+        t1[nth, 0] = s2
+      rescue ArgumentError, IndexError => e1
+      end
+      begin
+        t2.insert(nth, s2)
+      rescue ArgumentError, IndexError => e2
+      end
+      assert_equal(t1, t2, "t=#{encdump s1}; t.insert(#{nth},#{encdump s2}); t")
+      assert_equal(e1.class, e2.class, "begin #{encdump s1}.insert(#{nth},#{encdump s2}); rescue ArgumentError, IndexError => e; e end")
+    }
+  end
+
+  def test_str_intern
+    STRINGS.each {|s|
+      if /\0/ =~ a(s)
+        assert_raise(ArgumentError) { s.intern }
+      else
+        sym = s.intern
+        assert_equal(s, sym.to_s)
+      end
+    }
+  end
+
+  def test_str_length
+    STRINGS.each {|s|
+      assert_operator(s.length, :<=, s.bytesize)
+    }
+  end
+
+  def test_str_oct
+    STRINGS.each {|s|
+      t = s.oct
+      t2 = a(s)[/\A[0-9a-fA-FxXbB]*/].oct
+      assert_equal(t2, t)
+    }
+  end
+
+  def test_str_replace
+    combination(STRINGS, STRINGS) {|s1, s2|
+      t = s1.dup
+      t.replace s2
+      assert_equal(s2, t)
+      assert_equal(s2.encoding, t.encoding)
+    }
+  end
+
+  def test_str_reverse
+    STRINGS.each {|s|
+      t = s.reverse
+      assert_equal(s.bytesize, t.bytesize)
+      if s.valid_encoding?
+        assert_equal(s, t.reverse)
       end
     }
   end
