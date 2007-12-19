@@ -1467,8 +1467,9 @@ bigmul1(void *ptr)
     zds = BDIGITS(z);
     while (j--) zds[j] = 0;
     for (i = 0; i < RBIGNUM_LEN(x); i++) {
+	BDIGIT_DBL dd;
 	if (bms->stop) return Qnil;
-	BDIGIT_DBL dd = BDIGITS(x)[i];
+	dd = BDIGITS(x)[i];
 	if (dd == 0) continue;
 	n = 0;
 	for (j = 0; j < RBIGNUM_LEN(y); j++) {
@@ -1555,7 +1556,7 @@ bigdivrem1(void *ptr)
     if (nx < ny || (nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1])) {
 	if (divp) *divp = rb_int2big(0);
 	if (modp) *modp = x;
-	return;
+	return Qnil;
     }
     xds = BDIGITS(x);
     if (ny == 1) {
@@ -1574,7 +1575,7 @@ bigdivrem1(void *ptr)
 	    RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
 	}
 	if (divp) *divp = z;
-	return;
+	return Qnil;
     }
     z = bignew(nx==ny?nx+2:nx+1, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     zds = BDIGITS(z);
@@ -1666,6 +1667,7 @@ bigdivrem1(void *ptr)
 	RBIGNUM_SET_LEN(*modp, ny);
 	RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
     }
+    return Qnil;
 }
 
 static VALUE
