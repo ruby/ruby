@@ -648,5 +648,6 @@ class TestInteger < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, "[ruby-core:14139]") {
       assert_equal(0377, Integer("0_3_7_7"))
     }
+    assert_raise(ArgumentError, "[ruby-core:14139]") {Integer("0__3_7_7")}
   end
 end
