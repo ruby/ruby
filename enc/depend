@@ -1,4 +1,6 @@
-! encs = (Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS).each {|e| e.chomp!(".c")}
+! encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS
+! encs.each {|e| e.chomp!(".c")}
+! encs = encs.sort_by {|e| e.split(/(\d+)/).map {|n| Integer(n) rescue n}}
 
 VPATH = <% %w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(top_srcdir) $(srcdir)].join(CONFIG["PATH_SEPARATOR"]) %>
 
@@ -22,3 +24,10 @@ $(ENCSODIR)/<%e%>.$(DLEXT): <%e%>.$(OBJEXT)
 ! encs.each do |e|
 <%e%>.$(OBJEXT): <%e%>.c
 ! end
+
+clean:
+	$(RM) $(ENCSOS)
+	$(RM) $(ENCOBJS)
+
+distclean: clean
+	$(RM) enc.mk
