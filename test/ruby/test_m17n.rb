@@ -970,6 +970,79 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_str_center
+    assert_encoding("EUC-JP", "a".center(5, "\xa1\xa2".force_encoding("euc-jp")).encoding)
+
+    combination(STRINGS, [0,1,2,3,10]) {|s1, width|
+      t = s1.center(width)
+      assert(a(t).index(a(s1)))
+    }
+    combination(STRINGS, [0,1,2,3,10], STRINGS) {|s1, width, s2|
+      if s2.empty?
+        assert_raise(ArgumentError) { s1.center(width, s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.center(width, s2) }
+        next
+      end
+      t = s1.center(width, s2)
+      assert(a(t).index(a(s1)))
+      assert_str_enc_propagation(t, s1, s2) if (t != s1)
+    }
+  end
+
+  def test_str_ljust
+    combination(STRINGS, [0,1,2,3,10]) {|s1, width|
+      t = s1.ljust(width)
+      assert(a(t).index(a(s1)))
+    }
+    combination(STRINGS, [0,1,2,3,10], STRINGS) {|s1, width, s2|
+      if s2.empty?
+        assert_raise(ArgumentError) { s1.ljust(width, s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.ljust(width, s2) }
+        next
+      end
+      t = s1.ljust(width, s2)
+      assert(a(t).index(a(s1)))
+      assert_str_enc_propagation(t, s1, s2) if (t != s1)
+    }
+  end
+
+  def test_str_rjust
+    combination(STRINGS, [0,1,2,3,10]) {|s1, width|
+      t = s1.rjust(width)
+      assert(a(t).index(a(s1)))
+    }
+    combination(STRINGS, [0,1,2,3,10], STRINGS) {|s1, width, s2|
+      if s2.empty?
+        assert_raise(ArgumentError) { s1.rjust(width, s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.rjust(width, s2) }
+        next
+      end
+      t = s1.rjust(width, s2)
+      assert(a(t).index(a(s1)))
+      assert_str_enc_propagation(t, s1, s2) if (t != s1)
+    }
+  end
+
+  def test_chomp
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.chomp(s2) }
+        next
+      end
+      t = s1.chomp(s2)
+      assert_equal(s1.encoding, t.encoding)
+    }
+  end
+
   def test_tr
     s = "\x81\x41".force_encoding("shift_jis")
     assert_equal(s.tr("A", "B"), s)
