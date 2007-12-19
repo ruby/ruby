@@ -8494,6 +8494,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
 {
     reg_named_capture_assign_t *arg = (reg_named_capture_assign_t*)arg0;
     struct parser_params* parser = arg->parser;
+    ID var;
 
     arg->num++;
 
@@ -8502,7 +8503,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
         arg->fail_block = NEW_BEGIN(0);
     }
 
-    ID var = rb_intern3((const char *)name, name_end-name, arg->enc);
+    var = rb_intern3((const char *)name, name_end-name, arg->enc);
     if (!is_local_id(var)) {
         compile_error(PARSER_ARG "named capture with a non local variable - %s",
                       rb_id2name(var));
