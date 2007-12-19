@@ -1,3 +1,11 @@
+Wed Dec 19 22:59:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_sublen): adjust position if position is not at the
+	  head of a character.
+
+	* string.c (rb_str_chomp_bang): check if match start at the head
+	  of a character.
+
 Wed Dec 19 21:42:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_regsub): should set checked encoding.

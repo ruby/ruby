@@ -776,13 +776,14 @@ str_sublen(VALUE str, long pos, rb_encoding *enc)
 
 	i = 0;
 	while (p < e) {
-	    p += rb_enc_mbclen(p, e, enc);
+	    p += rb_enc_mbclen(p, RSTRING_END(str), enc);
 	    i++;
 	}
-	return i;
+	if (p == e) return i;
+	return i - 1;
     }
 }
-    
+
 int
 rb_str_sublen(VALUE str, int len)
 {
@@ -4462,9 +4463,10 @@ rb_str_chop(VALUE str)
 static VALUE
 rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 {
+    rb_encoding *enc;
     VALUE rs;
     int newline;
-    char *p;
+    char *p, *pp, *e;
     long len, rslen;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
@@ -4494,7 +4496,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     }
     if (NIL_P(rs)) return Qnil;
     StringValue(rs);
-    rb_enc_check(str, rs);
+    enc = rb_enc_check(str, rs);
     len = RSTRING_LEN(str);
     if (len == 0) return Qnil;
     p = RSTRING_PTR(str);
@@ -4518,9 +4520,20 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (rslen == 1 && newline == '\n')
 	goto smart_chomp;
 
+    if (is_broken_string(rs)) {
+	return Qnil;
+    }
+    pp = p + len - rslen;
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
-	 memcmp(RSTRING_PTR(rs), p+len-rslen, rslen) == 0)) {
+	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
+	if (!isascii(*pp)) {
+	    e = p+len;
+	    while (p < pp) {
+		p += rb_enc_mbclen(p, e, enc);
+	    }
+	    if (p != pp) return Qnil;
+	}
 	rb_str_modify(str);
 	STR_SET_LEN(str, RSTRING_LEN(str) - rslen);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
