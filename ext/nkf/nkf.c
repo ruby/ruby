@@ -10,24 +10,8 @@
 #define RUBY_NKF_REVISION "$Revision$"
 #define RUBY_NKF_VERSION NKF_VERSION " (" NKF_RELEASE_DATE ")"
 
-#include "ruby.h"
-
-/* Encoding Constants */
-#define	_AUTO		0
-#define	_JIS		1
-#define	_EUC		2
-#define	_SJIS		3
-#define	_BINARY		4
-#define	_NOCONV		4
-#define	_ASCII		5
-/* 0b011x is reserved for UTF-8 Family */
-#define	_UTF8		6
-/* 0b10xx is reserved for UTF-16 Family */
-#define	_UTF16		8
-/* 0b11xx is reserved for UTF-32 Family */
-#define	_UTF32		12
-#define	_OTHER		16
-#define	_UNKNOWN	_AUTO
+#include "ruby/ruby.h"
+#include "ruby/encoding.h"
 
 /* Replace nkf's getchar/putchar for variable modification */
 /* we never use getc, ungetc */
@@ -140,221 +124,81 @@ int nkf_split_options(const char *arg)
  */
 
 static VALUE
-rb_nkf_kconv(VALUE obj, VALUE opt, VALUE src)
+rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 {
-  char *opt_ptr, *opt_end;
-  volatile VALUE v;
+    char *opt_ptr, *opt_end;
+    volatile VALUE v;
+    char *encname;
+    int idx;
 
-  reinit();
-  StringValue(opt);
-  opt_ptr = RSTRING_PTR(opt);
-  opt_end = opt_ptr + RSTRING_LEN(opt);
-  nkf_split_options(opt_ptr);
+    reinit();
+    StringValue(opt);
+    opt_ptr = RSTRING_PTR(opt);
+    opt_end = opt_ptr + RSTRING_LEN(opt);
+    nkf_split_options(opt_ptr);
 
-  incsize = INCSIZE;
+    incsize = INCSIZE;
 
-  input_ctr = 0;
-  StringValue(src);
-  input = (unsigned char *)RSTRING_PTR(src);
-  i_len = RSTRING_LEN(src);
-  result = rb_str_new(0, i_len*3 + 10);
-  v = result;
+    input_ctr = 0;
+    StringValue(src);
+    input = (unsigned char *)RSTRING_PTR(src);
+    i_len = RSTRING_LEN(src);
+    result = rb_str_new(0, i_len*3 + 10);
+    v = result;
 
-  output_ctr = 0;
-  output     = (unsigned char *)RSTRING_PTR(result);
-  o_len      = RSTRING_LEN(result);
-  *output    = '\0';
+    output_ctr = 0;
+    output     = (unsigned char *)RSTRING_PTR(result);
+    o_len      = RSTRING_LEN(result);
+    *output    = '\0';
 
-  if(x0201_f == WISH_TRUE)
-    x0201_f = ((!iso2022jp_f)? TRUE : NO_X0201);
-
-  kanji_convert(NULL);
-  rb_str_set_len(result, output_ctr);
-  OBJ_INFECT(result, src);
-
-  return result;
+    kanji_convert(NULL);
+    rb_str_set_len(result, output_ctr);
+    OBJ_INFECT(result, src);
+    encname = nkf_enc_name(output_encoding);
+    fprintf(stderr, "%s\n", encname);
+    idx = rb_enc_find_index(encname);
+    fprintf(stderr, "%d\n", idx);
+    if (idx <= 0) {
+	idx = rb_enc_replicate(encname, rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
+	fprintf(stderr, "%d\n", idx);
+    }
+    rb_enc_associate_index(result, idx);
+    return result;
 }
 
 
 /*
  *  call-seq:
- *     NKF.guess1(str)  -> integer
+ *     NKF.guess(str)  -> encoding
  *
- *  Returns guessed encoding of _str_ as integer.
+ *  Returns guessed encoding of _str_ by nkf routine.
  *
- *  Algorithm described in:
- *  Ken Lunde. `Understanding Japanese Information Processing'
- *  Sebastopol, CA: O'Reilly & Associates.
- *
- *      case NKF.guess1(input)
- *      when NKF::JIS
- *        "ISO-2022-JP"
- *      when NKF::SJIS
- *        "Shift_JIS"
- *      when NKF::EUC
- *        "EUC-JP"
- *      when NKF::UNKNOWN
- *        "UNKNOWN(ASCII)"
- *      when NKF::BINARY
- *        "BINARY"
- *      end
  */
 
 static VALUE
-rb_nkf_guess1(VALUE obj, VALUE src)
+rb_nkf_guess(VALUE obj, VALUE src)
 {
-  unsigned char *p;
-  unsigned char *pend;
-  int sequence_counter = 0;
+    char* codename;
+    rb_encoding* enc;
 
-  StringValue(src);
-  p = (unsigned char *)RSTRING_PTR(src);
-  pend = p + RSTRING_LEN(src);
-  if (p == pend) return INT2FIX(_UNKNOWN);
+    reinit();
 
-#define INCR do {\
-      p++;\
-      if (p==pend) return INT2FIX(_UNKNOWN);\
-      sequence_counter++;\
-      if (sequence_counter % 2 == 1 && *p != 0xa4)\
-	sequence_counter = 0;\
-      if (6 <= sequence_counter) {\
-	  sequence_counter = 0;\
-	  return INT2FIX(_EUC);\
-      }\
-  } while (0)
+    input_ctr = 0;
+    StringValue(src);
+    input = (unsigned char *)RSTRING_PTR(src);
+    i_len = RSTRING_LEN(src);
 
-  if (*p == 0xa4)
-    sequence_counter = 1;
+    guess_f = TRUE;
+    kanji_convert( NULL );
+    guess_f = FALSE;
 
-  while (p<pend) {
-    if (*p == '\033') {
-      return INT2FIX(_JIS);
+    codename = get_guessed_code();
+    enc = rb_enc_find(codename);
+    if (enc <= 0) {
+	int idx = rb_enc_replicate(codename, rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
+	enc = rb_enc_from_index(idx);
     }
-    if (*p < '\006' || *p == 0x7f || *p == 0xff) {
-      return INT2FIX(_BINARY);
-    }
-    if (0x81 <= *p && *p <= 0x8d) {
-      return INT2FIX(_SJIS);
-    }
-    if (0x8f <= *p && *p <= 0x9f) {
-      return INT2FIX(_SJIS);
-    }
-    if (*p == 0x8e) {	/* SS2 */
-      INCR;
-      if ((0x40 <= *p && *p <= 0x7e) ||
-	  (0x80 <= *p && *p <= 0xa0) ||
-	  (0xe0 <= *p && *p <= 0xfc))
-	return INT2FIX(_SJIS);
-    }
-    else if (0xa1 <= *p && *p <= 0xdf) {
-      INCR;
-      if (0xf0 <= *p && *p <= 0xfe)
-	return INT2FIX(_EUC);
-      if (0xe0 <= *p && *p <= 0xef) {
-	while (p < pend && *p >= 0x40) {
-	  if (*p >= 0x81) {
-	    if (*p <= 0x8d || (0x8f <= *p && *p <= 0x9f)) {
-	      return INT2FIX(_SJIS);
-	    }
-	    else if (0xfd <= *p && *p <= 0xfe) {
-	      return INT2FIX(_EUC);
-	    }
-	  }
-	  INCR;
-	}
-      }
-      else if (*p <= 0x9f) {
-	return INT2FIX(_SJIS);
-      }
-    }
-    else if (0xf0 <= *p && *p <= 0xfe) {
-      return INT2FIX(_EUC);
-    }
-    else if (0xe0 <= *p && *p <= 0xef) {
-      INCR;
-      if ((0x40 <= *p && *p <= 0x7e) ||
-	  (0x80 <= *p && *p <= 0xa0)) {
-	return INT2FIX(_SJIS);
-      }
-      if (0xfd <= *p && *p <= 0xfe) {
-	return INT2FIX(_EUC);
-      }
-    }
-    INCR;
-  }
-  return INT2FIX(_UNKNOWN);
-}
-
-
-/*
- *  call-seq:
- *     NKF.guess2(str)  -> integer
- *
- *  Returns guessed encoding of _str_ as integer by nkf routine.
- *
- *     case NKF.guess(input)
- *     when NKF::ASCII
- *       "ASCII"
- *     when NKF::JIS
- *       "ISO-2022-JP"
- *     when NKF::SJIS
- *       "Shift_JIS"
- *     when NKF::EUC
- *       "EUC-JP"
- *     when NKF::UTF8
- *       "UTF-8"
- *     when NKF::UTF16
- *       "UTF-16"
- *     when NKF::UTF32
- *       "UTF-32"
- *     when NKF::UNKNOWN
- *       "UNKNOWN"
- *     when NKF::BINARY
- *       "BINARY"
- *     end
- */
-
-static VALUE
-rb_nkf_guess2(VALUE obj, VALUE src)
-{
-  int code = _BINARY;
-
-  reinit();
-
-  input_ctr = 0;
-  StringValue(src);
-  input = (unsigned char *)RSTRING_PTR(src);
-  i_len = RSTRING_LEN(src);
-
-  if(x0201_f == WISH_TRUE)
-    x0201_f = ((!iso2022jp_f)? TRUE : NO_X0201);
-
-  guess_f = TRUE;
-  kanji_convert( NULL );
-  guess_f = FALSE;
-
-  if (!is_inputcode_mixed) {
-    if (strcmp(input_codename, "") == 0) {
-      code = _ASCII;
-    } else if (strcmp(input_codename, "ISO-2022-JP") == 0) {
-      code = _JIS;
-    } else if (strcmp(input_codename, "EUC-JP") == 0) {
-      code = _EUC;
-    } else if (strcmp(input_codename, "Shift_JIS") == 0) {
-      code = _SJIS;
-    } else if (strcmp(input_codename, "UTF-8") == 0) {
-      code = _UTF8;
-    } else if (strcmp(input_codename, "UTF-16") == 0) {
-      code = _UTF16;
-    } else if (strcmp(input_codename, "UTF-32") == 0) {
-      code = _UTF32;
-    } else if (strlen(input_codename) > 0) {
-      code = _UNKNOWN;
-    }
-  }
-
-  return INT2FIX( code );
+    return rb_enc_from_encoding(enc);
 }
 
 
@@ -632,41 +476,17 @@ void
 Init_nkf()
 {
     /* hoge */
-    VALUE mKconv = rb_define_module("NKF");
+    VALUE mNKF = rb_define_module("NKF");
     /* hoge */
 
-    rb_define_module_function(mKconv, "nkf", rb_nkf_kconv, 2);
-    rb_define_module_function(mKconv, "guess1", rb_nkf_guess1, 1);
-    rb_define_module_function(mKconv, "guess2", rb_nkf_guess2, 1);
-    rb_define_alias(mKconv, "guess", "guess2");
-    rb_define_alias(rb_singleton_class(mKconv), "guess", "guess2");
+    rb_define_module_function(mNKF, "nkf", rb_nkf_convert, 2);
+    rb_define_module_function(mNKF, "guess", rb_nkf_guess, 1);
+    rb_define_alias(rb_singleton_class(mNKF), "guess", "guess");
 
-    /* Auto-Detect */
-    rb_define_const(mKconv, "AUTO", INT2FIX(_AUTO));
-    /* ISO-2022-JP */
-    rb_define_const(mKconv, "JIS", INT2FIX(_JIS));
-    /* EUC-JP */
-    rb_define_const(mKconv, "EUC", INT2FIX(_EUC));
-    /* Shift_JIS */
-    rb_define_const(mKconv, "SJIS", INT2FIX(_SJIS));
-    /* BINARY */
-    rb_define_const(mKconv, "BINARY", INT2FIX(_BINARY));
-    /* No conversion */
-    rb_define_const(mKconv, "NOCONV", INT2FIX(_NOCONV));
-    /* ASCII */
-    rb_define_const(mKconv, "ASCII", INT2FIX(_ASCII));
-    /* UTF-8 */
-    rb_define_const(mKconv, "UTF8", INT2FIX(_UTF8));
-    /* UTF-16 */
-    rb_define_const(mKconv, "UTF16", INT2FIX(_UTF16));
-    /* UTF-32 */
-    rb_define_const(mKconv, "UTF32", INT2FIX(_UTF32));
-    /* UNKNOWN */
-    rb_define_const(mKconv, "UNKNOWN", INT2FIX(_UNKNOWN));
     /* Full version string of nkf */
-    rb_define_const(mKconv, "VERSION", rb_str_new2(RUBY_NKF_VERSION));
+    rb_define_const(mNKF, "VERSION", rb_str_new2(RUBY_NKF_VERSION));
     /* Version of nkf */
-    rb_define_const(mKconv, "NKF_VERSION", rb_str_new2(NKF_VERSION));
+    rb_define_const(mNKF, "NKF_VERSION", rb_str_new2(NKF_VERSION));
     /* Release date of nkf */
-    rb_define_const(mKconv, "NKF_RELEASE_DATE", rb_str_new2(NKF_RELEASE_DATE));
+    rb_define_const(mNKF, "NKF_RELEASE_DATE", rb_str_new2(NKF_RELEASE_DATE));
 }

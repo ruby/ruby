@@ -1,3 +1,20 @@
+Wed Dec 19 13:22:14 2007  NARUSE, Yui <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf.c (NKF::_ENCODING): removed.
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): renamed to rb_nkf_convert.
+
+	* ext/nkf/nkf.c (rb_nkf_convert): set encoding.
+
+	* ext/nkf/nkf.c (rb_nkf_guess1): removed.
+
+	* ext/nkf/nkf.c (rb_nkf_guess2): renamed to rb_nkf_guess.
+
+	* ext/nkf/nkf.c (rb_nkf_guess):
+	  guess method now returns encoding object.
+
+	* ext/nkf/nkf-utf8/nkf.c: Update to nkf 2.0.8 2007-12-19.
+
 Wed Dec 19 10:52:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_to_inum): an underscore succeeding after octal
