@@ -439,7 +439,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	len = 2;
 	break;
       case 8:
-	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O')) {
+	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O'||str[1] == '_')) {
 	    str += 2;
 	}
       case 4: case 5: case 6: case 7:
