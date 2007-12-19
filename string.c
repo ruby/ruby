@@ -1007,8 +1007,10 @@ rb_str_cat2(VALUE str, const char *ptr)
 VALUE
 rb_str_buf_append(VALUE str, VALUE str2)
 {
+    rb_encoding *enc;
     long capa, len;
 
+    enc = rb_enc_check(str, str2);
     rb_str_modify(str);
     if (STR_ASSOC_P(str)) {
 	FL_UNSET(str, STR_ASSOC);
@@ -1031,6 +1033,7 @@ rb_str_buf_append(VALUE str, VALUE str2)
 	   RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
     STR_SET_LEN(str, len);
     OBJ_INFECT(str, str2);
+    rb_enc_associate(str, enc);
 
     return str;
 }
@@ -4288,9 +4291,10 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    (rslen <= 1 || memcmp(RSTRING_PTR(rs), p, rslen) == 0)) {
 	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
 	    OBJ_INFECT(line, str);
+	    rb_enc_copy(line, str);
 	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
-	    s = p + n;
+	    s = p + (rslen ? rslen : n);
 	}
 	p += n;
     }
@@ -4299,6 +4303,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	if (p > pend) p = pend;
 	line = rb_str_new5(str, s, p - s);
 	OBJ_INFECT(line, str);
+	rb_enc_copy(line, str);
 	rb_yield(line);
     }
 

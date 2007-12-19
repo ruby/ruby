@@ -1201,7 +1201,10 @@ class TestM17N < Test::Unit::TestCase
         assert_equal(s1.encoding, line.encoding)
         lines << line
       }
-      assert_equal(s1, lines.join(''))
+      next if lines.size == 0
+      s2 = lines.join('')
+      assert_equal(s1.encoding, s2.encoding)
+      assert_equal(s1, s2)
     }
   end
 

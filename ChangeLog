@@ -47,6 +47,18 @@ Wed Dec 19 22:59:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* test/ruby/test_m17n.rb (TestM17N::test_str_insert): test updated
 	  to check negative offset behavior.
 
+	* string.c (rb_str_each_line): should consider rslen.
+
+	* string.c (rb_str_buf_append): should propagate encoding.
+
+	* string.c (rb_str_each_line): ditto.
+
+	* test/ruby/test_m17n.rb (TestM17N::test_str_each_line): should
+	  check encoding as well.
+
+	* test/ruby/test_m17n.rb (TestM17N::test_str_each_line): empty
+	  array can not propagate encoding;  should not check.
+
 Wed Dec 19 21:42:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_regsub): should set checked encoding.
