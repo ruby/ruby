@@ -127,6 +127,13 @@ OUTFLAG       = -o
 !ifndef CFLAGS
 CFLAGS = -q -tWR -tWC $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 !endif
+!ifndef DEFS
+DEFS =
+!endif
+!ifndef CPPFLAGS
+CPPFLAGS =
+!endif
+CPPFLAGS = $(DEFS) $(CPPFLAGS)
 !ifndef CXXFLAGS
 CXXFLAGS = $(CFLAGS)
 !endif
@@ -332,6 +339,7 @@ s,@SHELL@,$$(COMSPEC),;t t
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
+s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
@@ -377,6 +385,7 @@ s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS) ,;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
+s,@RM@,$$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@CP@,copy > nul,;t t
 s,@LIBOBJS@, acosh.obj crypt.obj erf.obj strlcat.obj strlcpy.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t

@@ -1,3 +1,7 @@
+Thu Dec 20 04:15:41 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* */Makefile.sub (DEFS, RM): output to config.status.
+
 Thu Dec 20 02:59:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* common.mk (encs): create encoding directory.

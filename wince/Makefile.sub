@@ -43,7 +43,7 @@ YFLAGS = -o y.tab.c
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
-RM = $(srcdir)\win32\rm.bat
+RM = $(srcdir:/=\)\win32\rm.bat
 CP = copy > nul
 MV = ren > nul
 !if !defined(BASERUBY)
@@ -117,6 +117,7 @@ CPPFLAGS = $(CECPUDEF) -DUNDER_CE -D_WIN32_WCE=$(SUBSYSVERSION:.=) \
            -DFILENAME_MAX=MAX_PATH -DTLS_OUT_OF_INDEXES=0xFFFFFFFF \
            -DBUFSIZ=512 -D_UNICODE -DUNICODE
 !endif
+CPPFLAGS = $(DEFS) $(CPPFLAGS)
 !if !defined(CXXFLAGS)
 CXXFLAGS = $(CFLAGS)
 !endif
@@ -333,6 +334,7 @@ s,@SHELL@,$$(COMSPEC),;t t
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
+s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
@@ -378,6 +380,7 @@ s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
+s,@RM@,$$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@CP@,copy > nul,;t t
 s,@LIBOBJS@, acosh.obj crypt.obj erf.obj strlcat.obj strlcpy.obj win32.obj isinf.obj isnan.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t

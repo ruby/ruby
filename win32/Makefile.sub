@@ -156,11 +156,12 @@ LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/missing
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
-CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
+DEFS = -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
 MANIFESTTOOL = mt -nologo
 LDSHARED_1 = $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
 LDSHARED_2 = @$(RM) $(@:/=\).manifest
 !endif
+CPPFLAGS = $(DEFS) $(CPPFLAGS)
 
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
@@ -379,6 +380,7 @@ s,@SHELL@,$$(COMSPEC),;t t
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
+s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
@@ -424,6 +426,7 @@ s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
+s,@RM@,$$(COMSPEC) /C $$(top_srcdir:/=\)\win32\rm.bat,;t t
 s,@CP@,copy > nul,;t t
 s,@LIBOBJS@, acosh.obj crypt.obj erf.obj strlcpy.obj strlcat.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
