@@ -1074,6 +1074,156 @@ class TestM17N < Test::Unit::TestCase
       t = s.chop
       assert(t.valid_encoding?) if s.valid_encoding?
       assert(a(s).index(a(t)))
+      t2 = s.dup
+      t2.chop!
+      assert_equal(t, t2)
+    }
+  end
+
+  def test_str_clear
+    STRINGS.each {|s|
+      t = s.dup
+      t.clear
+      assert(t.valid_encoding?)
+      assert(t.empty?)
+    }
+  end
+
+  def test_str_clone
+    STRINGS.each {|s|
+      t = s.clone
+      assert_equal(s, t)
+      assert_equal(s.encoding, t.encoding)
+      assert_equal(a(s), a(t))
+    }
+  end
+
+  def test_str_dup
+    STRINGS.each {|s|
+      t = s.dup
+      assert_equal(s, t)
+      assert_equal(s.encoding, t.encoding)
+      assert_equal(a(s), a(t))
+    }
+  end
+
+  def test_str_count
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s1.valid_encoding? || !s2.valid_encoding?
+        #assert_raise(ArgumentError) { s1.count(s2) }
+        #assert_nothing_raised { s1.count(s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.count(s2) }
+        next
+      end
+      n = s1.count(s2)
+      n0 = a(s1).count(a(s2))
+      assert_operator(n, :<=, n0)
+    }
+  end
+
+  def test_str_crypt
+    combination(STRINGS, STRINGS) {|str, salt|
+      if a(salt).length < 2
+        assert_raise(ArgumentError) { str.crypt(salt) }
+        next
+      end
+      t = str.crypt(salt)
+      assert_equal(a(str).crypt(a(salt)), t)
+      assert_encoding('ASCII-8BIT', t.encoding)
+    }
+  end
+
+  def test_str_delete
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s1.valid_encoding? || !s2.valid_encoding?
+        #assert_raise(ArgumentError) { s1.delete(s2) }
+        #assert_nothing_raised { s1.delete(s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.delete(s2) }
+        next
+      end
+      t = s1.delete(s2)
+      assert(t.valid_encoding?)
+      assert_equal(t.encoding, s1.encoding)
+      assert_operator(t.length, :<=, s1.length)
+      t2 = s1.dup
+      t2.delete!(s2)
+      assert_equal(t, t2)
+    }
+  end
+
+  def test_str_downcase
+    STRINGS.each {|s|
+      if !s.valid_encoding?
+        #assert_raise(ArgumentError) { s.downcase }
+        #assert_nothing_raised { s.downcase }
+        next
+      end
+      t = s.downcase
+      assert(t.valid_encoding?)
+      assert_equal(t.encoding, s.encoding)
+      assert(t.casecmp(s))
+      t2 = s.dup
+      t2.downcase!
+      assert_equal(t, t2)
+    }
+  end
+
+  def test_str_dump
+    STRINGS.each {|s|
+      t = s.dump
+      assert(t.valid_encoding?)
+      assert(is_ascii_only?(t))
+      u = eval(t)
+      assert_equal(a(s), a(u))
+    }
+  end
+
+  def test_str_each_line
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s1.valid_encoding? || !s2.valid_encoding?
+        #assert_raise(ArgumentError) { s1.each_line(s2) {} }
+        #assert_nothing_raised { s1.each_line(s2) {} }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.each_line(s2) {} }
+        next
+      end
+      lines = []
+      s1.each_line(s2) {|line|
+        assert(line.valid_encoding?)
+        assert_equal(s1.encoding, line.encoding)
+        lines << line
+      }
+      assert_equal(s1, lines.join(''))
+    }
+  end
+
+  def test_str_each_byte
+    STRINGS.each {|s|
+      bytes = []
+      s.each_byte {|b|
+        bytes << b
+      }
+      a(s).split(//).each_with_index {|ch, i|
+        assert_equal(ch.ord, bytes[i])
+      }
+    }
+  end
+
+  def test_str_empty?
+    STRINGS.each {|s|
+      if s.length == 0
+        assert(s.empty?)
+      else
+        assert(!s.empty?)
+      end
     }
   end
 
