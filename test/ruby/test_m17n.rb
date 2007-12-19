@@ -1227,6 +1227,81 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_str_hex
+    STRINGS.each {|s|
+      t = s.hex
+      t2 = a(s)[/\A[0-9a-fA-Fx]*/].hex
+      assert_equal(t2, t)
+    }
+  end
+
+  def test_str_include?
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.include?(s2) }
+        assert_raise(ArgumentError) { s1.index(s2) }
+        assert_raise(ArgumentError) { s1.rindex(s2) }
+        next
+      end
+      t = s1.include?(s2)
+      if t
+        assert(a(s1).include?(a(s2)))
+        assert(s1.index(s2))
+        assert(s1.rindex(s2))
+      else
+        assert(!s1.index(s2))
+        assert(!s1.rindex(s2), "!#{encdump(s1)}.rindex(#{encdump(s2)})")
+      end
+      if s1.valid_encoding? && s2.valid_encoding?
+        if t && s1.valid_encoding? && s2.valid_encoding?
+          assert_match(/#{Regexp.escape(s2)}/, s1)
+        else
+          assert_no_match(/#{Regexp.escape(s2)}/, s1)
+        end
+      end
+    }
+  end
+
+  def test_str_index
+    combination(STRINGS, STRINGS, -2..2) {|s1, s2, pos|
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.index(s2) }
+        next
+      end
+      t = s1.index(s2, pos)
+      if !s1.valid_encoding? || !s2.valid_encoding?
+        next
+      end
+      if t
+        re = /#{Regexp.escape(s2)}/
+        assert(re.match(s1, pos))
+        assert_equal($`.length, t, "#{encdump s1}.index(#{encdump s2}, #{pos})")
+      end
+    }
+  end
+
+  def test_str_rindex
+    combination(STRINGS, STRINGS, -2..2) {|s1, s2, pos|
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.rindex(s2) }
+        next
+      end
+      t = s1.rindex(s2, pos)
+      if !s1.valid_encoding? || !s2.valid_encoding?
+        next
+      end
+      if t
+        #puts "#{encdump s1}.rindex(#{encdump s2}, #{pos}) => #{t}"
+        assert(a(s1).index(a(s2)))
+        pos2 = pos
+        pos2 += s1.length if pos < 0
+        re = /\A(.{0,#{pos2}})#{Regexp.escape(s2)}/m
+        assert(re.match(s1), "#{re.inspect}.match(#{encdump(s1)})")
+        assert_equal($1.length, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
+      end
+    }
+  end
+
   def test_tr
     s = "\x81\x41".force_encoding("shift_jis")
     assert_equal(s.tr("A", "B"), s)
@@ -1241,5 +1316,9 @@ class TestM17N < Test::Unit::TestCase
   def test_sub
     s = "abc".sub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
     assert_encoding("EUC-JP", s.encoding)
+  end
+
+  def test_regexp_match
+    assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
   end
 end
