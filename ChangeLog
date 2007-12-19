@@ -1,3 +1,8 @@
+Wed Dec 19 15:13:20 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_justify): should propagate encoding from pad
+	  string too.
+
 Wed Dec 19 13:57:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (TIMEZONE_VOID): check whether timezone requires zero

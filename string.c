@@ -5023,7 +5023,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     width = NUM2LONG(w);
     if (argc == 2) {
 	StringValue(pad);
-	rb_enc_check(str, pad);
+	enc = rb_enc_check(str, pad);
 	f = RSTRING_PTR(pad);
 	flen = RSTRING_LEN(pad);
 	fclen = str_strlen(pad, enc);
