@@ -445,6 +445,7 @@ static void reg_fragment_check_gen(struct parser_params*, VALUE, int);
 #define reg_fragment_check(str,options) reg_fragment_check_gen(parser, str, options)
 static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *match);
 #define reg_named_capture_assign(regexp,match) reg_named_capture_assign_gen(parser,regexp,match)
+int rb_enc_symname2_p(const char *, int, rb_encoding *);
 #else
 #define remove_begin(node) (node)
 #endif /* !RIPPER */
@@ -8494,6 +8495,9 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
 {
     reg_named_capture_assign_t *arg = (reg_named_capture_assign_t*)arg0;
     struct parser_params* parser = arg->parser;
+    rb_encoding *enc = arg->enc;
+    int len = name_end - name;
+    const char *s = (const char *)name;
     ID var;
 
     arg->num++;
@@ -8503,12 +8507,12 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
         arg->fail_block = NEW_BEGIN(0);
     }
 
-    var = rb_intern3((const char *)name, name_end-name, arg->enc);
-    if (!is_local_id(var)) {
-        compile_error(PARSER_ARG "named capture with a non local variable - %s",
-                      rb_id2name(var));
+    if (!(len && rb_enc_islower(*name, enc) && rb_enc_symname2_p(s, len, enc))) {
+        compile_error(PARSER_ARG "named capture with a non local variable - %.*s",
+                      len, name);
         return ST_CONTINUE;
     }
+    var = rb_intern3(s, len, enc);
     if (dvar_defined(var) || local_id(var)) {
         rb_warningS("named capture conflicts a local variable - %s", 
                     rb_id2name(var));
@@ -8796,8 +8800,14 @@ rb_symname_p(const char *name)
 int
 rb_enc_symname_p(const char *name, rb_encoding *enc)
 {
+    return rb_enc_symname2_p(name, strlen(name), enc);
+}
+
+int
+rb_enc_symname2_p(const char *name, int len, rb_encoding *enc)
+{
     const char *m = name;
-    const char *e = m + strlen(m);
+    const char *e = m + len;
     int localid = Qfalse;
 
     if (!m) return Qfalse;

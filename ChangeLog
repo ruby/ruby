@@ -1,6 +1,11 @@
-Wed Dec 19 16:26:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Dec 19 16:31:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_named_capture_assign_iter): remove C99 dependency.
+
+	* parse.y (reg_named_capture_assign_iter): get rid of creating
+	  unnecessary ID.
+
+	* parse.y (rb_enc_symname2_p): check for non-nul-terminated string.
 
 Wed Dec 19 15:37:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
