@@ -18,9 +18,9 @@ module Kconv
   #
   # Public Constants
   #
-  
+
   #Constant of Encoding
-  
+
   # Auto-Detect
   AUTO = NKF::AUTO
   # ISO-2022-JP
@@ -45,11 +45,9 @@ module Kconv
   UNKNOWN = NKF::UNKNOWN
 
   #
+  #
   # Private Constants
   #
-  
-  # Revision of kconv.rb
-  REVISION = %q$Revision$
   
   #Regexp of Encoding
   
@@ -83,7 +81,7 @@ module Kconv
   #
   
   # call-seq:
-  #    Kconv.kconv(str, out_code, in_code = Kconv::AUTO)
+  #    Kconv.kconv(str, to_enc, from_enc=nil)
   #
   # Convert <code>str</code> to out_code.
   # <code>out_code</code> and <code>in_code</code> are given as constants of Kconv.
@@ -92,41 +90,10 @@ module Kconv
   # This method decode MIME encoded string and
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want to decode them, use NKF.nkf.
-  def kconv(str, out_code, in_code = AUTO)
-    opt = '-'
-    case in_code
-    when ::NKF::JIS
-      opt << 'J'
-    when ::NKF::EUC
-      opt << 'E'
-    when ::NKF::SJIS
-      opt << 'S'
-    when ::NKF::UTF8
-      opt << 'W'
-    when ::NKF::UTF16
-      opt << 'W16'
-    when ::NKF::UTF32
-      opt << 'W32'
-    end
-
-    case out_code
-    when ::NKF::JIS
-      opt << 'j'
-    when ::NKF::EUC
-      opt << 'e'
-    when ::NKF::SJIS
-      opt << 's'
-    when ::NKF::UTF8
-      opt << 'w'
-    when ::NKF::UTF16
-      opt << 'w16'
-    when ::NKF::UTF32
-      opt << 'w32'
-    when ::NKF::NOCONV
-      return str
-    end
-
-    opt = '' if opt == '-'
+  def kconv(str, to_enc, from_enc=nil)
+    opt = ''
+    opt += ' --ic=' + from_enc.name if from_enc
+    opt += ' --oc=' + to_enc.name if to_enc
 
     ::NKF::nkf(opt, str)
   end
@@ -146,7 +113,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-jxm0', str).
   def tojis(str)
-    ::NKF::nkf('-jm', str).force_encoding("iso-2022-JP")
+    ::NKF::nkf('-jm', str)
   end
   module_function :tojis
 
@@ -160,7 +127,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-exm0', str).
   def toeuc(str)
-    ::NKF::nkf('-em', str).force_encoding("EUC-JP")
+    ::NKF::nkf('-em', str)
   end
   module_function :toeuc
 
@@ -174,7 +141,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-sxm0', str).
   def tosjis(str)
-    ::NKF::nkf('-sm', str).force_encoding("Shift_JIS")
+    ::NKF::nkf('-sm', str)
   end
   module_function :tosjis
 
@@ -188,7 +155,7 @@ module Kconv
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want it, use NKF.nkf('-wxm0', str).
   def toutf8(str)
-    ::NKF::nkf('-wm', str).force_encoding("UTF-8")
+    ::NKF::nkf('-wm', str)
   end
   module_function :toutf8
 
@@ -227,20 +194,11 @@ module Kconv
   # call-seq:
   #    Kconv.guess(str)   -> integer
   #
-  # Guess input encoding by NKF.guess2
+  # Guess input encoding by NKF.guess
   def guess(str)
     ::NKF::guess(str)
   end
   module_function :guess
-
-  # call-seq:
-  #    Kconv.guess_old(str)   -> integer
-  #
-  # Guess input encoding by NKF.guess1
-  def guess_old(str)
-    ::NKF::guess1(str)
-  end
-  module_function :guess_old
 
   #
   # isEncoding
@@ -283,7 +241,7 @@ end
 
 class String
   # call-seq:
-  #    String#kconv(out_code, in_code = Kconv::AUTO)
+  #    String#kconv(to_enc, from_enc)
   #
   # Convert <code>self</code> to out_code.
   # <code>out_code</code> and <code>in_code</code> are given as constants of Kconv.
@@ -292,8 +250,8 @@ class String
   # This method decode MIME encoded string and
   # convert halfwidth katakana to fullwidth katakana.
   # If you don't want to decode them, use NKF.nkf.
-  def kconv(out_code, in_code=Kconv::AUTO)
-    Kconv::kconv(self, out_code, in_code)
+  def kconv(to_enc, from_enc=nil)
+    Kconv::kconv(self, to_enc, from_enc)
   end
   
   #

@@ -61,6 +61,13 @@ rb_nkf_putchar(unsigned int c)
 #include "nkf-utf8/utf8tbl.c"
 #include "nkf-utf8/nkf.c"
 
+rb_encoding* rb_nkf_enc_get(const char *name)
+{
+    int idx = rb_enc_find_index(name);
+    if (idx < 0) idx = rb_enc_replicate(name, rb_default_encoding());
+    return rb_enc_from_index(idx);
+}
+
 int nkf_split_options(const char *arg)
 {
     int count = 0;
@@ -126,16 +133,13 @@ int nkf_split_options(const char *arg)
 static VALUE
 rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 {
-    char *opt_ptr, *opt_end;
-    volatile VALUE v;
-    char *encname;
-    int idx;
+    rb_encoding *to_enc;
+    const char *to_e;
+    int to_encidx;
 
     reinit();
     StringValue(opt);
-    opt_ptr = RSTRING_PTR(opt);
-    opt_end = opt_ptr + RSTRING_LEN(opt);
-    nkf_split_options(opt_ptr);
+    nkf_split_options(RSTRING_PTR(opt));
 
     incsize = INCSIZE;
 
@@ -144,7 +148,6 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     input = (unsigned char *)RSTRING_PTR(src);
     i_len = RSTRING_LEN(src);
     result = rb_str_new(0, i_len*3 + 10);
-    v = result;
 
     output_ctr = 0;
     output     = (unsigned char *)RSTRING_PTR(result);
@@ -154,15 +157,9 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     kanji_convert(NULL);
     rb_str_set_len(result, output_ctr);
     OBJ_INFECT(result, src);
-    encname = nkf_enc_name(output_encoding);
-    fprintf(stderr, "%s\n", encname);
-    idx = rb_enc_find_index(encname);
-    fprintf(stderr, "%d\n", idx);
-    if (idx <= 0) {
-	idx = rb_enc_replicate(encname, rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
-	fprintf(stderr, "%d\n", idx);
-    }
-    rb_enc_associate_index(result, idx);
+
+    rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
+
     return result;
 }
 
@@ -178,9 +175,6 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 static VALUE
 rb_nkf_guess(VALUE obj, VALUE src)
 {
-    char* codename;
-    rb_encoding* enc;
-
     reinit();
 
     input_ctr = 0;
@@ -192,13 +186,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
     kanji_convert( NULL );
     guess_f = FALSE;
 
-    codename = get_guessed_code();
-    enc = rb_enc_find(codename);
-    if (enc <= 0) {
-	int idx = rb_enc_replicate(codename, rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
-	enc = rb_enc_from_index(idx);
-    }
-    return rb_enc_from_encoding(enc);
+    return rb_enc_from_encoding(rb_nkf_enc_get(get_guessed_code()));
 }
 
 
@@ -482,6 +470,18 @@ Init_nkf()
     rb_define_module_function(mNKF, "nkf", rb_nkf_convert, 2);
     rb_define_module_function(mNKF, "guess", rb_nkf_guess, 1);
     rb_define_alias(rb_singleton_class(mNKF), "guess", "guess");
+
+    rb_define_const(mNKF, "AUTO",	Qnil);
+    rb_define_const(mNKF, "NOCONV",	Qnil);
+    rb_define_const(mNKF, "UNKNOWN",	Qnil);
+    rb_define_const(mNKF, "BINARY",	rb_enc_from_encoding(rb_nkf_enc_get("BINARY")));
+    rb_define_const(mNKF, "ASCII",	rb_enc_from_encoding(rb_nkf_enc_get("US_ASCII")));
+    rb_define_const(mNKF, "JIS",	rb_enc_from_encoding(rb_nkf_enc_get("ISO-2022-JP")));
+    rb_define_const(mNKF, "EUC",	rb_enc_from_encoding(rb_nkf_enc_get("EUC-JP")));
+    rb_define_const(mNKF, "SJIS",	rb_enc_from_encoding(rb_nkf_enc_get("Shift_JIS")));
+    rb_define_const(mNKF, "UTF8",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-8")));
+    rb_define_const(mNKF, "UTF16",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-16")));
+    rb_define_const(mNKF, "UTF32",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-32")));
 
     /* Full version string of nkf */
     rb_define_const(mNKF, "VERSION", rb_str_new2(RUBY_NKF_VERSION));

@@ -1,3 +1,16 @@
+Wed Dec 19 19:18:06 2007  NARUSE, Yui <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Updated.
+
+	* ext/nkf/nkf.c (rb_nkf_enc_get): added.
+	  (find encoding or replicate default encoding)
+
+	* ext/nkf/nkf.c (NKF::<ENCODING>): redefine encoding constant.
+
+	* ext/nkf/lib/kconv.rb (Kconv::<ENCODING>): redefined as Encoding.
+
+	* ext/nkf/lib/kconv.rb: refactoring.
+
 Wed Dec 19 19:11:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_mul0): blocking check for bigger numbers.

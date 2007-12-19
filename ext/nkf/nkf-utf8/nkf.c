@@ -320,6 +320,7 @@ static const struct {
     {"ISO-2022-JP-1",		ISO_2022_JP_1},
     {"ISO-2022-JP-3",		ISO_2022_JP_3},
     {"SHIFT_JIS",		SHIFT_JIS},
+    {"SJIS",			SHIFT_JIS},
     {"WINDOWS-31J",		WINDOWS_31J},
     {"CSWINDOWS31J",		WINDOWS_31J},
     {"CP932",			WINDOWS_31J},
