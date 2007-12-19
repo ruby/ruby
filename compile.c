@@ -2918,7 +2918,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	iseq->compile_data->current_block = prevblock;
 
-	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, retry_label, retry_end_l, 0, retry_label);
 	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, 0, retry_end_l);
 
 	break;
