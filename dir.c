@@ -268,7 +268,7 @@ fnmatch_helper(
 	    const char *t;
 	    if (ISEND(s))
 		RETURN(FNM_NOMATCH);
-	    if (t = bracket(p + 1, s, flags)) {
+	    if ((t = bracket(p + 1, s, flags)) != 0) {
 		p = t;
 		Inc(s);
 		continue;
@@ -465,7 +465,7 @@ dir_inspect(VALUE dir)
 {
     struct dir_data *dirp;
 
-    GetDIR(dir, dirp);
+    Data_Get_Struct(dir, struct dir_data, dirp);
     if (dirp->path) {
 	char *c = rb_obj_classname(dir);
 	int len = strlen(c) + strlen(dirp->path) + 4;
@@ -490,7 +490,7 @@ dir_path(VALUE dir)
 {
     struct dir_data *dirp;
 
-    GetDIR(dir, dirp);
+    Data_Get_Struct(dir, struct dir_data, dirp);
     if (!dirp->path) return Qnil;
     return rb_str_new2(dirp->path);
 }
@@ -581,7 +581,7 @@ dir_tell(VALUE dir)
     struct dir_data *dirp;
     long pos;
 
-    GetDIR(dir, dirp);
+    Data_Get_Struct(dir, struct dir_data, dirp);
     pos = telldir(dirp->dir);
     return rb_int2inum(pos);
 #else
@@ -976,7 +976,7 @@ has_magic(const char *s, int flags)
     register const char *p = s;
     register char c;
 
-    while (c = *p++) {
+    while ((c = *p++) != 0) {
 	switch (c) {
 	  case '*':
 	  case '?':
@@ -1009,7 +1009,7 @@ find_dirsep(const char *s, int flags)
     register char c;
     int open = 0;
 
-    while (c = *p++) {
+    while ((c = *p++) != 0) {
 	switch (c) {
 	  case '[':
 	    open = 1;

@@ -1,3 +1,8 @@
+Wed Dec 19 23:57:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_inspect, dir_path, dir_tell): check for frozen and closed
+	  is not needed.  [ruby-dev:32640]
+
 Wed Dec 19 22:59:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_sublen): adjust position if position is not at the
