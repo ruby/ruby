@@ -1442,34 +1442,32 @@ rb_big_minus(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-rb_big_mul0(VALUE x, VALUE y)
+static void
+rb_big_stop(void *ptr)
 {
+    VALUE *stop = (VALUE*)ptr;
+    *stop = Qtrue;
+}
+
+struct big_mul_struct {
+    VALUE x, y, stop;
+};
+
+static VALUE
+bigmul1(void *ptr)
+{
+    struct big_mul_struct *bms = (struct big_mul_struct*)ptr;
     long i, j;
     BDIGIT_DBL n = 0;
-    VALUE z;
+    VALUE x = bms->x, y = bms->y, z;
     BDIGIT *zds;
-
-    switch (TYPE(y)) {
-      case T_FIXNUM:
-	y = rb_int2big(FIX2LONG(y));
-	break;
-
-      case T_BIGNUM:
-	break;
-
-      case T_FLOAT:
-	return DOUBLE2NUM(rb_big2dbl(x) * RFLOAT_VALUE(y));
-
-      default:
-	return rb_num_coerce_bin(x, y);
-    }
 
     j = RBIGNUM_LEN(x) + RBIGNUM_LEN(y) + 1;
     z = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     zds = BDIGITS(z);
     while (j--) zds[j] = 0;
     for (i = 0; i < RBIGNUM_LEN(x); i++) {
+	if (bms->stop) return Qnil;
 	BDIGIT_DBL dd = BDIGITS(x)[i];
 	if (dd == 0) continue;
 	n = 0;
@@ -1486,6 +1484,42 @@ rb_big_mul0(VALUE x, VALUE y)
     return z;
 }
 
+static VALUE
+rb_big_mul0(VALUE x, VALUE y)
+{
+    struct big_mul_struct bms;
+    VALUE z;
+
+    switch (TYPE(y)) {
+      case T_FIXNUM:
+	y = rb_int2big(FIX2LONG(y));
+	break;
+
+      case T_BIGNUM:
+	break;
+
+      case T_FLOAT:
+	return DOUBLE2NUM(rb_big2dbl(x) * RFLOAT_VALUE(y));
+
+      default:
+	return rb_num_coerce_bin(x, y);
+    }
+
+    bms.x = x;
+    bms.y = y;
+    bms.stop = Qfalse;
+
+    if (RBIGNUM_LEN(x) + RBIGNUM_LEN(y) > 10000) {
+	VALUE stop = Qfalse;
+	z = rb_thread_blocking_region(bigmul1, &bms, rb_big_stop, &bms.stop);
+    }
+    else {
+	z = bigmul1(&bms);
+    }
+
+    return z;
+}
+
 /*
  *  call-seq:
  *     big * other  => Numeric
@@ -1499,9 +1533,15 @@ rb_big_mul(VALUE x, VALUE y)
     return bignorm(rb_big_mul0(x, y));
 }
 
-static void
-bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
+struct big_div_struct {
+    VALUE x, y, *divp, *modp, stop;
+};
+
+static VALUE
+bigdivrem1(void *ptr)
 {
+    struct big_div_struct *bds = (struct big_div_struct*)ptr;
+    VALUE x = bds->x, y = bds->y, *divp = bds->divp, *modp = bds->modp;
     long nx = RBIGNUM_LEN(x), ny = RBIGNUM_LEN(y);
     long i, j;
     VALUE yy, z;
@@ -1575,6 +1615,7 @@ bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 
     j = nx==ny?nx+1:nx;
     do {
+	if (bds->stop) return Qnil;
 	if (zds[j] ==  yds[ny-1]) q = BIGRAD-1;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
@@ -1625,6 +1666,27 @@ bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 	RBIGNUM_SET_LEN(*modp, ny);
 	RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
     }
+}
+
+static VALUE
+bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
+{
+    struct big_div_struct bds;
+    VALUE z;
+
+    bds.x = x;
+    bds.y = y;
+    bds.divp = divp;
+    bds.modp = modp;
+    bds.stop = Qfalse;
+    if (RBIGNUM_LEN(x) > 10000 || RBIGNUM_LEN(y) > 10000) {
+	VALUE stop = Qfalse;
+	z = rb_thread_blocking_region(bigdivrem1, &bds, rb_big_stop, &bds.stop);
+    }
+    else {
+	z = bigdivrem1(&bds);
+    }
+    return z;
 }
 
 static void
