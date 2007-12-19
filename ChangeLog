@@ -1,3 +1,10 @@
+Wed Dec 19 17:12:59 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knownbug.rb, test_block.rb: 
+	  move fixed bug.
+
+	* bootstraptest/test_m17n.rb: added.
+
 Wed Dec 19 16:59:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c (errinfo_place): skip if error is Fixnum.  [ruby-dev:32608]

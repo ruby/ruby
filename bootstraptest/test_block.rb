@@ -455,3 +455,20 @@ assert_equal 'ok', %q{
   vs1 == vs2 ? :ok : :ng
 }, '[ruby-dev:32329]'
 
+assert_normal_exit %q{
+  e = [1,2,3].each
+  10000.times {
+    e = [e].each
+  }
+  Thread.new { GC.start }.join
+}, '[ruby-dev:32604]'
+
+
+assert_equal '[nil, []]', %q{
+  def m() yield nil,[] end
+  l = lambda {|*v| v}
+  GC.stress=true
+  r = m(&l)      
+  GC.stress=false
+  r.inspect             
+}, '[ruby-dev:32567]'
