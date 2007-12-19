@@ -1,3 +1,8 @@
+Wed Dec 19 13:57:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (TIMEZONE_VOID): check whether timezone requires zero
+	  arguments.  [ruby-dev:32631]
+
 Wed Dec 19 13:22:14 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c (NKF::_ENCODING): removed.
