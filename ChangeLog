@@ -1,3 +1,8 @@
+Thu Dec 20 00:07:36 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/drbtest.rb (test_07_public_private_protected_missing):
+	  followed current Ruby specification.
+
 Wed Dec 19 23:57:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_inspect, dir_path, dir_tell): check for frozen and closed

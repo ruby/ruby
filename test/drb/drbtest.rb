@@ -179,7 +179,7 @@ module DRbCore
   def test_07_public_private_protected_missing
     assert_nothing_raised() {
       begin
-	@there.method_missing(:eval)
+	@there.method_missing(:eval, 'nil')
       rescue NoMethodError
 	assert_match(/^private method \`eval\'/, $!.message)
       end
@@ -208,7 +208,7 @@ module DRbCore
 	assert_match(/^undefined method \`undefined_method_test\'/, $!.message)
       end
     }
-    assert_raises(SecurityError) do
+    assert_raises(DRb::DRbConnError) do
       @there.method_missing(:__send__, :to_s)
     end
     assert_equal(true, @there.missing)
