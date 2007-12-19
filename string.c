@@ -1650,7 +1650,6 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
       }
 	/* fall through */
       case T_STRING:
-	pos = str_sublen(str, pos, enc);
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
 	break;

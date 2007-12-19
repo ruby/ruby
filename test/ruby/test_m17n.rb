@@ -1303,7 +1303,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_insert
-    combination(STRINGS, -2..2, STRINGS) {|s1, nth, s2|
+    combination(STRINGS, 0..2, STRINGS) {|s1, nth, s2|
       t1 = s1.dup
       t2 = s1.dup
       begin
@@ -1316,6 +1316,18 @@ class TestM17N < Test::Unit::TestCase
       end
       assert_equal(t1, t2, "t=#{encdump s1}; t.insert(#{nth},#{encdump s2}); t")
       assert_equal(e1.class, e2.class, "begin #{encdump s1}.insert(#{nth},#{encdump s2}); rescue ArgumentError, IndexError => e; e end")
+    }
+    combination(STRINGS, -2..-1, STRINGS) {|s1, nth, s2|
+      next if s1.length + nth < 0
+      next unless s1.valid_encoding?
+      next unless s2.valid_encoding?
+      t1 = s1.dup
+      begin
+        t1.insert(nth, s2)
+        slen = s2.length
+        assert_equal(t1[nth-slen+1,slen], s2, "t=#{encdump s1}; t.insert(#{nth},#{encdump s2}); t")
+      rescue ArgumentError, IndexError => e
+      end
     }
   end
 

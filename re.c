@@ -2146,7 +2146,8 @@ reg_match_pos(VALUE re, VALUE *strp, long pos)
     *strp = str = reg_operand(str, Qtrue);
     if (pos != 0) {
 	if (pos < 0) {
-	    pos += RSTRING_LEN(str);
+	    VALUE l = rb_str_length(str);
+	    pos += NUM2INT(l);
 	    if (pos < 0) {
 		return pos;
 	    }
