@@ -1377,6 +1377,8 @@ class TestM17N < Test::Unit::TestCase
   def test_sub
     s = "abc".sub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
     assert_encoding("EUC-JP", s.encoding)
+    assert_equal(Encoding::EUC_JP, "\xa4\xa2".force_encoding("euc-jp").sub(/./, '\&').encoding)
+    assert_equal(Encoding::EUC_JP, "\xa4\xa2".force_encoding("euc-jp").gsub(/./, '\&').encoding)
   end
 
   def test_regexp_match

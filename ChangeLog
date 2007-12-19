@@ -1,3 +1,9 @@
+Wed Dec 19 21:42:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_regsub): should set checked encoding.
+
+	* string.c (rb_str_sub_bang): applied r14212 too.
+
 Wed Dec 19 20:40:01 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bignum.c (bigmul1): C99ism.

@@ -2832,7 +2832,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
         rb_str_buf_cat(val, p, e-p);
     }
     if (!val) return str;
-    rb_enc_copy(val, str);
+    rb_enc_associate(val, enc);
 
     return val;
 }

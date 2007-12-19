@@ -2401,12 +2401,13 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 
     pat = get_pat(argv[0], 1);
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
+	rb_encoding *enc;
+
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 
 	if (iter) {
 	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
-	    rb_encoding *enc;
 
 	    rb_match_busy(match);
 	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
@@ -2414,13 +2415,13 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    str_mod_check(str, p, len);
 	    str_frozen_check(str);
 	    rb_backref_set(match);
-	    rb_enc_associate(str, enc);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);
-	    rb_enc_copy(str, repl);
+	    enc = rb_enc_check(str, repl);
 	}
 	rb_str_modify(str);
+	rb_enc_associate(str, enc);
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	plen = END(0) - BEG(0);
 	if (RSTRING_LEN(repl) > plen) {
