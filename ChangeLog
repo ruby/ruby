@@ -1,3 +1,7 @@
+Wed Dec 19 12:01:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_rest_arg): check if duplicated.  [ruby-core:14140]
+
 Wed Dec 19 10:52:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_to_inum): an underscore succeeding after octal

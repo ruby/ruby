@@ -2339,6 +2339,8 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
+			else if (local_id($2))
+			    yyerror("duplicate rest argument name");
 			if (dyna_in_block()) {
 			    rb_dvar_push($2, Qnil);
 			}
