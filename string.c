@@ -1569,6 +1569,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     sbeg = RSTRING_PTR(str);
     e = RSTRING_END(str);
     t = RSTRING_PTR(sub);
+    slen = RSTRING_LEN(sub);
     for (;;) {
 	s = str_nth(sbeg, e, pos, enc, asc);
 	if (!s) return -1;

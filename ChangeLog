@@ -8,6 +8,9 @@ Wed Dec 19 22:59:52 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_chomp_bang): wrong adjust condition.
 
+	* string.c (rb_str_rindex): comparison length should be based on
+	  bytes, not characters.
+
 Wed Dec 19 21:42:18 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_regsub): should set checked encoding.
