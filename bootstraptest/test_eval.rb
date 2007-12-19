@@ -189,7 +189,12 @@ assert_equal %q{[10, main]}, %q{
   $ans
 }
 
-assert_match /Illegal break/, %q{
-  STDERR.reopen(STDOUT)
-  eval "0 rescue break"
-}, '[ruby-dev:31372]'
+%w[break next redo].each do |keyword|
+  assert_match %r"Can't escape from eval with #{keyword}\z", %{
+    begin
+      eval "0 rescue #{keyword}"
+    rescue SyntaxError => e
+      e.message
+    end
+  }, '[ruby-dev:31372]'
+end

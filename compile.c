@@ -2942,11 +2942,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		      INT2FIX(level | 0x02) /* TAG_BREAK */ );
 	}
 	else if (iseq->type == ISEQ_TYPE_EVAL) {
+	  break_in_eval:
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with break"));
 	}
 	else {
 	    rb_iseq_t *ip = iseq->parent_iseq;
-	    while (ip && ip->compile_data) {
+	    while (ip) {
 		level++;
 		if (ip->compile_data->redo_label != 0) {
 		    level = 0x8000;
@@ -2959,6 +2960,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		else if (ip->type == ISEQ_TYPE_BLOCK) {
 		    level <<= 16;
 		    goto break_by_insn;
+		}
+		else if (ip->type == ISEQ_TYPE_EVAL) {
+		    goto break_in_eval;
 		}
 		ip = ip->parent_iseq;
 	    }
@@ -2985,6 +2989,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		      iseq->compile_data->end_label);
 	}
 	else if (iseq->type == ISEQ_TYPE_EVAL) {
+	  next_in_eval:
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with next"));
 	}
 	else {
@@ -3000,6 +3005,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		else if (ip->type == ISEQ_TYPE_BLOCK) {
 		    level |= 0x4000;
 		    break;
+		}
+		else if (ip->type == ISEQ_TYPE_EVAL) {
+		    goto next_in_eval;
 		}
 		ip = ip->parent_iseq;
 	    }
@@ -3034,6 +3042,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 #endif
 	}
 	else if (iseq->type == ISEQ_TYPE_EVAL) {
+	  redo_in_eval:
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with redo"));
 	}
 	else if (iseq->compile_data->start_label) {
@@ -3059,7 +3068,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    break;
 		}
 		else if (ip->type == ISEQ_TYPE_EVAL) {
-		    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with redo"));
+		    goto redo_in_eval;
 		}
 		ip = ip->parent_iseq;
 	    }

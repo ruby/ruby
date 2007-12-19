@@ -1,3 +1,9 @@
+Thu Dec 20 01:10:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): should handle upper level eval iseq
+	  from break/next, and COMPILE_ERROR() breaks only one block.
+	  [ruby-dev:31372]
+
 Thu Dec 20 00:07:36 2007  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/drb/drbtest.rb (test_07_public_private_protected_missing):
