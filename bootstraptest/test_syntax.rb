@@ -641,5 +641,8 @@ assert_equal 'true', %q{
   class C; def !@; true; end; end
   !C.new
 }
+assert_normal_exit %q{
+  eval "while true; return; end rescue p $!"
+}, '[ruby-dev:31663]'
 
 

@@ -534,22 +534,31 @@ iseq_to_a(VALUE self)
     return iseq_data_to_ary(iseq);
 }
 
-/*
-  now, search algorithm is brute force. but this should be binary search.
- */
-static unsigned short
-find_line_no(rb_iseq_t *iseqdat, unsigned long pos)
+/* TODO: search algorithm is brute force.
+         this should be binary search or so. */
+
+static struct iseq_insn_info_entry *
+get_insn_info(const rb_iseq_t *iseq, const unsigned long pos)
 {
-    unsigned long i, size = iseqdat->insn_info_size;
-    struct iseq_insn_info_entry *iiary = iseqdat->insn_info_table;
+    unsigned long i, size = iseq->insn_info_size;
+    struct iseq_insn_info_entry *table = iseq->insn_info_table;
 
     for (i = 0; i < size; i++) {
-	if (iiary[i].position == pos) {
-	    return iiary[i].line_no;
+	if (table[i].position == pos) {
+	    return &table[i];
 	}
     }
-    /* rb_bug("find_line_no: can't find %lu", pos); */
+
     return 0;
+}
+
+static unsigned short
+find_line_no(rb_iseq_t *iseq, unsigned long pos)
+{
+    struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
+    if (entry) {
+	return entry->line_no;
+    }
 }
 
 static unsigned short
@@ -568,8 +577,6 @@ find_prev_line_no(rb_iseq_t *iseqdat, unsigned long pos)
 	    }
 	}
     }
-
-    /* rb_bug("find_prev_line_no: can't find - %lu", pos); */
 
     return 0;
 }
@@ -717,7 +724,7 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
 	}
     }
 
-    {
+    if (1) {
 	int line_no = find_line_no(iseqdat, pos);
 	int prev = find_prev_line_no(iseqdat, pos);
 	if (line_no && line_no != prev) {
@@ -726,6 +733,14 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
 	    str = rb_str_new2(buff);
 	}
     }
+    else {
+	/* for debug */
+	struct iseq_insn_info_entry *entry = get_insn_info(iseqdat, pos);
+	snprintf(buff, sizeof(buff), "%-60s(line: %d, sp: %d)",
+		 RSTRING_PTR(str), entry->line_no, entry->sp);
+	str = rb_str_new2(buff);
+    }
+
     if (ret) {
 	rb_str_cat2(str, "\n");
 	rb_str_concat(ret, str);

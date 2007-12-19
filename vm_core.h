@@ -108,6 +108,7 @@
 struct iseq_insn_info_entry {
     unsigned short position;
     unsigned short line_no;
+    unsigned short sp;
 };
 
 struct iseq_catch_table_entry {

@@ -1127,6 +1127,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		}
 		insn_info_table[k].line_no = iobj->line_no;
 		insn_info_table[k].position = pos;
+		insn_info_table[k].sp = sp;
 		pos += len;
 		k++;
 		break;
@@ -3802,8 +3803,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ADD_INSN(ret, nd_line(node), leave);
 		}
 		else {
-		    ADD_INSN1(ret, nd_line(node), throw,
-			      INT2FIX(0x01) /* TAG_RETURN */ );
+		    ADD_INSN1(ret, nd_line(node), throw, INT2FIX(0x01) /* TAG_RETURN */ );
+		    ADD_INSN(ret, nd_line(node), pop);
 		}
 		break;
 	    }

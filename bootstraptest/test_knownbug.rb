@@ -31,10 +31,6 @@ assert_equal 'ok', %q{
   end
 }
 
-assert_normal_exit %q{
-  eval "while true; return; end rescue p $!"
-}, '[ruby-dev:31663]'
-
 assert_equal 'ok', %q{
   1.times{
     eval("break")
