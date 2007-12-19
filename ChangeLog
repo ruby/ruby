@@ -1,3 +1,9 @@
+Wed Dec 19 16:59:55 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (errinfo_place): skip if error is Fixnum.  [ruby-dev:32608]
+
+	* bootstraptest/test_exception.rb, test_known_bug.rb: move fixed bug.
+
 Wed Dec 19 16:31:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_named_capture_assign_iter): remove C99 dependency.

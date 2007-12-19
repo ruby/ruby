@@ -385,3 +385,20 @@ assert_match /undefined method `foo\'/, %q{
   C.new.foo
 }, "[ruby-dev:31407]"
 
+assert_equal 'nil', %q{
+  doit = false
+  exc = nil
+  t = Thread.new {
+    begin
+      doit = true
+      sleep 10
+    ensure
+      exc = $!
+    end
+  }
+  Thread.pass until doit
+  t.kill
+  t.join
+  exc.inspect
+}, '[ruby-dev:32608]'
+

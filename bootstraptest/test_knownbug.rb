@@ -190,23 +190,6 @@ assert_normal_exit %q{
   Thread.new { GC.start }.join
 }, '[ruby-dev:32604]'
 
-assert_equal 'nil', %q{
-  doit = false
-  exc = nil
-  t = Thread.new {
-    begin
-      doit = true
-      sleep 10
-    ensure
-      exc = $!
-    end
-  }
-  Thread.pass until doit
-  t.kill
-  t.join
-  exc.inspect
-}, '[ruby-dev:32608]'
-
 assert_equal 'true', %q{
   "abc".sub(/b/, "\xa1\xa1".force_encoding("euc-jp")) ==
   "a\xa1\xa1c".force_encoding("euc-jp")

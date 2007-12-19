@@ -2508,7 +2508,8 @@ errinfo_place(void)
 		return &cfp->dfp[-1];
 	    }
 	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
-		     TYPE(cfp->dfp[-1]) != T_NODE) {
+		     TYPE(cfp->dfp[-1]) != T_NODE &&
+		     !FIXNUM_P(cfp->dfp[-1])) {
 		return &cfp->dfp[-1];
 	    }
 	}
