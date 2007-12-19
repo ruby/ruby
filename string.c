@@ -4523,12 +4523,12 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (is_broken_string(rs)) {
 	return Qnil;
     }
-    pp = p + len - rslen;
+    e = p + len;
+    pp = e - rslen;
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
-	if (!isascii(*pp)) {
-	    e = p+len;
+	if (rb_enc_mbmaxlen(enc) > 1) {
 	    while (p < pp) {
 		p += rb_enc_mbclen(p, e, enc);
 	    }
