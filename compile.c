@@ -3804,12 +3804,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		}
 		else {
 		    ADD_INSN1(ret, nd_line(node), throw, INT2FIX(0x01) /* TAG_RETURN */ );
-		    ADD_INSN(ret, nd_line(node), pop);
+		    if (poped) {
+			ADD_INSN(ret, nd_line(node), pop);
+		    }
 		}
 		break;
 	    }
 	}
-
 	break;
       }
       case NODE_YIELD:{
