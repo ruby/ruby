@@ -177,5 +177,21 @@ ONIG_EXTERN const unsigned short OnigEncAsciiCtypeTable[];
  (ONIGENC_IS_ASCII_CODE_CTYPE(code, ONIGENC_CTYPE_UPPER) ||\
   ONIGENC_IS_ASCII_CODE_CTYPE(code, ONIGENC_CTYPE_LOWER))
    
+#ifdef ONIG_ENC_REGISTER
+extern int ONIG_ENC_REGISTER(const char *, OnigEncodingType*);
+#define OnigEncodingName(n) encoding_##n
+#define OnigEncodingDeclare(n) static OnigEncodingType OnigEncodingName(n)
+#define OnigEncodingDefine(n)			     \
+    OnigEncodingDeclare(n);			     \
+    void Init_##n(void) {			     \
+	ONIG_ENC_REGISTER(OnigEncodingName(n).name,  \
+			  &OnigEncodingName(n));     \
+    }						     \
+    OnigEncodingDeclare(n)
+#else
+#define OnigEncodingName(n) OnigEncoding##n
+#define OnigEncodingDeclare(n) OnigEncodingType OnigEncodingName(n)
+#define OnigEncodingDefine(n) OnigEncodingDeclare(n)
+#endif
 
 #endif /* REGENC_H */

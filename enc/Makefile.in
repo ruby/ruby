@@ -1,4 +1,6 @@
 srcdir = @srcdir@
+topdir = .
+libdir = @libdir@
 top_srcdir = $(srcdir:/enc=)
 arch = @arch@
 EXTOUT = @EXTOUT@
@@ -12,16 +14,22 @@ BUILTIN_ENCS	= ascii.c \
 		  euc_jp.c sjis.c \
 		  unicode.c utf8.c
 
+RUBY_SO_NAME = @RUBY_SO_NAME@
+LIBRUBY = @LIBRUBY@
+LIBRUBY_A = @LIBRUBY_A@
+LIBRUBYARG_STATIC = @LIBRUBYARG_STATIC@
+LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@
+
 empty =
 CC = @CC@
 OUTFLAG = @OUTFLAG@$(empty)
 CFLAGS = @CFLAGS@ @ARCH_FLAG@
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir)
 DEFS = @DEFS@
-CPPFLAGS = @CPPFLAGS@
+CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
-LIBS = @LIBS@ $(EXTLIBS)
+LIBS = @LIBRUBYARG@ @LIBS@ $(EXTLIBS)
 LDSHARED = @LDSHARED@
 DLDFLAGS = @DLDFLAGS@ $(EXTLDFLAGS) @ARCH_FLAG@
 

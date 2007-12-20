@@ -1,3 +1,16 @@
+Thu Dec 20 17:07:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (enc.mk): depends on rbconfig.rb.
+
+	* regenc.h (OnigEncodingDefine): external encoding definition macro.
+
+	* enc/Makefile.in: fix for linking.
+
+	* enc/depend, enc/make_encmake.rb: fix for Windows.
+
+
+	* enc/{ascii,euc_jp,sjis,utf8,iso_8859_{1..16}}.c: renamed.
+
 Thu Dec 20 16:42:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (find_line_no): return 0 if not found.

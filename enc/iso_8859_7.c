@@ -206,7 +206,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 }
 
 
-OnigEncodingType OnigEncodingISO_8859_7 = {
+OnigEncodingDefine(ISO_8859_7) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-7",  /* name */
   1,             /* max enc length */

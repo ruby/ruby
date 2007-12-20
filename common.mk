@@ -343,8 +343,8 @@ encs: enc.mk
 	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc"
 	$(MAKE) -f enc.mk -$(MAKEFLAGS)
 
-enc.mk: miniruby$(EXEEXT) $(srcdir)/enc/make_encmake.rb \
-	$(srcdir)/enc/Makefile.in $(srcdir)/enc/depend $(srcdir)/lib/mkmf.rb
+enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
+	$(srcdir)/lib/mkmf.rb rbconfig.rb
 	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" $@
 
 .PRECIOUS: $(MKFILES)

@@ -219,7 +219,7 @@ iso_8859_15_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
-OnigEncodingType OnigEncodingISO_8859_15 = {
+OnigEncodingDefine(ISO_8859_15) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-15",  /* name */
   1,             /* max enc length */
