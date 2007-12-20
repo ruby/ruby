@@ -552,6 +552,24 @@ class TestM17N < Test::Unit::TestCase
     /\A[\x00-\x7f]*\z/ =~ str.dup.force_encoding("ASCII-8BIT") ? true : false
   end
 
+  def encdump(str)
+    "#{str.dump}.force_encoding(#{str.encoding.name.dump})"
+  end
+
+  def encdumpargs(args)
+    r = '('
+    args.each_with_index {|a, i|
+      r << ',' if 0 < i
+      if String === a
+        r << encdump(a)
+      else
+        r << a.inspect
+      end
+    }
+    r << ')'
+    r
+  end
+
   def assert_str_enc_propagation(t, s1, s2)
     if !is_ascii_only?(s1)
       assert_equal(s1.encoding, t.encoding)
@@ -802,10 +820,6 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
-  def encdump(str)
-    "#{str.dump}.force_encoding(#{str.encoding.name.dump})"
-  end
-
   def test_str_assign
     combination(STRINGS, STRINGS) {|s1, s2|
       (-2).upto(2) {|i|
@@ -969,6 +983,7 @@ class TestM17N < Test::Unit::TestCase
         next
       end
       assert(t1.valid_encoding?) if s.valid_encoding?
+      assert(t1.casecmp(s))
       t2 = s.dup
       t2.capitalize!
       assert_equal(t1, t2)
@@ -1444,20 +1459,6 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
-  def encdumpargs(args)
-    r = '('
-    args.each_with_index {|a, i|
-      r << ',' if 0 < i
-      if String === a
-        r << encdump(a)
-      else
-        r << a.inspect
-      end
-    }
-    r << ')'
-    r
-  end
-
   def test_str_slice!
     each_slice_call {|s, *args|
       t = s.dup
@@ -1515,10 +1516,120 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_str_squeeze
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s1.valid_encoding? || !s2.valid_encoding?
+        #assert_raise(ArgumentError, "#{encdump s1}.squeeze(#{encdump s2})") { s1.squeeze(s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.squeeze(s2) }
+        next
+      end
+      t = s1.squeeze(s2)
+      assert_operator(t.length, :<=, s1.length)
+      t2 = s1.dup
+      t2.squeeze!(s2)
+      assert_equal(t, t2)
+    }
+  end
+
+  def test_str_strip
+    STRINGS.each {|s|
+      if !s.valid_encoding?
+        #assert_raise(ArgumentError, "#{encdump s}.strip") { s.strip }
+        #assert_nothing_raised("#{encdump s}.strip") { s.strip }
+        next
+      end
+      t = s.strip
+      l = s.lstrip
+      r = s.rstrip
+      assert_operator(l.length, :<=, s.length)
+      assert_operator(r.length, :<=, s.length)
+      assert_operator(t.length, :<=, l.length)
+      assert_operator(t.length, :<=, r.length)
+      t2 = s.dup
+      t2.strip!
+      assert_equal(t, t2)
+      l2 = s.dup
+      l2.lstrip!
+      assert_equal(l, l2)
+      r2 = s.dup
+      r2.rstrip!
+      assert_equal(r, r2)
+    }
+  end
+
+  def test_str_sum
+    STRINGS.each {|s|
+      assert_equal(a(s).sum, s.sum)
+    }
+  end
+
+  def test_str_swapcase
+    STRINGS.each {|s|
+      begin
+        t1 = s.swapcase
+      rescue ArgumentError
+        assert(!s.valid_encoding?)
+        next
+      end
+      assert(t1.valid_encoding?) if s.valid_encoding?
+      assert(t1.casecmp(s))
+      t2 = s.dup
+      t2.swapcase!
+      assert_equal(t1, t2)
+    }
+  end
+
+  def test_str_to_f
+    STRINGS.each {|s|
+      assert_nothing_raised { s.to_f }
+    }
+  end
+
+  def test_str_to_i
+    STRINGS.each {|s|
+      assert_nothing_raised { s.to_i }
+      2.upto(36) {|radix|
+        assert_nothing_raised { s.to_i(radix) }
+      }
+    }
+  end
+
+  def test_str_to_s
+    STRINGS.each {|s|
+      assert_same(s, s.to_s)
+      assert_same(s, s.to_str)
+    }
+  end
+
   def test_tr
     s = "\x81\x41".force_encoding("shift_jis")
     assert_equal(s.tr("A", "B"), s)
     assert_equal(s.tr_s("A", "B"), s)
+
+    assert_nothing_raised {
+      "a".force_encoding("ASCII-8BIT").tr("a".force_encoding("ASCII-8BIT"), "a".force_encoding("EUC-JP"))
+    }
+
+    combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
+      begin
+        puts "#{encdump s1}.tr(#{encdump s2}, #{encdump s3})"
+        t = s1.tr(s2, s3)
+      rescue ArgumentError
+        e = $!
+      end
+      if e
+        encs = []
+        encs << s1.encoding if !is_ascii_only?(s1)
+        encs << s2.encoding if !is_ascii_only?(s2)
+        encs << s3.encoding if !is_ascii_only?(s3)
+        encs.uniq!
+        #p e, encs
+        assert(1 < encs.length)
+      end
+    }
   end
 
   def test_squeeze
