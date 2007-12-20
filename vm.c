@@ -16,7 +16,7 @@
 #include "gc.h"
 
 #include "insnhelper.h"
-#include "insnhelper.ci"
+#include "vm_insnhelper.c"
 
 #define BUFSIZE 0x100
 #define PROCDEBUG 0
@@ -1026,7 +1026,7 @@ vm_init_redefined_flag(void)
 
 /* evaluator body */
 
-#include "vm_evalbody.ci"
+#include "vm_evalbody.c"
 
 /*                  finish
   VMe (h1)          finish

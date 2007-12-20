@@ -147,7 +147,7 @@ NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start,
 					VALUE *register_stack_start));
 
 #if   defined(_WIN32)
-#include "thread_win32.ci"
+#include "thread_win32.c"
 
 #define DEBUG_OUT() \
   WaitForSingleObject(&debug_mutex, INFINITE); \
@@ -156,7 +156,7 @@ NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start,
   ReleaseMutex(&debug_mutex);
 
 #elif defined(HAVE_PTHREAD_H)
-#include "thread_pthread.ci"
+#include "thread_pthread.c"
 
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \

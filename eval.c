@@ -38,10 +38,10 @@ static VALUE eval(VALUE, VALUE, VALUE, const char *, int);
 static inline VALUE rb_yield_0(int argc, VALUE *argv);
 static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
 
-#include "eval_error.ci"
-#include "eval_method.ci"
-#include "eval_safe.ci"
-#include "eval_jump.ci"
+#include "eval_error.c"
+#include "eval_method.c"
+#include "eval_safe.c"
+#include "eval_jump.c"
 
 /* initialize ruby */
 

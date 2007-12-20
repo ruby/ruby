@@ -1,7 +1,6 @@
-/* -*-c-*- */
 /**********************************************************************
 
-  insnhelper.ci - instruction helper functions.
+  insnhelper.c - instruction helper functions.
 
   $Author$
   $Date$

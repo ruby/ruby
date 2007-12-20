@@ -28,7 +28,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
 		eval.$(OBJEXT) \
-		eval_load.$(OBJEXT) \
+		load.$(OBJEXT) \
 		proc.$(OBJEXT) \
 		file.$(OBJEXT) \
 		gc.$(OBJEXT) \
@@ -427,14 +427,14 @@ error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}st.h {$(VPATH)}vm_opts.h {$(VPATH)}signal.h \
   {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}node.h {$(VPATH)}debug.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
-eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_error.ci {$(VPATH)}eval_intern.h \
-  {$(VPATH)}eval_method.ci {$(VPATH)}eval_safe.ci {$(VPATH)}eval_jump.ci \
+eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_error.c {$(VPATH)}eval_intern.h \
+  {$(VPATH)}eval_method.c {$(VPATH)}eval_safe.c {$(VPATH)}eval_jump.c \
   {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}vm_core.h {$(VPATH)}id.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h \
   {$(VPATH)}st.h {$(VPATH)}dln.h {$(VPATH)}debug.h \
   {$(VPATH)}vm_opts.h {$(VPATH)}thread_$(THREAD_MODEL).h
-eval_load.$(OBJEXT): {$(VPATH)}eval_load.c {$(VPATH)}eval_intern.h \
+load.$(OBJEXT): {$(VPATH)}load.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}vm_core.h {$(VPATH)}id.h \
@@ -540,7 +540,7 @@ struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}thread_win32.h {$(VPATH)}thread_pthread.h \
-  {$(VPATH)}thread_win32.ci {$(VPATH)}thread_pthread.ci \
+  {$(VPATH)}thread_win32.c {$(VPATH)}thread_pthread.c \
   {$(VPATH)}ruby.h {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h \
@@ -581,7 +581,7 @@ iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}de
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}vm.h {$(VPATH)}vm_core.h {$(VPATH)}id.h \
 	{$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}st.h \
 	{$(VPATH)}node.h {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}dln.h \
-	{$(VPATH)}insnhelper.h {$(VPATH)}insnhelper.ci {$(VPATH)}vm_evalbody.ci \
+	{$(VPATH)}insnhelper.h {$(VPATH)}vm_insnhelper.c {$(VPATH)}vm_evalbody.c \
         {$(VPATH)}insns.inc {$(VPATH)}vm.inc {$(VPATH)}vmtc.inc \
 	{$(VPATH)}vm_opts.h {$(VPATH)}eval_intern.h \
         {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
