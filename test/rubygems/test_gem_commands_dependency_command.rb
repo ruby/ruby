@@ -13,7 +13,7 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
 
   def test_execute
     quick_gem 'foo' do |gem|
-      gem.add_dependency 'bar', '> 1.0.0'
+      gem.add_dependency 'bar', '> 1'
     end
 
     @cmd.options[:args] = %w[foo]
@@ -22,7 +22,7 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
       @cmd.execute
     end
 
-    assert_equal "Gem foo-0.0.2\n  bar (> 1.0.0)\n\n", @ui.output
+    assert_equal "Gem foo-2\n  bar (> 1)\n\n", @ui.output
     assert_equal '', @ui.error
   end
 
@@ -41,7 +41,7 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
 
   def test_execute_pipe_format
     quick_gem 'foo' do |gem|
-      gem.add_dependency 'bar', '> 1.0.0'
+      gem.add_dependency 'bar', '> 1'
     end
 
     @cmd.options[:args] = %w[foo]
@@ -51,13 +51,13 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
       @cmd.execute
     end
 
-    assert_equal "bar --version '> 1.0.0'\n", @ui.output
+    assert_equal "bar --version '> 1'\n", @ui.output
     assert_equal '', @ui.error
   end
 
   def test_execute_reverse
     quick_gem 'foo' do |gem|
-      gem.add_dependency 'bar', '> 1.0.0'
+      gem.add_dependency 'bar', '> 1'
     end
 
     quick_gem 'baz' do |gem|
@@ -72,10 +72,10 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
     end
 
     expected = <<-EOF
-Gem foo-0.0.2
-  bar (> 1.0.0)
+Gem foo-2
+  bar (> 1)
   Used by
-    baz-0.0.2 (foo (>= 0))
+    baz-2 (foo (>= 0))
 
     EOF
 
@@ -85,7 +85,7 @@ Gem foo-0.0.2
 
   def test_execute_remote
     foo = quick_gem 'foo' do |gem|
-      gem.add_dependency 'bar', '> 1.0.0'
+      gem.add_dependency 'bar', '> 1'
     end
 
     util_setup_source_info_cache foo
@@ -100,7 +100,7 @@ Gem foo-0.0.2
       @cmd.execute
     end
 
-    assert_equal "Gem foo-0.0.2\n  bar (> 1.0.0)\n\n", @ui.output
+    assert_equal "Gem foo-2\n  bar (> 1)\n\n", @ui.output
     assert_equal '', @ui.error
   end
 

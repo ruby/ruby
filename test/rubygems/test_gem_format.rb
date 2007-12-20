@@ -22,7 +22,7 @@ class TestGemFormat < RubyGemTestCase
 
     gems = Dir[File.join(@gemhome, 'cache', '*.gem')]
 
-    names = [@a0_0_1, @a0_0_2, @b0_0_2, @c1_2, @pl1].map do |spec|
+    names = [@a1, @a2, @b2, @c1_2, @pl1].map do |spec|
       spec.original_name
     end
 

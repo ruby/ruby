@@ -8,31 +8,31 @@ class TestGemCommandsBuildCommand < RubyGemTestCase
   def setup
     super
 
+    @gem = quick_gem 'some_gem' do |s|
+      s.rubyforge_project = 'example'
+    end
+
     @cmd = Gem::Commands::BuildCommand.new
   end
 
   def test_execute
-    gem = quick_gem 'some_gem'
-
-    gemspec_file = File.join(@tempdir, "#{gem.full_name}.gemspec")
+    gemspec_file = File.join(@tempdir, "#{@gem.full_name}.gemspec")
 
     File.open gemspec_file, 'w' do |gs|
-      gs.write gem.to_ruby
+      gs.write @gem.to_ruby
     end
 
-    util_test_build_gem gem, gemspec_file
+    util_test_build_gem @gem, gemspec_file
   end
 
   def test_execute_yaml
-    gem = quick_gem 'some_gem'
-
-    gemspec_file = File.join(@tempdir, "#{gem.full_name}.gemspec")
+    gemspec_file = File.join(@tempdir, "#{@gem.full_name}.gemspec")
 
     File.open gemspec_file, 'w' do |gs|
-      gs.write gem.to_yaml
+      gs.write @gem.to_yaml
     end
 
-    util_test_build_gem gem, gemspec_file
+    util_test_build_gem @gem, gemspec_file
   end
 
   def test_execute_bad_gem
@@ -57,8 +57,8 @@ class TestGemCommandsBuildCommand < RubyGemTestCase
     output = @ui.output.split "\n"
     assert_equal "  Successfully built RubyGem", output.shift
     assert_equal "  Name: some_gem", output.shift
-    assert_equal "  Version: 0.0.2", output.shift
-    assert_equal "  File: some_gem-0.0.2.gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
     assert_equal [], output
     assert_equal '', @ui.error
 

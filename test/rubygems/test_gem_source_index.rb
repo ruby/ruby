@@ -178,7 +178,7 @@ class TestGemSourceIndex < RubyGemTestCase
   end
 
   def test_latest_specs
-    spec = quick_gem @gem1.name, '0.0.1'
+    spec = quick_gem @gem1.name, '1'
     @source_index.add_spec spec
 
     expected = [
@@ -223,7 +223,7 @@ class TestGemSourceIndex < RubyGemTestCase
 
   def test_search
     assert_equal [@gem1, @gem4], @source_index.search("gem_one")
-    assert_equal [@gem1], @source_index.search("gem_one", "= 0.0.2")
+    assert_equal [@gem1], @source_index.search("gem_one", "= 2")
 
     assert_equal [], @source_index.search("bogusstring")
     assert_equal [], @source_index.search("gem_one", "= 3.2.1")

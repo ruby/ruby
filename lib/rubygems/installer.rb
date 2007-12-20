@@ -28,8 +28,19 @@ class Gem::Installer
   class ExtensionBuildError < Gem::InstallError; end
 
   include Gem::UserInteraction
-  
+
   include Gem::RequirePathsBuilder
+
+  class << self
+
+    attr_writer :exec_format
+
+    # Defaults to use Ruby's program prefix and suffix.
+    def exec_format
+      @exec_format ||= Gem.default_exec_format
+    end
+
+  end
 
   ##
   # Constructs an Installer instance that will install the gem located at
@@ -40,18 +51,26 @@ class Gem::Installer
   #          for a signed-gems-only policy.
   # :ignore_dependencies:: Don't raise if a dependency is missing.
   # :install_dir:: The directory to install the gem into.
+  # :format_executable:: Format the executable the same as the ruby executable.
+  #                      If your ruby is ruby18, foo_exec will be installed as
+  #                      foo_exec18.
   # :security_policy:: Use the specified security policy.  See Gem::Security
   # :wrappers:: Install wrappers if true, symlinks if false.
   def initialize(gem, options={})
     @gem = gem
 
-    options = { :force => false, :install_dir => Gem.dir }.merge options
+    options = {
+      :force => false,
+      :install_dir => Gem.dir,
+      :exec_format => false,
+    }.merge options
 
     @env_shebang = options[:env_shebang]
     @force = options[:force]
     gem_home = options[:install_dir]
     @gem_home = Pathname.new(gem_home).expand_path
     @ignore_dependencies = options[:ignore_dependencies]
+    @format_executable = options[:format_executable]
     @security_policy = options[:security_policy]
     @wrappers = options[:wrappers]
 
@@ -114,7 +133,7 @@ class Gem::Installer
     generate_bin
     build_extensions
     write_spec
-    
+
     write_require_paths_file_if_needed
 
     # HACK remove?  Isn't this done in multiple places?
@@ -190,9 +209,12 @@ class Gem::Installer
   def generate_windows_script(bindir, filename)
     if Gem.win_platform? then
       script_name = filename + ".bat"
-      File.open(File.join(bindir, File.basename(script_name)), "w") do |file|
+      script_path = File.join bindir, File.basename(script_name)
+      File.open script_path, 'w' do |file|
         file.puts windows_stub_script(bindir, filename)
       end
+
+      say script_path if Gem.configuration.really_verbose
     end
   end
 
@@ -209,7 +231,7 @@ class Gem::Installer
 
     @spec.executables.each do |filename|
       filename.untaint
-      bin_path = File.join @gem_dir, 'bin', filename
+      bin_path = File.expand_path File.join(@gem_dir, @spec.bindir, filename)
       mode = File.stat(bin_path).mode | 0111
       File.chmod mode, bin_path
 
@@ -229,10 +251,24 @@ class Gem::Installer
   # http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-talk/193379
   #
   def generate_bin_script(filename, bindir)
-    File.open(File.join(bindir, File.basename(filename)), "w", 0755) do |file|
-      file.print app_script_text(filename)
-    end
-    generate_windows_script bindir, filename
+    bin_script_path = File.join bindir, formatted_program_filename(filename)
+
+    exec_path = File.join @gem_dir, @spec.bindir, filename
+
+    # HACK some gems don't have #! in their executables, restore 2008/06
+    #if File.read(exec_path, 2) == '#!' then
+      File.open bin_script_path, 'w', 0755 do |file|
+        file.print app_script_text(filename)
+      end
+
+      say bin_script_path if Gem.configuration.really_verbose
+
+      generate_windows_script bindir, filename
+    #else
+    #  FileUtils.rm_f bin_script_path
+    #  FileUtils.cp exec_path, bin_script_path,
+    #               :verbose => Gem.configuration.really_verbose
+    #end
   end
 
   ##
@@ -247,7 +283,7 @@ class Gem::Installer
     end
 
     src = File.join @gem_dir, 'bin', filename
-    dst = File.join bindir, File.basename(filename)
+    dst = File.join bindir, formatted_program_filename(filename)
 
     if File.exist? dst then
       if File.symlink? dst then
@@ -258,7 +294,7 @@ class Gem::Installer
       File.unlink dst
     end
 
-    File.symlink src, dst
+    FileUtils.symlink src, dst, :verbose => Gem.configuration.really_verbose
   end
 
   ##
@@ -351,6 +387,9 @@ TEXT
       begin
         Dir.chdir File.join(@gem_dir, File.dirname(extension))
         results = builder.build(extension, @gem_dir, dest_path, results)
+
+        say results.join("\n") if Gem.configuration.really_verbose
+
       rescue => ex
         results = results.join "\n"
 
@@ -402,6 +441,17 @@ Results logged to #{File.join(Dir.pwd, 'gem_make.out')}
       File.open(path, "wb") do |out|
         out.write file_data
       end
+
+      say path if Gem.configuration.really_verbose
+    end
+  end
+
+  # Prefix and suffix the program filename the same as ruby.
+  def formatted_program_filename(filename)
+    if @format_executable then
+      self.class.exec_format % File.basename(filename)
+    else
+      filename
     end
   end
 

@@ -12,6 +12,23 @@ class Gem::Platform
 
   attr_accessor :version
 
+  DEPRECATED_CONSTS = [
+    :DARWIN,
+    :LINUX_586,
+    :MSWIN32,
+    :PPC_DARWIN,
+    :WIN32,
+    :X86_LINUX
+  ]
+
+  def self.const_missing(name) # TODO remove six months from 2007/12
+    if DEPRECATED_CONSTS.include? name then
+      raise NameError, "#{name} has been removed, use CURRENT instead"
+    else
+      super
+    end
+  end
+
   def self.local
     arch = Gem::ConfigMap[:arch]
     arch = "#{arch}_60" if arch =~ /mswin32$/
@@ -159,34 +176,6 @@ class Gem::Platform
   # This will be replaced with Gem::Platform::local.
 
   CURRENT = 'current'
-
-  ##
-  # A One Click Installer-compatible gem, built with VC6 for 32 bit Windows.
-  #
-  # CURRENT is preferred over this constant, avoid its use at all costs.
-
-  MSWIN32 = new ['x86', 'mswin32', '60']
-
-  ##
-  # An x86 Linux-compatible gem
-  #
-  # CURRENT is preferred over this constant, avoid its use at all costs.
-
-  X86_LINUX = new ['x86', 'linux', nil]
-
-  ##
-  # A PowerPC Darwin-compatible gem
-  #
-  # CURRENT is preferred over this constant, avoid its use at all costs.
-
-  PPC_DARWIN = new ['ppc', 'darwin', nil]
-
-  # :stopdoc:
-  # Here lie legacy constants.  These are deprecated.
-  WIN32 = 'mswin32'
-  LINUX_586 = 'i586-linux'
-  DARWIN = 'powerpc-darwin'
-  # :startdoc:
 
 end
 

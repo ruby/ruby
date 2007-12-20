@@ -318,7 +318,7 @@ require 'rubygems/gem_openssl'
 
 module Gem::Security
 
-  class Exception < Exception; end
+  class Exception < Gem::Exception; end
 
   #
   # default options for most of the methods below

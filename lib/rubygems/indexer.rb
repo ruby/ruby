@@ -98,7 +98,7 @@ class Gem::Indexer
     files = @master_index.files + @quick_index.files + @marshal_index.files
 
     files.each do |file|
-      relative_name = file[/\A#{@directory}.(.*)/, 1]
+      relative_name = file[/\A#{Regexp.escape @directory}.(.*)/, 1]
       dest_name = File.join @dest_directory, relative_name
 
       FileUtils.rm_rf dest_name, :verbose => verbose

@@ -53,16 +53,16 @@ class TestGemIndexer < RubyGemTestCase
     assert_indexed quickdir, "index"
     assert_indexed quickdir, "index.rz"
 
-    assert_indexed quickdir, "#{@a0_0_1.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@a0_0_2.full_name}.gemspec.rz"
-    assert_indexed quickdir, "#{@b0_0_2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@a1.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@a2.full_name}.gemspec.rz"
+    assert_indexed quickdir, "#{@b2.full_name}.gemspec.rz"
     assert_indexed quickdir, "#{@c1_2.full_name}.gemspec.rz"
 
     assert_indexed quickdir, "#{@pl1.original_name}.gemspec.rz"
     deny_indexed quickdir, "#{@pl1.full_name}.gemspec.rz"
 
-    assert_indexed marshal_quickdir, "#{@a0_0_1.full_name}.gemspec.rz"
-    assert_indexed marshal_quickdir, "#{@a0_0_2.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a1.full_name}.gemspec.rz"
+    assert_indexed marshal_quickdir, "#{@a2.full_name}.gemspec.rz"
 
     deny_indexed quickdir, "#{@c1_2.full_name}.gemspec"
     deny_indexed marshal_quickdir, "#{@c1_2.full_name}.gemspec"

@@ -140,11 +140,12 @@ gems:
       raise SocketError
     end
 
+    uri = 'http://gems.example.com/yaml'
     e = assert_raise Gem::RemoteFetcher::FetchError do
-      fetcher.fetch_size 'http://gems.example.com/yaml'
+      fetcher.fetch_size uri
     end
 
-    assert_equal 'SocketError (SocketError)', e.message
+    assert_equal "SocketError (SocketError)\n\tgetting size of #{uri}", e.message
   end
 
   def test_no_proxy
@@ -229,6 +230,22 @@ gems:
     end
 
     assert_equal 'EOFError: EOFError reading uri', e.message
+  end
+
+  def test_fetch_path_open_uri_http_error
+    fetcher = Gem::RemoteFetcher.new nil
+
+    def fetcher.open_uri_or_path(uri)
+      io = StringIO.new 'went boom'
+      err = OpenURI::HTTPError.new 'error', io
+      raise err
+    end
+
+    e = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_path 'uri'
+    end
+
+    assert_equal "OpenURI::HTTPError: error reading uri\n\twent boom", e.message
   end
 
   def test_fetch_path_socket_error

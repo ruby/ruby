@@ -15,8 +15,9 @@ class Gem::DependencyInstaller
     :env_shebang => false,
     :domain => :both, # HACK dup
     :force => false,
+    :format_executable => false, # HACK dup
     :ignore_dependencies => false,
-    :security_policy => Gem::Security::NoSecurity, # HACK AlmostNo? Low?
+    :security_policy => nil, # HACK NoSecurity requires OpenSSL.  AlmostNo? Low?
     :wrappers => true
   }
 
@@ -30,6 +31,7 @@ class Gem::DependencyInstaller
   #           current directory.  :remote searches only gems in Gem::sources.
   #           :both searches both.
   # :force:: See Gem::Installer#install.
+  # :format_executable:: See Gem::Installer#initialize.
   # :ignore_dependencies: Don't install any dependencies.
   # :install_dir: See Gem::Installer#install.
   # :security_policy: See Gem::Installer::new and Gem::Security.
@@ -39,6 +41,7 @@ class Gem::DependencyInstaller
     @env_shebang = options[:env_shebang]
     @domain = options[:domain]
     @force = options[:force]
+    @format_executable = options[:format_executable]
     @ignore_dependencies = options[:ignore_dependencies]
     @install_dir = options[:install_dir] || Gem.dir
     @security_policy = options[:security_policy]
@@ -48,7 +51,14 @@ class Gem::DependencyInstaller
 
     spec_and_source = nil
 
-    local_gems = Dir["#{gem_name}*"].sort.reverse
+    glob = if File::ALT_SEPARATOR then
+             gem_name.gsub File::ALT_SEPARATOR, File::SEPARATOR
+           else
+             gem_name
+           end
+
+    local_gems = Dir["#{glob}*"].sort.reverse
+
     unless local_gems.empty? then
       local_gems.each do |gem_file|
         next unless gem_file =~ /gem$/
@@ -217,6 +227,7 @@ class Gem::DependencyInstaller
       inst = Gem::Installer.new local_gem_path,
                                 :env_shebang => @env_shebang,
                                 :force => @force,
+                                :format_executable => @format_executable,
                                 :ignore_dependencies => @ignore_dependencies,
                                 :install_dir => @install_dir,
                                 :security_policy => @security_policy,

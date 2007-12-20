@@ -89,6 +89,9 @@ class RubyGemTestCase < Test::Unit::TestCase
     @gem_repo = "http://gems.example.com"
     Gem.sources.replace [@gem_repo]
 
+    @orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
+    Gem::ConfigMap[:BASERUBY] = Gem::ConfigMap[:RUBY_INSTALL_NAME]
+
     @orig_arch = Gem::ConfigMap[:arch]
 
     if win_platform?
@@ -101,6 +104,7 @@ class RubyGemTestCase < Test::Unit::TestCase
   end
 
   def teardown
+    Gem::ConfigMap[:BASERUBY] = @orig_BASERUBY
     Gem::ConfigMap[:arch] = @orig_arch
 
     if defined? Gem::RemoteFetcher then
@@ -153,7 +157,7 @@ class RubyGemTestCase < Test::Unit::TestCase
     path
   end
 
-  def quick_gem(gemname, version='0.0.2')
+  def quick_gem(gemname, version='2')
     require 'rubygems/specification'
 
     spec = Gem::Specification.new do |s|
@@ -166,6 +170,7 @@ class RubyGemTestCase < Test::Unit::TestCase
       s.has_rdoc = true
       s.summary = "this is a summary"
       s.description = "This is a test description"
+
       yield(s) if block_given?
     end
 
@@ -205,9 +210,9 @@ class RubyGemTestCase < Test::Unit::TestCase
       s.require_paths = %w[lib]
     end
 
-    @a0_0_1 = quick_gem('a', '0.0.1', &spec)
-    @a0_0_2 = quick_gem('a', '0.0.2', &spec)
-    @b0_0_2 = quick_gem('b', '0.0.2', &spec)
+    @a1 = quick_gem('a', '1', &spec)
+    @a2 = quick_gem('a', '2', &spec)
+    @b2 = quick_gem('b', '2', &spec)
     @c1_2   = quick_gem('c', '1.2',   &spec)
     @pl1     = quick_gem 'pl', '1' do |s| # l for legacy
       s.files = %w[lib/code.rb]
@@ -216,13 +221,13 @@ class RubyGemTestCase < Test::Unit::TestCase
       s.instance_variable_set :@original_platform, 'i386-linux'
     end
 
-    write_file File.join(*%W[gems #{@a0_0_1.original_name} lib code.rb]) do end
-    write_file File.join(*%W[gems #{@a0_0_2.original_name} lib code.rb]) do end
-    write_file File.join(*%W[gems #{@b0_0_2.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@a1.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@a2.original_name} lib code.rb]) do end
+    write_file File.join(*%W[gems #{@b2.original_name} lib code.rb]) do end
     write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb]) do end
     write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb]) do end
 
-    [@a0_0_1, @a0_0_2, @b0_0_2, @c1_2, @pl1].each { |spec| util_build_gem spec }
+    [@a1, @a2, @b2, @c1_2, @pl1].each { |spec| util_build_gem spec }
 
     FileUtils.rm_r File.join(@gemhome, 'gems', @pl1.original_name)
 

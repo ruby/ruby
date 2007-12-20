@@ -7,17 +7,17 @@ class Gem::Commands::ServerCommand < Gem::Command
     super 'server', 'Documentation and gem repository HTTP server',
           :port => 8808, :gemdir => Gem.dir, :daemon => false
 
-    add_option '-p', '--port=PORT',
+    add_option '-p', '--port=PORT', Integer,
                'port to listen on' do |port, options|
       options[:port] = port
     end
 
     add_option '-d', '--dir=GEMDIR',
                'directory from which to serve gems' do |gemdir, options|
-      options[:gemdir] = gemdir
+      options[:gemdir] = File.expand_path gemdir
     end
 
-    add_option '--[no]-daemon', 'run as a daemon' do |daemon, options|
+    add_option '--[no-]daemon', 'run as a daemon' do |daemon, options|
       options[:daemon] = daemon
     end
   end

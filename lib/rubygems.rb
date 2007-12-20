@@ -6,6 +6,7 @@
 #++
 
 require 'rubygems/rubygems_version'
+require 'rubygems/defaults'
 require 'thread'
 
 module Gem
@@ -29,8 +30,8 @@ module Kernel
   # version).
   #
   # You can define the environment variable GEM_SKIP as a way to not
-  # load specified gems.  you might do this to test out changes that
-  # haven't been intsalled yet.  Example:
+  # load specified gems.  You might do this to test out changes that
+  # haven't been installed yet.  Example:
   #
   #   GEM_SKIP=libA:libB ruby-I../libA -I../libB ./mycode.rb
   #
@@ -47,17 +48,6 @@ module Kernel
   #
   def gem(gem_name, *version_requirements)
     active_gem_with_options(gem_name, version_requirements)
-  end
-
-  # Same as the +gem+ command, but will also require a file if the gem
-  # provides an auto-required file name.
-  #
-  # DEPRECATED!  Use +gem+ instead.
-  #
-  def require_gem(gem_name, *version_requirements)
-    file, lineno = location_of_caller
-    warn "#{file}:#{lineno}:Warning: require_gem is obsolete.  Use gem instead."
-    active_gem_with_options(gem_name, version_requirements, :auto_require=>true)
   end
 
   # Return the file name (string) and line number (integer) of the caller of
@@ -84,15 +74,17 @@ module Gem
   ConfigMap = {} unless defined?(ConfigMap)
   require 'rbconfig'
   ConfigMap.merge!(
-      :sitedir => RbConfig::CONFIG["sitedir"],
-      :ruby_version => RbConfig::CONFIG["ruby_version"],
-      :libdir => RbConfig::CONFIG["libdir"],
-      :sitelibdir => RbConfig::CONFIG["sitelibdir"],
+      :BASERUBY => RbConfig::CONFIG["BASERUBY"],
+      :EXEEXT => RbConfig::CONFIG["EXEEXT"],
+      :RUBY_INSTALL_NAME => RbConfig::CONFIG["RUBY_INSTALL_NAME"],
+      :RUBY_SO_NAME => RbConfig::CONFIG["RUBY_SO_NAME"],
       :arch => RbConfig::CONFIG["arch"],
       :bindir => RbConfig::CONFIG["bindir"],
-      :EXEEXT => RbConfig::CONFIG["EXEEXT"],
-      :RUBY_SO_NAME => RbConfig::CONFIG["RUBY_SO_NAME"],
-      :ruby_install_name => RbConfig::CONFIG["ruby_install_name"]
+      :libdir => RbConfig::CONFIG["libdir"],
+      :ruby_install_name => RbConfig::CONFIG["ruby_install_name"],
+      :ruby_version => RbConfig::CONFIG["ruby_version"],
+      :sitedir => RbConfig::CONFIG["sitedir"],
+      :sitelibdir => RbConfig::CONFIG["sitelibdir"]
   )
 
   MUTEX = Mutex.new
@@ -207,10 +199,6 @@ module Gem
       @sources
     end
 
-    # An Array of the default sources that come with RubyGems.
-    def default_sources
-      %w[http://gems.rubyforge.org]
-    end
 
     # Provide an alias for the old name.
     alias cache source_index
@@ -533,18 +521,6 @@ module Gem
         else
           "/"
         end
-      end
-    end
-
-    public
-
-    # Default home directory path to be used if an alternate value is
-    # not specified in the environment.
-    def default_dir
-      if defined? RUBY_FRAMEWORK_VERSION
-        return File.join(File.dirname(ConfigMap[:sitedir]), "Gems", ConfigMap[:ruby_version])
-      else
-        File.join(ConfigMap[:libdir], 'ruby', 'gems', ConfigMap[:ruby_version])
       end
     end
 

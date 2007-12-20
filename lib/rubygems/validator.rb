@@ -157,8 +157,9 @@ module Gem
         # XXX: why do we need this gem_spec when we've already got 'spec'?
       test_files = gem_spec.test_files
       if test_files.empty?
-        say "There are no unit tests to run for #{gem_spec.name}-#{gem_spec.version}"
-        return
+        say "There are no unit tests to run for #{gem_spec.full_name}"
+        require 'test/unit/ui/console/testrunner'
+        return Test::Unit::TestResult.new
       end
       gem gem_spec.name, "= #{gem_spec.version.version}"
       test_files.each do |f| require f end

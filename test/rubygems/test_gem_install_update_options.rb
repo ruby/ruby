@@ -16,7 +16,7 @@ class TestGemInstallUpdateOptions < RubyGemTestCase
     @cmd.add_install_update_options
 
     args = %w[-i /install_to --rdoc --ri -E -f -t -w -P HighSecurity
-              --ignore-dependencies --include-dependencies]
+              --ignore-dependencies --format-exec --include-dependencies]
 
     assert @cmd.handles?(args)
   end

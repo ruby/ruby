@@ -1,3 +1,7 @@
+Thu Dec 20 17:36:01 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems*:  Import RubyGems 1.0.0, r1575.
+
 Thu Dec 20 17:18:38 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c: support Proc#binding.

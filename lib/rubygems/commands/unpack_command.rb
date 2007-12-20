@@ -9,7 +9,13 @@ class Gem::Commands::UnpackCommand < Gem::Command
 
   def initialize
     super 'unpack', 'Unpack an installed gem to the current directory',
-          :version => Gem::Requirement.default
+          :version => Gem::Requirement.default,
+          :target  => Dir.pwd
+
+    add_option('--target', 'target directory for unpacking') do |value, options|
+      options[:target] = value
+    end
+
     add_version_option
   end
 
@@ -32,10 +38,11 @@ class Gem::Commands::UnpackCommand < Gem::Command
   def execute
     gemname = get_one_gem_name
     path = get_path(gemname, options[:version])
-    if path
-      target_dir = File.basename(path).sub(/\.gem$/, '')
+    if path then
+      basename = File.basename(path).sub(/\.gem$/, '')
+      target_dir = File.expand_path File.join(options[:target], basename)
       FileUtils.mkdir_p target_dir
-      Gem::Installer.new(path).unpack(File.expand_path(target_dir))
+      Gem::Installer.new(path).unpack target_dir
       say "Unpacked gem: '#{target_dir}'"
     else
       alert_error "Gem '#{gemname}' not installed."

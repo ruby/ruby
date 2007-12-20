@@ -2,6 +2,7 @@ require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems'
 require 'rubygems/gem_openssl'
+require 'rubygems/installer'
 require 'pathname'
 
 class TestGem < RubyGemTestCase
@@ -17,9 +18,9 @@ class TestGem < RubyGemTestCase
     util_make_gems
 
     expected = [
-      File.join(@gemhome, *%W[gems #{@a0_0_1.full_name} lib]),
-      File.join(@gemhome, *%W[gems #{@a0_0_2.full_name} lib]),
-      File.join(@gemhome, *%W[gems #{@b0_0_2.full_name} lib]),
+      File.join(@gemhome, *%W[gems #{@a1.full_name} lib]),
+      File.join(@gemhome, *%W[gems #{@a2.full_name} lib]),
+      File.join(@gemhome, *%W[gems #{@b2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@c1_2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@pl1.full_name} lib]),
     ]
@@ -87,6 +88,42 @@ class TestGem < RubyGemTestCase
 
   def test_self_default_dir
     assert_match @default_dir_re, Gem.default_dir
+  end
+
+  def test_self_default_exec_format
+    orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
+    orig_RUBY_INSTALL_NAME = Gem::ConfigMap[:RUBY_INSTALL_NAME]
+    Gem::ConfigMap[:BASERUBY] = 'ruby'
+    Gem::ConfigMap[:RUBY_INSTALL_NAME] = 'ruby'
+
+    assert_equal '%s', Gem.default_exec_format
+  ensure
+    Gem::ConfigMap[:BASERUBY] = orig_BASERUBY
+    Gem::ConfigMap[:RUBY_INSTALL_NAME] = orig_RUBY_INSTALL_NAME
+  end
+
+  def test_self_default_exec_format_18
+    orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
+    orig_RUBY_INSTALL_NAME = Gem::ConfigMap[:RUBY_INSTALL_NAME]
+    Gem::ConfigMap[:BASERUBY] = 'ruby'
+    Gem::ConfigMap[:RUBY_INSTALL_NAME] = 'ruby18'
+
+    assert_equal '%s18', Gem.default_exec_format
+  ensure
+    Gem::ConfigMap[:BASERUBY] = orig_BASERUBY
+    Gem::ConfigMap[:RUBY_INSTALL_NAME] = orig_RUBY_INSTALL_NAME
+  end
+
+  def test_self_default_exec_format_jruby
+    orig_BASERUBY = Gem::ConfigMap[:BASERUBY]
+    orig_RUBY_INSTALL_NAME = Gem::ConfigMap[:RUBY_INSTALL_NAME]
+    Gem::ConfigMap[:BASERUBY] = 'ruby'
+    Gem::ConfigMap[:RUBY_INSTALL_NAME] = 'jruby'
+
+    assert_equal 'j%s', Gem.default_exec_format
+  ensure
+    Gem::ConfigMap[:BASERUBY] = orig_BASERUBY
+    Gem::ConfigMap[:RUBY_INSTALL_NAME] = orig_RUBY_INSTALL_NAME
   end
 
   def test_self_default_sources
@@ -174,8 +211,8 @@ class TestGem < RubyGemTestCase
     util_make_gems
 
     expected = [
-      File.join(@gemhome, *%W[gems #{@a0_0_2.full_name} lib]),
-      File.join(@gemhome, *%W[gems #{@b0_0_2.full_name} lib]),
+      File.join(@gemhome, *%W[gems #{@a2.full_name} lib]),
+      File.join(@gemhome, *%W[gems #{@b2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@c1_2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@pl1.full_name} lib]),
     ]
@@ -251,10 +288,10 @@ class TestGem < RubyGemTestCase
 
     assert_equal File.join(@tempdir, *%w[gemhome gems c-1.2 lib code.rb]),
                  Gem.required_location("c", "code.rb")
-    assert_equal File.join(@tempdir, *%w[gemhome gems a-0.0.1 lib code.rb]),
-                 Gem.required_location("a", "code.rb", "<0.0.2")
-    assert_equal File.join(@tempdir, *%w[gemhome gems a-0.0.2 lib code.rb]),
-                 Gem.required_location("a", "code.rb", "=0.0.2")
+    assert_equal File.join(@tempdir, *%w[gemhome gems a-1 lib code.rb]),
+                 Gem.required_location("a", "code.rb", "< 2")
+    assert_equal File.join(@tempdir, *%w[gemhome gems a-2 lib code.rb]),
+                 Gem.required_location("a", "code.rb", "= 2")
   end
 
   def test_self_searcher
@@ -296,73 +333,6 @@ class TestGem < RubyGemTestCase
     else
       assert true, 'count this test'
     end
-  end
-
-  def test_require_gem_autorequire
-    name = "AutorequireArray"
-    files = %w(a.rb b.rb)
-    gem = quick_gem(name) do |s|
-      s.files = files.map { |f| File.join("lib", f) }
-      s.autorequire = files
-    end
-
-    fullname = gem.full_name
-
-    write_file "gems/#{fullname}/lib/a.rb" do |io|
-      io.puts "$LOADED_A = true"
-    end
-
-    write_file "gems/#{fullname}/lib/b.rb" do |io|
-      io.puts "$LOADED_B = true"
-    end
-
-    Gem.source_index = nil
-
-    old_loaded = $".dup
-    old_verbose = $VERBOSE
-    $VERBOSE = nil
-    require_gem name
-    $VERBOSE = old_verbose
-    new_loaded = $".dup
-
-    if RUBY_VERSION > "1.9" then
-      files = files.map do |file|
-        File.join @gemhome, 'gems', gem.full_name, 'lib', file
-      end
-    end
-
-    assert_equal files, (new_loaded - old_loaded)
-    assert defined?($LOADED_A)
-    assert defined?($LOADED_B)
-  end
-
-  def test_require_gem_autorequire_string
-    name = "AutorequireString"
-    file = "c.rb"
-    gem = quick_gem(name) do |s|
-      s.files = File.join("lib", file)
-      s.autorequire = file
-    end
-
-    fullname = gem.full_name
-
-    write_file("gems/#{fullname}/lib/c.rb") do |io|
-      io.puts "$LOADED_C = true"
-    end
-
-    old_loaded = $".dup
-    old_verbose = $VERBOSE
-    $VERBOSE = nil
-    require_gem name
-    $VERBOSE = old_verbose
-    new_loaded = $".dup
-
-    if RUBY_VERSION > "1.9" then
-      file = File.join @gemhome, 'gems', gem.full_name, 'lib', file
-    end
-
-    assert_equal(Array(file), (new_loaded - old_loaded))
-    assert(defined? $LOADED_C)
   end
 
   def util_ensure_gem_dirs

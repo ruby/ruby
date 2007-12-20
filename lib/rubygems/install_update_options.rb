@@ -76,6 +76,13 @@ module Gem::InstallUpdateOptions
                'dependent gems') do |value, options|
       options[:include_dependencies] = value
     end
+
+    add_option(:"Install/Update",       '--[no-]format-executable',
+               'Make installed executable names match ruby.',
+               'If ruby is ruby18, foo_exec will be',
+               'foo_exec18') do |value, options|
+      options[:format_executable] = value
+    end
   end
 
   # Default options for the gem install command.

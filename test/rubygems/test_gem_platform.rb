@@ -5,6 +5,19 @@ require 'rbconfig'
 
 class TestGemPlatform < RubyGemTestCase
 
+  def test_self_const_missing
+    consts = [:DARWIN, :LINUX_586, :MSWIN32, :PPC_DARWIN, :WIN32, :X86_LINUX]
+
+    consts.each do |const|
+      e = assert_raise NameError do
+        Gem::Platform.const_missing const
+      end
+
+      assert_equal "#{const} has been removed, use CURRENT instead",
+                   e.message
+    end
+  end
+
   def test_self_local
     util_set_arch 'i686-darwin8.10.1'
 
@@ -60,6 +73,10 @@ class TestGemPlatform < RubyGemTestCase
       'i386-mingw32'           => ['x86',       'mingw32',   nil],
       'i386-mswin32'           => ['x86',       'mswin32',   nil],
       'i386-mswin32_80'        => ['x86',       'mswin32',   '80'],
+      'i386-mswin32-80'        => ['x86',       'mswin32',   '80'],
+      'x86-mswin32'            => ['x86',       'mswin32',   nil],
+      'x86-mswin32_60'         => ['x86',       'mswin32',   '60'],
+      'x86-mswin32-60'         => ['x86',       'mswin32',   '60'],
       'i386-netbsdelf'         => ['x86',       'netbsdelf', nil],
       'i386-openbsd4.0'        => ['x86',       'openbsd',   '4.0'],
       'i386-solaris2.10'       => ['x86',       'solaris',   '2.10'],

@@ -82,8 +82,10 @@ class Gem::Commands::QueryCommand < Gem::Command
       end
 
       entry = gem_name.dup
+
       if options[:versions] then
-        entry << " (#{list_of_matching.map{|gem| gem.version.to_s}.join(", ")})"
+        versions = list_of_matching.map { |s| s.version }.uniq
+        entry << " (#{versions.join ', '})"
       end
 
       entry << "\n" << format_text(list_of_matching[0].summary, 68, 4) if

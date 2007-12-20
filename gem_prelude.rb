@@ -131,6 +131,7 @@ module Gem
           Dir.entries(gems_directory).each do |gem_directory_name|
             next if gem_directory_name == "." || gem_directory_name == ".."
             dash = gem_directory_name.rindex("-")
+            next if dash.nil?
             gem_name = gem_directory_name[0...dash]
             current_version = GemVersions[gem_name]
             new_version = calculate_integers_for_gem_version(gem_directory_name[dash+1..-1])
@@ -167,6 +168,7 @@ module Gem
 
     def method_missing(method, *args, &block)
       QuickLoader.load_full_rubygems_library
+      super unless Gem.respond_to?(method)
       Gem.send(method, *args, &block)
     end
   end
@@ -174,9 +176,14 @@ module Gem
   extend QuickLoader
 
 end
-
-Gem.push_all_highest_version_gems_on_load_path
-$".unshift File.join(Gem::ConfigMap[:libdir], "ruby", Gem::ConfigMap[:ruby_version], "rubygems.rb")
+begin
+  Gem.push_all_highest_version_gems_on_load_path
+  $".unshift File.join(Gem::ConfigMap[:libdir], "ruby", Gem::ConfigMap[:ruby_version], "rubygems.rb")
+rescue Exception => e
+  puts "Error loading gem paths on load path in gem_prelude"
+  puts e
+  puts e.backtrace.join("\n")
+end
 
 #puts "Gem load in #{Time.now - t} seconds"
 end # Gem::Enable

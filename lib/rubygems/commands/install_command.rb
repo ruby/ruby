@@ -17,6 +17,7 @@ class Gem::Commands::InstallCommand < Gem::Command
       :generate_rdoc => true,
       :generate_ri   => true,
       :install_dir => Gem.dir,
+      :format_executable => false,
       :test => false,
       :version => Gem::Requirement.default,
     })
@@ -56,6 +57,7 @@ class Gem::Commands::InstallCommand < Gem::Command
       :env_shebang => options[:env_shebang],
       :domain => options[:domain],
       :force => options[:force],
+      :format_executable => options[:format_executable],
       :ignore_dependencies => options[:ignore_dependencies],
       :install_dir => options[:install_dir],
       :security_policy => options[:security_policy],

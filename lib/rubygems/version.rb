@@ -75,7 +75,7 @@ class Gem::Version
 
   # Strip ignored trailing zeros.
   def normalize
-    @ints = @version.to_s.scan(/\d+/).map { |s| s.to_i }
+    @ints = build_array_from_version_string
 
     return if @ints.length == 1
 
@@ -127,18 +127,25 @@ class Gem::Version
     @ints <=> other.ints
   end
 
-  def hash
+  alias eql? == # :nodoc:
+
+  def hash # :nodoc:
     to_ints.inject { |hash_code, n| hash_code + n }
   end
 
   # Return a new version object where the next to the last revision
   # number is one greater. (e.g.  5.3.1 => 5.4)
   def bump
-    ints = @ints.dup
+    ints = build_array_from_version_string
     ints.pop if ints.size > 1
     ints[-1] += 1
     self.class.new(ints.join("."))
   end
+
+  def build_array_from_version_string
+    @version.to_s.scan(/\d+/).map { |s| s.to_i }
+  end
+  private :build_array_from_version_string
 
   #:stopdoc:
 

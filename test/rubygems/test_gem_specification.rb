@@ -47,12 +47,13 @@ end
   def setup
     super
 
-    @a0_0_1 = quick_gem 'a', '0.0.1' do |s|
+    @a1 = quick_gem 'a', '1' do |s|
       s.executable = 'exec'
       s.extensions << 'ext/a/extconf.rb'
       s.has_rdoc = 'true'
       s.test_file = 'test/suite.rb'
       s.requirements << 'A working computer'
+      s.rubyforge_project = 'example'
 
       s.add_dependency 'rake', '> 0.4'
       s.add_dependency 'jabber4r', '> 0.0.0'
@@ -62,8 +63,13 @@ end
       s.files = %w[lib/code.rb]
     end
 
-    @a0_0_2 = quick_gem 'a', '0.0.2' do |s|
+    @a2 = quick_gem 'a', '2' do |s|
       s.files = %w[lib/code.rb]
+    end
+
+    FileUtils.mkdir_p File.join(@tempdir, 'bin')
+    File.open File.join(@tempdir, 'bin', 'exec'), 'w' do |fp|
+      fp.puts "#!#{Gem.ruby}"
     end
   end
 
@@ -107,10 +113,10 @@ end
   end
 
   def test_self_load
-    spec = File.join @gemhome, 'specifications', "#{@a0_0_2.full_name}.gemspec"
+    spec = File.join @gemhome, 'specifications', "#{@a2.full_name}.gemspec"
     gs = Gem::Specification.load spec
 
-    assert_equal @a0_0_2, gs
+    assert_equal @a2, gs
   end
 
   def test_self_load_legacy_ruby
@@ -119,7 +125,7 @@ end
     assert_equal '0.4.0', s.version.to_s
     assert_equal true, s.has_rdoc?
     assert_equal Gem::Specification::TODAY, s.date
-    assert s.required_ruby_version.satisfied_by?(Gem::Version.new('0.0.1'))
+    assert s.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
     assert_equal false, s.has_unit_tests?
   end
 
@@ -129,7 +135,7 @@ end
     assert_equal '0.4.0', s.version.to_s
     assert_equal true, s.has_rdoc?
     #assert_equal Date.today, s.date
-    #assert s.required_ruby_version.satisfied_by?(Gem::Version.new('0.0.1'))
+    #assert s.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
     assert_equal false, s.has_unit_tests?
   end
 
@@ -197,10 +203,10 @@ end
   end
 
   def test__dump
-    @a0_0_2.platform = Gem::Platform.local
-    @a0_0_2.instance_variable_set :@original_platform, 'old_platform'
+    @a2.platform = Gem::Platform.local
+    @a2.instance_variable_set :@original_platform, 'old_platform'
 
-    data = Marshal.dump @a0_0_2
+    data = Marshal.dump @a2
 
     same_spec = Marshal.load data
 
@@ -208,64 +214,64 @@ end
   end
 
   def test_author
-    assert_equal 'A User', @a0_0_1.author
+    assert_equal 'A User', @a1.author
   end
 
   def test_authors
-    assert_equal ['A User'], @a0_0_1.authors
+    assert_equal ['A User'], @a1.authors
   end
 
   def test_bindir_equals
-    @a0_0_1.bindir = 'apps'
+    @a1.bindir = 'apps'
 
-    assert_equal 'apps', @a0_0_1.bindir
+    assert_equal 'apps', @a1.bindir
   end
 
   def test_bindir_equals_nil
-    @a0_0_2.bindir = nil
-    @a0_0_2.executable = 'app'
+    @a2.bindir = nil
+    @a2.executable = 'app'
 
-    assert_equal nil, @a0_0_2.bindir
-    assert_equal %w[lib/code.rb app], @a0_0_2.files
+    assert_equal nil, @a2.bindir
+    assert_equal %w[lib/code.rb app], @a2.files
   end
 
   def test_date
-    assert_equal Gem::Specification::TODAY, @a0_0_1.date
+    assert_equal Gem::Specification::TODAY, @a1.date
   end
 
   def test_date_equals_date
-    @a0_0_1.date = Date.new(2003, 9, 17)
-    assert_equal Time.local(2003, 9, 17, 0,0,0), @a0_0_1.date
+    @a1.date = Date.new(2003, 9, 17)
+    assert_equal Time.local(2003, 9, 17, 0,0,0), @a1.date
   end
 
   def test_date_equals_string
-    @a0_0_1.date = '2003-09-17'
-    assert_equal Time.local(2003, 9, 17, 0,0,0), @a0_0_1.date
+    @a1.date = '2003-09-17'
+    assert_equal Time.local(2003, 9, 17, 0,0,0), @a1.date
   end
 
   def test_date_equals_time
-    @a0_0_1.date = Time.local(2003, 9, 17, 0,0,0)
-    assert_equal Time.local(2003, 9, 17, 0,0,0), @a0_0_1.date
+    @a1.date = Time.local(2003, 9, 17, 0,0,0)
+    assert_equal Time.local(2003, 9, 17, 0,0,0), @a1.date
   end
 
   def test_date_equals_time_local
     # HACK PDT
-    @a0_0_1.date = Time.local(2003, 9, 17, 19,50,0)
-    assert_equal Time.local(2003, 9, 17, 0,0,0), @a0_0_1.date
+    @a1.date = Time.local(2003, 9, 17, 19,50,0)
+    assert_equal Time.local(2003, 9, 17, 0,0,0), @a1.date
   end
 
   def test_date_equals_time_utc
     # HACK PDT
-    @a0_0_1.date = Time.local(2003, 9, 17, 19,50,0)
-    assert_equal Time.local(2003, 9, 17, 0,0,0), @a0_0_1.date
+    @a1.date = Time.local(2003, 9, 17, 19,50,0)
+    assert_equal Time.local(2003, 9, 17, 0,0,0), @a1.date
   end
 
   def test_default_executable
-    assert_equal 'exec', @a0_0_1.default_executable
+    assert_equal 'exec', @a1.default_executable
 
-    @a0_0_1.default_executable = nil
-    @a0_0_1.instance_variable_set :@executables, nil
-    assert_equal nil, @a0_0_1.default_executable
+    @a1.default_executable = nil
+    @a1.instance_variable_set :@executables, nil
+    assert_equal nil, @a1.default_executable
   end
 
   def test_dependencies
@@ -273,11 +279,11 @@ end
     jabber = Gem::Dependency.new 'jabber4r', '> 0.0.0'
     pqa = Gem::Dependency.new 'pqa', ['> 0.4', '<= 0.6']
 
-    assert_equal [rake, jabber, pqa], @a0_0_1.dependencies
+    assert_equal [rake, jabber, pqa], @a1.dependencies
   end
 
   def test_description
-    assert_equal 'This is a test description', @a0_0_1.description
+    assert_equal 'This is a test description', @a1.description
   end
 
   def test_eql_eh
@@ -290,10 +296,10 @@ end
   end
 
   def test_equals2
-    assert_equal @a0_0_1, @a0_0_1
-    assert_equal @a0_0_1, @a0_0_1.dup
-    assert_not_equal @a0_0_1, @a0_0_2
-    assert_not_equal @a0_0_1, Object.new
+    assert_equal @a1, @a1
+    assert_equal @a1, @a1.dup
+    assert_not_equal @a1, @a2
+    assert_not_equal @a1, Object.new
   end
 
   # The cgikit specification was reported to be causing trouble in at least
@@ -322,42 +328,42 @@ end
   end
 
   def test_equals2_default_executable
-    spec = @a0_0_1.dup
+    spec = @a1.dup
     spec.default_executable = 'xx'
 
-    assert_not_equal @a0_0_1, spec
-    assert_not_equal spec, @a0_0_1
+    assert_not_equal @a1, spec
+    assert_not_equal spec, @a1
   end
 
   def test_equals2_extensions
-    spec = @a0_0_1.dup
+    spec = @a1.dup
     spec.extensions = 'xx'
 
-    assert_not_equal @a0_0_1, spec
-    assert_not_equal spec, @a0_0_1
+    assert_not_equal @a1, spec
+    assert_not_equal spec, @a1
   end
 
   def test_executables
-    @a0_0_1.executable = 'app'
-    assert_equal %w[app], @a0_0_1.executables
+    @a1.executable = 'app'
+    assert_equal %w[app], @a1.executables
   end
 
   def test_executable_equals
-    @a0_0_2.executable = 'app'
-    assert_equal 'app', @a0_0_2.executable
-    assert_equal %w[lib/code.rb bin/app], @a0_0_2.files
+    @a2.executable = 'app'
+    assert_equal 'app', @a2.executable
+    assert_equal %w[lib/code.rb bin/app], @a2.files
   end
 
   def test_extensions
-    assert_equal ['ext/a/extconf.rb'], @a0_0_1.extensions
+    assert_equal ['ext/a/extconf.rb'], @a1.extensions
   end
 
   def test_files
-    @a0_0_1.files = %w(files bin/common)
-    @a0_0_1.test_files = %w(test_files bin/common)
-    @a0_0_1.executables = %w(executables common)
-    @a0_0_1.extra_rdoc_files = %w(extra_rdoc_files bin/common)
-    @a0_0_1.extensions = %w(extensions bin/common)
+    @a1.files = %w(files bin/common)
+    @a1.test_files = %w(test_files bin/common)
+    @a1.executables = %w(executables common)
+    @a1.extra_rdoc_files = %w(extra_rdoc_files bin/common)
+    @a1.extensions = %w(extensions bin/common)
 
     expected = %w[
       bin/common
@@ -367,113 +373,123 @@ end
       files
       test_files
     ]
-    assert_equal expected, @a0_0_1.files.sort
+    assert_equal expected, @a1.files.sort
   end
 
   def test_files_duplicate
-    @a0_0_2.files = %w[a b c d b]
-    @a0_0_2.extra_rdoc_files = %w[x y z x]
-    @a0_0_2.normalize
+    @a2.files = %w[a b c d b]
+    @a2.extra_rdoc_files = %w[x y z x]
+    @a2.normalize
 
-    assert_equal %w[a b c d x y z], @a0_0_2.files
-    assert_equal %w[x y z], @a0_0_2.extra_rdoc_files
+    assert_equal %w[a b c d x y z], @a2.files
+    assert_equal %w[x y z], @a2.extra_rdoc_files
   end
 
   def test_files_extra_rdoc_files
-    @a0_0_2.files = %w[a b c d]
-    @a0_0_2.extra_rdoc_files = %w[x y z]
-    @a0_0_2.normalize
-    assert_equal %w[a b c d x y z], @a0_0_2.files
+    @a2.files = %w[a b c d]
+    @a2.extra_rdoc_files = %w[x y z]
+    @a2.normalize
+    assert_equal %w[a b c d x y z], @a2.files
   end
 
   def test_files_non_array
-    @a0_0_1.files = "F"
-    @a0_0_1.test_files = "TF"
-    @a0_0_1.executables = "X"
-    @a0_0_1.extra_rdoc_files = "ERF"
-    @a0_0_1.extensions = "E"
+    @a1.files = "F"
+    @a1.test_files = "TF"
+    @a1.executables = "X"
+    @a1.extra_rdoc_files = "ERF"
+    @a1.extensions = "E"
 
-    assert_equal %w[E ERF F TF bin/X], @a0_0_1.files.sort
+    assert_equal %w[E ERF F TF bin/X], @a1.files.sort
   end
 
   def test_files_non_array_pathological
-    @a0_0_1.instance_variable_set :@files, "F"
-    @a0_0_1.instance_variable_set :@test_files, "TF"
-    @a0_0_1.instance_variable_set :@extra_rdoc_files, "ERF"
-    @a0_0_1.instance_variable_set :@extensions, "E"
-    @a0_0_1.instance_variable_set :@executables, "X"
+    @a1.instance_variable_set :@files, "F"
+    @a1.instance_variable_set :@test_files, "TF"
+    @a1.instance_variable_set :@extra_rdoc_files, "ERF"
+    @a1.instance_variable_set :@extensions, "E"
+    @a1.instance_variable_set :@executables, "X"
 
-    assert_equal %w[E ERF F TF bin/X], @a0_0_1.files.sort
-    assert_kind_of Integer, @a0_0_1.hash
+    assert_equal %w[E ERF F TF bin/X], @a1.files.sort
+    assert_kind_of Integer, @a1.hash
+  end
+
+  def test_full_gem_path
+    assert_equal File.join(@gemhome, 'gems', @a1.full_name),
+                 @a1.full_gem_path
+
+    @a1.original_platform = 'mswin32'
+
+    assert_equal File.join(@gemhome, 'gems', @a1.original_name),
+                 @a1.full_gem_path
   end
 
   def test_full_name
-    assert_equal 'a-0.0.1', @a0_0_1.full_name
+    assert_equal 'a-1', @a1.full_name
 
-    @a0_0_1.platform = Gem::Platform.new ['universal', 'darwin', nil]
-    assert_equal 'a-0.0.1-universal-darwin', @a0_0_1.full_name
+    @a1.platform = Gem::Platform.new ['universal', 'darwin', nil]
+    assert_equal 'a-1-universal-darwin', @a1.full_name
 
-    @a0_0_1.instance_variable_set :@new_platform, 'mswin32'
-    assert_equal 'a-0.0.1-mswin32', @a0_0_1.full_name, 'legacy'
+    @a1.instance_variable_set :@new_platform, 'mswin32'
+    assert_equal 'a-1-mswin32', @a1.full_name, 'legacy'
 
     return if win_platform?
 
-    @a0_0_1.platform = 'current'
-    assert_equal 'a-0.0.1-x86-darwin-8', @a0_0_1.full_name
+    @a1.platform = 'current'
+    assert_equal 'a-1-x86-darwin-8', @a1.full_name
   end
 
   def test_full_name_windows
     test_cases = {
-      'i386-mswin32'      => 'a-0.0.1-x86-mswin32-60',
-      'i386-mswin32_80'   => 'a-0.0.1-x86-mswin32-80',
-      'i386-mingw32'      => 'a-0.0.1-x86-mingw32'
+      'i386-mswin32'      => 'a-1-x86-mswin32-60',
+      'i386-mswin32_80'   => 'a-1-x86-mswin32-80',
+      'i386-mingw32'      => 'a-1-x86-mingw32'
     }
     
     test_cases.each do |arch, expected|
       util_set_arch arch
-      @a0_0_1.platform = 'current'
-      assert_equal expected, @a0_0_1.full_name
+      @a1.platform = 'current'
+      assert_equal expected, @a1.full_name
     end
   end
 
   def test_has_rdoc_eh
-    assert_equal true, @a0_0_1.has_rdoc?
+    assert_equal true, @a1.has_rdoc?
   end
 
   def test_hash
-    assert_equal @a0_0_1.hash, @a0_0_1.hash
-    assert_equal @a0_0_1.hash, @a0_0_1.dup.hash
-    assert_not_equal @a0_0_1.hash, @a0_0_2.hash
+    assert_equal @a1.hash, @a1.hash
+    assert_equal @a1.hash, @a1.dup.hash
+    assert_not_equal @a1.hash, @a2.hash
   end
 
   def test_lib_files
-    @a0_0_1.files = %w[lib/foo.rb Rakefile]
+    @a1.files = %w[lib/foo.rb Rakefile]
 
-    assert_equal %w[lib/foo.rb], @a0_0_1.lib_files
+    assert_equal %w[lib/foo.rb], @a1.lib_files
   end
 
   def test_name
-    assert_equal 'a', @a0_0_1.name
+    assert_equal 'a', @a1.name
   end
 
   def test_original_name
-    assert_equal 'a-0.0.1', @a0_0_1.full_name
+    assert_equal 'a-1', @a1.full_name
 
-    @a0_0_1.platform = 'i386-linux'
-    @a0_0_1.instance_variable_set :@original_platform, 'i386-linux'
-    assert_equal 'a-0.0.1-i386-linux', @a0_0_1.original_name
+    @a1.platform = 'i386-linux'
+    @a1.instance_variable_set :@original_platform, 'i386-linux'
+    assert_equal 'a-1-i386-linux', @a1.original_name
   end
 
   def test_platform
-    assert_equal Gem::Platform::RUBY, @a0_0_1.platform
+    assert_equal Gem::Platform::RUBY, @a1.platform
   end
 
   def test_platform_equals
-    @a0_0_1.platform = nil
-    assert_equal Gem::Platform::RUBY, @a0_0_1.platform
+    @a1.platform = nil
+    assert_equal Gem::Platform::RUBY, @a1.platform
 
-    @a0_0_1.platform = Gem::Platform::RUBY
-    assert_equal Gem::Platform::RUBY, @a0_0_1.platform
+    @a1.platform = Gem::Platform::RUBY
+    assert_equal Gem::Platform::RUBY, @a1.platform
 
     test_cases = {
       'i386-mswin32'    => ['x86', 'mswin32', '60'],
@@ -484,29 +500,35 @@ end
 
     test_cases.each do |arch, expected|
       util_set_arch arch
-      @a0_0_1.platform = Gem::Platform::CURRENT
-      assert_equal Gem::Platform.new(expected), @a0_0_1.platform
+      @a1.platform = Gem::Platform::CURRENT
+      assert_equal Gem::Platform.new(expected), @a1.platform
     end
   end
 
+  def test_platform_equals_current
+    @a1.platform = Gem::Platform::CURRENT
+    assert_equal Gem::Platform.local, @a1.platform
+    assert_equal Gem::Platform.local.to_s, @a1.original_platform
+  end
+
   def test_platform_equals_legacy
-    @a0_0_1.platform = Gem::Platform::WIN32
-    assert_equal Gem::Platform::MSWIN32, @a0_0_1.platform
+    @a1.platform = 'mswin32'
+    assert_equal Gem::Platform.new('x86-mswin32'), @a1.platform
 
-    @a0_0_1.platform = Gem::Platform::LINUX_586
-    assert_equal Gem::Platform::X86_LINUX, @a0_0_1.platform
+    @a1.platform = 'i586-linux'
+    assert_equal Gem::Platform.new('x86-linux'), @a1.platform
 
-    @a0_0_1.platform = Gem::Platform::DARWIN
-    assert_equal Gem::Platform::PPC_DARWIN, @a0_0_1.platform
+    @a1.platform = 'powerpc-darwin'
+    assert_equal Gem::Platform.new('ppc-darwin'), @a1.platform
   end
 
   def test_require_paths
-    @a0_0_1.require_path = 'lib'
-    assert_equal %w[lib], @a0_0_1.require_paths
+    @a1.require_path = 'lib'
+    assert_equal %w[lib], @a1.require_paths
   end
 
   def test_requirements
-    assert_equal ['A working computer'], @a0_0_1.requirements
+    assert_equal ['A working computer'], @a1.requirements
   end
 
   def test_spaceship_name
@@ -539,28 +561,22 @@ end
   end
 
   def test_summary
-    assert_equal 'this is a summary', @a0_0_1.summary
+    assert_equal 'this is a summary', @a1.summary
   end
 
   def test_test_files
-    @a0_0_1.test_file = 'test/suite.rb'
-    assert_equal ['test/suite.rb'], @a0_0_1.test_files
-  end
-
-  def test_test_suite_file
-    @a0_0_2.test_suite_file = 'test/suite.rb'
-    assert_equal ['test/suite.rb'], @a0_0_2.test_files
-    # XXX: what about the warning?
+    @a1.test_file = 'test/suite.rb'
+    assert_equal ['test/suite.rb'], @a1.test_files
   end
 
   def test_to_ruby
-    @a0_0_2.required_rubygems_version = Gem::Requirement.new '> 0'
+    @a2.required_rubygems_version = Gem::Requirement.new '> 0'
 
-    ruby_code = @a0_0_2.to_ruby
+    ruby_code = @a2.to_ruby
 
     expected = "Gem::Specification.new do |s|
   s.name = %q{a}
-  s.version = \"0.0.2\"
+  s.version = \"2\"
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION} if s.respond_to? :specification_version=
 
@@ -582,17 +598,20 @@ end
 
     same_spec = eval ruby_code
 
-    assert_equal @a0_0_2, same_spec
+    assert_equal @a2, same_spec
   end
 
   def test_to_ruby_fancy
-    @a0_0_1.platform = Gem::Platform::PPC_DARWIN
-    ruby_code = @a0_0_1.to_ruby
+    @a1.platform = Gem::Platform.local
+    ruby_code = @a1.to_ruby
+
+    local = Gem::Platform.local
+    expected_platform = "[#{local.cpu.inspect}, #{local.os.inspect}, #{local.version.inspect}]"
 
     expected = "Gem::Specification.new do |s|
   s.name = %q{a}
-  s.version = \"0.0.1\"
-  s.platform = Gem::Platform.new([\"ppc\", \"darwin\", nil])
+  s.version = \"1\"
+  s.platform = Gem::Platform.new(#{expected_platform})
 
   s.specification_version = 2 if s.respond_to? :specification_version=
 
@@ -609,6 +628,7 @@ end
   s.homepage = %q{http://example.com}
   s.require_paths = [\"lib\"]
   s.requirements = [\"A working computer\"]
+  s.rubyforge_project = %q{example}
   s.rubygems_version = %q{#{Gem::RubyGemsVersion}}
   s.summary = %q{this is a summary}
   s.test_files = [\"test/suite.rb\"]
@@ -623,7 +643,7 @@ end
 
     same_spec = eval ruby_code
 
-    assert_equal @a0_0_1, same_spec
+    assert_equal @a1, same_spec
   end
 
   def test_to_ruby_legacy
@@ -635,10 +655,10 @@ end
   end
 
   def test_to_ruby_platform
-    @a0_0_2.platform = Gem::Platform.local
-    @a0_0_2.instance_variable_set :@original_platform, 'old_platform'
+    @a2.platform = Gem::Platform.local
+    @a2.instance_variable_set :@original_platform, 'old_platform'
 
-    ruby_code = @a0_0_2.to_ruby
+    ruby_code = @a2.to_ruby
 
     same_spec = eval ruby_code
 
@@ -646,28 +666,34 @@ end
   end
 
   def test_to_yaml
-    yaml_str = @a0_0_1.to_yaml
+    yaml_str = @a1.to_yaml
     same_spec = YAML.load(yaml_str)
 
-    assert_equal @a0_0_1, same_spec
+    assert_equal @a1, same_spec
   end
 
   def test_to_yaml_fancy
-    @a0_0_1.platform = Gem::Platform::PPC_DARWIN
-    yaml_str = @a0_0_1.to_yaml
+    @a1.platform = Gem::Platform.local
+    yaml_str = @a1.to_yaml
 
     same_spec = YAML.load(yaml_str)
 
-    assert_equal Gem::Platform::PPC_DARWIN, same_spec.platform
+    assert_equal Gem::Platform.local, same_spec.platform
 
-    assert_equal @a0_0_1, same_spec
+    assert_equal @a1, same_spec
   end
 
-  def test_to_yaml_legacy_platform
-    @a0_0_1.platform = 'powerpc-darwin7.9.0'
-    @a0_0_1.instance_variable_set :@original_platform, 'powerpc-darwin7.9.0'
+  def test_to_yaml_platform_empty_string
+    @a1.instance_variable_set :@original_platform, ''
 
-    yaml_str = @a0_0_1.to_yaml
+    assert_match %r|^platform: ruby$|, @a1.to_yaml
+  end
+
+  def test_to_yaml_platform_legacy
+    @a1.platform = 'powerpc-darwin7.9.0'
+    @a1.instance_variable_set :@original_platform, 'powerpc-darwin7.9.0'
+
+    yaml_str = @a1.to_yaml
 
     same_spec = YAML.load(yaml_str)
 
@@ -675,8 +701,61 @@ end
     assert_equal 'powerpc-darwin7.9.0', same_spec.original_platform
   end
 
+  def test_to_yaml_platform_nil
+    @a1.instance_variable_set :@original_platform, nil
+
+    assert_match %r|^platform: ruby$|, @a1.to_yaml
+  end
+
   def test_validate
-    assert @a0_0_1.validate
+    Dir.chdir @tempdir do
+      assert @a1.validate
+    end
+  end
+
+  def test_validate_authors
+    Dir.chdir @tempdir do
+      @a1.authors = []
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "WARNING:  no author specified\n", @ui.error, 'error'
+
+      @a1.authors = [Object.new]
+
+      e = assert_raise Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal 'authors must be Array of Strings', e.message
+    end
+  end
+
+  def test_validate_autorequire
+    Dir.chdir @tempdir do
+      @a1.autorequire = 'code'
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "WARNING:  deprecated autorequire specified\n",
+                   @ui.error, 'error'
+    end
+  end
+
+  def test_validate_email
+    Dir.chdir @tempdir do
+      @a1.email = ''
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "WARNING:  no email specified\n", @ui.error, 'error'
+    end
   end
 
   def test_validate_empty
@@ -687,51 +766,104 @@ end
     assert_equal 'missing value for attribute name', e.message
   end
 
+  def test_validate_executables
+    FileUtils.mkdir_p File.join(@tempdir, 'bin')
+    File.open File.join(@tempdir, 'bin', 'exec'), 'w' do end
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        assert @a1.validate
+      end
+    end
+
+    assert_equal '', @ui.output, 'output'
+    assert_equal "WARNING:  bin/exec is missing #! line\n", @ui.error, 'error'
+  end
+
   def test_validate_empty_require_paths
-    @a0_0_1.require_paths = []
+    @a1.require_paths = []
     e = assert_raise Gem::InvalidSpecificationException do
-      @a0_0_1.validate
+      @a1.validate
     end
 
     assert_equal 'specification must have at least one require_path', e.message
   end
 
-  def test_validate_platform_bad
-    @a0_0_1.platform = Object.new
-    assert_raise Gem::InvalidSpecificationException do @a0_0_1.validate end
+  def test_validate_homepage
+    Dir.chdir @tempdir do
+      @a1.homepage = ''
 
-    @a0_0_1.platform = "my-custom-platform"
-    e = assert_raise Gem::InvalidSpecificationException do
-      @a0_0_1.validate
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "WARNING:  no homepage specified\n", @ui.error, 'error'
     end
+  end
 
-    assert_equal 'invalid platform "my-custom-platform", see Gem::Platform',
-                 e.message
+  def test_validate_has_rdoc
+    Dir.chdir @tempdir do
+      @a1.has_rdoc = false
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "WARNING:  RDoc will not be generated (has_rdoc == false)\n",
+                   @ui.error, 'error'
+    end
   end
 
   def test_validate_platform_legacy
-    @a0_0_1.platform = Gem::Platform::WIN32
-    assert @a0_0_1.validate
+    Dir.chdir @tempdir do
+      @a1.platform = 'mswin32'
+      assert @a1.validate
 
-    @a0_0_1.platform = Gem::Platform::LINUX_586
-    assert @a0_0_1.validate
+      @a1.platform = 'i586-linux'
+      assert @a1.validate
 
-    @a0_0_1.platform = Gem::Platform::DARWIN
-    assert @a0_0_1.validate
+      @a1.platform = 'powerpc-darwin'
+      assert @a1.validate
+    end
+  end
+
+  def test_validate_rubyforge_project
+    Dir.chdir @tempdir do
+      @a1.rubyforge_project = ''
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "WARNING:  no rubyforge_project specified\n",
+                   @ui.error, 'error'
+    end
   end
 
   def test_validate_rubygems_version
-    @a0_0_1.rubygems_version = "3"
+    @a1.rubygems_version = "3"
     e = assert_raise Gem::InvalidSpecificationException do
-      @a0_0_1.validate
+      @a1.validate
     end
 
     assert_equal "expected RubyGems version #{Gem::RubyGemsVersion}, was 3",
                  e.message
   end
 
+  def test_validate_summary
+    Dir.chdir @tempdir do
+      @a1.summary = ''
+
+      use_ui @ui do
+        @a1.validate
+      end
+
+      assert_equal "WARNING:  no summary specified\n", @ui.error, 'error'
+    end
+  end
+
   def test_version
-    assert_equal Gem::Version.new('0.0.1'), @a0_0_1.version
+    assert_equal Gem::Version.new('1'), @a1.version
   end
 
 end

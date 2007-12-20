@@ -7,7 +7,9 @@ class TestGemCommandsUnpackCommand < RubyGemTestCase
   def setup
     super
 
-    @cmd = Gem::Commands::UnpackCommand.new
+    Dir.chdir @tempdir do
+      @cmd = Gem::Commands::UnpackCommand.new
+    end
   end
 
   def test_execute
@@ -15,13 +17,29 @@ class TestGemCommandsUnpackCommand < RubyGemTestCase
 
     @cmd.options[:args] = %w[a]
 
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @cmd.execute
+        end
+      end
+
+    assert File.exist?(File.join(@tempdir, 'a-2'))
+  end
+
+  def test_execute_with_target_option
+    util_make_gems
+
+    target = 'with_target'
+    @cmd.options[:args] = %w[a]
+    @cmd.options[:target] = target
+
     use_ui @ui do
       Dir.chdir @tempdir do
         @cmd.execute
       end
     end
 
-    assert File.exist?(File.join(@tempdir, 'a-0.0.2'))
+    assert File.exist?(File.join(@tempdir, target, 'a-2'))
   end
 
   def test_execute_exact_match

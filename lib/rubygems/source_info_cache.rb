@@ -176,7 +176,7 @@ class Gem::SourceInfoCache
 
   # The name of the system cache file. (class method)
   def self.system_cache_file
-    @system_cache_file ||= File.join(Gem.dir, "source_cache")
+    @system_cache_file ||= Gem.default_system_source_cache_dir
   end
 
   # The name of the user cache file.
@@ -187,7 +187,7 @@ class Gem::SourceInfoCache
   # The name of the user cache file. (class method)
   def self.user_cache_file
     @user_cache_file ||=
-      ENV['GEMCACHE'] || File.join(Gem.user_home, ".gem", "source_cache")
+      ENV['GEMCACHE'] || Gem.default_user_source_cache_dir
   end
 
   # Write data to the proper cache.
@@ -217,7 +217,7 @@ class Gem::SourceInfoCache
     unless File.exist? dir then
       begin
         FileUtils.mkdir_p(dir)
-      rescue RuntimeError
+      rescue RuntimeError, SystemCallError
         return nil
       end
     end

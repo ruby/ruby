@@ -60,10 +60,16 @@ Multiple sources and destinations may be specified.
       if get_from.scheme.nil? then
         get_from = get_from.to_s
       elsif get_from.scheme == 'file' then
-        get_from = get_from.to_s[5..-1]
+        # check if specified URI contains a drive letter (file:/D:/Temp)
+        get_from = get_from.to_s
+        get_from = if get_from =~ /^file:.*[a-z]:/i then
+                     get_from[6..-1]
+                   else
+                     get_from[5..-1]
+                   end
       end
 
-      open File.join(get_from, "Marshal.#{Gem.marshal_version}.Z"), "rb" do |y|
+      open File.join(get_from.to_s, "Marshal.#{Gem.marshal_version}.Z"), "rb" do |y|
         sourceindex_data = Zlib::Inflate.inflate y.read
         open File.join(save_to, "Marshal.#{Gem.marshal_version}"), "wb" do |out|
           out.write sourceindex_data

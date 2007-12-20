@@ -4,17 +4,18 @@
 # See LICENSE.txt for permissions.
 #++
 
-require 'time'
 require 'rubygems'
 require 'rubygems/version'
 require 'rubygems/platform'
 
 # :stopdoc:
 # Time::today has been deprecated in 0.9.5 and will be removed.
-def Time.today
-  t = Time.now
-  t - ((t.to_i + t.gmt_offset) % 86400)
-end unless defined? Time.today
+if RUBY_VERSION < '1.9' then
+  def Time.today
+    t = Time.now
+    t - ((t.to_i + t.gmt_offset) % 86400)
+  end unless defined? Time.today
+end
 # :startdoc:
 
 module Gem
@@ -239,7 +240,7 @@ module Gem
         @specification_version,
         @name,
         @version,
-        (Time === @date ? @date : Time.parse(@date.to_s)),
+        (Time === @date ? @date : (require 'time'; Time.parse(@date.to_s))),
         @summary,
         @required_ruby_version,
         @required_rubygems_version,
@@ -293,14 +294,9 @@ module Gem
       spec
     end
 
-    def warn_deprecated(old, new)
-      # How (if at all) to implement this?  We only want to warn when
-      # a gem is being built, I should think.
-    end
-    
     # REQUIRED gemspec attributes ------------------------------------
     
-    required_attribute :rubygems_version, RubyGemsVersion
+    required_attribute :rubygems_version, Gem::RubyGemsVersion
     required_attribute :specification_version, CURRENT_SPECIFICATION_VERSION
     required_attribute :name
     required_attribute :version
@@ -349,12 +345,12 @@ module Gem
     # DEPRECATED gemspec attributes ----------------------------------
     
     def test_suite_file
-      warn_deprecated(:test_suite_file, :test_files)
+      warn 'test_suite_file deprecated, use test_files'
       test_files.first
     end
 
     def test_suite_file=(val)
-      warn_deprecated(:test_suite_file, :test_files)
+      warn 'test_suite_file= deprecated, use test_files='
       @test_files = [] unless defined? @test_files
       @test_files << val
     end
@@ -386,6 +382,7 @@ module Gem
       case platform
       when Gem::Platform::CURRENT then
         @new_platform = Gem::Platform.local
+        @original_platform = @new_platform.to_s
 
       when Gem::Platform then
         @new_platform = platform
@@ -393,14 +390,14 @@ module Gem
       # legacy constants
       when nil, Gem::Platform::RUBY then
         @new_platform = Gem::Platform::RUBY
-      when Gem::Platform::WIN32 then
-        @new_platform = Gem::Platform::MSWIN32
-      when Gem::Platform::LINUX_586 then
-        @new_platform = Gem::Platform::X86_LINUX
-      when Gem::Platform::DARWIN then
-        @new_platform = Gem::Platform::PPC_DARWIN
+      when 'mswin32' then # was Gem::Platform::WIN32
+        @new_platform = Gem::Platform.new 'x86-mswin32'
+      when 'i586-linux' then # was Gem::Platform::LINUX_586
+        @new_platform = Gem::Platform.new 'x86-linux'
+      when 'powerpc-darwin' then # was Gem::Platform::DARWIN
+        @new_platform = Gem::Platform.new 'ppc-darwin'
       else
-        @new_platform = platform
+        @new_platform = Gem::Platform.new platform
       end
 
       @platform = @new_platform.to_s
@@ -422,11 +419,16 @@ module Gem
       # way to do it.
       case date
       when String then
-        @date = Time.parse date
+        @date = if /\A(\d{4})-(\d{2})-(\d{2})\Z/ =~ date then
+                  Time.local($1.to_i, $2.to_i, $3.to_i)
+                else
+                  require 'time'
+                  Time.parse date
+                end
       when Time then
-        @date = Time.parse date.strftime("%Y-%m-%d")
+        @date = Time.local(date.year, date.month, date.day)
       when Date then
-        @date = Time.parse date.to_s
+        @date = Time.local(date.year, date.month, date.day)
       else
         @date = TODAY
       end
@@ -751,7 +753,10 @@ module Gem
         out.map taguri, to_yaml_style do |map|
           map.add 'name', @name
           map.add 'version', @version
-          platform = if String === @original_platform then
+          platform = case @original_platform
+                     when nil, '' then
+                       'ruby'
+                     when String then
                        @original_platform
                      else
                        @original_platform.to_s
@@ -801,13 +806,14 @@ module Gem
         :version,
       ]
 
-      attributes = @@attributes.sort_by { |name,| name.to_s }
+      attributes = @@attributes.sort_by { |attr_name,| attr_name.to_s }
 
-      attributes.each do |name, default|
-        next if handled.include? name
-        current_value = self.send(name)
-        if current_value != default or self.class.required_attribute? name then
-          result << "  s.#{name} = #{ruby_code current_value}"
+      attributes.each do |attr_name, default|
+        next if handled.include? attr_name
+        current_value = self.send(attr_name)
+        if current_value != default or
+           self.class.required_attribute? attr_name then
+          result << "  s.#{attr_name} = #{ruby_code current_value}"
         end
       end
 
@@ -832,6 +838,8 @@ module Gem
     # Raises InvalidSpecificationException if the spec does not pass
     # the checks..
     def validate
+      extend Gem::UserInteraction
+
       normalize
 
       if rubygems_version != RubyGemsVersion then
@@ -856,6 +864,31 @@ module Gem
       else
         raise Gem::InvalidSpecificationException,
               "invalid platform #{platform.inspect}, see Gem::Platform"
+      end
+
+      unless Array === authors and
+             authors.all? { |author| String === author } then
+        raise Gem::InvalidSpecificationException,
+              'authors must be Array of Strings'
+      end
+
+      # Warnings
+
+      %w[author email homepage rubyforge_project summary].each do |attribute|
+        value = self.send attribute
+        alert_warning "no #{attribute} specified" if value.nil? or value.empty?
+      end
+
+      alert_warning "RDoc will not be generated (has_rdoc == false)" unless
+        has_rdoc
+
+      alert_warning "deprecated autorequire specified" if autorequire
+
+      executables.each do |executable|
+        executable_path = File.join bindir, executable
+        shebang = File.read(executable_path, 2) == '#!'
+
+        alert_warning "#{executable_path} is missing #! line" unless shebang
       end
 
       true
