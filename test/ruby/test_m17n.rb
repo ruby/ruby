@@ -1534,6 +1534,11 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_squeeze
+    s = "\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
+    assert_equal("\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp"), s.squeeze)
+  end
+
   def test_str_strip
     STRINGS.each {|s|
       if !s.valid_encoding?
@@ -1627,14 +1632,55 @@ class TestM17N < Test::Unit::TestCase
         encs << s3.encoding if !is_ascii_only?(s3)
         encs.uniq!
         #p e, encs
-        assert(1 < encs.length)
+        assert(1 < encs.length, "#{encdump s1}.tr(#{encdump s2}, #{encdump s3})")
       end
     }
   end
 
-  def test_squeeze
-    s = "\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
-    assert_equal("\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp"), s.squeeze)
+  def test_tr_s
+    combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
+      begin
+        #puts "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})"
+        t = s1.tr_s(s2, s3)
+      rescue ArgumentError
+        e = $!
+      end
+      if e
+        encs = []
+        encs << s1.encoding if !is_ascii_only?(s1)
+        encs << s2.encoding if !is_ascii_only?(s2)
+        encs << s3.encoding if !is_ascii_only?(s3)
+        encs.uniq!
+        #p e, encs
+        assert(1 < encs.length, "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})")
+      end
+    }
+  end
+
+  def test_str_upcase
+    STRINGS.each {|s|
+      begin
+        t1 = s.upcase
+      rescue ArgumentError
+        assert(!s.valid_encoding?)
+        next
+      end
+      assert(t1.valid_encoding?) if s.valid_encoding?
+      assert(t1.casecmp(s))
+      t2 = s.dup
+      t2.upcase!
+      assert_equal(t1, t2)
+    }
+  end
+
+  def test_str_succ
+    s0 = e("\xA1\xA1")
+    s = s0.dup
+    n = 1000
+    n.times {
+      s.succ!
+    }
+    assert_operator(s.length, :<, s0.length + Math.log2(n) + 1)
   end
 
   def test_sub
