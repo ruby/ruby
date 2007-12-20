@@ -1643,7 +1643,7 @@ class TestM17N < Test::Unit::TestCase
         #puts "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})"
         t = s1.tr_s(s2, s3)
       rescue ArgumentError
-        e = $!
+        e = $! unless /mbstring sequence/ =~ $!.message
       end
       if e
         encs = []
@@ -1651,7 +1651,7 @@ class TestM17N < Test::Unit::TestCase
         encs << s2.encoding if !is_ascii_only?(s2)
         encs << s3.encoding if !is_ascii_only?(s3)
         encs.uniq!
-        #p e, encs
+        #p e, encs, 
         assert(1 < encs.length, "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})")
       end
     }

@@ -3453,7 +3453,7 @@ static VALUE
 tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 {
     SIGNED_VALUE trans[256];
-    rb_encoding *enc;
+    rb_encoding *enc, *e1, *e2;
     struct tr trsrc, trrepl;
     int cflag = 0;
     int c, last = 0, modify = 0, i;
@@ -3471,9 +3471,13 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     if (RSTRING_LEN(repl) == 0) {
 	return rb_str_delete_bang(1, &src, str);
     }
-    enc = rb_enc_check(str, src);
-    if (rb_enc_check(str, repl) != enc) {
-	rb_raise(rb_eArgError, "character encodings differ");
+    e1 = rb_enc_check(str, src);
+    e2 = rb_enc_check(str, repl);
+    if (e1 == e2) {
+	enc = e1;
+    }
+    else {
+	enc = rb_enc_check(src, repl);
     }
     trrepl.p = RSTRING_PTR(repl);
     trrepl.pend = trrepl.p + RSTRING_LEN(repl);
