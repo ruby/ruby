@@ -5069,11 +5069,12 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	if (rp) {
 	    list = RARRAY_PTR(res)[0];
 	    for (i=0; i< RARRAY_LEN(read); i++) {
-                VALUE io = rb_io_get_io(rb_ary_entry(read, i));
+                VALUE obj = rb_ary_entry(read, i);
+                VALUE io = rb_io_get_io(obj);
 		GetOpenFile(io, fptr);
 		if (rb_fd_isset(fptr->fd, &fds[0]) ||
 		    rb_fd_isset(fptr->fd, &fds[3])) {
-		    rb_ary_push(list, io);
+		    rb_ary_push(list, obj);
 		}
 	    }
 	}
@@ -5081,11 +5082,12 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	if (wp) {
 	    list = RARRAY_PTR(res)[1];
 	    for (i=0; i< RARRAY_LEN(write); i++) {
-                VALUE io = rb_io_get_io(rb_ary_entry(write, i));
+                VALUE obj = rb_ary_entry(write, i);
+                VALUE io = rb_io_get_io(obj);
                 VALUE write_io = GetWriteIO(io);
 		GetOpenFile(write_io, fptr);
 		if (rb_fd_isset(fptr->fd, &fds[1])) {
-		    rb_ary_push(list, io);
+		    rb_ary_push(list, obj);
 		}
 	    }
 	}
@@ -5093,16 +5095,17 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	if (ep) {
 	    list = RARRAY_PTR(res)[2];
 	    for (i=0; i< RARRAY_LEN(except); i++) {
-                VALUE io = rb_io_get_io(rb_ary_entry(write, i));
+                VALUE obj = rb_ary_entry(write, i);
+                VALUE io = rb_io_get_io(obj);
                 VALUE write_io = GetWriteIO(io);
 		GetOpenFile(io, fptr);
 		if (rb_fd_isset(fptr->fd, &fds[2])) {
-		    rb_ary_push(list, io);
+		    rb_ary_push(list, obj);
 		}
                 else if (io != write_io) {
                     GetOpenFile(write_io, fptr);
                     if (rb_fd_isset(fptr->fd, &fds[2])) {
-                        rb_ary_push(list, io);
+                        rb_ary_push(list, obj);
                     }
                 }
 	    }

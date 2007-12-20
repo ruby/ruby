@@ -1,3 +1,7 @@
+Fri Dec 21 01:11:37 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* io.c (select_internal): should return original value.
+
 Fri Dec 21 00:26:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (tr_trans): wrong encoding check for tree strings.
