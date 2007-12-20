@@ -644,7 +644,7 @@ assert_equal 'true', %q{
 assert_normal_exit %q{
   eval "while true; return; end rescue p $!"
 }, '[ruby-dev:31663]'
-assert_equal :ok, %q{
+assert_equal '1', %q{
   def bar
     raise
   end

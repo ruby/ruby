@@ -1,3 +1,12 @@
+Thu Dec 20 09:59:27 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* insnhelper.ci (vm_expandarray): fix sp increase place.
+	  a patch from Yusuke ENDOH <mame AT tsg.ne.jp> in [ruby-dev:32581].
+
+	* bootstraptest/test_massign.rb: add a test for above.
+
+	* bootstraptest/test_syntax.rb: fix last committed test.
+
 Thu Dec 20 09:47:58 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_syntax.rb: add a test.

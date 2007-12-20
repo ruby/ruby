@@ -1340,11 +1340,11 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
     volatile VALUE tmp_ary;
     int len;
 
-    cfp->sp += space_size;
-
     if (TYPE(ary) != T_ARRAY) {
 	ary = rb_ary_to_ary(ary);
     }
+
+    cfp->sp += space_size;
 
     tmp_ary = ary;
     ptr = RARRAY_PTR(ary);

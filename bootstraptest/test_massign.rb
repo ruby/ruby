@@ -159,3 +159,18 @@ assert_equal 'ok', %q{
         ary = [0, 1, 2, 3, 4, 5, 6]
         a, b, *c, d, e, f = *ary; [a, b, c, d, e, f]
       }
+
+
+#
+assert_equal 'ok', %q{
+  a,s=[],"aaa"
+  300.times { a<<s; s=s.succ }
+  eval <<-END__
+  GC.stress=true
+  Fiber.new do
+    #{ a.join(",") },*zzz=1
+  end.resume
+  END__
+  :ok
+}, '[ruby-dev:32581]'
+
