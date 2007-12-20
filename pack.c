@@ -399,8 +399,8 @@ static unsigned long utf8_to_uv(const char*,long*);
  *       a     |  arbitrary binary string (null padded, count is width)
  *       B     |  Bit string (descending bit order)
  *       b     |  Bit string (ascending bit order)
- *       C     |  Unsigned char
- *       c     |  Char
+ *       C     |  Unsigned byte (C unsigned char)
+ *       c     |  Byte (C char)
  *       D, d  |  Double-precision float, native format
  *       E     |  Double-precision float, little-endian byte order
  *       e     |  Single-precision float, little-endian byte order
@@ -1185,9 +1185,9 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *     -------+---------+-----------------------------------------
  *       b    | String  | extract bits from each character (lsb first)
  *     -------+---------+-----------------------------------------
- *       C    | Fixnum  | extract a character as an unsigned integer
+ *       C    | Fixnum  | extract a byte (C char) as an unsigned integer
  *     -------+---------+-----------------------------------------
- *       c    | Fixnum  | extract a character as an integer
+ *       c    | Fixnum  | extract a byte (C char) as an integer
  *     -------+---------+-----------------------------------------
  *       d,D  | Float   | treat sizeof(double) characters as
  *            |         | a native double

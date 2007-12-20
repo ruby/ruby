@@ -1,3 +1,8 @@
+Thu Dec 20 17:15:15 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* pack.c: Slight change to documentation ('character' ->
+	  'byte (C char)'). [ruby-core:13126], see also [ruby-core:13998].
+
 Thu Dec 20 17:07:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (enc.mk): depends on rbconfig.rb.
