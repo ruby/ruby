@@ -644,5 +644,21 @@ assert_equal 'true', %q{
 assert_normal_exit %q{
   eval "while true; return; end rescue p $!"
 }, '[ruby-dev:31663]'
+assert_equal :ok, %q{
+  def bar
+    raise
+  end
 
+  def foo
+    1.times{
+      begin
+        return bar
+      rescue
+        :ok
+      end
+    }
+  end
+
+  foo
+}
 
