@@ -901,7 +901,7 @@ int main()
 AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
 
 if test x"$enable_pthread" = xyes; then
-    for pthread_lib in pthread pthreads c c_r; do
+    for pthread_lib in thr pthread pthreads c c_r; do
  	AC_CHECK_LIB($pthread_lib, pthread_kill,
 		     rb_with_pthread=yes, rb_with_pthread=no)
 	if test "$rb_with_pthread" = "yes"; then break; fi

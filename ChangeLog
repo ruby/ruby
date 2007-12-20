@@ -1,3 +1,7 @@
+Thu Dec 20 18:33:54 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* configure.in: add libthr for FreeBSD.
+
 Thu Dec 20 18:17:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk, *.ci: renamed to *.c.
