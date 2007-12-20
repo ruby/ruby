@@ -159,13 +159,10 @@ rb_catch_obj(VALUE tag, VALUE (*func)(), VALUE data)
 
 /* exit */
 
-static void call_end_proc _((VALUE data));
-
-static void
-call_end_proc(VALUE data)
+void
+rb_call_end_proc(VALUE data)
 {
-    /* TODO: fix me */
-    proc_invoke(data, rb_ary_new2(0), Qundef, 0);
+    rb_proc_call(data, rb_ary_new());
 }
 
 /*
@@ -198,7 +195,7 @@ rb_f_at_exit(void)
 	rb_raise(rb_eArgError, "called without a block");
     }
     proc = rb_block_proc();
-    rb_set_end_proc(call_end_proc, proc);
+    rb_set_end_proc(rb_call_end_proc, proc);
     return proc;
 }
 

@@ -472,3 +472,28 @@ assert_equal '[nil, []]', %q{
   GC.stress=false
   r.inspect             
 }, '[ruby-dev:32567]'
+
+assert_equal NilClass.to_s, %q{
+  r = false; 1.times{|&b| r = b}; r.class
+}
+
+assert_equal 'ok', %q{
+  class C
+    define_method(:foo) do |arg, &block|
+      if block then block.call else arg end
+    end
+  end
+  C.new.foo("ng") {"ok"}
+}, '[ruby-talk:266422]'
+
+assert_equal 'ok', %q{
+  STDERR.reopen(STDOUT)
+  class C
+    define_method(:foo) do |&block|
+      block.call if block
+    end
+    result = "ng"
+    new.foo() {result = "ok"}
+    result
+  end
+}

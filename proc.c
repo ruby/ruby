@@ -352,17 +352,6 @@ proc_lambda(void)
     return rb_block_lambda();
 }
 
-VALUE
-proc_invoke(VALUE self, VALUE args, VALUE alt_self, VALUE alt_class)
-{
-    rb_proc_t *proc;
-    GetProcPtr(self, proc);
-
-    /* ignore self and klass */
-    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			  RARRAY_LEN(args), RARRAY_PTR(args));
-}
-
 /* CHECKME: are the argument checking semantics correct? */
 
 /*
@@ -401,23 +390,32 @@ static VALUE
 proc_call(int argc, VALUE *argv, VALUE procval)
 {
     rb_proc_t *proc;
+    rb_block_t *blockptr = 0;
     GetProcPtr(procval, proc);
 
-    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self, argc, argv);
-}
+    if (BUILTIN_TYPE(proc->block.iseq) != T_NODE &&
+	proc->block.iseq->arg_block != -1) {
 
-static VALUE
-proc_yield(int argc, VALUE *argv, VALUE procval)
-{
-    rb_proc_t *proc;
-    GetProcPtr(procval, proc);
-    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self, argc, argv);
+	if (rb_block_given_p()) {
+	    rb_proc_t *proc;
+	    VALUE procval;
+	    procval = rb_block_proc();
+	    GetProcPtr(procval, proc);
+	    blockptr = &proc->block;
+	}
+    }
+
+    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+			  argc, argv, blockptr);
 }
 
 VALUE
-rb_proc_call(VALUE proc, VALUE args)
+rb_proc_call(VALUE self, VALUE args)
 {
-    return proc_invoke(proc, args, Qundef, 0);
+    rb_proc_t *proc;
+    GetProcPtr(self, proc);
+    return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
+			  RARRAY_LEN(args), RARRAY_PTR(args), 0);
 }
 
 /*
@@ -1489,7 +1487,7 @@ Init_Proc(void)
     rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, -1);
     rb_define_method(rb_cProc, "call", proc_call, -1);
     rb_define_method(rb_cProc, "[]", proc_call, -1);
-    rb_define_method(rb_cProc, "yield", proc_yield, -1);
+    rb_define_method(rb_cProc, "yield", proc_call, -1);
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "clone", proc_clone, 0);

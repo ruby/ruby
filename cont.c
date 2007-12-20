@@ -596,7 +596,7 @@ rb_fiber_start(void)
 	th->local_lfp = proc->block.lfp;
 	th->local_svar = Qnil;
 
-	cont->value = vm_invoke_proc(th, proc, proc->block.self, 1, &args);
+	cont->value = vm_invoke_proc(th, proc, proc->block.self, 1, &args, 0);
     }
     TH_POP_TAG();
 

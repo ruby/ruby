@@ -391,7 +391,7 @@ vm_cfunc_flags(rb_control_frame_t *cfp)
 
 static inline VALUE
 vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
-		VALUE klass, int argc, VALUE *argv)
+		VALUE klass, int argc, VALUE *argv, rb_block_t *blockptr)
 {
     rb_control_frame_t *cfp = th->cfp;
     rb_proc_t *proc;
@@ -402,7 +402,7 @@ vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
     (cfp-2)->method_class = klass;
 
     GetProcPtr(procval, proc);
-    val = vm_invoke_proc(th, proc, recv, argc, argv);
+    val = vm_invoke_proc(th, proc, recv, argc, argv, blockptr);
     return val;
 }
 
@@ -516,7 +516,7 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	      }
 	      case NODE_BMETHOD:{
 		  VALUE *argv = cfp->sp - num;
-		  val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv);
+		  val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv, blockptr);
 		  cfp->sp += - num - 1;
 		  break;
 	      }
@@ -1390,12 +1390,6 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
 	    }
 	}
     }
-}
-
-static void
-call_end_proc(VALUE data)
-{
-    rb_proc_call(data, rb_ary_new2(0));
 }
 
 static inline int

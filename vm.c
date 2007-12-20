@@ -465,8 +465,7 @@ vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
       }
       case NODE_ATTRSET:{
 	if (argc != 1) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)",
-		     argc);
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
 	}
 	val = rb_ivar_set(recv, body->nd_vid, argv[0]);
 	break;
@@ -481,7 +480,7 @@ vm_call0(rb_thread_t *th, VALUE klass, VALUE recv,
       }
       case NODE_BMETHOD:{
 	val = vm_call_bmethod(th, id, body->nd_cval,
-			      recv, klass, argc, (VALUE *)argv);
+			      recv, klass, argc, (VALUE *)argv, blockptr);
 	break;
       }
       default:
@@ -539,15 +538,16 @@ rb_call_super(int argc, const VALUE *argv)
 /* C -> Ruby: block */
 
 static VALUE
-invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *argv)
+invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self,
+	     int argc, VALUE *argv, rb_block_t *blockptr)
 {
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
 	rb_iseq_t *iseq = block->iseq;
 	rb_control_frame_t *cfp = th->cfp;
+	int i, opt_pc;
 	const int arg_size = iseq->arg_size;
 	const int type = block_proc_is_lambda(block->proc) ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
-	int i, opt_pc;
 
 	rb_vm_set_finish_env(th);
 
@@ -557,22 +557,8 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	    cfp->sp[i] = argv[i];
 	}
 
-	if (iseq->arg_block == -1) {
-	    opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, 0,
-					 type == FRAME_MAGIC_LAMBDA);
-	}
-	else {
-	    rb_block_t *blockptr = 0;
-	    if (rb_block_given_p()) {
-		rb_proc_t *proc;
-		VALUE procval;
-		procval = rb_block_proc();
-		GetProcPtr(procval, proc);
-		blockptr = &proc->block;
-	    }
-	    opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp,
-					 blockptr, type == FRAME_MAGIC_LAMBDA);
-	}
+	opt_pc = vm_yield_setup_args(th, iseq, argc, cfp->sp, blockptr,
+				     type == FRAME_MAGIC_LAMBDA);
 
 	vm_push_frame(th, iseq, type,
 		      self, GC_GUARDED_PTR(block->dfp),
@@ -587,7 +573,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self, int argc, VALUE *ar
 	    argc = 1;
 	    argv = &args;
 	}
-	val = vm_yield_with_cfunc(th, block, block->self, argc, argv);
+	val = vm_yield_with_cfunc(th, block, self, argc, argv);
     }
     return val;
 }
@@ -601,12 +587,12 @@ vm_yield(rb_thread_t *th, int argc, VALUE *argv)
 	vm_localjump_error("no block given", Qnil, 0);
     }
 
-    return invoke_block(th, block, block->self, argc, argv);
+    return invoke_block(th, block, block->self, argc, argv, 0);
 }
 
 VALUE
 vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
-	       VALUE self, int argc, VALUE *argv)
+	       VALUE self, int argc, VALUE *argv, rb_block_t *blockptr)
 {
     VALUE val = Qundef;
     int state;
@@ -618,7 +604,7 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	th->safe_level = proc->safe_level;
-	val = invoke_block(th, &proc->block, self, argc, argv);
+	val = invoke_block(th, &proc->block, self, argc, argv, blockptr);
     }
     TH_POP_TAG();
 
