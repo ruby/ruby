@@ -18,7 +18,7 @@ require "monitor"
 require "digest/md5"
 require "strscan"
 begin
-  require "openssl"
+  require "openssl/ssl"
 rescue LoadError
 end
 
@@ -330,10 +330,16 @@ module Net
     end
 
     # Sends a STARTTLS command to start TLS session.
-    def starttls(certs = nil, verify = false)
+    def starttls(options = {}, verify = false)
       send_command("STARTTLS") do |resp|
         if resp.kind_of?(TaggedResponse) && resp.name == "OK"
-          start_tls_session(certs, verify)
+          begin
+            # for backward compatibility
+            certs = options.to_str
+            options = create_ssl_params(certs, verify)
+          rescue NoMethodError
+          end
+          start_tls_session(options)
         end
       end
     end
@@ -865,16 +871,30 @@ module Net
 
     CRLF = "\r\n"      # :nodoc:
     PORT = 143         # :nodoc:
+    SSL_PORT = 993   # :nodoc:
 
     @@debug = false
     @@authenticators = {}
 
     # Creates a new Net::IMAP object and connects it to the specified
-    # +port+ (143 by default) on the named +host+.  If +usessl+ is true, 
-    # then an attempt will
-    # be made to use SSL (now TLS) to connect to the server.  For this
-    # to work OpenSSL [OSSL] and the Ruby OpenSSL [RSSL]
-    # extensions need to be installed.  The +certs+ parameter indicates
+    # port (143 by default) on the named +host+.
+    #
+    # If +port_or_options+ responds to to_int, it is used as port number.
+    # Otherwise +port_or_options+ is an option hash.
+    #
+    # The available options are:
+    #
+    # :port:: port number (default value is 143 for imap, or 993 for imaps)
+    # :ssl:: if port_or_options[:ssl] is true, then an attempt will be made
+    #        to use SSL (now TLS) to connect to the server.  For this to work
+    #        OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
+    #        be installed.
+    #        if port_or_options[:ssl] is a hash, it's passed to 
+    #        OpenSSL::SSL::SSLContext.build as parameters.
+    #
+    # +usessl+, +certs+, and +verify+ are for backward compatibility.
+    # If +usessl+ is true, then an attempt will be made to use SSL (now TLS)
+    # to connect to the server.  The +certs+ parameter indicates
     # the path or file containing the CA cert of the server, and the
     # +verify+ parameter is for the OpenSSL verification callback.
     #
@@ -888,16 +908,29 @@ module Net
     # SocketError:: hostname not known or other socket error.
     # Net::IMAP::ByeResponseError:: we connected to the host, but they 
     #                               immediately said goodbye to us.
-    def initialize(host, port = PORT, usessl = false, certs = nil, verify = false)
+    def initialize(host, port_or_options = {},
+                   usessl = false, certs = nil, verify = false)
       super()
       @host = host
-      @port = port
+      begin
+        # for backward compatibility
+        port = port_or_options.to_int
+        options = {
+          :port => port
+        }
+        if usessl
+          options[:ssl] = create_ssl_params(certs, verify)
+        end
+      rescue NoMethodError
+        options = port_or_options
+      end
+      @port = options[:port] || (options[:ssl] ? SSL_PORT : PORT)
       @tag_prefix = "RUBY"
       @tagno = 0
       @parser = ResponseParser.new
-      @sock = TCPSocket.open(host, port)
-      if usessl
-        start_tls_session(certs, verify)
+      @sock = TCPSocket.open(@host, @port)
+      if options[:ssl]
+        start_tls_session(options[:ssl])
         @usessl = true
       else
         @usessl = false
@@ -1207,24 +1240,45 @@ module Net
       end
     end
 
-    def start_tls_session(certs, verify)
+    def create_ssl_params(certs = nil, verify = false)
+      params = {}
+      if certs
+        if File.file?(certs)
+          params[:ca_file] = certs
+        elsif File.directory?(certs)
+          params[:ca_path] = certs
+        end
+      end
+      if verify
+        params[:verify_mode] = VERIFY_PEER
+      else
+        params[:verify_mode] = VERIFY_NONE
+      end
+      return params
+    end
+
+    def start_tls_session(params = {})
       unless defined?(OpenSSL)
         raise "SSL extension not installed"
       end
       if @sock.kind_of?(OpenSSL::SSL::SSLSocket)
         raise RuntimeError, "already using SSL"
       end
-      context = SSLContext::new()
-      context.ca_file = certs if certs && FileTest::file?(certs)
-      context.ca_path = certs if certs && FileTest::directory?(certs)
-      context.verify_mode = VERIFY_PEER if verify
+      begin
+        params = params.to_hash
+      rescue NoMethodError
+        params = {}
+      end
+      context = SSLContext.build(params)
       if defined?(VerifyCallbackProc)
         context.verify_callback = VerifyCallbackProc 
       end
       @sock = SSLSocket.new(@sock, context)
       @sock.sync_close = true
       @sock.connect
-      @sock.post_connection_check(@host) if verify
+      if context.verify_mode != VERIFY_NONE
+        @sock.post_connection_check(@host)
+      end
     end
 
     class RawData # :nodoc:
@@ -3298,9 +3352,8 @@ EOF
     usage
     exit(1)
   end
-  $port ||= $ssl ? 993 : 143
     
-  imap = Net::IMAP.new($host, $port, $ssl)
+  imap = Net::IMAP.new($host, :port => $port, :ssl => $ssl)
   begin
     password = get_password
     imap.authenticate($auth, $user, password)

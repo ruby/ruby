@@ -1,3 +1,8 @@
+Thu Dec 20 19:29:07 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (initialize): the second argument is an option
+	  hash now.  use SSLContext.build to specify SSL parameters.
+
 Thu Dec 20 19:11:56 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_thread_apply_priority): check
