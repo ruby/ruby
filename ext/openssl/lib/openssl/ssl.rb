@@ -37,6 +37,9 @@ module OpenSSL
             unless ctx.ca_file or ctx.ca_path or
                      ctx.cert_store or ctx.verify_callback
               ctx.cert_store = OpenSSL::X509::Store.new
+              if defined?(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
+                ctx.cert_store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+              end
               ctx.cert_store.set_default_paths
             end
           end

@@ -1,3 +1,8 @@
+Fri Dec 21 01:21:49 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLContext.build):
+	  enable CRL checking by default.
+
 Fri Dec 21 01:20:56 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/net/http.rb (Net::HTTP#connect): use
