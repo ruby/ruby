@@ -1,3 +1,7 @@
+Thu Dec 20 15:47:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/iso_8859_{1..16}.c: renamed.
+
 Thu Dec 20 09:59:27 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insnhelper.ci (vm_expandarray): fix sp increase place.
