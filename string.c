@@ -1457,6 +1457,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     s = RSTRING_PTR(str);
     if (offset) {
 	offset = str_offset(s, RSTRING_END(str), offset, enc, IS_7BIT(str));
+	s += offset;
     }
     if (slen == 0) return offset;
     /* need proceed one character at a time */
