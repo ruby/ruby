@@ -1,3 +1,13 @@
+Fri Dec 21 01:20:56 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/net/http.rb (Net::HTTP#connect): use
+	  OpenSSL::SSL::SSLContext.build instead of SSLContext.new (default
+	  verify mode is now OpenSSL::SSL::VERIFY_PEER).
+
+	* lib/net/https.rb: SSL parameters are defined by attr_accessor.
+
+	* test/net/http/test_https.rb: add test for HTTPS features.
+
 Fri Dec 21 01:11:37 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* io.c (select_internal): should return original value.

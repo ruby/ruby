@@ -1,4 +1,9 @@
 require 'webrick'
+begin
+  require "webrick/https"
+rescue LoadError
+  # SSL features cannot be tested
+end
 require 'webrick/httpservlet/abstract'
 
 module TestNetHTTPUtils
@@ -35,14 +40,22 @@ module TestNetHTTPUtils
   end
 
   def spawn_server
-    @server = WEBrick::HTTPServer.new(
+    server_config = {
       :BindAddress => config('host'),
       :Port => config('port'),
       :Logger => WEBrick::Log.new(NullWriter.new),
       :AccessLog => [],
       :ShutdownSocketWithoutClose => true,
-      :ServerType => Thread
-    )
+      :ServerType => Thread,
+    }
+    if defined?(OpenSSL) and config('ssl_enable')
+      server_config.update({
+        :SSLEnable      => true,
+        :SSLCertificate => config('ssl_certificate'),
+        :SSLPrivateKey  => config('ssl_private_key'),
+      })
+    end
+    @server = WEBrick::HTTPServer.new(server_config)
     @server.mount('/', Servlet)
     @server.start
     n_try_max = 5

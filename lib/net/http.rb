@@ -575,10 +575,13 @@ module Net   #:nodoc:
       s = timeout(@open_timeout) { TCPSocket.open(conn_address(), conn_port()) }
       D "opened"
       if use_ssl?
-        unless @ssl_context.verify_mode
-          warn "warning: peer certificate won't be verified in this SSL session"
-          @ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        ssl_parameters = Hash.new
+        SSL_ATTRIBUTES.each do |name|
+          if value = instance_variable_get("@#{name}")
+            ssl_parameters[name] = value
+          end
         end
+        @ssl_context = OpenSSL::SSL::SSLContext.build(ssl_parameters)
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
       end
