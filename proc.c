@@ -1459,6 +1459,40 @@ localjump_reason(VALUE exc)
     return rb_iv_get(exc, "@reason");
 }
 
+/*
+ *  call-seq:
+ *     prc.binding    => binding
+ *  
+ *  Returns the binding associated with <i>prc</i>. Note that
+ *  <code>Kernel#eval</code> accepts either a <code>Proc</code> or a
+ *  <code>Binding</code> object as its second parameter.
+ *     
+ *     def fred(param)
+ *       proc {}
+ *     end
+ *     
+ *     b = fred(99)
+ *     eval("param", b.binding)   #=> 99
+ *     eval("param", b)           #=> 99
+ */
+static VALUE
+proc_binding(VALUE self)
+{
+    rb_proc_t *proc;
+    VALUE bindval = binding_alloc(rb_cBinding);
+    rb_binding_t *bind;
+
+    GetProcPtr(self, proc);
+    GetBindingPtr(bindval, bind);
+
+    if (TYPE(proc->block.iseq) == T_NODE) {
+	rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
+    }
+
+    bind->env = proc->envval;
+    bind->cref_stack = proc->special_cref_stack;
+    return bindval;
+}
 
 /*
  *  <code>Proc</code> objects are blocks of code that have been bound to
@@ -1497,6 +1531,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_method(rb_cProc, "lambda?", proc_lambda_p, 0);
+    rb_define_method(rb_cProc, "binding", proc_binding, 0);
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);

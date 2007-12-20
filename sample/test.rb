@@ -2178,6 +2178,15 @@ end
 test_ok(File.expand_path(".", "//") == "//")
 test_ok(File.expand_path("sub", "//") == "//sub")
 
+# test_check "Proc#binding"
+ObjectSpace.each_object(Proc){|o|
+  begin
+    b = o.binding
+    eval 'self', b
+  rescue ArgumentError
+  end
+}
+
 test_check "gc"
 begin
   1.upto(10000) {
@@ -2209,6 +2218,7 @@ test_ok true   # reach here or dumps core
 ObjectSpace.each_object{|o|
   o.class.name
 }
+
 test_ok true   # reach here or dumps core
 
 if $failed > 0

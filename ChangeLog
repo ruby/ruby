@@ -1,3 +1,9 @@
+Thu Dec 20 17:18:38 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c: support Proc#binding.
+
+	* sample/test.rb: add a test.
+
 Thu Dec 20 17:15:15 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* pack.c: Slight change to documentation ('character' ->
