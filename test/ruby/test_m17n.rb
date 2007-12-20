@@ -508,11 +508,12 @@ class TestM17N < Test::Unit::TestCase
   STRINGS = [
     a(""), e(""), s(""), u(""),
     a("a"), e("a"), s("a"), u("a"),
+    a("."), e("."), s("."), u("."),
 
     # single character
     a("\x80"),
     e("\xa1\xa1"), e("\x8e\xa1"), e("\x8f\xa1\xa1"),
-    s("\x81\x40"), e("\xa1"),
+    s("\x81\x40"), s("\xa1"),
     u("\xc2\x80"),
 
     # same byte sequence
@@ -522,9 +523,9 @@ class TestM17N < Test::Unit::TestCase
     s("\x81a"), # mutibyte character which contains "a"
 
     # invalid
-    e("\xa1"),
-    s("\x81"),
-    u("\xc2"),
+    e("\xa1"), e("\x80"),
+    s("\x81"), s("\x80"),
+    u("\xc2"), u("\x80"),
   ]
 
   def combination(*args)
@@ -1374,6 +1375,142 @@ class TestM17N < Test::Unit::TestCase
       assert_equal(s.bytesize, t.bytesize)
       if s.valid_encoding?
         assert_equal(s, t.reverse)
+      end
+    }
+  end
+
+  def test_str_scan
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s2.valid_encoding?
+        assert_raise(RegexpError) { s1.scan(s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.scan(s2) }
+        next
+      end
+      r = s1.scan(s2)
+      r.each {|t|
+        assert_equal(s2, t)
+      }
+    }
+  end
+
+  def assert_same_result(expected_proc, actual_proc)
+    e = nil
+    begin
+      t = expected_proc.call
+    rescue
+      e = $!
+    end
+    if e
+      assert_raise(e.class) { actual_proc.call }
+    else
+      assert_equal(t, actual_proc.call)
+    end
+  end
+
+  def each_slice_call
+    combination(STRINGS, -2..2) {|s, nth|
+      yield s, nth
+    }
+    combination(STRINGS, -2..2, 0..2) {|s, nth, len|
+      yield s, nth, len
+    }
+    combination(STRINGS, STRINGS) {|s, substr|
+      yield s, substr
+    }
+    combination(STRINGS, -2..2, 0..2) {|s, first, last|
+      yield s, first..last
+      yield s, first...last
+    }
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s2.valid_encoding?
+        next
+      end
+      yield s1, Regexp.new(Regexp.escape(s2))
+    }
+    combination(STRINGS, STRINGS, 0..2) {|s1, s2, nth|
+      if !s2.valid_encoding?
+        next
+      end
+      yield s1, Regexp.new(Regexp.escape(s2)), nth
+    }
+  end
+
+  def test_str_slice
+    each_slice_call {|obj, *args|
+      assert_same_result(lambda { obj[*args] }, lambda { obj.slice(*args) })
+    }
+  end
+
+  def encdumpargs(args)
+    r = '('
+    args.each_with_index {|a, i|
+      r << ',' if 0 < i
+      if String === a
+        r << encdump(a)
+      else
+        r << a.inspect
+      end
+    }
+    r << ')'
+    r
+  end
+
+  def test_str_slice!
+    each_slice_call {|s, *args|
+      t = s.dup
+      begin
+        r = t.slice!(*args)
+      rescue
+        e = $!
+      end
+      if e
+        assert_raise(e.class) { s.slice(*args) }
+        next
+      end
+      if !r
+        assert_nil(s.slice(*args))
+        next
+      end
+      assert_equal(s.slice(*args), r)
+      assert_equal(s.bytesize, r.bytesize + t.bytesize)
+      if args.length == 1 && String === args[0]
+        assert_equal(args[0].encoding, r.encoding,
+                    "#{encdump s}.slice!#{encdumpargs args}.encoding")
+      else
+        assert_equal(s.encoding, r.encoding,
+                    "#{encdump s}.slice!#{encdumpargs args}.encoding")
+      end
+      if [s, *args].all? {|o| !(String === o) || o.valid_encoding? }
+        assert(r.valid_encoding?)
+        assert(t.valid_encoding?)
+        assert_equal(s.length, r.length + t.length)
+      end
+    }
+  end
+
+  def test_str_split
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s2.valid_encoding?
+        assert_raise(RegexpError) { s1.split(s2) }
+        next
+      end
+      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.split(s2) }
+        next
+      end
+      t = s1.split(s2)
+      t.each {|r|
+        assert(a(s1).include?(a(r)))
+        assert_equal(s1.encoding, r.encoding)
+      }
+      assert(a(s1).include?(t.map {|u| a(u) }.join(a(s2))))
+      if s1.valid_encoding? && s2.valid_encoding?
+        t.each {|r|
+          assert(r.valid_encoding?)
+        }
       end
     }
   end
