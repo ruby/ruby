@@ -1,3 +1,9 @@
+Thu Dec 20 09:42:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (big2str_orig): access beyond memory region cause crash
+	  on interrupt.  a patch from Yusuke ENDOH <mame AT tsg.ne.jp> in 
+	  [ruby-dev:32651].  [ruby-dev:32641]
+
 Thu Dec 20 09:06:54 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_index): wrong starting position.

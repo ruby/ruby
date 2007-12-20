@@ -837,12 +837,12 @@ big2str_orig(VALUE x, int base, char* ptr, long len, long hbase, int trim)
         while (k--) {
             ptr[--j] = ruby_digitmap[num % base];
             num /= base;
-            if (!trim && j <= 0) break;
+            if (j <= 0) break;
             if (trim && i == 0 && num == 0) break;
         }
     }
     if (trim) {
-        while (ptr[j] == '0') j++;
+        while (j < len && ptr[j] == '0') j++;
         MEMMOVE(ptr, ptr + j, char, len - j);
         len -= j;
     }
