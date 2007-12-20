@@ -334,6 +334,7 @@ native_thread_join(pthread_t th)
 static void
 native_thread_apply_priority(rb_thread_t *th)
 {
+#if defined(_POSIX_PRIORITY_SCHEDULING) && (_POSIX_PRIORITY_SCHEDULING > 0)
     struct sched_param sp;
     int policy;
     int priority = 0 - th->priority;
@@ -351,6 +352,9 @@ native_thread_apply_priority(rb_thread_t *th)
 
     sp.sched_priority = priority;
     pthread_setschedparam(th->thread_id, policy, &sp);
+#else
+    /* not touched */
+#endif
 }
 
 static void
