@@ -559,6 +559,9 @@ find_line_no(rb_iseq_t *iseq, unsigned long pos)
     if (entry) {
 	return entry->line_no;
     }
+    else {
+	return 0;
+    }
 }
 
 static unsigned short
