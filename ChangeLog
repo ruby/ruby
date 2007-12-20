@@ -1,3 +1,8 @@
+Fri Dec 21 08:07:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_next): should call next_init() if fiber
+	  is dead already. [ruby-dev:32459]
+
 Fri Dec 21 01:21:49 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLContext.build):

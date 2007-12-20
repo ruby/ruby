@@ -408,7 +408,7 @@ enumerator_next(VALUE obj)
     VALUE curr, v;
     curr = rb_fiber_current();
 
-    if (!e->fib) {
+    if (!e->fib || !rb_fiber_alive_p(e->fib)) {
 	next_init(obj, e);
     }
 
