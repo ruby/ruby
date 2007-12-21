@@ -1269,10 +1269,6 @@ end
 def depend_rules(depend)
   suffixes = []
   depout = []
-  depout << "$(OBJS): $(RUBY_EXTCONF_H)\n\n" if $extconf_h
-  unless suffixes.empty?
-     depout << ".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n"
-  end
   cont = implicit = nil
   impconv = proc do
     COMPILE_RULES.each {|rule| depout << (rule % implicit[0]) << implicit[1]}
@@ -1314,6 +1310,10 @@ def depend_rules(depend)
   elsif implicit
     impconv.call
   end
+  unless suffixes.empty?
+    depout.unshift(".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n")
+  end
+  depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n") if $extconf_h
   depout.flatten!
   depout
 end

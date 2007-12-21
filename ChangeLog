@@ -1,3 +1,7 @@
+Fri Dec 21 23:48:38 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (depend_rules): suffixes list broken. fixed.
+
 Fri Dec 21 20:18:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_mul0): remove unused variable.
