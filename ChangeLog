@@ -1,3 +1,9 @@
+Fri Dec 21 18:40:54 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* io.c: write() should be in blocking region.
+
+	* bootstraptest/test_io.rb, test_knownbug.rb: move a fixed test.
+
 Fri Dec 21 17:56:30 2007    <nagai@orca16.orcabay.ddo.jp>
 
 	* ext/tk/tcltklib.c: provisional support on Ruby-VM.

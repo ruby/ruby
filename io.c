@@ -455,6 +455,49 @@ wsplit_p(rb_io_t *fptr)
     return fptr->mode & FMODE_WSPLIT;
 }
 
+struct io_internal_struct {
+    int fd;
+    void *buf;
+    size_t capa;
+    int is_read;
+};
+
+static VALUE
+internal_io_func(void *ptr)
+{
+    struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
+    if (iis->is_read) {
+	return read(iis->fd, iis->buf, iis->capa);
+    }
+    else {
+	return write(iis->fd, iis->buf, iis->capa);
+    }
+}
+
+static int
+rb_read_internal(int fd, void *buf, size_t count)
+{
+    struct io_internal_struct iis;
+    iis.fd = fd;
+    iis.buf = buf;
+    iis.capa = count;
+    iis.is_read = 1;
+
+    return rb_thread_blocking_region(internal_io_func, &iis, RB_UBF_DFL, 0);
+}
+
+static int
+rb_write_internal(int fd, void *buf, size_t count)
+{
+    struct io_internal_struct iis;
+    iis.fd = fd;
+    iis.buf = buf;
+    iis.capa = count;
+    iis.is_read = 0;
+
+    return rb_thread_blocking_region(internal_io_func, &iis, RB_UBF_DFL, 0);
+}
+
 static int
 io_fflush(rb_io_t *fptr)
 {
@@ -479,9 +522,8 @@ io_fflush(rb_io_t *fptr)
         wsplit_p(fptr)) {
         l = PIPE_BUF;
     }
-    TRAP_BEG;
-    r = write(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
-    TRAP_END; /* xxx: signal handler may modify wbuf */
+    r = rb_write_internal(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
+    /* xxx: signal handler may modify wbuf */
     if (r == fptr->wbuf_len) {
         fptr->wbuf_off = 0;
         fptr->wbuf_len = 0;
@@ -627,9 +669,8 @@ io_fwrite(VALUE str, rb_io_t *fptr)
             wsplit_p(fptr)) {
             l = PIPE_BUF;
         }
-        TRAP_BEG;
-	r = write(fptr->fd, RSTRING_PTR(str)+offset, l);
-        TRAP_END; /* xxx: signal handler may modify given string. */
+	r = rb_write_internal(fptr->fd, RSTRING_PTR(str)+offset, l);
+	/* xxx: signal handler may modify given string. */
         if (r == n) return len;
         if (0 <= r) {
             offset += r;
@@ -903,30 +944,6 @@ rb_io_rewind(VALUE io)
     fptr->lineno = 0;
 
     return INT2FIX(0);
-}
-
-struct read_struct {
-    int fd;
-    void *buf;
-    size_t capa;
-};
-
-static VALUE
-read_func(void *ptr)
-{
-    struct read_struct *rs = (struct read_struct*)ptr;
-    return read(rs->fd, rs->buf, rs->capa);
-}
-
-
-static int
-rb_read_internal(int fd, void *buf, size_t count)
-{
-    struct read_struct rs;
-    rs.fd = fd;
-    rs.buf = buf;
-    rs.capa = count;
-    return rb_thread_blocking_region(read_func, &rs, RB_UBF_DFL, 0);
 }
 
 static int
