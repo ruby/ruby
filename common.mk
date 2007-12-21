@@ -60,7 +60,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		time.$(OBJEXT) \
 		transcode.$(OBJEXT) \
-		transcode_data_iso_8859.$(OBJEXT) \
+		transcode_data_one_byte.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
@@ -547,7 +547,7 @@ thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}signal.h {$(VPATH)}st.h {$(VPATH)}dln.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c {$(VPATH)}transcode_data.h {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h  {$(VPATH)}encoding.h
-transcode_data_iso_8859.$(OBJEXT): {$(VPATH)}transcode_data_iso_8859.c {$(VPATH)}transcode_data.h
+transcode_data_one_byte.$(OBJEXT): {$(VPATH)}transcode_data_one_byte.c {$(VPATH)}transcode_data.h
 cont.$(OBJEXT):  {$(VPATH)}cont.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}vm_core.h {$(VPATH)}id.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \

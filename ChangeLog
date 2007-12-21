@@ -1,3 +1,8 @@
+Fri Dec 21 16:25:25 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk, transcode_data_iso_8859.c: renamed to
+	  transcode_data_one_byte.c.
+
 Fri Dec 21 16:10:30 2007  Shigeo Kobayashi  <shigeo@tinyforest.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpMidRound): Round method bug
@@ -31,6 +36,7 @@ Fri Dec 21 15:31:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* encoding.c (rb_to_encoding): returns default encoding if no
 	  corresponding encoding found.
 
+>>>>>>> .r14414
 Fri Dec 21 15:24:22 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (initialize): accept service name.  changed
@@ -67,6 +73,7 @@ Fri Dec 21 13:54:05 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c: change "character encodings differ" error messages.
 
+>>>>>>> .r14409
 Fri Dec 21 13:46:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_register): set encoding constant.
