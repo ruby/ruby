@@ -943,7 +943,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     if (rb_reg_fixed_encoding_p(re)) {
         if (ENCODING_GET(re) != rb_enc_get_index(str) &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-            rb_raise(rb_eArgError, "fixed character encoding regexp with incompatible string");
+            rb_raise(rb_eArgError, "fixed character encoding regexp with incompatible string (encoding: %s)", rb_enc_name(rb_enc_get(str)));
         }
     }
     else if ((enc = rb_enc_get(str)) != 0 &&
