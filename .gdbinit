@@ -91,6 +91,9 @@ define rp
     output ((struct RRegexp*)$arg0)->str
     set print address on
     printf " len:%d ", ((struct RRegexp*)$arg0)->len
+    if $flags & RUBY_FL_USER6
+      printf "(none) "
+    end
     if $flags & RUBY_FL_USER5
       printf "(literal) "
     end

@@ -133,12 +133,14 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
 }
 
 #define REG_LITERAL FL_USER5
+#define REG_ENCODING_NONE FL_USER6
 
 #define KCODE_FIXED FL_USER4
 
 #define ARG_REG_OPTION_MASK \
     (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
 #define ARG_ENCODING_FIXED    16
+#define ARG_ENCODING_NONE     32
 
 #define ARG_KCODE_NONE	      0
 #define ARG_KCODE_EUC 	      1
@@ -186,8 +188,8 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
 
     switch (c) {
       case 'n':
-	*kcode = ARG_KCODE_NONE;
-	break;
+        *kcode = -1;
+        return (*option = ARG_ENCODING_NONE);
       case 'e':
 	*kcode = ARG_KCODE_EUC;
 	break;
@@ -946,9 +948,16 @@ rb_reg_prepare_re(VALUE re, VALUE str)
             rb_raise(rb_eArgError, "fixed character encoding regexp with incompatible string (encoding: %s)", rb_enc_name(rb_enc_get(str)));
         }
     }
-    else if ((enc = rb_enc_get(str)) != 0 &&
+    else {
+        if ((enc = rb_enc_get(str)) != 0 &&
 	     RREGEXP(re)->ptr->enc != enc) {
-	need_recompile = 1;
+            need_recompile = 1;
+        }
+        if ((RBASIC(re)->flags & REG_ENCODING_NONE) &&
+            rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+            rb_warn("none encoding regexp with non ASCII string (string encoding: %s)",
+                    rb_enc_name(rb_enc_get(str)));
+        }
     }
 
     if (need_recompile) {
@@ -1971,7 +1980,8 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
         return -1;
 
     if (fixed_enc) {
-	if (fixed_enc != enc && (options & ARG_ENCODING_FIXED)) {
+	if ((fixed_enc != enc && (options & ARG_ENCODING_FIXED)) ||
+            (fixed_enc != d_enc && (options & ARG_ENCODING_NONE))) {
 	    strcpy(err, "incompatible character encoding");
 	    return -1;
 	}
@@ -1983,11 +1993,15 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     else if (!(options & ARG_ENCODING_FIXED)) {
         enc = d_enc;
     }
-    
+
     rb_enc_associate((VALUE)re, enc);
     if ((options & ARG_ENCODING_FIXED) || fixed_enc) {
 	re->basic.flags |= KCODE_FIXED;
     }
+    if (options & ARG_ENCODING_NONE) {
+        re->basic.flags |= REG_ENCODING_NONE;
+    }
+    
     re->ptr = make_regexp(RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
             options & ARG_REG_OPTION_MASK, err);
     if (!re->ptr) return -1;
@@ -2536,6 +2550,7 @@ rb_reg_options(VALUE re)
     rb_reg_check(re);
     options = RREGEXP(re)->ptr->options & ARG_REG_OPTION_MASK;
     if (RBASIC(re)->flags & KCODE_FIXED) options |= ARG_ENCODING_FIXED;
+    if (RBASIC(re)->flags & REG_ENCODING_NONE) options |= ARG_ENCODING_NONE;
     return options;
 }
 

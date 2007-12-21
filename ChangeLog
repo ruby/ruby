@@ -1,3 +1,11 @@
+Sat Dec 22 01:35:41 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (ARG_ENCODING_NONE): defined for /.../n option.
+	  (REG_ENCODING_NONE): ditto.
+	  (rb_char_to_option_kcode): return ARG_ENCODING_NONE for n.
+	  (rb_reg_prepare_re): warn /ascii/n =~ "non-ascii".
+	  (rb_reg_initialize): set REG_ENCODING_NONE from ARG_ENCODING_NONE.
+
 Sat Dec 22 01:23:10 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/json/test_json_addition.rb (test_core): do not use Time.now
