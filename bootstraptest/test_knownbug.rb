@@ -3,13 +3,6 @@
 # So all tests will cause failure.
 #
 
-assert_equal 'ok', %q{
-  1.times{
-    eval("break")
-  }
-  :ok
-}, '[ruby-dev:32525]'
-
 assert_finish 2, %q{
   require "io/nonblock"
   r, w = IO.pipe

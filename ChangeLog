@@ -1,3 +1,9 @@
+Fri Dec 21 17:28:17 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/featurebug.rb: added.
+
+	* bootstraptest/test_knownbug.rb: move a feature bug.
+
 Fri Dec 21 17:25:22 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_atfork): fix to mark thread object.
