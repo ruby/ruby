@@ -330,7 +330,7 @@ module Net
     end
 
     # Sends a STARTTLS command to start TLS session.
-    def starttls(options = {}, verify = false)
+    def starttls(options = {}, verify = true)
       send_command("STARTTLS") do |resp|
         if resp.kind_of?(TaggedResponse) && resp.name == "OK"
           begin
@@ -909,20 +909,18 @@ module Net
     # Net::IMAP::ByeResponseError:: we connected to the host, but they 
     #                               immediately said goodbye to us.
     def initialize(host, port_or_options = {},
-                   usessl = false, certs = nil, verify = false)
+                   usessl = false, certs = nil, verify = true)
       super()
       @host = host
       begin
+        options = port_or_options.to_hash
+      rescue NoMethodError
         # for backward compatibility
-        port = port_or_options.to_int
-        options = {
-          :port => port
-        }
+        options = {}
+        options[:port] = port_or_options
         if usessl
           options[:ssl] = create_ssl_params(certs, verify)
         end
-      rescue NoMethodError
-        options = port_or_options
       end
       @port = options[:port] || (options[:ssl] ? SSL_PORT : PORT)
       @tag_prefix = "RUBY"
@@ -1240,7 +1238,7 @@ module Net
       end
     end
 
-    def create_ssl_params(certs = nil, verify = false)
+    def create_ssl_params(certs = nil, verify = true)
       params = {}
       if certs
         if File.file?(certs)
