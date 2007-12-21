@@ -645,6 +645,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 	keyword_END
 	keyword__LINE__
 	keyword__FILE__
+	keyword__ENCODING__
 
 %token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
 %token <node> tINTEGER tFLOAT tSTRING_CONTENT tCHAR
@@ -1759,7 +1760,8 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 		| '`'		{ ifndef_ripper($$ = '`'); }
 		;
 
-reswords	: keyword__LINE__ | keyword__FILE__ | keyword_BEGIN | keyword_END
+reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
+		| keyword_BEGIN | keyword_END
 		| keyword_alias | keyword_and | keyword_begin
 		| keyword_break | keyword_case | keyword_class | keyword_def
 		| keyword_defined | keyword_do | keyword_else | keyword_elsif
@@ -3923,6 +3925,7 @@ variable	: tIDENTIFIER
 		| keyword_false {ifndef_ripper($$ = keyword_false);}
 		| keyword__FILE__ {ifndef_ripper($$ = keyword__FILE__);}
 		| keyword__LINE__ {ifndef_ripper($$ = keyword__LINE__);}
+		| keyword__ENCODING__ {ifndef_ripper($$ = keyword__ENCODING__);}
 		;
 
 var_ref		: variable
@@ -7568,6 +7571,9 @@ gettable_gen(struct parser_params *parser, ID id)
     }
     else if (id == keyword__LINE__) {
 	return NEW_LIT(INT2FIX(ruby_sourceline));
+    }
+    else if (id == keyword__ENCODING__) {
+	return NEW_LIT(rb_enc_from_encoding(parser->enc));
     }
     else if (is_local_id(id)) {
 	if (dyna_in_block() && dvar_defined(id)) return NEW_DVAR(id);

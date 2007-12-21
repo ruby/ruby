@@ -6,6 +6,7 @@ const struct kwtable *rb_reserved_word _((const char *, unsigned int));
 
 struct kwtable;
 %%
+__ENCODING__, {keyword__ENCODING__, keyword__ENCODING__}, EXPR_END
 __LINE__, {keyword__LINE__, keyword__LINE__}, EXPR_END
 __FILE__, {keyword__FILE__, keyword__FILE__}, EXPR_END
 BEGIN, {keyword_BEGIN, keyword_BEGIN}, EXPR_END
