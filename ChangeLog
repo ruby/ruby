@@ -10,6 +10,11 @@ Fri Dec 21 12:16:50 2007  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_is_ascii_only_p): new method ascii_only?.
 
+Fri Dec 21 12:11:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_mode_enc): set default external encoding if no
+	  encoding specified explicitly.
+
 Fri Dec 21 12:00:34 2007  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in: check langinfo.h and locale.h.

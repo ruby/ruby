@@ -3068,6 +3068,9 @@ rb_io_mode_enc(rb_io_t *fptr, const char *mode)
 	}
 #endif
     }
+    else if (!(fptr->mode & FMODE_BINMODE)) {
+	fptr->enc = rb_default_external_encoding();
+    }
 }
 
 struct sysopen_struct {
@@ -3188,8 +3191,8 @@ rb_file_open_internal(VALUE io, const char *fname, const char *mode)
     rb_io_t *fptr;
 
     MakeOpenFile(io, fptr);
-    rb_io_mode_enc(fptr, mode);
     fptr->mode = rb_io_mode_flags(mode);
+    rb_io_mode_enc(fptr, mode);
     fptr->path = strdup(fname);
     fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(rb_io_flags_mode(fptr->mode)), 0666);
     io_check_tty(fptr);
@@ -3498,10 +3501,10 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 
     port = io_alloc(rb_cIO);
     MakeOpenFile(port, fptr);
-    rb_io_mode_enc(fptr, mode);
     fptr->fd = fd;
     fptr->stdio_file = fp;
     fptr->mode = modef | FMODE_SYNC|FMODE_DUPLEX;
+    rb_io_mode_enc(fptr, mode);
     fptr->pid = pid;
 
     if (0 <= write_fd) {
