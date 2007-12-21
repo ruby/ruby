@@ -1,3 +1,10 @@
+Fri Dec 21 17:25:22 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_atfork): fix to mark thread object.
+	  [ruby-dev:32404]
+
+	* bootstraptest/test_knownbug.rb, test_fork.rb: move a fixed test.
+
 Fri Dec 21 17:07:13 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.h: extern variable should not be initialized.
