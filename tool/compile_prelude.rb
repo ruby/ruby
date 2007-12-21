@@ -56,36 +56,35 @@ lines_list = preludes.map {|filename|
   [setup_lines, lines]
 }
 
-require 'tool/serb'
+require 'erb'
 
-tmp = ''
-eval(serb(<<'EOS', 'tmp'))
+tmp = ERB.new(<<'EOS', nil, '%').result(binding)
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
-! preludes.zip(lines_list).each_with_index {|(prelude, (setup_lines, lines)), i|
-static const char prelude_name<%i%>[] = <%c_esc(File.basename(prelude))%>;
-static const char prelude_code<%i%>[] =
-!   (setup_lines+lines).each {|line|
-<%line%>
-!   }
+% preludes.zip(lines_list).each_with_index {|(prelude, (setup_lines, lines)), i|
+static const char prelude_name<%=i%>[] = <%=c_esc(File.basename(prelude))%>;
+static const char prelude_code<%=i%>[] =
+%   (setup_lines+lines).each {|line|
+<%=line%>
+%   }
 ;
-! }
+% }
 
 void
 Init_prelude(void)
 {
-! lines_list.each_with_index {|(setup_lines, lines), i|
+% lines_list.each_with_index {|(setup_lines, lines), i|
   rb_iseq_eval(rb_iseq_compile(
-    rb_str_new(prelude_code<%i%>, sizeof(prelude_code<%i%>) - 1),
-    rb_str_new(prelude_name<%i%>, sizeof(prelude_name<%i%>) - 1),
-    INT2FIX(<%1-setup_lines.length%>)));
+    rb_str_new(prelude_code<%=i%>, sizeof(prelude_code<%=i%>) - 1),
+    rb_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1),
+    INT2FIX(<%=1-setup_lines.length%>)));
 
-! }
+% }
 #if 0
-! preludes.length.times {|i|
-    puts(prelude_code<%i%>);
-! }
+% preludes.length.times {|i|
+    puts(prelude_code<%=i%>);
+% }
 #endif
 }
 EOS

@@ -648,7 +648,7 @@ miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
-	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
+	$(MINIRUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
 prereq: incs {$(VPATH)}parse.c $(srcdir)/ext/ripper/ripper.c {$(VPATH)}miniprelude.c
 
