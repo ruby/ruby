@@ -1708,8 +1708,8 @@ append_utf8(unsigned long uv,
         rb_str_buf_cat(buf, utf8buf, len);
 
         if (*encp == 0)
-            *encp = rb_enc_find("utf-8");
-        else if (*encp != rb_enc_find("utf-8")) {
+            *encp = rb_utf8_encoding();
+        else if (*encp != rb_utf8_encoding()) {
             strcpy(err, "UTF-8 character in non UTF-8 regexp");
             return -1;
         }

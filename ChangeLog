@@ -1,3 +1,8 @@
+Fri Dec 21 16:06:13 2007  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (append_utf8): use rb_utf8_encoding() instead of
+	  rb_enc_find("utf-8").
+
 Fri Dec 21 15:59:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_init): use enc_register_at() directly.
