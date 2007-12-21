@@ -112,7 +112,7 @@ EOT
   end
 
   def test_core
-    t = Time.now
+    t = Time.at(1198254128, 895990)
     assert_equal t, JSON(JSON(t))
     d = Date.today
     assert_equal d, JSON(JSON(d))

@@ -1,3 +1,8 @@
+Sat Dec 22 01:23:10 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/json/test_json_addition.rb (test_core): do not use Time.now
+	  because JSON can't hold nsec.
+
 Sat Dec 22 01:10:30 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tk/sample/tkextlib/vu/canvSticker2.rb,
