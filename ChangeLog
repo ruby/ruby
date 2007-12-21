@@ -1,3 +1,10 @@
+Fri Dec 21 13:10:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_external_encoding): new method.
+
+	* encoding.c (rb_enc_from_encoding): returns Qnil for NULL
+	  encoding.
+
 Fri Dec 21 13:09:11 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_locale_charmap): return nil if no locale information.

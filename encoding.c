@@ -51,7 +51,7 @@ enc_new(rb_encoding *encoding)
 VALUE
 rb_enc_from_encoding(rb_encoding *encoding)
 {
-    if (!encoding) return 0;
+    if (!encoding) return Qnil;
     if (enc_initialized_p(encoding))
 	return ENC_FROM_ENCODING(encoding);
     return enc_new(encoding);

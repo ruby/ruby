@@ -5657,6 +5657,24 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
 }
 
+
+/*
+ *  call-seq:
+ *     io.externalencoding   => encoding
+ *
+ *  Returns the Encoding object that represents the encoding of the file.
+ */
+
+static VALUE
+rb_io_external_encoding(VALUE io)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    return rb_enc_from_encoding(fptr->enc);
+}
+
+
 static VALUE
 argf_tell(void)
 {
@@ -6231,6 +6249,8 @@ Init_IO(void)
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);
     rb_define_method(rb_cIO, "pid", rb_io_pid, 0);
     rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
+
+    rb_define_method(rb_cIO, "external_encoding", rb_io_external_encoding, 0);
 
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
