@@ -35,14 +35,11 @@ proc_call(VALUE proc, VALUE args)
     return rb_proc_call(proc, args);
 }
 
-struct enumerator;
-typedef VALUE enum_iter(VALUE, struct enumerator *, VALUE);
-
 struct enumerator {
     VALUE method;
     VALUE proc;
     VALUE args;
-    enum_iter *iter;
+    rb_block_call_func *iter;
     VALUE fib;
     VALUE dst;
     VALUE no_next;
@@ -77,8 +74,9 @@ enumerator_ptr(VALUE obj)
 }
 
 static VALUE
-enumerator_iter_i(VALUE i, struct enumerator *e, VALUE argc)
+enumerator_iter_i(VALUE i, VALUE enum_obj, int argc, VALUE *argv)
 {
+    struct enumerator *e = (struct enumerator *)enum_obj;
     return rb_yield(proc_call(e->proc, i));
 }
 
@@ -241,7 +239,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 	ptr->iter = enumerator_iter_i;
     }
     else {
-	ptr->iter = (enum_iter *)enumerator_each_i;
+	ptr->iter = enumerator_each_i;
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
@@ -369,7 +367,6 @@ enumerator_with_index(VALUE obj)
 static VALUE
 next_ii(VALUE i, VALUE obj)
 {
-    struct enumerator *e = enumerator_ptr(obj);
     rb_fiber_yield(1, &i);
     return Qnil;
 }
