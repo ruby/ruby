@@ -1965,7 +1965,7 @@ rb_fix2str(VALUE x, int base)
     int neg = 0;
 
     if (base < 2 || 36 < base) {
-	rb_raise(rb_eArgError, "illegal radix %d", base);
+	rb_raise(rb_eArgError, "invalid radix %d", base);
     }
     if (val == 0) {
 	return rb_str_new2("0");

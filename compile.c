@@ -3597,7 +3597,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    }
 		}
 		else {
-		    rb_bug("illegal goto/label format");
+		    rb_bug("invalid goto/label format");
 		}
 
 

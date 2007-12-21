@@ -1,3 +1,12 @@
+Fri Dec 21 11:28:00 2007  Tanaka Akira  <akr@fsij.org>
+
+	* regerror.c, string.c, io.c, lib/getoptlong.rb, lib/net/imap.rb,
+	  compile.c, sprintf.c, parse.y, ext/win32ole/win32ole.c,
+	  ext/tk/sample/demos-en/entry3.rb, ext/tk/lib/tcltk.rb,
+	  ext/openssl/ossl_bn.c, numeric.c, vm.c,
+	  benchmark/bm_so_meteor_contest.rb, bignum.c, ruby.c: don't "illegal"
+	  for non law violation context.
+
 Fri Dec 21 11:23:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (enc.mk): depends on $(RBCONFIG) instead of rbconfig.rb.

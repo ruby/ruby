@@ -3045,7 +3045,7 @@ module Net
             parse_error("unknown token - %s", $&.dump)
           end
         else
-          parse_error("illegal @lex_state - %s", @lex_state.inspect)
+          parse_error("invalid @lex_state - %s", @lex_state.inspect)
         end
       end
 

@@ -15,7 +15,7 @@ end
 # class to represent all information about a particular rotation of a particular piece
 class Rotation
   # an array (by location) containing a bit mask for how the piece maps at the given location.
-  # if the rotation is illegal at that location the mask will contain false
+  # if the rotation is invalid at that location the mask will contain false
   attr_reader :start_masks
 
   # maps a direction to a relative location.  these differ depending on whether it is an even or

@@ -266,7 +266,7 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
     if (VMDEBUG &&
 	(!(cfp->lfp[-1] == Qnil ||
 	  BUILTIN_TYPE(cfp->lfp[-1]) == T_VALUES))) {
-	rb_bug("illegal svar");
+	rb_bug("invalid svar");
     }
 
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
@@ -788,7 +788,7 @@ check_svar(void)
 	if (cfp->lfp && cfp->lfp[-1] != Qnil &&
 	    TYPE(cfp->lfp[-1]) != T_VALUES) {
 	    /* dp(cfp->lfp[-1]); */
-	    rb_bug("!!!illegal svar!!!");
+	    rb_bug("!!!invalid svar!!!");
 	}
 	cfp++;
     }

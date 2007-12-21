@@ -4057,7 +4057,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
     SysFreeString(pBuf);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, 
-                  "illegal iid: `%s'",
+                  "invalid iid: `%s'",
                   StringValuePtr(str_iid));
     }
 

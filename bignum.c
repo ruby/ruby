@@ -460,7 +460,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	break;
       default:
 	if (base < 2 || 36 < base) {
-	    rb_raise(rb_eArgError, "illegal radix %d", base);
+	    rb_raise(rb_eArgError, "invalid radix %d", base);
 	}
 	if (base <= 32) {
 	    len = 5;
@@ -802,7 +802,7 @@ big2str_find_n1(VALUE x, int base)
     long bits;
 
     if (base < 2 || 36 < base)
-        rb_bug("illegal radix %d", base);
+        rb_bug("invalid radix %d", base);
 
     if (FIXNUM_P(x)) {
         bits = (SIZEOF_LONG*CHAR_BIT - 1)/2 + 1;
@@ -909,7 +909,7 @@ rb_big2str0(VALUE x, int base, int trim)
     }
 
     if (base < 2 || 36 < base)
-        rb_raise(rb_eArgError, "illegal radix %d", base);
+        rb_raise(rb_eArgError, "invalid radix %d", base);
 
     n2 = big2str_find_n1(x, base);
     n1 = (n2 + 1) / 2;

@@ -406,7 +406,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    p--;
 	  case '%':
 	    if (flags != FNONE) {
-		rb_raise(rb_eArgError, "illegal format character - %%");
+		rb_raise(rb_eArgError, "invalid format character - %%");
 	    }
 	    PUSH("%", 1);
 	    break;

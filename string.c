@@ -2904,7 +2904,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
     else base = NUM2INT(b);
 
     if (base < 0) {
-	rb_raise(rb_eArgError, "illegal radix %d", base);
+	rb_raise(rb_eArgError, "invalid radix %d", base);
     }
     return rb_str_to_inum(str, base, Qfalse);
 }

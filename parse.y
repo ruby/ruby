@@ -4999,7 +4999,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 		return 0;
 	    }
 	    if (codepoint > 0x10ffff) {
-		yyerror("illegal Unicode codepoint (too large)");
+		yyerror("invalid Unicode codepoint (too large)");
 		return 0;
 	    }
 	    lex_p += numlen;
@@ -5287,7 +5287,7 @@ parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
     int len = parser_precise_mbclen();
     if (!MBCLEN_CHARFOUND(len)) {
-	compile_error(PARSER_ARG "illegal multibyte char");
+	compile_error(PARSER_ARG "invalid multibyte char");
 	return -1;
     }
     tokadd(c);

@@ -85,9 +85,9 @@ onig_error_code_to_format(int code)
   case ONIGERR_END_PATTERN_AT_CONTROL:
     p = "end pattern at control"; break;
   case ONIGERR_META_CODE_SYNTAX:
-    p = "illegal meta-code syntax"; break;
+    p = "invalid meta-code syntax"; break;
   case ONIGERR_CONTROL_CODE_SYNTAX:
-    p = "illegal control-code syntax"; break;
+    p = "invalid control-code syntax"; break;
   case ONIGERR_CHAR_CLASS_VALUE_AT_END_OF_RANGE:
     p = "char-class value at end of range"; break;
   case ONIGERR_CHAR_CLASS_VALUE_AT_START_OF_RANGE:

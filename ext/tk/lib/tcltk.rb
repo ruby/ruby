@@ -265,7 +265,7 @@ class TclTkWidget < TclTkCommand
       # (used in TclTkInterpreter#initialize())
 
       # need two arguments
-      fail("illegal # of parameter") if args.size != 2
+      fail("invalid # of parameter") if args.size != 2
 
       # ip: interpreter(TclTkIp)
       # exp: tcl/tk representation

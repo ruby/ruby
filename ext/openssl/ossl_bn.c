@@ -151,7 +151,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	break;
     default:
-	ossl_raise(rb_eArgError, "illegal radix %d", base);
+	ossl_raise(rb_eArgError, "invalid radix %d", base);
     }
     return self;
 }
@@ -203,7 +203,7 @@ ossl_bn_to_s(int argc, VALUE *argv, VALUE self)
 	str = ossl_buf2str(buf, strlen(buf));
 	break;
     default:
-	ossl_raise(rb_eArgError, "illegal radix %d", base);
+	ossl_raise(rb_eArgError, "invalid radix %d", base);
     }
 
     return str;
