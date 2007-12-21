@@ -288,7 +288,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     struct enumerator *ptr0, *ptr1;
 
     ptr0 = enumerator_ptr(orig);
-    if (ptr1->fib) {
+    if (ptr0->fib) {
 	/* Fibers cannot be copied */
 	rb_raise(rb_eTypeError, "can't copy execution context");
     }

@@ -12,6 +12,8 @@ Fri Dec 21 14:58:27 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* enumerator.c (enumerator_init_copy): prohibit cloning of
 	  generators since Fibers cannot be copied.
 
+	* enumerator.c (enumerator_init_copy): typo fixed.
+
 Fri Dec 21 14:46:07 2007  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (Init_IO): define IO::BINARY even if O_BINARY is not exist.
