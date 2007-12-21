@@ -1872,9 +1872,9 @@ rb_str_succ(VALUE orig)
 	c = '\001';
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
+	    int limit = 256;
 	    if (cc == 0) cc = rb_enc_codepoint(s, e, enc);
-	    cc += 1;
-	    l = rb_enc_mbcput(cc, carry, enc);
+	    while ((l = rb_enc_mbcput(++cc, carry, enc)) < 0 && --limit);
 	    if (l > 0) {
 		if (l == (o = e - s)) goto overlay;
 		n = s - sbeg;
@@ -4538,7 +4538,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
-	if (ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc,p,pp) != (const UChar*)pp)
+	if (ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, (UChar *)p, (UChar *)pp) != (const UChar*)pp)
 	    return Qnil;
 	rb_str_modify(str);
 	STR_SET_LEN(str, RSTRING_LEN(str) - rslen);
