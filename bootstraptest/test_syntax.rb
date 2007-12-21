@@ -624,7 +624,7 @@ assert_equal '2', %q{
   end
 }
 
-assert_match /illegal multibyte char/, %q{
+assert_match /invalid multibyte char/, %q{
   STDERR.reopen(STDOUT)
   eval("\"\xf0".force_encoding("utf-8"))
 }, '[ruby-dev:32429]'
