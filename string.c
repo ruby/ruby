@@ -5341,6 +5341,14 @@ rb_str_valid_encoding_p(VALUE str)
     return cr == ENC_CODERANGE_BROKEN ? Qfalse : Qtrue;
 }
 
+static VALUE
+rb_str_is_ascii_only_p(VALUE str)
+{
+    int cr = rb_enc_str_coderange(str);
+
+    return cr == ENC_CODERANGE_7BIT ? Qtrue : Qfalse;
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -5754,6 +5762,7 @@ Init_String(void)
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
     rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
+    rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
     id_to_s = rb_intern("to_s");
 
