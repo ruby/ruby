@@ -15,20 +15,20 @@
 
 #include "ruby/oniguruma.h"
 
-#define ENCODING_INLINE_MAX 15
-#define ENCODING_MASK (FL_USER8|FL_USER9|FL_USER10|FL_USER11)
-#define ENCODING_SHIFT (FL_USHIFT+8)
+#define ENCODING_INLINE_MAX 1023
+#define ENCODING_SHIFT (FL_USHIFT+10)
+#define ENCODING_MASK (ENCODING_INLINE_MAX<<ENCODING_SHIFT)
 #define ENCODING_SET(obj,i) do {\
     RBASIC(obj)->flags &= ~ENCODING_MASK;\
     RBASIC(obj)->flags |= i << ENCODING_SHIFT;\
 } while (0)
 #define ENCODING_GET(obj) ((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
 
-#define ENC_CODERANGE_MASK	(FL_USER12|FL_USER13)
+#define ENC_CODERANGE_MASK	(FL_USER8|FL_USER9)
 #define ENC_CODERANGE_UNKNOWN	0
-#define ENC_CODERANGE_7BIT	FL_USER12
-#define ENC_CODERANGE_VALID	FL_USER13
-#define ENC_CODERANGE_BROKEN	(FL_USER12|FL_USER13)
+#define ENC_CODERANGE_7BIT	FL_USER8
+#define ENC_CODERANGE_VALID	FL_USER9
+#define ENC_CODERANGE_BROKEN	(FL_USER8|FL_USER9)
 #define ENC_CODERANGE(obj) (RBASIC(obj)->flags & ENC_CODERANGE_MASK)
 #define ENC_CODERANGE_ASCIIONLY(obj) (ENC_CODERANGE(obj) == ENC_CODERANGE_7BIT)
 #define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags = \
@@ -39,6 +39,8 @@
 typedef OnigEncodingType rb_encoding;
 
 int rb_enc_replicate(const char *, rb_encoding *);
+int rb_define_dummy_encoding(const char *);
+int rb_enc_dummy_p(rb_encoding *);
 int rb_enc_to_index(rb_encoding*);
 int rb_enc_get_index(VALUE obj);
 int rb_enc_find_index(const char *name);

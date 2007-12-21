@@ -35,6 +35,9 @@ static st_table *enc_table_alias;
 #define enc_initialized_p(enc) ((enc)->auxiliary_data != &rb_cEncoding)
 #define ENC_FROM_ENCODING(enc) ((VALUE)(enc)->auxiliary_data)
 
+#define ENC_DUMMY FL_USER2
+#define ENC_DUMMY_P(enc) (RBASIC(enc)->flags & ENC_DUMMY)
+
 static void
 enc_mark(void *ptr)
 {
@@ -194,22 +197,63 @@ rb_enc_register(const char *name, rb_encoding *encoding)
     return index;
 }
 
-int
-rb_enc_replicate(const char *name, rb_encoding *encoding)
+static void
+enc_check_duplication(const char *name)
 {
-    VALUE enc, origenc;
-    int index = enc_table_size;
-
     if (rb_enc_registered(name) >= 0) {
 	rb_raise(rb_eArgError, "encoding %s is already registered", name);
     }
-    if (index < ENCODING_INLINE_MAX) index = ENCODING_INLINE_MAX;
+}
+
+static VALUE
+set_based_encoding(int index, rb_encoding *based)
+{
+    VALUE enc = rb_enc_from_encoding(enc_table[index].enc);
+
+    rb_ivar_set(enc, id_based_encoding, rb_enc_from_encoding(based));
+    return enc;
+}
+
+int
+rb_enc_replicate(const char *name, rb_encoding *encoding)
+{
+    int index = enc_table_size;
+
+    enc_check_duplication(name);
     if (enc_table_expand(index + 1) < 0) return -1;
     enc_register_at(index, name, encoding);
-    enc = rb_enc_from_encoding(enc_table[index].enc);
-    origenc = rb_enc_from_encoding(encoding);
-    rb_ivar_set(enc, id_based_encoding, origenc);
+    set_based_encoding(index, encoding);
     return index;
+}
+
+int
+rb_define_dummy_encoding(const char *name)
+{
+    int index = enc_table_size;
+    rb_encoding *encoding;
+    VALUE enc;
+
+    enc_check_duplication(name);
+    if (index < ENCODING_INLINE_MAX) index = ENCODING_INLINE_MAX;
+    if (enc_table_expand(index + 1) < 0) return -1;
+    encoding = rb_default_encoding();
+    enc_register_at(index, name, encoding);
+    enc = set_based_encoding(index, encoding);
+    FL_SET(enc, ENC_DUMMY);
+    return index;
+}
+
+int
+rb_enc_dummy_p(rb_encoding *enc)
+{
+    VALUE encoding = rb_enc_from_encoding(enc);
+    return ENC_DUMMY_P(encoding);
+}
+
+static VALUE
+enc_dummy_p(VALUE enc)
+{
+    return rb_enc_dummy_p(rb_to_encoding(enc)) ? Qtrue : Qfalse;
 }
 
 static int
@@ -233,9 +277,7 @@ enc_alias(const char *alias, const char *orig)
 int
 rb_enc_alias(const char *alias, const char *orig)
 {
-    if (rb_enc_registered(alias) >= 0) {
-	rb_raise(rb_eArgError, "encoding %s is already registered", alias);
-    }
+    enc_check_duplication(alias);
     return enc_alias(alias, orig);
 }
 
@@ -631,8 +673,9 @@ rb_enc_tolower(int c, rb_encoding *enc)
 static VALUE
 enc_inspect(VALUE self)
 {
-    return rb_sprintf("#<%s:%s>", rb_obj_classname(self),
-		      rb_enc_name((rb_encoding*)DATA_PTR(self)));
+    return rb_sprintf("#<%s:%s%s>", rb_obj_classname(self),
+		      rb_enc_name((rb_encoding*)DATA_PTR(self)),
+		      (ENC_DUMMY_P(self) ? " (dummy)" : ""));
 }
 
 static VALUE
@@ -815,6 +858,7 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
     rb_define_method(rb_cEncoding, "based_encoding", enc_based_encoding, 0);
+    rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "find", enc_find, 1);
     rb_define_singleton_method(rb_cEncoding, "compatible?", enc_compatible_p, 2);
@@ -826,7 +870,7 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
     /* dummy for unsupported, statefull encoding */
-    rb_enc_replicate("ISO-2022-JP", rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
+    rb_define_dummy_encoding("ISO-2022-JP");
 
     for (i = 0; i < enc_table_size; ++i) {
 	rb_encoding *enc = enc_table[i].enc;

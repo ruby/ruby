@@ -1,3 +1,18 @@
+Fri Dec 21 20:00:02 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_replicate): now creates first class encoding.
+
+	* encoding.c (rb_define_dummy_encoding): always based on the default
+	  encoding.
+
+	* encoding.c (rb_enc_dummy_p): check if dummy.
+
+	* encoding.c (enc_inspect): shows if dummy.
+
+	* encoding.c (Init_Encoding): added dummy? method
+
+	* include/ruby/encoding.h (ENCODING_INLINE_MAX): increased.
+
 Fri Dec 21 18:40:54 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* io.c: write() should be in blocking region.
