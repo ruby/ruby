@@ -1,3 +1,8 @@
+Sat Dec 22 08:29:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_buf_append): improvement for non-broken coded
+	  strings.
+
 Sat Dec 22 06:30:04 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_fork.rb: skip if fork is not unsupported.

@@ -1009,8 +1009,17 @@ rb_str_buf_append(VALUE str, VALUE str2)
 {
     rb_encoding *enc;
     long capa, len;
+    int cr1, cr2;
 
     enc = rb_enc_check(str, str2);
+    cr1 = ENC_CODERANGE(str);
+    cr2 = ENC_CODERANGE(str2);
+    if (cr1 == ENC_CODERANGE_BROKEN || cr2 == ENC_CODERANGE_BROKEN) {
+	cr1 = ENC_CODERANGE_UNKNOWN;
+    }
+    else if (cr2 > cr1) {
+	cr1 = cr2;
+    }
     rb_str_modify(str);
     if (STR_ASSOC_P(str)) {
 	FL_UNSET(str, STR_ASSOC);
@@ -1034,6 +1043,9 @@ rb_str_buf_append(VALUE str, VALUE str2)
     STR_SET_LEN(str, len);
     OBJ_INFECT(str, str2);
     rb_enc_associate(str, enc);
+    if (cr1 != ENC_CODERANGE_UNKNOWN) {
+	ENC_CODERANGE_SET(str, cr1);
+    }
 
     return str;
 }
