@@ -285,14 +285,20 @@ enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enumerator_init_copy(VALUE obj, VALUE orig)
 {
-    struct enumerator *ptr0 = enumerator_ptr(orig);
-    struct enumerator *ptr1 = enumerator_ptr(obj);
+    struct enumerator *ptr0, *ptr1;
+
+    ptr0 = enumerator_ptr(orig);
+    if (ptr1->fib) {
+	/* Fibers cannot be copied */
+	rb_raise(rb_eTypeError, "can't copy execution context");
+    }
+    ptr1 = enumerator_ptr(obj);
 
     ptr1->method = ptr0->method;
     ptr1->proc = ptr0->proc;
     ptr1->iter = ptr0->iter;
     ptr1->args = ptr0->args;
-    ptr1->fib  = ptr0->fib;
+    ptr1->fib  = 0;
 
     return obj;
 }
