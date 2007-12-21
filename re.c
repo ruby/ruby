@@ -954,9 +954,10 @@ rb_reg_prepare_re(VALUE re, VALUE str)
             need_recompile = 1;
         }
         if ((RBASIC(re)->flags & REG_ENCODING_NONE) &&
+	    enc != rb_default_encoding() &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
             rb_warn("none encoding regexp with non ASCII string (string encoding: %s)",
-                    rb_enc_name(rb_enc_get(str)));
+                    rb_enc_name(enc));
         }
     }
 
