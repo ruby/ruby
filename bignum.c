@@ -1511,7 +1511,6 @@ rb_big_mul0(VALUE x, VALUE y)
     bms.stop = Qfalse;
 
     if (RBIGNUM_LEN(x) + RBIGNUM_LEN(y) > 10000) {
-	VALUE stop = Qfalse;
 	z = rb_thread_blocking_region(bigmul1, &bms, rb_big_stop, &bms.stop);
     }
     else {
@@ -1682,7 +1681,6 @@ bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
     bds.modp = modp;
     bds.stop = Qfalse;
     if (RBIGNUM_LEN(x) > 10000 || RBIGNUM_LEN(y) > 10000) {
-	VALUE stop = Qfalse;
 	z = rb_thread_blocking_region(bigdivrem1, &bds, rb_big_stop, &bds.stop);
     }
     else {
