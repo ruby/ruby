@@ -1,3 +1,9 @@
+Sat Dec 22 06:30:04 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_fork.rb: skip if fork is not unsupported.
+
+	* bootstraptest/test_io.rb: skip if require failed.
+
 Sat Dec 22 06:09:12 2007  David Flanagan  <david@davidflanagan.com>
 
 	* io.c: fix typo in rdoc comment
