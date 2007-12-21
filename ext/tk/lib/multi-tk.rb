@@ -130,10 +130,10 @@ class MultiTkIp
 
     class << @@TK_CMD_TBL
       allow = [
-        '__send__', '__id__', 'freeze', 'inspect', 'kind_of?', 
+        '__send__', '__id__', 'freeze', 'inspect', 'kind_of?', 'object_id', 
         '[]', '[]=', 'delete', 'each', 'has_key?'
       ]
-      instance_methods.each{|m| undef_method(m) unless allow.index(m)}
+      instance_methods.each{|m| undef_method(m) unless allow.index(m.to_s)}
 
       def kind_of?(klass)
         @tbl.kind_of?(klass)
@@ -206,7 +206,7 @@ class MultiTkIp
     def initialize(ip, cmd)
       @ip = ip
       @cmd = cmd
-      freeze
+      self.freeze
     end
     attr_reader :ip, :cmd
     def inspect
@@ -723,7 +723,30 @@ class MultiTkIp
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
     end
 
-    @interp = TclTkIp.new(name, _keys2opts(keys))
+    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+      @interp = TclTkIp.new(name, _keys2opts(keys))
+    else
+      @interp_thread = Thread.new{
+        Thread.current[:interp] = interp = TclTkIp.new(name, _keys2opts(keys))
+        #sleep
+        interp.mainloop(true)
+      }
+      until @interp_thread[:interp]
+        Thread.pass
+      end
+      # INTERP_THREAD.run
+      @interp = @interp_thread[:interp]
+
+      def self.mainloop(check_root = true)
+        begin
+          TclTkLib.set_eventloop_window_mode(true)
+          @interp_thread.value
+        ensure
+          TclTkLib.set_eventloop_window_mode(false)
+        end
+      end
+    end
+
     @ip_name = nil
 
     @callback_status = [].taint
@@ -868,7 +891,7 @@ class MultiTkIp
       ret = []
       mtx = Mutex.new.lock
       @init_ip_env_queue.enq([mtx, ret, table, script])
-      mtx.lock
+      # mtx.lock
       if ret[0].kind_of?(Exception)
         raise ret[0]
       else
@@ -1206,7 +1229,20 @@ class MultiTkIp
 
     if safeip == nil
       # create master-ip
-      @interp = TclTkIp.new(name, _keys2opts(tk_opts))
+      if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+        @interp = TclTkIp.new(name, _keys2opts(tk_opts))
+      else
+        @interp_thread = Thread.new{
+          Thread.current[:interp] = interp = TclTkIp.new(name, _keys2opts(tk_opts))
+          #sleep
+          TclTkLib.mainloop(true)
+        }
+        until @interp_thread[:interp]
+          Thread.pass
+        end
+        # INTERP_THREAD.run
+        @interp = @interp_thread[:interp]
+      end
 
       @ip_name = nil
       if safe
@@ -1221,6 +1257,7 @@ class MultiTkIp
         @safe_base = true
         @interp, @ip_name = master.__create_safe_slave_obj(safe_opts, 
                                                            name, tk_opts)
+        @interp_thread = nil if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
         if safe
           safe = master.safe_level if safe < master.safe_level
           @safe_level = [safe]
@@ -1229,6 +1266,7 @@ class MultiTkIp
         end
       else
         @interp, @ip_name = master.__create_trusted_slave_obj(name, tk_opts)
+        @interp_thread = nil if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
         if safe
           safe = master.safe_level if safe < master.safe_level
           @safe_level = [safe]
@@ -2338,6 +2376,11 @@ end
 class MultiTkIp
   def mainloop(check_root = true, restart_on_dead = true)
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
+
+    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+      return @interp_thread.value if @interp_thread
+    end
+
     #return self if self.slave?
     #return self if self != @@DEFAULT_MASTER
     if self != @@DEFAULT_MASTER

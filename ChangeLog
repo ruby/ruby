@@ -1,3 +1,38 @@
+Fri Dec 21 17:56:30 2007    <nagai@orca16.orcabay.ddo.jp>
+
+	* ext/tk/tcltklib.c: provisional support on Ruby-VM.
+
+	* ext/tk/MANUAL_tcltklib.eng, ext/tk/MANUAL_tcltklib.eucj: 
+	  modify document about new functions.
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/labelframe.rb,
+	  ext/tk/lib/tk/frame.rb, ext/tk/lib/tk/toplevel.rb,
+	  ext/tk/lib/tk/scrollbar.rb, ext/tk/lib/tk/message.rb,
+	  ext/tk/lib/tk/listbox.rb, ext/tk/lib/tk/text.rb,
+	  ext/tk/lib/tk/scale.rb, ext/tk/lib/tk/entry.rb, 
+	  ext/tk/lib/tk/ttk_selector.rb, ext/tk/lib/tk/menu.rb,
+	  ext/tk/lib/tk/label.rb, ext/tk/lib/tk/spinbox.rb,
+	  ext/tk/lib/tk/textmark.rb, ext/tk/lib/tk/winpkg.rb,
+	  ext/tk/lib/tk/checkbutton.rb, ext/tk/lib/tk/panedwindow.rb,
+	  ext/tk/lib/tk/texttag.rb, ext/tk/lib/tk/root.rb,
+	  ext/tk/lib/tk/textimage.rb, ext/tk/lib/tk/radiobutton.rb,
+	  ext/tk/lib/tk/package.rb, ext/tk/lib/tk/macpkg.rb,
+	  ext/tk/lib/tk/composite.rb, ext/tk/lib/tk/autoload.rb,
+	  ext/tk/lib/tk/canvas.rb, ext/tk/lib/tk/button.rb,
+	  ext/tk/lib/tk/textwindow.rb,
+	  ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb,
+	  ext/tk/lib/tkextlib/tile/style.rb,
+	  ext/tk/lib/tkextlib/tile/tscrollbar.rb,
+	  ext/tk/lib/tkextlib/tile/tpaned.rb, ext/tk/lib/tkextlib/tile.rb,
+	  ext/tk/extconf.rb: support Tcl/Tk8.5 (partial, not complete).
+
+	* ext/tk/sample/demos-jp/widget,
+	  ext/tk/sample/demos-jp/pendulum.rb,
+	  ext/tk/sample/demos-jp/bind.rb,
+	  ext/tk/sample/tkextlib/vu/canvSticker2.rb, 
+	  ext/tk/sample/demos-en/pendulum.rb, 
+	  ext/tk/sample/demos-en/bind.rb: remove $KCODE and minor bug fix.
+
 Fri Dec 21 17:49:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_str_transcode_bang): returns self if no conversion.

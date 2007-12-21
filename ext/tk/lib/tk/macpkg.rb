@@ -20,9 +20,13 @@ module Tk
   end
 end
 
-module TkMacResource
+module Tk::MacResource
+end
+TkMacResource = Tk::MacResource
+
+module Tk::MacResource
   extend Tk
-  extend TkMacResource
+  extend Tk::MacResource
 
   TkCommandNames = ['resource'.freeze].freeze
 

@@ -3,7 +3,7 @@
 #
 require 'tk'
 
-class TkFrame<TkWindow
+class Tk::Frame<TkWindow
   TkCommandNames = ['frame'.freeze].freeze
   WidgetClassName = 'Frame'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -126,3 +126,5 @@ class TkFrame<TkWindow
     end
   end
 end
+
+TkFrame = Tk::Frame unless Object.const_defined? :TkFrame

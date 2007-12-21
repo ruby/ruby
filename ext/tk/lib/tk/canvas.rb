@@ -40,7 +40,7 @@ module TkCanvasItemConfig
   private :__item_pathname
 end
 
-class TkCanvas<TkWindow
+class Tk::Canvas<TkWindow
   include TkCanvasItemConfig
   include Tk::Scrollable
 
@@ -572,6 +572,9 @@ class TkCanvas<TkWindow
     TkcItem.type2class(tk_send('type', tagid(tag)))
   end
 end
+
+TkCanvas = Tk::Canvas unless Object.const_defined? :TkCanvas
+
 
 class TkcItem<TkObject
   extend Tk

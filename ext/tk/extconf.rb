@@ -63,11 +63,15 @@ def find_tcl(tcllib, stubs)
   elsif find_library(lib, func, *paths)
     true
   else
-    %w[8.5 8.4 8.3 8.2 8.1 8.0 7.6].find { |ver|
+    %w[8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6].find { |ver|
       find_library("#{lib}#{ver}", func, *paths) or
         find_library("#{lib}#{ver.delete('.')}", func, *paths) or
         find_library("tcl#{ver}", func, *paths) or
-        find_library("tcl#{ver.delete('.')}", func, *paths)
+        find_library("tcl#{ver.delete('.')}", func, *paths) or
+        find_library("#{lib}#{ver}g", func, *paths) or
+        find_library("#{lib}#{ver.delete('.')}g", func, *paths) or
+        find_library("tcl#{ver}g", func, *paths) or
+        find_library("tcl#{ver.delete('.')}g", func, *paths)
     }
   end
 end
@@ -86,11 +90,15 @@ def find_tk(tklib, stubs)
   elsif find_library(lib, func, *paths)
     true
   else
-    %w[8.5 8.4 8.3 8.2 8.1 8.0 4.2].find { |ver|
+    %w[8.6 8.5 8.4 8.3 8.2 8.1 8.0 4.2].find { |ver|
       find_library("#{lib}#{ver}", func, *paths) or
         find_library("#{lib}#{ver.delete('.')}", func, *paths) or
         find_library("tk#{ver}", func, *paths) or
-        find_library("tk#{ver.delete('.')}", func, *paths)
+        find_library("tk#{ver.delete('.')}", func, *paths) or 
+        find_library("#{lib}#{ver}g", func, *paths) or
+        find_library("#{lib}#{ver.delete('.')}g", func, *paths) or
+        find_library("tk#{ver}g", func, *paths) or
+        find_library("tk#{ver.delete('.')}g", func, *paths)
     }
   end
 end

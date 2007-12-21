@@ -6,7 +6,7 @@
 require 'tk'
 require 'tk/entry'
 
-class TkSpinbox<TkEntry
+class Tk::Spinbox<TkEntry
   TkCommandNames = ['spinbox'.freeze].freeze
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -97,3 +97,5 @@ class TkSpinbox<TkEntry
     _fromUTF8(tk_send_without_enc('set', _get_eval_enc_str(str)))
   end
 end
+
+TkSpinbox = Tk::Spinbox unless Object.const_defined? :TkSpinbox

@@ -17,6 +17,12 @@ module Tk::Tile::Style
 end
 
 class << Tk::Tile::Style
+  if Tk::Tile::TILE_SPEC_VERSION_ID < 8
+    TkCommandNames = ['style'.freeze].freeze
+  else
+    TkCommandNames = ['::ttk::style'.freeze].freeze
+  end
+
   def configure(style=nil, keys=nil)
     if style.kind_of?(Hash)
       keys = style
@@ -31,9 +37,9 @@ class << Tk::Tile::Style
     end
 
     if keys && keys != None
-      tk_call('style', sub_cmd, style, *hash_kv(keys))
+      tk_call(TkCommandNames[0], sub_cmd, style, *hash_kv(keys))
     else
-      tk_call('style', sub_cmd, style)
+      tk_call(TkCommandNames[0], sub_cmd, style)
     end
   end
   alias default configure
@@ -46,14 +52,15 @@ class << Tk::Tile::Style
     style = '.' unless style
 
     if keys && keys != None
-      tk_call('style', 'map', style, *hash_kv(keys))
+      tk_call(TkCommandNames[0], 'map', style, *hash_kv(keys))
     else
-      tk_call('style', 'map', style)
+      tk_call(TkCommandNames[0], 'map', style)
     end
   end
 
   def lookup(style, opt, state=None, fallback_value=None)
-    tk_call('style', 'lookup', style, '-' << opt.to_s, state, fallback_value)
+    tk_call(TkCommandNames[0], 'lookup', style, 
+            '-' << opt.to_s, state, fallback_value)
   end
 
   include Tk::Tile::ParseStyleLayout
@@ -66,42 +73,42 @@ class << Tk::Tile::Style
     style = '.' unless style
 
     if spec
-      tk_call('style', 'layout', style, spec)
+      tk_call(TkCommandNames[0], 'layout', style, spec)
     else
-      _style_layout(list(tk_call('style', 'layout', style)))
+      _style_layout(list(tk_call(TkCommandNames[0], 'layout', style)))
     end
   end
 
   def element_create(name, type, *args)
-    tk_call('style', 'element', 'create', name, type, *args)
+    tk_call(TkCommandNames[0], 'element', 'create', name, type, *args)
   end
 
   def element_names()
-    list(tk_call('style', 'element', 'names'))
+    list(tk_call(TkCommandNames[0], 'element', 'names'))
   end
 
   def element_options(elem)
-    simplelist(tk_call('style', 'element', 'options', elem))
+    simplelist(tk_call(TkCommandNames[0], 'element', 'options', elem))
   end
 
   def theme_create(name, keys=nil)
     if keys && keys != None
-      tk_call('style', 'theme', 'create', name, *hash_kv(keys))
+      tk_call(TkCommandNames[0], 'theme', 'create', name, *hash_kv(keys))
     else
-      tk_call('style', 'theme', 'create', name)
+      tk_call(TkCommandNames[0], 'theme', 'create', name)
     end
   end
 
   def theme_settings(name, cmd=nil, &b)
     cmd = Proc.new(&b) if !cmd && b
-    tk_call('style', 'theme', 'settings', name, cmd)
+    tk_call(TkCommandNames[0], 'theme', 'settings', name, cmd)
   end
 
   def theme_names()
-    list(tk_call('style', 'theme', 'names'))
+    list(tk_call(TkCommandNames[0], 'theme', 'names'))
   end
 
   def theme_use(name)
-    tk_call('style', 'theme', 'use', name)
+    tk_call(TkCommandNames[0], 'theme', 'use', name)
   end
 end

@@ -15,33 +15,69 @@ require 'tkextlib/tile/setup.rb'
 # TkPackage.require('tile', '0.4')
 # TkPackage.require('tile', '0.6')
 # TkPackage.require('tile', '0.7')
-verstr = TkPackage.require('tile')
-ver = verstr.split('.')
-if ver[0].to_i == 0 && ver[1].to_i <= 4
-  # version 0.4 or former
-  module Tk
-    module Tile
-      USE_TILE_NAMESPACE = true
-      USE_TTK_NAMESPACE  = false
-      TILE_SPEC_VERSION_ID = 0
-    end
-  end
-elsif ver[0].to_i == 0 && ver[1].to_i <= 6
-  # version 0.5 -- version 0.6
-  module Tk
-    module Tile
-      USE_TILE_NAMESPACE = true
-      USE_TTK_NAMESPACE  = true
-      TILE_SPEC_VERSION_ID = 5
-    end
+if Tk::TK_MAJOR_VERSION > 8 || 
+    (Tk::TK_MAJOR_VERSION == 8 && Tk::TK_MINOR_VERSION >= 5)
+  begin
+    verstr = TkPackage.require('Ttk')
+  rescue RuntimeError
+    verstr = TkPackage.require('tile')
   end
 else
-  # version 0.7 or later
+  verstr = TkPackage.require('tile')
+end
+
+ver = verstr.split('.')
+if ver[0].to_i == 0
+  # Tile extension package
+  if ver[1].to_i <= 4
+    # version 0.4 or former
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = true
+        USE_TTK_NAMESPACE  = false
+        TILE_SPEC_VERSION_ID = 0
+      end
+    end
+  elsif ver[1].to_i <= 6
+    # version 0.5 -- version 0.6
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = true
+        USE_TTK_NAMESPACE  = true
+        TILE_SPEC_VERSION_ID = 5
+      end
+    end
+  elsif ver[1].to_i <= 7
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = false
+        USE_TTK_NAMESPACE  = true
+        TILE_SPEC_VERSION_ID = 7
+      end
+    end
+  else
+    # version 0.8 or later
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = false
+        USE_TTK_NAMESPACE  = true
+        TILE_SPEC_VERSION_ID = 8
+      end
+    end
+  end
+
+  module Tk::Tile
+    PACKAGE_NAME = 'tile'.freeze
+  end
+else
+  # Ttk package merged Tcl/Tk core (Tcl/Tk 8.5+)
   module Tk
     module Tile
       USE_TILE_NAMESPACE = false
       USE_TTK_NAMESPACE  = true
-      TILE_SPEC_VERSION_ID = 7
+      TILE_SPEC_VERSION_ID = 8
+
+      PACKAGE_NAME = 'Ttk'.freeze
     end
   end
 end
@@ -51,14 +87,13 @@ module Tk
   module Tile
     TkComm::TkExtlibAutoloadModule.unshift(self)
 
-    PACKAGE_NAME = 'tile'.freeze
     def self.package_name
       PACKAGE_NAME
     end
 
     def self.package_version
       begin
-        TkPackage.require('tile')
+        TkPackage.require(PACKAGE_NAME)
       rescue
         ''
       end
@@ -200,6 +235,8 @@ module Tk
 
     autoload :TPaned,        'tkextlib/tile/tpaned'
     autoload :Paned,         'tkextlib/tile/tpaned'
+    autoload :PanedWindow,   'tkextlib/tile/tpaned'
+    autoload :Panedwindow,   'tkextlib/tile/tpaned'
 
     autoload :TProgressbar,  'tkextlib/tile/tprogressbar'
     autoload :Progressbar,   'tkextlib/tile/tprogressbar'
@@ -216,6 +253,8 @@ module Tk
 
     autoload :TScrollbar,    'tkextlib/tile/tscrollbar'
     autoload :Scrollbar,     'tkextlib/tile/tscrollbar'
+    autoload :XScrollbar,    'tkextlib/tile/tscrollbar'
+    autoload :YScrollbar,    'tkextlib/tile/tscrollbar'
 
     autoload :TSeparator,    'tkextlib/tile/tseparator'
     autoload :Separator,     'tkextlib/tile/tseparator'
@@ -228,3 +267,5 @@ module Tk
     autoload :Style,         'tkextlib/tile/style'
   end
 end
+
+Ttk = Tk::Tile

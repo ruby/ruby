@@ -221,7 +221,23 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : から抽出されるはずであるから，index_name 引数は nil と
          : せねばならない．
 
+   モジュール TclTkLib::RELEASE_TYPE
+      : Tcl/Tk のリリースタイプ番号の定義
+
+      定数  ALPHA
+         : ALPHA リリース
+
+      定数  BETA
+         : BETA リリース
+
+      定数  FINAL
+         : FINAL リリース
+
    モジュールメソッド
+      get_version()
+         : Tcl/Tk の major, minor, release-type 番号, release-type 名,
+         : patchlevel を配列にして返す．
+
       mainloop(check_root = true)
          : イベントループを起動する．check_root が true であれば，
          : root widget が存在する限り，このメソッドは終了しない．

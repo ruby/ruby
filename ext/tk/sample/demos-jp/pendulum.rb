@@ -51,9 +51,11 @@ TkFrame.new($pendulum_demo) {|frame|
 class PendulumAnimationDemo
   def initialize(frame)
     # Create some structural widgets
-    pane = TkPanedWindow.new(frame).pack(:fill=>:both, :expand=>true)
-    pane.add(@lf1 = TkLabelFrame.new(pane, :text=>'Pendulum Simulation'))
-    pane.add(@lf2 = TkLabelFrame.new(pane, :text=>'Phase Space'))
+    @pane = TkPanedWindow.new(frame).pack(:fill=>:both, :expand=>true)
+#    @pane.add(@lf1 = TkLabelFrame.new(@pane, :text=>'Pendulum Simulation'))
+#    @pane.add(@lf2 = TkLabelFrame.new(@pane, :text=>'Phase Space'))
+    @lf1 = TkLabelFrame.new(@pane, :text=>'Pendulum Simulation')
+    @lf2 = TkLabelFrame.new(@pane, :text=>'Phase Space')
 
     # Create the canvas containing the graphical representation of the
     # simulated system.
@@ -101,23 +103,24 @@ class PendulumAnimationDemo
     @dTheta = 0.0
     @length = 150
 
-    # init display
-    showPendulum
-
     # animation loop
     @timer = TkTimer.new(15){ repeat }
 
     # binding
     @c.bindtags_unshift(btag = TkBindTag.new)
     btag.bind('Destroy'){ @timer.stop }
-    btag.bind('1', proc{|x, y| @timer.stop; showPendulum(x, y)}, '%x %y')
-    btag.bind('B1-Motion', proc{|x, y| showPendulum(x, y)}, '%x %y')
+    btag.bind('1', proc{|x, y| @timer.stop; showPendulum(x.to_i, y.to_i)}, 
+              '%x %y')
+    btag.bind('B1-Motion', proc{|x, y| showPendulum(x.to_i, y.to_i)}, '%x %y')
     btag.bind('ButtonRelease-1', 
-              proc{|x, y| showPendulum(x, y); @timer.start }, '%x %y')
+              proc{|x, y| showPendulum(x.to_i, y.to_i); @timer.start }, 
+              '%x %y')
 
-    btag.bind('Configure', proc{|w| @plate.coords(0, 25, w, 25)}, '%w')
+    btag.bind('Configure', proc{|w| @plate.coords(0, 25, w.to_i, 25)}, '%w')
 
     @k.bind('Configure', proc{|h, w| 
+              h = h.to_i
+              w = w.to_i
               @psh = h/2; 
               @psw = w/2
               @x_axis.coords(2, @psh, w-2, @psh)
@@ -125,6 +128,14 @@ class PendulumAnimationDemo
               @label_theta.coords(@psw-4, 6)
               @label_dtheta.coords(w-6, @psh+4)
             }, '%h %w')
+
+    # add
+    Tk.update
+    @pane.add(@lf1)
+    @pane.add(@lf2)
+
+    # init display
+    showPendulum
 
     # animation start
     @timer.start(500)
@@ -156,6 +167,10 @@ class PendulumAnimationDemo
   # rate at which the angle is changing (the first derivative with
   # respect to time.)
   def showPhase
+    unless @psw && @psh
+      @psw = @k.width/2
+      @psh = @k.height/2
+    end
     @points << @theta + @psw << -20*@dTheta + @psh
     if @points.length > 100
       @points = @points[-100..-1]

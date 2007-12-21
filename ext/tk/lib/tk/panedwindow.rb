@@ -3,7 +3,7 @@
 #
 require 'tk'
 
-class TkPanedWindow<TkWindow
+class Tk::PanedWindow<TkWindow
   TkCommandNames = ['panedwindow'.freeze].freeze
   WidgetClassName = 'Panedwindow'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -229,4 +229,7 @@ class TkPanedWindow<TkWindow
     list(tk_send_without_enc('panes'))
   end
 end
-TkPanedwindow = TkPanedWindow
+
+Tk::Panedwindow = Tk::PanedWindow
+TkPanedWindow = Tk::PanedWindow unless Object.const_defined? :TkPanedWindow
+TkPanedwindow = Tk::Panedwindow unless Object.const_defined? :TkPanedwindow

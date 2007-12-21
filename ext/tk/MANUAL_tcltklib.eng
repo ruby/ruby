@@ -125,7 +125,24 @@ module TclTklib
          : Tcl7.6 doesn't have this flag. So PARSE_VARNAME is 
          : defined as 0. 
 
+  module TclTkLib::RELEASE_TYPE
+    : Defines release type number of Tcl/Tk
+
+       ALPHA
+         : ALPHA release
+
+       BETA
+         : BETA release
+
+       FINAL
+         : FINAL release
+
   [module methods]
+     get_version()
+        : return an array of major, minor, release-type number, 
+        : number, release-type name, and patchlevel of current 
+        : Tcl/Tk library.
+
      mainloop(check_root = true)
        : Starts the eventloop. If 'check_root' is true, this method 
        : doesn't return when a root widget exists. 

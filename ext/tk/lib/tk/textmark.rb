@@ -121,6 +121,7 @@ class TkTextMark<TkObject
     end
   end
 end
+TktMark = TkTextMark
 
 class TkTextNamedMark<TkTextMark
   def self.new(parent, name, *args)
@@ -146,21 +147,25 @@ class TkTextNamedMark<TkTextMark
     @t._addtag id, self
   end
 end
+TktNamedMark = TkTextNamedMark
 
 class TkTextMarkInsert<TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'insert', *args)
   end
 end
+TktMarkInsert = TkTextMarkInsert
 
 class TkTextMarkCurrent<TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'current', *args)
   end
 end
+TktMarkCurrent = TkTextMarkCurrent
 
 class TkTextMarkAnchor<TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'anchor', *args)
   end
 end
+TktMarkAnchor = TkTextMarkAnchor

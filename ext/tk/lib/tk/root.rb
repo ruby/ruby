@@ -5,7 +5,7 @@ require 'tk'
 require 'tk/wm'
 require 'tk/menuspec'
 
-class TkRoot<TkWindow
+class Tk::Root<TkWindow
   include Wm
   include TkMenuSpec
 
@@ -106,3 +106,5 @@ class TkRoot<TkWindow
     TkCore::INTERP._invoke('destroy', '.')
   end
 end
+
+TkRoot = Tk::Root unless Object.const_defined? :TkRoot

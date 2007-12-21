@@ -80,3 +80,5 @@ class TkTextImage<TkObject
     value
   end
 end
+
+TktImage = TkTextImage

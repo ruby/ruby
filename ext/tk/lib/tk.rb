@@ -1077,10 +1077,13 @@ module TkComm
   end
 end
 
-
 module TkCore
   include TkComm
   extend TkComm
+
+  unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
+    RUN_EVENTLOOP_ON_MAIN_THREAD = false
+  end
 
   unless self.const_defined? :INTERP
     if self.const_defined? :IP_NAME
@@ -1099,7 +1102,40 @@ module TkCore
       opts = ''
     end
 
-    INTERP = TclTkIp.new(name, opts)
+    if RUBY_VERSION < '1.9.0' || RUN_EVENTLOOP_ON_MAIN_THREAD ### !!!!!!!!!!!
+      INTERP = TclTkIp.new(name, opts)
+    else
+      require 'thread'
+      INTERP_MUTEX = Mutex.new
+      INTERP_ROOT_CHECK = ConditionVariable.new
+      INTERP_THREAD = Thread.new{
+        begin
+          Thread.current[:interp] = interp = TclTkIp.new(name, opts)
+        rescue => e
+          Thread.current[:interp] = e
+          raise e
+        end
+        Thread.current[:status] = nil
+        #sleep
+
+        begin
+          Thread.current[:status] = TclTkLib.mainloop(true)
+        rescue Exception=>e
+          Thread.current[:status] = e
+        ensure
+          INTERP_MUTEX.synchronize{ INTERP_ROOT_CHECK.broadcast }
+        end
+        Thread.current[:status] = TclTkLib.mainloop(false)
+      }
+
+      until INTERP_THREAD[:interp]
+        Thread.pass
+      end
+      # INTERP_THREAD.run
+      raise INTERP_THREAD[:interp] if INTERP_THREAD[:interp].kind_of? Exception
+
+      INTERP = INTERP_THREAD[:interp]
+    end
 
     def INTERP.__getip
       self
@@ -1554,7 +1590,28 @@ module TkCore
   end
 
   def mainloop(check_root = true)
-    TclTkLib.mainloop(check_root)
+    if RUBY_VERSION < '1.9.0' || 
+        TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD ### !!!!!!!!!!!
+      TclTkLib.mainloop(check_root)
+    else
+      begin
+        TclTkLib.set_eventloop_window_mode(true)
+        if check_root
+          INTERP_MUTEX.synchronize{
+            INTERP_ROOT_CHECK.wait(INTERP_MUTEX)
+            status = INTERP_THREAD[:status]
+            if status
+              INTERP_THREAD[:status] = nil
+              raise status if status.kind_of?(Exception)
+            end
+          }
+        else
+          INTERP_THREAD.value
+        end
+      ensure
+        TclTkLib.set_eventloop_window_mode(false)
+      end
+    end
   end
 
   def mainloop_thread?
@@ -1562,7 +1619,12 @@ module TkCore
     # nil   : there is no mainloop
     # false : mainloop is running on the other thread
     #         ( At then, it is dangerous to call Tk interpreter directly. )
-    TclTkLib.mainloop_thread?
+    if RUBY_VERSION < '1.9.0' || 
+        TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD ### !!!!!!!!!!!
+      TclTkLib.mainloop_thread?
+    else
+      Thread.current == INTERP_THREAD
+    end
   end
 
   def mainloop_exist?
@@ -1797,7 +1859,6 @@ module TkCore
     _tk_call_to_list_core(0, true, true, *args)
   end
 end
-
 
 module Tk
   include TkCore
@@ -2405,34 +2466,101 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
   end
 
   # estimate encoding
-  case $KCODE
-  when /^e/i  # EUC
-    Tk.encoding = 'euc-jp'
-    Tk.encoding_system = 'euc-jp'
-  when /^s/i  # SJIS
-    begin
-      if Tk.encoding_system == 'cp932'
-        Tk.encoding = 'cp932'
-      else
+  if RUBY_VERSION < '1.9.0'
+    case $KCODE
+    when /^e/i  # EUC
+      Tk.encoding = 'euc-jp'
+      Tk.encoding_system = 'euc-jp'
+    when /^s/i  # SJIS
+      begin
+        if Tk.encoding_system == 'cp932'
+          Tk.encoding = 'cp932'
+        else
+          Tk.encoding = 'shiftjis'
+          Tk.encoding_system = 'shiftjis'
+        end
+      rescue StandardError, NameError
         Tk.encoding = 'shiftjis'
         Tk.encoding_system = 'shiftjis'
       end
-    rescue StandardError, NameError
-      Tk.encoding = 'shiftjis'
-      Tk.encoding_system = 'shiftjis'
-    end
-  when /^u/i  # UTF8
-    Tk.encoding = 'utf-8'
-    Tk.encoding_system = 'utf-8'
-  else        # NONE
-    if defined? DEFAULT_TK_ENCODING
-      Tk.encoding_system = DEFAULT_TK_ENCODING
-    end
-    begin
-      Tk.encoding = Tk.encoding_system
-    rescue StandardError, NameError
+    when /^u/i  # UTF8
       Tk.encoding = 'utf-8'
       Tk.encoding_system = 'utf-8'
+    else        # NONE
+      if defined? DEFAULT_TK_ENCODING
+        Tk.encoding_system = DEFAULT_TK_ENCODING
+      end
+      begin
+        Tk.encoding = Tk.encoding_system
+      rescue StandardError, NameError
+        Tk.encoding = 'utf-8'
+        Tk.encoding_system = 'utf-8'
+      end
+    end
+  else #########################
+    $TK_ENCODING ||= Encoding.default_external.name
+    case $TK_ENCODING
+    when 'US_ASCII'
+      Tk.encoding = 'ascii'
+      Tk.encoding_system = 'ascii'
+    when 'BIG5'
+      Tk.encoding = 'big5'
+      Tk.encoding_system = 'big5'
+    when 'CP1251'
+      Tk.encoding = 'cp1251'
+      Tk.encoding_system = 'cp1251'
+    when 'EUC-JP'
+      Tk.encoding = 'euc-jp'
+      Tk.encoding_system = 'euc-jp'
+    when 'EUC-KR'
+      Tk.encoding = 'euc-kr'
+      Tk.encoding_system = 'euc-kr'
+    when 'EUC-TW', 'EUC-CN'
+      Tk.encoding = 'euc-cn'
+      Tk.encoding_system = 'euc-cn'
+    #when 'GB18030'
+    #  Tk.encoding = 'gb12345'        # ????????????
+    #  Tk.encoding_system = 'gb12345' # ????????????
+    when 'ISO-2022-JP'
+      Tk.encoding = 'iso2022-jp'
+      Tk.encoding_system = 'iso2022-jp'
+    when /ISO-8859-(.*)/
+      Tk.encoding = 'iso8859-' << $1
+      Tk.encoding_system = 'iso8859-' << $1
+    #when 'KOI8', 'KOI8-U'
+    #  Tk.encoding = 'koi8-u'        # ????????????
+    #  Tk.encoding_system = 'koi8-u' # ????????????
+    when 'KOI8-R'
+      Tk.encoding = 'koi8-r'
+      Tk.encoding_system = 'koi8-r'
+    when 'Shift_JIS'
+      begin
+        if Tk.encoding_system == 'cp932'
+          Tk.encoding = 'cp932'
+        else
+          Tk.encoding = 'shiftjis'
+          Tk.encoding_system = 'shiftjis'
+        end
+      rescue StandardError, NameError
+        Tk.encoding = 'shiftjis'
+        Tk.encoding_system = 'shiftjis'
+      end
+    when 'UNICODE'
+      Tk.encoding = 'unicode'
+      Tk.encoding_system = 'unicode'
+    when 'UTF-8'
+      Tk.encoding = 'utf-8'
+      Tk.encoding_system = 'utf-8'
+    else ###### 'ASCII-8BIT'
+      if defined? DEFAULT_TK_ENCODING
+        Tk.encoding_system = DEFAULT_TK_ENCODING
+      end
+      begin
+        Tk.encoding = Tk.encoding_system
+      rescue StandardError, NameError
+        Tk.encoding = 'utf-8'
+        Tk.encoding_system = 'utf-8'
+      end
     end
   end
 
@@ -4076,6 +4204,11 @@ class TkWindow<TkObject
   end
   private :create_self
 
+  def inspect
+    str = super
+    str[0..(str.index(' '))] << '@path=' << @path.inspect << '>'
+  end
+
   def exist?
     TkWinfo.exist?(self)
   end
@@ -4586,7 +4719,6 @@ class TkWindow<TkObject
   end
 end
 
-
 # freeze core modules
 #TclTkLib.freeze
 #TclTkIp.freeze
@@ -4598,7 +4730,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2007-01-26'.freeze
+  RELEASE_DATE = '2007-12-21'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

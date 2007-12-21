@@ -133,6 +133,11 @@ module TkComposite
   def initialize_composite(*args) end
   private :initialize_composite
 
+  def inspect
+    str = super
+    str.chop << ' @epath=' << @epath.inspect << '>'
+  end
+
   def option_methods(*opts)
     opts.each{|m_set, m_cget, m_info|
       m_set  = m_set.to_s

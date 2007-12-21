@@ -4,7 +4,7 @@
 require 'tk'
 require 'tk/label'
 
-class TkButton<TkLabel
+class Tk::Button<TkLabel
   TkCommandNames = ['button'.freeze].freeze
   WidgetClassName = 'Button'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -25,3 +25,5 @@ class TkButton<TkLabel
     self
   end
 end
+
+TkButton = Tk::Button unless Object.const_defined? :TkButton

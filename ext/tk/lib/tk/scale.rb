@@ -3,7 +3,7 @@
 #
 require 'tk'
 
-class TkScale<TkWindow
+class Tk::Scale<TkWindow
   TkCommandNames = ['scale'.freeze].freeze
   WidgetClassName = 'Scale'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -84,3 +84,5 @@ class TkScale<TkWindow
     val
   end
 end
+
+TkScale = Tk::Scale unless Object.const_defined? :TkScale

@@ -5,7 +5,7 @@ require 'tk'
 require 'tk/wm'
 require 'tk/menuspec'
 
-class TkToplevel<TkWindow
+class Tk::Toplevel<TkWindow
   include Wm
   include TkMenuSpec
 
@@ -117,9 +117,10 @@ class TkToplevel<TkWindow
       end
       if @classname.kind_of? TkBindTag
         @db_class = @classname
-        @classname = @classname.id
+        keys['class'] = @classname = @classname.id
       elsif @classname
         @db_class = TkDatabaseClass.new(@classname)
+        keys['class'] = @classname
       else
         @db_class = self.class
         @classname = @db_class::WidgetClassName
@@ -165,9 +166,10 @@ class TkToplevel<TkWindow
     end
     if @classname.kind_of? TkBindTag
       @db_class = @classname
-      @classname = @classname.id
+      keys['class'] = @classname = @classname.id
     elsif @classname
       @db_class = TkDatabaseClass.new(@classname)
+      keys['class'] = @classname
     else
       @db_class = self.class
       @classname = @db_class::WidgetClassName
@@ -255,3 +257,5 @@ class TkToplevel<TkWindow
     end
   end
 end
+
+TkToplevel = Tk::Toplevel unless Object.const_defined? :TkToplevel

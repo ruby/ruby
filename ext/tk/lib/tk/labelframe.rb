@@ -4,7 +4,7 @@
 require 'tk'
 require 'tk/frame'
 
-class TkLabelFrame<TkFrame
+class Tk::LabelFrame<TkFrame
   TkCommandNames = ['labelframe'.freeze].freeze
   WidgetClassName = 'Labelframe'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -22,4 +22,7 @@ class TkLabelFrame<TkFrame
   end
   private :__val2ruby_optkeys
 end
-TkLabelframe = TkLabelFrame
+
+Tk::Labelframe = TkLabelFrame
+TkLabelFrame = Tk::LabelFrame unless Object.const_defined? :TkLabelFrame
+TkLabelframe = Tk::Labelframe unless Object.const_defined? :TkLabelframe

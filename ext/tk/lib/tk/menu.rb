@@ -42,7 +42,7 @@ module TkMenuEntryConfig
   private :itemconfiginfo, :current_itemconfiginfo
 end
 
-class TkMenu<TkWindow
+class Tk::Menu<TkWindow
   include Wm
   include TkMenuEntryConfig
   extend TkMenuSpec
@@ -381,8 +381,10 @@ class TkMenu<TkWindow
 =end
 end
 
+TkMenu = Tk::Menu unless Object.const_defined? :TkMenu
 
-class TkMenuClone<TkMenu
+
+class Tk::MenuClone<TkMenu
 =begin
   def initialize(parent, type=None)
     widgetname = nil
@@ -436,7 +438,9 @@ class TkMenuClone<TkMenu
     @src_menu
   end
 end
-TkCloneMenu = TkMenuClone
+Tk::CloneMenu = Tk::MenuClone
+TkMenuClone = Tk::MenuClone unless Object.const_defined? :TkMenuClone
+TkCloneMenu = Tk::CloneMenu unless Object.const_defined? :TkCloneMenu
 
 module TkSystemMenu
   def initialize(parent, keys=nil)
@@ -463,28 +467,31 @@ module TkSystemMenu
 end
 
 
-class TkSysMenu_Help<TkMenu
+class Tk::SysMenu_Help<TkMenu
   # for all platform
   include TkSystemMenu
   SYSMENU_NAME = 'help'
 end
+TkSysMenu_Help = Tk::SysMenu_Help unless Object.const_defined? :TkSysMenu_Help
 
 
-class TkSysMenu_System<TkMenu
+class Tk::SysMenu_System<TkMenu
   # for Windows
   include TkSystemMenu
   SYSMENU_NAME = 'system'
 end
+TkSysMenu_System = Tk::SysMenu_System unless Object.const_defined? :TkSysMenu_System
 
 
-class TkSysMenu_Apple<TkMenu
+class Tk::SysMenu_Apple<TkMenu
   # for Machintosh
   include TkSystemMenu
   SYSMENU_NAME = 'apple'
 end
+TkSysMenu_Apple = Tk::SysMenu_Apple unless Object.const_defined? :TkSysMenu_Apple
 
 
-class TkMenubutton<TkLabel
+class Tk::Menubutton<TkLabel
   TkCommandNames = ['menubutton'.freeze].freeze
   WidgetClassName = 'Menubutton'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -506,10 +513,12 @@ class TkMenubutton<TkLabel
   private :__boolval_optkeys
 
 end
-TkMenuButton = TkMenubutton
+Tk::MenuButton = Tk::Menubutton
+TkMenubutton = Tk::Menubutton unless Object.const_defined? :TkMenubutton
+TkMenuButton = Tk::MenuButton unless Object.const_defined? :TkMenuButton
 
 
-class TkOptionMenubutton<TkMenubutton
+class Tk::OptionMenubutton<TkMenubutton
   TkCommandNames = ['tk_optionMenu'.freeze].freeze
 
   class OptionMenu<TkMenu
@@ -629,4 +638,7 @@ class TkOptionMenubutton<TkMenubutton
     @menu.current_entryconfiginfo(index, key)
   end
 end
-TkOptionMenuButton = TkOptionMenubutton
+
+Tk::OptionMenuButton = Tk::OptionMenubutton
+TkOptionMenubutton = Tk::OptionMenubutton unless Object.const_defined? :TkOptionMenubutton
+TkOptionMenuButton = Tk::OptionMenuButton unless Object.const_defined? :TkOptionMenuButton

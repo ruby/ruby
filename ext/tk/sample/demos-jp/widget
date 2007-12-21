@@ -2,7 +2,11 @@
 # -*- coding: euc-jp -*-
 
 # 漢字コード設定 ( tk.rb のロード時の encoding 推定/設定に使われる )
-$KCODE = 'euc'
+if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!!
+  $KCODE = 'euc'
+else
+  $TK_ENCODING = 'EUC-JP'
+end
 
 # tk 関係ライブラリの読み込み
 require 'tk'

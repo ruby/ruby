@@ -28,3 +28,22 @@ class Tk::Tile::TScrollbar < TkScrollbar
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 end
+
+class Tk::Tile::XScrollbar < Tk::Tile::TScrollbar
+  def create_self(keys)
+    keys = {} unless keys
+    keys['orient'] = 'horizontal'
+    super(keys)
+  end
+  private :create_self
+end
+
+class Tk::Tile::YScrollbar < Tk::Tile::TScrollbar
+  def create_self(keys)
+    keys = {} unless keys
+    keys['orient'] = 'vertical'
+    super(keys)
+  end
+  private :create_self
+end
+

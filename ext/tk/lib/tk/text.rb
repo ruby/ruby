@@ -60,7 +60,7 @@ module TkTextTagConfig
   private :itemconfiginfo, :current_itemconfiginfo
 end
 
-class TkText<TkTextWin
+class Tk::Text<TkTextWin
   ItemConfCMD = ['tag'.freeze, 'configure'.freeze].freeze
   #include TkTreatTextTagFont
   include TkTextTagConfig
@@ -1183,6 +1183,11 @@ class TkText<TkTextWin
   end
 
   def _ktext_length(txt)
+    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!
+      return txt.length
+    end
+    ###########################
+
     if $KCODE !~ /n/i
       return txt.gsub(/[^\Wa-zA-Z_\d]/, ' ').length
     end
@@ -1526,6 +1531,9 @@ class TkText<TkTextWin
     dump(['image'], *index, &block)
   end
 end
+
+TkText = Tk::Text unless Object.const_defined? :TkText
+
 
 #######################################
 

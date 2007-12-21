@@ -322,6 +322,11 @@ class Tk::Iwidgets::Scrolledtext
 
 
   def _ktext_length(txt)
+    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!
+      return txt.length
+    end
+    ###########################
+
     if $KCODE !~ /n/i
       return txt.gsub(/[^\Wa-zA-Z_\d]/, ' ').length
     end

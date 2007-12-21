@@ -225,6 +225,7 @@ class TkTextTag<TkObject
     self
   end
 end
+TktTag = TkTextTag
 
 class TkTextNamedTag<TkTextTag
   def self.new(parent, name, *args)
@@ -271,9 +272,11 @@ class TkTextNamedTag<TkTextTag
     @t._addtag id, self
   end
 end
+TktNamedTag = TkTextNamedTag
 
 class TkTextTagSel<TkTextNamedTag
   def self.new(parent, *args)
     super(parent, 'sel', *args)
   end
 end
+TktTagSel = TkTextTagSel

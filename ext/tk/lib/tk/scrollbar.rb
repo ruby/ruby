@@ -3,7 +3,7 @@
 #
 require 'tk'
 
-class TkScrollbar<TkWindow
+class Tk::Scrollbar<TkWindow
   TkCommandNames = ['scrollbar'.freeze].freeze
   WidgetClassName = 'Scrollbar'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -105,7 +105,10 @@ class TkScrollbar<TkWindow
   end
 end
 
-class TkXScrollbar<TkScrollbar
+TkScrollbar = Tk::Scrollbar unless Object.const_defined? :TkScrollbar
+
+
+class Tk::XScrollbar<TkScrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'horizontal'
@@ -114,7 +117,10 @@ class TkXScrollbar<TkScrollbar
   private :create_self
 end
 
-class TkYScrollbar<TkScrollbar
+TkXScrollbar = Tk::XScrollbar unless Object.const_defined? :TkXScrollbar
+
+
+class Tk::YScrollbar<TkScrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'vertical'
@@ -122,3 +128,5 @@ class TkYScrollbar<TkScrollbar
   end
   private :create_self
 end
+
+TkYScrollbar = Tk::YScrollbar unless Object.const_defined? :TkYScrollbar

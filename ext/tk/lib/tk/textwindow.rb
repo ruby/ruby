@@ -147,3 +147,5 @@ class TkTextWindow<TkObject
     value
   end
 end
+
+TktWindow = TkTextWindow

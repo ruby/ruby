@@ -8,7 +8,7 @@ require 'tk/label'
 require 'tk/scrollable'
 require 'tk/validation'
 
-class TkEntry<TkLabel
+class Tk::Entry<TkLabel
   include X_Scrollable
   include TkValidation
 
@@ -115,3 +115,5 @@ class TkEntry<TkLabel
     val
   end
 end
+
+TkEntry = Tk::Entry unless Object.const_defined? :TkEntry
