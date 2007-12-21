@@ -47,7 +47,7 @@ class Gem::Commands::BuildCommand < Gem::Command
 
   def yaml?(filename)
     line = open(filename) { |f| line = f.gets }
-    result = line =~ %r{^--- *!ruby/object:Gem::Specification}
+    result = line =~ %r{!ruby/object:Gem::Specification}
     result
   end
 end

@@ -1,3 +1,7 @@
+Fri Dec 21 17:44:47 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems*:  Update to RubyGems 1.0.1, r1581
+
 Fri Dec 21 17:32:49 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/pending.rb: renamed from featurebug.rb.
@@ -160,6 +164,7 @@ Fri Dec 21 12:45:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_chomp_bang): avoid unnecessary loop using
 	  ONIGENC_LEFT_ADJUST_CHAR_HEAD().
 
+>>>>>>> .r14423
 Fri Dec 21 12:32:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (Init_File): File.exists? revived.

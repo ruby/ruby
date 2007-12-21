@@ -27,7 +27,8 @@ end
 
 class TarTestCase < Test::Unit::TestCase
 
-  undef_method :default_test
+  undef_method :default_test if instance_methods.include? 'default_test' or
+                                instance_methods.include? :default_test
 
   def assert_headers_equal(h1, h2)
     fields = %w[name 100 mode 8 uid 8 gid 8 size 12 mtime 12 checksum 8

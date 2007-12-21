@@ -73,6 +73,7 @@ module Gem
 
   ConfigMap = {} unless defined?(ConfigMap)
   require 'rbconfig'
+  RbConfig = Config unless defined? ::RbConfig
   ConfigMap.merge!(
       :BASERUBY => RbConfig::CONFIG["BASERUBY"],
       :EXEEXT => RbConfig::CONFIG["EXEEXT"],

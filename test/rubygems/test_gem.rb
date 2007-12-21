@@ -52,7 +52,7 @@ class TestGem < RubyGemTestCase
     assert_equal nil, Gem.instance_variable_get(:@gem_home)
     assert_equal nil, Gem.instance_variable_get(:@gem_path)
     assert_not_equal searcher, Gem.searcher
-    assert_not_equal source_index, Gem.source_index
+    assert_not_equal source_index.object_id, Gem.source_index.object_id
   end
 
   def test_self_configuration
