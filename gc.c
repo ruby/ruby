@@ -1525,6 +1525,12 @@ garbage_collect(void)
     return Qtrue;
 }
 
+int
+rb_garbage_collect(void)
+{
+    return garbage_collect();
+}
+
 void
 rb_gc_mark_machine_stack(rb_thread_t *th)
 {

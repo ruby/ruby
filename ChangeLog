@@ -1,3 +1,7 @@
+Fri Dec 21 15:15:44 2007  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (rb_garbage_collect): new function for debugging.
+
 Fri Dec 21 15:16:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_to_encoding_index): should return error instead of
