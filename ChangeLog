@@ -1,3 +1,8 @@
+Fri Dec 21 17:49:06 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (rb_str_transcode_bang): returns self if no conversion.
+	  [ruby-dev:32662]
+
 Fri Dec 21 17:44:47 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*:  Update to RubyGems 1.0.1, r1581

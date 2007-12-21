@@ -370,7 +370,7 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
     VALUE newstr = str;
     int encidx = str_transcode(argc, argv, &newstr);
 
-    if (encidx < 0) return Qnil;
+    if (encidx < 0) return str;
     rb_str_shared_replace(str, newstr);
     rb_enc_associate_index(str, encidx);
     return str;
