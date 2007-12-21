@@ -943,7 +943,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     if (rb_reg_fixed_encoding_p(re)) {
         if (ENCODING_GET(re) != rb_enc_get_index(str) &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-            rb_raise(rb_eArgError, "character encodings differ");
+            rb_raise(rb_eArgError, "fixed character encoding regexp with incompatible string");
         }
     }
     else if ((enc = rb_enc_get(str)) != 0 &&
@@ -1666,7 +1666,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         if (*encp == 0)
             *encp = enc;
         else if (*encp != enc) {
-            strcpy(err, "character encodings differ");
+            strcpy(err, "escaped non ASCII character in UTF-8 regexp");
             return -1;
         }
     }
@@ -1710,7 +1710,7 @@ append_utf8(unsigned long uv,
         if (*encp == 0)
             *encp = rb_enc_find("utf-8");
         else if (*encp != rb_enc_find("utf-8")) {
-            strcpy(err, "character encodings differ");
+            strcpy(err, "UTF-8 character in non UTF-8 regexp");
             return -1;
         }
     }
@@ -1796,7 +1796,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
             if (*encp == 0)
                 *encp = enc;
             else if (*encp != enc) {
-                strcpy(err, "character encodings differ");
+                strcpy(err, "non ASCII character in UTF-8 regexp");
                 return -1;
             }
             continue;
@@ -1972,7 +1972,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 
     if (fixed_enc) {
 	if (fixed_enc != enc && (options & ARG_ENCODING_FIXED)) {
-	    strcpy(err, "character encodings differ");
+	    strcpy(err, "incompatible character encoding");
 	    return -1;
 	}
         if (fixed_enc != d_enc) {
