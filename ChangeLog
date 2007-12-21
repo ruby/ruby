@@ -1,3 +1,9 @@
+Sat Dec 22 05:09:43 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (parser_str_new, rb_intern3): rb_default_encoding() renamed.
+
+	* ext/nkf/nkf.c (rb_nkf_putchar): ditto.
+
 Sat Dec 22 03:54:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_ascii_encoding): renamed from previous

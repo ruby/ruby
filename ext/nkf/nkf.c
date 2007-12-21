@@ -64,7 +64,7 @@ rb_nkf_putchar(unsigned int c)
 rb_encoding* rb_nkf_enc_get(const char *name)
 {
     int idx = rb_enc_find_index(name);
-    if (idx < 0) idx = rb_enc_replicate(name, rb_default_encoding());
+    if (idx < 0) idx = rb_enc_replicate(name, rb_ascii_encoding());
     return rb_enc_from_index(idx);
 }
 
