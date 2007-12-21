@@ -1,3 +1,9 @@
+Fri Dec 21 17:07:13 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.h: extern variable should not be initialized.
+
+	* thread_pthread.c: add a parameter.
+
 Fri Dec 21 16:50:43 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (Init_Encoding): use enc_name as to_s.

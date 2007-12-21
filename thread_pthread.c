@@ -112,7 +112,7 @@ static rb_thread_lock_t signal_thread_list_lock;
 static pthread_key_t ruby_native_thread_key;
 
 static void
-null_func()
+null_func(int i)
 {
     /* null */
 }

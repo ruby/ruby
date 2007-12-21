@@ -17,7 +17,7 @@ NOINLINE(void rb_gc_set_stack_end(VALUE **stack_end_p));
 #endif
 
 #if RUBY_MARK_FREE_DEBUG
-extern int ruby_gc_debug_indent = 0;
+extern int ruby_gc_debug_indent;
 
 static void
 rb_gc_debug_indent(void)
