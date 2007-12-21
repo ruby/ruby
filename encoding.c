@@ -81,6 +81,9 @@ rb_to_encoding_index(VALUE enc)
     if (idx >= 0) {
 	return idx;
     }
+    else if (NIL_P(enc = rb_check_string_type(enc))) {
+	return -1;
+    }
     else {
 	return rb_enc_find_index(StringValueCStr(enc));
     }
