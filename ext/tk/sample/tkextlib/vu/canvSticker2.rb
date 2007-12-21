@@ -23,10 +23,10 @@ c.destroy
 #sti_conf = [ [10, 10, 180, 180], "Sticker äöüß@²³¼½¾",  :center ]
 #txt_conf = [ [210, 210],        "Text    äöüß@²³¼½¾",  :center ]
 sti_conf = [ [10, 10, 350, 350], 
-             Tk::UTF8_String('Sticker \u00E4\u00F6\u00FC\u00DF\u0040\u00B2\u00B3\u00BC\u00BD\\u00BE')
+             Tk::UTF8_String('Sticker \u00E4\u00F6\u00FC\u00DF\u0040\u00B2\u00B3\u00BC\u00BD\u00BE'),
              :center ]
 txt_conf = [ [250, 250],
-             Tk::UTF8_String('Text    \u00E4\u00F6\u00FC\u00DF\u0040\u00B2\u00B3\u00BC\u00BD\\u00BE')
+             Tk::UTF8_String('Text    \u00E4\u00F6\u00FC\u00DF\u0040\u00B2\u00B3\u00BC\u00BD\u00BE'),
              :center ]
 
 #p sti_conf
