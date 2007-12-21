@@ -1,3 +1,9 @@
+Fri Dec 21 16:10:30 2007  Shigeo Kobayashi  <shigeo@tinyforest.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpMidRound): Round method bug
+	  pointed by Ryan Platte fixed(Patch to the patch from "NATORI
+	  Shin").  [ruby-talk:273360]
+
 Fri Dec 21 16:06:13 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (append_utf8): use rb_utf8_encoding() instead of

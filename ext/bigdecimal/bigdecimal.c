@@ -4318,7 +4318,6 @@ Exit:
 
 /*
  *
- * f = 0: Round off/Truncate, 1: round up, 2:ceil, 3: floor, 4: Banker's rounding
  * nf: digit position for operation.
  *
  */
@@ -4339,15 +4338,22 @@ VpMidRound(Real *y, int f, int nf)
     nf += y->exponent*((int)BASE_FIG);
     exptoadd=0;
     if (nf < 0) {
+		/* rounding position too left(large). */
+		if((f!=VP_ROUND_CEIL) && (f!=VP_ROUND_FLOOR)) {
+			VpSetZero(y,VpGetSign(y)); /* truncate everything */
+			return 0;
+		}
         exptoadd = -nf;
         nf = 0;
     }
+
     /* ix: x->fraq[ix] contains round position */
     ix = nf/(int)BASE_FIG;
-    if(((U_LONG)ix)>=y->Prec) return 0; /* Unable to round */
+    if(((U_LONG)ix)>=y->Prec) return 0;  /* rounding position too right(small). */
     ioffset = nf - ix*((int)BASE_FIG);
 
     v = y->frac[ix];
+
     /* drop digits after pointed digit */
     n = BASE_FIG - ioffset - 1;
     for(shifter=1,i=0;i<n;++i) shifter *= 10;
