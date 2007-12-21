@@ -236,14 +236,23 @@ rb_enc_alias(const char *alias, const char *orig)
     return enc_alias(alias, orig);
 }
 
+enum {
+    ENCINDEX_ASCII,
+    ENCINDEX_EUC_JP,
+    ENCINDEX_SJIS,
+    ENCINDEX_UTF8,
+    ENCINDEX_BUILTIN_MAX
+};
+
 void
 rb_enc_init(void)
 {
-#define ENC_REGISTER(enc) enc_register(rb_enc_name(enc), enc)
-    ENC_REGISTER(ONIG_ENCODING_ASCII);
-    ENC_REGISTER(ONIG_ENCODING_EUC_JP);
-    ENC_REGISTER(ONIG_ENCODING_SJIS);
-    ENC_REGISTER(ONIG_ENCODING_UTF8);
+    enc_table_count = enc_table_expand(ENCINDEX_BUILTIN_MAX);
+#define ENC_REGISTER(enc) enc_register_at(ENCINDEX_##enc, rb_enc_name(ONIG_ENCODING_##enc), ONIG_ENCODING_##enc)
+    ENC_REGISTER(ASCII);
+    ENC_REGISTER(EUC_JP);
+    ENC_REGISTER(SJIS);
+    ENC_REGISTER(UTF8);
 #undef ENC_REGISTER
     enc_alias("ASCII", rb_enc_name(ONIG_ENCODING_ASCII));
     enc_alias("BINARY", rb_enc_name(ONIG_ENCODING_ASCII));
@@ -693,6 +702,15 @@ rb_default_encoding(void)
 	rb_enc_init();
     }
     return enc_table[0].enc;
+}
+
+rb_encoding *
+rb_utf8_encoding(void)
+{
+    if (!enc_table) {
+	rb_enc_init();
+    }
+    return enc_table[ENCINDEX_UTF8].enc;
 }
 
 static int default_external_index;

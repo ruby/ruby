@@ -266,7 +266,7 @@ struct parser_params {
 };
 
 #define UTF8_ENC() (parser->utf8 ? parser->utf8 : \
-		    (parser->utf8 = rb_enc_find("utf-8")))
+		    (parser->utf8 = rb_utf8_encoding()))
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW0() rb_str_new(0,0)
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)

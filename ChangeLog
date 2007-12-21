@@ -1,3 +1,13 @@
+Fri Dec 21 15:59:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_init): use enc_register_at() directly.
+
+	* encoding.c (rb_utf8_encoding): returns utf-8 encoding.
+
+	* include/ruby/encoding.h (rb_utf8_encoding): prototyped.
+
+	* parse.y (UTF8_ENC): uses rb_utf8_encoding().
+
 Fri Dec 21 15:24:22 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (initialize): accept service name.  changed
