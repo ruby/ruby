@@ -69,14 +69,14 @@ define rp
         printf "(assoc) "
       end
     end
-    printf "encoding:%d ", ($flags & (RUBY_FL_USER8|RUBY_FL_USER9|RUBY_FL_USER10|RUBY_FL_USER11)) >> RUBY_ENCODING_SHIFT
-    if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == 0
+    printf "encoding:%d ", ($flags & RUBY_ENCODING_MASK) >> RUBY_ENCODING_SHIFT
+    if ($flags & RUBY_ENC_CODERANGE_MASK) == 0
       printf "coderange:unknown "
     else
-    if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == RUBY_FL_USER12
+    if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_7BIT
       printf "coderange:7bit "
     else
-    if ($flags & (RUBY_FL_USER12|RUBY_FL_USER13)) == RUBY_FL_USER13
+    if ($flags & RUBY_ENC_CODERANGE_MASK) == RUBY_ENC_CODERANGE_VALID
       printf "coderange:valid "
     else
       printf "coderange:broken "
@@ -97,7 +97,7 @@ define rp
     if $flags & RUBY_FL_USER4
       printf "(fixed) "
     end
-    printf "encoding:%d ", ($flags & (RUBY_FL_USER8|RUBY_FL_USER9|RUBY_FL_USER10|RUBY_FL_USER11)) >> RUBY_ENCODING_SHIFT
+    printf "encoding:%d ", ($flags & RUBY_ENCODING_MASK) >> RUBY_ENCODING_SHIFT
     print (struct RRegexp *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ARRAY
