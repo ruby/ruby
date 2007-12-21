@@ -154,6 +154,7 @@ VALUE rb_fiber_new(VALUE (*)(ANYARGS), VALUE);
 VALUE rb_fiber_resume(VALUE fib, int argc, VALUE *args);
 VALUE rb_fiber_yield(int argc, VALUE *args);
 VALUE rb_fiber_current(void);
+VALUE rb_fiber_alive_p(VALUE);
 /* enum.c */
 /* enumerator.c */
 VALUE rb_enumeratorize(VALUE, VALUE, int, VALUE *);

@@ -787,7 +787,9 @@ VALUE rb_rescue(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
 VALUE rb_rescue2(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...);
 VALUE rb_ensure(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
 VALUE rb_catch(const char*,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_catch_obj(VALUE,VALUE(*)(ANYARGS),VALUE);
 NORETURN(void rb_throw(const char*,VALUE));
+NORETURN(void rb_throw_obj(VALUE,VALUE));
 
 VALUE rb_require(const char*);
 
