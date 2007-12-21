@@ -139,8 +139,11 @@ static rb_encoding *
 locale_encoding(void)
 {
     VALUE codeset = rb_locale_charmap(Qnil);
-    char *name = StringValueCStr(codeset);
+    char *name;
     int idx;
+
+    if (codeset == Qnil)
+        return rb_default_encoding();
 
     idx = rb_enc_find_index(name);
     if (idx < 0)

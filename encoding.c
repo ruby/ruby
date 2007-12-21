@@ -714,7 +714,7 @@ rb_locale_charmap(VALUE klass)
     codeset = nl_langinfo(CODESET);
     return rb_str_new2(codeset);
 #else
-    return rb_str_new2("ASCII-8BIT");
+    return Qnil;
 #endif
 }
 

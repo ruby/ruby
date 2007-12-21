@@ -1,3 +1,7 @@
+Fri Dec 21 13:09:11 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_locale_charmap): return nil if no locale information.
+
 Fri Dec 21 12:55:39 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/runit, lib/rubyunit.rb, test/testunit/runit: removed.
