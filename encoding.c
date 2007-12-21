@@ -14,6 +14,7 @@
 #include "ruby/encoding.h"
 #include "regenc.h"
 #include <ctype.h>
+#include <langinfo.h>
 
 static ID id_encoding, id_based_encoding;
 static VALUE rb_cEncoding;
@@ -703,6 +704,14 @@ rb_enc_set_default_external(VALUE encoding)
     default_external_index = rb_enc_to_index(rb_to_encoding(encoding));
 }
 
+VALUE
+rb_locale_charmap(VALUE klass)
+{
+    char *codeset;
+    codeset = nl_langinfo(CODESET);
+    return rb_str_new2(codeset);
+}
+
 static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {
@@ -772,6 +781,7 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "_load", enc_load, 1);
 
     rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
+    rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
     /* dummy for unsupported, statefull encoding */
     rb_enc_replicate("ISO-2022-JP", rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));

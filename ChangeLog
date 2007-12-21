@@ -1,3 +1,15 @@
+Fri Dec 21 11:47:56 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c: include locale.h
+	  (rb_locale_charmap): new method Encoding.locale_charmap for
+	  nl_langinfo(CODESET).
+
+	* include/ruby/encoding.h (rb_locale_charmap): declared.
+
+	* main.c (main): call setlocale with LC_CTYPE.
+
+	* ruby.c (locale_encoding): use rb_locale_charmap.
+
 Fri Dec 21 11:35:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, vm_dump.c: fix typo.  Reported by Yuki Mitsui.

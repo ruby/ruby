@@ -12,6 +12,7 @@
 
 #undef RUBY_EXPORT
 #include "ruby/ruby.h"
+#include <locale.h>
 
 RUBY_GLOBAL_SETUP
 
@@ -22,6 +23,7 @@ main(int argc, char **argv, char **envp)
     extern void ruby_set_debug_option(const char *);
     ruby_set_debug_option(getenv("RUBY_DEBUG"));
 #endif
+    setlocale(LC_CTYPE, "");
 
     ruby_sysinit(&argc, &argv);
     {

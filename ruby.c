@@ -138,32 +138,14 @@ usage(const char *name)
 static rb_encoding *
 locale_encoding(void)
 {
-    static const char *const langs[] = {"LC_ALL", "LC_CTYPE", "LANG",};
-    const char *lang, *at;
-    int i, len, idx = 0;
-    char buf[32];
-    rb_encoding *enc;
+    VALUE codeset = rb_locale_charmap(Qnil);
+    char *name = StringValueCStr(codeset);
+    int idx;
 
-    for (i = 0; i < sizeof(langs) / sizeof(langs[0]); ++i) {
-	if (!(lang = getenv(langs[i]))) continue;
-	if (!(lang = strchr(lang, '.'))) continue;
-	at = strchr(++lang, '@');
-	if ((len = (at ? at - lang : strlen(lang))) >= sizeof(buf) - 1) continue;
-	MEMCPY(buf, lang, char, len);
-	buf[len] = 0;
-	idx = rb_enc_find_index(buf);
-	if (idx < 0 && len > 3 &&
-	    (strncasecmp(buf, "euc", 3) == 0 ||
-	     strncasecmp(buf, "utf", 3) == 0) &&
-	    buf[3]) {
-	    MEMMOVE(buf + 4, buf + 3, char, len - 2);
-	    buf[3] = '-';
-	    idx = rb_enc_find_index(buf);
-	}
-	enc = rb_enc_from_index(idx);
-	if (enc) return enc;
-    }
-    return rb_default_encoding();
+    idx = rb_enc_find_index(name);
+    if (idx < 0)
+        return rb_default_encoding();
+    return rb_enc_from_index(idx);
 }
 
 extern VALUE rb_load_path;

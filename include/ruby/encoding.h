@@ -117,5 +117,6 @@ rb_encoding *rb_default_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
 VALUE rb_enc_default_external(void);
 void rb_enc_set_default_external(VALUE encoding);
+VALUE rb_locale_charmap(VALUE klass);
 
 #endif /* RUBY_ENCODING_H */
