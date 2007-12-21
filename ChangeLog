@@ -73,6 +73,8 @@ Fri Dec 21 00:26:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* test/ruby/test_m17n.rb (TestM17N::test_tr_s): "invalid mbstring
 	  sequence" is not an error to be tested.
 
+	* test/ruby/test_m17n.rb (TestM17N::test_tr): ditto.
+
 Thu Dec 20 19:29:07 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (initialize): the second argument is an option

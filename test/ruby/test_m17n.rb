@@ -1623,7 +1623,7 @@ class TestM17N < Test::Unit::TestCase
         #puts "#{encdump s1}.tr(#{encdump s2}, #{encdump s3})"
         t = s1.tr(s2, s3)
       rescue ArgumentError
-        e = $!
+        e = $! unless /mbstring sequence/ =~ $!.message
       end
       if e
         encs = []
