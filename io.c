@@ -2289,7 +2289,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (NIL_P(c)) return Qnil;
-    enc = rb_enc_get(io);
+    enc = fptr->enc ? fptr->enc : rb_default_external_encoding();
     if (FIXNUM_P(c)) {
 	int cc = FIX2INT(c);
 	char buf[16];
@@ -2842,18 +2842,19 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 VALUE
 rb_io_binmode(VALUE io)
 {
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "buffer already filled with text-mode content");
     }
+#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     if (0 <= fptr->fd && setmode(fptr->fd, O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
 
-    fptr->mode |= FMODE_BINMODE;
 #endif
+    fptr->mode |= FMODE_BINMODE;
+    fptr->enc = rb_default_encoding();
     return io;
 }
 
@@ -5629,10 +5630,14 @@ io_s_read(struct foreach_arg *arg)
 /*
  *  call-seq:
  *     IO.read(name, [length [, offset]] )   => string
+ *     IO.read(name, encoding)               => string
  *
  *  Opens the file, optionally seeks to the given offset, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
  *  <code>read</code> ensures the file is closed before returning.
+ *  If the second argument is a string or an encoding object, the encoding
+ *  of the result string is set to that encoding.  Otherwise the encoding
+ *  will be default external encoding.
  *
  *     IO.read("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
  *     IO.read("testfile", 20)       #=> "This is line one\nThi"
@@ -5642,16 +5647,29 @@ io_s_read(struct foreach_arg *arg)
 static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
-    VALUE fname, offset;
+    rb_encoding *enc = 0;
+    VALUE fname, arg1, offset;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "12", &fname, NULL, &offset);
+    rb_scan_args(argc, argv, "12", &fname, &arg1, &offset);
     FilePathValue(fname);
-    arg.argc = argc > 1 ? 1 : 0;
-    arg.argv = argv + 1;
+    if (argc == 2 && (enc = rb_to_encoding(arg1))) {
+	arg.argc = 0;
+    }
+    else {
+	arg.argc = argc > 1 ? 1 : 0;
+	arg.argv = argv + 1;
+    }
     arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
-    if (!NIL_P(offset)) {
+    if (enc) {
+	rb_io_t *fptr;
+
+	GetOpenFile(arg.io, fptr);
+	fptr->enc = enc;
+    }
+    else if (!NIL_P(offset)) {
+	rb_io_binmode(arg.io);
 	rb_io_seek(arg.io, offset, SEEK_SET);
     }
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);

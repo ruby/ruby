@@ -8,6 +8,18 @@ Fri Dec 21 15:59:46 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (UTF8_ENC): uses rb_utf8_encoding().
 
+Fri Dec 21 15:31:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_read): allow specifying encoding explicitly.
+
+	* io.c (rb_io_binmode): specifies encoding to ASCII-8BIT (binary).
+
+	* io.c (rb_io_s_read): IO should be in binary mode when offset is
+	  specified.
+
+	* encoding.c (rb_to_encoding): returns default encoding if no
+	  corresponding encoding found.
+
 Fri Dec 21 15:24:22 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (initialize): accept service name.  changed
