@@ -85,4 +85,7 @@ struct normalization_pair{
 };
 #endif
 
+#define MIME_DECODE_DEFAULT 0
+#define X0201_DEFAULT 0
+
 #endif /* _CONFIG_H_ */

@@ -1,3 +1,11 @@
+Fri Dec 21 16:37:43 2007  NARUSE, Yui <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/config.h (MIME_DECODE_DEFAULT, X0201_DEFAULT):
+	 defined as FALSE.  nkf and kconv don't decode MIME encoded string
+	 and don't convert JIS X 0201 Katakana.
+	
+	* test/nkf/test_kconv.rb: fix tests.
+
 Fri Dec 21 16:33:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (enumerator_iter_i): adjusted for rb_block_call_func.
