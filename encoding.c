@@ -302,6 +302,7 @@ rb_enc_find_index(const char *name)
 	char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib);
 	while (s < e) {
 	    if (!ISALNUM(*s)) *s = '_';
+	    else if (ISUPPER(*s)) *s = tolower(*s);
 	    ++s;
 	}
 	OBJ_FREEZE(enclib);

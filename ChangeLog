@@ -1,9 +1,12 @@
-Fri Dec 21 13:40:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 21 13:46:58 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_register): set encoding constant.
 
 	* encoding.c (rb_enc_find_index): replace non-alphanumeric chars with
 	  underscores, so that initialize function can be called.
+
+	* encoding.c (rb_enc_find_index): extension libraries have lower case
+	  names conventionally.
 
 	* ruby.c (proc_options, process_options): finds encoding after
 	  load_path is initialized.
