@@ -249,7 +249,6 @@ Fri Dec 21 12:45:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_chomp_bang): avoid unnecessary loop using
 	  ONIGENC_LEFT_ADJUST_CHAR_HEAD().
 
->>>>>>> .r14423
 Fri Dec 21 12:32:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (Init_File): File.exists? revived.
