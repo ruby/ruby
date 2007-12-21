@@ -139,7 +139,7 @@ class TestEval < Test::Unit::TestCase
 
     assert_equal 11,    o.instance_eval("11")
     assert_equal 12,    o.instance_eval("@ivar")
-    assert_equal 13,    o.instance_eval("@@cvar")
+    assert_raise(NameError) {o.instance_eval("@@cvar")}
     assert_equal 14,    o.instance_eval("$gvar__eval")
     assert_equal 15,    o.instance_eval("Const")
     assert_equal 16,    o.instance_eval("7 + 9")
@@ -149,7 +149,7 @@ class TestEval < Test::Unit::TestCase
 
     1.times {
       assert_equal 12,  o.instance_eval("@ivar")
-      assert_equal 13,  o.instance_eval("@@cvar")
+      assert_raise(NameError) {o.instance_eval("@@cvar")}
       assert_equal 14,  o.instance_eval("$gvar__eval")
       assert_equal 15,  o.instance_eval("Const")
     }
@@ -169,7 +169,7 @@ class TestEval < Test::Unit::TestCase
 
     assert_equal 11,    o.instance_eval { 11 }
     assert_equal 12,    o.instance_eval { @ivar }
-    assert_equal 13,    o.instance_eval { @@cvar }
+    assert_raise(NameError) {o.instance_eval{ @@cvar }}
     assert_equal 14,    o.instance_eval { $gvar__eval }
     assert_equal 15,    o.instance_eval { Const }
     assert_equal 16,    o.instance_eval { 7 + 9 }
@@ -179,21 +179,16 @@ class TestEval < Test::Unit::TestCase
 
     1.times {
       assert_equal 12,  o.instance_eval { @ivar }
-      assert_equal 13,  o.instance_eval { @@cvar }
+      assert_raise(NameError) {o.instance_eval{ @@cvar }}
       assert_equal 14,  o.instance_eval { $gvar__eval }
       assert_equal 15,  o.instance_eval { Const }
     }
   end
 
   def test_instance_eval_cvar
-    env = @@cvar
-    [Object.new, [], 7, :sym].each do |obj| # TODO: check :sym
-      assert_equal env, obj.instance_eval("@@cvar")
-      assert_equal env, obj.instance_eval { @@cvar }
-    end
-    [true, false, nil].each do |obj|
-      assert_equal env, obj.instance_eval("@@cvar")
-      assert_equal env, obj.instance_eval { @@cvar }
+    [Object.new, [], 7, :sym, true, false, nil].each do |obj|
+      assert_raise(NameError){obj.instance_eval("@@cvar")}
+      assert_raise(NameError){obj.instance_eval{@@cvar}}
     end
   end
 
