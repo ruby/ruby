@@ -93,6 +93,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal({"foo"=>[1, 2]},
                  /(?<foo>.)(?<foo>.)/.named_captures)
     assert_equal({}, /(.)(.)/.named_captures)
+
+    assert_equal("a[b]c", "abc".sub(/(?<x>[bc])/, "[\\k<x>]"))
   end
 
   def test_assign_named_capture
