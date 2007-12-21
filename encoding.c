@@ -629,9 +629,9 @@ rb_enc_tolower(int c, rb_encoding *enc)
 }
 
 static VALUE
-enc_to_s(VALUE self)
+enc_inspect(VALUE self)
 {
-    return rb_sprintf("<%s:%s>", rb_obj_classname(self),
+    return rb_sprintf("#<%s:%s>", rb_obj_classname(self),
 		      rb_enc_name((rb_encoding*)DATA_PTR(self)));
 }
 
@@ -811,8 +811,8 @@ Init_Encoding(void)
 
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);
-    rb_define_method(rb_cEncoding, "to_s", enc_to_s, 0);
-    rb_define_method(rb_cEncoding, "inspect", enc_to_s, 0);
+    rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
+    rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
     rb_define_method(rb_cEncoding, "based_encoding", enc_based_encoding, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
