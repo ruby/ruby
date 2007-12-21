@@ -158,6 +158,7 @@ enc_register(const char *name, rb_encoding *encoding)
 }
 
 static VALUE enc_based_encoding(VALUE);
+static void set_encoding_const(const char *, rb_encoding *);
 int rb_enc_registered(const char *name);
 
 int
@@ -170,16 +171,21 @@ rb_enc_register(const char *name, rb_encoding *encoding)
 	if (strcasecmp(name, rb_enc_name(oldenc))) {
 	    st_data_t key = (st_data_t)name, alias;
 	    st_delete(enc_table_alias, &key, &alias);
+	    index = enc_register(name, encoding);
 	}
 	else if (enc_initialized_p(oldenc) &&
-		 !NIL_P(enc_based_encoding(ENC_FROM_ENCODING(encoding)))) {
-	    return enc_register_at(index, name, encoding);
+		 !NIL_P(enc_based_encoding(ENC_FROM_ENCODING(oldenc)))) {
+	    enc_register_at(index, name, encoding);
 	}
 	else {
 	    rb_raise(rb_eArgError, "encoding %s is already registered", name);
 	}
     }
-    return enc_register(name, encoding);
+    else {
+	index = enc_register(name, encoding);
+    }
+    set_encoding_const(name, rb_enc_from_index(index));
+    return index;
 }
 
 int
@@ -293,6 +299,11 @@ rb_enc_find_index(const char *name)
     int i = rb_enc_registered(name);
     if (i < 0) {
 	VALUE enclib = rb_sprintf("enc/%s", name);
+	char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib);
+	while (s < e) {
+	    if (!ISALNUM(*s)) *s = '_';
+	    ++s;
+	}
 	OBJ_FREEZE(enclib);
 	if (RTEST(rb_protect(require_enc, enclib, 0)))
 	    i = rb_enc_registered(name);

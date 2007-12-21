@@ -81,6 +81,7 @@ struct cmdline_options {
     int yydebug;
     char *script;
     VALUE e_script;
+    const char *enc_name;
     int enc_index;
 };
 
@@ -739,7 +740,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		    break;
 		}
 		if (enc) {
-		    opt->enc_index = rb_enc_find_index(rb_enc_name(enc));
+		    opt->enc_name = rb_enc_name(enc);
 		}
 		s++;
 	    }
@@ -810,9 +811,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		    rb_raise(rb_eRuntimeError, "missing argument for --encoding");
 		}
 	      encoding:
-		if ((opt->enc_index = rb_enc_find_index(s)) < 0) {
-		    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
-		}
+		opt->enc_name = s;
 	    }
 	    else if (strncmp("encoding=", s, 9) == 0) {
 		if (!*(s += 9)) goto noencoding;
@@ -981,6 +980,11 @@ process_options(VALUE arg)
     ruby_init_gems(opt);
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
+    if ((s = opt->enc_name) != 0) {
+	if ((opt->enc_index = rb_enc_find_index(s)) < 0) {
+	    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
+	}
+    }
     if (opt->e_script) {
 	if (opt->enc_index >= 0)
 	    rb_enc_associate_index(opt->e_script, opt->enc_index);

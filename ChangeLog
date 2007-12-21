@@ -1,3 +1,13 @@
+Fri Dec 21 13:40:11 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_register): set encoding constant.
+
+	* encoding.c (rb_enc_find_index): replace non-alphanumeric chars with
+	  underscores, so that initialize function can be called.
+
+	* ruby.c (proc_options, process_options): finds encoding after
+	  load_path is initialized.
+
 Fri Dec 21 13:10:57 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_external_encoding): new method.
