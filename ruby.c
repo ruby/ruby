@@ -145,6 +145,7 @@ locale_encoding(void)
     if (codeset == Qnil)
         return rb_default_encoding();
 
+    name = StringValueCStr(codeset);
     idx = rb_enc_find_index(name);
     if (idx < 0)
         return rb_default_encoding();
