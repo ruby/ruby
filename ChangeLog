@@ -1,3 +1,7 @@
+Sat Dec 22 00:56:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/test.rb (valid_syntax): force_encoding input script.
+
 Fri Dec 21 23:48:38 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (depend_rules): suffixes list broken. fixed.

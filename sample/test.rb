@@ -1866,6 +1866,7 @@ end
 
 def valid_syntax?(code, fname)
   p fname
+  code.force_encoding("ascii-8bit")
   code = code.sub(/\A(?:\s*\#.*$)*(\n)?/n) {
     "#$&#{"\n" if $1 && !$2}BEGIN{return true}\n"
   }
