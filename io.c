@@ -6346,6 +6346,8 @@ Init_IO(void)
 #endif
 #ifdef O_BINARY
     rb_file_const("BINARY", INT2FIX(O_BINARY));
+#else
+    rb_file_const("BINARY", INT2FIX(0));
 #endif
 #ifdef O_SYNC
     rb_file_const("SYNC", INT2FIX(O_SYNC));

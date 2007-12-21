@@ -1,3 +1,7 @@
+Fri Dec 21 14:46:07 2007  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (Init_IO): define IO::BINARY even if O_BINARY is not exist.
+
 Fri Dec 21 14:01:14 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_system.rb (TestSystem::valid_syntax): apply
