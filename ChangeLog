@@ -1,3 +1,18 @@
+Fri Dec 21 11:23:24 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (enc.mk): depends on $(RBCONFIG) instead of rbconfig.rb.
+
+	* encoding.c (Init_Encoding): ISO-8859-1 is no longer a replica.
+
+	* regenc.h (OnigEncodingDefine): names of extension and encoding can
+	  differ.
+
+	* enc/Makefile.in: always shared.
+
+	* enc/depend (deffile): should not upcase.
+
+	* enc/{ascii,euc_jp,sjis,utf8,iso_8859_{1..16}}.c: fix for Init.
+
 Fri Dec 21 09:26:48 2007  Tanaka Akira  <akr@fsij.org>
 
 	* tool/compile_prelude.rb: use erb.
@@ -77,7 +92,6 @@ Thu Dec 20 17:07:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* enc/Makefile.in: fix for linking.
 
 	* enc/depend, enc/make_encmake.rb: fix for Windows.
-
 
 	* enc/{ascii,euc_jp,sjis,utf8,iso_8859_{1..16}}.c: renamed.
 

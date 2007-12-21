@@ -254,7 +254,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
     return FALSE;
 }
 
-OnigEncodingDefine(ISO_8859_1) = {
+OnigEncodingDefine(iso_8859_1, ISO_8859_1) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-1",  /* name */
   1,             /* max enc length */

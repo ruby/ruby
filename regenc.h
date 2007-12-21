@@ -181,9 +181,9 @@ ONIG_EXTERN const unsigned short OnigEncAsciiCtypeTable[];
 extern int ONIG_ENC_REGISTER(const char *, OnigEncodingType*);
 #define OnigEncodingName(n) encoding_##n
 #define OnigEncodingDeclare(n) static OnigEncodingType OnigEncodingName(n)
-#define OnigEncodingDefine(n)			     \
+#define OnigEncodingDefine(f,n)			     \
     OnigEncodingDeclare(n);			     \
-    void Init_##n(void) {			     \
+    void Init_##f(void) {			     \
 	ONIG_ENC_REGISTER(OnigEncodingName(n).name,  \
 			  &OnigEncodingName(n));     \
     }						     \
@@ -191,7 +191,7 @@ extern int ONIG_ENC_REGISTER(const char *, OnigEncodingType*);
 #else
 #define OnigEncodingName(n) OnigEncoding##n
 #define OnigEncodingDeclare(n) OnigEncodingType OnigEncodingName(n)
-#define OnigEncodingDefine(n) OnigEncodingDeclare(n)
+#define OnigEncodingDefine(f,n) OnigEncodingDeclare(n)
 #endif
 
 #endif /* REGENC_H */

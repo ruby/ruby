@@ -38,7 +38,7 @@ ascii_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
     return FALSE;
 }
 
-OnigEncodingDefine(ASCII) = {
+OnigEncodingDefine(ascii, ASCII) = {
   onigenc_single_byte_mbc_enc_len,
   "ASCII-8BIT",/* name */
   1,           /* max byte length */

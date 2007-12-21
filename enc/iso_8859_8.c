@@ -76,7 +76,7 @@ iso_8859_8_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding en
     return FALSE;
 }
 
-OnigEncodingDefine(ISO_8859_8) = {
+OnigEncodingDefine(iso_8859_8, ISO_8859_8) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-8",  /* name */
   1,             /* max enc length */

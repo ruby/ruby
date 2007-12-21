@@ -773,9 +773,6 @@ Init_Encoding(void)
 
     rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
 
-    /* should be imported from Oniguruma */
-    rb_enc_replicate("ISO-8859-1", rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
-
     /* dummy for unsupported, statefull encoding */
     rb_enc_replicate("ISO-2022-JP", rb_enc_find(rb_enc_name(ONIG_ENCODING_ASCII)));
 

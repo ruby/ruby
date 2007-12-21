@@ -35,9 +35,9 @@ $(ENCSODIR)/<%e%>.$(DLEXT): <%deps%>
 ! end
 ! if DEFFILE
 !   encs.each do |e|
-<%e%>-$(arch).def:
+<%e%>-$(arch).def: enc.mk
 	echo EXPORTS > $@
-	echo <%EXPORT_PREFIX%>Init_<%e.upcase%> >> $@
+	echo <%EXPORT_PREFIX%>Init_<%e%> >> $@
 
 !   end
 ! end

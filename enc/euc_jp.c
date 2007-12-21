@@ -341,7 +341,7 @@ get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
 }
 
 
-OnigEncodingDefine(EUC_JP) = {
+OnigEncodingDefine(euc_jp, EUC_JP) = {
   mbc_enc_len,
   "EUC-JP",   /* name */
   3,          /* max enc length */

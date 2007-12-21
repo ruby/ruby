@@ -351,7 +351,7 @@ get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
   }
 }
 
-OnigEncodingDefine(SJIS) = {
+OnigEncodingDefine(sjis, SJIS) = {
   mbc_enc_len,
   "Shift_JIS",   /* name */
   2,             /* max byte length */
