@@ -5686,7 +5686,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     io.externalencoding   => encoding
+ *     io.external_encoding   => encoding
  *
  *  Returns the Encoding object that represents the encoding of the file.
  */
