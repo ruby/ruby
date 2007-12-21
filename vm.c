@@ -1777,10 +1777,10 @@ Init_VM(void)
     rb_undef_alloc_func(rb_cThread);
     rb_define_method(rb_cThread, "initialize", ruby_thread_init, 0);
 
-    /* ::VM::USAGE_ANALISYS_* */
-    rb_define_const(rb_cVM, "USAGE_ANALISYS_INSN", rb_hash_new());
-    rb_define_const(rb_cVM, "USAGE_ANALISYS_REGS", rb_hash_new());
-    rb_define_const(rb_cVM, "USAGE_ANALISYS_INSN_BIGRAM", rb_hash_new());
+    /* ::VM::USAGE_ANALYSIS_* */
+    rb_define_const(rb_cVM, "USAGE_ANALYSIS_INSN", rb_hash_new());
+    rb_define_const(rb_cVM, "USAGE_ANALYSIS_REGS", rb_hash_new());
+    rb_define_const(rb_cVM, "USAGE_ANALYSIS_INSN_BIGRAM", rb_hash_new());
     rb_define_const(rb_cVM, "OPTS", opts = rb_ary_new());
 
 #if   OPT_DIRECT_THREADED_CODE

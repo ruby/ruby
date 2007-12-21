@@ -426,8 +426,8 @@ vm_analysis_insn(int insn)
     VALUE cv;
 
     if (usage_hash == 0) {
-	usage_hash = rb_intern("USAGE_ANALISYS_INSN");
-	bigram_hash = rb_intern("USAGE_ANALISYS_INSN_BIGRAM");
+	usage_hash = rb_intern("USAGE_ANALYSIS_INSN");
+	bigram_hash = rb_intern("USAGE_ANALYSIS_INSN_BIGRAM");
     }
     uh = rb_const_get(rb_cVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
@@ -474,7 +474,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
     VALUE cv;
 
     if (usage_hash == 0) {
-	usage_hash = rb_intern("USAGE_ANALISYS_INSN");
+	usage_hash = rb_intern("USAGE_ANALYSIS_INSN");
     }
 
     uh = rb_const_get(rb_cVM, usage_hash);
@@ -524,7 +524,7 @@ vm_analysis_register(int reg, int isset)
 	char buff[0x10];
 	int i;
 
-	usage_hash = rb_intern("USAGE_ANALISYS_REGS");
+	usage_hash = rb_intern("USAGE_ANALYSIS_REGS");
 
 	for (i = 0; i < sizeof(regstrs) / sizeof(regstrs[0]); i++) {
 	    int j;

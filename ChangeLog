@@ -1,3 +1,7 @@
+Fri Dec 21 11:35:10 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, vm_dump.c: fix typo.
+
 Fri Dec 21 11:28:00 2007  Tanaka Akira  <akr@fsij.org>
 
 	* regerror.c, string.c, io.c, lib/getoptlong.rb, lib/net/imap.rb,
