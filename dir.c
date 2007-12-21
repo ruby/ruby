@@ -1904,6 +1904,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
     rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1); /* in file.c */
+    rb_define_singleton_method(rb_cDir,"exists?", rb_file_directory_p, 1); /* in file.c */
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);

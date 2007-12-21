@@ -980,6 +980,7 @@ eaccess(const char *path, int mode)
  *
  * call-seq:
  *   Dir.exist?(file_name)   =>  true or false
+ *   Dir.exists?(file_name)   =>  true or false
  *
  * Returns <code>true</code> if the named file is a directory,
  * <code>false</code> otherwise.
@@ -1160,7 +1161,7 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
 /*
  * call-seq:
  *    File.exist?(file_name)    =>  true or false
- *    File.exists?(file_name)   =>  true or false    (obsolete)
+ *    File.exists?(file_name)   =>  true or false
  *
  * Return <code>true</code> if the named file exists.
  */
@@ -4442,6 +4443,7 @@ Init_File(void)
 
     define_filetest_function("directory?", rb_file_directory_p, 1);
     define_filetest_function("exist?", rb_file_exist_p, 1);
+    define_filetest_function("exists?", rb_file_exist_p, 1);
     define_filetest_function("readable?", rb_file_readable_p, 1);
     define_filetest_function("readable_real?", rb_file_readable_real_p, 1);
     define_filetest_function("world_readable?", rb_file_world_readable_p, 1);
