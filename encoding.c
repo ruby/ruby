@@ -14,7 +14,9 @@
 #include "ruby/encoding.h"
 #include "regenc.h"
 #include <ctype.h>
+#ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
+#endif
 
 static ID id_encoding, id_based_encoding;
 static VALUE rb_cEncoding;
@@ -707,9 +709,13 @@ rb_enc_set_default_external(VALUE encoding)
 VALUE
 rb_locale_charmap(VALUE klass)
 {
+#ifdef HAVE_LANGINFO_H
     char *codeset;
     codeset = nl_langinfo(CODESET);
     return rb_str_new2(codeset);
+#else
+    return rb_str_new2("ASCII-8BIT");
+#endif
 }
 
 static void
