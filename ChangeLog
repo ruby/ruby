@@ -1,3 +1,8 @@
+Sat Dec 22 03:54:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* encoding.c (rb_ascii_encoding): renamed from previous
+	  rb_default_encoding().
+
 Sat Dec 22 02:49:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (command): block from cmd_brace_block was ignored.

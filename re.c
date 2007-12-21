@@ -954,7 +954,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
             need_recompile = 1;
         }
         if ((RBASIC(re)->flags & REG_ENCODING_NONE) &&
-	    enc != rb_default_encoding() &&
+	    enc != rb_ascii_encoding() &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
             rb_warn("none encoding regexp with non ASCII string (string encoding: %s)",
                     rb_enc_name(enc));
@@ -1964,7 +1964,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     struct RRegexp *re = RREGEXP(obj);
     VALUE unescaped;
     rb_encoding *fixed_enc = 0;
-    rb_encoding *d_enc = rb_default_encoding();
+    rb_encoding *a_enc = rb_ascii_encoding();
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");
@@ -1982,17 +1982,17 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 
     if (fixed_enc) {
 	if ((fixed_enc != enc && (options & ARG_ENCODING_FIXED)) ||
-            (fixed_enc != d_enc && (options & ARG_ENCODING_NONE))) {
+            (fixed_enc != a_enc && (options & ARG_ENCODING_NONE))) {
 	    strcpy(err, "incompatible character encoding");
 	    return -1;
 	}
-        if (fixed_enc != d_enc) {
+        if (fixed_enc != a_enc) {
 	    options |= ARG_ENCODING_FIXED;
 	    enc = fixed_enc;
 	}
     }
     else if (!(options & ARG_ENCODING_FIXED)) {
-        enc = d_enc;
+        enc = a_enc;
     }
 
     rb_enc_associate((VALUE)re, enc);

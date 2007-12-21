@@ -2862,7 +2862,7 @@ rb_io_binmode(VALUE io)
 
 #endif
     fptr->mode |= FMODE_BINMODE;
-    fptr->enc = rb_default_encoding();
+    fptr->enc = rb_ascii_encoding();
     return io;
 }
 

@@ -115,7 +115,7 @@ int rb_enc_str_coderange(VALUE);
 int rb_enc_str_asciionly_p(VALUE);
 #define rb_enc_str_asciicompat_p(str) rb_enc_asciicompat(rb_enc_get(str))
 VALUE rb_enc_from_encoding(rb_encoding *enc);
-rb_encoding *rb_default_encoding(void);
+rb_encoding *rb_ascii_encoding(void);
 rb_encoding *rb_utf8_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
 VALUE rb_enc_default_external(void);

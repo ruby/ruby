@@ -236,7 +236,7 @@ rb_define_dummy_encoding(const char *name)
     enc_check_duplication(name);
     if (index < ENCODING_INLINE_MAX) index = ENCODING_INLINE_MAX;
     if (enc_table_expand(index + 1) < 0) return -1;
-    encoding = rb_default_encoding();
+    encoding = rb_ascii_encoding();
     enc_register_at(index, name, encoding);
     enc = set_based_encoding(index, encoding);
     FL_SET(enc, ENC_DUMMY);
@@ -742,7 +742,7 @@ enc_load(VALUE klass, VALUE str)
 }
 
 rb_encoding *
-rb_default_encoding(void)
+rb_ascii_encoding(void)
 {
     if (!enc_table) {
 	rb_enc_init();
