@@ -1264,8 +1264,9 @@ command		: operation command_args       %prec tLOWEST
 		| operation command_args cmd_brace_block
 		    {
 		    /*%%%*/
-			$$ = NEW_FCALL($1, $2);
 			block_dup_check($2,$3);
+		        $3->nd_iter = NEW_FCALL($1, $2);
+			$$ = $3;
 			fixpos($$, $2);
 		    /*%
 			$$ = dispatch2(command, $1, $2);
@@ -1284,8 +1285,9 @@ command		: operation command_args       %prec tLOWEST
 		| primary_value '.' operation2 command_args cmd_brace_block
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, $3, $4);
 			block_dup_check($4,$5);
+		        $5->nd_iter = NEW_CALL($1, $3, $4);
+			$$ = $5;
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_id2sym('.'), $3, $4);
@@ -1304,8 +1306,9 @@ command		: operation command_args       %prec tLOWEST
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
 		    {
 		    /*%%%*/
-			$$ = NEW_CALL($1, $3, $4);
 			block_dup_check($4,$5);
+		        $5->nd_iter = NEW_CALL($1, $3, $4);
+			$$ = $5;
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, ripper_intern("::"), $3, $4);

@@ -1,3 +1,8 @@
+Sat Dec 22 02:49:02 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (command): block from cmd_brace_block was ignored.
+	  [ruby-dev:32644]
+
 Sat Dec 22 01:52:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_ungetc): avoid buffer relocation, which might cause
