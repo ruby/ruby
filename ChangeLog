@@ -1,3 +1,7 @@
+Sun Dec 23 03:19:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encs, ext/ripper/ripper.c): MAKEFLAGS needs -.
+
 Sun Dec 23 01:56:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_mode_enc): do not set encoding unless explicitly
