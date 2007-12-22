@@ -1,3 +1,15 @@
+Sat Dec 22 17:06:50 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/net/ssl.rb (OpenSSL::SSL::SSLContext.build): removed.
+
+	* ext/openssl/lib/net/ssl.rb (OpenSSL::SSL::SSLContext#set_params):
+	  new method to set suitable SSL parameters.
+
+	* lib/net/pop.rb, lib/net/http.rb, lib/net/imap.rb, 
+	  test/openssl/test_ssl.rb: follow above change.
+
+	* test/net/http/test_https.rb: refine error case.
+
 Sat Dec 22 16:58:49 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (encode_utf7): accept UTF-8 strings.
@@ -19,7 +31,7 @@ Sat Dec 22 15:45:45 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* transcode_data_japanese: new data file for EUC-JP and SHIFT_JIS
 	  (not yet optimized; tests to follow; data from
 	  http://nkf.sourceforge.jp/ucm/{SJIS|eucJP}-nkf.ucm)
-    
+
 	* common.mk, transcode.c: Adjusted for transcode_data_japanese
 
 Sat Dec 22 15:30:13 2007  NAKAMURA Usaku  <usa@ruby-lang.org>

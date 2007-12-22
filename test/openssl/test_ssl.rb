@@ -245,13 +245,15 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   def test_verify_result
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)
-      ctx = OpenSSL::SSL::SSLContext.build
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
       assert_raise(OpenSSL::SSL::SSLError){ ssl.connect }
       assert_equal(OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN, ssl.verify_result)
 
       sock = TCPSocket.new("127.0.0.1", port)
-      ctx = OpenSSL::SSL::SSLContext.build(
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params(
         :verify_callback => Proc.new do |preverify_ok, store_ctx|
           store_ctx.error = OpenSSL::X509::V_OK
           true
@@ -262,7 +264,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       assert_equal(OpenSSL::X509::V_OK, ssl.verify_result)
 
       sock = TCPSocket.new("127.0.0.1", port)
-      ctx = OpenSSL::SSL::SSLContext.build(
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params(
         :verify_callback => Proc.new do |preverify_ok, store_ctx|
           store_ctx.error = OpenSSL::X509::V_ERR_APPLICATION_VERIFICATION
           false
@@ -274,10 +277,11 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     }
   end
 
-  def test_sslctx_build
+  def test_sslctx_set_params
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|server, port|
       sock = TCPSocket.new("127.0.0.1", port)
-      ctx = OpenSSL::SSL::SSLContext.build
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.set_params
       assert_equal(OpenSSL::SSL::VERIFY_PEER, ctx.verify_mode)
       assert_equal(OpenSSL::SSL::OP_ALL, ctx.options)
       ciphers = ctx.ciphers

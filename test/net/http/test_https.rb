@@ -59,7 +59,7 @@ class TestNetHTTPS < Test::Unit::TestCase
       http = Net::HTTP.new("ssl.netlab.jp", 443)
       http.use_ssl = true
       assert(
-        http.request_head("/"){|res| },
+        (http.request_head("/"){|res| } rescue false),
         "The system may not have default CA certificate store."
       )
     end

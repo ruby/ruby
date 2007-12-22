@@ -581,7 +581,8 @@ module Net   #:nodoc:
             ssl_parameters[name] = value
           end
         end
-        @ssl_context = OpenSSL::SSL::SSLContext.build(ssl_parameters)
+        @ssl_context = OpenSSL::SSL::SSLContext.new
+        @ssl_context.set_params(ssl_parameters)
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
       end

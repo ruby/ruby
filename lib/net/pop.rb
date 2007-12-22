@@ -328,7 +328,7 @@ module Net
     #    Net::POP.enable_ssl(params = {})
     #
     # Enable SSL for all new instances.
-    # +params+ is passed to OpenSSL::SSLContext.build.
+    # +params+ is passed to OpenSSL::SSLContext#set_params.
     def POP3.enable_ssl(*args)
       @ssl_params = create_ssl_params(*args)
     end
@@ -441,7 +441,7 @@ module Net
     # Enables SSL for this instance.  Must be called before the connection is
     # established to have any effect.
     # +params[:port]+ is port to establish the SSL connection on; Defaults to 995.
-    # +params+ (except :port) is passed to OpenSSL::SSLContext.build.
+    # +params+ (except :port) is passed to OpenSSL::SSLContext#set_params.
     def enable_ssl(verify_or_params = {}, certs = nil, port = nil)
       begin
         @ssl_params = verify_or_params.to_hash.dup
@@ -534,7 +534,8 @@ module Net
       s = timeout(@open_timeout) { TCPSocket.open(@address, port) }
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
-        context = OpenSSL::SSL::SSLContext.build(@ssl_params)
+        context = OpenSSL::SSL::SSLContext.new
+        context.set_params(@ssl_params)
         s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
         s.connect

@@ -892,7 +892,7 @@ module Net
     #         OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
     #         be installed.
     #         if options[:ssl] is a hash, it's passed to 
-    #         OpenSSL::SSL::SSLContext.build as parameters.
+    #         OpenSSL::SSL::SSLContext#set_params as parameters.
     #
     # The most common errors are:
     #
@@ -1263,7 +1263,8 @@ module Net
       rescue NoMethodError
         params = {}
       end
-      context = SSLContext.build(params)
+      context = SSLContext.new
+      context.set_params(params)
       if defined?(VerifyCallbackProc)
         context.verify_callback = VerifyCallbackProc 
       end

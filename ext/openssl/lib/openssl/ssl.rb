@@ -21,30 +21,28 @@ require "fcntl"
 module OpenSSL
   module SSL
     class SSLContext
-      class <<self
-        def build(params={})
-          default_params = {
-            :ssl_version => "SSLv23",
-            :verify_mode => OpenSSL::SSL::VERIFY_PEER,
-            :ciphers => "ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW",
-            :options => OpenSSL::SSL::OP_ALL,
-          }
-          params = default_params.merge(params)
-          ctx = new()
-          params.each{|name, value| ctx.__send__("#{name}=", value) }
-          ctx.verify_mode ||= OpenSSL::SSL::VERIFY_NONE
-          if ctx.verify_mode != OpenSSL::SSL::VERIFY_NONE
-            unless ctx.ca_file or ctx.ca_path or
-                     ctx.cert_store or ctx.verify_callback
-              ctx.cert_store = OpenSSL::X509::Store.new
-              if defined?(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
-                ctx.cert_store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
-              end
-              ctx.cert_store.set_default_paths
-            end
+      DEFAULT_PARAMS = {
+        :ssl_version => "SSLv23",
+        :verify_mode => OpenSSL::SSL::VERIFY_PEER,
+        :ciphers => "ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW",
+        :options => OpenSSL::SSL::OP_ALL,
+      }
+
+      DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
+      DEFAULT_CERT_STORE.set_default_paths
+      if defined?(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
+        DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+      end
+
+      def set_params(params={})
+        params = DEFAULT_PARAMS.merge(params)
+        params.each{|name, value| self.__send__("#{name}=", value) }
+        if self.verify_mode != OpenSSL::SSL::VERIFY_NONE
+          unless self.ca_file or self.ca_path or self.cert_store
+            self.cert_store = DEFAULT_CERT_STORE
           end
-          return ctx
         end
+        return params
       end
     end
 
