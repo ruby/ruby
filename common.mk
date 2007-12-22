@@ -565,7 +565,7 @@ variable.$(OBJEXT): {$(VPATH)}variable.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}node.h {$(VPATH)}st.h {$(VPATH)}util.h
 version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}version.h
+  {$(VPATH)}version.h {$(VPATH)}revision.h
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}vm_core.h {$(VPATH)}id.h \
         {$(VPATH)}compile.h {$(VPATH)}debug.h {$(VPATH)}ruby.h {$(VPATH)}config.h \
