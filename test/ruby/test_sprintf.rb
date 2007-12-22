@@ -174,4 +174,9 @@ class TestSprintf < Test::Unit::TestCase
 
     assert_raise(ArgumentError, "[ruby-core:11573]") {sprintf("%.25555555555555555555555555555555555555s", "hello")}
   end
+
+  def test_float
+    assert_equal("36893488147419111424",
+                 sprintf("%20.0f", 36893488147419107329.0))
+  end
 end

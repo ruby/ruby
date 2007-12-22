@@ -1,3 +1,7 @@
+Sat Dec 22 14:18:45 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_float.rb, test_sprintf.rb: fix test place.
+
 Sat Dec 22 14:17:02 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_objectspace.rb: skip flozen string.
