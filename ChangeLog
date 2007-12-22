@@ -1,3 +1,7 @@
+Sat Dec 22 14:17:02 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_objectspace.rb: skip flozen string.
+
 Sat Dec 22 14:02:58 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c (rb_ary_permutation): add volatile to avoid GC problem.
