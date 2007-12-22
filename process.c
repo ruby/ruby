@@ -1474,7 +1474,7 @@ rb_fork(int *status, int (*chfunc)(void*), void *charg)
 static VALUE
 rb_f_fork(VALUE obj)
 {
-#ifdef HAVE_FORK
+#if defined(HAVE_FORK) && !defined(__NetBSD__)
     rb_pid_t pid;
 
     rb_secure(2);

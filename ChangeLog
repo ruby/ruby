@@ -1,3 +1,7 @@
+Sat Dec 22 19:14:38 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* process.c (rb_f_fork): Unsupport Kernel.fork() on NetBSD.
+
 Sat Dec 22 15:54:54 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: Added simple tests for
