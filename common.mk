@@ -641,18 +641,23 @@ vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
 vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-incs: $(INSNS) node_name.inc
+srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c
 
-node_name.inc: {$(VPATH)}node.h
+incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}revision.h
+
+{$(srcdir)}node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
+{$(srcdir)}miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
+{$(srcdir)}prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
 	$(MINIRUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
-prereq: incs {$(VPATH)}parse.c $(srcdir)/ext/ripper/ripper.c {$(VPATH)}miniprelude.c {$(VPATH)}revision.h
+
+prereq: incs srcs preludes
+
+preludes: {$(VPATH)}miniprelude.c
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)

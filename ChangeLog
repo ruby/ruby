@@ -1,4 +1,6 @@
-Sun Dec 23 03:19:13 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 23 03:22:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (srcs): new target to generated sources.
 
 	* common.mk (encs, ext/ripper/ripper.c): MAKEFLAGS needs -.
 
