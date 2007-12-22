@@ -956,7 +956,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
         if ((RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	    enc != rb_ascii_encoding() &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-            rb_warn("none encoding regexp with non ASCII string (string encoding: %s)",
+            rb_warn("regexp match /.../n against to %s string",
                     rb_enc_name(enc));
         }
     }
