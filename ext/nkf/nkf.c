@@ -64,7 +64,17 @@ rb_nkf_putchar(unsigned int c)
 rb_encoding* rb_nkf_enc_get(const char *name)
 {
     int idx = rb_enc_find_index(name);
-    if (idx < 0) idx = rb_enc_replicate(name, rb_ascii_encoding());
+    if (idx < 0) {
+	nkf_encoding *nkf_enc = nkf_enc_find(name);
+	nkf_native_encoding * nkf_base_enc = nkf_enc_to_base_encoding(nkf_enc);
+	idx = rb_enc_find_index(nkf_enc_name(nkf_base_enc));
+	if (idx < 0) {
+	    idx = rb_enc_replicate(name, rb_ascii_encoding());
+	} else {
+	    rb_encoding *rb_enc = rb_enc_from_index(idx);
+	    idx = rb_enc_replicate(name, rb_enc);
+	}
+    }
     return rb_enc_from_index(idx);
 }
 
@@ -475,11 +485,11 @@ Init_nkf()
     rb_define_const(mNKF, "NOCONV",	Qnil);
     rb_define_const(mNKF, "UNKNOWN",	Qnil);
     rb_define_const(mNKF, "BINARY",	rb_enc_from_encoding(rb_nkf_enc_get("BINARY")));
-    rb_define_const(mNKF, "ASCII",	rb_enc_from_encoding(rb_nkf_enc_get("US_ASCII")));
+    rb_define_const(mNKF, "ASCII",	rb_enc_from_encoding(rb_nkf_enc_get("US-ASCII")));
     rb_define_const(mNKF, "JIS",	rb_enc_from_encoding(rb_nkf_enc_get("ISO-2022-JP")));
     rb_define_const(mNKF, "EUC",	rb_enc_from_encoding(rb_nkf_enc_get("EUC-JP")));
     rb_define_const(mNKF, "SJIS",	rb_enc_from_encoding(rb_nkf_enc_get("Shift_JIS")));
-    rb_define_const(mNKF, "UTF8",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-8")));
+    rb_define_const(mNKF, "UTF8",	rb_enc_from_encoding(rb_utf8_encoding()));
     rb_define_const(mNKF, "UTF16",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-16")));
     rb_define_const(mNKF, "UTF32",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-32")));
 

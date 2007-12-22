@@ -1,3 +1,12 @@
+Sat Dec 22 17:35:59 2007  NARUSE, Yui <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8.c: Update nkf.c rev:1.157.
+
+	* ext/nkf/nkf.c (rb_nkf_enc_get): replicate proper based encoding.
+
+	* ext/nkf/kconv.c (Kconv#kconv, to*): use self.encoding as from_enc
+	  when from_enc isn't given.
+
 Sat Dec 22 17:31:41 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb ($extmk): fixed broken condition.

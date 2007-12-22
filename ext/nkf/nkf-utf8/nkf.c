@@ -32,7 +32,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2007-12-19"
+#define NKF_RELEASE_DATE "2007-12-22"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW\n" \
     "Copyright (C) 2002-2007 Kono, Furukawa, Naruse, mastodon"
@@ -228,8 +228,6 @@ void  djgpp_setbinmode(FILE *fp)
 
 enum nkf_encodings {
     ASCII,
-    JIS_X_0208,
-    JIS_X_0201,
     ISO_8859_1,
     ISO_2022_JP,
     CP50220,
@@ -262,52 +260,84 @@ enum nkf_encodings {
     UTF_32BE_BOM,
     UTF_32LE,
     UTF_32LE_BOM,
-    JIS_X_0212=0x2844,
-    JIS_X_0213_1=0x284F,
-    JIS_X_0213_2=0x2850,
+    JIS_X_0201=0x1000,
+    JIS_X_0208,
+    JIS_X_0212,
+    JIS_X_0213_1,
+    JIS_X_0213_2,
     BINARY
 };
-static const struct {
-    const int id;
-    const char *name;
-} encoding_id_to_name_table[] = {
-    {ASCII,		"ASCII"},
-    {ISO_8859_1,	"ISO-8859-1"},
-    {ISO_2022_JP,	"ISO-2022-JP"},
-    {CP50220,		"CP50220"},
-    {CP50221,		"CP50221"},
-    {CP50222,		"CP50222"},
-    {ISO_2022_JP_1,	"ISO-2022-JP-1"},
-    {ISO_2022_JP_3,	"ISO-2022-JP-3"},
-    {SHIFT_JIS,		"Shift_JIS"},
-    {WINDOWS_31J,	"WINDOWS-31J"},
-    {CP10001,		"CP10001"},
-    {EUC_JP,		"EUC-JP"},
-    {CP51932,		"CP51932"},
-    {EUCJP_MS,		"eucJP-MS"},
-    {EUCJP_ASCII,	"eucJP-ASCII"},
-    {SHIFT_JISX0213,	"Shift_JISX0213"},
-    {SHIFT_JIS_2004,	"Shift_JIS-2004"},
-    {EUC_JISX0213,	"EUC-JISX0213"},
-    {EUC_JIS_2004,	"EUC-JIS-2004"},
-    {UTF_8,		"UTF-8"},
-    {UTF_8N,		"UTF-8N"},
-    {UTF_8_BOM,		"UTF-8-BOM"},
-    {UTF8_MAC,		"UTF8-MAC"},
-    {UTF_16,		"UTF-16"},
-    {UTF_16BE,		"UTF-16BE"},
-    {UTF_16BE_BOM,	"UTF-16BE-BOM"},
-    {UTF_16LE,		"UTF-16LE"},
-    {UTF_16LE_BOM,	"UTF-16LE-BOM"},
-    {UTF_32,		"UTF-32"},
-    {UTF_32BE,		"UTF-32BE"},
-    {UTF_32BE_BOM,	"UTF-32BE-BOM"},
-    {UTF_32LE,		"UTF-32LE"},
-    {UTF_32LE_BOM,	"UTF-32LE-BOM"},
-    {BINARY,		"BINARY"},
-    {-1,			""}
+
+nkf_char s_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
+nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
+nkf_char w_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
+nkf_char w_iconv16(nkf_char c2, nkf_char c1, nkf_char c0);
+nkf_char w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0);
+void j_oconv(nkf_char c2, nkf_char c1);
+void s_oconv(nkf_char c2, nkf_char c1);
+void e_oconv(nkf_char c2, nkf_char c1);
+void w_oconv(nkf_char c2, nkf_char c1);
+void w_oconv16(nkf_char c2, nkf_char c1);
+void w_oconv32(nkf_char c2, nkf_char c1);
+
+typedef struct {
+    char *name;
+    nkf_char (*iconv_func)(nkf_char c2, nkf_char c1, nkf_char c0);
+    void (*oconv_func)(nkf_char c2, nkf_char c1);
+} nkf_native_encoding;
+
+nkf_native_encoding NkfEncodingASCII =		{ "US_ASCII", e_iconv, e_oconv };
+nkf_native_encoding NkfEncodingISO_2022_JP =	{ "ISO-2022-JP", e_iconv, j_oconv };
+nkf_native_encoding NkfEncodingShift_JIS =	{ "Shift_JIS", s_iconv, s_oconv };
+nkf_native_encoding NkfEncodingEUC_JP =		{ "EUC-JP", e_iconv, e_oconv };
+nkf_native_encoding NkfEncodingUTF_8 =		{ "UTF-8", w_iconv, w_oconv };
+nkf_native_encoding NkfEncodingUTF_16 =		{ "UTF-16", w_iconv16, w_oconv16 };
+nkf_native_encoding NkfEncodingUTF_32 =		{ "UTF-32", w_iconv32, w_oconv32 };
+
+typedef struct {
+    int id;
+    char *name;
+    nkf_native_encoding *based_encoding;
+} nkf_encoding;
+nkf_encoding nkf_encoding_table[] = {
+    {ASCII,		"ASCII",		&NkfEncodingASCII},
+    {ISO_8859_1,	"ISO-8859-1",		&NkfEncodingASCII},
+    {ISO_2022_JP,	"ISO-2022-JP",		&NkfEncodingASCII},
+    {CP50220,		"CP50220",		&NkfEncodingISO_2022_JP},
+    {CP50221,		"CP50221",		&NkfEncodingISO_2022_JP},
+    {CP50222,		"CP50222",		&NkfEncodingISO_2022_JP},
+    {ISO_2022_JP_1,	"ISO-2022-JP-1",	&NkfEncodingISO_2022_JP},
+    {ISO_2022_JP_3,	"ISO-2022-JP-3",	&NkfEncodingISO_2022_JP},
+    {SHIFT_JIS,		"Shift_JIS",		&NkfEncodingShift_JIS},
+    {WINDOWS_31J,	"WINDOWS-31J",		&NkfEncodingShift_JIS},
+    {CP10001,		"CP10001",		&NkfEncodingShift_JIS},
+    {EUC_JP,		"EUC-JP",		&NkfEncodingEUC_JP},
+    {CP51932,		"CP51932",		&NkfEncodingEUC_JP},
+    {EUCJP_MS,		"eucJP-MS",		&NkfEncodingEUC_JP},
+    {EUCJP_ASCII,	"eucJP-ASCII",		&NkfEncodingEUC_JP},
+    {SHIFT_JISX0213,	"Shift_JISX0213",	&NkfEncodingShift_JIS},
+    {SHIFT_JIS_2004,	"Shift_JIS-2004",	&NkfEncodingShift_JIS},
+    {EUC_JISX0213,	"EUC-JISX0213",		&NkfEncodingEUC_JP},
+    {EUC_JIS_2004,	"EUC-JIS-2004",		&NkfEncodingEUC_JP},
+    {UTF_8,		"UTF-8",		&NkfEncodingUTF_8},
+    {UTF_8N,		"UTF-8N",		&NkfEncodingUTF_8},
+    {UTF_8_BOM,		"UTF-8-BOM",		&NkfEncodingUTF_8},
+    {UTF8_MAC,		"UTF8-MAC",		&NkfEncodingUTF_8},
+    {UTF_16,		"UTF-16",		&NkfEncodingUTF_16},
+    {UTF_16BE,		"UTF-16BE",		&NkfEncodingUTF_16},
+    {UTF_16BE_BOM,	"UTF-16BE-BOM",		&NkfEncodingUTF_16},
+    {UTF_16LE,		"UTF-16LE",		&NkfEncodingUTF_16},
+    {UTF_16LE_BOM,	"UTF-16LE-BOM",		&NkfEncodingUTF_16},
+    {UTF_32,		"UTF-32",		&NkfEncodingUTF_32},
+    {UTF_32BE,		"UTF-32BE",		&NkfEncodingUTF_32},
+    {UTF_32BE_BOM,	"UTF-32BE-BOM",		&NkfEncodingUTF_32},
+    {UTF_32LE,		"UTF-32LE",		&NkfEncodingUTF_32},
+    {UTF_32LE_BOM,	"UTF-32LE-BOM",		&NkfEncodingUTF_32},
+    {BINARY,		"BINARY",		&NkfEncodingASCII},
+    {-1,		NULL,			NULL}
 };
-static const struct {
+#define NKF_ENCODING_TABLE_SIZE 34
+struct {
     const char *name;
     const int id;
 } encoding_name_to_id_table[] = {
@@ -354,7 +384,7 @@ static const struct {
     {"UTF-32LE",		UTF_32LE},
     {"UTF-32LE-BOM",		UTF_32LE_BOM},
     {"BINARY",			BINARY},
-    {"",			-1}
+    {NULL,			-1}
 };
 #if defined(DEFAULT_CODE_JIS)
 #define	    DEFAULT_ENCODING ISO_2022_JP
@@ -441,7 +471,7 @@ struct input_code{
 };
 
 static char *input_codename = NULL; /* NULL: unestablished, "": BINARY */
-static int output_encoding = DEFAULT_ENCODING;
+static nkf_encoding *output_encoding;
 
 #if !defined(PERL_XS) && !defined(WIN32DLL)
 static  nkf_char     noconvert(FILE *f);
@@ -451,9 +481,7 @@ static  nkf_char     kanji_convert(FILE *f);
 static  nkf_char     h_conv(FILE *f,nkf_char c2,nkf_char c1);
 static  nkf_char     push_hold_buf(nkf_char c2);
 static  void    set_iconv(nkf_char f, nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0));
-static  nkf_char     s_iconv(nkf_char c2,nkf_char c1,nkf_char c0);
 static  nkf_char     s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1);
-static  nkf_char     e_iconv(nkf_char c2,nkf_char c1,nkf_char c0);
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
 /* UCS Mapping
  * 0: Shift_JIS, eucJP-ascii
@@ -482,9 +510,6 @@ static  void    encode_fallback_perl(nkf_char c);
 static  void    encode_fallback_subchar(nkf_char c);
 static  void    (*encode_fallback)(nkf_char c) = NULL;
 static  nkf_char     w2e_conv(nkf_char c2,nkf_char c1,nkf_char c0,nkf_char *p2,nkf_char *p1);
-static  nkf_char     w_iconv(nkf_char c2,nkf_char c1,nkf_char c0);
-static  nkf_char     w_iconv16(nkf_char c2,nkf_char c1,nkf_char c0);
-static  nkf_char     w_iconv32(nkf_char c2,nkf_char c1,nkf_char c0);
 static  nkf_char	unicode_to_jis_common(nkf_char c2,nkf_char c1,nkf_char c0,nkf_char *p2,nkf_char *p1);
 static  nkf_char	w_iconv_common(nkf_char c1,nkf_char c0,const unsigned short *const *pp,nkf_char psize,nkf_char *p2,nkf_char *p1);
 static  void    w16w_conv(nkf_char val, nkf_char *p2, nkf_char *p1, nkf_char *p0);
@@ -496,14 +521,8 @@ static  void    w_status(struct input_code *, nkf_char);
 static  int     output_bom_f = FALSE;
 static  int     output_endian = ENDIAN_BIG;
 static  nkf_char     e2w_conv(nkf_char c2,nkf_char c1);
-static  void    w_oconv(nkf_char c2,nkf_char c1);
-static  void    w_oconv16(nkf_char c2,nkf_char c1);
-static  void    w_oconv32(nkf_char c2,nkf_char c1);
 #endif
-static  void    e_oconv(nkf_char c2,nkf_char c1);
 static  nkf_char     e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1);
-static  void    s_oconv(nkf_char c2,nkf_char c1);
-static  void    j_oconv(nkf_char c2,nkf_char c1);
 static  void    fold_conv(nkf_char c2,nkf_char c1);
 static  void    nl_conv(nkf_char c2,nkf_char c1);
 static  void    z_conv(nkf_char c2,nkf_char c1);
@@ -895,6 +914,14 @@ static void nkf_str_upcase(const char *str, char *res, size_t length)
     res[i] = 0;
 }
 
+static nkf_encoding *nkf_enc_from_index(int idx)
+{
+    if (idx < 0 || NKF_ENCODING_TABLE_SIZE <= idx) {
+	return 0;
+    }
+    return &nkf_encoding_table[idx];
+}
+
 static int nkf_enc_find_index(const char *name)
 {
     int i, index = -1;
@@ -906,19 +933,17 @@ static int nkf_enc_find_index(const char *name)
     return index;
 }
 
-#if defined(PERL_XS) || defined(WIN32DLL)
-static char* nkf_enc_name(const int index)
+static nkf_encoding *nkf_enc_find(const char *name)
 {
-    int i;
-    const char* name = "ASCII";
-    for (i = 0; encoding_id_to_name_table[i].id >= 0; i++) {
-	if (encoding_id_to_name_table[i].id == index) {
-	    return nkf_strcpy(encoding_id_to_name_table[i].name);
-	}
-    }
-    return nkf_strcpy(name);
+    int idx = -1;
+    idx = nkf_enc_find_index(name);
+    if (idx < 0) return 0;
+    return nkf_enc_from_index(idx);
 }
-#endif
+
+#define nkf_enc_name(enc) (enc)->name
+#define nkf_enc_to_index(enc) (enc)->id
+#define nkf_enc_to_base_encoding(enc) (enc)->based_encoding
 
 #ifdef WIN32DLL
 #include "nkf32dll.c"
@@ -1327,6 +1352,7 @@ void options(unsigned char *cp)
     unsigned char *p;
     unsigned char *cp_back = NULL;
     char codeset[32];
+    nkf_encoding *enc;
 
     if (option_mode==1)
 	return;
@@ -1364,8 +1390,8 @@ void options(unsigned char *cp)
 	    }else{
                 if (strcmp(long_option[i].name, "ic=") == 0){
 		    nkf_str_upcase(p, codeset, 32);
-		    i = nkf_enc_find_index(codeset);
-		    switch (i) {
+		    enc = nkf_enc_find(codeset);
+		    switch (nkf_enc_to_index(enc)) {
 		    case ISO_2022_JP:
 			input_f = JIS_INPUT;
 			break;
@@ -1502,10 +1528,10 @@ void options(unsigned char *cp)
                     continue;
 		}
                 if (strcmp(long_option[i].name, "oc=") == 0){
-		    nkf_str_upcase(p, codeset, 32);
-		    output_encoding = nkf_enc_find_index(codeset);
 		    x0201_f = FALSE;
-		    switch (output_encoding) {
+		    nkf_str_upcase(p, codeset, 32);
+		    output_encoding = nkf_enc_find(codeset);
+		    switch (nkf_enc_to_index(output_encoding)) {
 		    case ISO_2022_JP:
 			output_conv = j_oconv;
 			break;
@@ -1880,16 +1906,16 @@ void options(unsigned char *cp)
         case 'j':           /* JIS output */
         case 'n':
             output_conv = j_oconv;
-            output_encoding = ISO_2022_JP;
+            output_encoding = nkf_enc_from_index(ISO_2022_JP);
             continue;
         case 'e':           /* AT&T EUC output */
             output_conv = e_oconv;
             cp932inv_f = FALSE;
-            output_encoding = EUC_JP;
+            output_encoding = nkf_enc_from_index(EUC_JP);
             continue;
         case 's':           /* SJIS output */
             output_conv = s_oconv;
-            output_encoding = SHIFT_JIS;
+            output_encoding = nkf_enc_from_index(SHIFT_JIS);
             continue;
         case 'l':           /* ISO8859 Latin-1 support, no conversion */
             iso8859_f = TRUE;  /* Only compatible with ISO-2022-JP */
@@ -1937,21 +1963,22 @@ void options(unsigned char *cp)
 		output_conv = w_oconv; cp++;
 		if (cp[0] == '0'){
 		    cp++;
-		    output_encoding = UTF_8N;
+		    output_encoding = nkf_enc_from_index(UTF_8N);
 		} else {
 		    output_bom_f = TRUE;
-		    output_encoding = UTF_8_BOM;
+		    output_encoding = nkf_enc_from_index(UTF_8_BOM);
 		}
 	    } else {
+		int enc_idx;
 		if ('1'== cp[0] && '6'==cp[1]) {
 		    output_conv = w_oconv16; cp+=2;
-		    output_encoding = UTF_16;
+		    enc_idx = UTF_16;
 		} else if ('3'== cp[0] && '2'==cp[1]) {
 		    output_conv = w_oconv32; cp+=2;
-		    output_encoding = UTF_32;
+		    enc_idx = UTF_32;
 		} else {
 		    output_conv = w_oconv;
-		    output_encoding = UTF_8;
+		    output_encoding = nkf_enc_from_index(UTF_8);
 		    continue;
 		}
 		if (cp[0]=='L') {
@@ -1960,19 +1987,21 @@ void options(unsigned char *cp)
 		} else if (cp[0] == 'B') {
 		    cp++;
                 } else {
+		    output_encoding = nkf_enc_from_index(enc_idx);
 		    continue;
                 }
 		if (cp[0] == '0'){
 		    cp++;
-		    output_encoding = output_encoding == UTF_16
+		    enc_idx = enc_idx == UTF_16
 			? (output_endian == ENDIAN_LITTLE ? UTF_16LE : UTF_16BE)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
 		} else {
 		    output_bom_f = TRUE;
-		    output_encoding = output_encoding == UTF_16
+		    enc_idx = enc_idx == UTF_16
 			? (output_endian == ENDIAN_LITTLE ? UTF_16LE_BOM : UTF_16BE_BOM)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE_BOM : UTF_32BE_BOM);
 		}
+		output_encoding = nkf_enc_from_index(enc_idx);
 	    }
             continue;
 #endif
@@ -3028,11 +3057,11 @@ nkf_char kanji_convert(FILE *f)
                             shift_mode = FALSE;
                             NEXT;
 #endif /* X0212_ENABLE */
-                        } else if (c1 == (JIS_X_0213_1&0x7F)){
+                        } else if (c1 == 0x4F){
                             input_mode = JIS_X_0213_1;
                             shift_mode = FALSE;
                             NEXT;
-                        } else if (c1 == (JIS_X_0213_2&0x7F)){
+                        } else if (c1 == 0x50){
                             input_mode = JIS_X_0213_2;
                             shift_mode = FALSE;
                             NEXT;
@@ -4469,7 +4498,7 @@ void j_oconv(nkf_char c2, nkf_char c1)
 		(*o_putc)(ESC);
 		(*o_putc)('$');
 		(*o_putc)('(');
-		(*o_putc)(JIS_X_0213_2&0x7F);
+		(*o_putc)(0x50);
 	    }
 	}else{
 	    if(output_mode!=JIS_X_0212){
@@ -4477,7 +4506,7 @@ void j_oconv(nkf_char c2, nkf_char c1)
 		(*o_putc)(ESC);
 		(*o_putc)('$');
 		(*o_putc)('(');
-		(*o_putc)(JIS_X_0212&0x7F);
+		(*o_putc)(0x44);
 	    }
         }
         (*o_putc)(c2 & 0x7f);
@@ -4515,7 +4544,7 @@ void j_oconv(nkf_char c2, nkf_char c1)
 		(*o_putc)(ESC);
 		(*o_putc)('$');
 		(*o_putc)('(');
-		(*o_putc)(JIS_X_0213_1&0x7F);
+		(*o_putc)(0x4F);
 	    }
 	}else if (output_mode != JIS_X_0208) {
             output_mode = JIS_X_0208;
@@ -6317,7 +6346,7 @@ void reinit(void)
     iconv_for_check = 0;
 #endif
     input_codename = NULL;
-    output_encoding = DEFAULT_ENCODING;
+    output_encoding = nkf_enc_from_index(DEFAULT_ENCODING);
 #ifdef WIN32DLL
     reinitdll();
 #endif /*WIN32DLL*/
