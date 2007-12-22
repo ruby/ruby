@@ -17,7 +17,7 @@ assert_normal_exit %q{
   ary.permutation(2) {|x|
     if x == [1,2]
       ObjectSpace.each_object(String) {|s|
-        s.clear if s.frozen? && (s.length == 40 || s.length == 80)
+        s.clear if !s.frozen? && (s.length == 40 || s.length == 80)
       }
     end
   }
