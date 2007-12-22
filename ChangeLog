@@ -1,3 +1,8 @@
+Sat Dec 22 14:30:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reg_named_capture_assign_iter): allows non-ascii names and
+	  get rid of reserved word IDs.
+
 Sat Dec 22 14:18:45 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_float.rb, test_sprintf.rb: fix test place.

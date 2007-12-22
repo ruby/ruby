@@ -8516,8 +8516,8 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
         arg->fail_block = NEW_BEGIN(0);
     }
 
-    if (!(len && rb_enc_islower(*name, enc) && rb_enc_symname2_p(s, len, enc))
-	|| rb_reserved_word(name, len)) {
+    if (!len || (*name != '_' && ISASCII(*name) && !rb_enc_islower(*name, enc)) ||
+	rb_reserved_word(s, len) || !rb_enc_symname2_p(s, len, enc)) {
         return ST_CONTINUE;
     }
     var = rb_intern3(s, len, enc);
