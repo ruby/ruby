@@ -1,3 +1,14 @@
+Sun Dec 23 01:56:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_mode_enc): do not set encoding unless explicitly
+	  specified.
+
+	* io.c (rb_io_check_readable): fill fptr->enc by default_external
+	  if it's empty.
+
+	* io.c (io_enc_str): fptr->enc is always set for reading IO (by
+	  rb_io_check_readable(fptr)).
+
 Sun Dec 23 01:18:06 2007  David Flanagan  <david@davidflanagan.com>
 
 	* io.c, io.h: temporary patch to partially implement

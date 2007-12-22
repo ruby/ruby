@@ -347,8 +347,10 @@ rb_io_check_readable(rb_io_t *fptr)
     if (fptr->wbuf_len) {
         io_fflush(fptr);
     }
-    if (!fptr->enc && fptr->fd == 0) {
-	fptr->enc = rb_default_external_encoding();
+    if (!fptr->enc) {
+	fptr->enc = (fptr->fd == 0)
+	    ? rb_default_external_encoding()
+	    : rb_ascii_encoding();
     }
 }
 
@@ -627,7 +629,7 @@ io_fwrite(VALUE str, rb_io_t *fptr)
      * the strings encoding then we must transcode before writing.
      * We must also transcode if two encodings were specified
      */
-    if (fptr->enc && (fptr->enc2 || fptr->enc != rb_enc_get(str))) {
+    if (fptr->enc) {
 	/* transcode str before output */
 	/* the methods in transcode.c are static, so call indirectly */
 	/* Can't use encode! because puts writes a frozen newline */
@@ -1298,18 +1300,16 @@ static VALUE
 io_enc_str(VALUE str, rb_io_t *fptr)
 {
     OBJ_TAINT(str);
-    if (fptr->enc) {
-	if (fptr->enc2) {
-	    /* two encodings, so transcode from enc2 to enc */
-            /* the methods in transcode.c are static, so call indirectly */
-	    str = rb_funcall(str, id_encode, 2, 
-			     rb_enc_from_encoding(fptr->enc2),
-			     rb_enc_from_encoding(fptr->enc));
-	}
-	else {
-	    /* just one encoding, so associate it with the string */
-	    rb_enc_associate(str, fptr->enc);
-	}
+    if (fptr->enc2) {
+	/* two encodings, so transcode from enc2 to enc */
+	/* the methods in transcode.c are static, so call indirectly */
+	str = rb_funcall(str, id_encode, 2, 
+			 rb_enc_from_encoding(fptr->enc2),
+			 rb_enc_from_encoding(fptr->enc));
+    }
+    else {
+	/* just one encoding, so associate it with the string */
+	rb_enc_associate(str, fptr->enc);
     }
     return str;
 }
@@ -2175,7 +2175,7 @@ rb_io_getc(VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    enc = fptr->enc ? fptr->enc : rb_default_external_encoding();
+    enc = fptr->enc;
     READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
@@ -2327,7 +2327,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (NIL_P(c)) return Qnil;
-    enc = fptr->enc ? fptr->enc : rb_default_external_encoding();
+    enc = fptr->enc;
     if (FIXNUM_P(c)) {
 	int cc = FIX2INT(c);
 	char buf[16];
@@ -3122,12 +3122,6 @@ rb_io_mode_enc(rb_io_t *fptr, const char *mode)
 		rb_warn("Unsupported encoding %s ignored", enc2name);
 	    }
 	}
-    }
-    else if (fptr->mode & FMODE_BINMODE) {
-	fptr->enc = rb_ascii_encoding();
-    }
-    else {
-	fptr->enc = rb_default_external_encoding();
     }
 }
 
