@@ -8518,8 +8518,6 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
 
     if (!(len && rb_enc_islower(*name, enc) && rb_enc_symname2_p(s, len, enc))
 	|| rb_reserved_word(name, len)) {
-        compile_error(PARSER_ARG "named capture with a non local variable - %.*s",
-                      len, name);
         return ST_CONTINUE;
     }
     var = rb_intern3(s, len, enc);
