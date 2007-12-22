@@ -882,17 +882,17 @@ module Net
     # Creates a new Net::IMAP object and connects it to the specified
     # +host+.
     #
-    # +options+ is an option hash.
+    # +options+ is an option hash, each key of which is a symbol.
     #
     # The available options are:
     #
-    # :port:: port number (default value is 143 for imap, or 993 for imaps)
-    # :ssl:: if +options[:ssl]+ is true, then an attempt will be made
-    #        to use SSL (now TLS) to connect to the server.  For this to work
-    #        OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
-    #        be installed.
-    #        if +options[:ssl]+ is a hash, it's passed to 
-    #        OpenSSL::SSL::SSLContext.build as parameters.
+    # port::  port number (default value is 143 for imap, or 993 for imaps)
+    # ssl::   if options[:ssl] is true, then an attempt will be made
+    #         to use SSL (now TLS) to connect to the server.  For this to work
+    #         OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
+    #         be installed.
+    #         if options[:ssl] is a hash, it's passed to 
+    #         OpenSSL::SSL::SSLContext.build as parameters.
     #
     # The most common errors are:
     #
