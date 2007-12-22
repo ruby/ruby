@@ -152,8 +152,8 @@ module Gem
         if File.exist?(File.join(path, ".require_paths"))
           require_paths.concat(File.read(File.join(path, ".require_paths")).split.map {|require_path| File.join(path, require_path)})
         else
-          require_paths << File.join(path, "lib") if File.exist?(File.join(path, "lib"))
           require_paths << File.join(path, "bin") if File.exist?(File.join(path, "bin"))
+          require_paths << File.join(path, "lib") if File.exist?(File.join(path, "lib"))
         end
       end
 

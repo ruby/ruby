@@ -1,3 +1,7 @@
+Sat Dec 22 11:31:14 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* gem_prelude.rb:  Place bin dir before lib dir so gem bin stubs work.
+
 Sat Dec 22 11:05:44 2007  Jim Weirich  <jim@tardis.local>
 
 	* lib/rake.rb (Rake): Added Rake and related libraries to the
