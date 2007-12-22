@@ -1,3 +1,7 @@
+Sat Dec 22 14:45:21 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: shouldn't freeze nil. [ruby-dev:32677]
+
 Sat Dec 22 14:27:27 2007  Tanaka Akira  <akr@fsij.org>
 
 	* regenc.c (onigenc_ascii_is_code_ctype): moved from enc/ascii.c.
