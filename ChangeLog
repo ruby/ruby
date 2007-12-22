@@ -1,3 +1,7 @@
+Sat Dec 22 19:17:10 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/probeprofiler/: removed.
+
 Sat Dec 22 19:14:38 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* process.c (rb_f_fork): Unsupport Kernel.fork() on NetBSD.
