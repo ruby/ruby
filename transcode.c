@@ -54,6 +54,12 @@ extern const BYTE_LOOKUP to_ISO_8859_13;
 extern const BYTE_LOOKUP to_ISO_8859_14;
 extern const BYTE_LOOKUP to_ISO_8859_15;
 
+extern const BYTE_LOOKUP from_SHIFT_JIS;
+extern const BYTE_LOOKUP from_EUC_JP;
+
+extern const BYTE_LOOKUP to_SHIFT_JIS;
+extern const BYTE_LOOKUP to_EUC_JP;
+
 
 /* declarations probably need to go into separate header file, e.g. transcode.h */
 
@@ -69,7 +75,7 @@ typedef struct {
 /* todo: dynamic structure, one per conversion (stream) */
 
 /* in the future, add some mechanism for dynamically adding stuff here */
-#define MAX_TRANSCODERS 29  /* todo: fix: this number has to be adjusted by hand */
+#define MAX_TRANSCODERS 33  /* todo: fix: this number has to be adjusted by hand */
 static transcoder transcoder_table[MAX_TRANSCODERS];
 
 /* not sure why it's not possible to do relocatable initializations */
@@ -124,6 +130,12 @@ init_transcoder_table(void)
     register_transcoder("UTF-8", "ISO-8859-13", &to_ISO_8859_13, 1, 1);
     register_transcoder("UTF-8", "ISO-8859-14", &to_ISO_8859_14, 1, 1);
     register_transcoder("UTF-8", "ISO-8859-15", &to_ISO_8859_15, 1, 1);
+
+    register_transcoder("SHIFT_JIS", "UTF-8",   &from_SHIFT_JIS, 3, 0);
+    register_transcoder("EUC-JP", "UTF-8",      &from_EUC_JP, 3, 0);
+    register_transcoder("UTF-8", "SHIFT_JIS",   &to_SHIFT_JIS, 2, 1);
+    register_transcoder("UTF-8", "EUC-JP",      &to_EUC_JP, 2, 1);
+
     register_transcoder(NULL, NULL, NULL, 0, 0);
 }
 
