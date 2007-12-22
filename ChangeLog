@@ -1,3 +1,7 @@
+Sat Dec 22 15:03:37 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (initialize): fixed documentation.
+
 Sat Dec 22 15:01:16 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/pop.rb (enable_ssl): use OpenSSL::SSL::SSLContext.build

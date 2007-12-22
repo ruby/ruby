@@ -876,27 +876,23 @@ module Net
     @@debug = false
     @@authenticators = {}
 
-    # Creates a new Net::IMAP object and connects it to the specified
-    # port (143 by default) on the named +host+.
+    # call-seq:
+    #    Net::IMAP.new(host, options = {})
     #
-    # If +port_or_options+ responds to to_int, it is used as port number.
-    # Otherwise +port_or_options+ is an option hash.
+    # Creates a new Net::IMAP object and connects it to the specified
+    # +host+.
+    #
+    # +options+ is an option hash.
     #
     # The available options are:
     #
     # :port:: port number (default value is 143 for imap, or 993 for imaps)
-    # :ssl:: if port_or_options[:ssl] is true, then an attempt will be made
+    # :ssl:: if +options[:ssl]+ is true, then an attempt will be made
     #        to use SSL (now TLS) to connect to the server.  For this to work
     #        OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions need to
     #        be installed.
-    #        if port_or_options[:ssl] is a hash, it's passed to 
+    #        if +options[:ssl]+ is a hash, it's passed to 
     #        OpenSSL::SSL::SSLContext.build as parameters.
-    #
-    # +usessl+, +certs+, and +verify+ are for backward compatibility.
-    # If +usessl+ is true, then an attempt will be made to use SSL (now TLS)
-    # to connect to the server.  The +certs+ parameter indicates
-    # the path or file containing the CA cert of the server, and the
-    # +verify+ parameter is for the OpenSSL verification callback.
     #
     # The most common errors are:
     #
