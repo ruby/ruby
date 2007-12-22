@@ -3,6 +3,10 @@
 SHELL = $(COMSPEC)
 MKFILES = Makefile
 
+!ifndef MFLAGS
+MFLAGS=-
+!endif
+
 #### Start of system configuration section. ####
 !ifndef OS
 OS = bccwin32

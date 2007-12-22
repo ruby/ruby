@@ -4,6 +4,10 @@ SHELL = $(COMSPEC)
 MKFILES = Makefile
 NULL = nul
 
+!ifndef MFLAGS
+MFLAGS=-
+!endif
+
 #### Start of system configuration section. ####
 
 !if defined(pathlist)
