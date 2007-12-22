@@ -350,7 +350,7 @@ rb_io_check_readable(rb_io_t *fptr)
     if (!fptr->enc) {
 	fptr->enc = (fptr->fd == 0)
 	    ? rb_default_external_encoding()
-	    : rb_ascii_encoding();
+	    : rb_ascii8bit_encoding();
     }
 }
 
@@ -2892,7 +2892,7 @@ rb_io_binmode(VALUE io)
 
 #endif
     fptr->mode |= FMODE_BINMODE;
-    fptr->enc = rb_ascii_encoding();
+    fptr->enc = rb_ascii8bit_encoding();
     return io;
 }
 

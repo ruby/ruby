@@ -144,12 +144,12 @@ locale_encoding(void)
     int idx;
 
     if (codeset == Qnil)
-        return rb_ascii_encoding();
+        return rb_ascii8bit_encoding();
 
     name = StringValueCStr(codeset);
     idx = rb_enc_find_index(name);
     if (idx < 0)
-        return rb_ascii_encoding();
+        return rb_ascii8bit_encoding();
     return rb_enc_from_index(idx);
 }
 

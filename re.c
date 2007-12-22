@@ -954,7 +954,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
             need_recompile = 1;
         }
         if ((RBASIC(re)->flags & REG_ENCODING_NONE) &&
-	    enc != rb_ascii_encoding() &&
+	    enc != rb_ascii8bit_encoding() &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
             rb_warn("regexp match /.../n against to %s string",
                     rb_enc_name(enc));
@@ -1964,7 +1964,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     struct RRegexp *re = RREGEXP(obj);
     VALUE unescaped;
     rb_encoding *fixed_enc = 0;
-    rb_encoding *a_enc = rb_ascii_encoding();
+    rb_encoding *a_enc = rb_ascii8bit_encoding();
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify regexp");

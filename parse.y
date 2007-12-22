@@ -4844,7 +4844,7 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func)
     if (!(func & STR_FUNC_REGEXP) &&
         rb_enc_asciicompat(enc) &&
         rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
-        rb_enc_associate(str, rb_ascii_encoding());
+        rb_enc_associate(str, rb_ascii8bit_encoding());
     }
 
     return str;
@@ -8968,7 +8968,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 	}
     }
     if (m - name < len) id = ID_JUNK;
-    if (enc != rb_ascii_encoding()) {
+    if (enc != rb_ascii8bit_encoding()) {
 	/*
 	 * this clause makes sense only when called from other than
 	 * rb_intern_str() taking care of code-range.
@@ -8977,7 +8977,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 	    for (; m <= name + len; ++m) {
 		if (!ISASCII(*m)) goto mbstr;
 	    }
-	    enc = rb_ascii_encoding();
+	    enc = rb_ascii8bit_encoding();
 	}
       mbstr:;
     }

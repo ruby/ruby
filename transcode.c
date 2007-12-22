@@ -357,7 +357,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     }
     /* set encoding */
     if (!to_enc) {
-	to_encidx = rb_enc_replicate(to_e, rb_ascii_encoding());
+	to_encidx = rb_enc_replicate(to_e, rb_ascii8bit_encoding());
     }
     *self = dest;
 
