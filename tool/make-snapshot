@@ -1,0 +1,31 @@
+#!/bin/bash
+
+LC_ALL=C LANG=C
+SVNURL=http://svn.ruby-lang.org/repos/ruby/trunk
+export LC_ALL LANG
+: ${VPATH=include/ruby} ${YACC=bison} ${BASERUBY=ruby} ${RUBY=ruby} ${MV=mv}
+export VPATH YACC BASERUBY RUBY MV
+
+[ -d "$1" ] || mkdir "$1" || exit 1
+dest=`cd "$1"; pwd`
+
+tmp=${TMP_DIR-/tmp}/ #ruby-snapshot-$$
+mkdir -p "$tmp"
+cd "$tmp"
+revision=`svn export $SVNURL ruby | sed -n '$s/.*\([0-9]+\).*/\1/p'`
+[ $revision ] || revision=`svn info $SVNURL | sed -n 's/Revision: //p'`
+echo "#define RUBY_REVISION $revision" > ruby/revision.h
+v=ruby-r$revision
+mv ruby $v
+(cd $v; sed 's/{[^{}]*}//g' common.mk | make -f - prereq srcdir=.)
+
+for cmd in "bzip tarball.tar.bz2 tar cjf" "gzip tarball.tar.gz tar czf" "zip archive.zip zip -qr"; do
+    mesg="${cmd%%.*}" cmd="${cmd#*.}"
+    ext="${cmd%% *}" cmd="${cmd#* }"
+    echo -n creating $mesg... $dest/$v.$ext
+    if $cmd $dest/$v.$ext $v; then
+	echo " done"
+    else
+	echo " failed"
+    fi
+done

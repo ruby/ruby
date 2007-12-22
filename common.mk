@@ -341,7 +341,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 
 encs: enc.mk
 	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc"
-	$(MAKE) -f enc.mk -$(MAKEFLAGS)
+	$(MAKE) -f enc.mk $(MFLAGS)$(MAKEFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
@@ -650,13 +650,16 @@ miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
 	$(MINIRUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
-prereq: incs {$(VPATH)}parse.c $(srcdir)/ext/ripper/ripper.c {$(VPATH)}miniprelude.c
+prereq: incs {$(VPATH)}parse.c $(srcdir)/ext/ripper/ripper.c {$(VPATH)}miniprelude.c {$(VPATH)}revision.h
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
 
+revision.h:
+	exit > $@
+
 $(srcdir)/ext/ripper/ripper.c:
-	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend -$(MAKEFLAGS) top_srcdir=../.. srcdir=.
+	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend $(MFLAGS)$(MAKEFLAGS) top_srcdir=../.. srcdir=.
 
 ##
 

@@ -14,34 +14,38 @@
 #include "version.h"
 #include <stdio.h>
 
+#define PRINT(type) puts(ruby_##type)
+#define MKSTR(type) rb_obj_freeze(rb_str_new(ruby_##type, sizeof(ruby_##type)-1))
+
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
+const char ruby_description[] = RUBY_DESCRIPTION;
+const char ruby_copyright[] = RUBY_COPYRIGHT;
 
 void
 Init_version(void)
 {
-    VALUE v = rb_obj_freeze(rb_str_new2(ruby_version));
-    VALUE d = rb_obj_freeze(rb_str_new2(ruby_release_date));
-    VALUE p = rb_obj_freeze(rb_str_new2(ruby_platform));
-
-    rb_define_global_const("RUBY_VERSION", v);
-    rb_define_global_const("RUBY_RELEASE_DATE", d);
-    rb_define_global_const("RUBY_PLATFORM", p);
+    rb_define_global_const("RUBY_VERSION", MKSTR(version));
+    rb_define_global_const("RUBY_RELEASE_DATE", MKSTR(release_date));
+    rb_define_global_const("RUBY_PLATFORM", MKSTR(platform));
     rb_define_global_const("RUBY_PATCHLEVEL", INT2FIX(RUBY_PATCHLEVEL));
+    rb_define_global_const("RUBY_REVISION", INT2FIX(RUBY_REVISION));
+    rb_define_global_const("RUBY_DESCRIPTION", MKSTR(description));
+    rb_define_global_const("RUBY_COPYRIGHT", MKSTR(copyright));
 }
 
 void
 ruby_show_version(void)
 {
-    printf("ruby %s (%s patchlevel %d) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PATCHLEVEL, RUBY_PLATFORM);
+    PRINT(description);
     fflush(stdout);
 }
 
 void
 ruby_show_copyright(void)
 {
-    printf("ruby - Copyright (C) 1993-%d Yukihiro Matsumoto\n", RUBY_RELEASE_YEAR);
+    PRINT(copyright);
     exit(0);
 }

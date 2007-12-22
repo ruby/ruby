@@ -1,3 +1,16 @@
+Sat Dec 22 15:14:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encs, ext/ripper/ripper.c): needs MFLAGS.
+
+	* configure.in (STRINGIZE): stringizing macro.
+
+	* include/ruby/defines.h (STRINGIZE): fallback.
+
+	* tool/make-snapshot: new file.
+
+	* version.c (ruby_description, ruby_copyright): string constants for
+	  -v option.
+
 Sat Dec 22 15:03:37 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (initialize): fixed documentation.

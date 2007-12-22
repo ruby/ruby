@@ -323,6 +323,41 @@ else
   AC_DEFINE(TOKEN_PASTE(x,y),[x/**/y])
 fi
 
+AC_CACHE_CHECK(stringization, rb_cv_stringization, [
+  rb_cv_stringization=no
+  for string in "#expr" '"expr"'; do
+    AC_COMPILE_IFELSE([
+      AC_LANG_BOOL_COMPILE_TRY([
+#define STRINGIZE0(expr) $string
+#define STRINGIZE(expr) STRINGIZE0(expr)
+#undef real_test_for_stringization
+#define test_for_stringization -.real_test_for_stringization.-
+const char stringized[[]] = STRINGIZE(test_for_stringization);
+], [sizeof(stringized) == 32])],
+      [rb_cv_stringization="$string"; break],
+      [rb_cv_stringization=no])
+  done]
+)
+AC_DEFINE(STRINGIZE(expr),STRINGIZE0(expr))
+if test x"$rb_cv_stringization" != xno -a "$rb_cv_stringization" != "#expr"; then
+  AC_DEFINE_UNQUOTED(STRINGIZE0(expr),$rb_cv_stringization)
+  AC_DEFINE(OLD_FASHIONED_STRINGIZATION,1)
+fi
+
+AC_CACHE_CHECK([string literal concatenation],
+  rb_cv_string_literal_concatenation, [
+  AC_COMPILE_IFELSE([
+    AC_LANG_BOOL_COMPILE_TRY([
+const char concatenated_literal[[]] = "literals" "to"
+  "be" "concatenated.";
+], [sizeof(concatenated_literal) == 26])],
+    [rb_cv_string_literal_concatenation=yes],
+    [rb_cv_string_literal_concatenation=no])]
+)
+if test "$rb_cv_string_literal_concatenation" = no; then
+  AC_DEFINE(NO_STRING_LITERAL_CONCATENATION,1)
+fi
+
 AC_CACHE_CHECK(for variable length prototypes and stdarg.h, rb_cv_stdarg,
   [AC_TRY_COMPILE([
 #include <stdarg.h>
@@ -1564,6 +1599,12 @@ case "$build_os" in
 esac
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
+test -z "$CFLAGS" || CFLAGS="$CFLAGS "; CFLAGS="$CFLAGS"'${cflags}'
+test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
+AC_SUBST(cppflags, [])dnl
+AC_SUBST(cflags, ["${optflags} ${debugflags}"])dnl
+AC_SUBST(optflags)dnl
+AC_SUBST(debugflags)dnl
 AC_SUBST(XCFLAGS)dnl
 AC_SUBST(XLDFLAGS)dnl
 AC_SUBST(LIBRUBY_LDSHARED)
