@@ -1,3 +1,7 @@
+Sat Dec 22 15:17:40 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb ($extmk): set true only when under ext/ or tool/.
+
 Sat Dec 22 15:14:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (encs, ext/ripper/ripper.c): needs MFLAGS.
