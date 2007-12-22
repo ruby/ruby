@@ -558,10 +558,6 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
-  def is_ascii_only?(str)
-    /\A[\x00-\x7f]*\z/ =~ str.dup.force_encoding("ASCII-8BIT") ? true : false
-  end
-
   def encdump(str)
     "#{str.dump}.force_encoding(#{str.encoding.name.dump})"
   end
@@ -581,9 +577,9 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def assert_str_enc_propagation(t, s1, s2)
-    if !is_ascii_only?(s1)
+    if !s1.ascii_only?
       assert_equal(s1.encoding, t.encoding)
-    elsif !is_ascii_only?(s2)
+    elsif !s2.ascii_only?
       assert_equal(s2.encoding, t.encoding)
     else
       assert([s1.encoding, s2.encoding].include?(t.encoding))
@@ -592,7 +588,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_plus
     combination(STRINGS, STRINGS) {|s1, s2|
-      if s1.encoding != s2.encoding && !is_ascii_only?(s1) && !is_ascii_only?(s2)
+      if s1.encoding != s2.encoding && !s1.ascii_only? && !s2.ascii_only?
         assert_raise(ArgumentError) { s1 + s2 }
       else
         t = s1 + s2
@@ -657,7 +653,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_eq
     combination(STRINGS, STRINGS) {|s1, s2|
-      if is_ascii_only?(s1) && is_ascii_only?(s2) && a(s1) == a(s2)
+      if s1.ascii_only? && s2.ascii_only? && a(s1) == a(s2)
         assert(s1 == s2)
       elsif s1.encoding == s2.encoding && a(s1) == a(s2)
         assert(s1 == s2)
@@ -680,7 +676,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_concat
     combination(STRINGS, STRINGS) {|s1, s2|
       s = s1.dup
-      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+      if s1.ascii_only? || s2.ascii_only? || s1.encoding == s2.encoding
         s << s2
         assert(s.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
         assert_equal(a(s), a(s1) + a(s2))
@@ -763,7 +759,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
 
     combination(STRINGS, STRINGS) {|s1, s2|
-      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+      if s1.ascii_only? || s2.ascii_only? || s1.encoding == s2.encoding
         t = s1[s2]
         if t != nil
           assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
@@ -834,7 +830,7 @@ class TestM17N < Test::Unit::TestCase
     combination(STRINGS, STRINGS) {|s1, s2|
       (-2).upto(2) {|i|
         t = s1.dup
-        if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+        if s1.ascii_only? || s2.ascii_only? || s1.encoding == s2.encoding
           if i < -s1.length || s1.length < i
             assert_raise(IndexError) { t[i] = s2 }
           else
@@ -863,7 +859,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_assign_len
     combination(STRINGS, -2..2, 0..2, STRINGS) {|s1, i, len, s2|
       t = s1.dup
-      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+      if s1.ascii_only? || s2.ascii_only? || s1.encoding == s2.encoding
         if i < -s1.length || s1.length < i
           assert_raise(IndexError) { t[i,len] = s2 }
         else
@@ -895,9 +891,9 @@ class TestM17N < Test::Unit::TestCase
     combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
       t = s1.dup
       encs = [
-        !is_ascii_only?(s1) ? s1.encoding : nil,
-        !is_ascii_only?(s2) ? s2.encoding : nil,
-        !is_ascii_only?(s3) ? s3.encoding : nil].uniq.compact
+        !s1.ascii_only? ? s1.encoding : nil,
+        !s2.ascii_only? ? s2.encoding : nil,
+        !s3.ascii_only? ? s3.encoding : nil].uniq.compact
       if 1 < encs.length
         assert_raise(ArgumentError, IndexError) { t[s2] = s3 }
       else
@@ -922,7 +918,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_assign_range2
     combination(STRINGS, -2..2, -2..2, STRINGS) {|s1, first, last, s2|
       t = s1.dup
-      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+      if s1.ascii_only? || s2.ascii_only? || s1.encoding == s2.encoding
         if first < -s1.length || s1.length < first
           assert_raise(RangeError) { t[first..last] = s2 }
         else
@@ -949,7 +945,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_assign_range3
     combination(STRINGS, -2..2, -2..2, STRINGS) {|s1, first, last, s2|
       t = s1.dup
-      if is_ascii_only?(s1) || is_ascii_only?(s2) || s1.encoding == s2.encoding
+      if s1.ascii_only? || s2.ascii_only? || s1.encoding == s2.encoding
         if first < -s1.length || s1.length < first
           assert_raise(RangeError) { t[first...last] = s2 }
         else
@@ -1026,7 +1022,7 @@ class TestM17N < Test::Unit::TestCase
         assert_raise(ArgumentError) { s1.center(width, s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.center(width, s2) }
         next
       end
@@ -1047,7 +1043,7 @@ class TestM17N < Test::Unit::TestCase
         assert_raise(ArgumentError) { s1.ljust(width, s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.ljust(width, s2) }
         next
       end
@@ -1068,7 +1064,7 @@ class TestM17N < Test::Unit::TestCase
         assert_raise(ArgumentError) { s1.rjust(width, s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.rjust(width, s2) }
         next
       end
@@ -1081,7 +1077,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_chomp
     combination(STRINGS, STRINGS) {|s1, s2|
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.chomp(s2) }
         next
       end
@@ -1140,7 +1136,7 @@ class TestM17N < Test::Unit::TestCase
         #assert_nothing_raised { s1.count(s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.count(s2) }
         next
       end
@@ -1169,7 +1165,7 @@ class TestM17N < Test::Unit::TestCase
         #assert_nothing_raised { s1.delete(s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.delete(s2) }
         next
       end
@@ -1204,7 +1200,7 @@ class TestM17N < Test::Unit::TestCase
     STRINGS.each {|s|
       t = s.dump
       assert(t.valid_encoding?)
-      assert(is_ascii_only?(t))
+      assert(t.ascii_only?)
       u = eval(t)
       assert_equal(a(s), a(u))
     }
@@ -1217,7 +1213,7 @@ class TestM17N < Test::Unit::TestCase
         #assert_nothing_raised { s1.each_line(s2) {} }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.each_line(s2) {} }
         next
       end
@@ -1266,7 +1262,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_include?
     combination(STRINGS, STRINGS) {|s1, s2|
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.include?(s2) }
         assert_raise(ArgumentError) { s1.index(s2) }
         assert_raise(ArgumentError) { s1.rindex(s2) }
@@ -1293,7 +1289,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_index
     combination(STRINGS, STRINGS, -2..2) {|s1, s2, pos|
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.index(s2) }
         next
       end
@@ -1311,7 +1307,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_rindex
     combination(STRINGS, STRINGS, -2..2) {|s1, s2, pos|
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.rindex(s2) }
         next
       end
@@ -1410,7 +1406,7 @@ class TestM17N < Test::Unit::TestCase
         assert_raise(RegexpError) { s1.scan(s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.scan(s2) }
         next
       end
@@ -1508,7 +1504,7 @@ class TestM17N < Test::Unit::TestCase
         assert_raise(RegexpError) { s1.split(s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.split(s2) }
         next
       end
@@ -1532,7 +1528,7 @@ class TestM17N < Test::Unit::TestCase
         #assert_raise(ArgumentError, "#{encdump s1}.squeeze(#{encdump s2})") { s1.squeeze(s2) }
         next
       end
-      if !is_ascii_only?(s1) && !is_ascii_only?(s2) && s1.encoding != s2.encoding
+      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
         assert_raise(ArgumentError) { s1.squeeze(s2) }
         next
       end
@@ -1637,9 +1633,9 @@ class TestM17N < Test::Unit::TestCase
       end
       if e
         encs = []
-        encs << s1.encoding if !is_ascii_only?(s1)
-        encs << s2.encoding if !is_ascii_only?(s2)
-        encs << s3.encoding if !is_ascii_only?(s3)
+        encs << s1.encoding if !s1.ascii_only?
+        encs << s2.encoding if !s2.ascii_only?
+        encs << s3.encoding if !s3.ascii_only?
         encs.uniq!
         #p e, encs
         assert(1 < encs.length, "#{encdump s1}.tr(#{encdump s2}, #{encdump s3})")
@@ -1657,9 +1653,9 @@ class TestM17N < Test::Unit::TestCase
       end
       if e
         encs = []
-        encs << s1.encoding if !is_ascii_only?(s1)
-        encs << s2.encoding if !is_ascii_only?(s2)
-        encs << s3.encoding if !is_ascii_only?(s3)
+        encs << s1.encoding if !s1.ascii_only?
+        encs << s2.encoding if !s2.ascii_only?
+        encs << s3.encoding if !s3.ascii_only?
         encs.uniq!
         #p e, encs, 
         assert(1 < encs.length, "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})")
