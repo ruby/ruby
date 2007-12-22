@@ -1,3 +1,13 @@
+Sat Dec 22 14:27:27 2007  Tanaka Akira  <akr@fsij.org>
+
+	* regenc.c (onigenc_ascii_is_code_ctype): moved from enc/ascii.c.
+
+	* regenc.h (onigenc_ascii_is_code_ctype): declared.
+
+	* enc/ascii.c: use onigenc_ascii_is_code_ctype.
+
+	* enc/us_ascii.c: new file for US-ASCII.
+
 Sat Dec 22 14:30:34 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_named_capture_assign_iter): allows non-ascii names and

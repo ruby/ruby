@@ -640,6 +640,16 @@ onigenc_always_false_is_allowed_reverse_match(const UChar* s, const UChar* end,
   return FALSE;
 }
 
+extern int
+onigenc_ascii_is_code_ctype(OnigCodePoint code, unsigned int ctype,
+                            OnigEncoding enc)
+{
+  if (code < 128)
+    return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
+  else
+    return FALSE;
+}
+
 extern OnigCodePoint
 onigenc_mbn_mbc_to_code(OnigEncoding enc, const UChar* p, const UChar* end)
 {

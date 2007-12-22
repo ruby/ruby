@@ -301,7 +301,6 @@ rb_enc_init(void)
 #undef ENC_REGISTER
     enc_alias("ASCII", rb_enc_name(ONIG_ENCODING_ASCII));
     enc_alias("BINARY", rb_enc_name(ONIG_ENCODING_ASCII));
-    enc_alias("US-ASCII", rb_enc_name(ONIG_ENCODING_ASCII)); /* will be defined separately in future. */
     enc_alias("SJIS", rb_enc_name(ONIG_ENCODING_SJIS));
 }
 
