@@ -1,3 +1,7 @@
+Sat Dec 22 17:31:41 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb ($extmk): fixed broken condition.
+
 Sat Dec 22 17:06:50 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/net/ssl.rb (OpenSSL::SSL::SSLContext.build): removed.

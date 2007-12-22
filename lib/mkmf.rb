@@ -146,7 +146,7 @@ end
 topdir = File.dirname(libdir = File.dirname(__FILE__))
 extdir = File.expand_path("ext", topdir)
 path = File.expand_path($0)
-$extmk = path[0, topdir.size+1] == topdir+"/" && %r"ext/|tool/" !~ path[topdir.size+1..-1]
+$extmk = path[0, topdir.size+1] == topdir+"/" && %r"(ext|enc|tool)/" =~ path[topdir.size+1..-1]
 if not $extmk and File.exist?(($hdrdir = RbConfig::CONFIG["rubyhdrdir"]) + "/ruby/ruby.h")
   $topdir = $hdrdir
   $top_srcdir = $hdrdir
