@@ -501,8 +501,7 @@ rb_str_length(VALUE str)
  */
 
 static VALUE
-rb_str_bytesize(str)
-    VALUE str;
+rb_str_bytesize(VALUE str)
 {
     return INT2NUM(RSTRING_LEN(str));
 }
@@ -5341,6 +5340,17 @@ rb_str_force_encoding(VALUE str, VALUE enc)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     str.valid_encoding?  => true or false
+ *  
+ *  Returns true for a string which encoded correctly.
+ *
+ *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding? => true
+ *    "\xc2".force_encoding("UTF-8").valid_encoding? => false
+ *    "\x80".force_encoding("UTF-8").valid_encoding? => false
+ */
+
 static VALUE
 rb_str_valid_encoding_p(VALUE str)
 {
@@ -5348,6 +5358,16 @@ rb_str_valid_encoding_p(VALUE str)
 
     return cr == ENC_CODERANGE_BROKEN ? Qfalse : Qtrue;
 }
+
+/*
+ *  call-seq:
+ *     str.ascii_only?  => true or false
+ *  
+ *  Returns true for a string which has only ASCII characters.
+ *
+ *    "abc".force_encoding("UTF-8").ascii_only? => true
+ *    "abc\u{6666}".force_encoding("UTF-8").ascii_only? => false
+ */
 
 static VALUE
 rb_str_is_ascii_only_p(VALUE str)
