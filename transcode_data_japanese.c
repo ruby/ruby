@@ -1,5 +1,5 @@
 #define TRANSCODE_DATA
-#include "/cygdrive/d/ruby/transcode_data.h"
+#include "transcode_data.h"
 
 static const unsigned char
 from_SHIFT_JIS_81_offsets[256] = {

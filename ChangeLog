@@ -1,3 +1,7 @@
+Sat Dec 22 15:56:36 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* transcode_data_japanese: typo.
+
 Sat Dec 22 15:54:54 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* ChangeLog: Information for last patch got lost, fixed
