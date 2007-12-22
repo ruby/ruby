@@ -1,4 +1,4 @@
-Sun Dec 23 03:26:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 23 03:35:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.h: use patchlevel if revision is not set.
 
@@ -7,6 +7,8 @@ Sun Dec 23 03:26:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* common.mk (srcs): new target to generated sources.
 
 	* common.mk (encs, ext/ripper/ripper.c): MAKEFLAGS needs -.
+
+	* enc/depend, enc/make_encmake.rb: use erb.
 
 Sun Dec 23 01:56:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

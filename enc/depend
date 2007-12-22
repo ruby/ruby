@@ -1,49 +1,49 @@
-! encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS
-! encs.each {|e| e.chomp!(".c")}
-! encs = encs.sort_by {|e| e.split(/(\d+)/).map {|n| Integer(n) rescue n}}
+% encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS
+% encs.each {|e| e.chomp!(".c")}
+% encs = encs.sort_by {|e| e.split(/(\d+)/).map {|n| Integer(n) rescue n}}
 
-VPATH = <% %w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(top_srcdir) $(srcdir)].join(CONFIG["PATH_SEPARATOR"]) %>
-LIBPATH = <%libpathflag($DEFLIBPATH)%>
+VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(top_srcdir) $(srcdir)].join(CONFIG["PATH_SEPARATOR"])%>
+LIBPATH = <%=libpathflag($DEFLIBPATH)%>
 
-ENCOBJS = <%encs.map {|e|"#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%"\n" if encs.size>1%>
-ENCDEFS = <%encs.map {|e|"#{e}.def"}.join(" \\\n\t  ") if DEFFILE%><%"\n" if encs.size>1%>
-ENCSOS = <%encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%>
+ENCOBJS = <%=encs.map {|e|"#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if encs.size>1%>
+ENCDEFS = <%=encs.map {|e|"#{e}.def"}.join(" \\\n\t  ") if DEFFILE%><%="\n" if encs.size>1%>
+ENCSOS = <%=encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%>
 
 all: $(ENCSOS)
 
-! COMPILE_RULES.each do |rule|
-<%  rule % %w[c $(OBJEXT)] %>
-	<%COMPILE_C%>
+% COMPILE_RULES.each do |rule|
+<%=  rule % %w[c $(OBJEXT)] %>
+	<%=COMPILE_C%>
 
-! end
-! unless encs.empty?
+% end
+% unless encs.empty?
 
 $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
 
-! encs.each do |e|
-<%e%>.so: $(ENCSODIR)/<%e%>.$(DLEXT)
-! end
+% encs.each do |e|
+<%=e%>.so: $(ENCSODIR)/<%=e%>.$(DLEXT)
+% end
 
-! end
-! link_so = LINK_SO.gsub(/\n/, "\n\t")
-! encs.each do |e|
-!   deps = "#{e}.$(OBJEXT)"
-!   deps << " #{e}-$(arch).def" if DEFFILE
-$(ENCSODIR)/<%e%>.$(DLEXT): <%deps%>
-	<%link_so.sub(/\$\(OBJS\)/, deps)%>
+% end
+% link_so = LINK_SO.gsub(/\n/, "\n\t")
+% encs.each do |e|
+%   deps = "#{e}.$(OBJEXT)"
+%   deps << " #{e}-$(arch).def" if DEFFILE
+$(ENCSODIR)/<%=e%>.$(DLEXT): <%=deps%>
+	<%=link_so.sub(/\$\(OBJS\)/, deps)%>
 
-! end
-! if DEFFILE
-!   encs.each do |e|
-<%e%>-$(arch).def: enc.mk
+% end
+% if DEFFILE
+%   encs.each do |e|
+<%=e%>-$(arch).def: enc.mk
 	echo EXPORTS > $@
-	echo <%EXPORT_PREFIX%>Init_<%e%> >> $@
+	echo <%=EXPORT_PREFIX%>Init_<%=e%> >> $@
 
-!   end
-! end
-! encs.each do |e|
-<%e%>.$(OBJEXT): <%e%>.c
-! end
+%   end
+% end
+% encs.each do |e|
+<%=e%>.$(OBJEXT): <%=e%>.c
+% end
 
 clean:
 	$(RM) $(ENCSOS)
