@@ -1,3 +1,8 @@
+Sat Dec 22 10:19:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_method_name): now __method__ and __callee__ are
+	  aliases.  [ruby-core:14244]
+
 Sat Dec 22 08:29:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_buf_append): improvement for non-broken coded
