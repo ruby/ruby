@@ -1265,7 +1265,6 @@ syck_genericresolver_node_import(VALUE self, VALUE node)
         break;
 
         case syck_seq_kind:
-            rb_iv_set(obj, "@kind", sym_seq);
             v = rb_ary_new2( syck_seq_count( n ) );
             for ( i = 0; i < syck_seq_count( n ); i++ )
             {
@@ -1276,10 +1275,10 @@ syck_genericresolver_node_import(VALUE self, VALUE node)
                 style = sym_inline;
             } 
             obj = rb_funcall( cSeq, s_new, 3, t, v, style );
+            rb_iv_set(obj, "@kind", sym_seq);
         break;
 
         case syck_map_kind:
-            rb_iv_set(obj, "@kind", sym_map);
             v = rb_hash_new();
             for ( i = 0; i < syck_map_count( n ); i++ )
             {
@@ -1290,6 +1289,7 @@ syck_genericresolver_node_import(VALUE self, VALUE node)
                 style = sym_inline;
             } 
             obj = rb_funcall( cMap, s_new, 3, t, v, style );
+            rb_iv_set(obj, "@kind", sym_map);
         break;
     }
 

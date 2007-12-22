@@ -1,3 +1,9 @@
+Sat Dec 22 21:10:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_genericresolver_node_import): should
+	  not set instance variable "@kind" before initializing it.
+	  [ruby-dev:32677]
+
 Sat Dec 22 19:52:23 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_objectspace.rb: fix condition.
