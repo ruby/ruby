@@ -1,3 +1,9 @@
+Sat Dec 22 10:25:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (reg_named_capture_assign_iter): captured name should
+	  not be reserved word.  a patch from Keita Yamaguchi
+	  <keita.yamaguchi AT gmail.com> in [ruby-dev:32675].
+
 Sat Dec 22 10:19:08 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_method_name): now __method__ and __callee__ are
