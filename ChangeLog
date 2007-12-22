@@ -1,3 +1,7 @@
+Sat Dec 22 11:37:06 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* encoding.c (rb_locale_charmap): win32 support.
+
 Sat Dec 22 11:31:14 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* gem_prelude.rb:  Place bin dir before lib dir so gem bin stubs work.

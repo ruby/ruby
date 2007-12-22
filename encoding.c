@@ -792,6 +792,8 @@ rb_locale_charmap(VALUE klass)
     char *codeset;
     codeset = nl_langinfo(CODESET);
     return rb_str_new2(codeset);
+#elif defined _WIN32
+    return rb_sprintf("CP%d", GetACP());
 #else
     return Qnil;
 #endif
