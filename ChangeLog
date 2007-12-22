@@ -1,3 +1,9 @@
+Sat Dec 22 15:01:16 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/pop.rb (enable_ssl): use OpenSSL::SSL::SSLContext.build
+	  instead of SSLContext.new (default verify mode is now
+	  OpenSSL::SSL::VERIFY_PEER).
+
 Sat Dec 22 14:45:21 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: shouldn't freeze nil. [ruby-dev:32677]

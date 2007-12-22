@@ -25,7 +25,7 @@ require 'digest/md5'
 require 'timeout'
 
 begin
-  require "openssl"
+  require "openssl/ssl"
 rescue LoadError
 end
 
@@ -322,38 +322,53 @@ module Net
     # SSL
     #
 
-    @use_ssl = false
-    @verify = nil
-    @certs = nil
+    @ssl_params = nil
 
+    # call-seq:
+    #    Net::POP.enable_ssl(params = {})
+    #
     # Enable SSL for all new instances.
-    # +verify+ is the type of verification to do on the Server Cert; Defaults
-    # to OpenSSL::SSL::VERIFY_NONE.
-    # +certs+ is a file or directory holding CA certs to use to verify the 
-    # server cert; Defaults to nil.
-    def POP3.enable_ssl(verify = OpenSSL::SSL::VERIFY_NONE, certs = nil)
-      @use_ssl = true
-      @verify = verify
-      @certs = certs  
+    # +params+ is passed to OpenSSL::SSLContext.build.
+    def POP3.enable_ssl(*args)
+      @ssl_params = create_ssl_params(*args)
+    end
+
+    def POP3.create_ssl_params(verify_or_params = {}, certs = nil)
+      begin
+        params = verify_or_params.to_hash
+      rescue NoMethodError
+        params = {}
+        params[:verify_mode] = verify_or_params
+        if certs
+          if File.file?(certs)
+            params[:ca_file] = certs
+          elsif File.directory?(certs)
+            params[:ca_path] = certs
+          end
+        end
+      end
+      return params
     end
 
     # Disable SSL for all new instances.
     def POP3.disable_ssl
-      @use_ssl = nil
-      @verify = nil
-      @certs = nil
+      @ssl_params = nil
+    end
+
+    def POP3.ssl_params
+      return @ssl_params
     end
 
     def POP3.use_ssl?
-      @use_ssl
+      return !@ssl_params.nil?
     end
 
     def POP3.verify
-      @verify
+      return @ssl_params[:verify_mode]
     end
 
     def POP3.certs
-      @certs
+      return @ssl_params[:ca_file] || @ssl_params[:ca_path]
     end
 
     #
@@ -394,11 +409,9 @@ module Net
     # This method does *not* open the TCP connection.
     def initialize(addr, port = nil, isapop = false)
       @address = addr
-      @use_ssl = POP3.use_ssl?
-      @port = port || (POP3.use_ssl? ? POP3.default_pop3s_port : POP3.default_pop3_port)
+      @ssl_params = POP3.ssl_params
+      @port = port
       @apop = isapop
-      @certs = POP3.certs
-      @verify = POP3.verify
       
       @command = nil
       @socket = nil
@@ -419,28 +432,28 @@ module Net
 
     # does this instance use SSL?
     def use_ssl?
-      @use_ssl
+      return !@ssl_params.nil?
     end
    
+    # call-seq:
+    #    Net::POP#enable_ssl(params = {})
+    #
     # Enables SSL for this instance.  Must be called before the connection is
     # established to have any effect.
-    # +verify+ is the type of verification to do on the Server Cert; Defaults
-    # to OpenSSL::SSL::VERIFY_NONE.
-    # +certs+ is a file or directory holding CA certs to use to verify the 
-    # server cert; Defaults to nil.
-    # +port+ is port to establish the SSL connection on; Defaults to 995.
-    def enable_ssl(verify = OpenSSL::SSL::VERIFY_NONE, certs = nil, 
-                   port = POP3.default_pop3s_port)
-      @use_ssl = true
-      @verify = verify
-      @certs = certs
-      @port = port
+    # +params[:port]+ is port to establish the SSL connection on; Defaults to 995.
+    # +params+ (except :port) is passed to OpenSSL::SSLContext.build.
+    def enable_ssl(verify_or_params = {}, certs = nil, port = nil)
+      begin
+        @ssl_params = verify_or_params.to_hash.dup
+        @port = @ssl_params.delete(:port) || @port
+      rescue NoMethodError
+        @ssl_params = POP3.create_ssl_params(verify_or_params, certs)
+        @port = port || @port
+      end
     end
     
     def disable_ssl
-      @use_ssl = false
-      @verify = nil
-      @certs = nil
+      @ssl_params = nil
     end
 
     # Provide human-readable stringification of class state.
@@ -469,7 +482,9 @@ module Net
     attr_reader :address
 
     # The port number to connect to.
-    attr_reader :port
+    def port
+      return @port || (use_ssl? ? POP3.default_pop3s_port : POP3.default_pop3_port)
+    end
 
     # Seconds to wait until a connection is opened.
     # If the POP3 object cannot open a connection within this time,
@@ -516,20 +531,10 @@ module Net
     end
 
     def do_start(account, password)
-      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }
+      s = timeout(@open_timeout) { TCPSocket.open(@address, port) }
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
-        context = OpenSSL::SSL::SSLContext.new
-        context.verify_mode = @verify
-        if @certs
-          if File.file?(@certs)
-            context.ca_file = @certs
-          elsif File.directory?(@certs)
-            context.ca_path = @certs
-          else
-            raise ArgumentError, "certs path is not file/directory: #{@certs}"
-          end
-        end
+        context = OpenSSL::SSL::SSLContext.build(@ssl_params)
         s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
         s.connect
