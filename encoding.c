@@ -250,6 +250,19 @@ rb_enc_dummy_p(rb_encoding *enc)
     return ENC_DUMMY_P(encoding);
 }
 
+/*
+ * call-seq:
+ *   enc.dummy? => true or false
+ *
+ * Returns true for dummy encoding.
+ * A dummy encoding is a encoding which character handling is not properly
+ * implemented.
+ * It is used for stateful encoding.
+ *
+ *   Encoding::ISO_2022_JP.dummy?       #=> true
+ *   Encoding::UTF_8.dummy?             #=> false
+ *
+ */
 static VALUE
 enc_dummy_p(VALUE enc)
 {
@@ -669,6 +682,15 @@ rb_enc_tolower(int c, rb_encoding *enc)
     return (ONIGENC_IS_ASCII_CODE(c)?ONIGENC_ASCII_CODE_TO_LOWER_CASE(c):(c));
 }
 
+/*
+ * call-seq:
+ *   enc.inspect => string
+ *
+ * Returns a string which represents the encoding for programmers.
+ *
+ *   Encoding::UTF_8.inspect       #=> "#<Encoding:UTF-8>"
+ *   Encoding::ISO_2022_JP.inspect #=> "#<Encoding:ISO-2022-JP (dummy)>"
+ */
 static VALUE
 enc_inspect(VALUE self)
 {
@@ -677,6 +699,14 @@ enc_inspect(VALUE self)
 		      (ENC_DUMMY_P(self) ? " (dummy)" : ""));
 }
 
+/*
+ * call-seq:
+ *   enc.name => string
+ *
+ * Returns the name of the encoding.
+ *
+ *   Encoding::UTF_8.name       => "UTF-8"
+ */
 static VALUE
 enc_name(VALUE self)
 {
@@ -689,6 +719,22 @@ enc_based_encoding(VALUE self)
     return rb_attr_get(self, id_based_encoding);
 }
 
+/*
+ * call-seq:
+ *   Encoding.list => [enc1, enc2, ...]
+ *
+ * Returns the list of loaded encodings.
+ *
+ *   Encoding.list
+ *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>, #<Encoding:Shift_JIS>, #<Encoding:UTF-8>, #<Encoding:ISO-2022-JP (dummy)>]
+ *
+ *   Encoding.find("US-ASCII")
+ *   #=> #<Encoding:US-ASCII>
+ *
+ *   Encoding.list
+ *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>, #<Encoding:Shift_JIS>, #<Encoding:UTF-8>, #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
+ *
+ */
 static VALUE
 enc_list(VALUE klass)
 {
@@ -703,6 +749,16 @@ enc_list(VALUE klass)
     return ary;
 }
 
+/*
+ * call-seq:
+ *   Encoding.find(symbol) => enc
+ *   Encoding.find(string) => enc
+ *
+ * Search the encoding with specified <i>name</i>.
+ * <i>name</i> should be a string or symbol.
+ *
+ *   Encoding.find("US-ASCII")  => #<Encoding:US-ASCII>
+ */
 static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
@@ -715,6 +771,24 @@ enc_find(VALUE klass, VALUE enc)
     return rb_enc_from_encoding(rb_enc_from_index(idx));
 }
 
+/*
+ * call-seq:
+ *   Encoding.compatible?(str1, str2) => enc or nil
+ *
+ * Checks the compatibility of two strings.
+ * If they are compabible, means concatinatable, 
+ * returns an encoding which the concatinated string will be.
+ * If they are not compatible, nil is returned.
+ *
+ *   Encoding.compatible?("\xa1".force_encoding("iso-8859-1"), "b")
+ *   => #<Encoding:ISO-8859-1>
+ *
+ *   Encoding.compatible?(
+ *     "\xa1".force_encoding("iso-8859-1"),
+ *     "\xa1\xa1".force_encoding("euc-jp"))
+ *   => nil
+ *
+ */
 static VALUE
 enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
 {
@@ -772,6 +846,14 @@ rb_enc_default_external(void)
     return rb_enc_from_encoding(rb_default_external_encoding());
 }
 
+/*
+ * call-seq:
+ *   Encoding.default_external => enc
+ *
+ * Returns default external encoding.
+ *
+ * It is initialized by the locale or -E option.
+ */
 static VALUE
 get_default_external(VALUE klass)
 {
@@ -784,6 +866,25 @@ rb_enc_set_default_external(VALUE encoding)
     default_external_index = rb_enc_to_index(rb_to_encoding(encoding));
 }
 
+/*
+ * call-seq:
+ *   Encoding.locale_charmap => string
+ *
+ * Returns the locale charmap name.
+ *
+ *   Debian GNU/Linux
+ *     LANG=C
+ *       Encoding.locale_charmap  => "ANSI_X3.4-1968"
+ *     LANG=ja_JP.EUC-JP
+ *       Encoding.locale_charmap  => "EUC-JP"
+ *
+ *   SunOS 5
+ *     LANG=C
+ *       Encoding.locale_charmap  => "646"
+ *     LANG=ja
+ *       Encoding.locale_charmap  => "eucJP"
+ *
+ */
 VALUE
 rb_locale_charmap(VALUE klass)
 {
