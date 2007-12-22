@@ -485,7 +485,7 @@ Init_nkf()
     rb_define_const(mNKF, "NOCONV",	Qnil);
     rb_define_const(mNKF, "UNKNOWN",	Qnil);
     rb_define_const(mNKF, "BINARY",	rb_enc_from_encoding(rb_nkf_enc_get("BINARY")));
-    rb_define_const(mNKF, "ASCII",	rb_enc_from_encoding(rb_nkf_enc_get("US-ASCII")));
+    rb_define_const(mNKF, "ASCII",	rb_enc_from_encoding(rb_ascii_encoding()));
     rb_define_const(mNKF, "JIS",	rb_enc_from_encoding(rb_nkf_enc_get("ISO-2022-JP")));
     rb_define_const(mNKF, "EUC",	rb_enc_from_encoding(rb_nkf_enc_get("EUC-JP")));
     rb_define_const(mNKF, "SJIS",	rb_enc_from_encoding(rb_nkf_enc_get("Shift_JIS")));
