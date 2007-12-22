@@ -1,4 +1,8 @@
-Sun Dec 23 03:22:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Dec 23 03:26:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.h: use patchlevel if revision is not set.
+
+	* {bcc32,win{32,ce}}/setup.mak (-version-): skip including revision.h.
 
 	* common.mk (srcs): new target to generated sources.
 

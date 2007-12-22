@@ -63,6 +63,7 @@ BASERUBY = $(BASERUBY)
 !endif
 <<
 	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
+#define RUBY_REVISION 0
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR

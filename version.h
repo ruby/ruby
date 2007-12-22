@@ -32,7 +32,7 @@ RUBY_EXTERN const char ruby_copyright[];
 #define RUBY_REVISION 0
 #endif
 
-#if RUBY_VERSION_TEENY > 0 && RUBY_PATCHLEVEL < 5000 && !RUBY_REVISION
+#if !RUBY_REVISION
 #define RUBY_RELEASE_STR "patchlevel"
 #define RUBY_RELEASE_NUM RUBY_PATCHLEVEL
 #else
