@@ -1,3 +1,8 @@
+Sun Dec 23 01:18:06 2007  David Flanagan  <david@davidflanagan.com>
+
+	* io.c, io.h: temporary patch to partially implement
+          transcode-on-read and transcode-on-write
+
 Sun Dec 23 00:48:05 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/imap/test_imap.rb: added tests for SSL.

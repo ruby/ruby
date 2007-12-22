@@ -124,7 +124,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush;
+static ID id_write, id_read, id_getc, id_flush, id_encode;
 
 extern char *ruby_inplace_mode;
 
@@ -621,6 +621,26 @@ static long
 io_fwrite(VALUE str, rb_io_t *fptr)
 {
     long len, n, r, l, offset = 0;
+
+    /*
+     * If an external encoding was specified and it differs from
+     * the strings encoding then we must transcode before writing.
+     * We must also transcode if two encodings were specified
+     */
+    if (fptr->enc && (fptr->enc2 || fptr->enc != rb_enc_get(str))) {
+	/* transcode str before output */
+	/* the methods in transcode.c are static, so call indirectly */
+	/* Can't use encode! because puts writes a frozen newline */
+	if (fptr->enc2) {
+	    str = rb_funcall(str, id_encode, 2, 
+			     rb_enc_from_encoding(fptr->enc),
+			     rb_enc_from_encoding(fptr->enc2));
+	}
+	else {
+	    str = rb_funcall(str, id_encode, 1, 
+			     rb_enc_from_encoding(fptr->enc));
+	}
+    }
 
     len = RSTRING_LEN(str);
     if ((n = len) <= 0) return n;
@@ -1279,7 +1299,17 @@ io_enc_str(VALUE str, rb_io_t *fptr)
 {
     OBJ_TAINT(str);
     if (fptr->enc) {
-	rb_enc_associate(str, fptr->enc);
+	if (fptr->enc2) {
+	    /* two encodings, so transcode from enc2 to enc */
+            /* the methods in transcode.c are static, so call indirectly */
+	    str = rb_funcall(str, id_encode, 2, 
+			     rb_enc_from_encoding(fptr->enc2),
+			     rb_enc_from_encoding(fptr->enc));
+	}
+	else {
+	    /* just one encoding, so associate it with the string */
+	    rb_enc_associate(str, fptr->enc);
+	}
     }
     return str;
 }
@@ -2878,10 +2908,10 @@ rb_io_binmode(VALUE io)
 static VALUE
 rb_io_binmode_m(VALUE io)
 {
+    rb_io_binmode(io);
+
 #if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     VALUE write_io;
-
-    rb_io_binmode(io);
 
     write_io = GetWriteIO(io);
     if (write_io != io)
@@ -3063,7 +3093,8 @@ void
 rb_io_mode_enc(rb_io_t *fptr, const char *mode)
 {
     const char *p0, *p1;
-    int idx;
+    char *enc2name;
+    int idx, idx2;
     
     p0 = strrchr(mode, ':');
     if (p0) {
@@ -3071,13 +3102,31 @@ rb_io_mode_enc(rb_io_t *fptr, const char *mode)
 	if (idx >= 0) {
 	    fptr->enc = rb_enc_from_index(idx);
 	}
-#if 0
+	else {
+	    rb_warn("Unsupported encoding %s ignored", p0+1);
+	}
 	p1 = strchr(mode, ':');
 	if (p1 < p0) {
+	    enc2name = ALLOCA_N(char, p0-p1);
+	    strncpy(enc2name, p1+1, p0-p1-1);
+	    enc2name[p0-p1-1] = '\0';
+	    idx2=rb_enc_find_index(enc2name);
+	    if (idx2 == idx) {
+		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
+			enc2name, p0+1);
+	    }
+	    else if (idx2 >= 0) {
+		fptr->enc2 = rb_enc_from_index(idx2);
+	    }
+	    else {
+		rb_warn("Unsupported encoding %s ignored", enc2name);
+	    }
 	}
-#endif
     }
-    else if (!(fptr->mode & FMODE_BINMODE)) {
+    else if (fptr->mode & FMODE_BINMODE) {
+	fptr->enc = rb_ascii_encoding();
+    }
+    else {
 	fptr->enc = rb_default_external_encoding();
     }
 }
@@ -5703,6 +5752,11 @@ rb_io_external_encoding(VALUE io)
     return rb_enc_from_encoding(fptr->enc);
 }
 
+static VALUE
+argf_external_encoding(void)
+{
+    return rb_enc_default_external();
+}
 
 static VALUE
 argf_tell(void)
@@ -6155,6 +6209,7 @@ Init_IO(void)
     id_read = rb_intern("read");
     id_getc = rb_intern("getc");
     id_flush = rb_intern("flush");
+    id_encode = rb_intern("encode");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
@@ -6338,6 +6393,8 @@ Init_IO(void)
 
     rb_define_singleton_method(argf, "lineno",   argf_lineno, 0);
     rb_define_singleton_method(argf, "lineno=",  argf_set_lineno, 1);
+
+    rb_define_singleton_method(argf, "external_encoding", argf_external_encoding, 0);
 
     rb_global_variable(&current_file);
     rb_define_readonly_variable("$FILENAME", &filename);

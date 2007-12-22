@@ -47,6 +47,7 @@ typedef struct rb_io_t {
     int rbuf_capa;
     VALUE tied_io_for_writing;
     rb_encoding *enc;
+    rb_encoding *enc2;
 } rb_io_t;
 
 #define HAVE_RB_IO_T 1
@@ -91,6 +92,7 @@ typedef struct rb_io_t {
     fp->rbuf_capa = 0;\
     fp->tied_io_for_writing = 0;\
     fp->enc = 0;\
+    fp->enc2 = 0;\
 } while (0)
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);
