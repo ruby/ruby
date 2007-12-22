@@ -726,13 +726,17 @@ enc_based_encoding(VALUE self)
  * Returns the list of loaded encodings.
  *
  *   Encoding.list
- *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>, #<Encoding:Shift_JIS>, #<Encoding:UTF-8>, #<Encoding:ISO-2022-JP (dummy)>]
+ *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>,
+ *       #<Encoding:Shift_JIS>, #<Encoding:UTF-8>,
+ *       #<Encoding:ISO-2022-JP (dummy)>]
  *
  *   Encoding.find("US-ASCII")
- *   #=> #<Encoding:US-ASCII>
+ *   => #<Encoding:US-ASCII>
  *
  *   Encoding.list
- *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>, #<Encoding:Shift_JIS>, #<Encoding:UTF-8>, #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
+ *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>,
+ *       #<Encoding:Shift_JIS>, #<Encoding:UTF-8>,
+ *       #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
  *
  */
 static VALUE
@@ -751,13 +755,15 @@ enc_list(VALUE klass)
 
 /*
  * call-seq:
- *   Encoding.find(symbol) => enc
  *   Encoding.find(string) => enc
+ *   Encoding.find(symbol) => enc
  *
  * Search the encoding with specified <i>name</i>.
  * <i>name</i> should be a string or symbol.
  *
  *   Encoding.find("US-ASCII")  => #<Encoding:US-ASCII>
+ *   Encoding.find(:Shift_JIS)  => #<Encoding:Shift_JIS>
+ *
  */
 static VALUE
 enc_find(VALUE klass, VALUE enc)
