@@ -341,7 +341,7 @@ class TestEval < Test::Unit::TestCase
   def test_cvar_scope_with_instance_eval
     Fixnum.class_eval "@@test_cvar_scope_with_instance_eval = 1" # depends on [ruby-dev:24229]
     @@test_cvar_scope_with_instance_eval = 4
-    assert_equal(4, 1.instance_eval("@@test_cvar_scope_with_instance_eval"), "[ruby-dev:24223]")
+    assert_equal(1, 1.instance_eval("@@test_cvar_scope_with_instance_eval"), "[ruby-dev:24223]")
     Fixnum.__send__(:remove_class_variable, :@@test_cvar_scope_with_instance_eval)
   end
 
