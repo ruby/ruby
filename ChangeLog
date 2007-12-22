@@ -1,3 +1,7 @@
+Sat Dec 22 10:30:45 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/insns2vm.rb: moved from lib/vm/instruction.rb.
+
 Sat Dec 22 10:25:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (reg_named_capture_assign_iter): captured name should
