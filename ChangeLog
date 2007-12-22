@@ -1,3 +1,9 @@
+Sat Dec 22 16:58:49 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (encode_utf7): accept UTF-8 strings.
+
+	* lib/net/imap.rb (decode_utf7): return UTF-8 strings.
+
 Sat Dec 22 15:56:36 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* transcode_data_japanese: typo.

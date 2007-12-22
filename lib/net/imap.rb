@@ -852,19 +852,19 @@ module Net
           end
           base64.unpack("m")[0].unpack("n*").pack("U*")
         end
-      }
+      }.force_encoding("UTF-8")
     end
 
     # Encode a string from UTF-8 format to modified UTF-7.
     def self.encode_utf7(s)
-      return s.gsub(/(&)|([^\x20-\x25\x27-\x7e]+)/n) { |x|
+      return s.gsub(/(&)|([^\x20-\x25\x27-\x7e]+)/u) { |x|
         if $1
           "&-"
         else
           base64 = [x.unpack("U*").pack("n*")].pack("m")
           "&" + base64.delete("=\n").tr("/", ",") + "-"
         end
-      }
+      }.force_encoding("ASCII-8BIT")
     end
 
     private
