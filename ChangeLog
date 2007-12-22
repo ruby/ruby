@@ -1,3 +1,7 @@
+Sun Dec 23 00:48:05 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/net/imap/test_imap.rb: added tests for SSL.
+
 Sat Dec 22 21:10:53 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_genericresolver_node_import): should
