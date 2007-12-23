@@ -670,14 +670,15 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_eq
     combination(STRINGS, STRINGS) {|s1, s2|
+      desc_eq = "#{encdump s1} == #{encdump s2}"
       if s1.ascii_only? && s2.ascii_only? && a(s1) == a(s2)
-        assert(s1 == s2)
+        assert(s1 == s2, desc_eq)
       elsif s1.encoding == s2.encoding && a(s1) == a(s2)
-        assert(s1 == s2)
+        assert(s1 == s2, desc_eq)
         assert(!(s1 != s2))
         assert_equal(0, s1 <=> s2)
       else
-        assert(!(s1 == s2))
+        assert(!(s1 == s2), "!(#{desc_eq})")
         assert(s1 != s2)
         assert_not_equal(0, s1 <=> s2)
       end
@@ -988,11 +989,12 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_cmp
     combination(STRINGS, STRINGS) {|s1, s2|
+      desc = "#{encdump s1} <=> #{encdump s2}"
       r = s1 <=> s2
       if s1 == s2
-        assert_equal(0, r)
+        assert_equal(0, r, desc)
       else
-        assert_not_equal(0, r)
+        assert_not_equal(0, r, desc)
       end
     }
   end
