@@ -1304,8 +1304,8 @@ io_enc_str(VALUE str, rb_io_t *fptr)
 	/* two encodings, so transcode from enc2 to enc */
 	/* the methods in transcode.c are static, so call indirectly */
 	str = rb_funcall(str, id_encode, 2, 
-			 rb_enc_from_encoding(fptr->enc2),
-			 rb_enc_from_encoding(fptr->enc));
+			 rb_enc_from_encoding(fptr->enc),
+			 rb_enc_from_encoding(fptr->enc2));
     }
     else {
 	/* just one encoding, so associate it with the string */
@@ -3109,15 +3109,14 @@ mode_enc(rb_io_t *fptr, const char *estr)
 	rb_warn("Unsupported encoding %s ignored", p1);
     }
 
-    p1 = strchr(estr, ':');
-    if (p0 && p1 && p1 < p0) {
-	enc2name = ALLOCA_N(char, p0-p1);
-	strncpy(enc2name, p1+1, p0-p1-1);
-	enc2name[p0-p1-1] = '\0';
+    if (p0) {
+	enc2name = ALLOCA_N(char, p0-estr+1);
+	strncpy(enc2name, estr, p0-estr);
+	enc2name[p0-estr] = '\0';
 	idx2=rb_enc_find_index(enc2name);
 	if (idx2 == idx) {
 	    rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
-		    enc2name, p0+1);
+		    enc2name, p1);
 	}
 	else if (idx2 >= 0) {
 	    fptr->enc2 = rb_enc_from_index(idx2);
@@ -4071,7 +4070,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 		     rb_io_flags_mode(flags));
 	}
 	fptr->mode = flags;
-	rb_io_mode_enc(fptr, StringValuePtr(nmode));
+	rb_io_mode_enc(fptr, StringValueCStr(nmode));
     }
 
     if (fptr->path) {
@@ -5526,12 +5525,15 @@ io_new_instance(VALUE args)
 
 /*
  *  call-seq:
- *     IO.pipe -> array
+ *     IO.pipe([encoding]) -> array
  *
  *  Creates a pair of pipe endpoints (connected to each other) and
  *  returns them as a two-element array of <code>IO</code> objects:
  *  <code>[</code> <i>read_file</i>, <i>write_file</i> <code>]</code>. Not
  *  available on all platforms.
+ *
+ *  If optional argument is specified, read string from pipe is tagged
+ *  the encoding specified.
  *
  *  In the example below, the two processes close the ends of the pipe
  *  that they are not using. This is not just a cosmetic nicety. The
@@ -5561,12 +5563,16 @@ io_new_instance(VALUE args)
  */
 
 static VALUE
-rb_io_s_pipe(VALUE klass)
+rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 {
-#ifndef __human68k__
+#ifdef __human68k__
+    rb_notimplement();
+    return Qnil;		/* not reached */
+#else
     int pipes[2], state;
-    VALUE r, w, args[3];
+    VALUE r, w, args[3], estr, tmp;
 
+    rb_scan_args(argc, argv, "01", &estr);
     if (pipe(pipes) == -1)
 	rb_sys_fail(0);
 
@@ -5579,6 +5585,18 @@ rb_io_s_pipe(VALUE klass)
 	close(pipes[1]);
 	rb_jump_tag(state);
     }
+    if (argc == 1) {
+	rb_io_t *fptr;
+
+	GetOpenFile(r, fptr);
+	tmp = rb_check_string_type(estr);
+	if (!NIL_P(tmp)) {
+	    mode_enc(fptr, StringValueCStr(tmp));
+	}
+	else {
+	    fptr->enc = rb_to_encoding(estr);
+	}
+    }
     args[1] = INT2NUM(pipes[1]);
     args[2] = INT2FIX(O_WRONLY);
     w = rb_protect(io_new_instance, (VALUE)args, &state);
@@ -5590,9 +5608,6 @@ rb_io_s_pipe(VALUE klass)
     rb_io_synchronized(RFILE(w)->fptr);
 
     return rb_assoc_new(r, w);
-#else
-    rb_notimplement();
-    return Qnil;		/* not reached */
 #endif
 }
 
@@ -5654,13 +5669,11 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     }
     v = rb_hash_aref(opt, encoding);
     if (!NIL_P(v)) {
-	rb_encoding *enc;
 	rb_io_t *fptr;
 
-	enc = rb_to_encoding(v);
 	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
 	GetOpenFile(arg->io, fptr);
-	fptr->enc = enc;
+	fptr->enc = rb_to_encoding(v);
 	return;
     }
 }
@@ -6334,7 +6347,7 @@ Init_IO(void)
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
     rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
-    rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, 0);
+    rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, -1);
     rb_define_singleton_method(rb_cIO, "try_convert", rb_io_s_try_convert, 1);
 
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
