@@ -78,7 +78,8 @@ There is the data-type check function
 
   void Check_Type(VALUE value, int type)
 
-which raises an exception if the VALUE does not have the type specified.
+which raises an exception if the VALUE does not have the type
+specified.
 
 There are also faster check macros for fixnums and nil.
 
@@ -93,27 +94,27 @@ respectively.  They are singletons for the data type.
 The T_FIXNUM data is a 31bit length fixed integer (63bit length on
 some machines), which can be converted to a C integer by using the
 FIX2INT() macro.  There is also NUM2INT() which converts any Ruby
-numbers into C integers.  The NUM2INT() macro includes a type check, so
-an exception will be raised if the conversion failed.  NUM2DBL() can
-be used to retrieve the double float value in the same way.
+numbers into C integers.  The NUM2INT() macro includes a type check,
+so an exception will be raised if the conversion failed.  NUM2DBL()
+can be used to retrieve the double float value in the same way.
 
 In version 1.7 or later it is recommended that you use the new macros
 StringValue() and StringValuePtr() to get a char* from a VALUE.
 StringValue(var) replaces var's value with the result of "var.to_str()".
 StringValuePtr(var) does same replacement and returns char*
-representation of var.  These macros will skip the replacement if var is
-a String.  Notice that the macros take only the lvalue as their
+representation of var.  These macros will skip the replacement if var
+is a String.  Notice that the macros take only the lvalue as their
 argument, to change the value of var in place.
 
 In version 1.6 or earlier, STR2CSTR() was used to do the same thing
 but now it is deprecated in version 1.7, because STR2CSTR() has a risk
-of a dangling pointer problem in the to_str() impliclit conversion.
+of a dangling pointer problem in the to_str() implicit conversion.
 
 Other data types have corresponding C structures, e.g. struct RArray
-for T_ARRAY etc. The VALUE of the type which has the corresponding structure
-can be cast to retrieve the pointer to the struct.  The casting macro
-will be of the form RXXXX for each data type; for instance, RARRAY(obj). 
-See "ruby.h".
+for T_ARRAY etc. The VALUE of the type which has the corresponding
+structure can be cast to retrieve the pointer to the struct.  The
+casting macro will be of the form RXXXX for each data type; for
+instance, RARRAY(obj).  See "ruby.h".
 
 There are some accessing macros for structure members, for example
 `RSTRING_LEN(s)' to to get the size of the Ruby String object.  The
@@ -121,8 +122,8 @@ allocated region can be accessed by `RSTRING_PTR(str).  For arrays, use
 `RARRAY_LEN(ary) and `RARRAY_PTR(ary) respectively.
 
 Notice: Do not change the value of the structure directly, unless you
-are responsible for the result.  This ends up being the cause of interesting
-bugs.
+are responsible for the result.  This ends up being the cause of
+interesting bugs.
 
 1.4 Convert C data into VALUE
 
@@ -152,9 +153,10 @@ range, but is a bit slower.
 
 1.5 Manipulating Ruby data
 
-As I already mentioned, it is not recommended to modify an object's internal
-structure.  To manipulate objects, use the functions supplied by the Ruby
-interpreter. Some (not all) of the useful functions are listed below:
+As I already mentioned, it is not recommended to modify an object's
+internal structure.  To manipulate objects, use the functions supplied
+by the Ruby interpreter. Some (not all) of the useful functions are
+listed below:
 
  String functions
 
@@ -209,7 +211,7 @@ interpreter. Some (not all) of the useful functions are listed below:
 
 2. Extending Ruby with C
 
-2.1 Addding new features to Ruby
+2.1 Adding new features to Ruby
 
 You can add new features (classes, methods, etc.) to the Ruby
 interpreter.  Ruby provides APIs for defining the following things:
@@ -330,10 +332,11 @@ of the innermost method (which is defined by Ruby) can be accessed.
 
 2.2.2 ID or Symbol
 
-You can invoke methods directly, without parsing the string.  First I need
-to explain about ID.  ID is the integer number to represent Ruby's
-identifiers such as variable names.  The Ruby data type corresponding to ID
-is Symbol.  It can be accessed from Ruby in the form:
+You can invoke methods directly, without parsing the string.  First I
+need to explain about ID.  ID is the integer number to represent
+Ruby's identifiers such as variable names.  The Ruby data type
+corresponding to ID is Symbol.  It can be accessed from Ruby in the
+form:
 
  :Identifier
 
@@ -366,8 +369,8 @@ specified by the symbol mid.
 2.2.4 Accessing the variables and constants
 
 You can access class variables and instance variables using access
-functions.  Also, global variables can be shared between both environments.
-There's no way to access Ruby's local variables.
+functions.  Also, global variables can be shared between both
+environments.  There's no way to access Ruby's local variables.
 
 The functions to access/modify instance variables are below:
 
@@ -501,7 +504,8 @@ the library.
 Here's the example of an initializing function.
 
 --
-Init_dbm()
+void
+Init_dbm(void)
 {
     /* define DBM class */
     cDBM = rb_define_class("DBM", rb_cObject);
@@ -535,8 +539,8 @@ struct dbmdata {
 obj = Data_Make_Struct(klass, struct dbmdata, 0, free_dbm, dbmp);
 --
 
-This code wraps the dbmdata structure into a Ruby object.  We avoid wrapping
-DBM* directly, because we want to cache size information.
+This code wraps the dbmdata structure into a Ruby object.  We avoid
+wrapping DBM* directly, because we want to cache size information.
 
 To retrieve the dbmdata structure from a Ruby object, we define the
 following macro:
@@ -556,8 +560,7 @@ methods with a fixed number of arguments receive arguments like this:
 
 --
 static VALUE
-fdbm_delete(obj, keystr)
-    VALUE obj, keystr;
+fdbm_delete(VALUE obj, VALUE keystr)
 {
 	:
 }
@@ -571,10 +574,7 @@ arguments like this:
 
 --
 static VALUE
-fdbm_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
 	:
     if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
@@ -597,8 +597,7 @@ by Ruby's array, like this:
 
 --
 static VALUE
-fdbm_indexes(obj, args)
-    VALUE obj, args;
+fdbm_indexes(VALUE obj, VALUE args)
 {
 	:
 }
@@ -1125,7 +1124,7 @@ this method, the compilation will not be done.
  find_executable(bin, path)
 
 Finds command in path, which is File::PATH_SEPARATOR-separated list of
-directories.  If path is nil or omitted, environment varialbe PATH
+directories.  If path is nil or omitted, environment variable PATH
 will be used.  Returns the path name of the command if it is found,
 otherwise nil.
 
@@ -1154,7 +1153,7 @@ Returns an array of the added directories ([include_dir, lib_dir]).
  pkg_config(pkg)
 
 Obtains the information for pkg by pkg-config command.  The actual
-command name can be overriden by --with-pkg-config command line
+command name can be overridden by --with-pkg-config command line
 option.
 
 /*

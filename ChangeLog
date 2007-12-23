@@ -1,7 +1,10 @@
 Mon Dec 24 05:32:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_inject): updated documentation.  a patch from Keita
-	  Yamaguchi <keita.yamaguchi@gmail.com> in [ruby-dev:32686].
+	  Yamaguchi <keita.yamaguchi AT gmail.com> in [ruby-dev:32686].
+
+	* README.EXT: updated.  a patch from Keita Yamaguchi
+	  <keita.yamaguchi AT gmail.com> in [ruby-core:14328].
 
 Mon Dec 24 05:13:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
