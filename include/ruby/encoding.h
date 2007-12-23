@@ -71,8 +71,8 @@ rb_encoding * rb_enc_find(const char *name);
 #define rb_enc_mbminlen(enc) (enc)->min_enc_len
 #define rb_enc_mbmaxlen(enc) (enc)->max_enc_len
 
-/* ptr,endptr,encoding -> mbclen */
-int rb_enc_mbclen(const char*, const char *, rb_encoding*);
+/* -> mbclen (no error notification, no exception, 0 < ret <= e-p) */
+int rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc);
 
 /* -> chlen, invalid or needmore */
 int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
@@ -83,14 +83,14 @@ int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
 /* -> 0x00..0x7f, -1 */
 int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
 
-/* code,encoding -> codelen */
-int rb_enc_codelen(int, rb_encoding*);
+/* -> codelen or raise exception */
+int rb_enc_codelen(int code, rb_encoding *enc);
 
 /* code,ptr,encoding -> write buf */
 #define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)buf)
 
-/* ptr,ptr,encoding -> codepoint */
-#define rb_enc_codepoint(p,e,enc) ONIGENC_MBC_TO_CODE(enc,(UChar*)p,(UChar*)e) 
+/* -> code or raise exception */
+int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
 
 /* ptr, ptr, encoding -> prev_char */
 #define rb_enc_prev_char(s,p,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)s,(UChar*)p)

@@ -1149,8 +1149,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_count
     combination(STRINGS, STRINGS) {|s1, s2|
       if !s1.valid_encoding? || !s2.valid_encoding?
-        #assert_raise(ArgumentError) { s1.count(s2) }
-        #assert_nothing_raised { s1.count(s2) }
+        assert_raise(ArgumentError) { s1.count(s2) }
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
@@ -1178,8 +1177,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_delete
     combination(STRINGS, STRINGS) {|s1, s2|
       if !s1.valid_encoding? || !s2.valid_encoding?
-        #assert_raise(ArgumentError) { s1.delete(s2) }
-        #assert_nothing_raised { s1.delete(s2) }
+        assert_raise(ArgumentError) { s1.delete(s2) }
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
@@ -1199,8 +1197,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_downcase
     STRINGS.each {|s|
       if !s.valid_encoding?
-        #assert_raise(ArgumentError) { s.downcase }
-        #assert_nothing_raised { s.downcase }
+        assert_raise(ArgumentError) { s.downcase }
         next
       end
       t = s.downcase
@@ -1226,8 +1223,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_each_line
     combination(STRINGS, STRINGS) {|s1, s2|
       if !s1.valid_encoding? || !s2.valid_encoding?
-        #assert_raise(ArgumentError) { s1.each_line(s2) {} }
-        #assert_nothing_raised { s1.each_line(s2) {} }
+        assert_raise(ArgumentError) { s1.each_line(s2) {} }
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
@@ -1294,12 +1290,18 @@ class TestM17N < Test::Unit::TestCase
         assert(!s1.index(s2))
         assert(!s1.rindex(s2), "!#{encdump(s1)}.rindex(#{encdump(s2)})")
       end
-      if s1.valid_encoding? && s2.valid_encoding?
-        if t && s1.valid_encoding? && s2.valid_encoding?
-          assert_match(/#{Regexp.escape(s2)}/, s1)
-        else
-          assert_no_match(/#{Regexp.escape(s2)}/, s1)
-        end
+      if s2.empty?
+        assert_equal(true, t)
+        next
+      end
+      if !s1.valid_encoding? || !s2.valid_encoding?
+        assert_equal(false, t, "#{encdump s1}.include?(#{encdump s2})")
+        next
+      end
+      if t && s1.valid_encoding? && s2.valid_encoding?
+        assert_match(/#{Regexp.escape(s2)}/, s1)
+      else
+        assert_no_match(/#{Regexp.escape(s2)}/, s1)
       end
     }
   end
@@ -1311,13 +1313,28 @@ class TestM17N < Test::Unit::TestCase
         next
       end
       t = s1.index(s2, pos)
+      if s2.empty?
+        if pos < 0 && pos+s1.length < 0
+          assert_equal(nil, t, "#{encdump s1}.index(#{encdump s2}, #{pos})");
+        elsif pos < 0
+          assert_equal(s1.length+pos, t, "#{encdump s1}.index(#{encdump s2}, #{pos})");
+        elsif s1.length < pos
+          assert_equal(nil, t, "#{encdump s1}.index(#{encdump s2}, #{pos})");
+        else
+          assert_equal(pos, t, "#{encdump s1}.index(#{encdump s2}, #{pos})");
+        end
+        next
+      end
       if !s1.valid_encoding? || !s2.valid_encoding?
+        assert_equal(nil, t, "#{encdump s1}.index(#{encdump s2}, #{pos})");
         next
       end
       if t
         re = /#{Regexp.escape(s2)}/
         assert(re.match(s1, pos))
         assert_equal($`.length, t, "#{encdump s1}.index(#{encdump s2}, #{pos})")
+      else
+        assert_no_match(/#{Regexp.escape(s2)}/, s1[pos..-1])
       end
     }
   end
@@ -1329,7 +1346,20 @@ class TestM17N < Test::Unit::TestCase
         next
       end
       t = s1.rindex(s2, pos)
+      if s2.empty?
+        if pos < 0 && pos+s1.length < 0
+          assert_equal(nil, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
+        elsif pos < 0
+          assert_equal(s1.length+pos, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
+        elsif s1.length < pos
+          assert_equal(s1.length, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
+        else
+          assert_equal(pos, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
+        end
+        next
+      end
       if !s1.valid_encoding? || !s2.valid_encoding?
+        assert_equal(nil, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
         next
       end
       if t
@@ -1340,6 +1370,16 @@ class TestM17N < Test::Unit::TestCase
         re = /\A(.{0,#{pos2}})#{Regexp.escape(s2)}/m
         assert(re.match(s1), "#{re.inspect}.match(#{encdump(s1)})")
         assert_equal($1.length, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
+      else
+        re = /#{Regexp.escape(s2)}/
+        n = re =~ s1
+        if n
+          if pos < 0
+            assert_operator(n, :>, s1.length+pos)
+          else
+            assert_operator(n, :>, pos)
+          end
+        end
       end
     }
   end
@@ -1411,9 +1451,11 @@ class TestM17N < Test::Unit::TestCase
     STRINGS.each {|s|
       t = s.reverse
       assert_equal(s.bytesize, t.bytesize)
-      if s.valid_encoding?
-        assert_equal(s, t.reverse)
+      if !s.valid_encoding?
+        assert_operator(t.length, :<=, s.length)
+        next
       end
+      assert_equal(s, t.reverse)
     }
   end
 
@@ -1542,7 +1584,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_squeeze
     combination(STRINGS, STRINGS) {|s1, s2|
       if !s1.valid_encoding? || !s2.valid_encoding?
-        #assert_raise(ArgumentError, "#{encdump s1}.squeeze(#{encdump s2})") { s1.squeeze(s2) }
+        assert_raise(ArgumentError, "#{encdump s1}.squeeze(#{encdump s2})") { s1.squeeze(s2) }
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
@@ -1565,8 +1607,7 @@ class TestM17N < Test::Unit::TestCase
   def test_str_strip
     STRINGS.each {|s|
       if !s.valid_encoding?
-        #assert_raise(ArgumentError, "#{encdump s}.strip") { s.strip }
-        #assert_nothing_raised("#{encdump s}.strip") { s.strip }
+        assert_raise(ArgumentError, "#{encdump s}.strip") { s.strip }
         next
       end
       t = s.strip
@@ -1596,19 +1637,21 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_swapcase
     STRINGS.each {|s|
-      begin
-        t1 = s.swapcase
-      rescue ArgumentError
-        assert(!s.valid_encoding?)
+      if !s.valid_encoding?
+        assert_raise(ArgumentError, "#{encdump s}.swapcase") { s.swapcase }
         next
       end
+      t1 = s.swapcase
       assert(t1.valid_encoding?) if s.valid_encoding?
       assert(t1.casecmp(s))
       t2 = s.dup
       t2.swapcase!
       assert_equal(t1, t2)
+      t3 = t1.swapcase
+      assert_equal(s, t3);
     }
   end
+
 
   def test_str_to_f
     STRINGS.each {|s|
@@ -1641,54 +1684,96 @@ class TestM17N < Test::Unit::TestCase
       "a".force_encoding("ASCII-8BIT").tr("a".force_encoding("ASCII-8BIT"), "a".force_encoding("EUC-JP"))
     }
 
+    assert_equal("\xA1\xA1".force_encoding("EUC-JP"),
+      "a".force_encoding("ASCII-8BIT").tr("a".force_encoding("ASCII-8BIT"), "\xA1\xA1".force_encoding("EUC-JP")))
+
     combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
-      begin
-        #puts "#{encdump s1}.tr(#{encdump s2}, #{encdump s3})"
-        t = s1.tr(s2, s3)
-      rescue ArgumentError
-        e = $! unless /mbstring sequence/ =~ $!.message
+      desc = "#{encdump s1}.tr(#{encdump s2}, #{encdump s3})"
+      if s1.empty?
+        assert_equal(s1, s1.tr(s2, s3), desc)
+        next
       end
-      if e
-        encs = []
-        encs << s1.encoding if !s1.ascii_only?
-        encs << s2.encoding if !s2.ascii_only?
-        encs << s3.encoding if !s3.ascii_only?
-        encs.uniq!
-        #p e, encs
-        assert(1 < encs.length, "#{encdump s1}.tr(#{encdump s2}, #{encdump s3})")
+      if !str_enc_compatible?(s1, s2, s3)
+        assert_raise(ArgumentError, desc) { s1.tr(s2, s3) }
+        next
       end
+      if !s1.valid_encoding?
+        assert_raise(ArgumentError, desc) { s1.tr(s2, s3) }
+        next
+      end
+      if s2.empty?
+        assert_equal(s1, s1.tr(s2, s3), desc)
+        next
+      end
+      if !s2.valid_encoding? || !s3.valid_encoding?
+        assert_raise(ArgumentError, desc) { s1.tr(s2, s3) }
+        next
+      end
+      t = s1.tr(s2, s3)
+      if s3.empty?
+        assert_equal(0, t.length, desc)
+        next
+      end
+      assert_equal(s1.length, t.length, desc)
     }
   end
 
+  def str_enc_compatible?(*strs)
+    encs = []
+    strs.each {|s|
+      encs << s.encoding if !s.ascii_only?
+    }
+    encs.uniq!
+    encs.length <= 1
+  end
+
   def test_tr_s
+    assert_equal("\xA1\xA1".force_encoding("EUC-JP"),
+      "a".force_encoding("ASCII-8BIT").tr("a".force_encoding("ASCII-8BIT"), "\xA1\xA1".force_encoding("EUC-JP")))
+
     combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
-      begin
-        #puts "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})"
-        t = s1.tr_s(s2, s3)
-      rescue ArgumentError
-        e = $! unless /mbstring sequence/ =~ $!.message
+      desc = "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})"
+      if s1.empty?
+        assert_equal(s1, s1.tr_s(s2, s3), desc)
+        next
       end
-      if e
-        encs = []
-        encs << s1.encoding if !s1.ascii_only?
-        encs << s2.encoding if !s2.ascii_only?
-        encs << s3.encoding if !s3.ascii_only?
-        encs.uniq!
-        #p e, encs, 
-        assert(1 < encs.length, "#{encdump s1}.tr_s(#{encdump s2}, #{encdump s3})")
+      if !s1.valid_encoding?
+        assert_raise(ArgumentError, desc) { s1.tr_s(s2, s3) }
+        next
       end
+      if !str_enc_compatible?(s1, s2, s3)
+        assert_raise(ArgumentError, desc) { s1.tr(s2, s3) }
+        next
+      end
+      if s2.empty?
+        assert_equal(s1, s1.tr_s(s2, s3), desc)
+        next
+      end
+      if !s2.valid_encoding? || !s3.valid_encoding?
+        assert_raise(ArgumentError, desc) { s1.tr_s(s2, s3) }
+        next
+      end
+
+      t = nil
+      assert_nothing_raised(desc) { t = s1.tr_s(s2, s3) }
+
+      if s3.empty?
+        assert_equal(0, t.length, desc)
+        next
+      end
+      assert_operator(s1.length, :>=, t.length, desc)
     }
   end
 
   def test_str_upcase
     STRINGS.each {|s|
-      begin
-        t1 = s.upcase
-      rescue ArgumentError
-        assert(!s.valid_encoding?)
+      desc = "#{encdump s}.upcase"
+      if !s.valid_encoding?
+        assert_raise(ArgumentError, desc) { s.upcase }
         next
       end
-      assert(t1.valid_encoding?) if s.valid_encoding?
+      t1 = s.upcase
+      assert(t1.valid_encoding?)
       assert(t1.casecmp(s))
       t2 = s.dup
       t2.upcase!
@@ -1697,13 +1782,18 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_str_succ
-    s0 = e("\xA1\xA1")
-    s = s0.dup
-    n = 1000
-    n.times {
-      s.succ!
+    starts = [
+      e("\xA1\xA1"),
+      e("\xFE\xFE")
+    ]
+    starts.each {|s0|
+      s = s0.dup
+      n = 1000
+      n.times {|i|
+        assert_operator(s.length, :<=, s0.length + Math.log2(i+1) + 1, "#{encdump s0} succ! #{i} times => #{encdump s}")
+        s.succ!
+      }
     }
-    assert_operator(s.length, :<, s0.length + Math.log2(n) + 1)
   end
 
   def test_sub

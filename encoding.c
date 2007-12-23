@@ -661,6 +661,15 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
     return c;
 }
 
+int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
+{
+    int r = rb_enc_precise_mbclen(p, e, enc);
+    if (MBCLEN_CHARFOUND(r))
+        return ONIGENC_MBC_TO_CODE(enc,(UChar*)p,(UChar*)e);
+    else
+	rb_raise(rb_eArgError, "invalid mbstring sequence");
+}
+
 int
 rb_enc_codelen(int c, rb_encoding *enc)
 {
