@@ -348,9 +348,9 @@ rb_io_check_readable(rb_io_t *fptr)
         io_fflush(fptr);
     }
     if (!fptr->enc) {
-	fptr->enc = (fptr->fd == 0)
-	    ? rb_default_external_encoding()
-	    : rb_ascii8bit_encoding();
+	fptr->enc = (fptr->mode & FMODE_BINMODE)
+	    ? rb_ascii8bit_encoding()
+	    : rb_default_external_encoding();
     }
 }
 
@@ -3091,39 +3091,49 @@ rb_io_modenum_mode(int flags)
     return NULL;		/* not reached */
 }
 
-void
-rb_io_mode_enc(rb_io_t *fptr, const char *mode)
+static void
+mode_enc(rb_io_t *fptr, const char *estr)
 {
     const char *p0, *p1;
     char *enc2name;
     int idx, idx2;
     
-    p0 = strrchr(mode, ':');
-    if (p0) {
-	idx = rb_enc_find_index(p0+1);
-	if (idx >= 0) {
-	    fptr->enc = rb_enc_from_index(idx);
+    p0 = strrchr(estr, ':');
+    if (!p0) p1 = estr;
+    else     p1 = p0 + 1;
+    idx = rb_enc_find_index(p1);
+    if (idx >= 0) {
+	fptr->enc = rb_enc_from_index(idx);
+    }
+    else {
+	rb_warn("Unsupported encoding %s ignored", p1);
+    }
+
+    p1 = strchr(estr, ':');
+    if (p0 && p1 && p1 < p0) {
+	enc2name = ALLOCA_N(char, p0-p1);
+	strncpy(enc2name, p1+1, p0-p1-1);
+	enc2name[p0-p1-1] = '\0';
+	idx2=rb_enc_find_index(enc2name);
+	if (idx2 == idx) {
+	    rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
+		    enc2name, p0+1);
+	}
+	else if (idx2 >= 0) {
+	    fptr->enc2 = rb_enc_from_index(idx2);
 	}
 	else {
-	    rb_warn("Unsupported encoding %s ignored", p0+1);
+	    rb_warn("Unsupported encoding %s ignored", enc2name);
 	}
-	p1 = strchr(mode, ':');
-	if (p1 < p0) {
-	    enc2name = ALLOCA_N(char, p0-p1);
-	    strncpy(enc2name, p1+1, p0-p1-1);
-	    enc2name[p0-p1-1] = '\0';
-	    idx2=rb_enc_find_index(enc2name);
-	    if (idx2 == idx) {
-		rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
-			enc2name, p0+1);
-	    }
-	    else if (idx2 >= 0) {
-		fptr->enc2 = rb_enc_from_index(idx2);
-	    }
-	    else {
-		rb_warn("Unsupported encoding %s ignored", enc2name);
-	    }
-	}
+    }
+}
+
+void
+rb_io_mode_enc(rb_io_t *fptr, const char *mode)
+{
+    const char *p = strchr(mode, ':');
+    if (p) {
+	mode_enc(fptr, p+1);
     }
 }
 
@@ -5683,14 +5693,10 @@ io_s_read(struct foreach_arg *arg)
 /*
  *  call-seq:
  *     IO.read(name, [length [, offset]] )   => string
- *     IO.read(name, encoding)               => string
  *
  *  Opens the file, optionally seeks to the given offset, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
  *  <code>read</code> ensures the file is closed before returning.
- *  If the second argument is a string or an encoding object, the encoding
- *  of the result string is set to that encoding.  Otherwise the encoding
- *  will be default external encoding.
  *
  *     IO.read("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
  *     IO.read("testfile", 20)       #=> "This is line one\nThi"
@@ -5700,28 +5706,16 @@ io_s_read(struct foreach_arg *arg)
 static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
-    rb_encoding *enc = 0;
-    VALUE fname, arg1, offset;
+    VALUE fname, offset, tmp = Qnil;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "12", &fname, &arg1, &offset);
+    rb_scan_args(argc, argv, "12", &fname, NULL, &offset);
     FilePathValue(fname);
-    if (argc == 2 && (enc = rb_to_encoding(arg1))) {
-	arg.argc = 0;
-    }
-    else {
-	arg.argc = argc > 1 ? 1 : 0;
-	arg.argv = argv + 1;
-    }
+    arg.argc = argc > 1 ? 1 : 0;
+    arg.argv = argv + 1;
     arg.io = rb_io_open(RSTRING_PTR(fname), "r");
     if (NIL_P(arg.io)) return Qnil;
-    if (enc) {
-	rb_io_t *fptr;
-
-	GetOpenFile(arg.io, fptr);
-	fptr->enc = enc;
-    }
-    else if (!NIL_P(offset)) {
+    if (!NIL_P(offset)) {
 	rb_io_binmode(arg.io);
 	rb_io_seek(arg.io, offset, SEEK_SET);
     }
@@ -5748,10 +5742,34 @@ rb_io_external_encoding(VALUE io)
     return rb_enc_from_encoding(fptr->enc);
 }
 
+/*
+ *  call-seq:
+ *     io.internal_encoding   => encoding
+ *
+ *  Returns the Encoding of the internal string if conversion is
+ *  specified.  Otherwise returns nil.
+ */
+
+static VALUE
+rb_io_internal_encoding(VALUE io)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    if (!fptr->enc2) return Qnil;
+    return rb_enc_from_encoding(fptr->enc2);
+}
+
 static VALUE
 argf_external_encoding(void)
 {
-    return rb_enc_default_external();
+    return rb_io_external_encoding(current_file);
+}
+
+static VALUE
+argf_internal_encoding(void)
+{
+    return rb_io_internal_encoding(current_file);
 }
 
 static VALUE
@@ -6331,6 +6349,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
 
     rb_define_method(rb_cIO, "external_encoding", rb_io_external_encoding, 0);
+    rb_define_method(rb_cIO, "internal_encoding", rb_io_internal_encoding, 0);
 
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
@@ -6391,6 +6410,7 @@ Init_IO(void)
     rb_define_singleton_method(argf, "lineno=",  argf_set_lineno, 1);
 
     rb_define_singleton_method(argf, "external_encoding", argf_external_encoding, 0);
+    rb_define_singleton_method(argf, "internal_encoding", argf_internal_encoding, 0);
 
     rb_global_variable(&current_file);
     rb_define_readonly_variable("$FILENAME", &filename);

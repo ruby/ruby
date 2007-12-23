@@ -1,3 +1,11 @@
+Mon Dec 24 00:52:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_read): encoding argument reverted.
+
+	* io.c (mode_enc): independent function to share code.
+
+	* io.c (rb_io_internal_encoding): new method.
+
 Mon Dec 24 00:47:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb (TestBeginEndBlock::test_endblockwarn): 
