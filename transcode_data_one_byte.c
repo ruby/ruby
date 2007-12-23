@@ -4,8 +4,14 @@
 static const unsigned char
 from_ISO_8859_1_offsets[256] = {
   /* used from from_ISO_8859_1 */
+  /* used from from_ISO_8859_2 */
+  /* used from from_ISO_8859_4 */
   /* used from from_ISO_8859_5 */
+  /* used from from_ISO_8859_9 */
+  /* used from from_ISO_8859_10 */
   /* used from from_ISO_8859_13 */
+  /* used from from_ISO_8859_14 */
+  /* used from from_ISO_8859_15 */
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
@@ -158,29 +164,6 @@ to_ISO_8859_1 = {
     to_ISO_8859_1_infos
 };
 
-static const unsigned char
-from_ISO_8859_10_offsets[256] = {
-  /* used from from_ISO_8859_10 */
-  /* used from from_ISO_8859_15 */
-  /* used from from_ISO_8859_2 */
-  /* used from from_ISO_8859_9 */
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      1,  2,  3,  4,  5,  6,  7,  8,    9, 10, 11, 12, 13, 14, 15, 16,
-     17, 18, 19, 20, 21, 22, 23, 24,   25, 26, 27, 28, 29, 30, 31, 32,
-     33, 34, 35, 36, 37, 38, 39, 40,   41, 42, 43, 44, 45, 46, 47, 48,
-     49, 50, 51, 52, 53, 54, 55, 56,   57, 58, 59, 60, 61, 62, 63, 64,
-     65, 66, 67, 68, 69, 70, 71, 72,   73, 74, 75, 76, 77, 78, 79, 80,
-     81, 82, 83, 84, 85, 86, 87, 88,   89, 90, 91, 92, 93, 94, 95, 96,
-     97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
-    113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
-};
 static const struct byte_lookup* const
 from_ISO_8859_2_infos[129] = {
              NOMAP, o2(0xC2,0x80), o2(0xC2,0x81), o2(0xC2,0x82),
@@ -219,7 +202,7 @@ from_ISO_8859_2_infos[129] = {
 };
 const BYTE_LOOKUP
 from_ISO_8859_2 = {
-    from_ISO_8859_10_offsets,
+    from_ISO_8859_1_offsets,
     from_ISO_8859_2_infos
 };
 
@@ -342,6 +325,7 @@ to_ISO_8859_2_CB = {
 static const unsigned char
 to_ISO_8859_2_offsets[256] = {
   /* used from to_ISO_8859_2 */
+  /* used from to_ISO_8859_3 */
   /* used from to_ISO_8859_4 */
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
@@ -545,25 +529,6 @@ to_ISO_8859_3_CB = {
     to_ISO_8859_3_CB_infos
 };
 
-static const unsigned char
-to_ISO_8859_3_offsets[256] = {
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  1,  2,  3,  4,  6,  6,    6,  6,  6,  5,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-};
 static const struct byte_lookup* const
 to_ISO_8859_3_infos[7] = {
                  NOMAP, &to_ISO_8859_3_C2,
@@ -573,31 +538,10 @@ to_ISO_8859_3_infos[7] = {
 };
 const BYTE_LOOKUP
 to_ISO_8859_3 = {
-    to_ISO_8859_3_offsets,
+    to_ISO_8859_2_offsets,
     to_ISO_8859_3_infos
 };
 
-static const unsigned char
-from_ISO_8859_14_offsets[256] = {
-  /* used from from_ISO_8859_14 */
-  /* used from from_ISO_8859_4 */
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
-      1,  2,  3,  4,  5,  6,  7,  8,    9, 10, 11, 12, 13, 14, 15, 16,
-     17, 18, 19, 20, 21, 22, 23, 24,   25, 26, 27, 28, 29, 30, 31, 32,
-     33, 34, 35, 36, 37, 38, 39, 40,   41, 42, 43, 44, 45, 46, 47, 48,
-     49, 50, 51, 52, 53, 54, 55, 56,   57, 58, 59, 60, 61, 62, 63, 64,
-     65, 66, 67, 68, 69, 70, 71, 72,   73, 74, 75, 76, 77, 78, 79, 80,
-     81, 82, 83, 84, 85, 86, 87, 88,   89, 90, 91, 92, 93, 94, 95, 96,
-     97, 98, 99,100,101,102,103,104,  105,106,107,108,109,110,111,112,
-    113,114,115,116,117,118,119,120,  121,122,123,124,125,126,127,128,
-};
 static const struct byte_lookup* const
 from_ISO_8859_4_infos[129] = {
              NOMAP, o2(0xC2,0x80), o2(0xC2,0x81), o2(0xC2,0x82),
@@ -636,7 +580,7 @@ from_ISO_8859_4_infos[129] = {
 };
 const BYTE_LOOKUP
 from_ISO_8859_4 = {
-    from_ISO_8859_14_offsets,
+    from_ISO_8859_1_offsets,
     from_ISO_8859_4_infos
 };
 
@@ -694,9 +638,9 @@ to_ISO_8859_4_C3 = {
 };
 
 static const unsigned char
-to_ISO_8859_10_C4_offsets[64] = {
-  /* used from to_ISO_8859_10_C4 */
+to_ISO_8859_4_C4_offsets[64] = {
   /* used from to_ISO_8859_4_C4 */
+  /* used from to_ISO_8859_10_C4 */
       0,  1, 27, 27,  2,  3, 27, 27,   27, 27, 27, 27,  4,  5, 27, 27,
       6,  7,  8,  9, 27, 27, 10, 11,   12, 13, 27, 27, 27, 27, 27, 27,
      27, 27, 14, 15, 27, 27, 27, 27,   16, 17, 18, 19, 27, 27, 20, 21,
@@ -714,7 +658,7 @@ to_ISO_8859_4_C4_infos[28] = {
 };
 static const BYTE_LOOKUP
 to_ISO_8859_4_C4 = {
-    to_ISO_8859_10_C4_offsets,
+    to_ISO_8859_4_C4_offsets,
     to_ISO_8859_4_C4_infos
 };
 
@@ -1579,10 +1523,10 @@ to_ISO_8859_8_E2_80 = {
 };
 
 static const unsigned char
-to_ISO_8859_10_E2_offsets[64] = {
+to_ISO_8859_8_E2_offsets[64] = {
+  /* used from to_ISO_8859_8_E2 */
   /* used from to_ISO_8859_10_E2 */
   /* used from to_ISO_8859_13_E2 */
-  /* used from to_ISO_8859_8_E2 */
       0,  1,  1,  1,  1,  1,  1,  1,    1,  1,  1,  1,  1,  1,  1,  1,
       1,  1,  1,  1,  1,  1,  1,  1,    1,  1,  1,  1,  1,  1,  1,  1,
       1,  1,  1,  1,  1,  1,  1,  1,    1,  1,  1,  1,  1,  1,  1,  1,
@@ -1594,7 +1538,7 @@ to_ISO_8859_8_E2_infos[2] = {
 };
 static const BYTE_LOOKUP
 to_ISO_8859_8_E2 = {
-    to_ISO_8859_10_E2_offsets,
+    to_ISO_8859_8_E2_offsets,
     to_ISO_8859_8_E2_infos
 };
 
@@ -1667,7 +1611,7 @@ from_ISO_8859_9_infos[129] = {
 };
 const BYTE_LOOKUP
 from_ISO_8859_9 = {
-    from_ISO_8859_10_offsets,
+    from_ISO_8859_1_offsets,
     from_ISO_8859_9_infos
 };
 
@@ -1838,7 +1782,7 @@ from_ISO_8859_10_infos[129] = {
 };
 const BYTE_LOOKUP
 from_ISO_8859_10 = {
-    from_ISO_8859_10_offsets,
+    from_ISO_8859_1_offsets,
     from_ISO_8859_10_infos
 };
 
@@ -1908,7 +1852,7 @@ to_ISO_8859_10_C4_infos[28] = {
 };
 static const BYTE_LOOKUP
 to_ISO_8859_10_C4 = {
-    to_ISO_8859_10_C4_offsets,
+    to_ISO_8859_4_C4_offsets,
     to_ISO_8859_10_C4_infos
 };
 
@@ -1956,7 +1900,7 @@ to_ISO_8859_10_E2_infos[2] = {
 };
 static const BYTE_LOOKUP
 to_ISO_8859_10_E2 = {
-    to_ISO_8859_10_E2_offsets,
+    to_ISO_8859_8_E2_offsets,
     to_ISO_8859_10_E2_infos
 };
 
@@ -2407,7 +2351,7 @@ to_ISO_8859_13_E2_infos[2] = {
 };
 static const BYTE_LOOKUP
 to_ISO_8859_13_E2 = {
-    to_ISO_8859_10_E2_offsets,
+    to_ISO_8859_8_E2_offsets,
     to_ISO_8859_13_E2_infos
 };
 
@@ -2494,7 +2438,7 @@ from_ISO_8859_14_infos[129] = {
 };
 const BYTE_LOOKUP
 from_ISO_8859_14 = {
-    from_ISO_8859_14_offsets,
+    from_ISO_8859_1_offsets,
     from_ISO_8859_14_infos
 };
 
@@ -2784,7 +2728,7 @@ from_ISO_8859_15_infos[129] = {
 };
 const BYTE_LOOKUP
 from_ISO_8859_15 = {
-    from_ISO_8859_10_offsets,
+    from_ISO_8859_1_offsets,
     from_ISO_8859_15_infos
 };
 
@@ -2902,4 +2846,4 @@ to_ISO_8859_15 = {
     to_ISO_8859_15_infos
 };
 
-/* Footprint (bytes): gross: 27556, saved: 3728, net: 23828 */
+/* Footprint (bytes): gross: 26788, saved: 3728, net: 23060 */

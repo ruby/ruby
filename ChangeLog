@@ -1,3 +1,9 @@
+Sun Dec 23 10:23:23 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode_data_one_byte.c: Better (and more honest) optimization.
+
+	* transcode_data_japanese.c: First optimization step.
+
 Sun Dec 23 09:07:02 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h, encoding.c, re.c, io.c, parse.y, numeric.c,
