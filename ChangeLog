@@ -1,7 +1,7 @@
-Sun Dec 23 08:42:51 2007  Tanaka Akira  <akr@fsij.org>
+Sun Dec 23 09:07:02 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h, encoding.c, re.c, io.c, parse.y, numeric.c,
-	  ruby.c, transcode.c: rename rb_ascii_encoding. to
+	  ruby.c, transcode.c, ext/nkf/nkf.c: rename rb_ascii_encoding. to
 	  rb_ascii8bit_encoding.  rb_ascii_encoding is ambiguous with
 	  ASCII-8BIT and US-ASCII.
 
