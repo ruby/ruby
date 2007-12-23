@@ -129,6 +129,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 	cont->machine_stack = ALLOC_N(VALUE, size);
     }
 
+    FLUSH_REGISTER_WINDOWS;
     MEMCPY(cont->machine_stack, cont->machine_stack_src, VALUE, size);
 
 #ifdef __ia64
@@ -256,6 +257,7 @@ cont_restore_1(rb_context_t *cont)
     }
 #endif
     if (cont->machine_stack_src) {
+	FLUSH_REGISTER_WINDOWS;
 	MEMCPY(cont->machine_stack_src, cont->machine_stack,
 	       VALUE, cont->machine_stack_size);
     }

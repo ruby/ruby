@@ -1,3 +1,8 @@
+Mon Dec 24 03:57:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* cont.c, vm.h: fix to support sparc machine.
+	  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>
+
 Mon Dec 24 03:35:19 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: remove additional "-".

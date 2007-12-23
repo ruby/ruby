@@ -118,14 +118,10 @@ error !
 #define ELABEL(x) INSN_ELABEL_##x
 #define LABEL_PTR(x) &&LABEL(x)
 
-#define INSN_ENTRY_SIG(insn) \
-  asm volatile (  "; #**************************************************\n" \
-                "\t; #[start] " # insn "\n") \
+#define INSN_ENTRY_SIG(insn)
 
 
-#define INSN_DISPATCH_SIG(insn) \
-  asm volatile (  "; #[end  ] " # insn "\n"\
-                "\t; #==================================================\n") \
+#define INSN_DISPATCH_SIG(insn)
 
 #define INSN_ENTRY(insn) \
   LABEL(insn): \
