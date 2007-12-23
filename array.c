@@ -767,8 +767,6 @@ rb_ary_aref(int argc, VALUE *argv, VALUE ary)
  *  Returns the element at _index_. A
  *  negative index counts from the end of _self_.  Returns +nil+
  *  if the index is out of range. See also <code>Array#[]</code>.
- *  (<code>Array#at</code> is slightly faster than <code>Array#[]</code>,
- *  as it does not accept ranges and so on.)
  *
  *     a = [ "a", "b", "c", "d", "e" ]
  *     a.at(0)     #=> "a"
