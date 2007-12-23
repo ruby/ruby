@@ -2908,11 +2908,13 @@ rb_io_binmode(VALUE io)
 static VALUE
 rb_io_binmode_m(VALUE io)
 {
+#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
+    VALUE write_io;
+#endif
+
     rb_io_binmode(io);
 
 #if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
-    VALUE write_io;
-
     write_io = GetWriteIO(io);
     if (write_io != io)
         rb_io_binmode(write_io);
