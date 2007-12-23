@@ -3,13 +3,6 @@
 # So all tests will cause failure.
 #
 
-assert_normal_exit %q{
-  def foo(&block)
-    yield if block
-  end
-  foo(&:bar)
-}, '[ruby-core:14279]'
-
 assert_equal 'ok', %q{
   open("tmp", "w") {|f| f.write "a\u00FFb" }
   s = open("tmp", "r:iso-8859-1:utf-8") {|f|

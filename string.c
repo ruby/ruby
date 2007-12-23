@@ -5519,17 +5519,15 @@ sym_to_sym(VALUE sym)
 }
 
 static VALUE
-sym_call(VALUE args, VALUE sym)
+sym_call(VALUE args, VALUE sym, int argc, VALUE *argv)
 {
     VALUE obj;
 
-    if (RARRAY_LEN(args) < 1) {
+    if (argc < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
     }
-    obj = RARRAY_PTR(args)[0];
-    return rb_funcall3(obj, (ID)sym,
-		       RARRAY_LEN(args) - 1,
-		       RARRAY_PTR(args) + 1);
+    obj = argv[0];
+    return rb_funcall3(obj, (ID)sym, argc - 1, argv + 1);
 }
 
 /*

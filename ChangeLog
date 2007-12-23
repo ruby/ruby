@@ -1,3 +1,8 @@
+Sun Dec 23 11:26:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_call): use exact argument array interface.
+	  [ruby-core:14279]
+
 Sun Dec 23 11:01:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_binmode_m): removed C99ism.

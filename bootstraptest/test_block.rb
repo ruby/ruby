@@ -497,3 +497,13 @@ assert_equal 'ok', %q{
     result
   end
 }
+
+assert_equal "ok", %q{
+  class Bar
+    def bar; :ok; end
+  end
+  def foo
+    yield(Bar.new) if block_given?
+  end
+  foo(&:bar)
+}, '[ruby-core:14279]'
