@@ -38,7 +38,7 @@ errout = ARGV.shift
 STDERR.reopen(File.open(errout, "w"))
 STDERR.sync = true
 Dir.chdir(#{q(DIR)})
-system("#{ruby}", "endblockwarn.rb")
+system("#{ruby}", "endblockwarn_rb")
 EOF
     launcher.close
     launcherpath = launcher.path
@@ -46,7 +46,7 @@ EOF
     erroutpath = errout.path
     system(ruby, launcherpath, erroutpath)
     expected = <<EOW
-endblockwarn.rb:2: warning: END in method; use at_exit
+endblockwarn_rb:2: warning: END in method; use at_exit
 (eval):2: warning: END in method; use at_exit
 EOW
     assert_equal(expected, File.read(erroutpath))
