@@ -1,3 +1,8 @@
+Sun Dec 23 19:45:22 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.httpdate): fix 2 digits year for 20xx.
+	  reported by Tadayoshi Funaba.  [ruby-dev:32687]
+
 Sun Dec 23 19:33:42 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/open-uri.rb:  Fix method redefined warning.  [ruby-core:14304]

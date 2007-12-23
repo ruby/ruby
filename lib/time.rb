@@ -338,7 +338,13 @@ class Time
              (\d\d):(\d\d):(\d\d)\x20
              GMT
              \s*\z/ix =~ date
-        Time.utc(1900+$3.to_i, $2, $1.to_i, $4.to_i, $5.to_i, $6.to_i)
+        year = $3.to_i
+        if year < 50
+          year += 2000
+        else
+          year += 1900
+        end
+        Time.utc(year, $2, $1.to_i, $4.to_i, $5.to_i, $6.to_i)
       elsif /\A\s*
              (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\x20
              (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\x20
@@ -543,6 +549,9 @@ if __FILE__ == $0
                    Time.httpdate("Tue, 15 Nov 1994 12:45:26 GMT"))
       assert_equal(Time.utc(1999, 12, 31, 23, 59, 59),
                    Time.httpdate("Fri, 31 Dec 1999 23:59:59 GMT"))
+
+      assert_equal(Time.utc(2007, 12, 23, 11, 22, 33),
+                   Time.httpdate('Sunday, 23-Dec-07 11:22:33 GMT'))
     end
 
     def test_rfc3339
