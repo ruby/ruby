@@ -2,11 +2,29 @@ require 'test/unit'
 require 'tmpdir'
 
 class TestIO_M17N < Test::Unit::TestCase
+  ENCS = [
+    Encoding::ASCII_8BIT,
+    Encoding::EUC_JP,
+    Encoding::Shift_JIS,
+    Encoding::UTF_8
+  ]
+
   def with_tmpdir
     Dir.mktmpdir {|dir|
-      Dir.chdir dir
-      yield dir
+      Dir.chdir(dir) {
+        yield dir
+      }
     }
+  end
+
+  def with_pipe(enc=nil)
+    r, w = IO.pipe(enc)
+    begin
+      yield r, w
+    ensure
+      r.close if !r.closed?
+      w.close if !w.closed?
+    end
   end
 
   def generate_file(path, content)
@@ -39,12 +57,7 @@ EOT
     with_tmpdir {
       src = "abc\n"
       generate_file('tmp', "abc\n")
-      [
-        Encoding::ASCII_8BIT,
-        Encoding::EUC_JP,
-        Encoding::Shift_JIS,
-        Encoding::UTF_8
-      ].each {|enc|
+      ENCS.each {|enc|
         s = open('tmp', "r:#{enc}") {|f| f.gets }
         assert_equal(enc, s.encoding)
         assert_str_equal(src, s)
@@ -56,12 +69,7 @@ EOT
     with_tmpdir {
       src = "\xc2\xa1\n"
       generate_file('tmp', src)
-      [
-        Encoding::ASCII_8BIT,
-        Encoding::EUC_JP,
-        Encoding::Shift_JIS,
-        Encoding::UTF_8
-      ].each {|enc|
+      ENCS.each {|enc|
         content = src.dup.force_encoding(enc)
         s = open('tmp', "r:#{enc}") {|f| f.gets }
         assert_equal(enc, s.encoding)
@@ -74,12 +82,7 @@ EOT
     with_tmpdir {
       src = "\xc2\xa1\n".force_encoding("ASCII-8BIT")
       generate_file('tmp', "\xc2\xa1\n")
-      [
-        Encoding::ASCII_8BIT,
-        Encoding::EUC_JP,
-        Encoding::Shift_JIS,
-        Encoding::UTF_8
-      ].each {|enc|
+      ENCS.each {|enc|
         content = src.dup.force_encoding(enc)
         open('tmp', "r:#{enc}") {|f|
           s = f.getc
@@ -140,25 +143,19 @@ EOT
 
   def test_write_noenc
     src = "\xc2\xa1\n"
-    encs = [
-      Encoding::ASCII_8BIT,
-      Encoding::EUC_JP,
-      Encoding::Shift_JIS,
-      Encoding::UTF_8
-    ]
     with_tmpdir {
       open('tmp', "w") {|f|
-        encs.each {|enc|
+        ENCS.each {|enc|
           f.write src.dup.force_encoding(enc)
         }
       }
       open('tmp', 'rb') {|f|
-        assert_equal(src*encs.length, f.read)
+        assert_equal(src*ENCS.length, f.read)
       }
     }
   end
 
-  def test_write_enc
+  def test_write_conversion
     utf8 = "\u6666"
     eucjp = "\xb3\xa2".force_encoding("EUC-JP")
     with_tmpdir {
@@ -170,6 +167,17 @@ EOT
         assert_equal(Encoding::EUC_JP, f.external_encoding)
         assert_equal(Encoding::UTF_8, f.internal_encoding)
         assert_equal(utf8, f.read)
+      }
+    }
+  end
+
+  def test_pipe
+    ENCS.each {|enc|
+      with_pipe(enc) {|r, w|
+        w << "\xc2\xa1"
+        w.close
+        s = r.getc 
+        assert_equal(enc, s.encoding)
       }
     }
   end
