@@ -225,6 +225,17 @@ EOT
         assert_equal(enc, s.encoding)
       }
     }
+
+    ENCS.reject {|e| e == Encoding::ASCII_8BIT }.each {|enc|
+      with_pipe("#{enc}:UTF-8") {|r, w|
+        w << "\xc2\xa1"
+        w.close
+        s = r.read
+        assert_equal(Encoding::UTF_8, s.encoding)
+        assert_equal(s.encode("UTF-8"), s)
+      }
+    }
+
   end
 
 end
