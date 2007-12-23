@@ -745,6 +745,8 @@ rb_interrupt(void)
     rb_raise(rb_eInterrupt, fmt);
 }
 
+static VALUE get_errinfo(void);
+
 /*
  *  call-seq:
  *     raise
@@ -768,8 +770,6 @@ rb_interrupt(void)
  *     raise "Failed to create socket"
  *     raise ArgumentError, "No parameters", caller
  */
-
-static VALUE get_errinfo(void);
 
 static VALUE
 rb_f_raise(int argc, VALUE *argv)
@@ -2599,6 +2599,8 @@ errat_setter(VALUE val, ID id, VALUE *var)
     set_backtrace(err, val);
 }
 
+int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
+
 /*
  *  call-seq:
  *     local_variables    => array
@@ -2611,8 +2613,6 @@ errat_setter(VALUE val, ID id, VALUE *var)
  *     end
  *     local_variables   #=> ["fred", "i"]
  */
-
-int vm_collect_local_variables_in_heap(rb_thread_t *th, VALUE *dfp, VALUE ary);
 
 static VALUE
 rb_f_local_variables(void)
