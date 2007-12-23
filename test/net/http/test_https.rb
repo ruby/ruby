@@ -1,12 +1,12 @@
 require "test/unit"
 begin
   require 'net/https'
+  require 'stringio'
+  require File.expand_path("../../openssl/utils", File.dirname(__FILE__))
+  require File.expand_path("utils", File.dirname(__FILE__))
 rescue LoadError
   # should skip this test
 end
-require 'stringio'
-require File.expand_path("utils", File.dirname(__FILE__))
-require File.expand_path("../../openssl/utils", File.dirname(__FILE__))
 
 class TestNetHTTPS < Test::Unit::TestCase
   include TestNetHTTPUtils
