@@ -342,7 +342,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 
 encs: enc.mk
 	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc"
-	$(MAKE) -f enc.mk $(MFLAGS) -$(MAKEFLAGS)
+	$(MAKE) -f enc.mk $(MFLAGS) $(MAKEFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
@@ -666,7 +666,7 @@ revision.h:
 	exit > $@
 
 $(srcdir)/ext/ripper/ripper.c:
-	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend $(MFLAGS) -$(MAKEFLAGS) top_srcdir=../.. srcdir=.
+	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend $(MFLAGS) $(MAKEFLAGS) top_srcdir=../.. srcdir=.
 
 ##
 
