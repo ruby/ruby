@@ -161,6 +161,8 @@ EOT
     eucjp = "\xb3\xa2".force_encoding("EUC-JP")
     with_tmpdir {
       open('tmp', "w:EUC-JP") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
         f.print utf8
       }
       assert_equal(eucjp, File.read('tmp').force_encoding("EUC-JP"))
