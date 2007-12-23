@@ -60,8 +60,8 @@ EOT
       s = open("tmp", "r:euc-jp:utf-8") {|f|
         f.gets("\xA2\xA2".force_encoding("euc-jp").encode("utf-8"))
       }
-      assert_equal(Encoding.find("euc-jp"), s.encoding)
-      assert_str_equal("before \xA1\xA2\xA2\xA3 after".force_encoding("iso-8859-1"), s, '[ruby-core:14319]')
+      assert_equal(Encoding.find("utf-8"), s.encoding)
+      assert_str_equal("before \xA1\xA2\xA2\xA3 after".force_encoding("euc-jp").encode("utf-8"), s, '[ruby-core:14319]')
     }
   end
 
@@ -196,8 +196,6 @@ EOT
       w.close
       s = r.read
       assert_equal(Encoding.default_external, s.encoding)
-      puts encdump(s)
-      puts encdump(utf8)
       assert_str_equal(utf8, s)
     }
 
@@ -226,7 +224,9 @@ EOT
       }
     }
 
-    ENCS.reject {|e| e == Encoding::ASCII_8BIT }.each {|enc|
+    ENCS.each {|enc|
+      next if enc == Encoding::ASCII_8BIT
+      next if enc == Encoding::UTF_8
       with_pipe("#{enc}:UTF-8") {|r, w|
         w << "\xc2\xa1"
         w.close

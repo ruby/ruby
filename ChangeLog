@@ -25,6 +25,8 @@ Mon Dec 24 02:59:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_enc_str): should preserve default_external encoding.
 
+	* io.c (appendline): should do multibyte aware RS search.
+
 Mon Dec 24 02:06:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_open): documentation update.

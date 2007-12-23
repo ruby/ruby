@@ -1647,22 +1647,32 @@ io_read(int argc, VALUE *argv, VALUE io)
 }
 
 static int
-appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
+appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, int mb)
 {
     VALUE str = *strp;
     int c = EOF;
     long limit = *lp;
+    rb_encoding *enc = io_read_encoding(fptr);
 
     do {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
 	if (pending > 0) {
-	    const char *p = READ_DATA_PENDING_PTR(fptr);
-	    const char *e;
+	    const char *s = READ_DATA_PENDING_PTR(fptr);
+	    const char *p, *e;
 	    long last = 0, len = (c != EOF);
 
 	    if (limit > 0 && pending > limit) pending = limit;
+	    p = s;
+	  again:
 	    e = memchr(p, delim, pending);
-	    if (e) pending = e - p + 1;
+	    if (e) {
+		if (mb &&
+		    ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc,(UChar*)s,(UChar*)e) != (UChar*)e) {
+		    p = e + 1;
+		    goto again;
+		}
+		pending = e - s + 1;
+	    }
 	    len += pending;
 	    if (!NIL_P(str)) {
 		last = RSTRING_LEN(str);
@@ -1742,7 +1752,7 @@ rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
     int c, nolimit = 0;
 
     for (;;) {
-	c = appendline(fptr, delim, &str, &limit);
+	c = appendline(fptr, delim, &str, &limit, 0);
 	if (c == EOF || c == delim) break;
 	if (limit == 0) {
 	    nolimit = 1;
@@ -1842,7 +1852,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 	newline = rsptr[rslen - 1];
 
-	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
+	while ((c = appendline(fptr, newline, &str, &limit, 1)) != EOF) {
 	    if (c == newline) {
 		if (RSTRING_LEN(str) < rslen) continue;
 		if (!rspara) rscheck(rsptr, rslen, rs);
