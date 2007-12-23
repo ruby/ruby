@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
-if RUBY_VERSION < "1.9"
-  require 'rubygems/open-uri'
-else
+if RUBY_VERSION > '1.9' then
   require 'open-uri'
+else
+  require 'rubygems/open-uri'
 end

@@ -1,3 +1,7 @@
+Sun Dec 23 18:02:52 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/gem_open_uri.rb:  Fix version check.
+
 Sun Dec 23 17:24:48 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_init): add eucJP as an alias of EUC-JP.
