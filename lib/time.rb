@@ -338,7 +338,7 @@ class Time
              (\d\d):(\d\d):(\d\d)\x20
              GMT
              \s*\z/ix =~ date
-        self.parse(date)
+        Time.utc(1900+$3.to_i, $2, $1.to_i, $4.to_i, $5.to_i, $6.to_i)
       elsif /\A\s*
              (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\x20
              (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\x20

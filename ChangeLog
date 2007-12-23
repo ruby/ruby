@@ -1,3 +1,8 @@
+Sun Dec 23 17:00:23 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.httpdate): use Time.utc for
+	  "day-of-week, dd-mon-yy HH::MM:SS GMT" format.
+
 Sun Dec 23 16:12:40 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc:  Fix 1.9 warnings.
