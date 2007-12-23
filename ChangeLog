@@ -1,3 +1,10 @@
+Mon Dec 24 02:59:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_check_readable): should not fill fptr->enc always.
+	  read-write IO (e.g. socket) does not work.  [ruby-dev:32685]
+
+	* io.c (io_read_encoding): retrieve reading encoding.
+
 Mon Dec 24 02:06:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_open): documentation update.

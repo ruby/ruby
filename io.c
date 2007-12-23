@@ -347,11 +347,20 @@ rb_io_check_readable(rb_io_t *fptr)
     if (fptr->wbuf_len) {
         io_fflush(fptr);
     }
-    if (!fptr->enc) {
-	fptr->enc = (fptr->mode & FMODE_BINMODE)
-	    ? rb_ascii8bit_encoding()
-	    : rb_default_external_encoding();
+    if (!fptr->enc && fptr->fd == 0) {
+	fptr->enc = rb_default_external_encoding();
     }
+}
+
+static rb_encoding*
+io_read_encoding(rb_io_t *fptr)
+{
+    if (fptr->enc) {
+	return fptr->enc;
+    }
+    return (fptr->mode & FMODE_BINMODE)
+	? rb_ascii8bit_encoding()
+	: rb_default_external_encoding();
 }
 
 void
@@ -1307,7 +1316,7 @@ io_enc_str(VALUE str, rb_io_t *fptr)
 			 rb_enc_from_encoding(fptr->enc),
 			 rb_enc_from_encoding(fptr->enc2));
     }
-    else {
+    else if (fptr->enc) {
 	/* just one encoding, so associate it with the string */
 	rb_enc_associate(str, fptr->enc);
     }
@@ -1800,7 +1809,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	if (RSTRING_LEN(str) == 0) return Qnil;
     }
     else if (limit == 0) {
-	return rb_enc_str_new(0, 0, fptr->enc);
+	return rb_enc_str_new(0, 0, io_read_encoding(fptr));
     }
     else if (rs == rb_default_rs) {
 	return rb_io_getline_fast(fptr, '\n', limit);
@@ -2175,7 +2184,7 @@ rb_io_getc(VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    enc = fptr->enc;
+    enc = io_read_encoding(fptr);
     READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
@@ -2327,7 +2336,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (NIL_P(c)) return Qnil;
-    enc = fptr->enc;
+    enc = io_read_encoding(fptr);
     if (FIXNUM_P(c)) {
 	int cc = FIX2INT(c);
 	char buf[16];
@@ -5854,7 +5863,7 @@ rb_io_external_encoding(VALUE io)
     if (!fptr->enc && fptr->fd == 0) {
 	fptr->enc = rb_default_external_encoding();
     }
-    return rb_enc_from_encoding(fptr->enc);
+    return rb_enc_from_encoding(io_read_encoding(fptr));
 }
 
 /*
@@ -5872,7 +5881,7 @@ rb_io_internal_encoding(VALUE io)
 
     GetOpenFile(io, fptr);
     if (!fptr->enc2) return Qnil;
-    return rb_enc_from_encoding(fptr->enc);
+    return rb_enc_from_encoding(io_read_encoding(fptr));
 }
 
 static VALUE
