@@ -23,6 +23,8 @@ Mon Dec 24 02:59:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (str_new_shared): was setting embedding flag of wrong
 	  string object.  [ruby-dev:32685]
 
+	* io.c (io_enc_str): should preserve default_external encoding.
+
 Mon Dec 24 02:06:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_open): documentation update.

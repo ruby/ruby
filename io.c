@@ -1316,9 +1316,9 @@ io_enc_str(VALUE str, rb_io_t *fptr)
 			 rb_enc_from_encoding(fptr->enc),
 			 rb_enc_from_encoding(fptr->enc2));
     }
-    else if (fptr->enc) {
+    else {
 	/* just one encoding, so associate it with the string */
-	rb_enc_associate(str, fptr->enc);
+	rb_enc_associate(str, io_read_encoding(fptr));
     }
     return str;
 }
