@@ -635,8 +635,8 @@ io_fwrite(VALUE str, rb_io_t *fptr)
 	/* Can't use encode! because puts writes a frozen newline */
 	if (fptr->enc2) {
 	    str = rb_funcall(str, id_encode, 2, 
-			     rb_enc_from_encoding(fptr->enc),
-			     rb_enc_from_encoding(fptr->enc2));
+			     rb_enc_from_encoding(fptr->enc2),
+			     rb_enc_from_encoding(fptr->enc));
 	}
 	else {
 	    str = rb_funcall(str, id_encode, 1, 
@@ -3811,9 +3811,28 @@ rb_io_s_sysopen(int argc, VALUE *argv)
  *
  *  If <i>path</i> does not start with a pipe character
  *  (``<code>|</code>''), treat it as the name of a file to open using
- *  the specified mode (defaulting to ``<code>r</code>''). (See the table
- *  of valid modes on page 331.) If a file is being created, its initial
- *  permissions may be set using the integer third parameter.
+ *  the specified mode (defaulting to ``<code>r</code>'').  The mode is
+ *  either a string or an integer.  If it is an integer, it must be 
+ *  bitwise-or of open(2) flags, such as File::RDWR or File::EXCL.
+ *  If it is a string, it is either "mode", "mode:encoding", or
+ *  "mode:encoding:encoding".  "mode" is one of the following:
+ *
+ *   r: read (default)
+ *   w: write
+ *   a: append
+ *
+ *  The mode can be followed by "b" (means binary-mode), or "+"
+ *  (means both reading and writing allowed) or both.  If one
+ *  encoding is specified, read string will be tagged by the
+ *  encoding in reading, and output string will be converted
+ *  to the specified encoding in writing.  If two encoding names
+ *  are specified, the read string is converted from the former
+ *  encoding to the latter encoding then tagged with the latter
+ *  in read mode, and in write mode, the output string will be
+ *  converted from the latter to the former before writing.
+ *  
+ *  If a file is being created, its initial permissions may be
+ *  set using the integer third parameter.
  *
  *  If a block is specified, it will be invoked with the
  *  <code>File</code> object as a parameter, and the file will be
@@ -5533,7 +5552,9 @@ io_new_instance(VALUE args)
  *  available on all platforms.
  *
  *  If optional argument is specified, read string from pipe is tagged
- *  the encoding specified.
+ *  with the encoding specified.  If encoding is a comma separated two
+ *  encoding names "A:B", the read string is converted from encoding A
+ *  to encoding B, then tagged with B.
  *
  *  In the example below, the two processes close the ends of the pipe
  *  that they are not using. This is not just a cosmetic nicety. The
