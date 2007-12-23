@@ -54,6 +54,17 @@ EOT
     }
   end
 
+  def test_terminator_conversion2
+    with_tmpdir {
+      generate_file('tmp', "before \xA1\xA2\xA2\xA3 after")
+      s = open("tmp", "r:euc-jp:utf-8") {|f|
+        f.gets("\xA2\xA2".force_encoding("euc-jp").encode("utf-8"))
+      }
+      assert_equal(Encoding.find("euc-jp"), s.encoding)
+      assert_str_equal("before \xA1\xA2\xA2\xA3 after".force_encoding("iso-8859-1"), s)
+    }
+  end
+
   def test_open_ascii
     with_tmpdir {
       src = "abc\n"
@@ -175,6 +186,37 @@ EOT
   end
 
   def test_pipe
+    utf8 = "\u6666"
+    eucjp = "\xb3\xa2".force_encoding("EUC-JP")
+
+    with_pipe {|r,w|
+      assert_equal(Encoding.default_external, r.external_encoding)
+      assert_equal(nil, r.internal_encoding)
+      w << utf8
+      w.close
+      s = r.read
+      assert_equal(Encoding.default_external, s.encoding)
+      puts encdump(s)
+      puts encdump(utf8)
+      assert_str_equal(utf8, s)
+    }
+
+    with_pipe("EUC-JP") {|r,w|
+      assert_equal(Encoding::EUC_JP, r.external_encoding)
+      assert_equal(nil, r.internal_encoding)
+      w << eucjp
+      w.close
+      assert_equal(eucjp, r.read)
+    }
+
+    with_pipe("UTF-8:EUC-JP") {|r,w|
+      assert_equal(Encoding::UTF_8, r.external_encoding)
+      assert_equal(Encoding::EUC_JP, r.internal_encoding)
+      w << utf8
+      w.close
+      assert_equal(eucjp, r.read)
+    }
+
     ENCS.each {|enc|
       with_pipe(enc) {|r, w|
         w << "\xc2\xa1"
