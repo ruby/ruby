@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'stringio'
 
 class TestM17N < Test::Unit::TestCase
   def assert_encoding(encname, actual, message=nil)
@@ -160,6 +161,17 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval('/\xc2\x20/u') }
   end
 
+  def assert_warning(pat, mesg=nil)
+    begin
+      org_stderr = $stderr
+      $stderr = StringIO.new(warn = '')
+      yield
+    ensure
+      $stderr = org_stderr
+    end
+    assert_match(pat, warn, mesg)
+  end
+
   def assert_regexp_generic_encoding(r)
     assert(!r.fixed_encoding?)
     %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
@@ -225,25 +237,26 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_regexp_ascii_none
-    begin
-      old_verbose = $VERBOSE
-      $VERBOSE = nil
+    r = /a/n
 
-      assert_regexp_generic_ascii(/a/n)
+    assert_warning(%r{regexp match /.../n against to}) {
+      assert_regexp_generic_ascii(r)
+    }
 
-      [/a/n].each {|r|
-        assert_equal(0, r =~ a("a"))
-        assert_equal(0, r =~ e("a"))
-        assert_equal(0, r =~ s("a"))
-        assert_equal(0, r =~ u("a"))
-        assert_equal(nil, r =~ a("\xc2\xa1"))
-        assert_equal(nil, r =~ e("\xc2\xa1"))
-        assert_equal(nil, r =~ s("\xc2\xa1"))
-        assert_equal(nil, r =~ u("\xc2\xa1"))
-      }
-    ensure
-      $VERBOSE = old_verbose
-    end
+    assert_equal(0, r =~ a("a"))
+    assert_equal(0, r =~ e("a"))
+    assert_equal(0, r =~ s("a"))
+    assert_equal(0, r =~ u("a"))
+    assert_equal(nil, r =~ a("\xc2\xa1"))
+    assert_warning(%r{regexp match /.../n against to EUC-JP string}) {
+      assert_equal(nil, r =~ e("\xc2\xa1"))
+    }
+    assert_warning(%r{regexp match /.../n against to Shift_JIS string}) {
+      assert_equal(nil, r =~ s("\xc2\xa1"))
+    }
+    assert_warning(%r{regexp match /.../n against to UTF-8 string}) {
+      assert_equal(nil, r =~ u("\xc2\xa1"))
+    }
   end
 
   def test_regexp_ascii
@@ -390,7 +403,9 @@ class TestM17N < Test::Unit::TestCase
 
   def test_union_1_regexp
     assert_regexp_generic_ascii(Regexp.union(//))
-    assert_regexp_generic_ascii(Regexp.union(//n))
+    assert_warning(%r{regexp match /.../n against to}) {
+      assert_regexp_generic_ascii(Regexp.union(//n))
+    }
     assert_regexp_fixed_eucjp(Regexp.union(//e))
     assert_regexp_fixed_sjis(Regexp.union(//s))
     assert_regexp_fixed_utf8(Regexp.union(//u))
@@ -431,7 +446,9 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_dynamic_ascii_regexp
-    assert_regexp_generic_ascii(/#{}/n)
+    assert_warning(%r{regexp match /.../n against to}) {
+      assert_regexp_generic_ascii(/#{}/n)
+    }
     assert_regexp_fixed_ascii8bit(/#{}\xc2\xa1/n)
     assert_regexp_fixed_ascii8bit(/\xc2\xa1#{}/n)
     #assert_raise(SyntaxError) { s1, s2 = s('\xc2'), s('\xa1'); /#{s1}#{s2}/ }
