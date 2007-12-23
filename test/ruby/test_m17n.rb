@@ -22,6 +22,184 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(a(bytes), a(actual), message)
   end
 
+  def assert_warning(pat, mesg=nil)
+    begin
+      org_stderr = $stderr
+      $stderr = StringIO.new(warn = '')
+      yield
+    ensure
+      $stderr = org_stderr
+    end
+    assert_match(pat, warn, mesg)
+  end
+
+  def assert_regexp_generic_encoding(r)
+    assert(!r.fixed_encoding?)
+    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
+      # "\xc2\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Shift_JIS and UTF-8.
+      assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(ename) }
+    }
+  end
+
+  def assert_regexp_fixed_encoding(r)
+    assert(r.fixed_encoding?)
+    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
+      enc = Encoding.find(ename)
+      if enc == r.encoding
+        assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(enc) }
+      else
+        assert_raise(ArgumentError) { r =~ "\xc2\xa1".force_encoding(enc) }
+      end
+    }
+  end
+
+  def assert_regexp_generic_ascii(r)
+    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_generic_encoding(r)
+  end
+
+  def assert_regexp_fixed_ascii8bit(r)
+    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
+  def assert_regexp_fixed_eucjp(r)
+    assert_encoding("EUC-JP", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
+  def assert_regexp_fixed_sjis(r)
+    assert_encoding("Shift_JIS", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
+  def assert_regexp_fixed_utf8(r)
+    assert_encoding("UTF-8", r.encoding)
+    assert_regexp_fixed_encoding(r)
+  end
+
+  STRINGS = [
+    a(""), e(""), s(""), u(""),
+    a("a"), e("a"), s("a"), u("a"),
+    a("."), e("."), s("."), u("."),
+
+    # single character
+    a("\x80"),
+    e("\xa1\xa1"), e("\x8e\xa1"), e("\x8f\xa1\xa1"),
+    s("\x81\x40"), s("\xa1"),
+    u("\xc2\x80"),
+
+    # same byte sequence
+    a("\xc2\xa1"), e("\xc2\xa1"), s("\xc2\xa1"), u("\xc2\xa1"),
+
+    s("\x81A"), # mutibyte character which contains "A"
+    s("\x81a"), # mutibyte character which contains "a"
+
+    # invalid
+    e("\xa1"), e("\x80"),
+    s("\x81"), s("\x80"),
+    u("\xc2"), u("\x80"),
+
+    # for transitivity test
+    u("\xe0\xa0\xa1"),
+    e("\xe0\xa0\xa1"),
+    s("\xe0\xa0\xa1"),
+  ]
+
+  def combination(*args)
+    if args.empty?
+      yield []
+    else
+      arg = args.shift
+      arg.each {|v|
+        combination(*args) {|vs|
+          yield [v, *vs]
+        }
+      }
+    end
+  end
+
+  def encdump(str)
+    "#{str.dump}.force_encoding(#{str.encoding.name.dump})"
+  end
+
+  def encdumpargs(args)
+    r = '('
+    args.each_with_index {|a, i|
+      r << ',' if 0 < i
+      if String === a
+        r << encdump(a)
+      else
+        r << a.inspect
+      end
+    }
+    r << ')'
+    r
+  end
+
+  def assert_str_enc_propagation(t, s1, s2)
+    if !s1.ascii_only?
+      assert_equal(s1.encoding, t.encoding)
+    elsif !s2.ascii_only?
+      assert_equal(s2.encoding, t.encoding)
+    else
+      assert([s1.encoding, s2.encoding].include?(t.encoding))
+    end
+  end
+
+  def assert_same_result(expected_proc, actual_proc)
+    e = nil
+    begin
+      t = expected_proc.call
+    rescue
+      e = $!
+    end
+    if e
+      assert_raise(e.class) { actual_proc.call }
+    else
+      assert_equal(t, actual_proc.call)
+    end
+  end
+
+  def each_slice_call
+    combination(STRINGS, -2..2) {|s, nth|
+      yield s, nth
+    }
+    combination(STRINGS, -2..2, 0..2) {|s, nth, len|
+      yield s, nth, len
+    }
+    combination(STRINGS, STRINGS) {|s, substr|
+      yield s, substr
+    }
+    combination(STRINGS, -2..2, 0..2) {|s, first, last|
+      yield s, first..last
+      yield s, first...last
+    }
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if !s2.valid_encoding?
+        next
+      end
+      yield s1, Regexp.new(Regexp.escape(s2))
+    }
+    combination(STRINGS, STRINGS, 0..2) {|s1, s2, nth|
+      if !s2.valid_encoding?
+        next
+      end
+      yield s1, Regexp.new(Regexp.escape(s2)), nth
+    }
+  end
+
+  def str_enc_compatible?(*strs)
+    encs = []
+    strs.each {|s|
+      encs << s.encoding if !s.ascii_only?
+    }
+    encs.uniq!
+    encs.length <= 1
+  end
+
+  # tests start
+
   def test_string_ascii_literal
     assert_encoding("ASCII-8BIT", eval(a(%{""})).encoding)
     assert_encoding("ASCII-8BIT", eval(a(%{"a"})).encoding)
@@ -159,62 +337,6 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval('/\xc2\xff/u') }
     assert_raise(SyntaxError) { eval('/\xc2 /u') }
     assert_raise(SyntaxError) { eval('/\xc2\x20/u') }
-  end
-
-  def assert_warning(pat, mesg=nil)
-    begin
-      org_stderr = $stderr
-      $stderr = StringIO.new(warn = '')
-      yield
-    ensure
-      $stderr = org_stderr
-    end
-    assert_match(pat, warn, mesg)
-  end
-
-  def assert_regexp_generic_encoding(r)
-    assert(!r.fixed_encoding?)
-    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
-      # "\xc2\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Shift_JIS and UTF-8.
-      assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(ename) }
-    }
-  end
-
-  def assert_regexp_fixed_encoding(r)
-    assert(r.fixed_encoding?)
-    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
-      enc = Encoding.find(ename)
-      if enc == r.encoding
-        assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(enc) }
-      else
-        assert_raise(ArgumentError) { r =~ "\xc2\xa1".force_encoding(enc) }
-      end
-    }
-  end
-
-  def assert_regexp_generic_ascii(r)
-    assert_encoding("ASCII-8BIT", r.encoding)
-    assert_regexp_generic_encoding(r)
-  end
-
-  def assert_regexp_fixed_ascii8bit(r)
-    assert_encoding("ASCII-8BIT", r.encoding)
-    assert_regexp_fixed_encoding(r)
-  end
-
-  def assert_regexp_fixed_eucjp(r)
-    assert_encoding("EUC-JP", r.encoding)
-    assert_regexp_fixed_encoding(r)
-  end
-
-  def assert_regexp_fixed_sjis(r)
-    assert_encoding("Shift_JIS", r.encoding)
-    assert_regexp_fixed_encoding(r)
-  end
-
-  def assert_regexp_fixed_utf8(r)
-    assert_encoding("UTF-8", r.encoding)
-    assert_regexp_fixed_encoding(r)
   end
 
   def test_regexp_generic
@@ -532,75 +654,11 @@ class TestM17N < Test::Unit::TestCase
     assert_nothing_raised { eval(u(%{/\\u{6666}#{}\\xc2\\xa0/})) }
   end
 
-  STRINGS = [
-    a(""), e(""), s(""), u(""),
-    a("a"), e("a"), s("a"), u("a"),
-    a("."), e("."), s("."), u("."),
-
-    # single character
-    a("\x80"),
-    e("\xa1\xa1"), e("\x8e\xa1"), e("\x8f\xa1\xa1"),
-    s("\x81\x40"), s("\xa1"),
-    u("\xc2\x80"),
-
-    # same byte sequence
-    a("\xc2\xa1"), e("\xc2\xa1"), s("\xc2\xa1"), u("\xc2\xa1"),
-
-    s("\x81A"), # mutibyte character which contains "A"
-    s("\x81a"), # mutibyte character which contains "a"
-
-    # invalid
-    e("\xa1"), e("\x80"),
-    s("\x81"), s("\x80"),
-    u("\xc2"), u("\x80"),
-  ]
-
-  def combination(*args)
-    if args.empty?
-      yield []
-    else
-      arg = args.shift
-      arg.each {|v|
-        combination(*args) {|vs|
-          yield [v, *vs]
-        }
-      }
-    end
-  end
-
   def test_str_new
     STRINGS.each {|s|
       t = String.new(s)
       assert_strenc(a(s), s.encoding, t)
     }
-  end
-
-  def encdump(str)
-    "#{str.dump}.force_encoding(#{str.encoding.name.dump})"
-  end
-
-  def encdumpargs(args)
-    r = '('
-    args.each_with_index {|a, i|
-      r << ',' if 0 < i
-      if String === a
-        r << encdump(a)
-      else
-        r << a.inspect
-      end
-    }
-    r << ')'
-    r
-  end
-
-  def assert_str_enc_propagation(t, s1, s2)
-    if !s1.ascii_only?
-      assert_equal(s1.encoding, t.encoding)
-    elsif !s2.ascii_only?
-      assert_equal(s2.encoding, t.encoding)
-    else
-      assert([s1.encoding, s2.encoding].include?(t.encoding))
-    end
   end
 
   def test_str_plus
@@ -666,6 +724,30 @@ class TestM17N < Test::Unit::TestCase
     assert_strenc('"\x00"', 'EUC-JP', e("%p") % e("\x00"))
     assert_strenc('"\x00"', 'Shift_JIS', s("%p") % s("\x00"))
     assert_strenc('"\x00"', 'UTF-8', u("%p") % u("\x00"))
+  end
+
+  def test_str_eq_reflexive
+    STRINGS.each {|s|
+      assert(s == s, "#{encdump s} == #{encdump s}")
+    }
+  end
+
+  def test_str_eq_symmetric
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if s1 == s2
+        assert(s2 == s1, "#{encdump s2} == #{encdump s1}")
+      else
+        assert(!(s2 == s1), "!(#{encdump s2} == #{encdump s1})")
+      end
+    }
+  end
+
+  def test_str_eq_transitive
+    combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
+      if s1 == s2 && s2 == s3
+        assert(s1 == s3, "transitive: #{encdump s1} == #{encdump s2} == #{encdump s3}")
+      end
+    }
   end
 
   def test_str_eq
@@ -1112,7 +1194,18 @@ class TestM17N < Test::Unit::TestCase
   def test_str_chop
     STRINGS.each {|s|
       s = s.dup
-      t = s.chop
+      desc = "#{encdump s}.chop"
+      if !s.valid_encoding?
+        #assert_raise(ArgumentError, desc) { s.chop }
+        begin
+          s.chop
+        rescue ArgumentError
+          e = $!
+        end
+        next if e
+      end
+      t = nil
+      assert_nothing_raised(desc) { t = s.chop }
       assert(t.valid_encoding?) if s.valid_encoding?
       assert(a(s).index(a(t)))
       t2 = s.dup
@@ -1478,48 +1571,6 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
-  def assert_same_result(expected_proc, actual_proc)
-    e = nil
-    begin
-      t = expected_proc.call
-    rescue
-      e = $!
-    end
-    if e
-      assert_raise(e.class) { actual_proc.call }
-    else
-      assert_equal(t, actual_proc.call)
-    end
-  end
-
-  def each_slice_call
-    combination(STRINGS, -2..2) {|s, nth|
-      yield s, nth
-    }
-    combination(STRINGS, -2..2, 0..2) {|s, nth, len|
-      yield s, nth, len
-    }
-    combination(STRINGS, STRINGS) {|s, substr|
-      yield s, substr
-    }
-    combination(STRINGS, -2..2, 0..2) {|s, first, last|
-      yield s, first..last
-      yield s, first...last
-    }
-    combination(STRINGS, STRINGS) {|s1, s2|
-      if !s2.valid_encoding?
-        next
-      end
-      yield s1, Regexp.new(Regexp.escape(s2))
-    }
-    combination(STRINGS, STRINGS, 0..2) {|s1, s2, nth|
-      if !s2.valid_encoding?
-        next
-      end
-      yield s1, Regexp.new(Regexp.escape(s2)), nth
-    }
-  end
-
   def test_str_slice
     each_slice_call {|obj, *args|
       assert_same_result(lambda { obj[*args] }, lambda { obj.slice(*args) })
@@ -1718,15 +1769,6 @@ class TestM17N < Test::Unit::TestCase
       end
       assert_equal(s1.length, t.length, desc)
     }
-  end
-
-  def str_enc_compatible?(*strs)
-    encs = []
-    strs.each {|s|
-      encs << s.encoding if !s.ascii_only?
-    }
-    encs.uniq!
-    encs.length <= 1
   end
 
   def test_tr_s
