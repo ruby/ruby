@@ -1,3 +1,7 @@
+Sun Dec 23 17:24:48 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_init): add eucJP as an alias of EUC-JP.
+
 Sun Dec 23 17:00:23 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.httpdate): use Time.utc for
