@@ -61,7 +61,7 @@ EOT
         f.gets("\xA2\xA2".force_encoding("euc-jp").encode("utf-8"))
       }
       assert_equal(Encoding.find("euc-jp"), s.encoding)
-      assert_str_equal("before \xA1\xA2\xA2\xA3 after".force_encoding("iso-8859-1"), s)
+      assert_str_equal("before \xA1\xA2\xA2\xA3 after".force_encoding("iso-8859-1"), s, '[ruby-core:14319]')
     }
   end
 
