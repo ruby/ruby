@@ -4,14 +4,6 @@
 #
 
 assert_equal 'ok', %q{
-  open("tmp", "w") {|f| f.write "a\u00FFb" }
-  s = open("tmp", "r:iso-8859-1:utf-8") {|f|
-    f.gets("\xFF".force_encoding("iso-8859-1"))
-  }
-  s == "a\xFF" ? :ok : :ng
-}, '[ruby-core:14288]'
-
-assert_equal 'ok', %q{
   open("require-lock-test.rb", "w") {|f|
     f.puts "sleep 0.1"
     f.puts "module M"
