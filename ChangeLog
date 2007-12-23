@@ -1,3 +1,7 @@
+Sun Dec 23 19:33:42 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/open-uri.rb:  Fix method redefined warning.  [ruby-core:14304]
+
 Sun Dec 23 18:31:49 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_enc_get): use rb_define_dummy_encoding.

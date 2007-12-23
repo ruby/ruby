@@ -5,6 +5,9 @@ require 'time'
 module Kernel
   private
   alias open_uri_original_open open # :nodoc:
+  class << self
+    alias open_uri_original_open open # :nodoc:
+  end
 
   # makes possible to open various resources including URIs.
   # If the first argument respond to `open' method,
