@@ -38,7 +38,7 @@ module RubyToken
   
   class Token
     NO_TEXT = "??".freeze
-    attr :text
+    attr_accessor :text
 
     def initialize(line_no, char_no)
       @line_no = line_no
@@ -53,7 +53,7 @@ module RubyToken
       self
     end
 
-    attr_reader :line_no, :char_no, :text
+    attr_reader :line_no, :char_no
   end
 
   class TkNode < Token
@@ -1934,9 +1934,8 @@ module RDoc
         meth.singleton = true
       else
 	unget_tk dot
-	back_tk.reverse_each do
-	  |tk|
-	  unget_tk tk
+	back_tk.reverse_each do |token|
+	  unget_tk token
 	end
 	name = name_t.name
 

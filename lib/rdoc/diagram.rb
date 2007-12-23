@@ -140,8 +140,8 @@ module RDoc
       graph << m
 
       unless mod.includes.empty?
-        mod.includes.each do |m|
-          m_full_name = find_full_name(m.name, mod)
+        mod.includes.each do |inc|
+          m_full_name = find_full_name(inc.name, mod)
           if @local_names.include?(m_full_name)
             @global_graph << DOT::DOTEdge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
                                       'to' => "#{mod.full_name.gsub( /:/,'_' )}",

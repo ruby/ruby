@@ -55,7 +55,7 @@ module RI
 
     def self.path(use_system, use_site, use_home, use_gems, *extra_dirs)
       path = raw_path(use_system, use_site, use_home, use_gems, *extra_dirs)
-      return path.select { |path| File.directory? path }
+      return path.select { |directory| File.directory? directory }
     end
 
     # Returns the selected documentation directories including nonexistent

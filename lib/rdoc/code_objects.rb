@@ -126,6 +126,7 @@ module RDoc
         @title = title
         @@sequence.succ!
         @sequence = @@sequence.dup
+        @comment = nil
         set_comment(comment)
       end
 
@@ -385,8 +386,8 @@ module RDoc
           module_name = modules.shift
           result = find_module_named(module_name)
           if result
-            modules.each do |module_name|
-              result = result.find_module_named(module_name)
+            modules.each do |name|
+              result = result.find_module_named(name)
               break unless result
             end
           end

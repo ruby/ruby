@@ -1,3 +1,7 @@
+Sun Dec 23 16:12:40 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc:  Fix 1.9 warnings.
+
 Sun Dec 23 15:28:37 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems, test/rubygems:  Fix new 1.9 warnings.
