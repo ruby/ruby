@@ -1769,9 +1769,10 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 }
 
 static void
-prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
+prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 {
     VALUE lim, rs;
+    rb_io_t *fptr;
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -1790,6 +1791,12 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
 		rs = tmp;
 	    }
 	}
+    }
+    GetOpenFile(io, fptr);
+    if (fptr->enc2) {
+	rs = rb_funcall(rs, id_encode, 2, 
+			rb_enc_from_encoding(fptr->enc2),
+			rb_enc_from_encoding(fptr->enc));
     }
     *rsp = rs;
     *limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
@@ -1872,7 +1879,7 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
     VALUE rs;
     long limit;
 
-    prepare_getline_args(argc, argv, &rs, &limit);
+    prepare_getline_args(argc, argv, &rs, &limit, io);
     return rb_io_getline_1(rs, limit, io);
 }
 
@@ -2041,7 +2048,7 @@ rb_io_readlines(int argc, VALUE *argv, VALUE io)
     VALUE line, ary, rs;
     long limit;
 
-    prepare_getline_args(argc, argv, &rs, &limit);
+    prepare_getline_args(argc, argv, &rs, &limit, io);
     ary = rb_ary_new();
     while (!NIL_P(line = rb_io_getline_1(rs, limit, io))) {
 	rb_ary_push(ary, line);
@@ -2080,7 +2087,7 @@ rb_io_each_line(int argc, VALUE *argv, VALUE io)
     long limit;
 
     RETURN_ENUMERATOR(io, argc, argv);
-    prepare_getline_args(argc, argv, &rs, &limit);
+    prepare_getline_args(argc, argv, &rs, &limit, io);
     while (!NIL_P(str = rb_io_getline_1(rs, limit, io))) {
 	rb_yield(str);
     }

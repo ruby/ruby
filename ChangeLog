@@ -5,6 +5,8 @@ Mon Dec 24 02:59:32 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_read_encoding): retrieve reading encoding.
 
+	* io.c (prepare_getline_args): convert RS to external encoding. 
+
 Mon Dec 24 02:06:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_open): documentation update.
