@@ -87,8 +87,8 @@ module Kconv
   # <code>out_code</code> and <code>in_code</code> are given as constants of Kconv.
   def kconv(str, to_enc, from_enc=nil)
     opt = ''
-    opt += ' --ic=' + from_enc.name if from_enc
-    opt += ' --oc=' + to_enc.name if to_enc
+    opt += ' --ic=' + from_enc.to_s if from_enc
+    opt += ' --oc=' + to_enc.to_s if to_enc
 
     ::NKF::nkf(opt, str)
   end
@@ -210,13 +210,8 @@ class String
   #
   # Convert <code>self</code> to out_code.
   # <code>out_code</code> and <code>in_code</code> are given as constants of Kconv.
-  #
-  # *Note*
-  # This method decode MIME encoded string and
-  # convert halfwidth katakana to fullwidth katakana.
-  # If you don't want to decode them, use NKF.nkf.
   def kconv(to_enc, from_enc=nil)
-    form_enc = self.encoding.name if !from_enc && self.encoding != Encoding.list[0]
+    form_enc = self.encoding if !from_enc && self.encoding != Encoding.list[0]
     Kconv::kconv(self, to_enc, from_enc)
   end
   

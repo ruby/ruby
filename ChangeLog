@@ -1,3 +1,16 @@
+Sun Dec 23 18:31:49 2007  NARUSE, Yui <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf.c (rb_nkf_enc_get): use rb_define_dummy_encoding.
+
+	* ext/nkf/nkf.c (Init_nkf): use rb_nkf_enc_get("ASCII").
+
+	* ext/nkf/nkf-utf8/nkf.c: Update 1.161.
+
+	* ext/nkf/nkf-utf9/config.h: default output encoding is now UTF-8.
+
+	* ext/nkf/lib/kconv.rb (Kconv.kconv): replace Encoding#name by
+	  Encoding#to_s.
+
 Sun Dec 23 18:02:52 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/gem_open_uri.rb:  Fix version check.

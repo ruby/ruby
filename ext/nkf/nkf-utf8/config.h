@@ -59,10 +59,10 @@ typedef int nkf_nfchar;
 /******************************/
 /* デフォルトの出力コード選択 */
 /* Select DEFAULT_CODE */
-#define DEFAULT_CODE_JIS
+/* #define DEFAULT_CODE_JIS */
 /* #define DEFAULT_CODE_SJIS */
 /* #define DEFAULT_CODE_EUC */
-/* #define DEFAULT_CODE_UTF8 */
+#define DEFAULT_CODE_UTF8
 /******************************/
 #else
 #define DEFAULT_CODE_SJIS
