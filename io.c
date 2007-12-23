@@ -5602,6 +5602,69 @@ struct foreach_arg {
     VALUE io;
 };
 
+static void
+open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
+{
+    VALUE opt, v;
+    static VALUE encoding, mode, open_args;
+
+    FilePathValue(argv[0]);
+    arg->argc = argc > 1 ? 1 : 0;
+    arg->argv = argv + 1;
+    if (argc == 1) {
+      no_key:
+	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
+	return;
+    }
+    opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+    if (NIL_P(opt)) goto no_key;
+    if (argc > 2) arg->argc = 1;
+    else arg->argc = 0;
+    if (!encoding) {
+	ID id;
+
+	id = rb_intern("encoding");
+	encoding = ID2SYM(id);
+	id = rb_intern("mode");
+	mode = ID2SYM(id);
+	id = rb_intern("open_args");
+	open_args = ID2SYM(id);
+    }
+    v = rb_hash_aref(opt, open_args);
+    if (!NIL_P(v)) {
+	VALUE args;
+
+	v = rb_convert_type(v, T_ARRAY, "Array", "to_ary");
+	args = rb_ary_new2(RARRAY_LEN(v)+1);
+	rb_ary_push(args, argv[0]);
+	rb_ary_concat(args, v);
+	MEMCPY(RARRAY_PTR(args)+1, RARRAY_PTR(v), VALUE, RARRAY_LEN(v));
+	
+	arg->io = rb_f_open(RARRAY_LEN(args), RARRAY_PTR(args));
+	return;
+    }
+    v = rb_hash_aref(opt, mode);
+    if (!NIL_P(v)) {
+	VALUE args[2];
+
+	args[0] = argv[0];
+	args[1] = v;
+	arg->io = rb_f_open(2, args);
+	return;
+    }
+    v = rb_hash_aref(opt, encoding);
+    if (!NIL_P(v)) {
+	rb_encoding *enc;
+	rb_io_t *fptr;
+
+	enc = rb_to_encoding(v);
+	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
+	GetOpenFile(arg->io, fptr);
+	fptr->enc = enc;
+	return;
+    }
+}
+
 static VALUE
 io_s_foreach(struct foreach_arg *arg)
 {
@@ -5630,21 +5693,21 @@ io_s_foreach(struct foreach_arg *arg)
  *     GOT This is line two
  *     GOT This is line three
  *     GOT And so on...
+ *
+ *  If the last argument is a hash, it's the keyword argument to open.
+ *  See <code>IO.read</code> for detail.
+ *
  */
 
 static VALUE
 rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
 {
-    VALUE fname;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "12", &fname, NULL, NULL);
+    rb_scan_args(argc, argv, "13", NULL, NULL, NULL, NULL);
     RETURN_ENUMERATOR(self, argc, argv);
-    FilePathValue(fname);
-    arg.io = rb_io_open(RSTRING_PTR(fname), "r");
+    open_key_args(argc, argv, &arg);
     if (NIL_P(arg.io)) return Qnil;
-    arg.argc = argc - 1;
-    arg.argv = argv + 1;
     return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
 }
 
@@ -5667,20 +5730,19 @@ io_s_readlines(struct foreach_arg *arg)
  *     a = IO.readlines("testfile")
  *     a[0]   #=> "This is line one\n"
  *
+ *  If the last argument is a hash, it's the keyword argument to open.
+ *  See <code>IO.read</code> for detail.
+ *
  */
 
 static VALUE
 rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 {
-    VALUE fname;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "12", &fname, NULL, NULL);
-    FilePathValue(fname);
-    arg.io = rb_io_open(RSTRING_PTR(fname), "r");
+    rb_scan_args(argc, argv, "13", NULL, NULL, NULL, NULL);
+    open_key_args(argc, argv, &arg);
     if (NIL_P(arg.io)) return Qnil;
-    arg.argc = argc - 1;
-    arg.argv = argv + 1;
     return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
 }
 
@@ -5693,10 +5755,28 @@ io_s_read(struct foreach_arg *arg)
 /*
  *  call-seq:
  *     IO.read(name, [length [, offset]] )   => string
+ *     IO.read(name, [length [, offset]], opt)   => string
  *
  *  Opens the file, optionally seeks to the given offset, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
  *  <code>read</code> ensures the file is closed before returning.
+ *
+ *  If the last argument is a hash, it specifies option for internal
+ *  open().  The key would be the following.  They are all exclusive,
+ *  
+ *   encoding: string or encoding
+ *
+ *    specifies encoding of the read string.  encoding will be ignored
+ *    if length is specified.
+ *
+ *   mode: string
+ *
+ *    specifies mode argument for open().  it should start with "r"
+ *    otherwise it would cause error.
+ *
+ *   open_args: array of strings
+ *
+ *    specifies arguments for open() as an array.
  *
  *     IO.read("testfile")           #=> "This is line one\nThis is line two\nThis is line three\nAnd so on...\n"
  *     IO.read("testfile", 20)       #=> "This is line one\nThi"
@@ -5706,18 +5786,16 @@ io_s_read(struct foreach_arg *arg)
 static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
-    VALUE fname, offset, tmp = Qnil;
+    VALUE offset;
     struct foreach_arg arg;
 
-    rb_scan_args(argc, argv, "12", &fname, NULL, &offset);
-    FilePathValue(fname);
-    arg.argc = argc > 1 ? 1 : 0;
-    arg.argv = argv + 1;
-    arg.io = rb_io_open(RSTRING_PTR(fname), "r");
+    rb_scan_args(argc, argv, "13", NULL, NULL, &offset, NULL);
+    open_key_args(argc, argv, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
 	rb_io_binmode(arg.io);
 	rb_io_seek(arg.io, offset, SEEK_SET);
+	if (arg.argc == 2) arg.argc = 1;
     }
     return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
 }

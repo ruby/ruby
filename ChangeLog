@@ -1,3 +1,8 @@
+Mon Dec 24 00:57:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (open_key_args): IO direct methods (foreach, readlines,
+	  read) now takes keyword argument: encoding, mode, open_args.
+
 Mon Dec 24 00:52:15 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_s_read): encoding argument reverted.
