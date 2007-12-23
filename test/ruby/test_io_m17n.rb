@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tmpdir'
+require 'timeout'
 
 class TestIO_M17N < Test::Unit::TestCase
   ENCS = [
@@ -62,6 +63,39 @@ EOT
       }
       assert_equal(Encoding.find("utf-8"), s.encoding)
       assert_str_equal("before \xA1\xA2\xA2\xA3 after".force_encoding("euc-jp").encode("utf-8"), s, '[ruby-core:14319]')
+    }
+  end
+
+  def test_pipe_terminator_conversion
+    with_pipe("euc-jp:utf-8") {|r, w|
+      w.write "before \xa2\xa2 after"
+      rs = "\xA2\xA2".encode("utf-8", "euc-jp")
+      timeout(1) {
+        assert_equal("before \xa2\xa2".encode("utf-8", "euc-jp"),
+                     r.gets(rs))
+      }
+    }
+  end
+
+  def test_pipe_conversion
+    with_pipe("euc-jp:utf-8") {|r, w|
+      w.write "\xa1\xa1"
+      assert_equal("\xa1\xa1".encode("utf-8", "euc-jp"), r.getc)
+    }
+  end
+
+  def test_pipe_convert_partial_read
+    with_pipe("euc-jp:utf-8") {|r, w|
+      begin
+        t = Thread.new {
+          w.write "\xa1"
+          sleep 0.1
+          w.write "\xa1"
+        }
+        assert_equal("\xa1\xa1".encode("utf-8", "euc-jp"), r.getc)
+      ensure
+        t.join if t
+      end
     }
   end
 
