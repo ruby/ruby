@@ -535,6 +535,7 @@ module Gem
       @new_platform = nil
       assign_defaults
       @loaded = false
+      @loaded_from = nil
       @@list << self
 
       yield self if block_given?

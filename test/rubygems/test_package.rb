@@ -488,15 +488,17 @@ class TestTarWriter < TarTestCase
         self.string.send(meth, *a)
       end
     end
-    os = Gem::Package::TarWriter.new dummyos
+
     content1 = ('a'..'z').to_a.join("")  # 26
     content2 = ('aa'..'zz').to_a.join("") # 1352
+
     Gem::Package::TarWriter.new(dummyos) do |os|
       os.add_file("lib/foo/bar", 0644) {|f| f.write "a" * 10 }
       os.add_file("lib/bar/baz", 0644) {|f| f.write content1 }
       os.add_file("lib/bar/baz", 0644) {|f| f.write content2 }
       os.add_file("lib/bar/baz", 0644) {|f| }
     end
+
     assert_headers_equal(tar_file_header("lib/foo/bar", "", 0644, 10),
                          dummyos[0,512])
     assert_equal("a" * 10 + "\0" * 502, dummyos[512,512])

@@ -58,12 +58,12 @@ class Gem::Commands::SpecificationCommand < Gem::Command
       terminate_interaction 1
     end
 
-    output = lambda { |spec| say spec.to_yaml; say "\n" }
+    output = lambda { |s| say s.to_yaml; say "\n" }
 
     if options[:all] then
       specs.each(&output)
     else
-      spec = specs.sort_by { |spec| spec.version }.last
+      spec = specs.sort_by { |s| s.version }.last
       output[spec]
     end
   end

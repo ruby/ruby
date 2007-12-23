@@ -120,13 +120,13 @@ end
   end
 
   def test_self_load_legacy_ruby
-    s = eval LEGACY_RUBY_SPEC
-    assert_equal 'keyedlist', s.name
-    assert_equal '0.4.0', s.version.to_s
-    assert_equal true, s.has_rdoc?
-    assert_equal Gem::Specification::TODAY, s.date
-    assert s.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
-    assert_equal false, s.has_unit_tests?
+    spec = eval LEGACY_RUBY_SPEC
+    assert_equal 'keyedlist', spec.name
+    assert_equal '0.4.0', spec.version.to_s
+    assert_equal true, spec.has_rdoc?
+    assert_equal Gem::Specification::TODAY, spec.date
+    assert spec.required_ruby_version.satisfied_by?(Gem::Version.new('1'))
+    assert_equal false, spec.has_unit_tests?
   end
 
   def test_self_load_legacy_yaml

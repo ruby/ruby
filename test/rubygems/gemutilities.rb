@@ -205,15 +205,15 @@ class RubyGemTestCase < Test::Unit::TestCase
   end
 
   def util_make_gems
-    spec = proc do |s|
+    init = proc do |s|
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]
     end
 
-    @a1 = quick_gem('a', '1', &spec)
-    @a2 = quick_gem('a', '2', &spec)
-    @b2 = quick_gem('b', '2', &spec)
-    @c1_2   = quick_gem('c', '1.2',   &spec)
+    @a1 = quick_gem('a', '1', &init)
+    @a2 = quick_gem('a', '2', &init)
+    @b2 = quick_gem('b', '2', &init)
+    @c1_2   = quick_gem('c', '1.2',   &init)
     @pl1     = quick_gem 'pl', '1' do |s| # l for legacy
       s.files = %w[lib/code.rb]
       s.require_paths = %w[lib]

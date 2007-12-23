@@ -92,8 +92,8 @@ class Gem::Commands::SourcesCommand < Gem::Command
       say "*** CURRENT SOURCES ***"
       say
 
-      Gem.sources.each do |source_uri|
-        say source_uri
+      Gem.sources.each do |source|
+        say source
       end
     end
   end
