@@ -1777,14 +1777,15 @@ rb_spawn(int argc, VALUE *argv)
  *     *
  */
 
-#if defined(SIGCLD) && !defined(SIGCHLD)
-# define SIGCHLD SIGCLD
-#endif
-
 static VALUE
 rb_f_system(int argc, VALUE *argv)
 {
     int status;
+
+#if defined(SIGCLD) && !defined(SIGCHLD)
+# define SIGCHLD SIGCLD
+#endif
+
 #ifdef SIGCHLD
     RETSIGTYPE (*chfunc)(int);
 
