@@ -5848,6 +5848,9 @@ rb_io_external_encoding(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
+    if (fptr->enc2) {
+	return rb_enc_from_encoding(fptr->enc2);
+    }
     if (!fptr->enc && fptr->fd == 0) {
 	fptr->enc = rb_default_external_encoding();
     }
@@ -5869,7 +5872,7 @@ rb_io_internal_encoding(VALUE io)
 
     GetOpenFile(io, fptr);
     if (!fptr->enc2) return Qnil;
-    return rb_enc_from_encoding(fptr->enc2);
+    return rb_enc_from_encoding(fptr->enc);
 }
 
 static VALUE

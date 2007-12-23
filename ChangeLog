@@ -6,6 +6,12 @@ Mon Dec 24 02:06:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fwrite): wrong encoding destination.
 
+	* io.c (rb_io_external_encoding): should return the encoding of
+	  the file reading.
+
+	* io.c (rb_io_internal_encoding): should return the encoding of
+	  read string.
+
 Mon Dec 24 01:46:43 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_s_pipe): allow specifying read-side encoding.
