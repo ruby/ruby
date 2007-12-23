@@ -370,12 +370,12 @@ inject_op_i(VALUE i, VALUE p)
 
 /*
  *  call-seq:
- *     enum.inject(sym, initial) => obj
+ *     enum.inject(initial, sym) => obj
  *     enum.inject(sym)          => obj
  *     enum.inject(initial) {| memo, obj | block }  => obj
  *     enum.inject          {| memo, obj | block }  => obj
  *
- *     enum.reduce(sym, initial) => obj
+ *     enum.reduce(initial, sym) => obj
  *     enum.reduce(sym)          => obj
  *     enum.reduce(initial) {| memo, obj | block }  => obj
  *     enum.reduce          {| memo, obj | block }  => obj
@@ -403,7 +403,7 @@ inject_op_i(VALUE i, VALUE p)
  *     # Same using a block and inject
  *     (5..10).inject {|sum, n| sum + n }            #=> 45
  *     # Multiply some numbers
- *     (5..10).reduce(:*, 1)                         #=> 151200
+ *     (5..10).reduce(1, :*)                         #=> 151200
  *     # Same using a block
  *     (5..10).inject(1) {|product, n| product * n } #=> 151200
  *     # find the longest word
