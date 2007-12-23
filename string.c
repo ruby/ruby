@@ -245,7 +245,7 @@ str_new_shared(VALUE klass, VALUE str)
     VALUE str2 = str_alloc(klass);
 
     if (RSTRING_LEN(str) <= RSTRING_EMBED_LEN_MAX) {
-	STR_SET_EMBED(str);
+	STR_SET_EMBED(str2);
 	memcpy(RSTRING_PTR(str2), RSTRING_PTR(str), RSTRING_LEN(str)+1);
 	STR_SET_EMBED_LEN(str2, RSTRING_LEN(str));
     }
