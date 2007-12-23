@@ -1,3 +1,8 @@
+Sun Dec 23 14:43:10 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* gem_prelude.rb:  Use require to load rubygems.rb so the correct path
+	is in $LOADED_FEATURES on RubyGems upgrade.
+
 Sun Dec 23 11:26:43 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (sym_call): use exact argument array interface.

@@ -76,14 +76,20 @@ module Gem
   end
 
   module QuickLoader
-    
+
     class << self
       def load_full_rubygems_library
-        QuickLoader.instance_methods.each {|method_name| QuickLoader.send(:undef_method, method_name)}
-        load "rubygems.rb"
+        QuickLoader.instance_methods.each do |method_name|
+          QuickLoader.send :undef_method, method_name
+        end
+
+        $".delete File.join(Gem::ConfigMap[:libdir], 'ruby',
+                            Gem::ConfigMap[:ruby_version], 'rubygems.rb')
+
+        require 'rubygems'
       end
     end
-    
+
     GemPaths = {}
     GemVersions = {}
     
@@ -176,9 +182,11 @@ module Gem
   extend QuickLoader
 
 end
+
 begin
   Gem.push_all_highest_version_gems_on_load_path
-  $".unshift File.join(Gem::ConfigMap[:libdir], "ruby", Gem::ConfigMap[:ruby_version], "rubygems.rb")
+  $" << File.join(Gem::ConfigMap[:libdir], "ruby",
+                  Gem::ConfigMap[:ruby_version], "rubygems.rb")
 rescue Exception => e
   puts "Error loading gem paths on load path in gem_prelude"
   puts e
