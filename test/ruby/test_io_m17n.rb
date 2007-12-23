@@ -46,9 +46,10 @@ EOT
   def test_terminator_conversion
     with_tmpdir {
       generate_file('tmp', "before \u00FF after")
-      s = open("tmp", "r:iso-8859-1:utf-8") {|f|
+      s = open("tmp", "r:utf-8:iso-8859-1") {|f|
         f.gets("\xFF".force_encoding("iso-8859-1"))
       }
+      assert_equal(Encoding.find("iso-8859-1"), s.encoding)
       assert_str_equal("before \xFF".force_encoding("iso-8859-1"), s, '[ruby-core:14288]')
     }
   end
@@ -163,7 +164,7 @@ EOT
         f.print utf8
       }
       assert_equal(eucjp, File.read('tmp').force_encoding("EUC-JP"))
-      open('tmp', 'r:UTF-8:EUC-JP') {|f|
+      open('tmp', 'r:EUC-JP:UTF-8') {|f|
         assert_equal(Encoding::EUC_JP, f.external_encoding)
         assert_equal(Encoding::UTF_8, f.internal_encoding)
         assert_equal(utf8, f.read)
