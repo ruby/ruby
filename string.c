@@ -3654,8 +3654,11 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.aux.capa = max;
     }
-
-    if (modify) return str;
+    
+    if (modify) {
+	rb_enc_associate(str, enc);
+	return str;
+    }
     return Qnil;
 }
 

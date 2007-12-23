@@ -1,3 +1,7 @@
+Mon Dec 24 05:13:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (tr_trans): should associate new encoding if modified.
+
 Mon Dec 24 04:04:12 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/net/http/test_https.rb: should rescue LoadError.
