@@ -1,3 +1,10 @@
+Tue Dec 25 01:54:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* id.c (Init_id): remove several unused symbols. [ruby-core:14362]
+
+	* compile.c (iseq_specialized_instruction): do not use
+	  VM_CALL_SEND_BANG flag any longer.
+
 Tue Dec 25 01:42:41 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/rdoc/rdoc.rb (parse_files): interpret coding cookie.

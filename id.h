@@ -47,9 +47,6 @@ extern ID idEnd;
 extern ID idBitblt;
 extern ID idAnswer;
 extern ID idSend;
-extern ID idSendBang;
-extern ID id__send;
-extern ID id__send_bang;
 extern ID id__send__;
 
 
