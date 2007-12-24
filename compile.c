@@ -2973,7 +2973,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (iseq->compile_data->redo_label != 0) {
 	    /* next in while loop */
 	    debugs("next in while\n");
-	    pop_after_throw = 1;
+	    pop_after_throw = poped;
 	    goto next_by_throw;
 	}
 	else if (iseq->compile_data->end_label) {

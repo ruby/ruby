@@ -681,3 +681,12 @@ assert_equal 'ok', %q{
   end # direct
 }, '[ruby-core:14385]'
 
+assert_equal 'ok', %q{
+  counter = 2
+  while true
+    counter -= 1
+    break if counter == 0
+    "#{next}"
+  end
+  :ok
+}
