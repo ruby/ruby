@@ -66,7 +66,7 @@ from_ISO_8859_1_infos[129] = {
      o2(0xC3,0xBF),
 };
 const BYTE_LOOKUP
-from_ISO_8859_1 = {
+rb_from_ISO_8859_1 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_1_infos
 };
@@ -159,7 +159,7 @@ to_ISO_8859_1_infos[4] = {
      &to_ISO_8859_1_C3,             UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_1 = {
+rb_to_ISO_8859_1 = {
     to_ISO_8859_1_offsets,
     to_ISO_8859_1_infos
 };
@@ -201,7 +201,7 @@ from_ISO_8859_2_infos[129] = {
      o2(0xCB,0x99),
 };
 const BYTE_LOOKUP
-from_ISO_8859_2 = {
+rb_from_ISO_8859_2 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_2_infos
 };
@@ -352,7 +352,7 @@ to_ISO_8859_2_infos[7] = {
                  UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_2 = {
+rb_to_ISO_8859_2 = {
     to_ISO_8859_2_offsets,
     to_ISO_8859_2_infos
 };
@@ -411,7 +411,7 @@ from_ISO_8859_3_infos[123] = {
      o2(0xC5,0x9D), o2(0xCB,0x99),         UNDEF,
 };
 const BYTE_LOOKUP
-from_ISO_8859_3 = {
+rb_from_ISO_8859_3 = {
     from_ISO_8859_3_offsets,
     from_ISO_8859_3_infos
 };
@@ -537,7 +537,7 @@ to_ISO_8859_3_infos[7] = {
                  UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_3 = {
+rb_to_ISO_8859_3 = {
     to_ISO_8859_2_offsets,
     to_ISO_8859_3_infos
 };
@@ -579,7 +579,7 @@ from_ISO_8859_4_infos[129] = {
      o2(0xCB,0x99),
 };
 const BYTE_LOOKUP
-from_ISO_8859_4 = {
+rb_from_ISO_8859_4 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_4_infos
 };
@@ -709,7 +709,7 @@ to_ISO_8859_4_infos[7] = {
                  UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_4 = {
+rb_to_ISO_8859_4 = {
     to_ISO_8859_2_offsets,
     to_ISO_8859_4_infos
 };
@@ -783,7 +783,7 @@ from_ISO_8859_5_infos[129] = {
           o2(0xD1,0x9F),
 };
 const BYTE_LOOKUP
-from_ISO_8859_5 = {
+rb_from_ISO_8859_5 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_5_infos
 };
@@ -929,7 +929,7 @@ to_ISO_8859_5_infos[6] = {
      &to_ISO_8859_5_E2,             UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_5 = {
+rb_to_ISO_8859_5 = {
     to_ISO_8859_5_offsets,
     to_ISO_8859_5_infos
 };
@@ -979,7 +979,7 @@ from_ISO_8859_6_infos[85] = {
              UNDEF,
 };
 const BYTE_LOOKUP
-from_ISO_8859_6 = {
+rb_from_ISO_8859_6 = {
     from_ISO_8859_6_offsets,
     from_ISO_8859_6_infos
 };
@@ -1080,7 +1080,7 @@ to_ISO_8859_6_infos[5] = {
                  UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_6 = {
+rb_to_ISO_8859_6 = {
     to_ISO_8859_6_offsets,
     to_ISO_8859_6_infos
 };
@@ -1172,7 +1172,7 @@ from_ISO_8859_7_infos[127] = {
                   UNDEF,
 };
 const BYTE_LOOKUP
-from_ISO_8859_7 = {
+rb_from_ISO_8859_7 = {
     from_ISO_8859_7_offsets,
     from_ISO_8859_7_infos
 };
@@ -1353,7 +1353,7 @@ to_ISO_8859_7_infos[7] = {
                  UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_7 = {
+rb_to_ISO_8859_7 = {
     to_ISO_8859_7_offsets,
     to_ISO_8859_7_infos
 };
@@ -1428,7 +1428,7 @@ from_ISO_8859_8_infos[94] = {
      o3(0xE2,0x80,0x8F),              UNDEF,
 };
 const BYTE_LOOKUP
-from_ISO_8859_8 = {
+rb_from_ISO_8859_8 = {
     from_ISO_8859_8_offsets,
     from_ISO_8859_8_infos
 };
@@ -1568,7 +1568,7 @@ to_ISO_8859_8_infos[6] = {
      &to_ISO_8859_8_E2,             UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_8 = {
+rb_to_ISO_8859_8 = {
     to_ISO_8859_8_offsets,
     to_ISO_8859_8_infos
 };
@@ -1610,7 +1610,7 @@ from_ISO_8859_9_infos[129] = {
      o2(0xC3,0xBF),
 };
 const BYTE_LOOKUP
-from_ISO_8859_9 = {
+rb_from_ISO_8859_9 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_9_infos
 };
@@ -1707,7 +1707,7 @@ to_ISO_8859_9_infos[6] = {
      &to_ISO_8859_9_C5,             UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_9 = {
+rb_to_ISO_8859_9 = {
     to_ISO_8859_9_offsets,
     to_ISO_8859_9_infos
 };
@@ -1781,7 +1781,7 @@ from_ISO_8859_10_infos[129] = {
           o2(0xC4,0xB8),
 };
 const BYTE_LOOKUP
-from_ISO_8859_10 = {
+rb_from_ISO_8859_10 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_10_infos
 };
@@ -1933,7 +1933,7 @@ to_ISO_8859_10_infos[7] = {
                   UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_10 = {
+rb_to_ISO_8859_10 = {
     to_ISO_8859_10_offsets,
     to_ISO_8859_10_infos
 };
@@ -2022,7 +2022,7 @@ from_ISO_8859_11_infos[122] = {
      o3(0xE0,0xB9,0x9B),              UNDEF,
 };
 const BYTE_LOOKUP
-from_ISO_8859_11 = {
+rb_from_ISO_8859_11 = {
     from_ISO_8859_11_offsets,
     from_ISO_8859_11_infos
 };
@@ -2150,7 +2150,7 @@ to_ISO_8859_11_infos[4] = {
      &to_ISO_8859_11_E0,              UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_11 = {
+rb_to_ISO_8859_11 = {
     to_ISO_8859_11_offsets,
     to_ISO_8859_11_infos
 };
@@ -2224,7 +2224,7 @@ from_ISO_8859_13_infos[129] = {
      o3(0xE2,0x80,0x99),
 };
 const BYTE_LOOKUP
-from_ISO_8859_13 = {
+rb_from_ISO_8859_13 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_13_infos
 };
@@ -2363,7 +2363,7 @@ to_ISO_8859_13_infos[7] = {
                   UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_13 = {
+rb_to_ISO_8859_13 = {
     to_ISO_8859_10_offsets,
     to_ISO_8859_13_infos
 };
@@ -2437,7 +2437,7 @@ from_ISO_8859_14_infos[129] = {
           o2(0xC3,0xBF),
 };
 const BYTE_LOOKUP
-from_ISO_8859_14 = {
+rb_from_ISO_8859_14 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_14_infos
 };
@@ -2653,7 +2653,7 @@ to_ISO_8859_14_infos[7] = {
                   UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_14 = {
+rb_to_ISO_8859_14 = {
     to_ISO_8859_14_offsets,
     to_ISO_8859_14_infos
 };
@@ -2727,7 +2727,7 @@ from_ISO_8859_15_infos[129] = {
           o2(0xC3,0xBF),
 };
 const BYTE_LOOKUP
-from_ISO_8859_15 = {
+rb_from_ISO_8859_15 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_15_infos
 };
@@ -2841,7 +2841,7 @@ to_ISO_8859_15_infos[6] = {
      &to_ISO_8859_15_E2,              UNDEF,
 };
 const BYTE_LOOKUP
-to_ISO_8859_15 = {
+rb_to_ISO_8859_15 = {
     to_ISO_8859_15_offsets,
     to_ISO_8859_15_infos
 };

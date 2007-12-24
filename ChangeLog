@@ -1,3 +1,8 @@
+Mon Dec 24 09:45:45 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c, transcode_data_one_byte.c, transcode_data_japanese.c:
+	  added rb_ prefix to external data symbols.
+
 Mon Dec 24 06:36:00 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Dec 24 05:32:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>

@@ -24,41 +24,41 @@ VALUE rb_str_shared_replace(VALUE, VALUE);
  */
 
 /* extern declarations, should use some include file here */
-extern const BYTE_LOOKUP from_ISO_8859_1;
-extern const BYTE_LOOKUP from_ISO_8859_2;
-extern const BYTE_LOOKUP from_ISO_8859_3;
-extern const BYTE_LOOKUP from_ISO_8859_4;
-extern const BYTE_LOOKUP from_ISO_8859_5;
-extern const BYTE_LOOKUP from_ISO_8859_6;
-extern const BYTE_LOOKUP from_ISO_8859_7;
-extern const BYTE_LOOKUP from_ISO_8859_8;
-extern const BYTE_LOOKUP from_ISO_8859_9;
-extern const BYTE_LOOKUP from_ISO_8859_10;
-extern const BYTE_LOOKUP from_ISO_8859_11;
-extern const BYTE_LOOKUP from_ISO_8859_13;
-extern const BYTE_LOOKUP from_ISO_8859_14;
-extern const BYTE_LOOKUP from_ISO_8859_15;
+extern const BYTE_LOOKUP rb_from_ISO_8859_1;
+extern const BYTE_LOOKUP rb_from_ISO_8859_2;
+extern const BYTE_LOOKUP rb_from_ISO_8859_3;
+extern const BYTE_LOOKUP rb_from_ISO_8859_4;
+extern const BYTE_LOOKUP rb_from_ISO_8859_5;
+extern const BYTE_LOOKUP rb_from_ISO_8859_6;
+extern const BYTE_LOOKUP rb_from_ISO_8859_7;
+extern const BYTE_LOOKUP rb_from_ISO_8859_8;
+extern const BYTE_LOOKUP rb_from_ISO_8859_9;
+extern const BYTE_LOOKUP rb_from_ISO_8859_10;
+extern const BYTE_LOOKUP rb_from_ISO_8859_11;
+extern const BYTE_LOOKUP rb_from_ISO_8859_13;
+extern const BYTE_LOOKUP rb_from_ISO_8859_14;
+extern const BYTE_LOOKUP rb_from_ISO_8859_15;
 
-extern const BYTE_LOOKUP to_ISO_8859_1;
-extern const BYTE_LOOKUP to_ISO_8859_2;
-extern const BYTE_LOOKUP to_ISO_8859_3;
-extern const BYTE_LOOKUP to_ISO_8859_4;
-extern const BYTE_LOOKUP to_ISO_8859_5;
-extern const BYTE_LOOKUP to_ISO_8859_6;
-extern const BYTE_LOOKUP to_ISO_8859_7;
-extern const BYTE_LOOKUP to_ISO_8859_8;
-extern const BYTE_LOOKUP to_ISO_8859_9;
-extern const BYTE_LOOKUP to_ISO_8859_10;
-extern const BYTE_LOOKUP to_ISO_8859_11;
-extern const BYTE_LOOKUP to_ISO_8859_13;
-extern const BYTE_LOOKUP to_ISO_8859_14;
-extern const BYTE_LOOKUP to_ISO_8859_15;
+extern const BYTE_LOOKUP rb_to_ISO_8859_1;
+extern const BYTE_LOOKUP rb_to_ISO_8859_2;
+extern const BYTE_LOOKUP rb_to_ISO_8859_3;
+extern const BYTE_LOOKUP rb_to_ISO_8859_4;
+extern const BYTE_LOOKUP rb_to_ISO_8859_5;
+extern const BYTE_LOOKUP rb_to_ISO_8859_6;
+extern const BYTE_LOOKUP rb_to_ISO_8859_7;
+extern const BYTE_LOOKUP rb_to_ISO_8859_8;
+extern const BYTE_LOOKUP rb_to_ISO_8859_9;
+extern const BYTE_LOOKUP rb_to_ISO_8859_10;
+extern const BYTE_LOOKUP rb_to_ISO_8859_11;
+extern const BYTE_LOOKUP rb_to_ISO_8859_13;
+extern const BYTE_LOOKUP rb_to_ISO_8859_14;
+extern const BYTE_LOOKUP rb_to_ISO_8859_15;
 
-extern const BYTE_LOOKUP from_SHIFT_JIS;
-extern const BYTE_LOOKUP from_EUC_JP;
+extern const BYTE_LOOKUP rb_from_SHIFT_JIS;
+extern const BYTE_LOOKUP rb_from_EUC_JP;
 
-extern const BYTE_LOOKUP to_SHIFT_JIS;
-extern const BYTE_LOOKUP to_EUC_JP;
+extern const BYTE_LOOKUP rb_to_SHIFT_JIS;
+extern const BYTE_LOOKUP rb_to_EUC_JP;
 
 
 /* declarations probably need to go into separate header file, e.g. transcode.h */
@@ -102,39 +102,39 @@ register_transcoder(const char *from_e, const char *to_e,
 static void
 init_transcoder_table(void)
 {
-    register_transcoder("ISO-8859-1",  "UTF-8", &from_ISO_8859_1, 2, 0);
-    register_transcoder("ISO-8859-2",  "UTF-8", &from_ISO_8859_2, 2, 0);
-    register_transcoder("ISO-8859-3",  "UTF-8", &from_ISO_8859_3, 2, 0);
-    register_transcoder("ISO-8859-4",  "UTF-8", &from_ISO_8859_4, 2, 0);
-    register_transcoder("ISO-8859-5",  "UTF-8", &from_ISO_8859_5, 3, 0);
-    register_transcoder("ISO-8859-6",  "UTF-8", &from_ISO_8859_6, 2, 0);
-    register_transcoder("ISO-8859-7",  "UTF-8", &from_ISO_8859_7, 3, 0);
-    register_transcoder("ISO-8859-8",  "UTF-8", &from_ISO_8859_8, 3, 0);
-    register_transcoder("ISO-8859-9",  "UTF-8", &from_ISO_8859_9, 2, 0);
-    register_transcoder("ISO-8859-10", "UTF-8", &from_ISO_8859_10, 3, 0);
-    register_transcoder("ISO-8859-11", "UTF-8", &from_ISO_8859_11, 3, 0);
-    register_transcoder("ISO-8859-13", "UTF-8", &from_ISO_8859_13, 3, 0);
-    register_transcoder("ISO-8859-14", "UTF-8", &from_ISO_8859_14, 3, 0);
-    register_transcoder("ISO-8859-15", "UTF-8", &from_ISO_8859_15, 3, 0);
-    register_transcoder("UTF-8", "ISO-8859-1",  &to_ISO_8859_1, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-2",  &to_ISO_8859_2, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-3",  &to_ISO_8859_3, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-4",  &to_ISO_8859_4, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-5",  &to_ISO_8859_5, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-6",  &to_ISO_8859_6, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-7",  &to_ISO_8859_7, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-8",  &to_ISO_8859_8, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-9",  &to_ISO_8859_9, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-10", &to_ISO_8859_10, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-11", &to_ISO_8859_11, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-13", &to_ISO_8859_13, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-14", &to_ISO_8859_14, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-15", &to_ISO_8859_15, 1, 1);
+    register_transcoder("ISO-8859-1",  "UTF-8", &rb_from_ISO_8859_1, 2, 0);
+    register_transcoder("ISO-8859-2",  "UTF-8", &rb_from_ISO_8859_2, 2, 0);
+    register_transcoder("ISO-8859-3",  "UTF-8", &rb_from_ISO_8859_3, 2, 0);
+    register_transcoder("ISO-8859-4",  "UTF-8", &rb_from_ISO_8859_4, 2, 0);
+    register_transcoder("ISO-8859-5",  "UTF-8", &rb_from_ISO_8859_5, 3, 0);
+    register_transcoder("ISO-8859-6",  "UTF-8", &rb_from_ISO_8859_6, 2, 0);
+    register_transcoder("ISO-8859-7",  "UTF-8", &rb_from_ISO_8859_7, 3, 0);
+    register_transcoder("ISO-8859-8",  "UTF-8", &rb_from_ISO_8859_8, 3, 0);
+    register_transcoder("ISO-8859-9",  "UTF-8", &rb_from_ISO_8859_9, 2, 0);
+    register_transcoder("ISO-8859-10", "UTF-8", &rb_from_ISO_8859_10, 3, 0);
+    register_transcoder("ISO-8859-11", "UTF-8", &rb_from_ISO_8859_11, 3, 0);
+    register_transcoder("ISO-8859-13", "UTF-8", &rb_from_ISO_8859_13, 3, 0);
+    register_transcoder("ISO-8859-14", "UTF-8", &rb_from_ISO_8859_14, 3, 0);
+    register_transcoder("ISO-8859-15", "UTF-8", &rb_from_ISO_8859_15, 3, 0);
+    register_transcoder("UTF-8", "ISO-8859-1",  &rb_to_ISO_8859_1, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-2",  &rb_to_ISO_8859_2, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-3",  &rb_to_ISO_8859_3, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-4",  &rb_to_ISO_8859_4, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-5",  &rb_to_ISO_8859_5, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-6",  &rb_to_ISO_8859_6, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-7",  &rb_to_ISO_8859_7, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-8",  &rb_to_ISO_8859_8, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-9",  &rb_to_ISO_8859_9, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-10", &rb_to_ISO_8859_10, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-11", &rb_to_ISO_8859_11, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-13", &rb_to_ISO_8859_13, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-14", &rb_to_ISO_8859_14, 1, 1);
+    register_transcoder("UTF-8", "ISO-8859-15", &rb_to_ISO_8859_15, 1, 1);
 
-    register_transcoder("SHIFT_JIS", "UTF-8",   &from_SHIFT_JIS, 3, 0);
-    register_transcoder("EUC-JP", "UTF-8",      &from_EUC_JP, 3, 0);
-    register_transcoder("UTF-8", "SHIFT_JIS",   &to_SHIFT_JIS, 2, 1);
-    register_transcoder("UTF-8", "EUC-JP",      &to_EUC_JP, 2, 1);
+    register_transcoder("SHIFT_JIS", "UTF-8",   &rb_from_SHIFT_JIS, 3, 0);
+    register_transcoder("EUC-JP", "UTF-8",      &rb_from_EUC_JP, 3, 0);
+    register_transcoder("UTF-8", "SHIFT_JIS",   &rb_to_SHIFT_JIS, 2, 1);
+    register_transcoder("UTF-8", "EUC-JP",      &rb_to_EUC_JP, 2, 1);
 
     register_transcoder(NULL, NULL, NULL, 0, 0);
 }

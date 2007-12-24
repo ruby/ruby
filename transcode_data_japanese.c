@@ -4419,7 +4419,7 @@ from_SHIFT_JIS_infos[108] = {
      &from_SHIFT_JIS_FC,              UNDEF,
 };
 const BYTE_LOOKUP
-from_SHIFT_JIS = {
+rb_from_SHIFT_JIS = {
     from_SHIFT_JIS_offsets,
     from_SHIFT_JIS_infos
 };
@@ -13344,7 +13344,7 @@ to_SHIFT_JIS_infos[17] = {
                 UNDEF,
 };
 const BYTE_LOOKUP
-to_SHIFT_JIS = {
+rb_to_SHIFT_JIS = {
     to_SHIFT_JIS_offsets,
     to_SHIFT_JIS_infos
 };
@@ -18113,7 +18113,7 @@ from_EUC_JP_infos[85] = {
                UNDEF,
 };
 const BYTE_LOOKUP
-from_EUC_JP = {
+rb_from_EUC_JP = {
     from_EUC_JP_offsets,
     from_EUC_JP_infos
 };
@@ -23613,7 +23613,7 @@ to_EUC_JP_infos[17] = {
              UNDEF,
 };
 const BYTE_LOOKUP
-to_EUC_JP = {
+rb_to_EUC_JP = {
     to_SHIFT_JIS_offsets,
     to_EUC_JP_infos
 };
