@@ -1,7 +1,8 @@
 Tue Dec 25 01:07:57 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/irb/output-method.rb: translate a comment to English to
-	  avoid mix of EUC-JP comment and UTF-8 $Date$.
+	  avoid mix of EUC-JP comment and UTF-8 Date keyword.
+	  svn substitute Date keyword with UTF-8 weekday on UTF-8 locale.
 
 Tue Dec 25 00:27:28 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
