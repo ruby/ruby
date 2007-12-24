@@ -662,3 +662,22 @@ assert_equal '1', %q{
   foo
 }
 
+assert_equal 'ok', %q{
+  counter = 2
+  while true
+    counter -= 1
+    next if counter != 0
+    break
+  end
+  :ok
+}, '[ruby-core:14385]'
+
+assert_equal 'ok', %q{
+  counter = 2
+  while true
+    counter -= 1
+    next if counter != 0
+    break :ok
+  end # direct
+}, '[ruby-core:14385]'
+

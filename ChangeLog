@@ -1,3 +1,12 @@
+Tue Dec 25 02:15:39 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): add a "pop" insn after break
+	  to fix stack consistency error.  [ruby-core:14385]
+
+	* bootstraptest/test_syntax.rb: add tests for above.
+
+	* bootstraptest/test_knownbug.rb: remove fixed bug.
+
 Tue Dec 25 01:54:36 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* id.c (Init_id): remove several unused symbols. [ruby-core:14362]
