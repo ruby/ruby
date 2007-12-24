@@ -639,3 +639,11 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
     rb_alias(mod, rb_to_id(newname), rb_to_id(oldname));
     return mod;
 }
+
+static void
+Init_eval_method(void)
+{
+    rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
+    rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
+    rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
+}

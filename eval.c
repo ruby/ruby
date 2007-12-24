@@ -2753,9 +2753,7 @@ Init_eval(void)
 
     rb_undef_method(rb_cClass, "module_function");
 
-    rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
-    rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
-    rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
+    Init_eval_method();
 
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);

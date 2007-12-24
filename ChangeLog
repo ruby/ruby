@@ -1,3 +1,11 @@
+Mon Dec 24 18:06:03 2007  Tanaka Akira  <akr@fsij.org>
+
+	* eval_method.c (Init_eval_method): extracted from Init_eval
+	  for rdoc to find rb_mod_remove_method, rb_mod_undef_method and
+	  rb_mod_alias_method.
+
+	* eval.c (Init_eval): call Init_eval_method.
+
 Mon Dec 24 17:59:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (load_lock): reverted.
