@@ -1,3 +1,18 @@
+Mon Dec 24 11:56:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: should not pass MAKEFLAGS to recursive make.
+	  + normal make: MFLAGS are set and command line options and macros
+	    are all passed silently.
+	  + GNU make: ditto, and all options and macros in MAKEFLAGS are in
+	    effect.
+	  + nmake: MFLAGS is not set and MAKEFLAGS has only options without
+	    hyphen, no macros exist in any variables.
+	  + Borland make: ditto, and command line macros cannot override
+	    macros in makefile, so passing them is vain.
+
+	* {bcc32,win{32,ce}}/Makefile.sub (SET_MAKE): set MFLAGS which is not
+	  set by default, to get rid of chaotic situation of MFLAGS/MAKEFLAGS.
+
 Mon Dec 24 11:32:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_comparable): fixed to keep transitivity.
@@ -6,19 +21,19 @@ Mon Dec 24 11:32:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Dec 24 11:20:31 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/ri_options.rb:  Fix display of GEMDIRS, make command
-	examples match ri's name.
+	  examples match ri's name.
 
 	* lib/rdoc/ri/ri_paths.rb:  Only allow latest ri dirs in ri output.
 
 Mon Dec 24 10:49:04 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/uri/mailto.rb, lib/uri/common.rb:  Fix Regexp warnings.  Patch
-	#16524 from Kornelius Kalnbach, [ruby-core:14302].
+	  #16524 from Kornelius Kalnbach, [ruby-core:14302].
 
 Mon Dec 24 10:37:38 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* gem_prelude.rb:  Remove methods from Gem, not QuickLoader, to fix
-	warnings.
+	  warnings.
 
 Mon Dec 24 09:45:45 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
