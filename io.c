@@ -4800,7 +4800,8 @@ rb_io_s_for_fd(int argc, VALUE *argv, VALUE klass)
     return io;
 }
 
-static int binmode = 0;
+static int argf_binmode = 0;
+static rb_encoding *argf_enc, *argf_enc2;
 
 static VALUE
 argf_forward(int argc, VALUE *argv)
@@ -4926,7 +4927,14 @@ next_argv(void)
 		}
 		current_file = prep_io(fr, FMODE_READABLE, rb_cFile, fn);
 	    }
-	    if (binmode) rb_io_binmode(current_file);
+	    if (argf_binmode) rb_io_binmode(current_file);
+	    if (argf_enc) {
+		rb_io_t *fptr;
+
+		GetOpenFile(current_file, fptr);
+		fptr->enc = argf_enc;
+		fptr->enc2 = argf_enc2;
+	    }
 	}
 	else {
 	    next_p = 1;
@@ -5597,19 +5605,41 @@ io_new_instance(VALUE args)
     return rb_class_new_instance(2, (VALUE*)args+1, *(VALUE*)args);
 }
 
+io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
+{
+    if (argc == 2) {
+	fptr->enc2 = rb_to_encoding(v1);
+	fptr->enc = rb_to_encoding(v2);
+    }
+    else if (argc == 1) {
+	VALUE tmp = rb_check_string_type(v1);
+	if (!NIL_P(tmp)) {
+	    mode_enc(fptr, StringValueCStr(tmp));
+	}
+	else {
+	    fptr->enc = rb_to_encoding(v1);
+	}
+    }
+}
+
 /*
  *  call-seq:
- *     IO.pipe([encoding]) -> array
+ *     IO.pipe                       -> array
+ *     IO.pipe(encoding)             -> array
+ *     IO.pipe(encoding1, encoding2) -> array
  *
  *  Creates a pair of pipe endpoints (connected to each other) and
  *  returns them as a two-element array of <code>IO</code> objects:
  *  <code>[</code> <i>read_file</i>, <i>write_file</i> <code>]</code>. Not
  *  available on all platforms.
  *
- *  If optional argument is specified, read string from pipe is tagged
+ *  If an optional argument is specified, read string from pipe is tagged
  *  with the encoding specified.  If encoding is a comma separated two
  *  encoding names "A:B", the read string is converted from encoding A
- *  to encoding B, then tagged with B.
+ *  (external encoding) to encoding B (internal encoding), then tagged
+ *  with B.  If two optional arguments are specified, those must be
+ *  encoding objects, and the first one is the external encoding, and the
+ *  second one is the internal encoding.
  *
  *  In the example below, the two processes close the ends of the pipe
  *  that they are not using. This is not just a cosmetic nicety. The
@@ -5646,9 +5676,10 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     return Qnil;		/* not reached */
 #else
     int pipes[2], state;
-    VALUE r, w, args[3], estr, tmp;
+    VALUE r, w, args[3], v1, v2;
+    rb_io_t *fptr;
 
-    rb_scan_args(argc, argv, "01", &estr);
+    rb_scan_args(argc, argv, "02", &v1, &v2);
     if (pipe(pipes) == -1)
 	rb_sys_fail(0);
 
@@ -5661,18 +5692,8 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 	close(pipes[1]);
 	rb_jump_tag(state);
     }
-    if (argc == 1) {
-	rb_io_t *fptr;
-
-	GetOpenFile(r, fptr);
-	tmp = rb_check_string_type(estr);
-	if (!NIL_P(tmp)) {
-	    mode_enc(fptr, StringValueCStr(tmp));
-	}
-	else {
-	    fptr->enc = rb_to_encoding(estr);
-	}
-    }
+    GetOpenFile(r, fptr);
+    io_encoding_set(fptr, argc, v1, v2);
     args[1] = INT2NUM(pipes[1]);
     args[2] = INT2FIX(O_WRONLY);
     w = rb_protect(io_new_instance, (VALUE)args, &state);
@@ -5930,6 +5951,32 @@ rb_io_internal_encoding(VALUE io)
     return rb_enc_from_encoding(io_read_encoding(fptr));
 }
 
+/*
+ *  call-seq:
+ *     io.set_encoding(enc)        => io
+ *     io.set_encoding(enc1, enc2) => io
+ *
+ *  If single argument is specified, read string from pipe is tagged
+ *  with the encoding specified.  If encoding is a comma separated two
+ *  encoding names "A:B", the read string is converted from encoding A
+ *  (external encoding) to encoding B (internal encoding), then tagged
+ *  with B.  If two arguments are specified, those must be encoding
+ *  objects, and the first one is the external encoding, and the
+ *  second one is the internal encoding.
+ */
+
+static VALUE
+rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
+{
+    rb_io_t *fptr;
+    VALUE v1, v2;
+
+    rb_scan_args(argc, argv, "11", &v1, &v2);
+    GetOpenFile(io, fptr);
+    io_encoding_set(fptr, argc, v1, v2);
+    return io;
+}
+
 static VALUE
 argf_external_encoding(void)
 {
@@ -5940,6 +5987,18 @@ static VALUE
 argf_internal_encoding(void)
 {
     return rb_io_internal_encoding(current_file);
+}
+
+static VALUE
+argf_set_encoding(int argc, VALUE *argv, VALUE io)
+{
+    rb_io_t *fptr;
+
+    rb_io_set_encoding(argc, argv, current_file);
+    GetOpenFile(io, fptr);
+    argf_enc = fptr->enc;
+    argf_enc2 = fptr->enc2;
+    return io;
 }
 
 static VALUE
@@ -6228,9 +6287,9 @@ argf_file(void)
 }
 
 static VALUE
-argf_binmode(void)
+argf_binmode_m(void)
 {
-    binmode = 1;
+    argf_binmode = 1;
     next_argv();
     ARGF_FORWARD(0, 0);
     rb_io_binmode(current_file);
@@ -6520,6 +6579,7 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "external_encoding", rb_io_external_encoding, 0);
     rb_define_method(rb_cIO, "internal_encoding", rb_io_internal_encoding, 0);
+    rb_define_method(rb_cIO, "set_encoding", rb_io_set_encoding, -1);
 
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
@@ -6567,7 +6627,7 @@ Init_IO(void)
     rb_define_singleton_method(argf, "pos=", argf_set_pos, 1);
     rb_define_singleton_method(argf, "eof", argf_eof, 0);
     rb_define_singleton_method(argf, "eof?", argf_eof, 0);
-    rb_define_singleton_method(argf, "binmode", argf_binmode, 0);
+    rb_define_singleton_method(argf, "binmode", argf_binmode_m, 0);
 
     rb_define_singleton_method(argf, "filename", argf_filename, 0);
     rb_define_singleton_method(argf, "path", argf_filename, 0);
@@ -6581,6 +6641,7 @@ Init_IO(void)
 
     rb_define_singleton_method(argf, "external_encoding", argf_external_encoding, 0);
     rb_define_singleton_method(argf, "internal_encoding", argf_internal_encoding, 0);
+    rb_define_singleton_method(argf, "set_encoding", argf_set_encoding, -1);
 
     rb_global_variable(&current_file);
     rb_define_readonly_variable("$FILENAME", &filename);

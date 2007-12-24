@@ -1,3 +1,12 @@
+Tue Dec 25 03:16:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_pipe): now takes up to two arguments.  allow its
+	  external/internal encoding by Encoding objects.
+
+	* io.c (rb_io_set_encoding): new method to set encoding of the IO.
+
+	* io.c (argf_set_encoding): ditto.
+
 Tue Dec 25 03:08:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* pack.c (pack_pack): use NUM2LONG instead of NUM2INT.
