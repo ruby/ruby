@@ -1858,4 +1858,19 @@ class TestM17N < Test::Unit::TestCase
   def test_regexp_match
     assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
   end
+
+  def test_nonascii_method_name
+     eval(e("def \xc2\xa1() @nonascii_method_name = :e end"))
+     eval(u("def \xc2\xa1() @nonascii_method_name = :u end"))
+     eval(e("\xc2\xa1()"))
+     assert_equal(:e, @nonascii_method_name)
+     eval(u("\xc2\xa1()"))
+     assert_equal(:u, @nonascii_method_name)
+     me = method(e("\xc2\xa1"))
+     mu = method(u("\xc2\xa1"))
+     assert_not_equal(me.name, mu.name)
+     assert_not_equal(me.inspect, mu.inspect)
+     assert_equal(e("\xc2\xa1"), me.name)
+     assert_equal(u("\xc2\xa1"), mu.name)
+  end
 end
