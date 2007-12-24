@@ -122,7 +122,7 @@ EOT
     assert_equal 1...10, JSON(JSON(1...10))
     assert_equal "a".."c", JSON(JSON("a".."c"))
     assert_equal "a"..."c", JSON(JSON("a"..."c"))
-    struct = Struct.new 'MyStruct', :foo, :bar
+    struct = Struct.new 'MyJsonStruct', :foo, :bar
     s = struct.new 4711, 'foot'
     assert_equal s, JSON(JSON(s))
     struct = Struct.new :foo, :bar
