@@ -1,3 +1,8 @@
+Mon Dec 24 20:23:44 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/rinda/test_rinda.rb: revert last commit because this test seems
+	  to have timing problem to halt all tests.
+
 Mon Dec 24 20:18:52 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/rinda/test_rinda.rb: enable rinda test.

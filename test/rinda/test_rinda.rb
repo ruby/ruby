@@ -493,6 +493,15 @@ module TupleSpaceTestModule
 end
 
 class TupleSpaceTest < Test::Unit::TestCase
+  def test_message
+    flunk("YARV doesn't support Rinda")
+  end
+end
+
+end
+__END__
+
+class TupleSpaceTest < Test::Unit::TestCase
   include TupleSpaceTestModule
 
   def setup
