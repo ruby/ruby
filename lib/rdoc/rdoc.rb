@@ -15,7 +15,7 @@ require 'rdoc/options'
 require 'rdoc/diagram'
 
 require 'find'
-require 'ftools'
+require 'fileutils'
 require 'time'
 
 # We put rdoc stuff in the RDoc module to avoid namespace
@@ -125,7 +125,7 @@ module RDoc
           last = (Time.parse(created) unless force rescue nil)
         end
       else
-        File.makedirs(op_dir)
+        FileUtils.mkdir_p(op_dir)
       end
       last
     end

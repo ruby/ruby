@@ -34,8 +34,6 @@
 # HTML is generated using the Template class.
 #
 
-require 'ftools'
-
 require 'rdoc/options'
 require 'rdoc/template'
 require 'rdoc/markup/simple_markup'

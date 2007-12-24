@@ -16,14 +16,11 @@ fileutils.rb	file utilities
 finalize.rb	adds finalizer to the object
 find.rb		traverses directory tree
 forwardable.rb	explicit delegation library
-ftools.rb	file tools
 getoptlong.rb	GNU getoptlong compatible
-getopts.rb	parses command line options (use getoptlong)
 gserver.rb	general TCP server
 ipaddr.rb	defines the IPAddr class
 irb.rb		interactive ruby
 logger.rb	simple logging utility
-mailread.rb	reads mail headers
 mathn.rb	extended math operation
 matrix.rb	matrix calculation library
 mkmf.rb		Makefile maker
@@ -41,7 +38,6 @@ open-uri.rb	easy-to-use network interface using URI and Net
 open3.rb	opens subprocess connection stdin/stdout/stderr
 optparse.rb	command line option analysis
 ostruct.rb	python style object
-parsearg.rb	argument parser using getopts
 parsedate.rb	parses date string (obsolete)
 pathname.rb	Object-Oriented Pathname Class
 pp.rb		pretty print objects
@@ -55,13 +51,11 @@ rdoc            source-code documentation tool
 resolv-replace.rb	replace Socket DNS by resolve.rb
 resolv.rb	DNS resolver in Ruby
 rexml		an XML parser for Ruby, in Ruby
-rubyunit.rb	original Ruby Unit testing framework
 scanf.rb	scanf for Ruby
 set.rb		defines the Set class
 shell.rb	runs commands and does pipeline operations like shell
 shellwords.rb	split into words like shell
 singleton.rb	singleton design pattern library
-soap		SOAP 1.1 implementation
 sync.rb		2 phase lock
 tempfile.rb	temporary file with automatic removal
 test/unit	Ruby Unit Testing Framework
@@ -81,7 +75,5 @@ uri/ldap.rb	ldap scheme support
 uri/mailto.rb	mailto scheme support
 weakref.rb	weak reference class
 webrick.rb	WEB server toolkit
-wsdl		WSDL 1.1 implementation
 xmlrpc		XML-RPC implementation
-xsd		XML Schema Datatypes implementation
 yaml.rb		YAML implementation

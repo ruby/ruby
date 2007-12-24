@@ -1,3 +1,16 @@
+Mon Dec 24 23:04:57 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/ftools.rb: removed obsoleted lib.  use fileutils instead (by eban).
+
+	* lib/rdoc/rdoc.rb, lib/rdoc/generators/*, lib/rake.rb: let it use
+	  fileutils instead of ftools.
+
+	* lib/shell/command-processor.rb: removed unused references to ftools.
+
+	* lib/parsedate.rb: removed.  see [ruby-core:12535], [ruby-dev:31969].
+
+	* lib/README: updated.
+
 Mon Dec 24 23:01:04 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (OpenURI::Buffer): use Meta ===.  [ruby-core:14295]

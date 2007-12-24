@@ -34,7 +34,7 @@
 # HTML is generated using the Template class.
 #
 
-require 'ftools'
+require 'fileutils'
 
 require 'rdoc/options'
 require 'rdoc/template'
@@ -1025,7 +1025,7 @@ module Generators
     
     def create_source_code_file(code_body)
       meth_path = @html_class.path.sub(/\.html$/, '.src')
-      File.makedirs(meth_path)
+      FileUtils.mkdir_p(meth_path)
       file_path = File.join(meth_path, @seq) + ".html"
 
       template = TemplatePage.new(RDoc::Page::SRC_PAGE)
@@ -1235,7 +1235,8 @@ module Generators
     # directory structure
 
     def gen_sub_directories
-      File.makedirs(FILE_DIR, CLASS_DIR)
+      FileUtils.mkdir_p(FILE_DIR)
+      FileUtils.mkdir_p(CLASS_DIR)
     rescue 
       $stderr.puts $!.message
       exit 1
@@ -1289,7 +1290,7 @@ module Generators
       list.each do |item|
         if item.document_self
           op_file = item.path
-          File.makedirs(File.dirname(op_file))
+          FileUtils.mkdir_p(File.dirname(op_file))
           File.open(op_file, "w") { |file| item.write_on(file) }
         end
       end

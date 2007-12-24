@@ -11,7 +11,6 @@
 #
 
 require "e2mmap"
-require "ftools"
 require "thread"
 
 require "shell/error"
@@ -589,24 +588,6 @@ class Shell
       def_builtin_commands(FileTest, 
 		   FileTest.singleton_methods(false).collect{|m| [m, ["FILENAME"]]})
 
-#       # method related ftools
-#       normal_delegation_ftools_methods = [
-# 	["syscopy", ["FILENAME_FROM", "FILENAME_TO"]],
-# 	["copy", ["FILENAME_FROM", "FILENAME_TO"]],
-# 	["move", ["FILENAME_FROM", "FILENAME_TO"]],
-# 	["compare", ["FILENAME_FROM", "FILENAME_TO"]],
-# 	["safe_unlink", ["*FILENAMES"]],
-# 	["makedirs", ["*FILENAMES"]],
-# 	#    ["chmod", ["mode", "*FILENAMES"]],
-# 	["install", ["FILENAME_FROM", "FILENAME_TO", "mode"]],
-#       ]
-#       def_builtin_commands(File,
-# 		   normal_delegation_ftools_methods)
-#       alias_method :cmp, :compare
-#       alias_method :mv, :move
-#       alias_method :cp, :copy
-#       alias_method :rm_f, :safe_unlink
-#       alias_method :mkpath, :makedirs
     end
 
   end
