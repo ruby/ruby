@@ -1,3 +1,10 @@
+Mon Dec 24 16:53:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_feature_p): returns loading path name too.
+
+	* load.c (search_required): returns path too if feature is being
+	  loaded.  [ruby-dev:32048]  [TODO: refactoring]
+
 Mon Dec 24 16:29:12 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* sample/openssl: reviewed and remove dependency on getopts.rb.
