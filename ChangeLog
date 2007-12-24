@@ -1,3 +1,13 @@
+Mon Dec 24 18:23:32 2007  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_exc_raise): ANSI style.
+	  (rb_exc_fatal): ditto.
+	  (rb_raise_jump): ditto.
+	  (rb_jump_tag): ditto.
+	  (rb_block_given_p): ditto.
+
+	* variable.c (original_module): ditto.
+
 Mon Dec 24 18:05:09 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (Init_ISeq): disable ISeq.load() because there is no verifier.

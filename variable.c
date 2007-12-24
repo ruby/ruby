@@ -1710,8 +1710,7 @@ rb_define_global_const(const char *name, VALUE val)
 }
 
 static VALUE
-original_module(c)
-    VALUE c;
+original_module(VALUE c)
 {
     if (TYPE(c) == T_ICLASS)
 	return RBASIC(c)->klass;

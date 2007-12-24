@@ -721,15 +721,13 @@ rb_longjmp(int tag, VALUE mesg)
 }
 
 void
-rb_exc_raise(mesg)
-    VALUE mesg;
+rb_exc_raise(VALUE mesg)
 {
     rb_longjmp(TAG_RAISE, mesg);
 }
 
 void
-rb_exc_fatal(mesg)
-    VALUE mesg;
+rb_exc_fatal(VALUE mesg)
 {
     rb_longjmp(TAG_FATAL, mesg);
 }
@@ -829,22 +827,20 @@ rb_make_exception(int argc, VALUE *argv)
 }
 
 void
-rb_raise_jump(mesg)
-    VALUE mesg;
+rb_raise_jump(VALUE mesg)
 {
     /* TODO: fix me */
     rb_longjmp(TAG_RAISE, mesg);
 }
 
 void
-rb_jump_tag(tag)
-    int tag;
+rb_jump_tag(int tag)
 {
     JUMP_TAG(tag);
 }
 
 int
-rb_block_given_p()
+rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
     if (GC_GUARDED_PTR_REF(th->cfp->lfp[0])) {
