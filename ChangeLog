@@ -1,3 +1,8 @@
+Mon Dec 24 13:43:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_atfork): should not leave living_threads
+	  referring freed table while allocating new table.
+
 Mon Dec 24 12:49:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in, lib/mkmf.rb, */Makefile.sub: specify

@@ -1974,11 +1974,10 @@ rb_thread_atfork(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_vm_t *vm = th->vm;
-    volatile VALUE thval = th->self;
+    VALUE thval = th->self;
     vm->main_thread = th;
 
-    st_free_table(vm->living_threads);
-    vm->living_threads = st_init_numtable();
+    st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
 }
 
