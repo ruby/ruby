@@ -1,3 +1,8 @@
+Tue Dec 25 02:55:26 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/rexml/element.rb (REXML::Elements#each): yield in each
+	  should be called with one parameter. [ruby-dev:32708]
+
 Tue Dec 25 02:15:39 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): add a "pop" insn after break
@@ -469,7 +474,7 @@ Sun Dec 23 01:56:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sun Dec 23 01:18:06 2007  David Flanagan  <david@davidflanagan.com>
 
 	* io.c, io.h: temporary patch to partially implement
-          transcode-on-read and transcode-on-write
+	  transcode-on-read and transcode-on-write
 
 Sun Dec 23 00:48:05 2007  Shugo Maeda  <shugo@ruby-lang.org>
 

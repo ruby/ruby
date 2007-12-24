@@ -1013,7 +1013,7 @@ module REXML
     #  doc.root.attributes.each {|name, value| p name+" => "+value }
     def each
       each_attribute do |attr|
-        yield attr.expanded_name, attr.value
+        yield [attr.expanded_name, attr.value]
       end
     end
 
