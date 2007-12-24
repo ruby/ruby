@@ -1664,10 +1664,15 @@ th_init2(rb_thread_t *th)
     th->stack = thread_recycle_stack(th->stack_size);
 
     th->cfp = (void *)(th->stack + th->stack_size);
-    th->cfp--;
 
+    vm_push_frame(th, 0, FRAME_MAGIC_TOP, Qnil, 0, 0,
+		  th->stack, 0, 0);
+    vm_push_frame(th, 0, FRAME_MAGIC_TOP, Qnil, 0, 0,
+		  th->cfp->sp, 0, 0);
+    
+#if 0
     th->cfp->pc = 0;
-    th->cfp->sp = th->stack + 1;
+    th->cfp->sp = th->stack;
     th->cfp->bp = 0;
     th->cfp->lfp = th->stack;
     *th->cfp->lfp = 0;
@@ -1677,6 +1682,7 @@ th_init2(rb_thread_t *th)
     th->cfp->iseq = 0;
     th->cfp->proc = 0;
     th->cfp->block_iseq = 0;
+#endif
 
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
@@ -1847,6 +1853,8 @@ Init_BareVM(void)
     rb_thread_t *th = ALLOC(rb_thread_t);
     MEMZERO(th, rb_thread_t, 1);
 
+    rb_thread_set_current_raw(th);
+
     vm_init2(vm);
     ruby_current_vm = vm;
 
@@ -1859,7 +1867,6 @@ Init_BareVM(void)
     th->machine_stack_maxsize /= 2;
     th->machine_register_stack_maxsize = th->machine_stack_maxsize;
 #endif
-    rb_thread_set_current_raw(th);
 }
 
 /* top self */

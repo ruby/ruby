@@ -1,3 +1,10 @@
+Tue Dec 25 05:24:12 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile): clear local table if node == 0.
+	  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>
+
+	* vm.c: clear VM stack.
+
 Tue Dec 25 04:23:32 2007  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (rb_id2str): fill klass of returned string as rb_cString.

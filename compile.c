@@ -145,6 +145,7 @@ iseq_compile(VALUE self, NODE *node)
 
     if (node == 0) {
 	COMPILE(ret, "nil", node);
+	iseq_set_local_table(iseq, 0);
     }
     else if (nd_type(node) == NODE_SCOPE) {
 	/* iseq type of top, method, class, block */
