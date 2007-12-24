@@ -1,3 +1,9 @@
+Mon Dec 24 15:42:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, cygwin/GNUmakefile.in, */Makefile.sub,
+	  djgpp/config.hin.: version dependent directory names now contain
+	  teeny.
+
 Mon Dec 24 15:29:13 2007  Tanaka Akira  <akr@fsij.org>
 
 	* tool/serb.rb: removed.

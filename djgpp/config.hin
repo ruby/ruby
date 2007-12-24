@@ -106,9 +106,9 @@
 #define NEED_IO_FLUSH_BETWEEN_RW 1
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
-#define RUBY_LIB "/lib/ruby/@MAJOR@.@MINOR@"
+#define RUBY_LIB "/lib/ruby/@MAJOR@.@MINOR@.@TEENY@"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/@MAJOR@.@MINOR@"
+#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/@MAJOR@.@MINOR@.@TEENY@"
 #define RUBY_PLATFORM "i386-msdosdjgpp"
-#define RUBY_ARCHLIB "/lib/ruby/@MAJOR@.@MINOR@/i386-msdosdjgpp"
-#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/@MAJOR@.@MINOR@/i386-msdosdjgpp"
+#define RUBY_ARCHLIB "/lib/ruby/@MAJOR@.@MINOR@.@TEENY@/i386-msdosdjgpp"
+#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/@MAJOR@.@MINOR@.@TEENY@/i386-msdosdjgpp"

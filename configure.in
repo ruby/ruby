@@ -1553,12 +1553,12 @@ case "$target_os" in
 	case "$target_os" in
 	cygwin*)
 	    if test x"$enable_shared" = xyes; then
-		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'${MAJOR}${MINOR}.dll
+		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'${MAJOR}${MINOR}${TEENY}.dll
 	    fi
 	    AC_LIBOBJ([strftime])
 	    ;;
 	mingw*)
-	    RUBY_SO_NAME=${rb_cv_msvcrt}-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
+	    RUBY_SO_NAME=${rb_cv_msvcrt}-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}${TEENY}
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
@@ -1660,7 +1660,7 @@ case "$target_os" in
     RUBY_LIB_PREFIX="${prefix}/lib/ruby"
     ;;
 esac
-RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
+RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}.${TEENY}"
 
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
@@ -1674,7 +1674,7 @@ case "$target_os" in
   *)
     RUBY_SITE_LIB_PATH="$SITE_DIR";;
 esac
-RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${MAJOR}.${MINOR}"
+RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${MAJOR}.${MINOR}.${TEENY}"
 
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
@@ -1692,7 +1692,7 @@ case "$target_os" in
   *)
     RUBY_VENDOR_LIB_PATH="$VENDOR_DIR";;
 esac
-RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${MAJOR}.${MINOR}"
+RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${MAJOR}.${MINOR}.${TEENY}"
 
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${RUBY_VENDOR_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB2, "${RUBY_VENDOR_LIB_PATH2}")
@@ -1740,7 +1740,7 @@ fi
 AC_ARG_WITH(rubyhdrdir,
 	    [  --with-ruby-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],
 	    [rubyhdrdir=$withval],
-	    [rubyhdrdir='${includedir}/ruby-${MAJOR}.${MINOR}'])
+	    [rubyhdrdir='${includedir}/ruby-${MAJOR}.${MINOR}.${TEENY}'])
 
 AC_ARG_WITH(sitehdrdir,
 	    [  --with-site-hdrdir=DIR  core headers in DIR [INCLUDEDIR]],
