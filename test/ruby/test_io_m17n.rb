@@ -66,6 +66,17 @@ EOT
     }
   end
 
+  def test_nonascii_terminator
+    with_tmpdir {
+      generate_file('tmp', "before \xA2\xA2 after")
+      open("tmp", "r:euc-jp") {|f|
+        assert_raise(ArgumentError) {
+          f.gets("\xA2\xA2".force_encoding("utf-8"))
+        }
+      }
+    }
+  end
+
   def test_pipe_terminator_conversion
     with_pipe("euc-jp:utf-8") {|r, w|
       w.write "before \xa2\xa2 after"
