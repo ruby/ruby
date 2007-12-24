@@ -1,3 +1,8 @@
+Mon Dec 24 12:08:10 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* /, ext/:  Add svn:ignore for OS X Xcode 3's conftest.dSYM
+	directories.
+
 Mon Dec 24 11:56:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk: should not pass MAKEFLAGS to recursive make.
