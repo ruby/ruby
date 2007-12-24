@@ -1,3 +1,10 @@
+Tue Dec 25 04:23:32 2007  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (rb_id2str): fill klass of returned string as rb_cString.
+	  some strings are allocated before rb_cString is created.
+	  This prevents a "called on terminated object" error by
+	  ObjectSpace.each_object(Module) {|m| p m.name }.
+
 Tue Dec 25 03:51:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix stack consistency bug.

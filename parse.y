@@ -9039,8 +9039,12 @@ rb_id2str(ID id)
 	}
     }
 
-    if (st_lookup(global_symbols.id_str, id, &data))
-	return (VALUE)data;
+    if (st_lookup(global_symbols.id_str, id, &data)) {
+        VALUE str = (VALUE)data;
+        if (RBASIC(str)->klass == 0)
+            RBASIC(str)->klass = rb_cString;
+	return str;
+    }
 
     if (is_attrset_id(id)) {
 	ID id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
@@ -9053,8 +9057,12 @@ rb_id2str(ID id)
 	str = rb_str_dup(str);
 	rb_str_cat(str, "=", 1);
 	rb_intern_str(str);
-	if (st_lookup(global_symbols.id_str, id, &data))
-	    return (VALUE)data;
+	if (st_lookup(global_symbols.id_str, id, &data)) {
+            VALUE str = (VALUE)data;
+            if (RBASIC(str)->klass == 0)
+                RBASIC(str)->klass = rb_cString;
+            return str;
+        }
     }
     return 0;
 }
