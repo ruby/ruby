@@ -52,9 +52,6 @@ extern char **environ;
 #endif
 char **rb_origenviron;
 
-jmp_buf function_call_may_return_twice_jmp_buf;
-int function_call_may_return_twice_false = 0;
-
 void rb_clear_trace_func(void);
 void rb_thread_stop_timer_thread(void);
 

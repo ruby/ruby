@@ -1,3 +1,9 @@
+Mon Dec 24 17:50:54 2007  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (function_call_may_return_twice_jmp_buf): removed.
+	  (function_call_may_return_twice_false): removed.
+	  [ruby-core:14335]
+
 Mon Dec 24 17:40:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (node_name.inc, miniprelude.c, prelude.c): nmake cannot
