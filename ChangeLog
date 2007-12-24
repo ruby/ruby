@@ -1,3 +1,11 @@
+Mon Dec 24 16:18:57 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/ri_options.rb:  Fix ri --help listing of gem ri paths.
+	Merge of r14567 and r14569 from trunk.
+
+	* lib/rdoc/ri/ri_paths.rb:  Fix duplication of ri data for multiple
+	gems.  Merge of r14567 from trunk
+
 Mon Dec 24 12:35:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win{32,ce}/Makefile.sub (MFLAGS): defaulted to -l.

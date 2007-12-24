@@ -44,8 +44,29 @@ module RI
 
     begin
       require 'rubygems'
-      GEMDIRS = Dir["#{Gem.path}/doc/*/ri"]
-      GEMDIRS.each { |path| RI::Paths::PATH << path }
+
+      # HACK dup'd from Gem.latest_partials and friends
+      all_paths = []
+
+      all_paths = Gem.path.map do |dir|
+        Dir[File.join(dir, 'doc', '*', 'ri')]
+      end.flatten
+
+      ri_paths = {}
+
+      all_paths.each do |dir|
+        base = File.basename File.dirname(dir)
+        if base =~ /(.*)-((\d+\.)*\d+)/ then
+          name, version = $1, $2
+          ver = Gem::Version.new version
+          if ri_paths[name].nil? or ver > ri_paths[name][0] then
+            ri_paths[name] = [ver, dir]
+          end
+        end
+      end
+
+      GEMDIRS = ri_paths.map { |k,v| v.last }.sort
+      GEMDIRS.each { |dir| RI::Paths::PATH << dir }
     rescue LoadError
       GEMDIRS = nil
     end
@@ -55,7 +76,7 @@ module RI
 
     def self.path(use_system, use_site, use_home, use_gems, *extra_dirs)
       path = raw_path(use_system, use_site, use_home, use_gems, *extra_dirs)
-      return path.select { |path| File.directory? path }
+      return path.select { |directory| File.directory? directory }
     end
 
     # Returns the selected documentation directories including nonexistent
