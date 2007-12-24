@@ -23754,7 +23754,7 @@ static int
 select_iso_2022_mode(char **out_pos, int new_mode)
 {
     char *out_p = *out_pos;
-    *out_p++ = '\e';
+    *out_p++ = '\x1b';
     switch (new_mode>>8)
     {
     case ISO_2022_GZD4:

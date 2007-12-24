@@ -1,3 +1,7 @@
+Mon Dec 24 23:32:24 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* transcode_data_japanese.c (select_iso_2022_mode): '\e' is not valid.
+
 Mon Dec 24 23:13:09 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/rdoc/diagram.rb (RDoc::Diagram#initialize): use fileuitls
