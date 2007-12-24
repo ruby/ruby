@@ -45,7 +45,7 @@ fc_path(struct fc_result *fc, ID name)
 {
     VALUE path, tmp;
 
-    path = rb_str_new2(rb_id2name(name));
+    path = rb_str_dup(rb_id2str(name));
     while (fc) {
 	if (fc->track == rb_cObject) break;
 	if (RCLASS_IV_TBL(fc->track) &&
@@ -56,7 +56,7 @@ fc_path(struct fc_result *fc, ID name)
 	    path = tmp;
 	    break;
 	}
-	tmp = rb_str_new2(rb_id2name(fc->name));
+	tmp = rb_str_dup(rb_id2str(fc->name));
 	rb_str_cat2(tmp, "::");
 	rb_str_append(tmp, path);
 	path = tmp;
@@ -148,7 +148,7 @@ classname(VALUE klass)
 	    if (!st_lookup(RCLASS_IV_TBL(klass), classid, &path)) {
 		return find_class_path(klass);
 	    }
-	    path = rb_str_new2(rb_id2name(SYM2ID(path)));
+	    path = rb_str_dup(rb_id2str(SYM2ID(path)));
 	    OBJ_FREEZE(path);
 	    st_insert(RCLASS_IV_TBL(klass), classpath, path);
 	    st_delete(RCLASS_IV_TBL(klass), (st_data_t*)&classid, 0);

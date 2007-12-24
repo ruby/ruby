@@ -498,7 +498,6 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
     for (i=0; i<RSTRUCT_LEN(s); i++) {
 	VALUE slot;
 	ID id;
-	const char *p;
 
 	if (i > 0) {
 	    rb_str_cat2(str, ", ");
@@ -506,8 +505,7 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
 	slot = RARRAY_PTR(members)[i];
 	id = SYM2ID(slot);
 	if (rb_is_local_id(id) || rb_is_const_id(id)) {
-	    p = rb_id2name(id);
-	    rb_str_cat2(str, p);
+	    rb_str_append(str, rb_id2str(id));
 	}
 	else {
 	    rb_str_append(str, rb_inspect(slot));

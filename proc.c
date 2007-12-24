@@ -858,7 +858,7 @@ method_name(VALUE obj)
     struct METHOD *data;
 
     Data_Get_Struct(obj, struct METHOD, data);
-    return rb_str_new2(rb_id2name(data->id));
+    return rb_str_dup(rb_id2str(data->id));
 }
 
 /*

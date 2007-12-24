@@ -2809,8 +2809,8 @@ fix_abs(VALUE fix)
 static VALUE
 fix_id2name(VALUE fix)
 {
-    const char *name = rb_id2name(FIX2UINT(fix));
-    if (name) return rb_str_new2(name);
+    VALUE name = rb_id2str(FIX2UINT(fix));
+    if (name) return rb_str_dup(name);
     return Qnil;
 }
 

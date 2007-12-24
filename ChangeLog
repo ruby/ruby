@@ -1,3 +1,9 @@
+Tue Dec 25 01:38:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (method_name): preserve Symbol's encoding.
+
+	* numeric.c (fix_id2name): ditto.
+
 Tue Dec 25 01:19:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_enc_left_char_head): new utility macro.

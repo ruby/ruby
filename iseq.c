@@ -665,7 +665,7 @@ insn_operand_intern(rb_iseq_t *iseq,
       case TS_GENTRY:
 	{
 	    struct global_entry *entry = (struct global_entry *)op;
-	    ret = rb_str_new2(rb_id2name(entry->id));
+	    ret = rb_str_dup(rb_id2str(entry->id));
 	}
 	break;
 

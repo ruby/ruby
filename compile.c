@@ -4077,7 +4077,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DEFN:{
 	VALUE iseqval = NEW_ISEQVAL(node->nd_defn,
-				    rb_str_new2(rb_id2name(node->nd_mid)),
+				    rb_str_dup(rb_id2str(node->nd_mid)),
 				    ISEQ_TYPE_METHOD);
 
 	debugp_param("defn/iseq", iseqval);
@@ -4093,7 +4093,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DEFS:{
 	VALUE iseqval = NEW_ISEQVAL(node->nd_defn,
-				    rb_str_new2(rb_id2name(node->nd_mid)),
+				    rb_str_dup(rb_id2str(node->nd_mid)),
 				    ISEQ_TYPE_METHOD);
 
 	debugp_param("defs/iseq", iseqval);
