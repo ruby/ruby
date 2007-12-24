@@ -652,13 +652,28 @@ proc_to_proc(VALUE self)
  *     eval("param", b)           #=> 99
  */
 
-void
+static void
 bm_mark(struct METHOD *data)
 {
     rb_gc_mark(data->rclass);
     rb_gc_mark(data->oclass);
     rb_gc_mark(data->recv);
     rb_gc_mark((VALUE)data->body);
+}
+
+NODE *
+rb_method_body(VALUE method)
+{
+    struct METHOD *data;
+
+    if (TYPE(method) == T_DATA &&
+	RDATA(method)->dmark == (RUBY_DATA_FUNC) bm_mark) {
+	Data_Get_Struct(method, struct METHOD, data);
+	return data->body;
+    }
+    else {
+	return 0;
+    }
 }
 
 NODE *rb_get_method_body(VALUE klass, ID id, ID *idp);

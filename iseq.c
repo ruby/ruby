@@ -881,6 +881,23 @@ ruby_iseq_disasm(VALUE self)
     return str;
 }
 
+static VALUE
+iseq_s_disasm(VALUE klass, VALUE body)
+{
+    extern NODE *rb_method_body(VALUE body);
+    NODE *node;
+    VALUE ret = Qnil;
+
+    if ((node = rb_method_body(body)) != 0) {
+	if (nd_type(node) == RUBY_VM_METHOD_NODE) {
+	    VALUE iseqval = (VALUE)node->nd_body;
+	    ret = ruby_iseq_disasm(iseqval);
+	}
+    }
+
+    return ret;
+}
+
 const char *
 ruby_node_name(int node)
 {
@@ -1250,16 +1267,19 @@ Init_ISeq(void)
     rb_define_alloc_func(rb_cISeq, iseq_alloc);
     rb_define_method(rb_cISeq, "inspect", iseq_inspect, 0);
     rb_define_method(rb_cISeq, "disasm", ruby_iseq_disasm, 0);
+    rb_define_method(rb_cISeq, "disassemble", ruby_iseq_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseq_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseq_eval, 0);
 
-    rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1);
+    /* disable this feature because there is no verifier. */
+    /* rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1); */
+
     rb_define_singleton_method(rb_cISeq, "compile", iseq_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "new", iseq_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "compile_file", iseq_s_compile_file, -1);
-    rb_define_singleton_method(rb_cISeq, "compile_option",
-			       iseq_s_compile_option_get, 0);
-    rb_define_singleton_method(rb_cISeq, "compile_option=",
-			       iseq_s_compile_option_set, 1);
+    rb_define_singleton_method(rb_cISeq, "compile_option", iseq_s_compile_option_get, 0);
+    rb_define_singleton_method(rb_cISeq, "compile_option=", iseq_s_compile_option_set, 1);
+    rb_define_singleton_method(rb_cISeq, "disasm", iseq_s_disasm, 1);
+    rb_define_singleton_method(rb_cISeq, "disassemble", iseq_s_disasm, 1);
 }
 
