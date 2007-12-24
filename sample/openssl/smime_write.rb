@@ -1,12 +1,12 @@
 require 'openssl'
-require 'getopts'
+require 'optparse'
 include OpenSSL
 
-getopts nil, "c:", "k:", "r:"
+options = ARGV.getopts("c:k:r:")
 
-cert_file = $OPT_c
-key_file  = $OPT_k
-rcpt_file = $OPT_r
+cert_file = options["c"]
+key_file  = options["k"]
+rcpt_file = options["r"]
 
 cert = X509::Certificate.new(File::read(cert_file))
 key = PKey::RSA.new(File::read(key_file))

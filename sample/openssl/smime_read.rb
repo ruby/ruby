@@ -1,12 +1,12 @@
-require 'getopts'
+require 'optparse'
 require 'openssl'
 include OpenSSL
 
-getopts nil, "c:", "k:", "C:"
+options = ARGV.getopts("c:k:C:")
 
-cert_file = $OPT_c
-key_file  = $OPT_k
-ca_path   = $OPT_C
+cert_file = options["c"]
+key_file  = options["k"]
+ca_path   = options["C"]
 
 data = $stdin.read
 

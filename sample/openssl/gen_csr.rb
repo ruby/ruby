@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-require 'getopts'
+require 'optparse'
 require 'openssl'
 
 include OpenSSL
@@ -14,10 +14,10 @@ EOS
   exit
 end
 
-getopts nil, "key:", "csrout:", "keyout:"
-keypair_file = $OPT_key
-csrout = $OPT_csrout || "csr.pem"
-keyout = $OPT_keyout || "keypair.pem"
+options = ARGV.getopts(nil, "key:", "csrout:", "keyout:")
+keypair_file = options["key"]
+csrout = options["csrout"] || "csr.pem"
+keyout = options["keyout"] || "keypair.pem"
 
 $stdout.sync = true
 name_str = ARGV.shift or usage()
@@ -47,3 +47,5 @@ puts "Writing #{csrout}..."
 File.open(csrout, "w") do |f|
   f << req.to_pem
 end
+puts req.to_text
+puts req.to_pem

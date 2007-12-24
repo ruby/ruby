@@ -1,3 +1,7 @@
+Mon Dec 24 16:29:12 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* sample/openssl: reviewed and remove dependency on getopts.rb.
+
 Mon Dec 24 16:18:57 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* mkconfig.rb: add teeny to CONFIG['ruby_version'].

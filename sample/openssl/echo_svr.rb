@@ -2,14 +2,14 @@
 
 require 'socket'
 require 'openssl'
-require 'getopts'
+require 'optparse'
 
-getopts nil, "p:2000", "c:", "k:", "C:"
+options = ARGV.getopts("p:c:k:C:")
 
-port      = $OPT_p
-cert_file = $OPT_c
-key_file  = $OPT_k
-ca_path   = $OPT_C
+port      = options["p"] || "2000"
+cert_file = options["c"]
+key_file  = options["k"]
+ca_path   = options["C"]
 
 if cert_file && key_file
   cert = OpenSSL::X509::Certificate.new(File::read(cert_file))
@@ -55,8 +55,11 @@ tcps = TCPServer.new(port)
 ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
 loop do
   ns = ssls.accept
+  puts "connected from #{ns.peeraddr}"
   while line = ns.gets
+    puts line.inspect
     ns.write line
   end
+  puts "connection closed"
   ns.close
 end

@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 
 require 'net/https'
-require 'getopts'
+require 'optparse'
 
-getopts nil, 'C:'
+options = ARGV.getopts('C:')
 
-ca_path = $OPT_C
+cert_store = options["C"]
 
 uri = URI.parse(ARGV[0])
 if proxy = ENV['HTTP_PROXY']
@@ -18,11 +18,12 @@ h = Net::HTTP.new(uri.host, uri.port, prx_host, prx_port)
 h.set_debug_output($stderr) if $DEBUG
 if uri.scheme == "https"
   h.use_ssl = true
-  if ca_path
-    h.verify_mode = OpenSSL::SSL::VERIFY_PEER
-    h.ca_path = ca_path
-  else
-    $stderr.puts "!!! WARNING: PEER CERTIFICATE WON'T BE VERIFIED !!!"
+  if cert_store
+    if File.directory?(cert_store)
+      h.ca_path = cert_store
+    else
+      h.ca_file = cert_store
+    end
   end
 end
 
