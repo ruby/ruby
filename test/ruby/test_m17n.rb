@@ -84,10 +84,13 @@ class TestM17N < Test::Unit::TestCase
     a("."), e("."), s("."), u("."),
 
     # single character
-    a("\x80"),
-    e("\xa1\xa1"), e("\x8e\xa1"), e("\x8f\xa1\xa1"),
-    s("\x81\x40"), s("\xa1"),
-    u("\xc2\x80"),
+    a("\x80"), a("\xff"),
+    e("\xa1\xa1"), e("\xfe\xfe"),
+    e("\x8e\xa1"), e("\x8e\xfe"),
+    e("\x8f\xa1\xa1"), e("\x8f\xfe\xfe"),
+    s("\x81\x40"), s("\xfc\xfc"),
+    s("\xa1"), s("\xdf"),
+    u("\xc2\x80"), u("\xf4\x8f\xbf\xbf"),
 
     # same byte sequence
     a("\xc2\xa1"), e("\xc2\xa1"), s("\xc2\xa1"), u("\xc2\xa1"),
@@ -1821,10 +1824,16 @@ class TestM17N < Test::Unit::TestCase
       e("\xA1\xA1"),
       e("\xFE\xFE")
     ]
-    starts.each {|s0|
+    STRINGS.each {|s0|
+      next if s0.empty?
       s = s0.dup
       n = 1000
+      h = {}
       n.times {|i|
+        if h[s]
+          assert(false, "#{encdump s} cycle with succ! #{i-h[s]} times")
+        end
+        h[s] = i
         assert_operator(s.length, :<=, s0.length + Math.log2(i+1) + 1, "#{encdump s0} succ! #{i} times => #{encdump s}")
         s.succ!
       }
