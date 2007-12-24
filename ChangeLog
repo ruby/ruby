@@ -1,4 +1,4 @@
-Mon Dec 24 16:53:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Dec 24 17:06:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p): returns loading path name too.
 

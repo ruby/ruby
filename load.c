@@ -99,14 +99,16 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
 }
 
 static int
-rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
+rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
     VALUE v, features, p, load_path = 0;
     const char *f, *e;
     long i, len, elen, n;
     st_table *loading_tbl;
+    st_data_t data;
     int type;
 
+    if (fn) *fn = 0;
     if (ext) {
 	len = ext - feature;
 	elen = strlen(ext);
@@ -143,6 +145,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
     }
     loading_tbl = get_loading_table();
     if (loading_tbl) {
+	f = 0;
 	if (!expanded) {
 	    struct loaded_feature_searching fs;
 	    fs.name = feature;
@@ -151,9 +154,13 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	    fs.load_path = load_path ? load_path : get_load_path();
 	    fs.result = 0;
 	    st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
-	    if (fs.result) goto loading;
+	    if ((f = fs.result) != 0) {
+		if (fn) *fn = f;
+		goto loading;
+	    }
 	}
-	if (st_lookup(loading_tbl, (st_data_t)feature, 0)) {
+	if (st_get_key(loading_tbl, (st_data_t)feature, &data)) {
+	    if (fn) *fn = (const char*)data;
 	  loading:
 	    if (!ext) return 'u';
 	    return !IS_RBEXT(ext) ? 's' : 'r';
@@ -166,7 +173,8 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded)
 	    MEMCPY(buf, feature, char, len);
 	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
 		strncpy(buf + len, e, DLEXT_MAXLEN + 1);
-		if (st_lookup(loading_tbl, (st_data_t)buf, 0)) {
+		if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
+		    if (fn) *fn = (const char*)data;
 		    return i ? 's' : 'r';
 		}
 	    }
@@ -182,15 +190,15 @@ rb_provided(const char *feature)
 
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qtrue, Qfalse)) return Qtrue;
+	    if (rb_feature_p(feature, ext, Qtrue, Qfalse, 0)) return Qtrue;
 	    return Qfalse;
 	}
 	else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-	    if (rb_feature_p(feature, ext, Qfalse, Qfalse)) return Qtrue;
+	    if (rb_feature_p(feature, ext, Qfalse, Qfalse, 0)) return Qtrue;
 	    return Qfalse;
 	}
     }
-    if (rb_feature_p(feature, feature + strlen(feature), Qtrue, Qfalse))
+    if (rb_feature_p(feature, feature + strlen(feature), Qtrue, Qfalse, 0))
 	return Qtrue;
     return Qfalse;
 }
@@ -337,7 +345,8 @@ load_lock(const char *ftptr)
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	return (char *)ftptr;
     }
-    return RTEST(rb_barrier_wait((VALUE)data)) ? (char *)ftptr : 0;
+    rb_barrier_wait((VALUE)data);
+    return 0;
 }
 
 static void
@@ -390,32 +399,37 @@ search_required(VALUE fname, volatile VALUE *path)
     VALUE tmp;
     char *ext, *ftptr;
     int type, ft = 0;
+    const char *loading;
 
     *path = 0;
     ext = strrchr(ftptr = RSTRING_PTR(fname), '.');
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qtrue, Qfalse))
+	    if (rb_feature_p(ftptr, ext, Qtrue, Qfalse, &loading)) {
+		if (loading) *path = rb_str_new2(loading);
 		return 'r';
+	    }
 	    if ((tmp = rb_find_file(fname)) != 0) {
 		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qtrue, Qtrue))
+		if (!rb_feature_p(ftptr, ext, Qtrue, Qtrue, 0))
 		    *path = tmp;
 		return 'r';
 	    }
 	    return 0;
 	}
 	else if (IS_SOEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qfalse, Qfalse))
+	    if (rb_feature_p(ftptr, ext, Qfalse, Qfalse, &loading)) {
+		if (loading) *path = rb_str_new2(loading);
 		return 's';
+	    }
 	    tmp = rb_str_new(RSTRING_PTR(fname), ext - RSTRING_PTR(fname));
 #ifdef DLEXT2
 	    OBJ_FREEZE(tmp);
 	    if (rb_find_file_ext(&tmp, loadable_ext + 1)) {
 		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue))
+		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, 0))
 		    *path = tmp;
 		return 's';
 	    }
@@ -425,25 +439,28 @@ search_required(VALUE fname, volatile VALUE *path)
 	    if ((tmp = rb_find_file(tmp)) != 0) {
 		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue))
+		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, 0))
 		    *path = tmp;
 		return 's';
 	    }
 #endif
 	}
 	else if (IS_DLEXT(ext)) {
-	    if (rb_feature_p(ftptr, ext, Qfalse, Qfalse))
+	    if (rb_feature_p(ftptr, ext, Qfalse, Qfalse, &loading)) {
+		if (loading) *path = rb_str_new2(loading);
 		return 's';
+	    }
 	    if ((tmp = rb_find_file(fname)) != 0) {
 		tmp = rb_file_expand_path(tmp, Qnil);
 		ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue))
+		if (!rb_feature_p(ftptr, ext, Qfalse, Qtrue, 0))
 		    *path = tmp;
 		return 's';
 	    }
 	}
     }
-    else if ((ft = rb_feature_p(ftptr, 0, Qfalse, Qfalse)) == 'r') {
+    else if ((ft = rb_feature_p(ftptr, 0, Qfalse, Qfalse, &loading)) == 'r') {
+	if (loading) *path = rb_str_new2(loading);
 	return 'r';
     }
     tmp = fname;
@@ -451,17 +468,17 @@ search_required(VALUE fname, volatile VALUE *path)
     tmp = rb_file_expand_path(tmp, Qnil);
     switch (type) {
       case 0:
-	ftptr = RSTRING_PTR(tmp);
 	if (ft)
 	    break;
-	return rb_feature_p(ftptr, 0, Qfalse, Qtrue);
+	ftptr = RSTRING_PTR(tmp);
+	return rb_feature_p(ftptr, 0, Qfalse, Qtrue, 0);
 
       default:
 	if (ft)
 	    break;
       case 1:
 	ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-	if (rb_feature_p(ftptr, ext, !--type, Qtrue))
+	if (rb_feature_p(ftptr, ext, !--type, Qtrue, &loading) && !loading)
 	    break;
 	*path = tmp;
     }
@@ -494,6 +511,8 @@ rb_require_safe(VALUE fname, int safe)
     } volatile saved;
     char *volatile ftptr = 0;
 
+    FilePathValue(fname);
+    RB_GC_GUARD(fname) = rb_str_new4(fname);
     PUSH_TAG();
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
@@ -502,8 +521,6 @@ rb_require_safe(VALUE fname, int safe)
 	int found;
 
 	rb_set_safe_level_force(safe);
-	FilePathValue(fname);
-	RB_GC_GUARD(fname) = rb_str_new4(fname);
 	found = search_required(fname, &path);
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
