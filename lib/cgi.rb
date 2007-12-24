@@ -339,8 +339,8 @@ class CGI
   #   url_encoded_string = CGI::escape("'Stop!' said Fred")
   #      # => "%27Stop%21%27+said+Fred"
   def CGI::escape(string)
-    string.gsub(/([^ a-zA-Z0-9_.-]+)/n) do
-      '%' + $1.unpack('H2' * $1.size).join('%').upcase
+    string.gsub(/([^ a-zA-Z0-9_.-]+)/) do
+      '%' + $1.unpack('H2' * $1.bytesize).join('%').upcase
     end.tr(' ', '+')
   end
 
@@ -349,8 +349,9 @@ class CGI
   #   string = CGI::unescape("%27Stop%21%27+said+Fred")
   #      # => "'Stop!' said Fred"
   def CGI::unescape(string)
-    string.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/n) do
-      [$1.delete('%')].pack('H*')
+    enc = string.encoding
+    string.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/) do
+      [$1.delete('%')].pack('H*').force_encoding(enc)
     end
   end
 
@@ -359,7 +360,7 @@ class CGI
   #   CGI::escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
   def CGI::escapeHTML(string)
-    string.gsub(/&/n, '&amp;').gsub(/\"/n, '&quot;').gsub(/>/n, '&gt;').gsub(/</n, '&lt;')
+    string.gsub(/&/, '&amp;').gsub(/\"/, '&quot;').gsub(/>/, '&gt;').gsub(/</, '&lt;')
   end
 
 
@@ -367,22 +368,23 @@ class CGI
   #   CGI::unescapeHTML("Usage: foo &quot;bar&quot; &lt;baz&gt;")
   #      # => "Usage: foo \"bar\" <baz>"
   def CGI::unescapeHTML(string)
-    string.gsub(/&(amp|quot|gt|lt|\#[0-9]+|\#x[0-9A-Fa-f]+);/n) do
+    enc = string.encoding
+    string.gsub(/&(amp|quot|gt|lt|\#[0-9]+|\#x[0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
       when 'amp'                 then '&'
       when 'quot'                then '"'
       when 'gt'                  then '>'
       when 'lt'                  then '<'
-      when /\A#0*(\d+)\z/n       then
+      when /\A#0*(\d+)\z/        then
         if Integer($1) < 256
-          Integer($1).chr
+          Integer($1).chr.force_encoding(enc)
         else
           "&##{$1};"
         end
-      when /\A#x([0-9a-f]+)\z/ni then
+      when /\A#x([0-9a-f]+)\z/i then
         if $1.hex < 256
-          $1.hex.chr
+          $1.hex.chr.force_encoding(enc)
         else
           "&#x#{$1};"
         end
