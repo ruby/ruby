@@ -657,6 +657,16 @@ class TestM17N < Test::Unit::TestCase
     assert_nothing_raised { eval(u(%{/\\u{6666}#{}\\xc2\\xa0/})) }
   end
 
+  def test_str_allocate
+    s = String.allocate
+    assert_equal(Encoding::ASCII_8BIT, s.encoding)
+  end
+
+  def test_str_String
+    s = String(10)
+    assert_equal(Encoding::ASCII_8BIT, s.encoding)
+  end
+
   def test_str_new
     STRINGS.each {|s|
       t = String.new(s)
@@ -1872,5 +1882,32 @@ class TestM17N < Test::Unit::TestCase
      assert_not_equal(me.inspect, mu.inspect)
      assert_equal(e("\xc2\xa1"), me.name)
      assert_equal(u("\xc2\xa1"), mu.name)
+  end
+
+  def test_symbol
+    s1 = "\xc2\xa1".force_encoding("euc-jp").intern
+    s2 = "\xc2\xa1".force_encoding("utf-8").intern
+    assert_not_equal(s1, s2)
+  end
+
+  def test_chr
+    0.upto(255) {|b|
+      assert_equal([b].pack("C"), b.chr)
+    }
+  end
+
+  def test_marshal
+    STRINGS.each {|s|
+      m = Marshal.dump(s)
+      t = Marshal.load(m)
+      assert_equal(s, t)
+    }
+  end
+
+  def test_env
+    ENV.each {|k, v|
+      assert_equal(Encoding::ASCII_8BIT, k.encoding)
+      assert_equal(Encoding::ASCII_8BIT, v.encoding)
+    }
   end
 end
