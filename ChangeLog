@@ -1,3 +1,8 @@
+Mon Dec 24 17:40:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (node_name.inc, miniprelude.c, prelude.c): nmake cannot
+	  handle target vpath in other than implicit rules.
+
 Mon Dec 24 17:20:34 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/{mailread.rb,getopts.rb,parsearg.rb}: removed.
