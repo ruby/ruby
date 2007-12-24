@@ -1,8 +1,13 @@
+Tue Dec 25 08:37:43 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+  * lib/csv.rb, test/csv/test_csv.rb:  Removed in preparation for FasterCSV
+    code import.
+
 Tue Dec 25 08:27:43 2007  Eric Hodel  <drbrain@segment7.net>
 
-	* lib/rubygems.rb:  Fix test failures.
+  * lib/rubygems.rb:  Fix test failures.
 
-	* test/rubygems/test_gem.rb:  Fix test failure.
+  * test/rubygems/test_gem.rb:  Fix test failure.
 
 Tue Dec 25 06:23:40 2007  Koichi Sasada  <ko1@atdot.net>
 
