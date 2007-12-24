@@ -79,9 +79,13 @@ module Gem
 
     class << self
       def load_full_rubygems_library
-        QuickLoader.instance_methods.each do |method_name|
-          QuickLoader.send :undef_method, method_name
+        class << Gem
+          Gem.methods(false).each do |method_name|
+            undef_method method_name
+          end
         end
+
+        Kernel.send :undef_method, :gem
 
         $".delete File.join(Gem::ConfigMap[:libdir], 'ruby',
                             Gem::ConfigMap[:ruby_version], 'rubygems.rb')

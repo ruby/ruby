@@ -1,3 +1,8 @@
+Mon Dec 24 10:37:38 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* gem_prelude.rb:  Remove methods from Gem, not QuickLoader, to fix
+	warnings.
+
 Mon Dec 24 09:45:45 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c, transcode_data_one_byte.c, transcode_data_japanese.c:
