@@ -62,11 +62,11 @@ module RI
           (RI::Paths::HOMEDIR || "No ~/.rdoc found") ],
 
         [ "--gems",         nil,    nil,
-          "Include documentation from RubyGems:\n  " +
+          "Include documentation from RubyGems:\n" +
           (RI::Paths::GEMDIRS ?
-           Gem.path.map { |dir| "#{dir}/doc/*/ri" }.join("\n") :
+           Gem.path.map { |dir| "  #{dir}/doc/*/ri" }.join("\n") :
            "No Rubygems ri found.") ],
-                                                           
+
         [ "--format",       "-f",   "<name>",
           "Format to use when displaying output:\n" +
           "   " + RI::TextFormatter.list + "\n" +
