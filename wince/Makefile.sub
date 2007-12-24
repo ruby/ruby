@@ -4,6 +4,10 @@ SHELL = $(COMSPEC)
 MKFILES = Makefile
 NULL = nul
 
+!ifndef MFLAGS
+MFLAGS=-l
+!endif
+
 #### Start of system configuration section. ####
 
 ## variables may be overridden by $(compile_dir)/Makefile
