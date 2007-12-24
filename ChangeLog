@@ -1,3 +1,14 @@
+Mon Dec 24 22:46:42 2007  NARUSE, Yui <naruse@ruby-lang.org>
+
+	* transocode.c: register_functional_transcoder() added.
+	  (init_transcoder_table(: register ISO-2022-JP.
+	  (str_transcode): add preprocessor and postprocessor.
+
+	* transcode_data_japanese.c: add ISO-2022-JP support.
+
+	* transcode_data.h: moved transcoder and transcoding difinition from
+	  transcode.c.
+
 Mon Dec 24 20:29:28 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/io/nonblock/test_flush.rb: fix test for 1.9.

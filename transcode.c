@@ -60,22 +60,17 @@ extern const BYTE_LOOKUP rb_from_EUC_JP;
 extern const BYTE_LOOKUP rb_to_SHIFT_JIS;
 extern const BYTE_LOOKUP rb_to_EUC_JP;
 
+extern void from_iso_2022_jp_transcoder_preprocessor(char**, char**, char*, char*,
+				struct transcoder_st *transcoder, struct transcoding*);
+extern void to_iso_2022_jp_transcoder_postprocessor(char**, char**, char*, char*,
+				struct transcoder_st *transcoder, struct transcoding*);
 
 /* declarations probably need to go into separate header file, e.g. transcode.h */
-
-/* static structure, one per supported encoding pair */
-typedef struct {
-    const char *from_encoding;
-    const char *to_encoding;
-    const BYTE_LOOKUP *conv_tree_start;
-    int max_output;
-    int from_utf8;
-} transcoder;
 
 /* todo: dynamic structure, one per conversion (stream) */
 
 /* in the future, add some mechanism for dynamically adding stuff here */
-#define MAX_TRANSCODERS 33  /* todo: fix: this number has to be adjusted by hand */
+#define MAX_TRANSCODERS 35  /* todo: fix: this number has to be adjusted by hand */
 static transcoder transcoder_table[MAX_TRANSCODERS];
 
 /* not sure why it's not possible to do relocatable initializations */
@@ -95,6 +90,29 @@ register_transcoder(const char *from_e, const char *to_e,
     transcoder_table[n].conv_tree_start = tree_start;
     transcoder_table[n].max_output = max_output;
     transcoder_table[n].from_utf8 = from_utf8;
+
+    n++;
+}
+
+static void
+register_functional_transcoder(const char *from_e, const char *to_e,
+    const BYTE_LOOKUP *tree_start, int max_output, int from_utf8,
+    void (*preprocessor)(char**, char**, char*, char*, transcoder*, transcoding*),
+    void (*postprocessor)(char**, char**, char*, char*, transcoder*, transcoding*))
+{
+    static int n = 0;
+    if (n >= MAX_TRANSCODERS) {
+	/* we are initializing, is it okay to use rb_raise here? */
+	rb_raise(rb_eRuntimeError /*change exception*/, "not enough transcoder slots");
+    }
+    transcoder_table[n].from_encoding = from_e;
+    transcoder_table[n].to_encoding = to_e;
+    transcoder_table[n].conv_tree_start = tree_start;
+    transcoder_table[n].max_output = max_output;
+    transcoder_table[n].from_utf8 = from_utf8;
+    transcoder_table[n].conv_tree_start = tree_start;
+    transcoder_table[n].preprocessor = preprocessor;
+    transcoder_table[n].postprocessor = postprocessor;
 
     n++;
 }
@@ -135,6 +153,10 @@ init_transcoder_table(void)
     register_transcoder("EUC-JP", "UTF-8",      &rb_from_EUC_JP, 3, 0);
     register_transcoder("UTF-8", "SHIFT_JIS",   &rb_to_SHIFT_JIS, 2, 1);
     register_transcoder("UTF-8", "EUC-JP",      &rb_to_EUC_JP, 2, 1);
+    register_functional_transcoder("ISO-2022-JP", "UTF-8", &rb_from_EUC_JP,
+				   8, 0, &from_iso_2022_jp_transcoder_preprocessor, NULL);
+    register_functional_transcoder("UTF-8", "ISO-2022-JP", &rb_to_EUC_JP,
+				   8, 1, NULL, &to_iso_2022_jp_transcoder_postprocessor);
 
     register_transcoder(NULL, NULL, NULL, 0, 0);
 }
@@ -164,14 +186,6 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
     }
     return NULL;
 }
-
-/* dynamic structure, one per conversion (similar to iconv_t) */
-/* may carry conversion state (e.g. for iso-2022-jp) */
-typedef struct transcoding {
-    VALUE ruby_string_dest; /* the String used as the conversion destination,
-			       or NULL if something else is being converted */
-    char *(*flush_func)(struct transcoding*, int, int);
-} transcoding;
 
 
 /*
@@ -331,6 +345,23 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
 	}
 
+	if (my_transcoder->preprocessor)
+	{
+	    fromp = sp = RSTRING_PTR(str);
+	    slen = RSTRING_LEN(str);
+	    blen = slen + 30; /* len + margin */
+	    dest = rb_str_tmp_new(blen);
+	    bp = RSTRING_PTR(dest);
+	    my_transcoding.ruby_string_dest = dest;
+	    (*my_transcoder->preprocessor)(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
+	    if (fromp != sp+slen) {
+		rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
+	    }
+	    buf = RSTRING_PTR(dest);
+	    *bp = '\0';
+	    rb_str_set_len(dest, bp - buf);
+	    str = dest;
+	}
 	fromp = sp = RSTRING_PTR(str);
 	slen = RSTRING_LEN(str);
 	blen = slen + 30; /* len + margin */
@@ -346,6 +377,23 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	buf = RSTRING_PTR(dest);
 	*bp = '\0';
 	rb_str_set_len(dest, bp - buf);
+	if (my_transcoder->postprocessor)
+	{
+	    str = dest;
+	    fromp = sp = RSTRING_PTR(str);
+	    slen = RSTRING_LEN(str);
+	    blen = slen + 30; /* len + margin */
+	    dest = rb_str_tmp_new(blen);
+	    bp = RSTRING_PTR(dest);
+	    my_transcoding.ruby_string_dest = dest;
+	    (*my_transcoder->postprocessor)(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
+	    if (fromp != sp+slen) {
+		rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
+	    }
+	    buf = RSTRING_PTR(dest);
+	    *bp = '\0';
+	    rb_str_set_len(dest, bp - buf);
+	}
 
 	if (encoding_equal(my_transcoder->to_encoding, to_e)) {
 	    final_encoding = 1;

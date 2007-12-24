@@ -1,3 +1,20 @@
+/**********************************************************************
+
+  transcode_data.h -
+
+  $Author$
+  $Date$
+  created at: Mon 10 Dec 2007 14:01:47 JST 2007
+
+  Copyright (C) 2007 Martin Duerst
+
+**********************************************************************/
+
+#include "ruby/ruby.h"
+
+#ifndef RUBY_TRANSCODE_DATA_H
+#define RUBY_TRANSCODE_DATA_H 1
+
 typedef unsigned char base_element;
 
 typedef struct byte_lookup {
@@ -37,3 +54,25 @@ typedef struct byte_lookup {
 #define TWOTRAIL       /* legal but undefined if two more trailing UTF-8 */
 #define THREETRAIL     /* legal but undefined if three more trailing UTF-8 */
 
+/* dynamic structure, one per conversion (similar to iconv_t) */
+/* may carry conversion state (e.g. for iso-2022-jp) */
+typedef struct transcoding {
+    VALUE ruby_string_dest; /* the String used as the conversion destination,
+			       or NULL if something else is being converted */
+    char *(*flush_func)(struct transcoding*, int, int);
+} transcoding;
+
+/* static structure, one per supported encoding pair */
+typedef struct transcoder_st{
+    const char *from_encoding;
+    const char *to_encoding;
+    const BYTE_LOOKUP *conv_tree_start;
+    int max_output;
+    int from_utf8;
+    void (*preprocessor)(char**, char**, char*, char*,
+				struct transcoder_st *transcoder, struct transcoding*);
+    void (*postprocessor)(char**, char**, char*, char*,
+				 struct transcoder_st *transcoder, struct transcoding*);
+} transcoder;
+
+#endif /* RUBY_TRANSCODE_DATA_H */
