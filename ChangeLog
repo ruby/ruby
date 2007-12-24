@@ -1,3 +1,11 @@
+Tue Dec 25 05:44:56 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/net/http.rb:  Fix uninitialized variable warning.
+	[ruby-talk:284582]
+
+	* lib/irb/output-method.rb:  Remove unused #foo method.
+	[ruby-talk:284582]
+
 Tue Dec 25 05:24:12 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile): clear local table if node == 0.

@@ -45,21 +45,6 @@ module IRB
       return format, opts if $1.size % 2 == 1
     end
 
-    def foo(format)
-      pos = 0
-      inspects = []
-      format.scan(/%[#0\-+ ]?(\*(?=[^0-9])|\*[1-9][0-9]*\$|[1-9][0-9]*(?=[^0-9]))?(\.(\*(?=[^0-9])|\*[1-9][0-9]*\$|[1-9][0-9]*(?=[^0-9])))?(([1-9][0-9]*\$)*)([diouxXeEfgGcsb%])/) {|f, p, pp, pos, new_pos, c|
-	puts [f, p, pp, pos, new_pos, c].join("!")
-	pos = new_pos if new_pos
-	if c == "I"
-	  inspects.push pos.to_i 
-	  (f||"")+(p||"")+(pp||"")+(pos||"")+"s"
-	else
-	  $&
-	end
-      }
-    end
-
     def puts(*objs)
       for obj in objs
 	print(*obj)

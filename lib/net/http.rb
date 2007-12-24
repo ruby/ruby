@@ -485,6 +485,7 @@ module Net   #:nodoc:
       @ssl_context = nil
       @enable_post_connection_check = true
       @compression = nil
+      @sspi_enabled = false
     end
 
     def inspect
