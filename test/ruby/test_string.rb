@@ -1055,6 +1055,13 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("2000aaa"),  S("1999zzz").succ)
     assert_equal(S("AAAAA000"), S("ZZZZ999").succ)
     assert_equal(S("*+"), S("**").succ)
+
+    assert_equal("abce", "abcd".succ)
+    assert_equal("THX1139", "THX1138".succ)
+    assert_equal("<<koalb>>", "<<koala>>".succ)
+    assert_equal("2000aaa", "1999zzz".succ)
+    assert_equal("AAAA0000", "ZZZ9999".succ)
+    assert_equal("**+", "***".succ)
   end
 
   def test_succ!
