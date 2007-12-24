@@ -1,3 +1,8 @@
+Tue Dec 25 00:27:28 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservley/cgihandler.rb
+	  (WEBrick::HTTPServlet::CGIHandler#do_GET): m17nized.
+
 Mon Dec 24 23:55:29 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/cgi.rb (CGI::escape): m17nized.

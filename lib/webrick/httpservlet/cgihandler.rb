@@ -75,7 +75,7 @@ module WEBrick
         end
 
         data = "" unless data
-        raw_header, body = data.split(/^[\xd\xa]+/on, 2) 
+        raw_header, body = data.split(/^[\xd\xa]+/, 2) 
         raise HTTPStatus::InternalServerError,
           "Premature end of script headers: #{@script_filename}" if body.nil?
 
