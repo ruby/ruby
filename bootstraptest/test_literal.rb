@@ -168,3 +168,11 @@ assert_equal 'c',               'r = ("a".."c"); r.end'
 
 assert_equal 'String',          '__FILE__.class'
 assert_equal 'Fixnum',          '__LINE__.class'
+
+###
+
+assert_equal 'ok', %q{
+  # this cause "called on terminated object".
+  ObjectSpace.each_object(Module) {|m| m.name.inspect }
+  :ok
+}

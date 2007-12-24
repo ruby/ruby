@@ -1,3 +1,7 @@
+Tue Dec 25 06:23:40 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knownbug.rb, test_literal.rb: move fixed test.
+
 Tue Dec 25 06:19:04 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* sample/biorhythm.rb: follow Ruby 1.9 libraries.
