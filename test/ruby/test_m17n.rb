@@ -1831,6 +1831,14 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_str_hash
+    combination(STRINGS, STRINGS) {|s1, s2|
+      if s1.eql?(s2)
+        assert_equal(s1.hash, s2.hash, "#{encdump s1}.hash == #{encdump s2}.dump")
+      end
+    }
+  end
+
   def test_sub
     s = "abc".sub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
     assert_encoding("EUC-JP", s.encoding)
