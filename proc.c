@@ -133,6 +133,11 @@ proc_clone(VALUE self)
  *   n(&method(:m))             => true
  *   n(&method(:m)).to_proc     => true
  *
+ *   class C
+ *     define_method(:d) {}
+ *   end
+ *   C.new.method(:d).to_proc.lambda?   => true
+ *
  */
 
 static VALUE
