@@ -1,3 +1,7 @@
+Tue Dec 25 06:19:04 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* sample/biorhythm.rb: follow Ruby 1.9 libraries.
+
 Tue Dec 25 06:15:01 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: add dummy toplevel frame.
