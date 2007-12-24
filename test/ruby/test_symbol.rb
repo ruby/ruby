@@ -74,4 +74,8 @@ class TestSymbol < Test::Unit::TestCase
     assert_inspect_evaled(':$0')
     assert_inspect_evaled(':$1')
   end
+
+  def test_to_proc
+    assert_equal %w(1 2 3), (1..3).map(&:to_s)
+  end
 end

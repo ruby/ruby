@@ -1414,10 +1414,7 @@ rb_proc_new(
     VALUE (*func)(ANYARGS), /* VALUE yieldarg[, VALUE procarg] */
     VALUE val)
 {
-    rb_proc_t *proc;
-    VALUE procval = rb_iterate((VALUE(*)(VALUE))mproc, 0, func, val);
-    GetProcPtr(procval, proc);
-    ((NODE*)proc->block.iseq)->u3.state = 1;
+    VALUE procval = rb_iterate(mproc, 0, func, val);
     return procval;
 }
 
@@ -1442,7 +1439,7 @@ method_proc(VALUE method)
      *   end
      * end
      */
-    procval = rb_iterate((VALUE (*)(VALUE))mlambda, 0, bmcall, method);
+    procval = rb_iterate(mlambda, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
     return procval;

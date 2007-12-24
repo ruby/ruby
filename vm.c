@@ -568,11 +568,6 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self,
 	val = vm_eval_body(th);
     }
     else {
-	if (((NODE*)block->iseq)->u3.state == 1) {
-	    VALUE args = rb_ary_new4(argc, argv);
-	    argc = 1;
-	    argv = &args;
-	}
 	val = vm_yield_with_cfunc(th, block, self, argc, argv);
     }
     return val;

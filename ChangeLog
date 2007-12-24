@@ -1,3 +1,11 @@
+Mon Dec 24 13:55:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (rb_proc_new), vm.c (invoke_block): removed u3.state magic.
+	  [ruby-core:14310]
+
+	* test/ruby/test_symbol.rb (test_to_proc): a test from Frederick
+	  Cheung <frederick.cheung AT gmail.com>.
+
 Mon Dec 24 13:43:36 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_atfork): should not leave living_threads
