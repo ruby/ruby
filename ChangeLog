@@ -1,3 +1,7 @@
+Mon Dec 24 20:29:28 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/io/nonblock/test_flush.rb: fix test for 1.9.
+
 Mon Dec 24 20:23:44 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/rinda/test_rinda.rb: revert last commit because this test seems
