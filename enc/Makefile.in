@@ -1,12 +1,14 @@
-srcdir = @srcdir@
+encsrcdir = @srcdir@
 topdir = .
 libdir = @libdir@
-top_srcdir = $(srcdir:/enc=)
+top_srcdir = $(encsrcdir:/enc=)
+srcdir = $(top_srcdir)
 arch = @arch@
 EXTOUT = @EXTOUT@
-hdrdir = $(top_srcdir)/include
+hdrdir = $(srcdir)/include
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 ENCSODIR = $(EXTOUT)/$(arch)/enc
+TRANSSODIR = $(ENCSODIR)/trans
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 
@@ -22,6 +24,7 @@ LIBRUBYARG_STATIC = $(LIBRUBYARG_SHARED)
 empty =
 CC = @CC@
 OUTFLAG = @OUTFLAG@$(empty)
+COUTFLAG = @COUTFLAG@$(empty)
 CFLAGS = $(CCDLFLAGS) @CFLAGS@ @ARCH_FLAG@
 CCDLFLAGS = @CCDLFLAGS@
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir)
@@ -34,3 +37,10 @@ LDSHARED = @LDSHARED@
 DLDFLAGS = @DLDFLAGS@ $(EXTLDFLAGS) @ARCH_FLAG@
 
 RM = @RM@
+
+all:
+
+clean:
+
+distclean: clean
+	$(RM) enc.mk

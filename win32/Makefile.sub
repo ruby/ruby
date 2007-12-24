@@ -132,6 +132,7 @@ RDOCTARGET = install-doc
 !endif
 
 OUTFLAG       = -Fe
+COUTFLAG      = -Fo
 !if !defined(CFLAGS)
 CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
@@ -439,7 +440,7 @@ s,@EXEEXT@,.exe,;t t
 s,@OBJEXT@,$(OBJEXT),;t t
 s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
-s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH) -def:$$(DEFFILE) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb,;t t
+s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH),;t t
 s,@ARCH_FLAG@,$(ARCH_FLAG),;t t
 s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
@@ -472,17 +473,18 @@ s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
 s,@OUTFLAG@,$(OUTFLAG),;t t
+s,@COUTFLAG@,$(COUTFLAG),;t t
 s,@CPPOUTFILE@,-P,;t t
 s,@LIBPATHFLAG@, -libpath:"%s",;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
-s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS),;t t
+s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
 !if $(MSC_VER) >= 1400
 s,@LINK_SO@,$(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
 s,@LINK_SO@,@$$(RM) $$(@:/=\).manifest,;t t
 !endif
-s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) -c -Tc$$(<:\=/),;t t
-s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) -c -Tp$$(<:\=/),;t t
+s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tc$$(<:\=/),;t t
+s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tp$$(<:\=/),;t t
 s,@COMPILE_RULES@,{$$(hdrdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(srcdir)}.%s{}.%s: .%s.%s:,;t t
 s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
@@ -502,11 +504,12 @@ s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
-<<KEEP
+<<
 
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ $(LDFLAGS)
+		miniruby.exe -v
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 
@@ -562,24 +565,24 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 			. $(icondirs) $(srcdir)/win32
 
 {$(srcdir)/enc}.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)/missing}.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)}.c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 .c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 
 {$(srcdir)/missing}.c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)}.c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
 .c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa -c -Tc$(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa $(COUTFLAG)$@ -c -Tc$(<:\=/)
 
 .rc.res:
 	$(RC) -I. -I$(<D) $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:\=/)
@@ -592,4 +595,4 @@ $(OBJS): {$(hdrdir)/ruby}win32.h
 dir.$(OBJEXT) win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fo$@ -c ext/extinit.c
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c

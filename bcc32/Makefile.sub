@@ -128,6 +128,7 @@ RDOCTARGET = install-doc
 !endif
 
 OUTFLAG       = -o
+COUTFLAG      = -o
 !ifndef CFLAGS
 CFLAGS = -q -tWR -tWC $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 !endif
@@ -214,10 +215,10 @@ VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/mis
 .path. = $(srcdir)
 
 .c.obj:
-	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
+	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:/=\)
 
 .c.asm:
-	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) -S $(<:\=/)
+	$(CC) $(CFLAGS) $(XCFLAGS) -I. $(CPPFLAGS) $(COUTFLAG)$@ -S $(<:\=/)
 
 .rc.res:
 	$(RC) $(RFLAGS) -I. -I$(<D). $(iconinc) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $(<:/=\)
@@ -431,13 +432,14 @@ s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
 s,@OUTFLAG@,$(OUTFLAG),;t t
+s,@COUTFLAG@,$(COUTFLAG),;t t
 s,@CPPOUTFILE@,,;t t
 s,@LIBPATHFLAG@, -L"%s",;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
-s,@LINK_SO@,$$(LDSHARED) $$(DLDFLAGS) $$(LIBPATH) $$(OBJS), $$(@:/=\), nul, $$(LIBS) $$(LOCAL_LIBS), $$(DEFFILE), $$(RESFILE),;t t
-s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) -c $$(<:/=\),;t t
-s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) -P -c $$(<:/=\),;t t
+s,@LINK_SO@,$$(LDSHARED) $$(DLDFLAGS) $$(LIBPATH) $$(OBJS:/=\), $$(@:/=\), nul, $$(LIBS) $$(LOCAL_LIBS), $$(DEFFILE:/=\), $$(RESFILE:/=\),;t t
+s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $(COUTFLAG)$$(@) -c $$(<:/=\),;t t
+s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) -P $(COUTFLAG)$$(@) -c $$(<:/=\),;t t
 s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(hdrdir)}.%s{}.%s: .%s.%s:,;t t
 s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
 s,@COMMON_LIBS@,m advapi32 avicap32 avifil32 cap comctl32 comdlg32 dlcapi gdi32 glu32 imagehlp imm32 inetmib1 kernel32 loadperf lsapi32 lz32 mapi32 mgmtapi mpr msacm32 msvfw32 nddeapi netapi32 ole32 oleaut32 oledlg olepro32 opengl32 pdh pkpd32 rasapi32 rasdlg rassapi rpcrt4 setupapi shell32 shfolder snmpapi sporder tapi32 url user32 vdmdbg version win32spl winmm wintrust wsock32,;t t
@@ -460,7 +462,7 @@ s,@top_srcdir@,$(srcdir),;t t
 
 miniruby$(EXEEXT):
 		@echo $(LIBS)
-		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT),$@,nul,$(LIBS)
+		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS:/=\) $(DMYEXT),$@,nul,$(LIBS)
 
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ),$@,nul,$(LIBRUBYARG) $(LIBS),,$(RUBY_INSTALL_NAME).res
@@ -518,7 +520,7 @@ distclean-local::
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -o$@ -c ext/extinit.c
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 main.$(OBJEXT): win32.h
 ascii.$(OBJEXT): win32.h

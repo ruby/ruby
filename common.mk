@@ -341,7 +341,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
 encs: enc.mk
-	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc"
+	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc/trans" enc/trans
 	$(MAKE) -f enc.mk $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \

@@ -1,54 +1,63 @@
+% deffile = (true if /\$\(DEFFILE\)/ =~ CONFIG["LINK_SO"])
 % encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS
 % encs.each {|e| e.chomp!(".c")}
-% encs = encs.sort_by {|e| e.split(/(\d+)/).map {|n| Integer(n) rescue n}}
+% alphanumeric_order = proc {|e| e.split(/(\d+)/).map {|n| Integer(n) rescue n}}
+% encs = encs.sort_by(&alphanumeric_order)
+% trans = Dir.open($srcdir+"/trans") {|d| d.select {|e| e.chomp!('.c')}}
+% trans = trans.sort_by(&alphanumeric_order)
+% trans.map! {|e| "trans/#{e}"}
+% dependencies = encs + trans
 
-VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(top_srcdir) $(srcdir)].join(CONFIG["PATH_SEPARATOR"])%>
+VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(srcdir) $(encsrcdir)].join(CONFIG["PATH_SEPARATOR"])%>
 LIBPATH = <%=libpathflag($DEFLIBPATH)%>
 
-ENCOBJS = <%=encs.map {|e|"#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if encs.size>1%>
-ENCDEFS = <%=encs.map {|e|"#{e}.def"}.join(" \\\n\t  ") if DEFFILE%><%="\n" if encs.size>1%>
+ENCOBJS = <%=encs.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if encs.size>1%>
+ENCDEFS = <%=encs.map {|e|"enc/#{e}.def"}.join(" \\\n\t  ") if deffile%><%="\n" if encs.size>1%>
 ENCSOS = <%=encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%>
 
-all: $(ENCSOS)
+TRANSOBJS = <%=trans.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if trans.size>1%>
+TRANSDEFS = <%=trans.map {|e|"enc/#{e}.def"}.join(" \\\n\t    ") if deffile%><%="\n" if trans.size>1%>
+TRANSSOS = <%=trans.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%>
+
+all: $(ENCSOS) $(TRANSSOS)
 
 % COMPILE_RULES.each do |rule|
 <%=  rule % %w[c $(OBJEXT)] %>
 	<%=COMPILE_C%>
 
 % end
-% unless encs.empty?
+% unless encs.empty? or trans.empty?
 
+%   unless encs.empty?
 $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
-
-% encs.each do |e|
-<%=e%>.so: $(ENCSODIR)/<%=e%>.$(DLEXT)
-% end
+%   end
+%   unless trans.empty?
+$(TRANSOBJS): ruby.h intern.h config.h defines.h transcode_data.h
+%   end
 
 % end
 % link_so = LINK_SO.gsub(/\n/, "\n\t")
-% encs.each do |e|
-%   deps = "#{e}.$(OBJEXT)"
-%   deps << " #{e}-$(arch).def" if DEFFILE
-$(ENCSODIR)/<%=e%>.$(DLEXT): <%=deps%>
-	<%=link_so.sub(/\$\(OBJS\)/, deps)%>
-
-% end
-% if DEFFILE
-%   encs.each do |e|
-<%=e%>-$(arch).def: enc.mk
-	echo EXPORTS > $@
-	echo <%=EXPORT_PREFIX%>Init_<%=e%> >> $@
-
+% link_so.gsub!(/(-(?:implib|pdb):\S+)-\$\(arch\)\./, '\1.')
+% dependencies.each do |e|
+%   obj = "enc/#{e}.$(OBJEXT)"
+%   df = ("enc/#{e}.def" if deffile)
+$(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
+%   if df
+	echo EXPORTS > <%=df%>
+	echo <%=EXPORT_PREFIX%>Init_<%=File.basename(e)%> >> <%=df%>
 %   end
+	<%=link_so.sub(/\$\(OBJS\)/) {obj}.sub(/\$\(DEFFILE\)/) {df}.gsub(/-(?:implib|pdb):/) {|s|"#{s}enc/#{e.sub(/[^\/]+\z/, '')}"}%>
+
 % end
-% encs.each do |e|
-<%=e%>.$(OBJEXT): <%=e%>.c
+% dependencies.each do |e|
+enc/<%=e%>.$(OBJEXT): $(srcdir)/enc/<%=e%>.c
+	<%=COMPILE_C.sub(/\$\(<(?:.*)\)/) {"$(srcdir)/enc/#{e}.c"}%>
 % end
 
 clean:
 	$(RM) $(ENCSOS)
 	$(RM) $(ENCDEFS)
 	$(RM) $(ENCOBJS)
-
-distclean: clean
-	$(RM) enc.mk
+	$(RM) $(TRANSSOS)
+	$(RM) $(TRANSDEFS)
+	$(RM) $(TRANSOBJS)

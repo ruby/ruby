@@ -160,6 +160,7 @@ else
 end
 
 OUTFLAG = CONFIG['OUTFLAG']
+COUTFLAG = CONFIG['COUTFLAG']
 CPPOUTFILE = CONFIG['CPPOUTFILE']
 
 CONFTEST_C = "conftest.c".freeze
@@ -1211,6 +1212,8 @@ LIBRUBY = #{CONFIG['LIBRUBY']}
 LIBRUBY_A = #{CONFIG['LIBRUBY_A']}
 LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
 LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
+OUTFLAG = #{OUTFLAG}
+COUTFLAG = #{COUTFLAG}
 
 RUBY_EXTCONF_H = #{$extconf_h}
 CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
@@ -1289,7 +1292,7 @@ def depend_rules(depend)
       implicit = [[m[1], m[2]], [m.post_match]]
       next
     elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-      line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
+      line.gsub!(%r"(?<=\s)(?![./\\])([^$(){}+=:\s,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
     end
     depout << line
   end
@@ -1700,8 +1703,8 @@ COMMON_LIBS = config_string('COMMON_LIBS', &split) || []
 
 COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
 RULE_SUBST = config_string('RULE_SUBST')
-COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) -c $<'
-COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) -c $<'
+COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
+COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
 TRY_LINK = config_string('TRY_LINK') ||
   "$(CC) #{OUTFLAG}conftest $(INCFLAGS) $(CPPFLAGS) " \
   "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"

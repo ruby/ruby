@@ -1,3 +1,15 @@
+Mon Dec 24 12:49:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in, lib/mkmf.rb, */Makefile.sub: specify
+	  compiled output file name explicitly.
+
+	* enc/Makefile.in, enc/depend: now makes compiler to put generated
+	  files under directories corresnponding to the each source.
+	  enc/trans supported.
+
+	* enc/make_encmake.rb: evaluates depend file before Makefile.in so
+	  that the former can influence to CONFIG.
+
 Mon Dec 24 12:35:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win{32,ce}/Makefile.sub (MFLAGS): defaulted to -l.
@@ -5,7 +17,7 @@ Mon Dec 24 12:35:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Dec 24 12:08:10 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* /, ext/:  Add svn:ignore for OS X Xcode 3's conftest.dSYM
-	directories.
+	  directories.
 
 Mon Dec 24 11:56:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -14,16 +14,16 @@ else
   BUILTIN_ENCS = []
 end
 
-DEFFILE = (true if CONFIG["DLDFLAGS"].sub!(/\s+-def:\$\(DEFFILE\)\s+/, ' '))
-  
-mkin = File.read(File.join($srcdir, "Makefile.in"))
-mkin.gsub!(/@(#{CONFIG.keys.join('|')})@/) {CONFIG[$1]}
 if File.exist?(depend = File.join($srcdir, "depend"))
   erb = ERB.new(File.read(depend), nil, '%')
   erb.filename = depend
   tmp = erb.result(binding)
-  mkin << "\n#### depend ####\n\n" << depend_rules(tmp).join
+  dep = "\n#### depend ####\n\n" << depend_rules(tmp).join
+else
+  dep = ""
 end
+mkin = File.read(File.join($srcdir, "Makefile.in"))
+mkin.gsub!(/@(#{CONFIG.keys.join('|')})@/) {CONFIG[$1]}
 open(ARGV[0], 'wb') {|f|
-  f.puts mkin
+  f.puts mkin, dep
 }

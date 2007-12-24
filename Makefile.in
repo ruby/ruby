@@ -37,6 +37,7 @@ VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/enc:$(srcdir)/mis
 
 empty =
 OUTFLAG = @OUTFLAG@$(empty)
+COUTFLAG = @COUTFLAG@$(empty)
 CFLAGS = @CFLAGS@ @ARCH_FLAG@
 XCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) @XCFLAGS@
 CPPFLAGS = @CPPFLAGS@
@@ -182,13 +183,13 @@ lex.c: keywords
 	fi
 
 .c.@OBJEXT@:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c $<
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
 .s.@OBJEXT@:
 	$(AS) $(ASFLAGS) -o $@ $<
 
 .c.S:
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -S $<
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -S $<
 
 clean-local::
 	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT)
@@ -197,4 +198,4 @@ distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG)
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ -c ext/extinit.c
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
