@@ -44,6 +44,87 @@ EOT
     assert_block(full_message) { expected == actual }
   end
 
+  def test_open_r
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r") {|f|
+        assert_equal(nil, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_enc
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r:euc-jp") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_enc_enc
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r:euc-jp:utf-8") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_w
+    with_tmpdir {
+      open("tmp", "w") {|f|
+        assert_equal(nil, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_w_enc
+    with_tmpdir {
+      open("tmp", "w:euc-jp") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_w_enc_enc
+    with_tmpdir {
+      open("tmp", "w:euc-jp:utf-8") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_w_enc
+    with_tmpdir {
+      open("tmp", "w:euc-jp") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_stdin
+    assert_equal(Encoding.default_external, STDIN.external_encoding)
+    assert_equal(nil, STDIN.internal_encoding)
+  end
+
+  def test_stdout
+    assert_equal(nil, STDOUT.external_encoding)
+    assert_equal(nil, STDOUT.internal_encoding)
+  end
+
+  def test_stderr
+    assert_equal(nil, STDERR.external_encoding)
+    assert_equal(nil, STDERR.internal_encoding)
+  end
+
   def test_terminator_conversion
     with_tmpdir {
       generate_file('tmp', "before \u00FF after")
