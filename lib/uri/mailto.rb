@@ -55,7 +55,7 @@ module URI
         (#{PATTERN::FRAGMENT})                        (?# 3: fragment)
       )?
       \\z
-    ", Regexp::EXTENDED, 'N').freeze
+    ", Regexp::EXTENDED).freeze
     # :startdoc:
 
     #

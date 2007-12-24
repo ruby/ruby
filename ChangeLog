@@ -1,3 +1,8 @@
+Mon Dec 24 10:49:04 2007
+
+	* lib/uri/mailto.rb, lib/uri/common.rb:  Fix Regexp warnings.  Patch
+	#16524 from Kornelius Kalnbach, [ruby-core:14302].
+
 Mon Dec 24 10:37:38 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* gem_prelude.rb:  Remove methods from Gem, not QuickLoader, to fix
