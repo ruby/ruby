@@ -1,3 +1,11 @@
+Mon Dec 24 17:12:57 2007  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h, random.c, array.c:
+	  change exported name.
+	  genrand_int32 -> rb_genrand_int32.
+	  genrand_real -> rb_genrand_real.
+	  [ruby-core:14335]
+
 Mon Dec 24 17:06:37 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* {lib,test}/{soap,wsdl,xsd}: removed soap4r along to the discussion

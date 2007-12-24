@@ -2896,7 +2896,7 @@ rb_ary_shuffle_bang(VALUE ary)
     rb_ary_modify(ary);
     ary_iter_check(ary);
     while (i) {
-	long j = genrand_real()*i;
+	long j = rb_genrand_real()*i;
 	VALUE tmp = RARRAY_PTR(ary)[--i];
 	RARRAY_PTR(ary)[i] = RARRAY_PTR(ary)[j];
 	RARRAY_PTR(ary)[j] = tmp;
@@ -2939,7 +2939,7 @@ rb_ary_choice(VALUE ary)
 
     i = RARRAY_LEN(ary);
     if (i == 0) return Qnil;
-    j = genrand_real()*i;
+    j = rb_genrand_real()*i;
     return RARRAY_PTR(ary)[j];
 }
 

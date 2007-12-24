@@ -442,8 +442,8 @@ VALUE rb_detach_process(rb_pid_t pid);
 VALUE rb_range_new(VALUE, VALUE, int);
 VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
 /* random.c */
-unsigned long genrand_int32(void);
-double genrand_real(void);
+unsigned long rb_genrand_int32(void);
+double rb_genrand_real(void);
 /* re.c */
 #define rb_memcmp memcmp
 int rb_memcicmp(const void*,const void*,long);

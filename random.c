@@ -145,7 +145,7 @@ next_state(void)
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-unsigned long
+static unsigned long
 genrand_int32(void)
 {
     unsigned long y;
@@ -163,7 +163,7 @@ genrand_int32(void)
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-double
+static double
 genrand_real(void)
 { 
     unsigned long a=genrand_int32()>>5, b=genrand_int32()>>6; 
@@ -187,6 +187,18 @@ genrand_real(void)
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+
+unsigned long
+rb_genrand_int32(void)
+{
+    return genrand_int32();
+}
+
+double
+rb_genrand_real(void)
+{
+    return genrand_real();
+}
 
 static VALUE saved_seed = INT2FIX(0);
 
