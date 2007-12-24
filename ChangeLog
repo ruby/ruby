@@ -1,3 +1,7 @@
+Mon Dec 24 15:55:50 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/compile.rb, getrev.rb, runruby.rb: remove unused tools.
+
 Mon Dec 24 15:42:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, cygwin/GNUmakefile.in, */Makefile.sub,
