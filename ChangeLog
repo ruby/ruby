@@ -1,3 +1,7 @@
+Mon Dec 24 20:16:54 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* instruby.rb: fix rdoc install dir.
+
 Mon Dec 24 18:37:32 2007  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_prepare_re): show regexp encoding in the error message.

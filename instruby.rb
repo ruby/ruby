@@ -236,7 +236,7 @@ install?(:rdoc) do
   if $rdocdir
     puts "installing rdoc"
 
-    ridatadir = File.join(CONFIG['datadir'], 'ri/$(MAJOR).$(MINOR)/system')
+    ridatadir = File.join(CONFIG['datadir'], 'ri/$(MAJOR).$(MINOR).$(TEENY)/system')
     Config.expand(ridatadir)
     makedirs [ridatadir]
     install_recursive($rdocdir, ridatadir)
