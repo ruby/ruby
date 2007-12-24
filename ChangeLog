@@ -1,3 +1,8 @@
+Mon Dec 24 17:20:34 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/{mailread.rb,getopts.rb,parsearg.rb}: removed.
+	  see [ruby-core:12535], [ruby-dev:31969].
+
 Mon Dec 24 17:12:57 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h, random.c, array.c:
