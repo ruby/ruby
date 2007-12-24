@@ -37,7 +37,7 @@ module RDoc
       @info = info
       @options = options
       @counter = 0
-      File.makedirs(DOT_PATH)
+      FileUtils.mkdir_p(DOT_PATH)
       @diagram_cache = {}
     end
 

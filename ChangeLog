@@ -1,3 +1,8 @@
+Mon Dec 24 23:13:09 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/rdoc/diagram.rb (RDoc::Diagram#initialize): use fileuitls
+	  instead of ftools.
+
 Mon Dec 24 23:04:57 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/ftools.rb: removed obsoleted lib.  use fileutils instead (by eban).
