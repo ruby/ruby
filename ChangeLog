@@ -1,3 +1,7 @@
+Mon Dec 24 12:35:03 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win{32,ce}/Makefile.sub (MFLAGS): defaulted to -l.
+
 Mon Dec 24 12:08:10 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* /, ext/:  Add svn:ignore for OS X Xcode 3's conftest.dSYM

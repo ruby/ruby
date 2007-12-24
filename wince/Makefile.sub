@@ -5,7 +5,7 @@ MKFILES = Makefile
 NULL = nul
 
 !ifndef MFLAGS
-MFLAGS=-
+MFLAGS=-l
 !endif
 
 #### Start of system configuration section. ####
