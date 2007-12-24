@@ -1,3 +1,8 @@
+Tue Dec 25 01:07:57 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/irb/output-method.rb: translate a comment to English to
+	  avoid mix of EUC-JP comment and UTF-8 $Date$.
+
 Tue Dec 25 00:27:28 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservley/cgihandler.rb

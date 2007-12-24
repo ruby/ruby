@@ -36,11 +36,11 @@ module IRB
     end
 
     # %
-    # <フラグ>  [#0- +]
-    # <最小フィールド幅> (\*|\*[1-9][0-9]*\$|[1-9][0-9]*)
-    # <精度>.(\*|\*[1-9][0-9]*\$|[1-9][0-9]*|)?
-    # #<長さ修正文字>(hh|h|l|ll|L|q|j|z|t)
-    # <変換修正文字>[diouxXeEfgGcsb%] 
+    # <flag>  [#0- +]
+    # <minimum field width> (\*|\*[1-9][0-9]*\$|[1-9][0-9]*)
+    # <precision>.(\*|\*[1-9][0-9]*\$|[1-9][0-9]*|)?
+    # #<length modifier>(hh|h|l|ll|L|q|j|z|t)
+    # <conversion specifier>[diouxXeEfgGcsb%] 
     def parse_printf_format(format, opts)
       return format, opts if $1.size % 2 == 1
     end
