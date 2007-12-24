@@ -1,4 +1,11 @@
-Mon Dec 24 10:49:04 2007
+Mon Dec 24 11:20:31 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/ri_options.rb:  Fix display of GEMDIRS, make command
+	examples match ri's name.
+
+	* lib/rdoc/ri/ri_paths.rb:  Only allow latest ri dirs in ri output.
+
+Mon Dec 24 10:49:04 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/uri/mailto.rb, lib/uri/common.rb:  Fix Regexp warnings.  Patch
 	#16524 from Kornelius Kalnbach, [ruby-core:14302].

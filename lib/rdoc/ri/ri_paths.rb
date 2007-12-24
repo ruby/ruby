@@ -42,13 +42,30 @@ module RI
     # This is the search path for 'ri'
     PATH = [ SYSDIR, SITEDIR, HOMEDIR ].find_all {|p| p && File.directory?(p)}
 
-    begin
-      require 'rubygems'
-      GEMDIRS = Dir["#{Gem.path}/doc/*/ri"]
-      GEMDIRS.each { |path| RI::Paths::PATH << path }
-    rescue LoadError
-      GEMDIRS = nil
+    require 'rubygems'
+
+    # HACK dup'd from Gem.latest_partials and friends
+    all_paths = []
+
+    all_paths = Gem.path.map do |dir|
+      Dir[File.join(dir, 'doc', '*', 'ri')]
+    end.flatten
+
+    ri_paths = {}
+
+    all_paths.each do |dir|
+      base = File.basename File.dirname(dir)
+      if base =~ /(.*)-((\d+\.)*\d+)/ then
+        name, version = $1, $2
+        ver = Gem::Version.new version
+        if ri_paths[name].nil? or ver > ri_paths[name][0] then
+          ri_paths[name] = [ver, dir]
+        end
+      end
     end
+
+    GEMDIRS = ri_paths.map { |k,v| v.last }.sort
+    GEMDIRS.each { |dir| RI::Paths::PATH << dir }
 
     # Returns the selected documentation directories as an Array, or PATH if no
     # overriding directories were given.

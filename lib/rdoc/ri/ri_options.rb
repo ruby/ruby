@@ -62,9 +62,10 @@ module RI
           (RI::Paths::HOMEDIR || "No ~/.rdoc found") ],
 
         [ "--gems",         nil,    nil,
-          "Include documentation from Rubygems:\n  " +
-          (RI::Paths::GEMDIRS ? "#{Gem.path}/doc/*/ri" :
-                                "No Rubygems ri found.") ],
+          "Include documentation from RubyGems:\n  " +
+          (RI::Paths::GEMDIRS ?
+           Gem.path.map { |dir| "#{dir}/doc/*/ri" }.join("\n") :
+           "No Rubygems ri found.") ],
                                                            
         [ "--format",       "-f",   "<name>",
           "Format to use when displaying output:\n" +
@@ -116,7 +117,8 @@ module RI
       def OptionList.error(msg)
         $stderr.puts
         $stderr.puts msg
-        $stderr.puts "\nFor help on options, try 'ri --help'\n\n"
+        name = File.basename $PROGRAM_NAME
+        $stderr.puts "\nFor help on options, try '#{name} --help'\n\n"
         exit 1
       end
       
@@ -136,7 +138,11 @@ module RI
           RI::Paths::HOMEDIR
         ]
 
-        directories << "#{Gem.path}/doc/*/ri" if RI::Paths::GEMDIRS
+        if RI::Paths::GEMDIRS then
+          Gem.path.each do |dir|
+            directories << "#{dir}/doc/*/ri"
+          end
+        end
 
         directories = directories.join("\n    ")
 
@@ -157,16 +163,16 @@ module RI
 
           For example:
 
-              ri  File
-              ri  File.new
-              ri  F.n
-              ri  zip
+              #{name}  File
+              #{name}  File.new
+              #{name}  F.n
+              #{name}  zip
 
           Note that shell quoting may be required for method names
           containing punctuation:
 
-              ri 'Array.[]'
-              ri compact\\!
+              #{name} 'Array.[]'
+              #{name} compact\\!
 
           By default ri searches for documentation in the following
           directories:
@@ -180,8 +186,8 @@ module RI
         EOT
 
         if short_form
-          puts "For help on options, type 'ri -h'"
-          puts "For a list of classes I know about, type 'ri -c'"
+          puts "For help on options, type '#{name} -h'"
+          puts "For a list of classes I know about, type '#{name} -c'"
         else
           puts "Options:\n\n"
           OPTION_LIST.each do|long, short, arg, desc|
