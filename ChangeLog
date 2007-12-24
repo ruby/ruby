@@ -1,3 +1,7 @@
+Tue Dec 25 03:19:47 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* tool/make-snapshot: must create configure and lex.c.
+
 Tue Dec 25 03:16:05 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_s_pipe): now takes up to two arguments.  allow its

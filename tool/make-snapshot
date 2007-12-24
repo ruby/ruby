@@ -17,7 +17,7 @@ revision=`svn export $SVNURL ruby | sed -n '$s/.*\([0-9]+\).*/\1/p'`
 echo "#define RUBY_REVISION $revision" > ruby/revision.h
 v=ruby-r$revision
 mv ruby $v
-(cd $v; sed 's/{[^{}]*}//g' common.mk | make -f - prereq srcdir=.)
+(cd $v; autoconf; (sed '/lex\.c/,/^$/!d' Makefile.in; sed 's/{[^{}]*}//g' common.mk) | make -f - prereq srcdir=.)
 
 for cmd in "bzip tarball.tar.bz2 tar cjf" "gzip tarball.tar.gz tar czf" "zip archive.zip zip -qr"; do
     mesg="${cmd%%.*}" cmd="${cmd#*.}"
