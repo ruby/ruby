@@ -345,8 +345,7 @@ load_lock(const char *ftptr)
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	return (char *)ftptr;
     }
-    rb_barrier_wait((VALUE)data);
-    return 0;
+    return RTEST(rb_barrier_wait((VALUE)data)) ? (char *)ftptr : 0;
 }
 
 static void

@@ -2555,6 +2555,9 @@ rb_barrier_wait(VALUE self)
 	if (thlist_signal(&barrier->waiting, 1, &barrier->owner)) return Qfalse;
 	return Qtrue;
     }
+    else if (barrier->owner == GET_THREAD()) {
+	return Qfalse;
+    }
     else {
 	*barrier->tail = q = ALLOC(rb_thread_list_t);
 	q->th = GET_THREAD();

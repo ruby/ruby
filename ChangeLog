@@ -1,3 +1,9 @@
+Mon Dec 24 17:59:29 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (load_lock): reverted.
+
+	* thread.c (rb_barrier_wait): check for recursive wait.
+
 Mon Dec 24 17:50:54 2007  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (function_call_may_return_twice_jmp_buf): removed.
