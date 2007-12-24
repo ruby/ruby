@@ -1,3 +1,8 @@
+Mon Dec 24 11:56:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {bcc32,win{32,ce}}/Makefile.sub (SET_MAKE): set MFLAGS which is not
+	  set by default, to get rid of chaotic situation of MFLAGS/MAKEFLAGS.
+
 Sat Dec 22 14:49:46 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: don't freeze nil even if 1.8 will not be aware of

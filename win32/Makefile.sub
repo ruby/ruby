@@ -366,7 +366,7 @@ s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
-s,@SET_MAKE@,$(SET_MAKE),;t t
+s,@SET_MAKE@,MFLAGS = -$$(MAKEFLAGS),;t t
 s,@CP@,copy > nul,;t t
 s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
