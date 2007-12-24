@@ -521,8 +521,7 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
  */
 
 static VALUE
-rb_mod_method_defined(mod, mid)
-    VALUE mod, mid;
+rb_mod_method_defined(VALUE mod, VALUE mid)
 {
     return rb_method_boundp(mod, rb_to_id(mid), 1);
 }

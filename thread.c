@@ -393,16 +393,6 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     return thval;
 }
 
-/*
- *  call-seq:
- *     Thread.start([args]*) {|args| block }   => thread
- *     Thread.fork([args]*) {|args| block }    => thread
- *
- *  Basically the same as <code>Thread::new</code>. However, if class
- *  <code>Thread</code> is subclassed, then calling <code>start</code> in that
- *  subclass will not invoke the subclass's <code>initialize</code> method.
- */
-
 static VALUE
 thread_s_new(int argc, VALUE *argv, VALUE klass)
 {
@@ -416,6 +406,16 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
     }
     return thread;
 }
+
+/*
+ *  call-seq:
+ *     Thread.start([args]*) {|args| block }   => thread
+ *     Thread.fork([args]*) {|args| block }    => thread
+ *
+ *  Basically the same as <code>Thread::new</code>. However, if class
+ *  <code>Thread</code> is subclassed, then calling <code>start</code> in that
+ *  subclass will not invoke the subclass's <code>initialize</code> method.
+ */
 
 static VALUE
 thread_start(VALUE klass, VALUE args)
@@ -2799,6 +2799,8 @@ rb_clear_trace_func(void)
     rb_remove_event_hook(0);
 }
 
+static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALUE klass);
+
 /*
  *  call-seq:
  *     set_trace_func(proc)    => proc
@@ -2841,8 +2843,6 @@ rb_clear_trace_func(void)
  *	  line prog.rb:4        test     Test
  *      return prog.rb:4        test     Test
  */
-
-static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALUE klass);
 
 static VALUE
 set_trace_func(VALUE obj, VALUE trace)

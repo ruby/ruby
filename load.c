@@ -310,11 +310,8 @@ rb_load_protect(VALUE fname, int wrap, int *state)
  *  file be propagated to the loading environment.
  */
 
-
 static VALUE
-rb_f_load(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_load(int argc, VALUE *argv)
 {
     VALUE fname, wrap;
 

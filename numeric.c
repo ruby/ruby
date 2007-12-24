@@ -2081,6 +2081,10 @@ fix_minus(VALUE x, VALUE y)
     }
 }
 
+#define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
+/*tests if N*N would overflow*/
+#define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
+
 /*
  * call-seq:
  *   fix * numeric   =>  numeric_result
@@ -2089,10 +2093,6 @@ fix_minus(VALUE x, VALUE y)
  * the class of <code>numeric</code> and on the magnitude of the
  * result.
  */
-
-#define SQRT_LONG_MAX ((SIGNED_VALUE)1<<((SIZEOF_LONG*CHAR_BIT-1)/2))
-/*tests if N*N would overflow*/
-#define FIT_SQRT_LONG(n) (((n)<SQRT_LONG_MAX)&&((n)>=-SQRT_LONG_MAX))
 
 static VALUE
 fix_mul(VALUE x, VALUE y)
