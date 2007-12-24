@@ -1,3 +1,7 @@
+Tue Dec 25 06:15:01 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: add dummy toplevel frame.
+
 Tue Dec 25 05:44:56 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/net/http.rb:  Fix uninitialized variable warning.

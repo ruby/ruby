@@ -1412,10 +1412,10 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockp
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *reg_cfp = th->cfp;
-    volatile VALUE iseq = rb_iseq_new(0, filename, filename, 0, ISEQ_TYPE_TOP);
+    volatile VALUE iseqval = rb_iseq_new(0, filename, filename, 0, ISEQ_TYPE_TOP);
     VALUE val;
 
-    vm_push_frame(th, DATA_PTR(iseq), FRAME_MAGIC_TOP,
+    vm_push_frame(th, DATA_PTR(iseqval), FRAME_MAGIC_TOP,
 		  recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
     val = (*func)(arg);
 
@@ -1666,23 +1666,7 @@ th_init2(rb_thread_t *th)
     th->cfp = (void *)(th->stack + th->stack_size);
 
     vm_push_frame(th, 0, FRAME_MAGIC_TOP, Qnil, 0, 0,
-		  th->stack, 0, 0);
-    vm_push_frame(th, 0, FRAME_MAGIC_TOP, Qnil, 0, 0,
-		  th->cfp->sp, 0, 0);
-    
-#if 0
-    th->cfp->pc = 0;
-    th->cfp->sp = th->stack;
-    th->cfp->bp = 0;
-    th->cfp->lfp = th->stack;
-    *th->cfp->lfp = 0;
-    th->cfp->dfp = th->stack;
-    th->cfp->self = Qnil;
-    th->cfp->flag = 0;
-    th->cfp->iseq = 0;
-    th->cfp->proc = 0;
-    th->cfp->block_iseq = 0;
-#endif
+		  th->stack, 0, 1);
 
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
@@ -1823,7 +1807,10 @@ Init_VM(void)
     {
 	rb_vm_t *vm = ruby_current_vm;
 	rb_thread_t *th = GET_THREAD();
+	VALUE filename = rb_str_new2("<dummy toplevel>");
+	volatile VALUE iseqval = rb_iseq_new(0, filename, filename, 0, ISEQ_TYPE_TOP);
         volatile VALUE th_self;
+	rb_iseq_t *iseq;
 
 	/* create vm object */
 	vm->self = Data_Wrap_Struct(rb_cVM, rb_vm_mark, vm_free, vm);
@@ -1831,7 +1818,6 @@ Init_VM(void)
 	/* create main thread */
 	th_self = th->self = Data_Wrap_Struct(rb_cThread, rb_thread_mark,
 					      thread_free, th);
-
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;
@@ -1841,6 +1827,13 @@ Init_VM(void)
 
 	vm->living_threads = st_init_numtable();
 	st_insert(vm->living_threads, th_self, (st_data_t) th->thread_id);
+
+	rb_register_mark_object(iseqval);
+	GetISeqPtr(iseqval, iseq);
+	th->cfp->iseq = iseq;
+	th->cfp->pc = iseq->iseq_encoded;
+	(th->cfp+1)->iseq = iseq;
+	(th->cfp+1)->pc = iseq->iseq_encoded;
     }
     vm_init_redefined_flag();
 }
