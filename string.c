@@ -1491,8 +1491,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
 	char *t;
 	pos = rb_memsearch(sptr, slen, s, len);
 	if (pos < 0) return pos;
-	t = (char *)onigenc_get_right_adjust_char_head(enc, (const UChar *)s,
-						       (const UChar *)s + pos);
+	t = rb_enc_right_char_head(s, s+pos, enc);
 	if (t == s) break;
 	if ((len -= t - s) <= 0) return -1;
 	offset += t - s;
@@ -4564,7 +4563,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
-	if (ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, (UChar *)p, (UChar *)pp) != (const UChar*)pp)
+	if (rb_enc_left_char_head(p, pp, enc) != pp)
 	    return Qnil;
 	rb_str_modify(str);
 	STR_SET_LEN(str, RSTRING_LEN(str) - rslen);

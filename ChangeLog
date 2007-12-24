@@ -1,3 +1,16 @@
+Tue Dec 25 01:19:18 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_enc_left_char_head): new utility macro.
+
+	* include/ruby/encoding.h (rb_enc_right_char_head): ditto.
+
+	* io.c (appendline): does multibyte RS search in the function.
+
+	* io.c (prepare_getline_args): RS may be nil.
+
+	* io.c (rb_io_getc): should process character based on external
+	  encoding, when transcoding required.
+
 Tue Dec 25 01:07:57 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/irb/output-method.rb: translate a comment to English to

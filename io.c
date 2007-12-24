@@ -363,6 +363,15 @@ io_read_encoding(rb_io_t *fptr)
 	: rb_default_external_encoding();
 }
 
+static rb_encoding*
+io_input_encoding(rb_io_t *fptr)
+{
+    if (fptr->enc2) {
+	return fptr->enc2;
+    }
+    return io_read_encoding(fptr);
+}
+
 void
 rb_io_check_writable(rb_io_t *fptr)
 {
@@ -1646,30 +1655,50 @@ io_read(int argc, VALUE *argv, VALUE io)
     return str;
 }
 
+static void
+rscheck(const char *rsptr, long rslen, VALUE rs)
+{
+    if (!rs) return;
+    if (RSTRING_PTR(rs) != rsptr && RSTRING_LEN(rs) != rslen)
+	rb_raise(rb_eRuntimeError, "rs modified");
+}
+
 static int
-appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, int mb)
+appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE rs, VALUE *strp, long *lp)
 {
     VALUE str = *strp;
     int c = EOF;
     long limit = *lp;
-    rb_encoding *enc = io_read_encoding(fptr);
+    rb_encoding *enc = io_input_encoding(fptr);
 
     do {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
 	if (pending > 0) {
 	    const char *s = READ_DATA_PENDING_PTR(fptr);
-	    const char *p, *e;
+	    const char *p, *e, *pp;
 	    long last = 0, len = (c != EOF);
 
 	    if (limit > 0 && pending > limit) pending = limit;
-	    p = s;
+	    pp = p = s;
 	  again:
 	    e = memchr(p, delim, pending);
 	    if (e) {
-		if (mb &&
-		    ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc,(UChar*)s,(UChar*)e) != (UChar*)e) {
+		const char *p0 = e - rslen + 1;
+		if (p0 < s) {
 		    p = e + 1;
 		    goto again;
+		}
+		pp = rb_enc_left_char_head(pp, p0, enc);
+		if (pp != p0) {
+		    p = e + 1;
+		    goto again;
+		}
+		if (rsptr) {
+		    rscheck(rsptr, rslen, rs);
+		    if (memcmp(p0, rsptr, rslen) != 0) {
+			p = e + 1;
+			goto again;
+		    }
 		}
 		pending = e - s + 1;
 	    }
@@ -1752,7 +1781,7 @@ rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
     int c, nolimit = 0;
 
     for (;;) {
-	c = appendline(fptr, delim, &str, &limit, 0);
+	c = appendline(fptr, delim, 0, 0, 0, &str, &limit);
 	if (c == EOF || c == delim) break;
 	if (limit == 0) {
 	    nolimit = 1;
@@ -1768,14 +1797,6 @@ rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
 	}
     }
     return str;
-}
-
-static int
-rscheck(const char *rsptr, long rslen, VALUE rs)
-{
-    if (RSTRING_PTR(rs) != rsptr && RSTRING_LEN(rs) != rslen)
-	rb_raise(rb_eRuntimeError, "rs modified");
-    return 0;
 }
 
 static void
@@ -1803,10 +1824,20 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 	}
     }
     GetOpenFile(io, fptr);
-    if (fptr->enc2) {
-	rs = rb_funcall(rs, id_encode, 2, 
-			rb_enc_from_encoding(fptr->enc2),
-			rb_enc_from_encoding(fptr->enc));
+    if (!NIL_P(rs)) {
+	rb_encoding *enc_rs = rb_enc_get(rs);
+	rb_encoding *enc_io = io_read_encoding(fptr);
+
+	if (enc_io != enc_rs &&
+	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
+	     !rb_enc_asciicompat(enc_io))) {
+	    rb_raise(rb_eArgError, "IO and RS encodings differ");
+	}
+	if (fptr->enc2) {
+	    rs = rb_funcall(rs, id_encode, 2, 
+			    rb_enc_from_encoding(fptr->enc2),
+			    rb_enc_from_encoding(fptr->enc));
+	}
     }
     *rsp = rs;
     *limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
@@ -1843,6 +1874,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    rslen = 2;
 	    rspara = 1;
 	    swallow(fptr, '\n');
+	    rs = 0;
 	}
 	else if (rslen == 1) {
 	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0], limit);
@@ -1852,12 +1884,9 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 	newline = rsptr[rslen - 1];
 
-	while ((c = appendline(fptr, newline, &str, &limit, 1)) != EOF) {
+	while ((c = appendline(fptr, newline, rsptr, rslen, rs, &str, &limit)) != EOF) {
 	    if (c == newline) {
-		if (RSTRING_LEN(str) < rslen) continue;
-		if (!rspara) rscheck(rsptr, rslen, rs);
-		if (memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - rslen,
-			   rsptr, rslen) == 0) break;
+		break;
 	    }
 	    if (limit == 0) {
 		nolimit = 1;
@@ -2201,7 +2230,7 @@ rb_io_getc(VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    enc = io_read_encoding(fptr);
+    enc = io_input_encoding(fptr);
     READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
