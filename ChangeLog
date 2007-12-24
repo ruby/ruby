@@ -1,3 +1,8 @@
+Mon Dec 24 11:32:44 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_comparable): fixed to keep transitivity.
+	  [ruby-dev:32693]
+
 Mon Dec 24 11:20:31 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/ri_options.rb:  Fix display of GEMDIRS, make command
@@ -19,8 +24,6 @@ Mon Dec 24 09:45:45 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c, transcode_data_one_byte.c, transcode_data_japanese.c:
 	  added rb_ prefix to external data symbols.
-
-Mon Dec 24 06:36:00 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Dec 24 05:32:22 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

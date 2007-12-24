@@ -23,6 +23,7 @@ class TestIO < Test::Unit::TestCase
     r, w = IO.pipe
     w.print "\377xyz"
     w.close
+    r.binmode
     assert_equal("\377", r.gets("\377"), "[ruby-dev:24460]")
     r.close
 

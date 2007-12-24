@@ -1274,10 +1274,15 @@ rb_str_comparable(VALUE str1, VALUE str2)
     if (idx1 == idx2) return Qtrue;
     rc1 = rb_enc_str_coderange(str1);
     rc2 = rb_enc_str_coderange(str2);
-    if (rc1 == ENC_CODERANGE_7BIT && rc2 == ENC_CODERANGE_7BIT)
-	return Qtrue;
-    if (rc1 == ENC_CODERANGE_BROKEN) return Qtrue;
-    if (rc2 == ENC_CODERANGE_BROKEN) return Qtrue;
+    if (rc1 == ENC_CODERANGE_7BIT) {
+	if (rc2 == ENC_CODERANGE_7BIT) return Qtrue;
+	if (rb_enc_asciicompat(rb_enc_from_index(idx1)))
+	    return Qtrue;
+    }
+    if (rc2 == ENC_CODERANGE_7BIT) {
+	if (rb_enc_asciicompat(rb_enc_from_index(idx2)))
+	    return Qtrue;
+    }
     return Qfalse;
 }
 
@@ -1293,6 +1298,11 @@ rb_str_cmp(VALUE str1, VALUE str2)
     retval = memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len);
     if (retval == 0) {
 	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
+	    if (!enc) {
+		if (rb_enc_get(str1) - rb_enc_get(str2) > 0)
+		    return 1;
+		return -1;
+	    }
 	    return 0;
 	}
 	if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return 1;
