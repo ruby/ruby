@@ -1,3 +1,8 @@
+Mon Dec 24 17:06:37 2007  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* {lib,test}/{soap,wsdl,xsd}: removed soap4r along to the discussion
+	  at ruby-core and ruby-dev.  see [ruby-core:12535], [ruby-dev:31969].
+
 Mon Dec 24 17:06:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_feature_p): returns loading path name too.
