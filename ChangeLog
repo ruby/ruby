@@ -1,7 +1,7 @@
 Tue Dec 25 05:24:12 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile): clear local table if node == 0.
-	  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>
+	  a patch from Yusuke ENDOH <mame AT tsg.ne.jp>  [ruby-dev:32530]
 
 	* vm.c: clear VM stack.
 
