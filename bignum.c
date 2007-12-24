@@ -977,10 +977,10 @@ big2ulong(VALUE x, const char *type, int check)
     BDIGIT_DBL num;
     BDIGIT *ds;
 
-    if (len > SIZEOF_VALUE/SIZEOF_BDIGITS) {
+    if (len > DIGSPERLONG) {
 	if (check)
 	    rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
-	len = SIZEOF_VALUE/SIZEOF_BDIGITS;
+	len = DIGSPERLONG;
     }
     ds = BDIGITS(x);
     num = 0;
@@ -2390,7 +2390,7 @@ rb_big_aref(VALUE x, VALUE y)
     if (TYPE(y) == T_BIGNUM) {
 	if (!RBIGNUM_SIGN(y))
 	    return INT2FIX(0);
-	if (RBIGNUM_LEN(bigtrunc(y)) > SIZEOF_VALUE/SIZEOF_BDIGITS) {
+	if (RBIGNUM_LEN(bigtrunc(y)) > DIGSPERLONG) {
 	  out_of_range:
 	    return RBIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}

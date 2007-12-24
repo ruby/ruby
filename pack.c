@@ -861,13 +861,13 @@ pack_pack(VALUE ary, VALUE fmt)
 
 	  case 'U':		/* Unicode character */
 	    while (len-- > 0) {
-		long l;
+		SIGNED_VALUE l;
 		char buf[8];
 		int le;
 
 		from = NEXTFROM;
 		from = rb_to_int(from);
-		l = NUM2INT(from);
+		l = NUM2LONG(from);
 		if (l < 0) {
 		    rb_raise(rb_eRangeError, "pack(U): value out of range");
 		}

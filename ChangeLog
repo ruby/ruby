@@ -1,3 +1,12 @@
+Tue Dec 25 03:08:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* pack.c (pack_pack): use NUM2LONG instead of NUM2INT.
+
+	* numeric.c (fix_lshift, fix_aref): use SIZEOF_LONG instead of
+	  SIZEOF_VALUE.
+
+	* bignum.c (big2ulong, rb_big_aref): ditto.
+
 Tue Dec 25 02:55:26 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/rexml/element.rb (REXML::Elements#each): yield in each
