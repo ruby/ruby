@@ -220,6 +220,11 @@ module RDoc
         $stderr.printf("\n%35s: ", File.basename(fn)) unless options.quiet
         
         content = File.open(fn, "r") {|f| f.read}
+        if /coding:\s*(\S+)/ =~ content[/\A(?:.*\n){0,2}/]
+          if enc = Encoding.find($1)
+            content.force_encoding(enc)
+          end
+        end
 
         top_level = TopLevel.new(fn)
         parser = ParserFactory.parser_for(top_level, fn, content, options, @stats)

@@ -1,3 +1,7 @@
+Tue Dec 25 01:42:41 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/rdoc/rdoc.rb (parse_files): interpret coding cookie.
+
 Tue Dec 25 01:38:04 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* proc.c (method_name): preserve Symbol's encoding.
