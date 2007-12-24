@@ -1,3 +1,7 @@
+Mon Dec 24 23:01:04 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI::Buffer): use Meta ===.  [ruby-core:14295]
+
 Mon Dec 24 22:46:42 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* transocode.c: register_functional_transcoder() added.
