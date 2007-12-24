@@ -1,3 +1,7 @@
+Mon Dec 24 20:18:52 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* test/rinda/test_rinda.rb: enable rinda test.
+
 Mon Dec 24 20:16:54 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* instruby.rb: fix rdoc install dir.
