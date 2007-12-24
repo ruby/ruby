@@ -345,9 +345,15 @@ module Gem
       end
 
       sitelibdir = ConfigMap[:sitelibdir]
+      sitelibdir_index = $LOAD_PATH.index sitelibdir
 
-      # gem directories must come after -I and ENV['RUBYLIB']
-      $:.insert($:.index(sitelibdir), *require_paths)
+      if sitelibdir_index then
+        # gem directories must come after -I and ENV['RUBYLIB']
+        $LOAD_PATH.insert(sitelibdir_index, *require_paths)
+      else
+        # we are probably testing in core, -I and RUBYLIB don't apply
+        $LOAD_PATH.unshift(*require_paths)
+      end
 
       # Now autorequire
       if autorequire && spec.autorequire then # DEPRECATED
