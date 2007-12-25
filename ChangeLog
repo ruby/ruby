@@ -1,3 +1,7 @@
+Tue Dec 25 22:55:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (TIMEZONE_VOID): typo.
+
 Tue Dec 25 22:45:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns2vm.rb: add encoding option to shbang.
