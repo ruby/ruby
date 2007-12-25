@@ -13,7 +13,7 @@ require "csv"
 # An example of how to provide custom CSV serialization.
 class Hash
   def self.csv_load( meta, headers, fields )
-    self[*headers.zip(fields).flatten.map { |e| eval(e) }]
+    self[*headers.zip(fields).to_a.flatten.map { |e| eval(e) }]
   end
   
   def csv_headers

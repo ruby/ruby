@@ -1,3 +1,10 @@
+Tue Dec 25 14:09:16 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb:  Fixed test failures caused by changes to Ruby.
+	
+	* test/csv/tc_serialization, test/csv/tc_csv_parsing, test/csv/tc_features:
+	  Fixed test failures caused by changes to Ruby.
+
 Tue Dec 25 14:11:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_encoding_set): missing return type.

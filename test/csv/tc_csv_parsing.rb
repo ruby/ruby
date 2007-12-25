@@ -123,7 +123,7 @@ class TestCSVParsing < Test::Unit::TestCase
     line,4,some\rjunk
     line,5,jkl
     END_DATA
-    lines = bad_data.to_a
+    lines = bad_data.lines.to_a
     assert_equal(6, lines.size)
     assert_match(/\Aline,4/, lines.find { |l| l =~ /some\rjunk/ })
     
@@ -147,7 +147,7 @@ class TestCSVParsing < Test::Unit::TestCase
     line,4,8'10"
     line,5,jkl
     END_DATA
-    lines = bad_data.to_a
+    lines = bad_data.lines.to_a
     assert_equal(6, lines.size)
     assert_match(/\Aline,4/, lines.find { |l| l =~ /8'10"/ })
     

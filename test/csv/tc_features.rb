@@ -82,7 +82,7 @@ class TestCSVFeatures < Test::Unit::TestCase
   end
   
   def test_lineno
-    assert_equal(5, @sample_data.to_a.size)
+    assert_equal(5, @sample_data.lines.to_a.size)
     
     4.times do |line_count|
       assert_equal(line_count, @csv.lineno)
