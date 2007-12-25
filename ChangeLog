@@ -1,3 +1,9 @@
+Tue Dec 25 21:26:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (parse.c): depends on tool/ytab.sed.
+
+	* tool/ytab.sed: hack for bison 2.1.
+
 Tue Dec 25 20:24:58 2007  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* ext/openssl/ossl_ssl.c: Only show a warning if the default 

@@ -368,7 +368,7 @@ enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/de
 
 PHONY:
 
-{$(VPATH)}parse.c: {$(VPATH)}parse.y
+{$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed
 
 {$(srcdir)}.y.c:
 	$(YACC) $(YFLAGS) -o y.tab.c $<
