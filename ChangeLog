@@ -1,3 +1,8 @@
+Tue Dec 25 13:23:13 2007  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io_m17n.rb (test_write_noenc): don't mix text and
+	  binary mode.  [ruby-dev:32743]
+
 Tue Dec 25 13:13:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* README.EXT.ja, dir.c, eval.c, eval_intern.h, lex.c.src,

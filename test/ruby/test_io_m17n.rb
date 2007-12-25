@@ -300,14 +300,14 @@ EOT
   end
 
   def test_write_noenc
-    src = "\xc2\xa1\n"
+    src = "\xc2\xa1\n".force_encoding("ascii-8bit")
     with_tmpdir {
       open('tmp', "w") {|f|
         ENCS.each {|enc|
           f.write src.dup.force_encoding(enc)
         }
       }
-      open('tmp', 'rb') {|f|
+      open('tmp', 'r:ascii-8bit') {|f|
         assert_equal(src*ENCS.length, f.read)
       }
     }
