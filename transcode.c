@@ -117,8 +117,8 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
     st_data_t k, val = 0;
 
     k = (st_data_t)key;
-    if (!st_lookup(transcoder_table, k, &val) &&
-	st_delete(transcoder_lib_table, &k, &val)) {
+    while (!st_lookup(transcoder_table, k, &val) &&
+	   st_delete(transcoder_lib_table, &k, &val)) {
 	const char *const lib = (const char *)val;
 	int len = strlen(lib);
 	char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
@@ -128,6 +128,8 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
 	memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
 	memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len + 1);
 	if (!rb_require(path)) return NULL;
+    }
+    if (!val) {
 	if (!st_lookup(transcoder_table, (st_data_t)key, &val)) {
 	    /* multistep logic, via UTF-8 */
 	    if (!encoding_equal(from_encoding, "UTF-8") &&

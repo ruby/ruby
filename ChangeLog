@@ -1,3 +1,7 @@
+Tue Dec 25 15:21:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (transcode_dispatch): fix for multistep transcode.
+
 Tue Dec 25 15:07:51 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enc/trans/single_byte.c (Init_single_byte): renamed.
