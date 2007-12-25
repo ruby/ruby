@@ -3,7 +3,6 @@ biorhythm.rb	biorhythm calculator
 cal.rb		cal(1) clone
 cbreak.rb	no echo done by ioctl
 clnt.rb		socket client
-dbmtest.rb	test for dbm
 dir.rb		directory access
 dualstack-fetch.rb	IPv6 demo
 dualstack-httpd.rb	IPv6 demo
@@ -20,7 +19,6 @@ fib.scm		Fibonacci number (Scheme)
 freq.rb		count word occurrence
 from.rb		scan mail spool
 fullpath.rb	convert ls -lR to fullpath format
-getopts.test	test fot getopt.rb
 goodfriday.rb	print various christian calendar event.
 io.rb		io test
 irb.rb		interactive ruby
@@ -31,7 +29,6 @@ list3.rb	stupid object sample
 mine.rb		simple mine sweeper	
 mkproto.rb     extract prototype from C
 mpart.rb	split file int multi part
-mrshtest.rb	test marshal
 observ.rb	observer design pattern sample
 occur.pl	count word occurrence (Perl)
 occur.rb	count word occurrence (Ruby)
@@ -42,7 +39,6 @@ rcs.awk		random character stereogram (AWK)
 rcs.rb		random character stereogram (Ruby)
 rcs.dat		data for random character stereogram
 rd2html.rb	rd (Ruby Document) to HTML translator
-regx.rb		regular expression tester
 sieve.rb	sieve of Eratosthenes
 svr.rb		socket server
 test.rb		test suite used by `make test'

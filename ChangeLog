@@ -1,3 +1,8 @@
+Tue Dec 25 11:48:35 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/README: removed obsoleted files: dbmtest.rb,
+	  getopts.test, mrshtest.rb, regx.rb.
+
 Tue Dec 25 11:45:34 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb:  Import the FasterCSV source as the new CSV class.
