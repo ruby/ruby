@@ -1837,8 +1837,6 @@ Init_VM(void)
 	GetISeqPtr(iseqval, iseq);
 	th->cfp->iseq = iseq;
 	th->cfp->pc = iseq->iseq_encoded;
-	(th->cfp+1)->iseq = iseq;
-	(th->cfp+1)->pc = iseq->iseq_encoded;
     }
     vm_init_redefined_flag();
 }

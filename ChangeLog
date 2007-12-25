@@ -1,3 +1,7 @@
+Tue Dec 25 12:42:59 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (Init_VM): remove unused code.
+
 Tue Dec 25 12:32:32 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c: Moving a static counter from inside register_transcoder()
