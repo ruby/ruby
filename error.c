@@ -23,7 +23,7 @@
 #define EXIT_SUCCESS 0
 #endif
 
-extern const char ruby_desription[];
+extern const char ruby_description[];
 
 static int
 err_position_0(char *buf, long len, const char *file, int line)
