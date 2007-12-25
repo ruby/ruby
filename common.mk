@@ -14,7 +14,7 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)
-NORMALMAINOBJ = main.$(OBJEXT) revision.$(OBJEXT)
+NORMALMAINOBJ = main.$(OBJEXT)
 MAINOBJ       = $(NORMALMAINOBJ)
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
@@ -307,6 +307,8 @@ clean-local::
 	@$(RM) *.inc
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean
+clean-enc:
+	@-$(MAKE) -f enc.mk $(MFLAGS) clean
 
 distclean: distclean-ext distclean-local
 distclean-local:: clean-local
@@ -315,12 +317,17 @@ distclean-local:: clean-local
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output $(PREP)
 distclean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean
+#	-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
+#	-rmdir -p $(arch_hdrdir)/ruby
+distclean-enc: clean-enc
+	@-$(MAKE) -f enc.mk $(MFLAGS) distclean
 
 realclean:: realclean-ext realclean-local
 realclean-local:: distclean-local
 	@$(RM) parse.c lex.c
 realclean-ext::
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) realclean
+distclean-enc:: distclean-enc
 
 check: test test-all
 

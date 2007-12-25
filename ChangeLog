@@ -1,3 +1,7 @@
+Tue Dec 25 16:15:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (clean-enc): clean encoding objects.
+
 Tue Dec 25 16:04:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* trunk/common.mk, goruby.c, golf_prelude.rb: for golfers.
