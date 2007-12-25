@@ -23633,7 +23633,7 @@ to_EUC_JP = {
 };
 static rb_transcoder
 rb_to_EUC_JP = {
-    "EUC_JP", "UTF-8", &to_EUC_JP, 2, 1,
+    "EUC-JP", "UTF-8", &to_EUC_JP, 2, 1,
     NULL, NULL,
 };
 
