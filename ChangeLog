@@ -1,3 +1,8 @@
+Tue Dec 25 17:48:28 2007  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm.c (rb_frame_method_id_and_class): new function to get the
+	  method id and class of the current frame.
+
 Tue Dec 25 17:32:04 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb (create_makefile): Add a missing dependency on the

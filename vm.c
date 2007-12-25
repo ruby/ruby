@@ -1388,6 +1388,12 @@ rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp)
     return 0;
 }
 
+int
+rb_frame_method_id_and_class(ID *idp, VALUE *klassp)
+{
+    return rb_thread_method_id_and_class(GET_THREAD(), idp, klassp);
+}
+
 VALUE
 rb_thread_current_status(rb_thread_t *th)
 {

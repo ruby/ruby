@@ -626,6 +626,7 @@ VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
 void Init_stack(VALUE*);
 void rb_frame_pop(void);
+int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 
 #if defined(__cplusplus)
 #if 0
