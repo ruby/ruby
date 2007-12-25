@@ -696,13 +696,6 @@ rb_thread_schedule(void)
 
 int rb_thread_critical; /* TODO: dummy variable */
 
-static VALUE
-rb_thread_s_critical(VALUE self)
-{
-    rb_warn("Thread.critical is unsupported.  Use Mutex instead.");
-    return Qnil;
-}
-
 VALUE
 rb_thread_blocking_region(
     rb_blocking_function_t *func, void *data1,
@@ -1014,8 +1007,7 @@ rb_thread_wakeup(VALUE thread)
  *  call-seq:
  *     thr.run   => thr
  *
- *  Wakes up <i>thr</i>, making it eligible for scheduling. If not in a critical
- *  section, then invokes the scheduler.
+ *  Wakes up <i>thr</i>, making it eligible for scheduling.
  *
  *     a = Thread.new { puts "a"; Thread.stop; puts "c" }
  *     Thread.pass
@@ -1044,8 +1036,7 @@ rb_thread_run(VALUE thread)
  *     Thread.stop   => nil
  *
  *  Stops execution of the current thread, putting it into a ``sleep'' state,
- *  and schedules execution of another thread. Resets the ``critical'' condition
- *  to <code>false</code>.
+ *  and schedules execution of another thread.
  *
  *     a = Thread.new { print "a"; Thread.stop; print "c" }
  *     Thread.pass
@@ -1304,7 +1295,6 @@ rb_thread_dead(rb_thread_t *th)
  *     b = Thread.new { Thread.stop }
  *     c = Thread.new { Thread.exit }
  *     d = Thread.new { sleep }
- *     Thread.critical = true
  *     d.kill                  #=> #<Thread:0x401b3678 aborting>
  *     a.status                #=> nil
  *     b.status                #=> "sleep"
@@ -1617,7 +1607,6 @@ rb_thread_priority(VALUE thread)
  *         end
  *     b.priority = -2
  *     sleep 1   #=> 1
- *     Thread.critical = 1
  *     count1    #=> 622504
  *     count2    #=> 5832
  */
@@ -3038,8 +3027,6 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "exit", rb_thread_exit, 0);
     rb_define_singleton_method(rb_cThread, "pass", thread_s_pass, 0);
     rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);
-    rb_define_singleton_method(rb_cThread, "critical", rb_thread_s_critical, 0);
-    rb_define_singleton_method(rb_cThread, "critical=", rb_thread_s_critical, 1);
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
 #if THREAD_DEBUG < 0
