@@ -1,3 +1,7 @@
+Tue Dec 25 14:11:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_encoding_set): missing return type.
+
 Tue Dec 25 14:03:48 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* test/rinda/test_rinda.rb (MockClock#{_forward, forwrd, sleep}):

@@ -1360,7 +1360,8 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     return io_enc_str(str, fptr);
 }
 
-void rb_io_set_nonblock(rb_io_t *fptr)
+void
+rb_io_set_nonblock(rb_io_t *fptr)
 {
     int flags;
 #ifdef F_GETFL
@@ -5605,6 +5606,7 @@ io_new_instance(VALUE args)
     return rb_class_new_instance(2, (VALUE*)args+1, *(VALUE*)args);
 }
 
+static void
 io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 {
     if (argc == 2) {
