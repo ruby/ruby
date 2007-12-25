@@ -1,3 +1,9 @@
+Tue Dec 25 17:32:04 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb (create_makefile): Add a missing dependency on the
+	  target directory for each .rb file.  This will hopefully fix
+	  parallel make (-jN).  Tested on FreeBSD.
+
 Tue Dec 25 16:51:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/trans/japanese.c (rb_{from,to}_{SHIFT_JIS,EUC_JP}): inversed
