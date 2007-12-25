@@ -1402,7 +1402,7 @@ method_inspect(VALUE method)
 	}
     }
     rb_str_buf_cat2(str, sharp);
-    rb_str_buf_cat2(str, rb_id2name(data->oid));
+    rb_str_append(str, rb_id2str(data->oid));
     rb_str_buf_cat2(str, ">");
 
     return str;

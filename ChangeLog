@@ -2,6 +2,10 @@ Tue Dec 25 12:22:17 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* sample/from.rb: follow Ruby 1.9 libraries.
 
+Tue Dec 25 12:21:56 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (method_inspect): preserve encoding of the method name.
+
 Tue Dec 25 12:07:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (BASERUBY): delayed error until BASERUBY is used.
