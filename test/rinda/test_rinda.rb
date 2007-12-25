@@ -33,14 +33,14 @@ class MockClock
     n
   end
     
-  def _forward(n=nil)
+  def _forward(n=@reso)
     now ,= @ts.take([nil, :now])
     @now = now + n
     n = @reso if n.nil?
     @ts.write([@now, :now])
   end
 
-  def forward(n=nil)
+  def forward(n=@reso)
     while n > 0
       _forward(@reso)
       n -= @reso
@@ -55,7 +55,7 @@ class MockClock
     @ts.write([2, :now])
   end
 
-  def sleep(n=nil)
+  def sleep(n=@reso)
     while will_deadlock? 
       n -= @reso
       forward

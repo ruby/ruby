@@ -1,3 +1,9 @@
+Tue Dec 25 14:03:48 2007  NARUSE, Yui <naruse@ruby-lang.org>
+
+	* test/rinda/test_rinda.rb (MockClock#{_forward, forwrd, sleep}):
+	  Change default value of n as @reso from nil.  If default value is
+	  nil, n.+ is not defined.
+
 Tue Dec 25 13:54:01 2007  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_io_m17n.rb (test_pipe): fixed.
