@@ -1,3 +1,9 @@
+Tue Dec 25 11:45:34 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb:  Import the FasterCSV source as the new CSV class.
+	
+	* test/csv/*:  Added all applicable tests from FasterCSV.
+
 Tue Dec 25 11:33:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (report_bug): uses ruby_description.
