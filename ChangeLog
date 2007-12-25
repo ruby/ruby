@@ -1,3 +1,9 @@
+Tue Dec 25 23:25:29 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/node.rb (REXML::Node::indent): should initialize rv
+	  variable.  a patch from Tadayoshi Funaba <tadf AT dotrb.org> in 
+	  [ruby-dev:32783].
+
 Tue Dec 25 23:16:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): encoding option in shbang and RUBYOPT did not
