@@ -2986,7 +2986,7 @@ rb_to_ISO_8859_15 = {
 };
 
 void
-Init_one_byte(void)
+Init_single_byte(void)
 {
     rb_register_transcoder(&rb_from_ISO_8859_1);
     rb_register_transcoder(&rb_from_ISO_8859_2);

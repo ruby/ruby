@@ -1,3 +1,7 @@
+Tue Dec 25 15:07:51 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enc/trans/single_byte.c (Init_single_byte): renamed.
+
 Tue Dec 25 15:00:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (enum_yield): when multiple values yielded from #each
