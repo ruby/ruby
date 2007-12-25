@@ -23,7 +23,7 @@
 #define EXIT_SUCCESS 0
 #endif
 
-extern const char ruby_version[], ruby_release_date[], ruby_platform[];
+extern const char ruby_desription[];
 
 static int
 err_position_0(char *buf, long len, const char *file, int line)
@@ -208,11 +208,10 @@ report_bug(const char *file, int line, const char *fmt, va_list args)
 
     if (fwrite(buf, 1, len, out) == len ||
 	fwrite(buf, 1, len, (out = stdout)) == len) {
-	rb_vm_bugreport();
 	fputs("[BUG] ", out);
 	vfprintf(out, fmt, args);
-	fprintf(out, "\nruby %s (%s) [%s]\n\n",
-		ruby_version, ruby_release_date, ruby_platform);
+	fprintf(out, "\n%s\n\n", ruby_description);
+	rb_vm_bugreport();
     }
 }
 

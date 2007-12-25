@@ -1,3 +1,7 @@
+Tue Dec 25 11:33:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (report_bug): uses ruby_description.
+
 Tue Dec 25 11:20:38 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix stack consistency error.
