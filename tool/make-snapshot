@@ -13,13 +13,14 @@ fi
 [ -d "$1" ] || mkdir "$1" || exit 1
 dest=`cd "$1"; pwd`
 
-tmp=${TMP_DIR-/tmp}/ #ruby-snapshot-$$
+tmp="${TMP_DIR-/tmp}/ruby-snapshot-$$"
 mkdir -p "$tmp"
-cd "$tmp"
+(cd "$tmp"
 revision=`svn export $SVNURL ruby | sed -n '$s/[^0-9]//gp'`
 [ $revision ] || revision=`svn info $SVNURL | sed -n 's/Revision: //p'`
 echo "#define RUBY_REVISION $revision" > ruby/revision.h
-v=ruby-r$revision
+version=`sed -n -e '/^#define RUBY_VERSION /s/[^0-9.]//gp' ruby/version.h`
+v=ruby-$version-r$revision
 mv ruby $v
 (cd $v; autoconf; (sed '/lex\.c/,/^$/!d' Makefile.in; sed 's/{[^{}]*}//g' common.mk) | make -f - prereq srcdir=.)
 
@@ -33,4 +34,5 @@ for cmd in "bzip tarball.tar.bz2 tar cjf" "gzip tarball.tar.gz tar czf" "zip arc
 	echo " failed"
     fi
 done
-exec rm -fr $v
+exec rm -fr $v)
+exec rmdir "$tmp"
