@@ -1,3 +1,10 @@
+Tue Dec 25 13:13:09 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* README.EXT.ja, dir.c, eval.c, eval_intern.h, lex.c.src,
+	  lex.c.blt, keywords, load.c, thread.c: more ANSI'ize.
+	  a patch from Tadashi Saito <shiba AT mail2.accsnet.ne.jp>
+	  in [ruby-dev:32725]
+
 Tue Dec 25 13:07:56 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, thread.c, cont.c: add RUBY_VM_SET_INTERRUPT(),

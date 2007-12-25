@@ -215,7 +215,7 @@ rb_provide(const char *feature)
     rb_provide_feature(rb_str_new2(feature));
 }
 
-NORETURN(static void load_failed _((VALUE)));
+NORETURN(static void load_failed(VALUE));
 
 void
 rb_load(VALUE fname, int wrap)

@@ -1998,7 +1998,7 @@ struct thgroup {
  *  were created.
  */
 
-static VALUE thgroup_s_alloc _((VALUE));
+static VALUE thgroup_s_alloc(VALUE);
 static VALUE
 thgroup_s_alloc(VALUE klass)
 {

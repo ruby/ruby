@@ -55,10 +55,10 @@ char **rb_origenviron;
 void rb_clear_trace_func(void);
 void rb_thread_stop_timer_thread(void);
 
-void rb_call_inits _((void));
-void Init_stack _((VALUE *));
-void Init_heap _((void));
-void Init_ext _((void));
+void rb_call_inits(void);
+void Init_stack(VALUE *);
+void Init_heap(void);
+void Init_ext(void);
 void Init_BareVM(void);
 
 void
@@ -268,7 +268,7 @@ rb_eval_string(const char *str)
 VALUE
 rb_eval_string_protect(const char *str, int *state)
 {
-    return rb_protect((VALUE (*)_((VALUE)))rb_eval_string, (VALUE)str, state);
+    return rb_protect((VALUE (*)(VALUE))rb_eval_string, (VALUE)str, state);
 }
 
 VALUE

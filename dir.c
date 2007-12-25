@@ -922,7 +922,7 @@ sys_warning_1(const char* mesg)
 
 #define GLOB_VERBOSE	(1UL << (sizeof(int) * CHAR_BIT - 1))
 #define sys_warning(val) \
-    (void)((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))sys_warning_1, (VALUE)(val), 0))
+    (void)((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)(VALUE))sys_warning_1, (VALUE)(val), 0))
 
 #define GLOB_ALLOC(type) (type *)malloc(sizeof(type))
 #define GLOB_ALLOC_N(type, n) (type *)malloc(sizeof(type) * (n))

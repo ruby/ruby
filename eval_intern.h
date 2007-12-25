@@ -62,7 +62,7 @@ void *alloca();
 #endif
 
 #ifndef HAVE_STRING_H
-char *strrchr _((const char *, const char));
+char *strrchr(const char *, const char);
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -192,19 +192,19 @@ char *strrchr _((const char *, const char));
   } \
 while (0)
 
-void rb_thread_cleanup _((void));
-void rb_thread_wait_other_threads _((void));
+void rb_thread_cleanup(void);
+void rb_thread_wait_other_threads(void);
 
 int thread_set_raised(rb_thread_t *th);
 int thread_reset_raised(rb_thread_t *th);
 
 VALUE rb_f_eval(int argc, VALUE *argv, VALUE self);
-VALUE rb_make_exception _((int argc, VALUE *argv));
+VALUE rb_make_exception(int argc, VALUE *argv);
 
 NORETURN(void rb_fiber_start(void));
 
-NORETURN(void rb_raise_jump _((VALUE)));
-NORETURN(void rb_print_undef _((VALUE, ID, int)));
+NORETURN(void rb_raise_jump(VALUE));
+NORETURN(void rb_print_undef(VALUE, ID, int));
 NORETURN(void vm_localjump_error(const char *, VALUE, int));
 NORETURN(void vm_jump_tag_but_local_jump(int, VALUE));
 

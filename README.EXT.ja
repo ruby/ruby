@@ -107,16 +107,16 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 発生する)．同様にチェック無しで使える変換マクロはdoubleを
 取り出す「NUM2DBL()」があります。
 
-char* を取り出す場合、version 1.6 以前では「STR2CSTR()」と
-いうマクロを使っていましたが、これは to_str() による暗黙の
-型変換結果が GC される可能性があるため、version 1.7 以降では
-obsolete となり、代わりに StringValue() と StringValuePtr()
-を使う事を推奨しています。StringValue(var) は var が String
- であれば何もせず、そうでなければ var を var.to_str() の結果に
-置き換えるマクロ、StringValuePtr(var) は同様に var を置き換え
-てから var の文字列表現に対する char* を返すマクロです。var の
-内容を直接置き換える処理が入るので、var は lvalue である必要が
-あります。
+char* を取り出す場合、version 1.6 以前では「STR2CSTR()」とい
+うマクロを使っていましたが、これは to_str() による暗黙の型変
+換結果が GC される可能性があるため、version 1.7 以降では
+obsolete となり、代わりに StringValue() と StringValuePtr() 
+を使う事を推奨しています。StringValue(var) は var が String 
+であれば何もせず、そうでなければ var を var.to_str() の結果
+に置き換えるマクロ、StringValuePtr(var) は同様に var を置き
+換えてから var の文字列表現に対する char* を返すマクロです。
+var の内容を直接置き換える処理が入るので、var は lvalue であ
+る必要があります。
 
 それ以外のデータタイプは対応するCの構造体があります．対応す
 る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
@@ -576,7 +576,8 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名」と
 定義を行います．dbm.cから一部引用します．
 
 --
-Init_dbm()
+void
+Init_dbm(void)
 {
     /* DBMクラスを定義する */
     cDBM = rb_define_class("DBM", rb_cObject);
@@ -638,8 +639,7 @@ fdbm_delete()はこのようになっています．
 
 --
 static VALUE
-fdbm_delete(obj, keystr)
-    VALUE obj, keystr;
+fdbm_delete(VALUE obj, VALUE keystr)
 {
 	:
 }
@@ -655,10 +655,7 @@ fdbm_delete(obj, keystr)
 
 --
 static VALUE
-fdbm_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+fdbm_s_open(int argc, VALUE *argv, VALUE klass)
 {
 	:
     if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
@@ -687,8 +684,7 @@ Rubyの配列で引数を受け取るものはindexesがあります．実装はこ
 
 --
 static VALUE
-fdbm_indexes(obj, args)
-    VALUE obj, args;
+fdbm_indexes(VALUE obj, VALUE args)
 {
 	:
 }
@@ -1049,8 +1045,8 @@ char *rb_id2name(ID id)
 
 char *rb_class2name(VALUE klass)
 
-  クラスの名前を返す(デバッグ用)．クラスが名前を持たない時には, 
-  祖先を遡って名前を持つクラスの名前を返す．
+  クラスの名前を返す(デバッグ用)．クラスが名前を持たない時に
+  は, 祖先を遡って名前を持つクラスの名前を返す．
 
 int rb_respond_to(VALUE obj, ID id)
 
@@ -1193,10 +1189,10 @@ find_library(lib, func, path...)
 
 have_func(func, header)
 
-  ヘッダファイルheaderをインクルードして関数funcの存在をチェッ
-  クする．funcが標準ではリンクされないライブラリ内のものであ
-  る時には先にhave_libraryでそのライブラリをチェックしておく
-  事．関数が存在する時trueを返す．
+  ヘッダファイルheaderをインクルードして関数funcの存在をチェ
+  ックする．funcが標準ではリンクされないライブラリ内のもので
+  ある時には先にhave_libraryでそのライブラリをチェックしてお
+  く事．関数が存在する時trueを返す．
 
 have_var(var, header)
 
@@ -1247,7 +1243,8 @@ find_executable(command, path)
 
 with_config(withval[, default=nil])
 
-  コマンドライン上の--with-<withval>で指定されたオプション値を得る．
+  コマンドライン上の--with-<withval>で指定されたオプション値
+  を得る．
 
 enable_config(config, *defaults)
 disable_config(config, *defaults)
@@ -1256,8 +1253,9 @@ disable_config(config, *defaults)
   --disable-<config>で指定された真偽値を得る．
   --enable-<config>が指定されていた場合はtrue，
   --disable-<config>が指定されていた場合はfalseを返す．
-  どちらも指定されていない場合は，ブロックつきで呼び出されている場合は
-  *defaultsをyieldした結果，ブロックなしなら*defaultsを返す．
+  どちらも指定されていない場合は，ブロックつきで呼び出されて
+  いる場合は*defaultsをyieldした結果，ブロックなしなら
+  *defaultsを返す．
 
 dir_config(target[, default_dir])
 dir_config(target[, default_include, default_lib])
@@ -1266,8 +1264,8 @@ dir_config(target[, default_include, default_lib])
   --with-<target>-libのいずれかで指定されるディレクトリを
   $CFLAGS や $LDFLAGS に追加する．--with-<target>-dir=/pathは
   --with-<target>-include=/path/include --with-<target>-lib=/path/lib
-  と等価である．追加された include ディレクトリと lib ディレクトリの
-  配列を返す． ([include_dir, lib_dir])
+  と等価である．追加された include ディレクトリと lib ディレ
+  クトリの配列を返す． ([include_dir, lib_dir])
 
 pkg_config(pkg)
 
