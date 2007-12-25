@@ -386,7 +386,7 @@ class Options
 	case opt
         when "--all"           then @show_all      = true
         when "--charset"       then @charset       = arg
-        when "--debug"         then $DEBUG         = true
+        when "--debug"         then $DEBUG_RDOC    = true
         when "--exclude"       then @exclude       << Regexp.new(arg)
         when "--inline-source" then @inline_source = true
         when "--line-numbers"  then @include_line_numbers = true

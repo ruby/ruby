@@ -236,7 +236,7 @@ module RDoc
     end
 
     def add_method(a_method)
-      puts "Adding #@visibility method #{a_method.name} to #@name" if $DEBUG
+      puts "Adding #@visibility method #{a_method.name} to #@name" if $DEBUG_RDOC
       a_method.visibility = @visibility
       add_to(@method_list, a_method)
     end
@@ -280,10 +280,10 @@ module RDoc
     def add_class_or_module(collection, class_type, name, superclass=nil)
       cls = collection[name]
       if cls
-        puts "Reusing class/module #{name}" if $DEBUG
+        puts "Reusing class/module #{name}" if $DEBUG_RDOC
       else
         cls = class_type.new(name, superclass)
-        puts "Adding class/module #{name} to #@name" if $DEBUG
+        puts "Adding class/module #{name} to #@name" if $DEBUG_RDOC
 #        collection[name] = cls if @document_self  && !@done_documenting
         collection[name] = cls if !@done_documenting
         cls.parent = self
@@ -497,7 +497,7 @@ module RDoc
     def add_class_or_module(collection, class_type, name, superclass)
       cls = collection[name]
       if cls
-        puts "Reusing class/module #{name}" if $DEBUG
+        puts "Reusing class/module #{name}" if $DEBUG_RDOC
       else
         if class_type == NormalModule
           all = @@all_modules
@@ -509,7 +509,7 @@ module RDoc
           cls = class_type.new(name, superclass)
           all[name] = cls  unless @done_documenting
         end
-        puts "Adding class/module #{name} to #@name" if $DEBUG
+        puts "Adding class/module #{name} to #@name" if $DEBUG_RDOC
         collection[name] = cls unless @done_documenting
         cls.parent = self
       end

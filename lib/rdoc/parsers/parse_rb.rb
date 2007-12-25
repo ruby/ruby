@@ -23,7 +23,7 @@ require "rdoc/markup/simple_markup/preprocess"
 
 require "rdoc/parsers/parserfactory"
 
-$TOKEN_DEBUG = $DEBUG
+$TOKEN_DEBUG = $DEBUG_RDOC
 
 # Definitions of all tokens involved in the lexical analysis
 
@@ -544,7 +544,7 @@ class RubyLex
       get_read
     end
 #   throw :eof unless tk
-    p tk if $DEBUG
+    p tk if $DEBUG_RDOC
     tk
   end
   
@@ -1666,21 +1666,21 @@ module RDoc
         when  TkUNTIL, TkWHILE
           nest += 1
           puts "FOUND #{tk.class} in #{container.name}, nest = #{nest}, " +
-            "line #{tk.line_no}" if $DEBUG
+            "line #{tk.line_no}" if $DEBUG_RDOC
           skip_optional_do_after_expression
 
           # 'for' is trickier
         when TkFOR
           nest += 1
           puts "FOUND #{tk.class} in #{container.name}, nest = #{nest}, " +
-            "line #{tk.line_no}" if $DEBUG
+            "line #{tk.line_no}" if $DEBUG_RDOC
           skip_for_variable
           skip_optional_do_after_expression
 
 	when TkCASE, TkDO, TkIF, TkUNLESS, TkBEGIN
 	  nest += 1
           puts "Found #{tk.class} in #{container.name}, nest = #{nest}, " +
-            "line #{tk.line_no}" if $DEBUG
+            "line #{tk.line_no}" if $DEBUG_RDOC
 
 	when TkIDENTIFIER
           if nest == 1 and current_method.nil?
@@ -1710,8 +1710,8 @@ module RDoc
 
 	when TkEND
           nest -= 1
-          puts "Found 'end' in #{container.name}, nest = #{nest}, line #{tk.line_no}" if $DEBUG
-          puts "Method = #{current_method.name}" if $DEBUG and current_method
+          puts "Found 'end' in #{container.name}, nest = #{nest}, line #{tk.line_no}" if $DEBUG_RDOC
+          puts "Method = #{current_method.name}" if $DEBUG_RDOC and current_method
 	  if nest == 0
             read_documentation_modifiers(container, CLASS_MODIFIERS)
             container.ongoing_visibility = save_visibility
@@ -1846,7 +1846,7 @@ module RDoc
 
       loop do
         puts("Param: #{tk}, #{@scanner.continue} " +
-          "#{@scanner.lex_state} #{nest}")  if $DEBUG
+          "#{@scanner.lex_state} #{nest}")  if $DEBUG_RDOC
 
         case tk
         when TkSEMICOLON
@@ -2042,7 +2042,7 @@ module RDoc
 
       loop do
         puts("Param: #{tk.inspect}, #{@scanner.continue} " +
-          "#{@scanner.lex_state} #{nest}")  if $DEBUG
+          "#{@scanner.lex_state} #{nest}")  if $DEBUG_RDOC
         case tk
         when TkSEMICOLON
           break
@@ -2098,7 +2098,7 @@ module RDoc
 
       loop do
         puts("\nWhile: #{tk}, #{@scanner.continue} " +
-          "#{@scanner.lex_state} #{nest}") if $DEBUG
+          "#{@scanner.lex_state} #{nest}") if $DEBUG_RDOC
         case tk
         when TkSEMICOLON
           break
@@ -2169,7 +2169,7 @@ module RDoc
 
       loop do
         puts("Call param: #{tk}, #{@scanner.continue} " +
-          "#{@scanner.lex_state} #{nest}") if $DEBUG
+          "#{@scanner.lex_state} #{nest}") if $DEBUG_RDOC
         case tk
         when TkSEMICOLON
           break
@@ -2251,7 +2251,7 @@ module RDoc
     
     def read_directive(allowed)
       tk = get_tk
-      puts "directive: #{tk.inspect}" if $DEBUG
+      puts "directive: #{tk.inspect}" if $DEBUG_RDOC
       result = nil
       if tk.kind_of?(TkCOMMENT) 
         if tk.text =~ /\s*:?(\w+):\s*(.*)/
@@ -2560,7 +2560,7 @@ module RDoc
 	    break
 	  when TkCOMMA
 	  else
-           warn("unexpected token: '#{tk2.inspect}'") if $DEBUG
+           warn("unexpected token: '#{tk2.inspect}'") if $DEBUG_RDOC
 	    break
 	  end
 	end
@@ -2598,7 +2598,7 @@ module RDoc
       when TkSTRING
 	eval @read[-1]
       else
-	warn("Expected symbol or string, got #{tk.inspect}") if $DEBUG
+	warn("Expected symbol or string, got #{tk.inspect}") if $DEBUG_RDOC
 	nil
       end
     end
