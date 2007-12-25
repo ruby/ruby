@@ -1,3 +1,7 @@
+Tue Dec 25 20:24:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot: argument check, and cleanup exported directory.
+
 Tue Dec 25 20:07:13 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* tool/make-snapshot: more portable.
