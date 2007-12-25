@@ -14,6 +14,8 @@ Tue Dec 25 15:00:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* enum.c: all method but all?, any?, one? and none? passed packed
 	  multiple values to the block.
 
+	* enum.c (collect_all): should pack all values.  [ruby-core:14410]
+
 Tue Dec 25 14:57:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (COMMONOBJS): transcode_data_*.c moved under enc/trans.

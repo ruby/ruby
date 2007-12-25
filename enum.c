@@ -302,9 +302,9 @@ collect_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 }
 
 static VALUE
-collect_all(VALUE i, VALUE ary)
+collect_all(VALUE i, VALUE ary, int argc, VALUE *argv)
 {
-    rb_ary_push(ary, i);
+    rb_ary_push(ary, enum_values_pack(argc, argv));
 
     return Qnil;
 }
