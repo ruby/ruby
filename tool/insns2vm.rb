@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!ruby -Kn
 
 require 'optparse'
 
