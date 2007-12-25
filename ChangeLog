@@ -1,3 +1,11 @@
+Tue Dec 25 16:04:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* trunk/common.mk, goruby.c, golf_prelude.rb: for golfers.
+
+	* trunk/main.c (main): hook for embedding applications.
+
+	* trunk/tool/compile_prelude.rb: can change initialize function name.
+
 Tue Dec 25 15:59:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_register): do not use based_encoding to check if

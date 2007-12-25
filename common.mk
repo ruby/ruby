@@ -14,7 +14,8 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 RDOCOUT       = $(EXTOUT)/rdoc
 
 DMYEXT	      = dmyext.$(OBJEXT)
-MAINOBJ	      = main.$(OBJEXT)
+NORMALMAINOBJ = main.$(OBJEXT) revision.$(OBJEXT)
+MAINOBJ       = $(NORMALMAINOBJ)
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
 
@@ -79,6 +80,8 @@ OBJS          = dln.$(OBJEXT) \
 		prelude.$(OBJEXT) \
 		$(COMMONOBJS)
 
+GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
+
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--extout="$(EXTOUT)" \
 		--make="$(MAKE)" \
@@ -99,7 +102,13 @@ all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
-miniruby$(EXEEXT): config.status $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
+miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
+
+GORUBY = go$(RUBY_INSTALL_NAME)
+golf: $(LIBRUBY) $(GOLFOBJS)
+	$(MAKE) $(MFLAGS) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
+
+program: $(PROGRAM)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
@@ -600,6 +609,9 @@ blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c \
 id.$(OBJEXT): {$(VPATH)}id.c {$(VPATH)}ruby.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
+golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
+goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
@@ -650,10 +662,13 @@ miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
 	$(MINIRUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
+golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb
+	$(BASERUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/golf_prelude.rb $@
 
 prereq: incs srcs preludes
 
 preludes: {$(VPATH)}miniprelude.c
+preludes: {$(srcdir)}golf_prelude.c
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)

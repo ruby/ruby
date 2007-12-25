@@ -8,6 +8,7 @@ $:.unshift(File.expand_path("../..", __FILE__))
 
 preludes = ARGV.dup
 outfile = preludes.pop
+init_name = outfile[/\w+(?=_prelude.c\z)/] || 'prelude'
 
 C_ESC = {
   "\\" => "\\\\",
@@ -72,7 +73,7 @@ static const char prelude_code<%=i%>[] =
 % }
 
 void
-Init_prelude(void)
+Init_<%=init_name%>(void)
 {
 % lines_list.each_with_index {|(setup_lines, lines), i|
   rb_iseq_eval(rb_iseq_compile(
