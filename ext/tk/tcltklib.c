@@ -1298,7 +1298,7 @@ eventloop_sleep(dummy)
 
 #if 0
 #ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
+    if (!ruby_native_thread_p()) {
         rb_bug("cross-thread violation on eventloop_sleep()");
     }
 #endif
@@ -1310,7 +1310,7 @@ eventloop_sleep(dummy)
 
 #if 0
 #ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
+    if (!ruby_native_thread_p()) {
         rb_bug("cross-thread violation on eventloop_sleep()");
     }
 #endif
@@ -2457,7 +2457,7 @@ tcl_protect(interp, proc, data)
 
 #if 0
 #ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
+    if (!ruby_native_thread_p()) {
         rb_bug("cross-thread violation on tcl_protect()");
     }
 #endif
@@ -2866,7 +2866,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
     }
 #if 0
 #ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
+    if (!ruby_native_thread_p()) {
         rb_bug("cross-thread violation on ip_ruby_eval()");
     }
 #endif
@@ -3015,7 +3015,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
     }
 #if 0
 #ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
+    if (!ruby_native_thread_p()) {
         rb_bug("cross-thread violation on ip_ruby_eval()");
     }
 #endif
@@ -3194,7 +3194,7 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
     Tcl_Preserve(interp);
 #if 0
 #ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
+    if (!ruby_native_thread_p()) {
         rb_bug("cross-thread violation on ip_ruby_eval()");
     }
 #endif
@@ -5964,7 +5964,7 @@ eval_queue_handler(evPtr, flags)
     if (rb_safe_level() != q->safe_level) {
 #if 0
 #ifdef HAVE_NATIVETHREAD
-        if (!is_ruby_native_thread()) {
+        if (!ruby_native_thread_p()) {
             rb_bug("cross-thread violation on eval_queue_handler()");
         }
 #endif
@@ -8384,7 +8384,7 @@ Init_tcltklib()
 
     /* if ruby->nativethread-supprt and tcltklib->doen't, 
        the following will cause link-error. */
-    is_ruby_native_thread();
+    ruby_native_thread_p();
 
     /* --------------------------------------------------------------- */
 

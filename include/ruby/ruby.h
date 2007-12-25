@@ -946,7 +946,7 @@ void ruby_sysinit(int *, char ***);
 
 #define RUBY_VM 1 /* YARV */
 #define HAVE_NATIVETHREAD
-int is_ruby_native_thread(void);
+int ruby_native_thread_p(void);
 
 #define RUBY_EVENT_NONE     0x00
 #define RUBY_EVENT_LINE     0x01

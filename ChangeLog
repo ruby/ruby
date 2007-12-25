@@ -1,3 +1,10 @@
+Tue Dec 25 16:26:48 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h, thread.c: rename is_ruby_native_thread() to
+	  ruby_native_thread_p().
+
+	* ext/tk/tcltklib.c: apply it.
+
 Tue Dec 25 16:15:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (clean-enc): clean encoding objects.
