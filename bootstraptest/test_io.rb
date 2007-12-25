@@ -26,3 +26,13 @@ assert_finish 10, %q{
   rescue LoadError
   end
 }, '[ruby-dev:32566]'
+
+assert_finish 1, %q{
+  r, w = IO.pipe
+  Thread.new {
+  w << "ab"
+  sleep 0.1
+  w << "ab"
+  }
+  p r.gets("abab")
+}

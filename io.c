@@ -1665,12 +1665,11 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 }
 
 static int
-appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE rs, VALUE *strp, long *lp)
+appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE *strp, long *lp)
 {
     VALUE str = *strp;
     int c = EOF;
     long limit = *lp;
-    rb_encoding *enc = io_input_encoding(fptr);
 
     if (rsptr == 0)
       rslen = 1;
@@ -1678,34 +1677,14 @@ appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE rs, VAL
     do {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
 	if (pending > 0) {
-	    const char *s = READ_DATA_PENDING_PTR(fptr);
-	    const char *p, *e, *pp;
+	    const char *p = READ_DATA_PENDING_PTR(fptr);
+	    const char *e;
 	    long last = 0, len = (c != EOF);
 
 	    if (limit > 0 && pending > limit) pending = limit;
-	    pp = p = s;
 	  again:
 	    e = memchr(p, delim, pending);
-	    if (e) {
-		const char *p0 = e - rslen + 1;
-		if (p0 < s) {
-		    p = e + 1;
-		    goto again;
-		}
-		pp = rb_enc_left_char_head(pp, p0, enc);
-		if (pp != p0) {
-		    p = e + 1;
-		    goto again;
-		}
-		if (rsptr) {
-		    rscheck(rsptr, rslen, rs);
-		    if (memcmp(p0, rsptr, rslen) != 0) {
-			p = e + 1;
-			goto again;
-		    }
-		}
-		pending = e - s + 1;
-	    }
+	    if (e) pending = e - p + 1;
 	    len += pending;
 	    if (!NIL_P(str)) {
 		last = RSTRING_LEN(str);
@@ -1785,7 +1764,7 @@ rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
     int c, nolimit = 0;
 
     for (;;) {
-	c = appendline(fptr, delim, 0, 0, 0, &str, &limit);
+	c = appendline(fptr, delim, 0, 0, &str, &limit);
 	if (c == EOF || c == delim) break;
 	if (limit == 0) {
 	    nolimit = 1;
@@ -1853,9 +1832,11 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     VALUE str = Qnil;
     rb_io_t *fptr;
     int nolimit = 0;
+    rb_encoding *enc;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    enc = io_input_encoding(fptr);
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
@@ -1888,9 +1869,17 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 	newline = rsptr[rslen - 1];
 
-	while ((c = appendline(fptr, newline, rsptr, rslen, rs, &str, &limit)) != EOF) {
+	while ((c = appendline(fptr, newline, rsptr, rslen, &str, &limit)) != EOF) {
 	    if (c == newline) {
-		break;
+		const char *s, *p, *pp;
+		
+		if (RSTRING_LEN(str) < rslen) continue;
+		s = RSTRING_PTR(str);
+		p = s +  RSTRING_LEN(str) - rslen;
+		pp = rb_enc_left_char_head(s, p, enc);
+		if (pp != p) continue;
+		if (!rspara) rscheck(rsptr, rslen, rs);
+		if (memcmp(p, rsptr, rslen) == 0) break;
 	    }
 	    if (limit == 0) {
 		nolimit = 1;

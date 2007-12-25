@@ -4,6 +4,10 @@ Tue Dec 25 18:40:46 2007  Koichi Sasada  <ko1@atdot.net>
 
 	 vm.c: comment out debug functions.
 
+Tue Dec 25 18:37:42 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (appendline): move RS comparison to rb_io_getline_1().
+
 Tue Dec 25 18:27:51 2007  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_each_line): don't call rb_enc_codepoint with empty
