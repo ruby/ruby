@@ -1,3 +1,11 @@
+Tue Dec 25 15:00:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_yield): when multiple values yielded from #each
+	  pack them into an array.  [ruby-dev:32708]
+
+	* enum.c: all method but all?, any?, one? and none? passed packed
+	  multiple values to the block.
+
 Tue Dec 25 14:57:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (COMMONOBJS): transcode_data_*.c moved under enc/trans.

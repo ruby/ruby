@@ -36,7 +36,7 @@ def headers.db_check(db)
   db_prefix ||= ""
 
   if (have_library(db, db_prefix+"dbm_open") || have_func(db_prefix+"dbm_open")) and
-      hdr = self.fetch(db, ["ndbm.h"]).find {|hdr| have_type("DBM", hdr, hsearch)}
+      hdr = self.fetch(db, ["ndbm.h"]).find {|h| have_type("DBM", h, hsearch)}
     have_func(db_prefix+"dbm_clearerr") unless have_gdbm
     $defs << hsearch if hsearch
     $defs << '-DDBM_HDR="<'+hdr+'>"'
