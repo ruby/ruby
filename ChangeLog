@@ -1,3 +1,13 @@
+Tue Dec 25 13:07:56 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, thread.c, cont.c: add RUBY_VM_SET_INTERRUPT(),
+	  RUBY_VM_SET_TIMER_INTERRUPT(), RUBY_VM_INTERRUPTED().
+
+	* thread.c, thread_pthread.c, thread_win32.c: fix to ignore time slice
+	  event until sleep.
+
+	* bootstraptest/test_thread.rb: add a test for time limited join test.
+
 Tue Dec 25 12:42:59 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (Init_VM): remove unused code.

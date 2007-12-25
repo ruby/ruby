@@ -208,17 +208,26 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     {
 	DWORD ret;
 	int status = th->status;
+
 	th->status = THREAD_STOPPED;
 	th->unblock_function = ubf_handle;
 	th->unblock_function_arg = th;
-	thread_debug("native_sleep start (%d)\n", (int)msec);
-	ret = w32_wait_events(0, 0, msec, th);
-	thread_debug("native_sleep done (%d)\n", ret);
+
+	if (RUBY_VM_INTERRUPTED(th)) {
+	    /* interrupted.  return immediate */
+	}
+	else {
+	    thread_debug("native_sleep start (%d)\n", (int)msec);
+	    ret = w32_wait_events(0, 0, msec, th);
+	    thread_debug("native_sleep done (%d)\n", ret);
+	}
+
 	th->unblock_function = 0;
 	th->unblock_function_arg = 0;
 	th->status = status;
     }
     GVL_UNLOCK_END();
+    RUBY_VM_CHECK_INTS();
 }
 
 int

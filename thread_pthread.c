@@ -392,6 +392,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     int prev_status = th->status;
     struct timespec ts;
     struct timeval tvn;
+    struct timeval tve;
 
     if (tv) {
 	gettimeofday(&tvn, NULL);
@@ -410,15 +411,14 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     GVL_UNLOCK_BEGIN();
     {
 	pthread_mutex_lock(&th->interrupt_lock);
+	th->unblock_function = ubf_pthread_cond_signal;
+	th->unblock_function_arg = th;
 
-	if (th->interrupt_flag) {
+	if (RUBY_VM_INTERRUPTED(th)) {
 	    /* interrupted.  return immediate */
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
 	else {
-	    th->unblock_function = ubf_pthread_cond_signal;
-	    th->unblock_function_arg = th;
-
 	    if (tv == 0) {
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		pthread_cond_wait(&th->native_thread_data.sleep_cond,
@@ -433,14 +433,16 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 					   &th->interrupt_lock, &ts);
 		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
 	    }
-	    th->unblock_function = 0;
-	    th->unblock_function_arg = 0;
 	}
-	pthread_mutex_unlock(&th->interrupt_lock);
+	th->unblock_function = 0;
+	th->unblock_function_arg = 0;
 
+	pthread_mutex_unlock(&th->interrupt_lock);
 	th->status = prev_status;
     }
     GVL_UNLOCK_END();
+    RUBY_VM_CHECK_INTS();
+
     thread_debug("native_sleep done\n");
 }
 

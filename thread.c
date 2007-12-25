@@ -218,7 +218,7 @@ static void
 rb_thread_interrupt(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
-    th->interrupt_flag = 1;
+    RUBY_VM_SET_INTERRUPT(th);
     if (th->unblock_function) {
 	(th->unblock_function)(th->unblock_function_arg);
     }
@@ -562,6 +562,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(limit)) {
 	delay = rb_num2dbl(limit);
     }
+
     return thread_join(target_th, delay);
 }
 
@@ -607,7 +608,6 @@ static void
 sleep_forever(rb_thread_t *th)
 {
     native_sleep(th, 0);
-    RUBY_VM_CHECK_INTS();
 }
 
 static void
@@ -1924,7 +1924,7 @@ timer_thread_function(void)
     rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
 
     /* for time slice */
-    vm->running_thread->interrupt_flag = 1;
+    RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
 
     /* check signal */
     if (vm->buffered_signal_size && vm->main_thread->exec_signal == 0) {

@@ -610,7 +610,7 @@ rb_fiber_start(void)
 	    th->thrown_errinfo =
 	      vm_make_jump_tag_but_local_jump(state, th->errinfo);
 	}
-	th->interrupt_flag = 1;
+	RUBY_VM_SET_INTERRUPT(th);
     }
 
     rb_fiber_terminate(cont);

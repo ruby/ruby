@@ -25,7 +25,17 @@ assert_equal %q{5000}, %q{
       Thread.new{
       }
     }.each{|e|
-      e.join
+      e.join()
+    }
+  }
+}
+assert_equal %q{5000}, %q{
+  5000.times{|e|
+    (1..2).map{
+      Thread.new{
+      }
+    }.each{|e|
+      e.join(1000000000)
     }
   }
 }
