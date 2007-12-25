@@ -1,3 +1,7 @@
+Tue Dec 25 15:55:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_succ): fix for string with non-alphanumeric chars.
+
 Tue Dec 25 15:42:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_external_encoding): should return nil for

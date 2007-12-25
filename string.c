@@ -1886,16 +1886,13 @@ rb_str_succ(VALUE orig)
 	    }
 	    n = s - sbeg;
 	}
-	else {
-	    break;
-	}
     }
     if (c == -1) {		/* str contains no alnum */
 	c = '\001';
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
 	    int limit = 256;
-	    if (cc == 0) cc = rb_enc_codepoint(s, e, enc);
+	    cc = rb_enc_codepoint(s, e, enc);
 	    while ((l = rb_enc_mbcput(++cc, carry, enc)) < 0 && --limit);
 	    if (l > 0) {
 		if (l == (o = e - s)) goto overlay;
