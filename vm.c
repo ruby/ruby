@@ -238,7 +238,7 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
     for (i = 0; i <= local_size; i++) {
 	env->env[i] = envptr[-local_size + i];
 #if 0
-	dp(env->env[i]);
+	fprintf(stderr, "%2d ", &envptr[-local_size + i] - th->stack); dp(env->env[i]);
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    /* clear value stack for GC */
 	    envptr[-local_size + i] = 0;
@@ -314,6 +314,11 @@ VALUE
 vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     VALUE envval;
+
+    if (VM_FRAME_FLAG(cfp->flag) == FRAME_MAGIC_FINISH) {
+	/* for method_missing */
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
 
     envval = vm_make_env_each(th, cfp, cfp->dfp, cfp->lfp);
 

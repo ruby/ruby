@@ -507,3 +507,43 @@ assert_equal "ok", %q{
   end
   foo(&:bar)
 }, '[ruby-core:14279]'
+
+assert_normal_exit %q{
+  class Controller
+    def respond_to(&block)
+      responder = Responder.new
+      block.call(responder)
+      responder.respond
+    end
+    def test_for_bug
+      respond_to{|format|
+        format.js{
+          puts "in test"
+          render{|obj|
+            puts obj
+          }
+        }
+      }
+    end
+    def render(&block)
+      puts "in render"
+    end
+  end
+
+  class Responder
+    def method_missing(symbol, &block)
+      puts "enter method_missing"
+      @response = Proc.new{
+        puts 'in method missing'
+        block.call
+      }
+      puts "leave method_missing"
+    end
+    def respond
+      @response.call
+    end
+  end
+  t = Controller.new
+  t.test_for_bug
+}, '[ruby-core:14395]'
+
