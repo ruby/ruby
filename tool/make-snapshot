@@ -12,7 +12,7 @@ dest=`cd "$1"; pwd`
 tmp=${TMP_DIR-/tmp}/ #ruby-snapshot-$$
 mkdir -p "$tmp"
 cd "$tmp"
-revision=`svn export $SVNURL ruby | sed -n '$s/.*\([0-9]+\).*/\1/p'`
+revision=`svn export $SVNURL ruby | sed -n '$s/.*\([0-9][0-9]*\).*/\1/p'`
 [ $revision ] || revision=`svn info $SVNURL | sed -n 's/Revision: //p'`
 echo "#define RUBY_REVISION $revision" > ruby/revision.h
 v=ruby-r$revision
