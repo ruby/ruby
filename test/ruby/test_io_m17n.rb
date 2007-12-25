@@ -342,7 +342,7 @@ EOT
       w.close
       s = r.read
       assert_equal(Encoding.default_external, s.encoding)
-      assert_str_equal(utf8, s)
+      assert_str_equal(utf8.dup.force_encoding(Encoding.default_external), s)
     }
 
     with_pipe("EUC-JP") {|r,w|
