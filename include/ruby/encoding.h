@@ -85,18 +85,19 @@ int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
 
 /* -> code or raise exception */
 int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
+#define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE(enc,(UChar*)(p),(UChar*)(e))
 
 /* -> codelen or raise exception */
 int rb_enc_codelen(int code, rb_encoding *enc);
 
 /* code,ptr,encoding -> write buf */
-#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)buf)
+#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)(buf))
 
 /* ptr, ptr, encoding -> prev_char */
-#define rb_enc_prev_char(s,p,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)s,(UChar*)p)
+#define rb_enc_prev_char(s,p,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)(s),(UChar*)(p))
 /* ptr, ptr, encoding -> next_char */
-#define rb_enc_left_char_head(s,p,enc) (char *)onigenc_get_left_adjust_char_head(enc,(UChar*)s,(UChar*)p)
-#define rb_enc_right_char_head(s,p,enc) (char *)onigenc_get_right_adjust_char_head(enc,(UChar*)s,(UChar*)p)
+#define rb_enc_left_char_head(s,p,enc) (char *)onigenc_get_left_adjust_char_head(enc,(UChar*)(s),(UChar*)(p))
+#define rb_enc_right_char_head(s,p,enc) (char *)onigenc_get_right_adjust_char_head(enc,(UChar*)(s),(UChar*)(p))
 
 #define rb_enc_isctype(c,t,enc) ONIGENC_IS_CODE_CTYPE(enc,c,t)
 #define rb_enc_isascii(c,enc) ONIGENC_IS_CODE_ASCII(c)
@@ -110,9 +111,11 @@ int rb_enc_codelen(int code, rb_encoding *enc);
 
 #define rb_enc_asciicompat(enc) (rb_enc_mbminlen(enc)==1)
 
+int rb_enc_casefold(char *to, const char *p, const char *e, rb_encoding *enc);
 int rb_enc_toupper(int c, rb_encoding *enc);
 int rb_enc_tolower(int c, rb_encoding *enc);
 ID rb_intern3(const char*, long, rb_encoding*);
+ID rb_interned_id_p(const char *, long, rb_encoding *);
 int rb_enc_symname_p(const char*, rb_encoding*);
 int rb_enc_str_coderange(VALUE);
 int rb_enc_str_asciionly_p(VALUE);

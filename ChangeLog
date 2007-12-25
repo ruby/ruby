@@ -1,3 +1,10 @@
+Tue Dec 25 19:01:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.h (rb_enc_mbc_to_codepoint): wrapper for
+	  ONIGENC_MBC_TO_CODE().
+
+	* string.c (rb_str_succ): deal with invalid sequence as binary.
+
 Tue Dec 25 18:40:46 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c: all methods need $SAFE < 1.

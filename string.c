@@ -1876,7 +1876,8 @@ rb_str_succ(VALUE orig)
     s = e = sbeg + RSTRING_LEN(str);
 
     while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
-	cc = rb_enc_codepoint(s, e, enc);
+	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+	cc = rb_enc_mbc_to_codepoint(s, e, enc);
 	if (rb_enc_isalnum(cc, enc)) {
 	    if (rb_enc_isascii(cc, enc)) {
 		if ((c = succ_char(s)) == 0) break;
@@ -1892,7 +1893,8 @@ rb_str_succ(VALUE orig)
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
 	    int limit = 256;
-	    cc = rb_enc_codepoint(s, e, enc);
+	    if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+	    cc = rb_enc_mbc_to_codepoint(s, e, enc);
 	    while ((l = rb_enc_mbcput(++cc, carry, enc)) < 0 && --limit);
 	    if (l > 0) {
 		if (l == (o = e - s)) goto overlay;

@@ -660,14 +660,15 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
     return c;
 }
 
-int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
+int
+rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
 {
     int r;
     if (e <= p)
         rb_raise(rb_eArgError, "empty string");
     r = rb_enc_precise_mbclen(p, e, enc);
     if (MBCLEN_CHARFOUND(r))
-        return ONIGENC_MBC_TO_CODE(enc,(UChar*)p,(UChar*)e);
+        return rb_enc_mbc_to_codepoint(p, e, enc);
     else
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
 }
