@@ -257,10 +257,12 @@ struct rb_iseq_struct {
     VALUE self;
 
     /* block inlining */
-    NODE *node;
-    void *special_block_builder;
-    void *cached_special_block_builder;
-    VALUE cached_special_block;
+    /* 
+     * NODE *node;
+     * void *special_block_builder;
+     * void *cached_special_block_builder;
+     * VALUE cached_special_block;
+     */
 
     /* klass/module nest information stack (cref) */
     NODE *cref_stack;

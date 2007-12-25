@@ -1,3 +1,7 @@
+Tue Dec 25 11:14:20 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c, vm_core.h: comment out unused fields.
+
 Tue Dec 25 11:02:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: check frame is FINAL when creating env.

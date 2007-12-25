@@ -82,8 +82,8 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(iseq->filename);
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
-	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node);
-	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block);
+/* 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node); */
+/*	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block); */
 
 	if (iseq->compile_data != 0) {
 	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->mark_ary);
@@ -164,9 +164,12 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->arg_rest = -1;
     iseq->arg_block = -1;
     iseq->klass = 0;
-    iseq->special_block_builder = GC_GUARDED_PTR_REF(block_opt);
-    iseq->cached_special_block_builder = 0;
-    iseq->cached_special_block = 0;
+
+    /*
+     * iseq->special_block_builder = GC_GUARDED_PTR_REF(block_opt);
+     * iseq->cached_special_block_builder = 0;
+     * iseq->cached_special_block = 0;
+     */
 
     iseq->compile_data = ALLOC(struct iseq_compile_data);
     MEMZERO(iseq->compile_data, struct iseq_compile_data, 1);
