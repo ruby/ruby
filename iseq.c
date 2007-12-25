@@ -455,6 +455,8 @@ iseq_s_compile(int argc, VALUE *argv, VALUE self)
 {
     VALUE src, file = Qnil, line = INT2FIX(1), opt = Qnil;
 
+    rb_secure(1);
+
     rb_scan_args(argc, argv, "13", &src, &file, &line, &opt);
     file = file == Qnil ? rb_str_new2("<compiled>") : file;
     line = line == Qnil ? INT2FIX(1) : line;
@@ -472,6 +474,7 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
     const char *fname;
     rb_compile_option_t option;
 
+    rb_secure(1);
     rb_scan_args(argc, argv, "11", &file, &opt);
     fname = StringValueCStr(file);
 
@@ -488,6 +491,7 @@ static VALUE
 iseq_s_compile_option_set(VALUE self, VALUE opt)
 {
     rb_compile_option_t option;
+    rb_secure(1);
     make_compile_option(&option, opt);
     COMPILE_OPTION_DEFAULT = option;
     return opt;
@@ -513,6 +517,7 @@ iseq_check(VALUE val)
 static VALUE
 iseq_eval(VALUE self)
 {
+    rb_secure(1);
     return rb_iseq_eval(self);
 }
 
@@ -534,6 +539,7 @@ static VALUE
 iseq_to_a(VALUE self)
 {
     rb_iseq_t *iseq = iseq_check(self);
+    rb_secure(1);
     return iseq_data_to_ary(iseq);
 }
 
@@ -792,6 +798,8 @@ ruby_iseq_disasm(VALUE self)
     char buff[0x200];
     enum {header_minlen = 72};
 
+    rb_secure(1);
+
     iseq = iseqdat->iseq;
     size = iseqdat->iseq_size;
 
@@ -890,6 +898,8 @@ iseq_s_disasm(VALUE klass, VALUE body)
     extern NODE *rb_method_body(VALUE body);
     NODE *node;
     VALUE ret = Qnil;
+
+    rb_secure(1);
 
     if ((node = rb_method_body(body)) != 0) {
 	if (nd_type(node) == RUBY_VM_METHOD_NODE) {
