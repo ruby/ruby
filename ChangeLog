@@ -1,3 +1,9 @@
+Tue Dec 25 12:32:32 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: Moving a static counter from inside register_transcoder()
+	  and register_functional_transcoder() to outside the functions, renaming
+	  from n to next_transcoder_position. Fixes 3) in [ruby-dev:32715].
+
 Tue Dec 25 12:22:17 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* sample/from.rb: follow Ruby 1.9 libraries.

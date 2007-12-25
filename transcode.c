@@ -72,6 +72,8 @@ extern void to_iso_2022_jp_transcoder_postprocessor(char**, char**, char*, char*
 /* in the future, add some mechanism for dynamically adding stuff here */
 #define MAX_TRANSCODERS 35  /* todo: fix: this number has to be adjusted by hand */
 static transcoder transcoder_table[MAX_TRANSCODERS];
+/* variable to work across register_transcoder and register_functional_transcoder */
+static int next_transcoder_position = 0;
 
 /* not sure why it's not possible to do relocatable initializations */
 /* maybe the code here can be removed (changed to simple initialization) */
@@ -80,18 +82,17 @@ static void
 register_transcoder(const char *from_e, const char *to_e,
     const BYTE_LOOKUP *tree_start, int max_output, int from_utf8)
 {
-    static int n = 0;
-    if (n >= MAX_TRANSCODERS) {
+    if (next_transcoder_position >= MAX_TRANSCODERS) {
 	/* we are initializing, is it okay to use rb_raise here? */
 	rb_raise(rb_eRuntimeError /*change exception*/, "not enough transcoder slots");
     }
-    transcoder_table[n].from_encoding = from_e;
-    transcoder_table[n].to_encoding = to_e;
-    transcoder_table[n].conv_tree_start = tree_start;
-    transcoder_table[n].max_output = max_output;
-    transcoder_table[n].from_utf8 = from_utf8;
+    transcoder_table[next_transcoder_position].from_encoding = from_e;
+    transcoder_table[next_transcoder_position].to_encoding = to_e;
+    transcoder_table[next_transcoder_position].conv_tree_start = tree_start;
+    transcoder_table[next_transcoder_position].max_output = max_output;
+    transcoder_table[next_transcoder_position].from_utf8 = from_utf8;
 
-    n++;
+    next_transcoder_position++;
 }
 
 static void
@@ -100,21 +101,20 @@ register_functional_transcoder(const char *from_e, const char *to_e,
     void (*preprocessor)(char**, char**, char*, char*, transcoder*, transcoding*),
     void (*postprocessor)(char**, char**, char*, char*, transcoder*, transcoding*))
 {
-    static int n = 0;
-    if (n >= MAX_TRANSCODERS) {
+    if (next_transcoder_position >= MAX_TRANSCODERS) {
 	/* we are initializing, is it okay to use rb_raise here? */
 	rb_raise(rb_eRuntimeError /*change exception*/, "not enough transcoder slots");
     }
-    transcoder_table[n].from_encoding = from_e;
-    transcoder_table[n].to_encoding = to_e;
-    transcoder_table[n].conv_tree_start = tree_start;
-    transcoder_table[n].max_output = max_output;
-    transcoder_table[n].from_utf8 = from_utf8;
-    transcoder_table[n].conv_tree_start = tree_start;
-    transcoder_table[n].preprocessor = preprocessor;
-    transcoder_table[n].postprocessor = postprocessor;
+    transcoder_table[next_transcoder_position].from_encoding = from_e;
+    transcoder_table[next_transcoder_position].to_encoding = to_e;
+    transcoder_table[next_transcoder_position].conv_tree_start = tree_start;
+    transcoder_table[next_transcoder_position].max_output = max_output;
+    transcoder_table[next_transcoder_position].from_utf8 = from_utf8;
+    transcoder_table[next_transcoder_position].conv_tree_start = tree_start;
+    transcoder_table[next_transcoder_position].preprocessor = preprocessor;
+    transcoder_table[next_transcoder_position].postprocessor = postprocessor;
 
-    n++;
+    next_transcoder_position++;
 }
 
 static void
