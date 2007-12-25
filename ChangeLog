@@ -1,3 +1,8 @@
+Tue Dec 25 23:16:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): encoding option in shbang and RUBYOPT did not
+	  work, do not store alloca()ed string in a parent scope struct.
+
 Tue Dec 25 22:56:52 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): keep this file.
