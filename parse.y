@@ -203,6 +203,7 @@ vtable_included(const struct vtable * tbl, ID id)
                      token
 */
 struct parser_params {
+    int is_ripper;
     NODE *heap;
 
     union tmpyystype *parser_yylval;   /* YYSTYPE not defined yet */
@@ -237,6 +238,7 @@ struct parser_params {
     int parser_ruby__end__seen;
     int line_count;
     int has_shebang;
+    char *parser_ruby_sourcefile; /* current source file */
     int parser_ruby_sourceline;	/* current line no. */
     rb_encoding *enc;
     rb_encoding *utf8;
@@ -245,14 +247,13 @@ struct parser_params {
 
 #ifndef RIPPER
     /* Ruby core only */
-    char *parser_ruby_sourcefile; /* current source file */
     NODE *parser_eval_tree_begin;
     NODE *parser_eval_tree;
     VALUE debug_lines;
     int nerr;
 #else
     /* Ripper only */
-    VALUE parser_ruby_sourcefile;
+    VALUE parser_ruby_sourcefile_string;
     const char *tokp;
     VALUE delayed;
     int delayed_line;
@@ -287,8 +288,6 @@ static int parser_yyerror(struct parser_params*, const char*);
 
 #define YYLEX_PARAM parser
 
-#define ruby_eval_tree		(parser->parser_eval_tree)
-#define ruby_eval_tree_begin	(parser->parser_eval_tree_begin)
 #define lex_strterm		(parser->parser_lex_strterm)
 #define lex_state		(parser->parser_lex_state)
 #define cond_stack		(parser->parser_cond_stack)
@@ -321,6 +320,8 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define yydebug			(parser->parser_yydebug)
 #ifdef RIPPER
 #else
+#define ruby_eval_tree		(parser->parser_eval_tree)
+#define ruby_eval_tree_begin	(parser->parser_eval_tree_begin)
 #define ruby_debug_lines	(parser->debug_lines)
 #endif
 
@@ -9171,12 +9172,14 @@ parser_initialize(struct parser_params *parser)
     parser->parser_lex_pend = 0;
     parser->parser_lvtbl = 0;
     parser->parser_ruby__end__seen = 0;
-#ifndef RIPPER
     parser->parser_ruby_sourcefile = 0;
+#ifndef RIPPER
+    parser->is_ripper = 0;
     parser->parser_eval_tree_begin = 0;
     parser->parser_eval_tree = 0;
 #else
-    parser->parser_ruby_sourcefile = Qnil;
+    parser->is_ripper = 1;
+    parser->parser_ruby_sourcefile_string = Qnil;
     parser->delayed = Qnil;
 
     parser->result = Qnil;
@@ -9190,6 +9193,11 @@ parser_initialize(struct parser_params *parser)
 }
 
 extern void rb_mark_source_filename(char *);
+
+#ifdef RIPPER
+#define parser_mark ripper_parser_mark
+#define parser_free ripper_parser_free
+#endif
 
 static void
 parser_mark(void *ptr)
@@ -9206,7 +9214,7 @@ parser_mark(void *ptr)
     rb_gc_mark(p->debug_lines);
     rb_mark_source_filename(p->parser_ruby_sourcefile);
 #else
-    rb_gc_mark(p->parser_ruby_sourcefile);
+    rb_gc_mark(p->parser_ruby_sourcefile_string);
     rb_gc_mark(p->delayed);
     rb_gc_mark(p->value);
     rb_gc_mark(p->result);
@@ -9656,6 +9664,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 {
     struct parser_params *parser;
     VALUE src, fname, lineno;
+    VALUE fname2;
 
     Data_Get_Struct(self, struct parser_params, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
@@ -9669,13 +9678,17 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     parser->parser_lex_input = src;
     parser->eofp = Qfalse;
     if (NIL_P(fname)) {
-        fname = STR_NEW2("(ripper)");
+        fname2 = STR_NEW2(" (ripper)");
     }
     else {
         StringValue(fname);
+        fname2 = rb_str_new2(" ");
+        rb_str_append(fname2, fname);
     }
     parser_initialize(parser);
-    parser->parser_ruby_sourcefile = fname;
+
+    parser->parser_ruby_sourcefile_string = fname2;
+    parser->parser_ruby_sourcefile = RSTRING_PTR(fname2)+1;
     parser->parser_ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
 
     return Qnil;

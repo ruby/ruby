@@ -1,3 +1,11 @@
+Tue Dec 25 21:32:44 2007  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (struct parser_params): make parser_ruby_sourcefile common
+	  field.  it is used by node_newnode.
+	  new field parser_ruby_sourcefile_string for ripper.
+	  (parser_initialize): initialize parser_ruby_sourcefile in ripper.
+	  (ripper_initialize): initialize parser_ruby_sourcefile_string.
+
 Tue Dec 25 21:26:09 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (parse.c): depends on tool/ytab.sed.
