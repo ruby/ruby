@@ -1850,7 +1850,7 @@ rb_thread_wait_fd_rw(int fd, int read)
 
 	rb_fd_term(&set);
 
-	if (result < 0 && errno != EBADF) {
+	if (result < 0) {
 	    rb_sys_fail(0);
 	}
     }

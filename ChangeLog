@@ -1,3 +1,7 @@
+Tue Dec 25 13:44:51 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_wait_fd_rw): should check EBADF on select().
+
 Tue Dec 25 13:30:03 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c, thread_pthread.h, thread_win32.c,
