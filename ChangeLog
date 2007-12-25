@@ -1,3 +1,8 @@
+Tue Dec 25 15:59:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_register): do not use based_encoding to check if
+	  dummy encoding.
+
 Tue Dec 25 15:55:14 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_succ): fix for string with non-alphanumeric chars.

@@ -166,7 +166,6 @@ enc_register(const char *name, rb_encoding *encoding)
     return enc_register_at(index - 1, name, encoding);
 }
 
-static VALUE enc_based_encoding(VALUE);
 static void set_encoding_const(const char *, rb_encoding *);
 int rb_enc_registered(const char *name);
 
@@ -183,7 +182,7 @@ rb_enc_register(const char *name, rb_encoding *encoding)
 	    index = enc_register(name, encoding);
 	}
 	else if (enc_initialized_p(oldenc) &&
-		 !NIL_P(enc_based_encoding(ENC_FROM_ENCODING(oldenc)))) {
+		 !ENC_DUMMY_P(ENC_FROM_ENCODING(oldenc))) {
 	    enc_register_at(index, name, encoding);
 	}
 	else {
