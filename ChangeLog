@@ -1,3 +1,9 @@
+Wed Dec 26 00:57:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/ext/generator/generator.c (Init_generator): requires
+	  json/common.rb for GeneratorError, when static linked.  a patch from
+	  Kenta Murata <muraken AT gmail.com> in [ruby-dev:32789].
+
 Tue Dec 25 23:33:55 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* development version 1.9.0 released.

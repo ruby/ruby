@@ -802,6 +802,7 @@ static VALUE cState_forget(VALUE self, VALUE object)
  */
 void Init_generator()
 {
+    rb_require("json/common");
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
     mGenerator = rb_define_module_under(mExt, "Generator");
