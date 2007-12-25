@@ -1672,6 +1672,9 @@ appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE rs, VAL
     long limit = *lp;
     rb_encoding *enc = io_input_encoding(fptr);
 
+    if (rsptr == 0)
+      rslen = 1;
+
     do {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
 	if (pending > 0) {

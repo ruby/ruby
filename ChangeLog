@@ -1,3 +1,10 @@
+Tue Dec 25 15:24:57 2007  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (appendline): initialize rslen to 1 if rsptr is 0.
+	  rslen is the length of the delimiter.
+	  if only delim is given, it should be 1.
+	  [ruby-dev:32746]
+
 Tue Dec 25 15:21:33 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_dispatch): fix for multistep transcode.
