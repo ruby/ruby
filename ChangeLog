@@ -1,3 +1,8 @@
+Tue Dec 25 18:27:51 2007  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_each_line): don't call rb_enc_codepoint with empty
+	  string.
+
 Tue Dec 25 18:06:04 2007  Tanaka Akira  <akr@fsij.org>
 	
 	* string.c (rb_str_inspect): don't call rb_enc_codepoint with empty

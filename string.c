@@ -4310,7 +4310,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	int n = rb_enc_codelen(c, enc);
 
 	if (rslen == 0 && c == newline) {
-	    while (rb_enc_codepoint(p, pend, enc) == newline) {
+	    while (p < pend && rb_enc_codepoint(p, pend, enc) == newline) {
 		p += n;
 	    }
 	    p -= n;
