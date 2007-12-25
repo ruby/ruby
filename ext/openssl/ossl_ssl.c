@@ -270,6 +270,8 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 static DH*
 ossl_default_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
+    rb_warning("using default DH parameters.");
+
     switch(keylength){
     case 512:
 	return OSSL_DEFAULT_DH_512;
@@ -463,7 +465,6 @@ ossl_sslctx_setup(VALUE self)
 	SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
     }
     else{
-	rb_warning("using default DH parameters.");
 	SSL_CTX_set_tmp_dh_callback(ctx, ossl_default_tmp_dh_callback);
     }
 #endif

@@ -1,3 +1,10 @@
+Tue Dec 25 20:24:58 2007  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/ossl_ssl.c: Only show a warning if the default 
+	  DH callback is actually used.
+
+	* ext/openssl/ossl_rand.c: New method: random_add().
+
 Tue Dec 25 20:24:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot: argument check, and cleanup exported directory.
