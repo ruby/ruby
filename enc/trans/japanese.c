@@ -1,4 +1,3 @@
-#define TRANSCODE_DATA
 #include "transcode_data.h"
 
 static const unsigned char
@@ -4418,10 +4417,15 @@ from_SHIFT_JIS_infos[108] = {
      &from_SHIFT_JIS_FA, &from_SHIFT_JIS_FB,
      &from_SHIFT_JIS_FC,              UNDEF,
 };
-const BYTE_LOOKUP
-rb_from_SHIFT_JIS = {
+static const BYTE_LOOKUP
+from_SHIFT_JIS = {
     from_SHIFT_JIS_offsets,
     from_SHIFT_JIS_infos
+};
+static rb_transcoder
+rb_from_SHIFT_JIS = {
+    "UTF-8", "SHIFT_JIS", &from_SHIFT_JIS, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -13343,10 +13347,15 @@ to_SHIFT_JIS_infos[17] = {
      &to_SHIFT_JIS_E7, &to_SHIFT_JIS_E8, &to_SHIFT_JIS_E9, &to_SHIFT_JIS_EF,
                 UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_SHIFT_JIS = {
+static const BYTE_LOOKUP
+to_SHIFT_JIS = {
     to_SHIFT_JIS_offsets,
     to_SHIFT_JIS_infos
+};
+static rb_transcoder
+rb_to_SHIFT_JIS = {
+    "SHIFT_JIS", "UTF-8", &to_SHIFT_JIS, 2, 1,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -18112,10 +18121,15 @@ from_EUC_JP_infos[85] = {
      &from_EUC_JP_F9, &from_EUC_JP_FA, &from_EUC_JP_FB, &from_EUC_JP_FC,
                UNDEF,
 };
-const BYTE_LOOKUP
-rb_from_EUC_JP = {
+static const BYTE_LOOKUP
+from_EUC_JP = {
     from_EUC_JP_offsets,
     from_EUC_JP_infos
+};
+static rb_transcoder
+rb_from_EUC_JP = {
+    "UTF-8", "EUC-JP", &from_EUC_JP, 3, 0,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -23612,10 +23626,15 @@ to_EUC_JP_infos[17] = {
      &to_EUC_JP_E7, &to_EUC_JP_E8, &to_EUC_JP_E9, &to_EUC_JP_EF,
              UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_EUC_JP = {
+static const BYTE_LOOKUP
+to_EUC_JP = {
     to_SHIFT_JIS_offsets,
     to_EUC_JP_infos
+};
+static rb_transcoder
+rb_to_EUC_JP = {
+    "EUC_JP", "UTF-8", &to_EUC_JP, 2, 1,
+    NULL, NULL,
 };
 
 #define ISO_2022_ENCODING(escseq, byte) ((escseq<<8)|byte)
@@ -23699,11 +23718,11 @@ get_iso_2022_mode(char **in_pos)
     return new_mode;
 }
 
-void
+static void
 from_iso_2022_jp_transcoder_preprocessor(char **in_pos, char **out_pos,
-				     char *in_stop, char *out_stop,
-				     transcoder *my_transcoder,
-				     transcoding *my_transcoding)
+					 char *in_stop, char *out_stop,
+					 rb_transcoder *my_transcoder,
+					 rb_transcoding *my_transcoding)
 {
     char *in_p = *in_pos, *out_p = *out_pos;
     int cur_mode = ISO_2022_GZ_ASCII;
@@ -23779,11 +23798,11 @@ select_iso_2022_mode(char **out_pos, int new_mode)
     return new_mode;
 }
 
-void
+static void
 to_iso_2022_jp_transcoder_postprocessor(char **in_pos, char **out_pos,
-				     char *in_stop, char *out_stop,
-				     transcoder *my_transcoder,
-				     transcoding *my_transcoding)
+					char *in_stop, char *out_stop,
+					rb_transcoder *my_transcoder,
+					rb_transcoding *my_transcoding)
 {
     char *in_p = *in_pos, *out_p = *out_pos;
     int cur_mode = ISO_2022_GZ_ASCII, new_mode = 0;
@@ -23823,4 +23842,27 @@ to_iso_2022_jp_transcoder_postprocessor(char **in_pos, char **out_pos,
     /* cleanup */
     *in_pos  = in_p;
     *out_pos = out_p;
+}
+
+static rb_transcoder
+rb_from_ISO_2022_JP = {
+    "ISO-2022-JP", "UTF-8", &from_EUC_JP, 8, 0,
+    &from_iso_2022_jp_transcoder_preprocessor, NULL,
+};
+
+static rb_transcoder
+rb_to_ISO_2022_JP = {
+    "UTF-8", "ISO-2022-JP", &to_EUC_JP, 8, 1,
+    NULL, &to_iso_2022_jp_transcoder_postprocessor,
+};
+
+void
+Init_japanese(void)
+{
+    rb_register_transcoder(&rb_from_SHIFT_JIS);
+    rb_register_transcoder(&rb_from_EUC_JP);
+    rb_register_transcoder(&rb_to_SHIFT_JIS);
+    rb_register_transcoder(&rb_to_EUC_JP);
+    rb_register_transcoder(&rb_from_ISO_2022_JP);
+    rb_register_transcoder(&rb_to_ISO_2022_JP);
 }

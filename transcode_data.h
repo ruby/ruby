@@ -22,12 +22,9 @@ typedef struct byte_lookup {
     const struct byte_lookup *const *info;
 } BYTE_LOOKUP;
 
-#ifdef TRANSCODE_DATA
+#ifndef PType
 /* data file needs to treat this as a pointer, to remove warnings */
 #define PType (const BYTE_LOOKUP *)
-#else
-/* in code, this is treated as just an integer */
-#define PType (int)
 #endif
 
 #define NOMAP   (PType 0x01)   /* single byte direct map */
@@ -56,23 +53,26 @@ typedef struct byte_lookup {
 
 /* dynamic structure, one per conversion (similar to iconv_t) */
 /* may carry conversion state (e.g. for iso-2022-jp) */
-typedef struct transcoding {
+typedef struct rb_transcoding {
     VALUE ruby_string_dest; /* the String used as the conversion destination,
 			       or NULL if something else is being converted */
-    char *(*flush_func)(struct transcoding*, int, int);
-} transcoding;
+    char *(*flush_func)(struct rb_transcoding*, int, int);
+} rb_transcoding;
 
 /* static structure, one per supported encoding pair */
-typedef struct transcoder_st{
+typedef struct rb_transcoder {
     const char *from_encoding;
     const char *to_encoding;
     const BYTE_LOOKUP *conv_tree_start;
     int max_output;
     int from_utf8;
     void (*preprocessor)(char**, char**, char*, char*,
-				struct transcoder_st *transcoder, struct transcoding*);
+			 struct rb_transcoder *, struct rb_transcoding *);
     void (*postprocessor)(char**, char**, char*, char*,
-				 struct transcoder_st *transcoder, struct transcoding*);
-} transcoder;
+			 struct rb_transcoder *, struct rb_transcoding *);
+} rb_transcoder;
+
+void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);
+void rb_register_transcoder(const rb_transcoder *);
 
 #endif /* RUBY_TRANSCODE_DATA_H */

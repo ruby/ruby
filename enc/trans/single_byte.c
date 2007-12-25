@@ -1,4 +1,3 @@
-#define TRANSCODE_DATA
 #include "transcode_data.h"
 
 static const unsigned char
@@ -65,10 +64,15 @@ from_ISO_8859_1_infos[129] = {
      o2(0xC3,0xBB), o2(0xC3,0xBC), o2(0xC3,0xBD), o2(0xC3,0xBE),
      o2(0xC3,0xBF),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_1 = {
+static const BYTE_LOOKUP
+from_ISO_8859_1 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_1_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_1 = {
+    "ISO-8859-1", "UTF-8", &from_ISO_8859_1, 2, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -158,10 +162,15 @@ to_ISO_8859_1_infos[4] = {
                  NOMAP, &to_ISO_8859_1_C2,
      &to_ISO_8859_1_C3,             UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_1 = {
+static const BYTE_LOOKUP
+to_ISO_8859_1 = {
     to_ISO_8859_1_offsets,
     to_ISO_8859_1_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_1 = {
+    "UTF-8", "ISO-8859-1", &to_ISO_8859_1, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -200,10 +209,15 @@ from_ISO_8859_2_infos[129] = {
      o2(0xC5,0xB1), o2(0xC3,0xBC), o2(0xC3,0xBD), o2(0xC5,0xA3),
      o2(0xCB,0x99),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_2 = {
+static const BYTE_LOOKUP
+from_ISO_8859_2 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_2_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_2 = {
+    "ISO-8859-2", "UTF-8", &from_ISO_8859_2, 2, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -351,10 +365,15 @@ to_ISO_8859_2_infos[7] = {
      &to_ISO_8859_2_C5, &to_ISO_8859_2_CB,
                  UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_2 = {
+static const BYTE_LOOKUP
+to_ISO_8859_2 = {
     to_ISO_8859_2_offsets,
     to_ISO_8859_2_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_2 = {
+    "UTF-8", "ISO-8859-2", &to_ISO_8859_2, 1, 1,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -410,10 +429,15 @@ from_ISO_8859_3_infos[123] = {
      o2(0xC3,0xBA), o2(0xC3,0xBB), o2(0xC3,0xBC), o2(0xC5,0xAD),
      o2(0xC5,0x9D), o2(0xCB,0x99),         UNDEF,
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_3 = {
+static const BYTE_LOOKUP
+from_ISO_8859_3 = {
     from_ISO_8859_3_offsets,
     from_ISO_8859_3_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_3 = {
+    "ISO-8859-3", "UTF-8", &from_ISO_8859_3, 2, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -536,10 +560,15 @@ to_ISO_8859_3_infos[7] = {
      &to_ISO_8859_3_C5, &to_ISO_8859_3_CB,
                  UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_3 = {
+static const BYTE_LOOKUP
+to_ISO_8859_3 = {
     to_ISO_8859_2_offsets,
     to_ISO_8859_3_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_3 = {
+    "UTF-8", "ISO-8859-3", &to_ISO_8859_3, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -578,10 +607,15 @@ from_ISO_8859_4_infos[129] = {
      o2(0xC3,0xBB), o2(0xC3,0xBC), o2(0xC5,0xA9), o2(0xC5,0xAB),
      o2(0xCB,0x99),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_4 = {
+static const BYTE_LOOKUP
+from_ISO_8859_4 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_4_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_4 = {
+    "ISO-8859-4", "UTF-8", &from_ISO_8859_4, 2, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -708,10 +742,15 @@ to_ISO_8859_4_infos[7] = {
      &to_ISO_8859_4_C5, &to_ISO_8859_4_CB,
                  UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_4 = {
+static const BYTE_LOOKUP
+to_ISO_8859_4 = {
     to_ISO_8859_2_offsets,
     to_ISO_8859_4_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_4 = {
+    "UTF-8", "ISO-8859-4", &to_ISO_8859_4, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -782,10 +821,15 @@ from_ISO_8859_5_infos[129] = {
           o2(0xC2,0xA7),      o2(0xD1,0x9E),
           o2(0xD1,0x9F),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_5 = {
+static const BYTE_LOOKUP
+from_ISO_8859_5 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_5_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_5 = {
+    "ISO-8859-5", "UTF-8", &from_ISO_8859_5, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -928,10 +972,15 @@ to_ISO_8859_5_infos[6] = {
      &to_ISO_8859_5_D0, &to_ISO_8859_5_D1,
      &to_ISO_8859_5_E2,             UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_5 = {
+static const BYTE_LOOKUP
+to_ISO_8859_5 = {
     to_ISO_8859_5_offsets,
     to_ISO_8859_5_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_5 = {
+    "UTF-8", "ISO-8859-5", &to_ISO_8859_5, 1, 1,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -978,10 +1027,15 @@ from_ISO_8859_6_infos[85] = {
      o2(0xD9,0x8F), o2(0xD9,0x90), o2(0xD9,0x91), o2(0xD9,0x92),
              UNDEF,
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_6 = {
+static const BYTE_LOOKUP
+from_ISO_8859_6 = {
     from_ISO_8859_6_offsets,
     from_ISO_8859_6_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_6 = {
+    "ISO-8859-6", "UTF-8", &from_ISO_8859_6, 2, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -1079,10 +1133,15 @@ to_ISO_8859_6_infos[5] = {
      &to_ISO_8859_6_D8, &to_ISO_8859_6_D9,
                  UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_6 = {
+static const BYTE_LOOKUP
+to_ISO_8859_6 = {
     to_ISO_8859_6_offsets,
     to_ISO_8859_6_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_6 = {
+    "UTF-8", "ISO-8859-6", &to_ISO_8859_6, 1, 1,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -1171,10 +1230,15 @@ from_ISO_8859_7_infos[127] = {
           o2(0xCF,0x8D),      o2(0xCF,0x8E),
                   UNDEF,
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_7 = {
+static const BYTE_LOOKUP
+from_ISO_8859_7 = {
     from_ISO_8859_7_offsets,
     from_ISO_8859_7_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_7 = {
+    "ISO-8859-7", "UTF-8", &from_ISO_8859_7, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -1352,10 +1416,15 @@ to_ISO_8859_7_infos[7] = {
      &to_ISO_8859_7_CF, &to_ISO_8859_7_E2,
                  UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_7 = {
+static const BYTE_LOOKUP
+to_ISO_8859_7 = {
     to_ISO_8859_7_offsets,
     to_ISO_8859_7_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_7 = {
+    "UTF-8", "ISO-8859-7", &to_ISO_8859_7, 1, 1,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -1427,10 +1496,15 @@ from_ISO_8859_8_infos[94] = {
           o2(0xD7,0xAA), o3(0xE2,0x80,0x8E),
      o3(0xE2,0x80,0x8F),              UNDEF,
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_8 = {
+static const BYTE_LOOKUP
+from_ISO_8859_8 = {
     from_ISO_8859_8_offsets,
     from_ISO_8859_8_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_8 = {
+    "ISO-8859-8", "UTF-8", &from_ISO_8859_8, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -1567,10 +1641,15 @@ to_ISO_8859_8_infos[6] = {
      &to_ISO_8859_8_C3, &to_ISO_8859_8_D7,
      &to_ISO_8859_8_E2,             UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_8 = {
+static const BYTE_LOOKUP
+to_ISO_8859_8 = {
     to_ISO_8859_8_offsets,
     to_ISO_8859_8_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_8 = {
+    "UTF-8", "ISO-8859-8", &to_ISO_8859_8, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -1609,10 +1688,15 @@ from_ISO_8859_9_infos[129] = {
      o2(0xC3,0xBB), o2(0xC3,0xBC), o2(0xC4,0xB1), o2(0xC5,0x9F),
      o2(0xC3,0xBF),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_9 = {
+static const BYTE_LOOKUP
+from_ISO_8859_9 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_9_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_9 = {
+    "ISO-8859-9", "UTF-8", &from_ISO_8859_9, 2, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -1706,10 +1790,15 @@ to_ISO_8859_9_infos[6] = {
      &to_ISO_8859_9_C3, &to_ISO_8859_9_C4,
      &to_ISO_8859_9_C5,             UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_9 = {
+static const BYTE_LOOKUP
+to_ISO_8859_9 = {
     to_ISO_8859_9_offsets,
     to_ISO_8859_9_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_9 = {
+    "UTF-8", "ISO-8859-9", &to_ISO_8859_9, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -1780,10 +1869,15 @@ from_ISO_8859_10_infos[129] = {
           o2(0xC3,0xBD),      o2(0xC3,0xBE),
           o2(0xC4,0xB8),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_10 = {
+static const BYTE_LOOKUP
+from_ISO_8859_10 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_10_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_10 = {
+    "ISO-8859-10", "UTF-8", &from_ISO_8859_10, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -1932,10 +2026,15 @@ to_ISO_8859_10_infos[7] = {
      &to_ISO_8859_10_C5, &to_ISO_8859_10_E2,
                   UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_10 = {
+static const BYTE_LOOKUP
+to_ISO_8859_10 = {
     to_ISO_8859_10_offsets,
     to_ISO_8859_10_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_10 = {
+    "UTF-8", "ISO-8859-10", &to_ISO_8859_10, 1, 1,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -2021,10 +2120,15 @@ from_ISO_8859_11_infos[122] = {
      o3(0xE0,0xB9,0x99), o3(0xE0,0xB9,0x9A),
      o3(0xE0,0xB9,0x9B),              UNDEF,
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_11 = {
+static const BYTE_LOOKUP
+from_ISO_8859_11 = {
     from_ISO_8859_11_offsets,
     from_ISO_8859_11_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_11 = {
+    "ISO-8859-11", "UTF-8", &from_ISO_8859_11, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -2149,10 +2253,15 @@ to_ISO_8859_11_infos[4] = {
                   NOMAP, &to_ISO_8859_11_C2,
      &to_ISO_8859_11_E0,              UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_11 = {
+static const BYTE_LOOKUP
+to_ISO_8859_11 = {
     to_ISO_8859_11_offsets,
     to_ISO_8859_11_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_11 = {
+    "UTF-8", "ISO-8859-11", &to_ISO_8859_11, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -2223,10 +2332,15 @@ from_ISO_8859_13_infos[129] = {
           o2(0xC5,0xBC),      o2(0xC5,0xBE),
      o3(0xE2,0x80,0x99),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_13 = {
+static const BYTE_LOOKUP
+from_ISO_8859_13 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_13_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_13 = {
+    "ISO-8859-13", "UTF-8", &from_ISO_8859_13, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -2362,10 +2476,15 @@ to_ISO_8859_13_infos[7] = {
      &to_ISO_8859_13_C5, &to_ISO_8859_13_E2,
                   UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_13 = {
+static const BYTE_LOOKUP
+to_ISO_8859_13 = {
     to_ISO_8859_10_offsets,
     to_ISO_8859_13_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_13 = {
+    "UTF-8", "ISO-8859-13", &to_ISO_8859_13, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -2436,10 +2555,15 @@ from_ISO_8859_14_infos[129] = {
           o2(0xC3,0xBD),      o2(0xC5,0xB7),
           o2(0xC3,0xBF),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_14 = {
+static const BYTE_LOOKUP
+from_ISO_8859_14 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_14_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_14 = {
+    "ISO-8859-14", "UTF-8", &from_ISO_8859_14, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -2652,10 +2776,15 @@ to_ISO_8859_14_infos[7] = {
      &to_ISO_8859_14_C5, &to_ISO_8859_14_E1,
                   UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_14 = {
+static const BYTE_LOOKUP
+to_ISO_8859_14 = {
     to_ISO_8859_14_offsets,
     to_ISO_8859_14_infos
+};
+static rb_transcoder
+rb_to_ISO_8859_14 = {
+    "UTF-8", "ISO-8859-14", &to_ISO_8859_14, 1, 1,
+    NULL, NULL,
 };
 
 static const struct byte_lookup* const
@@ -2726,10 +2855,15 @@ from_ISO_8859_15_infos[129] = {
           o2(0xC3,0xBD),      o2(0xC3,0xBE),
           o2(0xC3,0xBF),
 };
-const BYTE_LOOKUP
-rb_from_ISO_8859_15 = {
+static const BYTE_LOOKUP
+from_ISO_8859_15 = {
     from_ISO_8859_1_offsets,
     from_ISO_8859_15_infos
+};
+static rb_transcoder
+rb_from_ISO_8859_15 = {
+    "ISO-8859-15", "UTF-8", &from_ISO_8859_15, 3, 0,
+    NULL, NULL,
 };
 
 static const unsigned char
@@ -2840,10 +2974,47 @@ to_ISO_8859_15_infos[6] = {
       &to_ISO_8859_1_C3, &to_ISO_8859_15_C5,
      &to_ISO_8859_15_E2,              UNDEF,
 };
-const BYTE_LOOKUP
-rb_to_ISO_8859_15 = {
+static const BYTE_LOOKUP
+to_ISO_8859_15 = {
     to_ISO_8859_15_offsets,
     to_ISO_8859_15_infos
 };
+static rb_transcoder
+rb_to_ISO_8859_15 = {
+    "UTF-8", "ISO-8859-15", &to_ISO_8859_15, 1, 1,
+    NULL, NULL,
+};
 
+void
+Init_one_byte(void)
+{
+    rb_register_transcoder(&rb_from_ISO_8859_1);
+    rb_register_transcoder(&rb_from_ISO_8859_2);
+    rb_register_transcoder(&rb_from_ISO_8859_3);
+    rb_register_transcoder(&rb_from_ISO_8859_4);
+    rb_register_transcoder(&rb_from_ISO_8859_5);
+    rb_register_transcoder(&rb_from_ISO_8859_6);
+    rb_register_transcoder(&rb_from_ISO_8859_7);
+    rb_register_transcoder(&rb_from_ISO_8859_8);
+    rb_register_transcoder(&rb_from_ISO_8859_9);
+    rb_register_transcoder(&rb_from_ISO_8859_10);
+    rb_register_transcoder(&rb_from_ISO_8859_11);
+    rb_register_transcoder(&rb_from_ISO_8859_13);
+    rb_register_transcoder(&rb_from_ISO_8859_14);
+    rb_register_transcoder(&rb_from_ISO_8859_15);
+    rb_register_transcoder(&rb_to_ISO_8859_1);
+    rb_register_transcoder(&rb_to_ISO_8859_2);
+    rb_register_transcoder(&rb_to_ISO_8859_3);
+    rb_register_transcoder(&rb_to_ISO_8859_4);
+    rb_register_transcoder(&rb_to_ISO_8859_5);
+    rb_register_transcoder(&rb_to_ISO_8859_6);
+    rb_register_transcoder(&rb_to_ISO_8859_7);
+    rb_register_transcoder(&rb_to_ISO_8859_8);
+    rb_register_transcoder(&rb_to_ISO_8859_9);
+    rb_register_transcoder(&rb_to_ISO_8859_10);
+    rb_register_transcoder(&rb_to_ISO_8859_11);
+    rb_register_transcoder(&rb_to_ISO_8859_13);
+    rb_register_transcoder(&rb_to_ISO_8859_14);
+    rb_register_transcoder(&rb_to_ISO_8859_15);
+}
 /* Footprint (bytes): gross: 26788, saved: 3728, net: 23060 */

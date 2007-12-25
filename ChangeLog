@@ -1,3 +1,20 @@
+Tue Dec 25 14:57:00 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (COMMONOBJS): transcode_data_*.c moved under enc/trans.
+
+	* transcode_data.h (rb_transcoding, rb_transcoder): prefixed.
+
+	* transcode.c (rb_register_transcoder, rb_declare_transcoder): split
+	  declaration and registration.  [ruby-dev:32704]
+
+	* transcode.c (transcode_dispatch): autoload pre-declared transcoder.
+
+	* transcode.c (str_transcode): use rb_define_dummy_encoding().
+
+	* transcode.c (Init_transcode): initialize transcoder tables.
+
+	* enc/trans/single_byte.c, enc/trans/japanese.c: moved from top.
+
 Tue Dec 25 14:20:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mkmf.rb (map_dir): should generate path including $top_srcdir.

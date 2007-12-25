@@ -12,9 +12,9 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
-
+#define PType (int)
 #include "transcode_data.h"
-
+#include <ctype.h>
 
 VALUE rb_str_tmp_new(long);
 VALUE rb_str_shared_replace(VALUE, VALUE);
@@ -23,168 +23,122 @@ VALUE rb_str_shared_replace(VALUE, VALUE);
  *  Dispatch data and logic
  */
 
-/* extern declarations, should use some include file here */
-extern const BYTE_LOOKUP rb_from_ISO_8859_1;
-extern const BYTE_LOOKUP rb_from_ISO_8859_2;
-extern const BYTE_LOOKUP rb_from_ISO_8859_3;
-extern const BYTE_LOOKUP rb_from_ISO_8859_4;
-extern const BYTE_LOOKUP rb_from_ISO_8859_5;
-extern const BYTE_LOOKUP rb_from_ISO_8859_6;
-extern const BYTE_LOOKUP rb_from_ISO_8859_7;
-extern const BYTE_LOOKUP rb_from_ISO_8859_8;
-extern const BYTE_LOOKUP rb_from_ISO_8859_9;
-extern const BYTE_LOOKUP rb_from_ISO_8859_10;
-extern const BYTE_LOOKUP rb_from_ISO_8859_11;
-extern const BYTE_LOOKUP rb_from_ISO_8859_13;
-extern const BYTE_LOOKUP rb_from_ISO_8859_14;
-extern const BYTE_LOOKUP rb_from_ISO_8859_15;
+static st_table *transcoder_table, *transcoder_lib_table;
 
-extern const BYTE_LOOKUP rb_to_ISO_8859_1;
-extern const BYTE_LOOKUP rb_to_ISO_8859_2;
-extern const BYTE_LOOKUP rb_to_ISO_8859_3;
-extern const BYTE_LOOKUP rb_to_ISO_8859_4;
-extern const BYTE_LOOKUP rb_to_ISO_8859_5;
-extern const BYTE_LOOKUP rb_to_ISO_8859_6;
-extern const BYTE_LOOKUP rb_to_ISO_8859_7;
-extern const BYTE_LOOKUP rb_to_ISO_8859_8;
-extern const BYTE_LOOKUP rb_to_ISO_8859_9;
-extern const BYTE_LOOKUP rb_to_ISO_8859_10;
-extern const BYTE_LOOKUP rb_to_ISO_8859_11;
-extern const BYTE_LOOKUP rb_to_ISO_8859_13;
-extern const BYTE_LOOKUP rb_to_ISO_8859_14;
-extern const BYTE_LOOKUP rb_to_ISO_8859_15;
+#define TRANSCODER_INTERNAL_SEPARATOR '\t'
 
-extern const BYTE_LOOKUP rb_from_SHIFT_JIS;
-extern const BYTE_LOOKUP rb_from_EUC_JP;
-
-extern const BYTE_LOOKUP rb_to_SHIFT_JIS;
-extern const BYTE_LOOKUP rb_to_EUC_JP;
-
-extern void from_iso_2022_jp_transcoder_preprocessor(char**, char**, char*, char*,
-				struct transcoder_st *transcoder, struct transcoding*);
-extern void to_iso_2022_jp_transcoder_postprocessor(char**, char**, char*, char*,
-				struct transcoder_st *transcoder, struct transcoding*);
-
-/* declarations probably need to go into separate header file, e.g. transcode.h */
-
-/* todo: dynamic structure, one per conversion (stream) */
-
-/* in the future, add some mechanism for dynamically adding stuff here */
-#define MAX_TRANSCODERS 35  /* todo: fix: this number has to be adjusted by hand */
-static transcoder transcoder_table[MAX_TRANSCODERS];
-/* variable to work across register_transcoder and register_functional_transcoder */
-static int next_transcoder_position = 0;
-
-/* not sure why it's not possible to do relocatable initializations */
-/* maybe the code here can be removed (changed to simple initialization) */
-/* if we move this to another file???? */
-static void
-register_transcoder(const char *from_e, const char *to_e,
-    const BYTE_LOOKUP *tree_start, int max_output, int from_utf8)
+static char *
+transcoder_key(const char *from_e, const char *to_e)
 {
-    if (next_transcoder_position >= MAX_TRANSCODERS) {
-	/* we are initializing, is it okay to use rb_raise here? */
-	rb_raise(rb_eRuntimeError /*change exception*/, "not enough transcoder slots");
-    }
-    transcoder_table[next_transcoder_position].from_encoding = from_e;
-    transcoder_table[next_transcoder_position].to_encoding = to_e;
-    transcoder_table[next_transcoder_position].conv_tree_start = tree_start;
-    transcoder_table[next_transcoder_position].max_output = max_output;
-    transcoder_table[next_transcoder_position].from_utf8 = from_utf8;
+    int to_len = strlen(to_e);
+    int from_len = strlen(from_e);
+    char *const key = xmalloc(to_len + from_len + 2);
 
-    next_transcoder_position++;
+    memcpy(key, to_e, to_len);
+    memcpy(key + to_len + 1, from_e, from_len + 1);
+    key[to_len] = TRANSCODER_INTERNAL_SEPARATOR;
+    return key;
+}
+
+void
+rb_register_transcoder(const rb_transcoder *tr)
+{
+    st_data_t k, val = 0;
+    const char *const from_e = tr->from_encoding;
+    const char *const to_e = tr->to_encoding;
+    char *const key = transcoder_key(from_e, to_e);
+
+    if (st_lookup(transcoder_table, (st_data_t)key, &val)) {
+	xfree(key);
+	rb_raise(rb_eArgError, "transcoder from %s to %s has been already registered",
+		 from_e, to_e);
+    }
+    k = (st_data_t)key;
+    if (st_delete(transcoder_lib_table, &k, &val)) {
+	xfree((char *)k);
+    }
+    st_insert(transcoder_table, (st_data_t)key, (st_data_t)tr);
 }
 
 static void
-register_functional_transcoder(const char *from_e, const char *to_e,
-    const BYTE_LOOKUP *tree_start, int max_output, int from_utf8,
-    void (*preprocessor)(char**, char**, char*, char*, transcoder*, transcoding*),
-    void (*postprocessor)(char**, char**, char*, char*, transcoder*, transcoding*))
+declare_transcoder(const char *to, const char *from, const char *lib)
 {
-    if (next_transcoder_position >= MAX_TRANSCODERS) {
-	/* we are initializing, is it okay to use rb_raise here? */
-	rb_raise(rb_eRuntimeError /*change exception*/, "not enough transcoder slots");
-    }
-    transcoder_table[next_transcoder_position].from_encoding = from_e;
-    transcoder_table[next_transcoder_position].to_encoding = to_e;
-    transcoder_table[next_transcoder_position].conv_tree_start = tree_start;
-    transcoder_table[next_transcoder_position].max_output = max_output;
-    transcoder_table[next_transcoder_position].from_utf8 = from_utf8;
-    transcoder_table[next_transcoder_position].conv_tree_start = tree_start;
-    transcoder_table[next_transcoder_position].preprocessor = preprocessor;
-    transcoder_table[next_transcoder_position].postprocessor = postprocessor;
+    const char *const key = transcoder_key(to, from);
+    st_data_t k = (st_data_t)key, val;
 
-    next_transcoder_position++;
+    if (st_delete(transcoder_lib_table, &k, &val)) {
+	xfree((char *)k);
+    }
+    st_insert(transcoder_lib_table, (st_data_t)key, (st_data_t)lib);
+}
+
+#define MAX_TRANSCODER_LIBNAME_LEN 64
+static const char transcoder_lib_prefix[] = "enc/trans/";
+
+void
+rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
+{
+    if (!lib || strlen(lib) > MAX_TRANSCODER_LIBNAME_LEN) {
+	rb_raise(rb_eArgError, "invalid library name - %s",
+		 lib ? lib : "(null)");
+    }
+    declare_transcoder(enc1, enc2, lib);
+    declare_transcoder(enc2, enc1, lib);
 }
 
 static void
 init_transcoder_table(void)
 {
-    register_transcoder("ISO-8859-1",  "UTF-8", &rb_from_ISO_8859_1, 2, 0);
-    register_transcoder("ISO-8859-2",  "UTF-8", &rb_from_ISO_8859_2, 2, 0);
-    register_transcoder("ISO-8859-3",  "UTF-8", &rb_from_ISO_8859_3, 2, 0);
-    register_transcoder("ISO-8859-4",  "UTF-8", &rb_from_ISO_8859_4, 2, 0);
-    register_transcoder("ISO-8859-5",  "UTF-8", &rb_from_ISO_8859_5, 3, 0);
-    register_transcoder("ISO-8859-6",  "UTF-8", &rb_from_ISO_8859_6, 2, 0);
-    register_transcoder("ISO-8859-7",  "UTF-8", &rb_from_ISO_8859_7, 3, 0);
-    register_transcoder("ISO-8859-8",  "UTF-8", &rb_from_ISO_8859_8, 3, 0);
-    register_transcoder("ISO-8859-9",  "UTF-8", &rb_from_ISO_8859_9, 2, 0);
-    register_transcoder("ISO-8859-10", "UTF-8", &rb_from_ISO_8859_10, 3, 0);
-    register_transcoder("ISO-8859-11", "UTF-8", &rb_from_ISO_8859_11, 3, 0);
-    register_transcoder("ISO-8859-13", "UTF-8", &rb_from_ISO_8859_13, 3, 0);
-    register_transcoder("ISO-8859-14", "UTF-8", &rb_from_ISO_8859_14, 3, 0);
-    register_transcoder("ISO-8859-15", "UTF-8", &rb_from_ISO_8859_15, 3, 0);
-    register_transcoder("UTF-8", "ISO-8859-1",  &rb_to_ISO_8859_1, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-2",  &rb_to_ISO_8859_2, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-3",  &rb_to_ISO_8859_3, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-4",  &rb_to_ISO_8859_4, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-5",  &rb_to_ISO_8859_5, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-6",  &rb_to_ISO_8859_6, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-7",  &rb_to_ISO_8859_7, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-8",  &rb_to_ISO_8859_8, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-9",  &rb_to_ISO_8859_9, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-10", &rb_to_ISO_8859_10, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-11", &rb_to_ISO_8859_11, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-13", &rb_to_ISO_8859_13, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-14", &rb_to_ISO_8859_14, 1, 1);
-    register_transcoder("UTF-8", "ISO-8859-15", &rb_to_ISO_8859_15, 1, 1);
-
-    register_transcoder("SHIFT_JIS", "UTF-8",   &rb_from_SHIFT_JIS, 3, 0);
-    register_transcoder("EUC-JP", "UTF-8",      &rb_from_EUC_JP, 3, 0);
-    register_transcoder("UTF-8", "SHIFT_JIS",   &rb_to_SHIFT_JIS, 2, 1);
-    register_transcoder("UTF-8", "EUC-JP",      &rb_to_EUC_JP, 2, 1);
-    register_functional_transcoder("ISO-2022-JP", "UTF-8", &rb_from_EUC_JP,
-				   8, 0, &from_iso_2022_jp_transcoder_preprocessor, NULL);
-    register_functional_transcoder("UTF-8", "ISO-2022-JP", &rb_to_EUC_JP,
-				   8, 1, NULL, &to_iso_2022_jp_transcoder_postprocessor);
-
-    register_transcoder(NULL, NULL, NULL, 0, 0);
+    rb_declare_transcoder("ISO-8859-1",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-2",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-3",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-4",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-5",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-6",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-7",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-8",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-9",  "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-10", "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-11", "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-13", "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-14", "UTF-8", "single_byte");
+    rb_declare_transcoder("ISO-8859-15", "UTF-8", "single_byte");
+    rb_declare_transcoder("SHIFT_JIS",   "UTF-8", "japanese");
+    rb_declare_transcoder("EUC-JP",      "UTF-8", "japanese");
+    rb_declare_transcoder("ISO-2022-JP", "UTF-8", "japanese");
 }
 
-static int
-encoding_equal(const char* encoding1, const char* encoding2)
-{
-    return 0==strcasecmp(encoding1, encoding2);
-}
+#define encoding_equal(enc1, enc2) (strcasecmp(enc1, enc2) == 0)
 
-static transcoder*
+static rb_transcoder *
 transcode_dispatch(const char* from_encoding, const char* to_encoding)
 {
-    transcoder *candidate = transcoder_table;
-    
-    for (candidate = transcoder_table; candidate->from_encoding; candidate++) {
-	if (encoding_equal(from_encoding, candidate->from_encoding)
-	    && encoding_equal(to_encoding, candidate->to_encoding)) {
-		return candidate;
+    char *const key = transcoder_key(from_encoding, to_encoding);
+    st_data_t k, val = 0;
+
+    k = (st_data_t)key;
+    if (!st_lookup(transcoder_table, k, &val) &&
+	st_delete(transcoder_lib_table, &k, &val)) {
+	const char *const lib = (const char *)val;
+	int len = strlen(lib);
+	char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
+
+	xfree((char *)k);
+	if (len > MAX_TRANSCODER_LIBNAME_LEN) return NULL;
+	memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
+	memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len + 1);
+	if (!rb_require(path)) return NULL;
+	if (!st_lookup(transcoder_table, (st_data_t)key, &val)) {
+	    /* multistep logic, via UTF-8 */
+	    if (!encoding_equal(from_encoding, "UTF-8") &&
+		!encoding_equal(to_encoding, "UTF-8") &&
+		transcode_dispatch("UTF-8", to_encoding)) {  /* check that we have a second step */
+		return transcode_dispatch(from_encoding, "UTF-8"); /* return first step */
+	    }
+	    return NULL;
 	}
     }
-    /* multistep logic, via UTF-8 */
-    if (!encoding_equal(from_encoding, "UTF-8")
-	&& !encoding_equal(to_encoding, "UTF-8")
-	&& transcode_dispatch("UTF-8", to_encoding)) {  /* check that we have a second step */
-	    return transcode_dispatch(from_encoding, "UTF-8"); /* return first step */
-    }
-    return NULL;
+    return (rb_transcoder *)val;
 }
 
 
@@ -194,8 +148,8 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
 static void
 transcode_loop(char **in_pos, char **out_pos,
 	       char *in_stop, char *out_stop,
-	       transcoder *my_transcoder,
-	       transcoding *my_transcoding)
+	       const rb_transcoder *my_transcoder,
+	       rb_transcoding *my_transcoding)
 {
     char *in_p = *in_pos, *out_p = *out_pos;
     const BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
@@ -280,7 +234,7 @@ transcode_loop(char **in_pos, char **out_pos,
  */
 
 static char *
-str_transcoding_resize(transcoding *my_transcoding, int len, int new_len)
+str_transcoding_resize(rb_transcoding *my_transcoding, int len, int new_len)
 {
     VALUE dest_string = my_transcoding->ruby_string_dest;
     rb_str_resize(dest_string, new_len);
@@ -298,8 +252,8 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     const char *from_e, *to_e;
     int from_encidx, to_encidx;
     VALUE from_encval, to_encval;
-    transcoder *my_transcoder;
-    transcoding my_transcoding;
+    rb_transcoder *my_transcoder;
+    rb_transcoding my_transcoding;
     int final_encoding = 0;
 
     if (argc<1 || argc>2) {
@@ -307,6 +261,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     }
     if ((to_encidx = rb_to_encoding_index(to_encval = argv[0])) < 0) {
 	to_enc = 0;
+	to_encidx = 0;
 	to_e = StringValueCStr(to_encval);
     }
     else {
@@ -405,7 +360,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     }
     /* set encoding */
     if (!to_enc) {
-	to_encidx = rb_enc_replicate(to_e, rb_ascii8bit_encoding());
+	to_encidx = rb_define_dummy_encoding(to_e);
     }
     *self = dest;
 
@@ -467,7 +422,10 @@ rb_str_transcode(int argc, VALUE *argv, VALUE str)
 void
 Init_transcode(void)
 {
+    transcoder_table = st_init_strcasetable();
+    transcoder_lib_table = st_init_strcasetable();
     init_transcoder_table();
+
     rb_define_method(rb_cString, "encode", rb_str_transcode, -1);
     rb_define_method(rb_cString, "encode!", rb_str_transcode_bang, -1);
 }
