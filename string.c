@@ -3025,7 +3025,8 @@ rb_str_inspect(VALUE str)
 
 	p += n;
 	if (c == '"'|| c == '\\' ||
-	    (c == '#' && (cc = rb_enc_codepoint(p,pend,enc),
+	    (c == '#' && p < pend &&
+                          (cc = rb_enc_codepoint(p,pend,enc),
 			  (cc == '$' || cc == '@' || cc == '{')))) {
 	    prefix_escape(result, c, enc);
 	}

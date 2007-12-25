@@ -1,3 +1,10 @@
+Tue Dec 25 18:06:04 2007  Tanaka Akira  <akr@fsij.org>
+	
+	* string.c (rb_str_inspect): don't call rb_enc_codepoint with empty
+	  string.  fix '#'.inspect.
+
+	* encoding.c (rb_enc_codepoint): raise on empty string.
+
 Tue Dec 25 17:48:28 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm.c (rb_frame_method_id_and_class): new function to get the
