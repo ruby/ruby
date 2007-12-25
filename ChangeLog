@@ -1,3 +1,8 @@
+Tue Dec 25 16:51:07 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/japanese.c (rb_{from,to}_{SHIFT_JIS,EUC_JP}): inversed
+	  from_encoding and to_encoding.
+
 Tue Dec 25 16:41:57 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* golf_prelude.rb (h): add new method for all golfers.

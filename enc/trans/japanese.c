@@ -4424,7 +4424,7 @@ from_SHIFT_JIS = {
 };
 static rb_transcoder
 rb_from_SHIFT_JIS = {
-    "UTF-8", "SHIFT_JIS", &from_SHIFT_JIS, 3, 0,
+    "SHIFT_JIS", "UTF-8", &from_SHIFT_JIS, 3, 0,
     NULL, NULL,
 };
 
@@ -13354,7 +13354,7 @@ to_SHIFT_JIS = {
 };
 static rb_transcoder
 rb_to_SHIFT_JIS = {
-    "SHIFT_JIS", "UTF-8", &to_SHIFT_JIS, 2, 1,
+    "UTF-8", "SHIFT_JIS", &to_SHIFT_JIS, 2, 1,
     NULL, NULL,
 };
 
@@ -18128,7 +18128,7 @@ from_EUC_JP = {
 };
 static rb_transcoder
 rb_from_EUC_JP = {
-    "UTF-8", "EUC-JP", &from_EUC_JP, 3, 0,
+    "EUC-JP", "UTF-8", &from_EUC_JP, 3, 0,
     NULL, NULL,
 };
 
@@ -23633,7 +23633,7 @@ to_EUC_JP = {
 };
 static rb_transcoder
 rb_to_EUC_JP = {
-    "EUC-JP", "UTF-8", &to_EUC_JP, 2, 1,
+    "UTF-8", "EUC-JP", &to_EUC_JP, 2, 1,
     NULL, NULL,
 };
 
