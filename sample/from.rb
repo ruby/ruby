@@ -1,98 +1,113 @@
 #! /usr/local/bin/ruby
 
-require "parsedate"
+require "time"
 require "kconv"
-require "mailread"
-
-include ParseDate
-include Kconv
 
 class String
-
-  def kconv(code = Kconv::EUC)
-    Kconv.kconv(self, code, Kconv::AUTO)
-  end
-
   def kjust(len)
-    len += 1
-    me = self[0, len].ljust(len)
-    if me =~ /.$/ and $&.size == 2
-      me[-2..-1] = '  '
-      me[-2, 2] = '  '
+    res = ''
+    rlen = 0
+    self.each_char do |char|
+      delta = char.bytesize > 1 ? 2 : 1
+      break if rlen + delta > len
+      rlen += delta
+      res += char
     end
-    me.chop!
-  end
-
-end
-
-if ARGV[0] == '-w'
-  wait = true
-  ARGV.shift
-end
-
-if ARGV.length == 0
-  file = ENV['MAIL']
-  user = ENV['USER'] || ENV['USERNAME'] || ENV['LOGNAME'] 
-else
-  file = user = ARGV[0]
-  ARGV.clear
-end
-
-if file == nil or !File.exist? file
-  [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
-    if File.exist? f = "#{m}/mail/#{user}"
-      file = f
-      break 
-    end
+    res += ' ' * (len - rlen) if rlen < len
+    res
   end
 end
 
-$outcount = 0;
 def fromout(date, from, subj)
-  return if !date
-  y, m, d = parsedate(date) if date
+  return 0 if !date
+  y, m, d = Time.parse(date).to_a.reverse[4, 3] if date
   y ||= 0; m ||= 0; d ||= 0
-  if from
-    from.gsub! /\n/, ""
-  else
-    from = "sombody@somewhere"
-  end
-  if subj
-    subj.gsub! /\n/, ""
-  else
-    subj = "(nil)"
-  end
-  if ENV['LANG'] =~ /sjis/i
-    lang = Kconv::SJIS
-  else
-    lang = Kconv::EUC
-  end
-  from = from.kconv(lang).kjust(28)
-  subj = subj.kconv(lang).kjust(40)
-  printf "%02d/%02d/%02d [%s] %s\n",y%100,m,d,from,subj
-  $outcount += 1
+  from ||= "sombody@somewhere"
+  from.delete!("\r\n")
+  from = from.kconv(Encoding.default_external).kjust(28)
+  subj ||= "(nil)"
+  subj.delete!("\r\n")
+  subj = subj.kconv(Encoding.default_external).kjust(40)
+  printf "%02d/%02d/%02d [%s] %s\n", y%100, m, d, from, subj
+  return 1
 end
 
-if File.exist?(file)
-  atime = File.atime(file)
-  mtime = File.mtime(file)
-  f = open(file, "r")
-  begin
-    until f.eof?
-      mail = Mail.new(f)
-      fromout mail.header['Date'],mail.header['From'],mail.header['Subject']
+def get_mailfile(user)
+  file = user
+  unless user
+    file = ENV['MAIL']
+    user = ENV['USER'] || ENV['USERNAME'] || ENV['LOGNAME'] 
+  end
+
+  if file == nil or !File.exist?(file)
+    [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
+      path = "#{m}/mail/#{user}"
+      if File.exist?(path)
+	file = path
+	break
+      end
     end
-  ensure
-    f.close
+  end
+  file
+end
+
+def from_main
+  if ARGV[0] == '-w'
+    wait = true
+    ARGV.shift
+  end
+  file = get_mailfile(ARGV[0])
+
+  outcount = 0
+  if File.exist?(file)
+    atime = File.atime(file)
+    mtime = File.mtime(file)
+    open(file, "r") do |f|
+      until f.eof?
+	header = {}
+	f.each_line do |line|
+	  next if /^From / =~ line # skip From-line
+	  break if /^$/ =~ line	 # end of header
+
+	  if /^(?<attr>\S+?):\s*(?<value>.*)/ =~ line
+	    attr.capitalize!
+	    header[attr] = value
+	  elsif attr
+	    header[attr] += "\n" + line.lstrip
+	  end
+	end
+
+	f.each_line do |line|
+	  break if /^From / =~ line
+	end
+	outcount += fromout(header['Date'], header['From'], header['Subject'])
+      end
+    end
     File.utime(atime, mtime, file)
   end
+
+  if outcount == 0
+    print "You have no mail.\n"
+    sleep 2 if wait
+  elsif wait
+    system "stty cbreak -echo"
+    $stdin.getc
+    system "stty cooked echo"
+  end
 end
 
-if $outcount == 0
-  print "You have no mail.\n"
-  sleep 2 if wait
-elsif wait
-  system "stty cbreak -echo"
-  getc()
-  system "stty cooked echo"
+if __FILE__ == $0
+  from_main
 end
+
+__END__
+
+=begin
+
+= from.rb
+
+== USAGE
+
+ruby from.rb [-w] [username_or_filename]
+
+=end
