@@ -504,7 +504,7 @@ s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
-<<
+<<KEEP
 
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
