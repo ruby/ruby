@@ -5921,6 +5921,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
  *     io.external_encoding   => encoding
  *
  *  Returns the Encoding object that represents the encoding of the file.
+ *  If io is write mode and no encoding is specified, returns <code>nil</code>.
  */
 
 static VALUE
@@ -5934,6 +5935,11 @@ rb_io_external_encoding(VALUE io)
     }
     if (!fptr->enc && fptr->fd == 0) {
 	fptr->enc = rb_default_external_encoding();
+    }
+    if (fptr->mode & FMODE_WRITABLE) {
+	if (fptr->enc)
+	    return rb_enc_from_encoding(fptr->enc);
+	return Qnil;
     }
     return rb_enc_from_encoding(io_read_encoding(fptr));
 }

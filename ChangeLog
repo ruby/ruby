@@ -1,3 +1,8 @@
+Tue Dec 25 15:42:49 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_external_encoding): should return nil for
+	  pass-through write IO.  [ruby-dev:32740]
+
 Tue Dec 25 15:24:57 2007  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (appendline): initialize rslen to 1 if rsptr is 0.
