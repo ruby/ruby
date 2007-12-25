@@ -1,3 +1,7 @@
+Tue Dec 25 23:33:55 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* development version 1.9.0 released.
+
 Tue Dec 25 23:25:29 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/node.rb (REXML::Node::indent): should initialize rv
