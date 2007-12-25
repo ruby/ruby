@@ -19,7 +19,7 @@ AC_ARG_WITH(baseruby,
 		BASERUBY="ruby"
 	])
 test "`$BASERUBY -e 'p 42' 2>/dev/null`" = 42 ||
-    AC_MSG_ERROR([executable host ruby is required.  use --with-baseruby option.])
+    BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
 AC_SUBST(BASERUBY)
 
 AC_DEFUN([RUBY_MINGW32],
