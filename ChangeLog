@@ -1,3 +1,7 @@
+Tue Dec 25 16:41:57 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* golf_prelude.rb (h): add new method for all golfers.
+
 Tue Dec 25 16:37:12 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/trans/japanese.c (rb_to_EUC_JP): fixed typo.

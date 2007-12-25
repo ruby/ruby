@@ -4,4 +4,8 @@ class Object
     t = (methods + private_methods).sort.find{|e|r=~e}
     t ? __send__(t, *a, &b) : super
   end
+
+  def h(a='H', b='w', c='!')
+    puts "#{a}ello, #{b}orld#{c}"
+  end
 end
