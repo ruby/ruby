@@ -12,7 +12,20 @@
 
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
-void
+static void native_mutex_lock(pthread_mutex_t *lock);
+static void native_mutex_unlock(pthread_mutex_t *lock);
+static void native_mutex_destroy(pthread_mutex_t *lock);
+static int native_mutex_trylock(pthread_mutex_t *lock);
+static void native_mutex_initialize(pthread_mutex_t *lock);
+static void native_mutex_destroy(pthread_mutex_t *lock);
+
+static void native_cond_signal(pthread_cond_t *cond);
+static void native_cond_broadcast(pthread_cond_t *cond);
+static void native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+static void native_cond_initialize(pthread_cond_t *cond);
+static void native_cond_destroy(pthread_cond_t *cond);
+
+static void
 native_mutex_lock(pthread_mutex_t *lock)
 {
     int r;
@@ -21,7 +34,7 @@ native_mutex_lock(pthread_mutex_t *lock)
     }
 }
 
-void
+static void
 native_mutex_unlock(pthread_mutex_t *lock)
 {
     int r;
@@ -30,7 +43,7 @@ native_mutex_unlock(pthread_mutex_t *lock)
     }
 }
 
-inline int
+static inline int
 native_mutex_trylock(pthread_mutex_t *lock)
 {
     int r;
@@ -45,7 +58,7 @@ native_mutex_trylock(pthread_mutex_t *lock)
     return 0;
 }
 
-void
+static void
 native_mutex_initialize(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_init(lock, 0);
@@ -54,7 +67,7 @@ native_mutex_initialize(pthread_mutex_t *lock)
     }
 }
 
-void
+static void
 native_mutex_destroy(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_destroy(lock);
@@ -63,7 +76,7 @@ native_mutex_destroy(pthread_mutex_t *lock)
     }
 }
 
-void
+static void
 native_cond_initialize(pthread_cond_t *cond)
 {
     int r = pthread_cond_init(cond, 0);
@@ -72,7 +85,7 @@ native_cond_initialize(pthread_cond_t *cond)
     }
 }
 
-void
+static void
 native_cond_destroy(pthread_cond_t *cond)
 {
     int r = pthread_cond_destroy(cond);
@@ -81,19 +94,19 @@ native_cond_destroy(pthread_cond_t *cond)
     }
 }
 
-void
+static void
 native_cond_signal(pthread_cond_t *cond)
 {
     pthread_cond_signal(cond);
 }
 
-void
+static void
 native_cond_broadcast(pthread_cond_t *cond)
 {
     pthread_cond_broadcast(cond);
 }
 
-void
+static void
 native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     pthread_cond_wait(cond, mutex);

@@ -22,6 +22,17 @@
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
+static int native_mutex_lock(rb_thread_lock_t *);
+static int native_mutex_unlock(rb_thread_lock_t *);
+static int native_mutex_trylock(rb_thread_lock_t *);
+static void native_mutex_initialize(rb_thread_lock_t *);
+
+static void native_cond_signal(rb_thread_cond_t *cond);
+static void native_cond_broadcast(rb_thread_cond_t *cond);
+static void native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex);
+static void native_cond_initialize(rb_thread_cond_t *cond);
+static void native_cond_destroy(rb_thread_cond_t *cond);
+
 static rb_thread_t *
 ruby_thread_from_native(void)
 {
@@ -230,7 +241,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     RUBY_VM_CHECK_INTS();
 }
 
-int
+static int
 native_mutex_lock(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
@@ -266,7 +277,7 @@ native_mutex_lock(rb_thread_lock_t *lock)
 #endif
 }
 
-int
+static int
 native_mutex_unlock(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
@@ -278,7 +289,7 @@ native_mutex_unlock(rb_thread_lock_t *lock)
 #endif
 }
 
-int
+static int
 native_mutex_trylock(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
@@ -298,7 +309,7 @@ native_mutex_trylock(rb_thread_lock_t *lock)
 #endif
 }
 
-void
+static void
 native_mutex_initialize(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
@@ -312,7 +323,7 @@ native_mutex_initialize(rb_thread_lock_t *lock)
 #endif
 }
 
-void
+static void
 native_mutex_destroy(rb_thread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
@@ -332,7 +343,7 @@ struct rb_thread_cond_struct {
     struct cond_event_entry *last;
 };
 
-void
+static void
 native_cond_signal(rb_thread_cond_t *cond)
 {
     /* cond is guarded by mutex */
@@ -347,7 +358,7 @@ native_cond_signal(rb_thread_cond_t *cond)
     }
 }
 
-void
+static void
 native_cond_broadcast(rb_thread_cond_t *cond)
 {
     /* cond is guarded by mutex */
@@ -360,7 +371,7 @@ native_cond_broadcast(rb_thread_cond_t *cond)
     }
 }
 
-void
+static void
 native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
 {
     DWORD r;
@@ -391,14 +402,14 @@ native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
     w32_close_handle(entry.event);
 }
 
-void
+static void
 native_cond_initialize(rb_thread_cond_t *cond)
 {
     cond->next = 0;
     cond->last = 0;
 }
 
-void
+static void
 native_cond_destroy(rb_thread_cond_t *cond)
 {
     /* */
