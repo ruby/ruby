@@ -3027,7 +3027,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (iseq->compile_data->redo_label) {
 	    debugs("redo in while");
 #if 1
-	    pop_after_throw = 1;
+	    pop_after_throw = poped;
 	    goto redo_by_throw;
 #else
 	    add_ensure_iseq(ret, iseq);
@@ -3070,6 +3070,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ip = ip->parent_iseq;
 	    }
 	    if (ip != 0) {
+		ADD_INSN(ret, nd_line(node), putnil);
 		ADD_INSN1(ret, nd_line(node), throw,
 			  INT2FIX(level | 0x05) /* TAG_REDO */ );
 

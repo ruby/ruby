@@ -690,3 +690,25 @@ assert_equal 'ok', %q{
   end
   :ok
 }
+
+assert_equal 'ok', %q{
+  counter = 2
+  while true
+    counter -= 1
+    break if counter == 0
+    next 
+    redo
+  end
+  :ok
+}
+
+assert_equal 'ok', %q{
+  counter = 2
+  while true
+    counter -= 1
+    break if counter == 0
+    next 
+    "#{ redo }"
+  end
+  :ok
+}
