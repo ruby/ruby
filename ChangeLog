@@ -1,3 +1,7 @@
+Tue Dec 25 16:34:58 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dl/depend: add dependencies. [ruby-dev:32760]
+
 Tue Dec 25 16:26:48 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/ruby.h, thread.c: rename is_ruby_native_thread() to
