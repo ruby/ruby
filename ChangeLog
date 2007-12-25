@@ -1,3 +1,7 @@
+Tue Dec 25 20:07:13 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* tool/make-snapshot: more portable.
+
 Tue Dec 25 19:01:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.h (rb_enc_mbc_to_codepoint): wrapper for
