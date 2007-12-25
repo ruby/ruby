@@ -87,7 +87,7 @@ EOT
   def test_open_w
     with_tmpdir {
       open("tmp", "w") {|f|
-        assert_equal(Encoding.default_external, f.external_encoding)
+        assert_equal(nil, f.external_encoding)
         assert_equal(nil, f.internal_encoding)
       }
     }
@@ -96,7 +96,7 @@ EOT
   def test_open_wb
     with_tmpdir {
       open("tmp", "wb") {|f|
-        assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+        assert_equal(nil, f.external_encoding)
         assert_equal(nil, f.internal_encoding)
       }
     }
@@ -135,12 +135,12 @@ EOT
   end
 
   def test_stdout
-    assert_equal(Encoding.default_external, STDOUT.external_encoding)
+    assert_equal(nil, STDOUT.external_encoding)
     assert_equal(nil, STDOUT.internal_encoding)
   end
 
   def test_stderr
-    assert_equal(Encoding.default_external, STDERR.external_encoding)
+    assert_equal(nil, STDERR.external_encoding)
     assert_equal(nil, STDERR.internal_encoding)
   end
 
