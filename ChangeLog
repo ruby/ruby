@@ -1,3 +1,7 @@
+Tue Dec 25 14:20:13 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mkmf.rb (map_dir): should generate path including $top_srcdir.
+
 Tue Dec 25 14:09:16 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb:  Fixed test failures caused by changes to Ruby.
