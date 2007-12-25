@@ -2924,12 +2924,26 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (iseq->compile_data->redo_label != 0) {
 	    /* while/until */
+#if 0
 	    add_ensure_iseq(ret, iseq);
 	    COMPILE_(ret, "break val (while/until)", node->nd_stts,
 		     iseq->compile_data->loopval_popped);
 	    ADD_INSNL(ret, nd_line(node), jump,
 		      iseq->compile_data->end_label);
-	    ADD_INSN(ret, nd_line(node), pop);
+
+	    if (poped) {
+		ADD_INSN(ret, nd_line(node), pop);
+	    }
+#else
+	    level = 0x8000 | 0x4000;
+	    COMPILE(ret, "break val (while/until)", node->nd_stts);
+	    ADD_INSN1(ret, nd_line(node), throw,
+		      INT2FIX(level | 0x02) /* TAG_BREAK */ );
+
+	    if (poped) {
+		ADD_INSN(ret, nd_line(node), pop);
+	    }
+#endif
 	}
 	else if (iseq->type == ISEQ_TYPE_BLOCK) {
 	  break_by_insn:
@@ -3089,6 +3103,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, nd_line(node), putnil);
 	    ADD_INSN1(ret, nd_line(node), throw,
 		      INT2FIX(0x04) /* TAG_RETRY */ );
+
+	    if (poped) {
+		ADD_INSN(ret, nd_line(node), pop);
+	    }
 	}
 	else {
 	    COMPILE_ERROR((ERROR_ARGS "Invalid retry"));

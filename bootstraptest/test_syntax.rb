@@ -689,7 +689,7 @@ assert_equal 'ok', %q{
     "#{next}"
   end
   :ok
-}
+}, 'reported by Yusuke ENDOH'
 
 assert_equal 'ok', %q{
   counter = 2
@@ -700,7 +700,7 @@ assert_equal 'ok', %q{
     redo
   end
   :ok
-}
+}, 'reported by Yusuke ENDOH'
 
 assert_equal 'ok', %q{
   counter = 2
@@ -711,4 +711,38 @@ assert_equal 'ok', %q{
     "#{ redo }"
   end
   :ok
-}
+}, 'reported by Yusuke ENDOH'
+
+assert_normal_exit %q{
+  begin
+    raise
+  rescue
+    counter = 2
+    while true
+      counter -= 1
+      break if counter == 0
+      next
+      retry
+    end
+  end
+}, 'reported by Yusuke ENDOH'
+
+assert_normal_exit %q{
+  counter = 2
+  while true
+    counter -= 1
+    break if counter == 0
+    next
+    "#{ break }"
+  end
+}, 'reported by Yusuke ENDOH'
+
+assert_normal_exit %q{
+  counter = 2
+  while true
+    counter -= 1
+    next if counter != 0
+    "#{ break }"
+  end
+}, 'reported by Yusuke ENDOH'
+

@@ -1,3 +1,11 @@
+Tue Dec 25 21:32:54 2007  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): fix stack consistency error
+	  (break is compiled to throw instead of jump insn).
+	  these problems are reported by Yusuke ENDOH <mame AT tsg.ne.jp>
+
+	* bootstraptest/test_knownbug.rb, test_syntax.rb: move fixed test.
+
 Tue Dec 25 21:32:44 2007  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (struct parser_params): make parser_ruby_sourcefile common
