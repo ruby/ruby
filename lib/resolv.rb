@@ -1032,7 +1032,7 @@ class Resolv
 
       def ==(other) # :nodoc:
         return false unless Name === other
-        return @labels == other.to_a && @absolute == other.absolute?
+        return @labels.join == other.to_a.join && @absolute == other.absolute?
       end
 
       alias eql? == # :nodoc:
@@ -1262,7 +1262,7 @@ class Resolv
         end
 
         def put_label(d)
-          self.put_string(d.string)
+          self.put_string(d.to_s)
         end
       end
 
@@ -2191,7 +2191,7 @@ class Resolv
 
     def to_name
       return DNS::Name.new(
-        @address.unpack("H32")[0].split(//).reverse + ['ip6', 'int'])
+        @address.unpack("H32")[0].split(//).reverse + ['ip6', 'arpa'])
     end
 
     def ==(other) # :nodoc:
