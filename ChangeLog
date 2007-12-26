@@ -1,3 +1,7 @@
+Wed Dec 26 13:29:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (tmpbuf): use rb_str_tmp_new().
+
 Wed Dec 26 00:57:53 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/ext/generator/generator.c (Init_generator): requires

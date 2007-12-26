@@ -2969,14 +2969,8 @@ rb_ary_cycle(VALUE ary)
     return Qnil;
 }
 
-static VALUE
-tmpbuf(int n, int size)
-{
-    VALUE buf = rb_str_new(0, n*size);
-
-    RBASIC(buf)->klass = 0;
-    return buf;
-}
+VALUE rb_str_tmp_new(long);
+#define tmpbuf(n, size) rb_str_tmp_new((n)*(size))
 
 /*
  * Recursively compute permutations of r elements of the set [0..n-1].
