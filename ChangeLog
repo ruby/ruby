@@ -1,3 +1,9 @@
+Wed Dec 26 21:27:02 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb (_xmlschema): some improvements.
+
+	* lib/date/format.rb (_parse): a new hint compfunc. [experimental]
+
 Wed Dec 26 17:31:08 2007  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_fflush): check closed fptr after rb_write_internal to avoid

@@ -1101,6 +1101,8 @@ class Date
 	case k
 	when :comp, :complete
 	  e._comp = v
+	when :compfunc
+	  e._compfunc = v
 	when :style, :endian, :endianness, :order
 	  v = {
 	    :jp     => :jp,
@@ -1214,20 +1216,18 @@ class Date
       end
     end
 
-    if e._comp
-      if e.cwyear
-	if e.cwyear >= 0 && e.cwyear <= 99
-	  e.cwyear += if e.cwyear >= 69
-		      then 1900 else 2000 end
+    e._compfunc ||= lambda do |y|
+      if e._comp
+	if y >= 0 && y <= 99
+	  y += if y >= 69
+	       then 1900 else 2000 end
 	end
       end
-      if e.year
-	if e.year >= 0 && e.year <= 99
-	  e.year += if e.year >= 69
-		    then 1900 else 2000 end
-	end
-      end
+      y
     end
+
+    e.cwyear = e._compfunc.call(e.cwyear) if e.cwyear
+    e.  year = e._compfunc.call(e.  year) if e.  year
 
     e.offset ||= zone_to_diff(e.zone) if e.zone
 
@@ -1269,17 +1269,46 @@ class Date
   end
 
   def self._xmlschema(str) # :nodoc:
-    if /\A\s*-?\d{4}-\d{2}-\d{2}
-	(t
-	\d{2}:\d{2}:\d{2}(?:\.\d+)?)?
+    if /\A\s*(-?\d{4,})(?:-(\d{2})(?:-(\d{2}))?)?
+	(?:t
+	  (\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?)?
 	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
-      if $1.nil? && $2
-	str = str.sub(/(z|[-+]\d{2}:\d{2})/in, 'T00:00:00\1')
+      e = Format::Bag.new
+      e.year = $1.to_i
+      e.mon = $2.to_i if $2
+      e.mday = $3.to_i if $3
+      e.hour = $4.to_i if $4
+      e.min = $5.to_i if $5
+      e.sec = $6.to_i if $6
+      e.sec_fraction = $7.to_i.to_r / (10**$7.size) if $7
+      if $8
+	e.zone = $8
+	e.offset = zone_to_diff($8)
       end
-      _parse(str)
-    elsif /\A\s*\d{2}:\d{2}:\d{2}(\.\d+)?
+      e.to_hash
+    elsif /\A\s*(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?
 	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
-      _parse(str)
+      e = Format::Bag.new
+      e.hour = $1.to_i if $1
+      e.min = $2.to_i if $2
+      e.sec = $3.to_i if $3
+      e.sec_fraction = $4.to_i.to_r / (10**$4.size) if $4
+      if $5
+	e.zone = $5
+	e.offset = zone_to_diff($5)
+      end
+      e.to_hash
+    elsif /\A\s*(?:--(\d{2})(?:-(\d{2}))?|---(\d{2}))
+	(z|[-+]\d{2}:\d{2})?\s*\z/inx =~ str
+      e = Format::Bag.new
+      e.mon = $1.to_i if $1
+      e.mday = $2.to_i if $2
+      e.mday = $3.to_i if $3
+      if $4
+	e.zone = $4
+	e.offset = zone_to_diff($4)
+      end
+      e.to_hash
     end
   end
 
@@ -1290,15 +1319,17 @@ class Date
 	-?(\d{2,})\s+ # allow minus, anyway
 	\d{2}:\d{2}(:\d{2})?\s*
 	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/inox =~ str
-      e = _parse(str, :comp=>false)
-      if $1.size < 4
-	if e[:year] < 50
-	  e[:year] += 2000
-	elsif e[:year] < 1000
-	  e[:year] += 1900
-	end
-      end
-      e
+      _parse(str, :compfunc=>
+	     lambda do |y|
+	       if $1.size < 4
+		 if y < 50
+		   y += 2000
+		 elsif y < 1000
+		   y += 1900
+		 end
+	       end
+	       y
+	     end)
     end
   end
 
