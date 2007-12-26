@@ -1,3 +1,7 @@
+Wed Dec 26 13:55:02 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/csv.rb:  Cleaned up some code with Ruby 1.9 idioms.
+
 Wed Dec 26 13:29:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (tmpbuf): use rb_str_tmp_new().

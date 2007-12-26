@@ -187,12 +187,10 @@ class CSV
       @header_row = header_row
       
       # handle extra headers or fields
-      larger, smaller, transform = headers.size > fields.size ?
-                                   [headers, fields, :to_a]   :
-                                   [fields, headers, :reverse]
-      @row              = Array.new
-      larger.each_with_index do |e, i|
-        @row << [e, smaller[i]].send(transform)
+      @row = if headers.size > fields.size
+        headers.each_with_index.map { |header, i| [header, fields[i]] }
+      else
+        fields.each_with_index.map { |field, i| [headers[i], field] }
       end
     end
     
@@ -1814,8 +1812,7 @@ class CSV
     # see if we are converting headers or fields
     converters = headers ? @header_converters : @converters
     
-    converted = Array.new
-    fields.each_with_index do |field, index|
+    fields.each_with_index.map do |field, index|  # map_with_index
       converters.each do |converter|
         field = if converter.arity == 1  # straight field converter
           converter[field]
@@ -1825,9 +1822,8 @@ class CSV
         end
         break unless field.is_a? String  # short-curcuit pipeline for speed
       end
-      converted << field  # final state of each field, converted or original
+      field  # final state of each field, converted or original
     end
-    converted
   end
   
   # 
