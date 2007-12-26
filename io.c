@@ -534,7 +534,8 @@ io_fflush(rb_io_t *fptr)
         l = PIPE_BUF;
     }
     r = rb_write_internal(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
-    /* xxx: signal handler may modify wbuf */
+    /* xxx: other threads may modify wbuf */
+    rb_io_check_closed(fptr);
     if (r == fptr->wbuf_len) {
         fptr->wbuf_off = 0;
         fptr->wbuf_len = 0;

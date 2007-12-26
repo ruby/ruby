@@ -1,3 +1,8 @@
+Wed Dec 26 17:31:08 2007  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_fflush): check closed fptr after rb_write_internal to avoid
+	  SEGV on MacOS X.
+
 Wed Dec 26 16:10:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (Init_String): defines chars method.
