@@ -34,5 +34,5 @@ assert_finish 1, %q{
   sleep 0.1
   w << "ab"
   }
-  p r.gets("abab")
+  r.gets("abab")
 }
