@@ -49,7 +49,7 @@ open3.rb	opens subprocess connection stdin/stdout/stderr
 optparse.rb	command line option analysis
 ostruct.rb	python style object
 parsearg.rb	argument parser using getopts
-parsedate.rb	parses date string
+parsedate.rb	parses date string (obsolete)
 pathname.rb	Object-Oriented Pathname Class
 ping.rb		checks whether host is up, using TCP echo.
 pp.rb		pretty print objects
