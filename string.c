@@ -5741,6 +5741,7 @@ Init_String(void)
     rb_define_method(rb_cString, "split", rb_str_split_m, -1);
     rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
     rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
+    rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
