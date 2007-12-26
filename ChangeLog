@@ -1,12 +1,18 @@
+Thu Dec 27 02:25:45 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_tmpsrc): retry to create file if Errno::EACCES
+	  occurs. this is a workaround for mswin32.
+
 Wed Dec 26 22:47:31 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
-        * lib/resolv.rb (Resolv::DNS::Name.==): fix for other is array of
+	* lib/resolv.rb (Resolv::DNS::Name.==): fix for other is array of
 	  Resolv::DNS::Label::Str.
 
 	* lib/resolv.rb (Resolv::DNS::MessageEncoder#put_label): String#string
 	  is not defined, so replace to_s.
 
-        * lib/resolv.rb (Resolv::IPv6#to_name): ip6.int is obsoleted by ip6.arpa.
+	* lib/resolv.rb (Resolv::IPv6#to_name): ip6.int is obsoleted by
+	  ip6.arpa.
 
 
 Wed Dec 26 21:27:02 2007  Tadayoshi Funaba  <tadf@dotrb.org>

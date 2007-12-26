@@ -297,8 +297,16 @@ end
 def create_tmpsrc(src)
   src = yield(src) if block_given?
   src = src.gsub(/[ \t]+$/, '').gsub(/\A\n+|^\n+$/, '').sub(/[^\n]\z/, "\\&\n")
-  open(CONFTEST_C, "wb") do |cfile|
-    cfile.print src
+  count = 0
+  begin
+    open(CONFTEST_C, "wb") do |cfile|
+      cfile.print src
+    end
+  rescue Errno::EACCES
+    if (count += 1) < 5
+      sleep 0.2
+      retry
+    end
   end
   src
 end
