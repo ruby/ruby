@@ -166,6 +166,18 @@ EOT
     }
   end
 
+  def test_terminator_stateful_conversion
+    with_tmpdir {
+      src = "before \e$B\x23\x30\x23\x31\e(B after".force_encoding("iso-2022-jp")
+      generate_file('tmp', src)
+      s = open("tmp", "r:iso-2022-jp:euc-jp") {|f|
+        f.gets("0".force_encoding("euc-jp"))
+      }
+      assert_equal(Encoding.find("euc-jp"), s.encoding)
+      assert_str_equal(src.encode("euc-jp"), s)
+    }
+  end
+
   def test_nonascii_terminator
     with_tmpdir {
       generate_file('tmp', "before \xA2\xA2 after")
