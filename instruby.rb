@@ -165,6 +165,7 @@ exeext = CONFIG["EXEEXT"]
 
 ruby_install_name = CONFIG["ruby_install_name"]
 rubyw_install_name = CONFIG["rubyw_install_name"]
+goruby_install_name = "go" + ruby_install_name
 
 version = CONFIG["ruby_version"]
 bindir = CONFIG["bindir"]
@@ -192,6 +193,9 @@ install?(:local, :arch, :bin) do
   install ruby_install_name+exeext, bindir, :mode => 0755
   if rubyw_install_name and !rubyw_install_name.empty?
     install rubyw_install_name+exeext, bindir, :mode => 0755
+  end
+  if File.exist? goruby_install_name+exeext
+    install goruby_install_name+exeext, bindir, :mode => 0755
   end
   if enable_shared and dll != lib
     install dll, bindir, :mode => 0755

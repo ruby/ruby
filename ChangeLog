@@ -1,3 +1,7 @@
+Wed Dec 26 14:38:43 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* instruby.rb: install goruby if exists.
+
 Wed Dec 26 13:55:02 2007  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/csv.rb:  Cleaned up some code with Ruby 1.9 idioms.
