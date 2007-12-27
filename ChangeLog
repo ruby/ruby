@@ -1,3 +1,8 @@
+Thu Dec 27 14:34:38 2007  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_fflush): checks wbuf modification by other threads.
+	  not perfect.  it need locks.
+
 Thu Dec 27 10:44:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c: a patch to support IRIX from Andrew

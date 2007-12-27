@@ -526,24 +526,31 @@ io_fflush(rb_io_t *fptr)
         return 0;
     wbuf_off = fptr->wbuf_off;
     wbuf_len = fptr->wbuf_len;
-    l = fptr->wbuf_len;
+    l = wbuf_len;
     if (PIPE_BUF < l &&
         !rb_thread_critical &&
         !rb_thread_alone() &&
         wsplit_p(fptr)) {
         l = PIPE_BUF;
     }
-    r = rb_write_internal(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
-    /* xxx: other threads may modify wbuf */
+    r = rb_write_internal(fptr->fd, fptr->wbuf+wbuf_off, l);
+    if (wbuf_off != fptr->wbuf_off || fptr->wbuf_len < wbuf_len) {
+        /* xxx: Other threads modified wbuf in non-append operation.
+         * This condition can be false negative if other threads
+         * flush this IO and fill the buffer.
+         * A lock is required, definitely.
+         */
+        goto retry;
+    }
     rb_io_check_closed(fptr);
-    if (r == fptr->wbuf_len) {
+    if (fptr->wbuf_len <= r) {
         fptr->wbuf_off = 0;
         fptr->wbuf_len = 0;
         return 0;
     }
     if (0 <= r) {
-        fptr->wbuf_off = (wbuf_off += r);
-        fptr->wbuf_len = (wbuf_len -= r);
+        fptr->wbuf_off = r;
+        fptr->wbuf_len = r;
         errno = EAGAIN;
     }
     if (rb_io_wait_writable(fptr->fd)) {
@@ -702,7 +709,7 @@ io_fwrite(VALUE str, rb_io_t *fptr)
             l = PIPE_BUF;
         }
 	r = rb_write_internal(fptr->fd, RSTRING_PTR(str)+offset, l);
-	/* xxx: signal handler may modify given string. */
+	/* xxx: other threads may modify given string. */
         if (r == n) return len;
         if (0 <= r) {
             offset += r;
@@ -1683,7 +1690,6 @@ appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE *strp, 
 	    long last = 0, len = (c != EOF);
 
 	    if (limit > 0 && pending > limit) pending = limit;
-	  again:
 	    e = memchr(p, delim, pending);
 	    if (e) pending = e - p + 1;
 	    len += pending;
