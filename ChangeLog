@@ -1,3 +1,8 @@
+Fri Dec 28 01:27:47 2007  Tanaka Akira  <akr@fsij.org>
+
+	* lib/rdoc/rdoc.rb (parse_files): don't depend on the default external
+	  encoding.
+
 Fri Dec 28 00:01:57 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (golf_prelude.c): use MINIRUBY instead of BASERUBY because

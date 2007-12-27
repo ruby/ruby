@@ -219,7 +219,7 @@ module RDoc
       file_list.each do |fn|
         $stderr.printf("\n%35s: ", File.basename(fn)) unless options.quiet
         
-        content = File.open(fn, "r") {|f| f.read}
+        content = File.open(fn, "r:ascii-8bit") {|f| f.read}
         if /coding:\s*(\S+)/ =~ content[/\A(?:.*\n){0,2}/]
           if enc = Encoding.find($1)
             content.force_encoding(enc)
