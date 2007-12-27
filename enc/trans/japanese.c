@@ -23743,7 +23743,7 @@ from_iso_2022_jp_transcoder_preprocessor(char **in_pos, char **out_pos,
 	    /* SHIFT */
 	    rb_raise(rb_eRuntimeError /*change exception*/, "shift is not supported");
 	} else if (c1 >= 0x80) {
-	    rb_raise(rb_eRuntimeError /*change exception*/, "illegal byte sequence");
+	    rb_raise(rb_eRuntimeError /*change exception*/, "invalid byte sequence");
 	} else {
 	    switch (cur_mode) {
 	    case ISO_2022_GZ_ASCII:

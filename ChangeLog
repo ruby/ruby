@@ -1,7 +1,9 @@
-Thu Dec 27 17:25:27 2007  Tanaka Akira  <akr@fsij.org>
+Thu Dec 27 17:57:30 2007  Tanaka Akira  <akr@fsij.org>
 
-	* parse.y, transcode_data.h, transcode.c: change "illegal" to
-	  "invalid" in a context which doesn' t against a law.
+	* parse.y, transcode_data.h, transcode.c, lib/weakref.rb,
+	  lib/irb/ruby-lex.rb, lib/irb/lc/error.rb, enc/trans/japanese.c:
+	  change "illegal" to "invalid" in a context which doesn' t against
+	  a law.
 
 Thu Dec 27 16:37:06 2007  Tanaka Akira  <akr@fsij.org>
 

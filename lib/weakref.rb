@@ -52,12 +52,12 @@ class WeakRef < Delegator
 
   def __getobj__
     unless @@id_rev_map[self.object_id] == @__id
-      Kernel::raise RefError, "Illegal Reference - probably recycled", Kernel::caller(2)
+      Kernel::raise RefError, "Invalid Reference - probably recycled", Kernel::caller(2)
     end
     begin
       ObjectSpace._id2ref(@__id)
     rescue RangeError
-      Kernel::raise RefError, "Illegal Reference - probably recycled", Kernel::caller(2)
+      Kernel::raise RefError, "Invalid Reference - probably recycled", Kernel::caller(2)
     end
   end
   def __setobj__(obj)

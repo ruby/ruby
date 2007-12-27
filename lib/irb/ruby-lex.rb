@@ -967,7 +967,7 @@ class RubyLex
       when /[0-7]/
 	match = /[0-7_]/
       when /[89]/
-	RubyLex.fail SyntaxError, "Illegal octal digit"
+	RubyLex.fail SyntaxError, "Invalid octal digit"
       else 
 	return Token(TkINTEGER)
       end

@@ -18,7 +18,7 @@ module IRB
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"
   def_exception :NotImplementedError, "Need to define `%s'"
   def_exception :CantReturnToNormalMode, "Can't return to normal mode."
-  def_exception :IllegalParameter, "Illegal parameter(%s)."
+  def_exception :IllegalParameter, "Invalid parameter(%s)."
   def_exception :IrbAlreadyDead, "Irb is already dead."
   def_exception :IrbSwitchedToCurrentThread, "Switched to current thread."
   def_exception :NoSuchJob, "No such job(%s)."
