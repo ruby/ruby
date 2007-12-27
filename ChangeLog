@@ -1,3 +1,7 @@
+Fri Dec 28 01:47:25 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* golf_prelude.rb (Integer): Integer is now enumerable on goruby.
+
 Fri Dec 28 01:27:47 2007  Tanaka Akira  <akr@fsij.org>
 
 	* lib/rdoc/rdoc.rb (parse_files): don't depend on the default external

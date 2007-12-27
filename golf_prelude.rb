@@ -9,3 +9,11 @@ class Object
     puts "#{a}ello, #{b}orld#{c}"
   end
 end
+
+class Integer
+  def each(&b)
+    times &b
+  end
+
+  include Enumerable
+end
