@@ -5,7 +5,8 @@ $install_name ||= nil
 $so_name ||= nil
 
 srcdir = File.dirname(__FILE__)
-$:.replace [srcdir+"/lib", "."]
+$:.replace [srcdir+"/lib"] unless defined?(CROSS_COMPILING)
+$:.unshift(".")
 
 require "fileutils"
 mkconfig = File.basename($0)

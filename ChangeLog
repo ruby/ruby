@@ -1,3 +1,8 @@
+Thu Dec 27 23:56:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: should not use the libraries under the source directory
+	  at cross compiling.
+
 Thu Dec 27 23:43:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (EXTOBJS): uses ruby.rc always for other than
