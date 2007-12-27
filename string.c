@@ -3762,6 +3762,97 @@ rb_str_each_byte(str)
 }
 
 
+static VALUE str_enumerator _((VALUE, VALUE, int, VALUE *));
+static VALUE
+str_enumerator(str, sym, argc, argv)
+    VALUE str, sym;
+    int argc;
+    VALUE *argv;
+{
+    static VALUE enumerator;
+    static ID new;
+    int nargc;
+    VALUE *nargv, result;
+    volatile VALUE args;
+
+    if (!enumerator) {
+	rb_require("enumerator");
+	enumerator = rb_path2class("Enumerable::Enumerator");
+	new = rb_intern("new");
+    }
+    args = rb_ary_new2(nargc = argc + 2);
+    RBASIC(args)->klass = 0;
+    nargv = RARRAY_PTR(args);
+    nargv[0] = str;
+    nargv[1] = sym;
+    MEMCPY(nargv + 2, argv, VALUE, argc);
+    result = rb_funcall2(enumerator, new, nargc, nargv);
+    rb_ary_clear(args);
+    return result;
+}
+
+
+/*
+ *  Document-method: lines
+ *  call-seq:
+ *     str.lines(separator=$/)   => anEnumerator
+ *     str.lines(separator=$/) {|substr| block }        => str
+ *  
+ *  Returns an enumerator that gives each line in the string.  If a block is
+ *  given, it iterates over each line in the string.
+ *     
+ *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
+ *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
+ */
+
+static VALUE
+rb_str_lines(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    if (rb_block_given_p()) {
+	return rb_str_each_line(argc, argv, str);
+    }
+    else {
+	static VALUE each_line;
+
+	if (!each_line) each_line = ID2SYM(rb_intern("each_line"));
+	return str_enumerator(str, each_line, argc, argv);
+    }
+}
+
+
+/*
+ *  Document-method: bytes
+ *  call-seq:
+ *     str.bytes   => anEnumerator
+ *     str.bytes {|fixnum| block }    => str
+ *  
+ *  Returns an enumerator that gives each byte in the string.  If a block is
+ *  given, it iterates over each byte in the string.
+ *     
+ *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
+ */
+
+static VALUE
+rb_str_bytes(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    if (rb_block_given_p()) {
+	return rb_str_each_byte(argc, argv, str);
+    }
+    else {
+	static VALUE each_byte;
+
+	if (!each_byte) each_byte = ID2SYM(rb_intern("each_byte"));
+	return str_enumerator(str, each_byte, argc, argv);
+    }
+}
+
+
 /*
  *  call-seq:
  *     str.chop!   => str or nil
@@ -4753,6 +4844,9 @@ Init_String()
     rb_define_method(rb_cString, "each_line", rb_str_each_line, -1);
     rb_define_method(rb_cString, "each", rb_str_each_line, -1);
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
+
+    rb_define_method(rb_cString, "lines", rb_str_lines, -1);
+    rb_define_method(rb_cString, "bytes", rb_str_bytes, -1);
 
     rb_define_method(rb_cString, "sum", rb_str_sum, -1);
 
