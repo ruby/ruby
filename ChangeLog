@@ -1,3 +1,7 @@
+Thu Dec 27 15:11:27 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_check): show encodings in error message.
+
 Thu Dec 27 15:02:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_casecmp): fixed using a wrong variable.
