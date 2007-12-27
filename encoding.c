@@ -680,7 +680,7 @@ rb_enc_codelen(int c, rb_encoding *enc)
 {
     int n = ONIGENC_CODE_TO_MBCLEN(enc,c);
     if (n == 0) {
-	rb_raise(rb_eArgError, "invalid mbstring sequence");
+	rb_raise(rb_eArgError, "invalid codepoint");
     }
     return n;
 }

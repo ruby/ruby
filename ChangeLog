@@ -1,3 +1,7 @@
+Thu Dec 27 15:18:44 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_codelen): error message refined.
+
 Thu Dec 27 15:11:27 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_check): show encodings in error message.
