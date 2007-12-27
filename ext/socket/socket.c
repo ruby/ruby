@@ -25,6 +25,10 @@
 #include <sys/uio.h>
 #endif
 
+#ifdef HAVE_XTI_H
+#include <xti.h>
+#endif
+
 #ifndef _WIN32
 #if defined(__BEOS__)
 # include <net/socket.h>

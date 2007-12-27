@@ -1,3 +1,8 @@
+Thu Dec 27 10:44:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c: a patch to support IRIX from Andrew
+	  Thompson <andrew@hijacked.us> in [ruby-core:14447].
+
 Thu Dec 27 02:25:45 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_tmpsrc): retry to create file if Errno::EACCES
