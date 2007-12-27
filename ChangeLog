@@ -1,3 +1,8 @@
+Thu Dec 27 23:43:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (EXTOBJS): uses ruby.rc always for other than
+	  rubyw.exe.
+
 Thu Dec 27 22:31:37 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/commands/update_command.rb (do_rubygems_update): use
