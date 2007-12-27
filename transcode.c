@@ -183,14 +183,14 @@ transcode_loop(char **in_pos, char **out_pos,
 	    if (in_p >= in_stop) {
 		/* todo: deal with the case of backtracking */
 		/* todo: deal with incomplete input (streaming) */
-		goto illegal;
+		goto invalid;
 	    }
 	    next_byte = (unsigned char)*in_p++;
 	    if (from_utf8) {
 		if ((next_byte&0xC0) == 0x80)
 		    next_byte -= 0x80;
 		else
-		    goto illegal;
+		    goto invalid;
 	    }
 	    next_table = next_table->info[next_offset];
 	    goto follow_byte;
@@ -211,18 +211,18 @@ transcode_loop(char **in_pos, char **out_pos,
 	    *out_p++ = getBT2(next_info);
 	    *out_p++ = getBT3(next_info);
 	    continue;
-	  case ILLEGAL:
-	    goto illegal;
+	  case INVALID:
+	    goto invalid;
 	  case UNDEF:
 	    /* todo: add code for alternative behaviors */
-	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe illegal byte sequence)");
+	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe invalid byte sequence)");
 	    continue;
 	}
 	continue;
-      illegal:
-	/* deal with illegal byte sequence */
+      invalid:
+	/* deal with invalid byte sequence */
 	/* todo: add code for alternative behaviors */
-	rb_raise(rb_eRuntimeError /*change exception*/, "illegal byte sequence");
+	rb_raise(rb_eRuntimeError /*change exception*/, "invalid byte sequence");
 	continue;
     }
     /* cleanup */

@@ -32,7 +32,7 @@ typedef struct byte_lookup {
 #define TWObt   (0x03)   /* two bytes payload */
 #define THREEbt (0x05)   /* three bytes payload */
 #define FOURbt  (0x06)   /* four bytes payload, UTF-8 only, macros start at getBT0 */
-#define ILLEGAL (PType 0x07)   /* illegal byte sequence */
+#define INVALID (PType 0x07)   /* invalid byte sequence */
 #define UNDEF   (PType 0x09)   /* legal but undefined */
 #define ZERObt  (PType 0x0A)   /* zero bytes of payload, i.e. remove */
 

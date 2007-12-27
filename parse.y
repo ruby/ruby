@@ -6621,7 +6621,7 @@ parser_yylex(struct parser_params *parser)
 		    }
 		}
 		if (c > '7' && c <= '9') {
-		    yyerror("Illegal octal digit");
+		    yyerror("Invalid octal digit");
 		}
 		else if (c == '.' || c == 'e' || c == 'E') {
 		    tokadd('0');
