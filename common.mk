@@ -670,7 +670,7 @@ prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_
 	$(MINIRUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
 
 golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb
-	$(BASERUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/golf_prelude.rb $@
+	$(MINIRUBY) -I$(srcdir) -I$(srcdir)/lib -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/golf_prelude.rb $@
 
 prereq: incs srcs preludes
 
