@@ -1,3 +1,8 @@
+Thu Dec 27 11:01:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h, string.c (rb_str_set_len): added for upgrading path from
+	  1.8 to 1.9. [ruby-dev:32807]
+
 Thu Dec 27 10:47:32 2007  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* ext/openssl/ossl_ssl.c: Only show a warning if the default 
@@ -99,7 +104,6 @@ Mon Dec 10 21:00:30 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* array.c (rb_ary_slice_bang): should return nil if position out
 	  of range.  a patch from Akinori MUSHA <knu AT iDaemons.org>.
 	  [ruby-dev:32518]
-
 
 Mon Dec 10 18:28:06 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -9065,7 +9069,6 @@ Sat Apr  9 11:59:57 2005  Kouhei Sutou  <kou@cozmixng.org>
 	  - gave a name to 'x'.
 	  - undef_method -> remove_method for avoiding a warning in ruby 1.6.
 
-
 	* lib/rss/parser.rb: @@setter -> @@setters.
 
 	* lib/rss/parser.rb
@@ -9093,15 +9096,12 @@ Sat Apr  9 11:59:57 2005  Kouhei Sutou  <kou@cozmixng.org>
 	  elements. (ex. have childlen elements, have some attributes and
 	  a child element and so on.)
 
-
 	* lib/rss/dublincore.rb: supported multiple Dublin Core items.
 	* lib/rss/maker/dublincore.rb: ditto.
 
 	* lib/rss/maker/image.rb: supproted new Dublin Core API.
 
-
 	* lib/rss/maker/base.rb: added default current_element implementation.
-
 
 	* lib/rss/trackback.rb (RSS::TrackBackUtils.new_with_value_if_need):
 	  moved to RSS::Utils.
@@ -9109,17 +9109,14 @@ Sat Apr  9 11:59:57 2005  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/utils.rb (RSS::Utils.new_with_value_if_need):
 	  moved from RSS::TrackBackUtils.
 
-
 	* lib/rss/maker/image.rb: fixed invalid argument of
 	  add_need_initialize_variable bug.
 	* lib/rss/maker/trackback.rb: ditto.
-
 
 	* lib/rss/rss.rb (Hash#merge): added for ruby 1.6.
 
 	* lib/rss/rss.rb (RSS::BaseModel.date_writer): changed to accept nil
 	  for date value.
-
 
 	* test/test_dublincore.rb: added tests for plural accessor and
 	  multiple Dublin Core items.
@@ -9135,7 +9132,6 @@ Sat Apr  9 11:59:57 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_maker_dc.rb (test_date): added a test for #date=
 	  and #dc_date=.
-
 
 	* sample/rss/tdiary_plugin/rss-recent.rb:
 	  new option: @options['rss-recent.use-image-link']:
@@ -12794,7 +12790,6 @@ Sun Sep 12 02:41:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tcltklib/tcltklib.c: add TclTkIp#allow_ruby_exit? and
 	  allow_ruby_exit=
 
-
 	* ext/tk/lib/multi-tk.rb: ditto.
 
 	* ext/tk/lib/remote-tk.rb: ditto.
@@ -13379,7 +13374,6 @@ Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tkextlib/: add Iwidget and TkTable extension support
 
 	* ext/tk/sample/tkextlib/: add samples of Iwidget and TkTable
-
 
 Wed Jul 14 18:08:37 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -15857,14 +15851,12 @@ Tue Dec 30 12:30:30 2003  Dave Thomas  <dave@pragprog.com>
 	  class and a method have the same name, finding Xxx.abc was trying
 	  to find 'abc' in method 'Xxx', not class 'Xxx'.
 
-
 Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method):
 	  Handle undoing nesting of yield parameters correctly for:
 
 	  def each_entry(&b) Dir.foreach(@path) {|f| yield P.new(f) } end
-
 
 Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
 

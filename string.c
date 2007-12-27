@@ -671,6 +671,13 @@ rb_str_unlocktmp(str)
     return str;
 }
 
+void
+rb_str_set_len(VALUE str, long len)
+{
+    RSTRING(str)->len = len;
+    RSTRING(str)->ptr[len] = '\0';
+}
+
 VALUE
 rb_str_resize(str, len)
     VALUE str;

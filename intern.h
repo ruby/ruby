@@ -424,6 +424,7 @@ VALUE rb_str_times _((VALUE, VALUE));
 VALUE rb_str_substr _((VALUE, long, long));
 void rb_str_modify _((VALUE));
 VALUE rb_str_freeze _((VALUE));
+void rb_str_set_len _((VALUE, long));
 VALUE rb_str_resize _((VALUE, long));
 VALUE rb_str_cat _((VALUE, const char*, long));
 VALUE rb_str_cat2 _((VALUE, const char*));
