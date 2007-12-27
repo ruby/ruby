@@ -87,7 +87,7 @@ int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);
 int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
 #define rb_enc_mbc_to_codepoint(p, e, enc) ONIGENC_MBC_TO_CODE(enc,(UChar*)(p),(UChar*)(e))
 
-/* -> codelen or raise exception */
+/* -> codelen>0 or raise exception */
 int rb_enc_codelen(int code, rb_encoding *enc);
 
 /* code,ptr,encoding -> write buf */

@@ -1104,9 +1104,6 @@ rb_str_concat(VALUE str1, VALUE str2)
 	int pos = RSTRING_LEN(str1);
 	int len = rb_enc_codelen(c, enc);
 
-	if (len == 0) {
-	    rb_raise(rb_eArgError, "invalid codepoint 0x%x", c);
-	}
 	rb_str_resize(str1, pos+len);
 	rb_enc_mbcput(c, RSTRING_PTR(str1)+pos, enc);
 	return str1;
