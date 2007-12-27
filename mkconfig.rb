@@ -100,7 +100,7 @@ end
 
 drive = File::PATH_SEPARATOR == ';'
 
-prefix = '/lib/ruby/' + RUBY_VERSION.sub(/\.\d+$/, '') + '/' + RUBY_PLATFORM
+prefix = '/lib/ruby/' + RUBY_VERSION + '/' + RUBY_PLATFORM
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print "  CONFIG = {}\n"
