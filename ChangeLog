@@ -1,3 +1,8 @@
+Fri Dec 28 01:55:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (transcode_dispatch): allows transcoding from/to
+	  ASCII-8BIT.
+
 Fri Dec 28 01:47:25 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* golf_prelude.rb (Integer): Integer is now enumerable on goruby.

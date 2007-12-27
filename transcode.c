@@ -116,8 +116,7 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
     char *const key = transcoder_key(from_encoding, to_encoding);
     st_data_t k, val = 0;
 
-    k = (st_data_t)key;
-    while (!st_lookup(transcoder_table, k, &val) &&
+    while (!st_lookup(transcoder_table, (k = (st_data_t)key), &val) &&
 	   st_delete(transcoder_lib_table, &k, &val)) {
 	const char *const lib = (const char *)val;
 	int len = strlen(lib);
@@ -258,8 +257,8 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     rb_transcoding my_transcoding;
     int final_encoding = 0;
 
-    if (argc<1 || argc>2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
+    if (argc < 1 || argc > 2) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
     if ((to_encidx = rb_to_encoding_index(to_encval = argv[0])) < 0) {
 	to_enc = 0;
@@ -288,7 +287,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	return -1;
     }
     if (from_enc && to_enc && rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
-	if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+	if (to_encidx == 0 || ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
 	    return to_encidx;
 	}
     }
@@ -296,14 +295,32 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	return -1;
     }
 
-    while (!final_encoding) /* loop for multistep transcoding */
-    {                       /* later, maybe use smaller intermediate strings for very long strings */
+    if (from_encidx == 0) {
+	const char *p = RSTRING_PTR(str);
+	const char *e = p + RSTRING_LEN(str);
+
+	while (p < e) {
+	    int ret = rb_enc_precise_mbclen(p, e, to_enc);
+	    int len = MBCLEN_CHARFOUND(ret);
+
+	    if (!len) {
+		rb_raise(rb_eArgError, "not fully converted, %d bytes left", e-p);
+	    }
+	    p += len;
+	}
+	if (to_encidx < 0) {
+	    to_encidx = rb_define_dummy_encoding(to_e);
+	}
+	return to_encidx;
+    }
+
+    while (!final_encoding) { /* loop for multistep transcoding */
+	/* later, maybe use smaller intermediate strings for very long strings */
 	if (!(my_transcoder = transcode_dispatch(from_e, to_e))) {
 	    rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
 	}
 
-	if (my_transcoder->preprocessor)
-	{
+	if (my_transcoder->preprocessor) {
 	    fromp = sp = RSTRING_PTR(str);
 	    slen = RSTRING_LEN(str);
 	    blen = slen + 30; /* len + margin */
@@ -334,8 +351,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	buf = RSTRING_PTR(dest);
 	*bp = '\0';
 	rb_str_set_len(dest, bp - buf);
-	if (my_transcoder->postprocessor)
-	{
+	if (my_transcoder->postprocessor) {
 	    str = dest;
 	    fromp = sp = RSTRING_PTR(str);
 	    slen = RSTRING_LEN(str);
