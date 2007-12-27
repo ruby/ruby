@@ -1,3 +1,10 @@
+Thu Dec 27 10:47:32 2007  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/ossl_ssl.c: Only show a warning if the default 
+	  DH callback is actually used.
+
+	* ext/openssl/ossl_rand.c: New method: random_add().
+
 Wed Dec 26 22:27:45 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::DNS::Name.==): fix for other is array of

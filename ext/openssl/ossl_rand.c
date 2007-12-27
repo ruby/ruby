@@ -27,6 +27,12 @@ VALUE eRandomError;
 /*
  * Private
  */
+
+/*
+ *  call-seq:
+ *     seed(str) -> str
+ *
+ */
 static VALUE
 ossl_rand_seed(VALUE self, VALUE str)
 {
@@ -34,6 +40,20 @@ ossl_rand_seed(VALUE self, VALUE str)
     RAND_seed(RSTRING_PTR(str), RSTRING_LEN(str));
 
     return str;
+}
+
+/*
+ *  call-seq:
+ *     add(str, entropy) -> self
+ *
+ */
+static VALUE
+ossl_rand_add(VALUE self, VALUE str, VALUE entropy)
+{
+    StringValue(str);
+    RAND_add(RSTRING_PTR(str), RSTRING_LEN(str), NUM2DBL(entropy));
+
+    return self;
 }
 
 /*
@@ -166,6 +186,7 @@ Init_ossl_rand()
     eRandomError = rb_define_class_under(mRandom, "RandomError", eOSSLError);
 	
     DEFMETH(mRandom, "seed", ossl_rand_seed, 1);
+    DEFMETH(mRandom, "random_add", ossl_rand_add, 2);
     DEFMETH(mRandom, "load_random_file", ossl_rand_load_file, 1);
     DEFMETH(mRandom, "write_random_file", ossl_rand_write_file, 1);
     DEFMETH(mRandom, "random_bytes", ossl_rand_bytes, 1);
