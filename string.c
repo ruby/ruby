@@ -1437,7 +1437,7 @@ rb_str_casecmp(VALUE str1, VALUE str2)
 	return rb_str_cmp(str1, str2);
     }
 
-    p1 = RSTRING_PTR(str1); p1end = RSTRING_END(p1);
+    p1 = RSTRING_PTR(str1); p1end = RSTRING_END(str1);
     p2 = RSTRING_PTR(str2); p2end = RSTRING_END(str2);
     while (p1 < p1end && p2 < p2end) {
 	int c1 = rb_enc_codepoint(p1, p1end, enc);

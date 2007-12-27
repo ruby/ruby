@@ -1,3 +1,8 @@
+Thu Dec 27 15:02:52 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_casecmp): fixed using a wrong variable.
+	  [ruby-list:44402]
+
 Thu Dec 27 14:34:38 2007  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_fflush): checks wbuf modification by other threads.
