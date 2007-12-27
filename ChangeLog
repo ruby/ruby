@@ -1,3 +1,9 @@
+Thu Dec 27 22:31:37 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rubygems/commands/update_command.rb (do_rubygems_update): use
+	  portable and safely ENV operation. reported in
+	  <http://slashdot.jp/developers/comments.pl?sid=384937&cid=1273085>.
+
 Thu Dec 27 21:47:04 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* mkconfig.rb (prefix): archdir is "1.9.0", not "1.9". reported in

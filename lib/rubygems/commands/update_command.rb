@@ -122,11 +122,10 @@ class Gem::Commands::UpdateCommand < Gem::Command
       setup_cmd = "#{Gem.ruby} setup.rb #{args.join ' '}"
 
       # Make sure old rubygems isn't loaded
-      if Gem.win_platform? then
-        system "set RUBYOPT= & #{setup_cmd}"
-      else
-        system "RUBYOPT=\"\" #{setup_cmd}"
-      end
+      old = ENV["RUBYOPT"]
+      ENV.delete("RUBYOPT")
+      system setup_cmd
+      ENV["RUBYOPT"] = old if old
     end
   end
 
