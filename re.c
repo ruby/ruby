@@ -2631,13 +2631,15 @@ rb_reg_s_union(VALUE self, VALUE args0)
                     if (!has_ascii_incompat)
                         has_ascii_incompat = enc;
                     else if (has_ascii_incompat != enc)
-                        rb_raise(rb_eArgError, "regexp encodings differ");
+                        rb_raise(rb_eArgError, "incompatible encodings: %s and %s",
+                            rb_enc_name(has_ascii_incompat), rb_enc_name(enc));
                 }
                 else if (rb_reg_fixed_encoding_p(v)) {
                     if (!has_ascii_compat_fixed)
                         has_ascii_compat_fixed = enc;
                     else if (has_ascii_compat_fixed != enc)
-                        rb_raise(rb_eArgError, "regexp encodings differ");
+                        rb_raise(rb_eArgError, "incompatible encodings: %s and %s",
+                            rb_enc_name(has_ascii_compat_fixed), rb_enc_name(enc));
                 }
                 else {
                     has_asciionly = 1;
@@ -2652,7 +2654,8 @@ rb_reg_s_union(VALUE self, VALUE args0)
                     if (!has_ascii_incompat)
                         has_ascii_incompat = enc;
                     else if (has_ascii_incompat != enc)
-                        rb_raise(rb_eArgError, "regexp encodings differ");
+                        rb_raise(rb_eArgError, "incompatible encodings: %s and %s",
+                            rb_enc_name(has_ascii_incompat), rb_enc_name(enc));
                 }
                 else if (rb_enc_str_asciionly_p(e)) {
                     has_asciionly = 1;
@@ -2661,12 +2664,20 @@ rb_reg_s_union(VALUE self, VALUE args0)
                     if (!has_ascii_compat_fixed)
                         has_ascii_compat_fixed = enc;
                     else if (has_ascii_compat_fixed != enc)
-                        rb_raise(rb_eArgError, "regexp encodings differ");
+                        rb_raise(rb_eArgError, "incompatible encodings: %s and %s",
+                            rb_enc_name(has_ascii_compat_fixed), rb_enc_name(enc));
                 }
 		v = rb_reg_s_quote(Qnil, e);
 	    }
-            if (has_ascii_incompat && (has_asciionly || has_ascii_compat_fixed)) {
-                rb_raise(rb_eArgError, "regexp encodings differ");
+            if (has_ascii_incompat) {
+                if (has_asciionly) {
+                    rb_raise(rb_eArgError, "ASCII incompatible encoding: %s",
+                        rb_enc_name(has_ascii_incompat));
+                }
+                if (has_ascii_compat_fixed) {
+                    rb_raise(rb_eArgError, "incompatible encodings: %s and %s",
+                        rb_enc_name(has_ascii_incompat), rb_enc_name(has_ascii_compat_fixed));
+                }
             }
 
 	    rb_str_append(source, v);
