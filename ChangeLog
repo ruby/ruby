@@ -1,3 +1,7 @@
+Fri Dec 28 16:36:33 2007  NARUSE, Yui  <naruse@airemix.com>
+
+       * lib/resolv.rb (Resolv::DNS#each_address): now returns IPv6 address.
+
 Fri Dec 28 13:21:32 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, test/rss/test_version.rb, NEWS: 0.2.2 -> 0.2.3.
