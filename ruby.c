@@ -532,7 +532,6 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 {
     int argc0 = argc;
     const char *s;
-    const char *enc_name = 0;
 
     if (argc == 0)
 	return 0;
