@@ -135,23 +135,6 @@ usage(const char *name)
 	printf("  %s\n", *p++);
 }
 
-static rb_encoding *
-locale_encoding(void)
-{
-    VALUE codeset = rb_locale_charmap(Qnil);
-    char *name;
-    int idx;
-
-    if (codeset == Qnil)
-        return rb_ascii8bit_encoding();
-
-    name = StringValueCStr(codeset);
-    idx = rb_enc_find_index(name);
-    if (idx < 0)
-        return rb_ascii8bit_encoding();
-    return rb_enc_from_index(idx);
-}
-
 extern VALUE rb_load_path;
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
@@ -1025,7 +1008,7 @@ process_options(VALUE arg)
 	enc = rb_enc_from_index(opt->enc_index);
     }
     else {
-	enc = locale_encoding();
+	enc = rb_locale_encoding();
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
 

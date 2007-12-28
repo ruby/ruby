@@ -857,8 +857,12 @@ rb_encoding *
 rb_locale_encoding(void)
 {
     VALUE charmap = rb_locale_charmap(rb_cEncoding);
-    int idx = rb_enc_find_index(StringValueCStr(charmap));
+    int idx;
 
+    if (NIL_P(charmap))
+        return rb_ascii8bit_encoding();
+
+    idx = rb_enc_find_index(StringValueCStr(charmap));
     if (idx < 0)
         return rb_ascii8bit_encoding();
 
