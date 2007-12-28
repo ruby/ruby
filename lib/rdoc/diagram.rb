@@ -4,7 +4,7 @@
 # You must have the V1.7 or later in your path
 # http://www.research.att.com/sw/tools/graphviz/
 
-require "rdoc/dot/dot"
+require "rdoc/dot"
 require 'rdoc/options'
 
 module RDoc
@@ -55,7 +55,7 @@ module RDoc
         @done_modules = {}
         @local_names = find_names(i)
         @global_names = []
-        @global_graph = graph = DOT::DOTDigraph.new('name' => 'TopLevel',
+        @global_graph = graph = DOT::Digraph.new('name' => 'TopLevel',
                                     'fontname' => FONT,
                                     'fontsize' => '8',
                                     'bgcolor'  => 'lightcyan1',
@@ -63,7 +63,7 @@ module RDoc
         
         # it's a little hack %) i'm too lazy to create a separate class
         # for default node
-        graph << DOT::DOTNode.new('name' => 'node',
+        graph << DOT::Node.new('name' => 'node',
                                   'fontname' => FONT,
                                   'color' => 'black',
                                   'fontsize' => 8)
@@ -82,13 +82,13 @@ module RDoc
           @local_names = find_names(mod)
           @global_names = []
 
-          @global_graph = graph = DOT::DOTDigraph.new('name' => 'TopLevel',
+          @global_graph = graph = DOT::Digraph.new('name' => 'TopLevel',
                                       'fontname' => FONT,
                                       'fontsize' => '8',
                                       'bgcolor'  => 'lightcyan1',
                                       'compound' => 'true')
 
-          graph << DOT::DOTNode.new('name' => 'node',
+          graph << DOT::Node.new('name' => 'node',
                                     'fontname' => FONT,
                                     'color' => 'black',
                                     'fontsize' => 8)
@@ -127,7 +127,7 @@ module RDoc
 
       @counter += 1
       url = mod.http_url("classes")
-      m = DOT::DOTSubgraph.new('name' => "cluster_#{mod.full_name.gsub( /:/,'_' )}",
+      m = DOT::Subgraph.new('name' => "cluster_#{mod.full_name.gsub( /:/,'_' )}",
                                'label' => mod.name,
                                'fontname' => FONT,
                                'color' => 'blue', 
@@ -143,7 +143,7 @@ module RDoc
         mod.includes.each do |inc|
           m_full_name = find_full_name(inc.name, mod)
           if @local_names.include?(m_full_name)
-            @global_graph << DOT::DOTEdge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
+            @global_graph << DOT::Edge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
                                       'to' => "#{mod.full_name.gsub( /:/,'_' )}",
                                       'ltail' => "cluster_#{m_full_name.gsub( /:/,'_' )}",
                                       'lhead' => "cluster_#{mod.full_name.gsub( /:/,'_' )}")
@@ -151,13 +151,13 @@ module RDoc
             unless @global_names.include?(m_full_name)
               path = m_full_name.split("::")
               url = File.join('classes', *path) + ".html"
-              @global_graph << DOT::DOTNode.new('name' => "#{m_full_name.gsub( /:/,'_' )}",
+              @global_graph << DOT::Node.new('name' => "#{m_full_name.gsub( /:/,'_' )}",
                                         'shape' => 'box',
                                         'label' => "#{m_full_name}",
                                         'URL'   => %{"#{url}"})
               @global_names << m_full_name
             end
-            @global_graph << DOT::DOTEdge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
+            @global_graph << DOT::Edge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
                                       'to' => "#{mod.full_name.gsub( /:/,'_' )}",
                                       'lhead' => "cluster_#{mod.full_name.gsub( /:/,'_' )}")
           end
@@ -173,7 +173,7 @@ module RDoc
 
       # create dummy node (needed if empty and for module includes)
       if container.full_name
-        graph << DOT::DOTNode.new('name'     => "#{container.full_name.gsub( /:/,'_' )}",
+        graph << DOT::Node.new('name'     => "#{container.full_name.gsub( /:/,'_' )}",
                                   'label'    => "",
                                   'width'  => (container.classes.empty? and 
                                                container.modules.empty?) ? 
@@ -187,7 +187,7 @@ module RDoc
         if use_fileboxes && !files.include?(last_file)
           @counter += 1
           files[last_file] =
-            DOT::DOTSubgraph.new('name'     => "cluster_#{@counter}",
+            DOT::Subgraph.new('name'     => "cluster_#{@counter}",
                                  'label'    => "#{last_file}",
                                  'fontname' => FONT,
                                  'color'=>
@@ -217,7 +217,7 @@ module RDoc
           'URL'   => %{"#{url}"}
         }
 
-        c = DOT::DOTNode.new(attrs)
+        c = DOT::Node.new(attrs)
         
         if use_fileboxes
           files[last_file].push c 
@@ -237,20 +237,20 @@ module RDoc
           cl.includes.each do |m|
             m_full_name = find_full_name(m.name, cl)
             if @local_names.include?(m_full_name)
-              @global_graph << DOT::DOTEdge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
+              @global_graph << DOT::Edge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
                                       'to' => "#{cl.full_name.gsub( /:/,'_' )}",
                                       'ltail' => "cluster_#{m_full_name.gsub( /:/,'_' )}")
             else
               unless @global_names.include?(m_full_name)
                 path = m_full_name.split("::")
                 url = File.join('classes', *path) + ".html"
-                @global_graph << DOT::DOTNode.new('name' => "#{m_full_name.gsub( /:/,'_' )}",
+                @global_graph << DOT::Node.new('name' => "#{m_full_name.gsub( /:/,'_' )}",
                                           'shape' => 'box',
                                           'label' => "#{m_full_name}",
                                           'URL'   => %{"#{url}"})
                 @global_names << m_full_name
               end
-              @global_graph << DOT::DOTEdge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
+              @global_graph << DOT::Edge.new('from' => "#{m_full_name.gsub( /:/,'_' )}",
                                       'to' => "#{cl.full_name.gsub( /:/, '_')}")
             end
           end
@@ -261,13 +261,13 @@ module RDoc
           unless @local_names.include?(sclass_full_name) or @global_names.include?(sclass_full_name)
             path = sclass_full_name.split("::")
             url = File.join('classes', *path) + ".html"
-            @global_graph << DOT::DOTNode.new(
+            @global_graph << DOT::Node.new(
                        'name' => "#{sclass_full_name.gsub( /:/, '_' )}",
                        'label' => sclass_full_name,
                        'URL'   => %{"#{url}"})
             @global_names << sclass_full_name
           end
-          @global_graph << DOT::DOTEdge.new('from' => "#{sclass_full_name.gsub( /:/,'_' )}",
+          @global_graph << DOT::Edge.new('from' => "#{sclass_full_name.gsub( /:/,'_' )}",
                                     'to' => "#{cl.full_name.gsub( /:/, '_')}")
         end
       end
@@ -313,12 +313,12 @@ module RDoc
     def wrap_in_image_map(src, dot)
       res = %{<map id="map" name="map">\n}
       dot_map = `dot -Tismap #{src}`
-      dot_map.each do |area|
+      dot_map.split($/).each do |area|
         unless area =~ /^rectangle \((\d+),(\d+)\) \((\d+),(\d+)\) ([\/\w.]+)\s*(.*)/
           $stderr.puts "Unexpected output from dot:\n#{area}"
           return nil
         end
-        
+
         xs, ys = [$1.to_i, $3.to_i], [$2.to_i, $4.to_i]
         url, area_name = $5, $6
 

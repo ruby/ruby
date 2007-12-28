@@ -1,3 +1,9 @@
+Fri Dec 28 16:10:00 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/dot/dot.rb: Move to lib/rdoc/dot.rb. Fix namespacing.
+
+	* lib/rdoc/diagram.rb: Update for 1.9.
+
 Fri Dec 28 15:38:29 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup/sample/: Move to sample/rdoc/markup directory.
