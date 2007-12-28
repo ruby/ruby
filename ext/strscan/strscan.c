@@ -127,12 +127,20 @@ infect(VALUE str, struct strscanner *p)
 }
 
 static VALUE
+str_new(struct strscanner *p, const char *ptr, long len)
+{
+    VALUE str = rb_str_new(ptr, len);
+    rb_enc_copy(str, p->str);
+    return str;
+}
+
+static VALUE
 extract_range(struct strscanner *p, long beg_i, long end_i)
 {
     if (beg_i > S_LEN(p)) return Qnil;
     if (end_i > S_LEN(p))
         end_i = S_LEN(p);
-    return infect(rb_str_new(S_PBEG(p) + beg_i, end_i - beg_i), p);
+    return infect(str_new(p, S_PBEG(p) + beg_i, end_i - beg_i), p);
 }
 
 static VALUE
@@ -141,7 +149,7 @@ extract_beg_len(struct strscanner *p, long beg_i, long len)
     if (beg_i > S_LEN(p)) return Qnil;
     if (beg_i + len > S_LEN(p))
         len = S_LEN(p) - beg_i;
-    return infect(rb_str_new(S_PBEG(p) + beg_i, len), p);
+    return infect(str_new(p, S_PBEG(p) + beg_i, len), p);
 }
 
 /* =======================================================================
@@ -737,7 +745,7 @@ strscan_peek(VALUE self, VALUE vlen)
 
     len = NUM2LONG(vlen);
     if (EOS_P(p))
-        return infect(rb_str_new("", 0), p);
+        return infect(str_new(p, "", 0), p);
 
     if (p->curr + len > S_LEN(p))
         len = S_LEN(p) - p->curr;
@@ -999,7 +1007,7 @@ strscan_rest(VALUE self)
 
     GET_SCANNER(self, p);
     if (EOS_P(p)) {
-        return infect(rb_str_new("", 0), p);
+        return infect(str_new(p, "", 0), p);
     }
     return extract_range(p, p->curr, S_LEN(p));
 }

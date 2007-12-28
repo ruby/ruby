@@ -1,3 +1,12 @@
+Fri Dec 28 23:53:18 2007  Tanaka Akira  <akr@fsij.org>
+
+	* ext/strscan/strscan.c (str_new): new function for allocate an string
+	  with encoding propagation.
+	  (extract_range): use str_new.
+	  (extract_beg_len): ditto.
+	  (strscan_peek): ditto.
+	  (strscan_rest): ditto.
+
 Fri Dec 28 20:18:42 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* golf_prelude.rb (Object.say): derived from Perl 5.10.

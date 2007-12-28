@@ -289,7 +289,7 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil s.getch
 
     s = StringScanner.new("\244\242".force_encoding("euc-jp"))
-    assert_equal "\244\242", s.getch
+    assert_equal "\244\242".force_encoding("euc-jp"), s.getch
     assert_nil s.getch
 
     s = StringScanner.new('test')
@@ -317,8 +317,8 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil s.get_byte
 
     s = StringScanner.new("\244\242".force_encoding("euc-jp"))
-    assert_equal "\244", s.get_byte
-    assert_equal "\242", s.get_byte
+    assert_equal "\244".force_encoding("euc-jp"), s.get_byte
+    assert_equal "\242".force_encoding("euc-jp"), s.get_byte
     assert_nil s.get_byte
 
     s = StringScanner.new('test')
@@ -414,7 +414,7 @@ class TestStringScanner < Test::Unit::TestCase
 
     s = StringScanner.new("\244\242".force_encoding("euc-jp"))
     s.getch
-    assert_equal "\244\242", s[0]
+    assert_equal "\244\242".force_encoding("euc-jp"), s[0]
 
     str = 'test'
     str.taint
@@ -535,5 +535,10 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 4, s.matched_size
     s.terminate
     assert_nil s.matched_size
+  end
+
+  def test_encoding
+    ss = StringScanner.new("\xA1\xA2".force_encoding("euc-jp"))
+    assert_equal(Encoding::EUC_JP, ss.scan(/./e).encoding)
   end
 end

@@ -51,7 +51,7 @@ rb_encoding* rb_enc_compatible(VALUE,VALUE);
 rb_encoding* rb_enc_check(VALUE,VALUE);
 void rb_enc_associate_index(VALUE, int);
 void rb_enc_associate(VALUE, rb_encoding*);
-void rb_enc_copy(VALUE, VALUE);
+void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long len, rb_encoding*);
 long rb_enc_strlen(const char*, const char*, rb_encoding*);
