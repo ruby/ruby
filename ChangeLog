@@ -1,3 +1,7 @@
+Fri Dec 28 17:33:44 2007  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (make_time_t): verify mktime and timegm result.
+
 Fri Dec 28 16:36:33 2007  NARUSE, Yui  <naruse@airemix.com>
 
 	* lib/resolv.rb (Resolv::DNS#each_address): now returns IPv6 address.
