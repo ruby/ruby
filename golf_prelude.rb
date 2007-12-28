@@ -5,6 +5,12 @@ class Object
     t ? __send__(t, *a, &b) : super
   end
 
+  def self.const_missing c
+    r = /^#{c}/
+    t = constants.sort.find{|e|r=~e}
+    t ? const_get(t) : superclass.const_get(c)
+  end
+
   def h(a='H', b='w', c='!')
     puts "#{a}ello, #{b}orld#{c}"
   end

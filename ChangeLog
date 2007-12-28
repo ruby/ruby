@@ -1,3 +1,7 @@
+Fri Dec 28 10:06:54 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* golf_prelude.rb (Object.const_missing): Auto-complete constants.
+
 Fri Dec 28 01:55:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_dispatch): allows transcoding from/to
