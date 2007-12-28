@@ -374,7 +374,7 @@ EOT
       } #`
 
       ##
-      # Passes if the block throws +expected_value+
+      # Passes if the block throws +expected_object+
       #
       # Example:
       #   assert_throws :done do
@@ -382,22 +382,22 @@ EOT
       #   end
 
       public
-      def assert_throws(expected_value, message="", &proc)
+      def assert_throws(expected_object, message="", &proc)
         _wrap_assertion do
           assert_block("Should have passed a block to assert_throws."){block_given?}
           caught = true
           begin
-            catch(expected_value) do
+            catch(expected_object) do
               proc.call
               caught = false
             end
-            full_message = build_message(message, "<?> should have been thrown.", expected_value)
+            full_message = build_message(message, "<?> should have been thrown.", expected_object)
             assert_block(full_message){caught}
           rescue ArgumentError => error
             if UncaughtThrow[error.class] !~ error.message
               raise error
             end
-            full_message = build_message(message, "<?> expected to be thrown but\n<#$1> was thrown.", expected_value)
+            full_message = build_message(message, "<?> expected to be thrown but\n<#$1> was thrown.", expected_object)
             flunk(full_message)
           end
         end
