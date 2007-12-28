@@ -81,7 +81,12 @@ module SM
     end
 
     def to_s
-      "Special: type=#{type}, text=#{text.dump}"
+      "Special: type=#{type}, name=#{SM::Attribute.as_string type}, text=#{text.dump}"
+    end
+
+    def inspect
+      "#<SM::Special:0x%x @type=%p, name=%p @text=%p>" % [
+        object_id, @type, SM::Attribute.as_string(type), text.dump]
     end
   end
   

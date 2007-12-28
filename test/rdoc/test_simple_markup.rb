@@ -1,18 +1,14 @@
 require 'test/unit'
-
-$:.unshift "../../.."
-
 require 'rdoc/markup/simple_markup'
 
-include SM
-
-class TestParse < Test::Unit::TestCase
+class TestSimpleMarkup < Test::Unit::TestCase
 
   class MockOutput
+
     def start_accepting
       @res = []
-      end
-    
+    end
+
     def end_accepting
       @res
     end
@@ -52,28 +48,21 @@ class TestParse < Test::Unit::TestCase
   end
 
   def basic_conv(str)
-    sm = SimpleMarkup.new
+    sm = SM::SimpleMarkup.new
     mock = MockOutput.new
     sm.convert(str, mock)
     sm.content
   end
 
-  def line_types(str, expected)
-    p = SimpleMarkup.new
-    mock = MockOutput.new
-    p.convert(str, mock)
-    assert_equal(expected, p.get_line_types.map{|type| type.to_s[0,1]}.join(''))
-  end
-
   def line_groups(str, expected)
-    p = SimpleMarkup.new
+    p = SM::SimpleMarkup.new
     mock = MockOutput.new
 
     block = p.convert(str, mock)
 
     if block != expected
       rows = (0...([expected.size, block.size].max)).collect{|i|
-        [expected[i]||"nil", block[i]||"nil"] 
+        [expected[i]||"nil", block[i]||"nil"]
       }
       printf "\n\n%35s %35s\n", "Expected", "Got"
       rows.each {|e,g| printf "%35s %35s\n", e.dump, g.dump }
@@ -82,120 +71,11 @@ class TestParse < Test::Unit::TestCase
     assert_equal(expected, block)
   end
 
-  def test_tabs
-    str = "hello\n  dave"
-    assert_equal(str, basic_conv(str))
-    str = "hello\n\tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n \tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n  \tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n   \tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n    \tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n     \tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n      \tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n       \tdave"
-    assert_equal("hello\n        dave", basic_conv(str))
-    str = "hello\n        \tdave"
-    assert_equal("hello\n                dave", basic_conv(str))
-    str = ".\t\t."
-    assert_equal(".               .", basic_conv(str))
-  end
-
-  def test_whitespace
-    assert_equal("hello", basic_conv("hello"))
-    assert_equal("hello", basic_conv(" hello "))
-    assert_equal("hello", basic_conv(" \t \t hello\t\t"))
-
-    assert_equal("1\n 2\n  3", basic_conv("1\n 2\n  3"))
-    assert_equal("1\n 2\n  3", basic_conv("  1\n   2\n    3"))
-
-    assert_equal("1\n 2\n  3\n1\n 2", basic_conv("1\n 2\n  3\n1\n 2"))
-    assert_equal("1\n 2\n  3\n1\n 2", basic_conv("  1\n   2\n    3\n  1\n   2"))
-
-    assert_equal("1\n 2\n\n  3", basic_conv("  1\n   2\n\n    3"))
-  end
-
-  def test_types
-    str = "now is the time"
-    line_types(str, 'P')
-
-    str = "now is the time\nfor all good men"
-    line_types(str, 'PP')
-
-    str = "now is the time\n  code\nfor all good men"
-    line_types(str, 'PVP')
-
-    str = "now is the time\n  code\n more code\nfor all good men"
-    line_types(str, 'PVVP')
-
-    str = "now is\n---\nthe time"
-    line_types(str, 'PRP')
-
-    str = %{\
-       now is
-       * l1
-       * l2
-       the time}
-    line_types(str, 'PLLP')
-
-    str = %{\
-       now is
-       * l1
-         l1+
-       * l2
-       the time}
-    line_types(str, 'PLPLP')
-
-    str = %{\
-       now is
-       * l1
-         * l1.1
-       * l2
-       the time}
-    line_types(str, 'PLLLP')
-
-    str = %{\
-       now is
-       * l1
-         * l1.1
-           text
-             code
-             code
-
-           text
-       * l2
-       the time}
-    line_types(str, 'PLLPVVBPLP')
-
-    str = %{\
-       now is
-       1. l1
-          * l1.1
-       2. l2
-       the time}
-    line_types(str, 'PLLLP')
-
-    str = %{\
-       now is
-       [cat] l1
-             * l1.1
-       [dog] l2
-       the time}
-    line_types(str, 'PLLLP')
-
-    str = %{\
-       now is
-       [cat] l1
-             continuation
-       [dog] l2
-       the time}
-    line_types(str, 'PLPLP')
+  def line_types(str, expected)
+    p = SM::SimpleMarkup.new
+    mock = MockOutput.new
+    p.convert(str, mock)
+    assert_equal(expected, p.get_line_types.map{|type| type.to_s[0,1]}.join(''))
   end
 
   def test_groups
@@ -347,8 +227,165 @@ class TestParse < Test::Unit::TestCase
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
+  end
 
-    
+  def test_headings
+    str = "= heading one"
+    line_groups(str,
+                [ "L0: Heading\nheading one"
+                ])
+
+    str = "=== heading three"
+    line_groups(str,
+                [ "L0: Heading\nheading three"
+                ])
+
+    str = "text\n   === heading three"
+    line_groups(str,
+                [ "L0: Paragraph\ntext",
+                  "L0: Verbatim\n   === heading three\n"
+                ])
+
+    str = "text\n   code\n   === heading three"
+    line_groups(str,
+                [ "L0: Paragraph\ntext",
+                  "L0: Verbatim\n   code\n   === heading three\n"
+                ])
+
+    str = "text\n   code\n=== heading three"
+    line_groups(str,
+                [ "L0: Paragraph\ntext",
+                  "L0: Verbatim\n   code\n",
+                  "L0: Heading\nheading three"
+                ])
+
+  end
+
+  def test_list_split
+    str = %{\
+       now is
+       * l1
+       1. n1
+       2. n2
+       * l2
+       the time}
+    line_groups(str,
+                [ "L0: Paragraph\nnow is",
+                  "L1: ListStart\n",
+                  "L1: ListItem\nl1",
+                  "L1: ListEnd\n",
+                  "L1: ListStart\n",
+                  "L1: ListItem\nn1",
+                  "L1: ListItem\nn2",
+                  "L1: ListEnd\n",
+                  "L1: ListStart\n",
+                  "L1: ListItem\nl2",
+                  "L1: ListEnd\n",
+                  "L0: Paragraph\nthe time"
+                ])
+
+  end
+
+  def test_tabs
+    str = "hello\n  dave"
+    assert_equal(str, basic_conv(str))
+    str = "hello\n\tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n \tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n  \tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n   \tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n    \tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n     \tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n      \tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n       \tdave"
+    assert_equal("hello\n        dave", basic_conv(str))
+    str = "hello\n        \tdave"
+    assert_equal("hello\n                dave", basic_conv(str))
+    str = ".\t\t."
+    assert_equal(".               .", basic_conv(str))
+  end
+
+  def test_types
+    str = "now is the time"
+    line_types(str, 'P')
+
+    str = "now is the time\nfor all good men"
+    line_types(str, 'PP')
+
+    str = "now is the time\n  code\nfor all good men"
+    line_types(str, 'PVP')
+
+    str = "now is the time\n  code\n more code\nfor all good men"
+    line_types(str, 'PVVP')
+
+    str = "now is\n---\nthe time"
+    line_types(str, 'PRP')
+
+    str = %{\
+       now is
+       * l1
+       * l2
+       the time}
+    line_types(str, 'PLLP')
+
+    str = %{\
+       now is
+       * l1
+         l1+
+       * l2
+       the time}
+    line_types(str, 'PLPLP')
+
+    str = %{\
+       now is
+       * l1
+         * l1.1
+       * l2
+       the time}
+    line_types(str, 'PLLLP')
+
+    str = %{\
+       now is
+       * l1
+         * l1.1
+           text
+             code
+             code
+
+           text
+       * l2
+       the time}
+    line_types(str, 'PLLPVVBPLP')
+
+    str = %{\
+       now is
+       1. l1
+          * l1.1
+       2. l2
+       the time}
+    line_types(str, 'PLLLP')
+
+    str = %{\
+       now is
+       [cat] l1
+             * l1.1
+       [dog] l2
+       the time}
+    line_types(str, 'PLLLP')
+
+    str = %{\
+       now is
+       [cat] l1
+             continuation
+       [dog] l2
+       the time}
+    line_types(str, 'PLPLP')
   end
 
   def test_verbatim_merge
@@ -440,64 +477,20 @@ class TestParse < Test::Unit::TestCase
 
 
   end
- 
-  def test_list_split
-    str = %{\
-       now is
-       * l1
-       1. n1
-       2. n2
-       * l2
-       the time}
-    line_groups(str,
-                [ "L0: Paragraph\nnow is",
-                  "L1: ListStart\n",
-                  "L1: ListItem\nl1",
-                  "L1: ListEnd\n",
-                  "L1: ListStart\n",
-                  "L1: ListItem\nn1",
-                  "L1: ListItem\nn2",
-                  "L1: ListEnd\n",
-                  "L1: ListStart\n",
-                  "L1: ListItem\nl2",
-                  "L1: ListEnd\n",
-                  "L0: Paragraph\nthe time"
-                ])
 
+  def test_whitespace
+    assert_equal("hello", basic_conv("hello"))
+    assert_equal("hello", basic_conv(" hello "))
+    assert_equal("hello", basic_conv(" \t \t hello\t\t"))
+
+    assert_equal("1\n 2\n  3", basic_conv("1\n 2\n  3"))
+    assert_equal("1\n 2\n  3", basic_conv("  1\n   2\n    3"))
+
+    assert_equal("1\n 2\n  3\n1\n 2", basic_conv("1\n 2\n  3\n1\n 2"))
+    assert_equal("1\n 2\n  3\n1\n 2", basic_conv("  1\n   2\n    3\n  1\n   2"))
+
+    assert_equal("1\n 2\n\n  3", basic_conv("  1\n   2\n\n    3"))
   end
 
-
-  def test_headings
-    str = "= heading one"
-    line_groups(str, 
-                [ "L0: Heading\nheading one"
-                ])
-
-    str = "=== heading three"
-    line_groups(str, 
-                [ "L0: Heading\nheading three"
-                ])
-
-    str = "text\n   === heading three"
-    line_groups(str, 
-                [ "L0: Paragraph\ntext",
-                  "L0: Verbatim\n   === heading three\n"
-                ])
-
-    str = "text\n   code\n   === heading three"
-    line_groups(str, 
-                [ "L0: Paragraph\ntext",
-                  "L0: Verbatim\n   code\n   === heading three\n"
-                ])
-
-    str = "text\n   code\n=== heading three"
-    line_groups(str, 
-                [ "L0: Paragraph\ntext",
-                  "L0: Verbatim\n   code\n",
-                  "L0: Heading\nheading three"
-                ])
-
-  end
-
-  
 end
+

@@ -1,3 +1,7 @@
+Fri Dec 28 15:12:05 2007  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc, test/rdoc: Move RDoc tests out of lib/.
+
 Fri Dec 28 15:10:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (set_base_encoding, enc_base_encoding): renamed
