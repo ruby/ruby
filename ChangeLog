@@ -1,3 +1,10 @@
+Fri Dec 28 13:21:32 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, test/rss/test_version.rb, NEWS: 0.2.2 -> 0.2.3.
+
+	* lib/rss/parser.rb, test/rss/test_parser.rb: supported "-" in tag name.
+	Reported by Ray Chen. Thanks.
+
 Thu Dec 27 23:56:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: should not use the libraries under the source directory

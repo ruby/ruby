@@ -46,5 +46,17 @@ EOR
         assert_nil(RSS::Parser.parse(garbage_rss_file))
       end
     end
+
+    def test_parse_tag_includes_hyphen
+      assert_nothing_raised do
+        RSS::Parser.parse(make_RDF(<<-EOR))
+<xCal:x-calconnect-venue xmlns:xCal="urn:ietf:params:xml:ns:xcal" />
+#{make_channel}
+#{make_item}
+#{make_textinput}
+#{make_image}
+EOR
+      end
+    end
   end
 end
