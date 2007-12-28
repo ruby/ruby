@@ -89,6 +89,8 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
 static void
 init_transcoder_table(void)
 {
+    rb_declare_transcoder("US-ASCII",    "UTF-8", "single_byte");
+    rb_declare_transcoder("ASCII-8BIT",  "UTF-8", "single_byte");
     rb_declare_transcoder("ISO-8859-1",  "UTF-8", "single_byte");
     rb_declare_transcoder("ISO-8859-2",  "UTF-8", "single_byte");
     rb_declare_transcoder("ISO-8859-3",  "UTF-8", "single_byte");
@@ -173,6 +175,7 @@ transcode_loop(char **in_pos, char **out_pos,
       follow_byte:
 	next_offset = next_table->base[next_byte];
 	next_info = (VALUE)next_table->info[next_offset];
+      follow_info:
 	switch (next_info & 0x1F) {
 	  case NOMAP:
 	    *out_p++ = next_byte;
@@ -191,7 +194,7 @@ transcode_loop(char **in_pos, char **out_pos,
 		else
 		    goto invalid;
 	    }
-	    next_table = next_table->info[next_offset];
+	    next_table = (const BYTE_LOOKUP *)next_info;
 	    goto follow_byte;
 	    /* maybe rewrite the following cases to use fallthrough???? */
 	  case ZERObt: /* drop input */
@@ -210,6 +213,9 @@ transcode_loop(char **in_pos, char **out_pos,
 	    *out_p++ = getBT2(next_info);
 	    *out_p++ = getBT3(next_info);
 	    continue;
+	  case FUNii:
+	    next_info = (VALUE)(*my_transcoder->func_ii)(next_info);
+	    goto follow_info;
 	  case INVALID:
 	    goto invalid;
 	  case UNDEF:
@@ -287,31 +293,12 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	return -1;
     }
     if (from_enc && to_enc && rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
-	if (to_encidx == 0 || ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+	if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
 	    return to_encidx;
 	}
     }
     if (strcasecmp(from_e, to_e) == 0) {
 	return -1;
-    }
-
-    if (from_encidx == 0) {
-	const char *p = RSTRING_PTR(str);
-	const char *e = p + RSTRING_LEN(str);
-
-	while (p < e) {
-	    int ret = rb_enc_precise_mbclen(p, e, to_enc);
-	    int len = MBCLEN_CHARFOUND(ret);
-
-	    if (!len) {
-		rb_raise(rb_eArgError, "not fully converted, %d bytes left", e-p);
-	    }
-	    p += len;
-	}
-	if (to_encidx < 0) {
-	    to_encidx = rb_define_dummy_encoding(to_e);
-	}
-	return to_encidx;
     }
 
     while (!final_encoding) { /* loop for multistep transcoding */
@@ -412,6 +399,7 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *     str.encode(encoding)   => str
+ *     str.encode(to_encoding, from_encoding)   => str
  *
  *  With one argument, returns a copy of <i>str</i> transcoded
  *  to encoding +encoding+.

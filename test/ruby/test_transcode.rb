@@ -26,6 +26,8 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(ArgumentError) { 'abc'.encode!('foo', 'bar') }
     assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode('foo') }
     assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode!('foo') }
+    assert_raise(RuntimeError) { "\x80".encode('utf-8','ASCII-8BIT') }
+    assert_raise(RuntimeError) { "\x80".encode('utf-8','US-ASCII') }
     assert_raise(RuntimeError) { "\xA5".encode('utf-8','iso-8859-3') }
   end
 
@@ -87,6 +89,7 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_ascii_range
     encodings = [
+      'US-ASCII', 'ASCII-8BIT',
       'ISO-8859-1', 'ISO-8859-2', 'ISO-8859-3',
       'ISO-8859-4', 'ISO-8859-5', 'ISO-8859-6',
       'ISO-8859-7', 'ISO-8859-8', 'ISO-8859-9',

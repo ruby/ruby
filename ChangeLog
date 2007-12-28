@@ -1,3 +1,20 @@
+Fri Dec 28 01:55:04 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c (transcode_dispatch): reverted some of the changes
+          in r14746.
+
+	* transcode.c, enc/trans/single_byte.c: Added conversions to/from
+	  US-ASCII and ASCII-8BIT (using data tables).
+
+	* enc/trans/single_byte.c: Some spacing/ordering changes due to
+	  automatic data file generation.
+
+	* transcode_data.h, transcode.c: Preliminary code for using
+	  micro-conversion functions.
+
+	* test/ruby/test_transcode.rb: Added some tests for US-ASCII and
+	  ASCII-8BIT conversions.
+
 Fri Dec 28 17:33:44 2007  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (make_time_t): verify mktime and timegm result.
