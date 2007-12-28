@@ -1,3 +1,8 @@
+Fri Dec 28 19:29:07 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_readline, readline_s_set_input):
+	  use mReadline directly because self is not always same.
+
 Fri Dec 28 19:11:28 2007  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_locale_encoding): defined.

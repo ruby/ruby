@@ -95,9 +95,9 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 	add_history(buff);
     }
     if (buff) {
-	rb_io_t *ifp;
 	rb_encoding* enc;
-	VALUE input = rb_ivar_get(self, id_var_input);
+	VALUE input = rb_ivar_get(mReadline, id_var_input);
+	rb_io_t *ifp;
 	GetOpenFile(input, ifp);
 	if (ifp->enc)
 	    enc = ifp->enc;
@@ -123,7 +123,7 @@ readline_s_set_input(VALUE self, VALUE input)
     Check_Type(input, T_FILE);
     GetOpenFile(input, ifp);
     rl_instream = rb_io_stdio_file(ifp);
-    rb_ivar_set(self, id_var_input, input);
+    rb_ivar_set(mReadline, id_var_input, input);
     return input;
 }
 
