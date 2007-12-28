@@ -23,9 +23,6 @@ class Object
 end
 
 class Integer
-  def each(&b)
-    times &b
-  end
-
+  alias each times
   include Enumerable
 end
