@@ -853,6 +853,18 @@ rb_utf8_encoding(void)
     return enc_table[ENCINDEX_UTF8].enc;
 }
 
+rb_encoding *
+rb_locale_encoding(void)
+{
+    VALUE charmap = rb_locale_charmap(rb_cEncoding);
+    int idx = rb_enc_find_index(StringValueCStr(charmap));
+
+    if (idx < 0)
+        return rb_ascii8bit_encoding();
+
+    return rb_enc_from_index(idx);
+}
+
 static int default_external_index;
 
 rb_encoding *

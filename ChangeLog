@@ -1,3 +1,9 @@
+Fri Dec 28 19:11:28 2007  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_locale_encoding): defined.
+
+	* include/ruby/encoding.h (rb_locale_encoding): declared.
+
 Fri Dec 28 18:45:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_readline): set encoding to result.
