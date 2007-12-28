@@ -5,7 +5,7 @@ i\
 a\
 #endif
 }
-/^yydestruct/,/#endif/{
+/^yydestruct.*yymsg/,/#endif/{
   /^yydestruct/{
     /parser/!{
       h

@@ -1,3 +1,8 @@
+Fri Dec 28 11:46:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/ytab.sed: skip yydestruct hack unless yymsg exists, for bison
+	  1.8 series.  [ruby-dev:32825]
+
 Fri Dec 28 11:39:02 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* golf_prelude.rb (Object.quine): need to join because SCRIPT_LINES__[]
