@@ -294,9 +294,8 @@ io_unread(rb_io_t *fptr)
 	r = lseek(fptr->fd, -len, SEEK_CUR);
     }
     else
-#else
-    r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
 #endif
+    r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
     if (r < 0) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;

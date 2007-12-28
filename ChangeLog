@@ -1,3 +1,7 @@
+Sat Dec 29 03:10:12 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (io_unread): fix typo.
+
 Sat Dec 29 02:18:45 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (io_unread): adhoc workaround for non-binary mode of some DOSish
