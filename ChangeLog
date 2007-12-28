@@ -1,3 +1,7 @@
+Fri Dec 28 11:16:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* golf_prelude.rb (Object.quine): get the script itself.
+
 Fri Dec 28 10:06:54 2007  Akinori MUSHA  <knu@iDaemons.org>
 
 	* golf_prelude.rb (Object.const_missing): Auto-complete constants.

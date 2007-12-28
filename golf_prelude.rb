@@ -1,3 +1,5 @@
+SCRIPT_LINES__={}
+
 class Object
   def method_missing m, *a, &b
     r = /^#{m}/
@@ -13,6 +15,10 @@ class Object
 
   def h(a='H', b='w', c='!')
     puts "#{a}ello, #{b}orld#{c}"
+  end
+
+  def quine(src = $0)
+    SCRIPT_LINES__[src]
   end
 end
 
