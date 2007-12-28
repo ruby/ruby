@@ -369,11 +369,12 @@ EOT
         end
       end
 
-      UncaughtThrow = {NameError => /^uncaught throw \`(.+)\'$/,
-                       ThreadError => /^uncaught throw \`(.+)\' in thread /} #`
+      UncaughtThrow = {
+        ArgumentError => /^uncaught throw (.+)$/,
+      } #`
 
       ##
-      # Passes if the block throws +expected_symbol+
+      # Passes if the block throws +expected_value+
       #
       # Example:
       #   assert_throws :done do
@@ -381,23 +382,22 @@ EOT
       #   end
 
       public
-      def assert_throws(expected_symbol, message="", &proc)
+      def assert_throws(expected_value, message="", &proc)
         _wrap_assertion do
-          assert_instance_of(Symbol, expected_symbol, "assert_throws expects the symbol that should be thrown for its first argument")
           assert_block("Should have passed a block to assert_throws."){block_given?}
           caught = true
           begin
-            catch(expected_symbol) do
+            catch(expected_value) do
               proc.call
               caught = false
             end
-            full_message = build_message(message, "<?> should have been thrown.", expected_symbol)
+            full_message = build_message(message, "<?> should have been thrown.", expected_value)
             assert_block(full_message){caught}
-          rescue NameError, ThreadError => error
+          rescue ArgumentError => error
             if UncaughtThrow[error.class] !~ error.message
               raise error
             end
-            full_message = build_message(message, "<?> expected to be thrown but\n<?> was thrown.", expected_symbol, $1.intern)
+            full_message = build_message(message, "<?> expected to be thrown but\n<#$1> was thrown.", expected_value)
             flunk(full_message)
           end
         end
@@ -417,11 +417,11 @@ EOT
           assert(block_given?, "Should have passed a block to assert_nothing_thrown")
           begin
             proc.call
-          rescue NameError, ThreadError => error
+          rescue ArgumentError => error
             if UncaughtThrow[error.class] !~ error.message
               raise error
             end
-            full_message = build_message(message, "<?> was thrown when nothing was expected", $1.intern)
+            full_message = build_message(message, "<#$1> was thrown when nothing was expected")
             flunk(full_message)
           end
           assert(true, "Expected nothing to be thrown")

@@ -403,6 +403,22 @@ Message: <"Error">
             throw :thing
           }
         }
+        check_nothing_fails {
+          assert_throws(0, "message") {
+            throw 0
+          }
+        }
+        obj = Object.new
+        check_nothing_fails {
+          assert_throws(obj, "message") {
+            throw obj
+          }
+        }
+        check_fails("message.\n<\"string\"> expected to be thrown but\n<\"string\"> was thrown.") {
+          assert_throws("string", "message") {
+            throw "string"
+          }
+        }
         check_fails("message.\n<:thing> expected to be thrown but\n<:thing2> was thrown.") {
           assert_throws(:thing, "message") {
             throw :thing2

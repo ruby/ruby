@@ -1,3 +1,12 @@
+Sat Dec 29 04:46:58 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_throws):
+	  throw won't raise NameError nor ThreadError but ArgumentError on 1.9.
+	  (Test::Unit::Assertions#assert_not_throws): ditto.
+
+	* test/testunit/test_assertions.rb: add assertions for throwing some
+	  objects other than Symbol.
+
 Sat Dec 29 03:10:12 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (io_unread): fix typo.
