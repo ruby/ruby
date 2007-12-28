@@ -18,7 +18,7 @@ class Object
   end
 
   def quine(src = $0)
-    SCRIPT_LINES__[src]
+    SCRIPT_LINES__[src].join
   end
 end
 
