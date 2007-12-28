@@ -18,7 +18,7 @@
 #include <langinfo.h>
 #endif
 
-static ID id_encoding, id_based_encoding;
+static ID id_encoding, id_base_encoding;
 static VALUE rb_cEncoding;
 
 struct rb_encoding_entry {
@@ -205,11 +205,11 @@ enc_check_duplication(const char *name)
 }
 
 static VALUE
-set_based_encoding(int index, rb_encoding *based)
+set_base_encoding(int index, rb_encoding *base)
 {
     VALUE enc = rb_enc_from_encoding(enc_table[index].enc);
 
-    rb_ivar_set(enc, id_based_encoding, rb_enc_from_encoding(based));
+    rb_ivar_set(enc, id_base_encoding, rb_enc_from_encoding(base));
     return enc;
 }
 
@@ -221,7 +221,7 @@ rb_enc_replicate(const char *name, rb_encoding *encoding)
     enc_check_duplication(name);
     if (enc_table_expand(index + 1) < 0) return -1;
     enc_register_at(index, name, encoding);
-    set_based_encoding(index, encoding);
+    set_base_encoding(index, encoding);
     return index;
 }
 
@@ -237,7 +237,7 @@ rb_define_dummy_encoding(const char *name)
     if (enc_table_expand(index + 1) < 0) return -1;
     encoding = rb_ascii8bit_encoding();
     enc_register_at(index, name, encoding);
-    enc = set_based_encoding(index, encoding);
+    enc = set_base_encoding(index, encoding);
     FL_SET(enc, ENC_DUMMY);
     return index;
 }
@@ -729,9 +729,9 @@ enc_name(VALUE self)
 }
 
 static VALUE
-enc_based_encoding(VALUE self)
+enc_base_encoding(VALUE self)
 {
-    return rb_attr_get(self, id_based_encoding);
+    return rb_attr_get(self, id_base_encoding);
 }
 
 /*
@@ -973,14 +973,14 @@ Init_Encoding(void)
 {
     int i;
 
-    id_based_encoding = rb_intern("#based_encoding");
+    id_base_encoding = rb_intern("#base_encoding");
 
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);
     rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
-    rb_define_method(rb_cEncoding, "based_encoding", enc_based_encoding, 0);
+    rb_define_method(rb_cEncoding, "base_encoding", enc_base_encoding, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "find", enc_find, 1);

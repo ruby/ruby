@@ -1,3 +1,8 @@
+Fri Dec 28 15:10:47 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (set_base_encoding, enc_base_encoding): renamed
+	  based_encoding as base_encoding.
+
 Fri Dec 28 13:57:49 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* golf_prelude.rb (Integer#each): use alias simply.
