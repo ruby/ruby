@@ -1,3 +1,7 @@
+Fri Dec 28 20:18:42 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* golf_prelude.rb (Object.say): derived from Perl 5.10.
+
 Fri Dec 28 19:39:34 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* encoding.c (rb_locale_encoding): should check return value from

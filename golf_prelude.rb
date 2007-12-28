@@ -20,6 +20,8 @@ class Object
   def quine(src = $0)
     SCRIPT_LINES__[src].join
   end
+
+  alias say puts
 end
 
 class Integer
