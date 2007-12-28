@@ -1,3 +1,7 @@
+Fri Dec 28 16:36:33 2007  NARUSE, Yui  <naruse@airemix.com>
+
+	* lib/resolv.rb (Resolv::DNS#each_address): now returns IPv6 address.
+
 Fri Dec 28 16:10:00 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/dot/dot.rb: Move to lib/rdoc/dot.rb. Fix namespacing.
