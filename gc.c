@@ -1798,7 +1798,7 @@ os_obj_of(VALUE of)
  */
 
 static VALUE
-os_each_obj(int argc, VALUE *argv)
+os_each_obj(int argc, VALUE *argv, VALUE os)
 {
     VALUE of;
 
@@ -1806,6 +1806,7 @@ os_each_obj(int argc, VALUE *argv)
     if (rb_scan_args(argc, argv, "01", &of) == 0) {
 	of = 0;
     }
+    RETURN_ENUMERATOR(os, 1, &of);
     return os_obj_of(of);
 }
 

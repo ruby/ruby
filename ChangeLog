@@ -1,3 +1,8 @@
+Fri Dec 28 13:07:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (os_obj_of): returns an enumerator if no block given.  based on
+	  a patch from Yugui <yugui AT yugui.sakura.ne.jp>.  [ruby-dev:32828]
+
 Fri Dec 28 11:46:04 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/ytab.sed: skip yydestruct hack unless yymsg exists, for bison
