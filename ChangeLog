@@ -1,3 +1,10 @@
+Fri Dec 28 13:18:47 2007  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.2 -> 0.2.3.
+
+	* lib/rss/parser.rb, test/rss/test_parser.rb: supported "-" in tag name.
+	Reported by Ray Chen. Thanks.
+
 Fri Dec 28 13:07:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (os_obj_of): returns an enumerator if no block given.  based on

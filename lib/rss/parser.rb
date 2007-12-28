@@ -178,11 +178,7 @@ module RSS
       end
 
       def available_tags(uri)
-        begin
-          @@accessor_bases[uri].keys
-        rescue NameError
-          []
-        end
+        (@@accessor_bases[uri] || {}).keys
       end
       
       def register_uri(uri, name)
@@ -200,11 +196,13 @@ module RSS
       end
 
       def class_name(uri, tag_name)
-        begin
-          @@class_names[uri][tag_name]
-        rescue NameError
-          tag_name[0,1].upcase + tag_name[1..-1]
+        name = (@@class_names[uri] || {})[tag_name]
+        return name if name
+
+        tag_name = tag_name.gsub(/[_\-]([a-z]?)/) do
+          $1.upcase
         end
+        tag_name[0, 1].upcase + tag_name[1..-1]
       end
 
       def install_get_text_element(uri, name, accessor_base)
@@ -422,12 +420,14 @@ module RSS
     end
 
     def start_have_something_element(tag_name, prefix, attrs, ns, klass)
-
       check_ns(tag_name, prefix, ns, klass.required_uri)
+      attributes = collect_attributes(tag_name, prefix, attrs, ns, klass)
+      @proc_stack.push(setup_next_element(tag_name, klass, attributes))
+    end
 
+    def collect_attributes(tag_name, prefix, attrs, ns, klass)
       attributes = {}
       klass.get_attributes.each do |a_name, a_uri, required, element_name|
-
         if a_uri.is_a?(String) or !a_uri.respond_to?(:include?)
           a_uri = [a_uri]
         end
@@ -456,14 +456,18 @@ module RSS
 
         attributes[a_name] = val
       end
+      attributes
+    end
 
+    def setup_next_element(tag_name, klass, attributes)
       previous = @last_element
       next_element = klass.new(@do_validate, attributes)
       previous.set_next_element(tag_name, next_element)
       @last_element = next_element
       @last_element.parent = previous if klass.need_parent?
       @xml_child_mode = @last_element.have_xml_content?
-      pr = Proc.new do |text, tags|
+
+      Proc.new do |text, tags|
         p(@last_element.class) if DEBUG
         if @xml_child_mode
           @last_element.content = @xml_element.to_s
@@ -484,9 +488,7 @@ module RSS
         end
         @last_element = previous
       end
-      @proc_stack.push(pr)
     end
-
   end
 
   unless const_defined? :AVAILABLE_PARSER_LIBRARIES
