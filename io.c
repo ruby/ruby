@@ -284,7 +284,19 @@ io_unread(rb_io_t *fptr)
     if (fptr->rbuf_len == 0 || fptr->mode & FMODE_DUPLEX)
         return;
     /* xxx: target position may be negative if buffer is filled by ungetc */
+#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
+    if (!(fptr->mode & FMODE_BINMODE)) {
+	int len = fptr->rbuf_len;
+	while (fptr->rbuf_len-- > 0) {
+	    if (fptr->rbuf[fptr->rbuf_len] == '\n')
+		++len;
+	}
+	r = lseek(fptr->fd, -len, SEEK_CUR);
+    }
+    else
+#else
     r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
+#endif
     if (r < 0) {
         if (errno == ESPIPE)
             fptr->mode |= FMODE_DUPLEX;
