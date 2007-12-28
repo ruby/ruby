@@ -1,3 +1,7 @@
+Fri Dec 28 15:15:12 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/irb/completion.rb: Remove garbage ("X=1").
+
 Fri Dec 28 15:12:05 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc, test/rdoc: Move RDoc tests out of lib/.

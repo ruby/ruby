@@ -9,8 +9,6 @@
 
 require "readline"
 
-X=1
-
 module IRB
   module InputCompletor
 
