@@ -37,24 +37,10 @@ class TestSimpleMarkupAttributeManager < Test::Unit::TestCase
     ]
   end
 
-  def test_special
-    # class names, variable names, file names, or instance variables
-    @am.add_special(/(
-                       \b([A-Z]\w+(::\w+)*)
-                       | \#\w+[!?=]?
-                       | \b\w+([_\/\.]+\w+)+[!?=]?
-                      )/x,
-                    :CROSSREF)
-
-    assert_equal(["cat"], @am.flow("cat"))
-
-    assert_equal(["cat ", crossref("#fred"), " dog"].flatten,
-                  @am.flow("cat #fred dog"))
-
-    assert_equal([crossref("#fred"), " dog"].flatten,
-                  @am.flow("#fred dog"))
-
-    assert_equal(["cat ", crossref("#fred")].flatten, @am.flow("cat #fred"))
+  def test_adding
+    assert_equal(["cat ", @wombat_on, "and", @wombat_off, " dog" ],
+                  @am.flow("cat {and} dog"))
+    #assert_equal(["cat {and} dog" ], @am.flow("cat \\{and} dog"))
   end
 
   def test_basic
@@ -143,10 +129,24 @@ class TestSimpleMarkupAttributeManager < Test::Unit::TestCase
                   @am.flow("\\_cat_<i>dog</i>"))
   end
 
-  def test_adding
-    assert_equal(["cat ", @wombat_on, "and", @wombat_off, " dog" ],
-                  @am.flow("cat {and} dog"))
-#    assert_equal(["cat {and} dog" ], @am.flow("cat \\{and} dog"))
+  def test_special
+    # class names, variable names, file names, or instance variables
+    @am.add_special(/(
+                       \b([A-Z]\w+(::\w+)*)
+                       | \#\w+[!?=]?
+                       | \b\w+([_\/\.]+\w+)+[!?=]?
+                      )/x,
+                    :CROSSREF)
+
+    assert_equal(["cat"], @am.flow("cat"))
+
+    assert_equal(["cat ", crossref("#fred"), " dog"].flatten,
+                  @am.flow("cat #fred dog"))
+
+    assert_equal([crossref("#fred"), " dog"].flatten,
+                  @am.flow("#fred dog"))
+
+    assert_equal(["cat ", crossref("#fred")].flatten, @am.flow("cat #fred"))
   end
 
 end
