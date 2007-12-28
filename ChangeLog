@@ -1,3 +1,8 @@
+Fri Dec 28 13:45:21 2007  Akinori MUSHA  <knu@iDaemons.org>
+
+	* golf_prelude.rb (Object.const_missing): No need to delegate to
+	  superclass.  Just raise a NameError when none matches.
+
 Fri Dec 28 13:18:47 2007  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, test/rss/test_version.rb: 0.2.2 -> 0.2.3.

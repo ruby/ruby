@@ -9,8 +9,8 @@ class Object
 
   def self.const_missing c
     r = /^#{c}/
-    t = constants.sort.find{|e|r=~e}
-    t ? const_get(t) : superclass.const_get(c)
+    t = constants.sort.find{|e|r=~e} and return const_get(t)
+    raise NameError, "uninitialized constant #{c}", caller(1)
   end
 
   def h(a='H', b='w', c='!')
