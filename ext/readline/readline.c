@@ -29,6 +29,7 @@
 #endif
 
 static VALUE mReadline;
+static VALUE id_var_input;
 
 #define TOLOWER(c) (isupper(c) ? tolower(c) : c)
 
@@ -93,8 +94,20 @@ readline_readline(int argc, VALUE *argv, VALUE self)
     if (RTEST(add_hist) && buff) {
 	add_history(buff);
     }
-    if (buff)
+    if (buff) {
+	rb_io_t *ifp;
+	rb_encoding* enc;
+	VALUE input = rb_ivar_get(self, id_var_input);
+	GetOpenFile(input, ifp);
+	if (ifp->enc)
+	    enc = ifp->enc;
+	else if (ifp->mode & FMODE_BINMODE)
+	    enc = rb_ascii8bit_encoding();
+	else
+	    enc = rb_default_external_encoding();
 	result = rb_tainted_str_new2(buff);
+	rb_enc_associate(result, enc);
+    }
     else
 	result = Qnil;
     if (buff) free(buff);
@@ -110,6 +123,7 @@ readline_s_set_input(VALUE self, VALUE input)
     Check_Type(input, T_FILE);
     GetOpenFile(input, ifp);
     rl_instream = rb_io_stdio_file(ifp);
+    rb_ivar_set(self, id_var_input, input);
     return input;
 }
 
@@ -754,6 +768,9 @@ Init_readline()
 			       readline_s_set_filename_quote_characters, 1);
     rb_define_singleton_method(mReadline, "filename_quote_characters",
 			       readline_s_get_filename_quote_characters, 0);
+
+    id_var_input = rb_intern("#input");
+    rb_ivar_set(mReadline, id_var_input, rb_stdin);
 
     history = rb_obj_alloc(rb_cObject);
     rb_extend_object(history, rb_mEnumerable);

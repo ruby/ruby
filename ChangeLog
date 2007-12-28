@@ -1,3 +1,10 @@
+Fri Dec 28 18:45:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_readline): set encoding to result.
+
+	* ext/readline/readline.c (readline_s_set_input, Init_readline): save
+	  input IO to hidden instance variable.
+
 Fri Dec 28 01:55:04 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c (transcode_dispatch): reverted some of the changes
