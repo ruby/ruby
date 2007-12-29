@@ -1011,6 +1011,9 @@ Init_Encoding(void)
     /* dummy for unsupported, statefull encoding */
     rb_define_dummy_encoding("ISO-2022-JP");
 
+    rb_enc_replicate("Windows-31J", ONIG_ENCODING_SJIS);
+    rb_enc_alias("CP932", "Windows-31J");
+
     for (i = 0; i < enc_table_size; ++i) {
 	rb_encoding *enc = enc_table[i].enc;
 	if (enc) set_encoding_const(rb_enc_name(enc), enc);

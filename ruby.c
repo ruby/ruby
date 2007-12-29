@@ -712,7 +712,8 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		    enc = ONIG_ENCODING_EUC_JP;
 		    break;
 		  case 'S': case 's':
-		    enc = ONIG_ENCODING_SJIS;
+		    enc = rb_enc_find("Windows-31J");
+		    if (!enc) enc = ONIG_ENCODING_SJIS;
 		    break;
 		  case 'U': case 'u':
 		    enc = ONIG_ENCODING_UTF8;
