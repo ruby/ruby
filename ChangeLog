@@ -1,3 +1,7 @@
+Sat Dec 29 23:48:13 2007  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_fflush): don't retry when wbuf modified by other threads.
+
 Sat Dec 29 22:44:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_regsub): returns the given string itself if nothing
