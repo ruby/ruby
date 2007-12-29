@@ -1,3 +1,12 @@
+Sat Dec 29 22:44:30 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_regsub): returns the given string itself if nothing
+	  changed.
+
+	* string.c (rb_str_sub_bang): keeps code-range as possible.
+
+	* string.c (str_gsub): adjusts code-range.  [ruby-core:14566]
+
 Sat Dec 29 21:54:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (clean, distclean, realclean): should include clean-enc

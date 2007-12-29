@@ -2425,6 +2425,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     pat = get_pat(argv[0], 1);
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
 	rb_encoding *enc;
+	int cr = ENC_CODERANGE(str);
 
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
@@ -2446,6 +2447,10 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	rb_str_modify(str);
 	rb_enc_associate(str, enc);
 	if (OBJ_TAINTED(repl)) tainted = 1;
+	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
+	    int cr2 = ENC_CODERANGE(repl);
+	    if (cr2 == ENC_CODERANGE_UNKNOWN || cr2 > cr) cr = cr2;
+	}
 	plen = END(0) - BEG(0);
 	if (RSTRING_LEN(repl) > plen) {
 	    RESIZE_CAPA(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
@@ -2459,6 +2464,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	       RSTRING_PTR(repl), RSTRING_LEN(repl));
 	STR_SET_LEN(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+	ENC_CODERANGE_SET(str, cr);
 	if (tainted) OBJ_TAINT(str);
 
 	return str;
@@ -2516,7 +2522,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     int iter = 0;
     char *buf, *bp, *sp, *cp;
     int tainted = 0;
-    rb_encoding *enc;
+    int cr;
     
     switch (argc) {
       case 1:
@@ -2533,7 +2539,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat(argv[0], 1);
-    enc = rb_enc_get(pat);
     offset=0; n=0;
     beg = rb_reg_search(pat, str, 0, 0);
     if (beg < 0) {
@@ -2547,6 +2552,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     bp = buf;
     sp = cp = RSTRING_PTR(str);
     slen = RSTRING_LEN(str);
+    cr = ENC_CODERANGE(str);
 
     rb_str_locktmp(dest);
     do {
@@ -2573,6 +2579,10 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	}
 	rb_enc_associate(str, enc);
 	if (OBJ_TAINTED(val)) tainted = 1;
+	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
+	    int cr2 = ENC_CODERANGE(val);
+	    if (cr2 == ENC_CODERANGE_UNKNOWN || cr2 > cr) cr = cr2;
+	}
 	len = (bp - buf) + (beg - offset) + RSTRING_LEN(val) + 3;
 	if (blen < len) {
 	    while (blen < len) blen *= 2;
@@ -2636,6 +2646,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
     STR_SET_LEN(str, bp - buf);
 
+    ENC_CODERANGE_SET(str, cr);
     if (tainted) OBJ_TAINT(str);
     return str;
 }
