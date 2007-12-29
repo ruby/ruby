@@ -1,3 +1,8 @@
+Sun Dec 30 06:27:38 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (depend_rules): need to convert `/' to `\' for windows
+	  native commands.
+
 Sun Dec 30 01:43:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/Makefile.in (DLDFLAGS): like as extensions.  [ruby-core:14567]

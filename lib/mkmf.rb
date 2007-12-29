@@ -1308,6 +1308,10 @@ def depend_rules(depend)
     line.gsub!(/\.o\b/, ".#{$OBJEXT}")
     line.gsub!(/\$\((?:hdr|top)dir\)\/config.h/, $config_h) if $config_h
     line.gsub!(%r"\$\(hdrdir\)/(?!ruby(?![^:;/\s]))(?=[-\w]+\.h)", '\&ruby/')
+    if $nmake && /\A\s*\$\(RM|COPY\)/ =~ line
+      line.gsub!(%r"[-\w\./]{2,}"){$&.tr("/", "\\")}
+      line.gsub!(/(\$\((?!RM|COPY)[^:)]+)(?=\))/, '\1:/=\\')
+    end
     if /(?:^|[^\\])(?:\\\\)*\\$/ =~ line
       (cont ||= []) << line
       next
