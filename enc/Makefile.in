@@ -30,11 +30,13 @@ CCDLFLAGS = @CCDLFLAGS@
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(top_srcdir)
 DEFS = @DEFS@
 CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
-LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
-XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
+LDFLAGS = @LDFLAGS@
 LIBS = @LIBRUBYARG@ @LIBS@ $(EXTLIBS)
 LDSHARED = @LDSHARED@
-DLDFLAGS = @DLDFLAGS@ $(EXTLDFLAGS) @ARCH_FLAG@
+ldflags  = $(CFLAGS) $(LDFLAGS)
+dldflags = @DLDFLAGS@
+archflag = @ARCH_FLAG@
+DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
 
 RM = @RM@
 

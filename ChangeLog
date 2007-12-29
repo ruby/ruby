@@ -1,3 +1,7 @@
+Sun Dec 30 01:43:56 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/Makefile.in (DLDFLAGS): like as extensions.  [ruby-core:14567]
+
 Sat Dec 29 23:48:13 2007  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_fflush): don't retry when wbuf modified by other threads.
