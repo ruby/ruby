@@ -300,7 +300,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST)
 clear-installed-list:
 	@exit > $(INSTALLED_LIST)
 
-clean: clean-ext clean-local
+clean: clean-ext clean-local clean-enc
 clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
@@ -310,7 +310,7 @@ clean-ext:
 clean-enc:
 	@-$(MAKE) -f enc.mk $(MFLAGS) clean
 
-distclean: distclean-ext distclean-local
+distclean: distclean-ext distclean-local distclean-enc
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) config.h rbconfig.rb
 	@$(RM) config.cache config.log config.status
@@ -322,7 +322,7 @@ distclean-ext:
 distclean-enc: clean-enc
 	@-$(MAKE) -f enc.mk $(MFLAGS) distclean
 
-realclean:: realclean-ext realclean-local
+realclean:: realclean-ext realclean-local realclean-enc
 realclean-local:: distclean-local
 	@$(RM) parse.c lex.c
 realclean-ext::

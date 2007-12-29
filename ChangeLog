@@ -1,3 +1,8 @@
+Sat Dec 29 21:54:37 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (clean, distclean, realclean): should include clean-enc
+	  and others.  [ruby-dev:32887]
+
 Sat Dec 29 13:29:29 2007  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/test_knownbug.rb: add a test reported by 
