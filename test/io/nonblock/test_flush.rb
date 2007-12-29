@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'timeout'
 begin
   require 'io/nonblock'
 rescue LoadError
@@ -24,7 +25,9 @@ class TestIONonblock < Test::Unit::TestCase
       end
     }
     w.flush # assert_raise(IOError, "[ruby-dev:24985]") {w.flush}
-    assert_nothing_raised {t.join}
+    timeout(10) {
+      assert_nothing_raised {t.join}
+    }
     assert_equal(4097, result.size)
   end
 end if IO.method_defined?(:nonblock)
