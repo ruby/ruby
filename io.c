@@ -545,7 +545,7 @@ io_fflush(rb_io_t *fptr)
         l = PIPE_BUF;
     }
     r = rb_write_internal(fptr->fd, fptr->wbuf+wbuf_off, l);
-    /* xxx: Other threads modified wbuf in non-append operation.
+    /* xxx: Other threads may modify wbuf.
      * A lock is required, definitely. */
     rb_io_check_closed(fptr);
     if (fptr->wbuf_len <= r) {
