@@ -1865,6 +1865,13 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::EUC_JP, "\xa4\xa2".force_encoding("euc-jp").gsub(/./, '\&').encoding)
   end
 
+  def test_gsub
+    s = 'abc'
+    s.ascii_only?
+    s.gsub!(/b/, "\x80")
+    assert_equal(false, s.ascii_only?, "[ruby-core:14566] reported by Sam Ruby")
+  end
+
   def test_regexp_match
     assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
   end
