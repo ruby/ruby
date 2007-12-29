@@ -1,3 +1,12 @@
+Sat Dec 29 13:29:29 2007  Tanaka Akira  <akr@fsij.org>
+
+	* bootstraptest/test_knownbug.rb: add a test reported by 
+	  Kazuhiro NISHIYAMA.  [ruby-dev:32819].
+	  add a test reported by Frederick Cheung.  [ruby-core:14556].
+
+	* test/ruby/test_m17n.rb (test_gsub): add a test reported by
+	  Sam Ruby.  [ruby-core:14566]
+
 Sat Dec 29 04:46:58 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions#assert_throws):
