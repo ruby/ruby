@@ -741,7 +741,7 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
  * to _recv_nonblock_ fails. 
  *
  * BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EAGAIN.
+ * including Errno::EWOULDBLOCK.
  *
  * === See
  * * Socket#recvfrom
@@ -1562,7 +1562,7 @@ tcp_accept(VALUE sock)
  * to TCPServer#accept_nonblock fails. 
  *
  * TCPServer#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EAGAIN.
+ * including Errno::EWOULDBLOCK.
  * 
  * === See
  * * TCPServer#accept
@@ -1853,7 +1853,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
  * to _recvfrom_nonblock_ fails. 
  *
  * UDPSocket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EAGAIN.
+ * including Errno::EWOULDBLOCK.
  *
  * === See
  * * Socket#recvfrom
@@ -2126,7 +2126,7 @@ unix_accept(VALUE sock)
  * to UNIXServer#accept_nonblock fails. 
  *
  * UNIXServer#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EAGAIN.
+ * including Errno::EWOULDBLOCK.
  * 
  * === See
  * * UNIXServer#accept
@@ -2867,7 +2867,7 @@ sock_recvfrom(int argc, VALUE *argv, VALUE sock)
  * to _recvfrom_nonblock_ fails. 
  *
  * Socket#recvfrom_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EAGAIN.
+ * including Errno::EWOULDBLOCK.
  *
  * === See
  * * Socket#recvfrom
@@ -2935,7 +2935,7 @@ sock_accept(VALUE sock)
  * to _accept_nonblock_ fails. 
  *
  * Socket#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EAGAIN.
+ * including Errno::EWOULDBLOCK.
  * 
  * === See
  * * Socket#accept
