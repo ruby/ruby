@@ -765,6 +765,8 @@ program		:  {
 			$$ = $2;
 			parser->result = dispatch1(program, $$);
 		    %*/
+			lex_p = lex_pbeg = lex_pend = 0;
+			lex_lastline = lex_nextline = 0;
 		    }
 		;
 
@@ -4851,6 +4853,8 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func)
     return str;
 }
 
+#define lex_goto_eol(parser) (parser->parser_lex_p = parser->parser_lex_pend)
+
 static inline int
 parser_nextc(struct parser_params *parser)
 {
@@ -4865,7 +4869,7 @@ parser_nextc(struct parser_params *parser)
 
 	    if (!lex_input || NIL_P(v = lex_getline(parser))) {
 		parser->eofp = Qtrue;
-		lex_lastline = 0;
+		lex_goto_eol(parser);
 		return -1;
 	    }
 	}
@@ -4918,7 +4922,6 @@ parser_pushback(struct parser_params *parser, int c)
     }
 }
 
-#define lex_goto_eol(parser) (parser->parser_lex_p = parser->parser_lex_pend)
 #define was_bol() (lex_p == lex_pbeg + 1)
 #define peek(c) (lex_p != lex_pend && (c) == *lex_p)
 
@@ -6064,14 +6067,14 @@ parser_yylex(struct parser_params *parser)
 		  if ((c = nextc()) != '.') {
 		      pushback(c);
 		      pushback('.');
-		    goto retry;
+		      goto retry;
 		  }
 	      }
 	      default:
 		--ruby_sourceline;
-	      case -1:		/* EOF no decrement*/
 		lex_nextline = lex_lastline;
-		lex_p = lex_pend;
+	      case -1:		/* EOF no decrement*/
+		lex_goto_eol(parser);
 #ifdef RIPPER
 		if (c != -1) {
 		    parser->tokp = lex_p;
@@ -7094,7 +7097,7 @@ parser_yylex(struct parser_params *parser)
       case '_':
 	if (was_bol() && whole_match_p("__END__", 7, 0)) {
 	    ruby__end__seen = 1;
-	    lex_lastline = 0;
+	    parser->eofp = Qtrue;
 #ifndef RIPPER
 	    return -1;
 #else

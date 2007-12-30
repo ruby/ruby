@@ -1,3 +1,10 @@
+Sun Dec 30 13:56:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (program): clear input strings after all process.
+
+	* parse.y (parser_nextc, parser_yylex): should not drop lex_lastline
+	  while lex_p is valid.  [ruby-dev:32896]
+
 Sun Dec 30 10:54:49 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: rm largefile.h.
