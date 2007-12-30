@@ -1,3 +1,7 @@
+Sun Dec 30 23:19:06 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* golf_prelude.rb (@@golf_hash): for performance improvement.
+
 Sun Dec 30 22:44:50 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (_valid_time?): I'm not sure to recommend such an

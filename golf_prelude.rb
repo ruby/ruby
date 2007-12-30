@@ -1,9 +1,9 @@
 SCRIPT_LINES__={}
 
 class Object
+  @@golf_hash = {}
   def method_missing m, *a, &b
-    r = /^#{m}/
-    t = (methods + private_methods).sort.find{|e|r=~e}
+    t = @@golf_hash[[m,self.class]] ||= (methods + private_methods).sort.find{|e|/^#{m}/=~e}
     t ? __send__(t, *a, &b) : super
   end
 
