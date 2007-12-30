@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.33 2007-12-22 14:41:34+09 tadf Exp $
+# $Id: date.rb,v 2.34 2007-12-30 21:45:27+09 tadf Exp $
 #++
 #
 # == Overview
@@ -673,9 +673,9 @@ class Date
     h   += 24 if h   < 0
     min += 60 if min < 0
     s   += 60 if s   < 0
-    return unless ((0..23) === h &&
-		   (0..59) === min &&
-		   (0..59) === s) ||
+    return unless ((0...24) === h &&
+		   (0...60) === min &&
+		   (0...60) === s) ||
 		  (24 == h &&
 		    0 == min &&
 		    0 == s)

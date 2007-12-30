@@ -1,3 +1,8 @@
+Sun Dec 30 22:48:37 2007  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (_valid_time?): I'm not sure to recommend such an
+	  expression.  but anyway it is acceptable now.  [ruby-core:14580]
+
 Fri Dec 28 16:36:33 2007  NARUSE, Yui  <naruse@airemix.com>
 
        * lib/resolv.rb (Resolv::DNS#each_address): now returns IPv6 address.
