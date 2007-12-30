@@ -166,7 +166,7 @@ EXEEXT = .exe
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_SO_NAME).def
-MINIRUBY = .\miniruby$(EXEEXT) $(MINIRUBYOPT)
+MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib $(MINIRUBYOPT)
 RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
 
 !if !defined(STACK)

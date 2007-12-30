@@ -1,3 +1,11 @@
+Mon Dec 31 06:50:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* trunk/common.mk: not use -I$(srcdir)/lib with $(MINIRUBY) for cross
+	  compiling.
+
+	* configure.in, {win,bcc}32/Makefile.sub (MINIRUBY): -I$(srcdir)/lib
+	  moved.
+
 Sun Dec 30 22:48:37 2007  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (_valid_time?): I'm not sure to recommend such an

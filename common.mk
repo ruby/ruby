@@ -294,7 +294,7 @@ test-all:
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" --basedir="$(TESTSDIR)" --runner=$(TESTUI) $(TESTS)
 
 extconf:
-	$(MINIRUBY) -I$(srcdir)/lib -run -e mkdir -- -p "$(EXTCONFDIR)"
+	$(MINIRUBY) -run -e mkdir -- -p "$(EXTCONFDIR)"
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
 $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
