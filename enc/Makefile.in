@@ -1,5 +1,7 @@
 encsrcdir = @srcdir@
 topdir = .
+prefix = @prefix@
+exec_prefix = @exec_prefix@
 libdir = @libdir@
 top_srcdir = $(encsrcdir:/enc=)
 srcdir = $(top_srcdir)
@@ -45,4 +47,4 @@ all:
 clean:
 
 distclean: clean
-	$(RM) enc.mk
+	@$(RM) enc.mk

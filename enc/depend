@@ -55,9 +55,4 @@ enc/<%=e%>.$(OBJEXT): $(srcdir)/enc/<%=e%>.c
 % end
 
 clean:
-	$(RM) $(ENCSOS)
-	$(RM) $(ENCDEFS)
-	$(RM) $(ENCOBJS)
-	$(RM) $(TRANSSOS)
-	$(RM) $(TRANSDEFS)
-	$(RM) $(TRANSOBJS)
+        @$(RM) $(ENCSOS) $(ENCDEFS) $(ENCOBJS) $(TRANSSOS) $(TRANSDEFS) $(TRANSOBJS)

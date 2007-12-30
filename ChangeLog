@@ -1,3 +1,13 @@
+Sun Dec 30 10:54:49 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: rm largefile.h.
+	
+	* common.mk: clean golf, conf*, preludes, and so on.
+	
+	* enc/depend: silent and ignore error for rm.
+
+	* enc/Makefile.in: should define prefix and exec_prefix.
+
 Sun Dec 30 06:31:11 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* encoding.c (Init_encoding): register Windows-31J and its alias.

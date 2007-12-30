@@ -304,7 +304,7 @@ clean: clean-ext clean-local clean-enc
 clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	@$(RM) *.inc
+	@$(RM) *.inc $(GOLFOBJS)
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) clean
 clean-enc:
@@ -312,9 +312,10 @@ clean-enc:
 
 distclean: distclean-ext distclean-local distclean-enc
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) config.h rbconfig.rb
-	@$(RM) config.cache config.log config.status
+	@$(RM) $(MKFILES) config.h rbconfig.rb yasmdata.rb
+	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output $(PREP)
+	@-$(RM) ext/ripper/y.output
 distclean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean
 #	-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h
@@ -324,7 +325,7 @@ distclean-enc: clean-enc
 
 realclean:: realclean-ext realclean-local realclean-enc
 realclean-local:: distclean-local
-	@$(RM) parse.c lex.c
+	@$(RM) parse.c lex.c revision.h
 realclean-ext::
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) realclean
 realclean-enc:: distclean-enc
@@ -676,6 +677,7 @@ prereq: incs srcs preludes
 
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
+PRELUDES = prelude.c miniprelude.c golf_prelude.c
 
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)

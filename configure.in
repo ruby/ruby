@@ -1788,6 +1788,7 @@ else
   tr -d '\015' < confdefs.h > "${config_h}"
 fi
 tr -d '\015' < largefile.h > confdefs.h
+rm largefile.h
 
 BUILTIN_ENCS=["`sed -n -e '/^BUILTIN_ENCS[ 	]*=/{' \
 	-e s/// -e :l -e '/\\\\$/N' -e 's/\\\\\\n/ /' -e 't l' -e p \
