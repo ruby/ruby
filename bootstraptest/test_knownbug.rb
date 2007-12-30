@@ -4,7 +4,8 @@
 #
 
 assert_normal_exit %q{
-  File.read("/dev/null").clone
+  null = File.exist?("/dev/null") ? "/dev/null" : "NUL" # maybe DOSISH
+  File.read(null).clone
 }, '[ruby-dev:32819] reported by Kazuhiro NISHIYAMA'
 
 assert_normal_exit %q{
