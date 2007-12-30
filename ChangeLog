@@ -1,3 +1,8 @@
+Sun Dec 30 17:43:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (Init_Encoding): registered rb_encoding differs from
+	  ONIG_ENCODINGs.
+
 Sun Dec 30 13:56:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (program): clear input strings after all process.
