@@ -765,8 +765,6 @@ program		:  {
 			$$ = $2;
 			parser->result = dispatch1(program, $$);
 		    %*/
-			lex_p = lex_pbeg = lex_pend = 0;
-			lex_lastline = lex_nextline = 0;
 		    }
 		;
 
@@ -4685,6 +4683,8 @@ yycompile0(VALUE arg, int tracing)
     compile_for_eval = 0;
 
     lex_strterm = 0;
+    lex_p = lex_pbeg = lex_pend = 0;
+    lex_lastline = lex_nextline = 0;
     if (parser->nerr) {
 	return 0;
     }

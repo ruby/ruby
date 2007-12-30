@@ -1,3 +1,8 @@
+Sun Dec 30 21:54:26 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (program, yycompile0): too early to drop lex_lastline in
+	  rules.
+
 Sun Dec 30 19:23:23 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bootstraptest/test_knownbug.rb: support DOSISH.
