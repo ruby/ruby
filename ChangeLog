@@ -1,3 +1,8 @@
+Sun Dec 30 23:48:00 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* golf_prelude.rb (String#/): define / as split, as association of
+	  Array#*.
+
 Sun Dec 30 23:19:06 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* golf_prelude.rb (@@golf_hash): for performance improvement.

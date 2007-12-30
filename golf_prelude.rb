@@ -28,3 +28,7 @@ class Integer
   alias each times
   include Enumerable
 end
+
+class String
+  alias / split
+end
