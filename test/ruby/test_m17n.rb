@@ -1917,4 +1917,106 @@ class TestM17N < Test::Unit::TestCase
       assert_equal(Encoding::ASCII_8BIT, v.encoding)
     }
   end
+
+  def test_str_sub
+    combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
+      if !s2.valid_encoding?
+        assert_raise(RegexpError) { Regexp.new(Regexp.escape(s2)) }
+        next
+      end
+      r2 = Regexp.new(Regexp.escape(s2))
+      [
+        [
+          "#{encdump s1}.sub(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { s1.sub(r2, s3) }
+        ],
+        [
+          "#{encdump s1}.sub(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { s1.sub(r2) { s3 } }
+        ],
+        [
+          "#{encdump s1}.gsub(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { s1.gsub(r2, s3) }
+        ],
+        [
+          "#{encdump s1}.gsub(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { s1.gsub(r2) { s3 } }
+        ]
+      ].each {|desc, doit|
+        if !str_enc_compatible?(s1, s2)
+          assert_raise(ArgumentError, desc) { doit.call }
+          next
+        end
+        if !s1.include?(s2)
+          assert_equal(s1, doit.call)
+          next
+        end
+        if !str_enc_compatible?(s1, s3)
+          assert_raise(ArgumentError, desc) { doit.call }
+          next
+        end
+        t = nil
+        assert_nothing_raised(desc) {
+          t = doit.call
+        }
+        if s2 == s3
+          assert_equal(s1, t, desc)
+        else
+          assert_not_equal(s1, t, desc)
+        end
+      }
+    }
+  end
+
+  def test_str_sub!
+    combination(STRINGS, STRINGS, STRINGS) {|s1, s2, s3|
+      if !s2.valid_encoding?
+        assert_raise(RegexpError) { Regexp.new(Regexp.escape(s2)) }
+        next
+      end
+      r2 = Regexp.new(Regexp.escape(s2))
+      [
+        [
+          "t=#{encdump s1}.dup;t.sub!(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { t=s1.dup; [t, t.sub!(r2, s3)] }
+        ],
+        [
+          "t=#{encdump s1}.dup;t.sub!(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { t=s1.dup; [t, t.sub!(r2) { s3 }] }
+        ],
+        [
+          "t=#{encdump s1}.dup;t.gsub!(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { t=s1.dup; [t, t.gsub!(r2, s3)] }
+        ],
+        [
+          "t=#{encdump s1}.dup;t.gsub!(Regexp.new(#{encdump s2}), #{encdump s3})",
+          lambda { t=s1.dup; [t, t.gsub!(r2) { s3 }] }
+        ]
+      ].each {|desc, doit|
+        if !str_enc_compatible?(s1, s2)
+          assert_raise(ArgumentError, desc) { doit.call }
+          next
+        end
+        if !s1.include?(s2)
+          assert_equal([s1, nil], doit.call)
+          next
+        end
+        if !str_enc_compatible?(s1, s3)
+          assert_raise(ArgumentError, desc) { doit.call }
+          next
+        end
+        t = ret = nil
+        assert_nothing_raised(desc) {
+          t, ret = doit.call
+        }
+        assert(ret)
+        if s2 == s3
+          assert_equal(s1, t, desc)
+        else
+          assert_not_equal(s1, t, desc)
+        end
+      }
+    }
+  end
+
 end
