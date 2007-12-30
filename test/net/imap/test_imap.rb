@@ -19,50 +19,60 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_imaps_unknown_ca
-    assert_raise(OpenSSL::SSL::SSLError) do
-      imaps_test do |port|
-        Net::IMAP.new("localhost",
-                      :port => port,
-                      :ssl => true)
+    if defined?(OpenSSL)
+      assert_raise(OpenSSL::SSL::SSLError) do
+        imaps_test do |port|
+          Net::IMAP.new("localhost",
+                        :port => port,
+                        :ssl => true)
+        end
       end
     end
   end
 
   def test_imaps_with_ca_file
-    assert_nothing_raised do
-      imaps_test do |port|
-        Net::IMAP.new("localhost",
-                      :port => port,
-                      :ssl => { :ca_file => CA_FILE })
+    if defined?(OpenSSL)
+      assert_nothing_raised do
+        imaps_test do |port|
+          Net::IMAP.new("localhost",
+                        :port => port,
+                        :ssl => { :ca_file => CA_FILE })
+        end
       end
     end
   end
 
   def test_imaps_verify_none
-    assert_nothing_raised do
-      imaps_test do |port|
-        Net::IMAP.new("localhost",
-                      :port => port,
-                      :ssl => { :verify_mode => OpenSSL::SSL::VERIFY_NONE })
+    if defined?(OpenSSL)
+      assert_nothing_raised do
+        imaps_test do |port|
+          Net::IMAP.new("localhost",
+                        :port => port,
+                        :ssl => { :verify_mode => OpenSSL::SSL::VERIFY_NONE })
+        end
       end
     end
   end
 
   def test_imaps_post_connection_check
-    assert_raise(OpenSSL::SSL::SSLError) do
-      imaps_test do |port|
-        Net::IMAP.new("127.0.0.1",
-                      :port => port,
-                      :ssl => { :ca_file => CA_FILE })
+    if defined?(OpenSSL)
+      assert_raise(OpenSSL::SSL::SSLError) do
+        imaps_test do |port|
+          Net::IMAP.new("127.0.0.1",
+                        :port => port,
+                        :ssl => { :ca_file => CA_FILE })
+        end
       end
     end
   end
 
   def test_starttls
-    starttls_test do |port|
-      imap = Net::IMAP.new("localhost", :port => port)
-      imap.starttls(:ca_file => CA_FILE)
-      imap
+    if defined?(OpenSSL)
+      starttls_test do |port|
+        imap = Net::IMAP.new("localhost", :port => port)
+        imap.starttls(:ca_file => CA_FILE)
+        imap
+      end
     end
   end
 
