@@ -14,18 +14,18 @@ class TestIONonblock < Test::Unit::TestCase
     w << "b"
     w.flush
     w << "a" * 4096
-    Thread.new {
-      Thread.pass
-      w.close
-    }
     result = ""
-    t = Thread.new {
-      while (Thread.pass; s = r.read(4096))
-        result << s
-      end
-    }
-    w.flush # assert_raise(IOError, "[ruby-dev:24985]") {w.flush}
     timeout(10) {
+      Thread.new {
+        Thread.pass
+        w.close
+      }
+      t = Thread.new {
+        while (Thread.pass; s = r.read(4096))
+          result << s
+        end
+      }
+      w.flush # assert_raise(IOError, "[ruby-dev:24985]") {w.flush}
       assert_nothing_raised {t.join}
     }
     assert_equal(4097, result.size)
