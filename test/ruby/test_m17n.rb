@@ -219,14 +219,14 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_string_mixed_unicode
-    assert_raise(SyntaxError) { eval(a(%{"\xc2\xa0\\u{6666}"})) }
-    assert_raise(SyntaxError) { eval(e(%{"\xc2\xa0\\u{6666}"})) }
-    assert_raise(SyntaxError) { eval(s(%{"\xc2\xa0\\u{6666}"})) }
-    assert_nothing_raised { eval(u(%{"\xc2\xa0\\u{6666}"})) }
-    assert_raise(SyntaxError) { eval(a(%{"\\u{6666}\xc2\xa0"})) }
-    assert_raise(SyntaxError) { eval(e(%{"\\u{6666}\xc2\xa0"})) }
-    assert_raise(SyntaxError) { eval(s(%{"\\u{6666}\xc2\xa0"})) }
-    assert_nothing_raised { eval(u(%{"\\u{6666}\xc2\xa0"})) }
+    assert_raise(SyntaxError) { eval(a(%{"\xc2\xa1\\u{6666}"})) }
+    assert_raise(SyntaxError) { eval(e(%{"\xc2\xa1\\u{6666}"})) }
+    assert_raise(SyntaxError) { eval(s(%{"\xc2\xa1\\u{6666}"})) }
+    assert_nothing_raised { eval(u(%{"\xc2\xa1\\u{6666}"})) }
+    assert_raise(SyntaxError) { eval(a(%{"\\u{6666}\xc2\xa1"})) }
+    assert_raise(SyntaxError) { eval(e(%{"\\u{6666}\xc2\xa1"})) }
+    assert_raise(SyntaxError) { eval(s(%{"\\u{6666}\xc2\xa1"})) }
+    assert_nothing_raised { eval(u(%{"\\u{6666}\xc2\xa1"})) }
   end
 
   def test_string_inspect
@@ -620,41 +620,41 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_regexp_mixed_unicode
-    assert_raise(SyntaxError) { eval(a(%{/\xc2\xa0\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\xc2\xa0\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\xc2\xa0\\u{6666}/})) }
-    assert_nothing_raised { eval(u(%{/\xc2\xa0\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}\xc2\xa0/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}\xc2\xa0/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}\xc2\xa0/})) }
-    assert_nothing_raised { eval(u(%{/\\u{6666}\xc2\xa0/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\xc2\xa1\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\xc2\xa1\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\xc2\xa1\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\xc2\xa1\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}\xc2\xa1/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}\xc2\xa1/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}\xc2\xa1/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}\xc2\xa1/})) }
 
-    assert_raise(SyntaxError) { eval(a(%{/\\xc2\\xa0\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\\xc2\\xa0\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\\xc2\\xa0\\u{6666}/})) }
-    assert_nothing_raised { eval(u(%{/\\xc2\\xa0\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}\\xc2\\xa0/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}\\xc2\\xa0/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}\\xc2\\xa0/})) }
-    assert_nothing_raised { eval(u(%{/\\u{6666}\\xc2\\xa0/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\xc2\\xa1\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\xc2\\xa1\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\xc2\\xa1\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\\xc2\\xa1\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}\\xc2\\xa1/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}\\xc2\\xa1/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}\\xc2\\xa1/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}\\xc2\\xa1/})) }
 
-    assert_raise(SyntaxError) { eval(a(%{/\xc2\xa0#{}\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\xc2\xa0#{}\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\xc2\xa0#{}\\u{6666}/})) }
-    assert_nothing_raised { eval(u(%{/\xc2\xa0#{}\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}#{}\xc2\xa0/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}#{}\xc2\xa0/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}#{}\xc2\xa0/})) }
-    assert_nothing_raised { eval(u(%{/\\u{6666}#{}\xc2\xa0/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\xc2\xa1#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\xc2\xa1#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\xc2\xa1#{}\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\xc2\xa1#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}#{}\xc2\xa1/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}#{}\xc2\xa1/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}#{}\xc2\xa1/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}#{}\xc2\xa1/})) }
 
-    assert_raise(SyntaxError) { eval(a(%{/\\xc2\\xa0#{}\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\\xc2\\xa0#{}\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\\xc2\\xa0#{}\\u{6666}/})) }
-    assert_nothing_raised { eval(u(%{/\\xc2\\xa0#{}\\u{6666}/})) }
-    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}#{}\\xc2\\xa0/})) }
-    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}#{}\\xc2\\xa0/})) }
-    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}#{}\\xc2\\xa0/})) }
-    assert_nothing_raised { eval(u(%{/\\u{6666}#{}\\xc2\\xa0/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\xc2\\xa1#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\xc2\\xa1#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\xc2\\xa1#{}\\u{6666}/})) }
+    assert_nothing_raised { eval(u(%{/\\xc2\\xa1#{}\\u{6666}/})) }
+    assert_raise(SyntaxError) { eval(a(%{/\\u{6666}#{}\\xc2\\xa1/})) }
+    assert_raise(SyntaxError) { eval(e(%{/\\u{6666}#{}\\xc2\\xa1/})) }
+    assert_raise(SyntaxError) { eval(s(%{/\\u{6666}#{}\\xc2\\xa1/})) }
+    assert_nothing_raised { eval(u(%{/\\u{6666}#{}\\xc2\\xa1/})) }
   end
 
   def test_str_allocate
