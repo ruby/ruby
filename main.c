@@ -33,9 +33,6 @@ main(int argc, char **argv, char **envp)
     {
 	RUBY_INIT_STACK;
 	ruby_init();
-#ifdef RUBY_MAIN_INIT
-	RUBY_MAIN_INIT();
-#endif
 	return ruby_run_node(ruby_options(argc, argv));
     }
 }

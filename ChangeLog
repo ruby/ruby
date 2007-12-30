@@ -1,3 +1,10 @@
+Mon Dec 31 07:39:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* main.c, goruby.c (RUBY_MAIN_INIT): removed.
+
+	* goruby.c (goruby_run_node): run after ruby_init_loadpath() so that
+	  require works, and protect the call.
+
 Mon Dec 31 06:50:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* trunk/common.mk: not use -I$(srcdir)/lib with $(MINIRUBY) for cross
