@@ -13,6 +13,11 @@
 #ifndef RUBY_ENCODING_H
 #define RUBY_ENCODING_H 1
 
+#ifdef HAVE_STDARG_PROTOTYPES
+# include <stdarg.h>
+#else
+# include <varargs.h>
+#endif
 #include "ruby/oniguruma.h"
 
 #define ENCODING_INLINE_MAX 1023
@@ -54,6 +59,8 @@ void rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long len, rb_encoding*);
+PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
+VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
 long rb_enc_strlen(const char*, const char*, rb_encoding*);
 char* rb_enc_nth(const char*, const char*, int, rb_encoding*);
 VALUE rb_obj_encoding(VALUE);

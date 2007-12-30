@@ -467,18 +467,14 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if (slen < 0) {
 			rb_raise(rb_eArgError, "invalid mbstring sequence");
 		    }
-		}
-		if (flags&FPREC) {
-		    if (prec < slen) {
+		    if ((flags&FPREC) && (prec < slen)) {
 			char *p = rb_enc_nth(RSTRING_PTR(str), RSTRING_END(str),
 					     prec, enc);
 			slen = prec;
 			len = p - RSTRING_PTR(str);
 		    }
-		}
-		/* need to adjust multi-byte string pos */
-		if (flags&FWIDTH) {
-		    if (width > slen) {
+		    /* need to adjust multi-byte string pos */
+		    if ((flags&FWIDTH) && (width > slen)) {
 			width -= slen;
 			if (!(flags&FMINUS)) {
 			    CHECK(width);
@@ -925,7 +921,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
 }
 
 VALUE
-rb_vsprintf(const char *fmt, va_list ap)
+rb_enc_vsprintf(rb_encoding *enc, const char *fmt, va_list ap)
 {
     rb_printf_buffer f;
     VALUE result;
@@ -934,6 +930,7 @@ rb_vsprintf(const char *fmt, va_list ap)
     f._bf._size = 0;
     f._w = 120;
     result = rb_str_buf_new(f._w);
+    if (enc) rb_enc_associate(result, enc);
     f._bf._base = (unsigned char *)result;
     f._p = (unsigned char *)RSTRING_PTR(result);
     RBASIC(result)->klass = 0;
@@ -943,6 +940,25 @@ rb_vsprintf(const char *fmt, va_list ap)
     rb_str_resize(result, (char *)f._p - RSTRING_PTR(result));
 
     return result;
+}
+
+VALUE
+rb_enc_sprintf(rb_encoding *enc, const char *format, ...)
+{
+    VALUE result;
+    va_list ap;
+
+    va_start(ap, format);
+    result = rb_enc_vsprintf(enc, format, ap);
+    va_end(ap);
+
+    return result;
+}
+
+VALUE
+rb_vsprintf(const char *fmt, va_list ap)
+{
+    return rb_enc_vsprintf(NULL, fmt, ap);
 }
 
 VALUE
