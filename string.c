@@ -5352,6 +5352,8 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
  *     str.force_encoding(encoding)   => str
  *
  *  Changes the encoding to +encoding+ and returns self.
+ *
+ *  If nil is given as +encoding+, "ASCII-8BIT" is used.
  */
 
 static VALUE
