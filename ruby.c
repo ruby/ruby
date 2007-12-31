@@ -969,6 +969,9 @@ process_options(VALUE arg)
 	if ((opt->enc_index = rb_enc_find_index(s)) < 0) {
 	    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
 	}
+	else if (rb_enc_dummy_p(rb_enc_from_index(opt->enc_index))) {
+	    rb_raise(rb_eRuntimeError, "dummy encoding is not acceptable - %s ", s);
+	}
     }
     if (opt->e_script) {
 	if (opt->enc_index >= 0)

@@ -1,3 +1,7 @@
+Tue Jan  1 01:04:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): rejects dummy encoding.
+
 Mon Dec 31 23:53:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options, process_options): delays finding encoding
