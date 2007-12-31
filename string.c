@@ -1738,7 +1738,7 @@ static VALUE get_pat(VALUE, int);
  *       ...
  *     end
  *      
- *  The retuen value is a value from block exection in this case.
+ *  The return value is a value from block execution in this case.
  */
 
 static VALUE
@@ -1940,7 +1940,7 @@ rb_str_succ_bang(VALUE str)
  *  Iterates through successive values, starting at <i>str</i> and
  *  ending at <i>other_str</i> inclusive, passing each value in turn to
  *  the block. The <code>String#succ</code> method is used to generate
- *  each value.  If optional second arguent excle is omitted or is <code>false</code>,
+ *  each value.  If optional second argument exclusive is omitted or is <code>false</code>,
  *  the last value will be included; otherwise it will be excluded.
  *     
  *     "a8".upto("b6") {|s| print s, ' ' }
@@ -2568,7 +2568,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	    enc = rb_enc_check(str, val);
 	    str_mod_check(str, sp, slen);
 	    if (bang) str_frozen_check(str);
-	    if (val == dest) { 	/* paranoid chack [ruby-dev:24827] */
+	    if (val == dest) { 	/* paranoid check [ruby-dev:24827] */
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
 	    rb_backref_set(match);
@@ -3000,7 +3000,7 @@ prefix_escape(VALUE str, int c, rb_encoding *enc)
  * call-seq:
  *   str.inspect   => string
  *
- * Returns a printable version of _str_, srrounded by quote marks,
+ * Returns a printable version of _str_, surrounded by quote marks,
  * with special characters escaped.
  *
  *    str = "hello"

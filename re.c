@@ -2317,7 +2317,7 @@ rb_reg_match2(VALUE re)
  *       ...
  *     end
  *      
- *  The retuen value is a value from block exection in this case.
+ *  The return value is a value from block execution in this case.
  */
 
 static VALUE
