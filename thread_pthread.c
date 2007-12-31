@@ -432,7 +432,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
 	else {
-	    if (tv == 0) {
+	    if (tv == 0 || ts.tv_sec < tvn.tv_sec /* overflow */ ) {
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		pthread_cond_wait(&th->native_thread_data.sleep_cond,
 				  &th->interrupt_lock);

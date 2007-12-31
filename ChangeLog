@@ -1,3 +1,9 @@
+Mon Dec 31 22:53:29 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread_pthread.c (native_sleep): timespec tv_sec may overflow on
+	  some platform.  a patch from zunda <zunda616e AT yahoo.co.jp> in 
+	  [ruby-dev:32904].
+
 Mon Dec 31 19:35:20 2007  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (IS_7BIT): removed.
