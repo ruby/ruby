@@ -1,3 +1,8 @@
+Mon Dec 31 23:53:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options, process_options): delays finding encoding
+	  until load_path is set.
+
 Mon Dec 31 23:27:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resize): embeds if ptr is null.  [ruby-dev:32819]
