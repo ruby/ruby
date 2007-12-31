@@ -924,25 +924,37 @@ rb_str_set_len(VALUE str, long len)
 VALUE
 rb_str_resize(VALUE str, long len)
 {
+    long slen;
+
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
 
     rb_str_modify(str);
-    if (len != RSTRING_LEN(str)) {
+    slen = RSTRING_LEN(str);
+    if (len != slen) {
 	if (STR_EMBED_P(str)) {
 	    char *ptr;
 	    if (len <= RSTRING_EMBED_LEN_MAX) {
 		STR_SET_EMBED_LEN(str, len);
-		RSTRING_PTR(str)[len] = '\0';
+		RSTRING(str)->as.ary[len] = '\0';
 		return str;
 	    }
 	    ptr = ALLOC_N(char,len+1);
-	    MEMCPY(ptr, RSTRING_PTR(str), char, RSTRING_LEN(str));
+	    MEMCPY(ptr, RSTRING(str)->as.ary, char, slen);
 	    RSTRING(str)->as.heap.ptr = ptr;
 	    STR_SET_NOEMBED(str);
 	}
-	else if (RSTRING_LEN(str) < len || RSTRING_LEN(str) - len > 1024) {
+	else if (len <= RSTRING_EMBED_LEN_MAX) {
+	    char *ptr = RSTRING(str)->as.heap.ptr;
+	    STR_SET_EMBED(str);
+	    MEMCPY(RSTRING(str)->as.ary, ptr, char, len);
+	    RSTRING(str)->as.ary[len] = '\0';
+	    STR_SET_EMBED_LEN(str, len);
+	    xfree(ptr);
+	    return str;
+	}
+	else if (slen < len || slen - len > 1024) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len+1);
 	}
 	if (!STR_NOCAPA_P(str)) {

@@ -368,6 +368,9 @@ class TestString < Test::Unit::TestCase
         assert_equal(a.tainted?, b.tainted?)
       end
     end
+
+    null = File.exist?("/dev/null") ? "/dev/null" : "NUL" # maybe DOSISH
+    assert_equal("", File.read(null).clone, '[ruby-dev:32819] reported by Kazuhiro NISHIYAMA')
   end
 
   def test_concat

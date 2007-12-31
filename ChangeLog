@@ -1,3 +1,7 @@
+Mon Dec 31 23:27:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): embeds if ptr is null.  [ruby-dev:32819]
+
 Mon Dec 31 23:17:22 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_service):
