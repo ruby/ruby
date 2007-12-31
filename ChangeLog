@@ -1,3 +1,18 @@
+Mon Dec 31 19:35:20 2007  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (IS_7BIT): removed.
+	  (single_byte_optimizable): new function to test optimizationability
+	  using single byte string.
+	  (str_strlen): use single_byte_optimizable instead of
+	  is_ascii_string.
+	  (str_nth): rename argument: asc -> singlebyte.
+	  (str_offset): ditto.
+	  (rb_str_substr): use single_byte_optimizable instead of IS_7BIT.
+	  (rb_str_index): ditto.
+	  (rb_str_rindex): ditto.
+	  (rb_str_splice): ditto.
+	  (rb_str_justify): ditto.
+
 Mon Dec 31 07:39:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* main.c, goruby.c (RUBY_MAIN_INIT): removed.

@@ -93,8 +93,24 @@ VALUE rb_cSymbol;
 } while (0)
 
 #define is_ascii_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)
-#define IS_7BIT(str) (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
 #define is_broken_string(str) (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN)
+
+static int
+single_byte_optimizable(VALUE str)
+{
+    rb_encoding *enc = rb_enc_get(str);
+
+    if (rb_enc_mbminlen(enc) == 1 && rb_enc_mbmaxlen(enc) == 1)
+        return 1;
+
+    /* Not precise.  It may be ENC_CODERANGE_UNKNOWN. */
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
+        return 1;
+
+    /* Not precise.  Possibly single byte.
+     * "\xa1" in Shift_JIS for example. */
+    return 0;
+}
 
 VALUE rb_fs;
 
@@ -467,7 +483,7 @@ str_strlen(VALUE str, rb_encoding *enc)
 {
     long len;
 
-    if (is_ascii_string(str)) return RSTRING_LEN(str);
+    if (single_byte_optimizable(str)) return RSTRING_LEN(str);
     if (!enc) enc = rb_enc_get(str);
     len = rb_enc_strlen(RSTRING_PTR(str), RSTRING_END(str), enc);
     if (len < 0) {
@@ -745,9 +761,9 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
 }
 
 static char*
-str_nth(char *p, char *e, int nth, rb_encoding *enc, int asc)
+str_nth(char *p, char *e, int nth, rb_encoding *enc, int singlebyte)
 {
-    if (asc)
+    if (singlebyte)
 	p += nth;
     else
 	p = rb_enc_nth(p, e, nth, enc);
@@ -757,9 +773,9 @@ str_nth(char *p, char *e, int nth, rb_encoding *enc, int asc)
 }
 
 static int
-str_offset(char *p, char *e, int nth, rb_encoding *enc, int asc)
+str_offset(char *p, char *e, int nth, rb_encoding *enc, int singlebyte)
 {
-    const char *pp = str_nth(p, e, nth, enc, asc);
+    const char *pp = str_nth(p, e, nth, enc, singlebyte);
     if (!pp) return e - p;
     return pp - p;
 }
@@ -806,7 +822,7 @@ rb_str_substr(VALUE str, long beg, long len)
     rb_encoding *enc = rb_enc_get(str);
     VALUE str2;
     char *p, *s = RSTRING_PTR(str), *e = s + RSTRING_LEN(str);
-    int asc = IS_7BIT(str);
+    int singlebyte = single_byte_optimizable(str);
 
     if (len < 0) return Qnil;
     if (!RSTRING_LEN(str)) {
@@ -835,7 +851,7 @@ rb_str_substr(VALUE str, long beg, long len)
     if (len == 0) {
 	p = 0;
     }
-    else if ((p = str_nth(s, e, beg, enc, asc)) == e) {
+    else if ((p = str_nth(s, e, beg, enc, singlebyte)) == e) {
 	len = 0;
     }
     else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
@@ -846,7 +862,7 @@ rb_str_substr(VALUE str, long beg, long len)
 	    len *= rb_enc_mbmaxlen(enc);
     }
     else {
-	len = str_offset(p, e, len, enc, asc);
+	len = str_offset(p, e, len, enc, singlebyte);
     }
   sub:
     str2 = rb_str_new5(str, p, len);
@@ -1476,7 +1492,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     if (len - offset < slen) return -1;
     s = RSTRING_PTR(str);
     if (offset) {
-	offset = str_offset(s, RSTRING_END(str), offset, enc, IS_7BIT(str));
+	offset = str_offset(s, RSTRING_END(str), offset, enc, single_byte_optimizable(str));
 	s += offset;
     }
     if (slen == 0) return offset;
@@ -1573,7 +1589,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     long len, slen;
     char *s, *sbeg, *e, *t;
     rb_encoding *enc;
-    int asc = IS_7BIT(str);
+    int singlebyte = single_byte_optimizable(str);
 
     enc = rb_enc_check(str, sub);
     if (is_broken_string(sub)) {
@@ -1594,7 +1610,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
     t = RSTRING_PTR(sub);
     slen = RSTRING_LEN(sub);
     for (;;) {
-	s = str_nth(sbeg, e, pos, enc, asc);
+	s = str_nth(sbeg, e, pos, enc, singlebyte);
 	if (!s) return -1;
 	if (memcmp(s, t, slen) == 0) {
 	    return pos;
@@ -2135,7 +2151,7 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
     long slen;
     char *p, *e;
     rb_encoding *enc;
-    int asc = IS_7BIT(str);
+    int singlebyte = single_byte_optimizable(str);
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
 
@@ -2157,9 +2173,9 @@ rb_str_splice(VALUE str, long beg, long len, VALUE val)
     if (slen < len || slen < beg + len) {
 	len = slen - beg;
     }
-    p = str_nth(RSTRING_PTR(str), RSTRING_END(str), beg, enc, asc);
+    p = str_nth(RSTRING_PTR(str), RSTRING_END(str), beg, enc, singlebyte);
     if (!p) p = RSTRING_END(str);
-    e = str_nth(p, RSTRING_END(str), len, enc, asc);
+    e = str_nth(p, RSTRING_END(str), len, enc, singlebyte);
     if (!e) e = RSTRING_END(str);
     /* error check */
     beg = p - RSTRING_PTR(str);	/* physical position */
@@ -5069,7 +5085,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     char *p, *f = " ";
     long n, llen, rlen;
     volatile VALUE pad;
-    int asc = 1;
+    int singlebyte = 1;
 
     rb_scan_args(argc, argv, "11", &w, &pad);
     enc = rb_enc_get(str);
@@ -5080,7 +5096,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	f = RSTRING_PTR(pad);
 	flen = RSTRING_LEN(pad);
 	fclen = str_strlen(pad, enc);
-	asc = is_ascii_string(pad);
+	singlebyte = single_byte_optimizable(pad);
 	if (flen == 0) {
 	    rb_raise(rb_eArgError, "zero width padding");
 	}
@@ -5103,7 +5119,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	    llen -= fclen;
 	}
 	else {
-	    char *fp = str_nth(f, f+flen, llen, enc, asc);
+	    char *fp = str_nth(f, f+flen, llen, enc, singlebyte);
 	    n = fp - f;
 	    memcpy(p,f,n);
 	    p+=n;
@@ -5123,7 +5139,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	    rlen -= fclen;
 	}
 	else {
-	    char *fp = str_nth(f, f+flen, rlen, enc, asc);
+	    char *fp = str_nth(f, f+flen, rlen, enc, singlebyte);
 	    n = fp - f;
 	    memcpy(p,f,n);
 	    p+=n;
