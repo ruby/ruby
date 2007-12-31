@@ -837,7 +837,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
   sprint_exit:
-    /* XXX - We cannot validiate the number of arguments if (digit)$ style used.
+    /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
     if (posarg >= 0 && nextarg < argc) {
 	const char *mesg = "too many arguments for format string";
