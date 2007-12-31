@@ -4,7 +4,7 @@
 #
 
 assert_normal_exit %q{
-  STDERR.reopen("/dev/null") if File.exist? "/dev/null" and File.writable? "/dev/null"
+  STDERR.reopen(STDOUT)
   class Foo
      def self.add_method
        class_eval("def some-bad-name; puts 'hello' unless @some_variable.some_function(''); end")
