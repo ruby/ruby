@@ -1112,8 +1112,8 @@ minmax_ii(VALUE i, VALUE *memo)
  *     enum.minmax                   => [min,max]
  *     enum.minmax {|a,b| block }    => [min,max]
  *  
- *  Returns two elements array which contains the mininum and the
- *  maxinum value in the enumerable.  The first form assumes all
+ *  Returns two elements array which contains the minimum and the
+ *  maximum value in the enumerable.  The first form assumes all
  *  objects implement <code>Comparable</code>; the second uses the
  *  block to return <em>a <=> b</em>.
  *     
@@ -1255,7 +1255,7 @@ minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
  *     enum.minmax_by {| obj| block }   => [min, max]
  *  
  *  Returns two elements array array containing the objects in
- *  <i>enum</i> that gives the minmum and maximum values respectively
+ *  <i>enum</i> that gives the minimum and maximum values respectively
  *  from the given block.
  *     
  *     a = %w(albatross dog horse)

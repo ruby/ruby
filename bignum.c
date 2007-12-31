@@ -470,7 +470,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	}
 	break;
     }
-    if (*str == '0') {		/* squeeze preceeding 0s */
+    if (*str == '0') {		/* squeeze preceding 0s */
 	while (*++str == '0');
 	if (!(c = *str) || ISSPACE(c)) --str;
     }

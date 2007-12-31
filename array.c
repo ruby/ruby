@@ -2819,7 +2819,7 @@ flatten(VALUE ary, int level, int *modified)
  *  Flattens _self_ in place.
  *  Returns <code>nil</code> if no modifications were made (i.e.,
  *  <i>array</i> contains no subarrays.)  If the optional <i>level</i>
- *  argument determins the level of recursion to flatten.
+ *  argument determines the level of recursion to flatten.
  *     
  *     a = [ 1, 2, [3, [4, 5] ] ]
  *     a.flatten!   #=> [1, 2, 3, 4, 5]
@@ -2854,7 +2854,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  Returns a new array that is a one-dimensional flattening of this
  *  array (recursively). That is, for every element that is an array,
  *  extract its elements into the new array.  If the optional
- *  <i>level</i> argument determins the level of recursion to flatten.
+ *  <i>level</i> argument determines the level of recursion to flatten.
  *     
  *     s = [ 1, 2, 3 ]           #=> [1, 2, 3]
  *     t = [ 4, 5, 6, [7, 8] ]   #=> [4, 5, 6, [7, 8]]

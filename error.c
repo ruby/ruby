@@ -667,7 +667,7 @@ name_err_name(VALUE self)
  * call-seq:
  *  name_error.to_s   => string
  *
- * Produce a nicely-formated string representing the +NameError+.
+ * Produce a nicely-formatted string representing the +NameError+.
  */
 
 static VALUE
@@ -993,7 +993,7 @@ errno_missing(VALUE self, VALUE id)
 }
 
 /*
- *  Descendents of class <code>Exception</code> are used to communicate
+ *  Descendants of class <code>Exception</code> are used to communicate
  *  between <code>raise</code> methods and <code>rescue</code>
  *  statements in <code>begin/end</code> blocks. <code>Exception</code>
  *  objects carry information about the exception---its type (the

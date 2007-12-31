@@ -2549,7 +2549,7 @@ fix_lt(VALUE x, VALUE y)
  *   fix <= other     => true or false
  *
  * Returns <code>true</code> if the value of <code>fix</code> is
- * less thanor equal to that of <code>other</code>.
+ * less than or equal to that of <code>other</code>.
  */
 
 static VALUE

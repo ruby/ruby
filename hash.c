@@ -1536,7 +1536,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *  Adds the contents of <i>other_hash</i> to <i>hsh</i>.  If no
  *  block is specified entries with duplicate keys are overwritten
  *  with the values from <i>other_hash</i>, otherwise the value
- *  of each duplicate key is detemined by calling the block with
+ *  of each duplicate key is determined by calling the block with
  *  the key, its value in <i>hsh</i> and its value in <i>other_hash</i>.
  *
  *     h1 = { "a" => 100, "b" => 200 }
@@ -1661,7 +1661,7 @@ rb_hash_rassoc(VALUE hash, VALUE obj)
  *  hash. That is, for every key or value that is an array, extract
  *  its elements into the new array.  Unlike Array#flatten, this
  *  method does not flatten recursively by default.  If the optional
- *  <i>level</i> argument determins the level of recursion to flatten.
+ *  <i>level</i> argument determines the level of recursion to flatten.
  *
  *     a =  {1=> "one", 2 => [2,"two"], 3 => "three"}
  *     a.flatten    # => [1, "one", 2, [2, "two"], 3, "three"]
