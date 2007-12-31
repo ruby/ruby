@@ -100,9 +100,6 @@ rb_to_encoding(VALUE enc)
     if (NIL_P(enc)) return 0;
     idx = enc_check_encoding(enc);
     if (idx >= 0) return RDATA(enc)->data;
-    if (NIL_P(enc = rb_check_string_type(enc))) {
-	return 0;
-    }
     if ((idx = rb_enc_find_index(StringValueCStr(enc))) < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
     }

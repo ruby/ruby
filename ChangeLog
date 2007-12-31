@@ -1,3 +1,8 @@
+Tue Jan  1 01:29:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_to_encoding): raises for non-nil, non-encoding,
+	  non-string object.  [ruby-core:14634]
+
 Tue Jan  1 01:04:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): rejects dummy encoding.
