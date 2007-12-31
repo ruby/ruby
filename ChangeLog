@@ -1,3 +1,11 @@
+Mon Dec 31 23:17:22 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_service):
+	  call do_XXX which corespond with request method.
+	  (WEBrick::HTTPProxyServer#do_CONNECT,do_GET,do_POST,do_HEAD): added.
+
+	* test/webrick/test_httpproxy.rb: add test for WEBrick::HTTPProxyServer.
+
 Mon Dec 31 22:53:29 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread_pthread.c (native_sleep): timespec tv_sec may overflow on

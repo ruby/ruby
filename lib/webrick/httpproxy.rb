@@ -23,6 +23,16 @@ module WEBrick
     alias gets read
   end
 
+  FakeProxyURI = Object.new
+  class << FakeProxyURI
+    def method_missing(meth, *args)
+      if %w(scheme host port path query userinfo).member?(meth.to_s)
+        return nil
+      end
+      super
+    end
+  end
+
   class HTTPProxyServer < HTTPServer
     def initialize(config={}, default=Config::HTTP)
       super(config, default)
@@ -32,7 +42,7 @@ module WEBrick
 
     def service(req, res)
       if req.request_method == "CONNECT"
-        proxy_connect(req, res)
+        do_CONNECT(req, res)
       elsif req.unparsed_uri =~ %r!^http://!
         proxy_service(req, res)
       else
@@ -47,125 +57,32 @@ module WEBrick
       req.header.delete("proxy-authorization")
     end
 
-    # Some header fields shuold not be transfered.
-    HopByHop = %w( connection keep-alive proxy-authenticate upgrade
-                   proxy-authorization te trailers transfer-encoding )
-    ShouldNotTransfer = %w( set-cookie proxy-connection )
-    def split_field(f) f ? f.split(/,\s+/).collect{|i| i.downcase } : [] end
-
-    def choose_header(src, dst)
-      connections = split_field(src['connection'])
-      src.each{|key, value|
-        key = key.downcase
-        if HopByHop.member?(key)          || # RFC2616: 13.5.1
-           connections.member?(key)       || # RFC2616: 14.10
-           ShouldNotTransfer.member?(key)    # pragmatics
-          @logger.debug("choose_header: `#{key}: #{value}'")
-          next
-        end
-        dst[key] = value
-      }
-    end
-
-    # Net::HTTP is stupid about the multiple header fields.
-    # Here is workaround:
-    def set_cookie(src, dst)
-      if str = src['set-cookie']
-        cookies = []
-        str.split(/,\s*/).each{|token|
-          if /^[^=]+;/o =~ token
-            cookies[-1] << ", " << token
-          elsif /=/o =~ token
-            cookies << token
-          else
-            cookies[-1] << ", " << token
-          end
-        }
-        dst.cookies.replace(cookies)
-      end
-    end
-
-    def set_via(h)
-      if @config[:ProxyVia]
-        if  h['via']
-          h['via'] << ", " << @via
-        else
-          h['via'] = @via
-        end
-      end
-    end
-
     def proxy_uri(req, res)
-      @config[:ProxyURI]
+      # should return upstream proxy server's URI
+      return @config[:ProxyURI]
     end
 
     def proxy_service(req, res)
       # Proxy Authentication
       proxy_auth(req, res)      
 
-      # Create Request-URI to send to the origin server
-      uri  = req.request_uri
-      path = uri.path.dup
-      path << "?" << uri.query if uri.query
-
-      # Choose header fields to transfer
-      header = Hash.new
-      choose_header(req, header)
-      set_via(header)
-
-      # select upstream proxy server
-      if proxy = proxy_uri(req, res)
-        proxy_host = proxy.host
-        proxy_port = proxy.port
-        if proxy.userinfo
-          credentials = "Basic " + [proxy.userinfo].pack("m").delete("\n")
-          header['proxy-authorization'] = credentials
-        end
-      end
-
-      response = nil
       begin
-        http = Net::HTTP.new(uri.host, uri.port, proxy_host, proxy_port)
-        http.start{
-          if @config[:ProxyTimeout]
-            ##################################   these issues are 
-            http.open_timeout = 30   # secs  #   necessary (maybe bacause
-            http.read_timeout = 60   # secs  #   Ruby's bug, but why?)
-            ##################################
-          end
-          case req.request_method
-          when "GET"  then response = http.get(path, header)
-          when "POST" then response = http.post(path, req.body || "", header)
-          when "HEAD" then response = http.head(path, header)
-          else
-            raise HTTPStatus::MethodNotAllowed,
-              "unsupported method `#{req.request_method}'."
-          end
-        }
+        self.send("do_#{req.request_method}", req, res)
+      rescue NoMethodError
+        raise HTTPStatus::MethodNotAllowed,
+          "unsupported method `#{req.request_method}'."
       rescue => err
         logger.debug("#{err.class}: #{err.message}")
         raise HTTPStatus::ServiceUnavailable, err.message
       end
-  
-      # Persistent connction requirements are mysterious for me.
-      # So I will close the connection in every response.
-      res['proxy-connection'] = "close"
-      res['connection'] = "close"
-
-      # Convert Net::HTTP::HTTPResponse to WEBrick::HTTPProxy
-      res.status = response.code.to_i
-      choose_header(response, res)
-      set_cookie(response, res)
-      set_via(res)
-      res.body = response.body
 
       # Process contents
       if handler = @config[:ProxyContentHandler]
         handler.call(req, res)
       end
     end
-
-    def proxy_connect(req, res)
+  
+    def do_CONNECT(req, res)
       # Proxy Authentication
       proxy_auth(req, res)
 
@@ -245,8 +162,127 @@ module WEBrick
       raise HTTPStatus::EOFError
     end
 
+    def do_GET(req, res)
+      perform_proxy_request(req, res) do |http, path, header|
+        http.get(path, header)
+      end
+    end
+
+    def do_HEAD(req, res)
+      perform_proxy_request(req, res) do |http, path, header|
+        http.head(path, header)
+      end
+    end
+
+    def do_POST(req, res)
+      perform_proxy_request(req, res) do |http, path, header|
+        http.post(path, req.body || "", header)
+      end
+    end
+
     def do_OPTIONS(req, res)
       res['allow'] = "GET,HEAD,POST,OPTIONS,CONNECT"
+    end
+
+    private
+
+    # Some header fields shuold not be transfered.
+    HopByHop = %w( connection keep-alive proxy-authenticate upgrade
+                   proxy-authorization te trailers transfer-encoding )
+    ShouldNotTransfer = %w( set-cookie proxy-connection )
+    def split_field(f) f ? f.split(/,\s+/).collect{|i| i.downcase } : [] end
+
+    def choose_header(src, dst)
+      connections = split_field(src['connection'])
+      src.each{|key, value|
+        key = key.downcase
+        if HopByHop.member?(key)          || # RFC2616: 13.5.1
+           connections.member?(key)       || # RFC2616: 14.10
+           ShouldNotTransfer.member?(key)    # pragmatics
+          @logger.debug("choose_header: `#{key}: #{value}'")
+          next
+        end
+        dst[key] = value
+      }
+    end
+
+    # Net::HTTP is stupid about the multiple header fields.
+    # Here is workaround:
+    def set_cookie(src, dst)
+      if str = src['set-cookie']
+        cookies = []
+        str.split(/,\s*/).each{|token|
+          if /^[^=]+;/o =~ token
+            cookies[-1] << ", " << token
+          elsif /=/o =~ token
+            cookies << token
+          else
+            cookies[-1] << ", " << token
+          end
+        }
+        dst.cookies.replace(cookies)
+      end
+    end
+
+    def set_via(h)
+      if @config[:ProxyVia]
+        if  h['via']
+          h['via'] << ", " << @via
+        else
+          h['via'] = @via
+        end
+      end
+    end
+
+    def setup_proxy_header(req, res)
+      # Choose header fields to transfer
+      header = Hash.new
+      choose_header(req, header)
+      set_via(header)
+      return header
+    end
+
+    def setup_upstream_proxy_authentication(req, res, header)
+      if upstream = proxy_uri(req, res)
+        if upstream.userinfo
+          header['proxy-authorization'] =
+            "Basic " + [upstream.userinfo].pack("m").delete("\n")
+        end
+        return upstream
+      end
+      return FakeProxyURI
+    end
+
+    def perform_proxy_request(req, res)
+      uri = req.request_uri
+      path = uri.path.dup
+      path << "?" << uri.query if uri.query
+      header = setup_proxy_header(req, res)
+      upstream = setup_upstream_proxy_authentication(req, res, header)
+      response = nil
+
+      http = Net::HTTP.new(uri.host, uri.port, upstream.host, upstream.port)
+      http.start do
+        if @config[:ProxyTimeout]
+          ##################################   these issues are 
+          http.open_timeout = 30   # secs  #   necessary (maybe bacause
+          http.read_timeout = 60   # secs  #   Ruby's bug, but why?)
+          ##################################
+        end
+        response = yield(http, path, header)
+      end
+
+      # Persistent connction requirements are mysterious for me.
+      # So I will close the connection in every response.
+      res['proxy-connection'] = "close"
+      res['connection'] = "close"
+
+      # Convert Net::HTTP::HTTPResponse to WEBrick::HTTPResponse
+      res.status = response.code.to_i
+      choose_header(response, res)
+      set_cookie(response, res)
+      set_via(res)
+      res.body = response.body
     end
   end
 end

@@ -17,16 +17,20 @@ module TestWEBrick
   def start_server(klass, config={}, &block)
     server = klass.new({
       :BindAddress => "127.0.0.1", :Port => 0,
+      :ShutdownSocketWithoutClose =>true,
+      :ServerType => Thread,
       :Logger => WEBrick::Log.new(NullWriter),
       :AccessLog => [[NullWriter, ""]]
     }.update(config))
     begin
-      thread = Thread.start{ server.start }
+      server.start
       addr = server.listeners[0].addr
       block.yield([server, addr[3], addr[1]])
     ensure
-      server.stop
-      thread.join
+      server.shutdown
+      until server.status == :Stop
+        sleep 0.1
+      end
     end
   end
 
