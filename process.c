@@ -1346,7 +1346,7 @@ proc_syswait(VALUE pid)
  * process exits with +EXIT_SUCCESS+ when it returned zero.
  *
  * In the case of the function is called and returns non-zero value,
- * the child process exits with non-+EXIT_SUCCESS+ value (normaly
+ * the child process exits with non-+EXIT_SUCCESS+ value (normally
  * 127).  And, on the platforms where +FD_CLOEXEC+ is available,
  * +errno+ is propagated to the parent process, and this function
  * returns -1 in the parent process.  On the other platforms, just
@@ -1916,7 +1916,7 @@ proc_setpgrp(void)
     rb_secure(2);
   /* check for posix setpgid() first; this matches the posix */
   /* getpgrp() above.  It appears that configure will set SETPGRP_VOID */
-  /* even though setpgrp(0,0) would be prefered. The posix call avoids */
+  /* even though setpgrp(0,0) would be preferred. The posix call avoids */
   /* this confusion. */
 #ifdef HAVE_SETPGID
     if (setpgid(0,0) < 0) rb_sys_fail(0);
