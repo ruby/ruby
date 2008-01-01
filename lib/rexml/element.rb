@@ -296,7 +296,7 @@ module REXML
       raise "First argument must be either an element name, or an Element object" if element.nil?
       el = @elements.add(element)
       attrs.each do |key, value|
-        el.attributes[key]=Attribute.new(key,value,self)
+        el.attributes[key]=value
       end	if attrs.kind_of? Hash
       el
     end
@@ -552,7 +552,11 @@ module REXML
 
     def attribute( name, namespace=nil )
       prefix = nil
-      prefix = namespaces.index(namespace) if namespace
+      if namespaces.respond_to? :key
+        prefix = namespaces.key(namespace) if namespace
+      else
+        prefix = namespaces.index(namespace) if namespace
+      end
       prefix = nil if prefix == 'xmlns'
       attributes.get_attribute( "#{prefix ? prefix + ':' : ''}#{name}" )
     end
@@ -704,7 +708,6 @@ module REXML
     # A private helper method
     def each_with_something( test, max=0, name=nil )
       num = 0
-      child=nil
       @elements.each( name ){ |child|
         yield child if test.call(child) and num += 1
         return if max>0 and num == max
@@ -754,7 +757,6 @@ module REXML
         raise "index (#{index}) must be >= 1" if index < 1
         name = literalize(name) if name
         num = 0
-        child = nil
         @element.find { |child|
           child.kind_of? Element and
           (name.nil? ? true : child.has_name?( name )) and 
@@ -1217,7 +1219,8 @@ module REXML
     def get_attribute_ns(namespace, name)
       each_attribute() { |attribute|
         if name == attribute.name &&
-          namespace == attribute.namespace()
+          namespace == attribute.namespace() &&
+          ( !namespace.empty? || !attribute.fully_expanded_name.index(':') )
           return attribute
         end
       }

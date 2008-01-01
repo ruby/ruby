@@ -117,7 +117,6 @@ module REXML
       unless @children.empty?
         next_indent = indent + 1
         output << ' ['
-        child = nil    # speed
         @children.each { |child|
           output << "\n"
           f.write( child, output )

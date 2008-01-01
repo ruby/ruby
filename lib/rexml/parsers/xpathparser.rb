@@ -332,12 +332,12 @@ module REXML
           predicates << expr[1..-2] if expr
         end
         #puts "PREDICATES = #{predicates.inspect}"
-        predicates.each{ |expr| 
-          #puts "ORING #{expr}"
+        predicates.each{ |pred| 
+          #puts "ORING #{pred}"
           preds = []
           parsed << :predicate
           parsed << preds
-          OrExpr(expr, preds) 
+          OrExpr(pred, preds) 
         }
         #puts "PREDICATES = #{predicates.inspect}"
         path

@@ -59,6 +59,9 @@ module REXML
         @to_utf = true
       else
         @to_utf = false
+        if @buffer.respond_to? :force_encoding
+          @buffer.force_encoding Encoding::UTF_8
+        end
       end
     end
 
@@ -147,13 +150,13 @@ module REXML
       str = @source.read( 2 )
       if encoding
         self.encoding = encoding
-      elsif 0xfe == str[0] && 0xff == str[1]
+      elsif str[0,2] == "\xfe\xff"
         @line_break = "\000>"
-      elsif 0xff == str[0] && 0xfe == str[1]
+      elsif str[0,2] == "\xff\xfe"
         @line_break = ">\000"
-      elsif 0xef == str[0] && 0xbb == str[1]
+      elsif str[0,2] == "\xef\xbb"
         str += @source.read(1)
-        str = '' if (0xbf == str[2])
+        str = '' if (str[2,1] == "\xBF")
         @line_break = ">"
       else
         @line_break = ">"
@@ -193,6 +196,9 @@ module REXML
         str = @source.readline(@line_break)
         str = decode(str) if @to_utf and str 
         @buffer << str
+        if not @to_utf and @buffer.respond_to? :force_encoding
+          @buffer.force_encoding Encoding::UTF_8
+        end
       rescue Exception, NameError
         @source = nil
       end

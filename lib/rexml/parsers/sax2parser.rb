@@ -149,17 +149,26 @@ module REXML
 						procs = get_procs( :end_prefix_mapping, event[1] )
 						listeners = get_listeners( :end_prefix_mapping, event[1] )
 						if procs or listeners
-							namespace_mapping.each do |prefix, uri|
+							namespace_mapping.each do |ns_prefix, ns_uri|
 								# notify observers of namespaces
-								procs.each { |ob| ob.call( prefix ) } if procs
-								listeners.each { |ob| ob.end_prefix_mapping(prefix) } if listeners
+								procs.each { |ob| ob.call( ns_prefix ) } if procs
+								listeners.each { |ob| ob.end_prefix_mapping(ns_prefix) } if listeners
 							end
 						end
 					when :text
             #normalized = @parser.normalize( event[1] )
             #handle( :characters, normalized )
             copy = event[1].clone
-            @entities.each { |key, value| copy = copy.gsub("&#{key};", value) }
+
+            esub = proc { |match| 
+              if @entities.has_key?($1)
+                @entities[$1].gsub(Text::REFERENCE, &esub)
+              else
+                match
+              end
+            }
+
+            copy.gsub!( Text::REFERENCE, &esub )
             copy.gsub!( Text::NUMERICENTITY ) {|m|
               m=$1
               m = "0#{m}" if m[0] == ?x

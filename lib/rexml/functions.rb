@@ -256,9 +256,15 @@ module REXML
         end
       }
 
-      string(string).unpack('U*').collect { |c|
-        if map.has_key? c then map[c] else c end
-      }.compact.pack('U*')
+      if ''.respond_to? :chars
+        string(string).chars.collect { |c|
+          if map.has_key? c then map[c] else c end
+        }.compact.join
+      else
+        string(string).unpack('U*').collect { |c|
+          if map.has_key? c then map[c] else c end
+        }.compact.pack('U*')
+      end
     end
 
     # UNTESTED

@@ -31,6 +31,7 @@ module REXML
         @level = 0
         @ie_hack = ie_hack
         @width = 80
+        @compact = false
       end
 
       protected

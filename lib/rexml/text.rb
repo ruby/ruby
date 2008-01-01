@@ -308,37 +308,24 @@ module REXML
 
     # Unescapes all possible entities
     def Text::unnormalize( string, doctype=nil, filter=nil, illegal=nil )
-      rv = string.clone
-      rv.gsub!( /\r\n?/, "\n" )
-      matches = rv.scan( REFERENCE )
-      return rv if matches.size == 0
-      rv.gsub!( NUMERICENTITY ) {|m|
-        m=$1
-        m = "0#{m}" if m[0] == ?x
-        [Integer(m)].pack('U*')
-      }
-      matches.collect!{|x|x[0]}.compact!
-      if matches.size > 0
-        if doctype
-          matches.each do |entity_reference|
-            unless filter and filter.include?(entity_reference)
-              entity_value = doctype.entity( entity_reference )
-              re = /&#{entity_reference};/
-              rv.gsub!( re, entity_value ) if entity_value
-            end
+      string.gsub( /\r\n?/, "\n" ).gsub( REFERENCE ) { |ref|
+        if ref[1] == ?#
+          if ref[2] == ?x
+            [ref[3...-1].to_i(16)].pack('U*')
+          else
+            [ref[2...-1].to_i].pack('U*')
           end
+        elsif ref == '&amp;'
+          '&'
+        elsif filter and filter.include?( ref[1...-1] )
+          ref
+        elsif doctype
+          doctype.entity( ref[1...-1] ) or ref
         else
-          matches.each do |entity_reference|
-            unless filter and filter.include?(entity_reference)
-              entity_value = DocType::DEFAULT_ENTITIES[ entity_reference ]
-              re = /&#{entity_reference};/
-              rv.gsub!( re, entity_value.value ) if entity_value
-            end
-          end
+          entity_value = DocType::DEFAULT_ENTITIES[ ref[1...-1] ]
+          entity_value ? entity_value.value : ref
         end
-        rv.gsub!( /&amp;/, '&' )
-      end
-      rv
+      }
     end
   end
 end

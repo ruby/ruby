@@ -139,7 +139,7 @@ module REXML
 				if @parent
 					matches.each do |entity_reference|
 						entity_value = @parent.entity( entity_reference[0] )
-						rv.gsub!( /%#{entity_reference};/um, entity_value )
+						rv.gsub!( /%#{entity_reference.join};/um, entity_value )
 					end
 				end
 				return rv

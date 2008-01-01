@@ -1,3 +1,9 @@
+Tue Jan  1 14:41:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml: 1.9 patch from Sam Ruby mentioned in his blog:
+	  <http://intertwingly.net/blog/2007/12/31/Porting-REXML-to-Ruby-1-9>
+	  [ruby-core:14639]
+
 Tue Jan  1 14:15:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_substr): offset movement bug.  a patch from

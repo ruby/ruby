@@ -222,7 +222,7 @@ module REXML
         when :child
           new_nodeset = []
           nt = nil
-          for node in nodeset
+          nodeset.each do |node|
             nt = node.node_type
             new_nodeset += node.children if nt == :element or nt == :document
           end
@@ -266,7 +266,7 @@ module REXML
 
         when :ancestor
           new_nodeset = []
-          for node in nodeset
+          nodeset.each do |node|
             while node.parent
               node = node.parent
               new_nodeset << node unless new_nodeset.include? node
@@ -277,7 +277,7 @@ module REXML
 
         when :ancestor_or_self
           new_nodeset = []
-          for node in nodeset
+          nodeset.each do |node|
             if node.node_type == :element
               new_nodeset << node
               while ( node.parent )
@@ -341,7 +341,7 @@ module REXML
         when :descendant
           results = []
           nt = nil
-          for node in nodeset
+          nodeset.each do |node|
             nt = node.node_type
             results += expr( path_stack.dclone.unshift( :descendant_or_self ),
               node.children ) if nt == :element or nt == :document
@@ -376,7 +376,7 @@ module REXML
 
         when :preceding
           new_nodeset = []
-          for node in nodeset
+          nodeset.each do |node|
             new_nodeset += preceding( node )
           end
           #puts "NEW NODESET => #{new_nodeset.inspect}"
@@ -385,7 +385,7 @@ module REXML
 
         when :following
           new_nodeset = []
-          for node in nodeset
+          nodeset.each do |node|
             new_nodeset += following( node )
           end
           nodeset = new_nodeset
@@ -395,7 +395,7 @@ module REXML
           #puts "In :namespace"
           new_nodeset = []
           prefix = path_stack.shift
-          for node in nodeset
+          nodeset.each do |node|
             if (node.node_type == :element or node.node_type == :attribute)
               if @namespaces
                 namespaces = @namespaces

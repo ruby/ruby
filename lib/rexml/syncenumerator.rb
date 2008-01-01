@@ -6,8 +6,7 @@ module REXML
     # Enumerable objects.
     def initialize(*enums)
       @gens = enums
-      @biggest = @gens[0]
-      @gens.each {|x| @biggest = x if x.size > @biggest.size }
+      @length = @gens.collect {|x| x.size }.max
     end
 
     # Returns the number of enumerated Enumerable objects, i.e. the size
@@ -24,8 +23,8 @@ module REXML
 
     # Enumerates rows of the Enumerable objects.
     def each
-      @biggest.zip( *@gens ) {|a|
-        yield(*a[1..-1])
+      @length.times {|i|
+        yield @gens.collect {|x| x[i]}
       }
       self
     end

@@ -30,7 +30,10 @@ module REXML
               return
             when :start_element
               tag_stack.push(event[1])
-              el = @build_context = @build_context.add_element( event[1], event[2] )
+              el = @build_context = @build_context.add_element( event[1] )
+              event[2].each do |key, value|
+                el.attributes[key]=Attribute.new(key,value,self)
+              end
             when :end_element
               tag_stack.pop
               @build_context = @build_context.parent
