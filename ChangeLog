@@ -1,3 +1,9 @@
+Tue Jan  1 14:15:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_substr): offset movement bug.  a patch from
+	  Vincent Isambart <vincent.isambart at gmail.com> in
+	  [ruby-core:14647].  [ruby-core:14644]
+
 Tue Jan  1 01:29:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_to_encoding): raises for non-nil, non-encoding,

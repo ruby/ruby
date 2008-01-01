@@ -832,10 +832,10 @@ rb_str_substr(VALUE str, long beg, long len)
 	if (len > -beg) len = -beg;
 	if (-beg * rb_enc_mbmaxlen(enc) < RSTRING_LEN(str) / 8) {
 	    beg = -beg;
-	    while (len++ < beg && (e = rb_enc_prev_char(s, e, enc)) != 0);
+	    while (beg-- > len && (e = rb_enc_prev_char(s, e, enc)) != 0);
 	    p = e;
 	    if (!p) return Qnil;
-	    while (beg-- > 0 && (p = rb_enc_prev_char(s, p, enc)) != 0);
+	    while (len-- > 0 && (p = rb_enc_prev_char(s, p, enc)) != 0);
 	    if (!p) return Qnil;
 	    len = e - p;
 	    goto sub;
