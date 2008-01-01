@@ -32,7 +32,7 @@ all: $(ENCSOS) $(TRANSSOS)
 $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
 %   end
 %   unless trans.empty?
-$(TRANSOBJS): ruby.h intern.h config.h defines.h transcode_data.h
+$(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h
 %   end
 
 % end
