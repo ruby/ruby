@@ -87,6 +87,8 @@ void st_clear(st_table *);
 st_table *st_copy(st_table *);
 int st_numcmp(st_data_t, st_data_t);
 int st_numhash(st_data_t);
+int st_strcasecmp(const char *s1, const char *s2);
+int st_strncasecmp(const char *s1, const char *s2, size_t n);
 
 #if defined(__cplusplus)
 #if 0

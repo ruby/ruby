@@ -419,7 +419,7 @@ time_arg(int argc, VALUE *argv, struct tm *tm, long *nsec)
 	    tm->tm_mon = -1;
 	    for (i=0; i<12; i++) {
 		if (RSTRING_LEN(s) == 3 &&
-		    strcasecmp(months[i], RSTRING_PTR(v[1])) == 0) {
+		    STRCASECMP(months[i], RSTRING_PTR(v[1])) == 0) {
 		    tm->tm_mon = i;
 		    break;
 		}

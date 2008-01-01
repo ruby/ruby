@@ -173,7 +173,7 @@ rb_enc_register(const char *name, rb_encoding *encoding)
 
     if (index >= 0) {
 	rb_encoding *oldenc = rb_enc_from_index(index);
-	if (strcasecmp(name, rb_enc_name(oldenc))) {
+	if (STRCASECMP(name, rb_enc_name(oldenc))) {
 	    st_data_t key = (st_data_t)name, alias;
 	    st_delete(enc_table_alias, &key, &alias);
 	    index = enc_register(name, encoding);
@@ -341,7 +341,7 @@ rb_enc_registered(const char *name)
 	    if (i < ENCODING_INLINE_MAX - 1) i = ENCODING_INLINE_MAX - 1;
 	    continue;
 	}
-	if (strcasecmp(name, enc_table[i].name) == 0) {
+	if (STRCASECMP(name, enc_table[i].name) == 0) {
 	    return i;
 	}
     }
@@ -368,7 +368,7 @@ rb_enc_find_index(const char *name)
 	char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib);
 	while (s < e) {
 	    if (!ISALNUM(*s)) *s = '_';
-	    else if (ISUPPER(*s)) *s = tolower(*s);
+	    else if (ISUPPER(*s)) *s = TOLOWER(*s);
 	    ++s;
 	}
 	OBJ_FREEZE(enclib);

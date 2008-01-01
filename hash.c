@@ -1781,7 +1781,7 @@ env_delete(VALUE obj, VALUE name)
 
 	ruby_setenv(nam, 0);
 #ifdef ENV_IGNORECASE
-	if (strcasecmp(nam, PATH_ENV) == 0)
+	if (STRCASECMP(nam, PATH_ENV) == 0)
 #else
 	if (strcmp(nam, PATH_ENV) == 0)
 #endif
@@ -1817,7 +1817,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     env = getenv(nam);
     if (env) {
 #ifdef ENV_IGNORECASE
-	if (strcasecmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
+	if (STRCASECMP(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #else
 	if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
@@ -1859,7 +1859,7 @@ env_fetch(int argc, VALUE *argv)
 	return if_none;
     }
 #ifdef ENV_IGNORECASE
-    if (strcasecmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
+    if (STRCASECMP(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #else
     if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
@@ -1893,7 +1893,7 @@ envix(const char *nam)
     for (i = 0; env[i]; i++) {
 	if (
 #ifdef ENV_IGNORECASE
-	    strncasecmp(env[i],nam,len) == 0
+	    STRNCASECMP(env[i],nam,len) == 0
 #else
 	    memcmp(env[i],nam,len) == 0
 #endif
@@ -2014,7 +2014,7 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 
     ruby_setenv(name, value);
 #ifdef ENV_IGNORECASE
-    if (strcasecmp(name, PATH_ENV) == 0) {
+    if (STRCASECMP(name, PATH_ENV) == 0) {
 #else
     if (strcmp(name, PATH_ENV) == 0) {
 #endif

@@ -2532,10 +2532,6 @@ rb_path_end(const char *path)
     buflen = RSTRING_LEN(result),\
     pend = p + buflen)
 
-#if !defined(TOLOWER)
-#define TOLOWER(c) (ISUPPER(c) ? tolower(c) : (c))
-#endif
-
 static int is_absolute_path(const char*);
 
 static VALUE

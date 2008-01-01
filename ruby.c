@@ -184,7 +184,7 @@ rubylib_mangled_path(const char *s, unsigned int l)
 	    notfound = 1;
 	}
     }
-    if (!newp || l < oldl || strncasecmp(oldp, s, oldl) != 0) {
+    if (!newp || l < oldl || STRNCASECMP(oldp, s, oldl) != 0) {
 	return rb_str_new(s, l);
     }
     ret = rb_str_new(0, l + newl - oldl);
@@ -345,7 +345,7 @@ ruby_init_loadpath(void)
     p = strrchr(libpath, '/');
     if (p) {
 	*p = 0;
-	if (p - libpath > 3 && !strcasecmp(p - 4, "/bin")) {
+	if (p - libpath > 3 && !STRCASECMP(p - 4, "/bin")) {
 	    p -= 4;
 	    *p = 0;
 	}
@@ -1039,7 +1039,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 #if defined DOSISH || defined __CYGWIN__
 	{
 	    const char *ext = strrchr(fname, '.');
-	    if (ext && strcasecmp(ext, ".exe") == 0)
+	    if (ext && STRCASECMP(ext, ".exe") == 0)
 		mode |= O_BINARY;
 	}
 #endif

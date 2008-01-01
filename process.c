@@ -990,7 +990,7 @@ proc_exec_v(char **argv, const char *prog)
 #endif
 	char *extension;
 
-	if ((extension = strrchr(prog, '.')) != NULL && strcasecmp(extension, ".bat") == 0) {
+	if ((extension = strrchr(prog, '.')) != NULL && STRCASECMP(extension, ".bat") == 0) {
 	    char **new_argv;
 	    char *p;
 	    int n;
@@ -1128,7 +1128,7 @@ proc_spawn_v(char **argv, char *prog)
 	return -1;
 
 #if defined(__human68k__)
-    if ((extension = strrchr(prog, '.')) != NULL && strcasecmp(extension, ".bat") == 0) {
+    if ((extension = strrchr(prog, '.')) != NULL && STRCASECMP(extension, ".bat") == 0) {
 	char **new_argv;
 	char *p;
 	int n;

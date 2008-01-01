@@ -88,7 +88,7 @@ char *strchr(char*,char);
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
 
-#define downcase(c) (nocase && ISUPPER(c) ? tolower(c) : (c))
+#define downcase(c) (nocase && ISUPPER(c) ? TOLOWER(c) : (c))
 #define compare(c1, c2) (((unsigned char)(c1)) - ((unsigned char)(c2)))
 
 /* caution: in case *p == '\0'

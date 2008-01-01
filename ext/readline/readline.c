@@ -8,7 +8,6 @@
 #include "ruby/config.h"
 #include <errno.h>
 #include <stdio.h>
-#include <ctype.h>
 #include <string.h>
 #ifdef HAVE_READLINE_READLINE_H
 #include <readline/readline.h>
@@ -29,8 +28,6 @@
 #endif
 
 static VALUE mReadline;
-
-#define TOLOWER(c) (isupper(c) ? tolower(c) : c)
 
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"

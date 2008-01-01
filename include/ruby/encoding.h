@@ -136,4 +136,20 @@ VALUE rb_enc_default_external(void);
 void rb_enc_set_default_external(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);
 
+#define rb_isascii(c) ONIGENC_IS_CODE_ASCII(c)
+#define rb_isalnum(c) ONIGENC_IS_CODE_ALNUM(ONIG_ENCODING_ASCII, c)
+#define rb_isalpha(c) ONIGENC_IS_CODE_ALPHA(ONIG_ENCODING_ASCII, c)
+#define rb_isblank(c) ONIGENC_IS_CODE_BLANK(ONIG_ENCODING_ASCII, c)
+#define rb_iscntrl(c) ONIGENC_IS_CODE_CNTRL(ONIG_ENCODING_ASCII, c)
+#define rb_isdigit(c) ONIGENC_IS_CODE_DIGIT(ONIG_ENCODING_ASCII, c)
+#define rb_isgraph(c) ONIGENC_IS_CODE_GRAPH(ONIG_ENCODING_ASCII, c)
+#define rb_islower(c) ONIGENC_IS_CODE_LOWER(ONIG_ENCODING_ASCII, c)
+#define rb_isprint(c) ONIGENC_IS_CODE_PRINT(ONIG_ENCODING_ASCII, c)
+#define rb_ispunct(c) ONIGENC_IS_CODE_PUNCT(ONIG_ENCODING_ASCII, c)
+#define rb_isspace(c) ONIGENC_IS_CODE_SPACE(ONIG_ENCODING_ASCII, c)
+#define rb_isupper(c) ONIGENC_IS_CODE_UPPER(ONIG_ENCODING_ASCII, c)
+#define rb_isxdigit(c) ONIGENC_IS_CODE_XDIGIT(ONIG_ENCODING_ASCII, c)
+#define rb_tolower(c) rb_enc_tolower(c, ONIG_ENCODING_ASCII)
+#define rb_toupper(c) rb_enc_toupper(c, ONIG_ENCODING_ASCII)
+
 #endif /* RUBY_ENCODING_H */

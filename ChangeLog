@@ -1,3 +1,47 @@
+Tue Jan  1 21:11:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_isascii): defined.
+	  (rb_isalnum): ditto.
+	  (rb_isalpha): ditto.
+	  (rb_isblank): ditto.
+	  (rb_iscntrl): ditto.
+	  (rb_isdigit): ditto.
+	  (rb_isgraph): ditto.
+	  (rb_islower): ditto.
+	  (rb_isprint): ditto.
+	  (rb_ispunct): ditto.
+	  (rb_isspace): ditto.
+	  (rb_isupper): ditto.
+	  (rb_isxdigit): ditto.
+	  (rb_tolower): ditto.
+	  (rb_toupper): ditto.
+
+	* include/ruby/st.h (st_strcasecmp): declared.
+	  (st_strncasecmp): ditto.
+
+	* st.c (type_strcasehash): use st_strcasecmp instead of strcasecmp.
+	  (st_strcasecmp): defined.
+	  (st_strncasecmp): ditto.
+
+	* include/ruby/ruby.h: include include/ruby/encoding.h.
+	  (ISASCII): use rb_isascii.
+	  (ISPRINT): use rb_isprint.
+	  (ISSPACE): use rb_isspace.
+	  (ISUPPER): use rb_isupper.
+	  (ISLOWER): use rb_islower.
+	  (ISALNUM): use rb_isalnum.
+	  (ISALPHA): use rb_isalpha.
+	  (ISDIGIT): use rb_isdigit.
+	  (ISXDIGIT): use rb_isxdigit.
+	  (TOUPPER): defined.
+	  (TOLOWER): ditto.
+	  (STRCASECMP): ditto.
+	  (STRNCASECMP): ditto.
+
+	* dir.c, encoding.c, file.c, hash.c, process.c, ruby.c, time.c,
+	  transcode.c, ext/readline/readline.c: use locale insensitive
+	  functions.  [ruby-core:14662]
+
 Tue Jan  1 17:50:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_mode_enc): encoding spec is not allowed in binary mode.

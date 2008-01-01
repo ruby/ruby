@@ -110,7 +110,7 @@ init_transcoder_table(void)
     rb_declare_transcoder("ISO-2022-JP", "UTF-8", "japanese");
 }
 
-#define encoding_equal(enc1, enc2) (strcasecmp(enc1, enc2) == 0)
+#define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
 
 static rb_transcoder *
 transcode_dispatch(const char* from_encoding, const char* to_encoding)
@@ -297,7 +297,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    return to_encidx;
 	}
     }
-    if (strcasecmp(from_e, to_e) == 0) {
+    if (STRCASECMP(from_e, to_e) == 0) {
 	return -1;
     }
 

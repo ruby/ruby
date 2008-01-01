@@ -63,20 +63,6 @@ extern "C" {
 
 #include "defines.h"
 
-/* need to include <ctype.h> to use these macros */
-#ifndef ISPRINT
-#define ISASCII(c) isascii((int)(unsigned char)(c))
-#undef ISPRINT
-#define ISPRINT(c) (ISASCII(c) && isprint((int)(unsigned char)(c)))
-#define ISSPACE(c) (ISASCII(c) && isspace((int)(unsigned char)(c)))
-#define ISUPPER(c) (ISASCII(c) && isupper((int)(unsigned char)(c)))
-#define ISLOWER(c) (ISASCII(c) && islower((int)(unsigned char)(c)))
-#define ISALNUM(c) (ISASCII(c) && isalnum((int)(unsigned char)(c)))
-#define ISALPHA(c) (ISASCII(c) && isalpha((int)(unsigned char)(c)))
-#define ISDIGIT(c) (ISASCII(c) && isdigit((int)(unsigned char)(c)))
-#define ISXDIGIT(c) (ISASCII(c) && isxdigit((int)(unsigned char)(c)))
-#endif
-
 #if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
 #else
@@ -981,5 +967,23 @@ int rb_remove_event_hook(rb_event_hook_func_t func);
 #endif
 }  /* extern "C" { */
 #endif
+
+#include "encoding.h"
+#ifndef ISPRINT
+#define ISASCII(c) rb_isascii((int)(unsigned char)(c))
+#undef ISPRINT
+#define ISPRINT(c) (ISASCII(c) && rb_isprint((int)(unsigned char)(c)))
+#define ISSPACE(c) (ISASCII(c) && rb_isspace((int)(unsigned char)(c)))
+#define ISUPPER(c) (ISASCII(c) && rb_isupper((int)(unsigned char)(c)))
+#define ISLOWER(c) (ISASCII(c) && rb_islower((int)(unsigned char)(c)))
+#define ISALNUM(c) (ISASCII(c) && rb_isalnum((int)(unsigned char)(c)))
+#define ISALPHA(c) (ISASCII(c) && rb_isalpha((int)(unsigned char)(c)))
+#define ISDIGIT(c) (ISASCII(c) && rb_isdigit((int)(unsigned char)(c)))
+#define ISXDIGIT(c) (ISASCII(c) && rb_isxdigit((int)(unsigned char)(c)))
+#endif
+#define TOUPPER(c) (rb_toupper((int)(unsigned char)(c)))
+#define TOLOWER(c) (rb_tolower((int)(unsigned char)(c)))
+#define STRCASECMP(s1, s2) (st_strcasecmp(s1, s2))
+#define STRNCASECMP(s1, s2, n) (st_strncasecmp(s1, s2, n))
 
 #endif /* RUBY_H */
