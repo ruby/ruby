@@ -384,6 +384,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(2, a.count(S("lo"), S("o")))
     assert_equal(4, a.count(S("hello"), S("^l")))
     assert_equal(4, a.count(S("ej-m")))
+    assert_equal(0, S("y").count(S("a\\-z")))
   end
 
   def test_crypt
