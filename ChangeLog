@@ -1,3 +1,8 @@
+Tue Jan  1 17:50:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_mode_enc): encoding spec is not allowed in binary mode.
+	  [ruby-dev:32913]
+
 Tue Jan  1 14:41:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml: 1.9 patch from Sam Ruby mentioned in his blog:

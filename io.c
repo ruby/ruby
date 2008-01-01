@@ -3192,6 +3192,9 @@ rb_io_mode_enc(rb_io_t *fptr, const char *mode)
 {
     const char *p = strchr(mode, ':');
     if (p) {
+	if (fptr->mode & FMODE_BINMODE) {
+	    rb_raise(rb_eArgError, "encoding in binary mode");
+	}
 	mode_enc(fptr, p+1);
     }
 }
