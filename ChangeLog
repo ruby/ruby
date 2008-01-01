@@ -1,3 +1,7 @@
+Tue Jan  1 23:17:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: dependency updated.
+
 Tue Jan  1 21:11:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_isascii): defined.
