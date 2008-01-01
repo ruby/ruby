@@ -1,3 +1,13 @@
+Wed Jan  2 00:14:41 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/{nkf.c, utf8tbl.c}: Update nkf.
+
+	* ext/nkf/nkf.c: fix documents.
+
+	* ext/nkf/lib/kconv.rb: fix documents.
+	  (Kconv.is*): use valid_encoding?.
+	  (Kconv.isjis): defined.
+
 Tue Jan  1 23:17:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: dependency updated.

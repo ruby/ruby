@@ -1,7 +1,7 @@
 #include "config.h"
 
 #ifdef UTF8_OUTPUT_ENABLE
-const unsigned short euc_to_utf8_A1[] = {
+static const unsigned short euc_to_utf8_A1[] = {
          0x3000, 0x3001, 0x3002, 0xFF0C, 0xFF0E, 0x30FB, 0xFF1A,
  0xFF1B, 0xFF1F, 0xFF01, 0x309B, 0x309C, 0x00B4, 0xFF40, 0x00A8,
  0xFF3E, 0x203E, 0xFF3F, 0x30FD, 0x30FE, 0x309D, 0x309E, 0x3003,
@@ -17,7 +17,7 @@ const unsigned short euc_to_utf8_A1[] = {
 };
 
 /* Microsoft UCS Mapping Compatible */
-const unsigned short euc_to_utf8_A1_ms[] = {
+static const unsigned short euc_to_utf8_A1_ms[] = {
          0x3000, 0x3001, 0x3002, 0xFF0C, 0xFF0E, 0x30FB, 0xFF1A,
  0xFF1B, 0xFF1F, 0xFF01, 0x309B, 0x309C, 0x00B4, 0xFF40, 0x00A8,
  0xFF3E, 0xFFE3, 0xFF3F, 0x30FD, 0x30FE, 0x309D, 0x309E, 0x3003,
@@ -31,7 +31,7 @@ const unsigned short euc_to_utf8_A1_ms[] = {
  0xFF04, 0xFFE0, 0xFFE1, 0xFF05, 0xFF03, 0xFF06, 0xFF0A, 0xFF20,
  0x00A7, 0x2606, 0x2605, 0x25CB, 0x25CF, 0x25CE, 0x25C7,
 };
-const unsigned short euc_to_utf8_A2[] = {
+static const unsigned short euc_to_utf8_A2[] = {
          0x25C6, 0x25A1, 0x25A0, 0x25B3, 0x25B2, 0x25BD, 0x25BC,
  0x203B, 0x3012, 0x2192, 0x2190, 0x2191, 0x2193, 0x3013,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -47,7 +47,7 @@ const unsigned short euc_to_utf8_A2[] = {
 };
 
 /* Microsoft UCS Mapping Compatible */
-const unsigned short euc_to_utf8_A2_ms[] = {
+static const unsigned short euc_to_utf8_A2_ms[] = {
          0x25C6, 0x25A1, 0x25A0, 0x25B3, 0x25B2, 0x25BD, 0x25BC,
  0x203B, 0x3012, 0x2192, 0x2190, 0x2191, 0x2193, 0x3013,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -61,7 +61,7 @@ const unsigned short euc_to_utf8_A2_ms[] = {
       0,      0, 0x212B, 0x2030, 0x266F, 0x266D, 0x266A, 0x2020,
  0x2021, 0x00B6,      0,      0,      0,      0, 0x25EF,
 };
-const unsigned short euc_to_utf8_A3[] = {
+static const unsigned short euc_to_utf8_A3[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
  0xFF10, 0xFF11, 0xFF12, 0xFF13, 0xFF14, 0xFF15, 0xFF16, 0xFF17,
@@ -75,7 +75,7 @@ const unsigned short euc_to_utf8_A3[] = {
  0xFF50, 0xFF51, 0xFF52, 0xFF53, 0xFF54, 0xFF55, 0xFF56, 0xFF57,
  0xFF58, 0xFF59, 0xFF5A,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_A4[] = {
+static const unsigned short euc_to_utf8_A4[] = {
          0x3041, 0x3042, 0x3043, 0x3044, 0x3045, 0x3046, 0x3047,
  0x3048, 0x3049, 0x304A, 0x304B, 0x304C, 0x304D, 0x304E, 0x304F,
  0x3050, 0x3051, 0x3052, 0x3053, 0x3054, 0x3055, 0x3056, 0x3057,
@@ -89,7 +89,7 @@ const unsigned short euc_to_utf8_A4[] = {
  0x3090, 0x3091, 0x3092, 0x3093,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_A5[] = {
+static const unsigned short euc_to_utf8_A5[] = {
          0x30A1, 0x30A2, 0x30A3, 0x30A4, 0x30A5, 0x30A6, 0x30A7,
  0x30A8, 0x30A9, 0x30AA, 0x30AB, 0x30AC, 0x30AD, 0x30AE, 0x30AF,
  0x30B0, 0x30B1, 0x30B2, 0x30B3, 0x30B4, 0x30B5, 0x30B6, 0x30B7,
@@ -103,7 +103,7 @@ const unsigned short euc_to_utf8_A5[] = {
  0x30F0, 0x30F1, 0x30F2, 0x30F3, 0x30F4, 0x30F5, 0x30F6,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_A6[] = {
+static const unsigned short euc_to_utf8_A6[] = {
          0x0391, 0x0392, 0x0393, 0x0394, 0x0395, 0x0396, 0x0397,
  0x0398, 0x0399, 0x039A, 0x039B, 0x039C, 0x039D, 0x039E, 0x039F,
  0x03A0, 0x03A1, 0x03A3, 0x03A4, 0x03A5, 0x03A6, 0x03A7, 0x03A8,
@@ -117,7 +117,7 @@ const unsigned short euc_to_utf8_A6[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_A7[] = {
+static const unsigned short euc_to_utf8_A7[] = {
          0x0410, 0x0411, 0x0412, 0x0413, 0x0414, 0x0415, 0x0401,
  0x0416, 0x0417, 0x0418, 0x0419, 0x041A, 0x041B, 0x041C, 0x041D,
  0x041E, 0x041F, 0x0420, 0x0421, 0x0422, 0x0423, 0x0424, 0x0425,
@@ -131,7 +131,7 @@ const unsigned short euc_to_utf8_A7[] = {
  0x044E, 0x044F,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_A8[] = {
+static const unsigned short euc_to_utf8_A8[] = {
          0x2500, 0x2502, 0x250C, 0x2510, 0x2518, 0x2514, 0x251C,
  0x252C, 0x2524, 0x2534, 0x253C, 0x2501, 0x2503, 0x250F, 0x2513,
  0x251B, 0x2517, 0x2523, 0x2533, 0x252B, 0x253B, 0x254B, 0x2520,
@@ -145,7 +145,7 @@ const unsigned short euc_to_utf8_A8[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_A9[] = {
+static const unsigned short euc_to_utf8_A9[] = {
          0x2460, 0x2461, 0x2462, 0x2463, 0x2464, 0x2465, 0x2466,
  0x2467, 0x2468, 0x2469, 0x246A, 0x246B, 0x246C, 0x246D, 0x246E,
  0x246F, 0x2470, 0x2471, 0x2472, 0x2473,      0,      0,      0,
@@ -159,7 +159,7 @@ const unsigned short euc_to_utf8_A9[] = {
       0,      0, 0x2488, 0x2489, 0x248A, 0x248B, 0x248C, 0x248D,
  0x248E, 0x248F, 0x2490,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_AA[] = {
+static const unsigned short euc_to_utf8_AA[] = {
          0x2160, 0x2161, 0x2162, 0x2163, 0x2164, 0x2165, 0x2166,
  0x2167, 0x2168, 0x2169, 0x216A, 0x216B,      0,      0,      0,
       0,      0,      0,      0,      0, 0x2170, 0x2171, 0x2172,
@@ -173,7 +173,7 @@ const unsigned short euc_to_utf8_AA[] = {
  0x24AF, 0x24B0, 0x24B1, 0x24B2, 0x24B3, 0x24B4, 0x24B5,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_AB[] = {
+static const unsigned short euc_to_utf8_AB[] = {
          0x339C, 0x339F, 0x339D, 0x33A0, 0x33A4,      0, 0x33A1,
  0x33A5, 0x339E, 0x33A2, 0x338E,      0, 0x338F, 0x33C4, 0x3396,
  0x3397, 0x2113, 0x3398, 0x33B3, 0x33B2, 0x33B1, 0x33B0, 0x2109,
@@ -187,7 +187,7 @@ const unsigned short euc_to_utf8_AB[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0x2116, 0x33CD, 0x2121,      0,
 };
-const unsigned short euc_to_utf8_AC[] = {
+static const unsigned short euc_to_utf8_AC[] = {
          0x2664, 0x2667, 0x2661, 0x2662, 0x2660, 0x2663, 0x2665,
  0x2666,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0x3020, 0x260E, 0x3004,
@@ -201,7 +201,7 @@ const unsigned short euc_to_utf8_AC[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_AC_mac[] = {
+static const unsigned short euc_to_utf8_AC_mac[] = {
          0x2664, 0x2667, 0x2661, 0x2662, 0x2660, 0x2663, 0x2665,
  0x2666,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0x3020, 0x260E, 0x3004,
@@ -215,7 +215,7 @@ const unsigned short euc_to_utf8_AC_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_AD[] = {
+static const unsigned short euc_to_utf8_AD[] = {
          0x2460, 0x2461, 0x2462, 0x2463, 0x2464, 0x2465, 0x2466,
  0x2467, 0x2468, 0x2469, 0x246A, 0x246B, 0x246C, 0x246D, 0x246E,
  0x246F, 0x2470, 0x2471, 0x2472, 0x2473, 0x2160, 0x2161, 0x2162,
@@ -229,7 +229,7 @@ const unsigned short euc_to_utf8_AD[] = {
  0x2252, 0x2261, 0x222B, 0x222E, 0x2211, 0x221A, 0x22A5, 0x2220,
  0x221F, 0x22BF, 0x2235, 0x2229, 0x222A,      0, 0x3299,
 };
-const unsigned short euc_to_utf8_AD_mac[] = {
+static const unsigned short euc_to_utf8_AD_mac[] = {
          0x65E5, 0x6708, 0x706B, 0x6C34, 0x6728, 0x91D1, 0x571F,
  0x796D, 0x795D, 0x81EA, 0x81F3, 0x3239, 0x547C, 0x3231, 0x8CC7,
  0x540D, 0x3232, 0x5B66, 0x8CA1, 0x793E, 0x7279, 0x76E3, 0x4F01,
@@ -243,7 +243,7 @@ const unsigned short euc_to_utf8_AD_mac[] = {
  0x2252, 0x5927, 0x5C0F, 0x32A4, 0x32A5, 0x32A6, 0x32A7, 0x32A8,
  0x533B, 0x8CA1, 0x512A, 0x52B4, 0x5370, 0x63A7, 0x79D8,
 };
-const unsigned short euc_to_utf8_AE[] = {
+static const unsigned short euc_to_utf8_AE[] = {
          0x3349, 0x3322, 0x334D, 0x3314, 0x3316, 0x3305, 0x3333,
  0x334E, 0x3303, 0x3336, 0x3318, 0x3315, 0x3327, 0x3351, 0x334A,
  0x3339, 0x3357, 0x330D, 0x3342, 0x3323, 0x3326, 0x333B, 0x332B,
@@ -257,7 +257,7 @@ const unsigned short euc_to_utf8_AE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0x337F,      0,      0,
 };
-const unsigned short euc_to_utf8_AF[] = {
+static const unsigned short euc_to_utf8_AF[] = {
          0x222E, 0x221F, 0x22BF,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0x301D, 0x301F,      0,
@@ -271,7 +271,7 @@ const unsigned short euc_to_utf8_AF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_B0[] = {
+static const unsigned short euc_to_utf8_B0[] = {
          0x4E9C, 0x5516, 0x5A03, 0x963F, 0x54C0, 0x611B, 0x6328,
  0x59F6, 0x9022, 0x8475, 0x831C, 0x7A50, 0x60AA, 0x63E1, 0x6E25,
  0x65ED, 0x8466, 0x82A6, 0x9BF5, 0x6893, 0x5727, 0x65A1, 0x6271,
@@ -285,7 +285,7 @@ const unsigned short euc_to_utf8_B0[] = {
  0x7A32, 0x8328, 0x828B, 0x9C2F, 0x5141, 0x5370, 0x54BD, 0x54E1,
  0x56E0, 0x59FB, 0x5F15, 0x98F2, 0x6DEB, 0x80E4, 0x852D,
 };
-const unsigned short euc_to_utf8_B1[] = {
+static const unsigned short euc_to_utf8_B1[] = {
          0x9662, 0x9670, 0x96A0, 0x97FB, 0x540B, 0x53F3, 0x5B87,
  0x70CF, 0x7FBD, 0x8FC2, 0x96E8, 0x536F, 0x9D5C, 0x7ABA, 0x4E11,
  0x7893, 0x81FC, 0x6E26, 0x5618, 0x5504, 0x6B1D, 0x851A, 0x9C3B,
@@ -299,7 +299,7 @@ const unsigned short euc_to_utf8_B1[] = {
  0x8276, 0x82D1, 0x8597, 0x9060, 0x925B, 0x9D1B, 0x5869, 0x65BC,
  0x6C5A, 0x7525, 0x51F9, 0x592E, 0x5965, 0x5F80, 0x5FDC,
 };
-const unsigned short euc_to_utf8_B2[] = {
+static const unsigned short euc_to_utf8_B2[] = {
          0x62BC, 0x65FA, 0x6A2A, 0x6B27, 0x6BB4, 0x738B, 0x7FC1,
  0x8956, 0x9D2C, 0x9D0E, 0x9EC4, 0x5CA1, 0x6C96, 0x837B, 0x5104,
  0x5C4B, 0x61B6, 0x81C6, 0x6876, 0x7261, 0x4E59, 0x4FFA, 0x5378,
@@ -313,7 +313,7 @@ const unsigned short euc_to_utf8_B2[] = {
  0x4ECB, 0x4F1A, 0x89E3, 0x56DE, 0x584A, 0x58CA, 0x5EFB, 0x5FEB,
  0x602A, 0x6094, 0x6062, 0x61D0, 0x6212, 0x62D0, 0x6539,
 };
-const unsigned short euc_to_utf8_B3[] = {
+static const unsigned short euc_to_utf8_B3[] = {
          0x9B41, 0x6666, 0x68B0, 0x6D77, 0x7070, 0x754C, 0x7686,
  0x7D75, 0x82A5, 0x87F9, 0x958B, 0x968E, 0x8C9D, 0x51F1, 0x52BE,
  0x5916, 0x54B3, 0x5BB3, 0x5D16, 0x6168, 0x6982, 0x6DAF, 0x788D,
@@ -327,7 +327,7 @@ const unsigned short euc_to_utf8_B3[] = {
  0x53F6, 0x691B, 0x6A3A, 0x9784, 0x682A, 0x515C, 0x7AC3, 0x84B2,
  0x91DC, 0x938C, 0x565B, 0x9D28, 0x6822, 0x8305, 0x8431,
 };
-const unsigned short euc_to_utf8_B4[] = {
+static const unsigned short euc_to_utf8_B4[] = {
          0x7CA5, 0x5208, 0x82C5, 0x74E6, 0x4E7E, 0x4F83, 0x51A0,
  0x5BD2, 0x520A, 0x52D8, 0x52E7, 0x5DFB, 0x559A, 0x582A, 0x59E6,
  0x5B8C, 0x5B98, 0x5BDB, 0x5E72, 0x5E79, 0x60A3, 0x611F, 0x6163,
@@ -341,7 +341,7 @@ const unsigned short euc_to_utf8_B4[] = {
  0x57FA, 0x5947, 0x5B09, 0x5BC4, 0x5C90, 0x5E0C, 0x5E7E, 0x5FCC,
  0x63EE, 0x673A, 0x65D7, 0x65E2, 0x671F, 0x68CB, 0x68C4,
 };
-const unsigned short euc_to_utf8_B5[] = {
+static const unsigned short euc_to_utf8_B5[] = {
          0x6A5F, 0x5E30, 0x6BC5, 0x6C17, 0x6C7D, 0x757F, 0x7948,
  0x5B63, 0x7A00, 0x7D00, 0x5FBD, 0x898F, 0x8A18, 0x8CB4, 0x8D77,
  0x8ECC, 0x8F1D, 0x98E2, 0x9A0E, 0x9B3C, 0x4E80, 0x507D, 0x5100,
@@ -355,7 +355,7 @@ const unsigned short euc_to_utf8_B5[] = {
  0x5DE8, 0x62D2, 0x62E0, 0x6319, 0x6E20, 0x865A, 0x8A31, 0x8DDD,
  0x92F8, 0x6F01, 0x79A6, 0x9B5A, 0x4EA8, 0x4EAB, 0x4EAC,
 };
-const unsigned short euc_to_utf8_B6[] = {
+static const unsigned short euc_to_utf8_B6[] = {
          0x4F9B, 0x4FA0, 0x50D1, 0x5147, 0x7AF6, 0x5171, 0x51F6,
  0x5354, 0x5321, 0x537F, 0x53EB, 0x55AC, 0x5883, 0x5CE1, 0x5F37,
  0x5F4A, 0x602F, 0x6050, 0x606D, 0x631F, 0x6559, 0x6A4B, 0x6CC1,
@@ -369,7 +369,7 @@ const unsigned short euc_to_utf8_B6[] = {
  0x99D2, 0x5177, 0x611A, 0x865E, 0x55B0, 0x7A7A, 0x5076, 0x5BD3,
  0x9047, 0x9685, 0x4E32, 0x6ADB, 0x91E7, 0x5C51, 0x5C48,
 };
-const unsigned short euc_to_utf8_B7[] = {
+static const unsigned short euc_to_utf8_B7[] = {
          0x6398, 0x7A9F, 0x6C93, 0x9774, 0x8F61, 0x7AAA, 0x718A,
  0x9688, 0x7C82, 0x6817, 0x7E70, 0x6851, 0x936C, 0x52F2, 0x541B,
  0x85AB, 0x8A13, 0x7FA4, 0x8ECD, 0x90E1, 0x5366, 0x8888, 0x7941,
@@ -383,7 +383,7 @@ const unsigned short euc_to_utf8_B7[] = {
  0x5039, 0x5026, 0x5065, 0x517C, 0x5238, 0x5263, 0x55A7, 0x570F,
  0x5805, 0x5ACC, 0x5EFA, 0x61B2, 0x61F8, 0x62F3, 0x6372,
 };
-const unsigned short euc_to_utf8_B8[] = {
+static const unsigned short euc_to_utf8_B8[] = {
          0x691C, 0x6A29, 0x727D, 0x72AC, 0x732E, 0x7814, 0x786F,
  0x7D79, 0x770C, 0x80A9, 0x898B, 0x8B19, 0x8CE2, 0x8ED2, 0x9063,
  0x9375, 0x967A, 0x9855, 0x9A13, 0x9E78, 0x5143, 0x539F, 0x53B3,
@@ -397,7 +397,7 @@ const unsigned short euc_to_utf8_B8[] = {
  0x4E5E, 0x9BC9, 0x4EA4, 0x4F7C, 0x4FAF, 0x5019, 0x5016, 0x5149,
  0x516C, 0x529F, 0x52B9, 0x52FE, 0x539A, 0x53E3, 0x5411,
 };
-const unsigned short euc_to_utf8_B9[] = {
+static const unsigned short euc_to_utf8_B9[] = {
          0x540E, 0x5589, 0x5751, 0x57A2, 0x597D, 0x5B54, 0x5B5D,
  0x5B8F, 0x5DE5, 0x5DE7, 0x5DF7, 0x5E78, 0x5E83, 0x5E9A, 0x5EB7,
  0x5F18, 0x6052, 0x614C, 0x6297, 0x62D8, 0x63A7, 0x653B, 0x6602,
@@ -411,7 +411,7 @@ const unsigned short euc_to_utf8_B9[] = {
  0x544A, 0x56FD, 0x7A40, 0x9177, 0x9D60, 0x9ED2, 0x7344, 0x6F09,
  0x8170, 0x7511, 0x5FFD, 0x60DA, 0x9AA8, 0x72DB, 0x8FBC,
 };
-const unsigned short euc_to_utf8_BA[] = {
+static const unsigned short euc_to_utf8_BA[] = {
          0x6B64, 0x9803, 0x4ECA, 0x56F0, 0x5764, 0x58BE, 0x5A5A,
  0x6068, 0x61C7, 0x660F, 0x6606, 0x6839, 0x68B1, 0x6DF7, 0x75D5,
  0x7D3A, 0x826E, 0x9B42, 0x4E9B, 0x4F50, 0x53C9, 0x5506, 0x5D6F,
@@ -425,7 +425,7 @@ const unsigned short euc_to_utf8_BA[] = {
  0x548B, 0x643E, 0x6628, 0x6714, 0x67F5, 0x7A84, 0x7B56, 0x7D22,
  0x932F, 0x685C, 0x9BAD, 0x7B39, 0x5319, 0x518A, 0x5237,
 };
-const unsigned short euc_to_utf8_BB[] = {
+static const unsigned short euc_to_utf8_BB[] = {
          0x5BDF, 0x62F6, 0x64AE, 0x64E6, 0x672D, 0x6BBA, 0x85A9,
  0x96D1, 0x7690, 0x9BD6, 0x634C, 0x9306, 0x9BAB, 0x76BF, 0x6652,
  0x4E09, 0x5098, 0x53C2, 0x5C71, 0x60E8, 0x6492, 0x6563, 0x685F,
@@ -439,7 +439,7 @@ const unsigned short euc_to_utf8_BB[] = {
  0x8AEE, 0x8CC7, 0x8CDC, 0x96CC, 0x98FC, 0x6B6F, 0x4E8B, 0x4F3C,
  0x4F8D, 0x5150, 0x5B57, 0x5BFA, 0x6148, 0x6301, 0x6642,
 };
-const unsigned short euc_to_utf8_BC[] = {
+static const unsigned short euc_to_utf8_BC[] = {
          0x6B21, 0x6ECB, 0x6CBB, 0x723E, 0x74BD, 0x75D4, 0x78C1,
  0x793A, 0x800C, 0x8033, 0x81EA, 0x8494, 0x8F9E, 0x6C50, 0x9E7F,
  0x5F0F, 0x8B58, 0x9D2B, 0x7AFA, 0x8EF8, 0x5B8D, 0x96EB, 0x4E03,
@@ -453,7 +453,7 @@ const unsigned short euc_to_utf8_BC[] = {
  0x816B, 0x8DA3, 0x9152, 0x9996, 0x5112, 0x53D7, 0x546A, 0x5BFF,
  0x6388, 0x6A39, 0x7DAC, 0x9700, 0x56DA, 0x53CE, 0x5468,
 };
-const unsigned short euc_to_utf8_BD[] = {
+static const unsigned short euc_to_utf8_BD[] = {
          0x5B97, 0x5C31, 0x5DDE, 0x4FEE, 0x6101, 0x62FE, 0x6D32,
  0x79C0, 0x79CB, 0x7D42, 0x7E4D, 0x7FD2, 0x81ED, 0x821F, 0x8490,
  0x8846, 0x8972, 0x8B90, 0x8E74, 0x8F2F, 0x9031, 0x914B, 0x916C,
@@ -467,7 +467,7 @@ const unsigned short euc_to_utf8_BD[] = {
  0x7F72, 0x66F8, 0x85AF, 0x85F7, 0x8AF8, 0x52A9, 0x53D9, 0x5973,
  0x5E8F, 0x5F90, 0x6055, 0x92E4, 0x9664, 0x50B7, 0x511F,
 };
-const unsigned short euc_to_utf8_BE[] = {
+static const unsigned short euc_to_utf8_BE[] = {
          0x52DD, 0x5320, 0x5347, 0x53EC, 0x54E8, 0x5546, 0x5531,
  0x5617, 0x5968, 0x59BE, 0x5A3C, 0x5BB5, 0x5C06, 0x5C0F, 0x5C11,
  0x5C1A, 0x5E84, 0x5E8A, 0x5EE0, 0x5F70, 0x627F, 0x6284, 0x62DB,
@@ -481,7 +481,7 @@ const unsigned short euc_to_utf8_BE[] = {
  0x60C5, 0x64FE, 0x6761, 0x6756, 0x6D44, 0x72B6, 0x7573, 0x7A63,
  0x84B8, 0x8B72, 0x91B8, 0x9320, 0x5631, 0x57F4, 0x98FE,
 };
-const unsigned short euc_to_utf8_BF[] = {
+static const unsigned short euc_to_utf8_BF[] = {
          0x62ED, 0x690D, 0x6B96, 0x71ED, 0x7E54, 0x8077, 0x8272,
  0x89E6, 0x98DF, 0x8755, 0x8FB1, 0x5C3B, 0x4F38, 0x4FE1, 0x4FB5,
  0x5507, 0x5A20, 0x5BDD, 0x5BE9, 0x5FC3, 0x614E, 0x632F, 0x65B0,
@@ -495,7 +495,7 @@ const unsigned short euc_to_utf8_BF[] = {
  0x745E, 0x9AC4, 0x5D07, 0x5D69, 0x6570, 0x67A2, 0x8DA8, 0x96DB,
  0x636E, 0x6749, 0x6919, 0x83C5, 0x9817, 0x96C0, 0x88FE,
 };
-const unsigned short euc_to_utf8_C0[] = {
+static const unsigned short euc_to_utf8_C0[] = {
          0x6F84, 0x647A, 0x5BF8, 0x4E16, 0x702C, 0x755D, 0x662F,
  0x51C4, 0x5236, 0x52E2, 0x59D3, 0x5F81, 0x6027, 0x6210, 0x653F,
  0x6574, 0x661F, 0x6674, 0x68F2, 0x6816, 0x6B63, 0x6E05, 0x7272,
@@ -509,7 +509,7 @@ const unsigned short euc_to_utf8_C0[] = {
  0x6247, 0x64B0, 0x6813, 0x6834, 0x6CC9, 0x6D45, 0x6D17, 0x67D3,
  0x6F5C, 0x714E, 0x717D, 0x65CB, 0x7A7F, 0x7BAD, 0x7DDA,
 };
-const unsigned short euc_to_utf8_C1[] = {
+static const unsigned short euc_to_utf8_C1[] = {
          0x7E4A, 0x7FA8, 0x817A, 0x821B, 0x8239, 0x85A6, 0x8A6E,
  0x8CCE, 0x8DF5, 0x9078, 0x9077, 0x92AD, 0x9291, 0x9583, 0x9BAE,
  0x524D, 0x5584, 0x6F38, 0x7136, 0x5168, 0x7985, 0x7E55, 0x81B3,
@@ -523,7 +523,7 @@ const unsigned short euc_to_utf8_C1[] = {
  0x8349, 0x8358, 0x846C, 0x84BC, 0x85FB, 0x88C5, 0x8D70, 0x9001,
  0x906D, 0x9397, 0x971C, 0x9A12, 0x50CF, 0x5897, 0x618E,
 };
-const unsigned short euc_to_utf8_C2[] = {
+static const unsigned short euc_to_utf8_C2[] = {
          0x81D3, 0x8535, 0x8D08, 0x9020, 0x4FC3, 0x5074, 0x5247,
  0x5373, 0x606F, 0x6349, 0x675F, 0x6E2C, 0x8DB3, 0x901F, 0x4FD7,
  0x5C5E, 0x8CCA, 0x65CF, 0x7D9A, 0x5352, 0x8896, 0x5176, 0x63C3,
@@ -537,7 +537,7 @@ const unsigned short euc_to_utf8_C2[] = {
  0x5B85, 0x6258, 0x629E, 0x62D3, 0x6CA2, 0x6FEF, 0x7422, 0x8A17,
  0x9438, 0x6FC1, 0x8AFE, 0x8338, 0x51E7, 0x86F8, 0x53EA,
 };
-const unsigned short euc_to_utf8_C3[] = {
+static const unsigned short euc_to_utf8_C3[] = {
          0x53E9, 0x4F46, 0x9054, 0x8FB0, 0x596A, 0x8131, 0x5DFD,
  0x7AEA, 0x8FBF, 0x68DA, 0x8C37, 0x72F8, 0x9C48, 0x6A3D, 0x8AB0,
  0x4E39, 0x5358, 0x5606, 0x5766, 0x62C5, 0x63A2, 0x65E6, 0x6B4E,
@@ -551,7 +551,7 @@ const unsigned short euc_to_utf8_C3[] = {
  0x8A3B, 0x914E, 0x92F3, 0x99D0, 0x6A17, 0x7026, 0x732A, 0x82E7,
  0x8457, 0x8CAF, 0x4E01, 0x5146, 0x51CB, 0x558B, 0x5BF5,
 };
-const unsigned short euc_to_utf8_C4[] = {
+static const unsigned short euc_to_utf8_C4[] = {
          0x5E16, 0x5E33, 0x5E81, 0x5F14, 0x5F35, 0x5F6B, 0x5FB4,
  0x61F2, 0x6311, 0x66A2, 0x671D, 0x6F6E, 0x7252, 0x753A, 0x773A,
  0x8074, 0x8139, 0x8178, 0x8776, 0x8ABF, 0x8ADC, 0x8D85, 0x8DF3,
@@ -565,7 +565,7 @@ const unsigned short euc_to_utf8_C4[] = {
  0x608C, 0x62B5, 0x633A, 0x63D0, 0x68AF, 0x6C40, 0x7887, 0x798E,
  0x7A0B, 0x7DE0, 0x8247, 0x8A02, 0x8AE6, 0x8E44, 0x9013,
 };
-const unsigned short euc_to_utf8_C5[] = {
+static const unsigned short euc_to_utf8_C5[] = {
          0x90B8, 0x912D, 0x91D8, 0x9F0E, 0x6CE5, 0x6458, 0x64E2,
  0x6575, 0x6EF4, 0x7684, 0x7B1B, 0x9069, 0x93D1, 0x6EBA, 0x54F2,
  0x5FB9, 0x64A4, 0x8F4D, 0x8FED, 0x9244, 0x5178, 0x586B, 0x5929,
@@ -579,7 +579,7 @@ const unsigned short euc_to_utf8_C5[] = {
  0x76D7, 0x6DD8, 0x6E6F, 0x6D9B, 0x706F, 0x71C8, 0x5F53, 0x75D8,
  0x7977, 0x7B49, 0x7B54, 0x7B52, 0x7CD6, 0x7D71, 0x5230,
 };
-const unsigned short euc_to_utf8_C6[] = {
+static const unsigned short euc_to_utf8_C6[] = {
          0x8463, 0x8569, 0x85E4, 0x8A0E, 0x8B04, 0x8C46, 0x8E0F,
  0x9003, 0x900F, 0x9419, 0x9676, 0x982D, 0x9A30, 0x95D8, 0x50CD,
  0x52D5, 0x540C, 0x5802, 0x5C0E, 0x61A7, 0x649E, 0x6D1E, 0x77B3,
@@ -593,7 +593,7 @@ const unsigned short euc_to_utf8_C6[] = {
  0x8EDF, 0x96E3, 0x6C5D, 0x4E8C, 0x5C3C, 0x5F10, 0x8FE9, 0x5302,
  0x8CD1, 0x8089, 0x8679, 0x5EFF, 0x65E5, 0x4E73, 0x5165,
 };
-const unsigned short euc_to_utf8_C7[] = {
+static const unsigned short euc_to_utf8_C7[] = {
          0x5982, 0x5C3F, 0x97EE, 0x4EFB, 0x598A, 0x5FCD, 0x8A8D,
  0x6FE1, 0x79B0, 0x7962, 0x5BE7, 0x8471, 0x732B, 0x71B1, 0x5E74,
  0x5FF5, 0x637B, 0x649A, 0x71C3, 0x7C98, 0x4E43, 0x5EFC, 0x4E4B,
@@ -607,7 +607,7 @@ const unsigned short euc_to_utf8_C7[] = {
  0x67CF, 0x6CCA, 0x767D, 0x7B94, 0x7C95, 0x8236, 0x8584, 0x8FEB,
  0x66DD, 0x6F20, 0x7206, 0x7E1B, 0x83AB, 0x99C1, 0x9EA6,
 };
-const unsigned short euc_to_utf8_C8[] = {
+static const unsigned short euc_to_utf8_C8[] = {
          0x51FD, 0x7BB1, 0x7872, 0x7BB8, 0x8087, 0x7B48, 0x6AE8,
  0x5E61, 0x808C, 0x7551, 0x7560, 0x516B, 0x9262, 0x6E8C, 0x767A,
  0x9197, 0x9AEA, 0x4F10, 0x7F70, 0x629C, 0x7B4F, 0x95A5, 0x9CE9,
@@ -621,7 +621,7 @@ const unsigned short euc_to_utf8_C8[] = {
  0x8AB9, 0x8CBB, 0x907F, 0x975E, 0x98DB, 0x6A0B, 0x7C38, 0x5099,
  0x5C3E, 0x5FAE, 0x6787, 0x6BD8, 0x7435, 0x7709, 0x7F8E,
 };
-const unsigned short euc_to_utf8_C9[] = {
+static const unsigned short euc_to_utf8_C9[] = {
          0x9F3B, 0x67CA, 0x7A17, 0x5339, 0x758B, 0x9AED, 0x5F66,
  0x819D, 0x83F1, 0x8098, 0x5F3C, 0x5FC5, 0x7562, 0x7B46, 0x903C,
  0x6867, 0x59EB, 0x5A9B, 0x7D10, 0x767E, 0x8B2C, 0x4FF5, 0x5F6A,
@@ -635,7 +635,7 @@ const unsigned short euc_to_utf8_C9[] = {
  0x6B66, 0x821E, 0x8461, 0x856A, 0x90E8, 0x5C01, 0x6953, 0x98A8,
  0x847A, 0x8557, 0x4F0F, 0x526F, 0x5FA9, 0x5E45, 0x670D,
 };
-const unsigned short euc_to_utf8_CA[] = {
+static const unsigned short euc_to_utf8_CA[] = {
          0x798F, 0x8179, 0x8907, 0x8986, 0x6DF5, 0x5F17, 0x6255,
  0x6CB8, 0x4ECF, 0x7269, 0x9B92, 0x5206, 0x543B, 0x5674, 0x58B3,
  0x61A4, 0x626E, 0x711A, 0x596E, 0x7C89, 0x7CDE, 0x7D1B, 0x96F0,
@@ -649,7 +649,7 @@ const unsigned short euc_to_utf8_CA[] = {
  0x4FF8, 0x5305, 0x5446, 0x5831, 0x5949, 0x5B9D, 0x5CF0, 0x5CEF,
  0x5D29, 0x5E96, 0x62B1, 0x6367, 0x653E, 0x65B9, 0x670B,
 };
-const unsigned short euc_to_utf8_CB[] = {
+static const unsigned short euc_to_utf8_CB[] = {
          0x6CD5, 0x6CE1, 0x70F9, 0x7832, 0x7E2B, 0x80DE, 0x82B3,
  0x840C, 0x84EC, 0x8702, 0x8912, 0x8A2A, 0x8C4A, 0x90A6, 0x92D2,
  0x98FD, 0x9CF3, 0x9D6C, 0x4E4F, 0x4EA1, 0x508D, 0x5256, 0x574A,
@@ -663,7 +663,7 @@ const unsigned short euc_to_utf8_CB[] = {
  0x9C52, 0x685D, 0x4EA6, 0x4FE3, 0x53C8, 0x62B9, 0x672B, 0x6CAB,
  0x8FC4, 0x4FAD, 0x7E6D, 0x9EBF, 0x4E07, 0x6162, 0x6E80,
 };
-const unsigned short euc_to_utf8_CC[] = {
+static const unsigned short euc_to_utf8_CC[] = {
          0x6F2B, 0x8513, 0x5473, 0x672A, 0x9B45, 0x5DF3, 0x7B95,
  0x5CAC, 0x5BC6, 0x871C, 0x6E4A, 0x84D1, 0x7A14, 0x8108, 0x5999,
  0x7C8D, 0x6C11, 0x7720, 0x52D9, 0x5922, 0x7121, 0x725F, 0x77DB,
@@ -677,7 +677,7 @@ const unsigned short euc_to_utf8_CC[] = {
  0x77E2, 0x5384, 0x5F79, 0x7D04, 0x85AC, 0x8A33, 0x8E8D, 0x9756,
  0x67F3, 0x85AE, 0x9453, 0x6109, 0x6108, 0x6CB9, 0x7652,
 };
-const unsigned short euc_to_utf8_CD[] = {
+static const unsigned short euc_to_utf8_CD[] = {
          0x8AED, 0x8F38, 0x552F, 0x4F51, 0x512A, 0x52C7, 0x53CB,
  0x5BA5, 0x5E7D, 0x60A0, 0x6182, 0x63D6, 0x6709, 0x67DA, 0x6E67,
  0x6D8C, 0x7336, 0x7337, 0x7531, 0x7950, 0x88D5, 0x8A98, 0x904A,
@@ -691,7 +691,7 @@ const unsigned short euc_to_utf8_CD[] = {
  0x4E71, 0x5375, 0x5D50, 0x6B04, 0x6FEB, 0x85CD, 0x862D, 0x89A7,
  0x5229, 0x540F, 0x5C65, 0x674E, 0x68A8, 0x7406, 0x7483,
 };
-const unsigned short euc_to_utf8_CE[] = {
+static const unsigned short euc_to_utf8_CE[] = {
          0x75E2, 0x88CF, 0x88E1, 0x91CC, 0x96E2, 0x9678, 0x5F8B,
  0x7387, 0x7ACB, 0x844E, 0x63A0, 0x7565, 0x5289, 0x6D41, 0x6E9C,
  0x7409, 0x7559, 0x786B, 0x7C92, 0x9686, 0x7ADC, 0x9F8D, 0x4FB6,
@@ -705,7 +705,7 @@ const unsigned short euc_to_utf8_CE[] = {
  0x9F62, 0x66A6, 0x6B74, 0x5217, 0x52A3, 0x70C8, 0x88C2, 0x5EC9,
  0x604B, 0x6190, 0x6F23, 0x7149, 0x7C3E, 0x7DF4, 0x806F,
 };
-const unsigned short euc_to_utf8_CF[] = {
+static const unsigned short euc_to_utf8_CF[] = {
          0x84EE, 0x9023, 0x932C, 0x5442, 0x9B6F, 0x6AD3, 0x7089,
  0x8CC2, 0x8DEF, 0x9732, 0x52B4, 0x5A41, 0x5ECA, 0x5F04, 0x6717,
  0x697C, 0x6994, 0x6D6A, 0x6F0F, 0x7262, 0x72FC, 0x7BED, 0x8001,
@@ -719,7 +719,7 @@ const unsigned short euc_to_utf8_CF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_D0[] = {
+static const unsigned short euc_to_utf8_D0[] = {
          0x5F0C, 0x4E10, 0x4E15, 0x4E2A, 0x4E31, 0x4E36, 0x4E3C,
  0x4E3F, 0x4E42, 0x4E56, 0x4E58, 0x4E82, 0x4E85, 0x8C6B, 0x4E8A,
  0x8212, 0x5F0D, 0x4E8E, 0x4E9E, 0x4E9F, 0x4EA0, 0x4EA2, 0x4EB0,
@@ -733,7 +733,7 @@ const unsigned short euc_to_utf8_D0[] = {
  0x5043, 0x5047, 0x6703, 0x5055, 0x5050, 0x5048, 0x505A, 0x5056,
  0x506C, 0x5078, 0x5080, 0x509A, 0x5085, 0x50B4, 0x50B2,
 };
-const unsigned short euc_to_utf8_D1[] = {
+static const unsigned short euc_to_utf8_D1[] = {
          0x50C9, 0x50CA, 0x50B3, 0x50C2, 0x50D6, 0x50DE, 0x50E5,
  0x50ED, 0x50E3, 0x50EE, 0x50F9, 0x50F5, 0x5109, 0x5101, 0x5102,
  0x5116, 0x5115, 0x5114, 0x511A, 0x5121, 0x513A, 0x5137, 0x513C,
@@ -747,7 +747,7 @@ const unsigned short euc_to_utf8_D1[] = {
  0x525E, 0x5254, 0x526A, 0x5274, 0x5269, 0x5273, 0x527F, 0x527D,
  0x528D, 0x5294, 0x5292, 0x5271, 0x5288, 0x5291, 0x8FA8,
 };
-const unsigned short euc_to_utf8_D2[] = {
+static const unsigned short euc_to_utf8_D2[] = {
          0x8FA7, 0x52AC, 0x52AD, 0x52BC, 0x52B5, 0x52C1, 0x52CD,
  0x52D7, 0x52DE, 0x52E3, 0x52E6, 0x98ED, 0x52E0, 0x52F3, 0x52F5,
  0x52F8, 0x52F9, 0x5306, 0x5308, 0x7538, 0x530D, 0x5310, 0x530F,
@@ -761,7 +761,7 @@ const unsigned short euc_to_utf8_D2[] = {
  0x5492, 0x547B, 0x5480, 0x5476, 0x5484, 0x5490, 0x5486, 0x54C7,
  0x54A2, 0x54B8, 0x54A5, 0x54AC, 0x54C4, 0x54C8, 0x54A8,
 };
-const unsigned short euc_to_utf8_D3[] = {
+static const unsigned short euc_to_utf8_D3[] = {
          0x54AB, 0x54C2, 0x54A4, 0x54BE, 0x54BC, 0x54D8, 0x54E5,
  0x54E6, 0x550F, 0x5514, 0x54FD, 0x54EE, 0x54ED, 0x54FA, 0x54E2,
  0x5539, 0x5540, 0x5563, 0x554C, 0x552E, 0x555C, 0x5545, 0x5556,
@@ -775,7 +775,7 @@ const unsigned short euc_to_utf8_D3[] = {
  0x56BC, 0x56C1, 0x56C3, 0x56C0, 0x56C8, 0x56CE, 0x56D1, 0x56D3,
  0x56D7, 0x56EE, 0x56F9, 0x5700, 0x56FF, 0x5704, 0x5709,
 };
-const unsigned short euc_to_utf8_D4[] = {
+static const unsigned short euc_to_utf8_D4[] = {
          0x5708, 0x570B, 0x570D, 0x5713, 0x5718, 0x5716, 0x55C7,
  0x571C, 0x5726, 0x5737, 0x5738, 0x574E, 0x573B, 0x5740, 0x574F,
  0x5769, 0x57C0, 0x5788, 0x5761, 0x577F, 0x5789, 0x5793, 0x57A0,
@@ -789,7 +789,7 @@ const unsigned short euc_to_utf8_D4[] = {
  0x592D, 0x5932, 0x5938, 0x593E, 0x7AD2, 0x5955, 0x5950, 0x594E,
  0x595A, 0x5958, 0x5962, 0x5960, 0x5967, 0x596C, 0x5969,
 };
-const unsigned short euc_to_utf8_D5[] = {
+static const unsigned short euc_to_utf8_D5[] = {
          0x5978, 0x5981, 0x599D, 0x4F5E, 0x4FAB, 0x59A3, 0x59B2,
  0x59C6, 0x59E8, 0x59DC, 0x598D, 0x59D9, 0x59DA, 0x5A25, 0x5A1F,
  0x5A11, 0x5A1C, 0x5A09, 0x5A1A, 0x5A40, 0x5A6C, 0x5A49, 0x5A35,
@@ -803,7 +803,7 @@ const unsigned short euc_to_utf8_D5[] = {
  0x5BF3, 0x5C05, 0x5C07, 0x5C08, 0x5C0D, 0x5C13, 0x5C20, 0x5C22,
  0x5C28, 0x5C38, 0x5C39, 0x5C41, 0x5C46, 0x5C4E, 0x5C53,
 };
-const unsigned short euc_to_utf8_D6[] = {
+static const unsigned short euc_to_utf8_D6[] = {
          0x5C50, 0x5C4F, 0x5B71, 0x5C6C, 0x5C6E, 0x4E62, 0x5C76,
  0x5C79, 0x5C8C, 0x5C91, 0x5C94, 0x599B, 0x5CAB, 0x5CBB, 0x5CB6,
  0x5CBC, 0x5CB7, 0x5CC5, 0x5CBE, 0x5CC7, 0x5CD9, 0x5CE9, 0x5CFD,
@@ -817,7 +817,7 @@ const unsigned short euc_to_utf8_D6[] = {
  0x5E5F, 0x5E62, 0x5E64, 0x5E47, 0x5E75, 0x5E76, 0x5E7A, 0x9EBC,
  0x5E7F, 0x5EA0, 0x5EC1, 0x5EC2, 0x5EC8, 0x5ED0, 0x5ECF,
 };
-const unsigned short euc_to_utf8_D7[] = {
+static const unsigned short euc_to_utf8_D7[] = {
          0x5ED6, 0x5EE3, 0x5EDD, 0x5EDA, 0x5EDB, 0x5EE2, 0x5EE1,
  0x5EE8, 0x5EE9, 0x5EEC, 0x5EF1, 0x5EF3, 0x5EF0, 0x5EF4, 0x5EF8,
  0x5EFE, 0x5F03, 0x5F09, 0x5F5D, 0x5F5C, 0x5F0B, 0x5F11, 0x5F16,
@@ -831,7 +831,7 @@ const unsigned short euc_to_utf8_D7[] = {
  0x604A, 0x6046, 0x604D, 0x6063, 0x6043, 0x6064, 0x6042, 0x606C,
  0x606B, 0x6059, 0x6081, 0x608D, 0x60E7, 0x6083, 0x609A,
 };
-const unsigned short euc_to_utf8_D8[] = {
+static const unsigned short euc_to_utf8_D8[] = {
          0x6084, 0x609B, 0x6096, 0x6097, 0x6092, 0x60A7, 0x608B,
  0x60E1, 0x60B8, 0x60E0, 0x60D3, 0x60B4, 0x5FF0, 0x60BD, 0x60C6,
  0x60B5, 0x60D8, 0x614D, 0x6115, 0x6106, 0x60F6, 0x60F7, 0x6100,
@@ -845,7 +845,7 @@ const unsigned short euc_to_utf8_D8[] = {
  0x61E3, 0x61F6, 0x61FA, 0x61F4, 0x61FF, 0x61FD, 0x61FC, 0x61FE,
  0x6200, 0x6208, 0x6209, 0x620D, 0x620C, 0x6214, 0x621B,
 };
-const unsigned short euc_to_utf8_D9[] = {
+static const unsigned short euc_to_utf8_D9[] = {
          0x621E, 0x6221, 0x622A, 0x622E, 0x6230, 0x6232, 0x6233,
  0x6241, 0x624E, 0x625E, 0x6263, 0x625B, 0x6260, 0x6268, 0x627C,
  0x6282, 0x6289, 0x627E, 0x6292, 0x6293, 0x6296, 0x62D4, 0x6283,
@@ -859,7 +859,7 @@ const unsigned short euc_to_utf8_D9[] = {
  0x651D, 0x6417, 0x6428, 0x640F, 0x6467, 0x646F, 0x6476, 0x644E,
  0x652A, 0x6495, 0x6493, 0x64A5, 0x64A9, 0x6488, 0x64BC,
 };
-const unsigned short euc_to_utf8_DA[] = {
+static const unsigned short euc_to_utf8_DA[] = {
          0x64DA, 0x64D2, 0x64C5, 0x64C7, 0x64BB, 0x64D8, 0x64C2,
  0x64F1, 0x64E7, 0x8209, 0x64E0, 0x64E1, 0x62AC, 0x64E3, 0x64EF,
  0x652C, 0x64F6, 0x64F4, 0x64F2, 0x64FA, 0x6500, 0x64FD, 0x6518,
@@ -873,7 +873,7 @@ const unsigned short euc_to_utf8_DA[] = {
  0x665F, 0x6662, 0x6670, 0x6683, 0x6688, 0x668E, 0x6689, 0x6684,
  0x6698, 0x669D, 0x66C1, 0x66B9, 0x66C9, 0x66BE, 0x66BC,
 };
-const unsigned short euc_to_utf8_DB[] = {
+static const unsigned short euc_to_utf8_DB[] = {
          0x66C4, 0x66B8, 0x66D6, 0x66DA, 0x66E0, 0x663F, 0x66E6,
  0x66E9, 0x66F0, 0x66F5, 0x66F7, 0x670F, 0x6716, 0x671E, 0x6726,
  0x6727, 0x9738, 0x672E, 0x673F, 0x6736, 0x6741, 0x6738, 0x6737,
@@ -887,7 +887,7 @@ const unsigned short euc_to_utf8_DB[] = {
  0x68B5, 0x68A0, 0x68BA, 0x690F, 0x688D, 0x687E, 0x6901, 0x68CA,
  0x6908, 0x68D8, 0x6922, 0x6926, 0x68E1, 0x690C, 0x68CD,
 };
-const unsigned short euc_to_utf8_DC[] = {
+static const unsigned short euc_to_utf8_DC[] = {
          0x68D4, 0x68E7, 0x68D5, 0x6936, 0x6912, 0x6904, 0x68D7,
  0x68E3, 0x6925, 0x68F9, 0x68E0, 0x68EF, 0x6928, 0x692A, 0x691A,
  0x6923, 0x6921, 0x68C6, 0x6979, 0x6977, 0x695C, 0x6978, 0x696B,
@@ -901,7 +901,7 @@ const unsigned short euc_to_utf8_DC[] = {
  0x6A36, 0x6A78, 0x6A47, 0x6A62, 0x6A59, 0x6A66, 0x6A48, 0x6A38,
  0x6A22, 0x6A90, 0x6A8D, 0x6AA0, 0x6A84, 0x6AA2, 0x6AA3,
 };
-const unsigned short euc_to_utf8_DD[] = {
+static const unsigned short euc_to_utf8_DD[] = {
          0x6A97, 0x8617, 0x6ABB, 0x6AC3, 0x6AC2, 0x6AB8, 0x6AB3,
  0x6AAC, 0x6ADE, 0x6AD1, 0x6ADF, 0x6AAA, 0x6ADA, 0x6AEA, 0x6AFB,
  0x6B05, 0x8616, 0x6AFA, 0x6B12, 0x6B16, 0x9B31, 0x6B1F, 0x6B38,
@@ -915,7 +915,7 @@ const unsigned short euc_to_utf8_DD[] = {
  0x6C7E, 0x6C68, 0x6C73, 0x6C92, 0x6C90, 0x6CC4, 0x6CF1, 0x6CD3,
  0x6CBD, 0x6CD7, 0x6CC5, 0x6CDD, 0x6CAE, 0x6CB1, 0x6CBE,
 };
-const unsigned short euc_to_utf8_DE[] = {
+static const unsigned short euc_to_utf8_DE[] = {
          0x6CBA, 0x6CDB, 0x6CEF, 0x6CD9, 0x6CEA, 0x6D1F, 0x884D,
  0x6D36, 0x6D2B, 0x6D3D, 0x6D38, 0x6D19, 0x6D35, 0x6D33, 0x6D12,
  0x6D0C, 0x6D63, 0x6D93, 0x6D64, 0x6D5A, 0x6D79, 0x6D59, 0x6D8E,
@@ -929,7 +929,7 @@ const unsigned short euc_to_utf8_DE[] = {
  0x6EA5, 0x6EC2, 0x6E9F, 0x6F41, 0x6F11, 0x704C, 0x6EEC, 0x6EF8,
  0x6EFE, 0x6F3F, 0x6EF2, 0x6F31, 0x6EEF, 0x6F32, 0x6ECC,
 };
-const unsigned short euc_to_utf8_DF[] = {
+static const unsigned short euc_to_utf8_DF[] = {
          0x6F3E, 0x6F13, 0x6EF7, 0x6F86, 0x6F7A, 0x6F78, 0x6F81,
  0x6F80, 0x6F6F, 0x6F5B, 0x6FF3, 0x6F6D, 0x6F82, 0x6F7C, 0x6F58,
  0x6F8E, 0x6F91, 0x6FC2, 0x6F66, 0x6FB3, 0x6FA3, 0x6FA1, 0x6FA4,
@@ -943,7 +943,7 @@ const unsigned short euc_to_utf8_DF[] = {
  0x7195, 0x71A8, 0x71AC, 0x71D7, 0x71B9, 0x71BE, 0x71D2, 0x71C9,
  0x71D4, 0x71CE, 0x71E0, 0x71EC, 0x71E7, 0x71F5, 0x71FC,
 };
-const unsigned short euc_to_utf8_E0[] = {
+static const unsigned short euc_to_utf8_E0[] = {
          0x71F9, 0x71FF, 0x720D, 0x7210, 0x721B, 0x7228, 0x722D,
  0x722C, 0x7230, 0x7232, 0x723B, 0x723C, 0x723F, 0x7240, 0x7246,
  0x724B, 0x7258, 0x7274, 0x727E, 0x7282, 0x7281, 0x7287, 0x7292,
@@ -957,7 +957,7 @@ const unsigned short euc_to_utf8_E0[] = {
  0x7441, 0x745C, 0x7469, 0x7470, 0x7463, 0x746A, 0x7476, 0x747E,
  0x748B, 0x749E, 0x74A7, 0x74CA, 0x74CF, 0x74D4, 0x73F1,
 };
-const unsigned short euc_to_utf8_E1[] = {
+static const unsigned short euc_to_utf8_E1[] = {
          0x74E0, 0x74E3, 0x74E7, 0x74E9, 0x74EE, 0x74F2, 0x74F0,
  0x74F1, 0x74F8, 0x74F7, 0x7504, 0x7503, 0x7505, 0x750C, 0x750E,
  0x750D, 0x7515, 0x7513, 0x751E, 0x7526, 0x752C, 0x753C, 0x7544,
@@ -971,7 +971,7 @@ const unsigned short euc_to_utf8_E1[] = {
  0x7630, 0x763B, 0x7647, 0x7648, 0x7646, 0x765C, 0x7658, 0x7661,
  0x7662, 0x7668, 0x7669, 0x766A, 0x7667, 0x766C, 0x7670,
 };
-const unsigned short euc_to_utf8_E2[] = {
+static const unsigned short euc_to_utf8_E2[] = {
          0x7672, 0x7676, 0x7678, 0x767C, 0x7680, 0x7683, 0x7688,
  0x768B, 0x768E, 0x7696, 0x7693, 0x7699, 0x769A, 0x76B0, 0x76B4,
  0x76B8, 0x76B9, 0x76BA, 0x76C2, 0x76CD, 0x76D6, 0x76D2, 0x76DE,
@@ -985,7 +985,7 @@ const unsigned short euc_to_utf8_E2[] = {
  0x789A, 0x788C, 0x78A3, 0x78B5, 0x78AA, 0x78AF, 0x78D1, 0x78C6,
  0x78CB, 0x78D4, 0x78BE, 0x78BC, 0x78C5, 0x78CA, 0x78EC,
 };
-const unsigned short euc_to_utf8_E3[] = {
+static const unsigned short euc_to_utf8_E3[] = {
          0x78E7, 0x78DA, 0x78FD, 0x78F4, 0x7907, 0x7912, 0x7911,
  0x7919, 0x792C, 0x792B, 0x7940, 0x7960, 0x7957, 0x795F, 0x795A,
  0x7955, 0x7953, 0x797A, 0x797F, 0x798A, 0x799D, 0x79A7, 0x9F4B,
@@ -999,7 +999,7 @@ const unsigned short euc_to_utf8_E3[] = {
  0x7AE6, 0x7AED, 0x7AF0, 0x7B02, 0x7B0F, 0x7B0A, 0x7B06, 0x7B33,
  0x7B18, 0x7B19, 0x7B1E, 0x7B35, 0x7B28, 0x7B36, 0x7B50,
 };
-const unsigned short euc_to_utf8_E4[] = {
+static const unsigned short euc_to_utf8_E4[] = {
          0x7B7A, 0x7B04, 0x7B4D, 0x7B0B, 0x7B4C, 0x7B45, 0x7B75,
  0x7B65, 0x7B74, 0x7B67, 0x7B70, 0x7B71, 0x7B6C, 0x7B6E, 0x7B9D,
  0x7B98, 0x7B9F, 0x7B8D, 0x7B9C, 0x7B9A, 0x7B8B, 0x7B92, 0x7B8F,
@@ -1013,7 +1013,7 @@ const unsigned short euc_to_utf8_E4[] = {
  0x7CBD, 0x7CC0, 0x7CC5, 0x7CC2, 0x7CD8, 0x7CD2, 0x7CDC, 0x7CE2,
  0x9B3B, 0x7CEF, 0x7CF2, 0x7CF4, 0x7CF6, 0x7CFA, 0x7D06,
 };
-const unsigned short euc_to_utf8_E5[] = {
+static const unsigned short euc_to_utf8_E5[] = {
          0x7D02, 0x7D1C, 0x7D15, 0x7D0A, 0x7D45, 0x7D4B, 0x7D2E,
  0x7D32, 0x7D3F, 0x7D35, 0x7D46, 0x7D73, 0x7D56, 0x7D4E, 0x7D72,
  0x7D68, 0x7D6E, 0x7D4F, 0x7D63, 0x7D93, 0x7D89, 0x7D5B, 0x7D8F,
@@ -1027,7 +1027,7 @@ const unsigned short euc_to_utf8_E5[] = {
  0x8FAE, 0x7E7F, 0x7E88, 0x7E89, 0x7E8C, 0x7E92, 0x7E90, 0x7E93,
  0x7E94, 0x7E96, 0x7E8E, 0x7E9B, 0x7E9C, 0x7F38, 0x7F3A,
 };
-const unsigned short euc_to_utf8_E6[] = {
+static const unsigned short euc_to_utf8_E6[] = {
          0x7F45, 0x7F4C, 0x7F4D, 0x7F4E, 0x7F50, 0x7F51, 0x7F55,
  0x7F54, 0x7F58, 0x7F5F, 0x7F60, 0x7F68, 0x7F69, 0x7F67, 0x7F78,
  0x7F82, 0x7F86, 0x7F83, 0x7F88, 0x7F87, 0x7F8C, 0x7F94, 0x7F9E,
@@ -1041,7 +1041,7 @@ const unsigned short euc_to_utf8_E6[] = {
  0x80DB, 0x80E5, 0x80D9, 0x80DD, 0x80C4, 0x80DA, 0x80D6, 0x8109,
  0x80EF, 0x80F1, 0x811B, 0x8129, 0x8123, 0x812F, 0x814B,
 };
-const unsigned short euc_to_utf8_E7[] = {
+static const unsigned short euc_to_utf8_E7[] = {
          0x968B, 0x8146, 0x813E, 0x8153, 0x8151, 0x80FC, 0x8171,
  0x816E, 0x8165, 0x8166, 0x8174, 0x8183, 0x8188, 0x818A, 0x8180,
  0x8182, 0x81A0, 0x8195, 0x81A4, 0x81A3, 0x815F, 0x8193, 0x81A9,
@@ -1055,7 +1055,7 @@ const unsigned short euc_to_utf8_E7[] = {
  0x82E3, 0x82DF, 0x82D2, 0x82F4, 0x82F3, 0x82FA, 0x8393, 0x8303,
  0x82FB, 0x82F9, 0x82DE, 0x8306, 0x82DC, 0x8309, 0x82D9,
 };
-const unsigned short euc_to_utf8_E8[] = {
+static const unsigned short euc_to_utf8_E8[] = {
          0x8335, 0x8334, 0x8316, 0x8332, 0x8331, 0x8340, 0x8339,
  0x8350, 0x8345, 0x832F, 0x832B, 0x8317, 0x8318, 0x8385, 0x839A,
  0x83AA, 0x839F, 0x83A2, 0x8396, 0x8323, 0x838E, 0x8387, 0x838A,
@@ -1069,7 +1069,7 @@ const unsigned short euc_to_utf8_E8[] = {
  0x84A1, 0x8521, 0x84FF, 0x84F4, 0x8517, 0x8518, 0x852C, 0x851F,
  0x8515, 0x8514, 0x84FC, 0x8540, 0x8563, 0x8558, 0x8548,
 };
-const unsigned short euc_to_utf8_E9[] = {
+static const unsigned short euc_to_utf8_E9[] = {
          0x8541, 0x8602, 0x854B, 0x8555, 0x8580, 0x85A4, 0x8588,
  0x8591, 0x858A, 0x85A8, 0x856D, 0x8594, 0x859B, 0x85EA, 0x8587,
  0x859C, 0x8577, 0x857E, 0x8590, 0x85C9, 0x85BA, 0x85CF, 0x85B9,
@@ -1083,7 +1083,7 @@ const unsigned short euc_to_utf8_E9[] = {
  0x8737, 0x873B, 0x8725, 0x8729, 0x871A, 0x8760, 0x875F, 0x8778,
  0x874C, 0x874E, 0x8774, 0x8757, 0x8768, 0x876E, 0x8759,
 };
-const unsigned short euc_to_utf8_EA[] = {
+static const unsigned short euc_to_utf8_EA[] = {
          0x8753, 0x8763, 0x876A, 0x8805, 0x87A2, 0x879F, 0x8782,
  0x87AF, 0x87CB, 0x87BD, 0x87C0, 0x87D0, 0x96D6, 0x87AB, 0x87C4,
  0x87B3, 0x87C7, 0x87C6, 0x87BB, 0x87EF, 0x87F2, 0x87E0, 0x880F,
@@ -1097,7 +1097,7 @@ const unsigned short euc_to_utf8_EA[] = {
  0x8913, 0x8943, 0x891E, 0x8925, 0x892A, 0x892B, 0x8941, 0x8944,
  0x893B, 0x8936, 0x8938, 0x894C, 0x891D, 0x8960, 0x895E,
 };
-const unsigned short euc_to_utf8_EB[] = {
+static const unsigned short euc_to_utf8_EB[] = {
          0x8966, 0x8964, 0x896D, 0x896A, 0x896F, 0x8974, 0x8977,
  0x897E, 0x8983, 0x8988, 0x898A, 0x8993, 0x8998, 0x89A1, 0x89A9,
  0x89A6, 0x89AC, 0x89AF, 0x89B2, 0x89BA, 0x89BD, 0x89BF, 0x89C0,
@@ -1111,7 +1111,7 @@ const unsigned short euc_to_utf8_EB[] = {
  0x8B33, 0x97AB, 0x8B26, 0x8B2B, 0x8B3E, 0x8B28, 0x8B41, 0x8B4C,
  0x8B4F, 0x8B4E, 0x8B49, 0x8B56, 0x8B5B, 0x8B5A, 0x8B6B,
 };
-const unsigned short euc_to_utf8_EC[] = {
+static const unsigned short euc_to_utf8_EC[] = {
          0x8B5F, 0x8B6C, 0x8B6F, 0x8B74, 0x8B7D, 0x8B80, 0x8B8C,
  0x8B8E, 0x8B92, 0x8B93, 0x8B96, 0x8B99, 0x8B9A, 0x8C3A, 0x8C41,
  0x8C3F, 0x8C48, 0x8C4C, 0x8C4E, 0x8C50, 0x8C55, 0x8C62, 0x8C6C,
@@ -1125,7 +1125,7 @@ const unsigned short euc_to_utf8_EC[] = {
  0x8DDF, 0x8DE3, 0x8DFC, 0x8E08, 0x8E09, 0x8DFF, 0x8E1D, 0x8E1E,
  0x8E10, 0x8E1F, 0x8E42, 0x8E35, 0x8E30, 0x8E34, 0x8E4A,
 };
-const unsigned short euc_to_utf8_ED[] = {
+static const unsigned short euc_to_utf8_ED[] = {
          0x8E47, 0x8E49, 0x8E4C, 0x8E50, 0x8E48, 0x8E59, 0x8E64,
  0x8E60, 0x8E2A, 0x8E63, 0x8E55, 0x8E76, 0x8E72, 0x8E7C, 0x8E81,
  0x8E87, 0x8E85, 0x8E84, 0x8E8B, 0x8E8A, 0x8E93, 0x8E91, 0x8E94,
@@ -1139,7 +1139,7 @@ const unsigned short euc_to_utf8_ED[] = {
  0x9005, 0x8FF9, 0x8FFA, 0x9011, 0x9015, 0x9021, 0x900D, 0x901E,
  0x9016, 0x900B, 0x9027, 0x9036, 0x9035, 0x9039, 0x8FF8,
 };
-const unsigned short euc_to_utf8_EE[] = {
+static const unsigned short euc_to_utf8_EE[] = {
          0x904F, 0x9050, 0x9051, 0x9052, 0x900E, 0x9049, 0x903E,
  0x9056, 0x9058, 0x905E, 0x9068, 0x906F, 0x9076, 0x96A8, 0x9072,
  0x9082, 0x907D, 0x9081, 0x9080, 0x908A, 0x9089, 0x908F, 0x90A8,
@@ -1153,7 +1153,7 @@ const unsigned short euc_to_utf8_EE[] = {
  0x924B, 0x9250, 0x929C, 0x9296, 0x9293, 0x929B, 0x925A, 0x92CF,
  0x92B9, 0x92B7, 0x92E9, 0x930F, 0x92FA, 0x9344, 0x932E,
 };
-const unsigned short euc_to_utf8_EF[] = {
+static const unsigned short euc_to_utf8_EF[] = {
          0x9319, 0x9322, 0x931A, 0x9323, 0x933A, 0x9335, 0x933B,
  0x935C, 0x9360, 0x937C, 0x936E, 0x9356, 0x93B0, 0x93AC, 0x93AD,
  0x9394, 0x93B9, 0x93D6, 0x93D7, 0x93E8, 0x93E5, 0x93D8, 0x93C3,
@@ -1167,7 +1167,7 @@ const unsigned short euc_to_utf8_EF[] = {
  0x95DC, 0x95E1, 0x95E5, 0x95E2, 0x9621, 0x9628, 0x962E, 0x962F,
  0x9642, 0x964C, 0x964F, 0x964B, 0x9677, 0x965C, 0x965E,
 };
-const unsigned short euc_to_utf8_F0[] = {
+static const unsigned short euc_to_utf8_F0[] = {
          0x965D, 0x965F, 0x9666, 0x9672, 0x966C, 0x968D, 0x9698,
  0x9695, 0x9697, 0x96AA, 0x96A7, 0x96B1, 0x96B2, 0x96B0, 0x96B4,
  0x96B6, 0x96B8, 0x96B9, 0x96CE, 0x96CB, 0x96C9, 0x96CD, 0x894D,
@@ -1181,7 +1181,7 @@ const unsigned short euc_to_utf8_F0[] = {
  0x97F6, 0x97F5, 0x980F, 0x980C, 0x9838, 0x9824, 0x9821, 0x9837,
  0x983D, 0x9846, 0x984F, 0x984B, 0x986B, 0x986F, 0x9870,
 };
-const unsigned short euc_to_utf8_F1[] = {
+static const unsigned short euc_to_utf8_F1[] = {
          0x9871, 0x9874, 0x9873, 0x98AA, 0x98AF, 0x98B1, 0x98B6,
  0x98C4, 0x98C3, 0x98C6, 0x98E9, 0x98EB, 0x9903, 0x9909, 0x9912,
  0x9914, 0x9918, 0x9921, 0x991D, 0x991E, 0x9924, 0x9920, 0x992C,
@@ -1195,7 +1195,7 @@ const unsigned short euc_to_utf8_F1[] = {
  0x9ACF, 0x9AD1, 0x9AD3, 0x9AD4, 0x9ADE, 0x9ADF, 0x9AE2, 0x9AE3,
  0x9AE6, 0x9AEF, 0x9AEB, 0x9AEE, 0x9AF4, 0x9AF1, 0x9AF7,
 };
-const unsigned short euc_to_utf8_F2[] = {
+static const unsigned short euc_to_utf8_F2[] = {
          0x9AFB, 0x9B06, 0x9B18, 0x9B1A, 0x9B1F, 0x9B22, 0x9B23,
  0x9B25, 0x9B27, 0x9B28, 0x9B29, 0x9B2A, 0x9B2E, 0x9B2F, 0x9B32,
  0x9B44, 0x9B43, 0x9B4F, 0x9B4D, 0x9B4E, 0x9B51, 0x9B58, 0x9B74,
@@ -1209,7 +1209,7 @@ const unsigned short euc_to_utf8_F2[] = {
  0x9D03, 0x9D06, 0x9D2A, 0x9D26, 0x9DAF, 0x9D23, 0x9D1F, 0x9D44,
  0x9D15, 0x9D12, 0x9D41, 0x9D3F, 0x9D3E, 0x9D46, 0x9D48,
 };
-const unsigned short euc_to_utf8_F3[] = {
+static const unsigned short euc_to_utf8_F3[] = {
          0x9D5D, 0x9D5E, 0x9D64, 0x9D51, 0x9D50, 0x9D59, 0x9D72,
  0x9D89, 0x9D87, 0x9DAB, 0x9D6F, 0x9D7A, 0x9D9A, 0x9DA4, 0x9DA9,
  0x9DB2, 0x9DC4, 0x9DC1, 0x9DBB, 0x9DB8, 0x9DBA, 0x9DC6, 0x9DCF,
@@ -1223,7 +1223,7 @@ const unsigned short euc_to_utf8_F3[] = {
  0x9F54, 0x9F63, 0x9F5F, 0x9F60, 0x9F61, 0x9F66, 0x9F67, 0x9F6C,
  0x9F6A, 0x9F77, 0x9F72, 0x9F76, 0x9F95, 0x9F9C, 0x9FA0,
 };
-const unsigned short euc_to_utf8_F4[] = {
+static const unsigned short euc_to_utf8_F4[] = {
          0x582F, 0x69C7, 0x9059, 0x7464, 0x51DC, 0x7199,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -1237,7 +1237,7 @@ const unsigned short euc_to_utf8_F4[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_F5[] = {
+static const unsigned short euc_to_utf8_F5[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0xFE33,      0,      0,      0,      0,      0,
@@ -1251,7 +1251,7 @@ const unsigned short euc_to_utf8_F5[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_F9[] = {
+static const unsigned short euc_to_utf8_F9[] = {
          0x7E8A, 0x891C, 0x9348, 0x9288, 0x84DC, 0x4FC9, 0x70BB,
  0x6631, 0x68C8, 0x92F9, 0x66FB, 0x5F45, 0x4E28, 0x4EE1, 0x4EFC,
  0x4F00, 0x4F03, 0x4F39, 0x4F56, 0x4F92, 0x4F8A, 0x4F9A, 0x4F94,
@@ -1265,7 +1265,7 @@ const unsigned short euc_to_utf8_F9[] = {
  0x5CA6, 0x5CBA, 0x5CF5, 0x5D27, 0x5D53, 0xFA11, 0x5D42, 0x5D6D,
  0x5DB8, 0x5DB9, 0x5DD0, 0x5F21, 0x5F34, 0x5F67, 0x5FB7,
 };
-const unsigned short euc_to_utf8_FA[] = {
+static const unsigned short euc_to_utf8_FA[] = {
          0x5FDE, 0x605D, 0x6085, 0x608A, 0x60DE, 0x60D5, 0x6120,
  0x60F2, 0x6111, 0x6137, 0x6130, 0x6198, 0x6213, 0x62A6, 0x63F5,
  0x6460, 0x649D, 0x64CE, 0x654E, 0x6600, 0x6615, 0x663B, 0x6609,
@@ -1279,7 +1279,7 @@ const unsigned short euc_to_utf8_FA[] = {
  0x6FF5, 0x7005, 0x7007, 0x7028, 0x7085, 0x70AB, 0x710F, 0x7104,
  0x715C, 0x7146, 0x7147, 0xFA15, 0x71C1, 0x71FE, 0x72B1,
 };
-const unsigned short euc_to_utf8_FB[] = {
+static const unsigned short euc_to_utf8_FB[] = {
          0x72BE, 0x7324, 0xFA16, 0x7377, 0x73BD, 0x73C9, 0x73D6,
  0x73E3, 0x73D2, 0x7407, 0x73F5, 0x7426, 0x742A, 0x7429, 0x742E,
  0x7462, 0x7489, 0x749F, 0x7501, 0x756F, 0x7682, 0x769C, 0x769E,
@@ -1293,7 +1293,7 @@ const unsigned short euc_to_utf8_FB[] = {
  0x8B7F, 0x8CF0, 0x8CF4, 0x8D12, 0x8D76, 0xFA23, 0x8ECF, 0xFA24,
  0xFA25, 0x9067, 0x90DE, 0xFA26, 0x9115, 0x9127, 0x91DA,
 };
-const unsigned short euc_to_utf8_FC[] = {
+static const unsigned short euc_to_utf8_FC[] = {
          0x91D7, 0x91DE, 0x91ED, 0x91EE, 0x91E4, 0x91E5, 0x9206,
  0x9210, 0x920A, 0x923A, 0x9240, 0x923C, 0x924E, 0x9259, 0x9251,
  0x9239, 0x9267, 0x92A7, 0x9277, 0x9278, 0x92E7, 0x92D7, 0x92D9,
@@ -1309,7 +1309,7 @@ const unsigned short euc_to_utf8_FC[] = {
 };
 
 /* Microsoft UCS Mapping Compatible */
-const unsigned short euc_to_utf8_FC_ms[] = {
+static const unsigned short euc_to_utf8_FC_ms[] = {
          0x91D7, 0x91DE, 0x91ED, 0x91EE, 0x91E4, 0x91E5, 0x9206,
  0x9210, 0x920A, 0x923A, 0x9240, 0x923C, 0x924E, 0x9259, 0x9251,
  0x9239, 0x9267, 0x92A7, 0x9277, 0x9278, 0x92E7, 0x92D7, 0x92D9,
@@ -1325,7 +1325,7 @@ const unsigned short euc_to_utf8_FC_ms[] = {
 };
 
 #ifdef X0212_ENABLE
-const unsigned short euc_to_utf8_8FA2[] = {
+static const unsigned short euc_to_utf8_8FA2[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0x02D8,
  0x02C7, 0x00B8, 0x02D9, 0x02DD, 0x00AF, 0x02DB, 0x02DA, 0xFF5E,
@@ -1339,7 +1339,7 @@ const unsigned short euc_to_utf8_8FA2[] = {
  0x00A4, 0x2116,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_8FA6[] = {
+static const unsigned short euc_to_utf8_8FA6[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -1353,7 +1353,7 @@ const unsigned short euc_to_utf8_8FA6[] = {
       0, 0x03AC, 0x03AD, 0x03AE, 0x03AF, 0x03CA, 0x0390, 0x03CC,
  0x03C2, 0x03CD, 0x03CB, 0x03B0, 0x03CE,      0,      0,
 };
-const unsigned short euc_to_utf8_8FA7[] = {
+static const unsigned short euc_to_utf8_8FA7[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -1367,7 +1367,7 @@ const unsigned short euc_to_utf8_8FA7[] = {
       0,      0, 0x0452, 0x0453, 0x0454, 0x0455, 0x0456, 0x0457,
  0x0458, 0x0459, 0x045A, 0x045B, 0x045C, 0x045E, 0x045F,
 };
-const unsigned short euc_to_utf8_8FA9[] = {
+static const unsigned short euc_to_utf8_8FA9[] = {
          0x00C6, 0x0110,      0, 0x0126,      0, 0x0132,      0,
  0x0141, 0x013F,      0, 0x014A, 0x00D8, 0x0152,      0, 0x0166,
  0x00DE,      0,      0,      0,      0,      0,      0,      0,
@@ -1381,7 +1381,7 @@ const unsigned short euc_to_utf8_8FA9[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_8FAA[] = {
+static const unsigned short euc_to_utf8_8FAA[] = {
          0x00C1, 0x00C0, 0x00C4, 0x00C2, 0x0102, 0x01CD, 0x0100,
  0x0104, 0x00C5, 0x00C3, 0x0106, 0x0108, 0x010C, 0x00C7, 0x010A,
  0x010E, 0x00C9, 0x00C8, 0x00CB, 0x00CA, 0x011A, 0x0116, 0x0112,
@@ -1395,7 +1395,7 @@ const unsigned short euc_to_utf8_8FAA[] = {
  0x01D5, 0x0174, 0x00DD, 0x0178, 0x0176, 0x0179, 0x017D, 0x017B,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_8FAB[] = {
+static const unsigned short euc_to_utf8_8FAB[] = {
          0x00E1, 0x00E0, 0x00E4, 0x00E2, 0x0103, 0x01CE, 0x0101,
  0x0105, 0x00E5, 0x00E3, 0x0107, 0x0109, 0x010D, 0x00E7, 0x010B,
  0x010F, 0x00E9, 0x00E8, 0x00EB, 0x00EA, 0x011B, 0x0117, 0x0113,
@@ -1409,7 +1409,7 @@ const unsigned short euc_to_utf8_8FAB[] = {
  0x01D6, 0x0175, 0x00FD, 0x00FF, 0x0177, 0x017A, 0x017E, 0x017C,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_8FB0[] = {
+static const unsigned short euc_to_utf8_8FB0[] = {
          0x4E02, 0x4E04, 0x4E05, 0x4E0C, 0x4E12, 0x4E1F, 0x4E23,
  0x4E24, 0x4E28, 0x4E2B, 0x4E2E, 0x4E2F, 0x4E30, 0x4E35, 0x4E40,
  0x4E41, 0x4E44, 0x4E47, 0x4E51, 0x4E5A, 0x4E5C, 0x4E63, 0x4E68,
@@ -1423,7 +1423,7 @@ const unsigned short euc_to_utf8_8FB0[] = {
  0x4F5F, 0x4F63, 0x4F6A, 0x4F6C, 0x4F6E, 0x4F71, 0x4F77, 0x4F78,
  0x4F79, 0x4F7A, 0x4F7D, 0x4F7E, 0x4F81, 0x4F82, 0x4F84,
 };
-const unsigned short euc_to_utf8_8FB1[] = {
+static const unsigned short euc_to_utf8_8FB1[] = {
          0x4F85, 0x4F89, 0x4F8A, 0x4F8C, 0x4F8E, 0x4F90, 0x4F92,
  0x4F93, 0x4F94, 0x4F97, 0x4F99, 0x4F9A, 0x4F9E, 0x4F9F, 0x4FB2,
  0x4FB7, 0x4FB9, 0x4FBB, 0x4FBC, 0x4FBD, 0x4FBE, 0x4FC0, 0x4FC1,
@@ -1437,7 +1437,7 @@ const unsigned short euc_to_utf8_8FB1[] = {
  0x5066, 0x5067, 0x506A, 0x506D, 0x5070, 0x5071, 0x503B, 0x5081,
  0x5083, 0x5084, 0x5086, 0x508A, 0x508E, 0x508F, 0x5090,
 };
-const unsigned short euc_to_utf8_8FB2[] = {
+static const unsigned short euc_to_utf8_8FB2[] = {
          0x5092, 0x5093, 0x5094, 0x5096, 0x509B, 0x509C, 0x509E,
  0x509F, 0x50A0, 0x50A1, 0x50A2, 0x50AA, 0x50AF, 0x50B0, 0x50B9,
  0x50BA, 0x50BD, 0x50C0, 0x50C3, 0x50C4, 0x50C7, 0x50CC, 0x50CE,
@@ -1451,7 +1451,7 @@ const unsigned short euc_to_utf8_8FB2[] = {
  0x5183, 0x5184, 0x518B, 0x518E, 0x5198, 0x519D, 0x51A1, 0x51A3,
  0x51AD, 0x51B8, 0x51BA, 0x51BC, 0x51BE, 0x51BF, 0x51C2,
 };
-const unsigned short euc_to_utf8_8FB3[] = {
+static const unsigned short euc_to_utf8_8FB3[] = {
          0x51C8, 0x51CF, 0x51D1, 0x51D2, 0x51D3, 0x51D5, 0x51D8,
  0x51DE, 0x51E2, 0x51E5, 0x51EE, 0x51F2, 0x51F3, 0x51F4, 0x51F7,
  0x5201, 0x5202, 0x5205, 0x5212, 0x5213, 0x5215, 0x5216, 0x5218,
@@ -1465,7 +1465,7 @@ const unsigned short euc_to_utf8_8FB3[] = {
  0x52E1, 0x52E5, 0x52E8, 0x52E9, 0x52EA, 0x52EC, 0x52F0, 0x52F1,
  0x52F4, 0x52F6, 0x52F7, 0x5300, 0x5303, 0x530A, 0x530B,
 };
-const unsigned short euc_to_utf8_8FB4[] = {
+static const unsigned short euc_to_utf8_8FB4[] = {
          0x530C, 0x5311, 0x5313, 0x5318, 0x531B, 0x531C, 0x531E,
  0x531F, 0x5325, 0x5327, 0x5328, 0x5329, 0x532B, 0x532C, 0x532D,
  0x5330, 0x5332, 0x5335, 0x533C, 0x533D, 0x533E, 0x5342, 0x534C,
@@ -1479,7 +1479,7 @@ const unsigned short euc_to_utf8_8FB4[] = {
  0x5444, 0x5447, 0x544D, 0x544F, 0x545E, 0x5462, 0x5464, 0x5466,
  0x5467, 0x5469, 0x546B, 0x546D, 0x546E, 0x5474, 0x547F,
 };
-const unsigned short euc_to_utf8_8FB5[] = {
+static const unsigned short euc_to_utf8_8FB5[] = {
          0x5481, 0x5483, 0x5485, 0x5488, 0x5489, 0x548D, 0x5491,
  0x5495, 0x5496, 0x549C, 0x549F, 0x54A1, 0x54A6, 0x54A7, 0x54A9,
  0x54AA, 0x54AD, 0x54AE, 0x54B1, 0x54B7, 0x54B9, 0x54BA, 0x54BB,
@@ -1493,7 +1493,7 @@ const unsigned short euc_to_utf8_8FB5[] = {
  0x5597, 0x55A3, 0x55A4, 0x55AD, 0x55B2, 0x55BF, 0x55C1, 0x55C3,
  0x55C6, 0x55C9, 0x55CB, 0x55CC, 0x55CE, 0x55D1, 0x55D2,
 };
-const unsigned short euc_to_utf8_8FB6[] = {
+static const unsigned short euc_to_utf8_8FB6[] = {
          0x55D3, 0x55D7, 0x55D8, 0x55DB, 0x55DE, 0x55E2, 0x55E9,
  0x55F6, 0x55FF, 0x5605, 0x5608, 0x560A, 0x560D, 0x560E, 0x560F,
  0x5610, 0x5611, 0x5612, 0x5619, 0x562C, 0x5630, 0x5633, 0x5635,
@@ -1507,7 +1507,7 @@ const unsigned short euc_to_utf8_8FB6[] = {
  0x56CC, 0x56CD, 0x56D9, 0x56DC, 0x56DD, 0x56DF, 0x56E1, 0x56E4,
  0x56E5, 0x56E6, 0x56E7, 0x56E8, 0x56F1, 0x56EB, 0x56ED,
 };
-const unsigned short euc_to_utf8_8FB7[] = {
+static const unsigned short euc_to_utf8_8FB7[] = {
          0x56F6, 0x56F7, 0x5701, 0x5702, 0x5707, 0x570A, 0x570C,
  0x5711, 0x5715, 0x571A, 0x571B, 0x571D, 0x5720, 0x5722, 0x5723,
  0x5724, 0x5725, 0x5729, 0x572A, 0x572C, 0x572E, 0x572F, 0x5733,
@@ -1521,7 +1521,7 @@ const unsigned short euc_to_utf8_8FB7[] = {
  0x57E7, 0x57E9, 0x57ED, 0x57F0, 0x57F5, 0x57F6, 0x57F8, 0x57FD,
  0x57FE, 0x57FF, 0x5803, 0x5804, 0x5808, 0x5809, 0x57E1,
 };
-const unsigned short euc_to_utf8_8FB8[] = {
+static const unsigned short euc_to_utf8_8FB8[] = {
          0x580C, 0x580D, 0x581B, 0x581E, 0x581F, 0x5820, 0x5826,
  0x5827, 0x582D, 0x5832, 0x5839, 0x583F, 0x5849, 0x584C, 0x584D,
  0x584F, 0x5850, 0x5855, 0x585F, 0x5861, 0x5864, 0x5867, 0x5868,
@@ -1535,7 +1535,7 @@ const unsigned short euc_to_utf8_8FB8[] = {
  0x5936, 0x593F, 0x5943, 0x5946, 0x5952, 0x5953, 0x5959, 0x595B,
  0x595D, 0x595E, 0x595F, 0x5961, 0x5963, 0x596B, 0x596D,
 };
-const unsigned short euc_to_utf8_8FB9[] = {
+static const unsigned short euc_to_utf8_8FB9[] = {
          0x596F, 0x5972, 0x5975, 0x5976, 0x5979, 0x597B, 0x597C,
  0x598B, 0x598C, 0x598E, 0x5992, 0x5995, 0x5997, 0x599F, 0x59A4,
  0x59A7, 0x59AD, 0x59AE, 0x59AF, 0x59B0, 0x59B3, 0x59B7, 0x59BA,
@@ -1549,7 +1549,7 @@ const unsigned short euc_to_utf8_8FB9[] = {
  0x5A9C, 0x5A9E, 0x5A9F, 0x5AA0, 0x5AA2, 0x5AA7, 0x5AAC, 0x5AB1,
  0x5AB2, 0x5AB3, 0x5AB5, 0x5AB8, 0x5ABA, 0x5ABB, 0x5ABF,
 };
-const unsigned short euc_to_utf8_8FBA[] = {
+static const unsigned short euc_to_utf8_8FBA[] = {
          0x5AC4, 0x5AC6, 0x5AC8, 0x5ACF, 0x5ADA, 0x5ADC, 0x5AE0,
  0x5AE5, 0x5AEA, 0x5AEE, 0x5AF5, 0x5AF6, 0x5AFD, 0x5B00, 0x5B01,
  0x5B08, 0x5B17, 0x5B34, 0x5B19, 0x5B1B, 0x5B1D, 0x5B21, 0x5B25,
@@ -1563,7 +1563,7 @@ const unsigned short euc_to_utf8_8FBA[] = {
  0x5C2B, 0x5C2C, 0x5C2E, 0x5C30, 0x5C32, 0x5C35, 0x5C36, 0x5C59,
  0x5C5A, 0x5C5C, 0x5C62, 0x5C63, 0x5C67, 0x5C68, 0x5C69,
 };
-const unsigned short euc_to_utf8_8FBB[] = {
+static const unsigned short euc_to_utf8_8FBB[] = {
          0x5C6D, 0x5C70, 0x5C74, 0x5C75, 0x5C7A, 0x5C7B, 0x5C7C,
  0x5C7D, 0x5C87, 0x5C88, 0x5C8A, 0x5C8F, 0x5C92, 0x5C9D, 0x5C9F,
  0x5CA0, 0x5CA2, 0x5CA3, 0x5CA6, 0x5CAA, 0x5CB2, 0x5CB4, 0x5CB5,
@@ -1577,7 +1577,7 @@ const unsigned short euc_to_utf8_8FBB[] = {
  0x5DA7, 0x5DAB, 0x5DB0, 0x5DB4, 0x5DB8, 0x5DB9, 0x5DC3, 0x5DC7,
  0x5DCB, 0x5DD0, 0x5DCE, 0x5DD8, 0x5DD9, 0x5DE0, 0x5DE4,
 };
-const unsigned short euc_to_utf8_8FBC[] = {
+static const unsigned short euc_to_utf8_8FBC[] = {
          0x5DE9, 0x5DF8, 0x5DF9, 0x5E00, 0x5E07, 0x5E0D, 0x5E12,
  0x5E14, 0x5E15, 0x5E18, 0x5E1F, 0x5E20, 0x5E2E, 0x5E28, 0x5E32,
  0x5E35, 0x5E3E, 0x5E4B, 0x5E50, 0x5E49, 0x5E51, 0x5E56, 0x5E58,
@@ -1591,7 +1591,7 @@ const unsigned short euc_to_utf8_8FBC[] = {
  0x5F3D, 0x5F3F, 0x5F40, 0x5F44, 0x5F45, 0x5F47, 0x5F4D, 0x5F50,
  0x5F54, 0x5F58, 0x5F5B, 0x5F60, 0x5F63, 0x5F64, 0x5F67,
 };
-const unsigned short euc_to_utf8_8FBD[] = {
+static const unsigned short euc_to_utf8_8FBD[] = {
          0x5F6F, 0x5F72, 0x5F74, 0x5F75, 0x5F78, 0x5F7A, 0x5F7D,
  0x5F7E, 0x5F89, 0x5F8D, 0x5F8F, 0x5F96, 0x5F9C, 0x5F9D, 0x5FA2,
  0x5FA7, 0x5FAB, 0x5FA4, 0x5FAC, 0x5FAF, 0x5FB0, 0x5FB1, 0x5FB8,
@@ -1605,7 +1605,7 @@ const unsigned short euc_to_utf8_8FBD[] = {
  0x608A, 0x608E, 0x6091, 0x6093, 0x6095, 0x6098, 0x609D, 0x609E,
  0x60A2, 0x60A4, 0x60A5, 0x60A8, 0x60B0, 0x60B1, 0x60B7,
 };
-const unsigned short euc_to_utf8_8FBE[] = {
+static const unsigned short euc_to_utf8_8FBE[] = {
          0x60BB, 0x60BE, 0x60C2, 0x60C4, 0x60C8, 0x60C9, 0x60CA,
  0x60CB, 0x60CE, 0x60CF, 0x60D4, 0x60D5, 0x60D9, 0x60DB, 0x60DD,
  0x60DE, 0x60E2, 0x60E5, 0x60F2, 0x60F5, 0x60F8, 0x60FC, 0x60FD,
@@ -1619,7 +1619,7 @@ const unsigned short euc_to_utf8_8FBE[] = {
  0x61C0, 0x61C1, 0x61C2, 0x61CE, 0x61CF, 0x61D5, 0x61DC, 0x61DD,
  0x61DE, 0x61DF, 0x61E1, 0x61E2, 0x61E7, 0x61E9, 0x61E5,
 };
-const unsigned short euc_to_utf8_8FBF[] = {
+static const unsigned short euc_to_utf8_8FBF[] = {
          0x61EC, 0x61ED, 0x61EF, 0x6201, 0x6203, 0x6204, 0x6207,
  0x6213, 0x6215, 0x621C, 0x6220, 0x6222, 0x6223, 0x6227, 0x6229,
  0x622B, 0x6239, 0x623D, 0x6242, 0x6243, 0x6244, 0x6246, 0x624C,
@@ -1633,7 +1633,7 @@ const unsigned short euc_to_utf8_8FBF[] = {
  0x634A, 0x634B, 0x634E, 0x6352, 0x6353, 0x6354, 0x6358, 0x635B,
  0x6365, 0x6366, 0x636C, 0x636D, 0x6371, 0x6374, 0x6375,
 };
-const unsigned short euc_to_utf8_8FC0[] = {
+static const unsigned short euc_to_utf8_8FC0[] = {
          0x6378, 0x637C, 0x637D, 0x637F, 0x6382, 0x6384, 0x6387,
  0x638A, 0x6390, 0x6394, 0x6395, 0x6399, 0x639A, 0x639E, 0x63A4,
  0x63A6, 0x63AD, 0x63AE, 0x63AF, 0x63BD, 0x63C1, 0x63C5, 0x63C8,
@@ -1647,7 +1647,7 @@ const unsigned short euc_to_utf8_8FC0[] = {
  0x6491, 0x6498, 0x6499, 0x649B, 0x649D, 0x649F, 0x64A1, 0x64A3,
  0x64A6, 0x64A8, 0x64AC, 0x64B3, 0x64BD, 0x64BE, 0x64BF,
 };
-const unsigned short euc_to_utf8_8FC1[] = {
+static const unsigned short euc_to_utf8_8FC1[] = {
          0x64C4, 0x64C9, 0x64CA, 0x64CB, 0x64CC, 0x64CE, 0x64D0,
  0x64D1, 0x64D5, 0x64D7, 0x64E4, 0x64E5, 0x64E9, 0x64EA, 0x64ED,
  0x64F0, 0x64F5, 0x64F7, 0x64FB, 0x64FF, 0x6501, 0x6504, 0x6508,
@@ -1661,7 +1661,7 @@ const unsigned short euc_to_utf8_8FC1[] = {
  0x65F4, 0x65F5, 0x65F9, 0x65FE, 0x65FF, 0x6600, 0x6604, 0x6608,
  0x6609, 0x660D, 0x6611, 0x6612, 0x6615, 0x6616, 0x661D,
 };
-const unsigned short euc_to_utf8_8FC2[] = {
+static const unsigned short euc_to_utf8_8FC2[] = {
          0x661E, 0x6621, 0x6622, 0x6623, 0x6624, 0x6626, 0x6629,
  0x662A, 0x662B, 0x662C, 0x662E, 0x6630, 0x6631, 0x6633, 0x6639,
  0x6637, 0x6640, 0x6645, 0x6646, 0x664A, 0x664C, 0x6651, 0x664E,
@@ -1675,7 +1675,7 @@ const unsigned short euc_to_utf8_8FC2[] = {
  0x670E, 0x6713, 0x6719, 0x671C, 0x6720, 0x6722, 0x6733, 0x673E,
  0x6745, 0x6747, 0x6748, 0x674C, 0x6754, 0x6755, 0x675D,
 };
-const unsigned short euc_to_utf8_8FC3[] = {
+static const unsigned short euc_to_utf8_8FC3[] = {
          0x6766, 0x676C, 0x676E, 0x6774, 0x6776, 0x677B, 0x6781,
  0x6784, 0x678E, 0x678F, 0x6791, 0x6793, 0x6796, 0x6798, 0x6799,
  0x679B, 0x67B0, 0x67B1, 0x67B2, 0x67B5, 0x67BB, 0x67BC, 0x67BD,
@@ -1689,7 +1689,7 @@ const unsigned short euc_to_utf8_8FC3[] = {
  0x6898, 0x689A, 0x689C, 0x68A1, 0x68A3, 0x68A5, 0x68A9, 0x68AA,
  0x68AE, 0x68B2, 0x68BB, 0x68C5, 0x68C8, 0x68CC, 0x68CF,
 };
-const unsigned short euc_to_utf8_8FC4[] = {
+static const unsigned short euc_to_utf8_8FC4[] = {
          0x68D0, 0x68D1, 0x68D3, 0x68D6, 0x68D9, 0x68DC, 0x68DD,
  0x68E5, 0x68E8, 0x68EA, 0x68EB, 0x68EC, 0x68ED, 0x68F0, 0x68F1,
  0x68F5, 0x68F6, 0x68FB, 0x68FC, 0x68FD, 0x6906, 0x6909, 0x690A,
@@ -1703,7 +1703,7 @@ const unsigned short euc_to_utf8_8FC4[] = {
  0x69F5, 0x69FE, 0x6A00, 0x6A01, 0x6A03, 0x6A0F, 0x6A11, 0x6A15,
  0x6A1A, 0x6A1D, 0x6A20, 0x6A24, 0x6A28, 0x6A30, 0x6A32,
 };
-const unsigned short euc_to_utf8_8FC5[] = {
+static const unsigned short euc_to_utf8_8FC5[] = {
          0x6A34, 0x6A37, 0x6A3B, 0x6A3E, 0x6A3F, 0x6A45, 0x6A46,
  0x6A49, 0x6A4A, 0x6A4E, 0x6A50, 0x6A51, 0x6A52, 0x6A55, 0x6A56,
  0x6A5B, 0x6A64, 0x6A67, 0x6A6A, 0x6A71, 0x6A73, 0x6A7E, 0x6A81,
@@ -1717,7 +1717,7 @@ const unsigned short euc_to_utf8_8FC5[] = {
  0x6B3F, 0x6B46, 0x6B4A, 0x6B4D, 0x6B52, 0x6B56, 0x6B58, 0x6B5D,
  0x6B60, 0x6B67, 0x6B6B, 0x6B6E, 0x6B70, 0x6B75, 0x6B7D,
 };
-const unsigned short euc_to_utf8_8FC6[] = {
+static const unsigned short euc_to_utf8_8FC6[] = {
          0x6B7E, 0x6B82, 0x6B85, 0x6B97, 0x6B9B, 0x6B9F, 0x6BA0,
  0x6BA2, 0x6BA3, 0x6BA8, 0x6BA9, 0x6BAC, 0x6BAD, 0x6BAE, 0x6BB0,
  0x6BB8, 0x6BB9, 0x6BBD, 0x6BBE, 0x6BC3, 0x6BC4, 0x6BC9, 0x6BCC,
@@ -1731,7 +1731,7 @@ const unsigned short euc_to_utf8_8FC6[] = {
  0x6C98, 0x6C9C, 0x6C9F, 0x6CB0, 0x6CB2, 0x6CB4, 0x6CC2, 0x6CC6,
  0x6CCD, 0x6CCF, 0x6CD0, 0x6CD1, 0x6CD2, 0x6CD4, 0x6CD6,
 };
-const unsigned short euc_to_utf8_8FC7[] = {
+static const unsigned short euc_to_utf8_8FC7[] = {
          0x6CDA, 0x6CDC, 0x6CE0, 0x6CE7, 0x6CE9, 0x6CEB, 0x6CEC,
  0x6CEE, 0x6CF2, 0x6CF4, 0x6D04, 0x6D07, 0x6D0A, 0x6D0E, 0x6D0F,
  0x6D11, 0x6D13, 0x6D1A, 0x6D26, 0x6D27, 0x6D28, 0x6C67, 0x6D2E,
@@ -1745,7 +1745,7 @@ const unsigned short euc_to_utf8_8FC7[] = {
  0x6E3C, 0x6E44, 0x6E45, 0x6E48, 0x6E49, 0x6E4B, 0x6E4F, 0x6E51,
  0x6E52, 0x6E53, 0x6E54, 0x6E57, 0x6E5C, 0x6E5D, 0x6E5E,
 };
-const unsigned short euc_to_utf8_8FC8[] = {
+static const unsigned short euc_to_utf8_8FC8[] = {
          0x6E62, 0x6E63, 0x6E68, 0x6E73, 0x6E7B, 0x6E7D, 0x6E8D,
  0x6E93, 0x6E99, 0x6EA0, 0x6EA7, 0x6EAD, 0x6EAE, 0x6EB1, 0x6EB3,
  0x6EBB, 0x6EBF, 0x6EC0, 0x6EC1, 0x6EC3, 0x6EC7, 0x6EC8, 0x6ECA,
@@ -1759,7 +1759,7 @@ const unsigned short euc_to_utf8_8FC8[] = {
  0x6FA0, 0x6FA5, 0x6FA6, 0x6FA7, 0x6FA8, 0x6FAE, 0x6FAF, 0x6FB0,
  0x6FB5, 0x6FB6, 0x6FBC, 0x6FC5, 0x6FC7, 0x6FC8, 0x6FCA,
 };
-const unsigned short euc_to_utf8_8FC9[] = {
+static const unsigned short euc_to_utf8_8FC9[] = {
          0x6FDA, 0x6FDE, 0x6FE8, 0x6FE9, 0x6FF0, 0x6FF5, 0x6FF9,
  0x6FFC, 0x6FFD, 0x7000, 0x7005, 0x7006, 0x7007, 0x700D, 0x7017,
  0x7020, 0x7023, 0x702F, 0x7034, 0x7037, 0x7039, 0x703C, 0x7043,
@@ -1773,7 +1773,7 @@ const unsigned short euc_to_utf8_8FC9[] = {
  0x7131, 0x7138, 0x7141, 0x7145, 0x7146, 0x7147, 0x714A, 0x714B,
  0x7150, 0x7152, 0x7157, 0x715A, 0x715C, 0x715E, 0x7160,
 };
-const unsigned short euc_to_utf8_8FCA[] = {
+static const unsigned short euc_to_utf8_8FCA[] = {
          0x7168, 0x7179, 0x7180, 0x7185, 0x7187, 0x718C, 0x7192,
  0x719A, 0x719B, 0x71A0, 0x71A2, 0x71AF, 0x71B0, 0x71B2, 0x71B3,
  0x71BA, 0x71BF, 0x71C0, 0x71C1, 0x71C4, 0x71CB, 0x71CC, 0x71D3,
@@ -1787,7 +1787,7 @@ const unsigned short euc_to_utf8_8FCA[] = {
  0x72B4, 0x72BE, 0x72C1, 0x72C7, 0x72C9, 0x72CC, 0x72D5, 0x72D6,
  0x72D8, 0x72DF, 0x72E5, 0x72F3, 0x72F4, 0x72FA, 0x72FB,
 };
-const unsigned short euc_to_utf8_8FCB[] = {
+static const unsigned short euc_to_utf8_8FCB[] = {
          0x72FE, 0x7302, 0x7304, 0x7305, 0x7307, 0x730B, 0x730D,
  0x7312, 0x7313, 0x7318, 0x7319, 0x731E, 0x7322, 0x7324, 0x7327,
  0x7328, 0x732C, 0x7331, 0x7332, 0x7335, 0x733A, 0x733B, 0x733D,
@@ -1801,7 +1801,7 @@ const unsigned short euc_to_utf8_8FCB[] = {
  0x73D6, 0x73D9, 0x73DD, 0x73E1, 0x73E3, 0x73E6, 0x73E7, 0x73E9,
  0x73F4, 0x73F5, 0x73F7, 0x73F9, 0x73FA, 0x73FB, 0x73FD,
 };
-const unsigned short euc_to_utf8_8FCC[] = {
+static const unsigned short euc_to_utf8_8FCC[] = {
          0x73FF, 0x7400, 0x7401, 0x7404, 0x7407, 0x740A, 0x7411,
  0x741A, 0x741B, 0x7424, 0x7426, 0x7428, 0x7429, 0x742A, 0x742B,
  0x742C, 0x742D, 0x742E, 0x742F, 0x7430, 0x7431, 0x7439, 0x7440,
@@ -1815,7 +1815,7 @@ const unsigned short euc_to_utf8_8FCC[] = {
  0x74DA, 0x74DB, 0x74DE, 0x74DF, 0x74E4, 0x74E8, 0x74EA, 0x74EB,
  0x74EF, 0x74F4, 0x74FA, 0x74FB, 0x74FC, 0x74FF, 0x7506,
 };
-const unsigned short euc_to_utf8_8FCD[] = {
+static const unsigned short euc_to_utf8_8FCD[] = {
          0x7512, 0x7516, 0x7517, 0x7520, 0x7521, 0x7524, 0x7527,
  0x7529, 0x752A, 0x752F, 0x7536, 0x7539, 0x753D, 0x753E, 0x753F,
  0x7540, 0x7543, 0x7547, 0x7548, 0x754E, 0x7550, 0x7552, 0x7557,
@@ -1829,7 +1829,7 @@ const unsigned short euc_to_utf8_8FCD[] = {
  0x7619, 0x761B, 0x761C, 0x761D, 0x761E, 0x7623, 0x7625, 0x7626,
  0x7629, 0x762D, 0x7632, 0x7633, 0x7635, 0x7638, 0x7639,
 };
-const unsigned short euc_to_utf8_8FCE[] = {
+static const unsigned short euc_to_utf8_8FCE[] = {
          0x763A, 0x763C, 0x764A, 0x7640, 0x7641, 0x7643, 0x7644,
  0x7645, 0x7649, 0x764B, 0x7655, 0x7659, 0x765F, 0x7664, 0x7665,
  0x766D, 0x766E, 0x766F, 0x7671, 0x7674, 0x7681, 0x7685, 0x768C,
@@ -1843,7 +1843,7 @@ const unsigned short euc_to_utf8_8FCE[] = {
  0x7742, 0x7745, 0x7746, 0x774A, 0x774D, 0x774E, 0x774F, 0x7752,
  0x7756, 0x7757, 0x775C, 0x775E, 0x775F, 0x7760, 0x7762,
 };
-const unsigned short euc_to_utf8_8FCF[] = {
+static const unsigned short euc_to_utf8_8FCF[] = {
          0x7764, 0x7767, 0x776A, 0x776C, 0x7770, 0x7772, 0x7773,
  0x7774, 0x777A, 0x777D, 0x7780, 0x7784, 0x778C, 0x778D, 0x7794,
  0x7795, 0x7796, 0x779A, 0x779F, 0x77A2, 0x77A7, 0x77AA, 0x77AE,
@@ -1857,7 +1857,7 @@ const unsigned short euc_to_utf8_8FCF[] = {
  0x788F, 0x7894, 0x7898, 0x78A1, 0x789D, 0x789E, 0x789F, 0x78A4,
  0x78A8, 0x78AC, 0x78AD, 0x78B0, 0x78B1, 0x78B2, 0x78B3,
 };
-const unsigned short euc_to_utf8_8FD0[] = {
+static const unsigned short euc_to_utf8_8FD0[] = {
          0x78BB, 0x78BD, 0x78BF, 0x78C7, 0x78C8, 0x78C9, 0x78CC,
  0x78CE, 0x78D2, 0x78D3, 0x78D5, 0x78D6, 0x78E4, 0x78DB, 0x78DF,
  0x78E0, 0x78E1, 0x78E6, 0x78EA, 0x78F2, 0x78F3, 0x7900, 0x78F6,
@@ -1871,7 +1871,7 @@ const unsigned short euc_to_utf8_8FD0[] = {
  0x79B1, 0x79B4, 0x79B8, 0x79BB, 0x79C2, 0x79C4, 0x79C7, 0x79C8,
  0x79CA, 0x79CF, 0x79D4, 0x79D6, 0x79DA, 0x79DD, 0x79DE,
 };
-const unsigned short euc_to_utf8_8FD1[] = {
+static const unsigned short euc_to_utf8_8FD1[] = {
          0x79E0, 0x79E2, 0x79E5, 0x79EA, 0x79EB, 0x79ED, 0x79F1,
  0x79F8, 0x79FC, 0x7A02, 0x7A03, 0x7A07, 0x7A09, 0x7A0A, 0x7A0C,
  0x7A11, 0x7A15, 0x7A1B, 0x7A1E, 0x7A21, 0x7A27, 0x7A2B, 0x7A2D,
@@ -1885,7 +1885,7 @@ const unsigned short euc_to_utf8_8FD1[] = {
  0x7AFB, 0x7AFD, 0x7AFE, 0x7B07, 0x7B14, 0x7B1F, 0x7B23, 0x7B27,
  0x7B29, 0x7B2A, 0x7B2B, 0x7B2D, 0x7B2E, 0x7B2F, 0x7B30,
 };
-const unsigned short euc_to_utf8_8FD2[] = {
+static const unsigned short euc_to_utf8_8FD2[] = {
          0x7B31, 0x7B34, 0x7B3D, 0x7B3F, 0x7B40, 0x7B41, 0x7B47,
  0x7B4E, 0x7B55, 0x7B60, 0x7B64, 0x7B66, 0x7B69, 0x7B6A, 0x7B6D,
  0x7B6F, 0x7B72, 0x7B73, 0x7B77, 0x7B84, 0x7B89, 0x7B8E, 0x7B90,
@@ -1899,7 +1899,7 @@ const unsigned short euc_to_utf8_8FD2[] = {
  0x7C36, 0x7C39, 0x7C3A, 0x7C46, 0x7C4A, 0x7C55, 0x7C51, 0x7C52,
  0x7C53, 0x7C59, 0x7C5A, 0x7C5B, 0x7C5C, 0x7C5D, 0x7C5E,
 };
-const unsigned short euc_to_utf8_8FD3[] = {
+static const unsigned short euc_to_utf8_8FD3[] = {
          0x7C61, 0x7C63, 0x7C67, 0x7C69, 0x7C6D, 0x7C6E, 0x7C70,
  0x7C72, 0x7C79, 0x7C7C, 0x7C7D, 0x7C86, 0x7C87, 0x7C8F, 0x7C94,
  0x7C9E, 0x7CA0, 0x7CA6, 0x7CB0, 0x7CB6, 0x7CB7, 0x7CBA, 0x7CBB,
@@ -1913,7 +1913,7 @@ const unsigned short euc_to_utf8_8FD3[] = {
  0x7D7B, 0x7D7F, 0x7D81, 0x7D82, 0x7D83, 0x7D85, 0x7D86, 0x7D88,
  0x7D8B, 0x7D8C, 0x7D8D, 0x7D91, 0x7D96, 0x7D97, 0x7D9D,
 };
-const unsigned short euc_to_utf8_8FD4[] = {
+static const unsigned short euc_to_utf8_8FD4[] = {
          0x7D9E, 0x7DA6, 0x7DA7, 0x7DAA, 0x7DB3, 0x7DB6, 0x7DB7,
  0x7DB9, 0x7DC2, 0x7DC3, 0x7DC4, 0x7DC5, 0x7DC6, 0x7DCC, 0x7DCD,
  0x7DCE, 0x7DD7, 0x7DD9, 0x7E00, 0x7DE2, 0x7DE5, 0x7DE6, 0x7DEA,
@@ -1927,7 +1927,7 @@ const unsigned short euc_to_utf8_8FD4[] = {
  0x7F43, 0x7F44, 0x7F47, 0x7F4F, 0x7F52, 0x7F53, 0x7F5B, 0x7F5C,
  0x7F5D, 0x7F61, 0x7F63, 0x7F64, 0x7F65, 0x7F66, 0x7F6D,
 };
-const unsigned short euc_to_utf8_8FD5[] = {
+static const unsigned short euc_to_utf8_8FD5[] = {
          0x7F71, 0x7F7D, 0x7F7E, 0x7F7F, 0x7F80, 0x7F8B, 0x7F8D,
  0x7F8F, 0x7F90, 0x7F91, 0x7F96, 0x7F97, 0x7F9C, 0x7FA1, 0x7FA2,
  0x7FA6, 0x7FAA, 0x7FAD, 0x7FB4, 0x7FBC, 0x7FBF, 0x7FC0, 0x7FC3,
@@ -1941,7 +1941,7 @@ const unsigned short euc_to_utf8_8FD5[] = {
  0x80A7, 0x80AB, 0x80B8, 0x80B9, 0x80C8, 0x80CD, 0x80CF, 0x80D2,
  0x80D4, 0x80D5, 0x80D7, 0x80D8, 0x80E0, 0x80ED, 0x80EE,
 };
-const unsigned short euc_to_utf8_8FD6[] = {
+static const unsigned short euc_to_utf8_8FD6[] = {
          0x80F0, 0x80F2, 0x80F3, 0x80F6, 0x80F9, 0x80FA, 0x80FE,
  0x8103, 0x810B, 0x8116, 0x8117, 0x8118, 0x811C, 0x811E, 0x8120,
  0x8124, 0x8127, 0x812C, 0x8130, 0x8135, 0x813A, 0x813C, 0x8145,
@@ -1955,7 +1955,7 @@ const unsigned short euc_to_utf8_8FD6[] = {
  0x8213, 0x8214, 0x8219, 0x821A, 0x821D, 0x8221, 0x8222, 0x8228,
  0x8232, 0x8234, 0x823A, 0x8243, 0x8244, 0x8245, 0x8246,
 };
-const unsigned short euc_to_utf8_8FD7[] = {
+static const unsigned short euc_to_utf8_8FD7[] = {
          0x824B, 0x824E, 0x824F, 0x8251, 0x8256, 0x825C, 0x8260,
  0x8263, 0x8267, 0x826D, 0x8274, 0x827B, 0x827D, 0x827F, 0x8280,
  0x8281, 0x8283, 0x8284, 0x8287, 0x8289, 0x828A, 0x828E, 0x8291,
@@ -1969,7 +1969,7 @@ const unsigned short euc_to_utf8_8FD7[] = {
  0x833A, 0x833C, 0x833D, 0x8342, 0x8343, 0x8344, 0x8347, 0x834D,
  0x834E, 0x8351, 0x8355, 0x8356, 0x8357, 0x8370, 0x8378,
 };
-const unsigned short euc_to_utf8_8FD8[] = {
+static const unsigned short euc_to_utf8_8FD8[] = {
          0x837D, 0x837F, 0x8380, 0x8382, 0x8384, 0x8386, 0x838D,
  0x8392, 0x8394, 0x8395, 0x8398, 0x8399, 0x839B, 0x839C, 0x839D,
  0x83A6, 0x83A7, 0x83A9, 0x83AC, 0x83BE, 0x83BF, 0x83C0, 0x83C7,
@@ -1983,7 +1983,7 @@ const unsigned short euc_to_utf8_8FD8[] = {
  0x84A9, 0x84AA, 0x84AF, 0x84B1, 0x84B4, 0x84BA, 0x84BD, 0x84BE,
  0x84C0, 0x84C2, 0x84C7, 0x84C8, 0x84CC, 0x84CF, 0x84D3,
 };
-const unsigned short euc_to_utf8_8FD9[] = {
+static const unsigned short euc_to_utf8_8FD9[] = {
          0x84DC, 0x84E7, 0x84EA, 0x84EF, 0x84F0, 0x84F1, 0x84F2,
  0x84F7, 0x8532, 0x84FA, 0x84FB, 0x84FD, 0x8502, 0x8503, 0x8507,
  0x850C, 0x850E, 0x8510, 0x851C, 0x851E, 0x8522, 0x8523, 0x8524,
@@ -1997,7 +1997,7 @@ const unsigned short euc_to_utf8_8FD9[] = {
  0x85C7, 0x85CA, 0x85CB, 0x85CE, 0x85AD, 0x85D8, 0x85DA, 0x85DF,
  0x85E0, 0x85E6, 0x85E8, 0x85ED, 0x85F3, 0x85F6, 0x85FC,
 };
-const unsigned short euc_to_utf8_8FDA[] = {
+static const unsigned short euc_to_utf8_8FDA[] = {
          0x85FF, 0x8600, 0x8604, 0x8605, 0x860D, 0x860E, 0x8610,
  0x8611, 0x8612, 0x8618, 0x8619, 0x861B, 0x861E, 0x8621, 0x8627,
  0x8629, 0x8636, 0x8638, 0x863A, 0x863C, 0x863D, 0x8640, 0x8642,
@@ -2011,7 +2011,7 @@ const unsigned short euc_to_utf8_8FDA[] = {
  0x86FD, 0x8704, 0x8705, 0x8707, 0x870B, 0x870E, 0x870F, 0x8710,
  0x8713, 0x8714, 0x8719, 0x871E, 0x871F, 0x8721, 0x8723,
 };
-const unsigned short euc_to_utf8_8FDB[] = {
+static const unsigned short euc_to_utf8_8FDB[] = {
          0x8728, 0x872E, 0x872F, 0x8731, 0x8732, 0x8739, 0x873A,
  0x873C, 0x873D, 0x873E, 0x8740, 0x8743, 0x8745, 0x874D, 0x8758,
  0x875D, 0x8761, 0x8764, 0x8765, 0x876F, 0x8771, 0x8772, 0x877B,
@@ -2025,7 +2025,7 @@ const unsigned short euc_to_utf8_8FDB[] = {
  0x8812, 0x8813, 0x8814, 0x8818, 0x881A, 0x881B, 0x881C, 0x881E,
  0x881F, 0x8828, 0x882D, 0x882E, 0x8830, 0x8832, 0x8835,
 };
-const unsigned short euc_to_utf8_8FDC[] = {
+static const unsigned short euc_to_utf8_8FDC[] = {
          0x883A, 0x883C, 0x8841, 0x8843, 0x8845, 0x8848, 0x8849,
  0x884A, 0x884B, 0x884E, 0x8851, 0x8855, 0x8856, 0x8858, 0x885A,
  0x885C, 0x885F, 0x8860, 0x8864, 0x8869, 0x8871, 0x8879, 0x887B,
@@ -2039,7 +2039,7 @@ const unsigned short euc_to_utf8_8FDC[] = {
  0x894F, 0x8952, 0x8957, 0x895A, 0x895B, 0x895C, 0x8961, 0x8962,
  0x8963, 0x896B, 0x896E, 0x8970, 0x8973, 0x8975, 0x897A,
 };
-const unsigned short euc_to_utf8_8FDD[] = {
+static const unsigned short euc_to_utf8_8FDD[] = {
          0x897B, 0x897C, 0x897D, 0x8989, 0x898D, 0x8990, 0x8994,
  0x8995, 0x899B, 0x899C, 0x899F, 0x89A0, 0x89A5, 0x89B0, 0x89B4,
  0x89B5, 0x89B6, 0x89B7, 0x89BC, 0x89D4, 0x89D5, 0x89D6, 0x89D7,
@@ -2053,7 +2053,7 @@ const unsigned short euc_to_utf8_8FDD[] = {
  0x8A83, 0x8A86, 0x8A8B, 0x8A8F, 0x8A90, 0x8A92, 0x8A96, 0x8A97,
  0x8A99, 0x8A9F, 0x8AA7, 0x8AA9, 0x8AAE, 0x8AAF, 0x8AB3,
 };
-const unsigned short euc_to_utf8_8FDE[] = {
+static const unsigned short euc_to_utf8_8FDE[] = {
          0x8AB6, 0x8AB7, 0x8ABB, 0x8ABE, 0x8AC3, 0x8AC6, 0x8AC8,
  0x8AC9, 0x8ACA, 0x8AD1, 0x8AD3, 0x8AD4, 0x8AD5, 0x8AD7, 0x8ADD,
  0x8ADF, 0x8AEC, 0x8AF0, 0x8AF4, 0x8AF5, 0x8AF6, 0x8AFC, 0x8AFF,
@@ -2067,7 +2067,7 @@ const unsigned short euc_to_utf8_8FDE[] = {
  0x8C5B, 0x8C5D, 0x8C59, 0x8C63, 0x8C64, 0x8C66, 0x8C68, 0x8C69,
  0x8C6D, 0x8C73, 0x8C75, 0x8C76, 0x8C7B, 0x8C7E, 0x8C86,
 };
-const unsigned short euc_to_utf8_8FDF[] = {
+static const unsigned short euc_to_utf8_8FDF[] = {
          0x8C87, 0x8C8B, 0x8C90, 0x8C92, 0x8C93, 0x8C99, 0x8C9B,
  0x8C9C, 0x8CA4, 0x8CB9, 0x8CBA, 0x8CC5, 0x8CC6, 0x8CC9, 0x8CCB,
  0x8CCF, 0x8CD6, 0x8CD5, 0x8CD9, 0x8CDD, 0x8CE1, 0x8CE8, 0x8CEC,
@@ -2081,7 +2081,7 @@ const unsigned short euc_to_utf8_8FDF[] = {
  0x8DF1, 0x8DF2, 0x8DF4, 0x8DFD, 0x8E01, 0x8E04, 0x8E05, 0x8E06,
  0x8E0B, 0x8E11, 0x8E14, 0x8E16, 0x8E20, 0x8E21, 0x8E22,
 };
-const unsigned short euc_to_utf8_8FE0[] = {
+static const unsigned short euc_to_utf8_8FE0[] = {
          0x8E23, 0x8E26, 0x8E27, 0x8E31, 0x8E33, 0x8E36, 0x8E37,
  0x8E38, 0x8E39, 0x8E3D, 0x8E40, 0x8E41, 0x8E4B, 0x8E4D, 0x8E4E,
  0x8E4F, 0x8E54, 0x8E5B, 0x8E5C, 0x8E5D, 0x8E5E, 0x8E61, 0x8E62,
@@ -2095,7 +2095,7 @@ const unsigned short euc_to_utf8_8FE0[] = {
  0x8F21, 0x8F23, 0x8F25, 0x8F27, 0x8F28, 0x8F2C, 0x8F2D, 0x8F2E,
  0x8F34, 0x8F35, 0x8F36, 0x8F37, 0x8F3A, 0x8F40, 0x8F41,
 };
-const unsigned short euc_to_utf8_8FE1[] = {
+static const unsigned short euc_to_utf8_8FE1[] = {
          0x8F43, 0x8F47, 0x8F4F, 0x8F51, 0x8F52, 0x8F53, 0x8F54,
  0x8F55, 0x8F58, 0x8F5D, 0x8F5E, 0x8F65, 0x8F9D, 0x8FA0, 0x8FA1,
  0x8FA4, 0x8FA5, 0x8FA6, 0x8FB5, 0x8FB6, 0x8FB8, 0x8FBE, 0x8FC0,
@@ -2109,7 +2109,7 @@ const unsigned short euc_to_utf8_8FE1[] = {
  0x9099, 0x909B, 0x90A0, 0x90A1, 0x90A2, 0x90A5, 0x90B0, 0x90B2,
  0x90B3, 0x90B4, 0x90B6, 0x90BD, 0x90CC, 0x90BE, 0x90C3,
 };
-const unsigned short euc_to_utf8_8FE2[] = {
+static const unsigned short euc_to_utf8_8FE2[] = {
          0x90C4, 0x90C5, 0x90C7, 0x90C8, 0x90D5, 0x90D7, 0x90D8,
  0x90D9, 0x90DC, 0x90DD, 0x90DF, 0x90E5, 0x90D2, 0x90F6, 0x90EB,
  0x90EF, 0x90F0, 0x90F4, 0x90FE, 0x90FF, 0x9100, 0x9104, 0x9105,
@@ -2123,7 +2123,7 @@ const unsigned short euc_to_utf8_8FE2[] = {
  0x91A1, 0x91A6, 0x91A8, 0x91AC, 0x91AD, 0x91AE, 0x91B0, 0x91B1,
  0x91B2, 0x91B3, 0x91B6, 0x91BB, 0x91BC, 0x91BD, 0x91BF,
 };
-const unsigned short euc_to_utf8_8FE3[] = {
+static const unsigned short euc_to_utf8_8FE3[] = {
          0x91C2, 0x91C3, 0x91C5, 0x91D3, 0x91D4, 0x91D7, 0x91D9,
  0x91DA, 0x91DE, 0x91E4, 0x91E5, 0x91E9, 0x91EA, 0x91EC, 0x91ED,
  0x91EE, 0x91EF, 0x91F0, 0x91F1, 0x91F7, 0x91F9, 0x91FB, 0x91FD,
@@ -2137,7 +2137,7 @@ const unsigned short euc_to_utf8_8FE3[] = {
  0x9276, 0x9277, 0x9278, 0x9279, 0x927B, 0x927C, 0x927D, 0x927F,
  0x9288, 0x9289, 0x928A, 0x928D, 0x928E, 0x9292, 0x9297,
 };
-const unsigned short euc_to_utf8_8FE4[] = {
+static const unsigned short euc_to_utf8_8FE4[] = {
          0x9299, 0x929F, 0x92A0, 0x92A4, 0x92A5, 0x92A7, 0x92A8,
  0x92AB, 0x92AF, 0x92B2, 0x92B6, 0x92B8, 0x92BA, 0x92BB, 0x92BC,
  0x92BD, 0x92BF, 0x92C0, 0x92C1, 0x92C2, 0x92C3, 0x92C5, 0x92C6,
@@ -2151,7 +2151,7 @@ const unsigned short euc_to_utf8_8FE4[] = {
  0x9358, 0x935A, 0x935E, 0x9364, 0x9365, 0x9367, 0x9369, 0x936A,
  0x936D, 0x936F, 0x9370, 0x9371, 0x9373, 0x9374, 0x9376,
 };
-const unsigned short euc_to_utf8_8FE5[] = {
+static const unsigned short euc_to_utf8_8FE5[] = {
          0x937A, 0x937D, 0x937F, 0x9380, 0x9381, 0x9382, 0x9388,
  0x938A, 0x938B, 0x938D, 0x938F, 0x9392, 0x9395, 0x9398, 0x939B,
  0x939E, 0x93A1, 0x93A3, 0x93A4, 0x93A6, 0x93A8, 0x93AB, 0x93B4,
@@ -2165,7 +2165,7 @@ const unsigned short euc_to_utf8_8FE5[] = {
  0x945C, 0x945F, 0x9461, 0x9463, 0x9468, 0x946B, 0x946D, 0x946E,
  0x946F, 0x9471, 0x9472, 0x9484, 0x9483, 0x9578, 0x9579,
 };
-const unsigned short euc_to_utf8_8FE6[] = {
+static const unsigned short euc_to_utf8_8FE6[] = {
          0x957E, 0x9584, 0x9588, 0x958C, 0x958D, 0x958E, 0x959D,
  0x959E, 0x959F, 0x95A1, 0x95A6, 0x95A9, 0x95AB, 0x95AC, 0x95B4,
  0x95B6, 0x95BA, 0x95BD, 0x95BF, 0x95C6, 0x95C8, 0x95C9, 0x95CB,
@@ -2179,7 +2179,7 @@ const unsigned short euc_to_utf8_8FE6[] = {
  0x96B3, 0x96BA, 0x96CA, 0x96D2, 0x5DB2, 0x96D8, 0x96DA, 0x96DD,
  0x96DE, 0x96DF, 0x96E9, 0x96EF, 0x96F1, 0x96FA, 0x9702,
 };
-const unsigned short euc_to_utf8_8FE7[] = {
+static const unsigned short euc_to_utf8_8FE7[] = {
          0x9703, 0x9705, 0x9709, 0x971A, 0x971B, 0x971D, 0x9721,
  0x9722, 0x9723, 0x9728, 0x9731, 0x9733, 0x9741, 0x9743, 0x974A,
  0x974E, 0x974F, 0x9755, 0x9757, 0x9758, 0x975A, 0x975B, 0x9763,
@@ -2193,7 +2193,7 @@ const unsigned short euc_to_utf8_8FE7[] = {
  0x97F7, 0x97F8, 0x97FA, 0x9807, 0x980A, 0x9819, 0x980D, 0x980E,
  0x9814, 0x9816, 0x981C, 0x981E, 0x9820, 0x9823, 0x9826,
 };
-const unsigned short euc_to_utf8_8FE8[] = {
+static const unsigned short euc_to_utf8_8FE8[] = {
          0x982B, 0x982E, 0x982F, 0x9830, 0x9832, 0x9833, 0x9835,
  0x9825, 0x983E, 0x9844, 0x9847, 0x984A, 0x9851, 0x9852, 0x9853,
  0x9856, 0x9857, 0x9859, 0x985A, 0x9862, 0x9863, 0x9865, 0x9866,
@@ -2207,7 +2207,7 @@ const unsigned short euc_to_utf8_8FE8[] = {
  0x9958, 0x9959, 0x995B, 0x995C, 0x995E, 0x995F, 0x9960, 0x999B,
  0x999D, 0x999F, 0x99A6, 0x99B0, 0x99B1, 0x99B2, 0x99B5,
 };
-const unsigned short euc_to_utf8_8FE9[] = {
+static const unsigned short euc_to_utf8_8FE9[] = {
          0x99B9, 0x99BA, 0x99BD, 0x99BF, 0x99C3, 0x99C9, 0x99D3,
  0x99D4, 0x99D9, 0x99DA, 0x99DC, 0x99DE, 0x99E7, 0x99EA, 0x99EB,
  0x99EC, 0x99F0, 0x99F4, 0x99F5, 0x99F9, 0x99FD, 0x99FE, 0x9A02,
@@ -2221,7 +2221,7 @@ const unsigned short euc_to_utf8_8FE9[] = {
  0x9AE5, 0x9AE7, 0x9AE9, 0x9AEC, 0x9AF2, 0x9AF3, 0x9AF5, 0x9AF9,
  0x9AFA, 0x9AFD, 0x9AFF, 0x9B00, 0x9B01, 0x9B02, 0x9B03,
 };
-const unsigned short euc_to_utf8_8FEA[] = {
+static const unsigned short euc_to_utf8_8FEA[] = {
          0x9B04, 0x9B05, 0x9B08, 0x9B09, 0x9B0B, 0x9B0C, 0x9B0D,
  0x9B0E, 0x9B10, 0x9B12, 0x9B16, 0x9B19, 0x9B1B, 0x9B1C, 0x9B20,
  0x9B26, 0x9B2B, 0x9B2D, 0x9B33, 0x9B34, 0x9B35, 0x9B37, 0x9B39,
@@ -2235,7 +2235,7 @@ const unsigned short euc_to_utf8_8FEA[] = {
  0x9BC8, 0x9BCE, 0x9BD0, 0x9BD7, 0x9BD8, 0x9BDD, 0x9BDF, 0x9BE5,
  0x9BE7, 0x9BEA, 0x9BEB, 0x9BEF, 0x9BF3, 0x9BF7, 0x9BF8,
 };
-const unsigned short euc_to_utf8_8FEB[] = {
+static const unsigned short euc_to_utf8_8FEB[] = {
          0x9BF9, 0x9BFA, 0x9BFD, 0x9BFF, 0x9C00, 0x9C02, 0x9C0B,
  0x9C0F, 0x9C11, 0x9C16, 0x9C18, 0x9C19, 0x9C1A, 0x9C1C, 0x9C1E,
  0x9C22, 0x9C23, 0x9C26, 0x9C27, 0x9C28, 0x9C29, 0x9C2A, 0x9C31,
@@ -2249,7 +2249,7 @@ const unsigned short euc_to_utf8_8FEB[] = {
  0x9D47, 0x9D4A, 0x9D53, 0x9D54, 0x9D5F, 0x9D63, 0x9D62, 0x9D65,
  0x9D69, 0x9D6A, 0x9D6B, 0x9D70, 0x9D76, 0x9D77, 0x9D7B,
 };
-const unsigned short euc_to_utf8_8FEC[] = {
+static const unsigned short euc_to_utf8_8FEC[] = {
          0x9D7C, 0x9D7E, 0x9D83, 0x9D84, 0x9D86, 0x9D8A, 0x9D8D,
  0x9D8E, 0x9D92, 0x9D93, 0x9D95, 0x9D96, 0x9D97, 0x9D98, 0x9DA1,
  0x9DAA, 0x9DAC, 0x9DAE, 0x9DB1, 0x9DB5, 0x9DB9, 0x9DBC, 0x9DBF,
@@ -2263,7 +2263,7 @@ const unsigned short euc_to_utf8_8FEC[] = {
  0x9EB5, 0x9EC6, 0x9EC8, 0x9ECB, 0x9ED5, 0x9EDF, 0x9EE4, 0x9EE7,
  0x9EEC, 0x9EED, 0x9EEE, 0x9EF0, 0x9EF1, 0x9EF2, 0x9EF5,
 };
-const unsigned short euc_to_utf8_8FED[] = {
+static const unsigned short euc_to_utf8_8FED[] = {
          0x9EF8, 0x9EFF, 0x9F02, 0x9F03, 0x9F09, 0x9F0F, 0x9F10,
  0x9F11, 0x9F12, 0x9F14, 0x9F16, 0x9F17, 0x9F19, 0x9F1A, 0x9F1B,
  0x9F1F, 0x9F22, 0x9F26, 0x9F2A, 0x9F2B, 0x9F2F, 0x9F31, 0x9F32,
@@ -2277,7 +2277,7 @@ const unsigned short euc_to_utf8_8FED[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short euc_to_utf8_8FF3[] = {
+static const unsigned short euc_to_utf8_8FF3[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2291,7 +2291,7 @@ const unsigned short euc_to_utf8_8FF3[] = {
       0,      0,      0, 0x2170, 0x2171, 0x2172, 0x2173, 0x2174,
  0x2175, 0x2176, 0x2177, 0x2178, 0x2179, 0x2160, 0x2161,
 };
-const unsigned short euc_to_utf8_8FF4[] = {
+static const unsigned short euc_to_utf8_8FF4[] = {
             0x2162, 0x2163, 0x2164, 0x2165, 0x2166, 0x2167, 0x2168,
     0x2169, 0xff07, 0xff02, 0x3231, 0x2116, 0x2121, 0x70bb, 0x4efc,
     0x50f4, 0x51ec, 0x5307, 0x5324, 0xfa0e, 0x548a, 0x5759, 0xfa0f,
@@ -2432,7 +2432,7 @@ const unsigned short *const x0212_to_utf8_2bytes[] = {
 #endif /* UTF8_OUTPUT_ENABLE */
 
 #ifdef UTF8_INPUT_ENABLE
-const unsigned short utf8_to_euc_C2[] = {
+static const unsigned short utf8_to_euc_C2[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2442,7 +2442,7 @@ const unsigned short utf8_to_euc_C2[] = {
  0x216B, 0x215E,      0,      0, 0x212D,      0, 0x2279,      0,
  0xA231,      0, 0xA26B,      0,      0,      0,      0, 0xA244,
 };
-const unsigned short utf8_to_euc_C2_ms[] = {
+static const unsigned short utf8_to_euc_C2_ms[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2452,7 +2452,7 @@ const unsigned short utf8_to_euc_C2_ms[] = {
  0x216B, 0x215E,      0,      0, 0x212D,      0, 0x2279,      0,
  0xA231,      0, 0xA26B,      0,      0,      0,      0, 0xA244,
 };
-const unsigned short utf8_to_euc_C2_mac[] = {
+static const unsigned short utf8_to_euc_C2_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2462,7 +2462,7 @@ const unsigned short utf8_to_euc_C2_mac[] = {
  0x216B, 0x215E,      0,      0, 0x212D,      0, 0x2279,      0,
  0xA231,      0, 0xA26B,      0,      0,      0,      0, 0xA244,
 };
-const unsigned short utf8_to_euc_C2_932[] = {
+static const unsigned short utf8_to_euc_C2_932[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2472,7 +2472,7 @@ const unsigned short utf8_to_euc_C2_932[] = {
  0x216B, 0x215E,   0x32,   0x33, 0x212D, 0x264C, 0x2279, 0x2126,
  0x2124,   0x31,   0x6F, 0x2264,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_C3[] = {
+static const unsigned short utf8_to_euc_C3[] = {
  0xAA22, 0xAA21, 0xAA24, 0xAA2A, 0xAA23, 0xAA29, 0xA921, 0xAA2E,
  0xAA32, 0xAA31, 0xAA34, 0xAA33, 0xAA40, 0xAA3F, 0xAA42, 0xAA41,
       0, 0xAA50, 0xAA52, 0xAA51, 0xAA54, 0xAA58, 0xAA53, 0x215F,
@@ -2482,7 +2482,7 @@ const unsigned short utf8_to_euc_C3[] = {
  0xA943, 0xAB50, 0xAB52, 0xAB51, 0xAB54, 0xAB58, 0xAB53, 0x2160,
  0xA94C, 0xAB63, 0xAB62, 0xAB65, 0xAB64, 0xAB72, 0xA950, 0xAB73,
 };
-const unsigned short utf8_to_euc_C3_932[] = {
+static const unsigned short utf8_to_euc_C3_932[] = {
    0x41,   0x41,   0x41,   0x41,   0x41,   0x41,   0x41,   0x43,
    0x45,   0x45,   0x45,   0x45,   0x49,   0x49,   0x49,   0x49,
    0x44,   0x4E,   0x4F,   0x4F,   0x4F,   0x4F,   0x4F, 0x215F,
@@ -2492,7 +2492,7 @@ const unsigned short utf8_to_euc_C3_932[] = {
    0x64,   0x6E,   0x6F,   0x6F,   0x6F,   0x6F,   0x6F, 0x2160,
    0x6F,   0x75,   0x75,   0x75,   0x75,   0x79,   0x74,   0x79,
 };
-const unsigned short utf8_to_euc_C4[] = {
+static const unsigned short utf8_to_euc_C4[] = {
  0xAA27, 0xAB27, 0xAA25, 0xAB25, 0xAA28, 0xAB28, 0xAA2B, 0xAB2B,
  0xAA2C, 0xAB2C, 0xAA2F, 0xAB2F, 0xAA2D, 0xAB2D, 0xAA30, 0xAB30,
  0xA922, 0xA942, 0xAA37, 0xAB37,      0,      0, 0xAA36, 0xAB36,
@@ -2502,7 +2502,7 @@ const unsigned short utf8_to_euc_C4[] = {
  0xAA44, 0xA945, 0xA926, 0xA946, 0xAA48, 0xAB48, 0xAA49, 0xAB49,
  0xA947, 0xAA4A, 0xAB4A, 0xAA4C, 0xAB4C, 0xAA4B, 0xAB4B, 0xA929,
 };
-const unsigned short utf8_to_euc_C5[] = {
+static const unsigned short utf8_to_euc_C5[] = {
  0xA949, 0xA928, 0xA948, 0xAA4D, 0xAB4D, 0xAA4F, 0xAB4F, 0xAA4E,
  0xAB4E, 0xA94A, 0xA92B, 0xA94B, 0xAA57, 0xAB57,      0,      0,
  0xAA56, 0xAB56, 0xA92D, 0xA94D, 0xAA59, 0xAB59, 0xAA5B, 0xAB5B,
@@ -2512,7 +2512,7 @@ const unsigned short utf8_to_euc_C5[] = {
  0xAA68, 0xAB68, 0xAA6A, 0xAB6A, 0xAA71, 0xAB71, 0xAA74, 0xAB74,
  0xAA73, 0xAA75, 0xAB75, 0xAA77, 0xAB77, 0xAA76, 0xAB76,      0,
 };
-const unsigned short utf8_to_euc_C7[] = {
+static const unsigned short utf8_to_euc_C7[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0xAA26, 0xAB26, 0xAA43,
  0xAB43, 0xAA55, 0xAB55, 0xAA67, 0xAB67, 0xAA70, 0xAB70, 0xAA6D,
@@ -2522,7 +2522,7 @@ const unsigned short utf8_to_euc_C7[] = {
       0,      0,      0,      0,      0, 0xAB39,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_CB[] = {
+static const unsigned short utf8_to_euc_CB[] = {
       0,      0,      0,      0,      0,      0,      0, 0xA230,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2532,7 +2532,7 @@ const unsigned short utf8_to_euc_CB[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_CE[] = {
+static const unsigned short utf8_to_euc_CE[] = {
       0,      0,      0,      0, 0xA238, 0xA239, 0xA661,      0,
  0xA662, 0xA663, 0xA664,      0, 0xA667,      0, 0xA669, 0xA66C,
  0xA676, 0x2621, 0x2622, 0x2623, 0x2624, 0x2625, 0x2626, 0x2627,
@@ -2542,7 +2542,7 @@ const unsigned short utf8_to_euc_CE[] = {
  0xA67B, 0x2641, 0x2642, 0x2643, 0x2644, 0x2645, 0x2646, 0x2647,
  0x2648, 0x2649, 0x264A, 0x264B, 0x264C, 0x264D, 0x264E, 0x264F,
 };
-const unsigned short utf8_to_euc_CF[] = {
+static const unsigned short utf8_to_euc_CF[] = {
  0x2650, 0x2651, 0xA678, 0x2652, 0x2653, 0x2654, 0x2655, 0x2656,
  0x2657, 0x2658, 0xA675, 0xA67A, 0xA677, 0xA679, 0xA67C,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2552,7 +2552,7 @@ const unsigned short utf8_to_euc_CF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_D0[] = {
+static const unsigned short utf8_to_euc_D0[] = {
       0, 0x2727, 0xA742, 0xA743, 0xA744, 0xA745, 0xA746, 0xA747,
  0xA748, 0xA749, 0xA74A, 0xA74B, 0xA74C,      0, 0xA74D, 0xA74E,
  0x2721, 0x2722, 0x2723, 0x2724, 0x2725, 0x2726, 0x2728, 0x2729,
@@ -2562,7 +2562,7 @@ const unsigned short utf8_to_euc_D0[] = {
  0x2751, 0x2752, 0x2753, 0x2754, 0x2755, 0x2756, 0x2758, 0x2759,
  0x275A, 0x275B, 0x275C, 0x275D, 0x275E, 0x275F, 0x2760, 0x2761,
 };
-const unsigned short utf8_to_euc_D1[] = {
+static const unsigned short utf8_to_euc_D1[] = {
  0x2762, 0x2763, 0x2764, 0x2765, 0x2766, 0x2767, 0x2768, 0x2769,
  0x276A, 0x276B, 0x276C, 0x276D, 0x276E, 0x276F, 0x2770, 0x2771,
       0, 0x2757, 0xA772, 0xA773, 0xA774, 0xA775, 0xA776, 0xA777,
@@ -2572,7 +2572,7 @@ const unsigned short utf8_to_euc_D1[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E280[] = {
+static const unsigned short utf8_to_euc_E280[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
  0x213E,      0,      0,      0, 0x213D, 0x213D, 0x2142,      0,
@@ -2582,7 +2582,7 @@ const unsigned short utf8_to_euc_E280[] = {
  0x2273,      0, 0x216C, 0x216D,      0,      0,      0,      0,
       0,      0,      0, 0x2228,      0,      0, 0x2131,      0,
 };
-const unsigned short utf8_to_euc_E280_ms[] = {
+static const unsigned short utf8_to_euc_E280_ms[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
  0x213E,      0,      0,      0, 0x213D, 0x213D, 0x2142,      0,
@@ -2592,7 +2592,7 @@ const unsigned short utf8_to_euc_E280_ms[] = {
  0x2273,      0, 0x216C, 0x216D,      0,      0,      0,      0,
       0,      0,      0, 0x2228,      0,      0,   0x7E,      0,
 };
-const unsigned short utf8_to_euc_E280_932[] = {
+static const unsigned short utf8_to_euc_E280_932[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
  0x213E,      0,      0,      0,      0, 0x213D,      0,      0,
@@ -2602,7 +2602,7 @@ const unsigned short utf8_to_euc_E280_932[] = {
  0x2273,      0, 0x216C, 0x216D,      0,      0,      0,      0,
       0,      0,      0, 0x2228,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E284[] = {
+static const unsigned short utf8_to_euc_E284[] = {
       0,      0,      0, 0x216E,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0x2D62,      0,
@@ -2612,7 +2612,7 @@ const unsigned short utf8_to_euc_E284[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E284_mac[] = {
+static const unsigned short utf8_to_euc_E284_mac[] = {
       0,      0,      0, 0x216E,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0x2B7B,      0,
@@ -2622,7 +2622,7 @@ const unsigned short utf8_to_euc_E284_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E285[] = {
+static const unsigned short utf8_to_euc_E285[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2632,7 +2632,7 @@ const unsigned short utf8_to_euc_E285[] = {
  0xF373, 0xF374, 0xF375, 0xF376, 0xF377, 0xF378, 0xF379, 0xF37A,
  0xF37B, 0xF37C,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E285_mac[] = {
+static const unsigned short utf8_to_euc_E285_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2642,7 +2642,7 @@ const unsigned short utf8_to_euc_E285_mac[] = {
  0x2A35, 0x2A36, 0x2A37, 0x2A38, 0x2A39, 0x2A3A, 0x2A3B, 0x2A3C,
  0x2A3D, 0x2A3E,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E286[] = {
+static const unsigned short utf8_to_euc_E286[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
  0x222B, 0x222C, 0x222A, 0x222D,      0,      0,      0,      0,
@@ -2652,7 +2652,7 @@ const unsigned short utf8_to_euc_E286[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E287[] = {
+static const unsigned short utf8_to_euc_E287[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0x224D,      0, 0x224E,      0,      0,      0,
@@ -2662,7 +2662,7 @@ const unsigned short utf8_to_euc_E287[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E288[] = {
+static const unsigned short utf8_to_euc_E288[] = {
  0x224F,      0, 0x225F, 0x2250,      0,      0,      0, 0x2260,
  0x223A,      0,      0, 0x223B,      0,      0,      0,      0,
       0, 0x2D74, 0x215D,      0,      0,      0,      0,      0,
@@ -2672,7 +2672,7 @@ const unsigned short utf8_to_euc_E288[] = {
       0,      0,      0,      0, 0x2168, 0x2268,      0,      0,
       0,      0,      0,      0,      0, 0x2266,      0,      0,
 };
-const unsigned short utf8_to_euc_E288_932[] = {
+static const unsigned short utf8_to_euc_E288_932[] = {
  0x224F,      0, 0x225F, 0x2250,      0,      0,      0, 0x2260,
  0x223A,      0,      0, 0x223B,      0,      0,      0,      0,
       0, 0x2D74,      0,      0,      0,      0,      0,      0,
@@ -2682,7 +2682,7 @@ const unsigned short utf8_to_euc_E288_932[] = {
       0,      0,      0,      0, 0x2168, 0x2268,      0,      0,
       0,      0,      0,      0,      0, 0x2266,      0,      0,
 };
-const unsigned short utf8_to_euc_E288_mac[] = {
+static const unsigned short utf8_to_euc_E288_mac[] = {
  0x224F,      0, 0x225F, 0x2250,      0,      0,      0, 0x2260,
  0x223A,      0,      0, 0x223B,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2692,7 +2692,7 @@ const unsigned short utf8_to_euc_E288_mac[] = {
       0,      0,      0,      0, 0x2168, 0x2268,      0,      0,
       0,      0,      0,      0,      0, 0x2266,      0,      0,
 };
-const unsigned short utf8_to_euc_E289[] = {
+static const unsigned short utf8_to_euc_E289[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0x2262,      0,      0,      0,      0,      0,
@@ -2702,7 +2702,7 @@ const unsigned short utf8_to_euc_E289[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E28A[] = {
+static const unsigned short utf8_to_euc_E28A[] = {
       0,      0, 0x223E, 0x223F,      0,      0, 0x223C, 0x223D,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2712,7 +2712,7 @@ const unsigned short utf8_to_euc_E28A[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0x2D79,
 };
-const unsigned short utf8_to_euc_E28A_mac[] = {
+static const unsigned short utf8_to_euc_E28A_mac[] = {
       0,      0, 0x223E, 0x223F,      0,      0, 0x223C, 0x223D,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2722,7 +2722,7 @@ const unsigned short utf8_to_euc_E28A_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0x2F23,
 };
-const unsigned short utf8_to_euc_E28C[] = {
+static const unsigned short utf8_to_euc_E28C[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0x225E,      0,      0,      0,      0,      0,
@@ -2732,7 +2732,7 @@ const unsigned short utf8_to_euc_E28C[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E291[] = {
+static const unsigned short utf8_to_euc_E291[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2742,7 +2742,7 @@ const unsigned short utf8_to_euc_E291[] = {
  0x2D31, 0x2D32, 0x2D33, 0x2D34,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E291_mac[] = {
+static const unsigned short utf8_to_euc_E291_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2752,7 +2752,7 @@ const unsigned short utf8_to_euc_E291_mac[] = {
  0x2931, 0x2932, 0x2933, 0x2934,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E294[] = {
+static const unsigned short utf8_to_euc_E294[] = {
  0x2821, 0x282C, 0x2822, 0x282D,      0,      0,      0,      0,
       0,      0,      0,      0, 0x2823,      0,      0, 0x282E,
  0x2824,      0,      0, 0x282F, 0x2826,      0,      0, 0x2831,
@@ -2762,7 +2762,7 @@ const unsigned short utf8_to_euc_E294[] = {
  0x283D,      0,      0, 0x2833, 0x282A,      0,      0, 0x283A,
  0x283F,      0,      0, 0x2835, 0x282B,      0,      0, 0x283B,
 };
-const unsigned short utf8_to_euc_E295[] = {
+static const unsigned short utf8_to_euc_E295[] = {
       0,      0, 0x2840,      0,      0,      0,      0,      0,
       0,      0,      0, 0x2836,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2772,7 +2772,7 @@ const unsigned short utf8_to_euc_E295[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E296[] = {
+static const unsigned short utf8_to_euc_E296[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2782,7 +2782,7 @@ const unsigned short utf8_to_euc_E296[] = {
       0,      0, 0x2225, 0x2224,      0,      0,      0,      0,
       0,      0,      0,      0, 0x2227, 0x2226,      0,      0,
 };
-const unsigned short utf8_to_euc_E297[] = {
+static const unsigned short utf8_to_euc_E297[] = {
       0,      0,      0,      0,      0,      0, 0x2221, 0x217E,
       0,      0,      0, 0x217B,      0,      0, 0x217D, 0x217C,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2792,7 +2792,7 @@ const unsigned short utf8_to_euc_E297[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E298[] = {
+static const unsigned short utf8_to_euc_E298[] = {
       0,      0,      0,      0,      0, 0x217A, 0x2179,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2802,7 +2802,7 @@ const unsigned short utf8_to_euc_E298[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E299[] = {
+static const unsigned short utf8_to_euc_E299[] = {
  0x216A,      0, 0x2169,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2812,7 +2812,7 @@ const unsigned short utf8_to_euc_E299[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E380[] = {
+static const unsigned short utf8_to_euc_E380[] = {
  0x2121, 0x2122, 0x2123, 0x2137,      0, 0x2139, 0x213A, 0x213B,
  0x2152, 0x2153, 0x2154, 0x2155, 0x2156, 0x2157, 0x2158, 0x2159,
  0x215A, 0x215B, 0x2229, 0x222E, 0x214C, 0x214D,      0,      0,
@@ -2822,7 +2822,7 @@ const unsigned short utf8_to_euc_E380[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E380_932[] = {
+static const unsigned short utf8_to_euc_E380_932[] = {
  0x2121, 0x2122, 0x2123, 0x2137,      0, 0x2139, 0x213A, 0x213B,
  0x2152, 0x2153, 0x2154, 0x2155, 0x2156, 0x2157, 0x2158, 0x2159,
  0x215A, 0x215B, 0x2229, 0x222E, 0x214C, 0x214D,      0,      0,
@@ -2832,7 +2832,7 @@ const unsigned short utf8_to_euc_E380_932[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E381[] = {
+static const unsigned short utf8_to_euc_E381[] = {
       0, 0x2421, 0x2422, 0x2423, 0x2424, 0x2425, 0x2426, 0x2427,
  0x2428, 0x2429, 0x242A, 0x242B, 0x242C, 0x242D, 0x242E, 0x242F,
  0x2430, 0x2431, 0x2432, 0x2433, 0x2434, 0x2435, 0x2436, 0x2437,
@@ -2842,7 +2842,7 @@ const unsigned short utf8_to_euc_E381[] = {
  0x2450, 0x2451, 0x2452, 0x2453, 0x2454, 0x2455, 0x2456, 0x2457,
  0x2458, 0x2459, 0x245A, 0x245B, 0x245C, 0x245D, 0x245E, 0x245F,
 };
-const unsigned short utf8_to_euc_E382[] = {
+static const unsigned short utf8_to_euc_E382[] = {
  0x2460, 0x2461, 0x2462, 0x2463, 0x2464, 0x2465, 0x2466, 0x2467,
  0x2468, 0x2469, 0x246A, 0x246B, 0x246C, 0x246D, 0x246E, 0x246F,
  0x2470, 0x2471, 0x2472, 0x2473,      0,      0,      0,      0,
@@ -2852,7 +2852,7 @@ const unsigned short utf8_to_euc_E382[] = {
  0x2530, 0x2531, 0x2532, 0x2533, 0x2534, 0x2535, 0x2536, 0x2537,
  0x2538, 0x2539, 0x253A, 0x253B, 0x253C, 0x253D, 0x253E, 0x253F,
 };
-const unsigned short utf8_to_euc_E382_932[] = {
+static const unsigned short utf8_to_euc_E382_932[] = {
  0x2460, 0x2461, 0x2462, 0x2463, 0x2464, 0x2465, 0x2466, 0x2467,
  0x2468, 0x2469, 0x246A, 0x246B, 0x246C, 0x246D, 0x246E, 0x246F,
  0x2470, 0x2471, 0x2472, 0x2473, 0x2574,      0,      0,      0,
@@ -2862,7 +2862,7 @@ const unsigned short utf8_to_euc_E382_932[] = {
  0x2530, 0x2531, 0x2532, 0x2533, 0x2534, 0x2535, 0x2536, 0x2537,
  0x2538, 0x2539, 0x253A, 0x253B, 0x253C, 0x253D, 0x253E, 0x253F,
 };
-const unsigned short utf8_to_euc_E383[] = {
+static const unsigned short utf8_to_euc_E383[] = {
  0x2540, 0x2541, 0x2542, 0x2543, 0x2544, 0x2545, 0x2546, 0x2547,
  0x2548, 0x2549, 0x254A, 0x254B, 0x254C, 0x254D, 0x254E, 0x254F,
  0x2550, 0x2551, 0x2552, 0x2553, 0x2554, 0x2555, 0x2556, 0x2557,
@@ -2872,7 +2872,7 @@ const unsigned short utf8_to_euc_E383[] = {
  0x2570, 0x2571, 0x2572, 0x2573, 0x2574, 0x2575, 0x2576,      0,
       0,      0,      0, 0x2126, 0x213C, 0x2133, 0x2134,      0,
 };
-const unsigned short utf8_to_euc_E388[] = {
+static const unsigned short utf8_to_euc_E388[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2882,7 +2882,7 @@ const unsigned short utf8_to_euc_E388[] = {
       0, 0x2D6A, 0x2D6B,      0,      0,      0,      0,      0,
       0, 0x2D6C,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E388_mac[] = {
+static const unsigned short utf8_to_euc_E388_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2892,7 +2892,7 @@ const unsigned short utf8_to_euc_E388_mac[] = {
       0, 0x2D2E, 0x2D31,      0,      0,      0,      0,      0,
       0, 0x2D2C,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38A[] = {
+static const unsigned short utf8_to_euc_E38A[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2902,7 +2902,7 @@ const unsigned short utf8_to_euc_E38A[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38A_mac[] = {
+static const unsigned short utf8_to_euc_E38A_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2912,7 +2912,7 @@ const unsigned short utf8_to_euc_E38A_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38C[] = {
+static const unsigned short utf8_to_euc_E38C[] = {
       0,      0,      0, 0x2D46,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0x2D4A,      0,      0,
       0,      0,      0,      0, 0x2D41,      0,      0,      0,
@@ -2922,7 +2922,7 @@ const unsigned short utf8_to_euc_E38C[] = {
       0,      0,      0,      0,      0,      0, 0x2D47,      0,
       0,      0,      0, 0x2D4F,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38C_mac[] = {
+static const unsigned short utf8_to_euc_E38C_mac[] = {
       0,      0,      0, 0x2E29,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0x2E32,      0,      0,
       0,      0,      0,      0, 0x2E24,      0,      0,      0,
@@ -2932,7 +2932,7 @@ const unsigned short utf8_to_euc_E38C_mac[] = {
       0,      0,      0,      0,      0,      0, 0x2E2A,      0,
       0,      0,      0, 0x2E36,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38D[] = {
+static const unsigned short utf8_to_euc_E38D[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0x2D40, 0x2D4E,      0,      0, 0x2D43,      0,      0,
       0, 0x2D48,      0,      0,      0,      0,      0, 0x2D49,
@@ -2942,7 +2942,7 @@ const unsigned short utf8_to_euc_E38D[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0x2D5F, 0x2D6F, 0x2D6E, 0x2D6D,      0,
 };
-const unsigned short utf8_to_euc_E38D_mac[] = {
+static const unsigned short utf8_to_euc_E38D_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0x2E21, 0x2E2F,      0,      0, 0x2E23,      0,      0,
       0, 0x2E2E,      0,      0,      0,      0,      0, 0x2E31,
@@ -2952,7 +2952,7 @@ const unsigned short utf8_to_euc_E38D_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0x2E6A, 0x2E69, 0x2E68, 0x2E67,      0,
 };
-const unsigned short utf8_to_euc_E38E[] = {
+static const unsigned short utf8_to_euc_E38E[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0x2D53, 0x2D54,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2962,7 +2962,7 @@ const unsigned short utf8_to_euc_E38E[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38E_mac[] = {
+static const unsigned short utf8_to_euc_E38E_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0x2B2B, 0x2B2D,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2972,7 +2972,7 @@ const unsigned short utf8_to_euc_E38E_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38F[] = {
+static const unsigned short utf8_to_euc_E38F[] = {
       0,      0,      0,      0, 0x2D55,      0,      0,      0,
       0,      0,      0,      0,      0, 0x2D63,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2982,7 +2982,7 @@ const unsigned short utf8_to_euc_E38F[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E38F_mac[] = {
+static const unsigned short utf8_to_euc_E38F_mac[] = {
       0,      0,      0,      0, 0x2B2E,      0,      0,      0,
       0,      0,      0,      0,      0, 0x2B7C,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -2992,7 +2992,7 @@ const unsigned short utf8_to_euc_E38F_mac[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E4B8[] = {
+static const unsigned short utf8_to_euc_E4B8[] = {
  0x306C, 0x437A, 0xB021, 0x3C37, 0xB022, 0xB023,      0, 0x4B7C,
  0x3E66, 0x3B30, 0x3E65, 0x323C, 0xB024, 0x4954, 0x4D3F,      0,
  0x5022, 0x312F, 0xB025,      0, 0x336E, 0x5023, 0x4024, 0x5242,
@@ -3002,7 +3002,7 @@ const unsigned short utf8_to_euc_E4B8[] = {
  0xB02D, 0x5025, 0x367A,      0,      0, 0xB02E, 0x5026,      0,
  0x345D, 0x4330,      0, 0x3C67, 0x5027,      0,      0, 0x5028,
 };
-const unsigned short utf8_to_euc_E4B9[] = {
+static const unsigned short utf8_to_euc_E4B9[] = {
  0xB02F, 0xB030, 0x5029, 0x4735, 0xB031, 0x3557,      0, 0xB032,
       0,      0,      0, 0x4737,      0, 0x4663, 0x3843, 0x4B33,
       0, 0xB033,      0,      0,      0, 0x6949, 0x502A, 0x3E68,
@@ -3012,7 +3012,7 @@ const unsigned short utf8_to_euc_E4B9[] = {
       0, 0x4D70,      0, 0x467D, 0xB039, 0xB03A,      0,      0,
       0, 0xB03B,      0,      0,      0,      0, 0x3425, 0xB03C,
 };
-const unsigned short utf8_to_euc_E4BA[] = {
+static const unsigned short utf8_to_euc_E4BA[] = {
  0x3535,      0, 0x502C,      0,      0, 0x502D, 0x4E3B,      0,
  0x4D3D, 0x4168, 0x502F, 0x3B76, 0x4673, 0xB03D, 0x5032,      0,
       0, 0x313E, 0x385F,      0, 0x385E, 0x3066, 0xB03E, 0xB03F,
@@ -3022,7 +3022,7 @@ const unsigned short utf8_to_euc_E4BA[] = {
  0x5037,      0,      0, 0x5038,      0,      0, 0x5039,      0,
       0, 0xB042, 0x3F4D,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E4BB[] = {
+static const unsigned short utf8_to_euc_E4BB[] = {
  0x3D3A, 0x3F4E, 0x503E, 0xB043, 0x503C,      0, 0x503D, 0x3558,
       0,      0, 0x3A23, 0x3270,      0, 0x503B, 0x503A, 0x4A29,
  0xB044,      0,      0,      0, 0x3B46, 0x3B45, 0x423E, 0x503F,
@@ -3032,7 +3032,7 @@ const unsigned short utf8_to_euc_E4BB[] = {
  0x3644, 0xB04C, 0x4367, 0xB04D,      0, 0xB04E, 0x376F, 0x5043,
       0,      0,      0, 0x4724, 0xF42F, 0xB04F, 0xB050, 0xB051,
 };
-const unsigned short utf8_to_euc_E4BC[] = {
+static const unsigned short utf8_to_euc_E4BC[] = {
  0xB052, 0x346B, 0xB053, 0xB054,      0,      0,      0,      0,
  0xB055, 0x5044, 0x304B, 0xB056, 0xB057, 0x3860, 0x346C, 0x497A,
  0x4832, 0x3559, 0xB058,      0,      0, 0xB059, 0xB05A, 0xB05B,
@@ -3042,7 +3042,7 @@ const unsigned short utf8_to_euc_E4BC[] = {
  0x5046, 0xB05E,      0, 0xB060, 0x483C, 0xB061, 0x4E62, 0xB062,
  0x3F2D, 0xB063, 0x3B47, 0xB064, 0x3B77, 0x3240, 0xB065,      0,
 };
-const unsigned short utf8_to_euc_E4BD[] = {
+static const unsigned short utf8_to_euc_E4BD[] = {
  0xB066,      0, 0xB067, 0x4451,      0,      0, 0x4322, 0x504A,
  0xB068, 0xB069,      0, 0xB06A, 0xB06B, 0x304C, 0x4463, 0x3D3B,
  0x3A34, 0x4D24, 0xB06C, 0x424E, 0xB06D, 0x323F, 0xB06E, 0x5049,
@@ -3052,7 +3052,7 @@ const unsigned short utf8_to_euc_E4BD[] = {
  0x5051, 0xB075,      0, 0x3242,      0, 0x4A3B, 0x504B, 0xB076,
  0xB077, 0xB078, 0xB079, 0x504F, 0x3873, 0xB07A, 0xB07B, 0x3B48,
 };
-const unsigned short utf8_to_euc_E4BE[] = {
+static const unsigned short utf8_to_euc_E4BE[] = {
       0, 0xB07C, 0xB07D, 0x3426, 0xB07E, 0xB121, 0x5054,      0,
  0x504C, 0xB122, 0xB123, 0x4E63, 0xB124, 0x3B78, 0xB125, 0x504D,
  0xB126, 0x5052, 0xB127, 0xB128, 0xB129,      0, 0x5055, 0xB12A,
@@ -3062,7 +3062,7 @@ const unsigned short utf8_to_euc_E4BE[] = {
       0,      0, 0xB12F,      0,      0, 0x3F2F, 0x4E37, 0xB130,
       0, 0xB131,      0, 0xB132, 0xB133, 0xB134, 0xB135, 0x4A58,
 };
-const unsigned short utf8_to_euc_E4BF[] = {
+static const unsigned short utf8_to_euc_E4BF[] = {
  0xB136, 0xB137, 0x3738, 0x4225, 0x3264, 0xB138, 0xB139,      0,
  0xB13A, 0xB13B, 0x3D53, 0xB13C, 0xB13D, 0xB13E, 0x5059, 0xB13F,
  0x505E, 0x505C, 0xB140,      0, 0x5057,      0,      0, 0x422F,
@@ -3072,7 +3072,7 @@ const unsigned short utf8_to_euc_E4BF[] = {
  0xB144,      0, 0xB145, 0x4750,      0, 0x4936, 0x5068,      0,
  0x4A70,      0, 0x3236,      0, 0xB146, 0xB147, 0x506C, 0xB148,
 };
-const unsigned short utf8_to_euc_E580[] = {
+static const unsigned short utf8_to_euc_E580[] = {
  0xB149, 0xB14A,      0,      0, 0xB14B, 0x5066, 0x506F, 0xB14C,
       0, 0x4152, 0xB14D, 0x3844, 0xB14E, 0x475C, 0xB14F, 0x6047,
  0xB150, 0x506E, 0x455D, 0xB151, 0x5063,      0, 0x3876, 0xB152,
@@ -3082,7 +3082,7 @@ const unsigned short utf8_to_euc_E580[] = {
  0xB15B,      0, 0xB15C, 0xB15D,      0, 0xB15E, 0x3666,      0,
       0, 0x3770,      0, 0xB176,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E581[] = {
+static const unsigned short utf8_to_euc_E581[] = {
  0xB15F, 0xB160, 0xB161, 0x5070,      0, 0xB162, 0xB163, 0x5071,
  0x5075, 0x304E, 0xB164,      0, 0xB165,      0, 0xB166, 0x4A50,
  0x5074, 0xB167, 0xB168, 0xB169,      0, 0x5073, 0x5077, 0xB16A,
@@ -3092,7 +3092,7 @@ const unsigned short utf8_to_euc_E581[] = {
  0xB174, 0xB175, 0x3C45,      0, 0x4226, 0x4465, 0x3676,      0,
  0x5079,      0,      0,      0,      0, 0x3536,      0,      0,
 };
-const unsigned short utf8_to_euc_E582[] = {
+static const unsigned short utf8_to_euc_E582[] = {
  0x507A, 0xB177,      0, 0xB178, 0xB179, 0x507C, 0xB17A,      0,
       0,      0, 0xB17B,      0,      0, 0x4B35, 0xB17C, 0xB17D,
  0xB17E, 0x3766, 0xB221, 0xB222, 0xB223,      0, 0xB224,      0,
@@ -3102,7 +3102,7 @@ const unsigned short utf8_to_euc_E582[] = {
  0xB22E,      0, 0x507E, 0x5123, 0x507D, 0x3A44,      0, 0x3D7D,
       0, 0xB22F, 0xB230,      0,      0, 0xB231, 0x3739,      0,
 };
-const unsigned short utf8_to_euc_E583[] = {
+static const unsigned short utf8_to_euc_E583[] = {
  0xB232,      0, 0x5124, 0xB233, 0xB234, 0x364F,      0, 0xB235,
       0, 0x5121, 0x5122,      0, 0xB236, 0x462F, 0xB237, 0x417C,
  0xB238, 0x3623,      0, 0xB239, 0xB23A, 0x4B4D, 0x5125,      0,
@@ -3112,7 +3112,7 @@ const unsigned short utf8_to_euc_E583[] = {
       0, 0xB245, 0xB251,      0, 0xF430, 0x512C, 0xB246,      0,
       0, 0x512B, 0xB247, 0x4A48,      0,      0, 0xB248,      0,
 };
-const unsigned short utf8_to_euc_E584[] = {
+static const unsigned short utf8_to_euc_E584[] = {
  0x3537, 0x512E, 0x512F, 0xB249, 0x322F,      0, 0xB24A, 0xB24B,
  0xB24C, 0x512D,      0, 0xB24D, 0xB24E, 0xB24F, 0xB250,      0,
  0xB252,      0, 0x3C74,      0, 0x5132, 0x5131, 0x5130, 0xB253,
@@ -3122,7 +3122,7 @@ const unsigned short utf8_to_euc_E584[] = {
       0, 0xB25F, 0x4C59, 0xB260, 0xB261, 0xB262,      0, 0x5136,
  0xB263, 0xB264, 0x5135, 0x5138, 0x5137,      0,      0, 0x5139,
 };
-const unsigned short utf8_to_euc_E585[] = {
+static const unsigned short utf8_to_euc_E585[] = {
  0x513A, 0x3074, 0xB265, 0x3835, 0x373B, 0x3D3C, 0x437B, 0x3624,
  0x4068, 0x3877, 0xB266, 0x396E, 0x513C, 0x4C48, 0x4546, 0xB267,
  0x3B79,      0, 0x513B, 0xB268, 0x513D, 0xB269,      0, 0xB26A,
@@ -3132,7 +3132,7 @@ const unsigned short utf8_to_euc_E585[] = {
       0, 0x3626,      0,      0,      0, 0x4A3C, 0x4236, 0x3671,
  0x4535,      0,      0,      0, 0x3773,      0, 0xB26F,      0,
 };
-const unsigned short utf8_to_euc_E586[] = {
+static const unsigned short utf8_to_euc_E586[] = {
  0x5143,      0, 0x5144, 0xB270, 0xB271, 0x4662, 0x315F,      0,
       0, 0x5147, 0x3A7D, 0xB272, 0x5146, 0x3A46, 0xB273, 0x5148,
  0x666E, 0x5149, 0x4B41, 0x514A,      0, 0x514B, 0x514C, 0x3E69,
@@ -3142,7 +3142,7 @@ const unsigned short utf8_to_euc_E586[] = {
  0x5156, 0x5154, 0x5155, 0x5153, 0x3A63, 0x5157, 0x4C6A, 0x4E64,
  0xB279,      0, 0xB27A,      0, 0xB27B, 0x5158, 0xB27C, 0xB27D,
 };
-const unsigned short utf8_to_euc_E587[] = {
+static const unsigned short utf8_to_euc_E587[] = {
       0,      0, 0xB27E,      0, 0x4028, 0x5159, 0x3D5A,      0,
  0xB321, 0x515A,      0, 0x437C, 0x4E3F, 0x4560,      0, 0xB322,
       0, 0xB323, 0xB324, 0xB325,      0, 0xB326, 0x5245,      0,
@@ -3152,7 +3152,7 @@ const unsigned short utf8_to_euc_E587[] = {
  0x5160, 0x332E, 0xB32C, 0xB32D, 0xB32E, 0x5161, 0x3627, 0xB32F,
  0x464C, 0x317A, 0x3D50,      0,      0, 0x4821, 0x5162,      0,
 };
-const unsigned short utf8_to_euc_E588[] = {
+static const unsigned short utf8_to_euc_E588[] = {
  0x4561, 0xB330, 0xB331, 0x3F4F, 0x5163, 0xB332, 0x4A2C, 0x405A,
  0x3422,      0, 0x3429, 0x5164,      0,      0, 0x5166,      0,
       0, 0x373A, 0xB333, 0xB334, 0x5165, 0xB335, 0xB336, 0x4E73,
@@ -3162,7 +3162,7 @@ const unsigned short utf8_to_euc_E588[] = {
  0x457E, 0xB33A, 0xB33B, 0x516A,      0, 0xB33C, 0x4029, 0x3A7E,
  0x3774, 0x516B, 0x3B49, 0x396F, 0xB33D,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E589[] = {
+static const unsigned short utf8_to_euc_E589[] = {
       0,      0,      0, 0x4466, 0x516D, 0xB33E,      0, 0x4227,
       0, 0xB33F, 0x3A6F, 0x516E, 0x516F, 0x4130,      0, 0x516C,
       0,      0,      0,      0, 0x5171, 0xB340, 0x4B36, 0xB341,
@@ -3172,7 +3172,7 @@ const unsigned short utf8_to_euc_E589[] = {
  0x3E6A, 0x517B, 0x3364, 0x5175, 0x5173, 0x414F,      0, 0xB34A,
  0xB34B, 0xB34C,      0,      0,      0, 0x5177,      0, 0x5176,
 };
-const unsigned short utf8_to_euc_E58A[] = {
+static const unsigned short utf8_to_euc_E58A[] = {
  0xB34D,      0, 0xB34E, 0x3344,      0, 0xB34F,      0, 0x3760,
  0x517C, 0x4E2D, 0xB350,      0, 0xB351, 0x5178,      0,      0,
       0, 0x517D, 0x517A, 0xB352, 0x5179, 0xB353, 0xB354, 0xB355,
@@ -3182,7 +3182,7 @@ const unsigned short utf8_to_euc_E58A[] = {
  0xB35E, 0x4E65,      0,      0, 0x4F2B, 0x5225, 0xB35F, 0xB360,
  0xB361, 0x387A, 0xB362, 0xB363, 0x5224, 0xB364, 0x332F,      0,
 };
-const unsigned short utf8_to_euc_E58B[] = {
+static const unsigned short utf8_to_euc_E58B[] = {
  0xB365, 0x5226,      0, 0x4B56, 0xB366, 0x443C, 0xB367, 0x4D26,
  0xB368, 0x4A59,      0,      0, 0xB369, 0x5227,      0, 0xB36A,
       0, 0xB36B, 0x7055,      0, 0xB36C, 0x4630, 0xB36D, 0x5228,
@@ -3192,7 +3192,7 @@ const unsigned short utf8_to_euc_E58B[] = {
  0xB376, 0xB377, 0x372E, 0x522E, 0xB378, 0x522F, 0xB379, 0xB37A,
  0x5230, 0x5231, 0x3C5B,      0,      0,      0, 0x387B, 0x4C5E,
 };
-const unsigned short utf8_to_euc_E58C[] = {
+static const unsigned short utf8_to_euc_E58C[] = {
  0xB37B, 0x4C68, 0x4677, 0xB37C,      0, 0x4A71, 0x5232, 0xF432,
  0x5233,      0, 0xB37D, 0xB37E, 0xB421, 0x5235,      0, 0x5237,
  0x5236, 0xB422,      0, 0xB423,      0, 0x5238, 0x323D, 0x4B4C,
@@ -3202,7 +3202,7 @@ const unsigned short utf8_to_euc_E58C[] = {
  0xB430, 0x523C, 0xB431, 0x523D,      0, 0xB432,      0,      0,
  0x523E, 0x4924, 0x3668, 0x3065, 0xB433, 0xB434, 0xB435, 0x463F,
 };
-const unsigned short utf8_to_euc_E58D[] = {
+static const unsigned short utf8_to_euc_E58D[] = {
  0x523F, 0x3D3D, 0xB436, 0x4069,      0, 0x5241, 0x5240, 0x3E23,
  0x3861, 0x5243, 0x483E, 0xB438, 0xB437, 0x5244,      0,      0,
       0, 0x485C, 0x4234, 0x426E, 0x3628,      0,      0, 0x466E,
@@ -3212,7 +3212,7 @@ const unsigned short utf8_to_euc_E58D[] = {
  0x3075, 0x346D, 0xB440, 0x4228, 0x3551, 0x4D71,      0, 0x524B,
  0x3237, 0xB441,      0, 0x524A,      0,      0, 0xB442, 0x362A,
 };
-const unsigned short utf8_to_euc_E58E[] = {
+static const unsigned short utf8_to_euc_E58E[] = {
       0,      0, 0x524C, 0xB443, 0x4C71,      0,      0, 0xB444,
  0xB445,      0,      0,      0,      0,      0, 0xB446,      0,
       0,      0,      0, 0xB447, 0xB448,      0, 0x524D,      0,
@@ -3222,7 +3222,7 @@ const unsigned short utf8_to_euc_E58E[] = {
  0x5252,      0, 0xB450, 0x3837, 0xB451, 0xB452, 0x5253, 0xB453,
  0xB454,      0, 0xB455, 0x356E,      0, 0xB456,      0,      0,
 };
-const unsigned short utf8_to_euc_E58F[] = {
+static const unsigned short utf8_to_euc_E58F[] = {
  0xB457,      0, 0x3B32, 0x5254,      0, 0xB458,      0,      0,
  0x4B74, 0x3A35, 0x355A, 0x4D27, 0x4150, 0x483F, 0x3C7D, 0xB459,
       0,      0, 0xB45A, 0xB45B, 0x3D47, 0xB45C, 0x3C68, 0x3C75,
@@ -3232,7 +3232,7 @@ const unsigned short utf8_to_euc_E58F[] = {
  0x4266, 0x3C38, 0x3B4B, 0x3126,      0, 0xB463, 0x3370, 0x3966,
  0x3B4A,      0, 0x525D,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E590[] = {
+static const unsigned short utf8_to_euc_E590[] = {
       0, 0x525E, 0xB464, 0x3549, 0x3346,      0,      0,      0,
  0x3967, 0x3548, 0x445F, 0x3125, 0x4631, 0x4C3E, 0x3921, 0x4D79,
  0x4547, 0x387E,      0, 0xB465,      0,      0,      0,      0,
@@ -3242,7 +3242,7 @@ const unsigned short utf8_to_euc_E590[] = {
       0, 0xB46C,      0,      0, 0xB46D, 0xB46E, 0x5265,      0,
  0x355B, 0x3F61,      0, 0x4A2D, 0x5263, 0x525F, 0x3863,      0,
 };
-const unsigned short utf8_to_euc_E591[] = {
+static const unsigned short utf8_to_euc_E591[] = {
  0x5260,      0, 0x4F24, 0xB46F, 0xB470,      0, 0x4A72, 0xB471,
  0x4468, 0x3862, 0x3970,      0,      0, 0xB472, 0x5268, 0xB473,
       0, 0x465D,      0,      0,      0,      0,      0,      0,
@@ -3252,7 +3252,7 @@ const unsigned short utf8_to_euc_E591[] = {
  0x526F, 0x526D,      0, 0x4C23, 0xB47D, 0x526A, 0x5273, 0x526E,
       0,      0,      0, 0x5271, 0x3846, 0x4C3F,      0, 0xB47E,
 };
-const unsigned short utf8_to_euc_E592[] = {
+static const unsigned short utf8_to_euc_E592[] = {
  0x5272, 0xB521,      0, 0xB522, 0x5274, 0xB523, 0x5276,      0,
  0xB524, 0xB525, 0xF435, 0x3A70, 0x4F42, 0xB526, 0x526B, 0x5269,
  0x5275, 0xB527, 0x5270,      0,      0, 0xB528, 0xB529,      0,
@@ -3262,7 +3262,7 @@ const unsigned short utf8_to_euc_E592[] = {
       0, 0xB533, 0x3A69, 0x3331,      0,      0,      0, 0xB534,
  0x5279, 0xB535, 0xB536, 0xB537, 0x5325, 0x3076, 0x5324, 0xB538,
 };
-const unsigned short utf8_to_euc_E593[] = {
+static const unsigned short utf8_to_euc_E593[] = {
  0x3025, 0x494A, 0x5322,      0, 0x527C,      0, 0xB539, 0x5277,
  0x527D, 0x3A48, 0xB53A,      0,      0, 0xB53B, 0xB53C,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -3272,7 +3272,7 @@ const unsigned short utf8_to_euc_E593[] = {
       0,      0, 0x452F,      0,      0,      0, 0xB541,      0,
       0,      0, 0x532E,      0, 0xB542, 0x532B, 0xB543, 0xB544,
 };
-const unsigned short utf8_to_euc_E594[] = {
+static const unsigned short utf8_to_euc_E594[] = {
  0xB545, 0xB546,      0,      0, 0x3134, 0xB547, 0x3A36, 0x3F30,
  0xB548, 0xB549,      0,      0, 0xB54A, 0xB54B, 0xB54C, 0x5329,
  0x4562,      0,      0,      0, 0x532A, 0xB54D, 0x3022,      0,
@@ -3282,7 +3282,7 @@ const unsigned short utf8_to_euc_E594[] = {
       0, 0x3E27, 0xB550, 0x533A,      0, 0xB551, 0xB552,      0,
  0x5339, 0x5330,      0, 0xB553, 0xB554, 0xB555, 0x4243,      0,
 };
-const unsigned short utf8_to_euc_E595[] = {
+static const unsigned short utf8_to_euc_E595[] = {
  0x5331, 0xB556,      0,      0, 0x426F, 0x5336, 0x3E26, 0xB557,
       0, 0xB558, 0xB559,      0, 0x5333, 0xB55A,      0, 0x4C64,
  0xB55B, 0xB55C,      0, 0x373C,      0,      0, 0x5337, 0x5338,
@@ -3292,7 +3292,7 @@ const unsigned short utf8_to_euc_E595[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0x5341, 0x5346,      0, 0x5342, 0xB565,
 };
-const unsigned short utf8_to_euc_E596[] = {
+static const unsigned short utf8_to_euc_E596[] = {
  0x533D, 0xB566, 0xB567, 0x5347, 0x4131,      0, 0xB568, 0x5349,
  0xB569, 0x3922, 0x533F, 0x437D,      0,      0, 0xB56A, 0xB56B,
       0, 0xB56C, 0xB56D, 0xB56E, 0xB56F,      0,      0, 0xB570,
@@ -3302,7 +3302,7 @@ const unsigned short utf8_to_euc_E596[] = {
  0x3674,      0, 0xB574,      0,      0,      0, 0x3144,      0,
       0,      0,      0,      0,      0,      0,      0, 0xB575,
 };
-const unsigned short utf8_to_euc_E597[] = {
+static const unsigned short utf8_to_euc_E597[] = {
       0, 0xB576,      0, 0xB577, 0x534E, 0x534C, 0xB578, 0x5427,
       0, 0xB579,      0, 0xB57A, 0xB57B,      0, 0xB57C,      0,
       0, 0xB57D, 0xB57E, 0xB621, 0x5351,      0,      0, 0xB622,
@@ -3312,7 +3312,7 @@ const unsigned short utf8_to_euc_E597[] = {
       0,      0,      0,      0,      0,      0, 0xB628, 0x5353,
       0, 0x5358,      0,      0,      0, 0x5356, 0x5355, 0xB629,
 };
-const unsigned short utf8_to_euc_E598[] = {
+static const unsigned short utf8_to_euc_E598[] = {
       0,      0,      0,      0,      0, 0xB62A, 0x4332,      0,
  0xB62B, 0x3245, 0xB62C,      0,      0, 0xB62D, 0xB62E, 0xB62F,
  0xB630, 0xB631, 0xB632,      0, 0x5352,      0, 0x5354, 0x3E28,
@@ -3322,7 +3322,7 @@ const unsigned short utf8_to_euc_E598[] = {
  0xB635, 0x3E7C, 0x535E, 0xB636, 0x535C, 0xB637, 0x535D, 0xB638,
  0x535F, 0xB639,      0, 0xB63A, 0xB63B, 0xB63C,      0, 0xB63D,
 };
-const unsigned short utf8_to_euc_E599[] = {
+static const unsigned short utf8_to_euc_E599[] = {
  0xB63E, 0xB63F, 0x313D, 0xB640, 0xB641,      0, 0xB642,      0,
       0, 0xB643,      0, 0xB644, 0x4139, 0xB645, 0x5359, 0xB646,
  0x535A,      0,      0,      0, 0xB647,      0,      0,      0,
@@ -3332,7 +3332,7 @@ const unsigned short utf8_to_euc_E599[] = {
       0, 0xB651, 0xB652,      0, 0x4A2E, 0xB653,      0,      0,
  0x4655,      0, 0x4838,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E59A[] = {
+static const unsigned short utf8_to_euc_E59A[] = {
  0x5366,      0,      0,      0, 0xB654, 0xB655, 0x5365, 0x3345,
  0xB656,      0, 0x5367, 0xB657, 0xB658,      0,      0, 0x536A,
       0,      0,      0,      0, 0x5369, 0xB659,      0,      0,
@@ -3342,7 +3342,7 @@ const unsigned short utf8_to_euc_E59A[] = {
       0, 0xB666,      0, 0xB667, 0x536E,      0, 0x536D, 0xB668,
       0,      0,      0,      0, 0x5370,      0, 0xB669,      0,
 };
-const unsigned short utf8_to_euc_E59B[] = {
+static const unsigned short utf8_to_euc_E59B[] = {
  0x5373, 0x5371, 0x536F, 0x5372,      0, 0xB66A,      0,      0,
  0x5374, 0xB66B, 0xB66C, 0xB66D, 0xB670, 0xB671, 0x5375, 0xB66E,
  0xB66F, 0x5376,      0, 0x5377,      0,      0,      0, 0x5378,
@@ -3352,7 +3352,7 @@ const unsigned short utf8_to_euc_E59B[] = {
  0x3A24, 0xB67C, 0x304F, 0x3F5E,      0,      0, 0xB721, 0xB722,
       0, 0x537A, 0x3847,      0,      0, 0x3971,      0, 0x537C,
 };
-const unsigned short utf8_to_euc_E59C[] = {
+static const unsigned short utf8_to_euc_E59C[] = {
  0x537B, 0xB723, 0xB724, 0x4A60, 0x537D,      0,      0, 0xB725,
  0x5421, 0x537E, 0xB726, 0x5422, 0xB727, 0x5423,      0, 0x3777,
       0, 0xB728, 0x3160, 0x5424,      0, 0xB729, 0x5426,      0,
@@ -3362,7 +3362,7 @@ const unsigned short utf8_to_euc_E59C[] = {
  0x434F,      0,      0, 0xB737, 0xB738,      0,      0, 0x542A,
  0x542B,      0,      0, 0x542D,      0, 0xB739, 0xB73A, 0xB73B,
 };
-const unsigned short utf8_to_euc_E59D[] = {
+static const unsigned short utf8_to_euc_E59D[] = {
  0x542E,      0, 0x3A64,      0,      0, 0xB73C, 0xB73D, 0x3651,
       0,      0, 0x4B37,      0, 0xB73E, 0xB73F, 0x542C, 0x542F,
  0x3A41, 0x3923, 0xB740,      0,      0,      0,      0,      0,
@@ -3372,7 +3372,7 @@ const unsigned short utf8_to_euc_E59D[] = {
  0xB749, 0xB74A,      0, 0xB74B, 0xB74C, 0xB74D,      0, 0xB74E,
       0, 0xB74F, 0xB750, 0xB751, 0xB752,      0, 0xB753, 0x5434,
 };
-const unsigned short utf8_to_euc_E59E[] = {
+static const unsigned short utf8_to_euc_E59E[] = {
       0, 0xB754, 0x3F62, 0xB755,      0,      0,      0,      0,
  0x5432, 0x5435,      0, 0x373F, 0xB756,      0,      0,      0,
       0,      0,      0, 0x5436, 0xB757, 0xB760,      0, 0xB758,
@@ -3382,7 +3382,7 @@ const unsigned short utf8_to_euc_E59E[] = {
  0x543B,      0,      0, 0x5438,      0,      0,      0,      0,
  0xB765,      0,      0,      0,      0, 0xB766,      0,      0,
 };
-const unsigned short utf8_to_euc_E59F[] = {
+static const unsigned short utf8_to_euc_E59F[] = {
  0x5431,      0,      0, 0x543C,      0,      0, 0x543D, 0xB767,
  0xB768,      0,      0, 0x4B64, 0xB769,      0, 0x3E6B, 0xB76A,
       0,      0, 0x543F, 0x5440, 0x543E, 0xB76B, 0x5442,      0,
@@ -3392,7 +3392,7 @@ const unsigned short utf8_to_euc_E59F[] = {
  0xB773,      0,      0,      0, 0x3E7D, 0xB774, 0xB775, 0x3C39,
  0xB776, 0x475D, 0x3470,      0, 0x3A6B, 0xB777, 0xB778, 0xB779,
 };
-const unsigned short utf8_to_euc_E5A0[] = {
+static const unsigned short utf8_to_euc_E5A0[] = {
  0x4B59,      0, 0x4632, 0xB77A, 0xB77B, 0x3778, 0x424F,      0,
  0xB77C, 0xB77D, 0x5441, 0x5444, 0xB821, 0xB822,      0,      0,
       0,      0,      0,      0,      0, 0x4244,      0,      0,
@@ -3402,7 +3402,7 @@ const unsigned short utf8_to_euc_E5A0[] = {
  0x3161, 0x4A73, 0xB82A,      0, 0x3E6C, 0x4548,      0,      0,
       0, 0xB82B, 0x3A66,      0,      0, 0x544E,      0, 0xB82C,
 };
-const unsigned short utf8_to_euc_E5A1[] = {
+static const unsigned short utf8_to_euc_E5A1[] = {
  0x4A3D, 0x4E5D,      0,      0,      0,      0,      0,      0,
       0, 0xB82D, 0x3274, 0x544A, 0xB82E, 0xB82F,      0, 0xB830,
  0xB831, 0x413A, 0x544D,      0, 0x4563, 0xB832,      0, 0x4549,
@@ -3412,7 +3412,7 @@ const unsigned short utf8_to_euc_E5A1[] = {
  0x544B,      0, 0x5447,      0,      0, 0x3F50,      0,      0,
  0xB838, 0x544F,      0,      0, 0xB839,      0, 0x3D4E, 0xB83A,
 };
-const unsigned short utf8_to_euc_E5A2[] = {
+static const unsigned short utf8_to_euc_E5A2[] = {
  0xB83B, 0xB83C,      0, 0x362D,      0, 0x5450,      0, 0xB83D,
  0xB83E, 0xB83F, 0xB840,      0, 0xB841, 0xB842,      0, 0xB843,
  0xB844,      0,      0, 0x4A68, 0xB845,      0, 0xB846, 0x417D,
@@ -3422,7 +3422,7 @@ const unsigned short utf8_to_euc_E5A2[] = {
       0, 0xB84D, 0xB84E, 0x4A2F,      0,      0,      0,      0,
  0x5457, 0x5451, 0x5454, 0x5456, 0xB850,      0, 0x3A26,      0,
 };
-const unsigned short utf8_to_euc_E5A3[] = {
+static const unsigned short utf8_to_euc_E5A3[] = {
       0, 0x4A49, 0xB851,      0, 0xB84F, 0x5459,      0, 0x4345,
  0xB852,      0, 0x3275,      0, 0x3E6D, 0xB853, 0xB854,      0,
  0xB855, 0x545B, 0xB856, 0x545A, 0xB857, 0x3968, 0xB858, 0x545C,
@@ -3432,7 +3432,7 @@ const unsigned short utf8_to_euc_E5A3[] = {
  0x403C, 0x306D, 0x4764, 0xB85E,      0,      0,      0, 0x445B,
       0, 0x5465, 0x5464, 0x5466, 0x5467, 0x5468,      0,      0,
 };
-const unsigned short utf8_to_euc_E5A4[] = {
+static const unsigned short utf8_to_euc_E5A4[] = {
       0,      0, 0x5469,      0,      0, 0xB85F, 0xB860,      0,
       0, 0x4A51, 0x546A, 0xB861, 0xB862,      0,      0, 0x3246,
  0x546B,      0, 0xB863, 0xB864, 0xB865, 0x4D3C, 0x3330,      0,
@@ -3442,7 +3442,7 @@ const unsigned short utf8_to_euc_E5A4[] = {
  0xB86D, 0x3C3A, 0x5471, 0xB86E,      0, 0xB86F, 0xB870, 0x3050,
  0x5472,      0,      0,      0,      0,      0, 0x5473, 0xB871,
 };
-const unsigned short utf8_to_euc_E5A5[] = {
+static const unsigned short utf8_to_euc_E5A5[] = {
       0,      0,      0, 0xB872, 0x3162,      0, 0xB873, 0x3471,
  0x4660, 0x4A74,      0,      0,      0,      0, 0x5477, 0x4155,
  0x5476, 0x3740, 0xB874, 0xB875, 0x4B5B, 0x5475,      0, 0x4565,
@@ -3452,7 +3452,7 @@ const unsigned short utf8_to_euc_E5A5[] = {
       0,      0, 0xB922, 0x3D77, 0x455B, 0xB923, 0xB924,      0,
  0x5521, 0xB925,      0, 0xB926, 0xB927, 0x3925,      0,      0,
 };
-const unsigned short utf8_to_euc_E5A6[] = {
+static const unsigned short utf8_to_euc_E5A6[] = {
       0, 0x5522, 0x4721, 0x485E, 0x4C51,      0,      0,      0,
       0,      0, 0x4725, 0xB928, 0xB929, 0x552B, 0xB92A,      0,
       0,      0, 0xB92B, 0x3538,      0, 0xB92C, 0x4D45, 0xB92D,
@@ -3462,7 +3462,7 @@ const unsigned short utf8_to_euc_E5A6[] = {
  0xB934,      0, 0x5527, 0xB935,      0,      0,      0, 0xB936,
       0, 0x4B65, 0xB937, 0x3A4A, 0xB938,      0, 0x3E2A,      0,
 };
-const unsigned short utf8_to_euc_E5A7[] = {
+static const unsigned short utf8_to_euc_E5A7[] = {
       0, 0xB939,      0, 0xB93A, 0xB93B,      0, 0x5528,      0,
  0xB93C, 0x3B50, 0xB93D, 0x3B4F,      0, 0xB93E,      0,      0,
  0x3039, 0x3848, 0xB93F, 0x402B, 0x3051,      0,      0,      0,
@@ -3472,7 +3472,7 @@ const unsigned short utf8_to_euc_E5A7[] = {
       0, 0xB948, 0xB949,      0, 0xB94A,      0, 0x3028, 0xB94B,
       0,      0,      0, 0x3079,      0,      0,      0, 0x3B51,
 };
-const unsigned short utf8_to_euc_E5A8[] = {
+static const unsigned short utf8_to_euc_E5A8[] = {
  0xB94C, 0x3052,      0, 0x3023, 0xB94D,      0,      0,      0,
       0, 0x5532,      0,      0, 0xB94E, 0xB94F, 0xB950,      0,
       0, 0x5530, 0xB951, 0xB952,      0,      0,      0,      0,
@@ -3482,7 +3482,7 @@ const unsigned short utf8_to_euc_E5A8[] = {
  0xB95A,      0,      0,      0,      0, 0x5537, 0x5538,      0,
       0,      0,      0,      0, 0x3E2B,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E5A9[] = {
+static const unsigned short utf8_to_euc_E5A9[] = {
  0x5534, 0x4F2C,      0,      0, 0xB95B, 0xB95C, 0x474C, 0xB95D,
  0xB95E, 0x5536,      0,      0, 0xB95F,      0,      0,      0,
  0xB960,      0,      0,      0,      0, 0xB961,      0,      0,
@@ -3492,7 +3492,7 @@ const unsigned short utf8_to_euc_E5A9[] = {
       0,      0,      0,      0,      0,      0,      0, 0xB967,
       0,      0, 0xB968, 0xB969,      0,      0, 0xB96A, 0x4C3B,
 };
-const unsigned short utf8_to_euc_E5AA[] = {
+static const unsigned short utf8_to_euc_E5AA[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0xB96B,      0,      0,      0,      0,
  0xB96C,      0, 0x475E, 0xB96D,      0,      0, 0xB96E,      0,
@@ -3502,7 +3502,7 @@ const unsigned short utf8_to_euc_E5AA[] = {
       0, 0xB977, 0xB978, 0xB979,      0, 0xB97A,      0,      0,
  0xB97B,      0, 0xB97C, 0xB97D, 0x553C, 0x5540, 0x553D, 0xB97E,
 };
-const unsigned short utf8_to_euc_E5AB[] = {
+static const unsigned short utf8_to_euc_E5AB[] = {
       0, 0x3247, 0x553F,      0, 0xBA21,      0, 0xBA22,      0,
  0xBA23, 0x3C3B,      0, 0x553E, 0x3779,      0,      0, 0xBA24,
  0x554C,      0,      0,      0,      0,      0, 0x5545, 0x5542,
@@ -3512,7 +3512,7 @@ const unsigned short utf8_to_euc_E5AB[] = {
       0,      0,      0,      0,      0, 0xBA2B, 0xBA2C,      0,
       0,      0, 0x5546, 0x5547,      0, 0xBA2D,      0,      0,
 };
-const unsigned short utf8_to_euc_E5AC[] = {
+static const unsigned short utf8_to_euc_E5AC[] = {
  0xBA2E, 0xBA2F,      0,      0,      0,      0,      0,      0,
  0xBA30, 0x3472,      0, 0x5549, 0x5548,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0x554A, 0xBA31,
@@ -3522,7 +3522,7 @@ const unsigned short utf8_to_euc_E5AC[] = {
  0x3145,      0, 0x554B,      0, 0xBA32,      0, 0x554E,      0,
  0xBA39,      0,      0,      0,      0,      0, 0x554F,      0,
 };
-const unsigned short utf8_to_euc_E5AD[] = {
+static const unsigned short utf8_to_euc_E5AD[] = {
  0x5552, 0xBA3A,      0, 0x5550,      0, 0x5551,      0,      0,
       0,      0,      0, 0xBA3B, 0xBA3C,      0,      0,      0,
  0x3B52, 0x5553, 0xBA3D,      0, 0x3926, 0x5554, 0xBA3E, 0x3B7A,
@@ -3532,7 +3532,7 @@ const unsigned short utf8_to_euc_E5AD[] = {
  0x5559, 0x5623,      0, 0x555A,      0, 0x555B,      0,      0,
  0x555C,      0, 0x555E,      0, 0xBA43, 0xBA44, 0xBA45, 0xBA46,
 };
-const unsigned short utf8_to_euc_E5AE[] = {
+static const unsigned short utf8_to_euc_E5AE[] = {
  0x555F, 0xBA47,      0, 0x5560, 0xBA48, 0x4270, 0xBA49, 0x3127,
  0x3C69, 0x3042, 0xBA4A, 0x4157, 0x3430, 0x3C35, 0xBA4B, 0x3928,
  0xBA4C, 0xBA4D,      0, 0xBA4E, 0xBA4F, 0x4566, 0xBA50, 0x3D21,
@@ -3542,7 +3542,7 @@ const unsigned short utf8_to_euc_E5AE[] = {
  0x3A4B, 0xBA56, 0xBA57, 0x3332, 0x3163, 0x3E2C, 0x3248, 0xBA58,
  0x5562, 0x4D46, 0xBA59,      0, 0xBA5A,      0,      0, 0x3D49,
 };
-const unsigned short utf8_to_euc_E5AF[] = {
+static const unsigned short utf8_to_euc_E5AF[] = {
  0xBA5B, 0xBA5C, 0x3C64, 0x5563, 0x3473, 0x4652, 0x4C29, 0x5564,
       0, 0x5565,      0,      0, 0x4959, 0xBA5D,      0, 0xBA5E,
  0x5567,      0, 0x3428, 0x3677, 0x5566,      0, 0xBA5F, 0xBA60,
@@ -3552,7 +3552,7 @@ const unsigned short utf8_to_euc_E5AF[] = {
  0x556E, 0xBA66,      0, 0x5570, 0xBA67, 0x437E, 0x556F,      0,
  0x4023,      0, 0x3B7B,      0,      0, 0xBA68, 0x4250, 0x3C77,
 };
-const unsigned short utf8_to_euc_E5B0[] = {
+static const unsigned short utf8_to_euc_E5B0[] = {
       0, 0x4975, 0x406C,      0, 0x3C4D, 0x5571, 0x3E2D, 0x5572,
  0x5573, 0x3053, 0x423A, 0x3F52, 0xBA69, 0x5574, 0x4633, 0x3E2E,
       0, 0x3E2F,      0, 0x5575,      0,      0, 0x406D, 0xBA6A,
@@ -3562,7 +3562,7 @@ const unsigned short utf8_to_euc_E5B0[] = {
  0xBA73, 0x3D22, 0xBA74,      0,      0, 0xBA75, 0xBA76,      0,
  0x5579, 0x557A, 0x3C5C, 0x3F2C, 0x4674, 0x3F54, 0x4878, 0x4722,
 };
-const unsigned short utf8_to_euc_E5B1[] = {
+static const unsigned short utf8_to_euc_E5B1[] = {
  0x3649, 0x557B,      0,      0,      0, 0x356F, 0x557C,      0,
  0x367E,      0, 0x464F, 0x3230,      0, 0x3B53, 0x557D, 0x5622,
  0x5621, 0x367D,      0, 0x557E,      0, 0x4538,      0,      0,
@@ -3572,7 +3572,7 @@ const unsigned short utf8_to_euc_E5B1[] = {
  0xBB22, 0x3B33,      0,      0, 0xBB23, 0xBB24, 0x5627,      0,
       0, 0x5628, 0xBB25, 0xBB26, 0xBB27, 0xBB28,      0,      0,
 };
-const unsigned short utf8_to_euc_E5B2[] = {
+static const unsigned short utf8_to_euc_E5B2[] = {
       0,      0,      0,      0,      0,      0,      0, 0xBB29,
  0xBB2A,      0, 0xBB2B,      0, 0x5629,      0,      0, 0xBB2C,
  0x3474, 0x562A, 0xBB2D,      0, 0x562B,      0,      0,      0,
@@ -3582,7 +3582,7 @@ const unsigned short utf8_to_euc_E5B2[] = {
       0, 0x4252, 0xBB35, 0x3359, 0xBB36, 0xBB37, 0x562F, 0x5631,
  0x345F,      0, 0xBB38, 0x562E, 0x5630,      0, 0x5633,      0,
 };
-const unsigned short utf8_to_euc_E5B3[] = {
+static const unsigned short utf8_to_euc_E5B3[] = {
       0,      0,      0,      0,      0, 0x5632,      0, 0x5634,
       0, 0xBB39,      0, 0xBB3A,      0,      0,      0,      0,
       0,      0, 0xBB3B,      0,      0,      0,      0, 0xBB3D,
@@ -3592,7 +3592,7 @@ const unsigned short utf8_to_euc_E5B3[] = {
  0x4A76, 0xBB3F, 0xBB40,      0, 0xBB41, 0xF43B, 0x4567,      0,
       0,      0, 0x5638, 0x3D54,      0, 0x5637,      0,      0,
 };
-const unsigned short utf8_to_euc_E5B4[] = {
+static const unsigned short utf8_to_euc_E5B4[] = {
       0, 0xBB42,      0,      0,      0,      0, 0xBB43, 0x3F72,
       0,      0,      0, 0x563C,      0, 0xBB44, 0x3A6A,      0,
       0, 0x5642, 0xBB45,      0, 0x5643, 0x563D, 0x3333, 0x563E,
@@ -3602,7 +3602,7 @@ const unsigned short utf8_to_euc_E5B4[] = {
       0, 0xBB4B,      0,      0, 0xBB4C,      0,      0,      0,
       0, 0xBB4D,      0,      0,      0, 0xBB4E,      0, 0xBB4F,
 };
-const unsigned short utf8_to_euc_E5B5[] = {
+static const unsigned short utf8_to_euc_E5B5[] = {
       0,      0, 0xBB50, 0xBB51,      0,      0, 0xBB52,      0,
  0xBB53,      0, 0xBB57, 0x564B, 0x5648,      0, 0x564A,      0,
  0x4D72, 0xBB55, 0x5649, 0xF43C,      0, 0xBB54,      0,      0,
@@ -3612,7 +3612,7 @@ const unsigned short utf8_to_euc_E5B5[] = {
  0xBB5F,      0,      0, 0x564D,      0,      0, 0x564E,      0,
       0, 0xBB60, 0xBB61,      0,      0,      0, 0xBB62, 0xBB63,
 };
-const unsigned short utf8_to_euc_E5B6[] = {
+static const unsigned short utf8_to_euc_E5B6[] = {
       0, 0xBB64, 0x5651, 0xBB65, 0x5650,      0,      0, 0x564F,
  0xBB66,      0, 0xBB67, 0x4568, 0x563A,      0,      0,      0,
  0x5657,      0, 0xBB68, 0xBB69, 0xBB6A, 0xBB6B,      0,      0,
@@ -3622,7 +3622,7 @@ const unsigned short utf8_to_euc_E5B6[] = {
  0xBB72,      0, 0xE674,      0, 0xBB73,      0,      0, 0x5658,
  0xBB74, 0xBB75, 0x4E66,      0, 0x5659, 0x5656,      0,      0,
 };
-const unsigned short utf8_to_euc_E5B7[] = {
+static const unsigned short utf8_to_euc_E5B7[] = {
       0,      0,      0, 0xBB76,      0,      0,      0, 0xBB77,
       0, 0x565A,      0, 0xBB78, 0x3460, 0x565B, 0xBB7A,      0,
  0xBB79,      0, 0x565D, 0x565C,      0,      0, 0x565E,      0,
@@ -3632,7 +3632,7 @@ const unsigned short utf8_to_euc_E5B7[] = {
       0, 0x384A, 0x5661, 0x4C26, 0x4743, 0x5662,      0, 0x392B,
  0xBC22, 0xBC23,      0, 0x342C,      0, 0x4327, 0x3652,      0,
 };
-const unsigned short utf8_to_euc_E5B8[] = {
+static const unsigned short utf8_to_euc_E5B8[] = {
  0xBC24,      0, 0x3B54, 0x495B,      0,      0, 0x4841, 0xBC25,
       0,      0,      0, 0x5663, 0x3475, 0xBC26,      0,      0,
       0, 0x5666, 0xBC27,      0, 0xBC28, 0xBC29, 0x4421,      0,
@@ -3642,7 +3642,7 @@ const unsigned short utf8_to_euc_E5B8[] = {
  0x3522,      0, 0xBC2F, 0x4422,      0, 0xBC30, 0x5668, 0x5669,
  0x3E6F,      0,      0,      0,      0, 0x4B39, 0xBC31,      0,
 };
-const unsigned short utf8_to_euc_E5B9[] = {
+static const unsigned short utf8_to_euc_E5B9[] = {
  0x566C,      0,      0, 0x566B, 0x566A, 0x497D,      0, 0x5673,
       0, 0xBC34,      0, 0xBC32, 0x4B5A,      0, 0x566D,      0,
  0xBC33, 0xBC35,      0,      0, 0x566F, 0x4B6B, 0xBC36, 0x566E,
@@ -3652,7 +3652,7 @@ const unsigned short utf8_to_euc_E5B9[] = {
  0xBC41,      0, 0x3433, 0x4A3F, 0x472F, 0x5674, 0x5675,      0,
  0x392C, 0x3434, 0x5676, 0x3838, 0x4D44, 0x4D29, 0x3476, 0x5678,
 };
-const unsigned short utf8_to_euc_E5BA[] = {
+static const unsigned short utf8_to_euc_E5BA[] = {
  0xBC42, 0x4423,      0, 0x392D, 0x3E31,      0,      0, 0x485F,
       0,      0, 0x3E32, 0xBC43,      0,      0, 0xBC44, 0x3D78,
       0,      0,      0,      0,      0, 0x446C, 0x4A79, 0x4539,
@@ -3662,7 +3662,7 @@ const unsigned short utf8_to_euc_E5BA[] = {
       0, 0xBC4B,      0, 0xBC4C,      0, 0x3043, 0x3D6E, 0x392F,
  0x4D47,      0,      0,      0,      0, 0xBC4D, 0xBC4E, 0xBC4F,
 };
-const unsigned short utf8_to_euc_E5BB[] = {
+static const unsigned short utf8_to_euc_E5BB[] = {
       0, 0x567A, 0x567B, 0x4751,      0,      0, 0xBC50,      0,
  0x567C, 0x4E77, 0x4F2D, 0xBC52, 0xBC51,      0, 0xBC53, 0x567E,
  0x567D, 0xBC54, 0xBC55, 0x3347, 0xBC56, 0xBC57, 0x5721,      0,
@@ -3672,7 +3672,7 @@ const unsigned short utf8_to_euc_E5BB[] = {
  0x572D, 0x572B,      0, 0x572C, 0x572E,      0, 0x3164, 0x446E,
  0x572F,      0, 0x377A, 0x3276, 0x4736,      0, 0x5730, 0x467B,
 };
-const unsigned short utf8_to_euc_E5BC[] = {
+static const unsigned short utf8_to_euc_E5BC[] = {
       0, 0x4A5B, 0xBC5C, 0x5731, 0x4F2E,      0, 0xBC5D, 0xBC5E,
  0xBC5F, 0x5732, 0x4A40, 0x5735, 0x5021, 0x5031, 0xBC60, 0x3C30,
  0x4675, 0x5736,      0, 0x355D, 0x4424, 0x307A, 0x5737, 0x4A26,
@@ -3682,7 +3682,7 @@ const unsigned short utf8_to_euc_E5BC[] = {
  0xBC6C, 0x3C65,      0,      0, 0xBC6D, 0x4425, 0xBC6E, 0x362F,
  0x573A,      0,      0, 0xBC6F, 0x492B, 0xBC70, 0x4346, 0xBC71,
 };
-const unsigned short utf8_to_euc_E5BD[] = {
+static const unsigned short utf8_to_euc_E5BD[] = {
  0xBC72, 0x573B,      0,      0, 0xBC73, 0xBC74,      0, 0xBC75,
  0x573C,      0, 0x3630,      0, 0x573D, 0xBC76, 0x573E,      0,
  0xBC77, 0x5740,      0, 0x4576, 0xBC78,      0, 0x5741, 0x5742,
@@ -3692,7 +3692,7 @@ const unsigned short utf8_to_euc_E5BD[] = {
  0x3E34, 0x3146, 0xBD22, 0x5746, 0xBD23, 0xBD24,      0, 0x5747,
  0xBD25, 0x4C72, 0xBD26,      0, 0x4860, 0xBD27, 0xBD28, 0x574A,
 };
-const unsigned short utf8_to_euc_E5BE[] = {
+static const unsigned short utf8_to_euc_E5BE[] = {
  0x317D, 0x402C, 0x5749, 0x5748, 0x3742, 0x4254,      0, 0x574E,
  0x574C, 0xBD29, 0x574B, 0x4E27, 0x3865, 0xBD2A,      0, 0xBD2B,
  0x3D79, 0x574D, 0x454C, 0x3D3E,      0,      0, 0xBD2C, 0x4640,
@@ -3702,7 +3702,7 @@ const unsigned short utf8_to_euc_E5BE[] = {
  0xBD35, 0xBD36,      0, 0x4641, 0x4427,      0,      0, 0xF43E,
  0xBD37, 0x4530,      0,      0, 0x5755, 0x352B,      0,      0,
 };
-const unsigned short utf8_to_euc_E5BF[] = {
+static const unsigned short utf8_to_euc_E5BF[] = {
       0,      0,      0, 0x3F34, 0xBD38, 0x492C,      0, 0xBD39,
  0xBD3A, 0xBD3B,      0, 0xBD3C, 0x3477, 0x4726,      0,      0,
  0xBD3D, 0xBD3E, 0xBD3F, 0xBD40, 0xBD41,      0, 0x5756, 0x3B56,
@@ -3712,7 +3712,7 @@ const unsigned short utf8_to_euc_E5BF[] = {
  0x582D, 0x575A, 0xBD4C, 0xBD4D,      0, 0x4730, 0xBD4E,      0,
  0x5759,      0, 0xBD4F, 0x5757, 0xBD50, 0x397A,      0, 0x575D,
 };
-const unsigned short utf8_to_euc_E680[] = {
+static const unsigned short utf8_to_euc_E680[] = {
       0,      0,      0,      0,      0,      0,      0, 0xBD51,
       0,      0, 0xBD52,      0,      0, 0xBD53, 0x5763, 0x5769,
  0x5761,      0, 0x455C, 0xBD54, 0xBD55, 0x5766, 0x495D, 0xBD56,
@@ -3722,7 +3722,7 @@ const unsigned short utf8_to_euc_E680[] = {
       0, 0x5764,      0, 0xBD5C,      0, 0xBD5D,      0,      0,
       0,      0, 0x576A,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E681[] = {
+static const unsigned short utf8_to_euc_E681[] = {
  0xBD5E, 0x576C, 0x5776, 0x5774,      0,      0, 0x5771, 0xBD5F,
  0xBD60, 0xBD61, 0x5770, 0x4E78, 0xBD62, 0x5772,      0,      0,
  0x3632, 0xBD63, 0x3931,      0, 0xBD64, 0x3D7A, 0xBD65, 0xBD66,
@@ -3732,7 +3732,7 @@ const unsigned short utf8_to_euc_E681[] = {
  0x3366, 0xBD6A,      0,      0,      0, 0x3743,      0, 0x576E,
       0,      0,      0,      0,      0,      0, 0xBD6B, 0xBD6C,
 };
-const unsigned short utf8_to_euc_E682[] = {
+static const unsigned short utf8_to_euc_E682[] = {
       0, 0x577A, 0xBD6D, 0x577D, 0x5821, 0xF43F, 0xBD6E,      0,
  0xBD6F, 0x3C3D, 0xBD70, 0x5827, 0x4470, 0x577B, 0xBD71,      0,
       0, 0xBD72, 0x5825, 0xBD73, 0x3279, 0xBD74, 0x5823, 0x5824,
@@ -3742,7 +3742,7 @@ const unsigned short utf8_to_euc_E682[] = {
  0xBD7C, 0xBD7D, 0x4861, 0x575C, 0x582C, 0x5830, 0x4C65, 0xBD7E,
  0x5829,      0,      0, 0xBE21, 0x4569, 0x582E, 0xBE22,      0,
 };
-const unsigned short utf8_to_euc_E683[] = {
+static const unsigned short utf8_to_euc_E683[] = {
       0,      0, 0xBE23,      0, 0xBE24, 0x3E70, 0x582F, 0x4657,
  0xBE25, 0xBE26, 0xBE27, 0xBE28,      0,      0, 0xBE29, 0xBE2A,
       0, 0x4F47,      0, 0x582B, 0xBE2B, 0xBE2C,      0,      0,
@@ -3752,7 +3752,7 @@ const unsigned short utf8_to_euc_E683[] = {
  0x4246, 0x583D, 0xBE33, 0x415B, 0x5838, 0xBE34, 0x5835, 0x5836,
  0xBE35, 0x3C66, 0x5839, 0x583C, 0xBE36, 0xBE37,      0,      0,
 };
-const unsigned short utf8_to_euc_E684[] = {
+static const unsigned short utf8_to_euc_E684[] = {
  0x5837, 0x3D25, 0xBE38, 0x583A,      0,      0, 0x5834, 0xBE39,
  0x4C7C, 0x4C7B, 0xBE3A,      0, 0xBE3B, 0x583E, 0x583F, 0x3055,
  0xBE3C, 0xBE3D, 0xBE3E, 0xBE3F, 0xBE40, 0x5833, 0xBE41, 0xBE42,
@@ -3762,7 +3762,7 @@ const unsigned short utf8_to_euc_E684[] = {
  0xBE49, 0xBE4A,      0,      0, 0x5848, 0xBE4B, 0xBE4C, 0xBE4D,
       0, 0xBE4E,      0,      0, 0x5846, 0x5849, 0x5841, 0x5845,
 };
-const unsigned short utf8_to_euc_E685[] = {
+static const unsigned short utf8_to_euc_E685[] = {
       0, 0xBE4F, 0x584A,      0, 0x584B, 0xBE50, 0xBE51, 0x5840,
  0x3B7C, 0xBE52, 0x5844, 0x4256, 0x3932, 0x5832, 0x3F35,      0,
       0,      0,      0, 0x5858,      0, 0x4A69,      0,      0,
@@ -3772,7 +3772,7 @@ const unsigned short utf8_to_euc_E685[] = {
  0x3056, 0x5855, 0xBE56, 0x584C, 0x5852, 0x5859, 0x3744, 0x584D,
  0xBE57,      0,      0, 0xBE58, 0xBE59,      0, 0x4D5D, 0xBE5A,
 };
-const unsigned short utf8_to_euc_E686[] = {
+static const unsigned short utf8_to_euc_E686[] = {
  0xBE5B, 0xBE5C, 0x4D2B, 0xBE5D, 0xBE5E,      0,      0, 0x585C,
       0,      0, 0x5860, 0xBE5F,      0, 0xBE60, 0x417E,      0,
  0x4E79, 0x5861, 0xBE61, 0xBE62, 0x585E,      0, 0x585B, 0xBE63,
@@ -3782,7 +3782,7 @@ const unsigned short utf8_to_euc_E686[] = {
       0,      0, 0x377B,      0,      0,      0, 0x3231,      0,
  0xBE6D, 0xBE6E, 0x586B,      0, 0xBE6F,      0, 0x3438,      0,
 };
-const unsigned short utf8_to_euc_E687[] = {
+static const unsigned short utf8_to_euc_E687[] = {
  0xBE70, 0xBE71, 0xBE72, 0x5869,      0,      0, 0x586A, 0x3A29,
  0x5868, 0x5866, 0x5865, 0x586C, 0x5864, 0x586E, 0xBE73, 0xBE74,
  0x327B,      0,      0,      0,      0, 0xBE75,      0,      0,
@@ -3792,7 +3792,7 @@ const unsigned short utf8_to_euc_E687[] = {
       0,      0, 0x4428,      0, 0x5873,      0, 0x5871, 0x5867,
  0x377C,      0, 0x5872,      0, 0x5876, 0x5875, 0x5877, 0x5874,
 };
-const unsigned short utf8_to_euc_E688[] = {
+static const unsigned short utf8_to_euc_E688[] = {
  0x5878, 0xBF24,      0, 0xBF25, 0xBF26,      0,      0, 0xBF27,
  0x5879, 0x587A, 0x4A6A,      0, 0x587C, 0x587B, 0x3D3F,      0,
  0x402E, 0x3266, 0x327C, 0xBF28, 0x587D, 0xBF29, 0x303F,      0,
@@ -3802,7 +3802,7 @@ const unsigned short utf8_to_euc_E688[] = {
  0x5925,      0, 0x5926, 0x5927, 0x4257,      0,      0,      0,
  0x384D, 0xBF31,      0, 0x4C61,      0, 0xBF32,      0, 0x4B3C,
 };
-const unsigned short utf8_to_euc_E689[] = {
+static const unsigned short utf8_to_euc_E689[] = {
  0x3D6A, 0x5928, 0xBF33, 0xBF34, 0xBF35,      0, 0xBF36, 0x4070,
  0x6E3D, 0x4862,      0, 0x3C6A, 0xBF37, 0x3A4D, 0x5929,      0,
  0xBF38, 0xBF39, 0xBF3A, 0x4247, 0xBF3B, 0x4A27, 0xBF3C,      0,
@@ -3812,7 +3812,7 @@ const unsigned short utf8_to_euc_E689[] = {
       0, 0x3037,      0, 0xBF42,      0,      0, 0x495E,      0,
       0, 0x4863, 0xBF43,      0, 0x592F, 0xBF44, 0x5932, 0x3E35,
 };
-const unsigned short utf8_to_euc_E68A[] = {
+static const unsigned short utf8_to_euc_E68A[] = {
  0x353B,      0, 0x5930, 0x5937, 0x3E36,      0,      0,      0,
       0, 0x5931, 0x4744,      0,      0, 0xBF45, 0xBF46, 0xBF47,
  0xBF48, 0x4D5E, 0x5933, 0x5934, 0x5938, 0x456A, 0x5935, 0x3933,
@@ -3822,7 +3822,7 @@ const unsigned short utf8_to_euc_E68A[] = {
       0, 0x4A7A,      0, 0xBF4B,      0, 0x4471, 0xBF4C, 0xBF4D,
       0, 0x4B75, 0xBF4E, 0x593B, 0x3221, 0x436A, 0xBF4F, 0xBF50,
 };
-const unsigned short utf8_to_euc_E68B[] = {
+static const unsigned short utf8_to_euc_E68B[] = {
       0,      0, 0x5944,      0, 0xBF51, 0x4334, 0x593E, 0x5945,
  0x5940, 0x5947, 0x5943,      0, 0x5942, 0x476F, 0xBF52, 0x593C,
  0x327D, 0x593A, 0x3571, 0x4273, 0x5936, 0xBF53, 0xBF54, 0x5939,
@@ -3832,7 +3832,7 @@ const unsigned short utf8_to_euc_E68B[] = {
       0, 0x594A, 0xBF57, 0x377D, 0xBF58, 0x594F, 0x3B22, 0x3969,
       0,      0,      0,      0, 0xBF59, 0xBF5A, 0x3D26, 0x593D,
 };
-const unsigned short utf8_to_euc_E68C[] = {
+static const unsigned short utf8_to_euc_E68C[] = {
       0, 0x3B7D, 0x594C, 0xBF5B, 0xBF5C,      0,      0, 0x3B58,
  0x594D, 0x3044, 0xBF5D, 0xBF5E, 0x5948, 0xBF5F,      0,      0,
  0xBF60, 0x4429,      0, 0xBF61,      0,      0, 0xBF62,      0,
@@ -3842,7 +3842,7 @@ const unsigned short utf8_to_euc_E68C[] = {
       0,      0,      0,      0,      0, 0xBF67, 0xBF68,      0,
       0, 0xBF69, 0x4472,      0, 0xBF6A, 0x4854, 0x5951, 0x415E,
 };
-const unsigned short utf8_to_euc_E68D[] = {
+static const unsigned short utf8_to_euc_E68D[] = {
       0, 0xBF6B, 0xBF6C, 0xBF6D, 0xBF6E,      0, 0xBF6F,      0,
       0, 0x422A, 0xBF70, 0xBF71, 0x3B2B, 0x5952, 0xBF72, 0x5954,
  0x5950,      0, 0xBF73, 0xBF74, 0xBF75, 0x4A61,      0, 0x443D,
@@ -3852,7 +3852,7 @@ const unsigned short utf8_to_euc_E68D[] = {
       0, 0xBF7C, 0x377E,      0, 0xBF7D, 0xBF7E, 0x5959, 0x3E39,
  0xC021,      0, 0x4668, 0x4731, 0xC022, 0xC023,      0, 0xC024,
 };
-const unsigned short utf8_to_euc_E68E[] = {
+static const unsigned short utf8_to_euc_E68E[] = {
  0x5957,      0, 0xC025, 0x415D, 0xC026,      0,      0, 0xC027,
  0x3C78, 0x595C, 0xC028,      0, 0x3E38,      0, 0x5956, 0x595B,
  0xC029,      0, 0x4753,      0, 0xC02A, 0xC02B, 0x5955,      0,
@@ -3862,7 +3862,7 @@ const unsigned short utf8_to_euc_E68E[] = {
       0,      0, 0x3747,      0, 0x444F, 0x595E,      0,      0,
       0,      0,      0, 0x415F,      0, 0xC034, 0x5961,      0,
 };
-const unsigned short utf8_to_euc_E68F[] = {
+static const unsigned short utf8_to_euc_E68F[] = {
  0x5963, 0xC035,      0, 0x4237, 0x5969, 0xC036, 0x5964,      0,
  0xC037, 0x5966,      0,      0,      0,      0, 0xC038, 0x4941,
  0x4473, 0xC039, 0x5967, 0xC03A, 0xC03B, 0xC03C, 0x4D2C,      0,
@@ -3872,7 +3872,7 @@ const unsigned short utf8_to_euc_E68F[] = {
       0,      0, 0xC042, 0xC043, 0x3167, 0xC044, 0x5968,      0,
  0xC045, 0xC046, 0x4D49,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E690[] = {
+static const unsigned short utf8_to_euc_E690[] = {
       0,      0,      0,      0,      0,      0, 0x596C,      0,
       0, 0xC047, 0xC048,      0,      0, 0x423B,      0, 0x5973,
  0xC049,      0, 0xC04A, 0x596D, 0xC04B,      0, 0x596A, 0x5971,
@@ -3882,7 +3882,7 @@ const unsigned short utf8_to_euc_E690[] = {
  0xC055,      0,      0,      0, 0x596B, 0xC056, 0x596F,      0,
       0,      0, 0x3748,      0,      0, 0xC057, 0x3A71, 0xC058,
 };
-const unsigned short utf8_to_euc_E691[] = {
+static const unsigned short utf8_to_euc_E691[] = {
       0,      0, 0x405D,      0,      0,      0,      0,      0,
       0,      0,      0, 0xC059,      0,      0, 0x5977, 0xC05A,
       0, 0xC05B, 0xC05C, 0xC05D, 0xC05E,      0,      0,      0,
@@ -3892,7 +3892,7 @@ const unsigned short utf8_to_euc_E691[] = {
       0,      0,      0, 0xC068, 0xC069,      0, 0x5976,      0,
  0x4C4E,      0, 0x4022, 0xC06A,      0, 0xC06B,      0,      0,
 };
-const unsigned short utf8_to_euc_E692[] = {
+static const unsigned short utf8_to_euc_E692[] = {
       0,      0,      0, 0x3762,      0, 0xC06C,      0, 0xC06D,
  0x597D,      0,      0,      0,      0,      0,      0, 0xC06E,
  0xC06F, 0xC070, 0x3B35, 0x597A,      0, 0x5979,      0,      0,
@@ -3902,7 +3902,7 @@ const unsigned short utf8_to_euc_E692[] = {
  0x4071,      0, 0x4B50, 0xC07B,      0,      0,      0,      0,
       0, 0x3349,      0, 0x5A25, 0x597E, 0xC07C, 0xC07D, 0xC07E,
 };
-const unsigned short utf8_to_euc_E693[] = {
+static const unsigned short utf8_to_euc_E693[] = {
       0, 0x4D4A, 0x5A27,      0, 0xC121, 0x5A23,      0, 0x5A24,
       0, 0xC122, 0xC123, 0xC124, 0xC125, 0x4160, 0xC126,      0,
  0xC127, 0xC128, 0x5A22,      0, 0x593F, 0xC129,      0, 0xC12A,
@@ -3912,7 +3912,7 @@ const unsigned short utf8_to_euc_E693[] = {
  0xC130, 0x5A28, 0x5A33,      0, 0x5A32, 0xC131, 0x5A31, 0xC132,
       0,      0, 0x5A34, 0xC133,      0, 0x5A36, 0x3E71, 0xC134,
 };
-const unsigned short utf8_to_euc_E694[] = {
+static const unsigned short utf8_to_euc_E694[] = {
  0x5A35, 0xC135,      0,      0, 0xC136, 0x5A39,      0,      0,
  0xC137, 0xC138, 0xC139,      0,      0,      0,      0, 0xC13A,
       0,      0,      0, 0xC13B, 0xC13C,      0, 0xC13D,      0,
@@ -3922,7 +3922,7 @@ const unsigned short utf8_to_euc_E694[] = {
       0, 0xC146,      0,      0, 0x5A3D, 0x5A3E, 0x5A40, 0x5A3F,
  0x5A41, 0x327E, 0xC147, 0x3936, 0xC148, 0xC149, 0x4A7C, 0x402F,
 };
-const unsigned short utf8_to_euc_E695[] = {
+static const unsigned short utf8_to_euc_E695[] = {
       0,      0,      0, 0xC14A,      0, 0x384E,      0, 0xC14B,
  0x5A43, 0xC14C,      0,      0,      0, 0x5A46, 0xF441, 0x4952,
  0xC14D, 0x355F, 0xC14E,      0, 0xC14F, 0x5A45, 0x5A44, 0x4754,
@@ -3932,7 +3932,7 @@ const unsigned short utf8_to_euc_E695[] = {
  0x3F74,      0, 0x5A4A,      0, 0x4030, 0x4528,      0, 0x495F,
  0x5A4B,      0, 0xC154,      0,      0, 0xC155,      0,      0,
 };
-const unsigned short utf8_to_euc_E696[] = {
+static const unsigned short utf8_to_euc_E696[] = {
       0, 0xC156, 0x5A4C, 0x5A4D,      0, 0xC157,      0, 0x4A38,
  0x555D, 0x4046, 0xC158,      0, 0x494C,      0, 0x3A58,      0,
  0x4865, 0x4843, 0xC159,      0,      0, 0xC15A,      0, 0x454D,
@@ -3942,7 +3942,7 @@ const unsigned short utf8_to_euc_E696[] = {
  0x3F37,      0, 0xC161, 0xC162, 0xC163,      0,      0, 0x5A52,
       0, 0x4A7D,      0,      0, 0x3177, 0x3B5C,      0, 0xC164,
 };
-const unsigned short utf8_to_euc_E697[] = {
+static const unsigned short utf8_to_euc_E697[] = {
       0, 0x5A55, 0xC165, 0x5A53, 0x5A56, 0x4E39, 0x5A54,      0,
  0xC166, 0xC167,      0, 0x407B, 0x5A57,      0, 0xC168, 0x4232,
  0xC169,      0, 0x5A58,      0, 0xC16A,      0, 0xC16B, 0x347A,
@@ -3952,7 +3952,7 @@ const unsigned short utf8_to_euc_E697[] = {
  0xC16E, 0x5A5D, 0xC16F,      0, 0xC170, 0xC171,      0,      0,
       0, 0xC172, 0x3222, 0x5A61,      0,      0, 0xC173, 0xC174,
 };
-const unsigned short utf8_to_euc_E698[] = {
+static const unsigned short utf8_to_euc_E698[] = {
  0xC175,      0, 0x3937, 0x5A60, 0xC176,      0, 0x3A2B, 0x3E3A,
  0xC177, 0xC178, 0x5A5F,      0, 0x3E3B, 0xC179, 0x4C40, 0x3A2A,
       0, 0xC17A, 0xC17B, 0x3057, 0x404E, 0xC17C, 0xC17D,      0,
@@ -3962,7 +3962,7 @@ const unsigned short utf8_to_euc_E698[] = {
  0xC22C, 0xC22D,      0, 0xC22E, 0x5A65, 0x5A63, 0x5A64, 0xC230,
       0, 0xC22F,      0, 0xF442, 0x436B,      0,      0, 0x5B26,
 };
-const unsigned short utf8_to_euc_E699[] = {
+static const unsigned short utf8_to_euc_E699[] = {
  0xC231, 0x5A6A, 0x3B7E, 0x3938, 0x5A68, 0xC232, 0xC233,      0,
       0, 0x5A69, 0xC234, 0x3F38, 0xC235,      0, 0xC237, 0x5A67,
       0, 0xC236, 0x3B2F,      0,      0,      0,      0, 0xC238,
@@ -3972,7 +3972,7 @@ const unsigned short utf8_to_euc_E699[] = {
  0x5A72,      0,      0, 0xC244, 0x4032, 0xC245, 0x3E3D, 0xC247,
  0xC248, 0xC249, 0x4352, 0xC24A, 0xC24C,      0, 0xC243, 0xC246,
 };
-const unsigned short utf8_to_euc_E69A[] = {
+static const unsigned short utf8_to_euc_E69A[] = {
  0xC24B, 0x3647,      0, 0x5A73, 0x5A77,      0,      0, 0x324B,
  0x5A74, 0x5A76,      0, 0xC24D, 0xC24E, 0xC24F, 0x5A75,      0,
  0xC250, 0x3D6B, 0xC251,      0,      0,      0, 0x4348, 0x3045,
@@ -3982,7 +3982,7 @@ const unsigned short utf8_to_euc_E69A[] = {
       0, 0xC25A, 0xC25B,      0, 0x4B3D, 0xC25C,      0,      0,
  0x5B22, 0x5A7B,      0, 0xC25D, 0x5A7E,      0, 0x5A7D, 0xC25E,
 };
-const unsigned short utf8_to_euc_E69B[] = {
+static const unsigned short utf8_to_euc_E69B[] = {
  0xC25F, 0x5A7A, 0xC260, 0xC261, 0x5B21,      0,      0, 0x465E,
  0xC262, 0x5A7C,      0,      0, 0xC263,      0, 0xC264, 0xC265,
       0,      0,      0,      0, 0xC266,      0, 0x5B23,      0,
@@ -3992,7 +3992,7 @@ const unsigned short utf8_to_euc_E69B[] = {
  0x5B29,      0, 0x364A, 0x3148, 0x3939, 0x5B2A,      0, 0x5B2B,
  0x3D71, 0x4162, 0xC26D, 0xC23F, 0x5258, 0x413E, 0x413D, 0x4258,
 };
-const unsigned short utf8_to_euc_E69C[] = {
+static const unsigned short utf8_to_euc_E69C[] = {
  0x3A47,      0,      0, 0x5072,      0, 0xC26E,      0, 0xC26F,
  0x376E, 0x4D2D,      0, 0x4A7E,      0, 0x497E, 0xC270, 0x5B2C,
       0,      0,      0, 0xC271, 0x3A73, 0x443F, 0x5B2D, 0x4F2F,
@@ -4002,7 +4002,7 @@ const unsigned short utf8_to_euc_E69C[] = {
       0, 0x3C6B,      0, 0xC276, 0x4B51,      0, 0x5B34, 0x5B37,
  0x5B36,      0, 0x3479,      0,      0, 0x3560, 0xC277, 0x5B33,
 };
-const unsigned short utf8_to_euc_E69D[] = {
+static const unsigned short utf8_to_euc_E69D[] = {
       0, 0x5B35,      0,      0,      0, 0xC278, 0x5B38, 0xC279,
  0xC27A, 0x3F79,      0,      0, 0xC27B,      0, 0x4D7B, 0x3049,
  0x3A60, 0x423C,      0, 0x3C5D, 0xC27C, 0xC27D, 0x3E73,      0,
@@ -4012,7 +4012,7 @@ const unsigned short utf8_to_euc_E69D[] = {
  0x5B3F, 0x456C, 0x5A5E, 0x5A62, 0xC324, 0x354F, 0xC325, 0x4747,
       0,      0,      0, 0xC326, 0x5B41,      0, 0x3E3E, 0x4844,
 };
-const unsigned short utf8_to_euc_E69E[] = {
+static const unsigned short utf8_to_euc_E69E[] = {
       0, 0xC327,      0,      0, 0xC328, 0x5B47,      0, 0x487A,
       0, 0x5B3E,      0, 0x5B44, 0x5B43,      0, 0xC329, 0xC32A,
  0x404F, 0xC32B,      0, 0xC32C,      0, 0x4B6D, 0xC32D, 0x4E53,
@@ -4022,7 +4022,7 @@ const unsigned short utf8_to_euc_E69E[] = {
  0xC331, 0xC332, 0xC333, 0x5B4C, 0x5B4A, 0xC334, 0x324D, 0x5B48,
  0x5B4E, 0x5B54,      0, 0xC335, 0xC336, 0xC337,      0,      0,
 };
-const unsigned short utf8_to_euc_E69F[] = {
+static const unsigned short utf8_to_euc_E69F[] = {
  0xC339, 0x4248, 0xC33A, 0xC33B, 0x4A41, 0xC33C, 0x5B56,      0,
  0xC33D, 0xC33E, 0x4922,      0,      0,      0, 0x5B55, 0x4770,
  0x4B3F, 0x343B, 0xC33F, 0x4077, 0x3D40,      0,      0, 0xC340,
@@ -4032,7 +4032,7 @@ const unsigned short utf8_to_euc_E69F[] = {
  0xC345, 0x436C, 0xC346, 0x4C78, 0x3C46, 0x3A74, 0xC347, 0xC348,
       0, 0xC338,      0, 0x3A3A,      0,      0, 0x4B6F, 0x3341,
 };
-const unsigned short utf8_to_euc_E6A0[] = {
+static const unsigned short utf8_to_euc_E6A0[] = {
       0, 0xF446, 0x444E, 0x464A, 0x3149,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0x4072, 0xC34A,      0, 0x4034, 0x372A,
@@ -4042,7 +4042,7 @@ const unsigned short utf8_to_euc_E6A0[] = {
  0xC353, 0xC354, 0x5B5E, 0xC355, 0x4073,      0,      0,      0,
  0x334B, 0x3A2C,      0, 0xC356, 0x334A, 0x3A4F,      0, 0xC357,
 };
-const unsigned short utf8_to_euc_E6A1[] = {
+static const unsigned short utf8_to_euc_E6A1[] = {
  0x5B5C, 0x3765, 0x374B, 0x456D, 0xC358, 0xC359, 0x5B5A,      0,
  0x3046,      0, 0xC35A,      0, 0xC35B, 0x5B5D, 0x5B5F,      0,
  0x364D, 0x372C, 0xC349, 0x343C, 0x354B, 0xC35C,      0, 0xC35D,
@@ -4052,7 +4052,7 @@ const unsigned short utf8_to_euc_E6A1[] = {
  0xC363, 0xC364, 0xC365,      0, 0x5B6F, 0xC366, 0x3233, 0x5B64,
       0, 0xC367, 0xC368, 0xC369, 0xC36A,      0, 0x5B75, 0x5B65,
 };
-const unsigned short utf8_to_euc_E6A2[] = {
+static const unsigned short utf8_to_euc_E6A2[] = {
       0, 0x4E42, 0xC36B, 0x5B6C, 0xC36C, 0x475F, 0xC36D,      0,
  0xC36E,      0,      0,      0,      0, 0x5B74,      0, 0x5B67,
       0,      0,      0, 0x3034, 0x5B69,      0, 0xC36F, 0x393C,
@@ -4062,7 +4062,7 @@ const unsigned short utf8_to_euc_E6A2[] = {
  0x3323, 0x3A2D, 0xC379, 0x5B60,      0, 0x5B70, 0x3361,      0,
       0, 0x5B6E, 0x5B72, 0xC37A, 0x456E,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E6A3[] = {
+static const unsigned short utf8_to_euc_E6A3[] = {
       0,      0,      0,      0, 0x347E, 0xC37B, 0x5C32,      0,
  0xC37C, 0x4C49, 0x5B77, 0x347D, 0xC37D, 0x5B7E,      0, 0xC37E,
  0xC421, 0xC422, 0x4B40, 0xC423, 0x5C21, 0x5C23, 0xC424, 0x5C27,
@@ -4072,7 +4072,7 @@ const unsigned short utf8_to_euc_E6A3[] = {
  0xC42E, 0xC42F, 0x4033,      0,      0, 0xC430, 0xC431,      0,
       0, 0x5C2A, 0x343D, 0xC432, 0xC433, 0xC434,      0,      0,
 };
-const unsigned short utf8_to_euc_E6A4[] = {
+static const unsigned short utf8_to_euc_E6A4[] = {
  0x4F50, 0x5B76,      0,      0, 0x5C26, 0x3058, 0xC435,      0,
  0x5B78, 0xC436, 0xC437, 0x4C3A, 0x5B7D, 0x3F22, 0x4447, 0x5B73,
  0xC438, 0xC439, 0x5C25, 0xC43A,      0,      0, 0xC43B, 0xC43C,
@@ -4082,7 +4082,7 @@ const unsigned short utf8_to_euc_E6A4[] = {
  0x5C3F, 0xC43D,      0, 0xC43E, 0x464E, 0xC43F, 0x5C24,      0,
  0xC440, 0x5C3B,      0, 0xC441,      0, 0x5C3D,      0, 0x4458,
 };
-const unsigned short utf8_to_euc_E6A5[] = {
+static const unsigned short utf8_to_euc_E6A5[] = {
       0,      0, 0xC442,      0,      0, 0xC443,      0,      0,
       0, 0xC444, 0x4D4C,      0,      0,      0, 0xC445,      0,
       0,      0,      0, 0x4976, 0x5C38, 0x424A,      0, 0xC446,
@@ -4092,7 +4092,7 @@ const unsigned short utf8_to_euc_E6A5[] = {
  0xC44F, 0xC450, 0xC451, 0x4760, 0x5C3C, 0x364B,      0, 0x5C34,
  0x5C36, 0x5C33, 0xC452, 0xC453, 0x4F30, 0x335A, 0x5C39, 0xC454,
 };
-const unsigned short utf8_to_euc_E6A6[] = {
+static const unsigned short utf8_to_euc_E6A6[] = {
  0xC455, 0x5C43, 0x3335,      0,      0,      0,      0,      0,
       0,      0, 0x3A67,      0,      0, 0xC456, 0x315D,      0,
       0, 0x5C54, 0xC457,      0, 0x4F31, 0x5C57, 0xC458,      0,
@@ -4102,7 +4102,7 @@ const unsigned short utf8_to_euc_E6A6[] = {
       0, 0x5C63, 0x5C45,      0, 0x5C58,      0,      0, 0xC461,
  0xC462,      0, 0xC463, 0x5C50, 0xC464,      0, 0x5C4B, 0x5C48,
 };
-const unsigned short utf8_to_euc_E6A7[] = {
+static const unsigned short utf8_to_euc_E6A7[] = {
       0, 0x5C49,      0, 0x5C51,      0, 0xC465,      0, 0x7422,
  0xC466,      0, 0x5C4E, 0x393D, 0x4448, 0x4164, 0x5C4C,      0,
  0x5C47, 0xC467,      0, 0x5C4A,      0,      0, 0xC468, 0xC469,
@@ -4112,7 +4112,7 @@ const unsigned short utf8_to_euc_E6A7[] = {
       0, 0xC46E, 0x5C60, 0xC46F,      0, 0xC470,      0,      0,
       0, 0x5C5F,      0, 0x4450,      0, 0x4165, 0xC471, 0x5C5D,
 };
-const unsigned short utf8_to_euc_E6A8[] = {
+static const unsigned short utf8_to_euc_E6A8[] = {
  0xC472, 0xC473, 0x5C5B, 0xC474,      0, 0x5C62,      0,      0,
       0,      0, 0x5C68, 0x4875, 0x5C6E,      0,      0, 0xC475,
       0, 0xC476, 0x5C69, 0x5C6C, 0x5C66, 0xC477,      0, 0x4374,
@@ -4122,7 +4122,7 @@ const unsigned short utf8_to_euc_E6A8[] = {
  0xC47D,      0, 0xC47E,      0, 0xC521, 0x3E41, 0x5C70, 0xC522,
  0x5C77, 0x3C79, 0x3372, 0xC523,      0, 0x432E, 0xC524, 0xC525,
 };
-const unsigned short utf8_to_euc_E6A9[] = {
+static const unsigned short utf8_to_euc_E6A9[] = {
       0,      0,      0,      0, 0x5C6D, 0xC526, 0xC527, 0x5C72,
  0x5C76, 0xC528, 0xC529, 0x3636,      0,      0, 0xC52A,      0,
  0xC52B, 0xC52C, 0xC52D,      0,      0, 0xC52E, 0xC52F,      0,
@@ -4132,7 +4132,7 @@ const unsigned short utf8_to_euc_E6A9[] = {
       0, 0xC534, 0x5C6F, 0xC535,      0,      0,      0,      0,
  0x5C71,      0,      0,      0,      0,      0, 0xC536, 0x3360,
 };
-const unsigned short utf8_to_euc_E6AA[] = {
+static const unsigned short utf8_to_euc_E6AA[] = {
  0x4349, 0xC537,      0, 0xC538, 0x5C7C,      0, 0xC539, 0xC53A,
       0, 0xC53B,      0, 0xC53C,      0, 0x5C7A, 0x3869,      0,
  0x5C79, 0xC53D,      0,      0,      0,      0,      0, 0x5D21,
@@ -4142,7 +4142,7 @@ const unsigned short utf8_to_euc_E6AA[] = {
  0xC545, 0xC546,      0, 0x5D27, 0xC547,      0,      0,      0,
  0x5D26,      0,      0, 0x5D23,      0, 0xC548, 0xC549, 0xC54A,
 };
-const unsigned short utf8_to_euc_E6AB[] = {
+static const unsigned short utf8_to_euc_E6AB[] = {
       0, 0x5C6A, 0x5D25, 0x5D24,      0,      0, 0xC54B,      0,
  0xC54D, 0xC54C,      0,      0, 0xC54E,      0,      0,      0,
  0xC54F, 0x5D2A,      0, 0x4F26, 0xC550, 0xC551, 0xC552,      0,
@@ -4152,7 +4152,7 @@ const unsigned short utf8_to_euc_E6AB[] = {
  0xC558, 0xC559, 0xC55A,      0,      0,      0,      0,      0,
       0,      0, 0x5D32, 0x5D2F, 0xC55B, 0xC55C,      0,      0,
 };
-const unsigned short utf8_to_euc_E6AC[] = {
+static const unsigned short utf8_to_euc_E6AC[] = {
       0,      0, 0xC55D, 0xC55E, 0x4D73, 0x5D30, 0xC55F, 0xC560,
       0, 0xC561, 0x5C5E,      0,      0,      0,      0, 0xC562,
  0xC563, 0xC564, 0x5D33,      0,      0,      0, 0x5D34, 0xC565,
@@ -4162,7 +4162,7 @@ const unsigned short utf8_to_euc_E6AC[] = {
       0,      0, 0x4D5F,      0,      0, 0xC56D, 0xC56E, 0x5D38,
  0x5D37, 0x5D3A, 0x353D, 0xC56F,      0, 0x3656, 0x343E, 0xC570,
 };
-const unsigned short utf8_to_euc_E6AD[] = {
+static const unsigned short utf8_to_euc_E6AD[] = {
       0,      0,      0, 0x5D3D,      0,      0, 0xC571, 0x5D3C,
       0, 0x5D3E, 0xC572,      0, 0x324E, 0xC573, 0x4337,      0,
  0x5D3F,      0, 0xC574, 0x343F, 0x5D41,      0, 0xC575,      0,
@@ -4172,7 +4172,7 @@ const unsigned short utf8_to_euc_E6AD[] = {
  0xC57C,      0,      0, 0x3A50, 0x4E72, 0xC57D,      0,      0,
  0x5D45, 0x5D46,      0, 0x3B60,      0, 0xC57E, 0xC621, 0x5D47,
 };
-const unsigned short utf8_to_euc_E6AE[] = {
+static const unsigned short utf8_to_euc_E6AE[] = {
  0x5D48,      0, 0xC622, 0x5D4A, 0x5D49, 0xC623, 0x4B58,      0,
       0, 0x3D5E, 0x3C6C, 0x3B44,      0, 0x5D4B,      0,      0,
       0,      0,      0,      0,      0, 0x5D4D, 0x3F23, 0xC624,
@@ -4182,7 +4182,7 @@ const unsigned short utf8_to_euc_E6AE[] = {
  0xC62F, 0x5D54, 0x5D53, 0x5D55, 0x3225, 0x434A,      0, 0x5D56,
  0xC630, 0xC631, 0x3B26, 0x334C, 0x5D57, 0xC632, 0xC633, 0x4542,
 };
-const unsigned short utf8_to_euc_E6AF[] = {
+static const unsigned short utf8_to_euc_E6AF[] = {
  0x544C,      0,      0, 0xC634, 0xC635, 0x3523, 0x5D58,      0,
       0, 0xC636,      0, 0x5D59, 0xC637, 0x4A6C, 0x4B68,      0,
       0,      0, 0x4647, 0x5D5A, 0x4866,      0, 0xC638,      0,
@@ -4192,7 +4192,7 @@ const unsigned short utf8_to_euc_E6AF[] = {
       0, 0xC63F,      0, 0x5D5E,      0,      0,      0, 0xC640,
       0, 0xC641,      0,      0,      0,      0,      0, 0xC642,
 };
-const unsigned short utf8_to_euc_E6B0[] = {
+static const unsigned short utf8_to_euc_E6B0[] = {
       0,      0, 0xC643,      0, 0xC644, 0xC645,      0,      0,
  0x5D61, 0xC646,      0,      0,      0, 0xC647, 0xC648, 0x3B61,
  0xC649, 0x4C31, 0xC64A, 0x5D62, 0x5D63,      0,      0, 0x3524,
@@ -4202,7 +4202,7 @@ const unsigned short utf8_to_euc_E6B0[] = {
       0,      0,      0, 0xC652, 0x3F65, 0xC653, 0xC654, 0x4939,
  0x314A,      0, 0xC655, 0xC656,      0,      0, 0x4845, 0xC657,
 };
-const unsigned short utf8_to_euc_E6B1[] = {
+static const unsigned short utf8_to_euc_E6B1[] = {
  0x4475, 0x3D41, 0x3561,      0,      0,      0,      0,      0,
       0,      0, 0xC658, 0xC659,      0, 0xC65A, 0x4846, 0xC65B,
  0x3C2E,      0, 0xC65C,      0, 0xC65D, 0x5D68,      0, 0x3440,
@@ -4212,7 +4212,7 @@ const unsigned short utf8_to_euc_E6B1[] = {
  0x4241,      0, 0x3562, 0x5D72, 0xC664,      0, 0xC665,      0,
  0xC666, 0xC667, 0x3768, 0xC668,      0, 0x3525, 0x5D70,      0,
 };
-const unsigned short utf8_to_euc_E6B2[] = {
+static const unsigned short utf8_to_euc_E6B2[] = {
       0, 0x5D6E, 0x5D6B, 0x4D60,      0, 0xC669, 0xC66A, 0xC66B,
  0x4440, 0xC66C,      0,      0, 0x4659, 0x5D6C,      0,      0,
  0x5D74,      0, 0x5D73, 0x3723, 0xC66D, 0xC66E, 0x322D, 0xC66F,
@@ -4222,7 +4222,7 @@ const unsigned short utf8_to_euc_E6B2[] = {
  0xC673, 0x5D7D, 0xC674, 0x324F, 0xC675,      0,      0,      0,
  0x4A28, 0x4C7D, 0x5E21, 0x3C23, 0x3E42, 0x5D78, 0x5D7E, 0x3168,
 };
-const unsigned short utf8_to_euc_E6B3[] = {
+static const unsigned short utf8_to_euc_E6B3[] = {
       0, 0x3637, 0xC676,      0, 0x5D75, 0x5D7A, 0xC677,      0,
       0, 0x4074, 0x4771,      0, 0x4867, 0xC678,      0, 0xC679,
  0xC67A, 0xC67B, 0xC67C, 0x5D77, 0xC67D, 0x4B21, 0xC67E, 0x5D79,
@@ -4232,7 +4232,7 @@ const unsigned short utf8_to_euc_E6B3[] = {
  0x4259, 0x5D76, 0xC729, 0x314B, 0xC72A,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E6B4[] = {
+static const unsigned short utf8_to_euc_E6B4[] = {
       0,      0,      0,      0, 0xC72B,      0,      0, 0xC72C,
       0,      0, 0xC72D, 0x4D4E, 0x5E30,      0, 0xC72E, 0xC72F,
       0, 0xC730, 0x5E2F, 0xC731,      0,      0,      0, 0x4076,
@@ -4242,7 +4242,7 @@ const unsigned short utf8_to_euc_E6B4[] = {
       0, 0xC739, 0x3D27, 0x5E2E,      0, 0x5E2D, 0x5E28,      0,
  0x5E2B, 0xC73A,      0, 0x3368, 0xC73B, 0x5E2A, 0x4749, 0xC73C,
 };
-const unsigned short utf8_to_euc_E6B5[] = {
+static const unsigned short utf8_to_euc_E6B5[] = {
       0, 0x4E2E,      0,      0, 0x3E74, 0x4075,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0xC73D,
@@ -4252,7 +4252,7 @@ const unsigned short utf8_to_euc_E6B5[] = {
  0xC744,      0,      0,      0, 0x4D61,      0,      0, 0x3324,
  0x3F3B, 0x5E35,      0,      0, 0xC745,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E6B6[] = {
+static const unsigned short utf8_to_euc_E6B6[] = {
       0,      0, 0xC746,      0,      0, 0x5E3A,      0, 0xC747,
  0x3E43,      0,      0,      0, 0x4D30,      0, 0x5E37,      0,
       0, 0xC748, 0xC749, 0x5E32, 0xC74A, 0x5E38, 0xC74B, 0xC74C,
@@ -4262,7 +4262,7 @@ const unsigned short utf8_to_euc_E6B6[] = {
       0,      0, 0x3155,      0, 0xC750, 0x5E3E,      0, 0xC751,
  0x5E41, 0xC752,      0,      0, 0x4E43, 0xC753,      0, 0xC754,
 };
-const unsigned short utf8_to_euc_E6B7[] = {
+static const unsigned short utf8_to_euc_E6B7[] = {
  0x4D64,      0,      0,      0, 0xC755, 0x5E48, 0x5E42, 0x5E3F,
  0xC756,      0, 0xC757, 0x4E54, 0x5E45,      0, 0xC758, 0xC759,
       0, 0x3D4A, 0x5E47,      0,      0, 0x5E4C, 0xC75A,      0,
@@ -4272,7 +4272,7 @@ const unsigned short utf8_to_euc_E6B7[] = {
  0xC763, 0x3F3C, 0xF44C, 0x3D5F, 0xC764, 0x4A25, 0xC765, 0x3A2E,
  0xF44B, 0x5E3B, 0x5E49, 0x453A, 0xC766,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E6B8[] = {
+static const unsigned short utf8_to_euc_E6B8[] = {
  0xC767,      0,      0,      0, 0xC768, 0x4036,      0, 0x3369,
  0x3A51, 0x3E44, 0x5E3D, 0x3D42,      0,      0,      0,      0,
       0,      0,      0, 0x374C,      0, 0x5E3C,      0,      0,
@@ -4282,7 +4282,7 @@ const unsigned short utf8_to_euc_E6B8[] = {
       0,      0, 0xC76C,      0,      0,      0, 0xC76D,      0,
  0x5E62, 0xC76E, 0x5E5D, 0xC76F, 0xC770,      0, 0x5E55,      0,
 };
-const unsigned short utf8_to_euc_E6B9[] = {
+static const unsigned short utf8_to_euc_E6B9[] = {
       0,      0,      0, 0x5E5C, 0xC771, 0xC772,      0,      0,
  0xC773, 0xC774, 0x4C2B, 0xC775,      0, 0x5E5A, 0x5E5E, 0xC776,
       0, 0xC777, 0xC778, 0xC779, 0xC77A,      0, 0x3850, 0xC77B,
@@ -4292,7 +4292,7 @@ const unsigned short utf8_to_euc_E6B9[] = {
       0,      0, 0x5E53, 0xC824,      0,      0, 0x5E59,      0,
       0,      0,      0, 0xC825,      0, 0xC826, 0x4F51, 0x3C3E,
 };
-const unsigned short utf8_to_euc_E6BA[] = {
+static const unsigned short utf8_to_euc_E6BA[] = {
  0x4B7E,      0, 0x5E63,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0x482E, 0xC827,      0, 0x5E6F,
  0x383B,      0,      0, 0xC828,      0,      0, 0x3D60,      0,
@@ -4302,7 +4302,7 @@ const unsigned short utf8_to_euc_E6BA[] = {
       0, 0xC82E, 0x5E6C, 0xC82F,      0,      0, 0x4D4F, 0x5E67,
       0,      0, 0x452E, 0xC830,      0, 0x5E69,      0, 0xC831,
 };
-const unsigned short utf8_to_euc_E6BB[] = {
+static const unsigned short utf8_to_euc_E6BB[] = {
  0xC832, 0xC833, 0x5E71, 0xC834, 0x5E6B, 0x4C47,      0, 0xC835,
  0xC836, 0x5E66, 0xC837, 0x3C22, 0x5E7E, 0xC838, 0xC839, 0xC83A,
       0, 0x336A,      0, 0x5E68, 0x5E6D, 0x5E6E,      0,      0,
@@ -4312,7 +4312,7 @@ const unsigned short utf8_to_euc_E6BB[] = {
       0,      0, 0x5E7A,      0, 0x4529,      0,      0, 0x5F23,
  0x5E77, 0xC83E,      0, 0xC83F,      0, 0xC840, 0x5E78, 0x5E60,
 };
-const unsigned short utf8_to_euc_E6BC[] = {
+static const unsigned short utf8_to_euc_E6BC[] = {
       0, 0x3579, 0x493A,      0, 0xC841,      0, 0x3C3F,      0,
  0xC842, 0x3977, 0xC843,      0, 0xC844, 0xC845,      0, 0x4F33,
       0, 0x5E74,      0, 0x5F22, 0x3169, 0x4166, 0xC846,      0,
@@ -4322,7 +4322,7 @@ const unsigned short utf8_to_euc_E6BC[] = {
  0xC84E, 0x5E7B, 0x5E7D, 0xC84F,      0,      0, 0xC850,      0,
  0x4132,      0,      0, 0xC851, 0xC852,      0, 0x5F21, 0x5E79,
 };
-const unsigned short utf8_to_euc_E6BD[] = {
+static const unsigned short utf8_to_euc_E6BD[] = {
       0, 0x5E73,      0,      0,      0, 0x3443,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0xC854,
       0, 0xC855, 0xC856, 0xC857, 0x3769,      0,      0, 0xC858,
@@ -4332,7 +4332,7 @@ const unsigned short utf8_to_euc_E6BD[] = {
  0x4459,      0,      0,      0, 0x5F4C,      0,      0,      0,
  0x5F26,      0, 0x5F25,      0, 0x5F2E, 0xC861, 0xC862,      0,
 };
-const unsigned short utf8_to_euc_E6BE[] = {
+static const unsigned short utf8_to_euc_E6BE[] = {
  0x5F28, 0x5F27, 0x5F2D, 0xC863, 0x4021,      0, 0x5F24, 0xC864,
  0xC865,      0,      0, 0xC866, 0xC867, 0xC868, 0x5F30,      0,
  0xC869, 0x5F31, 0xC86A, 0xC86B, 0xC86C,      0, 0xC86D, 0x3442,
@@ -4342,7 +4342,7 @@ const unsigned short utf8_to_euc_E6BE[] = {
  0xC877, 0x4543,      0, 0x5F34,      0, 0xC878, 0xC879,      0,
       0, 0x5F38,      0,      0, 0xC87A,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E6BF[] = {
+static const unsigned short utf8_to_euc_E6BF[] = {
  0x3763, 0x4279, 0x5F32, 0x473B,      0, 0xC87B, 0x5F39, 0xC87C,
  0xC87D,      0, 0xC87E,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0x5F3E, 0x5F3C,      0,      0,
@@ -4352,7 +4352,7 @@ const unsigned short utf8_to_euc_E6BF[] = {
  0xC925, 0x5F40,      0, 0x5F2B,      0, 0xC926, 0x6F69,      0,
       0, 0xC927, 0x5F45,      0, 0xC928, 0xC929, 0x5F49,      0,
 };
-const unsigned short utf8_to_euc_E780[] = {
+static const unsigned short utf8_to_euc_E780[] = {
  0xC92A, 0x5F47,      0,      0,      0, 0xC92B, 0xC92C, 0xC92D,
       0, 0x5F43,      0, 0x5F44,      0, 0xC92E,      0, 0x5F48,
       0, 0x5F46,      0,      0,      0, 0x494E,      0, 0xC92F,
@@ -4362,7 +4362,7 @@ const unsigned short utf8_to_euc_E780[] = {
  0x5F50,      0, 0x5F52,      0, 0xC933,      0,      0, 0xC934,
       0, 0xC935,      0,      0, 0xC936,      0, 0x5F51,      0,
 };
-const unsigned short utf8_to_euc_E781[] = {
+static const unsigned short utf8_to_euc_E781[] = {
       0,      0,      0, 0xC937, 0xC938,      0,      0,      0,
  0xC939, 0xC93A, 0xC93B, 0xC93C, 0x5E75,      0, 0xC941,      0,
       0, 0x5F53,      0,      0, 0xC93D, 0xC93E,      0,      0,
@@ -4372,7 +4372,7 @@ const unsigned short utf8_to_euc_E781[] = {
  0x3325,      0,      0,      0,      0, 0xC946, 0xC947,      0,
  0x3564,      0,      0,      0, 0x3C5E, 0x3A52, 0xC948,      0,
 };
-const unsigned short utf8_to_euc_E782[] = {
+static const unsigned short utf8_to_euc_E782[] = {
       0, 0xC949,      0,      0,      0, 0xC94A, 0xC94B,      0,
       0, 0x4F27, 0x3F66,      0,      0,      0, 0x316A,      0,
       0,      0, 0x5F56,      0, 0xC94C, 0xC94D, 0xC94E, 0xC94F,
@@ -4382,7 +4382,7 @@ const unsigned short utf8_to_euc_E782[] = {
  0xC954, 0xC955,      0, 0x5F5B, 0xC956,      0,      0, 0xC957,
  0x5F5A, 0x4540, 0x3059, 0xF42E,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E783[] = {
+static const unsigned short utf8_to_euc_E783[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
  0x4E75,      0, 0xC958, 0x5F5E,      0,      0,      0, 0x3128,
       0, 0xC959,      0, 0xC95A, 0xC95B, 0xC95C, 0xC95D,      0,
@@ -4392,7 +4392,7 @@ const unsigned short utf8_to_euc_E783[] = {
       0, 0x5F58,      0,      0,      0,      0,      0,      0,
       0, 0x4B23, 0xC961,      0,      0, 0x5F62,      0,      0,
 };
-const unsigned short utf8_to_euc_E784[] = {
+static const unsigned short utf8_to_euc_E784[] = {
       0,      0,      0, 0xC962, 0xC963, 0xC964, 0xC965, 0xC966,
       0, 0x5F61,      0, 0xC967, 0xC968,      0,      0, 0xC969,
       0,      0,      0,      0, 0x316B,      0,      0,      0,
@@ -4402,7 +4402,7 @@ const unsigned short utf8_to_euc_E784[] = {
  0xC96F, 0xC970,      0,      0,      0,      0, 0x4133,      0,
  0xC971,      0,      0,      0, 0x3E46,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E785[] = {
+static const unsigned short utf8_to_euc_E785[] = {
       0, 0xC972,      0,      0,      0, 0xC973, 0xC974, 0xC975,
       0, 0x4E7B, 0xC976, 0xC977, 0x5F6A,      0, 0x4079,      0,
  0xC978,      0, 0xC979,      0,      0, 0x5F66, 0x5F6B, 0xC97A,
@@ -4412,7 +4412,7 @@ const unsigned short utf8_to_euc_E785[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0xCA22,      0,      0,      0, 0x407A,      0,      0,
 };
-const unsigned short utf8_to_euc_E786[] = {
+static const unsigned short utf8_to_euc_E786[] = {
  0xCA23,      0,      0,      0, 0x5F6F, 0xCA24,      0, 0xCA25,
  0x5F67,      0, 0x3727,      0, 0xCA26,      0,      0, 0x5F6D,
       0,      0, 0xCA27,      0, 0x4D50, 0x5F70,      0,      0,
@@ -4422,7 +4422,7 @@ const unsigned short utf8_to_euc_E786[] = {
  0xCA2D, 0x472E, 0xCA2E, 0xCA2F,      0,      0,      0,      0,
       0, 0x5F74, 0xCA30,      0,      0,      0, 0x5F75, 0xCA31,
 };
-const unsigned short utf8_to_euc_E787[] = {
+static const unsigned short utf8_to_euc_E787[] = {
  0xCA32, 0xCA33,      0, 0x4733, 0xCA34,      0,      0,      0,
  0x4575, 0x5F77,      0, 0xCA35, 0xCA36,      0, 0x5F79,      0,
  0x4E55,      0, 0x5F76, 0xCA37, 0x5F78, 0x316D, 0xCA38, 0x5F73,
@@ -4432,7 +4432,7 @@ const unsigned short utf8_to_euc_E787[] = {
       0,      0,      0,      0,      0, 0x5F7D,      0,      0,
  0xCA3C, 0x6021,      0, 0x5F6E, 0x5F7E,      0, 0xCA3D, 0x6022,
 };
-const unsigned short utf8_to_euc_E788[] = {
+static const unsigned short utf8_to_euc_E788[] = {
  0xCA3E,      0,      0,      0,      0,      0, 0x477A, 0xCA3F,
  0xCA40, 0xCA41,      0,      0,      0, 0x6023,      0,      0,
  0x6024,      0,      0, 0xCA42,      0,      0,      0, 0xCA43,
@@ -4442,7 +4442,7 @@ const unsigned short utf8_to_euc_E788[] = {
  0x6029,      0, 0x602A,      0, 0xCA4A, 0x3C5F, 0x4963,      0,
  0xCA4B, 0xCA4C, 0x4C6C, 0x602B, 0x602C, 0x4156, 0x3C24, 0x602D,
 };
-const unsigned short utf8_to_euc_E789[] = {
+static const unsigned short utf8_to_euc_E789[] = {
  0x602E, 0xCA4D, 0xCA4E, 0xCA4F,      0, 0xCA50, 0x602F, 0x4A52,
  0x4847,      0,      0, 0x6030, 0x4757,      0, 0xCA51, 0xCA52,
  0xCA53,      0, 0x442D, 0xCA54,      0, 0xCA55, 0xCA56,      0,
@@ -4452,7 +4452,7 @@ const unsigned short utf8_to_euc_E789[] = {
       0, 0xCA60, 0x4037,      0, 0x6032,      0,      0, 0xCA61,
  0xCA62, 0x4643,      0, 0xCA63, 0xCA64, 0x3823, 0x6033, 0xCA65,
 };
-const unsigned short utf8_to_euc_E78A[] = {
+static const unsigned short utf8_to_euc_E78A[] = {
  0x3A54, 0x6035, 0x6034,      0, 0xCA66,      0,      0, 0x6036,
       0, 0xCA67,      0,      0,      0, 0xCA68, 0xCA69,      0,
       0,      0, 0x6037, 0xCA6A,      0,      0, 0x6038,      0,
@@ -4462,7 +4462,7 @@ const unsigned short utf8_to_euc_E78A[] = {
       0, 0xCA6F, 0x603C,      0, 0xCA70,      0, 0x3E75,      0,
       0, 0x603B,      0,      0,      0,      0, 0xCA71,      0,
 };
-const unsigned short utf8_to_euc_E78B[] = {
+static const unsigned short utf8_to_euc_E78B[] = {
       0, 0xCA72, 0x3638, 0x603D, 0x603F,      0, 0x603E, 0xCA73,
       0, 0xCA74,      0,      0, 0xCA75,      0, 0x6040,      0,
  0x3851,      0, 0x6041,      0,      0, 0xCA76, 0xCA77, 0x3669,
@@ -4472,7 +4472,7 @@ const unsigned short utf8_to_euc_E78B[] = {
       0,      0,      0, 0xCA7B, 0xCA7C,      0,      0, 0x6046,
  0x432C, 0x6045, 0xCA7D, 0xCA7E, 0x4F35, 0x4762, 0xCB21,      0,
 };
-const unsigned short utf8_to_euc_E78C[] = {
+static const unsigned short utf8_to_euc_E78C[] = {
       0,      0, 0xCB22,      0, 0xCB23, 0xCB24,      0, 0xCB25,
       0,      0, 0x6049, 0xCB26,      0, 0xCB27,      0,      0,
       0,      0, 0xCB28, 0xCB29,      0,      0, 0x604B, 0x6048,
@@ -4482,7 +4482,7 @@ const unsigned short utf8_to_euc_E78C[] = {
       0, 0xCB32, 0xCB33,      0, 0x604D, 0xCB34, 0x4D31, 0x4D32,
       0,      0, 0xCB35, 0xCB36,      0, 0xCB37, 0x6051, 0x316E,
 };
-const unsigned short utf8_to_euc_E78D[] = {
+static const unsigned short utf8_to_euc_E78D[] = {
       0,      0,      0, 0xCB38, 0x3976, 0x3B62,      0,      0,
       0,      0,      0,      0,      0, 0xCB39, 0x6052, 0x6053,
  0xCB3A,      0, 0xCB3B,      0,      0,      0, 0xCB3C, 0x6055,
@@ -4492,7 +4492,7 @@ const unsigned short utf8_to_euc_E78D[] = {
  0x6058, 0xCB49, 0x334D,      0,      0, 0x605A,      0, 0xCB4A,
  0x6059, 0xCB4B, 0x605C, 0x605B, 0xCB4C,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E78E[] = {
+static const unsigned short utf8_to_euc_E78E[] = {
  0xCB4D, 0xCB4E,      0, 0xCB4F, 0x383C, 0xCB50, 0xCB51, 0x4E28,
       0, 0x364C,      0, 0x3226,      0,      0, 0xCB52,      0,
  0xCB53,      0,      0, 0xCB54,      0, 0xCB55, 0x366A, 0xCB56,
@@ -4502,7 +4502,7 @@ const unsigned short utf8_to_euc_E78E[] = {
       0,      0, 0x4E68, 0x605E,      0, 0xCB62,      0, 0xCB63,
       0, 0xCB64,      0, 0x6060, 0xCB65, 0xCB66,      0, 0xCB67,
 };
-const unsigned short utf8_to_euc_E78F[] = {
+static const unsigned short utf8_to_euc_E78F[] = {
  0x6061,      0, 0x3251,      0,      0, 0xCB68, 0xCB69,      0,
  0x605D, 0xCB6A, 0x3B39, 0xCB6B, 0xCB6C, 0x4441, 0x605F, 0xCB6D,
       0,      0, 0xCB6E, 0xCB6F,      0,      0, 0xCB70,      0,
@@ -4512,7 +4512,7 @@ const unsigned short utf8_to_euc_E78F[] = {
       0, 0x607E,      0,      0, 0xCB78, 0xCB79,      0, 0xCB7A,
  0x6069, 0xCB7B, 0xCB7C, 0xCB7D,      0, 0xCB7E, 0x383D, 0xCC21,
 };
-const unsigned short utf8_to_euc_E790[] = {
+static const unsigned short utf8_to_euc_E790[] = {
  0xCC22, 0xCC23,      0, 0x3565, 0xCC24, 0x6066, 0x4D7D, 0xCC25,
       0, 0x4E30, 0xCC26,      0,      0,      0,      0,      0,
       0, 0xCC27,      0,      0,      0,      0,      0,      0,
@@ -4522,7 +4522,7 @@ const unsigned short utf8_to_euc_E790[] = {
  0xCC34, 0xCC35, 0x606A, 0x4E56, 0x3657, 0x487C, 0x474A,      0,
       0, 0xCC36, 0x606B,      0,      0,      0,      0, 0x606D,
 };
-const unsigned short utf8_to_euc_E791[] = {
+static const unsigned short utf8_to_euc_E791[] = {
  0xCC37, 0x6070,      0, 0xCC38, 0xCC39,      0, 0xCC3A, 0xCC3B,
       0,      0,      0, 0xCC3C,      0, 0xCC3D,      0,      0,
       0, 0xCC3E, 0xCC3F,      0,      0, 0x606C,      0, 0xCC40,
@@ -4532,7 +4532,7 @@ const unsigned short utf8_to_euc_E791[] = {
  0x6073, 0xCC49, 0xCC4A, 0x3A3C,      0,      0, 0x6076,      0,
       0,      0,      0,      0,      0,      0, 0x6077,      0,
 };
-const unsigned short utf8_to_euc_E792[] = {
+static const unsigned short utf8_to_euc_E792[] = {
  0xCC4B, 0xCC4C,      0, 0x4D7E,      0, 0xCC4D, 0xCC4E, 0xCC4F,
       0, 0xCC50,      0, 0x6078,      0,      0,      0, 0xCC51,
  0xCC52, 0xCC53, 0xCC54,      0,      0,      0,      0,      0,
@@ -4542,7 +4542,7 @@ const unsigned short utf8_to_euc_E792[] = {
  0x3444, 0xCC64, 0xCC65,      0,      0, 0xCC66,      0,      0,
       0, 0xCC67,      0, 0xCC68,      0, 0x3C25,      0, 0xCC69,
 };
-const unsigned short utf8_to_euc_E793[] = {
+static const unsigned short utf8_to_euc_E793[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
  0xCC6A, 0xCC6B, 0x607B,      0, 0xCC6C,      0,      0, 0x607C,
  0xCC6D,      0,      0, 0xCC6E, 0x607D,      0,      0,      0,
@@ -4552,7 +4552,7 @@ const unsigned short utf8_to_euc_E793[] = {
  0x6127, 0x6128, 0x6126,      0, 0xCC79,      0, 0x4953, 0x612A,
  0x6129,      0, 0xCC7A, 0xCC7B, 0xCC7C,      0,      0, 0xCC7D,
 };
-const unsigned short utf8_to_euc_E794[] = {
+static const unsigned short utf8_to_euc_E794[] = {
       0, 0xF450,      0, 0x612C, 0x612B, 0x612D, 0xCC7E,      0,
       0,      0,      0,      0, 0x612E, 0x6130, 0x612F,      0,
       0, 0x3979, 0xCD21, 0x6132,      0, 0x6131, 0xCD22, 0xCD23,
@@ -4562,7 +4562,7 @@ const unsigned short utf8_to_euc_E794[] = {
  0x4544, 0x4D33, 0x3943, 0x3F3D,      0,      0, 0xCD2B, 0x434B,
  0x5234, 0xCD2C, 0x442E, 0x3268, 0x6136, 0xCD2D, 0xCD2E, 0xCD2F,
 };
-const unsigned short utf8_to_euc_E795[] = {
+static const unsigned short utf8_to_euc_E795[] = {
  0xCD30,      0,      0, 0xCD31, 0x6137,      0, 0x613C, 0xCD32,
  0xCD33, 0x613A, 0x6139, 0x5A42, 0x3326, 0x6138, 0xCD34, 0x305A,
  0xCD35, 0x482A, 0xCD36,      0, 0x484A,      0,      0, 0xCD37,
@@ -4572,7 +4572,7 @@ const unsigned short utf8_to_euc_E795[] = {
  0x305B, 0xCD3C,      0, 0x3E76, 0x6147,      0, 0x6144, 0x466D,
  0x6143, 0xCD3D, 0xCD3E, 0xCD3F, 0xCD40, 0xCD41, 0xCD42, 0x3526,
 };
-const unsigned short utf8_to_euc_E796[] = {
+static const unsigned short utf8_to_euc_E796[] = {
       0, 0xCD43, 0x614A,      0,      0, 0xCD44, 0x6145, 0x6146,
       0, 0x6149, 0x6148, 0x4925,      0,      0, 0x4142, 0x4141,
  0xCD45, 0x353F, 0xCD46, 0xCD47, 0x614B, 0xCD48,      0,      0,
@@ -4582,7 +4582,7 @@ const unsigned short utf8_to_euc_E796[] = {
       0, 0x6157, 0x4868, 0x6151, 0xCD4D, 0x6153,      0,      0,
  0x6155, 0x3F3E, 0xCD4E,      0, 0x6156, 0x6154, 0x3C40, 0xCD4F,
 };
-const unsigned short utf8_to_euc_E797[] = {
+static const unsigned short utf8_to_euc_E797[] = {
  0xCD50, 0xCD51, 0x6150, 0x6152, 0xCD52, 0x4942, 0xCD53, 0x3E49,
       0,      0, 0x6159,      0, 0xCD54, 0x6158, 0xCD55, 0xCD56,
       0,      0, 0x615A,      0, 0x3C26, 0x3A2F,      0, 0xCD57,
@@ -4592,7 +4592,7 @@ const unsigned short utf8_to_euc_E797[] = {
  0x6162, 0xCD61, 0x6164, 0x6165, 0x4354,      0,      0,      0,
       0, 0xCD62, 0x6163,      0, 0x6160,      0, 0x615E, 0x615F,
 };
-const unsigned short utf8_to_euc_E798[] = {
+static const unsigned short utf8_to_euc_E798[] = {
  0xCD63, 0x6161, 0xCD64, 0xCD65, 0xCD66,      0,      0, 0xCD67,
  0xCD68, 0x6168, 0xCD69, 0x6166, 0xCD6A, 0x6167,      0, 0xCD6B,
       0,      0, 0xCD6C, 0xCD6D,      0, 0xCD6E, 0xCD6F,      0,
@@ -4602,7 +4602,7 @@ const unsigned short utf8_to_euc_E798[] = {
  0x6170,      0, 0xCD7A, 0xCD7B, 0x616F, 0xCD7C,      0,      0,
  0xCD7D, 0xCD7E, 0xCE21, 0x6171, 0xCE22,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E799[] = {
+static const unsigned short utf8_to_euc_E799[] = {
  0xCE24, 0xCE25, 0x4E45, 0xCE26, 0xCE27, 0xCE28, 0x6174, 0x6172,
  0x6173, 0xCE29, 0xCE23, 0xCE2A, 0x3462,      0,      0,      0,
       0,      0, 0x4C7E,      0,      0, 0xCE2B, 0x4A4A,      0,
@@ -4612,7 +4612,7 @@ const unsigned short utf8_to_euc_E799[] = {
  0x617E, 0xCE33, 0x6221,      0, 0xCE34,      0, 0x6222,      0,
  0x6223,      0, 0x482F, 0x4550, 0x6224, 0x4772, 0x4934,      0,
 };
-const unsigned short utf8_to_euc_E79A[] = {
+static const unsigned short utf8_to_euc_E79A[] = {
  0x6225, 0xCE35, 0xF451, 0x6226, 0x452A, 0xCE36, 0x3327, 0x3944,
  0x6227,      0,      0, 0x6228, 0xCE37, 0xCE38, 0x6229,      0,
  0x3B29,      0,      0, 0x622B,      0, 0xCE39, 0x622A,      0,
@@ -4622,7 +4622,7 @@ const unsigned short utf8_to_euc_E79A[] = {
  0x622E,      0,      0,      0, 0x622F,      0,      0, 0x7369,
  0x6230, 0x6231, 0x6232,      0,      0, 0xCE48,      0, 0x3B2E,
 };
-const unsigned short utf8_to_euc_E79B[] = {
+static const unsigned short utf8_to_euc_E79B[] = {
       0, 0xCE49, 0x6233, 0x4756,      0, 0xCE4A, 0x4B5F,      0,
  0x314E, 0xCE4B, 0x3157, 0xCE4C, 0xCE4D, 0x6234, 0xCE4E,      0,
       0,      0, 0x6236,      0, 0xCE4F,      0, 0x6235, 0x4570,
@@ -4632,7 +4632,7 @@ const unsigned short utf8_to_euc_E79B[] = {
  0xCE55, 0xCE56, 0x4C55,      0, 0x443E,      0, 0xCE57,      0,
  0x416A, 0xCE58,      0, 0x623D, 0xCE59,      0, 0x3D62,      0,
 };
-const unsigned short utf8_to_euc_E79C[] = {
+static const unsigned short utf8_to_euc_E79C[] = {
  0xCE5A, 0x3E4A,      0,      0, 0x6240,      0, 0xCE5B, 0x623F,
  0x623E, 0x487D, 0xCE5C, 0x3447, 0x3829,      0, 0xCE5D,      0,
       0,      0, 0xCE5E,      0, 0xCE5F, 0xCE60,      0, 0xCE61,
@@ -4642,7 +4642,7 @@ const unsigned short utf8_to_euc_E79C[] = {
       0,      0,      0,      0, 0xCE6A, 0xCE6B, 0xCE6C, 0x6247,
  0x6248, 0xCE6D, 0x442F,      0, 0x3463, 0xCE6E, 0xCE6F,      0,
 };
-const unsigned short utf8_to_euc_E79D[] = {
+static const unsigned short utf8_to_euc_E79D[] = {
  0x4365,      0, 0xCE70,      0,      0, 0xCE71, 0xCE72, 0x6249,
       0,      0, 0xCE73,      0,      0, 0xCE74, 0xCE75, 0xCE76,
       0,      0, 0xCE77,      0,      0,      0, 0xCE78, 0xCE79,
@@ -4652,7 +4652,7 @@ const unsigned short utf8_to_euc_E79D[] = {
  0xCF25,      0, 0xCF26, 0xCF27, 0xCF28,      0,      0,      0,
       0, 0x6251, 0xCF29,      0,      0, 0xCF2A, 0x6250, 0x624F,
 };
-const unsigned short utf8_to_euc_E79E[] = {
+static const unsigned short utf8_to_euc_E79E[] = {
  0xCF2B,      0,      0,      0, 0xCF2C,      0,      0,      0,
       0,      0,      0, 0x6253, 0xCF2D, 0xCF2E, 0x6252,      0,
       0, 0x6254,      0,      0, 0xCF2F, 0xCF30, 0xCF31,      0,
@@ -4662,7 +4662,7 @@ const unsigned short utf8_to_euc_E79E[] = {
  0x6257, 0xCF39,      0, 0x4637,      0, 0xCF3A, 0x6258,      0,
       0, 0x6259,      0, 0x625D, 0x625B, 0x625C, 0xCF3B, 0x625A,
 };
-const unsigned short utf8_to_euc_E79F[] = {
+static const unsigned short utf8_to_euc_E79F[] = {
       0,      0,      0, 0xCF3C,      0,      0,      0, 0x625E,
       0, 0xCF3D,      0,      0,      0, 0x625F,      0,      0,
       0, 0xCF3E, 0xCF3F,      0,      0, 0xCF40,      0, 0x6260,
@@ -4672,7 +4672,7 @@ const unsigned short utf8_to_euc_E79F[] = {
  0xCF49, 0xCF4A,      0, 0x4050, 0xCF4B,      0,      0,      0,
  0xCF4C,      0,      0, 0xCF4D, 0x6265,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E7A0[] = {
+static const unsigned short utf8_to_euc_E7A0[] = {
       0,      0, 0x3A3D,      0,      0, 0xCF4E, 0xCF4F,      0,
       0, 0xCF50,      0,      0, 0x6266, 0xCF51, 0xCF52,      0,
       0, 0xCF53, 0x6267,      0, 0x3826, 0x3A55,      0,      0,
@@ -4682,7 +4682,7 @@ const unsigned short utf8_to_euc_E7A0[] = {
  0xCF5A,      0, 0x4B24,      0, 0x474B, 0xCF5B,      0, 0xCF5C,
       0,      0, 0x4557,      0,      0,      0,      0, 0x395C,
 };
-const unsigned short utf8_to_euc_E7A1[] = {
+static const unsigned short utf8_to_euc_E7A1[] = {
       0,      0,      0, 0xCF5D, 0xCF5E, 0x626B,      0, 0xCF5F,
  0xCF60,      0,      0,      0, 0xCF61,      0, 0xCF62,      0,
       0,      0, 0xCF63,      0,      0,      0,      0,      0,
@@ -4692,7 +4692,7 @@ const unsigned short utf8_to_euc_E7A1[] = {
       0,      0, 0x4823,      0, 0x626D,      0,      0,      0,
       0,      0, 0xCF6D,      0, 0x626F,      0, 0xCF6E,      0,
 };
-const unsigned short utf8_to_euc_E7A2[] = {
+static const unsigned short utf8_to_euc_E7A2[] = {
       0, 0x386B,      0,      0,      0,      0, 0x626E, 0x4476,
       0,      0, 0xCF6F,      0, 0x6271, 0x3337, 0x626C, 0xCF70,
       0, 0x486A,      0, 0x3130, 0xCF71, 0x3A6C,      0, 0x4F52,
@@ -4702,7 +4702,7 @@ const unsigned short utf8_to_euc_E7A2[] = {
  0xCF7B, 0xCF7C, 0xCF7D, 0xCF7E,      0, 0x6273,      0,      0,
       0,      0, 0x334E, 0xD021, 0x627B, 0xD022, 0x627A, 0xD023,
 };
-const unsigned short utf8_to_euc_E7A3[] = {
+static const unsigned short utf8_to_euc_E7A3[] = {
       0, 0x3C27,      0,      0,      0, 0x627C, 0x6277, 0xD024,
  0xD025, 0xD026, 0x627D, 0x6278, 0xD027,      0, 0xD028,      0,
  0x4858, 0x6276, 0xD029, 0xD02A, 0x6279, 0xD02B, 0xD02C,      0,
@@ -4712,7 +4712,7 @@ const unsigned short utf8_to_euc_E7A3[] = {
       0,      0, 0xD034, 0xD035, 0x6324,      0, 0xD037, 0xD038,
       0,      0, 0xD039, 0xD03A,      0, 0x6323,      0, 0xD03B,
 };
-const unsigned short utf8_to_euc_E7A4[] = {
+static const unsigned short utf8_to_euc_E7A4[] = {
  0xD036, 0x3E4C,      0,      0,      0,      0, 0xD03C, 0x6325,
       0,      0,      0,      0, 0xD03D,      0, 0x4143,      0,
  0xD03E, 0x6327, 0x6326,      0,      0,      0,      0,      0,
@@ -4722,7 +4722,7 @@ const unsigned short utf8_to_euc_E7A4[] = {
  0xF454, 0xD048,      0,      0, 0xD049, 0xD04A,      0,      0,
       0,      0, 0x3C28, 0xD04B, 0x4E69, 0xD04C, 0x3C52, 0xD04D,
 };
-const unsigned short utf8_to_euc_E7A5[] = {
+static const unsigned short utf8_to_euc_E7A5[] = {
  0x632B, 0x3737,      0,      0, 0xD04E, 0xD04F, 0xD050, 0x3540,
  0x3527, 0x3B63, 0xD051, 0xD052,      0,      0,      0, 0xD053,
  0x4D34, 0xD054,      0, 0x6331, 0xD055, 0x6330, 0x4144, 0x632D,
@@ -4732,7 +4732,7 @@ const unsigned short utf8_to_euc_E7A5[] = {
       0,      0, 0xD05C,      0,      0,      0,      0, 0x4578,
       0, 0xD05D, 0x6332, 0xD05E, 0xD05F,      0, 0xD060, 0x6333,
 };
-const unsigned short utf8_to_euc_E7A6[] = {
+static const unsigned short utf8_to_euc_E7A6[] = {
  0x6349, 0x3658,      0,      0, 0x4F3D, 0x4135,      0,      0,
       0,      0, 0x6334, 0xD061, 0xD062, 0x3252, 0x4477, 0x4A21,
       0, 0xD063,      0, 0xD064, 0xD065, 0xD066, 0xD067,      0,
@@ -4742,7 +4742,7 @@ const unsigned short utf8_to_euc_E7A6[] = {
  0x4729, 0xD070,      0, 0x633A, 0xD071,      0,      0,      0,
  0xD072, 0x633B, 0x633C, 0xD073,      0, 0x3659, 0x3253, 0x4645,
 };
-const unsigned short utf8_to_euc_E7A7[] = {
+static const unsigned short utf8_to_euc_E7A7[] = {
  0x3D28, 0x3B64, 0xD074,      0, 0xD075,      0,      0, 0xD076,
  0xD077, 0x633D, 0xD078, 0x3D29,      0,      0,      0, 0xD079,
       0, 0x324A, 0x4943,      0, 0xD07A, 0x633E, 0xD07B,      0,
@@ -4752,7 +4752,7 @@ const unsigned short utf8_to_euc_E7A7[] = {
  0x3E4E, 0xD127,      0,      0,      0,      0,      0,      0,
  0xD128,      0,      0, 0x305C, 0xD129,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E7A8[] = {
+static const unsigned short utf8_to_euc_E7A8[] = {
  0x3529,      0, 0xD12A, 0xD12B,      0,      0,      0, 0xD12C,
  0x6343, 0xD12D, 0xD12E, 0x4478, 0xD12F, 0x6344, 0x4047,      0,
       0, 0xD130,      0,      0, 0x4C2D, 0xD131,      0, 0x4923,
@@ -4762,7 +4762,7 @@ const unsigned short utf8_to_euc_E7A8[] = {
  0xD139, 0x634A, 0x3070,      0, 0xD13A, 0xD13B,      0, 0x634D,
  0xD13C, 0xD13D, 0xD13E, 0x634B, 0x3254, 0x374E, 0x634C, 0x3946,
 };
-const unsigned short utf8_to_euc_E7A9[] = {
+static const unsigned short utf8_to_euc_E7A9[] = {
  0x3972,      0, 0x4A66, 0x634E, 0xD13F, 0xD140, 0x4B54, 0xD141,
  0xD142, 0x6350,      0,      0, 0xD143, 0x4051, 0x314F, 0x323A,
  0x302C,      0,      0,      0,      0, 0xD144, 0xD145, 0x634F,
@@ -4772,7 +4772,7 @@ const unsigned short utf8_to_euc_E7A9[] = {
  0x6355,      0,      0,      0, 0x376A, 0xD14F, 0x3566,      0,
  0xD150, 0x6356, 0x3675,      0,      0, 0x6357, 0xD151, 0x407C,
 };
-const unsigned short utf8_to_euc_E7AA[] = {
+static const unsigned short utf8_to_euc_E7AA[] = {
  0xD152, 0x464D, 0xD153, 0x4060, 0x3A75, 0xD154, 0xD155,      0,
  0x6358,      0, 0xD156, 0xD157,      0,      0,      0,      0,
  0xD158, 0xD159, 0x4362, 0x416B, 0xD15A, 0x635A, 0x635C, 0x6359,
@@ -4782,7 +4782,7 @@ const unsigned short utf8_to_euc_E7AA[] = {
  0x635F,      0,      0, 0xD15F,      0, 0xD160, 0x6360,      0,
       0, 0xD161, 0x312E, 0xD162, 0xD163,      0,      0, 0x6363,
 };
-const unsigned short utf8_to_euc_E7AB[] = {
+static const unsigned short utf8_to_euc_E7AB[] = {
       0,      0,      0, 0x3376, 0x6362, 0x6361, 0xD164, 0x6365,
  0x635E, 0xD165, 0x6366, 0x4E29, 0xD166, 0x6367, 0xD167, 0x6368,
       0, 0xD168, 0x5474, 0x636A,      0, 0x6369,      0,      0,
@@ -4792,7 +4792,7 @@ const unsigned short utf8_to_euc_E7AB[] = {
  0x6372, 0xD16E,      0,      0, 0xD16F,      0, 0x3625,      0,
  0x513F, 0x435D, 0x3C33, 0xD170,      0, 0xD171, 0xD172, 0x3448,
 };
-const unsigned short utf8_to_euc_E7AC[] = {
+static const unsigned short utf8_to_euc_E7AC[] = {
       0,      0, 0x6373,      0, 0x6422,      0, 0x6376, 0xD173,
  0x3568,      0, 0x6375, 0x6424,      0,      0,      0, 0x6374,
       0, 0x3E50,      0,      0, 0xD174,      0,      0,      0,
@@ -4802,7 +4802,7 @@ const unsigned short utf8_to_euc_E7AC[] = {
  0xD17E, 0xD221,      0, 0x6377, 0xD222, 0x637B, 0x637D,      0,
       0, 0x3A7B,      0,      0,      0, 0xD223,      0, 0xD224,
 };
-const unsigned short utf8_to_euc_E7AD[] = {
+static const unsigned short utf8_to_euc_E7AD[] = {
  0xD225, 0xD226,      0,      0,      0, 0x6426, 0x492E, 0xD227,
  0x4826, 0x4579,      0, 0x365A, 0x6425, 0x6423, 0xD228, 0x4835,
  0x637E, 0x435E, 0x457B,      0, 0x457A, 0xD229, 0x3A76,      0,
@@ -4812,7 +4812,7 @@ const unsigned short utf8_to_euc_E7AD[] = {
  0x642B, 0x642C, 0xD231, 0xD232, 0x6429, 0x6427,      0, 0xD233,
       0,      0, 0x6421,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E7AE[] = {
+static const unsigned short utf8_to_euc_E7AE[] = {
       0,      0,      0,      0, 0xD234,      0, 0x4A4F, 0x3255,
       0, 0xD235,      0, 0x6435,      0, 0x6432, 0xD236, 0x6437,
  0xD237, 0xD238, 0x6436,      0, 0x4773, 0x4C27, 0xD239, 0x3B3B,
@@ -4822,7 +4822,7 @@ const unsigned short utf8_to_euc_E7AE[] = {
  0xD240, 0x4822, 0xD241,      0, 0x643E, 0xD242, 0xD243,      0,
  0x4824,      0, 0xD244, 0xD245, 0xD246, 0xD247,      0,      0,
 };
-const unsigned short utf8_to_euc_E7AF[] = {
+static const unsigned short utf8_to_euc_E7AF[] = {
  0x4061, 0x643B, 0xD248,      0, 0x484F, 0xD249, 0x643F, 0x4A53,
  0xD24A, 0x435B, 0xD24B, 0x643A, 0x643C,      0,      0, 0x643D,
       0,      0,      0,      0, 0xD24C,      0, 0xD24D, 0xD24E,
@@ -4832,7 +4832,7 @@ const unsigned short utf8_to_euc_E7AF[] = {
       0,      0, 0xD254, 0x644A, 0xD255, 0xD256, 0x644E, 0x644B,
  0xD257, 0xD258, 0xD259,      0, 0xD25A,      0, 0xD25B,      0,
 };
-const unsigned short utf8_to_euc_E7B0[] = {
+static const unsigned short utf8_to_euc_E7B0[] = {
  0x6447, 0xD25C, 0xD25D, 0xD25E, 0xD25F,      0, 0xD260, 0x6448,
       0, 0xD261,      0, 0xD262, 0xD263, 0x644D, 0xD264, 0xD265,
       0, 0x6442, 0x5255, 0x6449, 0x6443,      0,      0, 0x644C,
@@ -4842,7 +4842,7 @@ const unsigned short utf8_to_euc_E7B0[] = {
       0, 0xD26D,      0, 0xD26E, 0xD26F,      0, 0xD270, 0x6453,
  0x4876, 0xD271, 0xD272,      0,      0, 0x6455, 0x4E7C, 0x4A6D,
 };
-const unsigned short utf8_to_euc_E7B1[] = {
+static const unsigned short utf8_to_euc_E7B1[] = {
  0x645A,      0,      0, 0x6457,      0,      0, 0xD273,      0,
       0,      0, 0xD274,      0, 0x6456, 0x4052,      0, 0x6459,
  0x645B, 0xD276, 0xD277, 0xD278, 0x6458, 0xD275, 0x645F,      0,
@@ -4852,7 +4852,7 @@ const unsigned short utf8_to_euc_E7B1[] = {
  0xD327,      0, 0xD328, 0x4A46,      0, 0x6462,      0,      0,
       0, 0xD329,      0,      0, 0xD32A, 0xD32B, 0x4C62,      0,
 };
-const unsigned short utf8_to_euc_E7B2[] = {
+static const unsigned short utf8_to_euc_E7B2[] = {
       0, 0x364E, 0x3729, 0x6463,      0,      0, 0xD32C, 0xD32D,
       0, 0x4A34,      0, 0x3F68,      0, 0x4C30,      0, 0xD32E,
  0x6464,      0, 0x4E33,      0, 0xD32F, 0x4774,      0, 0x4146,
@@ -4862,7 +4862,7 @@ const unsigned short utf8_to_euc_E7B2[] = {
  0xD333, 0x646D, 0x646C, 0x646B,      0,      0, 0xD334, 0xD335,
       0, 0x646F, 0xD336, 0xD337, 0xD338, 0x6470, 0x403A, 0xD339,
 };
-const unsigned short utf8_to_euc_E7B3[] = {
+static const unsigned short utf8_to_euc_E7B3[] = {
  0x6471,      0, 0x6473,      0, 0xD33A, 0x6472,      0, 0xD33B,
  0xD33C, 0xD33D, 0x3852,      0,      0, 0xD33E, 0x4138, 0xD33F,
       0,      0, 0x6475, 0xD340, 0xD341, 0xD342, 0x457C, 0xD343,
@@ -4872,7 +4872,7 @@ const unsigned short utf8_to_euc_E7B3[] = {
       0,      0, 0x647A,      0, 0x647B, 0xD34A, 0x647C,      0,
  0x3B65,      0, 0x647D, 0x374F,      0,      0, 0x356A,      0,
 };
-const unsigned short utf8_to_euc_E7B4[] = {
+static const unsigned short utf8_to_euc_E7B4[] = {
  0x352A,      0, 0x6521, 0xD34B, 0x4C73, 0x3948, 0x647E, 0xD34C,
  0xD34D, 0xD34E, 0x6524, 0x4C66,      0, 0x473C,      0, 0xD34F,
  0x4933, 0xD350, 0xD351, 0xD352, 0x3D63, 0x6523, 0xD353, 0x3C53,
@@ -4882,7 +4882,7 @@ const unsigned short utf8_to_euc_E7B4[] = {
  0x3A59, 0xD35A, 0x6528, 0x3F42,      0, 0x652A,      0,      0,
       0, 0x3E52, 0x3A30,      0, 0xD35B, 0xD35C, 0xD35D, 0x6529,
 };
-const unsigned short utf8_to_euc_E7B5[] = {
+static const unsigned short utf8_to_euc_E7B5[] = {
  0xD35E, 0xD35F, 0x3D2A, 0x383E, 0x4148, 0x6525, 0x652B, 0xD360,
  0xD361,      0,      0, 0x6526, 0x3750, 0xD362, 0x652E, 0x6532,
  0x376B, 0xD363,      0, 0xD364,      0,      0, 0x652D, 0xD365,
@@ -4892,7 +4892,7 @@ const unsigned short utf8_to_euc_E7B5[] = {
  0xD36D, 0x457D, 0x652F, 0x652C,      0, 0x3328, 0x4064,      0,
  0xD36E, 0x3828, 0xD36F, 0xD370,      0, 0x6538,      0, 0xD371,
 };
-const unsigned short utf8_to_euc_E7B6[] = {
+static const unsigned short utf8_to_euc_E7B6[] = {
       0, 0xD372, 0xD373, 0xD374,      0, 0xD375, 0xD376,      0,
  0xD377, 0x6535,      0, 0xD378, 0xD379, 0xD37A,      0, 0x6537,
       0, 0xD37B,      0, 0x6534,      0,      0, 0xD37C, 0xD37D,
@@ -4902,7 +4902,7 @@ const unsigned short utf8_to_euc_E7B6[] = {
  0x6547, 0x394B, 0x4C56, 0xD425, 0x4456, 0x653D, 0xD426, 0xD427,
  0x6545, 0xD428, 0x653A, 0x433E,      0, 0x653F, 0x303D, 0x4C4A,
 };
-const unsigned short utf8_to_euc_E7B7[] = {
+static const unsigned short utf8_to_euc_E7B7[] = {
       0,      0, 0xD429, 0xD42A, 0xD42B, 0xD42C, 0xD42D, 0x653E,
       0,      0, 0x365B, 0x486C, 0xD42E, 0xD42F, 0xD430, 0x416D,
       0, 0x4E50, 0x3D6F,      0,      0, 0x656E, 0xF45D, 0xD431,
@@ -4912,7 +4912,7 @@ const unsigned short utf8_to_euc_E7B7[] = {
       0, 0xD43A, 0x654D,      0, 0x4E7D, 0xD43B, 0xD43C,      0,
       0, 0xD43D, 0xD43E, 0x654C,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E7B8[] = {
+static const unsigned short utf8_to_euc_E7B8[] = {
  0xD433, 0x316F,      0,      0, 0x466C, 0x654F,      0,      0,
  0xD43F, 0x6556, 0x6550, 0x6557,      0,      0,      0,      0,
  0xD440, 0xD441, 0x6553,      0,      0, 0xD442,      0, 0xD443,
@@ -4922,7 +4922,7 @@ const unsigned short utf8_to_euc_E7B8[] = {
       0, 0x6554, 0x6560, 0xD44C,      0, 0x655C, 0xD44D, 0x655F,
       0, 0x655D, 0x6561, 0x655B,      0, 0x6541, 0x4053, 0xD44E,
 };
-const unsigned short utf8_to_euc_E7B9[] = {
+static const unsigned short utf8_to_euc_E7B9[] = {
       0, 0x484B,      0, 0x655E, 0xD44F, 0xD450, 0x6559, 0xD451,
       0,      0, 0x4121, 0x3752,      0, 0x3D2B, 0xD452,      0,
  0xD453,      0, 0xD454,      0, 0x3F25, 0x4136, 0x6564,      0,
@@ -4932,7 +4932,7 @@ const unsigned short utf8_to_euc_E7B9[] = {
  0x372B,      0,      0, 0xD45D,      0,      0,      0,      0,
  0xD45E, 0x6568,      0, 0x656C, 0x656B, 0x656F, 0xD45F, 0x6571,
 };
-const unsigned short utf8_to_euc_E7BA[] = {
+static const unsigned short utf8_to_euc_E7BA[] = {
       0, 0xD460, 0x3B3C, 0x656D,      0,      0, 0xD461, 0xD462,
  0x6572, 0x6573, 0xD463,      0, 0x6574, 0xD464, 0x657A, 0x453B,
  0x6576, 0xD465, 0x6575, 0x6577, 0x6578, 0xD466, 0x6579,      0,
@@ -4942,7 +4942,7 @@ const unsigned short utf8_to_euc_E7BA[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E7BC[] = {
+static const unsigned short utf8_to_euc_E7BC[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -4952,7 +4952,7 @@ const unsigned short utf8_to_euc_E7BC[] = {
       0,      0,      0,      0,      0,      0, 0x344C,      0,
  0x657D,      0, 0x657E, 0xD46C, 0xD46B, 0xD46D, 0xD46E, 0xD46F,
 };
-const unsigned short utf8_to_euc_E7BD[] = {
+static const unsigned short utf8_to_euc_E7BD[] = {
       0,      0,      0, 0xD470, 0xD471, 0x6621,      0, 0xD472,
       0,      0,      0,      0, 0x6622, 0x6623, 0x6624, 0xD473,
  0x6625, 0x6626, 0xD474, 0xD475, 0x6628, 0x6627,      0,      0,
@@ -4962,7 +4962,7 @@ const unsigned short utf8_to_euc_E7BD[] = {
  0x4833, 0xD521, 0x3D70,      0,      0, 0x474D,      0, 0x486D,
  0x662F, 0x586D,      0,      0,      0, 0xD522, 0xD523, 0xD524,
 };
-const unsigned short utf8_to_euc_E7BE[] = {
+static const unsigned short utf8_to_euc_E7BE[] = {
  0xD525,      0, 0x6630, 0x6632,      0, 0x4D65, 0x6631, 0x6634,
  0x6633,      0, 0x4D53, 0xD526, 0x6635, 0xD527, 0x487E, 0xD528,
  0xD529, 0xD52A,      0,      0, 0x6636,      0, 0xD52B, 0xD52C,
@@ -4972,7 +4972,7 @@ const unsigned short utf8_to_euc_E7BE[] = {
       0,      0, 0x663C,      0, 0xD533,      0, 0x663F,      0,
  0x6640, 0x663D,      0,      0, 0xD534, 0x3129,      0, 0xD535,
 };
-const unsigned short utf8_to_euc_E7BF[] = {
+static const unsigned short utf8_to_euc_E7BF[] = {
  0xD536, 0x3227,      0, 0xD537,      0, 0x6642, 0x6643,      0,
  0xD538,      0, 0x6644,      0, 0x4D62,      0, 0xD539, 0xD53A,
       0,      0, 0x3D2C,      0, 0x6646, 0x6645,      0,      0,
@@ -4982,7 +4982,7 @@ const unsigned short utf8_to_euc_E7BF[] = {
  0x344D,      0, 0xD543, 0x664A,      0,      0,      0,      0,
       0, 0x664B, 0xD544, 0x4B5D, 0x4D63, 0xD545, 0xD546, 0xD547,
 };
-const unsigned short utf8_to_euc_E880[] = {
+static const unsigned short utf8_to_euc_E880[] = {
  0x4D54, 0x4F37,      0, 0x394D, 0x664E, 0x3C54, 0x664D, 0xD548,
  0xD549,      0, 0xD54A, 0x664F, 0x3C29, 0xD54B, 0xD54C, 0xD54D,
  0x4251, 0xD54E, 0x6650, 0xD54F, 0xD550, 0x394C, 0xD551, 0x4C57,
@@ -4992,7 +4992,7 @@ const unsigned short utf8_to_euc_E880[] = {
  0xD55A,      0,      0, 0x3C2A, 0xD55B, 0xD55C, 0x4C6D, 0xD55D,
       0, 0xD55E, 0xD55F, 0x6657, 0xD560, 0x433F, 0xD561, 0x6656,
 };
-const unsigned short utf8_to_euc_E881[] = {
+static const unsigned short utf8_to_euc_E881[] = {
  0xD562,      0,      0,      0, 0xD563,      0, 0x6659,      0,
       0,      0, 0x6658,      0,      0,      0,      0,      0,
       0,      0, 0x665A,      0,      0,      0, 0x403B,      0,
@@ -5002,7 +5002,7 @@ const unsigned short utf8_to_euc_E881[] = {
  0x6662, 0xD568, 0x6661, 0x6660, 0x4430, 0xD569, 0x6663, 0x3F26,
       0, 0x6664,      0,      0,      0, 0x6665, 0x4F38, 0x6666,
 };
-const unsigned short utf8_to_euc_E882[] = {
+static const unsigned short utf8_to_euc_E882[] = {
       0, 0xD56A,      0,      0, 0x6667, 0x6669, 0x6668, 0x4825,
  0xD56B, 0x4679,      0, 0x4F3E, 0x4829,      0, 0xD56C,      0,
       0,      0,      0, 0x666B,      0,      0, 0x3E53,      0,
@@ -5012,7 +5012,7 @@ const unsigned short utf8_to_euc_E882[] = {
       0, 0x394F, 0x3069,      0, 0x3A68,      0,      0,      0,
  0xD572, 0xD573, 0x4759,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E883[] = {
+static const unsigned short utf8_to_euc_E883[] = {
       0,      0,      0, 0x305F, 0x6674,      0, 0x4340,      0,
  0xD574,      0,      0,      0, 0x4758, 0xD575, 0x425B, 0xD576,
       0,      0, 0xD577,      0, 0xD578, 0xD579, 0x6676, 0xD57A,
@@ -5022,7 +5022,7 @@ const unsigned short utf8_to_euc_E883[] = {
  0xD621, 0x6679, 0xD622, 0xD623, 0x4639,      0, 0xD624,      0,
  0x363B, 0xD625, 0xD626,      0, 0x6726, 0x473D, 0xD627,      0,
 };
-const unsigned short utf8_to_euc_E884[] = {
+static const unsigned short utf8_to_euc_E884[] = {
       0,      0, 0x3B69, 0xD628,      0, 0x363C, 0x4048, 0x4F46,
  0x4C2E, 0x6677, 0x4054, 0xD629,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0xD62A, 0xD62B,
@@ -5032,7 +5032,7 @@ const unsigned short utf8_to_euc_E884[] = {
  0xD633, 0x4326,      0, 0x473E,      0, 0xD634,      0,      0,
       0, 0x4431, 0xD635,      0, 0xD636,      0, 0x6723,      0,
 };
-const unsigned short utf8_to_euc_E885[] = {
+static const unsigned short utf8_to_euc_E885[] = {
       0,      0,      0,      0,      0, 0xD637, 0x6722, 0xD638,
       0,      0, 0xD639, 0x667E, 0xD63A,      0, 0x3F55,      0,
  0x4965, 0x6725, 0xD63B, 0x6724, 0x3950, 0x4F53,      0, 0xD63C,
@@ -5042,7 +5042,7 @@ const unsigned short utf8_to_euc_E885[] = {
  0x3978, 0x6727,      0,      0, 0x672B,      0,      0, 0xD644,
  0x4432, 0x4A22, 0x4123,      0,      0,      0,      0, 0x425C,
 };
-const unsigned short utf8_to_euc_E886[] = {
+static const unsigned short utf8_to_euc_E886[] = {
  0x672F, 0xD645, 0x6730, 0x672C, 0xD647, 0xD648, 0xD649,      0,
  0x672D,      0, 0x672E, 0xD64A,      0,      0, 0xD64B, 0x3951,
  0xD646,      0,      0, 0x6736,      0, 0x6732, 0xD64C,      0,
@@ -5052,7 +5052,7 @@ const unsigned short utf8_to_euc_E886[] = {
  0x6738,      0, 0xD652, 0x4137, 0xD653, 0x6739,      0,      0,
  0x673B,      0, 0x673F, 0xD654,      0, 0x673C, 0x673A, 0x473F,
 };
-const unsigned short utf8_to_euc_E887[] = {
+static const unsigned short utf8_to_euc_E887[] = {
  0x673D,      0, 0x673E, 0xD656,      0, 0xD657, 0x3232,      0,
  0x6745, 0x6740, 0xD658, 0xD655,      0, 0x6741, 0xD659, 0xD65A,
       0, 0x6742,      0, 0x4221,      0, 0xD65B,      0, 0xD65C,
@@ -5062,7 +5062,7 @@ const unsigned short utf8_to_euc_E887[] = {
  0xD664, 0xD665, 0xD666, 0x3B6A, 0x4357, 0xD667, 0xD668,      0,
  0xD669, 0xD66A, 0x674A, 0x674B, 0x3131, 0xD66B, 0x674C, 0xD66C,
 };
-const unsigned short utf8_to_euc_E888[] = {
+static const unsigned short utf8_to_euc_E888[] = {
  0xD66D, 0x674D, 0x674E, 0xD66E,      0, 0x674F,      0, 0x6750,
  0x363D, 0x5A2A, 0x6751,      0, 0x4065, 0x6752, 0x3C4B, 0xD66F,
  0x6753,      0, 0x5030, 0xD670, 0xD671,      0, 0x6754, 0x4A5E,
@@ -5072,7 +5072,7 @@ const unsigned short utf8_to_euc_E888[] = {
       0,      0, 0xD678, 0x6758, 0xD679, 0x4249, 0x4775, 0x383F,
  0x6757, 0x4125, 0xD67A,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E889[] = {
+static const unsigned short utf8_to_euc_E889[] = {
  0x6759,      0,      0, 0xD67B, 0xD67C, 0xD67D, 0xD67E, 0x447A,
       0,      0,      0, 0xD721,      0,      0, 0xD722, 0xD723,
       0, 0xD724,      0,      0,      0,      0, 0xD725,      0,
@@ -5082,7 +5082,7 @@ const unsigned short utf8_to_euc_E889[] = {
       0, 0x6765, 0x3F27,      0, 0xD72B,      0, 0x3170, 0x6766,
  0x6767,      0,      0, 0xD72C,      0, 0xD72D, 0x6768, 0xD72E,
 };
-const unsigned short utf8_to_euc_E88A[] = {
+static const unsigned short utf8_to_euc_E88A[] = {
  0xD72F, 0xD730,      0, 0xD731, 0xD732,      0,      0, 0xD733,
       0, 0xD734, 0xD735, 0x3072,      0, 0x6769, 0xD736,      0,
       0, 0xD737, 0x676A,      0, 0xD738,      0, 0xD739,      0,
@@ -5092,7 +5092,7 @@ const unsigned short utf8_to_euc_E88A[] = {
  0xD746, 0x3256, 0xD747, 0x4B27, 0xD748,      0,      0, 0xD749,
  0x375D, 0x365C, 0xD74A, 0x676D, 0xD74B, 0x326A, 0xD74C, 0xD74D,
 };
-const unsigned short utf8_to_euc_E88B[] = {
+static const unsigned short utf8_to_euc_E88B[] = {
       0,      0,      0,      0,      0, 0x3423, 0xD74E,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
  0xD74F, 0x3171, 0x6772, 0x4E6A, 0x425D, 0xD750,      0, 0x4944,
@@ -5102,7 +5102,7 @@ const unsigned short utf8_to_euc_E88B[] = {
       0, 0x3151,      0, 0x6774, 0x6773,      0, 0xD759, 0xD75A,
       0, 0x6779, 0x6775, 0x6778,      0, 0xD75B, 0xD75C,      0,
 };
-const unsigned short utf8_to_euc_E88C[] = {
+static const unsigned short utf8_to_euc_E88C[] = {
  0xD75D, 0xD75E, 0x4C50, 0x6777, 0x3258, 0x337D, 0x677B, 0xD75F,
  0xD760, 0x677D, 0xD761, 0xD762,      0,      0, 0x3754,      0,
       0,      0,      0,      0,      0,      0, 0x6823, 0x682C,
@@ -5112,7 +5112,7 @@ const unsigned short utf8_to_euc_E88C[] = {
  0xD76D, 0x6825, 0x6824, 0xD76E, 0x6822, 0x6821, 0x4363, 0xD76F,
  0x427B, 0x6827, 0xD770,      0, 0xD771, 0xD772,      0,      0,
 };
-const unsigned short utf8_to_euc_E88D[] = {
+static const unsigned short utf8_to_euc_E88D[] = {
  0x6826,      0, 0xD773, 0xD774, 0xD775, 0x6829,      0, 0xD776,
       0, 0x4170, 0x3755,      0,      0, 0xD777, 0xD778, 0x3141,
  0x6828, 0xD779, 0x3953, 0xD83E, 0xD763, 0xD77A, 0xD77B, 0xD77C,
@@ -5122,7 +5122,7 @@ const unsigned short utf8_to_euc_E88D[] = {
  0xD77D,      0,      0, 0x683A,      0, 0x683B,      0, 0x3259,
  0xD77E,      0,      0, 0x322E, 0x6838, 0xD821,      0, 0xD822,
 };
-const unsigned short utf8_to_euc_E88E[] = {
+static const unsigned short utf8_to_euc_E88E[] = {
  0xD823,      0, 0xD824,      0, 0xD825, 0x682E, 0xD826, 0x6836,
       0, 0x683D, 0x6837,      0,      0, 0xD827, 0x6835,      0,
       0,      0, 0xD828, 0x6776, 0xD829, 0xD82A, 0x6833,      0,
@@ -5132,7 +5132,7 @@ const unsigned short utf8_to_euc_E88E[] = {
       0, 0x4D69,      0,      0,      0, 0x6839,      0,      0,
       0,      0,      0,      0,      0, 0x684F, 0xD834, 0xD835,
 };
-const unsigned short utf8_to_euc_E88F[] = {
+static const unsigned short utf8_to_euc_E88F[] = {
  0xD836, 0x6847,      0,      0,      0, 0x3F7B,      0, 0xD837,
       0, 0xD838, 0x3546,      0, 0x365D,      0, 0x6842, 0xD839,
  0xD83A, 0xD83B,      0, 0x325B, 0xD83C,      0, 0x3E54,      0,
@@ -5142,7 +5142,7 @@ const unsigned short utf8_to_euc_E88F[] = {
  0x3856, 0x4929, 0x684B,      0, 0x683F,      0, 0xD841, 0x6848,
  0xD842, 0xD843,      0, 0x6852, 0xD844, 0x6843,      0,      0,
 };
-const unsigned short utf8_to_euc_E890[] = {
+static const unsigned short utf8_to_euc_E890[] = {
       0, 0xD845,      0, 0x6844, 0x463A,      0, 0xD846, 0x6849,
       0,      0, 0xD847, 0x6846, 0x4B28, 0x684C, 0x3060, 0xD848,
       0, 0xD849,      0, 0x6840,      0, 0xD84A,      0,      0,
@@ -5152,7 +5152,7 @@ const unsigned short utf8_to_euc_E890[] = {
       0, 0x337E,      0,      0,      0, 0x6862,      0,      0,
  0x6850, 0xD84E,      0,      0, 0x6855, 0x4D6E,      0,      0,
 };
-const unsigned short utf8_to_euc_E891[] = {
+static const unsigned short utf8_to_euc_E891[] = {
       0,      0,      0,      0,      0, 0xD84F, 0x685E, 0xD850,
  0xD851, 0x4D55, 0xD852,      0,      0, 0xD853, 0x4E2A, 0xD854,
       0, 0xD855, 0xD856,      0,      0,      0, 0xD857, 0x4378,
@@ -5162,7 +5162,7 @@ const unsigned short utf8_to_euc_E891[] = {
  0xD861, 0x472C,      0, 0xD862, 0xD863, 0x302A, 0xD864, 0x6858,
  0xD865, 0x6861, 0x4978,      0, 0xD866, 0xD867,      0,      0,
 };
-const unsigned short utf8_to_euc_E892[] = {
+static const unsigned short utf8_to_euc_E892[] = {
       0, 0xD868, 0x685C,      0, 0x6857, 0xD869,      0,      0,
       0,      0,      0, 0x3E55,      0,      0,      0,      0,
  0x3D2F,      0, 0xD86A, 0xD86B, 0x3C2C, 0xD86C,      0,      0,
@@ -5172,7 +5172,7 @@ const unsigned short utf8_to_euc_E892[] = {
       0, 0xD873, 0x3377,      0, 0xD874,      0,      0,      0,
  0x3E78, 0x6865, 0xD875, 0x686A, 0x4173, 0xD876, 0xD877, 0x6866,
 };
-const unsigned short utf8_to_euc_E893[] = {
+static const unsigned short utf8_to_euc_E893[] = {
  0xD878, 0x686D, 0xD879,      0, 0x435F,      0, 0x686E, 0xD87A,
  0xD87B, 0x4D56, 0x6863, 0x3338, 0xD87C, 0x6869,      0, 0xD87D,
  0x686C, 0x4C2C,      0, 0xD87E,      0,      0, 0x686F,      0,
@@ -5182,7 +5182,7 @@ const unsigned short utf8_to_euc_E893[] = {
  0xD925, 0xD926, 0xD927,      0, 0x6873,      0,      0, 0xD928,
       0,      0, 0xD92A, 0xD92B, 0x687A, 0xD92C,      0, 0x6872,
 };
-const unsigned short utf8_to_euc_E894[] = {
+static const unsigned short utf8_to_euc_E894[] = {
  0x3C43,      0, 0xD92D, 0xD92E,      0,      0, 0x6851, 0xD92F,
       0,      0,      0,      0, 0xD930,      0, 0xD931,      0,
  0xD932, 0x4A4E,      0, 0x4C22, 0x6879, 0x6878,      0, 0x6874,
@@ -5192,7 +5192,7 @@ const unsigned short utf8_to_euc_E894[] = {
       0,      0, 0xD929, 0xD93D, 0xD93E, 0x4222, 0xD93F,      0,
       0,      0,      0,      0,      0, 0x4A43,      0, 0xD940,
 };
-const unsigned short utf8_to_euc_E895[] = {
+static const unsigned short utf8_to_euc_E895[] = {
  0x687B, 0x6921,      0, 0x4859,      0,      0, 0xD941,      0,
  0x687E, 0x3E56, 0x3C49, 0x6923,      0,      0, 0x363E, 0xD942,
  0xD943, 0xD944, 0xD945, 0xD946,      0, 0x6924, 0xD947, 0x4979,
@@ -5202,7 +5202,7 @@ const unsigned short utf8_to_euc_E895[] = {
       0,      0,      0,      0,      0,      0,      0, 0x6931,
       0, 0xD953, 0xD954, 0xD955,      0, 0xD956, 0x6932, 0xD957,
 };
-const unsigned short utf8_to_euc_E896[] = {
+static const unsigned short utf8_to_euc_E896[] = {
  0x6925, 0xD958,      0,      0, 0x4776, 0xD959, 0xD95A, 0x692F,
  0x6927, 0xD95B, 0x6929, 0xD95C, 0xD95D,      0,      0, 0xD95E,
  0x6933, 0x6928,      0, 0xD95F, 0x692C,      0,      0, 0x3172,
@@ -5212,7 +5212,7 @@ const unsigned short utf8_to_euc_E896[] = {
  0xF461,      0,      0,      0, 0xD967,      0, 0xD968, 0xD969,
  0xD96A, 0x6937, 0x6935,      0, 0xD96B, 0xD96C, 0xD96D, 0xD96E,
 };
-const unsigned short utf8_to_euc_E897[] = {
+static const unsigned short utf8_to_euc_E897[] = {
       0, 0x4F4E, 0xD96F,      0,      0,      0,      0, 0xD970,
       0, 0x6934, 0xD971, 0xD972,      0, 0x4D75, 0xD973, 0x6936,
  0x6938,      0,      0,      0,      0, 0x6939,      0,      0,
@@ -5222,7 +5222,7 @@ const unsigned short utf8_to_euc_E897[] = {
       0,      0,      0, 0xD97C,      0,      0, 0xD97D, 0x3D73,
       0, 0x693D, 0x6942, 0x4174, 0xD97E,      0, 0x6941, 0xDA21,
 };
-const unsigned short utf8_to_euc_E898[] = {
+static const unsigned short utf8_to_euc_E898[] = {
  0xDA22,      0, 0x6922,      0, 0xDA23, 0xDA24, 0x6943, 0x4149,
       0,      0, 0x693E, 0x6940,      0, 0xDA25, 0xDA26,      0,
  0xDA27, 0xDA28, 0xDA29, 0x693F,      0,      0, 0x5D31, 0x5D22,
@@ -5232,7 +5232,7 @@ const unsigned short utf8_to_euc_E898[] = {
  0x6946,      0,      0,      0,      0,      0, 0xDA31,      0,
  0xDA32,      0, 0xDA33,      0, 0xDA34, 0xDA35,      0, 0x6947,
 };
-const unsigned short utf8_to_euc_E899[] = {
+static const unsigned short utf8_to_euc_E899[] = {
  0xDA36, 0xB866, 0xDA37,      0,      0,      0, 0xDA38,      0,
       0,      0,      0,      0,      0, 0x6948, 0x3857,      0,
  0x3554,      0, 0xDA39, 0xDA3A, 0x694A, 0x515D, 0xDA3B, 0xDA3C,
@@ -5242,7 +5242,7 @@ const unsigned short utf8_to_euc_E899[] = {
       0, 0x694D,      0,      0,      0, 0xDA48, 0xDA49, 0xDA4A,
       0, 0x467A, 0xDA4B, 0x303A,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E89A[] = {
+static const unsigned short utf8_to_euc_E89A[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
  0xDA6D,      0, 0x3263, 0x6952, 0x6953, 0xDA4C,      0,      0,
       0, 0xDA4D,      0, 0x694E,      0, 0x3B3D, 0xDA4E,      0,
@@ -5252,7 +5252,7 @@ const unsigned short utf8_to_euc_E89A[] = {
  0x6958, 0xDA57,      0, 0xDA58, 0xDA59, 0xDA5A, 0x6954, 0xDA5B,
  0xDA5C, 0xDA5D,      0,      0,      0,      0,      0, 0xDA5E,
 };
-const unsigned short utf8_to_euc_E89B[] = {
+static const unsigned short utf8_to_euc_E89B[] = {
  0xDA5F, 0xDA60,      0, 0xDA61, 0x6956, 0xDA62, 0x6957, 0x3C58,
       0, 0x6959,      0, 0x4341,      0, 0x3756, 0x3342,      0,
       0, 0xDA63, 0xDA64,      0, 0x695C, 0xDA65,      0, 0xDA66,
@@ -5262,7 +5262,7 @@ const unsigned short utf8_to_euc_E89B[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
  0x427D, 0x696C, 0xDA6E, 0x6968, 0xDA6F, 0xDA70, 0x326B,      0,
 };
-const unsigned short utf8_to_euc_E89C[] = {
+static const unsigned short utf8_to_euc_E89C[] = {
  0x6966,      0, 0x4B2A, 0x6967, 0xDA71, 0xDA72, 0x6964, 0xDA73,
  0x6965, 0x696A, 0x696D, 0xDA74,      0, 0x696B, 0xDA75, 0xDA76,
  0xDA77, 0x6969, 0x6963, 0xDA78, 0xDA79,      0,      0,      0,
@@ -5272,7 +5272,7 @@ const unsigned short utf8_to_euc_E89C[] = {
       0, 0xDB24, 0xDB25,      0, 0x696E,      0,      0, 0x6970,
       0, 0xDB26, 0xDB27, 0x6971, 0xDB28, 0xDB29, 0xDB2A, 0x696F,
 };
-const unsigned short utf8_to_euc_E89D[] = {
+static const unsigned short utf8_to_euc_E89D[] = {
  0xDB2B,      0,      0, 0xDB2C,      0, 0xDB2D,      0,      0,
       0, 0x4066,      0, 0x4F39, 0x6978, 0xDB2E, 0x6979,      0,
       0,      0,      0, 0x6A21,      0, 0x3F2A,      0, 0x697B,
@@ -5282,7 +5282,7 @@ const unsigned short utf8_to_euc_E89D[] = {
       0, 0xDB35, 0xDB36,      0, 0x697A,      0, 0x4433,      0,
  0x6977,      0,      0, 0xDB37,      0,      0,      0, 0x4768,
 };
-const unsigned short utf8_to_euc_E89E[] = {
+static const unsigned short utf8_to_euc_E89E[] = {
       0,      0, 0x6A27, 0xDB38, 0xDB39, 0xDB3A, 0xDB3B, 0xDB3C,
  0xDB3D, 0xDB3E,      0, 0xDB3F, 0xDB40, 0x4D3B,      0,      0,
  0xDB41,      0,      0, 0xDB42,      0, 0xDB43,      0, 0xDB44,
@@ -5292,7 +5292,7 @@ const unsigned short utf8_to_euc_E89E[] = {
       0, 0xDB4E,      0, 0x6A30,      0, 0xDB4F,      0,      0,
       0,      0, 0x4D66, 0x6A33,      0, 0x6A2A, 0xDB50, 0xDB51,
 };
-const unsigned short utf8_to_euc_E89F[] = {
+static const unsigned short utf8_to_euc_E89F[] = {
  0x6A2B, 0xDB52,      0,      0, 0x6A2F,      0, 0x6A32, 0x6A31,
  0xDB53, 0xDB54, 0xDB55, 0x6A29,      0,      0, 0xDB56,      0,
  0x6A2C,      0, 0x6A3D,      0,      0, 0xDB57, 0xDB58,      0,
@@ -5302,7 +5302,7 @@ const unsigned short utf8_to_euc_E89F[] = {
       0, 0xDB63, 0x6A35, 0xDB64,      0,      0, 0x6A3A, 0x6A3B,
  0xDB65, 0x332A, 0xDB66, 0x3542,      0,      0, 0x6A39, 0xDB67,
 };
-const unsigned short utf8_to_euc_E8A0[] = {
+static const unsigned short utf8_to_euc_E8A0[] = {
       0, 0xDB68,      0, 0xDB69,      0, 0x6A24, 0xDB6A, 0xF464,
       0, 0xDB6B, 0xDB6C, 0xDB6D,      0, 0x6A38, 0x6A3C, 0x6A37,
  0xDB6E, 0x6A3E, 0xDB70, 0xDB71, 0xDB72, 0x6A40, 0x6A3F,      0,
@@ -5312,7 +5312,7 @@ const unsigned short utf8_to_euc_E8A0[] = {
  0xDB7C, 0x6A43, 0xDB7D,      0,      0, 0xDB7E, 0x6A44,      0,
       0, 0x6A45, 0xDC21, 0x6A47, 0xDC22,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E8A1[] = {
+static const unsigned short utf8_to_euc_E8A1[] = {
  0x376C, 0xDC23, 0x6A49, 0xDC24, 0x6A48, 0xDC25, 0x3D30,      0,
  0xDC26, 0xDC27, 0xDC28, 0xDC29, 0x3954, 0x5E27, 0xDC2A,      0,
       0, 0xDC2B, 0x6A4A, 0x3D51,      0, 0xDC2C, 0xDC2D, 0x3339,
@@ -5322,7 +5322,7 @@ const unsigned short utf8_to_euc_E8A1[] = {
  0x3F6A, 0xDC35, 0x6A55,      0,      0, 0x6A52,      0, 0x436F,
       0, 0xDC36,      0, 0xDC37,      0, 0x6A53, 0x6A50, 0x365E,
 };
-const unsigned short utf8_to_euc_E8A2[] = {
+static const unsigned short utf8_to_euc_E8A2[] = {
  0xDC38, 0x6A4F, 0x6A56,      0,      0,      0,      0,      0,
  0x3736,      0,      0, 0x425E,      0, 0x6A5C,      0,      0,
       0,      0, 0x6A58,      0,      0,      0, 0x4235, 0x6A57,
@@ -5332,7 +5332,7 @@ const unsigned short utf8_to_euc_E8A2[] = {
  0x6A5E, 0x6A60,      0,      0, 0x3853, 0x6A54,      0, 0x3041,
       0,      0, 0xDC41,      0,      0, 0xDC42, 0xDC43, 0x6A5F,
 };
-const unsigned short utf8_to_euc_E8A3[] = {
+static const unsigned short utf8_to_euc_E8A3[] = {
  0xDC44, 0x3A5B, 0x4E76, 0x6A61, 0x6A62, 0x4175,      0,      0,
       0,      0, 0xDC45, 0xDC46, 0xDC47, 0xDC48, 0xDC49, 0x4E22,
       0, 0xDC4A, 0xDC4B, 0xDC4C, 0x6A63, 0x4D35,      0,      0,
@@ -5342,7 +5342,7 @@ const unsigned short utf8_to_euc_E8A3[] = {
  0xDC51, 0xDC52, 0x6A6C, 0x3E58, 0x6A6A, 0xDC53,      0, 0xDC54,
  0x4D67, 0x6A67,      0,      0, 0x6A69, 0x403D, 0x3F7E,      0,
 };
-const unsigned short utf8_to_euc_E8A4[] = {
+static const unsigned short utf8_to_euc_E8A4[] = {
       0, 0xDC55, 0x6A68,      0, 0x6A6D,      0, 0xDC56, 0x4A23,
       0,      0, 0x6A6F,      0, 0x6A6E, 0xDC57, 0xDC58, 0xDC59,
  0x336C,      0, 0x4B2B, 0x6A70,      0, 0xDC5A, 0xDC5B,      0,
@@ -5352,7 +5352,7 @@ const unsigned short utf8_to_euc_E8A4[] = {
  0xDC64, 0xDC65, 0xDC66,      0,      0, 0xDC67, 0x6A79,      0,
  0x6A7A, 0xDC68, 0xDC69, 0x6A78,      0,      0, 0xDC6A,      0,
 };
-const unsigned short utf8_to_euc_E8A5[] = {
+static const unsigned short utf8_to_euc_E8A5[] = {
  0xDC6B, 0x6A76, 0xDC6C, 0x6A71, 0x6A77, 0xDC6D, 0xDC6E,      0,
       0, 0xDC6F,      0,      0, 0x6A7B, 0x7037,      0, 0xDC70,
       0,      0, 0xDC71,      0,      0,      0, 0x3228, 0xDC72,
@@ -5362,7 +5362,7 @@ const unsigned short utf8_to_euc_E8A5[] = {
  0xDC7B,      0, 0x3D31, 0xDC7C, 0x6B26, 0xDC7D,      0, 0x6B27,
       0,      0, 0xDC7E, 0xDD21, 0xDD22, 0xDD23, 0x6B28, 0x403E,
 };
-const unsigned short utf8_to_euc_E8A6[] = {
+static const unsigned short utf8_to_euc_E8A6[] = {
       0, 0x4D57,      0, 0x6B29,      0,      0, 0x4A24, 0x4746,
  0x6B2A, 0xDD24, 0x6B2B, 0x382B,      0, 0xDD25,      0, 0x352C,
  0xDD26,      0,      0, 0x6B2C, 0xDD27, 0xDD28, 0x3B6B, 0x4741,
@@ -5372,7 +5372,7 @@ const unsigned short utf8_to_euc_E8A6[] = {
  0xDD2E,      0, 0x6B33, 0x3451, 0xDD2F, 0xDD30, 0xDD31, 0xDD32,
       0,      0, 0x6B34,      0, 0xDD33, 0x6B35,      0, 0x6B36,
 };
-const unsigned short utf8_to_euc_E8A7[] = {
+static const unsigned short utf8_to_euc_E8A7[] = {
  0x6B37,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0x3351,      0, 0xDD34, 0xDD35, 0xDD36, 0xDD37,
@@ -5382,7 +5382,7 @@ const unsigned short utf8_to_euc_E8A7[] = {
       0, 0xDD3D,      0, 0xDD3E, 0x6B3C,      0, 0xDD3F,      0,
  0x6B3D, 0xDD40,      0,      0,      0, 0xDD41,      0, 0xDD42,
 };
-const unsigned short utf8_to_euc_E8A8[] = {
+static const unsigned short utf8_to_euc_E8A8[] = {
  0x3840,      0, 0x447B, 0x6B3E, 0xDD43, 0xDD44,      0, 0xDD45,
  0x3757,      0, 0x3F56,      0, 0x6B41,      0, 0x4624, 0xDD46,
  0x6B40, 0xDD47, 0xDD48, 0x3731, 0xDD49, 0xDD4A, 0x6B3F, 0x4277,
@@ -5392,7 +5392,7 @@ const unsigned short utf8_to_euc_E8A8[] = {
       0, 0x3576,      0, 0x4C75, 0x414A, 0xDD53, 0x6B45, 0xDD54,
       0,      0, 0x3F47, 0x4370, 0x3E5A, 0xDD55, 0xDD56,      0,
 };
-const unsigned short utf8_to_euc_E8A9[] = {
+static const unsigned short utf8_to_euc_E8A9[] = {
  0xDD57, 0x6B46,      0, 0xDD58,      0, 0xDD59, 0x6B49, 0xDD5A,
  0x6B4A, 0xDD5B,      0,      0,      0, 0xDD5C, 0xDD5D,      0,
  0x3A3E, 0x4242, 0x6B48, 0xDD5E, 0x3E5B, 0x493E, 0xDD5F, 0xDD60,
@@ -5402,7 +5402,7 @@ const unsigned short utf8_to_euc_E8A9[] = {
  0x354D, 0x4F43, 0x333A, 0x3E5C,      0, 0xDD67, 0xDD68, 0xDD69,
       0, 0xDD6A, 0xDD6B, 0xDD6C, 0x6B4B,      0, 0xDD6D, 0xDD6E,
 };
-const unsigned short utf8_to_euc_E8AA[] = {
+static const unsigned short utf8_to_euc_E8AA[] = {
  0xDD6F,      0, 0x6B50, 0xDD70, 0x6B51, 0x6B4F, 0xDD71, 0x3858,
       0, 0x4D40,      0, 0xDD72, 0x3B6F, 0x4727,      0, 0xDD73,
  0xDD74, 0x6B54, 0xDD75, 0x4040,      0, 0x4342, 0xDD76, 0xDD77,
@@ -5412,7 +5412,7 @@ const unsigned short utf8_to_euc_E8AA[] = {
  0x432F,      0, 0x325D, 0xDD7E,      0,      0, 0xDE21, 0xDE22,
       0, 0x4870,      0, 0xDE23, 0x3543,      0, 0xDE24, 0x4434,
 };
-const unsigned short utf8_to_euc_E8AB[] = {
+static const unsigned short utf8_to_euc_E8AB[] = {
       0,      0, 0x6B5B, 0xDE25, 0x6B59,      0, 0xDE26, 0x434C,
  0xDE27, 0xDE28, 0xDE29, 0x4041, 0x3452, 0x6B5A,      0, 0x3F5B,
       0, 0xDE2A, 0x4E4A, 0xDE2B, 0xDE2C, 0xDE2D, 0x4F40, 0xDE2E,
@@ -5422,7 +5422,7 @@ const unsigned short utf8_to_euc_E8AB[] = {
  0xDE32, 0x6B61,      0, 0x6B5E, 0xDE33, 0xDE34, 0xDE35, 0x6B65,
  0x3D74,      0, 0x3841,      0, 0xDE36,      0, 0x427A, 0xDE37,
 };
-const unsigned short utf8_to_euc_E8AC[] = {
+static const unsigned short utf8_to_euc_E8AC[] = {
  0x4B45, 0x315A, 0x3062,      0, 0x4625, 0xDE38, 0xDE39, 0x6B69,
       0,      0, 0xDE3F, 0xDE3A, 0x6B68,      0, 0x4666,      0,
  0x6B6D, 0xDE3B,      0,      0, 0x6B62,      0, 0x6B6C, 0x6B6E,
@@ -5432,7 +5432,7 @@ const unsigned short utf8_to_euc_E8AC[] = {
  0xDE41,      0,      0, 0x6B70,      0,      0,      0, 0xDE42,
       0, 0x3660,      0,      0, 0xDE43,      0, 0x6B74,      0,
 };
-const unsigned short utf8_to_euc_E8AD[] = {
+static const unsigned short utf8_to_euc_E8AD[] = {
       0, 0x6B76, 0xDE44, 0xDE45, 0xDE46, 0xDE47, 0xDE48,      0,
  0xDE49, 0x6B7A,      0,      0, 0x6B77, 0xDE4E, 0x6B79, 0x6B78,
       0,      0, 0xDE4A, 0xDE4B, 0xDE4C,      0, 0x6B7B,      0,
@@ -5442,7 +5442,7 @@ const unsigned short utf8_to_euc_E8AD[] = {
  0x3544, 0x6641, 0x3E79,      0, 0x6C24,      0, 0xDE52, 0x386E,
  0xDE53, 0xDE54,      0,      0, 0xDE55, 0x6C25, 0xDE56, 0xF466,
 };
-const unsigned short utf8_to_euc_E8AE[] = {
+static const unsigned short utf8_to_euc_E8AE[] = {
  0x6C26, 0xDE57,      0, 0x3B3E, 0xDE58, 0xDE59,      0,      0,
       0,      0, 0x5A4E, 0xDE5A, 0x6C27, 0xDE5B, 0x6C28, 0xDE5C,
  0x3D32,      0, 0x6C29, 0x6C2A, 0xDE5D, 0xDE5E, 0x6C2B,      0,
@@ -5452,7 +5452,7 @@ const unsigned short utf8_to_euc_E8AE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E8B0[] = {
+static const unsigned short utf8_to_euc_E8B0[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5462,7 +5462,7 @@ const unsigned short utf8_to_euc_E8B0[] = {
       0,      0,      0,      0,      0,      0,      0, 0x432B,
  0xDE62, 0xDE63, 0x6C2E,      0,      0, 0xDE64, 0xDE65, 0x6C30,
 };
-const unsigned short utf8_to_euc_E8B1[] = {
+static const unsigned short utf8_to_euc_E8B1[] = {
       0, 0x6C2F,      0,      0,      0, 0xDE66, 0x4626, 0xDE67,
  0x6C31, 0xDE68, 0x4B2D, 0xDE69, 0x6C32,      0, 0x6C33, 0xDE6A,
  0x6C34, 0xDE6B,      0, 0xDE6C, 0xDE6D, 0x6C35,      0, 0xDE6E,
@@ -5472,7 +5472,7 @@ const unsigned short utf8_to_euc_E8B1[] = {
       0,      0,      0, 0xDE79,      0, 0xDE7A, 0xDE7B,      0,
  0x6C38, 0x493F, 0x6C39, 0xDE7C, 0x6C41,      0, 0xDE7D,      0,
 };
-const unsigned short utf8_to_euc_E8B2[] = {
+static const unsigned short utf8_to_euc_E8B2[] = {
       0,      0, 0x6C3A,      0,      0, 0x6C3C, 0xDE7E, 0xDF21,
       0, 0x6C3B, 0x6C3D, 0xDF22, 0x4B46, 0x6C3E, 0x6C3F,      0,
  0xDF23,      0, 0xDF24, 0xDF25, 0x6C40,      0,      0,      0,
@@ -5482,7 +5482,7 @@ const unsigned short utf8_to_euc_E8B2[] = {
  0x4C63,      0, 0x6C47, 0x6C48, 0x352E,      0, 0x6C4A, 0x4763,
  0x425F, 0xDF2A, 0xDF2B, 0x4871, 0x453D, 0x6C46,      0, 0x4B47,
 };
-const unsigned short utf8_to_euc_E8B3[] = {
+static const unsigned short utf8_to_euc_E8B3[] = {
  0x326C, 0x6C4C, 0x4F28, 0x4442, 0x4F45, 0xDF2C, 0xDF2D, 0x3B71,
  0x6C4B, 0xDF2E, 0x4231, 0xDF2F,      0, 0x6C5C, 0x4128, 0xDF30,
       0, 0x4678,      0, 0x4950,      0, 0xDF32, 0xDF31,      0,
@@ -5492,7 +5492,7 @@ const unsigned short utf8_to_euc_E8B3[] = {
  0xDF39,      0, 0xDF3A,      0, 0xF467, 0xDF3B,      0, 0xDF3C,
  0xDF3D,      0, 0x6C51, 0x6C52, 0x3958, 0x6C50, 0xDF3E, 0xDF3F,
 };
-const unsigned short utf8_to_euc_E8B4[] = {
+static const unsigned short utf8_to_euc_E8B4[] = {
       0, 0xDF40,      0, 0xDF41, 0x6C53, 0x6C54,      0, 0x6C56,
  0x4223, 0xDF42, 0x6C55, 0x3466,      0, 0x6C58,      0, 0x6C57,
  0x6C59,      0, 0xDF43, 0x6C5B, 0x6C5D,      0, 0x6C5E, 0xDF44,
@@ -5502,7 +5502,7 @@ const unsigned short utf8_to_euc_E8B4[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E8B5[] = {
+static const unsigned short utf8_to_euc_E8B5[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5512,7 +5512,7 @@ const unsigned short utf8_to_euc_E8B5[] = {
  0x4176, 0x6C61,      0, 0x6C62, 0x496B,      0, 0xF468, 0x352F,
       0,      0,      0,      0,      0,      0,      0, 0xDF4A,
 };
-const unsigned short utf8_to_euc_E8B6[] = {
+static const unsigned short utf8_to_euc_E8B6[] = {
       0, 0x6C63, 0xDF4B,      0, 0xDF4C, 0x4436,      0,      0,
  0xDF4D,      0, 0x315B,      0,      0, 0xDF4E,      0,      0,
  0xDF4F, 0xDF50,      0,      0,      0, 0xDF51,      0,      0,
@@ -5522,7 +5522,7 @@ const unsigned short utf8_to_euc_E8B6[] = {
       0,      0, 0xDF59, 0x422D,      0, 0xDF5A,      0, 0xDF5B,
       0, 0xDF5C, 0x6C67, 0xDF5D, 0xDF6F,      0, 0x6C66,      0,
 };
-const unsigned short utf8_to_euc_E8B7[] = {
+static const unsigned short utf8_to_euc_E8B7[] = {
  0xDF5E,      0, 0x6C65,      0,      0, 0xDF5F, 0xDF60, 0xDF61,
  0xDF62,      0, 0xDF63, 0x6C6D, 0x6C6B,      0, 0xDF64, 0x6C68,
       0, 0xDF65,      0,      0, 0xDF66, 0xDF67, 0x6C6A, 0xDF68,
@@ -5532,7 +5532,7 @@ const unsigned short utf8_to_euc_E8B7[] = {
  0xDF6E, 0xDF70, 0xDF71, 0x4437, 0xDF72, 0x4129,      0,      0,
       0,      0,      0,      0, 0x6C72, 0xDF73,      0, 0x6C75,
 };
-const unsigned short utf8_to_euc_E8B8[] = {
+static const unsigned short utf8_to_euc_E8B8[] = {
       0, 0xDF74,      0,      0, 0xDF75, 0xDF76, 0xDF77,      0,
  0x6C73, 0x6C74, 0x4D59, 0xDF78,      0,      0,      0, 0x4627,
  0x6C78, 0xDF79,      0,      0, 0xDF7A,      0, 0xDF7B,      0,
@@ -5542,7 +5542,7 @@ const unsigned short utf8_to_euc_E8B8[] = {
  0x6C7C, 0xE024,      0, 0xE025, 0x6C7D, 0x6C7B, 0xE026, 0xE027,
  0xE028, 0xE029,      0,      0,      0, 0xE02A,      0,      0,
 };
-const unsigned short utf8_to_euc_E8B9[] = {
+static const unsigned short utf8_to_euc_E8B9[] = {
  0xE02B, 0xE02C, 0x6C7A,      0, 0x447D,      0,      0, 0x6D21,
  0x6D25, 0x6D22, 0x6C7E, 0xE02D, 0x6D23, 0xE02E, 0xE02F, 0xE030,
  0x6D24,      0,      0,      0, 0xE031, 0x6D2B,      0,      0,
@@ -5552,7 +5552,7 @@ const unsigned short utf8_to_euc_E8B9[] = {
  0xE03C, 0xE03D, 0x6D2D,      0, 0x3D33,      0, 0x6D2C,      0,
       0, 0xE03E, 0xE03F, 0xE040, 0x6D2E,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E8BA[] = {
+static const unsigned short utf8_to_euc_E8BA[] = {
       0, 0x6D2F, 0xE041, 0xE042, 0x6D32, 0x6D31,      0, 0x6D30,
       0, 0xE043, 0x6D34, 0x6D33,      0, 0x4C76,      0,      0,
  0xE044, 0x6D36, 0xE045, 0x6D35, 0x6D37, 0xE046,      0,      0,
@@ -5562,7 +5562,7 @@ const unsigned short utf8_to_euc_E8BA[] = {
  0x6D3C, 0x6D3E,      0, 0xE050,      0, 0xE051,      0,      0,
       0,      0, 0xE052, 0xE053,      0,      0, 0x6D3F,      0,
 };
-const unsigned short utf8_to_euc_E8BB[] = {
+static const unsigned short utf8_to_euc_E8BB[] = {
  0xE054, 0xE055,      0, 0xE056, 0xE057, 0x6D40, 0x6D3D, 0xE058,
  0x6D41,      0, 0x3C56, 0x6D42, 0x3530, 0x3733,      0, 0xE059,
       0, 0xE05A, 0x382E,      0, 0xE05B,      0,      0,      0,
@@ -5572,7 +5572,7 @@ const unsigned short utf8_to_euc_E8BB[] = {
  0xE05F, 0xE060,      0,      0,      0,      0,      0, 0xE061,
  0x3C34, 0xE062, 0xE063, 0x6D46, 0x6D45, 0x375A, 0x6D48,      0,
 };
-const unsigned short utf8_to_euc_E8BC[] = {
+static const unsigned short utf8_to_euc_E8BC[] = {
  0xE065,      0, 0xE066, 0x3353,      0, 0x6D4A,      0, 0xE067,
  0xE068, 0x3A5C, 0x6D49,      0, 0x6D52,      0,      0, 0xE069,
  0xE06A,      0, 0x6D4C, 0x6D4E, 0x4A65, 0x6D4B, 0xE06B, 0xE06C,
@@ -5582,7 +5582,7 @@ const unsigned short utf8_to_euc_E8BC[] = {
       0,      0,      0, 0x6D54, 0xE078, 0xE079, 0xE07A, 0xE07B,
  0x4D22, 0x6D56, 0xE07C, 0x6D55,      0,      0, 0x6D59, 0x4D41,
 };
-const unsigned short utf8_to_euc_E8BD[] = {
+static const unsigned short utf8_to_euc_E8BD[] = {
  0xE07D, 0xE07E, 0x6D58, 0xE121, 0x336D, 0x6D57, 0x6D5C, 0xE122,
       0, 0x6D5B,      0,      0, 0x6D5A, 0x4532, 0x6D5D, 0xE123,
       0, 0xE124, 0xE125, 0xE126, 0xE127, 0xE128,      0, 0x6D5E,
@@ -5592,7 +5592,7 @@ const unsigned short utf8_to_euc_E8BD[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E8BE[] = {
+static const unsigned short utf8_to_euc_E8BE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5602,7 +5602,7 @@ const unsigned short utf8_to_euc_E8BE[] = {
  0x4324, 0x3F2B, 0x4740,      0,      0, 0xE133, 0xE134, 0x6D68,
  0xE135,      0, 0x4A55, 0x4454, 0x397E,      0, 0xE136, 0x4329,
 };
-const unsigned short utf8_to_euc_E8BF[] = {
+static const unsigned short utf8_to_euc_E8BF[] = {
  0xE137, 0xE138, 0x312A,      0, 0x4B78, 0x3F57, 0xE139,      0,
       0,      0, 0xE13A, 0xE13B,      0, 0xE13C, 0x375E,      0,
  0xE13D, 0x3661, 0xE13E, 0xE13F, 0x4A56, 0xE140,      0,      0,
@@ -5612,7 +5612,7 @@ const unsigned short utf8_to_euc_E8BF[] = {
  0x3D52, 0xE146,      0,      0, 0x6D6F, 0xE147, 0xE148, 0x4C42,
  0x6D7E, 0x6D71, 0x6D72, 0xE149,      0, 0x4449, 0xE14A,      0,
 };
-const unsigned short utf8_to_euc_E980[] = {
+static const unsigned short utf8_to_euc_E980[] = {
  0x4260, 0x4177, 0xE14B, 0x4628, 0xE14C, 0x6D70, 0x3555,      0,
  0xE14D,      0,      0, 0x6D79, 0xE14E, 0x6D76, 0x6E25, 0x4629,
  0x4360, 0x6D73,      0, 0x447E, 0x4553, 0x6D74, 0x6D78, 0x3F60,
@@ -5622,7 +5622,7 @@ const unsigned short utf8_to_euc_E980[] = {
       0, 0x3D35, 0x3F4A, 0xE157, 0xE158, 0x6D7C, 0x6D7B, 0xE159,
  0x306F, 0x6D7D,      0,      0, 0x492F,      0, 0x6E27, 0xE15A,
 };
-const unsigned short utf8_to_euc_E981[] = {
+static const unsigned short utf8_to_euc_E981[] = {
       0, 0x465B, 0x3F6B, 0xE15B, 0xE15C, 0x4359,      0, 0x3678,
       0, 0x6E26, 0x4D37, 0x313F, 0xE15D, 0x4A57, 0x3261, 0x6E21,
  0x6E22, 0x6E23, 0x6E24, 0x463B, 0x4323, 0x3063, 0x6E28,      0,
@@ -5632,7 +5632,7 @@ const unsigned short utf8_to_euc_E981[] = {
  0xE164,      0, 0x6E2F,      0, 0xE165, 0x3D65, 0x6E2D, 0x412B,
  0x412A, 0xE166, 0x3064,      0, 0x4E4B, 0x6E31,      0, 0x4872,
 };
-const unsigned short utf8_to_euc_E982[] = {
+static const unsigned short utf8_to_euc_E982[] = {
  0x6E33, 0x6E32, 0x6E30, 0x6364, 0x3454, 0xE167,      0, 0x6D6E,
  0xE168, 0x6E35, 0x6E34, 0xE169, 0xE16A,      0, 0xE16B, 0x6E36,
  0xE16C, 0x4D38,      0,      0,      0, 0xE16D,      0, 0xE16E,
@@ -5642,7 +5642,7 @@ const unsigned short utf8_to_euc_E982[] = {
  0xE176, 0x6E39, 0xE177, 0xE178, 0xE179, 0x6E3A, 0xE17A,      0,
  0x4521,      0,      0,      0,      0, 0xE17B, 0xE17D,      0,
 };
-const unsigned short utf8_to_euc_E983[] = {
+static const unsigned short utf8_to_euc_E983[] = {
       0, 0x306A,      0, 0xE17E, 0xE221, 0xE222,      0, 0xE223,
  0xE224,      0, 0x3959,      0, 0xE17C,      0, 0x4F3A,      0,
       0,      0, 0xE22D,      0,      0, 0xE225,      0, 0xE226,
@@ -5652,7 +5652,7 @@ const unsigned short utf8_to_euc_E983[] = {
  0xE231,      0,      0,      0, 0xE232, 0x4D39, 0xE22E, 0x363F,
       0,      0,      0,      0,      0, 0x4554, 0xE233, 0xE234,
 };
-const unsigned short utf8_to_euc_E984[] = {
+static const unsigned short utf8_to_euc_E984[] = {
  0xE235,      0, 0x6E3F,      0, 0xE236, 0xE237, 0xE238,      0,
  0xE239,      0,      0,      0,      0, 0xE23A,      0,      0,
  0xE23B,      0, 0x6E40,      0, 0xE23C, 0xF46E, 0xE23D, 0xE23E,
@@ -5662,7 +5662,7 @@ const unsigned short utf8_to_euc_E984[] = {
  0x6E43, 0xE24B, 0x6E42,      0, 0xE24C,      0, 0xE24D, 0xE24E,
       0, 0xE24F, 0xE250,      0, 0xE251, 0xE252,      0,      0,
 };
-const unsigned short utf8_to_euc_E985[] = {
+static const unsigned short utf8_to_euc_E985[] = {
       0,      0,      0, 0xE253,      0,      0,      0, 0xE254,
  0xE255, 0x4653, 0x6E44, 0x3D36, 0x3C60, 0x475B, 0x4371, 0xE256,
       0,      0, 0x3C72, 0xE257, 0x3F6C,      0, 0x6E45, 0xE258,
@@ -5672,7 +5672,7 @@ const unsigned short utf8_to_euc_E985[] = {
       0,      0, 0x6E4B, 0x6E4A, 0xE260, 0x395A,      0, 0x3973,
  0x3B40, 0xE261, 0xE262, 0xE263,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E986[] = {
+static const unsigned short utf8_to_euc_E986[] = {
       0, 0xE264, 0x6E4E, 0xE265,      0, 0xE266, 0xE267, 0x3D66,
       0, 0x6E4D, 0xE268, 0x6E4C,      0, 0x4269, 0xE269,      0,
  0x386F, 0xE26A, 0x4043, 0xE26B, 0xE26C, 0xE26D,      0, 0x4830,
@@ -5682,7 +5682,7 @@ const unsigned short utf8_to_euc_E986[] = {
  0xE276, 0xE277, 0xE278, 0xE279, 0x6E54, 0x6E53, 0xE27A,      0,
  0x3E7A,      0, 0x6E55, 0xE27B, 0xE27C, 0xE27D,      0, 0xE27E,
 };
-const unsigned short utf8_to_euc_E987[] = {
+static const unsigned short utf8_to_euc_E987[] = {
  0x6E56, 0x6E57, 0xE321, 0xE322,      0, 0xE323, 0x4850, 0x3A53,
  0x3C61, 0x6E58,      0, 0x6E59, 0x4E24, 0x3D45, 0x4C6E, 0x4E4C,
  0x6E5A, 0x3662,      0, 0xE324, 0xE325,      0, 0x6E5B, 0xE326,
@@ -5692,7 +5692,7 @@ const unsigned short utf8_to_euc_E987[] = {
  0xE332, 0xE333,      0,      0,      0, 0x6E60, 0x6E61, 0xE334,
       0, 0xE335,      0, 0xE336, 0x6E5F, 0xE337,      0, 0x6E63,
 };
-const unsigned short utf8_to_euc_E988[] = {
+static const unsigned short utf8_to_euc_E988[] = {
  0xE338, 0xE339,      0,      0, 0xE33A, 0xE33B, 0xE33C, 0xE33D,
       0, 0xE33E, 0xE33F,      0, 0xE340, 0x465F, 0x3343,      0,
  0xE341, 0x6E67, 0xE342, 0xE343, 0x6E64, 0x6E66, 0xE344,      0,
@@ -5702,7 +5702,7 @@ const unsigned short utf8_to_euc_E988[] = {
  0xE34F,      0,      0, 0xE350, 0x4E6B, 0xE351, 0xE352, 0x385A,
  0xE353, 0xE354, 0xE355,      0, 0xE356,      0, 0xE357, 0x6E6F,
 };
-const unsigned short utf8_to_euc_E989[] = {
+static const unsigned short utf8_to_euc_E989[] = {
  0xE358,      0, 0xE359, 0xE35A, 0x4534, 0x6E6A, 0xE35B, 0xE35C,
  0x6E6D, 0x6E6B, 0xE35D, 0x6E70,      0, 0xE35E, 0xE35F, 0xE360,
  0x6E71, 0xE361,      0,      0,      0,      0,      0, 0x6E69,
@@ -5712,7 +5712,7 @@ const unsigned short utf8_to_euc_E989[] = {
  0xE36E, 0x395B,      0,      0,      0, 0xE36F, 0xE370, 0xE371,
  0xE372, 0xE373,      0, 0xE374, 0xE375, 0xE376, 0x4B48, 0xE377,
 };
-const unsigned short utf8_to_euc_E98A[] = {
+static const unsigned short utf8_to_euc_E98A[] = {
  0x3664,      0,      0, 0x3D46,      0, 0x463C,      0,      0,
  0xE378, 0xE379, 0xE37A,      0,      0, 0xE37B, 0xE37C,      0,
       0, 0x412D, 0xE37D, 0x6E74,      0, 0x6E6E, 0x6E73, 0xE37E,
@@ -5722,7 +5722,7 @@ const unsigned short utf8_to_euc_E98A[] = {
       0,      0, 0xE42A,      0,      0,      0, 0xE42B, 0x6E79,
  0xE42C, 0x6E78, 0xE42D, 0xE42E, 0xE42F, 0xE430,      0, 0xE431,
 };
-const unsigned short utf8_to_euc_E98B[] = {
+static const unsigned short utf8_to_euc_E98B[] = {
  0xE432, 0xE433, 0xE434, 0xE435,      0, 0xE436, 0xE437, 0xE438,
  0xE439,      0,      0, 0xE43A, 0xE43B, 0xE43C, 0xE43D, 0x6E77,
  0xE43E,      0, 0x4B2F, 0xE43F,      0, 0xE440,      0, 0xE441,
@@ -5732,7 +5732,7 @@ const unsigned short utf8_to_euc_E98B[] = {
  0xE44F,      0, 0x4946, 0x4372,      0,      0,      0,      0,
  0x3578, 0xE450, 0x6E7C, 0xE451, 0x395D,      0,      0, 0xE452,
 };
-const unsigned short utf8_to_euc_E98C[] = {
+static const unsigned short utf8_to_euc_E98C[] = {
  0xE453,      0, 0xE454,      0,      0,      0, 0x3B2C,      0,
  0xE455,      0,      0,      0,      0, 0xE456,      0, 0x6E7B,
  0x3F6D, 0xE457,      0,      0, 0xE458, 0xE459,      0,      0,
@@ -5742,7 +5742,7 @@ const unsigned short utf8_to_euc_E98C[] = {
       0,      0, 0x4F3F, 0xE464, 0xE465, 0x6F26, 0xE466, 0xE467,
       0,      0, 0x6F25, 0x6F27,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E98D[] = {
+static const unsigned short utf8_to_euc_E98D[] = {
       0,      0,      0,      0, 0x6E7D,      0,      0, 0xE468,
  0xE469, 0xE46A,      0, 0x4669,      0, 0x4555,      0,      0,
  0xE46B, 0xE46C, 0xE46D,      0, 0x4457, 0xE46E, 0x6F2C, 0xE46F,
@@ -5752,7 +5752,7 @@ const unsigned short utf8_to_euc_E98D[] = {
  0xE47A, 0xE47B,      0, 0xE47C, 0xE47D, 0x3830, 0xE47E,      0,
       0,      0, 0xE521,      0, 0x6F2A, 0xE522, 0x3E61, 0xE523,
 };
-const unsigned short utf8_to_euc_E98E[] = {
+static const unsigned short utf8_to_euc_E98E[] = {
  0xE524, 0xE525, 0xE526,      0,      0,      0,      0,      0,
  0xE527,      0, 0xE528, 0xE529, 0x3379, 0xE52A,      0, 0xE52B,
       0,      0, 0xE52C,      0, 0x6F30, 0xE52D, 0x3A3F, 0x4179,
@@ -5762,7 +5762,7 @@ const unsigned short utf8_to_euc_E98E[] = {
  0x6F2D,      0,      0,      0, 0xE537, 0xE538, 0xE539,      0,
       0, 0x6F31, 0xE53A,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E98F[] = {
+static const unsigned short utf8_to_euc_E98F[] = {
       0, 0xE53C,      0, 0x6F37, 0xE53D, 0xE53E, 0xE53F, 0xE540,
  0x6F3A, 0xE541, 0xE542, 0xE543, 0xE544, 0xE545,      0,      0,
  0x6F39, 0x452D,      0, 0xE546,      0,      0, 0x6F32, 0x6F33,
@@ -5772,7 +5772,7 @@ const unsigned short utf8_to_euc_E98F[] = {
       0,      0,      0,      0,      0,      0,      0, 0xE54F,
  0xE550, 0xE54E, 0xE551, 0xE552,      0, 0xE553,      0,      0,
 };
-const unsigned short utf8_to_euc_E990[] = {
+static const unsigned short utf8_to_euc_E990[] = {
       0, 0xE554, 0xE555, 0x6F3F, 0xE556,      0,      0, 0x6F40,
  0xE557, 0xE558,      0,      0,      0, 0xE559, 0xE55A, 0xE55B,
  0x6F41,      0,      0, 0x6F3E, 0x6F3D, 0xE55C, 0xE55D, 0xE55E,
@@ -5782,7 +5782,7 @@ const unsigned short utf8_to_euc_E990[] = {
       0, 0xE562, 0xE563, 0xE564, 0xE565, 0x6F44, 0x6F42,      0,
  0x4278,      0, 0x6F46, 0xE566,      0, 0xE568,      0, 0xE567,
 };
-const unsigned short utf8_to_euc_E991[] = {
+static const unsigned short utf8_to_euc_E991[] = {
       0, 0x6F47,      0, 0xE569, 0x6F49, 0xE56A,      0,      0,
  0xE56B,      0, 0xE56C,      0, 0xE56D,      0,      0,      0,
       0, 0x3455, 0x6F48, 0x4C7A,      0, 0xE56E,      0,      0,
@@ -5792,7 +5792,7 @@ const unsigned short utf8_to_euc_E991[] = {
  0x6F50, 0xE579, 0xE57A,      0,      0, 0x6F51,      0, 0x6F52,
       0,      0,      0,      0, 0x6F55, 0x6F53, 0x6F56, 0x6F58,
 };
-const unsigned short utf8_to_euc_E992[] = {
+static const unsigned short utf8_to_euc_E992[] = {
       0, 0x6F57,      0, 0xE57C, 0xE57B,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5802,7 +5802,7 @@ const unsigned short utf8_to_euc_E992[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E995[] = {
+static const unsigned short utf8_to_euc_E995[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5812,7 +5812,7 @@ const unsigned short utf8_to_euc_E995[] = {
       0,      0,      0,      0,      0,      0,      0, 0x4439,
  0xE57D, 0xE57E,      0,      0,      0,      0, 0xE621,      0,
 };
-const unsigned short utf8_to_euc_E996[] = {
+static const unsigned short utf8_to_euc_E996[] = {
  0x4C67,      0, 0x6F59, 0x412E, 0xE622,      0,      0, 0x6F5A,
  0xE623, 0x4A44, 0x6F5B, 0x332B, 0xE624, 0xE625, 0xE626, 0x313C,
       0, 0x3457, 0xF471, 0x3456, 0x6F5C,      0, 0x6F5D,      0,
@@ -5822,7 +5822,7 @@ const unsigned short utf8_to_euc_E996[] = {
       0,      0, 0x315C,      0, 0xE62F,      0, 0xE630,      0,
       0, 0x6F66, 0xE631, 0x6F65, 0x6F64, 0xE632, 0x6F67, 0xE633,
 };
-const unsigned short utf8_to_euc_E997[] = {
+static const unsigned short utf8_to_euc_E997[] = {
       0,      0,      0, 0x6F6A,      0,      0, 0xE634, 0x3047,
  0xE635, 0xE636, 0x6F68, 0xE637, 0x6F6C, 0x6F6B,      0,      0,
  0xE638, 0xE639, 0xE63A, 0xE63B, 0x6F6E, 0x6F6D, 0x6F6F,      0,
@@ -5832,7 +5832,7 @@ const unsigned short utf8_to_euc_E997[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E998[] = {
+static const unsigned short utf8_to_euc_E998[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5842,7 +5842,7 @@ const unsigned short utf8_to_euc_E998[] = {
       0, 0xE64B, 0x4B49, 0xE64C,      0,      0,      0, 0xE64D,
  0xE64E, 0xE64F, 0xE650, 0x414B, 0xE651, 0xE652,      0, 0x3024,
 };
-const unsigned short utf8_to_euc_E999[] = {
+static const unsigned short utf8_to_euc_E999[] = {
  0x424B, 0xE653, 0x6F78,      0, 0x496D,      0,      0,      0,
       0,      0,      0, 0x6F7B, 0x6F79, 0x395F,      0, 0x6F7A,
  0x3842,      0, 0xE654,      0, 0xE655,      0, 0xE656, 0xE657,
@@ -5852,7 +5852,7 @@ const unsigned short utf8_to_euc_E999[] = {
  0x3122,      0, 0x7024, 0x4444, 0xE65B, 0x4E4D, 0x462B, 0x6F7C,
  0x4E26,      0, 0x3831, 0xE65C, 0xE65D, 0x4D5B, 0xE65E, 0xE65F,
 };
-const unsigned short utf8_to_euc_E99A[] = {
+static const unsigned short utf8_to_euc_E99A[] = {
       0, 0xE660, 0xE661, 0xE662, 0xE663, 0x3679, 0x4E34,      0,
  0x3728, 0xE664, 0x4262, 0x6721,      0, 0x7026, 0x332C, 0x3F6F,
       0, 0xE665,      0,      0, 0x3356, 0x7028, 0xE666, 0x7029,
@@ -5862,7 +5862,7 @@ const unsigned short utf8_to_euc_E99A[] = {
  0x702E, 0x702C, 0x702D, 0xE670, 0x702F,      0, 0x7030, 0x4E6C,
  0x7031, 0x7032, 0xE671, 0x4049, 0x483B,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E99B[] = {
+static const unsigned short utf8_to_euc_E99B[] = {
  0x3F7D, 0x3467,      0,      0, 0x4D3A, 0x326D, 0x3D38, 0x385B,
       0, 0x7035, 0xE672, 0x7034, 0x3B73, 0x7036, 0x7033,      0,
       0, 0x3B28, 0xE673,      0,      0, 0x703A, 0x6A2D,      0,
@@ -5872,7 +5872,7 @@ const unsigned short utf8_to_euc_E99B[] = {
  0x4A37, 0xE67C, 0x3140,      0,      0,      0, 0x4E6D, 0x4D6B,
       0, 0x703B, 0xE67D, 0x4545,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E99C[] = {
+static const unsigned short utf8_to_euc_E99C[] = {
  0x3C7B,      0, 0xE67E, 0xE721, 0x703C, 0xE722, 0x703D, 0x3F4C,
  0x703E, 0xE723, 0x4E6E,      0,      0, 0x7039, 0x7040, 0x7042,
       0, 0x7041,      0, 0x703F,      0,      0, 0x7043,      0,
@@ -5882,7 +5882,7 @@ const unsigned short utf8_to_euc_E99C[] = {
  0x7047, 0xE72B, 0x4F2A, 0xE72C,      0,      0,      0,      0,
  0x5B31, 0x7048,      0, 0xF474,      0, 0x7049, 0x704A,      0,
 };
-const unsigned short utf8_to_euc_E99D[] = {
+static const unsigned short utf8_to_euc_E99D[] = {
       0, 0xE72D, 0x704E, 0xE72E, 0x704B,      0, 0x704C,      0,
  0x704D, 0x704F, 0xE72F,      0,      0, 0xF475, 0xE730, 0xE731,
       0, 0xF476, 0x4044,      0,      0, 0xE732, 0x4C77, 0xE733,
@@ -5892,7 +5892,7 @@ const unsigned short utf8_to_euc_E99D[] = {
       0, 0x7057,      0, 0xE73B, 0x3724,      0, 0xE73C, 0xE73D,
  0xE73E, 0x7058, 0x705C, 0xE73F, 0x705A, 0xE740,      0, 0xE741,
 };
-const unsigned short utf8_to_euc_E99E[] = {
+static const unsigned short utf8_to_euc_E99E[] = {
  0xE742, 0x705B,      0,      0, 0x3373, 0x7059, 0x705D,      0,
       0, 0xE743,      0, 0x705E,      0, 0x3048,      0, 0x705F,
  0x7060,      0,      0,      0,      0, 0xE744, 0xE745, 0xE746,
@@ -5902,7 +5902,7 @@ const unsigned short utf8_to_euc_E99E[] = {
       0, 0xE74E, 0xE74F, 0x7065, 0x7066, 0xE750, 0xE751,      0,
  0xE752, 0xE753, 0xE754,      0, 0xE755,      0, 0xE756, 0xE757,
 };
-const unsigned short utf8_to_euc_E99F[] = {
+static const unsigned short utf8_to_euc_E99F[] = {
       0, 0xE758,      0, 0x7067, 0xE759, 0xE75A, 0x7068, 0xE75B,
  0x7069, 0xE75C, 0xE75D, 0x706A, 0xE75E, 0xE75F, 0xE760,      0,
  0xE761, 0xE762,      0, 0x345A, 0xE763,      0,      0, 0xE764,
@@ -5912,7 +5912,7 @@ const unsigned short utf8_to_euc_E99F[] = {
       0, 0xE76E, 0x706E, 0x323B, 0xE76F, 0x7071, 0x7070, 0xE770,
  0xE771,      0, 0xE772, 0x3124,      0,      0,      0, 0x3641,
 };
-const unsigned short utf8_to_euc_E9A0[] = {
+static const unsigned short utf8_to_euc_E9A0[] = {
       0, 0x4A47, 0x443A, 0x3A22,      0, 0x3960, 0x3D67, 0xE773,
  0x3F5C,      0, 0xE774,      0, 0x7073, 0xE776, 0xE777, 0x7072,
  0x4D42, 0x3468, 0x4852, 0x465C, 0xE778,      0, 0xE779, 0x3F7C,
@@ -5922,7 +5922,7 @@ const unsigned short utf8_to_euc_E9A0[] = {
  0xE824,      0, 0xE825, 0xE826, 0x3150, 0xE827,      0, 0x7077,
  0x7074,      0,      0, 0x4951, 0x4D6A, 0x7078, 0xE829,      0,
 };
-const unsigned short utf8_to_euc_E9A1[] = {
+static const unsigned short utf8_to_euc_E9A1[] = {
       0,      0,      0,      0, 0xE82A,      0, 0x7079, 0xE82B,
       0,      0, 0xE82C, 0x707B, 0x426A, 0x335B, 0x335C, 0x707A,
       0, 0xE82D, 0xE82E, 0xE82F, 0x3469, 0x3832, 0xE830, 0xE831,
@@ -5932,7 +5932,7 @@ const unsigned short utf8_to_euc_E9A1[] = {
  0x707E, 0x7121,      0, 0x7123, 0x7122,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E9A2[] = {
+static const unsigned short utf8_to_euc_E9A2[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5942,7 +5942,7 @@ const unsigned short utf8_to_euc_E9A2[] = {
  0xE83D, 0x7126,      0,      0, 0xE83E,      0, 0x7127, 0xE83F,
  0xE840,      0, 0xE841, 0xE842,      0,      0,      0, 0xE843,
 };
-const unsigned short utf8_to_euc_E9A3[] = {
+static const unsigned short utf8_to_euc_E9A3[] = {
       0,      0, 0xE844, 0x7129, 0x7128, 0xE845, 0x712A,      0,
  0xE846,      0,      0,      0, 0xE847,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -5952,7 +5952,7 @@ const unsigned short utf8_to_euc_E9A3[] = {
       0,      0, 0x307B, 0xE84E, 0x303B,      0, 0xE84F,      0,
       0,      0,      0,      0, 0x3B74, 0x4B30, 0x3E7E,      0,
 };
-const unsigned short utf8_to_euc_E9A4[] = {
+static const unsigned short utf8_to_euc_E9A4[] = {
       0,      0, 0xE850, 0x712D,      0, 0x4C5F,      0, 0xE851,
  0xE852, 0x712E, 0x4D5C,      0, 0x3142,      0,      0,      0,
  0x3B41, 0xE853, 0x712F, 0x326E, 0x7130, 0xE854, 0xE855, 0xE856,
@@ -5962,7 +5962,7 @@ const unsigned short utf8_to_euc_E9A4[] = {
       0, 0xE85F, 0xE860, 0xE861, 0xE862, 0xE863,      0,      0,
       0, 0xE864, 0xE865, 0xE866, 0xE867, 0x7139, 0x713A,      0,
 };
-const unsigned short utf8_to_euc_E9A5[] = {
+static const unsigned short utf8_to_euc_E9A5[] = {
  0xE868, 0xE869, 0x713B,      0,      0, 0x713D, 0xE86A, 0xE86B,
  0xE86C, 0x713C,      0, 0x713F, 0x7142, 0xE86D, 0xE86E,      0,
  0x713E, 0x7140, 0x7141,      0, 0xE86F, 0x7143,      0, 0x3642,
@@ -5972,7 +5972,7 @@ const unsigned short utf8_to_euc_E9A5[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E9A6[] = {
+static const unsigned short utf8_to_euc_E9A6[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0x3C73, 0x7144,
@@ -5982,7 +5982,7 @@ const unsigned short utf8_to_euc_E9A6[] = {
  0xE87B, 0xE87C, 0xE87D, 0x435A, 0x466B, 0xE87E,      0,      0,
       0, 0xE921, 0xE922,      0, 0x7149, 0xE923,      0, 0xE924,
 };
-const unsigned short utf8_to_euc_E9A7[] = {
+static const unsigned short utf8_to_euc_E9A7[] = {
       0, 0x477D,      0, 0xE925, 0x424C, 0x3158, 0x366E,      0,
  0x366F, 0xE926,      0,      0,      0,      0,      0,      0,
  0x4373, 0x714E, 0x3670, 0xE927, 0xE928, 0x326F,      0,      0,
@@ -5992,7 +5992,7 @@ const unsigned short utf8_to_euc_E9A7[] = {
  0xE931, 0x7151, 0x7152,      0, 0xE932, 0xE933,      0,      0,
  0x7154, 0xE934,      0, 0x7153,      0, 0xE935, 0xE936, 0x3D59,
 };
-const unsigned short utf8_to_euc_E9A8[] = {
+static const unsigned short utf8_to_euc_E9A8[] = {
       0, 0x7155, 0xE937, 0xE938, 0xE939, 0x7157,      0,      0,
       0,      0,      0, 0xE93A, 0xE93B,      0, 0x3533, 0x7156,
  0xE93C, 0xE93D, 0x417B, 0x3833,      0,      0, 0xE93E,      0,
@@ -6002,7 +6002,7 @@ const unsigned short utf8_to_euc_E9A8[] = {
  0x462D,      0,      0, 0xE947,      0, 0xE948, 0xE949, 0x715B,
  0xE94A,      0,      0,      0,      0,      0, 0x7160,      0,
 };
-const unsigned short utf8_to_euc_E9A9[] = {
+static const unsigned short utf8_to_euc_E9A9[] = {
  0x715E, 0xE94C, 0x715D, 0x715F, 0xE94D, 0x715C,      0, 0xE94B,
       0,      0, 0xE94E, 0xE94F, 0xE950, 0x7162, 0xE951,      0,
       0, 0xE952,      0,      0, 0xE953, 0x7161, 0xE954, 0x7164,
@@ -6012,7 +6012,7 @@ const unsigned short utf8_to_euc_E9A9[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E9AA[] = {
+static const unsigned short utf8_to_euc_E9AA[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -6022,7 +6022,7 @@ const unsigned short utf8_to_euc_E9AA[] = {
  0x716D,      0, 0xE95A,      0, 0xE95B, 0xE95C, 0xE95D,      0,
  0x333C, 0xE95E,      0, 0xE95F, 0x716E,      0, 0xE960, 0xE961,
 };
-const unsigned short utf8_to_euc_E9AB[] = {
+static const unsigned short utf8_to_euc_E9AB[] = {
  0x716F, 0xE962,      0, 0xE963, 0x3F71,      0, 0xE964,      0,
  0xE965,      0,      0,      0,      0,      0, 0xE966, 0x7170,
  0xE967, 0x7171, 0xE968, 0x7172, 0x7173, 0xE969, 0xE96A, 0xE96B,
@@ -6032,7 +6032,7 @@ const unsigned short utf8_to_euc_E9AB[] = {
       0, 0x717D, 0xE974, 0xE975, 0x717C, 0xE976,      0, 0x717E,
       0, 0xE977, 0xE978, 0x7221,      0, 0xE979,      0, 0xE97A,
 };
-const unsigned short utf8_to_euc_E9AC[] = {
+static const unsigned short utf8_to_euc_E9AC[] = {
  0xE97B, 0xE97C, 0xE97D, 0xE97E, 0xEA21, 0xEA22, 0x7222,      0,
  0xEA23, 0xEA24,      0, 0xEA25, 0xEA26, 0xEA27, 0xEA28,      0,
  0xEA29,      0, 0xEA2A,      0,      0,      0, 0xEA2B,      0,
@@ -6042,7 +6042,7 @@ const unsigned short utf8_to_euc_E9AC[] = {
       0, 0x5D35, 0x722F, 0xEA33, 0xEA34, 0xEA35,      0, 0xEA36,
       0, 0xEA37, 0xEA38, 0x6478, 0x3534, 0xEA39,      0,      0,
 };
-const unsigned short utf8_to_euc_E9AD[] = {
+static const unsigned short utf8_to_euc_E9AD[] = {
       0, 0x3321, 0x3A32, 0x7231, 0x7230, 0x4C25,      0,      0,
  0xEA3A,      0,      0, 0xEA3B, 0xEA3C, 0x7233, 0x7234, 0x7232,
       0, 0x7235,      0,      0, 0x4B62, 0xEA3D, 0xEA3E, 0xEA3F,
@@ -6052,7 +6052,7 @@ const unsigned short utf8_to_euc_E9AD[] = {
       0,      0, 0xF47C, 0xEA4C, 0x7237, 0xEA4D,      0, 0xEA4E,
  0xEA4F, 0xEA50,      0,      0,      0,      0,      0, 0xEA51,
 };
-const unsigned short utf8_to_euc_E9AE[] = {
+static const unsigned short utf8_to_euc_E9AE[] = {
  0xEA52,      0,      0, 0x7239, 0xEA53, 0xEA54, 0xEA55, 0xEA56,
       0, 0xEA57, 0xEA58, 0xEA59,      0, 0xEA5A, 0x303E, 0xEA5B,
  0xEA5C, 0x723A, 0x4A2B, 0x7238, 0xEA5D,      0, 0x723B, 0x723C,
@@ -6062,7 +6062,7 @@ const unsigned short utf8_to_euc_E9AE[] = {
  0xEA65, 0xEA66, 0xEA67,      0, 0x7240,      0,      0, 0xEA68,
  0xEA69, 0x7243,      0, 0xEA6A, 0xEA6B,      0, 0xEA6C, 0xEA6D,
 };
-const unsigned short utf8_to_euc_E9AF[] = {
+static const unsigned short utf8_to_euc_E9AF[] = {
  0x7241, 0xEA6E,      0,      0,      0,      0, 0x7244, 0xEA6F,
  0xEA70, 0x3871, 0x7242,      0,      0,      0, 0xEA71, 0x7245,
  0xEA72, 0x7246, 0x7247,      0, 0x724B,      0, 0x3B2A, 0xEA73,
@@ -6072,7 +6072,7 @@ const unsigned short utf8_to_euc_E9AF[] = {
  0x7250, 0x724F, 0x724E, 0xEA7C,      0, 0x3033,      0, 0xEA7D,
  0xEA7E, 0xEB21, 0xEB22,      0,      0, 0xEB23,      0, 0xEB24,
 };
-const unsigned short utf8_to_euc_E9B0[] = {
+static const unsigned short utf8_to_euc_E9B0[] = {
  0xEB25,      0, 0xEB26,      0, 0x725A,      0, 0x7256,      0,
  0x7257, 0x7253, 0x7259, 0xEB27, 0x7255, 0x3362,      0, 0xEB28,
  0x4F4C, 0xEB29, 0x7258, 0x7254, 0x7252, 0x7251, 0xEB2A,      0,
@@ -6082,7 +6082,7 @@ const unsigned short utf8_to_euc_E9B0[] = {
  0x7260, 0xEB37, 0x7262,      0,      0, 0xEB38, 0xEB39, 0xEB3A,
       0, 0x336F, 0x724D, 0x3137,      0, 0xEB3B, 0x7264,      0,
 };
-const unsigned short utf8_to_euc_E9B1[] = {
+static const unsigned short utf8_to_euc_E9B1[] = {
       0, 0xEB3C,      0, 0xEB3D, 0xEB3E, 0xEB3F, 0x7263, 0x7261,
  0x432D, 0xEB40, 0xEB41,      0,      0,      0, 0xEB42, 0xEB43,
  0xEB44,      0, 0x4B70, 0xEB45, 0xEB46,      0, 0xEB47, 0x4E5A,
@@ -6092,7 +6092,7 @@ const unsigned short utf8_to_euc_E9B1[] = {
  0xEB54,      0, 0xEB55,      0,      0, 0xEB56, 0x7268, 0xEB57,
  0x7269,      0,      0, 0xEB58,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E9B3[] = {
+static const unsigned short utf8_to_euc_E9B3[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -6102,7 +6102,7 @@ const unsigned short utf8_to_euc_E9B3[] = {
  0x726C,      0, 0xEB5A, 0x4B31, 0x4C44,      0, 0x4650, 0xEB5B,
       0, 0xEB5C,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E9B4[] = {
+static const unsigned short utf8_to_euc_E9B4[] = {
       0,      0, 0xEB5E, 0x7270,      0,      0, 0x7271, 0x463E,
  0x726E, 0x726D,      0, 0xEB5D,      0,      0, 0x322A,      0,
       0, 0xEB5F, 0x7279,      0,      0, 0x7278,      0, 0xEB60,
@@ -6112,7 +6112,7 @@ const unsigned short utf8_to_euc_E9B4[] = {
  0xEB66,      0, 0xEB67, 0xEB68, 0xEB69,      0,      0,      0,
       0,      0, 0xEB6A, 0x3963, 0xEB6B, 0xEB6D, 0x727C, 0x727B,
 };
-const unsigned short utf8_to_euc_E9B5[] = {
+static const unsigned short utf8_to_euc_E9B5[] = {
       0, 0x727A, 0xEB6E, 0xEB6F, 0x7277, 0xEB6C, 0x727D, 0xEB70,
  0x727E,      0, 0xEB71,      0,      0,      0,      0,      0,
  0x7325, 0x7324,      0, 0xEB72, 0xEB73,      0,      0,      0,
@@ -6122,7 +6122,7 @@ const unsigned short utf8_to_euc_E9B5[] = {
  0xEB7B,      0, 0x7327,      0,      0,      0, 0xEB7C, 0xEB7D,
       0,      0, 0x732C, 0xEB7E, 0xEC21,      0, 0xEC22,      0,
 };
-const unsigned short utf8_to_euc_E9B6[] = {
+static const unsigned short utf8_to_euc_E9B6[] = {
       0,      0,      0, 0xEC23, 0xEC24,      0, 0xEC25, 0x7329,
       0, 0x7328, 0xEC26,      0,      0, 0xEC27, 0xEC28, 0x375C,
       0,      0, 0xEC29, 0xEC2A,      0, 0xEC2B, 0xEC2C, 0xEC2D,
@@ -6132,7 +6132,7 @@ const unsigned short utf8_to_euc_E9B6[] = {
       0, 0xEC33, 0x7330,      0, 0x4461, 0xEC34,      0,      0,
  0x7334, 0xEC35, 0x7335, 0x7333, 0xEC36,      0,      0, 0xEC37,
 };
-const unsigned short utf8_to_euc_E9B7[] = {
+static const unsigned short utf8_to_euc_E9B7[] = {
       0, 0x7332, 0x7338, 0xEC38, 0x7331,      0, 0x7336, 0xEC39,
       0, 0xEC3A, 0xEC3B,      0,      0,      0,      0, 0x7337,
       0,      0,      0, 0x733A, 0xEC3C, 0xEC3D, 0xEC3E, 0xEC3F,
@@ -6142,7 +6142,7 @@ const unsigned short utf8_to_euc_E9B7[] = {
  0xEC49,      0, 0x4F49, 0xEC4A, 0xEC4B,      0,      0,      0,
  0x733B, 0x426B, 0x3A6D,      0,      0, 0x733F, 0xEC4C,      0,
 };
-const unsigned short utf8_to_euc_E9B8[] = {
+static const unsigned short utf8_to_euc_E9B8[] = {
       0,      0, 0xEC4E,      0,      0,      0,      0, 0xEC4F,
       0,      0, 0xEC4D,      0,      0,      0, 0xEC50,      0,
  0xEC51, 0xEC52, 0xEC53,      0,      0, 0xEC54, 0xEC55,      0,
@@ -6152,7 +6152,7 @@ const unsigned short utf8_to_euc_E9B8[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_E9B9[] = {
+static const unsigned short utf8_to_euc_E9B9[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -6162,7 +6162,7 @@ const unsigned short utf8_to_euc_E9B9[] = {
       0,      0,      0,      0,      0, 0x7343,      0,      0,
  0x3834, 0x7344, 0xEC59, 0xEC5A, 0xEC5B, 0x7345,      0, 0x3C2F,
 };
-const unsigned short utf8_to_euc_E9BA[] = {
+static const unsigned short utf8_to_euc_E9BA[] = {
  0xEC5C, 0x7346, 0xEC5D, 0xEC5E, 0xEC5F, 0xEC60,      0, 0xEC61,
  0x7347,      0,      0, 0x7348, 0x7349,      0, 0xEC62, 0xEC63,
       0, 0x734C, 0x734A, 0x4F3C,      0, 0x734B, 0xEC64, 0x4E6F,
@@ -6172,7 +6172,7 @@ const unsigned short utf8_to_euc_E9BA[] = {
  0xEC6D,      0,      0, 0xEC6E, 0xEC6F, 0xEC70,      0,      0,
  0x7350, 0x396D, 0x4C4D, 0x4B63, 0x5677,      0, 0x5D60, 0x4B7B,
 };
-const unsigned short utf8_to_euc_E9BB[] = {
+static const unsigned short utf8_to_euc_E9BB[] = {
       0,      0,      0,      0, 0x322B,      0, 0xEC71,      0,
  0xEC72,      0,      0, 0xEC73, 0x7354, 0x3550, 0x7355, 0x7356,
  0x7357, 0xF47E, 0x3975,      0, 0x7358, 0xEC74,      0,      0,
@@ -6182,7 +6182,7 @@ const unsigned short utf8_to_euc_E9BB[] = {
  0xEC7B, 0xEC7C, 0xEC7D,      0, 0x7360, 0xEC7E, 0x7361, 0x7362,
  0xED21, 0x7363,      0, 0x7364, 0x7365, 0x7366,      0, 0xED22,
 };
-const unsigned short utf8_to_euc_E9BC[] = {
+static const unsigned short utf8_to_euc_E9BC[] = {
       0,      0, 0xED23, 0xED24,      0,      0,      0, 0x7367,
  0x7368, 0xED25,      0,      0,      0,      0, 0x4524, 0xED26,
  0xED27, 0xED28, 0xED29, 0x385D, 0xED2A, 0x736A, 0xED2B, 0xED2C,
@@ -6192,7 +6192,7 @@ const unsigned short utf8_to_euc_E9BC[] = {
       0, 0xED36, 0xED37,      0, 0xED38,      0,      0, 0xED39,
       0, 0xED3A, 0xED3B, 0x4921, 0xED3C, 0xED3D, 0x736D, 0xED3E,
 };
-const unsigned short utf8_to_euc_E9BD[] = {
+static const unsigned short utf8_to_euc_E9BD[] = {
       0, 0xED3F,      0, 0xED40, 0xED41, 0xED42, 0xED43, 0xED44,
       0,      0, 0x736E, 0x6337,      0,      0, 0x6C5A, 0x706D,
       0,      0, 0x736F, 0xED45, 0x7370, 0xED46, 0xED47, 0xED48,
@@ -6202,7 +6202,7 @@ const unsigned short utf8_to_euc_E9BD[] = {
  0xED52, 0xED53, 0x737A, 0xED54,      0, 0xED55, 0x737B, 0x7379,
       0,      0, 0xED56,      0,      0, 0xED57,      0,      0,
 };
-const unsigned short utf8_to_euc_E9BE[] = {
+static const unsigned short utf8_to_euc_E9BE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0x4E36,      0, 0xED58,
  0xED59, 0xED5A, 0xED5B,      0, 0xED5C, 0x737C, 0xED5D, 0xED5E,
@@ -6212,7 +6212,7 @@ const unsigned short utf8_to_euc_E9BE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_EFA4[] = {
+static const unsigned short utf8_to_euc_EFA4[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -6222,7 +6222,7 @@ const unsigned short utf8_to_euc_EFA4[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_EFA7[] = {
+static const unsigned short utf8_to_euc_EFA7[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -6232,7 +6232,7 @@ const unsigned short utf8_to_euc_EFA7[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_EFA8[] = {
+static const unsigned short utf8_to_euc_EFA8[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0xF434, 0xF437,
  0xF438, 0xF43D, 0xF444, 0xF447, 0xF448, 0xF44E, 0xF44F, 0xF453,
@@ -6242,7 +6242,7 @@ const unsigned short utf8_to_euc_EFA8[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_EFBC[] = {
+static const unsigned short utf8_to_euc_EFBC[] = {
       0, 0x212A, 0xF42A, 0x2174, 0x2170, 0x2173, 0x2175, 0xF429,
  0x214A, 0x214B, 0x2176, 0x215C, 0x2124, 0x215D, 0x2125, 0x213F,
  0x2330, 0x2331, 0x2332, 0x2333, 0x2334, 0x2335, 0x2336, 0x2337,
@@ -6252,7 +6252,7 @@ const unsigned short utf8_to_euc_EFBC[] = {
  0x2350, 0x2351, 0x2352, 0x2353, 0x2354, 0x2355, 0x2356, 0x2357,
  0x2358, 0x2359, 0x235A, 0x214E, 0x2140, 0x214F, 0x2130, 0x2132,
 };
-const unsigned short utf8_to_euc_EFBD[] = {
+static const unsigned short utf8_to_euc_EFBD[] = {
  0x212E, 0x2361, 0x2362, 0x2363, 0x2364, 0x2365, 0x2366, 0x2367,
  0x2368, 0x2369, 0x236A, 0x236B, 0x236C, 0x236D, 0x236E, 0x236F,
  0x2370, 0x2371, 0x2372, 0x2373, 0x2374, 0x2375, 0x2376, 0x2377,
@@ -6262,7 +6262,7 @@ const unsigned short utf8_to_euc_EFBD[] = {
  0x0E30, 0x0E31, 0x0E32, 0x0E33, 0x0E34, 0x0E35, 0x0E36, 0x0E37,
  0x0E38, 0x0E39, 0x0E3A, 0x0E3B, 0x0E3C, 0x0E3D, 0x0E3E, 0x0E3F,
 };
-const unsigned short utf8_to_euc_EFBD_ms[] = {
+static const unsigned short utf8_to_euc_EFBD_ms[] = {
  0x212E, 0x2361, 0x2362, 0x2363, 0x2364, 0x2365, 0x2366, 0x2367,
  0x2368, 0x2369, 0x236A, 0x236B, 0x236C, 0x236D, 0x236E, 0x236F,
  0x2370, 0x2371, 0x2372, 0x2373, 0x2374, 0x2375, 0x2376, 0x2377,
@@ -6272,7 +6272,7 @@ const unsigned short utf8_to_euc_EFBD_ms[] = {
  0x0E30, 0x0E31, 0x0E32, 0x0E33, 0x0E34, 0x0E35, 0x0E36, 0x0E37,
  0x0E38, 0x0E39, 0x0E3A, 0x0E3B, 0x0E3C, 0x0E3D, 0x0E3E, 0x0E3F,
 };
-const unsigned short utf8_to_euc_EFBE[] = {
+static const unsigned short utf8_to_euc_EFBE[] = {
  0x0E40, 0x0E41, 0x0E42, 0x0E43, 0x0E44, 0x0E45, 0x0E46, 0x0E47,
  0x0E48, 0x0E49, 0x0E4A, 0x0E4B, 0x0E4C, 0x0E4D, 0x0E4E, 0x0E4F,
  0x0E50, 0x0E51, 0x0E52, 0x0E53, 0x0E54, 0x0E55, 0x0E56, 0x0E57,
@@ -6282,7 +6282,7 @@ const unsigned short utf8_to_euc_EFBE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short utf8_to_euc_EFBF[] = {
+static const unsigned short utf8_to_euc_EFBF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -6292,7 +6292,7 @@ const unsigned short utf8_to_euc_EFBF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short *const utf8_to_euc_E2[] = {
+static const unsigned short *const utf8_to_euc_E2[] = {
  utf8_to_euc_E280,                0,                0,                0,
  utf8_to_euc_E284, utf8_to_euc_E285, utf8_to_euc_E286, utf8_to_euc_E287,
  utf8_to_euc_E288, utf8_to_euc_E289, utf8_to_euc_E28A,                0,
@@ -6310,7 +6310,7 @@ const unsigned short *const utf8_to_euc_E2[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
-const unsigned short *const utf8_to_euc_E2_ms[] = {
+static const unsigned short *const utf8_to_euc_E2_ms[] = {
  utf8_to_euc_E280_ms,                0,                0,                0,
  utf8_to_euc_E284, utf8_to_euc_E285, utf8_to_euc_E286, utf8_to_euc_E287,
  utf8_to_euc_E288, utf8_to_euc_E289, utf8_to_euc_E28A,                0,
@@ -6328,7 +6328,7 @@ const unsigned short *const utf8_to_euc_E2_ms[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
-const unsigned short *const utf8_to_euc_E2_932[] = {
+static const unsigned short *const utf8_to_euc_E2_932[] = {
  utf8_to_euc_E280_932,                0,                0,                0,
  utf8_to_euc_E284, utf8_to_euc_E285, utf8_to_euc_E286, utf8_to_euc_E287,
  utf8_to_euc_E288_932, utf8_to_euc_E289, utf8_to_euc_E28A,                0,
@@ -6346,7 +6346,7 @@ const unsigned short *const utf8_to_euc_E2_932[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
-const unsigned short *const utf8_to_euc_E2_mac[] = {
+static const unsigned short *const utf8_to_euc_E2_mac[] = {
  utf8_to_euc_E280_932,                0,                0,                0,
  utf8_to_euc_E284_mac, utf8_to_euc_E285_mac, utf8_to_euc_E286, utf8_to_euc_E287,
  utf8_to_euc_E288_mac, utf8_to_euc_E289, utf8_to_euc_E28A_mac,                0,
@@ -6364,7 +6364,7 @@ const unsigned short *const utf8_to_euc_E2_mac[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
-const unsigned short *const utf8_to_euc_E3[] = {
+static const unsigned short *const utf8_to_euc_E3[] = {
  utf8_to_euc_E380, utf8_to_euc_E381, utf8_to_euc_E382, utf8_to_euc_E383,
                 0,                0,                0,                0,
  utf8_to_euc_E388,                0, utf8_to_euc_E38A,                0,
@@ -6382,7 +6382,7 @@ const unsigned short *const utf8_to_euc_E3[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
-const unsigned short *const utf8_to_euc_E3_932[] = {
+static const unsigned short *const utf8_to_euc_E3_932[] = {
  utf8_to_euc_E380_932, utf8_to_euc_E381, utf8_to_euc_E382_932, utf8_to_euc_E383,
                 0,                0,                0,                0,
  utf8_to_euc_E388,                0, utf8_to_euc_E38A,                0,
@@ -6400,7 +6400,7 @@ const unsigned short *const utf8_to_euc_E3_932[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
-const unsigned short *const utf8_to_euc_E3_mac[] = {
+static const unsigned short *const utf8_to_euc_E3_mac[] = {
  utf8_to_euc_E380_932, utf8_to_euc_E381, utf8_to_euc_E382_932, utf8_to_euc_E383,
                 0,                0,                0,                0,
  utf8_to_euc_E388_mac,                0, utf8_to_euc_E38A_mac,                0,
@@ -6418,7 +6418,7 @@ const unsigned short *const utf8_to_euc_E3_mac[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
 };
-const unsigned short *const utf8_to_euc_E4[] = {
+static const unsigned short *const utf8_to_euc_E4[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
                 0,                0,                0,                0,
@@ -6436,7 +6436,7 @@ const unsigned short *const utf8_to_euc_E4[] = {
  utf8_to_euc_E4B8, utf8_to_euc_E4B9, utf8_to_euc_E4BA, utf8_to_euc_E4BB,
  utf8_to_euc_E4BC, utf8_to_euc_E4BD, utf8_to_euc_E4BE, utf8_to_euc_E4BF,
 };
-const unsigned short *const utf8_to_euc_E5[] = {
+static const unsigned short *const utf8_to_euc_E5[] = {
  utf8_to_euc_E580, utf8_to_euc_E581, utf8_to_euc_E582, utf8_to_euc_E583,
  utf8_to_euc_E584, utf8_to_euc_E585, utf8_to_euc_E586, utf8_to_euc_E587,
  utf8_to_euc_E588, utf8_to_euc_E589, utf8_to_euc_E58A, utf8_to_euc_E58B,
@@ -6454,7 +6454,7 @@ const unsigned short *const utf8_to_euc_E5[] = {
  utf8_to_euc_E5B8, utf8_to_euc_E5B9, utf8_to_euc_E5BA, utf8_to_euc_E5BB,
  utf8_to_euc_E5BC, utf8_to_euc_E5BD, utf8_to_euc_E5BE, utf8_to_euc_E5BF,
 };
-const unsigned short *const utf8_to_euc_E6[] = {
+static const unsigned short *const utf8_to_euc_E6[] = {
  utf8_to_euc_E680, utf8_to_euc_E681, utf8_to_euc_E682, utf8_to_euc_E683,
  utf8_to_euc_E684, utf8_to_euc_E685, utf8_to_euc_E686, utf8_to_euc_E687,
  utf8_to_euc_E688, utf8_to_euc_E689, utf8_to_euc_E68A, utf8_to_euc_E68B,
@@ -6472,7 +6472,7 @@ const unsigned short *const utf8_to_euc_E6[] = {
  utf8_to_euc_E6B8, utf8_to_euc_E6B9, utf8_to_euc_E6BA, utf8_to_euc_E6BB,
  utf8_to_euc_E6BC, utf8_to_euc_E6BD, utf8_to_euc_E6BE, utf8_to_euc_E6BF,
 };
-const unsigned short *const utf8_to_euc_E7[] = {
+static const unsigned short *const utf8_to_euc_E7[] = {
  utf8_to_euc_E780, utf8_to_euc_E781, utf8_to_euc_E782, utf8_to_euc_E783,
  utf8_to_euc_E784, utf8_to_euc_E785, utf8_to_euc_E786, utf8_to_euc_E787,
  utf8_to_euc_E788, utf8_to_euc_E789, utf8_to_euc_E78A, utf8_to_euc_E78B,
@@ -6490,7 +6490,7 @@ const unsigned short *const utf8_to_euc_E7[] = {
  utf8_to_euc_E7B8, utf8_to_euc_E7B9, utf8_to_euc_E7BA,                0,
  utf8_to_euc_E7BC, utf8_to_euc_E7BD, utf8_to_euc_E7BE, utf8_to_euc_E7BF,
 };
-const unsigned short *const utf8_to_euc_E8[] = {
+static const unsigned short *const utf8_to_euc_E8[] = {
  utf8_to_euc_E880, utf8_to_euc_E881, utf8_to_euc_E882, utf8_to_euc_E883,
  utf8_to_euc_E884, utf8_to_euc_E885, utf8_to_euc_E886, utf8_to_euc_E887,
  utf8_to_euc_E888, utf8_to_euc_E889, utf8_to_euc_E88A, utf8_to_euc_E88B,
@@ -6508,7 +6508,7 @@ const unsigned short *const utf8_to_euc_E8[] = {
  utf8_to_euc_E8B8, utf8_to_euc_E8B9, utf8_to_euc_E8BA, utf8_to_euc_E8BB,
  utf8_to_euc_E8BC, utf8_to_euc_E8BD, utf8_to_euc_E8BE, utf8_to_euc_E8BF,
 };
-const unsigned short *const utf8_to_euc_E9[] = {
+static const unsigned short *const utf8_to_euc_E9[] = {
  utf8_to_euc_E980, utf8_to_euc_E981, utf8_to_euc_E982, utf8_to_euc_E983,
  utf8_to_euc_E984, utf8_to_euc_E985, utf8_to_euc_E986, utf8_to_euc_E987,
  utf8_to_euc_E988, utf8_to_euc_E989, utf8_to_euc_E98A, utf8_to_euc_E98B,
@@ -6526,7 +6526,7 @@ const unsigned short *const utf8_to_euc_E9[] = {
  utf8_to_euc_E9B8, utf8_to_euc_E9B9, utf8_to_euc_E9BA, utf8_to_euc_E9BB,
  utf8_to_euc_E9BC, utf8_to_euc_E9BD, utf8_to_euc_E9BE,                0,
 };
-const unsigned short *const utf8_to_euc_EF[] = {
+static const unsigned short *const utf8_to_euc_EF[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
                 0,                0,                0,                0,
@@ -6544,7 +6544,7 @@ const unsigned short *const utf8_to_euc_EF[] = {
                 0,                0,                0,                0,
  utf8_to_euc_EFBC, utf8_to_euc_EFBD, utf8_to_euc_EFBE, utf8_to_euc_EFBF,
 };
-const unsigned short *const utf8_to_euc_EF_ms[] = {
+static const unsigned short *const utf8_to_euc_EF_ms[] = {
                 0,                0,                0,                0,
                 0,                0,                0,                0,
                 0,                0,                0,                0,
@@ -7878,7 +7878,7 @@ const unsigned short shiftjis_x0212[3][189] = {
  },
 };
 
-const unsigned short x0212_shiftjis_A2[] = {
+static const unsigned short x0212_shiftjis_A2[] = {
          0x819F,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0x8143,      0,      0, 0x8150,      0,      0, 0x8160,
@@ -7892,7 +7892,7 @@ const unsigned short x0212_shiftjis_A2[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_B0[] = {
+static const unsigned short x0212_shiftjis_B0[] = {
               0,      0,      0,      0,      0,      0,      0,
       0, 0xFA68,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -7906,7 +7906,7 @@ const unsigned short x0212_shiftjis_B0[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_B1[] = {
+static const unsigned short x0212_shiftjis_B1[] = {
               0,      0, 0xFA70,      0,      0,      0, 0xFA6F,
       0, 0xFA72,      0,      0, 0xFA71,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -7920,7 +7920,7 @@ const unsigned short x0212_shiftjis_B1[] = {
       0,      0,      0,      0, 0xFA79,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_B2[] = {
+static const unsigned short x0212_shiftjis_B2[] = {
               0,      0, 0xFA7B,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -7934,7 +7934,7 @@ const unsigned short x0212_shiftjis_B2[] = {
       0,      0,      0,      0,      0, 0xFA81,      0,      0,
       0,      0,      0,      0, 0xFA82,      0,      0,
 };
-const unsigned short x0212_shiftjis_B3[] = {
+static const unsigned short x0212_shiftjis_B3[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0xFA84,      0,      0,
@@ -7948,7 +7948,7 @@ const unsigned short x0212_shiftjis_B3[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0xFA89,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_B4[] = {
+static const unsigned short x0212_shiftjis_B4[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -7962,7 +7962,7 @@ const unsigned short x0212_shiftjis_B4[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_B5[] = {
+static const unsigned short x0212_shiftjis_B5[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0, 0xFA91,      0,      0,      0,      0, 0xFA93,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -7976,7 +7976,7 @@ const unsigned short x0212_shiftjis_B5[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_B7[] = {
+static const unsigned short x0212_shiftjis_B7[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -7990,7 +7990,7 @@ const unsigned short x0212_shiftjis_B7[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_B8[] = {
+static const unsigned short x0212_shiftjis_B8[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8004,7 +8004,7 @@ const unsigned short x0212_shiftjis_B8[] = {
       0,      0,      0,      0,      0, 0xFAA0,      0, 0xFAA1,
  0xFAA2,      0,      0,      0, 0xFAA3,      0,      0,
 };
-const unsigned short x0212_shiftjis_B9[] = {
+static const unsigned short x0212_shiftjis_B9[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0xFAA4,
       0,      0,      0,      0,      0,      0,      0, 0xFAA5,
@@ -8018,7 +8018,7 @@ const unsigned short x0212_shiftjis_B9[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_BA[] = {
+static const unsigned short x0212_shiftjis_BA[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8032,7 +8032,7 @@ const unsigned short x0212_shiftjis_BA[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_BB[] = {
+static const unsigned short x0212_shiftjis_BB[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0xFAAC,      0,      0,      0,      0,
@@ -8046,7 +8046,7 @@ const unsigned short x0212_shiftjis_BB[] = {
       0,      0,      0,      0, 0xFAB4, 0xFAB5,      0,      0,
       0, 0xFAB6,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_BC[] = {
+static const unsigned short x0212_shiftjis_BC[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8060,7 +8060,7 @@ const unsigned short x0212_shiftjis_BC[] = {
       0,      0,      0,      0, 0xFA67,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0xFAB9,
 };
-const unsigned short x0212_shiftjis_BD[] = {
+static const unsigned short x0212_shiftjis_BD[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8074,7 +8074,7 @@ const unsigned short x0212_shiftjis_BD[] = {
  0xFABE,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_BE[] = {
+static const unsigned short x0212_shiftjis_BE[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0xFAC0,      0,      0,      0,
  0xFABF,      0,      0, 0xFAC2,      0,      0,      0,      0,
@@ -8088,7 +8088,7 @@ const unsigned short x0212_shiftjis_BE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_BF[] = {
+static const unsigned short x0212_shiftjis_BF[] = {
               0,      0,      0,      0,      0,      0,      0,
  0xFAC7,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8102,7 +8102,7 @@ const unsigned short x0212_shiftjis_BF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_C0[] = {
+static const unsigned short x0212_shiftjis_C0[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8116,7 +8116,7 @@ const unsigned short x0212_shiftjis_C0[] = {
       0,      0,      0,      0, 0xFACB,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_C1[] = {
+static const unsigned short x0212_shiftjis_C1[] = {
               0,      0,      0,      0,      0, 0xFACC,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8130,7 +8130,7 @@ const unsigned short x0212_shiftjis_C1[] = {
       0,      0,      0,      0,      0, 0xFACE,      0,      0,
  0xFAD1,      0,      0,      0, 0xFACF,      0,      0,
 };
-const unsigned short x0212_shiftjis_C2[] = {
+static const unsigned short x0212_shiftjis_C2[] = {
          0xFAD3,      0,      0,      0, 0xFAD4,      0,      0,
       0,      0,      0, 0xFAD2,      0, 0xFA63,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8144,7 +8144,7 @@ const unsigned short x0212_shiftjis_C2[] = {
  0xFADF,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_C3[] = {
+static const unsigned short x0212_shiftjis_C3[] = {
          0xFAE1,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0xFAE2,      0,      0,
@@ -8158,7 +8158,7 @@ const unsigned short x0212_shiftjis_C3[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0xFA64,      0, 0xFAE7,
 };
-const unsigned short x0212_shiftjis_C4[] = {
+static const unsigned short x0212_shiftjis_C4[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8172,7 +8172,7 @@ const unsigned short x0212_shiftjis_C4[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0xFAED,      0,
 };
-const unsigned short x0212_shiftjis_C5[] = {
+static const unsigned short x0212_shiftjis_C5[] = {
               0,      0,      0,      0,      0,      0, 0xFAEF,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0, 0xFAF0, 0xFAF1,      0,
@@ -8186,7 +8186,7 @@ const unsigned short x0212_shiftjis_C5[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_C6[] = {
+static const unsigned short x0212_shiftjis_C6[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8200,7 +8200,7 @@ const unsigned short x0212_shiftjis_C6[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_C7[] = {
+static const unsigned short x0212_shiftjis_C7[] = {
          0xFAF9,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0xFAFA,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8214,7 +8214,7 @@ const unsigned short x0212_shiftjis_C7[] = {
  0xFB49,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0xFB47,      0,      0,
 };
-const unsigned short x0212_shiftjis_C8[] = {
+static const unsigned short x0212_shiftjis_C8[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0xFB4A,      0,      0,      0,      0,      0,      0,
@@ -8228,7 +8228,7 @@ const unsigned short x0212_shiftjis_C8[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
  0xFB4C,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_C9[] = {
+static const unsigned short x0212_shiftjis_C9[] = {
               0,      0,      0,      0,      0, 0xFB4D,      0,
       0,      0,      0, 0xFB4E,      0, 0xFB4F,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8242,7 +8242,7 @@ const unsigned short x0212_shiftjis_C9[] = {
       0,      0,      0,      0, 0xFB56, 0xFB57,      0,      0,
       0,      0,      0,      0, 0xFB55,      0,      0,
 };
-const unsigned short x0212_shiftjis_CA[] = {
+static const unsigned short x0212_shiftjis_CA[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0xFB59,      0,      0,      0,      0,
@@ -8256,7 +8256,7 @@ const unsigned short x0212_shiftjis_CA[] = {
       0, 0xFB5C,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_CB[] = {
+static const unsigned short x0212_shiftjis_CB[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0xFB5D,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8270,7 +8270,7 @@ const unsigned short x0212_shiftjis_CB[] = {
  0xFB62,      0,      0,      0, 0xFB63,      0,      0,      0,
       0, 0xFB66,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_CC[] = {
+static const unsigned short x0212_shiftjis_CC[] = {
               0,      0,      0,      0, 0xFB65,      0,      0,
       0,      0,      0, 0xFB67,      0, 0xFB69, 0xFB68,      0,
       0,      0, 0xFB6A,      0,      0,      0,      0,      0,
@@ -8284,7 +8284,7 @@ const unsigned short x0212_shiftjis_CC[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_CD[] = {
+static const unsigned short x0212_shiftjis_CD[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0, 0xFAA8,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8298,7 +8298,7 @@ const unsigned short x0212_shiftjis_CD[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_CE[] = {
+static const unsigned short x0212_shiftjis_CE[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8312,7 +8312,7 @@ const unsigned short x0212_shiftjis_CE[] = {
       0,      0, 0xFB76,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_CF[] = {
+static const unsigned short x0212_shiftjis_CF[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8326,7 +8326,7 @@ const unsigned short x0212_shiftjis_CF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D0[] = {
+static const unsigned short x0212_shiftjis_D0[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8340,7 +8340,7 @@ const unsigned short x0212_shiftjis_D0[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D1[] = {
+static const unsigned short x0212_shiftjis_D1[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8354,7 +8354,7 @@ const unsigned short x0212_shiftjis_D1[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D2[] = {
+static const unsigned short x0212_shiftjis_D2[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8368,7 +8368,7 @@ const unsigned short x0212_shiftjis_D2[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D3[] = {
+static const unsigned short x0212_shiftjis_D3[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8382,7 +8382,7 @@ const unsigned short x0212_shiftjis_D3[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D4[] = {
+static const unsigned short x0212_shiftjis_D4[] = {
               0,      0,      0,      0,      0,      0, 0xFB8C,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8396,7 +8396,7 @@ const unsigned short x0212_shiftjis_D4[] = {
       0,      0, 0xFB90,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D5[] = {
+static const unsigned short x0212_shiftjis_D5[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0, 0xFB91,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8410,7 +8410,7 @@ const unsigned short x0212_shiftjis_D5[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D7[] = {
+static const unsigned short x0212_shiftjis_D7[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8424,7 +8424,7 @@ const unsigned short x0212_shiftjis_D7[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D8[] = {
+static const unsigned short x0212_shiftjis_D8[] = {
               0, 0xFB95,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0, 0xFB96,
@@ -8438,7 +8438,7 @@ const unsigned short x0212_shiftjis_D8[] = {
       0,      0,      0,      0, 0xFB99,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_D9[] = {
+static const unsigned short x0212_shiftjis_D9[] = {
          0xFA60,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8452,7 +8452,7 @@ const unsigned short x0212_shiftjis_D9[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_DC[] = {
+static const unsigned short x0212_shiftjis_DC[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8466,7 +8466,7 @@ const unsigned short x0212_shiftjis_DC[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_DD[] = {
+static const unsigned short x0212_shiftjis_DD[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8480,7 +8480,7 @@ const unsigned short x0212_shiftjis_DD[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0xFBA6,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_DE[] = {
+static const unsigned short x0212_shiftjis_DE[] = {
               0,      0,      0, 0xFBA7,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
  0xFBA8,      0,      0,      0,      0, 0xFBAA,      0,      0,
@@ -8494,7 +8494,7 @@ const unsigned short x0212_shiftjis_DE[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_DF[] = {
+static const unsigned short x0212_shiftjis_DF[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8508,7 +8508,7 @@ const unsigned short x0212_shiftjis_DF[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E0[] = {
+static const unsigned short x0212_shiftjis_E0[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8522,7 +8522,7 @@ const unsigned short x0212_shiftjis_E0[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E1[] = {
+static const unsigned short x0212_shiftjis_E1[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8536,7 +8536,7 @@ const unsigned short x0212_shiftjis_E1[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E2[] = {
+static const unsigned short x0212_shiftjis_E2[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8550,7 +8550,7 @@ const unsigned short x0212_shiftjis_E2[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E3[] = {
+static const unsigned short x0212_shiftjis_E3[] = {
               0,      0,      0,      0,      0, 0xFBBB,      0,
  0xFBBA, 0xFBBC, 0xFBBF, 0xFBC0,      0,      0,      0, 0xFBBD,
  0xFBBE,      0,      0,      0,      0,      0,      0,      0,
@@ -8564,7 +8564,7 @@ const unsigned short x0212_shiftjis_E3[] = {
       0, 0xFBCD, 0xFBCE,      0,      0,      0,      0,      0,
  0xFA5F,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E4[] = {
+static const unsigned short x0212_shiftjis_E4[] = {
               0,      0,      0,      0,      0, 0xFBCC,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8578,7 +8578,7 @@ const unsigned short x0212_shiftjis_E4[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0xFBDF,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E5[] = {
+static const unsigned short x0212_shiftjis_E5[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0, 0xFBE1,      0,      0,      0,      0,
@@ -8592,7 +8592,7 @@ const unsigned short x0212_shiftjis_E5[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E6[] = {
+static const unsigned short x0212_shiftjis_E6[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8606,7 +8606,7 @@ const unsigned short x0212_shiftjis_E6[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E7[] = {
+static const unsigned short x0212_shiftjis_E7[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0, 0xFBED,      0, 0xFBEF,      0,
       0, 0xFBF1, 0xFBF3,      0,      0,      0,      0,      0,
@@ -8620,7 +8620,7 @@ const unsigned short x0212_shiftjis_E7[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E8[] = {
+static const unsigned short x0212_shiftjis_E8[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0, 0xFBF4,      0,      0,      0,      0, 0xFBF5,      0,
@@ -8634,7 +8634,7 @@ const unsigned short x0212_shiftjis_E8[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_E9[] = {
+static const unsigned short x0212_shiftjis_E9[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8648,7 +8648,7 @@ const unsigned short x0212_shiftjis_E9[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_EA[] = {
+static const unsigned short x0212_shiftjis_EA[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8662,7 +8662,7 @@ const unsigned short x0212_shiftjis_EA[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_EB[] = {
+static const unsigned short x0212_shiftjis_EB[] = {
               0,      0,      0,      0, 0xFC46,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8676,7 +8676,7 @@ const unsigned short x0212_shiftjis_EB[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0, 0xFC48, 0xFC47,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_EC[] = {
+static const unsigned short x0212_shiftjis_EC[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8690,7 +8690,7 @@ const unsigned short x0212_shiftjis_EC[] = {
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,
 };
-const unsigned short x0212_shiftjis_F3[] = {
+static const unsigned short x0212_shiftjis_F3[] = {
               0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
       0,      0,      0,      0,      0,      0,      0,      0,
@@ -8704,7 +8704,7 @@ const unsigned short x0212_shiftjis_F3[] = {
       0,      0,      0, 0xFA40, 0xFA41, 0xFA42, 0xFA43, 0xFA44,
  0xFA45, 0xFA46, 0xFA47, 0xFA48, 0xFA49, 0xFA4A, 0xFA4B,
 };
-const unsigned short x0212_shiftjis_F4[] = {
+static const unsigned short x0212_shiftjis_F4[] = {
          0xFA4C, 0xFA4D, 0xFA4E, 0xFA4F, 0xFA50, 0xFA51, 0xFA52,
  0xFA53, 0xFA56, 0xFA57, 0xFA58, 0xFA59, 0xFA5A, 0xFA62, 0xFA6A,
  0xFA7C, 0xFA83, 0xFA8A, 0xFA8B, 0xFA90, 0xFA92, 0xFA96, 0xFA9B,

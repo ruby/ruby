@@ -25,7 +25,7 @@ class TestKconv < Test::Unit::TestCase
 
 
   def test_eucjp
-    assert(@euc_str.dup.force_encoding(nil).iseuc)
+    assert(@euc_str.iseuc)
     assert_equal(::Kconv::EUC, Kconv.guess(@euc_str))
     assert_equal(@euc_str, @euc_str.toeuc)
     assert_equal(@euc_str, @sjis_str.toeuc)
@@ -37,7 +37,7 @@ class TestKconv < Test::Unit::TestCase
     assert_equal(@euc_str, @jis_str.kconv(::NKF::EUC))
   end
   def test_shiftjis
-    assert(@sjis_str.dup.force_encoding(nil).issjis)
+    assert(@sjis_str.issjis)
     assert_equal(::Kconv::SJIS, Kconv.guess(@sjis_str))
     assert_equal(@sjis_str, @euc_str.tosjis)
     assert_equal(@sjis_str, @sjis_str.tosjis)
@@ -49,7 +49,7 @@ class TestKconv < Test::Unit::TestCase
     assert_equal(@sjis_str, @jis_str.kconv(::NKF::SJIS))
   end
   def test_utf8
-    assert(@utf8_str.dup.force_encoding(nil).isutf8)
+    assert(@utf8_str.isutf8)
     assert_equal(::Kconv::UTF8, Kconv.guess(@utf8_str))
     assert_equal(@utf8_str, @euc_str.toutf8)
     assert_equal(@utf8_str, @sjis_str.toutf8)

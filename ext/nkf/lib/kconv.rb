@@ -45,38 +45,6 @@ module Kconv
   UNKNOWN = NKF::UNKNOWN
 
   #
-  #
-  # Private Constants
-  #
-  
-  #Regexp of Encoding
-  
-  # Regexp of Shift_JIS string (private constant)
-  RegexpShiftjis = /\A(?:
-		       [\x00-\x7f\xa1-\xdf] |
-		       [\x81-\x9f\xe0-\xfc][\x40-\x7e\x80-\xfc] 
-		      )*\z/nx
-
-  # Regexp of EUC-JP string (private constant)
-  RegexpEucjp = /\A(?:
-		    [\x00-\x7f]                         |
-		    \x8e        [\xa1-\xdf]             |
-		    \x8f        [\xa1-\xfe] [\xa1-\xfe] |
-		    [\xa1-\xfe] [\xa1-\xfe]
-		   )*\z/nx
-
-  # Regexp of UTF-8 string (private constant)
-  RegexpUtf8  = /\A(?:
-		    [\x00-\x7f]                                     |
-		    [\xc2-\xdf] [\x80-\xbf]                         |
-		    \xe0        [\xa0-\xbf] [\x80-\xbf]             |
-		    [\xe1-\xef] [\x80-\xbf] [\x80-\xbf]             |
-		    \xf0        [\x90-\xbf] [\x80-\xbf] [\x80-\xbf] |
-		    [\xf1-\xf3] [\x80-\xbf] [\x80-\xbf] [\x80-\xbf] |
-		    \xf4        [\x80-\x8f] [\x80-\xbf] [\x80-\xbf]
-		   )*\z/nx
-
-  #
   # Public Methods
   #
   
@@ -99,7 +67,7 @@ module Kconv
   #
 
   # call-seq:
-  #    Kconv.tojis(str)   -> string
+  #    Kconv.tojis(str)   => string
   #
   # Convert <code>str</code> to ISO-2022-JP
   def tojis(str)
@@ -108,7 +76,7 @@ module Kconv
   module_function :tojis
 
   # call-seq:
-  #    Kconv.toeuc(str)   -> string
+  #    Kconv.toeuc(str)   => string
   #
   # Convert <code>str</code> to EUC-JP
   def toeuc(str)
@@ -117,7 +85,7 @@ module Kconv
   module_function :toeuc
 
   # call-seq:
-  #    Kconv.tosjis(str)   -> string
+  #    Kconv.tosjis(str)   => string
   #
   # Convert <code>str</code> to Shift_JIS
   def tosjis(str)
@@ -126,7 +94,7 @@ module Kconv
   module_function :tosjis
 
   # call-seq:
-  #    Kconv.toutf8(str)   -> string
+  #    Kconv.toutf8(str)   => string
   #
   # Convert <code>str</code> to UTF-8
   def toutf8(str)
@@ -135,7 +103,7 @@ module Kconv
   module_function :toutf8
 
   # call-seq:
-  #    Kconv.toutf16(str)   -> string
+  #    Kconv.toutf16(str)   => string
   #
   # Convert <code>str</code> to UTF-16
   def toutf16(str)
@@ -144,7 +112,7 @@ module Kconv
   module_function :toutf16
 
   # call-seq:
-  #    Kconv.toutf32(str)   -> string
+  #    Kconv.toutf32(str)   => string
   #
   # Convert <code>str</code> to UTF-32
   def toutf32(str)
@@ -152,12 +120,21 @@ module Kconv
   end
   module_function :toutf32
 
+  # call-seq:
+  #    Kconv.tolocale   => string
+  #
+  # Convert <code>self</code> to locale encoding
+  def tolocale
+    kconv(str, Encoding.locale_charmap)
+  end
+  module_function :tolocale
+
   #
   # guess
   #
 
   # call-seq:
-  #    Kconv.guess(str)   -> integer
+  #    Kconv.guess(str)   => encoding
   #
   # Guess input encoding by NKF.guess
   def guess(str)
@@ -170,38 +147,52 @@ module Kconv
   #
 
   # call-seq:
-  #    Kconv.iseuc(str)   -> obj or nil
+  #    Kconv.iseuc(str)   => true or false
   #
   # Returns whether input encoding is EUC-JP or not.
   #
   # *Note* don't expect this return value is MatchData.
   def iseuc(str)
-    RegexpEucjp.match( str )
+    str.dup.force_encoding(EUC).valid_encoding?
   end
   module_function :iseuc
 
   # call-seq:
-  #    Kconv.issjis(str)   -> obj or nil
+  #    Kconv.issjis(str)   => true or false
   #
   # Returns whether input encoding is Shift_JIS or not.
-  #
-  # *Note* don't expect this return value is MatchData.
   def issjis(str)
-    RegexpShiftjis.match( str )
+    str.dup.force_encoding(SJIS).valid_encoding?
   end
   module_function :issjis
 
   # call-seq:
-  #    Kconv.isutf8(str)   -> obj or nil
+  #    Kconv.isjis(str)   => true or false
+  #
+  # Returns whether input encoding is ISO-2022-JP or not.
+  def isjis(str)
+    /\A [\t\n\r\x20-\x7E]*
+      (?:
+        (?:\x1b \x28 I      [\x21-\x7E]*
+          |\x1b \x28 J      [\x21-\x7E]*
+          |\x1b \x24 @      (?:[\x21-\x7E]{2})*
+          |\x1b \x24 B      (?:[\x21-\x7E]{2})*
+          |\x1b \x24 \x28 D (?:[\x21-\x7E]{2})*
+        )*
+        \x1b \x28 B [\t\n\r\x20-\x7E]*
+      )*
+     \z/nox =~ str.dup.force_encoding(nil) ? true : false
+  end
+  module_function :isjis
+
+  # call-seq:
+  #    Kconv.isutf8(str)   => true or false
   #
   # Returns whether input encoding is UTF-8 or not.
-  #
-  # *Note* don't expect this return value is MatchData.
   def isutf8(str)
-    RegexpUtf8.match( str )
+    str.dup.force_encoding(UTF8).valid_encoding?
   end
   module_function :isutf8
-
 end
 
 class String
@@ -220,66 +211,72 @@ class String
   #
   
   # call-seq:
-  #    String#tojis   -> string
+  #    String#tojis   => string
   #
   # Convert <code>self</code> to ISO-2022-JP
   def tojis; Kconv.tojis(self) end
 
   # call-seq:
-  #    String#toeuc   -> string
+  #    String#toeuc   => string
   #
   # Convert <code>self</code> to EUC-JP
   def toeuc; Kconv.toeuc(self) end
 
   # call-seq:
-  #    String#tosjis   -> string
+  #    String#tosjis   => string
   #
   # Convert <code>self</code> to Shift_JIS
   def tosjis; Kconv.tosjis(self) end
 
   # call-seq:
-  #    String#toutf8   -> string
+  #    String#toutf8   => string
   #
   # Convert <code>self</code> to UTF-8
   def toutf8; Kconv.toutf8(self) end
 
   # call-seq:
-  #    String#toutf16   -> string
+  #    String#toutf16   => string
   #
   # Convert <code>self</code> to UTF-16
   def toutf16; Kconv.toutf16(self) end
 
   # call-seq:
-  #    String#toutf32   -> string
+  #    String#toutf32   => string
   #
   # Convert <code>self</code> to UTF-32
   def toutf32; Kconv.toutf32(self) end
+
+  # call-seq:
+  #    String#tolocale   => string
+  #
+  # Convert <code>self</code> to locale encoding
+  def tolocale; Kconv.tolocale(self) end
 
   #
   # is Encoding
   #
 
   # call-seq:
-  #    String#iseuc   -> obj or nil
+  #    String#iseuc   => true or false
   #
   # Returns whether <code>self</code>'s encoding is EUC-JP or not.
-  #
-  # *Note* don't expect this return value is MatchData.
   def iseuc;	Kconv.iseuc(self) end
 
   # call-seq:
-  #    String#issjis   -> obj or nil
+  #    String#issjis   => true or false
   #
   # Returns whether <code>self</code>'s encoding is Shift_JIS or not.
-  #
-  # *Note* don't expect this return value is MatchData.
   def issjis;	Kconv.issjis(self) end
 
   # call-seq:
-  #    String#isutf8   -> obj or nil
+  #    String#isjis   => true or false
+  #
+  # Returns whether <code>self</code>'s encoding is ISO-2022-JP or not.
+  def isjis;	Kconv.isjis(self) end
+
+  # call-seq:
+  #    String#isutf8   => true or false
   #
   # Returns whether <code>self</code>'s encoding is UTF-8 or not.
-  #
-  # *Note* don't expect this return value is MatchData.
   def isutf8;	Kconv.isutf8(self) end
 end

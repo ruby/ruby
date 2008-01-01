@@ -32,7 +32,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2007-12-23"
+#define NKF_RELEASE_DATE "2007-01-02"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW\n" \
     "Copyright (C) 2002-2007 Kono, Furukawa, Naruse, mastodon"
@@ -205,11 +205,12 @@ void  djgpp_setbinmode(FILE *fp)
 
 
 /* byte order */
-
-#define		ENDIAN_BIG	1234
-#define		ENDIAN_LITTLE	4321
-#define		ENDIAN_2143	2143
-#define		ENDIAN_3412	3412
+enum byte_order {
+    ENDIAN_BIG    = 1,
+    ENDIAN_LITTLE = 2,
+    ENDIAN_2143   = 3,
+    ENDIAN_3412   = 4
+};
 
 /* ASCII CODE */
 
@@ -266,10 +267,10 @@ enum nkf_encodings {
     UTF_32LE,
     UTF_32LE_BOM,
     JIS_X_0201=0x1000,
-    JIS_X_0208,
-    JIS_X_0212,
-    JIS_X_0213_1,
-    JIS_X_0213_2,
+    JIS_X_0208=0x1001,
+    JIS_X_0212=0x1002,
+    JIS_X_0213_1=0x1003,
+    JIS_X_0213_2=0x1004,
     BINARY
 };
 
@@ -286,9 +287,9 @@ void w_oconv16(nkf_char c2, nkf_char c1);
 void w_oconv32(nkf_char c2, nkf_char c1);
 
 typedef struct {
-    char *name;
-    nkf_char (*iconv_func)(nkf_char c2, nkf_char c1, nkf_char c0);
-    void (*oconv_func)(nkf_char c2, nkf_char c1);
+    const char *name;
+    nkf_char (*iconv)(nkf_char c2, nkf_char c1, nkf_char c0);
+    void (*oconv)(nkf_char c2, nkf_char c1);
 } nkf_native_encoding;
 
 nkf_native_encoding NkfEncodingASCII =		{ "US_ASCII", e_iconv, e_oconv };
@@ -300,21 +301,21 @@ nkf_native_encoding NkfEncodingUTF_16 =		{ "UTF-16", w_iconv16, w_oconv16 };
 nkf_native_encoding NkfEncodingUTF_32 =		{ "UTF-32", w_iconv32, w_oconv32 };
 
 typedef struct {
-    int id;
-    char *name;
-    nkf_native_encoding *based_encoding;
+    const int id;
+    const char *name;
+    const nkf_native_encoding *base_encoding;
 } nkf_encoding;
 nkf_encoding nkf_encoding_table[] = {
     {ASCII,		"ASCII",		&NkfEncodingASCII},
     {ISO_8859_1,	"ISO-8859-1",		&NkfEncodingASCII},
-    {ISO_2022_JP,	"ISO-2022-JP",		&NkfEncodingASCII},
+    {ISO_2022_JP,	"ISO-2022-JP",		&NkfEncodingISO_2022_JP},
     {CP50220,		"CP50220",		&NkfEncodingISO_2022_JP},
     {CP50221,		"CP50221",		&NkfEncodingISO_2022_JP},
     {CP50222,		"CP50222",		&NkfEncodingISO_2022_JP},
     {ISO_2022_JP_1,	"ISO-2022-JP-1",	&NkfEncodingISO_2022_JP},
     {ISO_2022_JP_3,	"ISO-2022-JP-3",	&NkfEncodingISO_2022_JP},
     {SHIFT_JIS,		"Shift_JIS",		&NkfEncodingShift_JIS},
-    {WINDOWS_31J,	"WINDOWS-31J",		&NkfEncodingShift_JIS},
+    {WINDOWS_31J,	"Windows-31J",		&NkfEncodingShift_JIS},
     {CP10001,		"CP10001",		&NkfEncodingShift_JIS},
     {EUC_JP,		"EUC-JP",		&NkfEncodingEUC_JP},
     {CP51932,		"CP51932",		&NkfEncodingEUC_JP},
@@ -476,7 +477,8 @@ struct input_code{
 };
 
 static char *input_codename = NULL; /* NULL: unestablished, "": BINARY */
-static nkf_encoding *output_encoding;
+static nkf_encoding *input_encoding = NULL;
+static nkf_encoding *output_encoding = NULL;
 
 #if !defined(PERL_XS) && !defined(WIN32DLL)
 static  nkf_char     noconvert(FILE *f);
@@ -601,7 +603,6 @@ static int             nop_f = FALSE;
 static int             binmode_f = TRUE;       /* binary mode */
 static int             rot_f = FALSE;          /* rot14/43 mode */
 static int             hira_f = FALSE;          /* hira/kata henkan */
-static int             input_f = FALSE;        /* non fixed input code  */
 static int             alpha_f = FALSE;        /* convert JIx0208 alphbet to ASCII */
 static int             mime_f = MIME_DECODE_DEFAULT;   /* convert MIME B base64 or Q */
 static int             mime_decode_f = FALSE;  /* mime decode is explicitly on */
@@ -753,11 +754,8 @@ static int             fold_margin  = FOLD_MARGIN;
 #endif
 
 /* process default */
-static void (*output_conv)(nkf_char c2,nkf_char c1) = DEFAULT_CONV;
-
-static void (*oconv)(nkf_char c2,nkf_char c1) = no_connection;
-/* s_iconv or oconv */
 static nkf_char (*iconv)(nkf_char c2,nkf_char c1,nkf_char c0) = no_connection2;
+static void (*oconv)(nkf_char c2,nkf_char c1) = no_connection;
 
 static void (*o_zconv)(nkf_char c2,nkf_char c1) = no_connection;
 static void (*o_fconv)(nkf_char c2,nkf_char c1) = no_connection;
@@ -948,7 +946,20 @@ static nkf_encoding *nkf_enc_find(const char *name)
 
 #define nkf_enc_name(enc) (enc)->name
 #define nkf_enc_to_index(enc) (enc)->id
-#define nkf_enc_to_base_encoding(enc) (enc)->based_encoding
+#define nkf_enc_to_base_encoding(enc) (enc)->base_encoding
+#define nkf_enc_to_iconv(enc) nkf_enc_to_base_encoding(enc)->iconv
+#define nkf_enc_to_oconv(enc) nkf_enc_to_base_encoding(enc)->oconv
+#define nkf_enc_asciicompat(enc) (\
+    nkf_enc_to_base_encoding(enc) == &NkfEncodingASCII ||\
+    nkf_enc_to_base_encoding(enc) == &NkfEncodingISO_2022_JP)
+#define nkf_enc_unicode_p(enc) (\
+    nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_8 ||\
+    nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_16 ||\
+    nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_32)
+#define nkf_enc_cp5022x_p(enc) (\
+    nkf_enc_to_index(enc) == CP50220 ||\
+    nkf_enc_to_index(enc) == CP50221 ||\
+    nkf_enc_to_index(enc) == CP50222)
 
 #ifdef WIN32DLL
 #include "nkf32dll.c"
@@ -1294,7 +1305,7 @@ static const struct {
     {"katakana","h2"},
     {"katakana-hiragana","h3"},
     {"guess=", ""},
-    {"guess", "g1"},
+    {"guess", "g2"},
     {"cp932", ""},
     {"no-cp932", ""},
 #ifdef X0212_ENABLE
@@ -1358,7 +1369,6 @@ void options(unsigned char *cp)
     char codeset[32];
     nkf_encoding *enc;
 
-    if (!output_encoding) output_encoding = nkf_enc_from_index(DEFAULT_ENCODING);
     if (option_mode==1)
 	return;
     while(*cp && *cp++!='-');
@@ -1396,14 +1406,12 @@ void options(unsigned char *cp)
                 if (strcmp(long_option[i].name, "ic=") == 0){
 		    nkf_str_upcase((char *)p, codeset, 32);
 		    enc = nkf_enc_find(codeset);
-		    switch (nkf_enc_to_index(enc)) {
-		    case ISO_2022_JP:
-			input_f = JIS_INPUT;
-			break;
+		    if (!enc) continue;
+		    input_encoding = enc;
+		    switch (nkf_enc_to_index(input_encoding)) {
 		    case CP50220:
 		    case CP50221:
 		    case CP50222:
-			input_f = JIS_INPUT;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = TRUE;
 #endif
@@ -1412,23 +1420,17 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case ISO_2022_JP_1:
-			input_f = JIS_INPUT;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
 			break;
 		    case ISO_2022_JP_3:
-			input_f = JIS_INPUT;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
 			x0213_f = TRUE;
 			break;
-		    case SHIFT_JIS:
-			input_f = SJIS_INPUT;
-			break;
 		    case WINDOWS_31J:
-			input_f = SJIS_INPUT;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = TRUE;
 #endif
@@ -1437,7 +1439,6 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case CP10001:
-			input_f = SJIS_INPUT;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = TRUE;
 #endif
@@ -1445,11 +1446,7 @@ void options(unsigned char *cp)
 			ms_ucs_map_f = UCS_MAP_CP10001;
 #endif
 			break;
-		    case EUC_JP:
-			input_f = EUC_INPUT;
-			break;
 		    case CP51932:
-			input_f = EUC_INPUT;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = TRUE;
 #endif
@@ -1458,7 +1455,6 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case EUCJP_MS:
-			input_f = EUC_INPUT;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
 #endif
@@ -1467,7 +1463,6 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case EUCJP_ASCII:
-			input_f = EUC_INPUT;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
 #endif
@@ -1477,7 +1472,6 @@ void options(unsigned char *cp)
 			break;
 		    case SHIFT_JISX0213:
 		    case SHIFT_JIS_2004:
-			input_f = SJIS_INPUT;
 			x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
@@ -1485,50 +1479,36 @@ void options(unsigned char *cp)
 			break;
 		    case EUC_JISX0213:
 		    case EUC_JIS_2004:
-			input_f = EUC_INPUT;
 			x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
 			cp51932_f = FALSE;
 #endif
 			break;
 #ifdef UTF8_INPUT_ENABLE
-		    case UTF_8:
-		    case UTF_8N:
-		    case UTF_8_BOM:
-			input_f = UTF8_INPUT;
-			break;
 #ifdef UNICODE_NORMALIZATION
 		    case UTF8_MAC:
-			input_f = UTF8_INPUT;
 			nfc_f = TRUE;
 			break;
 #endif
 		    case UTF_16:
 		    case UTF_16BE:
 		    case UTF_16BE_BOM:
-			input_f = UTF16_INPUT;
 			input_endian = ENDIAN_BIG;
 			break;
 		    case UTF_16LE:
 		    case UTF_16LE_BOM:
-			input_f = UTF16_INPUT;
 			input_endian = ENDIAN_LITTLE;
 			break;
 		    case UTF_32:
 		    case UTF_32BE:
 		    case UTF_32BE_BOM:
-			input_f = UTF32_INPUT;
 			input_endian = ENDIAN_BIG;
 			break;
 		    case UTF_32LE:
 		    case UTF_32LE_BOM:
-			input_f = UTF32_INPUT;
 			input_endian = ENDIAN_LITTLE;
 			break;
 #endif
-		    default:
-			fprintf(stderr, "unknown input encoding: %s\n", codeset);
-			break;
 		    }
                     continue;
 		}
@@ -1539,21 +1519,16 @@ void options(unsigned char *cp)
 		    if (enc <= 0) continue;
 		    output_encoding = enc;
 		    switch (nkf_enc_to_index(output_encoding)) {
-		    case ISO_2022_JP:
-			output_conv = j_oconv;
-			break;
 		    case CP50220:
-			    output_conv = j_oconv;
-			    x0201_f = TRUE;
+			x0201_f = TRUE;
 #ifdef SHIFTJIS_CP932
-			    cp932inv_f = FALSE;
+			cp932inv_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-			    ms_ucs_map_f = UCS_MAP_CP932;
+			ms_ucs_map_f = UCS_MAP_CP932;
 #endif
 			break;
 		    case CP50221:
-			output_conv = j_oconv;
 #ifdef SHIFTJIS_CP932
 			cp932inv_f = FALSE;
 #endif
@@ -1562,7 +1537,6 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case ISO_2022_JP_1:
-			output_conv = j_oconv;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
@@ -1571,7 +1545,6 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case ISO_2022_JP_3:
-			output_conv = j_oconv;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
@@ -1580,26 +1553,17 @@ void options(unsigned char *cp)
 			cp932inv_f = FALSE;
 #endif
 			break;
-		    case SHIFT_JIS:
-			output_conv = s_oconv;
-			break;
 		    case WINDOWS_31J:
-			output_conv = s_oconv;
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_CP932;
 #endif
 			break;
 		    case CP10001:
-			output_conv = s_oconv;
 #ifdef UTF8_OUTPUT_ENABLE
 			ms_ucs_map_f = UCS_MAP_CP10001;
 #endif
 			break;
-		    case EUC_JP:
-			output_conv = e_oconv;
-			break;
 		    case CP51932:
-			output_conv = e_oconv;
 #ifdef SHIFTJIS_CP932
 			cp932inv_f = FALSE;
 #endif
@@ -1608,7 +1572,6 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case EUCJP_MS:
-			output_conv = e_oconv;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
@@ -1617,7 +1580,6 @@ void options(unsigned char *cp)
 #endif
 			break;
 		    case EUCJP_ASCII:
-			output_conv = e_oconv;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
@@ -1627,15 +1589,13 @@ void options(unsigned char *cp)
 			break;
 		    case SHIFT_JISX0213:
 		    case SHIFT_JIS_2004:
-			    output_conv = s_oconv;
-			    x0213_f = TRUE;
+			x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
-			    cp932inv_f = FALSE;
+			cp932inv_f = FALSE;
 #endif
 			break;
 		    case EUC_JISX0213:
 		    case EUC_JIS_2004:
-			output_conv = e_oconv;
 #ifdef X0212_ENABLE
 			x0212_f = TRUE;
 #endif
@@ -1645,60 +1605,41 @@ void options(unsigned char *cp)
 #endif
 			break;
 #ifdef UTF8_OUTPUT_ENABLE
-		    case UTF_8:
-		    case UTF_8N:
-			output_conv = w_oconv;
-			break;
 		    case UTF_8_BOM:
-			output_conv = w_oconv;
 			output_bom_f = TRUE;
-			break;
-		    case UTF_16BE:
-			output_conv = w_oconv16;
 			break;
 		    case UTF_16:
 		    case UTF_16BE_BOM:
-			output_conv = w_oconv16;
 			output_bom_f = TRUE;
 			break;
 		    case UTF_16LE:
-			output_conv = w_oconv16;
 			output_endian = ENDIAN_LITTLE;
+			output_bom_f = FALSE;
 			break;
 		    case UTF_16LE_BOM:
-			output_conv = w_oconv16;
 			output_endian = ENDIAN_LITTLE;
 			output_bom_f = TRUE;
 			break;
-		    case UTF_32:
-		    case UTF_32BE:
-			output_conv = w_oconv32;
-			break;
 		    case UTF_32BE_BOM:
-			output_conv = w_oconv32;
 			output_bom_f = TRUE;
 			break;
 		    case UTF_32LE:
-			output_conv = w_oconv32;
 			output_endian = ENDIAN_LITTLE;
+			output_bom_f = FALSE;
 			break;
 		    case UTF_32LE_BOM:
-			output_conv = w_oconv32;
 			output_endian = ENDIAN_LITTLE;
 			output_bom_f = TRUE;
 			break;
 #endif
-		    default:
-			fprintf(stderr, "unknown output encoding: %s\n", codeset);
-			break;
 		    }
                     continue;
 		}
                 if (strcmp(long_option[i].name, "guess=") == 0){
-		    if (p[0] == '1') {
-			guess_f = 2;
-		    } else {
+		    if (p[0] == '0' || p[0] == '1') {
 			guess_f = 1;
+		    } else {
+			guess_f = 2;
 		    }
                     continue;
                 }
@@ -1872,7 +1813,6 @@ void options(unsigned char *cp)
 #endif
 #ifdef UNICODE_NORMALIZATION
 		if (strcmp(long_option[i].name, "utf8mac-input") == 0){
-		    input_f = UTF8_INPUT;
 		    nfc_f = TRUE;
 		    continue;
 		}
@@ -1912,21 +1852,18 @@ void options(unsigned char *cp)
             continue;
         case 'j':           /* JIS output */
         case 'n':
-            output_conv = j_oconv;
             output_encoding = nkf_enc_from_index(ISO_2022_JP);
             continue;
         case 'e':           /* AT&T EUC output */
-            output_conv = e_oconv;
             cp932inv_f = FALSE;
             output_encoding = nkf_enc_from_index(EUC_JP);
             continue;
         case 's':           /* SJIS output */
-            output_conv = s_oconv;
-            output_encoding = nkf_enc_from_index(SHIFT_JIS);
+            output_encoding = nkf_enc_from_index(WINDOWS_31J);
             continue;
         case 'l':           /* ISO8859 Latin-1 support, no conversion */
             iso8859_f = TRUE;  /* Only compatible with ISO-2022-JP */
-            input_f = LATIN1_INPUT;
+            input_encoding = nkf_enc_from_index(ISO_8859_1);
             continue;
         case 'i':           /* Kanji IN ESC-$-@/B */
             if (*cp=='@'||*cp=='B')
@@ -1967,7 +1904,7 @@ void options(unsigned char *cp)
 #ifdef UTF8_OUTPUT_ENABLE
         case 'w':           /* UTF-8 output */
             if (cp[0] == '8') {
-		output_conv = w_oconv; cp++;
+		cp++;
 		if (cp[0] == '0'){
 		    cp++;
 		    output_encoding = nkf_enc_from_index(UTF_8N);
@@ -1978,13 +1915,12 @@ void options(unsigned char *cp)
 	    } else {
 		int enc_idx;
 		if ('1'== cp[0] && '6'==cp[1]) {
-		    output_conv = w_oconv16; cp+=2;
+		    cp += 2;
 		    enc_idx = UTF_16;
 		} else if ('3'== cp[0] && '2'==cp[1]) {
-		    output_conv = w_oconv32; cp+=2;
+		    cp += 2;
 		    enc_idx = UTF_32;
 		} else {
-		    output_conv = w_oconv;
 		    output_encoding = nkf_enc_from_index(UTF_8);
 		    continue;
 		}
@@ -2016,18 +1952,19 @@ void options(unsigned char *cp)
         case 'W':           /* UTF input */
 	    if (cp[0] == '8') {
 		cp++;
-		input_f = UTF8_INPUT;
+		input_encoding = nkf_enc_from_index(UTF_8);
 	    }else{
+		int enc_idx;
 		if ('1'== cp[0] && '6'==cp[1]) {
 		    cp += 2;
-		    input_f = UTF16_INPUT;
 		    input_endian = ENDIAN_BIG;
+		    enc_idx = UTF_16;
 		} else if ('3'== cp[0] && '2'==cp[1]) {
 		    cp += 2;
-		    input_f = UTF32_INPUT;
 		    input_endian = ENDIAN_BIG;
+		    enc_idx = UTF_32;
 		} else {
-		    input_f = UTF8_INPUT;
+		    input_encoding = nkf_enc_from_index(UTF_8);
 		    continue;
 		}
 		if (cp[0]=='L') {
@@ -2035,20 +1972,25 @@ void options(unsigned char *cp)
 		    input_endian = ENDIAN_LITTLE;
 		} else if (cp[0] == 'B') {
 		    cp++;
+		    input_endian = ENDIAN_BIG;
 		}
+		enc_idx = enc_idx == UTF_16
+		    ? (output_endian == ENDIAN_LITTLE ? UTF_16LE : UTF_16BE)
+		    : (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
+		input_encoding = nkf_enc_from_index(enc_idx);
 	    }
             continue;
 #endif
         /* Input code assumption */
-        case 'J':   /* JIS input */
-            input_f = JIS_INPUT;
-            continue;
-        case 'E':   /* AT&T EUC input */
-            input_f = EUC_INPUT;
-            continue;
-        case 'S':   /* MS Kanji input */
-            input_f = SJIS_INPUT;
-            continue;
+	case 'J':   /* ISO-2022-JP input */
+	    input_encoding = nkf_enc_from_index(ISO_2022_JP);
+	    continue;
+	case 'E':   /* EUC-JP input */
+	    input_encoding = nkf_enc_from_index(EUC_JP);
+	    continue;
+	case 'S':   /* Windows-31J input */
+	    input_encoding = nkf_enc_from_index(WINDOWS_31J);
+	    continue;
         case 'Z':   /* Convert X0208 alphabet to asii */
             /* alpha_f
 	       bit:0   Convert JIS X 0208 Alphabet to ASCII
@@ -2160,10 +2102,10 @@ void options(unsigned char *cp)
             continue;
 #ifndef PERL_XS
         case 'g':
-            if (*cp == '1') {
+            if ('2' <= *cp && *cp <= '9') {
                 guess_f = 2;
                 cp++;
-            } else if (*cp == '0') {
+            } else if (*cp == '0' || *cp == '1') {
 		guess_f = 1;
                 cp++;
             } else {
@@ -2200,7 +2142,7 @@ struct input_code * find_inputcode_byfunc(nkf_char (*iconv_func)(nkf_char c2,nkf
 void set_iconv(nkf_char f, nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0))
 {
 #ifdef INPUT_CODE_FIX
-    if (f || !input_f)
+    if (f || !input_encoding)
 #endif
         if (estab_f != f){
             estab_f = f;
@@ -2208,7 +2150,7 @@ void set_iconv(nkf_char f, nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_ch
 
     if (iconv_func
 #ifdef INPUT_CODE_FIX
-        && (f == -TRUE || !input_f) /* -TRUE means "FORCE" */
+        && (f == -TRUE || !input_encoding) /* -TRUE means "FORCE" */
 #endif
         ){
         iconv = iconv_func;
@@ -2588,7 +2530,8 @@ nkf_char noconvert(FILE *f)
 
 void module_connection(void)
 {
-    oconv = output_conv;
+    if (!output_encoding) output_encoding = nkf_enc_from_index(DEFAULT_ENCODING);
+    oconv = nkf_enc_to_oconv(output_encoding);
     o_putc = std_putc;
 
     /* replace continucation module, from output side */
@@ -2648,7 +2591,7 @@ void module_connection(void)
     }
 #endif
 #ifdef UNICODE_NORMALIZATION
-    if (nfc_f && input_f == UTF8_INPUT){
+    if (nfc_f){
         i_nfc_getc = i_getc; i_getc = nfc_getc;
         i_nfc_ungetc = i_ungetc; i_ungetc= nfc_ungetc;
     }
@@ -2661,18 +2604,8 @@ void module_connection(void)
 	i_bgetc = i_getc; i_getc = broken_getc;
 	i_bungetc = i_ungetc; i_ungetc = broken_ungetc;
     }
-    if (input_f == JIS_INPUT || input_f == EUC_INPUT || input_f == LATIN1_INPUT) {
-        set_iconv(-TRUE, e_iconv);
-    } else if (input_f == SJIS_INPUT) {
-        set_iconv(-TRUE, s_iconv);
-#ifdef UTF8_INPUT_ENABLE
-    } else if (input_f == UTF8_INPUT) {
-        set_iconv(-TRUE, w_iconv);
-    } else if (input_f == UTF16_INPUT) {
-        set_iconv(-TRUE, w_iconv16);
-    } else if (input_f == UTF32_INPUT) {
-        set_iconv(-TRUE, w_iconv32);
-#endif
+    if (input_encoding) {
+        set_iconv(-TRUE, nkf_enc_to_iconv(input_encoding));
     } else {
         set_iconv(FALSE, e_iconv);
     }
@@ -2696,7 +2629,7 @@ void check_bom(FILE *f)
 	if((c2 = (*i_getc)(f)) == 0x00){
 	    if((c2 = (*i_getc)(f)) == 0xFE){
 		if((c2 = (*i_getc)(f)) == 0xFF){
-		    if(!input_f){
+		    if(!input_encoding){
 			set_iconv(TRUE, w_iconv32);
 		    }
 		    if (iconv == w_iconv32) {
@@ -2708,7 +2641,7 @@ void check_bom(FILE *f)
 		(*i_ungetc)(0xFE,f);
 	    }else if(c2 == 0xFF){
 		if((c2 = (*i_getc)(f)) == 0xFE){
-		    if(!input_f){
+		    if(!input_encoding){
 			set_iconv(TRUE, w_iconv32);
 		    }
 		    if (iconv == w_iconv32) {
@@ -2726,7 +2659,7 @@ void check_bom(FILE *f)
     case 0xEF:
 	if((c2 = (*i_getc)(f)) == 0xBB){
 	    if((c2 = (*i_getc)(f)) == 0xBF){
-		if(!input_f){
+		if(!input_encoding){
 		    set_iconv(TRUE, w_iconv);
 		}
 		if (iconv == w_iconv) {
@@ -2742,7 +2675,7 @@ void check_bom(FILE *f)
 	if((c2 = (*i_getc)(f)) == 0xFF){
 	    if((c2 = (*i_getc)(f)) == 0x00){
 		if((c2 = (*i_getc)(f)) == 0x00){
-		    if(!input_f){
+		    if(!input_encoding){
 			set_iconv(TRUE, w_iconv32);
 		    }
 		    if (iconv == w_iconv32) {
@@ -2753,7 +2686,7 @@ void check_bom(FILE *f)
 		}else (*i_ungetc)(c2,f);
 		(*i_ungetc)(0x00,f);
 	    }else (*i_ungetc)(c2,f);
-	    if(!input_f){
+	    if(!input_encoding){
 		set_iconv(TRUE, w_iconv16);
 	    }
 	    if (iconv == w_iconv16) {
@@ -2768,7 +2701,7 @@ void check_bom(FILE *f)
 	if((c2 = (*i_getc)(f)) == 0xFE){
 	    if((c2 = (*i_getc)(f)) == 0x00){
 		if((c2 = (*i_getc)(f)) == 0x00){
-		    if(!input_f){
+		    if(!input_encoding){
 			set_iconv(TRUE, w_iconv32);
 		    }
 		    if (iconv == w_iconv32) {
@@ -2779,7 +2712,7 @@ void check_bom(FILE *f)
 		}else (*i_ungetc)(c2,f);
 		(*i_ungetc)(0x00,f);
 	    }else (*i_ungetc)(c2,f);
-	    if(!input_f){
+	    if(!input_encoding){
 		set_iconv(TRUE, w_iconv16);
 	    }
 	    if (iconv == w_iconv16) {
@@ -2805,11 +2738,7 @@ nkf_char kanji_convert(FILE *f)
     nkf_char    c3, c2=0, c1, c0=0;
     int is_8bit = FALSE;
 
-    if(input_f == SJIS_INPUT || input_f == EUC_INPUT
-#ifdef UTF8_INPUT_ENABLE
-       || input_f == UTF8_INPUT || input_f == UTF16_INPUT
-#endif
-      ){
+    if (input_encoding && !nkf_enc_asciicompat(input_encoding)) {
 	is_8bit = TRUE;
     }
 
@@ -2826,12 +2755,12 @@ nkf_char kanji_convert(FILE *f)
 
     while ((c1 = (*i_getc)(f)) != EOF) {
 #ifdef INPUT_CODE_FIX
-	if (!input_f)
+	if (!input_encoding)
 #endif
 	    code_status(c1);
         if (c2) {
             /* second byte */
-            if (c2 > ((input_f == JIS_INPUT && ms_ucs_map_f) ? 0x92 : DEL)) {
+            if (c2 > ((input_encoding && nkf_enc_cp5022x_p(input_encoding)) ? 0x92 : DEL)) {
                 /* in case of 8th bit is on */
                 if (!estab_f&&!mime_decode_mode) {
                     /* in case of not established yet */
@@ -2920,7 +2849,7 @@ nkf_char kanji_convert(FILE *f)
                 SEND;
 	    } else
 #endif
-	    if (c1 > ((input_f == JIS_INPUT && ms_ucs_map_f) ? 0x92 : DEL)) {
+	    if (c1 > ((input_encoding && nkf_enc_cp5022x_p(input_encoding)) ? 0x92 : DEL)) {
                 /* 8 bit code */
                 if (!estab_f && !iso8859_f) {
                     /* not established yet */
@@ -5019,7 +4948,7 @@ void hira_conv(nkf_char c2, nkf_char c1)
                 c2 = 0x24;
                 (*o_hira_conv)(c2,c1);
                 return;
-            } else if (c1 == 0x74 && (output_conv == w_oconv || output_conv == w_oconv16)) {
+            } else if (c1 == 0x74 && nkf_enc_unicode_p(output_encoding)) {
                 c2 = 0;
                 c1 = CLASS_UNICODE | 0x3094;
                 (*o_hira_conv)(c2,c1);
@@ -6252,7 +6181,6 @@ void reinit(void)
     binmode_f = TRUE;
     rot_f = FALSE;
     hira_f = FALSE;
-    input_f = FALSE;
     alpha_f = FALSE;
     mime_f = MIME_DECODE_DEFAULT;
     mime_decode_f = FALSE;
@@ -6318,7 +6246,6 @@ void reinit(void)
     kanji_intro = DEFAULT_J;
     ascii_intro = DEFAULT_R;
     fold_margin  = FOLD_MARGIN;
-    output_conv = DEFAULT_CONV;
     oconv = DEFAULT_CONV;
     o_zconv = no_connection;
     o_fconv = no_connection;
@@ -6353,6 +6280,7 @@ void reinit(void)
     iconv_for_check = 0;
 #endif
     input_codename = NULL;
+    input_encoding = NULL;
     output_encoding = nkf_enc_from_index(DEFAULT_ENCODING);
 #ifdef WIN32DLL
     reinitdll();
@@ -6491,7 +6419,7 @@ void show_configuration(void)
 	    "OFF"
 #endif
 	    "\n");
-fprintf(HELP_OUTPUT, " --help, --version output: "
+    fprintf(HELP_OUTPUT, "    --help, --version output:    "
 #if HELP_OUTPUT_HELP_OUTPUT
 "HELP_OUTPUT"
 #else

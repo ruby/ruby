@@ -66,8 +66,7 @@ rb_encoding* rb_nkf_enc_get(const char *name)
     int idx = rb_enc_find_index(name);
     if (idx < 0) {
 	nkf_encoding *nkf_enc = nkf_enc_find(name);
-	nkf_native_encoding * nkf_base_enc = nkf_enc_to_base_encoding(nkf_enc);
-	idx = rb_enc_find_index(nkf_enc_name(nkf_base_enc));
+	idx = rb_enc_find_index(nkf_enc_name(nkf_enc_to_base_encoding(nkf_enc)));
 	if (idx < 0) {
 	    idx = rb_define_dummy_encoding(name);
 	} else {
@@ -127,7 +126,7 @@ int nkf_split_options(const char *arg)
 
 /*
  *  call-seq:
- *     NKF.nkf(opt, str)   -> string
+ *     NKF.nkf(opt, str)   => string
  *
  *  Convert _str_ and return converted result.
  *  Conversion details are specified by _opt_ as String.
@@ -176,7 +175,7 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 
 /*
  *  call-seq:
- *     NKF.guess(str)  -> encoding
+ *     NKF.guess(str)  => encoding
  *
  *  Returns guessed encoding of _str_ by nkf routine.
  *
@@ -402,7 +401,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *
  *  [Shift_JIS] SJIS, MS-Kanji
  *
- *  [CP932] a.k.a. Windows-31J
+ *  [Windows-31J] a.k.a. CP932
  *
  *  [UTF-8] same as UTF-8N
  *
