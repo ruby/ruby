@@ -117,6 +117,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
     int sign = 0;
     size_t len;
     unsigned long ret;
+    const char *subject_found = str;
 
     if (base == 1 || 36 < base) {
         errno = EINVAL;
@@ -136,6 +137,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
     }
 
     if (str[0] == '0') {
+        subject_found = str+1;
         if (base == 0 || base == 16) {
             if (str[1] == 'x' || str[1] == 'X') {
                 b = 16;
@@ -157,8 +159,11 @@ ruby_strtoul(const char *str, char **endptr, int base)
 
     ret = scan_digits(str, b, &len, &overflow);
 
+    if (0 < len)
+        subject_found = str+len;
+
     if (endptr)
-        *endptr = (char*)(str+len);
+        *endptr = (char*)subject_found;
 
     if (overflow) {
         errno = ERANGE;
@@ -166,7 +171,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
     }
 
     if (sign < 0) {
-        ret = -(long)ret;
+        ret = -ret;
         return ret;
     }
     else {
