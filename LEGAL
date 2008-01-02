@@ -148,11 +148,9 @@ missing/isinf.c:
 missing/isnan.c:
 missing/memcmp.c:
 missing/memmove.c:
-missing/strcasecmp.c:
 missing/strchr.c:
 missing/streror.c:
 missing/strftime.c:
-missing/strncasecmp.c:
 missing/strstr.c:
 missing/strtol.c:
 ext/digest/sha1/sha1.[ch]:
