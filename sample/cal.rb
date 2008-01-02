@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 
-# cal.rb: Written by Tadayoshi Funaba 1998-2004
-# $Id: cal.rb,v 2.8 2004-09-25 12:50:10+09 tadf Exp $
+# cal.rb: Written by Tadayoshi Funaba 1998-2004,2006
+# $Id: cal.rb,v 2.10 2006-12-30 21:44:44+09 tadf Exp $
 
 require 'date'
 
@@ -9,25 +9,25 @@ class Cal
 
   START =
     {
-    'cn' => true,    # China
-    'de' => 2342032, # Germany (protestant states)
-    'dk' => 2342032, # Denmark
-    'es' => 2299161, # Spain
-    'fi' => 2361390, # Finland
-    'fr' => 2299227, # France
-    'gb' => 2361222, # United Kingdom
-    'gr' => 2423868, # Greece
-    'hu' => 2301004, # Hungary
-    'it' => 2299161, # Italy
-    'jp' => true,    # Japan
-    'no' => 2342032, # Norway
-    'pl' => 2299161, # Poland
-    'pt' => 2299161, # Portugal
-    'ru' => 2421639, # Russia
-    'se' => 2361390, # Sweden
-    'us' => 2361222, # United States
-    'os' => false,   # (old style)
-    'ns' => true     # (new style)
+    'cn' => Date::GREGORIAN, # China
+    'de' => 2342032,         # Germany (protestant states)
+    'dk' => 2342032,         # Denmark
+    'es' => 2299161,         # Spain
+    'fi' => 2361390,         # Finland
+    'fr' => 2299227,         # France
+    'gb' => 2361222,         # United Kingdom
+    'gr' => 2423868,         # Greece
+    'hu' => 2301004,         # Hungary
+    'it' => 2299161,         # Italy
+    'jp' => Date::GREGORIAN, # Japan
+    'no' => 2342032,         # Norway
+    'pl' => 2299161,         # Poland
+    'pt' => 2299161,         # Portugal
+    'ru' => 2421639,         # Russia
+    'se' => 2361390,         # Sweden
+    'us' => 2361222,         # United States
+    'os' => Date::JULIAN,    # (old style)
+    'ns' => Date::GREGORIAN  # (new style)
   }
 
   DEFAULT_START = 'gb'
@@ -72,7 +72,7 @@ class Cal
 
     ca = %w(January February March April May June July
 	    August September October November December)[m - 1]
-    ca = ca + ' ' + y.to_s if not @opt_y
+    ca = ca + ' ' + y.to_s if !@opt_y
     ca = ca.center(@mw)
 
     ta.unshift(ca)
@@ -150,13 +150,13 @@ if __FILE__ == $0
   end
 
   y, m = ARGV.values_at(1, 0).compact.collect{|x| x.to_i}
-  cal.opt_y(true) if y and not m
+  cal.opt_y(true) if y && !m
 
   to = Date.today
   y ||= to.year
   m ||= to.mon
 
-  usage unless m >= 1 and m <= 12
+  usage unless m >= 1 && m <= 12
   usage unless y >= -4712
 
   print cal.print(y, m)
