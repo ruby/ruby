@@ -817,7 +817,7 @@ str_isnumber(const char *p)
     if (!p || *p == '\0')
        return 0;
     ep = NULL;
-    (void)strtoul(p, &ep, 10);
+    (void)STRTOUL(p, &ep, 10);
     if (ep && *ep == '\0')
        return 1;
     else
@@ -3165,7 +3165,7 @@ sock_s_getservbyname(int argc, VALUE *argv)
 	char *s = RSTRING_PTR(service);
 	char *end;
 
-	port = strtoul(s, &end, 0);
+	port = STRTOUL(s, &end, 0);
 	if (*end != '\0') {
 	    rb_raise(rb_eSocket, "no such service %s/%s", s, RSTRING_PTR(proto));
 	}

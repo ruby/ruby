@@ -394,7 +394,6 @@ strftime.$(OBJEXT): {$(VPATH)}strftime.c
 strstr.$(OBJEXT): {$(VPATH)}strstr.c
 strtod.$(OBJEXT): {$(VPATH)}strtod.c
 strtol.$(OBJEXT): {$(VPATH)}strtol.c
-strtoul.$(OBJEXT): {$(VPATH)}strtoul.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
 x68.$(OBJEXT): {$(VPATH)}x68.c
 os2.$(OBJEXT): {$(VPATH)}os2.c

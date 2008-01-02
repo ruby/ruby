@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/util.h"
 
 #include <math.h>
 #include <float.h>
@@ -483,7 +484,7 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     len *= strlen(str)*sizeof(char);
 
     if (len <= (sizeof(long)*CHAR_BIT)) {
-	unsigned long val = strtoul(str, &end, base);
+	unsigned long val = STRTOUL(str, &end, base);
 
 	if (str < end && *end == '_') goto bigparse;
 	if (badcheck) {

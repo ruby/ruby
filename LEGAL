@@ -157,22 +157,6 @@ ext/digest/sha1/sha1.[ch]:
 
   These files are all under public domain.
 
-missing/strtoul.c:
-
-  This file will not be used on most platforms depending on how the
-  configure script results.  In any case you must not receive any fee
-  with the file itself.
-
-    Copyright 1988 Regents of the University of California
-
-    Permission to use, copy, modify, and distribute this
-    software and its documentation for any purpose and without
-    fee is hereby granted, provided that the above copyright
-    notice appear in all copies.  The University of California
-    makes no representations about the suitability of this
-    software for any purpose.  It is provided "as is" without
-    express or implied warranty.
-
 missing/erf.c:
 missing/crypt.c:
 missing/vsnprintf.c:

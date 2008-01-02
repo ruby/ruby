@@ -133,10 +133,6 @@ extern long strtol(const char *, char **, int);
 #endif
 */
 
-#ifndef HAVE_STRTOUL
-extern unsigned long strtoul(const char *, char **, int);
-#endif
-
 #ifndef HAVE_VSNPRINTF
 # include <stdarg.h>
 extern int snprintf(char *, size_t n, char const *, ...);

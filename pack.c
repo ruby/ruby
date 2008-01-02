@@ -492,7 +492,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {
-	    len = strtoul(p, (char**)&p, 10);
+	    len = STRTOUL(p, (char**)&p, 10);
 	}
 	else {
 	    len = 1;
@@ -1351,7 +1351,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {
-	    len = strtoul(p, (char**)&p, 10);
+	    len = STRTOUL(p, (char**)&p, 10);
 	}
 	else {
 	    len = (type != '@');

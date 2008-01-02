@@ -63,6 +63,117 @@ ruby_scan_hex(const char *start, int len, int *retlen)
     return retval;
 }
 
+static unsigned long
+scan_digits(const char *str, int base, size_t *retlen, int *overflow)
+{
+    static char table[] = {
+        /*     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
+        /*0*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*1*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*2*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*3*/  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,-1,-1,-1,-1,-1,-1,
+        /*4*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
+        /*5*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
+        /*6*/ -1,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,
+        /*7*/ 25,26,27,28,29,30,31,32,33,34,35,-1,-1,-1,-1,-1,
+        /*8*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*9*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*a*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*b*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*c*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*d*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*e*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+        /*f*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+    };
+
+    const char *start = str;
+    unsigned long ret = 0, x;
+    unsigned long MUL_OVERFLOW = (~(unsigned long)0) / base;
+    int c;
+    *overflow = 0;
+
+    while ((c = (unsigned char)*str++) != '\0') {
+        int d = table[c];
+        if (d == -1 || base <= d) {
+            *retlen = (str-1) - start;
+            return ret;
+        }
+        if (MUL_OVERFLOW < ret)
+            *overflow = 1;
+        ret *= base;
+        x = ret;
+        ret += d; 
+        if (ret < x)
+            *overflow = 1;
+    }
+    *retlen = (str-1) - start;
+    return ret;
+}
+
+unsigned long
+ruby_strtoul(const char *str, char **endptr, int base)
+{
+    int c, b, overflow;
+    int sign = 0;
+    size_t len;
+    unsigned long ret;
+
+    if (base == 1 || 36 < base) {
+        errno = EINVAL;
+        return 0;
+    }
+
+    while ((c = *str) && ISSPACE(c))
+        str++;
+
+    if (c == '+') {
+        sign = 1;
+        str++;
+    }
+    else if (c == '-') {
+        sign = -1;
+        str++;
+    }
+
+    if (str[0] == '0') {
+        if (base == 0 || base == 16) {
+            if (str[1] == 'x' || str[1] == 'X') {
+                b = 16;
+                str += 2;
+            }
+            else {
+                b = base == 0 ? 8 : 16;
+                str++;
+            }
+        }
+        else {
+            b = base;
+            str++;
+        }
+    }
+    else {
+        b = base == 0 ? 10 : base;
+    }
+
+    ret = scan_digits(str, b, &len, &overflow);
+
+    if (endptr)
+        *endptr = (char*)(str+len);
+
+    if (overflow) {
+        errno = ERANGE;
+        return ULONG_MAX;
+    }
+
+    if (sign < 0) {
+        ret = -(long)ret;
+        return ret;
+    }
+    else {
+        return ret;
+    }
+}
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef HAVE_UNISTD_H

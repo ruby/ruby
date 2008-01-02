@@ -633,7 +633,7 @@ powerpc-darwin*)
 esac
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove strerror strftime\
-		 strchr strstr strtoul crypt flock vsnprintf\
+		 strchr strstr crypt flock vsnprintf\
 		 isnan finite isinf hypot acosh erf strlcpy strlcat)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd eaccess\
 	      truncate chsize times utimes utimensat fcntl lockf lstat\

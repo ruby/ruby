@@ -986,4 +986,7 @@ int rb_remove_event_hook(rb_event_hook_func_t func);
 #define STRCASECMP(s1, s2) (st_strcasecmp(s1, s2))
 #define STRNCASECMP(s1, s2, n) (st_strncasecmp(s1, s2, n))
 
+unsigned long ruby_strtoul(const char *str, char **endptr, int base);
+#define STRTOUL(str, endptr, base) (ruby_strtoul(str, endptr, base))
+
 #endif /* RUBY_H */
