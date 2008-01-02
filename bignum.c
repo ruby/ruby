@@ -11,7 +11,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/util.h"
 
 #include <math.h>
 #include <float.h>
