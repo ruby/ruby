@@ -1,7 +1,8 @@
 Wed Jan  2 15:23:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* util.c (ruby_strtoul): locale independent strtoul is implemented to
-	  avoid "i".to_i(36) cause 0 under tr_TR locale.
+	  avoid "i".to_i(36) cause 0 under tr_TR locale on Debian GNU/Linux
+	  4.0 (Etch).
 	  This is newly implemented, not a copy of missing/strtoul.c.
 
 	* include/ruby/ruby.h (ruby_strtoul): declared.
