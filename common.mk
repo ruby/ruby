@@ -387,8 +387,6 @@ flock.$(OBJEXT): {$(VPATH)}flock.c
 memcmp.$(OBJEXT): {$(VPATH)}memcmp.c
 memmove.$(OBJEXT): {$(VPATH)}memmove.c
 mkdir.$(OBJEXT): {$(VPATH)}mkdir.c
-strcasecmp.$(OBJEXT): {$(VPATH)}strcasecmp.c
-strncasecmp.$(OBJEXT): {$(VPATH)}strncasecmp.c
 strchr.$(OBJEXT): {$(VPATH)}strchr.c
 strdup.$(OBJEXT): {$(VPATH)}strdup.c
 strerror.$(OBJEXT): {$(VPATH)}strerror.c

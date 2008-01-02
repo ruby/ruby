@@ -1,3 +1,8 @@
+Wed Jan  2 14:01:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (strcasecmp.o): removed.
+	  (strncasecmp.o): removed.
+
 Wed Jan  2 11:34:57 2008  Tanaka Akira  <akr@fsij.org>
 
 	* missing/strcasecmp.c: removed.  Ruby don't use locale dependent
