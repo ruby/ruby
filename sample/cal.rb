@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 
-# cal.rb: Written by Tadayoshi Funaba 1998-2004
-# $Id: cal.rb,v 2.7 2004-01-10 23:52:51+09 tadf Exp $
+# cal.rb: Written by Tadayoshi Funaba 1998-2004,2006
+# $Id: cal.rb,v 2.10 2006-12-30 21:44:44+09 tadf Exp $
 
 require 'date'
 
@@ -9,25 +9,25 @@ class Cal
 
   START =
     {
-    'cn' => true,    # China
-    'de' => 2342032, # Germany (protestant states)
-    'dk' => 2342032, # Denmark
-    'es' => 2299161, # Spain
-    'fi' => 2361390, # Finland
-    'fr' => 2299227, # France
-    'gb' => 2361222, # United Kingdom
-    'gr' => 2423868, # Greece
-    'hu' => 2301004, # Hungary
-    'it' => 2299161, # Italy
-    'jp' => true,    # Japan
-    'no' => 2342032, # Norway
-    'pl' => 2299161, # Poland
-    'pt' => 2299161, # Portugal
-    'ru' => 2421639, # Russia
-    'se' => 2361390, # Sweden
-    'us' => 2361222, # United States
-    'os' => false,   # (old style)
-    'ns' => true     # (new style)
+    'cn' => Date::GREGORIAN, # China
+    'de' => 2342032,         # Germany (protestant states)
+    'dk' => 2342032,         # Denmark
+    'es' => 2299161,         # Spain
+    'fi' => 2361390,         # Finland
+    'fr' => 2299227,         # France
+    'gb' => 2361222,         # United Kingdom
+    'gr' => 2423868,         # Greece
+    'hu' => 2301004,         # Hungary
+    'it' => 2299161,         # Italy
+    'jp' => Date::GREGORIAN, # Japan
+    'no' => 2342032,         # Norway
+    'pl' => 2299161,         # Poland
+    'pt' => 2299161,         # Portugal
+    'ru' => 2421639,         # Russia
+    'se' => 2361390,         # Sweden
+    'us' => 2361222,         # United States
+    'os' => Date::JULIAN,    # (old style)
+    'ns' => Date::GREGORIAN  # (new style)
   }
 
   DEFAULT_START = 'gb'
@@ -72,7 +72,7 @@ class Cal
 
     ca = %w(January February March April May June July
 	    August September October November December)[m - 1]
-    ca = ca + ' ' + y.to_s if not @opt_y
+    ca = ca + ' ' + y.to_s if !@opt_y
     ca = ca.center(@mw)
 
     ta.unshift(ca)
@@ -121,33 +121,43 @@ end
 
 if __FILE__ == $0
 
-  require 'getopts'
+  require 'getoptlong'
 
   def usage
     warn 'usage: cal [-c iso3166] [-jmty] [[month] year]'
     exit 1
   end
 
-  usage unless getopts('jmty', "c:#{Cal::DEFAULT_START}")
+  cal = Cal.new
+
+  begin
+    GetoptLong.new(['-c', GetoptLong::REQUIRED_ARGUMENT],
+		   ['-j', GetoptLong::NO_ARGUMENT],
+		   ['-m', GetoptLong::NO_ARGUMENT],
+		   ['-t', GetoptLong::NO_ARGUMENT],
+		   ['-y', GetoptLong::NO_ARGUMENT]).
+    each do |opt, arg|
+      case opt
+      when '-c'; cal.opt_c(arg) || raise
+      when '-j'; cal.opt_j(true)
+      when '-m'; cal.opt_m(true)
+      when '-t'; cal.opt_t(true)
+      when '-y'; cal.opt_y(true)
+      end
+    end
+  rescue
+    usage
+  end
 
   y, m = ARGV.values_at(1, 0).compact.collect{|x| x.to_i}
-  $OPT_y ||= (y and not m)
+  cal.opt_y(true) if y && !m
 
   to = Date.today
   y ||= to.year
   m ||= to.mon
 
-  usage unless m >= 1 and m <= 12
+  usage unless m >= 1 && m <= 12
   usage unless y >= -4712
-  usage if Cal::START[$OPT_c].nil?
-
-  cal = Cal.new
-
-  cal.opt_j($OPT_j)
-  cal.opt_m($OPT_m)
-  cal.opt_t($OPT_t)
-  cal.opt_y($OPT_y)
-  cal.opt_c($OPT_c)
 
   print cal.print(y, m)
 
