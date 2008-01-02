@@ -110,14 +110,6 @@ extern double modf(double, double *);
 #endif
 */
 
-#ifndef HAVE_STRCASECMP
-extern int strcasecmp(const char *, const char *);
-#endif
-
-#ifndef HAVE_STRNCASECMP
-extern int strncasecmp(const char *, const char *, size_t);
-#endif
-
 #ifndef HAVE_STRCHR
 extern char *strchr(const char *, int);
 extern char *strrchr(const char *, int);
