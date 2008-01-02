@@ -21,7 +21,6 @@ freq.rb		count word occurrence
 from.rb		scan mail spool
 fullpath.rb	convert ls -lR to fullpath format
 getopts.test	test fot getopt.rb
-goodfriday.rb	print various christian calendar event.
 io.rb		io test
 irb.rb		interactive ruby
 less.rb		front end for less
