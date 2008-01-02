@@ -1,3 +1,26 @@
+Thu Jan  3 05:02:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/us_ascii.c: add us_ascii_ prefix for functions to ease
+	  setting breakpoint when debugging.
+
+	* enc/euc_jp.c: add eucjp_ prefix.
+
+	* enc/sjis.c: add sjis_ prefix.
+
+	* enc/iso_8859_1.c: add iso_8859_1_ prefix.
+
+	* enc/iso_8859_2.c: add iso_8859_2_ prefix.
+
+	* enc/iso_8859_3.c: add iso_8859_3_ prefix.
+
+	* enc/iso_8859_4.c: add iso_8859_4_ prefix.
+
+	* enc/iso_8859_5.c: add iso_8859_5_ prefix.
+
+	* enc/iso_8859_6.c: add iso_8859_6_ prefix.
+
+	* enc/iso_8859_7.c: add iso_8859_7_ prefix.
+
 Thu Jan  3 02:44:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* bignum.c (conv_digit): use ISDIGIT, ISLOWER and ISUPPER.

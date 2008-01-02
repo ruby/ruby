@@ -1,7 +1,7 @@
 #include "regenc.h"
 
 extern int
-mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+us_ascii_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
     if (*p & 0x80)
         return ONIGENC_CONSTRUCT_MBCLEN_INVALID();
@@ -9,7 +9,7 @@ mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 }
 
 OnigEncodingDefine(us_ascii, US_ASCII) = {
-  mbc_enc_len,
+  us_ascii_mbc_enc_len,
   "US-ASCII",/* name */
   1,           /* max byte length */
   1,           /* min byte length */

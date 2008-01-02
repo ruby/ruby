@@ -114,7 +114,7 @@ static const signed char trans[][0x100] = {
 #undef F
 
 static int
-mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+eucjp_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
   int firstbyte = *p++;
   state_t s;
@@ -132,7 +132,7 @@ mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 }
 
 static OnigCodePoint
-mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
+eucjp_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
   int c, i, len;
   OnigCodePoint n;
@@ -150,7 +150,7 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 }
 
 static int
-code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
+eucjp_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 {
   if (ONIGENC_IS_CODE_ASCII(code)) return 1;
   else if (code > 0xffffff) return 0;
@@ -179,7 +179,7 @@ code_to_mbc_first(OnigCodePoint code)
 #endif
 
 static int
-code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
+eucjp_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
   UChar *p = buf;
 
@@ -195,7 +195,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 }
 
 static int
-mbc_case_fold(OnigCaseFoldType flag,
+eucjp_mbc_case_fold(OnigCaseFoldType flag,
 	      const UChar** pp, const UChar* end, UChar* lower,
 	      OnigEncoding enc)
 {
@@ -220,7 +220,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 }
 
 static UChar*
-left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+eucjp_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 {
   /* In this encoding
      mb-trail bytes doesn't mix with single bytes.
@@ -239,7 +239,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 }
 
 static int
-is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc)
+eucjp_is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc)
 {
   const UChar c = *s;
   if (c <= 0x7e || c == 0x8e || c == 0x8f)
@@ -281,7 +281,7 @@ init_property_list(void)
 }
 
 static int
-property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
+eucjp_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
   int ctype;
 
@@ -295,14 +295,14 @@ property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 }
 
 static int
-is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
+eucjp_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
     if (code < 128)
       return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
     else {
       if (CTYPE_IS_WORD_GRAPH_PRINT(ctype)) {
-	return (code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
+	return (eucjp_code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
       }
     }
   }
@@ -320,7 +320,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 }
 
 static int
-get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
+eucjp_get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
 		     const OnigCodePoint* ranges[], OnigEncoding enc)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
@@ -342,21 +342,21 @@ get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
 
 
 OnigEncodingDefine(euc_jp, EUC_JP) = {
-  mbc_enc_len,
+  eucjp_mbc_enc_len,
   "EUC-JP",   /* name */
   3,          /* max enc length */
   1,          /* min enc length */
   onigenc_is_mbc_newline_0x0a,
-  mbc_to_code,
-  code_to_mbclen,
-  code_to_mbc,
-  mbc_case_fold,
+  eucjp_mbc_to_code,
+  eucjp_code_to_mbclen,
+  eucjp_code_to_mbc,
+  eucjp_mbc_case_fold,
   onigenc_ascii_apply_all_case_fold,
   onigenc_ascii_get_case_fold_codes_by_str,
-  property_name_to_ctype,
-  is_code_ctype,
-  get_ctype_code_range,
-  left_adjust_char_head,
-  is_allowed_reverse_match,
+  eucjp_property_name_to_ctype,
+  eucjp_is_code_ctype,
+  eucjp_get_ctype_code_range,
+  eucjp_left_adjust_char_head,
+  eucjp_is_allowed_reverse_match,
   0
 };
