@@ -19,7 +19,6 @@ fib.scm		Fibonacci number (Scheme)
 freq.rb		count word occurrence
 from.rb		scan mail spool
 fullpath.rb	convert ls -lR to fullpath format
-goodfriday.rb	print various christian calendar event.
 io.rb		io test
 irb.rb		interactive ruby
 less.rb		front end for less
