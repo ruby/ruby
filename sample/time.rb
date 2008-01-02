@@ -1,8 +1,12 @@
-#! /usr/local/bin/ruby
-cmd = ARGV.join(" ")
+#! /usr/bin/env ruby
+
 b = Time.now
-system(cmd)
+system(*ARGV)
 e = Time.now
-ut, st, cut, cst = Time.times.to_a
-total = (e - b).to_f
-STDERR.printf "%11.1f real %11.1f user %11.1f sys\n", total, cut, cst
+
+tms = Process.times
+real = e - b
+user = tms.cutime
+sys = tms.cstime
+
+STDERR.printf("%11.1f real %11.1f user %11.1f sys\n", real, user, sys)
