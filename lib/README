@@ -47,7 +47,7 @@ profiler.rb	ruby profiler module
 pstore.rb	persistent object strage using marshal
 racc/parser.rb	racc (Ruby yACC) runtime
 rational.rb	rational number support
-rdoc            source-code documentation tool
+rdoc	source-code documentation tool
 resolv-replace.rb	replace Socket DNS by resolve.rb
 resolv.rb	DNS resolver in Ruby
 rexml		an XML parser for Ruby, in Ruby
