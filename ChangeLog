@@ -1,3 +1,7 @@
+Thu Jan  3 02:44:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (conv_digit): use ISDIGIT, ISLOWER and ISUPPER.
+
 Wed Jan  2 23:50:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* util.c (ruby_strtoul): "0x", "+" and "-" is not a valid integer.

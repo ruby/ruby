@@ -380,9 +380,9 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 
 #define conv_digit(c) \
     (!ISASCII(c) ? -1 : \
-     isdigit(c) ? ((c) - '0') : \
-     islower(c) ? ((c) - 'a' + 10) : \
-     isupper(c) ? ((c) - 'A' + 10) : \
+     ISDIGIT(c) ? ((c) - '0') : \
+     ISLOWER(c) ? ((c) - 'a' + 10) : \
+     ISUPPER(c) ? ((c) - 'A' + 10) : \
      -1)
 
     if (!str) {
