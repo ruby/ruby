@@ -66,7 +66,7 @@ ruby_scan_hex(const char *start, int len, int *retlen)
 static unsigned long
 scan_digits(const char *str, int base, size_t *retlen, int *overflow)
 {
-    static char table[] = {
+    static signed char table[] = {
         /*     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f */
         /*0*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
         /*1*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
