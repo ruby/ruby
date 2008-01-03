@@ -2169,6 +2169,7 @@ fptr_finalize(fptr, noraise)
 {
     int n1 = 0, n2 = 0, f1, f2 = -1;
 
+    errno = 0;
     if (fptr->f2) {
 	f2 = fileno(fptr->f2);
 	while (n2 = 0, fflush(fptr->f2) < 0) {

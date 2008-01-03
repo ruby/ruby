@@ -1,3 +1,7 @@
+Thu Jan  3 11:28:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): clear errno first.  [ruby-talk:284492]
+
 Wed Jan  2 10:18:56 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* sample/time.rb: use Process.times instead of Time.times.
