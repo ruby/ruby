@@ -1,3 +1,8 @@
+Fri Jan  4 00:20:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_ungetc): move data in buffer if it is required to store the
+	  argument.
+
 Thu Jan  3 21:56:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (st_strcasecmp): declared for STRCASECMP.

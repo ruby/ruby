@@ -320,8 +320,14 @@ io_ungetc(VALUE str, rb_io_t *fptr)
 	    fptr->rbuf_capa = 8192;
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
-    if (fptr->rbuf_off < len) {
+    if (fptr->rbuf_capa < len + fptr->rbuf_len) {
 	rb_raise(rb_eIOError, "ungetc failed");
+    }
+    if (fptr->rbuf_off < len) {
+        MEMMOVE(fptr->rbuf+fptr->rbuf_capa-fptr->rbuf_len,
+                fptr->rbuf+fptr->rbuf_off,
+                char, fptr->rbuf_len);
+        fptr->rbuf_off = fptr->rbuf_capa-fptr->rbuf_len;
     }
     fptr->rbuf_off-=len;
     fptr->rbuf_len+=len;
