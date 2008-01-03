@@ -1,3 +1,8 @@
+Thu Jan  3 21:56:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (st_strcasecmp): declared for STRCASECMP.
+	  (st_strncasecmp): declared for STRNCASECMP.
+
 Thu Jan  3 20:24:48 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* eval_jump.c (rb_f_catch): Resotre cfp if catched thrown object.

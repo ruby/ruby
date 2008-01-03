@@ -961,13 +961,6 @@ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events,
 		       VALUE data);
 int rb_remove_event_hook(rb_event_hook_func_t func);
 
-#if defined(__cplusplus)
-#if 0
-{ /* satisfy cc-mode */
-#endif
-}  /* extern "C" { */
-#endif
-
 /* locale insensitive functions */
 
 #define rb_isascii(c) ((unsigned long)(c) < 128)
@@ -1000,10 +993,19 @@ int rb_toupper(int c);
 #endif
 #define TOUPPER(c) rb_toupper((unsigned char)c)
 #define TOLOWER(c) rb_tolower((unsigned char)c)
+
+int st_strcasecmp(const char *s1, const char *s2);
+int st_strncasecmp(const char *s1, const char *s2, size_t n);
 #define STRCASECMP(s1, s2) (st_strcasecmp(s1, s2))
 #define STRNCASECMP(s1, s2, n) (st_strncasecmp(s1, s2, n))
 
 unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 #define STRTOUL(str, endptr, base) (ruby_strtoul(str, endptr, base))
 
+#if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
+}  /* extern "C" { */
+#endif
 #endif /* RUBY_H */
