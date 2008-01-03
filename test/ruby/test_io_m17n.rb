@@ -223,6 +223,17 @@ EOT
     }
   end
 
+  def test_getc_stateful_conversion
+    with_tmpdir {
+      src = "\e$B\x23\x30\x23\x31\e(B".force_encoding("iso-2022-jp")
+      generate_file('tmp', src)
+      open("tmp", "r:iso-2022-jp:euc-jp") {|f|
+        assert_equal("\xa3\xb0".force_encoding("euc-jp"), f.getc)
+        assert_equal("\xa3\xb1".force_encoding("euc-jp"), f.getc)
+      }
+    }
+  end
+
   def test_open_ascii
     with_tmpdir {
       src = "abc\n"
