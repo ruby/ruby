@@ -115,7 +115,7 @@ static const signed char trans[][0x100] = {
 #undef F
 
 static int
-sjis_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 {
   int firstbyte = *p++;
   state_t s;
@@ -129,7 +129,7 @@ sjis_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 }
 
 static int
-sjis_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
+code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 {
   if (code < 256) {
     if (EncLen_SJIS[(int )code] == 1)
@@ -145,7 +145,7 @@ sjis_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 }
 
 static OnigCodePoint
-sjis_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
+mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
   int c, i, len;
   OnigCodePoint n;
@@ -164,7 +164,7 @@ sjis_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 }
 
 static int
-sjis_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
+code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
   UChar *p = buf;
 
@@ -179,7 +179,7 @@ sjis_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 }
 
 static int
-sjis_mbc_case_fold(OnigCaseFoldType flag,
+mbc_case_fold(OnigCaseFoldType flag,
 	      const UChar** pp, const UChar* end, UChar* lower,
 	      OnigEncoding enc)
 {
@@ -214,13 +214,13 @@ is_mbc_ambiguous(OnigCaseFoldType flag,
 
 #if 0
 static int
-sjis_is_code_ctype(OnigCodePoint code, unsigned int ctype)
+is_code_ctype(OnigCodePoint code, unsigned int ctype)
 {
   if (code < 128)
     return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
   else {
     if (CTYPE_IS_WORD_GRAPH_PRINT(ctype)) {
-      return (sjis_code_to_mbclen(code) > 1 ? TRUE : FALSE);
+      return (code_to_mbclen(code) > 1 ? TRUE : FALSE);
     }
   }
 
@@ -229,7 +229,7 @@ sjis_is_code_ctype(OnigCodePoint code, unsigned int ctype)
 #endif
 
 static UChar*
-sjis_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 {
   const UChar *p;
   int len;
@@ -252,7 +252,7 @@ sjis_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 }
 
 static int
-sjis_is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc)
+is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc)
 {
   const UChar c = *s;
   return (SJIS_ISMB_TRAIL(c) ? FALSE : TRUE);
@@ -292,7 +292,7 @@ init_property_list(void)
 }
 
 static int
-sjis_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
+property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
   int ctype;
 
@@ -306,14 +306,14 @@ sjis_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 }
 
 static int
-sjis_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
+is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
     if (code < 128)
       return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
     else {
       if (CTYPE_IS_WORD_GRAPH_PRINT(ctype)) {
-	return (sjis_code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
+	return (code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
       }
     }
   }
@@ -331,7 +331,7 @@ sjis_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 }
 
 static int
-sjis_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
+get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
 		     const OnigCodePoint* ranges[], OnigEncoding enc)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
@@ -352,21 +352,21 @@ sjis_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
 }
 
 OnigEncodingDefine(sjis, SJIS) = {
-  sjis_mbc_enc_len,
+  mbc_enc_len,
   "Shift_JIS",   /* name */
   2,             /* max byte length */
   1,             /* min byte length */
   onigenc_is_mbc_newline_0x0a,
-  sjis_mbc_to_code,
-  sjis_code_to_mbclen,
-  sjis_code_to_mbc,
-  sjis_mbc_case_fold,
+  mbc_to_code,
+  code_to_mbclen,
+  code_to_mbc,
+  mbc_case_fold,
   onigenc_ascii_apply_all_case_fold,
   onigenc_ascii_get_case_fold_codes_by_str,
-  sjis_property_name_to_ctype,
-  sjis_is_code_ctype,
-  sjis_get_ctype_code_range,
-  sjis_left_adjust_char_head,
-  sjis_is_allowed_reverse_match,
+  property_name_to_ctype,
+  is_code_ctype,
+  get_ctype_code_range,
+  left_adjust_char_head,
+  is_allowed_reverse_match,
   0
 };

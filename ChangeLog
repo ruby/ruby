@@ -1,3 +1,42 @@
+Fri Jan  4 02:53:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/euc_jp.c: remove eucjp_ prefix.  breakpoint can be specified as
+	  euc_jp.c:mbc_enc_len.  avoid needless conflict by merge.
+
+	* enc/sjis.c: remove sjis_ prefix.
+
+	* enc/utf8.c: remove utf8_ prefix.
+
+	* enc/iso_8859_1.c: remove iso_8859_1_ prefix.
+
+	* enc/iso_8859_2.c: remove iso_8859_2_ prefix.
+
+	* enc/iso_8859_3.c: remove iso_8859_3_ prefix.
+
+	* enc/iso_8859_4.c: remove iso_8859_4_ prefix.
+
+	* enc/iso_8859_5.c: remove iso_8859_5_ prefix.
+
+	* enc/iso_8859_6.c: remove iso_8859_6_ prefix.
+
+	* enc/iso_8859_7.c: remove iso_8859_7_ prefix.
+
+	* enc/iso_8859_8.c: remove iso_8859_8_ prefix.
+
+	* enc/iso_8859_9.c: remove iso_8859_9_ prefix.
+
+	* enc/iso_8859_10.c: remove iso_8859_10_ prefix.
+
+	* enc/iso_8859_11.c: remove iso_8859_11_ prefix.
+
+	* enc/iso_8859_13.c: remove iso_8859_13_ prefix.
+
+	* enc/iso_8859_14.c: remove iso_8859_14_ prefix.
+
+	* enc/iso_8859_15.c: remove iso_8859_15_ prefix.
+
+	* enc/iso_8859_16.c: remove iso_8859_16_ prefix.
+
 Fri Jan  4 02:47:06 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_search): iterate onig_match for reverse mode.

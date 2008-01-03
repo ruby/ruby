@@ -104,7 +104,7 @@ static const unsigned short EncISO_8859_9_CtypeTable[256] = {
 };
 
 static int
-iso_8859_9_mbc_case_fold(OnigCaseFoldType flag,
+mbc_case_fold(OnigCaseFoldType flag,
 	      const UChar** pp, const UChar* end, UChar* lower,
 	      OnigEncoding enc)
 {
@@ -149,7 +149,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end)
 #endif
 
 static int
-iso_8859_9_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
+is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
   if (code < 256)
     return ENC_IS_ISO_8859_9_CTYPE(code, ctype);
@@ -192,7 +192,7 @@ static const OnigPairCaseFoldCodes CaseFoldMap[] = {
 };
 
 static int
-iso_8859_9_apply_all_case_fold(OnigCaseFoldType flag,
+apply_all_case_fold(OnigCaseFoldType flag,
 			       OnigApplyAllCaseFoldFunc f, void* arg,
 			       OnigEncoding enc)
 {
@@ -202,7 +202,7 @@ iso_8859_9_apply_all_case_fold(OnigCaseFoldType flag,
 }
 
 static int
-iso_8859_9_get_case_fold_codes_by_str(OnigCaseFoldType flag,
+get_case_fold_codes_by_str(OnigCaseFoldType flag,
 				      const OnigUChar* p, const OnigUChar* end,
 				      OnigCaseFoldCodeItem items[],
 				      OnigEncoding enc)
@@ -221,11 +221,11 @@ OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   onigenc_single_byte_mbc_to_code,
   onigenc_single_byte_code_to_mbclen,
   onigenc_single_byte_code_to_mbc,
-  iso_8859_9_mbc_case_fold,
-  iso_8859_9_apply_all_case_fold,
-  iso_8859_9_get_case_fold_codes_by_str,
+  mbc_case_fold,
+  apply_all_case_fold,
+  get_case_fold_codes_by_str,
   onigenc_minimum_property_name_to_ctype,
-  iso_8859_9_is_code_ctype,
+  is_code_ctype,
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
