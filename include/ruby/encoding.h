@@ -136,20 +136,4 @@ VALUE rb_enc_default_external(void);
 void rb_enc_set_default_external(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);
 
-#define rb_isascii(c) ((unsigned long)(c) < 128)
-#define rb_isalnum(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_ALNUM, ONIG_ENCODING_ASCII)
-#define rb_isalpha(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_ALPHA, ONIG_ENCODING_ASCII)
-#define rb_isblank(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_BLANK, ONIG_ENCODING_ASCII)
-#define rb_iscntrl(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_CNTRL, ONIG_ENCODING_ASCII)
-#define rb_isdigit(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_DIGIT, ONIG_ENCODING_ASCII)
-#define rb_isgraph(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_GRAPH, ONIG_ENCODING_ASCII)
-#define rb_islower(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_LOWER, ONIG_ENCODING_ASCII)
-#define rb_isprint(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_PRINT, ONIG_ENCODING_ASCII)
-#define rb_ispunct(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_PUNCT, ONIG_ENCODING_ASCII)
-#define rb_isspace(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_SPACE, ONIG_ENCODING_ASCII)
-#define rb_isupper(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_UPPER, ONIG_ENCODING_ASCII)
-#define rb_isxdigit(c) onigenc_ascii_is_code_ctype((c), ONIGENC_CTYPE_XDIGIT, ONIG_ENCODING_ASCII)
-#define rb_tolower(c) rb_enc_tolower(c, ONIG_ENCODING_ASCII)
-#define rb_toupper(c) rb_enc_toupper(c, ONIG_ENCODING_ASCII)
-
 #endif /* RUBY_ENCODING_H */

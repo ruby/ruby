@@ -969,21 +969,37 @@ int rb_remove_event_hook(rb_event_hook_func_t func);
 #endif
 
 /* locale insensitive functions */
-#include "encoding.h"
+
+#define rb_isascii(c) ((unsigned long)(c) < 128)
+int rb_isalnum(int c);
+int rb_isalpha(int c);
+int rb_isblank(int c);
+int rb_iscntrl(int c);
+int rb_isdigit(int c);
+int rb_isgraph(int c);
+int rb_islower(int c);
+int rb_isprint(int c);
+int rb_ispunct(int c);
+int rb_isspace(int c);
+int rb_isupper(int c);
+int rb_isxdigit(int c);
+int rb_tolower(int c);
+int rb_toupper(int c);
+
 #ifndef ISPRINT
-#define ISASCII(c) rb_isascii((int)(unsigned char)(c))
+#define ISASCII(c) rb_isascii((unsigned char)(c))
 #undef ISPRINT
-#define ISPRINT(c) (ISASCII(c) && rb_isprint((int)(unsigned char)(c)))
-#define ISSPACE(c) (ISASCII(c) && rb_isspace((int)(unsigned char)(c)))
-#define ISUPPER(c) (ISASCII(c) && rb_isupper((int)(unsigned char)(c)))
-#define ISLOWER(c) (ISASCII(c) && rb_islower((int)(unsigned char)(c)))
-#define ISALNUM(c) (ISASCII(c) && rb_isalnum((int)(unsigned char)(c)))
-#define ISALPHA(c) (ISASCII(c) && rb_isalpha((int)(unsigned char)(c)))
-#define ISDIGIT(c) (ISASCII(c) && rb_isdigit((int)(unsigned char)(c)))
-#define ISXDIGIT(c) (ISASCII(c) && rb_isxdigit((int)(unsigned char)(c)))
+#define ISPRINT(c) rb_isprint((unsigned char)c)
+#define ISSPACE(c) rb_isspace((unsigned char)c)
+#define ISUPPER(c) rb_isupper((unsigned char)c)
+#define ISLOWER(c) rb_islower((unsigned char)c)
+#define ISALNUM(c) rb_isalnum((unsigned char)c)
+#define ISALPHA(c) rb_isalpha((unsigned char)c)
+#define ISDIGIT(c) rb_isdigit((unsigned char)c)
+#define ISXDIGIT(c) rb_isxdigit((unsigned char)c)
 #endif
-#define TOUPPER(c) (rb_toupper((int)(unsigned char)(c)))
-#define TOLOWER(c) (rb_tolower((int)(unsigned char)(c)))
+#define TOUPPER(c) rb_toupper((unsigned char)c)
+#define TOLOWER(c) rb_tolower((unsigned char)c)
 #define STRCASECMP(s1, s2) (st_strcasecmp(s1, s2))
 #define STRNCASECMP(s1, s2, n) (st_strncasecmp(s1, s2, n))
 

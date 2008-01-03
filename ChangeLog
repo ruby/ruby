@@ -1,3 +1,66 @@
+Thu Jan  3 17:33:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_isalnum): defined.
+	  (rb_isalpha): ditto.
+	  (rb_isblank): ditto.
+	  (rb_iscntrl): ditto.
+	  (rb_isdigit): ditto.
+	  (rb_isgraph): ditto.
+	  (rb_islower): ditto.
+	  (rb_isprint): ditto.
+	  (rb_ispunct): ditto.
+	  (rb_isspace): ditto.
+	  (rb_isupper): ditto.
+	  (rb_isxdigit): ditto.
+	  (rb_tolower): ditto.
+	  (rb_toupper): ditto.
+
+	* include/ruby/ruby.h: don't include include/ruby/encoding.h.
+	  (rb_isascii): defined.
+	  (rb_isalnum): declared.
+	  (rb_isalpha): ditto.
+	  (rb_isblank): ditto.
+	  (rb_iscntrl): ditto.
+	  (rb_isdigit): ditto.
+	  (rb_isgraph): ditto.
+	  (rb_islower): ditto.
+	  (rb_isprint): ditto.
+	  (rb_ispunct): ditto.
+	  (rb_isspace): ditto.
+	  (rb_isupper): ditto.
+	  (rb_isxdigit): ditto.
+	  (rb_tolower): ditto.
+	  (rb_toupper): ditto.
+	  (ISASCII): simplified.
+	  (ISPRINT): ditto.
+	  (ISSPACE): ditto.
+	  (ISUPPER): ditto.
+	  (ISLOWER): ditto.
+	  (ISALNUM): ditto.
+	  (ISALPHA): ditto.
+	  (ISDIGIT): ditto.
+	  (ISXDIGIT): ditto.
+	  (TOUPPER): ditto.
+	  (TOLOWER): ditto.
+
+	* include/ruby/encoding.h (rb_isascii): removed.
+	  (rb_isalnum): ditto.
+	  (rb_isalpha): ditto.
+	  (rb_isblank): ditto.
+	  (rb_iscntrl): ditto.
+	  (rb_isdigit): ditto.
+	  (rb_isgraph): ditto.
+	  (rb_islower): ditto.
+	  (rb_isprint): ditto.
+	  (rb_ispunct): ditto.
+	  (rb_isspace): ditto.
+	  (rb_isupper): ditto.
+	  (rb_isxdigit): ditto.
+	  (rb_tolower): ditto.
+	  (rb_toupper): ditto.
+
+	* common.mk: dependency updated.
+
 Thu Jan  3 15:10:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_isascii): simplified.

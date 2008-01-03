@@ -409,30 +409,25 @@ win32.$(OBJEXT): {$(VPATH)}win32.c
 
 array.$(OBJEXT): {$(VPATH)}array.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h
+  {$(VPATH)}st.h {$(VPATH)}util.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 class.$(OBJEXT): {$(VPATH)}class.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}signal.h {$(VPATH)}node.h
+  {$(VPATH)}st.h {$(VPATH)}signal.h {$(VPATH)}node.h
 compar.$(OBJEXT): {$(VPATH)}compar.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 dir.$(OBJEXT): {$(VPATH)}dir.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h
+  {$(VPATH)}st.h {$(VPATH)}util.h
 dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}dln.h
+  {$(VPATH)}st.h {$(VPATH)}dln.h
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c {$(VPATH)}dln.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}dln.h
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}dln.h
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
@@ -440,22 +435,18 @@ encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h
 enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}node.h {$(VPATH)}util.h
+  {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}debug.h {$(VPATH)}node.h
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}debug.h {$(VPATH)}node.h
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}signal.h {$(VPATH)}node.h \
+  {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h {$(VPATH)}node.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}node.h \
+  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h \
   {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}vm_core.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h \
@@ -463,85 +454,82 @@ eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}eval_jump.c
 load.$(OBJEXT): {$(VPATH)}load.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}node.h \
+  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h \
   {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}vm_core.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h
 file.$(OBJEXT): {$(VPATH)}file.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}io.h \
+  {$(VPATH)}st.h {$(VPATH)}io.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
   {$(VPATH)}signal.h {$(VPATH)}util.h {$(VPATH)}dln.h
 gc.$(OBJEXT): {$(VPATH)}gc.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}signal.h {$(VPATH)}node.h {$(VPATH)}re.h {$(VPATH)}regex.h \
-  {$(VPATH)}io.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h \
-  {$(VPATH)}id.h {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}gc.h
+  {$(VPATH)}st.h {$(VPATH)}signal.h {$(VPATH)}node.h {$(VPATH)}re.h \
+  {$(VPATH)}regex.h {$(VPATH)}oniguruma.h {$(VPATH)}io.h \
+  {$(VPATH)}encoding.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
+  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}thread_$(THREAD_MODEL).h \
+  {$(VPATH)}gc.h
 hash.$(OBJEXT): {$(VPATH)}hash.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h {$(VPATH)}signal.h
+  {$(VPATH)}st.h {$(VPATH)}util.h {$(VPATH)}signal.h
 inits.$(OBJEXT): {$(VPATH)}inits.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 io.$(OBJEXT): {$(VPATH)}io.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}io.h \
+  {$(VPATH)}st.h {$(VPATH)}io.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
   {$(VPATH)}signal.h {$(VPATH)}util.h
 main.$(OBJEXT): {$(VPATH)}main.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 marshal.$(OBJEXT): {$(VPATH)}marshal.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}io.h {$(VPATH)}util.h
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}io.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}util.h
 math.$(OBJEXT): {$(VPATH)}math.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 numeric.$(OBJEXT): {$(VPATH)}numeric.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
   {$(VPATH)}oniguruma.h
 object.$(OBJEXT): {$(VPATH)}object.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h {$(VPATH)}debug.h {$(VPATH)}node.h
+  {$(VPATH)}st.h {$(VPATH)}util.h {$(VPATH)}debug.h {$(VPATH)}node.h
 pack.$(OBJEXT): {$(VPATH)}pack.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 parse.$(OBJEXT): {$(VPATH)}parse.c {$(VPATH)}parse.y {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}node.h {$(VPATH)}id.h {$(VPATH)}regenc.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}id.h {$(VPATH)}regenc.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c {$(VPATH)}keywords \
   {$(VPATH)}debug.h
 prec.$(OBJEXT): {$(VPATH)}prec.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}node.h \
+  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h \
   {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}vm_core.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h {$(VPATH)}gc.h
 process.$(OBJEXT): {$(VPATH)}process.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}signal.h {$(VPATH)}vm_core.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}signal.h {$(VPATH)}vm_core.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 random.$(OBJEXT): {$(VPATH)}random.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 range.$(OBJEXT): {$(VPATH)}range.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 re.$(OBJEXT): {$(VPATH)}re.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}re.h \
-  {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}regint.h {$(VPATH)}regenc.h
+  {$(VPATH)}st.h {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
+  {$(VPATH)}encoding.h {$(VPATH)}util.h {$(VPATH)}regint.h \
+  {$(VPATH)}regenc.h
 regcomp.$(OBJEXT): {$(VPATH)}regcomp.c {$(VPATH)}regparse.h \
   {$(VPATH)}regint.h {$(VPATH)}config.h {$(VPATH)}defines.h \
   {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h {$(VPATH)}st.h
@@ -562,35 +550,32 @@ regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c {$(VPATH)}regint.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}node.h {$(VPATH)}eval_intern.h {$(VPATH)}util.h \
+  {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}eval_intern.h {$(VPATH)}util.h \
   {$(VPATH)}signal.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
   {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}thread_$(THREAD_MODEL).h \
   {$(VPATH)}dln.h
 signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}signal.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
+  {$(VPATH)}st.h {$(VPATH)}signal.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}re.h {$(VPATH)}regex.h \
-  {$(VPATH)}vsnprintf.c
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}re.h {$(VPATH)}regex.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}encoding.h {$(VPATH)}vsnprintf.c
 st.$(OBJEXT): {$(VPATH)}st.c {$(VPATH)}config.h {$(VPATH)}defines.h \
   {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}re.h \
-  {$(VPATH)}regex.h
+  {$(VPATH)}st.h {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
+  {$(VPATH)}encoding.h
 struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
-  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h \
-  {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}node.h \
+  {$(VPATH)}missing.h {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h \
   {$(VPATH)}util.h {$(VPATH)}signal.h {$(VPATH)}vm_core.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h {$(VPATH)}vm.h \
@@ -601,45 +586,40 @@ transcode.$(OBJEXT): {$(VPATH)}transcode.c {$(VPATH)}ruby.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}transcode_data.h
 cont.$(OBJEXT): {$(VPATH)}cont.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}vm_core.h {$(VPATH)}signal.h {$(VPATH)}node.h \
+  {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h {$(VPATH)}node.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}gc.h \
   {$(VPATH)}eval_intern.h {$(VPATH)}util.h {$(VPATH)}dln.h
 time.$(OBJEXT): {$(VPATH)}time.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h
+  {$(VPATH)}st.h
 util.$(OBJEXT): {$(VPATH)}util.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}util.h
+  {$(VPATH)}st.h {$(VPATH)}util.h
 variable.$(OBJEXT): {$(VPATH)}variable.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}node.h {$(VPATH)}util.h
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h
 version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}version.h {$(VPATH)}revision.h
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}version.h \
+  {$(VPATH)}revision.h
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
   {$(VPATH)}signal.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}compile.h \
   {$(VPATH)}insns.inc {$(VPATH)}insns_info.inc {$(VPATH)}optinsn.inc
 iseq.$(OBJEXT): {$(VPATH)}iseq.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}node.h {$(VPATH)}gc.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
-  {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
+  {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}gc.h {$(VPATH)}vm_core.h \
+  {$(VPATH)}signal.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}insns.inc \
   {$(VPATH)}insns_info.inc {$(VPATH)}node_name.inc
 vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}node.h {$(VPATH)}gc.h {$(VPATH)}insnhelper.h \
+  {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}gc.h {$(VPATH)}insnhelper.h \
   {$(VPATH)}eval_intern.h {$(VPATH)}util.h {$(VPATH)}signal.h \
   {$(VPATH)}vm_core.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h {$(VPATH)}vm.h \
@@ -647,8 +627,7 @@ vm.$(OBJEXT): {$(VPATH)}vm.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}vmtc.inc {$(VPATH)}vm.inc {$(VPATH)}insns.def
 vm_dump.$(OBJEXT): {$(VPATH)}vm_dump.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
   {$(VPATH)}signal.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}vm.h
 debug.$(OBJEXT): {$(VPATH)}debug.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
@@ -659,35 +638,30 @@ debug.$(OBJEXT): {$(VPATH)}debug.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 blockinlining.$(OBJEXT): {$(VPATH)}blockinlining.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}vm_core.h \
   {$(VPATH)}signal.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 id.$(OBJEXT): {$(VPATH)}id.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
-  {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h {$(VPATH)}id.h
+  {$(VPATH)}st.h {$(VPATH)}id.h
 miniprelude.$(OBJEXT): {$(VPATH)}miniprelude.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h
+  {$(VPATH)}intern.h {$(VPATH)}st.h
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
@@ -700,8 +674,8 @@ sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regint.h {$(VPATH)}config.h \
 unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}config.h {$(VPATH)}defines.h
+utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
+  {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
 	  vmtc.inc vm.inc
