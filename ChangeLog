@@ -1,3 +1,7 @@
+Thu Jan  3 18:39:12 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c: (rb_tolower, rb_toupper): body was exchanged.
+
 Thu Jan  3 17:54:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* regenc.h (onigenc_ascii_is_code_ctype): put back.

@@ -1039,12 +1039,12 @@ int rb_isxdigit(int c) { return ctype_test(c, ONIGENC_CTYPE_XDIGIT); }
 int
 rb_tolower(int c)
 {
-    return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_UPPER_CASE(c) : c;
+    return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_LOWER_CASE(c) : c;
 }
 
 int
 rb_toupper(int c)
 {
-    return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_LOWER_CASE(c) : c;
+    return rb_isascii(c) ? ONIGENC_ASCII_CODE_TO_UPPER_CASE(c) : c;
 }
 
