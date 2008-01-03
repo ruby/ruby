@@ -51,17 +51,19 @@
 #undef finally
 #undef leave
 
-#if defined(__cplusplus)
-extern "C++" {
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <direct.h>
 #include <process.h>
 #include <time.h>
+#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
+extern "C++" {			/* template without extern "C++" */
+#endif
 #include <math.h>
+#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
+}
+#endif
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -72,10 +74,6 @@ extern "C++" {
 #endif
 #include <io.h>
 #include <malloc.h>
-
-#if defined(__cplusplus)
-}
-#endif
 
 #ifdef _M_IX86
 # define WIN95 1

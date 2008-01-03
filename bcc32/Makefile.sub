@@ -263,6 +263,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define HAVE_STRTOD 1
 \#define HAVE_STRTOL 1
 \#define HAVE_STRTOUL 1
+\#define HAVE_VSNPRINTF 1
 \#define HAVE_ISNAN 1
 \#define HAVE_FINITE 1
 \#define HAVE_HYPOT 1
