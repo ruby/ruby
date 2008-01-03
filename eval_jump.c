@@ -105,6 +105,7 @@ rb_f_catch(int argc, VALUE *argv)
     int state;
     VALUE val = Qnil;		/* OK */
     rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *saved_cfp = th->cfp;
 
     rb_scan_args(argc, argv, "01", &tag);
     if (argc == 0) {
@@ -118,6 +119,7 @@ rb_f_catch(int argc, VALUE *argv)
 	val = rb_yield_0(1, &tag);
     }
     else if (state == TAG_THROW && RNODE(th->errinfo)->u1.value == tag) {
+	th->cfp = saved_cfp;
 	val = th->tag->retval;
 	th->errinfo = Qnil;
 	state = 0;
