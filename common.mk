@@ -378,7 +378,7 @@ PHONY:
 	@$(MV) $@.new $@
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
-alloca.$(OBJEXT): {$(VPATH)}alloca.c
+alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
 crypt.$(OBJEXT): {$(VPATH)}crypt.c
 dup2.$(OBJEXT): {$(VPATH)}dup2.c
 erf.$(OBJEXT): {$(VPATH)}erf.c
@@ -430,8 +430,9 @@ dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}st.h {$(VPATH)}encoding.h {$(VPATH)}oniguruma.h \
   {$(VPATH)}dln.h
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c {$(VPATH)}dln.c {$(VPATH)}ruby.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}dln.h
+  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}dln.h
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
