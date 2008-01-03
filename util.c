@@ -88,7 +88,7 @@ scan_digits(const char *str, int base, size_t *retlen, int *overflow)
 
     const char *start = str;
     unsigned long ret = 0, x;
-    unsigned long MUL_OVERFLOW = (~(unsigned long)0) / base;
+    unsigned long mul_overflow = (~(unsigned long)0) / base;
     int c;
     *overflow = 0;
 
@@ -98,7 +98,7 @@ scan_digits(const char *str, int base, size_t *retlen, int *overflow)
             *retlen = (str-1) - start;
             return ret;
         }
-        if (MUL_OVERFLOW < ret)
+        if (mul_overflow < ret)
             *overflow = 1;
         ret *= base;
         x = ret;
