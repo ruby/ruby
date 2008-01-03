@@ -1,3 +1,7 @@
+Fri Jan  4 01:20:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32.h: only VC6 needs extern "C++" for math.h.  [ruby-talk:285660]
+
 Fri Jan  4 00:54:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/oniguruma.h: Oniguruma 1.9.1 merged.
