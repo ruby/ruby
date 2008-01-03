@@ -5875,7 +5875,7 @@ parser_magic_comment(struct parser_params *parser, const char *str, int len)
 	str_copy(name, beg, n);
 #ifndef RIPPER
 	do {
-	    if (strncasecmp(p->name, RSTRING_PTR(name), n) == 0) {
+	    if (STRNCASECMP(p->name, RSTRING_PTR(name), n) == 0) {
 		n = vend - vbeg;
 		if (p->length) {
 		    n = (*p->length)(parser, vbeg, n);
@@ -5918,7 +5918,7 @@ set_file_encoding(struct parser_params *parser, const char *str, const char *sen
 	    if (ISSPACE(*str)) break;
 	    continue;
 	}
-	if (strncasecmp(str-6, "coding", 6) == 0) break;
+	if (STRNCASECMP(str-6, "coding", 6) == 0) break;
     }
     for (;;) {
 	do {

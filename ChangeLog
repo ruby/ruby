@@ -1,3 +1,8 @@
+Thu Jan  3 14:37:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (parser_magic_comment): use STRNCASECMP.
+	  (set_file_encoding): ditto.
+
 Thu Jan  3 11:44:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* time.c: don't mention an obsolete library, ParseDate.
