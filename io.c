@@ -2169,6 +2169,7 @@ rb_io_each_byte(VALUE io)
 	    fptr->rbuf_len--;
 	    rb_yield(INT2FIX(*p & 0xff));
 	    p++;
+    errno = 0;
 	}
 	rb_io_check_readable(fptr);
 	READ_CHECK(fptr);
