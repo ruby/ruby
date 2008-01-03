@@ -1,3 +1,7 @@
+Thu Jan  3 11:44:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* time.c: don't mention an obsolete library, ParseDate.
+
 Thu Jan  3 11:28:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fptr_finalize): clear errno first.  [ruby-talk:284492]

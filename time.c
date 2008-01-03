@@ -2306,7 +2306,7 @@ time_load(VALUE klass, VALUE str)
  *  stored internally as the number of seconds and nanoseconds since
  *  the <em>Epoch</em>, January 1, 1970 00:00 UTC. On some operating
  *  systems, this offset is allowed to be negative. Also see the
- *  library modules <code>Date</code> and <code>ParseDate</code>. The
+ *  library modules <code>Date</code>. The
  *  <code>Time</code> class treats GMT (Greenwich Mean Time) and UTC
  *  (Coordinated Universal Time)<em>[Yes, UTC really does stand for
  *  Coordinated Universal Time. There was a committee involved.]</em>
