@@ -137,7 +137,7 @@ eucjp_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
   int c, i, len;
   OnigCodePoint n;
 
-  len = enc_len(ONIG_ENCODING_EUC_JP, p, end);
+  len = enclen(ONIG_ENCODING_EUC_JP, p, end);
   n = (OnigCodePoint )*p++;
   if (len == 1) return n;
 
@@ -156,7 +156,8 @@ eucjp_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
   else if (code > 0xffffff) return 0;
   else if ((code & 0xff0000) >= 0x800000) return 3;
   else if ((code &   0xff00) >= 0x8000) return 2;
-  else return 0;
+  else
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
 }
 
 #if 0
@@ -188,8 +189,8 @@ eucjp_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
   *p++ = (UChar )(code & 0xff);
 
 #if 1
-  if (enc_len(ONIG_ENCODING_EUC_JP, buf, p) != (p - buf))
-    return ONIGENC_ERR_INVALID_WIDE_CHAR_VALUE;
+  if (enclen(ONIG_ENCODING_EUC_JP, buf, p) != (p - buf))
+    return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif  
   return p - buf;
 }
@@ -210,7 +211,7 @@ eucjp_mbc_case_fold(OnigCaseFoldType flag,
   else {
     int i;
 
-    len = enc_len(ONIG_ENCODING_EUC_JP, p, end);
+    len = enclen(ONIG_ENCODING_EUC_JP, p, end);
     for (i = 0; i < len; i++) {
       *lower++ = *p++;
     }
@@ -232,7 +233,7 @@ eucjp_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc
   p = s;
 
   while (!eucjp_islead(*p) && p > start) p--;
-  len = enc_len(ONIG_ENCODING_EUC_JP, p, s);
+  len = enclen(ONIG_ENCODING_EUC_JP, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));
@@ -311,7 +312,7 @@ eucjp_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 
     ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
     if (ctype >= (unsigned int )PropertyListNum)
-      return ONIGENC_ERR_TYPE_BUG;
+      return ONIGERR_TYPE_BUG;
 
     return onig_is_in_code_range((UChar* )PropertyList[ctype], code);
   }
@@ -320,7 +321,7 @@ eucjp_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 }
 
 static int
-eucjp_get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
+eucjp_get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
 		     const OnigCodePoint* ranges[], OnigEncoding enc)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
@@ -332,8 +333,8 @@ eucjp_get_ctype_code_range(int ctype, OnigCodePoint* sb_out,
     PROPERTY_LIST_INIT_CHECK;
 
     ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
-    if (ctype >= PropertyListNum)
-      return ONIGENC_ERR_TYPE_BUG;
+    if (ctype >= (OnigCtype )PropertyListNum)
+      return ONIGERR_TYPE_BUG;
 
     *ranges = PropertyList[ctype];
     return 0;

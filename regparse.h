@@ -213,7 +213,7 @@ typedef struct {
 typedef struct {
   NodeBase base;
   int     state;
-  int     ref_num;
+  int     group_num;
   UChar*  name;
   UChar*  name_end;
   struct _Node*  target;  /* EncloseNode : ENCLOSE_MEMORY */
@@ -340,6 +340,7 @@ extern void   onig_node_str_clear P_((Node* node));
 extern int    onig_free_node_list P_((void));
 extern int    onig_names_free P_((regex_t* reg));
 extern int    onig_parse_make_tree P_((Node** root, const UChar* pattern, const UChar* end, regex_t* reg, ScanEnv* env));
+extern int    onig_free_shared_cclass_table P_((void));
 
 #ifdef ONIG_DEBUG
 #ifdef USE_NAMED_GROUP

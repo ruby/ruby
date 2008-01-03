@@ -115,7 +115,7 @@ static int
 bitset_is_empty(BitSetRef bs)
 {
   int i;
-  for (i = 0; i < BITSET_SIZE; i++) {
+  for (i = 0; i < (int )BITSET_SIZE; i++) {
     if (bs[i] != 0) return 0;
   }
   return 1;
@@ -416,8 +416,8 @@ compile_tree_n_times(Node* node, int n, regex_t* reg)
 }
 
 static int
-add_compile_string_length(UChar* s, int mb_len, int str_len,
-                          regex_t* reg, int ignore_case)
+add_compile_string_length(UChar* s ARG_UNUSED, int mb_len, int str_len,
+                          regex_t* reg ARG_UNUSED, int ignore_case)
 {
   int len;
   int op = select_str_opcode(mb_len, str_len, ignore_case);
@@ -469,13 +469,13 @@ compile_length_string_node(Node* node, regex_t* reg)
   ambig = NSTRING_IS_AMBIG(node);
 
   p = prev = sn->s;
-  prev_len = enc_len(enc, p, sn->end);
+  prev_len = enclen(enc, p, sn->end);
   p += prev_len;
   slen = 1;
   rlen = 0;
 
   for (; p < sn->end; ) {
-    len = enc_len(enc, p, sn->end);
+    len = enclen(enc, p, sn->end);
     if (len == prev_len) {
       slen++;
     }
@@ -518,12 +518,12 @@ compile_string_node(Node* node, regex_t* reg)
   ambig = NSTRING_IS_AMBIG(node);
 
   p = prev = sn->s;
-  prev_len = enc_len(enc, p, end);
+  prev_len = enclen(enc, p, end);
   p += prev_len;
   slen = 1;
 
   for (; p < end; ) {
-    len = enc_len(enc, p, end);
+    len = enclen(enc, p, end);
     if (len == prev_len) {
       slen++;
     }
@@ -1535,7 +1535,7 @@ compile_length_tree(Node* node, regex_t* reg)
     {
       BRefNode* br = NBREF(node);
 
-#ifdef USE_BACKREF_AT_LEVEL
+#ifdef USE_BACKREF_WITH_LEVEL
       if (IS_BACKREF_NEST_LEVEL(br)) {
         r = SIZE_OPCODE + SIZE_OPTION + SIZE_LENGTH +
             SIZE_LENGTH + (SIZE_MEMNUM * br->back_num);
@@ -1659,9 +1659,9 @@ compile_tree(Node* node, regex_t* reg)
     {
       BRefNode* br = NBREF(node);
 
-#ifdef USE_BACKREF_AT_LEVEL
+#ifdef USE_BACKREF_WITH_LEVEL
       if (IS_BACKREF_NEST_LEVEL(br)) {
-	r = add_opcode(reg, OP_BACKREF_AT_LEVEL);
+	r = add_opcode(reg, OP_BACKREF_WITH_LEVEL);
 	if (r) return r;
 	r = add_option(reg, (reg->options & ONIG_OPTION_IGNORECASE));
 	if (r) return r;
@@ -1703,7 +1703,7 @@ compile_tree(Node* node, regex_t* reg)
         }
 	if (r) return r;
 
-#ifdef USE_BACKREF_AT_LEVEL
+#ifdef USE_BACKREF_WITH_LEVEL
       add_bacref_mems:
 #endif
 	r = add_length(reg, br->back_num);
@@ -1951,7 +1951,7 @@ unset_addr_list_fix(UnsetAddrList* uslist, regex_t* reg)
 }
 #endif
 
-#ifdef USE_INFINITE_REPEAT_MONOMANIAC_MEM_STATUS_CHECK
+#ifdef USE_MONOMANIAC_CHECK_CAPTURES_IN_ENDLESS_REPEAT
 static int
 quantifiers_memory_node_info(Node* node)
 {
@@ -2018,7 +2018,7 @@ quantifiers_memory_node_info(Node* node)
 
   return r;
 }
-#endif /* USE_INFINITE_REPEAT_MONOMANIAC_MEM_STATUS_CHECK */
+#endif /* USE_MONOMANIAC_CHECK_CAPTURES_IN_ENDLESS_REPEAT */
 
 static int
 get_min_match_length(Node* node, OnigDistance *min, ScanEnv* env)
@@ -2312,7 +2312,7 @@ get_char_length_tree1(Node* node, regex_t* reg, int* len, int level)
       StrNode* sn = NSTR(node);
       UChar *s = sn->s;
       while (s < sn->end) {
-	s += enc_len(reg->enc, s, sn->end);
+	s += enclen(reg->enc, s, sn->end);
 	(*len)++;
       }
     }
@@ -3003,25 +3003,12 @@ setup_subexp_call(Node* node, ScanEnv* env)
 
   case NT_CALL:
     {
-      int n, num, *refs;
-      UChar *p;
       CallNode* cn = NCALL(node);
       Node** nodes = SCANENV_MEM_NODES(env);
 
-#ifdef USE_NAMED_GROUP
-      n = onig_name_to_group_numbers(env->reg, cn->name, cn->name_end, &refs);
-#else
-      n = -1;
-#endif
-      if (n <= 0) {
-	/* name not found, check group number. (?*ddd) */
-	p = cn->name;
-	num = onig_scan_unsigned_number(&p, cn->name_end, env->enc);
-	if (num <= 0 || p != cn->name_end) {
-	  onig_scan_env_set_error_string(env,
-		  ONIGERR_UNDEFINED_NAME_REFERENCE, cn->name, cn->name_end);
-	  return ONIGERR_UNDEFINED_NAME_REFERENCE;
-	}
+      if (cn->group_num != 0) {
+	int gnum = cn->group_num;
+
 #ifdef USE_NAMED_GROUP
 	if (env->num_named > 0 &&
 	    IS_SYNTAX_BV(env->syntax, ONIG_SYN_CAPTURE_ONLY_NAMED_GROUP) &&
@@ -3029,32 +3016,47 @@ setup_subexp_call(Node* node, ScanEnv* env)
 	  return ONIGERR_NUMBERED_BACKREF_OR_CALL_NOT_ALLOWED;
 	}
 #endif
-	if (num > env->num_mem) {
+	if (gnum > env->num_mem) {
 	  onig_scan_env_set_error_string(env,
 		 ONIGERR_UNDEFINED_GROUP_REFERENCE, cn->name, cn->name_end);
 	  return ONIGERR_UNDEFINED_GROUP_REFERENCE;
 	}
-	cn->ref_num = num;
-	goto set_call_attr;
-      }
-      else if (n > 1) {
-	onig_scan_env_set_error_string(env,
-	       ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL, cn->name, cn->name_end);
-	return ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL;
-      }
-      else {
-	cn->ref_num = refs[0];
+
+#ifdef USE_NAMED_GROUP
       set_call_attr:
-	cn->target = nodes[cn->ref_num];
+#endif
+	cn->target = nodes[cn->group_num];
 	if (IS_NULL(cn->target)) {
 	  onig_scan_env_set_error_string(env,
-		  ONIGERR_UNDEFINED_NAME_REFERENCE, cn->name, cn->name_end);
+		 ONIGERR_UNDEFINED_NAME_REFERENCE, cn->name, cn->name_end);
 	  return ONIGERR_UNDEFINED_NAME_REFERENCE;
 	}
 	SET_ENCLOSE_STATUS(cn->target, NST_CALLED);
-	BIT_STATUS_ON_AT(env->bt_mem_start, cn->ref_num);
+	BIT_STATUS_ON_AT(env->bt_mem_start, cn->group_num);
 	cn->unset_addr_list = env->unset_addr_list;
       }
+#ifdef USE_NAMED_GROUP
+      else {
+	int *refs;
+
+	int n = onig_name_to_group_numbers(env->reg, cn->name, cn->name_end,
+					   &refs);
+	if (n <= 0) {
+	  onig_scan_env_set_error_string(env,
+		 ONIGERR_UNDEFINED_NAME_REFERENCE, cn->name, cn->name_end);
+	  return ONIGERR_UNDEFINED_NAME_REFERENCE;
+	}
+	else if (n > 1) {
+	  onig_scan_env_set_error_string(env,
+	    ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL, cn->name, cn->name_end);
+	  return ONIGERR_MULTIPLEX_DEFINITION_NAME_CALL;
+	}
+	else {
+	  cn->group_num = refs[0];
+	  goto set_call_attr;
+	}
+      }
+#endif
     }
     break;
 
@@ -3389,7 +3391,7 @@ expand_case_fold_string(Node* node, regex_t* reg)
       goto err;
     }
 
-    len = enc_len(reg->enc, p, end);
+    len = enclen(reg->enc, p, end);
 
     if (n == 0) {
       if (IS_NULL(snode)) {
@@ -3706,7 +3708,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 	if (p[i] > env->num_mem)  return ONIGERR_INVALID_BACKREF;
 	BIT_STATUS_ON_AT(env->backrefed_mem, p[i]);
 	BIT_STATUS_ON_AT(env->bt_mem_start, p[i]);
-#ifdef USE_BACKREF_AT_LEVEL
+#ifdef USE_BACKREF_WITH_LEVEL
 	if (IS_BACKREF_NEST_LEVEL(br)) {
 	  BIT_STATUS_ON_AT(env->bt_mem_end, p[i]);
 	}
@@ -3731,7 +3733,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 	if (r) break;
 	if (d == 0) {
 	  qn->target_empty_info = NQ_TARGET_IS_EMPTY;
-#ifdef USE_INFINITE_REPEAT_MONOMANIAC_MEM_STATUS_CHECK
+#ifdef USE_MONOMANIAC_CHECK_CAPTURES_IN_ENDLESS_REPEAT
 	  r = quantifiers_memory_node_info(target);
 	  if (r < 0) break;
 	  if (r > 0) {
@@ -3898,7 +3900,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 
 /* set skip map for Boyer-Moor search */
 static int
-set_bm_skip(UChar* s, UChar* end, OnigEncoding enc,
+set_bm_skip(UChar* s, UChar* end, OnigEncoding enc ARG_UNUSED,
 	    UChar skip[], int** int_skip)
 {
   int i, len;
@@ -3987,7 +3989,7 @@ map_position_value(OnigEncoding enc, int i)
      6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  5,  5,  5,  5,  1
   };
 
-  if (i < sizeof(ByteValTable)/sizeof(ByteValTable[0])) {
+  if (i < (int )(sizeof(ByteValTable)/sizeof(ByteValTable[0]))) {
     if (i == 0 && ONIGENC_MBC_MINLEN(enc) > 1)
       return 20;
     else
@@ -4019,7 +4021,7 @@ distance_value(MinMaxLen* mm)
   if (mm->max == ONIG_INFINITE_DISTANCE) return 0;
 
   d = mm->max - mm->min;
-  if (d < sizeof(dist_vals)/sizeof(dist_vals[0]))
+  if (d < (int )(sizeof(dist_vals)/sizeof(dist_vals[0])))
     /* return dist_vals[d] * 16 / (mm->min + 12); */
     return (int )dist_vals[d];
   else
@@ -4212,7 +4214,7 @@ concat_opt_exact_info(OptExactInfo* to, OptExactInfo* add, OnigEncoding enc)
   p = add->s;
   end = p + add->len;
   for (i = to->len; p < end; ) {
-    len = enc_len(enc, p, end);
+    len = enclen(enc, p, end);
     if (i + len > OPT_EXACT_MAXLEN) break;
     for (j = 0; j < len && p < end; j++)
       to->s[i++] = *p++;
@@ -4227,14 +4229,14 @@ concat_opt_exact_info(OptExactInfo* to, OptExactInfo* add, OnigEncoding enc)
 }
 
 static void
-concat_opt_exact_info_str(OptExactInfo* to,
-			  UChar* s, UChar* end, int raw, OnigEncoding enc)
+concat_opt_exact_info_str(OptExactInfo* to, UChar* s, UChar* end,
+			  int raw ARG_UNUSED, OnigEncoding enc)
 {
   int i, j, len;
   UChar *p;
 
   for (i = to->len, p = s; p < end && i < OPT_EXACT_MAXLEN; ) {
-    len = enc_len(enc, p, end);
+    len = enclen(enc, p, end);
     if (i + len > OPT_EXACT_MAXLEN) break;
     for (j = 0; j < len && p < end; j++)
       to->s[i++] = *p++;
@@ -4260,7 +4262,7 @@ alt_merge_opt_exact_info(OptExactInfo* to, OptExactInfo* add, OptEnv* env)
 
   for (i = 0; i < to->len && i < add->len; ) {
     if (to->s[i] != add->s[i]) break;
-    len = enc_len(env->enc, to->s + i, to->s + to->len);
+    len = enclen(env->enc, to->s + i, to->s + to->len);
 
     for (j = 1; j < len; j++) {
       if (to->s[i+j] != add->s[i+j]) break;
@@ -5044,7 +5046,7 @@ static void print_enc_string(FILE* fp, OnigEncoding enc,
 	fputc((int )code, fp);
       }
 
-      p += enc_len(enc, p);
+      p += enclen(enc, p);
     }
   }
   else {
@@ -5634,8 +5636,6 @@ onig_init(void)
 extern int
 onig_end(void)
 {
-  extern int onig_free_shared_cclass_table(void);
-
   THREAD_ATOMIC_START;
 
 #ifdef ONIG_DEBUG_STATISTICS
@@ -5679,11 +5679,11 @@ onig_is_in_code_range(const UChar* p, OnigCodePoint code)
 }
 
 extern int
-onig_is_code_in_cc_len(int enclen, OnigCodePoint code, CClassNode* cc)
+onig_is_code_in_cc_len(int elen, OnigCodePoint code, CClassNode* cc)
 {
   int found;
 
-  if (enclen > 1 || (code >= SINGLE_BYTE_SIZE)) {
+  if (elen > 1 || (code >= SINGLE_BYTE_SIZE)) {
     if (IS_NULL(cc->mbuf)) {
       found = 0;
     }
@@ -5776,7 +5776,7 @@ OnigOpInfoType OnigOpInfo[] = {
   { OP_BACKREFN_IC,         "backrefn-ic",          ARG_SPECIAL },
   { OP_BACKREF_MULTI,       "backref_multi",        ARG_SPECIAL },
   { OP_BACKREF_MULTI_IC,    "backref_multi-ic",     ARG_SPECIAL },
-  { OP_BACKREF_AT_LEVEL,    "backref_at_level",     ARG_SPECIAL },
+  { OP_BACKREF_WITH_LEVEL,    "backref_at_level",     ARG_SPECIAL },
   { OP_MEMORY_START_PUSH,   "mem-start-push",       ARG_MEMNUM  },
   { OP_MEMORY_START,        "mem-start",            ARG_MEMNUM  },
   { OP_MEMORY_END_PUSH,     "mem-end-push",         ARG_MEMNUM  },
@@ -5968,7 +5968,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
       break;
 
     case OP_EXACT1_IC:
-      len = enc_len(enc, bp);
+      len = enclen(enc, bp);
       p_string(f, len, bp);
       bp += len;
       break;
@@ -6043,7 +6043,7 @@ onig_print_compiled_byte_code(FILE* f, UChar* bp, UChar** nextp,
       }
       break;
 
-    case OP_BACKREF_AT_LEVEL:
+    case OP_BACKREF_WITH_LEVEL:
       {
 	OnigOptionType option;
 	LengthType level;
@@ -6182,7 +6182,7 @@ print_indent_tree(FILE* f, Node* node, int indent)
 
   case NT_CCLASS:
     fprintf(f, "<cclass:%x>", (int )node);
-    if (IS_CCLASS_NOT(NCCLASS(node)) fputs(" not", f);
+    if (IS_NCCLASS_NOT(NCCLASS(node))) fputs(" not", f);
     if (NCCLASS(node)->mbuf) {
       BBuf* bbuf = NCCLASS(node)->mbuf;
       for (i = 0; i < bbuf->used; i++) {

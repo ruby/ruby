@@ -2,7 +2,7 @@
   iso8859_9.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -124,8 +124,7 @@ iso_8859_9_mbc_case_fold(OnigCaseFoldType flag,
 
 #if 0
 static int
-iso_8859_9_is_mbc_ambiguous(OnigCaseFoldType flag,
-			    const UChar** pp, const UChar* end)
+is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end)
 {
   int v;
   const UChar* p = *pp;

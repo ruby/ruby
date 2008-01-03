@@ -1,3 +1,7 @@
+Fri Jan  4 00:54:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/oniguruma.h: Oniguruma 1.9.1 merged.
+
 Fri Jan  4 00:20:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_ungetc): move data in buffer if it is required to store the
