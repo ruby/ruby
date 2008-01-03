@@ -124,7 +124,6 @@ ONIG_EXTERN int onigenc_single_byte_code_to_mbc P_((OnigCodePoint code, UChar *b
 ONIG_EXTERN UChar* onigenc_single_byte_left_adjust_char_head P_((const UChar* start, const UChar* s, OnigEncoding enc));
 ONIG_EXTERN int onigenc_always_true_is_allowed_reverse_match P_((const UChar* s, const UChar* end, OnigEncoding enc));
 ONIG_EXTERN int onigenc_always_false_is_allowed_reverse_match P_((const UChar* s, const UChar* end, OnigEncoding enc));
-ONIG_EXTERN int onigenc_ascii_is_code_ctype P_((OnigCodePoint code, unsigned int ctype, OnigEncoding enc));
 
 /* methods for multi byte encoding */
 ONIG_EXTERN OnigCodePoint onigenc_mbn_mbc_to_code P_((OnigEncoding enc, const UChar* p, const UChar* end));

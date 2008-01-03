@@ -968,6 +968,7 @@ int rb_remove_event_hook(rb_event_hook_func_t func);
 }  /* extern "C" { */
 #endif
 
+/* locale insensitive functions */
 #include "encoding.h"
 #ifndef ISPRINT
 #define ISASCII(c) rb_isascii((int)(unsigned char)(c))

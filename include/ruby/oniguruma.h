@@ -380,6 +380,8 @@ int onigenc_strlen_null P_((OnigEncoding enc, const OnigUChar* p));
 ONIG_EXTERN
 int onigenc_str_bytelen_null P_((OnigEncoding enc, const OnigUChar* p));
 
+ONIG_EXTERN
+int onigenc_ascii_is_code_ctype P_((OnigCodePoint code, unsigned int ctype, OnigEncoding enc));
 
 
 /* PART: regular expression */

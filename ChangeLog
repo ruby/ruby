@@ -1,3 +1,22 @@
+Thu Jan  3 15:10:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_isascii): simplified.
+	  (rb_isalnum): call onigenc_ascii_is_code_ctype without indirect call.
+	  (rb_isalpha): ditto.
+	  (rb_isblank): ditto.
+	  (rb_iscntrl): ditto.
+	  (rb_isdigit): ditto.
+	  (rb_isgraph): ditto.
+	  (rb_islower): ditto.
+	  (rb_isprint): ditto.
+	  (rb_ispunct): ditto.
+	  (rb_isspace): ditto.
+	  (rb_isupper): ditto.
+	  (rb_isxdigit): ditto.
+
+	* include/ruby/oniguruma.h (onigenc_ascii_is_code_ctype): declaration
+	  moved from regenc.h.
+
 Thu Jan  3 14:37:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (parser_magic_comment): use STRNCASECMP.
