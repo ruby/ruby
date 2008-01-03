@@ -1,3 +1,7 @@
+Fri Jan  4 02:47:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_search): iterate onig_match for reverse mode.
+
 Fri Jan  4 01:20:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32.h: only VC6 needs extern "C++" for math.h.  [ruby-talk:285660]

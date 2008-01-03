@@ -1036,6 +1036,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     VALUE match;
     static struct re_registers regs;
     int range;
+    rb_encoding *enc = rb_enc_get(str);
 
     if (pos > RSTRING_LEN(str) || pos < 0) {
 	rb_backref_set(Qnil);
@@ -1045,18 +1046,32 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     rb_reg_prepare_re(re, str);
 
     if (reverse) {
-	range = -pos;
+        char *p = RSTRING_PTR(str) + pos;
+        while (1) {
+            result = onig_match(RREGEXP(re)->ptr,
+                                (UChar*)(RSTRING_PTR(str)),
+                                ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
+                                (UChar*)p,
+                                &regs,
+                                ONIG_OPTION_NONE);
+            if (result != ONIG_MISMATCH) {
+                result = p - RSTRING_PTR(str);
+                break;
+            }
+            if (RSTRING_PTR(str) == p)
+                break;
+            p = rb_enc_prev_char(RSTRING_PTR(str), p, enc);
+        }
     }
     else {
 	range = RSTRING_LEN(str) - pos;
+        result = onig_search(RREGEXP(re)->ptr,
+                             (UChar*)(RSTRING_PTR(str)),
+                             ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
+                             ((UChar*)(RSTRING_PTR(str)) + pos),
+                             ((UChar*)(RSTRING_PTR(str)) + pos + range),
+                             &regs, ONIG_OPTION_NONE);
     }
-
-    result = onig_search(RREGEXP(re)->ptr,
-			 (UChar*)(RSTRING_PTR(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
-			 ((UChar*)(RSTRING_PTR(str)) + pos),
-			 ((UChar*)(RSTRING_PTR(str)) + pos + range),
-			 &regs, ONIG_OPTION_NONE);
 
     if (result < 0) {
 	if (result == ONIG_MISMATCH) {
