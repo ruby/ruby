@@ -1,3 +1,7 @@
+Thu Jan  3 17:54:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* regenc.h (onigenc_ascii_is_code_ctype): put back.
+
 Thu Jan  3 17:33:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_isalnum): defined.
