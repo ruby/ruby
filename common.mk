@@ -677,9 +677,16 @@ prelude.$(OBJEXT): {$(VPATH)}prelude.c {$(VPATH)}ruby.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
-golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c {$(VPATH)}ruby.h {$(VPATH)}vm_core.h
-goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c {$(VPATH)}ruby.h \
+  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
+  {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
+  {$(VPATH)}thread_$(THREAD_MODEL).h
+goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c {$(VPATH)}ruby.h \
+  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
