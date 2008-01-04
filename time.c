@@ -349,7 +349,7 @@ time_arg(argc, argv, tm, usec)
 	    tm->tm_mon = -1;
 	    for (i=0; i<12; i++) {
 		if (RSTRING(s)->len == 3 &&
-		    strcasecmp(months[i], RSTRING(v[1])->ptr) == 0) {
+		    strcasecmp(months[i], RSTRING(s)->ptr) == 0) {
 		    tm->tm_mon = i;
 		    break;
 		}

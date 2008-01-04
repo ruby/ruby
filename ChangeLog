@@ -1,3 +1,7 @@
+Fri Jan  4 23:08:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_arg): use converted object.  [ruby-core:14759]
+
 Fri Jan  4 01:20:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32.h: only VC6 needs extern "C++" for math.h.  [ruby-talk:285660]
