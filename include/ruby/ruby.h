@@ -982,17 +982,17 @@ int rb_toupper(int c);
 #ifndef ISPRINT
 #define ISASCII(c) rb_isascii((unsigned char)(c))
 #undef ISPRINT
-#define ISPRINT(c) rb_isprint((unsigned char)c)
-#define ISSPACE(c) rb_isspace((unsigned char)c)
-#define ISUPPER(c) rb_isupper((unsigned char)c)
-#define ISLOWER(c) rb_islower((unsigned char)c)
-#define ISALNUM(c) rb_isalnum((unsigned char)c)
-#define ISALPHA(c) rb_isalpha((unsigned char)c)
-#define ISDIGIT(c) rb_isdigit((unsigned char)c)
-#define ISXDIGIT(c) rb_isxdigit((unsigned char)c)
+#define ISPRINT(c) rb_isprint((unsigned char)(c))
+#define ISSPACE(c) rb_isspace((unsigned char)(c))
+#define ISUPPER(c) rb_isupper((unsigned char)(c))
+#define ISLOWER(c) rb_islower((unsigned char)(c))
+#define ISALNUM(c) rb_isalnum((unsigned char)(c))
+#define ISALPHA(c) rb_isalpha((unsigned char)(c))
+#define ISDIGIT(c) rb_isdigit((unsigned char)(c))
+#define ISXDIGIT(c) rb_isxdigit((unsigned char)(c))
 #endif
-#define TOUPPER(c) rb_toupper((unsigned char)c)
-#define TOLOWER(c) rb_tolower((unsigned char)c)
+#define TOUPPER(c) rb_toupper((unsigned char)(c))
+#define TOLOWER(c) rb_tolower((unsigned char)(c))
 
 int st_strcasecmp(const char *s1, const char *s2);
 int st_strncasecmp(const char *s1, const char *s2, size_t n);
