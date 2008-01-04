@@ -1,3 +1,8 @@
+Fri Jan  4 14:00:50 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_prepare_re): check string encoding.  Oniguruma doesn't
+	  support invalid encoding.
+
 Fri Jan  4 10:22:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_search): avoid inner loop for reverse search.
@@ -54,7 +59,7 @@ Fri Jan  4 01:20:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jan  4 00:54:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* include/ruby/oniguruma.h: Oniguruma 1.9.1 merged.
+	* include/ruby/oniguruma.h: Oniguruma 5.9.1 merged.
 
 Fri Jan  4 00:20:47 2008  Tanaka Akira  <akr@fsij.org>
 

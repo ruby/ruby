@@ -940,6 +940,12 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     int need_recompile = 0;
     rb_encoding *enc;
 
+    if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
+        rb_raise(rb_eArgError,
+            "broken %s string",
+            rb_enc_name(rb_enc_get(str)));
+    }
+
     rb_reg_check(re);
     /* ignorecase status */
     if (rb_reg_fixed_encoding_p(re)) {

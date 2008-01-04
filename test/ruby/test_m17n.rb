@@ -877,7 +877,10 @@ class TestM17N < Test::Unit::TestCase
         if t != nil
           assert(t.valid_encoding?) if s1.valid_encoding? && s2.valid_encoding?
           assert_equal(s2, t)
-          assert_match(/#{Regexp.escape(s2)}/, s1)
+          assert_match(/#{Regexp.escape(a(s2))}/, a(s1))
+          if s1.valid_encoding?
+            assert_match(/#{Regexp.escape(s2)}/, s1)
+          end
         end
       else
         assert_raise(ArgumentError) { s1[s2] }
@@ -1577,6 +1580,10 @@ class TestM17N < Test::Unit::TestCase
         assert_raise(ArgumentError) { s1.scan(s2) }
         next
       end
+      if !s1.valid_encoding?
+        assert_raise(ArgumentError) { s1.scan(s2) }
+        next
+      end
       r = s1.scan(s2)
       r.each {|t|
         assert_equal(s2, t)
@@ -1630,6 +1637,10 @@ class TestM17N < Test::Unit::TestCase
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
+        assert_raise(ArgumentError) { s1.split(s2) }
+        next
+      end
+      if !s1.valid_encoding?
         assert_raise(ArgumentError) { s1.split(s2) }
         next
       end
@@ -1943,6 +1954,10 @@ class TestM17N < Test::Unit::TestCase
           lambda { s1.gsub(r2) { s3 } }
         ]
       ].each {|desc, doit|
+        if !s1.valid_encoding?
+          assert_raise(ArgumentError, desc) { doit.call }
+          next
+        end
         if !str_enc_compatible?(s1, s2)
           assert_raise(ArgumentError, desc) { doit.call }
           next
@@ -1993,6 +2008,10 @@ class TestM17N < Test::Unit::TestCase
           lambda { t=s1.dup; [t, t.gsub!(r2) { s3 }] }
         ]
       ].each {|desc, doit|
+        if !s1.valid_encoding?
+          assert_raise(ArgumentError, desc) { doit.call }
+          next
+        end
         if !str_enc_compatible?(s1, s2)
           assert_raise(ArgumentError, desc) { doit.call }
           next
