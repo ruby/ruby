@@ -1036,7 +1036,6 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     VALUE match;
     static struct re_registers regs;
     char *range = RSTRING_PTR(str);
-    rb_encoding *enc = rb_enc_get(str);
 
     if (pos > RSTRING_LEN(str) || pos < 0) {
 	rb_backref_set(Qnil);
