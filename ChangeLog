@@ -1,3 +1,7 @@
+Sat Jan  5 01:46:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): update according to the last API revert.
+
 Sat Jan  5 01:30:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h, re.c (rb_reg_new): keep interface same as
