@@ -1,3 +1,10 @@
+Fri Jan  4 10:22:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_search): avoid inner loop for reverse search.
+
+	* regexec.c: unset USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE
+	  which is turned on since oniguruma 5.9.1.
+
 Fri Jan  4 02:53:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/euc_jp.c: remove eucjp_ prefix.  breakpoint can be specified as
