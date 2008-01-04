@@ -1,3 +1,8 @@
+Fri Jan  4 16:24:58 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/digest/lib/digest/hmac.rb (Digest::HMAC#initialize): use
+	  String#bytesize to avoid test errors on EUC-JP environment.
+
 Fri Jan  4 14:00:50 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_prepare_re): check string encoding.  Oniguruma doesn't

@@ -45,7 +45,7 @@ module Digest
 
       block_len = @md.block_length
 
-      if key.length > block_len
+      if key.bytesize > block_len
         key = @md.digest(key)
       end
 
