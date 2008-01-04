@@ -115,7 +115,9 @@
 # implementation, see SimpleDelegator.
 #
 class Delegator
-  preserved = [:__id__, :object_id, :__send__, :public_send, :respond_to?, :send]
+  preserved = [:__id__, :object_id, :__send__, :public_send, :respond_to?, :send,
+               :instance_eval, :instance_exec,
+              ]
   instance_methods.each do |m|
     next if preserved.include?(m)
     undef_method m
@@ -264,7 +266,7 @@ def DelegateClass(superclass)
   methods -= [
     :__id__, :object_id, :__send__, :public_send, :respond_to?, :send,
     :==, :equal?, :initialize, :method_missing, :__getobj__, :__setobj__,
-    :clone, :dup, :marshal_dump, :marshal_load,
+    :clone, :dup, :marshal_dump, :marshal_load, :instance_eval, :instance_exec,
   ]
   klass.module_eval {
     include Delegator::MethodDelegation

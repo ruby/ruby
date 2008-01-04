@@ -2726,8 +2726,8 @@ Init_eval(void)
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
     rb_define_method(rb_mKernel, "public_send", rb_f_public_send, -1);
 
-    rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
-    rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
+    rb_define_method(rb_cBasicObject, "instance_eval", rb_obj_instance_eval, -1);
+    rb_define_method(rb_cBasicObject, "instance_exec", rb_obj_instance_exec, -1);
 
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);

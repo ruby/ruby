@@ -1,3 +1,10 @@
+Sat Jan  5 01:50:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (Init_eval): move instance_eval and instance_exec to
+	  BasicObject.  [ruby-core:14747]
+
+	* lib/delegate.rb: should preserve new methods in BasicObject.
+
 Sat Jan  5 01:46:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): update according to the last API revert.
