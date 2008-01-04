@@ -460,18 +460,31 @@ rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 }
 
 static VALUE
-rb_reg_error_desc(VALUE str, int options, const char *err)
+rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
     char opts[6];
     VALUE desc = rb_str_buf_new2(err);
 
-    rb_enc_copy(desc, str);
+    rb_enc_associate(desc, enc);
     rb_str_buf_cat2(desc, ": /");
-    rb_reg_expr_str(desc, RSTRING_PTR(str), RSTRING_LEN(str));
+    rb_reg_expr_str(desc, s, len);
     opts[0] = '/';
     option_to_str(opts + 1, options);
     rb_str_buf_cat2(desc, opts);
     return rb_exc_new3(rb_eRegexpError, desc);
+}
+
+static void
+rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err)
+{
+    rb_exc_raise(rb_enc_reg_error_desc(s, len, enc, options, err));
+}
+
+static VALUE
+rb_reg_error_desc(VALUE str, int options, const char *err)
+{
+    return rb_enc_reg_error_desc(RSTRING_PTR(str), RSTRING_LEN(str),
+				 rb_enc_get(str), options, err);
 }
 
 static void
@@ -2040,7 +2053,7 @@ rb_reg_s_alloc(VALUE klass)
 }
 
 VALUE
-rb_reg_new(VALUE s, int options)
+rb_reg_new_str(VALUE s, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
     onig_errmsg_buffer err;
@@ -2050,6 +2063,25 @@ rb_reg_new(VALUE s, int options)
     }
 
     return re;
+}
+
+VALUE
+rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
+{
+    VALUE re = rb_reg_s_alloc(rb_cRegexp);
+    onig_errmsg_buffer err;
+
+    if (rb_reg_initialize(re, s, len, enc, options, err) != 0) {
+	rb_enc_reg_raise(s, len, enc, options, err);
+    }
+
+    return re;
+}
+
+VALUE
+rb_reg_new(const char *s, long len, int options)
+{
+    return rb_enc_reg_new(s, len, rb_ascii8bit_encoding(), options);
 }
 
 VALUE
@@ -2078,7 +2110,7 @@ rb_reg_regcomp(VALUE str)
 	&& memcmp(RREGEXP(reg_cache)->str, RSTRING_PTR(str), RSTRING_LEN(str)) == 0)
 	return reg_cache;
 
-    return reg_cache = rb_reg_new(save_str, 0);
+    return reg_cache = rb_reg_new_str(save_str, 0);
 }
 
 /*
@@ -2607,7 +2639,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
         else {
             VALUE quoted;
             quoted = rb_reg_s_quote(Qnil, arg);
-            return rb_reg_new(quoted, 0);
+            return rb_reg_new_str(quoted, 0);
         }
     }
     else {

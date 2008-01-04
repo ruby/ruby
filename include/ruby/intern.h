@@ -454,7 +454,9 @@ VALUE rb_reg_last_match(VALUE);
 VALUE rb_reg_match_pre(VALUE);
 VALUE rb_reg_match_post(VALUE);
 VALUE rb_reg_match_last(VALUE);
-VALUE rb_reg_new(VALUE, int);
+#define HAVE_RB_REG_NEW_STR 1
+VALUE rb_reg_new_str(VALUE, int);
+VALUE rb_reg_new(const char *, long, int);
 VALUE rb_reg_match(VALUE, VALUE);
 VALUE rb_reg_match2(VALUE);
 int rb_reg_options(VALUE);

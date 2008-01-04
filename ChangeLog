@@ -1,3 +1,17 @@
+Sat Jan  5 01:30:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h, re.c (rb_reg_new): keep interface same as
+	  1.8.  [ruby-core:14583]
+
+	* include/ruby/intern.h, re.c (rb_reg_new_str): renamed, and defines
+	  HAVE_RB_REG_NEW_STR macro to tell if it is available.
+
+	* include/ruby/encoding.h (rb_enc_reg_new): added.
+
+	* insns.def (toregexp), marshal.c (r_object0): use rb_reg_new_str().
+
+	* re.c (rb_reg_regcomp, rb_reg_s_union): ditto.
+
 Fri Jan  4 23:08:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_arg): use converted object.  [ruby-core:14759]

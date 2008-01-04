@@ -58,7 +58,8 @@ void rb_enc_associate_index(VALUE, int);
 void rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
 
-VALUE rb_enc_str_new(const char*, long len, rb_encoding*);
+VALUE rb_enc_str_new(const char*, long, rb_encoding*);
+VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);
 PRINTF_ARGS(VALUE rb_enc_sprintf(rb_encoding *, const char*, ...), 2, 3);
 VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
 long rb_enc_strlen(const char*, const char*, rb_encoding*);

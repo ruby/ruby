@@ -1307,7 +1307,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	{
 	    volatile VALUE str = r_bytes(arg);
 	    int options = r_byte(arg);
-	    v = r_entry(rb_reg_new(str, options), arg);
+	    v = r_entry(rb_reg_new_str(str, options), arg);
             v = r_leave(v, arg);
 	}
 	break;
