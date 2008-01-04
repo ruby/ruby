@@ -1,3 +1,7 @@
+Fri Jan  4 23:08:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_arg): use converted object.  [ruby-core:14759]
+
 Fri Jan  4 16:24:58 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/digest/lib/digest/hmac.rb (Digest::HMAC#initialize): use
