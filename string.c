@@ -3481,6 +3481,9 @@ trnext(struct tr *t, rb_encoding *enc)
     for (;;) {
 	if (!t->gen) {
 	    if (t->p == t->pend) return -1;
+	    if (t->p < t->pend - 1 && *t->p == '\\') {
+		t->p++;
+	    }
 	    t->now = rb_enc_codepoint(t->p, t->pend, enc);
 	    t->p += rb_enc_codelen(t->now, enc);
 	    if (t->p < t->pend - 1 && *t->p == '-') {

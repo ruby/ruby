@@ -1,3 +1,7 @@
+Sat Jan  5 02:14:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (trnext): should enable backslash escape.
+
 Sat Jan  5 01:50:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_eval): move instance_eval and instance_exec to
