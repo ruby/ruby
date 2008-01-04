@@ -9001,6 +9001,7 @@ rb_intern2(const char *name, long len)
     return rb_intern3(name, len, rb_enc_from_index(0));
 }
 
+#undef rb_intern
 ID
 rb_intern(const char *name)
 {

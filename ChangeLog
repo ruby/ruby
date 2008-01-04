@@ -1,3 +1,8 @@
+Sat Jan  5 02:21:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (rb_intern): memorize interned ID for constant
+	  string, using gcc's __builtin_constant_p and statement expression.
+
 Sat Jan  5 02:14:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (trnext): should enable backslash escape.

@@ -719,6 +719,20 @@ const char *rb_id2name(ID);
 ID rb_to_id(VALUE);
 VALUE rb_id2str(ID);
 
+#ifdef __GNUC__
+/* __builtin_constant_p and statement expression is available
+ * since gcc-2.7.2.3 at least. */
+#define rb_intern(str) \
+    (__builtin_constant_p(str) ? \
+        ({ \
+            static ID rb_intern_id_cache; \
+            if (!rb_intern_id_cache) \
+                rb_intern_id_cache = rb_intern(str); \
+            rb_intern_id_cache; \
+        }) : \
+        rb_intern(str))
+#endif
+
 char *rb_class2name(VALUE);
 char *rb_obj_classname(VALUE);
 
