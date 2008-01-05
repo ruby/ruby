@@ -1010,6 +1010,7 @@ Init_Encoding(void)
 
     rb_enc_replicate("Windows-31J", rb_enc_from_index(ENCINDEX_SJIS));
     rb_enc_alias("CP932", "Windows-31J");
+    rb_enc_alias("csWindows31J", "Windows-31J"); /* IANA.  IE6 accepts csWindows31J but Windows-31J. */
 
     for (i = 0; i < enc_table_size; ++i) {
 	rb_encoding *enc = enc_table[i].enc;
