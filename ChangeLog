@@ -1,3 +1,7 @@
+Sat Jan  5 13:04:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): no need for intermediate object.
+
 Sat Jan  5 11:48:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (Init_Encoding): alias csWindows31J to Windows-31J.

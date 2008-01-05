@@ -694,7 +694,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  case 'F':
 	    if (*++s) {
-		rb_fs = rb_reg_new_str(rb_str_new2(s), 0);
+		rb_fs = rb_reg_new(s, strlen(s), 0);
 	    }
 	    break;
 
