@@ -3873,33 +3873,39 @@ rb_io_s_sysopen(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     open(path [, mode [, perm]] )                => io or nil
- *     open(path [, mode [, perm]] ) {|io| block }  => obj
+ *     open(path [, mode_enc [, perm]] )                => io or nil
+ *     open(path [, mode_enc [, perm]] ) {|io| block }  => obj
  *
  *  Creates an <code>IO</code> object connected to the given stream,
  *  file, or subprocess.
  *
  *  If <i>path</i> does not start with a pipe character
  *  (``<code>|</code>''), treat it as the name of a file to open using
- *  the specified mode (defaulting to ``<code>r</code>'').  The mode is
+ *  the specified mode (defaulting to ``<code>r</code>'').
+ *
+ *  The mode_enc is
  *  either a string or an integer.  If it is an integer, it must be 
  *  bitwise-or of open(2) flags, such as File::RDWR or File::EXCL.
- *  If it is a string, it is either "mode", "mode:encoding", or
- *  "mode:encoding:encoding".  "mode" is one of the following:
+ *  If it is a string, it is either "mode", "mode:ext_enc", or
+ *  "mode:ext_enc:int_enc".
+ *  The mode is one of the following:
  *
  *   r: read (default)
  *   w: write
  *   a: append
  *
  *  The mode can be followed by "b" (means binary-mode), or "+"
- *  (means both reading and writing allowed) or both.  If one
- *  encoding is specified, read string will be tagged by the
- *  encoding in reading, and output string will be converted
- *  to the specified encoding in writing.  If two encoding names
- *  are specified, the read string is converted from the former
- *  encoding to the latter encoding then tagged with the latter
- *  in read mode, and in write mode, the output string will be
- *  converted from the latter to the former before writing.
+ *  (means both reading and writing allowed) or both.
+ *  If ext_enc (external encoding) is specified,
+ *  read string will be tagged by the encoding in reading,
+ *  and output string will be converted
+ *  to the specified encoding in writing.
+ *  If two encoding names,
+ *  ext_enc and int_enc (external encoding and internal encoding),
+ *  are specified, the read string is converted from ext_enc
+ *  to int_enc then tagged with the int_enc in read mode,
+ *  and in write mode, the output string will be
+ *  converted from int_enc to ext_enc before writing.
  *  
  *  If a file is being created, its initial permissions may be
  *  set using the integer third parameter.
@@ -5640,22 +5646,25 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 
 /*
  *  call-seq:
- *     IO.pipe                       -> array
- *     IO.pipe(encoding)             -> array
- *     IO.pipe(encoding1, encoding2) -> array
+ *     IO.pipe                    -> [read_io, write_io]
+ *     IO.pipe(ext_enc)           -> [read_io, write_io]
+ *     IO.pipe("ext_enc:int_enc") -> [read_io, write_io]
+ *     IO.pipe(ext_enc, int_enc)  -> [read_io, write_io]
  *
  *  Creates a pair of pipe endpoints (connected to each other) and
  *  returns them as a two-element array of <code>IO</code> objects:
- *  <code>[</code> <i>read_file</i>, <i>write_file</i> <code>]</code>. Not
+ *  <code>[</code> <i>read_io</i>, <i>write_io</i> <code>]</code>. Not
  *  available on all platforms.
  *
- *  If an optional argument is specified, read string from pipe is tagged
- *  with the encoding specified.  If encoding is a comma separated two
- *  encoding names "A:B", the read string is converted from encoding A
- *  (external encoding) to encoding B (internal encoding), then tagged
- *  with B.  If two optional arguments are specified, those must be
- *  encoding objects, and the first one is the external encoding, and the
- *  second one is the internal encoding.
+ *  If an encoding (encoding name or encoding object) is specified as an optional argument,
+ *  read string from pipe is tagged with the encoding specified.
+ *  If the argument is a colon separated two encoding names "A:B",
+ *  the read string is converted from encoding A (external encoding)
+ *  to encoding B (internal encoding), then tagged with B.
+ *  If two optional arguments are specified, those must be
+ *  encoding objects or encoding names,
+ *  and the first one is the external encoding,
+ *  and the second one is the internal encoding.
  *
  *  In the example below, the two processes close the ends of the pipe
  *  that they are not using. This is not just a cosmetic nicety. The
@@ -5975,15 +5984,16 @@ rb_io_internal_encoding(VALUE io)
 
 /*
  *  call-seq:
- *     io.set_encoding(enc)        => io
- *     io.set_encoding(enc1, enc2) => io
+ *     io.set_encoding(ext_enc)           => io
+ *     io.set_encoding("ext_enc:int_enc") => io
+ *     io.set_encoding(ext_enc, int_enc)  => io
  *
- *  If single argument is specified, read string from pipe is tagged
- *  with the encoding specified.  If encoding is a comma separated two
+ *  If single argument is specified, read string from io is tagged
+ *  with the encoding specified.  If encoding is a colon separated two
  *  encoding names "A:B", the read string is converted from encoding A
  *  (external encoding) to encoding B (internal encoding), then tagged
  *  with B.  If two arguments are specified, those must be encoding
- *  objects, and the first one is the external encoding, and the
+ *  objects or encoding names, and the first one is the external encoding, and the
  *  second one is the internal encoding.
  */
 

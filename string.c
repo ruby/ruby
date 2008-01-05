@@ -103,11 +103,11 @@ single_byte_optimizable(VALUE str)
     if (rb_enc_mbminlen(enc) == 1 && rb_enc_mbmaxlen(enc) == 1)
         return 1;
 
-    /* Not precise.  It may be ENC_CODERANGE_UNKNOWN. */
+    /* Conservative.  It may be ENC_CODERANGE_UNKNOWN. */
     if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
         return 1;
 
-    /* Not precise.  Possibly single byte.
+    /* Conservative.  Possibly single byte.
      * "\xa1" in Shift_JIS for example. */
     return 0;
 }

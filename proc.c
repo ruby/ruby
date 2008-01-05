@@ -184,7 +184,7 @@ proc_clone(VALUE self)
  *
  * define_method always defines a method without the tricks,
  * even if a non-lambda Proc object is given.
- * This is only the exception which the tricks is changed.
+ * This is the only exception which the tricks are not preserved.
  *
  *   class C
  *     define_method(:e, &proc {})
