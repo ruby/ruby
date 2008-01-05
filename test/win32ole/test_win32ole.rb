@@ -342,6 +342,9 @@ if defined?(WIN32OLE)
         WIN32OLE.locale = 0x0411
         obj = WIN32OLE_VARIANT.new("\\100,000", WIN32OLE::VARIANT::VT_CY)
         assert_equal("100000", obj.value)
+        assert_raise(WIN32OLERuntimeError) {
+          obj = WIN32OLE_VARIANT.new("$100.000", WIN32OLE::VARIANT::VT_CY)
+        }
 
         WIN32OLE.locale = 1033
         obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
