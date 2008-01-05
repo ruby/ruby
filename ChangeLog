@@ -1,3 +1,8 @@
+Sat Jan  5 21:48:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* vm_insnhelper.c (vm_callee_setup_arg): it is not inlinable because
+	  alloca is used.
+
 Sat Jan  5 16:50:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_resize): copy if old data is not empty

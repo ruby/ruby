@@ -95,7 +95,7 @@ vm_pop_frame(rb_thread_t *th)
 
 /* method dispatch */
 
-static inline int
+static int
 vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 		    int argc, VALUE *argv, rb_block_t **block)
 {
