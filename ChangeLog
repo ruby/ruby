@@ -1,6 +1,6 @@
-Sat Jan  5 14:45:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jan  5 16:50:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (rb_str_resize): copy at old length but not new length.
+	* string.c (rb_str_resize): copy if old data is not empty
 	  [ruby-core:14785]
 
 Sat Jan  5 13:04:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
