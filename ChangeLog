@@ -1,3 +1,8 @@
+Sun Jan  6 00:48:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/resolv.rb (Reolv::DNS#each_address): get A record and then AAAA
+	  record. [ruby-dev:32925]
+
 Sat Jan  5 21:48:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* vm_insnhelper.c (vm_callee_setup_arg): it is not inlinable because
