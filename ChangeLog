@@ -1,3 +1,8 @@
+Sun Jan  6 01:38:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_initialize_str): /\x80/n is not an error even if script
+	  encoding is EUC-JP.
+
 Sun Jan  6 00:48:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/resolv.rb (Reolv::DNS#each_address): get A record and then AAAA

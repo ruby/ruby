@@ -2035,8 +2035,14 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 static int
 rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
 {
-    return rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str),
-			     options, err);
+    int ret;
+    rb_encoding *enc = rb_enc_get(str);
+    if (options & ARG_ENCODING_NONE)
+        enc = rb_ascii8bit_encoding();
+    ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
+			    options, err);
+    RB_GC_GUARD(str);
+    return ret;
 }
 
 static VALUE

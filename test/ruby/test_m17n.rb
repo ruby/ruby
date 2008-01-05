@@ -382,6 +382,8 @@ class TestM17N < Test::Unit::TestCase
     assert_warning(%r{regexp match /.../n against to UTF-8 string}) {
       assert_equal(nil, r =~ u("\xc2\xa1"))
     }
+
+    assert_nothing_raised { eval(e("/\\x80/n")) }
   end
 
   def test_regexp_ascii
