@@ -278,23 +278,34 @@ if defined?(WIN32OLE)
       fname = fso.getTempName
       begin
         WIN32OLE.codepage = WIN32OLE::CP_UTF8
+        obj = WIN32OLE_VARIANT.new([0x3042].pack("U*"))
+        assert_equal("\xE3\x81\x82", obj.value)
+
+        begin
+          WIN32OLE.codepage = 932 # Windows-31J
+        rescue WIN32OLERuntimeError
+        end
+        if (WIN32OLE.codepage == 932)
+          assert_equal("\x82\xA0", obj.value)
+        end
+
+        begin
+          WIN32OLE.codepage = 20932 # MS EUC-JP
+        rescue WIN32OLERuntimeError
+        end
+        if (WIN32OLE.codepage == 20932)
+          assert_equal("\xA4\xA2", obj.value)
+        end
+
+        WIN32OLE.codepage = WIN32OLE::CP_UTF8
         file = fso.opentextfile(fname, 2, true)
         file.write [0x3042].pack("U*")
         file.close
         str = ""
-        open(fname) {|ifs|
+        open(fname, "r:ascii-8bit") {|ifs|
           str = ifs.read
         }
         assert_equal("\202\240", str)
-
-        WIN32OLE.codepage = WIN32OLE::CP_ACP
-        file = fso.opentextfile(fname, 2, true)
-        file.write [0x3042].pack("U*")
-        file.close
-        open(fname) {|ifs|
-          str = ifs.read
-        }
-        assert_equal("\343\201", str)
 
         # This test fail if codepage 20932 (euc) is not installed.
         begin 
@@ -305,7 +316,7 @@ if defined?(WIN32OLE)
           file = fso.opentextfile(fname, 2, true)
           file.write [164, 162].pack("c*")
           file.close
-          open(fname) {|ifs|
+          open(fname, "r:ascii-8bit") {|ifs|
             str = ifs.read
           }
           assert_equal("\202\240", str)
