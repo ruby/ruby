@@ -405,7 +405,6 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     int prev_status = th->status;
     struct timespec ts;
     struct timeval tvn;
-    struct timeval tve;
 
     if (tv) {
 	gettimeofday(&tvn, NULL);
