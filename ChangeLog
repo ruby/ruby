@@ -1,3 +1,8 @@
+Sat Jan  5 14:45:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_resize): copy at old length but not new length.
+	  [ruby-core:14785]
+
 Sat Jan  5 13:04:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): no need for intermediate object.
