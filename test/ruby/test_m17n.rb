@@ -1883,6 +1883,10 @@ class TestM17N < Test::Unit::TestCase
     s.ascii_only?
     s.gsub!(/b/, "\x80")
     assert_equal(false, s.ascii_only?, "[ruby-core:14566] reported by Sam Ruby")
+
+    s = "abc".force_encoding(Encoding::ASCII_8BIT)
+    t = s.gsub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
+    assert_equal(Encoding::ASCII_8BIT, s.encoding)
   end
 
   def test_regexp_match
