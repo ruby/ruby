@@ -3,7 +3,6 @@
 #   save-history.rb - 
 #   	$Release Version: 0.9.5$
 #   	$Revision$
-#   	$Date$
 #   	by Keiju ISHITSUKAkeiju@ruby-lang.org)
 #
 # --

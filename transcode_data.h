@@ -3,7 +3,6 @@
   transcode_data.h -
 
   $Author$
-  $Date$
   created at: Mon 10 Dec 2007 14:01:47 JST 2007
 
   Copyright (C) 2007 Martin Duerst

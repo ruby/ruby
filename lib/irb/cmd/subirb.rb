@@ -3,7 +3,6 @@
 #   multi.rb - 
 #   	$Release Version: 0.9.5$
 #   	$Revision$
-#   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --

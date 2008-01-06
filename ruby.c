@@ -3,7 +3,6 @@
   ruby.c -
 
   $Author$
-  $Date$
   created at: Tue Aug 10 12:47:31 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

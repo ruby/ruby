@@ -3,7 +3,6 @@
   sprintf.c -
 
   $Author$
-  $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

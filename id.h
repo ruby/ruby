@@ -3,7 +3,6 @@
   id.h - 
 
   $Author: ko1 $
-  $Date: $
   created at: Thu Jul 12 04:38:07 2007
 
   Copyright (C) 2007 Koichi Sasada

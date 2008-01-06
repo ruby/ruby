@@ -2,7 +2,6 @@
 						
                                                 $Release Version: 1.1 $
                                                 $Revision$
-                                                $Date$
 						Original version by Tosh
 
 =begin

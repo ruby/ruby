@@ -3,7 +3,6 @@
   bignum.c -
 
   $Author$
-  $Date$
   created at: Fri Jun 10 00:48:55 JST 1994
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

@@ -4,7 +4,6 @@
   	      for missing timeval struct
 
   $Author$
-  $Date$
   created at: Sat May 11 23:46:03 JST 2002
 
 ************************************************/

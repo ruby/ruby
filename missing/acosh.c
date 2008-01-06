@@ -3,7 +3,6 @@
   acosh.c -
 
   $Author$
-  $Date$
   created at: Fri Apr 12 00:34:17 JST 2002
 
   public domain rewrite of acosh(3), asinh(3) and atanh(3)

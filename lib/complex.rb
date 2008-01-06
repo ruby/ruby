@@ -2,7 +2,6 @@
 #   complex.rb - 
 #   	$Release Version: 0.5 $
 #   	$Revision: 1.3 $
-#   	$Date: 1998/07/08 10:05:28 $
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # ----

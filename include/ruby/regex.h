@@ -3,7 +3,6 @@
   regex.h -
 
   $Author$
-  $Date$
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto
 

@@ -1,6 +1,5 @@
 #
 #               tk/canvas.rb - Tk canvas classes
-#                       $Date$
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 #
 require 'tk'

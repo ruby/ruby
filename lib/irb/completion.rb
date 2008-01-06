@@ -2,7 +2,6 @@
 #   irb/completor.rb - 
 #   	$Release Version: 0.9$
 #   	$Revision$
-#   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #       From Original Idea of shugo@ruby-lang.org
 #

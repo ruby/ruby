@@ -12,7 +12,6 @@
  */
 
 /*
-  $Date$
   modified for win32ole (ruby) by Masaki.Suketa <masaki.suketa@nifty.ne.jp>
  */
 

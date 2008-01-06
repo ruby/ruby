@@ -1,6 +1,5 @@
 #
 #               tk/entry.rb - Tk entry classes
-#                       $Date$
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 
 require 'tk'

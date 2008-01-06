@@ -3,7 +3,6 @@
   compile.c - ruby node tree -> VM instruction sequence
 
   $Author$
-  $Date$
   created at: 04/01/01 03:42:15 JST
 
   Copyright (C) 2004-2007 Koichi Sasada

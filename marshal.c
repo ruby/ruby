@@ -3,7 +3,6 @@
   marshal.c -
 
   $Author$
-  $Date$
   created at: Thu Apr 27 16:30:01 JST 1995
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

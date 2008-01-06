@@ -3,7 +3,6 @@
   dbm.c -
 
   $Author$
-  $Date$
   created at: Mon Jan 24 15:59:52 JST 1994
 
   Copyright (C) 1995-2001 Yukihiro Matsumoto

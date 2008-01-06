@@ -3,7 +3,6 @@
   sockport.h -
 
   $Author$
-  $Date$
   created at: Fri Apr 30 23:19:34 JST 1999
 
 ************************************************/

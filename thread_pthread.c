@@ -4,7 +4,6 @@
   thread_pthread.c -
 
   $Author$
-  $Date$
 
   Copyright (C) 2004-2007 Koichi Sasada
 

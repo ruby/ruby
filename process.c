@@ -3,7 +3,6 @@
   process.c -
 
   $Author$
-  $Date$
   created at: Tue Aug 10 14:30:50 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

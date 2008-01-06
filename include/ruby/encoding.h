@@ -3,7 +3,6 @@
   encoding.h -
 
   $Author: matz $
-  $Date: 2007-05-24 11:49:41 +0900 (Thu, 24 May 2007) $
   created at: Thu May 24 11:49:41 JST 2007
 
   Copyright (C) 2007 Yukihiro Matsumoto

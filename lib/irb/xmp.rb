@@ -2,7 +2,6 @@
 #   xmp.rb - irb version of gotoken xmp
 #   	$Release Version: 0.9$
 #   	$Revision$
-#   	$Date$
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --

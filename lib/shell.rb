@@ -2,7 +2,6 @@
 #   shell.rb - 
 #   	$Release Version: 0.7 $
 #   	$Revision: 1.9 $
-#   	$Date: 2002/03/04 12:01:10 $
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --

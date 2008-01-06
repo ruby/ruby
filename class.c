@@ -3,7 +3,6 @@
   class.c -
 
   $Author$
-  $Date$
   created at: Tue Aug 10 15:05:44 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

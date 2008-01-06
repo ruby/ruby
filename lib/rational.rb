@@ -2,7 +2,6 @@
 #   rational.rb -
 #       $Release Version: 0.5 $
 #       $Revision: 1.7 $
-#       $Date: 1999/08/24 12:49:28 $
 #       by Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # Documentation by Kevin Jackson and Gavin Sinclair.

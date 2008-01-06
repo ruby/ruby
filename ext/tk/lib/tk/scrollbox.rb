@@ -1,7 +1,6 @@
 #
 #               tk/scrollbox.rb - Tk Listbox with Scrollbar
 #                                 as an example of Composite Widget
-#                       $Date$
 #                       by Yukihiro Matsumoto <matz@netlab.co.jp>
 #
 require 'tk'

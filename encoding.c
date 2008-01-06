@@ -3,7 +3,6 @@
   encoding.c -
 
   $Author$
-  $Date$
   created at: Thu May 24 17:23:27 JST 2007
 
   Copyright (C) 2007 Yukihiro Matsumoto

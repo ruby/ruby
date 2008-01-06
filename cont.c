@@ -3,7 +3,6 @@
   cont.c - 
 
   $Author$
-  $Date$
   created at: Thu May 23 09:03:43 2007
 
   Copyright (C) 2007 Koichi Sasada

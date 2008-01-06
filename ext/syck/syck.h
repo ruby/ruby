@@ -2,7 +2,6 @@
  * syck.h
  *
  * $Author$
- * $Date$
  *
  * Copyright (C) 2003 why the lucky stiff
  */

@@ -3,7 +3,6 @@
   insnhelper.c - instruction helper functions.
 
   $Author$
-  $Date$
 
   Copyright (C) 2007 Koichi Sasada
 

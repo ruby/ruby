@@ -2,7 +2,6 @@
 #   e2mmap.rb - for ruby 1.1
 #   	$Release Version: 2.0$
 #   	$Revision: 1.10 $
-#   	$Date: 1999/02/17 12:33:17 $
 #   	by Keiju ISHITSUKA
 #
 # --

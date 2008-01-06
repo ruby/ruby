@@ -3,7 +3,6 @@
  * rubyext.c
  *
  * $Author$
- * $Date$
  *
  * Copyright (C) 2003-2005 why the lucky stiff
  */

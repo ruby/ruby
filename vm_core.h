@@ -3,7 +3,6 @@
   vm_core.h - 
 
   $Author$
-  $Date$
   created at: 04/01/01 19:41:38 JST
 
   Copyright (C) 2004-2007 Koichi Sasada

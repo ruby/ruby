@@ -2,7 +2,6 @@
 #   tracer.rb - 
 #   	$Release Version: 0.2$
 #   	$Revision: 1.8 $
-#   	$Date: 1998/05/19 03:42:49 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --

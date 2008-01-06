@@ -4,7 +4,6 @@
 # $Revision$
 # $Id$
 # $Author$
-# $Date$
 #
 # A product of the Austin Ruby Codefest (Austin, Texas, August 2002)
 

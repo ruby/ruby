@@ -1,6 +1,5 @@
 #
 #		thread.rb - thread support classes
-#			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.co.jp>
 #
 # Copyright (C) 2001  Yukihiro Matsumoto

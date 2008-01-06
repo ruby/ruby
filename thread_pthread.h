@@ -3,7 +3,6 @@
   thread_pthread.h -
 
   $Author$
-  $Date$
 
   Copyright (C) 2004-2007 Koichi Sasada
 

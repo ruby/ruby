@@ -3,7 +3,6 @@
 #   matrix.rb - 
 #   	$Release Version: 1.0$
 #   	$Revision: 1.13 $
-#   	$Date: 2001/12/09 14:22:23 $
 #       Original Version from Smalltalk-80 version
 #          on July 23, 1985 at 8:37:17 am
 #       by Keiju ISHITSUKA

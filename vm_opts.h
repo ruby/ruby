@@ -4,7 +4,6 @@
   vm_opts.h - VM optimize option
 
   $Author$
-  $Date$
 
   Copyright (C) 2004-2007 Koichi Sasada
 

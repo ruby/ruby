@@ -3,7 +3,6 @@
   util.c -
 
   $Author$
-  $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

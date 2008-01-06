@@ -5,7 +5,6 @@
 ;;; C/C++ mode style for Ruby.
 ;;;
 ;;;  $Author$
-;;;  $Date$
 ;;;  created at: Thu Apr 26 13:54:01 JST 2007
 ;;;
 

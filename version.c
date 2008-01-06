@@ -3,7 +3,6 @@
   version.c -
 
   $Author$
-  $Date$
   created at: Thu Sep 30 20:08:01 JST 1993
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

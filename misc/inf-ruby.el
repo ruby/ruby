@@ -2,7 +2,6 @@
 ;;;
 ;;;  $Id$
 ;;;  $Author$
-;;;  $Date$
 ;;;
 ;;; Inferior Ruby Mode - ruby process in a buffer.
 ;;;                      adapted from cmuscheme.el

@@ -1,6 +1,5 @@
 #
 #               tk/text.rb - Tk text classes
-#                       $Date$
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 require 'tk'
 require 'tk/itemfont'

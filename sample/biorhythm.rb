@@ -3,7 +3,6 @@
 #               biorhythm.rb - 
 #                       $Release Version: $
 #                       $Revision$
-#                       $Date$
 #                       by Yasuo OHBA(STAFS Development Room)
 #
 # --

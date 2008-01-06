@@ -2,7 +2,6 @@
   insns.def - YARV instruction definitions
 
   $Author: $
-  $Date: $
   created at: 04/01/01 01:17:55 JST
 
   Copyright (C) 2004-2007 Koichi Sasada

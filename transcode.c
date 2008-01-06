@@ -3,7 +3,6 @@
   transcode.c -
 
   $Author$
-  $Date$
   created at: Tue Oct 30 16:10:22 JST 2007
 
   Copyright (C) 2007 Martin Duerst

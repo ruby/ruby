@@ -3,7 +3,6 @@
   rubysig.h -
 
   $Author$
-  $Date$
   created at: Wed Aug 16 01:15:38 JST 1995
 
   Copyright (C) 1993-2007 Yukihiro Matsumoto

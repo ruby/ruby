@@ -2,7 +2,6 @@
 #   output-method.rb - optput methods used by irb 
 #   	$Release Version: 0.9.5$
 #   	$Revision$
-#   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
