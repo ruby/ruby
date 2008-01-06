@@ -1,3 +1,10 @@
+Sun Jan  6 09:32:58 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: introduced some constants
+	  (for internal use) and aliases (minute and second).
+
+	* sample/cal.rb: trivial adjustments.
+
 Sun Jan  6 01:38:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_initialize_str): /\x80/n is not an error even if script

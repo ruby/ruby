@@ -1,5 +1,5 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2007
-# $Id: format.rb,v 2.40 2007-09-09 08:28:03+09 tadf Exp $
+# format.rb: Written by Tadayoshi Funaba 1999-2008
+# $Id: format.rb,v 2.41 2008-01-06 08:42:17+09 tadf Exp $
 
 require 'rational'
 
@@ -257,25 +257,23 @@ class Date
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
-	emit_n((sec_fraction / (1.to_r/(10**3))).round, 3, f)
+	emit_n((sec_fraction / MILLISECONDS_IN_SECOND).round, 3, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
       when 'M', 'OM'; emit_n(min, 2, f)
       when 'm', 'Om'; emit_n(mon, 2, f)
       when 'N'
-	emit_n((sec_fraction / (1.to_r/(10**9))).round, 9, f)
+	emit_n((sec_fraction / NANOSECONDS_IN_SECOND).round, 9, f)
       when 'n'; "\n"
       when 'P'; emit_ad(strftime('%p').downcase, 0, f)
       when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
       when 'Q'
-	d = ajd - jd_to_ajd(self.class::UNIXEPOCH, 0)
-	s = (d * 86400*10**3).to_i
+	s = ((ajd - UNIX_EPOCH_IN_AJD) / MILLISECONDS_IN_DAY).round
 	emit_sn(s, 1, f)
       when 'R'; emit_a(strftime('%H:%M'), 0, f)
       when 'r'; emit_a(strftime('%I:%M:%S %p'), 0, f)
       when 'S', 'OS'; emit_n(sec, 2, f)
       when 's'
-	d = ajd - jd_to_ajd(self.class::UNIXEPOCH, 0)
-	s = (d * 86400).to_i
+	s = ((ajd - UNIX_EPOCH_IN_AJD) / SECONDS_IN_DAY).round
 	emit_sn(s, 1, f)
       when 'T'
 	if m == '%T'
@@ -299,9 +297,9 @@ class Date
 	t = $1.size
 	sign = if offset < 0 then -1 else +1 end
 	fr = offset.abs
-	hh, fr = fr.divmod(1.to_r/24)
-	mm, fr = fr.divmod(1.to_r/1440)
-	ss, fr = fr.divmod(1.to_r/86400)
+	hh, fr = fr.divmod(HOURS_IN_DAY)
+	mm, fr = fr.divmod(MINUTES_IN_DAY)
+	ss, fr = fr.divmod(SECONDS_IN_DAY)
 	if t == 3
 	  if    ss.nonzero? then t =  2
 	  elsif mm.nonzero? then t =  1
@@ -372,12 +370,12 @@ class Date
 
 =begin
   def beat(n=0)
-    i, f = (new_offset(1.to_r/24).day_fraction * 1000).divmod(1)
+    i, f = (new_offset(HOURS_IN_DAY).day_fraction * 1000).divmod(1)
     ('@%03d' % i) +
       if n < 1
 	''
       else
-	'.%0*d' % [n, (f / (1.to_r/(10**n))).round]
+	'.%0*d' % [n, (f / Rational(1, 10**n)).round]
       end
   end
 =end
@@ -456,8 +454,8 @@ class Date
 				 then /\A([-+]?\d{1,3})/
 				 else /\A([-+]?\d{1,})/
 				 end, '')
-#	  val = $1.to_i.to_r / (10**3)
-	  val = $1.to_i.to_r / (10**$1.size)
+#	  val = Rational($1.to_i, 10**3)
+	  val = Rational($1.to_i, 10**$1.size)
 	  e.sec_fraction = val
 	when 'M', 'OM'
 	  return unless str.sub!(/\A(\d{1,2})/, '')
@@ -474,8 +472,8 @@ class Date
 				 then /\A([-+]?\d{1,9})/
 				 else /\A([-+]?\d{1,})/
 				 end, '')
-#	  val = $1.to_i.to_r / (10**9)
-	  val = $1.to_i.to_r / (10**$1.size)
+#	  val = Rational($1.to_i, 10**9)
+	  val = Rational($1.to_i, 10**$1.size)
 	  e.sec_fraction = val
 	when 'n', 't'
 	  return unless _strptime_i(str, "\s", e)
@@ -484,7 +482,7 @@ class Date
 	  e._merid = if $1.downcase == 'a' then 0 else 12 end
 	when 'Q'
 	  return unless str.sub!(/\A(-?\d{1,})/, '')
-	  val = $1.to_i.to_r / 10**3
+	  val = Rational($1.to_i, 10**3)
 	  e.seconds = val
 	when 'R'
 	  return unless _strptime_i(str, '%H:%M', e)
@@ -723,7 +721,7 @@ class Date
       e.hour = $1.to_i
       e.min = $2.to_i if $2
       e.sec = $3.to_i if $3
-      e.sec_fraction = $4.to_i.to_r / (10**$4.size) if $4
+      e.sec_fraction = Rational($4.to_i, 10**$4.size) if $4
 
       if $5
 	e.hour %= 12
@@ -738,9 +736,9 @@ class Date
 =begin
   def self._parse_beat(str, e) # :nodoc:
     if str.sub!(/@\s*(\d+)(?:[,.](\d*))?/, ' ')
-      beat = $1.to_i.to_r
-      beat += $2.to_i.to_r / (10**$2.size) if $2
-      secs = beat.to_r / 1000
+      beat = Rational($1.to_i)
+      beat += Rational($2.to_i, 10**$2.size) if $2
+      secs = Rational(beat, 1000)
       h, min, s, fr = self.day_fraction_to_time(secs)
       e.hour = h
       e.min = min
@@ -1063,7 +1061,7 @@ class Date
 	end
       end
       if $4
-	e.sec_fraction = $4.to_i.to_r / (10**$4.size)
+	e.sec_fraction = Rational($4.to_i, 10**$4.size)
       end
       if $5
 	e.zone = $5
@@ -1280,7 +1278,7 @@ class Date
       e.hour = $4.to_i if $4
       e.min = $5.to_i if $5
       e.sec = $6.to_i if $6
-      e.sec_fraction = $7.to_i.to_r / (10**$7.size) if $7
+      e.sec_fraction = Rational($7.to_i, 10**$7.size) if $7
       if $8
 	e.zone = $8
 	e.offset = zone_to_diff($8)
@@ -1292,7 +1290,7 @@ class Date
       e.hour = $1.to_i if $1
       e.min = $2.to_i if $2
       e.sec = $3.to_i if $3
-      e.sec_fraction = $4.to_i.to_r / (10**$4.size) if $4
+      e.sec_fraction = Rational($4.to_i, 10**$4.size) if $4
       if $5
 	e.zone = $5
 	e.offset = zone_to_diff($5)
@@ -1390,7 +1388,7 @@ class Date
 	  hour, min, sec, = zone.split(':')
 	elsif zone.include?(',') || zone.include?('.')
 	  hour, fr, = zone.split(/[,.]/)
-	  min = fr.to_i.to_r / (10**fr.size) * 60
+	  min = Rational(fr.to_i, 10**fr.size) * 60
 	else
 	  case zone.size
 	  when 3
@@ -1430,7 +1428,7 @@ class DateTime < Date
 	     if n < 1
 	       ''
 	     else
-	       '.%0*d' % [n, (sec_fraction / (1.to_r/(10**n))).round]
+	       '.%0*d' % [n, (sec_fraction / Rational(1, 10**n)).round]
 	     end +
 	     '%:z')
   end
