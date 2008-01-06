@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 
-# cal.rb: Written by Tadayoshi Funaba 1998-2004,2006
-# $Id: cal.rb,v 2.10 2006-12-30 21:44:44+09 tadf Exp $
+# cal.rb: Written by Tadayoshi Funaba 1998-2004,2006,2008
+# $Id: cal.rb,v 2.11 2008-01-06 08:42:17+09 tadf Exp $
 
 require 'date'
 
@@ -53,7 +53,7 @@ class Cal
   end
 
   def pict(y, m)
-    d = (1..31).detect{|d| Date.valid_date?(y, m, d, @start)}
+    d = (1..31).detect{|x| Date.valid_date?(y, m, x, @start)}
     fi = Date.new(y, m, d, @start)
     fi -= (fi.jd - @k + 1) % 7
 
@@ -162,3 +162,5 @@ if __FILE__ == $0
   print cal.print(y, m)
 
 end
+
+# See Bird & Wadler's Introduction to functional programming 4.5.

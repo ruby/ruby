@@ -1,3 +1,10 @@
+Sun Jan  6 09:39:02 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: introduced some constants
+	  (for internal use) and aliases (minute and second).
+
+	* sample/cal.rb: trivial adjustments.
+
 Fri Jan  4 23:08:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_arg): use converted object.  [ruby-core:14759]
