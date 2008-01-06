@@ -721,6 +721,13 @@ class TestM17N < Test::Unit::TestCase
     s = "abc".force_encoding(Encoding::ASCII_8BIT)
     t = s.gsub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
     assert_equal(Encoding::ASCII_8BIT, s.encoding)
+
+    assert_raise(ArgumentError) {
+      "abc".gsub(/[ac]/) {
+         $& == "a" ? "\xc2\xa1".force_encoding("euc-jp") :
+                     "\xc2\xa1".force_encoding("utf-8")
+      }
+    }
   end
 
   def test_regexp_match
