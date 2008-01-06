@@ -1,3 +1,8 @@
+Mon Jan  7 01:05:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/erb.rb (ERB::Revision): cut off locale dependent string in Date
+	  keyword.
+
 Mon Jan  7 00:48:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* Date keyword removed to avoid inclusion of locale dependent
