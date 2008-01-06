@@ -1,7 +1,7 @@
 Sun Jan  6 09:39:02 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: introduced some constants
-	  (for internal use) and aliases (minute and second).
+	  (for internal use).
 
 	* sample/cal.rb: trivial adjustments.
 
