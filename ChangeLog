@@ -1,3 +1,8 @@
+Sun Jan  6 21:14:12 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_initialize_str): forbid raw non ASCII character
+	  for ASCII-8BIT regexp in non ASCII-8BIT script.
+
 Sun Jan  6 18:19:12 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_enc_str_buf_cat): declared.

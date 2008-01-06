@@ -2037,8 +2037,16 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err)
 {
     int ret;
     rb_encoding *enc = rb_enc_get(str);
-    if (options & ARG_ENCODING_NONE)
-        enc = rb_ascii8bit_encoding();
+    if (options & ARG_ENCODING_NONE) {
+        rb_encoding *ascii8bit = rb_ascii8bit_encoding();
+        if (enc != ascii8bit) {
+            if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+                strcpy(err, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
+                return -1;
+            }
+            enc = ascii8bit;
+        }
+    }
     ret = rb_reg_initialize(obj, RSTRING_PTR(str), RSTRING_LEN(str), enc,
 			    options, err);
     RB_GC_GUARD(str);
