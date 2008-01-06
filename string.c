@@ -119,6 +119,17 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
     const char *e = p + len;
     int cr;
 
+    if (rb_enc_to_index(enc) == 0) {
+        /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
+        while (p < e) {
+            if (!ISASCII((unsigned char)*p)) {
+                return ENC_CODERANGE_VALID;
+            }
+            p++;
+        }
+        return ENC_CODERANGE_7BIT;
+    }
+
     cr = rb_enc_asciicompat(enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
     while (p < e) {
         int ret = rb_enc_precise_mbclen(p, e, enc);
@@ -1056,12 +1067,22 @@ rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *ptr_enc)
     int ptr_a8 = rb_enc_to_index(ptr_enc) == 0;
 
     str_cr = ENC_CODERANGE(str);
-    ptr_cr = coderange_scan(ptr, len, ptr_enc);
 
-    if (str_cr == ENC_CODERANGE_UNKNOWN) {
-        if (str_a8 ? !ptr_a8
-                   : (str_enc != ptr_enc && ptr_cr != ENC_CODERANGE_7BIT)) {
-            str_cr = rb_enc_str_coderange(str);
+    if (str_enc == ptr_enc) {
+        if (str_cr == ENC_CODERANGE_UNKNOWN ||
+            (ptr_a8 && str_cr != ENC_CODERANGE_7BIT)) {
+            ptr_cr = ENC_CODERANGE_UNKNOWN;
+        }
+        else {
+            ptr_cr = coderange_scan(ptr, len, ptr_enc);
+        }
+    }
+    else {
+        ptr_cr = coderange_scan(ptr, len, ptr_enc);
+        if (str_cr == ENC_CODERANGE_UNKNOWN) {
+            if (str_a8 || ptr_cr != ENC_CODERANGE_7BIT) {
+                str_cr = rb_enc_str_coderange(str);
+            }
         }
     }
 

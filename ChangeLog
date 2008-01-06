@@ -1,3 +1,8 @@
+Mon Jan  7 01:36:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (coderange_scan): optimize ASCII-8BIT string.
+	  (rb_enc_str_buf_cat): don't call coderange_scan if possible.
+
 Mon Jan  7 01:05:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/erb.rb (ERB::Revision): cut off locale dependent string in Date
