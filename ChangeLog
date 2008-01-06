@@ -1,3 +1,18 @@
+Sun Jan  6 18:19:12 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_enc_str_buf_cat): declared.
+
+	* string.c (coderange_scan): extracted from rb_enc_str_coderange.
+	  (rb_enc_str_coderange): use coderange_scan.
+	  (rb_str_shared_replace): copy encoding and coderange.
+	  (rb_enc_str_buf_cat): new function for linear complexity string
+	  accumulation with encoding.
+	  (rb_str_sub_bang): don't conflict substituted part and replacement.
+	  (str_gsub): use rb_enc_str_buf_cat.
+	  (rb_str_clear): clear coderange.
+
+	* re.c (rb_reg_regsub): use rb_enc_str_buf_cat.
+
 Sun Jan  6 17:55:44 2008  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* lib/securerandom.rb: Add Win32 support.

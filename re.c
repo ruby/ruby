@@ -2795,17 +2795,18 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     VALUE val = 0;
     char *p, *s, *e;
     int no, clen;
-    rb_encoding *enc = rb_enc_check(str, src);
+    rb_encoding *str_enc = rb_enc_get(str);
+    rb_encoding *src_enc = rb_enc_get(src);
 
     p = s = RSTRING_PTR(str);
     e = s + RSTRING_LEN(str);
 
     while (s < e) {
-        int c = rb_enc_ascget(s, e, &clen, enc);
+        int c = rb_enc_ascget(s, e, &clen, str_enc);
 	char *ss;
 
 	if (c == -1) {
-	    s += mbclen(s, e, enc);
+	    s += mbclen(s, e, str_enc);
 	    continue;
 	}
 	ss = s;
@@ -2816,12 +2817,12 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	if (!val) {
 	    val = rb_str_buf_new(ss-p);
 	}
-        rb_str_buf_cat(val, p, ss-p);
+        rb_enc_str_buf_cat(val, p, ss-p, str_enc);
 
-        c = rb_enc_ascget(s, e, &clen, enc);
+        c = rb_enc_ascget(s, e, &clen, str_enc);
         if (c == -1) {
-            s += mbclen(s, e, enc);
-	    rb_str_buf_cat(val, ss, s-ss);
+            s += mbclen(s, e, str_enc);
+	    rb_enc_str_buf_cat(val, ss, s-ss, str_enc);
 	    continue;
         }
         s += clen;
@@ -2839,14 +2840,14 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	    break;
 
           case 'k':
-            if (s < e && rb_enc_ascget(s, e, &clen, enc) == '<') {
+            if (s < e && rb_enc_ascget(s, e, &clen, str_enc) == '<') {
                 char *name, *name_end;
                
                 name_end = name = s + clen;
                 while (name_end < e) {
-                    c = rb_enc_ascget(name_end, e, &clen, enc);
+                    c = rb_enc_ascget(name_end, e, &clen, str_enc);
                     if (c == '>') break;
-                    name_end += c == -1 ? mbclen(name_end, e, enc) : clen;
+                    name_end += c == -1 ? mbclen(name_end, e, str_enc) : clen;
                 }
                 if (name_end < e) {
                     no = name_to_backref_number(regs, regexp, name, name_end);
@@ -2858,7 +2859,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                 }
             }
 
-            rb_str_buf_cat(val, ss, s-ss);
+            rb_enc_str_buf_cat(val, ss, s-ss, str_enc);
             continue;
 
           case '0':
@@ -2867,11 +2868,11 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	    break;
 
 	  case '`':
-	    rb_str_buf_cat(val, RSTRING_PTR(src), BEG(0));
+	    rb_enc_str_buf_cat(val, RSTRING_PTR(src), BEG(0), src_enc);
 	    continue;
 
 	  case '\'':
-	    rb_str_buf_cat(val, RSTRING_PTR(src)+END(0), RSTRING_LEN(src)-END(0));
+	    rb_enc_str_buf_cat(val, RSTRING_PTR(src)+END(0), RSTRING_LEN(src)-END(0), src_enc);
 	    continue;
 
 	  case '+':
@@ -2881,26 +2882,25 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	    break;
 
 	  case '\\':
-	    rb_str_buf_cat(val, s-clen, clen);
+	    rb_enc_str_buf_cat(val, s-clen, clen, str_enc);
 	    continue;
 
 	  default:
-	    rb_str_buf_cat(val, ss, s-ss);
+	    rb_enc_str_buf_cat(val, ss, s-ss, str_enc);
 	    continue;
 	}
 
 	if (no >= 0) {
 	    if (no >= regs->num_regs) continue;
 	    if (BEG(no) == -1) continue;
-	    rb_str_buf_cat(val, RSTRING_PTR(src)+BEG(no), END(no)-BEG(no));
+	    rb_enc_str_buf_cat(val, RSTRING_PTR(src)+BEG(no), END(no)-BEG(no), src_enc);
 	}
     }
 
     if (!val) return str;
     if (p < e) {
-        rb_str_buf_cat(val, p, e-p);
+        rb_enc_str_buf_cat(val, p, e-p, str_enc);
     }
-    rb_enc_associate(val, enc);
 
     return val;
 }

@@ -335,7 +335,6 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def test_str_aref_substr
-
     combination(STRINGS, STRINGS) {|s1, s2|
       if s1.ascii_only? || s2.ascii_only? || s1.encoding == s2.encoding
         t = s1[s2]
@@ -1359,7 +1358,7 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal(s1, doit.call)
           next
         end
-        if !str_enc_compatible?(s1, s3)
+        if !str_enc_compatible?(s1.gsub(r2, ''), s3)
           assert_raise(ArgumentError, desc) { doit.call }
           next
         end
@@ -1413,7 +1412,7 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal([s1, nil], doit.call)
           next
         end
-        if !str_enc_compatible?(s1, s3)
+        if !str_enc_compatible?(s1.gsub(r2, ''), s3)
           assert_raise(ArgumentError, desc) { doit.call }
           next
         end

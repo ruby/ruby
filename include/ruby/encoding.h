@@ -65,6 +65,7 @@ VALUE rb_enc_vsprintf(rb_encoding *, const char*, va_list);
 long rb_enc_strlen(const char*, const char*, rb_encoding*);
 char* rb_enc_nth(const char*, const char*, int, rb_encoding*);
 VALUE rb_obj_encoding(VALUE);
+VALUE rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *enc);
 
 /* index -> rb_encoding */
 rb_encoding* rb_enc_from_index(int idx);
