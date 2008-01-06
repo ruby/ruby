@@ -7,6 +7,7 @@
 #
 # * openssl
 # * /dev/urandom
+# * Win32
 #
 # == Example
 #
@@ -49,11 +50,12 @@ module SecureRandom
   # NotImplementedError is raised.
   def self.random_bytes(n=nil)
     n ||= 16
+
     if defined? OpenSSL::Random
       return OpenSSL::Random.random_bytes(n)
     end
+
     if !defined?(@has_urandom) || @has_urandom
-      @has_urandom = false
       flags = File::RDONLY
       flags |= File::NONBLOCK if defined? File::NONBLOCK
       flags |= File::NOCTTY if defined? File::NOCTTY
@@ -71,9 +73,39 @@ module SecureRandom
           return ret
         }
       rescue Errno::ENOENT
-        raise NotImplementedError, "No random device"
+        @has_urandom = false
       end
     end
+
+    if !defined?(@has_win32)
+      begin
+        require 'Win32API'
+
+        crypt_acquire_context = Win32API.new("advapi32", "CryptAcquireContext", 'PPPII', 'L')
+        @crypt_gen_random = Win32API.new("advapi32", "CryptGenRandom", 'LIP', 'L')
+
+        hProvStr = " " * 4
+        prov_rsa_full = 1
+        crypt_verifycontext = 0xF0000000
+
+        if crypt_acquire_context.call(hProvStr, nil, nil, prov_rsa_full, crypt_verifycontext) == 0
+          raise SystemCallError, "CryptAcquireContext failed: #{lastWin32ErrorMessage}"
+        end
+        @hProv, = hProvStr.unpack('L')
+
+        @has_win32 = true
+      rescue LoadError
+        @has_win32 = false
+      end
+    end
+    if @has_win32
+      bytes = " " * n
+      if @crypt_gen_random.call(@hProv, bytes.size, bytes) == 0
+        raise SystemCallError, "CryptGenRandom failed: #{lastWin32ErrorMessage}"
+      end
+      return bytes
+    end
+
     raise NotImplementedError, "No random device"
   end
 
@@ -133,5 +165,18 @@ module SecureRandom
       i64 = SecureRandom.random_bytes(8).unpack("Q")[0]
       Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
     end
+  end
+
+  # Following code is based on David Garamond's GUID library for Ruby.
+  def self.lastWin32ErrorMessage # :nodoc:
+    get_last_error = Win32API.new("kernel32", "GetLastError", '', 'L')
+    format_message = Win32API.new("kernel32", "FormatMessageA", 'LPLLPLPPPPPPPP', 'L')
+    format_message_ignore_inserts = 0x00000200
+    format_message_from_system    = 0x00001000
+
+    code = get_last_error.call
+    msg = "\0" * 1024
+    len = format_message.call(format_message_ignore_inserts + format_message_from_system, 0, code, 0, msg, 1024, nil, nil, nil, nil, nil, nil, nil, nil)
+    msg[0, len].tr("\r", '').chomp
   end
 end
