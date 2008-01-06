@@ -1,6 +1,6 @@
 Mon Jan  7 00:48:02 2008  Tanaka Akira  <akr@fsij.org>
 
-	* $Date$ keyword removed to avoid inclusion of locale dependent
+	* Date keyword removed to avoid inclusion of locale dependent
 	  string.
 
 Sun Jan  6 21:14:12 2008  Tanaka Akira  <akr@fsij.org>
