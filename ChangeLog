@@ -18,7 +18,7 @@ Mon Jan  7 01:05:45 2008  Tanaka Akira  <akr@fsij.org>
 Mon Jan  7 00:48:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* Date keyword removed to avoid inclusion of locale dependent
-	  string.
+	  string.  [ruby-dev:32940]
 
 Sun Jan  6 21:14:12 2008  Tanaka Akira  <akr@fsij.org>
 
