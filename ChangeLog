@@ -1,3 +1,10 @@
+Mon Jan  7 02:14:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (coderange_scan): avoid rb_enc_to_index.
+	  (rb_enc_str_buf_cat): ditto.
+	  (str_cat_char): use rb_enc_str_buf_cat.
+	  (rb_str_inspect): ditto.
+
 Mon Jan  7 01:36:49 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (coderange_scan): optimize ASCII-8BIT string.

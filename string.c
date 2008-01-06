@@ -119,8 +119,8 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
     const char *e = p + len;
     int cr;
 
-    if (rb_enc_to_index(enc) == 0) {
-        /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
+    if (enc == rb_ascii8bit_encoding()) {
+        /* ASCII-8BIT string never be broken. */
         while (p < e) {
             if (!ISASCII((unsigned char)*p)) {
                 return ENC_CODERANGE_VALID;
@@ -1063,8 +1063,8 @@ rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *ptr_enc)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *res_enc;
     int str_cr, ptr_cr, res_cr;
-    int str_a8 = rb_enc_to_index(str_enc) == 0;
-    int ptr_a8 = rb_enc_to_index(ptr_enc) == 0;
+    int str_a8 = ENCODING_GET(str) == 0;
+    int ptr_a8 = ptr_enc == rb_ascii8bit_encoding();
 
     str_cr = ENC_CODERANGE(str);
 
@@ -3108,7 +3108,7 @@ str_cat_char(VALUE str, int c, rb_encoding *enc)
     int n = rb_enc_codelen(c, enc);
 
     rb_enc_mbcput(c, s, enc);
-    rb_str_buf_cat(str, s, n);
+    rb_enc_str_buf_cat(str, s, n, enc);
 }
 
 static void
@@ -3187,7 +3187,7 @@ rb_str_inspect(VALUE str)
 	    prefix_escape(result, 'e', enc);
 	}
 	else if (rb_enc_isprint(c, enc)) {
-	    rb_str_buf_cat(result, p-n, n);
+	    rb_enc_str_buf_cat(result, p-n, n, enc);
 	}
 	else {
 	    char buf[5];
