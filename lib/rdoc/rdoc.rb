@@ -18,8 +18,7 @@ require 'find'
 require 'fileutils'
 require 'time'
 
-# We put rdoc stuff in the RDoc module to avoid namespace
-# clutter.
+# We put rdoc stuff in the RDoc module to avoid namespace clutter.
 #
 # ToDo: This isn't universally true.
 #

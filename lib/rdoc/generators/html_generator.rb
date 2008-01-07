@@ -1,10 +1,7 @@
 require 'fileutils'
 
-require 'rdoc/options'
-require 'rdoc/template'
-require 'rdoc/markup/simple_markup'
+require 'rdoc/generators'
 require 'rdoc/markup/simple_markup/to_html'
-require 'cgi'
 
 module Generators
 
@@ -780,7 +777,9 @@ module Generators
     end
 
     def filename_to_label
-      @context.file_relative_name.gsub(/%|\/|\?|\#/) {|s| '%' + ("%x" % s[0]) }
+      @context.file_relative_name.gsub(/%|\/|\?|\#/) do |s|
+        '%%%x' % s[0].unpack('C')
+      end
     end
 
     def index_name
@@ -1177,7 +1176,7 @@ module Generators
     # Generators may need to return specific subclasses depending on the
     # options they are passed. Because of this we create them using a factory
 
-    def HTMLGenerator.for(options)
+    def self.for(options)
       AllReferences::reset
       HtmlMethod::reset
 
