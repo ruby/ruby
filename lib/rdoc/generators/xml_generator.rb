@@ -3,7 +3,7 @@ require 'rdoc/generators/html_generator'
 ##
 # Generate XML output as one big file
 
-class Generators::XMLGenerator < Generators::HTMLGenerator
+class RDoc::Generators::XMLGenerator < RDoc::Generators::HTMLGenerator
 
   ##
   # Standard generator factory
@@ -42,16 +42,16 @@ class Generators::XMLGenerator < Generators::HTMLGenerator
 
   def build_indices
     @info.each do |toplevel|
-      @files << Generators::HtmlFile.new(toplevel, @options, Generators::FILE_DIR)
+      @files << RDoc::Generators::HtmlFile.new(toplevel, @options, RDoc::Generators::FILE_DIR)
     end
 
     RDoc::TopLevel.all_classes_and_modules.each do |cls|
-      build_class_list(cls, @files[0], Generators::CLASS_DIR)
+      build_class_list(cls, @files[0], RDoc::Generators::CLASS_DIR)
     end
   end
 
   def build_class_list(from, html_file, class_dir)
-    @classes << Generators::HtmlClass.new(from, html_file, class_dir, @options)
+    @classes << RDoc::Generators::HtmlClass.new(from, html_file, class_dir, @options)
     from.each_classmodule do |mod|
       build_class_list(mod, html_file, class_dir)
     end
@@ -71,7 +71,7 @@ class Generators::XMLGenerator < Generators::HTMLGenerator
     # this method is defined in the template file
     write_extra_pages if defined? write_extra_pages
 
-    template = TemplatePage.new(RDoc::Page::ONE_PAGE)
+    template = RDoc::TemplatePage.new(RDoc::Page::ONE_PAGE)
 
     if @options.op_name
       opfile = File.open(@options.op_name, "w")
@@ -98,7 +98,7 @@ class Generators::XMLGenerator < Generators::HTMLGenerator
   end
 
   def gen_method_index
-    gen_an_index(Generators::HtmlMethod.all_methods, 'Methods')
+    gen_an_index(RDoc::Generators::HtmlMethod.all_methods, 'Methods')
   end
 
   def gen_an_index(collection, title)

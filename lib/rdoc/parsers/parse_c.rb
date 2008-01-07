@@ -3,7 +3,6 @@
 
 require "rdoc/code_objects"
 require "rdoc/parsers/parserfactory"
-require "rdoc/options"
 require "rdoc/rdoc"
 
 module RDoc
@@ -37,6 +36,7 @@ module RDoc
     "rb_cTime"             => "Time",
     "rb_cTrueClass"        => "TrueClass",
     "rb_cStruct"           => "Struct",
+    "rb_cVM"               => "VM",
     "rb_eException"        => "Exception",
     "rb_eStandardError"    => "StandardError",
     "rb_eSystemExit"       => "SystemExit",
@@ -177,13 +177,13 @@ module RDoc
     # prepare to parse a C file
     def initialize(top_level, file_name, body, options, stats)
       @known_classes = KNOWN_CLASSES.dup
-      @body = handle_tab_width(handle_ifdefs_in(body))
       @options = options
+      @body = handle_tab_width(handle_ifdefs_in(body))
       @stats   = stats
       @top_level = top_level
       @classes = Hash.new
       @file_dir = File.dirname(file_name)
-      @progress = $stderr unless options.quiet
+      @progress = $stderr unless @options.quiet
     end
 
     # Extract the classes/modules and methods from a C file
@@ -627,8 +627,8 @@ module RDoc
     # Find the C code corresponding to a Ruby method
     def find_body(meth_name, meth_obj, body, quiet = false)
       case body
-      when %r{((?>/\*.*?\*/\s*))(?:static\s+)?VALUE\s+#{meth_name}
-              \s*(\([^)]*\))\s*\{.*?^\}}xm
+      when %r"((?>/\*.*?\*/\s*))(?:static\s+)?VALUE\s+#{meth_name}
+              \s*(\([^)]*\))\s*\{.*?^\}"xm
         comment, params = $1, $2
         body_text = $&
 
@@ -752,7 +752,7 @@ module RDoc
 
     def handle_tab_width(body)
       if /\t/ =~ body
-        tab_width = Options.instance.tab_width
+        tab_width = @options.tab_width
         body.split(/\n/).map do |line|
           1 while line.gsub!(/\t+/) { ' ' * (tab_width*$&.length - $`.length % tab_width)}  && $~ #`
           line

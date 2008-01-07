@@ -4,11 +4,11 @@
 # You must have the V1.7 or later in your path
 # http://www.research.att.com/sw/tools/graphviz/
 
-require "rdoc/dot"
-require 'rdoc/options'
+require 'rdoc/dot'
 
 module RDoc
 
+  ##
   # Draw a set of diagrams representing the modules and classes in the
   # system. We draw one diagram for each file, and one for each toplevel
   # class or module. This means there will be overlap. However, it also
@@ -167,7 +167,7 @@ module RDoc
 
     def add_classes(container, graph, file = nil )
 
-      use_fileboxes = Options.instance.fileboxes
+      use_fileboxes = @options.fileboxes
 
       files = {}
 
@@ -281,7 +281,7 @@ module RDoc
     def convert_to_png(file_base, graph)
       str = graph.to_s
       return @diagram_cache[str] if @diagram_cache[str]
-      op_type = Options.instance.image_format
+      op_type = @options.image_format
       dotfile = File.join(DOT_PATH, file_base)
       src = dotfile + ".dot"
       dot = dotfile + "." + op_type
@@ -332,4 +332,6 @@ module RDoc
       return res
     end
   end
+
 end
+

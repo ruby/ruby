@@ -305,8 +305,6 @@ module RubyToken
 
 end
 
-
-
 # Lexical analyzer for Ruby source
 
 class RubyLex
@@ -345,9 +343,11 @@ class RubyLex
     
     attr_reader :line_num
     
-    def initialize(content)
+    def initialize(content, options)
+      @options = options
+      
       if /\t/ =~ content
-        tab_width = Options.instance.tab_width
+        tab_width = @options.tab_width
         content = content.split(/\n/).map do |line|
           1 while line.gsub!(/\t+/) { ' ' * (tab_width*$&.length - $`.length % tab_width)}  && $~ #`
           line
@@ -444,10 +444,12 @@ class RubyLex
     false
   end
 
-  def initialize(content)
+  def initialize(content, options)
     lex_init
 
-    @reader = BufferedReader.new(content)
+    @options = options
+
+    @reader = BufferedReader.new content, @options
 
     @exp_line_no = @line_no = 1
     @base_char_no = 0
@@ -1353,10 +1355,9 @@ class RubyLex
   end
 end
 
-
-
-# Extract code elements from a source file, returning a TopLevel
-# object containing the constituent file elements.
+##
+# Extract code elements from a source file, returning a TopLevel object
+# containing the constituent file elements.
 #
 # This file is based on rtags
 
@@ -1389,7 +1390,7 @@ module RDoc
       @size = 0
       @token_listeners = nil
       @input_file_name = file_name
-      @scanner = RubyLex.new(content)
+      @scanner = RubyLex.new content, @options
       @scanner.exception_on_syntax_error = false
       @top_level = top_level
       @progress = $stderr unless options.quiet
@@ -2325,13 +2326,11 @@ module RDoc
           throw :enddoc
 
         when "main"
-          options = Options.instance
-          options.main_page = param
-	  ""
+          @options.main_page = param
+          ""
 
         when "title"
-          options = Options.instance
-          options.title = param
+          @options.title = param
           ""
 
         when "section"
@@ -2605,3 +2604,4 @@ module RDoc
   end
 
 end
+

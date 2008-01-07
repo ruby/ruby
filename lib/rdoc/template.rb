@@ -35,7 +35,7 @@
 #
 #
 
-class TemplatePage
+class RDoc::TemplatePage
 
   ##########
   # A context holds a stack of key/value pairs (like a symbol

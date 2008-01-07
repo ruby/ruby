@@ -1,3 +1,9 @@
+Mon Jan  7 15:51:35 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/options.rb:  Convert to OptionParser, clean up -h output,
+	namespace under RDoc.
+	* lib/rdoc/*:  Namespace RDoc::Options.
+
 Mon Jan  7 15:42:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk, Makefile.in, */Makefile.sub (distclean-local): move

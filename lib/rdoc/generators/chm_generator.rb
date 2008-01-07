@@ -1,6 +1,6 @@
 require 'rdoc/generators/html_generator'
 
-class Generators::CHMGenerator < Generators::HTMLGenerator
+class RDoc::Generators::CHMGenerator < RDoc::Generators::HTMLGenerator
 
   HHC_PATH = "c:/Program Files/HTML Help Workshop/hhc.exe"
 

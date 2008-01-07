@@ -6,7 +6,7 @@ require 'rdoc/ri/ri_reader'
 require 'rdoc/ri/ri_writer'
 require 'rdoc/ri/ri_descriptions'
 
-class Generators::RIGenerator
+class RDoc::Generators::RIGenerator
 
   ##
   # Generators may need to return specific subclasses depending on the

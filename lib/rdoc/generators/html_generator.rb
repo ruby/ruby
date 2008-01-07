@@ -3,7 +3,7 @@ require 'fileutils'
 require 'rdoc/generators'
 require 'rdoc/markup/simple_markup/to_html'
 
-module Generators
+module RDoc::Generators
 
   ##
   # Name of sub-direcory that holds file descriptions
@@ -59,13 +59,16 @@ module Generators
     ##
     # We need to record the html path of our caller so we can generate
     # correct relative paths for any hyperlinks that we find
-    def initialize(from_path, context)
+    def initialize(from_path, context, options)
       super()
+
       @from_path = from_path
 
       @parent_name = context.parent_name
       @parent_name += "::" if @parent_name
       @context = context
+
+      @options = options
     end
 
     ##
@@ -80,7 +83,7 @@ module Generators
       name = special.text
       if name[0,1] == '#'
         lookup = name[1..-1]
-        name = lookup unless Options.instance.show_hash
+        name = lookup unless @options.show_hash
       else
         lookup = name
       end
@@ -201,7 +204,7 @@ module Generators
 
       end
       unless defined? @html_formatter
-        @html_formatter = HyperlinkHtml.new(self.path, self)
+        @html_formatter = HyperlinkHtml.new(self.path, self, @options)
       end
 
       # Convert leading comment markers to spaces, but only
@@ -615,9 +618,9 @@ module Generators
 
     def write_on(f)
       value_hash
-      template = TemplatePage.new(RDoc::Page::BODY,
-                                      RDoc::Page::CLASS_PAGE,
-                                      RDoc::Page::METHOD_LIST)
+      template = RDoc::TemplatePage.new(RDoc::Page::BODY,
+                                        RDoc::Page::CLASS_PAGE,
+                                        RDoc::Page::METHOD_LIST)
       template.write_html_on(f, @values)
     end
 
@@ -847,9 +850,9 @@ module Generators
 
     def write_on(f)
       value_hash
-      template = TemplatePage.new(RDoc::Page::BODY,
-                                  RDoc::Page::FILE_PAGE,
-                                  RDoc::Page::METHOD_LIST)
+      template = RDoc::TemplatePage.new(RDoc::Page::BODY,
+                                        RDoc::Page::FILE_PAGE,
+                                        RDoc::Page::METHOD_LIST)
       template.write_html_on(f, @values)
     end
 
@@ -877,8 +880,6 @@ module Generators
     end
 
   end
-
-  ##
 
   class HtmlMethod
 
@@ -1014,7 +1015,7 @@ module Generators
       FileUtils.mkdir_p(meth_path)
       file_path = File.join(meth_path, @seq) + ".html"
 
-      template = TemplatePage.new(RDoc::Page::SRC_PAGE)
+      template = RDoc::TemplatePage.new(RDoc::Page::SRC_PAGE)
       File.open(file_path, "w") do |f|
         values = {
           'title'     => CGI.escapeHTML(index_name),
@@ -1069,7 +1070,7 @@ module Generators
         end
       end
 
-      add_line_numbers(src) if Options.instance.include_line_numbers
+      add_line_numbers(src) if @options.include_line_numbers
       src
     end
 
@@ -1239,7 +1240,7 @@ module Generators
     # Write out the style sheet used by the main frames
 
     def write_style_sheet
-      template = TemplatePage.new(RDoc::Page::STYLE)
+      template = RDoc::TemplatePage.new(RDoc::Page::STYLE)
       unless @options.css
         File.open(CSS_NAME, "w") do |f|
           values = { "fonts" => RDoc::Page::FONTS }
@@ -1333,7 +1334,7 @@ module Generators
     end
 
     def gen_an_index(collection, title, template, filename)
-      template = TemplatePage.new(RDoc::Page::FR_INDEX_BODY, template)
+      template = RDoc::TemplatePage.new(RDoc::Page::FR_INDEX_BODY, template)
       res = []
       collection.sort.each do |f|
         if f.document_self
@@ -1361,7 +1362,7 @@ module Generators
     # line.
 
     def gen_main_index
-      template = TemplatePage.new(RDoc::Page::INDEX)
+      template = RDoc::TemplatePage.new(RDoc::Page::INDEX)
       File.open("index.html", "w") do |f|
         values = {
           "initial_page" => main_url,
@@ -1473,7 +1474,7 @@ module Generators
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
 
-      template = TemplatePage.new(RDoc::Page::ONE_PAGE)
+      template = RDoc::TemplatePage.new(RDoc::Page::ONE_PAGE)
 
       if @options.op_name
         opfile = File.open(@options.op_name, "w")

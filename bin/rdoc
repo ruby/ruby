@@ -21,7 +21,7 @@
 #  search path if necessary.
 
 def adjust_for_existing_rdoc(path)
-  
+
   $stderr.puts %{
   It seems as if you have a previously-installed RDoc in
   the directory #{path}.
@@ -44,7 +44,7 @@ def adjust_for_existing_rdoc(path)
 end
 
 $:.each do |path|
-  if /site_ruby/ =~ path 
+  if /site_ruby/ =~ path
     rdoc_path = File.join(path, 'rdoc', 'rdoc.rb')
     if File.exist?(rdoc_path)
       adjust_for_existing_rdoc(path)
@@ -60,8 +60,8 @@ require 'rdoc/rdoc'
 
 begin
   r = RDoc::RDoc.new
-  r.document(ARGV)
-rescue RDoc::RDocError => e
+  r.document ARGV
+rescue RDoc::Error => e
   $stderr.puts e.message
-  exit(1)
+  exit 1
 end
