@@ -1,3 +1,9 @@
+Mon Jan  7 15:42:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk, Makefile.in, */Makefile.sub (distclean-local): move
+	  removing rule of ext/ripper/y.output from common.mk to Makefiles
+	  that depend on platforms.
+
 Mon Jan  7 13:54:57 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_preprocess): fix fixed_enc condition.

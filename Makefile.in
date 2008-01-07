@@ -196,6 +196,7 @@ clean-local::
 
 distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG)
+	@-$(RM) ext/ripper/y.output
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c

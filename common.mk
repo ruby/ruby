@@ -315,7 +315,6 @@ distclean-local:: clean-local
 	@$(RM) $(MKFILES) config.h rbconfig.rb yasmdata.rb
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output $(PREP)
-	@-$(RM) ext/ripper/y.output
 distclean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) distclean
 #	-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h

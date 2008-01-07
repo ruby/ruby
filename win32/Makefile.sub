@@ -556,6 +556,7 @@ distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
+		@-$(RM) ext\ripper\y.output
 
 $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
