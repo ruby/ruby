@@ -35,7 +35,9 @@ module WEBrick
 
         cgi_in = IO::popen(@cgicmd, "wb")
         cgi_out = Tempfile.new("webrick.cgiout.", @tempdir)
+        cgi_out.set_encoding("ASCII-8BIT")
         cgi_err = Tempfile.new("webrick.cgierr.", @tempdir)
+        cgi_err.set_encoding("ASCII-8BIT")
         begin
           cgi_in.sync = true
           meta = req.meta_vars

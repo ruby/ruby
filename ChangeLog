@@ -1,3 +1,8 @@
+Mon Jan  7 20:37:55 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb: external encoding of
+	  tempfiles is set to "ASCII-8BIT".
+
 Mon Jan  7 19:39:50 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/template.rb:  Use ERB instead of custom template language.
