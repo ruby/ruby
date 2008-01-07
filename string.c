@@ -5975,7 +5975,7 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "length", sym_length, 0);
     rb_define_method(rb_cSymbol, "size", sym_length, 0);
     rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
-    rb_define_method(rb_cSymbol, "match", sym_match, -1);
+    rb_define_method(rb_cSymbol, "match", sym_match, 1);
 
     rb_define_method(rb_cSymbol, "upcase", sym_upcase, 0);
     rb_define_method(rb_cSymbol, "downcase", sym_downcase, 0);

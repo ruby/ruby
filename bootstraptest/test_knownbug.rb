@@ -83,7 +83,7 @@ assert_equal 'ok', %q{
      end
   end
 
-  M::A.eval_str(<<END)
+  M::A.eval_str(<<-END)
   workflow_rule do |r|
      r.at 1
   end
