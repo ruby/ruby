@@ -1,73 +1,74 @@
-module RDoc
-module Page
-
-
+module RDoc::Page
 
 CONTENTS_XML = %{
-IF:description
+<% if defined? classes and classes["description"] then %>
     <description>
-%description%
+<%= classes["description"] %>
     </description>
-ENDIF:description
+<% end %>
     <contents>
-IF:requires
+<% if defined? files and files["requires"] then %>
       <required-file-list>
-START:requires
-         <required-file name="%name%"
-IF:aref 
-                        href="%aref%"
-ENDIF:aref
+<% files["requires"].each do |requires| %>
+         <required-file name="<%= requires["name"] %>"
+<% if requires["aref"] then %> 
+                        href="<%= requires["aref"] %>"
+<% end %>
          />
-END:requires
+<% end # files["requires"] %>
       </required-file-list>
-ENDIF:requires
-IF:attributes
+<% end %>
+<% if defined? classes and classes["sections"] then %>
+<% classes["sections"].each do |sections| %>
+<% if sections["attributes"] then %>
       <attribute-list>
-START:attributes
-        <attribute name="%name%">
-IF:rw
-          <attribute-rw>%rw%</attribute-rw>
-ENDIF:rw
-          <description>%a_desc%</description>
+<% sections["attributes"].each do |attributes| %>
+        <attribute name="<%= attributes["name"] %>">
+<% if attributes["rw"] then %>
+          <attribute-rw><%= attributes["rw"] %></attribute-rw>
+<% end %>
+          <description><%= attributes["a_desc"] %></description>
         </attribute>
-END:attributes
+<% end # sections["attributes"] %>
       </attribute-list>
-ENDIF:attributes
-IF:includes
-      <included-module-list>
-START:includes
-        <included-module name="%name%"
-IF:aref
-                         href="%aref%"
-ENDIF:aref
-        />
-END:includes
-      </included-module-list>
-ENDIF:includes
-IF:method_list
+<% end %>
+<% if sections["method_list"] then %>
       <method-list>
-START:method_list
-IF:methods
-START:methods
-        <method name="%name%" type="%type%" category="%category%" id="%aref%">
-          <parameters>%params%</parameters>
-IF:m_desc
+<% sections["method_list"].each do |method_list| %>
+<% if method_list["methods"] then %>
+<% method_list["methods"].each do |methods| %>
+        <method name="<%= methods["name"] %>" type="<%= methods["type"] %>" category="<%= methods["category"] %>" id="<%= methods["aref"] %>">
+          <parameters><%= methods["params"] %></parameters>
+<% if methods["m_desc"] then %>
           <description>
-%m_desc%
+<%= methods["m_desc"] %>
           </description>
-ENDIF:m_desc
-IF:sourcecode
+<% end %>
+<% if methods["sourcecode"] then %>
           <source-code-listing>
-%sourcecode%
+<%= methods["sourcecode"] %>
           </source-code-listing>
-ENDIF:sourcecode
+<% end %>
         </method>
-END:methods
-ENDIF:methods
-END:method_list
+<% end # method_list["methods"] %>
+<% end %>
+<% end # sections["method_list"] %>
       </method-list>
-ENDIF:method_list
-     </contents>
+<% end %>
+<% end # classes["sections"] %>
+<% end %>
+<% if defined? classes and classes["includes"] then %>
+      <included-module-list>
+<% classes["includes"].each do |includes| %>
+        <included-module name="<%= includes["name"] %>"
+<% if includes["aref"] then %>
+                         href="<%= includes["aref"] %>"
+<% end %>
+        />
+<% end # classes["includes"] %>
+      </included-module-list>
+<% end %>
+    </contents>
 }
 
 ########################################################################
@@ -75,38 +76,36 @@ ENDIF:method_list
 ONE_PAGE = %{<?xml version="1.0" encoding="utf-8"?>
 <rdoc>
 <file-list>
-START:files
-  <file name="%short_name%" id="%href%">
+<% values["files"].each do |files| %>
+  <file name="<%= files["short_name"] %>" id="<%= files["href"] %>">
     <file-info>
-      <path>%full_path%</path>
-      <dtm-modified>%dtm_modified%</dtm-modified>
+      <path><%= files["full_path"] %></path>
+      <dtm-modified><%= files["dtm_modified"] %></dtm-modified>
     </file-info>
 } + CONTENTS_XML + %{
   </file>
-END:files
+<% end # values["files"] %>
 </file-list>
 <class-module-list>
-START:classes
-  <%classmod% name="%full_name%" id="%full_name%">
+<% values["classes"].each do |classes| %>
+  <<%= classes["classmod"] %> name="<%= classes["full_name"] %>" id="<%= classes["full_name"] %>">
     <classmod-info>
-IF:infiles
+<% if classes["infiles"] then %>
       <infiles>      
-START:infiles
-        <infile>HREF:full_path_url:full_path:</infile>
-END:infiles
+<% classes["infiles"].each do |infiles|  %>
+        <infile><%= href infiles["full_path_url"], infiles["full_path"] %></infile>
+<% end # classes["infiles"] %>
       </infiles>
-ENDIF:infiles
-IF:parent
-     <superclass>HREF:par_url:parent:</superclass>
-ENDIF:parent
+<% end %>
+<% if classes["parent"] then %>
+     <superclass><%= href classes["par_url"], classes["parent"] %></superclass>
+<% end %>
     </classmod-info>
 } + CONTENTS_XML + %{
-  </%classmod%>
-END:classes
+  </<%= classes["classmod"] %>>
+<% end # values["classes"] %>
 </class-module-list>
 </rdoc>
 }
 
-
-end
 end

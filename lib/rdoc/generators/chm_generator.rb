@@ -27,8 +27,6 @@ class RDoc::Generators::CHMGenerator < RDoc::Generators::HTMLGenerator
       "\n\nYou can download a copy for free from:\n\n" <<
       "    http://msdn.microsoft.com/library/default.asp?" <<
       "url=/library/en-us/htmlhelp/html/hwMicrosoftHTMLHelpDownloads.asp\n\n"
-
-    exit 99
   end
 
   ##
@@ -54,7 +52,7 @@ class RDoc::Generators::CHMGenerator < RDoc::Generators::HTMLGenerator
   # files that go to make up the help.
 
   def create_project_file
-    template = TemplatePage.new(RDoc::Page::HPP_FILE)
+    template = RDoc::TemplatePage.new RDoc::Page::HPP_FILE
     values = { "title" => @options.title, "opname" => @op_name }
     files = []
     @files.each do |f|
@@ -92,13 +90,13 @@ class RDoc::Generators::CHMGenerator < RDoc::Generators::HTMLGenerator
     end
 
     values = { "contents" => contents }
-    template = TemplatePage.new(RDoc::Page::CONTENTS)
+    template = RDoc::TemplatePage.new RDoc::Page::CONTENTS
     File.open("contents.hhc", "w") do |f|
       template.write_html_on(f, values)
     end
 
     values = { "index" => index }
-    template = TemplatePage.new(RDoc::Page::CHM_INDEX)
+    template = RDoc::TemplatePage.new RDoc::Page::CHM_INDEX
     File.open("index.hhk", "w") do |f|
       template.write_html_on(f, values)
     end

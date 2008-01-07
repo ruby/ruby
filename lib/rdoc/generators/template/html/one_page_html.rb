@@ -1,78 +1,77 @@
-module RDoc
-module Page
-######################################################################
-#
-# The following is used for the -1 option
-#
+module RDoc::Page
 
 CONTENTS_XML = %{
-IF:description
-%description%
-ENDIF:description
+<% if defined? classes and classes["description"] then %>
+<%= classes["description"] %>
+<% end %>
 
-IF:requires
+<% if defined? files and files["requires"] then %>
 <h4>Requires:</h4>
 <ul>
-START:requires
-IF:aref
-<li><a href="%aref%">%name%</a></li>
-ENDIF:aref
-IFNOT:aref
-<li>%name%</li>
-ENDIF:aref 
-END:requires
+<% files["requires"].each do |requires| %>
+<% if requires["aref"] then %>
+<li><a href="<%= requires["aref"] %>"><%= requires["name"] %></a></li>
+<% end %>
+<% unless requires["aref"] then %>
+<li><%= requires["name"] %></li>
+<% end %>
+<% end # files["requires"] %>
 </ul>
-ENDIF:requires
+<% end %>
 
-IF:attributes
-<h4>Attributes</h4>
-<table>
-START:attributes
-<tr><td>%name%</td><td>%rw%</td><td>%a_desc%</td></tr>
-END:attributes
-</table>
-ENDIF:attributes
-
-IF:includes
+<% if defined? classes and classes["includes"] then %>
 <h4>Includes</h4>
 <ul>
-START:includes
-IF:aref
-<li><a href="%aref%">%name%</a></li>
-ENDIF:aref
-IFNOT:aref
-<li>%name%</li>
-ENDIF:aref 
-END:includes
+<% classes["includes"].each do |includes| %>
+<% if includes["aref"] then %>
+<li><a href="<%= includes["aref"] %>"><%= includes["name"] %></a></li>
+<% end %>
+<% unless includes["aref"] then %>
+<li><%= includes["name"] %></li>
+<% end %>
+<% end # classes["includes"] %>
 </ul>
-ENDIF:includes
+<% end %>
 
-IF:method_list
+<% if defined? classes and classes["sections"] then %>
+<% classes["sections"].each do |sections| %>
+<% if sections["attributes"] then %>
+<h4>Attributes</h4>
+<table>
+<% sections["attributes"].each do |attributes| %>
+<tr><td><%= attributes["name"] %></td><td><%= attributes["rw"] %></td><td><%= attributes["a_desc"] %></td></tr>
+<% end # sections["attributes"] %>
+</table>
+<% end %>
+
+<% if sections["method_list"] then %>
 <h3>Methods</h3>
-START:method_list
-IF:methods
-START:methods
-<h4>%type% %category% method: 
-IF:callseq
-<a name="%aref%">%callseq%</a>
-ENDIF:callseq
-IFNOT:callseq
-<a name="%aref%">%name%%params%</a></h4>
-ENDIF:callseq
+<% sections["method_list"].each do |method_list| %>
+<% if method_list["methods"] then %>
+<% method_list["methods"].each do |methods| %>
+<h4><%= methods["type"] %> <%= methods["category"] %> method: 
+<% if methods["callseq"] then %>
+<a name="<%= methods["aref"] %>"><%= methods["callseq"] %></a>
+<% end %>
+<% unless methods["callseq"] then %>
+<a name="<%= methods["aref"] %>"><%= methods["name"] %><%= methods["params"] %></a></h4>
+<% end %>
 
-IF:m_desc
-%m_desc%
-ENDIF:m_desc
+<% if methods["m_desc"] then %>
+<%= methods["m_desc"] %>
+<% end %>
 
-IF:sourcecode
+<% if methods["sourcecode"] then %>
 <blockquote><pre>
-%sourcecode%
+<%= methods["sourcecode"] %>
 </pre></blockquote>
-ENDIF:sourcecode
-END:methods
-ENDIF:methods
-END:method_list
-ENDIF:method_list
+<% end %>
+<% end # method_list["methods"] %>
+<% end %>
+<% end # sections["method_list"] %>
+<% end %>
+<% end # classes["sections"] %>
+<% end %>
 }
 
 ########################################################################
@@ -81,42 +80,42 @@ ONE_PAGE = %{
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-  <title>%title%</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=%charset%" />
+  <title><%= values["title"] %></title>
+  <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>" />
 </head>
 <body>
-START:files
-<h2>File: %short_name%</h2>
+<% values["files"].each do |files| %>
+<h2>File: <%= files["short_name"] %></h2>
 <table>
-  <tr><td>Path:</td><td>%full_path%</td></tr>
-  <tr><td>Modified:</td><td>%dtm_modified%</td></tr>
+  <tr><td>Path:</td><td><%= files["full_path"] %></td></tr>
+  <tr><td>Modified:</td><td><%= files["dtm_modified"] %></td></tr>
 </table>
 } + CONTENTS_XML + %{
-END:files
+<% end # values["files"] %>
 
-IF:classes
+<% if values["classes"] then %>
 <h2>Classes</h2>
-START:classes
-IF:parent
-<h3>%classmod% %full_name% &lt; HREF:par_url:parent:</h3>
-ENDIF:parent
-IFNOT:parent
-<h3>%classmod% %full_name%</h3>
-ENDIF:parent
+<% values["classes"].each do |classes| %>
+<% if classes["parent"] then %>
+<h3><%= classes["classmod"] %> <%= classes["full_name"] %> &lt; <%= href classes["par_url"], classes["parent"] %></h3>
+<% end %>
+<% unless classes["parent"] then %>
+<h3><%= classes["classmod"] %> <%= classes["full_name"] %></h3>
+<% end %>
 
-IF:infiles
+<% if classes["infiles"] then %>
 (in files
-START:infiles
-HREF:full_path_url:full_path:
-END:infiles
+<% classes["infiles"].each do |infiles| %>
+<%= href infiles["full_path_url"], infiles["full_path"] %>
+<% end # classes["infiles"] %>
 )
-ENDIF:infiles
+<% end %>
 } + CONTENTS_XML + %{
-END:classes
-ENDIF:classes
+<% end # values["classes"] %>
+<% end %>
 </body>
 </html>
 }
 
 end
-end
+

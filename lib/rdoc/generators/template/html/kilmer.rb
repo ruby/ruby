@@ -5,7 +5,7 @@ module Page
 FONTS = "Verdana, Arial, Helvetica, sans-serif"
 
 STYLE = %{
-body,td,p { font-family: %fonts%; 
+body,td,p { font-family: <%= values["fonts"] %>; 
        color: #000040;
 }
 
@@ -18,20 +18,20 @@ body,td,p { font-family: %fonts%;
 .big-title-font { 
   color: black;
   font-weight: bold;
-  font-family: %fonts%; 
+  font-family: <%= values["fonts"] %>; 
   font-size: large; 
   height: 60px;
   padding: 10px 3px 10px 3px;
 }
 
 .small-title-font { color: black;
-                    font-family: %fonts%;
+                    font-family: <%= values["fonts"] %>;
                     font-size:10; }
 
 .aqua { color: black }
 
 .method-name, .attr-name {
-      font-family: font-family: %fonts%; 
+      font-family: font-family: <%= values["fonts"] %>; 
       font-weight: bold;
       font-size: small;
       margin-left: 20px;
@@ -92,9 +92,9 @@ body,td,p { font-family: %fonts%;
 
 BODY = %{
 <html><head>
-  <title>%title%</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=%charset%">
-  <link rel="stylesheet" href="%style_url%" type="text/css" media="screen" />
+  <title><%= values["title"] %></title>
+  <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>">
+  <link rel="stylesheet" href="<%= values["style_url"] %>" type="text/css" media="screen" />
   <script type="text/javascript" language="JavaScript">
   <!--
   function popCode(url) {
@@ -105,82 +105,82 @@ BODY = %{
 </head>
 <body bgcolor="white">
 
-!INCLUDE!  <!-- banner header -->
+<%= template_include %>  <!-- banner header -->
 
-IF:diagram
+<% if values["diagram"] then %>
 <table width="100%"><tr><td align="center">
-%diagram%
+<%= values["diagram"] %>
 </td></tr></table>
-ENDIF:diagram
+<% end %>
 
-IF:description
-<div class="description">%description%</div>
-ENDIF:description
+<% if values["description"] then %>
+<div class="description"><%= values["description"] %></div>
+<% end %>
 
-IF:requires
+<% if values["requires"] then %>
 <table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Required files</td></tr>
 </table><br />
 <div class="name-list">
-START:requires
-HREF:aref:name:
-END:requires
-ENDIF:requires
+<% values["requires"].each do |requires| %>
+<%= href requires["aref"], requires["name"] %>
+<% end # values["requires"] %>
+<% end %>
 </div>
 
-IF:methods
+<% if values["methods"] then %>
 <table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Methods</td></tr>
 </table><br />
 <div class="name-list">
-START:methods
-HREF:aref:name:,
-END:methods
+<% values["methods"].each do |methods| %>
+<%= href methods["aref"], methods["name"] %>,
+<% end # values["methods"] %>
 </div>
-ENDIF:methods
+<% end %>
 
 
-START:sections
+<% values["sections"].each do |sections| %>
     <div id="section">
-IF:sectitle
-      <h2 class="section-title"><a name="%secsequence%">%sectitle%</a></h2>
-IF:seccomment
+<% if sections["sectitle"] then %>
+      <h2 class="section-title"><a name="<%= sections["secsequence"] %>"><%= sections["sectitle"] %></a></h2>
+<% if sections["seccomment"] then %>
       <div class="section-comment">
-        %seccomment%
-      </div>      
-ENDIF:seccomment
-ENDIF:sectitle
+        <%= sections["seccomment"] %>
+      </div>
+<% end %>
+<% end %>
 
-IF:attributes
+<% if sections["attributes"] then %>
 <table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Attributes</td></tr>
 </table><br />
 <table cellspacing="5">
-START:attributes
+<% sections["attributes"].each do |attributes| %>
      <tr valign="top">
-IF:rw
-       <td align="center" class="attr-rw">&nbsp;[%rw%]&nbsp;</td>
-ENDIF:rw
-IFNOT:rw
+<% if attributes["rw"] then %>
+       <td align="center" class="attr-rw">&nbsp;[<%= attributes["rw"] %>]&nbsp;</td>
+<% end %>
+<% unless attributes["rw"] then %>
        <td></td>
-ENDIF:rw
-       <td class="attr-name">%name%</td>
-       <td>%a_desc%</td>
+<% end %>
+       <td class="attr-name"><%= attributes["name"] %></td>
+       <td><%= attributes["a_desc"] %></td>
      </tr>
-END:attributes
+<% end # sections["attributes"] %>
 </table>
-ENDIF:attributes
+<% end %>
 
-IF:classlist
+<% if sections["classlist"] then %>
 <table cellpadding="5" width="100%">
 <tr><td class="tablesubtitle">Classes and Modules</td></tr>
 </table><br />
-%classlist%<br />
-ENDIF:classlist
+<%= sections["classlist"] %><br />
+<% end %>
 
-  !INCLUDE!  <!-- method descriptions -->
+  <%= template_include %>  <!-- method descriptions -->
 
-END:sections
+<% end # values["sections"] %>
 
 </body>
 </html>
@@ -192,19 +192,19 @@ FILE_PAGE = <<_FILE_PAGE_
 <table width="100%">
  <tr class="title-row">
  <td><table width="100%"><tr>
-   <td class="big-title-font" colspan="2"><font size="-3"><b>File</b><br /></font>%short_name%</td>
+   <td class="big-title-font" colspan="2"><font size="-3"><b>File</b><br /></font><%= values["short_name"] %></td>
    <td align="right"><table cellspacing="0" cellpadding="2">
          <tr>
            <td  class="small-title-font">Path:</td>
-           <td class="small-title-font">%full_path%
-IF:cvsurl
-				&nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
-ENDIF:cvsurl
+           <td class="small-title-font"><%= values["full_path"] %>
+<% if values["cvsurl"] then %>
+				&nbsp;(<a href="<%= values["cvsurl"] %>"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
+<% end %>
            </td>
          </tr>
          <tr>
            <td class="small-title-font">Modified:</td>
-           <td class="small-title-font">%dtm_modified%</td>
+           <td class="small-title-font"><%= values["dtm_modified"] %></td>
          </tr>
         </table>
     </td></tr></table></td>
@@ -218,35 +218,35 @@ CLASS_PAGE = %{
 <table width="100%" border="0" cellspacing="0">
  <tr class="title-row">
  <td class="big-title-font">
-   <font size="-3"><b>%classmod%</b><br /></font>%full_name%
+   <font size="-3"><b><%= values["classmod"] %></b><br /></font><%= values["full_name"] %>
  </td>
  <td align="right">
    <table cellspacing="0" cellpadding="2">
      <tr valign="top">
       <td class="small-title-font">In:</td>
       <td class="small-title-font">
-START:infiles
-HREF:full_path_url:full_path:
-IF:cvsurl
-&nbsp;(<a href="%cvsurl%"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
-ENDIF:cvsurl
-END:infiles
+<% values["infiles"].each do |infiles| %>
+<%= href infiles["full_path_url"], infiles["full_path"] %>
+<% if infiles["cvsurl"] then %>
+&nbsp;(<a href="<%= infiles["cvsurl"] %>"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
+<% end %>
+<% end # values["infiles"] %>
       </td>
      </tr>
-IF:parent
+<% if values["parent"] then %>
      <tr>
       <td class="small-title-font">Parent:</td>
       <td class="small-title-font">
-IF:par_url
-        <a href="%par_url%" class="cyan">
-ENDIF:par_url
-%parent%
-IF:par_url
+<% if values["par_url"] then %>
+        <a href="<%= values["par_url"] %>" class="cyan">
+<% end %>
+<%= values["parent"] %>
+<% if values["par_url"] then %>
          </a>
-ENDIF:par_url
+<% end %>
       </td>
      </tr>
-ENDIF:parent
+<% end %>
    </table>
   </td>
   </tr>
@@ -256,58 +256,58 @@ ENDIF:parent
 ###################################################################
 
 METHOD_LIST = %{
-IF:includes
+<% if values["includes"] then %>
 <div class="tablesubsubtitle">Included modules</div><br />
 <div class="name-list">
-START:includes
-    <span class="method-name">HREF:aref:name:</span>
-END:includes
+<% values["includes"].each do |includes| %>
+    <span class="method-name"><%= href includes["aref"], includes["name"] %></span>
+<% end # values["includes"] %>
 </div>
-ENDIF:includes
+<% end %>
 
-IF:method_list
-START:method_list
-IF:methods
+<% if values["method_list"] then %>
+<% values["method_list"].each do |method_list| $stderr.puts({ :method_list => method_list }.inspect) %>
+<% if values["methods"] then %>
 <table cellpadding=5 width="100%">
-<tr><td class="tablesubtitle">%type% %category% methods</td></tr>
+<tr><td class="tablesubtitle"><%= values["type"] %> <%= values["category"] %> methods</td></tr>
 </table>
-START:methods
+<% values["methods"].each do |methods| $stderr.puts({ :methods => methods }.inspect) %>
 <table width="100%" cellspacing="0" cellpadding="5" border="0">
 <tr><td class="methodtitle">
-<a name="%aref%">
-IF:callseq
-<b>%callseq%</b>
-ENDIF:callseq
-IFNOT:callseq
- <b>%name%</b>%params%
-ENDIF:callseq
-IF:codeurl
-<a href="%codeurl%" target="source" class="srclink">src</a>
-ENDIF:codeurl
+<a name="<%= values["aref"] %>">
+<% if values["callseq"] then %>
+<b><%= values["callseq"] %></b>
+<% end %>
+<% unless values["callseq"] then %>
+ <b><%= values["name"] %></b><%= values["params"] %>
+<% end %>
+<% if values["codeurl"] then %>
+<a href="<%= values["codeurl"] %>" target="source" class="srclink">src</a>
+<% end %>
 </a></td></tr>
 </table>
-IF:m_desc
+<% if values["m_desc"] then %>
 <div class="description">
-%m_desc%
+<%= values["m_desc"] %>
 </div>
-ENDIF:m_desc
-IF:aka
+<% end %>
+<% if values["aka"] then %>
 <div class="aka">
 This method is also aliased as
-START:aka
-<a href="%aref%">%name%</a>
-END:aka
+<% values["aka"].each do |aka| $stderr.puts({ :aka => aka }.inspect) %>
+<a href="<%= values["aref"] %>"><%= values["name"] %></a>
+<% end # values["aka"] %>
 </div>
-ENDIF:aka
-IF:sourcecode
+<% end %>
+<% if values["sourcecode"] then %>
 <pre class="source">
-%sourcecode%
+<%= values["sourcecode"] %>
 </pre>
-ENDIF:sourcecode
-END:methods
-ENDIF:methods
-END:method_list
-ENDIF:method_list
+<% end %>
+<% end # values["methods"] %>
+<% end %>
+<% end # values["method_list"] %>
+<% end %>
 }
 
 =begin
@@ -317,8 +317,8 @@ ENDIF:method_list
 
 SRC_PAGE = %{
 <html>
-<head><title>%title%</title>
-<meta http-equiv="Content-Type" content="text/html; charset=%charset%">
+<head><title><%= values["title"] %></title>
+<meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>">
 <style type="text/css">
 .ruby-comment    { color: green; font-style: italic }
 .ruby-constant   { color: #4433aa; font-weight: bold; }
@@ -336,7 +336,7 @@ SRC_PAGE = %{
 </style>
 </head>
 <body bgcolor="white">
-<pre>%code%</pre>
+<pre><%= values["code"] %></pre>
 </body>
 </html>
 }
@@ -344,13 +344,13 @@ SRC_PAGE = %{
 ########################## Index ################################
 
 FR_INDEX_BODY = %{
-!INCLUDE!
+<%= template_include %>
 }
 
 FILE_INDEX = %{
 <html>
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=%charset%">
+<meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>">
 <style>
 <!--
   body {
@@ -378,10 +378,10 @@ div.banner {
 <base target="docwin">
 </head>
 <body>
-<div class="banner">%list_title%</div>
-START:entries
-<a href="%href%">%name%</a><br />
-END:entries
+<div class="banner"><%= values["list_title"] %></div>
+<% values["entries"].each do |entries| %>
+<a href="<%= entries["href"] %>"><%= entries["name"] %></a><br />
+<% end # values["entries"] %>
 </body></html>
 }
 
@@ -391,8 +391,8 @@ METHOD_INDEX = FILE_INDEX
 INDEX = %{
 <html>
 <head>
-  <title>%title%</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=%charset%">
+  <title><%= values["title"] %></title>
+  <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>">
 </head>
 
 <frameset cols="20%,*">
@@ -401,15 +401,15 @@ INDEX = %{
         <frame src="fr_class_index.html"  name="Classes">
         <frame src="fr_method_index.html" name="Methods">
     </frameset>
-IF:inline_source
-      <frame  src="%initial_page%" name="docwin">
-ENDIF:inline_source
-IFNOT:inline_source
+<% if values["inline_source"] then %>
+      <frame  src="<%= values["initial_page"] %>" name="docwin">
+<% end %>
+<% unless values["inline_source"] then %>
     <frameset rows="80%,20%">
-      <frame  src="%initial_page%" name="docwin">
+      <frame  src="<%= values["initial_page"] %>" name="docwin">
       <frame  src="blank.html" name="source">
     </frameset>
-ENDIF:inline_source
+<% end %>
     <noframes>
           <body bgcolor="white">
             Click <a href="html/index.html">here</a> for a non-frames

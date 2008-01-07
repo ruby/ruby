@@ -1,3 +1,11 @@
+Mon Jan  7 19:39:50 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/template.rb:  Use ERB instead of custom template language.
+
+	* lib/rdoc/generators/template/html/old_html.rb:  Remove.
+
+	* lib/rdoc/generators/template/*: Convert to ERB.
+
 Mon Jan  7 19:11:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (Init_String): sym_match arity spec was wrong.  a patch

@@ -1,67 +1,68 @@
-module RDoc
-module Page
-
-
+module RDoc::Page
 
 CONTENTS_RDF = %{
-IF:description
+<% if defined? classes and classes["description"] then %>
     <description rd:parseType="Literal">
-%description%
+<%= classes["description"] %>
     </description>
-ENDIF:description
+<% end %>
 
-IF:requires
-START:requires
-         <rd:required-file rd:name="%name%" />
-END:requires
-ENDIF:requires
+<% if defined? files and files["requires"] then %>
+<% files["requires"].each do |requires| %>
+         <rd:required-file rd:name="<%= requires["name"] %>" />
+<% end # files["requires"] %>
+<% end %>
 
-IF:attributes
-START:attributes
+<% if defined? classes and classes["includes"] then %>
+      <IncludedModuleList>
+<% classes["includes"].each do |includes| %>
+        <included-module rd:name="<%= includes["name"] %>"  />
+<% end # includes["includes"] %>
+      </IncludedModuleList>
+<% end %>
+
+<% if defined? classes and classes["sections"] then %>
+<% classes["sections"].each do |sections| %>
+<% if sections["attributes"] then %>
+<% sections["attributes"].each do |attributes| %>
         <contents>
-        <Attribute rd:name="%name%">
-IF:rw
-          <attribute-rw>%rw%</attribute-rw>
-ENDIF:rw
-          <description rdf:parseType="Literal">%a_desc%</description>
+        <Attribute rd:name="<%= attributes["name"] %>">
+<% if attributes["rw"] then %>
+          <attribute-rw><%= attributes["rw"] %></attribute-rw>
+<% end %>
+          <description rdf:parseType="Literal"><%= attributes["a_desc"] %></description>
         </Attribute>
         </contents>
-END:attributes
-ENDIF:attributes
+<% end # sections["attributes"] %>
+<% end %>
 
-IF:includes
-      <IncludedModuleList>
-START:includes
-        <included-module rd:name="%name%"  />
-END:includes
-      </IncludedModuleList>
-ENDIF:includes
-
-IF:method_list
-START:method_list
-IF:methods
-START:methods
+<% if sections["method_list"] then %>
+<% sections["method_list"].each do |method_list| %>
+<% if method_list["methods"] then %>
+<% method_list["methods"].each do |methods| %>
 	<contents>
-        <Method rd:name="%name%" rd:visibility="%type%"
-                rd:category="%category%" rd:id="%aref%">
-          <parameters>%params%</parameters>
-IF:m_desc
+        <Method rd:name="<%= methods["name"] %>" rd:visibility="<%= methods["type"] %>"
+                rd:category="<%= methods["category"] %>" rd:id="<%= methods["aref"] %>">
+          <parameters><%= methods["params"] %></parameters>
+<% if methods["m_desc"] then %>
           <description rdf:parseType="Literal">
-%m_desc%
+<%= methods["m_desc"] %>
           </description>
-ENDIF:m_desc
-IF:sourcecode
+<% end %>
+<% if methods["sourcecode"] then %>
           <source-code-listing rdf:parseType="Literal">
-%sourcecode%
+<%= methods["sourcecode"] %>
           </source-code-listing>
-ENDIF:sourcecode
+<% end %>
         </Method>
        </contents>
-END:methods
-ENDIF:methods
-END:method_list
-ENDIF:method_list
+<% end # method_list["methods"] %>
+<% end %>
+<% end # sections["method_list"] %>
+<% end %>
      <!-- end method list -->
+<% end # classes["sections"] %>
+<% end %>
 }
 
 ########################################################################
@@ -72,41 +73,39 @@ ONE_PAGE = %{<?xml version="1.0" encoding="utf-8"?>
         xmlns:rd="http://pragprog.com/rdoc/rdoc.rdf#">
 
 <!-- RDoc -->
-START:files
-  <rd:File rd:name="%short_name%" rd:id="%href%">
-      <path>%full_path%</path>
-      <dtm-modified>%dtm_modified%</dtm-modified>
+<% values["files"].each do |files| %>
+  <rd:File rd:name="<%= files["short_name"] %>" rd:id="<%= files["href"] %>">
+      <path><%= files["full_path"] %></path>
+      <dtm-modified><%= files["dtm_modified"] %></dtm-modified>
 } + CONTENTS_RDF + %{
   </rd:File>
-END:files
-START:classes
-  <%classmod% rd:name="%full_name%" rd:id="%full_name%">
+<% end # values["files"] %>
+<% values["classes"].each do |classes| %>
+  <<%= values["classmod"] %> rd:name="<%= classes["full_name"] %>" rd:id="<%= classes["full_name"] %>">
     <classmod-info>
-IF:infiles
+<% if classes["infiles"] then %>
       <InFiles>
-START:infiles
+<% classes["infiles"].each do |infiles| %>
         <infile>
-          <File rd:name="%full_path%"
-IF:full_path_url
-                rdf:about="%full_path_url%"
-ENDIF:full_path_url
+          <File rd:name="<%= infiles["full_path"] %>"
+<% if infiles["full_path_url"] then %>
+                rdf:about="<%= infiles["full_path_url"] %>"
+<% end %>
            />
          </infile>
-END:infiles
+<% end # classes["infiles"] %>
       </InFiles>
-ENDIF:infiles
-IF:parent
-     <superclass>HREF:par_url:parent:</superclass>
-ENDIF:parent
+<% end %>
+<% if classes["parent"] then %>
+     <superclass><%= href classes["par_url"], classes["parent"] %></superclass>
+<% end %>
     </classmod-info>
 } + CONTENTS_RDF + %{
-  </%classmod%>
-END:classes
+  </<%= classes["classmod"] %>>
+<% end # values["classes"] %>
 <!-- /RDoc -->
 </rdf:RDF>
 }
 
-
-end
 end
 
