@@ -1,4 +1,8 @@
-Mon Jan  7 16:06:09 2008
+Mon Jan  7 16:10:35 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/tokenstream.rb:  Namespace under RDoc.
+
+Mon Jan  7 16:06:09 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/dot.rb:  Namespace under RDoc.
 
