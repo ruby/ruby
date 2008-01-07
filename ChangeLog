@@ -1,3 +1,14 @@
+Mon Jan  7 11:51:49 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/generators/ri_generator.rb:  Merge documentation from the
+	  same class on output.  Fixes bug where documentation could
+	  disappear.
+
+	* lib/rdoc/options.rb:  Fix typo.
+
+	* lib/rdoc/generators/*: Clean up some namespacing and make RDoc
+	  consistent.
+
 Mon Jan  7 11:44:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_internal_get_index): extracted from

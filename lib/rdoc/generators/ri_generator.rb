@@ -28,6 +28,8 @@ class Generators::RIGenerator
     @ri_writer = RI::RiWriter.new(".")
     @markup    = SM::SimpleMarkup.new
     @to_flow   = SM::ToFlow.new
+
+    @generated = {}
   end
 
   ##
@@ -205,17 +207,21 @@ class Generators::RIGenerator
       end
     end
 
-    if old_cls.nil?
-      # no merge: simply overwrite
-      @ri_writer.remove_class(cls_desc)
-      @ri_writer.add_class(cls_desc)
-    else
-      # existing class: merge in
-      old_desc = rdr.get_class(old_cls)
+    prev_cls = @generated[cls_desc.full_name]
 
-      old_desc.merge_in(cls_desc)
-      @ri_writer.add_class(old_desc)
+    if old_cls and not prev_cls then
+      old_desc = rdr.get_class old_cls
+      cls_desc.merge_in old_desc
     end
+
+    if prev_cls then
+      cls_desc.merge_in prev_cls
+    end
+
+    @generated[cls_desc.full_name] = cls_desc
+
+    @ri_writer.remove_class cls_desc
+    @ri_writer.add_class cls_desc
   end
 
 end

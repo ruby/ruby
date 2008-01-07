@@ -352,7 +352,7 @@ class Options
       @op_name = nil
       @show_all = false
       @main_page = nil
-      @marge     = false
+      @merge     = false
       @exclude   = []
       @quiet = false
       @generator_name = 'html'
