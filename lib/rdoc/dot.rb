@@ -1,4 +1,6 @@
-module DOT
+module RDoc; end
+
+module RDoc::DOT
 
   TAB = '  '
   TAB2 = TAB * 2

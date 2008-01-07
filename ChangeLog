@@ -1,3 +1,9 @@
+Mon Jan  7 16:06:09 2008
+
+	* lib/rdoc/dot.rb:  Namespace under RDoc.
+
+	* lib/rdoc/diagram.rb:  Clean up formatting.
+
 Mon Jan  7 15:51:35 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/options.rb:  Convert to OptionParser, clean up -h output,
