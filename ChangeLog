@@ -1,3 +1,17 @@
+Tue Jan  8 01:13:50 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (STR_ENC_GET): defined.  same as rb_enc_get without
+	  enc_capable.
+	  (coderange_scan): ASCII-8BIT test refined.
+	  (rb_enc_cr_str_buf_cat): new internal function to accumulate
+	  strings with encoding.
+	  (rb_enc_str_buf_cat): use rb_enc_cr_str_buf_cat.
+	  (rb_str_buf_append): ditto
+	  (str_gsub): use rb_str_buf_append.
+	  (rb_str_hash): use ENCODING_GET.
+	  (rb_str_comparable): ditto.
+	  (rb_str_cmp): compare encoding index, not rb_encoding address.
+
 Mon Jan  7 20:37:55 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb: external encoding of
@@ -147,7 +161,7 @@ Sun Jan  6 01:38:07 2008  Tanaka Akira  <akr@fsij.org>
 
 Sun Jan  6 00:48:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* lib/resolv.rb (Reolv::DNS#each_address): get A record and then AAAA
+	* lib/resolv.rb (Resolv::DNS#each_address): get A record and then AAAA
 	  record. [ruby-dev:32925]
 
 Sat Jan  5 21:48:03 2008  Tanaka Akira  <akr@fsij.org>
@@ -287,7 +301,7 @@ Thu Jan  3 21:56:07 2008  Tanaka Akira  <akr@fsij.org>
 
 Thu Jan  3 20:24:48 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* eval_jump.c (rb_f_catch): Resotre cfp if catched thrown object.
+	* eval_jump.c (rb_f_catch): Restore cfp if catched thrown object.
 
 Thu Jan  3 19:45:57 2008  Koichi Sasada  <ko1@atdot.net>
 
@@ -582,7 +596,7 @@ Mon Dec 31 23:27:17 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Dec 31 23:17:22 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_service):
-	  call do_XXX which corespond with request method.
+	  call do_XXX which correspond with request method.
 	  (WEBrick::HTTPProxyServer#do_CONNECT,do_GET,do_POST,do_HEAD): added.
 
 	* test/webrick/test_httpproxy.rb: add test for WEBrick::HTTPProxyServer.
