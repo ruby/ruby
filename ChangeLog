@@ -1,3 +1,14 @@
+Mon Jan  7 15:52:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h (OnigEncodingType): new member
+	  ruby_encoding_index to avoid linear search in rb_enc_to_index.
+
+	* include/ruby/encoding.h (rb_enc_to_index): macro defined to use
+	  ruby_encoding_index.
+
+	* encoding.c (rb_enc_to_index): removed.
+	  (enc_register_at): initialize ruby_encoding_index member.
+
 Mon Jan  7 16:10:35 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/tokenstream.rb:  Namespace under RDoc.

@@ -67,7 +67,7 @@ enc_check_encoding(VALUE obj)
 	RDATA(obj)->dmark != enc_mark) {
 	return -1;
     }
-    index = rb_enc_to_index(RDATA(obj)->data);
+    index = rb_enc_to_index((rb_encoding*)RDATA(obj)->data);
     if (rb_enc_from_index(index) != RDATA(obj)->data)
 	return -1;
     return index;
@@ -141,6 +141,7 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
     *ent->enc = *encoding;
     encoding = ent->enc;
     encoding->name = name;
+    encoding->ruby_encoding_index = index;
     if (rb_cEncoding) {
 	/* initialize encoding data */
 	enc_new(encoding);
@@ -472,20 +473,6 @@ rb_enc_associate_index(VALUE obj, int idx)
 	ENC_CODERANGE_CLEAR(obj);
     }
     rb_enc_internal_set_index(obj, idx);
-}
-
-int
-rb_enc_to_index(rb_encoding *enc)
-{
-    int i;
-
-    if (!enc) return 0;
-    for (i=0; i<enc_table_size; i++) {
-	if (enc_table[i].enc == enc) {
-	    return i;
-	}
-    }
-    return 0;
 }
 
 void

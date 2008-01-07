@@ -167,6 +167,7 @@ typedef struct OnigEncodingTypeST {
   OnigUChar* (*left_adjust_char_head)(const OnigUChar* start, const OnigUChar* p, struct OnigEncodingTypeST* enc);
   int    (*is_allowed_reverse_match)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
   void *auxiliary_data;
+  int ruby_encoding_index;
 } OnigEncodingType;
 
 typedef OnigEncodingType* OnigEncoding;

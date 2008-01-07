@@ -67,7 +67,7 @@ typedef OnigEncodingType rb_encoding;
 int rb_enc_replicate(const char *, rb_encoding *);
 int rb_define_dummy_encoding(const char *);
 int rb_enc_dummy_p(rb_encoding *);
-int rb_enc_to_index(rb_encoding*);
+#define rb_enc_to_index(enc) ((enc) ? ((enc)->ruby_encoding_index) : 0)
 int rb_enc_get_index(VALUE obj);
 int rb_enc_find_index(const char *name);
 int rb_to_encoding_index(VALUE);
