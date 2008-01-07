@@ -465,9 +465,9 @@ module RDoc::Generators
           end
           if res.size > 0
             outer << {
-              "type"    => vis.to_s.capitalize,
-              "category"    => singleton ? "Class" : "Instance",
-              "methods" => res
+              "type"     => vis.to_s.capitalize,
+              "category" => singleton ? "Class" : "Instance",
+              "methods"  => res
             }
           end
         end
@@ -634,7 +634,7 @@ module RDoc::Generators
       d = markup(@context.comment)
       @values["description"] = d unless d.empty?
 
-      ml = build_method_summary_list
+      ml = build_method_summary_list @path
       @values["methods"] = ml unless ml.empty?
 
       il = build_include_list(@context)
@@ -692,6 +692,7 @@ module RDoc::Generators
     def class_attribute_values
       h_name = CGI.escapeHTML(name)
 
+      @values["path"]      = @path
       @values["classmod"]  = @is_module ? "Module" : "Class"
       @values["title"]     = "#{@values['classmod']}: #{h_name}"
 
@@ -894,7 +895,7 @@ module RDoc::Generators
 
     @@all_methods = []
 
-    def HtmlMethod::reset
+    def self.reset
       @@all_methods = []
     end
 
@@ -1028,7 +1029,7 @@ module RDoc::Generators
       HTMLGenerator.gen_url(path, file_path)
     end
 
-    def HtmlMethod.all_methods
+    def self.all_methods
       @@all_methods
     end
 
@@ -1155,7 +1156,7 @@ module RDoc::Generators
     ##
     # Converts a target url to one that is relative to a given path
 
-    def HTMLGenerator.gen_url(path, target)
+    def self.gen_url(path, target)
       from          = File.dirname(path)
       to, to_file   = File.split(target)
 
@@ -1178,8 +1179,8 @@ module RDoc::Generators
     # options they are passed. Because of this we create them using a factory
 
     def self.for(options)
-      AllReferences::reset
-      HtmlMethod::reset
+      AllReferences.reset
+      HtmlMethod.reset
 
       if options.all_one_file
         HTMLGeneratorInOne.new(options)
@@ -1270,7 +1271,6 @@ module RDoc::Generators
     #   class, module, and method names)
 
     def build_indices
-
       @toplevels.each do |toplevel|
         @files << HtmlFile.new(toplevel, @options, FILE_DIR)
       end
@@ -1362,17 +1362,23 @@ module RDoc::Generators
     # line.
 
     def gen_main_index
-      template = RDoc::TemplatePage.new(RDoc::Page::INDEX)
-      File.open("index.html", "w") do |f|
+      template = RDoc::TemplatePage.new RDoc::Page::INDEX
+
+      open 'index.html', 'w'  do |f|
+        classes = @classes.sort.map { |klass| klass.value_hash }
+
         values = {
-          "initial_page" => main_url,
-          'title'        => CGI.escapeHTML(@options.title),
-          'charset'      => @options.charset
+          'main_page'     => @main_page,
+          'initial_page'  => main_url,
+          'style_url'     => style_url('', @options.css),
+          'title'         => CGI.escapeHTML(@options.title),
+          'charset'       => @options.charset,
+          'classes'       => classes,
         }
-        if @options.inline_source
-          values['inline_source'] = true
-        end
-        template.write_html_on(f, values)
+
+        values['inline_source'] = @options.inline_source
+
+        template.write_html_on f, values
       end
     end
 
@@ -1380,33 +1386,29 @@ module RDoc::Generators
     # Returns the url of the main page
 
     def main_url
-      main_page = @options.main_page
-      ref = nil
-      if main_page
-        ref = AllReferences[main_page]
-        if ref
-          ref = ref.path
+      @main_page = @options.main_page
+      @main_page_ref = nil
+      if @main_page
+        @main_page_ref = AllReferences[@main_page]
+        if @main_page_ref then
+          @main_page_path = @main_page_ref.path
         else
-          $stderr.puts "Could not find main page #{main_page}"
+          $stderr.puts "Could not find main page #{@main_page}"
         end
       end
 
-      unless ref
-        for file in @files
-          if file.document_self
-            ref = file.path
-            break
-          end
-        end
+      unless @main_page_path then
+        file = @files.find { |file| file.document_self }
+        @main_page_path = file.path if file
       end
 
-      unless ref
+      unless @main_page_path then
         $stderr.puts "Couldn't find anything to document"
         $stderr.puts "Perhaps you've used :stopdoc: in all classes"
-        exit(1)
+        exit 1
       end
 
-      ref
+      @main_page_path
     end
 
   end
