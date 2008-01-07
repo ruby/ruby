@@ -66,3 +66,26 @@ assert_equal 'ok', %q{
   end
   C.new.foo {}
 }, '[ruby-core:14813]'
+
+assert_equal 'ok', %q{
+  module M
+     class A
+       class << self
+         attr_accessor :at
+         def workflow_rule
+           yield self
+         end
+
+         def eval_str(str)
+           eval(str)
+         end
+       end
+     end
+  end
+
+  M::A.eval_str(<<END)
+  workflow_rule do |r|
+     r.at 1
+  end
+  END
+}, '[ruby-core:14641]'
