@@ -41,3 +41,28 @@ assert_equal 'ok', %q{
 }, '[ruby-dev:32882]'
 
 
+assert_equal 'ok', %q{
+  class C
+    define_method(:foo) {
+      if block_given?
+        :ng
+      else
+        :ok
+      end
+    }
+  end
+  C.new.foo
+}, '[ruby-core:14813]'
+
+assert_equal 'ok', %q{
+  class C
+    define_method(:foo) {
+      if block_given?
+        :ok
+      else
+        :ng
+      end
+    }
+  end
+  C.new.foo {}
+}, '[ruby-core:14813]'
