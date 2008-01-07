@@ -2684,6 +2684,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     int iter = 0;
     char *sp, *cp;
     int tainted = 0;
+    rb_encoding *str_enc;
     
     switch (argc) {
       case 1:
@@ -2712,6 +2713,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     sp = RSTRING_PTR(str);
     slen = RSTRING_LEN(str);
     cp = sp;
+    str_enc = rb_enc_get(str);
 
     do {
 	n++;
@@ -2734,7 +2736,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	if (OBJ_TAINTED(val)) tainted = 1;
 
 	len = beg - offset;	/* copy pre-match substr */
-        rb_enc_str_buf_cat(dest, cp, len, rb_enc_get(str));
+        rb_enc_str_buf_cat(dest, cp, len, str_enc);
 
         rb_enc_str_buf_cat(dest, RSTRING_PTR(val), RSTRING_LEN(val), rb_enc_get(val));
         RB_GC_GUARD(val);
@@ -2746,8 +2748,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	     * in order to prevent infinite loops.
 	     */
 	    if (RSTRING_LEN(str) <= END(0)) break;
-	    len = rb_enc_mbclen(RSTRING_PTR(str)+END(0), RSTRING_END(str), rb_enc_get(str));
-            rb_enc_str_buf_cat(dest, RSTRING_PTR(str)+END(0), len, rb_enc_get(str));
+	    len = rb_enc_mbclen(RSTRING_PTR(str)+END(0), RSTRING_END(str), str_enc);
+            rb_enc_str_buf_cat(dest, RSTRING_PTR(str)+END(0), len, str_enc);
 	    offset = END(0) + len;
 	}
 	cp = RSTRING_PTR(str) + offset;
@@ -2755,7 +2757,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	beg = rb_reg_search(pat, str, offset, 0);
     } while (beg >= 0);
     if (RSTRING_LEN(str) > offset) {
-        rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, rb_enc_get(str));
+        rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
     }
     rb_backref_set(match);
     if (bang) {

@@ -1,3 +1,7 @@
+Mon Jan  7 18:10:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (str_gsub): move rb_enc_get(str) to out of loop.
+
 Mon Jan  7 15:52:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h (OnigEncodingType): new member
