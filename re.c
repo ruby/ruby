@@ -1914,7 +1914,7 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
     if (unescape_nonascii(p, end, enc, buf, fixed_enc, err) != 0)
         return Qnil;
 
-    if (fixed_enc) {
+    if (*fixed_enc) {
         rb_enc_associate(buf, *fixed_enc);
     }
 
