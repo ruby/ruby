@@ -1,39 +1,3 @@
-# We're responsible for generating all the HTML files
-# from the object tree defined in code_objects.rb. We
-# generate:
-#
-# [files]   an html file for each input file given. These
-#           input files appear as objects of class
-#           TopLevel
-#
-# [classes] an html file for each class or module encountered.
-#           These classes are not grouped by file: if a file
-#           contains four classes, we'll generate an html
-#           file for the file itself, and four html files 
-#           for the individual classes. 
-#
-# [indices] we generate three indices for files, classes,
-#           and methods. These are displayed in a browser
-#           like window with three index panes across the
-#           top and the selected description below
-#
-# Method descriptions appear in whatever entity (file, class,
-# or module) that contains them.
-#
-# We generate files in a structure below a specified subdirectory,
-# normally +doc+.
-#
-#  opdir
-#     |
-#     |___ files
-#     |       |__  per file summaries
-#     |
-#     |___ classes
-#             |__ per class/module descriptions
-#
-# HTML is generated using the Template class.
-#
-
 require 'rdoc/options'
 require 'rdoc/template'
 require 'rdoc/markup/simple_markup'
@@ -47,12 +11,11 @@ require 'rdoc/ri/ri_descriptions'
 
 module Generators
 
-
   class RIGenerator
 
-    # Generators may need to return specific subclasses depending
-    # on the options they are passed. Because of this
-    # we create them using a factory
+    ##
+    # Generators may need to return specific subclasses depending on the
+    # options they are passed. Because of this we create them using a factory
 
     def RIGenerator.for(options)
       new(options)
@@ -62,8 +25,9 @@ module Generators
       protected :new
     end
 
-    # Set up a new HTML generator. Basically all we do here is load
-    # up the correct output temlate
+    ##
+    # Set up a new HTML generator. Basically all we do here is load up the
+    # correct output temlate
 
     def initialize(options) #:not-new:
       @options   = options
@@ -72,11 +36,9 @@ module Generators
       @to_flow   = SM::ToFlow.new
     end
 
-
     ##
-    # Build the initial indices and output objects
-    # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # Build the initial indices and output objects based on an array of
+    # TopLevel objects containing the extracted information.
 
     def generate(toplevels)
       RDoc::TopLevel.all_classes_and_modules.each do |cls|
@@ -163,8 +125,8 @@ module Generators
 
     private
 
-    # return a list of class and instance methods that we'll be
-    # documenting
+    ##
+    # Returns a list of class and instance methods that we'll be documenting
 
     def method_list(cls)
       list = cls.method_list
@@ -185,17 +147,17 @@ module Generators
       end
       return c,i
     end
-    
+
     def params_of(method)
       if method.call_seq
         method.call_seq
       else
         params = method.params || ""
-        
+
         p = params.gsub(/\s*\#.*/, '')
         p = p.tr("\n", " ").squeeze(" ")
         p = "(" + p + ")" unless p[0] == ?(
-        
+
         if (block = method.block_params)
           block.gsub!(/\s*\#.*/, '')
           block = block.tr("\n", " ").squeeze(" ")
@@ -213,7 +175,7 @@ module Generators
 
       # Convert leading comment markers to spaces, but only
       # if all non-blank lines have them
-      
+
       if comment =~ /^(?>\s*)[^\#]/
         content = comment
       else
@@ -222,12 +184,11 @@ module Generators
       @markup.convert(content, @to_flow)
     end
 
-
-    # By default we replace existing classes with the
-    # same name. If the --merge option was given, we instead
-    # merge this definition into an existing class. We add
-    # our methods, aliases, etc to that class, but do not
-    # change the class's description.
+    ##
+    # By default we replace existing classes with the same name. If the
+    # --merge option was given, we instead merge this definition into an
+    # existing class. We add our methods, aliases, etc to that class, but do
+    # not change the class's description.
 
     def update_or_replace(cls_desc)
       old_cls = nil
@@ -242,7 +203,7 @@ module Generators
           $stderr.puts "documentation. This file references a class or "
           $stderr.puts "module called #{cls_desc.name} which I don't"
           $stderr.puts "have existing documentation for."
-          $stderr.puts 
+          $stderr.puts
           $stderr.puts "Perhaps you need to generate its documentation first"
           exit 1
         else
@@ -262,5 +223,8 @@ module Generators
         @ri_writer.add_class(old_desc)
       end
     end
+
   end
+
 end
+

@@ -1,4 +1,3 @@
-
 require 'rdoc/options'
 require 'rdoc/markup/simple_markup'
 require 'rdoc/markup/simple_markup/to_html'
@@ -6,16 +5,18 @@ require 'rdoc/generators/html_generator'
 
 module Generators
 
+  ##
   # Generate XML output as one big file
 
   class XMLGenerator < HTMLGenerator
 
+    ##
     # Standard generator factory
+
     def XMLGenerator.for(options)
       XMLGenerator.new(options)
     end
 
-    
     def initialize(*args)
       super
     end
@@ -23,7 +24,7 @@ module Generators
     ##
     # Build the initial indices and output objects
     # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # the extracted information.
 
     def generate(info)
       @info       = info
@@ -34,7 +35,6 @@ module Generators
       build_indices
       generate_xml
     end
-
 
     ##
     # Generate:
@@ -66,14 +66,14 @@ module Generators
     ##
     # Generate all the HTML. For the one-file case, we generate
     # all the information in to one big hash
-    #
+
     def generate_xml
-      values = { 
+      values = {
         'charset' => @options.charset,
         'files'   => gen_into(@files),
         'classes' => gen_into(@classes)
       }
-      
+
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
 
@@ -107,7 +107,6 @@ module Generators
       gen_an_index(HtmlMethod.all_methods, 'Methods')
     end
 
-    
     def gen_an_index(collection, title)
       res = []
       collection.sort.each do |f|
@@ -126,3 +125,4 @@ module Generators
   end
 
 end
+

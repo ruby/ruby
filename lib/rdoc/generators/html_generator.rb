@@ -1,39 +1,3 @@
-# We're responsible for generating all the HTML files
-# from the object tree defined in code_objects.rb. We
-# generate:
-#
-# [files]   an html file for each input file given. These
-#           input files appear as objects of class
-#           TopLevel
-#
-# [classes] an html file for each class or module encountered.
-#           These classes are not grouped by file: if a file
-#           contains four classes, we'll generate an html
-#           file for the file itself, and four html files 
-#           for the individual classes. 
-#
-# [indices] we generate three indices for files, classes,
-#           and methods. These are displayed in a browser
-#           like window with three index panes across the
-#           top and the selected description below
-#
-# Method descriptions appear in whatever entity (file, class,
-# or module) that contains them.
-#
-# We generate files in a structure below a specified subdirectory,
-# normally +doc+.
-#
-#  opdir
-#     |
-#     |___ files
-#     |       |__  per file summaries
-#     |
-#     |___ classes
-#             |__ per class/module descriptions
-#
-# HTML is generated using the Template class.
-#
-
 require 'fileutils'
 
 require 'rdoc/options'
@@ -44,24 +8,32 @@ require 'cgi'
 
 module Generators
 
-  # Name of sub-direcories that hold file and class/module descriptions
+  ##
+  # Name of sub-direcory that holds file descriptions
 
   FILE_DIR  = "files"
+
+  ##
+  # Name of sub-direcory that holds class descriptions
+
   CLASS_DIR = "classes"
+
+  ##
+  # Name of the RDoc CSS file
+
   CSS_NAME  = "rdoc-style.css"
-  
 
   ##
   # Build a hash of all items that can be cross-referenced.
-  # This is used when we output required and included names: 
+  # This is used when we output required and included names:
   # if the names appear in this hash, we can generate
   # an html cross reference to the appropriate description.
-  # We also use this when parsing comment blocks: any decorated 
+  # We also use this when parsing comment blocks: any decorated
   # words matching an entry in this list are hyperlinked.
 
   class AllReferences
     @@refs = {}
-    
+
     def AllReferences::reset
       @@refs = {}
     end
@@ -79,7 +51,6 @@ module Generators
     end
   end
 
-
   ##
   # Subclass of the SM::ToHtml class that supports looking
   # up words in the AllReferences list. Those that are
@@ -87,6 +58,8 @@ module Generators
   # be hyperlinked
 
   class HyperlinkHtml < SM::ToHtml
+
+    ##
     # We need to record the html path of our caller so we can generate
     # correct relative paths for any hyperlinks that we find
     def initialize(from_path, context)
@@ -98,6 +71,7 @@ module Generators
       @context = context
     end
 
+    ##
     # We're invoked when any text matches the CROSSREF pattern
     # (defined in MarkUp). If we fine the corresponding reference,
     # generate a hyperlink. If the name we're looking for contains
@@ -134,9 +108,10 @@ module Generators
       end
     end
 
-
+    ##
     # Generate a hyperlink for url, labeled with text. Handle the
     # special cases for img: and link: described under handle_special_HYPEDLINK
+
     def gen_url(url, text)
       if url =~ /([A-Za-z]+):(.*)/
         type = $1
@@ -155,7 +130,7 @@ module Generators
         end
       end
 
-      if (type == "http" || type == "link") && 
+      if (type == "http" || type == "link") &&
           url =~ /\.(gif|png|jpg|jpeg|bmp)$/
 
         "<img src=\"#{url}\" />"
@@ -164,6 +139,7 @@ module Generators
       end
     end
 
+    ##
     # And we're invoked with a potential external hyperlink mailto:
     # just gets inserted. http: links are checked to see if they
     # reference an image. If so, that image gets inserted using an
@@ -176,14 +152,14 @@ module Generators
       gen_url(url, url)
     end
 
-    # HEre's a hypedlink where the label is different to the URL
+    ##
+    # Here's a hypedlink where the label is different to the URL
     #  <label>[url]
-    #
-    
+
     def handle_special_TIDYLINK(special)
       text = special.text
 #      unless text =~ /(\S+)\[(.*?)\]/
-      unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/ 
+      unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/
         return text
       end
       label = $1
@@ -193,15 +169,12 @@ module Generators
 
   end
 
-
-  
-  #####################################################################
-  #
+  ##
   # Handle common markup tasks for the various Html classes
-  #
 
   module MarkUp
 
+    ##
     # Convert a string in markup format into HTML. We keep a cached
     # SimpleMarkup object lying around after the first time we're
     # called per object.
@@ -217,9 +190,9 @@ module Generators
                              | \#\w+(\([.\w\*\/\+\-\=\<\>]+\))?  #  meth(**) (for operator in Fortran95)
                              | \b([A-Z]\w*(::\w+)*[.\#]\w+)  #    A::B.meth
                              | \b([A-Z]\w+(::\w+)*)       #    A::B..
-                             | \#\w+[!?=]?                #    #meth_name 
+                             | \#\w+[!?=]?                #    #meth_name
                              | \b\w+([_\/\.]+\w+)*[!?=]?  #    meth_name
-                             )/x, 
+                             )/x,
                             :CROSSREF)
 
         # external hyperlinks
@@ -251,6 +224,7 @@ module Generators
       res
     end
 
+    ##
     # Qualify a stylesheet URL; if if +css_name+ does not begin with '/' or
     # 'http[s]://', prepend a prefix relative to +path+. Otherwise, return it
     # unmodified.
@@ -265,6 +239,7 @@ module Generators
       end
     end
 
+    ##
     # Build a webcvs URL with the given 'url' argument. URLs with a '%s' in them
     # get the file's path sprintfed into them; otherwise they're just catenated
     # together.
@@ -276,34 +251,35 @@ module Generators
         return url + full_path
       end
     end
+
   end
 
-
-  #####################################################################
-  #
+  ##
   # A Context is built by the parser to represent a container: contexts
   # hold classes, modules, methods, require lists and include lists.
   # ClassModule and TopLevel are the context objects we process here
-  # 
+
   class ContextUser
 
     include MarkUp
 
     attr_reader :context
-    
+
     def initialize(context, options)
       @context = context
       @options = options
     end
-      
+
+    ##
     # convenience method to build a hyperlink
+
     def href(link, cls, name)
       %{<a href="#{link}" class="#{cls}">#{name}</a>} #"
     end
 
-    # return a reference to outselves to be used as an href=
-    # the form depends on whether we're all in one file
-    # or in multiple files
+    ##
+    # Returns a reference to outselves to be used as an href= the form depends
+    # on whether we're all in one file or in multiple files
 
     def as_href(from_path)
       if @options.all_one_file
@@ -313,10 +289,11 @@ module Generators
       end
     end
 
-    # Create a list of HtmlMethod objects for each method
-    # in the corresponding context object. If the @options.show_all
-    # variable is set (corresponding to the <tt>--all</tt> option,
-    # we include all methods, otherwise just the public ones.
+    ##
+    # Create a list of HtmlMethod objects for each method in the corresponding
+    # context object. If the @options.show_all variable is set (corresponding
+    # to the <tt>--all</tt> option, we include all methods, otherwise just the
+    # public ones.
 
     def collect_methods
       list = @context.method_list
@@ -326,23 +303,26 @@ module Generators
       @methods = list.collect {|m| HtmlMethod.new(m, self, @options) }
     end
 
+    ##
     # Build a summary list of all the methods in this context
+
     def build_method_summary_list(path_prefix="")
       collect_methods unless @methods
       meths = @methods.sort
       res = []
       meths.each do |meth|
-	res << {
+        res << {
           "name" => CGI.escapeHTML(meth.name),
-          "aref" => "#{path_prefix}\##{meth.aref}" 
+          "aref" => "#{path_prefix}\##{meth.aref}"
         }
       end
       res
     end
 
-
+    ##
     # Build a list of aliases for which we couldn't find a
     # corresponding method
+
     def build_alias_summary_list(section)
       values = []
       @context.aliases.each do |al|
@@ -358,8 +338,10 @@ module Generators
       end
       values
     end
-    
+
+    ##
     # Build a list of constants
+
     def build_constants_summary_list(section)
       values = []
       @context.constants.each do |co|
@@ -373,7 +355,7 @@ module Generators
       end
       values
     end
-    
+
     def build_requires_list(context)
       potentially_referenced_list(context.requires) {|fn| [fn + ".rb"] }
     end
@@ -382,6 +364,7 @@ module Generators
       potentially_referenced_list(context.includes)
     end
 
+    ##
     # Build a list from an array of <i>Htmlxxx</i> items. Look up each
     # in the AllReferences hash: if we find a corresponding entry,
     # we generate a hyperlink to it, otherwise just output the name.
@@ -394,12 +377,12 @@ module Generators
     def potentially_referenced_list(array)
       res = []
       array.each do |i|
-        ref = AllReferences[i.name] 
+        ref = AllReferences[i.name]
 #         if !ref
 #           container = @context.parent
 #           while !ref && container
 #             name = container.name + "::" + i.name
-#             ref = AllReferences[name] 
+#             ref = AllReferences[name]
 #             container = container.parent
 #           end
 #         end
@@ -424,6 +407,7 @@ module Generators
       res
     end
 
+    ##
     # Build an array of arrays of method details. The outer array has up
     # to six entries, public, private, and protected for both class
     # methods, the other for instance methods. The inner arrays contain
@@ -434,12 +418,12 @@ module Generators
 
       methods = @methods.sort
       for singleton in [true, false]
-        for vis in [ :public, :protected, :private ] 
+        for vis in [ :public, :protected, :private ]
           res = []
           methods.each do |m|
             if m.section == section and
-                m.document_self and 
-                m.visibility == vis and 
+                m.document_self and
+                m.visibility == vis and
                 m.singleton == singleton
               row = {}
               if m.call_seq
@@ -459,7 +443,7 @@ module Generators
                   alias_names << {
                     'name' => other.name,
                     'aref'  => other.viewer.as_href(path)
-                  } 
+                  }
                 end
               end
               unless alias_names.empty?
@@ -479,7 +463,7 @@ module Generators
               res << row
             end
           end
-          if res.size > 0 
+          if res.size > 0
             outer << {
               "type"    => vis.to_s.capitalize,
               "category"    => singleton ? "Class" : "Instance",
@@ -491,8 +475,9 @@ module Generators
       outer
     end
 
+    ##
     # Build the structured list of classes and modules contained
-    # in this context. 
+    # in this context.
 
     def build_class_list(level, from, section, infile=nil)
       res = ""
@@ -502,7 +487,7 @@ module Generators
         next unless mod.section == section
         next if infile && !mod.defined_in?(infile)
         if mod.document_self
-          res << 
+          res <<
             prefix <<
             "Module " <<
             href(url(mod.viewer.path), "link", mod.full_name) <<
@@ -516,7 +501,7 @@ module Generators
         next if infile && !cls.defined_in?(infile)
         if cls.document_self
           res      <<
-            prefix << 
+            prefix <<
             "Class " <<
             href(url(cls.viewer.path), "link", cls.full_name) <<
             "<br />\n" <<
@@ -526,7 +511,7 @@ module Generators
 
       res
     end
-    
+
     def url(target)
       HTMLGenerator.gen_url(path, target)
     end
@@ -550,8 +535,9 @@ module Generators
       res
     end
 
-
+    ##
     # Find a symbol in ourselves or our parent
+
     def find_symbol(symbol, method=nil)
       res = @context.find_symbol(symbol, method)
       if res
@@ -560,8 +546,9 @@ module Generators
       res
     end
 
+    ##
     # create table of contents if we contain sections
-      
+
     def add_table_of_sections
       toc = []
       @context.sections.each do |section|
@@ -572,15 +559,13 @@ module Generators
           }
         end
       end
-      
+
       @values['toc'] = toc unless toc.empty?
     end
 
-
   end
 
-  #####################################################################
-  #
+  ##
   # Wrap a ClassModule context
 
   class HtmlClass < ContextUser
@@ -607,8 +592,10 @@ module Generators
       AllReferences.add(name, self)
     end
 
-    # return the relative file name to store this class in,
-    # which is also its url
+    ##
+    # Returns the relative file name to store this class in, which is also its
+    # url
+
     def http_url(full_name, prefix)
       path = full_name.dup
       if path['<<']
@@ -616,7 +603,6 @@ module Generators
       end
       File.join(prefix, path.split("::")) + ".html"
     end
-
 
     def name
       @context.full_name
@@ -664,16 +650,16 @@ module Generators
 
         al = build_alias_summary_list(section)
         secdata["aliases"] = al unless al.empty?
-        
+
         co = build_constants_summary_list(section)
         secdata["constants"] = co unless co.empty?
-        
+
         al = build_attribute_list(section)
         secdata["attributes"] = al unless al.empty?
-        
+
         cl = build_class_list(0, @context, section)
         secdata["classlist"] = cl unless cl.empty?
-        
+
         mdl = build_method_detail_list(section)
         secdata["method_list"] = mdl unless mdl.empty?
 
@@ -690,8 +676,8 @@ module Generators
         next unless att.section == section
         if att.visibility == :public || att.visibility == :protected || @options.show_all
           entry = {
-            "name"   => CGI.escapeHTML(att.name), 
-            "rw"     => att.rw, 
+            "name"   => CGI.escapeHTML(att.name),
+            "rw"     => att.rw,
             "a_desc" => markup(att.comment, true)
           }
           unless att.visibility == :public || att.visibility == :protected
@@ -720,19 +706,19 @@ module Generators
       parent_class = @context.superclass
 
       if parent_class
-	@values["parent"] = CGI.escapeHTML(parent_class)
+        @values["parent"] = CGI.escapeHTML(parent_class)
 
-	if parent_name
-	  lookup = parent_name + "::" + parent_class
-	else
-	  lookup = parent_class
-	end
+        if parent_name
+          lookup = parent_name + "::" + parent_class
+        else
+          lookup = parent_class
+        end
 
-	parent_url = AllReferences[lookup] || AllReferences[parent_class]
+        parent_url = AllReferences[lookup] || AllReferences[parent_class]
 
-	if parent_url and parent_url.document_self
-	  @values["par_url"] = aref_to(parent_url.path)
-	end
+        if parent_url and parent_url.document_self
+          @values["par_url"] = aref_to(parent_url.path)
+        end
       end
 
       files = []
@@ -759,8 +745,7 @@ module Generators
 
   end
 
-  #####################################################################
-  #
+  ##
   # Handles the mapping of a file's information to HTML. In reality,
   # a file corresponds to a +TopLevel+ object, containing modules,
   # classes, and top-level methods. In theory it _could_ contain
@@ -851,16 +836,16 @@ module Generators
 
         al = build_alias_summary_list(section)
         secdata["aliases"] = al unless al.empty?
-        
+
         co = build_constants_summary_list(section)
         @values["constants"] = co unless co.empty?
 
         secdata
       end
-      
+
       @values
     end
-    
+
     def write_on(f)
       value_hash
       template = TemplatePage.new(RDoc::Page::BODY,
@@ -872,7 +857,7 @@ module Generators
     def file_attribute_values
       full_path = @context.file_absolute_name
       short_name = File.basename(full_path)
-      
+
       @values["title"] = CGI.escapeHTML("File: #{short_name}")
 
       if @context.diagram
@@ -891,11 +876,13 @@ module Generators
     def <=>(other)
       self.name <=> other.name
     end
+
   end
 
-  #####################################################################
+  ##
 
   class HtmlMethod
+
     include MarkUp
 
     attr_reader :context
@@ -931,10 +918,10 @@ module Generators
 
       AllReferences.add(name, self)
     end
-    
-    # return a reference to outselves to be used as an href=
-    # the form depends on whether we're all in one file
-    # or in multiple files
+
+    ##
+    # Returns a reference to outselves to be used as an href= the form depends
+    # on whether we're all in one file or in multiple files
 
     def as_href(from_path)
       if @options.all_one_file
@@ -970,9 +957,9 @@ module Generators
 
     def path
       if @options.all_one_file
-	aref
+        aref
       else
-	@html_class.path + "#" + aref
+        @html_class.path + "#" + aref
       end
     end
 
@@ -1005,7 +992,7 @@ module Generators
         p = @context.params.gsub(/\s*\#.*/, '')
         p = p.tr("\n", " ").squeeze(" ")
         p = "(" + p + ")" unless p[0] == ?(
-        
+
         if (block = @context.block_params)
          # If this method has explicit block parameters, remove any
          # explicit &block
@@ -1022,7 +1009,7 @@ module Generators
       end
       CGI.escapeHTML(p)
     end
-    
+
     def create_source_code_file(code_body)
       meth_path = @html_class.path.sub(/\.html$/, '.src')
       FileUtils.mkdir_p(meth_path)
@@ -1052,7 +1039,6 @@ module Generators
     ##
     # Given a sequence of source tokens, mark up the source code
     # to make it look purty.
-
 
     def markup_code(tokens)
       src = ""
@@ -1088,8 +1074,8 @@ module Generators
       src
     end
 
-    # we rely on the fact that the first line of a source code
-    # listing has 
+    ##
+    # We rely on the fact that the first line of a source code listing has
     #    # File xxxxx, line dddd
 
     def add_line_numbers(src)
@@ -1100,7 +1086,7 @@ module Generators
         real_fmt = "%#{size}d: "
         fmt = " " * (size+2)
         src.gsub!(/^/) do
-          res = sprintf(fmt, first) 
+          res = sprintf(fmt, first)
           first += 1
           fmt = real_fmt
           res
@@ -1123,39 +1109,73 @@ module Generators
       end
       res
     end
+
   end
 
-  #####################################################################
+  ##
+  # We're responsible for generating all the HTML files
+  # from the object tree defined in code_objects.rb. We
+  # generate:
+  #
+  # [files]   an html file for each input file given. These
+  #           input files appear as objects of class
+  #           TopLevel
+  #
+  # [classes] an html file for each class or module encountered.
+  #           These classes are not grouped by file: if a file
+  #           contains four classes, we'll generate an html
+  #           file for the file itself, and four html files
+  #           for the individual classes.
+  #
+  # [indices] we generate three indices for files, classes,
+  #           and methods. These are displayed in a browser
+  #           like window with three index panes across the
+  #           top and the selected description below
+  #
+  # Method descriptions appear in whatever entity (file, class,
+  # or module) that contains them.
+  #
+  # We generate files in a structure below a specified subdirectory,
+  # normally +doc+.
+  #
+  #  opdir
+  #     |
+  #     |___ files
+  #     |       |__  per file summaries
+  #     |
+  #     |___ classes
+  #             |__ per class/module descriptions
+  #
+  # HTML is generated using the Template class.
 
   class HTMLGenerator
 
     include MarkUp
 
     ##
-    # convert a target url to one that is relative to a given
-    # path
-    
+    # Converts a target url to one that is relative to a given path
+
     def HTMLGenerator.gen_url(path, target)
       from          = File.dirname(path)
       to, to_file   = File.split(target)
-      
+
       from = from.split("/")
       to   = to.split("/")
-      
+
       while from.size > 0 and to.size > 0 and from[0] == to[0]
         from.shift
         to.shift
       end
-      
+
       from.fill("..")
       from.concat(to)
       from << to_file
       File.join(*from)
     end
 
-    # Generators may need to return specific subclasses depending
-    # on the options they are passed. Because of this
-    # we create them using a factory
+    ##
+    # Generators may need to return specific subclasses depending on the
+    # options they are passed. Because of this we create them using a factory
 
     def HTMLGenerator.for(options)
       AllReferences::reset
@@ -1172,19 +1192,19 @@ module Generators
       protected :new
     end
 
-    # Set up a new HTML generator. Basically all we do here is load
-    # up the correct output temlate
+    ##
+    # Set up a new HTML generator. Basically all we do here is load up the
+    # correct output temlate
 
     def initialize(options) #:not-new:
       @options    = options
       load_html_template
     end
 
-
     ##
     # Build the initial indices and output objects
     # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # the extracted information.
 
     def generate(toplevels)
       @toplevels  = toplevels
@@ -1202,7 +1222,7 @@ module Generators
     ##
     # Load up the HTML template specified in the options.
     # If the template name contains a slash, use it literally
-    #
+
     def load_html_template
       template = @options.template
       unless template =~ %r{/|\\}
@@ -1218,8 +1238,7 @@ module Generators
 
     ##
     # Write out the style sheet used by the main frames
-    #
-    
+
     def write_style_sheet
       template = TemplatePage.new(RDoc::Page::STYLE)
       unless @options.css
@@ -1231,13 +1250,12 @@ module Generators
     end
 
     ##
-    # See the comments at the top for a description of the
-    # directory structure
+    # See the comments at the top for a description of the directory structure
 
     def gen_sub_directories
       FileUtils.mkdir_p(FILE_DIR)
       FileUtils.mkdir_p(CLASS_DIR)
-    rescue 
+    rescue
       $stderr.puts $!.message
       exit 1
     end
@@ -1271,7 +1289,7 @@ module Generators
 
     ##
     # Generate all the HTML
-    #
+
     def generate_html
       # the individual descriptions for files and classes
       gen_into(@files)
@@ -1281,7 +1299,7 @@ module Generators
       gen_class_index
       gen_method_index
       gen_main_index
-      
+
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
     end
@@ -1298,8 +1316,8 @@ module Generators
     end
 
     def gen_file_index
-      gen_an_index(@files, 'Files', 
-                   RDoc::Page::FILE_INDEX, 
+      gen_an_index(@files, 'Files',
+                   RDoc::Page::FILE_INDEX,
                    "fr_file_index.html")
     end
 
@@ -1310,12 +1328,11 @@ module Generators
     end
 
     def gen_method_index
-      gen_an_index(HtmlMethod.all_methods, 'Methods', 
+      gen_an_index(HtmlMethod.all_methods, 'Methods',
                    RDoc::Page::METHOD_INDEX,
                    "fr_method_index.html")
     end
 
-    
     def gen_an_index(collection, title, template, filename)
       template = TemplatePage.new(RDoc::Page::FR_INDEX_BODY, template)
       res = []
@@ -1338,10 +1355,11 @@ module Generators
       end
     end
 
-    # The main index page is mostly a template frameset, but includes
-    # the initial page. If the <tt>--main</tt> option was given,
-    # we use this as our main page, otherwise we use the
-    # first file specified on the command line.
+    ##
+    # The main index page is mostly a template frameset, but includes the
+    # initial page. If the <tt>--main</tt> option was given, we use this as
+    # our main page, otherwise we use the first file specified on the command
+    # line.
 
     def gen_main_index
       template = TemplatePage.new(RDoc::Page::INDEX)
@@ -1358,7 +1376,9 @@ module Generators
       end
     end
 
-    # return the url of the main page
+    ##
+    # Returns the url of the main page
+
     def main_url
       main_page = @options.main_page
       ref = nil
@@ -1374,7 +1394,7 @@ module Generators
       unless ref
         for file in @files
           if file.document_self
-            ref = file.path 
+            ref = file.path
             break
           end
         end
@@ -1389,12 +1409,7 @@ module Generators
       ref
     end
 
-
   end
-
-
-  ######################################################################
-
 
   class HTMLGeneratorInOne < HTMLGenerator
 
@@ -1405,7 +1420,7 @@ module Generators
     ##
     # Build the initial indices and output objects
     # based on an array of TopLevel objects containing
-    # the extracted information. 
+    # the extracted information.
 
     def generate(info)
       @toplevels  = info
@@ -1416,7 +1431,6 @@ module Generators
       build_indices
       generate_xml
     end
-
 
     ##
     # Generate:
@@ -1448,15 +1462,15 @@ module Generators
     ##
     # Generate all the HTML. For the one-file case, we generate
     # all the information in to one big hash
-    #
+
     def generate_xml
-      values = { 
+      values = {
         'charset' => @options.charset,
         'files'   => gen_into(@files),
         'classes' => gen_into(@classes),
         'title'        => CGI.escapeHTML(@options.title),
       }
-      
+
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
 
@@ -1490,7 +1504,6 @@ module Generators
       gen_an_index(HtmlMethod.all_methods, 'Methods')
     end
 
-    
     def gen_an_index(collection, title)
       res = []
       collection.sort.each do |f|
@@ -1507,4 +1520,6 @@ module Generators
     end
 
   end
+
 end
+
