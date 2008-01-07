@@ -370,6 +370,15 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_sjis(eval(s(%q{/\xc2\xa1/})))
   end
 
+  def test_regexp_windows_31j
+    begin
+      Regexp.new("\xa1".force_encoding("windows-31j")) =~ "\xa1\xa1".force_encoding("euc-jp")
+    rescue ArgumentError
+      err = $!
+    end
+    assert_match(/windows-31j/i, err.message)
+  end
+
   def test_regexp_embed
     r = eval(e("/\xc2\xa1/"))
     assert_raise(ArgumentError) { eval(s("/\xc2\xa1\#{r}/s")) }

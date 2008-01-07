@@ -1063,7 +1063,7 @@ rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *ptr_enc)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *res_enc;
     int str_cr, ptr_cr, res_cr;
-    int str_a8 = ENCODING_GET(str) == 0;
+    int str_a8 = ENCODING_IS_ASCII8BIT(str);
     int ptr_a8 = ptr_enc == rb_ascii8bit_encoding();
 
     str_cr = ENC_CODERANGE(str);

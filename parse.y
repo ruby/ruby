@@ -8470,7 +8470,7 @@ reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
     if (c) {
 	int opt, idx;
 	rb_char_to_option_kcode(c, &opt, &idx);
-	if (idx != ENCODING_GET(str) && ENCODING_GET(str) &&
+	if (idx != ENCODING_GET(str) && !ENCODING_IS_ASCII8BIT(str) &&
 	    rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
 	    compile_error(PARSER_ARG
 			  "regexp encoding option '%c' differs from source encoding '%s'",

@@ -22,11 +22,27 @@
 #define ENCODING_INLINE_MAX 1023
 #define ENCODING_SHIFT (FL_USHIFT+10)
 #define ENCODING_MASK (ENCODING_INLINE_MAX<<ENCODING_SHIFT)
-#define ENCODING_SET(obj,i) do {\
+
+#define ENCODING_SET_INLINED(obj,i) do {\
     RBASIC(obj)->flags &= ~ENCODING_MASK;\
-    RBASIC(obj)->flags |= i << ENCODING_SHIFT;\
+    RBASIC(obj)->flags |= (i) << ENCODING_SHIFT;\
 } while (0)
-#define ENCODING_GET(obj) ((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
+#define ENCODING_SET(obj,i) do {\
+    VALUE rb_encoding_set_obj = (obj); \
+    int encoding_set_enc_index = (i); \
+    if (encoding_set_enc_index < ENCODING_INLINE_MAX) \
+        ENCODING_SET_INLINED(rb_encoding_set_obj, encoding_set_enc_index); \
+    else \
+        rb_enc_internal_set_index(rb_encoding_set_obj, encoding_set_enc_index); \
+} while (0)
+
+#define ENCODING_GET_INLINED(obj) ((RBASIC(obj)->flags & ENCODING_MASK)>>ENCODING_SHIFT)
+#define ENCODING_GET(obj) \
+    (ENCODING_GET_INLINED(obj) != ENCODING_INLINE_MAX ? \
+     ENCODING_GET_INLINED(obj) : \
+     rb_enc_internal_get_index(obj))
+
+#define ENCODING_IS_ASCII8BIT(obj) (ENCODING_GET_INLINED(obj) == 0)
 
 #define ENC_CODERANGE_MASK	(FL_USER8|FL_USER9)
 #define ENC_CODERANGE_UNKNOWN	0
@@ -39,6 +55,12 @@
 				   (RBASIC(obj)->flags & ~ENC_CODERANGE_MASK) | (cr))
 #define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET(obj,0)
 
+#define ENCODING_CODERANGE_SET(obj, encindex, cr) \
+    do { \
+        VALUE rb_encoding_coderange_obj = (obj); \
+        ENCODING_SET(rb_encoding_coderange_obj, (encindex)); \
+        ENC_CODERANGE_SET(rb_encoding_coderange_obj, (cr)); \
+    } while (0)
 
 typedef OnigEncodingType rb_encoding;
 
@@ -56,6 +78,8 @@ rb_encoding* rb_enc_check(VALUE,VALUE);
 void rb_enc_associate_index(VALUE, int);
 void rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
+int rb_enc_internal_get_index(VALUE obj);
+void rb_enc_internal_set_index(VALUE obj, int encindex);
 
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
 VALUE rb_enc_reg_new(const char*, long, rb_encoding*, int);

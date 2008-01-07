@@ -1,3 +1,22 @@
+Mon Jan  7 11:44:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_internal_get_index): extracted from
+	  rb_enc_get_index.
+	  (rb_enc_internal_set_index): extracted from rb_enc_associate_index
+
+	* include/ruby/encoding.h (ENCODING_SET): work over ENCODING_INLINE_MAX.
+	  (ENCODING_GET): ditto.
+	  (ENCODING_IS_ASCII8BIT): defined.
+	  (ENCODING_CODERANGE_SET): defined.
+
+	* re.c (rb_reg_fixed_encoding_p): use ENCODING_IS_ASCII8BIT.
+
+	* string.c (rb_enc_str_buf_cat): use ENCODING_IS_ASCII8BIT.
+
+	* parse.y (reg_fragment_setenc_gen): use ENCODING_IS_ASCII8BIT.
+
+	* marshal.c (has_ivars): use ENCODING_IS_ASCII8BIT.
+
 Mon Jan  7 02:14:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (coderange_scan): avoid rb_enc_to_index.
