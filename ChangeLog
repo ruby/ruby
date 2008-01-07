@@ -1,3 +1,7 @@
+Tue Jan  8 07:56:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_buf_append): fix append itself.
+
 Tue Jan  8 01:13:50 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (STR_ENC_GET): defined.  same as rb_enc_get without

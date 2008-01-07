@@ -1166,7 +1166,13 @@ rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *ptr_enc)
 VALUE
 rb_str_buf_append(VALUE str, VALUE str2)
 {
-    int str2_cr = ENC_CODERANGE(str2);
+    int str2_cr;
+
+    if (str == str2) {
+        str2 = rb_str_dup(str2);
+    }
+
+    str2_cr = ENC_CODERANGE(str2);
 
     rb_enc_cr_str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2),
         ENCODING_GET(str2), str2_cr, &str2_cr);

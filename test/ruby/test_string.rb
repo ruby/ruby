@@ -170,6 +170,12 @@ class TestString < Test::Unit::TestCase
   def test_LSHIFT # '<<'
     assert_equal(S("world!"), S("world") << 33)
     assert_equal(S("world!"), S("world") << S('!'))
+
+    s = "a"
+    10.times {|i|
+      s << s
+      assert_equal("a" * (2<<i), s)
+    }
   end
 
   def test_MATCH # '=~'
