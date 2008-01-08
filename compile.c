@@ -4831,7 +4831,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 #define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
 #define CHECK_STRING(v)  rb_convert_type(v, T_STRING, "String", "to_str")
 #define CHECK_SYMBOL(v)  rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym")
-#define CHECK_INTEGER(v) (NUM2LONG(v), v)
+static inline VALUE CHECK_INTEGER(VALUE v) {NUM2LONG(v); return v;}
 
 VALUE
 iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
@@ -4868,20 +4868,19 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
     else {
 	int i = 0;
 	VALUE argc = CHECK_INTEGER(rb_ary_entry(args, i++));
-	VALUE arg_opts = CHECK_INTEGER(rb_ary_entry(args, i++));
 	VALUE arg_opt_labels = CHECK_ARRAY(rb_ary_entry(args, i++));
 	VALUE arg_post_len = CHECK_INTEGER(rb_ary_entry(args, i++));
 	VALUE arg_post_start = CHECK_INTEGER(rb_ary_entry(args, i++));
 	VALUE arg_rest = CHECK_INTEGER(rb_ary_entry(args, i++));
 	VALUE arg_block = CHECK_INTEGER(rb_ary_entry(args, i++));
+	VALUE arg_simple = CHECK_INTEGER(rb_ary_entry(args, i++));
 
 	iseq->argc = FIX2INT(argc);
-	iseq->arg_opts = FIX2INT(arg_opts);
 	iseq->arg_rest = FIX2INT(arg_rest);
 	iseq->arg_post_len = FIX2INT(arg_post_len);
 	iseq->arg_post_start = FIX2INT(arg_post_start);
 	iseq->arg_block = FIX2INT(arg_block);
-	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
+	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, RARRAY_LEN(arg_opt_labels));
 
 	if (iseq->arg_block != -1) {
 	    iseq->arg_size = iseq->arg_block + 1;
@@ -4901,6 +4900,8 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 	      (VALUE)register_label(iseq, labels_table,
 				    rb_ary_entry(arg_opt_labels, i));
 	}
+
+	iseq->arg_simple = NUM2INT(arg_simple);
     }
 
     /* exception */

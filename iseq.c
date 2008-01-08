@@ -323,48 +323,48 @@ VALUE iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 #define CHECK_ARRAY(v)   rb_convert_type(v, T_ARRAY, "Array", "to_ary")
 #define CHECK_STRING(v)  rb_convert_type(v, T_STRING, "String", "to_str")
 #define CHECK_SYMBOL(v)  rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym")
-#define CHECK_INTEGER(v) (NUM2LONG(v), v)
+static inline VALUE CHECK_INTEGER(VALUE v) {NUM2LONG(v); return v;}
 VALUE
 iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 {
     VALUE iseqval = iseq_alloc(rb_cISeq);
 
     VALUE magic, version1, version2, format_type, misc;
-    VALUE name, filename, line;
+    VALUE name, filename;
     VALUE type, body, locals, args, exception;
 
     VALUE iseq_type;
     struct st_table *type_map = 0;
     rb_iseq_t *iseq;
     rb_compile_option_t option;
+    int i = 0;
 
     /* [magic, major_version, minor_version, format_type, misc,
-     *  name, filename, line,
+     *  name, filename,
      *  type, locals, args, exception_table, body]
      */
 
     data        = CHECK_ARRAY(data);
 
-    magic       = CHECK_STRING(rb_ary_entry(data, 0));
-    version1    = CHECK_INTEGER(rb_ary_entry(data, 1));
-    version2    = CHECK_INTEGER(rb_ary_entry(data, 2));
-    format_type = CHECK_INTEGER(rb_ary_entry(data, 3));
-    misc        = rb_ary_entry(data, 4); /* TODO */
+    magic       = CHECK_STRING(rb_ary_entry(data, i++));
+    version1    = CHECK_INTEGER(rb_ary_entry(data, i++));
+    version2    = CHECK_INTEGER(rb_ary_entry(data, i++));
+    format_type = CHECK_INTEGER(rb_ary_entry(data, i++));
+    misc        = rb_ary_entry(data, i++); /* TODO */
 
-    name        = CHECK_STRING(rb_ary_entry(data, 5));
-    filename    = CHECK_STRING(rb_ary_entry(data, 6));
-    line        = CHECK_ARRAY(rb_ary_entry(data, 7));
+    name        = CHECK_STRING(rb_ary_entry(data, i++));
+    filename    = CHECK_STRING(rb_ary_entry(data, i++));
 
-    type        = CHECK_SYMBOL(rb_ary_entry(data, 8));
-    locals      = CHECK_ARRAY(rb_ary_entry(data, 9));
+    type        = CHECK_SYMBOL(rb_ary_entry(data, i++));
+    locals      = CHECK_ARRAY(rb_ary_entry(data, i++));
 
-    args        = rb_ary_entry(data, 10);
+    args        = rb_ary_entry(data, i++);
     if (FIXNUM_P(args) || (args = CHECK_ARRAY(args))) {
 	/* */
     }
 
-    exception   = CHECK_ARRAY(rb_ary_entry(data, 11));
-    body        = CHECK_ARRAY(rb_ary_entry(data, 12));
+    exception   = CHECK_ARRAY(rb_ary_entry(data, i++));
+    body        = CHECK_ARRAY(rb_ary_entry(data, i++));
 
     GetISeqPtr(iseqval, iseq);
     iseq->self = iseqval;
