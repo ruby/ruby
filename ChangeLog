@@ -1,3 +1,7 @@
+Tue Jan  8 15:27:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/utf{16,32}_{be,le}.c: imported from Oniguruma 5.9.1.
+
 Tue Jan  8 15:03:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (str_gsub): avoid appending empty pre-match substr.
