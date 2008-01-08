@@ -2,20 +2,20 @@ require 'optparse'
 require 'yaml'
 
 require 'rdoc/ri'
-require 'rdoc/ri/ri_paths'
-require 'rdoc/ri/ri_formatter'
-require 'rdoc/ri/ri_display'
+require 'rdoc/ri/paths'
+require 'rdoc/ri/formatter'
+require 'rdoc/ri/display'
 require 'fileutils'
 require 'rdoc/markup/simple_markup'
 require 'rdoc/markup/simple_markup/to_flow'
 
-class RDoc::RI::RiDriver
-  
+class RDoc::RI::Driver
+
   def self.process_args(argv)
     options = {}
     options[:use_stdout] = !$stdout.tty?
     options[:width] = 72
-    options[:formatter] = RI::TextFormatter.for 'plain'
+    options[:formatter] = RDoc::RI::Formatter.for 'plain'
     options[:list_classes] = false
     options[:list_names] = false
 
@@ -33,12 +33,12 @@ class RDoc::RI::RiDriver
       opt.summary_indent = ' ' * 4
 
       directories = [
-        RI::Paths::SYSDIR,
-        RI::Paths::SITEDIR,
-        RI::Paths::HOMEDIR
+        RDoc::RI::Paths::SYSDIR,
+        RDoc::RI::Paths::SITEDIR,
+        RDoc::RI::Paths::HOMEDIR
       ]
 
-      if RI::Paths::GEMDIRS then
+      if RDoc::RI::Paths::GEMDIRS then
         Gem.path.each do |dir|
           directories << "#{dir}/doc/*/ri"
         end
@@ -109,19 +109,19 @@ Options may also be set in the 'RI' environment variable.
       opt.separator nil
 
       opt.on("--fmt=FORMAT", "--format=FORMAT", "-f",
-             RI::TextFormatter.list.split(', '), # HACK
+             RDoc::RI::Formatter::FORMATTERS.keys,
              "Format to use when displaying output:",
-             "   #{RI::TextFormatter.list}",
+             "   #{RDoc::RI::Formatter.list}",
              "Use 'bs' (backspace) with most pager",
              "programs. To use ANSI, either disable the",
              "pager or tell the pager to allow control",
              "characters.") do |value|
-        options[:formatter] = RI::TextFormatter.for value
+        options[:formatter] = RDoc::RI::Formatter.for value
       end
 
       opt.separator nil
 
-      if RI::Paths::GEMDIRS then
+      unless RDoc::RI::Paths::GEMDIRS.empty? then
         opt.on("--[no-]gems",
                "Include documentation from RubyGems.") do |value|
           use_gems = value
@@ -180,10 +180,10 @@ Options may also be set in the 'RI' environment variable.
 
     options[:names] = argv
 
-    options[:path] = RI::Paths.path(use_system, use_site, use_home, use_gems,
-                                    *doc_dirs)
-    options[:raw_path] = RI::Paths.raw_path(use_system, use_site, use_home,
-                                            use_gems, *doc_dirs)
+    options[:path] = RDoc::RI::Paths.path(use_system, use_site, use_home,
+                                          use_gems, *doc_dirs)
+    options[:raw_path] = RDoc::RI::Paths.raw_path(use_system, use_site,
+                                                  use_home, use_gems, *doc_dirs)
 
     options
 
@@ -204,17 +204,18 @@ Options may also be set in the 'RI' environment variable.
     @names = options[:names]
 
     @class_cache_name = 'classes'
-    @all_dirs = RI::Paths.path(true, true, true, true)
-    @homepath = RI::Paths.raw_path(false, false, true, false).first
+    @all_dirs = RDoc::RI::Paths.path(true, true, true, true)
+    @homepath = RDoc::RI::Paths.raw_path(false, false, true, false).first
     @homepath = @homepath.sub(/\.rdoc/, '.ri')
-    @sys_dirs = RI::Paths.raw_path(true, false, false, false)
+    @sys_dirs = RDoc::RI::Paths.raw_path(true, false, false, false)
 
     FileUtils.mkdir_p cache_file_path unless File.directory? cache_file_path
 
     @class_cache = nil
 
-    @display = DefaultDisplay.new(options[:formatter], options[:width],
-                                  options[:use_stdout])
+    @display = RDoc::RI::DefaultDisplay.new(options[:formatter],
+                                            options[:width],
+                                            options[:use_stdout])
   end
 
   def class_cache
@@ -371,7 +372,7 @@ Options may also be set in the 'RI' environment variable.
       end
     end
   end
-  
+
   def select_classes(pattern = nil)
     classes = class_cache.keys.sort
     classes = classes.grep pattern if pattern
@@ -384,17 +385,6 @@ Options may also be set in the 'RI' environment variable.
     end
 
     cache
-  end
-
-  # Couldn't find documentation in +path+, so tell the user what to do
-
-  def report_missing_documentation(path)
-    STDERR.puts "No ri documentation found in:"
-    path.each do |d|
-      STDERR.puts "     #{d}"
-    end
-    STDERR.puts "\nWas rdoc run to create documentation?\n\n"
-    RDoc::usage("Installing Documentation")
   end
 
 end

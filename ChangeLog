@@ -1,3 +1,7 @@
+Tue Jan  8 19:17:29 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/*: Clean up namespacing of RI's classes.
+
 Tue Jan  8 18:05:35 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* bin/ri, lib/rdoc/ri/*: Replace with Ryan Davis' cached ri.

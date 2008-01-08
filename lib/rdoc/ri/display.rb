@@ -1,53 +1,41 @@
-# This is a kind of 'flag' module. If you want to write your
-# own 'ri' display module (perhaps because you'r writing
-# an IDE or somesuch beast), you simply write a class
-# which implements the various 'display' methods in 'DefaultDisplay',
-# and include the 'RiDisplay' module in that class.
+require 'rdoc/ri'
+
+##
+# This is a kind of 'flag' module. If you want to write your own 'ri' display
+# module (perhaps because you'r writing an IDE or somesuch beast), you simply
+# write a class which implements the various 'display' methods in
+# 'DefaultDisplay', and include the 'RiDisplay' module in that class.
 #
 # To access your class from the command line, you can do
 #
 #    ruby -r <your source file>  ../ri ....
-#
-# If folks _really_ want to do this from the command line,
-# I'll build an option in
 
-module RiDisplay
+module RDoc::RI::Display
+
   @@display_class = nil
 
-  def RiDisplay.append_features(display_class)
+  def self.append_features(display_class)
     @@display_class = display_class
   end
 
-  def RiDisplay.new(*args)
+  def self.new(*args)
     @@display_class.new(*args)
   end
+
 end
 
-######################################################################
-#
-# A paging display module. Uses the ri_formatter class to do the
-# actual presentation
-#
+##
+# A paging display module. Uses the RDoc::RI::Formatter class to do the actual
+# presentation
 
-class DefaultDisplay
+class RDoc::RI::DefaultDisplay
 
-  include RiDisplay
+  include RDoc::RI::Display
 
   def initialize(formatter, width, use_stdout)
     @use_stdout = use_stdout
     @formatter = formatter.new width, "     "
   end
-
-  ######################################################################
-
-  def display_usage
-    page do
-      RI::Options::OptionList.usage(short_form=true)
-    end
-  end
-
-
-  ######################################################################
 
   def display_method_info(method)
     page do
@@ -64,8 +52,6 @@ class DefaultDisplay
       end
     end
   end
-
-  ######################################################################
 
   def display_class_info(klass, ri_reader)
     page do
@@ -145,8 +131,7 @@ class DefaultDisplay
     end
   end
 
-  ######################################################################
-
+  ##
   # Display a list of method names
 
   def display_method_list(methods)
@@ -157,8 +142,6 @@ class DefaultDisplay
     end
   end
 
-  ######################################################################
-
   def display_class_list(namespaces)
     page do
       puts "More than one class or module matched your request. You can refine"
@@ -166,8 +149,6 @@ class DefaultDisplay
       @formatter.wrap(namespaces.map {|m| m.full_name}.join(", "))
     end
   end
-
-  ######################################################################
 
   def list_known_classes(classes)
     if classes.empty?
@@ -181,8 +162,6 @@ class DefaultDisplay
     end
   end
 
-  ######################################################################
-
   def list_known_names(names)
     if names.empty?
       warn_no_database
@@ -193,11 +172,7 @@ class DefaultDisplay
     end
   end
 
-  ######################################################################
-
   private
-
-  ######################################################################
 
   def page
     if pager = setup_pager then
@@ -215,8 +190,6 @@ class DefaultDisplay
   rescue Errno::EPIPE
   end
 
-  ######################################################################
-
   def setup_pager
     unless @use_stdout then
       for pager in [ ENV['PAGER'], "less", "more", 'pager' ].compact.uniq
@@ -226,8 +199,6 @@ class DefaultDisplay
       nil
     end
   end
-
-  ######################################################################
 
   def display_params(method)
     params = method.params
@@ -248,7 +219,6 @@ class DefaultDisplay
       @formatter.wrap("Extension from #{method.source_path}")
     end
   end
-  ######################################################################
 
   def display_flow(flow)
     if !flow || flow.empty?
@@ -257,8 +227,6 @@ class DefaultDisplay
       @formatter.display_flow(flow)
     end
   end
-
-  ######################################################################
 
   def warn_no_database
     puts "No ri data found"
@@ -272,4 +240,5 @@ class DefaultDisplay
     puts "If you installed Ruby from a packaging system, then you may need to"
     puts "install an additional package, or ask the packager to enable ri generation."
   end
-end  # class RiDisplay
+end
+

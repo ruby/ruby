@@ -36,7 +36,7 @@ module RDoc
   ##
   # Exception thrown by any rdoc error.
 
-  class Error < StandardError; end
+  class Error < RuntimeError; end
 
   RDocError = Error # :nodoc:
 

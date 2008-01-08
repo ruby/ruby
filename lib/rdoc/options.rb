@@ -1,7 +1,7 @@
 # We handle the parsing of options, and subsequently as a singleton
 # object to be queried for option values
 
-require "rdoc/ri/ri_paths"
+require "rdoc/ri/paths"
 require 'optparse'
 
 class RDoc::Options
@@ -423,7 +423,7 @@ Usage: #{opt.program_name} [options] [names...]
              "subsequent --op parameter, so no special",
              "privileges are needed.") do |value|
         @generator_name = "ri"
-        @op_dir = RI::Paths::HOMEDIR
+        @op_dir = RDoc::RI::Paths::HOMEDIR
         setup_generator
       end
 
@@ -435,7 +435,7 @@ Usage: #{opt.program_name} [options] [names...]
              "making them accessible to others, so",
              "special privileges are needed.") do |value|
         @generator_name = "ri"
-        @op_dir = RI::Paths::SITEDIR
+        @op_dir = RDoc::RI::Paths::SITEDIR
         setup_generator
       end
 
@@ -449,7 +449,7 @@ Usage: #{opt.program_name} [options] [names...]
              "option is intended to be used during Ruby",
              "installation.") do |value|
         @generator_name = "ri"
-        @op_dir = RI::Paths::SYSDIR
+        @op_dir = RDoc::RI::Paths::SYSDIR
         setup_generator
       end
 

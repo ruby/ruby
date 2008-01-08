@@ -1,10 +1,10 @@
 require 'rdoc/generators'
 require 'rdoc/markup/simple_markup/to_flow'
 
-require 'rdoc/ri/ri_cache'
-require 'rdoc/ri/ri_reader'
-require 'rdoc/ri/ri_writer'
-require 'rdoc/ri/ri_descriptions'
+require 'rdoc/ri/cache'
+require 'rdoc/ri/reader'
+require 'rdoc/ri/writer'
+require 'rdoc/ri/descriptions'
 
 class RDoc::Generators::RIGenerator
 
@@ -25,7 +25,7 @@ class RDoc::Generators::RIGenerator
 
   def initialize(options) #:not-new:
     @options   = options
-    @ri_writer = RI::RiWriter.new(".")
+    @ri_writer = RDoc::RI::Writer.new "."
     @markup    = SM::SimpleMarkup.new
     @to_flow   = SM::ToFlow.new
 
@@ -53,34 +53,35 @@ class RDoc::Generators::RIGenerator
 
   def generate_class_info(cls)
     if cls === RDoc::NormalModule
-      cls_desc = RI::ModuleDescription.new
+      cls_desc = RDoc::RI::ModuleDescription.new
     else
-      cls_desc = RI::ClassDescription.new
+      cls_desc = RDoc::RI::ClassDescription.new
       cls_desc.superclass  = cls.superclass
     end
     cls_desc.name        = cls.name
     cls_desc.full_name   = cls.full_name
     cls_desc.comment     = markup(cls.comment)
 
-    cls_desc.attributes =cls.attributes.sort.map do |a|
-      RI::Attribute.new(a.name, a.rw, markup(a.comment))
+    cls_desc.attributes = cls.attributes.sort.map do |a|
+      RDoc::RI::Attribute.new(a.name, a.rw, markup(a.comment))
     end
 
     cls_desc.constants = cls.constants.map do |c|
-      RI::Constant.new(c.name, c.value, markup(c.comment))
+      RDoc::RI::Constant.new(c.name, c.value, markup(c.comment))
     end
 
     cls_desc.includes = cls.includes.map do |i|
-      RI::IncludedModule.new(i.name)
+      RDoc::RI::IncludedModule.new(i.name)
     end
 
     class_methods, instance_methods = method_list(cls)
 
     cls_desc.class_methods = class_methods.map do |m|
-      RI::MethodSummary.new(m.name)
+      RDoc::RI::MethodSummary.new(m.name)
     end
+
     cls_desc.instance_methods = instance_methods.map do |m|
-      RI::MethodSummary.new(m.name)
+      RDoc::RI::MethodSummary.new(m.name)
     end
 
     update_or_replace(cls_desc)
@@ -94,9 +95,8 @@ class RDoc::Generators::RIGenerator
     end
   end
 
-
   def generate_method_info(cls_desc, method)
-    meth_desc = RI::MethodDescription.new
+    meth_desc = RDoc::RI::MethodDescription.new
     meth_desc.name = method.name
     meth_desc.full_name = cls_desc.full_name
     if method.singleton
@@ -113,7 +113,7 @@ class RDoc::Generators::RIGenerator
     meth_desc.block_params = method.block_params
 
     meth_desc.aliases = method.aliases.map do |a|
-      RI::AliasName.new(a.name)
+      RDoc::RI::AliasName.new(a.name)
     end
 
     @ri_writer.add_method(cls_desc, meth_desc)
@@ -190,7 +190,7 @@ class RDoc::Generators::RIGenerator
     old_cls = nil
 
     if @options.merge
-      rdr = RI::RiReader.new(RI::RiCache.new(@options.op_dir))
+      rdr = RDoc::RI::Reader.new RDoc::RI::Cache.new(@options.op_dir)
 
       namespace = rdr.top_level_namespace
       namespace = rdr.lookup_namespace_in(cls_desc.name, namespace)
