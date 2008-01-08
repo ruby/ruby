@@ -8,6 +8,16 @@ NULL = nul
 MFLAGS=-l
 !endif
 
+!ifndef CROSS_COMPILING
+CROSS_COMPILING = 0
+!endif
+!ifndef LARGEFILE_SUPPORT
+LARGEFILE_SUPPORT = 1
+!endif
+!ifndef win_srcdir
+win_srcdir = $(srcdir)/win32
+!endif
+
 #### Start of system configuration section. ####
 
 ## variables may be overridden by $(compile_dir)/Makefile
@@ -86,8 +96,13 @@ OS = mswin32
 !error RT not defined.  Retry from configure pass.
 !endif
 
+arch = $(ARCH)-$(OS)
+
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)
+!endif
+!ifndef RUBY_PLATFORM
+RUBY_PLATFORM = $(arch)
 !endif
 
 !if !defined(prefix)
@@ -119,8 +134,11 @@ RDOCTARGET = install-nodoc
 !endif
 
 OUTFLAG       = -Fe
+!if !defined(RUNTIMEFLAG)
+RUNTIMEFLAG   = -MD
+!endif
 !if !defined(CFLAGS)
-CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
+CFLAGS = $(RUNTIMEFLAG) $(DEBUGFLAGS) $(WARNFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
 !if !defined(LDFLAGS)
 LDFLAGS = -link -incremental:no -debug -opt:ref -opt:icf
@@ -134,6 +152,7 @@ RFLAGS = -r
 !if !defined(EXTLIBS)
 EXTLIBS =
 !endif
+!if !defined(LIBS)
 LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib
 !if !defined(USE_WINSOCK2)
 LIBS = $(LIBS) wsock32.lib
@@ -141,20 +160,24 @@ LIBS = $(LIBS) wsock32.lib
 LIBS = $(LIBS) ws2_32.lib
 !endif
 LIBS = $(LIBS) $(EXTLIBS)
+!endif
+!if !defined(MISSING)
 MISSING = acosh.obj crypt.obj erf.obj win32.obj
+!endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
 CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing
+XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing $(XCFLAGS)
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
-CPPFLAGS = $(CPPFLAGS) -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
+DEFS = -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
 MANIFESTTOOL = mt -nologo
 LDSHARED_1 = $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
 LDSHARED_2 = @$(RM) $(@:/=\).manifest
 !endif
+CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
@@ -163,14 +186,28 @@ LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -def:$(RUBYDEF)
 
 EXEEXT = .exe
+!if !defined(PROGRAM)
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
+!endif
+!if !defined(WPROGRAM) && defined(RUBYW_INSTALL_NAME)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
+!endif
 RUBYDEF = $(RUBY_SO_NAME).def
-MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib $(MINIRUBYOPT)
-RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
+!if $(CROSS_COMPILING)
+MINIRUBY = $(RUBY) -I$(MAKEDIR) -rfake
+RUNRUBY = $(MINIRUBY)
+!else
+MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib
+RUNRUBY = .\ruby$(EXEEXT)
+!endif
+MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
+RUNRUBY = $(RUNRUBY) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
 
 !if !defined(STACK)
 STACK = 0x2000000
+!if defined(STACK_COMMIT)
+STACK = $(STACK),$(STACK_COMMIT)
+!endif
 !endif
 ORGLIBPATH = $(LIB)
 
@@ -181,25 +218,60 @@ LIBRUBY_SO    = $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 
+!if $(CROSS_COMPILING)
+PREP          = fake.rb
+!else
 PREP          = miniruby$(EXEEXT)
+!endif
 
 !if !defined(EXTSTATIC)
 EXTSTATIC     = 
 !endif
 
 OBJEXT = obj
+ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
 
-WINMAINOBJ    = winmain.$(OBJEXT)
-MINIOBJS      = dmydln.$(OBJEXT)
+!if [find "revision.h" $(srcdir:/=\)\version.h > nul 2> nul] == 0
+REVISION_H    = revision.h
+REVISION_UP   = revision-up
+!else
+REVISION_H    = version.h
+REVISION_UP   =
+!endif
 
-all: $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
+!if !defined(WINMAINOBJ)
+WINMAINOBJ    = winmain.$(OBJEXT)
+!endif
+MINIOBJS      = dmydln.$(OBJEXT)
+LIBOBJS       = acosh.obj crypt.obj erf.obj strlcpy.obj strlcat.obj win32.obj $(LIBOBJS)
+
+!ifndef COMMON_LIBS
+COMMON_LIBS  = m
+!endif
+!ifndef COMMON_MACROS
+COMMON_MACROS = WIN32_LEAN_AND_MEAN WIN32
+!endif
+!ifndef COMMON_HEADERS
+!if !defined(USE_WINSOCK2)
+COMMON_HEADERS = winsock.h
+!else
+COMMON_HEADERS = winsock2.h
+!endif
+COMMON_HEADERS = $(COMMON_HEADERS) windows.h
+!endif
+
+all: $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
+
+$(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak
+	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
+	@echo $(MKFILES) should be updated, re-run $(MAKE).
 
 CONFIG_H = ./.config.h.time
 
@@ -207,11 +279,17 @@ config: config.status
 
 config.status: $(CONFIG_H)
 
-$(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
+BANG = !
+
+!if exist(config.h)
+!include config.h
+!endif
+
+$(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 	@echo Creating config.h
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat config.h <<
 #if _MSC_VER != $(MSC_VER)
-#error MSC version unmatch
+#error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif
 !if defined(USE_WINSOCK2)
 #define USE_WINSOCK2 1
@@ -252,7 +330,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 !endif
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define HAVE_DECL_SYS_NERR 1
+!if !defined(WIN32_WCE)
 #define HAVE_LIMITS_H 1
+!endif
 #define HAVE_FCNTL_H 1
 #define HAVE_SYS_UTIME_H 1
 #define HAVE_FLOAT_H 1
@@ -263,7 +343,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define HAVE_ST_RDEV 1
 #define GETGROUPS_T int
 #define RETSIGTYPE void
+!if !defined(WIN32_WCE)
 #define HAVE_ALLOCA 1
+!endif
 #define HAVE_DUP2 1
 #define HAVE_MEMCMP 1
 #define HAVE_MEMMOVE 1
@@ -292,7 +374,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define HAVE_TIMES 1
 #define HAVE_FCNTL 1
 #define HAVE_LINK 1
+!if !defined(WIN32_WCE)
 #define HAVE__SETJMP 1
+!endif
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
 #define HAVE_MKTIME 1
@@ -307,20 +391,51 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define FILE_READPTR _ptr
 #define inline __inline
 #define NEED_IO_SEEK_BETWEEN_RW 1
+!if "$(PROCESSOR_ARCHITECTURE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define STACK_GROW_DIRECTION -1
+!endif
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
 #define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR)"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
 #define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)"
-#define RUBY_PLATFORM "$(ARCH)-$(OS)"
+#define RUBY_PLATFORM "$(arch)"
 #define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
+#define LIBRUBY_SO "$(LIBRUBY_SO)"
+#if 0
+$(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(OS)"!="$$(ARCH)-$$(OS)"
+config.h: nul
+$(BANG)endif
+#endif
+!if defined(WIN32_WCE)
+#define GC_MALLOC_LIMIT 4000000
+#define stricmp _stricmp
+#define fopen   wce_fopen
+#define open	   _open
+#define read	   _read
+#define write	   _write
+#define lseek      _lseek
+
+#if _WIN32_WCE < 300
+  #define isascii(c) ( (c>=0x00&&c<=0x7f)?1:0 )
+  #define isspace(c) ( ((c>=0x09&&c<=0x0d)||c==0x20)?1:0 )
+  #define isdigit(c) ( (c>=0x30&&c<=0x39)?1:0 )
+  #define isupper(c) ( (c>='A'&&c<='Z')?1:0 )
+  #define isalpha(c) ( ((c>='A'&&c<='Z')||(c>='a'&&c<='z'))?1:0 )
+  #define isprint(c) ( (c>=0x20&&c<=0x7e)?1:0 )
+  #define isalnum(c) ( (isalpha(c)||isdigit(c))?1:0 )
+  #define iscntrl(c) ( ((c>=0x00&&c<=0x1f)||c==0x7f)?1:0 )
+  #define islower(c) ( (c>='a'&&c<='z')?1:0 )
+  #define ispunct(c) ( !(isalnum(c)||isspace(c))?1:0 )
+  #define isxdigit(c) ( ((c>=0&&c<=9)||(c>='A'&&c<='F')||(c>='a'&&c<='f'))?1:0 )
+#endif
+!endif
 <<
 	@exit > $(@:/=\)
 
-config.status: $(MKFILES) $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
+config.status: $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(srcdir)/common.mk
 	@echo Creating $@
 	@exit <<$@
 # Generated automatically by Makefile.sub.
@@ -372,14 +487,14 @@ s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,MFLAGS = -$$(MAKEFLAGS),;t t
 s,@CP@,copy > nul,;t t
-s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj,;t t
+s,@LIBOBJS@,$(LIBOBJS),;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
 s,@EXEEXT@,.exe,;t t
 s,@OBJEXT@,$(OBJEXT),;t t
 s,@XCFLAGS@,$(XCFLAGS),;t t
 s,@XLDFLAGS@,$(XLDFLAGS),;t t
-s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH) -def:$$(DEFFILE) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb,;t t
+s,@DLDFLAGS@,$(DLDFLAGS) $$(LIBPATH),;t t
 s,@ARCH_FLAG@,$(ARCH_FLAG),;t t
 s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
@@ -417,23 +532,19 @@ s,@CPPOUTFILE@,-P,;t t
 s,@LIBPATHFLAG@, -libpath:"%s",;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
-s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS),;t t
+s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
 !if $(MSC_VER) >= 1400
 s,@LINK_SO@,$(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
 s,@LINK_SO@,@$$(RM) $$(@:/=\).manifest,;t t
 !endif
 s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) -c -Tp$$(<:\=/),;t t
-s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(hdrdir)}.%s{}.%s: .%s.%s:,;t t
-s,@RULE_SUBST@,{.;$$(srcdir);$$(topdir);$$(hdrdir)}%s,;t t
+s,@COMPILE_RULES@,{$$(hdrdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(srcdir)}.%s{}.%s: .%s.%s:,;t t
+s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
-s,@COMMON_LIBS@,m,;t t
-s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN WIN32,;t t
-!if defined(USE_WINSOCK2)
-s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
-!else
-s,@COMMON_HEADERS@,windows.h winsock.h,;t t
-!endif
+s,@COMMON_LIBS@,$(COMMON_LIBS),;t t
+s,@COMMON_MACROS@,$(COMMON_MACROS),;t t
+s,@COMMON_HEADERS@,$(COMMON_HEADERS),;t t
 s,@DISTCLEANFILES@,vc*.pdb,;t t
 s,@EXPORT_PREFIX@, ,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
@@ -447,22 +558,27 @@ s,@top_srcdir@,$(srcdir),;t t
 
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
+		@$(RM) $@
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 
+!if "$(PROGRAM)" != ""
 $(PROGRAM):	$(RUBY_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
+!endif
 
+!if "$(WPROGRAM)" != ""
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			$(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 		$(LDSHARED_1)
 		$(LDSHARED_2)
+!endif
 
 $(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 		$(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
@@ -482,7 +598,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
-{$(srcdir)/win32}.def.lib:
+{$(win_srcdir)}.def.lib:
 		$(AR) $(ARFLAGS)$@ -def:$<
 
 clean-local::
@@ -490,7 +606,7 @@ clean-local::
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 
 distclean-local::
-		@$(RM) ext\config.cache $(RBCONFIG:/=\)
+		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
@@ -499,11 +615,33 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 			-ruby_name=$(RUBY_INSTALL_NAME) \
 			-rubyw_name=$(RUBYW_INSTALL_NAME) \
 			-so_name=$(RUBY_SO_NAME) \
-			. $(icondirs) $(srcdir)/win32
+!if defined(WIN32_WCE)
+			-wce_ver=$(SUBSYSVERSION) \
+!endif
+			. $(icondirs) $(win_srcdir)
+
+fake.rb: $(MKFILES)
+	@echo Creating <<$@
+class Object
+  CROSS_COMPILING = RUBY_PLATFORM
+  remove_const :RUBY_PLATFORM
+  remove_const :RUBY_VERSION
+  RUBY_PLATFORM = "$(ARCH)"
+  RUBY_VERSION = "$(MAJOR).$(MINOR).$(TEENY)"
+end
+class File
+  remove_const :ALT_SEPARATOR
+  ALT_SEPARATOR = "\\"
+end
+<<KEEP
 
 {$(srcdir)/missing}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.obj:
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
+{$(win_srcdir)}.c.obj:
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
+{$(win_srcdir)/sys}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
@@ -520,7 +658,7 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 
 $(OBJS): {$(srcdir)}win32/win32.h
 
-dir.$(OBJEXT): {$(srcdir)}win32/dir.h
+dir.$(OBJEXT) win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fo$@ -c ext/extinit.c
