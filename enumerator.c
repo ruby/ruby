@@ -365,9 +365,9 @@ enumerator_with_index(VALUE obj)
 }
 
 static VALUE
-next_ii(VALUE i, VALUE obj)
+next_ii(VALUE i, VALUE obj, int argc, VALUE *argv)
 {
-    rb_fiber_yield(1, &i);
+    rb_fiber_yield(argc, argv);
     return Qnil;
 }
 

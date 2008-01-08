@@ -1347,6 +1347,18 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 
 
 static VALUE
+call_next(VALUE *v)
+{
+    return v[0] = rb_funcall(v[1], id_next, 0, 0);
+}
+
+static VALUE
+call_stop(VALUE *v)
+{
+    return v[0] = Qundef;
+}
+
+static VALUE
 zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
 {
     volatile VALUE result = memo->u1.value;
@@ -1357,8 +1369,20 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
     tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
     rb_ary_store(tmp, 0, enum_values_pack(argc, argv));
     for (i=0; i<RARRAY_LEN(args); i++) {
-	VALUE v = rb_funcall(RARRAY_PTR(args)[i], id_next, 0, 0);
-	rb_ary_push(tmp, v);
+	if (NIL_P(RARRAY_PTR(args)[i])) {
+	    rb_ary_push(tmp, Qnil);
+	}
+	else {
+	    VALUE v[2];
+
+	    v[1] = RARRAY_PTR(args)[i];
+	    rb_rescue2(call_next, (VALUE)v, call_stop, (VALUE)v, rb_eStopIteration, 0);
+	    if (v[0] == Qundef) {
+		RARRAY_PTR(args)[i] = Qnil;
+		v[0] = Qnil;
+	    }
+	    rb_ary_push(tmp, v[0]);
+	}
     }
     if (NIL_P(result)) {
 	rb_yield(tmp);
@@ -1367,12 +1391,6 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
 	rb_ary_push(result, tmp);
     }
     return Qnil;
-}
-
-static VALUE
-zip_b(NODE *memo)
-{
-    return rb_block_call(memo->u3.value, id_each, 0, 0, zip_i, (VALUE)memo);
 }
 
 /*
@@ -1401,16 +1419,19 @@ static VALUE
 enum_zip(int argc, VALUE *argv, VALUE obj)
 {
     int i;
-    VALUE result;
+    ID conv;
     NODE *memo;
+    VALUE result = Qnil;
 
+    conv = rb_intern("to_enum");
     for (i=0; i<argc; i++) {
-	argv[i] = rb_funcall(argv[i], rb_intern("to_enum"), 1, ID2SYM(id_each));
+	argv[i] = rb_funcall(argv[i], conv, 1, ID2SYM(id_each));
     }
-    RETURN_ENUMERATOR(obj, argc, argv);
-    result = rb_block_given_p() ? Qnil : rb_ary_new();
-    memo = rb_node_newnode(NODE_MEMO, result, rb_ary_new4(argc, argv), obj);
-    rb_rescue2(zip_b, (VALUE)memo, 0, 0, rb_eStopIteration, (VALUE)0);
+    if (!rb_block_given_p()) {
+	result = rb_ary_new();
+    }
+    memo = rb_node_newnode(NODE_MEMO, result, rb_ary_new4(argc, argv), 0);
+    rb_block_call(obj, id_each, 0, 0, zip_i, (VALUE)memo);
 
     return result;
 }

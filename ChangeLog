@@ -2,6 +2,18 @@ Tue Jan  8 18:05:35 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* bin/ri, lib/rdoc/ri/*: Replace with Ryan Davis' cached ri.
 
+Tue Jan  8 17:32:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (enum_zip): honor length of the receiver, not the
+	  shortest length.  [ruby-core:14738]
+
+	* enum.c (enum_zip): returns array not enumerator for no block
+	  form.  [ruby-core:14738]
+
+	* enumerator.c (next_ii): do not ignore multiple values yielded.
+
+	* array.c (rb_ary_zip): faster version without creating generators.
+
 Tue Jan  8 15:47:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enc/utf{16,32}_{be,le}.c: use &OnigEncodingName(*) instead of
