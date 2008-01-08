@@ -1,3 +1,8 @@
+Tue Jan  8 19:48:15 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/driver.rb: Speed up Marshal.load. Fix bug with nested
+	classes' methods.
+
 Tue Jan  8 19:17:29 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/*: Clean up namespacing of RI's classes.

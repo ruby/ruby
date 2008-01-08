@@ -267,13 +267,13 @@ Options may also be set in the 'RI' environment variable.
     if File.exist? path and
        File.mtime(path) >= File.mtime(class_cache_file_path) then
       File.open path, 'rb' do |fp|
-        Marshal.load fp
+        Marshal.load fp.read
       end
     else
       class_cache = nil
 
       File.open class_cache_file_path, 'rb' do |fp|
-        class_cache = Marshal.load fp
+        class_cache = Marshal.load fp.read
       end
 
       klass = class_cache[klassname]
@@ -354,7 +354,12 @@ Options may also be set in the 'RI' environment variable.
           if class_cache.key? name then
             display_class name
           else
-            klass, meth = name.split(/::|\#|\./)
+            meth = nil
+
+            parts = name.split(/::|\#|\./)
+            meth = parts.pop unless parts.last =~ /^[A-Z]/
+            klass = parts.join '::'
+
             cache = load_cache_for klass
             # HACK Does not support F.n
             abort "Nothing known about #{name}" unless cache
