@@ -29,6 +29,8 @@
 
 #include "regenc.h"
 
+OnigEncodingDeclare(UTF16_BE);
+
 #define UTF16_IS_SURROGATE_FIRST(c)    (c >= 0xd8 && c <= 0xdb)
 #define UTF16_IS_SURROGATE_SECOND(c)   (c >= 0xdc && c <= 0xdf)
 
@@ -153,7 +155,7 @@ utf16be_mbc_case_fold(OnigCaseFoldType flag,
     return 2;
   }
   else
-    return onigenc_unicode_mbc_case_fold(ONIG_ENCODING_UTF16_BE, flag,
+    return onigenc_unicode_mbc_case_fold(&OnigEncodingName(UTF16_BE), flag,
 					 pp, end, fold);
 }
 
@@ -213,7 +215,7 @@ utf16be_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 				   OnigCaseFoldCodeItem items[],
 				   struct OnigEncodingTypeST* enc ARG_UNUSED)
 {
-  return onigenc_unicode_get_case_fold_codes_by_str(ONIG_ENCODING_UTF16_BE,
+  return onigenc_unicode_get_case_fold_codes_by_str(&OnigEncodingName(UTF16_BE),
 						    flag, p, end, items);
 }
 
