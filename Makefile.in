@@ -148,7 +148,7 @@ fake.rb:	Makefile
 		end; \
 		' > $@
 
-Makefile:	$(srcdir)/Makefile.in
+Makefile:	$(srcdir)/Makefile.in $(srcdir)/enc/Makefile.in
 
 $(MKFILES): config.status $(srcdir)/common.mk
 		MAKE=$(MAKE) $(SHELL) ./config.status
@@ -160,7 +160,7 @@ $(MKFILES): config.status $(srcdir)/common.mk
 		$(MAKE) -f conftest.mk | grep '^AUTO_REMAKE$$' >/dev/null 2>&1 || \
 		{ echo "Makefile updated, restart."; exit 1; }
 
-config.status:	$(srcdir)/configure
+config.status:	$(srcdir)/configure $(srcdir)/enc/Makefile.in
 		MINIRUBY="$(MINIRUBY)" $(SHELL) ./config.status --recheck
 
 $(srcdir)/configure: $(srcdir)/configure.in

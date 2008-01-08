@@ -1,3 +1,8 @@
+Tue Jan  8 22:33:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c, Makefile.in, include/ruby/oniguruma.h,
+	  enc/Makefile.in: fix rules for UTF-{16,32}{BE,LE}.
+
 Tue Jan  8 20:02:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win{32,ce}/Makefile.sub: merged.
