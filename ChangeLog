@@ -1,3 +1,7 @@
+Tue Jan  8 23:55:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_init): UTF-{16,32}{BE,LE} are not builtin.
+
 Tue Jan  8 22:33:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c, Makefile.in, include/ruby/oniguruma.h,
