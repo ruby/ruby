@@ -23,7 +23,7 @@ module RI
 
     #:stopdoc:
     require 'rbconfig'
-    
+
     DOC_DIR  = "doc/rdoc"
 
     version = RbConfig::CONFIG['ruby_version']
@@ -42,7 +42,7 @@ module RI
     # This is the search path for 'ri'
     PATH = [ SYSDIR, SITEDIR, HOMEDIR ].find_all {|p| p && File.directory?(p)}
 
-    require 'rubygems'
+    require 'rubygems' unless defined?(Gem) and Gem::Enable
 
     # HACK dup'd from Gem.latest_partials and friends
     all_paths = []

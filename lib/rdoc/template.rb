@@ -48,9 +48,8 @@ class RDoc::TemplatePage
   # Process the template using +values+, writing the result to +io+.
 
   def write_html_on(io, values)
-    template_include = ""
-
     b = binding
+    template_include = ""
 
     @templates.reverse_each do |template|
       template_include = ERB.new(template).result b

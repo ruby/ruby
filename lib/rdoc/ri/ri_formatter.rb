@@ -2,29 +2,28 @@ module RI
   class TextFormatter
 
     attr_reader :indent
-    
-    def initialize(options, indent)
-      @options = options
-      @width   = options.width
+
+    def initialize(width, indent)
+      @width   = width
       @indent  = indent
     end
-    
-    
+
+
     ######################################################################
-    
+
     def draw_line(label=nil)
       len = @width
       len -= (label.size+1) if label
       print "-"*len
       if label
         print(" ")
-        bold_print(label) 
+        bold_print(label)
       end
       puts
     end
-    
+
     ######################################################################
-    
+
     def wrap(txt,  prefix=@indent, linelen=@width)
       return unless txt && !txt.empty?
       work = conv_markup(txt)
@@ -51,7 +50,7 @@ module RI
     def blankline
       puts
     end
-    
+
     ######################################################################
 
     # called when we want to ensure a nbew 'wrap' starts on a newline
@@ -60,7 +59,7 @@ module RI
 
     def break_to_newline
     end
-    
+
     ######################################################################
 
     def bold_print(txt)
@@ -82,7 +81,7 @@ module RI
           gsub(/&lt;/, '<').
           gsub(/&quot;/, '"').
           gsub(/&amp;/, '&')
-          
+
     end
 
     # convert markup into display form
@@ -99,7 +98,7 @@ module RI
     def display_list(list)
       case list.type
 
-      when SM::ListBase::BULLET 
+      when SM::ListBase::BULLET
         prefixer = proc { |ignored| @indent + "*   " }
 
       when SM::ListBase::NUMBER,
@@ -116,7 +115,7 @@ module RI
           start = start.succ
           res
         end
-        
+
       when SM::ListBase::LABELED
         prefixer = proc do |li|
           li.label
@@ -156,7 +155,7 @@ module RI
       when SM::Flow::P, SM::Flow::LI
         wrap(conv_html(item.body), prefix)
         blankline
-        
+
       when SM::Flow::LIST
         display_list(item)
 
@@ -194,7 +193,7 @@ module RI
         puts text.upcase
         puts ul
 #        puts
-        
+
       when 2
         ul = "-" * text.length
         puts
@@ -215,7 +214,7 @@ module RI
 
     def strip_attributes(txt)
       tokens = txt.split(%r{(</?(?:b|code|em|i|tt)>)})
-      text = [] 
+      text = []
       attributes = 0
       tokens.each do |tok|
         case tok
@@ -230,16 +229,16 @@ module RI
 
 
   end
-  
-  
+
+
   ######################################################################
   # Handle text with attributes. We're a base class: there are
   # different presentation classes (one, for example, uses overstrikes
   # to handle bold and underlining, while another using ANSI escape
   # sequences
-  
+
   class AttributeFormatter < TextFormatter
-    
+
     BOLD      = 1
     ITALIC    = 2
     CODE      = 4
@@ -263,7 +262,7 @@ module RI
       end
     end
 
-    
+
     class AttributeString
       attr_reader :txt
 
@@ -363,7 +362,7 @@ module RI
 
 
   ##################################################
-  
+
   # This formatter generates overstrike-style formatting, which
   # works with pagers such as man and less.
 
@@ -395,7 +394,7 @@ module RI
   end
 
   ##################################################
-  
+
   # This formatter uses ANSI escape sequences
   # to colorize stuff
   # works with pages such as man and less.
@@ -441,7 +440,7 @@ module RI
       print strip_attributes(text)
       puts heading[1]
     end
-    
+
     private
 
     ATTR_MAP = {
@@ -462,7 +461,7 @@ module RI
   end
 
   ##################################################
-  
+
   # This formatter uses HTML.
 
   class HtmlFormatter < AttributeFormatter
@@ -508,13 +507,13 @@ module RI
       tag("h#{level}") { text }
       puts
     end
-    
+
     ######################################################################
 
     def display_list(list)
 
       case list.type
-      when SM::ListBase::BULLET 
+      when SM::ListBase::BULLET
         list_type = "ul"
         prefixer = proc { |ignored| "<li>" }
 
@@ -523,7 +522,7 @@ module RI
       SM::ListBase::LOWERALPHA
         list_type = "ol"
         prefixer = proc { |ignored| "<li>" }
-        
+
       when SM::ListBase::LABELED
         list_type = "dl"
         prefixer = proc do |li|
@@ -554,7 +553,9 @@ module RI
 
     def display_verbatim_flow_item(item, prefix=@indent)
         print("<pre>")
-        puts item.body
+        item.body.split(/\n/).each do |line|
+          puts conv_html(line)
+        end
         puts("</pre>")
     end
 
@@ -602,7 +603,7 @@ module RI
   end
 
   ##################################################
-  
+
   # This formatter reduces extra lines for a simpler output.
   # It improves way output looks for tools like IRC bots.
 
@@ -621,7 +622,7 @@ module RI
 
     def draw_line(label=nil)
       unless label.nil? then
-        bold_print(label) 
+        bold_print(label)
         puts
       end
     end
@@ -656,7 +657,7 @@ module RI
       "plain"  => TextFormatter,
       "simple" => SimpleFormatter,
     }
-      
+
     def TextFormatter.list
       FORMATTERS.keys.sort.join(", ")
     end

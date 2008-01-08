@@ -1,3 +1,5 @@
+require 'rdoc'
+
 require 'rdoc/parsers/parse_rb.rb'
 require 'rdoc/parsers/parse_c.rb'
 require 'rdoc/parsers/parse_f95.rb'
@@ -11,21 +13,7 @@ require 'find'
 require 'fileutils'
 require 'time'
 
-##
-# :include: README
-
 module RDoc
-
-  ##
-  # RDoc version you are using
-
-  VERSION = "2.0.0"
-
-  ##
-  # Name of the dotfile that contains the description of files to be processed
-  # in the current directory
-
-  DOT_DOC_FILENAME = ".document"
 
   ##
   # Simple stats collector

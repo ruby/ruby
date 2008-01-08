@@ -1,13 +1,8 @@
-require 'rdoc/ri/ri_util'
-require 'rdoc/ri/ri_formatter'
-require 'rdoc/ri/ri_options'
-
-
 # This is a kind of 'flag' module. If you want to write your
 # own 'ri' display module (perhaps because you'r writing
 # an IDE or somesuch beast), you simply write a class
 # which implements the various 'display' methods in 'DefaultDisplay',
-# and include the 'RiDisplay' module in that class. 
+# and include the 'RiDisplay' module in that class.
 #
 # To access your class from the command line, you can do
 #
@@ -34,18 +29,17 @@ end
 # actual presentation
 #
 
-class  DefaultDisplay
+class DefaultDisplay
 
   include RiDisplay
 
-  def initialize(options)
-    @options = options
-    @formatter = @options.formatter.new(@options, "     ")
-  end    
-  
-  
+  def initialize(formatter, width, use_stdout)
+    @use_stdout = use_stdout
+    @formatter = formatter.new width, "     "
+  end
+
   ######################################################################
-  
+
   def display_usage
     page do
       RI::Options::OptionList.usage(short_form=true)
@@ -54,7 +48,7 @@ class  DefaultDisplay
 
 
   ######################################################################
-  
+
   def display_method_info(method)
     page do
       @formatter.draw_line(method.full_name)
@@ -64,31 +58,31 @@ class  DefaultDisplay
       if method.aliases && !method.aliases.empty?
         @formatter.blankline
         aka = "(also known as "
-        aka << method.aliases.map {|a| a.name }.join(", ") 
+        aka << method.aliases.map {|a| a.name }.join(", ")
         aka << ")"
         @formatter.wrap(aka)
       end
     end
   end
-  
+
   ######################################################################
-  
+
   def display_class_info(klass, ri_reader)
-    page do 
+    page do
       superclass = klass.superclass_string
-      
+
       if superclass
         superclass = " < " + superclass
       else
         superclass = ""
       end
-      
+
       @formatter.draw_line(klass.display_name + ": " +
                            klass.full_name + superclass)
-      
+
       display_flow(klass.comment)
-      @formatter.draw_line 
-    
+      @formatter.draw_line
+
       unless klass.includes.empty?
         @formatter.blankline
         @formatter.display_heading("Includes:", 2, "")
@@ -106,7 +100,7 @@ class  DefaultDisplay
       end
         @formatter.wrap(incs.sort.join(', '))
       end
-      
+
       unless klass.constants.empty?
         @formatter.blankline
         @formatter.display_heading("Constants:", 2, "")
@@ -114,23 +108,35 @@ class  DefaultDisplay
         klass.constants.each { |c| len = c.name.length if c.name.length > len }
         len += 2
         klass.constants.each do |c|
-          @formatter.wrap(c.value, 
+          @formatter.wrap(c.value,
                           @formatter.indent+((c.name+":").ljust(len)))
-        end 
+        end
       end
-      
+
       unless klass.class_methods.empty?
         @formatter.blankline
         @formatter.display_heading("Class methods:", 2, "")
         @formatter.wrap(klass.class_methods.map{|m| m.name}.sort.join(', '))
       end
-      
+
+      unless klass.class_method_extensions.empty?
+        @formatter.blankline
+        @formatter.display_heading("Class Method Extensions:", 2, "")
+        @formatter.wrap(klass.class_method_extensions.map{|m| m.name}.sort.join(', '))
+      end
+
       unless klass.instance_methods.empty?
         @formatter.blankline
         @formatter.display_heading("Instance methods:", 2, "")
         @formatter.wrap(klass.instance_methods.map{|m| m.name}.sort.join(', '))
       end
-      
+
+      unless klass.instance_method_extensions.empty?
+        @formatter.blankline
+        @formatter.display_heading("Instance Method Extensions:", 2, "")
+        @formatter.wrap(klass.instance_method_extensions.map{|m| m.name}.sort.join(', '))
+      end
+
       unless klass.attributes.empty?
         @formatter.blankline
         @formatter.wrap("Attributes:", "")
@@ -138,11 +144,11 @@ class  DefaultDisplay
       end
     end
   end
-  
+
   ######################################################################
-  
+
   # Display a list of method names
-  
+
   def display_method_list(methods)
     page do
       puts "More than one method matched your request. You can refine"
@@ -150,9 +156,9 @@ class  DefaultDisplay
       @formatter.wrap(methods.map {|m| m.full_name} .join(", "))
     end
   end
-  
+
   ######################################################################
-  
+
   def display_class_list(namespaces)
     page do
       puts "More than one class or module matched your request. You can refine"
@@ -160,14 +166,14 @@ class  DefaultDisplay
       @formatter.wrap(namespaces.map {|m| m.full_name}.join(", "))
     end
   end
-  
+
   ######################################################################
 
   def list_known_classes(classes)
     if classes.empty?
       warn_no_database
     else
-      page do 
+      page do
         @formatter.draw_line("Known classes and modules")
         @formatter.blankline
         @formatter.wrap(classes.sort.join(", "))
@@ -181,7 +187,7 @@ class  DefaultDisplay
     if names.empty?
       warn_no_database
     else
-      page do 
+      page do
         names.each {|n| @formatter.raw_print_line(n)}
       end
     end
@@ -194,34 +200,36 @@ class  DefaultDisplay
   ######################################################################
 
   def page
-    return yield unless pager = setup_pager
-    begin
-      save_stdout = STDOUT.clone
-      STDOUT.reopen(pager)
+    if pager = setup_pager then
+      begin
+        orig_stdout = $stdout
+        $stdout = pager
+        yield
+      ensure
+        $stdout = orig_stdout
+        pager.close
+      end
+    else
       yield
-    ensure
-      STDOUT.reopen(save_stdout)
-      save_stdout.close
-      pager.close
     end
+  rescue Errno::EPIPE
   end
 
   ######################################################################
 
   def setup_pager
-    unless @options.use_stdout
+    unless @use_stdout then
       for pager in [ ENV['PAGER'], "less", "more", 'pager' ].compact.uniq
         return IO.popen(pager, "w") rescue nil
       end
-      @options.use_stdout = true
+      @use_stdout = true
       nil
     end
   end
 
   ######################################################################
-  
-  def display_params(method)
 
+  def display_params(method)
     params = method.params
 
     if params[0,1] == "("
@@ -232,13 +240,16 @@ class  DefaultDisplay
       end
     end
     params.split(/\n/).each do |p|
-      @formatter.wrap(p) 
+      @formatter.wrap(p)
       @formatter.break_to_newline
     end
+    if method.source_path then
+      @formatter.blankline
+      @formatter.wrap("Extension from #{method.source_path}")
+    end
   end
-
   ######################################################################
-  
+
   def display_flow(flow)
     if !flow || flow.empty?
       @formatter.wrap("(no description...)")
@@ -248,9 +259,17 @@ class  DefaultDisplay
   end
 
   ######################################################################
-  
+
   def warn_no_database
-    puts "Before using ri, you need to generate documentation"
-    puts "using 'rdoc' with the --ri option"
+    puts "No ri data found"
+    puts
+    puts "If you've installed Ruby yourself, you need to generate documentation using:"
+    puts
+    puts "  make install-doc"
+    puts
+    puts "from the same place you ran `make` to build ruby."
+    puts
+    puts "If you installed Ruby from a packaging system, then you may need to"
+    puts "install an additional package, or ask the packager to enable ri generation."
   end
 end  # class RiDisplay
