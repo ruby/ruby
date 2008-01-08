@@ -1,3 +1,7 @@
+Tue Jan  8 15:03:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (str_gsub): avoid appending empty pre-match substr.
+
 Tue Jan  8 13:05:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_build_from_ary), iseq.c (iseq_load): fix for format change.
