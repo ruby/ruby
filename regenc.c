@@ -125,7 +125,7 @@ onigenc_strlen_null(OnigEncoding enc, const UChar* s)
 {
   int n = 0;
   UChar* p = (UChar* )s;
-  UChar* e = p + strlen(s);
+  UChar* e = p + strlen((const char *)s);
   
   while (1) {
     if (*p == '\0') {
@@ -151,7 +151,7 @@ onigenc_str_bytelen_null(OnigEncoding enc, const UChar* s)
 {
   UChar* start = (UChar* )s;
   UChar* p = (UChar* )s;
-  UChar* e = p + strlen(s);
+  UChar* e = p + strlen((const char *)s);
 
   while (1) {
     if (*p == '\0') {

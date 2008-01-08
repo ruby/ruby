@@ -1,4 +1,12 @@
-Tue Jan  8 15:27:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jan  8 15:40:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regenc.c (onigenc_strlen_null, onigenc_str_bytelen_null): suppressed
+	  warnings.
+
+	* regenc.h, enc/unicode.c (onigenc_unicode_ctype_code_range): added
+	  encoding argument.
+
+	* enc/utf{16,32}_{be,le}.c: added init functions.
 
 	* enc/utf{16,32}_{be,le}.c: imported from Oniguruma 5.9.1.
 

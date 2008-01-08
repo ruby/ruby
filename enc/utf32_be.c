@@ -173,7 +173,7 @@ utf32be_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 						    flag, p, end, items);
 }
 
-OnigEncodingType OnigEncodingUTF32_BE = {
+OnigEncodingDefine(utf32_be, UTF32_BE) = {
   utf32be_mbc_enc_len,
   "UTF-32BE",   /* name */
   4,            /* max byte length */
