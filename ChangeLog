@@ -1,3 +1,7 @@
+Tue Jan  8 20:02:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win{32,ce}/Makefile.sub: merged.
+
 Tue Jan  8 19:48:15 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/driver.rb: Speed up Marshal.load. Fix bug with nested
