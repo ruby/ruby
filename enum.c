@@ -1400,18 +1400,19 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
  *  
  *  Takes one element from <i>enum</i> and merges corresponding
  *  elements from each <i>args</i>.  This generates a sequence of
- *  <em>n</em>-element arrays, where <em>n</em> is one more that the
- *  count of arguments.  The length of the sequence is truncated to
- *  the size of the shortest argument (or <i>enum</i>).  If a block
- *  given, it is invoked for each output array, otherwise an array of
- *  arrays is returned.
+ *  <em>n</em>-element arrays, where <em>n</em> is one more than the
+ *  count of arguments.  The length of the resulting sequence will be
+ *  <code>enum#size</code.  If the size of any argument is less than
+ *  <code>enum#size</code>, <code>nil</code> values are supplied. If
+ *  a block is given, it is invoked for each output array, otherwise
+ *  an array of arrays is returned.
  *     
  *     a = [ 4, 5, 6 ]
  *     b = [ 7, 8, 9 ]
  *     
  *     [1,2,3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
  *     [1,2].zip(a,b)         #=> [[1, 4, 7], [2, 5, 8]]
- *     a.zip([1,2],[8])       #=> [[4,1,8]]
+ *     a.zip([1,2],[8])       #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
  *     
  */
 

@@ -1,3 +1,8 @@
+Wed Jan  9 08:42:01 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* enum.c:  Updating the documentation of Enumrable#zip to reflect
+	  the recent changes Matz made to the method.
+
 Wed Jan  9 01:35:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/Makefile.in (BUILTIN_ENCS): UTF-{16,32}{BE,LE} are not builtin.
