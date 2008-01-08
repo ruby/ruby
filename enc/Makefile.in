@@ -16,8 +16,7 @@ OBJEXT = @OBJEXT@
 
 BUILTIN_ENCS	= ascii.c \
 		  euc_jp.c sjis.c \
-		  unicode.c utf8.c \
-		  utf_16be.c utf_16le.c utf_32be.c utf_32le.c
+		  unicode.c utf8.c
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@
