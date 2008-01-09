@@ -1,3 +1,9 @@
+Wed Jan  9 18:24:39 2008  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* golf_prelude.rb (Array#to_s): alias to join.
+
+	* golf_prelude.rb (FalseClass#to_s): return "".
+
 Wed Jan  9 16:59:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): fix self appending.

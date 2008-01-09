@@ -20,11 +20,17 @@ class Object
     puts "#{a}ello, #{b}orld#{c}"
   end
 
-  def quine(src = $0)
-    SCRIPT_LINES__[src].join
-  end
-
   alias say puts
+end
+
+class Array
+  alias to_s join
+end
+
+class FalseClass
+  def to_s
+    ""
+  end
 end
 
 class Integer
