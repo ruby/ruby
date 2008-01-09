@@ -4675,7 +4675,6 @@ yycompile0(VALUE arg, int tracing)
 	}
     }
 
-    parser->enc = rb_enc_get(lex_input);
     parser_prepare(parser);
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
