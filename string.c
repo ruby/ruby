@@ -1061,7 +1061,7 @@ static VALUE
 rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int ptr_encindex, int ptr_cr, int *ptr_cr_ret)
 {
-    long capa, total;
+    long capa, total, off = -1;
 
     int str_encindex = ENCODING_GET(str);
     int res_encindex;
@@ -1128,7 +1128,13 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
+    if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
+        off = ptr - RSTRING_PTR(str);
+    }
     rb_str_modify(str);
+    if (off != -1) {
+        ptr = RSTRING_PTR(str) + off;
+    }
     if (len == 0) {
         ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
         return str;
@@ -1169,10 +1175,6 @@ VALUE
 rb_str_buf_append(VALUE str, VALUE str2)
 {
     int str2_cr;
-
-    if (str == str2) {
-        str2 = rb_str_dup(str2);
-    }
 
     str2_cr = ENC_CODERANGE(str2);
 
