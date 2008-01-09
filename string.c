@@ -1132,9 +1132,6 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
         off = ptr - RSTRING_PTR(str);
     }
     rb_str_modify(str);
-    if (off != -1) {
-        ptr = RSTRING_PTR(str) + off;
-    }
     if (len == 0) {
         ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
         return str;
@@ -1155,6 +1152,9 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
 	    capa = (capa + 1) * 2;
 	}
 	RESIZE_CAPA(str, capa);
+    }
+    if (off != -1) {
+        ptr = RSTRING_PTR(str) + off;
     }
     memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
     STR_SET_LEN(str, total);
