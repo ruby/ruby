@@ -1076,12 +1076,14 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
             (ptr_a8 && str_cr != ENC_CODERANGE_7BIT)) {
             ptr_cr = ENC_CODERANGE_UNKNOWN;
         }
-        else {
+        else if (ptr_cr == ENC_CODERANGE_UNKNOWN) {
             ptr_cr = coderange_scan(ptr, len, rb_enc_from_index(ptr_encindex));
         }
     }
     else {
-        ptr_cr = coderange_scan(ptr, len, rb_enc_from_index(ptr_encindex));
+	if (ptr_cr == ENC_CODERANGE_UNKNOWN) {
+	    ptr_cr = coderange_scan(ptr, len, rb_enc_from_index(ptr_encindex));
+	}
         if (str_cr == ENC_CODERANGE_UNKNOWN) {
             if (str_a8 || ptr_cr != ENC_CODERANGE_7BIT) {
                 str_cr = rb_enc_str_coderange(str);

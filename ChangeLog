@@ -1,3 +1,8 @@
+Wed Jan  9 13:03:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_enc_cr_str_buf_cat): do not recalculate coderange
+	  value if it's given from outside.
+
 Wed Jan  9 08:42:01 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* enum.c:  Updating the documentation of Enumrable#zip to reflect
