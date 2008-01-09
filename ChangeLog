@@ -7,6 +7,11 @@ Wed Jan  9 22:03:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_replicate): replica of dummy is a dummy.
 
+Wed Jan  9 20:55:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/e2mmap.rb (Exception2MessageMapper::Raise): define fail.
+	  [ruby-dev:32854]
+
 Wed Jan  9 20:35:42 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb: supprt X-Forwarded-* header fields.

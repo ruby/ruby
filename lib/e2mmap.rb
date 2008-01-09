@@ -78,6 +78,7 @@ module Exception2MessageMapper
     E2MM.Raise(self, err, *rest)
   end
   alias Fail Raise
+  alias fail Raise
 
   # def_e2message(c, m)
   #	    c:  exception
