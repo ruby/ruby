@@ -101,6 +101,7 @@ class Prime
   alias next succ
 
   def each
+    return to_enum(:each) unless block_given?
     loop do
       yield succ
     end
