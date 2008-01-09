@@ -857,6 +857,21 @@ ruby_init_gems(struct cmdline_options *opt)
     Init_prelude();
 }
 
+static int
+opt_enc_index(VALUE enc_name)
+{
+    const char *s = RSTRING_PTR(enc_name);
+    int i = rb_enc_find_index(s);
+
+    if (i < 0) {
+	rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
+    }
+    else if (rb_enc_dummy_p(rb_enc_from_index(i))) {
+	rb_raise(rb_eRuntimeError, "dummy encoding is not acceptable - %s ", s);
+    }
+    return i;
+}
+
 static VALUE
 process_options(VALUE arg)
 {
@@ -873,6 +888,8 @@ process_options(VALUE arg)
     argv += i;
 
     if (rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
+	VALUE enc_name = opt->enc_name;
+
 	while (ISSPACE(*s))
 	    s++;
 	if (*s == 'T' || (*s == '-' && *(s + 1) == 'T')) {
@@ -901,12 +918,13 @@ process_options(VALUE arg)
 		}
 		if (!*s)
 		    break;
-		if (!strchr("IdvwWrK", *s))
+		if (!strchr("EIdvwWrK", *s))
 		    rb_raise(rb_eRuntimeError,
 			     "invalid switch in RUBYOPT: -%c", *s);
 		s = moreswitches(s, opt);
 	    }
 	}
+	if (enc_name) opt->enc_name = enc_name;
     }
 
     if (opt->version) {
@@ -964,13 +982,7 @@ process_options(VALUE arg)
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
     if (opt->enc_name != 0) {
-	s = RSTRING_PTR(opt->enc_name);
-	if ((opt->enc_index = rb_enc_find_index(s)) < 0) {
-	    rb_raise(rb_eRuntimeError, "unknown encoding name - %s", s);
-	}
-	else if (rb_enc_dummy_p(rb_enc_from_index(opt->enc_index))) {
-	    rb_raise(rb_eRuntimeError, "dummy encoding is not acceptable - %s ", s);
-	}
+	opt->enc_index = opt_enc_index(opt->enc_name);
     }
     if (opt->e_script) {
 	if (opt->enc_index >= 0)
@@ -1072,6 +1084,8 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 
 	c = rb_io_getbyte(f);
 	if (c == INT2FIX('#')) {
+	    int no_enc = !opt->enc_name;
+
 	    c = rb_io_getbyte(f);
 	    if (c == INT2FIX('!')) {
 		line = rb_io_gets(f);
@@ -1129,6 +1143,9 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 		rb_io_ungetc(f, c);
 	    }
 	    rb_io_ungetc(f, INT2FIX('#'));
+	    if (no_enc && opt->enc_name) {
+		opt->enc_index = opt_enc_index(opt->enc_name);
+	    }
 	}
 	else if (!NIL_P(c)) {
 	    rb_io_ungetc(f, c);

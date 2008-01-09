@@ -1,3 +1,11 @@
+Wed Jan  9 15:54:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): give priority command line encoding option
+	  to RUBYOPT, and enable -E option in RUBYOPT.
+
+	* ruby.c (load_file): deal with encoding option in shebang line if
+	  nothing in command line and RUBYOPT.
+
 Wed Jan  9 14:55:36 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (yycompile0): remove setting parser->enc because it is set
