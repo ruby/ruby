@@ -1,3 +1,14 @@
+Wed Jan  9 20:35:42 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httprequest.rb: supprt X-Forwarded-* header fields.
+	  WEBrick::HTTPRequest#{host,port,request_uri} is derived having
+	  regards to X-Forwarded-Proto and X-Forwarded-Host.
+
+	* lib/webrick/httprequest.rb
+	  (WEBrick::HTTPRequest#server_name?): new method.
+	  (WEBrick::HTTPRequest#remote_ip?): new method.
+	  (WEBrick::HTTPRequest#ssl?): new method.
+
 Wed Jan  9 18:24:39 2008  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* golf_prelude.rb (Array#to_s): alias to join.

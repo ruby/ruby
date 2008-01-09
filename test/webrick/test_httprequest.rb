@@ -79,6 +79,7 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
       Accept-Language: ja
       Content-Type: text/plain
       Content-Length: 7
+      X-Empty-Header: 
 
       foobar
     _end_of_message_
@@ -97,6 +98,8 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     assert_equal(7, req.content_length)
     assert_equal("text/plain", req.content_type)
     assert_equal("foobar\n", req.body)
+    assert_equal("", req["x-empty-header"])
+    assert_equal(nil, req["x-no-header"])
     assert(req.query.empty?)
   end
 
@@ -236,6 +239,70 @@ class TestWEBrickHTTPRequest < Test::Unit::TestCase
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
     assert_equal(File.read(__FILE__), req.body)
+  end
+
+  def test_forwarded
+    msg = <<-_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      User-Agent: w3m/0.5.2
+      X-Forwarded-For: 123.123.123.123
+      X-Forwarded-Host: forward.example.com
+      X-Forwarded-Server: server.example.com
+      Connection: Keep-Alive
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("http://forward.example.com/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(80, req.port)
+    assert_equal("123.123.123.123", req.remote_ip)
+    assert(!req.ssl?)
+
+    msg = <<-_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      User-Agent: w3m/0.5.2
+      X-Forwarded-For: 192.168.1.10, 172.16.1.1, 123.123.123.123
+      X-Forwarded-Host: forward.example.com:8080
+      X-Forwarded-Server: server.example.com
+      Connection: Keep-Alive
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("http://forward.example.com:8080/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(8080, req.port)
+    assert_equal("123.123.123.123", req.remote_ip)
+    assert(!req.ssl?)
+
+    msg = <<-_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      Client-IP: 234.234.234.234
+      X-Forwarded-Proto: https
+      X-Forwarded-For: 192.168.1.10, 10.0.0.1, 123.123.123.123
+      X-Forwarded-Host: forward.example.com
+      X-Forwarded-Server: server.example.com
+      X-Requested-With: XMLHttpRequest
+      Connection: Keep-Alive
+
+    _end_of_message_
+    msg.gsub!(/^ {6}/, "")
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("https://forward.example.com/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(443, req.port)
+    assert_equal("234.234.234.234", req.remote_ip)
+    assert(req.ssl?)
   end
 
   def test_bad_messages

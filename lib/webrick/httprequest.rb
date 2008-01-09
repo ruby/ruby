@@ -69,6 +69,9 @@ module WEBrick
 
       @remaining_size = nil
       @socket = nil
+
+      @forwarded_proto = @forwarded_host = @forwarded_port =
+        @forwarded_server = @forwarded_for = nil
     end
 
     def parse(socket=nil)
@@ -95,6 +98,7 @@ module WEBrick
       return if @unparsed_uri == "*"
 
       begin
+        setup_forwarded_info
         @request_uri = parse_uri(@unparsed_uri)
         @path = HTTPUtils::unescape(@request_uri.path)
         @path = HTTPUtils::normalize_path(@path)
@@ -151,6 +155,26 @@ module WEBrick
         value = @header[k]
         yield(k, value.empty? ? nil : value.join(", "))
       }
+    end
+
+    def host
+      return @forwarded_host || @host
+    end
+
+    def port
+      return @forwarded_port || @port
+    end
+
+    def server_name
+      return @forwarded_server || @config[:ServerName]
+    end
+
+    def remote_ip
+      return self["client-ip"] || @forwarded_for || @peeraddr[3]
+    end
+
+    def ssl?
+      return @request_uri.scheme == "https"
     end
 
     def keep_alive?
@@ -255,7 +279,9 @@ module WEBrick
       end
       uri = URI::parse(str)
       return uri if uri.absolute?
-      if self["host"]
+      if @forwarded_host
+        host, port = @forwarded_host, @forwarded_port
+      elsif self["host"]
         pattern = /\A(#{URI::REGEXP::PATTERN::HOST})(?::(\d+))?\z/n
         host, port = *self['host'].scan(pattern)[0]
       elsif @addr.size > 0
@@ -263,7 +289,7 @@ module WEBrick
       else
         host, port = @config[:ServerName], @config[:Port]
       end
-      uri.scheme = scheme
+      uri.scheme = @forwarded_proto || scheme
       uri.host = host
       uri.port = port ? port.to_i : nil
       return URI::parse(uri.to_s)
@@ -354,6 +380,26 @@ module WEBrick
         end
       rescue => ex
         raise HTTPStatus::BadRequest, ex.message
+      end
+    end
+
+    PrivateNetworkRegexp = /
+      ^unknown$|
+      ^((::ffff:)?127.0.0.1|::1)$|
+      ^(::ffff:)?(10|172\.(1[6-9]|2[0-9]|3[01])|192\.168)\.
+    /ixo
+
+    def setup_forwarded_info
+      @forwarded_server = self["x-forwarded-server"]
+      @forwarded_proto = self["x-forwarded-proto"]
+      if host_port = self["x-forwarded-host"]
+        @forwarded_host, tmp = host_port.split(":", 2)
+        @forwarded_port = (tmp || (@forwarded_proto == "https" ? 443 : 80)).to_i
+      end
+      if addrs = self["x-forwarded-for"]
+        addrs = addrs.split(",").collect(&:strip)
+        addrs.reject!{|ip| PrivateNetworkRegexp =~ ip }
+        @forwarded_for = addrs.first
       end
     end
   end
