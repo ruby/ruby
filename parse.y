@@ -5957,6 +5957,7 @@ parser_prepare(struct parser_params *parser)
 	return;
     }
     pushback(c);
+    parser->enc = rb_enc_get(lex_input);
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
