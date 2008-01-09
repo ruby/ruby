@@ -374,9 +374,7 @@ io_read_encoding(rb_io_t *fptr)
     if (fptr->enc) {
 	return fptr->enc;
     }
-    return (fptr->mode & FMODE_BINMODE)
-	? rb_ascii8bit_encoding()
-	: rb_default_external_encoding();
+    return rb_default_external_encoding();
 }
 
 static rb_encoding*
@@ -2949,16 +2947,14 @@ rb_io_binmode(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
+#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "buffer already filled with text-mode content");
     }
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     if (0 <= fptr->fd && setmode(fptr->fd, O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
-
 #endif
     fptr->mode |= FMODE_BINMODE;
-    fptr->enc = rb_ascii8bit_encoding();
     return io;
 }
 
@@ -3198,9 +3194,6 @@ rb_io_mode_enc(rb_io_t *fptr, const char *mode)
 {
     const char *p = strchr(mode, ':');
     if (p) {
-	if (fptr->mode & FMODE_BINMODE) {
-	    rb_raise(rb_eArgError, "encoding in binary mode");
-	}
 	mode_enc(fptr, p+1);
     }
 }

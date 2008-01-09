@@ -58,7 +58,7 @@ EOT
     with_tmpdir {
       generate_file('tmp', "")
       open("tmp", "rb") {|f|
-        assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+        assert_equal(Encoding.default_external, f.external_encoding)
         assert_equal(nil, f.internal_encoding)
       }
     }

@@ -1,3 +1,10 @@
+Thu Jan 10 02:41:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_binmode): should not alter encoding.  [ruby-dev:32918]
+
+	* io.c (io_read_encoding): need not to return ASCII-8BIT for
+	  binary IO.
+
 Wed Jan  9 22:04:17 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/mathn.rb (Prime#each): returns an enumerator if no block
