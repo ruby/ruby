@@ -1,3 +1,8 @@
+Wed Jan  9 13:45:52 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (WEBrick::HTTPServer#start):
+	  :DoNotReverseLookup option had not been performed.
+
 Wed Jan  9 13:03:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): do not recalculate coderange

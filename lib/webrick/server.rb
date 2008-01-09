@@ -91,6 +91,7 @@ module WEBrick
               svrs[0].each{|svr|
                 @tokens.pop          # blocks while no token is there.
                 if sock = accept_client(svr)
+                  sock.do_not_reverse_lookup = config[:DoNotReverseLookup]
                   th = start_thread(sock, &block)
                   th[:WEBrickThread] = true
                   thgroup.add(th)
