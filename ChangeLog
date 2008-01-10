@@ -1,3 +1,8 @@
+Thu Jan 10 10:53:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_open_osfhandle): reverted to old definition.
+	  [ ruby-Bugs-16948 ]
+
 Tue Jan  8 20:02:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win{32,ce}/Makefile.sub: merged.
