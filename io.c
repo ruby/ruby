@@ -5627,7 +5627,7 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 	fptr->enc = rb_to_encoding(v2);
     }
     else if (argc == 1) {
-	if if (NIL_P(v1)) {
+	if (NIL_P(v1)) {
 	    fptr->enc = 0;
 	}
 	else {
