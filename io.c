@@ -5627,12 +5627,17 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 	fptr->enc = rb_to_encoding(v2);
     }
     else if (argc == 1) {
-	VALUE tmp = rb_check_string_type(v1);
-	if (!NIL_P(tmp)) {
-	    mode_enc(fptr, StringValueCStr(tmp));
+	if if (NIL_P(v1)) {
+	    fptr->enc = 0;
 	}
 	else {
-	    fptr->enc = rb_to_encoding(v1);
+	    VALUE tmp = rb_check_string_type(v1);
+	    if (!NIL_P(tmp)) {
+		mode_enc(fptr, StringValueCStr(tmp));
+	    }
+	    else {
+		fptr->enc = rb_to_encoding(v1);
+	    }
 	}
     }
 }
