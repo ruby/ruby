@@ -78,7 +78,6 @@ rb_to_encoding_index(VALUE enc)
 {
     int idx;
 
-    if (NIL_P(enc)) return 0;
     idx = enc_check_encoding(enc);
     if (idx >= 0) {
 	return idx;
@@ -96,7 +95,6 @@ rb_to_encoding(VALUE enc)
 {
     int idx;
 
-    if (NIL_P(enc)) return 0;
     idx = enc_check_encoding(enc);
     if (idx >= 0) return RDATA(enc)->data;
     if ((idx = rb_enc_find_index(StringValueCStr(enc))) < 0) {

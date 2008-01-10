@@ -1,3 +1,8 @@
+Fri Jan 11 06:13:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_to_encoding_index, rb_to_encoding): disallow nil.
+	  [ruby-dev:33003]
+
 Fri Jan 11 01:08:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (rb_mutex_unlock): proper error message for unlocking
