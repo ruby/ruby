@@ -7,7 +7,7 @@ class Mutex
     begin
       yield
     ensure
-      self.unlock
+      self.unlock rescue nil
     end
   end
 end
