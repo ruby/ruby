@@ -5621,6 +5621,7 @@ io_new_instance(VALUE args)
 static void
 io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 {
+    if (NIL_P(v2)) argc = 1;
     if (argc == 2) {
 	fptr->enc2 = rb_to_encoding(v1);
 	fptr->enc = rb_to_encoding(v2);

@@ -1,3 +1,8 @@
+Thu Jan 10 10:15:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_encoding_set): IO.pipe("euc-jp", nil) should work as
+	  IO.pipe("euc-jp", nil).  [ruby-dev:33000]
+
 Thu Jan 10 02:41:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_binmode): should not alter encoding.  [ruby-dev:32918]
