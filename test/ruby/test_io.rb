@@ -20,7 +20,7 @@ class TestIO < Test::Unit::TestCase
     r.close
 
     # "\377"
-    r, w = IO.pipe
+    r, w = IO.pipe('ascii-8bit')
     w.print "\377xyz"
     w.close
     r.binmode
