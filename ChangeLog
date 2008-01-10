@@ -1,3 +1,9 @@
+Fri Jan 11 01:08:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (rb_mutex_unlock): proper error message for unlocking
+	  mutex that is not locked.  a patch from Yusuke ENDOH
+	  <mame at tsg.ne.jp> in [ruby-dev:33010].
+
 Thu Jan 10 18:00:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* prelude.rb (Mutex::synchronize): capture exception from unlock.

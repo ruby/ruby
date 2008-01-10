@@ -2362,21 +2362,29 @@ VALUE
 rb_mutex_unlock(VALUE self)
 {
     mutex_t *mutex;
+    char *err = NULL;
     GetMutexPtr(self, mutex);
 
-    if (mutex->th != GET_THREAD()) {
-	rb_raise(rb_eThreadError,
-		 "Attempt to unlock a mutex which is locked by another thread");
+    native_mutex_lock(&mutex->lock);
+
+    if (mutex->th == 0) {
+	err = "Attempt to unlock a mutex which is not locked";
+    }
+    else if (mutex->th != GET_THREAD()) {
+	err = "Attempt to unlock a mutex which is locked by another thread";
+    }
+    else {
+	mutex->th = 0;
+	if (mutex->cond_waiting > 0) {
+	    /* waiting thread */
+	    native_cond_signal(&mutex->cond);
+	    mutex->cond_waiting--;
+	}
     }
 
-    native_mutex_lock(&mutex->lock);
-    mutex->th = 0;
-    if (mutex->cond_waiting > 0) {
-	/* waiting thread */
-	native_cond_signal(&mutex->cond);
-	mutex->cond_waiting--;
-    }
     native_mutex_unlock(&mutex->lock);
+
+    if (err) rb_raise(rb_eThreadError, err);
 
     return self;
 }
