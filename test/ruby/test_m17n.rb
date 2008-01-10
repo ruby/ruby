@@ -248,6 +248,10 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_utf16_valid_encoding
+    assert_equal(false, "\xd8\x00\xd8\x00".force_encoding("utf-16be").valid_encoding?)
+  end
+
   def test_regexp_too_short_multibyte_character
     assert_raise(SyntaxError) { eval('/\xfe/e') }
     assert_raise(SyntaxError) { eval('/\x8e/e') }
