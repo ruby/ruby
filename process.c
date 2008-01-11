@@ -100,11 +100,6 @@ static VALUE S_Tms;
 #undef HAVE_SETRGID
 #endif
 
-#if defined(__MacOS_X__) || defined(__bsdi__)
-#define BROKEN_SETREUID 1
-#define BROKEN_SETREGID 1
-#endif
-
 #ifdef BROKEN_SETREUID
 #define setreuid ruby_setreuid
 #endif
