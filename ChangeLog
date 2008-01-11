@@ -1,3 +1,7 @@
+Fri Jan 11 10:24:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/options.rb ():
+
 Thu Jan 10 10:53:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_open_osfhandle): reverted to old definition.
