@@ -1,4 +1,4 @@
-Fri Jan 11 12:27:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 11 12:35:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: moved broken syscall checks from process.c etc.
 
