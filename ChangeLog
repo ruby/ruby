@@ -1,3 +1,8 @@
+Fri Jan 11 18:17:10 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/driver.rb (read_yaml): Follow namespace change
+	  [ruby-core:14964].
+
 Fri Jan 11 16:55:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_append): performance improvement.

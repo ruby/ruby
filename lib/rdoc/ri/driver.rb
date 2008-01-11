@@ -54,8 +54,8 @@ Where name can be:
 All class names may be abbreviated to their minimum unambiguous form. If a name
 is ambiguous, all valid options will be listed.
 
-The form '.' method matches either class or instance methods, while 
-#method matches only instance and ::method matches only class methods.
+The form '.' method matches either class or instance methods, while #method
+matches only instance and ::method matches only class methods.
 
 For example:
 
@@ -341,7 +341,7 @@ Options may also be set in the 'RI' environment variable.
   end
 
   def read_yaml(path)
-    YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):RI.*/, '')
+    YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):(RDoc|RI).*/, '')
   end
 
   def run
