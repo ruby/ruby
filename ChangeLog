@@ -1,6 +1,7 @@
 Fri Jan 11 10:24:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/rdoc/options.rb ():
+	* lib/rdoc/options.rb (check_diagram): more precise check, darwin
+	  is not Windows but minwg is on it.
 
 Fri Jan 11 09:59:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
