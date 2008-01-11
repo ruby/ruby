@@ -1,4 +1,7 @@
-Fri Jan 11 10:24:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 11 11:57:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defines.h (WORDS_BIGENDIAN): honor __BIG_ENDIAN__ than the result of
+	  configure.
 
 	* lib/rdoc/options.rb (check_diagram): more precise check, darwin
 	  is not Windows but minwg is on it.
