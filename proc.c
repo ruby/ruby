@@ -52,6 +52,7 @@ proc_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(proc->blockprocval);
 	RUBY_MARK_UNLESS_NULL((VALUE)proc->special_cref_stack);
 	RUBY_MARK_UNLESS_NULL(proc->block.proc);
+	RUBY_MARK_UNLESS_NULL(proc->block.self);
 	if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
 	    RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
 	}
