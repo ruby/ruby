@@ -1,4 +1,6 @@
-Fri Jan 11 11:57:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 11 12:27:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: moved broken syscall checks from process.c etc.
 
 	* defines.h (WORDS_BIGENDIAN): honor __BIG_ENDIAN__ than the result of
 	  configure.

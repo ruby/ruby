@@ -370,7 +370,19 @@ case "$target_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-darwin*)	LIBS="-lobjc $LIBS";;
+darwin*)	LIBS="-lobjc $LIBS"
+		AC_TRY_CPP([#include <AvailabilityMacros.h>
+		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
+		    #error pre OS X 10.4
+		    [!<===== pre OS X 10.4 =====>]
+		    #endif
+		    ], [/* nothing */], [],
+		    [
+		    AC_DEFINE(BROKEN_SETREUID, 1)
+		    AC_DEFINE(BROKEN_SETREGID, 1)
+		    ac_cv_header_ucontext_h=no
+		    ])
+		;;
 hpux*)		LIBS="-lm $LIBS"
 		ac_cv_c_inline=no;;
 human*)		ac_cv_func_getpgrp_void=yes
@@ -426,6 +438,8 @@ msdosdjgpp*)	LIBS="-lm $LIBS"
 		ac_cv_func_setrlimit=no
 		;;
 bsdi*)          LIBS="-lm $LIBS"
+		AC_DEFINE(BROKEN_SETREUID, 1)
+		AC_DEFINE(BROKEN_SETREGID, 1)
                 ac_cv_sizeof_rlim_t=8;;
 freebsd*)	LIBS="-lm $LIBS"
 		AC_CACHE_CHECK([whether -lxpg4 has to be linked],
