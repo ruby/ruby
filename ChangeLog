@@ -1,3 +1,8 @@
+Sat Jan 12 04:38:38 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ruby.c (process_options): -e'script' is locale encoding by default.
+	  (load_file): ruby script from stdin is locale encoding by default.
+
 Sat Jan 12 04:31:59 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c: fix bug: -m was -m0.

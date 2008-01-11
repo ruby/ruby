@@ -984,9 +984,14 @@ process_options(VALUE arg)
     if (opt->enc_name != 0) {
 	opt->enc_index = opt_enc_index(opt->enc_name);
     }
+    if (opt->enc_index >= 0) {
+	enc = rb_enc_from_index(opt->enc_index);
+    }
+    else {
+	enc = rb_locale_encoding();
+    }
     if (opt->e_script) {
-	if (opt->enc_index >= 0)
-	    rb_enc_associate_index(opt->e_script, opt->enc_index);
+	rb_enc_associate(opt->e_script, enc);
 	require_libraries();
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
@@ -1021,12 +1026,6 @@ process_options(VALUE arg)
 	}
     }
 
-    if (opt->enc_index >= 0) {
-	enc = rb_enc_from_index(opt->enc_index);
-    }
-    else {
-	enc = rb_locale_encoding();
-    }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
 
     return (VALUE)tree;
@@ -1153,6 +1152,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	require_libraries();	/* Why here? unnatural */
     }
     if (opt->enc_index >= 0) rb_enc_associate_index(f, opt->enc_index);
+    else rb_enc_associate(f, rb_locale_encoding());
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
