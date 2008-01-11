@@ -24,25 +24,6 @@
 #
 # Here is a simple example of usage:
 #
-#     # == Synopsis
-#     #
-#     # hello: greets user, demonstrates command line parsing
-#     #
-#     # == Usage
-#     #
-#     # hello [OPTION] ... DIR
-#     #
-#     # -h, --help:
-#     #    show help
-#     #
-#     # --repeat x, -n x:
-#     #    repeat x times
-#     #
-#     # --name [name]:
-#     #    greet user by name, if name not supplied default is John
-#     #
-#     # DIR: The directory in which to issue the greeting.
-#     
 #     require 'getoptlong'
 #     require 'rdoc/usage'
 #     
@@ -58,7 +39,20 @@
 #     opts.each do |opt, arg|
 #       case opt
 #         when '--help'
-#           RDoc::usage
+#           puts <<-EOF
+#     hello [OPTION] ... DIR
+#     
+#     -h, --help:
+#        show help
+#     
+#     --repeat x, -n x:
+#        repeat x times
+#     
+#     --name [name]:
+#        greet user by name, if name not supplied default is John
+#     
+#     DIR: The directory in which to issue the greeting.
+#           EOF
 #         when '--repeat'
 #           repetitions = arg.to_i
 #         when '--name'

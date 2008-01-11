@@ -1,3 +1,9 @@
+Fri Jan 11 18:28:49 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/usage.rb: Removed.
+
+	* lib/getoptlong.rb: Update example to not use lib/rdoc/usage.rb.
+
 Fri Jan 11 18:17:10 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/driver.rb (read_yaml): Follow namespace change
