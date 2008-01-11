@@ -32,10 +32,10 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2007-01-02"
+#define NKF_RELEASE_DATE "2008-01-11"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW\n" \
-    "Copyright (C) 2002-2007 Kono, Furukawa, Naruse, mastodon"
+    "Copyright (C) 2002-2008 Kono, Furukawa, Naruse, mastodon"
 
 #include "config.h"
 #include "utf8tbl.h"
@@ -188,21 +188,10 @@ void  djgpp_setbinmode(FILE *fp)
 
  */
 
-/* Input Assumption */
-
-#define         JIS_INPUT       4
-#define         EUC_INPUT      16
-#define         SJIS_INPUT      5
-#define         LATIN1_INPUT    6
-#define		UTF8_INPUT     13
-#define		UTF16_INPUT    1015
-#define		UTF32_INPUT    1017
+/* MIME ENCODE */
 
 #define         FIXED_MIME      7
 #define         STRICT_MIME     8
-
-/* MIME ENCODE */
-
 
 /* byte order */
 enum byte_order {
@@ -266,6 +255,7 @@ enum nkf_encodings {
     UTF_32BE_BOM,
     UTF_32LE,
     UTF_32LE_BOM,
+    NKF_ENCODING_TABLE_SIZE,
     JIS_X_0201=0x1000,
     JIS_X_0208=0x1001,
     JIS_X_0212=0x1002,
@@ -292,7 +282,7 @@ typedef struct {
     void (*oconv)(nkf_char c2, nkf_char c1);
 } nkf_native_encoding;
 
-nkf_native_encoding NkfEncodingASCII =		{ "US_ASCII", e_iconv, e_oconv };
+nkf_native_encoding NkfEncodingASCII =		{ "ASCII", e_iconv, e_oconv };
 nkf_native_encoding NkfEncodingISO_2022_JP =	{ "ISO-2022-JP", e_iconv, j_oconv };
 nkf_native_encoding NkfEncodingShift_JIS =	{ "Shift_JIS", s_iconv, s_oconv };
 nkf_native_encoding NkfEncodingEUC_JP =		{ "EUC-JP", e_iconv, e_oconv };
@@ -305,8 +295,9 @@ typedef struct {
     const char *name;
     const nkf_native_encoding *base_encoding;
 } nkf_encoding;
+
 nkf_encoding nkf_encoding_table[] = {
-    {ASCII,		"ASCII",		&NkfEncodingASCII},
+    {ASCII,		"US-ASCII",		&NkfEncodingASCII},
     {ISO_8859_1,	"ISO-8859-1",		&NkfEncodingASCII},
     {ISO_2022_JP,	"ISO-2022-JP",		&NkfEncodingISO_2022_JP},
     {CP50220,		"CP50220",		&NkfEncodingISO_2022_JP},
@@ -342,14 +333,15 @@ nkf_encoding nkf_encoding_table[] = {
     {BINARY,		"BINARY",		&NkfEncodingASCII},
     {-1,		NULL,			NULL}
 };
-#define NKF_ENCODING_TABLE_SIZE 34
+
 struct {
     const char *name;
     const int id;
 } encoding_name_to_id_table[] = {
+    {"US-ASCII",		ASCII},
     {"ASCII",			ASCII},
     {"ISO-2022-JP",		ISO_2022_JP},
-    {"X-ISO2022JP-CP932",	CP50220},
+    {"ISO2022JP-CP932",		CP50220},
     {"CP50220",			CP50220},
     {"CP50221",			CP50221},
     {"CP50222",			CP50222},
@@ -928,6 +920,7 @@ static nkf_encoding *nkf_enc_from_index(int idx)
 static int nkf_enc_find_index(const char *name)
 {
     int i, index = -1;
+    if (*name == 'X' && *(name+1) == '-') name += 2;
     for (i = 0; encoding_name_to_id_table[i].id >= 0; i++) {
 	if (strcmp(name, encoding_name_to_id_table[i].name) == 0) {
 	    return encoding_name_to_id_table[i].id;

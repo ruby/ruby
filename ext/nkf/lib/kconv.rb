@@ -181,7 +181,7 @@ module Kconv
         )*
         \x1b \x28 B [\t\n\r\x20-\x7E]*
       )*
-     \z/nox =~ str.dup.force_encoding(nil) ? true : false
+     \z/nox =~ str.dup.force_encoding('BINARY') ? true : false
   end
   module_function :isjis
 
