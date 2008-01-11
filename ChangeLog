@@ -1,4 +1,7 @@
-Fri Jan 11 11:50:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 11 11:57:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defines.h (WORDS_BIGENDIAN): honor __BIG_ENDIAN__ than the result of
+	  configure.
 
 	* dln.c: use dlopen on Mac OS X 10.3 or later.  backport from trunk.
 

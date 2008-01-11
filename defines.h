@@ -102,6 +102,16 @@ void xfree _((void*));
 #endif
 #endif
 
+#if defined(__NeXT__) || defined(__APPLE__)
+/* Do not trust WORDS_BIGENDIAN from configure since -arch compiler flag may
+   result in a different endian.  Instead trust __BIG_ENDIAN__ and
+   __LITTLE_ENDIAN__ which are set correctly by -arch. */
+#undef WORDS_BIGENDIAN
+#ifdef __BIG_ENDIAN__
+#define WORDS_BIGENDIAN
+#endif
+#endif
+
 #ifdef __NeXT__
 /* NextStep, OpenStep, Rhapsody */
 #ifndef S_IRUSR
@@ -154,13 +164,6 @@ void xfree _((void*));
 #endif
 #ifndef S_ISREG
 #define S_ISREG(mode)  (((mode) & (0170000)) == (0100000))
-#endif
-/* Do not trust WORDS_BIGENDIAN from configure since -arch compiler flag may
-   result in a different endian.  Instead trust __BIG_ENDIAN__ and
-   __LITTLE_ENDIAN__ which are set correctly by -arch. */
-#undef WORDS_BIGENDIAN
-#ifdef __BIG_ENDIAN__
-#define WORDS_BIGENDIAN
 #endif
 #ifndef __APPLE__
 /* NextStep, OpenStep (but not Rhapsody) */
