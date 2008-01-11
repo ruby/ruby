@@ -252,6 +252,16 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(false, "\xd8\x00\xd8\x00".force_encoding("utf-16be").valid_encoding?)
   end
 
+  def test_utf16
+    assert_equal(255, "f\0f\0".force_encoding("utf-16le").hex)
+    assert_raise(ArgumentError) {
+      "aa".force_encoding("utf-16be").count("aa")
+    }
+    assert_raise(ArgumentError) {
+      "a".force_encoding("us-ascii") + "aa".force_encoding("utf-16be")
+    }
+  end
+
   def test_regexp_too_short_multibyte_character
     assert_raise(SyntaxError) { eval('/\xfe/e') }
     assert_raise(SyntaxError) { eval('/\x8e/e') }
