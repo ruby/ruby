@@ -81,19 +81,28 @@ char *getenv();
 # include "macruby_private.h"
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)   /* Mac OS X */
+# if defined(HAVE_DLOPEN)
+   /* Mac OS X with dlopen (10.3 or later) */
+#  define MACOSX_DLOPEN
+# else
+#  define MACOSX_DYLD
+# endif
+#endif
+
 #ifdef __BEOS__
 # include <image.h>
 #endif
 
 #ifndef NO_DLN_LOAD
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX) && !defined(__APPLE__) && !defined(_UNICOSMP)
+#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX) && !defined(MACOSX_DYLD) && !defined(_UNICOSMP)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) ||  (defined(__NetBSD__) && !defined(__ELF__)) || defined(__BORLANDC__) || (defined(__FreeBSD__) && !defined(__ELF__)) || (defined(__OpenBSD__) && !defined(__ELF__)) || defined(NeXT) || defined(__WATCOMC__) || defined(__APPLE__)
+# if defined(__hp9000s300) ||  (defined(__NetBSD__) && !defined(__ELF__)) || defined(__BORLANDC__) || (defined(__FreeBSD__) && !defined(__ELF__)) || (defined(__OpenBSD__) && !defined(__ELF__)) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
 #  define FUNCNAME_PATTERN "_Init_%s"
 # else
 #  define FUNCNAME_PATTERN "Init_%s"
@@ -1141,7 +1150,7 @@ dln_sym(name)
 #endif
 #endif
 #else
-#ifdef __APPLE__
+#ifdef MACOSX_DYLD
 #include <mach-o/dyld.h>
 #endif
 #endif
@@ -1403,7 +1412,7 @@ dln_load(file)
     }
 #endif /* _AIX */
 
-#if defined(NeXT) || defined(__APPLE__)
+#if defined(NeXT) || defined(MACOSX_DYLD)
 #define DLN_DEFINED
 /*----------------------------------------------------
    By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
@@ -1527,7 +1536,7 @@ dln_load(file)
     }
 #endif /* __BEOS__*/
 
-#ifdef __MACOS__
+#ifdef __MACOS__   /* Mac OS 9 or before */
 # define DLN_DEFINED
     {
       OSErr err;
