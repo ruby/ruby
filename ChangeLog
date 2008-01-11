@@ -1,3 +1,7 @@
+Sat Jan 12 04:31:59 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: fix bug: -m was -m0.
+
 Fri Jan 11 23:22:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (string.c): call rb_str_buf_append to update encoding of

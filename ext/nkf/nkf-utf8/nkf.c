@@ -2045,6 +2045,8 @@ void options(unsigned char *cp)
             } else if (*cp=='0') {
                 mime_decode_f = FALSE;
                 mime_f = FALSE; cp++;
+            } else {
+                mime_f = STRICT_MIME;
             }
             continue;
         case 'M':   /* MIME output */
