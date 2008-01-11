@@ -1,3 +1,8 @@
+Fri Jan 11 23:22:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (string.c): call rb_str_buf_append to update encoding of
+	  str1, even if str2 is empty.
+
 Fri Jan 11 20:20:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_mark): needs to mark the receiver too.  a patch from
