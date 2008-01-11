@@ -205,7 +205,7 @@ set_base_encoding(int index, rb_encoding *base)
     VALUE enc = rb_enc_from_encoding(enc_table[index].enc);
 
     rb_ivar_set(enc, id_base_encoding, rb_enc_from_encoding(base));
-    if (ENC_DUMMY_P(base)) FL_SET(enc, ENC_DUMMY);
+    if (rb_enc_dummy_p(base)) FL_SET(enc, ENC_DUMMY);
     return enc;
 }
 

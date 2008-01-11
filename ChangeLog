@@ -1,3 +1,7 @@
+Fri Jan 11 09:23:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding (set_base_encoding): must use rb_enc_dummy_p.
+
 Fri Jan 11 06:13:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_to_encoding_index, rb_to_encoding): disallow nil.
