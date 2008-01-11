@@ -567,7 +567,7 @@ Usage: #{opt.program_name} [options] [names...]
   # Windows.
 
   def check_diagram
-    return if RUBY_PLATFORM =~ /mswin/
+    return if RUBY_PLATFORM =~ /mswin|cygwin|mingw|bccwin/
 
     ok = false
     ver = nil
