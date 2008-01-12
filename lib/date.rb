@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.35 2008-01-06 08:42:17+09 tadf Exp $
+# $Id: date.rb,v 2.36 2008-01-12 10:54:29+09 tadf Exp $
 #++
 #
 # == Overview
@@ -505,9 +505,9 @@ class Date
   # Convert a fractional day +fr+ to [hours, minutes, seconds,
   # fraction_of_a_second]
   def self.day_fraction_to_time(fr)
-    h,   fr = fr.divmod(HOURS_IN_DAY)
-    min, fr = fr.divmod(MINUTES_IN_DAY)
-    s,   fr = fr.divmod(SECONDS_IN_DAY)
+    ss,  fr = fr.divmod(SECONDS_IN_DAY) # 4p
+    h,   ss = ss.divmod(3600)
+    min, s  = ss.divmod(60)
     return h, min, s, fr
   end
 
@@ -517,11 +517,15 @@ class Date
     Rational(Rational(1, 2), 2) # a challenge
 
     def self.time_to_day_fraction(h, min, s)
-      Rational(h, 24) + Rational(min, 1440) + Rational(s, 86400)
+      Rational(h * 3600 + min * 60 + s, 86400) # 4p
     end
   rescue
     def self.time_to_day_fraction(h, min, s)
-      h.to_r/24 + min.to_r/1440 + s.to_r/86400
+	if Integer === h && Integer === min && Integer === s
+	  Rational(h * 3600 + min * 60 + s, 86400) # 4p
+	else
+	  h.to_r/24 + min.to_r/1440 + s.to_r/86400
+	end
     end
   end
 
@@ -1373,7 +1377,7 @@ class Date
   # Return the date as a human-readable string.
   #
   # The format used is YYYY-MM-DD.
-  def to_s() strftime end
+  def to_s() format('%.4d-%02d-%02d', year, mon, mday) end # 4p
 
   # Dump to Marshal format.
   def _dump(limit) Marshal.dump([@ajd, @of, @sg], -1) end
@@ -1616,6 +1620,11 @@ class DateTime < Date
 
   public :hour, :min, :sec, :sec_fraction, :zone, :offset, :new_offset
 #	 :minute, :second, :second_fraction
+
+  def to_s # 4p
+    format('%.4d-%02d-%02dT%02d:%02d:%02d%s',
+	   year, mon, mday, hour, min, sec, zone)
+  end
 
 end
 
