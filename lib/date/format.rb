@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2008
-# $Id: format.rb,v 2.41 2008-01-06 08:42:17+09 tadf Exp $
+# $Id: format.rb,v 2.42 2008-01-12 10:54:29+09 tadf Exp $
 
 require 'rational'
 
@@ -297,9 +297,9 @@ class Date
 	t = $1.size
 	sign = if offset < 0 then -1 else +1 end
 	fr = offset.abs
-	hh, fr = fr.divmod(HOURS_IN_DAY)
-	mm, fr = fr.divmod(MINUTES_IN_DAY)
-	ss, fr = fr.divmod(SECONDS_IN_DAY)
+	ss = fr.div(SECONDS_IN_DAY) # 4p
+	hh, ss = ss.divmod(3600)
+	mm, ss = ss.divmod(60)
 	if t == 3
 	  if    ss.nonzero? then t =  2
 	  elsif mm.nonzero? then t =  1

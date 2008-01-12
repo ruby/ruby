@@ -1,3 +1,7 @@
+Sat Jan 12 12:01:49 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: tuning for performance.
+
 Sat Jan 12 11:29:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/test_proc.rb: fixed wrong expected result.  pointed
