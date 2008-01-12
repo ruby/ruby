@@ -180,10 +180,10 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 }
 
 void
-rb_define_alloc_func(VALUE klass, VALUE (*func) _((VALUE)))
+rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0),
+    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0),
 		  NOEX_PRIVATE);
 }
 
@@ -191,7 +191,7 @@ void
 rb_undef_alloc_func(VALUE klass)
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, 0, NOEX_UNDEF);
+    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, 0, NOEX_UNDEF);
 }
 
 rb_alloc_func_t
