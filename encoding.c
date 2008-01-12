@@ -999,7 +999,7 @@ rb_enc_name_list(VALUE klass)
 static int
 rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
 {
-    rb_hash_aset((VALUE)arg, rb_str_new2((char *)name), rb_enc_name(rb_enc_from_index((int)orig)));
+    rb_hash_aset((VALUE)arg, rb_str_new2((char *)name), rb_str_new2(rb_enc_name(rb_enc_from_index((int)orig))));
     return 0;
 }
 
@@ -1014,7 +1014,7 @@ static VALUE
 rb_enc_aliases(VALUE klass)
 {
     VALUE aliases = rb_hash_new();
-    st_foreach(enc_table_alias, rb_enc_aliases_enc_i, (st_data_t)aliases);
+    if (enc_table_alias) st_foreach(enc_table_alias, rb_enc_aliases_enc_i, (st_data_t)aliases);
     st_foreach(enc_table_alias_name, rb_enc_aliases_str_i, (st_data_t)aliases);
     return aliases;
 }
