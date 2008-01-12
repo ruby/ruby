@@ -1,5 +1,3 @@
-#! ./miniruby
-
 #
 # OnigEncodingDefine(foo, Foo) = {
 #   ..
@@ -11,13 +9,12 @@
 # ENC_ALIAS("CP932", "Windows-31J")
 #
 
-require 'mkmf'
-
 encodings = []
 replicas = {}
 aliases = {}
-Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)}.each do |fn|
-  open(File.join($srcdir,fn)) do |f|
+encdir = ARGV[0]
+Dir.open(encdir) {|d| d.grep(/.+\.c\z/)}.each do |fn|
+  open(File.join(encdir,fn)) do |f|
     orig = nil
     name = nil
     f.each_line do |line|
@@ -36,14 +33,16 @@ Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)}.each do |fn|
     end
   end
 end
+p aliases
 open('encdb.h', 'wb') do |f|
   f.puts 'static const char *enc_name_list[] = {'
   encodings.each {|name| f.puts'    "%s",' % name}
   replicas.each_key {|name| f.puts'    "%s",' % name}
+  aliases.each_key {|name| f.puts'    "%s",' % name}
   f.puts(<<"_TEXT_")
     NULL
 };
-static const int enc_name_list_size = #{encodings.length + replicas.length};
+static const int enc_name_list_size = #{encodings.length + replicas.length + aliases.length};
 static const int enc_aliases_size = #{aliases.length};
 static st_table *enc_table_replica_name;
 static st_table *enc_table_alias_name;

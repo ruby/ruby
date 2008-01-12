@@ -1,3 +1,9 @@
+Sun Jan 13 01:52:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enc/make_encdb.rb: should work on Ruby 1.8.  [ruby-dev:33069]
+
+	* common.mk (encdb.h): pass enc dir from outside to make_encdb.rb.
+
 Sun Jan 13 00:01:07 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/make_encdb.rb: added. search enc/*.c and make encoding database.
