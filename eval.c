@@ -453,7 +453,8 @@ rb_define_alloc_func(klass, func)
     VALUE (*func) _((VALUE));
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0), NOEX_PRIVATE);
+    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, NEW_CFUNC(func, 0),
+		  NOEX_PRIVATE);
 }
 
 void
@@ -461,7 +462,7 @@ rb_undef_alloc_func(klass)
     VALUE klass;
 {
     Check_Type(klass, T_CLASS);
-    rb_add_method(CLASS_OF(klass), ID_ALLOCATOR, 0, NOEX_UNDEF);
+    rb_add_method(rb_singleton_class(klass), ID_ALLOCATOR, 0, NOEX_UNDEF);
 }
 
 static NODE*

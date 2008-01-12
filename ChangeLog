@@ -1,3 +1,10 @@
+Sat Jan 12 18:27:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_define_alloc_func, rb_undef_alloc_func): should
+	  define/undef on a signleton class.  [ruby-core:09959]
+
+9959]
+
 Sat Jan 12 12:04:14 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: tuning for performance.
