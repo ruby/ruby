@@ -89,3 +89,12 @@ assert_equal 'ok', %q{
   end
   END
 }, '[ruby-core:14641]'
+
+assert_equal 'true', %{
+  pid = fork {
+      exit t.status != "run"
+  }
+  Process.wait pid
+  $?.success?
+}
+
