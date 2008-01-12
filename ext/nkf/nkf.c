@@ -133,10 +133,6 @@ int nkf_split_options(const char *arg)
  *
  *     require 'nkf'
  *     output = NKF.nkf("-s", input)
- *
- *  *Note*
- *  By default, nkf decodes MIME encoded string.
- *  If you want not to decode input, use NKF.nkf with <b>-m0</b> flag.
  */
 
 static VALUE
@@ -472,9 +468,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
 void
 Init_nkf()
 {
-    /* hoge */
     VALUE mNKF = rb_define_module("NKF");
-    /* hoge */
 
     rb_define_module_function(mNKF, "nkf", rb_nkf_convert, 2);
     rb_define_module_function(mNKF, "guess", rb_nkf_guess, 1);

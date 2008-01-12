@@ -1,4 +1,9 @@
+Sat Jan 12 12:44:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf.c: rdoc update.
+
 Sat Jan 12 12:01:49 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
 
 	* lib/date.rb, lib/date/format.rb: tuning for performance.
 
