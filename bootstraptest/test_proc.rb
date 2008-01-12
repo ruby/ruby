@@ -253,10 +253,9 @@ assert_equal %q{3}, %q{
     a + 2
   }.call
 }
-
-assert_equal %q{ok}, %q{
+assert_equal %Q{ok\n}, %q{
   class A; def get_block; proc {puts "ok"} end end
   block = A.new.get_block
   GC.start
   block.call
-}
+}, '[ruby-core:14885]'
