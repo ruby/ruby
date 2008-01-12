@@ -312,7 +312,7 @@ clean-enc:
 
 distclean: distclean-ext distclean-local distclean-enc
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) config.h rbconfig.rb yasmdata.rb
+	@$(RM) $(MKFILES) config.h rbconfig.rb yasmdata.rb encdb.h
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output $(PREP)
 distclean-ext:
@@ -431,7 +431,7 @@ dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h
+  {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h {$(VPATH)}encdb.h
 enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h
@@ -707,6 +707,9 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}revision.h
 
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
+
+encdb.h: $(srcdir)/enc/make_encdb.rb
+	$(BASERUBY) -I$(srcdir) $(srcdir)/enc/make_encdb.rb
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@

@@ -26,3 +26,6 @@ OnigEncodingDefine(us_ascii, US_ASCII) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
+ENC_ALIAS("ASCII", "US-ASCII");
+ENC_ALIAS("ANSI_X3.4-1986", "US-ASCII");
+

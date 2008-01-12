@@ -361,3 +361,4 @@ OnigEncodingDefine(euc_jp, EUC_JP) = {
   is_allowed_reverse_match,
   0
 };
+ENC_ALIAS("eucJP", "EUC-JP"); /* UI-OSF Application Platform Profile for Japanese Environment Version 1.1 */

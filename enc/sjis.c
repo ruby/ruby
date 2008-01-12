@@ -370,3 +370,7 @@ OnigEncodingDefine(sjis, SJIS) = {
   is_allowed_reverse_match,
   0
 };
+ENC_ALIAS("SJIS", "Shift_JIS");
+ENC_REPLICATE("Windows-31J", "Shift_JIS");
+ENC_ALIAS("CP932", "Windows-31J");
+ENC_ALIAS("csWindows31J", "Windows-31J"); /* IANA.  IE6 don't accept Windows-31J but csWindows31J. */

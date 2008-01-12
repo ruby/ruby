@@ -47,3 +47,4 @@ OnigEncodingDefine(ascii, ASCII) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
+ENC_ALIAS("BINARY", "ASCII-8BIT");

@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "regenc.h"
+#include "encdb.h"
 #include <ctype.h>
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
@@ -291,8 +292,6 @@ rb_enc_alias(const char *alias, const char *orig)
 
 enum {
     ENCINDEX_ASCII,
-    ENCINDEX_EUC_JP,
-    ENCINDEX_SJIS,
     ENCINDEX_UTF8,
     ENCINDEX_BUILTIN_MAX
 };
@@ -303,14 +302,8 @@ rb_enc_init(void)
     enc_table_count = enc_table_expand(ENCINDEX_BUILTIN_MAX);
 #define ENC_REGISTER(enc) enc_register_at(ENCINDEX_##enc, rb_enc_name(ONIG_ENCODING_##enc), ONIG_ENCODING_##enc)
     ENC_REGISTER(ASCII);
-    ENC_REGISTER(EUC_JP);
-    ENC_REGISTER(SJIS);
     ENC_REGISTER(UTF8);
 #undef ENC_REGISTER
-    enc_alias("ASCII", rb_enc_name(ONIG_ENCODING_ASCII));
-    enc_alias("BINARY", rb_enc_name(ONIG_ENCODING_ASCII));
-    enc_alias("eucJP", rb_enc_name(ONIG_ENCODING_EUC_JP)); /* UI-OSF Application Platform Profile for Japanese Environment Version 1.1 */
-    enc_alias("SJIS", rb_enc_name(ONIG_ENCODING_SJIS));
 }
 
 rb_encoding *
@@ -373,6 +366,20 @@ rb_enc_find_index(const char *name)
 	OBJ_FREEZE(enclib);
 	if (RTEST(rb_protect(require_enc, enclib, 0)))
 	    i = rb_enc_registered(name);
+	else {
+	    st_data_t key = (st_data_t)name, orig;
+	    if (st_lookup(enc_table_replica_name, key, &orig)) {
+		i = rb_enc_find_index((char *)orig);
+		if (i < 0) {
+		    rb_raise(rb_eRuntimeError, "unknown original encoding name - %s for %s", (char *)orig, name);
+		}
+		i = rb_enc_replicate(name, rb_enc_from_index(i));
+		st_delete(enc_table_replica_name, &key, &orig);
+	    } else if (st_lookup(enc_table_alias_name, key, &orig)) {
+		i = rb_enc_alias(name, (char *)orig);
+		st_delete(enc_table_replica_name, &key, &orig);
+	    }
+	}
 	rb_set_errinfo(Qnil);
     }
     return i;
@@ -978,6 +985,40 @@ set_encoding_alias(st_data_t name, st_data_t orig, st_data_t arg)
     return ST_CONTINUE;
 }
 
+static VALUE
+rb_enc_name_list(VALUE klass)
+{
+    VALUE ary = rb_ary_new2(enc_name_list_size);
+    int i;
+    for (i = 0; i < enc_name_list_size; i++) {
+	rb_ary_push(ary, rb_str_new2(enc_name_list[i]));
+    }
+    return ary;
+}
+
+static int
+rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
+{
+    rb_hash_aset((VALUE)arg, rb_str_new2((char *)name), rb_enc_name(rb_enc_from_index((int)orig)));
+    return 0;
+}
+
+static int
+rb_enc_aliases_str_i(st_data_t name, st_data_t orig, st_data_t arg)
+{
+    rb_hash_aset((VALUE)arg, rb_str_new2((char *)name), rb_str_new2((char *)orig));
+    return 0;
+}
+
+static VALUE
+rb_enc_aliases(VALUE klass)
+{
+    VALUE aliases = rb_hash_new();
+    st_foreach(enc_table_alias, rb_enc_aliases_enc_i, (st_data_t)aliases);
+    st_foreach(enc_table_alias_name, rb_enc_aliases_str_i, (st_data_t)aliases);
+    return aliases;
+}
+
 void
 Init_Encoding(void)
 {
@@ -993,6 +1034,8 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "base_encoding", enc_base_encoding, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
+    rb_define_singleton_method(rb_cEncoding, "name_list", rb_enc_name_list, 0);
+    rb_define_singleton_method(rb_cEncoding, "aliases", rb_enc_aliases, 0);
     rb_define_singleton_method(rb_cEncoding, "find", enc_find, 1);
     rb_define_singleton_method(rb_cEncoding, "compatible?", enc_compatible_p, 2);
 
@@ -1005,15 +1048,7 @@ Init_Encoding(void)
     /* dummy for unsupported, statefull encoding */
     rb_define_dummy_encoding("ISO-2022-JP");
 
-    rb_enc_replicate("Windows-31J", rb_enc_from_index(ENCINDEX_SJIS));
-    rb_enc_alias("CP932", "Windows-31J");
-    rb_enc_alias("csWindows31J", "Windows-31J"); /* IANA.  IE6 don't accept Windows-31J but csWindows31J. */
-
-    for (i = 0; i < enc_table_size; ++i) {
-	rb_encoding *enc = enc_table[i].enc;
-	if (enc) set_encoding_const(rb_enc_name(enc), enc);
-    }
-    st_foreach(enc_table_alias, set_encoding_alias, 0);
+    enc_init_db();
 }
 
 /* locale insensitive functions */
