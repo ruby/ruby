@@ -94,3 +94,6 @@ OnigEncodingDefine(iso_8859_11, ISO_8859_11) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
+ENC_ALIAS("ISO8859-11", "ISO-8859-11");
+ENC_REPLICATE("Windows-874", "ISO-8859-11");
+ENC_ALIAS("CP874", "ISO-8859-11");

@@ -13,7 +13,7 @@ encodings = []
 replicas = {}
 aliases = {}
 encdir = ARGV[0]
-Dir.open(encdir) {|d| d.grep(/.+\.c\z/)}.each do |fn|
+Dir.open(encdir) {|d| d.grep(/.+\.c\z/)}.sort.each do |fn|
   open(File.join(encdir,fn)) do |f|
     orig = nil
     name = nil
@@ -26,19 +26,19 @@ Dir.open(encdir) {|d| d.grep(/.+\.c\z/)}.each do |fn|
     encodings << $1 if $1
     f.each_line do |line|
       if /^ENC_REPLICATE\(\s*"([^"]+)"\s*,\s*"([^"]+)"/o =~ line
+	encodings << $1
 	replicas[$1] = $2
       elsif /^ENC_ALIAS\(\s*"([^"]+)"\s*,\s*"([^"]+)"/o =~ line
+	encodings << $1
 	aliases[$1] = $2
       end
     end
   end
 end
-p aliases
+
 open('encdb.h', 'wb') do |f|
   f.puts 'static const char *const enc_name_list[] = {'
   encodings.each {|name| f.puts'    "%s",' % name}
-  replicas.each_key {|name| f.puts'    "%s",' % name}
-  aliases.each_key {|name| f.puts'    "%s",' % name}
   f.puts('};', '', 'static void', 'enc_init_db(void)', '{')
   replicas.each_pair {|name, orig|
     f.puts '    ENC_REPLICATE("%s", "%s");' % [name, orig]

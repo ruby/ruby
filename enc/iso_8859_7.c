@@ -224,3 +224,6 @@ OnigEncodingDefine(iso_8859_7, ISO_8859_7) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
+ENC_ALIAS("ISO8859-7", "ISO-8859-7");
+ENC_REPLICATE("Windows-1253", "ISO-8859-7");
+ENC_ALIAS("CP1253", "Windows-1253");

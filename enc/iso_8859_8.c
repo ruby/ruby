@@ -94,3 +94,6 @@ OnigEncodingDefine(iso_8859_8, ISO_8859_8) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
+ENC_ALIAS("ISO8859-8", "ISO-8859-8");
+ENC_REPLICATE("Windows-1255", "ISO-8859-8");
+ENC_ALIAS("CP1255", "Windows-1255");

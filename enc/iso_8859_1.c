@@ -272,3 +272,6 @@ OnigEncodingDefine(iso_8859_1, ISO_8859_1) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
+ENC_ALIAS("ISO8859-1", "ISO-8859-1");
+ENC_REPLICATE("Windows-1252", "ISO-8859-1");
+ENC_ALIAS("CP1252", "Windows-1252");

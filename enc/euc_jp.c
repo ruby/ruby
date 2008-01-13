@@ -364,3 +364,6 @@ OnigEncodingDefine(euc_jp, EUC_JP) = {
   0
 };
 ENC_ALIAS("eucJP", "EUC-JP"); /* UI-OSF Application Platform Profile for Japanese Environment Version 1.1 */
+ENC_REPLICATE("eucJP-ms", "EUC-JP"); /* TOG/JVC CDE/Motif Technical WG */
+ENC_ALIAS("euc-jp-ms", "EUC-JP");
+ENC_REPLICATE("CP51932", "EUC-JP"); /* Windows CodePage 51932 */

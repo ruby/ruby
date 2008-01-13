@@ -28,4 +28,4 @@ OnigEncodingDefine(us_ascii, US_ASCII) = {
 };
 ENC_ALIAS("ASCII", "US-ASCII");
 ENC_ALIAS("ANSI_X3.4-1986", "US-ASCII");
-
+ENC_ALIAS("646", "US-ASCII");

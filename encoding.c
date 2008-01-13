@@ -1087,10 +1087,13 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
     rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
+    enc_init_db();
+
     /* dummy for unsupported, statefull encoding */
     rb_define_dummy_encoding("ISO-2022-JP");
-
-    enc_init_db();
+    rb_enc_alias("ISO2022-JP", "ISO-2022-JP");
+    rb_define_dummy_encoding("ISO-2022-JP-2");
+    rb_enc_alias("ISO2022-JP-2", "ISO-2022-JP-2");
 }
 
 /* locale insensitive functions */
