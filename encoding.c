@@ -297,8 +297,6 @@ rb_enc_alias(const char *alias, const char *orig)
 
 enum {
     ENCINDEX_ASCII,
-    ENCINDEX_EUC_JP,
-    ENCINDEX_SJIS,
     ENCINDEX_UTF8,
     ENCINDEX_BUILTIN_MAX
 };
@@ -309,8 +307,6 @@ rb_enc_init(void)
     enc_table.count = enc_table_expand(ENCINDEX_BUILTIN_MAX);
 #define ENC_REGISTER(enc) enc_register_at(ENCINDEX_##enc, rb_enc_name(ONIG_ENCODING_##enc), ONIG_ENCODING_##enc)
     ENC_REGISTER(ASCII);
-    ENC_REGISTER(EUC_JP);
-    ENC_REGISTER(SJIS);
     ENC_REGISTER(UTF8);
 #undef ENC_REGISTER
 }

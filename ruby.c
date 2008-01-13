@@ -709,11 +709,11 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		rb_encoding *enc = 0;
 		switch (*s) {
 		  case 'E': case 'e':
-		    enc = ONIG_ENCODING_EUC_JP;
+		    enc = enc = rb_enc_find("EUC-JP");
 		    break;
 		  case 'S': case 's':
 		    enc = rb_enc_find("Windows-31J");
-		    if (!enc) enc = ONIG_ENCODING_SJIS;
+		    if (!enc) enc = rb_enc_find("Shift_JIS");
 		    break;
 		  case 'U': case 'u':
 		    enc = ONIG_ENCODING_UTF8;

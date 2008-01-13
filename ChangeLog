@@ -1,3 +1,16 @@
+Sun Jan 13 11:41:11 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (ENCINDEX_EUC_JP, ENCINDEX_SJIS): removed.
+	  (rb_enc_init): EUC-JP and Shift_JIS are not builtin now.
+
+	* enc/Makefile.in: ditto.
+
+	* common.mk: ditto.
+
+	* ruby.c (proc_options): ditto.
+
+	* enc/shift_jis.c, enc/euc_jp.c: fixes for romove from builtin.
+
 Sun Jan 13 10:21:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_table): packed all enc_table stuff.

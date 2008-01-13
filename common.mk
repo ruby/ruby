@@ -664,12 +664,6 @@ goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c {$(VPATH)}ruby.h \
 
 ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
-euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regint.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-shift_jis.$(OBJEXT): {$(VPATH)}shift_jis.c {$(VPATH)}regint.h {$(VPATH)}config.h \
-  {$(VPATH)}defines.h {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}st.h
 unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h

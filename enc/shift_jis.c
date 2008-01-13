@@ -29,6 +29,8 @@
 
 #include "regint.h"
 
+OnigEncodingDeclare(Shift_JIS);
+
 static const int EncLen_SJIS[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -150,7 +152,7 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
   int c, i, len;
   OnigCodePoint n;
 
-  len = enclen(ONIG_ENCODING_SJIS, p, end);
+  len = enclen(&encoding_Shift_JIS, p, end);
   c = *p++;
   n = c;
   if (len == 1) return n;
@@ -172,7 +174,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
   *p++ = (UChar )(code & 0xff);
 
 #if 0
-  if (enclen(ONIG_ENCODING_SJIS, buf) != (p - buf))
+  if (enclen(&encoding_Shift_JIS, buf) != (p - buf))
     return REGERR_INVALID_CODE_POINT_VALUE;
 #endif
   return p - buf;
@@ -192,7 +194,7 @@ mbc_case_fold(OnigCaseFoldType flag,
   }
   else {
     int i;
-    int len = enclen(ONIG_ENCODING_SJIS, p, end);
+    int len = enclen(&encoding_Shift_JIS, p, end);
 
     for (i = 0; i < len; i++) {
       *lower++ = *p++;
@@ -207,7 +209,7 @@ static int
 is_mbc_ambiguous(OnigCaseFoldType flag,
 		 const UChar** pp, const UChar* end)
 {
-  return onigenc_mbn_is_mbc_ambiguous(ONIG_ENCODING_SJIS, flag, pp, end);
+  return onigenc_mbn_is_mbc_ambiguous(&encoding_Shift_JIS, flag, pp, end);
                                       
 }
 #endif
@@ -245,7 +247,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
       }
     } 
   }
-  len = enclen(ONIG_ENCODING_SJIS, p, s);
+  len = enclen(&encoding_Shift_JIS, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));
@@ -351,7 +353,7 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
   }
 }
 
-OnigEncodingDefine(sjis, SJIS) = {
+OnigEncodingDefine(shift_jis, Shift_JIS) = {
   mbc_enc_len,
   "Shift_JIS",   /* name */
   2,             /* max byte length */
