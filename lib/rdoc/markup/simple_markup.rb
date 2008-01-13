@@ -1,5 +1,7 @@
-# = Introduction
-#
+require 'rdoc/markup/simple_markup/fragments'
+require 'rdoc/markup/simple_markup/lines.rb'
+
+##
 # SimpleMarkup parses plain text documents and attempts to decompose
 # them into their constituent parts. Some of these parts are high-level:
 # paragraphs, chunks of verbatim text, list entries and the like. Other
@@ -65,7 +67,7 @@
 #
 #       ant::  a little insect that is known
 #              to enjoy picnics
-#     
+#
 #   This latter style guarantees that the list bodies' left margins are
 #   aligned: think of them as a two column table.
 #
@@ -107,19 +109,13 @@
 #
 # = Using SimpleMarkup
 #
-# For information on using SimpleMarkup programatically, 
-# see SM::SimpleMarkup.
-#
+# For information on using SimpleMarkup programatically, see SM::SimpleMarkup.
+#--
 # Author::   Dave Thomas,  dave@pragmaticprogrammer.com
 # Version::  0.0
 # License::  Ruby license
 
-
-
-require 'rdoc/markup/simple_markup/fragments'
-require 'rdoc/markup/simple_markup/lines.rb'
-
-module SM  #:nodoc:
+module SM
 
   # == Synopsis
   #
@@ -162,25 +158,18 @@ module SM  #:nodoc:
   #   h.add_tag(:STRIKE, "<strike>", "</strike>")
   #
   #   puts "<body>" + p.convert(ARGF.read, h) + "</body>"
-  #
-  # == Output Formatters
-  #
-  # _missing_
-  #
-  #
 
   class SimpleMarkup
 
     SPACE = ?\s
 
     # List entries look like:
-    #  *       text
-    #  1.      text
-    #  [label] text
-    #  label:: text
+    #   *       text
+    #   1.      text
+    #   [label] text
+    #   label:: text
     #
-    # Flag it as a list entry, and
-    # work out the indent for subsequent lines
+    # Flag it as a list entry, and work out the indent for subsequent lines
 
     SIMPLE_LIST_RE = /^(
                   (  \*          (?# bullet)
@@ -197,12 +186,10 @@ module SM  #:nodoc:
                         )(?:\s+|$)
                       )/x
 
-
     ##
-    # take a block of text and use various heuristics to determine
-    # it's structure (paragraphs, lists, and so on). Invoke an
-    # event handler as we identify significant chunks.
-    #
+    # Take a block of text and use various heuristics to determine it's
+    # structure (paragraphs, lists, and so on). Invoke an event handler as we
+    # identify significant chunks.
 
     def initialize
       @am = AttributeManager.new
@@ -210,41 +197,39 @@ module SM  #:nodoc:
     end
 
     ##
-    # Add to the sequences used to add formatting to an individual word 
-    # (such as *bold*). Matching entries will generate attibutes
-    # that the output formatters can recognize by their +name+
+    # Add to the sequences used to add formatting to an individual word (such
+    # as *bold*). Matching entries will generate attibutes that the output
+    # formatters can recognize by their +name+.
 
     def add_word_pair(start, stop, name)
       @am.add_word_pair(start, stop, name)
     end
 
     ##
-    # Add to the sequences recognized as general markup
-    #
+    # Add to the sequences recognized as general markup.
 
     def add_html(tag, name)
       @am.add_html(tag, name)
     end
 
     ##
-    # Add to other inline sequences. For example, we could add
-    # WikiWords using something like:
+    # Add to other inline sequences. For example, we could add WikiWords using
+    # something like:
     #
     #    parser.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
     #
-    # Each wiki word will be presented to the output formatter 
-    # via the accept_special method
-    #
+    # Each wiki word will be presented to the output formatter via the
+    # accept_special method.
 
     def add_special(pattern, name)
       @am.add_special(pattern, name)
     end
 
-
-    # We take a string, split it into lines, work out the type of
-    # each line, and from there deduce groups of lines (for example
-    # all lines in a paragraph). We then invoke the output formatter
-    # using a Visitor to display the result
+    ##
+    # We take a string, split it into lines, work out the type of each line,
+    # and from there deduce groups of lines (for example all lines in a
+    # paragraph). We then invoke the output formatter using a Visitor to
+    # display the result.
 
     def convert(str, op)
       @lines = Lines.new(str.split(/\r?\n/).collect { |aLine| 
@@ -258,16 +243,11 @@ module SM  #:nodoc:
       group.accept(@am, op)
     end
 
-
-    #######
     private
-    #######
-
 
     ##
     # Look through the text at line indentation. We flag each line as being
-    # Blank, a paragraph, a list element, or verbatim text
-    #
+    # Blank, a paragraph, a list element, or verbatim text.
 
     def assign_types_to_lines(margin = 0, level = 0)
 
@@ -362,23 +342,24 @@ module SM  #:nodoc:
       end
     end
 
-    # Handle labeled list entries, We have a special case
-    # to deal with. Because the labels can be long, they force
-    # the remaining block of text over the to right:
+    ##
+    # Handle labeled list entries, We have a special case to deal with.
+    # Because the labels can be long, they force the remaining block of text
+    # over the to right:
     #
-    # this is a long label that I wrote:: and here is the
-    #                                     block of text with
-    #                                     a silly margin
+    #   this is a long label that I wrote:: and here is the
+    #                                       block of text with
+    #                                       a silly margin
     #
-    # So we allow the special case. If the label is followed
-    # by nothing, and if the following line is indented, then
-    # we take the indent of that line as the new margin
+    # So we allow the special case. If the label is followed by nothing, and
+    # if the following line is indented, then we take the indent of that line
+    # as the new margin.
     #
-    # this is a long label that I wrote::
-    #     here is a more reasonably indented block which
-    #     will ab attached to the label.
+    #   this is a long label that I wrote::
+    #       here is a more reasonably indented block which
+    #       will be attached to the label.
     #
-    
+
     def handled_labeled_list(line, level, margin, offset, prefix)
       prefix_length = prefix.length
       text = line.text
@@ -425,12 +406,12 @@ module SM  #:nodoc:
       return true
     end
 
-    # Return a block consisting of fragments which are
-    # paragraphs, list entries or verbatim text. We merge consecutive
-    # lines of the same type and level together. We are also slightly
-    # tricky with lists: the lines following a list introduction
-    # look like paragraph lines at the next level, and we remap them
-    # into list entries instead
+    ##
+    # Return a block consisting of fragments which are paragraphs, list
+    # entries or verbatim text. We merge consecutive lines of the same type
+    # and level together. We are also slightly tricky with lists: the lines
+    # following a list introduction look like paragraph lines at the next
+    # level, and we remap them into list entries instead.
 
     def group_lines
       @lines.rewind
@@ -460,17 +441,23 @@ module SM  #:nodoc:
       block
     end
 
-    ## for debugging, we allow access to our line contents as text
+    ##
+    # For debugging, we allow access to our line contents as text.
+
     def content
       @lines.as_text
     end
     public :content
 
-    ## for debugging, return the list of line types
+    ##
+    # For debugging, return the list of line types.
+
     def get_line_types
       @lines.line_types
     end
     public :get_line_types
+
   end
 
 end
+

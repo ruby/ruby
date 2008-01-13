@@ -50,7 +50,7 @@ module SM
 
     ##
     # Set up the standard mapping of attributes to LaTeX
-    #
+
     def init_tags
       @attr_tags = [
         InlineTag.new(SM::Attribute.bitmap_for(:BOLD), l("\\textbf{"), l("}")),
@@ -61,6 +61,7 @@ module SM
 
     ##
     # Escape a LaTeX string
+
     def escape(str)
 # $stderr.print "FE: ", str
       s = str.
@@ -80,13 +81,12 @@ module SM
     ##
     # Add a new set of LaTeX tags for an attribute. We allow
     # separate start and end tags for flexibility
-    #
+
     def add_tag(name, start, stop)
       @attr_tags << InlineTag.new(SM::Attribute.bitmap_for(name), start, stop)
     end
 
-
-    ## 
+    ##
     # Here's the client side of the visitor pattern
 
     def start_accepting
@@ -116,7 +116,7 @@ module SM
     end
 
     def accept_list_start(am, fragment)
-      @res << list_name(fragment.type, true) <<"\n"
+      @res << list_name(fragment.type, true) << "\n"
       @in_list_entry.push false
     end
 
@@ -124,7 +124,7 @@ module SM
       if tag = @in_list_entry.pop
         @res << tag << "\n"
       end
-      @res << list_name(fragment.type, false) <<"\n"
+      @res << list_name(fragment.type, false) << "\n"
     end
 
     def accept_list_item(am, fragment)
@@ -144,6 +144,7 @@ module SM
       @res << convert_heading(fragment.head_level, am.flow(fragment.txt))
     end
 
+    ##
     # This is a higher speed (if messier) version of wrap
 
     def wrap(txt, line_len = 76)
@@ -173,11 +174,7 @@ module SM
       res
     end
 
-    #######################################################################
-
     private
-
-    #######################################################################
 
     def on_tags(res, item)
       attr_mask = item.turn_on
@@ -220,13 +217,12 @@ module SM
       res
     end
 
+    ##
     # some of these patterns are taken from SmartyPants...
 
     def convert_string(item)
-
       escape(item).
-      
-      
+
       # convert ... to elipsis (and make sure .... becomes .<elipsis>)
         gsub(/\.\.\.\./, '.\ldots{}').gsub(/\.\.\./, '\ldots{}').
 
@@ -270,7 +266,7 @@ module SM
         when 4 then "\\subsubsection{"
         else  "\\paragraph{"
         end +
-        convert_flow(flow) + 
+        convert_flow(flow) +
         "}\n"
     end
 
@@ -304,7 +300,8 @@ module SM
 
     def list_item_start(am, fragment)
       case fragment.type
-      when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA, ListBase::LOWERALPHA
+      when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA,
+           ListBase::LOWERALPHA
         "\\item "
 
       when ListBase::LABELED
@@ -319,7 +316,8 @@ module SM
 
     def list_end_for(fragment_type)
       case fragment_type
-      when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA, ListBase::LOWERALPHA, ListBase::LABELED
+      when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA,
+           ListBase::LOWERALPHA, ListBase::LABELED
         ""
       when ListBase::NOTE
         "\\\\\n"
@@ -331,3 +329,4 @@ module SM
   end
 
 end
+

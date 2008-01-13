@@ -1,10 +1,9 @@
 module SM
 
-  ## 
+  ##
   # Handle common directives that can occur in a block of text:
   #
   # : include : filename
-  #
 
   class PreProcess
 
@@ -13,12 +12,12 @@ module SM
       @include_path = include_path
     end
 
-    # Look for common options in a chunk of text. Options that
-    # we don't handle are passed back to our caller
-    # as |directive, param| 
+    ##
+    # Look for common options in a chunk of text. Options that we don't handle
+    # are passed back to our caller as |directive, param|
 
     def handle(text)
-      text.gsub!(/^([ \t#]*):(\w+):\s*(.+)?\n/) do 
+      text.gsub!(/^([ \t#]*):(\w+):\s*(.+)?\n/) do
         prefix    = $1
         directive = $2.downcase
         param     = $3
@@ -34,11 +33,10 @@ module SM
       end
     end
 
-    #######
     private
-    #######
 
-    # Include a file, indenting it correctly
+    ##
+    # Include a file, indenting it correctly.
 
     def include_file(name, indent)
       if (full_name = find_include_file(name))
@@ -55,9 +53,9 @@ module SM
       end
     end
 
-    # Look for the given file in the directory containing the current
-    # file, and then in each of the directories specified in the
-    # RDOC_INCLUDE path
+    ##
+    # Look for the given file in the directory containing the current file,
+    # and then in each of the directories specified in the RDOC_INCLUDE path
 
     def find_include_file(name)
       to_search = [ File.dirname(@input_file_name) ].concat @include_path
@@ -70,4 +68,6 @@ module SM
     end
 
   end
+
 end
+

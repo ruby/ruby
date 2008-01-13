@@ -24,7 +24,7 @@ module SM
 
     ##
     # Set up the standard mapping of attributes to HTML tags
-    #
+
     def init_tags
       @attr_tags = [
         InlineTag.new(SM::Attribute.bitmap_for(:BOLD), "<b>", "</b>"),
@@ -34,24 +34,23 @@ module SM
     end
 
     ##
-    # Add a new set of HTML tags for an attribute. We allow
-    # separate start and end tags for flexibility
-    #
+    # Add a new set of HTML tags for an attribute. We allow separate start and
+    # end tags for flexibility.
+
     def add_tag(name, start, stop)
       @attr_tags << InlineTag.new(SM::Attribute.bitmap_for(name), start, stop)
     end
 
     ##
-    # Given an HTML tag, decorate it with class information
-    # and the like if required. This is a no-op in the base
-    # class, but is overridden in HTML output classes that
-    # implement style sheets
+    # Given an HTML tag, decorate it with class information and the like if
+    # required. This is a no-op in the base class, but is overridden in HTML
+    # output classes that implement style sheets.
 
     def annotate(tag)
       tag
     end
 
-    ## 
+    ##
     # Here's the client side of the visitor pattern
 
     def start_accepting
@@ -82,7 +81,7 @@ module SM
     end
 
     def accept_list_start(am, fragment)
-      @res << html_list_name(fragment.type, true) <<"\n"
+      @res << html_list_name(fragment.type, true) << "\n"
       @in_list_entry.push false
     end
 
@@ -90,7 +89,7 @@ module SM
       if tag = @in_list_entry.pop
         @res << annotate(tag) << "\n"
       end
-      @res << html_list_name(fragment.type, false) <<"\n"
+      @res << html_list_name(fragment.type, false) << "\n"
     end
 
     def accept_list_item(am, fragment)
@@ -110,6 +109,7 @@ module SM
       @res << convert_heading(fragment.head_level, am.flow(fragment.txt))
     end
 
+    ##
     # This is a higher speed (if messier) version of wrap
 
     def wrap(txt, line_len = 76)
@@ -139,11 +139,7 @@ module SM
       res
     end
 
-    #######################################################################
-
     private
-
-    #######################################################################
 
     def on_tags(res, item)
       attr_mask = item.turn_on
@@ -185,12 +181,12 @@ module SM
       res
     end
 
+    ##
     # some of these patterns are taken from SmartyPants...
 
     def convert_string(item)
       CGI.escapeHTML(item).
-      
-      
+
       # convert -- to em-dash, (-- to en-dash)
         gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
 
@@ -233,8 +229,8 @@ module SM
 
     def convert_heading(level, flow)
       res =
-        annotate("<h#{level}>") + 
-        convert_flow(flow) + 
+        annotate("<h#{level}>") +
+        convert_flow(flow) +
         annotate("</h#{level}>\n")
     end
 
@@ -249,21 +245,21 @@ module SM
         annotate("<li>")
 
       when ListBase::UPPERALPHA
-	annotate("<li type=\"A\">")
+        annotate("<li type=\"A\">")
 
       when ListBase::LOWERALPHA
-	annotate("<li type=\"a\">")
+        annotate("<li type=\"a\">")
 
       when ListBase::LABELED
         annotate("<dt>") +
-          convert_flow(am.flow(fragment.param)) + 
+          convert_flow(am.flow(fragment.param)) +
           annotate("</dt>") +
           annotate("<dd>")
 
       when ListBase::NOTE
         annotate("<tr>") +
           annotate("<td valign=\"top\">") +
-          convert_flow(am.flow(fragment.param)) + 
+          convert_flow(am.flow(fragment.param)) +
           annotate("</td>") +
           annotate("<td>")
       else
@@ -273,7 +269,8 @@ module SM
 
     def list_end_for(fragment_type)
       case fragment_type
-      when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA, ListBase::LOWERALPHA
+      when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA,
+           ListBase::LOWERALPHA
         "</li>"
       when ListBase::LABELED
         "</dd>"
@@ -287,3 +284,4 @@ module SM
   end
 
 end
+

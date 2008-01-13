@@ -1,7 +1,8 @@
 module SM
 
-  # We manage a set of attributes. Each attribute has a symbol name
-  # and a bit value
+  ##
+  # We manage a set of attributes. Each attribute has a symbol name and a bit
+  # value
 
   class Attribute
     SPECIAL = 1
@@ -36,19 +37,21 @@ module SM
     end
   end
 
-
-  # An AttrChanger records a change in attributes. It contains
-  # a bitmap of the attributes to turn on, and a bitmap of those to
-  # turn off
+  ##
+  # An AttrChanger records a change in attributes. It contains a bitmap of the
+  # attributes to turn on, and a bitmap of those to turn off
 
   AttrChanger = Struct.new(:turn_on, :turn_off)
+
   class AttrChanger
     def to_s
       "Attr: +#{Attribute.as_string(@turn_on)}/-#{Attribute.as_string(@turn_on)}"
     end
   end
 
+  ##
   # An array of attributes which parallels the characters in a string
+
   class AttrSpan
     def initialize(length)
       @attrs = Array.new(length, 0)
@@ -89,45 +92,50 @@ module SM
         object_id, @type, SM::Attribute.as_string(type), text.dump]
     end
   end
-  
+
   class AttributeManager
 
     NULL = "\000".freeze
 
     ##
-    # We work by substituting non-printing characters in to the
-    # text. For now I'm assuming that I can substitute
-    # a character in the range 0..8 for a 7 bit character
-    # without damaging the encoded string, but this might
-    # be optimistic
-    #
+    # We work by substituting non-printing characters in to the text. For now
+    # I'm assuming that I can substitute a character in the range 0..8 for a 7
+    # bit character without damaging the encoded string, but this might be
+    # optimistic
 
     A_PROTECT  = 004
     PROTECT_ATTR  = A_PROTECT.chr
 
-    # This maps delimiters that occur around words (such as
-    # *bold* or +tt+) where the start and end delimiters
-    # and the same. This lets us optimize the regexp
+    ##
+    # This maps delimiters that occur around words (such as *bold* or +tt+)
+    # where the start and end delimiters and the same. This lets us optimize
+    # the regexp
+
     MATCHING_WORD_PAIRS = {}
 
-    # And this is used when the delimiters aren't the same. In this
-    # case the hash maps a pattern to the attribute character
+    ##
+    # And this is used when the delimiters aren't the same. In this case the
+    # hash maps a pattern to the attribute character
+
     WORD_PAIR_MAP = {}
 
+    ##
     # This maps HTML tags to the corresponding attribute char
+
     HTML_TAGS = {}
 
-    # And this maps _special_ sequences to a name. A special sequence
-    # is something like a WikiWord
+    ##
+    # And this maps _special_ sequences to a name. A special sequence is
+    # something like a WikiWord
+
     SPECIAL = {}
 
-    # Return an attribute object with the given turn_on
-    # and turn_off bits set
+    ##
+    # Return an attribute object with the given turn_on and turn_off bits set
 
     def attribute(turn_on, turn_off)
       AttrChanger.new(turn_on, turn_off)
     end
-
 
     def change_attribute(current, new)
       diff = current ^ new
@@ -147,8 +155,10 @@ module SM
       res
     end
 
-    # Map attributes like <b>text</b>to the sequence \001\002<char>\001\003<char>,
-    # where <char> is a per-attribute specific character
+    ##
+    # Map attributes like <b>text</b>to the sequence
+    # \001\002<char>\001\003<char>, where <char> is a per-attribute specific
+    # character
 
     def convert_attrs(str, attrs)
       # first do matching ones
@@ -194,10 +204,10 @@ module SM
       end
     end
 
-    # A \ in front of a character that would normally be
-    # processed turns off processing. We do this by turning
-    # \< into <#{PROTECT}
-    
+    ##
+    # A \ in front of a character that would normally be processed turns off
+    # processing. We do this by turning \< into <#{PROTECT}
+
     PROTECTABLE = [ "<" << "\\" ]  #"
 
 
@@ -214,7 +224,7 @@ module SM
       add_word_pair("*", "*", :BOLD)
       add_word_pair("_", "_", :EM)
       add_word_pair("+", "+", :TT)
-      
+
       add_html("em", :EM)
       add_html("i",  :EM)
       add_html("b",  :BOLD)
@@ -253,7 +263,7 @@ module SM
 
       puts("Before flow, str='#{@str.dump}'") if $DEBUG_RDOC
       mask_protected_sequences
- 
+
       @attrs = AttrSpan.new(@str.length)
 
       puts("After protecting, str='#{@str.dump}'") if $DEBUG_RDOC
@@ -295,7 +305,6 @@ module SM
       current_attr = 0
       str = ""
 
-      
       str_len = @str.length
 
       # skip leading invisible text
@@ -328,7 +337,7 @@ module SM
           i += 1
         end while i < str_len and @str[i] == "\0"
       end
-      
+
       # tidy up trailing text
       if start_pos < str_len
         res << copy_string(start_pos, str_len)
@@ -343,3 +352,4 @@ module SM
   end
 
 end
+

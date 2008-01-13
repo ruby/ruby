@@ -1,10 +1,9 @@
-##########################################################################
-#
-# We store the lines we're working on as objects of class Line.
-# These contain the text of the line, along with a flag indicating the
-# line type, and an indentation level
-
 module SM
+
+  ##
+  # We store the lines we're working on as objects of class Line.  These
+  # contain the text of the line, along with a flag indicating the line type,
+  # and an indentation level.
 
   class Line
     INFINITY = 9999
@@ -85,15 +84,14 @@ module SM
     end
   end
 
-  ###############################################################################
-  #
+  ##
   # A container for all the lines
-  #
 
   class Lines
+
     include Enumerable
 
-    attr_reader :lines   # for debugging
+    attr_reader :lines # :nodoc:
 
     def initialize(lines)
       @lines = lines
@@ -147,5 +145,8 @@ module SM
     def line_types
       @lines.map {|l| l.type }
     end
+
   end
+
 end
+

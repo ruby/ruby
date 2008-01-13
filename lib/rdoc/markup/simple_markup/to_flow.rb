@@ -40,7 +40,7 @@ module SM
 
     ##
     # Set up the standard mapping of attributes to HTML tags
-    #
+
     def init_tags
       @attr_tags = [
         InlineTag.new(SM::Attribute.bitmap_for(:BOLD), "<b>", "</b>"),
@@ -50,24 +50,23 @@ module SM
     end
 
     ##
-    # Add a new set of HTML tags for an attribute. We allow
-    # separate start and end tags for flexibility
-    #
+    # Add a new set of HTML tags for an attribute. We allow separate start and
+    # end tags for flexibility
+
     def add_tag(name, start, stop)
       @attr_tags << InlineTag.new(SM::Attribute.bitmap_for(name), start, stop)
     end
 
     ##
-    # Given an HTML tag, decorate it with class information
-    # and the like if required. This is a no-op in the base
-    # class, but is overridden in HTML output classes that
-    # implement style sheets
+    # Given an HTML tag, decorate it with class information and the like if
+    # required. This is a no-op in the base class, but is overridden in HTML
+    # output classes that implement style sheets
 
     def annotate(tag)
       tag
     end
 
-    ## 
+    ##
     # Here's the client side of the visitor pattern
 
     def start_accepting
@@ -116,12 +115,7 @@ module SM
       @res << Flow::H.new(fragment.head_level, convert_flow(am.flow(fragment.txt)))
     end
 
-
-    #######################################################################
-
     private
-
-    #######################################################################
 
     def on_tags(res, item)
       attr_mask = item.turn_on
@@ -163,8 +157,6 @@ module SM
       res
     end
 
-    # some of these patterns are taken from SmartyPants...
-
     def convert_string(item)
       CGI.escapeHTML(item)
     end
@@ -178,11 +170,13 @@ module SM
           handled = true
         end
       end
+
       raise "Unhandled special: #{special}" unless handled
+
       special.text
     end
-
 
   end
 
 end
+

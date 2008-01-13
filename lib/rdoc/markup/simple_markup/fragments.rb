@@ -1,11 +1,10 @@
 require 'rdoc/markup/simple_markup/lines.rb'
-#require 'rdoc/markup/simple_markup/to_flow.rb'
 
 module SM
 
   ##
   # A Fragment is a chunk of text, subclassed as a paragraph, a list
-  # entry, or verbatim text
+  # entry, or verbatim text.
 
   class Fragment
     attr_reader   :level, :param, :txt
@@ -47,7 +46,7 @@ module SM
 
   ##
   # A paragraph is a fragment which gets wrapped to fit. We remove all
-  # newlines when we're created, and have them put back on output
+  # newlines when we're created, and have them put back on output.
 
   class Paragraph < Fragment
     type_name Line::PARAGRAPH
@@ -67,7 +66,6 @@ module SM
 
   ##
   # A List is a fragment with some kind of label
-  #
 
   class ListBase < Paragraph
     # List types
@@ -114,16 +112,17 @@ module SM
 
   ##
   # A horizontal rule
+
   class Rule < Fragment
     type_name Line::RULE
   end
 
-
-  # Collect groups of lines together. Each group
-  # will end up containing a flow of text
+  ##
+  # Collect groups of lines together. Each group will end up containing a flow
+  # of text
 
   class LineCollection
-    
+
     def initialize
       @fragments = []
     end
@@ -136,17 +135,20 @@ module SM
       @fragments.each(&b)
     end
 
-    # For testing
-    def to_a
+    def to_a # :nodoc:
       @fragments.map {|fragment| fragment.to_s}
     end
 
+    ##
     # Factory for different fragment types
+
     def fragment_for(*args)
       Fragment.for(*args)
     end
 
-    # tidy up at the end
+    ##
+    # Tidy up at the end
+
     def normalize
       change_verbatim_blank_lines
       add_list_start_and_ends
@@ -159,7 +161,6 @@ module SM
     end
 
     def accept(am, visitor)
-
       visitor.start_accepting
 
       @fragments.each do |fragment|
@@ -185,9 +186,8 @@ module SM
 
       visitor.end_accepting
     end
-    #######
+
     private
-    #######
 
     # If you have:
     #
@@ -197,14 +197,12 @@ module SM
     #   
     #       and more code
     #
-    # You'll end up with the fragments Paragraph, BlankLine, 
-    # Verbatim, BlankLine, Verbatim, BlankLine, etc
+    # You'll end up with the fragments Paragraph, BlankLine, Verbatim,
+    # BlankLine, Verbatim, BlankLine, etc.
     #
-    # The BlankLine in the middle of the verbatim chunk needs to
-    # be changed to a real verbatim newline, and the two
-    # verbatim blocks merged
-    #
-    #    
+    # The BlankLine in the middle of the verbatim chunk needs to be changed to
+    # a real verbatim newline, and the two verbatim blocks merged
+
     def change_verbatim_blank_lines
       frag_block = nil
       blank_count = 0
@@ -232,9 +230,9 @@ module SM
       @fragments.compact!
     end
 
-    # List nesting is implicit given the level of
-    # Make it explicit, just to make life a tad
-    # easier for the output processors
+    ##
+    # List nesting is implicit given the level of indentation. Make it
+    # explicit, just to make life a tad easier for the output processors
 
     def add_list_start_and_ends
       level = 0
@@ -270,8 +268,9 @@ module SM
       @fragments = res
     end
 
-    # now insert start/ends between list entries at the
-    # same level that have different element types
+    ##
+    # Inserts start/ends between list entries at the same level that have
+    # different element types
 
     def add_list_breaks
       res = @fragments
@@ -302,7 +301,8 @@ module SM
       end
     end
 
-    # Finally tidy up the blank lines:
+    ##
+    # Tidy up the blank lines:
     # * change Blank/ListEnd into ListEnd/Blank
     # * remove blank lines at the front
 
@@ -324,5 +324,6 @@ module SM
     end
 
   end
-  
+
 end
+
