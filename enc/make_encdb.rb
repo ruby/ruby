@@ -40,25 +40,21 @@ open('encdb.h', 'wb') do |f|
   replicas.each_key {|name| f.puts'    "%s",' % name}
   aliases.each_key {|name| f.puts'    "%s",' % name}
   f.puts(<<"_TEXT_")
-    NULL
 };
-static const int enc_name_list_size = #{encodings.length + replicas.length + aliases.length};
-static const int enc_aliases_size = #{aliases.length};
-static st_table *enc_table_replica_name;
-static st_table *enc_table_alias_name;
+#define enc_name_list_size (sizeof(enc_name_list)/sizeof(enc_name_list[0]))
 
 static void enc_init_db(void)
 {
-    if (!enc_table_replica_name) {
-	enc_table_replica_name = st_init_strcasetable();
+    if (!enc_table.replica_name) {
+	enc_table.replica_name = st_init_strcasetable();
     }
-    if (!enc_table_alias_name) {
-	enc_table_alias_name = st_init_strcasetable();
+    if (!enc_table.alias_name) {
+	enc_table.alias_name = st_init_strcasetable();
     }
 _TEXT_
   replicas.each_pair {|name, orig|
-    f.puts'    st_insert(enc_table_replica_name, (st_data_t)"%s", (st_data_t)"%s");' % [name, orig]}
+    f.puts'    st_insert(enc_table.replica_name, (st_data_t)"%s", (st_data_t)"%s");' % [name, orig]}
   aliases.each_pair {|name, orig|
-    f.puts'    st_insert(enc_table_alias_name, (st_data_t)"%s", (st_data_t)"%s");' % [name, orig]}
+    f.puts'    st_insert(enc_table.alias_name, (st_data_t)"%s", (st_data_t)"%s");' % [name, orig]}
   f.puts '}'
 end
