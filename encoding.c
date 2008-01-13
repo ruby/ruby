@@ -757,16 +757,14 @@ enc_base_encoding(VALUE self)
  * Returns the list of loaded encodings.
  *
  *   Encoding.list
- *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>,
- *       #<Encoding:Shift_JIS>, #<Encoding:UTF-8>,
+ *   => [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
  *       #<Encoding:ISO-2022-JP (dummy)>]
  *
  *   Encoding.find("US-ASCII")
  *   => #<Encoding:US-ASCII>
  *
  *   Encoding.list
- *   => [#<Encoding:ASCII-8BIT>, #<Encoding:EUC-JP>,
- *       #<Encoding:Shift_JIS>, #<Encoding:UTF-8>,
+ *   => [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>,
  *       #<Encoding:US-ASCII>, #<Encoding:ISO-2022-JP (dummy)>]
  *
  */
@@ -1000,6 +998,22 @@ set_encoding_alias(st_data_t name, st_data_t orig, st_data_t arg)
     return ST_CONTINUE;
 }
 
+/*
+ * call-seq:
+ *   Encoding.name_list => ["enc1", "enc2", ...]
+ *
+ * Returns the list of available encoding names.
+ *
+ *   Encoding.name_list
+ *   => ["US-ASCII", "ASCII-8BIT", "UTF-8",
+ *       "ISO-8859-1", "Shift_JIS", "EUC-JP",
+ *       "Windows-31J",
+ *       "BINARY", "CP932", "eucJP"]
+ *
+ * This list doesn't include dummy encodings.
+ *
+ */
+
 static VALUE
 rb_enc_name_list(VALUE klass)
 {
@@ -1024,6 +1038,18 @@ rb_enc_aliases_str_i(st_data_t name, st_data_t orig, st_data_t arg)
     rb_hash_aset((VALUE)arg, rb_str_new2((char *)name), rb_str_new2((char *)orig));
     return 0;
 }
+
+/*
+ * call-seq:
+ *   Encoding.aliases => {"alias1" => "orig1", "alias2" => "orig2", ...}
+ *
+ * Returns the hash of available encoding alias and original encoding name.
+ *
+ *   Encoding.aliases
+ *   => {"BINARY"=>"ASCII-8BIT", "ASCII"=>"US-ASCII", "ANSI_X3.4-1986"=>"US-ASCII",
+ *       "SJIS"=>"Shift_JIS", "eucJP"=>"EUC-JP", "CP932"=>"Windows-31J"}
+ *
+ */
 
 static VALUE
 rb_enc_aliases(VALUE klass)
