@@ -1,6 +1,6 @@
-require 'rdoc/generators/html_generator'
+require 'rdoc/generators/html'
 
-class RDoc::Generators::CHMGenerator < RDoc::Generators::HTMLGenerator
+class RDoc::Generators::CHM < RDoc::Generators::HTML
 
   HHC_PATH = "c:/Program Files/HTML Help Workshop/hhc.exe"
 
@@ -52,7 +52,7 @@ class RDoc::Generators::CHMGenerator < RDoc::Generators::HTMLGenerator
   # files that go to make up the help.
 
   def create_project_file
-    template = RDoc::TemplatePage.new RDoc::Page::HPP_FILE
+    template = RDoc::TemplatePage.new @template::HPP_FILE
     values = { "title" => @options.title, "opname" => @op_name }
     files = []
     @files.each do |f|
@@ -90,13 +90,13 @@ class RDoc::Generators::CHMGenerator < RDoc::Generators::HTMLGenerator
     end
 
     values = { "contents" => contents }
-    template = RDoc::TemplatePage.new RDoc::Page::CONTENTS
+    template = RDoc::TemplatePage.new @template::CONTENTS
     File.open("contents.hhc", "w") do |f|
       template.write_html_on(f, values)
     end
 
     values = { "index" => index }
-    template = RDoc::TemplatePage.new RDoc::Page::CHM_INDEX
+    template = RDoc::TemplatePage.new @template::CHM_INDEX
     File.open("index.hhk", "w") do |f|
       template.write_html_on(f, values)
     end

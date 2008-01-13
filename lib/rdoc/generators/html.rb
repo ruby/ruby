@@ -6,21 +6,6 @@ require 'rdoc/markup/simple_markup/to_html'
 module RDoc::Generators
 
   ##
-  # Name of sub-direcory that holds file descriptions
-
-  FILE_DIR  = "files"
-
-  ##
-  # Name of sub-direcory that holds class descriptions
-
-  CLASS_DIR = "classes"
-
-  ##
-  # Name of the RDoc CSS file
-
-  CSS_NAME  = "rdoc-style.css"
-
-  ##
   # Build a hash of all items that can be cross-referenced.
   # This is used when we output required and included names:
   # if the names appear in this hash, we can generate
@@ -126,7 +111,7 @@ module RDoc::Generators
         if path[0,1] == '#'     # is this meaningful?
           url = path
         else
-          url = HTMLGenerator.gen_url(@from_path, path)
+          url = HTML.gen_url(@from_path, path)
         end
       end
 
@@ -235,7 +220,7 @@ module RDoc::Generators
       if %r{^(https?:/)?/} =~ css_name
         return css_name
       else
-        return HTMLGenerator.gen_url(path, css_name)
+        return HTML.gen_url(path, css_name)
       end
     end
 
@@ -268,6 +253,9 @@ module RDoc::Generators
     def initialize(context, options)
       @context = context
       @options = options
+
+      # HACK ugly
+      @template = options.template_class
     end
 
     ##
@@ -285,7 +273,7 @@ module RDoc::Generators
       if @options.all_one_file
         "#" + path
       else
-        HTMLGenerator.gen_url(from_path, path)
+        HTML.gen_url(from_path, path)
       end
     end
 
@@ -513,7 +501,7 @@ module RDoc::Generators
     end
 
     def url(target)
-      HTMLGenerator.gen_url(path, target)
+      HTML.gen_url(path, target)
     end
 
     def aref_to(target)
@@ -618,9 +606,9 @@ module RDoc::Generators
 
     def write_on(f)
       value_hash
-      template = RDoc::TemplatePage.new(RDoc::Page::BODY,
-                                        RDoc::Page::CLASS_PAGE,
-                                        RDoc::Page::METHOD_LIST)
+      template = RDoc::TemplatePage.new(@template::BODY,
+                                        @template::CLASS_PAGE,
+                                        @template::METHOD_LIST)
       template.write_html_on(f, @values)
     end
 
@@ -851,9 +839,11 @@ module RDoc::Generators
 
     def write_on(f)
       value_hash
-      template = RDoc::TemplatePage.new(RDoc::Page::BODY,
-                                        RDoc::Page::FILE_PAGE,
-                                        RDoc::Page::METHOD_LIST)
+
+      template = RDoc::TemplatePage.new(@template::BODY,
+                                        @template::FILE_PAGE,
+                                        @template::METHOD_LIST)
+
       template.write_html_on(f, @values)
     end
 
@@ -903,6 +893,10 @@ module RDoc::Generators
       @context    = context
       @html_class = html_class
       @options    = options
+
+      # HACK ugly
+      @template = options.template_class
+
       @@seq       = @@seq.succ
       @seq        = @@seq
       @@all_methods << self
@@ -913,7 +907,7 @@ module RDoc::Generators
         @source_code = markup_code(ts)
         unless @options.inline_source
           @src_url = create_source_code_file(@source_code)
-          @img_url = HTMLGenerator.gen_url(path, 'source.png')
+          @img_url = HTML.gen_url(path, 'source.png')
         end
       end
 
@@ -928,7 +922,7 @@ module RDoc::Generators
       if @options.all_one_file
         "#" + path
       else
-        HTMLGenerator.gen_url(from_path, path)
+        HTML.gen_url(from_path, path)
       end
     end
 
@@ -988,7 +982,6 @@ module RDoc::Generators
     def params
       # params coming from a call-seq in 'C' will start with the
       # method name
-      p = @context.params
       if p !~ /^\w/
         p = @context.params.gsub(/\s*\#.*/, '')
         p = p.tr("\n", " ").squeeze(" ")
@@ -1016,7 +1009,7 @@ module RDoc::Generators
       FileUtils.mkdir_p(meth_path)
       file_path = File.join(meth_path, @seq) + ".html"
 
-      template = RDoc::TemplatePage.new(RDoc::Page::SRC_PAGE)
+      template = RDoc::TemplatePage.new(@template::SRC_PAGE)
       File.open(file_path, "w") do |f|
         values = {
           'title'     => CGI.escapeHTML(index_name),
@@ -1026,7 +1019,7 @@ module RDoc::Generators
         }
         template.write_html_on(f, values)
       end
-      HTMLGenerator.gen_url(path, file_path)
+      HTML.gen_url(path, file_path)
     end
 
     def self.all_methods
@@ -1149,7 +1142,7 @@ module RDoc::Generators
   #
   # HTML is generated using the Template class.
 
-  class HTMLGenerator
+  class HTML
 
     include MarkUp
 
@@ -1183,9 +1176,9 @@ module RDoc::Generators
       HtmlMethod.reset
 
       if options.all_one_file
-        HTMLGeneratorInOne.new(options)
+        HTMLInOne.new(options)
       else
-        HTMLGenerator.new(options)
+        HTML.new(options)
       end
     end
 
@@ -1226,12 +1219,17 @@ module RDoc::Generators
 
     def load_html_template
       template = @options.template
-      unless template =~ %r{/|\\}
-        template = File.join("rdoc/generators/template",
+
+      unless template =~ %r{/|\\} then
+        template = File.join("rdoc/generators",
                              @options.generator.key, template)
       end
+
       require template
-      extend RDoc::Page
+
+      @template = self.class.const_get @options.template.upcase
+      @options.template_class = @template
+
     rescue LoadError
       $stderr.puts "Could not find HTML template '#{template}'"
       exit 99
@@ -1241,10 +1239,20 @@ module RDoc::Generators
     # Write out the style sheet used by the main frames
 
     def write_style_sheet
-      template = RDoc::TemplatePage.new(RDoc::Page::STYLE)
-      unless @options.css
+      return unless @template.constants.include? :STYLE or
+                    @template.constants.include? 'STYLE'
+
+      template = RDoc::TemplatePage.new @template::STYLE
+
+      unless @options.css then
         File.open(CSS_NAME, "w") do |f|
-          values = { "fonts" => RDoc::Page::FONTS }
+          values = {}
+
+          if @template.constants.include? :FONTS or
+             @template.constants.include? 'FONTS' then
+            values["fonts"] = @template::FONTS
+          end
+
           template.write_html_on(f, values)
         end
       end
@@ -1316,25 +1324,21 @@ module RDoc::Generators
     end
 
     def gen_file_index
-      gen_an_index(@files, 'Files',
-                   RDoc::Page::FILE_INDEX,
-                   "fr_file_index.html")
+      gen_an_index @files, 'Files', @template::FILE_INDEX, "fr_file_index.html"
     end
 
     def gen_class_index
-      gen_an_index(@classes, 'Classes',
-                   RDoc::Page::CLASS_INDEX,
+      gen_an_index(@classes, 'Classes', @template::CLASS_INDEX,
                    "fr_class_index.html")
     end
 
     def gen_method_index
-      gen_an_index(HtmlMethod.all_methods, 'Methods',
-                   RDoc::Page::METHOD_INDEX,
+      gen_an_index(HtmlMethod.all_methods, 'Methods', @template::METHOD_INDEX,
                    "fr_method_index.html")
     end
 
     def gen_an_index(collection, title, template, filename)
-      template = RDoc::TemplatePage.new(RDoc::Page::FR_INDEX_BODY, template)
+      template = RDoc::TemplatePage.new @template::FR_INDEX_BODY, template
       res = []
       collection.sort.each do |f|
         if f.document_self
@@ -1362,7 +1366,7 @@ module RDoc::Generators
     # line.
 
     def gen_main_index
-      template = RDoc::TemplatePage.new RDoc::Page::INDEX
+      template = RDoc::TemplatePage.new @template::INDEX
 
       open 'index.html', 'w'  do |f|
         classes = @classes.sort.map { |klass| klass.value_hash }
@@ -1413,7 +1417,7 @@ module RDoc::Generators
 
   end
 
-  class HTMLGeneratorInOne < HTMLGenerator
+  class HTMLInOne < HTML
 
     def initialize(*args)
       super
@@ -1476,7 +1480,7 @@ module RDoc::Generators
       # this method is defined in the template file
       write_extra_pages if defined? write_extra_pages
 
-      template = RDoc::TemplatePage.new(RDoc::Page::ONE_PAGE)
+      template = RDoc::TemplatePage.new @template::ONE_PAGE
 
       if @options.op_name
         opfile = File.open(@options.op_name, "w")

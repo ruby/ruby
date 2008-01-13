@@ -68,11 +68,11 @@ module RDoc
       File.directory? "#{d}/rdoc/generators"
     end.each do |dir|
       Dir.entries("#{dir}/rdoc/generators").each do |gen|
-        next unless /(\w+)_generator.rb$/ =~ gen
+        next unless /(\w+)\.rb$/ =~ gen
         type = $1
         unless GENERATORS.has_key? type
           GENERATORS[type] = Generator.new("rdoc/generators/#{gen}",
-                                           "#{type.upcase}Generator".intern,
+                                           "#{type.upcase}".intern,
                                            type)
         end
       end

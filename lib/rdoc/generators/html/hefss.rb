@@ -1,81 +1,102 @@
-module RDoc
-module Page
+require 'rdoc/generators/html'
+require 'rdoc/generators/html/html'
 
+module RDoc::Generators::HTML::HEFSS
 
-FONTS = "Verdana, Arial, Helvetica, sans-serif"
+  FONTS = "Verdana, Arial, Helvetica, sans-serif"
 
-STYLE = %{
-body,td,p { font-family: <%= values["fonts"] %>; 
+STYLE = <<-EOF
+body,p { font-family: Verdana, Arial, Helvetica, sans-serif;
+       color: #000040; background: #BBBBBB;
+}
+
+td { font-family: Verdana, Arial, Helvetica, sans-serif;
        color: #000040;
 }
 
-.attr-rw { font-size: xx-small; color: #444488 }
+.attr-rw { font-size: small; color: #444488 }
 
-.title-row { background-color: #CCCCFF;
-             color:      #000010;
+.title-row {color:      #eeeeff;
+	    background: #BBBBDD;
 }
 
-.big-title-font { 
-  color: black;
-  font-weight: bold;
-  font-family: <%= values["fonts"] %>; 
-  font-size: large; 
-  height: 60px;
-  padding: 10px 3px 10px 3px;
+.big-title-font { color: white;
+                  font-family: Verdana, Arial, Helvetica, sans-serif;
+                  font-size: large;
+                  height: 50px}
+
+.small-title-font { color: purple;
+                    font-family: Verdana, Arial, Helvetica, sans-serif;
+                    font-size: small; }
+
+.aqua { color: purple }
+
+.method-name, attr-name {
+      font-family: monospace; font-weight: bold;
 }
 
-.small-title-font { color: black;
-                    font-family: <%= values["fonts"] %>;
-                    font-size:10; }
-
-.aqua { color: black }
-
-.method-name, .attr-name {
-      font-family: font-family: <%= values["fonts"] %>; 
-      font-weight: bold;
-      font-size: small;
-      margin-left: 20px;
-      color: #000033;
-}
-
-.tablesubtitle, .tablesubsubtitle {
+.tablesubtitle {
    width: 100%;
    margin-top: 1ex;
    margin-bottom: .5ex;
-   padding: 5px 0px 5px 3px;
+   padding: 5px 0px 5px 20px;
    font-size: large;
-   color: black;
-   background-color: #CCCCFF;
-   border: thin;
+   color: purple;
+   background: #BBBBCC;
+}
+
+.tablesubsubtitle {
+   width: 100%;
+   margin-top: 1ex;
+   margin-bottom: .5ex;
+   padding: 5px 0px 5px 20px;
+   font-size: medium;
+   color: white;
+   background: #BBBBCC;
 }
 
 .name-list {
-  margin-left: 5px;
+  font-family: monospace;
+  margin-left: 40px;
   margin-bottom: 2ex;
-  line-height: 105%;
+  line-height: 140%;
 }
 
 .description {
-  margin-left: 5px;
+  margin-left: 40px;
   margin-bottom: 2ex;
-  line-height: 105%;
-  font-size: small;
+  line-height: 140%;
 }
 
 .methodtitle {
-  font-size: small;
-  font-weight: bold;
-  text-decoration: none;
-  color: #000033;
-  background-color: white; 
+  font-size: medium;
+  text_decoration: none;
+  padding: 3px 3px 3px 20px;
+  color: #0000AA;
 }
 
-.srclink {
-  font-size: small;
+.column-title {
+  font-size: medium;
   font-weight: bold;
-  text-decoration: none;
-  color: #0000DD;
-  background-color: white;
+  text_decoration: none;
+  padding: 3px 3px 3px 20px;
+  color: #3333CC;
+  }
+
+.variable-name {
+  font-family: monospace;
+  font-size: medium;
+  text_decoration: none;
+  padding: 3px 3px 3px 20px;
+  color: #0000AA;
+}
+
+.row-name {
+  font-size: medium;
+  font-weight: medium;
+  font-family: monospace;
+  text_decoration: none;
+  padding: 3px 3px 3px 20px;
 }
 
 .paramsig {
@@ -84,13 +105,9 @@ body,td,p { font-family: <%= values["fonts"] %>;
 
 .srcbut { float: right }
 
-}
+  EOF
 
-
-############################################################################
-
-
-BODY = %{
+  BODY = <<-EOF
 <html><head>
   <title><%= values["title"] %></title>
   <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>">
@@ -103,7 +120,7 @@ BODY = %{
   //-->
   </script>
 </head>
-<body bgcolor="white">
+<body bgcolor="#BBBBBB">
 
 <%= template_include %>  <!-- banner header -->
 
@@ -128,32 +145,26 @@ BODY = %{
 <% end %>
 </div>
 
-<% if values["methods"] then %>
+<% if values["sections"] then %>
+<% values["sections"].each do |sections| %>
+<% if sections["method_list"] then %>
+<% sections["method_list"].each do |method_list| %>
+<% if method_list["methods"] then %>
 <table cellpadding="5" width="100%">
-<tr><td class="tablesubtitle">Methods</td></tr>
+<tr><td class="tablesubtitle">Subroutines and Functions</td></tr>
 </table><br />
 <div class="name-list">
-<% values["methods"].each do |methods| %>
-<%= href methods["aref"], methods["name"] %>,
+<% method_list["methods"].each do |methods| %>
+<a href="<%= methods["codeurl"] %>" target="source"><%= methods["name"] %></a>
 <% end # values["methods"] %>
 </div>
 <% end %>
-
-
-<% values["sections"].each do |sections| %>
-    <div id="section">
-<% if sections["sectitle"] then %>
-      <h2 class="section-title"><a name="<%= sections["secsequence"] %>"><%= sections["sectitle"] %></a></h2>
-<% if sections["seccomment"] then %>
-      <div class="section-comment">
-        <%= sections["seccomment"] %>
-      </div>
-<% end %>
+<% end # values["method_list"] %>
 <% end %>
 
 <% if sections["attributes"] then %>
 <table cellpadding="5" width="100%">
-<tr><td class="tablesubtitle">Attributes</td></tr>
+<tr><td class="tablesubtitle">Arguments</td></tr>
 </table><br />
 <table cellspacing="5">
 <% sections["attributes"].each do |attributes| %>
@@ -167,28 +178,26 @@ BODY = %{
        <td class="attr-name"><%= attributes["name"] %></td>
        <td><%= attributes["a_desc"] %></td>
      </tr>
-<% end # sections["attributes"] %>
+<% end # values["attributes"] %>
 </table>
 <% end %>
+<% end # values["sections"] %>
+<% end %>
 
-<% if sections["classlist"] then %>
+<% if values["classlist"] then %>
 <table cellpadding="5" width="100%">
-<tr><td class="tablesubtitle">Classes and Modules</td></tr>
+<tr><td class="tablesubtitle">Modules</td></tr>
 </table><br />
-<%= sections["classlist"] %><br />
+<%= values["classlist"] %><br />
 <% end %>
 
   <%= template_include %>  <!-- method descriptions -->
 
-<% end # values["sections"] %>
-
 </body>
 </html>
-}
+  EOF
 
-###############################################################################
-
-FILE_PAGE = <<_FILE_PAGE_
+  FILE_PAGE = <<-EOF
 <table width="100%">
  <tr class="title-row">
  <td><table width="100%"><tr>
@@ -210,11 +219,9 @@ FILE_PAGE = <<_FILE_PAGE_
     </td></tr></table></td>
   </tr>
 </table><br />
-_FILE_PAGE_
+  EOF
 
-###################################################################
-
-CLASS_PAGE = %{
+  CLASS_PAGE = <<-EOF
 <table width="100%" border="0" cellspacing="0">
  <tr class="title-row">
  <td class="big-title-font">
@@ -251,13 +258,11 @@ CLASS_PAGE = %{
   </td>
   </tr>
 </table><br />
-}
+  EOF
 
-###################################################################
-
-METHOD_LIST = %{
+  METHOD_LIST = <<-EOF
 <% if values["includes"] then %>
-<div class="tablesubsubtitle">Included modules</div><br />
+<div class="tablesubsubtitle">Uses</div><br />
 <div class="name-list">
 <% values["includes"].each do |includes| %>
     <span class="method-name"><%= href includes["aref"], includes["name"] %></span>
@@ -265,61 +270,46 @@ METHOD_LIST = %{
 </div>
 <% end %>
 
-<% if values["method_list"] then %>
-<% values["method_list"].each do |method_list| $stderr.puts({ :method_list => method_list }.inspect) %>
-<% if values["methods"] then %>
-<table cellpadding=5 width="100%">
-<tr><td class="tablesubtitle"><%= values["type"] %> <%= values["category"] %> methods</td></tr>
+<% if values["sections"] then %>
+<% values["sections"].each do |sections| %>
+<% if sections["method_list"] then %>
+<% sections["method_list"].each do |method_list| %>
+<% if method_list["methods"] then %>
+<table cellpadding="5" width="100%">
+<tr><td class="tablesubtitle"><%= method_list["type"] %> <%= method_list["category"] %> methods</td></tr>
 </table>
-<% values["methods"].each do |methods| $stderr.puts({ :methods => methods }.inspect) %>
+<% method_list["methods"].each do |methods| %>
 <table width="100%" cellspacing="0" cellpadding="5" border="0">
 <tr><td class="methodtitle">
-<a name="<%= values["aref"] %>">
-<% if values["callseq"] then %>
-<b><%= values["callseq"] %></b>
-<% end %>
-<% unless values["callseq"] then %>
- <b><%= values["name"] %></b><%= values["params"] %>
-<% end %>
-<% if values["codeurl"] then %>
-<a href="<%= values["codeurl"] %>" target="source" class="srclink">src</a>
+<a name="<%= methods["aref"] %>">
+<b><%= methods["name"] %></b><%= methods["params"] %>
+<% if methods["codeurl"] then %>
+<a href="<%= methods["codeurl"] %>" target="source" class="srclink">src</a>
 <% end %>
 </a></td></tr>
 </table>
-<% if values["m_desc"] then %>
+<% if method_list["m_desc"] then %>
 <div class="description">
-<%= values["m_desc"] %>
+<%= method_list["m_desc"] %>
 </div>
 <% end %>
-<% if values["aka"] then %>
-<div class="aka">
-This method is also aliased as
-<% values["aka"].each do |aka| $stderr.puts({ :aka => aka }.inspect) %>
-<a href="<%= values["aref"] %>"><%= values["name"] %></a>
-<% end # values["aka"] %>
-</div>
+<% end # method_list["methods"] %>
 <% end %>
-<% if values["sourcecode"] then %>
-<pre class="source">
-<%= values["sourcecode"] %>
-</pre>
+<% end # sections["method_list"] %>
 <% end %>
-<% end # values["methods"] %>
+<% end # values["sections"] %>
 <% end %>
-<% end # values["method_list"] %>
-<% end %>
-}
+  EOF
 
-=begin
-=end
-
-########################## Source code ##########################
-
-SRC_PAGE = %{
+  SRC_PAGE = <<-EOF
 <html>
 <head><title><%= values["title"] %></title>
 <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>">
 <style type="text/css">
+  .kw { color: #3333FF; font-weight: bold }
+  .cmt { color: green; font-style: italic }
+  .str { color: #662222; font-style: italic }
+  .re  { color: #662222; }
 .ruby-comment    { color: green; font-style: italic }
 .ruby-constant   { color: #4433aa; font-weight: bold; }
 .ruby-identifier { color: #222222;  }
@@ -329,40 +319,34 @@ SRC_PAGE = %{
 .ruby-operator   { color: #111111;  }
 .ruby-regexp     { color: #662222; }
 .ruby-value      { color: #662222; font-style: italic }
-  .kw { color: #3333FF; font-weight: bold }
-  .cmt { color: green; font-style: italic }
-  .str { color: #662222; font-style: italic }
-  .re  { color: #662222; }
 </style>
 </head>
-<body bgcolor="white">
+<body bgcolor="#BBBBBB">
 <pre><%= values["code"] %></pre>
 </body>
 </html>
-}
+  EOF
 
-########################## Index ################################
-
-FR_INDEX_BODY = %{
+  FR_INDEX_BODY = %{
 <%= template_include %>
 }
 
-FILE_INDEX = %{
+  FILE_INDEX = <<-EOF
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>">
-<style>
+<style type="text/css">
 <!--
   body {
-background-color: #ddddff;
-     font-family: #{FONTS}; 
-       font-size: 11px; 
+background-color: #bbbbbb;
+     font-family: #{FONTS};
+       font-size: 11px;
       font-style: normal;
-     line-height: 14px; 
+     line-height: 14px;
            color: #000040;
   }
 div.banner {
-  background: #0000aa;
+  background: #bbbbcc;
   color:      white;
   padding: 1;
   margin: 0;
@@ -372,7 +356,7 @@ div.banner {
   text-align: center;
   width: 100%;
 }
-  
+
 -->
 </style>
 <base target="docwin">
@@ -383,12 +367,12 @@ div.banner {
 <a href="<%= entries["href"] %>"><%= entries["name"] %></a><br />
 <% end # values["entries"] %>
 </body></html>
-}
+  EOF
 
-CLASS_INDEX = FILE_INDEX
-METHOD_INDEX = FILE_INDEX
+  CLASS_INDEX = FILE_INDEX
+  METHOD_INDEX = FILE_INDEX
 
-INDEX = %{
+  INDEX = <<-EOF
 <html>
 <head>
   <title><%= values["title"] %></title>
@@ -398,20 +382,15 @@ INDEX = %{
 <frameset cols="20%,*">
     <frameset rows="15%,35%,50%">
         <frame src="fr_file_index.html"   title="Files" name="Files">
-        <frame src="fr_class_index.html"  name="Classes">
-        <frame src="fr_method_index.html" name="Methods">
+        <frame src="fr_class_index.html"  name="Modules">
+        <frame src="fr_method_index.html" name="Subroutines and Functions">
     </frameset>
-<% if values["inline_source"] then %>
-      <frame  src="<%= values["initial_page"] %>" name="docwin">
-<% end %>
-<% unless values["inline_source"] then %>
     <frameset rows="80%,20%">
       <frame  src="<%= values["initial_page"] %>" name="docwin">
       <frame  src="blank.html" name="source">
     </frameset>
-<% end %>
     <noframes>
-          <body bgcolor="white">
+          <body bgcolor="#BBBBBB">
             Click <a href="html/index.html">here</a> for a non-frames
             version of this page.
           </body>
@@ -419,17 +398,17 @@ INDEX = %{
 </frameset>
 
 </html>
+  EOF
+
+  # Blank page to use as a target
+  BLANK = %{
+<html><body bgcolor="#BBBBBB"></body></html>
 }
 
-# and a blank page to use as a target
-BLANK = %{
-<html><body bgcolor="white"></body></html>
-}
-
-def write_extra_pages
-  template = TemplatePage.new(BLANK)
-  File.open("blank.html", "w") { |f| template.write_html_on(f, {}) }
-end
+  def write_extra_pages
+    template = TemplatePage.new(BLANK)
+    File.open("blank.html", "w") { |f| template.write_html_on(f, {}) }
+  end
 
 end
-end
+

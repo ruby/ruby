@@ -1,6 +1,8 @@
-module RDoc::Page
+require 'rdoc/generators/xml'
 
-CONTENTS_RDF = %{
+module RDoc::Generators::XML::RDF
+
+  CONTENTS_RDF = <<-EOF
 <% if defined? classes and classes["description"] then %>
     <description rd:parseType="Literal">
 <%= classes["description"] %>
@@ -63,11 +65,11 @@ CONTENTS_RDF = %{
      <!-- end method list -->
 <% end # classes["sections"] %>
 <% end %>
-}
+  EOF
 
 ########################################################################
 
-ONE_PAGE = %{<?xml version="1.0" encoding="utf-8"?>
+  ONE_PAGE = %{<?xml version="1.0" encoding="utf-8"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
         xmlns="http://pragprog.com/rdoc/rdoc.rdf#"
         xmlns:rd="http://pragprog.com/rdoc/rdoc.rdf#">

@@ -1,6 +1,8 @@
-module RDoc::Page
+require 'rdoc/generators/xml'
 
-CONTENTS_XML = %{
+module RDoc::Generators::XML::XML
+
+  CONTENTS_XML = <<-EOF
 <% if defined? classes and classes["description"] then %>
     <description>
 <%= classes["description"] %>
@@ -11,7 +13,7 @@ CONTENTS_XML = %{
       <required-file-list>
 <% files["requires"].each do |requires| %>
          <required-file name="<%= requires["name"] %>"
-<% if requires["aref"] then %> 
+<% if requires["aref"] then %>
                         href="<%= requires["aref"] %>"
 <% end %>
          />
@@ -69,11 +71,9 @@ CONTENTS_XML = %{
       </included-module-list>
 <% end %>
     </contents>
-}
+  EOF
 
-########################################################################
-
-ONE_PAGE = %{<?xml version="1.0" encoding="utf-8"?>
+  ONE_PAGE = %{<?xml version="1.0" encoding="utf-8"?>
 <rdoc>
 <file-list>
 <% values["files"].each do |files| %>
@@ -91,7 +91,7 @@ ONE_PAGE = %{<?xml version="1.0" encoding="utf-8"?>
   <<%= classes["classmod"] %> name="<%= classes["full_name"] %>" id="<%= classes["full_name"] %>">
     <classmod-info>
 <% if classes["infiles"] then %>
-      <infiles>      
+      <infiles>
 <% classes["infiles"].each do |infiles|  %>
         <infile><%= href infiles["full_path_url"], infiles["full_path"] %></infile>
 <% end # classes["infiles"] %>

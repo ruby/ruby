@@ -133,6 +133,13 @@ class RDoc::Options
   attr_reader :template
 
   ##
+  # Template class for file generation
+  #--
+  # HACK around dependencies in lib/rdoc/generators/html.rb
+
+  attr_accessor :template_class # :nodoc:
+
+  ##
   # Documentation title
 
   attr_reader :title
@@ -156,6 +163,7 @@ class RDoc::Options
     @rdoc_include = []
     @title = nil
     @template = nil
+    @template_class = nil
     @diagram = false
     @fileboxes = false
     @show_hash = false
@@ -379,6 +387,7 @@ Usage: #{opt.program_name} [options] [names...]
              "Put all the output into a single file.") do |value|
         @all_one_file = value
         @inline_source = value if value
+        @template = 'one_page_html'
       end
 
       opt.separator nil
@@ -411,7 +420,7 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.on("--quiet", "-q",
              "Don't show progress as we parse.") do |value|
-        @quite = value
+        @quiet = value
       end
 
       opt.separator nil

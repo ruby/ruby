@@ -1,9 +1,9 @@
-require 'rdoc/generators/html_generator'
+require 'rdoc/generators/html'
 
 ##
 # Generate XML output as one big file
 
-class RDoc::Generators::XMLGenerator < RDoc::Generators::HTMLGenerator
+class RDoc::Generators::XML < RDoc::Generators::HTML
 
   ##
   # Standard generator factory
@@ -71,7 +71,7 @@ class RDoc::Generators::XMLGenerator < RDoc::Generators::HTMLGenerator
     # this method is defined in the template file
     write_extra_pages if defined? write_extra_pages
 
-    template = RDoc::TemplatePage.new(RDoc::Page::ONE_PAGE)
+    template = RDoc::TemplatePage.new @template::ONE_PAGE
 
     if @options.op_name
       opfile = File.open(@options.op_name, "w")

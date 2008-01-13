@@ -1,6 +1,8 @@
-module RDoc::Page
+require 'rdoc/generators/html'
 
-CONTENTS_XML = %{
+module RDoc::Generators::HTML::ONE_PAGE_HTML
+
+  CONTENTS_XML = <<-EOF
 <% if defined? classes and classes["description"] then %>
 <%= classes["description"] %>
 <% end %>
@@ -72,11 +74,9 @@ CONTENTS_XML = %{
 <% end %>
 <% end # classes["sections"] %>
 <% end %>
-}
+  EOF
 
-########################################################################
-
-ONE_PAGE = %{
+  ONE_PAGE = %{
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>

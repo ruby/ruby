@@ -1,14 +1,26 @@
-module RDoc::Page
+require 'rdoc/generators/chm'
+require 'rdoc/generators/html/html'
 
-require "rdoc/generators/template/html/html"
+module RDoc::Generators::CHM::CHM
 
-# This is a nasty little hack, but hhc doesn't support the <?xml
-# tag, so...
+  HTML = RDoc::Generators::HTML::HTML
 
-BODY.sub!(/<\?xml.*\?>/, '')
-SRC_PAGE.sub!(/<\?xml.*\?>/, '')
+  INDEX = HTML::INDEX
 
-HPP_FILE = %{
+  CLASS_INDEX = HTML::CLASS_INDEX
+  CLASS_PAGE = HTML::CLASS_PAGE
+  FILE_INDEX = HTML::FILE_INDEX
+  FILE_PAGE = HTML::FILE_PAGE
+  METHOD_INDEX = HTML::METHOD_INDEX
+  METHOD_LIST = HTML::METHOD_LIST
+
+  FR_INDEX_BODY = HTML::FR_INDEX_BODY
+
+  # This is a nasty little hack, but hhc doesn't support the <?xml tag, so...
+  BODY = HTML::BODY.sub!(/<\?xml.*\?>/, '')
+  SRC_PAGE = HTML::SRC_PAGE.sub!(/<\?xml.*\?>/, '')
+
+  HPP_FILE = <<-EOF
 [OPTIONS]
 Auto Index = Yes
 Compatibility=1.1 or later
@@ -23,9 +35,9 @@ Title=<%= values["title"] %>
 <% values["all_html_files"].each do |all_html_files| %>
 <%= all_html_files["html_file_name"] %>
 <% end # values["all_html_files"] %>
-}
+  EOF
 
-CONTENTS = %{
+  CONTENTS = <<-EOF
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <HTML>
 <HEAD>
@@ -57,9 +69,9 @@ CONTENTS = %{
 <% end # values["contents"] %>
 </UL>
 </BODY></HTML>
-}
+  EOF
 
-CHM_INDEX  = %{
+  CHM_INDEX = <<-EOF
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <HTML>
 <HEAD>
@@ -80,7 +92,7 @@ CHM_INDEX  = %{
 <% end # values["index"] %>
 </UL>
 </BODY></HTML>
-}
+  EOF
 
 end
 

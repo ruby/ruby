@@ -6,7 +6,7 @@ require 'rdoc/ri/reader'
 require 'rdoc/ri/writer'
 require 'rdoc/ri/descriptions'
 
-class RDoc::Generators::RIGenerator
+class RDoc::Generators::RI
 
   ##
   # Generators may need to return specific subclasses depending on the
@@ -21,7 +21,7 @@ class RDoc::Generators::RIGenerator
   end
 
   ##
-  # Set up a new RIGenerator.
+  # Set up a new RDoc::Generators::RI.
 
   def initialize(options) #:not-new:
     @options   = options

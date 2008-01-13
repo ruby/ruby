@@ -1,4 +1,7 @@
-#
+require 'rdoc/generators/html'
+require 'rdoc/generators/html/one_page_html'
+
+##
 # = CSS2 RDoc HTML template
 #
 # This is a template for RDoc that uses XHTML 1.0 Transitional and dictates a
@@ -17,14 +20,12 @@
 # a copy of this license, visit http://creativecommons.org/licenses/by/1.0/ or
 # send a letter to Creative Commons, 559 Nathan Abbott Way, Stanford, California
 # 94305, USA.
-#
 
-module RDoc
-  module Page
+module RDoc::Generators::HTML::HTML
 
-    FONTS = "Verdana,Arial,Helvetica,sans-serif"
+  FONTS = "Verdana,Arial,Helvetica,sans-serif"
 
-STYLE = <<-EOF
+  STYLE = <<-EOF
 body {
     font-family: Verdana,Arial,Helvetica,sans-serif;
     font-size:   90%;
@@ -239,13 +240,14 @@ EOF
 ### H E A D E R   T E M P L A T E
 #####################################################################
 
-XHTML_PREAMBLE = %{<?xml version="1.0" encoding="<%= values["charset"] %>"?>
+  XHTML_PREAMBLE = <<-EOF
+<?xml version="1.0" encoding="<%= values["charset"] %>"?>
 <!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-}
+  EOF
 
-HEADER = XHTML_PREAMBLE + <<-EOF
+  HEADER = XHTML_PREAMBLE + <<-EOF
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title><%= values["title"] %></title>
@@ -288,33 +290,32 @@ HEADER = XHTML_PREAMBLE + <<-EOF
 <body>
 EOF
 
-
 #####################################################################
 ### C O N T E X T   C O N T E N T   T E M P L A T E
 #####################################################################
 
-CONTEXT_CONTENT = %{
+  CONTEXT_CONTENT = %{
 }
-
 
 #####################################################################
 ### F O O T E R   T E M P L A T E
 #####################################################################
-FOOTER = <<-EOF
+
+  FOOTER = <<-EOF
 <div id="validator-badges">
   <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
 </div>
 
 </body>
 </html>
-EOF
+  EOF
 
 
 #####################################################################
 ### F I L E   P A G E   H E A D E R   T E M P L A T E
 #####################################################################
 
-FILE_PAGE = <<-EOF
+  FILE_PAGE = <<-EOF
   <div id="fileHeader">
     <h1><%= values["short_name"] %></h1>
     <table class="header-table">
@@ -332,14 +333,13 @@ FILE_PAGE = <<-EOF
     </tr>
     </table>
   </div>
-EOF
-
+  EOF
 
 #####################################################################
 ### C L A S S   P A G E   H E A D E R   T E M P L A T E
 #####################################################################
 
-CLASS_PAGE = <<-EOF
+  CLASS_PAGE = <<-EOF
     <div id="classHeader">
         <table class="header-table">
         <tr class="top-aligned-row">
@@ -381,14 +381,13 @@ CLASS_PAGE = <<-EOF
 <% end %>
         </table>
     </div>
-EOF
-
+  EOF
 
 #####################################################################
 ### M E T H O D   L I S T   T E M P L A T E
 #####################################################################
 
-METHOD_LIST = <<-EOF
+  METHOD_LIST = <<-EOF
 
   <div id="contextContent">
 <% if values["diagram"] then %>
@@ -419,7 +418,7 @@ METHOD_LIST = <<-EOF
     <div id="contents-list">
       <h3 class="section-bar">Contents</h3>
       <ul>
-<% values["toc"].each do |toc| $stderr.puts({ :toc => toc }.inspect) %>
+<% values["toc"].each do |toc| %>
       <li><a href="#<%= values["href"] %>"><%= values["secname"] %></a></li>
 <% end # values["toc"] %>
      </ul>
@@ -601,14 +600,13 @@ METHOD_LIST = <<-EOF
     </div>
 <% end %>
 <% end # values["sections"] %>
-EOF
-
+  EOF
 
 #####################################################################
 ### B O D Y   T E M P L A T E
 #####################################################################
 
-BODY = HEADER + %{
+  BODY = HEADER + %{
 
 <%= template_include %>  <!-- banner header -->
 
@@ -620,13 +618,11 @@ BODY = HEADER + %{
 
 } + FOOTER
 
-
-
 #####################################################################
 ### S O U R C E   C O D E   T E M P L A T E
 #####################################################################
 
-SRC_PAGE = XHTML_PREAMBLE + <<-EOF
+  SRC_PAGE = XHTML_PREAMBLE + <<-EOF
 <html>
 <head>
   <title><%= values["title"] %></title>
@@ -637,18 +633,18 @@ SRC_PAGE = XHTML_PREAMBLE + <<-EOF
   <pre><%= values["code"] %></pre>
 </body>
 </html>
-EOF
+  EOF
 
 
 #####################################################################
 ### I N D E X   F I L E   T E M P L A T E S
 #####################################################################
 
-FR_INDEX_BODY = %{
+  FR_INDEX_BODY = %{
 <%= template_include %>
 }
 
-FILE_INDEX = XHTML_PREAMBLE + %{
+  FILE_INDEX = XHTML_PREAMBLE + <<-EOF
 <!--
 
     <%= values["list_title"] %>
@@ -672,12 +668,13 @@ FILE_INDEX = XHTML_PREAMBLE + %{
 </div>
 </body>
 </html>
-}
+  EOF
 
-CLASS_INDEX = FILE_INDEX
-METHOD_INDEX = FILE_INDEX
+  CLASS_INDEX = FILE_INDEX
+  METHOD_INDEX = FILE_INDEX
 
-INDEX = %{<?xml version="1.0" encoding="<%= values["charset"] %>"?>
+  INDEX = <<-EOF
+<?xml version="1.0" encoding="<%= values["charset"] %>"?>
 <!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
@@ -701,11 +698,7 @@ INDEX = %{<?xml version="1.0" encoding="<%= values["charset"] %>"?>
     <frame src="<%= values["initial_page"] %>" name="docwin" />
 </frameset>
 </html>
-}
+  EOF
 
+end
 
-
-  end # module Page
-end # class RDoc
-
-require 'rdoc/generators/template/html/one_page_html'
