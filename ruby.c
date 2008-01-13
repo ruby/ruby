@@ -1064,6 +1064,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	VALUE c = 1;		/* something not nil */
 	VALUE line;
 	char *p;
+	int no_enc = !opt->enc_name;
 
 	if (opt->xflag) {
 	    forbid_setid("-x");
@@ -1083,8 +1084,6 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 
 	c = rb_io_getbyte(f);
 	if (c == INT2FIX('#')) {
-	    int no_enc = !opt->enc_name;
-
 	    c = rb_io_getbyte(f);
 	    if (c == INT2FIX('!')) {
 		line = rb_io_gets(f);

@@ -1,4 +1,7 @@
-Sun Jan 13 13:50:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 13 13:53:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file): local variable was not initialized when -x flag
+	  is given.
 
 	* ruby.c (load_file): script files should not be affected by locale.
 	  [ruby-dev:33054]
