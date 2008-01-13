@@ -712,14 +712,14 @@ onigenc_mbn_is_mbc_ambiguous(OnigEncoding enc, OnigCaseFoldType flag,
 #endif
 
 extern int
-onigenc_mb2_code_to_mbclen(OnigCodePoint code)
+onigenc_mb2_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 {
   if ((code & 0xff00) != 0) return 2;
   else return 1;
 }
 
 extern int
-onigenc_mb4_code_to_mbclen(OnigCodePoint code)
+onigenc_mb4_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 {
        if ((code & 0xff000000) != 0) return 4;
   else if ((code & 0xff0000) != 0) return 3;

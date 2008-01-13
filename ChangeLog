@@ -1,3 +1,14 @@
+Mon Jan 14 02:03:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/oniguruma.h: remove ONIG_ENCODING_* and OnigEncoding*
+	  which are not builtin.
+
+	* regenc.{c,h} (onigenc_mb2_code_to_mbclen, onigenc_mb4_code_to_mbclen):
+	  fix prototype.
+
+	* enc/big5.c, enc/euc_kr.c, enc/euc_tw.c, enc/gb18030.c,
+	  enc/koi8_r.c, enc/windows_1251.c: imported from Oniguruma.
+
 Sun Jan 13 22:47:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/make_encdb.h: sort encoding names by original name.
