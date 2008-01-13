@@ -1,7 +1,7 @@
-require 'rdoc/generators/html'
-require 'rdoc/generators/html/html'
+require 'rdoc/generator/html'
+require 'rdoc/generator/html/html'
 
-module RDoc::Generators::HTML::HEFSS
+module RDoc::Generator::HTML::HEFSS
 
   FONTS = "Verdana, Arial, Helvetica, sans-serif"
 

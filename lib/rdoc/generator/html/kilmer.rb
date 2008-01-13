@@ -1,6 +1,6 @@
-require 'rdoc/generators/html'
+require 'rdoc/generator/html'
 
-module RDoc::Generators::HTML::KILMER
+module RDoc::Generator::HTML::KILMER
 
   FONTS = "Verdana, Arial, Helvetica, sans-serif"
 

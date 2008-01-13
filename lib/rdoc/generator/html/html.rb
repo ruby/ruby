@@ -1,5 +1,5 @@
-require 'rdoc/generators/html'
-require 'rdoc/generators/html/one_page_html'
+require 'rdoc/generator/html'
+require 'rdoc/generator/html/one_page_html'
 
 ##
 # = CSS2 RDoc HTML template
@@ -21,7 +21,7 @@ require 'rdoc/generators/html/one_page_html'
 # send a letter to Creative Commons, 559 Nathan Abbott Way, Stanford, California
 # 94305, USA.
 
-module RDoc::Generators::HTML::HTML
+module RDoc::Generator::HTML::HTML
 
   FONTS = "Verdana,Arial,Helvetica,sans-serif"
 

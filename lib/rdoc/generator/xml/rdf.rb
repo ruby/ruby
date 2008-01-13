@@ -1,6 +1,6 @@
-require 'rdoc/generators/xml'
+require 'rdoc/generator/xml'
 
-module RDoc::Generators::XML::RDF
+module RDoc::Generator::XML::RDF
 
   CONTENTS_RDF = <<-EOF
 <% if defined? classes and classes["description"] then %>

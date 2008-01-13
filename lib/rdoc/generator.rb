@@ -4,7 +4,7 @@ require 'rdoc/options'
 require 'rdoc/markup/simple_markup'
 require 'rdoc/template'
 
-module RDoc::Generators
+module RDoc::Generator
 
   ##
   # Name of sub-direcory that holds file descriptions

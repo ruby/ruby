@@ -1,6 +1,6 @@
-require 'rdoc/generators/html'
+require 'rdoc/generator/html'
 
-module RDoc::Generators::HTML::ONE_PAGE_HTML
+module RDoc::Generator::HTML::ONE_PAGE_HTML
 
   CONTENTS_XML = <<-EOF
 <% if defined? classes and classes["description"] then %>

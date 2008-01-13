@@ -135,7 +135,7 @@ class RDoc::Options
   ##
   # Template class for file generation
   #--
-  # HACK around dependencies in lib/rdoc/generators/html.rb
+  # HACK around dependencies in lib/rdoc/generator/html.rb
 
   attr_accessor :template_class # :nodoc:
 

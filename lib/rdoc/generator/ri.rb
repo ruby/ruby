@@ -1,4 +1,4 @@
-require 'rdoc/generators'
+require 'rdoc/generator'
 require 'rdoc/markup/simple_markup/to_flow'
 
 require 'rdoc/ri/cache'
@@ -6,10 +6,10 @@ require 'rdoc/ri/reader'
 require 'rdoc/ri/writer'
 require 'rdoc/ri/descriptions'
 
-class RDoc::Generators::RI
+class RDoc::Generator::RI
 
   ##
-  # Generators may need to return specific subclasses depending on the
+  # Generator may need to return specific subclasses depending on the
   # options they are passed. Because of this we create them using a factory
 
   def self.for(options)
@@ -21,7 +21,7 @@ class RDoc::Generators::RI
   end
 
   ##
-  # Set up a new RDoc::Generators::RI.
+  # Set up a new RDoc::Generator::RI.
 
   def initialize(options) #:not-new:
     @options   = options

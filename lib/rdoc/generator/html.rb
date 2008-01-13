@@ -1,9 +1,9 @@
 require 'fileutils'
 
-require 'rdoc/generators'
+require 'rdoc/generator'
 require 'rdoc/markup/simple_markup/to_html'
 
-module RDoc::Generators
+module RDoc::Generator
 
   ##
   # Build a hash of all items that can be cross-referenced.
@@ -61,8 +61,8 @@ module RDoc::Generators
     # (defined in MarkUp). If we fine the corresponding reference,
     # generate a hyperlink. If the name we're looking for contains
     # no punctuation, we look for it up the module/class chain. For
-    # example, HyperlinkHtml is found, even without the Generators::
-    # prefix, because we look for it in module Generators first.
+    # example, HyperlinkHtml is found, even without the Generator::
+    # prefix, because we look for it in module Generator first.
 
     def handle_special_CROSSREF(special)
       name = special.text
@@ -1168,7 +1168,7 @@ module RDoc::Generators
     end
 
     ##
-    # Generators may need to return specific subclasses depending on the
+    # Generator may need to return specific subclasses depending on the
     # options they are passed. Because of this we create them using a factory
 
     def self.for(options)
@@ -1221,8 +1221,8 @@ module RDoc::Generators
       template = @options.template
 
       unless template =~ %r{/|\\} then
-        template = File.join("rdoc/generators",
-                             @options.generator.key, template)
+        template = File.join('rdoc', 'generator', @options.generator.key,
+                             template)
       end
 
       require template

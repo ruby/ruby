@@ -219,7 +219,7 @@ Options are:
 [<tt>--template</tt> <i>name</i>]
     specify an alternate template to use when generating output (the
     default is 'standard'). This template should be in a directory
-    accessible via $: as rdoc/generators/xxxx_template, where 'xxxx'
+    accessible via $: as rdoc/generator/xxxx_template, where 'xxxx'
     depends on the output formatter.
 
 [<tt>--version</tt>]

@@ -1,6 +1,6 @@
-require 'rdoc/generators/html'
+require 'rdoc/generator/html'
 
-class RDoc::Generators::CHM < RDoc::Generators::HTML
+class RDoc::Generator::CHM < RDoc::Generator::HTML
 
   HHC_PATH = "c:/Program Files/HTML Help Workshop/hhc.exe"
 

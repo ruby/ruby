@@ -1,9 +1,9 @@
-require 'rdoc/generators/html'
+require 'rdoc/generator/html'
 
 ##
 # Generate XML output as one big file
 
-class RDoc::Generators::XML < RDoc::Generators::HTML
+class RDoc::Generator::XML < RDoc::Generator::HTML
 
   ##
   # Standard generator factory
@@ -42,16 +42,16 @@ class RDoc::Generators::XML < RDoc::Generators::HTML
 
   def build_indices
     @info.each do |toplevel|
-      @files << RDoc::Generators::HtmlFile.new(toplevel, @options, RDoc::Generators::FILE_DIR)
+      @files << RDoc::Generator::HtmlFile.new(toplevel, @options, RDoc::Generator::FILE_DIR)
     end
 
     RDoc::TopLevel.all_classes_and_modules.each do |cls|
-      build_class_list(cls, @files[0], RDoc::Generators::CLASS_DIR)
+      build_class_list(cls, @files[0], RDoc::Generator::CLASS_DIR)
     end
   end
 
   def build_class_list(from, html_file, class_dir)
-    @classes << RDoc::Generators::HtmlClass.new(from, html_file, class_dir, @options)
+    @classes << RDoc::Generator::HtmlClass.new(from, html_file, class_dir, @options)
     from.each_classmodule do |mod|
       build_class_list(mod, html_file, class_dir)
     end
@@ -98,7 +98,7 @@ class RDoc::Generators::XML < RDoc::Generators::HTML
   end
 
   def gen_method_index
-    gen_an_index(RDoc::Generators::HtmlMethod.all_methods, 'Methods')
+    gen_an_index(RDoc::Generator::HtmlMethod.all_methods, 'Methods')
   end
 
   def gen_an_index(collection, title)

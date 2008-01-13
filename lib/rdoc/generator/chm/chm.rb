@@ -1,9 +1,9 @@
-require 'rdoc/generators/chm'
-require 'rdoc/generators/html/html'
+require 'rdoc/generator/chm'
+require 'rdoc/generator/html/html'
 
-module RDoc::Generators::CHM::CHM
+module RDoc::Generator::CHM::CHM
 
-  HTML = RDoc::Generators::HTML::HTML
+  HTML = RDoc::Generator::HTML::HTML
 
   INDEX = HTML::INDEX
 

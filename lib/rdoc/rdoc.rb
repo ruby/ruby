@@ -57,21 +57,20 @@ module RDoc
     Generator = Struct.new(:file_name, :class_name, :key)
 
     ##
-    # This is the list of output generators that we
-    # support
+    # This is the list of output generator that we support
 
     GENERATORS = {}
 
     $LOAD_PATH.collect do |d|
       File.expand_path d
     end.find_all do |d|
-      File.directory? "#{d}/rdoc/generators"
+      File.directory? "#{d}/rdoc/generator"
     end.each do |dir|
-      Dir.entries("#{dir}/rdoc/generators").each do |gen|
+      Dir.entries("#{dir}/rdoc/generator").each do |gen|
         next unless /(\w+)\.rb$/ =~ gen
         type = $1
         unless GENERATORS.has_key? type
-          GENERATORS[type] = Generator.new("rdoc/generators/#{gen}",
+          GENERATORS[type] = Generator.new("rdoc/generator/#{gen}",
                                            "#{type.upcase}".intern,
                                            type)
         end
@@ -266,7 +265,7 @@ module RDoc
 
         require gen.file_name
 
-        gen_class = Generators.const_get(gen.class_name)
+        gen_class = ::RDoc::Generator.const_get gen.class_name
         gen = gen_class.for(options)
 
         pwd = Dir.pwd
