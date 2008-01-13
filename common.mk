@@ -703,7 +703,7 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c
 
-incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}revision.h
+incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}revision.h
 
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@

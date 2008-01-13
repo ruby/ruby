@@ -1,3 +1,7 @@
+Sun Jan 13 09:22:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (incs): includes encdb.h.
+
 Sun Jan 13 09:17:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {bcc,win}32/Makefile.sub (MV): use move instead of ren.  [ruby-Bugs-17019]
