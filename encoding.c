@@ -292,6 +292,8 @@ rb_enc_alias(const char *alias, const char *orig)
 
 enum {
     ENCINDEX_ASCII,
+    ENCINDEX_EUC_JP,
+    ENCINDEX_SJIS,
     ENCINDEX_UTF8,
     ENCINDEX_BUILTIN_MAX
 };
@@ -302,6 +304,8 @@ rb_enc_init(void)
     enc_table_count = enc_table_expand(ENCINDEX_BUILTIN_MAX);
 #define ENC_REGISTER(enc) enc_register_at(ENCINDEX_##enc, rb_enc_name(ONIG_ENCODING_##enc), ONIG_ENCODING_##enc)
     ENC_REGISTER(ASCII);
+    ENC_REGISTER(EUC_JP);
+    ENC_REGISTER(SJIS);
     ENC_REGISTER(UTF8);
 #undef ENC_REGISTER
 }
@@ -366,21 +370,24 @@ rb_enc_find_index(const char *name)
 	OBJ_FREEZE(enclib);
 	if (RTEST(rb_protect(require_enc, enclib, 0)))
 	    i = rb_enc_registered(name);
-	else {
-	    st_data_t key = (st_data_t)name, orig;
-	    if (st_lookup(enc_table_replica_name, key, &orig)) {
-		i = rb_enc_find_index((char *)orig);
-		if (i < 0) {
-		    rb_raise(rb_eRuntimeError, "unknown original encoding name - %s for %s", (char *)orig, name);
-		}
-		i = rb_enc_replicate(name, rb_enc_from_index(i));
-		st_delete(enc_table_replica_name, &key, &orig);
-	    } else if (st_lookup(enc_table_alias_name, key, &orig)) {
-		i = rb_enc_alias(name, (char *)orig);
-		st_delete(enc_table_replica_name, &key, &orig);
-	    }
-	}
 	rb_set_errinfo(Qnil);
+    }
+    if (i < 0) {
+	st_data_t key = (st_data_t)name, orig;
+	if (st_lookup(enc_table_replica_name, key, &orig)) {
+	    i = rb_enc_find_index((char *)orig);
+	    if (i < 0) {
+		rb_raise(rb_eRuntimeError, "unknown original encoding name - '%s' for replica '%s'", (char *)orig, name);
+	    }
+	    i = rb_enc_replicate(name, rb_enc_from_index(i));
+	    st_delete(enc_table_replica_name, &key, &orig);
+	} else if (st_lookup(enc_table_alias_name, key, &orig)) {
+	    i = rb_enc_alias(name, (char *)orig);
+	    if (i < 0) {
+		rb_raise(rb_eRuntimeError, "unknown original encoding name - '%s' for alias '%s'", (char *)orig, name);
+	    }
+	    st_delete(enc_table_alias_name, &key, &orig);
+	}
     }
     return i;
 }

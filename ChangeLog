@@ -1,3 +1,16 @@
+Sun Jan 13 09:58:17 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_init): revert removing SJIS.
+	
+	* enc/sjis.c: move to enc/shift_jis.c, to make encoding name equal to
+	  filename for convinience of loading lib.
+
+	* enc/shift_jis.c: moved from enc/sjis.c.
+
+	* common.mk: follows enc/shift_jis.c.
+
+	* enc/Makefile.in: ditto.
+
 Sun Jan 13 09:22:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (incs): includes encdb.h.

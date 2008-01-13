@@ -15,7 +15,7 @@ DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 
 BUILTIN_ENCS	= ascii.c \
-		  euc_jp.c sjis.c \
+		  euc_jp.c shift_jis.c \
 		  unicode.c utf8.c
 
 RUBY_SO_NAME = @RUBY_SO_NAME@

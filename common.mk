@@ -667,7 +667,7 @@ ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
 euc_jp.$(OBJEXT): {$(VPATH)}euc_jp.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regint.h {$(VPATH)}config.h \
+shift_jis.$(OBJEXT): {$(VPATH)}shift_jis.c {$(VPATH)}regint.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h \
   {$(VPATH)}st.h
 unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
