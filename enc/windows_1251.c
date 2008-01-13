@@ -180,7 +180,7 @@ cp1251_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
-OnigEncodingType OnigEncodingCP1251 = {
+OnigEncodingDefine(windows_1251, Windows_1251) = {
   onigenc_single_byte_mbc_enc_len,
   "Windows-1251",      /* name */
   1,             /* max enc length */
