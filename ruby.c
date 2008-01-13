@@ -1151,8 +1151,12 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	}
 	require_libraries();	/* Why here? unnatural */
     }
-    if (opt->enc_index >= 0) rb_enc_associate_index(f, opt->enc_index);
-    else rb_enc_associate(f, rb_locale_encoding());
+    if (opt->enc_index >= 0) {
+	rb_enc_associate_index(f, opt->enc_index);
+    }
+    else if (f == rb_stdin) {
+	rb_enc_associate(f, rb_locale_encoding());
+    }
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
