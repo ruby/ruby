@@ -34,6 +34,12 @@ static struct {
     st_table *alias_name;
 } enc_table;
 
+#undef ENC_REPLICATE
+#undef ENC_ALIAS
+#define ENC_REPLICATE(name, orig) st_insert(enc_table.replica_name, (st_data_t)(name), (st_data_t)(orig))
+#define ENC_ALIAS(name, orig) st_insert(enc_table.alias_name, (st_data_t)(name), (st_data_t)(orig))
+#define enc_name_list_size (sizeof(enc_name_list)/sizeof(enc_name_list[0]))
+
 #include "encdb.h"
 
 #define ENC_UNINITIALIZED (&rb_cEncoding)
@@ -1032,6 +1038,9 @@ void
 Init_Encoding(void)
 {
     id_base_encoding = rb_intern("#base_encoding");
+
+    enc_table.replica_name = st_init_strcasetable();
+    enc_table.alias_name = st_init_strcasetable();
 
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);

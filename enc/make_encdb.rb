@@ -35,26 +35,16 @@ Dir.open(encdir) {|d| d.grep(/.+\.c\z/)}.each do |fn|
 end
 p aliases
 open('encdb.h', 'wb') do |f|
-  f.puts 'static const char *enc_name_list[] = {'
+  f.puts 'static const char *const enc_name_list[] = {'
   encodings.each {|name| f.puts'    "%s",' % name}
   replicas.each_key {|name| f.puts'    "%s",' % name}
   aliases.each_key {|name| f.puts'    "%s",' % name}
-  f.puts(<<"_TEXT_")
-};
-#define enc_name_list_size (sizeof(enc_name_list)/sizeof(enc_name_list[0]))
-
-static void enc_init_db(void)
-{
-    if (!enc_table.replica_name) {
-	enc_table.replica_name = st_init_strcasetable();
-    }
-    if (!enc_table.alias_name) {
-	enc_table.alias_name = st_init_strcasetable();
-    }
-_TEXT_
+  f.puts('};', '', 'static void', 'enc_init_db(void)', '{')
   replicas.each_pair {|name, orig|
-    f.puts'    st_insert(enc_table.replica_name, (st_data_t)"%s", (st_data_t)"%s");' % [name, orig]}
+    f.puts '    ENC_REPLICATE("%s", "%s");' % [name, orig]
+  }
   aliases.each_pair {|name, orig|
-    f.puts'    st_insert(enc_table.alias_name, (st_data_t)"%s", (st_data_t)"%s");' % [name, orig]}
+    f.puts '    ENC_ALIAS("%s", "%s");' % [name, orig]
+  }
   f.puts '}'
 end

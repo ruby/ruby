@@ -1,3 +1,11 @@
+Sun Jan 13 18:41:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (Init_Encoding): moved initialization from encdb.h.
+
+	* enc/make_encdb.rb (enc_name_list): constified.
+
+	* enc/make_encdb.rb (enc_init_db): moved some functions to encoding.c.
+
 Sun Jan 13 13:53:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file): local variable was not initialized when -x flag
