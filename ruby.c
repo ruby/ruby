@@ -709,7 +709,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		rb_encoding *enc = 0;
 		switch (*s) {
 		  case 'E': case 'e':
-		    enc = enc = rb_enc_find("EUC-JP");
+		    enc = rb_enc_find("EUC-JP");
 		    break;
 		  case 'S': case 's':
 		    enc = rb_enc_find("Windows-31J");
