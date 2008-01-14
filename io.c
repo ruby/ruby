@@ -1712,6 +1712,18 @@ appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE *strp, 
 	    if (c != EOF) {
 		RSTRING_PTR(str)[last++] = c;
 	    }
+	    if (limit > 0 && limit == pending) {
+		char *p = fptr->rbuf+fptr->rbuf_off;
+		char *pp = p + limit;
+		char *pl = rb_enc_left_char_head(p, pp, io_read_encoding(fptr));
+
+		if (pl < pp) {
+		    int diff = pp - pl;
+		    pending -= diff;
+		    limit = pending;
+		    rb_str_set_len(str, RSTRING_LEN(str)-diff);
+		}
+	    }
 	    read_buffered_data(RSTRING_PTR(str) + last, pending, fptr); /* must not fail */
 	    limit -= pending;
 	    *lp = limit;
