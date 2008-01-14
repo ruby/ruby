@@ -193,3 +193,11 @@ rescue
   100
 end
 }, '[ruby-dev:31371]'
+assert_equal 'true', %{
+  t = Thread.new { loop {} }
+  pid = fork {
+      exit t.status != "run"
+  }
+  Process.wait pid
+  $?.success?
+}

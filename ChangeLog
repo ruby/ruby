@@ -1,3 +1,10 @@
+Mon Jan 14 18:53:58 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c: clear thread structure.
+	  (TODO: survey that child process should clear mutex or not).
+
+	* bootstraptest/test_knownbug.rb, test_thread.rb: move a fixed test.
+
 Mon Jan 14 18:43:38 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/runner.rb: add "flunk" method.

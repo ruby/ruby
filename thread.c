@@ -1955,7 +1955,18 @@ rb_thread_start_timer_thread(void)
     rb_thread_create_timer_thread();
 }
 
-/***/
+static int
+terminate_atfork_i(st_data_t key, st_data_t val, rb_thread_t *current_th)
+{
+    VALUE thval = key;
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+
+    if (th != current_th) {
+	thread_cleanup_func(th);
+    }
+    return ST_CONTINUE;
+}
 
 void
 rb_thread_atfork(void)
@@ -1965,6 +1976,7 @@ rb_thread_atfork(void)
     VALUE thval = th->self;
     vm->main_thread = th;
 
+    st_foreach(vm->living_threads, terminate_atfork_i, (st_data_t)th);
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
 }
