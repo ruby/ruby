@@ -1757,16 +1757,17 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	if (state == TAG_RAISE) {
 	    VALUE errinfo = th->errinfo;
 	    if (strcmp(file, "(eval)") == 0) {
-		VALUE mesg, errat;
+		VALUE mesg, errat, bt2;
 
 		errat = get_backtrace(errinfo);
 		mesg = rb_attr_get(errinfo, rb_intern("mesg"));
-		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
-		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
+		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY &&
+		    (bt2 = backtrace(-2), RARRAY_LEN(bt2) > 0)) {
+		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING && !RSTRING_LEN(mesg)) {
 			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
 			rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
 		    }
-		    RARRAY_PTR(errat)[0] = RARRAY_PTR(backtrace(-2))[0];
+		    RARRAY_PTR(errat)[0] = RARRAY_PTR(bt2)[0];
 		}
 	    }
 	    rb_exc_raise(errinfo);
