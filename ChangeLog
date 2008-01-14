@@ -1,3 +1,7 @@
+Mon Jan 14 23:33:02 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb (Kconv.tolocale): argument is str.
+
 Mon Jan 14 23:31:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in (setup): add -I$(EXTOUT)/$(arch) to MINIRUBY.

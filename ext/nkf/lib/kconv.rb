@@ -124,7 +124,7 @@ module Kconv
   #    Kconv.tolocale   => string
   #
   # Convert <code>self</code> to locale encoding
-  def tolocale
+  def tolocale(str)
     kconv(str, Encoding.locale_charmap)
   end
   module_function :tolocale
