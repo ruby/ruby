@@ -143,7 +143,6 @@ error !
 
 /* for GCC 3.4.x */
 #define TC_DISPATCH(insn) \
-  DISPATCH_ARCH_DEPEND_WAY(GET_CURRENT_INSN()); \
   INSN_DISPATCH_SIG(insn); \
   goto *GET_CURRENT_INSN(); \
   ;
