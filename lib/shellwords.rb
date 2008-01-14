@@ -102,7 +102,7 @@ module Shellwords
   module_function :shellescape
 
   class << self
-    alias escape shellsplit
+    alias escape shellescape
   end
 
   #

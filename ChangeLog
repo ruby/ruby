@@ -1,3 +1,9 @@
+Mon Jan 14 16:12:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/shellwords.rb: scape should be an alias to shellescape.  a
+	  patch from Masahiro Kawato <m-kawato AT mwb.biglobe.ne.jp> in
+	  [ruby-dev:33060].
+
 Mon Jan 14 09:32:40 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/time.rb: do not reference Time directly from the inside of
