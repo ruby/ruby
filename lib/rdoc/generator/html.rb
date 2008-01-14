@@ -1,7 +1,7 @@
 require 'fileutils'
 
 require 'rdoc/generator'
-require 'rdoc/markup/simple_markup/to_html'
+require 'rdoc/markup/to_html'
 
 module RDoc::Generator
 
@@ -34,12 +34,11 @@ module RDoc::Generator
   end
 
   ##
-  # Subclass of the SM::ToHtml class that supports looking
-  # up words in the AllReferences list. Those that are
-  # found (like AllReferences in this comment) will
-  # be hyperlinked
+  # Subclass of the RDoc::Markup::ToHtml class that supports looking up words
+  # in the AllReferences list. Those that are found (like AllReferences in
+  # this comment) will be hyperlinked
 
-  class HyperlinkHtml < SM::ToHtml
+  class HyperlinkHtml < RDoc::Markup::ToHtml
 
     ##
     # We need to record the html path of our caller so we can generate
@@ -161,13 +160,13 @@ module RDoc::Generator
 
     ##
     # Convert a string in markup format into HTML. We keep a cached
-    # SimpleMarkup object lying around after the first time we're
+    # RDoc::Markup object lying around after the first time we're
     # called per object.
 
     def markup(str, remove_para=false)
       return '' unless str
       unless defined? @markup
-        @markup = SM::SimpleMarkup.new
+        @markup = RDoc::Markup.new
 
         # class names, variable names, or instance variables
         @markup.add_special(/(

@@ -1,7 +1,7 @@
 require 'cgi'
 require 'rdoc'
 require 'rdoc/options'
-require 'rdoc/markup/simple_markup'
+require 'rdoc/markup'
 require 'rdoc/template'
 
 module RDoc::Generator

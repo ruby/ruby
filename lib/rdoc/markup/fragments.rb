@@ -1,6 +1,7 @@
-require 'rdoc/markup/simple_markup/lines.rb'
+require 'rdoc/markup'
+require 'rdoc/markup/lines'
 
-module SM
+class RDoc::Markup
 
   ##
   # A Fragment is a chunk of text, subclassed as a paragraph, a list
@@ -119,7 +120,7 @@ module SM
 
   ##
   # Collect groups of lines together. Each group will end up containing a flow
-  # of text
+  # of text.
 
   class LineCollection
 

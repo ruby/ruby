@@ -1,5 +1,5 @@
 require 'rdoc/generator'
-require 'rdoc/markup/simple_markup/to_flow'
+require 'rdoc/markup/to_flow'
 
 require 'rdoc/ri/cache'
 require 'rdoc/ri/reader'
@@ -26,8 +26,8 @@ class RDoc::Generator::RI
   def initialize(options) #:not-new:
     @options   = options
     @ri_writer = RDoc::RI::Writer.new "."
-    @markup    = SM::SimpleMarkup.new
-    @to_flow   = SM::ToFlow.new
+    @markup    = RDoc::Markup.new
+    @to_flow   = RDoc::Markup::ToFlow.new
 
     @generated = {}
   end
@@ -38,7 +38,7 @@ class RDoc::Generator::RI
 
   def generate(toplevels)
     RDoc::TopLevel.all_classes_and_modules.each do |cls|
-      process_class(cls)
+      process_class cls
     end
   end
 
@@ -58,6 +58,7 @@ class RDoc::Generator::RI
       cls_desc = RDoc::RI::ClassDescription.new
       cls_desc.superclass  = cls.superclass
     end
+
     cls_desc.name        = cls.name
     cls_desc.full_name   = cls.full_name
     cls_desc.comment     = markup(cls.comment)

@@ -1,5 +1,5 @@
 require 'yaml'
-require 'rdoc/markup/simple_markup/fragments'
+require 'rdoc/markup/fragments'
 require 'rdoc/ri'
 
 #--
@@ -91,7 +91,7 @@ class RDoc::RI::ModuleDescription < RDoc::RI::Description
       @comment = old.comment
     else
       unless old.comment.nil? or old.comment.empty? then
-        @comment << SM::Flow::RULE.new
+        @comment << RDoc::Markup::Flow::RULE.new
         @comment.concat old.comment
       end
     end

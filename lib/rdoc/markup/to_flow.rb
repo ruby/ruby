@@ -1,8 +1,8 @@
-require 'rdoc/markup/simple_markup/fragments'
-require 'rdoc/markup/simple_markup/inline'
+require 'rdoc/markup/fragments'
+require 'rdoc/markup/inline'
 require 'cgi'
 
-module SM
+class RDoc::Markup
 
   module Flow
     P = Struct.new(:body)
@@ -24,12 +24,12 @@ module SM
 
   class ToFlow
     LIST_TYPE_TO_HTML = {
-      SM::ListBase::BULLET     =>  [ "<ul>", "</ul>" ],
-      SM::ListBase::NUMBER     =>  [ "<ol>", "</ol>" ],
-      SM::ListBase::UPPERALPHA =>  [ "<ol>", "</ol>" ],
-      SM::ListBase::LOWERALPHA =>  [ "<ol>", "</ol>" ],
-      SM::ListBase::LABELED    =>  [ "<dl>", "</dl>" ],
-      SM::ListBase::NOTE       =>  [ "<table>", "</table>" ],
+      RDoc::Markup::ListBase::BULLET     =>  [ "<ul>", "</ul>" ],
+      RDoc::Markup::ListBase::NUMBER     =>  [ "<ol>", "</ol>" ],
+      RDoc::Markup::ListBase::UPPERALPHA =>  [ "<ol>", "</ol>" ],
+      RDoc::Markup::ListBase::LOWERALPHA =>  [ "<ol>", "</ol>" ],
+      RDoc::Markup::ListBase::LABELED    =>  [ "<dl>", "</dl>" ],
+      RDoc::Markup::ListBase::NOTE       =>  [ "<table>", "</table>" ],
     }
 
     InlineTag = Struct.new(:bit, :on, :off)
@@ -43,9 +43,9 @@ module SM
 
     def init_tags
       @attr_tags = [
-        InlineTag.new(SM::Attribute.bitmap_for(:BOLD), "<b>", "</b>"),
-        InlineTag.new(SM::Attribute.bitmap_for(:TT),   "<tt>", "</tt>"),
-        InlineTag.new(SM::Attribute.bitmap_for(:EM),   "<em>", "</em>"),
+        InlineTag.new(RDoc::Markup::Attribute.bitmap_for(:BOLD), "<b>", "</b>"),
+        InlineTag.new(RDoc::Markup::Attribute.bitmap_for(:TT),   "<tt>", "</tt>"),
+        InlineTag.new(RDoc::Markup::Attribute.bitmap_for(:EM),   "<em>", "</em>"),
       ]
     end
 
@@ -54,7 +54,7 @@ module SM
     # end tags for flexibility
 
     def add_tag(name, start, stop)
-      @attr_tags << InlineTag.new(SM::Attribute.bitmap_for(name), start, stop)
+      @attr_tags << InlineTag.new(RDoc::Markup::Attribute.bitmap_for(name), start, stop)
     end
 
     ##

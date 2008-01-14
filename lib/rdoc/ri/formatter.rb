@@ -99,17 +99,17 @@ class RDoc::RI::Formatter
   def display_list(list)
     case list.type
 
-    when SM::ListBase::BULLET
+    when RDoc::Markup::ListBase::BULLET
       prefixer = proc { |ignored| @indent + "*   " }
 
-    when SM::ListBase::NUMBER,
-      SM::ListBase::UPPERALPHA,
-      SM::ListBase::LOWERALPHA
+    when RDoc::Markup::ListBase::NUMBER,
+      RDoc::Markup::ListBase::UPPERALPHA,
+      RDoc::Markup::ListBase::LOWERALPHA
 
       start = case list.type
-              when SM::ListBase::NUMBER      then 1
-              when  SM::ListBase::UPPERALPHA then 'A'
-              when SM::ListBase::LOWERALPHA  then 'a'
+              when RDoc::Markup::ListBase::NUMBER      then 1
+              when RDoc::Markup::ListBase::UPPERALPHA then 'A'
+              when RDoc::Markup::ListBase::LOWERALPHA  then 'a'
               end
       prefixer = proc do |ignored|
         res = @indent + "#{start}.".ljust(4)
@@ -117,15 +117,15 @@ class RDoc::RI::Formatter
         res
       end
 
-    when SM::ListBase::LABELED
+    when RDoc::Markup::ListBase::LABELED
       prefixer = proc do |li|
         li.label
       end
 
-    when SM::ListBase::NOTE
+    when RDoc::Markup::ListBase::NOTE
       longest = 0
       list.contents.each do |item|
-        if item.kind_of?(SM::Flow::LI) && item.label.length > longest
+        if item.kind_of?(RDoc::Markup::Flow::LI) && item.label.length > longest
           longest = item.label.length
         end
       end
@@ -140,7 +140,7 @@ class RDoc::RI::Formatter
     end
 
     list.contents.each do |item|
-      if item.kind_of? SM::Flow::LI
+      if item.kind_of? RDoc::Markup::Flow::LI
         prefix = prefixer.call(item)
         display_flow_item(item, prefix)
       else
@@ -153,20 +153,20 @@ class RDoc::RI::Formatter
 
   def display_flow_item(item, prefix=@indent)
     case item
-    when SM::Flow::P, SM::Flow::LI
+    when RDoc::Markup::Flow::P, RDoc::Markup::Flow::LI
       wrap(conv_html(item.body), prefix)
       blankline
 
-    when SM::Flow::LIST
+    when RDoc::Markup::Flow::LIST
       display_list(item)
 
-    when SM::Flow::VERB
+    when RDoc::Markup::Flow::VERB
       display_verbatim_flow_item(item, @indent)
 
-    when SM::Flow::H
+    when RDoc::Markup::Flow::H
       display_heading(conv_html(item.text), item.level, @indent)
 
-    when SM::Flow::RULE
+    when RDoc::Markup::Flow::RULE
       draw_line
 
     else
@@ -508,23 +508,23 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
 
   def display_list(list)
     case list.type
-    when SM::ListBase::BULLET
+    when RDoc::Markup::ListBase::BULLET
       list_type = "ul"
       prefixer = proc { |ignored| "<li>" }
 
-    when SM::ListBase::NUMBER,
-      SM::ListBase::UPPERALPHA,
-      SM::ListBase::LOWERALPHA
+    when RDoc::Markup::ListBase::NUMBER,
+      RDoc::Markup::ListBase::UPPERALPHA,
+      RDoc::Markup::ListBase::LOWERALPHA
       list_type = "ol"
       prefixer = proc { |ignored| "<li>" }
 
-    when SM::ListBase::LABELED
+    when RDoc::Markup::ListBase::LABELED
       list_type = "dl"
       prefixer = proc do |li|
           "<dt><b>" + escape(li.label) + "</b><dd>"
       end
 
-    when SM::ListBase::NOTE
+    when RDoc::Markup::ListBase::NOTE
       list_type = "table"
       prefixer = proc do |li|
           %{<tr valign="top"><td>#{li.label.gsub(/ /, '&nbsp;')}</td><td>}
@@ -535,7 +535,7 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
 
     print "<#{list_type}>"
     list.contents.each do |item|
-      if item.kind_of? SM::Flow::LI
+      if item.kind_of? RDoc::Markup::Flow::LI
         prefix = prefixer.call(item)
         print prefix
         display_flow_item(item, prefix)

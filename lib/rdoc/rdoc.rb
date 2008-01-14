@@ -5,6 +5,7 @@ require 'rdoc/parsers/parse_c.rb'
 require 'rdoc/parsers/parse_f95.rb'
 require 'rdoc/parsers/parse_simple.rb'
 
+require 'rdoc/stats'
 require 'rdoc/options'
 
 require 'rdoc/diagram'
@@ -14,31 +15,6 @@ require 'fileutils'
 require 'time'
 
 module RDoc
-
-  ##
-  # Simple stats collector
-
-  class Stats
-    attr_accessor :num_files, :num_classes, :num_modules, :num_methods
-    def initialize
-      @num_files = @num_classes = @num_modules = @num_methods = 0
-      @start = Time.now
-    end
-    def print
-      puts "Files:   #@num_files"
-      puts "Classes: #@num_classes"
-      puts "Modules: #@num_modules"
-      puts "Methods: #@num_methods"
-      puts "Elapsed: " + sprintf("%0.3fs", Time.now - @start)
-    end
-  end
-
-  ##
-  # Exception thrown by any rdoc error.
-
-  class Error < RuntimeError; end
-
-  RDocError = Error # :nodoc:
 
   ##
   # Encapsulate the production of rdoc documentation. Basically
@@ -192,22 +168,27 @@ module RDoc
     # for .document files.
 
     def list_files_in_directory(dir, options)
-      normalized_file_list(options, Dir.glob(File.join(dir, "*")), false, options.exclude)
+      files = Dir.glob File.join(dir, "*")
+
+      normalized_file_list options, files, false, options.exclude
     end
 
     ##
     # Parse each file on the command line, recursively entering directories.
 
     def parse_files(options)
-      file_info = []
-
       files = options.files
       files = ["."] if files.empty?
 
       file_list = normalized_file_list(options, files, true)
 
+      return [] if file_list.empty?
+
+      file_info = []
+      width = file_list.map { |name| name.length }.max + 1
+
       file_list.each do |fn|
-        $stderr.printf("\n%35s: ", File.basename(fn)) unless options.quiet
+        $stderr.printf("\n%*s: ", width, fn) unless options.quiet
 
         content = File.open(fn, "r:ascii-8bit") {|f| f.read}
         if /coding:\s*(\S+)/ =~ content[/\A(?:.*\n){0,2}/]
@@ -252,6 +233,7 @@ module RDoc
       unless options.all_one_file
         @last_created = setup_output_dir(options.op_dir, options.force_update)
       end
+
       start_time = Time.now
 
       file_info = parse_files(options)

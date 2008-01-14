@@ -1,4 +1,4 @@
-module SM
+class RDoc::Markup
 
   ##
   # We store the lines we're working on as objects of class Line.  These
@@ -14,7 +14,7 @@ module SM
     RULE      = :RULE
     PARAGRAPH = :PARAGRAPH
     VERBATIM  = :VERBATIM
-    
+
     # line type
     attr_accessor :type
 
@@ -36,7 +36,6 @@ module SM
 
     # true if this line has been deleted from the list of lines
     attr_accessor :deleted
-    
 
     def initialize(text)
       @text    = text.dup
@@ -69,7 +68,6 @@ module SM
 
     ##
     # Strip off the leading margin
-    #
 
     def strip_leading(size)
       if @text.size > size
@@ -85,7 +83,7 @@ module SM
   end
 
   ##
-  # A container for all the lines
+  # A container for all the lines.
 
   class Lines
 

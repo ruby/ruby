@@ -6,8 +6,8 @@ require 'rdoc/ri/paths'
 require 'rdoc/ri/formatter'
 require 'rdoc/ri/display'
 require 'fileutils'
-require 'rdoc/markup/simple_markup'
-require 'rdoc/markup/simple_markup/to_flow'
+require 'rdoc/markup'
+require 'rdoc/markup/to_flow'
 
 class RDoc::RI::Driver
 
@@ -222,7 +222,7 @@ Options may also be set in the 'RI' environment variable.
     return @class_cache if @class_cache
 
     newest = map_dirs('created.rid', :all) do |f|
-      File.mtime f if test ?f, f 
+      File.mtime f if test ?f, f
     end.max
 
     up_to_date = (File.exist?(class_cache_file_path) and
@@ -341,7 +341,7 @@ Options may also be set in the 'RI' environment variable.
   end
 
   def read_yaml(path)
-    YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):(RDoc|RI).*/, '')
+    YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):(RDoc::RI|RI).*/, '')
   end
 
   def run

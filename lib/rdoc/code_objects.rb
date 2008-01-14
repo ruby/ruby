@@ -458,7 +458,7 @@ module RDoc
     
   end
 
-
+  ##
   # A TopLevel context is a source file
 
   class TopLevel < Context
@@ -470,7 +470,7 @@ module RDoc
     @@all_classes = {}
     @@all_modules = {}
 
-    def TopLevel::reset
+    def self.reset
       @@all_classes = {}
       @@all_modules = {}
     end
@@ -488,14 +488,15 @@ module RDoc
       nil
     end
 
-    # Adding a class or module to a TopLevel is special, as we only
-    # want one copy of a particular top-level class. For example,
-    # if both file A and file B implement class C, we only want one
-    # ClassModule object for C. This code arranges to share
-    # classes and modules between files.
+    ##
+    # Adding a class or module to a TopLevel is special, as we only want one
+    # copy of a particular top-level class. For example, if both file A and
+    # file B implement class C, we only want one ClassModule object for C.
+    # This code arranges to share classes and modules between files.
 
     def add_class_or_module(collection, class_type, name, superclass)
       cls = collection[name]
+
       if cls
         puts "Reusing class/module #{name}" if $DEBUG_RDOC
       else
@@ -504,23 +505,29 @@ module RDoc
         else
           all = @@all_classes
         end
+
         cls = all[name]
+
         if !cls
           cls = class_type.new(name, superclass)
-          all[name] = cls  unless @done_documenting
+          all[name] = cls unless @done_documenting
         end
-        puts "Adding class/module #{name} to #@name" if $DEBUG_RDOC
+
+        puts "Adding class/module #{name} to #{@name}" if $DEBUG_RDOC
+
         collection[name] = cls unless @done_documenting
+
         cls.parent = self
       end
+
       cls
     end
 
-    def TopLevel.all_classes_and_modules
+    def self.all_classes_and_modules
       @@all_classes.values + @@all_modules.values
     end
 
-    def TopLevel.find_class_named(name)
+    def self.find_class_named(name)
      @@all_classes.each_value do |c|
         res = c.find_class_named(name) 
         return res if res
@@ -538,11 +545,12 @@ module RDoc
       nil
     end
 
+    ##
     # Find a named module
+
     def find_module_named(name)
       find_class_or_module_named(name) || find_enclosing_module_named(name)
     end
-
 
   end
 

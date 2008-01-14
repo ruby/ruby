@@ -1,7 +1,7 @@
 require 'rdoc/ri'
 require 'rdoc/ri/descriptions'
 require 'rdoc/ri/writer'
-require 'rdoc/markup/simple_markup/to_flow'
+require 'rdoc/markup/to_flow'
 
 class RDoc::RI::Reader
 

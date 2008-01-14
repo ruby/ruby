@@ -26,7 +26,7 @@ end
 
 ##
 # A paging display module. Uses the RDoc::RI::Formatter class to do the actual
-# presentation
+# presentation.
 
 class RDoc::RI::DefaultDisplay
 

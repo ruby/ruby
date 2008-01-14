@@ -1,3 +1,8 @@
+Mon Jan 14 12:33:07 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup*:  Renamespace from SM::SimpleMarkup to
+	RDoc::Markup.
+
 Mon Jan 14 10:45:45 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/ascii.c: Exchanged order of arguments for one ENC_ALIAS

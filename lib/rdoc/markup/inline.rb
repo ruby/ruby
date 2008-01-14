@@ -1,8 +1,10 @@
-module SM
+require 'rdoc/markup'
+
+class RDoc::Markup
 
   ##
   # We manage a set of attributes. Each attribute has a symbol name and a bit
-  # value
+  # value.
 
   class Attribute
     SPECIAL = 1
@@ -39,7 +41,7 @@ module SM
 
   ##
   # An AttrChanger records a change in attributes. It contains a bitmap of the
-  # attributes to turn on, and a bitmap of those to turn off
+  # attributes to turn on, and a bitmap of those to turn off.
 
   AttrChanger = Struct.new(:turn_on, :turn_off)
 
@@ -50,7 +52,7 @@ module SM
   end
 
   ##
-  # An array of attributes which parallels the characters in a string
+  # An array of attributes which parallels the characters in a string.
 
   class AttrSpan
     def initialize(length)
@@ -84,12 +86,12 @@ module SM
     end
 
     def to_s
-      "Special: type=#{type}, name=#{SM::Attribute.as_string type}, text=#{text.dump}"
+      "Special: type=#{type}, name=#{RDoc::Markup::Attribute.as_string type}, text=#{text.dump}"
     end
 
     def inspect
-      "#<SM::Special:0x%x @type=%p, name=%p @text=%p>" % [
-        object_id, @type, SM::Attribute.as_string(type), text.dump]
+      "#<RDoc::Markup::Special:0x%x @type=%p, name=%p @text=%p>" % [
+        object_id, @type, RDoc::Markup::Attribute.as_string(type), text.dump]
     end
   end
 

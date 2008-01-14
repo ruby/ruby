@@ -64,6 +64,7 @@ profiler.rb
 pstore.rb
 racc
 rational.rb
+rdoc.rb
 rdoc
 readbytes.rb
 resolv-replace.rb
