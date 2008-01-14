@@ -304,8 +304,11 @@ rb_enc_alias(const char *alias, const char *orig)
 enum {
     ENCINDEX_ASCII,
     ENCINDEX_UTF8,
+    ENCINDEX_US_ASCII,
     ENCINDEX_BUILTIN_MAX
 };
+
+extern rb_encoding OnigEncodingUS_ASCII;
 
 void
 rb_enc_init(void)
@@ -314,6 +317,7 @@ rb_enc_init(void)
 #define ENC_REGISTER(enc) enc_register_at(ENCINDEX_##enc, rb_enc_name(ONIG_ENCODING_##enc), ONIG_ENCODING_##enc)
     ENC_REGISTER(ASCII);
     ENC_REGISTER(UTF8);
+    enc_register_at(ENCINDEX_US_ASCII, rb_enc_name(&OnigEncodingUS_ASCII), &OnigEncodingUS_ASCII);
 #undef ENC_REGISTER
 }
 

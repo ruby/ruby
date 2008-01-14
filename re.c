@@ -142,12 +142,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n)
 #define ARG_ENCODING_FIXED    16
 #define ARG_ENCODING_NONE     32
 
-#define ARG_KCODE_NONE	      0
-#define ARG_KCODE_EUC 	      1
-#define ARG_KCODE_SJIS	      2
-#define ARG_KCODE_UTF8	      3
-#define ARG_KCODE_MASK	      3
-
 static int
 char_to_option(int c)
 {
@@ -191,13 +185,13 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
         *kcode = -1;
         return (*option = ARG_ENCODING_NONE);
       case 'e':
-	*kcode = ARG_KCODE_EUC;
+	*kcode = rb_enc_find_index("EUC-JP");
 	break;
       case 's':
-	*kcode = ARG_KCODE_SJIS;
+	*kcode = rb_enc_find_index("Shitf_JIS");
 	break;
       case 'u':
-	*kcode = ARG_KCODE_UTF8;
+	*kcode = rb_enc_find_index("UTF-8");
 	break;
       default:
 	*kcode = -1;

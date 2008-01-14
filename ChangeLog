@@ -1,3 +1,10 @@
+Mon Jan 14 22:48:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_char_to_option_kcode): use rb_enc_find_index() instead
+	  of using fixed index value.
+
+	* enc/Makefile.in (encsrcdir): make US-ASCII built-in.
+
 Mon Jan 14 22:25:02 2008  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* golf_prelude.rb: Shorter method name completion.  Same method

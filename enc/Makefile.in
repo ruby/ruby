@@ -14,7 +14,7 @@ TRANSSODIR = $(ENCSODIR)/trans
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 
-BUILTIN_ENCS	= ascii.c \
+BUILTIN_ENCS	= ascii.c us_ascii.c\
 		  unicode.c utf8.c
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
