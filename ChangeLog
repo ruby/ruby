@@ -1,3 +1,14 @@
+Mon Jan 14 13:49:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_prepare_re): initialize error message buffer.
+	  (rb_reg_search): ditto.
+	  (rb_reg_check_preprocess): ditto.
+	  (rb_reg_new_str): ditto.
+	  (rb_enc_reg_new): ditto.
+	  (rb_reg_compile): ditto.
+	  (rb_reg_initialize_m): ditto.
+	  (rb_reg_s_union_m): ditto.
+
 Mon Jan 14 12:33:07 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup*:  Renamespace from SM::SimpleMarkup to

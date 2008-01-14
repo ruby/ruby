@@ -984,7 +984,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     }
 
     if (need_recompile) {
-	onig_errmsg_buffer err;
+	onig_errmsg_buffer err = "";
 	int r;
 	OnigErrorInfo einfo;
 	regex_t *reg, *reg2;
@@ -1079,7 +1079,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	    return result;
 	}
 	else {
-	    onig_errmsg_buffer err;
+	    onig_errmsg_buffer err = "";
 	    onig_error_code_to_str((UChar*)err, result);
 	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, 0);
 	}
@@ -1925,7 +1925,7 @@ VALUE
 rb_reg_check_preprocess(VALUE str)
 {
     rb_encoding *fixed_enc = 0;
-    onig_errmsg_buffer err;
+    onig_errmsg_buffer err = "";
     VALUE buf;
     char *p, *end;
     rb_encoding *enc;
@@ -1967,7 +1967,7 @@ static VALUE
 rb_reg_preprocess_m(VALUE klass, VALUE obj)
 {
     rb_encoding *fixed_enc = 0;
-    onig_errmsg_buffer err;
+    onig_errmsg_buffer err = "";
     VALUE str = rb_reg_preprocess_obj(obj, &fixed_enc, err);
     if (str == Qnil)
         rb_raise(rb_eArgError, "%s", err);
@@ -2070,7 +2070,7 @@ VALUE
 rb_reg_new_str(VALUE s, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
-    onig_errmsg_buffer err;
+    onig_errmsg_buffer err = "";
 
     if (rb_reg_initialize_str(re, s, options, err) != 0) {
 	rb_reg_raise_str(s, options, err);
@@ -2083,7 +2083,7 @@ VALUE
 rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
-    onig_errmsg_buffer err;
+    onig_errmsg_buffer err = "";
 
     if (rb_reg_initialize(re, s, len, enc, options, err) != 0) {
 	rb_enc_reg_raise(s, len, enc, options, err);
@@ -2102,7 +2102,7 @@ VALUE
 rb_reg_compile(VALUE str, int options)
 {
     VALUE re = rb_reg_s_alloc(rb_cRegexp);
-    onig_errmsg_buffer err;
+    onig_errmsg_buffer err = "";
 
     if (!str) str = rb_str_new(0,0);
     if (rb_reg_initialize_str(re, str, options, err) != 0) {
@@ -2426,7 +2426,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 static VALUE
 rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 {
-    onig_errmsg_buffer err;
+    onig_errmsg_buffer err = "";
     int flags = 0;
     VALUE str;
     rb_encoding *enc;
@@ -2778,7 +2778,7 @@ rb_reg_s_union_m(VALUE self, VALUE args)
 static VALUE
 rb_reg_init_copy(VALUE copy, VALUE re)
 {
-    onig_errmsg_buffer err;
+    onig_errmsg_buffer err = "";
     const char *s;
     long len;
 
