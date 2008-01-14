@@ -66,7 +66,7 @@ class Time
       'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6, 
       'T' => -7, 'U' => -8, 'V' => -9, 'W' => -10, 'X' => -11, 'Y' => -12,
     }
-    def zone_offset(zone, year=Time.now.year)
+    def zone_offset(zone, year=self.now.year)
       off = nil
       zone = zone.upcase
       if /\A([+-])(\d\d):?(\d\d)\z/ =~ zone
@@ -75,9 +75,9 @@ class Time
         off = zone.to_i * 3600
       elsif ZoneOffset.include?(zone)
         off = ZoneOffset[zone] * 3600
-      elsif ((t = Time.local(year, 1, 1)).zone.upcase == zone rescue false)
+      elsif ((t = self.local(year, 1, 1)).zone.upcase == zone rescue false)
         off = t.utc_offset
-      elsif ((t = Time.local(year, 7, 1)).zone.upcase == zone rescue false)
+      elsif ((t = self.local(year, 7, 1)).zone.upcase == zone rescue false)
         off = t.utc_offset
       end
       off
@@ -177,7 +177,7 @@ class Time
       if off
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
-        t = Time.utc(year, mon, day, hour, min, sec, usec)
+        t = self.utc(year, mon, day, hour, min, sec, usec)
         t.localtime if !zone_utc?(zone)
         t
       else
@@ -236,7 +236,7 @@ class Time
     #
     # A failure for Time.parse should be checked, though.
     #
-    def parse(date, now=Time.now)
+    def parse(date, now=self.now)
       d = Date._parse(date, false)
       year = d[:year]
       year = yield(year) if year && block_given?
@@ -250,7 +250,7 @@ class Time
     # block.  For example:
     #
     #     Time.strptime(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
-    def strptime(date, format, now=Time.now)
+    def strptime(date, format, now=self.now)
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       year = d[:year]
@@ -344,7 +344,7 @@ class Time
         else
           year += 1900
         end
-        Time.utc(year, $2, $1.to_i, $4.to_i, $5.to_i, $6.to_i)
+        self.utc(year, $2, $1.to_i, $4.to_i, $5.to_i, $6.to_i)
       elsif /\A\s*
              (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\x20
              (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\x20
@@ -389,9 +389,9 @@ class Time
           zone = $8
           year, mon, day, hour, min, sec =
             apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
-          Time.utc(year, mon, day, hour, min, sec, usec)
+          self.utc(year, mon, day, hour, min, sec, usec)
         else
-          Time.local(year, mon, day, hour, min, sec, usec)
+          self.local(year, mon, day, hour, min, sec, usec)
         end
       else
         raise ArgumentError.new("invalid date: #{date.inspect}")
