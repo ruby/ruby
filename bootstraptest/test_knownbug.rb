@@ -90,7 +90,7 @@ assert_equal 'ok', %q{
 }, '[ruby-core:14641]'
 
 assert_equal 'true', %{
-  t = Thread.new { sleep }
+  t = Thread.new { loop {} }
   pid = fork {
       exit t.status != "run"
   }
