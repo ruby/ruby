@@ -1,3 +1,10 @@
+Mon Jan 14 16:09:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.1: a patch to describe --encoding.  a patch from Yugui
+	  <yugui AT yugui.sakura.ne.jp> in [ruby-dev:33079].
+
+	* ruby.c: ditto.
+
 Mon Jan 14 13:49:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_prepare_re): initialize error message buffer.

@@ -13,14 +13,17 @@
 .Op Fl Sacdlnpswvy
 .Op Fl 0 Ns Op Ar octal
 .Op Fl C Ar directory
+.Op Fl E Ar encoding
 .Op Fl F Ar pattern
 .Op Fl I Ar directory
 .Op Fl K Ar c
 .Op Fl T Ns Op Ar level
+.Op Fl W Ns Op Ar level
 .Op Fl e Ar command
 .Op Fl i Ns Op Ar extension
 .Op Fl r Ar library
 .Op Fl x Ns Op Ar directory
+.Op Fl -disable-gems
 .Op Fl -
 .Op Ar program_file
 .Op Ar argument ...
@@ -132,7 +135,12 @@ makes Ruby read whole file at once as a single string since there is
 no legal character with that value.
 .Pp
 .It Fl C Ar directory
+.It Fl X Ar directory
 Causes Ruby to switch to the directory.
+.Pp
+.It Fl E Ar encname
+.It Fl -encoding Ar encname
+Specifies the encoding for the program codes.
 .Pp
 .It Fl F Ar pattern
 Specifies input field separator
@@ -161,6 +169,30 @@ on machines that don't support it, in the following manner:
 .Pp
 .It Fl T Ns Op Ar level
 Turns on taint checks at the specified level (default 1).
+.Pp
+.It Fl W Ns Op Ar level
+Turns on verbose mode at the specified level, without printing version 
+message at the beginning. The level can be;
+.Bl -hang -offset indent
+.It Sy 0
+Verbose mode is "silence". It sets the
+.Li "$VERBOSE"
+to nil.
+.Pp
+.It Sy 1
+Verbose mode is "medium". It sets the
+.Li "$VERBOSE"
+to false.
+.Pp
+.It Sy 2 (default)
+Verbose mode is "verbose". It sets the
+.Li "$VERBOSE"
+to true.
+.Fl W Ns
+2 is same as
+.Fl w
+.
+.El
 .Pp
 .It Fl a
 Turns on auto-split mode when used with
@@ -304,6 +336,10 @@ before executing script.
 Turns on compiler debug mode.  Ruby will print a bunch of internal
 state messages during compiling scripts.  You don't have to specify
 this switch, unless you are going to debug the Ruby interpreter.
+.Pp
+.It Fl -disable-gems
+Disables RubyGems libraries. By default, Ruby can load the latest 
+version of the each installed gems.
 .El
 .Pp
 .Sh ENVIRONMENT
