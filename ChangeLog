@@ -1,3 +1,9 @@
+Mon Jan 14 23:31:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in (setup): add -I$(EXTOUT)/$(arch) to MINIRUBY.
+
+	* bootstraptest/runner.rb (main): expand -I directory path.
+
 Mon Jan 14 23:28:10 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/enc-setup.mak (BUILTIN_ENCOBJS): depends on enc/Makefile.in.

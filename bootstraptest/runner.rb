@@ -51,6 +51,7 @@ def main
     case arg
     when /\A--ruby=(.*)/
       @ruby = File.expand_path($1)
+      @ruby.gsub!(/-I([^ ]*)/){"-I"+File.expand_path($1)}
       true
     when /\A--sets=(.*)/
       tests = Dir.glob("#{File.dirname($0)}/test_{#{$1}}*.rb")
