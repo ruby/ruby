@@ -6535,16 +6535,17 @@ eval(self, src, scope, file, line)
     if (state) {
 	if (state == TAG_RAISE) {
 	    if (strcmp(file, "(eval)") == 0) {
-		VALUE mesg, errat;
+		VALUE mesg, errat, bt2;
 
 		errat = get_backtrace(ruby_errinfo);
-		mesg  = rb_attr_get(ruby_errinfo, rb_intern("mesg"));
-		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
+		mesg = rb_attr_get(ruby_errinfo, rb_intern("mesg"));
+		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY &&
+		    (bt2 = backtrace(-2), RARRAY_LEN(bt2) > 0)) {
 		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
 			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
-			rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
+			rb_str_update(mesg, 0, 0, RARRAY_PTR(errat)[0]);
 		    }
-		    RARRAY(errat)->ptr[0] = RARRAY(backtrace(-2))->ptr[0];
+		    RARRAY_PTR(errat)[0] = RARRAY_PTR(bt2)[0];
 		}
 	    }
 	    rb_exc_raise(ruby_errinfo);
