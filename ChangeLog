@@ -1,3 +1,7 @@
+Tue Jan 15 01:28:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: simplified dummy objects dependencies.
+
 Tue Jan 15 01:19:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (OBJS): moved encoding.o from COMMONOBJS.

@@ -424,14 +424,9 @@ dir.$(OBJEXT): {$(VPATH)}dir.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
 dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h {$(VPATH)}dln.h
-dmydln.$(OBJEXT): {$(VPATH)}dmydln.c {$(VPATH)}dln.c {$(VPATH)}ruby.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}dln.h
+dmydln.$(OBJEXT): {$(VPATH)}dmydln.c dln.$(OBJEXT)
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
-dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h {$(VPATH)}encdb.h
+dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c encoding.$(OBJEXT)
 encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
