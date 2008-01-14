@@ -874,9 +874,9 @@ rb_locale_encoding(void)
     int idx;
 
     if (NIL_P(charmap))
-        return rb_ascii8bit_encoding();
-
-    idx = rb_enc_find_index(StringValueCStr(charmap));
+        idx = rb_enc_find_index("US-ASCII");
+    else
+        idx = rb_enc_find_index(StringValueCStr(charmap));
     if (idx < 0)
         return rb_ascii8bit_encoding();
 
@@ -1093,7 +1093,7 @@ Init_Encoding(void)
     rb_define_dummy_encoding("ISO-2022-JP");
     rb_enc_alias("ISO2022-JP", "ISO-2022-JP");
     rb_define_dummy_encoding("ISO-2022-JP-2");
-    rb_enc_alias("ISO2022-JP-2", "ISO-2022-JP-2");
+    rb_enc_alias("ISO2022-JP2", "ISO-2022-JP-2");
 }
 
 /* locale insensitive functions */
