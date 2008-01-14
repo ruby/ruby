@@ -1,3 +1,9 @@
+Mon Jan 14 16:12:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/shellwords.rb: scape should be an alias to shellescape.  a
+	  patch from Masahiro Kawato <m-kawato AT mwb.biglobe.ne.jp> in
+	  [ruby-dev:33060].
+
 Mon Jan 14 16:09:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.1: a patch to describe --encoding.  a patch from Yugui
