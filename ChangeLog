@@ -1,3 +1,14 @@
+Tue Jan 15 01:19:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (OBJS): moved encoding.o from COMMONOBJS.
+
+	* common.mk (dmyencoding.o): added.  [ruby-dev:33099]
+
+	* configure.in, {win,bcc}32/Makefile.sub (MINIOBJS): added
+	  dmyencoding.o.
+
+	* dmyencoding.c (rb_locale_charmap): returns nil for miniruby.
+
 Tue Jan 15 00:05:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (appendline): specifying limit should not generate broken

@@ -1608,7 +1608,7 @@ case "$target_os" in
     *)
 	;;
 esac
-MINIOBJS="$MINIDLNOBJ"
+MINIOBJS="$MINIDLNOBJ dmyencoding.o"
 
 case "$build_os" in
   *msdosdjgpp*) FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in;;

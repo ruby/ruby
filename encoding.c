@@ -943,7 +943,9 @@ rb_enc_set_default_external(VALUE encoding)
 VALUE
 rb_locale_charmap(VALUE klass)
 {
-#ifdef HAVE_LANGINFO_H
+#if defined NO_LOCALE_CHARMAP
+    return Qnil;
+#elif defined HAVE_LANGINFO_H
     char *codeset;
     codeset = nl_langinfo(CODESET);
     return rb_str_new2(codeset);

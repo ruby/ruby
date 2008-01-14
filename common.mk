@@ -24,7 +24,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
 		dir.$(OBJEXT) \
-		encoding.$(OBJEXT) \
 		enum.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
@@ -77,6 +76,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		$(MISSING)
 
 OBJS          = dln.$(OBJEXT) \
+		encoding.$(OBJEXT) \
 		prelude.$(OBJEXT) \
 		$(COMMONOBJS)
 
@@ -428,6 +428,10 @@ dmydln.$(OBJEXT): {$(VPATH)}dmydln.c {$(VPATH)}dln.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}dln.h
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
+dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
+  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h {$(VPATH)}encdb.h
 encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
