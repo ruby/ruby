@@ -237,6 +237,12 @@ rescue Exception => err
   error err.message, message
 end
 
+def flunk(message = '')
+  newtest
+  $stderr.print 'F'
+  error message, ''
+end
+
 def pretty(src, desc, result)
   src = src.sub(/\A.*\n/, '')
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"

@@ -3,6 +3,10 @@
 # So all tests will cause failure.
 #
 
+# test is not written...
+flunk '[ruby-dev:31819] rb_clear_cache_by_class'
+flunk '[ruby-dev:31820] valgrind set_trace_func'
+
 assert_equal 'ok', %q{
   class X < RuntimeError;end
   x = [X]
@@ -12,11 +16,6 @@ assert_equal 'ok', %q{
    :ok
   end
 }, '[ruby-core:14537]'
-
-# test is not written...
-# * [ruby-dev:31819] rb_clear_cache_by_class
-# * [ruby-dev:31820] valgrind set_trace_func
-
 
 assert_equal 'ok', %q{
   while true

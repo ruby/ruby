@@ -1,3 +1,9 @@
+Mon Jan 14 18:43:38 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/runner.rb: add "flunk" method.
+
+	* bootstraptest/test_knownbug.rb: fix to use flunk.
+
 Mon Jan 14 18:10:59 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.h: remove dangerous assembler sentence.
