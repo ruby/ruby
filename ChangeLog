@@ -1,3 +1,12 @@
+Mon Jan 14 22:25:02 2008  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* golf_prelude.rb: Shorter method name completion.  Same method
+	  used for const missing. do_while and do_until added.  Enumerator
+	  gains all of Array's abilities. Ex:
+	    '123'.m{|i|i*2} #=> "112233"
+	    '123'.pe #=> '123'.perm*' ' #=> "123 132 213 231 312 321"
+	  base on a patch from Darren Smith <darrenks AT ml1.net>.
+
 Mon Jan 14 21:10:02 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enc/us_ascii.c: wrong alias name: ANSI_X3.4-1986.
