@@ -1,3 +1,7 @@
+Tue Jan 15 01:28:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: simplified dummy objects dependencies.
+
 Mon Jan 14 16:12:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/shellwords.rb: scape should be an alias to shellescape.  a
