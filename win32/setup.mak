@@ -142,7 +142,8 @@ int main(int argc, char **argv)
 	@del rtname.*
 
 -version-: nul
-	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" >>$(MAKEFILE)
+	@$(APPEND)
+	@$(CPP) -I$(srcdir) <<"Creating $(MAKEFILE)" | find "=" >>$(MAKEFILE)
 #define RUBY_REVISION 0
 #include "version.h"
 MAJOR = RUBY_VERSION_MAJOR
@@ -208,7 +209,8 @@ $(CPU) = $(PROCESSOR_LEVEL)
 
 -epilogue-: nul
 !if exist(confargs.c)
-	@$(CPP) confargs.c >> $(MAKEFILE)
+	@$(APPEND)
+	@$(CPP) confargs.c | find "=" >> $(MAKEFILE)
 	@del confargs.c
 !endif
 	@type << >>$(MAKEFILE)
