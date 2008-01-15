@@ -1,3 +1,7 @@
+Tue Jan 15 13:43:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk (us_ascii.o): add dependecies. [ruby-dev:33111]
+
 Tue Jan 15 03:41:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (eval): check if backtrace is empty.  [ruby-core:15040]
