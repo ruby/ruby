@@ -53,14 +53,14 @@ static const int EncLen_UTF16[] = {
 
 static int
 utf16be_mbc_enc_len(const UChar* p, const OnigUChar* e ARG_UNUSED,
-		    struct OnigEncodingTypeST* enc ARG_UNUSED)
+		    OnigEncoding enc ARG_UNUSED)
 {
   return EncLen_UTF16[*p];
 }
 
 static int
 utf16be_is_mbc_newline(const UChar* p, const UChar* end,
-		       struct OnigEncodingTypeST* enc ARG_UNUSED)
+		       OnigEncoding enc)
 {
   if (p + 1 < end) {
     if (*(p+1) == 0x0a && *p == 0x00)
@@ -81,7 +81,7 @@ utf16be_is_mbc_newline(const UChar* p, const UChar* end,
 
 static OnigCodePoint
 utf16be_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
-		    struct OnigEncodingTypeST* enc ARG_UNUSED)
+		    OnigEncoding enc)
 {
   OnigCodePoint code;
 
@@ -98,14 +98,14 @@ utf16be_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
 
 static int
 utf16be_code_to_mbclen(OnigCodePoint code,
-		       struct OnigEncodingTypeST* enc ARG_UNUSED)
+		       OnigEncoding enc)
 {
   return (code > 0xffff ? 4 : 2);
 }
 
 static int
 utf16be_code_to_mbc(OnigCodePoint code, UChar *buf,
-		    struct OnigEncodingTypeST* enc ARG_UNUSED)
+		    OnigEncoding enc)
 {
   UChar* p = buf;
 
@@ -130,7 +130,7 @@ utf16be_code_to_mbc(OnigCodePoint code, UChar *buf,
 static int
 utf16be_mbc_case_fold(OnigCaseFoldType flag,
 		      const UChar** pp, const UChar* end, UChar* fold,
-		      struct OnigEncodingTypeST* enc ARG_UNUSED)
+		      OnigEncoding enc)
 {
   const UChar* p = *pp;
 
@@ -193,7 +193,7 @@ utf16be_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* e
 
 static UChar*
 utf16be_left_adjust_char_head(const UChar* start, const UChar* s,
-			      struct OnigEncodingTypeST* enc ARG_UNUSED)
+			      OnigEncoding enc ARG_UNUSED)
 {
   if (s <= start) return (UChar* )s;
 
@@ -211,7 +211,7 @@ static int
 utf16be_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 				   const OnigUChar* p, const OnigUChar* end,
 				   OnigCaseFoldCodeItem items[],
-				   struct OnigEncodingTypeST* enc ARG_UNUSED)
+				   OnigEncoding enc)
 {
   return onigenc_unicode_get_case_fold_codes_by_str(enc,
 						    flag, p, end, items);

@@ -1,3 +1,8 @@
+Tue Jan 15 23:00:08 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/utf_{16,32}{be,le}.c: remove some ARG_UNUSED.  replace struct
+	OnigEncodingST by OnigEncoding.
+
 Tue Jan 15 22:30:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (ENC_REGISTER): use &OnigEncoding*.

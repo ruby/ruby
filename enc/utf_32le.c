@@ -31,14 +31,14 @@
 
 static int
 utf32le_mbc_enc_len(const UChar* p ARG_UNUSED, const OnigUChar* e ARG_UNUSED,
-		    struct OnigEncodingTypeST* enc ARG_UNUSED)
+		    OnigEncoding enc ARG_UNUSED)
 {
   return 4;
 }
 
 static int
 utf32le_is_mbc_newline(const UChar* p, const UChar* end,
-		       struct OnigEncodingTypeST* enc ARG_UNUSED)
+		       OnigEncoding enc ARG_UNUSED)
 {
   if (p + 3 < end) {
     if (*p == 0x0a && *(p+1) == 0 && *(p+2) == 0 && *(p+3) == 0)
@@ -61,21 +61,21 @@ utf32le_is_mbc_newline(const UChar* p, const UChar* end,
 
 static OnigCodePoint
 utf32le_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
-		    struct OnigEncodingTypeST* enc ARG_UNUSED)
+		    OnigEncoding enc ARG_UNUSED)
 {
   return (OnigCodePoint )(((p[3] * 256 + p[2]) * 256 + p[1]) * 256 + p[0]);
 }
 
 static int
 utf32le_code_to_mbclen(OnigCodePoint code ARG_UNUSED,
-		       struct OnigEncodingTypeST* enc ARG_UNUSED)
+		       OnigEncoding enc ARG_UNUSED)
 {
   return 4;
 }
 
 static int
 utf32le_code_to_mbc(OnigCodePoint code, UChar *buf,
-		    struct OnigEncodingTypeST* enc ARG_UNUSED)
+		    OnigEncoding enc ARG_UNUSED)
 {
   UChar* p = buf;
 
@@ -89,7 +89,7 @@ utf32le_code_to_mbc(OnigCodePoint code, UChar *buf,
 static int
 utf32le_mbc_case_fold(OnigCaseFoldType flag,
 		      const UChar** pp, const UChar* end, UChar* fold,
-		      struct OnigEncodingTypeST* enc ARG_UNUSED)
+		      OnigEncoding enc)
 {
   const UChar* p = *pp;
 
@@ -153,7 +153,7 @@ utf32le_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* e
 
 static UChar*
 utf32le_left_adjust_char_head(const UChar* start, const UChar* s,
-			      struct OnigEncodingTypeST* enc ARG_UNUSED)
+			      OnigEncoding enc ARG_UNUSED)
 {
   int rem;
 
@@ -167,7 +167,7 @@ static int
 utf32le_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 				   const OnigUChar* p, const OnigUChar* end,
 				   OnigCaseFoldCodeItem items[],
-				   struct OnigEncodingTypeST* enc ARG_UNUSED)
+				   OnigEncoding enc)
 {
   return onigenc_unicode_get_case_fold_codes_by_str(enc,
 						    flag, p, end, items);
