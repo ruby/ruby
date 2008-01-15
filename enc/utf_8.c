@@ -1,5 +1,5 @@
 /**********************************************************************
-  utf8.c -  Oniguruma (regular expression library)
+  utf_8.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
@@ -28,6 +28,10 @@
  */
 
 #include "regenc.h"
+
+OnigEncodingDeclare(UTF_8);
+#undef ONIG_ENCODING_UTF8
+#define ONIG_ENCODING_UTF8 (&OnigEncodingName(UTF_8))
 
 #define USE_INVALID_CODE_SCHEME
 
@@ -462,7 +466,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 						    flag, p, end, items);
 }
 
-OnigEncodingDefine(utf8, UTF8) = {
+OnigEncodingDefine(utf_8, UTF_8) = {
   mbc_enc_len,
   "UTF-8",     /* name */
   6,           /* max byte length */

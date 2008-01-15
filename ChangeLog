@@ -1,3 +1,7 @@
+Tue Jan 15 17:26:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/utf_8.c: renamed as IANA name.
+
 Tue Jan 15 16:59:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): encoding libraries cannot be loaded until
@@ -136,7 +140,7 @@ Mon Jan 14 13:49:26 2008  Tanaka Akira  <akr@fsij.org>
 Mon Jan 14 12:33:07 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup*:  Renamespace from SM::SimpleMarkup to
-	RDoc::Markup.
+	  RDoc::Markup.
 
 Mon Jan 14 10:45:45 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 

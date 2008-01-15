@@ -668,7 +668,7 @@ us_ascii.$(OBJEXT): {$(VPATH)}us_ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
 unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-utf8.$(OBJEXT): {$(VPATH)}utf8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
+utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \

@@ -565,7 +565,7 @@ st.$(OBJEXT): win32.h
 string.$(OBJEXT): win32.h
 struct.$(OBJEXT): win32.h
 time.$(OBJEXT): win32.h
-utf8.$(OBJEXT): win32.h
+utf_8.$(OBJEXT): win32.h
 util.$(OBJEXT): win32.h
 variable.$(OBJEXT): win32.h
 version.$(OBJEXT): win32.h
