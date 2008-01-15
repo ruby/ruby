@@ -29,10 +29,6 @@
 
 #include "regenc.h"
 
-OnigEncodingDeclare(UTF_8);
-#undef ONIG_ENCODING_UTF8
-#define ONIG_ENCODING_UTF8 (&OnigEncodingName(UTF_8))
-
 #define USE_INVALID_CODE_SCHEME
 
 #ifdef USE_INVALID_CODE_SCHEME
