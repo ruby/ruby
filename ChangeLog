@@ -1,3 +1,7 @@
+Tue Jan 15 15:09:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/setup.mak: strip out empty lines from CPP output.
+
 Tue Jan 15 03:41:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (eval): check if backtrace is empty.  [ruby-core:15040]
