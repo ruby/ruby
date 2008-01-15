@@ -1,3 +1,8 @@
+Tue Jan 15 16:59:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): encoding libraries cannot be loaded until
+	  load path is set.
+
 Tue Jan 15 15:09:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/setup.mak: strip out empty lines from CPP output.

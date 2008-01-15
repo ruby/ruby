@@ -707,24 +707,23 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  case 'K':
 	    if (*++s) {
-		rb_encoding *enc = 0;
+		const char *enc_name = 0;
 		switch (*s) {
 		  case 'E': case 'e':
-		    enc = rb_enc_find("EUC-JP");
+		    enc_name = "EUC-JP";
 		    break;
 		  case 'S': case 's':
-		    enc = rb_enc_find("Windows-31J");
-		    if (!enc) enc = rb_enc_find("Shift_JIS");
+		    enc_name = "Windows-31J";
 		    break;
 		  case 'U': case 'u':
-		    enc = ONIG_ENCODING_UTF8;
+		    enc_name = "UTF-8";
 		    break;
 		  case 'N': case 'n': case 'A': case 'a':
-		    enc = ONIG_ENCODING_ASCII;
+		    enc_name = "US-ASCII";
 		    break;
 		}
-		if (enc) {
-		    opt->enc_name = rb_str_new2(rb_enc_name(enc));
+		if (enc_name) {
+		    opt->enc_name = rb_str_new2(enc_name);
 		}
 		s++;
 	    }
