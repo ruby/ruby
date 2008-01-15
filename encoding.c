@@ -944,7 +944,7 @@ VALUE
 rb_locale_charmap(VALUE klass)
 {
 #if defined NO_LOCALE_CHARMAP
-    return Qnil;
+    return rb_str_new2("ASCII-8BIT");
 #elif defined HAVE_LANGINFO_H
     char *codeset;
     codeset = nl_langinfo(CODESET);
