@@ -13,7 +13,7 @@ srcdir = $(WIN32DIR)/..
 prefix = /usr
 !endif
 BANG = !
-APPEND = echo>>$(MAKEFILE)
+APPEND = echo.>>$(MAKEFILE)
 !ifdef MAKEFILE
 MAKE = $(MAKE) -f $(MAKEFILE)
 !else
@@ -56,6 +56,9 @@ EXTOUT = $(EXTOUT)
 BASERUBY = $(BASERUBY)
 !endif
 <<
+!if !defined(BASERUBY)
+	@for %I in (ruby.exe) do @echo BASERUBY = "%~$$PATH:I" >> $(MAKEFILE)
+!endif
 
 -system-vars-: -runtime-
 

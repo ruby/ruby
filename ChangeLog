@@ -1,3 +1,10 @@
+Tue Jan 15 14:57:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {win,bcc}32/setup.mak (-basic-vars-): expand BASERUBY to full path
+	  to get rid of ./ruby.exe.
+
+	* win32/enc-setup.mak: workaround for Borland make.
+
 Tue Jan 15 14:44:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_locale_charmap): use ASCII-8BIT in miniruby.

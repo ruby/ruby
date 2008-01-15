@@ -15,7 +15,7 @@ prefix = /usr
 OS = bccwin32
 RT = $(OS)
 BANG = !
-APPEND = echo>>$(MAKEFILE)
+APPEND = echo.>>$(MAKEFILE)
 !ifdef MAKEFILE
 MAKE = $(MAKE) -f $(MAKEFILE)
 !else
@@ -42,7 +42,15 @@ $(BANG)endif
 $(BANG)ifndef prefix
 prefix = $(prefix:\=/)
 $(BANG)endif
+$(BANG)if !defined(BASERUBY)
+!if defined(BASERUBY)
+BASERUBY = $(BASERUBY)
+!endif
 |
+!if !defined(BASERUBY)
+	@for %I in (ruby.exe) do @echo BASERUBY = "%~$$PATH:I" >> $(MAKEFILE)
+!endif
+	@$(APPEND) $(BANG)endif
 !if exist(confargs.mk)
 	@type confargs.mk >> $(MAKEFILE)
 	@del confargs.mk
