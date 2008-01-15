@@ -29,8 +29,6 @@
 
 #include "regenc.h"
 
-OnigEncodingDeclare(UTF_32BE);
-
 static int
 utf32be_mbc_enc_len(const UChar* p ARG_UNUSED, const OnigUChar* e ARG_UNUSED,
 		    struct OnigEncodingTypeST* enc ARG_UNUSED)
@@ -116,7 +114,7 @@ utf32be_mbc_case_fold(OnigCaseFoldType flag,
     return 4;
   }
   else
-    return onigenc_unicode_mbc_case_fold(&OnigEncodingName(UTF_32BE), flag, pp,
+    return onigenc_unicode_mbc_case_fold(enc, flag, pp,
 					 end, fold);
 }
 
@@ -171,7 +169,7 @@ utf32be_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 				   OnigCaseFoldCodeItem items[],
 				   struct OnigEncodingTypeST* enc ARG_UNUSED)
 {
-  return onigenc_unicode_get_case_fold_codes_by_str(&OnigEncodingName(UTF_32BE),
+  return onigenc_unicode_get_case_fold_codes_by_str(enc,
 						    flag, p, end, items);
 }
 

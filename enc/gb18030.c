@@ -30,8 +30,6 @@
 
 #include "regenc.h"
 
-OnigEncodingDeclare(GB18030);
-
 #if 1
 #define DEBUG_GB18030(arg)
 #else
@@ -80,20 +78,20 @@ gb18030_mbc_enc_len(const UChar* p, const UChar* end, OnigEncoding enc)
 static OnigCodePoint
 gb18030_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_to_code(&OnigEncodingName(GB18030), p, end);
+  return onigenc_mbn_mbc_to_code(enc, p, end);
 }
 
 static int
 gb18030_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
-  return onigenc_mb4_code_to_mbc(&OnigEncodingName(GB18030), code, buf);
+  return onigenc_mb4_code_to_mbc(enc, code, buf);
 }
 
 static int
 gb18030_mbc_case_fold(OnigCaseFoldType flag, const UChar** pp, const UChar* end,
                       UChar* lower, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_case_fold(&OnigEncodingName(GB18030), flag,
+  return onigenc_mbn_mbc_case_fold(enc, flag,
                                    pp, end, lower);
 }
 
@@ -102,14 +100,14 @@ static int
 gb18030_is_mbc_ambiguous(OnigCaseFoldType flag,
 			 const UChar** pp, const UChar* end, OnigEncoding enc)
 {
-  return onigenc_mbn_is_mbc_ambiguous(&OnigEncodingName(GB18030), flag, pp, end);
+  return onigenc_mbn_is_mbc_ambiguous(enc, flag, pp, end);
 }
 #endif
 
 static int
 gb18030_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
-  return onigenc_mb4_is_code_ctype(&OnigEncodingName(GB18030), code, ctype);
+  return onigenc_mb4_is_code_ctype(enc, code, ctype);
 }
 
 enum state {

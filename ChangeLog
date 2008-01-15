@@ -1,3 +1,14 @@
+Tue Jan 15 22:30:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (ENC_REGISTER): use &OnigEncoding*.
+	  (ENCINDEX_UTF_8): renamed from ENCINDEX_UTF8.
+	  (rb_enc_init): use ENC_REGISTER.
+
+	* include/ruby/oniguruma.h (OnigEncodingUTF8, ONIG_ENCODING_UTF8):
+	  removed.
+
+	* enc/*.c: remove use of &encoding_*; use enc argument instead.
+
 Tue Jan 15 18:44:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enc/utf_8.c: remove use of ONIG_ENCODING_UTF8 altogether; use

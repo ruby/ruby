@@ -29,8 +29,6 @@
 
 #include "regenc.h"
 
-OnigEncodingDeclare(BIG5);
-
 static const int EncLen_BIG5[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -59,20 +57,20 @@ big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 static OnigCodePoint
 big5_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_to_code(&OnigEncodingName(BIG5), p, end);
+  return onigenc_mbn_mbc_to_code(enc, p, end);
 }
 
 static int
 big5_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
-  return onigenc_mb2_code_to_mbc(&OnigEncodingName(BIG5), code, buf);
+  return onigenc_mb2_code_to_mbc(enc, code, buf);
 }
 
 static int
 big5_mbc_case_fold(OnigCaseFoldType flag, const UChar** pp, const UChar* end,
                    UChar* lower, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_case_fold(&OnigEncodingName(BIG5), flag,
+  return onigenc_mbn_mbc_case_fold(enc, flag,
                                    pp, end, lower);
 }
 
@@ -81,14 +79,14 @@ static int
 big5_is_mbc_ambiguous(OnigCaseFoldType flag,
 		      const UChar** pp, const UChar* end, OnigEncoding enc)
 {
-  return onigenc_mbn_is_mbc_ambiguous(&OnigEncodingName(BIG5), flag, pp, end);
+  return onigenc_mbn_is_mbc_ambiguous(enc, flag, pp, end);
 }
 #endif
 
 static int
 big5_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
-  return onigenc_mb2_is_code_ctype(&OnigEncodingName(BIG5), code, ctype);
+  return onigenc_mb2_is_code_ctype(enc, code, ctype);
 }
 
 static const char BIG5_CAN_BE_TRAIL_TABLE[256] = {
@@ -130,7 +128,7 @@ big5_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
       }
     } 
   }
-  len = enclen(&OnigEncodingName(BIG5), p, s);
+  len = enclen(enc, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

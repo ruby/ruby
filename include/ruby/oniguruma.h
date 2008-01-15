@@ -173,10 +173,8 @@ typedef struct OnigEncodingTypeST {
 typedef OnigEncodingType* OnigEncoding;
 
 ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
-ONIG_EXTERN OnigEncodingType OnigEncodingUTF8;
 
 #define ONIG_ENCODING_ASCII        (&OnigEncodingASCII)
-#define ONIG_ENCODING_UTF8         (&OnigEncodingUTF8)
 
 #define ONIG_ENCODING_UNDEF    ((OnigEncoding )0)
 

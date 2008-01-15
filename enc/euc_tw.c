@@ -29,8 +29,6 @@
 
 #include "regenc.h"
 
-OnigEncodingDeclare(EUC_TW);
-
 static const int EncLen_EUCTW[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -59,20 +57,20 @@ euctw_mbc_enc_len(const UChar* p, const UChar* end, OnigEncoding enc)
 static OnigCodePoint
 euctw_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_to_code(&OnigEncodingName(EUC_TW), p, end);
+  return onigenc_mbn_mbc_to_code(enc, p, end);
 }
 
 static int
 euctw_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
-  return onigenc_mb4_code_to_mbc(&OnigEncodingName(EUC_TW), code, buf);
+  return onigenc_mb4_code_to_mbc(enc, code, buf);
 }
 
 static int
 euctw_mbc_case_fold(OnigCaseFoldType flag, const UChar** pp, const UChar* end,
                     UChar* lower, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_case_fold(&OnigEncodingName(EUC_TW), flag,
+  return onigenc_mbn_mbc_case_fold(enc, flag,
                                    pp, end, lower);
 }
 
@@ -81,14 +79,14 @@ static int
 euctw_is_mbc_ambiguous(OnigCaseFoldType flag,
 		       const UChar** pp, const UChar* end, OnigEncoding enc)
 {
-  return onigenc_mbn_is_mbc_ambiguous(&OnigEncodingName(EUC_TW), flag, pp, end);
+  return onigenc_mbn_is_mbc_ambiguous(enc, flag, pp, end);
 }
 #endif
 
 static int
 euctw_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 {
-  return onigenc_mb4_is_code_ctype(&OnigEncodingName(EUC_TW), code, ctype);
+  return onigenc_mb4_is_code_ctype(enc, code, ctype);
 }
 
 #define euctw_islead(c)    (((c) < 0xa1 && (c) != 0x8e) || (c) == 0xff)
@@ -106,7 +104,7 @@ euctw_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc
   p = s;
 
   while (!euctw_islead(*p) && p > start) p--;
-  len = enclen(&OnigEncodingName(EUC_TW), p, s);
+  len = enclen(enc, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

@@ -29,7 +29,6 @@
 
 #include "regint.h"
 
-OnigEncodingDeclare(EUC_JP);
 
 #define eucjp_islead(c)    ((UChar )((c) - 0xa1) > 0xfe - 0xa1)
 
@@ -139,7 +138,7 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
   int c, i, len;
   OnigCodePoint n;
 
-  len = enclen(&OnigEncodingName(EUC_JP), p, end);
+  len = enclen(enc, p, end);
   n = (OnigCodePoint )*p++;
   if (len == 1) return n;
 
@@ -191,7 +190,7 @@ code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
   *p++ = (UChar )(code & 0xff);
 
 #if 1
-  if (enclen(&OnigEncodingName(EUC_JP), buf, p) != (p - buf))
+  if (enclen(enc, buf, p) != (p - buf))
     return ONIGERR_INVALID_CODE_POINT_VALUE;
 #endif  
   return p - buf;
@@ -213,7 +212,7 @@ mbc_case_fold(OnigCaseFoldType flag,
   else {
     int i;
 
-    len = enclen(&OnigEncodingName(EUC_JP), p, end);
+    len = enclen(enc, p, end);
     for (i = 0; i < len; i++) {
       *lower++ = *p++;
     }
@@ -235,7 +234,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
   p = s;
 
   while (!eucjp_islead(*p) && p > start) p--;
-  len = enclen(&OnigEncodingName(EUC_JP), p, s);
+  len = enclen(enc, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

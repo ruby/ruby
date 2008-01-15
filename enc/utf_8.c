@@ -424,7 +424,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
   return onigenc_unicode_get_case_fold_codes_by_str(enc, flag, p, end, items);
 }
 
-OnigEncodingDefine(utf8, UTF8) = {
+OnigEncodingDefine(utf_8, UTF_8) = {
   mbc_enc_len,
   "UTF-8",     /* name */
   6,           /* max byte length */
