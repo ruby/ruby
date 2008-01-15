@@ -180,7 +180,7 @@ PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
 WPROGRAM=$(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_SO_NAME).def
 MINIRUBY = .\miniruby$(EXEEXT) -I$(srcdir)/lib $(MINIRUBYOPT)
-RUNRUBY = .\ruby$(EXEEXT) "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
+RUNRUBY = .\ruby$(EXEEXT) -i"$(EXTOUT)/$(arch)" "$(srcdir)/runruby.rb" --extout="$(EXTOUT)" --
 
 ORGLIBPATH = $(LIB)
 

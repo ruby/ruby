@@ -1,3 +1,8 @@
+Tue Jan 15 13:54:41 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32}/Makefile.sub (RUNRUBY): need to set archdir when
+	  invoking ruby.
+
 Tue Jan 15 13:43:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk (us_ascii.o): add dependecies. [ruby-dev:33111]
