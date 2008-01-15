@@ -49,7 +49,7 @@ static const int EncLen_EUCKR[] = {
 };
 
 static int
-euckr_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+euckr_mbc_enc_len(const UChar* p, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   return EncLen_EUCKR[*p];
 }
@@ -111,7 +111,7 @@ euckr_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc
 }
 
 static int
-euckr_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc)
+euckr_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   const UChar c = *s;
   if (c <= 0x7e) return TRUE;

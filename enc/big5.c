@@ -49,7 +49,7 @@ static const int EncLen_BIG5[] = {
 };
 
 static int
-big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+big5_mbc_enc_len(const UChar* p, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   return EncLen_BIG5[*p];
 }
@@ -135,7 +135,7 @@ big5_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 }
 
 static int
-big5_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc)
+big5_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   const UChar c = *s;
 

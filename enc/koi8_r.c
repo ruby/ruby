@@ -105,7 +105,8 @@ static const unsigned short EncKOI8_R_CtypeTable[256] = {
 
 static int
 koi8_r_mbc_case_fold(OnigCaseFoldType flag ARG_UNUSED,
-             const UChar** pp, const UChar* end ARG_UNUSED, UChar* lower, OnigEncoding enc)
+		     const UChar** pp, const UChar* end ARG_UNUSED,
+		     UChar* lower, OnigEncoding enc ARG_UNUSED)
 {
   const UChar* p = *pp;
 
@@ -116,7 +117,8 @@ koi8_r_mbc_case_fold(OnigCaseFoldType flag ARG_UNUSED,
 
 #if 0
 static int
-koi8_r_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end, OnigEncoding enc)
+koi8_r_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp,
+			const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
   int v;
   const UChar* p = *pp;
@@ -128,7 +130,8 @@ koi8_r_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* en
 #endif
 
 static int
-koi8_r_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
+koi8_r_is_code_ctype(OnigCodePoint code, unsigned int ctype,
+		     OnigEncoding enc ARG_UNUSED)
 {
   if (code < 256)
     return ENC_IS_KOI8_R_CTYPE(code, ctype);
@@ -176,7 +179,8 @@ static const OnigPairCaseFoldCodes CaseFoldMap[] = {
 
 static int
 koi8_r_apply_all_case_fold(OnigCaseFoldType flag,
-			       OnigApplyAllCaseFoldFunc f, void* arg, OnigEncoding enc)
+			   OnigApplyAllCaseFoldFunc f,
+			   void* arg, OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_apply_all_case_fold_with_map(
              sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 0,
@@ -185,7 +189,8 @@ koi8_r_apply_all_case_fold(OnigCaseFoldType flag,
 
 static int
 koi8_r_get_case_fold_codes_by_str(OnigCaseFoldType flag,
-    const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[], OnigEncoding enc)
+		  const OnigUChar* p, const OnigUChar* end,
+		  OnigCaseFoldCodeItem items[], OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_get_case_fold_codes_by_str_with_map(
 	     sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 0,

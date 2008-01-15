@@ -115,7 +115,7 @@ static const signed char trans[][0x100] = {
 #undef F
 
 static int
-mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
   int firstbyte = *p++;
   state_t s;
@@ -129,7 +129,7 @@ mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
 }
 
 static int
-code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
+code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
   if (code < 256) {
     if (EncLen_SJIS[(int )code] == 1)
@@ -252,7 +252,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 }
 
 static int
-is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc)
+is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
   const UChar c = *s;
   return (SJIS_ISMB_TRAIL(c) ? FALSE : TRUE);
@@ -332,7 +332,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 
 static int
 get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
-		     const OnigCodePoint* ranges[], OnigEncoding enc)
+		     const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
 {
   if (ctype <= ONIGENC_MAX_STD_CTYPE) {
     return ONIG_NO_SUPPORT_CONFIG;

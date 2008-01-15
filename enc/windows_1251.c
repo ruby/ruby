@@ -106,7 +106,7 @@ static const unsigned short EncCP1251_CtypeTable[256] = {
 
 static int
 cp1251_mbc_case_fold(OnigCaseFoldType flag ARG_UNUSED,
-             const UChar** pp, const UChar* end ARG_UNUSED, UChar* lower, OnigEncoding enc)
+             const UChar** pp, const UChar* end ARG_UNUSED, UChar* lower, OnigEncoding enc ARG_UNUSED)
 {
   const UChar* p = *pp;
 
@@ -116,7 +116,7 @@ cp1251_mbc_case_fold(OnigCaseFoldType flag ARG_UNUSED,
 }
 
 static int
-cp1251_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
+cp1251_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
 {
   if (code < 256)
     return ENC_IS_CP1251_CTYPE(code, ctype);
@@ -164,7 +164,7 @@ static const OnigPairCaseFoldCodes CaseFoldMap[] = {
 
 static int
 cp1251_apply_all_case_fold(OnigCaseFoldType flag,
-			       OnigApplyAllCaseFoldFunc f, void* arg, OnigEncoding enc)
+			       OnigApplyAllCaseFoldFunc f, void* arg, OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_apply_all_case_fold_with_map(
              sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 0,
@@ -173,7 +173,7 @@ cp1251_apply_all_case_fold(OnigCaseFoldType flag,
 
 static int
 cp1251_get_case_fold_codes_by_str(OnigCaseFoldType flag,
-    const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[], OnigEncoding enc)
+    const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[], OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_get_case_fold_codes_by_str_with_map(
 	     sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 0,

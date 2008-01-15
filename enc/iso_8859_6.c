@@ -68,7 +68,7 @@ static const unsigned short EncISO_8859_6_CtypeTable[256] = {
 };
 
 static int
-is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
+is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
 {
   if (code < 256)
     return ENC_IS_ISO_8859_6_CTYPE(code, ctype);

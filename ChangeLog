@@ -1,3 +1,9 @@
+Tue Jan 15 23:52:51 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/*: add ARG_UNUSED.
+
+	* enc/koi8_u.c: added.
+
 Tue Jan 15 23:00:08 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/utf_{16,32}{be,le}.c: remove some ARG_UNUSED.  replace struct

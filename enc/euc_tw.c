@@ -49,13 +49,13 @@ static const int EncLen_EUCTW[] = {
 };
 
 static int
-euctw_mbc_enc_len(const UChar* p, const UChar* end, OnigEncoding enc)
+euctw_mbc_enc_len(const UChar* p, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   return EncLen_EUCTW[*p];
 }
 
 static OnigCodePoint
-euctw_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
+euctw_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
   return onigenc_mbn_mbc_to_code(enc, p, end);
 }
@@ -111,7 +111,7 @@ euctw_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc
 }
 
 static int
-euctw_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc)
+euctw_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   const UChar c = *s;
   if (c <= 0x7e) return TRUE;

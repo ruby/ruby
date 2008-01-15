@@ -63,7 +63,7 @@ static const char GB18030_MAP[] = {
 };
 
 static int
-gb18030_mbc_enc_len(const UChar* p, const UChar* end, OnigEncoding enc)
+gb18030_mbc_enc_len(const UChar* p, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   if (GB18030_MAP[*p] != CM)
     return 1;
@@ -470,7 +470,7 @@ gb18030_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding e
 }
 
 static int
-gb18030_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc)
+gb18030_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   return GB18030_MAP[*s] == C1 ? TRUE : FALSE;
 }
