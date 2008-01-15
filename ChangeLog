@@ -1,3 +1,7 @@
+Tue Jan 15 18:01:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (MKFILES): add dependecies.
+
 Tue Jan 15 18:00:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enc/utf_8.c (OnigEncodingDefine): encoding name should be kept

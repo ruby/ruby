@@ -281,9 +281,10 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
-$(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak
+$(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak $(srcdir)/enc/Makefile.in
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
 	@echo $(MKFILES) should be updated, re-run $(MAKE).
+	@exit 1
 
 RUBY_CONFIG_H = $(arch_hdrdir)/ruby/config.h
 CONFIG_H = ./.config.h.time
