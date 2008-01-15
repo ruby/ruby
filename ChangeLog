@@ -1,3 +1,8 @@
+Tue Jan 15 18:00:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enc/utf_8.c (OnigEncodingDefine): encoding name should be kept
+	  unchanged.
+
 Tue Jan 15 17:53:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/utf_8.c: renamed as IANA name.
