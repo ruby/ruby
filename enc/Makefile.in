@@ -15,7 +15,7 @@ DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 
 BUILTIN_ENCS	= ascii.c us_ascii.c\
-		  unicode.c utf8.c
+		  unicode.c utf_8.c
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@
@@ -34,7 +34,7 @@ CPPFLAGS = @CPPFLAGS@ -DONIG_ENC_REGISTER=rb_enc_register
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBRUBYARG@ @LIBS@ $(EXTLIBS)
 LDSHARED = @LDSHARED@
-ldflags  = $(CFLAGS) $(LDFLAGS)
+ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
 archflag = @ARCH_FLAG@
 DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
