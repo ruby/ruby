@@ -272,7 +272,7 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
   int c, len;
   OnigCodePoint n;
 
-  len = enclen(ONIG_ENCODING_UTF8, p, end);
+  len = enclen(enc, p, end);
   c = *p++;
   if (len > 1) {
     len--;
@@ -390,46 +390,9 @@ mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
     return 1; /* return byte length of converted char to lower */
   }
   else {
-    return onigenc_unicode_mbc_case_fold(ONIG_ENCODING_UTF8, flag,
-					 pp, end, fold);
+    return onigenc_unicode_mbc_case_fold(enc, flag, pp, end, fold);
   }
 }
-
-#if 0
-static int
-is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end)
-{
-  const UChar* p = *pp;
-
-  if (ONIGENC_IS_MBC_ASCII(p)) {
-    (*pp)++;
-    return ONIGENC_IS_ASCII_CODE_CASE_AMBIG(*p);
-  }
-  else {
-    (*pp) += enclen(ONIG_ENCODING_UTF8, p);
-
-    if (*p == 0xc3) {
-      int c = *(p + 1);
-      if (c >= 0x80) {
-	if (c <= (UChar )0x9e) { /* upper */
-	  if (c == (UChar )0x97) return FALSE;
-	  return TRUE;
-	}
-	else if (c >= (UChar )0xa0 && c <= (UChar )0xbe) { /* lower */
-	  if (c == (UChar )'\267') return FALSE;
-	  return TRUE;
-	}
-        else if (c == (UChar )0x9f &&
-                 (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
-	  return TRUE;
-        }
-      }
-    }
-  }
-
-  return FALSE;
-}
-#endif
 
 
 static int
@@ -458,8 +421,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
     const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[],
     OnigEncoding enc)
 {
-  return onigenc_unicode_get_case_fold_codes_by_str(ONIG_ENCODING_UTF8,
-						    flag, p, end, items);
+  return onigenc_unicode_get_case_fold_codes_by_str(enc, flag, p, end, items);
 }
 
 OnigEncodingDefine(utf8, UTF8) = {
