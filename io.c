@@ -3626,6 +3626,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 	exename = cmd;
 	cmdbuf = rb_str_tmp_new(rb_w32_argv_size(args));
 	cmd = rb_w32_join_argv(RSTRING_PTR(cmdbuf), args);
+	rb_str_resize(argbuf, 0);
     }
     while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd, &write_fd)) == -1) {
 	/* exec failed */
@@ -3775,6 +3776,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 	tmp = rb_ary_dup(tmp);
 	RBASIC(tmp)->klass = 0;
 	port = pipe_open_v(RARRAY_LEN(tmp), RARRAY_PTR(tmp), mode);
+	rb_ary_clear(tmp);
     }
     else {
 	SafeStringValue(pname);
