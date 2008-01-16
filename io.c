@@ -3192,14 +3192,15 @@ mode_enc(rb_io_t *fptr, const char *estr)
 	    enc2name = ALLOCA_N(char, n+1);
 	    memcpy(enc2name, estr, n);
 	    enc2name[n] = '\0';
+	    estr = enc2name;
 	    idx2 = rb_enc_find_index(enc2name);
 	}
 	if (idx2 < 0) {
-	    rb_warn("Unsupported encoding %s ignored", enc2name);
+	    rb_warn("Unsupported encoding %.*s ignored", n, estr);
 	}
 	else if (idx2 == idx) {
-	    rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
-		    enc2name, p1);
+	    rb_warn("Ignoring internal encoding %.*s: it is identical to external encoding %s",
+		    n, estr, p1);
 	}
 	else {
 	    fptr->enc2 = rb_enc_from_index(idx2);

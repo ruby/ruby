@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <math.h>
+#include <float.h>
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -2048,15 +2049,16 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	return d;
     }
     if (*end) {
-	char *buf = ALLOCA_N(char, strlen(p)+1);
+	char buf[DBL_DIG * 4 + 10];
 	char *n = buf;
+	char *e = buf + sizeof(buf) - 1;
 
-	while (p < end) *n++ = *p++;
-	while (*p) {
+	while (p < end && n < e) *n++ = *p++;
+	while (n < e && *p) {
 	    if (*p == '_') {
 		/* remove underscores between digits */
-		    if (n == buf || !ISDIGIT(n[-1])) goto bad;
-		    while (*++p == '_');
+		if (n == buf || !ISDIGIT(n[-1])) goto bad;
+		while (*++p == '_');
 		if (!ISDIGIT(*p)) {
 		    if (badcheck) goto bad;
 		    break;

@@ -166,18 +166,22 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	    return !IS_RBEXT(ext) ? 's' : 'r';
 	}
 	else {
+	    VALUE bufstr;
 	    char *buf;
 
 	    if (ext && *ext) return 0;
-	    buf = ALLOCA_N(char, len + DLEXT_MAXLEN + 1);
+	    bufstr = rb_str_tmp_new(len + DLEXT_MAXLEN);
+	    buf = RSTRING_PTR(bufstr);
 	    MEMCPY(buf, feature, char, len);
 	    for (i = 0; (e = loadable_ext[i]) != 0; i++) {
 		strncpy(buf + len, e, DLEXT_MAXLEN + 1);
 		if (st_get_key(loading_tbl, (st_data_t)buf, &data)) {
+		    rb_str_resize(bufstr, 0);
 		    if (fn) *fn = (const char*)data;
 		    return i ? 's' : 'r';
 		}
 	    }
+	    rb_str_resize(bufstr, 0);
 	}
     }
     return 0;
