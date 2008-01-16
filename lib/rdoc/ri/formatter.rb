@@ -9,9 +9,6 @@ class RDoc::RI::Formatter
     @indent  = indent
   end
 
-
-  ######################################################################
-
   def draw_line(label=nil)
     len = @width
     len -= (label.size+1) if label
@@ -22,8 +19,6 @@ class RDoc::RI::Formatter
     end
     puts
   end
-
-  ######################################################################
 
   def wrap(txt,  prefix=@indent, linelen=@width)
     return unless txt && !txt.empty?
@@ -46,36 +41,28 @@ class RDoc::RI::Formatter
     puts(prefix + res.join("\n" + next_prefix))
   end
 
-  ######################################################################
-
   def blankline
     puts
   end
 
-  ######################################################################
-
-  # called when we want to ensure a nbew 'wrap' starts on a newline
-  # Only needed for HtmlFormatter, because the rest do their
-  # own line breaking
+  ##
+  # Called when we want to ensure a new 'wrap' starts on a newline.  Only
+  # needed for HtmlFormatter, because the rest do their own line breaking.
 
   def break_to_newline
   end
-
-  ######################################################################
 
   def bold_print(txt)
     print txt
   end
 
-  ######################################################################
-
   def raw_print_line(txt)
     puts txt
   end
 
-  ######################################################################
+  ##
+  # Convert HTML entities back to ASCII
 
-  # convert HTML entities back to ASCII
   def conv_html(txt)
     txt.
       gsub(/&gt;/, '>').
@@ -85,7 +72,9 @@ class RDoc::RI::Formatter
 
   end
 
-  # convert markup into display form
+  ##
+  # Convert markup into display form
+
   def conv_markup(txt)
     txt.
       gsub(%r{<tt>(.*?)</tt>}) { "+#$1+" } .
@@ -93,8 +82,6 @@ class RDoc::RI::Formatter
     gsub(%r{<b>(.*?)</b>}) { "*#$1*" } .
     gsub(%r{<em>(.*?)</em>}) { "_#$1_" }
   end
-
-  ######################################################################
 
   def display_list(list)
     case list.type
@@ -149,8 +136,6 @@ class RDoc::RI::Formatter
     end
   end
 
-  ######################################################################
-
   def display_flow_item(item, prefix=@indent)
     case item
     when RDoc::Markup::Flow::P, RDoc::Markup::Flow::LI
@@ -174,16 +159,12 @@ class RDoc::RI::Formatter
     end
   end
 
-  ######################################################################
-
   def display_verbatim_flow_item(item, prefix=@indent)
     item.body.split(/\n/).each do |line|
       print @indent, conv_html(line), "\n"
     end
     blankline
   end
-
-  ######################################################################
 
   def display_heading(text, level, indent)
     text = strip_attributes(text)
@@ -206,7 +187,6 @@ class RDoc::RI::Formatter
     end
   end
 
-
   def display_flow(flow)
     flow.each do |f|
       display_flow_item(f)
@@ -227,7 +207,6 @@ class RDoc::RI::Formatter
     end
     text.join
   end
-
 
 end
 
@@ -323,9 +302,6 @@ class RDoc::RI::AttributeFormatter < RDoc::RI::Formatter
 
   protected
 
-  ##
-  # overridden in specific formatters
-
   def write_attribute_text(prefix, line)
     print prefix
     line.each do |achar|
@@ -333,9 +309,6 @@ class RDoc::RI::AttributeFormatter < RDoc::RI::Formatter
     end
     puts
   end
-
-  ##
-  # again, overridden
 
   def bold_print(txt)
     print txt
@@ -384,7 +357,7 @@ class RDoc::RI::OverstrikeFormatter < RDoc::RI::AttributeFormatter
   end
 
   ##
-  # draw a string in bold
+  # Draw a string in bold
 
   def bold_print(text)
     text.split(//).each do |ch|
@@ -463,10 +436,6 @@ end
 # This formatter uses HTML.
 
 class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
-
-  def initialize(*args)
-    super
-  end
 
   def write_attribute_text(prefix, line)
     curr_attr = 0
@@ -635,7 +604,6 @@ class RDoc::RI::SimpleFormatter < RDoc::RI::Formatter
   end
 
 end
-
 
 ##
 # Finally, fill in the list of known formatters
