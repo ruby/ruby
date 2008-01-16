@@ -1,11 +1,5 @@
 Wed Jan 16 15:26:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* load.c (rb_feature_p): get rid of unlimited alloca.
-
-	* object.c (rb_cstr_to_dbl): ditto.
-
-	* io.c (mode_enc): fixed uninitialized variable.
-
 	* file.c (sys_fail2): get rid of unlimited alloca.
 
 	* io.c (mode_enc, pipe_open, rb_io_s_popen): ditto.
