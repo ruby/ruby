@@ -146,6 +146,7 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
 {
     struct rb_encoding_entry *ent = &enc_table.list[index];
 
+    name = strdup(name);
     ent->name = name;
     if (!ent->enc) ent->enc = malloc(sizeof(rb_encoding));
     *ent->enc = *encoding;

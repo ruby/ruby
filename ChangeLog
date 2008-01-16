@@ -1,3 +1,7 @@
+Wed Jan 16 22:45:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_register_at): make own copy.  [ruby-dev:33136]
+
 Wed Jan 16 18:03:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open, rb_io_s_popen): clear temporary object to release
