@@ -1,3 +1,8 @@
+Wed Jan 16 17:55:07 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (fix_quo): typo. a patch from Shin-ichiro HARA
+	  <sinara AT blade.nagaokaut.ac.jp> in [ruby-dev:33130]
+
 Wed Jan 16 17:36:26 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/test_delegate.rb: add new test file for delegate.rb.

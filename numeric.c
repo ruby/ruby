@@ -2187,7 +2187,7 @@ fix_quo(VALUE x, VALUE y)
     }
     switch (TYPE(y)) {
       case T_BIGNUM:
-	return DOUBLE2NUM((double)FIX2LONG(y) / rb_big2dbl(y));
+	return DOUBLE2NUM((double)FIX2LONG(x) / rb_big2dbl(y));
       case T_FLOAT:
 	return DOUBLE2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
       default:
