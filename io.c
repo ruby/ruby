@@ -3184,19 +3184,25 @@ mode_enc(rb_io_t *fptr, const char *estr)
     }
 
     if (p0) {
-	enc2name = ALLOCA_N(char, p0-estr+1);
-	strncpy(enc2name, estr, p0-estr);
-	enc2name[p0-estr] = '\0';
-	idx2=rb_enc_find_index(enc2name);
-	if (idx2 == idx) {
+	int n = p0 - estr;
+	if (n > ENCODING_MAXNAMELEN) {
+	    idx2 = -1;
+	}
+	else {
+	    enc2name = ALLOCA_N(char, n+1);
+	    memcpy(enc2name, estr, n);
+	    enc2name[n] = '\0';
+	    idx2 = rb_enc_find_index(enc2name);
+	}
+	if (idx2 < 0) {
+	    rb_warn("Unsupported encoding %s ignored", enc2name);
+	}
+	else if (idx2 == idx) {
 	    rb_warn("Ignoring internal encoding %s: it is identical to external encoding %s",
 		    enc2name, p1);
 	}
-	else if (idx2 >= 0) {
-	    fptr->enc2 = rb_enc_from_index(idx2);
-	}
 	else {
-	    rb_warn("Unsupported encoding %s ignored", enc2name);
+	    fptr->enc2 = rb_enc_from_index(idx2);
 	}
     }
 }
@@ -3523,6 +3529,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 #elif defined(_WIN32)
     int openmode = rb_io_mode_modenum(mode);
     const char *exename = NULL;
+    volatile VALUE cmdbuf;
 #endif
     FILE *fp = 0;
     int fd = -1;
@@ -3602,15 +3609,22 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
     }
 #elif defined(_WIN32)
     if (argc) {
-	char **args = ALLOCA_N(char *, argc+1);
+	volatile VALUE argbuf;
+	char **args;
 	int i;
 
+	if (argc >= FIXNUM_MAX / sizeof(char *)) {
+	    rb_raise(rb_eArgError, "too many arguments");
+	}
+	argbuf = rb_str_tmp_new((argc+1) * sizeof(char *));
+	args = (void *)RSTRING_PTR(argbuf);
 	for (i = 0; i < argc; ++i) {
 	    args[i] = RSTRING_PTR(argv[i]);
 	}
 	args[i] = NULL;
 	exename = cmd;
-	cmd = rb_w32_join_argv(ALLOCA_N(char, rb_w32_argv_size(args)), args);
+	cmdbuf = rb_str_tmp_new(rb_w32_argv_size(args));
+	cmd = rb_w32_join_argv(RSTRING_PTR(cmdbuf), args);
     }
     while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd, &write_fd)) == -1) {
 	/* exec failed */
@@ -3757,11 +3771,9 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
-	long len = RARRAY_LEN(tmp);
-	VALUE *args = ALLOCA_N(VALUE, len);
-
-	MEMCPY(args, RARRAY_PTR(tmp), VALUE, len);
-	port = pipe_open_v(len, args, mode);
+	tmp = rb_ary_dup(tmp);
+	RBASIC(tmp)->klass = 0;
+	port = pipe_open_v(RARRAY_LEN(tmp), RARRAY_PTR(tmp), mode);
     }
     else {
 	SafeStringValue(pname);

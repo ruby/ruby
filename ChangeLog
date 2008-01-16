@@ -1,3 +1,9 @@
+Wed Jan 16 14:55:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (sys_fail2): get rid of unlimited alloca.
+
+	* io.c (mode_enc, pipe_open, rb_io_s_popen): ditto.
+
 Wed Jan 16 12:51:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_tmp_new, rb_str_shared_replace):

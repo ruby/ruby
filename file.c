@@ -2151,11 +2151,31 @@ static void
 sys_fail2(VALUE s1, VALUE s2)
 {
     char *buf;
-    int len;
+#ifdef MAX_PATH
+    const int max_pathlen = MAX_PATH;
+#else
+    const int max_pathlen = MAXPATHLEN;
+#endif
+    const char *e1, *e2;
+    int len = 5;
+    int l1 = RSTRING_LEN(s1), l2 = RSTRING_LEN(s2);
 
-    len = RSTRING_LEN(s1) + RSTRING_LEN(s2) + 5;
+    e1 = e2 = "";
+    if (l1 > max_pathlen) {
+	l1 = max_pathlen - 3;
+	e1 = "...";
+	len += 3;
+    }
+    if (l2 > max_pathlen) {
+	l2 = max_pathlen - 3;
+	e2 = "...";
+	len += 3;
+    }
+    len += l1 + l2;
     buf = ALLOCA_N(char, len);
-    snprintf(buf, len, "(%s, %s)", RSTRING_PTR(s1), RSTRING_PTR(s2));
+    snprintf(buf, len, "(%.*s%s, %.*s%s)",
+	     l1, RSTRING_PTR(s1), e1,
+	     l2, RSTRING_PTR(s2), e2);
     rb_sys_fail(buf);
 }
 
