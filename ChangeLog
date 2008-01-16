@@ -1,3 +1,8 @@
+Wed Jan 16 12:51:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_str_tmp_new, rb_str_shared_replace):
+	  prototype moved.
+
 Tue Jan 15 23:52:51 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/*: add ARG_UNUSED.

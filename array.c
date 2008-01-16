@@ -3046,7 +3046,6 @@ rb_ary_cycle(VALUE ary)
     return Qnil;
 }
 
-VALUE rb_str_tmp_new(long);
 #define tmpbuf(n, size) rb_str_tmp_new((n)*(size))
 
 /*

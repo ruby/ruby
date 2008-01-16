@@ -15,9 +15,6 @@
 #include "transcode_data.h"
 #include <ctype.h>
 
-VALUE rb_str_tmp_new(long);
-VALUE rb_str_shared_replace(VALUE, VALUE);
-
 /*
  *  Dispatch data and logic
  */
