@@ -188,7 +188,7 @@ rb_char_to_option_kcode(int c, int *option, int *kcode)
 	*kcode = rb_enc_find_index("EUC-JP");
 	break;
       case 's':
-	*kcode = rb_enc_find_index("Shitf_JIS");
+	*kcode = rb_enc_find_index("Shift_JIS");
 	break;
       case 'u':
 	*kcode = rb_enc_find_index("UTF-8");
