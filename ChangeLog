@@ -1,3 +1,9 @@
+Fri Jan 18 00:03:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_init): use default external encoding
+	  if nothing is given.  a patch from sheepman <sheepman AT
+	  sheepman.sakura.ne.jp> in [ruby-dev:33159].
+
 Thu Jan 17 23:56:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (encdb.h): give output file name to make_encdb.rb.

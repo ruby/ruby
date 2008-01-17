@@ -187,7 +187,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr)
 	ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
 	break;
       case 0:
-	string = rb_str_new("", 0);
+	string = rb_enc_str_new("", 0, rb_default_external_encoding());
 	ptr->flags = FMODE_READWRITE;
 	break;
     }
