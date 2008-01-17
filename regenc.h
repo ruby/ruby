@@ -202,5 +202,6 @@ extern int ONIG_ENC_REGISTER(const char *, OnigEncodingType*);
 /* macros for define replica encoding and encoding alias */
 #define ENC_REPLICATE(name, orig)
 #define ENC_ALIAS(name, orig)
+#define ENC_DUMMY(name)
 
 #endif /* REGENC_H */

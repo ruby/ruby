@@ -15,56 +15,59 @@ def check_duplication(encs, name, fn, line)
   end
 end
 
+count = 0
+lines = []
 encodings = []
-replicas = {}
-aliases = {}
 encdir = ARGV[0]
-Dir.open(encdir) {|d| d.grep(/.+\.c\z/)}.sort.each do |fn|
+outhdr = ARGV[1] || 'encdb.h'
+Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort.each do |fn|
   open(File.join(encdir,fn)) do |f|
     orig = nil
     name = nil
     encs = []
     f.each_line do |line|
-      break if /^OnigEncodingDefine/o =~ line
-    end
-    f.each_line do |line|
-      break if /"(.*?)"/ =~ line
-    end
-    if $1
-      check_duplication(encs, $1, fn, $.)
-      encs << $1.upcase
-      encodings << $1 
-      f.each_line do |line|
-	if /^ENC_REPLICATE\(\s*"([^"]+)"\s*,\s*"([^"]+)"/o =~ line
-	  raise ArgumentError,
-	    '%s:%d: ENC_REPLICATE: %s is not defined yet. (replica %s)' %
-	    [fn, $., $2, $1] unless encs.include?($2.upcase)
-	  check_duplication(encs, $1, fn, $.)
-	  encs << $1.upcase
-	  encodings << $1
-	  replicas[$1] = $2
-	elsif /^ENC_ALIAS\(\s*"([^"]+)"\s*,\s*"([^"]+)"/o =~ line
-	  raise ArgumentError,
-	    '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
-	    [fn, $., $2, $1] unless encs.include?($2.upcase)
-	  check_duplication(encs, $1, fn, $.)
-	  encodings << $1
-	  aliases[$1] = $2
-	end
+      if (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
+        if $1
+          check_duplication(encs, $1, fn, $.)
+          encs << $1.upcase
+          encodings << $1
+          count += 1
+        end
+      else
+        case line
+        when /^\s*rb_enc_register\(\s*"([^"]+)"/
+          count += 1
+          line = nil
+        when /^ENC_REPLICATE\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
+          raise ArgumentError,
+          '%s:%d: ENC_REPLICATE: %s is not defined yet. (replica %s)' %
+            [fn, $., $2, $1] unless encs.include?($2.upcase)
+          count += 1
+        when /^ENC_ALIAS\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
+          raise ArgumentError,
+          '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
+            [fn, $., $2, $1] unless encs.include?($2.upcase)
+        when /^ENC_DUMMY\(\s*"([^"]+)"/
+          count += 1
+        else
+          next
+        end
+        check_duplication(encs, $1, fn, $.)
+        encs << $1.upcase
+        lines << line.sub(/;.*/m, ";\n") if line
       end
     end
   end
 end
 
-open('encdb.h', 'wb') do |f|
-  f.puts 'static const char *const enc_name_list[] = {'
-  encodings.each {|name| f.puts'    "%s",' % name}
-  f.puts('};', '', 'static void', 'enc_init_db(void)', '{')
-  replicas.each_pair {|name, orig|
-    f.puts '    ENC_REPLICATE("%s", "%s");' % [name, orig]
-  }
-  aliases.each_pair {|name, orig|
-    f.puts '    ENC_ALIAS("%s", "%s");' % [name, orig]
-  }
-  f.puts '}'
+result = encodings.map {|e| %[ENC_DEFINE("#{e}");\n]}.join + lines.join + 
+  "\n#define ENCODING_COUNT #{count}\n"
+mode = IO::RDWR|IO::CREAT
+mode |= IO::BINARY if defined?(IO::BINARY)
+open(outhdr, mode) do |f|
+  unless f.read == result
+    f.rewind
+    f.truncate(0)
+    f.print result
+  end
 end

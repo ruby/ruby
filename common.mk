@@ -704,7 +704,7 @@ node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
 encdb.h: $(srcdir)/enc/make_encdb.rb
-	$(BASERUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc
+	$(BASERUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@

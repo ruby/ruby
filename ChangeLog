@@ -1,3 +1,17 @@
+Thu Jan 17 23:56:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encdb.h): give output file name to make_encdb.rb.
+
+	* encoding.c (enc_table): simplified.
+
+	* encoding.c (enc_register_at): lazy loading.  [ruby-dev:33013]
+
+	* regenc.h (ENC_DUMMY): added.
+
+	* enc/make_encdb.rb: now emits macros only.
+
+	* enc/iso_2022_jp.h: split from encoding.c.
+
 Thu Jan 17 21:48:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_char_to_option_kcode): fixed typo.

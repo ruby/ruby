@@ -29,35 +29,62 @@ static struct {
     struct rb_encoding_entry *list;
     int count;
     int size;
-    st_table *alias;
-    st_table *replica_name;
-    st_table *alias_name;
+    st_table *names;
 } enc_table;
+
+void rb_enc_init(void);
 
 #undef ENC_REPLICATE
 #undef ENC_ALIAS
-#define ENC_REPLICATE(name, orig) st_insert(enc_table.replica_name, (st_data_t)(name), (st_data_t)(orig))
-#define ENC_ALIAS(name, orig) st_insert(enc_table.alias_name, (st_data_t)(name), (st_data_t)(orig))
-#define enc_name_list_size (sizeof(enc_name_list)/sizeof(enc_name_list[0]))
+#undef ENC_DUMMY
+static int encdb_replicate(const char *alias, const char *orig);
+static int encdb_alias(const char *alias, const char *orig);
+static int encdb_dummy(const char *name);
+static void enc_declare(const char *name);
+#define ENC_REPLICATE(name, orig) encdb_replicate(name, orig)
+#define ENC_ALIAS(name, orig) encdb_alias(name, orig)
+#define ENC_DUMMY(name) encdb_dummy(name)
+#define ENC_DEFINE(name) enc_declare(name)
 
+static void
+enc_init_db(void)
+{
 #include "encdb.h"
+}
+
+#define enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
 
 #define ENC_UNINITIALIZED (&rb_cEncoding)
 #define enc_initialized_p(enc) ((enc)->auxiliary_data != &rb_cEncoding)
 #define ENC_FROM_ENCODING(enc) ((VALUE)(enc)->auxiliary_data)
 
-#define ENC_DUMMY FL_USER2
-#define ENC_DUMMY_P(enc) (RBASIC(enc)->flags & ENC_DUMMY)
+#define ENC_DUMMY_FLAG FL_USER2
+#define ENC_DUMMY_P(enc) (RBASIC(enc)->flags & ENC_DUMMY_FLAG)
+#define ENC_SET_DUMMY(enc) (RBASIC(enc)->flags |= ENC_DUMMY_FLAG)
+
+static int load_encoding(const char *name);
+static VALUE enc_base_encoding(VALUE self);
 
 static void
 enc_mark(void *ptr)
 {
 }
 
+static void
+enc_free(void *ptr)
+{
+    rb_encoding *enc = ptr;
+    struct rb_encoding_entry *ent = &enc_table.list[enc->ruby_encoding_index];
+    xfree((char *)ent->name);
+    ent->name = 0;
+    ent->enc = 0;
+    xfree(ptr);
+}
+
 static VALUE
 enc_new(rb_encoding *encoding)
 {
-    VALUE enc = Data_Wrap_Struct(rb_cEncoding, enc_mark, -1, encoding);
+    VALUE enc = Data_Wrap_Struct(rb_cEncoding, enc_mark, enc_free, encoding);
     encoding->auxiliary_data = (void *)enc;
     return enc;
 }
@@ -75,13 +102,19 @@ static int
 enc_check_encoding(VALUE obj)
 {
     int index;
+    rb_encoding *enc;
+
     if (SPECIAL_CONST_P(obj) || BUILTIN_TYPE(obj) != T_DATA ||
 	RDATA(obj)->dmark != enc_mark) {
 	return -1;
     }
-    index = rb_enc_to_index((rb_encoding*)RDATA(obj)->data);
-    if (rb_enc_from_index(index) != RDATA(obj)->data)
+    enc = (rb_encoding*)RDATA(obj)->data;
+    index = rb_enc_to_index(enc);
+    if (rb_enc_from_index(index) != enc)
 	return -1;
+    if (enc_autoload_p(enc)) {
+	index = load_encoding(enc->name);
+    }
     return index;
 }
 
@@ -119,7 +152,7 @@ void
 rb_gc_mark_encodings(void)
 {
     int i;
-    for (i = 0; i < enc_table.size; ++i) {
+    for (i = 0; i < enc_table.count; ++i) {
 	rb_encoding *enc = enc_table.list[i].enc;
 	if (enc && enc_initialized_p(enc)) {
 	    rb_gc_mark(ENC_FROM_ENCODING(enc));
@@ -131,29 +164,50 @@ static int
 enc_table_expand(int newsize)
 {
     struct rb_encoding_entry *ent;
+    int count = newsize;
 
     if (enc_table.size >= newsize) return newsize;
+    newsize = (newsize + 7) / 8 * 8;
     ent = realloc(enc_table.list, sizeof(*enc_table.list) * newsize);
     if (!ent) return -1;
     memset(ent + enc_table.size, 0, sizeof(*ent)*(newsize - enc_table.size));
     enc_table.list = ent;
     enc_table.size = newsize;
-    return newsize;
+    return count;
 }
 
 static int
 enc_register_at(int index, const char *name, rb_encoding *encoding)
 {
     struct rb_encoding_entry *ent = &enc_table.list[index];
+    void *obj = ENC_UNINITIALIZED;
 
-    name = strdup(name);
-    ent->name = name;
-    if (!ent->enc) ent->enc = malloc(sizeof(rb_encoding));
-    *ent->enc = *encoding;
+    if (!ent->name) {
+	ent->name = name = strdup(name);
+    }
+    else if (STRCASECMP(name, ent->name)) {
+	return -1;
+    }
+    if (!ent->enc) {
+	ent->enc = malloc(sizeof(rb_encoding));
+    }
+    else {
+	obj = ent->enc->auxiliary_data;
+    }
+    if (encoding) {
+	*ent->enc = *encoding;
+    }
+    else {
+	memset(ent->enc, 0, sizeof(*ent->enc));
+    }
     encoding = ent->enc;
     encoding->name = name;
     encoding->ruby_encoding_index = index;
-    if (rb_cEncoding) {
+    st_insert(enc_table.names, (st_data_t)name, (st_data_t)index);
+    if (obj != ENC_UNINITIALIZED) {
+	encoding->auxiliary_data = obj;
+    }
+    else if (rb_cEncoding) {
 	/* initialize encoding data */
 	enc_new(encoding);
     }
@@ -168,7 +222,6 @@ enc_register(const char *name, rb_encoding *encoding)
 {
     int index = enc_table.count;
 
-    if (index >= ENCODING_INLINE_MAX) index = enc_table.size;
     if ((index = enc_table_expand(index + 1)) < 0) return -1;
     enc_table.count = index;
     return enc_register_at(index - 1, name, encoding);
@@ -185,12 +238,11 @@ rb_enc_register(const char *name, rb_encoding *encoding)
     if (index >= 0) {
 	rb_encoding *oldenc = rb_enc_from_index(index);
 	if (STRCASECMP(name, rb_enc_name(oldenc))) {
-	    st_data_t key = (st_data_t)name, alias;
-	    st_delete(enc_table.alias, &key, &alias);
 	    index = enc_register(name, encoding);
 	}
-	else if (enc_initialized_p(oldenc) &&
-		 !ENC_DUMMY_P(ENC_FROM_ENCODING(oldenc))) {
+	else if (!enc_autoload_p(oldenc) ||
+		 (enc_initialized_p(oldenc) &&
+		  !ENC_DUMMY_P(ENC_FROM_ENCODING(oldenc)))) {
 	    enc_register_at(index, name, encoding);
 	}
 	else {
@@ -199,9 +251,19 @@ rb_enc_register(const char *name, rb_encoding *encoding)
     }
     else {
 	index = enc_register(name, encoding);
+	set_encoding_const(name, rb_enc_from_index(index));
     }
-    set_encoding_const(name, rb_enc_from_index(index));
     return index;
+}
+
+static void
+enc_declare(const char *name)
+{
+    int idx = rb_enc_registered(name);
+    if (idx < 0) {
+	idx = enc_register(name, 0);
+    }
+    set_encoding_const(name, rb_enc_from_index(idx));
 }
 
 static void
@@ -218,36 +280,68 @@ set_base_encoding(int index, rb_encoding *base)
     VALUE enc = rb_enc_from_encoding(enc_table.list[index].enc);
 
     rb_ivar_set(enc, id_base_encoding, rb_enc_from_encoding(base));
-    if (rb_enc_dummy_p(base)) FL_SET(enc, ENC_DUMMY);
+    if (rb_enc_dummy_p(base)) ENC_SET_DUMMY(enc);
     return enc;
 }
 
 int
 rb_enc_replicate(const char *name, rb_encoding *encoding)
 {
-    int index = enc_table.size;
+    int idx;
 
     enc_check_duplication(name);
-    if (enc_table_expand(index + 1) < 0) return -1;
-    enc_register_at(index, name, encoding);
-    set_base_encoding(index, encoding);
-    return index;
+    idx = enc_register(name, encoding);
+    set_base_encoding(idx, encoding);
+    set_encoding_const(name, rb_enc_from_index(idx));
+    return idx;
+}
+
+static int
+enc_replicate(int idx, const char *name, rb_encoding *origenc)
+{
+    if (idx < 0) {
+	idx = enc_register(name, origenc);
+    }
+    else {
+	idx = enc_register_at(idx, name, origenc);
+    }
+    if (idx >= 0) {
+	set_base_encoding(idx, origenc);
+	set_encoding_const(name, rb_enc_from_index(idx));
+    }
+    return idx;
+}
+
+static int
+encdb_replicate(const char *name, const char *orig)
+{
+    int origidx = rb_enc_registered(orig);
+    int idx = rb_enc_registered(name);
+
+    if (origidx < 0) {
+	origidx = enc_register(orig, 0);
+    }
+    return enc_replicate(idx, name, rb_enc_from_index(origidx));
 }
 
 int
 rb_define_dummy_encoding(const char *name)
 {
-    int index = enc_table.size;
-    rb_encoding *encoding;
-    VALUE enc;
+    int index = rb_enc_replicate(name, rb_ascii8bit_encoding());
+    VALUE enc = rb_enc_from_encoding(enc_table.list[index].enc);
 
-    enc_check_duplication(name);
-    if (index < ENCODING_INLINE_MAX) index = ENCODING_INLINE_MAX;
-    if (enc_table_expand(index + 1) < 0) return -1;
-    encoding = rb_ascii8bit_encoding();
-    enc_register_at(index, name, encoding);
-    enc = set_base_encoding(index, encoding);
-    FL_SET(enc, ENC_DUMMY);
+    ENC_SET_DUMMY(enc);
+    return index;
+}
+
+static int
+encdb_dummy(const char *name)
+{
+    int index = enc_replicate(rb_enc_registered(name), name,
+			      rb_ascii8bit_encoding());
+    VALUE enc = rb_enc_from_encoding(enc_table.list[index].enc);
+
+    ENC_SET_DUMMY(enc);
     return index;
 }
 
@@ -278,28 +372,38 @@ enc_dummy_p(VALUE enc)
 }
 
 static int
-enc_alias(const char *alias, const char *orig)
+enc_alias(const char *alias, int idx)
 {
-    st_data_t data;
-    int idx;
-
-    if (!enc_table.alias) {
-	enc_table.alias = st_init_strcasetable();
-    }
-    if ((idx = rb_enc_find_index(orig)) < 0) {
-	if (!st_lookup(enc_table.alias, (st_data_t)orig, &data))
-	    return -1;
-	idx = (int)data;
-    }
-    st_insert(enc_table.alias, (st_data_t)alias, (st_data_t)idx);
+    alias = strdup(alias);
+    st_insert(enc_table.names, (st_data_t)alias, (st_data_t)idx);
+    set_encoding_const(alias, rb_enc_from_index(idx));
     return idx;
 }
 
 int
 rb_enc_alias(const char *alias, const char *orig)
 {
+    int idx;
+
     enc_check_duplication(alias);
-    return enc_alias(alias, orig);
+    if (!enc_table.list) {
+	rb_enc_init();
+    }
+    if ((idx = rb_enc_find_index(orig)) < 0) {
+	return -1;
+    }
+    return enc_alias(alias, idx);
+}
+
+static int
+encdb_alias(const char *alias, const char *orig)
+{
+    int idx = rb_enc_registered(orig);
+
+    if (idx < 0) {
+	idx = enc_register(orig, 0);
+    }
+    return enc_alias(alias, idx);
 }
 
 enum {
@@ -315,12 +419,16 @@ extern rb_encoding OnigEncodingUS_ASCII;
 void
 rb_enc_init(void)
 {
-    enc_table.count = enc_table_expand(ENCINDEX_BUILTIN_MAX);
+    enc_table_expand(ENCODING_COUNT + 1);
+    if (!enc_table.names) {
+	enc_table.names = st_init_strcasetable();
+    }
 #define ENC_REGISTER(enc) enc_register_at(ENCINDEX_##enc, rb_enc_name(&OnigEncoding##enc), &OnigEncoding##enc)
     ENC_REGISTER(ASCII);
     ENC_REGISTER(UTF_8);
     ENC_REGISTER(US_ASCII);
 #undef ENC_REGISTER
+    enc_table.count = ENCINDEX_BUILTIN_MAX;
 }
 
 rb_encoding *
@@ -329,7 +437,7 @@ rb_enc_from_index(int index)
     if (!enc_table.list) {
 	rb_enc_init();
     }
-    if (index < 0 || enc_table.size <= index) {
+    if (index < 0 || enc_table.count <= index) {
 	return 0;
     }
     return enc_table.list[index].enc;
@@ -338,26 +446,12 @@ rb_enc_from_index(int index)
 int
 rb_enc_registered(const char *name)
 {
-    int i;
-    st_data_t alias = 0;
+    st_data_t idx = 0;
 
     if (!name) return -1;
-    if (!enc_table.list) {
-	rb_enc_init();
-    }
-    for (i=0; i<enc_table.size; i++) {
-	if (!enc_table.list[i].name) {
-	    if (i < ENCODING_INLINE_MAX - 1) i = ENCODING_INLINE_MAX - 1;
-	    continue;
-	}
-	if (STRCASECMP(name, enc_table.list[i].name) == 0) {
-	    return i;
-	}
-    }
-    if (!alias && enc_table.alias) {
-	if (st_lookup(enc_table.alias, (st_data_t)name, &alias)) {
-	    return (int)alias;
-	}
+    if (!enc_table.list) return -1;
+    if (st_lookup(enc_table.names, (st_data_t)name, &idx)) {
+	return (int)idx;
     }
     return -1;
 }
@@ -368,39 +462,53 @@ require_enc(VALUE enclib)
     return rb_require_safe(enclib, rb_safe_level());
 }
 
+static int
+load_encoding(const char *name)
+{
+    VALUE enclib = rb_sprintf("enc/%s", name);
+    VALUE verbose = ruby_verbose;
+    VALUE debug = ruby_debug;
+    char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib);
+    while (s < e) {
+	if (!ISALNUM(*s)) *s = '_';
+	else if (ISUPPER(*s)) *s = TOLOWER(*s);
+	++s;
+    }
+    OBJ_FREEZE(enclib);
+    ruby_verbose = Qfalse;
+    ruby_debug = Qfalse;
+    rb_protect(require_enc, enclib, 0);
+    ruby_verbose = verbose;
+    ruby_debug = debug;
+    rb_set_errinfo(Qnil);
+    return rb_enc_registered(name);
+}
+
 int
 rb_enc_find_index(const char *name)
 {
-    int i = rb_enc_registered(name);
+    int i = rb_enc_registered(name), b;
+    rb_encoding *enc;
+    VALUE base;
+
     if (i < 0) {
-	VALUE enclib = rb_sprintf("enc/%s", name);
-	char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib);
-	while (s < e) {
-	    if (!ISALNUM(*s)) *s = '_';
-	    else if (ISUPPER(*s)) *s = TOLOWER(*s);
-	    ++s;
-	}
-	OBJ_FREEZE(enclib);
-	if (RTEST(rb_protect(require_enc, enclib, 0)))
-	    i = rb_enc_registered(name);
-	rb_set_errinfo(Qnil);
+	i = load_encoding(name);
     }
-    if (i < 0) {
-	st_data_t key = (st_data_t)name, orig;
-	if (st_lookup(enc_table.replica_name, key, &orig)) {
-	    i = rb_enc_find_index((char *)orig);
-	    if (i < 0) {
-		rb_raise(rb_eRuntimeError, "unknown original encoding name - '%s' for replica '%s'", (char *)orig, name);
+    else if (enc_autoload_p(enc = rb_enc_from_index(i))) {
+	if (enc_initialized_p(enc) &&
+	    (base = enc_base_encoding(ENC_FROM_ENCODING(enc)), !NIL_P(base))) {
+	    if ((b = enc_check_encoding(base)) < 0) {
+		st_data_t key, val;
+		key = (st_data_t)name;
+		if (st_delete(enc_table.names, &key, &val)) {
+		    if (enc->name != (char *)key) xfree((char *)key);
+		}
+		return -1;
 	    }
-	    i = rb_enc_replicate(name, rb_enc_from_index(i));
-	    st_delete(enc_table.replica_name, &key, &orig);
+	    enc_register_at(i, name, rb_enc_from_index(b));
 	}
-	else if (st_lookup(enc_table.alias_name, key, &orig)) {
-	    i = rb_enc_alias(name, (char *)orig);
-	    if (i < 0) {
-		rb_raise(rb_eRuntimeError, "unknown original encoding name - '%s' for alias '%s'", (char *)orig, name);
-	    }
-	    st_delete(enc_table.alias_name, &key, &orig);
+	else {
+	    i = load_encoding(name);
 	}
     }
     return i;
@@ -777,9 +885,9 @@ enc_base_encoding(VALUE self)
 static VALUE
 enc_list(VALUE klass)
 {
-    VALUE ary = rb_ary_new2(enc_table.size);
+    VALUE ary = rb_ary_new2(enc_table.count);
     int i;
-    for (i = 0; i < enc_table.size; ++i) {
+    for (i = 0; i < enc_table.count; ++i) {
 	rb_encoding *enc = enc_table.list[i].enc;
 	if (enc) {
 	    rb_ary_push(ary, rb_enc_from_encoding(enc));
@@ -963,9 +1071,11 @@ set_encoding_const(const char *name, rb_encoding *enc)
 {
     VALUE encoding = rb_enc_from_encoding(enc);
     char *s = (char *)name;
-    int haslower = 0, valid = 0;
+    int haslower = 0, hasupper = 0, valid = 0;
 
+    if (ISDIGIT(*s)) return;
     if (ISUPPER(*s)) {
+	hasupper = 1;
 	while (*++s && (ISALNUM(*s) || *s == '_')) {
 	    if (ISLOWER(*s)) haslower = 1;
 	}
@@ -976,9 +1086,11 @@ set_encoding_const(const char *name, rb_encoding *enc)
     }
     if (!valid || haslower) {
 	int len = strlen(name) + 1;
-	if (!haslower) {
-	    while (!ISLOWER(*s) && *++s);
-	    if (*s) haslower = 1;
+	if (!haslower || !hasupper) {
+	    do {
+		if (ISLOWER(*s)) haslower = 1;
+		if (ISUPPER(*s)) hasupper = 1;
+	    } while (*++s && (!haslower || !hasupper));
 	}
 	MEMCPY(s = ALLOCA_N(char, len), name, char, len);
 	name = s;
@@ -987,7 +1099,9 @@ set_encoding_const(const char *name, rb_encoding *enc)
 	    for (; *s; ++s) {
 		if (!ISALNUM(*s)) *s = '_';
 	    }
-	    rb_define_const(rb_cEncoding, name, encoding);
+	    if (hasupper) {
+		rb_define_const(rb_cEncoding, name, encoding);
+	    }
 	}
 	if (haslower) {
 	    for (s = (char *)name; *s; ++s) {
@@ -999,10 +1113,10 @@ set_encoding_const(const char *name, rb_encoding *enc)
 }
 
 static int
-set_encoding_alias(st_data_t name, st_data_t orig, st_data_t arg)
+rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
 {
-    rb_encoding *enc = rb_enc_from_index((int)orig);
-    set_encoding_const((const char *)name, enc);
+    VALUE ary = (VALUE)arg;
+    rb_ary_push(ary, rb_str_new2((char *)name));
     return ST_CONTINUE;
 }
 
@@ -1025,25 +1139,25 @@ set_encoding_alias(st_data_t name, st_data_t orig, st_data_t arg)
 static VALUE
 rb_enc_name_list(VALUE klass)
 {
-    VALUE ary = rb_ary_new2(enc_name_list_size);
-    int i;
-    for (i = 0; i < enc_name_list_size; i++) {
-	rb_ary_push(ary, rb_str_new2(enc_name_list[i]));
-    }
+    VALUE ary = rb_ary_new2(enc_table.names->num_entries);
+    st_foreach(enc_table.names, rb_enc_name_list_i, (st_data_t)ary);
     return ary;
 }
 
 static int
 rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
 {
-    rb_hash_aset((VALUE)arg, rb_str_new2((char *)name), rb_str_new2(rb_enc_name(rb_enc_from_index((int)orig))));
-    return 0;
-}
+    VALUE *p = (VALUE *)arg;
+    VALUE aliases = p[0];
+    VALUE ary = p[1];
+    int idx = (int)orig;
+    VALUE str = rb_ary_entry(ary, idx);
 
-static int
-rb_enc_aliases_str_i(st_data_t name, st_data_t orig, st_data_t arg)
-{
-    rb_hash_aset((VALUE)arg, rb_str_new2((char *)name), rb_str_new2((char *)orig));
+    if (NIL_P(str)) {
+	str = rb_str_new2(rb_enc_name(rb_enc_from_index(idx)));
+	rb_ary_store(ary, idx, str);
+    }
+    rb_hash_aset(aliases, rb_str_new2((char *)name), str);
     return 0;
 }
 
@@ -1062,19 +1176,17 @@ rb_enc_aliases_str_i(st_data_t name, st_data_t orig, st_data_t arg)
 static VALUE
 rb_enc_aliases(VALUE klass)
 {
-    VALUE aliases = rb_hash_new();
-    if (enc_table.alias) st_foreach(enc_table.alias, rb_enc_aliases_enc_i, (st_data_t)aliases);
-    st_foreach(enc_table.alias_name, rb_enc_aliases_str_i, (st_data_t)aliases);
-    return aliases;
+    VALUE aliases[2];
+    aliases[0] = rb_hash_new();
+    aliases[1] = rb_ary_new();
+    st_foreach(enc_table.names, rb_enc_aliases_enc_i, (st_data_t)aliases);
+    return aliases[0];
 }
 
 void
 Init_Encoding(void)
 {
     id_base_encoding = rb_intern("#base_encoding");
-
-    enc_table.replica_name = st_init_strcasetable();
-    enc_table.alias_name = st_init_strcasetable();
 
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);
@@ -1096,12 +1208,6 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
     enc_init_db();
-
-    /* dummy for unsupported, statefull encoding */
-    rb_define_dummy_encoding("ISO-2022-JP");
-    rb_enc_alias("ISO2022-JP", "ISO-2022-JP");
-    rb_define_dummy_encoding("ISO-2022-JP-2");
-    rb_enc_alias("ISO2022-JP2", "ISO-2022-JP-2");
 }
 
 /* locale insensitive functions */
