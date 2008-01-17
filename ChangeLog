@@ -1,3 +1,9 @@
+Fri Jan 18 00:49:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_check_readable): flush tied write IO too.
+
+	* io.c (Init_IO): tie stdin with stdout.  [ruby-core:15107]
+
 Fri Jan 18 00:23:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_free): removed since rb_encoding may be used while

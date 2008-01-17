@@ -363,6 +363,11 @@ rb_io_check_readable(rb_io_t *fptr)
     if (fptr->wbuf_len) {
         io_fflush(fptr);
     }
+    if (fptr->tied_io_for_writing) {
+	rb_io_t *wfptr;
+	GetOpenFile(fptr->tied_io_for_writing, wfptr);
+	io_fflush(wfptr);
+    }
     if (!fptr->enc && fptr->fd == 0) {
 	fptr->enc = rb_default_external_encoding();
     }
@@ -6647,6 +6652,7 @@ Init_IO(void)
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
     rb_deferr = orig_stderr = rb_stderr;
+    RFILE(rb_stdin)->fptr->tied_io_for_writing = rb_stdout;
 
     /* constants to hold original stdin/stdout/stderr */
     rb_define_global_const("STDIN", rb_stdin);
