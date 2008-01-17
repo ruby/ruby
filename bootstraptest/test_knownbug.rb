@@ -75,3 +75,4 @@ assert_equal 'true', %{
   $?.success?
 }
 
+assert_valid_syntax('1.times {|i|print (42),1;}', '[ruby-list:44479]')

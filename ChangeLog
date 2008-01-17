@@ -1,3 +1,9 @@
+Fri Jan 18 02:02:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb (assert_valid_syntax): added.
+
+	* bootstraptest/test_knownbug.rb: added test for [ruby-list:44479]
+
 Fri Jan 18 01:48:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_method): check argument number to

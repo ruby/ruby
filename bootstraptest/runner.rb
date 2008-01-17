@@ -127,9 +127,9 @@ def exec_test(pathes)
   end
 end
 
-def assert_check(testsrc, message = '')
+def assert_check(testsrc, message = '', opt = '')
   $stderr.puts "\##{@count} #{@location}" if @verbose
-  result = get_result_string(testsrc)
+  result = get_result_string(testsrc, opt)
   check_coredump
   faildesc = yield(result)
   if !faildesc
@@ -176,6 +176,13 @@ def assert_not_match(unexpected_pattern, testsrc, message = '')
       desc = "#{unexpected_pattern.inspect} expected to be !~\n#{result.inspect}"
       pretty(testsrc, desc, result)
     end
+  }
+end
+
+def assert_valid_syntax(testsrc, message = '')
+  newtest
+  assert_check(testsrc, message, '-c') {|result|
+    result if /Syntax OK/ !~ result
   }
 end
 
@@ -268,11 +275,11 @@ def make_srcfile(src)
   filename
 end
 
-def get_result_string(src)
+def get_result_string(src, opt = '')
   if @ruby
     filename = make_srcfile(src)
     begin
-      `#{@ruby} -W0 #{filename}`
+      `#{@ruby} -W0 #{opt} #{filename}`
     ensure
       raise CoreDumpError, "core dumped" if $? and $?.coredump?
     end
