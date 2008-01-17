@@ -11,6 +11,8 @@
 /* finish iseq array */
 #include "insns.inc"
 
+#include <math.h>
+
 /* control stack frame */
 
 
