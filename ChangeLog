@@ -1,3 +1,9 @@
+Fri Jan 18 04:27:57 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* sample/rdoc/markup/rdoc2latex.rb:  Fix for new namespacing.
+
+	* lib/rdoc/markup/to_latex.rb:  Fix namespacing.
+
 Fri Jan 18 02:02:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/runner.rb (assert_valid_syntax): added.

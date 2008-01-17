@@ -29,13 +29,13 @@ class RDoc::Markup::ToLaTeX
   end
 
   LIST_TYPE_TO_LATEX = {
-    ListBase::BULLET =>  [ l("\\begin{itemize}"), l("\\end{itemize}") ],
-    ListBase::NUMBER =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\arabic" ],
-    ListBase::UPPERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\Alph" ],
-    ListBase::LOWERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\alph" ],
-    ListBase::LABELED => [ l("\\begin{description}"), l("\\end{description}") ],
-    ListBase::NOTE    => [
-      l("\\begin{tabularx}{\\linewidth}{@{} l X @{}}"), 
+    RDoc::Markup::ListBase::BULLET =>  [ l("\\begin{itemize}"), l("\\end{itemize}") ],
+    RDoc::Markup::ListBase::NUMBER =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\arabic" ],
+    RDoc::Markup::ListBase::UPPERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\Alph" ],
+    RDoc::Markup::ListBase::LOWERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\alph" ],
+    RDoc::Markup::ListBase::LABELED => [ l("\\begin{description}"), l("\\end{description}") ],
+    RDoc::Markup::ListBase::NOTE    => [
+      l("\\begin{tabularx}{\\linewidth}{@{} l X @{}}"),
       l("\\end{tabularx}") ],
   }
 
@@ -62,7 +62,7 @@ class RDoc::Markup::ToLaTeX
   # Escape a LaTeX string
 
   def escape(str)
-$stderr.print "FE: ", str
+    $stderr.print "FE: ", str if $DEBUG_RDOC
     s = str.
        sub(/\s+$/, '').
       gsub(/([_\${}&%#])/, "#{BS}\\1").
@@ -73,7 +73,7 @@ $stderr.print "FE: ", str
       gsub(/>/,  GREATERTHAN).
       gsub(/,,/, ",{},").
       gsub(/\`/,  BACKQUOTE)
-$stderr.print "-> ", s, "\n"
+    $stderr.print "-> ", s, "\n" if $DEBUG_RDOC
     s
   end
 
@@ -202,7 +202,7 @@ $stderr.print "-> ", s, "\n"
     flow.each do |item|
       case item
       when String
-         $stderr.puts "Converting '#{item}'"
+        $stderr.puts "Converting '#{item}'" if $DEBUG_RDOC
         res << convert_string(item)
       when AttrChanger
         off_tags(res, item)
@@ -299,14 +299,15 @@ $stderr.print "-> ", s, "\n"
 
   def list_item_start(am, fragment)
     case fragment.type
-    when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA,
-         ListBase::LOWERALPHA
+    when RDoc::Markup::ListBase::BULLET, RDoc::Markup::ListBase::NUMBER,
+         RDoc::Markup::ListBase::UPPERALPHA,
+         RDoc::Markup::ListBase::LOWERALPHA then
       "\\item "
 
-    when ListBase::LABELED
+    when RDoc::Markup::ListBase::LABELED then
       "\\item[" + convert_flow(am.flow(fragment.param)) + "] "
 
-    when ListBase::NOTE
+    when RDoc::Markup::ListBase::NOTE then
         convert_flow(am.flow(fragment.param)) + " & "
     else
       raise "Invalid list type"
@@ -315,10 +316,13 @@ $stderr.print "-> ", s, "\n"
 
   def list_end_for(fragment_type)
     case fragment_type
-    when ListBase::BULLET, ListBase::NUMBER, ListBase::UPPERALPHA,
-         ListBase::LOWERALPHA, ListBase::LABELED
+    when RDoc::Markup::ListBase::BULLET,
+         RDoc::Markup::ListBase::NUMBER,
+         RDoc::Markup::ListBase::UPPERALPHA,
+         RDoc::Markup::ListBase::LOWERALPHA,
+         RDoc::Markup::ListBase::LABELED then
       ""
-    when ListBase::NOTE
+    when RDoc::Markup::ListBase::NOTE
       "\\\\\n"
     else
       raise "Invalid list type"
@@ -326,6 +330,4 @@ $stderr.print "-> ", s, "\n"
   end
 
 end
-
-d
 

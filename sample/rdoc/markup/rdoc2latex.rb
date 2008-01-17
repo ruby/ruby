@@ -1,12 +1,11 @@
 #!/usr/local/bin/ruby
-# Illustration of a script to convert an RDoc-style file to a LaTeX
-# document
+# Illustration of a script to convert an RDoc-style file to a LaTeX document
 
-require 'rdoc/markup/simple_markup'
-require 'rdoc/markup/simple_markup/to_latex'
+require 'rdoc/markup'
+require 'rdoc/markup/to_latex'
 
-p = SM::SimpleMarkup.new
-h = SM::ToLaTeX.new
+p = RDoc::Markup.new
+h = RDoc::Markup::ToLaTeX.new
 
 #puts "\\documentclass{report}"
 #puts "\\usepackage{tabularx}"
