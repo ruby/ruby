@@ -693,7 +693,7 @@ io_fwrite(VALUE str, rb_io_t *fptr)
     }
     if ((fptr->mode & FMODE_SYNC) ||
         (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len) ||
-        ((fptr->mode & FMODE_TTY) && memchr(RSTRING_PTR(str)+offset, '\n', len))) {
+        (fptr->mode & FMODE_TTY)) {
         /* xxx: use writev to avoid double write if available */
         if (fptr->wbuf_len && fptr->wbuf_len+len <= fptr->wbuf_capa) {
             if (fptr->wbuf_capa < fptr->wbuf_off+fptr->wbuf_len+len) {

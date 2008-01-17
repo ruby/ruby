@@ -63,6 +63,11 @@ Thu Jan 17 21:01:25 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: some trivial changes.
 
+Thu Jan 17 10:30:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fwrite): always flush IO on tty, even without newlines.
+	  [ruby-core:15107]
+
 Wed Jan 16 22:45:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_register_at): make own copy.  [ruby-dev:33136]
