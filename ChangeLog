@@ -1,3 +1,7 @@
+Fri Jan 18 07:06:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (Init_IO): stdin/stdout may not be duplex.
+
 Fri Jan 18 04:27:57 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* sample/rdoc/markup/rdoc2latex.rb:  Fix for new namespacing.

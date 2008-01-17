@@ -6652,7 +6652,6 @@ Init_IO(void)
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
     rb_deferr = orig_stderr = rb_stderr;
-    RFILE(rb_stdin)->fptr->tied_io_for_writing = rb_stdout;
 
     /* constants to hold original stdin/stdout/stderr */
     rb_define_global_const("STDIN", rb_stdin);
