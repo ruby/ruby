@@ -1,3 +1,7 @@
+Fri Jan 18 00:17:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/euc_cn.c: split from enc/euc_kr.c.
+
 Fri Jan 18 00:03:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_init): use default external encoding

@@ -137,6 +137,4 @@ OnigEncodingDefine(euc_kr, EUC_KR) = {
   euckr_is_allowed_reverse_match
 };
 ENC_ALIAS("eucKR", "EUC-KR");
-ENC_REPLICATE("EUC-CN", "EUC-KR");
-ENC_ALIAS("eucCN", "EUC-CN");
 ENC_REPLICATE("CP949", "EUC-KR");
