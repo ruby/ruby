@@ -70,21 +70,10 @@ enc_mark(void *ptr)
 {
 }
 
-static void
-enc_free(void *ptr)
-{
-    rb_encoding *enc = ptr;
-    struct rb_encoding_entry *ent = &enc_table.list[enc->ruby_encoding_index];
-    xfree((char *)ent->name);
-    ent->name = 0;
-    ent->enc = 0;
-    xfree(ptr);
-}
-
 static VALUE
 enc_new(rb_encoding *encoding)
 {
-    VALUE enc = Data_Wrap_Struct(rb_cEncoding, enc_mark, enc_free, encoding);
+    VALUE enc = Data_Wrap_Struct(rb_cEncoding, enc_mark, -1, encoding);
     encoding->auxiliary_data = (void *)enc;
     return enc;
 }
