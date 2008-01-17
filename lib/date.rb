@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.36 2008-01-12 10:54:29+09 tadf Exp $
+# $Id: date.rb,v 2.37 2008-01-17 20:16:31+09 tadf Exp $
 #++
 #
 # == Overview
@@ -275,8 +275,8 @@ class Date
 
     def <=> (other)
       case other
-      when Infinity; d <=> other.d
-      when Numeric; d
+      when Infinity; return d <=> other.d
+      when Numeric; return d
       else
 	begin
 	  l, r = other.coerce(self)
@@ -524,7 +524,7 @@ class Date
 	if Integer === h && Integer === min && Integer === s
 	  Rational(h * 3600 + min * 60 + s, 86400) # 4p
 	else
-	  h.to_r/24 + min.to_r/1440 + s.to_r/86400
+	  (h * 3600 + min * 60 + s).to_r/86400 # 4p
 	end
     end
   end
