@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2008
-# $Id: format.rb,v 2.42 2008-01-12 10:54:29+09 tadf Exp $
+# $Id: format.rb,v 2.43 2008-01-17 20:16:31+09 tadf Exp $
 
 require 'rational'
 
@@ -257,12 +257,12 @@ class Date
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
-	emit_n((sec_fraction / MILLISECONDS_IN_SECOND).round, 3, f)
+	emit_n((sec_fraction / MILLISECONDS_IN_SECOND).floor, 3, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
       when 'M', 'OM'; emit_n(min, 2, f)
       when 'm', 'Om'; emit_n(mon, 2, f)
       when 'N'
-	emit_n((sec_fraction / NANOSECONDS_IN_SECOND).round, 9, f)
+	emit_n((sec_fraction / NANOSECONDS_IN_SECOND).floor, 9, f)
       when 'n'; "\n"
       when 'P'; emit_ad(strftime('%p').downcase, 0, f)
       when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
