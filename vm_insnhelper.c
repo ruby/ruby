@@ -495,45 +495,49 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
 	    switch (nd_type(node)) {
 	      case RUBY_VM_METHOD_NODE:{
-		  vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
-		  return Qundef;
+		vm_setup_method(th, cfp, num, blockptr, flag, (VALUE)node->nd_body, recv, klass);
+		return Qundef;
 	      }
 	      case NODE_CFUNC:{
-		  val = vm_call_cfunc(th, cfp, num, id, recv, mn->nd_clss, flag, node, blockptr);
-		  break;
+		val = vm_call_cfunc(th, cfp, num, id, recv, mn->nd_clss, flag, node, blockptr);
+		break;
 	      }
 	      case NODE_ATTRSET:{
-		  val = rb_ivar_set(recv, node->nd_vid, *(cfp->sp - 1));
-		  cfp->sp -= 2;
-		  break;
+		val = rb_ivar_set(recv, node->nd_vid, *(cfp->sp - 1));
+		cfp->sp -= 2;
+		break;
 	      }
 	      case NODE_IVAR:{
-		  val = rb_ivar_get(recv, node->nd_vid);
-		  cfp->sp -= 1;
-		  break;
+		if (num != 0) {
+		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
+			     num);
+		}
+		val = rb_attr_get(recv, node->nd_vid);
+		cfp->sp -= 1;
+		break;
 	      }
 	      case NODE_BMETHOD:{
-		  VALUE *argv = cfp->sp - num;
-		  val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv, blockptr);
-		  cfp->sp += - num - 1;
-		  break;
+		VALUE *argv = cfp->sp - num;
+		val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv, blockptr);
+		cfp->sp += - num - 1;
+		break;
 	      }
 	      case NODE_ZSUPER:{
-		  klass = RCLASS_SUPER(mn->nd_clss);
-		  mn = rb_method_node(klass, id);
+		klass = RCLASS_SUPER(mn->nd_clss);
+		mn = rb_method_node(klass, id);
 
-		  if (mn != 0) {
-		      goto normal_method_dispatch;
-		  }
-		  else {
-		      goto start_method_dispatch;
-		  }
+		if (mn != 0) {
+		    goto normal_method_dispatch;
+		}
+		else {
+		    goto start_method_dispatch;
+		}
 	      }
 	      default:{
-		  printf("node: %s\n", ruby_node_name(nd_type(node)));
-		  rb_bug("eval_invoke_method: unreachable");
-		  /* unreachable */
-		  break;
+		printf("node: %s\n", ruby_node_name(nd_type(node)));
+		rb_bug("eval_invoke_method: unreachable");
+		/* unreachable */
+		break;
 	      }
 	    }
 	}
