@@ -4764,7 +4764,6 @@ rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int lin
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
     lex_input = s;
-    parser->enc = rb_enc_get(s);
     lex_pbeg = lex_p = lex_pend = 0;
     compile_for_eval = rb_parse_in_eval();
 
@@ -5957,6 +5956,7 @@ parser_prepare(struct parser_params *parser)
 	return;
     }
     pushback(c);
+    parser->enc = rb_enc_get(lex_lastline);
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
@@ -9689,9 +9689,6 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
         rb_str_append(fname2, fname);
     }
     parser_initialize(parser);
-    if (parser->parser_lex_gets == lex_get_str) {
-	parser->enc = rb_enc_get(src);
-    }
 
     parser->parser_ruby_sourcefile_string = fname2;
     parser->parser_ruby_sourcefile = RSTRING_PTR(fname2)+1;

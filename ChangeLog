@@ -1,3 +1,10 @@
+Sat Jan 19 08:35:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_prepare): get encoding from the first line.
+	  [ruby-dev:33168]
+
+	* ruby.c (load_file): set encoding to input with set_encoding.
+
 Sat Jan 19 03:46:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (thread_create_core): prohibit thread creation in the

@@ -1038,6 +1038,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
     VALUE f;
     int line_start = 1;
     NODE *tree = 0;
+    rb_encoding *enc;
 
     if (!fname)
 	rb_load_fail(fname);
@@ -1151,10 +1152,16 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	require_libraries();	/* Why here? unnatural */
     }
     if (opt->enc_index >= 0) {
-	rb_enc_associate_index(f, opt->enc_index);
+	enc = rb_enc_from_index(opt->enc_index);
     }
     else if (f == rb_stdin) {
-	rb_enc_associate(f, rb_locale_encoding());
+	enc = rb_locale_encoding();
+    }
+    else {
+	enc = 0;
+    }
+    if (enc) {
+	rb_funcall(f, rb_intern("set_encoding"), 1, rb_enc_from_encoding(enc));
     }
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
