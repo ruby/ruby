@@ -498,6 +498,12 @@ rb_enc_find_index(const char *name)
 	}
 	else {
 	    i = load_encoding(name);
+	    enc = rb_enc_from_index(i);
+	    if (!enc->precise_mbc_enc_len) {
+		rb_warn("failed to load encoding (%s); use ASCII-8BIT instead",
+			name);
+		return 0;
+	    }
 	}
     }
     return i;

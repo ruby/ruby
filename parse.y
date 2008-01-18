@@ -4764,6 +4764,7 @@ rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int lin
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
     lex_input = s;
+    parser->enc = rb_enc_get(s);
     lex_pbeg = lex_p = lex_pend = 0;
     compile_for_eval = rb_parse_in_eval();
 
@@ -5956,7 +5957,6 @@ parser_prepare(struct parser_params *parser)
 	return;
     }
     pushback(c);
-    parser->enc = rb_enc_get(lex_input);
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
@@ -9192,7 +9192,7 @@ parser_initialize(struct parser_params *parser)
 #ifdef YYMALLOC
     parser->heap = NULL;
 #endif
-    parser->enc = rb_enc_from_index(0);
+    parser->enc = rb_ascii8bit_encoding();
 }
 
 extern void rb_mark_source_filename(char *);

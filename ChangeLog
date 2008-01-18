@@ -1,3 +1,14 @@
+Fri Jan 18 09:22:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_initialize): explicitly call rb_ascii8bit_encoding().
+
+	* parse.y (parser_prepare): lex_input may not be have encoding (e.g. IO).
+
+	* parse.y (rb_parser_compile_string): set encoding from input string. 
+
+	* encoding.c (rb_enc_find_index): use ASCII-8BIT if loading known
+	  encoding failed.
+
 Fri Jan 18 07:06:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (Init_IO): stdin/stdout may not be duplex.
