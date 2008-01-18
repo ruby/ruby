@@ -1,3 +1,10 @@
+Fri Jan 18 15:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_cleanup_func): ignore errors from destroying mutex
+	  of dead thread.  [ruby-core:15069]
+
+	* thread_pthread.c, thread_win32.c (native_thread_destroy): ditto.
+
 Fri Jan 18 15:56:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_name_list_i, rb_enc_aliases_enc_i): freeze

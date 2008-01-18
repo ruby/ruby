@@ -281,7 +281,6 @@ thread_cleanup_func(void *th_ptr)
 #ifdef __ia64
     th->machine_register_stack_start = th->machine_register_stack_end = 0;
 #endif
-    native_mutex_destroy(&th->interrupt_lock);
     native_thread_destroy(th);
 }
 
