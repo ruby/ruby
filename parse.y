@@ -9677,7 +9677,6 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     else {
         StringValue(src);
         parser->parser_lex_gets = lex_get_str;
-	parser->enc = rb_enc_get(src);
     }
     parser->parser_lex_input = src;
     parser->eofp = Qfalse;
@@ -9690,6 +9689,9 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
         rb_str_append(fname2, fname);
     }
     parser_initialize(parser);
+    if (parser->parser_lex_gets == lex_get_str) {
+	parser->enc = rb_enc_get(src);
+    }
 
     parser->parser_ruby_sourcefile_string = fname2;
     parser->parser_ruby_sourcefile = RSTRING_PTR(fname2)+1;
