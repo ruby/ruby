@@ -9,7 +9,7 @@ class TestM17N < Test::Unit::TestCase
   module AESU
     def a(str) str.dup.force_encoding("ASCII-8BIT") end
     def e(str) str.dup.force_encoding("EUC-JP") end
-    def s(str) str.dup.force_encoding("Shift_JIS") end
+    def s(str) str.dup.force_encoding("Windows-31J") end
     def u(str) str.dup.force_encoding("UTF-8") end
   end
   include AESU
@@ -35,15 +35,15 @@ class TestM17N < Test::Unit::TestCase
 
   def assert_regexp_generic_encoding(r)
     assert(!r.fixed_encoding?)
-    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
-      # "\xc2\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Shift_JIS and UTF-8.
+    %w[ASCII-8BIT EUC-JP Windows-31J UTF-8].each {|ename|
+      # "\xc2\xa1" is a valid sequence for ASCII-8BIT, EUC-JP, Windows-31J and UTF-8.
       assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(ename) }
     }
   end
 
   def assert_regexp_fixed_encoding(r)
     assert(r.fixed_encoding?)
-    %w[ASCII-8BIT EUC-JP Shift_JIS UTF-8].each {|ename|
+    %w[ASCII-8BIT EUC-JP Windows-31J UTF-8].each {|ename|
       enc = Encoding.find(ename)
       if enc == r.encoding
         assert_nothing_raised { r =~ "\xc2\xa1".force_encoding(enc) }
@@ -69,7 +69,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def assert_regexp_fixed_sjis(r)
-    assert_encoding("Shift_JIS", r.encoding)
+    assert_encoding("Windows-31J", r.encoding)
     assert_regexp_fixed_encoding(r)
   end
 
@@ -318,7 +318,7 @@ class TestM17N < Test::Unit::TestCase
     assert_warning(%r{regexp match /.../n against to EUC-JP string}) {
       assert_equal(nil, r =~ e("\xc2\xa1"))
     }
-    assert_warning(%r{regexp match /.../n against to Shift_JIS string}) {
+    assert_warning(%r{regexp match /.../n against to Windows-31J string}) {
       assert_equal(nil, r =~ s("\xc2\xa1"))
     }
     assert_warning(%r{regexp match /.../n against to UTF-8 string}) {
@@ -446,7 +446,7 @@ class TestM17N < Test::Unit::TestCase
 
     assert_encoding("ASCII-8BIT", Regexp.quote(a("\xc2\xa1")).encoding)
     assert_encoding("EUC-JP",     Regexp.quote(e("\xc2\xa1")).encoding)
-    assert_encoding("Shift_JIS",  Regexp.quote(s("\xc2\xa1")).encoding)
+    assert_encoding("Windows-31J",  Regexp.quote(s("\xc2\xa1")).encoding)
     assert_encoding("UTF-8",      Regexp.quote(u("\xc2\xa1")).encoding)
   end
 
@@ -627,7 +627,7 @@ class TestM17N < Test::Unit::TestCase
     #assert_raise(ArgumentError) { a("%c") % 0xc2a1 }
     assert_strenc("\xc2\xa1", 'EUC-JP', e("%c") % 0xc2a1)
     assert_raise(ArgumentError) { e("%c") % 0xc2 }
-    assert_strenc("\xc2", 'Shift_JIS', s("%c") % 0xc2)
+    assert_strenc("\xc2", 'Windows-31J', s("%c") % 0xc2)
     #assert_raise(ArgumentError) { s("%c") % 0xc2a1 }
     assert_strenc("\u{c2a1}", 'UTF-8', u("%c") % 0xc2a1)
     assert_strenc("\u{c2}", 'UTF-8', u("%c") % 0xc2)
@@ -636,22 +636,22 @@ class TestM17N < Test::Unit::TestCase
   def test_sprintf_p
     assert_strenc('""', 'ASCII-8BIT', a("%p") % a(""))
     assert_strenc('""', 'EUC-JP', e("%p") % e(""))
-    assert_strenc('""', 'Shift_JIS', s("%p") % s(""))
+    assert_strenc('""', 'Windows-31J', s("%p") % s(""))
     assert_strenc('""', 'UTF-8', u("%p") % u(""))
 
     assert_strenc('"a"', 'ASCII-8BIT', a("%p") % a("a"))
     assert_strenc('"a"', 'EUC-JP', e("%p") % e("a"))
-    assert_strenc('"a"', 'Shift_JIS', s("%p") % s("a"))
+    assert_strenc('"a"', 'Windows-31J', s("%p") % s("a"))
     assert_strenc('"a"', 'UTF-8', u("%p") % u("a"))
 
     assert_strenc('"\xC2\xA1"', 'ASCII-8BIT', a("%p") % a("\xc2\xa1"))
     assert_strenc("\"\xC2\xA1\"", 'EUC-JP', e("%p") % e("\xc2\xa1"))
-    #assert_strenc("\"\xC2\xA1\"", 'Shift_JIS', s("%p") % s("\xc2\xa1"))
+    #assert_strenc("\"\xC2\xA1\"", 'Windows-31J', s("%p") % s("\xc2\xa1"))
     assert_strenc("\"\xC2\xA1\"", 'UTF-8', u("%p") % u("\xc2\xa1"))
 
     assert_strenc('"\x00"', 'ASCII-8BIT', a("%p") % a("\x00"))
     assert_strenc('"\x00"', 'EUC-JP', e("%p") % e("\x00"))
-    assert_strenc('"\x00"', 'Shift_JIS', s("%p") % s("\x00"))
+    assert_strenc('"\x00"', 'Windows-31J', s("%p") % s("\x00"))
     assert_strenc('"\x00"', 'UTF-8', u("%p") % u("\x00"))
   end
 
