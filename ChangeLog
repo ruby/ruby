@@ -19,6 +19,9 @@ Fri Jan 18 09:22:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* encoding.c (rb_enc_aliases_enc_i): exclude non alias names from
 	  Encoding.aliases.
 
+	* encoding.c (rb_enc_find_index): use original encoding name to
+	  load DLL.
+
 Fri Jan 18 07:06:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (Init_IO): stdin/stdout may not be duplex.

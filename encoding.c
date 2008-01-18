@@ -497,7 +497,7 @@ rb_enc_find_index(const char *name)
 	    enc_register_at(i, name, rb_enc_from_index(b));
 	}
 	else {
-	    i = load_encoding(name);
+	    i = load_encoding(rb_enc_name(enc));
 	    if (enc_autoload_p(rb_enc_from_index(i))) {
 		rb_warn("failed to load encoding (%s); use ASCII-8BIT instead",
 			name);
