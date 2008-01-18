@@ -103,7 +103,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
 		 events, count, timeout, th);
     if (th && (intr = th->native_thread_data.interrupt_event)) {
 	w32_reset_event(intr);
-	if (th->interrupt_flag) {
+	if (RUBY_VM_INTERRUPTED(th)) {
 	    w32_set_event(intr);
 	}
 
