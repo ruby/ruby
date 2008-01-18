@@ -498,8 +498,7 @@ rb_enc_find_index(const char *name)
 	}
 	else {
 	    i = load_encoding(name);
-	    enc = rb_enc_from_index(i);
-	    if (!enc->precise_mbc_enc_len) {
+	    if (enc_autoload_p(rb_enc_from_index(i))) {
 		rb_warn("failed to load encoding (%s); use ASCII-8BIT instead",
 			name);
 		return 0;
@@ -1149,11 +1148,16 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
     VALUE str = rb_ary_entry(ary, idx);
 
     if (NIL_P(str)) {
-	str = rb_str_new2(rb_enc_name(rb_enc_from_index(idx)));
+	rb_encoding *enc = rb_enc_from_index(idx);
+
+	if (STRCASECMP((char*)name, rb_enc_name(enc)) == 0) {
+	    return ST_CONTINUE;
+	}
+	str = rb_str_new2(rb_enc_name(enc));
 	rb_ary_store(ary, idx, str);
     }
     rb_hash_aset(aliases, rb_str_new2((char *)name), str);
-    return 0;
+    return ST_CONTINUE;
 }
 
 /*
