@@ -1,3 +1,12 @@
+Sat Jan 19 03:46:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (thread_create_core): prohibit thread creation in the
+	  frozen thread group.  a patch in [ruby-dev:33176] from sheepman
+	  <sheepman AT sheepman.sakura.ne.jp>.
+
+	* thread.c (thread_create_core): should inherit ThreadGroup from
+	  the current thread.
+
 Sat Jan 19 00:37:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): set result encoding for wider width.
