@@ -457,7 +457,10 @@ load_encoding(const char *name)
     VALUE enclib = rb_sprintf("enc/%s", name);
     VALUE verbose = ruby_verbose;
     VALUE debug = ruby_debug;
+    VALUE loaded;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib);
+    int idx;
+
     while (s < e) {
 	if (!ISALNUM(*s)) *s = '_';
 	else if (ISUPPER(*s)) *s = TOLOWER(*s);
@@ -466,11 +469,14 @@ load_encoding(const char *name)
     OBJ_FREEZE(enclib);
     ruby_verbose = Qfalse;
     ruby_debug = Qfalse;
-    rb_protect(require_enc, enclib, 0);
+    loaded = rb_protect(require_enc, enclib, 0);
     ruby_verbose = verbose;
     ruby_debug = debug;
     rb_set_errinfo(Qnil);
-    return rb_enc_registered(name);
+    if (NIL_P(loaded)) return -1;
+    if ((idx = rb_enc_registered(name)) < 0) return -1;
+    if (enc_autoload_p(enc_table.list[idx].enc)) return -1;
+    return idx;
 }
 
 int
@@ -487,20 +493,14 @@ rb_enc_find_index(const char *name)
 	if (enc_initialized_p(enc) &&
 	    (base = enc_base_encoding(ENC_FROM_ENCODING(enc)), !NIL_P(base))) {
 	    if ((b = enc_check_encoding(base)) < 0) {
-#if 0
-		st_data_t key, val;
-		key = (st_data_t)name;
-		if (st_delete(enc_table.names, &key, &val)) {
-		    if (enc->name != (char *)key) xfree((char *)key);
-		}
-#endif
-		return -1;
+		goto failed;
 	    }
 	    enc_register_at(i, rb_enc_name(enc), rb_enc_from_index(b));
 	}
 	else {
 	    i = load_encoding(rb_enc_name(enc));
-	    if (enc_autoload_p(rb_enc_from_index(i))) {
+	    if (i < 0) {
+	      failed:
 		rb_warn("failed to load encoding (%s); use ASCII-8BIT instead",
 			name);
 		return 0;

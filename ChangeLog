@@ -1,4 +1,6 @@
-Fri Jan 18 11:39:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 18 12:25:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (load_encoding): check if successfully loaded.
 
 	* encoding.c (rb_enc_find_index): use original encoding name to
 	  replicate loaded encoding instead alias.
