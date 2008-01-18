@@ -487,14 +487,16 @@ rb_enc_find_index(const char *name)
 	if (enc_initialized_p(enc) &&
 	    (base = enc_base_encoding(ENC_FROM_ENCODING(enc)), !NIL_P(base))) {
 	    if ((b = enc_check_encoding(base)) < 0) {
+#if 0
 		st_data_t key, val;
 		key = (st_data_t)name;
 		if (st_delete(enc_table.names, &key, &val)) {
 		    if (enc->name != (char *)key) xfree((char *)key);
 		}
+#endif
 		return -1;
 	    }
-	    enc_register_at(i, name, rb_enc_from_index(b));
+	    enc_register_at(i, rb_enc_name(enc), rb_enc_from_index(b));
 	}
 	else {
 	    i = load_encoding(rb_enc_name(enc));
