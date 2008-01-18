@@ -6436,7 +6436,7 @@ Wed Oct 10 15:39:04 2007  Tanaka Akira  <akr@fsij.org>
 
 Wed Oct 10 14:31:05 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (rb_enc_str_coderange): fixed checkfor non-ascii.
+	* string.c (rb_enc_str_coderange): fixed check for non-ascii.
 
 Tue Oct  9 21:35:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
