@@ -160,6 +160,13 @@ assert_equal %q{[1, 1]}, %q{
   sleep 0.1
   [thg.list.size, ThreadGroup::Default.list.size]
 }
+assert_equal %q{true}, %q{
+  thg = ThreadGroup.new
+
+  t = Thread.new{sleep 5}
+  thg.add t
+  thg.list.include?(t)
+}
 assert_equal %q{[true, nil, true]}, %q{
   /a/ =~ 'a'
   $a = $~

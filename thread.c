@@ -302,7 +302,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 #ifdef __ia64
     th->machine_register_stack_start = register_stack_start;
 #endif
-    th->thgroup = th->vm->thgroup_default;
     thread_debug("thread start: %p\n", th);
 
     native_mutex_lock(&th->vm->global_interpreter_lock);
@@ -383,6 +382,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->first_func = fn;
 
     th->priority = GET_THREAD()->priority;
+    th->thgroup = th->vm->thgroup_default;
 
     native_mutex_initialize(&th->interrupt_lock);
     /* kick thread */
