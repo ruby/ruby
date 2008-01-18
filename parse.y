@@ -9677,6 +9677,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     else {
         StringValue(src);
         parser->parser_lex_gets = lex_get_str;
+	parser->enc = rb_enc_get(src);
     }
     parser->parser_lex_input = src;
     parser->eofp = Qfalse;
