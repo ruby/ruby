@@ -1112,7 +1112,9 @@ static int
 rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
 {
     VALUE ary = (VALUE)arg;
-    rb_ary_push(ary, rb_str_new2((char *)name));
+    VALUE str = rb_str_new2((char *)name);
+    OBJ_FREEZE(str);
+    rb_ary_push(ary, str);
     return ST_CONTINUE;
 }
 
@@ -1144,10 +1146,9 @@ static int
 rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
 {
     VALUE *p = (VALUE *)arg;
-    VALUE aliases = p[0];
-    VALUE ary = p[1];
+    VALUE aliases = p[0], ary = p[1];
     int idx = (int)orig;
-    VALUE str = rb_ary_entry(ary, idx);
+    VALUE key, str = rb_ary_entry(ary, idx);
 
     if (NIL_P(str)) {
 	rb_encoding *enc = rb_enc_from_index(idx);
@@ -1156,9 +1157,12 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
 	    return ST_CONTINUE;
 	}
 	str = rb_str_new2(rb_enc_name(enc));
+	OBJ_FREEZE(str);
 	rb_ary_store(ary, idx, str);
     }
-    rb_hash_aset(aliases, rb_str_new2((char *)name), str);
+    key = rb_str_new2((char *)name);
+    OBJ_FREEZE(key);
+    rb_hash_aset(aliases, key, str);
     return ST_CONTINUE;
 }
 
