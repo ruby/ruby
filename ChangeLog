@@ -1,3 +1,8 @@
+Fri Jan 18 14:36:34 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_m17n.rb (test_str_dump): added test for
+	  String#dump. [ruby-dev:33142]
+
 Fri Jan 18 12:25:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (load_encoding): check if successfully loaded.

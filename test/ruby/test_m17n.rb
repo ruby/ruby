@@ -189,6 +189,44 @@ class TestM17N < Test::Unit::TestCase
     assert_equal('"\xFC"', u("\xfc").inspect)
   end
 
+  def test_str_dump
+    [
+      e("\xfe"),
+      e("\x8e"),
+      e("\x8f"),
+      e("\x8f\xa1"),
+      s("\xef"),
+      u("\xc2"),
+      u("\xe0\x80"),
+      u("\xf0\x80\x80"),
+      u("\xf8\x80\x80\x80"),
+      u("\xfc\x80\x80\x80\x80"),
+
+      e("\xfe "),
+      e("\x8e "),
+      e("\x8f "),
+      e("\x8f\xa1 "),
+      s("\xef "),
+      u("\xc2 "),
+      u("\xe0\x80 "),
+      u("\xf0\x80\x80 "),
+      u("\xf8\x80\x80\x80 "),
+      u("\xfc\x80\x80\x80\x80 "),
+
+
+      e("\xa1\x8f\xa1\xa1"),
+
+      s("\x81."),
+      s("\x81@"),
+
+      u("\xfc"),
+      "\u3042",
+      "ascii",
+    ].each do |str|
+      assert_equal(str, eval(str.dump), "[ruby-dev:33142]")
+    end
+  end
+
   def test_validate_redundant_utf8
     bits_0x10ffff = "11110100 10001111 10111111 10111111"
     [
