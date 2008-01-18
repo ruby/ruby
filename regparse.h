@@ -1,5 +1,5 @@
-#ifndef REGPARSE_H
-#define REGPARSE_H
+#ifndef ONIGURUMA_REGPARSE_H
+#define ONIGURUMA_REGPARSE_H
 /**********************************************************************
   regparse.h -  Oniguruma (regular expression library)
 **********************************************************************/
@@ -348,4 +348,4 @@ extern int onig_print_names(FILE*, regex_t*);
 #endif
 #endif
 
-#endif /* REGPARSE_H */
+#endif /* ONIGURUMA_REGPARSE_H */

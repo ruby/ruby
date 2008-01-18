@@ -9,8 +9,8 @@
 
 **********************************************************************/
 
-#ifndef _INSNHELPER_H_INCLUDED_
-#define _INSNHELPER_H_INCLUDED_
+#ifndef RUBY_INSNHELPER_H
+#define RUBY_INSNHELPER_H
 
 #include "ruby/ruby.h"
 #include "ruby/node.h"
@@ -145,4 +145,4 @@
     CALL_METHOD(num, 0, 0, id, rb_method_node(klass, id), recv, CLASS_OF(recv)); \
 } while (0)
 
-#endif /* _INSNHELPER_H_INCLUDED_ */
+#endif /* RUBY_INSNHELPER_H */

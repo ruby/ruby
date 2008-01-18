@@ -9,6 +9,9 @@
 
 **********************************************************************/
 
+#ifndef RUBY_ID_H
+#define RUBY_ID_H
+
 extern VALUE symIFUNC;
 extern VALUE symCFUNC;
 
@@ -48,4 +51,4 @@ extern ID idAnswer;
 extern ID idSend;
 extern ID id__send__;
 
-
+#endif /* RUBY_ID_H */

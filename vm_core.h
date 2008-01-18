@@ -9,8 +9,8 @@
 
 **********************************************************************/
 
-#ifndef RUBY_CORE_H
-#define RUBY_CORE_H
+#ifndef RUBY_VM_CORE_H
+#define RUBY_VM_CORE_H
 
 #define RUBY_VM_THREAD_MODEL 2
 
@@ -677,4 +677,4 @@ exec_event_hooks(rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id,
     } \
 } while (0)
 
-#endif /* RUBY_CORE_H */
+#endif /* RUBY_VM_CORE_H */

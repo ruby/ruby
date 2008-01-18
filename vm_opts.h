@@ -10,8 +10,8 @@
 **********************************************************************/
 
 
-#ifndef VM_OPTS_H_INCLUDED
-#define VM_OPTS_H_INCLUDED
+#ifndef RUBY_VM_OPTS_H
+#define RUBY_VM_OPTS_H
 
 /* Compile options.
  * You can change these options at runtime by VM::CompileOption.
@@ -47,5 +47,4 @@
 /* misc */
 #define SUPPORT_JOKE                 0
 
-#endif /* VM_OPTS_H_INCLUDED */
-
+#endif /* RUBY_VM_OPTS_H */

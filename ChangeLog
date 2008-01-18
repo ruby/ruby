@@ -1,3 +1,13 @@
+Fri Jan 18 17:56:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h, insnhelper.h, thread_pthread.h, vm_core.h, vm_opts.h:
+	  prefixed include guards with RUBY.
+
+	* id.h: added include guard.
+
+	* regenc.h, regint.h, regparse.h: prefixed include guards with
+	  ONIGURUMA.
+
 Fri Jan 18 15:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_cleanup_func): ignore errors from destroying mutex

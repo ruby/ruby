@@ -1,6 +1,6 @@
 
-#ifndef EVAL_INTERN_H_INCLUDED
-#define EVAL_INTERN_H_INCLUDED
+#ifndef RUBY_EVAL_INTERN_H
+#define RUBY_EVAL_INTERN_H
 
 #define PASS_PASSED_BLOCK() \
   (GET_THREAD()->passed_block = \
@@ -243,4 +243,4 @@ VALUE rb_vm_top_self();
 
 #define ruby_cbase() vm_get_cbase(GET_THREAD())
 
-#endif /* EVAL_INTERN_H_INCLUDED */
+#endif /* RUBY_EVAL_INTERN_H */

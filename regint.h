@@ -1,5 +1,5 @@
-#ifndef REGINT_H
-#define REGINT_H
+#ifndef ONIGURUMA_REGINT_H
+#define ONIGURUMA_REGINT_H
 /**********************************************************************
   regint.h -  Oniguruma (regular expression library)
 **********************************************************************/
@@ -841,4 +841,4 @@ typedef int (*ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE)(void);
 
 extern int onigenc_property_list_init P_((ONIGENC_INIT_PROPERTY_LIST_FUNC_TYPE));
 
-#endif /* REGINT_H */
+#endif /* ONIGURUMA_REGINT_H */

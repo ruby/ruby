@@ -1,5 +1,5 @@
-#ifndef REGENC_H
-#define REGENC_H
+#ifndef ONIGURUMA_REGENC_H
+#define ONIGURUMA_REGENC_H
 /**********************************************************************
   regenc.h -  Oniguruma (regular expression library)
 **********************************************************************/
@@ -204,4 +204,4 @@ extern int ONIG_ENC_REGISTER(const char *, OnigEncodingType*);
 #define ENC_ALIAS(name, orig)
 #define ENC_DUMMY(name)
 
-#endif /* REGENC_H */
+#endif /* ONIGURUMA_REGENC_H */
