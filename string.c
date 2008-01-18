@@ -3210,6 +3210,7 @@ escape_codepoint:
 VALUE
 rb_str_dump(VALUE str)
 {
+    rb_encoding *enc0 = rb_enc_get(str);
     rb_encoding *enc = rb_enc_from_index(0);
     long len;
     char *p, *pend;
@@ -3241,6 +3242,10 @@ rb_str_dump(VALUE str)
 	    }
 	    break;
 	}
+    }
+    if (!rb_enc_asciicompat(enc0)) {
+	len += 19;		/* ".force_encoding('')" */
+	len += strlen(enc0->name);
     }
 
     result = rb_str_new5(str, 0, len);
@@ -3301,10 +3306,14 @@ rb_str_dump(VALUE str)
 	}
     }
     *q++ = '"';
+    if (!rb_enc_asciicompat(enc0)) {
+	sprintf(q, ".force_encoding(\"%s\")", enc0->name);
+	enc0 = enc;
+    }
 
     OBJ_INFECT(result, str);
     /* result from dump is ASCII */
-    rb_enc_associate(result, enc);
+    rb_enc_associate(result, enc0);
     return result;
 }
 

@@ -98,6 +98,13 @@ Thu Jan 17 21:01:25 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: some trivial changes.
 
+Thu Jan 17 13:07:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_dump): preserve the encoding of source string
+	  if it is ASCII compatible.  otherwise, add '.force_encoding()'
+	  for ugly work around.  maybe we should implement some other way
+	  to keep non ASCII encoding in dumped string.  [ruby-dev:33142]
+
 Thu Jan 17 10:30:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fwrite): always flush IO on tty, even without newlines.
