@@ -57,7 +57,7 @@ BASERUBY = $(BASERUBY)
 !endif
 <<
 !if !defined(BASERUBY)
-	@for %I in (ruby.exe) do @echo BASERUBY = "%~$$PATH:I" >> $(MAKEFILE)
+	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I >> $(MAKEFILE)
 !endif
 
 -system-vars-: -runtime-
@@ -185,22 +185,22 @@ $(CPU) = $(PROCESSOR_LEVEL)
 !endif
 
 -alpha-: nul
-	@$(APPEND) $(ARCH) = alpha
+	@echo $(ARCH) = alpha>>$(MAKEFILE)
 -x64-: nul
-	@$(APPEND) $(ARCH) = x64
+	@echo $(ARCH) = x64>>$(MAKEFILE)
 -ia64-: nul
-	@$(APPEND) $(ARCH) = ia64
+	@echo $(ARCH) = ia64>>$(MAKEFILE)
 -ix86-: nul
-	@$(APPEND) $(ARCH) = x86
+	@echo $(ARCH) = x86>>$(MAKEFILE)
 
 -i386-: -ix86-
-	@$(APPEND) $(CPU) = 3
+	@echo $(CPU) = 3>>$(MAKEFILE)
 -i486-: -ix86-
-	@$(APPEND) $(CPU) = 4
+	@echo $(CPU) = 4>>$(MAKEFILE)
 -i586-: -ix86-
-	@$(APPEND) $(CPU) = 5
+	@echo $(CPU) = 5>>$(MAKEFILE)
 -i686-: -ix86-
-	@$(APPEND) $(CPU) = 6
+	@echo $(CPU) = 6>>$(MAKEFILE)
 
 -epilogue-: -encs-
 
