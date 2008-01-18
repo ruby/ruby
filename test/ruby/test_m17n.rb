@@ -687,10 +687,42 @@ class TestM17N < Test::Unit::TestCase
     #assert_strenc("\"\xC2\xA1\"", 'Windows-31J', s("%p") % s("\xc2\xa1"))
     assert_strenc("\"\xC2\xA1\"", 'UTF-8', u("%p") % u("\xc2\xa1"))
 
+    assert_strenc('"\xC2\xA1"', 'ASCII-8BIT', "%10p" % a("\xc2\xa1"))
+    assert_strenc("       \"\xC2\xA1\"", 'EUC-JP', "%10p" % e("\xc2\xa1"))
+    #assert_strenc("       \"\xC2\xA1\"", 'Windows-31J', "%10p" % s("\xc2\xa1"))
+    assert_strenc("       \"\xC2\xA1\"", 'UTF-8', "%10p" % u("\xc2\xa1"))
+
     assert_strenc('"\x00"', 'ASCII-8BIT', a("%p") % a("\x00"))
     assert_strenc('"\x00"', 'EUC-JP', e("%p") % e("\x00"))
     assert_strenc('"\x00"', 'Windows-31J', s("%p") % s("\x00"))
     assert_strenc('"\x00"', 'UTF-8', u("%p") % u("\x00"))
+  end
+
+  def test_sprintf_s
+    assert_strenc('', 'ASCII-8BIT', a("%s") % a(""))
+    assert_strenc('', 'EUC-JP', e("%s") % e(""))
+    assert_strenc('', 'Windows-31J', s("%s") % s(""))
+    assert_strenc('', 'UTF-8', u("%s") % u(""))
+
+    assert_strenc('a', 'ASCII-8BIT', a("%s") % a("a"))
+    assert_strenc('a', 'EUC-JP', e("%s") % e("a"))
+    assert_strenc('a', 'Windows-31J', s("%s") % s("a"))
+    assert_strenc('a', 'UTF-8', u("%s") % u("a"))
+
+    assert_strenc("\xC2\xA1", 'ASCII-8BIT', a("%s") % a("\xc2\xa1"))
+    assert_strenc("\xC2\xA1", 'EUC-JP', e("%s") % e("\xc2\xa1"))
+    #assert_strenc("\xC2\xA1", 'Windows-31J', s("%s") % s("\xc2\xa1"))
+    assert_strenc("\xC2\xA1", 'UTF-8', u("%s") % u("\xc2\xa1"))
+
+    assert_strenc("        \xC2\xA1", 'ASCII-8BIT', "%10s" % a("\xc2\xa1"))
+    assert_strenc("         \xA1\xA1", 'EUC-JP', "%10s" % e("\xa1\xa1"))
+    #assert_strenc("         \xC2\xA1", 'Windows-31J', "%10s" % s("\xc2\xa1"))
+    assert_strenc("         \xC2\xA1", 'UTF-8', "%10s" % u("\xc2\xa1"))
+
+    assert_strenc("\x00", 'ASCII-8BIT', a("%s") % a("\x00"))
+    assert_strenc("\x00", 'EUC-JP', e("%s") % e("\x00"))
+    assert_strenc("\x00", 'Windows-31J', s("%s") % s("\x00"))
+    assert_strenc("\x00", 'UTF-8', u("%s") % u("\x00"))
   end
 
   def test_str_lt

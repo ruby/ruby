@@ -490,6 +490,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 				buf[blen++] = ' ';
 			    }
 			}
+			rb_enc_associate(result, enc);
 			break;
 		    }
 		}
