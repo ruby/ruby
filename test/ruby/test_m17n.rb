@@ -825,6 +825,10 @@ class TestM17N < Test::Unit::TestCase
     }
   end
 
+  def test_end_with
+    assert_false("\x81\x40".force_encoding("sjis").end_with?("@"))
+  end
+
   def test_regexp_match
     assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
   end
