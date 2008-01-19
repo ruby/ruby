@@ -821,9 +821,6 @@ class Date
 	str.sub!(/\b-(\d{3})\b/n, ' ')
       e.yday = $1.to_i
       true
-    elsif e._date && str.sub!(/('?[-+]?\d+)-('?-?\d+)/n, ' ')
-      s3e(e, nil, $1, $2)
-      true
     end
   end
 
@@ -837,11 +834,6 @@ class Date
       e.year = $2.to_i + era
       e.mon = $3.to_i
       e.mday = $4.to_i
-      true
-    elsif e._jis && str.sub!(/(\d+)\.(\d+)\.(\d+)/in, ' ')
-      e.year = $1.to_i + 1988
-      e.mon = $2.to_i
-      e.mday = $3.to_i
       true
     end
   end
@@ -858,53 +850,16 @@ class Date
     end
   end
 
-  def self._parse_sla_jp(str, e) # :nodoc:
+  def self._parse_sla(str, e) # :nodoc:
     if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:\D\s*('?-?\d+))?|n, ' ') # '
       s3e(e, $1, $2, $3)
       true
     end
   end
 
-  def self._parse_sla_eu(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:\D\s*('?-?\d+))?|n, ' ') # '
-      s3e(e, $3, $2, $1)
-      true
-    end
-  end
-
-  def self._parse_sla_us(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)/\s*('?\d+)(?:\D\s*('?-?\d+))?|n, ' ') # '
-      s3e(e, $3, $1, $2)
-      true
-    end
-  end
-
-  def self._parse_dot_jp(str, e) # :nodoc:
+  def self._parse_dot(str, e) # :nodoc:
     if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
       s3e(e, $1, $2, $3)
-      true
-    elsif e._date && str.sub!(%r|('?-?\d+)\.\s*('?\d+)|n, ' ') # '
-      s3e(e, nil, $1, $2)
-      true
-    end
-  end
-
-  def self._parse_dot_eu(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
-      s3e(e, $3, $2, $1)
-      true
-    elsif e._date && str.sub!(%r|('?-?\d+)\.\s*('?\d+)|n, ' ') # '
-      s3e(e, nil, $2, $1)
-      true
-    end
-  end
-
-  def self._parse_dot_us(str, e) # :nodoc:
-    if str.sub!(%r|('?-?\d+)\.\s*('?\d+)\.\s*('?-?\d+)|n, ' ') # '
-      s3e(e, $3, $1, $2)
-      true
-    elsif e._date && str.sub!(%r|('?-?\d+)\.\s*('?\d+)|n, ' ') # '
-      s3e(e, nil, $1, $2)
       true
     end
   end
@@ -956,24 +911,15 @@ class Date
 	if $3.nil? && $4
 	  e.sec  = $2[-2, 2].to_i
 	else
-	  if e._time
-	    e.hour = $2[ 0, 2].to_i
-	  else
-	    e.mday = $2[ 0, 2].to_i
-	  end
+	  e.mday = $2[ 0, 2].to_i
 	end
       when 4
 	if $3.nil? && $4
 	  e.sec  = $2[-2, 2].to_i
 	  e.min  = $2[-4, 2].to_i
 	else
-	  if e._time
-	    e.hour = $2[ 0, 2].to_i
-	    e.min  = $2[ 2, 2].to_i
-	  else
-	    e.mon  = $2[ 0, 2].to_i
-	    e.mday = $2[ 2, 2].to_i
-	  end
+	  e.mon  = $2[ 0, 2].to_i
+	  e.mday = $2[ 2, 2].to_i
 	end
       when 6
 	if $3.nil? && $4
@@ -981,15 +927,9 @@ class Date
 	  e.min  = $2[-4, 2].to_i
 	  e.hour = $2[-6, 2].to_i
 	else
-	  if e._time || e._ofx
-	    e.hour = $2[ 0, 2].to_i
-	    e.min  = $2[ 2, 2].to_i
-	    e.sec  = $2[ 4, 2].to_i
-	  else
-	    e.year = ($1 + $2[ 0, 2]).to_i
-	    e.mon  = $2[ 2, 2].to_i
-	    e.mday = $2[ 4, 2].to_i
-	  end
+	  e.year = ($1 + $2[ 0, 2]).to_i
+	  e.mon  = $2[ 2, 2].to_i
+	  e.mday = $2[ 4, 2].to_i
 	end
       when 8, 10, 12, 14
 	if $3.nil? && $4
@@ -1080,118 +1020,33 @@ class Date
 
   private_class_method :_parse_day, :_parse_time, # :_parse_beat,
 	:_parse_eu, :_parse_us, :_parse_iso, :_parse_iso2,
-	:_parse_jis, :_parse_vms,
-	:_parse_sla_jp, :_parse_sla_eu, :_parse_sla_us,
-	:_parse_dot_jp, :_parse_dot_eu, :_parse_dot_us,
+	:_parse_jis, :_parse_vms, :_parse_sla, :_parse_dot,
 	:_parse_year, :_parse_mon, :_parse_mday, :_parse_ddd
 
-  def self._parse(str, hints={})
+  def self._parse(str, comp=true)
     str = str.dup
 
     e = Format::Bag.new
 
-    e._comp = true
-
-    unless Hash === hints
-      e._comp = hints
-    else
-      hints.each do |k, v|
-	case k
-	when :comp, :complete
-	  e._comp = v
-	when :compfunc
-	  e._compfunc = v
-	when :style, :endian, :endianness, :order
-	  v = {
-	    :jp     => :jp,
-	    :eu     => :eu,
-	    :us     => :us,
-	    :big    => :jp,
-	    :little => :eu,
-	    :middle => :us,
-	    :ymd    => :jp,
-	    :dmy    => :eu,
-	    :mdy    => :us
-	  }[v]
-	  e._style = v
-	when :date
-	  e._date = v
-	when :time
-	  e._time = v
-	when :jis
-	  e._jis = v
-	when :ofx
-	  e._ofx = v
-	else
-	  raise ArgumentError, 'unknown hint'
-	end
-      end
-    end
+    e._comp = comp
 
     str.gsub!(/[^-+',.\/:@[:alnum:]\[\]\x80-\xff]+/n, ' ')
 
-    case e._style
-    when :jp
-      _parse_time(str, e) # || _parse_beat(str, e)
-      _parse_eu(str, e)     ||
-      _parse_us(str, e)     ||
-      _parse_iso(str, e)    ||
-      _parse_jis(str, e)    ||
-      _parse_vms(str, e)    ||
-      _parse_sla_jp(str, e) ||
-      _parse_dot_jp(str, e) ||
-      _parse_iso2(str, e)   ||
-      _parse_year(str, e)   ||
-      _parse_mon(str, e)    ||
-      _parse_mday(str, e)   ||
-      _parse_ddd(str, e)
-      _parse_day(str, e)
-    when :eu
-      _parse_time(str, e) # || _parse_beat(str, e)
-      _parse_eu(str, e)     ||
-      _parse_iso(str, e)    ||
-      _parse_jis(str, e)    ||
-      _parse_vms(str, e)    ||
-      _parse_sla_eu(str, e) ||
-      _parse_dot_eu(str, e) ||
-      _parse_iso2(str, e)   ||
-      _parse_year(str, e)   ||
-      _parse_mon(str, e)    ||
-      _parse_mday(str, e)   ||
-      _parse_ddd(str, e)    ||
-      _parse_us(str, e)
-      _parse_day(str, e)
-    when :us
-      _parse_time(str, e) # || _parse_beat(str, e)
-      _parse_eu(str, e)     ||
-      _parse_us(str, e)     ||
-      _parse_iso(str, e)    ||
-      _parse_jis(str, e)    ||
-      _parse_vms(str, e)    ||
-      _parse_sla_us(str, e) ||
-      _parse_dot_us(str, e) ||
-      _parse_iso2(str, e)   ||
-      _parse_year(str, e)   ||
-      _parse_mon(str, e)    ||
-      _parse_mday(str, e)   ||
-      _parse_ddd(str, e)
-      _parse_day(str, e)
-    else
-      _parse_time(str, e) # || _parse_beat(str, e)
-      _parse_eu(str, e)     ||
-      _parse_us(str, e)     ||
-      _parse_iso(str, e)    ||
-      _parse_jis(str, e)    ||
-      _parse_vms(str, e)    ||
-      _parse_sla_jp(str, e) ||
-      _parse_dot_jp(str, e) ||
-      _parse_iso2(str, e)   ||
-      _parse_year(str, e)   ||
-      _parse_mon(str, e)    ||
-      _parse_mday(str, e)   ||
-      _parse_ddd(str, e)
-      _parse_day(str, e)
-    end
+    _parse_time(str, e) # || _parse_beat(str, e)
+    _parse_day(str, e)
+
+    _parse_eu(str, e)     ||
+    _parse_us(str, e)     ||
+    _parse_iso(str, e)    ||
+    _parse_jis(str, e)    ||
+    _parse_vms(str, e)    ||
+    _parse_sla(str, e)    ||
+    _parse_dot(str, e)    ||
+    _parse_iso2(str, e)   ||
+    _parse_year(str, e)   ||
+    _parse_mon(str, e)    ||
+    _parse_mday(str, e)   ||
+    _parse_ddd(str, e)
 
     if str.sub!(/\b(bc\b|bce\b|b\.c\.|b\.c\.e\.)/in, ' ')
       if e.year
@@ -1214,18 +1069,20 @@ class Date
       end
     end
 
-    e._compfunc ||= lambda do |y|
-      if e._comp
-	if y >= 0 && y <= 99
-	  y += if y >= 69
-	       then 1900 else 2000 end
+    if e._comp
+      if e.cwyear
+	if e.cwyear >= 0 && e.cwyear <= 99
+	  e.cwyear += if e.cwyear >= 69
+		      then 1900 else 2000 end
 	end
       end
-      y
+      if e.year
+	if e.year >= 0 && e.year <= 99
+	  e.year += if e.year >= 69
+		    then 1900 else 2000 end
+	end
+      end
     end
-
-    e.cwyear = e._compfunc.call(e.cwyear) if e.cwyear
-    e.  year = e._compfunc.call(e.  year) if e.  year
 
     e.offset ||= zone_to_diff(e.zone) if e.zone
 
@@ -1317,17 +1174,15 @@ class Date
 	-?(\d{2,})\s+ # allow minus, anyway
 	\d{2}:\d{2}(:\d{2})?\s*
 	(?:[-+]\d{4}|ut|gmt|e[sd]t|c[sd]t|m[sd]t|p[sd]t|[a-ik-z])\s*\z/inox =~ str
-      _parse(str, :compfunc=>
-	     lambda do |y|
-	       if $1.size < 4
-		 if y < 50
-		   y += 2000
-		 elsif y < 1000
-		   y += 1900
-		 end
-	       end
-	       y
-	     end)
+      e = _parse(str, false)
+      if $1.size < 4
+	if e[:year] < 50
+	  e[:year] += 2000
+	elsif e[:year] < 1000
+	  e[:year] += 1900
+	end
+      end
+      e
     end
   end
 
@@ -1362,7 +1217,11 @@ class Date
 	(t
 	(\d{2}:\d{2}(:\d{2}([,.]\d*)?)?
 	(z|[-+]\d{2}(:?\d{2})?)?)?)?\s*\z/inx =~ str
-      _parse(str, :jis=>true)
+      if /\A\s*\d/ =~ str
+	_parse(str.sub(/\A\s*(\d)/, 'h\1'))
+      else
+	_parse(str)
+      end
     else
       _iso8601(str)
     end

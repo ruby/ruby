@@ -1062,8 +1062,8 @@ class Date
   # Day Number day 0.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.parse(str='-4712-01-01', hints={}, sg=ITALY)
-    elem = _parse(str, hints)
+  def self.parse(str='-4712-01-01', comp=true, sg=ITALY)
+    elem = _parse(str, comp)
     new_by_frags(elem, sg)
   end
 
@@ -1709,8 +1709,8 @@ class DateTime < Date
   # Day Number day 0.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.parse(str='-4712-01-01T00:00:00+00:00', hints={}, sg=ITALY)
-    elem = _parse(str, hints)
+  def self.parse(str='-4712-01-01T00:00:00+00:00', comp=true, sg=ITALY)
+    elem = _parse(str, comp)
     new_by_frags(elem, sg)
   end
 
