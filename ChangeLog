@@ -1,3 +1,8 @@
+Sat Jan 19 22:41:39 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (coderange_scan): don't call mbclen functions for ASCII
+	  characters with ASCII compatible encoding.
+
 Sat Jan 19 21:00:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/rdoc/template.rb (RDoc): defined to avoid uninitialized constant

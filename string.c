@@ -115,40 +115,92 @@ single_byte_optimizable(VALUE str)
 
 VALUE rb_fs;
 
+static inline const char *
+search_nonascii(const char *p, const char *e)
+{
+#if ULONG_MAX == 18446744073709551615UL
+# define NONASCII_MASK 0x8080808080808080UL
+#elif ULONG_MAX == 4294967295UL
+# define NONASCII_MASK 0x80808080UL
+#endif
+#ifdef NONASCII_MASK
+    if (sizeof(long) * 2 < e - p) {
+        const unsigned long *s, *t;
+        const VALUE lowbits = sizeof(unsigned long) - 1;
+        s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
+        t = (const unsigned long*)(~lowbits & (VALUE)e);
+        while (p < (const char *)s) {
+            if (!ISASCII(*p))
+                return p;
+            p++;
+        }
+        while (s < t) {
+            if (*s & NONASCII_MASK) {
+                t = s;
+                break;
+            }
+            s++;
+        }
+        p = (const char *)t;
+    }
+#endif
+    while (p < e) {
+        if (!ISASCII(*p))
+            return p;
+        p++;
+    }
+    return NULL;
+}
+
 static int
 coderange_scan(const char *p, long len, rb_encoding *enc)
 {
     const char *e = p + len;
-    int cr;
 
     if (rb_enc_to_index(enc) == 0) {
         /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
-        while (p < e) {
-            if (!ISASCII((unsigned char)*p)) {
-                return ENC_CODERANGE_VALID;
-            }
-            p++;
-        }
-        return ENC_CODERANGE_7BIT;
+        p = search_nonascii(p, e);
+        return p ? ENC_CODERANGE_VALID : ENC_CODERANGE_7BIT;
     }
 
-    cr = rb_enc_asciicompat(enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
+    if (rb_enc_asciicompat(enc)) {
+        p = search_nonascii(p, e);
+        if (!p) {
+            return ENC_CODERANGE_7BIT;
+        }
+        while (p < e) {
+            int ret = rb_enc_precise_mbclen(p, e, enc);
+            int len = MBCLEN_CHARFOUND(ret);
+            if (!len) {
+                return ENC_CODERANGE_BROKEN;
+            }
+            p += len;
+            if (p < e) {
+                p = search_nonascii(p, e);
+                if (!p) {
+                    return ENC_CODERANGE_VALID;
+                }
+            }
+        }
+        if (e < p) {
+            return ENC_CODERANGE_BROKEN;
+        }
+        return ENC_CODERANGE_VALID;
+    }
+
     while (p < e) {
         int ret = rb_enc_precise_mbclen(p, e, enc);
         int len = MBCLEN_CHARFOUND(ret);
 
-        if (len) {
-            if (len != 1 || !ISASCII((unsigned char)*p)) {
-                cr = ENC_CODERANGE_VALID;
-            }
-            p += len;
+        if (!len) {
+            return ENC_CODERANGE_BROKEN;
         }
-        else {
-            cr = ENC_CODERANGE_BROKEN;
-            break;
-        }
+        p += len;
     }
-    return cr;
+    if (e < p) {
+        return ENC_CODERANGE_BROKEN;
+    }
+    return ENC_CODERANGE_VALID;
 }
 
 int
