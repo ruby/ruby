@@ -1,3 +1,9 @@
+Sat Jan 19 11:21:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (sigsetjmp): check if available.
+
+	* eval.c, gc.c (setjmp): do not use _setjmp if sigsetjmp is available.
+
 Sat Jan 19 11:10:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: Remove wrong assumptions about Cygwin.  a patch from

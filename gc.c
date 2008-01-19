@@ -37,7 +37,7 @@
 void re_free_registers _((struct re_registers*));
 void rb_io_fptr_finalize _((struct OpenFile*));
 
-#if !defined(setjmp) && defined(HAVE__SETJMP)
+#if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(HAVE_SIGSETJMP)
 #define setjmp(env) _setjmp(env)
 #endif
 

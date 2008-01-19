@@ -554,7 +554,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
 	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\
 	      getgroups setgroups getpriority getrlimit setrlimit sysconf\
 	      group_member dlopen sigprocmask\
-	      sigaction _setjmp setsid telldir seekdir fchmod\
+	      sigaction sigsetjmp _setjmp setsid telldir seekdir fchmod\
 	      mktime timegm gettimeofday\
 	      cosh sinh tanh round setuid setgid setenv unsetenv)
 AC_ARG_ENABLE(setreuid,
