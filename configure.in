@@ -389,11 +389,7 @@ human*)		ac_cv_func_getpgrp_void=yes
 		ac_cv_func_setitimer=no
 		;;
 beos*)		ac_cv_func_link=no;;
-cygwin*)	rb_cv_have_daylight=no
-		ac_cv_var_tzname=no
-		ac_cv_func__setjmp=no
-		ac_cv_func_setitimer=no
-		;;
+cygwin*)	;;
 mingw*)		if test "$with_winsock2" = yes; then
 		  LIBS="-lws2_32 $LIBS"
 		else
@@ -1518,7 +1514,6 @@ case "$target_os" in
 		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'${MAJOR}${MINOR}.dll
 		LIBRUBY='lib$(RUBY_SO_NAME).dll.a'
 	    fi
-	    AC_LIBOBJ([strftime])
 	    ;;
 	mingw*)
 	    RUBY_SO_NAME=${rb_cv_msvcrt}-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}

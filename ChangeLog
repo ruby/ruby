@@ -1,3 +1,8 @@
+Sat Jan 19 11:10:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: Remove wrong assumptions about Cygwin.  a patch from
+	  Corinna Vinschen in [ruby-Bugs-17018].
+
 Thu Jan 17 21:06:01 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (Date::Infinity#<=>): didn't work.  A patch from
