@@ -1,3 +1,8 @@
+Sat Jan 19 20:41:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (enc_new): don't free rb_encoding to avoid SEGV by
+	  `miniruby -e exit' on x86_64 GNU/Linux.
+
 Sat Jan 19 18:40:19 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb (once): use an instance variable which points a hash
@@ -2679,7 +2684,7 @@ Sun Dec 23 10:23:23 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 Sun Dec 23 09:07:02 2007  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h, encoding.c, re.c, io.c, parse.y, numeric.c,
-	  ruby.c, transcode.c, ext/nkf/nkf.c: rename rb_ascii_encoding. to
+	  ruby.c, transcode.c, ext/nkf/nkf.c: rename rb_ascii_encoding to
 	  rb_ascii8bit_encoding.  rb_ascii_encoding is ambiguous with
 	  ASCII-8BIT and US-ASCII.
 

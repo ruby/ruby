@@ -73,7 +73,7 @@ enc_mark(void *ptr)
 static VALUE
 enc_new(rb_encoding *encoding)
 {
-    VALUE enc = Data_Wrap_Struct(rb_cEncoding, enc_mark, -1, encoding);
+    VALUE enc = Data_Wrap_Struct(rb_cEncoding, enc_mark, 0, encoding);
     encoding->auxiliary_data = (void *)enc;
     return enc;
 }
