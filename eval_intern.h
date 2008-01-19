@@ -81,7 +81,7 @@ char *strrchr(const char *, const char);
 #include "vmsruby_private.h"
 #endif
 
-#if !defined(setjmp) && defined(HAVE__SETJMP)
+#if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(HAVE_SIGSETJMP)
 #define ruby_setjmp(env) _setjmp(env)
 #define ruby_longjmp(env,val) _longjmp(env,val)
 #else

@@ -50,7 +50,7 @@
 
 int rb_io_fptr_finalize(struct rb_io_t*);
 
-#if !defined(setjmp) && defined(HAVE__SETJMP)
+#if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(HAVE_SIGSETJMP)
 #define setjmp(env) _setjmp(env)
 #endif
 
