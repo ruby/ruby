@@ -24,6 +24,8 @@ require 'erb'
 #
 # So you can see what is being used inside which loop.
 
+module RDoc
+end
 class RDoc::TemplatePage
 
   ##

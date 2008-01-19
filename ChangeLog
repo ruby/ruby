@@ -1,3 +1,8 @@
+Sat Jan 19 21:00:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/rdoc/template.rb (RDoc): defined to avoid uninitialized constant
+	  error by `./ruby test/rubygems/test_gem_server.rb'.
+
 Sat Jan 19 20:41:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (enc_new): don't free rb_encoding to avoid SEGV by
