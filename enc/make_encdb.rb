@@ -9,27 +9,29 @@
 # ENC_ALIAS("CP932", "Windows-31J")
 #
 
-def check_duplication(encs, name, fn, line)
-  if encs.include?(name)
-    raise ArgumentError, "%s:%d: encoding %s is already registered" % [fn, line, name]
+def check_duplication(defs, name, fn, line)
+  if defs[name]
+    raise ArgumentError, "%s:%d: encoding %s is already registered(%s:%d)" %
+      [fn, line, name, *defs[name]]
+  else
+    defs[name.upcase] = [fn,line]
   end
 end
 
 count = 0
 lines = []
 encodings = []
+defs = {}
 encdir = ARGV[0]
 outhdr = ARGV[1] || 'encdb.h'
 Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort.each do |fn|
   open(File.join(encdir,fn)) do |f|
     orig = nil
     name = nil
-    encs = []
     f.each_line do |line|
       if (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
         if $1
-          check_duplication(encs, $1, fn, $.)
-          encs << $1.upcase
+          check_duplication(defs, $1, fn, $.)
           encodings << $1
           count += 1
         end
@@ -41,19 +43,18 @@ Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort.each do |fn|
         when /^ENC_REPLICATE\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
           raise ArgumentError,
           '%s:%d: ENC_REPLICATE: %s is not defined yet. (replica %s)' %
-            [fn, $., $2, $1] unless encs.include?($2.upcase)
+            [fn, $., $2, $1] unless defs[$2.upcase]
           count += 1
         when /^ENC_ALIAS\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
           raise ArgumentError,
           '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
-            [fn, $., $2, $1] unless encs.include?($2.upcase)
+            [fn, $., $2, $1] unless defs[$2.upcase]
         when /^ENC_DUMMY\(\s*"([^"]+)"/
           count += 1
         else
           next
         end
-        check_duplication(encs, $1, fn, $.)
-        encs << $1.upcase
+        check_duplication(defs, $1, fn, $.)
         lines << line.sub(/;.*/m, ";\n") if line
       end
     end
