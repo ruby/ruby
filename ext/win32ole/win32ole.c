@@ -115,7 +115,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.2"
+#define WIN32OLE_VERSION "1.1.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1074,29 +1074,28 @@ ole_set_safe_array(long n, SAFEARRAY *psa, long *pid, long *pub, VALUE val, long
     HRESULT hr = S_OK;
     VARIANT var;
     VOID *p = NULL;
-    VariantInit(&var);
-    if(n < 0) return;
-    if(n == dim - 1) {
+    long i = n;
+    while(i >= 0) {
         val1 = ole_ary_m_entry(val, pid);
+        VariantInit(&var);
         p = val2variant_ptr(val1, &var, vt);
         if (is_all_index_under(pid, pub, dim) == Qtrue) {
-	  if ((V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL) ||
-	      (V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL)) {
-                rb_raise(eWIN32OLERuntimeError, "argument does not have IDispatch or IUnknown Interface");
+            if ((V_VT(&var) == VT_DISPATCH && V_DISPATCH(&var) == NULL) ||
+                (V_VT(&var) == VT_UNKNOWN && V_UNKNOWN(&var) == NULL)) {
+                rb_raise(eWIN32OLERuntimeError, "element of array does not have IDispatch or IUnknown Interface");
             }
             hr = SafeArrayPutElement(psa, pid, p);
         }
         if (FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "failed to SafeArrayPutElement");
         }
-    }
-    pid[n] += 1;
-    if (pid[n] <= pub[n]) {
-        ole_set_safe_array(dim-1, psa, pid, pub, val, dim, vt);
-    }
-    else {
-        pid[n] = 0;
-        ole_set_safe_array(n-1, psa, pid, pub, val, dim, vt);
+        pid[i] += 1;
+        if (pid[i] > pub[i]) {
+            pid[i] = 0;
+            i -= 1;
+        } else {
+            i = dim - 1;
+        }
     }
 }
 

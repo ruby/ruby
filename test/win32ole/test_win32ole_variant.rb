@@ -297,6 +297,13 @@ if defined?(WIN32OLE_VARIANT)
       assert_nil(obj.value)
     end
 
+    def test_s_new_array
+      # should not occur stack over flow
+      ar = (1..500000).to_a.map{|i| [i]}
+      ar2 = WIN32OLE_VARIANT.new(ar)
+      assert_equal(ar, ar2.value)
+    end
+
     def test_s_array
       obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_I4)
       assert_instance_of(WIN32OLE_VARIANT, obj)
@@ -326,6 +333,7 @@ if defined?(WIN32OLE_VARIANT)
 
       obj = WIN32OLE_VARIANT.array([2,3], WIN32OLE::VARIANT::VT_DISPATCH)
       assert_equal([[nil, nil, nil],[nil,nil,nil]], obj.value)
+
     end
 
     def test_s_array_exc

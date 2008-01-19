@@ -1,3 +1,10 @@
+Sat Jan 19 09:23:14 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_set_safe_array): should not use
+	  recursive calling.
+
+	* test/win32ole/test_win32ole_variant.rb: ditto.
+
 Sat Jan 19 08:58:47 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup: Remove ListBase and Line constants.
