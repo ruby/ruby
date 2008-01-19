@@ -1,27 +1,49 @@
 require 'rdoc/ri'
+require 'rdoc/markup'
 
 class RDoc::RI::Formatter
 
   attr_reader :indent
 
-  def initialize(width, indent)
-    @width   = width
-    @indent  = indent
+  FORMATTERS = { }
+
+  def self.for(name)
+    FORMATTERS[name.downcase]
+  end
+
+  def self.list
+    FORMATTERS.keys.sort.join ", "
+  end
+
+  def initialize(output, width, indent)
+    @output = output
+    @width  = width
+    @indent = indent
   end
 
   def draw_line(label=nil)
     len = @width
-    len -= (label.size+1) if label
-    print "-"*len
-    if label
-      print(" ")
-      bold_print(label)
+    len -= (label.size + 1) if label
+
+    if len > 0 then
+      @output.print '-' * len
+      if label
+        @output.print ' '
+        bold_print label
+      end
+
+      @output.puts
+    else
+      @output.print '-' * @width
+      @output.puts
+
+      @output.puts label
     end
-    puts
   end
 
-  def wrap(txt,  prefix=@indent, linelen=@width)
+  def wrap(txt, prefix=@indent, linelen=@width)
     return unless txt && !txt.empty?
+
     work = conv_markup(txt)
     textLen = linelen - prefix.length
     patt = Regexp.new("^(.{0,#{textLen}})[ \n]")
@@ -38,11 +60,11 @@ class RDoc::RI::Formatter
       end
     end
     res << work if work.length.nonzero?
-    puts(prefix + res.join("\n" + next_prefix))
+    @output.puts(prefix + res.join("\n" + next_prefix))
   end
 
   def blankline
-    puts
+    @output.puts
   end
 
   ##
@@ -53,11 +75,11 @@ class RDoc::RI::Formatter
   end
 
   def bold_print(txt)
-    print txt
+    @output.print txt
   end
 
   def raw_print_line(txt)
-    puts txt
+    @output.puts txt
   end
 
   ##
@@ -69,7 +91,6 @@ class RDoc::RI::Formatter
       gsub(/&lt;/, '<').
       gsub(/&quot;/, '"').
       gsub(/&amp;/, '&')
-
   end
 
   ##
@@ -78,25 +99,22 @@ class RDoc::RI::Formatter
   def conv_markup(txt)
     txt.
       gsub(%r{<tt>(.*?)</tt>}) { "+#$1+" } .
-    gsub(%r{<code>(.*?)</code>}) { "+#$1+" } .
-    gsub(%r{<b>(.*?)</b>}) { "*#$1*" } .
-    gsub(%r{<em>(.*?)</em>}) { "_#$1_" }
+      gsub(%r{<code>(.*?)</code>}) { "+#$1+" } .
+      gsub(%r{<b>(.*?)</b>}) { "*#$1*" } .
+      gsub(%r{<em>(.*?)</em>}) { "_#$1_" }
   end
 
   def display_list(list)
     case list.type
-
-    when RDoc::Markup::ListBase::BULLET
+    when :BULLET
       prefixer = proc { |ignored| @indent + "*   " }
 
-    when RDoc::Markup::ListBase::NUMBER,
-      RDoc::Markup::ListBase::UPPERALPHA,
-      RDoc::Markup::ListBase::LOWERALPHA
+    when :NUMBER, :UPPERALPHA, :LOWERALPHA then
 
       start = case list.type
-              when RDoc::Markup::ListBase::NUMBER      then 1
-              when RDoc::Markup::ListBase::UPPERALPHA then 'A'
-              when RDoc::Markup::ListBase::LOWERALPHA  then 'a'
+              when :NUMBER     then 1
+              when :UPPERALPHA then 'A'
+              when :LOWERALPHA then 'a'
               end
       prefixer = proc do |ignored|
         res = @indent + "#{start}.".ljust(4)
@@ -104,12 +122,12 @@ class RDoc::RI::Formatter
         res
       end
 
-    when RDoc::Markup::ListBase::LABELED
+    when :LABELED then
       prefixer = proc do |li|
         li.label
       end
 
-    when RDoc::Markup::ListBase::NOTE
+    when :NOTE then
       longest = 0
       list.contents.each do |item|
         if item.kind_of?(RDoc::Markup::Flow::LI) && item.label.length > longest
@@ -122,8 +140,7 @@ class RDoc::RI::Formatter
       end
 
     else
-      fail "unknown list type"
-
+      raise ArgumentError, "unknown list type #{list.type}"
     end
 
     list.contents.each do |item|
@@ -161,7 +178,7 @@ class RDoc::RI::Formatter
 
   def display_verbatim_flow_item(item, prefix=@indent)
     item.body.split(/\n/).each do |line|
-      print @indent, conv_html(line), "\n"
+      @output.print @indent, conv_html(line), "\n"
     end
     blankline
   end
@@ -171,19 +188,19 @@ class RDoc::RI::Formatter
     case level
     when 1
       ul = "=" * text.length
-      puts
-      puts text.upcase
-      puts ul
+      @output.puts
+      @output.puts text.upcase
+      @output.puts ul
       #        puts
 
     when 2
       ul = "-" * text.length
-      puts
-      puts text
-      puts ul
+      @output.puts
+      @output.puts text
+      @output.puts ul
       #        puts
     else
-      print indent, text, "\n"
+      @output.print indent, text, "\n"
     end
   end
 
@@ -274,11 +291,11 @@ class RDoc::RI::AttributeFormatter < RDoc::RI::Formatter
   end
 
   ##
-  # Overrides base class. Looks for <tt>...</tt> etc sequences
-  # and generates an array of AttrChars. This array is then used
-  # as the basis for the split
+  # Overrides base class.  Looks for <tt>...</tt> etc sequences and generates
+  # an array of AttrChars.  This array is then used as the basis for the
+  # split.
 
-  def wrap(txt,  prefix=@indent, linelen=@width)
+  def wrap(txt, prefix=@indent, linelen=@width)
     return unless txt && !txt.empty?
 
     txt = add_attributes_to(txt)
@@ -303,15 +320,15 @@ class RDoc::RI::AttributeFormatter < RDoc::RI::Formatter
   protected
 
   def write_attribute_text(prefix, line)
-    print prefix
+    @output.print prefix
     line.each do |achar|
-      print achar.char
+      @output.print achar.char
     end
-    puts
+    @output.puts
   end
 
   def bold_print(txt)
-    print txt
+    @output.print txt
   end
 
   private
@@ -342,18 +359,18 @@ class RDoc::RI::OverstrikeFormatter < RDoc::RI::AttributeFormatter
   BS = "\C-h"
 
   def write_attribute_text(prefix, line)
-    print prefix
+    @output.print prefix
     line.each do |achar|
       attr = achar.attr
       if (attr & (ITALIC+CODE)) != 0
-        print "_", BS
+        @output.print "_", BS
       end
       if (attr & BOLD) != 0
-        print achar.char, BS
+        @output.print achar.char, BS
       end
-      print achar.char
+      @output.print achar.char
     end
-    puts
+    @output.puts
   end
 
   ##
@@ -361,7 +378,7 @@ class RDoc::RI::OverstrikeFormatter < RDoc::RI::AttributeFormatter
 
   def bold_print(text)
     text.split(//).each do |ch|
-      print ch, BS, ch
+      @output.print ch, BS, ch
     end
   end
 
@@ -374,12 +391,12 @@ end
 class RDoc::RI::AnsiFormatter < RDoc::RI::AttributeFormatter
 
   def initialize(*args)
-    print "\033[0m"
     super
+    @output.print "\033[0m"
   end
 
   def write_attribute_text(prefix, line)
-    print prefix
+    @output.print prefix
     curr_attr = 0
     line.each do |achar|
       attr = achar.attr
@@ -387,14 +404,14 @@ class RDoc::RI::AnsiFormatter < RDoc::RI::AttributeFormatter
         update_attributes(achar.attr)
         curr_attr = achar.attr
       end
-      print achar.char
+      @output.print achar.char
     end
     update_attributes(0) unless curr_attr.zero?
-    puts
+    @output.puts
   end
 
   def bold_print(txt)
-    print "\033[1m#{txt}\033[m"
+    @output.print "\033[1m#{txt}\033[m"
   end
 
   HEADINGS = {
@@ -406,10 +423,10 @@ class RDoc::RI::AnsiFormatter < RDoc::RI::AttributeFormatter
   def display_heading(text, level, indent)
     level = 3 if level > 3
     heading = HEADINGS[level]
-    print indent
-    print heading[0]
-    print strip_attributes(text)
-    puts heading[1]
+    @output.print indent
+    @output.print heading[0]
+    @output.print strip_attributes(text)
+    @output.puts heading[1]
   end
 
   private
@@ -427,7 +444,7 @@ class RDoc::RI::AnsiFormatter < RDoc::RI::AttributeFormatter
         str << ATTR_MAP[quality]
       end
     end
-    print str, "m"
+    @output.print str, "m"
   end
 
 end
@@ -445,7 +462,7 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
         update_attributes(curr_attr, achar.attr)
         curr_attr = achar.attr
       end
-      print(escape(achar.char))
+      @output.print(escape(achar.char))
     end
     update_attributes(curr_attr, 0) unless curr_attr.zero?
   end
@@ -454,7 +471,7 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
     if label != nil
       bold_print(label)
     end
-    puts("<hr>")
+    @output.puts("<hr>")
   end
 
   def bold_print(txt)
@@ -462,38 +479,36 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
   end
 
   def blankline()
-    puts("<p>")
+    @output.puts("<p>")
   end
 
   def break_to_newline
-    puts("<br>")
+    @output.puts("<br>")
   end
 
   def display_heading(text, level, indent)
     level = 4 if level > 4
     tag("h#{level}") { text }
-    puts
+    @output.puts
   end
 
   def display_list(list)
     case list.type
-    when RDoc::Markup::ListBase::BULLET
+    when :BULLET then
       list_type = "ul"
       prefixer = proc { |ignored| "<li>" }
 
-    when RDoc::Markup::ListBase::NUMBER,
-      RDoc::Markup::ListBase::UPPERALPHA,
-      RDoc::Markup::ListBase::LOWERALPHA
+    when :NUMBER, :UPPERALPHA, :LOWERALPHA then
       list_type = "ol"
       prefixer = proc { |ignored| "<li>" }
 
-    when RDoc::Markup::ListBase::LABELED
+    when :LABELED then
       list_type = "dl"
       prefixer = proc do |li|
           "<dt><b>" + escape(li.label) + "</b><dd>"
       end
 
-    when RDoc::Markup::ListBase::NOTE
+    when :NOTE then
       list_type = "table"
       prefixer = proc do |li|
           %{<tr valign="top"><td>#{li.label.gsub(/ /, '&nbsp;')}</td><td>}
@@ -502,25 +517,25 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
       fail "unknown list type"
     end
 
-    print "<#{list_type}>"
+    @output.print "<#{list_type}>"
     list.contents.each do |item|
       if item.kind_of? RDoc::Markup::Flow::LI
         prefix = prefixer.call(item)
-        print prefix
+        @output.print prefix
         display_flow_item(item, prefix)
       else
         display_flow_item(item)
       end
     end
-    print "</#{list_type}>"
+    @output.print "</#{list_type}>"
   end
 
   def display_verbatim_flow_item(item, prefix=@indent)
-    print("<pre>")
+    @output.print("<pre>")
     item.body.split(/\n/).each do |line|
-      puts conv_html(line)
+      @output.puts conv_html(line)
     end
-    puts("</pre>")
+    @output.puts("</pre>")
   end
 
   private
@@ -547,13 +562,13 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
         str << "<" << ATTR_MAP[quality]
       end
     end
-    print str
+    @output.print str
   end
 
   def tag(code)
-    print("<#{code}>")
-    print(yield)
-    print("</#{code}>")
+    @output.print("<#{code}>")
+    @output.print(yield)
+    @output.print("</#{code}>")
   end
 
   def escape(str)
@@ -584,7 +599,7 @@ class RDoc::RI::SimpleFormatter < RDoc::RI::Formatter
   def draw_line(label=nil)
     unless label.nil? then
       bold_print(label)
-      puts
+      @output.puts
     end
   end
 
@@ -595,36 +610,18 @@ class RDoc::RI::SimpleFormatter < RDoc::RI::Formatter
     text = strip_attributes(text)
     case level
     when 1
-      puts "= " + text.upcase
+      @output.puts "= " + text.upcase
     when 2
-      puts "-- " + text
+      @output.puts "-- " + text
     else
-      print indent, text, "\n"
+      @output.print indent, text, "\n"
     end
   end
 
 end
 
-##
-# Finally, fill in the list of known formatters
-
-class RDoc::RI::Formatter
-
-  FORMATTERS = {
-    "plain"  => RDoc::RI::Formatter,
-    "simple" => RDoc::RI::SimpleFormatter,
-    "bs"     => RDoc::RI::OverstrikeFormatter,
-    "ansi"   => RDoc::RI::AnsiFormatter,
-    "html"   => RDoc::RI::HtmlFormatter,
-  }
-
-  def self.list
-    FORMATTERS.keys.sort.join(", ")
-  end
-
-  def self.for(name)
-    FORMATTERS[name.downcase]
-  end
-
-end
-
+RDoc::RI::Formatter::FORMATTERS['plain']  = RDoc::RI::Formatter
+RDoc::RI::Formatter::FORMATTERS['simple'] = RDoc::RI::SimpleFormatter
+RDoc::RI::Formatter::FORMATTERS['bs']     = RDoc::RI::OverstrikeFormatter
+RDoc::RI::Formatter::FORMATTERS['ansi']   = RDoc::RI::AnsiFormatter
+RDoc::RI::Formatter::FORMATTERS['html']   = RDoc::RI::HtmlFormatter

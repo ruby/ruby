@@ -1,10 +1,10 @@
 require "test/unit"
-require "rdoc/markup/simple_markup/inline"
+require "rdoc/markup/inline"
 
-class TestSimpleMarkupAttributeManager < Test::Unit::TestCase
+class TestRDocMarkupAttributeManager < Test::Unit::TestCase
 
   def setup
-    @am = SM::AttributeManager.new
+    @am = RDoc::Markup::AttributeManager.new
 
     @bold_on  = @am.changed_attribute_by_name([], [:BOLD])
     @bold_off = @am.changed_attribute_by_name([:BOLD], [])
@@ -28,11 +28,11 @@ class TestSimpleMarkupAttributeManager < Test::Unit::TestCase
   end
 
   def crossref(text)
-    crossref_bitmap = SM::Attribute.bitmap_for(:_SPECIAL_) |
-                      SM::Attribute.bitmap_for(:CROSSREF)
+    crossref_bitmap = RDoc::Markup::Attribute.bitmap_for(:_SPECIAL_) |
+                      RDoc::Markup::Attribute.bitmap_for(:CROSSREF)
 
     [ @am.changed_attribute_by_name([], [:CROSSREF] | [:_SPECIAL_]),
-      SM::Special.new(crossref_bitmap, text),
+      RDoc::Markup::Special.new(crossref_bitmap, text),
       @am.changed_attribute_by_name([:CROSSREF] | [:_SPECIAL_], [])
     ]
   end

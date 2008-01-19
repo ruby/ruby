@@ -34,7 +34,7 @@ class RDoc::RI::DefaultDisplay
 
   def initialize(formatter, width, use_stdout)
     @use_stdout = use_stdout
-    @formatter = formatter.new width, "     "
+    @formatter = formatter.new $stdout, width, "     "
   end
 
   def display_method_info(method)

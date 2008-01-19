@@ -1,62 +1,19 @@
 require 'test/unit'
-require 'rdoc/markup/simple_markup'
+require 'rdoc/markup'
+require 'rdoc/markup/to_test'
 
-class TestSimpleMarkup < Test::Unit::TestCase
-
-  class MockOutput
-
-    def start_accepting
-      @res = []
-    end
-
-    def end_accepting
-      @res
-    end
-
-    def accept_paragraph(am, fragment)
-      @res << fragment.to_s
-    end
-
-    def accept_verbatim(am, fragment)
-      @res << fragment.to_s
-    end
-
-    def accept_list_start(am, fragment)
-      @res << fragment.to_s
-    end
-
-    def accept_list_end(am, fragment)
-      @res << fragment.to_s
-    end
-
-    def accept_list_item(am, fragment)
-      @res << fragment.to_s
-    end
-
-    def accept_blank_line(am, fragment)
-      @res << fragment.to_s
-    end
-
-    def accept_heading(am, fragment)
-      @res << fragment.to_s
-    end
-
-    def accept_rule(am, fragment)
-      @res << fragment.to_s
-    end
-
-  end
+class TestRDocMarkup < Test::Unit::TestCase
 
   def basic_conv(str)
-    sm = SM::SimpleMarkup.new
-    mock = MockOutput.new
+    sm = RDoc::Markup.new
+    mock = RDoc::Markup::ToTest.new
     sm.convert(str, mock)
     sm.content
   end
 
   def line_groups(str, expected)
-    p = SM::SimpleMarkup.new
-    mock = MockOutput.new
+    p = RDoc::Markup.new
+    mock = RDoc::Markup::ToTest.new
 
     block = p.convert(str, mock)
 
@@ -72,8 +29,8 @@ class TestSimpleMarkup < Test::Unit::TestCase
   end
 
   def line_types(str, expected)
-    p = SM::SimpleMarkup.new
-    mock = MockOutput.new
+    p = RDoc::Markup.new
+    mock = RDoc::Markup::ToTest.new
     p.convert(str, mock)
     assert_equal(expected, p.get_line_types.map{|type| type.to_s[0,1]}.join(''))
   end

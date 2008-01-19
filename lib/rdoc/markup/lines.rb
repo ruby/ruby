@@ -8,12 +8,14 @@ class RDoc::Markup
   class Line
     INFINITY = 9999
 
-    BLANK     = :BLANK
-    HEADING   = :HEADING
-    LIST      = :LIST
-    RULE      = :RULE
-    PARAGRAPH = :PARAGRAPH
-    VERBATIM  = :VERBATIM
+    LINE_TYPES = [
+      :BLANK,
+      :HEADING,
+      :LIST,
+      :PARAGRAPH,
+      :RULE,
+      :VERBATIM,
+    ]
 
     # line type
     attr_accessor :type
@@ -132,7 +134,7 @@ class RDoc::Markup
 
     def normalize
       margin = @lines.collect{|l| l.leading_spaces}.min
-      margin = 0 if margin == Line::INFINITY
+      margin = 0 if margin == :INFINITY
       @lines.each {|line| line.strip_leading(margin) } if margin > 0
     end
 

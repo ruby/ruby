@@ -24,12 +24,12 @@ class RDoc::Markup
 
   class ToFlow
     LIST_TYPE_TO_HTML = {
-      RDoc::Markup::ListBase::BULLET     =>  [ "<ul>", "</ul>" ],
-      RDoc::Markup::ListBase::NUMBER     =>  [ "<ol>", "</ol>" ],
-      RDoc::Markup::ListBase::UPPERALPHA =>  [ "<ol>", "</ol>" ],
-      RDoc::Markup::ListBase::LOWERALPHA =>  [ "<ol>", "</ol>" ],
-      RDoc::Markup::ListBase::LABELED    =>  [ "<dl>", "</dl>" ],
-      RDoc::Markup::ListBase::NOTE       =>  [ "<table>", "</table>" ],
+      :BULLET     =>  [ "<ul>", "</ul>" ],
+      :NUMBER     =>  [ "<ol>", "</ol>" ],
+      :UPPERALPHA =>  [ "<ol>", "</ol>" ],
+      :LOWERALPHA =>  [ "<ol>", "</ol>" ],
+      :LABELED    =>  [ "<dl>", "</dl>" ],
+      :NOTE       =>  [ "<table>", "</table>" ],
     }
 
     InlineTag = Struct.new(:bit, :on, :off)

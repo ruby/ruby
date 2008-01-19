@@ -6,12 +6,12 @@ require 'cgi'
 class RDoc::Markup::ToHtml
 
   LIST_TYPE_TO_HTML = {
-    RDoc::Markup::ListBase::BULLET =>  [ "<ul>", "</ul>" ],
-    RDoc::Markup::ListBase::NUMBER =>  [ "<ol>", "</ol>" ],
-    RDoc::Markup::ListBase::UPPERALPHA =>  [ "<ol>", "</ol>" ],
-    RDoc::Markup::ListBase::LOWERALPHA =>  [ "<ol>", "</ol>" ],
-    RDoc::Markup::ListBase::LABELED => [ "<dl>", "</dl>" ],
-    RDoc::Markup::ListBase::NOTE    => [ "<table>", "</table>" ],
+    :BULLET =>  [ "<ul>", "</ul>" ],
+    :NUMBER =>  [ "<ol>", "</ol>" ],
+    :UPPERALPHA =>  [ "<ol>", "</ol>" ],
+    :LOWERALPHA =>  [ "<ol>", "</ol>" ],
+    :LABELED => [ "<dl>", "</dl>" ],
+    :NOTE    => [ "<table>", "</table>" ],
   }
 
   InlineTag = Struct.new(:bit, :on, :off)
@@ -241,22 +241,22 @@ class RDoc::Markup::ToHtml
 
   def list_item_start(am, fragment)
     case fragment.type
-    when RDoc::Markup::ListBase::BULLET, RDoc::Markup::ListBase::NUMBER then
+    when :BULLET, :NUMBER then
       annotate("<li>")
 
-    when RDoc::Markup::ListBase::UPPERALPHA then
+    when :UPPERALPHA then
       annotate("<li type=\"A\">")
 
-    when RDoc::Markup::ListBase::LOWERALPHA then
+    when :LOWERALPHA then
       annotate("<li type=\"a\">")
 
-    when RDoc::Markup::ListBase::LABELED then
+    when :LABELED then
       annotate("<dt>") +
         convert_flow(am.flow(fragment.param)) +
         annotate("</dt>") +
         annotate("<dd>")
 
-    when RDoc::Markup::ListBase::NOTE then
+    when :NOTE then
       annotate("<tr>") +
         annotate("<td valign=\"top\">") +
         convert_flow(am.flow(fragment.param)) +
@@ -269,13 +269,11 @@ class RDoc::Markup::ToHtml
 
   def list_end_for(fragment_type)
     case fragment_type
-    when RDoc::Markup::ListBase::BULLET, RDoc::Markup::ListBase::NUMBER,
-         RDoc::Markup::ListBase::UPPERALPHA,
-         RDoc::Markup::ListBase::LOWERALPHA then
+    when :BULLET, :NUMBER, :UPPERALPHA, :LOWERALPHA then
       "</li>"
-    when RDoc::Markup::ListBase::LABELED then
+    when :LABELED then
       "</dd>"
-    when RDoc::Markup::ListBase::NOTE then
+    when :NOTE then
       "</td></tr>"
     else
       raise "Invalid list type"

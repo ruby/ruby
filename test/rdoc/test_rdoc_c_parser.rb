@@ -17,7 +17,7 @@ class TestRdocC_Parser < Test::Unit::TestCase
 
     @top_level = RDoc::TopLevel.new filename
     @fn = filename
-    @options = Options.instance
+    @options = RDoc::Options.new Hash.new
     @stats = RDoc::Stats.new
 
     @progress = StringIO.new

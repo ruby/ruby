@@ -11,6 +11,22 @@ class RDoc::Markup
     attr_reader   :level, :param, :txt
     attr_accessor :type
 
+    ######
+    # This is a simple factory system that lets us associate fragement
+    # types (a string) with a subclass of fragment
+
+    TYPE_MAP = {}
+
+    def self.type_name(name)
+      TYPE_MAP[name] = self
+    end
+
+    def self.for(line)
+      klass =  TYPE_MAP[line.type] ||
+        raise("Unknown line type: '#{line.type.inspect}:' '#{line.text}'")
+      return klass.new(line.level, line.param, line.flag, line.text)
+    end
+
     def initialize(level, param, type, txt)
       @level = level
       @param = param
@@ -28,21 +44,6 @@ class RDoc::Markup
       "L#@level: #{self.class.name.split('::')[-1]}\n#@txt"
     end
 
-    ######
-    # This is a simple factory system that lets us associate fragement
-    # types (a string) with a subclass of fragment
-
-    TYPE_MAP = {}
-
-    def Fragment.type_name(name)
-      TYPE_MAP[name] = self
-    end
-
-    def Fragment.for(line)
-      klass =  TYPE_MAP[line.type] ||
-        raise("Unknown line type: '#{line.type.inspect}:' '#{line.text}'")
-      return klass.new(line.level, line.param, line.flag, line.text)
-    end
   end
 
   ##
@@ -50,15 +51,15 @@ class RDoc::Markup
   # newlines when we're created, and have them put back on output.
 
   class Paragraph < Fragment
-    type_name Line::PARAGRAPH
+    type_name :PARAGRAPH
   end
 
   class BlankLine < Paragraph
-    type_name Line::BLANK
+    type_name :BLANK
   end
 
   class Heading < Paragraph
-    type_name Line::HEADING
+    type_name :HEADING
 
     def head_level
       @param.to_i
@@ -69,17 +70,18 @@ class RDoc::Markup
   # A List is a fragment with some kind of label
 
   class ListBase < Paragraph
-    # List types
-    BULLET  = :BULLET
-    NUMBER  = :NUMBER
-    UPPERALPHA  = :UPPERALPHA
-    LOWERALPHA  = :LOWERALPHA
-    LABELED = :LABELED
-    NOTE    = :NOTE
+    LIST_TYPES = [
+      :BULLET,
+      :NUMBER,
+      :UPPERALPHA,
+      :LOWERALPHA,
+      :LABELED,
+      :NOTE,
+    ]
   end
 
   class ListItem < ListBase
-    type_name Line::LIST
+    type_name :LIST
 
     #  def label
     #    am = AttributeManager.new(@param)
@@ -103,7 +105,7 @@ class RDoc::Markup
   # Verbatim code contains lines that don't get wrapped.
 
   class Verbatim < Fragment
-    type_name  Line::VERBATIM
+    type_name  :VERBATIM
 
     def add_text(txt)
       @txt << txt.chomp << "\n"
@@ -115,7 +117,7 @@ class RDoc::Markup
   # A horizontal rule
 
   class Rule < Fragment
-    type_name Line::RULE
+    type_name :RULE
   end
 
   ##

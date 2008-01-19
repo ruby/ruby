@@ -1,3 +1,21 @@
+Sat Jan 19 08:58:47 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup: Remove ListBase and Line constants.
+
+	* lib/rdoc/ri: Allow output IO to be specified.
+
+	* test/rdoc/parser/test_parse_c.rb: Move up one level, fixed.
+
+	* test/rdoc/parser/test_rdoc_markup_attribute_manager.rb: Renamed to
+	  match new class name, updated to match new classes.
+
+	* test/rdoc/test_rdoc_ri_formatter.rb: Start of RI formatting tests.
+
+	* test/rdoc/test_rdoc_ri_attribute_manager.rb: Start of
+	  RDoc::RI::AttributeManager tests.
+
+	* test/rdoc/test_simple_markup.rb: Moved to match new class name.
+
 Sat Jan 19 08:35:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_prepare): get encoding from the first line.

@@ -29,12 +29,12 @@ class RDoc::Markup::ToLaTeX
   end
 
   LIST_TYPE_TO_LATEX = {
-    RDoc::Markup::ListBase::BULLET =>  [ l("\\begin{itemize}"), l("\\end{itemize}") ],
-    RDoc::Markup::ListBase::NUMBER =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\arabic" ],
-    RDoc::Markup::ListBase::UPPERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\Alph" ],
-    RDoc::Markup::ListBase::LOWERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\alph" ],
-    RDoc::Markup::ListBase::LABELED => [ l("\\begin{description}"), l("\\end{description}") ],
-    RDoc::Markup::ListBase::NOTE    => [
+    :BULLET =>  [ l("\\begin{itemize}"), l("\\end{itemize}") ],
+    :NUMBER =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\arabic" ],
+    :UPPERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\Alph" ],
+    :LOWERALPHA =>  [ l("\\begin{enumerate}"), l("\\end{enumerate}"), "\\alph" ],
+    :LABELED => [ l("\\begin{description}"), l("\\end{description}") ],
+    :NOTE    => [
       l("\\begin{tabularx}{\\linewidth}{@{} l X @{}}"),
       l("\\end{tabularx}") ],
   }
@@ -299,15 +299,13 @@ class RDoc::Markup::ToLaTeX
 
   def list_item_start(am, fragment)
     case fragment.type
-    when RDoc::Markup::ListBase::BULLET, RDoc::Markup::ListBase::NUMBER,
-         RDoc::Markup::ListBase::UPPERALPHA,
-         RDoc::Markup::ListBase::LOWERALPHA then
+    when :BULLET, :NUMBER, :UPPERALPHA, :LOWERALPHA then
       "\\item "
 
-    when RDoc::Markup::ListBase::LABELED then
+    when :LABELED then
       "\\item[" + convert_flow(am.flow(fragment.param)) + "] "
 
-    when RDoc::Markup::ListBase::NOTE then
+    when :NOTE then
         convert_flow(am.flow(fragment.param)) + " & "
     else
       raise "Invalid list type"
@@ -316,13 +314,9 @@ class RDoc::Markup::ToLaTeX
 
   def list_end_for(fragment_type)
     case fragment_type
-    when RDoc::Markup::ListBase::BULLET,
-         RDoc::Markup::ListBase::NUMBER,
-         RDoc::Markup::ListBase::UPPERALPHA,
-         RDoc::Markup::ListBase::LOWERALPHA,
-         RDoc::Markup::ListBase::LABELED then
+    when :BULLET, :NUMBER, :UPPERALPHA, :LOWERALPHA, :LABELED then
       ""
-    when RDoc::Markup::ListBase::NOTE
+    when :NOTE
       "\\\\\n"
     else
       raise "Invalid list type"

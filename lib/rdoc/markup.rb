@@ -159,7 +159,6 @@ require 'rdoc'
 #
 #--
 # Author::   Dave Thomas,  dave@pragmaticprogrammer.com
-# Version::  0.0
 # License::  Ruby license
 
 class RDoc::Markup
@@ -256,7 +255,7 @@ class RDoc::Markup
 
     while line = @lines.next
       if line.isBlank?
-        line.stamp(Line::BLANK, level)
+        line.stamp :BLANK, level
         next
       end
 
@@ -282,7 +281,7 @@ class RDoc::Markup
       #
 
       if /^(---+)\s*$/ =~ active_line
-        line.stamp(Line::RULE, level, $1.length-2)
+        line.stamp :RULE, level, $1.length-2
         next
       end
 
@@ -296,14 +295,14 @@ class RDoc::Markup
         prefix_length = prefix.length
 
         flag = case prefix
-               when "*","-" then ListBase::BULLET
-               when /^\d/   then ListBase::NUMBER
-               when /^[A-Z]/ then ListBase::UPPERALPHA
-               when /^[a-z]/ then ListBase::LOWERALPHA
+               when "*","-" then :BULLET
+               when /^\d/   then :NUMBER
+               when /^[A-Z]/ then :UPPERALPHA
+               when /^[a-z]/ then :LOWERALPHA
                else raise "Invalid List Type: #{self.inspect}"
                end
 
-        line.stamp(Line::LIST, level+1, prefix, flag)
+        line.stamp :LIST, level+1, prefix, flag
         text[margin, prefix_length] = " " * prefix_length
         assign_types_to_lines(offset, level + 1)
         next
@@ -328,7 +327,7 @@ class RDoc::Markup
       if active_line[0] == ?= and active_line =~ /^(=+)\s*(.*)/
         prefix_length = $1.length
         prefix_length = 6 if prefix_length > 6
-        line.stamp(Line::HEADING, 0, prefix_length)
+        line.stamp :HEADING, 0, prefix_length
         line.strip_leading(margin + prefix_length)
         next
       end
@@ -338,9 +337,9 @@ class RDoc::Markup
 
       if active_line[0] == SPACE
         line.strip_leading(margin) if margin > 0
-        line.stamp(Line::VERBATIM, level)
+        line.stamp :VERBATIM, level
       else
-        line.stamp(Line::PARAGRAPH, level)
+        line.stamp :PARAGRAPH, level
       end
     end
   end
@@ -369,10 +368,10 @@ class RDoc::Markup
     flag = nil
     case prefix
     when /^\[/
-      flag = ListBase::LABELED
+      flag = :LABELED
       prefix = prefix[1, prefix.length-2]
     when /:$/
-      flag = ListBase::NOTE
+      flag = :NOTE
       prefix.chop!
     else raise "Invalid List Type: #{self.inspect}"
     end
@@ -403,7 +402,7 @@ class RDoc::Markup
       end
     end
 
-    line.stamp(Line::LIST, level+1, prefix, flag)
+    line.stamp :LIST, level+1, prefix, flag
     text[margin, prefix_length] = " " * prefix_length
     assign_types_to_lines(offset, level + 1)
     return true
@@ -431,12 +430,12 @@ class RDoc::Markup
       else
         group = block.fragment_for(line)
         block.add(group)
-        if line.type == Line::LIST
-          wantedType = Line::PARAGRAPH
+        if line.type == :LIST
+          wantedType = :PARAGRAPH
         else
           wantedType = line.type
         end
-        wantedLevel = line.type == Line::HEADING ? line.param : line.level
+        wantedLevel = line.type == :HEADING ? line.param : line.level
       end
     end
 
