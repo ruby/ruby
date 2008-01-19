@@ -1,3 +1,8 @@
+Sat Jan 19 18:40:19 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (once): use an instance variable which points a hash
+	  as cache. [experimental]
+
 Sat Jan 19 17:21:29 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb, lib/date/format.rb: parse's hints as an

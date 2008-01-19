@@ -1101,13 +1101,13 @@ class Date
 
   class << self
 
-    def once(*ids) # :nodoc:
+    def once(*ids) # :nodoc: -- restricted
       for id in ids
 	module_eval <<-"end;"
 	  alias_method :__#{id.to_i}__, :#{id.to_s}
 	  private :__#{id.to_i}__
-	  def #{id.to_s}(*args, &block)
-	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
+	  def #{id.to_s}(*args)
+	    @__ca__[#{id.to_i}] ||= __#{id.to_i}__(*args)
 	  end
 	end;
       end
@@ -1136,7 +1136,10 @@ class Date
   #
   # Using one of the factory methods such as Date::civil is
   # generally easier and safer.
-  def initialize(ajd=0, of=0, sg=ITALY) @ajd, @of, @sg = ajd, of, sg end
+  def initialize(ajd=0, of=0, sg=ITALY)
+    @ajd, @of, @sg = ajd, of, sg
+    @__ca__ = {}
+  end
 
   # Get the date as an Astronomical Julian Day Number.
   def ajd() @ajd end
