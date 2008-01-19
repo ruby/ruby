@@ -79,7 +79,12 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def encdump(str)
-    "#{str.dump}.force_encoding(#{str.encoding.name.dump})"
+    d = str.dump
+    if /\.force_encoding\("[A-Za-z0-9.:_+-]*"\)\z/ =~ d
+      d
+    else
+      "#{d}.force_encoding(#{str.encoding.name.dump})"
+    end
   end
 
   def encdumpargs(args)
@@ -287,7 +292,8 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_utf16_valid_encoding
-    assert_equal(false, "\xd8\x00\xd8\x00".force_encoding("utf-16be").valid_encoding?)
+    s = "\xd8\x00\xd8\x00".force_encoding("utf-16be")
+    assert_equal(false, s.valid_encoding?, "#{encdump s}.valid_encoding?")
   end
 
   def test_utf16
