@@ -10745,7 +10745,7 @@ static void init_code_range_array(void) {
 }
 
 extern int
-onigenc_unicode_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
+onigenc_unicode_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
 {
   if (
 #ifdef USE_UNICODE_PROPERTIES
@@ -11014,7 +11014,7 @@ onigenc_unicode_mbc_case_fold(OnigEncoding enc,
 extern int
 onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag,
 				    OnigApplyAllCaseFoldFunc f, void* arg,
-				    OnigEncoding enc)
+				    OnigEncoding enc ARG_UNUSED)
 {
   const CaseUnfold_11_Type* p11;
   OnigCodePoint code;

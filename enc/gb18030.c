@@ -494,5 +494,5 @@ OnigEncodingDefine(gb18030, GB18030) = {
   gb18030_is_allowed_reverse_match
 };
 ENC_REPLICATE("GBK", "GB18030");
-ENC_ALIAS("CP936", "GBK");
+ENC_REPLICATE("CP936", "GB18030");
 ENC_ALIAS("Windows-936", "GBK");

@@ -217,7 +217,7 @@ static const signed char trans[][0x100] = {
 #undef F
 
 static int
-mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 {
   int firstbyte = *p++;
   state_t s;
@@ -294,7 +294,7 @@ mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 }
 
 static int
-code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
+code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
   if      ((code & 0xffffff80) == 0) return 1;
   else if ((code & 0xfffff800) == 0) return 2;
@@ -311,7 +311,7 @@ code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
 }
 
 static int
-code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
+code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 {
 #define UTF8_TRAILS(code, shift) (UChar )((((code) >> (shift)) & 0x3f) | 0x80)
 #define UTF8_TRAIL0(code)        (UChar )(((code) & 0x3f) | 0x80)
@@ -397,7 +397,7 @@ mbc_case_fold(OnigCaseFoldType flag, const UChar** pp,
 
 static int
 get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
-			  const OnigCodePoint* ranges[], OnigEncoding enc)
+			  const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
 {
   *sb_out = 0x80;
   return onigenc_unicode_ctype_code_range(ctype, ranges);
@@ -405,7 +405,7 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
 
 
 static UChar*
-left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc ARG_UNUSED)
 {
   const UChar *p;
 

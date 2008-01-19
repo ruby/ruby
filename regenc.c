@@ -395,7 +395,7 @@ const OnigPairCaseFoldCodes OnigAsciiLowerMap[] = {
 extern int
 onigenc_ascii_apply_all_case_fold(OnigCaseFoldType flag ARG_UNUSED,
 				  OnigApplyAllCaseFoldFunc f, void* arg,
-				  OnigEncoding enc)
+				  OnigEncoding enc ARG_UNUSED)
 {
   OnigCodePoint code;
   int i, r;
@@ -416,9 +416,9 @@ onigenc_ascii_apply_all_case_fold(OnigCaseFoldType flag ARG_UNUSED,
 }
 
 extern int
-onigenc_ascii_get_case_fold_codes_by_str(OnigCaseFoldType flag,
-    const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[],
-     OnigEncoding enc)
+onigenc_ascii_get_case_fold_codes_by_str(OnigCaseFoldType flag ARG_UNUSED,
+    const OnigUChar* p, const OnigUChar* end ARG_UNUSED, OnigCaseFoldCodeItem items[],
+     OnigEncoding enc ARG_UNUSED)
 {
   if (0x41 <= *p && *p <= 0x5a) {
     items[0].byte_len = 1;
@@ -564,7 +564,7 @@ onigenc_not_support_get_ctype_code_range(OnigCtype ctype,
 }
 
 extern int
-onigenc_is_mbc_newline_0x0a(const UChar* p, const UChar* end, OnigEncoding enc)
+onigenc_is_mbc_newline_0x0a(const UChar* p, const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
   if (p < end) {
     if (*p == 0x0a) return 1;
@@ -574,8 +574,8 @@ onigenc_is_mbc_newline_0x0a(const UChar* p, const UChar* end, OnigEncoding enc)
 
 /* for single byte encodings */
 extern int
-onigenc_ascii_mbc_case_fold(OnigCaseFoldType flag, const UChar** p,
-			    const UChar*end, UChar* lower, OnigEncoding enc)
+onigenc_ascii_mbc_case_fold(OnigCaseFoldType flag ARG_UNUSED, const UChar** p,
+			    const UChar*end, UChar* lower, OnigEncoding enc ARG_UNUSED)
 {
   *lower = ONIGENC_ASCII_CODE_TO_LOWER_CASE(**p);
 
@@ -585,8 +585,8 @@ onigenc_ascii_mbc_case_fold(OnigCaseFoldType flag, const UChar** p,
 
 #if 0
 extern int
-onigenc_ascii_is_mbc_ambiguous(OnigCaseFoldType flag,
-			       const UChar** pp, const UChar* end)
+onigenc_ascii_is_mbc_ambiguous(OnigCaseFoldType flag ARG_UNUSED,
+			       const UChar** pp, const UChar* end ARG_UNUSED)
 {
   const UChar* p = *pp;
 
@@ -596,54 +596,56 @@ onigenc_ascii_is_mbc_ambiguous(OnigCaseFoldType flag,
 #endif
 
 extern int
-onigenc_single_byte_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc)
+onigenc_single_byte_mbc_enc_len(const UChar* p ARG_UNUSED, const UChar* e ARG_UNUSED,
+				OnigEncoding enc ARG_UNUSED)
 {
   return 1;
 }
 
 extern OnigCodePoint
-onigenc_single_byte_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
+onigenc_single_byte_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
+				OnigEncoding enc ARG_UNUSED)
 {
   return (OnigCodePoint )(*p);
 }
 
 extern int
-onigenc_single_byte_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
+onigenc_single_byte_code_to_mbclen(OnigCodePoint code ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   return 1;
 }
 
 extern int
-onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
+onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc ARG_UNUSED)
 {
   *buf = (UChar )(code & 0xff);
   return 1;
 }
 
 extern UChar*
-onigenc_single_byte_left_adjust_char_head(const UChar* start, const UChar* s,
-					  OnigEncoding enc)
+onigenc_single_byte_left_adjust_char_head(const UChar* start ARG_UNUSED, const UChar* s,
+					  OnigEncoding enc ARG_UNUSED)
 {
   return (UChar* )s;
 }
 
 extern int
-onigenc_always_true_is_allowed_reverse_match(const UChar* s, const UChar* end,
-					     OnigEncoding enc)
+onigenc_always_true_is_allowed_reverse_match(const UChar* s ARG_UNUSED, const UChar* end ARG_UNUSED,
+					     OnigEncoding enc ARG_UNUSED)
 {
   return TRUE;
 }
 
 extern int
-onigenc_always_false_is_allowed_reverse_match(const UChar* s, const UChar* end,
-					      OnigEncoding enc)
+onigenc_always_false_is_allowed_reverse_match(const UChar* s ARG_UNUSED, const UChar* end ARG_UNUSED,
+					      OnigEncoding enc ARG_UNUSED)
 {
   return FALSE;
 }
 
 extern int
 onigenc_ascii_is_code_ctype(OnigCodePoint code, unsigned int ctype,
-                            OnigEncoding enc)
+                            OnigEncoding enc ARG_UNUSED)
 {
   if (code < 128)
     return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
@@ -697,7 +699,7 @@ onigenc_mbn_mbc_case_fold(OnigEncoding enc, OnigCaseFoldType flag ARG_UNUSED,
 #if 0
 extern int
 onigenc_mbn_is_mbc_ambiguous(OnigEncoding enc, OnigCaseFoldType flag,
-                             const UChar** pp, const UChar* end)
+                             const UChar** pp ARG_UNUSED, const UChar* end ARG_UNUSED)
 {
   const UChar* p = *pp;
 
@@ -712,14 +714,14 @@ onigenc_mbn_is_mbc_ambiguous(OnigEncoding enc, OnigCaseFoldType flag,
 #endif
 
 extern int
-onigenc_mb2_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
+onigenc_mb2_code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
   if ((code & 0xff00) != 0) return 2;
   else return 1;
 }
 
 extern int
-onigenc_mb4_code_to_mbclen(OnigCodePoint code, OnigEncoding enc)
+onigenc_mb4_code_to_mbclen(OnigCodePoint code, OnigEncoding enc ARG_UNUSED)
 {
        if ((code & 0xff000000) != 0) return 4;
   else if ((code & 0xff0000) != 0) return 3;
