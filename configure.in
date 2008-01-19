@@ -484,11 +484,7 @@ human*)		ac_cv_func_getpgrp_void=yes
 		ac_cv_func_setitimer=no
 		;;
 beos*)		ac_cv_func_link=no;;
-cygwin*)	rb_cv_have_daylight=no
-		ac_cv_var_tzname=no
-		ac_cv_func__setjmp=no
-		ac_cv_func_setitimer=no
-		;;
+cygwin*)	;;
 mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
@@ -1569,7 +1565,6 @@ case "$target_os" in
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='cyg$(RUBY_SO_NAME)'${MAJOR}${MINOR}${TEENY}.dll
 	    fi
-	    AC_LIBOBJ([strftime])
 	    ;;
 	mingw*)
 	    RUBY_SO_NAME=${rb_cv_msvcrt}-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}${TEENY}
