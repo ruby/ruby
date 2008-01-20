@@ -297,12 +297,23 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_utf16
-    assert_equal(255, "f\0f\0".force_encoding("utf-16le").hex)
-    assert_raise(ArgumentError) {
-      "aa".force_encoding("utf-16be").count("aa")
+    s1 = "ab".force_encoding("utf-16be")
+    s2 = "b".force_encoding("utf-16be")
+    assert_equal(false, s1.end_with?(s2), "#{encdump s1}.end_with?(#{encdump s2})")
+
+    s1 = "f\0f\0".force_encoding("utf-16le")
+    assert_equal(255, s1.hex, "#{encdump s1}.hex")
+
+    s1 = "aa".force_encoding("utf-16be")
+    s2 = "aa"
+    assert_raise(ArgumentError, "#{encdump s1}.count(#{encdump s2})") {
+      s1.count(s2)
     }
-    assert_raise(ArgumentError) {
-      "a".force_encoding("us-ascii") + "aa".force_encoding("utf-16be")
+
+    s1 = "a".force_encoding("us-ascii")
+    s2 = "aa".force_encoding("utf-16be")
+    assert_raise(ArgumentError, "#{encdump s1} + #{encdump s2}") {
+      s1 + s2
     }
   end
 
