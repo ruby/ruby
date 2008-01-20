@@ -852,6 +852,12 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(false, s1.end_with?(s2), "#{encdump s1}.end_with?(#{encdump s2})")
   end
 
+  def test_each_char
+    a = [e("\xa4\xa2"), "b", e("\xa4\xa4"), "c"]
+    s = "\xa4\xa2b\xa4\xa4c".force_encoding("euc-jp")
+    assert_equal(a, s.each_char.to_a, "[ruby-dev:33211] #{encdump s}.each_char.to_a")
+  end
+
   def test_regexp_match
     assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
   end
