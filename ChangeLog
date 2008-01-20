@@ -1,4 +1,11 @@
-Sun Jan 20 15:08:08 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+Sun Jan 20 20:00:20 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c, enc/trans/utf_16_32.c, test/ruby/test_transcode.rb:
+	  added UTF-16LE conversions.
+
+	* fixed changelog for last commit
+
+Sun Jan 20 17:54:00 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* added changelog for last commit
 

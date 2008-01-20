@@ -58,11 +58,69 @@ fun_so_to_utf_16be(const unsigned char* s, unsigned char* o)
         return 4;
     }
 }
+
+static int
+fun_so_from_utf_16le(const unsigned char* s, unsigned char* o)
+{
+    if (!s[1] && s[0]<0x80) {
+        o[0] = s[0];
+        return 1;
+    }
+    else if (s[1]<0x08) {
+        o[0] = 0xC0 | (s[1]<<2) | (s[0]>>6);
+        o[1] = 0x80 | s[0]&0x3F;
+        return 2;
+    }
+    else if ((s[1]&0xF8)!=0xD8) {
+        o[0] = 0xE0 | s[1]>>4;
+        o[1] = 0x80 | ((s[1]&0x0F)<<2) | (s[0]>>6);
+        o[2] = 0x80 | s[0]&0x3F;
+        return 3;
+    }
+    else {
+        unsigned int u = (((s[1]&0x03)<<2)|(s[0]>>6)) + 1;
+        o[0] = 0xF0 | u>>2;
+        o[1] = 0x80 | ((u&0x03)<<4) | (s[0]>>2)&0x0F;
+        o[2] = 0x80 | ((s[0]&0x03)<<4) | ((s[3]&0x03)<<2) | (s[2]>>6);
+        o[3] = 0x80 | s[2]&0x3F;
+        return 4;
+    }
+}
+
+static int
+fun_so_to_utf_16le(const unsigned char* s, unsigned char* o)
+{
+    if (!(s[0]&0x80)) {
+        o[1] = 0x00;
+        o[0] = s[0];
+        return 2;
+    }
+    else if ((s[0]&0xE0)==0xC0) {
+        o[1] = (s[0]>>2)&0x07;
+        o[0] = ((s[0]&0x03)<<6) | s[1]&0x3F;
+        return 2;
+    }
+    else if ((s[0]&0xF0)==0xE0) {
+        o[1] = (s[0]<<4) | (s[1]>>2)^0x20;
+        o[0] = (s[1]<<6) | s[2]^0x80;
+        return 2;
+    }
+    else {
+        int w = (((s[0]&0x07)<<2) | (s[1]>>4)&0x03) - 1;
+        o[1] = 0xD8 | (w>>2);
+        o[0] = (w<<6) | ((s[1]&0x0F)<<2) | ((s[2]>>4)-8);
+        o[3] = 0xDC | ((s[2]>>2)&0x03);
+        o[2] = (s[2]<<6) | (s[3]&~0x80);
+        return 4;
+    }
+}
 static const unsigned char
 from_UTF_16BE_00_offsets[256] = {
   /* used by from_UTF_16BE_00 */
   /* used by from_UTF_16BE_D8 */
   /* used by from_UTF_16BE_D8_00_00 */
+  /* used by from_UTF_16LE */
+  /* used by from_UTF_16LE_00_D8 */
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
@@ -108,6 +166,8 @@ from_UTF_16BE_D8_00_00 = {
 
 static const unsigned char
 from_UTF_16BE_D8_00_offsets[256] = {
+  /* used by from_UTF_16BE_D8_00 */
+  /* used by from_UTF_16LE_00_D8_00 */
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
@@ -147,6 +207,8 @@ from_UTF_16BE_D8 = {
 
 static const unsigned char
 from_UTF_16BE_offsets[256] = {
+  /* used by from_UTF_16BE */
+  /* used by from_UTF_16LE_00 */
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
       0,  0,  0,  0,  0,  0,  0,  0,    0,  0,  0,  0,  0,  0,  0,  0,
@@ -200,6 +262,13 @@ to_UTF_16BE_82 = {
   /* used as  to_UTF_16BE_F0_90 */
   /* used as  to_UTF_16BE_F1_80 */
   /* used as  to_UTF_16BE_F4_80 */
+  /* used as  to_UTF_16LE */
+  /* used as  to_UTF_16LE_E0 */
+  /* used as  to_UTF_16LE_E1 */
+  /* used as  to_UTF_16LE_ED */
+  /* used as  to_UTF_16LE_F0_90 */
+  /* used as  to_UTF_16LE_F1_80 */
+  /* used as  to_UTF_16LE_F4_80 */
     to_UTF_16BE_82_offsets,
     from_UTF_16BE_00_infos
 };
@@ -219,6 +288,8 @@ to_UTF_16BE_E0_infos[2] = {
 };
 static const BYTE_LOOKUP
 to_UTF_16BE_E0 = {
+  /* used as  to_UTF_16BE */
+  /* used as  to_UTF_16LE */
     to_UTF_16BE_E0_offsets,
     to_UTF_16BE_E0_infos
 };
@@ -233,6 +304,10 @@ to_UTF_16BE_E1 = {
   /* used as  to_UTF_16BE_F0 */
   /* used as  to_UTF_16BE_F1 */
   /* used as  to_UTF_16BE_F4 */
+  /* used as  to_UTF_16LE */
+  /* used as  to_UTF_16LE_F0 */
+  /* used as  to_UTF_16LE_F1 */
+  /* used as  to_UTF_16LE_F4 */
     to_UTF_16BE_82_offsets,
     to_UTF_16BE_E1_infos
 };
@@ -243,6 +318,8 @@ to_UTF_16BE_ED_infos[2] = {
 };
 static const BYTE_LOOKUP
 to_UTF_16BE_ED = {
+  /* used as  to_UTF_16BE */
+  /* used as  to_UTF_16LE */
     to_UTF_16BE_E0_offsets,
     to_UTF_16BE_ED_infos
 };
@@ -262,6 +339,8 @@ to_UTF_16BE_F0_infos[2] = {
 };
 static const BYTE_LOOKUP
 to_UTF_16BE_F0 = {
+  /* used as  to_UTF_16BE */
+  /* used as  to_UTF_16LE */
     to_UTF_16BE_F0_offsets,
     to_UTF_16BE_F0_infos
 };
@@ -272,6 +351,8 @@ to_UTF_16BE_F1_infos[1] = {
 };
 static const BYTE_LOOKUP
 to_UTF_16BE_F1 = {
+  /* used as  to_UTF_16BE */
+  /* used as  to_UTF_16LE */
     to_UTF_16BE_82_offsets,
     to_UTF_16BE_F1_infos
 };
@@ -282,6 +363,8 @@ to_UTF_16BE_F4_infos[2] = {
 };
 static const BYTE_LOOKUP
 to_UTF_16BE_F4 = {
+  /* used as  to_UTF_16BE */
+  /* used as  to_UTF_16LE */
     to_UTF_16BE_F0_offsets,
     to_UTF_16BE_F4_infos
 };
@@ -313,6 +396,8 @@ to_UTF_16BE_infos[9] = {
 };
 static const BYTE_LOOKUP
 to_UTF_16BE = {
+  /* used as  to_UTF_16BE */
+  /* used as  to_UTF_16LE */
     to_UTF_16BE_offsets,
     to_UTF_16BE_infos
 };
@@ -323,10 +408,65 @@ rb_to_UTF_16BE = {
     NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_16be
 };
 
+static const struct byte_lookup* const
+from_UTF_16LE_00_D8_00_infos[2] = {
+     INVALID,   FUNso,
+};
+static const BYTE_LOOKUP
+from_UTF_16LE_00_D8_00 = {
+    from_UTF_16BE_D8_00_offsets,
+    from_UTF_16LE_00_D8_00_infos
+};
+
+static const struct byte_lookup* const
+from_UTF_16LE_00_D8_infos[1] = {
+     &from_UTF_16LE_00_D8_00,
+};
+static const BYTE_LOOKUP
+from_UTF_16LE_00_D8 = {
+    from_UTF_16BE_00_offsets,
+    from_UTF_16LE_00_D8_infos
+};
+
+static const struct byte_lookup* const
+from_UTF_16LE_00_infos[3] = {
+                    FUNso, &from_UTF_16LE_00_D8,
+                  INVALID,
+};
+static const BYTE_LOOKUP
+from_UTF_16LE_00 = {
+    from_UTF_16BE_offsets,
+    from_UTF_16LE_00_infos
+};
+
+static const struct byte_lookup* const
+from_UTF_16LE_infos[1] = {
+     &from_UTF_16LE_00,
+};
+static const BYTE_LOOKUP
+from_UTF_16LE = {
+    from_UTF_16BE_00_offsets,
+    from_UTF_16LE_infos
+};
+
+static rb_transcoder
+rb_from_UTF_16LE = {
+    "UTF-16LE", "UTF-8", &from_UTF_16LE, 4, 0,
+    NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_16le
+};
+
+static rb_transcoder
+rb_to_UTF_16LE = {
+    "UTF-8", "UTF-16LE", &to_UTF_16BE, 4, 1,
+    NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_16le
+};
+
 void
 Init_utf_16_32(void)
 {
     rb_register_transcoder(&rb_from_UTF_16BE);
     rb_register_transcoder(&rb_to_UTF_16BE);
+    rb_register_transcoder(&rb_from_UTF_16LE);
+    rb_register_transcoder(&rb_to_UTF_16LE);
 }
-/* Footprint (bytes): gross: 3420, saved: 1992, net: 1428 */
+/* Footprint (bytes): gross: 6036, saved: 4548, net: 1488 */
