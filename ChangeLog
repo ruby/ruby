@@ -1,3 +1,18 @@
+Sun Jan 20 15:08:08 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* added changelog for last commit
+
+Sun Jan 20 15:08:08 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/utf_16_32.c: new file, currently implementing
+	  UTF-16BE conversions only.
+
+	* test/ruby/test_transcode.rb: Added tests for UTF-16BE;
+	  made check_both_ways() use force_encoding differently.
+
+	* transcode_data.h, transcode.c: Support for more conversion
+	  functions.
+
 Sun Jan 20 13:06:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_each_char): performance improvement, and stop if
