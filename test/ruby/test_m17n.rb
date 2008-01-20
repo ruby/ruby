@@ -297,6 +297,10 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_utf16
+    s1 = "aa".force_encoding("utf-16be")
+    s2 = "z".force_encoding("us-ascii")
+    assert_nil(Encoding.compatible?(s1, s2), "Encoding.compatible?(#{encdump s1}, #{encdump s2})")
+
     s1 = "ab".force_encoding("utf-16be")
     s2 = "b".force_encoding("utf-16be")
     assert_equal(false, s1.end_with?(s2), "#{encdump s1}.end_with?(#{encdump s2})")
