@@ -890,12 +890,21 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_marshal
+    s1 = "\xa1\xa1".force_encoding("euc-jp")
+    s2 = Marshal.load(Marshal.dump(s1))
+    assert_equal(s1, s2)
   end
 
   def test_env
     ENV.each {|k, v|
       assert_equal(Encoding::ASCII_8BIT, k.encoding)
       assert_equal(Encoding::ASCII_8BIT, v.encoding)
+    }
+  end
+
+  def test_encoding_find
+    assert_raise(ArgumentError) {
+      Encoding.find("utf-8".force_encoding("utf-16be"))
     }
   end
 end
