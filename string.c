@@ -4599,10 +4599,11 @@ rb_str_each_char(VALUE str)
     len = RSTRING_LEN(str);
     enc = rb_enc_get(str);
     n = rb_enc_mbclen(ptr, ptr + len, enc);
-    for (i = 0; i < len; i += n) {
+    for (i = 0; i < len;) {
 	rb_yield(rb_str_subseq(str, i, n));
 	ptr = RSTRING_PTR(str);
 	len = RSTRING_LEN(str);
+	if ((i += n) >= len) break;
 	enc = rb_enc_get(str);
 	s = rb_enc_left_char_head(ptr, ptr + i, enc);
 	n = rb_enc_mbclen(s, ptr + len, enc);

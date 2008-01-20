@@ -1,3 +1,8 @@
+Mon Jan 21 03:45:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_each_char): advance offset before get next char
+	  length.  [ruby-dev:33211]
+
 Sun Jan 20 20:00:20 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c, enc/trans/utf_16_32.c, test/ruby/test_transcode.rb:
