@@ -558,7 +558,19 @@ module REXML
         prefix = namespaces.index(namespace) if namespace
       end
       prefix = nil if prefix == 'xmlns'
-      attributes.get_attribute( "#{prefix ? prefix + ':' : ''}#{name}" )
+
+      ret_val = 
+        attributes.get_attribute( "#{prefix ? prefix + ':' : ''}#{name}" )
+
+      return ret_val unless ret_val.nil?
+      return nil if prefix.nil?
+
+      # now check that prefix'es namespace is not the same as the
+      # default namespace
+      return nil unless ( namespaces[ prefix ] == namespaces[ 'xmlns' ] )
+
+      attributes.get_attribute( name )
+
     end
 
     # Evaluates to +true+ if this element has any attributes set, false
@@ -675,7 +687,7 @@ module REXML
     #  out = ''
     #  doc.write( out )     #-> doc is written to the string 'out'
     #  doc.write( $stdout ) #-> doc written to the console
-    def write(writer=$stdout, indent=-1, transitive=false, ie_hack=false)
+    def write(output=$stdout, indent=-1, transitive=false, ie_hack=false)
       Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters")
       formatter = if indent > -1
           if transitive
@@ -1217,14 +1229,17 @@ module REXML
     # 
     # Method contributed by Henrik Martensson
     def get_attribute_ns(namespace, name)
+      result = nil
       each_attribute() { |attribute|
         if name == attribute.name &&
           namespace == attribute.namespace() &&
           ( !namespace.empty? || !attribute.fully_expanded_name.index(':') )
-          return attribute
+          # foo will match xmlns:foo, but only if foo isn't also an attribute
+          result = attribute if !result or !namespace.empty? or 
+                                !attribute.fully_expanded_name.index(':')
         end
       }
-      nil
+      result
     end
   end
 end

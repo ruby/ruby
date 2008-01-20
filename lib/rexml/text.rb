@@ -18,8 +18,40 @@ module REXML
     # If +raw+ is true, then REXML leaves the value alone
     attr_accessor :raw
 
-    ILLEGAL = /(<|&(?!(#{Entity::NAME})|(#0*((?:\d+)|(?:x[a-fA-F0-9]+)));))/um
+    NEEDS_A_SECOND_CHECK = /(<|&((#{Entity::NAME});|(#0*((?:\d+)|(?:x[a-fA-F0-9]+)));)?)/um
     NUMERICENTITY = /&#0*((?:\d+)|(?:x[a-fA-F0-9]+));/ 
+    VALID_CHAR = [
+      0x9, 0xA, 0xD,
+      (0x20..0xD7FF),
+      (0xE000..0xFFFD),
+      (0x10000..0x10FFFF)
+    ]
+
+    if String.method_defined? :encode
+      VALID_XML_CHARS = Regexp.new('^['+
+        VALID_CHAR.map { |item|
+          case item
+          when Fixnum
+            [item].pack('U').force_encoding('utf-8')
+          when Range
+            [item.first, '-'.ord, item.last].pack('UUU').force_encoding('utf-8')
+          end
+        }.join +
+      ']*$')
+    else
+      VALID_XML_CHARS = /^(
+           [\x09\x0A\x0D\x20-\x7E]            # ASCII
+         | [\xC2-\xDF][\x80-\xBF]             # non-overlong 2-byte
+         |  \xE0[\xA0-\xBF][\x80-\xBF]        # excluding overlongs
+         | [\xE1-\xEC\xEE][\x80-\xBF]{2}      # straight 3-byte
+         |  \xEF[\x80-\xBE]{2}                #
+         |  \xEF\xBF[\x80-\xBD]               # excluding U+fffe and U+ffff
+         |  \xED[\x80-\x9F][\x80-\xBF]        # excluding surrogates
+         |  \xF0[\x90-\xBF][\x80-\xBF]{2}     # planes 1-3
+         | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
+         |  \xF4[\x80-\x8F][\x80-\xBF]{2}     # plane 16
+       )*$/x; 
+    end
 
     # Constructor
     # +arg+ if a String, the content is set to the String.  If a Text,
@@ -58,7 +90,7 @@ module REXML
     #
     # +pattern+ INTERNAL USE ONLY
     def initialize(arg, respect_whitespace=false, parent=nil, raw=nil, 
-      entity_filter=nil, illegal=ILLEGAL )
+      entity_filter=nil, illegal=NEEDS_A_SECOND_CHECK )
 
       @raw = false
 
@@ -85,10 +117,54 @@ module REXML
 
       @string.gsub!( /\r\n?/, "\n" )
 
-      # check for illegal characters
-      if @raw
-        if @string =~ illegal
-          raise "Illegal character '#{$1}' in raw string \"#{@string}\""
+      Text.check(@string, NEEDS_A_SECOND_CHECK, doctype) if @raw and @parent
+    end
+
+    def parent= parent
+      super(parent)
+      Text.check(@string, NEEDS_A_SECOND_CHECK, doctype) if @raw and @parent
+    end
+
+    # check for illegal characters
+    def Text.check string, pattern, doctype
+
+      # illegal anywhere
+      if string !~ VALID_XML_CHARS
+        if String.method_defined? :encode
+          string.chars.each do |c|
+            case c.ord
+            when *VALID_CHAR
+            else
+              raise "Illegal character #{c.inspect} in raw string \"#{string}\""
+            end
+          end
+        else
+          string.scan(/[\x00-\x7F]|[\x80-\xBF][\xC0-\xF0]*|[\xC0-\xF0]/) do |c|
+            case c.unpack('U')
+            when *VALID_CHAR
+            else
+              raise "Illegal character #{c.inspect} in raw string \"#{string}\""
+            end
+          end
+        end
+      end
+
+      # context sensitive
+      string.scan(pattern).each do
+        if $1[-1] != ?;
+          raise "Illegal character '#{$1}' in raw string \"#{string}\""
+        elsif $1[0] == ?&
+          if $5 and $5[0] == ?#
+            case ($5[1] == ?x ? $5[2..-1].to_i(16) : $5[1..-1].to_i)
+            when *VALID_CHAR
+            else
+              raise "Illegal character '#{$1}' in raw string \"#{string}\""
+            end
+          elsif $3 and !SUBSTITUTES.include?($1)
+            if !doctype or !doctype.entities.has_key?($3)
+              raise "Undeclared entity '#{$1}' in raw string \"#{string}\""
+            end
+          end
         end
       end
     end
@@ -120,6 +196,13 @@ module REXML
       to_s() <=> other.to_s
     end
 
+    def doctype
+      if @parent
+        doc = @parent.document
+        doc.doctype if doc
+      end
+    end
+
     REFERENCE = /#{Entity::REFERENCE}/
     # Returns the string value of this text node.  This string is always
     # escaped, meaning that it is a valid XML text node string, and all
@@ -137,12 +220,6 @@ module REXML
     def to_s
       return @string if @raw
       return @normalized if @normalized
-
-      doctype = nil
-      if @parent
-        doc = @parent.document
-        doctype = doc.doctype if doc
-      end
 
       @normalized = Text::normalize( @string, doctype, @entity_filter )
     end
@@ -165,12 +242,7 @@ module REXML
     #   u = Text.new( "sean russell", false, nil, true )
     #   u.value   #-> "sean russell"
     def value
-      @unnormalized if @unnormalized
-      doctype = nil
-      if @parent
-        doc = @parent.document
-        doctype = doc.doctype if doc
-      end
+      return @unnormalized if @unnormalized
       @unnormalized = Text::unnormalize( @string, doctype )
     end
 
@@ -286,7 +358,7 @@ module REXML
     EREFERENCE = /&(?!#{Entity::NAME};)/
     # Escapes all possible entities
     def Text::normalize( input, doctype=nil, entity_filter=nil )
-      copy = input
+      copy = input.to_s
       # Doing it like this rather than in a loop improves the speed
       #copy = copy.gsub( EREFERENCE, '&amp;' )
       copy = copy.gsub( "&", "&amp;" )

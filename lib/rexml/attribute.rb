@@ -17,6 +17,8 @@ module REXML
 		attr_writer :normalized	
 		PATTERN = /\s*(#{NAME_STR})\s*=\s*(["'])(.*?)\2/um
 
+    NEEDS_A_SECOND_CHECK = /(<|&((#{Entity::NAME});|(#0*((?:\d+)|(?:x[a-fA-F0-9]+)));)?)/um
+
 		# Constructor.
     # FIXME: The parser doesn't catch illegal characters in attributes
     #
@@ -110,15 +112,16 @@ module REXML
 			end
 		end
 
-		# Returns the attribute value, with entities replaced
-		def to_s
-			return @normalized if @normalized
-
-			doctype = nil
+    def doctype
 			if @element
 				doc = @element.document
 				doctype = doc.doctype if doc
 			end
+    end
+
+		# Returns the attribute value, with entities replaced
+		def to_s
+			return @normalized if @normalized
 
 			@normalized = Text::normalize( @unnormalized, doctype )
 			@unnormalized = nil
@@ -129,11 +132,6 @@ module REXML
 		# have been expanded to their values
 		def value
 			return @unnormalized if @unnormalized
-			doctype = nil
-			if @element
-				doc = @element.document
-				doctype = doc.doctype if doc
-			end
 			@unnormalized = Text::unnormalize( @normalized, doctype )
 			@normalized = nil
       @unnormalized
@@ -150,6 +148,11 @@ module REXML
 		# Returns this attribute
 		def element=( element )
 			@element = element
+
+      if @normalized
+        Text.check( @normalized, NEEDS_A_SECOND_CHECK, doctype )
+      end
+
 			self
 		end
 

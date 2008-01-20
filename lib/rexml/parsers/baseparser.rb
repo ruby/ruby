@@ -25,7 +25,20 @@ module REXML
     #
     # Nat Price gave me some good ideas for the API.
     class BaseParser
-      NCNAME_STR= '[\w:][\-\w\d.]*'
+      if String.method_defined? :encode
+        # Oniguruma / POSIX [understands unicode]
+        LETTER = '[[:alpha:]]'
+        DIGIT = '[[:digit:]]'
+      else
+        # Ruby < 1.9 [doesn't understand unicode]
+        LETTER = 'a-zA-Z'
+        DIGIT = '\d'
+      end
+
+      COMBININGCHAR = '' # TODO
+      EXTENDER = ''      # TODO
+
+      NCNAME_STR= "[#{LETTER}_:][-#{LETTER}#{DIGIT}._:#{COMBININGCHAR}#{EXTENDER}]*"
       NAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
       UNAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
 
@@ -33,7 +46,7 @@ module REXML
       NAME = "([\\w:]#{NAMECHAR}*)"
       NMTOKEN = "(?:#{NAMECHAR})+"
       NMTOKENS = "#{NMTOKEN}(\\s+#{NMTOKEN})*"
-      REFERENCE = "(?:&#{NAME};|&#\\d+;|&#x[0-9a-fA-F]+;)"
+      REFERENCE = "&(?:#{NAME};|#\\d+;|#x[0-9a-fA-F]+;)"
       REFERENCE_RE = /#{REFERENCE}/
 
       DOCTYPE_START = /\A\s*<!DOCTYPE\s/um
@@ -340,6 +353,12 @@ module REXML
               raise REXML::ParseException.new("Malformed node", @source) unless md
               if md[0][2] == ?-
                 md = @source.match( COMMENT_PATTERN, true )
+
+                case md[1]
+                when /--/, /-$/
+                  raise REXML::ParseException.new("Malformed comment", @source)
+                end
+
                 return [ :comment, md[1] ] if md
               else
                 md = @source.match( CDATA_PATTERN, true )
@@ -384,6 +403,12 @@ module REXML
                   elsif b
                     prefixes << b unless b == "xml"
                   end
+
+                  if attributes.has_key? a
+                    msg = "Duplicate attribute #{a.inspect}"
+                    raise REXML::ParseException.new( msg, @source, self)
+                  end
+
                   attributes[a] = e 
                 }
               end
@@ -470,13 +495,10 @@ module REXML
               if entity_value
                 re = /&#{entity_reference};/
                 rv.gsub!( re, entity_value )
+              else
+                er = DEFAULT_ENTITIES[entity_reference]
+                rv.gsub!( er[0], er[2] ) if er
               end
-            end
-          end
-          matches.each do |entity_reference|
-            unless filter and filter.include?(entity_reference)
-              er = DEFAULT_ENTITIES[entity_reference]
-              rv.gsub!( er[0], er[2] ) if er
             end
           end
           rv.gsub!( /&amp;/, '&' )

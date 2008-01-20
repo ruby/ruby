@@ -147,7 +147,7 @@ module REXML
       # the XML spec.  If there is one, we can determine the encoding from
       # it.
       @buffer = ""
-      str = @source.read( 2 )
+      str = @source.read( 2 ) || ''
       if encoding
         self.encoding = encoding
       elsif str[0,2] == "\xfe\xff"
@@ -161,7 +161,7 @@ module REXML
       else
         @line_break = ">"
       end
-      super str+@source.readline( @line_break )
+      super( @source.eof? ? str : str+@source.readline( @line_break ) )
     end
 
     def scan(pattern, cons=false)
@@ -231,7 +231,7 @@ module REXML
     end
 
     def position
-      @er_source.stat.pipe? ? 0 : @er_source.pos
+      @er_source.pos rescue 0
     end
 
     # @return the current line in the source
