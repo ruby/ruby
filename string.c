@@ -4590,11 +4590,22 @@ rb_str_each_byte(VALUE str)
 static VALUE
 rb_str_each_char(VALUE str)
 {
-    int i, len = str_strlen(str, 0);
+    int i, len, n;
+    const char *ptr, *s;
+    rb_encoding *enc;
 
     RETURN_ENUMERATOR(str, 0, 0);
-    for (i=0; i<len; i++) {
-	rb_yield(rb_str_substr(str, i, 1));
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    enc = rb_enc_get(str);
+    n = rb_enc_mbclen(ptr, ptr + len, enc);
+    for (i = 0; i < len; i += n) {
+	rb_yield(rb_str_subseq(str, i, n));
+	ptr = RSTRING_PTR(str);
+	len = RSTRING_LEN(str);
+	enc = rb_enc_get(str);
+	s = rb_enc_left_char_head(ptr, ptr + i, enc);
+	n = rb_enc_mbclen(s, ptr + len, enc);
     }
     return str;
 }

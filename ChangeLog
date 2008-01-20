@@ -1,3 +1,8 @@
+Sun Jan 20 13:06:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_each_char): performance improvement, and stop if
+	  shortened in the block.  [ruby-dev:33189]
+
 Sun Jan 20 09:12:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: use -Ks when read insns.def. [ruby-dev#33185]
