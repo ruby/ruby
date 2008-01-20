@@ -35,6 +35,9 @@ typedef struct byte_lookup {
 #define UNDEF	(PType 0x09)	/* legal but undefined */
 #define ZERObt	(PType 0x0A)	/* zero bytes of payload, i.e. remove */
 #define FUNii	(PType 0x0B)	/* function from info to info */
+#define FUNsi	(PType 0x0D)	/* function from start to info */
+#define FUNio	(PType 0x0E)	/* function from info to output */
+#define FUNso	(PType 0x0F)	/* function from start to output */
 
 #define o1(b1)		(PType((((unsigned char)(b1))<<8)|ONEbt))
 #define o2(b1,b2)	(PType((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|TWObt))
@@ -72,7 +75,10 @@ typedef struct rb_transcoder {
 			 struct rb_transcoder *, struct rb_transcoding *);
     void (*postprocessor)(char**, char**, char*, char*,
 			 struct rb_transcoder *, struct rb_transcoding *);
-    VALUE (*func_ii)(VALUE); /* function from info to info */
+    VALUE (*func_ii)(VALUE);                      /* info  -> info   */
+    VALUE (*func_si)(const unsigned char* const); /* start -> info   */
+    int (*func_io)(VALUE, const unsigned char*); /* info  -> output */
+    int (*func_so)(const unsigned char*, unsigned char*); /* start -> output */
 } rb_transcoder;
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);

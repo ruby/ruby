@@ -10,7 +10,8 @@ class TestTranscode < Test::Unit::TestCase
                       'ISO-8859-7', 'ISO-8859-8',
                       'ISO-8859-9', 'ISO-8859-10',
                       'ISO-8859-11', 'ISO-8859-13',
-                      'ISO-8859-14', 'ISO-8859-15'
+                      'ISO-8859-14', 'ISO-8859-15',
+                      'UTF-16BE'
                     ]
     all_encodings.each do |enc|
       'abc'.encode(enc, 'UTF-8')
@@ -54,8 +55,8 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def check_both_ways(utf8, raw, encoding)
-    assert_equal(utf8, raw.encode('utf-8', encoding))
-    assert_equal(raw, utf8.encode(encoding).force_encoding('ASCII-8BIT'))
+    assert_equal(utf8.force_encoding('utf-8'), raw.encode('utf-8', encoding))
+    assert_equal(raw.force_encoding(encoding), utf8.encode(encoding, 'utf-8'))
   end
 
   def test_encodings
@@ -123,5 +124,53 @@ class TestTranscode < Test::Unit::TestCase
       test_start = all_bytes
       assert_equal(test_start, test_start.encode('UTF-8',enc).encode(enc).force_encoding('ASCII-8BIT')) 
     end
+  end
+  
+  def test_utf_16be
+    check_both_ways("abc".force_encoding('UTF-8'), "\x00a\x00b\x00c", 'utf-16be')
+    check_both_ways("\u00E9", "\x00\xE9", 'utf-16be');
+    check_both_ways("\u00E9\u0070\u00E9\u0065", "\x00\xE9\x00\x70\x00\xE9\x00\x65", 'utf-16be') # épée
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\x67\x7E\x67\x2C\x88\x4C\x5F\x18", 'utf-16be') # 松本行弘
+    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\x97\x52\x5C\x71\x5B\x66\x96\x62\x59\x27\x5B\x66",
+                    'utf-16be') # 青山学院大学
+    check_both_ways("Martin D\u00FCrst", "\x00M\x00a\x00r\x00t\x00i\x00n\x00 \x00D\x00\xFC\x00r\x00s\x00t",
+                    'utf-16be') # Martin Dürst
+    # BMP
+    check_both_ways("\u0000", "\x00\x00", 'utf-16be')
+    check_both_ways("\u007F", "\x00\x7F", 'utf-16be')
+    check_both_ways("\u0080", "\x00\x80", 'utf-16be')
+    check_both_ways("\u0555", "\x05\x55", 'utf-16be')
+    check_both_ways("\u04AA", "\x04\xAA", 'utf-16be')
+    check_both_ways("\u0333", "\x03\x33", 'utf-16be')
+    check_both_ways("\u04CC", "\x04\xCC", 'utf-16be')
+    check_both_ways("\u00F0", "\x00\xF0", 'utf-16be')
+    check_both_ways("\u070F", "\x07\x0F", 'utf-16be')
+    check_both_ways("\u07FF", "\x07\xFF", 'utf-16be')
+    check_both_ways("\u0800", "\x08\x00", 'utf-16be')
+    check_both_ways("\uD7FF", "\xD7\xFF", 'utf-16be')
+    check_both_ways("\uE000", "\xE0\x00", 'utf-16be')
+    check_both_ways("\uFFFF", "\xFF\xFF", 'utf-16be')
+    check_both_ways("\u5555", "\x55\x55", 'utf-16be')
+    check_both_ways("\uAAAA", "\xAA\xAA", 'utf-16be')
+    check_both_ways("\u3333", "\x33\x33", 'utf-16be')
+    check_both_ways("\uCCCC", "\xCC\xCC", 'utf-16be')
+    check_both_ways("\uF0F0", "\xF0\xF0", 'utf-16be')
+    check_both_ways("\u0F0F", "\x0F\x0F", 'utf-16be')
+    check_both_ways("\uFF00", "\xFF\x00", 'utf-16be')
+    check_both_ways("\u00FF", "\x00\xFF", 'utf-16be')
+    # outer planes
+    check_both_ways("\u{10000}", "\xD8\x00\xDC\x00", 'utf-16be')
+    check_both_ways("\u{FFFFF}", "\xDB\xBF\xDF\xFF", 'utf-16be')
+    check_both_ways("\u{100000}", "\xDB\xC0\xDC\x00", 'utf-16be')
+    check_both_ways("\u{10FFFF}", "\xDB\xFF\xDF\xFF", 'utf-16be')
+    check_both_ways("\u{105555}", "\xDB\xD5\xDD\x55", 'utf-16be')
+    check_both_ways("\u{55555}", "\xD9\x15\xDD\x55", 'utf-16be')
+    check_both_ways("\u{AAAAA}", "\xDA\x6A\xDE\xAA", 'utf-16be')
+    check_both_ways("\u{33333}", "\xD8\x8C\xDF\x33", 'utf-16be')
+    check_both_ways("\u{CCCCC}", "\xDA\xF3\xDC\xCC", 'utf-16be')
+    check_both_ways("\u{8F0F0}", "\xD9\xFC\xDC\xF0", 'utf-16be')
+    check_both_ways("\u{F0F0F}", "\xDB\x83\xDF\x0F", 'utf-16be')
+    check_both_ways("\u{8FF00}", "\xD9\xFF\xDF\x00", 'utf-16be')
+    check_both_ways("\u{F00FF}", "\xDB\x80\xDC\xFF", 'utf-16be')
   end
 end

@@ -104,6 +104,7 @@ init_transcoder_table(void)
     rb_declare_transcoder("SHIFT_JIS",   "UTF-8", "japanese");
     rb_declare_transcoder("EUC-JP",      "UTF-8", "japanese");
     rb_declare_transcoder("ISO-2022-JP", "UTF-8", "japanese");
+    rb_declare_transcoder("UTF-16BE",    "UTF-8", "utf_16_32");
 }
 
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
@@ -153,12 +154,14 @@ transcode_loop(char **in_pos, char **out_pos,
     char *in_p = *in_pos, *out_p = *out_pos;
     const BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
     const BYTE_LOOKUP *next_table;
+    char *char_start;
     unsigned int next_offset;
     VALUE next_info;
     unsigned char next_byte;
     int from_utf8 = my_transcoder->from_utf8;
     char *out_s = out_stop - my_transcoder->max_output + 1;
     while (in_p < in_stop) {
+	char_start = in_p;
 	next_table = conv_tree_start;
 	if (out_p >= out_s) {
 	    int len = (out_p - *out_pos);
@@ -212,6 +215,16 @@ transcode_loop(char **in_pos, char **out_pos,
 	  case FUNii:
 	    next_info = (VALUE)(*my_transcoder->func_ii)(next_info);
 	    goto follow_info;
+	  case FUNsi:
+	    next_info = (VALUE)(*my_transcoder->func_si)(char_start);
+	    goto follow_info;
+	    break;
+	  case FUNio:
+	    out_p += (VALUE)(*my_transcoder->func_io)(next_info, out_p);
+	    break;
+	  case FUNso:
+	    out_p += (VALUE)(*my_transcoder->func_so)(char_start, out_p);
+	    break;
 	  case INVALID:
 	    goto invalid;
 	  case UNDEF:
