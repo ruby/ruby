@@ -1,3 +1,15 @@
+Mon Jan 21 06:40:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (transcode_dispatch): constified return value.
+
+	* transcode_data.h (rb_transcoding): include pointer to rb_transcoder
+	  and auxiliary data.
+
+	* transcode_data.h (rb_transcoder): all callback functions shoud have
+	  their own parameters.
+
+	* enc/trans/{japanese,single_byte}.c: constified.
+
 Mon Jan 21 03:45:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_each_char): advance offset before get next char

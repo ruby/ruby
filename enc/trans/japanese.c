@@ -4422,7 +4422,7 @@ from_SHIFT_JIS = {
     from_SHIFT_JIS_offsets,
     from_SHIFT_JIS_infos
 };
-static rb_transcoder
+static const rb_transcoder
 rb_from_SHIFT_JIS = {
     "SHIFT_JIS", "UTF-8", &from_SHIFT_JIS, 3, 0,
     NULL, NULL,
@@ -13352,7 +13352,7 @@ to_SHIFT_JIS = {
     to_SHIFT_JIS_offsets,
     to_SHIFT_JIS_infos
 };
-static rb_transcoder
+static const rb_transcoder
 rb_to_SHIFT_JIS = {
     "UTF-8", "SHIFT_JIS", &to_SHIFT_JIS, 2, 1,
     NULL, NULL,
@@ -18126,7 +18126,7 @@ from_EUC_JP = {
     from_EUC_JP_offsets,
     from_EUC_JP_infos
 };
-static rb_transcoder
+static const rb_transcoder
 rb_from_EUC_JP = {
     "EUC-JP", "UTF-8", &from_EUC_JP, 3, 0,
     NULL, NULL,
@@ -23631,7 +23631,7 @@ to_EUC_JP = {
     to_SHIFT_JIS_offsets,
     to_EUC_JP_infos
 };
-static rb_transcoder
+static const rb_transcoder
 rb_to_EUC_JP = {
     "UTF-8", "EUC-JP", &to_EUC_JP, 2, 1,
     NULL, NULL,
@@ -23721,9 +23721,9 @@ get_iso_2022_mode(char **in_pos)
 static void
 from_iso_2022_jp_transcoder_preprocessor(char **in_pos, char **out_pos,
 					 char *in_stop, char *out_stop,
-					 rb_transcoder *my_transcoder,
 					 rb_transcoding *my_transcoding)
 {
+    const rb_transcoder *my_transcoder = my_transcoding->transcoder;
     char *in_p = *in_pos, *out_p = *out_pos;
     int cur_mode = ISO_2022_GZ_ASCII;
     unsigned char c1;
@@ -23801,9 +23801,9 @@ select_iso_2022_mode(char **out_pos, int new_mode)
 static void
 to_iso_2022_jp_transcoder_postprocessor(char **in_pos, char **out_pos,
 					char *in_stop, char *out_stop,
-					rb_transcoder *my_transcoder,
 					rb_transcoding *my_transcoding)
 {
+    const rb_transcoder *my_transcoder = my_transcoding->transcoder;
     char *in_p = *in_pos, *out_p = *out_pos;
     int cur_mode = ISO_2022_GZ_ASCII, new_mode = 0;
     unsigned char next_byte;
@@ -23844,13 +23844,13 @@ to_iso_2022_jp_transcoder_postprocessor(char **in_pos, char **out_pos,
     *out_pos = out_p;
 }
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_2022_JP = {
     "ISO-2022-JP", "UTF-8", &from_EUC_JP, 8, 0,
     &from_iso_2022_jp_transcoder_preprocessor, NULL,
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_2022_JP = {
     "UTF-8", "ISO-2022-JP", &to_EUC_JP, 8, 1,
     NULL, &to_iso_2022_jp_transcoder_postprocessor,

@@ -33,25 +33,25 @@ from_US_ASCII = {
     from_US_ASCII_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_US_ASCII = {
     "US-ASCII", "UTF-8", &from_US_ASCII, 1, 0,
     NULL, NULL,
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_US_ASCII = {
     "UTF-8", "US-ASCII", &from_US_ASCII, 1, 1,
     NULL, NULL,
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ASCII_8BIT = {
     "ASCII-8BIT", "UTF-8", &from_US_ASCII, 1, 0,
     NULL, NULL,
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ASCII_8BIT = {
     "UTF-8", "ASCII-8BIT", &from_US_ASCII, 1, 1,
     NULL, NULL,
@@ -127,7 +127,7 @@ from_ISO_8859_1 = {
     from_ISO_8859_1_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_1 = {
     "ISO-8859-1", "UTF-8", &from_ISO_8859_1, 2, 0,
     NULL, NULL,
@@ -226,7 +226,7 @@ to_ISO_8859_1 = {
     to_ISO_8859_1_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_1 = {
     "UTF-8", "ISO-8859-1", &to_ISO_8859_1, 1, 1,
     NULL, NULL,
@@ -274,7 +274,7 @@ from_ISO_8859_2 = {
     from_ISO_8859_2_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_2 = {
     "ISO-8859-2", "UTF-8", &from_ISO_8859_2, 2, 0,
     NULL, NULL,
@@ -431,7 +431,7 @@ to_ISO_8859_2 = {
     to_ISO_8859_2_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_2 = {
     "UTF-8", "ISO-8859-2", &to_ISO_8859_2, 1, 1,
     NULL, NULL,
@@ -496,7 +496,7 @@ from_ISO_8859_3 = {
     from_ISO_8859_3_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_3 = {
     "ISO-8859-3", "UTF-8", &from_ISO_8859_3, 2, 0,
     NULL, NULL,
@@ -628,7 +628,7 @@ to_ISO_8859_3 = {
     to_ISO_8859_3_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_3 = {
     "UTF-8", "ISO-8859-3", &to_ISO_8859_3, 1, 1,
     NULL, NULL,
@@ -676,7 +676,7 @@ from_ISO_8859_4 = {
     from_ISO_8859_4_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_4 = {
     "ISO-8859-4", "UTF-8", &from_ISO_8859_4, 2, 0,
     NULL, NULL,
@@ -812,7 +812,7 @@ to_ISO_8859_4 = {
     to_ISO_8859_4_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_4 = {
     "UTF-8", "ISO-8859-4", &to_ISO_8859_4, 1, 1,
     NULL, NULL,
@@ -892,7 +892,7 @@ from_ISO_8859_5 = {
     from_ISO_8859_5_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_5 = {
     "ISO-8859-5", "UTF-8", &from_ISO_8859_5, 3, 0,
     NULL, NULL,
@@ -1044,7 +1044,7 @@ to_ISO_8859_5 = {
     to_ISO_8859_5_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_5 = {
     "UTF-8", "ISO-8859-5", &to_ISO_8859_5, 1, 1,
     NULL, NULL,
@@ -1100,7 +1100,7 @@ from_ISO_8859_6 = {
     from_ISO_8859_6_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_6 = {
     "ISO-8859-6", "UTF-8", &from_ISO_8859_6, 2, 0,
     NULL, NULL,
@@ -1207,7 +1207,7 @@ to_ISO_8859_6 = {
     to_ISO_8859_6_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_6 = {
     "UTF-8", "ISO-8859-6", &to_ISO_8859_6, 1, 1,
     NULL, NULL,
@@ -1305,7 +1305,7 @@ from_ISO_8859_7 = {
     from_ISO_8859_7_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_7 = {
     "ISO-8859-7", "UTF-8", &from_ISO_8859_7, 3, 0,
     NULL, NULL,
@@ -1492,7 +1492,7 @@ to_ISO_8859_7 = {
     to_ISO_8859_7_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_7 = {
     "UTF-8", "ISO-8859-7", &to_ISO_8859_7, 1, 1,
     NULL, NULL,
@@ -1573,7 +1573,7 @@ from_ISO_8859_8 = {
     from_ISO_8859_8_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_8 = {
     "ISO-8859-8", "UTF-8", &from_ISO_8859_8, 3, 0,
     NULL, NULL,
@@ -1719,7 +1719,7 @@ to_ISO_8859_8 = {
     to_ISO_8859_8_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_8 = {
     "UTF-8", "ISO-8859-8", &to_ISO_8859_8, 1, 1,
     NULL, NULL,
@@ -1767,7 +1767,7 @@ from_ISO_8859_9 = {
     from_ISO_8859_9_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_9 = {
     "ISO-8859-9", "UTF-8", &from_ISO_8859_9, 2, 0,
     NULL, NULL,
@@ -1870,7 +1870,7 @@ to_ISO_8859_9 = {
     to_ISO_8859_9_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_9 = {
     "UTF-8", "ISO-8859-9", &to_ISO_8859_9, 1, 1,
     NULL, NULL,
@@ -1950,7 +1950,7 @@ from_ISO_8859_10 = {
     from_ISO_8859_10_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_10 = {
     "ISO-8859-10", "UTF-8", &from_ISO_8859_10, 3, 0,
     NULL, NULL,
@@ -2108,7 +2108,7 @@ to_ISO_8859_10 = {
     to_ISO_8859_10_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_10 = {
     "UTF-8", "ISO-8859-10", &to_ISO_8859_10, 1, 1,
     NULL, NULL,
@@ -2203,7 +2203,7 @@ from_ISO_8859_11 = {
     from_ISO_8859_11_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_11 = {
     "ISO-8859-11", "UTF-8", &from_ISO_8859_11, 3, 0,
     NULL, NULL,
@@ -2337,7 +2337,7 @@ to_ISO_8859_11 = {
     to_ISO_8859_11_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_11 = {
     "UTF-8", "ISO-8859-11", &to_ISO_8859_11, 1, 1,
     NULL, NULL,
@@ -2417,7 +2417,7 @@ from_ISO_8859_13 = {
     from_ISO_8859_13_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_13 = {
     "ISO-8859-13", "UTF-8", &from_ISO_8859_13, 3, 0,
     NULL, NULL,
@@ -2562,7 +2562,7 @@ to_ISO_8859_13 = {
     to_ISO_8859_13_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_13 = {
     "UTF-8", "ISO-8859-13", &to_ISO_8859_13, 1, 1,
     NULL, NULL,
@@ -2642,7 +2642,7 @@ from_ISO_8859_14 = {
     from_ISO_8859_14_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_14 = {
     "ISO-8859-14", "UTF-8", &from_ISO_8859_14, 3, 0,
     NULL, NULL,
@@ -2864,7 +2864,7 @@ to_ISO_8859_14 = {
     to_ISO_8859_14_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_14 = {
     "UTF-8", "ISO-8859-14", &to_ISO_8859_14, 1, 1,
     NULL, NULL,
@@ -2944,7 +2944,7 @@ from_ISO_8859_15 = {
     from_ISO_8859_15_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_ISO_8859_15 = {
     "ISO-8859-15", "UTF-8", &from_ISO_8859_15, 3, 0,
     NULL, NULL,
@@ -3064,7 +3064,7 @@ to_ISO_8859_15 = {
     to_ISO_8859_15_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_ISO_8859_15 = {
     "UTF-8", "ISO-8859-15", &to_ISO_8859_15, 1, 1,
     NULL, NULL,

@@ -110,7 +110,7 @@ init_transcoder_table(void)
 
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
 
-static rb_transcoder *
+static const rb_transcoder *
 transcode_dispatch(const char* from_encoding, const char* to_encoding)
 {
     char *const key = transcoder_key(from_encoding, to_encoding);
@@ -214,17 +214,17 @@ transcode_loop(char **in_pos, char **out_pos,
 	    *out_p++ = getBT3(next_info);
 	    continue;
 	  case FUNii:
-	    next_info = (VALUE)(*my_transcoder->func_ii)(next_info);
+	    next_info = (VALUE)(*my_transcoder->func_ii)(next_info, my_transcoding);
 	    goto follow_info;
 	  case FUNsi:
-	    next_info = (VALUE)(*my_transcoder->func_si)(char_start);
+	    next_info = (VALUE)(*my_transcoder->func_si)(char_start, my_transcoding);
 	    goto follow_info;
 	    break;
 	  case FUNio:
-	    out_p += (VALUE)(*my_transcoder->func_io)(next_info, out_p);
+	    out_p += (VALUE)(*my_transcoder->func_io)(next_info, out_p, my_transcoding);
 	    break;
 	  case FUNso:
-	    out_p += (VALUE)(*my_transcoder->func_so)(char_start, out_p);
+	    out_p += (VALUE)(*my_transcoder->func_so)(char_start, out_p, my_transcoding);
 	    break;
 	  case INVALID:
 	    goto invalid;
@@ -269,7 +269,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     const char *from_e, *to_e;
     int from_encidx, to_encidx;
     VALUE from_encval, to_encval;
-    rb_transcoder *my_transcoder;
+    const rb_transcoder *my_transcoder;
     rb_transcoding my_transcoding;
     int final_encoding = 0;
 
@@ -307,7 +307,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    return to_encidx;
 	}
     }
-    if (STRCASECMP(from_e, to_e) == 0) {
+    if (encoding_equal(from_e, to_e)) {
 	return -1;
     }
 
@@ -324,7 +324,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    dest = rb_str_tmp_new(blen);
 	    bp = RSTRING_PTR(dest);
 	    my_transcoding.ruby_string_dest = dest;
-	    (*my_transcoder->preprocessor)(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
+	    (*my_transcoder->preprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
 	    if (fromp != sp+slen) {
 		rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
 	    }
@@ -356,7 +356,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    dest = rb_str_tmp_new(blen);
 	    bp = RSTRING_PTR(dest);
 	    my_transcoding.ruby_string_dest = dest;
-	    (*my_transcoder->postprocessor)(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
+	    (*my_transcoder->postprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
 	    if (fromp != sp+slen) {
 		rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
 	    }
