@@ -678,7 +678,7 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 $(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
 	$(RM) $(PROGRAM)
-	$(BASERUBY) $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
 
 minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 

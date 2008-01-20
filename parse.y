@@ -4729,7 +4729,7 @@ lex_get_str(struct parser_params *parser, VALUE s)
 	if (*end++ == '\n') break;
     }
     lex_gets_ptr = end - RSTRING_PTR(s);
-    return STR_NEW(beg, end - beg);
+    return rb_enc_str_new(beg, end - beg, rb_enc_get(s));
 }
 
 static VALUE

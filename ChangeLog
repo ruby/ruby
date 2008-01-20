@@ -1,3 +1,9 @@
+Sun Jan 20 09:12:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: use -Ks when read insns.def. [ruby-dev#33185]
+
+	* parse.y: fix -e and stdin strings aren't set encoding.
+
 Sun Jan 20 05:12:44 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/make_encdb.rb: fix duplication check.
