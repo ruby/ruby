@@ -1,3 +1,7 @@
+Mon Jan 21 11:59:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_each_char): move forward.  [ruby-dev:33231]
+
 Mon Jan 21 06:40:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_dispatch): constified return value.

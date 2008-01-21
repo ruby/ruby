@@ -3233,7 +3233,7 @@ rb_str_inspect(VALUE str)
 	    char *s;
             char *q;
 
-escape_codepoint:
+	  escape_codepoint:
             for (q = p-n; q < p; q++) {
                 s = buf;
                 sprintf(buf, "\\x%02X", *q & 0377);
@@ -4605,7 +4605,7 @@ rb_str_each_char(VALUE str)
 	len = RSTRING_LEN(str);
 	if ((i += n) >= len) break;
 	enc = rb_enc_get(str);
-	s = rb_enc_left_char_head(ptr, ptr + i, enc);
+	s = rb_enc_right_char_head(ptr, ptr + i, enc);
 	n = rb_enc_mbclen(s, ptr + len, enc);
     }
     return str;
