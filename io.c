@@ -2671,11 +2671,16 @@ rb_io_mode_flags(mode)
         case '+':
             flags |= FMODE_READWRITE;
             break;
+        case ':':
+            /* forward compatibility */
+            rb_warning("encoding options not supported in 1.8: %s", mode);
+            goto end;
         default:
             goto error;
         }
     }
 
+ end:
     return flags;
 }
 
@@ -2744,11 +2749,16 @@ rb_io_mode_modenum(mode)
         case '+':
             flags = (flags & ~O_ACCMODE) | O_RDWR;
             break;
+        case ':':
+            /* forward compatibility */
+            rb_warning("encoding options not supported in 1.8: %s", mode);
+            goto end;
         default:
             goto error;
         }
     }
 
+ end:
     return flags;
 }
 
