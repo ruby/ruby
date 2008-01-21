@@ -1,4 +1,4 @@
-Mon Jan 21 14:32:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jan 21 14:36:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_transcode): initialize transcoder in
 	  rb_transcoding.  [ruby-dev:33234]
