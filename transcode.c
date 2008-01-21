@@ -147,20 +147,20 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
  *  Transcoding engine logic
  */
 static void
-transcode_loop(char **in_pos, char **out_pos,
-	       char *in_stop, char *out_stop,
+transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
+	       unsigned char *in_stop, unsigned char *out_stop,
 	       const rb_transcoder *my_transcoder,
 	       rb_transcoding *my_transcoding)
 {
-    char *in_p = *in_pos, *out_p = *out_pos;
+    unsigned char *in_p = *in_pos, *out_p = *out_pos;
     const BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
     const BYTE_LOOKUP *next_table;
-    char *char_start;
+    unsigned char *char_start;
     unsigned int next_offset;
     VALUE next_info;
     unsigned char next_byte;
     int from_utf8 = my_transcoder->from_utf8;
-    char *out_s = out_stop - my_transcoder->max_output + 1;
+    unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
     while (in_p < in_stop) {
 	char_start = in_p;
 	next_table = conv_tree_start;
@@ -214,17 +214,17 @@ transcode_loop(char **in_pos, char **out_pos,
 	    *out_p++ = getBT3(next_info);
 	    continue;
 	  case FUNii:
-	    next_info = (VALUE)(*my_transcoder->func_ii)(next_info, my_transcoding);
+	    next_info = (VALUE)(*my_transcoder->func_ii)(next_info);
 	    goto follow_info;
 	  case FUNsi:
-	    next_info = (VALUE)(*my_transcoder->func_si)(char_start, my_transcoding);
+	    next_info = (VALUE)(*my_transcoder->func_si)(char_start);
 	    goto follow_info;
 	    break;
 	  case FUNio:
-	    out_p += (VALUE)(*my_transcoder->func_io)(next_info, out_p, my_transcoding);
+	    out_p += (VALUE)(*my_transcoder->func_io)(next_info, out_p);
 	    break;
 	  case FUNso:
-	    out_p += (VALUE)(*my_transcoder->func_so)(char_start, out_p, my_transcoding);
+	    out_p += (VALUE)(*my_transcoder->func_so)(char_start, out_p);
 	    break;
 	  case INVALID:
 	    goto invalid;
@@ -250,12 +250,12 @@ transcode_loop(char **in_pos, char **out_pos,
  *  String-specific code
  */
 
-static char *
+static unsigned char *
 str_transcoding_resize(rb_transcoding *my_transcoding, int len, int new_len)
 {
     VALUE dest_string = my_transcoding->ruby_string_dest;
     rb_str_resize(dest_string, new_len);
-    return RSTRING_PTR(dest_string);
+    return (unsigned char *)RSTRING_PTR(dest_string);
 }
 
 static int
@@ -264,7 +264,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     VALUE dest;
     VALUE str = *self;
     long blen, slen;
-    char *buf, *bp, *sp, *fromp;
+    unsigned char *buf, *bp, *sp, *fromp;
     rb_encoding *from_enc, *to_enc;
     const char *from_e, *to_e;
     int from_encidx, to_encidx;
@@ -318,26 +318,26 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	}
 
 	if (my_transcoder->preprocessor) {
-	    fromp = sp = RSTRING_PTR(str);
+	    fromp = sp = (unsigned char *)RSTRING_PTR(str);
 	    slen = RSTRING_LEN(str);
 	    blen = slen + 30; /* len + margin */
 	    dest = rb_str_tmp_new(blen);
-	    bp = RSTRING_PTR(dest);
+	    bp = (unsigned char *)RSTRING_PTR(dest);
 	    my_transcoding.ruby_string_dest = dest;
 	    (*my_transcoder->preprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
 	    if (fromp != sp+slen) {
 		rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
 	    }
-	    buf = RSTRING_PTR(dest);
+	    buf = (unsigned char *)RSTRING_PTR(dest);
 	    *bp = '\0';
 	    rb_str_set_len(dest, bp - buf);
 	    str = dest;
 	}
-	fromp = sp = RSTRING_PTR(str);
+	fromp = sp = (unsigned char *)RSTRING_PTR(str);
 	slen = RSTRING_LEN(str);
 	blen = slen + 30; /* len + margin */
 	dest = rb_str_tmp_new(blen);
-	bp = RSTRING_PTR(dest);
+	bp = (unsigned char *)RSTRING_PTR(dest);
 	my_transcoding.ruby_string_dest = dest;
 	my_transcoding.flush_func = str_transcoding_resize;
 
@@ -345,22 +345,22 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	if (fromp != sp+slen) {
 	    rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
 	}
-	buf = RSTRING_PTR(dest);
+	buf = (unsigned char *)RSTRING_PTR(dest);
 	*bp = '\0';
 	rb_str_set_len(dest, bp - buf);
 	if (my_transcoder->postprocessor) {
 	    str = dest;
-	    fromp = sp = RSTRING_PTR(str);
+	    fromp = sp = (unsigned char *)RSTRING_PTR(str);
 	    slen = RSTRING_LEN(str);
 	    blen = slen + 30; /* len + margin */
 	    dest = rb_str_tmp_new(blen);
-	    bp = RSTRING_PTR(dest);
+	    bp = (unsigned char *)RSTRING_PTR(dest);
 	    my_transcoding.ruby_string_dest = dest;
 	    (*my_transcoder->postprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
 	    if (fromp != sp+slen) {
 		rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
 	    }
-	    buf = RSTRING_PTR(dest);
+	    buf = (unsigned char *)RSTRING_PTR(dest);
 	    *bp = '\0';
 	    rb_str_set_len(dest, bp - buf);
 	}

@@ -23671,10 +23671,10 @@ enum ISO_2022_ESCSEQ {
 #define ISO_2022_GZ_JIS_X_0213_2004_1           ISO_2022_ENCODING(ISO_2022_GZDM4,'Q')
 
 static int
-get_iso_2022_mode(char **in_pos)
+get_iso_2022_mode(unsigned char **in_pos)
 {
     int new_mode;
-    char *in_p = *in_pos;
+    unsigned char *in_p = *in_pos;
     switch (*in_p++)
     {
     case '(':
@@ -23719,15 +23719,15 @@ get_iso_2022_mode(char **in_pos)
 }
 
 static void
-from_iso_2022_jp_transcoder_preprocessor(char **in_pos, char **out_pos,
-					 char *in_stop, char *out_stop,
+from_iso_2022_jp_transcoder_preprocessor(unsigned char **in_pos, unsigned char **out_pos,
+					 unsigned char *in_stop, unsigned char *out_stop,
 					 rb_transcoding *my_transcoding)
 {
     const rb_transcoder *my_transcoder = my_transcoding->transcoder;
-    char *in_p = *in_pos, *out_p = *out_pos;
+    unsigned char *in_p = *in_pos, *out_p = *out_pos;
     int cur_mode = ISO_2022_GZ_ASCII;
     unsigned char c1;
-    char *out_s = out_stop - my_transcoder->max_output + 1;
+    unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
     while (in_p < in_stop) {
 	if (out_p >= out_s) {
 	    int len = (out_p - *out_pos);
@@ -23770,9 +23770,9 @@ from_iso_2022_jp_transcoder_preprocessor(char **in_pos, char **out_pos,
 }
 
 static int
-select_iso_2022_mode(char **out_pos, int new_mode)
+select_iso_2022_mode(unsigned char **out_pos, int new_mode)
 {
-    char *out_p = *out_pos;
+    unsigned char *out_p = *out_pos;
     *out_p++ = '\x1b';
     switch (new_mode>>8)
     {
@@ -23799,15 +23799,15 @@ select_iso_2022_mode(char **out_pos, int new_mode)
 }
 
 static void
-to_iso_2022_jp_transcoder_postprocessor(char **in_pos, char **out_pos,
-					char *in_stop, char *out_stop,
+to_iso_2022_jp_transcoder_postprocessor(unsigned char **in_pos, unsigned char **out_pos,
+					unsigned char *in_stop, unsigned char *out_stop,
 					rb_transcoding *my_transcoding)
 {
     const rb_transcoder *my_transcoder = my_transcoding->transcoder;
-    char *in_p = *in_pos, *out_p = *out_pos;
+    unsigned char *in_p = *in_pos, *out_p = *out_pos;
     int cur_mode = ISO_2022_GZ_ASCII, new_mode = 0;
     unsigned char next_byte;
-    char *out_s = out_stop - my_transcoder->max_output + 1;
+    unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
     while (in_p < in_stop) {
 	if (out_p >= out_s) {
 	    int len = (out_p - *out_pos);

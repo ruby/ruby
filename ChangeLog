@@ -1,3 +1,15 @@
+Mon Jan 21 12:35:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (transcode_loop, str_transcoding_resize): use unsigned
+	  char.  [ruby-dev:33232]
+
+	* transcode_data.h (rb_transcoding, rb_transcoder): removed callback
+	  parameters.
+
+	* enc/trans/japanese.c: ditto.
+
+	* enc/trans/utf_16_32.c: parenthesized bit-or operands.
+
 Mon Jan 21 11:59:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_each_char): move forward.  [ruby-dev:33231]
