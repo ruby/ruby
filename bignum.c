@@ -1851,7 +1851,7 @@ static VALUE big_rshift(VALUE, unsigned long);
 static VALUE big_shift(VALUE x, int n)
 {
     if (n < 0)
-	return big_lshift(x, (unsigned int)n);
+	return big_lshift(x, (unsigned int)-n);
     else if (n > 0)
 	return big_rshift(x, (unsigned int)n);
     return x;
