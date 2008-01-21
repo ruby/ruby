@@ -1384,7 +1384,7 @@ class Date
 
 # def self._load(str) new!(*Marshal.load(str)) end
 
-  # Load from Marshall format.
+  # Load from Marshal format.
   def self._load(str)
     a = Marshal.load(str)
     if a.size == 2
