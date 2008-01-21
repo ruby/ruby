@@ -1,3 +1,10 @@
+Mon Jan 21 14:32:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_transcode): initialize transcoder in
+	  rb_transcoding.  [ruby-dev:33234]
+
+	* transcode_data.h (rb_transcoding): transcoder constified.
+
 Mon Jan 21 12:50:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c, gc.c (setjmp): sigsetjmp is a macro on cygwin.

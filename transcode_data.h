@@ -59,7 +59,7 @@ typedef struct byte_lookup {
 /* dynamic structure, one per conversion (similar to iconv_t) */
 /* may carry conversion state (e.g. for iso-2022-jp) */
 typedef struct rb_transcoding {
-    struct rb_transcoder *transcoder;
+    const struct rb_transcoder *transcoder;
     VALUE ruby_string_dest; /* the String used as the conversion destination,
 			       or NULL if something else is being converted */
     unsigned char *(*flush_func)(struct rb_transcoding*, int, int);

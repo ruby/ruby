@@ -311,6 +311,8 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	return -1;
     }
 
+    my_transcoding.transcoder = my_transcoder;
+
     while (!final_encoding) { /* loop for multistep transcoding */
 	/* later, maybe use smaller intermediate strings for very long strings */
 	if (!(my_transcoder = transcode_dispatch(from_e, to_e))) {
