@@ -1482,7 +1482,10 @@ class Date
   def marshal_dump() [@ajd, @of, @sg] end
 
   # Load from Marshall format.
-  def marshal_load(a) @ajd, @of, @sg, = a end
+  def marshal_load(a)
+    @ajd, @of, @sg, = a
+    @__ca__ = {}
+  end
 
 end
 

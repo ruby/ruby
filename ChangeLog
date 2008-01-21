@@ -1,3 +1,7 @@
+Mon Jan 21 20:09:38 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (marshal_load): initialize the cache.
+
 Mon Jan 21 19:42:42 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c, enc/trans/utf_16_32.c, test/ruby/test_transcode.rb:
