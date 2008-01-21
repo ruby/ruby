@@ -1,3 +1,8 @@
+Mon Jan 21 19:42:42 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c, enc/trans/utf_16_32.c, test/ruby/test_transcode.rb:
+	  added UTF-32BE and UTF-32LE conversions.
+
 Mon Jan 21 14:36:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_transcode): initialize transcoder in

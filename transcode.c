@@ -106,6 +106,8 @@ init_transcoder_table(void)
     rb_declare_transcoder("ISO-2022-JP", "UTF-8", "japanese");
     rb_declare_transcoder("UTF-16BE",    "UTF-8", "utf_16_32");
     rb_declare_transcoder("UTF-16LE",    "UTF-8", "utf_16_32");
+    rb_declare_transcoder("UTF-32BE",    "UTF-8", "utf_16_32");
+    rb_declare_transcoder("UTF-32LE",    "UTF-8", "utf_16_32");
 }
 
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)

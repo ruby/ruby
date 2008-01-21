@@ -178,4 +178,63 @@ class TestTranscode < Test::Unit::TestCase
     check_utf_16_both_ways("\u{8FF00}", "\xD9\xFF\xDF\x00")
     check_utf_16_both_ways("\u{F00FF}", "\xDB\x80\xDC\xFF")
   end
+
+  def check_utf_32_both_ways(utf8, raw)
+    copy = raw.dup
+    0.step(copy.length-1, 4) do |i|
+      copy[i+3], copy[i+2], copy[i+1], copy[i] = copy[i], copy[i+1], copy[i+2], copy[i+3]
+    end
+    check_both_ways(utf8, raw, 'utf-32be')
+    #check_both_ways(utf8, copy, 'utf-32le')
+  end
+
+  def test_utf_32
+    check_utf_32_both_ways("abc", "\x00\x00\x00a\x00\x00\x00b\x00\x00\x00c")
+    check_utf_32_both_ways("\u00E9", "\x00\x00\x00\xE9");
+    check_utf_32_both_ways("\u00E9\u0070\u00E9\u0065",
+      "\x00\x00\x00\xE9\x00\x00\x00\x70\x00\x00\x00\xE9\x00\x00\x00\x65") # épée
+    check_utf_32_both_ways("\u677E\u672C\u884C\u5F18",
+      "\x00\x00\x67\x7E\x00\x00\x67\x2C\x00\x00\x88\x4C\x00\x00\x5F\x18") # 松本行弘
+    check_utf_32_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66",
+      "\x00\x00\x97\x52\x00\x00\x5C\x71\x00\x00\x5B\x66\x00\x00\x96\x62\x00\x00\x59\x27\x00\x00\x5B\x66") # 青山学院大学
+    check_utf_32_both_ways("Martin D\u00FCrst",
+      "\x00\x00\x00M\x00\x00\x00a\x00\x00\x00r\x00\x00\x00t\x00\x00\x00i\x00\x00\x00n\x00\x00\x00 \x00\x00\x00D\x00\x00\x00\xFC\x00\x00\x00r\x00\x00\x00s\x00\x00\x00t") # Martin Dürst
+    # BMP
+    check_utf_32_both_ways("\u0000", "\x00\x00\x00\x00")
+    check_utf_32_both_ways("\u007F", "\x00\x00\x00\x7F")
+    check_utf_32_both_ways("\u0080", "\x00\x00\x00\x80")
+    check_utf_32_both_ways("\u0555", "\x00\x00\x05\x55")
+    check_utf_32_both_ways("\u04AA", "\x00\x00\x04\xAA")
+    check_utf_32_both_ways("\u0333", "\x00\x00\x03\x33")
+    check_utf_32_both_ways("\u04CC", "\x00\x00\x04\xCC")
+    check_utf_32_both_ways("\u00F0", "\x00\x00\x00\xF0")
+    check_utf_32_both_ways("\u070F", "\x00\x00\x07\x0F")
+    check_utf_32_both_ways("\u07FF", "\x00\x00\x07\xFF")
+    check_utf_32_both_ways("\u0800", "\x00\x00\x08\x00")
+    check_utf_32_both_ways("\uD7FF", "\x00\x00\xD7\xFF")
+    check_utf_32_both_ways("\uE000", "\x00\x00\xE0\x00")
+    check_utf_32_both_ways("\uFFFF", "\x00\x00\xFF\xFF")
+    check_utf_32_both_ways("\u5555", "\x00\x00\x55\x55")
+    check_utf_32_both_ways("\uAAAA", "\x00\x00\xAA\xAA")
+    check_utf_32_both_ways("\u3333", "\x00\x00\x33\x33")
+    check_utf_32_both_ways("\uCCCC", "\x00\x00\xCC\xCC")
+    check_utf_32_both_ways("\uF0F0", "\x00\x00\xF0\xF0")
+    check_utf_32_both_ways("\u0F0F", "\x00\x00\x0F\x0F")
+    check_utf_32_both_ways("\uFF00", "\x00\x00\xFF\x00")
+    check_utf_32_both_ways("\u00FF", "\x00\x00\x00\xFF")
+    # outer planes
+    check_utf_32_both_ways("\u{10000}", "\x00\x01\x00\x00")
+    check_utf_32_both_ways("\u{FFFFF}", "\x00\x0F\xFF\xFF")
+    check_utf_32_both_ways("\u{100000}","\x00\x10\x00\x00")
+    check_utf_32_both_ways("\u{10FFFF}","\x00\x10\xFF\xFF")
+    check_utf_32_both_ways("\u{105555}","\x00\x10\x55\x55")
+    check_utf_32_both_ways("\u{55555}", "\x00\x05\x55\x55")
+    check_utf_32_both_ways("\u{AAAAA}", "\x00\x0A\xAA\xAA")
+    check_utf_32_both_ways("\u{33333}", "\x00\x03\x33\x33")
+    check_utf_32_both_ways("\u{CCCCC}", "\x00\x0C\xCC\xCC")
+    check_utf_32_both_ways("\u{8F0F0}", "\x00\x08\xF0\xF0")
+    check_utf_32_both_ways("\u{F0F0F}", "\x00\x0F\x0F\x0F")
+    check_utf_32_both_ways("\u{8FF00}", "\x00\x08\xFF\x00")
+    check_utf_32_both_ways("\u{F00FF}", "\x00\x0F\x00\xFF")
+  end
 end
