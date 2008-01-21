@@ -95,4 +95,256 @@ class TestBignum < Test::Unit::TestCase
     assert_equal("1777777777777777777777" ,18446744073709551615.to_s(8))
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
   end
+
+
+  T_ZERO = (2**32).coerce(0).first
+  T_ONE  = (2**32).coerce(1).first
+  T_MONE = (2**32).coerce(-1).first
+  T31  = 2**31   # 2147483648
+  T31P = T31 - 1 # 2147483647
+  T32  = 2**32   # 4294967296
+  T32P = T32 - 1 # 4294967295
+  T64  = 2**64   # 18446744073709551616
+  T64P = T64 - 1 # 18446744073709551615
+
+  def test_big_2comp
+    assert_equal("-4294967296", (~T32P).to_s)
+    assert_equal("..f00000000", "%x" % -T32)
+  end
+
+  def test_int2inum
+    assert_equal([T31P], [T31P].pack("I").unpack("I"))
+    assert_equal([T31P], [T31P].pack("i").unpack("i"))
+  end
+
+  def test_quad_pack
+    assert_equal([    1], [    1].pack("q").unpack("q"))
+    assert_equal([-   1], [-   1].pack("q").unpack("q"))
+    assert_equal([ T31P], [ T31P].pack("q").unpack("q"))
+    assert_equal([-T31P], [-T31P].pack("q").unpack("q"))
+    assert_equal([ T64P], [ T64P].pack("Q").unpack("Q"))
+    assert_equal([    0], [ T64 ].pack("Q").unpack("Q"))
+  end
+
+  def test_str_to_inum
+    assert_equal(1, " +1".to_i)
+    assert_equal(-1, " -1".to_i)
+    assert_equal(0, "++1".to_i)
+    assert_equal(73, "111".oct)
+    assert_equal(273, "0x111".oct)
+    assert_equal(7, "0b111".oct)
+    assert_equal(73, "0o111".oct)
+    assert_equal(111, "0d111".oct)
+    assert_equal(73, "0111".oct)
+    assert_equal(111, Integer("111"))
+    assert_equal(13, "111".to_i(3))
+    assert_raise(ArgumentError) { "111".to_i(37) }
+    assert_equal(1333, "111".to_i(36))
+    assert_equal(1057, "111".to_i(32))
+    assert_equal(0, "00a".to_i)
+    assert_equal(1, Integer("1 "))
+    assert_raise(ArgumentError) { Integer("1_") }
+    assert_raise(ArgumentError) { Integer("1__") }
+    assert_raise(ArgumentError) { Integer("1_0 x") }
+    assert_equal(T31P, "1111111111111111111111111111111".to_i(2))
+  end
+
+  def test_to_s2
+    assert_raise(ArgumentError) { T31P.to_s(37) }
+    assert_equal(32768, (10**32768-1).to_s.size)
+    assert_raise(RangeError) { Process.wait(1, T64P) }
+    assert_equal("0", T_ZERO.to_s)
+    assert_equal("1", T_ONE.to_s)
+  end
+
+  def test_to_f
+    assert_nothing_raised { T31P.to_f.to_i }
+    assert_raise(FloatDomainError) { (1024**1024).to_f.to_i }
+  end
+
+  def test_cmp
+    assert(T31P > 1)
+    assert(T31P < 2147483648.0)
+    assert(T31P < T64P)
+    assert(T64P > T31P)
+    assert_raise(ArgumentError) { T31P < "foo" }
+  end
+
+  def test_eq
+    assert(T31P != 1)
+    assert(T31P == 2147483647.0)
+    assert(T31P != "foo")
+  end
+
+  def test_eql
+    assert(T31P.eql?(T31P))
+  end
+
+  def test_convert
+    assert_equal([255], [T_MONE].pack("C").unpack("C"))
+    assert_equal([0], [T32].pack("C").unpack("C"))
+    assert_raise(RangeError) { 0.to_s(T32) }
+    assert_raise(Errno::EINVAL) { Process.wait(0, T32P) }
+    assert_raise(RangeError) { Process.wait(0, T32) }
+    assert_raise(RangeError) { Process.wait(0, -T32P) }
+  end
+
+  def test_sub
+    assert_equal(-T31, T32 - (T32 + T31))
+  end
+
+  def test_plus
+    assert_equal(T32.to_f, T32P + 1.0)
+    assert_raise(TypeError) { T32 + "foo" }
+  end
+
+  def test_minus
+    assert_equal(T32P.to_f, T32 - 1.0)
+    assert_raise(TypeError) { T32 - "foo" }
+  end
+
+  def test_mul
+    assert_equal(T32.to_f, T32 * 1.0)
+    assert_raise(TypeError) { T32 * "foo" }
+  end
+
+  def test_divrem
+    assert_equal(0, T32 / T64)
+  end
+
+  def test_div
+    assert_equal(T32.to_f, T32 / 1.0)
+    assert_raise(TypeError) { T32 / "foo" }
+  end
+
+  def test_modulo
+    assert_raise(TypeError) { T32 % "foo" }
+  end
+
+  def test_remainder
+    assert_equal(0, T32.remainder(1))
+    assert_raise(TypeError) { T32.remainder("foo") }
+  end
+
+  def test_divmod
+    assert_equal([T32, 0], T32.divmod(1))
+    assert_equal([2, 0], T32.divmod(T31))
+    assert_raise(TypeError) { T32.divmod("foo") }
+  end
+
+  def test_quo
+    assert_equal(T32.to_f, T32.quo(1))
+    assert_equal(T32.to_f, T32.quo(1.0))
+    assert_equal(T32.to_f, T32.quo(T_ONE))
+    assert_raise(TypeError) { T32.quo("foo") }
+    assert_equal(1024**1024, (1024**1024).quo(1))
+    assert_equal(1024**1024, (1024**1024).quo(1.0))
+    assert_equal(1024**1024*2, (1024**1024*2).quo(1))
+    inf = 1 / 0.0; nan = inf / inf
+    assert_raise(FloatDomainError) { (1024**1024*2).quo(nan) }
+  end
+
+  def test_pow
+    assert_equal(1.0, T32 ** 0.0)
+    assert_equal(1.0 / T32, T32 ** -1)
+    assert((T32 ** T32).infinite?)
+    assert((T32 ** (2**30-1)).infinite?)
+    assert_raise(TypeError) { T32**"foo" }
+  end
+
+  def test_and
+    assert_equal(0, T32 & 1)
+    assert_equal(-T32, (-T32) & (-T31))
+    assert_equal(0, T32 & T64)
+  end
+
+  def test_or
+    assert_equal(T32 + 1, T32 | 1)
+    assert_equal(T32 + T31, T32 | T31)
+    assert_equal(-T31, (-T32) | (-T31))
+    assert_equal(T64 + T32, T32 | T64)
+  end
+
+  def test_xor
+    assert_equal(T32 + 1, T32 ^ 1)
+    assert_equal(T32 + T31, T32 ^ T31)
+    assert_equal(T31, (-T32) ^ (-T31))
+    assert_equal(T64 + T32, T32 ^ T64)
+  end
+
+  def test_shift2
+    assert_equal(2**33, (2**32) <<  1)
+    assert_equal(2**31, (2**32) << -1)
+    assert_equal(2**33, (2**32) <<  1.0)
+    assert_equal(2**31, (2**32) << -1.0)
+    assert_equal(2**33, (2**32) << T_ONE)
+    assert_equal(2**31, (2**32) << T_MONE)
+    assert_equal(2**31, (2**32) >>  1)
+    assert_equal(2**33, (2**32) >> -1)
+    assert_equal(2**31, (2**32) >>  1.0)
+    assert_equal(2**33, (2**32) >> -1.0)
+    assert_equal(2**31, (2**32) >> T_ONE)
+    assert_equal(2**33, (2**32) >> T_MONE)
+    assert_equal( 0,  (2**32) >> (2**32))
+    assert_equal(-1, -(2**32) >> (2**32))
+    assert_equal( 0,  (2**32) >> 128)
+    assert_equal(-1, -(2**32) >> 128)
+    assert_equal( 0,  (2**31) >> 32)
+    assert_equal(-1, -(2**31) >> 32)
+  end
+
+  def test_aref
+    assert_equal(0, (2**32)[0])
+    assert_equal(0, (2**32)[2**32])
+    assert_equal(0, (2**32)[-(2**32)])
+    assert_equal(0, (2**32)[T_ZERO])
+    assert_equal(0, (-(2**64))[0])
+    assert_equal(1, (-2**256)[256])
+  end
+
+  def test_hash
+    assert_nothing_raised { T31P.hash }
+  end
+
+  def test_coerce
+    assert_equal([T64P, T31P], T31P.coerce(T64P))
+    assert_raise(TypeError) { T31P.coerce(nil) }
+  end
+
+  def test_abs
+    assert_equal(T31P, (-T31P).abs)
+  end
+
+  def test_size
+    assert(T31P.size.is_a?(Integer))
+  end
+
+  def test_odd
+    assert_equal(true, (2**32+1).odd?)
+    assert_equal(false, (2**32).odd?)
+  end
+
+  def test_even
+    assert_equal(false, (2**32+1).even?)
+    assert_equal(true, (2**32).even?)
+  end
+
+  def interrupt
+    time = Time.now
+    start_flag = false
+    end_flag = false
+    thread = Thread.new do
+      start_flag = true
+      yield
+      end_flag = true
+    end
+    sleep 1
+    thread.raise
+    thread.join rescue nil
+    start_flag && !end_flag && Time.now - time < 10
+  end
+
+  def test_interrupt
+    assert(interrupt { (65536 ** 65536).to_s })
+  end
 end

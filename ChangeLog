@@ -1,3 +1,7 @@
+Tue Jan 22 00:45:12 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_bignum.rb: add tests for bignum.c.
+
 Tue Jan 22 00:30:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (big_shift): fix a bug that caused infinite loop when
