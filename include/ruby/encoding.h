@@ -133,6 +133,9 @@ int rb_enc_codelen(int code, rb_encoding *enc);
 #define rb_enc_left_char_head(s,p,enc) (char *)onigenc_get_left_adjust_char_head(enc,(UChar*)(s),(UChar*)(p))
 #define rb_enc_right_char_head(s,p,enc) (char *)onigenc_get_right_adjust_char_head(enc,(UChar*)(s),(UChar*)(p))
 
+/* ptr, ptr, encoding -> newline_or_not */
+#define rb_enc_is_newline(p,end,enc)  ONIGENC_IS_MBC_NEWLINE(enc,p,end)
+
 #define rb_enc_isctype(c,t,enc) ONIGENC_IS_CODE_CTYPE(enc,c,t)
 #define rb_enc_isascii(c,enc) ONIGENC_IS_CODE_ASCII(c)
 #define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA(enc,c)

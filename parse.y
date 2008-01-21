@@ -8966,8 +8966,13 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     mb = 0;
     if (!rb_enc_isdigit(*m, enc)) {
 	while (m <= name + last && is_identchar(m, e, enc)) {
-	    if (!ISASCII(*m)) mb = 1;
-	    m += rb_enc_mbclen(m, e, enc);
+	    if (ISASCII(*m)) {
+		m++;
+	    }
+	    else {
+		mb = 1;
+		m += rb_enc_mbclen(m, e, enc);
+	    }
 	}
     }
     if (m - name < len) id = ID_JUNK;

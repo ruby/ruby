@@ -1,3 +1,11 @@
+Tue Jan 22 04:40:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (rb_intern3): do not call rb_enc_mbclen() if *m is
+	  ASCII.  [ruby-talk:287225]
+
+	* string.c (rb_str_each_line): use rb_enc_is_newline() to gain
+	  performance if the record separator ($/) is not modified.
+
 Tue Jan 22 01:15:51 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ChangeLog: format-time-string under C locale. [ruby-dev:33261]

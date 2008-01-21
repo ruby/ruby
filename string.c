@@ -4468,6 +4468,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     char *ptr = p;
     long len = RSTRING_LEN(str), rslen;
     VALUE line;
+    int n;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
 	rs = rb_rs;
@@ -4480,6 +4481,22 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     }
     StringValue(rs);
     enc = rb_enc_check(str, rs);
+    if (rs == rb_default_rs) {
+	while (p < pend) {
+	    n = rb_enc_mbclen(p, pend, enc);
+	    if (rb_enc_is_newline(p, pend, enc)) {
+		line = rb_str_new5(str, s, p - s + n);
+		OBJ_INFECT(line, str);
+		rb_enc_copy(line, str);
+		rb_yield(line);
+		str_mod_check(str, ptr, len);
+		s = p + n;
+	    }
+	    p += n;
+	}
+	goto finish;
+    }
+
     rslen = RSTRING_LEN(rs);
     if (rslen == 0) {
 	newline = '\n';
@@ -4490,8 +4507,8 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
     while (p < pend) {
 	int c = rb_enc_codepoint(p, pend, enc);
-	int n = rb_enc_codelen(c, enc);
 
+	n = rb_enc_codelen(c, enc);
 	if (rslen == 0 && c == newline) {
 	    while (p < pend && rb_enc_codepoint(p, pend, enc) == newline) {
 		p += n;
@@ -4510,6 +4527,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	p += n;
     }
 
+  finish:
     if (s != pend) {
 	if (p > pend) p = pend;
 	line = rb_str_new5(str, s, p - s);
