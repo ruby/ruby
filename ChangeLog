@@ -1,3 +1,7 @@
+Mon Jan 21 12:50:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c, gc.c (setjmp): sigsetjmp is a macro on cygwin.
+
 Sat Jan 19 11:21:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (sigsetjmp): check if available.

@@ -193,7 +193,7 @@ static int volatile freebsd_clear_carry_flag = 0;
      POST_GETCONTEXT, \
      (j)->status)
 #else
-#  if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(HAVE_SIGSETJMP)
+#  if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(sigsetjmp) && !defined(HAVE_SIGSETJMP)
 #    define ruby_setjmp(just_before_setjmp, env) \
        ((just_before_setjmp), _setjmp(env))
 #    define ruby_longjmp(env,val) _longjmp(env,val)
