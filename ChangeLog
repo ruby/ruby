@@ -1,3 +1,7 @@
+Mon Jan 21 12:50:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c, gc.c (setjmp): sigsetjmp is a macro on cygwin.
+
 Mon Jan 21 12:35:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_loop, str_transcoding_resize): use unsigned
