@@ -1519,11 +1519,13 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
       unless dirs.include?(dir)
 	dirs << dir
 	mfile.print "pre-install-rb#{sfx}: #{dir}\n"
-      end
+      end if $nmake
       for f in files
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb#{sfx}: #{dest}\n")
-	mfile.print("#{dest}: #{f} #{dir}\n\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) ")
+        mfile.print("#{dest}: #{f}\n")
+        mfile.print("\t$(MAKEDIRS) $(@D)\n") unless $nmake
+        mfile.print("\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) ")
 	sep = config_string('BUILD_FILE_SEPARATOR')
 	if sep
 	  f = f.gsub("/", sep)
@@ -1541,7 +1543,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
     end
   end
   dirs.unshift(sodir) if target and !dirs.include?(sodir)
-  dirs.each {|d| mfile.print "#{d}:\n\t$(MAKEDIRS) $@\n"}
+  dirs.each {|d| mfile.print "#{d}:\n\t$(MAKEDIRS) $@\n"} if $nmake
 
   mfile.print <<-SITEINSTALL
 
