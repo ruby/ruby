@@ -1,3 +1,8 @@
+Tue Jan 22 22:26:23 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_bignum.rb: change some tests because rational
+	  redefines Bignum#quo and Bignum#**.
+
 Tue Jan 22 20:58:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): need to output sodir rule.

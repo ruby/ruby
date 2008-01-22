@@ -236,12 +236,18 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(T32.to_f, T32.quo(1))
     assert_equal(T32.to_f, T32.quo(1.0))
     assert_equal(T32.to_f, T32.quo(T_ONE))
-    assert_raise(TypeError) { T32.quo("foo") }
+
+    ### rational changes the behavior of Bignum#quo
+    #assert_raise(TypeError) { T32.quo("foo") }
+    assert_raise(TypeError, NoMethodError) { T32.quo("foo") }
+
     assert_equal(1024**1024, (1024**1024).quo(1))
     assert_equal(1024**1024, (1024**1024).quo(1.0))
     assert_equal(1024**1024*2, (1024**1024*2).quo(1))
     inf = 1 / 0.0; nan = inf / inf
-    assert_raise(FloatDomainError) { (1024**1024*2).quo(nan) }
+
+    ### rational changes the behavior of Bignum#quo
+    #assert_raise(FloatDomainError) { (1024**1024*2).quo(nan) }
   end
 
   def test_pow
@@ -249,7 +255,10 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(1.0 / T32, T32 ** -1)
     assert((T32 ** T32).infinite?)
     assert((T32 ** (2**30-1)).infinite?)
-    assert_raise(TypeError) { T32**"foo" }
+
+    ### rational changes the behavior of Bignum#**
+    #assert_raise(TypeError) { T32**"foo" }
+    assert_raise(TypeError, ArgumentError) { T32**"foo" }
   end
 
   def test_and
