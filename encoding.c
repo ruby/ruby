@@ -669,6 +669,7 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 	    if (cr1 != cr2) {
 		/* may need to handle ENC_CODERANGE_BROKEN */
 		if (cr1 == ENC_CODERANGE_7BIT) return enc2;
+		if (cr2 == ENC_CODERANGE_7BIT) return enc1;
 	    }
 	    if (cr2 == ENC_CODERANGE_7BIT) {
 		if (idx1 == 0) return enc2;

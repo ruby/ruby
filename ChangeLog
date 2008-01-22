@@ -12,6 +12,9 @@ Tue Jan 22 12:57:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* encoding.c (rb_enc_compatible): encoding must be ASCII
 	  compatible before checking ENC_CODERANGE_7BIT.
 
+	* encoding.c (rb_enc_compatible): wrong compatibility condition.
+	  [ruby-dev:33273]
+
 Tue Jan 22 09:26:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_each_char): iterates over a shadow.
