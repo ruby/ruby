@@ -4609,22 +4609,17 @@ static VALUE
 rb_str_each_char(VALUE str)
 {
     int i, len, n;
-    const char *ptr, *s;
+    const char *ptr;
     rb_encoding *enc;
 
     RETURN_ENUMERATOR(str, 0, 0);
+    str = rb_str_new4(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     enc = rb_enc_get(str);
-    n = rb_enc_mbclen(ptr, ptr + len, enc);
-    for (i = 0; i < len;) {
+    for (i = 0; i < len; i += n) {
+	n = rb_enc_mbclen(ptr + i, ptr + len, enc);
 	rb_yield(rb_str_subseq(str, i, n));
-	ptr = RSTRING_PTR(str);
-	len = RSTRING_LEN(str);
-	if ((i += n) >= len) break;
-	enc = rb_enc_get(str);
-	s = rb_enc_right_char_head(ptr, ptr + i, enc);
-	n = rb_enc_mbclen(s, ptr + len, enc);
     }
     return str;
 }

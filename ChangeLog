@@ -1,3 +1,8 @@
+Tue Jan 22 09:26:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_each_char): iterates over a shadow.
+	  [ruby-dev:33243]
+
 Tue Jan 22 08:59:52 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/formatter.rb:  Indent labeled lists like note lists.
