@@ -1543,7 +1543,7 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
     end
   end
   dirs.unshift(sodir) if target and !dirs.include?(sodir)
-  dirs.each {|d| mfile.print "#{d}:\n\t$(MAKEDIRS) $@\n" if $nmake || dirs == sodir}
+  dirs.each {|d| mfile.print "#{d}:\n\t$(MAKEDIRS) $@\n" if $nmake || d == sodir}
 
   mfile.print <<-SITEINSTALL
 
