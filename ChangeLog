@@ -1,3 +1,8 @@
+Tue Jan 22 17:52:52 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/trans/utf_16_32.c: Streamline parentheses, add more
+	  'static' qualifiers.
+
 Tue Jan 22 12:57:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in (MINIRUBY): remove -I$(EXTOUT)/$(arch) from

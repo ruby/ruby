@@ -16,14 +16,14 @@ fun_so_from_utf_16be(const unsigned char* s, unsigned char* o)
         return 2;
     }
     else if ((s[0]&0xF8)!=0xD8) {
-        o[0] = 0xE0 | s[0]>>4;
+        o[0] = 0xE0 | (s[0]>>4);
         o[1] = 0x80 | ((s[0]&0x0F)<<2) | (s[1]>>6);
         o[2] = 0x80 | (s[1]&0x3F);
         return 3;
     }
     else {
         unsigned int u = (((s[0]&0x03)<<2)|(s[1]>>6)) + 1;
-        o[0] = 0xF0 | u>>2;
+        o[0] = 0xF0 | (u>>2);
         o[1] = 0x80 | ((u&0x03)<<4) | ((s[1]>>2)&0x0F);
         o[2] = 0x80 | ((s[1]&0x03)<<4) | ((s[2]&0x03)<<2) | (s[3]>>6);
         o[3] = 0x80 | (s[3]&0x3F);
@@ -45,12 +45,12 @@ fun_so_to_utf_16be(const unsigned char* s, unsigned char* o)
         return 2;
     }
     else if ((s[0]&0xF0)==0xE0) {
-        o[0] = (s[0]<<4) | ((s[1]>>2)^0x20);
+        o[0] = (s[0]<<4) | (s[1]>>2)^0x20;
         o[1] = (s[1]<<6) | (s[2]^0x80);
         return 2;
     }
     else {
-        int w = (((s[0]&0x07)<<2) | ((s[1]>>4)&0x03)) - 1;
+        int w = (((s[0]&0x07)<<2) | (s[1]>>4)&0x03) - 1;
         o[0] = 0xD8 | (w>>2);
         o[1] = (w<<6) | ((s[1]&0x0F)<<2) | ((s[2]>>4)-8);
         o[2] = 0xDC | ((s[2]>>2)&0x03);
@@ -72,7 +72,7 @@ fun_so_from_utf_16le(const unsigned char* s, unsigned char* o)
         return 2;
     }
     else if ((s[1]&0xF8)!=0xD8) {
-        o[0] = 0xE0 | s[1]>>4;
+        o[0] = 0xE0 | (s[1]>>4);
         o[1] = 0x80 | ((s[1]&0x0F)<<2) | (s[0]>>6);
         o[2] = 0x80 | (s[0]&0x3F);
         return 3;
@@ -106,7 +106,7 @@ fun_so_to_utf_16le(const unsigned char* s, unsigned char* o)
         return 2;
     }
     else {
-        int w = (((s[0]&0x07)<<2) | ((s[1]>>4)&0x03)) - 1;
+        int w = (((s[0]&0x07)<<2) | (s[1]>>4)&0x03) - 1;
         o[1] = 0xD8 | (w>>2);
         o[0] = (w<<6) | ((s[1]&0x0F)<<2) | ((s[2]>>4)-8);
         o[3] = 0xDC | ((s[2]>>2)&0x03);
@@ -125,13 +125,13 @@ fun_so_from_utf_32be(const unsigned char* s, unsigned char* o)
         }
         else if (s[2]<0x08) {
             o[0] = 0xC0 | (s[2]<<2) | (s[3]>>6);
-            o[1] = 0x80 | s[3]&0x3F;
+            o[1] = 0x80 | (s[3]&0x3F);
             return 2;
         }
         else {
-            o[0] = 0xE0 | s[2]>>4;
+            o[0] = 0xE0 | (s[2]>>4);
             o[1] = 0x80 | ((s[2]&0x0F)<<2) | (s[3]>>6);
-            o[2] = 0x80 | s[3]&0x3F;
+            o[2] = 0x80 | (s[3]&0x3F);
             return 3;
         }
     }
@@ -139,7 +139,7 @@ fun_so_from_utf_32be(const unsigned char* s, unsigned char* o)
         o[0] = 0xF0 | (s[1]>>2);
         o[1] = 0x80 | ((s[1]&0x03)<<4) | (s[2]>>4);
         o[2] = 0x80 | ((s[2]&0x0F)<<2) | (s[3]>>6);
-        o[3] = 0x80 | s[3]&0x3F;
+        o[3] = 0x80 | (s[3]&0x3F);
         return 4;
     }
 }
@@ -155,17 +155,17 @@ fun_so_to_utf_32be(const unsigned char* s, unsigned char* o)
     else if ((s[0]&0xE0)==0xC0) {
         o[1] = 0x00;
         o[2] = (s[0]>>2)&0x07;
-        o[3] = ((s[0]&0x03)<<6) | s[1]&0x3F;
+        o[3] = ((s[0]&0x03)<<6) | (s[1]&0x3F);
     }
     else if ((s[0]&0xF0)==0xE0) {
         o[1] = 0x00;
-        o[2] = (s[0]<<4) | (s[1]>>2)^0x20;
-        o[3] = (s[1]<<6) | s[2]^0x80;
+        o[2] = (s[0]<<4) | ((s[1]>>2)^0x20);
+        o[3] = (s[1]<<6) | (s[2]^0x80);
     }
     else {
-        o[1] = ((s[0]&0x07)<<2) | (s[1]>>4)&0x03;
-        o[2] = ((s[1]&0x0F)<<4) | (s[2]>>2)&0x0F;
-        o[3] = ((s[2]&0x03)<<6) | s[3]&0x3F;
+        o[1] = ((s[0]&0x07)<<2) | ((s[1]>>4)&0x03);
+        o[2] = ((s[1]&0x0F)<<4) | ((s[2]>>2)&0x0F);
+        o[3] = ((s[2]&0x03)<<6) | (s[3]&0x3F);
     }
     return 4;
 }
@@ -317,7 +317,7 @@ from_UTF_16BE = {
     from_UTF_16BE_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_UTF_16BE = {
     "UTF-16BE", "UTF-8", &from_UTF_16BE, 4, 0,
     NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_16be
@@ -516,7 +516,7 @@ to_UTF_32BE = {
     to_UTF_32BE_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_UTF_16BE = {
     "UTF-8", "UTF-16BE", &to_UTF_32BE, 4, 1,
     NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_16be
@@ -563,13 +563,13 @@ from_UTF_16LE = {
     from_UTF_16LE_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_UTF_16LE = {
     "UTF-16LE", "UTF-8", &from_UTF_16LE, 4, 0,
     NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_16le
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_UTF_16LE = {
     "UTF-8", "UTF-16LE", &to_UTF_32BE, 4, 1,
     NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_16le
@@ -687,13 +687,13 @@ from_UTF_32BE = {
     from_UTF_32BE_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_UTF_32BE = {
     "UTF-32BE", "UTF-8", &from_UTF_32BE, 4, 0,
     NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_32be
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_UTF_32BE = {
     "UTF-8", "UTF-32BE", &to_UTF_32BE, 4, 1,
     NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_32be
@@ -769,13 +769,13 @@ from_UTF_32LE = {
     from_UTF_32LE_infos
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_from_UTF_32LE = {
     "UTF-32LE", "UTF-8", &from_UTF_32LE, 4, 0,
     NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_32le
 };
 
-static rb_transcoder
+static const rb_transcoder
 rb_to_UTF_32LE = {
     "UTF-8", "UTF-32LE", &to_UTF_32BE, 4, 1,
     NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_32le
