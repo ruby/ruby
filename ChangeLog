@@ -1,3 +1,17 @@
+Tue Jan 22 12:57:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* configure.in (MINIRUBY): remove -I$(EXTOUT)/$(arch) from
+	  MINIRUBY since miniruby might not be able to load DLL.
+
+	* test/ruby/test_m17n.rb: move tests from bootstrap test.
+
+	* encoding.c (enc_find): should check name if ASCII compatible.
+
+	* string.c (rb_str_end_with): should check character boundary.
+
+	* encoding.c (rb_enc_compatible): encoding must be ASCII
+	  compatible before checking ENC_CODERANGE_7BIT.
+
 Tue Jan 22 09:26:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_each_char): iterates over a shadow.

@@ -690,6 +690,9 @@ class TestM17N < Test::Unit::TestCase
     #assert_raise(ArgumentError) { s("%c") % 0xc2a1 }
     assert_strenc("\u{c2a1}", 'UTF-8', u("%c") % 0xc2a1)
     assert_strenc("\u{c2}", 'UTF-8', u("%c") % 0xc2)
+    assert_raise(ArgumentError) {
+      "%s%s" % [s("\xc2\xa1"), e("\xc2\xa1")]
+    }
   end
 
   def test_sprintf_p
@@ -744,6 +747,7 @@ class TestM17N < Test::Unit::TestCase
     assert_strenc("\x00", 'EUC-JP', e("%s") % e("\x00"))
     assert_strenc("\x00", 'Windows-31J', s("%s") % s("\x00"))
     assert_strenc("\x00", 'UTF-8', u("%s") % u("\x00"))
+    assert_equal("EUC-JP", (e("\xc2\xa1 %s") % "foo").encoding.name)
   end
 
   def test_str_lt
@@ -791,29 +795,34 @@ class TestM17N < Test::Unit::TestCase
 
     assert_equal(nil, u("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")])
     assert_raise(ArgumentError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
+    assert_nil(e("\xa1\xa2\xa3\xa4")[e("\xa2\xa3")])
+  end
+
+  def test_aset
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_raise(ArgumentError){s["\xb0\xa3"] = "foo"}
   end
 
   def test_str_center
-    assert_encoding("EUC-JP", "a".center(5, "\xa1\xa2".force_encoding("euc-jp")).encoding)
+    assert_encoding("EUC-JP", "a".center(5, e("\xa1\xa2")).encoding)
+    assert_encoding("EUC-JP", e("\xa3\xb0").center(10).encoding)
   end
 
   def test_squeeze
-    s = "\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp")
-    assert_equal("\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4".force_encoding("euc-jp"), s.squeeze)
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb1\xa3\xb3\xa3\xb4")
+    assert_equal(e("\xa3\xb0\xa3\xb1\xa3\xb3\xa3\xb4"), s.squeeze)
   end
 
   def test_tr
-    s = "\x81\x41".force_encoding("shift_jis")
+    s = s("\x81\x41")
     assert_equal(s.tr("A", "B"), s)
     assert_equal(s.tr_s("A", "B"), s)
 
     assert_nothing_raised {
-      "a".force_encoding("ASCII-8BIT").tr("a".force_encoding("ASCII-8BIT"), "a".force_encoding("EUC-JP"))
+      "a".force_encoding("ASCII-8BIT").tr(a("a"), a("a"))
     }
 
-    assert_equal("\xA1\xA1".force_encoding("EUC-JP"),
-      "a".force_encoding("ASCII-8BIT").tr("a".force_encoding("ASCII-8BIT"), "\xA1\xA1".force_encoding("EUC-JP")))
-
+    assert_equal(e("\xA1\xA1"), a("a").tr(a("a"), e("\xA1\xA1")))
   end
 
   def test_tr_s
@@ -821,11 +830,79 @@ class TestM17N < Test::Unit::TestCase
       "a".force_encoding("ASCII-8BIT").tr("a".force_encoding("ASCII-8BIT"), "\xA1\xA1".force_encoding("EUC-JP")))
   end
 
+  def test_count
+    assert_equal(0, e("\xa1\xa2").count("z"))
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_raise(ArgumentError){s.count(a("\xa3\xb0"))}
+  end
+
+  def test_delete
+    assert_equal(1, e("\xa1\xa2").delete("z").length)
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_raise(ArgumentError){s.delete(a("\xa3\xb2"))}
+  end
+
+  def test_include?
+    assert_equal(false, e("\xa1\xa2\xa3\xa4").include?(e("\xa3")))
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_equal(false, s.include?(e("\xb0\xa3")))
+  end
+
+  def test_index
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_nil(s.index(e("\xb3\xa3")))
+    assert_nil(e("\xa1\xa2\xa3\xa4").index(e("\xa3")))
+    assert_nil(e("\xa1\xa2\xa3\xa4").rindex(e("\xa3")))
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_raise(ArgumentError){s.rindex(a("\xb1\xa3"))}
+  end
+
+  def test_next
+    s1 = e("\xa1\xa1")
+    s2 = s1.dup
+    (94*94+94).times { s2.next! }
+    assert_not_equal(s1, s2)
+  end
+
   def test_sub
     s = "abc".sub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
     assert_encoding("EUC-JP", s.encoding)
     assert_equal(Encoding::EUC_JP, "\xa4\xa2".force_encoding("euc-jp").sub(/./, '\&').encoding)
     assert_equal(Encoding::EUC_JP, "\xa4\xa2".force_encoding("euc-jp").gsub(/./, '\&').encoding)
+  end
+
+  def test_insert
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_equal(e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4a"), s.insert(-1, "a"))
+  end
+
+  def test_scan
+    assert_equal(["a"], e("\xa1\xa2a\xa3\xa4").scan(/a/))
+  end
+
+  def test_upto
+    s1 = e("\xa1\xa2")
+    s2 = s("\xa1\xa2")
+    assert_raise(ArgumentError){s1.upto(s2) {|x| break }}
+  end
+
+  def test_casecmp
+    s1 = s("\x81\x41")
+    s2 = s("\x81\x61")
+    assert_not_equal(0, s1.casecmp(s2))
+  end
+
+  def test_reverse
+    assert_equal(u("\xf0jihgfedcba"), u("abcdefghij\xf0").reverse)
+  end
+
+  def test_plus
+    assert_raise(ArgumentError){u("\xe3\x81\x82") + a("\xa1")}
+  end
+
+  def test_chomp
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_raise(ArgumentError){s.chomp(s("\xa3\xb4"))}
   end
 
   def test_gsub
@@ -844,12 +921,19 @@ class TestM17N < Test::Unit::TestCase
                      "\xc2\xa1".force_encoding("utf-8")
       }
     }
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_equal(e("\xa3\xb0z\xa3\xb2\xa3\xb3\xa3\xb4"), s.gsub(/\xa3\xb1/e, "z"))
   end
 
   def test_end_with
-    s1 = "\x81\x40".force_encoding("sjis")
+    s1 = s("\x81\x40")
     s2 = "@"
     assert_equal(false, s1.end_with?(s2), "#{encdump s1}.end_with?(#{encdump s2})")
+  end
+
+  def test_each_line
+    s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
+    assert_raise(ArgumentError){s.each_line(a("\xa3\xb1")) {|l| }}
   end
 
   def test_each_char
@@ -860,6 +944,13 @@ class TestM17N < Test::Unit::TestCase
 
   def test_regexp_match
     assert_equal([0,0], //.match("\xa1\xa1".force_encoding("euc-jp"),-1).offset(0))
+    assert_equal(0, // =~ :a)
+  end
+
+  def test_split
+    assert_equal(e("\xa1\xa2\xa1\xa3").split(//),
+                 [e("\xa1\xa2"), e("\xa1\xa3")],
+                 '[ruby-dev:32452]')
   end
 
   def test_nonascii_method_name

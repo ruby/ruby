@@ -640,7 +640,7 @@ rb_encoding*
 rb_enc_compatible(VALUE str1, VALUE str2)
 {
     int idx1, idx2;
-    rb_encoding *enc;
+    rb_encoding *enc1, *enc2;
 
     idx1 = rb_enc_get_index(str1);
     idx2 = rb_enc_get_index(str2);
@@ -648,6 +648,10 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     if (idx1 == idx2) {
 	return rb_enc_from_index(idx1);
     }
+    enc1 = rb_enc_from_index(idx1);
+    enc2 = rb_enc_from_index(idx2);
+    if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2))
+	return 0;
     if (BUILTIN_TYPE(str1) != T_STRING) {
 	VALUE tmp = str1;
 	int idx0 = idx1;
@@ -664,17 +668,15 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 	    cr2 = rb_enc_str_coderange(str2);
 	    if (cr1 != cr2) {
 		/* may need to handle ENC_CODERANGE_BROKEN */
-		if (cr1 == ENC_CODERANGE_7BIT) return rb_enc_from_index(idx2);
-		if (cr2 == ENC_CODERANGE_7BIT) return rb_enc_from_index(idx1);
+		if (cr1 == ENC_CODERANGE_7BIT) return enc2;
 	    }
 	    if (cr2 == ENC_CODERANGE_7BIT) {
-		if (idx1 == 0) return rb_enc_from_index(idx2);
-		return rb_enc_from_index(idx1);
+		if (idx1 == 0) return enc2;
+		return enc1;
 	    }
 	}
-	if (cr1 == ENC_CODERANGE_7BIT &&
-	    rb_enc_asciicompat(enc = rb_enc_from_index(idx2)))
-	    return enc;
+	if (cr1 == ENC_CODERANGE_7BIT)
+	    return enc2;
     }
     return 0;
 }
@@ -908,7 +910,11 @@ static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
     int idx;
+
     if (SYMBOL_P(enc)) enc = rb_id2str(SYM2ID(enc));
+    if (!rb_enc_asciicompat(rb_enc_get(enc))) {
+	rb_raise(rb_eArgError, "invalid name encoding (non ASCII)");
+    }
     idx = rb_enc_find_index(StringValueCStr(enc));
     if (idx < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));

@@ -5522,14 +5522,19 @@ static VALUE
 rb_str_end_with(int argc, VALUE *argv, VALUE str)
 {
     int i;
+    char *p, *s;
+    rb_encoding *enc;
 
     for (i=0; i<argc; i++) {
 	VALUE tmp = rb_check_string_type(argv[i]);
 	if (NIL_P(tmp)) continue;
-	rb_enc_check(str, tmp);
+	enc = rb_enc_check(str, tmp);
 	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
-	if (memcmp(RSTRING_PTR(str) + RSTRING_LEN(str) - RSTRING_LEN(tmp),
-		   RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
+	p = RSTRING_PTR(str);
+	s = p + RSTRING_LEN(str) - RSTRING_LEN(tmp);
+	if (rb_enc_left_char_head(p, s, enc) != s)
+	    continue;
+	if (memcmp(s, p, RSTRING_LEN(tmp)) == 0)
 	    return Qtrue;
     }
     return Qfalse;
