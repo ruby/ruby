@@ -1,3 +1,11 @@
+Tue Jan 22 08:59:52 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/formatter.rb:  Indent labeled lists like note lists.
+
+	* test/rdoc/test_rdoc_ri_overstrike_formatter.rb:  Added.
+
+	* test/rdoc/test_rdoc_ri_formatter.rb:  Added tests.
+
 Tue Jan 22 04:40:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (rb_intern3): do not call rb_enc_mbclen() if *m is

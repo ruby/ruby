@@ -110,50 +110,46 @@ class RDoc::RI::Formatter
       prefixer = proc { |ignored| @indent + "*   " }
 
     when :NUMBER, :UPPERALPHA, :LOWERALPHA then
-
       start = case list.type
               when :NUMBER     then 1
               when :UPPERALPHA then 'A'
               when :LOWERALPHA then 'a'
               end
+
       prefixer = proc do |ignored|
         res = @indent + "#{start}.".ljust(4)
         start = start.succ
         res
       end
 
-    when :LABELED then
-      prefixer = proc do |li|
-        li.label
-      end
-
-    when :NOTE then
+    when :LABELED, :NOTE then
       longest = 0
+
       list.contents.each do |item|
-        if item.kind_of?(RDoc::Markup::Flow::LI) && item.label.length > longest
+        if RDoc::Markup::Flow::LI === item and item.label.length > longest then
           longest = item.label.length
         end
       end
 
-      prefixer = proc do |li|
-        @indent + li.label.ljust(longest+1)
-      end
+      longest += 1
+
+      prefixer = proc { |li| @indent + li.label.ljust(longest) }
 
     else
       raise ArgumentError, "unknown list type #{list.type}"
     end
 
     list.contents.each do |item|
-      if item.kind_of? RDoc::Markup::Flow::LI
-        prefix = prefixer.call(item)
-        display_flow_item(item, prefix)
+      if RDoc::Markup::Flow::LI === item then
+        prefix = prefixer.call item
+        display_flow_item item, prefix
       else
-        display_flow_item(item)
+        display_flow_item item
       end
     end
   end
 
-  def display_flow_item(item, prefix=@indent)
+  def display_flow_item(item, prefix = @indent)
     case item
     when RDoc::Markup::Flow::P, RDoc::Markup::Flow::LI
       wrap(conv_html(item.body), prefix)
@@ -172,7 +168,7 @@ class RDoc::RI::Formatter
       draw_line
 
     else
-      fail "Unknown flow element: #{item.class}"
+      raise RDoc::Error, "Unknown flow element: #{item.class}"
     end
   end
 
@@ -184,24 +180,25 @@ class RDoc::RI::Formatter
   end
 
   def display_heading(text, level, indent)
-    text = strip_attributes(text)
+    text = strip_attributes text
+
     case level
-    when 1
+    when 1 then
       ul = "=" * text.length
       @output.puts
       @output.puts text.upcase
       @output.puts ul
-      #        puts
 
-    when 2
+    when 2 then
       ul = "-" * text.length
       @output.puts
       @output.puts text
       @output.puts ul
-      #        puts
     else
       @output.print indent, text, "\n"
     end
+
+    @output.puts
   end
 
   def display_flow(flow)
@@ -210,19 +207,8 @@ class RDoc::RI::Formatter
     end
   end
 
-  def strip_attributes(txt)
-    tokens = txt.split(%r{(</?(?:b|code|em|i|tt)>)})
-    text = []
-    attributes = 0
-    tokens.each do |tok|
-      case tok
-      when %r{^</(\w+)>$}, %r{^<(\w+)>$}
-        ;
-      else
-        text << tok
-      end
-    end
-    text.join
+  def strip_attributes(text)
+    text.gsub(/(<\/?(?:b|code|em|i|tt)>)/, '')
   end
 
 end
@@ -246,16 +232,7 @@ class RDoc::RI::AttributeFormatter < RDoc::RI::Formatter
     "tt"   => CODE
   }
 
-  # TODO: struct?
-  class AttrChar
-    attr_reader :char
-    attr_reader :attr
-
-    def initialize(char, attr)
-      @char = char
-      @attr = attr
-    end
-  end
+  AttrChar = Struct.new :char, :attr
 
   class AttributeString
     attr_reader :txt
@@ -360,16 +337,14 @@ class RDoc::RI::OverstrikeFormatter < RDoc::RI::AttributeFormatter
 
   def write_attribute_text(prefix, line)
     @output.print prefix
+
     line.each do |achar|
       attr = achar.attr
-      if (attr & (ITALIC+CODE)) != 0
-        @output.print "_", BS
-      end
-      if (attr & BOLD) != 0
-        @output.print achar.char, BS
-      end
+      @output.print "_", BS if (attr & (ITALIC + CODE)) != 0
+      @output.print achar.char, BS if (attr & BOLD) != 0
       @output.print achar.char
     end
+
     @output.puts
   end
 
@@ -415,9 +390,9 @@ class RDoc::RI::AnsiFormatter < RDoc::RI::AttributeFormatter
   end
 
   HEADINGS = {
-    1 => [ "\033[1;32m", "\033[m" ] ,
-    2 => ["\033[4;32m", "\033[m" ],
-    3 => ["\033[32m", "\033[m" ]
+    1 => ["\033[1;32m", "\033[m"],
+    2 => ["\033[4;32m", "\033[m"],
+    3 => ["\033[32m",   "\033[m"],
   }
 
   def display_heading(text, level, indent)

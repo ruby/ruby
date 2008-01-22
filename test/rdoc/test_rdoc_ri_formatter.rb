@@ -45,23 +45,209 @@ class TestRDocRIFormatter < Test::Unit::TestCase
     assert_equal expected, @f.conv_markup(text)
   end
 
+  def test_display_flow
+    flow = [
+      RDoc::Markup::Flow::H.new(1, 'heading'),
+      RDoc::Markup::Flow::P.new('paragraph'),
+    ]
+
+    @f.display_flow flow
+
+    assert_equal "\nHEADING\n=======\n\n  paragraph\n\n", @output.string
+  end
+
+  def test_display_flow_item_h
+    item = RDoc::Markup::Flow::H.new 1, 'heading'
+
+    @f.display_flow_item item
+
+    assert_equal "\nHEADING\n=======\n\n", @output.string
+  end
+
+  def test_display_flow_item_li
+    item = RDoc::Markup::Flow::LI.new nil, 'paragraph'
+
+    @f.display_flow_item item
+
+    assert_equal "  paragraph\n\n", @output.string
+  end
+
+  def test_display_flow_item_list
+    item = RDoc::Markup::Flow::LIST.new :NUMBER
+
+    @f.display_flow_item item
+
+    assert_equal "", @output.string
+  end
+
+  def test_display_flow_item_p
+    item = RDoc::Markup::Flow::P.new 'paragraph'
+
+    @f.display_flow_item item
+
+    assert_equal "  paragraph\n\n", @output.string
+  end
+
+  def test_display_flow_item_rule
+    item = RDoc::Markup::Flow::RULE.new 1
+
+    @f.display_flow_item item
+
+    assert_equal "#{'-' * 78}\n", @output.string
+  end
+
+  def test_display_flow_item_unknown
+    e = assert_raise RDoc::Error do
+      @f.display_flow_item Object.new
+    end
+
+    assert_equal "Unknown flow element: Object", e.message
+  end
+
+  def test_display_flow_item_verb
+    item = RDoc::Markup::Flow::VERB.new 'a b c'
+
+    @f.display_flow_item item
+
+    assert_equal "  a b c\n\n", @output.string
+  end
+
+  def test_display_heading_1
+    @f.display_heading 'heading', 1, '  '
+
+    assert_equal "\nHEADING\n=======\n\n", @output.string
+  end
+
+  def test_display_heading_2
+    @f.display_heading 'heading', 2, '  '
+
+    assert_equal "\nheading\n-------\n\n", @output.string
+  end
+
+  def test_display_heading_3
+    @f.display_heading 'heading', 3, '  '
+
+    assert_equal "  heading\n\n", @output.string
+  end
+
+  def test_display_list
+    list = RDoc::Markup::Flow::LIST.new :NUMBER
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
+    list << RDoc::Markup::Flow::LI.new(nil, 'd e f')
+
+    @f.display_list list
+
+    assert_equal "  1.  a b c\n\n  2.  d e f\n\n", @output.string
+  end
+
   def test_display_list_bullet
-    list = util_convert('* a b c').first
+    list = RDoc::Markup::Flow::LIST.new :BULLET
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
 
     @f.display_list list
 
     assert_equal "  *   a b c\n\n", @output.string
   end
 
+  def test_display_heading_1
+    @f.display_heading 'heading', 1, '  '
+
+    assert_equal "\nHEADING\n=======\n\n", @output.string
+  end
+
+  def test_display_heading_2
+    @f.display_heading 'heading', 2, '  '
+
+    assert_equal "\nheading\n-------\n\n", @output.string
+  end
+
+  def test_display_heading_3
+    @f.display_heading 'heading', 3, '  '
+
+    assert_equal "  heading\n\n", @output.string
+  end
+
+  def test_display_list
+    list = RDoc::Markup::Flow::LIST.new :NUMBER
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
+    list << RDoc::Markup::Flow::LI.new(nil, 'd e f')
+
+    @f.display_list list
+
+    assert_equal "  1.  a b c\n\n  2.  d e f\n\n", @output.string
+  end
+
+  def test_display_list_bullet
+    list = RDoc::Markup::Flow::LIST.new :BULLET
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
+
+    @f.display_list list
+
+    assert_equal "  *   a b c\n\n", @output.string
+  end
+
+  def test_display_list_labeled
+    list = RDoc::Markup::Flow::LIST.new :LABELED
+    list << RDoc::Markup::Flow::LI.new('label', 'a b c')
+
+    @f.display_list list
+
+    assert_equal "  label a b c\n\n", @output.string
+  end
+
+  def test_display_list_lower_alpha
+    list = RDoc::Markup::Flow::LIST.new :LOWERALPHA
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
+
+    @f.display_list list
+
+    assert_equal "  a.  a b c\n\n", @output.string
+  end
+
+  def test_display_list_note
+    list = RDoc::Markup::Flow::LIST.new :NOTE
+    list << RDoc::Markup::Flow::LI.new('note:', 'a b c')
+
+    @f.display_list list
+
+    assert_equal "  note: a b c\n\n", @output.string
+  end
+
+  def test_display_list_number
+    list = RDoc::Markup::Flow::LIST.new :NUMBER
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
+
+    @f.display_list list
+
+    assert_equal "  1.  a b c\n\n", @output.string
+  end
+
   def test_display_list_unknown
-    list = util_convert('* a b c').first
-    list.instance_variable_set :@type, :UNKNOWN
+    list = RDoc::Markup::Flow::LIST.new :UNKNOWN
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
 
     e = assert_raise ArgumentError do
       @f.display_list list
     end
 
     assert_equal 'unknown list type UNKNOWN', e.message
+  end
+
+  def test_display_list_upper_alpha
+    list = RDoc::Markup::Flow::LIST.new :UPPERALPHA
+    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
+
+    @f.display_list list
+
+    assert_equal "  A.  a b c\n\n", @output.string
+  end
+
+  def test_display_verbatim_flow_item
+    verbatim = RDoc::Markup::Flow::VERB.new "a b c\nd e f"
+
+    @f.display_verbatim_flow_item verbatim
+
+    assert_equal "  a b c\n  d e f\n\n", @output.string
   end
 
   def test_draw_line
@@ -91,6 +277,46 @@ class TestRDocRIFormatter < Test::Unit::TestCase
     assert_equal "a b c\n", @output.string
   end
 
+  def test_strip_attributes_b
+    text = @f.strip_attributes 'hello <b>world</b>'
+
+    expected = 'hello world'
+
+    assert_equal expected, text
+  end
+
+  def test_strip_attributes_code
+    text = @f.strip_attributes 'hello <code>world</code>'
+
+    expected = 'hello world'
+
+    assert_equal expected, text
+  end
+
+  def test_strip_attributes_em
+    text = @f.strip_attributes 'hello <em>world</em>'
+
+    expected = 'hello world'
+
+    assert_equal expected, text
+  end
+
+  def test_strip_attributes_i
+    text = @f.strip_attributes 'hello <i>world</i>'
+
+    expected = 'hello world'
+
+    assert_equal expected, text
+  end
+
+  def test_strip_attributes_tt
+    text = @f.strip_attributes 'hello <tt>world</tt>'
+
+    expected = 'hello world'
+
+    assert_equal expected, text
+  end
+
   def test_wrap_empty
     @f.wrap ''
     assert_equal '', @output.string
@@ -117,8 +343,5 @@ class TestRDocRIFormatter < Test::Unit::TestCase
     assert_equal "  a b c\n", @output.string
   end
 
-  def util_convert(text)
-    @markup.convert text, @flow
-  end
 end
 
