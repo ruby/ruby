@@ -1,3 +1,7 @@
+Tue Jan 22 20:58:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): need to output sodir rule.
+
 Tue Jan 22 19:37:16 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): lib files shoudn't depend on install
