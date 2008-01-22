@@ -14,7 +14,7 @@ prefix = /usr
 !endif
 OS = mswin32
 BANG = !
-APPEND = echo>>$(MAKEFILE)
+APPEND = echo.>>$(MAKEFILE)
 !ifdef MAKEFILE
 MAKE = $(MAKE) -f $(MAKEFILE)
 !else
@@ -41,8 +41,8 @@ MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
 EXTSTATIC = $(EXTSTATIC)
-!if defined(USE_WINSOCK2)
-USE_WINSOCK2 = $(USE_WINSOCK2)
+!if "$(USE_WINSOCK2)" != "0"
+USE_WINSOCK2 = 1
 !endif
 !if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)
@@ -151,18 +151,18 @@ $(CPU) = $(PROCESSOR_LEVEL)
 !endif
 
 -alpha-: nul
-	@$(APPEND) $(ARCH) = alpha
+	@echo $(ARCH) = alpha>>$(MAKEFILE)
 -ix86-: nul
-	@$(APPEND) $(ARCH) = x86
+	@echo $(ARCH) = x86>>$(MAKEFILE)
 
 -i386-: -ix86-
-	@$(APPEND) $(CPU) = 3
+	@echo $(CPU) = 3>>$(MAKEFILE)
 -i486-: -ix86-
-	@$(APPEND) $(CPU) = 4
+	@echo $(CPU) = 4>>$(MAKEFILE)
 -i586-: -ix86-
-	@$(APPEND) $(CPU) = 5
+	@echo $(CPU) = 5>>$(MAKEFILE)
 -i686-: -ix86-
-	@$(APPEND) $(CPU) = 6
+	@echo $(CPU) = 6>>$(MAKEFILE)
 
 -epilogue-: nul
 	@type << >>$(MAKEFILE)
