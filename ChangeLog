@@ -1,3 +1,12 @@
+Thu Jan 24 03:23:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_each_line): use memchr(3) for faster newline
+	  search.
+
+	* io.c (appendline): remove unused arguments
+
+	* io.c (rb_io_getline_fast): make much simpler (and faster).
+
 Thu Jan 24 02:13:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* insns.def (expandarray): fix stack inc.

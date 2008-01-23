@@ -1686,14 +1686,11 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 }
 
 static int
-appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE *strp, long *lp)
+appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 {
     VALUE str = *strp;
     int c = EOF;
     long limit = *lp;
-
-    if (rsptr == 0)
-      rslen = 1;
 
     do {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
@@ -1701,6 +1698,7 @@ appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE *strp, 
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
 	    const char *e;
 	    long last = 0, len = (c != EOF);
+	    rb_encoding *enc = io_read_encoding(fptr);
 
 	    if (limit > 0 && pending > limit) pending = limit;
 	    e = memchr(p, delim, pending);
@@ -1720,7 +1718,7 @@ appendline(rb_io_t *fptr, int delim, const char *rsptr, int rslen, VALUE *strp, 
 	    if (limit > 0 && limit == pending) {
 		char *p = fptr->rbuf+fptr->rbuf_off;
 		char *pp = p + limit;
-		char *pl = rb_enc_left_char_head(p, pp, io_read_encoding(fptr));
+		char *pl = rb_enc_left_char_head(p, pp, enc);
 
 		if (pl < pp) {
 		    int diff = pp - pl;
@@ -1790,27 +1788,53 @@ swallow(rb_io_t *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(rb_io_t *fptr, unsigned char delim, long limit)
+rb_io_getline_fast(rb_io_t *fptr)
 {
     VALUE str = Qnil;
-    int c, nolimit = 0;
+    int len = 0;
+    rb_encoding *enc = io_read_encoding(fptr);
 
     for (;;) {
-	c = appendline(fptr, delim, 0, 0, &str, &limit);
-	if (c == EOF || c == delim) break;
-	if (limit == 0) {
-	    nolimit = 1;
+	long pending = READ_DATA_PENDING_COUNT(fptr);
+
+	if (pending > 0) {
+	    const char *p = READ_DATA_PENDING_PTR(fptr);
+	    const char *e;
+
+	    e = memchr(p, '\n', pending);
+	    if (e) {
+		const char *p0 = rb_enc_left_char_head(p, e, enc);
+		const char *pend = rb_enc_left_char_head(p, p+pending, enc);
+		if (rb_enc_is_newline(p0, pend, enc)) {
+		    pending = p0 - p + rb_enc_mbclen(p0, pend, enc);
+		}
+		else {
+		    e = 0;
+		}
+	    }
+	    if (NIL_P(str)) {
+		str = rb_str_new(p, pending);
+		fptr->rbuf_off += pending;
+		fptr->rbuf_len -= pending;
+	    }
+	    else {
+		rb_str_resize(str, len + pending);
+		read_buffered_data(RSTRING_PTR(str)+len, pending, fptr);
+	    }
+	    len += pending;
+	    if (e) break;
+	}
+	rb_thread_wait_fd(fptr->fd);
+	rb_io_check_closed(fptr);
+	if (io_fillbuf(fptr) < 0) {
+	    if (NIL_P(str)) return Qnil;
 	    break;
 	}
     }
 
-    if (!NIL_P(str)) {
-	str = io_enc_str(str, fptr);
-	if (!nolimit) {
-	    fptr->lineno++;
-	    lineno = INT2FIX(fptr->lineno);
-	}
-    }
+    str = io_enc_str(str, fptr);
+    fptr->lineno++;
+    lineno = INT2FIX(fptr->lineno);
     return str;
 }
 
@@ -1838,11 +1862,12 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 	    }
 	}
     }
-    GetOpenFile(io, fptr);
-    if (!NIL_P(rs)) {
-	rb_encoding *enc_rs = rb_enc_get(rs);
-	rb_encoding *enc_io = io_read_encoding(fptr);
+    if (!NIL_P(rs) && rs != rb_default_rs) {
+	rb_encoding *enc_rs, *enc_io;
 
+	GetOpenFile(io, fptr);
+	enc_rs = rb_enc_get(rs);
+	enc_io = io_read_encoding(fptr);
 	if (enc_io != enc_rs &&
 	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
 	     !rb_enc_asciicompat(enc_io))) {
@@ -1876,8 +1901,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     else if (limit == 0) {
 	return rb_enc_str_new(0, 0, io_read_encoding(fptr));
     }
-    else if (rs == rb_default_rs) {
-	return rb_io_getline_fast(fptr, '\n', limit);
+    else if (rs == rb_default_rs && limit < 0) {
+	return rb_io_getline_fast(fptr);
     }
     else {
 	int c, newline;
@@ -1893,15 +1918,12 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    swallow(fptr, '\n');
 	    rs = 0;
 	}
-	else if (rslen == 1) {
-	    return rb_io_getline_fast(fptr, (unsigned char)RSTRING_PTR(rs)[0], limit);
-	}
 	else {
 	    rsptr = RSTRING_PTR(rs);
 	}
 	newline = rsptr[rslen - 1];
 
-	while ((c = appendline(fptr, newline, rsptr, rslen, &str, &limit)) != EOF) {
+	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
 	    if (c == newline) {
 		const char *s, *p, *pp;
 		
@@ -1954,7 +1976,7 @@ rb_io_gets(VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    return rb_io_getline_fast(fptr, '\n', 0);
+    return rb_io_getline_fast(fptr);
 }
 
 /*

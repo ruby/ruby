@@ -4470,9 +4470,8 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     rb_encoding *enc;
     VALUE rs;
     int newline;
-    char *p = RSTRING_PTR(str), *pend = p + RSTRING_LEN(str), *s = p;
-    char *ptr = p;
-    long len = RSTRING_LEN(str), rslen;
+    char *p, *pend, *s, *ptr;
+    long len, rslen; 
     VALUE line;
     int n;
 
@@ -4480,29 +4479,39 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	rs = rb_rs;
     }
     RETURN_ENUMERATOR(str, argc, argv);
-
     if (NIL_P(rs)) {
 	rb_yield(str);
 	return str;
     }
+    str = rb_str_new4(str);
+    ptr = p = s = RSTRING_PTR(str);
+    pend = p + RSTRING_LEN(str);
+    len = RSTRING_LEN(str);
     StringValue(rs);
-    enc = rb_enc_check(str, rs);
     if (rs == rb_default_rs) {
+	enc = rb_enc_get(str);
 	while (p < pend) {
-	    n = rb_enc_mbclen(p, pend, enc);
-	    if (rb_enc_is_newline(p, pend, enc)) {
-		line = rb_str_new5(str, s, p - s + n);
-		OBJ_INFECT(line, str);
-		rb_enc_copy(line, str);
-		rb_yield(line);
-		str_mod_check(str, ptr, len);
-		s = p + n;
+	    char *p0;
+
+	    p = memchr(p, '\n', pend - p);
+	    if (!p) break;
+	    p0 = rb_enc_left_char_head(s, p, enc);
+	    if (!rb_enc_is_newline(p0, pend, enc)) {
+		p++;
+		continue;
 	    }
-	    p += n;
+	    p = p0 + rb_enc_mbclen(s, p0, enc);
+	    line = rb_str_new5(str, s, p - s);
+	    OBJ_INFECT(line, str);
+	    rb_enc_copy(line, str);
+	    rb_yield(line);
+	    str_mod_check(str, ptr, len);
+	    s = p;
 	}
 	goto finish;
     }
 
+    enc = rb_enc_check(str, rs);
     rslen = RSTRING_LEN(rs);
     if (rslen == 0) {
 	newline = '\n';
@@ -4535,8 +4544,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
   finish:
     if (s != pend) {
-	if (p > pend) p = pend;
-	line = rb_str_new5(str, s, p - s);
+	line = rb_str_new5(str, s, pend - s);
 	OBJ_INFECT(line, str);
 	rb_enc_copy(line, str);
 	rb_yield(line);
