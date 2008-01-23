@@ -68,11 +68,15 @@ assert_equal 'ok', %q{
 
 assert_equal 'true', %{
   t = Thread.new { loop {} }
-  pid = fork {
+  begin
+    pid = fork {
       exit t.status != "run"
-  }
-  Process.wait pid
-  $?.success?
+    }
+    Process.wait pid
+    $?.success?
+  rescue NotImplementedError
+    true
+  end
 }
 
 assert_valid_syntax('1.times {|i|print (42),1;}', '[ruby-list:44479]')

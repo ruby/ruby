@@ -202,9 +202,13 @@ end
 }, '[ruby-dev:31371]'
 assert_equal 'true', %{
   t = Thread.new { loop {} }
-  pid = fork {
+  begin
+    pid = fork {
       exit t.status != "run"
-  }
-  Process.wait pid
-  $?.success?
+    }
+    Process.wait pid
+    $?.success?
+  rescue NotImplementedError
+    true
+  end
 }
