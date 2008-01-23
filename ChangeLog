@@ -1,3 +1,8 @@
+Wed Jan 23 23:54:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* sprintf.c: fix comment.  [ruby-dev:33275]
+	* math.c: fix comment.  [ruby-dev:33276]
+
 Wed Jan 23 22:47:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_struct.rb: add tests to achieve over 90% test

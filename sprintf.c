@@ -221,12 +221,7 @@ sign_bits(int base, const char *p)
  *        s   | Argument is a string to be substituted. If the format
  *            | sequence contains a precision, at most that many characters
  *            | will be copied.
- *        u   | Treat argument as an unsigned decimal number. Negative integers
- *            | are displayed as a 32 bit two's complement plus one for the
- *            | underlying architecture; that is, 2 ** 32 + n.  However, since
- *            | Ruby has no inherent limit on bits used to represent the
- *            | integer, this value is preceded by two dots (..) in order to
- *            | indicate a infinite number of leading sign bits.
+ *        u   | Identical to `d'.
  *        X   | Convert argument as a hexadecimal number using uppercase
  *            | letters. Negative numbers will be displayed with two
  *            | leading periods (representing an infinite string of
@@ -243,7 +238,7 @@ sign_bits(int base, const char *p)
  *     sprintf("%1$*2$s %2$d %1$s", "hello", 8)   #=> "   hello 8 hello"
  *     sprintf("%1$*2$s %2$d", "hello", -8)       #=> "hello    -8"
  *     sprintf("%+g:% g:%-g", 1.23, 1.23, 1.23)   #=> "+1.23: 1.23:1.23"
- *     sprintf("%u", -123)                        #=> "..4294967173"
+ *     sprintf("%u", -123)                        #=> "-123"
  */
 
 VALUE
