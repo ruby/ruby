@@ -955,7 +955,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 
     rb_reg_check(re);
     /* ignorecase status */
-    if (rb_reg_fixed_encoding_p(re)) {
+    if (rb_reg_fixed_encoding_p(re) || !rb_enc_str_asciicompat_p(str)) {
         if (ENCODING_GET(re) != rb_enc_get_index(str) &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
             rb_raise(rb_eArgError,
@@ -993,6 +993,10 @@ rb_reg_prepare_re(VALUE re, VALUE str)
         unescaped = rb_reg_preprocess(
             RREGEXP(re)->str, RREGEXP(re)->str + RREGEXP(re)->len, enc,
             &fixed_enc, err);
+
+        if (unescaped == Qnil) {
+            rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
+        }
 
 	r = onig_new(&reg2, (UChar* )RSTRING_PTR(unescaped),
 		     (UChar* )(RSTRING_PTR(unescaped) + RSTRING_LEN(unescaped)),

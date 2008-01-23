@@ -1,3 +1,8 @@
+Wed Jan 23 13:39:48 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_prepare_re): fix SEGV by
+	  /a/ =~ "aa".force_encoding("utf-16be").
+
 Wed Jan 23 11:53:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_mod_check, str_nth, str_offset): consitfied.
