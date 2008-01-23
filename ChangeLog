@@ -1,3 +1,9 @@
+Wed Jan 23 10:18:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval_method.c (rb_export_method): set ruby_vm_redefined_flag for
+	  visibility change as well.  reported by K.Kosako in
+	  http://d.hatena.ne.jp/kkos/20080122#1201012720.
+
 Tue Jan 22 22:26:23 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_bignum.rb: change some tests because rational

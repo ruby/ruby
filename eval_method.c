@@ -388,6 +388,9 @@ rb_export_method(VALUE klass, ID name, ID noex)
 	rb_print_undef(klass, name, 0);
     }
     if (fbody->nd_body->nd_noex != noex) {
+	if (nd_type(fbody->nd_body->nd_body) == NODE_CFUNC) {
+	    rb_vm_check_redefinition_opt_method(fbody);
+	}
 	if (klass == origin) {
 	    fbody->nd_body->nd_noex = noex;
 	}
