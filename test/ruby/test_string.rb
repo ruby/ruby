@@ -1366,4 +1366,8 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("4\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
     assert_nil(l.slice!(/\A.*\n/), "[ruby-dev:31665]")
   end
+
+  def test_end_with?
+    assert("abc".end_with?("c"))
+  end
 end
