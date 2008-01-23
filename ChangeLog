@@ -1,3 +1,8 @@
+Wed Jan 23 22:14:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/japanese.c (rb_from_Windows_31J, rb_to_Windows_31J):
+	  provisional workaround for Windows-31J.  [ruby-dev:33320]
+
 Wed Jan 23 15:25:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_strftime): copy encoding from format.  [ruby-dev:33303]

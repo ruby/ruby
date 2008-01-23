@@ -4427,6 +4427,11 @@ rb_from_SHIFT_JIS = {
     "SHIFT_JIS", "UTF-8", &from_SHIFT_JIS, 3, 0,
     NULL, NULL,
 };
+static const rb_transcoder
+rb_from_Windows_31J = {
+    "Windows-31J", "UTF-8", &from_SHIFT_JIS, 3, 0,
+    NULL, NULL,
+};
 
 static const unsigned char
 to_SHIFT_JIS_C2_offsets[64] = {
@@ -13355,6 +13360,11 @@ to_SHIFT_JIS = {
 static const rb_transcoder
 rb_to_SHIFT_JIS = {
     "UTF-8", "SHIFT_JIS", &to_SHIFT_JIS, 2, 1,
+    NULL, NULL,
+};
+static const rb_transcoder
+rb_to_Windows_31J = {
+    "UTF-8", "Windows_31J", &to_SHIFT_JIS, 2, 1,
     NULL, NULL,
 };
 
@@ -23860,8 +23870,10 @@ void
 Init_japanese(void)
 {
     rb_register_transcoder(&rb_from_SHIFT_JIS);
+    rb_register_transcoder(&rb_from_Windows_31J);
     rb_register_transcoder(&rb_from_EUC_JP);
     rb_register_transcoder(&rb_to_SHIFT_JIS);
+    rb_register_transcoder(&rb_to_Windows_31J);
     rb_register_transcoder(&rb_to_EUC_JP);
     rb_register_transcoder(&rb_from_ISO_2022_JP);
     rb_register_transcoder(&rb_to_ISO_2022_JP);
