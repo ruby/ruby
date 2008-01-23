@@ -268,7 +268,7 @@ struct parser_params {
 #define UTF8_ENC() (parser->utf8 ? parser->utf8 : \
 		    (parser->utf8 = rb_utf8_encoding()))
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
-#define STR_NEW0() rb_str_new(0,0)
+#define STR_NEW0() rb_enc_str_new(0,0,rb_usascii_encoding())
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func))
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
@@ -4667,7 +4667,7 @@ yycompile0(VALUE arg, int tracing)
     if (!compile_for_eval && rb_safe_level() == 0) {
 	ruby_debug_lines = debug_lines(ruby_sourcefile);
 	if (ruby_debug_lines && ruby_sourceline > 0) {
-	    VALUE str = rb_str_new(0, 0);
+	    VALUE str = STR_NEW0();
 	    n = ruby_sourceline;
 	    do {
 		rb_ary_push(ruby_debug_lines, str);
@@ -7446,7 +7446,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 
     htype = nd_type(head);
     if (htype == NODE_EVSTR) {
-	NODE *node = NEW_DSTR(rb_str_new(0, 0));
+	NODE *node = NEW_DSTR(STR_NEW0());
 	head = list_append(node, head);
     }
     switch (nd_type(tail)) {
@@ -7489,7 +7489,7 @@ static NODE *
 evstr2dstr_gen(struct parser_params *parser, NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
-	node = list_append(NEW_DSTR(rb_str_new(0, 0)), node);
+	node = list_append(NEW_DSTR(STR_NEW0()), node);
     }
     return node;
 }
