@@ -450,7 +450,7 @@ DEFINE_INSN
 expandarray
 (rb_num_t num, rb_num_t flag)
 (..., VALUE ary)
-(...) // inc += flag == 0x02 ? num : ((num > 0) ? num - 1 + (flag ? 1 : 0) : num + 1 - (flag ? 1 : 0));
+(...) // inc += num - 1 + (flag & 1 ? 1 : 0);
 {
     vm_expandarray(GET_CFP(), ary, num, flag);
 }

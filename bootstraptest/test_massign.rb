@@ -174,3 +174,10 @@ assert_equal 'ok', %q{
   :ok
 }, '[ruby-dev:32581]'
 
+assert_equal 'ok', %q{
+  while true
+    *, z = 1
+    break
+  end
+  :ok
+}, '[ruby-dev:32892]'

@@ -17,14 +17,6 @@ assert_equal 'ok', %q{
   end
 }, '[ruby-core:14537]'
 
-assert_equal 'ok', %q{
-  while true
-    *, z = 1
-    break
-  end
-  :ok
-}, '[ruby-dev:32892]'
-
 
 assert_equal 'ok', %q{
   1.times do
