@@ -49,4 +49,162 @@ class TestStruct < Test::Unit::TestCase
       }
     }
   end
+
+  def test_inherit
+    klass = Struct.new(:a)
+    klass2 = Class.new(klass)
+    o = klass2.new(1)
+    assert_equal(1, o.a)
+  end
+
+  def test_members
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert_equal([:a], klass.members)
+    assert_equal([:a], o.members)
+  end
+
+  def test_ref
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert_equal(1, o[:a])
+    assert_raise(NameError) { o[:b] }
+  end
+
+  def test_modify
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert_raise(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        o.a = 2
+      end.value
+    end
+  end
+
+  def test_set
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    o[:a] = 2
+    assert_equal(2, o[:a])
+    assert_raise(NameError) { o[:b] = 3 }
+  end
+
+  def test_struct_new
+    Struct.instance_eval { const_set(:Foo, nil) }
+    assert_raise(NameError) { Struct.new("foo") }
+    assert_nothing_raised { Struct.new("Foo") }
+    Struct.instance_eval { remove_const(:Foo) }
+    assert_nothing_raised { Struct.new(:a) { } }
+    assert_raise(RuntimeError) { Struct.new(:a) { raise } }
+
+    assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
+  end
+
+  def test_initialize
+    klass = Struct.new(:a)
+    assert_raise(ArgumentError) { klass.new(1, 2) }
+  end
+
+  def test_each
+    klass = Struct.new(:a, :b)
+    o = klass.new(1, 2)
+    assert_equal([1, 2], o.each.to_a)
+  end
+
+  def test_each_pair
+    klass = Struct.new(:a, :b)
+    o = klass.new(1, 2)
+    assert_equal([[:a, 1], [:b, 2]], o.each_pair.to_a)
+  end
+
+  def test_inspect
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert_equal("#<struct a=1>", o.inspect)
+    o.a = o
+    assert(o.inspect =~ /^#<struct a=#<struct #<.*?>:...>>$/)
+
+    Struct.new("Foo", :a)
+    o = Struct::Foo.new(1)
+    assert_equal("#<struct Struct::Foo a=1>", o.inspect)
+    Struct.instance_eval { remove_const(:Foo) }
+
+    klass = Struct.new(:a, :b)
+    o = klass.new(1, 2)
+    assert_equal("#<struct a=1, b=2>", o.inspect)
+
+    klass = Struct.new(:@a)
+    o = klass.new(1)
+    assert_equal("#<struct :@a=1>", o.inspect)
+  end
+
+  def test_init_copy
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert_equal(o, o.dup)
+  end
+
+  def test_aref
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert_equal(1, o[0])
+    assert_raise(IndexError) { o[-2] }
+    assert_raise(IndexError) { o[1] }
+  end
+
+  def test_aset
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    o[0] = 2
+    assert_equal(2, o[:a])
+    assert_raise(IndexError) { o[-2] = 3 }
+    assert_raise(IndexError) { o[1] = 3 }
+  end
+
+  def test_values_at
+    klass = Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal([2, 4, 6], o.values_at(1, 3, 5))
+    assert_equal([2, 3, 4, 3, 4, 5], o.values_at(1..3, 2...5))
+  end
+
+  def test_select
+    klass = Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal([1, 3, 5], o.select {|v| v % 2 != 0 })
+    assert_raise(ArgumentError) { o.select(1) }
+  end
+
+  def test_equal
+    klass1 = Struct.new(:a)
+    klass2 = Struct.new(:a, :b)
+    o1 = klass1.new(1)
+    o2 = klass1.new(1)
+    o3 = klass2.new(1)
+    assert(o1.==(o2))
+    assert(o1 != o3)
+  end
+
+  def test_hash
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert(o.hash.is_a?(Fixnum))
+  end
+
+  def test_eql
+    klass1 = Struct.new(:a)
+    klass2 = Struct.new(:a, :b)
+    o1 = klass1.new(1)
+    o2 = klass1.new(1)
+    o3 = klass2.new(1)
+    assert(o1.eql?(o2))
+    assert(!(o1.eql?(o3)))
+  end
+
+  def test_size
+    klass = Struct.new(:a)
+    o = klass.new(1)
+    assert_equal(1, o.size)
+  end
 end
