@@ -984,7 +984,7 @@ class TestM17NComb < Test::Unit::TestCase
         pos2 = pos
         pos2 += s1.length if pos < 0
         re = /\A(.{0,#{pos2}})#{Regexp.escape(s2)}/m
-        assert(re.match(s1), "#{re.inspect}.match(#{encdump(s1)})")
+        assert(enccall(re, :match, s1), "#{re.inspect}.match(#{encdump(s1)})")
         assert_equal($1.length, t, "#{encdump s1}.rindex(#{encdump s2}, #{pos})")
       else
         re = /#{Regexp.escape(s2)}/
@@ -1276,7 +1276,7 @@ class TestM17NComb < Test::Unit::TestCase
         assert_raise(ArgumentError, desc) { s1.tr(s2, s3) }
         next
       end
-      t = s1.tr(s2, s3)
+      t = enccall(s1, :tr, s2, s3)
       assert_operator(s1.length, :>=, t.length, desc)
     }
   end
