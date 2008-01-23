@@ -1,3 +1,9 @@
+Thu Jan 24 03:47:41 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rexml/text.rb, lib/rubygems/open-uri.rb, lib/open-uri.rb,
+	  test/logger/test_logger.rb, test/ruby/test_regexp.rb:
+	  fix tests. [ruby-dev:33336]
+
 Thu Jan 24 03:23:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_line): use memchr(3) for faster newline

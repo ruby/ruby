@@ -50,7 +50,7 @@ module REXML
          |  \xF0[\x90-\xBF][\x80-\xBF]{2}     # planes 1-3
          | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
          |  \xF4[\x80-\x8F][\x80-\xBF]{2}     # plane 16
-       )*$/x; 
+       )*$/nx; 
     end
 
     # Constructor
@@ -139,7 +139,7 @@ module REXML
             end
           end
         else
-          string.scan(/[\x00-\x7F]|[\x80-\xBF][\xC0-\xF0]*|[\xC0-\xF0]/) do |c|
+          string.scan(/[\x00-\x7F]|[\x80-\xBF][\xC0-\xF0]*|[\xC0-\xF0]/n) do |c|
             case c.unpack('U')
             when *VALID_CHAR
             else
