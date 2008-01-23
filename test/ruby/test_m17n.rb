@@ -297,6 +297,9 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_utf16
+    s = "aa".force_encoding("utf-16be")
+    assert_raise(ArgumentError, "Time.now.strftime(#{encdump s})") { Time.now.strftime(s) }
+
     s = "aaaa".force_encoding("utf-16be")
     assert_equal(s.encoding, s.intern.to_s.encoding, "#{encdump s}.intern.to_s.encoding")
 
