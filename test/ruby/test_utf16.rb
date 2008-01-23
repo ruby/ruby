@@ -1,6 +1,6 @@
 require 'test/unit'
 
-class TestM17N < Test::Unit::TestCase
+class TestUTF16 < Test::Unit::TestCase
   def encdump(str)
     d = str.dump
     if /\.force_encoding\("[A-Za-z0-9.:_+-]*"\)\z/ =~ d
