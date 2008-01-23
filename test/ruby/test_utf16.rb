@@ -10,6 +10,33 @@ class TestUTF16 < Test::Unit::TestCase
     end
   end
 
+  def enccall(recv, meth, *args)
+    desc = ''
+    if String === recv
+      desc << encdump(recv)
+    else
+      desc << recv.inspect
+    end
+    desc << '.' << meth.to_s
+    if !args.empty?
+      desc << '('
+      args.each_with_index {|a, i|
+        desc << ',' if 0 < i
+        if String === a
+          desc << encdump(a)
+        else
+          desc << a.inspect
+        end
+      }
+      desc << ')'
+    end
+    result = nil
+    assert_nothing_raised(desc) {
+      result = recv.send(meth, *args)
+    }
+    result
+  end
+
   # tests start
 
   def test_utf16be_valid_encoding
@@ -71,5 +98,9 @@ class TestUTF16 < Test::Unit::TestCase
     assert_raise(ArgumentError, "\"a\#{#{encdump s}}\"") {
       "a#{s}"
     }
+  end
+
+  def test_slice!
+    enccall("aa".force_encoding("UTF-16BE"), :slice!, -1)
   end
 end
