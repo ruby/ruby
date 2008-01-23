@@ -65,4 +65,11 @@ class TestUTF16 < Test::Unit::TestCase
       Encoding.find("utf-8".force_encoding("utf-16be"))
     }
   end
+
+  def test_interpolation
+    s = "aa".force_encoding("utf-16be")
+    assert_raise(ArgumentError, "\"a\#{#{encdump s}}\"") {
+      "a#{s}"
+    }
+  end
 end
