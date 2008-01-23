@@ -57,4 +57,18 @@ class TestPack < Test::Unit::TestCase
     assert_raises(RangeError) { [0x80000000].pack("U") }
     assert_raises(RangeError) { [0x100000000].pack("U") }
   end
+
+  def test_pack_P
+    a = ["abc"]
+    assert_equal a, a.pack("P").unpack("P*")
+    assert_equal "a", a.pack("P").unpack("P")[0]
+    assert_equal a, a.pack("P").freeze.unpack("P*")
+  end
+
+  def test_pack_p
+    a = ["abc"]
+    assert_equal a, a.pack("p").unpack("p*")
+    assert_equal a[0], a.pack("p").unpack("p")[0]
+    assert_equal a, a.pack("p").freeze.unpack("p*")
+  end
 end

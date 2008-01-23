@@ -742,6 +742,7 @@ str_make_independent(VALUE str)
     STR_SET_NOEMBED(str);
     ptr[len] = 0;
     RSTRING(str)->as.heap.ptr = ptr;
+    RSTRING(str)->as.heap.len = len;
     RSTRING(str)->as.heap.aux.capa = len;
     STR_UNSET_NOCAPA(str);
 }
@@ -771,6 +772,7 @@ rb_str_associate(VALUE str, VALUE add)
 	    RESIZE_CAPA(str, RSTRING_LEN(str));
 	}
 	FL_SET(str, STR_ASSOC);
+	RBASIC(add)->klass = 0;
 	RSTRING(str)->as.heap.aux.shared = add;
     }
 }
@@ -779,8 +781,9 @@ VALUE
 rb_str_associated(VALUE str)
 {
     if (STR_ASSOC_P(str)) {
-	if (OBJ_FROZEN(str)) return Qfalse;
-	return RSTRING(str)->as.heap.aux.shared;
+	VALUE ary = RSTRING(str)->as.heap.aux.shared;
+	if (OBJ_FROZEN(str)) OBJ_FREEZE(ary);
+	return ary;
     }
     return Qfalse;
 }
@@ -953,6 +956,10 @@ rb_str_substr(VALUE str, long beg, long len)
 VALUE
 rb_str_freeze(VALUE str)
 {
+    if (STR_ASSOC_P(str)) {
+	VALUE ary = RSTRING(str)->as.heap.aux.shared;
+	OBJ_FREEZE(ary);
+    }
     return rb_obj_freeze(str);
 }
 

@@ -1,3 +1,14 @@
+Wed Jan 23 15:04:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_make_independent): should set length.
+
+	* string.c (rb_str_associate): hide associated array from ObjectSpace.
+
+	* string.c (rb_str_associated): return associated array with freezing
+	  instead of false.  [ruby-dev:33282]
+
+	* string.c (rb_str_freeze): freeze associated array together.
+
 Wed Jan 23 13:39:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_prepare_re): fix SEGV by
