@@ -160,6 +160,7 @@ int rb_enc_str_asciionly_p(VALUE);
 VALUE rb_enc_from_encoding(rb_encoding *enc);
 rb_encoding *rb_ascii8bit_encoding(void);
 rb_encoding *rb_utf8_encoding(void);
+rb_encoding *rb_usascii_encoding(void);
 rb_encoding *rb_locale_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
 VALUE rb_enc_default_external(void);

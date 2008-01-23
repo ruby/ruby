@@ -985,6 +985,15 @@ rb_utf8_encoding(void)
 }
 
 rb_encoding *
+rb_usascii_encoding(void)
+{
+    if (!enc_table.list) {
+	rb_enc_init();
+    }
+    return enc_table.list[ENCINDEX_US_ASCII].enc;
+}
+
+rb_encoding *
 rb_locale_encoding(void)
 {
     VALUE charmap = rb_locale_charmap(rb_cEncoding);
