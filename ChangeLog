@@ -1,3 +1,9 @@
+Wed Jan 23 11:53:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_mod_check, str_nth, str_offset): consitfied.
+
+	* string.c (rb_str_dump): dump in ASCII-8BIT always.
+
 Wed Jan 23 10:18:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval_method.c (rb_export_method): set ruby_vm_redefined_flag for

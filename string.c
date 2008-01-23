@@ -228,7 +228,7 @@ int rb_enc_str_asciionly_p(VALUE str)
 }
 
 static inline void
-str_mod_check(VALUE s, char *p, long len)
+str_mod_check(VALUE s, const char *p, long len)
 {
     if (RSTRING_PTR(s) != p || RSTRING_LEN(s) != len){
 	rb_raise(rb_eRuntimeError, "string modified");
@@ -839,19 +839,19 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
 }
 
 static char*
-str_nth(char *p, char *e, int nth, rb_encoding *enc, int singlebyte)
+str_nth(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
 {
     if (singlebyte)
 	p += nth;
     else
 	p = rb_enc_nth(p, e, nth, enc);
     if (!p) return 0;
-    if (p > e) return e;
-    return p;
+    if (p > e) p = e;
+    return (char *)p;
 }
 
 static int
-str_offset(char *p, char *e, int nth, rb_encoding *enc, int singlebyte)
+str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
 {
     const char *pp = str_nth(p, e, nth, enc, singlebyte);
     if (!pp) return e - p;
@@ -3263,16 +3263,15 @@ VALUE
 rb_str_dump(VALUE str)
 {
     rb_encoding *enc0 = rb_enc_get(str);
-    rb_encoding *enc = rb_enc_from_index(0);
     long len;
-    char *p, *pend;
+    const char *p, *pend;
     char *q, *qend;
     VALUE result;
 
     len = 2;			/* "" */
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
     while (p < pend) {
-	char c = *p++;
+	unsigned char c = *p++;
 	switch (c) {
 	  case '"':  case '\\':
 	  case '\n': case '\r':
@@ -3286,11 +3285,11 @@ rb_str_dump(VALUE str)
 	    break;
 
 	  default:
-	    if (rb_enc_isprint(c, enc)) {
+	    if (ISPRINT(c)) {
 		len++;
 	    }
 	    else {
-		len += 4;		/* \nnn */
+		len += 4;		/* \xNN */
 	    }
 	    break;
 	}
@@ -3306,7 +3305,7 @@ rb_str_dump(VALUE str)
 
     *q++ = '"';
     while (p < pend) {
-	char c = *p++;
+	unsigned char c = *p++;
 
 	if (c == '"' || c == '\\') {
 	    *q++ = '\\';
@@ -3348,19 +3347,19 @@ rb_str_dump(VALUE str)
 	    *q++ = '\\';
 	    *q++ = 'e';
 	}
-	else if (rb_enc_isprint(c, enc)) {
+	else if (ISPRINT(c)) {
 	    *q++ = c;
 	}
 	else {
 	    *q++ = '\\';
-	    sprintf(q, "x%02X", c&0xff);
+	    sprintf(q, "x%02X", c);
 	    q += 3;
 	}
     }
     *q++ = '"';
     if (!rb_enc_asciicompat(enc0)) {
 	sprintf(q, ".force_encoding(\"%s\")", enc0->name);
-	enc0 = enc;
+	enc0 = rb_enc_from_index(0);
     }
 
     OBJ_INFECT(result, str);
