@@ -719,7 +719,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		    enc_name = "UTF-8";
 		    break;
 		  case 'N': case 'n': case 'A': case 'a':
-		    enc_name = "US-ASCII";
+		    enc_name = "ASCII-8BIT";
 		    break;
 		}
 		if (enc_name) {

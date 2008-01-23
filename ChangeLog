@@ -5,6 +5,8 @@ Thu Jan 24 01:00:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* parse.y (parser_str_new, rb_intern3): ascii only string literal is
 	  US-ASCII.
 
+	* ruby.c (proc_optionc): -Kn means ASCII-8BIT. 
+
 Wed Jan 23 23:54:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* sprintf.c: fix comment.  [ruby-dev:33275]
