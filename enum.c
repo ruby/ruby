@@ -863,7 +863,8 @@ one_iter_i(VALUE i, VALUE *memo)
  *  true.
  *     
  *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
- *     %w{ant bear cat}.one? {|word| word.length >= 4}   #=> false
+ *     %w{ant bear cat}.one? {|word| word.length > 4}    #=> false
+ *     %w{ant bear cat}.one? {|word| word.length < 4}    #=> false
  *     [ nil, true, 99 ].one?                            #=> false
  *     [ nil, true, false ].one?                         #=> true
  *     
@@ -1223,7 +1224,7 @@ enum_max_by(VALUE obj)
     rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
     return memo[1];
 }
-
+ 
 static VALUE
 minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
@@ -1484,7 +1485,7 @@ take_while_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
  *  then stops iterating and returns an array of all prior elements.
  *     
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.take {|i| i < 3 }   # => [1, 2]
+ *     a.take_while {|i| i < 3 }   # => [1, 2]
  *     
  */
 
@@ -1556,7 +1557,7 @@ drop_while_i(VALUE i, VALUE *args, int argc, VALUE *argv)
  *  containing the remaining elements.
  *     
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop {|i| i < 3 }   # => [3, 4, 5, 0]
+ *     a.drop_while {|i| i < 3 }   # => [3, 4, 5, 0]
  *     
  */
 

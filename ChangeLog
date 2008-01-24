@@ -1,3 +1,7 @@
+Thu Jan 24 23:23:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* enum.c (enum_one, enum_take_while, enum_drop_while): fix documents.
+
 Thu Jan 24 21:46:24 2008  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (reg_fragment_setenc_gen): associate ASCII-8BIT only if
@@ -97,7 +101,7 @@ Thu Jan 24 03:23:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Jan 24 02:13:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* insns.def (expandarray): fix stack inc.
+	* insns.def (expandarray): fix stack inc.  [ruby-dev:32892]
 	* bootstraptest/test_knownbug.rb, test_massign.rb: move a fixed test.
 
 Thu Jan 24 01:00:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
