@@ -37,7 +37,6 @@ memfill(register VALUE *mem, register long size, register VALUE val)
     }
 }
 
-#define ARY_SORTLOCK FL_USER3
 #define ARY_SHARED_P(a) FL_TEST(a, ELTS_SHARED)
 
 #define ARY_SET_LEN(ary, n) do { \
@@ -54,8 +53,6 @@ static inline void
 rb_ary_modify_check(VALUE ary)
 {
     if (OBJ_FROZEN(ary)) rb_error_frozen("array");
-    if (FL_TEST(ary, ARY_SORTLOCK))
-	rb_raise(rb_eRuntimeError, "can't modify array during sort");
     if (!OBJ_TAINTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
@@ -93,7 +90,6 @@ static VALUE
 rb_ary_frozen_p(VALUE ary)
 {
     if (OBJ_FROZEN(ary)) return Qtrue;
-    if (FL_TEST(ary, ARY_SORTLOCK)) return Qtrue;
     return Qfalse;
 }
 
@@ -1436,34 +1432,19 @@ rb_ary_reverse_m(VALUE ary)
     return rb_ary_reverse(rb_ary_dup(ary));
 }
 
-struct ary_sort_data {
-    VALUE ary;
-    VALUE *ptr;
-    long len;
-};
-
-static void
-ary_sort_check(struct ary_sort_data *data)
-{
-    if (RARRAY_PTR(data->ary) != data->ptr || RARRAY_LEN(data->ary) != data->len) {
-	rb_raise(rb_eRuntimeError, "array modified during sort");
-    }
-}
-
 static int
-sort_1(const void *ap, const void *bp, void *data)
+sort_1(const void *ap, const void *bp, void *dummy)
 {
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     VALUE retval = rb_yield_values(2, a, b);
     int n;
 
     n = rb_cmpint(retval, a, b);
-    ary_sort_check((struct ary_sort_data *)data);
     return n;
 }
 
 static int
-sort_2(const void *ap, const void *bp, void *data)
+sort_2(const void *ap, const void *bp, void *dummy)
 {
     VALUE retval;
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
@@ -1480,28 +1461,8 @@ sort_2(const void *ap, const void *bp, void *data)
 
     retval = rb_funcall(a, id_cmp, 1, b);
     n = rb_cmpint(retval, a, b);
-    ary_sort_check((struct ary_sort_data *)data);
 
     return n;
-}
-
-static VALUE
-sort_i(VALUE ary)
-{
-    struct ary_sort_data data;
-
-    data.ary = ary;
-    data.ptr = RARRAY_PTR(ary); data.len = RARRAY_LEN(ary);
-    ruby_qsort(RARRAY_PTR(ary), RARRAY_LEN(ary), sizeof(VALUE),
-	  rb_block_given_p()?sort_1:sort_2, &data);
-    return ary;
-}
-
-static VALUE
-sort_unlock(VALUE ary)
-{
-    FL_UNSET(ary, ARY_SORTLOCK);
-    return ary;
 }
 
 /*
@@ -1525,8 +1486,16 @@ rb_ary_sort_bang(VALUE ary)
 {
     rb_ary_modify(ary);
     if (RARRAY_LEN(ary) > 1) {
-	FL_SET(ary, ARY_SORTLOCK);	/* prohibit modification during sort */
-	rb_ensure(sort_i, ary, sort_unlock, ary);
+	VALUE tmp = ary_make_shared(ary);
+
+	RBASIC(tmp)->klass = 0;
+	ruby_qsort(RARRAY_PTR(tmp), RARRAY_LEN(tmp), sizeof(VALUE),
+		   rb_block_given_p()?sort_1:sort_2, 0);
+	RARRAY(ary)->ptr = RARRAY(tmp)->ptr;
+	RARRAY(ary)->len = RARRAY(tmp)->len;
+	RARRAY(ary)->aux.capa = RARRAY(tmp)->aux.capa;
+	FL_UNSET(ary, ELTS_SHARED);
+	rb_gc_force_recycle(tmp);
     }
     return ary;
 }

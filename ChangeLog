@@ -1,10 +1,15 @@
-Thu Jan 24 15:15:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Jan 24 15:44:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (collect_bang_i): use rb_ary_store() to avoid potential
 	  memory corruption.  a patch from Yusuke Endoh <mame@tsg.ne.jp>
 	  in [ruby-dev:33328].
 
 	* array.c (ITERATE): remove unnecessary macro.
+
+	* array.c (sort_1): remove ary_sort_check().  in-place sort keep
+	  original elements even when it's modified.
+
+	* array.c (sort_2): ditto.
 
 Thu Jan 24 15:09:40 2008  Tanaka Akira  <akr@fsij.org>
 
