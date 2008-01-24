@@ -54,7 +54,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def assert_regexp_generic_ascii(r)
-    assert_encoding("ASCII-8BIT", r.encoding)
+    assert_encoding("US-ASCII", r.encoding)
     assert_regexp_generic_encoding(r)
   end
 
@@ -137,17 +137,17 @@ class TestM17N < Test::Unit::TestCase
   # tests start
 
   def test_string_ascii_literal
-    assert_encoding("ASCII-8BIT", eval(a(%{""})).encoding)
-    assert_encoding("ASCII-8BIT", eval(a(%{"a"})).encoding)
+    assert_encoding("US-ASCII", eval(a(%{""})).encoding)
+    assert_encoding("US-ASCII", eval(a(%{"a"})).encoding)
   end
 
   def test_string_eucjp_literal
-    assert_encoding("ASCII-8BIT", eval(e(%{""})).encoding)
-    assert_encoding("ASCII-8BIT", eval(e(%{"a"})).encoding)
+    assert_encoding("US-ASCII", eval(e(%{""})).encoding)
+    assert_encoding("US-ASCII", eval(e(%{"a"})).encoding)
     assert_encoding("EUC-JP", eval(e(%{"\xa1\xa1"})).encoding)
     assert_encoding("EUC-JP", eval(e(%{"\\xa1\\xa1"})).encoding)
-    assert_encoding("ASCII-8BIT", eval(e(%{"\\x20"})).encoding)
-    assert_encoding("ASCII-8BIT", eval(e(%{"\\n"})).encoding)
+    assert_encoding("US-ASCII", eval(e(%{"\\x20"})).encoding)
+    assert_encoding("US-ASCII", eval(e(%{"\\n"})).encoding)
     assert_encoding("EUC-JP", eval(e(%{"\\x80"})).encoding)
   end
 
@@ -362,8 +362,6 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_ascii8bit(eval(a(%{/\xc2\xa1/})))
     assert_regexp_fixed_ascii8bit(eval(a(%{/\xc2\xa1/n})))
     assert_regexp_fixed_ascii8bit(eval(a(%q{/\xc2\xa1/})))
-
-    assert_raise(SyntaxError) { eval("/\xa1\xa1/n".force_encoding("euc-jp")) }
 
     [/\xc2\xa1/n, eval(a(%{/\xc2\xa1/})), eval(a(%{/\xc2\xa1/n}))].each {|r|
       assert_equal(nil, r =~ a("a"))
@@ -681,7 +679,7 @@ class TestM17N < Test::Unit::TestCase
     #assert_strenc("\"\xC2\xA1\"", 'Windows-31J', s("%p") % s("\xc2\xa1"))
     assert_strenc("\"\xC2\xA1\"", 'UTF-8', u("%p") % u("\xc2\xa1"))
 
-    assert_strenc('"\xC2\xA1"', 'ASCII-8BIT', "%10p" % a("\xc2\xa1"))
+    assert_strenc('"\xC2\xA1"', 'US-ASCII', "%10p" % a("\xc2\xa1"))
     assert_strenc("       \"\xC2\xA1\"", 'EUC-JP', "%10p" % e("\xc2\xa1"))
     #assert_strenc("       \"\xC2\xA1\"", 'Windows-31J', "%10p" % s("\xc2\xa1"))
     assert_strenc("       \"\xC2\xA1\"", 'UTF-8', "%10p" % u("\xc2\xa1"))
