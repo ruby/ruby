@@ -2008,7 +2008,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
 	}
     }
     else if (!(options & ARG_ENCODING_FIXED)) {
-        enc = a_enc;
+       enc = rb_usascii_encoding();
     }
 
     rb_enc_associate((VALUE)re, enc);
