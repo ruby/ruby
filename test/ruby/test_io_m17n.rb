@@ -413,7 +413,7 @@ EOT
       Marshal.dump(data, w)
       w.close
       result = nil
-      assert_not_raised("[ruby-dev:33264]") { result = Marshal.load(r) }
+      assert_nothing_raised("[ruby-dev:33264]") { result = Marshal.load(r) }
       assert_equal(data, result)
     }
   end
