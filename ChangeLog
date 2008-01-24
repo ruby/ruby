@@ -1,3 +1,11 @@
+Thu Jan 24 19:29:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (remove_sign_bits): returns pointer to the first char to
+	  be used, instead of copying.
+
+	* sprintf.c (rb_str_format): negative indicator dots should come
+	  before sign digits always.  [ruby-dev:33224]
+
 Thu Jan 24 18:19:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_enc_is_newline): parenthesized arguments.

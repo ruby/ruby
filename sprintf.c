@@ -46,12 +46,8 @@ remove_sign_bits(char *str, int base)
 	    t++;
 	}
     }
-    if (t > s) {
-	while (*t) *s++ = *t++;
-	*s = '\0';
-    }
 
-    return str;
+    return t;
 }
 
 static char
@@ -503,10 +499,11 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	  case 'B':
 	  case 'u':
 	    {
+		volatile VALUE tmp1;
 		volatile VALUE val = GETARG();
-		char fbuf[32], nbuf[64], *s, *t;
+		char fbuf[32], nbuf[64], *s;
 		const char *prefix = 0;
-		int sign = 0;
+		int sign = 0, dots = 0;
 		char sc = 0;
 		long v = 0;
 		int base, bignum = 0;
@@ -607,19 +604,19 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			}
 			sprintf(fbuf, "%%l%c", c);
 			sprintf(nbuf, fbuf, v);
+			s = nbuf;
 		    }
 		    else {
 			s = nbuf;
 			if (v < 0) {
-			    strcpy(s, "..");
-			    s += 2;
+			    dots = 1;
 			}
 			sprintf(fbuf, "%%l%c", *p == 'X' ? 'x' : *p);
-			sprintf(s, fbuf, v);
+			sprintf(++s, fbuf, v);
 			if (v < 0) {
 			    char d = 0;
 
-			    remove_sign_bits(s, base);
+			    s = remove_sign_bits(s, base);
 			    switch (base) {
 			      case 16:
 				d = 'f'; break;
@@ -627,12 +624,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 				d = '7'; break;
 			    }
 			    if (d && *s != d) {
-				memmove(s+1, s, strlen(s)+1);
-				*s = d;
+				*--s = d;
 			    }
 			}
 		    }
-		    s = nbuf;
 		}
 		else {
 		    if (sign) {
@@ -653,7 +648,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			}
 		    }
 		    else {
-                        volatile VALUE tmp1;
 			if (!RBIGNUM_SIGN(val)) {
 			    val = rb_big_clone(val);
 			    rb_big_2comp(val);
@@ -661,32 +655,29 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			tmp1 = tmp = rb_big2str0(val, base, RBIGNUM_SIGN(val));
 			s = RSTRING_PTR(tmp);
 			if (*s == '-') {
+			    dots = 1;
 			    if (base == 10) {
 				rb_warning("negative number for %%u specifier");
 			    }
-			    remove_sign_bits(++s, base);
-			    tmp = rb_str_new(0, 3+strlen(s));
-			    t = RSTRING_PTR(tmp);
-			    if (!(flags&(FPREC|FZERO))) {
-				strcpy(t, "..");
-				t += 2;
-			    }
+			    s = remove_sign_bits(++s, base);
 			    switch (base) {
 			      case 16:
-				if (s[0] != 'f') strcpy(t++, "f"); break;
+				if (s[0] != 'f') *--s = 'f'; break;
 			      case 8:
-				if (s[0] != '7') strcpy(t++, "7"); break;
+				if (s[0] != '7') *--s = '7'; break;
 			      case 2:
-				if (s[0] != '1') strcpy(t++, "1"); break;
+				if (s[0] != '1') *--s = '1'; break;
 			    }
-			    strcpy(t, s);
-			    s  = RSTRING_PTR(tmp);
 			}
 		    }
 		}
 
 		pos = -1;
 		len = strlen(s);
+		if (dots) {
+		    prec -= 2;
+		    width -= 2;
+		}
 
 		if (*p == 'X') {
 		    char *pp = s;
@@ -716,6 +707,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    PUSH(prefix, plen);
 		}
 		CHECK(prec - len);
+		if (dots) {
+		    memcpy(&buf[blen], "..", 2);
+		    blen += 2;
+		}
 		if (!bignum && v < 0) {
 		    char c = sign_bits(base, p);
 		    while (len < prec--) {
