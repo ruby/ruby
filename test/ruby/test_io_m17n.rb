@@ -407,5 +407,15 @@ EOT
 
   end
 
+  def test_marshal
+    with_pipe("EUC-JP") {|r, w|
+      data = 56225
+      Marshal.dump(data, w)
+      w.close
+      result = nil
+      assert_not_raised("[ruby-dev:33264]") { result = Marshal.load(r) }
+      assert_equal(data, result)
+    }
+  end
 end
 
