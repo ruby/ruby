@@ -1799,12 +1799,14 @@ rb_io_getline_fast(rb_io_t *fptr)
 
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
+	    const char *pend = p + pending - 1;
 	    const char *e;
 
 	    e = memchr(p, '\n', pending);
 	    if (e) {
 		const char *p0 = rb_enc_left_char_head(p, e, enc);
-		const char *pend = rb_enc_left_char_head(p, p+pending, enc);
+
+		pend = rb_enc_left_char_head(p0, pend, enc);
 		if (rb_enc_is_newline(p0, pend, enc)) {
 		    pending = p0 - p + rb_enc_mbclen(p0, pend, enc);
 		}
