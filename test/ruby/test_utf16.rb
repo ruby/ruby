@@ -103,4 +103,12 @@ class TestUTF16 < Test::Unit::TestCase
   def test_slice!
     enccall("aa".force_encoding("UTF-16BE"), :slice!, -1)
   end
+
+  def test_concat
+    s1 = ""
+    s2 = "aa".force_encoding("utf-16be")
+    assert_raise(ArgumentError, "#{encdump s1} << #{encdump s2}") {
+      s1 << s2
+    }
+  end
 end

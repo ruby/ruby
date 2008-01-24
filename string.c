@@ -1140,8 +1140,13 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
         }
     }
     else {
+        rb_encoding *str_enc = rb_enc_from_index(str_encindex);
+        rb_encoding *ptr_enc = rb_enc_from_index(ptr_encindex);
+        if (!rb_enc_asciicompat(str_enc) || !rb_enc_asciicompat(ptr_enc)) {
+            goto incompatible;
+        }
 	if (ptr_cr == ENC_CODERANGE_UNKNOWN) {
-	    ptr_cr = coderange_scan(ptr, len, rb_enc_from_index(ptr_encindex));
+	    ptr_cr = coderange_scan(ptr, len, ptr_enc);
 	}
         if (str_cr == ENC_CODERANGE_UNKNOWN) {
             if (str_a8 || ptr_cr != ENC_CODERANGE_7BIT) {
@@ -1155,6 +1160,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     if (str_encindex != ptr_encindex &&
         str_cr != ENC_CODERANGE_7BIT &&
         ptr_cr != ENC_CODERANGE_7BIT) {
+incompatible:
         rb_raise(rb_eArgError, "append incompatible encoding strings: %s and %s",
             rb_enc_name(rb_enc_from_index(str_encindex)),
             rb_enc_name(rb_enc_from_index(ptr_encindex)));

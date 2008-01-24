@@ -1,3 +1,8 @@
+Thu Jan 24 11:14:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_enc_cr_str_buf_cat): ASCII incompatible encoding is
+	  not compatible with any other encoding.
+
 Thu Jan 24 07:34:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* parse.y (STR_NEW0): set encoding as US-ASCII.
