@@ -1103,8 +1103,9 @@ module URI
       end
     end
 
+    @@to_s = Kernel.instance_method(:to_s)
     def inspect
-      sprintf("#<%s:%#0x URL:%s>", self.class.to_s, self.object_id, self.to_s)
+      @@to_s.bind(self).call.sub!(/>\z/) {" URL:#{self}>"}
     end
 
     def coerce(oth)
