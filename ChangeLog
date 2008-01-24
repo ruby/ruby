@@ -1,3 +1,11 @@
+Thu Jan 24 15:15:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (collect_bang_i): use rb_ary_store() to avoid potential
+	  memory corruption.  a patch from Yusuke Endoh <mame@tsg.ne.jp>
+	  in [ruby-dev:33328].
+
+	* array.c (ITERATE): remove unnecessary macro.
+
 Thu Jan 24 15:09:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (make_time_t): revert round trip test.  [ruby-dev:33058]

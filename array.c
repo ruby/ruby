@@ -37,14 +37,6 @@ memfill(register VALUE *mem, register long size, register VALUE val)
     }
 }
 
-#define ARY_ITERLOCK FL_USER1
-static void
-ary_iter_check(VALUE ary)
-{
-    if (FL_TEST(ary, ARY_ITERLOCK)) {
-      rb_raise(rb_eRuntimeError, "can't modify array during iteration");
-    }
-}
 #define ARY_SORTLOCK FL_USER3
 #define ARY_SHARED_P(a) FL_TEST(a, ELTS_SHARED)
 
@@ -56,11 +48,6 @@ ary_iter_check(VALUE ary)
 #define RESIZE_CAPA(ary,capacity) do {\
     REALLOC_N(RARRAY(ary)->ptr, VALUE, (capacity));\
     RARRAY(ary)->aux.capa = (capacity);\
-} while (0)
-
-#define ITERATE(func, ary) do { \
-    FL_SET(ary, ARY_ITERLOCK); \
-    return rb_ensure(func, (ary), each_unlock, (ary));\
 } while (0)
 
 static inline void
@@ -307,7 +294,6 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     VALUE size, val;
 
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     if (rb_scan_args(argc, argv, "02", &size, &val) == 0) {
 	if (RARRAY_PTR(ary) && !ARY_SHARED_P(ary)) {
 	    free(RARRAY(ary)->ptr);
@@ -548,7 +534,6 @@ rb_ary_shift(VALUE ary)
     VALUE top;
 
     rb_ary_modify_check(ary);
-    ary_iter_check(ary);
     if (RARRAY_LEN(ary) == 0) return Qnil;
     top = RARRAY_PTR(ary)[0];
     if (!ARY_SHARED_P(ary)) {
@@ -594,7 +579,6 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     }
 
     rb_ary_modify_check(ary);
-    ary_iter_check(ary);
     result = ary_shared_first(argc, argv, ary, Qfalse);
     n = RARRAY_LEN(result);
     if (ARY_SHARED_P(ary)) {
@@ -628,7 +612,6 @@ rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 
     if (argc == 0) return ary;
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     if (RARRAY(ary)->aux.capa <= RARRAY_LEN(ary)+argc) {
 	RESIZE_CAPA(ary, RARRAY(ary)->aux.capa + ARY_DEFAULT_SIZE);
     }
@@ -995,7 +978,6 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	rlen = RARRAY_LEN(rpl);
     }
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     if (beg >= RARRAY_LEN(ary)) {
 	len = beg + rlen;
 	if (len >= ARY_CAPA(ary)) {
@@ -1118,24 +1100,6 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
-static VALUE
-each_unlock(VALUE ary)
-{
-    FL_UNSET(ary, ARY_ITERLOCK);
-    return ary;
-}
-
-static VALUE
-each_i(VALUE ary)
-{
-    long i;
-
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-	rb_yield(RARRAY_PTR(ary)[i]);
-    }
-    return ary;
-}
-
 /*
  *  call-seq:
  *     array.each {|item| block }   ->   array
@@ -1154,18 +1118,11 @@ each_i(VALUE ary)
 VALUE
 rb_ary_each(VALUE ary)
 {
-    RETURN_ENUMERATOR(ary, 0, 0);
-    ITERATE(each_i, ary);
-    return ary;
-}
-
-static VALUE
-each_index_i(VALUE ary)
-{
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-      rb_yield(LONG2NUM(i));
+	rb_yield(RARRAY_PTR(ary)[i]);
     }
     return ary;
 }
@@ -1188,21 +1145,11 @@ each_index_i(VALUE ary)
 static VALUE
 rb_ary_each_index(VALUE ary)
 {
+    long i;
     RETURN_ENUMERATOR(ary, 0, 0);
-    ITERATE(each_index_i, ary);
-    return ary;
-}
 
-static VALUE
-reverse_each_i(VALUE ary)
-{
-    long len = RARRAY_LEN(ary);
-
-    while (len--) {
-	rb_yield(RARRAY_PTR(ary)[len]);
-	if (RARRAY_LEN(ary) < len) {
-	    len = RARRAY_LEN(ary);
-	}
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	rb_yield(LONG2NUM(i));
     }
     return ary;
 }
@@ -1225,8 +1172,17 @@ reverse_each_i(VALUE ary)
 static VALUE
 rb_ary_reverse_each(VALUE ary)
 {
+    long len;
+
     RETURN_ENUMERATOR(ary, 0, 0);
-    ITERATE(reverse_each_i, ary);
+    len = RARRAY_LEN(ary);
+    while (len--) {
+	rb_yield(RARRAY_PTR(ary)[len]);
+	if (RARRAY_LEN(ary) < len) {
+	    len = RARRAY_LEN(ary);
+	}
+    }
+    return ary;
 }
 
 /*
@@ -1434,7 +1390,6 @@ rb_ary_reverse(VALUE ary)
     VALUE tmp;
 
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     if (RARRAY_LEN(ary) > 1) {
 	p1 = RARRAY_PTR(ary);
 	p2 = p1 + RARRAY_LEN(ary) - 1;	/* points last item */
@@ -1569,7 +1524,6 @@ VALUE
 rb_ary_sort_bang(VALUE ary)
 {
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     if (RARRAY_LEN(ary) > 1) {
 	FL_SET(ary, ARY_SORTLOCK);	/* prohibit modification during sort */
 	rb_ensure(sort_i, ary, sort_unlock, ary);
@@ -1602,19 +1556,6 @@ rb_ary_sort(VALUE ary)
 }
 
 
-static VALUE
-collect_i(VALUE ary)
-{
-    long i;
-    VALUE collect;
-
-    collect = rb_ary_new2(RARRAY_LEN(ary));
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-	rb_ary_push(collect, rb_yield(RARRAY_PTR(ary)[i]));
-    }
-    return collect;
-}
-
 /*
  *  call-seq:
  *     array.collect {|item| block }  -> an_array
@@ -1632,22 +1573,17 @@ collect_i(VALUE ary)
 static VALUE
 rb_ary_collect(VALUE ary)
 {
-    RETURN_ENUMERATOR(ary, 0, 0);
-    ITERATE(collect_i, ary);
-}
-
-
-static VALUE
-collect_bang_i(VALUE ary)
-{
     long i;
+    VALUE collect;
 
-    rb_ary_modify(ary);
+    RETURN_ENUMERATOR(ary, 0, 0);
+    collect = rb_ary_new2(RARRAY_LEN(ary));
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	RARRAY_PTR(ary)[i] = rb_yield(RARRAY_PTR(ary)[i]);
+	rb_ary_push(collect, rb_yield(RARRAY_PTR(ary)[i]));
     }
-    return ary;
+    return collect;
 }
+
 
 /* 
  *  call-seq:
@@ -1666,8 +1602,14 @@ collect_bang_i(VALUE ary)
 static VALUE
 rb_ary_collect_bang(VALUE ary)
 {
+    long i;
+
     RETURN_ENUMERATOR(ary, 0, 0);
-    ITERATE(collect_bang_i, ary);
+    rb_ary_modify(ary);
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+	rb_ary_store(ary, i, rb_yield(RARRAY_PTR(ary)[i]));
+    }
+    return ary;
 }
 
 VALUE
@@ -1721,21 +1663,6 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
 }
 
 
-static VALUE
-select_i(VALUE ary)
-{
-    VALUE result;
-    long i;
-
-    result = rb_ary_new2(RARRAY_LEN(ary));
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
-	if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
-	    rb_ary_push(result, rb_ary_elt(ary, i));
-	}
-    }
-    return result;
-}
-
 /*
  *  call-seq:
  *     array.select {|item| block } -> an_array
@@ -1751,8 +1678,17 @@ select_i(VALUE ary)
 static VALUE
 rb_ary_select(VALUE ary)
 {
+    VALUE result;
+    long i;
+
     RETURN_ENUMERATOR(ary, 0, 0);
-    ITERATE(select_i, ary);
+    result = rb_ary_new2(RARRAY_LEN(ary));
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+	if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
+	    rb_ary_push(result, rb_ary_elt(ary, i));
+	}
+    }
+    return result;
 }
 
 /*
@@ -1794,7 +1730,6 @@ rb_ary_delete(VALUE ary, VALUE item)
     }
 
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     if (RARRAY_LEN(ary) > i2) {
 	RARRAY(ary)->len = i2;
 	if (i2 * 2 < ARY_CAPA(ary) &&
@@ -1819,7 +1754,6 @@ rb_ary_delete_at(VALUE ary, long pos)
     }
 
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     del = RARRAY_PTR(ary)[pos];
     MEMMOVE(RARRAY_PTR(ary)+pos, RARRAY_PTR(ary)+pos+1, VALUE,
 	    RARRAY_LEN(ary)-pos-1);
@@ -1909,11 +1843,22 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
     return rb_ary_delete_at(ary, NUM2LONG(arg1));
 }
 
+/*
+ *  call-seq:
+ *     array.reject! {|item| block }  -> array or nil
+ *  
+ *  Equivalent to <code>Array#delete_if</code>, deleting elements from
+ *  _self_ for which the block evaluates to true, but returns
+ *  <code>nil</code> if no changes were made. Also see
+ *  <code>Enumerable#reject</code>.
+ */
+
 static VALUE
-reject_bang_i(VALUE ary)
+rb_ary_reject_bang(VALUE ary)
 {
     long i1, i2;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
 	VALUE v = RARRAY_PTR(ary)[i1];
@@ -1928,24 +1873,6 @@ reject_bang_i(VALUE ary)
     if (i2 < RARRAY_LEN(ary))
 	RARRAY(ary)->len = i2;
     return ary;
-}
-
-/*
- *  call-seq:
- *     array.reject! {|item| block }  -> array or nil
- *  
- *  Equivalent to <code>Array#delete_if</code>, deleting elements from
- *  _self_ for which the block evaluates to true, but returns
- *  <code>nil</code> if no changes were made. Also see
- *  <code>Enumerable#reject</code>.
- */
-
-static VALUE
-rb_ary_reject_bang(VALUE ary)
-{
-    RETURN_ENUMERATOR(ary, 0, 0);
-    ary_iter_check(ary);
-    ITERATE(reject_bang_i, ary);
 }
 
 /*
@@ -2120,7 +2047,6 @@ rb_ary_replace(VALUE copy, VALUE orig)
 
     orig = to_ary(orig);
     rb_ary_modify_check(copy);
-    ary_iter_check(copy);
     if (copy == orig) return copy;
     shared = ary_make_shared(orig);
     if (!ARY_SHARED_P(copy)) {
@@ -2149,7 +2075,6 @@ VALUE
 rb_ary_clear(VALUE ary)
 {
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     RARRAY(ary)->len = 0;
     if (ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
 	RESIZE_CAPA(ary, ARY_DEFAULT_SIZE * 2);
@@ -2218,7 +2143,6 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	break;
     }
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     end = beg + len;
     if (end < 0) {
 	rb_raise(rb_eArgError, "argument too big");
@@ -2712,7 +2636,6 @@ rb_ary_uniq_bang(VALUE ary)
     VALUE hash, v, vv;
     long i, j;
 
-    ary_iter_check(ary);
     hash = ary_make_hash(ary, 0);
 
     if (RARRAY_LEN(ary) == RHASH_SIZE(hash)) {
@@ -2765,7 +2688,6 @@ rb_ary_compact_bang(VALUE ary)
     long n;
 
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     p = t = RARRAY_PTR(ary);
     end = p + RARRAY_LEN(ary);
     
@@ -2971,7 +2893,6 @@ rb_ary_shuffle_bang(VALUE ary)
     long i = RARRAY_LEN(ary);
 
     rb_ary_modify(ary);
-    ary_iter_check(ary);
     while (i) {
 	long j = rb_genrand_real()*i;
 	VALUE tmp = RARRAY_PTR(ary)[--i];
