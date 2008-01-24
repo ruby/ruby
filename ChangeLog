@@ -1,3 +1,14 @@
+Thu Jan 24 20:21:07 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parser.y (parser_str_new): automatically update string literal's
+	  encoding from US-ASCII to ASCII-8BIT when script encoding is US-ASCII
+	  and the string includes non-ascii bytes. [ruby-dev:33348]
+
+	* parser.y (reg_fragment_check_gen, reg_compile_gen): automatically
+	  update regexp literal's encoding from US-ASCII to ASCII-8BIT when
+	  script encoding is US-ASCII, the regexp has no kcode option and the
+	  regexp includes non-ascii bytes. [ruby-dev:33353]
+
 Thu Jan 24 19:36:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic::inspect): use Kernel#to_s instead

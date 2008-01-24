@@ -270,7 +270,7 @@ struct parser_params {
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),parser->enc)
 #define STR_NEW0() rb_enc_str_new(0,0,rb_usascii_encoding())
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
-#define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func))
+#define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),parser->enc)
 #define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
@@ -456,8 +456,9 @@ static int lvar_defined_gen(struct parser_params*, ID);
 #define RE_OPTION_ENCODING_SHIFT 8
 #define RE_OPTION_ENCODING(e) (((e)&0xff)<<RE_OPTION_ENCODING_SHIFT)
 #define RE_OPTION_ENCODING_IDX(o) (((o)>>RE_OPTION_ENCODING_SHIFT)&0xff)
-#define RE_OPTION_ENCODING_NONE(o) ((o)&32)
+#define RE_OPTION_ENCODING_NONE(o) ((o)&RE_OPTION_ARG_ENCODING_NONE)
 #define RE_OPTION_MASK  0xff
+#define RE_OPTION_ARG_ENCODING_NONE 32
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
 #define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
@@ -4838,15 +4839,18 @@ enum string_type {
 };
 
 static VALUE
-parser_str_new(const char *p, long n, rb_encoding *enc, int func)
+parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *enc0)
 {
     VALUE str;
 
     str = rb_enc_str_new(p, n, enc);
-    if (!(func & STR_FUNC_REGEXP) &&
-        rb_enc_asciicompat(enc) &&
-        rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
-        rb_enc_associate(str, rb_usascii_encoding());
+    if (!(func & STR_FUNC_REGEXP) && rb_enc_asciicompat(enc)) {
+	if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+	    rb_enc_associate(str, rb_usascii_encoding());
+	}
+	else if (enc0 == rb_usascii_encoding()) {
+	    rb_enc_associate(str, rb_ascii8bit_encoding());
+	}
     }
 
     return str;
@@ -8488,6 +8492,10 @@ static void
 reg_fragment_check_gen(struct parser_params* parser, VALUE str, int options)
 {
     VALUE err;
+    if (!RE_OPTION_ENCODING_IDX(options) &&
+	parser->enc == rb_usascii_encoding()) {
+	options |= RE_OPTION_ARG_ENCODING_NONE;
+    }
     reg_fragment_setenc_gen(parser, str, options);
     err = rb_reg_check_preprocess(str);
     if (err != Qnil) {
@@ -8581,6 +8589,10 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 {
     VALUE re;
 
+    if (!RE_OPTION_ENCODING_IDX(options) &&
+	parser->enc == rb_usascii_encoding()) {
+	options |= RE_OPTION_ARG_ENCODING_NONE;
+    }
     reg_fragment_setenc(str, options);
     re = rb_reg_compile(str, options & RE_OPTION_MASK);
     if (NIL_P(re)) {
