@@ -456,6 +456,7 @@ static int lvar_defined_gen(struct parser_params*, ID);
 #define RE_OPTION_ENCODING_SHIFT 8
 #define RE_OPTION_ENCODING(e) (((e)&0xff)<<RE_OPTION_ENCODING_SHIFT)
 #define RE_OPTION_ENCODING_IDX(o) (((o)>>RE_OPTION_ENCODING_SHIFT)&0xff)
+#define RE_OPTION_ENCODING_NONE(o) ((o)&32)
 #define RE_OPTION_MASK  0xff
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
@@ -8477,6 +8478,9 @@ reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
 			  c, rb_enc_name(rb_enc_get(str)));
 	}
 	ENCODING_SET(str, idx);
+    }
+    else if (RE_OPTION_ENCODING_NONE(options)) {
+	rb_enc_associate(str, rb_ascii8bit_encoding());
     }
 }
 
