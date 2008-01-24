@@ -931,7 +931,7 @@ rb_match_busy(VALUE match)
 static VALUE
 rb_reg_fixed_encoding_p(VALUE re)
 {
-    if (!ENCODING_IS_ASCII8BIT(re) || FL_TEST(re, KCODE_FIXED))
+    if (FL_TEST(re, KCODE_FIXED))
         return Qtrue;
     else
         return Qfalse;
