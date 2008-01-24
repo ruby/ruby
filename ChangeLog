@@ -1,3 +1,7 @@
+Thu Jan 24 15:09:40 2008  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (make_time_t): revert round trip test.  [ruby-dev:33058]
+
 Thu Jan 24 11:14:56 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): ASCII incompatible encoding is
