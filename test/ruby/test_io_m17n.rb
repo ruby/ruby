@@ -417,5 +417,14 @@ EOT
       assert_equal(data, result)
     }
   end
+
+  def test_gets_nil
+    with_pipe("UTF-8:EUC-JP") {|r, w|
+      w << "\u{3042}"
+      w.close
+      result = r.gets(nil)
+      assert_equal("\u{3042}".encode("euc-jp"), result)
+    }
+  end
 end
 
