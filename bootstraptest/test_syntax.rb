@@ -746,3 +746,15 @@ assert_normal_exit %q{
   end
 }, 'reported by Yusuke ENDOH'
 
+assert_equal 'ok', %q{
+  1.times do
+    [
+      1, 2, 3, 4, 5, 6, 7, 8,
+      begin
+        false ? next : p
+        break while true
+      end
+    ]
+  end
+  :ok
+}, '[ruby-dev:32882]'

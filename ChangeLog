@@ -1,3 +1,14 @@
+Sat Jan 26 02:51:06 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, compile.h: fix stack pointer issues.
+	  calculate correct stack depth at compile time.
+
+	* insns.def (emptstack): remove it and add a new insn "adjuststack".
+
+	* bootstraptest/test_knownbug.rb: move/remove fixed test.
+
+	* bootstraptest/test_syntax.rb: ditto.
+
 Sat Jan 26 00:17:18 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_usascii_new{,2}: defined.

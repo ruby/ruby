@@ -3,35 +3,18 @@
 # So all tests will cause failure.
 #
 
-# test is not written...
-flunk '[ruby-dev:31819] rb_clear_cache_by_class'
-flunk '[ruby-dev:31820] valgrind set_trace_func'
-flunk '[ruby-dev:32746] Invalid read of size 1'
-
 assert_equal 'ok', %q{
-  class X < RuntimeError;end
-  x = [X]
-  begin
-   raise X
-  rescue *x
-   :ok
-  end
-}, '[ruby-core:14537]'
-
-
-assert_equal 'ok', %q{
-  1.times do
-    [
-      1, 2, 3, 4, 5, 6, 7, 8,
-      begin
-        false ? next : p
-        break while true
+  class C
+    define_method(:foo) {
+      if block_given?
+        :ok
+      else
+        :ng
       end
-    ]
+    }
   end
-  :ok
-}, '[ruby-dev:32882]'
-
+  C.new.foo {}
+}, '[ruby-core:14813]'
 
 assert_equal 'ok', %q{
   class C
@@ -46,30 +29,19 @@ assert_equal 'ok', %q{
   C.new.foo
 }, '[ruby-core:14813]'
 
-assert_equal 'ok', %q{
-  class C
-    define_method(:foo) {
-      if block_given?
-        :ok
-      else
-        :ng
-      end
-    }
-  end
-  C.new.foo {}
-}, '[ruby-core:14813]'
+# test is not written...
+flunk '[ruby-dev:31819] rb_clear_cache_by_class'
+flunk '[ruby-dev:31820] valgrind set_trace_func'
+flunk '[ruby-dev:32746] Invalid read of size 1'
 
-assert_equal 'true', %{
-  t = Thread.new { loop {} }
+assert_equal 'ok', %q{
+  class X < RuntimeError;end
+  x = [X]
   begin
-    pid = fork {
-      exit t.status != "run"
-    }
-    Process.wait pid
-    $?.success?
-  rescue NotImplementedError
-    true
+   raise X
+  rescue *x
+   :ok
   end
-}
+}, '[ruby-core:14537]'
 
 assert_valid_syntax('1.times {|i|print (42),1;}', '[ruby-list:44479]')

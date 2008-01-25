@@ -200,6 +200,7 @@ rescue
   100
 end
 }, '[ruby-dev:31371]'
+
 assert_equal 'true', %{
   t = Thread.new { loop {} }
   begin

@@ -162,7 +162,10 @@ r_value(VALUE value)
 
 /* add label */
 #define ADD_LABEL(seq, label) \
-  ADD_ELEM(seq, (LINK_ELEMENT *)label)
+  ADD_ELEM(seq, (LINK_ELEMENT *) label)
+
+#define ADD_ADJUST(seq, line, label) \
+  ADD_ELEM(seq, (LINK_ELEMENT *) new_adjust_body(iseq, label, line))
 
 #define ADD_CATCH_ENTRY(type, ls, le, iseqv, lc)		\
     (rb_ary_push(iseq->compile_data->catch_table_ary,		\

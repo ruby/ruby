@@ -695,12 +695,12 @@ setn
   @j current stack ‚ð‹ó‚É‚·‚éB
  */
 DEFINE_INSN
-emptstack
-()
+adjuststack
+(rb_num_t n)
 (...)
-(...) // inc = 0; depth = 0;
+(...) // inc -= n
 {
-    SET_SP(GET_CFP()->bp);
+    INC_SP(-n);
 }
 
 
@@ -1060,7 +1060,7 @@ DEFINE_INSN
 invokesuper
 (rb_num_t op_argc, ISEQ blockiseq, rb_num_t op_flag)
 (...)
-(VALUE val) // inc += - op_argc;
+(VALUE val) // inc += - (op_argc + ((op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? 1 : 0));
 {
     rb_block_t *blockptr = !(op_flag & VM_CALL_ARGS_BLOCKARG_BIT) ? GET_BLOCK_PTR() : 0;
     int num = caller_setup_args(th, GET_CFP(), op_flag, op_argc, blockiseq, &blockptr);

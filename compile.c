@@ -34,10 +34,10 @@ VALUE vm_eval(void *);
 
 /* types */
 
-#define ISEQ_ELEMENT_NONE  INT2FIX(0x00)
-#define ISEQ_ELEMENT_LABEL INT2FIX(0x01)
-#define ISEQ_ELEMENT_INSN  INT2FIX(0x02)
-#define ISEQ_ELEMENT_SEQ   INT2FIX(0x03)
+#define ISEQ_ELEMENT_NONE   INT2FIX(0x00)
+#define ISEQ_ELEMENT_LABEL  INT2FIX(0x01)
+#define ISEQ_ELEMENT_INSN   INT2FIX(0x02)
+#define ISEQ_ELEMENT_ADJUST INT2FIX(0x03)
 
 typedef struct iseq_link_element {
     int type;
@@ -67,6 +67,12 @@ typedef struct iseq_insn_data {
     int sc_state;
     VALUE *operands;
 } INSN;
+
+typedef struct iseq_adjust_data {
+    LINK_ELEMENT link;
+    LABEL *label;
+    int line_no;
+} ADJUST;
 
 struct ensure_range {
     LABEL *begin;
@@ -101,6 +107,7 @@ static void ADD_ELEM(LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
 
 static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, int line);
+static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, NODE * n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
@@ -156,9 +163,9 @@ iseq_compile(VALUE self, NODE *node)
 	    LABEL *start = iseq->compile_data->start_label = NEW_LABEL(0);
 	    LABEL *end = iseq->compile_data->end_label = NEW_LABEL(0);
 
-	    ADD_LABEL(ret, iseq->compile_data->start_label);
+	    ADD_LABEL(ret, start);
 	    COMPILE(ret, "block body", node->nd_body);
-	    ADD_LABEL(ret, iseq->compile_data->end_label);
+	    ADD_LABEL(ret, end);
 
 	    /* wide range catch handler must put at last */
 	    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
@@ -292,6 +299,12 @@ static LABEL *
 compile_data_alloc_label(rb_iseq_t *iseq)
 {
     return (LABEL *)compile_data_alloc(iseq, sizeof(LABEL));
+}
+
+static ADJUST *
+compile_data_alloc_adjust(rb_iseq_t *iseq)
+{
+    return (ADJUST *)compile_data_alloc(iseq, sizeof(ADJUST));
 }
 
 /*
@@ -583,6 +596,17 @@ new_label_body(rb_iseq_t *iseq, int line)
     labelobj->sc_state = 0;
     labelobj->sp = -1;
     return labelobj;
+}
+
+static ADJUST *
+new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
+{
+    ADJUST *adjust = compile_data_alloc_adjust(iseq);
+    adjust->link.type = ISEQ_ELEMENT_ADJUST;
+    adjust->link.next = 0;
+    adjust->label = label;
+    adjust->line_no = line;
+    return adjust;
 }
 
 static INSN *
@@ -964,10 +988,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	  case ISEQ_ELEMENT_INSN:
 	    {
 		iobj = (INSN *)list;
-		pos += insn_data_length(iobj);
 		line = iobj->line_no;
-
-		k += 1;
+		pos += insn_data_length(iobj);
+		k++;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
@@ -980,6 +1003,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	  case ISEQ_ELEMENT_NONE:
 	    {
 		/* ignore */
+		break;
+	    }
+	  case ISEQ_ELEMENT_ADJUST:
+	    {
+		pos += 2 /* insn + 1 operand */;
+		k++;
 		break;
 	    }
 	  default:
@@ -1009,14 +1038,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
 		iobj = (INSN *)list;
 
-		if (iobj->insn_id == BIN(emptstack) && sp == 0) {
-		    iobj->insn_id = BIN(nop);
-		}
-		else {
-		    sp = calc_sp_depth(sp, iobj);
-		    if (sp > stack_max) {
-			stack_max = sp;
-		    }
+		/* update sp */
+		sp = calc_sp_depth(sp, iobj);
+		if (sp > stack_max) {
+		    stack_max = sp;
 		}
 
 		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
@@ -1143,6 +1168,40 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 		}
 		break;
 	    }
+	  case ISEQ_ELEMENT_ADJUST:
+	    {
+		ADJUST *adjust = (ADJUST *)list;
+		int orig_sp = sp;
+
+		if (adjust->label) {
+		    sp = adjust->label->sp;
+		}
+		else {
+		    sp = 0;
+		}
+
+		if (orig_sp - sp > 0) {
+		    insn_info_table[k].line_no = adjust->line_no;
+		    insn_info_table[k].position = pos;
+		    insn_info_table[k].sp = sp;
+		    k++;
+		    generated_iseq[pos++] = BIN(adjuststack);
+		    generated_iseq[pos++] = orig_sp - sp;
+		}
+		else if (orig_sp - sp == 0) {
+		    /* jump to next insn */
+		    insn_info_table[k].line_no = adjust->line_no;
+		    insn_info_table[k].position = pos;
+		    insn_info_table[k].sp = sp;
+		    k++;
+		    generated_iseq[pos++] = BIN(jump);
+		    generated_iseq[pos++] = 0;
+		}
+		else {
+		    rb_bug("iseq_set_sequence: adjust bug");
+		}
+		break;
+	    }
 	  default:
 	    /* ignore */
 	    break;
@@ -1152,7 +1211,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
 #if 0
     /* this check need dead code elimination */
-    if (sp != 0) {
+    if (sp != 1) {
 	rb_bug("SP is not 0 on %s (%d)\n", RSTRING_PTR(iseq->name), sp);
     }
 #endif
@@ -2923,26 +2982,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	if (iseq->compile_data->redo_label != 0) {
 	    /* while/until */
-#if 0
 	    add_ensure_iseq(ret, iseq);
+	    ADD_ADJUST(ret, nd_line(node), iseq->compile_data->redo_label);
 	    COMPILE_(ret, "break val (while/until)", node->nd_stts,
 		     iseq->compile_data->loopval_popped);
-	    ADD_INSNL(ret, nd_line(node), jump,
-		      iseq->compile_data->end_label);
-
-	    if (poped) {
-		ADD_INSN(ret, nd_line(node), pop);
-	    }
-#else
-	    level = 0x8000 | 0x4000;
-	    COMPILE(ret, "break val (while/until)", node->nd_stts);
-	    ADD_INSN1(ret, nd_line(node), throw,
-		      INT2FIX(level | 0x02) /* TAG_BREAK */ );
-
-	    if (poped) {
-		ADD_INSN(ret, nd_line(node), pop);
-	    }
-#endif
+	    ADD_INSNL(ret, nd_line(node), jump, iseq->compile_data->end_label);
 	}
 	else if (iseq->type == ISEQ_TYPE_BLOCK) {
 	  break_by_insn:
@@ -2985,14 +3029,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	int pop_after_throw = 0;
 
 	if (iseq->compile_data->redo_label != 0) {
-	    /* next in while loop */
-	    debugs("next in while\n");
-	    pop_after_throw = poped;
-	    goto next_by_throw;
+	    debugs("next in while loop\n");
+	    ADD_ADJUST(ret, nd_line(node), iseq->compile_data->redo_label);
+	    add_ensure_iseq(ret, iseq);
+	    ADD_INSNL(ret, nd_line(node), jump, iseq->compile_data->start_label);
 	}
 	else if (iseq->compile_data->end_label) {
 	    debugs("next in block\n");
-	    ADD_INSN (ret, nd_line(node), emptstack);
+	    ADD_ADJUST(ret, nd_line(node), iseq->compile_data->start_label);
 	    COMPILE(ret, "next val", node->nd_stts);
 	    add_ensure_iseq(ret, iseq);
 	    ADD_INSNL(ret, nd_line(node), jump,
@@ -3036,28 +3080,21 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_REDO:{
-	int pop_after_throw = 0;
 	if (iseq->compile_data->redo_label) {
 	    debugs("redo in while");
-#if 1
-	    pop_after_throw = poped;
-	    goto redo_by_throw;
-#else
+
+	    ADD_ADJUST(ret, nd_line(node), iseq->compile_data->redo_label);
 	    add_ensure_iseq(ret, iseq);
 	    ADD_INSNL(ret, nd_line(node), jump,
 		      iseq->compile_data->redo_label);
-	    if (!poped) { /* for stack consistency */
-		ADD_INSN(ret, nd_line(node), putnil);
-	    }
-#endif
 	}
 	else if (iseq->type == ISEQ_TYPE_EVAL) {
 	  redo_in_eval:
 	    COMPILE_ERROR((ERROR_ARGS "Can't escape from eval with redo"));
 	}
 	else if (iseq->compile_data->start_label) {
-	    ADD_INSN (ret, nd_line(node), emptstack);
 	    add_ensure_iseq(ret, iseq);
+	    ADD_ADJUST(ret, nd_line(node), iseq->compile_data->start_label);
 	    ADD_INSNL(ret, nd_line(node), jump,
 		      iseq->compile_data->start_label);
 	    if (!poped) { /* for stack consistency */
@@ -3086,10 +3123,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		ADD_INSN(ret, nd_line(node), putnil);
 		ADD_INSN1(ret, nd_line(node), throw,
 			  INT2FIX(level | 0x05) /* TAG_REDO */ );
-
-		if (pop_after_throw) {
-		    ADD_INSN(ret, nd_line(node), pop);
-		}
 	    }
 	    else {
 		COMPILE_ERROR((ERROR_ARGS "Invalid redo"));
@@ -3807,8 +3840,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		break;
 	    }
 	    else {
+
 		if (is->type == ISEQ_TYPE_METHOD) {
-		    ADD_INSN(ret, nd_line(node), emptstack);
+		    ADD_ADJUST(ret, nd_line(node), 0);
 		}
 
 		COMPILE(ret, "return nd_stts (return val)", node->nd_stts);
@@ -3816,6 +3850,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		if (is->type == ISEQ_TYPE_METHOD) {
 		    add_ensure_iseq(ret, iseq);
 		    ADD_INSN(ret, nd_line(node), leave);
+		    if (poped) {
+			ADD_INSN(ret, nd_line(node), pop);
+		    }
 		}
 		else {
 		    ADD_INSN1(ret, nd_line(node), throw, INT2FIX(0x01) /* TAG_RETURN */ );
