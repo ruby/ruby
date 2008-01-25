@@ -881,6 +881,8 @@ opt_enc_index(VALUE enc_name)
     return i;
 }
 
+static int src_encoding_index = -1; /* TODO: VM private */
+
 static VALUE
 process_options(VALUE arg)
 {
@@ -1000,6 +1002,7 @@ process_options(VALUE arg)
     }
     if (opt->src.enc.name != 0) {
 	opt->src.enc.index = opt_enc_index(opt->src.enc.name);
+	src_encoding_index = opt->src.enc.index;
     }
     if (opt->ext.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->ext.enc.index);
@@ -1181,6 +1184,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	    rb_io_ungetc(f, INT2FIX('#'));
 	    if (no_src_enc && opt->src.enc.name) {
 		opt->src.enc.index = opt_enc_index(opt->src.enc.name);
+		src_encoding_index = opt->src.enc.index;
 	    }
 	    if (no_ext_enc && opt->ext.enc.name) {
 		opt->ext.enc.index = opt_enc_index(opt->ext.enc.name);
@@ -1224,6 +1228,7 @@ rb_load_file(const char *fname)
     struct cmdline_options opt;
 
     MEMZERO(&opt, opt, 1);
+    opt.src.enc.index = src_encoding_index;
     return load_file(rb_parser_new(), fname, 0, &opt);
 }
 
@@ -1455,7 +1460,7 @@ ruby_process_options(int argc, char **argv)
     args.argc = argc;
     args.argv = argv;
     args.opt = &opt;
-    opt.src.enc.index = -1;
+    opt.src.enc.index = src_encoding_index;
     opt.ext.enc.index = -1;
     tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
 				    process_options, (VALUE)&args,

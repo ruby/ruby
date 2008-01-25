@@ -1,3 +1,8 @@
+Fri Jan 25 16:11:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options, load_file, rb_load_file): propagates script
+	  encoding by -K to libraries.  [ruby-dev:33156]
+
 Fri Jan 25 15:56:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (cmdline_arguments): split argc and argv from cmdline_options.
