@@ -111,4 +111,8 @@ class TestUTF16 < Test::Unit::TestCase
       s1 << s2
     }
   end
+
+  def test_regexp_union
+    enccall(Regexp, :union, "aa".force_encoding("utf-16be"), "bb".force_encoding("utf-16be"))
+  end
 end
