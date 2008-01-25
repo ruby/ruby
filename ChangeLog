@@ -1,3 +1,8 @@
+Fri Jan 25 13:15:23 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (proc_options, process_options, load_file): shouldn't effect
+	  --encoding to script encoding. [ruby-dev:33169]
+
 Fri Jan 25 10:31:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* */*.bat: set svn:mime-type to text/batch.
