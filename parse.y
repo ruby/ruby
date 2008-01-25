@@ -9222,7 +9222,7 @@ parser_initialize(struct parser_params *parser)
 #ifdef YYMALLOC
     parser->heap = NULL;
 #endif
-    parser->enc = rb_ascii8bit_encoding();
+    parser->enc = rb_usascii_encoding();
 }
 
 extern void rb_mark_source_filename(char *);

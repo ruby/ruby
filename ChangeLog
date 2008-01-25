@@ -1,3 +1,15 @@
+Sat Jan 26 03:41:53 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (parser_initialize): set default script encoding as US-ASCII.
+
+	* ruby.c (load_file): ditto.
+
+	* ruby.c (process_options): set script encoding of -e from locale
+	  except when -K is specified.
+
+	* ruby.c (load_file): set script encoding of stdin from locale except
+	  when -K is specified. [ruby-dev:33375]
+
 Sat Jan 26 02:51:06 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, compile.h: fix stack pointer issues.
