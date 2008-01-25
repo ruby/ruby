@@ -80,7 +80,7 @@ shortlen(long len, BDIGIT *ds)
 
 static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc;
-static ID s_getc, s_read, s_write, s_binmode;
+static ID s_getbyte, s_read, s_write, s_binmode;
 
 ID rb_id_encoding(void);
 
@@ -903,7 +903,7 @@ r_byte(struct load_arg *arg)
     }
     else {
 	VALUE src = arg->src;
-	VALUE v = rb_funcall2(src, s_getc, 0, 0);
+	VALUE v = rb_funcall2(src, s_getbyte, 0, 0);
 	if (NIL_P(v)) rb_eof_error();
 	c = (unsigned char)NUM2CHR(v);
     }
@@ -1556,7 +1556,7 @@ marshal_load(int argc, VALUE *argv)
 	arg.taint = OBJ_TAINTED(port); /* original taintedness */
 	StringValue(port);	       /* possible conversion */
     }
-    else if (rb_respond_to(port, s_getc) && rb_respond_to(port, s_read)) {
+    else if (rb_respond_to(port, s_getbyte) && rb_respond_to(port, s_read)) {
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
@@ -1637,7 +1637,7 @@ Init_marshal(void)
     s_dump_data = rb_intern("_dump_data");
     s_load_data = rb_intern("_load_data");
     s_alloc = rb_intern("_alloc");
-    s_getc = rb_intern("getc");
+    s_getbyte = rb_intern("getbyte");
     s_read = rb_intern("read");
     s_write = rb_intern("write");
     s_binmode = rb_intern("binmode");

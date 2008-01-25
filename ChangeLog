@@ -1,3 +1,9 @@
+Sat Jan 26 01:35:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* marshal.c (r_byte): use getbyte instead of getc.
+	  (marshal_load): ditto.
+	  [ruby-dev:33264]
+
 Sat Jan 26 00:43:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_getline_fast): don't care ASCII incompatible encoding.
