@@ -1,3 +1,7 @@
+Fri Jan 25 10:31:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* */*.bat: set svn:mime-type to text/batch.
+
 Thu Jan 24 23:23:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* enum.c (enum_one, enum_take_while, enum_drop_while): fix documents.
