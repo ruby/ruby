@@ -66,8 +66,6 @@ VALUE rb_parser_set_yydebug(VALUE, VALUE);
 char *ruby_inplace_mode = 0;
 
 struct cmdline_options {
-    int argc;
-    char **argv;
     int sflag, xflag;
     int do_loop, do_print;
     int do_check, do_line;
@@ -86,6 +84,12 @@ struct cmdline_options {
 	    int index;
 	} enc;
     } src, ext;
+};
+
+struct cmdline_arguments {
+    int argc;
+    char **argv;
+    struct cmdline_options *opt;
 };
 
 static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
@@ -880,9 +884,10 @@ opt_enc_index(VALUE enc_name)
 static VALUE
 process_options(VALUE arg)
 {
-    struct cmdline_options *opt = (struct cmdline_options *)arg;
-    int argc = opt->argc;
-    char **argv = opt->argv;
+    struct cmdline_arguments *argp = (struct cmdline_arguments *)arg;
+    struct cmdline_options *opt = argp->opt;
+    int argc = argp->argc;
+    char **argv = argp->argv;
     NODE *tree = 0;
     VALUE parser;
     rb_encoding *enc;
@@ -1437,18 +1442,20 @@ true_value(void)
 void *
 ruby_process_options(int argc, char **argv)
 {
+    struct cmdline_arguments args;
     struct cmdline_options opt;
     NODE *tree;
 
     MEMZERO(&opt, opt, 1);
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_progname;
-    opt.argc = argc;
-    opt.argv = argv;
+    args.argc = argc;
+    args.argv = argv;
+    args.opt = &opt;
     opt.src.enc.index = -1;
     opt.ext.enc.index = -1;
     tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
-				    process_options, (VALUE)&opt,
+				    process_options, (VALUE)&args,
 				    0, rb_progname);
 
     rb_define_readonly_boolean("$-p", opt.do_print);

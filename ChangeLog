@@ -1,4 +1,6 @@
-Fri Jan 25 15:12:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 25 15:41:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (cmdline_arguments): split argc and argv from cmdline_options.
 
 	* ruby.c (process_options): not set encoding of -e option from -E
 	  option if they are not compatible.
