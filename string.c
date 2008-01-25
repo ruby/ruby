@@ -1116,26 +1116,6 @@ rb_str_cat2(VALUE str, const char *ptr)
     return rb_str_cat(str, ptr, strlen(ptr));
 }
 
-VALUE
-rb_str_buf_cat_ascii(VALUE str, const char *ptr)
-{
-    rb_encoding *enc = rb_enc_get(str);
-    if (rb_enc_asciicompat(enc)) {
-        return rb_str_buf_cat(str, ptr, strlen(ptr));
-    }
-    else {
-        char *buf = ALLOCA_N(char, rb_enc_mbmaxlen(enc));
-        while (*ptr) {
-            int c = (unsigned char)*ptr;
-            int len = rb_enc_codelen(c, enc);
-            rb_enc_mbcput(c, buf, enc);
-            rb_str_buf_cat(str, buf, len);
-            ptr++;
-        }
-        return str;
-    }
-}
-
 static VALUE
 rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int ptr_encindex, int ptr_cr, int *ptr_cr_ret)
@@ -1254,6 +1234,30 @@ rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *ptr_enc)
 {
     return rb_enc_cr_str_buf_cat(str, ptr, len,
         rb_enc_to_index(ptr_enc), ENC_CODERANGE_UNKNOWN, NULL);
+}
+
+VALUE
+rb_str_buf_cat_ascii(VALUE str, const char *ptr)
+{
+    /* ptr must reference NUL terminated ASCII string. */
+    int encindex = ENCODING_GET(str);
+    rb_encoding *enc = rb_enc_from_index(encindex);
+    if (rb_enc_asciicompat(enc)) {
+        return rb_enc_cr_str_buf_cat(str, ptr, strlen(ptr),
+            encindex, ENC_CODERANGE_7BIT, 0);
+    }
+    else {
+        char *buf = ALLOCA_N(char, rb_enc_mbmaxlen(enc));
+        while (*ptr) {
+            int c = (unsigned char)*ptr;
+            int len = rb_enc_codelen(c, enc);
+            rb_enc_mbcput(c, buf, enc);
+            rb_enc_cr_str_buf_cat(str, buf, len,
+                encindex, ENC_CODERANGE_VALID, 0);
+            ptr++;
+        }
+        return str;
+    }
 }
 
 VALUE

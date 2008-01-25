@@ -1,3 +1,7 @@
+Fri Jan 25 21:49:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_buf_cat_ascii): use rb_enc_cr_str_buf_cat.
+
 Fri Jan 25 19:38:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (version.$(OBJEXT)): depends on $(srcdir)/revision.h.
