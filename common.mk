@@ -602,7 +602,7 @@ variable.$(OBJEXT): {$(VPATH)}variable.c {$(VPATH)}ruby.h \
 version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}version.h \
-  {$(VPATH)}revision.h
+  $(srcdir)/revision.h
 
 compile.$(OBJEXT): {$(VPATH)}compile.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \

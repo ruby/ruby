@@ -1,4 +1,6 @@
-Fri Jan 25 18:27:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 25 19:38:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (version.$(OBJEXT)): depends on $(srcdir)/revision.h.
 
 	* common.mk (revision.h): extracts revision number with ``svn info''.
 
