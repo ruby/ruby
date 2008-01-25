@@ -1207,11 +1207,9 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	}
     }
     else {
-	enc = 0;
+	enc = rb_ascii8bit_encoding();
     }
-    if (enc) {
-	rb_funcall(f, rb_intern("set_encoding"), 1, rb_enc_from_encoding(enc));
-    }
+    rb_funcall(f, rb_intern("set_encoding"), 1, rb_enc_from_encoding(enc));
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);

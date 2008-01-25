@@ -1,3 +1,8 @@
+Fri Jan 25 17:12:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (load_file): set default to ASCII-8BIT explicitly if -K
+	  option is not given.
+
 Fri Jan 25 16:31:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_str_buf_cat_ascii): declared.
