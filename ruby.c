@@ -1000,14 +1000,30 @@ process_options(VALUE arg)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = rb_locale_encoding();
+	enc = 0;
     }
     if (opt->e_script) {
-	rb_enc_associate(opt->e_script, enc);
+	rb_encoding *eenc = rb_locale_encoding();
+	if (!enc) {
+	    enc = eenc;
+	}
+	else if (!rb_enc_asciicompat(enc)) {
+	    rb_warning("%s is not ASCII compatible, ignored for -e",
+		       rb_enc_name(enc));
+	}
+	else if (eenc != enc &&
+		 (rb_enc_str_coderange(opt->e_script) != ENC_CODERANGE_7BIT)) {
+	    rb_warning("-e conatains non ASCII string, encoding %s is not used",
+		       rb_enc_name(enc));
+	}
+	rb_enc_associate(opt->e_script, eenc);
 	require_libraries();
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
+	if (!enc) {
+	    enc = rb_locale_encoding();
+	}
 	if (opt->script[0] == '-' && !opt->script[1]) {
 	    forbid_setid("program input from stdin");
 	}
