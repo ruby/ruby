@@ -1,4 +1,4 @@
-Fri Jan 25 15:41:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jan 25 15:56:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (cmdline_arguments): split argc and argv from cmdline_options.
 

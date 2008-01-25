@@ -1021,6 +1021,9 @@ process_options(VALUE arg)
 	    rb_warning("-e conatains non ASCII string, encoding %s is not used",
 		       rb_enc_name(enc));
 	}
+	else {
+	    eenc = enc;
+	}
 	rb_enc_associate(opt->e_script, eenc);
 	require_libraries();
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
