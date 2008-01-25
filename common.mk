@@ -98,6 +98,8 @@ TESTWORKDIR   = testwork
 
 BOOTSTRAPRUBY = $(BASERUBY)
 
+VCS           = svn
+
 all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
@@ -698,7 +700,7 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c
 
-incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}revision.h
+incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h $(srcdir)/revision.h
 
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
@@ -724,8 +726,11 @@ PRELUDES = prelude.c miniprelude.c golf_prelude.c
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
 
-revision.h:
-	exit > $@
+$(srcdir)/revision.h:
+	@set LC_MESSAGES=C
+	-@$(SET_LC_MESSAGES) $(VCS) info "$(@D)" | \
+	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@.tmp"
+	$(IFCHANGE) "$@" "$@.tmp"
 
 $(srcdir)/ext/ripper/ripper.c:
 	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
@@ -788,3 +793,7 @@ vtune: miniruby$(EXEEXT)
 
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb
+
+up:
+	@$(VCS) up "$(srcdir)" |\
+	sed '-e$${' -eh "-es/[^0-9]//g" "-es/^/#define RUBY_REVISION /" "-ew$(srcdir)/revision.h" -eg "-e}"

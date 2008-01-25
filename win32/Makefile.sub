@@ -63,6 +63,7 @@ YFLAGS = -o y.tab.c
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
+IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 CP = copy > nul
 MV = move > nul
@@ -246,14 +247,6 @@ ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
 
-!if [find "revision.h" $(srcdir:/=\)\version.h > nul 2> nul] == 0
-REVISION_H    = revision.h
-REVISION_UP   = revision-up
-!else
-REVISION_H    = version.h
-REVISION_UP   =
-!endif
-
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
@@ -307,7 +300,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if !exist("$(arch_hdrdir)/ruby")
 	@md $(arch_hdrdir:/=\)\ruby
 !endif
-	@$(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat $(RUBY_CONFIG_H:/=\) <<
+	@$(IFCHANGE) $(RUBY_CONFIG_H:/=\) <<
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif

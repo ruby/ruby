@@ -92,6 +92,8 @@ ARFLAGS       = rcu
 RANLIB        = @RANLIB@
 AS            = @AS@
 ASFLAGS       = @ASFLAGS@
+IFCHANGE      = $(srcdir)/tool/ifchange
+SET_LC_MESSAGES = LC_MESSAGES=C
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S

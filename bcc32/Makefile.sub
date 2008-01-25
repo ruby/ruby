@@ -70,6 +70,7 @@ BASERUBY = ruby
 
 PURIFY =
 AUTOCONF = autoconf
+IFCHANGE = $(srcdir:/=\)\win32\ifchange.bat
 RM = $(srcdir:/=\)\win32\rm.bat
 CP = copy > nul
 MV = move > nul
@@ -248,7 +249,7 @@ config.status: $(CONFIG_H)
 $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 	@if not exist $(arch_hdrdir:/=\) md $(arch_hdrdir:/=\)
 	@if not exist $(arch_hdrdir:/=\)\ruby md $(arch_hdrdir:/=\)\ruby
-	@$(srcdir:/=\)\win32\ifchange.bat $(RUBY_CONFIG_H:/=\) &&|
+	@$(IFCHANGE) $(RUBY_CONFIG_H:/=\) &&|
 \#define HAVE_SYS_TYPES_H 1
 \#define HAVE_SYS_STAT_H 1
 \#define HAVE_STDLIB_H 1

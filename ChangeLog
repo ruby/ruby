@@ -1,3 +1,16 @@
+Fri Jan 25 18:27:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (revision.h): extracts revision number with ``svn info''.
+
+	* common.mk (up): target to update from the repository.
+
+	* Makefile.in, {win,bcc}32/Makefile.sub (IFCHANGE): tool to update a
+	  file if changed.
+
+	* tool/ifchange: for unixen.
+
+	* win32/ifchange.bat: some fix
+
 Fri Jan 25 17:12:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file): set default to ASCII-8BIT explicitly if -K
