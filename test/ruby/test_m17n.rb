@@ -962,4 +962,55 @@ class TestM17N < Test::Unit::TestCase
       assert_equal(Encoding::ASCII_8BIT, v.encoding)
     }
   end
+
+  def test_empty_string
+    assert_equal("".encoding, Encoding::US_ASCII)
+  end
+
+  def test_nil_to_s
+    assert_equal(nil.to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_nil_inspect
+    assert_equal(nil.inspect.encoding, Encoding::US_ASCII)
+  end
+
+  def test_true_to_s
+    assert_equal(true.to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_false_to_s
+    assert_equal(false.to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_fixnum_to_s
+    assert_equal(1.to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_float_to_s
+    assert_equal(1.0.to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_bignum_to_s
+    assert_equal((1<<129).to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_array_to_s
+    assert_equal([].to_s.encoding, Encoding::US_ASCII)
+    assert_equal([nil].to_s.encoding, Encoding::US_ASCII)
+    assert_equal([1].to_s.encoding, Encoding::US_ASCII)
+    assert_equal([""].to_s.encoding, Encoding::US_ASCII)
+    assert_equal(["a"].to_s.encoding, Encoding::US_ASCII)
+    assert_equal([nil,1,"","a","\x20",[]].to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_hash_to_s
+    assert_equal({}.to_s.encoding, Encoding::US_ASCII)
+    assert_equal({1=>nil,"foo"=>""}.to_s.encoding, Encoding::US_ASCII)
+  end
+
+  def test_encoding_to_s
+    assert_equal(Encoding::US_ASCII.to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII.inspect.encoding, Encoding::US_ASCII)
+  end
 end

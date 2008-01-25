@@ -806,7 +806,7 @@ nil_to_f(VALUE obj)
 static VALUE
 nil_to_s(VALUE obj)
 {
-    return rb_str_new2("");
+    return rb_str_new(0, 0);
 }
 
 /*
@@ -836,7 +836,7 @@ nil_to_a(VALUE obj)
 static VALUE
 nil_inspect(VALUE obj)
 {
-    return rb_str_new2("nil");
+    return rb_usascii_str_new2("nil");
 }
 
 /***********************************************************************
@@ -859,7 +859,7 @@ nil_inspect(VALUE obj)
 static VALUE
 true_to_s(VALUE obj)
 {
-    return rb_str_new2("true");
+    return rb_usascii_str_new2("true");
 }
 
 
@@ -936,7 +936,7 @@ true_xor(VALUE obj, VALUE obj2)
 static VALUE
 false_to_s(VALUE obj)
 {
-    return rb_str_new2("false");
+    return rb_usascii_str_new2("false");
 }
 
 /*
@@ -1090,7 +1090,7 @@ static VALUE
 rb_mod_to_s(VALUE klass)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
-	VALUE s = rb_str_new2("#<");
+	VALUE s = rb_usascii_str_new2("#<");
 	VALUE v = rb_iv_get(klass, "__attached__");
 
 	rb_str_cat2(s, "Class:");

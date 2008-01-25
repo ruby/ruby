@@ -1632,7 +1632,7 @@ rb_file_ftype(const struct stat *st)
 	t = "unknown";
     }
 
-    return rb_str_new2(t);
+    return rb_usascii_str_new2(t);
 }
 
 /*
@@ -2917,7 +2917,7 @@ rb_file_s_dirname(VALUE klass, VALUE fname)
 	p = root;
     }
     if (p == name)
-	return rb_str_new2(".");
+	return rb_usascii_str_new2(".");
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(name) && isdirsep(*(name + 2))) {
 	const char *top = skiproot(name + 2);
@@ -2965,7 +2965,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
  
     e = strrchr(p, '.');	/* get the last dot of the last component */
     if (!e || e == p || !e[1])	/* no dot, or the only dot is first or end? */
-	return rb_str_new2("");
+	return rb_str_new(0, 0);
     extname = rb_str_new(e, chompdirsep(e) - e);	/* keep the dot, too! */
     OBJ_INFECT(extname, fname);
     return extname;
@@ -3014,7 +3014,7 @@ static VALUE
 file_inspect_join(VALUE ary, VALUE argp, int recur)
 {
     VALUE *arg = (VALUE *)argp;
-    if (recur) return rb_str_new2("[...]");
+    if (recur) return rb_usascii_str_new2("[...]");
     return rb_file_join(arg[0], arg[1]);
 }
 
@@ -4516,14 +4516,14 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
     rb_define_singleton_method(rb_cFile, "path", rb_file_s_path, 1);
 
-    separator = rb_obj_freeze(rb_str_new2("/"));
+    separator = rb_obj_freeze(rb_usascii_str_new2("/"));
     rb_define_const(rb_cFile, "Separator", separator);
     rb_define_const(rb_cFile, "SEPARATOR", separator);
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
 #ifdef DOSISH
-    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_str_new2("\\")));
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_obj_freeze(rb_usascii_str_new2("\\")));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif

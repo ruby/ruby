@@ -1169,7 +1169,7 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 {
     VALUE str;
 
-    if (recur) return rb_str_new2("{...}");
+    if (recur) return rb_usascii_str_new2("{...}");
     str = rb_str_buf_new2("{");
     rb_hash_foreach(hash, inspect_i, str);
     rb_str_buf_cat2(str, "}");
@@ -1193,7 +1193,7 @@ static VALUE
 rb_hash_inspect(VALUE hash)
 {
     if (RHASH_EMPTY_P(hash))
-	return rb_str_new2("{}");
+	return rb_usascii_str_new2("{}");
     return rb_exec_recursive(inspect_hash, hash, 0);
 }
 
@@ -1821,7 +1821,7 @@ rb_f_getenv(VALUE obj, VALUE name)
 	if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
 	{
-	    VALUE str = rb_str_new2(env);
+	    VALUE str = rb_usascii_str_new2(env);
 
 	    rb_obj_freeze(str);
 	    return str;
@@ -1862,7 +1862,7 @@ env_fetch(int argc, VALUE *argv)
 #else
     if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
-	return rb_str_new2(env);
+	return rb_usascii_str_new2(env);
     return env_str_new2(env);
 }
 
@@ -2217,7 +2217,7 @@ env_clear(void)
 static VALUE
 env_to_s(void)
 {
-    return rb_str_new2("ENV");
+    return rb_usascii_str_new2("ENV");
 }
 
 static VALUE
@@ -2239,7 +2239,7 @@ env_inspect(void)
 	    rb_str_buf_cat2(str, "\"");
 	    rb_str_buf_cat(str, *env, s-*env);
 	    rb_str_buf_cat2(str, "\"=>");
-	    i = rb_inspect(rb_str_new2(s+1));
+	    i = rb_inspect(rb_usascii_str_new2(s+1));
 	    rb_str_buf_append(str, i);
 	}
 	env++;

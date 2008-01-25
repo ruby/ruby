@@ -1,3 +1,30 @@
+Sat Jan 26 00:17:18 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_usascii_new{,2}: defined.
+	  (rb_str_new): set US-ASCII and ENC_CODERANGE_7BIT when empty
+	  string.
+
+	* encoding.c (rb_usascii_encoding, rb_usascii_encindex): defined.
+	  (rb_enc_inspect, enc_name, rb_locale_charmap, rb_enc_name_list_i):
+	  use rb_str_ascii_new.
+
+	* array.c (recursive_join, inspect_ary): ditto.
+	
+	* object.c (nil_to_s, nil_inspect, true_to_s, false_to_s,
+	  rb_mod_to_s): ditto.
+
+	* hash.c (inspect_hash, rb_hash_inspect, rb_f_getenv, env_fetch,
+	  env_clear, env_to_s, env_inspect): ditto.
+
+	* numeric.c (flo_to_s, int_chr, rb_fix2str): ditto.
+
+	* bignum.c (rb_big2str): ditto.
+
+	* file.c (rb_file_ftype, rb_file_s_dirname, rb_file_s_extname,
+	  file_inspect_join, Init_file): ditto.
+
+	* test/ruby/test_ruby_m17n.rb: add checks for encoding of string.
+
 Sat Jan 26 01:35:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* marshal.c (r_byte): use getbyte instead of getc.

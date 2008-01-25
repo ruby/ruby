@@ -1233,7 +1233,7 @@ recursive_join(VALUE ary, VALUE argp, int recur)
 {
     VALUE *arg = (VALUE *)argp;
     if (recur) {
-	return rb_str_new2("[...]");
+	return rb_usascii_str_new2("[...]");
     }
     return rb_ary_join(arg[0], arg[1]);
 }
@@ -1337,7 +1337,7 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
 static VALUE
 rb_ary_inspect(VALUE ary)
 {
-    if (RARRAY_LEN(ary) == 0) return rb_str_new2("[]");
+    if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new2("[]");
     return rb_exec_recursive(inspect_ary, ary, 0);
 }
 

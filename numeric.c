@@ -504,9 +504,9 @@ flo_to_s(VALUE flt)
     char *p, *e;
 
     if (isinf(value))
-	return rb_str_new2(value < 0 ? "-Infinity" : "Infinity");
+	return rb_usascii_str_new2(value < 0 ? "-Infinity" : "Infinity");
     else if(isnan(value))
-	return rb_str_new2("NaN");
+	return rb_usascii_str_new2("NaN");
 
     sprintf(buf, "%#.15g", value); /* ensure to print decimal point */
     if (!(e = strchr(buf, 'e'))) {
@@ -522,7 +522,7 @@ flo_to_s(VALUE flt)
     while (p[-1]=='0' && ISDIGIT(p[-2]))
 	p--;
     memmove(p, e, strlen(e)+1);
-    return rb_str_new2(buf);
+    return rb_usascii_str_new2(buf);
 }
 
 /*
@@ -1851,7 +1851,12 @@ int_chr(int argc, VALUE *argv, VALUE num)
 	    rb_raise(rb_eRangeError, "%ld out of char range", i);
 	}
 	c = i;
-	return rb_str_new(&c, 1);
+	if (i < 0x80) {
+	    return rb_usascii_str_new(&c, 1);
+	}
+	else {
+	    return rb_str_new(&c, 1);
+	}
       case 1:
 	break;
       default:
@@ -1968,7 +1973,7 @@ rb_fix2str(VALUE x, int base)
 	rb_raise(rb_eArgError, "invalid radix %d", base);
     }
     if (val == 0) {
-	return rb_str_new2("0");
+	return rb_usascii_str_new2("0");
     }
     if (val < 0) {
 	val = -val;
@@ -1982,7 +1987,7 @@ rb_fix2str(VALUE x, int base)
 	*--b = '-';
     }
 
-    return rb_str_new2(b);
+    return rb_usascii_str_new2(b);
 }
 
 /*

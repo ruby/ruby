@@ -904,7 +904,7 @@ rb_big2str0(VALUE x, int base, int trim)
         return rb_fix2str(x, base);
     }
     if (BIGZEROP(x)) {
-        return rb_str_new2("0");
+        return rb_usascii_str_new2("0");
     }
 
     if (base < 2 || 36 < base)

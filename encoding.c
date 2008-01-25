@@ -838,9 +838,11 @@ rb_enc_tolower(int c, rb_encoding *enc)
 static VALUE
 enc_inspect(VALUE self)
 {
-    return rb_sprintf("#<%s:%s%s>", rb_obj_classname(self),
+    VALUE str = rb_sprintf("#<%s:%s%s>", rb_obj_classname(self),
 		      rb_enc_name((rb_encoding*)DATA_PTR(self)),
 		      (ENC_DUMMY_P(self) ? " (dummy)" : ""));
+    ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+    return str;
 }
 
 /*
@@ -854,7 +856,7 @@ enc_inspect(VALUE self)
 static VALUE
 enc_name(VALUE self)
 {
-    return rb_str_new2(rb_enc_name((rb_encoding*)DATA_PTR(self)));
+    return rb_usascii_str_new2(rb_enc_name((rb_encoding*)DATA_PTR(self)));
 }
 
 static VALUE
@@ -993,6 +995,12 @@ rb_usascii_encoding(void)
     return enc_table.list[ENCINDEX_US_ASCII].enc;
 }
 
+int
+rb_usascii_encindex(void)
+{
+    return ENCINDEX_US_ASCII;
+}
+
 rb_encoding *
 rb_locale_encoding(void)
 {
@@ -1066,11 +1074,11 @@ VALUE
 rb_locale_charmap(VALUE klass)
 {
 #if defined NO_LOCALE_CHARMAP
-    return rb_str_new2("ASCII-8BIT");
+    return rb_usascii_str_new2("ASCII-8BIT");
 #elif defined HAVE_LANGINFO_H
     char *codeset;
     codeset = nl_langinfo(CODESET);
-    return rb_str_new2(codeset);
+    return rb_usascii_str_new2(codeset);
 #elif defined _WIN32
     return rb_sprintf("CP%d", GetACP());
 #else
@@ -1128,7 +1136,7 @@ static int
 rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
 {
     VALUE ary = (VALUE)arg;
-    VALUE str = rb_str_new2((char *)name);
+    VALUE str = rb_usascii_str_new2((char *)name);
     OBJ_FREEZE(str);
     rb_ary_push(ary, str);
     return ST_CONTINUE;
@@ -1172,11 +1180,11 @@ rb_enc_aliases_enc_i(st_data_t name, st_data_t orig, st_data_t arg)
 	if (STRCASECMP((char*)name, rb_enc_name(enc)) == 0) {
 	    return ST_CONTINUE;
 	}
-	str = rb_str_new2(rb_enc_name(enc));
+	str = rb_usascii_str_new2(rb_enc_name(enc));
 	OBJ_FREEZE(str);
 	rb_ary_store(ary, idx, str);
     }
-    key = rb_str_new2((char *)name);
+    key = rb_usascii_str_new2((char *)name);
     OBJ_FREEZE(key);
     rb_hash_aset(aliases, key, str);
     return ST_CONTINUE;
