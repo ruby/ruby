@@ -1,3 +1,11 @@
+Sat Jan 26 00:43:40 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_getline_fast): don't care ASCII incompatible encoding.
+	  (prepare_getline_args): generate a newline according to IO encoding
+	  when necessary.
+	  (rb_io_getline_1): call rb_io_getline_fast only for ASCII
+	  compatible encoding.
+
 Fri Jan 25 21:49:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_buf_cat_ascii): use rb_enc_cr_str_buf_cat.
@@ -206,7 +214,7 @@ Wed Jan 23 13:39:48 2008  Tanaka Akira  <akr@fsij.org>
 
 Wed Jan 23 11:53:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (str_mod_check, str_nth, str_offset): consitfied.
+	* string.c (str_mod_check, str_nth, str_offset): constified.
 
 	* string.c (rb_str_dump): dump in ASCII-8BIT always.
 
@@ -227,7 +235,7 @@ Tue Jan 22 20:58:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Jan 22 19:37:16 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/mkmf.rb (create_makefile): lib files shoudn't depend on install
+	* lib/mkmf.rb (create_makefile): lib files shouldn't depend on install
 	  dir because if the dir is newer than lib files, lib files will be
 	  always copied.
 
@@ -330,7 +338,7 @@ Mon Jan 21 06:40:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* transcode_data.h (rb_transcoding): include pointer to rb_transcoder
 	  and auxiliary data.
 
-	* transcode_data.h (rb_transcoder): all callback functions shoud have
+	* transcode_data.h (rb_transcoder): all callback functions should have
 	  their own parameters.
 
 	* enc/trans/{japanese,single_byte}.c: constified.
@@ -379,7 +387,7 @@ Sun Jan 20 05:12:44 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sun Jan 20 05:03:46 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ascii.c: remove difinition of replica KOI8-U.
+	* ascii.c: remove definition of replica KOI8-U.
 
 Sun Jan 20 00:33:59 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -484,7 +492,7 @@ Fri Jan 18 20:19:51 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Fri Jan 18 20:03:05 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/setup.mak (BASERUBY): nmake cannot execute ruby collectly
+	* win32/setup.mak (BASERUBY): nmake cannot execute ruby correctly
 	  if the path of ruby.exe is quoted.
 
 	* win32/setup.mak ($(ARCH)): if a macro is appended by $(APPEND),
@@ -701,7 +709,7 @@ Tue Jan 15 18:05:26 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Jan 15 18:01:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/Makefile.sub (MKFILES): add dependecies.
+	* win32/Makefile.sub (MKFILES): add dependencies.
 
 Tue Jan 15 18:00:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -741,7 +749,7 @@ Tue Jan 15 13:54:41 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Jan 15 13:43:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* common.mk (us_ascii.o): add dependecies. [ruby-dev:33111]
+	* common.mk (us_ascii.o): add dependencies. [ruby-dev:33111]
 
 Tue Jan 15 03:41:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -921,7 +929,7 @@ Sun Jan 13 11:41:11 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (proc_options): ditto.
 
-	* enc/shift_jis.c, enc/euc_jp.c: fixes for romove from builtin.
+	* enc/shift_jis.c, enc/euc_jp.c: fixes for remove from builtin.
 
 Sun Jan 13 10:21:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -932,7 +940,7 @@ Sun Jan 13 09:58:17 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* encoding.c (rb_enc_init): revert removing SJIS.
 	
 	* enc/sjis.c: move to enc/shift_jis.c, to make encoding name equal to
-	  filename for convinience of loading lib.
+	  filename for convenience of loading lib.
 
 	* enc/shift_jis.c: moved from enc/sjis.c.
 
@@ -969,14 +977,14 @@ Sun Jan 13 00:01:07 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	  (Init_Encoding): init encdb.	
 
 	* enc/ascii.c, enc/us_ascii.c, enc/euc_jp.c, enc/sjis.c:
-	  add replica encoding and encoding alias difinition.
+	  add replica encoding and encoding alias definition.
 
-	* common.mk (dist-clean-local): add rule for remvoe encdb.h.
+	* common.mk (dist-clean-local): add rule for remove encdb.h.
 
 Sat Jan 12 18:27:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_define_alloc_func, rb_undef_alloc_func): should
-	  define/undef on a signleton class.  [ruby-core:09959]
+	  define/undef on a singleton class.  [ruby-core:09959]
 
 Sat Jan 12 12:44:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -1035,7 +1043,7 @@ Fri Jan 11 12:35:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  configure.
 
 	* lib/rdoc/options.rb (check_diagram): more precise check, darwin
-	  is not Windows but minwg is on it.
+	  is not Windows but mingw is on it.
 
 Fri Jan 11 09:59:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -1095,7 +1103,7 @@ Wed Jan  9 20:55:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Jan  9 20:35:42 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/httprequest.rb: supprt X-Forwarded-* header fields.
+	* lib/webrick/httprequest.rb: support X-Forwarded-* header fields.
 	  WEBrick::HTTPRequest#{host,port,request_uri} is derived having
 	  regards to X-Forwarded-Proto and X-Forwarded-Host.
 
@@ -1148,7 +1156,7 @@ Wed Jan  9 13:03:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Jan  9 08:42:01 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
-	* enum.c:  Updating the documentation of Enumrable#zip to reflect
+	* enum.c:  Updating the documentation of Enumerable#zip to reflect
 	  the recent changes Matz made to the method.
 
 Wed Jan  9 01:35:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -2149,7 +2157,7 @@ Thu Dec 27 17:57:30 2007  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y, transcode_data.h, transcode.c, lib/weakref.rb,
 	  lib/irb/ruby-lex.rb, lib/irb/lc/error.rb, enc/trans/japanese.c:
-	  change "illegal" to "invalid" in a context which doesn' t against
+	  change "illegal" to "invalid" in a context which doesn't against
 	  a law.
 
 Thu Dec 27 16:37:06 2007  Tanaka Akira  <akr@fsij.org>
@@ -2250,7 +2258,7 @@ Tue Dec 25 23:25:29 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Dec 25 23:16:01 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ruby.c (proc_options): encoding option in shbang and RUBYOPT did not
+	* ruby.c (proc_options): encoding option in shebang and RUBYOPT did not
 	  work, do not store alloca()ed string in a parent scope struct.
 
 Tue Dec 25 22:56:52 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -2263,7 +2271,7 @@ Tue Dec 25 22:55:42 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Dec 25 22:45:10 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* insns2vm.rb: add encoding option to shbang.
+	* insns2vm.rb: add encoding option to shebang.
 
 Tue Dec 25 22:13:51 2007  Koichi Sasada  <ko1@atdot.net>
 

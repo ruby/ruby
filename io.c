@@ -1792,27 +1792,17 @@ rb_io_getline_fast(rb_io_t *fptr)
 {
     VALUE str = Qnil;
     int len = 0;
-    rb_encoding *enc = io_read_encoding(fptr);
 
     for (;;) {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
 
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
-	    const char *pend = p + pending - 1;
 	    const char *e;
 
 	    e = memchr(p, '\n', pending);
 	    if (e) {
-		const char *p0 = rb_enc_left_char_head(p, e, enc);
-
-		pend = rb_enc_left_char_head(p0, pend, enc);
-		if (rb_enc_is_newline(p0, pend, enc)) {
-		    pending = p0 - p + rb_enc_mbclen(p0, pend, enc);
-		}
-		else {
-		    e = 0;
-		}
+                pending = e - p + 1;
 	    }
 	    if (NIL_P(str)) {
 		str = rb_str_new(p, pending);
@@ -1864,7 +1854,7 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 	    }
 	}
     }
-    if (!NIL_P(rs) && rs != rb_default_rs) {
+    if (!NIL_P(rs)) {
 	rb_encoding *enc_rs, *enc_io;
 
 	GetOpenFile(io, fptr);
@@ -1873,12 +1863,24 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 	if (enc_io != enc_rs &&
 	    (rb_enc_str_coderange(rs) != ENC_CODERANGE_7BIT ||
 	     !rb_enc_asciicompat(enc_io))) {
-	    rb_raise(rb_eArgError, "IO and RS encodings differ");
+            if (rs == rb_default_rs) {
+                rs = rb_enc_str_new(0, 0, enc_io);
+                rb_str_buf_cat_ascii(rs, "\n");
+            }
+            else {
+                rb_raise(rb_eArgError, "encoding mismatch: %s IO with %s RS",
+                         rb_enc_name(enc_io),
+                         rb_enc_name(enc_rs));
+            }
 	}
 	if (fptr->enc2) {
-	    rs = rb_funcall(rs, id_encode, 2, 
+            VALUE rs2;
+	    rs2 = rb_funcall(rs, id_encode, 2, 
 			    rb_enc_from_encoding(fptr->enc2),
 			    rb_enc_from_encoding(fptr->enc));
+            if (!RTEST(rb_str_equal(rs, rs2))) {
+                rs = rs2;
+            }
 	}
     }
     *rsp = rs;
@@ -1903,7 +1905,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     else if (limit == 0) {
 	return rb_enc_str_new(0, 0, io_read_encoding(fptr));
     }
-    else if (rs == rb_default_rs && limit < 0) {
+    else if (rs == rb_default_rs && limit < 0 &&
+             rb_enc_asciicompat(io_read_encoding(fptr))) {
 	return rb_io_getline_fast(fptr);
     }
     else {
