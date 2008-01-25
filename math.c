@@ -136,7 +136,7 @@ math_acos(obj, x)
  *  call-seq:
  *     Math.asin(x)    => float
  *  
- *  Computes the arc sine of <i>x</i>. Returns 0..PI.
+ *  Computes the arc sine of <i>x</i>. Returns -{PI/2} .. {PI/2}.
  */
 
 static VALUE
