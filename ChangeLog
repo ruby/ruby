@@ -2471,7 +2471,7 @@ Tue Dec 25 14:11:57 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Dec 25 14:03:48 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
-	* test/rinda/test_rinda.rb (MockClock#{_forward, forwrd, sleep}):
+	* test/rinda/test_rinda.rb (MockClock#{_forward, forward, sleep}):
 	  Change default value of n as @reso from nil.  If default value is
 	  nil, n.+ is not defined.
 
@@ -2735,13 +2735,13 @@ Mon Dec 24 23:01:04 2007  Tanaka Akira  <akr@fsij.org>
 
 Mon Dec 24 22:46:42 2007  NARUSE, Yui <naruse@ruby-lang.org>
 
-	* transocode.c: register_functional_transcoder() added.
+	* transcode.c: register_functional_transcoder() added.
 	  (init_transcoder_table(: register ISO-2022-JP.
 	  (str_transcode): add preprocessor and postprocessor.
 
 	* transcode_data_japanese.c: add ISO-2022-JP support.
 
-	* transcode_data.h: moved transcoder and transcoding difinition from
+	* transcode_data.h: moved transcoder and transcoding definition from
 	  transcode.c.
 
 Mon Dec 24 20:29:28 2007  Koichi Sasada  <ko1@atdot.net>
@@ -2872,7 +2872,7 @@ Mon Dec 24 12:49:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  compiled output file name explicitly.
 
 	* enc/Makefile.in, enc/depend: now makes compiler to put generated
-	  files under directories corresnponding to the each source.
+	  files under directories corresponding to the each source.
 	  enc/trans supported.
 
 	* enc/make_encmake.rb: evaluates depend file before Makefile.in so
@@ -3265,7 +3265,7 @@ Sat Dec 22 14:18:45 2007  Koichi Sasada  <ko1@atdot.net>
 
 Sat Dec 22 14:17:02 2007  Koichi Sasada  <ko1@atdot.net>
 
-	* bootstraptest/test_objectspace.rb: skip flozen string.
+	* bootstraptest/test_objectspace.rb: skip frozen string.
 
 Sat Dec 22 14:02:58 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -3547,7 +3547,7 @@ Fri Dec 21 15:31:59 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Fri Dec 21 15:24:22 2007  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (initialize): accept service name.  changed
-	  the defalut value of the old style +verify+ argument to true.
+	  the default value of the old style +verify+ argument to true.
 
 Fri Dec 21 15:15:44 2007  Tanaka Akira  <akr@fsij.org>
 
@@ -3742,7 +3742,7 @@ Thu Dec 20 18:17:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk, *.ci: renamed to *.c.
 
-	* eval_laod.c: renamed to load.c.
+	* eval_load.c: renamed to load.c.
 
 Thu Dec 20 17:36:01 2007  Eric Hodel  <drbrain@segment7.net>
 
@@ -4232,13 +4232,13 @@ Mon Dec 17 20:53:27 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_get_verify_result):
 	  new method OpenSSL::SSL::SSLSocket#verify_result to wrap
-	  SSL_get_verrify_result.
+	  SSL_get_verify_result.
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLContext.build):
 	  new method to build OpenSSL::SSL::SSLContext with Hash parameters.
 	  this method provides safety default parameters than SSLContext.new.
 
-	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL.verify_cetificate_identity):
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL.verify_certificate_identity):
 	  new module function: pull out identity verification process
 	  from OpenSSL::SSL::SSLSocket#post_connection_check.
 
@@ -4307,7 +4307,7 @@ Mon Dec 17 16:04:16 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Dec 17 16:02:30 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb, lib/webrick/cgi.rb: Request-Line or
-	  header fields shold be read with maximum length. [ruby-talk:231745]
+	  header fields should be read with maximum length. [ruby-talk:231745]
 
 Mon Dec 17 14:03:39 2007  Tanaka Akira  <akr@fsij.org>
 
@@ -4340,7 +4340,7 @@ Sun Dec 16 17:07:35 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	  for undefined conversions.
 
 	* transcode_data_iso_8859.c: Changed from character constants
-	  ('\xC2') to integer contants (0xC2) for shorter files and
+	  ('\xC2') to integer constants (0xC2) for shorter files and
 	  better readability; eliminated duplicated tables; changed
 	  from -1 offset to actual UNDEF entry (not yet distinguishing
 	  UNDEF and ILLEGAL correctly).
@@ -4380,7 +4380,7 @@ Sat Dec 15 20:20:48 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (BUILTIN_ENCS): [] needs to be enclosed because of m4.
 
-	* Makefile.in (BUILTIN_ENCOBJS): substitued by autoconf.
+	* Makefile.in (BUILTIN_ENCOBJS): substituted by autoconf.
 
 	* enc/Makefile.in: new file to compile external encoding sources.
 
@@ -4448,7 +4448,7 @@ Fri Dec 14 15:25:30 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 	* transcode.c (str_transcode, transcode_dispatch): added two-step
 	  conversion logic via UTF-8.
 
-	* trancode.c: some minor formatting fixes
+	* transcode.c: some minor formatting fixes
 
 	* transcode_data.h, transcode_data_iso_8859.c: Shortened
 	  extremely frequently used macros to shorten file length.
@@ -4560,7 +4560,7 @@ Thu Dec 13 16:41:37 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Dec 13 13:09:03 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/io.h (MakeOpenFile): fptr->enc should be
-	  intialized to zero.  [ruby-dev:32569]
+	  initialized to zero.  [ruby-dev:32569]
 
 Thu Dec 13 08:56:01 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -4868,8 +4868,8 @@ Sun Dec  9 12:03:16 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Dec  9 11:29:23 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (tr_trans): get rid of segfaults when has mulitbytes but
-	  source sets have no mulitbytes.
+	* string.c (tr_trans): get rid of segfaults when has multibytes but
+	  source sets have no multibytes.
 
 Sun Dec  9 04:01:28 2007  Tanaka Akira  <akr@fsij.org>
 
@@ -5075,8 +5075,8 @@ Tue Dec  4 14:34:35 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Dec  4 11:23:50 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* bignum.c (rb_cstr_to_inum): trailing spaces may exist at sqeezing
-	  preceeding 0s.  [ruby-core:13873]
+	* bignum.c (rb_cstr_to_inum): trailing spaces may exist at squeezing
+	  preceding 0s.  [ruby-core:13873]
 
 Mon Dec  3 11:51:53 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -10271,7 +10271,7 @@ Mon Jul  2 08:53:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c: fix symbol name (:toplevel -> :top).
 
-	* lib/vm/instruction.rb, template/vm.inc.tmpl: replacable
+	* lib/vm/instruction.rb, template/vm.inc.tmpl: replaceable
 	  current file name.
 
 Mon Jul  2 05:29:07 2007  Koichi Sasada  <ko1@atdot.net>
@@ -12680,7 +12680,7 @@ Wed Feb 28 00:08:11 2007  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
 Tue Feb 27 22:18:45 2007  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* configure.in (--enable-auto-image-base): avoid the neccessity to
+	* configure.in (--enable-auto-image-base): avoid the necessity to
 	  rebase the shared libs as much as possible;
 	  submitted by Corinna Vinschen <spam at vinschen.de> in
 	  [ruby-talk:240964].
@@ -12949,7 +12949,7 @@ Sat Feb 24 10:49:55 2007  Koichi Sasada  <ko1@atdot.net>
 	* parse.y, node.h, compile.c: change node tree structure.  a purpose
 	  of this change is to unify argument structure of method and block.
 	  this change prohibits duplicate block parameter name.
-	  new argument infromation:
+	  new argument information:
 	    NODE_ARGS	  [m: int, o: NODE_OPT_ARG, ->]
 	    NODE_ARGS_AUX [r: ID, b: ID, ->]
 	    NODE_ARGS_AUX [Pst: id, Plen: int, init: NODE*]
@@ -12966,7 +12966,7 @@ Sat Feb 24 10:49:55 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ripper/test_scanner_events.rb: |_,_,foo| -> |_1,_2,foo|
 
-	* test/ruby/test_lambda.rb: disalbe test temporarily.
+	* test/ruby/test_lambda.rb: disable test temporarily.
 
 Sat Feb 24 10:46:28 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -13200,7 +13200,7 @@ Thu Feb 15 01:52:53 2007  Koichi Sasada  <ko1@atdot.net>
 Thu Feb 15 01:50:26 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/fileutils/test_fileutils.rb (check_singleton): fix to use
-	  symbole instead of string.
+	  symbol instead of string.
 
 	* test/io/nonblock/test_flush.rb: enable tests.
 
