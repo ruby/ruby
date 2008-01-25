@@ -1,3 +1,12 @@
+Fri Jan 25 16:31:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_str_buf_cat_ascii): declared.
+
+	* string.c (rb_str_buf_cat_ascii): defined.
+
+	* re.c (rb_reg_s_union): use rb_str_buf_cat_ascii to support ASCII
+	  incompatible encoding.
+
 Fri Jan 25 16:11:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options, load_file, rb_load_file): propagates script

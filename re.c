@@ -2668,7 +2668,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
 	    VALUE e = rb_ary_entry(args0, i);
 
 	    if (0 < i)
-		rb_str_buf_cat2(source, "|"); /* xxx: UTF-16 */
+		rb_str_buf_cat_ascii(source, "|");
 
 	    v = rb_check_regexp_type(e);
 	    if (!NIL_P(v)) {
@@ -2726,6 +2726,9 @@ rb_reg_s_union(VALUE self, VALUE args0)
                 }
             }
 
+            if (i == 0) {
+                rb_enc_copy(source, v);
+            }
 	    rb_str_append(source, v);
 	}
 

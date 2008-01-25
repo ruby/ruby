@@ -504,6 +504,7 @@ void rb_str_shared_replace(VALUE, VALUE);
 VALUE rb_str_buf_append(VALUE, VALUE);
 VALUE rb_str_buf_cat(VALUE, const char*, long);
 VALUE rb_str_buf_cat2(VALUE, const char*);
+VALUE rb_str_buf_cat_ascii(VALUE, const char*);
 VALUE rb_obj_as_string(VALUE);
 VALUE rb_check_string_type(VALUE);
 VALUE rb_str_dup(VALUE);
