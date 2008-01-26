@@ -278,7 +278,7 @@ str_new(VALUE klass, const char *ptr, long len)
     if (ptr) {
 	memcpy(RSTRING_PTR(str), ptr, len);
     }
-    else {
+    if (len == 0) {
 	ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     }
     STR_SET_LEN(str, len);
