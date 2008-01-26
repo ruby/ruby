@@ -37,6 +37,14 @@ class TestUTF16 < Test::Unit::TestCase
     result
   end
 
+  def assert_str_equal(expected, actual, message=nil)
+    full_message = build_message(message, <<EOT)
+#{encdump expected} expected but not equal to
+#{encdump actual}.
+EOT
+    assert_block(full_message) { expected == actual }
+  end
+
   # tests start
 
   def test_utf16be_valid_encoding
@@ -110,6 +118,11 @@ class TestUTF16 < Test::Unit::TestCase
     assert_raise(ArgumentError, "#{encdump s1} << #{encdump s2}") {
       s1 << s2
     }
+  end
+
+  def test_chomp
+    s = "\1\n".force_encoding("utf-16be")
+    assert_str_equal(s, s.chomp, "#{encdump s}.chomp")
   end
 
   def test_regexp_union
