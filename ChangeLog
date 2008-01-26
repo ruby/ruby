@@ -1,3 +1,8 @@
+Sat Jan 26 17:22:46 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, compile.h: fix to calculate correct stack depth
+	   at each instruction.
+
 Sat Jan 26 09:41:02 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rexml/doctype.rb, test/rss/test_maker_itunes.rb: replace

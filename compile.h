@@ -167,6 +167,9 @@ r_value(VALUE value)
 #define ADD_ADJUST(seq, line, label) \
   ADD_ELEM(seq, (LINK_ELEMENT *) new_adjust_body(iseq, label, line))
 
+#define ADD_ADJUST_RESTORE(seq, label) \
+  ADD_ELEM(seq, (LINK_ELEMENT *) new_adjust_body(iseq, label, -1))
+
 #define ADD_CATCH_ENTRY(type, ls, le, iseqv, lc)		\
     (rb_ary_push(iseq->compile_data->catch_table_ary,		\
 		 rb_ary_new3(5, type,				\
