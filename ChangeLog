@@ -1,3 +1,8 @@
+Sun Jan 27 05:56:39 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_preprocess): force fixed encoding when ASCII
+	  incompatible source string.
+
 Sat Jan 26 23:46:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): zero-precision zero should be empty.

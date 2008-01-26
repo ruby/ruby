@@ -1908,7 +1908,13 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
 
     buf = rb_str_buf_new(0);
 
-    *fixed_enc = 0;
+    if (rb_enc_asciicompat(enc))
+        *fixed_enc = 0;
+    else {
+        *fixed_enc = enc;
+        rb_enc_associate(buf, enc);
+    }
+
     if (unescape_nonascii(p, end, enc, buf, fixed_enc, err) != 0)
         return Qnil;
 

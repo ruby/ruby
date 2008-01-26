@@ -115,4 +115,10 @@ class TestUTF16 < Test::Unit::TestCase
   def test_regexp_union
     enccall(Regexp, :union, "aa".force_encoding("utf-16be"), "bb".force_encoding("utf-16be"))
   end
+
+  def test_empty_regexp
+    s = "".force_encoding("utf-16be")
+    assert_equal(Encoding.find("utf-16be"), Regexp.new(s).encoding,
+                "Regexp.new(#{encdump s}).encoding")
+  end
 end
