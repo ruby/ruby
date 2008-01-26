@@ -1,3 +1,11 @@
+Sat Jan 26 23:46:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): zero-precision zero should be empty.
+	  [ruby-dev:33363]
+
+	* sprintf.c (rb_str_format): not prepend octal prefix to negative or
+	  zero value.  [ruby-dev:33363], [ruby-dev:33367]
+
 Sat Jan 26 23:42:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (assignable_gen, keyword_to_name): __ENCODING__ was missing.

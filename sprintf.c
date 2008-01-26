@@ -692,7 +692,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    width = 0;
 		}
 		else {
-		    if (prec < len) prec = len;
+		    if (prec < len) {
+			if ((flags & FPREC) && len == 1 && *s == '0') len = 0;
+			else prec = len;
+		    }
 		    width -= prec;
 		}
 		if (!(flags&FMINUS)) {
@@ -702,15 +705,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		}
 		if (sc) PUSH(&sc, 1);
-		if (prefix) {
+		if (prefix && (prefix[1] || !(dots || (len && s[0] == '0')))) {
 		    int plen = strlen(prefix);
 		    PUSH(prefix, plen);
 		}
 		CHECK(prec - len);
-		if (dots) {
-		    memcpy(&buf[blen], "..", 2);
-		    blen += 2;
-		}
+		if (dots) PUSH("..", 2);
 		if (!bignum && v < 0) {
 		    char c = sign_bits(base, p);
 		    while (len < prec--) {
