@@ -1,3 +1,7 @@
+Sat Jan 26 23:42:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assignable_gen, keyword_to_name): __ENCODING__ was missing.
+
 Sat Jan 26 19:08:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* marshal.c (w_object): dump string encoding in USERDEF.

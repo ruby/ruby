@@ -7630,6 +7630,9 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
     else if (id == keyword__LINE__) {
 	yyerror("Can't assign to __LINE__");
     }
+    else if (id == keyword__ENCODING__) {
+	yyerror("Can't assign to __ENCODING__");
+    }
     else if (is_local_id(id)) {
 	if (dyna_in_block()) {
 	    if (dvar_curr(id)) {
@@ -9562,6 +9565,7 @@ static const struct kw_assoc {
     {keyword_END,	"END"},
     {keyword__LINE__,	"__LINE__"},
     {keyword__FILE__,	"__FILE__"},
+    {keyword__ENCODING__, "__ENCODING__"},
     {0, NULL}
 };
 
