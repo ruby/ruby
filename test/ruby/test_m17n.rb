@@ -1017,4 +1017,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII.to_s.encoding, Encoding::US_ASCII)
     assert_equal(Encoding::US_ASCII.inspect.encoding, Encoding::US_ASCII)
   end
+
+  def test_regexp_source
+    s = "\xa4\xa2".force_encoding("euc-jp")
+    r = Regexp.new(s)
+    t = r.source
+    assert_equal(s, t, "[ruby-dev:33377] Regexp.new(#{encdump s}).source")
+  end
 end
