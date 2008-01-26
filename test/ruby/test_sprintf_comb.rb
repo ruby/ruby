@@ -107,15 +107,18 @@ class TestSprintfComb < Test::Unit::TestCase
   VS.reverse!
 
   def combination(*args)
-    if args.empty?
-      yield []
-    else
-      arg = args.shift
-      arg.each {|v|
-        combination(*args) {|vs|
-          yield [v, *vs]
-        }
+    args = args.map {|a| a.to_a }
+    i = 0
+    while true
+      n = i
+      as = []
+      args.reverse_each {|a|
+        n, m = n.divmod(a.length)
+        as.unshift a[m]
       }
+      break if 0 < n
+      yield as
+      i += 1
     end
   end
 
