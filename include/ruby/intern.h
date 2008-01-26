@@ -499,6 +499,8 @@ VALUE rb_tainted_str_new2(const char*);
 VALUE rb_str_buf_new(long);
 VALUE rb_str_buf_new2(const char*);
 VALUE rb_str_tmp_new(long);
+VALUE rb_usascii_str_new(const char*, long);
+VALUE rb_usascii_str_new2(const char*);
 void rb_str_free(VALUE);
 void rb_str_shared_replace(VALUE, VALUE);
 VALUE rb_str_buf_append(VALUE, VALUE);

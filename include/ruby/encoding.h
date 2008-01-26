@@ -163,6 +163,7 @@ rb_encoding *rb_utf8_encoding(void);
 rb_encoding *rb_usascii_encoding(void);
 rb_encoding *rb_locale_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
+int rb_usascii_encindex(void);
 VALUE rb_enc_default_external(void);
 void rb_enc_set_default_external(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);

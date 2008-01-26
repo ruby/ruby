@@ -1,3 +1,10 @@
+Sat Jan 26 09:30:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_usascii_encindex): added prototype.
+
+	* include/ruby/intern.h (rb_usascii_str_new, rb_usascii_str_new2):
+	  ditto.
+
 Sat Jan 26 09:17:13 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_new): set US-ASCII and ENC_CODERANGE_7BIT when
