@@ -758,3 +758,11 @@ assert_equal 'ok', %q{
   end
   :ok
 }, '[ruby-dev:32882]'
+
+assert_equal "1\n2\n", %q{
+  i = 0
+  while i<2
+    i += 1
+    next p(i)
+  end
+}

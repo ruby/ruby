@@ -3044,6 +3044,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    LABEL *splabel = NEW_LABEL(0);
 	    debugs("next in while loop\n");
 	    ADD_LABEL(ret, splabel);
+	    COMPILE(ret, "next val/valid syntax?", node->nd_stts);
 	    add_ensure_iseq(ret, iseq);
 	    ADD_ADJUST(ret, nd_line(node), iseq->compile_data->redo_label);
 	    ADD_INSNL(ret, nd_line(node), jump, iseq->compile_data->start_label);

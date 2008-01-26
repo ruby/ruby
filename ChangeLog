@@ -1,3 +1,10 @@
+Sat Jan 26 17:42:23 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c (iseq_compile_each): validate argument expr of "next"
+	  statement.
+
+	* bootstraptest/test_syntax.rb: add a test.
+
 Sat Jan 26 17:22:46 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, compile.h: fix to calculate correct stack depth
