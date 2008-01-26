@@ -13665,7 +13665,7 @@ Wed Feb  7 09:35:32 2007  Koichi Sasada  <ko1@atdot.net>
 	* process.c: add a prototype of rb_thread_stop_timer_thread() (in thread.c).
 
 	* thread.c: remove raw_gets() function (unused) and fix some format
-	  mismatch (format mismatchs have remained yet. this is todo).
+	  mismatch (format mismatches have remained yet. this is todo).
 
 	* thread.c (rb_thread_wait_fd_rw): fix typo on label name.
 
@@ -13709,7 +13709,7 @@ Tue Feb 06 22:06:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c}:
 	  imported nkf 2007-01-28.
 	  * Fixed: can't decode MIME encode JIS string.
-	  * Fixed: Fullwitdh-halfwidth conversion.
+	  * Fixed: Fullwidth-halfwidth conversion.
 	  * Support DoCoMo's and Softbank's EMOJI
 	  * Support CP932, CP5022x, eucJP-ms UDC
 	  * Support UTF-32 encoding
@@ -13746,7 +13746,7 @@ Tue Feb  6 15:44:11 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c (iseq_compile_each): fix setting is_local flag.
 
-	* yarvtest/test_class.rb: add a test for class local isntance variable.
+	* yarvtest/test_class.rb: add a test for class local instance variable.
 
 Tue Feb  6 14:15:34 2007  Koichi Sasada  <ko1@atdot.net>
 
@@ -13794,7 +13794,7 @@ Tue Feb  6 01:07:14 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* process.c: define above functions.
 
-	* ext/pty/pty.c: use above functins.
+	* ext/pty/pty.c: use above functions.
 
 	* io.c (pipe_finalize): ditto.
 
@@ -14205,7 +14205,7 @@ Tue Jan  9 12:29:20 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Jan  9 03:54:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_upto): String#upto from empty string makes
-	  inifinite loop.  [ruby-core:09864]
+	  infinite loop.  [ruby-core:09864]
 
 	* string.c (rb_str_upto): use RSTRING_LEN().
 
@@ -14280,7 +14280,7 @@ Sat Jan  6 09:10:52 2007  Koichi Sasada  <ko1@atdot.net>
 	* insns.def: support direct method dispatch with "send" or "funcall".
 	  This means that "obj.send :m" skips "BasicObject#send" invocation
 	  (method frame creation, etc) and "obj.m" invokes directly.
-	  If you make backtrace, there are no enties of "send" method.
+	  If you make backtrace, there are no entries of "send" method.
 
 	* compile.c (iseq_specialized_instruction): fix to support above
 
@@ -14472,10 +14472,10 @@ Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 
 Mon Jan  1 06:05:55 2007  Eric Hodel  <drbrain@segment7.net>
 
-	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts):
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constants):
 	  Allow RDoc comment to give friendly value for rb_define_const.  Patch
 	  by Daniel Berger <djberg96 at gmail.com>, [ruby-patches-7499].
-	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts): Fix
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constants): Fix
 	  whitespace handling in constant comments.
 
 Mon Jan 01 00:00:00 2007  Koichi Sasada  <ko1@atdot.net>
@@ -14612,7 +14612,7 @@ Sat Dec  9 21:39:24 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Dec  9 11:22:00 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* lib/irb/locale.rb (IRB::Locale::search_file): ues File.exist?
+	* lib/irb/locale.rb (IRB::Locale::search_file): use File.exist?
 	  instead of File.exists?.  a patch from Yutaka Kanemoto
 	  <kinpoco at gmail.com> in [ruby-dev:30000].
 
@@ -14623,7 +14623,7 @@ Fri Dec  8 18:11:18 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Fri Dec  8 17:00:13 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* bin/rdoc: ues File.exist? instead of File.exists?.
+	* bin/rdoc: use File.exist? instead of File.exists?.
 
 Thu Dec  7 23:50:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -14650,7 +14650,7 @@ Wed Dec  6 23:58:36 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Dec  5 19:01:42 2006  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* configure.in (SITE_DIR): fixed to emtpy RUBY_SITE_LIB in config.h on
+	* configure.in (SITE_DIR): fixed to empty RUBY_SITE_LIB in config.h on
 	  NetBSD.  fixed: [ruby-dev:29358]
 
 Tue Dec  5 18:38:21 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -15033,7 +15033,7 @@ Sun Oct 22 16:47:56 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* string.c (rb_str_substr): should be infected with only original
 	  string, but not the shared string.  fixed: [ruby-core:09152]
 
-	* string.c (rb_str_new4): keep shared string untainted when orignal
+	* string.c (rb_str_new4): keep shared string untainted when original
 	  string is tainted.  fixed: [ruby-dev:29672]
 
 Sun Oct 22 07:55:11 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -15064,7 +15064,7 @@ Fri Oct 20 20:28:37 2006  Akinori MUSHA  <knu@iDaemons.org>
 	  rb_ to avoid name clash in writing extensions.
 
 	* ext/digest: Introduce Digest::Class and Digest::Instance for
-	  ease of implementing subclasses and add-ons, inspried by
+	  ease of implementing subclasses and add-ons, inspired by
 	  gotoyuzo.
 
 	* ext/digest: The Digest::Instance module now requires and assumes
@@ -15877,7 +15877,7 @@ Thu Sep 21 15:06:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Sep 21 13:55:07 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ext/etc/etc.c (etc_getpwuid): uid integer should be wraped in
+	* ext/etc/etc.c (etc_getpwuid): uid integer should be wrapped in
 	  uid_t value.  [ruby-core:08897]
 
 	* ext/etc/etc.c (etc_getpwuid): uid_t may be bigger than plain
@@ -17455,7 +17455,7 @@ Wed Jul  5 01:12:19 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Jul  4 21:48:56 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ruby.c (proc_options): supress warning on DOSISH.
+	* ruby.c (proc_options): suppress warning on DOSISH.
 
 Tue Jul  4 15:12:49 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -17471,7 +17471,7 @@ Mon Jul  3 19:04:38 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_make_menu_embeddable): help to make a menu
 	  widget embeddable (pack, grid, and so on) like as a general widget.
-	  However, an embeddable menu may require to be definied some event
+	  However, an embeddable menu may require to be defined some event
 	  bindings for general use.
 
 	* ext/tk/lib/tk/event.rb: [bug fix] Tk.callback_break and
@@ -19127,7 +19127,7 @@ Tue Feb 14 18:48:33 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Feb 14 15:15:22 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/zlib/zlib.c: supress warning on test/zlib. [ruby-dev:28323]
+	* ext/zlib/zlib.c: suppress warning on test/zlib. [ruby-dev:28323]
 
 Tue Feb 14 13:47:22 2006  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -19324,13 +19324,13 @@ Thu Feb  2 16:01:24 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Feb  2 14:45:53 2006  Ville Mattila  <ville.mattila@stonesoft.com>
 
-	* configure.in: The isinf is not regognized by autoconf
+	* configure.in: The isinf is not recognized by autoconf
 	  library guesser on solaris 10. [ruby-core:7138]
 
 Wed Feb  1 22:01:47 2006  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* configure.in, hash.c (ruby_setenv): use setenv(3) and unsetenv(3)
-	  where they are supported. modifing environ variable seems to
+	  where they are supported. modifying environ variable seems to
 	  segfault solaris 10. [ruby-core:7276] [ruby-dev:28270]
 
 	* ruby.c (set_arg0): if use setenv(3), environ space cannot be used
