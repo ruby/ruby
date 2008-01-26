@@ -57,6 +57,7 @@ class TestMarshal < Test::Unit::TestCase
     def initialize(str)
       @str = str
     end
+    attr_reader :str
     def _dump(limit)
       @str
     end
@@ -72,5 +73,15 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(data)
     }
     assert_equal("marshal data too short", e.message)
+  end
+
+
+  def test_userdef_encoding
+    s1 = "\xa4\xa4".force_encoding("euc-jp")
+    o1 = C.new(s1)
+    m = Marshal.dump(o1)
+    o2 = Marshal.load(m)
+    s2 = o2.str
+    assert_equal(s1, s2)
   end
 end

@@ -613,7 +613,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    w_class(TYPE_USERDEF, obj, arg, Qfalse);
 	    w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
             if (hasiv2) {
-		w_ivar(obj, ivtbl2, &c_arg);
+		w_ivar(v, ivtbl2, &c_arg);
             }
             else if (hasiv) {
 		w_ivar(obj, ivtbl, &c_arg);
