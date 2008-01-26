@@ -151,6 +151,10 @@ class TestM17N < Test::Unit::TestCase
     assert_encoding("EUC-JP", eval(e(%{"\\x80"})).encoding)
   end
 
+  def test_utf8_literal
+    assert_equal(Encoding::UTF_8, "\u3042".encoding, "[ruby-dev:33406] \"\\u3042\".encoding")
+  end
+
   def test_string_mixed_unicode
     assert_raise(SyntaxError) { eval(a(%{"\xc2\xa1\\u{6666}"})) }
     assert_raise(SyntaxError) { eval(e(%{"\xc2\xa1\\u{6666}"})) }
