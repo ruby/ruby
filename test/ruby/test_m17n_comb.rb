@@ -112,15 +112,18 @@ class TestM17NComb < Test::Unit::TestCase
   ]
 
   def combination(*args)
-    if args.empty?
-      yield []
-    else
-      arg = args.shift
-      arg.each {|v|
-        combination(*args) {|vs|
-          yield [v, *vs]
-        }
+    args = args.map {|a| a.to_a }
+    i = 0
+    while true
+      n = i
+      as = []
+      args.reverse_each {|a|
+        n, m = n.divmod(a.length)
+        as.unshift a[m]
       }
+      break if 0 < n
+      yield as
+      i += 1
     end
   end
 
@@ -309,14 +312,17 @@ class TestM17NComb < Test::Unit::TestCase
       desc_eq = "#{encdump s1} == #{encdump s2}"
       if s1.ascii_only? && s2.ascii_only? && a(s1) == a(s2)
         assert(s1 == s2, desc_eq)
+        assert(s1.eql?(s2), desc_eq)
       elsif s1.encoding == s2.encoding && a(s1) == a(s2)
         assert(s1 == s2, desc_eq)
         assert(!(s1 != s2))
         assert_equal(0, s1 <=> s2)
+        assert(s1.eql?(s2), desc_eq)
       else
         assert(!(s1 == s2), "!(#{desc_eq})")
         assert(s1 != s2)
         assert_not_equal(0, s1 <=> s2)
+        assert(!s1.eql?(s2))
       end
     }
   end
@@ -634,7 +640,6 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def test_str_center
-
     combination(STRINGS, [0,1,2,3,10]) {|s1, width|
       t = s1.center(width)
       assert(a(t).index(a(s1)))
@@ -1037,6 +1042,7 @@ class TestM17NComb < Test::Unit::TestCase
       else
         sym = s.intern
         assert_equal(s, sym.to_s, "#{encdump s}.intern.to_s")
+        assert_equal(sym, s.to_sym)
       end
     }
   end
@@ -1471,6 +1477,130 @@ class TestM17NComb < Test::Unit::TestCase
           assert_not_equal(s1, t, desc)
         end
       }
+    }
+  end
+
+  def test_str_bytes
+    STRINGS.each {|s1|
+      ary = []
+      s1.bytes.each {|b|
+        ary << b
+      }
+      assert_equal(s1.unpack("C*"), ary)
+    }
+  end
+
+  def test_str_bytesize
+    STRINGS.each {|s1|
+      assert_equal(s1.unpack("C*").length, s1.bytesize)
+    }
+  end
+
+  def test_str_chars
+    STRINGS.each {|s1|
+      ary = []
+      s1.chars.each {|c|
+        ary << c
+      }
+      expected = []
+      s1.length.times {|i|
+        expected << s1[i]
+      }
+      assert_equal(expected, ary)
+    }
+  end
+
+  def test_str_chr
+    STRINGS.each {|s1|
+      if s1.empty?
+        assert_equal("", s1.chr)
+        next
+      end
+      assert_equal(s1[0], s1.chr)
+    }
+  end
+
+  def test_str_end_with?
+    combination(STRINGS, STRINGS) {|s1, s2|
+      desc = "#{encdump s1}.end_with?(#{encdump s2})"
+      if !str_enc_compatible?(s1, s2)
+        assert_raise(ArgumentError, desc) { s1.end_with?(s2) }
+        next
+      end
+      if s1.length < s2.length
+        assert_equal(false, s1.end_with?(s2), desc)
+        next
+      end
+      if s1[s1.length-s2.length, s2.length] == s2
+        assert_equal(true, s1.end_with?(s2), desc)
+        next
+      end
+      assert_equal(false, s1.end_with?(s2), desc)
+    }
+  end
+
+  def test_str_start_with?
+    combination(STRINGS, STRINGS) {|s1, s2|
+      desc = "#{encdump s1}.start_with?(#{encdump s2})"
+      if !str_enc_compatible?(s1, s2)
+        assert_raise(ArgumentError, desc) { s1.start_with?(s2) }
+        next
+      end
+      if s1.length < s2.length
+        assert_equal(false, s1.start_with?(s2), desc)
+        next
+      end
+      if s1[0, s2.length] == s2
+        assert_equal(true, s1.start_with?(s2), desc)
+        next
+      end
+      assert_equal(false, s1.start_with?(s2), desc)
+    }
+  end
+
+  def test_str_ord
+    STRINGS.each {|s1|
+      if s1.empty?
+        assert_raise(ArgumentError) { s1.ord }
+        next
+      end
+      if !s1.valid_encoding?
+        assert_raise(ArgumentError) { s1.ord }
+        next
+      end
+      assert_equal(s1[0].ord, s1.ord)
+    }
+  end
+
+  def test_str_partition
+    combination(STRINGS, STRINGS) {|s1, s2|
+      desc = "#{encdump s1}.partition(#{encdump s2})"
+      if !str_enc_compatible?(s1, s2)
+        assert_raise(ArgumentError, desc) { s1.partition(s2) }
+        next
+      end
+      i = s1.index(s2)
+      if !i
+        assert_equal([s1, "", ""], s1.partition(s2), desc)
+        next
+      end
+      assert_equal([s1[0,i], s2, s1[(i+s2.length)..-1]], s1.partition(s2), desc)
+    }
+  end
+
+  def test_str_rpartition
+    combination(STRINGS, STRINGS) {|s1, s2|
+      desc = "#{encdump s1}.rpartition(#{encdump s2})"
+      if !str_enc_compatible?(s1, s2)
+        assert_raise(ArgumentError, desc) { s1.rpartition(s2) }
+        next
+      end
+      i = s1.rindex(s2)
+      if !i
+        assert_equal(["", "", s1], s1.rpartition(s2), desc)
+        next
+      end
+      assert_equal([s1[0,i], s2, s1[(i+s2.length)..-1]], s1.rpartition(s2), desc)
     }
   end
 
