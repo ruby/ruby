@@ -66,7 +66,8 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_too_long_string
-    (data = Marshal.dump(C.new("a")))[-2, 1] = "\003\377\377\377"
+    data = Marshal.dump(C.new("a".force_encoding("ascii-8bit")))
+    data[-2, 1] = "\003\377\377\377"
     e = assert_raise(ArgumentError, "[ruby-dev:32054]") {
       Marshal.load(data)
     }
