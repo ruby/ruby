@@ -1,4 +1,11 @@
+/*
+ * utf8tbl.c - Convertion Table for nkf
+ *
+ * $Id$
+ */
+
 #include "config.h"
+#include "utf8tbl.h"
 
 #ifdef UTF8_OUTPUT_ENABLE
 static const unsigned short euc_to_utf8_A1[] = {
