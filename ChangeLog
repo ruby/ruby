@@ -1,7 +1,10 @@
-Sun Jan 27 21:48:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jan 27 22:31:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode-set-encoding): automatically insert
 	  encoding magic comment.
+
+	* misc/ruby-mode.el (ruby-mode): set ruby-mode-set-encoding to buffer
+	  local before-save-hook.
 
 Sun Jan 27 19:51:15 2008  Tanaka Akira  <akr@fsij.org>
 

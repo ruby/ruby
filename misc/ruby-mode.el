@@ -272,6 +272,7 @@ The variable ruby-indent-level controls the amount of indentation.
   (make-local-variable 'add-log-current-defun-function)
   (setq add-log-current-defun-function 'ruby-add-log-current-method)
 
+  (make-local-variable 'before-save-hook)
   (add-hook 'before-save-hook 'ruby-mode-set-encoding)
 
   (run-hooks 'ruby-mode-hook))
