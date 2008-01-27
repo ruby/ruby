@@ -40,12 +40,13 @@
 /*
  * Select Default Output Encoding
  * 
- * If not defined, locale encoding is used.
  */
 
-/* #define DEFAULT_CODE_JIS   */
-/* #define DEFAULT_CODE_SJIS  */
-/* #define DEFAULT_CODE_EUC   */
-/* #define DEFAULT_CODE_UTF8  */
+/* #define DEFAULT_CODE_JIS    */
+/* #define DEFAULT_CODE_SJIS   */
+/* #define DEFAULT_CODE_EUC    */
+/* #define DEFAULT_CODE_UTF8   */
+/* #define DEFAULT_CODE_LOCALE */
 
 #endif /* _CONFIG_H_ */
+

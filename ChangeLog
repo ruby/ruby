@@ -1,3 +1,7 @@
+Sun Jan 27 17:54:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf.c: raise error when no output encoding is given.
+
 Sun Jan 27 17:20:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_succ): don't increment/decrement codepoint.

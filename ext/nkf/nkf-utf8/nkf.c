@@ -258,6 +258,8 @@ struct {
 #define	    DEFAULT_ENCIDX EUC_JP
 #elif defined(DEFAULT_CODE_UTF8)
 #define	    DEFAULT_ENCIDX UTF_8
+#else
+#define	    DEFAULT_ENCIDX 0
 #endif
 
 
@@ -714,7 +716,7 @@ static nkf_encoding *nkf_enc_find(const char *name)
     nkf_enc_to_index(enc) == CP50221 ||\
     nkf_enc_to_index(enc) == CP50222)
 
-#ifndef DEFAULT_ENCIDX
+#ifdef DEFAULT_CODE_LOCALE
 static char* nkf_locale_charmap()
 {
 #ifdef HAVE_LANGINFO_H
@@ -735,16 +737,16 @@ static nkf_encoding* nkf_locale_encoding()
     if (enc < 0) enc = 0;
     return enc;
 }
-#endif
+#endif /* DEFAULT_CODE_LOCALE */
 
 static nkf_encoding* nkf_default_encoding()
 {
-#ifdef DEFAULT_ENCIDX
-    return nkf_enc_from_index(DEFAULT_ENCIDX);
-#else
+#ifdef DEFAULT_CODE_LOCALE
     nkf_encoding *enc = nkf_locale_encoding();
     if (enc <= 0) enc = nkf_enc_from_index(ISO_2022_JP);
     return enc;
+#else
+    return nkf_enc_from_index(DEFAULT_ENCIDX);
 #endif
 }
 
@@ -837,11 +839,13 @@ void show_configuration(void)
 	   );
     fprintf(HELP_OUTPUT,
 	    "    Default output encoding:     "
-#ifdef DEFAULT_ENCIDX
+#ifdef DEFAULT_CODE_LOCALE
 	    "%s\n", nkf_enc_name(nkf_default_encoding())
-#else
+#elif DEFAULT_ENCIDX
 	    "%s (%s)\n", nkf_locale_encoding() ? "LOCALE" : "DEFAULT",
 	    nkf_enc_name(nkf_default_encoding())
+#else
+            "NONE"
 #endif
 	   );
     fprintf(HELP_OUTPUT,
