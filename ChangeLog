@@ -1,3 +1,8 @@
+Sun Jan 27 19:51:15 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_inspect): avoid exception by
+	  "\#\xa1".force_encoding("euc-jp").inspect.
+
 Sun Jan 27 19:07:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_succ): warning suppressed.

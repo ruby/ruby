@@ -3311,9 +3311,11 @@ rb_str_inspect(VALUE str)
 
 	p += n;
 	if (c == '"'|| c == '\\' ||
-	    (c == '#' && p < pend &&
-                          (cc = rb_enc_codepoint(p,pend,enc),
-			  (cc == '$' || cc == '@' || cc == '{')))) {
+	    (c == '#' &&
+             p < pend &&
+             MBCLEN_CHARFOUND(rb_enc_precise_mbclen(p,pend,enc)) &&
+             (cc = rb_enc_codepoint(p,pend,enc),
+              (cc == '$' || cc == '@' || cc == '{')))) {
 	    prefix_escape(result, c, enc);
 	}
 	else if (c == '\n') {
