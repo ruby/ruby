@@ -808,3 +808,4 @@ help:
 	@echo '  test-all:      all ruby tests'
 	@echo '  install:       install all ruby distributions'
 	@echo '  install-nodoc: install without rdoc'
+	@echo '  golf:          make goruby'
