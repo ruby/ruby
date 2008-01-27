@@ -1349,10 +1349,6 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def test_str_succ
-    starts = [
-      e("\xA1\xA1"),
-      e("\xFE\xFE")
-    ]
     STRINGS.each {|s0|
       next if s0.empty?
       s = s0.dup
@@ -1360,11 +1356,16 @@ class TestM17NComb < Test::Unit::TestCase
       h = {}
       n.times {|i|
         if h[s]
-          assert(false, "#{encdump s} cycle with succ! #{i-h[s]} times")
+          assert(false, "#{encdump s} cycle with succ #{i-h[s]} times")
         end
         h[s] = i
-        assert_operator(s.length, :<=, s0.length + Math.log2(i+1) + 1, "#{encdump s0} succ! #{i} times => #{encdump s}")
-        s.succ!
+        assert_operator(s.length, :<=, s0.length + Math.log2(i+1) + 1, "#{encdump s0} succ #{i} times => #{encdump s}")
+        #puts encdump(s)
+        t = s.succ
+        if s.valid_encoding?
+          assert(t.valid_encoding?, "#{encdump s}.succ.valid_encoding?")
+        end
+        s = t
       }
     }
   end

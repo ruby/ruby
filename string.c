@@ -2000,74 +2000,143 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
     return result;
 }
 
-static int
-succ_char(char *s)
-{
-    char c = *s;
+enum neighbor_char {
+    NEIGHBOR_NOT_CHAR,
+    NEIGHBOR_FOUND,
+    NEIGHBOR_WRAPPED
+};
 
-    /* numerics */
-    if ('0' <= c && c < '9') (*s)++;
-    else if (c == '9') {
-	*s = '0';
-	return '1';
+static enum neighbor_char
+enc_succ_char(char *p, int len, rb_encoding *enc)
+{
+    int i, l;
+    while (1) {
+        for (i = len-1; 0 <= i; i--) {
+            int c;
+            c = ++((unsigned char*)p)[i];
+            if (c != 0)
+                break;
+        }
+        if (i < 0)
+            return NEIGHBOR_WRAPPED;
+        l = rb_enc_precise_mbclen(p, p+len, enc);
+        if (MBCLEN_CHARFOUND(l)) {
+            if (l == len) {
+                return NEIGHBOR_FOUND;
+            }
+            else {
+                memset(p+l, '\xff', len-l);
+            }
+        }
+        if (MBCLEN_INVALID(l) && i < len-1) {
+            int len2, l2;
+            for (len2 = len-1; 0 < len2; len2--) {
+                l2 = rb_enc_precise_mbclen(p, p+len2, enc);
+                if (!MBCLEN_INVALID(l2))
+                    break;
+            }
+            memset(p+len2+1, '\xff', len-(len2+1));
+        }
     }
-    /* small alphabets */
-    else if ('a' <= c && c < 'z') (*s)++;
-    else if (c == 'z') {
-	return *s = 'a';
+}
+
+static enum neighbor_char
+enc_pred_char(char *p, int len, rb_encoding *enc)
+{
+    int i, l;
+    while (1) {
+        for (i = len-1; 0 <= i; i--) {
+            int c;
+            c = --((unsigned char*)p)[i];
+            if (c != 0xff)
+                break;
+        }
+        if (i < 0)
+            return NEIGHBOR_WRAPPED;
+        l = rb_enc_precise_mbclen(p, p+len, enc);
+        if (MBCLEN_CHARFOUND(l)) {
+            if (l == len) {
+                return NEIGHBOR_FOUND;
+            }
+            else {
+                memset(p+l, '\0', len-l);
+            }
+        }
+        if (MBCLEN_INVALID(l) && i < len-1) {
+            int len2, l2;
+            for (len2 = len-1; 0 < len2; len2--) {
+                l2 = rb_enc_precise_mbclen(p, p+len2, enc);
+                if (!MBCLEN_INVALID(l2))
+                    break;
+            }
+            memset(p+len2+1, '\0', len-(len2+1));
+        }
     }
-    /* capital alphabets */
-    else if ('A' <= c && c < 'Z') (*s)++;
-    else if (c == 'Z') {
-	return *s = 'A';
-    }
-    return 0;
 }
 
 /*
-  overwrite +s+ by succeeding letter of +c+ in +enc+ and returns
-  carried-out letter.  assuming each ranges are successive, and mbclen
+  overwrite +p+ by succeeding letter in +enc+ and returns
+  NEIGHBOR_FOUND or NEIGHBOR_WRAPPED.
+  When NEIGHBOR_WRAPPED, carried-out letter is stored into carry.
+  assuming each ranges are successive, and mbclen
   never change in each ranges.
+  NEIGHBOR_NOT_CHAR is returned if invalid character or the range has only one
+  character.
  */
-static int
-enc_succ_char(unsigned int c, char *s, rb_encoding *enc)
+static enum neighbor_char
+enc_succ_alnum_char(char *p, int len, rb_encoding *enc, char *carry)
 {
-    unsigned int cs;
+    enum neighbor_char ret;
+    int c;
+    int ctype;
+    int range;
+    char save[ONIGENC_CODE_TO_MBC_MAXLEN];
 
-    /* numerics */
-    if (rb_enc_isdigit(c, enc)) {
-	cs = c++;
-	if (rb_enc_isdigit(c, enc)) {
-	    rb_enc_mbcput(c, s, enc);
-	    return 0;
-	}
-	do c = cs--; while (rb_enc_isdigit(cs, enc));
-	rb_enc_mbcput(c, s, enc);
-	return ++c;
+    c = rb_enc_mbc_to_codepoint(p, p+len, enc);
+    if (rb_enc_isctype(c, ONIGENC_CTYPE_DIGIT, enc))
+        ctype = ONIGENC_CTYPE_DIGIT;
+    else if (rb_enc_isctype(c, ONIGENC_CTYPE_ALPHA, enc))
+        ctype = ONIGENC_CTYPE_ALPHA;
+    else
+        return NEIGHBOR_NOT_CHAR;
+
+    MEMCPY(save, p, char, len);
+    ret = enc_succ_char(p, len, enc);
+    if (ret == NEIGHBOR_FOUND) {
+        c = rb_enc_mbc_to_codepoint(p, p+len, enc);
+        if (rb_enc_isctype(c, ctype, enc))
+            return NEIGHBOR_FOUND;
     }
-    /* small alphabets */
-    if (rb_enc_islower(c, enc)) {
-	cs = c++;
-	if (rb_enc_islower(c, enc)) {
-	    rb_enc_mbcput(c, s, enc);
-	    return 0;
-	}
-	do c = cs--; while (rb_enc_islower(cs, enc));
-	rb_enc_mbcput(c, s, enc);
-	return c;
+    MEMCPY(p, save, char, len);
+    range = 1;
+    while (1) {
+        MEMCPY(save, p, char, len);
+        ret = enc_pred_char(p, len, enc);
+        if (ret == NEIGHBOR_FOUND) {
+            c = rb_enc_mbc_to_codepoint(p, p+len, enc);
+            if (!rb_enc_isctype(c, ctype, enc)) {
+                MEMCPY(p, save, char, len);
+                break;
+            }
+        }
+        else {
+            MEMCPY(p, save, char, len);
+            break;
+        }
+        range++;
     }
-    /* capital alphabets */
-    if (rb_enc_isupper(c, enc)) {
-	cs = c++;
-	if (rb_enc_isupper(c, enc)) {
-	    rb_enc_mbcput(c, s, enc);
-	    return 0;
-	}
-	do c = cs--; while (rb_enc_isupper(cs, enc));
-	rb_enc_mbcput(c, s, enc);
-	return c;
+    if (range == 1) {
+        return NEIGHBOR_NOT_CHAR;
     }
-    return -1;
+
+    if (ctype != ONIGENC_CTYPE_DIGIT) {
+        MEMCPY(carry, p, char, len);
+        return NEIGHBOR_WRAPPED;
+    }
+
+    MEMCPY(carry, p, char, len);
+    enc_succ_char(carry, len, enc);
+    return NEIGHBOR_WRAPPED;
 }
 
 
@@ -2103,9 +2172,9 @@ rb_str_succ(VALUE orig)
     VALUE str;
     char *sbeg, *s, *e;
     int c = -1;
-    unsigned int cc = 0;
-    long n = 0, o = 0, l;
+    long l;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN];
+    int carry_pos, carry_len;
 
     str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
     rb_enc_copy(str, orig);
@@ -2117,41 +2186,45 @@ rb_str_succ(VALUE orig)
     s = e = sbeg + RSTRING_LEN(str);
 
     while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
+        enum neighbor_char neighbor;
 	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
-	cc = rb_enc_mbc_to_codepoint(s, e, enc);
-	if (rb_enc_isalnum(cc, enc)) {
-	    if (rb_enc_isascii(cc, enc)) {
-		if ((c = succ_char(s)) == 0) break;
-	    }
-	    else {
-		if ((c = enc_succ_char(cc, s, enc)) == 0) break;
-	    }
-	    n = s - sbeg;
-	}
+        neighbor = enc_succ_alnum_char(s, l, enc, carry);
+        if (neighbor == NEIGHBOR_NOT_CHAR)
+            continue;
+        if (neighbor == NEIGHBOR_FOUND)
+            return str;
+        c = 1;
+        carry_pos = s - sbeg;
+        carry_len = l;
     }
     if (c == -1) {		/* str contains no alnum */
-	c = '\001';
+        carry[0] = '\001';
+        carry_len = 1;
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
-	    int limit = 256;
-	    if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
-	    cc = rb_enc_mbc_to_codepoint(s, e, enc);
-	    while ((l = rb_enc_mbcput(++cc, carry, enc)) < 0 && --limit);
-	    if (l > 0) {
-		if (l == (o = e - s)) goto overlay;
-		n = s - sbeg;
-		goto insert;
-	    }
+            enum neighbor_char neighbor;
+            if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+            neighbor = enc_succ_char(s, l, enc);
+            if (neighbor == NEIGHBOR_FOUND)
+                return str;
+            if (rb_enc_precise_mbclen(s, s+l, enc) != l) {
+                /* wrapped to \0...\0.  search next valid char. */
+                enc_succ_char(s, l, enc);
+            }
+            c = 1;
+            carry_pos = s - sbeg;
 	}
+        if (c == -1) {
+            c = 1;
+            carry_pos = 0;
+        }
     }
-    if (!s && (l = rb_enc_mbcput(c, carry, enc)) > 0) {
-      insert:
-	RESIZE_CAPA(str, RSTRING_LEN(str) + l - o);
-	s = RSTRING_PTR(str) + n;
-	memmove(s + l, s + o, RSTRING_LEN(str) - n - o);
-      overlay:
-	memmove(s, carry, l);
-	STR_SET_LEN(str, RSTRING_LEN(str) + l - o);
+    if (!s && c == 1) {
+	RESIZE_CAPA(str, RSTRING_LEN(str) + carry_len);
+	s = RSTRING_PTR(str) + carry_pos;
+	memmove(s + carry_len, s, RSTRING_LEN(str) - carry_pos);
+	memmove(s, carry, carry_len);
+	STR_SET_LEN(str, RSTRING_LEN(str) + carry_len);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
     }
 

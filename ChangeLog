@@ -1,3 +1,7 @@
+Sun Jan 27 17:20:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_succ): don't increment/decrement codepoint.
+
 Sun Jan 27 16:03:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb (RubyLex#buf_input): use chars.to_a.
