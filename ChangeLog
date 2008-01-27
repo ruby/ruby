@@ -1,3 +1,7 @@
+Mon Jan 28 00:39:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_set_encode): check if encoding is ASCII compatible.
+
 Sun Jan 27 23:33:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): fix for left justify flag.

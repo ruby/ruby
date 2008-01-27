@@ -5746,10 +5746,16 @@ static void
 parser_set_encode(struct parser_params *parser, const char *name)
 {
     int idx = rb_enc_find_index(name);
+    rb_encoding *enc;
+
     if (idx < 0) {
 	rb_raise(rb_eArgError, "unknown encoding name: %s", name);
     }
-    parser->enc = rb_enc_from_index(idx);
+    enc = rb_enc_from_index(idx);
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "%s is not ASCII compatible", rb_enc_name(enc));
+    }
+    parser->enc = enc;
 }
 
 #ifndef RIPPER
