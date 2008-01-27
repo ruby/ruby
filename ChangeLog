@@ -1,3 +1,8 @@
+Sun Jan 27 21:48:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-mode-set-encoding): automatically insert
+	  encoding magic comment.
+
 Sun Jan 27 19:51:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_inspect): avoid exception by

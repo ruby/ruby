@@ -5,40 +5,42 @@
 ;;;  created at: Fri Feb  4 14:49:13 JST 1994
 ;;;
 
-(defconst ruby-mode-revision "$Revision$")
+(defconst ruby-mode-revision "$Revision$"
+  "Ruby mode revision string.")
 
 (defconst ruby-mode-version
   (progn
    (string-match "[0-9.]+" ruby-mode-revision)
-   (substring ruby-mode-revision (match-beginning 0) (match-end 0))))
+   (substring ruby-mode-revision (match-beginning 0) (match-end 0)))
+  "Ruby mode version number.")
 
 (defconst ruby-block-beg-re
   "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin\\|do"
-  )
+  "Regexp to match the beginning of blocks in ruby-mode.")
 
 (defconst ruby-non-block-do-re
   "\\(while\\|until\\|for\\|rescue\\)\\>[^_]"
-  )
+  "Regexp to match")
 
 (defconst ruby-indent-beg-re
   "\\(\\s *\\(class\\|module\\|def\\)\\)\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin"
-    )
+  "Regexp to match where the indentation gets deeper.")
 
 (defconst ruby-modifier-beg-re
   "if\\|unless\\|while\\|until"
-  )
+  "Regexp to match modifiers same as the beginning of blocks.")
 
 (defconst ruby-modifier-re
   (concat ruby-modifier-beg-re "\\|rescue")
-  )
+  "Regexp to match modifiers.")
 
 (defconst ruby-block-mid-re
   "then\\|else\\|elsif\\|when\\|rescue\\|ensure"
-  )
+  "Regexp to match where the indentation gets shallower in middle of block statements.")
 
 (defconst ruby-block-op-re
   "and\\|or\\|not"
-  )
+  "Regexp to match ")
 
 (defconst ruby-block-hanging-re
   (concat ruby-modifier-beg-re "\\|" ruby-block-op-re)
@@ -67,7 +69,7 @@
 (defconst ruby-negative
   (concat "^[ \t]*\\(\\(" ruby-block-mid-re "\\)\\>\\|"
 	    ruby-block-end-re "\\|}\\|\\]\\)")
-  )
+  "Regexp to match where the indentation gets shallower.")
 
 (defconst ruby-operator-chars "-,.+*/%&|^~=<>:")
 (defconst ruby-operator-re (concat "[" ruby-operator-chars "]"))
@@ -232,6 +234,22 @@ Also ignores spaces after parenthesis when 'space."
   (make-local-variable 'paragraph-ignore-fill-prefix)
   (setq paragraph-ignore-fill-prefix t))
 
+(defun ruby-mode-set-encoding ()
+  (save-excursion
+    (widen)
+    (goto-char (point-min))
+    (when (re-search-forward "[^\0-\177]" nil t)
+      (goto-char (point-min))
+      (if (looking-at "^#![^\n]*ruby") (beginning-of-line 2))
+      (unless (looking-at "\s*#\.*coding\s*[:=]")
+	(insert "# -*- coding: "
+		(let ((coding-system (coding-system-to-mime-charset (or coding-system-for-write
+									buffer-file-coding-system))))
+		  (if coding-system
+		      (symbol-name coding-system)
+		    "ascii-8bit"))
+		" -*-\n")))))
+
 ;;;###autoload
 (defun ruby-mode ()
   "Major mode for editing ruby scripts.
@@ -253,6 +271,8 @@ The variable ruby-indent-level controls the amount of indentation.
 
   (make-local-variable 'add-log-current-defun-function)
   (setq add-log-current-defun-function 'ruby-add-log-current-method)
+
+  (add-hook 'before-save-hook 'ruby-mode-set-encoding)
 
   (run-hooks 'ruby-mode-hook))
 
