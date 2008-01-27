@@ -2,7 +2,7 @@
  * 
  * nkf.h - Header file for nkf
  * 
- * $Id: nkf.h,v 1.2 2008/01/23 09:10:25 naruse Exp $
+ * $Id$
  */
 
 #ifndef NKF_H
