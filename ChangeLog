@@ -1,3 +1,8 @@
+Sun Jan 27 22:33:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): fix for octal with precision.
+	  [ruby-dev:33411]
+
 Sun Jan 27 22:31:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode-set-encoding): automatically insert

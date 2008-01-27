@@ -535,9 +535,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		      case 'B':
 			prefix = "0B"; break;
 		    }
-		    if (prefix) {
-			width -= strlen(prefix);
-		    }
 		}
 
 	      bin_retry:
@@ -687,15 +684,27 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			pp++;
 		    }
 		}
+		if (prefix && !prefix[1]) {
+		    if (dots) {
+			prefix = 0;
+		    }
+		    else if (len == 1 && *s == '0') {
+			if (flags & FPREC) len = 0;
+			prefix = 0;
+		    }
+		    else if ((flags & FPREC) && (prec > len)) {
+			prefix = 0;
+		    }
+		}
+		if (prefix) {
+		    width -= strlen(prefix);
+		}
 		if ((flags&(FZERO|FPREC)) == FZERO) {
 		    prec = width;
 		    width = 0;
 		}
 		else {
-		    if (prec < len) {
-			if ((flags & FPREC) && len == 1 && *s == '0') len = 0;
-			else prec = len;
-		    }
+		    if (prec < len) prec = len;
 		    width -= prec;
 		}
 		if (!(flags&FMINUS)) {
@@ -705,7 +714,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		}
 		if (sc) PUSH(&sc, 1);
-		if (prefix && (prefix[1] || !(dots || (len && s[0] == '0')))) {
+		if (prefix) {
 		    int plen = strlen(prefix);
 		    PUSH(prefix, plen);
 		}
