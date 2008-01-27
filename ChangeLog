@@ -1,3 +1,7 @@
+Sun Jan 27 18:18:13 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (help): show major targets.
+
 Sun Jan 27 17:54:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c: raise error when no output encoding is given.
