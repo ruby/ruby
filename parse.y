@@ -5299,7 +5299,7 @@ static int
 parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
     int len = parser_precise_mbclen();
-    if (!MBCLEN_CHARFOUND(len)) {
+    if (!MBCLEN_CHARFOUND_P(len)) {
 	compile_error(PARSER_ARG "invalid multibyte char");
 	return -1;
     }

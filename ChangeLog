@@ -1,3 +1,39 @@
+Sun Jan 27 23:20:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h: precise mbclen API redesigned to avoid
+	  inline functions.
+	  (onigenc_mbclen_charfound): removed.
+	  (onigenc_mbclen_needmore): removed.
+	  (onigenc_mbclen_recover): removed.
+	  (ONIGENC_MBCLEN_CHARFOUND): removed.
+	  (ONIGENC_MBCLEN_CHARFOUND_P): defined.
+	  (ONIGENC_MBCLEN_CHARFOUND_LEN): defined.
+	  (ONIGENC_MBCLEN_INVALID): removed.
+	  (ONIGENC_MBCLEN_INVALID_P): defined.
+	  (ONIGENC_MBCLEN_NEEDMORE): removed.
+	  (ONIGENC_MBCLEN_NEEDMORE_P): defined.
+	  (ONIGENC_MBCLEN_NEEDMORE_LEN): defined.
+	  (ONIGENC_MBC_ENC_LEN): use onigenc_mbclen_approximate.
+
+	* regenc.c (onigenc_mbclen_approximate): defined.
+
+	* include/ruby/encoding.h (MBCLEN_CHARFOUND): removed.
+	  (MBCLEN_INVALID): removed.
+	  (MBCLEN_NEEDMORE): removed.
+	  (MBCLEN_CHARFOUND_P): defined.
+	  (MBCLEN_INVALID_P): defined.
+	  (MBCLEN_NEEDMORE_P): defined.
+	  (MBCLEN_CHARFOUND_LEN): defined.
+	  (MBCLEN_NEEDMORE_LEN): defined.
+
+	* encoding.c: use new API.
+
+	* re.c: ditto.
+
+	* string.c: ditto.
+
+	* parse.y: ditto.
+
 Sun Jan 27 22:55:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (value_expr_gen): reverted r12880.  [ruby-dev:33388]

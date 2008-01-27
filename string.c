@@ -170,11 +170,10 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
         }
         while (p < e) {
             int ret = rb_enc_precise_mbclen(p, e, enc);
-            int len = MBCLEN_CHARFOUND(ret);
-            if (!len) {
+            if (!MBCLEN_CHARFOUND_P(ret)) {
                 return ENC_CODERANGE_BROKEN;
             }
-            p += len;
+            p += MBCLEN_CHARFOUND_LEN(ret);
             if (p < e) {
                 p = search_nonascii(p, e);
                 if (!p) {
@@ -190,12 +189,11 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 
     while (p < e) {
         int ret = rb_enc_precise_mbclen(p, e, enc);
-        int len = MBCLEN_CHARFOUND(ret);
 
-        if (!len) {
+        if (!MBCLEN_CHARFOUND_P(ret)) {
             return ENC_CODERANGE_BROKEN;
         }
-        p += len;
+        p += MBCLEN_CHARFOUND_LEN(ret);
     }
     if (e < p) {
         return ENC_CODERANGE_BROKEN;
@@ -2017,7 +2015,8 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
             return NEIGHBOR_WRAPPED;
         ++((unsigned char*)p)[i];
         l = rb_enc_precise_mbclen(p, p+len, enc);
-        if (MBCLEN_CHARFOUND(l)) {
+        if (MBCLEN_CHARFOUND_P(l)) {
+            l = MBCLEN_CHARFOUND_LEN(l);
             if (l == len) {
                 return NEIGHBOR_FOUND;
             }
@@ -2025,11 +2024,11 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
                 memset(p+l, 0xff, len-l);
             }
         }
-        if (MBCLEN_INVALID(l) && i < len-1) {
+        if (MBCLEN_INVALID_P(l) && i < len-1) {
             int len2, l2;
             for (len2 = len-1; 0 < len2; len2--) {
                 l2 = rb_enc_precise_mbclen(p, p+len2, enc);
-                if (!MBCLEN_INVALID(l2))
+                if (!MBCLEN_INVALID_P(l2))
                     break;
             }
             memset(p+len2+1, 0xff, len-(len2+1));
@@ -2048,7 +2047,8 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
             return NEIGHBOR_WRAPPED;
         --((unsigned char*)p)[i];
         l = rb_enc_precise_mbclen(p, p+len, enc);
-        if (MBCLEN_CHARFOUND(l)) {
+        if (MBCLEN_CHARFOUND_P(l)) {
+            l = MBCLEN_CHARFOUND_LEN(l);
             if (l == len) {
                 return NEIGHBOR_FOUND;
             }
@@ -2056,11 +2056,11 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
                 memset(p+l, 0, len-l);
             }
         }
-        if (MBCLEN_INVALID(l) && i < len-1) {
+        if (MBCLEN_INVALID_P(l) && i < len-1) {
             int len2, l2;
             for (len2 = len-1; 0 < len2; len2--) {
                 l2 = rb_enc_precise_mbclen(p, p+len2, enc);
-                if (!MBCLEN_INVALID(l2))
+                if (!MBCLEN_INVALID_P(l2))
                     break;
             }
             memset(p+len2+1, 0, len-(len2+1));
@@ -3300,11 +3300,12 @@ rb_str_inspect(VALUE str)
 	int cc;
 
         n = rb_enc_precise_mbclen(p, pend, enc);
-        if (!MBCLEN_CHARFOUND(n)) {
+        if (!MBCLEN_CHARFOUND_P(n)) {
             p++;
             n = 1;
             goto escape_codepoint;
         }
+        n = MBCLEN_CHARFOUND_LEN(n);
 
 	c = rb_enc_codepoint(p, pend, enc);
 	n = rb_enc_codelen(c, enc);
@@ -3313,7 +3314,7 @@ rb_str_inspect(VALUE str)
 	if (c == '"'|| c == '\\' ||
 	    (c == '#' &&
              p < pend &&
-             MBCLEN_CHARFOUND(rb_enc_precise_mbclen(p,pend,enc)) &&
+             MBCLEN_CHARFOUND_P(rb_enc_precise_mbclen(p,pend,enc)) &&
              (cc = rb_enc_codepoint(p,pend,enc),
               (cc == '$' || cc == '@' || cc == '{')))) {
 	    prefix_escape(result, c, enc);

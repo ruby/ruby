@@ -2289,12 +2289,13 @@ rb_io_getc(VALUE io)
 	return Qnil;
     }
     r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
-    if ((n = MBCLEN_CHARFOUND(r)) != 0 && n <= fptr->rbuf_len) {
+    if (MBCLEN_CHARFOUND_P(r) &&
+        (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf_len) {
 	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
 	fptr->rbuf_off += n;
 	fptr->rbuf_len -= n;
     }
-    else if (MBCLEN_NEEDMORE(r)) {
+    else if (MBCLEN_NEEDMORE_P(r)) {
 	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, fptr->rbuf_len);
         fptr->rbuf_len = 0;
 getc_needmore:
@@ -2303,7 +2304,7 @@ getc_needmore:
             fptr->rbuf_off++;
             fptr->rbuf_len--;
             r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), enc);
-            if (MBCLEN_NEEDMORE(r)) {
+            if (MBCLEN_NEEDMORE_P(r)) {
                 goto getc_needmore;
             }
         }

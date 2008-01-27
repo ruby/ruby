@@ -110,9 +110,11 @@ int rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc);
 
 /* -> chlen, invalid or needmore */
 int rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc);
-#define MBCLEN_CHARFOUND(ret)     ONIGENC_MBCLEN_CHARFOUND(ret)
-#define MBCLEN_INVALID(ret)       ONIGENC_MBCLEN_INVALID(ret)
-#define MBCLEN_NEEDMORE(ret)      ONIGENC_MBCLEN_NEEDMORE(ret)
+#define MBCLEN_CHARFOUND_P(ret)     ONIGENC_MBCLEN_CHARFOUND_P(ret)
+#define MBCLEN_CHARFOUND_LEN(ret)     ONIGENC_MBCLEN_CHARFOUND_LEN(ret)
+#define MBCLEN_INVALID_P(ret)       ONIGENC_MBCLEN_INVALID_P(ret)
+#define MBCLEN_NEEDMORE_P(ret)      ONIGENC_MBCLEN_NEEDMORE_P(ret)
+#define MBCLEN_NEEDMORE_LEN(ret)      ONIGENC_MBCLEN_NEEDMORE_LEN(ret)
 
 /* -> 0x00..0x7f, -1 */
 int rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc);

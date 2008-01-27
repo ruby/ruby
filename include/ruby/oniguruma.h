@@ -229,32 +229,23 @@ ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
 #define ONIGENC_STEP_BACK(enc,start,s,n) \
         onigenc_step_back((enc),(start),(s),(n))
 
-
 #define ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(n)   (n)
-#define ONIGENC_CONSTRUCT_MBCLEN_INVALID()      (-1)
-#define ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(n)    (-1-(n))
+#define ONIGENC_MBCLEN_CHARFOUND_P(r)           (0 < (r))
+#define ONIGENC_MBCLEN_CHARFOUND_LEN(r)         (r)
 
-static inline int onigenc_mbclen_charfound(int r) { return 0 < r ? r : 0; }
-static inline int onigenc_mbclen_needmore(int r) { return r < -1 ? -1 - r : 0; }
-#define ONIGENC_MBCLEN_CHARFOUND(r)     onigenc_mbclen_charfound(r)
-#define ONIGENC_MBCLEN_INVALID(r)       ((r) == -1)
-#define ONIGENC_MBCLEN_NEEDMORE(r)      onigenc_mbclen_needmore(r)
+#define ONIGENC_CONSTRUCT_MBCLEN_INVALID()      (-1)
+#define ONIGENC_MBCLEN_INVALID_P(r)             ((r) == -1)
+
+#define ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(n)    (-1-(n))
+#define ONIGENC_MBCLEN_NEEDMORE_P(r)            ((r) < -1)
+#define ONIGENC_MBCLEN_NEEDMORE_LEN(r)          (-1-(r))
 
 #define ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e)   (enc)->precise_mbc_enc_len(p,e,enc)
 
-static inline int onigenc_mbclen_recover(const OnigUChar* p,const OnigUChar* e, struct OnigEncodingTypeST* enc)
-{
-    int ret = ONIGENC_PRECISE_MBC_ENC_LEN(enc,p,e);
-    int r;
-    if (ONIGENC_MBCLEN_INVALID(ret))
-        return 1;
-    else if ((r = ONIGENC_MBCLEN_NEEDMORE(ret)))
-        return e-p+r;
-    else
-        return ONIGENC_MBCLEN_CHARFOUND(ret);
-}
+ONIG_EXTERN
+int onigenc_mbclen_approximate P_((const OnigUChar* p,const OnigUChar* e, struct OnigEncodingTypeST* enc));
 
-#define ONIGENC_MBC_ENC_LEN(enc,p,e)           onigenc_mbclen_recover(p,e,enc)
+#define ONIGENC_MBC_ENC_LEN(enc,p,e)           onigenc_mbclen_approximate(p,e,enc)
 #define ONIGENC_MBC_MAXLEN(enc)               ((enc)->max_enc_len)
 #define ONIGENC_MBC_MAXLEN_DIST(enc)           ONIGENC_MBC_MAXLEN(enc)
 #define ONIGENC_MBC_MINLEN(enc)               ((enc)->min_enc_len)

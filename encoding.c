@@ -749,9 +749,8 @@ int
 rb_enc_mbclen(const char *p, const char *e, rb_encoding *enc)
 {
     int n = ONIGENC_PRECISE_MBC_ENC_LEN(enc, (UChar*)p, (UChar*)e);
-    n = MBCLEN_CHARFOUND(n);
-    if (0 < n && n <= e-p)
-        return n;
+    if (MBCLEN_CHARFOUND_P(n) && MBCLEN_CHARFOUND_LEN(n) <= e-p)
+        return MBCLEN_CHARFOUND_LEN(n);
     else
         return 1;
 }
@@ -782,7 +781,7 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
         return c;
     }
     l = rb_enc_precise_mbclen(p, e, enc);
-    if (!MBCLEN_CHARFOUND(l))
+    if (!MBCLEN_CHARFOUND_P(l))
         return -1;
     c = rb_enc_codepoint(p, e, enc);
     if (!rb_enc_isascii(c, enc))
@@ -798,7 +797,7 @@ rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
     if (e <= p)
         rb_raise(rb_eArgError, "empty string");
     r = rb_enc_precise_mbclen(p, e, enc);
-    if (MBCLEN_CHARFOUND(r))
+    if (MBCLEN_CHARFOUND_P(r))
         return rb_enc_mbc_to_codepoint(p, e, enc);
     else
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
