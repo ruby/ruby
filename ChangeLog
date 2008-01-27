@@ -1,3 +1,7 @@
+Sun Jan 27 22:55:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (value_expr_gen): reverted r12880.  [ruby-dev:33388]
+
 Sun Jan 27 22:33:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): fix for octal with precision.

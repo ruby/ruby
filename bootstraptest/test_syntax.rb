@@ -540,8 +540,8 @@ assert_equal %q{1}, %q{
   class << (ary=[]); def []; 0; end; def []=(x); super(0,x);end;end; ary[]+=1
 }, '[ruby-dev:31110]'
 assert_syntax_error "Can't set variable $1", %q{0..$1=1}, '[ruby-dev:31118]'
-assert_syntax_error "void value expression", %q{1.times{1+(1&&next)}}, '[ruby-dev:31119]'
-assert_syntax_error "void value expression", %q{x=-1;loop{x+=1&&redo if (x+=1).zero?}}, '[ruby-dev:31119]'
+assert_valid_syntax %q{1.times{1+(1&&next)}}, '[ruby-dev:31119]'
+assert_valid_syntax %q{x=-1;loop{x+=1&&redo if (x+=1).zero?}}, '[ruby-dev:31119]'
 assert_syntax_error %q{syntax error, unexpected $end}, %q{!}, '[ruby-dev:31243]'
 assert_equal %q{[nil]}, %q{[()]}, '[ruby-dev:31252]'
 assert_equal %q{true}, %q{!_=()}, '[ruby-dev:31263]'
