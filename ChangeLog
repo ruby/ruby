@@ -1,3 +1,7 @@
+Sun Jan 27 19:07:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_succ): warning suppressed.
+
 Sun Jan 27 18:18:13 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (help): show major targets.
@@ -16,7 +20,7 @@ Sun Jan 27 16:03:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sun Jan 27 16:27:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/nkf/nkt-utf8: update nkf.
+	* ext/nkf/nkf-utf8: update nkf.
 
 Sun Jan 27 16:25:27 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 

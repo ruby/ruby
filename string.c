@@ -2011,21 +2011,18 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
 {
     int i, l;
     while (1) {
-        for (i = len-1; 0 <= i; i--) {
-            int c;
-            c = ++((unsigned char*)p)[i];
-            if (c != 0)
-                break;
-        }
+        for (i = len-1; 0 <= i && (unsigned char)p[i] == 0xff; i--)
+            p[i] = '\0';
         if (i < 0)
             return NEIGHBOR_WRAPPED;
+        ++((unsigned char*)p)[i];
         l = rb_enc_precise_mbclen(p, p+len, enc);
         if (MBCLEN_CHARFOUND(l)) {
             if (l == len) {
                 return NEIGHBOR_FOUND;
             }
             else {
-                memset(p+l, '\xff', len-l);
+                memset(p+l, 0xff, len-l);
             }
         }
         if (MBCLEN_INVALID(l) && i < len-1) {
@@ -2035,7 +2032,7 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
                 if (!MBCLEN_INVALID(l2))
                     break;
             }
-            memset(p+len2+1, '\xff', len-(len2+1));
+            memset(p+len2+1, 0xff, len-(len2+1));
         }
     }
 }
@@ -2045,21 +2042,18 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
 {
     int i, l;
     while (1) {
-        for (i = len-1; 0 <= i; i--) {
-            int c;
-            c = --((unsigned char*)p)[i];
-            if (c != 0xff)
-                break;
-        }
+        for (i = len-1; 0 <= i && (unsigned char)p[i] == 0; i--)
+            p[i] = '\xff';
         if (i < 0)
             return NEIGHBOR_WRAPPED;
+        --((unsigned char*)p)[i];
         l = rb_enc_precise_mbclen(p, p+len, enc);
         if (MBCLEN_CHARFOUND(l)) {
             if (l == len) {
                 return NEIGHBOR_FOUND;
             }
             else {
-                memset(p+l, '\0', len-l);
+                memset(p+l, 0, len-l);
             }
         }
         if (MBCLEN_INVALID(l) && i < len-1) {
@@ -2069,7 +2063,7 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
                 if (!MBCLEN_INVALID(l2))
                     break;
             }
-            memset(p+len2+1, '\0', len-(len2+1));
+            memset(p+len2+1, 0, len-(len2+1));
         }
     }
 }
@@ -2173,8 +2167,8 @@ rb_str_succ(VALUE orig)
     char *sbeg, *s, *e;
     int c = -1;
     long l;
-    char carry[ONIGENC_CODE_TO_MBC_MAXLEN];
-    int carry_pos, carry_len;
+    char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
+    int carry_pos = 0, carry_len = 1;
 
     str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
     rb_enc_copy(str, orig);
@@ -2198,8 +2192,6 @@ rb_str_succ(VALUE orig)
         carry_len = l;
     }
     if (c == -1) {		/* str contains no alnum */
-        carry[0] = '\001';
-        carry_len = 1;
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
             enum neighbor_char neighbor;
@@ -2211,23 +2203,15 @@ rb_str_succ(VALUE orig)
                 /* wrapped to \0...\0.  search next valid char. */
                 enc_succ_char(s, l, enc);
             }
-            c = 1;
             carry_pos = s - sbeg;
 	}
-        if (c == -1) {
-            c = 1;
-            carry_pos = 0;
-        }
     }
-    if (!s && c == 1) {
-	RESIZE_CAPA(str, RSTRING_LEN(str) + carry_len);
-	s = RSTRING_PTR(str) + carry_pos;
-	memmove(s + carry_len, s, RSTRING_LEN(str) - carry_pos);
-	memmove(s, carry, carry_len);
-	STR_SET_LEN(str, RSTRING_LEN(str) + carry_len);
-	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
-    }
-
+    RESIZE_CAPA(str, RSTRING_LEN(str) + carry_len);
+    s = RSTRING_PTR(str) + carry_pos;
+    memmove(s + carry_len, s, RSTRING_LEN(str) - carry_pos);
+    memmove(s, carry, carry_len);
+    STR_SET_LEN(str, RSTRING_LEN(str) + carry_len);
+    RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
     return str;
 }
 
