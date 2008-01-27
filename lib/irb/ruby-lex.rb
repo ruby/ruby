@@ -188,7 +188,7 @@ class RubyLex
     prompt
     line = @input.call
     return nil unless line
-    @rests.concat line.split(//)
+    @rests.concat line.chars.to_a
     true
   end
   private :buf_input

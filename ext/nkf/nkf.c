@@ -145,6 +145,7 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     reinit();
     StringValue(opt);
     nkf_split_options(RSTRING_PTR(opt));
+    if (!output_encoding) rb_raise(rb_eArgError, "no output encoding given");
 
     incsize = INCSIZE;
 

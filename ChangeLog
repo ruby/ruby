@@ -1,3 +1,7 @@
+Sun Jan 27 16:03:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb (RubyLex#buf_input): use chars.to_a.
+
 Sun Jan 27 16:27:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkt-utf8: update nkf.
