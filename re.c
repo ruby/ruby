@@ -311,7 +311,7 @@ rb_reg_source(VALUE re)
     VALUE str;
 
     rb_reg_check(re);
-    str = rb_str_new(RREGEXP(re)->str,RREGEXP(re)->len);
+    str = rb_enc_str_new(RREGEXP(re)->str,RREGEXP(re)->len, rb_enc_get(re));
     if (OBJ_TAINTED(re)) OBJ_TAINT(str);
     return str;
 }

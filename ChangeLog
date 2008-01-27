@@ -1,3 +1,7 @@
+Sun Jan 27 16:25:27 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_source): set encoding as regexp encoding.
+
 Sun Jan 27 05:56:39 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_preprocess): force fixed encoding when ASCII
