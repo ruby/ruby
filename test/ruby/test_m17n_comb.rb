@@ -232,13 +232,30 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
+  ASCII_INCOMPATIBLE_ENCODINGS = %w[
+    UTF-16BE
+    UTF-16LE
+    UTF-32BE
+    UTF-32LE
+  ]
   def str_enc_compatible?(*strs)
     encs = []
+    ascii_incompatible_encodings = {}
+    has_ascii_compatible = false
     strs.each {|s|
       encs << s.encoding if !s.ascii_only?
+      if /\A#{Regexp.union ASCII_INCOMPATIBLE_ENCODINGS}\z/o =~ s.encoding.name
+        ascii_incompatible_encodings[s.encoding] = true
+      else
+        has_ascii_compatible = true
+      end
     }
-    encs.uniq!
-    encs.length <= 1
+    if ascii_incompatible_encodings.empty?
+      encs.uniq!
+      encs.length <= 1
+    else
+      !has_ascii_compatible && ascii_incompatible_encodings.size == 1
+    end
   end
 
   # tests start
@@ -342,9 +359,8 @@ class TestM17NComb < Test::Unit::TestCase
   end
 
   def test_str_aref
-
     STRINGS.each {|s|
-      t = ''
+      t = ''.force_encoding(s.encoding)
       0.upto(s.length-1) {|i|
         u = s[i]
         assert(u.valid_encoding?) if s.valid_encoding?
@@ -352,13 +368,11 @@ class TestM17NComb < Test::Unit::TestCase
       }
       assert_equal(t, s)
     }
-
   end
 
   def test_str_aref_len
-
     STRINGS.each {|s|
-      t = ''
+      t = ''.force_encoding(s.encoding)
       0.upto(s.length-1) {|i|
         u = s[i,1]
         assert(u.valid_encoding?) if s.valid_encoding?
@@ -368,7 +382,7 @@ class TestM17NComb < Test::Unit::TestCase
     }
 
     STRINGS.each {|s|
-      t = ''
+      t = ''.force_encoding(s.encoding)
       0.step(s.length-1, 2) {|i|
         u = s[i,2]
         assert(u.valid_encoding?) if s.valid_encoding?
@@ -1528,14 +1542,14 @@ class TestM17NComb < Test::Unit::TestCase
         next
       end
       if s1.length < s2.length
-        assert_equal(false, s1.end_with?(s2), desc)
+        assert_equal(false, enccall(s1, :end_with?, s2), desc)
         next
       end
       if s1[s1.length-s2.length, s2.length] == s2
-        assert_equal(true, s1.end_with?(s2), desc)
+        assert_equal(true, enccall(s1, :end_with?, s2), desc)
         next
       end
-      assert_equal(false, s1.end_with?(s2), desc)
+      assert_equal(false, enccall(s1, :end_with?, s2), desc)
     }
   end
 
@@ -1547,14 +1561,14 @@ class TestM17NComb < Test::Unit::TestCase
         next
       end
       if s1.length < s2.length
-        assert_equal(false, s1.start_with?(s2), desc)
+        assert_equal(false, enccall(s1, :start_with?, s2), desc)
         next
       end
       if s1[0, s2.length] == s2
-        assert_equal(true, s1.start_with?(s2), desc)
+        assert_equal(true, enccall(s1, :start_with?, s2), desc)
         next
       end
-      assert_equal(false, s1.start_with?(s2), desc)
+      assert_equal(false, enccall(s1, :start_with?, s2), desc)
     }
   end
 
@@ -1579,7 +1593,7 @@ class TestM17NComb < Test::Unit::TestCase
         assert_raise(ArgumentError, desc) { s1.partition(s2) }
         next
       end
-      i = s1.index(s2)
+      i = enccall(s1, :index, s2)
       if !i
         assert_equal([s1, "", ""], s1.partition(s2), desc)
         next
@@ -1595,7 +1609,7 @@ class TestM17NComb < Test::Unit::TestCase
         assert_raise(ArgumentError, desc) { s1.rpartition(s2) }
         next
       end
-      i = s1.rindex(s2)
+      i = enccall(s1, :rindex, s2)
       if !i
         assert_equal(["", "", s1], s1.rpartition(s2), desc)
         next
