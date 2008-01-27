@@ -699,12 +699,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (prefix) {
 		    width -= strlen(prefix);
 		}
-		if ((flags&(FZERO|FPREC)) == FZERO) {
+		if ((flags & (FZERO|FMINUS|FPREC)) == FZERO) {
 		    prec = width;
 		    width = 0;
 		}
 		else {
-		    if (prec < len) prec = len;
+		    if (prec < len) {
+			if ((flags & FPREC) && len == 1 && *s == '0') len = 0;
+			else prec = len;
+		    }
 		    width -= prec;
 		}
 		if (!(flags&FMINUS)) {
@@ -726,7 +729,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			buf[blen++] = c;
 		    }
 		}
-		else {
+		else if ((flags & (FMINUS|FPREC)) != FMINUS) {
 		    char c;
 
 		    if (!sign && bignum && !RBIGNUM_SIGN(val))

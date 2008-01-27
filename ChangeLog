@@ -1,3 +1,10 @@
+Sun Jan 27 23:33:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): fix for left justify flag.
+
+	* sprintf.c (rb_str_format): zero-precision zero bug revised.
+	  [ruby-dev:33419]
+
 Sun Jan 27 23:20:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h: precise mbclen API redesigned to avoid
