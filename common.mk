@@ -730,7 +730,7 @@ $(srcdir)/revision.h: $(REVISION_FORCE)
 	@set LC_MESSAGES=C
 	-@$(SET_LC_MESSAGES) $(VCS) info "$(@D)" | \
 	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@.tmp"
-	$(IFCHANGE) "$@" "$@.tmp"
+	@$(IFCHANGE) "$@" "$@.tmp"
 
 $(srcdir)/ext/ripper/ripper.c:
 	cd $(srcdir)/ext/ripper && exec $(MAKE) -f depend $(MFLAGS) top_srcdir=../.. srcdir=.
