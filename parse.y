@@ -9076,7 +9076,7 @@ rb_id2str(ID id)
 	    if (op_tbl[i].token == id) {
 		VALUE str = global_symbols.op_sym[i];
 		if (!str) {
-		    str = rb_str_new2(op_tbl[i].name);
+		    str = rb_usascii_str_new2(op_tbl[i].name);
 		    OBJ_FREEZE(str);
 		    global_symbols.op_sym[i] = str;
 		}
@@ -9728,7 +9728,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     }
     else {
         StringValue(fname);
-        fname2 = rb_str_new2(" ");
+        fname2 = rb_usascii_str_new2(" ");
         rb_str_append(fname2, fname);
     }
     parser_initialize(parser);
@@ -9864,7 +9864,7 @@ Init_ripper(void)
     VALUE Ripper;
 
     Ripper = rb_define_class("Ripper", rb_cObject);
-    rb_define_const(Ripper, "Version", rb_str_new2(RIPPER_VERSION));
+    rb_define_const(Ripper, "Version", rb_usascii_str_new2(RIPPER_VERSION));
     rb_define_alloc_func(Ripper, ripper_s_allocate);
     rb_define_method(Ripper, "initialize", ripper_initialize, -1);
     rb_define_method(Ripper, "parse", ripper_parse, 0);
