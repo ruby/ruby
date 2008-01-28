@@ -726,7 +726,7 @@ PRELUDES = prelude.c miniprelude.c golf_prelude.c
 docs:
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
 
-$(srcdir)/revision.h:
+$(srcdir)/revision.h: $(REVISION_FORCE)
 	@set LC_MESSAGES=C
 	-@$(SET_LC_MESSAGES) $(VCS) info "$(@D)" | \
 	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@.tmp"
@@ -796,7 +796,7 @@ dist: $(PROGRAM)
 
 up:
 	@$(VCS) up "$(srcdir)"
-	-@$(MAKE) $(MFLAGS) "$(srcdir)/revision.h"
+	-@$(MAKE) $(MFLAGS) REVISION_FORCE=PHONY "$(srcdir)/revision.h"
 
 help:
 	@echo "                Makefile of Ruby"
