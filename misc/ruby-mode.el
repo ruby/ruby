@@ -234,21 +234,34 @@ Also ignores spaces after parenthesis when 'space."
   (make-local-variable 'paragraph-ignore-fill-prefix)
   (setq paragraph-ignore-fill-prefix t))
 
+(eval-when-compile
+  (unless (fboundp 'coding-system-to-mime-charset)
+    (defun coding-system-to-mime-charset (coding-system)
+      (coding-system-change-eol-conversion coding-system nil))))
+
 (defun ruby-mode-set-encoding ()
   (save-excursion
     (widen)
     (goto-char (point-min))
     (when (re-search-forward "[^\0-\177]" nil t)
       (goto-char (point-min))
-      (if (looking-at "^#![^\n]*ruby") (beginning-of-line 2))
-      (unless (looking-at "\s*#\.*coding\s*[:=]")
-	(insert "# -*- coding: "
-		(let ((coding-system (coding-system-to-mime-charset (or coding-system-for-write
-									buffer-file-coding-system))))
-		  (if coding-system
-		      (symbol-name coding-system)
-		    "ascii-8bit"))
-		" -*-\n")))))
+      (let ((coding-system
+	     (coding-system-to-mime-charset
+	      (or coding-system-for-write
+		  buffer-file-coding-system))))
+	(setq coding-system
+	      (if coding-system
+		  (symbol-name coding-system)
+		"ascii-8bit"))
+	(if (looking-at "^#![^\n]*ruby") (beginning-of-line 2))
+	(cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]+\\)")
+	       (unless (string= (match-string 2) coding-system)
+		 (goto-char (match-beginning 2))
+		 (delete-region (point) (match-end 2))
+		 (insert coding-system)))
+	      ((looking-at "\\s *#.*coding\\s *[:=]"))
+	      (t (insert "# -*- coding: " coding-system " -*-\n"))
+	      )))))
 
 ;;;###autoload
 (defun ruby-mode ()
