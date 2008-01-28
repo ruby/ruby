@@ -952,6 +952,16 @@ class TestM17N < Test::Unit::TestCase
     assert_not_equal(s1, s2)
   end
 
+  def test_symbol_op
+    ops = %w[
+      .. ... + - +(binary) -(binary) * / % ** +@ -@ | ^ & ! <=> > >= < <= ==
+      === != =~ !~ ~ ! [] []= << >> :: `
+    ] #`
+    ops.each do |op|
+      assert_equal(Encoding::US_ASCII, op.intern.encoding, "[ruby-dev:33449]")
+    end
+  end
+
   def test_chr
     0.upto(255) {|b|
       assert_equal([b].pack("C"), b.chr)
@@ -972,54 +982,54 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_empty_string
-    assert_equal("".encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, "".encoding)
   end
 
   def test_nil_to_s
-    assert_equal(nil.to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, nil.to_s.encoding)
   end
 
   def test_nil_inspect
-    assert_equal(nil.inspect.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, nil.inspect.encoding)
   end
 
   def test_true_to_s
-    assert_equal(true.to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, true.to_s.encoding)
   end
 
   def test_false_to_s
-    assert_equal(false.to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, false.to_s.encoding)
   end
 
   def test_fixnum_to_s
-    assert_equal(1.to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, 1.to_s.encoding)
   end
 
   def test_float_to_s
-    assert_equal(1.0.to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, 1.0.to_s.encoding)
   end
 
   def test_bignum_to_s
-    assert_equal((1<<129).to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, (1<<129).to_s.encoding)
   end
 
   def test_array_to_s
-    assert_equal([].to_s.encoding, Encoding::US_ASCII)
-    assert_equal([nil].to_s.encoding, Encoding::US_ASCII)
-    assert_equal([1].to_s.encoding, Encoding::US_ASCII)
-    assert_equal([""].to_s.encoding, Encoding::US_ASCII)
-    assert_equal(["a"].to_s.encoding, Encoding::US_ASCII)
-    assert_equal([nil,1,"","a","\x20",[]].to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, [].to_s.encoding)
+    assert_equal(Encoding::US_ASCII, [nil].to_s.encoding)
+    assert_equal(Encoding::US_ASCII, [1].to_s.encoding)
+    assert_equal(Encoding::US_ASCII, [""].to_s.encoding)
+    assert_equal(Encoding::US_ASCII, ["a"].to_s.encoding)
+    assert_equal(Encoding::US_ASCII, [nil,1,"","a","\x20",[]].to_s.encoding)
   end
 
   def test_hash_to_s
-    assert_equal({}.to_s.encoding, Encoding::US_ASCII)
-    assert_equal({1=>nil,"foo"=>""}.to_s.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, {}.to_s.encoding)
+    assert_equal(Encoding::US_ASCII, {1=>nil,"foo"=>""}.to_s.encoding)
   end
 
   def test_encoding_to_s
-    assert_equal(Encoding::US_ASCII.to_s.encoding, Encoding::US_ASCII)
-    assert_equal(Encoding::US_ASCII.inspect.encoding, Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, Encoding::US_ASCII.to_s.encoding)
+    assert_equal(Encoding::US_ASCII, Encoding::US_ASCII.inspect.encoding)
   end
 
   def test_regexp_source
