@@ -153,6 +153,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_utf8_literal
     assert_equal(Encoding::UTF_8, "\u3042".encoding, "[ruby-dev:33406] \"\\u3042\".encoding")
+    assert_raise(SyntaxError) { eval(a('\u3052\x80')) }
   end
 
   def test_string_mixed_unicode

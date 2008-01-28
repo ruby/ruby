@@ -4848,7 +4848,7 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 	if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
 	    rb_enc_associate(str, rb_usascii_encoding());
 	}
-	else if (enc0 == rb_usascii_encoding()) {
+	else if (enc0 == rb_usascii_encoding() && enc != rb_utf8_encoding()) {
 	    rb_enc_associate(str, rb_ascii8bit_encoding());
 	}
     }
