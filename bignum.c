@@ -912,7 +912,7 @@ rb_big2str0(VALUE x, int base, int trim)
 
     n2 = big2str_find_n1(x, base);
     n1 = (n2 + 1) / 2;
-    ss = rb_str_new(0, n2 + 1); /* plus one for sign */
+    ss = rb_usascii_str_new(0, n2 + 1); /* plus one for sign */
     ptr = RSTRING_PTR(ss);
     ptr[0] = RBIGNUM_SIGN(x) ? '+' : '-';
 
