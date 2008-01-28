@@ -795,8 +795,8 @@ dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb
 
 up:
-	@$(VCS) up "$(srcdir)" |\
-	sed '-e$${' -eh "-es/[^0-9]//g" "-es/^/#define RUBY_REVISION /" "-ew$(srcdir)/revision.h" -eg "-e}"
+	@$(VCS) up "$(srcdir)"
+	-@$(MAKE) "$(srcdir)/revision.h"
 
 help:
 	@echo "                Makefile of Ruby"
