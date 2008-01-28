@@ -1,3 +1,7 @@
+Mon Jan 28 15:33:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/big5.c (big5_mbc_enc_len): validation implemented.
+
 Mon Jan 28 13:02:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/euc_kr.c (euckr_mbc_enc_len): validation implemented.
