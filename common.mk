@@ -796,7 +796,7 @@ dist: $(PROGRAM)
 
 up:
 	@$(VCS) up "$(srcdir)"
-	-@$(MAKE) "$(srcdir)/revision.h"
+	-@$(MAKE) $(MFLAGS) "$(srcdir)/revision.h"
 
 help:
 	@echo "                Makefile of Ruby"
