@@ -1,3 +1,7 @@
+Mon Jan 28 17:41:19 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enc/utf_8.c: add alias CP65001.
+
 Mon Jan 28 15:33:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/big5.c (big5_mbc_enc_len): validation implemented.

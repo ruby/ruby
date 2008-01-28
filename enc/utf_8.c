@@ -442,3 +442,4 @@ OnigEncodingDefine(utf_8, UTF_8) = {
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
+ENC_ALIAS("CP65001", "UTF-8");
