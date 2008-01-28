@@ -653,7 +653,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_String
     s = String(10)
-    assert_equal(Encoding::ASCII_8BIT, s.encoding)
+    assert_equal(Encoding::US_ASCII, s.encoding)
   end
 
   def test_sprintf_c
