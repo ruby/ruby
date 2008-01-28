@@ -3653,7 +3653,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 	argbuf = rb_str_tmp_new((argc+1) * sizeof(char *));
 	args = (void *)RSTRING_PTR(argbuf);
 	for (i = 0; i < argc; ++i) {
-	    args[i] = RSTRING_PTR(argv[i]);
+	    args[i] = StringValueCStr(argv[i]);
 	}
 	args[i] = NULL;
 	exename = cmd;
@@ -3717,7 +3717,7 @@ pipe_open_v(int argc, VALUE *argv, const char *mode)
     const char *cmd;
 
     if (!RB_GC_GUARD(prog)) prog = argv[0];
-    cmd = RSTRING_PTR(prog);
+    cmd = StringValueCStr(prog);
     return pipe_open(cmd, argc, argv, mode);
 }
 
@@ -3802,7 +3802,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 	mode = rb_io_modenum_mode(FIX2INT(pmode));
     }
     else {
-	mode = StringValuePtr(pmode);
+	mode = StringValueCStr(pmode);
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
@@ -3848,7 +3848,7 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 	}
 	else {
 	    SafeStringValue(vmode);
-	    flags = rb_io_mode_modenum(RSTRING_PTR(vmode));
+	    flags = rb_io_mode_modenum(StringValueCStr(vmode));
 	}
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
@@ -3856,7 +3856,7 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
     }
     else {
 
-	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
+	mode = NIL_P(vmode) ? "r" : StringValueCStr(vmode);
 	rb_file_open_internal(io, RSTRING_PTR(fname), mode);
     }
     return io;
@@ -3912,7 +3912,7 @@ rb_io_s_sysopen(int argc, VALUE *argv)
     else if (FIXNUM_P(vmode)) flags = FIX2INT(vmode);
     else {
 	SafeStringValue(vmode);
-	flags = rb_io_mode_modenum(RSTRING_PTR(vmode));
+	flags = rb_io_mode_modenum(StringValueCStr(vmode));
     }
     if (NIL_P(perm)) fmode = 0666;
     else             fmode = NUM2INT(perm);
@@ -4207,7 +4207,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     }
 
     if (!NIL_P(nmode)) {
-	int flags = rb_io_mode_flags(StringValuePtr(nmode));
+	int flags = rb_io_mode_flags(StringValueCStr(nmode));
 	if (IS_PREP_STDIO(fptr) &&
             ((fptr->mode & FMODE_READWRITE) & (flags & FMODE_READWRITE)) !=
             (fptr->mode & FMODE_READWRITE)) {
@@ -4225,7 +4225,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	fptr->path = 0;
     }
 
-    fptr->path = strdup(RSTRING_PTR(fname));
+    fptr->path = strdup(StringValueCStr(fname));
     mode = rb_io_flags_mode(fptr->mode);
     if (fptr->fd < 0) {
         fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(mode), 0666);
@@ -4238,13 +4238,13 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     }
 
     if (fptr->stdio_file) {
-        if (freopen(RSTRING_PTR(fname), mode, fptr->stdio_file) == 0) {
+        if (freopen(fptr->path, mode, fptr->stdio_file) == 0) {
             rb_sys_fail(fptr->path);
         }
         fptr->fd = fileno(fptr->stdio_file);
 #ifdef USE_SETVBUF
         if (setvbuf(fptr->stdio_file, NULL, _IOFBF, 0) != 0)
-            rb_warn("setvbuf() can't be honoured for %s", RSTRING_PTR(fname));
+            rb_warn("setvbuf() can't be honoured for %s", fptr->path);
 #endif
     }
     else {
@@ -4741,7 +4741,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	}
 	else {
 	    SafeStringValue(mode);
-	    flags = rb_io_mode_modenum(RSTRING_PTR(mode));
+	    flags = rb_io_mode_modenum(StringValueCStr(mode));
 	}
     }
     orig = rb_io_check_io(fnum);
@@ -4765,7 +4765,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	GetOpenFile(orig, ofp);
 	if (ofp->refcnt == LONG_MAX) {
 	    VALUE s = rb_inspect(orig);
-	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValuePtr(s));
+	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValueCStr(s));
 	}
 	if (argc == 2) {
 	    fmode = rb_io_modenum_flags(flags);
@@ -4927,7 +4927,7 @@ next_argv(void)
       retry:
 	if (RARRAY_LEN(rb_argv) > 0) {
 	    filename = rb_ary_shift(rb_argv);
-	    fn = StringValuePtr(filename);
+	    fn = StringValueCStr(filename);
 	    if (strlen(fn) == 1 && fn[0] == '-') {
 		current_file = rb_stdin;
 		if (ruby_inplace_mode) {
@@ -5601,7 +5601,7 @@ rb_f_syscall(int argc, VALUE *argv)
 	if (!NIL_P(v)) {
 	    StringValue(v);
 	    rb_str_modify(v);
-	    arg[i] = (unsigned long)RSTRING_PTR(v);
+	    arg[i] = (unsigned long)StringValueCStr(v);
 	}
 	else {
 	    arg[i] = (unsigned long)NUM2LONG(*argv);
@@ -6440,7 +6440,7 @@ opt_i_set(VALUE val)
     StringValue(val);
     if (ruby_inplace_mode) free(ruby_inplace_mode);
     ruby_inplace_mode = 0;
-    ruby_inplace_mode = strdup(RSTRING_PTR(val));
+    ruby_inplace_mode = strdup(StringValueCStr(val));
 }
 
 /*
