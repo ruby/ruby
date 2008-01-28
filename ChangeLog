@@ -1,3 +1,14 @@
+Mon Jan 28 19:37:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (ole_cp2encoding): new function.
+
+	* ext/win32ole/win32ole.c (ole_wc2vstr, ole_variant2val, fole_missing):
+	  set encoding to result.
+
+	* ext/win32ole/win32ole.c (fole_s_set_code_page, Init_win32ole): set
+	  default encoding.
+	  [ruby-dev:33433]
+
 Mon Jan 28 11:17:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c, parse.y, re.c: use rb_ascii8bit_encoding.

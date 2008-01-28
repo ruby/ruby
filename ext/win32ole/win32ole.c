@@ -17,6 +17,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/st.h"
+#include "ruby/encoding.h"
 #include <ctype.h>
 #include <windows.h>
 #include <ocidl.h>
@@ -195,7 +196,8 @@ static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
 static IDispatchVtbl com_vtbl;
 static UINT cWIN32OLE_cp = CP_ACP;
-static LCID cWIN32OLE_lcid = LOCALE_SYSTEM_DEFAULT; 
+static LCID cWIN32OLE_lcid = LOCALE_SYSTEM_DEFAULT;
+static rb_encoding *cWIN32OLE_enc;
 static UINT g_cp_to_check = CP_ACP;
 static char g_lcid_to_check[8 + 1];
 static VARTYPE g_nil_to = VT_ERROR;
@@ -766,6 +768,67 @@ date2time_str(double date)
     return rb_str_new2(szTime);
 }
 
+struct myCPINFOEX {
+  UINT MaxCharSize;
+  BYTE DefaultChar[2];
+  BYTE LeadByte[12];
+  WCHAR UnicodeDefaultChar;
+  UINT CodePage;
+  char CodePageName[MAX_PATH];
+};
+
+static rb_encoding *
+ole_cp2encoding(UINT cp)
+{
+    static BOOL (*pGetCPInfoEx)(UINT, DWORD, struct myCPINFOEX *) = NULL;
+    struct myCPINFOEX* buf;
+    VALUE enc_name;
+    char *enc_cstr;
+    int idx;
+
+    if (!code_page_installed(cp)) {
+	switch(cp) {
+	  case CP_ACP:
+	    cp = GetACP();
+	    break;
+	  case CP_OEMCP:
+	    cp = GetOEMCP();
+	    break;
+	  case CP_MACCP:
+	  case CP_THREAD_ACP:
+	    if (!pGetCPInfoEx) {
+		pGetCPInfoEx = (BOOL (*)(UINT, DWORD, LPVOID))
+		    GetProcAddress(GetModuleHandle("kernel32"), "GetCPInfoEx");
+		if (!pGetCPInfoEx) {
+		    pGetCPInfoEx = (void*)-1;
+		}
+	    }
+	    buf = ALLOCA_N(struct myCPINFOEX, 1);
+	    ZeroMemory(buf, sizeof(struct myCPINFOEX));
+	    if (pGetCPInfoEx == (void*)-1 || !pGetCPInfoEx(cp, 0, buf)) {
+		rb_raise(eWIN32OLERuntimeError, "cannot map codepage to encoding.");
+		break;	/* never reach here */
+	    }
+	    cp = buf->CodePage;
+	    break;
+	  case CP_SYMBOL:
+	  case CP_UTF7:
+	  case CP_UTF8:
+	    // nothing ToDo
+	    break;
+	  default:
+            rb_raise(eWIN32OLERuntimeError, "codepage should be WIN32OLE::CP_ACP, WIN32OLE::CP_OEMCP, WIN32OLE::CP_MACCP, WIN32OLE::CP_THREAD_ACP, WIN32OLE::CP_SYMBOL, WIN32OLE::CP_UTF7, WIN32OLE::CP_UTF8, or installed codepage.");
+            break;
+        }
+    }
+
+    enc_name = rb_sprintf("CP%d", cp);
+    idx = rb_enc_find_index(enc_cstr = StringValueCStr(enc_name));
+    if (idx < 0)
+	idx = rb_define_dummy_encoding(enc_cstr);
+    return rb_enc_from_index(idx);
+}
+
 static char *
 ole_wc2mb(LPWSTR pw)
 {
@@ -967,7 +1030,7 @@ static VALUE
 ole_wc2vstr(LPWSTR pw, BOOL isfree)
 {
     char *p = ole_wc2mb(pw);
-    VALUE vstr = rb_str_new2(p);
+    VALUE vstr = rb_enc_str_new(p, strlen(p), cWIN32OLE_enc);
     if(isfree)
         SysFreeString(pw);
     free(p);
@@ -1809,13 +1872,10 @@ ole_variant2val(VARIANT *pvar)
 
     case VT_BSTR:
     {
-        char *p;
         if(V_ISBYREF(pvar))
-            p = ole_wc2mb(*V_BSTRREF(pvar));
+            obj = ole_wc2vstr(*V_BSTRREF(pvar), FALSE);
         else
-            p = ole_wc2mb(V_BSTR(pvar));
-        obj = rb_str_new2(p);
-        if(p) free(p);
+            obj = ole_wc2vstr(V_BSTR(pvar), FALSE);
         break;
     }
 
@@ -1892,9 +1952,7 @@ ole_variant2val(VARIANT *pvar)
         hr = VariantChangeTypeEx(&variant, pvar, 
                                   cWIN32OLE_lcid, 0, VT_BSTR);
         if (SUCCEEDED(hr) && V_VT(&variant) == VT_BSTR) {
-            char *p = ole_wc2mb(V_BSTR(&variant));
-            obj = rb_str_new2(p);
-            if(p) free(p);
+            obj = ole_wc2vstr(V_BSTR(&variant), FALSE);
         }
         VariantClear(&variant);
         break;
@@ -2630,6 +2688,7 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
             break;
         }
     }
+    cWIN32OLE_enc = ole_cp2encoding(cWIN32OLE_cp);
     /*
      * Should this method return old codepage?
      */
@@ -3613,12 +3672,12 @@ fole_missing(int argc, VALUE *argv, VALUE self)
     }
     n = strlen(mname);
     if(mname[n-1] == '=') {
-        argv[0] = rb_str_new(mname, n-1);
+        argv[0] = rb_enc_str_new(mname, n-1, cWIN32OLE_enc);
 
         return ole_propertyput(self, argv[0], argv[1]);
     }
     else {
-        argv[0] = rb_str_new2(mname);
+        argv[0] = rb_enc_str_new(mname, n, cWIN32OLE_enc);
         return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
     }
 }
@@ -8167,4 +8226,5 @@ Init_win32ole()
 
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
+    cWIN32OLE_enc = ole_cp2encoding(cWIN32OLE_cp);
 }
