@@ -1,3 +1,13 @@
+Tue Jan 29 03:01:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (reg_fragment_setenc_gen): US-ASCII script special code.
+
+	* parse.y (reg_fragment_check_len, reg_compile_gen): no need such
+	  trick.
+	  [ruby-dev:33399]
+
+	* test/ruby/test_m17n.rb (test_regexp_usacii_literal): add tests.
+
 Tue Jan 29 01:38:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* common.mk ($(srcdir)/revision.h): no need to show ifchange execution

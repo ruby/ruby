@@ -78,6 +78,15 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_encoding(r)
   end
 
+  def assert_regexp_usascii_literal(r, enc, ex = nil)
+    code = "# -*- encoding: US-ASCII -*-\n#{r}.encoding"
+    if ex
+      assert_raise(ex) { eval(code) }
+    else
+      assert_equal(enc, eval(code))
+    end
+  end
+
   def encdump(str)
     d = str.dump
     if /\.force_encoding\("[A-Za-z0-9.:_+-]*"\)\z/ =~ d
@@ -1044,5 +1053,33 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, eval("__ENCODING__".force_encoding("ASCII-8BIT")))
     assert_equal(Encoding::US_ASCII, eval("# -*- encoding: US-ASCII -*-\n__ENCODING__".force_encoding("ASCII-8BIT")))
     assert_equal(Encoding::ASCII_8BIT, eval("# -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
+  end
+
+  def test_regexp_usascii
+    assert_regexp_usascii_literal('//', Encoding::US_ASCII)
+    assert_regexp_usascii_literal('/#{}/', Encoding::US_ASCII)
+    assert_regexp_usascii_literal('/#{"a"}/', Encoding::US_ASCII)
+    assert_regexp_usascii_literal('/#{%q"\x80"}/', Encoding::ASCII_8BIT)
+    assert_regexp_usascii_literal('/#{"\x80"}/', nil, SyntaxError)
+
+    assert_regexp_usascii_literal('/a/', Encoding::US_ASCII)
+    assert_regexp_usascii_literal('/a#{}/', Encoding::US_ASCII)
+    assert_regexp_usascii_literal('/a#{"a"}/', Encoding::US_ASCII)
+    assert_regexp_usascii_literal('/a#{%q"\x80"}/', Encoding::ASCII_8BIT)
+    assert_regexp_usascii_literal('/a#{"\x80"}/', nil, SyntaxError)
+
+    assert_regexp_usascii_literal('/\x80/', Encoding::ASCII_8BIT)
+    assert_regexp_usascii_literal('/\x80#{}/', Encoding::ASCII_8BIT)
+    assert_regexp_usascii_literal('/\x80#{"a"}/', Encoding::ASCII_8BIT)
+    assert_regexp_usascii_literal('/\x80#{%q"\x80"}/', Encoding::ASCII_8BIT)
+    assert_regexp_usascii_literal('/\x80#{"\x80"}/', nil, SyntaxError)
+
+    assert_regexp_usascii_literal('/\u1234/', Encoding::UTF_8)
+    assert_regexp_usascii_literal('/\u1234#{}/', Encoding::UTF_8)
+    assert_regexp_usascii_literal('/\u1234#{"a"}/', Encoding::UTF_8)
+    assert_regexp_usascii_literal('/\u1234#{%q"\x80"}/', nil, SyntaxError)
+    assert_regexp_usascii_literal('/\u1234#{"\x80"}/', nil, SyntaxError)
+    assert_regexp_usascii_literal('/\u1234\x80/', nil, SyntaxError)
+    assert_regexp_usascii_literal('/\u1234#{}\x80/', nil, RegexpError)
   end
 end

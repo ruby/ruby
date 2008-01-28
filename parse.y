@@ -8501,6 +8501,15 @@ reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
         }
 	rb_enc_associate(str, rb_ascii8bit_encoding());
     }
+    else if (parser->enc == rb_usascii_encoding()) {
+	if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+	    /* raise in re.c */
+	    rb_enc_associate(str, rb_usascii_encoding());
+	}
+	else {
+	    rb_enc_associate(str, rb_ascii8bit_encoding());
+	}
+    }
     return;
 
 error:
@@ -8513,10 +8522,6 @@ static void
 reg_fragment_check_gen(struct parser_params* parser, VALUE str, int options)
 {
     VALUE err;
-    if (!RE_OPTION_ENCODING_IDX(options) &&
-	parser->enc == rb_usascii_encoding()) {
-	options |= RE_OPTION_ARG_ENCODING_NONE;
-    }
     reg_fragment_setenc_gen(parser, str, options);
     err = rb_reg_check_preprocess(str);
     if (err != Qnil) {
@@ -8610,10 +8615,6 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 {
     VALUE re;
 
-    if (!RE_OPTION_ENCODING_IDX(options) &&
-	parser->enc == rb_usascii_encoding()) {
-	options |= RE_OPTION_ARG_ENCODING_NONE;
-    }
     reg_fragment_setenc(str, options);
     re = rb_reg_compile(str, options & RE_OPTION_MASK);
     if (NIL_P(re)) {
