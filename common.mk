@@ -799,14 +799,14 @@ up:
 	sed '-e$${' -eh "-es/[^0-9]//g" "-es/^/#define RUBY_REVISION /" "-ew$(srcdir)/revision.h" -eg "-e}"
 
 help:
-	@echo '                Makefile of Ruby'
-	@echo
-	@echo 'targets:'
-	@echo '  all:           compile ruby and extensions'
-	@echo '  check:         equals make test test-all'
-	@echo '  test:          ruby core tests'
-	@echo '  test-all:      all ruby tests'
-	@echo '  install:       install all ruby distributions'
-	@echo '  install-nodoc: install without rdoc'
-	@echo '  clean:         clean built objects'
-	@echo '  golf:          for golfers'
+	@echo "                Makefile of Ruby"
+	@echo ""
+	@echo "targets:"
+	@echo "  all:           compile ruby and extensions"
+	@echo "  check:         equals make test test-all"
+	@echo "  test:          ruby core tests"
+	@echo "  test-all:      all ruby tests"
+	@echo "  install:       install all ruby distributions"
+	@echo "  install-nodoc: install without rdoc"
+	@echo "  clean:         clean built objects"
+	@echo "  golf:          for golfers"
