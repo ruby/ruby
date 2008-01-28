@@ -1027,4 +1027,11 @@ class TestM17N < Test::Unit::TestCase
     t = r.source
     assert_equal(s, t, "[ruby-dev:33377] Regexp.new(#{encdump s}).source")
   end
+
+  def test_magic_comment
+    assert_equal(Encoding::US_ASCII, eval("__ENCODING__".force_encoding("US-ASCII")))
+    assert_equal(Encoding::ASCII_8BIT, eval("__ENCODING__".force_encoding("ASCII-8BIT")))
+    assert_equal(Encoding::US_ASCII, eval("# -*- encoding: US-ASCII -*-\n__ENCODING__".force_encoding("ASCII-8BIT")))
+    assert_equal(Encoding::ASCII_8BIT, eval("# -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
+  end
 end
