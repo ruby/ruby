@@ -1,3 +1,7 @@
+Mon Jan 28 11:17:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c, parse.y, re.c: use rb_ascii8bit_encoding.
+
 Mon Jan 28 17:54:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/utf_7.h: add dummy encoding UTF-7 and its alias CP65000.

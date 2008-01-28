@@ -2466,7 +2466,7 @@ rb_reg_initialize_m(int argc, VALUE *argv, VALUE self)
 	if (argc == 3 && !NIL_P(argv[2])) {
 	    char *kcode = StringValuePtr(argv[2]);
 	    if (kcode[0] == 'n' || kcode[1] == 'N') {
-		enc = rb_enc_from_index(0);
+		enc = rb_ascii8bit_encoding();
 		flags |= ARG_ENCODING_FIXED;
 	    }
 	    else {
@@ -2514,7 +2514,7 @@ rb_reg_quote(VALUE str)
     }
     if (ascii_only && rb_enc_get_index(str) != 0) {
         str = rb_str_new3(str);
-        rb_enc_associate(str, rb_enc_from_index(0));
+        rb_enc_associate(str, rb_ascii8bit_encoding());
     }
     return str;
 
@@ -2746,7 +2746,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
             result_enc = has_ascii_compat_fixed;
         }
         else {
-            result_enc = rb_enc_from_index(0);
+            result_enc = rb_ascii8bit_encoding();
         }
 
         rb_enc_associate(source, result_enc);

@@ -271,7 +271,7 @@ struct parser_params {
 #define STR_NEW0() rb_enc_str_new(0,0,rb_usascii_encoding())
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),parser->enc)
-#define STR_ENC(m) ((m)?parser->enc:rb_enc_from_index(0))
+#define STR_ENC(m) ((m)?parser->enc:rb_ascii8bit_encoding())
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
 
@@ -8842,7 +8842,7 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 int
 rb_symname_p(const char *name)
 {
-    return rb_enc_symname_p(name, rb_enc_from_index(0));
+    return rb_enc_symname_p(name, rb_ascii8bit_encoding());
 }
 
 int
@@ -8953,7 +8953,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
       case '$':
 	id |= ID_GLOBAL;
 	if ((mb = is_special_global_name(++m, e, enc)) != 0) {
-	    if (!--mb) enc = rb_enc_from_index(0);
+	    if (!--mb) enc = rb_ascii8bit_encoding();
 	    goto new_id;
 	}
 	break;
@@ -9039,7 +9039,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 ID
 rb_intern2(const char *name, long len)
 {
-    return rb_intern3(name, len, rb_enc_from_index(0));
+    return rb_intern3(name, len, rb_ascii8bit_encoding());
 }
 
 #undef rb_intern

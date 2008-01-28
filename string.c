@@ -3477,7 +3477,7 @@ rb_str_dump(VALUE str)
     *q++ = '"';
     if (!rb_enc_asciicompat(enc0)) {
 	sprintf(q, ".force_encoding(\"%s\")", enc0->name);
-	enc0 = rb_enc_from_index(0);
+	enc0 = rb_ascii8bit_encoding();
     }
 
     OBJ_INFECT(result, str);
