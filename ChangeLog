@@ -1,3 +1,7 @@
+Tue Jan 29 22:27:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* range.c: fix SEGV by ("a" .. "z").step(2 ** 30) { }.
+
 Tue Jan 29 21:59:16 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/euc_tw.c (euctw_islead): 0x8e is a leading byte.
