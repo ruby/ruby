@@ -1,3 +1,7 @@
+Wed Jan 30 00:09:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/euc_tw.c (euctw_mbc_enc_len): validation implemented.
+
 Tue Jan 29 22:58:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_enumerator.rb: add tests to achieve over 90% test
