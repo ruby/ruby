@@ -201,7 +201,7 @@ ASMEXT        = asm
 INSTALLED_LIST= .installed.list
 
 WINMAINOBJ    = winmain.$(OBJEXT)
-MINIOBJS      = dmydln.$(OBJEXT) dmyencoding.$(OBJEXT) miniprelude.$(OBJEXT)
+MINIOBJS      = dmydln.$(OBJEXT) dmyencoding.$(OBJEXT) dmytranscode.$(OBJEXT) miniprelude.$(OBJEXT)
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 hdrdir = $(srcdir)/include

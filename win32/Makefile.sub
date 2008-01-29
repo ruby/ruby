@@ -250,7 +250,7 @@ INSTALLED_LIST= .installed.list
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
-MINIOBJS      = dmydln.$(OBJEXT) dmyencoding.$(OBJEXT) miniprelude.$(OBJEXT)
+MINIOBJS      = dmydln.$(OBJEXT) dmyencoding.$(OBJEXT) dmytranscode.$(OBJEXT) miniprelude.$(OBJEXT)
 LIBOBJS       = acosh.obj crypt.obj erf.obj strlcpy.obj strlcat.obj win32.obj $(LIBOBJS)
 
 !ifndef COMMON_LIBS

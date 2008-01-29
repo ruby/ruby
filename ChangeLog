@@ -1,3 +1,7 @@
+Tue Jan 29 20:17:06 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32}/Makefile.sub (MINIOBJS): add dmytranscode.$(OBJEXT).
+
 Tue Jan 29 19:39:40 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in, common.mk: fix rule for dmytranscode.o.
