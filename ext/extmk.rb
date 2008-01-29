@@ -550,6 +550,7 @@ if $nmake == ?b
   end
 end
 $mflags.unshift("topdir=#$topdir")
+ENV["RUBYOPT"] = ''
 system($make, *sysquote($mflags)) or exit($?.exitstatus)
 
 #Local variables:
