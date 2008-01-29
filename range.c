@@ -264,8 +264,7 @@ step_i(i, arg)
 	iter[0] -= INT2FIX(1) & ~FIXNUM_FLAG;
     }
     else {
-	VALUE one = INT2FIX(1);
-	iter[0] = rb_funcall(iter[0], '-', 1, &one);
+	iter[0] = rb_funcall(iter[0], '-', 1, INT2FIX(1));
     }
     if (iter[0] == INT2FIX(0)) {
 	rb_yield(i);
