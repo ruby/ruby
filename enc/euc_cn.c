@@ -9,3 +9,4 @@ Init_euc_cn(void)
 }
 
 ENC_ALIAS("eucCN", "EUC-CN");
+ENC_ALIAS("GB2312", "EUC-CN");
