@@ -1,3 +1,7 @@
+Tue Jan 29 17:54:11 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/gbk.c (EncLen_gbk): too short. [ruby-dev:33497]
+
 Tue Jan 29 17:25:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dmyencoding.c, encoding.c (enc_init_db, NO_ENCDB_H):
