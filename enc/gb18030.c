@@ -62,7 +62,7 @@ static const char GB18030_MAP[] = {
   CM, CM, CM, CM, CM, CM, CM, CM, CM, CM, CM, CM, CM, CM, CM, C1
 };
 
-typedef enum { FAILURE = -2, ACCEPT = -1, S0 = 0, S1 } state_t;
+typedef enum { FAILURE = -2, ACCEPT = -1, S0 = 0, S1, S2, S3 } state_t;
 #define A ACCEPT
 #define F FAILURE
 static const signed char trans[][0x100] = {
