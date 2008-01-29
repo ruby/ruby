@@ -1853,7 +1853,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 
 
 static int
-compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
+compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int *cntp)
 {
     NODE *list = node->nd_next;
     VALUE lit = node->nd_lit;
@@ -1867,8 +1867,26 @@ compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
 	cnt++;
 	list = list->nd_next;
     }
+    *cntp = cnt;
 
+    return COMPILE_OK;
+}
+
+static int
+compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
+{
+    int cnt;
+    compile_dstr_fragments(iseq, ret, node, &cnt);
     ADD_INSN1(ret, nd_line(node), concatstrings, INT2FIX(cnt));
+    return COMPILE_OK;
+}
+
+static int
+compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node)
+{
+    int cnt;
+    compile_dstr_fragments(iseq, ret, node, &cnt);
+    ADD_INSN2(ret, nd_line(node), toregexp, INT2FIX(node->nd_cflag), INT2FIX(cnt));
     return COMPILE_OK;
 }
 
@@ -4111,8 +4129,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_DREGX:{
-	compile_dstr(iseq, ret, node);
-	ADD_INSN1(ret, nd_line(node), toregexp, INT2FIX(node->nd_cflag));
+	compile_dregx(iseq, ret, node);
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -4128,8 +4145,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_INSN2(ret, nd_line(node), onceinlinecache, 0, lend);
 	ADD_INSN(ret, nd_line(node), pop);
 
-	compile_dstr(iseq, ret, node);
-	ADD_INSN1(ret, nd_line(node), toregexp, INT2FIX(node->nd_cflag));
+	compile_dregx(iseq, ret, node);
 
 	ADD_INSN1(ret, nd_line(node), setinlinecache, lstart);
 	ADD_LABEL(ret, lend);

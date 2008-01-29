@@ -397,12 +397,19 @@ tostring
  */
 DEFINE_INSN
 toregexp
-(rb_num_t opt)
-(VALUE str)
-(VALUE val)
+(rb_num_t opt, rb_num_t cnt)
+(...)
+(VALUE val) // inc += 1 - cnt;
 {
-    volatile VALUE tmp = str; /* for GC */
-    val = rb_reg_new_str(str, opt);
+    VALUE rb_reg_new_ary(VALUE ary, int options);
+    int i;
+    VALUE ary = rb_ary_new2(cnt);
+    RBASIC(ary)->klass = 0;
+    for (i = 0; i < cnt; i++) {
+        rb_ary_store(ary, cnt-i-1, TOPN(i));
+    }
+    POPN(cnt);
+    val = rb_reg_new_ary(ary, opt);
 }
 
 /**

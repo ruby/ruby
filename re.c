@@ -1949,36 +1949,53 @@ rb_reg_check_preprocess(VALUE str)
     return Qnil;
 }
 
-#if 0
 static VALUE
-rb_reg_preprocess_obj(VALUE str,
-        rb_encoding **fixed_enc, onig_errmsg_buffer err)
-{
-    VALUE buf;
-    char *p, *end;
-    rb_encoding *enc;
-
-    StringValue(str);
-    p = RSTRING_PTR(str);
-    end = p + RSTRING_LEN(str);
-    enc = rb_enc_get(str);
-
-    buf = rb_reg_preprocess(p, end, enc, fixed_enc, err);
-    RB_GC_GUARD(str);
-    return buf;
-}
-
-static VALUE
-rb_reg_preprocess_m(VALUE klass, VALUE obj)
+rb_reg_preprocess_dregexp(VALUE ary)
 {
     rb_encoding *fixed_enc = 0;
     onig_errmsg_buffer err = "";
-    VALUE str = rb_reg_preprocess_obj(obj, &fixed_enc, err);
-    if (str == Qnil)
-        rb_raise(rb_eArgError, "%s", err);
-    return rb_assoc_new(str, fixed_enc ? Qtrue : Qfalse);
+    int i;
+    VALUE result = 0;
+    int argc = RARRAY_LEN(ary);
+    VALUE *argv = RARRAY_PTR(ary);
+
+    if (argc == 0) {
+        rb_raise(rb_eArgError, "no arguments given");
+    }
+
+    for (i = 0; i < argc; i++) {
+        VALUE str = argv[i];
+        VALUE buf;
+        char *p, *end;
+        rb_encoding *enc;
+
+        StringValue(str);
+        p = RSTRING_PTR(str);
+        end = p + RSTRING_LEN(str);
+        enc = rb_enc_get(str);
+
+        buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err);
+        RB_GC_GUARD(str);
+
+        if (buf == Qnil)
+            rb_raise(rb_eArgError, "%s", err);
+
+        if (i == 0) {
+            /* The encoding of the first fragment is the encoding 
+             * given by the regexp option or script encoding. */
+            if (fixed_enc == 0) {
+                rb_enc_copy(buf, str);
+            }
+        }
+
+        if (!result)
+            result = buf;
+        else
+            rb_str_buf_append(result, buf);
+    }
+
+    return result;
 }
-#endif
 
 static int
 rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
@@ -2082,6 +2099,12 @@ rb_reg_new_str(VALUE s, int options)
     }
 
     return re;
+}
+
+VALUE
+rb_reg_new_ary(VALUE ary, int opt)
+{
+    return rb_reg_new_str(rb_reg_preprocess_dregexp(ary), opt);
 }
 
 VALUE
@@ -3041,10 +3064,6 @@ Init_Regexp(void)
     rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union_m, -2);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
     rb_define_singleton_method(rb_cRegexp, "try_convert", rb_reg_s_try_convert, 1);
-
-#if 0
-    rb_define_singleton_method(rb_cRegexp, "preprocess", rb_reg_preprocess_m, 1);
-#endif
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
     rb_define_method(rb_cRegexp, "initialize_copy", rb_reg_init_copy, 1);

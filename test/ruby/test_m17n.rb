@@ -442,14 +442,14 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { eval(s("/\#{r}\xc2\xa1/s")) }
 
     r = /\xc2\xa1/e
-    #assert_raise(ArgumentError) { eval(s("/\xc2\xa1\#{r}/s")) }
-    #assert_raise(ArgumentError) { eval(s("/\#{r}\xc2\xa1/s")) }
+    assert_raise(ArgumentError) { eval(s("/\xc2\xa1\#{r}/s")) }
+    assert_raise(ArgumentError) { eval(s("/\#{r}\xc2\xa1/s")) }
 
     r = eval(e("/\xc2\xa1/"))
-    #assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
+    assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
 
     r = /\xc2\xa1/e
-    #assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
+    assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
   end
 
   def test_begin_end_offset
@@ -574,7 +574,7 @@ class TestM17N < Test::Unit::TestCase
     }
     assert_regexp_fixed_ascii8bit(/#{}\xc2\xa1/n)
     assert_regexp_fixed_ascii8bit(/\xc2\xa1#{}/n)
-    #assert_raise(SyntaxError) { s1, s2 = s('\xc2'), s('\xa1'); /#{s1}#{s2}/ }
+    assert_nothing_raised { s1, s2 = a('\xc2'), a('\xa1'); /#{s1}#{s2}/ }
   end
 
   def test_dynamic_eucjp_regexp
@@ -584,7 +584,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval('/\xc2#{}/e') }
     assert_raise(SyntaxError) { eval('/#{}\xc2/e') }
     assert_raise(SyntaxError) { eval('/\xc2#{}\xa1/e') }
-    #assert_raise(SyntaxError) { s1, s2 = e('\xc2'), e('\xa1'); /#{s1}#{s2}/ }
+    assert_raise(ArgumentError) { s1, s2 = e('\xc2'), e('\xa1'); /#{s1}#{s2}/ }
   end
 
   def test_dynamic_sjis_regexp
@@ -594,7 +594,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval('/\x81#{}/s') }
     assert_raise(SyntaxError) { eval('/#{}\x81/s') }
     assert_raise(SyntaxError) { eval('/\x81#{}\xa1/s') }
-    #assert_raise(SyntaxError) { s1, s2 = s('\x81'), s('\xa1'); /#{s1}#{s2}/ }
+    assert_raise(ArgumentError) { s1, s2 = s('\x81'), s('\xa1'); /#{s1}#{s2}/ }
   end
 
   def test_dynamic_utf8_regexp
@@ -604,7 +604,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval('/\xc2#{}/u') }
     assert_raise(SyntaxError) { eval('/#{}\xc2/u') }
     assert_raise(SyntaxError) { eval('/\xc2#{}\xa1/u') }
-    #assert_raise(SyntaxError) { s1, s2 = u('\xc2'), u('\xa1'); /#{s1}#{s2}/ }
+    assert_raise(ArgumentError) { s1, s2 = u('\xc2'), u('\xa1'); /#{s1}#{s2}/ }
   end
 
   def test_regexp_unicode
@@ -1080,6 +1080,6 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_usascii_literal('/\u1234#{%q"\x80"}/', nil, SyntaxError)
     assert_regexp_usascii_literal('/\u1234#{"\x80"}/', nil, SyntaxError)
     assert_regexp_usascii_literal('/\u1234\x80/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234#{}\x80/', nil, RegexpError)
+    assert_regexp_usascii_literal('/\u1234#{}\x80/', nil, ArgumentError)
   end
 end
