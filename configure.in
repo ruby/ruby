@@ -1693,6 +1693,7 @@ else
   tr -d '\015' < confdefs.h > config.h
 fi
 tr -d '\015' < largefile.h > confdefs.h
+rm largefile.h
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{

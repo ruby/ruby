@@ -1,3 +1,7 @@
+Tue Jan 29 11:53:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: rm largefile.h.
+
 Sun Jan 27 03:48:40 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sun Jan 27 03:48:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
