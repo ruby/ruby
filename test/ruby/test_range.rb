@@ -71,4 +71,192 @@ class TestRange < Test::Unit::TestCase
     r = Marshal.load(s)
     assert_nothing_raised { r.instance_eval { initialize 5, 6} }
   end
+
+  def test_bad_value
+    assert_raise(ArgumentError) { (1 .. :a) }
+  end
+
+  def test_exclude_end
+    assert(!((0..1).exclude_end?))
+    assert((0...1).exclude_end?)
+  end
+
+  def test_eq
+    r = (0..1)
+    assert(r == r)
+    assert(r == (0..1))
+    assert(r != 0)
+    assert(r != (1..2))
+    assert(r != (0..2))
+    assert(r != (0...1))
+  end
+
+  def test_eql
+    r = (0..1)
+    assert(r.eql?(r))
+    assert(r.eql?(0..1))
+    assert(!r.eql?(0))
+    assert(!r.eql?(1..2))
+    assert(!r.eql?(0..2))
+    assert(!r.eql?(0...1))
+  end
+
+  def test_hash
+    assert((0..1).hash.is_a?(Fixnum))
+  end
+
+  def test_step
+    a = []
+    (0..10).step {|x| a << x }
+    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
+
+    a = []
+    (0..10).step(2) {|x| a << x }
+    assert_equal([0, 2, 4, 6, 8, 10], a)
+
+    o = Object.new
+    def o.to_int; 2; end
+    a = []
+    (0..10).step(o) {|x| a << x }
+    assert_equal([0, 2, 4, 6, 8, 10], a)
+
+    assert_raise(ArgumentError) { (0..10).step(-1) { } }
+    assert_raise(ArgumentError) { (0..10).step(0) { } }
+
+    a = []
+    ("a" .. "z").step(2) {|x| a << x }
+    assert_equal(%w(a c e g i k m o q s u w y), a)
+
+    a = []
+    ("a" .. "z").step(2**32) {|x| a << x }
+    assert_equal(["a"], a)
+
+    a = []
+    (2**32-1 .. 2**32+1).step(2) {|x| a << x }
+    assert_equal([4294967295, 4294967297], a)
+    zero = (2**32).coerce(0).first
+    assert_raise(ArgumentError) { (2**32-1 .. 2**32+1).step(zero) { } }
+
+    o1 = Object.new
+    o2 = Object.new
+    def o1.<=>(x); -1; end
+    def o2.<=>(x); 0; end
+    assert_raise(TypeError) { (o1..o2).step(1) { } }
+
+    class << o1; self; end.class_eval do
+      define_method(:succ) { o2 }
+    end
+    a = []
+    (o1..o2).step(1) {|x| a << x }
+    assert_equal([o1, o2], a)
+
+    a = []
+    (o1...o2).step(1) {|x| a << x }
+    assert_equal([o1], a)
+  end
+
+  def test_each
+    a = []
+    (0..10).each {|x| a << x }
+    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
+
+    o1 = Object.new
+    o2 = Object.new
+    def o1.<=>(x); -1; end
+    def o2.<=>(x); 0; end
+    class << o1; self; end.class_eval do
+      define_method(:succ) { o2 }
+    end
+
+    r1 = (o1..o2)
+    r2 = (o1...o2)
+
+    a = []
+    r1.each {|x| a << x }
+    assert_equal([o1, o2], a)
+
+    a = []
+    r2.each {|x| a << x }
+    assert_equal([o1], a)
+
+    def o2.<=>(x); 1; end
+
+    a = []
+    r1.each {|x| a << x }
+    assert_equal([o1], a)
+
+    def o2.<=>(x); nil; end
+
+    a = []
+    r1.each {|x| a << x }
+    assert_equal([o1], a)
+
+    def o1.<=>(x); nil; end
+
+    a = []
+    r2.each {|x| a << x }
+    assert_equal([], a)
+  end
+
+  def test_begin_end
+    assert_equal(0, (0..1).begin)
+    assert_equal(1, (0..1).end)
+  end
+
+  def test_first_last
+    assert_equal([0, 1, 2], (0..10).first(3))
+    assert_equal([8, 9, 10], (0..10).last(3))
+  end
+
+  def test_to_s
+    assert_equal("0..1", (0..1).to_s)
+    assert_equal("0...1", (0...1).to_s)
+  end
+
+  def test_inspect
+    assert_equal("0..1", (0..1).inspect)
+    assert_equal("0...1", (0...1).inspect)
+  end
+
+  def test_eqq
+    assert((0..10) === 5)
+    assert(!((0..10) === 11))
+  end
+
+  def test_include
+    assert(("a".."z").include?("c"))
+    assert(!(("a".."z").include?("5")))
+    assert(("a"..."z").include?("y"))
+    assert(!(("a"..."z").include?("z")))
+    assert(!(("a".."z").include?("cc")))
+    assert((0...10).include?(5))
+  end
+
+  def test_cover
+    assert(("a".."z").cover?("c"))
+    assert(!(("a".."z").cover?("5")))
+    assert(("a"..."z").cover?("y"))
+    assert(!(("a"..."z").cover?("z")))
+    assert(("a".."z").cover?("cc"))
+  end
+
+  def test_beg_len
+    o = Object.new
+    assert_raise(TypeError) { [][o] }
+    def o.begin; -10; end
+    assert_raise(TypeError) { [][o] }
+    def o.end; 0; end
+    assert_raise(NoMethodError) { [][o] }
+    def o.exclude_end?; false; end
+    assert_nil([0][o])
+    assert_raise(RangeError) { [0][o] = 1 }
+    def o.begin; 10; end
+    def o.end; 10; end
+    assert_nil([0][o])
+    def o.begin; 0; end
+    assert_equal([0], [0][o])
+    def o.begin; 2; end
+    def o.end; 0; end
+    assert_equal([], [0, 1, 2][o])
+  end
 end
