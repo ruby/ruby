@@ -1449,7 +1449,7 @@ rb_big_stop(void *ptr)
 }
 
 struct big_mul_struct {
-    VALUE x, y, stop;
+    VALUE x, y, z, stop;
 };
 
 static VALUE
@@ -1458,11 +1458,10 @@ bigmul1(void *ptr)
     struct big_mul_struct *bms = (struct big_mul_struct*)ptr;
     long i, j;
     BDIGIT_DBL n = 0;
-    VALUE x = bms->x, y = bms->y, z;
+    VALUE x = bms->x, y = bms->y, z = bms->z;
     BDIGIT *zds;
 
     j = RBIGNUM_LEN(x) + RBIGNUM_LEN(y) + 1;
-    z = bignew(j, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     zds = BDIGITS(z);
     while (j--) zds[j] = 0;
     for (i = 0; i < RBIGNUM_LEN(x); i++) {
@@ -1488,7 +1487,7 @@ static VALUE
 rb_big_mul0(VALUE x, VALUE y)
 {
     struct big_mul_struct bms;
-    VALUE z;
+    volatile VALUE z;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -1507,6 +1506,7 @@ rb_big_mul0(VALUE x, VALUE y)
 
     bms.x = x;
     bms.y = y;
+    bms.z = bignew(RBIGNUM_LEN(x) + RBIGNUM_LEN(y) + 1, RBIGNUM_SIGN(x)==RBIGNUM_SIGN(y));
     bms.stop = Qfalse;
 
     if (RBIGNUM_LEN(x) + RBIGNUM_LEN(y) > 10000) {
@@ -1533,20 +1533,64 @@ rb_big_mul(VALUE x, VALUE y)
 }
 
 struct big_div_struct {
-    VALUE x, y, *divp, *modp, stop;
+    long nx, ny;
+    BDIGIT *yds, *zds;
+    VALUE stop;
 };
 
 static VALUE
 bigdivrem1(void *ptr)
 {
     struct big_div_struct *bds = (struct big_div_struct*)ptr;
-    VALUE x = bds->x, y = bds->y, *divp = bds->divp, *modp = bds->modp;
-    long nx = RBIGNUM_LEN(x), ny = RBIGNUM_LEN(y);
+    long nx = bds->nx, ny = bds->ny;
     long i, j;
-    VALUE yy, z;
-    BDIGIT *xds, *yds, *zds, *tds;
+    BDIGIT *yds = bds->yds, *zds = bds->zds;
     BDIGIT_DBL t2;
     BDIGIT_DBL_SIGNED num;
+    BDIGIT q;
+
+    j = nx==ny?nx+1:nx;
+    do {
+	if (bds->stop) return Qnil;
+	if (zds[j] ==  yds[ny-1]) q = BIGRAD-1;
+	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
+	if (q) {
+	    i = 0; num = 0; t2 = 0;
+	    do {			/* multiply and subtract */
+		BDIGIT_DBL ee;
+		t2 += (BDIGIT_DBL)yds[i] * q;
+		ee = num - BIGLO(t2);
+		num = (BDIGIT_DBL)zds[j - ny + i] + ee;
+		if (ee) zds[j - ny + i] = BIGLO(num);
+		num = BIGDN(num);
+		t2 = BIGDN(t2);
+	    } while (++i < ny);
+	    num += zds[j - ny + i] - t2;/* borrow from high digit; don't update */
+	    while (num) {		/* "add back" required */
+		i = 0; num = 0; q--;
+		do {
+		    BDIGIT_DBL ee = num + yds[i];
+		    num = (BDIGIT_DBL)zds[j - ny + i] + ee;
+		    if (ee) zds[j - ny + i] = BIGLO(num);
+		    num = BIGDN(num);
+		} while (++i < ny);
+		num--;
+	    }
+	}
+	zds[j] = q;
+    } while (--j >= ny);
+    return Qnil;
+}
+
+static VALUE
+bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
+{
+    struct big_div_struct bds;
+    long nx = RBIGNUM_LEN(x), ny = RBIGNUM_LEN(y);
+    long i, j;
+    volatile VALUE yy, z;
+    BDIGIT *xds, *yds, *zds, *tds;
+    BDIGIT_DBL t2;
     BDIGIT dd, q;
 
     if (BIGZEROP(y)) rb_num_zerodiv();
@@ -1612,36 +1656,18 @@ bigdivrem1(void *ptr)
 	while (j--) zds[j] = xds[j];
     }
 
-    j = nx==ny?nx+1:nx;
-    do {
-	if (bds->stop) return Qnil;
-	if (zds[j] ==  yds[ny-1]) q = BIGRAD-1;
-	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
-	if (q) {
-	    i = 0; num = 0; t2 = 0;
-	    do {			/* multiply and subtract */
-		BDIGIT_DBL ee;
-		t2 += (BDIGIT_DBL)yds[i] * q;
-		ee = num - BIGLO(t2);
-		num = (BDIGIT_DBL)zds[j - ny + i] + ee;
-		if (ee) zds[j - ny + i] = BIGLO(num);
-		num = BIGDN(num);
-		t2 = BIGDN(t2);
-	    } while (++i < ny);
-	    num += zds[j - ny + i] - t2;/* borrow from high digit; don't update */
-	    while (num) {		/* "add back" required */
-		i = 0; num = 0; q--;
-		do {
-		    BDIGIT_DBL ee = num + yds[i];
-		    num = (BDIGIT_DBL)zds[j - ny + i] + ee;
-		    if (ee) zds[j - ny + i] = BIGLO(num);
-		    num = BIGDN(num);
-		} while (++i < ny);
-		num--;
-	    }
-	}
-	zds[j] = q;
-    } while (--j >= ny);
+    bds.nx = nx;
+    bds.ny = ny;
+    bds.zds = zds;
+    bds.yds = yds;
+    bds.stop = Qfalse;
+    if (RBIGNUM_LEN(x) > 10000 || RBIGNUM_LEN(y) > 10000) {
+	rb_thread_blocking_region(bigdivrem1, &bds, rb_big_stop, &bds.stop);
+    }
+    else {
+	bigdivrem1(&bds);
+    }
+
     if (divp) {			/* move quotient down in z */
 	*divp = rb_big_clone(z);
 	zds = BDIGITS(*divp);
@@ -1664,26 +1690,6 @@ bigdivrem1(void *ptr)
 	}
 	RBIGNUM_SET_LEN(*modp, ny);
 	RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
-    }
-    return Qnil;
-}
-
-static VALUE
-bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
-{
-    struct big_div_struct bds;
-    VALUE z;
-
-    bds.x = x;
-    bds.y = y;
-    bds.divp = divp;
-    bds.modp = modp;
-    bds.stop = Qfalse;
-    if (RBIGNUM_LEN(x) > 10000 || RBIGNUM_LEN(y) > 10000) {
-	z = rb_thread_blocking_region(bigdivrem1, &bds, rb_big_stop, &bds.stop);
-    }
-    else {
-	z = bigdivrem1(&bds);
     }
     return z;
 }

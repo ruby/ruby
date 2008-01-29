@@ -1,3 +1,8 @@
+Tue Jan 29 21:55:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c: move object allocation out of blocking_region.
+	  [ruby-dev:33139]
+
 Tue Jan 29 20:37:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/make_transdb.rb: add for make transdb.h.
