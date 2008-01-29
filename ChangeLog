@@ -1,3 +1,10 @@
+Tue Jan 29 17:25:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dmyencoding.c, encoding.c (enc_init_db, NO_ENCDB_H):
+	  miniruby doesn't use encdb.
+
+	* common.mk: encdb.h use miniruby.
+
 Tue Jan 29 17:37:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/gb18030.c (gb18030_mbc_enc_len): validation implemented.
@@ -23,7 +30,7 @@ Tue Jan 29 16:59:01 2008  Tanaka Akira  <akr@fsij.org>
 
 Tue Jan 29 16:25:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* common.mk, ext/extmkf.rb: always make encdb.h.
+	* common.mk, ext/extmk.rb: always make encdb.h.
 
 Tue Jan 29 12:53:39 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 

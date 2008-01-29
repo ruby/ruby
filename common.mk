@@ -100,7 +100,7 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 VCS           = svn
 
-all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY) encs
+all: $(MKFILES) $(PREP) encdb $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
@@ -428,7 +428,11 @@ dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}st.h {$(VPATH)}dln.h
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c dln.$(OBJEXT)
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
-dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c encoding.$(OBJEXT)
+dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c \
+  {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
+  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
+  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
+  {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h
 encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
@@ -705,11 +709,12 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h $(srcdir)/revision.h
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-encdb.h.new:
-	$(BASERUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@
+encdb:
+	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc encdb.h.new
+	$(IFCHANGE) "encdb.h" "encdb.h.new"
 
-encdb.h: encdb.h.new
-	$(IFCHANGE) "$@" "$@.new"
+encdb.h:
+	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@

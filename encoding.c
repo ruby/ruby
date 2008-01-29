@@ -49,7 +49,11 @@ static void enc_declare(const char *name);
 static void
 enc_init_db(void)
 {
+#ifdef NO_ENCDB_H
+#define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
+#else
 #include "encdb.h"
+#endif
 }
 
 #define enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
