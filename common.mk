@@ -59,7 +59,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		time.$(OBJEXT) \
-		transcode.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
@@ -78,6 +77,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 OBJS          = dln.$(OBJEXT) \
 		encoding.$(OBJEXT) \
 		prelude.$(OBJEXT) \
+		transcode.$(OBJEXT) \
 		$(COMMONOBJS)
 
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
