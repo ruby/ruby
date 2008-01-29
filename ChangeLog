@@ -1,3 +1,12 @@
+Tue Jan 29 20:37:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/make_transdb.rb: add for make transdb.h.
+
+	* dmytranscode.c: add for miniruby.
+
+	* enc/gbk.c (gbk_left_adjust_char_head, gbk_is_allowed_reverse_match):
+	  fix odd regexp match. [ruby-dev:33502]
+
 Tue Jan 29 20:17:06 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32}/Makefile.sub (MINIOBJS): add dmytranscode.$(OBJEXT).

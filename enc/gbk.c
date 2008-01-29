@@ -29,7 +29,7 @@
 
 #include "regenc.h"
 
-static const int EncLen_gbk[] = {
+static const int EncLen_GBK[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -47,6 +47,28 @@ static const int EncLen_gbk[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1
 };
+
+static const char GBK_CAN_BE_TRAIL_TABLE[256] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0
+};
+
+#define GBK_ISMB_FIRST(byte)  (EncLen_GBK[byte] > 1)
+#define GBK_ISMB_TRAIL(byte)  GBK_CAN_BE_TRAIL_TABLE[(byte)]
 
 typedef enum { FAILURE = -2, ACCEPT = -1, S0 = 0, S1 } state_t;
 #define A ACCEPT
@@ -101,7 +123,7 @@ gbk_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
     return s == ACCEPT ? ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(n) : \
                          ONIGENC_CONSTRUCT_MBCLEN_INVALID()
   if (s < 0) RETURN(1);
-  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(EncLen_gbk[firstbyte]-1);
+  if (p == e) return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(EncLen_GBK[firstbyte]-1);
   s = trans[s][*p++];
   RETURN(2);
 #undef RETURN
@@ -142,21 +164,23 @@ gbk_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
   return onigenc_mb2_is_code_ctype(enc, code, ctype);
 }
 
-#define gbk_islead(c)    ((c) < 0xa1 || (c) == 0xff)
-
 static UChar*
 gbk_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 {
-  /* Assumed in this encoding,
-     mb-trail bytes don't mix with single bytes.
-  */
   const UChar *p;
   int len;
 
   if (s <= start) return (UChar* )s;
   p = s;
 
-  while (!gbk_islead(*p) && p > start) p--;
+  if (GBK_ISMB_TRAIL(*p)) {
+    while (p > start) {
+      if (! GBK_ISMB_FIRST(*--p)) {
+	p++;
+	break;
+      }
+    } 
+  }
   len = enclen(enc, p, s);
   if (p + len > s) return (UChar* )p;
   p += len;
@@ -167,13 +191,12 @@ static int
 gbk_is_allowed_reverse_match(const UChar* s, const UChar* end ARG_UNUSED, OnigEncoding enc ARG_UNUSED)
 {
   const UChar c = *s;
-  if (c <= 0x7e) return TRUE;
-  else           return FALSE;
+  return (GBK_ISMB_TRAIL(c) ? FALSE : TRUE);
 }
 
-OnigEncodingDefine(gbk, gbk) = {
+OnigEncodingDefine(gbk, GBK) = {
   gbk_mbc_enc_len,
-  "GBK",   /* name */
+  "GBK",      /* name */
   2,          /* max enc length */
   1,          /* min enc length */
   onigenc_is_mbc_newline_0x0a,
