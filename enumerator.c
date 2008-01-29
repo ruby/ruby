@@ -427,7 +427,7 @@ enumerator_next(VALUE obj)
 
 /*
  * call-seq:
- *   e.next?   => e
+ *   e.rewind   => e
  *
  * Rewinds the enumeration sequence by the next method.
  */
