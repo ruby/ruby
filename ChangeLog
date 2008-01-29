@@ -1,3 +1,9 @@
+Tue Jan 29 22:58:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_enumerator.rb: add tests to achieve over 90% test
+	  coverage of enumerator.c.
+	* test/ruby/test_enum.rb: add for enum.c.
+
 Tue Jan 29 22:29:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* enumerator.c: fix documents.
