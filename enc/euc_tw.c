@@ -89,7 +89,7 @@ euctw_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
   return onigenc_mb4_is_code_ctype(enc, code, ctype);
 }
 
-#define euctw_islead(c)    (((c) < 0xa1 && (c) != 0x8e) || (c) == 0xff)
+#define euctw_islead(c)    ((UChar )((c) - 0xa1) > 0xfe - 0xa1)
 
 static UChar*
 euctw_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
