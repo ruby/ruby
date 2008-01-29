@@ -42,17 +42,17 @@ if defined?(WIN32OLE)
       exc = assert_raise(WIN32OLERuntimeError) {
         @dict1.add
       }
-      assert_match(/^\(in OLE method `add': \)/, exc.message)
+      assert_match(/^\(in OLE method `add': \)/, exc.message) #`
 
       exc = assert_raise(WIN32OLERuntimeError) {
         @dict1._invoke(1, [], [])
       }
-      assert_match(/^\(in OLE method `<dispatch id:1>': \)/, exc.message)
+      assert_match(/^\(in OLE method `<dispatch id:1>': \)/, exc.message) #`
 
       exc = assert_raise(WIN32OLERuntimeError) {
         @dict1.compareMode = -1
       }
-      assert_match(/^\(in setting property `compareMode': \)/, exc.message)
+      assert_match(/^\(in setting property `compareMode': \)/, exc.message) #`
     end
 
     def test_ole_methods
@@ -156,7 +156,7 @@ if defined?(WIN32OLE)
       exc = assert_raise(WIN32OLERuntimeError) {
         WIN32OLE.new("{000}")
       }
-      assert_match(/unknown OLE server: `\{000\}'/, exc.message)
+      assert_match(/unknown OLE server: `\{000\}'/, exc.message) #`
     end
 
     def test_s_connect
@@ -279,14 +279,14 @@ if defined?(WIN32OLE)
       begin
         WIN32OLE.codepage = WIN32OLE::CP_UTF8
         obj = WIN32OLE_VARIANT.new([0x3042].pack("U*"))
-        assert_equal("\xE3\x81\x82", obj.value)
+        assert_equal("\xE3\x81\x82".force_encoding("CP65001"), obj.value)
 
         begin
           WIN32OLE.codepage = 932 # Windows-31J
         rescue WIN32OLERuntimeError
         end
         if (WIN32OLE.codepage == 932)
-          assert_equal("\x82\xA0", obj.value)
+          assert_equal("\x82\xA0".force_encoding("CP932"), obj.value)
         end
 
         begin
@@ -294,7 +294,7 @@ if defined?(WIN32OLE)
         rescue WIN32OLERuntimeError
         end
         if (WIN32OLE.codepage == 20932)
-          assert_equal("\xA4\xA2", obj.value)
+          assert_equal("\xA4\xA2".force_encoding("CP20932"), obj.value)
         end
 
         WIN32OLE.codepage = WIN32OLE::CP_UTF8
