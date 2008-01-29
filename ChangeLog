@@ -1,3 +1,7 @@
+Tue Jan 29 12:53:39 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/gbk.c: add GBK, CP936 and CP949.
+
 Tue Jan 29 03:01:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (reg_fragment_setenc_gen): US-ASCII script special code.
