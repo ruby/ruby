@@ -10,6 +10,7 @@ if [ "$temp" = - ]; then
 fi
 if cmp "$target" "$temp" >/dev/null 2>&1; then
     echo "$target unchanged"
+    rm -f "$temp"
 else
     echo "$target updated"
     mv -f "$temp" "$target"

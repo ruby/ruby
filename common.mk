@@ -700,17 +700,16 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c
 
-incs: $(INSNS) {$(VPATH)}node_name.inc $(srcdir)/revision.h
+incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h $(srcdir)/revision.h
 
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-encdb.h.new::
+encdb.h.new:
 	$(BASERUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@
 
 encdb.h: encdb.h.new
 	$(IFCHANGE) "$@" "$@.new"
-	-@$(RM) "$@.new"
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
