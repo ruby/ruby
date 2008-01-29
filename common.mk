@@ -100,7 +100,7 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 VCS           = svn
 
-all: $(MKFILES) $(PREP) encdb $(RBCONFIG) $(LIBRUBY) encs
+all: $(MKFILES) $(PREP) encdb transdb $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
@@ -433,10 +433,7 @@ dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h
-encoding.$(OBJEXT): {$(VPATH)}encoding.c {$(VPATH)}ruby.h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
-  {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
-  {$(VPATH)}oniguruma.h {$(VPATH)}regenc.h {$(VPATH)}encdb.h
+encoding.$(OBJEXT): dmyencoding.$(OBJEXT) {$(VPATH)}encdb.h
 enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h
@@ -584,10 +581,11 @@ thread.$(OBJEXT): {$(VPATH)}thread.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h {$(VPATH)}vm.h \
   {$(VPATH)}gc.h {$(VPATH)}thread_$(THREAD_MODEL).c
-transcode.$(OBJEXT): {$(VPATH)}transcode.c {$(VPATH)}ruby.h \
+dmytranscode.$(OBJEXT): {$(VPATH)}transcode.c {$(VPATH)}ruby.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}missing.h \
   {$(VPATH)}intern.h {$(VPATH)}st.h {$(VPATH)}encoding.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}transcode_data.h
+transcode.$(OBJEXT): dmytranscode.$(OBJEXT) {$(VPATH)}transdb.h
 cont.$(OBJEXT): {$(VPATH)}cont.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h {$(VPATH)}node.h \
@@ -704,7 +702,7 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c
 
-incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h $(srcdir)/revision.h
+incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(srcdir)/revision.h
 
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
@@ -715,6 +713,13 @@ encdb:
 
 encdb.h:
 	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@
+
+transdb:
+	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans transdb.h.new
+	$(IFCHANGE) "transdb.h" "transdb.h.new"
+
+transdb.h:
+	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans $@
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@

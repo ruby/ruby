@@ -1,3 +1,11 @@
+Tue Jan 29 19:03:16 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/japanese.c (rb_to_Windows_31J): to 'Windows-31J'.
+
+	* common.mk: add rules for transdb.h.
+
+	* transcode.c (init_transcoder_table): use transdb.h.
+
 Tue Jan 29 18:05:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (encdb_{replicate,alias,dummy,declare}): define only if

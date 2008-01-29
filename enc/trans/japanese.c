@@ -13364,7 +13364,7 @@ rb_to_SHIFT_JIS = {
 };
 static const rb_transcoder
 rb_to_Windows_31J = {
-    "UTF-8", "Windows_31J", &to_SHIFT_JIS, 2, 1,
+    "UTF-8", "Windows-31J", &to_SHIFT_JIS, 2, 1,
     NULL, NULL,
 };
 

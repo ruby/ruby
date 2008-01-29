@@ -85,29 +85,9 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
 static void
 init_transcoder_table(void)
 {
-    rb_declare_transcoder("US-ASCII",    "UTF-8", "single_byte");
-    rb_declare_transcoder("ASCII-8BIT",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-1",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-2",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-3",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-4",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-5",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-6",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-7",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-8",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-9",  "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-10", "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-11", "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-13", "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-14", "UTF-8", "single_byte");
-    rb_declare_transcoder("ISO-8859-15", "UTF-8", "single_byte");
-    rb_declare_transcoder("SHIFT_JIS",   "UTF-8", "japanese");
-    rb_declare_transcoder("EUC-JP",      "UTF-8", "japanese");
-    rb_declare_transcoder("ISO-2022-JP", "UTF-8", "japanese");
-    rb_declare_transcoder("UTF-16BE",    "UTF-8", "utf_16_32");
-    rb_declare_transcoder("UTF-16LE",    "UTF-8", "utf_16_32");
-    rb_declare_transcoder("UTF-32BE",    "UTF-8", "utf_16_32");
-    rb_declare_transcoder("UTF-32LE",    "UTF-8", "utf_16_32");
+#ifndef NO_TRANSDB_H
+#include "transdb.h"
+#endif
 }
 
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
