@@ -147,6 +147,9 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(ArgumentError) { Integer("1__") }
     assert_raise(ArgumentError) { Integer("1_0 x") }
     assert_equal(T31P, "1111111111111111111111111111111".to_i(2))
+    assert_equal(0_2, '0_2'.to_i)
+    assert_equal(00_2, '00_2'.to_i)
+    assert_equal(00_02, '00_02'.to_i)
   end
 
   def test_to_s2
