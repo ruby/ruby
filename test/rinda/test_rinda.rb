@@ -253,6 +253,14 @@ module TupleSpaceTestModule
     end
   end
 
+  def test_symbol_tuple
+    @ts.write([:symbol, :symbol])
+    @ts.write(['string', :string])
+    assert_equal([[:symbol, :symbol]], @ts.read_all([:symbol, nil]))
+    assert_equal([[:symbol, :symbol]], @ts.read_all([Symbol, nil]))
+    assert_equal([], @ts.read_all([:nil, nil]))
+  end
+
   def test_core_01
     5.times do |n|
       @ts.write([:req, 2])

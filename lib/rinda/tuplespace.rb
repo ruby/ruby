@@ -411,7 +411,8 @@ module Rinda
     end
 
     def bin_for_find(template)
-      @hash.fetch(bin_key(template), @enum)
+      key = bin_key(template)
+      key ? @hash.fetch(key, []) : @enum
     end
   end
 
