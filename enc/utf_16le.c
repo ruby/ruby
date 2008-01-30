@@ -29,8 +29,9 @@
 
 #include "regenc.h"
 
-#define UTF16_IS_SURROGATE_FIRST(c)    (c >= 0xd8 && c <= 0xdb)
-#define UTF16_IS_SURROGATE_SECOND(c)   (c >= 0xdc && c <= 0xdf)
+#define UTF16_IS_SURROGATE_FIRST(c)    (((c) & 0xfc) == 0xd8)
+#define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
+#define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
 
 static const int EncLen_UTF16[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -52,10 +53,23 @@ static const int EncLen_UTF16[] = {
 };
 
 static int
-utf16le_mbc_enc_len(const UChar* p, const OnigUChar* e ARG_UNUSED,
+utf16le_mbc_enc_len(const UChar* p, const OnigUChar* e,
 		    OnigEncoding enc ARG_UNUSED)
 {
-  return EncLen_UTF16[*(p+1)];
+  int len = e-p, byte;
+  if (len < 2)
+    return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(1);
+  byte = p[1];
+  if (!UTF16_IS_SURROGATE(byte)) {
+    return ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(2);
+  }
+  if (UTF16_IS_SURROGATE_FIRST(byte)) {
+    if (len < 4)
+      return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(4-len);
+    if (UTF16_IS_SURROGATE_SECOND(p[3]))
+      return ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(4);
+  }
+  return ONIGENC_CONSTRUCT_MBCLEN_INVALID();
 }
 
 static int

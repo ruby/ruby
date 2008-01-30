@@ -1,3 +1,15 @@
+Wed Jan 30 12:26:59 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/utf_16be.c (UTF16_IS_SURROGATE_FIRST): avoid branch.
+	  (UTF16_IS_SURROGATE_SECOND): ditto.
+	  (UTF16_IS_SURROGATE): defined.
+	  (utf16be_mbc_enc_len): validation implemented.
+
+	* enc/utf_16le.c (UTF16_IS_SURROGATE_FIRST): avoid branch.
+	  (UTF16_IS_SURROGATE_SECOND): ditto.
+	  (UTF16_IS_SURROGATE): defined.
+	  (utf16le_mbc_enc_len): validation implemented.
+
 Wed Jan 30 12:06:43 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* bignum.c (rb_cstr_to_inum): '0_2' is a valid representatin.
