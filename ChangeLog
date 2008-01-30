@@ -1,3 +1,8 @@
+Thu Jan 31 08:31:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (ext/extmk.rb, instruby.rb): inlined $(MAKE) so that can
+	  be executed even with -n.
+
 Thu Jan 31 07:00:19 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb (bin_for_find): should find a symbol by
