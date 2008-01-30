@@ -470,16 +470,15 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
 	break;
     }
     if (*str == '0') {		/* squeeze preceding 0s */
-      int nn = 0;
-      while ((c = *++str) == '0' || c == '_') {
-	  if (c == '_') {
-	      nn++;
-	      if (nn >= 2)
-		break;
-	  } else
-	      nn = 0;
-      }
-      if (!(c = *str) || ISSPACE(c)) --str;
+	int us = 0;
+	while ((c = *++str) == '0' || c == '_') {
+	    if (c == '_') {
+		if (++us >= 2)
+		    break;
+	    } else
+		us = 0;
+	}
+	if (!(c = *str) || ISSPACE(c)) --str;
     }
     c = *str;
     c = conv_digit(c);
