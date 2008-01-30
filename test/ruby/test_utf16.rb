@@ -176,6 +176,14 @@ EOT
     assert_str_equal(s, s.chomp, "#{encdump s}.chomp")
   end
 
+  def test_succ
+    s = "\xff\xff".force_encoding("utf-16be")
+    assert(s.succ.valid_encoding?, "#{encdump s}.succ.valid_encoding?")
+
+    s = "\xdb\xff\xdf\xff".force_encoding("utf-16be")
+    assert(s.succ.valid_encoding?, "#{encdump s}.succ.valid_encoding?")
+  end
+
   def test_regexp_union
     enccall(Regexp, :union, "aa".force_encoding("utf-16be"), "bb".force_encoding("utf-16be"))
   end

@@ -2203,6 +2203,10 @@ rb_str_succ(VALUE orig)
                 /* wrapped to \0...\0.  search next valid char. */
                 enc_succ_char(s, l, enc);
             }
+            if (!rb_enc_asciicompat(enc)) {
+                MEMCPY(carry, s, char, l);
+                carry_len = l;
+            }
             carry_pos = s - sbeg;
 	}
     }
