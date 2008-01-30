@@ -119,6 +119,12 @@ EOT
     assert_nil(Encoding.compatible?(s1, s2), "Encoding.compatible?(#{encdump s1}, #{encdump s2})")
   end
 
+  def test_casecmp
+    s1 = "aa".force_encoding("utf-16be")
+    s2 = "AA"
+    assert_not_equal(0, s1.casecmp(s2), "#{encdump s1}.casecmp(#{encdump s2})")
+  end
+
   def test_end_with
     s1 = "ab".force_encoding("utf-16be")
     s2 = "b".force_encoding("utf-16be")
