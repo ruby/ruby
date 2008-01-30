@@ -416,7 +416,7 @@ rb_cstr_to_inum(str, base, badcheck)
 	len = 2;
 	break;
       case 8:
-	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O'||str[1] == '_')) {
+	if (str[0] == '0' && (str[1] == 'o'||str[1] == 'O')) {
 	    str += 2;
 	}
       case 4: case 5: case 6: case 7:
@@ -448,7 +448,14 @@ rb_cstr_to_inum(str, base, badcheck)
 	break;
     }
     if (*str == '0') {		/* squeeze preceeding 0s */
-	while (*++str == '0');
+	int us = 0;
+	while ((c = *++str) == '0' || c == '_') {
+	    if (c == '_') {
+		if (++us >= 2)
+		    break;
+	    } else
+		us = 0;
+	}
 	if (!(c = *str) || ISSPACE(c)) --str;
     }
     c = *str;

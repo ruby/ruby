@@ -1,3 +1,7 @@
+Wed Jan 30 22:06:54 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	*  bignum.c (rb_cstr_to_inum): '0_2' is a valid representation.
+
 Tue Jan 29 22:40:12 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* range.c (step_i): rb_funcall receives VALUE as an argument.
