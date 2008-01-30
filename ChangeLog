@@ -1,3 +1,8 @@
+Thu Jan 31 02:22:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (open_key_args): allow encoding key to take two encoding
+	  names.  a patch from <rubikitch AT ruby-lang.org>.  [ruby-dev:33540]
+
 Thu Jan 31 02:15:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (dsym): allow empty symbols.  [ruby-core:15248]

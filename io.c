@@ -5853,7 +5853,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 
 	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
 	GetOpenFile(arg->io, fptr);
-	fptr->enc = rb_to_encoding(v);
+        mode_enc(fptr, StringValueCStr(v));
 	return;
     }
 }
