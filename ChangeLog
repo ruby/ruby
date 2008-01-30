@@ -1,3 +1,7 @@
+Wed Jan 30 17:32:49 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/*.c: add GB12345, UCS-{2,4}{BE,LE}.
+
 Wed Jan 30 14:32:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rdoc/ri/driver.rb (cache_file_for): shoudn't use `:' in filename.

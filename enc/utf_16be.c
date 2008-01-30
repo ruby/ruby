@@ -257,3 +257,4 @@ OnigEncodingDefine(utf_16be, UTF_16BE) = {
   utf16be_left_adjust_char_head,
   onigenc_always_false_is_allowed_reverse_match
 };
+ENC_ALIAS("UCS-2BE", "UTF-16BE");
