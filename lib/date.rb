@@ -1694,6 +1694,42 @@ end
 
 class Date
 
+  class << self
+
+    def deprecated_class_method_alias(old, new) # :nodoc:
+      module_eval <<-"end;"
+	class << self
+	  def #{old}(*args, &block)
+	    if $VERBOSE
+	      warn("\#{caller.shift.sub(/:in .*/, '')}: " \
+		   "warning: \#{self}::#{old} is deprecated; " \
+		   "use \#{self}::#{new}")
+	    end
+	    #{new}(*args, &block)
+	  end
+	end
+      end;
+    end
+
+    private :deprecated_class_method_alias
+
+    def deprecated_alias(old, new) # :nodoc:
+      module_eval <<-"end;"
+	def #{old}(*args, &block)
+	  if $VERBOSE
+	    warn("\#{caller.shift.sub(/:in .*/, '')}: " \
+		 "warning: \#{self.class}\##{old} is deprecated; " \
+		 "use \#{self.class}\##{new}")
+	  end
+	  #{new}(*args, &block)
+	end
+      end;
+    end
+
+    private :deprecated_alias
+
+  end
+
   [ %w(os?	julian?),
     %w(ns?	gregorian?),
     %w(exist1?	valid_jd?),
@@ -1707,16 +1743,7 @@ class Date
     %w(new3	new),
     %w(neww	commercial)
   ].each do |old, new|
-    module_eval <<-"end;"
-      def self.#{old}(*args, &block)
-	if $VERBOSE
-	  warn("\#{caller.shift.sub(/:in .*/, '')}: " \
-	       "warning: \#{self}::#{old} is deprecated; " \
-	       "use \#{self}::#{new}")
-	end
-	#{new}(*args, &block)
-      end
-    end;
+    deprecated_class_method_alias(old, new)
   end
 
   [ %w(os?	julian?),
@@ -1726,16 +1753,7 @@ class Date
     %w(of	offset),
     %w(newof	new_offset)
   ].each do |old, new|
-    module_eval <<-"end;"
-      def #{old}(*args, &block)
-	if $VERBOSE
-	  warn("\#{caller.shift.sub(/:in .*/, '')}: " \
-	       "warning: \#{self.class}\##{old} is deprecated; " \
-	       "use \#{self.class}\##{new}")
-	end
-	#{new}(*args, &block)
-      end
-    end;
+    deprecated_alias(old, new)
   end
 
   private :of, :newof
