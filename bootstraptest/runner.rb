@@ -50,7 +50,8 @@ def main
   ARGV.delete_if {|arg|
     case arg
     when /\A--ruby=(.*)/
-      @ruby = File.expand_path($1)
+      @ruby = $1
+      @ruby.gsub!(/^([^ ]*)/){File.expand_path($1)}
       @ruby.gsub!(/-I([^ ]*)/){"-I"+File.expand_path($1)}
       true
     when /\A--sets=(.*)/

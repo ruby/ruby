@@ -1,3 +1,7 @@
+Wed Jan 30 11:57:50 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bootstraptest/runner.rb: fix -I../../hoge case.
+
 Wed Jan 30 01:25:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_range.rb: add tests to achieve over 90% test coverage
