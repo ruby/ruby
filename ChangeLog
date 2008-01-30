@@ -1,3 +1,7 @@
+Wed Jan 30 14:32:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rdoc/ri/driver.rb (cache_file_for): shoudn't use `:' in filename.
+
 Wed Jan 30 14:27:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_succ): use wrapped character as a carry for

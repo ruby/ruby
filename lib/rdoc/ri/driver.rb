@@ -249,7 +249,7 @@ Options may also be set in the 'RI' environment variable.
   end
 
   def cache_file_for(klassname)
-    File.join cache_file_path, klassname
+    File.join cache_file_path, klassname.gsub(/:+/, "-")
   end
 
   def cache_file_path
