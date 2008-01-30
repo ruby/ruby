@@ -1,3 +1,9 @@
+Thu Jan 31 00:01:51 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (select_internal): fix SEGV by `select [STDIN],nil,[STDIN]'.
+	  fixed by Petr Chromec.
+	  http://rubyforge.org/tracker/index.php?func=detail&aid=17275&group_id=426&atid=1698
+
 Wed Jan 30 17:32:49 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/*.c: add GB12345, UCS-{2,4}{BE,LE}.

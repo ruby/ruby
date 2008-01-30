@@ -5316,7 +5316,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
 	if (ep) {
 	    list = RARRAY_PTR(res)[2];
 	    for (i=0; i< RARRAY_LEN(except); i++) {
-                VALUE obj = rb_ary_entry(write, i);
+                VALUE obj = rb_ary_entry(except, i);
                 VALUE io = rb_io_get_io(obj);
                 VALUE write_io = GetWriteIO(io);
 		GetOpenFile(io, fptr);
