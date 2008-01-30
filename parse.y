@@ -3868,8 +3868,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 		    /*%%%*/
 			lex_state = EXPR_ENDARG;
 			if (!($$ = $2)) {
-			    $$ = NEW_NIL();
-			    yyerror("empty symbol literal");
+			    $$ = NEW_LIT(ID2SYM(rb_intern("")));
 			}
 			else {
 			    VALUE lit;
@@ -3880,10 +3879,6 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				break;
 			      case NODE_STR:
 				lit = $$->nd_lit;
-				if (RSTRING_LEN(lit) == 0) {
-				    yyerror("empty symbol literal");
-				    break;
-				}
 				$$->nd_lit = ID2SYM(rb_intern_str(lit));
 				nd_set_type($$, NODE_LIT);
 				break;

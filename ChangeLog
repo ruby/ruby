@@ -1,3 +1,7 @@
+Thu Jan 31 02:15:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (dsym): allow empty symbols.  [ruby-core:15248]
+
 Thu Jan 31 00:01:51 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (select_internal): fix SEGV by `select [STDIN],nil,[STDIN]'.
