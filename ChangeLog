@@ -1,3 +1,11 @@
+Thu Jan 31 06:24:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_close_read): replaces fptr with the tied writer if
+	  duplex.
+
+	* io.c (rb_io_close_write): unties the tied IO for writing if duplex.
+	  [ruby-dev:33532]
+
 Thu Jan 31 02:22:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (open_key_args): allow encoding key to take two encoding

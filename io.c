@@ -2298,7 +2298,7 @@ rb_io_getc(VALUE io)
     else if (MBCLEN_NEEDMORE_P(r)) {
 	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, fptr->rbuf_len);
         fptr->rbuf_len = 0;
-getc_needmore:
+      getc_needmore:
         if (io_fillbuf(fptr) != -1) {
             rb_str_cat(str, fptr->rbuf+fptr->rbuf_off, 1);
             fptr->rbuf_off++;
@@ -2784,7 +2784,14 @@ rb_io_close_read(VALUE io)
 
     write_io = GetWriteIO(io);
     if (io != write_io) {
+	rb_io_t *wfptr;
         fptr_finalize(fptr, Qfalse);
+	GetOpenFile(write_io, wfptr);
+	if (fptr->refcnt < LONG_MAX) {
+	    wfptr->refcnt++;
+	    RFILE(io)->fptr = wfptr;
+	    rb_io_fptr_finalize(fptr);
+	}
         return Qnil;
     }
 
@@ -2817,12 +2824,13 @@ static VALUE
 rb_io_close_write(VALUE io)
 {
     rb_io_t *fptr;
+    VALUE write_io;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
-    io = GetWriteIO(io);
-    GetOpenFile(io, fptr);
+    write_io = GetWriteIO(io);
+    GetOpenFile(write_io, fptr);
     if (is_socket(fptr->fd, fptr->path)) {
 #ifndef SHUT_WR
 # define SHUT_WR 1
@@ -2831,14 +2839,21 @@ rb_io_close_write(VALUE io)
             rb_sys_fail(fptr->path);
         fptr->mode &= ~FMODE_WRITABLE;
         if (!(fptr->mode & FMODE_READABLE))
-            return rb_io_close(io);
+	    return rb_io_close(write_io);
         return Qnil;
     }
 
     if (fptr->mode & FMODE_READABLE) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
-    return rb_io_close(io);
+
+    rb_io_close(write_io);
+    if (io != write_io) {
+	GetOpenFile(io, fptr);
+	fptr->tied_io_for_writing = 0;
+	fptr->mode &= ~FMODE_DUPLEX;
+    }
+    return Qnil;
 }
 
 /*
