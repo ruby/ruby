@@ -1,3 +1,7 @@
+Wed Jan 30 12:06:43 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* bignum.c (rb_cstr_to_inum): '0_2' is a valid representatin.
+
 Wed Jan 30 11:57:50 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bootstraptest/runner.rb: fix -I../../hoge case.
