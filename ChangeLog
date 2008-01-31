@@ -1,3 +1,8 @@
+Thu Jan 31 15:06:50 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (r_object0): call r_entry/r_leave to call proc when TYPE_FIXNUM,
+	  TYPE_NIL, TYPE_TRUE, TYPE_FALSE, TYPE_SYMBOL.
+
 Thu Jan 31 14:03:38 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rdoc/ri/display.rb (display_method_list, display_class_list):

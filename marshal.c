@@ -1208,14 +1208,20 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_NIL:
 	v = Qnil;
+	v = r_entry(v, arg);
+	v = r_leave(v, arg);
 	break;
 
       case TYPE_TRUE:
 	v = Qtrue;
+	v = r_entry(v, arg);
+	v = r_leave(v, arg);
 	break;
 
       case TYPE_FALSE:
 	v = Qfalse;
+	v = r_entry(v, arg);
+	v = r_leave(v, arg);
 	break;
 
       case TYPE_FIXNUM:
@@ -1223,6 +1229,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    long i = r_long(arg);
 	    v = LONG2FIX(i);
 	}
+	v = r_entry(v, arg);
+	v = r_leave(v, arg);
 	break;
 
       case TYPE_FLOAT:
@@ -1497,6 +1505,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 
       case TYPE_SYMBOL:
 	v = ID2SYM(r_symreal(arg));
+	v = r_entry(v, arg);
+	v = r_leave(v, arg);
 	break;
 
       case TYPE_SYMLINK:
