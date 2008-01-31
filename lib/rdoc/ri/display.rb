@@ -177,11 +177,11 @@ class RDoc::RI::DefaultDisplay
   def page
     if pager = setup_pager then
       begin
-        orig_stdout = $stdout
-        $stdout = pager
+        orig_output = @formatter.output
+        @formatter.output = pager
         yield
       ensure
-        $stdout = orig_stdout
+        @formatter.output = orig_output
         pager.close
       end
     else

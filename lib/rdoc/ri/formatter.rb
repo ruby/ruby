@@ -4,6 +4,7 @@ require 'rdoc/markup'
 class RDoc::RI::Formatter
 
   attr_reader :indent
+  attr_accessor :output
 
   FORMATTERS = { }
 
