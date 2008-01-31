@@ -675,4 +675,117 @@ class TestInteger < Test::Unit::TestCase
     }
     assert_raise(ArgumentError, "[ruby-core:14139]") {Integer("0__3_7_7")}
   end
+
+  def test_int_p
+    assert(!(1.0.integer?))
+    assert(1.integer?)
+  end
+
+  def test_odd_p_even_p
+    Fixnum.class_eval do
+      alias odd_bak odd?
+      alias even_bak even?
+      remove_method :odd?, :even?
+    end
+
+    assert(1.odd?)
+    assert(!(2.odd?))
+    assert(!(1.even?))
+    assert(2.even?)
+
+  ensure
+    Fixnum.class_eval do
+      alias odd? odd_bak
+      alias even? even_bak
+      remove_method :odd_bak, :even_bak
+    end
+  end
+
+  def test_succ
+    assert_equal(2, 1.send(:succ))
+
+    Fixnum.class_eval do
+      alias succ_bak succ
+      remove_method :succ
+    end
+
+    assert_equal(2, 1.succ)
+    assert_equal(4294967297, 4294967296.succ)
+
+  ensure
+    Fixnum.class_eval do
+      alias succ succ_bak
+      remove_method :succ_bak
+    end
+  end
+
+  def test_chr
+    assert_equal("a", "a".ord.chr)
+    assert_raise(RangeError) { (-1).chr }
+    assert_raise(RangeError) { 0x100.chr }
+  end
+
+  def test_induced_from
+    assert_equal(1, Integer.induced_from(1))
+    assert_equal(1, Integer.induced_from(1.0))
+    assert_raise(TypeError) { Integer.induced_from(nil) }
+  end
+
+  def test_upto
+    a = []
+    1.upto(3) {|x| a << x }
+    assert_equal([1, 2, 3], a)
+
+    a = []
+    1.upto(0) {|x| a << x }
+    assert_equal([], a)
+
+    x = 2**30 - 1
+    a = []
+    x.upto(x+2) {|x| a << x }
+    assert_equal([x, x+1, x+2], a)
+  end
+
+  def test_downto
+    a = []
+    -1.downto(-3) {|x| a << x }
+    assert_equal([-1, -2, -3], a)
+
+    a = []
+    1.downto(2) {|x| a << x }
+    assert_equal([], a)
+
+    x = -(2**30)
+    a = []
+    x.downto(x-2) {|x| a << x }
+    assert_equal([x, x-1, x-2], a)
+  end
+
+  def test_times
+    (2**32).times do |i|
+      break if i == 2
+    end
+  end
+
+  def test_round
+    assert_equal(11111, 11111.round)
+    assert_equal(Fixnum, 11111.round.class)
+    assert_equal(11111, 11111.round(0))
+    assert_equal(Fixnum, 11111.round(0).class)
+
+    assert_equal(11111.0, 11111.round(1))
+    assert_equal(Float, 11111.round(1).class)
+    assert_equal(11111.0, 11111.round(2))
+    assert_equal(Float, 11111.round(2).class)
+
+    assert_equal(11110, 11111.round(-1))
+    assert_equal(Fixnum, 11111.round(-1).class)
+    assert_equal(11100, 11111.round(-2))
+    assert_equal(Fixnum, 11111.round(-2).class)
+
+    assert_equal(1111_1111_1111_1110, 1111_1111_1111_1111.round(-1))
+    assert_equal(Bignum, 1111_1111_1111_1111.round(-1).class)
+    assert_equal(-1111_1111_1111_1110, (-1111_1111_1111_1111).round(-1))
+    assert_equal(Bignum, (-1111_1111_1111_1111).round(-1).class)
+  end
 end

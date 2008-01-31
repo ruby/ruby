@@ -14,6 +14,12 @@ class TestEnumerable < Test::Unit::TestCase
         yield 2
       end
     end
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
   end
 
   def test_grep

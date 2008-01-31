@@ -1,6 +1,15 @@
 require 'test/unit'
 
 class TestBignum < Test::Unit::TestCase
+  def setup
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
+  end
+
   def fact(n)
     return 1 if n == 0
     f = 1

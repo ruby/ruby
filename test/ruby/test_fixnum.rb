@@ -118,4 +118,128 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(0x40000000, (-0x40000000).abs)
     assert_equal(0x4000000000000000, (-0x4000000000000000).abs)
   end
+
+  def test_induced_from
+    assert_equal(1, Fixnum.induced_from(1))
+    assert_raise(RangeError) { Fixnum.induced_from(2**31-1) }
+    assert_equal(1, Fixnum.induced_from((2**32).coerce(1).first))
+  end
+
+  def test_to_s
+    assert_equal("1010", 10.to_s(2))
+    assert_equal("a", 10.to_s(36))
+    assert_raise(ArgumentError) { 10.to_s(1) }
+  end
+
+  def test_plus
+    assert_equal(2, 1 + 1)
+    assert_equal(4294967297, 1 + 2**32)
+    assert_equal(2.0, 1 + 1.0)
+    assert_raise(TypeError) { 1 + nil }
+  end
+
+  def test_minus
+    assert_equal(0, 1 - 1)
+    assert_equal(-4294967295, 1 - 2**32)
+    assert_equal(0.0, 1 - 1.0)
+    assert_raise(TypeError) { 1 - nil }
+  end
+
+  def test_mul
+    assert_equal(6, 2.send(:*, 3))
+    a = 2**30-1
+    assert_equal(1152921502459363329, a.send(:*, a))
+
+    assert_equal(6.0, 2 * 3.0)
+    assert_raise(TypeError) { 2 * nil }
+  end
+
+  def test_divide
+    assert_equal(2.0, 4.quo(2))
+    assert_equal(2.0, 4 / 2)
+    assert_equal(2.0, 4.div(2))
+
+    assert_equal(0.5**32, 1.quo(2**32))
+    assert_equal(0, 1 / (2**32))
+    assert_equal(0, 1.div(2**32))
+
+    assert_equal(0.5, 1.quo(2.0))
+    assert_equal(0.5, 1 / 2.0)
+    assert_equal(0, 1.div(2.0))
+
+    ### rational changes the behavior of Fixnum#quo
+    #assert_raise(TypeError) { 2.quo(nil) }
+    assert_raise(TypeError, NoMethodError) { 2.quo(nil) }
+    assert_raise(TypeError) { 2 / nil }
+    assert_raise(TypeError) { 2.div(nil) }
+
+    assert_equal(0, 4.modulo(2))
+    assert_equal(1, 1.modulo(2**32))
+    assert_equal(1, 1.modulo(2.0))
+    assert_raise(TypeError) { 2.modulo(nil) }
+
+    assert_equal([2, 0], 4.divmod(2))
+    assert_equal([0, 1], 1.divmod(2**32))
+    assert_equal([0, 1], 1.divmod(2.0))
+    assert_raise(TypeError) { 2.divmod(nil) }
+  end
+
+  def test_pow2
+    assert_equal(65536, 2**16)
+    assert_equal(4294967296, 2**32)
+    assert_equal(0.5**16, 2**-16)
+    assert_equal(1, (-1)**4294967296)
+    assert_equal(-1, (-1)**4294967295)
+    assert_equal(4, 2**((2**32).coerce(2).first))
+    assert_equal(2, 4**0.5)
+    assert_equal(0, 0**0.5)
+    assert((0**-1.0).infinite?)
+    ### rational changes the behavior of Fixnum#**
+    #assert_raise(TypeError) { 1 ** nil }
+    assert_raise(TypeError, NoMethodError) { 1 ** nil }
+  end
+
+  def test_cmp
+    assert(1 != nil)
+
+    assert_equal(0, 1 <=> 1)
+    assert_equal(-1, 1 <=> 4294967296)
+    assert_equal(0, 1 <=> 1.0)
+    assert_nil(1 <=> nil)
+
+    assert(1.send(:>, 0))
+    assert(!(1.send(:>, 1)))
+    assert(!(1.send(:>, 2)))
+    assert(!(1.send(:>, 4294967296)))
+    assert(1.send(:>, 0.0))
+    assert_raise(ArgumentError) { 1.send(:>, nil) }
+
+    assert(1.send(:>=, 0))
+    assert(1.send(:>=, 1))
+    assert(!(1.send(:>=, 2)))
+    assert(!(1.send(:>=, 4294967296)))
+    assert(1.send(:>=, 0.0))
+    assert_raise(ArgumentError) { 1.send(:>=, nil) }
+
+    assert(!(1.send(:<, 0)))
+    assert(!(1.send(:<, 1)))
+    assert(1.send(:<, 2))
+    assert(1.send(:<, 4294967296))
+    assert(!(1.send(:<, 0.0)))
+    assert_raise(ArgumentError) { 1.send(:<, nil) }
+
+    assert(!(1.send(:<=, 0)))
+    assert(1.send(:<=, 1))
+    assert(1.send(:<=, 2))
+    assert(1.send(:<=, 4294967296))
+    assert(!(1.send(:<=, 0.0)))
+    assert_raise(ArgumentError) { 1.send(:<=, nil) }
+  end
+
+  def test_id2name
+    assert_equal("foo", :foo.to_i.id2name)
+    assert_nil(0.id2name)
+    assert_equal(:foo, :foo.to_i.to_sym)
+    assert_nil(0.to_sym)
+  end
 end

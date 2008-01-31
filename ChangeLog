@@ -1,3 +1,15 @@
+Thu Jan 31 23:06:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_bignum.rb: suppress warnings during test.
+	* test/ruby/test_enum.rb: ditto.
+	* test/ruby/test_integer.rb: add tests to achieve over 90% test
+	  coverage of numeric.c.
+	* test/ruby/test_float.rb: ditto.
+	* test/ruby/test_fixnum.rb: ditto.
+	* test/ruby/test_numeric.rb: ditto.
+	* test/ruby/test_pack.rb: add tests to achieve over 90% test coverage
+	  of pack.c.
+
 Thu Jan 31 17:30:42 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* marshal.c (r_object0): no need to call r_entry for immediate values.
