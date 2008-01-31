@@ -136,16 +136,16 @@ class RDoc::RI::DefaultDisplay
 
   def display_method_list(methods)
     page do
-      puts "More than one method matched your request. You can refine"
-      puts "your search by asking for information on one of:\n\n"
+      @formatter.raw_print_line("More than one method matched your request. You can refine")
+      @formatter.raw_print_line("your search by asking for information on one of:\n\n")
       @formatter.wrap(methods.map {|m| m.full_name} .join(", "))
     end
   end
 
   def display_class_list(namespaces)
     page do
-      puts "More than one class or module matched your request. You can refine"
-      puts "your search by asking for information on one of:\n\n"
+      @formatter.raw_print_line("More than one class or module matched your request. You can refine")
+      @formatter.raw_print_line("your search by asking for information on one of:\n\n")
       @formatter.wrap(namespaces.map {|m| m.full_name}.join(", "))
     end
   end

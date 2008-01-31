@@ -1,3 +1,17 @@
+Thu Jan 31 14:03:38 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/rdoc/ri/display.rb (display_method_list, display_class_list):
+	  use @formatter.raw_print_line instead of puts.
+
+	* lib/rdoc/ri/driver.rb (select_methods): new method to collect all
+	  instance/class methods which match with passed pattern.
+
+	* lib/rdoc/ri/driver.rb (run): use class_cache's result directly
+	  instead of select_classes' because it's removed now.
+
+	* lib/rdoc/ri/driver.rb (run): search methods when passed name is not
+	  class name. [ruby-core:15309]
+
 Thu Jan 31 08:31:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (ext/extmk.rb, instruby.rb): inlined $(MAKE) so that can

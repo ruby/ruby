@@ -346,7 +346,7 @@ Options may also be set in the 'RI' environment variable.
 
   def run
     if @names.empty? then
-      @display.list_known_classes select_classes
+      @display.list_known_classes class_cache.keys.sort
     else
       @names.each do |name|
         case name
@@ -371,17 +371,33 @@ Options may also be set in the 'RI' environment variable.
           if class_cache.key? name then
             display_class name
           else
-            @display.list_known_classes select_classes(/^#{name}/)
+            methods = select_methods(/^#{name}/)
+            if methods.size == 0
+              abort "Nothing known about #{name}"
+            elsif methods.size == 1
+              @display.display_method_info methods.first
+            else
+              @display.display_method_list methods
+            end
           end
         end
       end
     end
   end
 
-  def select_classes(pattern = nil)
-    classes = class_cache.keys.sort
-    classes = classes.grep pattern if pattern
-    classes
+  def select_methods(pattern)
+    methods = []
+    class_cache.keys.sort.each do |klass|
+      class_cache[klass]["instance_methods"].map{|h|h["name"]}.grep(pattern) do |name|
+        method = load_cache_for(klass)[klass+'#'+name]
+        methods << method if method
+      end
+      class_cache[klass]["class_methods"].map{|h|h["name"]}.grep(pattern) do |name|
+        method = load_cache_for(klass)[klass+'::'+name]
+        methods << method if method
+      end
+    end
+    methods
   end
 
   def write_cache(cache, path)
