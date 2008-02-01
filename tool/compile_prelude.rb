@@ -16,8 +16,8 @@ C_ESC = {
   "\n" => '\n',
 }
 
-0x00.upto(0x1f) {|ch| C_ESC[[ch].pack("C")] ||= "\\x%02x" % ch }
-0x7f.upto(0xff) {|ch| C_ESC[[ch].pack("C")] = "\\x%02x" % ch }
+0x00.upto(0x1f) {|ch| C_ESC[[ch].pack("C")] ||= "\\%03o" % ch }
+0x7f.upto(0xff) {|ch| C_ESC[[ch].pack("C")] = "\\%03o" % ch }
 C_ESC_PAT = Regexp.union(*C_ESC.keys)
 
 def c_esc(str)

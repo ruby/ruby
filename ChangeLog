@@ -1,3 +1,8 @@
+Fri Feb  1 11:44:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/compile_prelude.rb (C_ESC): use octal escape to avoid
+	  "\x09for (;;) ..." to be interpret the first character 0x9f.
+
 Thu Jan 31 23:06:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_bignum.rb: suppress warnings during test.
