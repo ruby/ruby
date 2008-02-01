@@ -1,3 +1,9 @@
+Fri Feb  1 12:43:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (darwin): _XOPEN_SOURCE is necessary to make ucontext_t
+	  consistent with the library implementation of MacOS X 10.5.
+	  [ruby-dev:33461]
+
 Fri Feb  1 11:44:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/compile_prelude.rb (C_ESC): use octal escape to avoid
