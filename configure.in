@@ -377,7 +377,10 @@ darwin*)	LIBS="-lobjc $LIBS"
 		    #error pre OS X 10.4
 		    [!<===== pre OS X 10.4 =====>]
 		    #endif
-		    ], [],
+		    ],
+		    [
+		    test "x$target_cpu" = xppc && ac_cv_header_ucontext_h=no
+		    ],
 		    [
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)
