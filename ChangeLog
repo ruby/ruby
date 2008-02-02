@@ -1,3 +1,11 @@
+Sat Feb  2 09:53:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (darwin): disabled fat-binary support which confuses
+	  configure much, since ``universal'' implies hidden cross-compiling.
+	  TODO: ruby and libruby.bundle might be possible to bound with `lipo'
+	  after builds for each archs.  Anyway, config.h and rbconfig.rb must
+	  be separated definitely at least.
+
 Sat Feb  2 09:28:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* random.c (limited_big_rand): fix buffer overflow when SIZEOF_BDIGITS
