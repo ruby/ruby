@@ -1039,11 +1039,8 @@ time_nsec(VALUE time)
 /*
  *  call-seq:
  *     time <=> other_time => -1, 0, +1 
- *     time <=> numeric    => -1, 0, +1
  *  
- *  Comparison---Compares <i>time</i> with <i>other_time</i> or with
- *  <i>numeric</i>, which is the number of seconds (possibly
- *  fractional) since the Epoch.
+ *  Comparison---Compares <i>time</i> with <i>other_time</i>.
  *     
  *     t = Time.now       #=> 2007-11-19 08:12:12 -0600
  *     t2 = t + 2592000   #=> 2007-12-19 08:12:12 -0600
