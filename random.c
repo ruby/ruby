@@ -385,12 +385,16 @@ limited_big_rand(struct RBignum *limit)
     val = (struct RBignum *)rb_big_clone((VALUE)limit);
     RBIGNUM_SET_SIGN(val, 1);
 #if SIZEOF_BDIGITS == 2
-# define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[(i)*2] | \
-                           ((i)*2+1 < RBIGNUM_DIGITS(big) ? (RBIGNUM_DIGITS(big)[(i)*2+1] << 16) \
-                                                 : 0))
-# define BIG_SET32(big,i,d) ((RBIGNUM_DIGITS(big)[(i)*2] = (d) & 0xffff), \
-                             ((i)*2+1 < RBIGNUM_DIGITS(big) ? (RBIGNUM_DIGITS(big)[(i)*2+1] = (d) >> 16) \
-                                                   : 0))
+# define BIG_GET32(big,i) \
+    (RBIGNUM_DIGITS(big)[(i)*2] | \
+     ((i)*2+1 < RBIGNUM_LEN(big) ? \
+      (RBIGNUM_DIGITS(big)[(i)*2+1] << 16) : \
+      0))
+# define BIG_SET32(big,i,d) \
+    ((RBIGNUM_DIGITS(big)[(i)*2] = (d) & 0xffff), \
+     ((i)*2+1 < RBIGNUM_LEN(big) ? \
+      (RBIGNUM_DIGITS(big)[(i)*2+1] = (d) >> 16) : \
+      0))
 #else
     /* SIZEOF_BDIGITS == 4 */
 # define BIG_GET32(big,i) (RBIGNUM_DIGITS(big)[i])

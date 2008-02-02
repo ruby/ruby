@@ -1,3 +1,8 @@
+Sat Feb  2 09:28:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (limited_big_rand): fix buffer overflow when SIZEOF_BDIGITS
+	  is 2.  fixed by Kenta Murata.  [ruby-dev:33565]
+
 Fri Feb  1 21:42:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (darwin): _XOPEN_SOURCE is necessary to make ucontext_t
