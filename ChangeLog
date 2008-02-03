@@ -1,3 +1,9 @@
+Sun Feb 03 21:13:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_numeric.rb: forgot to add this (at r15360).
+	* test/ruby/test_file_exhaustive.rb: add tests to achive over 80% test
+	  coverage of file.c.
+
 Sat Feb  2 20:06:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/benchmark.rb (Benchmark::realtime): make Benchmark#realtime
