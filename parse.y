@@ -8906,11 +8906,19 @@ rb_enc_symname2_p(const char *name, int len, rb_encoding *enc)
 	if (*++m == '=') ++m;
 	break;
 
+      case '!':
+	switch (*++m) {
+	  case '\0': return Qtrue;
+	  case '=': case '~': ++m; break;
+	  default: return Qfalse;
+	}
+	break;
+	    
       default:
 	localid = !rb_enc_isupper(*m, enc);
       id:
 	if (m >= e || (*m != '_' && !rb_enc_isalpha(*m, enc) && ISASCII(*m)))
-		  return Qfalse;
+	    return Qfalse;
 	while (m < e && is_identchar(m, e, enc)) m += rb_enc_mbclen(m, e, enc);
 	if (localid) {
 	    switch (*m) {
