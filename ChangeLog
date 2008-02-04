@@ -1,6 +1,6 @@
 Mon Feb  4 14:51:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* trunk/parse.y (rb_enc_symname2_p): support "!", "!=" and "!~".
+	* parse.y (rb_enc_symname2_p): support "!", "!=" and "!~".
 	  [ruby-dev:33592]
 
 Mon Feb  4 13:58:42 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -2431,7 +2431,7 @@ Mon Dec 31 07:39:31 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Dec 31 06:50:38 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* trunk/common.mk: not use -I$(srcdir)/lib with $(MINIRUBY) for cross
+	* common.mk: not use -I$(srcdir)/lib with $(MINIRUBY) for cross
 	  compiling.
 
 	* configure.in, {win,bcc}32/Makefile.sub (MINIRUBY): -I$(srcdir)/lib
@@ -2960,11 +2960,11 @@ Tue Dec 25 16:15:15 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Dec 25 16:04:28 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* trunk/common.mk, goruby.c, golf_prelude.rb: for golfers.
+	* common.mk, goruby.c, golf_prelude.rb: for golfers.
 
-	* trunk/main.c (main): hook for embedding applications.
+	* main.c (main): hook for embedding applications.
 
-	* trunk/tool/compile_prelude.rb: can change initialize function name.
+	* tool/compile_prelude.rb: can change initialize function name.
 
 Tue Dec 25 15:59:51 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -7479,11 +7479,11 @@ Sat Oct 13 00:00:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Oct 12 15:04:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* trunk/parse.y (magic_comments): add "encoding" as same as "coding".
+	* parse.y (magic_comments): add "encoding" as same as "coding".
 
-	* trunk/parse.y (set_file_encoding): special file encoding handling.
+	* parse.y (set_file_encoding): special file encoding handling.
 
-	* trunk/parse.y (parser_yylex): ditto.
+	* parse.y (parser_yylex): ditto.
 
 Fri Oct 12 12:44:11 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
