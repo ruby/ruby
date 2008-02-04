@@ -1,3 +1,8 @@
+Mon Feb  4 16:44:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (darwin): NSIG is not defined if _XOPEN_SOURCE > 500L.
+	  [ruby-dev:33584]
+
 Mon Feb  4 14:51:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_enc_symname2_p): support "!", "!=" and "!~".

@@ -468,7 +468,7 @@ nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
 darwin*)	LIBS="-lobjc $LIBS"
-		CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE=600 -D_DARWIN_C_SOURCE"
+		CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE"
 		AC_TRY_CPP([#include <AvailabilityMacros.h>
 		    #if MAC_OS_X_VERSION_MAX_ALLOWED <= 1040
 		    #error pre OS X 10.4
