@@ -143,7 +143,7 @@ class Delegator
           target.__send__(m, *args, &block)
         end
       rescue Exception
-        $@.delete_if{|s| /^#{__FILE__}:\d+:in `method_missing'$/ =~ s} #`
+        $@.delete_if{|s| %r"\A#{__FILE__}:\d+:in `method_missing'\z"o =~ s}
         ::Kernel::raise
       end
     end
@@ -246,9 +246,17 @@ class SimpleDelegator<Delegator
 end
 
 # :stopdoc:
-# backward compatibility ^_^;;;
-Delegater = Delegator
-SimpleDelegater = SimpleDelegator
+def Delegator.delegating_block(mid)
+  lambda do |*args, &block|
+    begin
+      @delegate_dc_obj.__send__(mid, *args, &block)
+    rescue
+      re = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-2}:/o
+      $!.backtrace.delete_if {|t| re =~ t}
+      raise
+    end
+  end
+end
 # :startdoc:
 
 #
@@ -280,19 +288,9 @@ def DelegateClass(superclass)
       @delegate_dc_obj = obj
     end
   }
-  for method in methods
-    begin
-      klass.module_eval <<-EOS, __FILE__, __LINE__+1
-        def #{method}(*args, &block)
-	  begin
-	    @delegate_dc_obj.__send__(:#{method}, *args, &block)
-	  rescue
-	    raise $!, $@[2..-1]
-	  end
-	end
-      EOS
-    rescue SyntaxError
-      raise NameError, "invalid identifier %s" % method, caller(3)
+  klass.module_eval do
+    methods.each do |method|
+      define_method(method, Delegator.delegating_block(method))
     end
   end
   return klass
