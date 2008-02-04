@@ -1178,29 +1178,6 @@ class CGI
       @multipart
     end
 
-    module Value    # :nodoc:
-      def set_params(params)
-        @params = params
-      end
-      def [](idx, *args)
-        if args.size == 0
-          warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
-          @params[idx]
-        else
-          super[idx,*args]
-        end
-      end
-      def first
-        warn "#{caller(1)[0]}:CAUTION! cgi['key'] == cgi.params['key'][0]; if want Array, use cgi.params['key']"
-        self
-      end
-      alias last first
-      def to_a
-        @params || [self]
-      end
-      alias to_ary to_a   	# to be rhs of multiple assignment
-    end
-
     # Get the value for the parameter with a given key.
     #
     # If the parameter has multiple values, only the first will be 
@@ -1219,8 +1196,6 @@ class CGI
         end
       else
         str = if value then value.dup else "" end
-        str.extend(Value)
-        str.set_params(params)
         str
       end
     end
