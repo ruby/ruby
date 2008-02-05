@@ -1,14 +1,19 @@
-Wed Feb 06 00:48:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+Wed Feb  6 00:50:19 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* insns.def (adjuststack): never use INC_SP with minus value because
+	  some compilers cannot deal it collectly. use DEC_SP instead.
+
+Wed Feb  6 00:48:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_hash.rb: add tests to achieve over 90% test coverage
 	  of hash.c.
 	* test/ruby/test_env.rb: ditto.
 
-Wed Feb 06 00:24:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+Wed Feb  6 00:24:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* hash.c (env_rassoc): remove access to free'd environment on mswin32.
 
-Tue Feb 05 21:57:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+Tue Feb  5 21:57:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm.c (rb_call_super): pass a passed block when super is called via
 	  rb_call_super.  [ruby-dev:33598]
@@ -49,7 +54,7 @@ Mon Feb  4 08:59:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  extend(CGI::Value).  a patch from <tommy AT tmtm.org> in
 	  [ruby-dev:33583].
 
-Sun Feb 03 21:13:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+Sun Feb  3 21:13:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_numeric.rb: forgot to add this (at r15360).
 	* test/ruby/test_file_exhaustive.rb: add tests to achive over 80% test
@@ -7640,7 +7645,7 @@ Sun Oct  7 17:50:14 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/open-uri.rb: ditto.
 
-Sun Oct 07 15:48:40 2007  Koichi Sasada  <ko1@atdot.net>
+Sun Oct  7 15:48:40 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (opt_eq): fix to use rb_str_equal().
 
@@ -11808,7 +11813,7 @@ Thu Jun  7 12:48:33 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_fiber.rb: add a test.
 
-Thu Jun 07 07:24:36 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+Thu Jun  7 07:24:36 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/json/common.rb: Ponder offering parse! method.
 
@@ -14202,7 +14207,7 @@ Wed Feb  7 03:39:32 2007  Koichi Sasada  <ko1@atdot.net>
 	* ruby.h, proc.c: change declaration place of rb_cEnv
 	  from proc.c to ruby.c.
 
-Tue Feb 06 22:06:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
+Tue Feb  6 22:06:45 2007  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c}:
 	  imported nkf 2007-01-28.
@@ -14915,20 +14920,20 @@ Thu Jan  4 17:00:06 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  OpenSSL::ASN1::ASN1Data#value,#tag,#tag_class and
 	  OpenSSL::ASN1::BitString#unused_bits should be public.
 
-Thu Jan 04 13:45:10 2007  Koichi Sasada  <ko1@atdot.net>
+Thu Jan  4 13:45:10 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.ci: fix last changes around PTHREAD_STACK_MIN.
 
-Thu Jan 04 13:42:47 2007  Koichi Sasada  <ko1@atdot.net>
+Thu Jan  4 13:42:47 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* common.mk: restore changes.
 
-Thu Jan 04 10:33:54 2007  Koichi Sasada  <ko1@atdot.net>
+Thu Jan  4 10:33:54 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.ci: fix to skip using PTHREAD_STACK_MIN.
 	  [ruby-dev:30063]
 
-Thu Jan 04 10:30:11 2007  Koichi Sasada  <ko1@atdot.net>
+Thu Jan  4 10:30:11 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* benchmark/run_rite.rb (bm): fix to use lines.
 
@@ -14948,13 +14953,13 @@ Tue Jan  2 10:29:54 2007  Eric Hodel  <drbrain@segment7.net>
 	* ext/zlib/zlib.c: fix to compile on YARV
 	  ruby_errinfo -> rb_errinfo()
 
-Mon Jan 01 08:07:06 2007  Koichi Sasada  <ko1@atdot.net>
+Mon Jan  1 08:07:06 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/tk/tcltklib.c: fix to compile on YARV
 	  ruby_errinfo -> rb_errinfo(),
 	  ruby_safe_level -> rb_safe_level().
 
-Mon Jan 01 07:57:17 2007  Koichi Sasada  <ko1@atdot.net>
+Mon Jan  1 07:57:17 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* test/drb/test_drbssl.rb: fix to skip drb tests.
 
@@ -14976,7 +14981,7 @@ Mon Jan  1 06:05:55 2007  Eric Hodel  <drbrain@segment7.net>
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constants): Fix
 	  whitespace handling in constant comments.
 
-Mon Jan 01 00:00:00 2007  Koichi Sasada  <ko1@atdot.net>
+Mon Jan  1 00:00:00 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* Merge YARV
 
@@ -16764,7 +16769,7 @@ Wed Sep  6 13:25:04 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (symbols_i): need to initialize early-created symbols.
 	  [ruby-dev:29496]
 
-Wed Sep 06 12:05:19 2006  NARUSE, Yui  <naruse@ruby-lang.org>
+Wed Sep  6 12:05:19 2006  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (Kconv::toeuc): remove -m0 [ruby-dev:29505]
 
