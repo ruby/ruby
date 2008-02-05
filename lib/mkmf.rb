@@ -73,16 +73,18 @@ end
 
 INSTALL_DIRS = [
   [dir_re('commondir'), "$(RUBYCOMMONDIR)"],
-  [dir_re("sitedir"), "$(RUBYCOMMONDIR)"],
+  [dir_re('sitedir'), "$(RUBYCOMMONDIR)"],
   [dir_re('rubylibdir'), "$(RUBYLIBDIR)"],
   [dir_re('archdir'), "$(RUBYARCHDIR)"],
   [dir_re('sitelibdir'), "$(RUBYLIBDIR)"],
-  [dir_re('sitearchdir'), "$(RUBYARCHDIR)"]
+  [dir_re('sitearchdir'), "$(RUBYARCHDIR)"],
+  [dir_re('bindir'), "$(BINDIR)"],
 ]
 
 def install_dirs(target_prefix = nil)
   if $extout
     dirs = [
+      ['BINDIR',        '$(extout)/bin'],
       ['RUBYCOMMONDIR', '$(extout)/common'],
       ['RUBYLIBDIR',    '$(RUBYCOMMONDIR)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(extout)/$(arch)$(target_prefix)'],
@@ -91,12 +93,14 @@ def install_dirs(target_prefix = nil)
     ]
   elsif $extmk
     dirs = [
+      ['BINDIR',        '$(bindir)'],
       ['RUBYCOMMONDIR', '$(rubylibdir)'],
       ['RUBYLIBDIR',    '$(rubylibdir)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(archdir)$(target_prefix)'],
     ]
   else
     dirs = [
+      ['BINDIR',        '$(bindir)'],
       ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
       ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
@@ -498,13 +502,14 @@ end
 
 def install_files(mfile, ifiles, map = nil, srcprefix = nil)
   ifiles or return
+  ifiles.empty? and return
   srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
   dirs = []
   path = Hash.new {|h, i| h[i] = dirs.push([i])[-1]}
   ifiles.each do |files, dir, prefix|
     dir = map_dir(dir, map)
-    prefix = %r|\A#{Regexp.quote(prefix)}/?| if prefix
+    prefix &&= %r|\A#{Regexp.quote(prefix)}/?|
     if /\A\.\// =~ files
       # install files which are in current working directory.
       files = files[2..-1]
@@ -517,6 +522,10 @@ def install_files(mfile, ifiles, map = nil, srcprefix = nil)
     f = nil
     Dir.glob(files) do |f|
       f[0..len] = "" if len
+      case File.basename(f)
+      when *$NONINSTALLFILES
+        next
+      end
       d = File.dirname(f)
       d.sub!(prefix, "") if prefix
       d = (d.empty? || d == ".") ? dir : File.join(dir, d)
@@ -1548,7 +1557,8 @@ def init_mkmf(config = CONFIG)
   $DEFLIBPATH = $extmk ? ["$(topdir)"] : CROSS_COMPILING ? [] : ["$(libdir)"]
   $DEFLIBPATH.unshift(".")
   $LIBPATH = []
-  $INSTALLFILES = nil
+  $INSTALLFILES = []
+  $NONINSTALLFILES = [/~\z/, /\A#.*#\z/, /\A\.#/, /\.bak\z/i, /\.orig\z/, /\.rej\z/, /\.l[ao]\z/, /\.o\z/]
 
   $objs = nil
   $srcs = nil

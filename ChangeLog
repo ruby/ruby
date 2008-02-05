@@ -1,3 +1,13 @@
+Tue Feb  5 11:14:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (INSTALL_DIRS, install_dirs): added BINDIR.
+
+	* lib/mkmf.rb (install_files): rejects files matching to
+	  $NONINSTALLFILES.
+
+	* lib/mkmf.rb (init_mkmf): defaults $NONINSTALLFILES to backup and
+	  temporary filse.
+
 Mon Feb  4 16:44:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (darwin): NSIG is not defined if _XOPEN_SOURCE > 500L.
