@@ -1,3 +1,9 @@
+Wed Feb 06 00:48:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_hash.rb: add tests to achieve over 90% test coverage
+	  of hash.c.
+	* test/ruby/test_env.rb: ditto.
+
 Wed Feb 06 00:24:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* hash.c (env_rassoc): remove access to free'd environment on mswin32.

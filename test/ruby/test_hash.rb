@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'continuation'
 
 class TestHash < Test::Unit::TestCase
 
@@ -82,6 +83,12 @@ class TestHash < Test::Unit::TestCase
       self => 'self', true => 'true', nil => 'nil',
       'nil' => nil
     ]
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
   end
 
   def test_s_AREF
@@ -644,4 +651,180 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], expected - vals)
   end
 
+  def test_security_check
+    h = {}
+    assert_raise(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        h[1] = 1
+      end.join
+    end
+  end
+
+  def test_intialize_wrong_arguments
+    assert_raise(ArgumentError) do
+      Hash.new(0) { }
+    end
+  end
+
+  def test_create
+    assert_equal({1=>2, 3=>4}, Hash[[[1,2],[3,4]]])
+    assert_raise(ArgumentError) { Hash[0, 1, 2] }
+    assert_equal({1=>2, 3=>4}, Hash[1,2,3,4])
+  end
+
+  def test_rehash2
+    h = {1 => 2, 3 => 4}
+    assert_equal(h.dup, h.rehash)
+    assert_raise(RuntimeError) { h.each { h.rehash } }
+    assert_equal({}, {}.rehash)
+  end
+
+  def test_fetch2
+    assert_equal(:bar, @h.fetch(0, :foo) { :bar })
+  end
+
+  def test_default_proc
+    h = Hash.new {|h, k| h + k + "baz" }
+    assert_equal("foobarbaz", h.default_proc.call("foo", "bar"))
+    h = {}
+    assert_nil(h.default_proc)
+  end
+
+  def test_shift2
+    h = Hash.new {|h, k| :foo }
+    h[1] = 2
+    assert_equal([1, 2], h.shift)
+    assert_equal(:foo, h.shift)
+    assert_equal(:foo, h.shift)
+
+    h = Hash.new(:foo)
+    h[1] = 2
+    assert_equal([1, 2], h.shift)
+    assert_equal(:foo, h.shift)
+    assert_equal(:foo, h.shift)
+
+    h = {1=>2}
+    h.each { assert_equal([1, 2], h.shift) }
+  end
+
+  def test_reject_bang2
+    assert_equal({1=>2}, {1=>2,3=>4}.reject! {|k, v| k + v == 7 })
+    assert_nil({1=>2,3=>4}.reject! {|k, v| k == 5 })
+    assert_nil({}.reject! { })
+  end
+
+  def test_select
+    assert_equal({3=>4,5=>6}, {1=>2,3=>4,5=>6}.select {|k, v| k + v >= 7 })
+  end
+
+  def test_clear
+    assert_equal({}, {1=>2,3=>4,5=>6}.clear)
+    h = {1=>2,3=>4,5=>6}
+    h.each { h.clear }
+    assert_equal({}, h)
+  end
+
+  def test_replace2
+    h1 = Hash.new { :foo }
+    h2 = {}
+    h2.replace h1
+    assert_equal(:foo, h2[0])
+  end
+
+  def test_size2
+    assert_equal(0, {}.size)
+  end
+
+  def test_equal2
+    assert({} != 0)
+    o = Object.new
+    def o.to_hash; {}; end
+    def o.==(x); true; end
+    assert({} == o)
+    def o.==(x); false; end
+    assert({} != o)
+
+    h1 = {1=>2}; h2 = {3=>4}
+    assert(h1 != h2)
+    h1 = {1=>2}; h2 = {1=>4}
+    assert(h1 != h2)
+
+    h1 = {}; h1[h1] = h1; h1.rehash
+    h2 = {}; h2[h2] = h2; h2.rehash
+    assert(h1 != h2)
+  end
+
+  def test_eql
+    assert(!({}.eql?(0)))
+    o = Object.new
+    def o.to_hash; {}; end
+    def o.eql?(x); true; end
+    assert({}.eql?(o))
+    def o.eql?(x); false; end
+    assert(!({}.eql?(o)))
+  end
+
+  def test_hash2
+    assert_kind_of(Integer, {}.hash)
+  end
+
+  def test_update2
+    h1 = {1=>2, 3=>4}
+    h2 = {1=>3, 5=>7}
+    h1.update(h2) {|k, v1, v2| k + v1 + v2 }
+    assert_equal({1=>6, 3=>4, 5=>7}, h1)
+  end
+
+  def test_merge
+    h1 = {1=>2, 3=>4}
+    h2 = {1=>3, 5=>7}
+    assert_equal({1=>3, 3=>4, 5=>7}, h1.merge(h2))
+    assert_equal({1=>6, 3=>4, 5=>7}, h1.merge(h2) {|k, v1, v2| k + v1 + v2 })
+  end
+
+  def test_assoc
+    assert_equal([3,4], {1=>2, 3=>4, 5=>6}.assoc(3))
+    assert_nil({1=>2, 3=>4, 5=>6}.assoc(4))
+  end
+
+  def test_rassoc
+    assert_equal([3,4], {1=>2, 3=>4, 5=>6}.rassoc(4))
+    assert_nil({1=>2, 3=>4, 5=>6}.rassoc(3))
+  end
+
+  def test_flatten
+    assert_equal([1, 2], {[1] => [2]}.flatten)
+  end
+
+  def test_callcc
+    h = {1=>2}
+    c = nil
+    f = false
+    h.each { callcc {|c2| c = c2 } }
+    unless f
+      f = true
+      c.call
+    end
+    assert_raise(RuntimeError) { h.each { h.rehash } }
+
+    h = {1=>2}
+    c = nil
+    assert_raise(RuntimeError) do
+      h.each { callcc {|c2| c = c2 } }
+      h.clear
+      c.call
+    end
+  end
+
+  def test_compare_by_identity
+    a = "foo"
+    assert(!{}.compare_by_identity?)
+    h = { a => "bar" }
+    assert(!h.compare_by_identity?)
+    h.compare_by_identity
+    assert(h.compare_by_identity?)
+    #assert_equal("bar", h[a])
+    assert_nil(h["foo"])
+  end
 end
