@@ -306,7 +306,6 @@ putnil
 ()
 (VALUE val)
 {
-fprintf(stderr, "[DEBUG B] reg_cfp:%p reg_cfp->sp:%p\n", reg_cfp, reg_cfp->sp);
     val = Qnil;
 }
 
