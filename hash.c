@@ -1670,7 +1670,7 @@ rb_hash_rassoc(VALUE hash, VALUE obj)
 static VALUE
 rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE ary;
+    VALUE ary, tmp;
 
     ary = rb_hash_to_a(hash);
     if (argc == 0) {
