@@ -1,3 +1,8 @@
+Tue Feb 05 21:57:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm.c (rb_call_super): pass a passed block when super is called via
+	  rb_call_super.  [ruby-dev:33598]
+
 Tue Feb  5 11:14:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (INSTALL_DIRS, install_dirs): added BINDIR.

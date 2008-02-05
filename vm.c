@@ -536,6 +536,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 VALUE
 rb_call_super(int argc, const VALUE *argv)
 {
+    PASS_PASSED_BLOCK();
     return vm_call_super(GET_THREAD(), argc, argv);
 }
 
