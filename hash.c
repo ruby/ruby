@@ -2372,8 +2372,9 @@ env_rassoc(VALUE dmy, VALUE obj)
 	if (s++) {
 	    long len = strlen(s);
 	    if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
+		VALUE result = rb_assoc_new(rb_tainted_str_new(*env, s-*env-1), obj);
 		FREE_ENVIRON(environ);
-		return rb_assoc_new(rb_tainted_str_new(*env, s-*env-1), obj);
+		return result;
 	    }
 	}
 	env++;

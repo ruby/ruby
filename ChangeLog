@@ -1,3 +1,7 @@
+Wed Feb 06 00:24:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* hash.c (env_rassoc): remove access to free'd environment on mswin32.
+
 Tue Feb 05 21:57:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm.c (rb_call_super): pass a passed block when super is called via
