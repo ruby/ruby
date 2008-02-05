@@ -1,3 +1,8 @@
+Wed Feb  6 01:47:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_flatten): do not flatten recursively by default.
+	  [ruby-dev:33603]
+
 Wed Feb  6 00:50:19 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* insns.def (adjuststack): never use INC_SP with minus value because

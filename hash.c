@@ -1673,6 +1673,11 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
     VALUE ary;
 
     ary = rb_hash_to_a(hash);
+    if (argc == 0) {
+	argc = 1;
+	tmp = INT2FIX(1);
+	argv = &tmp;
+    }
     rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
     return ary;
 }
