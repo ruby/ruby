@@ -1,3 +1,8 @@
+Thu Feb 07 04:26:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/korean.c: add EUC-KR conversion support by Park Ji-In.
+	  [ruby-dev:33621]
+
 Wed Feb  6 01:47:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_flatten): do not flatten recursively by default.
