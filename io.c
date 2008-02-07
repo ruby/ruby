@@ -4132,7 +4132,13 @@ io_reopen(VALUE io, VALUE nfile)
     }
 
     /* copy rb_io_t structure */
-    fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
+    if (fptr->mode & FMODE_PREP) {
+        int mask = FMODE_PREP|FMODE_READWRITE;
+        fptr->mode = (orig->mode & ~mask)|(fptr->mode & mask);
+    }
+    else {
+        fptr->mode = orig->mode;
+    }
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (fptr->path) free(fptr->path);

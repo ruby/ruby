@@ -36,3 +36,19 @@ assert_finish 1, %q{
   }
   r.gets("abab")
 }
+
+assert_equal 'ok', %q{
+  require 'tmpdir'
+  begin
+    tmpname = "#{Dir.tmpdir}/ruby-btest-#{$$}-#{rand(0x100000000).to_s(36)}"
+    rw = File.open(tmpname, File::RDWR|File::CREAT|File::EXCL)
+  rescue Errno::EEXIST
+    retry
+  end
+  save = STDIN.dup
+  STDIN.reopen(rw)
+  STDIN.reopen(save)
+  rw.close
+  File.unlink(tmpname)
+  :ok
+}
