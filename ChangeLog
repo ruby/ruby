@@ -1,3 +1,24 @@
+Thu Feb  7 10:39:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (math_gamma): new method Math.gamma.
+	  (math_lgamma): new method Math.lgamma.
+
+	* include/ruby/missing.h (tgamma): declared unless HAVE_TGAMMA.
+	  (lgamma_r): declared unless HAVE_LGAMMA_R.
+
+	* configure.in (tgamma): check for replacement funtions.
+	  (lgamma_r): ditto.
+	
+	* missing/tgamma.c: new file.  based on gamma.c from
+	  "C-gengo niyoru saishin algorithm jiten" (New Algorithm handbook
+	  in C language) (Gijyutsu hyouron sha, Tokyo, 1991)
+	  by Haruhiko Okumura.
+
+	* missing/lgamma_r.c: ditto.
+
+	* LEGAL (missing/tgamma.c): describe as public domain.
+	  (missing/lgamma_r.c): ditto.
+
 Thu Feb  7 09:05:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_enc_from_index): BINARY does not

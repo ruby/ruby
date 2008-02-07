@@ -158,6 +158,8 @@ ext/digest/sha1/sha1.[ch]:
   These files are all under public domain.
 
 missing/erf.c:
+missing/tgamma.c:
+missing/lgamma_r.c:
 missing/crypt.c:
 missing/vsnprintf.c:
 

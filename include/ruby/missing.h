@@ -79,6 +79,14 @@ extern double erf(double);
 extern double erfc(double);
 #endif
 
+#ifndef HAVE_TGAMMA
+extern double tgamma(double);
+#endif
+
+#ifndef HAVE_LGAMMA_R
+extern double lgamma_r(double, int *);
+#endif
+
 #ifndef isinf
 # ifndef HAVE_ISINF
 #  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)

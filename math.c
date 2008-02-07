@@ -487,6 +487,76 @@ math_erfc(VALUE obj, VALUE x)
 }
 
 /*
+ * call-seq:
+ *    Math.gamma(x)  => float
+ *
+ *  Calculates the gamma function of x.
+ *
+ *  Note that gamma(n) is same as fact(n-1) for integer n >= 0.
+ *  However gamma(n) returns float and possibly has error in calculation.
+ *
+ *   def fact(n) (1..n).inject(1) {|r,i| r*i } end
+ *   0.upto(25) {|i| p [i, Math.gamma(i+1), fact(i)] }
+ *   =>
+ *   [0, 1.0, 1]
+ *   [1, 1.0, 1]
+ *   [2, 2.0, 2]
+ *   [3, 6.0, 6]
+ *   [4, 24.0, 24]
+ *   [5, 120.0, 120]
+ *   [6, 720.0, 720]
+ *   [7, 5040.0, 5040]
+ *   [8, 40320.0, 40320]
+ *   [9, 362880.0, 362880]
+ *   [10, 3628800.0, 3628800]
+ *   [11, 39916800.0, 39916800]
+ *   [12, 479001599.999999, 479001600]
+ *   [13, 6227020800.00001, 6227020800]
+ *   [14, 87178291199.9998, 87178291200]
+ *   [15, 1307674368000.0, 1307674368000]
+ *   [16, 20922789888000.0, 20922789888000]
+ *   [17, 3.55687428096001e+14, 355687428096000]
+ *   [18, 6.40237370572799e+15, 6402373705728000]
+ *   [19, 1.21645100408832e+17, 121645100408832000]
+ *   [20, 2.43290200817664e+18, 2432902008176640000]
+ *   [21, 5.10909421717094e+19, 51090942171709440000]
+ *   [22, 1.12400072777761e+21, 1124000727777607680000]
+ *   [23, 2.58520167388851e+22, 25852016738884976640000]
+ *   [24, 6.20448401733239e+23, 620448401733239439360000]
+ *   [25, 1.5511210043331e+25, 15511210043330985984000000]
+ *
+ */
+
+static VALUE
+math_gamma(VALUE obj, VALUE x)
+{
+    Need_Float(x);
+    return DOUBLE2NUM(tgamma(RFLOAT_VALUE(x)));
+}
+
+/*
+ * call-seq:
+ *    Math.lgamma(x)  => [float, -1 or 1]
+ *
+ *  Calculates the logarithmic gamma of x and
+ *  the sign of gamma of x.
+ *
+ *  Math.lgamma(x) is same as
+ *   [Math.log(Math.gamma(x)), Math.gamma(x) < 0 ? -1 : 1]
+ *  but avoid overflow by Math.gamma(x) for large x.
+ */
+
+static VALUE
+math_lgamma(VALUE obj, VALUE x)
+{
+    int sign;
+    VALUE v;
+    Need_Float(x);
+    v = DOUBLE2NUM(lgamma_r(RFLOAT_VALUE(x), &sign));
+    return rb_assoc_new(v, INT2FIX(sign));
+}
+
+/*
  *  The <code>Math</code> module contains module functions for basic
  *  trigonometric and transcendental functions. See class
  *  <code>Float</code> for a list of constants that
@@ -541,4 +611,7 @@ Init_Math(void)
 
     rb_define_module_function(rb_mMath, "erf",  math_erf,  1);
     rb_define_module_function(rb_mMath, "erfc", math_erfc, 1);
+
+    rb_define_module_function(rb_mMath, "gamma", math_gamma, 1);
+    rb_define_module_function(rb_mMath, "lgamma", math_lgamma, 1);
 }
