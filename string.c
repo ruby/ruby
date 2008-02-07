@@ -3049,7 +3049,7 @@ rb_str_replace(VALUE str, VALUE str2)
     }
     else {
 	rb_str_modify(str);
-	str_replace_shared(str, str2);
+	str_replace_shared(str, rb_str_new4(str2));
     }
 
     OBJ_INFECT(str, str2);

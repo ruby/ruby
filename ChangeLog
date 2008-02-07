@@ -1,6 +1,9 @@
-Thu Feb  7 18:57:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb  7 19:11:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_dup): reverted unneeded change.  [ruby-dev:33634]
+
+	* string.c (rb_str_replace): makes frozen shared string before
+	  sharing.
 
 Thu Feb  7 16:33:51 2008  Tanaka Akira  <akr@fsij.org>
 
