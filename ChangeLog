@@ -6,7 +6,7 @@ Thu Feb  7 10:39:21 2008  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/missing.h (tgamma): declared unless HAVE_TGAMMA.
 	  (lgamma_r): declared unless HAVE_LGAMMA_R.
 
-	* configure.in (tgamma): check for replacement funtions.
+	* configure.in (tgamma): check for replacement functions.
 	  (lgamma_r): ditto.
 	
 	* missing/tgamma.c: new file.  based on gamma.c from
@@ -37,7 +37,7 @@ Wed Feb  6 01:47:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Feb  6 00:50:19 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* insns.def (adjuststack): never use INC_SP with minus value because
-	  some compilers cannot deal it collectly. use DEC_SP instead.
+	  some compilers cannot deal it correctly. use DEC_SP instead.
 
 Wed Feb  6 00:48:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -93,7 +93,7 @@ Mon Feb  4 08:59:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sun Feb  3 21:13:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_numeric.rb: forgot to add this (at r15360).
-	* test/ruby/test_file_exhaustive.rb: add tests to achive over 80% test
+	* test/ruby/test_file_exhaustive.rb: add tests to achieve over 80% test
 	  coverage of file.c.
 
 Sat Feb  2 20:06:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -209,7 +209,7 @@ Wed Jan 30 17:32:49 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Wed Jan 30 14:32:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* lib/rdoc/ri/driver.rb (cache_file_for): shoudn't use `:' in filename.
+	* lib/rdoc/ri/driver.rb (cache_file_for): shouldn't use `:' in filename.
 
 Wed Jan 30 14:27:19 2008  Tanaka Akira  <akr@fsij.org>
 
