@@ -1,3 +1,11 @@
+Thu Feb  7 11:11:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* missing/lgamma_r.c (lgamma_r): some compilers don't permit dividing
+	  by literal 0.0. use const variable instead.
+
+	* {bcc32,win32,wince}/Makefile.sub (MISSING): add lgamma_r.obj and
+	  tgamma.obj.
+
 Thu Feb  7 10:39:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* math.c (math_gamma): new method Math.gamma.

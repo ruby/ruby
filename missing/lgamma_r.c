@@ -51,8 +51,9 @@ lgamma_r(double x, int *signp)
         double i, f, s;
         f = modf(-x, &i);
         if (f == 0.0) {
+            static const double zero = 0.0;
             *signp = 1;
-            return 1.0/0.0;
+            return 1.0/zero;
         }
         *signp = (fmod(i, 2.0) != 0.0) ? 1 : -1;
         s = sin(PI * x);

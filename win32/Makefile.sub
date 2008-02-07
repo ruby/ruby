@@ -172,7 +172,7 @@ EXTLIBS =
 LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib ws2_32.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
-MISSING = acosh.obj crypt.obj erf.obj strlcpy.obj strlcat.obj win32.obj
+MISSING = acosh.obj crypt.obj erf.obj lgamma_r.obj strlcpy.obj strlcat.obj tgamma.obj win32.obj
 !endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
@@ -251,7 +251,7 @@ INSTALLED_LIST= .installed.list
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
 MINIOBJS      = dmydln.$(OBJEXT) dmyencoding.$(OBJEXT) dmytranscode.$(OBJEXT) miniprelude.$(OBJEXT)
-LIBOBJS       = acosh.obj crypt.obj erf.obj strlcpy.obj strlcat.obj win32.obj $(LIBOBJS)
+LIBOBJS       = $(MISSING) $(LIBOBJS)
 
 !ifndef COMMON_LIBS
 COMMON_LIBS  = m

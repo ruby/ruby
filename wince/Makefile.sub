@@ -26,7 +26,8 @@ XLDFLAGS = -stack:$(STACK) -subsystem:$(SUBSYSTEM)
 !endif
 LIBS = coredll.lib ceshell.lib winsock.lib  $(EXTLIBS)
 MISSING = acosh.obj crypt.obj dup2.obj erf.obj hypot.obj \
-          isinf.obj isnan.obj strftime.obj strlcat.obj strlcpy.obj win32.obj \
+          isinf.obj isnan.obj lgamma.obj strftime.obj strlcat.obj strlcpy.obj
+          tgamma.obj win32.obj \
           assert.obj direct.obj errno.obj io_wce.obj process_wce.obj \
           signal_wce.obj stdio.obj stdlib.obj string_wce.obj \
           time_wce.obj wince.obj winsock2.obj \
