@@ -564,7 +564,9 @@ static VALUE rb_str_replace(VALUE, VALUE);
 VALUE
 rb_str_dup(VALUE str)
 {
-    return rb_str_new3(str);
+    VALUE dup = str_alloc(rb_obj_class(str));
+    rb_str_replace(dup, str);
+    return dup;
 }
 
 
