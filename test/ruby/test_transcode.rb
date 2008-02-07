@@ -82,6 +82,10 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0643\u062A\u0628", "\xE3\xCA\xC8", 'iso-8859-6') # كتب
     check_both_ways("\u65E5\u8A18", "\x93\xFA\x8BL", 'shift_jis') # 日記
     check_both_ways("\u65E5\u8A18", "\xC6\xFC\xB5\xAD", 'euc-jp')
+    check_both_ways("\uC560\uC778\uAD6C\uD568\u0020\u6734\uC9C0\uC778",
+         "\xBE\xD6\xC0\xCE\xB1\xB8\xC7\xD4\x20\xDA\xD3\xC1\xF6\xC0\xCE", 'euc-kr') # 애인구함 朴지인
+    check_both_ways("\uC544\uD58F\uD58F\u0020\uB620\uBC29\uD6BD\uB2D8\u0020\uC0AC\uB791\uD716",
+         "\xBE\xC6\xC1\x64\xC1\x64\x20\x8C\x63\xB9\xE6\xC4\x4F\xB4\xD4\x20\xBB\xE7\xB6\xFB\xC5\x42", 'cp949') # 아햏햏 똠방횽님 사랑휖
   end
 
   def test_twostep
@@ -96,7 +100,7 @@ class TestTranscode < Test::Unit::TestCase
       'ISO-8859-7', 'ISO-8859-8', 'ISO-8859-9',
       'ISO-8859-10', 'ISO-8859-11', 'ISO-8859-13',
       'ISO-8859-14', 'ISO-8859-15',
-      'EUC-JP', 'SHIFT_JIS'
+      'EUC-JP', 'SHIFT_JIS', 'EUC-KR'
     ]
     all_ascii = (0..127).to_a.pack 'C*'
     encodings.each do |enc|

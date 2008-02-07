@@ -1,3 +1,8 @@
+Thu Feb  7 15:03:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/korean.c: add support for CP949 by Park Ji-In.
+	  [ruby-dev:33626]
+
 Thu Feb  7 11:11:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* missing/lgamma_r.c (lgamma_r): some compilers don't permit dividing
