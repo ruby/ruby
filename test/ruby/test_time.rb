@@ -145,4 +145,207 @@ class TestTime < Test::Unit::TestCase
     assert_marshal_roundtrip(Marshal.load(Marshal.dump(t)))
   end
 
+  # Sat Jan 01 00:00:00 UTC 2000
+  T2000 = Time.at(946684800).gmtime
+
+  def test_security_error
+    assert_raise(SecurityError) do
+      Thread.new do
+        t = Time.gm(2000)
+        $SAFE = 4
+        t.localtime
+      end.join
+    end
+  end
+
+  def test_at3
+    assert_equal(T2000, Time.at(T2000))
+    assert_raise(RangeError) { Time.at(2**31-1, 1_000_000) }
+    assert_raise(RangeError) { Time.at(-2**31, -1_000_000) }
+  end
+
+  def test_utc_or_local
+    assert_equal(T2000, Time.gm(2000))
+    assert_equal(T2000, Time.gm(0, 0, 0, 1, 1, 2000, :foo, :bar, false, :baz))
+    assert_equal(T2000, Time.gm(0))
+    assert_equal(T2000, Time.gm(100))
+    assert_equal(T2000, Time.gm(2000, "jan"))
+    assert_equal(T2000, Time.gm(2000, "1"))
+    assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, 0, 0))
+    assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, 0, "0"))
+    assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, "0", :foo, :foo))
+    assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1, :foo, :foo) }
+    assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1.0, :foo, :foo) }
+    assert_raise(RangeError) { Time.gm(2000, 1, 1, 0, 0, 10_000_000_000_000_001.0, :foo, :foo) }
+    assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -(2**31), :foo, :foo) }
+    o = Object.new
+    def o.divmod(x); nil; end
+    assert_raise(TypeError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    def o.divmod(x); [-1, 0]; end
+    assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, o, :foo, :foo) }
+    assert_raise(ArgumentError) { Time.gm(2000, 13) }
+
+    t = Time.local(2000)
+    assert_equal(t.gmt_offset, T2000 - t)
+  end
+
+  def test_time_interval
+    m = Mutex.new.lock
+    assert_nothing_raised { m.sleep(0) }
+    assert_raise(ArgumentError) { m.sleep(-1) }
+  end
+
+  def test_to_f
+    assert_equal(946684800.0, T2000.to_f)
+  end
+
+  def test_cmp
+    assert_equal(-1, T2000 <=> Time.gm(2001))
+    assert_equal(1, T2000 <=> Time.gm(1999))
+    assert_nil(T2000 <=> 0)
+  end
+
+  def test_eql
+    assert(T2000.eql?(T2000))
+    assert(!T2000.eql?(Time.gm(2001)))
+  end
+
+  def test_utc_p
+    assert(Time.gm(2000).gmt?)
+    assert(!Time.local(2000).gmt?)
+    assert(!Time.at(0).gmt?)
+  end
+
+  def test_hash
+    assert_kind_of(Integer, T2000.hash)
+  end
+
+  def test_init_copy
+    assert_equal(T2000, T2000.dup)
+    assert_raise(TypeError) do
+      T2000.instance_eval { initialize_copy(nil) }
+    end
+  end
+
+  def test_localtime_gmtime
+    assert_nothing_raised do
+      t = Time.gm(2000)
+      assert(t.gmt?)
+      t.localtime
+      assert(!t.gmt?)
+      t.localtime
+      assert(!t.gmt?)
+      t.gmtime
+      assert(t.gmt?)
+      t.gmtime
+      assert(t.gmt?)
+    end
+
+    t1 = Time.gm(2000)
+    t2 = t1.getlocal
+    assert_equal(t1, t2)
+    t1.localtime
+    assert_equal(t1, t2)
+    assert_equal(t1.gmt?, t2.gmt?)
+
+    t1 = Time.local(2000)
+    t2 = t1.getgm
+    assert_equal(t1, t2)
+    t1.gmtime
+    assert_equal(t1, t2)
+    assert_equal(t1.gmt?, t2.gmt?)
+  end
+
+  def test_asctime
+    assert_equal("Sat Jan  1 00:00:00 2000", T2000.asctime)
+    assert_kind_of(String, Time.at(0).asctime)
+  end
+
+  def test_to_s
+    assert_equal("2000-01-01 00:00:00 UTC", T2000.to_s)
+    assert_kind_of(String, Time.at(946684800).getlocal.to_s)
+    assert_equal(Time.at(946684800).getlocal.to_s, Time.at(946684800).to_s)
+  end
+
+  def test_plus_minus_succ
+    assert_raise(RangeError) { T2000 + 10000000000 }
+    assert_raise(RangeError) { T2000 - 3094168449 }
+    assert_raise(RangeError) { T2000 + 1200798848 }
+    assert_raise(TypeError) { T2000 + Time.now }
+    assert_equal(T2000 + 1, T2000.succ)
+  end
+
+  def test_readers
+    assert_equal(0, T2000.sec)
+    assert_equal(0, T2000.min)
+    assert_equal(0, T2000.hour)
+    assert_equal(1, T2000.mday)
+    assert_equal(1, T2000.mon)
+    assert_equal(2000, T2000.year)
+    assert_equal(6, T2000.wday)
+    assert_equal(1, T2000.yday)
+    assert_equal(false, T2000.isdst)
+    assert_equal("UTC", T2000.zone)
+    assert_equal(0, T2000.gmt_offset)
+    assert(!T2000.sunday?)
+    assert(!T2000.monday?)
+    assert(!T2000.tuesday?)
+    assert(!T2000.wednesday?)
+    assert(!T2000.thursday?)
+    assert(!T2000.friday?)
+    assert(T2000.saturday?)
+    assert_equal([0, 0, 0, 1, 1, 2000, 6, 1, false, "UTC"], T2000.to_a)
+
+    t = Time.at(946684800).getlocal
+    assert_equal(t.sec, Time.at(946684800).sec)
+    assert_equal(t.min, Time.at(946684800).min)
+    assert_equal(t.hour, Time.at(946684800).hour)
+    assert_equal(t.mday, Time.at(946684800).mday)
+    assert_equal(t.mon, Time.at(946684800).mon)
+    assert_equal(t.year, Time.at(946684800).year)
+    assert_equal(t.wday, Time.at(946684800).wday)
+    assert_equal(t.yday, Time.at(946684800).yday)
+    assert_equal(t.isdst, Time.at(946684800).isdst)
+    assert_equal(t.zone, Time.at(946684800).zone)
+    assert_equal(t.gmt_offset, Time.at(946684800).gmt_offset)
+    assert_equal(t.sunday?, Time.at(946684800).sunday?)
+    assert_equal(t.monday?, Time.at(946684800).monday?)
+    assert_equal(t.tuesday?, Time.at(946684800).tuesday?)
+    assert_equal(t.wednesday?, Time.at(946684800).wednesday?)
+    assert_equal(t.thursday?, Time.at(946684800).thursday?)
+    assert_equal(t.friday?, Time.at(946684800).friday?)
+    assert_equal(t.saturday?, Time.at(946684800).saturday?)
+    assert_equal(t.to_a, Time.at(946684800).to_a)
+  end
+
+  def test_strftime
+    assert_equal("Sat", T2000.strftime("%a"))
+    assert_equal("Saturday", T2000.strftime("%A"))
+    assert_equal("Jan", T2000.strftime("%b"))
+    assert_equal("January", T2000.strftime("%B"))
+    assert_equal("Sat Jan  1 00:00:00 2000", T2000.strftime("%c"))
+    assert_equal("01", T2000.strftime("%d"))
+    assert_equal("00", T2000.strftime("%H"))
+    assert_equal("12", T2000.strftime("%I"))
+    assert_equal("001", T2000.strftime("%j"))
+    assert_equal("01", T2000.strftime("%m"))
+    assert_equal("00", T2000.strftime("%M"))
+    assert_equal("AM", T2000.strftime("%p"))
+    assert_equal("00", T2000.strftime("%S"))
+    assert_equal("00", T2000.strftime("%U"))
+    assert_equal("00", T2000.strftime("%W"))
+    assert_equal("6", T2000.strftime("%w"))
+    assert_equal("01/01/00", T2000.strftime("%x"))
+    assert_equal("00:00:00", T2000.strftime("%X"))
+    assert_equal("00", T2000.strftime("%y"))
+    assert_equal("2000", T2000.strftime("%Y"))
+    assert_equal("GMT", T2000.strftime("%Z"))
+    assert_equal("%", T2000.strftime("%%"))
+
+    assert_equal("", T2000.strftime(""))
+    assert_equal("foo\0bar\x0000\x0000\x0000", T2000.strftime("foo\0bar\0%H\0%M\0%S"))
+    assert_equal("foo" * 1000, T2000.strftime("foo" * 1000))
+
+    assert_equal("Sat", Time.at(946684800).strftime("%a"))
+  end
 end

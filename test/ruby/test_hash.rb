@@ -794,7 +794,7 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_flatten
-    assert_equal([1, 2], {[1] => [2]}.flatten)
+    assert_equal([[1], [2]], {[1] => [2]}.flatten)
   end
 
   def test_callcc

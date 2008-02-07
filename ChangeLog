@@ -1,3 +1,12 @@
+Fri Feb 08 00:07:24 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_hash.rb: follow the change of Hash#flatten.
+
+	* test/ruby/test_time.rb: add tests to achieve over 70% test coverage
+	  of time.c.
+
+	* test/ruby/test_prec.rb: ditto over 90% for prec.c.
+
 Thu Feb  7 19:11:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_dup): reverted unneeded change.  [ruby-dev:33634]
@@ -82,6 +91,7 @@ Wed Feb  6 00:48:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_hash.rb: add tests to achieve over 90% test coverage
 	  of hash.c.
+
 	* test/ruby/test_env.rb: ditto.
 
 Wed Feb  6 00:24:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -132,6 +142,7 @@ Mon Feb  4 08:59:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sun Feb  3 21:13:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_numeric.rb: forgot to add this (at r15360).
+
 	* test/ruby/test_file_exhaustive.rb: add tests to achieve over 80% test
 	  coverage of file.c.
 
@@ -175,12 +186,18 @@ Fri Feb  1 11:44:22 2008  Tanaka Akira  <akr@fsij.org>
 Thu Jan 31 23:06:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_bignum.rb: suppress warnings during test.
+
 	* test/ruby/test_enum.rb: ditto.
+
 	* test/ruby/test_integer.rb: add tests to achieve over 90% test
 	  coverage of numeric.c.
+
 	* test/ruby/test_float.rb: ditto.
+
 	* test/ruby/test_fixnum.rb: ditto.
+
 	* test/ruby/test_numeric.rb: ditto.
+
 	* test/ruby/test_pack.rb: add tests to achieve over 90% test coverage
 	  of pack.c.
 
@@ -288,6 +305,7 @@ Tue Jan 29 22:58:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_enumerator.rb: add tests to achieve over 90% test
 	  coverage of enumerator.c.
+
 	* test/ruby/test_enum.rb: add for enum.c.
 
 Tue Jan 29 22:29:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -847,6 +865,7 @@ Thu Jan 24 03:23:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Jan 24 02:13:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* insns.def (expandarray): fix stack inc.  [ruby-dev:32892]
+
 	* bootstraptest/test_knownbug.rb, test_massign.rb: move a fixed test.
 
 Thu Jan 24 01:00:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -861,13 +880,16 @@ Thu Jan 24 01:00:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Wed Jan 23 23:54:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* sprintf.c: fix comment.  [ruby-dev:33275]
+
 	* math.c: fix comment.  [ruby-dev:33276]
 
 Wed Jan 23 22:47:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_struct.rb: add tests to achieve over 90% test
 	  coverage of struct.c.
+
 	* test/ruby/test_sprintf.rb: ditto for sprintf.c.
+
 	* test/ruby/test_math.rb: ditto for math.c.
 
 Wed Jan 23 22:14:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
