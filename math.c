@@ -542,7 +542,7 @@ math_gamma(VALUE obj, VALUE x)
  *  the sign of gamma of x.
  *
  *  Math.lgamma(x) is same as
- *   [Math.log(Math.gamma(x)), Math.gamma(x) < 0 ? -1 : 1]
+ *   [Math.log(Math.gamma(x).abs), Math.gamma(x) < 0 ? -1 : 1]
  *  but avoid overflow by Math.gamma(x) for large x.
  */
 
