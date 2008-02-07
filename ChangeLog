@@ -1,3 +1,13 @@
+Thu Feb  7 16:33:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_replace_shared): replaces string with sharing.
+
+	* string.c (rb_str_new4, rb_str_associate, rb_str_associated): allows
+	  associated strings shared.
+
+	* string.c (rb_str_dup, rb_str_substr, rb_str_replace): shares memory.
+	  [ruby-core:15400]
+
 Thu Feb  7 15:42:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_end_with): compares with the suffix.

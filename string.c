@@ -345,10 +345,8 @@ rb_tainted_str_new2(const char *ptr)
 }
 
 static VALUE
-str_new_shared(VALUE klass, VALUE str)
+str_replace_shared(VALUE str2, VALUE str)
 {
-    VALUE str2 = str_alloc(klass);
-
     if (RSTRING_LEN(str) <= RSTRING_EMBED_LEN_MAX) {
 	STR_SET_EMBED(str2);
 	memcpy(RSTRING_PTR(str2), RSTRING_PTR(str), RSTRING_LEN(str)+1);
@@ -363,6 +361,12 @@ str_new_shared(VALUE klass, VALUE str)
     }
 
     return str2;
+}
+
+static VALUE
+str_new_shared(VALUE klass, VALUE str)
+{
+    return str_replace_shared(str_alloc(klass), str);
 }
 
 static VALUE
@@ -412,24 +416,32 @@ rb_str_new4(VALUE orig)
 
     if (OBJ_FROZEN(orig)) return orig;
     klass = rb_obj_class(orig);
-    if (STR_SHARED_P(orig) && (str = RSTRING(orig)->as.heap.aux.shared)
-	&& klass == RBASIC(str)->klass) {
+    if (STR_SHARED_P(orig) && (str = RSTRING(orig)->as.heap.aux.shared)) {
 	long ofs;
 	ofs = RSTRING_LEN(str) - RSTRING_LEN(orig);
-	if ((ofs > 0) || (!OBJ_TAINTED(str) && OBJ_TAINTED(orig))) {
+	if ((ofs > 0) || (klass != RBASIC(str)->klass) ||
+	    (!OBJ_TAINTED(str) && OBJ_TAINTED(orig))) {
 	    str = str_new3(klass, str);
 	    RSTRING(str)->as.heap.ptr += ofs;
 	    RSTRING(str)->as.heap.len -= ofs;
 	}
+	OBJ_INFECT(str, orig);
     }
-    else if (STR_ASSOC_P(orig) || STR_EMBED_P(orig)) {
+    else if (STR_EMBED_P(orig)) {
 	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
 	rb_enc_copy(str, orig);
+	OBJ_INFECT(str, orig);
+    }
+    else if (STR_ASSOC_P(orig)) {
+	VALUE assoc = RSTRING(orig)->as.heap.aux.shared;
+	FL_UNSET(orig, STR_ASSOC);
+	str = str_new4(klass, orig);
+	FL_SET(str, STR_ASSOC);
+	RSTRING(str)->as.heap.aux.shared = assoc;
     }
     else {
 	str = str_new4(klass, orig);
     }
-    OBJ_INFECT(str, orig);
     OBJ_FREEZE(str);
     return str;
 }
@@ -552,9 +564,7 @@ static VALUE rb_str_replace(VALUE, VALUE);
 VALUE
 rb_str_dup(VALUE str)
 {
-    VALUE dup = str_alloc(rb_obj_class(str));
-    rb_str_replace(dup, str);
-    return dup;
+    return rb_str_new3(str);
 }
 
 
@@ -777,14 +787,23 @@ rb_str_modify(VALUE str)
 void
 rb_str_associate(VALUE str, VALUE add)
 {
+    /* sanity check */
+    if (OBJ_FROZEN(str)) rb_error_frozen("string");
     if (STR_ASSOC_P(str)) {
-	/* sanity check */
-	if (OBJ_FROZEN(str)) rb_error_frozen("string");
 	/* already associated */
 	rb_ary_concat(RSTRING(str)->as.heap.aux.shared, add);
     }
     else {
-	if (STR_SHARED_P(str) || STR_EMBED_P(str)) {
+	if (STR_SHARED_P(str)) {
+	    VALUE assoc = RSTRING(str)->as.heap.aux.shared;
+	    str_make_independent(str);
+	    if (STR_ASSOC_P(assoc)) {
+		assoc = RSTRING(assoc)->as.heap.aux.shared;
+		rb_ary_concat(assoc, add);
+		add = assoc;
+	    }
+	}
+	else if (STR_EMBED_P(str)) {
 	    str_make_independent(str);
 	}
 	else if (RSTRING(str)->as.heap.aux.capa != RSTRING_LEN(str)) {
@@ -799,10 +818,9 @@ rb_str_associate(VALUE str, VALUE add)
 VALUE
 rb_str_associated(VALUE str)
 {
+    if (STR_SHARED_P(str)) str = RSTRING(str)->as.heap.aux.shared;
     if (STR_ASSOC_P(str)) {
-	VALUE ary = RSTRING(str)->as.heap.aux.shared;
-	if (OBJ_FROZEN(str)) OBJ_FREEZE(ary);
-	return ary;
+	return RSTRING(str)->as.heap.aux.shared;
     }
     return Qfalse;
 }
@@ -965,9 +983,17 @@ rb_str_substr(VALUE str, long beg, long len)
 	len = str_offset(p, e, len, enc, singlebyte);
     }
   sub:
-    str2 = rb_str_new5(str, p, len);
-    rb_enc_copy(str2, str);
-    OBJ_INFECT(str2, str);
+    if (len > RSTRING_EMBED_LEN_MAX && beg + len == RSTRING_LEN(str)) {
+	str2 = rb_str_new4(str);
+	str2 = str_new3(rb_obj_class(str2), str2);
+	RSTRING(str2)->as.heap.ptr += RSTRING(str2)->as.heap.len - len;
+	RSTRING(str2)->as.heap.len = len;
+    }
+    else {
+	str2 = rb_str_new5(str, p, len);
+	rb_enc_copy(str2, str);
+	OBJ_INFECT(str2, str);
+    }
 
     return str2;
 }
@@ -1179,7 +1205,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     if (str_encindex != ptr_encindex &&
         str_cr != ENC_CODERANGE_7BIT &&
         ptr_cr != ENC_CODERANGE_7BIT) {
-incompatible:
+      incompatible:
         rb_raise(rb_eArgError, "append incompatible encoding strings: %s and %s",
             rb_enc_name(rb_enc_from_index(str_encindex)),
             rb_enc_name(rb_enc_from_index(ptr_encindex)));
@@ -3005,6 +3031,9 @@ rb_str_replace(VALUE str, VALUE str2)
 
     StringValue(str2);
     len = RSTRING_LEN(str2);
+    if (STR_ASSOC_P(str2)) {
+	str2 = rb_str_new4(str2);
+    }
     if (STR_SHARED_P(str2)) {
 	if (str_independent(str) && !STR_EMBED_P(str)) {
 	    free(RSTRING_PTR(str));
@@ -3016,18 +3045,9 @@ rb_str_replace(VALUE str, VALUE str2)
 	FL_UNSET(str, STR_ASSOC);
 	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
     }
-    else if (STR_ASSOC_P(str2)) {
-	rb_str_modify(str);
-	STR_SET_NOEMBED(str);
-	RSTRING(str)->as.heap.ptr = ALLOC_N(char,len+1);
-	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), len+1);
-	FL_SET(str, STR_ASSOC);
-	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
-    }
     else {
 	rb_str_modify(str);
-	rb_str_resize(str, len);
-	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), len+1);
+	str_replace_shared(str, str2);
     }
 
     OBJ_INFECT(str, str2);
