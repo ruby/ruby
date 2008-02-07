@@ -674,6 +674,8 @@ static void nkf_str_upcase(const char *src, char *dest, size_t length)
 static nkf_encoding *nkf_enc_from_index(int idx)
 {
     if (idx < 0 || NKF_ENCODING_TABLE_SIZE <= idx) {
+	if (idx == BINARY)
+	    return &nkf_encoding_table[NKF_ENCODING_TABLE_SIZE];
 	return 0;
     }
     return &nkf_encoding_table[idx];
