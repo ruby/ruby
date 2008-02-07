@@ -5663,7 +5663,7 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 	s = p + RSTRING_LEN(str) - RSTRING_LEN(tmp);
 	if (rb_enc_left_char_head(p, s, enc) != s)
 	    continue;
-	if (memcmp(s, p, RSTRING_LEN(tmp)) == 0)
+	if (memcmp(s, RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
 	    return Qtrue;
     }
     return Qfalse;

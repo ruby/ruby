@@ -1,3 +1,7 @@
+Thu Feb  7 15:42:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_end_with): compares with the suffix.
+
 Thu Feb  7 15:03:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/korean.c: add support for CP949 by Park Ji-In.
