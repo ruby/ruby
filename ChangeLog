@@ -3,7 +3,7 @@ Thu Feb  7 09:05:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ext/nkf/nkf-utf8/nkf.c (nkf_enc_from_index): BINARY does not
 	  have in-bound encoding index.
 
-Thu Feb 07 04:26:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+Thu Feb  7 04:26:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/korean.c: add EUC-KR conversion support by Park Ji-In.
 	  [ruby-dev:33621]
