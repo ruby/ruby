@@ -56,7 +56,7 @@ lgamma_r(double x, int *signp)
             return 1.0/zero;
         }
         *signp = (fmod(i, 2.0) != 0.0) ? 1 : -1;
-        s = sin(PI * x);
+        s = sin(PI * f);
         if (s < 0) s = -s;
         return LOG_PI - log(s) - loggamma(1 - x);
     }
