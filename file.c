@@ -1872,7 +1872,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 static void
 lchmod_internal(const char *path, void *mode)
 {
-    if (lchmod(path, (int)mode) < 0)
+    if (lchmod(path, (int)(VALUE)mode) < 0)
 	rb_sys_fail(path);
 }
 
