@@ -1,3 +1,8 @@
+Fri Feb  8 22:10:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb (OpenURI.open_http): rescue URI::InvalidURIError by
+	  URI.parse for location URI.
+
 Fri Feb  8 19:22:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (rb_str_derive): uses rb_str_subseq() for byte
