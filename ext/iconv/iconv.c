@@ -110,7 +110,8 @@ static void iconv_dfree _((void *cd));
 static VALUE iconv_free _((VALUE cd));
 static VALUE iconv_try _((iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen));
 static VALUE rb_str_derive _((VALUE str, const char* ptr, int len));
-static VALUE iconv_convert _((iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* env));
+static VALUE iconv_convert _((iconv_t cd, VALUE str, int start, int length, int toidx,
+			      struct iconv_env_t* env));
 static VALUE iconv_s_allocate _((VALUE klass));
 static VALUE iconv_initialize _((int argc, VALUE *argv, VALUE self));
 static VALUE iconv_s_open _((int argc, VALUE *argv, VALUE self));
@@ -129,7 +130,8 @@ static VALUE charset_map;
  *
  * Returns the map from canonical name to system dependent name.
  */
-static VALUE charset_map_get(void)
+static VALUE
+charset_map_get(void)
 {
     return charset_map;
 }
@@ -270,7 +272,8 @@ iconv_try(iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *
 
 #define FAILED_MAXLEN 16
 
-static VALUE iconv_failure_initialize(VALUE error, VALUE mesg, VALUE success, VALUE failed)
+static VALUE
+iconv_failure_initialize(VALUE error, VALUE mesg, VALUE success, VALUE failed)
 {
     rb_call_super(1, &mesg);
     rb_ivar_set(error, rb_success, success);
@@ -324,7 +327,7 @@ rb_str_derive(VALUE str, const char* ptr, int len)
 }
 
 static VALUE
-iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* env)
+iconv_convert(iconv_t cd, VALUE str, int start, int length, int toidx, struct iconv_env_t* env)
 {
     VALUE ret = Qfalse;
     VALUE error = Qfalse;
@@ -335,12 +338,9 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* 
     char buffer[BUFSIZ];
     char *outptr;
     size_t outlen;
-    int toidx = -1;
 
     if (cd == (iconv_t)-1)
 	rb_raise(rb_eArgError, "closed iconv");
-
-    if (env) toidx = env->toidx;
 
     if (NIL_P(str)) {
 	/* Reset output pointer or something. */
@@ -614,12 +614,13 @@ iconv_s_convert(struct iconv_env_t* env)
     VALUE last = 0;
 
     for (; env->argc > 0; --env->argc, ++env->argv) {
-	VALUE s = iconv_convert(env->cd, last = *(env->argv), 0, -1, env);
+	VALUE s = iconv_convert(env->cd, last = *(env->argv),
+				0, -1, env->toidx, env);
 	env->append(env->ret, s);
     }
 
     if (!NIL_P(last)) {
-	VALUE s = iconv_convert(env->cd, Qnil, 0, 0, env);
+	VALUE s = iconv_convert(env->cd, Qnil, 0, 0, env->toidx, env);
 	if (RSTRING_LEN(s))
 	    env->append(env->ret, s);
     }
@@ -776,23 +777,20 @@ iconv_s_list(void)
  * its initial shift state.
  */
 static VALUE
-iconv_init_state(VALUE cd)
+iconv_init_state(VALUE self)
 {
-    return iconv_convert(VALUE2ICONV(cd), Qnil, 0, 0, NULL);
+    iconv_t cd = VALUE2ICONV((VALUE)DATA_PTR(self));
+    DATA_PTR(self) = NULL;
+    return iconv_convert(cd, Qnil, 0, 0, ENCODING_GET(self), NULL);
 }
 
 static VALUE
 iconv_finish(VALUE self)
 {
     VALUE cd = check_iconv(self);
-    VALUE str;
 
     if (!cd) return Qnil;
-    DATA_PTR(self) = NULL;
-
-    str = rb_ensure(iconv_init_state, cd, iconv_free, cd);
-    ENCODING_SET(str, ENCODING_GET(self));
-    return str;
+    return rb_ensure(iconv_init_state, self, iconv_free, cd);
 }
 
 /*
@@ -834,8 +832,8 @@ iconv_iconv(int argc, VALUE *argv, VALUE self)
     str = iconv_convert(VALUE2ICONV(cd), str,
 			NIL_P(n1) ? 0 : NUM2INT(n1),
 			NIL_P(n2) ? -1 : NUM2INT(n2),
+			ENCODING_GET(self),
 			NULL);
-    ENCODING_SET(str, ENCODING_GET(self));
     return str;
 }
 
@@ -852,16 +850,16 @@ iconv_conv(int argc, VALUE *argv, VALUE self)
 {
     iconv_t cd = VALUE2ICONV(check_iconv(self));
     VALUE str, s;
+    int toidx = ENCODING_GET(self);
 
-    str = iconv_convert(cd, Qnil, 0, 0, NULL);
-    ENCODING_SET(str, ENCODING_GET(self));
+    str = iconv_convert(cd, Qnil, 0, 0, toidx, NULL);
     if (argc > 0) {
 	do {
-	    s = iconv_convert(cd, *argv++, 0, -1, NULL);
+	    s = iconv_convert(cd, *argv++, 0, -1, toidx, NULL);
 	    if (RSTRING_LEN(s))
 		rb_str_buf_append(str, s);
 	} while (--argc);
-	s = iconv_convert(cd, Qnil, 0, 0, NULL);
+	s = iconv_convert(cd, Qnil, 0, 0, toidx, NULL);
 	if (RSTRING_LEN(s))
 	    rb_str_buf_append(str, s);
     }
