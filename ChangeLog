@@ -1,3 +1,8 @@
+Sat Feb  9 00:44:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb.rb (IRB::Irb::eval_input): rescues Interrupt and other than
+	  SystemExit and SignalException.  [ruby-core:15359]
+
 Fri Feb  8 23:51:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* missing/lgamma_r.c (lgamma_r): use smaller argument for sin function.
