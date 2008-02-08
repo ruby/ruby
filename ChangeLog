@@ -1,3 +1,7 @@
+Fri Feb  8 15:09:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (xsystem): expand macros like as make.
+
 Tue Feb  5 11:14:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (INSTALL_DIRS, install_dirs): added BINDIR.
