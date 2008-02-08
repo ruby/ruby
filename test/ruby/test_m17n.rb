@@ -864,6 +864,14 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(["a"], e("\xa1\xa2a\xa3\xa4").scan(/a/))
   end
 
+  def test_scan_dup
+    s1 = e("\xa4\xa2")*100
+    s2 = s1.dup.force_encoding("ascii-8bit")
+    s2.scan(/\A./n) {|f|
+      assert_equal(Encoding::ASCII_8BIT, f.encoding)
+    }
+  end
+
   def test_upto
     s1 = e("\xa1\xa2")
     s2 = s("\xa1\xa2")
