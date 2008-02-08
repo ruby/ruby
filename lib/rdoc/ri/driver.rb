@@ -341,7 +341,7 @@ Options may also be set in the 'RI' environment variable.
   end
 
   def read_yaml(path)
-    YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):(RDoc::RI|RI).*/, '')
+    YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):(RDoc::RI|RI|SM).*/, '')
   end
 
   def run
