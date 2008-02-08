@@ -319,7 +319,7 @@ rb_str_derive(VALUE str, const char* ptr, int len)
     if (NIL_P(str))
 	return rb_str_new(ptr, len);
     if (RSTRING_PTR(str) + RSTRING_LEN(str) == ptr + len)
-	ret = rb_str_substr(str, ptr - RSTRING_PTR(str), len);
+	ret = rb_str_subseq(str, ptr - RSTRING_PTR(str), len);
     else
 	ret = rb_str_new(ptr, len);
     OBJ_INFECT(ret, str);

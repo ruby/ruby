@@ -1,4 +1,7 @@
-Fri Feb  8 19:19:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Feb  8 19:22:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (rb_str_derive): uses rb_str_subseq() for byte
+	  length.  [ruby-dev:33653]
 
 	* ext/iconv/iconv.c (iconv_convert): added toidx argument to set
 	  encoding of successfully converted string.  [ruby-dev:33221]
