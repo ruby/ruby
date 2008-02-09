@@ -10,6 +10,7 @@ reference - Haruhiko Okumura: C-gengo niyoru saishin algorithm jiten
     gamma.c -- Gamma function
 ***********************************************************/
 #include <math.h>
+#include <errno.h>
 #define PI      3.14159265358979324  /* $\pi$ */
 #define LOG_2PI 1.83787706640934548  /* $\log 2\pi$ */
 #define N       8
@@ -42,8 +43,22 @@ loggamma(double x)  /* the natural logarithm of the Gamma function. */
 
 double tgamma(double x)  /* Gamma function */
 {
-    if (x < 0)
-        return PI / (sin(PI * x) * exp(loggamma(1 - x)));
+    if (x == 0.0) { /* Pole Error */
+        errno = ERANGE;
+        return 1/x < 0 ? -HUGE_VAL : HUGE_VAL;
+    }
+    if (x < 0) {
+        int sign;
+        static double zero = 0.0;
+        double i, f;
+        f = modf(-x, &i);
+        if (f == 0.0) { /* Domain Error */
+            errno = EDOM;
+            return zero/zero;
+        }
+        sign = (fmod(i, 2.0) != 0.0) ? 1 : -1;
+        return sign * PI / (sin(PI * f) * exp(loggamma(1 - x)));
+    }
     return exp(loggamma(x));
 }
 

@@ -1,3 +1,7 @@
+Sat Feb  9 12:06:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* missing/tgamma.c (tgamma): add error check.
+
 Sat Feb  9 11:47:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* math.c (math_gamma): add error check.
