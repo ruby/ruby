@@ -1,6 +1,6 @@
 Sat Feb  9 11:09:26 2008  Tanaka Akira  <akr@fsij.org>
 
-	* missing/xlgamma_r.c (lgamma_r): return HUGE_VAL for non-positive
+	* missing/lgamma_r.c (lgamma_r): return HUGE_VAL for non-positive
 	  integers.
 
 Sat Feb  9 10:03:07 2008  Tanaka Akira  <akr@fsij.org>
