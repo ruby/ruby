@@ -530,8 +530,12 @@ math_erfc(VALUE obj, VALUE x)
 static VALUE
 math_gamma(VALUE obj, VALUE x)
 {
+    double d;
     Need_Float(x);
-    return DOUBLE2NUM(tgamma(RFLOAT_VALUE(x)));
+    errno = 0;
+    d = tgamma(RFLOAT_VALUE(x));
+    domain_check(d, "gamma");
+    return DOUBLE2NUM(d);
 }
 
 /*
@@ -549,10 +553,14 @@ math_gamma(VALUE obj, VALUE x)
 static VALUE
 math_lgamma(VALUE obj, VALUE x)
 {
+    double d;
     int sign;
     VALUE v;
     Need_Float(x);
-    v = DOUBLE2NUM(lgamma_r(RFLOAT_VALUE(x), &sign));
+    errno = 0;
+    d = lgamma_r(RFLOAT_VALUE(x), &sign);
+    domain_check(d, "lgamma");
+    v = DOUBLE2NUM(d);
     return rb_assoc_new(v, INT2FIX(sign));
 }
 

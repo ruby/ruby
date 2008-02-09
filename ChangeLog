@@ -1,3 +1,8 @@
+Sat Feb  9 11:47:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (math_gamma): add error check.
+	  (math_lgamma): ditto.
+
 Sat Feb  9 11:09:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* missing/lgamma_r.c (lgamma_r): return HUGE_VAL for non-positive
