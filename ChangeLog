@@ -1,3 +1,8 @@
+Sat Feb  9 21:20:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_math.rb: add tests for Math#gamma, Math#lgamma and
+	  Math#cbrt, and use assert_in_delta instead of assert.
+
 Sat Feb  9 18:34:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* math.c (math_cbrt): new method Math.cbrt.
@@ -69,7 +74,7 @@ Fri Feb  8 09:27:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/rdoc/ri/driver.rb (read_yaml): remove SM* for compatibility.
 
-Fri Feb 08 00:07:24 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+Fri Feb  8 00:07:24 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_hash.rb: follow the change of Hash#flatten.
 

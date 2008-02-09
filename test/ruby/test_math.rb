@@ -2,7 +2,7 @@ require 'test/unit'
 
 class TestMath < Test::Unit::TestCase
   def check(a, b)
-    assert(a - b < Float::EPSILON * 3)
+    assert_in_delta(a, b, Float::EPSILON * 4)
   end
 
   def test_atan2
@@ -169,5 +169,66 @@ class TestMath < Test::Unit::TestCase
   def test_erfc
     check(1, Math.erfc(0))
     check(0, Math.erfc(1.0 / 0.0))
+  end
+
+  def test_gamma
+    sqrt_pi = Math.sqrt(Math::PI)
+    check(4 * sqrt_pi / 3, Math.gamma(-1.5))
+    check(-2 * sqrt_pi, Math.gamma(-0.5))
+    check(sqrt_pi, Math.gamma(0.5))
+    check(1, Math.gamma(1))
+    check(sqrt_pi / 2, Math.gamma(1.5))
+    check(1, Math.gamma(2))
+    check(3 * sqrt_pi / 4, Math.gamma(2.5))
+    check(2, Math.gamma(3))
+    check(15 * sqrt_pi / 8, Math.gamma(3.5))
+    check(6, Math.gamma(4))
+  end
+
+  def test_lgamma
+    sqrt_pi = Math.sqrt(Math::PI)
+
+    g, s = Math.lgamma(-1.5)
+    check(Math.log(4 * sqrt_pi / 3), g)
+    assert_equal(s, 1)
+
+    g, s = Math.lgamma(-0.5)
+    check(Math.log(2 * sqrt_pi), g)
+    assert_equal(s, -1)
+
+    g, s = Math.lgamma(0.5)
+    check(Math.log(sqrt_pi), g)
+    assert_equal(s, 1)
+
+    assert_equal([0, 1], Math.lgamma(1))
+
+    g, s = Math.lgamma(1.5)
+    check(Math.log(sqrt_pi / 2), g)
+    assert_equal(s, 1)
+
+    assert_equal([0, 1], Math.lgamma(2))
+
+    g, s = Math.lgamma(2.5)
+    check(Math.log(3 * sqrt_pi / 4), g)
+    assert_equal(s, 1)
+
+    g, s = Math.lgamma(3)
+    check(Math.log(2), g)
+    assert_equal(s, 1)
+
+    g, s = Math.lgamma(3.5)
+    check(Math.log(15 * sqrt_pi / 8), g)
+    assert_equal(s, 1)
+
+    g, s = Math.lgamma(4)
+    check(Math.log(6), g)
+    assert_equal(s, 1)
+  end
+
+  def test_cbrt
+    check(1, Math.cbrt(1))
+    check(-2, Math.cbrt(-8))
+    check(3, Math.cbrt(27))
+    check(-0.1, Math.cbrt(-0.001))
   end
 end
