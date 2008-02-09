@@ -12,6 +12,7 @@ reference - Haruhiko Okumura: C-gengo niyoru saishin algorithm jiten
     gamma.c -- Gamma function
 ***********************************************************/
 #include <math.h>
+#include <errno.h>
 #define PI      3.14159265358979324  /* $\pi$ */
 #define LOG_2PI 1.83787706640934548  /* $\log 2\pi$ */
 #define LOG_PI  1.14472988584940017  /* $\log_e \pi$ */
@@ -47,13 +48,13 @@ loggamma(double x)  /* the natural logarithm of the Gamma function. */
 double
 lgamma_r(double x, int *signp)
 {
-    if (x < 0) {
+    if (x <= 0) {
         double i, f, s;
         f = modf(-x, &i);
-        if (f == 0.0) {
-            static const double zero = 0.0;
+        if (f == 0.0) { /* pole error */
             *signp = 1;
-            return 1.0/zero;
+            errno = ERANGE;
+            return HUGE_VAL;
         }
         *signp = (fmod(i, 2.0) != 0.0) ? 1 : -1;
         s = sin(PI * f);
