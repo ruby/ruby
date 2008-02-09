@@ -586,19 +586,22 @@ BigDecimal_to_f(VALUE self)
 {
     ENTER(1);
     Real *p;
-    double d, d2;
+    double d;
     S_LONG e;
+    char *buf;
 
     GUARD_OBJ(p,GetVpValue(self,1));
     if(VpVtoD(&d, &e, p)!=1) return rb_float_new(d);
+    buf = ALLOCA_N(char,(unsigned int)VpNumOfChars(p,"E"));
+    VpToString(p, buf, 0, 0);
     errno = 0;
-    d2 = pow(10.0,(double)e);
-    if((errno == ERANGE && e>0) || (d2>1.0 && (fabs(d) > (DBL_MAX / d2)))) {
+    d = strtod(buf, 0);
+    if(errno == ERANGE) {
        VpException(VP_EXCEPTION_OVERFLOW,"BigDecimal to Float conversion",0);
        if(d>0.0) return rb_float_new(DBL_MAX);
        else      return rb_float_new(-DBL_MAX);
     }
-    return rb_float_new(d*d2);
+    return rb_float_new(d);
 }
 
 /* The coerce method provides support for Ruby type coercion. It is not
@@ -1051,7 +1054,7 @@ static VALUE
 BigDecimal_remainder(VALUE self, VALUE r) /* remainder */
 {
     VALUE  f;
-    Real  *d,*rv;
+    Real  *d,*rv=0;
     f = BigDecimal_divremain(self,r,&d,&rv);
     if(f!=(VALUE)0) return f;
     return ToValue(rv);
@@ -1505,7 +1508,7 @@ BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
             } else if(*psz=='+') {
                 fPlus = 2; psz++;
             }
-            while(ch=*psz++) {
+            while((ch=*psz++)!=0) {
                 if(ISSPACE(ch)) continue;
                 if(!ISDIGIT(ch)) {
                     if(ch=='F' || ch=='f') fmt = 1; /* F format */
@@ -1962,17 +1965,27 @@ static int gfCheckVal = 1;      /* Value checking flag in VpNmlz()  */
 static U_LONG gnPrecLimit = 0;  /* Global upper limit of the precision newly allocated */
 static U_LONG gfRoundMode = VP_ROUND_HALF_UP; /* Mode for general rounding operation   */
 
+#ifndef BASE_FIG
 static U_LONG BASE_FIG = 4;     /* =log10(BASE)  */
 static U_LONG BASE = 10000L;    /* Base value(value must be 10**BASE_FIG) */
                 /* The value of BASE**2 + BASE must be represented */
                 /* within one U_LONG. */
 static U_LONG HALF_BASE = 5000L;/* =BASE/2  */
-static S_LONG DBLE_FIG = 8;    /* figure of double */
 static U_LONG BASE1 = 1000L;    /* =BASE/10  */
+#else
+#ifndef BASE
+#error BASE_FIG is defined but BASE is not
+#endif
+#define HALF_BASE (BASE/2)
+#define BASE1 (BASE/10)
+#endif
+#ifndef DBLE_FIG
+#define DBLE_FIG (DBL_DIG+1)    /* figure of double */
+#endif
 
 static Real *VpConstOne;    /* constant 1.0 */
 static Real *VpPt5;        /* constant 0.5 */
-static U_LONG maxnr = 100;    /* Maximum iterations for calcurating sqrt. */
+#define maxnr 100UL    /* Maximum iterations for calcurating sqrt. */
                 /* used in VpSqrt() */
 
 /* ETC */
@@ -2089,8 +2102,8 @@ VpSetRoundMode(unsigned long n)
  *    (to let the compiler know they may be changed in outside
  *    (... but not actually..)).
  */
-volatile double gZero_ABCED9B1_CE73__00400511F31D = 0.0;
-volatile double gOne_ABCED9B4_CE73__00400511F31D  = 1.0;
+volatile const double gZero_ABCED9B1_CE73__00400511F31D = 0.0;
+volatile const double gOne_ABCED9B4_CE73__00400511F31D  = 1.0;
 static double
 Zero(void)
 {
@@ -2362,16 +2375,15 @@ VpNumOfChars(Real *vp,const char *pszFmt)
 VP_EXPORT U_LONG
 VpInit(U_LONG BaseVal)
 {
-    U_LONG w;
-    double v;
-
     /* Setup +/- Inf  NaN -0 */
     VpGetDoubleNaN();
     VpGetDoublePosInf();
     VpGetDoubleNegInf();
     VpGetDoubleNegZero();
 
+#ifndef BASE_FIG
     if(BaseVal <= 0) {
+        U_LONG w;
         /* Base <= 0, then determine Base by calcuration. */
         BASE = 1;
         while(
@@ -2388,6 +2400,8 @@ VpInit(U_LONG BaseVal)
     BASE1 = BASE / 10;
     BASE_FIG = 0;
     while(BaseVal /= 10) ++BASE_FIG;
+#endif
+
     /* Allocates Vp constants. */
     VpConstOne = VpAlloc((U_LONG)1, "1");
     VpPt5 = VpAlloc((U_LONG)1, ".5");
@@ -2395,15 +2409,6 @@ VpInit(U_LONG BaseVal)
 #ifdef _DEBUG
     gnAlloc = 0;
 #endif /* _DEBUG */
-
-    /* Determine # of digits available in one 'double'. */
-
-    v = 1.0;
-    DBLE_FIG = 0;
-    while(v + 1.0 > 1.0) {
-        ++DBLE_FIG;
-        v /= 10;
-    }
 
 #ifdef _DEBUG
     if(gfDebug) {
@@ -2507,7 +2512,7 @@ VpAlloc(U_LONG mx, const char *szVal)
     psz = ALLOCA_N(char,strlen(szVal)+1);
     i   = 0;
     ipn = 0;
-    while(psz[i]=szVal[ipn]) {
+    while((psz[i]=szVal[ipn])!=0) {
         if(ISDIGIT(psz[i])) ++ni;
         if(psz[i]=='_') {
             if(ni>0) {ipn++;continue;}
@@ -2550,7 +2555,7 @@ VpAlloc(U_LONG mx, const char *szVal)
     else if(szVal[i] == '+')          ++i;
     /* Skip digits */
     ni = 0;            /* digits in mantissa */
-    while(v = szVal[i]) {
+    while((v = szVal[i]) != 0) {
         if(!ISDIGIT(v)) break;
         ++i;
         ++ni;
@@ -2564,7 +2569,7 @@ VpAlloc(U_LONG mx, const char *szVal)
         if(szVal[i] == '.') {    /* xxx. */
             ++i;
             ipf = i;
-            while(v = szVal[i]) {    /* get fraction part. */
+            while((v = szVal[i]) != 0) {    /* get fraction part. */
                 if(!ISDIGIT(v)) break;
                 ++i;
                 ++nf;
@@ -2582,7 +2587,7 @@ VpAlloc(U_LONG mx, const char *szVal)
             ipe = i;
             v = szVal[i];
             if((v == '-') ||(v == '+')) ++i;
-            while(v=szVal[i]) {
+            while((v=szVal[i])!=0) {
                 if(!ISDIGIT(v)) break;
                 ++i;
                 ++ne;
@@ -4434,7 +4439,7 @@ VpLeftRound(Real *y, int f, int nf)
     if(!VpHasVal(y)) return 0; /* Unable to round */
     v = y->frac[0];
     nf -= VpExponent(y)*BASE_FIG;
-    while(v=v/10) nf--;
+    while((v /= 10) != 0) nf--;
     nf += (BASE_FIG-1);
     return VpMidRound(y,f,nf);
 }
