@@ -14,7 +14,7 @@
 
 struct METHOD {
     VALUE oclass;		/* class that holds the method */
-    VALUE rclass;		/* class of the recevier */
+    VALUE rclass;		/* class of the receiver */
     VALUE recv;
     ID id, oid;
     NODE *body;
@@ -171,7 +171,7 @@ proc_clone(VALUE self)
  *   method(:m).to_proc.lambda? => true
  *
  *   n(&method(:m))             => true
- *   n(&method(:m)).to_proc     => true
+ *   n(&method(:m).to_proc)     => true
  *
  * define_method is treated same as method definition.
  * The defined method has no tricks.
