@@ -1,3 +1,11 @@
+Sat Feb  9 18:34:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (math_cbrt): new method Math.cbrt.
+
+	* configure.in (cbrt): check for replacement functions.
+
+	* missing/cbrt.c: new file.
+
 Sat Feb  9 17:51:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): use strtod() for more

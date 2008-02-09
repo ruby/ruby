@@ -402,6 +402,20 @@ math_sqrt(VALUE obj, VALUE x)
 
 /*
  *  call-seq:
+ *     Math.cbrt(numeric)    => float
+ *  
+ *  Returns the cube root of <i>numeric</i>.
+ */
+
+static VALUE
+math_cbrt(VALUE obj, VALUE x)
+{
+    Need_Float(x);
+    return DOUBLE2NUM(cbrt(RFLOAT_VALUE(x)));
+}
+
+/*
+ *  call-seq:
  *     Math.frexp(numeric)    => [ fraction, exponent ]
  *  
  *  Returns a two-element array containing the normalized fraction (a
@@ -611,6 +625,7 @@ Init_Math(void)
     rb_define_module_function(rb_mMath, "log2", math_log2, 1);
     rb_define_module_function(rb_mMath, "log10", math_log10, 1);
     rb_define_module_function(rb_mMath, "sqrt", math_sqrt, 1);
+    rb_define_module_function(rb_mMath, "cbrt", math_cbrt, 1);
 
     rb_define_module_function(rb_mMath, "frexp", math_frexp, 1);
     rb_define_module_function(rb_mMath, "ldexp", math_ldexp, 2);

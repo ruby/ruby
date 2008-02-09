@@ -649,7 +649,7 @@ esac
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove strerror strftime\
 		 strchr strstr crypt flock vsnprintf\
-		 isnan finite isinf hypot acosh erf tgamma lgamma_r \
+		 isnan finite isinf hypot acosh erf tgamma lgamma_r cbrt \
                  strlcpy strlcat)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd eaccess\
 	      truncate chsize times utimes utimensat fcntl lockf lstat\
