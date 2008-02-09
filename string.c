@@ -425,6 +425,7 @@ rb_str_new4(VALUE orig)
 	    RSTRING(str)->as.heap.ptr += ofs;
 	    RSTRING(str)->as.heap.len -= ofs;
 	}
+	rb_enc_copy(str, orig);
 	OBJ_INFECT(str, orig);
     }
     else if (STR_EMBED_P(orig)) {
