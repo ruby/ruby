@@ -1,3 +1,7 @@
+Sat Feb  9 23:44:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* missing/tgamma.c (tgamma): use lgamma_r if available.
+
 Sat Feb  9 23:22:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/extconf.rb: simplified the condition.
