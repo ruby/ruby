@@ -1,3 +1,7 @@
+Sat Feb  9 23:22:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/extconf.rb: simplified the condition.
+
 Sat Feb  9 21:20:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_math.rb: add tests for Math#gamma, Math#lgamma and
