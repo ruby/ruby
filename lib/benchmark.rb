@@ -333,7 +333,7 @@ module Benchmark
     # Registers the given label and block pair in the job list.
     #
     def item(label = "", &blk) # :yield:
-      raise ArgmentError, "no block" unless block_given?
+      raise ArgumentError, "no block" unless block_given?
       label += ' '
       w = label.length
       @width = w if @width < w
