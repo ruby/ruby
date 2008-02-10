@@ -25,7 +25,7 @@ LDFLAGS = -link -incremental:yes -pdb:none -machine:$(MACHINE) -subsystem:$(SUBS
 XLDFLAGS = -stack:$(STACK) -subsystem:$(SUBSYSTEM)
 !endif
 LIBS = coredll.lib ceshell.lib winsock.lib  $(EXTLIBS)
-MISSING = acosh.obj crypt.obj dup2.obj erf.obj hypot.obj \
+MISSING = acosh.obj cbrt.obj crypt.obj dup2.obj erf.obj hypot.obj \
           isinf.obj isnan.obj lgamma.obj strftime.obj strlcat.obj strlcpy.obj
           tgamma.obj win32.obj \
           assert.obj direct.obj errno.obj io_wce.obj process_wce.obj \

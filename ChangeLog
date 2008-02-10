@@ -1,3 +1,7 @@
+Sun Feb 10 15:07:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {bcc32,win32,wince}/Makefile.sub (MISSING): added cbrt.obj.
+
 Sun Feb 10 12:58:33 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/code_objects.rb: Make some attributes accessible for reuse.
