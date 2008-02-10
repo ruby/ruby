@@ -250,6 +250,14 @@ class TestRDocRIFormatter < Test::Unit::TestCase
     assert_equal "  a b c\n  d e f\n\n", @output.string
   end
 
+  def test_display_verbatim_flow_item_bold
+    verbatim = RDoc::Markup::Flow::VERB.new "*a* b c"
+
+    @f.display_verbatim_flow_item verbatim
+
+    assert_equal "  *a* b c\n\n", @output.string
+  end
+
   def test_draw_line
     @f.draw_line
 

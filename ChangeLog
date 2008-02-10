@@ -1,3 +1,24 @@
+Sun Feb 10 12:58:33 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/code_objects.rb: Make some attributes accessible for reuse.
+	* lib/rdoc/generator/html.rb: Pull out ContextUser classes and related
+	  methods for reuse.
+	* lib/rdoc/generator.rb: Move ContextUser classes to
+	  RDoc::Generator::Context for reuse.
+	* lib/rdoc/rdoc.rb: Make RDoc::RDoc initialization a little easier.
+	* lib/rdoc/options.rb: Make RDoc::Options easier to use without
+	  parsing an ARGV.
+	* lib/rdoc/markup/to_*.rb: Subclass RDoc::Markup::Formatter.
+	* lib/rdoc/markup/formatter.rb: Add RDoc::Markup::Formatter to make
+	  RDoc markup conversion easier.
+	* lib/rdoc/markup/fragments.rb: Make RDoc::Markup::ListItem easier to
+	  test.
+	* lib/rdoc/markup/to_html_hyperlink.rb: Pulled out of the HTML
+	  generator for easier reusability.
+	* lib/rdoc/markup.rb: Fix bug with labeled lists containing bullet
+	  lists.
+	* lib/rdoc/generators/html/html.rb: Fix Constant display.
+
 Sat Feb  9 23:44:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* missing/tgamma.c (tgamma): use lgamma_r if available.

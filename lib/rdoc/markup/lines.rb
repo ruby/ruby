@@ -59,8 +59,8 @@ class RDoc::Markup
     end
 
     # Return true if this line is blank
-    def isBlank?
-      @text.length.zero?
+    def blank?
+      @text.empty?
     end
 
     # stamp a line with a type, a level, a prefix, and a flag

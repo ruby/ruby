@@ -1,3 +1,4 @@
+require 'rdoc/markup/formatter'
 require 'rdoc/markup/fragments'
 require 'rdoc/markup/inline'
 require 'cgi'
@@ -22,7 +23,7 @@ class RDoc::Markup
     H = Struct.new(:level, :text)
   end
 
-  class ToFlow
+  class ToFlow < RDoc::Markup::Formatter
     LIST_TYPE_TO_HTML = {
       :BULLET     =>  [ "<ul>", "</ul>" ],
       :NUMBER     =>  [ "<ol>", "</ol>" ],
@@ -35,6 +36,8 @@ class RDoc::Markup
     InlineTag = Struct.new(:bit, :on, :off)
 
     def initialize
+      super
+
       init_tags
     end
 

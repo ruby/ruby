@@ -146,16 +146,16 @@ require 'rdoc'
 #     end
 #   end
 #   
-#   p = RDoc::Markup.new
-#   p.add_word_pair("{", "}", :STRIKE)
-#   p.add_html("no", :STRIKE)
+#   m = RDoc::Markup.new
+#   m.add_word_pair("{", "}", :STRIKE)
+#   m.add_html("no", :STRIKE)
 #   
-#   p.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
+#   m.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
 #   
 #   h = WikiHtml.new
 #   h.add_tag(:STRIKE, "<strike>", "</strike>")
 #   
-#   puts "<body>" + p.convert(ARGF.read, h) + "</body>"
+#   puts "<body>" + m.convert(ARGF.read, h) + "</body>"
 #
 #--
 # Author::   Dave Thomas,  dave@pragmaticprogrammer.com
@@ -194,7 +194,7 @@ class RDoc::Markup
   # identify significant chunks.
 
   def initialize
-    @am = AttributeManager.new
+    @am = RDoc::Markup::AttributeManager.new
     @output = nil
   end
 
@@ -234,15 +234,16 @@ class RDoc::Markup
   # display the result.
 
   def convert(str, op)
-    @lines = Lines.new(str.split(/\r?\n/).collect { |aLine|
-                         Line.new(aLine) })
+    lines = str.split(/\r?\n/).map { |line| Line.new line }
+    @lines = Lines.new lines
+
     return "" if @lines.empty?
     @lines.normalize
     assign_types_to_lines
     group = group_lines
     # call the output formatter to handle the result
-    #      group.to_a.each {|i| p i}
-    group.accept(@am, op)
+    #group.each { |line| p line }
+    group.accept @am, op
   end
 
   private
@@ -252,9 +253,8 @@ class RDoc::Markup
   # Blank, a paragraph, a list element, or verbatim text.
 
   def assign_types_to_lines(margin = 0, level = 0)
-
     while line = @lines.next
-      if line.isBlank?
+      if line.blank? then
         line.stamp :BLANK, level
         next
       end
@@ -289,7 +289,6 @@ class RDoc::Markup
       # text following them (* xxx, - xxx, and dd. xxx)
 
       if SIMPLE_LIST_RE =~ active_line
-
         offset = margin + $1.length
         prefix = $2
         prefix_length = prefix.length
@@ -307,7 +306,6 @@ class RDoc::Markup
         assign_types_to_lines(offset, level + 1)
         next
       end
-
 
       if LABEL_LIST_RE =~ active_line
         offset = margin + $1.length
@@ -366,22 +364,23 @@ class RDoc::Markup
     prefix_length = prefix.length
     text = line.text
     flag = nil
+
     case prefix
-    when /^\[/
+    when /^\[/ then
       flag = :LABELED
       prefix = prefix[1, prefix.length-2]
-    when /:$/
+    when /:$/ then
       flag = :NOTE
       prefix.chop!
-    else raise "Invalid List Type: #{self.inspect}"
+    else
+      raise "Invalid List Type: #{self.inspect}"
     end
 
     # body is on the next line
-
-    if text.length <= offset
+    if text.length <= offset then
       original_line = line
       line = @lines.next
-      return(false) unless line
+      return false unless line
       text = line.text
 
       for i in 0..margin
@@ -390,15 +389,24 @@ class RDoc::Markup
           return false
         end
       end
+
       i = margin
       i += 1 while text[i] == SPACE
-      if i >= text.length
+
+      if i >= text.length then
         @lines.unget
         return false
       else
         offset = i
         prefix_length = 0
-        @lines.delete(original_line)
+
+        if text[offset..-1] =~ SIMPLE_LIST_RE then
+          @lines.unget
+          line = original_line
+          line.text = ''
+        else
+          @lines.delete original_line
+        end
       end
     end
 
@@ -418,24 +426,26 @@ class RDoc::Markup
   def group_lines
     @lines.rewind
 
-    inList = false
-    wantedType = wantedLevel = nil
+    in_list = false
+    wanted_type = wanted_level = nil
 
     block = LineCollection.new
     group = nil
 
     while line = @lines.next
-      if line.level == wantedLevel and line.type == wantedType
+      if line.level == wanted_level and line.type == wanted_type
         group.add_text(line.text)
       else
         group = block.fragment_for(line)
         block.add(group)
+
         if line.type == :LIST
-          wantedType = :PARAGRAPH
+          wanted_type = :PARAGRAPH
         else
-          wantedType = line.type
+          wanted_type = line.type
         end
-        wantedLevel = line.type == :HEADING ? line.param : line.level
+
+        wanted_level = line.type == :HEADING ? line.param : line.level
       end
     end
 
@@ -462,4 +472,5 @@ class RDoc::Markup
 end
 
 require 'rdoc/markup/fragments'
+require 'rdoc/markup/inline'
 require 'rdoc/markup/lines'

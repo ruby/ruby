@@ -53,13 +53,15 @@ module RDoc
       end
     end
 
-    private
+    def initialize
+      @stats = Stats.new
+    end
 
     ##
     # Report an error message and exit
 
     def error(msg)
-      raise RDoc::Error, msg
+      raise ::RDoc::Error, msg
     end
 
     ##
@@ -206,8 +208,6 @@ module RDoc
       file_info
     end
 
-    public
-
     ##
     # Format up one or more files according to the given arguments.
     #
@@ -222,8 +222,6 @@ module RDoc
 
     def document(argv)
       TopLevel::reset
-
-      @stats = Stats.new
 
       options = Options.new GENERATORS
       options.parse argv

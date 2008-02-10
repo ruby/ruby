@@ -18,6 +18,14 @@ class TestRDocRIOverstrikeFormatter < Test::Unit::TestCase
     @af = RDoc::RI::AttributeFormatter
   end
 
+  def test_display_verbatim_flow_item_bold
+    verbatim = RDoc::Markup::Flow::VERB.new "*a* b c"
+
+    @f.display_verbatim_flow_item verbatim
+
+    assert_equal "  *a* b c\n\n", @output.string
+  end
+
   def test_write_attribute_text_bold
     line = [RDoc::RI::AttributeFormatter::AttrChar.new('b', @af::BOLD)]
 

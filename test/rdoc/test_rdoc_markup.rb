@@ -12,10 +12,10 @@ class TestRDocMarkup < Test::Unit::TestCase
   end
 
   def line_groups(str, expected)
-    p = RDoc::Markup.new
+    m = RDoc::Markup.new
     mock = RDoc::Markup::ToTest.new
 
-    block = p.convert(str, mock)
+    block = m.convert(str, mock)
 
     if block != expected
       rows = (0...([expected.size, block.size].max)).collect{|i|
@@ -29,10 +29,10 @@ class TestRDocMarkup < Test::Unit::TestCase
   end
 
   def line_types(str, expected)
-    p = RDoc::Markup.new
+    m = RDoc::Markup.new
     mock = RDoc::Markup::ToTest.new
-    p.convert(str, mock)
-    assert_equal(expected, p.get_line_types.map{|type| type.to_s[0,1]}.join(''))
+    m.convert(str, mock)
+    assert_equal(expected, m.get_line_types.map{|type| type.to_s[0,1]}.join(''))
   end
 
   def test_groups
@@ -68,8 +68,8 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1",
-                  "L1: ListItem\nl2",
+                  "L1: BULLET ListItem\nl1",
+                  "L1: BULLET ListItem\nl2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
@@ -83,8 +83,8 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1 l1+",
-                  "L1: ListItem\nl2",
+                  "L1: BULLET ListItem\nl1 l1+",
+                  "L1: BULLET ListItem\nl2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
@@ -98,11 +98,11 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1",
+                  "L1: BULLET ListItem\nl1",
                   "L2: ListStart\n",
-                  "L2: ListItem\nl1.1",
+                  "L2: BULLET ListItem\nl1.1",
                   "L2: ListEnd\n",
-                  "L1: ListItem\nl2",
+                  "L1: BULLET ListItem\nl2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
@@ -122,13 +122,13 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1",
+                  "L1: BULLET ListItem\nl1",
                   "L2: ListStart\n",
-                  "L2: ListItem\nl1.1 text",
+                  "L2: BULLET ListItem\nl1.1 text",
                   "L2: Verbatim\n  code\n    code\n",
                   "L2: Paragraph\ntext",
                   "L2: ListEnd\n",
-                  "L1: ListItem\nl2",
+                  "L1: BULLET ListItem\nl2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
@@ -143,11 +143,11 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1",
+                  "L1: NUMBER ListItem\nl1",
                   "L2: ListStart\n",
-                  "L2: ListItem\nl1.1",
+                  "L2: BULLET ListItem\nl1.1",
                   "L2: ListEnd\n",
-                  "L1: ListItem\nl2",
+                  "L1: NUMBER ListItem\nl2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
@@ -161,11 +161,11 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1",
+                  "L1: LABELED ListItem\ncat: l1",
                   "L2: ListStart\n",
-                  "L2: ListItem\nl1.1",
+                  "L2: BULLET ListItem\nl1.1",
                   "L2: ListEnd\n",
-                  "L1: ListItem\nl2",
+                  "L1: LABELED ListItem\ndog: l2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
@@ -179,8 +179,8 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1 continuation",
-                  "L1: ListItem\nl2",
+                  "L1: LABELED ListItem\ncat: l1 continuation",
+                  "L1: LABELED ListItem\ndog: l2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
@@ -218,6 +218,133 @@ class TestRDocMarkup < Test::Unit::TestCase
 
   end
 
+  def test_list_alpha
+    str = "a. alpha\nb. baker\nB. ALPHA\nA. BAKER"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: LOWERALPHA ListItem\nalpha",
+                  "L1: LOWERALPHA ListItem\nbaker",
+                  "L1: ListEnd\n",
+                  "L1: ListStart\n",
+                  "L1: UPPERALPHA ListItem\nALPHA",
+                  "L1: UPPERALPHA ListItem\nBAKER",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_bullet_dash
+    str = "- one\n- two\n"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: BULLET ListItem\none",
+                  "L1: BULLET ListItem\ntwo",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_bullet_star
+    str = "* one\n* two\n"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: BULLET ListItem\none",
+                  "L1: BULLET ListItem\ntwo",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_labeled_bracket
+    str = "[one] item one\n[two] item two"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: LABELED ListItem\none: item one",
+                  "L1: LABELED ListItem\ntwo: item two",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_labeled_bracket_continued
+    str = "[one]\n  item one\n[two]\n  item two"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: LABELED ListItem\none: item one",
+                  "L1: LABELED ListItem\ntwo: item two",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_labeled_colon
+    str = "one:: item one\ntwo:: item two"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: NOTE ListItem\none:: item one",
+                  "L1: NOTE ListItem\ntwo:: item two",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_labeled_colon_continued
+    str = "one::\n  item one\ntwo::\n  item two"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: NOTE ListItem\none:: item one",
+                  "L1: NOTE ListItem\ntwo:: item two",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_nested_bullet_bullet
+    str = "* one\n* two\n  * cat\n  * dog"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: BULLET ListItem\none",
+                  "L1: BULLET ListItem\ntwo",
+                  "L2: ListStart\n",
+                  "L2: BULLET ListItem\ncat",
+                  "L2: BULLET ListItem\ndog",
+                  "L2: ListEnd\n",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_nested_labeled_bullet
+    str = "[one]\n  * cat\n  * dog"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: LABELED ListItem\none: ",
+                  "L2: ListStart\n",
+                  "L2: BULLET ListItem\ncat",
+                  "L2: BULLET ListItem\ndog",
+                  "L2: ListEnd\n",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_nested_labeled_bullet_bullet
+    str = "[one]\n  * cat\n    * dog"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: LABELED ListItem\none: ",
+                  "L2: ListStart\n",
+                  "L2: BULLET ListItem\ncat",
+                  "L3: ListStart\n",
+                  "L3: BULLET ListItem\ndog",
+                  "L3: ListEnd\n",
+                  "L2: ListEnd\n",
+                  "L1: ListEnd\n" ])
+  end
+
+  def test_list_number
+    str = "1. one\n2. two\n1. three"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: NUMBER ListItem\none",
+                  "L1: NUMBER ListItem\ntwo",
+                  "L1: NUMBER ListItem\nthree",
+                  "L1: ListEnd\n" ])
+  end
+
   def test_list_split
     str = %{\
        now is
@@ -229,18 +356,28 @@ class TestRDocMarkup < Test::Unit::TestCase
     line_groups(str,
                 [ "L0: Paragraph\nnow is",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl1",
+                  "L1: BULLET ListItem\nl1",
                   "L1: ListEnd\n",
                   "L1: ListStart\n",
-                  "L1: ListItem\nn1",
-                  "L1: ListItem\nn2",
+                  "L1: NUMBER ListItem\nn1",
+                  "L1: NUMBER ListItem\nn2",
                   "L1: ListEnd\n",
                   "L1: ListStart\n",
-                  "L1: ListItem\nl2",
+                  "L1: BULLET ListItem\nl2",
                   "L1: ListEnd\n",
                   "L0: Paragraph\nthe time"
                 ])
 
+  end
+
+  def test_paragraph
+    str = "paragraph\n\n*bold* paragraph\n"
+
+    line_groups str, [
+      "L0: Paragraph\nparagraph",
+      "L0: BlankLine\n",
+      "L0: Paragraph\n*bold* paragraph"
+    ]
   end
 
   def test_tabs
@@ -343,6 +480,15 @@ class TestRDocMarkup < Test::Unit::TestCase
        [dog] l2
        the time}
     line_types(str, 'PLPLP')
+  end
+
+  def test_verbatim
+    str = "paragraph\n  *bold* verbatim\n"
+
+    line_groups str, [
+      "L0: Paragraph\nparagraph",
+      "L0: Verbatim\n  *bold* verbatim\n"
+    ]
   end
 
   def test_verbatim_merge

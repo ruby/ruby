@@ -5,10 +5,10 @@ require 'rdoc/tokenstream'
 
 module RDoc
 
-
+  ##
   # We contain the common stuff for contexts (which are containers)
   # and other elements (methods, attributes and so on)
-  #
+
   class CodeObject
 
     attr_accessor :parent
@@ -82,8 +82,7 @@ module RDoc
     # Access the code object's comment
     attr_reader :comment
 
-    # Update the comment, but don't overwrite a real comment
-    # with an empty one
+    # Update the comment, but don't overwrite a real comment with an empty one
     def comment=(comment)
       @comment = comment unless comment.empty?
     end
@@ -94,7 +93,7 @@ module RDoc
     # those directives. Wehn a comment is assigned, we then extract
     # out any matching directives and update our object
 
-    def CodeObject.attr_overridable(name, *aliases)
+    def self.attr_overridable(name, *aliases)
       @overridables ||= {}
 
       attr_accessor name
@@ -623,7 +622,7 @@ module RDoc
     end
   end
 
-
+  ##
   # AnyMethod is the base class for objects representing methods
 
   class AnyMethod < CodeObject
@@ -632,13 +631,17 @@ module RDoc
     attr_accessor :block_params
     attr_accessor :dont_rename_initialize
     attr_accessor :singleton
-    attr_reader   :aliases           # list of other names for this method
-    attr_accessor :is_alias_for      # or a method we're aliasing
+    attr_reader :text
+
+    # list of other names for this method
+    attr_reader   :aliases
+
+    # method we're aliasing
+    attr_accessor :is_alias_for
 
     attr_overridable :params, :param, :parameters, :parameter
 
     attr_accessor :call_seq
-
 
     include TokenStream
 
@@ -692,7 +695,6 @@ $stderr.puts p
       @aliases << method
     end
   end
-
 
   # Represent an alias, which is an old_name/ new_name pair associated
   # with a particular context

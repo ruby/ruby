@@ -31,9 +31,9 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
     crossref_bitmap = RDoc::Markup::Attribute.bitmap_for(:_SPECIAL_) |
                       RDoc::Markup::Attribute.bitmap_for(:CROSSREF)
 
-    [ @am.changed_attribute_by_name([], [:CROSSREF] | [:_SPECIAL_]),
+    [ @am.changed_attribute_by_name([], [:CROSSREF, :_SPECIAL_]),
       RDoc::Markup::Special.new(crossref_bitmap, text),
-      @am.changed_attribute_by_name([:CROSSREF] | [:_SPECIAL_], [])
+      @am.changed_attribute_by_name([:CROSSREF, :_SPECIAL_], [])
     ]
   end
 
@@ -90,29 +90,44 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
                   @am.flow("cat _a__nd_ *dog*"))
   end
 
-  def test_html_like
-    assert_equal(["cat ", @tt_on, "dog", @tt_off], @am.flow("cat <tt>dog</Tt>"))
+  def test_html_like_em_bold
+    assert_equal ["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
+                  @am.flow("cat <i>and </i><b>dog</b>")
+  end
 
-    assert_equal(["cat ", @em_on, "and", @em_off, " ", @bold_on, "dog", @bold_off],
-                  @am.flow("cat <i>and</i> <B>dog</b>"))
+  def test_html_like_em_bold_SGML
+    assert_equal ["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
+                  @am.flow("cat <i>and <b></i>dog</b>")
+  end
 
-    assert_equal(["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off],
-                  @am.flow("cat <i>and <B>dog</B></I>"))
-
-    assert_equal(["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
-                  @am.flow("cat <i>and </i><b>dog</b>"))
-
-    assert_equal(["cat ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
-                  @am.flow("cat <i>and <b></i>dog</b>"))
-
-    assert_equal([@tt_on, "cat", @tt_off, " ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
-                  @am.flow("<tt>cat</tt> <i>and <b></i>dog</b>"))
-
-    assert_equal(["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off],
-                  @am.flow("cat <i>and <b>dog</b></i>"))
-
+  def test_html_like_em_bold_nested_1
     assert_equal(["cat ", @bold_em_on, "and", @bold_em_off, " dog"],
                   @am.flow("cat <i><b>and</b></i> dog"))
+  end
+
+  def test_html_like_em_bold_nested_2
+    assert_equal ["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off],
+                  @am.flow("cat <i>and <b>dog</b></i>")
+  end
+
+  def test_html_like_em_bold_nested_mixed_case
+    assert_equal ["cat ", @em_on, "and ", @em_then_bold, "dog", @bold_em_off],
+                  @am.flow("cat <i>and <B>dog</B></I>")
+  end
+
+  def test_html_like_em_bold_mixed_case
+    assert_equal ["cat ", @em_on, "and", @em_off, " ", @bold_on, "dog", @bold_off],
+                  @am.flow("cat <i>and</i> <B>dog</b>")
+  end
+
+  def test_html_like_teletype
+    assert_equal ["cat ", @tt_on, "dog", @tt_off],
+                 @am.flow("cat <tt>dog</Tt>")
+  end
+
+  def test_html_like_teletype_em_bold_SGML
+    assert_equal [@tt_on, "cat", @tt_off, " ", @em_on, "and ", @em_to_bold, "dog", @bold_off],
+                  @am.flow("<tt>cat</tt> <i>and <b></i>dog</b>")
   end
 
   def test_protect

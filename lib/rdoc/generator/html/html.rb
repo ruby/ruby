@@ -478,14 +478,14 @@ EOF
 
       <div class="name-list">
         <table summary="Constants">
-<% values["constants"].each do |constants| $stderr.puts({ :constants => constants }.inspect) %>
+<% values["constants"].each do |constants| %>
         <tr class="top-aligned-row context-row">
-          <td class="context-item-name"><%= values["name"] %></td>
+          <td class="context-item-name"><%= constants["name"] %></td>
           <td>=</td>
-          <td class="context-item-value"><%= values["value"] %></td>
+          <td class="context-item-value"><%= constants["value"] %></td>
 <% if values["desc"] then %>
           <td width="3em">&nbsp;</td>
-          <td class="context-item-desc"><%= values["desc"] %></td>
+          <td class="context-item-desc"><%= constants["desc"] %></td>
 <% end %>
         </tr>
 <% end # values["constants"] %>

@@ -1,22 +1,25 @@
+require 'rdoc/markup/formatter'
 require 'rdoc/markup/fragments'
 require 'rdoc/markup/inline'
 
 require 'cgi'
 
-class RDoc::Markup::ToHtml
+class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   LIST_TYPE_TO_HTML = {
-    :BULLET =>  [ "<ul>", "</ul>" ],
-    :NUMBER =>  [ "<ol>", "</ol>" ],
-    :UPPERALPHA =>  [ "<ol>", "</ol>" ],
-    :LOWERALPHA =>  [ "<ol>", "</ol>" ],
-    :LABELED => [ "<dl>", "</dl>" ],
-    :NOTE    => [ "<table>", "</table>" ],
+    :BULLET =>     %w[<ul> </ul>],
+    :NUMBER =>     %w[<ol> </ol>],
+    :UPPERALPHA => %w[<ol> </ol>],
+    :LOWERALPHA => %w[<ol> </ol>],
+    :LABELED =>    %w[<dl> </dl>],
+    :NOTE    =>    %w[<table> </table>],
   }
 
   InlineTag = Struct.new(:bit, :on, :off)
 
   def initialize
+    super
+
     init_tags
   end
 
@@ -94,8 +97,11 @@ class RDoc::Markup::ToHtml
     if tag = @in_list_entry.last
       @res << annotate(tag) << "\n"
     end
+
     @res << list_item_start(am, fragment)
+
     @res << wrap(convert_flow(am.flow(fragment.txt))) << "\n"
+
     @in_list_entry[-1] = list_end_for(fragment.type)
   end
 

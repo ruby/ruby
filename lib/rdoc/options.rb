@@ -49,7 +49,7 @@ class RDoc::Options
   ##
   # The list of files to be processed
 
-  attr_reader :files
+  attr_accessor :files
 
   ##
   # Scan newer sources than the flag file if true.
@@ -74,7 +74,7 @@ class RDoc::Options
   ##
   # Should source code be included inline, or displayed in a popup
 
-  attr_reader :inline_source
+  attr_accessor :inline_source
 
   ##
   # Name of the file, class or module to display in the initial index page (if

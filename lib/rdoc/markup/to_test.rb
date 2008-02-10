@@ -1,9 +1,10 @@
 require 'rdoc/markup'
+require 'rdoc/markup/formatter'
 
 ##
 # This Markup outputter is used for testing purposes.
 
-class RDoc::Markup::ToTest
+class RDoc::Markup::ToTest < RDoc::Markup::Formatter
 
   def start_accepting
     @res = []

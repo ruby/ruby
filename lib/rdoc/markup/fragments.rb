@@ -83,10 +83,16 @@ class RDoc::Markup
   class ListItem < ListBase
     type_name :LIST
 
-    #  def label
-    #    am = AttributeManager.new(@param)
-    #    am.flow
-    #  end
+    def to_s
+      text = if [:NOTE, :LABELED].include? type then
+               "#{@param}: #{@txt}"
+             else
+               @txt
+             end
+
+      "L#@level: #{type} #{self.class.name.split('::')[-1]}\n#{text}"
+    end
+
   end
 
   class ListStart < ListBase
@@ -311,9 +317,8 @@ class RDoc::Markup
 
     def tidy_blank_lines
       (@fragments.size - 1).times do |i|
-        if @fragments[i].kind_of?(BlankLine) and 
-            @fragments[i+1].kind_of?(ListEnd)
-          @fragments[i], @fragments[i+1] = @fragments[i+1], @fragments[i] 
+        if BlankLine === @fragments[i] and ListEnd === @fragments[i+1] then
+          @fragments[i], @fragments[i+1] = @fragments[i+1], @fragments[i]
         end
       end
 

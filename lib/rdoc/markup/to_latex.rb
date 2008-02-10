@@ -1,3 +1,4 @@
+require 'rdoc/markup/formatter'
 require 'rdoc/markup/fragments'
 require 'rdoc/markup/inline'
 
@@ -6,7 +7,7 @@ require 'cgi'
 ##
 # Convert SimpleMarkup to basic LaTeX report format.
 
-class RDoc::Markup::ToLaTeX
+class RDoc::Markup::ToLaTeX < RDoc::Markup::Formatter
 
   BS = "\020"   # \
   OB = "\021"   # {

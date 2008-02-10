@@ -12,9 +12,9 @@ class RDoc::Markup
     @@name_to_bitmap = { :_SPECIAL_ => SPECIAL }
     @@next_bitmap = 2
 
-    def Attribute.bitmap_for(name)
+    def self.bitmap_for(name)
       bitmap = @@name_to_bitmap[name]
-      if !bitmap
+      unless bitmap then
         bitmap = @@next_bitmap
         @@next_bitmap <<= 1
         @@name_to_bitmap[name] = bitmap
@@ -22,7 +22,7 @@ class RDoc::Markup
       bitmap
     end
 
-    def Attribute.as_string(bitmap)
+    def self.as_string(bitmap)
       return "none" if bitmap.zero?
       res = []
       @@name_to_bitmap.each do |name, bit|
@@ -31,7 +31,7 @@ class RDoc::Markup
       res.join(",")
     end
 
-    def Attribute.each_name_of(bitmap)
+    def self.each_name_of(bitmap)
       @@name_to_bitmap.each do |name, bit|
         next if bit == SPECIAL
         yield name.to_s if (bitmap & bit) != 0
@@ -85,14 +85,15 @@ class RDoc::Markup
       self.text == o.text && self.type == o.type
     end
 
-    def to_s
-      "Special: type=#{type}, name=#{RDoc::Markup::Attribute.as_string type}, text=#{text.dump}"
-    end
-
     def inspect
       "#<RDoc::Markup::Special:0x%x @type=%p, name=%p @text=%p>" % [
         object_id, @type, RDoc::Markup::Attribute.as_string(type), text.dump]
     end
+
+    def to_s
+      "Special: type=#{type}, name=#{RDoc::Markup::Attribute.as_string type}, text=#{text.dump}"
+    end
+
   end
 
   class AttributeManager
@@ -165,8 +166,10 @@ class RDoc::Markup
     def convert_attrs(str, attrs)
       # first do matching ones
       tags = MATCHING_WORD_PAIRS.keys.join("")
+
       re = "(^|\\W)([#{tags}])([A-Za-z_]+?)\\2(\\W|\$)"
 #      re = "(^|\\W)([#{tags}])(\\S+?)\\2(\\W|\$)"
+
       1 while str.gsub!(Regexp.new(re)) {
         attr = MATCHING_WORD_PAIRS[$2];
         attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
@@ -185,9 +188,9 @@ class RDoc::Markup
     end
 
     def convert_html(str, attrs)
-      tags = HTML_TAGS.keys.join("|")
-      re = "<(#{tags})>(.*?)</\\1>"
-      1 while str.gsub!(Regexp.new(re, Regexp::IGNORECASE)) {
+      tags = HTML_TAGS.keys.join '|'
+
+      1 while str.gsub!(/<(#{tags})>(.*?)<\/\1>/i) {
         attr = HTML_TAGS[$1.downcase]
         html_length = $1.length + 2
         seq = NULL * html_length
@@ -210,7 +213,7 @@ class RDoc::Markup
     # A \ in front of a character that would normally be processed turns off
     # processing. We do this by turning \< into <#{PROTECT}
 
-    PROTECTABLE = [ "<" << "\\" ]  #"
+    PROTECTABLE = [ "<" << "\\" ]
 
 
     def mask_protected_sequences
@@ -300,7 +303,6 @@ class RDoc::Markup
     end
 
     def split_into_flow
-
       display_attributes if $DEBUG_RDOC
 
       res = []
