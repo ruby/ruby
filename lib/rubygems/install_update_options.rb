@@ -37,7 +37,7 @@ module Gem::InstallUpdateOptions
       options[:generate_ri] = value
     end
 
-    add_option(:"Install/Update", '-E', '--env-shebang',
+    add_option(:"Install/Update", '-E', '--[no-]env-shebang',
                "Rewrite the shebang line on installed",
                "scripts to use /usr/bin/env") do |value, options|
       options[:env_shebang] = value

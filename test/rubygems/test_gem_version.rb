@@ -185,7 +185,7 @@ class TestGemVersion < RubyGemTestCase
 
   def assert_adequate(version, requirement)
     ver = Gem::Version.new(version)
-    req = Gem::Version::Requirement.new(requirement)
+    req = Gem::Requirement.new(requirement)
     assert req.satisfied_by?(ver),
       "Version #{version} should be adequate for Requirement #{requirement}"
   end

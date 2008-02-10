@@ -25,6 +25,8 @@ class Gem::Uninstaller
   def initialize(gem, options)
     @gem = gem
     @version = options[:version] || Gem::Requirement.default
+    gem_home = options[:install_dir] || Gem.dir
+    @gem_home = File.expand_path gem_home
     @force_executables = options[:executables]
     @force_all = options[:all]
     @force_ignore = options[:ignore]
@@ -71,31 +73,38 @@ class Gem::Uninstaller
   #
   def remove_executables(gemspec)
     return if gemspec.nil?
-    if(gemspec.executables.size > 0)
-      raise Gem::FilePermissionError.new(Gem.bindir) unless
-        File.writable?(Gem.bindir)
+
+    if gemspec.executables.size > 0 then
+      bindir = Gem.bindir @gem_home
+
+      raise Gem::FilePermissionError, bindir unless File.writable? bindir
+
       list = Gem.source_index.search(gemspec.name).delete_if { |spec|
         spec.version == gemspec.version
       }
+
       executables = gemspec.executables.clone
+
       list.each do |spec|
         spec.executables.each do |exe_name|
           executables.delete(exe_name)
         end
       end
+
       return if executables.size == 0
+
       answer = @force_executables || ask_yes_no(
-        "Remove executables and scripts for\n" +
-        "'#{gemspec.executables.join(", ")}' in addition to the gem?",
+        "Remove executables:\n" \
+        "\t#{gemspec.executables.join(", ")}\n\nin addition to the gem?",
         true) # " # appease ruby-mode - don't ask
-      unless answer
+
+      unless answer then
         say "Executables and scripts will remain installed."
-        return
       else
         gemspec.executables.each do |exe_name|
           say "Removing #{exe_name}"
-          File.unlink File.join(Gem.bindir, exe_name) rescue nil
-          File.unlink File.join(Gem.bindir, exe_name + ".bat") rescue nil
+          FileUtils.rm_f File.join(bindir, exe_name)
+          FileUtils.rm_f File.join(bindir, "#{exe_name}.bat")
         end
       end
     end
@@ -119,9 +128,16 @@ class Gem::Uninstaller
   # uninstalled a gem, it is removed from that list.
   #
   def remove(spec, list)
-    unless ok_to_remove? spec then
+    unless dependencies_ok? spec then
       raise Gem::DependencyRemovalException,
             "Uninstallation aborted due to dependent gem(s)"
+    end
+
+    unless path_ok? spec then
+      alert("In order to remove #{spec.name}, please execute:\n" \
+            "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
+      raise Gem::GemNotInHomeException,
+            "Gem is not installed in directory #{@gem_home}"
     end
 
     raise Gem::FilePermissionError, spec.installation_path unless
@@ -157,7 +173,13 @@ class Gem::Uninstaller
     list.delete spec
   end
 
-  def ok_to_remove?(spec)
+  def path_ok?(spec)
+    match_path = File.join @gem_home, 'gems', spec.full_name
+
+    match_path == spec.full_gem_path
+  end
+
+  def dependencies_ok?(spec)
     return true if @force_ignore
 
     srcindex = Gem::SourceIndex.from_installed_gems

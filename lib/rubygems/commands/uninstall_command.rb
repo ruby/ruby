@@ -18,16 +18,21 @@ module Gem
           options[:all] = value
         end
 
-          add_option('-i', '--[no-]ignore-dependencies',
-                     'Ignore dependency requirements while',
-                     'uninstalling') do |value, options|
+        add_option('-I', '--[no-]ignore-dependencies',
+                   'Ignore dependency requirements while',
+                   'uninstalling') do |value, options|
           options[:ignore] = value
         end
 
-          add_option('-x', '--[no-]executables',
+        add_option('-x', '--[no-]executables',
                      'Uninstall applicable executables without',
                      'confirmation') do |value, options|
           options[:executables] = value
+        end
+
+        add_option('-i', '--install-dir DIR',
+                   'Directory to uninstall gem from') do |value, options|
+          options[:install_dir] = File.expand_path(value)
         end
 
         add_version_option
@@ -39,7 +44,8 @@ module Gem
       end
 
       def defaults_str # :nodoc:
-        "--version '#{Gem::Requirement.default}' --no-force"
+        "--version '#{Gem::Requirement.default}' --no-force " \
+        "--install-dir #{Gem.dir}"
       end
 
       def usage # :nodoc:

@@ -136,7 +136,7 @@ module Gem
         execute
       end
     end
-    
+
     # Call the given block when invoked.
     #
     # Normal command invocations just executes the +execute+ method of
@@ -146,7 +146,7 @@ module Gem
     def when_invoked(&block)
       @when_invoked = block
     end
-    
+
     # Add a command-line option and handler to the command.
     #
     # See OptionParser#make_switch for an explanation of +opts+.
@@ -165,7 +165,7 @@ module Gem
         option_list.reject! { |args, _| args.any? { |x| x =~ /^#{name}/ } }
       end
     end
-    
+
     # Merge a set of command options with the set of default options
     # (without modifying the default option hash).
     def merge_options(new_options)
@@ -191,7 +191,7 @@ module Gem
       parser.parse!(args)
       @options[:args] = args
     end
-    
+
     def add_extra_args(args)
       result = []
       s_extra = Command.specific_extra_args(@command)
@@ -291,7 +291,7 @@ module Gem
       def common_options
         @common_options ||= []
       end
-    
+
       def add_common_option(*args, &handler)
         Gem::Command.common_options << [args, handler]
       end
@@ -315,7 +315,7 @@ module Gem
       def specific_extra_args(cmd)
         specific_extra_args_hash[cmd]
       end
-      
+
       # Add a list of extra arguments for the given command.  +args+
       # may be an array or a string to be split on white space.
       def add_specific_extra_args(cmd,args)
@@ -334,7 +334,7 @@ module Gem
     # ----------------------------------------------------------------
     # Add the options common to all commands.
 
-    add_common_option('-h', '--help', 
+    add_common_option('-h', '--help',
       'Get help on this command') do
       |value, options|
       options[:help] = true
@@ -358,11 +358,11 @@ module Gem
     # commands.  Both options are actually handled before the other
     # options get parsed.
 
-    add_common_option('--config-file FILE', 
+    add_common_option('--config-file FILE',
       "Use this config file instead of default") do
     end
 
-    add_common_option('--backtrace', 
+    add_common_option('--backtrace',
       'Show stack backtrace on errors') do
     end
 

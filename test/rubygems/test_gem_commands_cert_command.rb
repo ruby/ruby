@@ -3,6 +3,10 @@ require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 
 require 'rubygems/commands/cert_command'
 
+unless defined? OpenSSL then
+  warn "`gem cert` tests are being skipped, module OpenSSL not found"
+end
+
 class TestGemCommandsCertCommand < RubyGemTestCase
 
   def setup
@@ -118,5 +122,5 @@ class TestGemCommandsCertCommand < RubyGemTestCase
     # HACK this test sucks
   end
 
-end
+end if defined? OpenSSL
 

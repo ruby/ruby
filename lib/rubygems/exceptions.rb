@@ -11,8 +11,12 @@ class Gem::DependencyError < Gem::Exception; end
 
 class Gem::DependencyRemovalException < Gem::Exception; end
 
+##
+# Raised when attempting to uninstall a gem that isn't in GEM_HOME.
+class Gem::GemNotInHomeException < Gem::Exception; end
+
 class Gem::DocumentError < Gem::Exception; end
-  
+
 ##
 # Potentially raised when a specification is validated.
 class Gem::EndOfYAMLException < Gem::Exception; end

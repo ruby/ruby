@@ -288,19 +288,21 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal %w[a-1], inst.installed_gems.map { |s| s.full_name }
   end
 
-  def test_install_security_policy
-    FileUtils.mv @a1_gem, @cache_dir
-    FileUtils.mv @b1_gem, @cache_dir
-    policy = Gem::Security::HighSecurity
-    inst = Gem::DependencyInstaller.new 'b', nil, :security_policy => policy
+  if defined? OpenSSL then
+    def test_install_security_policy
+      FileUtils.mv @a1_gem, @cache_dir
+      FileUtils.mv @b1_gem, @cache_dir
+      policy = Gem::Security::HighSecurity
+      inst = Gem::DependencyInstaller.new 'b', nil, :security_policy => policy
 
-    e = assert_raise Gem::Exception do
-      inst.install
+      e = assert_raise Gem::Exception do
+        inst.install
+      end
+
+      assert_equal 'Unsigned gem', e.message
+
+      assert_equal %w[], inst.installed_gems.map { |s| s.full_name }
     end
-
-    assert_equal 'Unsigned gem', e.message
-
-    assert_equal %w[], inst.installed_gems.map { |s| s.full_name }
   end
 
   def test_install_wrappers

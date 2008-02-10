@@ -1,4 +1,3 @@
-require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'rubygems'
 require 'rubygems/gem_openssl'
@@ -74,6 +73,8 @@ class TestGem < RubyGemTestCase
       foo = quick_gem 'foo' do |s| s.files = %w[data/foo.txt] end
       install_gem foo
     end
+
+    Gem.source_index = nil
 
     gem 'foo'
 
@@ -280,9 +281,7 @@ class TestGem < RubyGemTestCase
 
   def test_self_prefix
     file_name = File.expand_path __FILE__
-    expected = File.dirname File.dirname(file_name)
-    expected = File.dirname expected if expected =~ %r|/test| # for Ruby trunk
-    assert_equal expected, Gem.prefix
+    assert_equal File.dirname(File.dirname(file_name)), Gem.prefix
   end
 
   def test_self_required_location

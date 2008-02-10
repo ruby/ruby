@@ -271,7 +271,7 @@ gems:
       fetcher.fetch_path 'uri'
     end
 
-    assert_match %r|\AErrno::ECONNREFUSED: .* - connect\(2\) reading uri\z|,
+    assert_match %r|ECONNREFUSED:.*connect\(2\) reading uri\z|,
                  e.message
   end
 

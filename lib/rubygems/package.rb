@@ -614,14 +614,16 @@ module Gem::Package
     # this method would use the String IO approach on all platforms at all
     # times.  And that's the way it is.
     def zipped_stream(entry)
-      # This is Jamis Buck's ZLib workaround.  The original code is
-      # commented out while we evaluate this patch.
-      entry.read(10) # skip the gzip header
-      zis = Zlib::Inflate.new(-Zlib::MAX_WBITS)
-      is = StringIO.new(zis.inflate(entry.read))
-      # zis = Zlib::GzipReader.new entry
-      # dis = zis.read
-      # is = StringIO.new(dis)
+      if defined? Rubinius then
+        zis = Zlib::GzipReader.new entry
+        dis = zis.read
+        is = StringIO.new(dis)
+      else
+        # This is Jamis Buck's ZLib workaround for some unknown issue
+        entry.read(10) # skip the gzip header
+        zis = Zlib::Inflate.new(-Zlib::MAX_WBITS)
+        is = StringIO.new(zis.inflate(entry.read))
+      end
     ensure
       zis.finish if zis
     end

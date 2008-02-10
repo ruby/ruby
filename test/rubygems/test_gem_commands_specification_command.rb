@@ -85,7 +85,8 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
       @cmd.execute
     end
 
-    assert_equal "#{foo.to_yaml}\n", @ui.output
+    assert_match %r|\A--- !ruby/object:Gem::Specification|, @ui.output
+    assert_match %r|name: foo|, @ui.output
     assert_equal "WARNING:  Remote information is not complete\n\n", @ui.error
   end
 

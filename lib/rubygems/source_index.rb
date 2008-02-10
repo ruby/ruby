@@ -46,7 +46,7 @@ module Gem
         if deprecated.empty?
           from_gems_in(*installed_spec_directories)
         else
-          from_gems_in(*deprecated)
+          from_gems_in(*deprecated) # HACK warn
         end
       end
       
@@ -118,6 +118,7 @@ module Gem
     def load_gems_in(*spec_dirs)
       @gems.clear
       specs = Dir.glob File.join("{#{spec_dirs.join(',')}}", "*.gemspec")
+
       specs.each do |file_name|
         gemspec = self.class.load_specification(file_name.untaint)
         add_spec(gemspec) if gemspec

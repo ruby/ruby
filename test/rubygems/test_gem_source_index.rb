@@ -401,7 +401,7 @@ class TestGemSourceIndex < RubyGemTestCase
   def test_update_with_missing
     marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
                             "#{@gem3.full_name}.gemspec.rz"
-    dumped = Marshal.dump(@gem3)
+    dumped = Marshal.dump @gem3
     @fetcher.data[marshal_uri] = util_zip(dumped)
 
     use_ui @ui do

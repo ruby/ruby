@@ -1,3 +1,8 @@
+Sun Feb 10 16:58:20 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems*, test/rubygems*, gem_prelude.rb: Import RubyGems
+	* r1601.  [ruby-core:15381]
+
 Sun Feb 10 15:07:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub (MISSING): added cbrt.obj.

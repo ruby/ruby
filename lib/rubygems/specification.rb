@@ -457,7 +457,7 @@ module Gem
 
     overwrite_accessor :default_executable do
       begin
-        if defined? @default_executable and @default_executable
+        if defined?(@default_executable) and @default_executable
           result = @default_executable
         elsif @executables and @executables.size == 1
           result = Array(@executables).first
@@ -471,14 +471,12 @@ module Gem
     end
 
     def add_bindir(executables)
-      if not defined? @executables || @executables.nil?
-        return nil
-      end
+      return nil if executables.nil?
 
-      if defined? @bindir and @bindir then
-        Array(@executables).map {|e| File.join(@bindir, e) }
+      if @bindir then
+        Array(executables).map { |e| File.join(@bindir, e) }
       else
-        @executables
+        executables
       end
     rescue
       return nil
@@ -511,7 +509,7 @@ module Gem
         @test_files = [@test_suite_file].flatten
         @test_suite_file = nil
       end
-      if defined? @test_files and @test_files then
+      if defined?(@test_files) and @test_files then
         @test_files
       else
         @test_files = []
@@ -903,7 +901,7 @@ module Gem
     # Also, the summary and description are converted to a normal
     # format. 
     def normalize
-      if defined? @extra_rdoc_files and @extra_rdoc_files then
+      if defined?(@extra_rdoc_files) and @extra_rdoc_files then
         @extra_rdoc_files.uniq!
         @files ||= []
         @files.concat(@extra_rdoc_files)

@@ -53,10 +53,10 @@ class TestGemServer < RubyGemTestCase
     assert_equal 200, @res.status, @res.body
     assert @res['date']
     assert_equal 'text/plain', @res['content-type']
-    yaml = Zlib::Inflate.inflate(@res.body)
-    assert_match %r|Gem::Specification|, yaml
-    assert_match %r|name: a|, yaml
-    assert_match %r|version: "1"|, yaml
+
+    spec = YAML.load Zlib::Inflate.inflate(@res.body)
+    assert_equal 'a', spec.name
+    assert_equal Gem::Version.new(1), spec.version
   end
 
   def test_quick_a_1_mswin32_gemspec_rz
@@ -72,10 +72,11 @@ class TestGemServer < RubyGemTestCase
     assert_equal 200, @res.status, @res.body
     assert @res['date']
     assert_equal 'text/plain', @res['content-type']
-    yaml = Zlib::Inflate.inflate(@res.body)
-    assert_match %r|Gem::Specification|, yaml
-    assert_match %r|name: a|, yaml
-    assert_match %r|version: "1"|, yaml
+
+    spec = YAML.load Zlib::Inflate.inflate(@res.body)
+    assert_equal 'a', spec.name
+    assert_equal Gem::Version.new(1), spec.version
+    assert_equal Gem::Platform.local, spec.platform
   end
 
   def test_quick_common_substrings
@@ -91,10 +92,10 @@ class TestGemServer < RubyGemTestCase
     assert_equal 200, @res.status, @res.body
     assert @res['date']
     assert_equal 'text/plain', @res['content-type']
-    yaml = Zlib::Inflate.inflate @res.body
-    assert_match %r|Gem::Specification|, yaml
-    assert_match %r|name: a$|, yaml
-    assert_match %r|version: "1"|, yaml
+
+    spec = YAML.load Zlib::Inflate.inflate(@res.body)
+    assert_equal 'a', spec.name
+    assert_equal Gem::Version.new(1), spec.version
   end
 
   def test_quick_z_9_gemspec_rz

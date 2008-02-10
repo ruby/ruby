@@ -1,5 +1,7 @@
 require 'test/unit'
 require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
+require 'rubygems/package'
+require 'rubygems/security'
 require 'rubygems/commands/fetch_command'
 
 class TestGemCommandsFetchCommand < RubyGemTestCase

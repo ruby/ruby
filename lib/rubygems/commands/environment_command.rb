@@ -58,7 +58,11 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
       end
 
       out << "  - GEM PATHS:\n"
-      Gem.path.each do |p|
+      out << "     - #{Gem.dir}\n"
+
+      path = Gem.path.dup
+      path.delete Gem.dir
+      path.each do |p|
         out << "     - #{p}\n"
       end
 

@@ -8,7 +8,7 @@
 require 'rubygems'
 require 'rubygems/gem_runner'
 
-required_version = Gem::Requirement.new ">= 1.8.2"
+required_version = Gem::Requirement.new ">= 1.8.3"
 
 unless required_version.satisfied_by? Gem::Version.new(RUBY_VERSION) then
   abort "Expected Ruby Version #{required_version}, was #{RUBY_VERSION}"
