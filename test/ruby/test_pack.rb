@@ -235,9 +235,8 @@ class TestPack < Test::Unit::TestCase
 
     s1 = [67305985, -50462977].pack("i!*")
     s2 = [67305985, 4244504319].pack("I!*")
-    assert_equal(s1, s2)
-    assert_equal([67305985, -50462977], s2.unpack("i!*"))
-    assert_equal([67305985, 4244504319], s1.unpack("I!*"))
+    assert_equal([67305985, -50462977], s1.unpack("i!*"))
+    assert_equal([67305985, 4244504319], s2.unpack("I!*"))
   end
 
   def test_pack_unpack_lL
@@ -249,9 +248,8 @@ class TestPack < Test::Unit::TestCase
 
     s1 = [67305985, -50462977].pack("l!*")
     s2 = [67305985, 4244504319].pack("L!*")
-    assert_equal(s1, s2)
-    assert_equal([67305985, -50462977], s2.unpack("l!*"))
-    assert_equal([67305985, 4244504319], s1.unpack("L!*"))
+    assert_equal([67305985, -50462977], s1.unpack("l!*"))
+    assert_equal([67305985, 4244504319], s2.unpack("L!*"))
   end
 
   def test_pack_unpack_qQ

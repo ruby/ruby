@@ -438,7 +438,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_flock ## xxx
-    f = File.new(@file, "w")
+    f = File.new(@file, "r+")
     f.flock(File::LOCK_EX)
     f.flock(File::LOCK_SH)
     f.flock(File::LOCK_UN)

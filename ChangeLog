@@ -1,3 +1,19 @@
+Mon Feb 11 06:50:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_pack.rb: fix tests for 64bit CPU.
+
+	* test/ruby/test_bignum.rb: ditto.
+
+	* test/ruby/test_file_exhaustive.rb: ditto.
+
+	* test/ruby/test_integer.rb: ditto.
+
+	* test/ruby/test_time.rb: ditto.
+
+	* test/ruby/test_numeric.rb: ditto.
+
+	* test/ruby/test_fixnum.rb: ditto.
+
 Mon Feb 11 00:18:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/benchmark.rb (Job::Benchmark#item): fix typo.

@@ -121,7 +121,10 @@ class TestFixnum < Test::Unit::TestCase
 
   def test_induced_from
     assert_equal(1, Fixnum.induced_from(1))
-    assert_raise(RangeError) { Fixnum.induced_from(2**31-1) }
+    assert_raise(RangeError) do
+      Fixnum.induced_from(2**31-1)
+      Fixnum.induced_from(2**63-1)
+    end
     assert_equal(1, Fixnum.induced_from((2**32).coerce(1).first))
   end
 

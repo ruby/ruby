@@ -783,9 +783,9 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(11100, 11111.round(-2))
     assert_equal(Fixnum, 11111.round(-2).class)
 
-    assert_equal(1111_1111_1111_1110, 1111_1111_1111_1111.round(-1))
-    assert_equal(Bignum, 1111_1111_1111_1111.round(-1).class)
-    assert_equal(-1111_1111_1111_1110, (-1111_1111_1111_1111).round(-1))
-    assert_equal(Bignum, (-1111_1111_1111_1111).round(-1).class)
+    assert_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1))
+    assert_equal(Bignum, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1).class)
+    assert_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
+    assert_equal(Bignum, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1).class)
   end
 end

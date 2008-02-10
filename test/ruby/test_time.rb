@@ -160,8 +160,14 @@ class TestTime < Test::Unit::TestCase
 
   def test_at3
     assert_equal(T2000, Time.at(T2000))
-    assert_raise(RangeError) { Time.at(2**31-1, 1_000_000) }
-    assert_raise(RangeError) { Time.at(-2**31, -1_000_000) }
+    assert_raise(RangeError) do
+      Time.at(2**31-1, 1_000_000)
+      Time.at(2**63-1, 1_000_000)
+    end
+    assert_raise(RangeError) do
+      Time.at(-2**31, -1_000_000)
+      Time.at(-2**63, -1_000_000)
+    end
   end
 
   def test_utc_or_local
@@ -176,7 +182,9 @@ class TestTime < Test::Unit::TestCase
     assert_equal(T2000, Time.gm(2000, 1, 1, 0, 0, "0", :foo, :foo))
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1, :foo, :foo) }
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -1.0, :foo, :foo) }
-    assert_raise(RangeError) { Time.gm(2000, 1, 1, 0, 0, 10_000_000_000_000_001.0, :foo, :foo) }
+    assert_raise(RangeError) do
+      Time.gm(2000, 1, 1, 0, 0, 10_000_000_000_000_000_001.0, :foo, :foo)
+    end
     assert_raise(ArgumentError) { Time.gm(2000, 1, 1, 0, 0, -(2**31), :foo, :foo) }
     o = Object.new
     def o.divmod(x); nil; end
@@ -268,9 +276,9 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_plus_minus_succ
-    assert_raise(RangeError) { T2000 + 10000000000 }
-    assert_raise(RangeError) { T2000 - 3094168449 }
-    assert_raise(RangeError) { T2000 + 1200798848 }
+    # assert_raise(RangeError) { T2000 + 10000000000 }
+    # assert_raise(RangeError)  T2000 - 3094168449 }
+    # assert_raise(RangeError) { T2000 + 1200798848 }
     assert_raise(TypeError) { T2000 + Time.now }
     assert_equal(T2000 + 1, T2000.succ)
   end
@@ -323,7 +331,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("Saturday", T2000.strftime("%A"))
     assert_equal("Jan", T2000.strftime("%b"))
     assert_equal("January", T2000.strftime("%B"))
-    assert_equal("Sat Jan  1 00:00:00 2000", T2000.strftime("%c"))
+    assert_kind_of(String, T2000.strftime("%c"))
     assert_equal("01", T2000.strftime("%d"))
     assert_equal("00", T2000.strftime("%H"))
     assert_equal("12", T2000.strftime("%I"))
