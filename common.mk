@@ -707,14 +707,14 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(s
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-encdb:
+encdb: $(PREP)
 	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc encdb.h.new
 	$(IFCHANGE) "encdb.h" "encdb.h.new"
 
 encdb.h:
 	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@
 
-transdb:
+transdb: $(PREP)
 	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans transdb.h.new
 	$(IFCHANGE) "transdb.h" "transdb.h.new"
 
