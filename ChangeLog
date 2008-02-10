@@ -1,3 +1,7 @@
+Mon Feb 11 00:18:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/benchmark.rb (Job::Benchmark#item): fix typo.
+
 Sun Feb 10 21:58:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (encdb, transdb): depend on $(PREP).
