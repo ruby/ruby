@@ -430,6 +430,35 @@ module RSS
       test_items(false)
     end
 
+    def test_pubDate_without_description
+      title = "TITLE"
+      link = "http://hoge.com/"
+      description = "text hoge fuga"
+      author = "oprah@oxygen.net"
+      pubDate = Time.now
+
+      rss = RSS::Maker.make("2.0") do |maker|
+        setup_dummy_channel(maker)
+
+        maker.items.new_item do |item|
+          item.title = title
+          item.link = link
+          # item.description = description
+          item.author = author
+          item.pubDate = pubDate
+        end
+      end
+      assert_equal(1, rss.items.size)
+      rss.channel.items.each_with_index do |item, i|
+        assert_equal(title, item.title)
+        assert_equal(link, item.link)
+        # assert_equal(description, item.description)
+        assert_equal(author, item.author)
+        assert_equal(pubDate, item.pubDate)
+        assert_equal(pubDate, item.date)
+      end
+    end
+
     def test_guid
       isPermaLink = "true"
       content = "http://inessential.com/2002/09/01.php#a2"

@@ -1,3 +1,16 @@
+Mon Feb 11 17:21:18 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::VERSION), test/rss/test_version.rb:
+	0.2.3 -> 0.2.4.
+
+	* lib/rss/maker.rb, lib/rss/maker/, test/rss/test_maker_2.0.rb:
+	fixed a bug that RSS::Maker.make("0.9")'s item doesn't make some
+	elements if description is missed.
+	Reported by Michael Auzenne. Thanks!!!
+
+	* lib/rss/maker/0.9.rb, test/rss/test_maker_0.9.rb:
+	RSS::Maker.make("0.9") generates RSS 0.92 not RSS 0.91.
+
 Mon Feb 11 10:43:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (load_file): the encoding of DATA follows the source

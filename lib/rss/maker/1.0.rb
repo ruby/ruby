@@ -7,8 +7,8 @@ module RSS
 
     class RSS10 < RSSBase
 
-      def initialize
-        super("1.0")
+      def initialize(feed_version="1.0")
+        super
         @feed_type = "rss"
       end
 
@@ -428,7 +428,7 @@ module RSS
       end
     end
 
-    add_maker("1.0", RSS10)
-    add_maker("rss1.0", RSS10)
+    add_maker("1.0", "1.0", RSS10)
+    add_maker("rss1.0", "1.0", RSS10)
   end
 end

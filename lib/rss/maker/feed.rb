@@ -4,8 +4,8 @@ module RSS
   module Maker
     module Atom
       class Feed < RSSBase
-        def initialize
-          super("1.0")
+        def initialize(feed_version="1.0")
+          super
           @feed_type = "atom"
           @feed_subtype = "feed"
         end
@@ -421,9 +421,9 @@ module RSS
       end
     end
 
-    add_maker("atom", Atom::Feed)
-    add_maker("atom:feed", Atom::Feed)
-    add_maker("atom1.0", Atom::Feed)
-    add_maker("atom1.0:feed", Atom::Feed)
+    add_maker("atom", "1.0", Atom::Feed)
+    add_maker("atom:feed", "1.0", Atom::Feed)
+    add_maker("atom1.0", "1.0", Atom::Feed)
+    add_maker("atom1.0:feed", "1.0", Atom::Feed)
   end
 end

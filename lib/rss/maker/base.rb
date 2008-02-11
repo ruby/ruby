@@ -357,8 +357,8 @@ module RSS
 
     class RSSBase < Base
       class << self
-        def make(&block)
-          new.make(&block)
+        def make(version, &block)
+          new(version).make(&block)
         end
       end
 
