@@ -10,6 +10,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/encoding.h"
 
 VALUE rb_cRange;
 static ID id_cmp, id_succ, id_beg, id_end, id_excl;
@@ -747,6 +748,27 @@ range_include(VALUE range, VALUE val)
 	    }
 	}
 	return Qfalse;
+    }
+    else if (TYPE(beg) == T_STRING && TYPE(end) == T_STRING &&
+	     RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1) {
+	rb_encoding *enc = rb_enc_check(beg, end);
+
+	if (NIL_P(val)) return Qfalse;
+	if (TYPE(val) == T_STRING) {
+	    if (RSTRING_LEN(val) == 0 || RSTRING_LEN(val) > 1)
+		return Qfalse;
+	    else {
+		char b = RSTRING_PTR(beg)[0];
+		char e = RSTRING_PTR(end)[0];
+		char v = RSTRING_PTR(val)[0];
+
+		if (ISASCII(b) && ISASCII(e) && ISASCII(v)) {
+		    if (b <= v && v < e) return Qtrue;
+		    if (!EXCL(range) && v == e) return Qtrue;
+		    return Qfalse;
+		}
+	    }
+	}
     }
     /* TODO: ruby_frame->this_func = rb_intern("include?"); */
     return rb_call_super(1, &val);

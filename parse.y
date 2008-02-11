@@ -271,7 +271,7 @@ struct parser_params {
 #define STR_NEW0() rb_enc_str_new(0,0,rb_usascii_encoding())
 #define STR_NEW2(p) rb_enc_str_new((p),strlen(p),parser->enc)
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),parser->enc)
-#define STR_ENC(m) ((m)?parser->enc:rb_ascii8bit_encoding())
+#define STR_ENC(m) ((m)?parser->enc:rb_usascii_encoding())
 #define ENC_SINGLE(cr) ((cr)==ENC_CODERANGE_7BIT)
 #define TOK_INTERN(mb) rb_intern3(tok(), toklen(), STR_ENC(mb))
 
@@ -9043,7 +9043,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 ID
 rb_intern2(const char *name, long len)
 {
-    return rb_intern3(name, len, rb_ascii8bit_encoding());
+    return rb_intern3(name, len, rb_usascii_encoding());
 }
 
 #undef rb_intern
@@ -9056,14 +9056,16 @@ rb_intern(const char *name)
 ID
 rb_intern_str(VALUE str)
 {
-    int idx = 0;
+    rb_encoding *enc;
     ID id;
 
-    if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-	idx = rb_enc_get_index(str);
+    if (rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT) {
+	enc = rb_usascii_encoding();
     }
-    id = rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str),
-		    rb_enc_from_index(idx));
+    else {
+	enc = rb_enc_get(str);
+    }
+    id = rb_intern3(RSTRING_PTR(str), RSTRING_LEN(str), enc);
     RB_GC_GUARD(str);
     return id;
 }

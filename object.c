@@ -1940,7 +1940,10 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 static VALUE
 rb_to_integer(VALUE val, const char *method)
 {
-    VALUE v = convert_type(val, "Integer", method, Qtrue);
+    VALUE v;
+
+    if (FIXNUM_P(val)) return val;
+    v = convert_type(val, "Integer", method, Qtrue);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	char *cname = rb_obj_classname(val);
 	rb_raise(rb_eTypeError, "can't convert %s to Integer (%s#%s gives %s)",
@@ -1952,7 +1955,10 @@ rb_to_integer(VALUE val, const char *method)
 VALUE
 rb_check_to_integer(VALUE val, const char *method)
 {
-    VALUE v = convert_type(val, "Integer", method, Qfalse);
+    VALUE v;
+
+    if (FIXNUM_P(val)) return val;
+    v = convert_type(val, "Integer", method, Qfalse);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
 	return Qnil;
     }

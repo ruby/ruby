@@ -1,3 +1,24 @@
+Tue Feb 12 02:42:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_include): specialize single character string
+	  case (e.g. (?a ..?z).include(?x)) for performance.
+	  [ruby-core:15481]
+
+	* string.c (rb_str_upto): specialize single character case.
+
+	* string.c (rb_str_hash): omit coderange scan for performance.
+
+	* object.c (rb_check_to_integer): check Fixnum first.
+
+	* object.c (rb_to_integer): ditto.
+
+	* string.c (rb_str_equal): inline memcmp to avoid unnecessary
+	  rb_str_comparable(). 
+
+	* parse.y (rb_intern2): use US-ASCII encoding.
+
+	* parse.y (rb_intern_str): ditto. 
+
 Mon Feb 11 17:21:18 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION), test/rss/test_version.rb:

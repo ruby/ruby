@@ -1509,11 +1509,7 @@ rb_memhash(const void *ptr, long len)
 int
 rb_str_hash(VALUE str)
 {
-    int e = ENCODING_GET(str);
-    if (e && is_ascii_string(str)) {
-	e = 0;
-    }
-    return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str), e);
+    return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str), 0);
 }
 
 /*
@@ -1593,6 +1589,8 @@ rb_str_cmp(VALUE str1, VALUE str2)
 VALUE
 rb_str_equal(VALUE str1, VALUE str2)
 {
+    int len;
+
     if (str1 == str2) return Qtrue;
     if (TYPE(str2) != T_STRING) {
 	if (!rb_respond_to(str2, rb_intern("to_str"))) {
@@ -1601,8 +1599,8 @@ rb_str_equal(VALUE str1, VALUE str2)
 	return rb_equal(str2, str1);
     }
     if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if (RSTRING_LEN(str1) == RSTRING_LEN(str2) &&
-	rb_str_cmp(str1, str2) == 0) {
+    if (RSTRING_LEN(str1) == (len = RSTRING_LEN(str2)) &&
+	memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len) == 0) {
 	return Qtrue;
     }
     return Qfalse;
@@ -2295,14 +2293,30 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     VALUE current, after_end;
     ID succ;
     int n, excl;
+    rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &end, &exclusive);
-    rb_enc_check(beg, end);
     excl = RTEST(exclusive);
     succ = rb_intern("succ");
     StringValue(end);
+    enc = rb_enc_check(beg, end);
+    if (RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1 &&
+	is_ascii_string(beg) && is_ascii_string(end)) {
+	char c = RSTRING_PTR(beg)[0];
+	char e = RSTRING_PTR(end)[0];
+
+	if (c > e || (excl && c == e)) return beg;
+	for (;;) {
+	    rb_yield(rb_enc_str_new(&c, 1, enc));
+	    if (!excl && c == e) break;
+	    c++;
+	    if (excl && c == e) break;
+	}
+	return beg;
+    }
     n = rb_str_cmp(beg, end);
     if (n > 0 || (excl && n == 0)) return beg;
+	
     after_end = rb_funcall(end, succ, 0, 0);
     current = beg;
     while (!rb_str_equal(current, after_end)) {
@@ -2311,7 +2325,6 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 	current = rb_funcall(current, succ, 0, 0);
 	StringValue(current);
 	if (excl && rb_str_equal(current, end)) break;
-	StringValue(current);
 	if (RSTRING_LEN(current) > RSTRING_LEN(end) || RSTRING_LEN(current) == 0)
 	    break;
     }
