@@ -1,3 +1,7 @@
+Mon Feb 11 16:57:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ChangeLog: format-time-string under C locale. [ruby-dev:33261]
+
 Mon Feb 11 16:31:47 2008  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
 
 	* gc.c (rb_newobj): prohibit call of rb_newobj() during gc.
@@ -21093,9 +21097,10 @@ For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 Local variables:
 add-log-time-format: (lambda ()
   (let* ((time (current-time))
+	 (system-time-locale "C")
 	 (diff (+ (cadr time) 32400))
 	 (lo (% diff 65536))
-	 (hi  (+ (car time) (/ diff 65536))))
+	 (hi (+ (car time) (/ diff 65536))))
   (format-time-string "%a %b %e %H:%M:%S %Y" (list hi lo) t)))
 indent-tabs-mode: t
 tab-width: 8
