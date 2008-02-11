@@ -1,3 +1,16 @@
+Mon Feb 11 17:25:21 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::VERSION), test/rss/test_version.rb, NEWS:
+	0.2.3 -> 0.2.4.
+
+	* lib/rss/maker.rb, lib/rss/maker/, test/rss/test_maker_2.0.rb:
+	fixed a bug that RSS::Maker.make("0.9")'s item doesn't make some
+	elements if description is missed.
+	Reported by Michael Auzenne. Thanks!!!
+
+	* lib/rss/maker/0.9.rb, test/rss/test_maker_0.9.rb:
+	RSS::Maker.make("0.9") generates RSS 0.92 not RSS 0.91.
+
 Mon Feb 11 16:57:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ChangeLog: format-time-string under C locale. [ruby-dev:33261]

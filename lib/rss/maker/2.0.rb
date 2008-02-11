@@ -93,7 +93,16 @@ module RSS
         class Item < RSS09::Items::Item
           private
           def required_variable_names
-            %w(title description)
+            []
+          end
+
+          def not_set_required_variables
+            vars = super
+            if !title {|t| t.have_required_values?} and
+                !description {|d| d.have_required_values?}
+              vars << "title or description"
+            end
+            vars
           end
 
           def variables
@@ -208,7 +217,7 @@ module RSS
       end
     end
     
-    add_maker("2.0", RSS20)
-    add_maker("rss2.0", RSS20)
+    add_maker("2.0", "2.0", RSS20)
+    add_maker("rss2.0", "2.0", RSS20)
   end
 end

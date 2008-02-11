@@ -7,7 +7,7 @@ module RSS
     
     class RSS09 < RSSBase
       
-      def initialize(feed_version="0.91")
+      def initialize(feed_version="0.92")
         super
         @feed_type = "rss"
       end
@@ -258,23 +258,27 @@ module RSS
           def to_feed(rss)
             item = Rss::Channel::Item.new
             set = setup_values(item)
-            if set or title {|t| t.have_required_values?}
+            _not_set_required_variables = not_set_required_variables
+            if _not_set_required_variables.empty?
               rss.items << item
               set_parent(item, rss.channel)
               setup_other_elements(rss, item)
             elsif variable_is_set?
-              raise NotSetError.new("maker.items", not_set_required_variables)
+              raise NotSetError.new("maker.items", _not_set_required_variables)
             end
           end
 
           private
           def required_variable_names
-            %w(link)
+            []
           end
 
           def not_set_required_variables
             vars = super
-            vars << "title" unless title {|t| t.have_required_values?}
+            if @maker.feed_version == "0.91"
+              vars << "title" unless title {|t| t.have_required_values?}
+              vars << "link" unless link {|l| l.have_required_values?}
+            end
             vars
           end
 
@@ -454,8 +458,10 @@ module RSS
       end
     end
     
-    add_maker("0.9", RSS09)
-    add_maker("0.91", RSS09)
-    add_maker("rss0.91", RSS09)
+    add_maker("0.9", "0.92", RSS09)
+    add_maker("0.91", "0.91", RSS09)
+    add_maker("0.92", "0.92", RSS09)
+    add_maker("rss0.91", "0.91", RSS09)
+    add_maker("rss0.92", "0.92", RSS09)
   end
 end

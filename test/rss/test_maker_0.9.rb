@@ -13,7 +13,7 @@ module RSS
         setup_dummy_channel(maker)
         setup_dummy_image(maker)
       end
-      assert_equal("0.91", rss.rss_version)
+      assert_equal("0.92", rss.rss_version)
       
       rss = RSS::Maker.make("0.91") do |maker|
         setup_dummy_channel(maker)

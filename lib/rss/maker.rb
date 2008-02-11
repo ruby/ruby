@@ -8,15 +8,15 @@ module RSS
       def make(version, &block)
         m = maker(version)
         raise UnsupportedMakerVersionError.new(version) if m.nil?
-        m.make(&block)
+        m[:maker].make(m[:version], &block)
       end
 
       def maker(version)
         MAKERS[version]
       end
 
-      def add_maker(version, maker)
-        MAKERS[version] = maker
+      def add_maker(version, normalized_version, maker)
+        MAKERS[version] = {:maker => maker, :version => normalized_version}
       end
 
       def versions
@@ -24,7 +24,7 @@ module RSS
       end
 
       def makers
-        MAKERS.values.uniq
+        MAKERS.values.collect {|info| info[:maker]}.uniq
       end
     end
   end
