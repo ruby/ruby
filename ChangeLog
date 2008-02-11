@@ -1,3 +1,8 @@
+Mon Feb 11 10:43:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ruby.c (load_file): the encoding of DATA follows the source
+	  file encoding. [ruby-dev:33693]
+
 Mon Feb 11 06:50:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_pack.rb: fix tests for 64bit CPU.
