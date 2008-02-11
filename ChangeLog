@@ -1,3 +1,13 @@
+Mon Feb 11 16:31:47 2008  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* gc.c (rb_newobj): prohibit call of rb_newobj() during gc.
+	  Submitted by Sylvain Joyeux [ruby-core:12099].
+
+	* ext/dl/ptr.c: do not use LONG2NUM() inside dlptr_free().
+	  Slightly modified fix bassed on a patch by Sylvain Joyeux
+	  [ruby-core:12099] [ ruby-bugs-11859 ] [ ruby-bugs-11882 ]
+	  [ ruby-patches-13151 ].
+
 Mon Feb 11 00:22:55 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/benchmark.rb (Job::Benchmark#item): fix typo.
