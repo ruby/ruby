@@ -13,7 +13,8 @@
 
 <%=
 line = 15
-vm_body.gsub(/\n|__CURRENT_LINE__|__CURRENT_FILE__/){|e|
+vm_body.gsub(/\n|__CURRENT_LINE__|__CURRENT_FILE__/){
+  e = $&
   case e
   when '__CURRENT_LINE__'
     line.to_s

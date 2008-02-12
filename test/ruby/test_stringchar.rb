@@ -34,7 +34,7 @@ class TestStringchar < Test::Unit::TestCase
 ABCD
 ABCD
 END
-    $x.gsub!(/((.|\n)*?)B((.|\n)*?)D/){$1+$3}
+    $x.gsub!(/((.|\n)*?)B((.|\n)*?)D/m ,'\1\3')
     assert_equal("AC\nAC\n", $x)
 
     assert("foobar" =~ /foo(?=(bar)|(baz))/)

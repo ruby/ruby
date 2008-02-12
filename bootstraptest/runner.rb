@@ -264,7 +264,7 @@ def adjust_indent(src)
 end
 
 def untabify(str)
-  str.gsub(/^\t+/) {|tabs| ' ' * (8 * tabs.size) }
+  str.gsub(/^\t+/) {' ' * (8 * $&.size) }
 end
 
 def make_srcfile(src)

@@ -150,7 +150,8 @@ print <<EOS
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
   def RbConfig::expand(val, config = CONFIG)
-    val.gsub!(/\\$\\$|\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) do |var|
+    val.gsub!(/\\$\\$|\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) do
+      var = $&
       if !(v = $1 || $2)
 	'$'
       elsif key = config[v = v[/\\A[^:]+(?=(?::(.*?)=(.*))?\\z)/]]
@@ -158,7 +159,7 @@ print <<EOS
 	config[v] = false
 	RbConfig::expand(key, config)
 	config[v] = key
-	key = key.gsub(/\#{Regexp.quote(pat)}(?=\\s|\\z)/n) {sub} if pat
+	key = key.gsub(/\#{Regexp.quote(pat)}(?=\\s|\\z)/n, sub) if pat
 	key
       else
 	var

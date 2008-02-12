@@ -275,7 +275,7 @@ install?(:local, :comm, :bin) do
       shebang = f.gets
       body = f.read
 
-      if shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
+      if shebang.sub!(/^\#!.*?ruby\b/, "#!" + ruby_shebang)
         f.rewind
         f.print shebang, body
         f.truncate(f.pos)

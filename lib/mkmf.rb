@@ -1512,10 +1512,10 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
         f.gsub!("/", sep)
         dir.gsub!("/", sep)
         sep = ":/="+sep
-        f.gsub!(/(\$\(\w+)(\))/) {$1+sep+$2}
-        f.gsub!(/(\$\{\w+)(\})/) {$1+sep+$2}
-        dir.gsub!(/(\$\(\w+)(\))/) {$1+sep+$2}
-        dir.gsub!(/(\$\{\w+)(\})/) {$1+sep+$2}
+        f.gsub!(/(\$\(\w+)(\))/, "\\1#{sep}\\2")
+        f.gsub!(/(\$\{\w+)(\})/, "\\1#{sep}\\2")
+        dir.gsub!(/(\$\(\w+)(\))/, "\\1#{sep}\\2")
+        dir.gsub!(/(\$\{\w+)(\})/, "\\1#{sep}\\2")
       end
       mfile.print "\t$(INSTALL_PROG) #{f} #{dir}\n"
       if defined?($installed_list)
@@ -1546,8 +1546,8 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
 	if sep
 	  f = f.gsub("/", sep)
 	  sep = ":/="+sep
-	  f = f.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
-	  f = f.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
+	  f = f.gsub(/(\$\(\w+)(\))/, "\\1#{sep}\\2")
+	  f = f.gsub(/(\$\{\w+)(\})/, "\\1#{sep}\\2")
 	else
 	  sep = ""
 	end

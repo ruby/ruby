@@ -657,7 +657,7 @@ C1.new.m(1,2,3,4,5,6,7,8,9)
 
 
 tests.each{|setup, methods| setup = setup.dup; setup.strip!
-  setup = BASE.gsub(/<TEST>/){setup}
+  setup = BASE.gsub(/<TEST>/, setup)
   methods.split(/\n/).each{|m| m = m.dup; m.strip!
     next if m.empty?
     expr = "#{setup}; #{m}"

@@ -22,7 +22,7 @@ module Test
         # Creates a new wrapper for a_proc.
         def initialize(a_proc)
           @a_proc = a_proc
-          @hash = a_proc.inspect.sub(/^(#<#{a_proc.class}:)/){''}.sub(/(>)$/){''}.hex
+          @hash = a_proc.inspect.sub(/^(#<#{a_proc.class}:)/, '').sub(/(>)$/, '').hex
         end
 
         def hash # :nodoc:

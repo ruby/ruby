@@ -1,3 +1,11 @@
+Tue Feb 12 15:27:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bootstraptest/runner.rb, bootstraptest/test_method.rb, enc/depend,
+	instruby.rb, lib/mkmf.rb, lib/test/unit/util/procwrapper.rb,
+	mkconfig.rb, sample/test.rb, template/vm.inc.tmpl,
+	test/ruby/test_stringchar.rb: fixes arround String#gsub.
+
+
 Tue Feb 12 15:11:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/lib/json/pure/generator.rb,
