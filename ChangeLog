@@ -1,8 +1,10 @@
-Wed Feb 13 01:27:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Feb 13 03:12:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt, arg): concat opt_call_args only if non-null.
 
-	* parse.y (arg_concat_gen, arg_append_gen): optimize for array concat.
+	* parse.y (arg_concat_gen, arg_append_gen): optimize for array push.
+
+	* parse.y (arg_concat_gen): optimize for array concat.
 
 	* parse.y (arg_add_gen): removed since identical to arg_append_gen.
 

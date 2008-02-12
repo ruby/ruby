@@ -7823,9 +7823,6 @@ arg_append_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 	node1->nd_body = list_append(NEW_LIST(node1->nd_body), node2);
 	nd_set_type(node1, NODE_ARGSCAT);
 	return node1;
-      case NODE_ARGSCAT:
-	node1->nd_body = list_append(node1->nd_body, node2);
-	return node1;
     }
     return NEW_ARGSPUSH(node1, node2);
 }
