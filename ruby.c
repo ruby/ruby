@@ -1192,6 +1192,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
     else {
 	enc = rb_usascii_encoding();
     }
+    rb_funcall(f, rb_intern("set_encoding"), 1, rb_enc_from_encoding(enc));
     tree = (NODE *)rb_parser_compile_file(parser, fname, f, line_start);
     rb_funcall(f, rb_intern("set_encoding"), 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
