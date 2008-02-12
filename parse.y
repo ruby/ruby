@@ -369,6 +369,7 @@ static NODE *new_evstr_gen(struct parser_params*,NODE*);
 #define new_evstr(n) new_evstr_gen(parser,n)
 static NODE *evstr2dstr_gen(struct parser_params*,NODE*);
 #define evstr2dstr(n) evstr2dstr_gen(parser,n)
+static NODE *splat_array(NODE*);
 
 static NODE *call_bin_op_gen(struct parser_params*,NODE*,ID,NODE*);
 #define call_bin_op(recv,id,arg1) call_bin_op_gen(parser, recv,id,arg1)
@@ -2445,7 +2446,13 @@ args		: arg_value
 		| args ',' arg_value
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, $3);
+			NODE *n1;
+			if ((n1 = splat_array($1)) != 0) {
+			    $$ = list_append(n1, $3);
+			}
+			else {
+			    $$ = arg_append($1, $3);
+			}
 		    /*%
 			$$ = arg_add($1, $3);
 		    %*/
@@ -2453,7 +2460,14 @@ args		: arg_value
 		| args ',' tSTAR arg_value
 		    {
 		    /*%%%*/
-			$$ = arg_concat($1, $4);
+			NODE *n1;
+			if (nd_type($4) == NODE_ARRAY &&
+			    (n1 = splat_array($1)) != 0) {
+			    $$ = list_concat(n1, $4);
+			}
+			else {
+			    $$ = arg_concat($1, $4);
+			}
 		    /*%
 			$$ = arg_add_star($1, $4);
 		    %*/
@@ -2463,7 +2477,13 @@ args		: arg_value
 mrhs		: args ',' arg_value
 		    {
 		    /*%%%*/
-			$$ = arg_append($1, $3);
+			NODE *n1;
+			if ((n1 = splat_array($1)) != 0) {
+			    $$ = list_append(n1, $3);
+			}
+			else {
+			    $$ = arg_append($1, $3);
+			}
 		    /*%
 			$$ = mrhs_add(args2mrhs($1), $3);
 		    %*/
@@ -2471,7 +2491,14 @@ mrhs		: args ',' arg_value
 		| args ',' tSTAR arg_value
 		    {
 		    /*%%%*/
-			$$ = arg_concat($1, $4);
+			NODE *n1;
+			if (nd_type($4) == NODE_ARRAY &&
+			    (n1 = splat_array($1)) != 0) {
+			    $$ = list_concat(n1, $4);
+			}
+			else {
+			    $$ = arg_concat($1, $4);
+			}
 		    /*%
 			$$ = mrhs_add_star(args2mrhs($1), $4);
 		    %*/
@@ -7796,6 +7823,14 @@ arg_add_gen(struct parser_params *parser, NODE *node1, NODE *node2)
       default:
 	return NEW_ARGSPUSH(node1, node2);
     }
+}
+
+static NODE *
+splat_array(NODE* node)
+{
+    if (nd_type(node) == NODE_SPLAT) node = node->nd_head;
+    if (nd_type(node) == NODE_ARRAY) return node;
+    return 0;
 }
 
 static NODE *

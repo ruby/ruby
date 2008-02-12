@@ -1,24 +1,28 @@
+Tue Feb 12 16:18:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (args, mrhs): flattens literal array splats.
+
 Tue Feb 12 15:27:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bootstraptest/runner.rb, bootstraptest/test_method.rb, enc/depend,
-	instruby.rb, lib/mkmf.rb, lib/test/unit/util/procwrapper.rb,
-	mkconfig.rb, sample/test.rb, template/vm.inc.tmpl,
-	test/ruby/test_stringchar.rb: fixes arround String#gsub.
+	  instruby.rb, lib/mkmf.rb, lib/test/unit/util/procwrapper.rb,
+	  mkconfig.rb, sample/test.rb, template/vm.inc.tmpl,
+	  test/ruby/test_stringchar.rb: fixes arround String#gsub.
 
 
 Tue Feb 12 15:11:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/json/lib/json/pure/generator.rb,
-	ext/json/lib/json/pure/parser.rb, ext/openssl/lib/openssl/x509.rb,
-	ext/win32ole/sample/olegen.rb, lib/date/format.rb, lib/irb/context.rb,
-	lib/irb/workspace.rb, lib/net/http.rb, lib/net/imap.rb,
-	lib/rdoc/generator.rb, lib/rdoc/markup/to_html.rb,
-	lib/rdoc/markup/to_latex.rb, lib/rdoc/parsers/parse_c.rb,
-	lib/rdoc/ri/formatter.rb, lib/rexml/parsers/baseparser.rb,
-	lib/rexml/quickpath.rb, lib/rexml/text.rb, lib/rss/parser.rb,
-	lib/uri/common.rb, lib/uri/generic.rb, lib/webrick/httpresponse.rb,
-	lib/webrick/httpservlet/filehandler.rb, lib/yaml/baseemitter.rb,
-	lib/yaml/encoding.rb: performance tuning arround String#gsub.
+	  ext/json/lib/json/pure/parser.rb, ext/openssl/lib/openssl/x509.rb,
+	  ext/win32ole/sample/olegen.rb, lib/date/format.rb, lib/irb/context.rb,
+	  lib/irb/workspace.rb, lib/net/http.rb, lib/net/imap.rb,
+	  lib/rdoc/generator.rb, lib/rdoc/markup/to_html.rb,
+	  lib/rdoc/markup/to_latex.rb, lib/rdoc/parsers/parse_c.rb,
+	  lib/rdoc/ri/formatter.rb, lib/rexml/parsers/baseparser.rb,
+	  lib/rexml/quickpath.rb, lib/rexml/text.rb, lib/rss/parser.rb,
+	  lib/uri/common.rb, lib/uri/generic.rb, lib/webrick/httpresponse.rb,
+	  lib/webrick/httpservlet/filehandler.rb, lib/yaml/baseemitter.rb,
+	  lib/yaml/encoding.rb: performance tuning arround String#gsub.
 
 Tue Feb 12 12:16:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -87,12 +91,12 @@ Mon Feb 11 17:21:18 2008  Kouhei Sutou  <kou@cozmixng.org>
 	0.2.3 -> 0.2.4.
 
 	* lib/rss/maker.rb, lib/rss/maker/, test/rss/test_maker_2.0.rb:
-	fixed a bug that RSS::Maker.make("0.9")'s item doesn't make some
-	elements if description is missed.
-	Reported by Michael Auzenne. Thanks!!!
+	  fixed a bug that RSS::Maker.make("0.9")'s item doesn't make some
+	  elements if description is missed.
+	  Reported by Michael Auzenne. Thanks!!!
 
 	* lib/rss/maker/0.9.rb, test/rss/test_maker_0.9.rb:
-	RSS::Maker.make("0.9") generates RSS 0.92 not RSS 0.91.
+	  RSS::Maker.make("0.9") generates RSS 0.92 not RSS 0.91.
 
 Mon Feb 11 10:43:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -126,7 +130,7 @@ Sun Feb 10 21:58:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Sun Feb 10 16:58:20 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*, test/rubygems*, gem_prelude.rb: Import RubyGems
-	* r1601.  [ruby-core:15381]
+	  r1601.  [ruby-core:15381]
 
 Sun Feb 10 15:07:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
