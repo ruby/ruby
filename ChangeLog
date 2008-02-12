@@ -1,6 +1,8 @@
-Tue Feb 12 16:18:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Feb 12 16:48:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (args, mrhs): flattens literal array splats.
+
+	* parse.y (exc_list): splat literal array.
 
 Tue Feb 12 15:27:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
