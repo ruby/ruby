@@ -8749,7 +8749,7 @@ static struct symbols {
 } global_symbols = {tLAST_TOKEN >> ID_SCOPE_SHIFT};
 
 static const struct st_hash_type symhash = {
-    rb_str_cmp,
+    rb_str_hash_cmp,
     rb_str_hash,
 };
 

@@ -1512,6 +1512,19 @@ rb_str_hash(VALUE str)
     return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str), 0);
 }
 
+int
+rb_str_hash_cmp(VALUE str1, VALUE str2)
+{
+    int len;
+
+    if (!rb_str_comparable(str1, str2)) return 1;
+    if (RSTRING_LEN(str1) == (len = RSTRING_LEN(str2)) &&
+	memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len) == 0) {
+	return 0;
+    }
+    return 1;
+}
+
 /*
  * call-seq:
  *    str.hash   => fixnum
@@ -1700,7 +1713,7 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     StringValue(str2);
     enc = rb_enc_compatible(str1, str2);
     if (!enc) {
-	return rb_str_cmp(str1, str2);
+	return Qnil;
     }
 
     p1 = RSTRING_PTR(str1); p1end = RSTRING_END(str1);

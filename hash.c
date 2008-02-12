@@ -53,7 +53,7 @@ rb_any_cmp(VALUE a, VALUE b)
     }
     if (TYPE(a) == T_STRING && RBASIC(a)->klass == rb_cString &&
 	TYPE(b) == T_STRING && RBASIC(b)->klass == rb_cString) {
-	return rb_str_cmp(a, b);
+	return rb_str_hash_cmp(a, b);
     }
     if (a == Qundef || b == Qundef) return -1;
     if (SYMBOL_P(a) && SYMBOL_P(b)) {
