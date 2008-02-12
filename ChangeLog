@@ -1,3 +1,7 @@
+Tue Feb 12 10:16:47 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/ri/paths.rb:  Restore require rubygems check.
+
 Tue Feb 12 02:42:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_include): specialize single character string

@@ -42,30 +42,34 @@ module RDoc::RI::Paths
   # This is the search path for 'ri'
   PATH = [ SYSDIR, SITEDIR, HOMEDIR ].find_all {|p| p && File.directory?(p)}
 
-  require 'rubygems' unless defined?(Gem) and Gem::Enable
+  begin
+    require 'rubygems' unless defined?(Gem) and Gem::Enable
 
-  # HACK dup'd from Gem.latest_partials and friends
-  all_paths = []
+    # HACK dup'd from Gem.latest_partials and friends
+    all_paths = []
 
-  all_paths = Gem.path.map do |dir|
-    Dir[File.join(dir, 'doc', '*', 'ri')]
-  end.flatten
+    all_paths = Gem.path.map do |dir|
+      Dir[File.join(dir, 'doc', '*', 'ri')]
+    end.flatten
 
-  ri_paths = {}
+    ri_paths = {}
 
-  all_paths.each do |dir|
-    base = File.basename File.dirname(dir)
-    if base =~ /(.*)-((\d+\.)*\d+)/ then
-      name, version = $1, $2
-      ver = Gem::Version.new version
-      if ri_paths[name].nil? or ver > ri_paths[name][0] then
-        ri_paths[name] = [ver, dir]
+    all_paths.each do |dir|
+      base = File.basename File.dirname(dir)
+      if base =~ /(.*)-((\d+\.)*\d+)/ then
+        name, version = $1, $2
+        ver = Gem::Version.new version
+        if ri_paths[name].nil? or ver > ri_paths[name][0] then
+          ri_paths[name] = [ver, dir]
+        end
       end
     end
-  end
 
-  GEMDIRS = ri_paths.map { |k,v| v.last }.sort
-  GEMDIRS.each { |dir| PATH << dir }
+    GEMDIRS = ri_paths.map { |k,v| v.last }.sort
+    GEMDIRS.each { |dir| PATH << dir }
+  rescue LoadError
+    GEMDIRS = []
+  end
 
   # Returns the selected documentation directories as an Array, or PATH if no
   # overriding directories were given.
