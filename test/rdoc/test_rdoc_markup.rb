@@ -334,6 +334,20 @@ class TestRDocMarkup < Test::Unit::TestCase
                   "L1: ListEnd\n" ])
   end
 
+  def test_list_nested_number_number
+    str = "1. one\n1. two\n   1. cat\n   1. dog"
+
+    line_groups(str,
+                [ "L1: ListStart\n",
+                  "L1: NUMBER ListItem\none",
+                  "L1: NUMBER ListItem\ntwo",
+                  "L2: ListStart\n",
+                  "L2: NUMBER ListItem\ncat",
+                  "L2: NUMBER ListItem\ndog",
+                  "L2: ListEnd\n",
+                  "L1: ListEnd\n" ])
+  end
+
   def test_list_number
     str = "1. one\n2. two\n1. three"
 

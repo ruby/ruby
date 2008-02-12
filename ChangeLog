@@ -1,3 +1,8 @@
+Wed Feb 13 08:57:21 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/markup/inline.rb:  Allow inline markup to have a leading
+	  '#' or '\', or trailing punctuation.  i.e. *#freeze?*, *\foo?*.
+
 Wed Feb 13 07:21:23 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/to_html_hyperlink.rb:  Moved linking to to_html.rb, move

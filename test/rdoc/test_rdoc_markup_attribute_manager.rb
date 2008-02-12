@@ -82,6 +82,17 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
 
   end
 
+  def test_bold
+    assert_equal [@bold_on, 'bold', @bold_off],
+                 @am.flow("*bold*")
+
+    assert_equal [@bold_on, 'Bold:', @bold_off],
+                 @am.flow("*Bold:*")
+
+    assert_equal [@bold_on, '\\bold', @bold_off],
+                 @am.flow("*\\bold*")
+  end
+
   def test_combined
     assert_equal(["cat ", @em_on, "and", @em_off, " ", @bold_on, "dog", @bold_off],
                   @am.flow("cat _and_ *dog*"))

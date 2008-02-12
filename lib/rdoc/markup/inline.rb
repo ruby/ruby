@@ -167,21 +167,20 @@ class RDoc::Markup
       # first do matching ones
       tags = MATCHING_WORD_PAIRS.keys.join("")
 
-      re = "(^|\\W)([#{tags}])([A-Za-z_]+?)\\2(\\W|\$)"
-#      re = "(^|\\W)([#{tags}])(\\S+?)\\2(\\W|\$)"
+      re = /(^|\W)([#{tags}])([#\\]?[\w.\/]+?\S?)\2(\W|$)/
 
-      1 while str.gsub!(Regexp.new(re)) {
-        attr = MATCHING_WORD_PAIRS[$2];
+      1 while str.gsub!(re) do
+        attr = MATCHING_WORD_PAIRS[$2]
         attrs.set_attrs($`.length + $1.length + $2.length, $3.length, attr)
-        $1 + NULL*$2.length + $3 + NULL*$2.length + $4
-      }
+        $1 + NULL * $2.length + $3 + NULL * $2.length + $4
+      end
 
       # then non-matching
-      unless WORD_PAIR_MAP.empty?
+      unless WORD_PAIR_MAP.empty? then
         WORD_PAIR_MAP.each do |regexp, attr|
-          str.gsub!(regexp) { 
+          str.gsub!(regexp) {
             attrs.set_attrs($`.length + $1.length, $2.length, attr)
-            NULL*$1.length + $2 + NULL*$3.length
+            NULL * $1.length + $2 + NULL * $3.length
           }
         end
       end
@@ -213,8 +212,7 @@ class RDoc::Markup
     # A \ in front of a character that would normally be processed turns off
     # processing. We do this by turning \< into <#{PROTECT}
 
-    PROTECTABLE = [ "<" << "\\" ]
-
+    PROTECTABLE = %w[<\\]
 
     def mask_protected_sequences
       protect_pattern = Regexp.new("\\\\([#{Regexp.escape(PROTECTABLE.join(''))}])")
@@ -272,11 +270,15 @@ class RDoc::Markup
       @attrs = AttrSpan.new(@str.length)
 
       puts("After protecting, str='#{@str.dump}'") if $DEBUG_RDOC
+
       convert_attrs(@str, @attrs)
       convert_html(@str, @attrs)
       convert_specials(str, @attrs)
+
       unmask_protected_sequences
+
       puts("After flow, str='#{@str.dump}'") if $DEBUG_RDOC
+
       return split_into_flow
     end
 
