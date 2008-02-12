@@ -1,3 +1,8 @@
+Tue Feb 12 12:13:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* instruby.rb: specify file mode to install.  a patch from
+	  pegacorn  <subscriber.jp AT gmail.com> in [ruby-dev:33699].
+
 Tue Feb 12 11:38:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (rb_num_coerce_bin): add ID argument to specify

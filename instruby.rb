@@ -123,8 +123,9 @@ def makedirs(dirs)
 end
 
 def install_recursive(srcdir, dest, options = {})
-  noinst = options[:no_install]
-  glob = options[:glob] || "*"
+  opts = options.clone
+  noinst = opts.delete(:no_install)
+  glob = opts.delete(:glob) || "*"
   subpath = srcdir.size..-1
   Dir.glob("#{srcdir}/**/#{glob}") do |src|
     case base = File.basename(src)
@@ -143,7 +144,7 @@ def install_recursive(srcdir, dest, options = {})
       makedirs(d)
     else
       makedirs(File.dirname(d))
-      install src, d
+      install src, d, opts
     end
   end
 end
@@ -224,15 +225,15 @@ if $extout
     if noinst = CONFIG["no_install_files"] and noinst.empty?
       noinst = nil
     end
-    install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst)
-    install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h")
+    install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => 0755)
+    install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => 0644)
   end
   install?(:ext, :comm, :'ext-comm') do
     puts "installing extension scripts"
     hdrdir = rubyhdrdir + "/ruby"
     makedirs [rubylibdir, sitelibdir, vendorlibdir, hdrdir]
-    install_recursive("#{extout}/common", rubylibdir)
-    install_recursive("#{extout}/include/ruby", hdrdir, :glob => "*.h")
+    install_recursive("#{extout}/common", rubylibdir, :mode => 0644)
+    install_recursive("#{extout}/include/ruby", hdrdir, :glob => "*.h", :mode => 0644)
   end
 end
 
@@ -243,7 +244,7 @@ install?(:rdoc) do
     ridatadir = File.join(CONFIG['datadir'], 'ri/$(MAJOR).$(MINOR).$(TEENY)/system')
     Config.expand(ridatadir)
     makedirs [ridatadir]
-    install_recursive($rdocdir, ridatadir)
+    install_recursive($rdocdir, ridatadir, :mode => 0644)
   end
 end
 
@@ -324,7 +325,7 @@ install?(:local, :arch, :lib) do
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?
-  install_recursive("include", rubyhdrdir, :no_install => noinst, :glob => "*.h")
+  install_recursive("include", rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => 0644)
 end
 
 install?(:local, :comm, :man) do
