@@ -7794,8 +7794,18 @@ static NODE *
 arg_concat_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 {
     if (!node2) return node1;
-    if (nd_type(node1) == NODE_BLOCK_PASS) {
+    switch (nd_type(node1)) {
+      case NODE_BLOCK_PASS:
 	node1->nd_iter = arg_concat(node1->nd_iter, node2);
+	return node1;
+      case NODE_ARGSPUSH:
+	if (nd_type(node2) != NODE_ARRAY) break;
+	node1->nd_body = list_concat(NEW_LIST(node1->nd_body), node2);
+	nd_set_type(node1, NODE_ARGSCAT);
+	return node1;
+      case NODE_ARGSCAT:
+	if (nd_type(node2) != NODE_ARRAY) break;
+	node1->nd_body = list_concat(node1->nd_body, node2);
 	return node1;
     }
     return NEW_ARGSCAT(node1, node2);
@@ -7811,9 +7821,15 @@ arg_append_gen(struct parser_params *parser, NODE *node1, NODE *node2)
       case NODE_BLOCK_PASS:
 	node1->nd_head = arg_append(node1->nd_head, node2);
 	return node1;
-      default:
-	return NEW_ARGSPUSH(node1, node2);
+      case NODE_ARGSPUSH:
+	node1->nd_body = list_append(NEW_LIST(node1->nd_body), node2);
+	nd_set_type(node1, NODE_ARGSCAT);
+	return node1;
+      case NODE_ARGSCAT:
+	node1->nd_body = list_append(node1->nd_body, node2);
+	return node1;
     }
+    return NEW_ARGSPUSH(node1, node2);
 }
 
 static NODE *
