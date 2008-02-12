@@ -1027,11 +1027,10 @@ stmt		: keyword_alias fitem {lex_state = EXPR_FNAME;} fitem
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_call
 		    {
 		    /*%%%*/
-			NODE *args;
+			NODE *args = $6;
 
-			value_expr($6);
-			if (!$3) $3 = NEW_ZARRAY();
-			args = arg_concat($6, $3);
+			value_expr(args);
+			if ($3) args = arg_concat(args, $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
@@ -1829,11 +1828,10 @@ arg		: lhs '=' arg
 		| primary_value '[' opt_call_args rbracket tOP_ASGN arg
 		    {
 		    /*%%%*/
-			NODE *args;
+			NODE *args = $6;
 
-			value_expr($6);
-			if (!$3) $3 = NEW_ZARRAY();
-			args = arg_concat($6, $3);
+			value_expr(args);
+			if ($3) args = arg_concat(args, $3);
 			if ($5 == tOROP) {
 			    $5 = 0;
 			}
