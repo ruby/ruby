@@ -1,7 +1,7 @@
 require 'cgi'
 require 'rdoc'
 require 'rdoc/options'
-require 'rdoc/markup/to_html_hyperlink'
+require 'rdoc/markup/to_html_crossref'
 require 'rdoc/template'
 
 module RDoc::Generator
@@ -81,7 +81,7 @@ module RDoc::Generator
       return '' unless str
 
       unless defined? @formatter then
-        @formatter = RDoc::Markup::ToHtmlHyperlink.new(path, self,
+        @formatter = RDoc::Markup::ToHtmlCrossref.new(path, self,
                                                        @options.show_hash)
       end
 

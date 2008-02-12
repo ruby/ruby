@@ -1,3 +1,8 @@
+Wed Feb 13 07:21:23 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/to_html_hyperlink.rb:  Moved linking to to_html.rb, move
+	  crossref to to_html_crossref.rb
+
 Wed Feb 13 04:15:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (arg_concat_gen, arg_append_gen): optimize for array push.

@@ -20,7 +20,70 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   def initialize
     super
 
+    # external hyperlinks
+    @markup.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
+
+    # and links of the form  <text>[<url>]
+    @markup.add_special(/(((\{.*?\})|\b\S+?)\[\S+?\.\S+?\])/, :TIDYLINK)
+
     init_tags
+  end
+
+  ##
+  # Generate a hyperlink for url, labeled with text. Handle the
+  # special cases for img: and link: described under handle_special_HYPEDLINK
+
+  def gen_url(url, text)
+    if url =~ /([A-Za-z]+):(.*)/ then
+      type = $1
+      path = $2
+    else
+      type = "http"
+      path = url
+      url  = "http://#{url}"
+    end
+
+    if type == "link" then
+      url = if path[0, 1] == '#' then # is this meaningful?
+              path
+            else
+              HTML.gen_url @from_path, path
+            end
+    end
+
+    if (type == "http" or type == "link") and
+       url =~ /\.(gif|png|jpg|jpeg|bmp)$/ then
+      "<img src=\"#{url}\" />"
+    else
+      "<a href=\"#{url}\">#{text.sub(%r{^#{type}:/*}, '')}</a>"
+    end
+  end
+
+  ##
+  # And we're invoked with a potential external hyperlink mailto:
+  # just gets inserted. http: links are checked to see if they
+  # reference an image. If so, that image gets inserted using an
+  # <img> tag. Otherwise a conventional <a href> is used.  We also
+  # support a special type of hyperlink, link:, which is a reference
+  # to a local file whose path is relative to the --op directory.
+
+  def handle_special_HYPERLINK(special)
+    url = special.text
+    gen_url url, url
+  end
+
+  ##
+  # Here's a hypedlink where the label is different to the URL
+  #  <label>[url] or {long label}[url]
+
+  def handle_special_TIDYLINK(special)
+    text = special.text
+
+    return text unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/
+
+    label = $1
+    url   = $2
+    gen_url url, label
   end
 
   ##
