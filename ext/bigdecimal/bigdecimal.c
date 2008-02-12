@@ -38,7 +38,7 @@ VALUE rb_cBigDecimal;
 /*
  * ================== Ruby Interface part ==========================
  */
-#define DoSomeOne(x,y) rb_num_coerce_bin(x,y)
+#define DoSomeOne(x,y,f) rb_num_coerce_bin(x,y,f)
 
 #if 0
 /* BigDecimal provides arbitrary-precision floating point decimal arithmetic.
@@ -657,7 +657,7 @@ BigDecimal_add(VALUE self, VALUE r)
     U_LONG mx;
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r);
+    if(!b) return DoSomeOne(self,r,'+');
     SAVE(b);
     if(VpIsNaN(b)) return b->obj;
     if(VpIsNaN(a)) return a->obj;
@@ -696,7 +696,7 @@ BigDecimal_sub(VALUE self, VALUE r)
 
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r);
+    if(!b) return DoSomeOne(self,r,'-');
     SAVE(b);
 
     if(VpIsNaN(b)) return b->obj;
@@ -725,7 +725,20 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     Real *a, *b;
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return rb_num_coerce_cmp(self,r);
+    if(!b) {
+	ID f;
+
+	switch(op)
+	{
+	  case '*': return   INT2FIX(e); /* any op */
+	  case '=': f = rb_intern("=="); break;
+	  case '!': f = rb_intern("!="); break;
+	  case 'G': f = rb_intern(">="); break;
+	  case 'L': f = rb_intern("<="); break;
+	  case '>': case '<': f = (ID)op; break;
+	}
+	return rb_num_coerce_cmp(self,r,f);
+    }
     SAVE(b);
     e = VpComp(a, b);
     if(e==999) return Qnil;
@@ -862,7 +875,7 @@ BigDecimal_mult(VALUE self, VALUE r)
 
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r);
+    if(!b) return DoSomeOne(self,r,'*');
     SAVE(b);
 
     mx = a->Prec + b->Prec;
@@ -881,7 +894,7 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
 
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r);
+    if(!b) return DoSomeOne(self,r,'/');
     SAVE(b);
     *div = b;
     mx =(a->MaxPrec + b->MaxPrec + 1) * VpBaseFig();
@@ -942,7 +955,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
 
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r);
+    if(!b) return DoSomeOne(self,r,rb_intern("divmod"));
     SAVE(b);
 
     if(VpIsNaN(a) || VpIsNaN(b)) goto NaN;
@@ -1015,7 +1028,7 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
 
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r);
+    if(!b) return DoSomeOne(self,r,rb_intern("remainder"));
     SAVE(b);
 
     mx  =(a->MaxPrec + b->MaxPrec) *VpBaseFig();

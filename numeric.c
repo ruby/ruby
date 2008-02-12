@@ -162,27 +162,27 @@ do_coerce(VALUE *x, VALUE *y, int err)
 }
 
 VALUE
-rb_num_coerce_bin(VALUE x, VALUE y)
+rb_num_coerce_bin(VALUE x, VALUE y, ID func)
 {
     do_coerce(&x, &y, Qtrue);
-    return rb_funcall(x, rb_frame_this_func(), 1, y);
+    return rb_funcall(x, func, 1, y);
 }
 
 VALUE
-rb_num_coerce_cmp(VALUE x, VALUE y)
+rb_num_coerce_cmp(VALUE x, VALUE y, ID func)
 {
     if (do_coerce(&x, &y, Qfalse))
-	return rb_funcall(x, rb_frame_this_func(), 1, y);
+	return rb_funcall(x, func, 1, y);
     return Qnil;
 }
 
 VALUE
-rb_num_coerce_relop(VALUE x, VALUE y)
+rb_num_coerce_relop(VALUE x, VALUE y, ID func)
 {
     VALUE c, x0 = x, y0 = y;
 
     if (!do_coerce(&x, &y, Qfalse) ||
-	NIL_P(c = rb_funcall(x, rb_frame_this_func(), 1, y))) {
+	NIL_P(c = rb_funcall(x, func, 1, y))) {
 	rb_cmperr(x0, y0);
 	return Qnil;		/* not reached */
     }
@@ -567,7 +567,7 @@ flo_plus(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM(RFLOAT_VALUE(x) + RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '+');
     }
 }
 
@@ -590,7 +590,7 @@ flo_minus(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM(RFLOAT_VALUE(x) - RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '-');
     }
 }
 
@@ -613,7 +613,7 @@ flo_mul(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM(RFLOAT_VALUE(x) * RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '*');
     }
 }
 
@@ -641,7 +641,7 @@ flo_div(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM(RFLOAT_VALUE(x) / RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '/');
     }
 }
 
@@ -701,7 +701,7 @@ flo_mod(VALUE x, VALUE y)
 	fy = RFLOAT_VALUE(y);
 	break;
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '%');
     }
     flodivmod(RFLOAT_VALUE(x), fy, 0, &mod);
     return DOUBLE2NUM(mod);
@@ -731,7 +731,7 @@ flo_divmod(VALUE x, VALUE y)
 	fy = RFLOAT_VALUE(y);
 	break;
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
     }
     flodivmod(RFLOAT_VALUE(x), fy, &div, &mod);
     if (FIXABLE(div)) {
@@ -767,7 +767,7 @@ flo_pow(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM(pow(RFLOAT_VALUE(x), RFLOAT_VALUE(y)));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("**"));
     }
 }
 
@@ -906,7 +906,7 @@ flo_cmp(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_cmp(x, y);
+	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
     }
     return rb_dbl_cmp(a, b);
 }
@@ -939,7 +939,7 @@ flo_gt(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, '>');
     }
     if (isnan(a)) return Qfalse;
     return (a > b)?Qtrue:Qfalse;
@@ -974,7 +974,7 @@ flo_ge(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, rb_intern(">="));
     }
     if (isnan(a)) return Qfalse;
     return (a >= b)?Qtrue:Qfalse;
@@ -1008,7 +1008,7 @@ flo_lt(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, '<');
     }
     if (isnan(a)) return Qfalse;
     return (a < b)?Qtrue:Qfalse;
@@ -1043,7 +1043,7 @@ flo_le(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, rb_intern("<="));
     }
     if (isnan(a)) return Qfalse;
     return (a <= b)?Qtrue:Qfalse;
@@ -2047,7 +2047,7 @@ fix_plus(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM((double)FIX2LONG(x) + RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '+');
     }
 }
 
@@ -2081,7 +2081,7 @@ fix_minus(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM((double)FIX2LONG(x) - RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '-');
     }
 }
 
@@ -2140,7 +2140,7 @@ fix_mul(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM((double)FIX2LONG(x) * RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '*');
     }
 }
 
@@ -2196,7 +2196,7 @@ fix_quo(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("quo"));
     }
 }
 
@@ -2222,7 +2222,7 @@ fix_divide(VALUE x, VALUE y, int flo)
 	    return LONG2NUM(div);
 	}
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, flo ? '/' : rb_intern("div"));
     }
 }
 
@@ -2284,7 +2284,7 @@ fix_mod(VALUE x, VALUE y)
 	    return DOUBLE2NUM(mod);
 	}
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '%');
     }
 }
 
@@ -2319,7 +2319,7 @@ fix_divmod(VALUE x, VALUE y)
 	    return rb_assoc_new(a, b);
 	}
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
     }
 }
 
@@ -2416,7 +2416,7 @@ fix_pow(VALUE x, VALUE y)
 	if (a == 1) return DOUBLE2NUM(1.0);
 	return DOUBLE2NUM(pow((double)a, RFLOAT_VALUE(y)));
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("**"));
     }
 }
 
@@ -2469,7 +2469,7 @@ fix_cmp(VALUE x, VALUE y)
       case T_FLOAT:
 	return rb_dbl_cmp((double)FIX2LONG(x), RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_cmp(x, y);
+	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
     }
 }
 
@@ -2494,7 +2494,7 @@ fix_gt(VALUE x, VALUE y)
       case T_FLOAT:
 	return (double)FIX2LONG(x) > RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, '>');
     }
 }
 
@@ -2519,7 +2519,7 @@ fix_ge(VALUE x, VALUE y)
       case T_FLOAT:
 	return (double)FIX2LONG(x) >= RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, rb_intern(">="));
     }
 }
 
@@ -2544,7 +2544,7 @@ fix_lt(VALUE x, VALUE y)
       case T_FLOAT:
 	return (double)FIX2LONG(x) < RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, '<');
     }
 }
 
@@ -2569,7 +2569,7 @@ fix_le(VALUE x, VALUE y)
       case T_FLOAT:
 	return (double)FIX2LONG(x) <= RFLOAT_VALUE(y) ? Qtrue : Qfalse;
       default:
-	return rb_num_coerce_relop(x, y);
+	return rb_num_coerce_relop(x, y, rb_intern("<="));
     }
 }
 

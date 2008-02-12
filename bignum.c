@@ -1184,7 +1184,7 @@ rb_big_cmp(VALUE x, VALUE y)
 	return rb_dbl_cmp(rb_big2dbl(x), RFLOAT_VALUE(y));
 
       default:
-	return rb_num_coerce_cmp(x, y);
+	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
     }
 
     if (RBIGNUM_SIGN(x) > RBIGNUM_SIGN(y)) return INT2FIX(1);
@@ -1419,7 +1419,7 @@ rb_big_plus(VALUE x, VALUE y)
 	return DOUBLE2NUM(rb_big2dbl(x) + RFLOAT_VALUE(y));
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '+');
     }
 }
 
@@ -1444,7 +1444,7 @@ rb_big_minus(VALUE x, VALUE y)
 	return DOUBLE2NUM(rb_big2dbl(x) - RFLOAT_VALUE(y));
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '-');
     }
 }
 
@@ -1508,7 +1508,7 @@ rb_big_mul0(VALUE x, VALUE y)
 	return DOUBLE2NUM(rb_big2dbl(x) * RFLOAT_VALUE(y));
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '*');
     }
 
     bms.x = x;
@@ -1742,7 +1742,7 @@ rb_big_div(VALUE x, VALUE y)
 	return DOUBLE2NUM(rb_big2dbl(x) / RFLOAT_VALUE(y));
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '/');
     }
     bigdivmod(x, y, &z, 0);
 
@@ -1772,7 +1772,7 @@ rb_big_modulo(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, '%');
     }
     bigdivmod(x, y, 0, &z);
 
@@ -1802,7 +1802,7 @@ rb_big_remainder(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("remainder"));
     }
     bigdivrem(x, y, 0, &z);
 
@@ -1830,7 +1830,7 @@ rb_big_divmod(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
     }
     bigdivmod(x, y, &div, &mod);
 
@@ -1931,7 +1931,7 @@ rb_big_quo(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("quo"));
     }
     return DOUBLE2NUM(dx / dy);
 }
@@ -2038,7 +2038,7 @@ rb_big_pow(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y);
+	return rb_num_coerce_bin(x, y, rb_intern("**"));
     }
     return DOUBLE2NUM(pow(rb_big2dbl(x), d));
 }

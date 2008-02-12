@@ -364,9 +364,9 @@ VALUE rb_marshal_load(VALUE);
 void rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE));
 /* numeric.c */
 void rb_num_zerodiv(void);
-VALUE rb_num_coerce_bin(VALUE, VALUE);
-VALUE rb_num_coerce_cmp(VALUE, VALUE);
-VALUE rb_num_coerce_relop(VALUE, VALUE);
+VALUE rb_num_coerce_bin(VALUE, VALUE, ID);
+VALUE rb_num_coerce_cmp(VALUE, VALUE, ID);
+VALUE rb_num_coerce_relop(VALUE, VALUE, ID);
 VALUE rb_float_new(double);
 VALUE rb_num2fix(VALUE);
 VALUE rb_fix2str(VALUE, int);

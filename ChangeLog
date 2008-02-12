@@ -1,3 +1,14 @@
+Tue Feb 12 11:38:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (rb_num_coerce_bin): add ID argument to specify
+	  caller's method name.  [ruby-dev:33663]
+
+	* numeric.c (rb_num_coerce_cmp): ditto.
+
+	* numeric.c (rb_num_coerce_relop): ditto.
+
+	* ext/bigdecimal/bigdecimal.c (DoSomeOne): add function name argument.
+
 Tue Feb 12 10:25:02 2008
 
 	* lib/rdoc/rdoc.rb:  Wrap parse_files' read in version check for
