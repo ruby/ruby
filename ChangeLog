@@ -1,3 +1,9 @@
+Tue Feb 12 11:33:26 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/erb/test_erb.rb(TestERBCore): import from erb-2.0.4.
+
+	* test/erb/hello.erb: ditto
+
 Mon Feb 11 17:25:21 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION), test/rss/test_version.rb, NEWS:
