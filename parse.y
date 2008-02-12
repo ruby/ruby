@@ -7816,22 +7816,6 @@ arg_append_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     }
 }
 
-#define arg_add(n1, n2) arg_add_gen(parser,n1,n2)
-static NODE *
-arg_add_gen(struct parser_params *parser, NODE *node1, NODE *node2)
-{
-    if (!node1) return NEW_LIST(node2);
-    switch (nd_type(node1))  {
-      case NODE_ARRAY:
-	return list_append(node1, node2);
-      case NODE_BLOCK_PASS:
-	node1->nd_head = arg_add(node1->nd_head, node2);
-	return node1;
-      default:
-	return NEW_ARGSPUSH(node1, node2);
-    }
-}
-
 static NODE *
 splat_array(NODE* node)
 {
@@ -7860,7 +7844,7 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 
       case NODE_ATTRASGN:
       case NODE_CALL:
-	lhs->nd_args = arg_add(lhs->nd_args, rhs);
+	lhs->nd_args = arg_append(lhs->nd_args, rhs);
 	break;
 
       default:
