@@ -104,6 +104,10 @@ class Complex < Numeric
   @RCS_ID='-$Id: complex.rb,v 1.3 1998/07/08 10:05:28 keiju Exp keiju $-'
 
   undef step
+  undef <, <=, <=>, >, >=
+  undef between?
+  undef div, divmod, modulo
+  undef floor, truncate, ceil, round
 
   def scalar?
     false
@@ -199,6 +203,10 @@ class Complex < Numeric
       x/y
     end
   end
+
+  def quo(other)
+    Complex(@real.quo(1), @image.quo(1)) / other
+  end
   
   #
   # Raise this complex number to the given (real or complex) power.
@@ -248,6 +256,8 @@ class Complex < Numeric
   #
   # Remainder after division by a real or complex number.
   #
+
+=begin
   def % (other)
     if other.kind_of?(Complex)
       Complex(@real % other.real, @image % other.image)
@@ -258,7 +268,8 @@ class Complex < Numeric
       x % y
     end
   end
-  
+=end
+
 #--
 #    def divmod(other)
 #      if other.kind_of?(Complex)
@@ -312,8 +323,6 @@ class Complex < Numeric
   end
   alias conj conjugate
 
-  undef <=>
-  
   #
   # Test for numerical equality (<tt>a == a + 0<i>i</i></tt>).
   #
@@ -410,8 +419,34 @@ class Complex < Numeric
   
 end
 
+class Integer
 
+  unless defined?(1.numerator)
+    def numerator() self end
+    def denominator() 1 end
 
+    def gcd(other)
+      min = self.abs
+      max = other.abs
+      while min > 0
+        tmp = min
+        min = max % min
+        max = tmp
+      end
+      max
+    end
+
+    def lcm(other)
+      if self.zero? or other.zero?
+        0
+      else
+        (self.div(self.gcd(other)) * other).abs
+      end
+    end
+
+  end
+
+end
 
 module Math
   alias sqrt! sqrt

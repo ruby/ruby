@@ -121,11 +121,6 @@ end
 class Rational
   Unify = true
 
-  remove_method :inspect
-  def inspect
-    format "%s/%s", numerator.inspect, denominator.inspect
-  end
-
   alias power! **
 
   def ** (other)
