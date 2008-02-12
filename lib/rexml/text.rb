@@ -345,7 +345,7 @@ module REXML
         copy.gsub!( SETUTITSBUS[2], SLAICEPS[2] )
         copy.gsub!( SETUTITSBUS[3], SLAICEPS[3] )
         copy.gsub!( SETUTITSBUS[4], SLAICEPS[4] )
-        copy.gsub!( /&#0*((?:\d+)|(?:x[a-f0-9]+));/ ) {|m|
+        copy.gsub!( /&#0*((?:\d+)|(?:x[a-f0-9]+));/ ) {
           m=$1
           #m='0' if m==''
           m = "0#{m}" if m[0] == ?x
@@ -380,7 +380,8 @@ module REXML
 
     # Unescapes all possible entities
     def Text::unnormalize( string, doctype=nil, filter=nil, illegal=nil )
-      string.gsub( /\r\n?/, "\n" ).gsub( REFERENCE ) { |ref|
+      string.gsub( /\r\n?/, "\n" ).gsub( REFERENCE ) {
+        ref = $&
         if ref[1] == ?#
           if ref[2] == ?x
             [ref[3...-1].to_i(16)].pack('U*')

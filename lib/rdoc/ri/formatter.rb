@@ -87,22 +87,22 @@ class RDoc::RI::Formatter
   # Convert HTML entities back to ASCII
 
   def conv_html(txt)
-    txt.
-      gsub(/&gt;/, '>').
-      gsub(/&lt;/, '<').
-      gsub(/&quot;/, '"').
-      gsub(/&amp;/, '&')
+    txt = txt.gsub(/&gt;/, '>')
+    txt.gsub!(/&lt;/, '<')
+    txt.gsub!(/&quot;/, '"')
+    txt.gsub!(/&amp;/, '&')
+    txt
   end
 
   ##
   # Convert markup into display form
 
   def conv_markup(txt)
-    txt.
-      gsub(%r{<tt>(.*?)</tt>}) { "+#$1+" } .
-      gsub(%r{<code>(.*?)</code>}) { "+#$1+" } .
-      gsub(%r{<b>(.*?)</b>}) { "*#$1*" } .
-      gsub(%r{<em>(.*?)</em>}) { "_#$1_" }
+    txt = txt.gsub(%r{<tt>(.*?)</tt>}, '+\1+')
+    txt.gsub!(%r{<code>(.*?)</code>}, '+\1+')
+    txt.gsub!(%r{<b>(.*?)</b>}, '*\1*')
+    txt.gsub!(%r{<em>(.*?)</em>}, '_\1_') 
+    txt
   end
 
   def display_list(list)
@@ -548,11 +548,11 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
   end
 
   def escape(str)
-    str.
-      gsub(/&/n, '&amp;').
-      gsub(/\"/n, '&quot;').
-      gsub(/>/n, '&gt;').
-      gsub(/</n, '&lt;')
+    str = str.gsub(/&/n, '&amp;')
+    str.gsub!(/\"/n, '&quot;')
+    str.gsub!(/>/n, '&gt;')
+    str.gsub!(/</n, '&lt;')
+    str
   end
 
 end

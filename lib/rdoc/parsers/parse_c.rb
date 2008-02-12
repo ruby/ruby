@@ -766,7 +766,7 @@ module RDoc
     # Removes #ifdefs that would otherwise confuse us
     
     def handle_ifdefs_in(body)
-      body.gsub(/^#ifdef HAVE_PROTOTYPES.*?#else.*?\n(.*?)#endif.*?\n/m) { $1 }
+      body.gsub(/^#ifdef HAVE_PROTOTYPES.*?#else.*?\n(.*?)#endif.*?\n/m, '\1')
     end
     
   end

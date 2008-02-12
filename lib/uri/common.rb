@@ -285,7 +285,8 @@ module URI
         # perhaps unsafe is String object
         unsafe = Regexp.new("[#{Regexp.quote(unsafe)}]", false, 'N')
       end
-      str.gsub(unsafe) do |us|
+      str.gsub(unsafe) do
+        us = $&
         tmp = ''
         us.each_byte do |uc|
           tmp << sprintf('%%%02X', uc)

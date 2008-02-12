@@ -215,9 +215,9 @@ class Date
 	  :emit_a, :emit_ad, :emit_au
 
   def strftime(fmt='%F')
-    fmt.gsub(/%([-_0^#]+)?(\d+)?([EO]?(?::{1,3}z|.))/m) do |m|
+    fmt.gsub(/%([-_0^#]+)?(\d+)?([EO]?(?::{1,3}z|.))/m) do
       f = {}
-      a = $&
+      m = $&
       s, w, c = $1, $2, $3
       if s
 	s.scan(/./) do |k|
@@ -327,7 +327,7 @@ class Date
       when '%'; emit_a('%', 0, f)
       when '+'; emit_a(strftime('%a %b %e %H:%M:%S %Z %Y'), 0, f)
       else
-	a
+	m
       end
     end
   end

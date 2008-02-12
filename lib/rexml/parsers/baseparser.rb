@@ -482,7 +482,7 @@ module REXML
         rv.gsub!( /\r\n?/, "\n" )
         matches = rv.scan( REFERENCE_RE )
         return rv if matches.size == 0
-        rv.gsub!( /&#0*((?:\d+)|(?:x[a-fA-F0-9]+));/ ) {|m|
+        rv.gsub!( /&#0*((?:\d+)|(?:x[a-fA-F0-9]+));/ ) {
           m=$1
           m = "0#{m}" if m[0] == ?x
           [Integer(m)].pack('U*')

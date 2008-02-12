@@ -1105,7 +1105,7 @@ module URI
 
     @@to_s = Kernel.instance_method(:to_s)
     def inspect
-      @@to_s.bind(self).call.sub!(/>\z/) {" URL:#{self}>"}
+      @@to_s.bind(self).call.sub!(/>\z/, " URL:#{self}>")
     end
 
     def coerce(oth)

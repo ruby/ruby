@@ -200,14 +200,14 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       gsub(/\.\.\.\./, '.&#8230;').gsub(/\.\.\./, '&#8230;').
 
     # convert single closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\'}) { "#$1&#8217;" }.
-      gsub(%r{\'(?=\W|s\b)}) { "&#8217;" }.
+      gsub(%r{([^ \t\r\n\[\{\(])\'}, '\1&#8217;').
+      gsub(%r{\'(?=\W|s\b)}, '&#8217;').
 
     # convert single opening quote
       gsub(/'/, '&#8216;').
 
     # convert double closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\'(?=\W)}) { "#$1&#8221;" }.
+      gsub(%r{([^ \t\r\n\[\{\(])\'(?=\W)}, '\1&#8221;').
 
     # convert double opening quote
       gsub(/'/, '&#8220;').

@@ -170,15 +170,12 @@ module REXML
 			rest = path[ind+1..-1]
 
 			# have to change 'a [=<>] b [=<>] c' into 'a [=<>] b and b [=<>] c'
-			predicate.gsub!( /([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)/u ) { 
-				"#$1 #$2 #$3 and #$3 #$4 #$5"
-			}
+			predicate.gsub!( /([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)\s*([<>=])\s*([^\s(and)(or)<>=]+)/u,
+				'\1 \2 \3 and \3 \4 \5' )
 			# Let's do some Ruby trickery to avoid some work:
 			predicate.gsub!( /&/u, "&&" )
 			predicate.gsub!( /=/u, "==" )
-			predicate.gsub!( /@(\w[-\w.]*)/u ) {
-				"attribute(\"#$1\")" 
-			}
+			predicate.gsub!( /@(\w[-\w.]*)/u, 'attribute("\1")' ) 
 			predicate.gsub!( /\bmod\b/u, "%" )
 			predicate.gsub!( /\b(\w[-\w.]*\()/u ) {
 				fname = $1

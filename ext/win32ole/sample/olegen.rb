@@ -230,7 +230,7 @@ class WIN32COMGen
       v.visible? && v.variable_kind == 'CONSTANT'
     }.each do |v|
       io.print "  "
-      io.print v.name.sub(/^./){|c| c.upcase}
+      io.print v.name.sub(/^./){$&.upcase}
       io.print " = "
       io.puts  v.value
     end

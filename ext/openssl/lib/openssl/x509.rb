@@ -82,7 +82,8 @@ module OpenSSL
 
         def expand_pair(str)
           return nil unless str
-          return str.gsub(Pair){|pair|
+          return str.gsub(Pair){
+            pair = $&
             case pair.size
             when 2 then pair[1,1]
             when 3 then Integer("0x#{pair[1,2]}").chr
@@ -93,7 +94,7 @@ module OpenSSL
 
         def expand_hexstring(str)
           return nil unless str
-          der = str.gsub(HexPair){|hex| Integer("0x#{hex}").chr }
+          der = str.gsub(HexPair){$&.to_i(16).chr }
           a1 = OpenSSL::ASN1.decode(der)
           return a1.value, a1.tag
         end

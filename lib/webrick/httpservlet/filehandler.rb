@@ -371,7 +371,7 @@ module WEBrick
           if name == ".."
             dname = "Parent Directory"
           elsif name.size > 25
-            dname = name.sub(/^(.{23})(.*)/){ $1 + ".." }
+            dname = name.sub(/^(.{23})(?:.*)/, '\1..')
           else
             dname = name
           end

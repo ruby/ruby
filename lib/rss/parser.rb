@@ -199,9 +199,7 @@ module RSS
         name = (@@class_names[uri] || {})[tag_name]
         return name if name
 
-        tag_name = tag_name.gsub(/[_\-]([a-z]?)/) do
-          $1.upcase
-        end
+        tag_name.gsub!(/[_\-]([a-z]?)/){$1.upcase}
         tag_name[0, 1].upcase + tag_name[1..-1]
       end
 

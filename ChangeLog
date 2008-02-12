@@ -1,3 +1,17 @@
+Tue Feb 12 15:11:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/json/lib/json/pure/generator.rb,
+	ext/json/lib/json/pure/parser.rb, ext/openssl/lib/openssl/x509.rb,
+	ext/win32ole/sample/olegen.rb, lib/date/format.rb, lib/irb/context.rb,
+	lib/irb/workspace.rb, lib/net/http.rb, lib/net/imap.rb,
+	lib/rdoc/generator.rb, lib/rdoc/markup/to_html.rb,
+	lib/rdoc/markup/to_latex.rb, lib/rdoc/parsers/parse_c.rb,
+	lib/rdoc/ri/formatter.rb, lib/rexml/parsers/baseparser.rb,
+	lib/rexml/quickpath.rb, lib/rexml/text.rb, lib/rss/parser.rb,
+	lib/uri/common.rb, lib/uri/generic.rb, lib/webrick/httpresponse.rb,
+	lib/webrick/httpservlet/filehandler.rb, lib/yaml/baseemitter.rb,
+	lib/yaml/encoding.rb: performance tuning arround String#gsub.
+
 Tue Feb 12 12:16:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_hash_cmp): lighter version of rb_str_cmp() for

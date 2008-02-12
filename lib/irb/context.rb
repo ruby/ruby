@@ -233,7 +233,7 @@ module IRB
     def inspect
       array = []
       for ivar in instance_variables.sort{|e1, e2| e1 <=> e2}
-	name = ivar.sub(/^@(.*)$/){$1}
+	name = ivar.sub(/^@(.*)$/, '\1')
 	val = instance_eval(ivar)
 	case ivar
 	when *NOPRINTING_IVARS

@@ -95,7 +95,7 @@ EOF
 	return nil if bt =~ /irb\/.*\.rb/
       when 3
 	return nil if bt =~ /irb\/.*\.rb/
-	bt.sub!(/:\s*in `irb_binding'/){""} 
+	bt.sub!(/:\s*in `irb_binding'/, '')
       end
       bt
     end

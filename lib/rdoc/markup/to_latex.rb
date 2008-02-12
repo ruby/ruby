@@ -227,14 +227,14 @@ class RDoc::Markup::ToLaTeX < RDoc::Markup::Formatter
       gsub(/\.\.\.\./, '.\ldots{}').gsub(/\.\.\./, '\ldots{}').
 
     # convert single closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\'}) { "#$1'" }.
-      gsub(%r{\'(?=\W|s\b)}) { "'" }.
+      gsub(%r{([^ \t\r\n\[\{\(])\'}, '\1\'').
+      gsub(%r{\'(?=\W|s\b)}, "'" ).
 
     # convert single opening quote
       gsub(/'/, '`').
 
     # convert double closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\"(?=\W)}) { "#$1''" }.
+      gsub(%r{([^ \t\r\n\[\{\(])\"(?=\W)}, "\\1''").
 
     # convert double opening quote
       gsub(/"/, "``").
