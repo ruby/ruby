@@ -1,3 +1,8 @@
+Tue Feb 12 10:25:02 2008
+
+	* lib/rdoc/rdoc.rb:  Wrap parse_files' read in version check for
+	  backwards compatibility.
+
 Tue Feb 12 10:15:14 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (load_file): enc must effect source encoding.
