@@ -255,9 +255,20 @@ class Pathname
   end
 
   if File::ALT_SEPARATOR
-    SEPARATOR_PAT = /[#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}]/
+    SEPARATOR_LIST = "#{Regexp.quote File::ALT_SEPARATOR}#{Regexp.quote File::SEPARATOR}"
+    SEPARATOR_PAT = /[#{SEPARATOR_LIST}]/
   else
+    SEPARATOR_LIST = "#{Regexp.quote File::SEPARATOR}"
     SEPARATOR_PAT = /#{Regexp.quote File::SEPARATOR}/
+  end
+
+  # Return a pathname which the extention of the basename is substituted by
+  # <i>repl</i>.
+  #
+  # If self has no extension part, <i>repl</i> is appended.
+  def sub_ext(repl)
+    ext = File.extname(@path)
+    self.class.new(@path.chomp(ext) + repl)
   end
 
   # chop_basename(path) -> [pre-basename, basename] or nil

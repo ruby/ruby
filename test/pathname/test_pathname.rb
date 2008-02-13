@@ -381,6 +381,17 @@ class TestPathname < Test::Unit::TestCase
   def pathsub(path, pat, repl) Pathname.new(path).sub(pat, repl).to_s end
   defassert(:pathsub, "a.o", "a.c", /\.c\z/, ".o")
 
+  def pathsubext(path, repl) Pathname.new(path).sub_ext(repl).to_s end
+  defassert(:pathsubext, 'a.o', 'a.c', '.o')
+  defassert(:pathsubext, 'a.o', 'a.c++', '.o')
+  defassert(:pathsubext, 'a.png', 'a.gif', '.png')
+  defassert(:pathsubext, 'ruby.tar.bz2', 'ruby.tar.gz', '.bz2')
+  defassert(:pathsubext, 'd/a.o', 'd/a.c', '.o')
+  defassert(:pathsubext, 'foo', 'foo.exe', '')
+  defassert(:pathsubext, 'lex.yy.o', 'lex.yy.c', '.o')
+  defassert(:pathsubext, 'fooaa.o', 'fooaa', '.o')
+  defassert(:pathsubext, 'd.e/aa.o', 'd.e/aa', '.o')
+
   def root?(path)
     Pathname.new(path).root?
   end

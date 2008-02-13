@@ -1,3 +1,7 @@
+Wed Feb 13 22:46:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pathname.rb (Pathname#sub_ext): new method.  [ruby-list:44608]
+
 Wed Feb 13 21:50:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (proc_curry): new method. [ruby-dev:33676]
