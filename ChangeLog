@@ -1,3 +1,9 @@
+Thu Feb 14 00:49:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (INSTRUBY_ARGS): pass mode to install.  [ruby-dev:33766]
+
+	* instruby.rb (parse_args): added --data-mode and --prog-mode options.
+
 Tue Feb 12 11:33:26 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/erb/test_erb.rb(TestERBCore): import from erb-2.0.4.
