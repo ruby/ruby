@@ -159,7 +159,7 @@ print <<EOS
 	config[v] = false
 	RbConfig::expand(key, config)
 	config[v] = key
-	key = key.gsub(/\#{Regexp.quote(pat)}(?=\\s|\\z)/n, sub) if pat
+	key = key.gsub(/\#{Regexp.quote(pat)}(?=\\s|\\z)/n) {sub} if pat
 	key
       else
 	var
