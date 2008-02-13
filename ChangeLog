@@ -3,7 +3,7 @@ Wed Feb 13 16:21:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* lib/uri/generic.rb: revert r15442. 2nd argument of String#sub parse
 	  escapes. [ruby-dev:33726]
 
-	* bootstraptest/test_method.rb enc/depend instruby.rb lib/mkmf.rb
+	* bootstraptest/test_method.rb, enc/depend, instruby.rb, lib/mkmf.rb,
 	  mkconfig.rb: revert r15443. ditto.
 
 Wed Feb 13 11:20:26 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
