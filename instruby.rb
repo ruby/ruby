@@ -24,6 +24,8 @@ def parse_args()
   $installed_list = nil
   $dryrun = false
   $rdocdir = nil
+  $data_mode = 0644
+  $prog_mode = 0755
   opt = OptionParser.new
   opt.on('-n') {$dryrun = true}
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
@@ -39,6 +41,12 @@ def parse_args()
   opt.on('-i', '--install=TYPE',
          [:local, :bin, :lib, :man, :ext, :"ext-arch", :"ext-comm", :rdoc]) do |ins|
     $install << ins
+  end
+  opt.on('--data-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
+    $data_mode = mode
+  end
+  opt.on('--prog-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
+    $prog_mode = mode
   end
   opt.on('--installed-list [FILENAME]') {|name| $installed_list = name}
   opt.on('--rdoc-output [DIR]') {|dir| $rdocdir = dir}
@@ -119,7 +127,7 @@ def makedirs(dirs)
       File.directory?(realdir)
     end
   end.compact!
-  super(dirs, :mode => 0755) unless dirs.empty?
+  super(dirs, :mode => $prog_mode) unless dirs.empty?
 end
 
 def install_recursive(srcdir, dest, options = {})
@@ -191,22 +199,22 @@ install?(:local, :arch, :bin) do
 
   makedirs [bindir, libdir, archlibdir]
 
-  install ruby_install_name+exeext, bindir, :mode => 0755
+  install ruby_install_name+exeext, bindir, :mode => $prog_mode
   if rubyw_install_name and !rubyw_install_name.empty?
-    install rubyw_install_name+exeext, bindir, :mode => 0755
+    install rubyw_install_name+exeext, bindir, :mode => $prog_mode
   end
   if File.exist? goruby_install_name+exeext
-    install goruby_install_name+exeext, bindir, :mode => 0755
+    install goruby_install_name+exeext, bindir, :mode => $prog_mode
   end
   if enable_shared and dll != lib
-    install dll, bindir, :mode => 0755
+    install dll, bindir, :mode => $prog_mode
   end
-  install lib, libdir, :mode => 0755 unless lib == arc
-  install arc, libdir, :mode => 0644
-  install "rbconfig.rb", archlibdir, :mode => 0644
+  install lib, libdir, :mode => $prog_mode unless lib == arc
+  install arc, libdir, :mode => $data_mode
+  install "rbconfig.rb", archlibdir, :mode => $data_mode
   if CONFIG["ARCHFILE"]
     for file in CONFIG["ARCHFILE"].split
-      install file, archlibdir, :mode => 0644
+      install file, archlibdir, :mode => $data_mode
     end
   end
 
@@ -225,15 +233,15 @@ if $extout
     if noinst = CONFIG["no_install_files"] and noinst.empty?
       noinst = nil
     end
-    install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => 0755)
-    install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => 0644)
+    install_recursive("#{extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode)
+    install_recursive("#{extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
   end
   install?(:ext, :comm, :'ext-comm') do
     puts "installing extension scripts"
     hdrdir = rubyhdrdir + "/ruby"
     makedirs [rubylibdir, sitelibdir, vendorlibdir, hdrdir]
-    install_recursive("#{extout}/common", rubylibdir, :mode => 0644)
-    install_recursive("#{extout}/include/ruby", hdrdir, :glob => "*.h", :mode => 0644)
+    install_recursive("#{extout}/common", rubylibdir, :mode => $data_mode)
+    install_recursive("#{extout}/include/ruby", hdrdir, :glob => "*.h", :mode => $data_mode)
   end
 end
 
@@ -244,7 +252,7 @@ install?(:rdoc) do
     ridatadir = File.join(CONFIG['datadir'], 'ri/$(MAJOR).$(MINOR).$(TEENY)/system')
     Config.expand(ridatadir)
     makedirs [ridatadir]
-    install_recursive($rdocdir, ridatadir, :mode => 0644)
+    install_recursive($rdocdir, ridatadir, :mode => $data_mode)
   end
 end
 
@@ -265,7 +273,7 @@ install?(:local, :comm, :bin) do
     name = ruby_install_name.sub(/ruby/, File.basename(src))
     dest = File.join(bindir, name)
 
-    install src, dest, :mode => 0755
+    install src, dest, :mode => $prog_mode
 
     next if $dryrun
 
@@ -311,7 +319,7 @@ install?(:local, :comm, :lib) do
   for f in Dir["lib/**/*{.rb,help-message}"]
     dir = File.dirname(f).sub!(/\Alib/, rubylibdir) || rubylibdir
     makedirs dir
-    install f, dir, :mode => 0644
+    install f, dir, :mode => $data_mode
   end
 end
 
@@ -325,7 +333,7 @@ install?(:local, :arch, :lib) do
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?
-  install_recursive("include", rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => 0644)
+  install_recursive("include", rubyhdrdir, :no_install => noinst, :glob => "*.h", :mode => $data_mode)
 end
 
 install?(:local, :comm, :man) do
@@ -341,7 +349,7 @@ install?(:local, :comm, :man) do
     makedirs destdir
 
     if $mantype == "doc"
-      install mdoc, destfile, :mode => 0644
+      install mdoc, destfile, :mode => $data_mode
     else
       require 'mdoc2man.rb'
 
@@ -353,7 +361,7 @@ install?(:local, :comm, :man) do
 
       w.close
 
-      install w.path, destfile, :mode => 0644
+      install w.path, destfile, :mode => $data_mode
     end
   end
 end

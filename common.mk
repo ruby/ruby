@@ -84,11 +84,15 @@ GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--extout="$(EXTOUT)" \
-		--make="$(MAKE)" \
 		--mflags="$(MFLAGS)" \
 		--make-flags="$(MAKEFLAGS)"
 EXTMK_ARGS    =	$(SCRIPT_ARGS) --extension $(EXTS) --extstatic $(EXTSTATIC) --
-INSTRUBY_ARGS =	$(SCRIPT_ARGS) --installed-list $(INSTALLED_LIST)
+INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
+		--data-mode=$(INSTALL_DATA_MODE) \
+		--prog-mode=$(INSTALL_PROG_MODE) \
+		--installed-list $(INSTALLED_LIST)
+INSTALL_PROG_MODE = 0755
+INSTALL_DATA_MODE = 0644
 
 PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil' -- \
 			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)

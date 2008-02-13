@@ -1,3 +1,9 @@
+Thu Feb 14 00:49:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (INSTRUBY_ARGS): pass mode to install.  [ruby-dev:33766]
+
+	* instruby.rb (parse_args): added --data-mode and --prog-mode options.
+
 Thu Feb 14 00:02:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* eval.c (eval): allow to eval in a binding that has a singleton method.
