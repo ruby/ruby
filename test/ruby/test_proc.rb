@@ -1,6 +1,15 @@
 require 'test/unit'
 
 class TestProc < Test::Unit::TestCase
+  def setup
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
+  end
+
   def test_proc
     p1 = proc{|i| i}
     assert_equal(2, p1.call(2))
@@ -199,5 +208,93 @@ class TestProc < Test::Unit::TestCase
     end
 
     assert_equal(fib, [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89])
+  end
+
+  def test_dup_clone
+    b = proc {|x| x + "bar" }
+    class << b; attr_accessor :foo; end
+
+    bd = b.dup
+    assert_equal("foobar", bd.call("foo"))
+    assert_raise(NoMethodError) { bd.foo = :foo }
+    assert_raise(NoMethodError) { bd.foo }
+
+    bc = b.clone
+    assert_equal("foobar", bc.call("foo"))
+    bc.foo = :foo
+    assert_equal(:foo, bc.foo)
+  end
+
+  def test_binding
+    b = proc {|x, y, z| proc {}.binding }.call(1, 2, 3)
+    class << b; attr_accessor :foo; end
+
+    bd = b.dup
+    assert_equal([1, 2, 3], bd.eval("[x, y, z]"))
+    assert_raise(NoMethodError) { bd.foo = :foo }
+    assert_raise(NoMethodError) { bd.foo }
+
+    bc = b.clone
+    assert_equal([1, 2, 3], bc.eval("[x, y, z]"))
+    bc.foo = :foo
+    assert_equal(:foo, bc.foo)
+
+    b = nil
+    1.times { x, y, z = 1, 2, 3; b = binding }
+    assert_equal([1, 2, 3], b.eval("[x, y, z]"))
+  end
+
+  def test_proc_lambda
+    assert_raise(ArgumentError) { proc }
+    assert_raise(ArgumentError) { lambda }
+
+    o = Object.new
+    def o.foo
+      b = nil
+      1.times { b = lambda }
+      b
+    end
+    assert_equal(:foo, o.foo { :foo }.call)
+
+    def o.foo(&b)
+      b = nil
+      1.times { b = lambda }
+      b
+    end
+    assert_equal(:foo, o.foo { :foo }.call)
+  end
+
+  def test_arity2
+    assert_equal(0, method(:proc).to_proc.arity)
+    assert_equal(-1, proc {}.curry.arity)
+  end
+
+  def test_proc_location
+    t = Thread.new { sleep }
+    assert_raise(ThreadError) { t.instance_eval { initialize { } } }
+    t.kill
+  end
+
+  def test_eq2
+    b1 = proc { }
+    b2 = b1.dup
+    assert(b1 == b2)
+  end
+  
+  def test_to_proc
+    b = proc { :foo }
+    assert_equal(:foo, b.to_proc.call)
+  end
+
+  def test_localjump_error
+    o = Object.new
+    def foo; yield; end
+    exc = foo rescue $!
+    assert_nil(exc.exit_value)
+    assert_equal(:noreason, exc.reason)
+  end
+
+  def test_binding2
+    assert_raise(ArgumentError) { proc {}.curry.binding }
   end
 end

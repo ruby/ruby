@@ -1700,7 +1700,7 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	volatile VALUE iseqval;
 
 	if (scope != Qnil) {
-	    if (CLASS_OF(scope) == rb_cBinding) {
+	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
 		stored_cref_stack = bind->cref_stack;
