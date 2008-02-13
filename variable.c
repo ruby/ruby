@@ -932,17 +932,20 @@ clear:
 static VALUE
 ivar_get(VALUE obj, ID id, int warn)
 {
-    VALUE val;
-    VALUE klass;
+    VALUE val, *ptr;
+    struct st_table *iv_index_tbl;
+    long len;
     st_data_t index;
 
     switch (TYPE(obj)) {
       case T_OBJECT:
-        klass = rb_obj_class(obj);
-        if (!RCLASS_IV_INDEX_TBL(klass)) break; 
-        if (!st_lookup(RCLASS_IV_INDEX_TBL(klass), id, &index)) break;
-        if (ROBJECT_LEN(obj) <= index) break;
-        val = ROBJECT_PTR(obj)[index];
+        len = ROBJECT_LEN(obj);
+        ptr = ROBJECT_PTR(obj);
+        iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+        if (!iv_index_tbl) break; 
+        if (!st_lookup(iv_index_tbl, id, &index)) break;
+        if (len <= index) break;
+        val = ptr[index];
         if (val != Qundef)
             return val;
 	break;
@@ -977,7 +980,7 @@ rb_attr_get(VALUE obj, ID id)
 VALUE
 rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    VALUE klass;
+    struct st_table *iv_index_tbl;
     st_data_t index;
     long i, len;
     int ivar_extended;
@@ -987,13 +990,18 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
     if (OBJ_FROZEN(obj)) rb_error_frozen("object");
     switch (TYPE(obj)) {
       case T_OBJECT:
-        klass = rb_obj_class(obj);
-        if (!RCLASS_IV_INDEX_TBL(klass))
-            RCLASS_IV_INDEX_TBL(klass) = st_init_numtable();
+        iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+        if (!iv_index_tbl) {
+            VALUE klass = rb_obj_class(obj);
+            iv_index_tbl = RCLASS_IV_INDEX_TBL(klass);
+            if (!iv_index_tbl) {
+                iv_index_tbl = RCLASS_IV_INDEX_TBL(klass) = st_init_numtable();
+            }
+        }
         ivar_extended = 0;
-        if (!st_lookup(RCLASS_IV_INDEX_TBL(klass), id, &index)) {
-            index = RCLASS_IV_INDEX_TBL(klass)->num_entries;
-            st_add_direct(RCLASS_IV_INDEX_TBL(klass), id, index);
+        if (!st_lookup(iv_index_tbl, id, &index)) {
+            index = iv_index_tbl->num_entries;
+            st_add_direct(iv_index_tbl, id, index);
             ivar_extended = 1;
         }
         len = ROBJECT_LEN(obj);
@@ -1010,8 +1018,8 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
                 VALUE *newptr;
                 long newsize = (index+1) + (index+1)/4; /* (index+1)*1.25 */
                 if (!ivar_extended &&
-                    RCLASS_IV_INDEX_TBL(klass)->num_entries < newsize) {
-                    newsize = RCLASS_IV_INDEX_TBL(klass)->num_entries;
+                    iv_index_tbl->num_entries < newsize) {
+                    newsize = iv_index_tbl->num_entries;
                 }
                 if (RBASIC(obj)->flags & ROBJECT_EMBED) {
                     newptr = ALLOC_N(VALUE, newsize);
@@ -1026,6 +1034,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
                 for (; len < newsize; len++)
                     newptr[len] = Qundef;
                 ROBJECT(obj)->as.heap.len = newsize;
+                ROBJECT(obj)->as.heap.iv_index_tbl = iv_index_tbl;
             }
         }
         ROBJECT_PTR(obj)[index] = val;
@@ -1045,13 +1054,14 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_ivar_defined(VALUE obj, ID id)
 {
-    VALUE klass, val;
+    VALUE val;
+    struct st_table *iv_index_tbl;
     st_data_t index;
     switch (TYPE(obj)) {
       case T_OBJECT:
-        klass = rb_obj_class(obj);
-        if (!RCLASS_IV_INDEX_TBL(klass)) break; 
-        if (!st_lookup(RCLASS_IV_INDEX_TBL(klass), id, &index)) break;
+        iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+        if (!iv_index_tbl) break;
+        if (!st_lookup(iv_index_tbl, id, &index)) break;
         if (ROBJECT_LEN(obj) <= index) break;
         val = ROBJECT_PTR(obj)[index];
         if (val != Qundef)
@@ -1091,11 +1101,10 @@ obj_ivar_i(ID key, VALUE index, struct obj_ivar_tag *data)
 static void
 obj_ivar_each(VALUE obj, int (*func)(ANYARGS), st_data_t arg)
 {
-    VALUE klass = rb_obj_class(obj);
     st_table *tbl;
     struct obj_ivar_tag data;
 
-    tbl = RCLASS_IV_INDEX_TBL(klass);
+    tbl = ROBJECT_IV_INDEX_TBL(obj);
     if (!tbl)
         return;
 
@@ -1194,7 +1203,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
     VALUE val = Qnil;
     ID id = rb_to_id(name);
-    VALUE klass;
+    struct st_table *iv_index_tbl;
     st_data_t index;
 
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
@@ -1206,9 +1215,9 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 
     switch (TYPE(obj)) {
       case T_OBJECT:
-        klass = rb_obj_class(obj);
-        if (!RCLASS_IV_INDEX_TBL(klass)) break; 
-        if (!st_lookup(RCLASS_IV_INDEX_TBL(klass), id, &index)) break;
+        iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
+        if (!iv_index_tbl) break;
+        if (!st_lookup(iv_index_tbl, id, &index)) break;
         if (ROBJECT_LEN(obj) <= index) break;
         val = ROBJECT_PTR(obj)[index];
         if (val != Qundef) {

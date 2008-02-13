@@ -1,3 +1,17 @@
+Wed Feb 13 20:48:50 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (RObject): add iv_index_tbl for shortcut of
+	  RCLASS_IV_INDEX_TBL(rb_obj_class(obj)).
+	  (ROBJECT_IV_INDEX_TBL): defined.
+
+	* object.c (init_copy): initialize iv_index_tbl in struct RObject.
+
+	* variable.c (ivar_get): use ROBJECT_IV_INDEX_TBL.
+	  (rb_ivar_defined): ditto.
+	  (obj_ivar_each): ditto.
+	  (rb_obj_remove_instance_variable): ditto.
+	  (rb_ivar_set): update iv_index_tbl in struct RObject.
+
 Wed Feb 13 16:21:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/generic.rb: revert r15442. 2nd argument of String#sub parse

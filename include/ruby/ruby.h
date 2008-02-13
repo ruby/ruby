@@ -398,6 +398,7 @@ struct RObject {
 	struct {
 	    long len;
 	    VALUE *ptr;
+            struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
 	} heap;
 	VALUE ary[ROBJECT_EMBED_LEN_MAX];
     } as;
@@ -411,6 +412,10 @@ struct RObject {
     ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
      ROBJECT(o)->as.ary : \
      ROBJECT(o)->as.heap.ptr)
+#define ROBJECT_IV_INDEX_TBL(o) \
+    ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
+     RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
+     ROBJECT(o)->as.heap.iv_index_tbl)
 
 struct RValues {
     struct RBasic basic;

@@ -170,6 +170,7 @@ init_copy(VALUE dest, VALUE obj)
             xfree(ROBJECT_PTR(dest));
             ROBJECT(dest)->as.heap.ptr = 0;
             ROBJECT(dest)->as.heap.len = 0;
+            ROBJECT(dest)->as.heap.iv_index_tbl = 0;
         }
         if (RBASIC(obj)->flags & ROBJECT_EMBED) {
             MEMCPY(ROBJECT(dest)->as.ary, ROBJECT(obj)->as.ary, VALUE, ROBJECT_EMBED_LEN_MAX);
@@ -181,6 +182,7 @@ init_copy(VALUE dest, VALUE obj)
             MEMCPY(ptr, ROBJECT(obj)->as.heap.ptr, VALUE, len);
             ROBJECT(dest)->as.heap.ptr = ptr;
             ROBJECT(dest)->as.heap.len = len;
+            ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
             RBASIC(dest)->flags &= ~ROBJECT_EMBED;
         }
         break;
