@@ -1674,7 +1674,10 @@ if defined? Process.kill
   $x = 0
   trap "SIGINT", Proc.new{|sig| $x = 2}
   Process.kill "SIGINT", $$
-  sleep 0.1
+  100.times {
+    sleep 0.1
+    break if $x != 0
+  }
   test_ok($x == 2)
 
   trap "SIGINT", Proc.new{raise "Interrupt"}
