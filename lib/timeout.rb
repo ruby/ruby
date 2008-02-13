@@ -32,8 +32,13 @@ module Timeout
   ##
   # Raised by Timeout#timeout when the block times out.
 
-  class Error<Interrupt
+  class Error < Interrupt
   end
+  class ExitException < ::Exception # :nodoc:
+  end
+
+  THIS_FILE = /\A#{Regexp.quote(__FILE__)}:/o
+  CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
 
   ##
   # Executes the method's block. If the block execution terminates before +sec+
@@ -44,9 +49,10 @@ module Timeout
   # Timeout' into your classes so they have a #timeout method, as well as a
   # module method, so you can call it directly as Timeout.timeout().
 
-  def timeout(sec, exception=Error)
+  def timeout(sec, klass = nil)
     return yield if sec == nil or sec.zero?
     raise ThreadError, "timeout within critical session" if Thread.critical
+    exception = klass || Class.new(ExitException)
     begin
       x = Thread.current
       y = Thread.start {
@@ -55,6 +61,17 @@ module Timeout
       }
       yield sec
       #    return true
+    rescue exception => e
+      rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
+      (bt = e.backtrace).reject! {|m| rej =~ m}
+      level = -caller(CALLER_OFFSET).size
+      while THIS_FILE =~ bt[level]
+        bt.delete_at(level)
+        level += 1
+      end
+      raise if klass            # if exception class is specified, it
+                                # would be expected outside.
+      raise Error, e.message, e.backtrace
     ensure
       y.kill if y and y.alive?
     end
@@ -72,7 +89,7 @@ end
 # Defined for backwards compatibility with earlier versions of timeout.rb, see
 # Timeout#timeout.
 
-def timeout(n, e=Timeout::Error, &block) # :nodoc:
+def timeout(n, e = nil, &block) # :nodoc:
   Timeout::timeout(n, e, &block)
 end
 
