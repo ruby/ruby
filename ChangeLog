@@ -1,3 +1,9 @@
+Wed Feb 13 21:50:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* proc.c (proc_curry): new method. [ruby-dev:33676]
+
+	* test/ruby/test_proc.rb: add tests for above.
+
 Wed Feb 13 20:48:50 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (RObject): add iv_index_tbl for shortcut of
@@ -237,8 +243,8 @@ Sat Feb  9 23:22:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sat Feb  9 21:20:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* test/ruby/test_math.rb: add tests for Math#gamma, Math#lgamma and
-	  Math#cbrt, and use assert_in_delta instead of assert.
+	* test/ruby/test_math.rb: add tests for Math.gamma, Math.lgamma and
+	  Math.cbrt, and use assert_in_delta instead of assert.
 
 Sat Feb  9 18:34:45 2008  Tanaka Akira  <akr@fsij.org>
 

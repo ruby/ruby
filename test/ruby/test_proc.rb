@@ -137,4 +137,67 @@ class TestProc < Test::Unit::TestCase
     assert_equal "OK", b.call
   end
 
+  def test_curry
+    b = proc {|x, y, z| (x||0) + (y||0) + (z||0) }
+    assert_equal(6, b.curry[1][2][3])
+    assert_equal(6, b.curry[1, 2][3, 4])
+    assert_equal(6, b.curry(5)[1][2][3][4][5])
+    assert_equal(6, b.curry(5)[1, 2][3, 4][5])
+    assert_equal(1, b.curry(1)[1])
+
+    b = proc {|x, y, z, *w| (x||0) + (y||0) + (z||0) + w.inject(0, &:+) }
+    assert_equal(6, b.curry[1][2][3])
+    assert_equal(10, b.curry[1, 2][3, 4])
+    assert_equal(15, b.curry(5)[1][2][3][4][5])
+    assert_equal(15, b.curry(5)[1, 2][3, 4][5])
+    assert_equal(1, b.curry(1)[1])
+
+    b = lambda {|x, y, z| (x||0) + (y||0) + (z||0) }
+    assert_equal(6, b.curry[1][2][3])
+    assert_raise(ArgumentError) { b.curry[1, 2][3, 4] }
+    assert_raise(ArgumentError) { b.curry(5) }
+    assert_raise(ArgumentError) { b.curry(1) }
+
+    b = lambda {|x, y, z, *w| (x||0) + (y||0) + (z||0) + w.inject(0, &:+) }
+    assert_equal(6, b.curry[1][2][3])
+    assert_equal(10, b.curry[1, 2][3, 4])
+    assert_equal(15, b.curry(5)[1][2][3][4][5])
+    assert_equal(15, b.curry(5)[1, 2][3, 4][5])
+    assert_raise(ArgumentError) { b.curry(1) }
+
+    b = proc { :foo }
+    assert_equal(:foo, b.curry[])
+  end
+ 
+  def test_curry_ski_fib
+    s = proc {|f, g, x| f[x][g[x]] }.curry
+    k = proc {|x, y| x }.curry
+    i = proc {|x| x }.curry
+
+    fib = []
+    inc = proc {|x| fib[-1] += 1; x }.curry
+    ret = proc {|x| throw :end if fib.size > 10; fib << 0; x }.curry
+
+    catch(:end) do
+      s[
+        s[s[i][i]][k[i]]
+      ][
+        k[inc]
+      ][
+        s[
+          s[
+            k[s]
+          ][
+            s[k[s[k[s]]]
+          ][
+            s[s[k[s]][s[k[s[k[ret]]]][s[k[s[i]]][k]]]][k]]
+          ]
+        ][
+          k[s[k[s]][k]]
+        ]
+      ]
+    end
+
+    assert_equal(fib, [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89])
+  end
 end

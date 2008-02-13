@@ -1608,6 +1608,106 @@ proc_binding(VALUE self)
     return bindval;
 }
 
+static VALUE curry(VALUE dummy, VALUE args, int argc, VALUE *argv);
+
+static VALUE
+make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
+{
+    VALUE args = rb_ary_new2(3);
+    RARRAY_PTR(args)[0] = proc;
+    RARRAY_PTR(args)[1] = passed;
+    RARRAY_PTR(args)[2] = arity;
+    RARRAY_LEN(args) = 3;
+    rb_ary_freeze(passed);
+    rb_ary_freeze(args);
+    return rb_proc_new(curry, args);
+}
+
+static VALUE
+curry(VALUE dummy, VALUE args, int argc, VALUE *argv)
+{
+    VALUE proc, passed, arity;
+    proc = RARRAY_PTR(args)[0];
+    passed = RARRAY_PTR(args)[1];
+    arity = RARRAY_PTR(args)[2];
+
+    passed = rb_ary_plus(passed, rb_ary_new4(argc, argv));
+    rb_ary_freeze(passed);
+    if(RARRAY_LEN(passed) < FIX2INT(arity)) {
+	arity = make_curry_proc(proc, passed, arity);
+	return arity;
+    }
+    arity = rb_proc_call(proc, passed);
+    return arity;
+}
+
+ /*
+  *  call-seq:
+  *     prc.curry         => a_proc
+  *     prc.curry(arity)  => a_proc
+  *
+  *  Returns a curried proc. If the optional <i>arity</i> argument is given,
+  *  it determines the number of arguments.
+  *  A curried proc receives some arguments. If a sufficient number of
+  *  arguments are supplied, it passes the supplied arguments to the original
+  *  proc and returns the result. Otherwise, returns another curried proc that
+  *  takes the rest of arguments.
+  *
+  *     b = proc {|x, y, z| (x||0) + (y||0) + (z||0) }
+  *     p b.curry[1][2][3]           #=> 6
+  *     p b.curry[1, 2][3, 4]        #=> 6
+  *     p b.curry(5)[1][2][3][4][5]  #=> 6
+  *     p b.curry(5)[1, 2][3, 4][5]  #=> 6
+  *     p b.curry(1)[1]              #=> 1
+  *
+  *     b = proc {|x, y, z, *w| (x||0) + (y||0) + (z||0) + w.inject(0, &:+) }
+  *     p b.curry[1][2][3]           #=> 6
+  *     p b.curry[1, 2][3, 4]        #=> 10
+  *     p b.curry(5)[1][2][3][4][5]  #=> 15
+  *     p b.curry(5)[1, 2][3, 4][5]  #=> 15
+  *     p b.curry(1)[1]              #=> 1
+  *
+  *     b = lambda {|x, y, z| (x||0) + (y||0) + (z||0) }
+  *     p b.curry[1][2][3]           #=> 6
+  *     p b.curry[1, 2][3, 4]        #=> wrong number of arguments (4 or 3)
+  *     p b.curry(5)                 #=> wrong number of arguments (5 or 3)
+  *     p b.curry(1)                 #=> wrong number of arguments (1 or 3)
+  *
+  *     b = lambda {|x, y, z, *w| (x||0) + (y||0) + (z||0) + w.inject(0, &:+) }
+  *     p b.curry[1][2][3]           #=> 6
+  *     p b.curry[1, 2][3, 4]        #=> 10
+  *     p b.curry(5)[1][2][3][4][5]  #=> 15
+  *     p b.curry(5)[1, 2][3, 4][5]  #=> 15
+  *     p b.curry(1)                 #=> wrong number of arguments (1 or 3)
+  *
+  *     b = proc { :foo }
+  *     p b.curry[]                  #=> :foo
+  */
+static VALUE
+proc_curry(int argc, VALUE *argv, VALUE self)
+{
+    int sarity, marity = FIX2INT(proc_arity(self));
+    VALUE arity, opt = Qfalse;
+
+    if (marity < 0) {
+	marity = -marity - 1;
+	opt = Qtrue;
+    }
+
+    rb_scan_args(argc, argv, "01", &arity);
+    if (NIL_P(arity)) {
+	arity = INT2FIX(marity);
+    }
+    else {
+	sarity = FIX2INT(arity);
+	if (proc_lambda_p(self) && (sarity < marity || (sarity > marity && !opt))) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", sarity, marity);
+	}
+    }
+
+    return make_curry_proc(self, rb_ary_new(), arity);
+}
+
 /*
  *  <code>Proc</code> objects are blocks of code that have been bound to
  *  a set of local variables. Once bound, the code may be called in
@@ -1646,6 +1746,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_method(rb_cProc, "lambda?", proc_lambda_p, 0);
     rb_define_method(rb_cProc, "binding", proc_binding, 0);
+    rb_define_method(rb_cProc, "curry", proc_curry, -1);
 
     /* Exceptions */
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
