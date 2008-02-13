@@ -24,8 +24,13 @@
 
 module Timeout
   # Raised by Timeout#timeout when the block times out.
-  class Error < Interrupt
+  class Error < RuntimeError
   end
+  class ExitException < ::Exception # :nodoc:
+  end
+
+  THIS_FILE = /\A#{Regexp.quote(__FILE__)}:/o
+  CALLER_OFFSET = ((c = caller[0]) && THIS_FILE =~ c) ? 1 : 0
 
   # Executes the method's block.  If the block execution terminates before
   # +sec+ seconds has passed, it returns the result value of the block.
@@ -35,8 +40,9 @@ module Timeout
   # Note that this is both a method of module Timeout, so you can 'include Timeout'
   # into your classes so they have a #timeout method, as well as a module method,
   # so you can call it directly as Timeout.timeout().
-  def timeout(sec, exception = Error)   #:yield: +sec+
+  def timeout(sec, klass = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
+    exception = klass || Class.new(ExitException)
     begin
       x = Thread.current
       y = Thread.start {
@@ -44,6 +50,17 @@ module Timeout
         x.raise exception, "execution expired" if x.alive?
       }
       return yield(sec)
+    rescue exception => e
+      rej = /\A#{Regexp.quote(__FILE__)}:#{__LINE__-4}\z/o
+      (bt = e.backtrace).reject! {|m| rej =~ m}
+      level = -caller(CALLER_OFFSET).size
+      while THIS_FILE =~ bt[level]
+        bt.delete_at(level)
+        level += 1
+      end
+      raise if klass            # if exception class is specified, it
+                                # would be expected outside.
+      raise Error, e.message, e.backtrace
     ensure
       if y and y.alive?
         y.kill 
@@ -61,7 +78,7 @@ end
 #
 # Defined for backwards compatibility with earlier versions of timeout.rb, see
 # Timeout#timeout.
-def timeout(n, e = Timeout::Error, &block)
+def timeout(n, e = nil, &block)
   Timeout::timeout(n, e, &block)
 end
 

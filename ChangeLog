@@ -1,3 +1,8 @@
+Thu Feb 14 01:43:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout::timeout): made sensitive to location on the
+	  stack.  [ruby-core:15458]
+
 Thu Feb 14 00:49:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (INSTRUBY_ARGS): pass mode to install.  [ruby-dev:33766]
