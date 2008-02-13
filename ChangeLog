@@ -1,3 +1,10 @@
+Wed Feb 13 11:20:26 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enc/depend: fix typo.
+
+	* lib/mkmf.rb: revert r15443. "\\1#{sep}\\2" is wrong if sep is ended
+	  with "\\".
+
 Wed Feb 13 08:57:21 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/markup/inline.rb:  Allow inline markup to have a leading

@@ -46,7 +46,7 @@ $(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
 	echo EXPORTS > <%=df%>
 	echo <%=EXPORT_PREFIX%>Init_<%=File.basename(e)%> >> <%=df%>
 %   end
-	<%=link_so.sub(/\$\(OBJS\)/, obj).sub(/\$\(DEFFILE\)/, df.to_s).gsub(/-(?:implib|pdb):/, "\\1enc/#{e.sub(/[^\/]+\z/, '')}")%>
+	<%=link_so.sub(/\$\(OBJS\)/, obj).sub(/\$\(DEFFILE\)/, df.to_s).gsub(/-(?:implib|pdb):/, "\\&enc/#{e.sub(/[^\/]+\z/, '')}")%>
 
 % end
 % dependencies.each do |e|
