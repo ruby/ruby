@@ -1,3 +1,7 @@
+Thu Feb 14 16:02:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_utime): inhibits with secure level 2 or higher.
+
 Thu Feb 14 12:30:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_preprocess_dregexp): use non-preprocessed regexp source

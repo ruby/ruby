@@ -2133,6 +2133,7 @@ rb_file_s_utime(int argc, VALUE *argv)
     struct timespec tss[2], *tsp = NULL;
     long n;
 
+    rb_secure(2);
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
     if (!NIL_P(atime) || !NIL_P(mtime)) {
