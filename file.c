@@ -2013,6 +2013,7 @@ rb_file_s_utime(argc, argv)
     struct timeval tvs[2], *tvp = NULL;
     long n;
 
+    rb_secure(2);
     rb_scan_args(argc, argv, "2*", &atime, &mtime, &rest);
 
     if (!NIL_P(atime) || !NIL_P(mtime)) {

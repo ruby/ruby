@@ -1,3 +1,7 @@
+Thu Feb 14 16:02:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_utime): inhibits with secure level 2 or higher.
+
 Thu Feb 14 01:43:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout::timeout): made sensitive to location on the
