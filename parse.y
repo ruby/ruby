@@ -8546,7 +8546,7 @@ reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
     }
     return;
 
-error:
+  error:
     compile_error(PARSER_ARG
         "regexp encoding option '%c' differs from source encoding '%s'",
         c, rb_enc_name(rb_enc_get(str)));
@@ -8648,12 +8648,17 @@ static VALUE
 reg_compile_gen(struct parser_params* parser, VALUE str, int options)
 {
     VALUE re;
+    VALUE err;
 
     reg_fragment_setenc(str, options);
+    err = rb_errinfo();
     re = rb_reg_compile(str, options & RE_OPTION_MASK);
     if (NIL_P(re)) {
-	RB_GC_GUARD(re) = rb_obj_as_string(rb_errinfo());
-	compile_error(PARSER_ARG "%s", RSTRING_PTR(re));
+	ID mesg = rb_intern("mesg");
+	VALUE m = rb_attr_get(err, mesg);
+	rb_str_cat(m, "\n", 1);
+	rb_str_append(m, rb_attr_get(rb_errinfo(), mesg));
+	rb_set_errinfo(err);
 	return Qnil;
     }
     return re;

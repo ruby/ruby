@@ -1,3 +1,10 @@
+Thu Feb 14 23:56:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.c (error_print): append a newline to rest lines.
+
+	* parse.y (reg_compile_gen): appends error message from
+	  rb_reg_compile() to one from reg_fragment_setenc().
+
 Thu Feb 14 21:00:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_reopen): check STDIN, STDOUT and STDERR mode according to
