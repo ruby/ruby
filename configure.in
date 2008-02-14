@@ -553,7 +553,7 @@ AC_REPLACE_FUNCS(dup2 memmove strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isnan finite isinf hypot acosh erf)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
-	      truncate chsize times utimes fcntl lockf lstat symlink link\
+	      truncate ftruncate chsize times utimes fcntl lockf lstat symlink link\
 	      readlink setitimer setruid seteuid setreuid setresuid\
 	      setproctitle setrgid setegid setregid setresgid issetugid pause\
 	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\

@@ -3101,7 +3101,7 @@ rb_file_truncate(obj, len)
     f = GetWriteFile(fptr);
     fflush(f);
     fseeko(f, (off_t)0, SEEK_CUR);
-#ifdef HAVE_TRUNCATE
+#ifdef HAVE_FTRUNCATE
     if (ftruncate(fileno(f), pos) < 0)
 	rb_sys_fail(fptr->path);
 #else
