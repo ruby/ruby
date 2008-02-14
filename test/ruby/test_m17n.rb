@@ -450,6 +450,42 @@ class TestM17N < Test::Unit::TestCase
 
     r = /\xc2\xa1/e
     assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
+
+    r1 = Regexp.new('foo'.force_encoding("ascii-8bit"))
+    r2 = eval('/bar#{r1}/'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::US_ASCII, r2.encoding)
+
+    r1 = Regexp.new('foo'.force_encoding("us-ascii"))
+    r2 = eval('/bar#{r1}/'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::US_ASCII, r2.encoding)
+
+    r1 = Regexp.new('foo'.force_encoding("ascii-8bit"))
+    r2 = eval('/bar#{r1}/'.force_encoding('us-ascii'))
+    assert_equal(Encoding::US_ASCII, r2.encoding)
+
+    r1 = Regexp.new('foo'.force_encoding("us-ascii"))
+    r2 = eval('/bar#{r1}/'.force_encoding('us-ascii'))
+    assert_equal(Encoding::US_ASCII, r2.encoding)
+
+    r1 = Regexp.new('\xa1'.force_encoding("ascii-8bit"))
+    r2 = eval('/bar#{r1}/'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::ASCII_8BIT, r2.encoding)
+
+    r1 = Regexp.new('\xa1'.force_encoding("ascii-8bit"))
+    r2 = eval('/bar#{r1}/'.force_encoding('us-ascii'))
+    assert_equal(Encoding::ASCII_8BIT, r2.encoding)
+
+    r1 = Regexp.new('foo'.force_encoding("ascii-8bit"))
+    r2 = eval('/\xa1#{r1}/'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::ASCII_8BIT, r2.encoding)
+
+    r1 = Regexp.new('foo'.force_encoding("us-ascii"))
+    r2 = eval('/\xa1#{r1}/'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::ASCII_8BIT, r2.encoding)
+
+    r1 = Regexp.new('\xa1'.force_encoding("ascii-8bit"))
+    r2 = eval('/\xa1#{r1}/'.force_encoding('ascii-8bit'))
+    assert_equal(Encoding::ASCII_8BIT, r2.encoding)
   end
 
   def test_regexp_embed_preprocess
