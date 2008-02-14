@@ -1953,6 +1953,7 @@ static VALUE
 rb_reg_preprocess_dregexp(VALUE ary)
 {
     rb_encoding *fixed_enc = 0;
+    rb_encoding *regexp_enc = 0;
     onig_errmsg_buffer err = "";
     int i;
     VALUE result = 0;
@@ -1967,31 +1968,33 @@ rb_reg_preprocess_dregexp(VALUE ary)
         VALUE str = argv[i];
         VALUE buf;
         char *p, *end;
-        rb_encoding *enc;
+        rb_encoding *src_enc;
 
         StringValue(str);
         p = RSTRING_PTR(str);
         end = p + RSTRING_LEN(str);
-        enc = rb_enc_get(str);
+        src_enc = rb_enc_get(str);
 
-        buf = rb_reg_preprocess(p, end, enc, &fixed_enc, err);
-        RB_GC_GUARD(str);
+        buf = rb_reg_preprocess(p, end, src_enc, &fixed_enc, err);
 
         if (buf == Qnil)
             rb_raise(rb_eArgError, "%s", err);
 
-        if (i == 0) {
-            /* The encoding of the first fragment is the encoding 
-             * given by the regexp option or script encoding. */
-            if (fixed_enc == 0) {
-                rb_enc_copy(buf, str);
+        if (fixed_enc != 0) {
+            if (regexp_enc != 0 && regexp_enc != fixed_enc) {
+                rb_raise(rb_eArgError, "encoding mismatch in dynamic regexp : %s and %s",
+                         rb_enc_name(regexp_enc), rb_enc_name(fixed_enc));
             }
+            regexp_enc = fixed_enc;
         }
 
         if (!result)
-            result = buf;
+            result = rb_str_new3(str);
         else
-            rb_str_buf_append(result, buf);
+            rb_str_buf_append(result, str);
+    }
+    if (regexp_enc) {
+        rb_enc_associate(result, regexp_enc);
     }
 
     return result;

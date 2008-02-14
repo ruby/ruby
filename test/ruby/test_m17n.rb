@@ -452,6 +452,12 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError) { /\xc2\xa1#{r}/s }
   end
 
+  def test_regexp_embed_preprocess
+    r1 = /\xa4\xa2/e
+    r2 = /#{r1}/
+    assert(r2.source.include?(r1.source))
+  end
+
   def test_begin_end_offset
     str = e("\244\242\244\244\244\246\244\250\244\252a")
     assert(/(a)/ =~ str)

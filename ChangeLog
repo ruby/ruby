@@ -1,3 +1,8 @@
+Thu Feb 14 12:30:02 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_preprocess_dregexp): use non-preprocessed regexp source
+	  for result.
+
 Thu Feb 14 01:43:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout::timeout): made sensitive to location on the
