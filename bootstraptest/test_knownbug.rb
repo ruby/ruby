@@ -45,3 +45,7 @@ assert_equal 'ok', %q{
 }, '[ruby-core:14537]'
 
 assert_valid_syntax('1.times {|i|print (42),1;}', '[ruby-list:44479]')
+
+assert_normal_exit %q{
+  File.read("empty", nil, nil, {})
+}, '[ruby-dev:33072]'
