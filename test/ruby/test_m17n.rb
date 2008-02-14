@@ -488,6 +488,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, r2.encoding)
   end
 
+  def test_regexp_named_class
+    assert_match(/[[:space:]]/u, "\u{00a0}")
+    assert_match(/[[:space:]]/, "\u{00a0}")
+  end
+
   def test_regexp_embed_preprocess
     r1 = /\xa4\xa2/e
     r2 = /#{r1}/
