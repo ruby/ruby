@@ -43,7 +43,8 @@ module RDoc::RI::Paths
   PATH = [ SYSDIR, SITEDIR, HOMEDIR ].find_all {|p| p && File.directory?(p)}
 
   begin
-    require 'rubygems' unless defined?(Gem) and Gem::Enable
+    require 'rubygems' unless defined?(Gem) and defined?(Gem::Enable) and
+                              Gem::Enable
 
     # HACK dup'd from Gem.latest_partials and friends
     all_paths = []
