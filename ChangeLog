@@ -1,7 +1,7 @@
 Thu Feb 14 17:44:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/ptr.c (dlmem_each_i): typo fixed.  a patch from IKOMA
-	  Yoshiki <ikoma@mb.i-chubu.ne.jp> in [ruby-dev:33776].
+	  Yoshiki <ikoma AT mb.i-chubu.ne.jp> in [ruby-dev:33776].
 
 Thu Feb 14 16:02:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -95,7 +95,7 @@ Mon Feb  4 16:44:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sat Feb  2 20:06:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/benchmark.rb (Benchmark::realtime): make Benchmark#realtime
-	  a bit faster.  a patch from Alexander Dymo <dymo@ukrpost.ua> in
+	  a bit faster.  a patch from Alexander Dymo <dymo AT ukrpost.ua> in
 	  [ruby-core:15337].
 
 Sat Feb  2 09:53:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -141,12 +141,6 @@ Tue Jan 29 22:40:12 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 Tue Jan 29 11:53:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: rm largefile.h.
-
-Sun Jan 27 03:48:40 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-Sun Jan 27 03:48:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-Sun Jan 27 03:47:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Jan 28 01:21:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -242,8 +236,6 @@ Sat Jan 12 18:27:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_define_alloc_func, rb_undef_alloc_func): should
 	  define/undef on a signleton class.  [ruby-core:09959]
-
-9959]
 
 Sat Jan 12 12:04:14 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
