@@ -6,32 +6,32 @@ class TestMath < Test::Unit::TestCase
   end
 
   def test_atan2
-    check(Math.atan2(0, 1), 0)
-    check(Math.atan2(1, 1), Math::PI / 4)
-    check(Math.atan2(1, 0), Math::PI / 2)
+    check(0, Math.atan2(0, 1))
+    check(Math::PI / 4, Math.atan2(1, 1))
+    check(Math::PI / 2, Math.atan2(1, 0))
   end
 
   def test_cos
-    check(Math.cos(0 * Math::PI / 4),  1.0)
-    check(Math.cos(1 * Math::PI / 4),  1.0 / Math.sqrt(2))
-    check(Math.cos(2 * Math::PI / 4),  0.0)
-    check(Math.cos(4 * Math::PI / 4), -1.0)
-    check(Math.cos(6 * Math::PI / 4),  0.0)
+    check(1.0,  Math.cos(0 * Math::PI / 4))
+    check(1.0 / Math.sqrt(2), Math.cos(1 * Math::PI / 4))
+    check(0.0,  Math.cos(2 * Math::PI / 4))
+    check(-1.0, Math.cos(4 * Math::PI / 4))
+    check(0.0,  Math.cos(6 * Math::PI / 4))
   end
 
   def test_sin
-    check(Math.sin(0 * Math::PI / 4),  0.0)
-    check(Math.sin(1 * Math::PI / 4),  1.0 / Math.sqrt(2))
-    check(Math.sin(2 * Math::PI / 4),  1.0)
-    check(Math.sin(4 * Math::PI / 4),  0.0)
-    check(Math.sin(6 * Math::PI / 4), -1.0)
+    check(0.0,  Math.sin(0 * Math::PI / 4))
+    check(1.0 / Math.sqrt(2), Math.sin(1 * Math::PI / 4))
+    check(1.0,  Math.sin(2 * Math::PI / 4))
+    check(0.0,  Math.sin(4 * Math::PI / 4))
+    check(-1.0, Math.sin(6 * Math::PI / 4))
   end
 
   def test_tan
-    check(Math.tan(0 * Math::PI / 4),  0.0)
-    check(Math.tan(1 * Math::PI / 4),  1.0)
+    check(0.0, Math.tan(0 * Math::PI / 4))
+    check(1.0, Math.tan(1 * Math::PI / 4))
     assert(Math.tan(2 * Math::PI / 4).abs > 1024)
-    check(Math.tan(4 * Math::PI / 4),  0.0)
+    check(0.0, Math.tan(4 * Math::PI / 4))
     assert(Math.tan(6 * Math::PI / 4).abs > 1024)
   end
 
@@ -77,22 +77,22 @@ class TestMath < Test::Unit::TestCase
   end
 
   def test_acosh
-    check(Math.acosh(1), 0)
-    check(Math.acosh((Math::E ** 1 + Math::E ** -1) / 2), 1)
-    check(Math.acosh((Math::E ** 2 + Math::E ** -2) / 2), 2)
+    check(0, Math.acosh(1))
+    check(1, Math.acosh((Math::E ** 1 + Math::E ** -1) / 2))
+    check(2, Math.acosh((Math::E ** 2 + Math::E ** -2) / 2))
     assert_raise(Errno::EDOM, Errno::ERANGE) { Math.acosh(0) }
   end
 
   def test_asinh
-    check(Math.asinh(0), 0)
-    check(Math.asinh((Math::E ** 1 - Math::E ** -1) / 2), 1)
-    check(Math.asinh((Math::E ** 2 - Math::E ** -2) / 2), 2)
+    check(0, Math.asinh(0))
+    check(1, Math.asinh((Math::E ** 1 - Math::E ** -1) / 2))
+    check(2, Math.asinh((Math::E ** 2 - Math::E ** -2) / 2))
   end
 
   def test_atanh
-    check(Math.atanh(Math.sinh(0) / Math.cosh(0)), 0)
-    check(Math.atanh(Math.sinh(1) / Math.cosh(1)), 1)
-    check(Math.atanh(Math.sinh(2) / Math.cosh(2)), 2)
+    check(0, Math.atanh(Math.sinh(0) / Math.cosh(0)))
+    check(1, Math.atanh(Math.sinh(1) / Math.cosh(1)))
+    check(2, Math.atanh(Math.sinh(2) / Math.cosh(2)))
     assert_raise(Errno::EDOM, Errno::ERANGE) { Math.atanh(-1) }
   end
 

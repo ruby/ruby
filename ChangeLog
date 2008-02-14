@@ -1,3 +1,9 @@
+Thu Feb 14 16:07:40 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_math.rb: actual-expected argument ordering for
+	  test_math.rb fixed.  a patch from Tadashi Saito
+	  <shiba AT mail2.accsnet.ne.jp> in [ruby-dev:33770].
+
 Thu Feb 14 16:02:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_utime): inhibits with secure level 2 or higher.
