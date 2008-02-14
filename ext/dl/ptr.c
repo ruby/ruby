@@ -1006,7 +1006,7 @@ static int
 dlmem_each_i(void* key, VALUE value, void* arg)
 {
   VALUE vkey = DLLONG2NUM(key);
-  rb_yield(rb_assic_new(vkey, value));
+  rb_yield(rb_assoc_new(vkey, value));
   return Qnil;
 }
 
