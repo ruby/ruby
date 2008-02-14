@@ -22,6 +22,12 @@
 #undef SIGBUS
 #endif
 
+#if defined HAVE_SIGPROCMASK || defined HAVE_SIGSETMASK
+#define USE_TRAP_MASK 1
+#else
+#define USE_TRAP_MASK 0
+#endif
+
 #ifndef NSIG
 # ifdef DJGPP
 #  define NSIG SIGMAX
@@ -629,7 +635,7 @@ rb_trap_exec(void)
 }
 
 struct trap_arg {
-#ifndef _WIN32
+#if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
     sigset_t mask;
 # else
@@ -813,7 +819,7 @@ trap(struct trap_arg *arg)
 
     trap_list[sig].cmd = command;
     /* enable at least specified signal. */
-#ifndef _WIN32
+#if USE_TRAP_MASK
 #ifdef HAVE_SIGPROCMASK
     sigdelset(&arg->mask, sig);
 #else
@@ -823,7 +829,7 @@ trap(struct trap_arg *arg)
     return oldcmd;
 }
 
-#ifndef _WIN32
+#if USE_TRAP_MASK
 static VALUE
 trap_ensure(struct trap_arg *arg)
 {
@@ -841,7 +847,7 @@ trap_ensure(struct trap_arg *arg)
 void
 rb_trap_restore_mask(void)
 {
-#ifndef _WIN32
+#if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
     sigprocmask(SIG_SETMASK, &trap_last_mask, NULL);
 # else
@@ -904,7 +910,7 @@ sig_trap(int argc, VALUE *argv)
     if (OBJ_TAINTED(arg.cmd)) {
 	rb_raise(rb_eSecurityError, "Insecure: tainted signal trap");
     }
-#ifndef _WIN32
+#if USE_TRAP_MASK
     /* disable interrupt */
 # ifdef HAVE_SIGPROCMASK
     sigfillset(&arg.mask);
@@ -955,7 +961,7 @@ static void
 init_sigchld(int sig)
 {
     sighandler_t oldfunc;
-#ifndef _WIN32
+#if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
     sigset_t mask;
 # else
@@ -963,7 +969,7 @@ init_sigchld(int sig)
 # endif
 #endif
 
-#ifndef _WIN32
+#if USE_TRAP_MASK
     /* disable interrupt */
 # ifdef HAVE_SIGPROCMASK
     sigfillset(&mask);
@@ -980,7 +986,7 @@ init_sigchld(int sig)
 	trap_list[sig].cmd = 0;
     }
 
-#ifndef _WIN32
+#if USE_TRAP_MASK
 #ifdef HAVE_SIGPROCMASK
     sigdelset(&mask, sig);
     sigprocmask(SIG_SETMASK, &mask, NULL);

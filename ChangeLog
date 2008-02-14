@@ -1,3 +1,10 @@
+Fri Feb 15 02:40:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (sigsetmask): check when signal semantics is not POSIX.
+
+	* signal.c (USE_TRAP_MASK): set true if sigprocmask or sigsetmask is
+	  available.
+
 Thu Feb 14 23:56:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.c (error_print): append a newline to rest lines.
