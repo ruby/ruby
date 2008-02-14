@@ -3173,7 +3173,7 @@ rb_file_truncate(VALUE obj, VALUE len)
 	rb_raise(rb_eIOError, "not opened for writing");
     }
     rb_io_flush(obj);
-#ifdef HAVE_TRUNCATE
+#ifdef HAVE_FTRUNCATE
     if (ftruncate(fptr->fd, pos) < 0)
 	rb_sys_fail(fptr->path);
 #else

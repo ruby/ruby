@@ -1,3 +1,9 @@
+Fri Feb 15 02:42:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ftruncate): check if available.
+
+	* file.c (rb_file_truncate): check if ftruncate instead of truncate.
+
 Fri Feb 15 02:40:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (sigsetmask): check when signal semantics is not POSIX.
