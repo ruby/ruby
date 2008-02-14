@@ -171,6 +171,7 @@ error_print(void)
 	    }
 	    if (tail) {
 		warn_print2(tail, elen - len - 1);
+		if (einfo[elen-1] != '\n') warn_print2("\n", 1);
 	    }
 	}
     }
