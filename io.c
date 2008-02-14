@@ -4112,8 +4112,9 @@ io_reopen(VALUE io, VALUE nfile)
     if (fptr == orig) return io;
 #if !defined __CYGWIN__
     if (IS_PREP_STDIO(fptr)) {
-	if (((fptr->mode & FMODE_READWRITE) & (orig->mode & FMODE_READWRITE)) !=
-            (fptr->mode & FMODE_READWRITE)) {
+        if ((fptr->stdio_file == stdin && !(orig->mode & FMODE_READABLE)) ||
+            (fptr->stdio_file == stdout && !(orig->mode & FMODE_WRITABLE)) ||
+            (fptr->stdio_file == stderr && !(orig->mode & FMODE_WRITABLE))) {
 	    rb_raise(rb_eArgError,
 		     "%s can't change access mode from \"%s\" to \"%s\"",
 		     PREP_STDIO_NAME(fptr), rb_io_flags_mode(fptr->mode),
@@ -4132,13 +4133,7 @@ io_reopen(VALUE io, VALUE nfile)
     }
 
     /* copy rb_io_t structure */
-    if (fptr->mode & FMODE_PREP) {
-        int mask = FMODE_PREP|FMODE_READWRITE;
-        fptr->mode = (orig->mode & ~mask)|(fptr->mode & mask);
-    }
-    else {
-        fptr->mode = orig->mode;
-    }
+    fptr->mode = orig->mode | (fptr->mode & FMODE_PREP);
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (fptr->path) free(fptr->path);
