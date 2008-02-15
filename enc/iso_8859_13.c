@@ -231,3 +231,12 @@ OnigEncodingDefine(iso_8859_13, ISO_8859_13) = {
   onigenc_always_true_is_allowed_reverse_match
 };
 ENC_ALIAS("ISO8859-13", "ISO-8859-13");
+
+/*
+ * Name: windows-1257
+ * MIBenum: 2257
+ * http://www.microsoft.com/globaldev/reference/sbcs/1257.mspx
+ * http://en.wikipedia.org/wiki/Windows-1257
+ */
+ENC_REPLICATE("Windows-1257", "ISO-8859-13");
+ENC_ALIAS("CP1257", "Windows-1257");
