@@ -1,3 +1,8 @@
+Fri Feb 15 18:44:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (single_byte_optimizable): rb_enc_mbminlen must be 1
+	  when rb_enc_mbmaxlen is 1.
+
 Sat Feb 16 03:43:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_nth): moved to string.c.
