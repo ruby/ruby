@@ -309,6 +309,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define HAVE_FSYNC 1
 \#define HAVE_GETCWD 1
 \#define HAVE_TRUNCATE 1
+\#define HAVE_FTRUNCATE 1
 \#define HAVE_FSEEKO 1
 \#define HAVE_FTELLO 1
 \#define HAVE_TIMES 1

@@ -1,3 +1,8 @@
+Fri Feb 15 10:27:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {win,bcc}32/Makefile.sub (config.h): added HAVE_FTRUNCATE.
+	  [ruby-dev:33786]
+
 Fri Feb 15 09:44:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_compile_gen): reg_fragment_setenc might not raise an

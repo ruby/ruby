@@ -398,6 +398,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_FSYNC 1
 #define HAVE_GETCWD 1
 #define HAVE_TRUNCATE 1
+#define HAVE_FTRUNCATE 1
 #define HAVE_FSEEKO 1
 #define HAVE_FTELLO 1
 #define HAVE_TIMES 1
