@@ -102,6 +102,8 @@ class Complex < Numeric
   @RCS_ID='-$Id: complex.rb,v 1.3 1998/07/08 10:05:28 keiju Exp keiju $-'
 
   undef step
+  undef div, divmod
+  undef floor, truncate, ceil, round
 
   def Complex.generic?(other) # :nodoc:
     other.kind_of?(Integer) or
@@ -194,6 +196,10 @@ class Complex < Numeric
     end
   end
   
+  def quo(other)
+    Complex(@real.quo(1), @image.quo(1)) / other
+  end
+
   #
   # Raise this complex number to the given (real or complex) power.
   #
@@ -409,8 +415,34 @@ class Complex < Numeric
   
 end
 
+class Integer
 
+  unless defined?(1.numerator)
+    def numerator() self end
+    def denominator() 1 end
 
+    def gcd(other)
+      min = self.abs
+      max = other.abs
+      while min > 0
+        tmp = min
+        min = max % min
+        max = tmp
+      end
+      max
+    end
+
+    def lcm(other)
+      if self.zero? or other.zero?
+        0
+      else
+        (self.div(self.gcd(other)) * other).abs
+      end
+    end
+
+  end
+
+end
 
 module Math
   alias sqrt! sqrt

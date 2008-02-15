@@ -1,3 +1,18 @@
+Fri Feb 15 20:37:06 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/rational.rb (floor, ceil, truncate, round): do not use
+	  definitions of Numeric.
+
+	* lib/rational.rb (to_i): should returns truncated self.
+
+	* lib/complex.rb (numerator): requires
+	  Integer#{numerator,denominator}.
+
+	* lib/complex.rb (quo): do not use definition of Numeric.
+
+	* lib/complex.rb (div, divmod, floor, ceil, truncate, round):
+	  undef'ed.
+
 Fri Feb 15 15:23:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_convert): check upper bound.  a patch from
