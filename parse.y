@@ -8655,10 +8655,14 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
     re = rb_reg_compile(str, options & RE_OPTION_MASK);
     if (NIL_P(re)) {
 	ID mesg = rb_intern("mesg");
-	VALUE m = rb_attr_get(err, mesg);
-	rb_str_cat(m, "\n", 1);
-	rb_str_append(m, rb_attr_get(rb_errinfo(), mesg));
+	VALUE m = rb_attr_get(rb_errinfo(), mesg);
 	rb_set_errinfo(err);
+	if (!NIL_P(err)) {
+	    rb_str_append(rb_str_cat(rb_attr_get(err, mesg), "\n", 1), m);
+	}
+	else {
+	    compile_error(PARSER_ARG "%s", RSTRING_PTR(m));
+	}
 	return Qnil;
     }
     return re;

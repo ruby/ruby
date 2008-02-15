@@ -1,3 +1,8 @@
+Fri Feb 15 09:44:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reg_compile_gen): reg_fragment_setenc might not raise an
+	  exception before rb_reg_compile.
+
 Fri Feb 15 07:37:40 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/ri/paths.rb: Preserve compatibility with 1.8.
