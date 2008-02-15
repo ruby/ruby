@@ -1010,6 +1010,8 @@ process_options(VALUE arg)
     else {
 	enc = rb_locale_encoding();
     }
+    rb_enc_set_default_external(rb_enc_from_encoding(enc));
+
     if (opt->e_script) {
 	rb_encoding *eenc;
 	if (opt->src.enc.index >= 0) {
@@ -1052,8 +1054,6 @@ process_options(VALUE arg)
 	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
 	}
     }
-
-    rb_enc_set_default_external(rb_enc_from_encoding(enc));
 
     return (VALUE)tree;
 }
