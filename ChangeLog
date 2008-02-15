@@ -1,3 +1,8 @@
+Fri Feb 15 15:34:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_getbyte): new method.
+	  (rb_str_setbyte): new method.
+
 Fri Feb 15 15:29:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/require_relative.rb: new file.

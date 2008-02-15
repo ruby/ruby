@@ -3127,6 +3127,49 @@ rb_str_chr(VALUE str)
 
 /*
  *  call-seq:
+ *     str.getbyte(index)          => 0 .. 255
+ *
+ *  returns the <i>index</i>th byte as an integer.
+ */
+static VALUE
+rb_str_getbyte(VALUE str, VALUE index)
+{
+    long pos = NUM2LONG(index);
+
+    if (pos < 0)
+        pos += RSTRING_LEN(str);
+    if (pos < 0 ||  RSTRING_LEN(str) <= pos)
+        return Qnil;
+
+    return INT2FIX((unsigned char)RSTRING_PTR(str)[pos]);
+}
+
+/*
+ *  call-seq:
+ *     str.setbyte(index, int) => int
+ *
+ *  modifies the <i>index</i>th byte as <i>int</i>.
+ */
+static VALUE
+rb_str_setbyte(VALUE str, VALUE index, VALUE value)
+{
+    long pos = NUM2LONG(index);
+    int byte = NUM2INT(value);
+
+    rb_str_modify(str);
+
+    if (pos < -RSTRING_LEN(str) || RSTRING_LEN(str) <= pos)
+        rb_raise(rb_eIndexError, "index %ld out of string", pos);
+    if (pos < 0)
+        pos += RSTRING_LEN(str);
+
+    RSTRING_PTR(str)[pos] = byte;
+
+    return value;
+}
+
+/*
+ *  call-seq:
  *     str.reverse   => new_str
  *  
  *  Returns a new string with the characters from <i>str</i> in reverse order.
@@ -6107,6 +6150,8 @@ Init_String(void)
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "clear", rb_str_clear, 0);
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
+    rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
+    rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);
