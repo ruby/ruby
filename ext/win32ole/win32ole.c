@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.3"
+#define WIN32OLE_VERSION "1.1.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -259,6 +259,9 @@ static void jd2civil(long day, int *yy, int *mm, int *dd);
 static void double2time(double v, int *y, int *m, int *d, int *hh, int *mm, int *ss);
 static double time_object2date(VALUE tmobj);
 static VALUE date2time_str(double date);
+static rb_encoding *ole_cp2encoding(UINT cp);
+static UINT ole_encoding2cp(rb_encoding *enc);
+static UINT ole_init_cp();
 static char *ole_wc2mb(LPWSTR pw);
 static VALUE ole_hresult2msg(HRESULT hr);
 static VALUE ole_excepinfo2msg(EXCEPINFO *pExInfo);
@@ -766,6 +769,86 @@ date2time_str(double date)
             "%04d/%02d/%02d %02d:%02d:%02d",
             y, m, d, hh, mm, ss);
     return rb_str_new2(szTime);
+}
+
+#define ENC_MACHING_CP(enc,encname,cp) if(strcasecmp(rb_enc_name((enc)),(encname)) == 0) return cp
+
+static UINT ole_encoding2cp(rb_encoding *enc)
+{
+    /*
+     * Is there any better solution to convert 
+     * Ruby encoding to Windows codepage???
+     */
+    ENC_MACHING_CP(enc, "Big5", 950);
+    ENC_MACHING_CP(enc, "CP51932", 51932);
+    ENC_MACHING_CP(enc, "CP850", 850);
+    ENC_MACHING_CP(enc, "CP852", 852);
+    ENC_MACHING_CP(enc, "CP855", 855);
+    ENC_MACHING_CP(enc, "CP949", 949);
+    ENC_MACHING_CP(enc, "EUC-JP", 20932); 
+    ENC_MACHING_CP(enc, "EUC-KR", 51949);
+    ENC_MACHING_CP(enc, "EUC-TW", 51950);
+    ENC_MACHING_CP(enc, "GB18030", 54936);
+    ENC_MACHING_CP(enc, "GB2312", 51936);
+    ENC_MACHING_CP(enc, "GBK", 936);
+    ENC_MACHING_CP(enc, "IBM437", 437);
+    ENC_MACHING_CP(enc, "IBM737", 737);
+    ENC_MACHING_CP(enc, "IBM775", 775);
+    ENC_MACHING_CP(enc, "IBM852", 852);
+    ENC_MACHING_CP(enc, "IBM855", 855);
+    ENC_MACHING_CP(enc, "IBM857", 857);
+    ENC_MACHING_CP(enc, "IBM860", 860);
+    ENC_MACHING_CP(enc, "IBM861", 861);
+    ENC_MACHING_CP(enc, "IBM862", 862);
+    ENC_MACHING_CP(enc, "IBM863", 863);
+    ENC_MACHING_CP(enc, "IBM864", 864);
+    ENC_MACHING_CP(enc, "IBM865", 865);
+    ENC_MACHING_CP(enc, "IBM866", 866);
+    ENC_MACHING_CP(enc, "IBM869", 869);
+    ENC_MACHING_CP(enc, "ISO-2022-JP", 50220);
+    ENC_MACHING_CP(enc, "ISO-8859-1", 28591);
+    ENC_MACHING_CP(enc, "ISO-8859-15", 28605);
+    ENC_MACHING_CP(enc, "ISO-8859-2", 28592);
+    ENC_MACHING_CP(enc, "ISO-8859-3", 28593);
+    ENC_MACHING_CP(enc, "ISO-8859-4", 28594);
+    ENC_MACHING_CP(enc, "ISO-8859-5", 28595);
+    ENC_MACHING_CP(enc, "ISO-8859-6", 28596);
+    ENC_MACHING_CP(enc, "ISO-8859-7", 28597);
+    ENC_MACHING_CP(enc, "ISO-8859-8", 28598);
+    ENC_MACHING_CP(enc, "ISO-8859-9", 28599);
+    ENC_MACHING_CP(enc, "KOI8-R", 20866);
+    ENC_MACHING_CP(enc, "KOI8-U", 21866);
+    ENC_MACHING_CP(enc, "Shift_JIS", 932);
+    ENC_MACHING_CP(enc, "US-ASCII", 20127);
+    ENC_MACHING_CP(enc, "UTF-16BE", 1201);
+    ENC_MACHING_CP(enc, "UTF-16LE", 1200);
+    ENC_MACHING_CP(enc, "UTF-7", 65000);
+    ENC_MACHING_CP(enc, "UTF-8", 65001);
+    ENC_MACHING_CP(enc, "Windows-1250", 1250);
+    ENC_MACHING_CP(enc, "Windows-1251", 1251);
+    ENC_MACHING_CP(enc, "Windows-1252", 1252);
+    ENC_MACHING_CP(enc, "Windows-1253", 1253);
+    ENC_MACHING_CP(enc, "Windows-1254", 1254);
+    ENC_MACHING_CP(enc, "Windows-1255", 1255);
+    ENC_MACHING_CP(enc, "Windows-1256", 1256);
+    ENC_MACHING_CP(enc, "Windows-1257", 1257);
+    ENC_MACHING_CP(enc, "Windows-1258", 1258);
+    ENC_MACHING_CP(enc, "Windows-31J", 932);
+    ENC_MACHING_CP(enc, "Windows-874", 874);
+    ENC_MACHING_CP(enc, "eucJP-ms", 20932);
+    return CP_ACP;
+}
+
+static UINT
+ole_init_cp()
+{
+    UINT cp;
+    rb_encoding *encdef;
+    encdef = rb_default_external_encoding();
+    cp = ole_encoding2cp(encdef);
+    if (code_page_installed(cp)) {
+        cWIN32OLE_cp = cp;
+    }
 }
 
 struct myCPINFOEX {
@@ -8226,5 +8309,6 @@ Init_win32ole()
 
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
+    ole_init_cp();
     cWIN32OLE_enc = ole_cp2encoding(cWIN32OLE_cp);
 }

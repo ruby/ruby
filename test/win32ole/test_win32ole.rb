@@ -263,9 +263,12 @@ if defined?(WIN32OLE)
                    guid)
     end
 
-    def test_s_codepage
-      assert_equal(WIN32OLE::CP_ACP, WIN32OLE.codepage)
-    end
+    # 
+    # WIN32OLE.codepage is initialized according to Encoding.default_external.
+    #
+    # def test_s_codepage
+    #   assert_equal(WIN32OLE::CP_ACP, WIN32OLE.codepage)
+    # end
 
     def test_s_codepage_set
       WIN32OLE.codepage = WIN32OLE::CP_UTF8
