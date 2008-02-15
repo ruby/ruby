@@ -597,12 +597,10 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 	excl = EXCL(range);
     }
     else {
-	b = rb_check_to_integer(range, "begin");
-	if (NIL_P(b))
-	    return Qfalse;
-	e = rb_check_to_integer(range, "end");
-	if (NIL_P(e))
-	    return Qfalse;
+	if (!rb_respond_to(range, id_beg)) return Qfalse;
+	if (!rb_respond_to(range, id_end)) return Qfalse;
+	b = rb_funcall(range, id_beg, 0);
+	e = rb_funcall(range, id_end, 0);
 	excl = RTEST(rb_funcall(range, rb_intern("exclude_end?"), 0));
     }
     beg = NUM2LONG(b);
@@ -751,8 +749,6 @@ range_include(VALUE range, VALUE val)
     }
     else if (TYPE(beg) == T_STRING && TYPE(end) == T_STRING &&
 	     RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1) {
-	rb_encoding *enc = rb_enc_check(beg, end);
-
 	if (NIL_P(val)) return Qfalse;
 	if (TYPE(val) == T_STRING) {
 	    if (RSTRING_LEN(val) == 0 || RSTRING_LEN(val) > 1)
