@@ -1,3 +1,7 @@
+Fri Feb 15 18:23:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_sub_bang, str_gsub): allows hash for replacement.
+
 Fri Feb 15 17:12:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_strlen): use search_nonascii() for performance.

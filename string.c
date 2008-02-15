@@ -2783,7 +2783,7 @@ get_pat(VALUE pat, int quote)
 static VALUE
 rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 {
-    VALUE pat, repl, match;
+    VALUE pat, repl, match, hash = Qnil;
     struct re_registers *regs;
     int iter = 0;
     int tainted = 0;
@@ -2794,7 +2794,10 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     }
     else if (argc == 2) {
 	repl = argv[1];
-	StringValue(repl);
+	hash = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+	if (NIL_P(hash)) {
+	    StringValue(repl);
+	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
@@ -2817,6 +2820,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    str_mod_check(str, p, len);
 	    str_frozen_check(str);
 	    rb_backref_set(match);
+	}
+	else if (!NIL_P(hash)) {
+	    repl = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);
@@ -2904,7 +2910,7 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
-    VALUE pat, val, repl, match, dest;
+    VALUE pat, val, repl, match, dest, hash = Qnil;
     struct re_registers *regs;
     long beg, n;
     long offset, blen, slen, len;
@@ -2920,7 +2926,10 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	break;
       case 2:
 	repl = argv[1];
-	StringValue(repl);
+	hash = rb_check_convert_type(argv[1], T_HASH, "Hash", "to_hash");
+	if (NIL_P(hash)) {
+	    StringValue(repl);
+	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
 	break;
       default:
@@ -2955,6 +2964,9 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
 	    rb_backref_set(match);
+	}
+	else if (!NIL_P(hash)) {
+	    val = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
 	}
 	else {
 	    val = rb_reg_regsub(repl, str, regs, pat);
