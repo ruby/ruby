@@ -380,8 +380,11 @@ iconv_convert(iconv_t cd, VALUE str, int start, int length, int toidx, struct ic
 	    length = 0;
 	else if ((length -= start) < 0)
 	    length = 0;
-	else
+	else {
 	    inptr += start;
+	    if (length > slen)
+		length = slen;
+	}
     }
     instart = inptr;
     inlen = length;
