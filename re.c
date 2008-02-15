@@ -2540,7 +2540,7 @@ rb_reg_quote(VALUE str)
     }
     if (ascii_only && rb_enc_get_index(str) != 0) {
         str = rb_str_new3(str);
-        rb_enc_associate(str, rb_ascii8bit_encoding());
+        rb_enc_associate(str, rb_usascii_encoding());
     }
     return str;
 

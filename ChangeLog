@@ -1,3 +1,8 @@
+Fri Feb 15 10:35:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_quote): set US-ACII for ASCII-only string.
+	  [ruby-dev:33785]
+
 Fri Feb 15 10:27:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {win,bcc}32/Makefile.sub (config.h): added HAVE_FTRUNCATE.
