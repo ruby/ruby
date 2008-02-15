@@ -5820,6 +5820,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     static VALUE encoding, mode, open_args;
 
     FilePathValue(argv[0]);
+    arg->io = 0;
     arg->argc = argc > 1 ? 1 : 0;
     arg->argv = argv + 1;
     if (argc == 1) {
@@ -5861,16 +5862,16 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	args[0] = argv[0];
 	args[1] = v;
 	arg->io = rb_f_open(2, args);
-	return;
     }
     v = rb_hash_aref(opt, encoding);
     if (!NIL_P(v)) {
 	rb_io_t *fptr;
 
-	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
+	if (!arg->io) {
+	    arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
+	}
 	GetOpenFile(arg->io, fptr);
         mode_enc(fptr, StringValueCStr(v));
-	return;
     }
 }
 
@@ -5971,8 +5972,9 @@ io_s_read(struct foreach_arg *arg)
  *  <code>read</code> ensures the file is closed before returning.
  *
  *  If the last argument is a hash, it specifies option for internal
- *  open().  The key would be the following.  They are all exclusive,
- *  
+ *  open().  The key would be the following.  open_args: is exclusive
+ *  to others.
+ *
  *   encoding: string or encoding
  *
  *    specifies encoding of the read string.  encoding will be ignored
