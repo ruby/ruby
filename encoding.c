@@ -720,28 +720,6 @@ rb_obj_encoding(VALUE obj)
     return rb_enc_from_encoding(enc);
 }
 
-
-char*
-rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
-{
-    int c;
-
-    if (rb_enc_mbmaxlen(enc) == 1) {
-	p += nth;
-    }
-    else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
-	p += nth * rb_enc_mbmaxlen(enc);
-    }
-    else {
-	for (c=0; p<e && nth--; c++) {
-	    int n = rb_enc_mbclen(p, e, enc);
-
-	    p += n;
-	}
-    }
-    return (char*)p;
-}
-
 long
 rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
 {
