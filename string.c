@@ -591,11 +591,21 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
-    long len;
+    long len = 0;
+    const char *p, *e;
 
     if (single_byte_optimizable(str)) return RSTRING_LEN(str);
     if (!enc) enc = STR_ENC_GET(str);
-    len = rb_enc_strlen(RSTRING_PTR(str), RSTRING_END(str), enc);
+    p = RSTRING_PTR(str);
+    e = RSTRING_END(str);
+    if (rb_enc_asciicompat(enc)) {
+	const char *p2 = search_nonascii(p, e);
+
+	if (!p2) return RSTRING_LEN(str);
+	len = p2 - p;
+	p = p2;
+    }
+    len += rb_enc_strlen(p, e, enc);
     if (len < 0) {
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
     }
@@ -886,8 +896,17 @@ str_nth(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
 {
     if (singlebyte)
 	p += nth;
-    else
+    else {
+	if (rb_enc_asciicompat(enc)) {
+	    const char *p2 = search_nonascii(p, e);
+
+	    if (!p2 || p + nth < p2)
+		return (char*)p + nth;
+	    nth -= p2 - p;
+	    p = p2;
+	}
 	p = rb_enc_nth(p, e, nth, enc);
+    }
     if (!p) return 0;
     if (p > e) p = e;
     return (char *)p;
@@ -2805,14 +2824,12 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         enc = rb_enc_compatible(str, repl);
         if (!enc) {
             rb_encoding *str_enc = STR_ENC_GET(str);
-            if (coderange_scan(RSTRING_PTR(str), BEG(0), str_enc) !=
-                    ENC_CODERANGE_7BIT ||
+            if (coderange_scan(RSTRING_PTR(str), BEG(0), str_enc) != ENC_CODERANGE_7BIT ||
                 coderange_scan(RSTRING_PTR(str)+END(0),
-                    RSTRING_LEN(str)-END(0), str_enc) !=
-                    ENC_CODERANGE_7BIT) {
+			       RSTRING_LEN(str)-END(0), str_enc) != ENC_CODERANGE_7BIT) {
                 rb_raise(rb_eArgError, "character encodings differ: %s and %s",
-                    rb_enc_name(str_enc),
-                    rb_enc_name(STR_ENC_GET(repl)));
+			 rb_enc_name(str_enc),
+			 rb_enc_name(STR_ENC_GET(repl)));
             }
             enc = STR_ENC_GET(repl);
         }

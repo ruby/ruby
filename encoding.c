@@ -645,8 +645,8 @@ rb_enc_check(VALUE str1, VALUE str2)
     rb_encoding *enc = rb_enc_compatible(str1, str2);
     if (!enc)
 	rb_raise(rb_eArgError, "character encodings differ: %s and %s",
-            rb_enc_name(rb_enc_get(str1)),
-            rb_enc_name(rb_enc_get(str2)));
+		 rb_enc_name(rb_enc_get(str1)),
+		 rb_enc_name(rb_enc_get(str2)));
     return enc;
 }
 
