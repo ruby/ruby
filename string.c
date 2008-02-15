@@ -101,7 +101,7 @@ single_byte_optimizable(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
 
-    if (rb_enc_mbminlen(enc) == 1 && rb_enc_mbmaxlen(enc) == 1)
+    if (rb_enc_mbmaxlen(enc) == 1)
         return 1;
 
     /* Conservative.  It may be ENC_CODERANGE_UNKNOWN. */
