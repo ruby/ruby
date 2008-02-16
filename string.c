@@ -597,35 +597,7 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
         return (e - p) / rb_enc_mbminlen(enc);
     }
-#ifdef NONASCII_MASK
-    else if (enc == rb_utf8_encoding()) {
-	if (sizeof(long) * 2 < e - p) {
-	    const unsigned long *s, *t;
-	    const VALUE lowbits = sizeof(unsigned long) - 1;
-	    s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
-	    t = (const unsigned long*)(~lowbits & (VALUE)e);
-	    for (c=0; p<(const char *)s; p++) {
-		if (((*p)&0xC0) != 0x80) c++;
-	    }
-	    while (s < t) {
-		unsigned long d = *s;
-		d = (~d ^ (d&(d<<1)))&NONASCII_MASK;
-		d = (d>>7) + (d>>15);
-		d = d + (d>>16);
-#if NONASCII_MASK == 0x8080808080808080UL
-		d = d + (d>>32);
-#endif
-		c += (long)(d&0xF);
-		s++;
-	    }
-	    p = (const char *)t;
-	}
-	for (; p<e; p++) {
-	    if (((*p)&0xC0) != 0x80) c++;
-	}
-	return c;
-    }
-#endif
+
     else if (rb_enc_asciicompat(enc)) {
         c = 0;
         while (p < e) {
@@ -658,6 +630,37 @@ str_strlen(VALUE str, rb_encoding *enc)
     if (!enc) enc = STR_ENC_GET(str);
     p = RSTRING_PTR(str);
     e = RSTRING_END(str);
+#ifdef NONASCII_MASK
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
+        enc == rb_utf8_encoding()) {
+        len = 0;
+	if (sizeof(long) * 2 < e - p) {
+	    const unsigned long *s, *t;
+	    const VALUE lowbits = sizeof(unsigned long) - 1;
+	    s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
+	    t = (const unsigned long*)(~lowbits & (VALUE)e);
+	    for (len=0; p<(const char *)s; p++) {
+		if (((*p)&0xC0) != 0x80) len++;
+	    }
+	    while (s < t) {
+		unsigned long d = *s;
+		d = (~d ^ (d&(d<<1)))&NONASCII_MASK;
+		d = (d>>7) + (d>>15);
+		d = d + (d>>16);
+#if NONASCII_MASK == 0x8080808080808080UL
+		d = d + (d>>32);
+#endif
+		len += (long)(d&0xF);
+		s++;
+	    }
+	    p = (const char *)t;
+	}
+	for (; p<e; p++) {
+	    if (((*p)&0xC0) != 0x80) len++;
+	}
+    }
+    else
+#endif
     len = rb_enc_strlen(p, e, enc);
     if (len < 0) {
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
