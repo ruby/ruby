@@ -2716,27 +2716,29 @@ rb_str_subpat_set(VALUE str, VALUE re, int nth, VALUE val)
     VALUE match;
     long start, end, len;
     rb_encoding *enc;
+    struct re_registers *regs;
 
     if (rb_reg_search(re, str, 0, 0) < 0) {
 	rb_raise(rb_eIndexError, "regexp not matched");
     }
     match = rb_backref_get();
-    if (nth >= RMATCH(match)->regs->num_regs) {
+    regs = RMATCH_REGS(match);
+    if (nth >= regs->num_regs) {
       out_of_range:
 	rb_raise(rb_eIndexError, "index %d out of regexp", nth);
     }
     if (nth < 0) {
-	if (-nth >= RMATCH(match)->regs->num_regs) {
+	if (-nth >= regs->num_regs) {
 	    goto out_of_range;
 	}
-	nth += RMATCH(match)->regs->num_regs;
+	nth += regs->num_regs;
     }
 
-    start = RMATCH(match)->BEG(nth);
+    start = BEG(nth);
     if (start == -1) {
 	rb_raise(rb_eIndexError, "regexp group %d not matched", nth);
     }
-    end = RMATCH(match)->END(nth);
+    end = END(nth);
     len = end - start;
     StringValue(val);
     enc = rb_enc_check(str, val);
@@ -2967,7 +2969,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	int cr = ENC_CODERANGE(str);
 
 	match = rb_backref_get();
-	regs = RMATCH(match)->regs;
+	regs = RMATCH_REGS(match);
 
 	if (iter || !NIL_P(hash)) {
 	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
@@ -3114,7 +3116,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     do {
 	n++;
 	match = rb_backref_get();
-	regs = RMATCH(match)->regs;
+	regs = RMATCH_REGS(match);
 	if (iter || !NIL_P(hash)) {
             if (iter) {
                 rb_match_busy(match);
@@ -4751,7 +4753,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	struct re_registers *regs;
 
 	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
-	    regs = RMATCH(rb_backref_get())->regs;
+	    regs = RMATCH_REGS(rb_backref_get());
 	    if (start == end && BEG(0) == END(0)) {
 		if (!RSTRING_PTR(str)) {
 		    rb_ary_push(result, rb_str_new("", 0));
@@ -5397,7 +5399,7 @@ scan_once(VALUE str, VALUE pat, long *start)
     enc = STR_ENC_GET(str);
     if (rb_reg_search(pat, str, *start, 0) >= 0) {
 	match = rb_backref_get();
-	regs = RMATCH(match)->regs;
+	regs = RMATCH_REGS(match);
 	if (BEG(0) == END(0)) {
 	    /*
 	     * Always consume at least one character of the input string

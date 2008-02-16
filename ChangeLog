@@ -1,3 +1,40 @@
+Sun Feb 17 03:37:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/re.h (struct rmatch_offset): new struct for character
+	  offsets.
+	  (struct rmatch): new struct.
+	  (struct RMatch): reference struct rmatch.
+	  (RMATCH_REGS): new macro.
+
+	* re.c (match_alloc): initialize struct rmatch.
+	  (pair_byte_cmp): new function.
+	  (update_char_offset): update character offsets.
+	  (match_init_copy): copy regexp and character offsets.
+	  (match_sublen): removed.
+	  (match_offset): use update_char_offset.
+	  (match_begin): ditto.
+	  (match_end): ditto.
+	  (rb_reg_search): make character offset updated flag false.
+	  (match_size): use RMATCH_REGS.
+	  (match_backref_number): ditto.
+	  (rb_reg_nth_defined): ditto.
+	  (rb_reg_nth_match): ditto.
+	  (rb_reg_match_pre): ditto.
+	  (rb_reg_match_post): ditto.
+	  (rb_reg_match_last): ditto.
+	  (match_array): ditto.
+	  (match_aref): ditto.
+	  (match_values_at): ditto.
+	  (match_inspect): ditto.
+
+	* string.c (rb_str_subpat_set): use RMATCH_REGS.
+	  (rb_str_sub_bang): ditto.
+	  (str_gsub): ditto.
+	  (rb_str_split_m): ditto.
+	  (scan_once): ditto.
+
+	* gc.c (obj_free): free character offsets.
+
 Sun Feb 17 03:13:40 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/resource.rb: made version infos confirm to OS spec.

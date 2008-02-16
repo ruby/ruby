@@ -26,14 +26,28 @@ extern "C" {
 
 typedef struct re_pattern_buffer Regexp;
 
+struct rmatch_offset {
+    int beg;
+    int end;
+};
+
+struct rmatch {
+    struct re_registers regs;
+
+    int char_offset_updated;
+    int char_offset_num_allocated;
+    struct rmatch_offset *char_offset;
+};
+
 struct RMatch {
     struct RBasic basic;
     VALUE str;
-    struct re_registers *regs;
+    struct rmatch *rmatch;
     VALUE regexp;  /* RRegexp */
 };
 
 #define RMATCH(obj)  (R_CAST(RMatch)(obj))
+#define RMATCH_REGS(obj)  (&(R_CAST(RMatch)(obj))->rmatch->regs)
 
 VALUE rb_reg_regcomp(VALUE);
 int rb_reg_search(VALUE, VALUE, int, int);

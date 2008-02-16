@@ -1322,9 +1322,12 @@ obj_free(VALUE obj)
 	}
 	break;
       case T_MATCH:
-	if (RANY(obj)->as.match.regs) {
-	    onig_region_free(RANY(obj)->as.match.regs, 0);
-	    RUBY_CRITICAL(free(RANY(obj)->as.match.regs));
+	if (RANY(obj)->as.match.rmatch) {
+            struct rmatch *rm = RANY(obj)->as.match.rmatch;
+	    onig_region_free(&rm->regs, 0);
+            if (rm->char_offset)
+                RUBY_CRITICAL(free(rm->char_offset));
+	    RUBY_CRITICAL(free(rm));
 	}
 	break;
       case T_FILE:
