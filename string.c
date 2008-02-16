@@ -588,24 +588,48 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+long
+rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
+{
+    long c;
+    const char *q;
+
+    if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
+        return (e - p) / rb_enc_mbminlen(enc);
+    }
+    else if (rb_enc_asciicompat(enc)) {
+        c = 0;
+        while (p < e) {
+            if (ISASCII(*p)) {
+                q = search_nonascii(p, e);
+                if (!q)
+                    return c + (e - p);
+                c += q - p;
+                p = q;
+            }
+            p += rb_enc_mbclen(p, e, enc);
+            c++;
+        }
+        return c;
+    }
+
+    for (c=0; p<e; c++) {
+        p += rb_enc_mbclen(p, e, enc);
+    }
+    return c;
+}
+
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
-    long len = 0;
+    long len;
     const char *p, *e;
 
     if (single_byte_optimizable(str)) return RSTRING_LEN(str);
     if (!enc) enc = STR_ENC_GET(str);
     p = RSTRING_PTR(str);
     e = RSTRING_END(str);
-    if (rb_enc_asciicompat(enc)) {
-	const char *p2 = search_nonascii(p, e);
-
-	if (!p2) return RSTRING_LEN(str);
-	len = p2 - p;
-	p = p2;
-    }
-    len += rb_enc_strlen(p, e, enc);
+    len = rb_enc_strlen(p, e, enc);
     if (len < 0) {
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
     }
