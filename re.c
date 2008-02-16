@@ -1510,6 +1510,10 @@ match_inspect(VALUE match)
     struct backref_name_tag *names;
     VALUE regexp = RMATCH(match)->regexp;
 
+    if (regexp == 0) {
+        return rb_sprintf("#<%s:%p>", cname, (void*)match);
+    }
+
     names = ALLOCA_N(struct backref_name_tag, num_regs);
     MEMZERO(names, struct backref_name_tag, num_regs);
 
