@@ -2902,17 +2902,20 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 
-	if (iter) {
+	if (iter || !NIL_P(hash)) {
 	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
 
-	    rb_match_busy(match);
-	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+            if (iter) {
+                rb_match_busy(match);
+                repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+            }
+            else {
+                repl = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+                repl = rb_obj_as_string(repl);
+            }
 	    str_mod_check(str, p, len);
 	    str_frozen_check(str);
-	    rb_backref_set(match);
-	}
-	else if (!NIL_P(hash)) {
-	    repl = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+	    if (iter) rb_backref_set(match);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);
@@ -3045,18 +3048,21 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	n++;
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
-	if (iter) {
-	    rb_match_busy(match);
-	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	if (iter || !NIL_P(hash)) {
+            if (iter) {
+                rb_match_busy(match);
+                val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+            }
+            else {
+                val = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+                val = rb_obj_as_string(val);
+            }
 	    str_mod_check(str, sp, slen);
 	    if (bang) str_frozen_check(str);
 	    if (val == dest) { 	/* paranoid check [ruby-dev:24827] */
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
-	    rb_backref_set(match);
-	}
-	else if (!NIL_P(hash)) {
-	    val = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+	    if (iter) rb_backref_set(match);
 	}
 	else {
 	    val = rb_reg_regsub(repl, str, regs, pat);
