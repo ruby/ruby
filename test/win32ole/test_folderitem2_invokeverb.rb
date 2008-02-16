@@ -35,6 +35,11 @@ if defined?(WIN32OLE)
       # 
       verbs = @fi2.verbs
       verbs.extend(Enumerable)
+      @cp = WIN32OLE.codepage
+      begin
+        WIN32OLE.codepage = 932
+      rescue
+      end
       @shortcut = verbs.collect{|verb| 
         verb.name
       }.find {|name|
@@ -77,6 +82,7 @@ if defined?(WIN32OLE)
       if @dummy_path
         @fso.deleteFile(@dummy_path)
       end
+      WIN32OLE.codepage = @cp
     end
 
   end

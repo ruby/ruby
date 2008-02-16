@@ -271,12 +271,14 @@ if defined?(WIN32OLE)
     # end
 
     def test_s_codepage_set
+      cp = WIN32OLE.codepage
       WIN32OLE.codepage = WIN32OLE::CP_UTF8
       assert_equal(WIN32OLE::CP_UTF8, WIN32OLE.codepage)
-      WIN32OLE.codepage = WIN32OLE::CP_ACP
+      WIN32OLE.codepage = cp
     end
 
     def test_s_codepage_changed
+      cp = WIN32OLE.codepage
       fso = WIN32OLE.new("Scripting.FileSystemObject")
       fname = fso.getTempName
       begin
@@ -326,7 +328,7 @@ if defined?(WIN32OLE)
         end
 
       ensure
-        WIN32OLE.codepage = WIN32OLE::CP_ACP
+        WIN32OLE.codepage = cp
         if (File.exist?(fname))
           File.unlink(fname)
         end
