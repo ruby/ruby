@@ -659,6 +659,9 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     idx1 = rb_enc_get_index(str1);
     idx2 = rb_enc_get_index(str2);
 
+    if (idx1 < 0 || idx2 < 0)
+        return 0;
+
     if (idx1 == idx2) {
 	return rb_enc_from_index(idx1);
     }

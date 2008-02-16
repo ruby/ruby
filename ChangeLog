@@ -1,3 +1,7 @@
+Sat Feb 16 18:13:53 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_compatible): check encoding incapable arguments.
+
 Sat Feb 16 20:12:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (match_inspect): avoid SEGV with MatchData.allocate.inspect.
@@ -108,7 +112,7 @@ Fri Feb 15 15:23:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Feb 15 10:35:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* re.c (rb_reg_quote): set US-ACII for ASCII-only string.
+	* re.c (rb_reg_quote): set US-ASCII for ASCII-only string.
 	  [ruby-dev:33785]
 
 Fri Feb 15 10:27:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -275,7 +279,7 @@ Tue Feb 12 15:27:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* bootstraptest/runner.rb, bootstraptest/test_method.rb, enc/depend,
 	  instruby.rb, lib/mkmf.rb, lib/test/unit/util/procwrapper.rb,
 	  mkconfig.rb, sample/test.rb, template/vm.inc.tmpl,
-	  test/ruby/test_stringchar.rb: fixes arround String#gsub.
+	  test/ruby/test_stringchar.rb: fixes around String#gsub.
 
 
 Tue Feb 12 15:11:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -290,7 +294,7 @@ Tue Feb 12 15:11:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	  lib/rexml/quickpath.rb, lib/rexml/text.rb, lib/rss/parser.rb,
 	  lib/uri/common.rb, lib/uri/generic.rb, lib/webrick/httpresponse.rb,
 	  lib/webrick/httpservlet/filehandler.rb, lib/yaml/baseemitter.rb,
-	  lib/yaml/encoding.rb: performance tuning arround String#gsub.
+	  lib/yaml/encoding.rb: performance tuning around String#gsub.
 
 Tue Feb 12 12:16:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
