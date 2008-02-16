@@ -1,3 +1,7 @@
+Sat Feb 16 20:49:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_substr): optimized for UTF-8.
+
 Sat Feb 16 18:13:53 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_compatible): check encoding incapable arguments.
@@ -12,7 +16,7 @@ Sat Feb 16 19:04:17 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sat Feb 16 18:25:14 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* string.c (str_strlen): little more optimize.
+	* string.c (str_strlen): little more optimization.
 	  (rb_enc_nth): remove needless variable 'c'.
 
 Sat Feb 16 18:00:13 2008  Tanaka Akira  <akr@fsij.org>

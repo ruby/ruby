@@ -1011,6 +1011,58 @@ str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singleby
     return pp - p;
 }
 
+#ifdef NONASCII_MASK
+static char *
+str_utf8_nth(const char *p, const char *e, int nth)
+{
+    if (sizeof(long) * 2 < nth) {
+	const unsigned long *s, *t;
+	const VALUE lowbits = sizeof(unsigned long) - 1;
+	s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
+	t = (const unsigned long*)(~lowbits & (VALUE)e);
+	for (; p<(const char *)s && 0<nth; p++) {
+	    if (((*p)&0xC0) != 0x80) nth--;
+	}
+	while (s < t) {
+	    unsigned long d = *s++;
+	    d = ~d | (d<<1);
+	    d &= NONASCII_MASK;
+	    d >>= 7;
+	    d += (d>>8);
+	    d += (d>>16);
+#if NONASCII_MASK == 0x8080808080808080UL
+	    d += (d>>32);
+#endif
+	    nth -= (long)(d&0xF);
+	    if (nth < 8) {
+		t = s;
+		break;
+	    }
+	}
+	p = (char *)t;
+    }
+    if (0 < nth) {
+	while (p < e) {
+	    if (((*p)&0xC0) != 0x80) {
+		nth--;
+		if (nth < 0)
+		    break;
+	    }
+	    p++;
+	}
+    }
+    return (char *)p;
+}
+
+static int
+str_utf8_offset(const char *p, const char *e, int nth)
+{
+    const char *pp = str_utf8_nth(p, e, nth);
+    if (!pp) return e - p;
+    return pp - p;
+}
+#endif
+
 static long
 str_sublen(VALUE str, long pos, rb_encoding *enc)
 {
@@ -1082,6 +1134,13 @@ rb_str_substr(VALUE str, long beg, long len)
     if (len == 0) {
 	p = 0;
     }
+#ifdef NONASCII_MASK
+    else if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
+        enc == rb_utf8_encoding()) {
+        p = str_utf8_nth(s, e, beg);
+        len = str_utf8_offset(p, e, len);
+    }
+#endif
     else if ((p = str_nth(s, e, beg, enc, singlebyte)) == e) {
 	len = 0;
     }
