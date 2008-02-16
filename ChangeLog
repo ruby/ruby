@@ -1,3 +1,8 @@
+Sat Feb 16 13:01:33 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_enc_strlen): add search_nonascii like character
+	  counter for UTF-8.
+
 Sat Feb 16 11:53:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_enc_strlen): moved to string.c.
