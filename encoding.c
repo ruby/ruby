@@ -664,8 +664,15 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     }
     enc1 = rb_enc_from_index(idx1);
     enc2 = rb_enc_from_index(idx2);
-    if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2))
+
+    if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
+        if (TYPE(str2) == T_STRING && RSTRING_LEN(str2) == 0)
+            return enc1;
+        if (TYPE(str1) == T_STRING && RSTRING_LEN(str1) == 0)
+            return enc2;
 	return 0;
+    }
+
     if (BUILTIN_TYPE(str1) != T_STRING) {
 	VALUE tmp = str1;
 	int idx0 = idx1;

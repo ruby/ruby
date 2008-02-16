@@ -597,7 +597,6 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
         return (e - p) / rb_enc_mbminlen(enc);
     }
-
     else if (rb_enc_asciicompat(enc)) {
         c = 0;
         while (p < e) {
@@ -1303,6 +1302,13 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
         rb_encoding *str_enc = rb_enc_from_index(str_encindex);
         rb_encoding *ptr_enc = rb_enc_from_index(ptr_encindex);
         if (!rb_enc_asciicompat(str_enc) || !rb_enc_asciicompat(ptr_enc)) {
+            if (len == 0)
+                return str;
+            if (RSTRING_LEN(str) == 0) {
+                rb_str_buf_cat(str, ptr, len);
+                ENCODING_CODERANGE_SET(str, ptr_encindex, ptr_cr);
+                return str;
+            }
             goto incompatible;
         }
 	if (ptr_cr == ENC_CODERANGE_UNKNOWN) {

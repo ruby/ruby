@@ -169,9 +169,49 @@ EOT
     enccall("aa".force_encoding("UTF-16BE"), :slice!, -1)
   end
 
-  def test_concat
+  def test_plus_empty1
     s1 = ""
     s2 = "aa".force_encoding("utf-16be")
+    assert_nothing_raised("#{encdump s1} << #{encdump s2}") {
+      s1 + s2
+    }
+  end
+
+  def test_plus_empty2
+    s1 = "aa"
+    s2 = "".force_encoding("utf-16be")
+    assert_nothing_raised("#{encdump s1} << #{encdump s2}") {
+      s1 + s2
+    }
+  end
+
+  def test_plus_nonempty
+    s1 = "aa"
+    s2 = "bb".force_encoding("utf-16be")
+    assert_raise(ArgumentError, "#{encdump s1} << #{encdump s2}") {
+      s1 + s2
+    }
+  end
+
+  def test_concat_empty1
+    s1 = ""
+    s2 = "aa".force_encoding("utf-16be")
+    assert_nothing_raised("#{encdump s1} << #{encdump s2}") {
+      s1 << s2
+    }
+  end
+
+  def test_concat_empty2
+    s1 = "aa"
+    s2 = "".force_encoding("utf-16be")
+    assert_nothing_raised("#{encdump s1} << #{encdump s2}") {
+      s1 << s2
+    }
+  end
+
+  def test_concat_nonempty
+    s1 = "aa"
+    s2 = "bb".force_encoding("utf-16be")
     assert_raise(ArgumentError, "#{encdump s1} << #{encdump s2}") {
       s1 << s2
     }
