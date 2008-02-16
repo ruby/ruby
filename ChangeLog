@@ -2,7 +2,7 @@ Sat Feb 16 16:14:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_enc_strlen): UTF-8 character count moved to str_strlen.
 	  (str_strlen): UTF-8 character count is only applicable for valid
-	  UTF-8 string.
+	  UTF-8 string.  [ruby-dev:33807]
 
 Sat Feb 16 13:16:49 2008  Tanaka Akira  <akr@fsij.org>
 
