@@ -667,9 +667,6 @@ str_strlen(VALUE str, rb_encoding *enc)
     if (len < 0) {
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
     }
-    if (ENC_CODERANGE(str) != ENC_CODERANGE_VALID && enc == STR_ENC_GET(str)) {
-	ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
-    }
     return len;
 }
 
