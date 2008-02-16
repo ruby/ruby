@@ -53,3 +53,6 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   "abc".gsub(/./, "a" => "z")
 }
+assert_normal_exit %q{
+  Encoding.compatible?("",0)
+}
