@@ -643,9 +643,11 @@ str_strlen(VALUE str, rb_encoding *enc)
 	    }
 	    while (s < t) {
 		unsigned long d = *s;
-		d = (~d ^ (d&(d<<1)))&NONASCII_MASK;
-		d = (d>>7) + (d>>15);
-		d = d + (d>>16);
+		d = ~d | (d<<1);
+		d &= NONASCII_MASK;
+		d >>= 7;
+		d += (d>>8);
+		d += (d>>16);
 #if NONASCII_MASK == 0x8080808080808080UL
 		d = d + (d>>32);
 #endif
@@ -657,12 +659,16 @@ str_strlen(VALUE str, rb_encoding *enc)
 	for (; p<e; p++) {
 	    if (((*p)&0xC0) != 0x80) len++;
 	}
+	return len;
     }
     else
 #endif
     len = rb_enc_strlen(p, e, enc);
     if (len < 0) {
 	rb_raise(rb_eArgError, "invalid mbstring sequence");
+    }
+    if (ENC_CODERANGE(str) != ENC_CODERANGE_VALID && enc == STR_ENC_GET(str)) {
+	ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
     }
     return len;
 }
@@ -949,8 +955,6 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
 char*
 rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
 {
-    int c;
-
     if (rb_enc_mbmaxlen(enc) == 1) {
         p += nth;
     }
@@ -981,10 +985,8 @@ rb_enc_nth(const char *p, const char *e, int nth, rb_encoding *enc)
         return (char *)p;
     }
     else {
-        for (c=0; p<e && nth--; c++) {
-            int n = rb_enc_mbclen(p, e, enc);
-
-            p += n;
+        while (p<e && nth--) {
+            p += rb_enc_mbclen(p, e, enc);
         }
     }
     if (p > e) p = e;
