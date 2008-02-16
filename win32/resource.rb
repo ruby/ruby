@@ -4,9 +4,9 @@ require 'rbconfig'
 
 CONFIG = RbConfig::MAKEFILE_CONFIG
 
-version = %w'MAJOR MINOR TEENY PATCHLEVEL'.map {|v| CONFIG[v] || '0'}
-fversion = version.join(',')
-rversion = version.join('.')
+version = %w'MAJOR MINOR TEENY PATCHLEVEL'.map{|v| CONFIG[v] || '0'}
+nversion = version.join(',')
+sversion = version.join('.')
 
 $ruby_name ||= CONFIG["RUBY_INSTALL_NAME"]
 $rubyw_name ||= CONFIG["RUBYW_INSTALL_NAME"] || $ruby_name.sub(/ruby/, '\&w')
@@ -62,8 +62,8 @@ end
 
 #{icon || ''}
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION    #{fversion}
- PRODUCTVERSION #{fversion}
+ FILEVERSION    #{nversion}
+ PRODUCTVERSION #{nversion}
  FILEFLAGSMASK  0x3fL
  FILEFLAGS      0x0L
  FILEOS         VOS__WINDOWS32
@@ -74,16 +74,15 @@ BEGIN
  BEGIN
   BLOCK "000004b0"
   BEGIN
-   VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{rversion} [#{RUBY_PLATFORM}]\\0"
-   VALUE "FileVersion",      "#{fversion}\\0"
-   VALUE "Home Page",        "http://www.ruby-lang.org/\\0"
+   VALUE "Comments",         "#{RUBY_RELEASE_DATE}\\0"
+   VALUE "CompanyName",      "http://www.ruby-lang.org/\\0"
+   VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{sversion} [#{RUBY_PLATFORM}]\\0"
+   VALUE "FileVersion",      "#{sversion}\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
    VALUE "LegalCopyright",   "Copyright (C) 1993-#{RUBY_RELEASE_DATE[/\d+/]} Yukihiro Matsumoto\\0"
    VALUE "OriginalFilename", "#{base + ext}\\0"
-   VALUE "Platform",         "#{RUBY_PLATFORM}\\0"
-   VALUE "ProductVersion",   "#{fversion}\\0"
-   VALUE "Release Date",     "#{RUBY_RELEASE_DATE}\\0"
-   VALUE "Version",          "#{rversion}\\0"
+   VALUE "ProductName",      "Ruby interpreter #{sversion} [#{RUBY_PLATFORM}]\\0"
+   VALUE "ProductVersion",   "#{sversion}\\0"
   END
  END
  BLOCK "VarFileInfo"
