@@ -1,3 +1,11 @@
+Sun Feb 17 15:25:08 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (ENC_CODERANGE_AND): added.
+
+	* string.c (rb_str_plus, srb_str_times): keep coderange.
+
+	* parse.y (STR_NEW0) use rb_usascii_str_new.
+
 Sun Feb 17 14:07:24 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (str_strlen): rb_enc_strlen doesn't fail.

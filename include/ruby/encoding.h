@@ -56,6 +56,13 @@
 #define ENC_CODERANGE_SET(obj,cr) (RBASIC(obj)->flags = \
 				   (RBASIC(obj)->flags & ~ENC_CODERANGE_MASK) | (cr))
 #define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET(obj,0)
+#define ENC_CODERANGE_AND(a, b) (\
+    (a == b) ? a : \
+    (a == ENC_CODERANGE_BROKEN) ? ENC_CODERANGE_BROKEN : \
+    (b == ENC_CODERANGE_BROKEN) ? ENC_CODERANGE_BROKEN : \
+    (a == ENC_CODERANGE_UNKNOWN) ? ENC_CODERANGE_UNKNOWN : \
+    (b == ENC_CODERANGE_UNKNOWN) ? ENC_CODERANGE_UNKNOWN : \
+    ENC_CODERANGE_VALID)
 
 #define ENCODING_CODERANGE_SET(obj, encindex, cr) \
     do { \

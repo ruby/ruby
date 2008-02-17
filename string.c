@@ -738,7 +738,8 @@ rb_str_plus(VALUE str1, VALUE str2)
 
     if (OBJ_TAINTED(str1) || OBJ_TAINTED(str2))
 	OBJ_TAINT(str3);
-    rb_enc_associate(str3, enc);
+    ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
+			   ENC_CODERANGE_AND(ENC_CODERANGE(str1), ENC_CODERANGE(str2)));
     return str3;
 }
 
@@ -778,7 +779,7 @@ rb_str_times(VALUE str, VALUE times)
     }
     RSTRING_PTR(str2)[RSTRING_LEN(str2)] = '\0';
     OBJ_INFECT(str2, str);
-    rb_enc_copy(str2, str);
+    ENCODING_CODERANGE_SET(str2, rb_enc_get_index(str), ENC_CODERANGE(str));
 
     return str2;
 }
