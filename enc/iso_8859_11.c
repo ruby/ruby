@@ -95,6 +95,17 @@ OnigEncodingDefine(iso_8859_11, ISO_8859_11) = {
   onigenc_always_true_is_allowed_reverse_match
 };
 ENC_ALIAS("ISO8859-11", "ISO-8859-11");
+
+/*
+ * Name: TIS-620
+ * MIBenum: 2259
+ * Link: http://en.wikipedia.org/wiki/Thai_Industrial_Standard_620-2533
+ */
 ENC_REPLICATE("TIS-620", "ISO-8859-11");
+
+/*
+ * Name: Windows-874
+ * Link: http://www.microsoft.com/globaldev/reference/sbcs/874.mspx
+ */
 ENC_REPLICATE("Windows-874", "ISO-8859-11");
 ENC_ALIAS("CP874", "Windows-874");

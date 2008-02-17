@@ -362,7 +362,27 @@ OnigEncodingDefine(euc_jp, EUC_JP) = {
   is_allowed_reverse_match,
   0
 };
+/*
+ * Name: EUC-JP
+ * MIBenum: 18
+ * Link: http://www.iana.org/assignments/character-sets
+ * Link: http://home.m05.itscom.net/numa/cde/sjis-euc/sjis-euc.html
+ */
 ENC_ALIAS("eucJP", "EUC-JP"); /* UI-OSF Application Platform Profile for Japanese Environment Version 1.1 */
+
+/*
+ * Name: eucJP-ms
+ * Link: http://home.m05.itscom.net/numa/cde/ucs-conv/ucs-conv.html
+ * Link: http://www2d.biglobe.ne.jp/~msyk/charcode/cp932/eucJP-ms.html
+ * Link: http://ja.wikipedia.org/wiki/EUC-JP
+ */
 ENC_REPLICATE("eucJP-ms", "EUC-JP"); /* TOG/JVC CDE/Motif Technical WG */
 ENC_ALIAS("euc-jp-ms", "EUC-JP");
-ENC_REPLICATE("CP51932", "EUC-JP"); /* Windows CodePage 51932 */
+
+/*
+ * Name: CP51932
+ * Link: http://search.cpan.org/src/NARUSE/Encode-EUCJPMS-0.07/ucm/cp51932.ucm
+ * Link: http://legacy-encoding.sourceforge.jp/wiki/index.php?cp51932
+ * Link: http://msyk.at.webry.info/200511/article_2.html
+ */
+ENC_REPLICATE("CP51932", "EUC-JP");

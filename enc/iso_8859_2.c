@@ -238,5 +238,13 @@ OnigEncodingDefine(iso_8859_2, ISO_8859_2) = {
   onigenc_always_true_is_allowed_reverse_match
 };
 ENC_ALIAS("ISO8859-2", "ISO-8859-2");
+
+/*
+ * Name: windows-1250
+ * MIBenum: 2250
+ * Link: http://www.iana.org/assignments/character-sets
+ * Link: http://www.microsoft.com/globaldev/reference/sbcs/1250.mspx
+ * Link: http://en.wikipedia.org/wiki/Windows-1250
+ */
 ENC_REPLICATE("Windows-1250", "ISO-8859-2");
 ENC_ALIAS("CP1250", "Windows-1250");
