@@ -2985,6 +2985,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
         if (c == -1) {
             s += mbclen(s, e, str_enc);
 	    rb_enc_str_buf_cat(val, ss, s-ss, str_enc);
+            p = s;
 	    continue;
         }
         s += clen;

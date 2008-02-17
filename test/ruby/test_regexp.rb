@@ -407,7 +407,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("fooXXXbaz", "foobarbaz".sub!(/bar/, "XXX"))
     s = [0xff].pack("C")
     assert_equal(s, "X".sub!(/./, s))
-    assert_equal('\\' + s + '\\' + s, "X".sub!(/./, '\\' + s)) # ???
+    assert_equal('\\' + s, "X".sub!(/./, '\\' + s))
     assert_equal('\k', "foo".sub!(/.../, '\k'))
     assert_raise(RuntimeError) { "foo".sub!(/(?<x>o)/, '\k<x') }
     assert_equal('foo[bar]baz', "foobarbaz".sub!(/(b..)/, '[\0]'))
