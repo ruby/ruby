@@ -136,6 +136,11 @@ EOT
     assert_equal(255, s1.hex, "#{encdump s1}.hex")
   end
 
+  def test_oct
+    assert_equal(077, "77".encode("utf-16le").oct)
+    assert_equal(077, "77".encode("utf-16be").oct)
+  end
+
   def test_count
     s1 = "aa".force_encoding("utf-16be")
     s2 = "aa"
@@ -238,5 +243,20 @@ EOT
     s = "".force_encoding("utf-16be")
     assert_equal(Encoding.find("utf-16be"), Regexp.new(s).encoding,
                 "Regexp.new(#{encdump s}).encoding")
+  end
+
+  def test_gsub
+    s = "abcd".force_encoding("utf-16be")
+    assert_raise(ArgumentError) {
+      s.gsub(Regexp.new(".".encode("utf-16be")), "xy")
+    }
+  end
+
+  def test_split_awk
+    s = " ab cd ".encode("utf-16be")
+    r = s.split(" ".encode("utf-16be"))
+    assert_equal(2, r.length)
+    assert_str_equal("ab".encode("utf-16be"), r[0])
+    assert_str_equal("cd".encode("utf-16be"), r[1])
   end
 end
