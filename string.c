@@ -758,6 +758,7 @@ rb_str_times(VALUE str, VALUE times)
 {
     VALUE str2;
     long n, len;
+    int cr;
 
     len = NUM2LONG(times);
     if (len < 0) {
@@ -779,7 +780,9 @@ rb_str_times(VALUE str, VALUE times)
     }
     RSTRING_PTR(str2)[RSTRING_LEN(str2)] = '\0';
     OBJ_INFECT(str2, str);
-    ENCODING_CODERANGE_SET(str2, rb_enc_get_index(str), ENC_CODERANGE(str));
+    cr = ENC_CODERANGE(str);
+    if (cr == ENC_CODERANGE_BROKEN) cr = ENC_CODERANGE_UNKNOWN;
+    ENCODING_CODERANGE_SET(str2, rb_enc_get_index(str), cr);
 
     return str2;
 }

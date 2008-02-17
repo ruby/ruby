@@ -1,3 +1,9 @@
+Sun Feb 17 21:38:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (ENC_CODERANGE_AND): fix broken case. [ruby-dev:33826]
+
+	* string.c (rb_str_times): fix broken case. [ruby-dev:33826]
+
 Sun Feb 17 20:45:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_prepare_re): add enable_warning parameter.
