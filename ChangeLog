@@ -1,3 +1,7 @@
+Sun Feb 17 14:07:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (str_strlen): rb_enc_strlen doesn't fail.
+
 Sun Feb 17 13:03:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (str_sublen): use rb_enc_strlen.

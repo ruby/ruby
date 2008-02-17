@@ -622,7 +622,6 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
-    long len;
     const char *p, *e;
 
     if (single_byte_optimizable(str)) return RSTRING_LEN(str);
@@ -632,7 +631,7 @@ str_strlen(VALUE str, rb_encoding *enc)
 #ifdef NONASCII_MASK
     if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
         enc == rb_utf8_encoding()) {
-        len = 0;
+        long len = 0;
 	if (sizeof(long) * 2 < e - p) {
 	    const unsigned long *s, *t;
 	    const VALUE lowbits = sizeof(unsigned long) - 1;
@@ -661,13 +660,8 @@ str_strlen(VALUE str, rb_encoding *enc)
 	}
 	return len;
     }
-    else
 #endif
-    len = rb_enc_strlen(p, e, enc);
-    if (len < 0) {
-	rb_raise(rb_eArgError, "invalid mbstring sequence");
-    }
-    return len;
+    return rb_enc_strlen(p, e, enc);
 }
 
 /*
