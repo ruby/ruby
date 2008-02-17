@@ -109,6 +109,8 @@ class TestM17NComb < Test::Unit::TestCase
     s("\xe0\xa0\xa1"),
 
     #"aa".force_encoding("utf-16be"),
+    #"aaaa".force_encoding("utf-32be"),
+    #"aaa".force_encoding("utf-32be"),
   ]
 
   def combination(*args)

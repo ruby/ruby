@@ -1041,7 +1041,7 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err);
 
 static void
-rb_reg_prepare_re(VALUE re, VALUE str)
+rb_reg_prepare_re(VALUE re, VALUE str, int enable_warning)
 {
     int need_recompile = 0;
     rb_encoding *enc;
@@ -1068,7 +1068,8 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 	     RREGEXP(re)->ptr->enc != enc) {
             need_recompile = 1;
         }
-        if ((RBASIC(re)->flags & REG_ENCODING_NONE) &&
+        if (enable_warning &&
+            (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	    enc != rb_ascii8bit_encoding() &&
             rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
             rb_warn("regexp match /.../n against to %s string",
@@ -1119,7 +1120,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
     OnigEncoding enc;
     UChar *p, *string;
 
-    rb_reg_prepare_re(re, str);
+    rb_reg_prepare_re(re, str, 0);
 
     if (reverse) {
 	range = -pos;
@@ -1158,7 +1159,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	return -1;
     }
 
-    rb_reg_prepare_re(re, str);
+    rb_reg_prepare_re(re, str, 1);
 
     if (!reverse) {
 	range += RSTRING_LEN(str);
