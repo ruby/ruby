@@ -1,3 +1,7 @@
+Sun Feb 17 13:03:48 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (str_sublen): use rb_enc_strlen.
+
 Sun Feb 17 12:17:52 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/{euc_jp.c,gbk.c,iso_8859_1.c,iso_8859_11.c,iso_8859_13.c,

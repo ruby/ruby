@@ -1071,19 +1071,11 @@ str_utf8_offset(const char *p, const char *e, int nth)
 static long
 str_sublen(VALUE str, long pos, rb_encoding *enc)
 {
-    if (rb_enc_mbmaxlen(enc) == 1 || pos < 0) return pos;
+    if (rb_enc_mbmaxlen(enc) == 1 || pos < 0)
+        return pos;
     else {
 	char *p = RSTRING_PTR(str);
-	char *e = p + pos;
-	long i;
-
-	i = 0;
-	while (p < e) {
-	    p += rb_enc_mbclen(p, RSTRING_END(str), enc);
-	    i++;
-	}
-	if (p == e) return i;
-	return i - 1;
+        return rb_enc_strlen(p, p + pos, enc);
     }
 }
 
