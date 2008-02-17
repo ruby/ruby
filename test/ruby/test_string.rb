@@ -174,7 +174,7 @@ class TestString < Test::Unit::TestCase
     s = "a"
     10.times {|i|
       s << s
-      assert_equal("a" * (2<<i), s)
+      assert_equal("a" * (2 << i), s)
     }
   end
 
@@ -1369,5 +1369,14 @@ class TestString < Test::Unit::TestCase
 
   def test_end_with?
     assert("abc".end_with?("c"))
+  end
+
+  def test_times
+    s1 = ''
+    100.times {|n|
+      s2 = "a" * n
+      assert_equal(s1, s2)
+      s1 << 'a'
+    }
   end
 end

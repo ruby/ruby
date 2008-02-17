@@ -762,7 +762,7 @@ VALUE
 rb_str_times(VALUE str, VALUE times)
 {
     VALUE str2;
-    long i, len;
+    long n, len;
 
     len = NUM2LONG(times);
     if (len < 0) {
@@ -773,9 +773,14 @@ rb_str_times(VALUE str, VALUE times)
     }
 
     str2 = rb_str_new5(str, 0, len *= RSTRING_LEN(str));
-    for (i = 0; i < len; i += RSTRING_LEN(str)) {
-	memcpy(RSTRING_PTR(str2) + i,
-	       RSTRING_PTR(str), RSTRING_LEN(str));
+    if (len) {
+        n = RSTRING_LEN(str);
+        memcpy(RSTRING_PTR(str2), RSTRING_PTR(str), n);
+        while (n <= len/2) {
+            memcpy(RSTRING_PTR(str2) + n, RSTRING_PTR(str2), n);
+            n *= 2;
+        }
+        memcpy(RSTRING_PTR(str2) + n, RSTRING_PTR(str2), len-n);
     }
     RSTRING_PTR(str2)[RSTRING_LEN(str2)] = '\0';
     OBJ_INFECT(str2, str);

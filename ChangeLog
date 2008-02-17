@@ -1,3 +1,7 @@
+Sun Feb 17 09:17:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_times): reduce loop overhead.
+
 Sun Feb 17 03:37:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/re.h (struct rmatch_offset): new struct for character
