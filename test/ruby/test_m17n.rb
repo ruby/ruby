@@ -1149,4 +1149,11 @@ class TestM17N < Test::Unit::TestCase
   def test_euc_tw
     assert_equal("a", "a\x8e\xa2\xa1\xa1".force_encoding("euc-tw").chop)
   end
+
+  def test_valid_encoding
+    s = "\xa1".force_encoding("euc-jp")
+    assert_equal(false, s.valid_encoding?)
+    assert_equal(true,(s+s).valid_encoding?, "[ruby-dev:33826]")
+    assert_equal(true,(s*2).valid_encoding?, "[ruby-dev:33826]")
+  end
 end
