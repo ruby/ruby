@@ -523,16 +523,14 @@ class TestM17N < Test::Unit::TestCase
   def test_quote
     assert_regexp_generic_ascii(/#{Regexp.quote(a("a"))}#{Regexp.quote(e("e"))}/)
 
-    # Regexp.quote returns ASCII-8BIT string for ASCII only string
-    # to make generic regexp if possible.
-    assert_encoding("ASCII-8BIT", Regexp.quote(a("")).encoding)
-    assert_encoding("ASCII-8BIT", Regexp.quote(e("")).encoding)
-    assert_encoding("ASCII-8BIT", Regexp.quote(s("")).encoding)
-    assert_encoding("ASCII-8BIT", Regexp.quote(u("")).encoding)
-    assert_encoding("ASCII-8BIT", Regexp.quote(a("a")).encoding)
-    assert_encoding("ASCII-8BIT", Regexp.quote(e("a")).encoding)
-    assert_encoding("ASCII-8BIT", Regexp.quote(s("a")).encoding)
-    assert_encoding("ASCII-8BIT", Regexp.quote(u("a")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(a("")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(e("")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(s("")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(u("")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(a("a")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(e("a")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(s("a")).encoding)
+    assert_encoding("US-ASCII", Regexp.quote(u("a")).encoding)
 
     assert_encoding("ASCII-8BIT", Regexp.quote(a("\xc2\xa1")).encoding)
     assert_encoding("EUC-JP",     Regexp.quote(e("\xc2\xa1")).encoding)

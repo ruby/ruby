@@ -2654,7 +2654,7 @@ rb_reg_quote(VALUE str)
 	}
         s += clen;
     }
-    if (ascii_only && rb_enc_get_index(str) != 0) {
+    if (ascii_only) {
         str = rb_str_new3(str);
         rb_enc_associate(str, rb_usascii_encoding());
     }
@@ -2662,7 +2662,10 @@ rb_reg_quote(VALUE str)
 
   meta_found:
     tmp = rb_str_new(0, RSTRING_LEN(str)*2);
-    if (!ascii_only) {
+    if (ascii_only) {
+        rb_enc_associate(tmp, rb_usascii_encoding());
+    }
+    else {
         rb_enc_copy(tmp, str);
     }
     t = RSTRING_PTR(tmp);
