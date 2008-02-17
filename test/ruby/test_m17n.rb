@@ -1153,7 +1153,14 @@ class TestM17N < Test::Unit::TestCase
   def test_valid_encoding
     s = "\xa1".force_encoding("euc-jp")
     assert_equal(false, s.valid_encoding?)
-    assert_equal(true,(s+s).valid_encoding?, "[ruby-dev:33826]")
-    assert_equal(true,(s*2).valid_encoding?, "[ruby-dev:33826]")
+    assert_equal(true, (s+s).valid_encoding?, "[ruby-dev:33826]")
+    assert_equal(true, (s*2).valid_encoding?, "[ruby-dev:33826]")
+    assert_equal(true, ("%s%s" % [s, s]).valid_encoding?)
+    assert_equal(true, (s.dup << s).valid_encoding?)
+    assert_equal(true, "".center(2, s).valid_encoding?)
+
+     s = "\xa1\xa1\x8f".force_encoding("euc-jp")
+     assert_equal(false, s.valid_encoding?)
+     assert_equal(true, s.reverse.valid_encoding?)
   end
 end
