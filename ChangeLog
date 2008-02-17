@@ -1,3 +1,7 @@
+Sun Feb 17 23:06:55 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/cgi.rb (CGI::escapeHTML): use gsub with Hash. [ruby-dev:33828]
+
 Sun Feb 17 21:38:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (ENC_CODERANGE_AND): fix broken case. [ruby-dev:33826]
