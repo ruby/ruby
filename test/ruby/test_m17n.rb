@@ -980,6 +980,12 @@ class TestM17N < Test::Unit::TestCase
   def test_each_line
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_raise(ArgumentError){s.each_line(a("\xa3\xb1")) {|l| }}
+    s = e("\xa4\xa2\nfoo")
+
+    actual = []
+    s.each_line {|line| actual << line }
+    expected = [e("\xa4\xa2\n"), e("foo")]
+    assert_equal(expected, actual)
   end
 
   def test_each_char

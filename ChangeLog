@@ -1,3 +1,7 @@
+Mon Feb 18 15:16:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_each_line): fix newline size.
+
 Mon Feb 18 13:06:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/irb/locale.rb (IRB::Locale#lc2kconv): check ja_JP.EUC-JP as well.

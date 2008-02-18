@@ -4896,7 +4896,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 		p++;
 		continue;
 	    }
-	    p = p0 + rb_enc_mbclen(s, p0, enc);
+	    p = p0 + rb_enc_mbclen(p0, pend, enc);
 	    line = rb_str_new5(str, s, p - s);
 	    OBJ_INFECT(line, str);
 	    rb_enc_copy(line, str);
