@@ -1,3 +1,8 @@
+Mon Feb 18 10:17:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/lib/expect.rb (IO#expect): check if peer is closed.
+	  [ruby-Bugs-17940]
+
 Fri Feb 15 20:37:06 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/rational.rb (floor, ceil, truncate, round): do not use
