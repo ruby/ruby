@@ -2615,6 +2615,7 @@ yycompile(f, line)
 
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
+    ruby_eval_tree_begin = 0;
     heredoc_end = 0;
     lex_strterm = 0;
     ruby_current_node = 0;
