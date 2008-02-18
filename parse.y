@@ -3844,7 +3844,7 @@ string_content	: tSTRING_CONTENT
 			COND_LEXPOP();
 			CMDARG_LEXPOP();
 		    /*%%%*/
-			if ($3) $3->flags &= ~NODE_NEWLINE;
+			if ($3) $3->flags &= ~NODE_FL_NEWLINE;
 			$$ = new_evstr($3);
 		    /*%
 			$$ = dispatch1(string_embexpr, $3);
@@ -7339,7 +7339,7 @@ newline_node(NODE *node)
 {
     if (node) {
 	node = remove_begin(node);
-	node->flags |= NODE_NEWLINE;
+	node->flags |= NODE_FL_NEWLINE;
     }
     return node;
 }

@@ -2676,7 +2676,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
     type = nd_type(node);
 
-    if (node->flags & NODE_NEWLINE) {
+    if (node->flags & NODE_FL_NEWLINE) {
 	ADD_TRACE(ret, nd_line(node), RUBY_EVENT_LINE);
     }
 

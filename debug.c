@@ -56,11 +56,11 @@ static const union {
         RUBY_FL_USER18      = FL_USER18,
         RUBY_FL_USER19      = FL_USER19,
         RUBY_FL_USHIFT      = FL_USHIFT,
-        RUBY_NODE_NEWLINE   = NODE_NEWLINE,
         RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT,
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
         RUBY_NODE_LSHIFT    = NODE_LSHIFT,
         RUBY_NODE_LMASK     = NODE_LMASK,
+        RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE,
     } various;
 } dummy_gdb_enums;
 

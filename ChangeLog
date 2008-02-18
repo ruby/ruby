@@ -200,6 +200,11 @@ Fri Feb 15 20:29:42 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole.rb: ditto.
 
+Fri Feb 15 19:31:23 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/node.h (NODE_FL_NEWLINE): renamed from NODE_NEWLINE
+	  to denote its a flag.  [ruby-core:15529]
+
 Fri Feb 15 18:23:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_sub_bang, str_gsub): allows hash for replacement.
