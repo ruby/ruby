@@ -3151,6 +3151,10 @@ rb_reg_s_last_match(int argc, VALUE *argv)
     return match_getter();
 }
 
+static void
+re_warn(const char* s) {
+    rb_warn("%s" ,s);
+}
 
 /*
  *  Document-class: Regexp
@@ -3169,6 +3173,8 @@ Init_Regexp(void)
 
     onigenc_set_default_caseconv_table((UChar*)casetable);
     onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
+    onig_set_warn_func(re_warn);
+    onig_set_verb_warn_func(re_warn);
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);

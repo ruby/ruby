@@ -1,3 +1,7 @@
+Mon Feb 18 11:51:19 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (re_warn): defined to restore warnings for /[a-c-e]/, etc.
+
 Mon Feb 18 10:17:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/lib/expect.rb (IO#expect): check if peer is closed.
