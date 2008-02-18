@@ -580,6 +580,7 @@ class TestString < Test::Unit::TestCase
     assert_equal('ac', 'abc'.sub(/b/, {}))
     assert_equal('a1c', 'abc'.sub(/b/, "b" => 1))
     assert_equal('aBc', 'abc'.sub(/b/, Hash.new {|h, k| k.upcase }))
+    assert_equal('a[\&]c', 'abc'.sub(/b/, "b" => '[\&]'))
     assert_equal('aBcabc', 'abcabc'.sub(/b/, Hash.new {|h, k| h[k] = k.upcase }))
     assert_equal('aBcdef', 'abcdef'.sub(/de|b/, "b" => "B", "de" => "DE"))
   end
@@ -589,6 +590,7 @@ class TestString < Test::Unit::TestCase
     assert_equal('ac', 'abc'.gsub(/b/, {}))
     assert_equal('a1c', 'abc'.gsub(/b/, "b" => 1))
     assert_equal('aBc', 'abc'.gsub(/b/, Hash.new {|h, k| k.upcase }))
+    assert_equal('a[\&]c', 'abc'.gsub(/b/, "b" => '[\&]'))
     assert_equal('aBcaBc', 'abcabc'.gsub(/b/, Hash.new {|h, k| h[k] = k.upcase }))
     assert_equal('aBcDEf', 'abcdef'.gsub(/de|b/, "b" => "B", "de" => "DE"))
   end
