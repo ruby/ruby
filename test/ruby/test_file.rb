@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'tempfile'
-require 'ut_eof'
+require 'require_relative'
+require_relative 'ut_eof'
 
 class TestFile < Test::Unit::TestCase
 

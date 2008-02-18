@@ -1,7 +1,7 @@
 require 'test/unit'
 require 'tempfile'
-$:.replace([File.dirname(File.expand_path(__FILE__))] | $:)
-require 'envutil'
+require 'require_relative'
+require_relative 'envutil'
 
 class TestBeginEndBlock < Test::Unit::TestCase
   DIR = File.dirname(File.expand_path(__FILE__))

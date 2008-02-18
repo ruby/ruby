@@ -1,6 +1,7 @@
 require 'test/unit'
-require 'envutil'
 require 'tmpdir'
+require 'require_relative'
+require_relative 'envutil'
 
 class TestSystem < Test::Unit::TestCase
   def valid_syntax?(code, fname)

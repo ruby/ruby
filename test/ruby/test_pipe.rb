@@ -1,5 +1,6 @@
 require 'test/unit'
-require 'ut_eof'
+require 'require_relative'
+require_relative 'ut_eof'
 
 class TestPipe < Test::Unit::TestCase
   include TestEOF
