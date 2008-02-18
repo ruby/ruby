@@ -3153,7 +3153,7 @@ rb_reg_s_last_match(int argc, VALUE *argv)
 
 static void
 re_warn(const char* s) {
-    rb_warn("%s" ,s);
+    rb_warn("%s", s);
 }
 
 /*
