@@ -470,6 +470,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def check(re, ss, fs = [])
+    re = Regexp.new(re) unless re.is_a?(Regexp)
     ss = [ss] unless ss.is_a?(Array)
     ss.each do |e, s|
       s ||= e
@@ -502,7 +503,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A\78\z/, "\7" + '8', ["\100", ""])
     check(/\A\Qfoo\E\z/, "QfooE")
     check(/\Aa++\z/, "aaa")
-    check(/\Ax]\z/, "x]")
+    check('\Ax]\z', "x]")
     check(/x#foo/x, "x", "#foo")
     check(/\Ax#foo#{ "\n" }x\z/x, "xx", ["x", "x#foo\nx"])
     check(/\A\p{Alpha}\z/, ["a", "z"], [".", "", ".."])
@@ -568,8 +569,8 @@ class TestRegexp < Test::Unit::TestCase
   def test_char_class
     failcheck('[]')
     failcheck('[x')
-    check(/\A[]]\z/, "]", "")
-    check(/\A[]\.]+\z/, %w(] . ]..]), ["", "["])
+    check('\A[]]\z', "]", "")
+    check('\A[]\.]+\z', %w(] . ]..]), ["", "["])
     check(/\A[\u3042]\z/, "\u3042", "\u3042aa")
     check(/\A[\u3042\x61]+\z/, ["aa\u3042aa", "\u3042\u3042", "a"], ["", "b"])
     check(/\A[\u3042\x61\x62]+\z/, "abab\u3042abab\u3042")
@@ -587,13 +588,13 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A[\0]\z/, "\0")
     check(/\A[[:0]]\z/, [":", "0"], ["", ":0"])
     check(/\A[0-]\z/, ["0", "-"], "0-")
-    check(/\A[a-&&\w]\z/, "a", "-")
-    check(/\A[--0]\z/, ["-", "/", "0"], ["", "1"])
-    check(/\A['--0]\z/, %w(* + \( \) 0 ,), ["", ".", "1"])
+    check('\A[a-&&\w]\z', "a", "-")
+    check('\A[--0]\z', ["-", "/", "0"], ["", "1"])
+    check('\A[\'--0]\z', %w(* + \( \) 0 ,), ["", ".", "1"])
     check(/\A[a-b-]\z/, %w(a b -), ["", "c"])
-    check(/\A[a-b-&&\w]\z/, %w(a b), ["", "-"])
-    check(/\A[a-b-&&\W]\z/, "-", ["", "a", "b"])
-    check(/\A[a-c-e]\z/, %w(a b c e), %w(- d)) # is it OK?
+    check('\A[a-b-&&\w]\z', %w(a b), ["", "-"])
+    check('\A[a-b-&&\W]\z', "-", ["", "a", "b"])
+    check('\A[a-c-e]\z', %w(a b c e), %w(- d)) # is it OK?
     check(/\A[a-f&&[^b-c]&&[^e]]\z/, %w(a d f), %w(b c e g 0))
     check(/\A[[^b-c]&&[^e]&&a-f]\z/, %w(a d f), %w(b c e g 0))
     check(/\A[\n\r\t]\z/, ["\n", "\r", "\t"])
@@ -605,7 +606,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A[[:alpha\:]]\z/, %w(a l p h a :), %w(b 0 1 .))
     check(/\A[[:alpha:foo]0]\z/, %w(0 a), %w(1 .))
     check(/\A[[:xdigit:]&&[:alpha:]]\z/, "a", %w(g 0))
-    check(/\A[[:abcdefghijklmnopqrstu:]]+\z/, "[]")
+    check('\A[[:abcdefghijklmnopqrstu:]]+\z', "[]")
     failcheck('[[:alpha')
     failcheck('[[:alpha:')
     failcheck('[[:alp:]]')
