@@ -53,9 +53,15 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   "abc".gsub(/./, "a" => "z")
 }
+
 assert_normal_exit %q{
   Encoding.compatible?("",0)
 }
+
 assert_normal_exit %q{
   "".center(1, "\x80".force_encoding("utf-8"))
 }, '[ruby-dev:33807]'
+
+assert_normal_exit %q{
+  ARGF.set_encoding "foo"
+}
