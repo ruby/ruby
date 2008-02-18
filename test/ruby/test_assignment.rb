@@ -490,7 +490,8 @@ class TestAssignment < Test::Unit::TestCase
   end
 end
 
-require 'sentence'
+require 'require_relative'
+require_relative 'sentence'
 class TestAssignmentGen < Test::Unit::TestCase
   Syntax = {
     :exp => [["0"],

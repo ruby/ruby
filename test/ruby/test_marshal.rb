@@ -1,5 +1,6 @@
 require 'test/unit'
-require 'marshaltestlib'
+require 'require_relative'
+require_relative 'marshaltestlib'
 
 class TestMarshal < Test::Unit::TestCase
   include MarshalTestLib

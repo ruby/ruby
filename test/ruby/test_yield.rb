@@ -74,7 +74,8 @@ class TestRubyYield < Test::Unit::TestCase
   end
 end
 
-require 'sentence'
+require 'require_relative'
+require_relative 'sentence'
 class TestRubyYieldGen < Test::Unit::TestCase
   Syntax = {
     :exp => [["0"],
