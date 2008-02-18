@@ -575,6 +575,24 @@ class TestString < Test::Unit::TestCase
     assert_nil(a.sub!(S('X'), S('Y')))
   end
 
+  def test_sub_hash
+    assert_equal('azc', 'abc'.sub(/b/, "b" => "z"))
+    assert_equal('ac', 'abc'.sub(/b/, {}))
+    assert_equal('a1c', 'abc'.sub(/b/, "b" => 1))
+    assert_equal('aBc', 'abc'.sub(/b/, Hash.new {|h, k| k.upcase }))
+    assert_equal('aBcabc', 'abcabc'.sub(/b/, Hash.new {|h, k| h[k] = k.upcase }))
+    assert_equal('aBcdef', 'abcdef'.sub(/de|b/, "b" => "B", "de" => "DE"))
+  end
+
+  def test_gsub_hash
+    assert_equal('azc', 'abc'.gsub(/b/, "b" => "z"))
+    assert_equal('ac', 'abc'.gsub(/b/, {}))
+    assert_equal('a1c', 'abc'.gsub(/b/, "b" => 1))
+    assert_equal('aBc', 'abc'.gsub(/b/, Hash.new {|h, k| k.upcase }))
+    assert_equal('aBcaBc', 'abcabc'.gsub(/b/, Hash.new {|h, k| h[k] = k.upcase }))
+    assert_equal('aBcDEf', 'abcdef'.gsub(/de|b/, "b" => "B", "de" => "DE"))
+  end
+
   def test_hash
     assert_equal(S("hello").hash, S("hello").hash)
     assert(S("hello").hash != S("helLO").hash)
