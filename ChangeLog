@@ -1,3 +1,7 @@
+Mon Feb 18 13:06:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/irb/locale.rb (IRB::Locale#lc2kconv): check ja_JP.EUC-JP as well.
+
 Mon Feb 18 11:51:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (re_warn): defined to restore warnings for /[a-c-e]/, etc.

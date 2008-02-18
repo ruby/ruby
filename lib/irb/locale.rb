@@ -26,7 +26,7 @@ module IRB
 
     def lc2kconv(lang)
       case lang
-      when "ja_JP.ujis", "ja_JP.euc", "ja_JP.eucJP"
+      when "ja_JP.ujis", "ja_JP.euc", "ja_JP.eucJP", "ja_JP.EUC-JP"
         Kconv::EUC
       when "ja_JP.sjis", "ja_JP.SJIS"
         Kconv::SJIS
