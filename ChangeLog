@@ -1,3 +1,11 @@
+Tue Feb 19 11:14:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_exec_node): no thread starts inside iseq compilation.
+
+	* eval.c (rb_f_raise): skip current control frame.  [ruby-core:15589]
+
+	* insns.def (opt_div): raise as the ordinary method. [ruby-core:15589]
+
 Mon Feb 18 15:16:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_each_line): fix newline size.

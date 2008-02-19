@@ -225,9 +225,9 @@ ruby_exec_node(void *n, char *file)
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
+	VALUE iseq = rb_iseq_new(n, rb_str_new2("<main>"),
+				 rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
 	SAVE_ROOT_JMPBUF(th, {
-	    VALUE iseq = rb_iseq_new(n, rb_str_new2("<main>"),
-				     rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
 	    th->base_block = 0;
 	    val = rb_iseq_eval(iseq);
 	});
@@ -775,7 +775,9 @@ rb_f_raise(int argc, VALUE *argv)
 	    argv = &err;
 	}
     }
-    rb_raise_jump(rb_make_exception(argc, argv));
+    err = rb_make_exception(argc, argv);
+    GET_THREAD()->cfp++;
+    rb_raise_jump(err);
     return Qnil;		/* not reached */
 }
 
