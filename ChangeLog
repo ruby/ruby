@@ -1,3 +1,8 @@
+Tue Feb 19 14:27:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_event): prevent polling.  based on
+	  a patch from error errorsson in [ruby-Bugs-17675].
+
 Tue Feb 19 12:08:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yycompile): clear ruby_eval_tree_begin if parse failed.
