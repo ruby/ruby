@@ -574,9 +574,7 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 #define STACK_END (th->machine_stack_end)
 #define STACK_LEVEL_MAX (th->machine_stack_maxsize/sizeof(VALUE))
 
-#if defined(sparc) || defined(__sparc__)
-# define STACK_LENGTH  (STACK_START - STACK_END + 0x80)
-#elif STACK_GROW_DIRECTION < 0
+#if STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (STACK_START - STACK_END)
 #elif STACK_GROW_DIRECTION > 0
 # define STACK_LENGTH  (STACK_END - STACK_START + 1)
