@@ -1,3 +1,8 @@
+Tue Feb 19 14:27:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_event): prevent polling.  based on
+	  a patch from error errorsson in [ruby-Bugs-17675].
+
 Tue Feb 19 11:14:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_exec_node): no thread starts inside iseq compilation.
