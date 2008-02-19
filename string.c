@@ -128,12 +128,12 @@ search_nonascii(const char *p, const char *e)
         const unsigned long *s, *t;
         const VALUE lowbits = sizeof(unsigned long) - 1;
         s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
-        t = (const unsigned long*)(~lowbits & (VALUE)e);
         while (p < (const char *)s) {
             if (!ISASCII(*p))
                 return p;
             p++;
         }
+        t = (const unsigned long*)(~lowbits & (VALUE)e);
         while (s < t) {
             if (*s & NONASCII_MASK) {
                 t = s;
@@ -619,10 +619,63 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     return c;
 }
 
+long
+rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
+{
+    long c;
+    const char *q;
+    int ret;
+
+    *cr = 0;
+    if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
+	return (e - p) / rb_enc_mbminlen(enc);
+    }
+    else if (rb_enc_asciicompat(enc)) {
+	c = 0;
+	while (p < e) {
+	    if (ISASCII(*p)) {
+		q = search_nonascii(p, e);
+		if (!q) {
+		    return c + (e - p);
+		}
+		c += q - p;
+		p = q;
+	    }
+	    ret = rb_enc_precise_mbclen(p, e, enc);
+	    if (MBCLEN_CHARFOUND_P(ret)) {
+		*cr |= ENC_CODERANGE_VALID;
+		p += MBCLEN_CHARFOUND_LEN(ret);
+	    }
+	    else {
+		*cr = ENC_CODERANGE_BROKEN;
+		p++;
+	    }
+	    c++;
+	}
+	if (!*cr) *cr = ENC_CODERANGE_7BIT;
+	return c;
+    }
+
+    for (c=0; p<e; c++) {
+	ret = rb_enc_precise_mbclen(p, e, enc);
+	if (MBCLEN_CHARFOUND_P(ret)) {
+	    *cr |= ENC_CODERANGE_VALID;
+	    p += MBCLEN_CHARFOUND_LEN(ret);
+	}
+	else {
+	    *cr = ENC_CODERANGE_BROKEN;
+	    p++;
+	}
+    }
+    if (!*cr) *cr = ENC_CODERANGE_7BIT;
+    return c;
+}
+
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
     const char *p, *e;
+    int n, cr;
 
     if (single_byte_optimizable(str)) return RSTRING_LEN(str);
     if (!enc) enc = STR_ENC_GET(str);
@@ -661,7 +714,11 @@ str_strlen(VALUE str, rb_encoding *enc)
 	return len;
     }
 #endif
-    return rb_enc_strlen(p, e, enc);
+    n = rb_enc_strlen_cr(p, e, enc, &cr);
+    if (cr) {
+        ENC_CODERANGE_SET(str, cr);
+    }
+    return n;
 }
 
 /*
