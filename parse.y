@@ -2641,7 +2641,7 @@ yycompile(f, line)
 	rb_gc_force_recycle((VALUE)tmp);
     }
     if (n == 0) node = ruby_eval_tree;
-    else ruby_eval_tree_begin = 0;
+    if (ruby_nerrs) ruby_eval_tree_begin = 0;
     return node;
 }
 
