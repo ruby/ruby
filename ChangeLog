@@ -1,3 +1,7 @@
+Tue Feb 19 20:49:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_raise_jump): moved adjustment for control frame.
+
 Tue Feb 19 18:34:32 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (STACK_LENGTH) [SPARC] : 0x80 offset removed.  [ruby-dev:33857]

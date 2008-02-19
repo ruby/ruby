@@ -775,9 +775,7 @@ rb_f_raise(int argc, VALUE *argv)
 	    argv = &err;
 	}
     }
-    err = rb_make_exception(argc, argv);
-    GET_THREAD()->cfp++;
-    rb_raise_jump(err);
+    rb_raise_jump(rb_make_exception(argc, argv));
     return Qnil;		/* not reached */
 }
 
@@ -830,6 +828,8 @@ rb_make_exception(int argc, VALUE *argv)
 void
 rb_raise_jump(VALUE mesg)
 {
+    rb_thread_t *th = GET_THREAD();
+    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
     /* TODO: fix me */
     rb_longjmp(TAG_RAISE, mesg);
 }
