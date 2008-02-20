@@ -1,3 +1,8 @@
+Wed Feb 20 19:42:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_associate_index): doesn't clear coderange
+	  when new encoding equals to old one.
+
 Wed Feb 20 19:15:38 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_enc_str_copy): added for wrapper for rb_enc_copy.
