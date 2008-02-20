@@ -1,3 +1,8 @@
+Wed Feb 20 23:28:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/readline/extconf.rb (rl_event_hook): workaround for native
+	  windows.
+
 Wed Feb 20 19:42:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_associate_index): doesn't clear coderange
