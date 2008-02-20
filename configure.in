@@ -1054,11 +1054,23 @@ if test "$with_dln_a_out" != yes; then
     esac
   fi
 
+
+  AC_ARG_ENABLE(rpath,
+       [  --disable-rpath         embed run path into extension libraries.],
+       [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
+  if test "$enable_rpath" = yes; then
+    LIBPATHFLAG=" -L%1\$-s"
+    RPATHFLAG=" ${linker_flag}-R%1\$-s"
+  fi
+
   case "$target_os" in
 	hpux*)		DLDFLAGS="$DLDFLAGS -E"
 			: ${LDSHARED='ld -b'}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			: ${LIBPATHENV=SHLIB_PATH}
+			if test "$rb_cv_prog_gnu_ld" = no; then
+			    RPATHFLAG=' +b %1$-s'
+			fi
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
                           : ${LDSHARED='$(CC) -shared'}
@@ -1168,14 +1180,6 @@ if test "$with_dln_a_out" != yes; then
 	*) 		: ${LDSHARED='ld'} ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
-
-  AC_ARG_ENABLE(rpath,
-       [  --disable-rpath         embed run path into extension libraries.],
-       [enable_rpath=$enableval], [enable_rpath="$rb_cv_binary_elf"])
-  if test "$enable_rpath" = yes; then
-    LIBPATHFLAG=" -L%1\$-s"
-    RPATHFLAG=" ${linker_flag}-R%1\$-s"
-  fi
 fi
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
