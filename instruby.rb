@@ -14,7 +14,7 @@ require 'tempfile'
 STDOUT.sync = true
 File.umask(0)
 
-def parse_args()
+def parse_args(argv = ARGV)
   $mantype = 'doc'
   $destdir = nil
   $extout = nil
@@ -26,6 +26,10 @@ def parse_args()
   $rdocdir = nil
   $data_mode = 0644
   $prog_mode = 0755
+  $dir_mode = nil
+  $script_mode = nil
+  $cmdtype = ('bat' if File::ALT_SEPARATOR == '\\')
+  mflags = []
   opt = OptionParser.new
   opt.on('-n') {$dryrun = true}
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
@@ -39,7 +43,7 @@ def parse_args()
     $mflags.concat(v)
   end
   opt.on('-i', '--install=TYPE',
-         [:local, :bin, :lib, :man, :ext, :"ext-arch", :"ext-comm", :rdoc]) do |ins|
+         [:local, :bin, :"bin-arch", :"bin-comm", :lib, :man, :ext, :"ext-arch", :"ext-comm", :rdoc]) do |ins|
     $install << ins
   end
   opt.on('--data-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
@@ -48,20 +52,39 @@ def parse_args()
   opt.on('--prog-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
     $prog_mode = mode
   end
+  opt.on('--dir-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
+    $dir_mode = mode
+  end
+  opt.on('--script-mode=OCTAL-MODE', OptionParser::OctalInteger) do |mode|
+    $script_mode = mode
+  end
   opt.on('--installed-list [FILENAME]') {|name| $installed_list = name}
   opt.on('--rdoc-output [DIR]') {|dir| $rdocdir = dir}
+  opt.on('--cmd-type=TYPE', %w[bat cmd plain]) {|cmd| $cmdtype = (cmd unless cmd == 'plain')}
 
-  opt.parse! rescue abort [$!.message, opt].join("\n")
+  opt.order!(argv) do |v|
+    case v
+    when /\AINSTALL[-_]([-\w]+)=(.*)/
+      argv.unshift("--#{$1.tr('_', '-')}=#{$2}")
+    when /\A\w[-\w+]*=\z/
+      mflags << v
+    when /\A\w[-\w+]*\z/
+      $install << v.intern
+    else
+      raise OptionParser::InvalidArgument, v
+    end
+  end rescue abort [$!.message, opt].join("\n")
 
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
+  $mflags.unshift(*mflags)
 
   def $mflags.set?(flag)
     grep(/\A-(?!-).*#{'%s' % flag}/i) { return true }
     false
   end
   def $mflags.defined?(var)
-    grep(/\A#{var}=(.*)/) {return $1}
+    grep(/\A#{var}=(.*)/) {return block_given? ? yield($1) : $1}
     false
   end
 
@@ -85,6 +108,9 @@ def parse_args()
   end
 
   $rdocdir ||= $mflags.defined?('RDOCOUT')
+
+  $dir_mode ||= $prog_mode | 0700
+  $script_mode ||= $prog_mode
 end
 
 parse_args()
@@ -127,7 +153,7 @@ def makedirs(dirs)
       File.directory?(realdir)
     end
   end.compact!
-  super(dirs, :mode => $prog_mode) unless dirs.empty?
+  super(dirs, :mode => $dir_mode) unless dirs.empty?
 end
 
 def install_recursive(srcdir, dest, options = {})
@@ -159,9 +185,10 @@ end
 
 def open_for_install(path, mode, &block)
   unless $dryrun
-    open(with_destdir(path), mode, &block)
+    open(realpath = with_destdir(path), "wb", mode, &block)
+    File.chmod(mode, realpath)
   end
-  $installed_list.puts path if /^w/ =~ mode and $installed_list
+  $installed_list.puts path if $installed_list
 end
 
 def with_destdir(dir)
@@ -194,7 +221,7 @@ dll = CONFIG["LIBRUBY_SO"]
 lib = CONFIG["LIBRUBY"]
 arc = CONFIG["LIBRUBY_A"]
 
-install?(:local, :arch, :bin) do
+install?(:local, :arch, :bin, :'bin-arch') do
   puts "installing binary commands"
 
   makedirs [bindir, libdir, archlibdir]
@@ -256,47 +283,41 @@ install?(:rdoc) do
   end
 end
 
-install?(:local, :comm, :bin) do
+install?(:local, :comm, :bin, :'bin-comm') do
   puts "installing command scripts"
 
   Dir.chdir srcdir
   makedirs [bindir, rubylibdir]
 
   ruby_shebang = File.join(bindir, ruby_install_name)
-  if File::ALT_SEPARATOR
-    ruby_bin_dosish = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
+  if $cmdtype
+    ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
   end
   for src in Dir["bin/*"]
     next unless File.file?(src)
     next if /\/[.#]|(\.(old|bak|orig|rej|diff|patch|core)|~|\/core)$/i =~ src
 
     name = ruby_install_name.sub(/ruby/, File.basename(src))
-    dest = File.join(bindir, name)
-
-    install src, dest, :mode => $prog_mode
-
-    next if $dryrun
 
     shebang = ''
     body = ''
-    open_for_install(dest, "r+") { |f|
+    open(src, "rb") do |f|
       shebang = f.gets
       body = f.read
+    end
+    shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
+    shebang.sub!(/\r$/, '')
+    body.gsub!(/\r$/, '')
 
-      if shebang.sub!(/^\#!.*?ruby\b/) {"#!" + ruby_shebang}
-        f.rewind
-        f.print shebang, body
-        f.truncate(f.pos)
-      end
-    }
-
-    if ruby_bin_dosish
-      batfile = File.join(bindir, name + ".bat")
-      open_for_install(batfile, "wb") {|b|
-        b.print((<<EOH+shebang+body+<<EOF).gsub(/\r?\n/, "\r\n"))
+    cmd = File.join(bindir, name)
+    cmd << ".#{$cmdtype}" if $cmdtype
+    open_for_install(cmd, $script_mode) do |f|
+      case $cmdtype
+      when "bat"
+        f.print((<<EOH+shebang+body+<<EOF).gsub(/$/, "\r"))
 @echo off
 @if not "%~d0" == "~d0" goto WinNT
-#{ruby_bin_dosish} -x "#{batfile}" %1 %2 %3 %4 %5 %6 %7 %8 %9
+#{ruby_bin} -x "#{cmd}" %1 %2 %3 %4 %5 %6 %7 %8 %9
 @goto endofruby
 :WinNT
 "%~dp0#{ruby_install_name}" -x "%~f0" %*
@@ -305,7 +326,14 @@ EOH
 __END__
 :endofruby
 EOF
-      }
+      when "cmd"
+        f.print(<<EOH, shebang, body)
+@"%~dp0#{ruby_install_name}" -x "%~f0" %*
+@exit /b %ERRORLEVEL%
+EOH
+      else
+        f.print shebang, body
+      end
     end
   end
 end
@@ -366,10 +394,12 @@ install?(:local, :comm, :man) do
   end
 end
 
-$install.concat ARGV.collect {|n| n.intern}
 $install << :local << :ext if $install.empty?
 $install.each do |inst|
-  $install_procs[inst].each do |block|
+  if !(procs = $install_procs[inst]) || procs.empty?
+    next warn("unknown install target - #{inst}")
+  end
+  procs.each do |block|
     dir = Dir.pwd
     begin
       block.call
