@@ -197,6 +197,7 @@ extern int    rb_w32_rename(const char *, const char *);
 extern int    rb_w32_stat(const char *, struct stat *);
 extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
+extern int    rb_w32_map_errno(DWORD);
 
 #define vsnprintf(s,n,f,l) rb_w32_vsnprintf(s,n,f,l)
 #define snprintf   rb_w32_snprintf
