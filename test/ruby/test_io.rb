@@ -55,4 +55,10 @@ class TestIO < Test::Unit::TestCase
   ensure
     r.close
   end
+
+  def test_rubydev33072
+    assert_raise(Errno::ENOENT, "[ruby-dev:33072]") do
+      File.read("empty", nil, nil, {})
+    end
+  end
 end

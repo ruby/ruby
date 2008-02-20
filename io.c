@@ -5851,7 +5851,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	rb_ary_push(args, argv[0]);
 	rb_ary_concat(args, v);
 	MEMCPY(RARRAY_PTR(args)+1, RARRAY_PTR(v), VALUE, RARRAY_LEN(v));
-	
+
 	arg->io = rb_f_open(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;
     }
@@ -5863,13 +5863,14 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	args[1] = v;
 	arg->io = rb_f_open(2, args);
     }
+
+    if (!arg->io) {
+	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
+    }
+
     v = rb_hash_aref(opt, encoding);
     if (!NIL_P(v)) {
 	rb_io_t *fptr;
-
-	if (!arg->io) {
-	    arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
-	}
 	GetOpenFile(arg->io, fptr);
         mode_enc(fptr, StringValueCStr(v));
     }
