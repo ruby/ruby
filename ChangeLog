@@ -1,3 +1,16 @@
+Wed Feb 20 19:15:38 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_enc_str_copy): added for wrapper for rb_enc_copy.
+	  this also copy coderange when ptr and len is equal.
+
+	* string.c (rb_enc_cr_str_copy): added for wrapper for rb_enc_copy.
+	  this always copy coderange.
+
+	* string.c (str_replace_shared): use rb_enc_str_copy.
+
+	* string.c (str_new3): don't rb_enc_copy because encoding is copied
+	  at str_replace_shared.
+
 Wed Feb 20 13:08:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (parse_args): added --dir-mode, --script-mode and

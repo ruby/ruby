@@ -201,6 +201,23 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
     return ENC_CODERANGE_VALID;
 }
 
+void
+rb_enc_str_copy(VALUE str1, VALUE str2)
+{
+    rb_enc_copy(str1, str2);
+    if (RSTRING_PTR(str1) == RSTRING_PTR(str2) &&
+	RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
+	ENC_CODERANGE_SET(str1, ENC_CODERANGE(str2));
+    }
+}
+
+void
+rb_enc_cr_str_copy(VALUE str1, VALUE str2)
+{
+    rb_enc_copy(str1, str2);
+    ENC_CODERANGE_SET(str1, ENC_CODERANGE(str2));
+}
+
 int
 rb_enc_str_coderange(VALUE str)
 {
@@ -359,6 +376,7 @@ str_replace_shared(VALUE str2, VALUE str)
 	RSTRING(str2)->as.heap.aux.shared = str;
 	FL_SET(str2, ELTS_SHARED);
     }
+    rb_enc_cr_str_copy(str2, str);
 
     return str2;
 }
@@ -372,10 +390,7 @@ str_new_shared(VALUE klass, VALUE str)
 static VALUE
 str_new3(VALUE klass, VALUE str)
 {
-    VALUE str2 = str_new_shared(klass, str);
-
-    rb_enc_copy(str2, str);
-    return str2;
+    return str_new_shared(klass, str);
 }
 
 VALUE
