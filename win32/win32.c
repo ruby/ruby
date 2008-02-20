@@ -166,8 +166,8 @@ static struct {
     {	WSAEMFILE,			EMFILE		},
 };
 
-static int
-map_errno(DWORD winerr)
+int
+rb_w32_map_errno(DWORD winerr)
 {
     int i;
 
@@ -186,6 +186,8 @@ map_errno(DWORD winerr)
     }
     return EINVAL;
 }
+
+#define map_errno rb_w32_map_errno
 
 static char *NTLoginName;
 

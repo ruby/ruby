@@ -1,3 +1,7 @@
+Wed Feb 20 23:55:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_map_errno): exported.
+
 Wed Feb 20 23:28:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/readline/extconf.rb (rl_event_hook): workaround for native
