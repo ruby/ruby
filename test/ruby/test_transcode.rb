@@ -19,8 +19,6 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_errors
-    # we don't have semantics for conversion without attribute yet
-    # maybe 'convert to UTF-8' would be nice :-)
     assert_raise(ArgumentError) { 'abc'.encode }
     assert_raise(ArgumentError) { 'abc'.encode! }
     assert_raise(ArgumentError) { 'abc'.encode('foo', 'bar') }
@@ -240,5 +238,10 @@ class TestTranscode < Test::Unit::TestCase
     check_utf_32_both_ways("\u{F0F0F}", "\x00\x0F\x0F\x0F")
     check_utf_32_both_ways("\u{8FF00}", "\x00\x08\xFF\x00")
     check_utf_32_both_ways("\u{F00FF}", "\x00\x0F\x00\xFF")
+  end
+  
+  def test_invalid_ignore
+    # arguments only
+    'abc'.encode('utf-8', invalid: :ignore)
   end
 end

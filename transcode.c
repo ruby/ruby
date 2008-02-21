@@ -15,6 +15,9 @@
 #include "transcode_data.h"
 #include <ctype.h>
 
+static VALUE sym_invalid, sym_ignore;
+#define INVALID_IGNORE 0x1
+
 /*
  *  Dispatch data and logic
  */
@@ -132,7 +135,8 @@ static void
 transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
 	       unsigned char *in_stop, unsigned char *out_stop,
 	       const rb_transcoder *my_transcoder,
-	       rb_transcoding *my_transcoding)
+	       rb_transcoding *my_transcoding,
+	       const int opt)
 {
     unsigned char *in_p = *in_pos, *out_p = *out_pos;
     const BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
@@ -211,14 +215,17 @@ transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
 	  case INVALID:
 	    goto invalid;
 	  case UNDEF:
-	    /* todo: add code for alternative behaviors */
+	    /* todo: add code for alternate behaviors */
 	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe invalid byte sequence)");
 	    continue;
 	}
 	continue;
       invalid:
 	/* deal with invalid byte sequence */
-	/* todo: add code for alternative behaviors */
+	/* todo: add more alternative behaviors */
+	if (opt&INVALID_IGNORE) {
+	    continue;
+	}
 	rb_raise(rb_eRuntimeError /*change exception*/, "invalid byte sequence");
 	continue;
     }
@@ -254,7 +261,22 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     const rb_transcoder *my_transcoder;
     rb_transcoding my_transcoding;
     int final_encoding = 0;
+    VALUE opt;
+    int options = 0;
 
+    opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+    if (!NIL_P(opt)) {
+	VALUE v;
+
+	argc--;
+	v = rb_hash_aref(opt, sym_invalid);
+	if (NIL_P(v)) {
+	    rb_raise(rb_eArgError, "unknown value for invalid: setting");
+	}
+	else if (v==sym_ignore) {
+	    options |= INVALID_IGNORE;
+	}
+    }
     if (argc < 1 || argc > 2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
@@ -325,7 +347,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	my_transcoding.ruby_string_dest = dest;
 	my_transcoding.flush_func = str_transcoding_resize;
 
-	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding);
+	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding, options);
 	if (fromp != sp+slen) {
 	    rb_raise(rb_eArgError, "not fully converted, %d bytes left", sp+slen-fromp);
 	}
@@ -425,6 +447,9 @@ Init_transcode(void)
     transcoder_table = st_init_strcasetable();
     transcoder_lib_table = st_init_strcasetable();
     init_transcoder_table();
+
+    sym_invalid = ID2SYM(rb_intern("invalid"));
+    sym_ignore = ID2SYM(rb_intern("ignore"));
 
     rb_define_method(rb_cString, "encode", rb_str_transcode, -1);
     rb_define_method(rb_cString, "encode!", rb_str_transcode_bang, -1);

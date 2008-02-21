@@ -1,3 +1,14 @@
+Thu Feb 21 17:15:15 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c: Added basic support for passing options to String#encode
+	  via a hash. Currently only one option, with one value, is supported:
+	  invalid: :ignore (dropping invalid byte sequences instead of
+	  producing an error). Option naming is not yet stable!
+
+	* test/ruby/test_transcode.rb: Added a single test for invalid: :ignore
+	  option. Not more tests because most data does not yet distinguish
+	  between INVALID and UNKNOWN.
+
 Thu Feb 21 16:35:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_unshift_m): expands enough for argc.  [ruby-dev:33880]
