@@ -7,6 +7,13 @@ Thu Feb 21 14:49:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* io.c (argf_set_encoding): uses current_file after check if next
 	  input is available.
 
+Thu Feb 21 14:13:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_putc): invoke stdout method so that redefining putc
+	  may take effect.   [ruby-talk:291844]
+
+	* io.c (rb_f_puts): ditto.
+
 Thu Feb 21 11:10:49 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c: replace rb_enc_copy by rb_enc_cr_str_copy or
