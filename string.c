@@ -857,11 +857,14 @@ rb_str_times(VALUE str, VALUE times)
             n *= 2;
         }
         memcpy(RSTRING_PTR(str2) + n, RSTRING_PTR(str2), len-n);
+	cr = ENC_CODERANGE(str);
+	if (cr == ENC_CODERANGE_BROKEN) cr = ENC_CODERANGE_UNKNOWN;
+    }
+    else {
+	cr = ENC_CODERANGE_7BIT;
     }
     RSTRING_PTR(str2)[RSTRING_LEN(str2)] = '\0';
     OBJ_INFECT(str2, str);
-    cr = ENC_CODERANGE(str);
-    if (cr == ENC_CODERANGE_BROKEN) cr = ENC_CODERANGE_UNKNOWN;
     ENCODING_CODERANGE_SET(str2, rb_enc_get_index(str), cr);
 
     return str2;
@@ -1238,7 +1241,8 @@ rb_str_substr(VALUE str, long beg, long len)
     }
     else {
 	str2 = rb_str_new5(str, p, len);
-	rb_enc_cr_str_copy(str2, str);
+	if (len) rb_enc_cr_str_copy(str2, str);
+	else ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
 	OBJ_INFECT(str2, str);
     }
 

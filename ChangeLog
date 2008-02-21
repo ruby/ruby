@@ -1,3 +1,12 @@
+Fri Feb 22 04:48:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_times): empty string's coderange is CODERANGE_7BIT.
+
+	* string.c (rb_str_substr): ditto.
+
+	* encoding.c (rb_enc_compatible): empty string is compatible with not
+	  only nonasciicompatible strings. [ruby-dev:33895]
+
 Thu Feb 21 17:15:15 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c: Added basic support for passing options to String#encode
