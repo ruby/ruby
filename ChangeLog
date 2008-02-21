@@ -1,7 +1,7 @@
-Thu Feb 21 14:47:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb 21 14:49:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* io.c (argf_set_encoding): uses current_file after check for next
-	  input.
+	* io.c (argf_set_encoding): uses current_file after check if next
+	  input is available.
 
 Thu Feb 21 11:10:49 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
