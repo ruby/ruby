@@ -1,3 +1,7 @@
+Thu Feb 21 16:35:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_unshift_m): expands enough for argc.  [ruby-dev:33880]
+
 Thu Feb 21 14:49:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_set_encoding): uses current_file after check if next

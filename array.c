@@ -368,7 +368,7 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 	idx += RARRAY_LEN(ary);
 	if (idx < 0) {
 	    rb_raise(rb_eIndexError, "index %ld out of array",
-		    idx - RARRAY_LEN(ary));
+		     idx - RARRAY_LEN(ary));
 	}
     }
 
@@ -604,12 +604,12 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
-    long len = RARRAY(ary)->len;
+    long len;
 
     if (argc == 0) return ary;
     rb_ary_modify(ary);
-    if (RARRAY(ary)->aux.capa <= RARRAY_LEN(ary)+argc) {
-	RESIZE_CAPA(ary, RARRAY(ary)->aux.capa + ARY_DEFAULT_SIZE);
+    if (RARRAY(ary)->aux.capa <= (len = RARRAY(ary)->len) + argc) {
+	RESIZE_CAPA(ary, len + argc + ARY_DEFAULT_SIZE);
     }
 
     /* sliding items */
