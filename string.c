@@ -202,20 +202,28 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 }
 
 void
-rb_enc_str_copy(VALUE str1, VALUE str2)
+rb_enc_str_copy(VALUE dest, VALUE src)
 {
-    rb_enc_copy(str1, str2);
-    if (RSTRING_PTR(str1) == RSTRING_PTR(str2) &&
-	RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
-	ENC_CODERANGE_SET(str1, ENC_CODERANGE(str2));
+    rb_enc_copy(dest, src);
+    if (RSTRING_PTR(dest) == RSTRING_PTR(src) &&
+	RSTRING_LEN(dest) == RSTRING_LEN(src)) {
+	ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
     }
 }
 
 void
-rb_enc_cr_str_copy(VALUE str1, VALUE str2)
+rb_enc_cr_str_copy(VALUE dest, VALUE src)
 {
-    rb_enc_copy(str1, str2);
-    ENC_CODERANGE_SET(str1, ENC_CODERANGE(str2));
+    rb_enc_copy(dest, src);
+    if (!is_broken_string(src))
+	ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
+}
+
+void
+rb_enc_cr_str_exact_copy(VALUE dest, VALUE src)
+{
+    rb_enc_copy(dest, src);
+    ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
 }
 
 int
@@ -376,7 +384,7 @@ str_replace_shared(VALUE str2, VALUE str)
 	RSTRING(str2)->as.heap.aux.shared = str;
 	FL_SET(str2, ELTS_SHARED);
     }
-    rb_enc_cr_str_copy(str2, str);
+    rb_enc_cr_str_exact_copy(str2, str);
 
     return str2;
 }
@@ -419,7 +427,7 @@ str_new4(VALUE klass, VALUE str)
 	FL_SET(str, ELTS_SHARED);
 	RSTRING(str)->as.heap.aux.shared = str2;
     }
-    rb_enc_copy(str2, str);
+    rb_enc_cr_str_exact_copy(str2, str);
     OBJ_INFECT(str2, str);
     return str2;
 }
@@ -440,12 +448,12 @@ rb_str_new4(VALUE orig)
 	    RSTRING(str)->as.heap.ptr += ofs;
 	    RSTRING(str)->as.heap.len -= ofs;
 	}
-	rb_enc_copy(str, orig);
+	rb_enc_cr_str_exact_copy(str, orig);
 	OBJ_INFECT(str, orig);
     }
     else if (STR_EMBED_P(orig)) {
 	str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
-	rb_enc_copy(str, orig);
+	rb_enc_cr_str_exact_copy(str, orig);
 	OBJ_INFECT(str, orig);
     }
     else if (STR_ASSOC_P(orig)) {
@@ -1160,7 +1168,7 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2 = rb_str_new5(str, RSTRING_PTR(str)+beg, len);
 
-    rb_enc_copy(str2, str);
+    rb_enc_cr_str_copy(str2, str);
     OBJ_INFECT(str2, str);
 
     return str2;
@@ -1230,7 +1238,7 @@ rb_str_substr(VALUE str, long beg, long len)
     }
     else {
 	str2 = rb_str_new5(str, p, len);
-	rb_enc_copy(str2, str);
+	rb_enc_cr_str_copy(str2, str);
 	OBJ_INFECT(str2, str);
     }
 
@@ -2454,7 +2462,7 @@ rb_str_succ(VALUE orig)
     int carry_pos = 0, carry_len = 1;
 
     str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
-    rb_enc_copy(str, orig);
+    rb_enc_cr_str_copy(str, orig);
     OBJ_INFECT(str, orig);
     if (RSTRING_LEN(str) == 0) return str;
 
@@ -2499,6 +2507,7 @@ rb_str_succ(VALUE orig)
     memmove(s, carry, carry_len);
     STR_SET_LEN(str, RSTRING_LEN(str) + carry_len);
     RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
+    rb_enc_str_coderange(str);
     return str;
 }
 
@@ -3341,8 +3350,7 @@ rb_str_replace(VALUE str, VALUE str2)
     }
 
     OBJ_INFECT(str, str2);
-    rb_enc_copy(str, str2);
-    ENC_CODERANGE_SET(str, ENC_CODERANGE(str2));
+    rb_enc_cr_str_exact_copy(str, str2);
     return str;
 }
 
@@ -4971,7 +4979,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    p = p0 + rb_enc_mbclen(p0, pend, enc);
 	    line = rb_str_new5(str, s, p - s);
 	    OBJ_INFECT(line, str);
-	    rb_enc_copy(line, str);
+	    rb_enc_cr_str_copy(line, str);
 	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
 	    s = p;
@@ -5002,7 +5010,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    (rslen <= 1 || memcmp(RSTRING_PTR(rs), p, rslen) == 0)) {
 	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
 	    OBJ_INFECT(line, str);
-	    rb_enc_copy(line, str);
+	    rb_enc_cr_str_copy(line, str);
 	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
 	    s = p + (rslen ? rslen : n);
@@ -5014,7 +5022,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     if (s != pend) {
 	line = rb_str_new5(str, s, pend - s);
 	OBJ_INFECT(line, str);
-	rb_enc_copy(line, str);
+	rb_enc_cr_str_copy(line, str);
 	rb_yield(line);
     }
 
@@ -5169,7 +5177,7 @@ static VALUE
 rb_str_chop(VALUE str)
 {
     VALUE str2 = rb_str_new5(str, RSTRING_PTR(str), chopped_length(str));
-    rb_enc_copy(str2, str);
+    rb_enc_cr_str_copy(str2, str);
     OBJ_INFECT(str2, str);
     return str2;
 }
