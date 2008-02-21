@@ -154,7 +154,7 @@ int rb_enc_codelen(int code, rb_encoding *enc);
 #define rb_enc_isspace(c,enc) ONIGENC_IS_CODE_SPACE(enc,c)
 #define rb_enc_isdigit(c,enc) ONIGENC_IS_CODE_DIGIT(enc,c)
 
-#define rb_enc_asciicompat(enc) (rb_enc_mbminlen(enc)==1)
+#define rb_enc_asciicompat(enc) (!rb_enc_dummy_p(enc) && rb_enc_mbminlen(enc)==1)
 
 int rb_enc_casefold(char *to, const char *p, const char *e, rb_encoding *enc);
 int rb_enc_toupper(int c, rb_encoding *enc);

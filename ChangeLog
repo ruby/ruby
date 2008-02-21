@@ -1,3 +1,8 @@
+Thu Feb 21 10:35:04 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_enc_asciicompat): dummy encoding is not
+	  ascii compatible. [ruby-dev:33878]
+
 Thu Feb 21 00:01:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RPATHFLAG): -R option of HP-UX ld is not for runtime
