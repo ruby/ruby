@@ -69,3 +69,7 @@ assert_equal 'ok', %q{
   File.unlink(tmpname)
   :ok
 }
+
+assert_normal_exit %q{
+  ARGF.set_encoding "foo"
+}

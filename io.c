@@ -6103,8 +6103,11 @@ argf_set_encoding(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
 
+    if (next_argv()) {
+	rb_raise(rb_eArgError, "no stream to set encoding");
+    }
     rb_io_set_encoding(argc, argv, current_file);
-    GetOpenFile(io, fptr);
+    GetOpenFile(current_file, fptr);
     argf_enc = fptr->enc;
     argf_enc2 = fptr->enc2;
     return io;
