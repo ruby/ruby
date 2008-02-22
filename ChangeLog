@@ -1,3 +1,12 @@
+Sat Feb 23 01:09:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rlimit_resource_type): new function.
+	  (rlimit_resource_value): new function.
+	  (proc_getrlimit): use rlimit_resource_type to accept
+	  symbol and string as resource type.
+	  (proc_setrlimit): use rlimit_resource_type and rlimit_resource_value
+	  to accept symbol and string as resource type and values.
+
 Fri Feb 22 21:12:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_copy): check string's coderange is 7bit or

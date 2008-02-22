@@ -38,4 +38,36 @@ class TestProcess < Test::Unit::TestCase
     Process.wait pid
     assert_equal(0, $?.to_i, "#{$?}")
   end
+
+  def test_rlimit_name
+    return unless rlimit_exist?
+    [
+      :AS, "AS",
+      :CORE, "CORE",
+      :CPU, "CPU",
+      :DATA, "DATA",
+      :FSIZE, "FSIZE",
+      :MEMLOCK, "MEMLOCK",
+      :NOFILE, "NOFILE",
+      :NPROC, "NPROC",
+      :RSS, "RSS",
+      :STACK, "STACK",
+      :SBSIZE, "SBSIZE",
+    ].each {|name|
+      if Process.const_defined? "RLIMIT_#{name}"
+        assert_nothing_raised { Process.getrlimit(name) }
+      else
+        assert_raise(ArgumentError) { Process.getrlimit(name) }
+      end
+    }
+    assert_raise(ArgumentError) { Process.getrlimit(:FOO) }
+    assert_raise(ArgumentError) { Process.getrlimit("FOO") }
+  end
+
+  def test_rlimit_value
+    return unless rlimit_exist?
+    assert_raise(ArgumentError) { Process.setrlimit(:CORE, :FOO) }
+    assert_raise(Errno::EPERM) { Process.setrlimit(:NOFILE, :INFINITY) }
+    assert_raise(Errno::EPERM) { Process.setrlimit(:NOFILE, "INFINITY") }
+  end
 end

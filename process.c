@@ -2102,6 +2102,133 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 # define NUM2RLIM(v) NUM2ULL(v)
 #endif
 
+#if defined(RLIM2NUM)
+static int
+rlimit_resource_type(VALUE rtype)
+{
+    const char *name;
+    VALUE v;
+
+    switch (TYPE(rtype)) {
+      case T_SYMBOL:
+        name = rb_id2name(SYM2ID(rtype));
+        break;
+
+      default:
+        v = rb_check_string_type(rtype);
+        if (!NIL_P(v)) {
+            rtype = v;
+      case T_STRING:
+            name = StringValueCStr(rtype);
+            break;
+        }
+        /* fall through */
+
+      case T_FIXNUM:
+      case T_BIGNUM:
+        return NUM2INT(rtype);
+    }
+
+    switch (*name) {
+      case 'A':
+#ifdef RLIMIT_AS
+        if (strcmp(name, "AS") == 0) return RLIMIT_AS;
+#endif
+        break;
+
+      case 'C':
+#ifdef RLIMIT_CORE
+        if (strcmp(name, "CORE") == 0) return RLIMIT_CORE;
+#endif
+#ifdef RLIMIT_CPU
+        if (strcmp(name, "CPU") == 0) return RLIMIT_CPU;
+#endif
+        break;
+
+      case 'D':
+#ifdef RLIMIT_DATA
+        if (strcmp(name, "DATA") == 0) return RLIMIT_DATA;
+#endif
+        break;
+
+      case 'F':
+#ifdef RLIMIT_FSIZE
+        if (strcmp(name, "FSIZE") == 0) return RLIMIT_FSIZE;
+#endif
+        break;
+
+      case 'M':
+#ifdef RLIMIT_MEMLOCK
+        if (strcmp(name, "MEMLOCK") == 0) return RLIMIT_MEMLOCK;
+#endif
+        break;
+
+      case 'N':
+#ifdef RLIMIT_NOFILE
+        if (strcmp(name, "NOFILE") == 0) return RLIMIT_NOFILE;
+#endif
+#ifdef RLIMIT_NPROC
+        if (strcmp(name, "NPROC") == 0) return RLIMIT_NPROC;
+#endif
+        break;
+
+      case 'R':
+#ifdef RLIMIT_RSS
+        if (strcmp(name, "RSS") == 0) return RLIMIT_RSS;
+#endif
+        break;
+
+      case 'S':
+#ifdef RLIMIT_STACK
+        if (strcmp(name, "STACK") == 0) return RLIMIT_STACK;
+#endif
+#ifdef RLIMIT_SBSIZE
+        if (strcmp(name, "SBSIZE") == 0) return RLIMIT_SBSIZE;
+#endif
+        break;
+    }
+    rb_raise(rb_eArgError, "invalid resource name: %s", name);
+}
+
+static rlim_t
+rlimit_resource_value(VALUE rval)
+{
+    const char *name;
+    VALUE v;
+
+    switch (TYPE(rval)) {
+      case T_SYMBOL:
+        name = rb_id2name(SYM2ID(rval));
+        break;
+
+      default:
+        v = rb_check_string_type(rval);
+        if (!NIL_P(v)) {
+            rval = v;
+      case T_STRING:
+            name = StringValueCStr(rval);
+            break;
+        }
+        /* fall through */
+
+      case T_FIXNUM:
+      case T_BIGNUM:
+        return NUM2INT(rval);
+    }
+
+#ifdef RLIM_INFINITY
+    if (strcmp(name, "INFINITY") == 0) return RLIM_INFINITY;
+#endif
+#ifdef RLIM_SAVED_MAX
+    if (strcmp(name, "SAVED_MAX") == 0) return RLIM_SAVED_MAX;
+#endif
+#ifdef RLIM_SAVED_CUR
+    if (strcmp(name, "SAVED_CUR") == 0) return RLIM_SAVED_CUR;
+#endif
+    rb_raise(rb_eArgError, "invalid resource value: %s", name);
+}
+#endif
+
 /*
  *  call-seq:
  *     Process.getrlimit(resource)   => [cur_limit, max_limit]
@@ -2110,9 +2237,10 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
  *  _cur_limit_ means current (soft) limit and
  *  _max_limit_ means maximum (hard) limit.
  *
- *  _resource_ indicates the kind of resource to limit:
- *  such as <code>Process::RLIMIT_CORE</code>,
- *  <code>Process::RLIMIT_CPU</code>, etc.
+ *  _resource_ indicates the kind of resource to limit.
+ *  It is specified as a symbol such as <code>:CORE</code>,
+ *  a string such as <code>"CORE"</code> or
+ *  a constant such as <code>Process::RLIMIT_CORE</code>.
  *  See Process.setrlimit for details.
  *
  *  _cur_limit_ and _max_limit_ may be <code>Process::RLIM_INFINITY</code>,
@@ -2129,7 +2257,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
 
     rb_secure(2);
 
-    if (getrlimit(NUM2INT(resource), &rlim) < 0) {
+    if (getrlimit(rlimit_resource_type(resource), &rlim) < 0) {
 	rb_sys_fail("getrlimit");
     }
     return rb_assoc_new(RLIM2NUM(rlim.rlim_cur), RLIM2NUM(rlim.rlim_max));
@@ -2150,28 +2278,37 @@ proc_getrlimit(VALUE obj, VALUE resource)
  *  If _max_limit_ is not given, _cur_limit_ is used.
  *
  *  _resource_ indicates the kind of resource to limit.
- *  The list of resources are OS dependent.
+ *  It should be a symbol such as <code>:CORE</code>,
+ *  a string such as <code>"CORE"</code> or
+ *  a constant such as <code>Process::RLIMIT_CORE</code>.
+ *  The available resources are OS dependent.
  *  Ruby may support following resources.
  *
- *  [Process::RLIMIT_CORE] core size (bytes) (SUSv3)
- *  [Process::RLIMIT_CPU] CPU time (seconds) (SUSv3)
- *  [Process::RLIMIT_DATA] data segment (bytes) (SUSv3)
- *  [Process::RLIMIT_FSIZE] file size (bytes) (SUSv3)
- *  [Process::RLIMIT_NOFILE] file descriptors (number) (SUSv3)
- *  [Process::RLIMIT_STACK] stack size (bytes) (SUSv3)
- *  [Process::RLIMIT_AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
- *  [Process::RLIMIT_MEMLOCK] total size for mlock(2) (bytes) (4.4BSD, GNU/Linux)
- *  [Process::RLIMIT_NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
- *  [Process::RLIMIT_RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
- *  [Process::RLIMIT_SBSIZE] all socket buffers (bytes) (NetBSD, FreeBSD)
+ *  [CORE] core size (bytes) (SUSv3)
+ *  [CPU] CPU time (seconds) (SUSv3)
+ *  [DATA] data segment (bytes) (SUSv3)
+ *  [FSIZE] file size (bytes) (SUSv3)
+ *  [NOFILE] file descriptors (number) (SUSv3)
+ *  [STACK] stack size (bytes) (SUSv3)
+ *  [AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
+ *  [MEMLOCK] total size for mlock(2) (bytes) (4.4BSD, GNU/Linux)
+ *  [NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
+ *  [RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
+ *  [SBSIZE] all socket buffers (bytes) (NetBSD, FreeBSD)
  *
- *  Other <code>Process::RLIMIT_???</code> constants may be defined.
- *
- *  _cur_limit_ and _max_limit_ may be <code>Process::RLIM_INFINITY</code>,
+ *  _cur_limit_ and _max_limit_ may be
+ *  <code>:INFINITY</code>, <code>"INFINITY"</code> or
+ *  <code>Process::RLIM_INFINITY</code>,
  *  which means that the resource is not limited.
- *  They may be <code>Process::RLIM_SAVED_MAX</code> or
- *  <code>Process::RLIM_SAVED_CUR</code> too.
+ *  They may be <code>Process::RLIM_SAVED_MAX</code>,
+ *  <code>Process::RLIM_SAVED_CUR</code> and
+ *  corresponding symbols and strings too.
  *  See system setrlimit(2) manual for details.
+ *
+ *  The following example raise the soft limit of core size to
+ *  the hard limit to try to make core dump possible.
+ *
+ *    Process.setrlimit(:CORE, Process.getrlimit(:CORE)[1])
  *
  */
 
@@ -2188,10 +2325,10 @@ proc_setrlimit(int argc, VALUE *argv, VALUE obj)
     if (rlim_max == Qnil)
         rlim_max = rlim_cur;
 
-    rlim.rlim_cur = NUM2RLIM(rlim_cur);
-    rlim.rlim_max = NUM2RLIM(rlim_max);
+    rlim.rlim_cur = rlimit_resource_value(rlim_cur);
+    rlim.rlim_max = rlimit_resource_value(rlim_max);
 
-    if (setrlimit(NUM2INT(resource), &rlim) < 0) {
+    if (setrlimit(rlimit_resource_type(resource), &rlim) < 0) {
 	rb_sys_fail("setrlimit");
     }
     return Qnil;
