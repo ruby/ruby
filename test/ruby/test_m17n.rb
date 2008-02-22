@@ -805,9 +805,9 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(nil,           u("\xc2\xa1")[1])
 
     str = "\u3042"
-    assert_equal(true,  str[0, 0], "[ruby-dev:33895]")
-    assert_equal(false, str[0, 1])
-    assert_equal(false, str[0...-1])
+    assert_equal(true,  str[0, 0].ascii_only?, "[ruby-dev:33895]")
+    assert_equal(false, str[0, 1].ascii_only?)
+    assert_equal(false, str[0..-1].ascii_only?)
   end
 
   def test_str_aref_len
