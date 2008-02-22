@@ -1,3 +1,7 @@
+Fri Feb 22 19:50:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (BIGZEROP): fix for longer Bignum zeros.  [ruby-Bugs-17454]
+
 Fri Feb 22 16:09:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_lshift, rb_big_rshift, rb_big_aref): removed excess
