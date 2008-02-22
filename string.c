@@ -618,7 +618,7 @@ rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
     const char *q;
 
     if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
-        return (e - p) / rb_enc_mbminlen(enc);
+        return (e - p + rb_enc_mbminlen(enc) - 1) / rb_enc_mbminlen(enc);
     }
     else if (rb_enc_asciicompat(enc)) {
         c = 0;
@@ -651,7 +651,7 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 
     *cr = 0;
     if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
-	return (e - p) / rb_enc_mbminlen(enc);
+	return (e - p + rb_enc_mbminlen(enc) - 1) / rb_enc_mbminlen(enc);
     }
     else if (rb_enc_asciicompat(enc)) {
 	c = 0;
@@ -1223,10 +1223,9 @@ rb_str_substr(VALUE str, long beg, long len)
 	len = 0;
     }
     else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
-	long rest = (e - p) / rb_enc_mbmaxlen(enc);
-	if (len > rest)
-	    len = rest;
-	else
+        if (len * rb_enc_mbmaxlen(enc) > e - p)
+            len = e - p;
+        else
 	    len *= rb_enc_mbmaxlen(enc);
     }
     else {
@@ -5777,7 +5776,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
 	flen = RSTRING_LEN(pad);
 	fclen = str_strlen(pad, enc);
 	singlebyte = single_byte_optimizable(pad);
-	if (flen == 0) {
+	if (flen == 0 || fclen == 0) {
 	    rb_raise(rb_eArgError, "zero width padding");
 	}
     }

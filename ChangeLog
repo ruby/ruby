@@ -1,3 +1,14 @@
+Fri Feb 22 15:47:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_mbclen): return minlen instead of 1 when
+	  a character is not found properly.
+
+	* string.c (rb_enc_strlen): round up string length with fixed
+	  multibyte encoding such as UTF-32.
+	  (rb_enc_strlen_cr): ditto.
+	  (rb_str_substr): fix substring with fixed multibyte encoding.
+	  (rb_str_justify): check number of characters.
+
 Fri Feb 22 12:11:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_inspect): string of ascii incompatible encoding
