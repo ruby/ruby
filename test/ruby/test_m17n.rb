@@ -785,6 +785,13 @@ class TestM17N < Test::Unit::TestCase
     assert(s("a") < a("\xa1"))
   end
 
+  def test_str_multiply
+    str = "\u3042"
+    assert_equal(true,  (str * 0).ascii_only?, "[ruby-dev:33895]")
+    assert_equal(false, (str * 1).ascii_only?)
+    assert_equal(false, (str * 2).ascii_only?
+  end
+
   def test_str_aref
     assert_equal(a("\xc2"), a("\xc2\xa1")[0])
     assert_equal(a("\xa1"), a("\xc2\xa1")[1])
@@ -796,6 +803,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(nil,       s("\xc2\xa1")[2])
     assert_equal(u("\xc2\xa1"), u("\xc2\xa1")[0])
     assert_equal(nil,           u("\xc2\xa1")[1])
+
+    str = "\u3042"
+    assert_equal(true,  str[0, 0], "[ruby-dev:33895]")
+    assert_equal(false, str[0, 1])
+    assert_equal(false, str[0...-1])
   end
 
   def test_str_aref_len
@@ -1168,5 +1180,5 @@ class TestM17N < Test::Unit::TestCase
      s = "\xa1\xa1\x8f".force_encoding("euc-jp")
      assert_equal(false, s.valid_encoding?)
      assert_equal(true, s.reverse.valid_encoding?)
-  end
+   end
 end
