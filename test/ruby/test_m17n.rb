@@ -789,7 +789,7 @@ class TestM17N < Test::Unit::TestCase
     str = "\u3042"
     assert_equal(true,  (str * 0).ascii_only?, "[ruby-dev:33895]")
     assert_equal(false, (str * 1).ascii_only?)
-    assert_equal(false, (str * 2).ascii_only?
+    assert_equal(false, (str * 2).ascii_only?)
   end
 
   def test_str_aref
