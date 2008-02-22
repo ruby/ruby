@@ -3663,6 +3663,7 @@ rb_str_inspect(VALUE str)
     char *p, *pend;
     VALUE result = rb_str_buf_new2("");
 
+    if (!rb_enc_asciicompat(enc)) enc = rb_usascii_encoding();
     rb_enc_associate(result, enc);
     str_cat_char(result, '"', enc);
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
