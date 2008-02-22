@@ -24,7 +24,9 @@ encodings = []
 defs = {}
 encdir = ARGV[0]
 outhdr = ARGV[1] || 'encdb.h'
-Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort.each do |fn|
+Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
+  e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
+}.each do |fn|
   open(File.join(encdir,fn)) do |f|
     orig = nil
     name = nil

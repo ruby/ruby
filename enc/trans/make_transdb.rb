@@ -10,7 +10,9 @@ count = 0
 converters = {}
 transdir = ARGV[0]
 outhdr = ARGV[1] || 'transdb.h'
-Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/)}.sort.each do |fn|
+Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
+  e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
+}.each do |fn|
   open(File.join(transdir,fn)) do |f|
     f.each_line do |line|
       if (/^static const rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)
