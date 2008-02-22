@@ -215,8 +215,17 @@ void
 rb_enc_cr_str_copy(VALUE dest, VALUE src)
 {
     rb_enc_copy(dest, src);
-    if (!is_broken_string(src))
-	ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
+    switch (ENC_CODERANGE(src)) {
+    case ENC_CODERANGE_7BIT:
+	ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
+	break;
+    case ENC_CODERANGE_VALID:
+	if (search_nonascii(RSTRING_PTR(dest), RSTRING_END(dest)))
+	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
+	else
+	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
+	break;
+    }
 }
 
 void

@@ -1,3 +1,8 @@
+Fri Feb 22 21:12:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_enc_cr_str_copy): check string's coderange is 7bit or
+	  valid.
+
 Fri Feb 22 19:50:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (BIGZEROP): fix for longer Bignum zeros.  [ruby-Bugs-17454]
