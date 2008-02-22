@@ -220,7 +220,8 @@ rb_enc_cr_str_copy(VALUE dest, VALUE src)
 	ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
 	break;
     case ENC_CODERANGE_VALID:
-	if (search_nonascii(RSTRING_PTR(dest), RSTRING_END(dest)))
+	if (!rb_enc_asciicompat(enc) ||
+	    search_nonascii(RSTRING_PTR(dest), RSTRING_END(dest)))
 	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
 	else
 	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
