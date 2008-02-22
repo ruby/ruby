@@ -1242,7 +1242,10 @@ rb_str_substr(VALUE str, long beg, long len)
     else {
 	str2 = rb_str_new5(str, p, len);
 	if (len) rb_enc_cr_str_copy(str2, str);
-	else ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+	else {
+	    rb_enc_copy(str2, str);
+	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+	}
 	OBJ_INFECT(str2, str);
     }
 
