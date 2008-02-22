@@ -1,3 +1,8 @@
+Fri Feb 22 16:09:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_lshift, rb_big_rshift, rb_big_aref): removed excess
+	  arguments.
+
 Thu Feb 21 00:01:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RPATHFLAG): -R option of HP-UX ld is not for runtime

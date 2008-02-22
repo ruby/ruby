@@ -1367,7 +1367,7 @@ bigdivrem(x, y, divp, modp)
 
     dd = 0;
     q = yds[ny-1];
-    while ((q & (1<<(BITSPERDIG-1))) == 0) {
+    while ((q & (1U<<(BITSPERDIG-1))) == 0) {
 	q <<= 1;
 	dd++;
     }
@@ -2012,7 +2012,7 @@ rb_big_lshift(x, y)
 		if (!NIL_P(t)) return t;
 		neg = 1;
 	    }
-	    shift = big2ulong(y, "long", Qtrue);
+	    shift = big2ulong(y, "long");
 	    break;
 	}
 	y = rb_to_int(y);
@@ -2081,7 +2081,7 @@ rb_big_rshift(x, y)
 	    else {
 		neg = 1;
 	    }
-	    shift = big2ulong(y, "long", Qtrue);
+	    shift = big2ulong(y, "long");
 	    break;
 	}
 	y = rb_to_int(y);
@@ -2171,7 +2171,7 @@ rb_big_aref(x, y)
 	  out_of_range:
 	    return RBIGNUM(x)->sign ? INT2FIX(0) : INT2FIX(1);
 	}
-	shift = big2ulong(y, "long", Qfalse);
+	shift = big2ulong(y, "long");
     }
     else {
 	i = NUM2LONG(y);
