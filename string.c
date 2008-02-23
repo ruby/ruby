@@ -201,7 +201,7 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
     return ENC_CODERANGE_VALID;
 }
 
-void
+static void
 rb_enc_str_copy(VALUE dest, VALUE src)
 {
     rb_enc_copy(dest, src);
@@ -211,9 +211,12 @@ rb_enc_str_copy(VALUE dest, VALUE src)
     }
 }
 
-void
-rb_enc_cr_str_copy(VALUE dest, VALUE src)
+static void
+rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
 {
+    /* this function is designed for copying encoding and coderange
+     * from src to new string "dest" which is made from the part of src.
+     */
     rb_enc_copy(dest, src);
     switch (ENC_CODERANGE(src)) {
     case ENC_CODERANGE_7BIT:
@@ -226,10 +229,18 @@ rb_enc_cr_str_copy(VALUE dest, VALUE src)
 	else
 	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
 	break;
+    default:
+	if (RSTRING_LEN(dest) == 0) {
+	    if (!rb_enc_asciicompat(STR_ENC_GET(src)))
+		ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
+	    else
+		ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
+	}
+	break;
     }
 }
 
-void
+static void
 rb_enc_cr_str_exact_copy(VALUE dest, VALUE src)
 {
     rb_enc_copy(dest, src);
@@ -867,15 +878,10 @@ rb_str_times(VALUE str, VALUE times)
             n *= 2;
         }
         memcpy(RSTRING_PTR(str2) + n, RSTRING_PTR(str2), len-n);
-	cr = ENC_CODERANGE(str);
-	if (cr == ENC_CODERANGE_BROKEN) cr = ENC_CODERANGE_UNKNOWN;
-    }
-    else {
-	cr = ENC_CODERANGE_7BIT;
     }
     RSTRING_PTR(str2)[RSTRING_LEN(str2)] = '\0';
     OBJ_INFECT(str2, str);
-    ENCODING_CODERANGE_SET(str2, rb_enc_get_index(str), cr);
+    rb_enc_cr_str_copy_for_substr(str2, str);
 
     return str2;
 }
@@ -1181,7 +1187,7 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2 = rb_str_new5(str, RSTRING_PTR(str)+beg, len);
 
-    rb_enc_cr_str_copy(str2, str);
+    rb_enc_cr_str_copy_for_substr(str2, str);
     OBJ_INFECT(str2, str);
 
     return str2;
@@ -1250,11 +1256,7 @@ rb_str_substr(VALUE str, long beg, long len)
     }
     else {
 	str2 = rb_str_new5(str, p, len);
-	if (len) rb_enc_cr_str_copy(str2, str);
-	else {
-	    rb_enc_copy(str2, str);
-	    ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
-	}
+	rb_enc_cr_str_copy_for_substr(str2, str);
 	OBJ_INFECT(str2, str);
     }
 
@@ -1641,9 +1643,11 @@ rb_str_concat(VALUE str1, VALUE str2)
 	int c = FIX2INT(str2);
 	int pos = RSTRING_LEN(str1);
 	int len = rb_enc_codelen(c, enc);
+	int cr = ENC_CODERANGE(str1);
 
 	rb_str_resize(str1, pos+len);
 	rb_enc_mbcput(c, RSTRING_PTR(str1)+pos, enc);
+	ENC_CODERANGE_SET(str1, cr);
 	return str1;
     }
     return rb_str_append(str1, str2);
@@ -2478,7 +2482,7 @@ rb_str_succ(VALUE orig)
     int carry_pos = 0, carry_len = 1;
 
     str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
-    rb_enc_cr_str_copy(str, orig);
+    rb_enc_cr_str_copy_for_substr(str, orig);
     OBJ_INFECT(str, orig);
     if (RSTRING_LEN(str) == 0) return str;
 
@@ -3493,7 +3497,7 @@ rb_str_reverse(VALUE str)
     }
     STR_SET_LEN(obj, RSTRING_LEN(str));
     OBJ_INFECT(obj, str);
-    rb_enc_associate(obj, enc);
+    rb_enc_cr_str_copy_for_substr(obj, str);
 
     return obj;
 }
@@ -3884,6 +3888,7 @@ rb_str_upcase_bang(VALUE str)
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
+    int cr = ENC_CODERANGE(str);
 
     rb_str_modify(str);
     enc = STR_ENC_GET(str);
@@ -3899,6 +3904,7 @@ rb_str_upcase_bang(VALUE str)
 	s += rb_enc_codelen(c, enc);
     }
 
+    ENC_CODERANGE_SET(str, cr);
     if (modify) return str;
     return Qnil;
 }
@@ -3940,6 +3946,7 @@ rb_str_downcase_bang(VALUE str)
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
+    int cr = ENC_CODERANGE(str);
 
     rb_str_modify(str);
     enc = STR_ENC_GET(str);
@@ -3955,6 +3962,7 @@ rb_str_downcase_bang(VALUE str)
 	s += rb_enc_codelen(c, enc);
     }
 
+    ENC_CODERANGE_SET(str, cr);
     if (modify) return str;
     return Qnil;
 }
@@ -4002,6 +4010,7 @@ rb_str_capitalize_bang(VALUE str)
     char *s, *send;
     int modify = 0;
     int c;
+    int cr = ENC_CODERANGE(str);
 
     rb_str_modify(str);
     enc = STR_ENC_GET(str);
@@ -4022,6 +4031,8 @@ rb_str_capitalize_bang(VALUE str)
 	}
 	s += rb_enc_codelen(c, enc);
     }
+
+    ENC_CODERANGE_SET(str, cr);
     if (modify) return str;
     return Qnil;
 }
@@ -4064,6 +4075,7 @@ rb_str_swapcase_bang(VALUE str)
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
+    int cr = ENC_CODERANGE(str);
 
     rb_str_modify(str);
     enc = STR_ENC_GET(str);
@@ -4084,6 +4096,7 @@ rb_str_swapcase_bang(VALUE str)
 	s += rb_enc_codelen(c, enc);
     }
 
+    ENC_CODERANGE_SET(str, cr);
     if (modify) return str;
     return Qnil;
 }
@@ -4483,6 +4496,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     VALUE del = 0, nodel = 0;
     int modify = 0;
     int i;
+    int cr = ENC_CODERANGE(str);
 
     if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
@@ -4515,6 +4529,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     *t = '\0';
     STR_SET_LEN(str, t - RSTRING_PTR(str));
 
+    ENC_CODERANGE_SET(str, cr);
     if (modify) return str;
     return Qnil;
 }
@@ -4996,7 +5011,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    p = p0 + rb_enc_mbclen(p0, pend, enc);
 	    line = rb_str_new5(str, s, p - s);
 	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy(line, str);
+	    rb_enc_cr_str_copy_for_substr(line, str);
 	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
 	    s = p;
@@ -5027,7 +5042,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	    (rslen <= 1 || memcmp(RSTRING_PTR(rs), p, rslen) == 0)) {
 	    line = rb_str_new5(str, s, p - s + (rslen ? rslen : n));
 	    OBJ_INFECT(line, str);
-	    rb_enc_cr_str_copy(line, str);
+	    rb_enc_cr_str_copy_for_substr(line, str);
 	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
 	    s = p + (rslen ? rslen : n);
@@ -5039,7 +5054,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     if (s != pend) {
 	line = rb_str_new5(str, s, pend - s);
 	OBJ_INFECT(line, str);
-	rb_enc_cr_str_copy(line, str);
+	rb_enc_cr_str_copy_for_substr(line, str);
 	rb_yield(line);
     }
 
@@ -5194,7 +5209,7 @@ static VALUE
 rb_str_chop(VALUE str)
 {
     VALUE str2 = rb_str_new5(str, RSTRING_PTR(str), chopped_length(str));
-    rb_enc_cr_str_copy(str2, str);
+    rb_enc_cr_str_copy_for_substr(str2, str);
     OBJ_INFECT(str2, str);
     return str2;
 }
