@@ -70,6 +70,8 @@ double ruby_strtod(const char *, char **);
 #undef strtod
 #define strtod(s,e) ruby_strtod(s,e)
 
+void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

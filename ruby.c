@@ -65,6 +65,12 @@ VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
 char *ruby_inplace_mode = 0;
 
+#define DISABLE_BIT(bit) (1U << disable_##bit)
+enum disable_flag_bits {
+    disable_gems,
+    disable_rubyopt,
+};
+
 struct cmdline_options {
     int sflag, xflag;
     int do_loop, do_print;
@@ -73,7 +79,7 @@ struct cmdline_options {
     int usage;
     int version;
     int copyright;
-    int disable_gems;
+    int disable;
     int verbose;
     int yydebug;
     char *script;
@@ -132,7 +138,8 @@ usage(const char *name)
 	"-w              turn warnings on for your script",
 	"-W[level]       set warning level; 0=silence, 1=medium, 2=verbose (default)",
 	"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
-	"--disable-gems  disable gem libraries",
+	"--enable/--disable-FEATURE --enable/--disable=FEATURE  enable/disable FEATUREs",
+	"                gems: gem libraries, rubyopt: RUBYOPT env",
 	"--copyright     print the copyright",
 	"--version       print the version",
 	NULL
@@ -536,6 +543,34 @@ moreswitches(const char *s, struct cmdline_options *opt)
     return (char *)s;
 }
 
+#define UNSET_WHEN(bit)					      \
+    if (len < sizeof(#bit) && strncmp(str, #bit, len) == 0) { \
+	*(unsigned int *)arg &= ~DISABLE_BIT(bit);	      \
+	return;                                               \
+    }
+
+#define SET_WHEN(bit)					      \
+    if (len < sizeof(#bit) && strncmp(str, #bit, len) == 0) { \
+	*(unsigned int *)arg |= DISABLE_BIT(bit);	      \
+	return;                                               \
+    }
+
+static void
+enable_option(const char *str, int len, void *arg)
+{
+    UNSET_WHEN(gems);
+    UNSET_WHEN(rubyopt);
+    rb_warn("unknown argument for --enable: `%.*s'", len, str);
+}
+
+static void
+disable_option(const char *str, int len, void *arg)
+{
+    SET_WHEN(gems);
+    SET_WHEN(rubyopt);
+    rb_warn("unknown argument for --disable: `%.*s'", len, str);
+}
+
 static int
 proc_options(int argc, char **argv, struct cmdline_options *opt)
 {
@@ -792,8 +827,20 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 		ruby_debug = Qtrue;
                 ruby_verbose = Qtrue;
             }
-            else if (strcmp("disable-gems", s) == 0)
-		opt->disable_gems = 1;
+	    else if (strncmp("enable", s, n = 6) == 0 &&
+		     (!s[n] || s[n] == '-' || s[n] == '=')) {
+		if (!(s += n + 1)[-1] && (!--argc || !(s = *++argv))) {
+		    rb_raise(rb_eRuntimeError, "missing argument for --enable");
+		}
+		ruby_each_words(s, enable_option, &opt->disable);
+	    }
+	    else if (strncmp("disable", s, n = 7) == 0 &&
+		     (!s[n] || s[n] == '-' || s[n] == '=')) {
+		if (!(s += n + 1)[-1] && (!--argc || !(s = *++argv))) {
+		    rb_raise(rb_eRuntimeError, "missing argument for --disable");
+		}
+		ruby_each_words(s, disable_option, &opt->disable);
+	    }
 	    else if (strncmp("encoding", s, n = 8) == 0 && (!s[n] || s[n] == '=')) {
 		s += n;
 		if (!*s++) {
@@ -854,11 +901,11 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 void Init_prelude(void);
 
 static void
-ruby_init_gems(struct cmdline_options *opt)
+ruby_init_gems(int enable)
 {
     VALUE gem;
     gem = rb_define_module("Gem");
-    rb_const_set(gem, rb_intern("Enable"), opt->disable_gems ? Qfalse : Qtrue);
+    rb_const_set(gem, rb_intern("Enable"), enable ? Qtrue : Qfalse);
     Init_prelude();
 }
 
@@ -895,7 +942,8 @@ process_options(VALUE arg)
     argc -= i;
     argv += i;
 
-    if (rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
+    if (!(opt->disable & DISABLE_BIT(rubyopt)) &&
+	rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
 	VALUE src_enc_name = opt->src.enc.name;
 	VALUE ext_enc_name = opt->ext.enc.name;
 
@@ -990,7 +1038,7 @@ process_options(VALUE arg)
     process_sflag(opt);
 
     ruby_init_loadpath();
-    ruby_init_gems(opt);
+    ruby_init_gems(!(opt->disable && DISABLE_BIT(gems)));
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
     if (opt->ext.enc.name != 0) {

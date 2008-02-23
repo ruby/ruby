@@ -1,3 +1,17 @@
+Sun Feb 24 06:13:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* debug.c (ruby_set_debug_option): separated ruby_each_words().
+
+	* util.c (ruby_each_words): extracted from ruby_set_debug_option().
+
+	* ruby.c (proc_options): generalized enable/disable options.
+
+	* ruby.c (ruby_init_gems): take enabled flag.  [ruby-core:14840]
+
+	* ruby.c (process_options): added --disable-rubyopt flag.
+
+	* include/ruby/util.h (ruby_each_words): prototype.
+
 Sun Feb 24 05:25:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): check if argument for -E exists.

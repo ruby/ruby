@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/util.h"
 #include "debug.h"
 #include "vm_core.h"
 
@@ -121,31 +122,25 @@ ruby_debug_breakpoint(void)
 }
 
 #ifdef RUBY_DEBUG_ENV
-#include <ctype.h>
-
-void
-ruby_set_debug_option(const char *str)
+static void
+set_debug_option(const char *str, int len, void *arg)
 {
-    const char *end;
-    int len;
-
-    if (!str) return;
-    for (; *str; str = end) {
-	while (ISSPACE(*str) || *str == ',') str++;
-	if (!*str) break;
-	end = str;
-	while (*end && !ISSPACE(*end) && *end != ',') end++;
-	len = end - str;
-#define SET_WHEN(name, var)		    \
+#define SET_WHEN(name, var) do {	    \
 	if (len == sizeof(name) - 1 &&	    \
 	    strncmp(str, name, len) == 0) { \
 	    extern int ruby_##var;	    \
 	    ruby_##var = 1;		    \
-	    continue;			    \
-	}
-	SET_WHEN("gc_stress", gc_stress);
-	SET_WHEN("core", enable_coredump);
-	fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
-    }
+	    return;			    \
+	}				    \
+    } while (0)
+    SET_WHEN("gc_stress", gc_stress);
+    SET_WHEN("core", enable_coredump);
+    fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
+}
+
+void
+ruby_set_debug_option(const char *str)
+{
+    ruby_each_words(str, set_debug_option, 0);
 }
 #endif
