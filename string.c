@@ -1165,21 +1165,15 @@ str_utf8_offset(const char *p, const char *e, int nth)
 }
 #endif
 
-static long
-str_sublen(VALUE str, long pos, rb_encoding *enc)
+long
+rb_str_sublen(VALUE str, long pos)
 {
-    if (rb_enc_mbmaxlen(enc) == 1 || pos < 0)
+    if (single_byte_optimizable(str) || pos < 0)
         return pos;
     else {
 	char *p = RSTRING_PTR(str);
-        return rb_enc_strlen(p, p + pos, enc);
+        return rb_enc_strlen(p, p + pos, STR_ENC_GET(str));
     }
-}
-
-int
-rb_str_sublen(VALUE str, int len)
-{
-    return str_sublen(str, len, STR_ENC_GET(str));
 }
 
 VALUE
@@ -3480,7 +3474,7 @@ rb_str_reverse(VALUE str)
     p = RSTRING_END(obj);
 
     if (RSTRING_LEN(str) > 1) {
-	if (rb_enc_mbmaxlen(enc) == 1) {
+	if (single_byte_optimizable(str)) {
 	    while (s < e) {
 		*--p = *s++;
 	    }
@@ -3521,7 +3515,7 @@ rb_str_reverse_bang(VALUE str)
 	s = RSTRING_PTR(str);
 	e = RSTRING_END(str) - 1;
 
-	if (rb_enc_mbmaxlen(enc) == 1) {
+	if (single_byte_optimizable(str)) {
 	    while (s < e) {
 		c = *s;
 		*s++ = *e;

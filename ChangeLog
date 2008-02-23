@@ -1,3 +1,10 @@
+Sat Feb 23 20:16:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_sublen): removed.
+
+	* string.c (rb_str_reverse, rb_str_reverse_bang): use 
+	  single_byte_optimizable.
+
 Sat Feb 23 19:25:18 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_copy_for_substr): renamed from
