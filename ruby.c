@@ -79,7 +79,7 @@ struct cmdline_options {
     int usage;
     int version;
     int copyright;
-    int disable;
+    unsigned int disable;
     int verbose;
     int yydebug;
     char *script;
@@ -139,7 +139,7 @@ usage(const char *name)
 	"-W[level]       set warning level; 0=silence, 1=medium, 2=verbose (default)",
 	"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
 	"--enable/--disable-FEATURE --enable/--disable=FEATURE  enable/disable FEATUREs",
-	"                gems: gem libraries, rubyopt: RUBYOPT env",
+	"                gems: gem libraries, rubyopt: RUBYOPT env, or all",
 	"--copyright     print the copyright",
 	"--version       print the version",
 	NULL
@@ -543,31 +543,44 @@ moreswitches(const char *s, struct cmdline_options *opt)
     return (char *)s;
 }
 
-#define UNSET_WHEN(bit)					      \
-    if (len < sizeof(#bit) && strncmp(str, #bit, len) == 0) { \
-	*(unsigned int *)arg &= ~DISABLE_BIT(bit);	      \
-	return;                                               \
+#define NAME_MATCH_P(name, str, len) \
+    ((len) < sizeof(name) && strncmp((str), name, (len)) == 0)
+
+#define UNSET_WHEN(name, bit, str, len)	\
+    if (NAME_MATCH_P(name, str, len)) { \
+	*(unsigned int *)arg &= ~(bit); \
+	return;				\
     }
 
-#define SET_WHEN(bit)					      \
-    if (len < sizeof(#bit) && strncmp(str, #bit, len) == 0) { \
-	*(unsigned int *)arg |= DISABLE_BIT(bit);	      \
-	return;                                               \
+#define SET_WHEN(name, bit, str, len)	\
+    if (NAME_MATCH_P(name, str, len)) { \
+	*(unsigned int *)arg |= (bit);	\
+	return;				\
     }
 
 static void
 enable_option(const char *str, int len, void *arg)
 {
-    UNSET_WHEN(gems);
-    UNSET_WHEN(rubyopt);
+#define UNSET_WHEN_DISABLE(bit) UNSET_WHEN(#bit, DISABLE_BIT(bit), str, len)
+    UNSET_WHEN_DISABLE(gems);
+    UNSET_WHEN_DISABLE(rubyopt);
+    if (NAME_MATCH_P("all", str, len)) {
+	*(unsigned int *)arg = 0U;
+	return;
+    }
     rb_warn("unknown argument for --enable: `%.*s'", len, str);
 }
 
 static void
 disable_option(const char *str, int len, void *arg)
 {
-    SET_WHEN(gems);
-    SET_WHEN(rubyopt);
+#define SET_WHEN_DISABLE(bit) SET_WHEN(#bit, DISABLE_BIT(bit), str, len)
+    SET_WHEN_DISABLE(gems);
+    SET_WHEN_DISABLE(rubyopt);
+    if (NAME_MATCH_P("all", str, len)) {
+	*(unsigned int *)arg = ~0U;
+	return;
+    }
     rb_warn("unknown argument for --disable: `%.*s'", len, str);
 }
 

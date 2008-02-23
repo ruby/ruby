@@ -1,8 +1,11 @@
-Sun Feb 24 06:13:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Feb 24 06:49:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* debug.c (ruby_set_debug_option): separated ruby_each_words().
 
 	* util.c (ruby_each_words): extracted from ruby_set_debug_option().
+
+	* ruby.c (enable_option, disable_option): allow all for all known
+	  features.
 
 	* ruby.c (proc_options): generalized enable/disable options.
 
