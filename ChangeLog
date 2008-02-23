@@ -1,3 +1,8 @@
+Sun Feb 24 05:09:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-style.el (ruby-style-label-indent): fix for labels inside
+	  blocks in switch.
+
 Sun Feb 24 03:52:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (valid_filename): use O_EXCL to get rid of clobbering
