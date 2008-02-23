@@ -1,3 +1,8 @@
+Sun Feb 24 03:52:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (valid_filename): use O_EXCL to get rid of clobbering
+	  existing files in race conditions.
+
 Sat Feb 23 21:36:13 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (ole_init_cp): should return value.
