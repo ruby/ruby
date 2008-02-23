@@ -1,3 +1,8 @@
+Sun Feb 24 03:52:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (valid_filename): use O_EXCL to get rid of clobbering
+	  existing files in race conditions.
+
 Fri Feb 22 19:50:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (BIGZEROP): fix for longer Bignum zeros.  [ruby-Bugs-17454]

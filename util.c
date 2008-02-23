@@ -234,20 +234,16 @@ valid_filename(char *s)
     int fd;
 
     /*
-    // if the file exists, then it's a valid filename!
-    */
-
-    if (_access(s, 0) == 0) {
-	return 1;
-    }
-
-    /*
     // It doesn't exist, so see if we can open it.
     */
 
-    if ((fd = _open(s, O_CREAT, 0666)) >= 0) {
+    if ((fd = _open(s, O_CREAT|O_EXCL, 0666)) >= 0) {
 	_close(fd);
 	_unlink(s);	/* don't leave it laying around */
+	return 1;
+    }
+    else if (errno == EEXIST) {
+	/* if the file exists, then it's a valid filename! */
 	return 1;
     }
     return 0;
