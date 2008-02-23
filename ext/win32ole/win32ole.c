@@ -819,7 +819,6 @@ static UINT ole_encoding2cp(rb_encoding *enc)
     ENC_MACHING_CP(enc, "KOI8-R", 20866);
     ENC_MACHING_CP(enc, "KOI8-U", 21866);
     ENC_MACHING_CP(enc, "Shift_JIS", 932);
-    ENC_MACHING_CP(enc, "US-ASCII", 20127);
     ENC_MACHING_CP(enc, "UTF-16BE", 1201);
     ENC_MACHING_CP(enc, "UTF-16LE", 1200);
     ENC_MACHING_CP(enc, "UTF-7", 65000);

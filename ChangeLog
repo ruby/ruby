@@ -1,3 +1,8 @@
+Sat Feb 23 18:50:17 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_encoding2cp): remove US-ASCII
+	  mapping.
+
 Sat Feb 23 01:09:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rlimit_resource_type): new function.
