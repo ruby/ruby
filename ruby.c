@@ -539,7 +539,7 @@ moreswitches(const char *s, struct cmdline_options *opt)
 static int
 proc_options(int argc, char **argv, struct cmdline_options *opt)
 {
-    int argc0 = argc;
+    int n, argc0 = argc;
     const char *s;
 
     if (argc == 0)
@@ -707,10 +707,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    break;
 
 	  case 'E':
-	    if (!*++s) {
-		s = argv[1];
-		argc--, argv++;
-	    }
+	    if (!*++s) goto next_encoding;
 	    goto encoding;
 
 	  case 'K':
@@ -797,17 +794,16 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
             }
             else if (strcmp("disable-gems", s) == 0)
 		opt->disable_gems = 1;
-	    else if (strcmp("encoding", s) == 0) {
-		if (!--argc || !(s = *++argv)) {
-		  noencoding:
-		    rb_raise(rb_eRuntimeError, "missing argument for --encoding");
+	    else if (strncmp("encoding", s, n = 8) == 0 && (!s[n] || s[n] == '=')) {
+		s += n;
+		if (!*s++) {
+		  next_encoding:
+		    if (!--argc || !(s = *++argv)) {
+			rb_raise(rb_eRuntimeError, "missing argument for --encoding");
+		    }
 		}
 	      encoding:
 		opt->ext.enc.name = rb_str_new2(s);
-	    }
-	    else if (strncmp("encoding=", s, 9) == 0) {
-		if (!*(s += 9)) goto noencoding;
-		goto encoding;
 	    }
 	    else if (strcmp("version", s) == 0)
 		opt->version = 1;

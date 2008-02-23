@@ -1,3 +1,7 @@
+Sun Feb 24 05:25:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): check if argument for -E exists.
+
 Sun Feb 24 05:09:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-label-indent): fix for labels inside
