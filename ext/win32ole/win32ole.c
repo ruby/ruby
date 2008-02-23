@@ -848,6 +848,7 @@ ole_init_cp()
     if (code_page_installed(cp)) {
         cWIN32OLE_cp = cp;
     }
+    return cp;
 }
 
 struct myCPINFOEX {

@@ -1,3 +1,7 @@
+Sat Feb 23 21:36:13 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (ole_init_cp): should return value.
+
 Sat Feb 23 20:16:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (str_sublen): removed.
