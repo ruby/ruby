@@ -70,10 +70,7 @@ void
 ruby_debug_print_indent(int level, int debug_level, int indent_level)
 {
     if (level < debug_level) {
-	int i;
-	for (i = 0; i < indent_level; i++) {
-	    fprintf(stderr, " ");
-	}
+	fprintf(stderr, "%*s", indent_level, "");
 	fflush(stderr);
     }
 }
