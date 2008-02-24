@@ -310,7 +310,7 @@ clean: clean-ext clean-local clean-enc
 clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	@$(RM) *.inc $(GOLFOBJS)
+	@$(RM) *.inc $(GOLFOBJS) y.tab.c y.output
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) clean
 clean-enc:
@@ -320,7 +320,7 @@ distclean: distclean-ext distclean-local distclean-enc
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) config.h rbconfig.rb yasmdata.rb encdb.h
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
-	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output $(PREP)
+	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) distclean
 #	-$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h

@@ -194,11 +194,10 @@ lex.c: keywords
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -S $<
 
 clean-local::
-	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT)
+	@$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output
 
 distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG)
-	@-$(RM) ext/ripper/y.output
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
