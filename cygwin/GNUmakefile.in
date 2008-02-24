@@ -67,6 +67,9 @@ $(LIBRUBY_SO): $(RUBYDEF)
 
 $(RUBYDEF): $(LIBRUBY_A) $(PREP) $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/win32/mkexports.rb -output=$@ $(LIBRUBY_A)
+
+clean-local:
+	@$(RM) $(RUBYDEF)
 endif
 
 ifeq (@target_os@,cygwin)
