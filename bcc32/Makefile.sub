@@ -462,10 +462,10 @@ post-install-doc::
 clean-local::
 		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) *.tds *.il? $(RUBY_SO_NAME).lib
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
+		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
 
 distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\)
-		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
 ext/extinit.obj: ext/extinit.c $(SETUP)

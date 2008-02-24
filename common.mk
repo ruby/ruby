@@ -272,6 +272,7 @@ clean: clean-ext clean-local
 clean-local::
 	@$(RM) $(OBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
+	@$(RM) y.tab.c y.output
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) clean
 
@@ -279,7 +280,7 @@ distclean: distclean-ext distclean-local
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) config.h rbconfig.rb
 	@$(RM) config.cache config.log config.status
-	@$(RM) *~ *.bak *.stackdump core *.core gmon.out y.tab.c y.output $(PREP)
+	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) distclean
 

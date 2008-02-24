@@ -1,3 +1,8 @@
+Sun Feb 24 23:29:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, {bcc,win}32/Makefile.sub (clean-local): remove
+	  intermediate files.
+
 Sun Feb 24 03:52:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (valid_filename): use O_EXCL to get rid of clobbering
