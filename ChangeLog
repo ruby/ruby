@@ -1,3 +1,8 @@
+Mon Feb 25 13:40:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (Init_process): share bignum objects for RLIM_INFINITY,
+	  RLIM_SAVED_MAX and RLIM_SAVED_CUR if they are equal.
+
 Mon Feb 25 10:41:41 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* encoding.c (Encoding#dummy): minor grammatical fixes
@@ -193,7 +198,7 @@ Wed Feb 20 13:08:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  type, for compiled files and script files.
 
 	* instruby.rb (parse_args): deal with make style command line macros,
-	  and count as long syle options if prefixed with INSTALL_.
+	  and count as long style options if prefixed with INSTALL_.
 
 	* instruby.rb (makedirs): use $dir_mode.  [ruby-dev:33805]
 
@@ -282,7 +287,7 @@ Sun Feb 17 15:25:08 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (ENC_CODERANGE_AND): added.
 
-	* string.c (rb_str_plus, srb_str_times): keep coderange.
+	* string.c (rb_str_plus, rb_str_times): keep coderange.
 
 	* parse.y (STR_NEW0) use rb_usascii_str_new.
 
