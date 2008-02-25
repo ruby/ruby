@@ -357,10 +357,10 @@ rb_enc_dummy_p(rb_encoding *enc)
  * call-seq:
  *   enc.dummy? => true or false
  *
- * Returns true for dummy encoding.
- * A dummy encoding is a encoding which character handling is not properly
+ * Returns true for dummy encodings.
+ * A dummy encoding is an encoding for which character handling is not properly
  * implemented.
- * It is used for stateful encoding.
+ * It is used for stateful encodings.
  *
  *   Encoding::ISO_2022_JP.dummy?       #=> true
  *   Encoding::UTF_8.dummy?             #=> false

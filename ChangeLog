@@ -1,3 +1,8 @@
+Mon Feb 25 10:41:41 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* encoding.c (Encoding#dummy): minor grammatical fixes
+	  in rdoc documentation.
+
 Mon Feb 25 00:01:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (clean-local): should be double-colon.
