@@ -1,3 +1,11 @@
+Mon Feb 25 17:30:29 2008  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/digest.c ext/openssl/lib/openssl/digest.rb:
+	  Commit patch #9280 from Akinori MUSHA.
+	  Simplify the OpenSSL::Digest class and make use of the
+	  existing Digest framework.
+	  Enhance performance.
+
 Mon Feb 25 13:40:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (Init_process): share bignum objects for RLIM_INFINITY,
