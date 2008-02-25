@@ -737,6 +737,7 @@ ceil_log2(register unsigned long x)
 #define MAX_BIG2STR_TABLE_ENTRIES 64
 
 static VALUE big2str_power_cache[35][MAX_BIG2STR_TABLE_ENTRIES];
+static int power_cache_initialized = 0;
 
 static void
 power_cache_init(void)
@@ -901,6 +902,10 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
         return big2str_orig(x, base, ptr, len, hbase, trim);
     }
 
+    if (!power_cache_initialized) {
+	power_cache_init();
+	power_cache_initialized = 1;
+    }
     b = power_cache_get_power(base, n1, &m1);
     bigdivmod(x, b, &q, &r);
     lh = big2str_karatsuba(q, base, ptr,      (len - m1)/2,
@@ -2605,6 +2610,4 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "size", rb_big_size, 0);
     rb_define_method(rb_cBignum, "odd?", rb_big_odd_p, 0);
     rb_define_method(rb_cBignum, "even?", rb_big_even_p, 0);
-
-    power_cache_init();
 }
