@@ -1,3 +1,8 @@
+Mon Feb 25 13:40:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (Init_process): share bignum objects for RLIM_INFINITY,
+	  RLIM_SAVED_MAX and RLIM_SAVED_CUR if they are equal.
+
 Sun Feb 24 23:29:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, {bcc,win}32/Makefile.sub (clean-local): remove
