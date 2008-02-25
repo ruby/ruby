@@ -166,10 +166,10 @@ init_copy(VALUE dest, VALUE obj)
     rb_gc_copy_finalizer(dest, obj);
     switch (TYPE(obj)) {
       case T_OBJECT:
-        if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_PTR(dest)) {
-            xfree(ROBJECT_PTR(dest));
-            ROBJECT(dest)->as.heap.ptr = 0;
-            ROBJECT(dest)->as.heap.len = 0;
+        if (!(RBASIC(dest)->flags & ROBJECT_EMBED) && ROBJECT_IVPTR(dest)) {
+            xfree(ROBJECT_IVPTR(dest));
+            ROBJECT(dest)->as.heap.ivptr = 0;
+            ROBJECT(dest)->as.heap.numiv = 0;
             ROBJECT(dest)->as.heap.iv_index_tbl = 0;
         }
         if (RBASIC(obj)->flags & ROBJECT_EMBED) {
@@ -177,11 +177,11 @@ init_copy(VALUE dest, VALUE obj)
             RBASIC(dest)->flags |= ROBJECT_EMBED;
         }
         else {
-            long len = ROBJECT(obj)->as.heap.len;
+            long len = ROBJECT(obj)->as.heap.numiv;
             VALUE *ptr = ALLOC_N(VALUE, len);
-            MEMCPY(ptr, ROBJECT(obj)->as.heap.ptr, VALUE, len);
-            ROBJECT(dest)->as.heap.ptr = ptr;
-            ROBJECT(dest)->as.heap.len = len;
+            MEMCPY(ptr, ROBJECT(obj)->as.heap.ivptr, VALUE, len);
+            ROBJECT(dest)->as.heap.ivptr = ptr;
+            ROBJECT(dest)->as.heap.numiv = len;
             ROBJECT(dest)->as.heap.iv_index_tbl = ROBJECT(obj)->as.heap.iv_index_tbl;
             RBASIC(dest)->flags &= ~ROBJECT_EMBED;
         }
@@ -374,8 +374,8 @@ rb_obj_inspect(VALUE obj)
 
     if (TYPE(obj) == T_OBJECT) {
         int has_ivar = 0;
-        VALUE *ptr = ROBJECT_PTR(obj);
-        long len = ROBJECT_LEN(obj);
+        VALUE *ptr = ROBJECT_IVPTR(obj);
+        long len = ROBJECT_NUMIV(obj);
         long i;
 
         for (i = 0; i < len; i++) {

@@ -1,3 +1,16 @@
+Tue Feb 26 01:16:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (ROBJECT_NUMIV): renamed from ROBJECT_LEN.
+	  (ROBJECT_IVPTR): renamed from ROBJECT_PTR.
+
+	* variable.c: follow the above renaming.
+
+	* object.c: ditto.
+
+	* gc.c: ditto.
+
+	* marshal.c: ditto.
+
 Mon Feb 25 17:30:29 2008  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* ext/openssl/digest.c ext/openssl/lib/openssl/digest.rb:

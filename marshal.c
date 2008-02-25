@@ -505,8 +505,8 @@ w_objivar(VALUE obj, struct dump_call_arg *arg)
     VALUE *ptr;
     long i, len, num;
 
-    len = ROBJECT_LEN(obj);
-    ptr = ROBJECT_PTR(obj);
+    len = ROBJECT_NUMIV(obj);
+    ptr = ROBJECT_IVPTR(obj);
     num = 0;
     for (i = 0; i < len; i++)
         if (ptr[i] != Qundef)

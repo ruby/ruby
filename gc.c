@@ -1065,8 +1065,8 @@ gc_mark_children(VALUE ptr, int lev)
 
       case T_OBJECT:
         {
-            long i, len = ROBJECT_LEN(obj);
-	    VALUE *ptr = ROBJECT_PTR(obj);
+            long i, len = ROBJECT_NUMIV(obj);
+	    VALUE *ptr = ROBJECT_IVPTR(obj);
             for (i  = 0; i < len; i++) {
 		gc_mark(*ptr++, lev);
             }
@@ -1274,8 +1274,8 @@ obj_free(VALUE obj)
     switch (RANY(obj)->as.basic.flags & T_MASK) {
       case T_OBJECT:
 	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
-            RANY(obj)->as.object.as.heap.ptr) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.object.as.heap.ptr));
+            RANY(obj)->as.object.as.heap.ivptr) {
+	    RUBY_CRITICAL(free(RANY(obj)->as.object.as.heap.ivptr));
 	}
 	break;
       case T_MODULE:

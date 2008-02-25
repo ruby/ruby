@@ -396,22 +396,22 @@ struct RObject {
     struct RBasic basic;
     union {
 	struct {
-	    long len;
-	    VALUE *ptr;
+	    long numiv;
+	    VALUE *ivptr;
             struct st_table *iv_index_tbl; /* shortcut for RCLASS_IV_INDEX_TBL(rb_obj_class(obj)) */
 	} heap;
 	VALUE ary[ROBJECT_EMBED_LEN_MAX];
     } as;
 };
 #define ROBJECT_EMBED FL_USER1
-#define ROBJECT_LEN(o) \
+#define ROBJECT_NUMIV(o) \
     ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
      ROBJECT_EMBED_LEN_MAX : \
-     ROBJECT(o)->as.heap.len)
-#define ROBJECT_PTR(o) \
+     ROBJECT(o)->as.heap.numiv)
+#define ROBJECT_IVPTR(o) \
     ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
      ROBJECT(o)->as.ary : \
-     ROBJECT(o)->as.heap.ptr)
+     ROBJECT(o)->as.heap.ivptr)
 #define ROBJECT_IV_INDEX_TBL(o) \
     ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
      RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
