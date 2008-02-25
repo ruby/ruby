@@ -48,7 +48,7 @@ GetDigestPtr(VALUE obj)
 
         SafeGetDigest(obj, ctx);
 
-        md = EVP_MD_CTX_md(ctx); /*== ctx->digest*/
+        md = EVP_MD_CTX_md(ctx);
     }
 
     return md;
@@ -62,7 +62,6 @@ ossl_digest_new(const EVP_MD *md)
 
     ret = ossl_digest_alloc(cDigest);
     GetDigest(ret, ctx);
-    EVP_MD_CTX_init(ctx);
     EVP_DigestInit_ex(ctx, md, NULL);
    
     return ret;
@@ -80,9 +79,8 @@ ossl_digest_alloc(VALUE klass)
     ctx = EVP_MD_CTX_create();
     if (ctx == NULL)
 	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
-    EVP_MD_CTX_init(ctx);
     obj = Data_Wrap_Struct(klass, 0, EVP_MD_CTX_destroy, ctx);
-	
+
     return obj;
 }
 
@@ -102,14 +100,9 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
     VALUE type, data;
 
     rb_scan_args(argc, argv, "11", &type, &data);
-    StringValue(type);
+    md = GetDigestPtr(type);
     if (!NIL_P(data)) StringValue(data);
-    name = StringValuePtr(type);
-    
-    md = EVP_get_digestbyname(name);
-    if (!md) {
-	ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
-    }
+
     GetDigest(self, ctx);
     EVP_DigestInit_ex(ctx, md, NULL);
     
@@ -167,116 +160,31 @@ ossl_digest_update(VALUE self, VALUE data)
     return self;
 }
 
-static void
-digest_final(EVP_MD_CTX *ctx, char **buf, int *buf_len)
-{
-    EVP_MD_CTX final;
-
-    if (!EVP_MD_CTX_copy(&final, ctx)) {
-	ossl_raise(eDigestError, NULL);
-    }
-    if (!(*buf = OPENSSL_malloc(EVP_MD_CTX_size(&final)))) {
-	EVP_MD_CTX_cleanup(&final);
-	ossl_raise(eDigestError, "Cannot allocate mem for digest");
-    }
-    EVP_DigestFinal_ex(&final, *buf, buf_len);
-    EVP_MD_CTX_cleanup(&final);
-}
-
 /*
  *  call-seq:
- *      digest.final -> aString
+ *      digest.finish -> aString
  *
  */
 static VALUE
-ossl_digest_digest(VALUE self)
+ossl_digest_finish(int argc, VALUE *argv, VALUE self)
 {
     EVP_MD_CTX *ctx;
-    char *buf;
-    int buf_len;
-    VALUE digest;
-	
-    GetDigest(self, ctx);
-    digest_final(ctx, &buf, &buf_len);
-    digest = ossl_buf2str(buf, buf_len);
-	
-    return digest;
-}
+    VALUE str;
 
-/*
- *  call-seq:
- *      digest.hexdigest -> aString
- *
- */
-static VALUE
-ossl_digest_hexdigest(VALUE self)
-{
-    EVP_MD_CTX *ctx;
-    char *buf, *hexbuf;
-    int buf_len;
-    VALUE hexdigest;
+    rb_scan_args(argc, argv, "01", &str);
 
     GetDigest(self, ctx);
-    digest_final(ctx, &buf, &buf_len);
-    if (string2hex(buf, buf_len, &hexbuf, NULL) != 2 * buf_len) {
-	OPENSSL_free(buf);
-	ossl_raise(eDigestError, "Memory alloc error");
-    }
-    OPENSSL_free(buf);
-    hexdigest = ossl_buf2str(hexbuf, 2 * buf_len);
 
-    return hexdigest;
-}
-
-static VALUE
-ossl_digest_s_digest(VALUE klass, VALUE str, VALUE data)
-{
-    VALUE obj = rb_class_new_instance(1, &str, klass);
-
-    ossl_digest_update(obj, data);
-
-    return ossl_digest_digest(obj);
-}
-
-static VALUE
-ossl_digest_s_hexdigest(VALUE klass, VALUE str, VALUE data)
-{
-    VALUE obj = rb_class_new_instance(1, &str, klass);
-
-    ossl_digest_update(obj, data);
-
-    return ossl_digest_hexdigest(obj);
-}
-
-/*
- *  call-seq:
- *      digest1 == digest2 -> true | false
- *
- */
-static VALUE
-ossl_digest_equal(VALUE self, VALUE other)
-{
-    EVP_MD_CTX *ctx;
-    VALUE str1, str2;
-
-    if (rb_obj_is_kind_of(other, cDigest) == Qtrue) {
-	str2 = ossl_digest_digest(other);
+    if (NIL_P(str)) {
+        str = rb_str_new(NULL, EVP_MD_CTX_size(ctx));
     } else {
-	StringValue(other);
-	str2 = other;
-    }
-    GetDigest(self, ctx);
-    if (RSTRING_LEN(str2) == EVP_MD_CTX_size(ctx)) {
-	str1 = ossl_digest_digest(self);
-    } else {
-	str1 = ossl_digest_hexdigest(self);
-    }
-    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)
-	&& rb_str_cmp(str1, str2) == 0) {
-	return Qtrue;
+        StringValue(str);
+        rb_str_resize(str, EVP_MD_CTX_size(ctx));
     }
 
-    return Qfalse;
+    EVP_DigestFinal_ex(ctx, RSTRING_PTR(str), NULL);
+
+    return str;
 }
 
 /*
@@ -296,7 +204,7 @@ ossl_digest_name(VALUE self)
 
 /*
  *  call-seq:
- *      digest.size -> integer
+ *      digest.digest_size -> integer
  *
  *  Returns the output size of the digest.
  */
@@ -310,38 +218,42 @@ ossl_digest_size(VALUE self)
     return INT2NUM(EVP_MD_CTX_size(ctx));
 }
 
+static VALUE
+ossl_digest_block_length(VALUE self)
+{
+    EVP_MD_CTX *ctx;
+
+    GetDigest(self, ctx);
+
+    return INT2NUM(EVP_MD_CTX_block_size(ctx));
+}
+
 /*
  * INIT
  */
 void
 Init_ossl_digest()
 {
+    rb_require("openssl");
+    rb_require("digest");
+
 #if 0 /* let rdoc know about mOSSL */
     mOSSL = rb_define_module("OpenSSL");
 #endif
 
-    cDigest = rb_define_class_under(mOSSL, "Digest", rb_cObject);
+    cDigest = rb_define_class_under(mOSSL, "Digest", rb_path2class("Digest::Class"));
     eDigestError = rb_define_class_under(cDigest, "DigestError", eOSSLError);
 	
     rb_define_alloc_func(cDigest, ossl_digest_alloc);
-    rb_define_singleton_method(cDigest, "digest", ossl_digest_s_digest, 2);
-    rb_define_singleton_method(cDigest, "hexdigest", ossl_digest_s_hexdigest, 2);
-	
+
     rb_define_method(cDigest, "initialize", ossl_digest_initialize, -1);
-    rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
-    
     rb_define_copy_func(cDigest, ossl_digest_copy);
-    
-    rb_define_method(cDigest, "digest", ossl_digest_digest, 0);
-    rb_define_method(cDigest, "hexdigest", ossl_digest_hexdigest, 0);
-    rb_define_alias(cDigest, "inspect", "hexdigest");
-    rb_define_alias(cDigest, "to_s", "hexdigest");
-    
+    rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
     rb_define_method(cDigest, "update", ossl_digest_update, 1);
     rb_define_alias(cDigest, "<<", "update");
-    
-    rb_define_method(cDigest, "==", ossl_digest_equal, 1);
-    
+    rb_define_private_method(cDigest, "finish", ossl_digest_finish, -1);
+    rb_define_method(cDigest, "digest_length", ossl_digest_size, 0);
+    rb_define_method(cDigest, "block_length", ossl_digest_block_length, 0);
+
     rb_define_method(cDigest, "name", ossl_digest_name, 0);
-    rb_define_method(cDigest, "size", ossl_digest_size, 0);
 }

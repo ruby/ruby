@@ -1,3 +1,11 @@
+Mon Feb 25 17:30:29 2008  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/digest.c ext/openssl/lib/openssl/digest.rb:
+	  Commit patch #9280 from Akinori MUSHA.
+	  Simplify the OpenSSL::Digest class and make use of the
+	  existing Digest framework.
+	  Enhance performance.
+
 Mon Feb 25 15:33:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bignum.c (big2str_karatsuba): initialize cache if not initialized.
