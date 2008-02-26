@@ -317,7 +317,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 	rb_raise(rb_eArgError, "array size too big");
     }
     rb_ary_modify(ary);
-	RESIZE_CAPA(ary, len);
+    RESIZE_CAPA(ary, len);
     if (rb_block_given_p()) {
 	long i;
 
@@ -2343,6 +2343,19 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
     return rb_exec_recursive(recursive_equal, ary1, ary2);
 }
 
+static VALUE
+recursive_eql(VALUE ary1, VALUE ary2, int recur)
+{
+    long i;
+
+    if (recur) return Qfalse;
+    for (i=0; i<RARRAY_LEN(ary1); i++) {
+	if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
+	    return Qfalse;
+    }
+    return Qtrue;
+}
+
 /*
  *  call-seq:
  *     array.eql?(other)  -> true or false
@@ -2354,16 +2367,10 @@ rb_ary_equal(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_eql(VALUE ary1, VALUE ary2)
 {
-    long i;
-
     if (ary1 == ary2) return Qtrue;
     if (TYPE(ary2) != T_ARRAY) return Qfalse;
     if (RARRAY_LEN(ary1) != RARRAY_LEN(ary2)) return Qfalse;
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
-	    return Qfalse;
-    }
-    return Qtrue;
+    return rb_exec_recursive(recursive_eql, ary1, ary2);
 }
 
 static VALUE
@@ -2425,6 +2432,25 @@ rb_ary_includes(VALUE ary, VALUE item)
 }
 
 
+static VALUE
+recursive_cmp(VALUE ary1, VALUE ary2, int recur)
+{
+    long i, len;
+
+    if (recur) return Qnil;
+    len = RARRAY_LEN(ary1);
+    if (len > RARRAY_LEN(ary2)) {
+	len = RARRAY_LEN(ary2);
+    }
+    for (i=0; i<RARRAY_LEN(ary1); i++) {
+	VALUE v = rb_funcall(rb_ary_elt(ary1, i), id_cmp, 1, rb_ary_elt(ary2, i));
+	if (v != INT2FIX(0)) {
+	    return v;
+	}
+    }
+    return Qundef;
+}
+
 /* 
  *  call-seq:
  *     array <=> other_array   ->  -1, 0, +1
@@ -2448,19 +2474,13 @@ rb_ary_includes(VALUE ary, VALUE item)
 VALUE
 rb_ary_cmp(VALUE ary1, VALUE ary2)
 {
-    long i, len;
+    long len;
+    VALUE v;
 
     ary2 = to_ary(ary2);
-    len = RARRAY_LEN(ary1);
-    if (len > RARRAY_LEN(ary2)) {
-	len = RARRAY_LEN(ary2);
-    }
-    for (i=0; i<len; i++) {
-	VALUE v = rb_funcall(rb_ary_elt(ary1, i), id_cmp, 1, rb_ary_elt(ary2, i));
-	if (v != INT2FIX(0)) {
-	    return v;
-	}
-    }
+    if (ary1 == ary2) return INT2FIX(0);
+    v = rb_exec_recursive(recursive_cmp, ary1, ary2);
+    if (v != Qundef) return v;
     len = RARRAY_LEN(ary1) - RARRAY_LEN(ary2);
     if (len == 0) return INT2FIX(0);
     if (len > 0) return INT2FIX(1);

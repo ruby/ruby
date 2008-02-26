@@ -1,3 +1,8 @@
+Tue Feb 26 15:30:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_eql, rb_ary_cmp): get rid of stack overflow with
+	  self-recursive constructs.  [ruby-Bugs-18356]
+
 Tue Feb 26 01:16:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (ROBJECT_NUMIV): renamed from ROBJECT_LEN.
