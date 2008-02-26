@@ -1,3 +1,7 @@
+Tue Feb 26 15:43:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (tokadd_escape): refactored.  [ruby-core:15657]
+
 Tue Feb 26 15:30:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_eql, rb_ary_cmp): get rid of stack overflow with
