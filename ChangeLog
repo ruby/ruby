@@ -1,3 +1,8 @@
+Tue Feb 26 15:50:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (value_expr_gen): removed inappropriate warning.
+	  [ruby-core:15660]
+
 Tue Feb 26 15:43:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (tokadd_escape): refactored.  [ruby-core:15657]

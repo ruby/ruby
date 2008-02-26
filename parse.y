@@ -7902,6 +7902,14 @@ value_expr_gen(struct parser_params *parser, NODE *node)
 	    break;
 
 	  case NODE_IF:
+	    if (!node->nd_body) {
+		node = node->nd_else;
+		break;
+	    }
+	    else if (!node->nd_else) {
+		node = node->nd_body;
+		break;
+	    }
 	    if (!value_expr(node->nd_body)) return Qfalse;
 	    node = node->nd_else;
 	    break;
