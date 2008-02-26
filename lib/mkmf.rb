@@ -1316,7 +1316,7 @@ def depend_rules(depend)
       implicit = [[m[1], m[2]], [m.post_match]]
       next
     elsif RULE_SUBST and /\A(?!\s*\w+\s*=)[$\w][^#]*:/ =~ line
-      line.gsub!(%r"(?<=\s)(?![./\\])([^$(){}+=:\s,]+)(?=\s|\z)", &RULE_SUBST.method(:%))
+      line.gsub!(%r"(\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {$1 + RULE_SUBST % $2}
     end
     depout << line
   end

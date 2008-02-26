@@ -1,3 +1,11 @@
+Wed Feb 27 03:55:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb, enc/make_encmake.rb: load current mkmf.rb even if
+	  cross-compiling.
+
+	* ext/extmk.rb, enc/make_encmake.rb, lib/mkmf.rb: need to be 1.8
+	  compatible for cross-compiling.
+
 Tue Feb 26 16:53:13 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-calculate-indent): should distinguish

@@ -24,17 +24,18 @@ alias $0 $progname
 $extlist = []
 $compiled = {}
 
-$:.replace([Dir.pwd])
-require 'rbconfig'
-
 srcdir = File.dirname(File.dirname(__FILE__))
-
-$:.unshift(srcdir, File.expand_path("lib", srcdir))
+unless defined?(CROSS_COMPILING) and CROSS_COMPILING
+  $:.replace([File.expand_path("lib", srcdir), Dir.pwd])
+end
+$:.unshift(srcdir)
+require 'rbconfig'
 
 $topdir = "."
 $top_srcdir = srcdir
 
-require 'mkmf'
+$" << "mkmf.rb"
+load File.expand_path("lib/mkmf.rb", srcdir)
 require 'optparse/shellwords'
 
 def sysquote(x)
@@ -60,7 +61,7 @@ def extract_makefile(makefile, keep = true)
       unless installrb.empty?
         config = CONFIG.dup
         install_dirs(target_prefix).each {|var, val| config[var] = val}
-        FileUtils.rm_f(installrb.values.collect {|f| RbConfig.expand(f, config)}, verbose: true)
+        FileUtils.rm_f(installrb.values.collect {|f| RbConfig.expand(f, config)}, :verbose => true)
       end
     end
     return false
@@ -287,7 +288,7 @@ def parse_args()
   $mflags.unshift(*rest) unless rest.empty?
 
   def $mflags.set?(flag)
-    grep(/\A-(?!-).*#{'%s' % flag}/i) { return true }
+    grep(/\A-(?!-).*#{flag.chr}/i) { return true }
     false
   end
   def $mflags.defined?(var)
@@ -337,18 +338,22 @@ end
 
 EXEEXT = CONFIG['EXEEXT']
 if CROSS_COMPILING
-  $ruby = CONFIG['MINIRUBY']
+  $ruby = $mflags.defined?("MINIRUBY") || CONFIG['MINIRUBY']
 elsif sep = config_string('BUILD_FILE_SEPARATOR')
   $ruby = "$(topdir:/=#{sep})#{sep}miniruby" + EXEEXT
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I'$(topdir)' -I'$(top_srcdir)/lib'"
-$ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
-$ruby << " -I'$(top_srcdir)/ext' -rpurelib.rb"
+$ruby << " -I'$(topdir)'"
+unless CROSS_COMPILING
+  $ruby << " -I'$(top_srcdir)/lib'"
+  $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
+  $ruby << " -I'$(top_srcdir)/ext' -rpurelib.rb"
+  ENV["RUBYLIB"] = "-"
+  ENV["RUBYOPT"] = "-rpurelib.rb"
+end
 $config_h = '$(arch_hdrdir)/ruby/config.h'
-ENV["RUBYLIB"] = "-"
-ENV["RUBYOPT"] = "-rpurelib.rb"
+$mflags << "ruby=#$ruby"
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 
@@ -398,12 +403,12 @@ else
     elsif (w = w.grep(String)).empty?
       proc {true}
     else
-      w.collect {|o| o.split(/,/)}.flatten.method(:any?)
+      proc {|c1| w.collect {|o| o.split(/,/)}.flatten.any?(&c1)}
     end
   }
-  cond = proc {|ext|
-    cond1 = proc {|n| File.fnmatch(n, ext, File::FNM_PATHNAME)}
-    withes.call(&cond1) or !withouts.call(&cond1)
+  cond = proc {|ext, *|
+    cond1 = proc {|n| File.fnmatch(n, ext)}
+    withes.call(cond1) or !withouts.call(cond1)
   }
   exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
     d = File.dirname(d)
@@ -550,7 +555,7 @@ if $nmake == ?b
   end
 end
 $mflags.unshift("topdir=#$topdir")
-ENV["RUBYOPT"] = ''
+ENV.delete("RUBYOPT")
 system($make, *sysquote($mflags)) or exit($?.exitstatus)
 
 #Local variables:

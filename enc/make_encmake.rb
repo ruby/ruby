@@ -1,10 +1,10 @@
 #! ./miniruby
 
 dir = File.expand_path("../..", __FILE__)
-$:.unshift(File.join(dir, "lib"))
 $:.unshift(dir)
 $:.unshift(".")
-require 'mkmf'
+$" << "mkmf.rb"
+load File.expand_path("lib/mkmf.rb", dir)
 require 'erb'
 
 if /--builtin-encs=/ =~ ARGV[0]
