@@ -524,11 +524,9 @@ Init_ossl_dh()
 }
 
 #else /* defined NO_DH */
-#   warning >>> OpenSSL is compiled without DH support <<<
 void
 Init_ossl_dh()
 {
-    rb_warning("OpenSSL is compiled without DH support");
 }
 #endif /* NO_DH */
 

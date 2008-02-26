@@ -477,12 +477,8 @@ Init_ossl_dsa()
 }
 
 #else /* defined NO_DSA */
-#   warning >>> OpenSSL is compiled without DSA support <<<
-
 void
 Init_ossl_dsa()
 {
-    rb_warning("OpenSSL is compiled without DSA support");
 }
-
 #endif /* NO_DSA */
