@@ -1094,7 +1094,7 @@ Init_signal(void)
     install_sighandler(SIGBUS, sigbus);
 #endif
 #ifdef SIGSEGV
-    install_sighandler(SIGSEGV, sigsegv);
+    //install_sighandler(SIGSEGV, sigsegv);
 #endif
     }
 #ifdef SIGPIPE
