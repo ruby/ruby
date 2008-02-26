@@ -1,3 +1,7 @@
+Tue Feb 26 15:43:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* parse.y (tokadd_escape): refactored.  [ruby-core:15657]
+
 Mon Feb 25 17:30:29 2008  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* ext/openssl/digest.c ext/openssl/lib/openssl/digest.rb:

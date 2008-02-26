@@ -2890,8 +2890,7 @@ read_escape()
 }
 
 static int
-tokadd_escape(term)
-    int term;
+tokadd_escape()
 {
     int c;
 
@@ -2956,7 +2955,7 @@ tokadd_escape(term)
 	tokadd('\\'); tokadd('c');
       escaped:
 	if ((c = nextc()) == '\\') {
-	    return tokadd_escape(term);
+	    return tokadd_escape();
 	}
 	else if (c == -1) goto eof;
 	tokadd(c);
@@ -2968,8 +2967,7 @@ tokadd_escape(term)
 	return -1;
 
       default:
-	if (c != '\\' || c != term)
-	    tokadd('\\');
+        tokadd('\\');
 	tokadd(c);
     }
     return 0;
@@ -3089,7 +3087,7 @@ tokadd_string(func, term, paren, nest)
 	      default:
 		if (func & STR_FUNC_REGEXP) {
 		    pushback(c);
-		    if (tokadd_escape(term) < 0)
+		    if (tokadd_escape() < 0)
 			return -1;
 		    continue;
 		}
