@@ -174,7 +174,7 @@ static VALUE ossl_ssl_session_get_id(VALUE self)
 
 	p = SSL_SESSION_get_id(ctx, &i);
 
-	return rb_str_new(p, i);
+	return rb_str_new((const char *) p, i);
 }
 #endif
 
@@ -200,7 +200,7 @@ static VALUE ossl_ssl_session_to_der(VALUE self)
 	else if (len >= sizeof(buf))
 		ossl_raise(eSSLSession, "i2d_SSL_SESSION too large");
 
-	return rb_str_new(p, len);
+	return rb_str_new((const char *) p, len);
 }
 
 /*
@@ -289,6 +289,8 @@ void Init_ossl_ssl_session(void)
 
 #ifdef HAVE_SSL_SESSION_GET_ID
 	rb_define_method(cSSLSession, "id", ossl_ssl_session_get_id, 0);
+#else
+	rb_undef_method(cSSLSession, "id");
 #endif
 	rb_define_method(cSSLSession, "to_der", ossl_ssl_session_to_der, 0);
 	rb_define_method(cSSLSession, "to_pem", ossl_ssl_session_to_pem, 0);

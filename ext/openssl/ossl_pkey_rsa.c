@@ -585,11 +585,9 @@ Init_ossl_rsa()
 }
 
 #else /* defined NO_RSA */
-#   warning >>> OpenSSL is compiled without RSA support <<<
 void
 Init_ossl_rsa()
 {
-    rb_warning("OpenSSL is compiled without RSA support");
 }
 #endif /* NO_RSA */
 

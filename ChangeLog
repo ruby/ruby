@@ -1,3 +1,12 @@
+Tue Feb 26 16:06:00 2008  Technorama Ltd.  <oss-ruby@technorama.net>
+
+	* ext/openssl/ossl_{ec,dh,dsa,rsa}.c: Remove useless warnings.
+
+	* ext/openssl/ossl_asn1.c: Simplify code.
+
+	* ext/openssl/ossl_ssl_session.c Fix compiler warnings.
+	  Undefine #id if SSL_SESSION_get_id is not supported.
+
 Tue Feb 26 15:50:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (value_expr_gen): removed inappropriate warning.

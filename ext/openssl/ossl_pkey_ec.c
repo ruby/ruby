@@ -1576,10 +1576,7 @@ void Init_ossl_ec()
 }
 
 #else /* defined NO_EC */
-#   warning >>> OpenSSL is compiled without EC support <<<
-
 void Init_ossl_ec()
 {
 }
-
 #endif /* NO_EC */
