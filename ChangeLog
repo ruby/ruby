@@ -1,3 +1,8 @@
+Tue Feb 26 16:41:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (combi_len, rb_ary_product): check for overflow.
+	  [ruby-Bugs-18355]
+
 Tue Feb 26 16:38:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (recursive_cmp): compare minimal length parts.

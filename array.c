@@ -3072,7 +3072,11 @@ combi_len(long n, long k)
     if (k < 0) return 0;
     val = 1;
     for (i=1; i <= k; i++,n--) {
+	long m = val;
 	val *= n;
+	if (val < m) {
+	    rb_raise(rb_eRangeError, "too big for combination");
+	}
 	val /= i;
     }
     return val;
@@ -3185,8 +3189,12 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 
     /* Compute the length of the result array; return [] if any is empty */
     for (i = 0; i < n; i++) {
-	resultlen *= RARRAY_LEN(arrays[i]);
-	if (resultlen == 0) return rb_ary_new2(0);
+	long k = RARRAY_LEN(arrays[i]), l = resultlen;
+	if (k == 0) return rb_ary_new2(0);
+	resultlen *= k;
+	if (resultlen < k || resultlen < l || resultlen / k != l) {
+	    rb_raise(rb_eRangeError, "too big to product");
+	}
     }
 
     /* Otherwise, allocate and fill in an array of results */
