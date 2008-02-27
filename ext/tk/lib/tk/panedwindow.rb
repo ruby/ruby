@@ -231,5 +231,7 @@ class Tk::PanedWindow<TkWindow
 end
 
 Tk::Panedwindow = Tk::PanedWindow
-TkPanedWindow = Tk::PanedWindow unless Object.const_defined? :TkPanedWindow
-TkPanedwindow = Tk::Panedwindow unless Object.const_defined? :TkPanedwindow
+#TkPanedWindow = Tk::PanedWindow unless Object.const_defined? :TkPanedWindow
+#TkPanedwindow = Tk::Panedwindow unless Object.const_defined? :TkPanedwindow
+Tk.__set_toplevel_aliases__(:Tk, Tk::PanedWindow, 
+                            :TkPanedWindow, :TkPanedwindow)

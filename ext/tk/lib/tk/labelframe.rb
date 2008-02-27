@@ -4,7 +4,7 @@
 require 'tk'
 require 'tk/frame'
 
-class Tk::LabelFrame<TkFrame
+class Tk::LabelFrame<Tk::Frame
   TkCommandNames = ['labelframe'.freeze].freeze
   WidgetClassName = 'Labelframe'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -23,6 +23,7 @@ class Tk::LabelFrame<TkFrame
   private :__val2ruby_optkeys
 end
 
-Tk::Labelframe = TkLabelFrame
-TkLabelFrame = Tk::LabelFrame unless Object.const_defined? :TkLabelFrame
-TkLabelframe = Tk::Labelframe unless Object.const_defined? :TkLabelframe
+Tk::Labelframe = Tk::LabelFrame
+#TkLabelFrame = Tk::LabelFrame unless Object.const_defined? :TkLabelFrame
+#TkLabelframe = Tk::Labelframe unless Object.const_defined? :TkLabelframe
+Tk.__set_toplevel_aliases__(:Tk, Tk::LabelFrame, :TkLabelFrame, :TkLabelframe)

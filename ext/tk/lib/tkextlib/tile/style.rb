@@ -52,10 +52,28 @@ class << Tk::Tile::Style
     style = '.' unless style
 
     if keys && keys != None
-      tk_call(TkCommandNames[0], 'map', style, *hash_kv(keys))
+      if keys.kind_of?(Hash)
+        tk_call(TkCommandNames[0], 'map', style, *hash_kv(keys))
+      else
+        simplelist(tk_call(TkCommandNames[0], 'map', style, '-' << keys.to_s))
+      end
     else
-      tk_call(TkCommandNames[0], 'map', style)
+      ret = {}
+      Hash[*(simplelist(tk_call(TkCommandNames[0], 'map', style)))].each{|k, v|
+        ret[k[1..-1]] = list(v)
+      }
+      ret
     end
+  end
+  alias map_configure map
+
+  def map_configinfo(style=nil, key=None)
+    style = '.' unless style
+    map(style, key)
+  end
+
+  def map_default_configinfo(key=None)
+    map('.', key)
   end
 
   def lookup(style, opt, state=None, fallback_value=None)
@@ -92,16 +110,20 @@ class << Tk::Tile::Style
   end
 
   def theme_create(name, keys=nil)
+    name = name.to_s
     if keys && keys != None
       tk_call(TkCommandNames[0], 'theme', 'create', name, *hash_kv(keys))
     else
       tk_call(TkCommandNames[0], 'theme', 'create', name)
     end
+    name
   end
 
   def theme_settings(name, cmd=nil, &b)
+    name = name.to_s
     cmd = Proc.new(&b) if !cmd && b
     tk_call(TkCommandNames[0], 'theme', 'settings', name, cmd)
+    name
   end
 
   def theme_names()
@@ -109,6 +131,8 @@ class << Tk::Tile::Style
   end
 
   def theme_use(name)
+    name = name.to_s
     tk_call(TkCommandNames[0], 'theme', 'use', name)
+    name
   end
 end

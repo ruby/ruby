@@ -362,7 +362,7 @@ module TkOptionDB
 
   def new_proc_class_random(klass, func, safe = 4, add = false, &b)
     eval_under_random_base(){
-      TkOption.new_proc_class(klass, func, safe, add, self, &b)
+      TkOptionDB.new_proc_class(klass, func, safe, add, self, &b)
     }
   end
   module_function :new_proc_class_random

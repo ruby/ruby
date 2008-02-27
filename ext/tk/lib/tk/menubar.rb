@@ -89,7 +89,7 @@ require 'tk/frame'
 require 'tk/composite'
 require 'tk/menuspec'
 
-class TkMenubar<TkFrame
+class TkMenubar<Tk::Frame
   include TkComposite
   include TkMenuSpec
   

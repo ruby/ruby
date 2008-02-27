@@ -7,7 +7,7 @@ require 'tk/tagfont'
 
 class TkTextTag<TkObject
   include TkTreatTagFont
-  include TkText::IndexModMethods
+  include Tk::Text::IndexModMethods
 
   TTagID_TBL = TkCore::INTERP.create_table
   Tk_TextTag_ID = ['tag'.freeze, '00000'.taint].freeze
@@ -47,7 +47,7 @@ class TkTextTag<TkObject
   end
 
   def id
-    TkText::IndexString.new(@id)
+    Tk::Text::IndexString.new(@id)
   end
 
   def exist?
@@ -60,11 +60,11 @@ class TkTextTag<TkObject
   end
 
   def first
-    TkText::IndexString.new(@id + '.first')
+    Tk::Text::IndexString.new(@id + '.first')
   end
 
   def last
-    TkText::IndexString.new(@id + '.last')
+    Tk::Text::IndexString.new(@id + '.last')
   end
 
   def add(*indices)
@@ -83,7 +83,7 @@ class TkTextTag<TkObject
     l = tk_split_simplelist(tk_call_without_enc(@t.path, 'tag', 'ranges', @id))
     r = []
     while key=l.shift
-      r.push [TkText::IndexString.new(key), TkText::IndexString.new(l.shift)]
+      r.push [Tk::Text::IndexString.new(key), Tk::Text::IndexString.new(l.shift)]
     end
     r
   end
@@ -92,7 +92,7 @@ class TkTextTag<TkObject
     simplelist(tk_call_without_enc(@t.path, 'tag', 'nextrange', @id, 
                                    _get_eval_enc_str(first), 
                                    _get_eval_enc_str(last))).collect{|idx|
-      TkText::IndexString.new(idx)
+      Tk::Text::IndexString.new(idx)
     }
   end
 
@@ -100,7 +100,7 @@ class TkTextTag<TkObject
     simplelist(tk_call_without_enc(@t.path, 'tag', 'prevrange', @id, 
                                    _get_eval_enc_str(first), 
                                    _get_eval_enc_str(last))).collect{|idx|
-      TkText::IndexString.new(idx)
+      Tk::Text::IndexString.new(idx)
     }
   end
 
@@ -248,8 +248,8 @@ class TkTextNamedTag<TkTextTag
   end
 
   def initialize(parent, name, *args)
-    #unless parent.kind_of?(TkText)
-    #  fail ArgumentError, "expect TkText for 1st argument"
+    #unless parent.kind_of?(Tk::Text)
+    #  fail ArgumentError, "expect Tk::Text for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path

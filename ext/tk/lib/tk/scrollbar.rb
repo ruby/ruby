@@ -105,10 +105,11 @@ class Tk::Scrollbar<TkWindow
   end
 end
 
-TkScrollbar = Tk::Scrollbar unless Object.const_defined? :TkScrollbar
+#TkScrollbar = Tk::Scrollbar unless Object.const_defined? :TkScrollbar
+Tk.__set_toplevel_aliases__(:Tk, Tk::Scrollbar, :TkScrollbar)
 
 
-class Tk::XScrollbar<TkScrollbar
+class Tk::XScrollbar<Tk::Scrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'horizontal'
@@ -117,10 +118,11 @@ class Tk::XScrollbar<TkScrollbar
   private :create_self
 end
 
-TkXScrollbar = Tk::XScrollbar unless Object.const_defined? :TkXScrollbar
+#TkXScrollbar = Tk::XScrollbar unless Object.const_defined? :TkXScrollbar
+Tk.__set_toplevel_aliases__(:Tk, Tk::XScrollbar, :TkXScrollbar)
 
 
-class Tk::YScrollbar<TkScrollbar
+class Tk::YScrollbar<Tk::Scrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'vertical'
@@ -129,4 +131,5 @@ class Tk::YScrollbar<TkScrollbar
   private :create_self
 end
 
-TkYScrollbar = Tk::YScrollbar unless Object.const_defined? :TkYScrollbar
+#TkYScrollbar = Tk::YScrollbar unless Object.const_defined? :TkYScrollbar
+Tk.__set_toplevel_aliases__(:Tk, Tk::YScrollbar, :TkYScrollbar)

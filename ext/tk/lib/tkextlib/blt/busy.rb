@@ -19,7 +19,7 @@ module Tk::BLT
     class Shield < TkWindow
       def self.shield_path(win)
         win = window(win) unless win.kind_of?(TkWindow)
-        if win.kind_of?(TkToplevel)
+        if win.kind_of?(Tk::Toplevel)
           win.path + '._Busy'
         else
           win.path + '_Busy'

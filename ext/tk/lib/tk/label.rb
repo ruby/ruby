@@ -17,4 +17,5 @@ class Tk::Label<TkWindow
   #private :create_self
 end
 
-TkLabel = Tk::Label unless Object.const_defined? :TkLabel
+#TkLabel = Tk::Label unless Object.const_defined? :TkLabel
+Tk.__set_toplevel_aliases__(:Tk, Tk::Label, :TkLabel)

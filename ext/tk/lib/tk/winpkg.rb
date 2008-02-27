@@ -9,7 +9,8 @@ require 'tk'
 
 module Tk::WinDDE
 end
-TkWinDDE = Tk::WinDDE
+#TkWinDDE = Tk::WinDDE
+Tk.__set_toplevel_aliases__(:Tk, Tk::WinDDE, :TkWinDDE)
 
 module Tk::WinDDE
   extend Tk
@@ -91,7 +92,8 @@ end
 
 module Tk::WinRegistry
 end
-TkWinRegistry = Tk::WinRegistry
+#TkWinRegistry = Tk::WinRegistry
+Tk.__set_toplevel_aliases__(:Tk, Tk::WinRegistry, :TkWinRegistry)
 
 module Tk::WinRegistry
   extend Tk

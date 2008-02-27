@@ -85,10 +85,22 @@ class Tk::Iwidgets::Checkbox
     self
   end
 
-  def get(idx)
-    simplelist(tk_call(@path, 'get', index(idx))).collect{|id|
+  def get_tags
+    simplelist(tk_call_without_enc(@path, 'get'))
+  end
+
+  def get_objs
+    simplelist(tk_call_without_enc(@path, 'get')).collect{|id|
       Tk::Itk::Component.id2obj(self, id)
     }
+  end
+
+  def get(idx=nil)
+    if idx
+      bool(tk_call_without_enc(@path, 'get', index(idx)))
+    else
+      get_tags
+    end
   end
 
   def index(idx)

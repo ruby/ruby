@@ -9,7 +9,7 @@ require 'tkextlib/bwidget.rb'
 
 module Tk
   module BWidget
-    class Button < TkButton
+    class Button < Tk::Button
     end
   end
 end

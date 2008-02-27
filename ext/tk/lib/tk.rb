@@ -935,7 +935,7 @@ module TkComm
 
   def _bindinfo(what, context=nil)
     if context
-      tk_call_without_enc(*what+["<#{tk_event_sequence(context)}>"]) .collect {|cmdline|
+      tk_call_without_enc(*what+["<#{tk_event_sequence(context)}>"]).each_line.collect {|cmdline|
 =begin
         if cmdline =~ /^rb_out\S* (c(?:_\d+_)?\d+)\s+(.*)$/
           #[Tk_CMDTBL[$1], $2]
@@ -4102,6 +4102,14 @@ class TkWindow<TkObject
   include TkWinfo
   extend TkBindCore
 
+  @@WIDGET_INSPECT_FULL = false
+  def TkWindow._widget_inspect_full_?
+    @@WIDGET_INSPECT_FULL
+  end
+  def TkWindow._widget_inspect_full_=(mode)
+    @@WIDGET_INSPECT_FULL = (mode && true) || false
+  end
+
   TkCommandNames = [].freeze
   ## ==> If TkCommandNames[0] is a string (not a null string), 
   ##     assume the string is a Tcl/Tk's create command of the widget class. 
@@ -4204,8 +4212,12 @@ class TkWindow<TkObject
   private :create_self
 
   def inspect
-    str = super
-    str[0..(str.index(' '))] << '@path=' << @path.inspect << '>'
+    if @@WIDGET_INSPECT_FULL
+      super
+    else
+      str = super
+      str[0..(str.index(' '))] << '@path=' << @path.inspect << '>'
+    end
   end
 
   def exist?
@@ -4717,6 +4729,7 @@ class TkWindow<TkObject
     bindtags(bindtags().unshift(tag))
   end
 end
+TkWidget = TkWindow
 
 # freeze core modules
 #TclTkLib.freeze

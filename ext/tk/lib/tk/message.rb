@@ -4,7 +4,7 @@
 require 'tk'
 require 'tk/label'
 
-class Tk::Message<TkLabel
+class Tk::Message<Tk::Label
   TkCommandNames = ['message'.freeze].freeze
   WidgetClassName = 'Message'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -18,4 +18,5 @@ class Tk::Message<TkLabel
   private :create_self
 end
 
-TkMessage = Tk::Message unless Object.const_defined? :TkMessage
+#TkMessage = Tk::Message unless Object.const_defined? :TkMessage
+Tk.__set_toplevel_aliases__(:Tk, Tk::Message, :TkMessage)

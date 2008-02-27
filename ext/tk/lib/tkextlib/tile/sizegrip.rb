@@ -9,8 +9,12 @@ module Tk
   module Tile
     class SizeGrip < TkWindow
     end
+    Sizegrip = SizeGrip
   end
 end
+
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Sizegrip, :TkSizegrip, :TkSizeGrip)
+
 
 class Tk::Tile::SizeGrip < TkWindow
   include Tk::Tile::TileWidget

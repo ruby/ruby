@@ -7,7 +7,7 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TScale < TkScale
+    class TScale < Tk::Scale
     end
     Scale = TScale
 
@@ -17,7 +17,10 @@ module Tk
   end
 end
 
-class Tk::Tile::TScale < TkScale
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Scale, :TkScale)
+
+
+class Tk::Tile::TScale < Tk::Scale
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE

@@ -15,6 +15,8 @@ require 'tk'
 module TkEvent
   class Event < TkUtil::CallbackSubst
     module Grp
+      major, minor, type, type_name, patchlevel = TclTkLib.get_version
+
       KEY         =           0x1
       BUTTON      =           0x2
       MOTION      =           0x4
@@ -39,7 +41,7 @@ module TkEvent
       RESIZEREQ   =           0x200000
       CIRCREQ     =           0x400000
 
-      MWHEEL      =           0x10000000
+      MWHEEL      =           KEY
 
       ALL         =           0xFFFFFFFF
 
@@ -298,31 +300,54 @@ module TkEvent
       [ ?b, ?n, :num ], 
       [ ?c, ?n, :count ], 
       [ ?d, ?s, :detail ], 
+      # ?e
       [ ?f, ?b, :focus ], 
+      # ?g
       [ ?h, ?n, :height ], 
       [ ?i, ?s, :win_hex ], 
+      # ?j
       [ ?k, ?n, :keycode ], 
+      # ?l
       [ ?m, ?s, :mode ], 
+      # ?n
       [ ?o, ?b, :override ], 
       [ ?p, ?s, :place ], 
+      # ?q
+      # ?r
       [ ?s, ?x, :state ], 
       [ ?t, ?n, :time ], 
+      # ?u
+      [ ?v, ?n, :value_mask ], 
       [ ?w, ?n, :width ], 
       [ ?x, ?n, :x ], 
       [ ?y, ?n, :y ], 
+      # ?z
       [ ?A, ?s, :char ], 
       [ ?B, ?n, :borderwidth ], 
+      # ?C
       [ ?D, ?n, :wheel_delta ], 
       [ ?E, ?b, :send_event ], 
+      # ?F
+      # ?G
+      # ?H
+      # ?I
+      # ?J
       [ ?K, ?s, :keysym ], 
+      # ?L
+      # ?M
       [ ?N, ?n, :keysym_num ], 
+      # ?O
       [ ?P, ?s, :property ], 
+      # ?Q
       [ ?R, ?s, :rootwin_id ], 
       [ ?S, ?s, :subwindow ], 
       [ ?T, ?n, :type ], 
+      # ?U
+      # ?V
       [ ?W, ?w, :widget ], 
       [ ?X, ?n, :x_root ], 
       [ ?Y, ?n, :y_root ], 
+      # ?Z
       nil
     ]
 

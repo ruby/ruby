@@ -13,6 +13,9 @@ module Tk
   end
 end
 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Notebook, :TkNotebook)
+
+
 class Tk::Tile::TNotebook < TkWindow
   ################################
   include TkItemConfigMethod

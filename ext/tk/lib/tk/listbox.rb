@@ -278,4 +278,5 @@ class Tk::Listbox<TkTextWin
 =end
 end
 
-TkListbox = Tk::Listbox unless Object.const_defined? :TkListbox
+#TkListbox = Tk::Listbox unless Object.const_defined? :TkListbox
+Tk.__set_toplevel_aliases__(:Tk, Tk::Listbox, :TkListbox)

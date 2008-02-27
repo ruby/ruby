@@ -572,7 +572,8 @@ class Tk::Canvas<TkWindow
   end
 end
 
-TkCanvas = Tk::Canvas unless Object.const_defined? :TkCanvas
+#TkCanvas = Tk::Canvas unless Object.const_defined? :TkCanvas
+Tk.__set_toplevel_aliases__(:Tk, Tk::Canvas, :TkCanvas)
 
 
 class TkcItem<TkObject
@@ -660,8 +661,8 @@ class TkcItem<TkObject
   ########################################
 
   def initialize(parent, *args)
-    #unless parent.kind_of?(TkCanvas)
-    #  fail ArgumentError, "expect TkCanvas for 1st argument"
+    #unless parent.kind_of?(Tk::Canvas)
+    #  fail ArgumentError, "expect Tk::Canvas for 1st argument"
     #end
     @parent = @c = parent
     @path = parent.path

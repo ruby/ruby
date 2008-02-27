@@ -140,9 +140,9 @@ class Tk::Menu<TkWindow
     type = keys.delete('type') if keys.has_key?('type')
 
     if keys.empty?
-      TkMenuClone.new(self, parent, type)
+      Tk::MenuClone.new(self, parent, type)
     else
-      TkMenuClone.new(self, parent, type, keys)
+      Tk::MenuClone.new(self, parent, type, keys)
     end
   end
 
@@ -381,10 +381,11 @@ class Tk::Menu<TkWindow
 =end
 end
 
-TkMenu = Tk::Menu unless Object.const_defined? :TkMenu
+#TkMenu = Tk::Menu unless Object.const_defined? :TkMenu
+Tk.__set_toplevel_aliases__(:Tk, Tk::Menu, :TkMenu)
 
 
-class Tk::MenuClone<TkMenu
+class Tk::MenuClone<Tk::Menu
 =begin
   def initialize(parent, type=None)
     widgetname = nil
@@ -439,10 +440,11 @@ class Tk::MenuClone<TkMenu
   end
 end
 Tk::CloneMenu = Tk::MenuClone
-TkMenuClone = Tk::MenuClone unless Object.const_defined? :TkMenuClone
-TkCloneMenu = Tk::CloneMenu unless Object.const_defined? :TkCloneMenu
+#TkMenuClone = Tk::MenuClone unless Object.const_defined? :TkMenuClone
+#TkCloneMenu = Tk::CloneMenu unless Object.const_defined? :TkCloneMenu
+Tk.__set_toplevel_aliases__(:Tk, Tk::MenuClone, :TkMenuClone, :TkCloneMenu)
 
-module TkSystemMenu
+module Tk::SystemMenu
   def initialize(parent, keys=nil)
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
@@ -465,33 +467,37 @@ module TkSystemMenu
     end
   end
 end
+TkSystemMenu = Tk::SystemMenu
 
 
-class Tk::SysMenu_Help<TkMenu
+class Tk::SysMenu_Help<Tk::Menu
   # for all platform
-  include TkSystemMenu
+  include Tk::SystemMenu
   SYSMENU_NAME = 'help'
 end
-TkSysMenu_Help = Tk::SysMenu_Help unless Object.const_defined? :TkSysMenu_Help
+#TkSysMenu_Help = Tk::SysMenu_Help unless Object.const_defined? :TkSysMenu_Help
+Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Help, :TkSysMenu_Help)
 
 
-class Tk::SysMenu_System<TkMenu
+class Tk::SysMenu_System<Tk::Menu
   # for Windows
-  include TkSystemMenu
+  include Tk::SystemMenu
   SYSMENU_NAME = 'system'
 end
-TkSysMenu_System = Tk::SysMenu_System unless Object.const_defined? :TkSysMenu_System
+#TkSysMenu_System = Tk::SysMenu_System unless Object.const_defined? :TkSysMenu_System
+Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_System, :TkSysMenu_System)
 
 
-class Tk::SysMenu_Apple<TkMenu
+class Tk::SysMenu_Apple<Tk::Menu
   # for Machintosh
-  include TkSystemMenu
+  include Tk::SystemMenu
   SYSMENU_NAME = 'apple'
 end
-TkSysMenu_Apple = Tk::SysMenu_Apple unless Object.const_defined? :TkSysMenu_Apple
+#TkSysMenu_Apple = Tk::SysMenu_Apple unless Object.const_defined? :TkSysMenu_Apple
+Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Apple, :TkSysMenu_Apple)
 
 
-class Tk::Menubutton<TkLabel
+class Tk::Menubutton<Tk::Label
   TkCommandNames = ['menubutton'.freeze].freeze
   WidgetClassName = 'Menubutton'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -514,11 +520,12 @@ class Tk::Menubutton<TkLabel
 
 end
 Tk::MenuButton = Tk::Menubutton
-TkMenubutton = Tk::Menubutton unless Object.const_defined? :TkMenubutton
-TkMenuButton = Tk::MenuButton unless Object.const_defined? :TkMenuButton
+#TkMenubutton = Tk::Menubutton unless Object.const_defined? :TkMenubutton
+#TkMenuButton = Tk::MenuButton unless Object.const_defined? :TkMenuButton
+Tk.__set_toplevel_aliases__(:Tk, Tk::Menubutton, :TkMenubutton, :TkMenuButton)
 
 
-class Tk::OptionMenubutton<TkMenubutton
+class Tk::OptionMenubutton<Tk::Menubutton
   TkCommandNames = ['tk_optionMenu'.freeze].freeze
 
   class OptionMenu<TkMenu
@@ -640,5 +647,7 @@ class Tk::OptionMenubutton<TkMenubutton
 end
 
 Tk::OptionMenuButton = Tk::OptionMenubutton
-TkOptionMenubutton = Tk::OptionMenubutton unless Object.const_defined? :TkOptionMenubutton
-TkOptionMenuButton = Tk::OptionMenuButton unless Object.const_defined? :TkOptionMenuButton
+#TkOptionMenubutton = Tk::OptionMenubutton unless Object.const_defined? :TkOptionMenubutton
+#TkOptionMenuButton = Tk::OptionMenuButton unless Object.const_defined? :TkOptionMenuButton
+Tk.__set_toplevel_aliases__(:Tk, Tk::OptionMenubutton, 
+                            :TkOptionMenubutton, :TkOptionMenuButton)

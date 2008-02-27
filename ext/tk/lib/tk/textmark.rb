@@ -5,7 +5,7 @@ require 'tk'
 require 'tk/text'
 
 class TkTextMark<TkObject
-  include TkText::IndexModMethods
+  include Tk::Text::IndexModMethods
 
   TMarkID_TBL = TkCore::INTERP.create_table
   Tk_TextMark_ID = ['mark'.freeze, '00000'.taint].freeze
@@ -19,8 +19,8 @@ class TkTextMark<TkObject
   end
 
   def initialize(parent, index)
-    #unless parent.kind_of?(TkText)
-    #  fail ArgumentError, "expect TkText for 1st argument"
+    #unless parent.kind_of?(Tk::Text)
+    #  fail ArgumentError, "expect Tk::Text for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path
@@ -36,7 +36,7 @@ class TkTextMark<TkObject
   end
 
   def id
-    TkText::IndexString.new(@id)
+    Tk::Text::IndexString.new(@id)
   end
 
   def exist?
@@ -49,15 +49,15 @@ class TkTextMark<TkObject
   end
 
 =begin
-  # move to TkText::IndexModMethods module
+  # move to Tk::Text::IndexModMethods module
   def +(mod)
     return chars(mod) if mod.kind_of?(Numeric)
 
     mod = mod.to_s
     if mod =~ /^\s*[+-]?\d/
-      TkText::IndexString.new(@id + ' + ' + mod)
+      Tk::Text::IndexString.new(@id + ' + ' + mod)
     else
-      TkText::IndexString.new(@id + ' ' + mod)
+      Tk::Text::IndexString.new(@id + ' ' + mod)
     end
   end
 
@@ -66,11 +66,11 @@ class TkTextMark<TkObject
 
     mod = mod.to_s
     if mod =~ /^\s*[+-]?\d/
-      TkText::IndexString.new(@id + ' - ' + mod)
+      Tk::Text::IndexString.new(@id + ' - ' + mod)
     elsif mod =~ /^\s*[-]\s+(\d.*)$/
-      TkText::IndexString.new(@id + ' - -' + $1)
+      Tk::Text::IndexString.new(@id + ' - -' + $1)
     else
-      TkText::IndexString.new(@id + ' ' + mod)
+      Tk::Text::IndexString.new(@id + ' ' + mod)
     end
   end
 =end
@@ -133,8 +133,8 @@ class TkTextNamedMark<TkTextMark
   end
 
   def initialize(parent, name, index=nil)
-    #unless parent.kind_of?(TkText)
-    #  fail ArgumentError, "expect TkText for 1st argument"
+    #unless parent.kind_of?(Tk::Text)
+    #  fail ArgumentError, "expect Tk::Text for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path

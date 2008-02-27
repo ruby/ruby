@@ -258,4 +258,5 @@ class Tk::Toplevel<TkWindow
   end
 end
 
-TkToplevel = Tk::Toplevel unless Object.const_defined? :TkToplevel
+#TkToplevel = Tk::Toplevel unless Object.const_defined? :TkToplevel
+Tk.__set_toplevel_aliases__(:Tk, Tk::Toplevel, :TkToplevel)

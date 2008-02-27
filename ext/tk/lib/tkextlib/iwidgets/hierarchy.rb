@@ -207,7 +207,7 @@ class Tk::Iwidgets::Hierarchy
     self
   end
 
-  # based on TkText widget
+  # based on Tk::Text widget
 
   def bbox(index)
     list(tk_send_without_enc('bbox', _get_eval_enc_str(index)))

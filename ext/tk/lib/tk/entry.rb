@@ -7,7 +7,7 @@ require 'tk/label'
 require 'tk/scrollable'
 require 'tk/validation'
 
-class Tk::Entry<TkLabel
+class Tk::Entry<Tk::Label
   include X_Scrollable
   include TkValidation
 
@@ -115,4 +115,5 @@ class Tk::Entry<TkLabel
   end
 end
 
-TkEntry = Tk::Entry unless Object.const_defined? :TkEntry
+#TkEntry = Tk::Entry unless Object.const_defined? :TkEntry
+Tk.__set_toplevel_aliases__(:Tk, Tk::Entry, :TkEntry)

@@ -17,6 +17,6 @@ end
 
 module Tk
   module Vu
-    Spinbox = TkSpinbox
+    Spinbox = Tk::Spinbox
   end
 end

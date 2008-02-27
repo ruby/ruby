@@ -5,7 +5,7 @@
 require 'tk'
 require 'tk/entry'
 
-class Tk::Spinbox<TkEntry
+class Tk::Spinbox<Tk::Entry
   TkCommandNames = ['spinbox'.freeze].freeze
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -97,4 +97,5 @@ class Tk::Spinbox<TkEntry
   end
 end
 
-TkSpinbox = Tk::Spinbox unless Object.const_defined? :TkSpinbox
+#TkSpinbox = Tk::Spinbox unless Object.const_defined? :TkSpinbox
+Tk.__set_toplevel_aliases__(:Tk, Tk::Spinbox, :TkSpinbox)

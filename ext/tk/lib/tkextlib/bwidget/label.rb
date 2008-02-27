@@ -9,7 +9,7 @@ require 'tkextlib/bwidget.rb'
 
 module Tk
   module BWidget
-    class Label < TkLabel
+    class Label < Tk::Label
     end
   end
 end

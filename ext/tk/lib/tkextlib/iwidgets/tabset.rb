@@ -96,4 +96,48 @@ class Tk::Iwidgets::Tabset
     tk_call(@path, 'select', index(idx))
     self
   end
+
+  def show_tab(idx)
+    if index(idx) == 0
+      self.start = 0
+      return
+    end
+
+    reutrn unless @canvas ||= self.winfo_children[0]
+
+    delta = 1 if (delta = cget(:gap)) == 'overlap' ||
+                   (delta = self.winfo_pixels(delta) + 1) <= 0
+
+    case cget(:tabpos)
+    when 's', 'n'
+      if (head = tabcget(idx, :left)) < 0
+        self.start -= head
+        return
+      end
+      tabs_size = @canvas.winfo_width
+      tab_start, tab_end = @canvas . 
+        find_overlapping(head, 0, head + delta, @canvas.winfo_height) . 
+        find_all{|id| @canvas.itemtype(id) == TkcPolygon} . 
+        map!{|id| bbox = @canvas.bbox(id); [bbox[0], bbox[2]]} . max
+
+    when 'e', 'w'
+      if (head = tabcget(idx, :top)) < 0
+        self.start -= head
+        return
+      end
+      tabs_size = @canvas.winfo_height
+      tab_start, tab_end = @canvas . 
+        find_overlapping(0, head, @canvas.winfo_width, head + delta) . 
+        find_all{|id| @canvas.itemtype(id) == TkcPolygon} . 
+        map!{|id| bbox = @canvas.bbox(id); [bbox[1], bbox[3]]} . max
+    end
+
+    if (size = tab_end - tab_start + 1) > tabs_size
+      self.start -= tab_start
+    elsif head + size > tabs_size
+      self.start -= head + size - tabs_size
+    end
+
+    self
+  end
 end

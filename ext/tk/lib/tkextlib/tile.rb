@@ -4,6 +4,7 @@
 #
 
 require 'tk'
+require 'tk/ttk_selector'
 
 # call setup script for general 'tkextlib' libraries
 require 'tkextlib/setup.rb'
@@ -261,6 +262,9 @@ module Tk
 
     autoload :TSquare,       'tkextlib/tile/tsquare'
     autoload :Square,        'tkextlib/tile/tsquare'
+
+    autoload :SizeGrip,      'tkextlib/tile/sizegrip'
+    autoload :Sizegrip,      'tkextlib/tile/sizegrip'
 
     autoload :Treeview,      'tkextlib/tile/treeview'
 

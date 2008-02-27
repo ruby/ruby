@@ -31,7 +31,7 @@ class Tk::BWidget::ButtonBox
       name = tagOrId[:name]
       return index(name) unless name.empty?
     end
-    if tagOrId.kind_of?(TkButton)
+    if tagOrId.kind_of?(Tk::Button)
       return index(tagOrId[:text])
     end
     # index(tagOrId.to_s)
@@ -54,7 +54,7 @@ class Tk::BWidget::ButtonBox
       name = idx[:name]
       idx = name unless name.empty?
     end
-    if idx.kind_of?(TkButton)
+    if idx.kind_of?(Tk::Button)
       idx = idx[:text]
     end
     number(tk_send('index', idx.to_s))

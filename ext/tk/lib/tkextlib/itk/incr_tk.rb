@@ -156,7 +156,7 @@ module Tk
           master = master.to_s
         end
         return id unless ComponentID_TBL.key?(master)
-        (ComponentID_TBL.key?(id))? ComponentID_TBL[master][id]: id
+        (ComponentID_TBL[master].key?(id))? ComponentID_TBL[master][id]: id
       end
 
       def self.new(master, component=nil)

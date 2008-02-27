@@ -49,7 +49,7 @@ class Tk::Iwidgets::Selectiondialog
     self
   end
 
-  # based on TkListbox ( and TkTextWin )
+  # based on Tk::Listbox ( and TkTextWin )
   def curselection
     list(tk_send_without_enc('curselection'))
   end

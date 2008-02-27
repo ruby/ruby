@@ -4,7 +4,7 @@
 require 'tk'
 require 'tk/button'
 
-class Tk::RadioButton<TkButton
+class Tk::RadioButton<Tk::Button
   TkCommandNames = ['radiobutton'.freeze].freeze
   WidgetClassName = 'Radiobutton'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -65,5 +65,7 @@ class Tk::RadioButton<TkButton
 end
 
 Tk::Radiobutton = Tk::RadioButton
-TkRadioButton = Tk::RadioButton unless Object.const_defined? :TkRadioButton
-TkRadiobutton = Tk::Radiobutton unless Object.const_defined? :TkRadiobutton
+#TkRadioButton = Tk::RadioButton unless Object.const_defined? :TkRadioButton
+#TkRadiobutton = Tk::Radiobutton unless Object.const_defined? :TkRadiobutton
+Tk.__set_toplevel_aliases__(:Tk, Tk::RadioButton, 
+                            :TkRadioButton, :TkRadiobutton)

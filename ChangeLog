@@ -1,3 +1,25 @@
+Thu Feb 28 03:03:32 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/*: make default widget set 
+	  switchable between Tk (standard Tcl/Tk widget set) and 
+	  Ttk (Tile). Initial default widget set is Tk. Now, toplevel 
+	  widget classes are removed and defined as aliases. 
+	  For example, "TkButton" is an alias of the "Tk::Button" class. 
+	  Those aliases are replaced when switching default widget set. 
+	  "Tk.default_widget_set=" is the method for switching default 
+	  widget set. "Tk.default_widget_set = :Ttk" defines Ttk (Tile) 
+	  widget set as default. It means that "TkButton" denotes 
+	  "Tk::Tile::Button" class. And then, "TkButton.new" creates 
+	  a Tk::Tile::Button widget. Of course, you can back to use 
+	  standard Tk widgets as the default widget set by calling 
+	  "Tk.default_widget_set = :Tk", whenever you want. Based on 
+	  thie feature, you can use Ttk widget styling engine on your 
+	  old Ruby/Tk application without modifying its source, if you 
+	  don'tuse widget options unsupported on Ttk widgets (At first, 
+	  call "Tk.default_widget_set = :Ttk", and next load and run 
+	  your application). 
+	  This is one step for supporting Tcl/Tk8.5 features.
+
 Wed Feb 27 22:55:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_coderange_scan_restartable): coderange scaning
@@ -5079,7 +5101,7 @@ Fri Dec 21 18:40:54 2007  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_io.rb, test_knownbug.rb: move a fixed test.
 
-Fri Dec 21 17:56:30 2007    <nagai@orca16.orcabay.ddo.jp>
+Fri Dec 21 17:56:30 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: provisional support on Ruby-VM.
 

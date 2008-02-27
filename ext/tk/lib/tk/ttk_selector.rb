@@ -1,55 +1,67 @@
 #
 #  ttk_selector
 #
-module Ttk_Selector
-  @TTK_CLASS_NAMES = {}
+######################################
+#  toplevel classes/modules
+module Tk
+  @TOPLEVEL_ALIAS_TABLE[:Ttk] = {
+    :TkButton       => 'tkextlib/tile/tbutton', 
 
-  def self.use_ttk_as_default(mode = true)
-    if mode # Use Ttk widgets
-      @TTK_CLASS_NAMES.each{|name, status|
-        eval("::Tk#{name} = ::Tk::#{(status)? 'Tile::': '::'}#{name}", 
-             TOPLEVEL_BINDING)
-      }
-    else # Use standard Tk widagets
-      @TTK_CLASS_NAMES.each{|name, status|
-        eval("::Tk#{name} = ::Tk::#{name}", TOPLEVEL_BINDING)
-      }
+    :TkCheckbutton  => 'tkextlib/tile/tcheckbutton', 
+    :TkCheckButton  => 'tkextlib/tile/tcheckbutton', 
+
+    # :TkDialog       => 'tkextlib/tile/dialog', 
+
+    :TkEntry        => 'tkextlib/tile/tentry', 
+
+    :TkCombobox     => 'tkextlib/tile/tcombobox', 
+
+    :TkFrame        => 'tkextlib/tile/tframe', 
+
+    :TkLabel        => 'tkextlib/tile/tlabel', 
+
+    :TkLabelframe   => 'tkextlib/tile/tlabelframe', 
+    :TkLabelFrame   => 'tkextlib/tile/tlabelframe', 
+
+    :TkMenubutton   => 'tkextlib/tile/tmenubutton', 
+    :TkMenuButton   => 'tkextlib/tile/tmenubutton', 
+
+    :TkNotebook     => 'tkextlib/tile/tnotebook', 
+
+    # :TkPaned        => 'tkextlib/tile/tpaned', 
+    :TkPanedwindow  => 'tkextlib/tile/tpaned', 
+    :TkPanedWindow  => 'tkextlib/tile/tpaned', 
+
+    :TkProgressbar  => 'tkextlib/tile/tprogressbar', 
+
+    :TkRadiobutton  => 'tkextlib/tile/tradiobutton', 
+    :TkRadioButton  => 'tkextlib/tile/tradiobutton', 
+
+    :TkScale        => 'tkextlib/tile/tscale', 
+    # :TkProgress     => 'tkextlib/tile/tscale', 
+
+    :TkScrollbar    => 'tkextlib/tile/tscrollbar', 
+    :TkXScrollbar   => 'tkextlib/tile/tscrollbar', 
+    :TkYScrollbar   => 'tkextlib/tile/tscrollbar', 
+
+    :TkSeparator    => 'tkextlib/tile/tseparator', 
+
+    :TkSizeGrip     => 'tkextlib/tile/sizegrip', 
+    :TkSizegrip     => 'tkextlib/tile/sizegrip', 
+
+    # :TkSquare       => 'tkextlib/tile/tsquare', 
+
+    :TkTreeview     => 'tkextlib/tile/treeview', 
+  }
+  @TOPLEVEL_ALIAS_TABLE[:Tile] = @TOPLEVEL_ALIAS_TABLE[:Ttk]
+
+  ################################################
+
+  @TOPLEVEL_ALIAS_SETUP_PROC[:Tile] = 
+    @TOPLEVEL_ALIAS_SETUP_PROC[:Ttk] = proc{|mod|
+    unless Tk.autoload?(:Tile) || Tk.const_defined?(:Tile) 
+      Object.autoload :Ttk, 'tkextlib/tile'
+      Tk.autoload :Tile, 'tkextlib/tile'
     end
-  end
-
-  def self.add(name)
-    @TTK_CLASS_NAMES[name] = true
-  end
-
-  def self.remove(name)
-    @TTK_CLASS_NAMES[name] = false
-  end
+  }
 end
-
-#--------------------------------------------------------------------
-
-Ttk_Selector.add('Button')
-Ttk_Selector.add('Checkbutton')
-Ttk_Selector.add('Entry')
-##(ttk only)  Ttk_Selector.add('Combobox')
-##(ttk only)  Ttk_Selector.add('Dialog')
-Ttk_Selector.add('Frame')
-Ttk_Selector.add('Label')
-Ttk_Selector.add('Labelframe')
-##(std only)  Ttk_Selector.add('Listbox')
-Ttk_Selector.add('Menubutton')
-##(ttk only)  Ttk_Selector.add('Notebook')
-Ttk_Selector.add('Panedwindow')
-##(ttk only)  Ttk_Selector.add('Progressbar')
-Ttk_Selector.add('Radiobutton')
-Ttk_Selector.add('Scale')
-##(ttk only)  Ttk_Selector.add('Progress')
-Ttk_Selector.add('Scrollbar')
-Ttk_Selector.add('XScrollbar')
-Ttk_Selector.add('YScrollbar')
-##(ttk only)  Ttk_Selector.add('Separator')
-##(ttk only)  Ttk_Selector.add('SizeGrip')
-##(ttk only)  Ttk_Selector.add('Square')
-##(ttk only)  Ttk_Selector.add('Treeview')
-
-#--------------------------------------------------------------------

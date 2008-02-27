@@ -9,7 +9,7 @@ require 'tkextlib/blt/tile.rb'
 
 module Tk::BLT
   module Tile
-    class Toplevel < TkToplevel
+    class Toplevel < Tk::Toplevel
       TkCommandNames = ['::blt::tile::toplevel'.freeze].freeze
     end
   end

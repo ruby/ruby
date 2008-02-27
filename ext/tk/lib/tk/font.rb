@@ -899,13 +899,15 @@ class TkFont
       if key.include?(';')
         win, tag, optkey = key.split(';')
         winobj = tk_tcl2ruby(win)
-        if winobj.kind_of? TkText
+        #if winobj.kind_of? TkText
+        if winobj.kind_of?(TkText) || winobj.kind_of?(Tk::Text)
           if optkey
             ret.push([winobj, winobj.tagid2obj(tag), optkey])
           else
             ret.push([winobj, winobj.tagid2obj(tag)])
           end
-        elsif winobj.kind_of? TkCanvas
+        #elsif winobj.kind_of? TkCanvas
+        elsif winobj.kind_of?(TkCanvas) || winobj.kind_of?(Tk::Canvas)
           if (tagobj = TkcTag.id2obj(winobj, tag)).kind_of? TkcTag
             if optkey
               ret.push([winobj, tagobj, optkey])
@@ -925,7 +927,8 @@ class TkFont
               ret.push([winobj, tag])
             end
           end
-        elsif winobj.kind_of? TkMenu
+        #elsif winobj.kind_of? TkMenu
+        elsif winobj.kind_of?(TkMenu) || winobj.kind_of?(Tk::Menu)
           if optkey
             ret.push([winobj, tag, optkey])
           else
@@ -1504,11 +1507,14 @@ module TkFont::CoreMethods
             optkey = 'font' if optkey == nil || optkey == ''
             winobj = tk_tcl2ruby(win)
 #           winobj.tagfont_configure(tag, {'font'=>@latinfont})
-            if winobj.kind_of? TkText
+            #if winobj.kind_of? TkText
+            if winobj.kind_of?(TkText) || winobj.kind_of?(Tk::Text)
               tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @latinfont)
-            elsif winobj.kind_of? TkCanvas
+            #elsif winobj.kind_of? TkCanvas
+            elsif winobj.kind_of?(TkCanvas) || winobj.kind_of?(Tk::Canvas)
               tk_call(win, 'itemconfigure', tag, "-#{optkey}", @latinfont)
-            elsif winobj.kind_of? TkMenu
+            #elsif winobj.kind_of? TkMenu
+            elsif winobj.kind_of?(TkMenu) || winobj.kind_of?(Tk::Menu)
               tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
             else
               raise RuntimeError, "unknown widget type"
@@ -1539,11 +1545,14 @@ module TkFont::CoreMethods
             optkey = 'kanjifont' unless optkey
             winobj = tk_tcl2ruby(win)
 #           winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
-            if winobj.kind_of? TkText
+            #if winobj.kind_of? TkText
+            if winobj.kind_of?(TkText) || winobj.kind_of?(Tk::Text)
               tk_call(win, 'tag', 'configure', tag, "-#{optkey}", @kanjifont)
-            elsif winobj.kind_of? TkCanvas
+            #elsif winobj.kind_of? TkCanvas
+            elsif winobj.kind_of?(TkCanvas) || winobj.kind_of?(Tk::Canvas)
               tk_call(win, 'itemconfigure', tag, "-#{optkey}", @kanjifont)
-            elsif winobj.kind_of? TkMenu
+            #elsif winobj.kind_of? TkMenu
+            elsif winobj.kind_of?(TkMenu) || winobj.kind_of?(Tk::Menu)
               tk_call(win, 'entryconfigure', tag, "-#{optkey}", @latinfont)
             else
               raise RuntimeError, "unknown widget type"

@@ -103,7 +103,7 @@ class Tk::BWidget::Dialog
       name = tagOrId[:name]
       return index(name) unless name.empty?
     end
-    if tagOrId.kind_of?(TkButton)
+    if tagOrId.kind_of?(Tk::Button)
       return index(tagOrId[:text])
     end
     # index(tagOrId.to_s)

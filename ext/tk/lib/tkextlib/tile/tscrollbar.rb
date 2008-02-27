@@ -7,13 +7,16 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TScrollbar < TkScrollbar
+    class TScrollbar < Tk::Scrollbar
     end
     Scrollbar = TScrollbar
   end
 end
 
-class Tk::Tile::TScrollbar < TkScrollbar
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Scrollbar, :TkScrollbar)
+
+
+class Tk::Tile::TScrollbar < Tk::Scrollbar
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE
@@ -47,3 +50,5 @@ class Tk::Tile::YScrollbar < Tk::Tile::TScrollbar
   private :create_self
 end
 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::XScrollbar, :TkXScrollbar)
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::YScrollbar, :TkYScrollbar)

@@ -20,7 +20,7 @@ class TkVariable
 
   #TkCore::INTERP.add_tk_procs('rb_var', 'args', 
   #     "ruby [format \"TkVariable.callback %%Q!%s!\" $args]")
-TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
+  TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     if {[set st [catch {eval {ruby_cmd TkVariable callback} $args} ret]] != 0} {
        set idx [string first "\n\n" $ret]
        if {$idx > 0} {

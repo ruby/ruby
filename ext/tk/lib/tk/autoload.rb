@@ -1,21 +1,7 @@
 #
 #  autoload
 #
-major, minor, type, type_name, patchlevel = TclTkLib.get_version
-
-######################################
-#  depend on version of Tcl/Tk
-if major > 8 || 
-    (major == 8 && minor > 5) || 
-    (major == 8 && minor == 5 && type >= TclTkLib::RELEASE_TYPE::BETA) 
-  # Tcl/Tk 8.5 beta or later
-  autoload :Ttk, 'tkextlib/tile'
-  module Tk
-    autoload :Tile, 'tkextlib/tile'
-  end
-end
-
-######################################
+############################################
 #  geometry manager
 module Tk
   autoload :Grid,             'tk/grid'
@@ -38,12 +24,7 @@ autoload :TkPlace,            'tk/place'
 def TkPlace(*args); TkPlace.configure(*args); end
 
 
-######################################
-# Ttk (Tile) support
-require 'tk/ttk_selector'
-
-
-######################################
+############################################
 # classes on Tk module
 module Tk
   autoload :Button,           'tk/button'
@@ -66,12 +47,15 @@ module Tk
 
   autoload :Menu,             'tk/menu'
   autoload :MenuClone,        'tk/menu'
+  autoload :CloneMenu,        'tk/menu'
   autoload :SystemMenu,       'tk/menu'
   autoload :SysMenu_Help,     'tk/menu'
   autoload :SysMenu_System,   'tk/menu'
   autoload :SysMenu_Apple,    'tk/menu'
   autoload :Menubutton,       'tk/menu'
+  autoload :MenuButton,       'tk/menu'
   autoload :OptionMenubutton, 'tk/menu'
+  autoload :OptionMenBbutton, 'tk/menu'
 
   autoload :Message,          'tk/message'
 
@@ -97,7 +81,7 @@ module Tk
 end
 
 
-######################################
+############################################
 # sub-module of Tk
 module Tk
   autoload :Clock,            'tk/clock'
@@ -129,184 +113,287 @@ module Tk
 
 end
 
-######################################
-#  toplevel classes/modules
-autoload_list = {
-  :TkBgError            => 'tk/bgerror', 
 
-  :TkBindTag            => 'tk/bindtag', 
-  :TkBindTagAll         => 'tk/bindtag', 
-  :TkDatabaseClass      => 'tk/bindtag', 
+############################################
+#  toplevel classes/modules (fixed)
+autoload :TkBgError,          'tk/bgerror'
 
-  :TkButton             => 'tk/button', 
+autoload :TkBindTag,          'tk/bindtag'
+autoload :TkBindTagAll,       'tk/bindtag'
+autoload :TkDatabaseClass,    'tk/bindtag'
 
-  :TkCanvas             => 'tk/canvas', 
+autoload :TkConsole,          'tk/console'
 
-  :TkcItem              => 'tk/canvas', 
-  :TkcArc               => 'tk/canvas', 
-  :TkcBitmap            => 'tk/canvas', 
-  :TkcImage             => 'tk/canvas', 
-  :TkcLine              => 'tk/canvas', 
-  :TkcOval              => 'tk/canvas', 
-  :TkcPolygon           => 'tk/canvas', 
-  :TkcRectangle         => 'tk/canvas', 
-  :TkcText              => 'tk/canvas', 
-  :TkcWindow            => 'tk/canvas', 
+autoload :TkcItem,            'tk/canvas'
+autoload :TkcArc,             'tk/canvas'
+autoload :TkcBitmap,          'tk/canvas'
+autoload :TkcImage,           'tk/canvas'
+autoload :TkcLine,            'tk/canvas'
+autoload :TkcOval,            'tk/canvas'
+autoload :TkcPolygon,         'tk/canvas'
+autoload :TkcRectangle,       'tk/canvas'
+autoload :TkcText,            'tk/canvas'
+autoload :TkcWindow,          'tk/canvas'
 
-  :TkcTagAccess         => 'tk/canvastag', 
-  :TkcTag               => 'tk/canvastag', 
-  :TkcTagString         => 'tk/canvastag', 
-  :TkcNamedTag          => 'tk/canvastag', 
-  :TkcTagAll            => 'tk/canvastag', 
-  :TkcTagCurrent        => 'tk/canvastag', 
-  :TkcTagGroup          => 'tk/canvastag', 
+autoload :TkcTagAccess,       'tk/canvastag'
+autoload :TkcTag,             'tk/canvastag'
+autoload :TkcTagString,       'tk/canvastag'
+autoload :TkcNamedTag,        'tk/canvastag'
+autoload :TkcTagAll,          'tk/canvastag'
+autoload :TkcTagCurrent,      'tk/canvastag'
+autoload :TkcTagGroup,        'tk/canvastag'
 
-  :TkCheckButton        => 'tk/checkbutton', 
-  :TkCheckbutton        => 'tk/checkbutton', 
+autoload :TkClipboard,        'tk/clipboard'
 
-  :TkClipboard          => 'tk/clipboard', 
+autoload :TkComposite,        'tk/composite'
 
-  :TkComposite          => 'tk/composite', 
+autoload :TkConsole,          'tk/console'
 
-  :TkConsole            => 'tk/console', 
+autoload :TkDialog,           'tk/dialog'
+autoload :TkDialog2,          'tk/dialog'
+autoload :TkDialogObj,        'tk/dialog'
+autoload :TkWarning,          'tk/dialog'
+autoload :TkWarning2,         'tk/dialog'
+autoload :TkWarningObj,       'tk/dialog'
 
-  :TkDialog             => 'tk/dialog', 
-  :TkDialog2            => 'tk/dialog', 
-  :TkDialogObj          => 'tk/dialog', 
-  :TkWarning            => 'tk/dialog', 
-  :TkWarning2           => 'tk/dialog', 
-  :TkWarningObj         => 'tk/dialog', 
+autoload :TkEvent,            'tk/event'
 
-  :TkEntry              => 'tk/entry', 
+autoload :TkFont,             'tk/font'
+autoload :TkTreatTagFont,     'tk/font'
 
-  :TkEvent              => 'tk/event', 
+autoload :TkImage,            'tk/image'
+autoload :TkBitmapImage,      'tk/image'
+autoload :TkPhotoImage,       'tk/image'
 
-  :TkFont               => 'tk/font', 
-  :TkTreatTagFont       => 'tk/font', 
+autoload :TkItemConfigMethod, 'tk/itemconfig'
 
-  :TkFrame              => 'tk/frame', 
+autoload :TkTreatItemFont,    'tk/itemfont'
 
-  :TkImage              => 'tk/image', 
-  :TkBitmapImage        => 'tk/image', 
-  :TkPhotoImage         => 'tk/image', 
+autoload :TkKinput,           'tk/kinput'
 
-  :TkItemConfigMethod   => 'tk/itemconfig', 
+autoload :TkSystemMenu,       'tk/menu'
 
-  :TkTreatItemFont      => 'tk/itemfont', 
+autoload :TkMenubar,          'tk/menubar'
 
-  :TkKinput             => 'tk/kinput', 
+autoload :TkMenuSpec,         'tk/menuspec'
 
-  :TkLabel              => 'tk/label', 
+autoload :TkManageFocus,      'tk/mngfocus'
 
-  :TkLabelFrame         => 'tk/labelframe', 
-  :TkLabelframe         => 'tk/labelframe', 
+autoload :TkMsgCatalog,       'tk/msgcat'
+autoload :TkMsgCat,           'tk/msgcat'
 
-  :TkListbox            => 'tk/listbox', 
+autoload :TkNamespace,        'tk/namespace'
 
-  :TkMacResource        => 'tk/macpkg', 
+autoload :TkOptionDB,         'tk/optiondb'
+autoload :TkOption,           'tk/optiondb'
+autoload :TkResourceDB,       'tk/optiondb'
 
-  :TkMenu               => 'tk/menu', 
-  :TkMenuClone          => 'tk/menu', 
-  :TkSystemMenu         => 'tk/menu', 
-  :TkSysMenu_Help       => 'tk/menu', 
-  :TkSysMenu_System     => 'tk/menu', 
-  :TkSysMenu_Apple      => 'tk/menu', 
-  :TkMenubutton         => 'tk/menu', 
-  :TkOptionMenubutton   => 'tk/menu', 
+autoload :TkPackage,          'tk/package'
 
-  :TkMenubar            => 'tk/menubar', 
+autoload :TkPalette,          'tk/palette'
 
-  :TkMenuSpec           => 'tk/menuspec', 
+autoload :TkScrollbox,        'tk/scrollbox'
 
-  :TkMessage            => 'tk/message', 
+autoload :TkSelection,        'tk/selection'
 
-  :TkManageFocus        => 'tk/mngfocus', 
+autoload :TkTreatTagFont,     'tk/tagfont'
 
-  :TkMsgCatalog         => 'tk/msgcat', 
-  :TkMsgCat             => 'tk/msgcat', 
+autoload :TkTextImage,        'tk/textimage'
+autoload :TktImage,           'tk/textimage'
 
-  :TkNamespace          => 'tk/namespace', 
+autoload :TkTextMark,         'tk/textmark'
+autoload :TkTextNamedMark,    'tk/textmark'
+autoload :TkTextMarkInsert,   'tk/textmark'
+autoload :TkTextMarkCurrent,  'tk/textmark'
+autoload :TkTextMarkAnchor,   'tk/textmark'
+autoload :TktMark,            'tk/textmark'
+autoload :TktNamedMark,       'tk/textmark'
+autoload :TktMarkInsert,      'tk/textmark'
+autoload :TktMarkCurrent,     'tk/textmark'
+autoload :TktMarkAnchor,      'tk/textmark'
 
-  :TkOptionDB           => 'tk/optiondb', 
-  :TkOption             => 'tk/optiondb', 
-  :TkResourceDB         => 'tk/optiondb', 
+autoload :TkTextTag,          'tk/texttag'
+autoload :TkTextNamedTag,     'tk/texttag'
+autoload :TkTextTagSel,       'tk/texttag'
+autoload :TktTag,             'tk/texttag'
+autoload :TktNamedTag,        'tk/texttag'
+autoload :TktTagSel,          'tk/texttag'
 
-  :TkPackage            => 'tk/package', 
+autoload :TkTextWindow,       'tk/textwindow'
+autoload :TktWindow,          'tk/textwindow'
 
-  :TkPalette            => 'tk/palette', 
+autoload :TkAfter,            'tk/timer'
+autoload :TkTimer,            'tk/timer'
+autoload :TkRTTimer,          'tk/timer'
 
-  :TkPanedWindow        => 'tk/panedwindow', 
-  :TkPanedwindow        => 'tk/panedwindow', 
+autoload :TkTextWin,          'tk/txtwin_abst'
 
-  :TkRadioButton        => 'tk/radiobutton', 
-  :TkRadiobutton        => 'tk/radiobutton', 
+autoload :TkValidation,       'tk/validation'
+autoload :TkValidateCommand,  'tk/validation'
 
-  :TkRoot               => 'tk/root', 
+autoload :TkVariable,         'tk/variable'
+autoload :TkVarAccess,        'tk/variable'
 
-  :TkScale              => 'tk/scale', 
+autoload :TkVirtualEvent,     'tk/virtevent'
+autoload :TkNamedVirtualEvent,'tk/virtevent'
 
-  :TkScrollbar          => 'tk/scrollbar', 
-  :TkXScrollbar         => 'tk/scrollbar', 
-  :TkYScrollbar         => 'tk/scrollbar', 
+autoload :TkWinfo,            'tk/winfo'
 
-  :TkScrollbox          => 'tk/scrollbox', 
+autoload :TkXIM,              'tk/xim'
 
-  :TkSelection          => 'tk/selection', 
 
-  :TkSpinbox            => 'tk/spinbox', 
+############################################
+#  toplevel classes/modules (switchable)
+module Tk
+  @TOPLEVEL_ALIAS_TABLE = {}
+  @TOPLEVEL_ALIAS_TABLE[:Tk] = {
+    :TkButton             => 'tk/button', 
 
-  :TkTreatTagFont       => 'tk/tagfont', 
+    :TkCanvas             => 'tk/canvas', 
 
-  :TkText               => 'tk/text', 
+    :TkCheckButton        => 'tk/checkbutton', 
+    :TkCheckbutton        => 'tk/checkbutton', 
 
-  :TkTextImage          => 'tk/textimage', 
-  :TktImage             => 'tk/textimage', 
+    # :TkDialog             => 'tk/dialog', 
+    # :TkDialog2            => 'tk/dialog', 
+    # :TkDialogObj          => 'tk/dialog', 
+    # :TkWarning            => 'tk/dialog', 
+    # :TkWarning2           => 'tk/dialog', 
+    # :TkWarningObj         => 'tk/dialog', 
 
-  :TkTextMark           => 'tk/textmark', 
-  :TkTextNamedMark      => 'tk/textmark', 
-  :TkTextMarkInsert     => 'tk/textmark', 
-  :TkTextMarkCurrent    => 'tk/textmark', 
-  :TkTextMarkAnchor     => 'tk/textmark', 
-  :TktMark              => 'tk/textmark', 
-  :TktNamedMark         => 'tk/textmark', 
-  :TktMarkInsert        => 'tk/textmark', 
-  :TktMarkCurrent       => 'tk/textmark', 
-  :TktMarkAnchor        => 'tk/textmark', 
+    :TkEntry              => 'tk/entry', 
 
-  :TkTextTag            => 'tk/texttag', 
-  :TkTextNamedTag       => 'tk/texttag', 
-  :TkTextTagSel         => 'tk/texttag', 
-  :TktTag               => 'tk/texttag', 
-  :TktNamedTag          => 'tk/texttag', 
-  :TktTagSel            => 'tk/texttag', 
+    :TkFrame              => 'tk/frame', 
 
-  :TkTextWindow         => 'tk/textwindow', 
-  :TktWindow           => 'tk/textwindow', 
+    :TkLabel              => 'tk/label', 
 
-  :TkAfter              => 'tk/timer', 
-  :TkTimer              => 'tk/timer', 
-  :TkRTTimer            => 'tk/timer', 
+    :TkLabelFrame         => 'tk/labelframe', 
+    :TkLabelframe         => 'tk/labelframe', 
 
-  :TkToplevel           => 'tk/toplevel', 
+    :TkListbox            => 'tk/listbox', 
 
-  :TkTextWin            => 'tk/txtwin_abst', 
+    :TkMacResource        => 'tk/macpkg', 
 
-  :TkValidation         => 'tk/validation', 
+    :TkMenu               => 'tk/menu', 
+    :TkMenuClone          => 'tk/menu', 
+    :TkCloneMenu          => 'tk/menu', 
+    # :TkSystemMenu         => 'tk/menu', 
+    :TkSysMenu_Help       => 'tk/menu', 
+    :TkSysMenu_System     => 'tk/menu', 
+    :TkSysMenu_Apple      => 'tk/menu', 
+    :TkMenubutton         => 'tk/menu', 
+    :TkMenuButton         => 'tk/menu', 
+    :TkOptionMenubutton   => 'tk/menu', 
+    :TkOptionMenuButton   => 'tk/menu', 
 
-  :TkVariable           => 'tk/variable', 
-  :TkVarAccess          => 'tk/variable', 
+    :TkMessage            => 'tk/message', 
 
-  :TkVirtualEvent       => 'tk/virtevent', 
-  :TkNamedVirtualEvent  => 'tk/virtevent', 
+    :TkPanedWindow        => 'tk/panedwindow', 
+    :TkPanedwindow        => 'tk/panedwindow', 
 
-  :TkWinfo              => 'tk/winfo', 
+    :TkRadioButton        => 'tk/radiobutton', 
+    :TkRadiobutton        => 'tk/radiobutton', 
 
-  :TkWinDDE             => 'tk/winpkg', 
-  :TkWinRegistry        => 'tk/winpkg', 
+    :TkRoot               => 'tk/root', 
 
-  :TkXIM                => 'tk/xim', 
-}
-autoload_list.each{|mod, lib|
-  #autoload mod, lib unless 
-  autoload mod, lib unless (Object.const_defined? mod) && (autoload? mod)
-}
+    :TkScale              => 'tk/scale', 
+
+    :TkScrollbar          => 'tk/scrollbar', 
+    :TkXScrollbar         => 'tk/scrollbar', 
+    :TkYScrollbar         => 'tk/scrollbar', 
+
+    :TkSpinbox            => 'tk/spinbox', 
+
+    :TkText               => 'tk/text', 
+
+    :TkToplevel           => 'tk/toplevel', 
+
+    :TkWinDDE             => 'tk/winpkg', 
+    :TkWinRegistry        => 'tk/winpkg', 
+  }
+
+  @TOPLEVEL_ALIAS_SETUP_PROC = {}
+
+  @current_default_widget_set = nil
+end
+
+############################################
+
+class << Tk
+  def default_widget_set
+    @current_default_widget_set
+  end
+
+  def default_widget_set=(target)
+    target = target.to_sym
+    return target if target == @current_default_widget_set
+
+    if (cmd = @TOPLEVEL_ALIAS_SETUP_PROC[target])
+      cmd.call(target)
+    end
+
+    _replace_toplevel_aliases(target)
+  end
+
+  def __set_toplevel_aliases__(target, obj, *symbols)
+    @TOPLEVEL_ALIAS_TABLE[target = target.to_sym] ||= {}
+    symbols.each{|sym|
+      @TOPLEVEL_ALIAS_TABLE[target][sym = sym.to_sym] = obj
+      if @current_default_widget_set == target
+        Object.class_eval{remove_const sym} if Object.const_defined?(sym)
+        Object.const_set(sym, obj)
+      end
+    }
+  end
+
+  ###################################
+  private
+  def _replace_toplevel_aliases(target)
+    # check already autoloaded
+    if (table = @TOPLEVEL_ALIAS_TABLE[current = @current_default_widget_set])
+      table.each{|sym, file|
+        if !Object.autoload?(sym) && Object.const_defined?(sym) && 
+            @TOPLEVEL_ALIAS_TABLE[current][sym].kind_of?(String)
+          # autoload -> class
+          @TOPLEVEL_ALIAS_TABLE[current][sym] = Object.const_get(sym)
+        end
+      }
+    end
+
+    # setup autoloads
+    @TOPLEVEL_ALIAS_TABLE[target].each{|sym, file|
+      Object.class_eval{remove_const sym} if Object.const_defined?(sym)
+      if file.kind_of?(String)
+        # file => autoload target file
+        Object.autoload(sym, file)
+      else
+        # file => loaded class object
+        Object.const_set(sym, file)
+      end
+    }
+
+    # update current alias
+    @current_default_widget_set = target
+  end
+end
+
+############################################
+# setup default widget set => :Tk
+Tk.default_widget_set = :Tk
+
+
+############################################
+#  depend on the version of Tcl/Tk
+major, minor, type, type_name, patchlevel = TclTkLib.get_version
+
+############################################
+# Ttk (Tile) support
+if major > 8 || 
+    (major == 8 && minor > 5) || 
+    (major == 8 && minor == 5 && type >= TclTkLib::RELEASE_TYPE::BETA) 
+  # Tcl/Tk 8.5 beta or later
+  Object.autoload :Ttk, 'tkextlib/tile'
+  Tk.autoload :Tile, 'tkextlib/tile'
+
+  require 'tk/ttk_selector'
+end

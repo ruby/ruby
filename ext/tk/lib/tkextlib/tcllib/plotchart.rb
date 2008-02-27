@@ -225,7 +225,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class XYPlot < TkCanvas
+  class XYPlot < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -247,7 +247,7 @@ module Tk::Tcllib::Plotchart
         @xaxis = args.shift
         @yaxis = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -337,7 +337,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class PolarPlot < TkCanvas
+  class PolarPlot < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -356,7 +356,7 @@ module Tk::Tcllib::Plotchart
 
         @radius_data = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -395,7 +395,7 @@ module Tk::Tcllib::Plotchart
   Polarplot = PolarPlot
 
   ############################
-  class IsometricPlot < TkCanvas
+  class IsometricPlot < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -430,7 +430,7 @@ module Tk::Tcllib::Plotchart
           @stepsize = args.shift
         end
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -475,7 +475,7 @@ module Tk::Tcllib::Plotchart
   Isometricplot = IsometricPlot
 
   ############################
-  class Plot3D < TkCanvas
+  class Plot3D < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -500,7 +500,7 @@ module Tk::Tcllib::Plotchart
         @yaxis = args.shift
         @zaxis = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -557,7 +557,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Piechart < TkCanvas
+  class Piechart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -566,7 +566,7 @@ module Tk::Tcllib::Plotchart
     ].freeze
 
     def initialize(*args) # args := ([parent] [, keys])
-      if args[0].kind_of?(TkCanvas)
+      if args[0].kind_of?(Tk::Canvas)
         parent = args.shift
         @path = parent.path
       else
@@ -588,7 +588,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Barchart < TkCanvas
+  class Barchart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -626,7 +626,7 @@ module Tk::Tcllib::Plotchart
           @series_size  = args.shift
         end
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -672,7 +672,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Timechart < TkCanvas
+  class Timechart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -699,7 +699,7 @@ module Tk::Tcllib::Plotchart
         @time_end   = args.shift
         @items      = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -733,7 +733,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Gnattchart < TkCanvas
+  class Gnattchart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -772,7 +772,7 @@ module Tk::Tcllib::Plotchart
           @text_width = None
         end
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget

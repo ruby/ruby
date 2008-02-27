@@ -127,4 +127,5 @@ class Tk::Frame<TkWindow
   end
 end
 
-TkFrame = Tk::Frame unless Object.const_defined? :TkFrame
+#TkFrame = Tk::Frame unless Object.const_defined? :TkFrame
+Tk.__set_toplevel_aliases__(:Tk, Tk::Frame, :TkFrame)

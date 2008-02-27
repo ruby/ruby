@@ -85,4 +85,5 @@ class Tk::Scale<TkWindow
   end
 end
 
-TkScale = Tk::Scale unless Object.const_defined? :TkScale
+#TkScale = Tk::Scale unless Object.const_defined? :TkScale
+Tk.__set_toplevel_aliases__(:Tk, Tk::Scale, :TkScale)

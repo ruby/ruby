@@ -13,6 +13,10 @@ module Tk
   end
 end
 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Panedwindow, 
+                            :TkPanedwindow, :TkPanedWindow)
+
+
 class Tk::Tile::TPaned < TkWindow
   include Tk::Tile::TileWidget
 

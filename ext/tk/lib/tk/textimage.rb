@@ -5,11 +5,11 @@ require 'tk'
 require 'tk/text'
 
 class TkTextImage<TkObject
-  include TkText::IndexModMethods
+  include Tk::Text::IndexModMethods
 
   def initialize(parent, index, keys)
-    #unless parent.kind_of?(TkText)
-    #  fail ArgumentError, "expect TkText for 1st argument"
+    #unless parent.kind_of?(Tk::Text)
+    #  fail ArgumentError, "expect Tk::Text for 1st argument"
     #end
     @t = parent
     if index == 'end' || index == :end
@@ -34,7 +34,7 @@ class TkTextImage<TkObject
   end
 
   def id
-    TkText::IndexString.new(@id)
+    Tk::Text::IndexString.new(@id)
   end
   def mark
     @path

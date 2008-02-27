@@ -73,9 +73,9 @@ class Tk::Text<TkTextWin
 
       mod = mod.to_s
       if mod =~ /^\s*[+-]?\d/
-        TkText::IndexString.new(String.new(id) << ' + ' << mod)
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod)
       else
-        TkText::IndexString.new(String.new(id) << ' ' << mod)
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod)
       end
     end
 
@@ -84,20 +84,20 @@ class Tk::Text<TkTextWin
 
       mod = mod.to_s
       if mod =~ /^\s*[+-]?\d/
-        TkText::IndexString.new(String.new(id) << ' - ' << mod)
+        Tk::Text::IndexString.new(String.new(id) << ' - ' << mod)
       elsif mod =~ /^\s*[-]\s+(\d.*)$/
-        TkText::IndexString.new(String.new(id) << ' - -' << $1)
+        Tk::Text::IndexString.new(String.new(id) << ' - -' << $1)
       else
-        TkText::IndexString.new(String.new(id) << ' ' << mod)
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod)
       end
     end
 
     def chars(mod)
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' chars')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' chars')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' chars')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' chars')
       end
     end
     alias char chars
@@ -106,9 +106,9 @@ class Tk::Text<TkTextWin
       # Tk8.5 feature
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display chars')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display chars')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display chars')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display chars')
       end
     end
     alias display_char display_chars
@@ -117,9 +117,9 @@ class Tk::Text<TkTextWin
       # Tk8.5 feature
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any chars')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any chars')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any chars')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any chars')
       end
     end
     alias any_char any_chars
@@ -128,9 +128,9 @@ class Tk::Text<TkTextWin
       # Tk8.5 feature
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' indices')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' indices')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' indices')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' indices')
       end
     end
 
@@ -138,9 +138,9 @@ class Tk::Text<TkTextWin
       # Tk8.5 feature
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display indices')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display indices')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display indices')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display indices')
       end
     end
 
@@ -148,18 +148,18 @@ class Tk::Text<TkTextWin
       # Tk8.5 feature
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any indices')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any indices')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any indices')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any indices')
       end
     end
 
     def lines(mod)
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' lines')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' lines')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' lines')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' lines')
       end
     end
     alias line lines
@@ -168,9 +168,9 @@ class Tk::Text<TkTextWin
       # Tk8.5 feature
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display_lines')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' display_lines')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display lines')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' display lines')
       end
     end
     alias display_line display_lines
@@ -179,43 +179,43 @@ class Tk::Text<TkTextWin
       # Tk8.5 feature
       fail ArgumentError, 'expect Integer'  unless mod.kind_of?(Integer)
       if mod < 0
-        TkText::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any_lines')
+        Tk::Text::IndexString.new(String.new(id) << ' ' << mod.to_s << ' any_lines')
       else
-        TkText::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any lines')
+        Tk::Text::IndexString.new(String.new(id) << ' + ' << mod.to_s << ' any lines')
       end
     end
     alias any_line any_lines
 
     def linestart
-      TkText::IndexString.new(String.new(id) << ' linestart')
+      Tk::Text::IndexString.new(String.new(id) << ' linestart')
     end
     def lineend
-      TkText::IndexString.new(String.new(id) << ' lineend')
+      Tk::Text::IndexString.new(String.new(id) << ' lineend')
     end
 
     def display_linestart
       # Tk8.5 feature
-      TkText::IndexString.new(String.new(id) << ' display linestart')
+      Tk::Text::IndexString.new(String.new(id) << ' display linestart')
     end
     def display_lineend
       # Tk8.5 feature
-      TkText::IndexString.new(String.new(id) << ' display lineend')
+      Tk::Text::IndexString.new(String.new(id) << ' display lineend')
     end
 
     def wordstart
-      TkText::IndexString.new(String.new(id) << ' wordstart')
+      Tk::Text::IndexString.new(String.new(id) << ' wordstart')
     end
     def wordend
-      TkText::IndexString.new(String.new(id) << ' wordend')
+      Tk::Text::IndexString.new(String.new(id) << ' wordend')
     end
 
     def display_wordstart
       # Tk8.5 feature
-      TkText::IndexString.new(String.new(id) << ' display wordstart')
+      Tk::Text::IndexString.new(String.new(id) << ' display wordstart')
     end
     def display_wordend
       # Tk8.5 feature
-      TkText::IndexString.new(String.new(id) << ' display wordend')
+      Tk::Text::IndexString.new(String.new(id) << ' display wordend')
     end
   end
 
@@ -284,16 +284,16 @@ class Tk::Text<TkTextWin
   private :__strval_optkeys
 
   def self.at(x, y)
-    TkText::IndexString.at(x, y)
+    Tk::Text::IndexString.at(x, y)
   end
 
   def at(x, y)
-    TkText::IndexString.at(x, y)
+    Tk::Text::IndexString.at(x, y)
   end
 
   def index(idx)
-    TkText::IndexString.new(tk_send_without_enc('index', 
-                                                _get_eval_enc_str(idx)))
+    Tk::Text::IndexString.new(tk_send_without_enc('index', 
+                                                  _get_eval_enc_str(idx)))
   end
 
   def get_displaychars(*index)
@@ -967,7 +967,7 @@ class Tk::Text<TkTextWin
                             false, true)
     r = []
     while key=l.shift
-      r.push [TkText::IndexString.new(key), TkText::IndexString.new(l.shift)]
+      r.push [Tk::Text::IndexString.new(key), Tk::Text::IndexString.new(l.shift)]
     end
     r
   end
@@ -977,7 +977,7 @@ class Tk::Text<TkTextWin
                                    _get_eval_enc_str(tag), 
                                    _get_eval_enc_str(first), 
                                    _get_eval_enc_str(last))).collect{|idx|
-      TkText::IndexString.new(idx)
+      Tk::Text::IndexString.new(idx)
     }
   end
 
@@ -986,7 +986,7 @@ class Tk::Text<TkTextWin
                                    _get_eval_enc_str(tag), 
                                    _get_eval_enc_str(first), 
                                    _get_eval_enc_str(last))).collect{|idx|
-      TkText::IndexString.new(idx)
+      Tk::Text::IndexString.new(idx)
     }
   end
 
@@ -1236,7 +1236,7 @@ class Tk::Text<TkTextWin
     if ret == ""
       nil
     else
-      TkText::IndexString.new(ret)
+      Tk::Text::IndexString.new(ret)
     end
   end
 
@@ -1271,7 +1271,7 @@ class Tk::Text<TkTextWin
     if ret == ""
       nil
     else
-      TkText::IndexString.new(ret)
+      Tk::Text::IndexString.new(ret)
     end
   end
 
@@ -1460,10 +1460,10 @@ class Tk::Text<TkTextWin
       # retrieve index
       idx = str.index(/ /, i)
       if idx
-        result.push(TkText::IndexString.new(str[i..(idx-1)]))
+        result.push(Tk::Text::IndexString.new(str[i..(idx-1)]))
         i = idx + 1
       else
-        result.push(TkText::IndexString.new(str[i..-1]))
+        result.push(Tk::Text::IndexString.new(str[i..-1]))
         break
       end
     end
@@ -1531,15 +1531,16 @@ class Tk::Text<TkTextWin
   end
 end
 
-TkText = Tk::Text unless Object.const_defined? :TkText
+#TkText = Tk::Text unless Object.const_defined? :TkText
+Tk.__set_toplevel_aliases__(:Tk, Tk::Text, :TkText)
 
 
 #######################################
 
-class TkText::Peer < TkText
+class Tk::Text::Peer < Tk::Text
   # Tk8.5 feature
   def initialize(text, parent=nil, keys={})
-    unless text.kind_of?(TkText)
+    unless text.kind_of?(Tk::Text)
       fail ArgumentError, "TkText is expected for 1st argument"
     end
     @src_text = text

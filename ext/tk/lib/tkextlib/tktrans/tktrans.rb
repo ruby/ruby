@@ -39,7 +39,7 @@ class TkWindow
   end
 end
 
-class TkRoot
+class Tk::Root
   undef tktrans_set_image, tktrans_get_image
 
   def tktrans_set_image(img)
@@ -51,7 +51,7 @@ class TkRoot
   end
 end
 
-class TkToplevel
+class Tk::Toplevel
   undef tktrans_set_image, tktrans_get_image
 
   def tktrans_set_image(img)

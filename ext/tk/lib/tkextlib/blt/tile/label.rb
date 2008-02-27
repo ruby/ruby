@@ -9,7 +9,7 @@ require 'tkextlib/blt/tile.rb'
 
 module Tk::BLT
   module Tile
-    class Label < TkLabel
+    class Label < Tk::Label
       TkCommandNames = ['::blt::tile::label'.freeze].freeze
     end
   end

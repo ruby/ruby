@@ -12,6 +12,9 @@ module Tk
   end
 end
 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Treeview, :TkTreeview)
+
+
 module Tk::Tile::TreeviewConfig
   include TkItemConfigMethod
 

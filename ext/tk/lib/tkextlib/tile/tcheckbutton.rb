@@ -7,7 +7,7 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TCheckButton < TkCheckButton
+    class TCheckButton < Tk::CheckButton
     end
     TCheckbutton = TCheckButton
     CheckButton  = TCheckButton
@@ -15,7 +15,11 @@ module Tk
   end
 end
 
-class Tk::Tile::TCheckButton < TkCheckButton
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Checkbutton, 
+                            :TkCheckbutton, :TkCheckButton)
+
+
+class Tk::Tile::TCheckButton < Tk::CheckButton
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE

@@ -14,7 +14,7 @@ module Tk::BLT
   end
 end
 
-class TkCanvas
+class Tk::Canvas
   alias __BLT_EPS_item_strval_optkeys __item_strval_optkeys
   def __item_strval_optkeys(id)
     __BLT_EPS_item_strval_optkeys(id) + [

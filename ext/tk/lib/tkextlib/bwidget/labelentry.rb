@@ -11,7 +11,7 @@ require 'tkextlib/bwidget/entry'
 
 module Tk
   module BWidget
-    class LabelEntry < TkEntry
+    class LabelEntry < Tk::Entry
     end
   end
 end
