@@ -1384,7 +1384,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     }
     if (bytes != siz) rb_str_resize(str, bytes);
     str = io_enc_str(str, fptr);
-    if (fptr->enc2) {
+    if (!fptr->enc2) {
 	ENC_CODERANGE_SET(str, cr);
     }
     return str;
@@ -1960,10 +1960,10 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 		swallow(fptr, '\n');
 	    }
 	}
+	str = io_enc_str(str, fptr);
     }
 
     if (!NIL_P(str)) {
-	str = io_enc_str(str, fptr);
 	if (!nolimit) {
 	    fptr->lineno++;
 	    lineno = INT2FIX(fptr->lineno);
