@@ -1358,6 +1358,9 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 {
     long bytes = 0;
     long n;
+    long pos = 0;
+    rb_encoding *enc = io_read_encoding(fptr);
+    int cr = 0;
 
     if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
@@ -1370,15 +1373,21 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 	READ_CHECK(fptr);
 	n = io_fread(str, bytes, fptr);
 	if (n == 0 && bytes == 0) {
-            break;
+	    break;
 	}
 	bytes += n;
+	if (cr != ENC_CODERANGE_BROKEN)
+	    pos = rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + bytes, enc, &cr);
 	if (bytes < siz) break;
 	siz += BUFSIZ;
 	rb_str_resize(str, siz);
     }
     if (bytes != siz) rb_str_resize(str, bytes);
-    return io_enc_str(str, fptr);
+    str = io_enc_str(str, fptr);
+    if (fptr->enc2) {
+	ENC_CODERANGE_SET(str, cr);
+    }
+    return str;
 }
 
 void

@@ -1,3 +1,10 @@
+Wed Feb 27 22:55:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_coderange_scan_restartable): coderange scaning
+	  for partial read.
+
+	* io.c (read_all): set coderange when not convert encoding.
+
 Wed Feb 27 03:55:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb, enc/make_encmake.rb: load current mkmf.rb even if
