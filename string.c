@@ -3561,7 +3561,6 @@ rb_str_reverse(VALUE str)
 static VALUE
 rb_str_reverse_bang(VALUE str)
 {
-    rb_encoding *enc = STR_ENC_GET(str);
     char *s, *e, c;
 
     if (RSTRING_LEN(str) > 1) {

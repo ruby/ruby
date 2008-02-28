@@ -1,10 +1,14 @@
-Thu Feb 28 11:13:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb 28 11:19:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_reverse_bang): removed unsed variables.
 
 	* include/ruby/encoding.h (rb_str_coderange_scan_restartable): added
 	  prototype.
 
 	* string.c (rb_str_coderange_scan_restartable, rb_str_times): removed
 	  unsed variables.
+
+	* string.c (rb_str_reverse_bang): ditto
 
 	* string.c (rb_enc_str_copy): unused now.  may be used in future?
 
