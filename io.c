@@ -1960,7 +1960,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 		swallow(fptr, '\n');
 	    }
 	}
-	str = io_enc_str(str, fptr);
+	if (!NIL_P(str)) str = io_enc_str(str, fptr);
     }
 
     if (!NIL_P(str)) {
