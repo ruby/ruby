@@ -192,6 +192,8 @@ autoload :TkPackage,          'tk/package'
 
 autoload :TkPalette,          'tk/palette'
 
+autoload :TkRoot,             'tk/root'
+
 autoload :TkScrollbox,        'tk/scrollbox'
 
 autoload :TkSelection,        'tk/selection'
@@ -294,7 +296,7 @@ module Tk
     :TkRadioButton        => 'tk/radiobutton', 
     :TkRadiobutton        => 'tk/radiobutton', 
 
-    :TkRoot               => 'tk/root', 
+    # :TkRoot               => 'tk/root', 
 
     :TkScale              => 'tk/scale', 
 

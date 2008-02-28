@@ -322,7 +322,7 @@ class Tk::Iwidgets::Scrolledtext
 
 
   def _ktext_length(txt)
-    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!
+    if TkCore::WITH_ENCODING ### Ruby 1.9 !!!!!!!!!!!!!
       return txt.length
     end
     ###########################

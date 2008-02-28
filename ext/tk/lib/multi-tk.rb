@@ -695,6 +695,8 @@ class MultiTkIp
 
   ######################################
 
+  WITH_RUBY_VM  = Object.const_defined?(:VM) && ::VM.class == Class
+
   if self.const_defined? :DEFAULT_MASTER_NAME
     name = DEFAULT_MASTER_NAME.to_s
   else
@@ -723,9 +725,9 @@ class MultiTkIp
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
     end
 
-    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+    unless WITH_RUBY_VM
       @interp = TclTkIp.new(name, _keys2opts(keys))
-    else
+    else ### Ruby 1.9 !!!!!!!!!!!
       @interp_thread = Thread.new{
         Thread.current[:interp] = interp = TclTkIp.new(name, _keys2opts(keys))
         #sleep
@@ -876,22 +878,26 @@ class MultiTkIp
     Thread.new{
       current = Thread.current
       loop {
-        mtx, ret, table, script = @init_ip_env_queue.deq
-        begin        
+        mtx, cond, ret, table, script = @init_ip_env_queue.deq
+        begin
           ret[0] = table.each{|tg, ip| ip._init_ip_env(script) }
         rescue Exception => e
           ret[0] = e
         ensure
-          mtx.unlock
+          mtx.synchronize{ cond.signal }
         end
+        mtx = cond = ret = table = script = nil  # clear variables for GC
       }
     }
 
     def self.__init_ip_env__(table, script)
       ret = []
-      mtx = Mutex.new.lock
-      @init_ip_env_queue.enq([mtx, ret, table, script])
-      # mtx.lock
+      mtx  = (Thread.current[:MultiTk_ip_Mutex] ||= Mutex.new)
+      cond = (Thread.current[:MultiTk_ip_CondVar] ||= ConditionVariable.new)
+      mtx.synchronize{
+        @init_ip_env_queue.enq([mtx, cond, ret, table, script])
+        cond.wait(mtx)
+      }
       if ret[0].kind_of?(Exception)
         raise ret[0]
       else
@@ -1229,9 +1235,9 @@ class MultiTkIp
 
     if safeip == nil
       # create master-ip
-      if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+      unless WITH_RUBY_VM
         @interp = TclTkIp.new(name, _keys2opts(tk_opts))
-      else
+      else ### Ruby 1.9 !!!!!!!!!!!
         @interp_thread = Thread.new{
           Thread.current[:interp] = interp = TclTkIp.new(name, _keys2opts(tk_opts))
           #sleep
@@ -1257,7 +1263,8 @@ class MultiTkIp
         @safe_base = true
         @interp, @ip_name = master.__create_safe_slave_obj(safe_opts, 
                                                            name, tk_opts)
-        @interp_thread = nil if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+        # @interp_thread = nil if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+        @interp_thread = nil unless WITH_RUBY_VM  ### Ruby 1.9 !!!!!!!!!!!
         if safe
           safe = master.safe_level if safe < master.safe_level
           @safe_level = [safe]
@@ -1266,7 +1273,8 @@ class MultiTkIp
         end
       else
         @interp, @ip_name = master.__create_trusted_slave_obj(name, tk_opts)
-        @interp_thread = nil if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+        # @interp_thread = nil if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+        @interp_thread = nil unless WITH_RUBY_VM  ### Ruby 1.9 !!!!!!!!!!!
         if safe
           safe = master.safe_level if safe < master.safe_level
           @safe_level = [safe]
@@ -2377,7 +2385,7 @@ class MultiTkIp
   def mainloop(check_root = true, restart_on_dead = true)
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
 
-    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!
+    unless WITH_RUBY_VM  ### Ruby 1.9 !!!!!!!!!!!
       return @interp_thread.value if @interp_thread
     end
 

@@ -1182,7 +1182,7 @@ class Tk::Text<TkTextWin
   end
 
   def _ktext_length(txt)
-    if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!
+    if TkCore::WITH_ENCODING ### Ruby 1.9 !!!!!!!!!!!!!
       return txt.length
     end
     ###########################
@@ -1541,7 +1541,7 @@ class Tk::Text::Peer < Tk::Text
   # Tk8.5 feature
   def initialize(text, parent=nil, keys={})
     unless text.kind_of?(Tk::Text)
-      fail ArgumentError, "TkText is expected for 1st argument"
+      fail ArgumentError, "Tk::Text is expected for 1st argument"
     end
     @src_text = text
     super(parent, keys)

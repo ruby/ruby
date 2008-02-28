@@ -1076,11 +1076,16 @@ module TkComm
   end
 end
 
+
 module TkCore
   include TkComm
   extend TkComm
 
+  WITH_RUBY_VM  = Object.const_defined?(:VM) && ::VM.class == Class
+  WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
+
   unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
+    ### Ruby 1.9 !!!!!!!!!!!!!!!!!!!!!!!!!!
     RUN_EVENTLOOP_ON_MAIN_THREAD = false
   end
 
@@ -1101,7 +1106,7 @@ module TkCore
       opts = ''
     end
 
-    if RUBY_VERSION < '1.9.0' || RUN_EVENTLOOP_ON_MAIN_THREAD ### !!!!!!!!!!!
+    if !WITH_RUBY_VM || RUN_EVENTLOOP_ON_MAIN_THREAD ### Ruby 1.9 !!!!!!!!!!!
       INTERP = TclTkIp.new(name, opts)
     else
       require 'thread'
@@ -1589,8 +1594,8 @@ module TkCore
   end
 
   def mainloop(check_root = true)
-    if RUBY_VERSION < '1.9.0' || 
-        TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD ### !!!!!!!!!!!
+    if !TkCore::WITH_RUBY_VM || TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD
+      ### Ruby 1.9 !!!!!!!!!!!
       TclTkLib.mainloop(check_root)
     else
       begin
@@ -1618,8 +1623,8 @@ module TkCore
     # nil   : there is no mainloop
     # false : mainloop is running on the other thread
     #         ( At then, it is dangerous to call Tk interpreter directly. )
-    if RUBY_VERSION < '1.9.0' || 
-        TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD ### !!!!!!!!!!!
+    if !TkCore::WITH_RUBY_VM || TkCore::RUN_EVENTLOOP_ON_MAIN_THREAD
+      ### Ruby 1.9 !!!!!!!!!!!
       TclTkLib.mainloop_thread?
     else
       Thread.current == INTERP_THREAD
@@ -1859,6 +1864,7 @@ module TkCore
   end
 end
 
+
 module Tk
   include TkCore
   extend Tk
@@ -1974,7 +1980,7 @@ module Tk
   end
 
   def root
-    TkRoot.new
+    Tk::Root.new
   end
 
   def Tk.load_tclscript(file, enc=nil)
@@ -2465,7 +2471,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
   end
 
   # estimate encoding
-  if RUBY_VERSION < '1.9.0'
+  unless TkCore::WITH_ENCODING ### Ruby 1.9 !!!!!!!!!!!!
     case $KCODE
     when /^e/i  # EUC
       Tk.encoding = 'euc-jp'
@@ -4742,7 +4748,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2007-12-21'.freeze
+  RELEASE_DATE = '2008-02-29'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

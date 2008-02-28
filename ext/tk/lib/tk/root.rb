@@ -86,5 +86,4 @@ class Tk::Root<TkWindow
   end
 end
 
-#TkRoot = Tk::Root unless Object.const_defined? :TkRoot
-Tk.__set_toplevel_aliases__(:Tk, Tk::Root, :TkRoot)
+TkRoot = Tk::Root unless Object.const_defined? :TkRoot

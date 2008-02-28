@@ -1,3 +1,17 @@
+Fri Feb 29 02:24:22 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: forgot to update RELEASE_DATE
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/text.rb,
+	  ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: remove adhoc check 
+	  of Ruby's features (use existence of some classes instead of 
+	  comparing with RUBY_VERSION)
+
+	* ext/tk/lib/tk/root.rb, ext/tk/lib/tk/autoload.rb: make TkRoot 
+	  (Tk::Root) unswitchable
+
+	* ext/tk/lib/multi-tk.rb: partial bug fix (still not work!!)
+
 Thu Feb 28 23:37:12 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (OpenURI::Meta#meta_setup_encoding): use ASCII-8BIT
