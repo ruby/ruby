@@ -412,8 +412,27 @@ module OpenURI
     # The Hash keys are downcased for canonicalization.
     attr_reader :meta
 
+    def meta_setup_encoding # :nodoc:
+      charset = self.charset
+      return unless charset
+      begin
+        enc = Encoding.find(charset)
+      rescue ArgumentError
+        return
+      end
+      if self.respond_to? :force_encoding
+        self.force_encoding(enc)
+      elsif self.respond_to? :string
+        self.string.force_encoding(enc)
+      else # Tempfile
+        self.set_encoding enc
+      end
+    end
+
     def meta_add_field(name, value) # :nodoc:
-      @meta[name.downcase] = value
+      name = name.downcase
+      @meta[name] = value
+      meta_setup_encoding if name == 'content-type'
     end
 
     # returns a Time which represents Last-Modified field.
