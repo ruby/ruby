@@ -535,7 +535,7 @@ rb_enc_find(const char *name)
 static inline int
 enc_capable(VALUE obj)
 {
-    if (IMMEDIATE_P(obj)) return Qfalse;
+    if (SPECIAL_CONST_P(obj)) return Qfalse;
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_REGEXP:
