@@ -1113,6 +1113,13 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII, {1=>nil,"foo"=>""}.to_s.encoding)
   end
 
+  def test_encoding_find
+    assert_raise(TypeError) {Encoding.find(nil)}
+    assert_raise(TypeError) {Encoding.find(0)}
+    assert_raise(TypeError) {Encoding.find([])}
+    assert_raise(TypeError) {Encoding.find({})}
+  end
+
   def test_encoding_to_s
     assert_equal(Encoding::US_ASCII, Encoding::US_ASCII.to_s.encoding)
     assert_equal(Encoding::US_ASCII, Encoding::US_ASCII.inspect.encoding)

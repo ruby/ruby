@@ -57,7 +57,3 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   "".center(1, "\x80".force_encoding("utf-8"))
 }, '[ruby-dev:33807]'
-
-assert_normal_exit %q{
-  Encoding.find(nil)
-}

@@ -1,3 +1,8 @@
+Thu Feb 28 19:45:52 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (enc_find): check type of argument and convert to String
+	  if it is StringValue. [ruby-cvs:22866]
+
 Thu Feb 28 18:07:52 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb (OpenURI::Meta#meta_setup_encoding): setup encoding

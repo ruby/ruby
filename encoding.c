@@ -902,7 +902,7 @@ enc_find(VALUE klass, VALUE enc)
 {
     int idx;
 
-    if (SYMBOL_P(enc)) enc = rb_id2str(SYM2ID(enc));
+    StringValue(enc);
     if (!rb_enc_asciicompat(rb_enc_get(enc))) {
 	rb_raise(rb_eArgError, "invalid name encoding (non ASCII)");
     }
