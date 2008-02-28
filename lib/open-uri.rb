@@ -414,12 +414,14 @@ module OpenURI
 
     def meta_setup_encoding # :nodoc:
       charset = self.charset
-      return unless charset
-      begin
-        enc = Encoding.find(charset)
-      rescue ArgumentError
-        return
+      enc = nil
+      if charset
+        begin
+          enc = Encoding.find(charset)
+        rescue ArgumentError
+        end
       end
+      enc = Encoding::ASCII_8BIT unless enc
       if self.respond_to? :force_encoding
         self.force_encoding(enc)
       elsif self.respond_to? :string
