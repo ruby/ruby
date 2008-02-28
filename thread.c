@@ -845,22 +845,22 @@ rb_thread_signal_exit(void *thptr)
 }
 
 int
-thread_set_raised(rb_thread_t *th)
+rb_thread_set_raised(rb_thread_t *th)
 {
-    if (th->raised_flag) {
+    if (th->raised_flag & RAISED_EXCEPTION) {
 	return 1;
     }
-    th->raised_flag = 1;
+    th->raised_flag |= RAISED_EXCEPTION;
     return 0;
 }
 
 int
-thread_reset_raised(rb_thread_t *th)
+rb_thread_reset_raised(rb_thread_t *th)
 {
-    if (th->raised_flag == 0) {
+    if (!(th->raised_flag & RAISED_EXCEPTION)) {
 	return 0;
     }
-    th->raised_flag = 0;
+    th->raised_flag &= ~RAISED_EXCEPTION;
     return 1;
 }
 
@@ -3005,7 +3005,7 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 	th->tracing = 1;
     }
 
-    raised = thread_reset_raised(th);
+    raised = rb_thread_reset_raised(th);
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
@@ -3013,7 +3013,7 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
     }
 
     if (raised) {
-	thread_set_raised(th);
+	rb_thread_set_raised(th);
     }
     POP_TAG();
 

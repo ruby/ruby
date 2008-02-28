@@ -656,7 +656,7 @@ rb_longjmp(int tag, VALUE mesg)
     const char *file;
     int line = 0;
 
-    if (thread_set_raised(th)) {
+    if (rb_thread_set_raised(th)) {
 	th->errinfo = exception_error;
 	JUMP_TAG(TAG_FATAL);
     }
@@ -703,7 +703,7 @@ rb_longjmp(int tag, VALUE mesg)
 	    th->errinfo = mesg;
 	}
 	else if (status) {
-	    thread_reset_raised(th);
+	    rb_thread_reset_raised(th);
 	    JUMP_TAG(status);
 	}
     }
@@ -715,7 +715,7 @@ rb_longjmp(int tag, VALUE mesg)
 			0 /* TODO: id */, 0 /* TODO: klass */);
     }
 
-    thread_reset_raised(th);
+    rb_thread_reset_raised(th);
     JUMP_TAG(tag);
 }
 
@@ -1241,17 +1241,17 @@ rb_with_disable_interrupt(VALUE (*proc)(ANYARGS), VALUE data)
 static inline void
 stack_check(void)
 {
-    static int overflowing = 0;
+    rb_thread_t *th = GET_THREAD();
 
-    if (!overflowing && ruby_stack_check()) {
+    if (!rb_thread_stack_overflowing_p(th) && ruby_stack_check()) {
 	int state;
-	overflowing = 1;
+	rb_thread_set_stack_overflow(th);
 	PUSH_TAG();
 	if ((state = EXEC_TAG()) == 0) {
 	    rb_exc_raise(sysstack_error);
 	}
 	POP_TAG();
-	overflowing = 0;
+	rb_thread_reset_stack_overflow(th);
 	JUMP_TAG(state);
     }
 }
@@ -1426,6 +1426,8 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope
 	    }
 	}
     }
+
+    stack_check();
 
     {
 	VALUE val;

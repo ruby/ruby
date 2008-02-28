@@ -1,3 +1,9 @@
+Thu Feb 28 13:51:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (stack_check): made flag per threads.
+
+	* thread.c (rb_thread_set_raised, rb_thread_reset_raised): prefixed.
+
 Thu Feb 28 11:43:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_flock): immediately returns on EAGAIN if
