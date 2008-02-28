@@ -1,3 +1,7 @@
+Thu Feb 28 11:23:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_getline_1): get rid of segfault.  [ruby-dev:33938]
+
 Thu Feb 28 11:19:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_reverse_bang): removed unsed variables.
