@@ -253,18 +253,6 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
     }
 }
 
-#if 0
-static void
-rb_enc_str_copy(VALUE dest, VALUE src)
-{
-    rb_enc_copy(dest, src);
-    if (RSTRING_PTR(dest) == RSTRING_PTR(src) &&
-	RSTRING_LEN(dest) == RSTRING_LEN(src)) {
-	ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
-    }
-}
-#endif
-
 static void
 rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
 {

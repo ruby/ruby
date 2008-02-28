@@ -1,3 +1,7 @@
+Thu Feb 28 14:36:46 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_enc_str_copy): removed.
+
 Thu Feb 28 13:51:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (stack_check): made flag per threads.
