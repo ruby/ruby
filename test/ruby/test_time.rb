@@ -327,6 +327,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_strftime
+    t = Time.at(946684800).getlocal
     assert_equal("Sat", T2000.strftime("%a"))
     assert_equal("Saturday", T2000.strftime("%A"))
     assert_equal("Jan", T2000.strftime("%b"))
@@ -347,7 +348,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("00:00:00", T2000.strftime("%X"))
     assert_equal("00", T2000.strftime("%y"))
     assert_equal("2000", T2000.strftime("%Y"))
-    assert_equal("GMT", T2000.strftime("%Z"))
+    assert(["GMT", "UTC"].include?(T2000.strftime("%Z")))
     assert_equal("%", T2000.strftime("%%"))
 
     assert_equal("", T2000.strftime(""))
