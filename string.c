@@ -204,10 +204,7 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
 long
 rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc, int *cr)
 {
-    long c;
-    const char *p;
-    int ret;
-    p = s;
+    const char *p = s;
 
     if (*cr == ENC_CODERANGE_BROKEN)
 	return e - s;
@@ -256,6 +253,7 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
     }
 }
 
+#if 0
 static void
 rb_enc_str_copy(VALUE dest, VALUE src)
 {
@@ -265,6 +263,7 @@ rb_enc_str_copy(VALUE dest, VALUE src)
 	ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
     }
 }
+#endif
 
 static void
 rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
@@ -274,17 +273,17 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
      */
     rb_enc_copy(dest, src);
     switch (ENC_CODERANGE(src)) {
-    case ENC_CODERANGE_7BIT:
+      case ENC_CODERANGE_7BIT:
 	ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
 	break;
-    case ENC_CODERANGE_VALID:
+      case ENC_CODERANGE_VALID:
 	if (!rb_enc_asciicompat(STR_ENC_GET(src)) ||
 	    search_nonascii(RSTRING_PTR(dest), RSTRING_END(dest)))
 	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
 	else
 	    ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
 	break;
-    default:
+      default:
 	if (RSTRING_LEN(dest) == 0) {
 	    if (!rb_enc_asciicompat(STR_ENC_GET(src)))
 		ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
@@ -315,7 +314,8 @@ rb_enc_str_coderange(VALUE str)
     return cr;
 }
 
-int rb_enc_str_asciionly_p(VALUE str)
+int
+rb_enc_str_asciionly_p(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
 
@@ -914,7 +914,6 @@ rb_str_times(VALUE str, VALUE times)
 {
     VALUE str2;
     long n, len;
-    int cr;
 
     len = NUM2LONG(times);
     if (len < 0) {
