@@ -1,3 +1,8 @@
+Thu Feb 28 11:43:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_flock): immediately returns on EAGAIN if
+	  non-blocking.  [ruby-core:15672]
+
 Thu Feb 28 11:23:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_getline_1): get rid of segfault.  [ruby-dev:33938]

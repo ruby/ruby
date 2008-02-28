@@ -3256,10 +3256,10 @@ rb_file_flock(VALUE obj, VALUE operation)
 {
 #ifndef __CHECKER__
     rb_io_t *fptr;
-    int op[2];
+    int op[2], op1;
 
     rb_secure(2);
-    op[1] = NUM2INT(operation);
+    op[1] = op1 = NUM2INT(operation);
     GetOpenFile(obj, fptr);
     op[0] = fptr->fd;
 
@@ -3273,6 +3273,7 @@ rb_file_flock(VALUE obj, VALUE operation)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
+	    if (op1 & LOCK_NB) goto exit;
 	    rb_thread_polling();
 	    rb_io_check_closed(fptr);
 	    continue;
@@ -3287,6 +3288,7 @@ rb_file_flock(VALUE obj, VALUE operation)
 	    rb_sys_fail(fptr->path);
 	}
     }
+  exit:
 #endif
     return INT2FIX(0);
 }
