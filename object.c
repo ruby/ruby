@@ -808,7 +808,7 @@ nil_to_f(VALUE obj)
 static VALUE
 nil_to_s(VALUE obj)
 {
-    return rb_str_new(0, 0);
+    return rb_usascii_str_new(0, 0);
 }
 
 /*

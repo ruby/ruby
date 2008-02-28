@@ -1,3 +1,12 @@
+Fri Feb 29 02:50:07 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_new): remove encoding assumption of empty string.
+
+	* hash.c ( rb_f_getenv, env_fetch, env_inspect): result of ENV should
+	  be always ASCII-8BIT.
+
+	* object.c (nil_to_s): nil.to_s should be US-ASCII.
+
 Fri Feb 29 02:24:22 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: forgot to update RELEASE_DATE

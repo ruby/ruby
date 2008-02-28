@@ -1826,7 +1826,7 @@ rb_f_getenv(VALUE obj, VALUE name)
 	if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
 	{
-	    VALUE str = rb_usascii_str_new2(env);
+	    VALUE str = rb_str_new2(env);
 
 	    rb_obj_freeze(str);
 	    return str;
@@ -1867,7 +1867,7 @@ env_fetch(int argc, VALUE *argv)
 #else
     if (strcmp(nam, PATH_ENV) == 0 && !rb_env_path_tainted())
 #endif
-	return rb_usascii_str_new2(env);
+	return rb_str_new2(env);
     return env_str_new2(env);
 }
 
@@ -2244,7 +2244,7 @@ env_inspect(void)
 	    rb_str_buf_cat2(str, "\"");
 	    rb_str_buf_cat(str, *env, s-*env);
 	    rb_str_buf_cat2(str, "\"=>");
-	    i = rb_inspect(rb_usascii_str_new2(s+1));
+	    i = rb_inspect(rb_str_new2(s+1));
 	    rb_str_buf_append(str, i);
 	}
 	env++;
