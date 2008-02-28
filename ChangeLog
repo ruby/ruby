@@ -1,3 +1,7 @@
+Thu Feb 28 15:29:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (rb_io_getline_fast): scan coderange.
+
 Thu Feb 28 14:36:46 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_enc_str_copy): removed.

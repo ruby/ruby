@@ -1801,6 +1801,9 @@ rb_io_getline_fast(rb_io_t *fptr)
 {
     VALUE str = Qnil;
     int len = 0;
+    long pos = 0;
+    rb_encoding *enc = io_read_encoding(fptr);
+    int cr = 0;
 
     for (;;) {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
@@ -1823,6 +1826,8 @@ rb_io_getline_fast(rb_io_t *fptr)
 		read_buffered_data(RSTRING_PTR(str)+len, pending, fptr);
 	    }
 	    len += pending;
+	    if (cr != ENC_CODERANGE_BROKEN)
+		pos = rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + len, enc, &cr);
 	    if (e) break;
 	}
 	rb_thread_wait_fd(fptr->fd);
@@ -1834,6 +1839,7 @@ rb_io_getline_fast(rb_io_t *fptr)
     }
 
     str = io_enc_str(str, fptr);
+    ENC_CODERANGE_SET(str, cr);
     fptr->lineno++;
     lineno = INT2FIX(fptr->lineno);
     return str;
