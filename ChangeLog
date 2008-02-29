@@ -1,3 +1,8 @@
+Fri Feb 29 20:58:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_iterator.rb (TestIterator::test_enumerator):
+	  adjust test for zip behavior reversion.
+
 Fri Feb 29 20:25:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_chomp_bang): now works on UTF-16.
