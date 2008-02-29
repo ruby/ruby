@@ -1,3 +1,7 @@
+Sat Mar  1 02:35:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2str_find_n1): check integer overflow.
+
 Tue Feb 26 16:06:00 2008  Technorama Ltd.  <oss-ruby@technorama.net>
 
 	* ext/openssl/ossl_pkey_{ec,dh,dsa,rsa}.c: Remove useless warnings.

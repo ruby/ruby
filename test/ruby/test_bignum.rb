@@ -95,4 +95,13 @@ class TestBignum < Test::Unit::TestCase
     assert_equal("1777777777777777777777" ,18446744073709551615.to_s(8))
     assert_equal("-1777777777777777777777" ,-18446744073709551615.to_s(8))
   end
+
+  def test_too_big_to_s
+    i = 32
+    while (big = 2**(i-1)-1).is_a?(Fixnum)
+      i *= 2
+    end
+    e = assert_raise(RangeError) {(1 << big).to_s}
+    assert_match(/too big to convert/, e.message)
+  end
 end
