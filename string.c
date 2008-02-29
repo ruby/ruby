@@ -4453,9 +4453,20 @@ tr_setup_table(VALUE str, char stable[256], int first,
     tr.p = RSTRING_PTR(str); tr.pend = tr.p + RSTRING_LEN(str);
     tr.gen = tr.now = tr.max = 0;
     
-    if (RSTRING_LEN(str) > 1 && RSTRING_PTR(str)[0] == '^') {
-	cflag = 1;
-	tr.p++;
+    if (RSTRING_LEN(str) > 1) {
+	if (rb_enc_asciicompat(enc)) {
+	    if (RSTRING_PTR(str)[0] == '^') {
+		cflag = 1;
+		tr.p++;
+	    }
+	}
+	else {
+	    c = rb_enc_codepoint(RSTRING_PTR(str), RSTRING_END(str), enc);
+	    if (c == '^') {
+		cflag = 1;
+		tr.p+=rb_enc_codelen(c, enc);
+	    }
+	}
     }
     if (first) {
 	for (i=0; i<256; i++) {
@@ -4838,11 +4849,21 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     else {
       fs_set:
-	if (TYPE(spat) == T_STRING && RSTRING_LEN(spat) == 1) {
-	    if (RSTRING_PTR(spat)[0] == ' ') {
-		awk_split = Qtrue;
+	if (TYPE(spat) == T_STRING) {
+	    rb_encoding *enc2 = STR_ENC_GET(spat);
+
+	    if (rb_enc_mbminlen(enc2) == 1) {
+		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' '){
+		    awk_split = Qtrue;
+		}
 	    }
 	    else {
+		if (str_strlen(spat, enc2) == 1 &&
+		    rb_enc_codepoint(RSTRING_PTR(spat), RSTRING_END(spat), enc2) == ' ') {
+		    awk_split = Qtrue;
+		}
+	    }
+	    if (!awk_split) {
 		spat = rb_reg_regcomp(rb_reg_quote(spat));
 	    }
 	}
@@ -5266,27 +5287,49 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     char *p, *pp, *e;
     long len, rslen;
 
+    len = RSTRING_LEN(str);
+    if (len == 0) return Qnil;
+    p = RSTRING_PTR(str);
+    e = p + len;
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
-	len = RSTRING_LEN(str);
-	if (len == 0) return Qnil;
-	p = RSTRING_PTR(str);
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
-	    rb_enc_check(str, rs);
 	    rb_str_modify(str);
-	    if (RSTRING_PTR(str)[len-1] == '\n') {
-		STR_DEC_LEN(str);
-		if (RSTRING_LEN(str) > 0 &&
-		    RSTRING_PTR(str)[RSTRING_LEN(str)-1] == '\r') {
-		    STR_DEC_LEN(str);
+	    enc = rb_enc_get(str);
+	    if (rb_enc_mbminlen(enc) > 1) {
+		len = str_strlen(str, enc);
+		pp = rb_enc_nth(p, e, len-1, enc);
+		if (rb_enc_is_newline(pp, e, enc)) {
+		    e = pp;
+		    len--;
 		}
-	    }
-	    else if (RSTRING_PTR(str)[len-1] == '\r') {
-		STR_DEC_LEN(str);
+		if (len > 0) {
+		    p = rb_enc_nth(p, e, len-1, enc);
+		    if (rb_enc_codepoint(p, e, enc) == '\r') {
+			pp = e = p;
+		    }
+		}
+		if (e == RSTRING_END(str)) {
+		    return Qnil;
+		}
+		len = pp - RSTRING_PTR(str);
+		STR_SET_LEN(str, len);
 	    }
 	    else {
-		return Qnil;
+		if (RSTRING_PTR(str)[len-1] == '\n') {
+		    STR_DEC_LEN(str);
+		    if (RSTRING_LEN(str) > 0 &&
+			RSTRING_PTR(str)[RSTRING_LEN(str)-1] == '\r') {
+			STR_DEC_LEN(str);
+		    }
+		}
+		else if (RSTRING_PTR(str)[len-1] == '\r') {
+		    STR_DEC_LEN(str);
+		}
+		else {
+		    return Qnil;
+		}
 	    }
 	    RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
 	    return str;
@@ -5294,10 +5337,6 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     }
     if (NIL_P(rs)) return Qnil;
     StringValue(rs);
-    enc = rb_enc_check(str, rs);
-    len = RSTRING_LEN(str);
-    if (len == 0) return Qnil;
-    p = RSTRING_PTR(str);
     rslen = RSTRING_LEN(rs);
     if (rslen == 0) {
 	while (len>0 && p[len-1] == '\n') {
@@ -5321,8 +5360,8 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (is_broken_string(rs)) {
 	return Qnil;
     }
-    e = p + len;
     pp = e - rslen;
+    enc = rb_enc_check(str, rs);
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {

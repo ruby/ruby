@@ -1,3 +1,13 @@
+Fri Feb 29 20:25:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_chomp_bang): now works on UTF-16.
+
+	* string.c (tr_setup_table): negation should work on non ASCII
+	  compatible strings as well.
+
+	* string.c (rb_str_split_m): awk split should work on non ASCII
+	  compatible strings as well.
+
 Fri Feb 29 18:08:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_strftime): format should be ascii compatible.

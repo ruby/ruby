@@ -280,6 +280,7 @@ class TestString < Test::Unit::TestCase
   def test_chomp
     assert_equal(S("hello"), S("hello").chomp("\n"))
     assert_equal(S("hello"), S("hello\n").chomp("\n"))
+    save = $/
 
     $/ = "\n"
 
@@ -289,7 +290,7 @@ class TestString < Test::Unit::TestCase
     $/ = "!"
     assert_equal(S("hello"), S("hello").chomp)
     assert_equal(S("hello"), S("hello!").chomp)
-    $/ = "\n"
+    $/ = save
   end
 
   def test_chomp!
@@ -302,6 +303,7 @@ class TestString < Test::Unit::TestCase
     a = S("hello\n")
     a.chomp!(S("\n"))
     assert_equal(S("hello"), a)
+    save = $/
 
     $/ = "\n"
     a = S("hello")
@@ -321,7 +323,7 @@ class TestString < Test::Unit::TestCase
     a.chomp!
     assert_equal(S("hello"), a)
 
-    $/ = "\n"
+    $/ = save
 
     a = S("hello\n")
     b = a.dup
@@ -474,6 +476,7 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_each
+    save = $/
     $/ = "\n"
     res=[]
     S("hello\nworld").lines.each {|x| res << x}
@@ -490,7 +493,7 @@ class TestString < Test::Unit::TestCase
     S("hello!world").lines.each {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
-    $/ = "\n"
+    $/ = save
   end
 
   def test_each_byte
@@ -502,6 +505,7 @@ class TestString < Test::Unit::TestCase
   end
 
   def test_each_line
+    save = $/
     $/ = "\n"
     res=[]
     S("hello\nworld").lines.each {|x| res << x}
@@ -520,7 +524,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
     
-    $/ = "\n"
+    $/ = save
   end
 
   def test_empty?

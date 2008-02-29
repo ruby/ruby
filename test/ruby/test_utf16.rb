@@ -232,9 +232,11 @@ EOT
 
   def test_chomp
     s = "\1\n".force_encoding("utf-16be")
-    assert_raise(ArgumentError, "#{encdump s}.chomp") {
-      s.chomp
-    }
+    assert_equal(s, s.chomp, "#{encdump s}.chomp")
+    s = "\0\n".force_encoding("utf-16be")
+    assert_equal("", s.chomp, "#{encdump s}.chomp")
+    s = "\0\r\0\n".force_encoding("utf-16be")
+    assert_equal("", s.chomp, "#{encdump s}.chomp")
   end
 
   def test_succ
