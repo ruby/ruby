@@ -1,3 +1,8 @@
+Fri Feb 29 15:12:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (opt_block_param): command can start just after block param
+	  definition.  [ruby-list:44479]
+
 Fri Feb 29 03:22:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/test_time.rb (test_readers): fix typo.

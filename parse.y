@@ -3197,6 +3197,9 @@ block_param	: f_arg ',' f_rest_arg opt_f_block_arg
 
 opt_block_param	: none
 		| block_param_def
+		    {
+			command_start = Qtrue;
+		    }
 		;
 
 block_param_def	: '|' opt_bv_decl '|'
