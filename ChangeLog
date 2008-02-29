@@ -1,3 +1,10 @@
+Sat Mar  1 00:29:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_enc_dummy_p): bootstrap encodings can not be dummy.
+
+	* encoding.c (rb_enc_ascget): no needs to call rb_enc_precise_mbclen()
+	  twice.
+
 Fri Feb 29 23:14:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_m17n_comb.rb (TestM17NComb::test_str_chomp): test

@@ -349,7 +349,9 @@ encdb_dummy(const char *name)
 int
 rb_enc_dummy_p(rb_encoding *enc)
 {
-    VALUE encoding = rb_enc_from_encoding(enc);
+    VALUE encoding;
+    if (!enc_initialized_p(enc)) return Qfalse;
+    encoding = rb_enc_from_encoding(enc);
     return ENC_DUMMY_P(encoding);
 }
 
@@ -772,7 +774,7 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
     l = rb_enc_precise_mbclen(p, e, enc);
     if (!MBCLEN_CHARFOUND_P(l))
         return -1;
-    c = rb_enc_codepoint(p, e, enc);
+    c = rb_enc_mbc_to_codepoint(p, e, enc);
     if (!rb_enc_isascii(c, enc))
         return -1;
     if (len) *len = l;
