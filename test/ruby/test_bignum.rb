@@ -377,4 +377,13 @@ class TestBignum < Test::Unit::TestCase
   def test_interrupt
     assert(interrupt { (65536 ** 65536).to_s })
   end
+
+  def test_too_big_to_s
+    i = 32
+    while (big = 2**(i-1)-1).is_a?(Fixnum)
+      i *= 2
+    end
+    e = assert_raise(RangeError) {(1 << big).to_s}
+    assert_match(/too big to convert/, e.message)
+  end
 end

@@ -829,6 +829,9 @@ big2str_find_n1(VALUE x, int base)
     else if (BIGZEROP(x)) {
         return 0;
     }
+    else if (RBIGNUM_LEN(x) >= LONG_MAX/BITSPERDIG) {
+	rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+    }
     else {
         bits = BITSPERDIG*RBIGNUM_LEN(x);
     }

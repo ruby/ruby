@@ -1,3 +1,7 @@
+Sat Mar  1 02:35:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2str_find_n1): check integer overflow.
+
 Sat Mar  1 00:29:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_enc_dummy_p): bootstrap encodings can not be dummy.
