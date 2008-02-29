@@ -5357,11 +5357,11 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (rslen == 1 && newline == '\n')
 	goto smart_chomp;
 
+    enc = rb_enc_check(str, rs);
     if (is_broken_string(rs)) {
 	return Qnil;
     }
     pp = e - rslen;
-    enc = rb_enc_check(str, rs);
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {

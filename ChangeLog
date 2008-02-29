@@ -1,3 +1,8 @@
+Fri Feb 29 23:14:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_m17n_comb.rb (TestM17NComb::test_str_chomp): test
+	  updated. 
+
 Fri Feb 29 20:58:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_iterator.rb (TestIterator::test_enumerator):

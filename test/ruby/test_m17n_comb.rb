@@ -720,8 +720,10 @@ class TestM17NComb < Test::Unit::TestCase
 
   def test_str_chomp
     combination(STRINGS, STRINGS) {|s1, s2|
-      if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
-        assert_raise(ArgumentError) { s1.chomp(s2) }
+      if !s1.ascii_only? && !s2.ascii_only? && !Encoding.compatible?(s1,s2)
+        if s1.bytesize > s2.bytesize 
+          assert_raise(ArgumentError) { s1.chomp(s2) }
+        end
         next
       end
       t = enccall(s1, :chomp, s2)
@@ -1425,6 +1427,7 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal(s1, doit.call)
           next
         end
+        assert(false, "test broken")
         if !str_enc_compatible?(s1.gsub(r2, ''), s3)
           assert_raise(ArgumentError, desc) { doit.call }
           next
@@ -1479,6 +1482,7 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal([s1, nil], doit.call)
           next
         end
+        assert(false, "test broken")
         if !str_enc_compatible?(s1.gsub(r2, ''), s3)
           assert_raise(ArgumentError, desc) { doit.call }
           next
