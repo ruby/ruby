@@ -5273,6 +5273,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
+	    rb_enc_check(str, rs);
 	    rb_str_modify(str);
 	    if (RSTRING_PTR(str)[len-1] == '\n') {
 		STR_DEC_LEN(str);
@@ -5648,6 +5649,11 @@ rb_str_scan(VALUE str, VALUE pat)
 static VALUE
 rb_str_hex(VALUE str)
 {
+    rb_encoding *enc = rb_enc_get(str);
+
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
+    }
     return rb_str_to_inum(str, 16, Qfalse);
 }
 
@@ -5669,6 +5675,11 @@ rb_str_hex(VALUE str)
 static VALUE
 rb_str_oct(VALUE str)
 {
+    rb_encoding *enc = rb_enc_get(str);
+
+    if (!rb_enc_asciicompat(enc)) {
+	rb_raise(rb_eArgError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
+    }
     return rb_str_to_inum(str, -8, Qfalse);
 }
 

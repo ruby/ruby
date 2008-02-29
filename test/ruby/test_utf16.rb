@@ -132,13 +132,21 @@ EOT
   end
 
   def test_hex
-    s1 = "f\0f\0".force_encoding("utf-16le")
-    assert_equal(255, s1.hex, "#{encdump s1}.hex")
+    assert_raise(ArgumentError) {
+      "ff".encode("utf-16le").hex
+    }
+    assert_raise(ArgumentError) {
+      "ff".encode("utf-16be").hex
+    }
   end
 
   def test_oct
-    assert_equal(077, "77".encode("utf-16le").oct)
-    assert_equal(077, "77".encode("utf-16be").oct)
+    assert_raise(ArgumentError) {
+      "77".encode("utf-16le").oct
+    }
+    assert_raise(ArgumentError) {
+      "77".encode("utf-16be").oct
+    }
   end
 
   def test_count
@@ -224,7 +232,9 @@ EOT
 
   def test_chomp
     s = "\1\n".force_encoding("utf-16be")
-    assert_str_equal(s, s.chomp, "#{encdump s}.chomp")
+    assert_raise(ArgumentError, "#{encdump s}.chomp") {
+      s.chomp
+    }
   end
 
   def test_succ

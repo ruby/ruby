@@ -1,3 +1,15 @@
+Fri Feb 29 18:08:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_strftime): format should be ascii compatible.
+
+	* parse.y (rb_intern3): non ASCII compatible symbols.
+
+	* re.c (rb_reg_regsub): add encoding check.
+
+	* string.c (rb_str_chomp_bang): ditto.
+
+	* test/ruby/test_utf16.rb (TestUTF16::test_chomp): raises exception.
+
 Fri Feb 29 15:16:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_rpartition): calculation was done in byte indexing.

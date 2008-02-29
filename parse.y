@@ -9008,6 +9008,10 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     if (st_lookup(global_symbols.sym_id, str, (st_data_t *)&id))
 	return id;
 
+    if (rb_cString && !rb_enc_asciicompat(enc)) {
+	id = ID_JUNK;
+	goto new_id;
+    }
     last = len-1;
     id = 0;
     switch (*m) {

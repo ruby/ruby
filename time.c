@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include <sys/types.h>
 #include <time.h>
+#include "ruby/encoding.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -2077,6 +2078,9 @@ time_strftime(VALUE time, VALUE format)
 	time_get_tm(time, tobj->gmt);
     }
     StringValue(format);
+    if (!rb_enc_str_asciicompat_p(format)) {
+	rb_raise(rb_eArgError, "format should have ASCII compatible encoding");
+    }
     format = rb_str_new4(format);
     fmt = RSTRING_PTR(format);
     len = RSTRING_LEN(format);
