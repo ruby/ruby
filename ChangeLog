@@ -1,3 +1,10 @@
+Fri Feb 29 15:16:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_rpartition): calculation was done in byte indexing.
+
+	* test/ruby/test_m17n_comb.rb (TestM17NComb::test_str_start_with):
+	  allow start_with? matching on broken strings.
+
 Fri Feb 29 15:12:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (opt_block_param): command can start just after block param

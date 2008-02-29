@@ -1144,6 +1144,7 @@ str_nth(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
     return (char *)p;
 }
 
+/* char offset to byte offset */
 static int
 str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singlebyte)
 {
@@ -1204,6 +1205,7 @@ str_utf8_offset(const char *p, const char *e, int nth)
 }
 #endif
 
+/* byte offset to char offset */
 long
 rb_str_sublen(VALUE str, long pos)
 {
@@ -6036,10 +6038,9 @@ rb_str_rpartition(VALUE str, VALUE sep)
     if (regex) {
 	sep = rb_reg_nth_match(0, rb_backref_get());
     }
-    return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
+    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
 		          sep,
-		          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-					     RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+		          rb_str_substr(str,pos+str_strlen(sep,STR_ENC_GET(sep)),RSTRING_LEN(str)));
 }
 
 /*
