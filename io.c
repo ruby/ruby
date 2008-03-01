@@ -1359,8 +1359,8 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     long bytes = 0;
     long n;
     long pos = 0;
-    rb_encoding *enc = io_read_encoding(fptr);
-    int cr = 0;
+    rb_encoding *enc = io_input_encoding(fptr);
+    int cr = fptr->enc2 ? ENC_CODERANGE_BROKEN : 0;
 
     if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
@@ -1802,8 +1802,8 @@ rb_io_getline_fast(rb_io_t *fptr)
     VALUE str = Qnil;
     int len = 0;
     long pos = 0;
-    rb_encoding *enc = io_read_encoding(fptr);
-    int cr = 0;
+    rb_encoding *enc = io_input_encoding(fptr);
+    int cr = fptr->enc2 ? ENC_CODERANGE_BROKEN : 0;
 
     for (;;) {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
@@ -1839,7 +1839,7 @@ rb_io_getline_fast(rb_io_t *fptr)
     }
 
     str = io_enc_str(str, fptr);
-    ENC_CODERANGE_SET(str, cr);
+    if (!fptr->enc2) ENC_CODERANGE_SET(str, cr);
     fptr->lineno++;
     lineno = INT2FIX(fptr->lineno);
     return str;
