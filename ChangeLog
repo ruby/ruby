@@ -1,3 +1,9 @@
+Sat Mar  1 17:59:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (struct argf): packed ARGF stuffs.
+
+	* ruby.c (proc_options): use ruby_set_inplace_mode().
+
 Sat Mar  1 17:51:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb (recursive_collect): do not always

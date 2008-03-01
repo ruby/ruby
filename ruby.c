@@ -63,7 +63,11 @@ VALUE ruby_verbose = Qfalse;
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
-char *ruby_inplace_mode = 0;
+const char *ruby_get_inplace_mode(void);
+void ruby_set_inplace_mode(const char *);
+
+extern VALUE rb_get_argv(void);
+#define rb_argv rb_get_argv()
 
 #define DISABLE_BIT(bit) (1U << disable_##bit)
 enum disable_flag_bits {
@@ -461,9 +465,10 @@ process_sflag(struct cmdline_options *opt)
     if (opt->sflag) {
 	long n;
 	VALUE *args;
+	VALUE argv = rb_argv;
 
-	n = RARRAY_LEN(rb_argv);
-	args = RARRAY_PTR(rb_argv);
+	n = RARRAY_LEN(argv);
+	args = RARRAY_PTR(argv);
 	while (n > 0) {
 	    VALUE v = *args++;
 	    char *s = StringValuePtr(v);
@@ -510,9 +515,9 @@ process_sflag(struct cmdline_options *opt)
 	    }
 	    rb_gv_set(s, v);
 	}
-	n = RARRAY_LEN(rb_argv) - n;
+	n = RARRAY_LEN(argv) - n;
 	while (n--) {
-	    rb_ary_shift(rb_argv);
+	    rb_ary_shift(argv);
 	}
     }
     opt->sflag = 0;
@@ -720,9 +725,7 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 
 	  case 'i':
 	    forbid_setid("-i");
-	    if (ruby_inplace_mode)
-		free(ruby_inplace_mode);
-	    ruby_inplace_mode = strdup(s + 1);
+	    ruby_set_inplace_mode(s + 1);
 	    break;
 
 	  case 'x':
@@ -1272,7 +1275,6 @@ rb_load_file(const char *fname)
 }
 
 VALUE rb_progname;
-VALUE rb_argv;
 VALUE rb_argv0;
 
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
@@ -1436,8 +1438,6 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
-    rb_define_readonly_variable("$*", &rb_argv);
-    rb_argv = rb_ary_new();
     rb_define_global_const("ARGV", rb_argv);
     rb_global_variable(&rb_argv0);
 
@@ -1455,6 +1455,7 @@ void
 ruby_set_argv(int argc, char **argv)
 {
     int i;
+    VALUE av = rb_argv;
 
 #if defined(USE_DLN_A_OUT)
     if (origarg.argv)
@@ -1462,12 +1463,12 @@ ruby_set_argv(int argc, char **argv)
     else
 	dln_argv0 = argv[0];
 #endif
-    rb_ary_clear(rb_argv);
+    rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
 	VALUE arg = rb_tainted_str_new2(argv[i]);
 
 	OBJ_FREEZE(arg);
-	rb_ary_push(rb_argv, arg);
+	rb_ary_push(av, arg);
     }
 }
 
