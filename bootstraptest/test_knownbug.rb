@@ -50,3 +50,13 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   "".center(1, "\x80".force_encoding("utf-8"))
 }, '[ruby-dev:33807]'
+
+assert_equal 'ok', %q{
+  a = lambda {|x, y, &b| b }
+  b = a.curry[1]
+  if b.call(2){} == nil
+    :ng
+  else
+    :ok
+  end
+}, '[ruby-core:15551]'
