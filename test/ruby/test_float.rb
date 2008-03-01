@@ -83,6 +83,7 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("1e")}
     assert_raise(ArgumentError){Float("1__1")}
     # add expected behaviour here.
+    assert_equal(10, Float("1_0"))
   end
 
   def test_divmod
