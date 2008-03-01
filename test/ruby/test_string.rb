@@ -207,7 +207,7 @@ class TestString < Test::Unit::TestCase
       171,
       171]
 
-    assert_equal(S(' hi 123 %foo   456 0x0A3.1 1011 ab AB 0b1011 0xab 0XAB'), x)
+    assert_equal(S(' hi 123 %foo   456 0A3.1 1011 ab AB 0b1011 0xab 0XAB'), x)
   end
 
   def test_MUL # '*'
