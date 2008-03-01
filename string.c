@@ -6290,7 +6290,7 @@ sym_inspect(VALUE sym)
     memcpy(RSTRING_PTR(str)+1, RSTRING_PTR(sym), RSTRING_LEN(sym));
     if (RSTRING_LEN(sym) != strlen(RSTRING_PTR(sym)) ||
 	!rb_enc_symname_p(RSTRING_PTR(sym), enc)) {
-	str = rb_str_dump(str);
+	str = rb_str_inspect(str);
 	strncpy(RSTRING_PTR(str), ":\"", 2);
     }
     if (klass != Qundef) {

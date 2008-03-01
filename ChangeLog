@@ -1,3 +1,8 @@
+Sat Mar  1 12:34:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (sym_inspect): use rb_str_inspect() instead of
+	  rb_str_dump().  [ruby-dev:33946]
+
 Sat Mar  1 12:15:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval_method.c (rb_get_method_body): ent->method may be freed by
