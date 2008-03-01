@@ -17,10 +17,13 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_instance_of Fixnum, 1_2_3_4
     assert_equal '18', 0x12.inspect
     assert_instance_of Fixnum, 0x12
+    assert_raise(SyntaxError) { eval("0x") }
     assert_equal '15', 0o17.inspect
     assert_instance_of Fixnum, 0o17
+    assert_raise(SyntaxError) { eval("0o") }
     assert_equal '5', 0b101.inspect
     assert_instance_of Fixnum, 0b101
+    assert_raise(SyntaxError) { eval("0b") }
     assert_equal '123456789012345678901234567890', 123456789012345678901234567890.inspect
     assert_instance_of Bignum, 123456789012345678901234567890
     assert_instance_of Float, 1.3
