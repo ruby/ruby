@@ -1,4 +1,6 @@
 require 'test/unit'
+require 'require_relative'
+require_relative 'allpairs'
 
 class TestSprintfComb < Test::Unit::TestCase
   VS = [
@@ -106,20 +108,8 @@ class TestSprintfComb < Test::Unit::TestCase
   ]
   VS.reverse!
 
-  def combination(*args)
-    args = args.map {|a| a.to_a }
-    i = 0
-    while true
-      n = i
-      as = []
-      args.reverse_each {|a|
-        n, m = n.divmod(a.length)
-        as.unshift a[m]
-      }
-      break if 0 < n
-      yield as
-      i += 1
-    end
+  def combination(*args, &b)
+    AllPairs.each(*args, &b)
   end
 
   def emu(format, v)

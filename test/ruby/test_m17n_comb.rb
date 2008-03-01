@@ -1,5 +1,7 @@
 require 'test/unit'
 require 'stringio'
+require 'require_relative'
+require_relative 'allpairs'
 
 class TestM17NComb < Test::Unit::TestCase
   def assert_encoding(encname, actual, message=nil)
@@ -113,20 +115,8 @@ class TestM17NComb < Test::Unit::TestCase
     #"aaa".force_encoding("utf-32be"),
   ]
 
-  def combination(*args)
-    args = args.map {|a| a.to_a }
-    i = 0
-    while true
-      n = i
-      as = []
-      args.reverse_each {|a|
-        n, m = n.divmod(a.length)
-        as.unshift a[m]
-      }
-      break if 0 < n
-      yield as
-      i += 1
-    end
+  def combination(*args, &b)
+    AllPairs.each(*args, &b)
   end
 
   def encdump(str)

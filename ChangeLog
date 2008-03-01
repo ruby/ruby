@@ -1,3 +1,11 @@
+Sat Mar  1 13:11:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/allpairs.rb: new file for all pairs method.
+
+	* test/ruby/test_m17n_comb.rb: use allpairs.rb to reduce test cases.
+
+	* test/ruby/test_sprintf_comb.rb: ditto.
+
 Sat Mar  1 12:34:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (sym_inspect): use rb_str_inspect() instead of
