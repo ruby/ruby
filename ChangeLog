@@ -1,3 +1,11 @@
+Sat Mar  1 10:01:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_coderange_scan_restartable): should not return
+	  offset in the middle of a character.
+
+	* string.c (rb_str_coderange_scan_restartable): should not return
+	  invalid cr value.
+
 Sat Mar  1 09:36:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): "%#.0o" should keep prefix where

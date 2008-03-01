@@ -224,8 +224,8 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	while (p < e) {
 	    int ret = rb_enc_precise_mbclen(p, e, enc);
 	    if (!MBCLEN_CHARFOUND_P(ret)) {
-		*cr = MBCLEN_INVALID_P(ret) ? ENC_CODERANGE_BROKEN: ret;
-		return e - s;
+		*cr = MBCLEN_INVALID_P(ret) ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_UNKNOWN;
+		return p - s;
 	    }
 	    p += MBCLEN_CHARFOUND_LEN(ret);
 	    if (p < e) {
@@ -243,7 +243,7 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 	while (p < e) {
 	    int ret = rb_enc_precise_mbclen(p, e, enc);
 	    if (!MBCLEN_CHARFOUND_P(ret)) {
-		*cr = MBCLEN_INVALID_P(ret) ? ENC_CODERANGE_BROKEN: ret;
+		*cr = MBCLEN_INVALID_P(ret) ? ENC_CODERANGE_BROKEN: ENC_CODERANGE_UNKNOWN;
 		return p - s;
 	    }
 	    p += MBCLEN_CHARFOUND_LEN(ret);
