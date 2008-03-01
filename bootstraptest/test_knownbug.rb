@@ -29,11 +29,6 @@ assert_equal 'ok', %q{
   C.new.foo
 }, '[ruby-core:14813]'
 
-# test is not written...
-flunk '[ruby-dev:31819] rb_clear_cache_by_class'
-flunk '[ruby-dev:31820] valgrind set_trace_func'
-flunk '[ruby-dev:32746] Invalid read of size 1'
-
 assert_equal 'ok', %q{
   class X < RuntimeError;end
   x = [X]

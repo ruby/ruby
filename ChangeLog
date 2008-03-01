@@ -1,3 +1,11 @@
+Sat Mar  1 12:15:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval_method.c (rb_get_method_body): ent->method may be freed by
+	  GC.  [ruby-dev:31819]
+
+	* thread.c (remove_event_hook): should not access freed memory.
+	  [ruby-dev:31820]
+
 Sat Mar 01 10:31:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (read_all, rb_io_getline_fast): encoding is io_input_encoding.

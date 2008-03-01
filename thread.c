@@ -2757,9 +2757,10 @@ rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 static int
 remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
 {
-    rb_event_hook_t *prev = NULL, *hook = *root;
+    rb_event_hook_t *prev = NULL, *hook = *root, *next;
 
     while (hook) {
+	next = hook->next;
 	if (func == 0 || hook->func == func) {
 	    if (prev) {
 		prev->next = hook->next;
@@ -2769,8 +2770,10 @@ remove_event_hook(rb_event_hook_t **root, rb_event_hook_func_t func)
 	    }
 	    xfree(hook);
 	}
-	prev = hook;
-	hook = hook->next;
+	else {
+	    prev = hook;
+	}
+	hook = next;
     }
     return -1;
 }
