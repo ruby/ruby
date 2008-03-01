@@ -1,3 +1,8 @@
+Sat Mar  1 17:51:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/collector/dir.rb (recursive_collect): do not always
+	  include all test_*.rb.
+
 Sat Mar  1 14:14:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* development snapshot 1.9.0-1 released.
