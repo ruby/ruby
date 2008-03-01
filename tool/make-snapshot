@@ -3,8 +3,8 @@
 LC_ALL=C LANG=C
 SVNURL=http://svn.ruby-lang.org/repos/ruby/trunk
 export LC_ALL LANG
-: ${VPATH=include/ruby} ${YACC=bison} ${BASERUBY=ruby} ${RUBY=ruby} ${MV=mv}
-export VPATH YACC BASERUBY RUBY MV
+: ${VPATH=include/ruby} ${YACC=bison} ${BASERUBY=ruby} ${RUBY=ruby} ${MV=mv} ${MINIRUBY=ruby}
+export VPATH YACC BASERUBY RUBY MV MINIRUBY
 
 if [ ! "$1" ]; then
     echo usage: `basename $0` new-directory-to-save 1>&2
@@ -16,11 +16,11 @@ dest=`cd "$1"; pwd`
 tmp="${TMP_DIR-/tmp}/ruby-snapshot-$$"
 mkdir -p "$tmp"
 (cd "$tmp"
-revision=`svn export $SVNURL ruby | sed -n '$s/[^0-9]//gp'`
+revision=r`svn export $SVNURL ruby | sed -n '$s/[^0-9]//gp'`
 [ $revision ] || revision=`svn info $SVNURL | sed -n 's/Revision: //p'`
 echo "#define RUBY_REVISION $revision" > ruby/revision.h
 version=`sed -n -e '/^#define RUBY_VERSION /s/[^0-9.]//gp' ruby/version.h`
-v=ruby-$version-r$revision
+v=ruby-$version-${2-$revision}
 mv ruby $v
 (cd $v; autoconf; (sed '/lex\.c/,/^$/!d' Makefile.in; sed 's/{[^{}]*}//g' common.mk) | make -f - prereq srcdir=.)
 

@@ -1,3 +1,10 @@
+Sat Mar  1 13:46:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* tool/make-snapshot: make prereq uses MINIRUBY.
+
+	* tool/make-snapshot: allow packaging like 1.9.0-1 by second
+	  command-line argument.
+
 Sat Mar  1 13:11:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/allpairs.rb: new file for all pairs method.
