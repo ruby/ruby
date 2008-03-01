@@ -145,7 +145,7 @@ class TestSprintfComb < Test::Unit::TestCase
       radix = 2
       digitmap = {0 => '0', 1 => '1'}
       complement = !pl && !sp
-      prefix = '0b' if hs
+      prefix = '0b' if hs && v != 0
     when 'd'
       radix = 10
       digitmap = {}
@@ -161,13 +161,13 @@ class TestSprintfComb < Test::Unit::TestCase
       digitmap = {}
       16.times {|i| digitmap[i] = i.to_s(16).upcase }
       complement = !pl && !sp
-      prefix = '0X' if hs
+      prefix = '0X' if hs && v != 0
     when 'x'
       radix = 16
       digitmap = {}
       16.times {|i| digitmap[i] = i.to_s(16) }
       complement = !pl && !sp
-      prefix = '0x' if hs
+      prefix = '0x' if hs && v != 0
     else
       raise "unexpected type: #{type.inspect}"
     end

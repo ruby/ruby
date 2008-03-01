@@ -1,3 +1,8 @@
+Sat Mar  1 09:36:08 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): "%#.0o" should keep prefix where
+	  "%#.0x" should not.
+
 Sat Mar  1 02:35:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big2str_find_n1): check integer overflow.

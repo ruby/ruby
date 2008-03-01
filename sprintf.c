@@ -684,17 +684,20 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			pp++;
 		    }
 		}
-		if (prefix && !prefix[1]) {
+		if (prefix && !prefix[1]) { /* octal */
 		    if (dots) {
 			prefix = 0;
 		    }
 		    else if (len == 1 && *s == '0') {
-			if (flags & FPREC) len = 0;
-			prefix = 0;
+			len = 0;
+			if (flags & FPREC) prec--;
 		    }
 		    else if ((flags & FPREC) && (prec > len)) {
 			prefix = 0;
 		    }
+		}
+		else if (len == 1 && *s == '0') {
+		    prefix = 0;
 		}
 		if (prefix) {
 		    width -= strlen(prefix);
@@ -705,8 +708,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 		else {
 		    if (prec < len) {
-			if ((flags & FPREC) && len == 1 && *s == '0') len = 0;
-			else prec = len;
+			if (!prefix && prec == 0 && len == 1 && *s == '0') len = 0;
+			prec = len;
 		    }
 		    width -= prec;
 		}
