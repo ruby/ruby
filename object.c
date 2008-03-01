@@ -2042,7 +2042,7 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 
     if (!p) return 0.0;
     q = p;
-	while (ISSPACE(*p)) p++;
+    while (ISSPACE(*p)) p++;
     d = strtod(p, &end);
     if (errno == ERANGE) {
 	OutOfRange();
@@ -2050,8 +2050,8 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	errno = 0;
     }
     if (p == end) {
-	  bad:
 	if (badcheck) {
+	  bad:
 	    rb_invalid_str(q, "Float()");
 	}
 	return d;
@@ -2060,19 +2060,24 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	char buf[DBL_DIG * 4 + 10];
 	char *n = buf;
 	char *e = buf + sizeof(buf) - 1;
+	char prev = 0;
 
 	while (p < end && n < e) *n++ = *p++;
-	while (n < e && *p) {
+	while (*p) {
 	    if (*p == '_') {
 		/* remove underscores between digits */
-		if (n == buf || !ISDIGIT(n[-1])) goto bad;
-		while (*++p == '_');
-		if (!ISDIGIT(*p)) {
-		    if (badcheck) goto bad;
-		    break;
+		if (badcheck) {
+		    if (n == buf || !ISDIGIT(prev)) goto bad;
+		    ++p;
+		    if (!ISDIGIT(*p)) goto bad;
+		}
+		else {
+		    while (*++p == '_');
+		    continue;
 		}
 	    }
-	    *n++ = *p++;
+	    prev = *p++;
+	    if (n < e) *n++ = prev;
 	}
 	*n = '\0';
 	p = buf;

@@ -81,6 +81,7 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(ArgumentError){Float("-")}
     assert_raise(ArgumentError){Float("-.")}
     assert_raise(ArgumentError){Float("1e")}
+    assert_raise(ArgumentError){Float("1__1")}
     # add expected behaviour here.
   end
 
