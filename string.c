@@ -4446,27 +4446,16 @@ tr_setup_table(VALUE str, char stable[256], int first,
 {
     char buf[256];
     struct tr tr;
-    int c;
+    int c, l;
     VALUE table = 0, ptable = 0;
     int i, cflag = 0;
 
     tr.p = RSTRING_PTR(str); tr.pend = tr.p + RSTRING_LEN(str);
     tr.gen = tr.now = tr.max = 0;
     
-    if (RSTRING_LEN(str) > 1) {
-	if (rb_enc_asciicompat(enc)) {
-	    if (RSTRING_PTR(str)[0] == '^') {
-		cflag = 1;
-		tr.p++;
-	    }
-	}
-	else {
-	    c = rb_enc_codepoint(RSTRING_PTR(str), RSTRING_END(str), enc);
-	    if (c == '^') {
-		cflag = 1;
-		tr.p+=rb_enc_codelen(c, enc);
-	    }
-	}
+    if (RSTRING_LEN(str) > 1 && rb_enc_ascget(tr.p, tr.pend, &l, enc) == '^') {
+	cflag = 1;
+	tr.p += l;
     }
     if (first) {
 	for (i=0; i<256; i++) {
@@ -4858,8 +4847,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		}
 	    }
 	    else {
-		if (str_strlen(spat, enc2) == 1 &&
-		    rb_enc_codepoint(RSTRING_PTR(spat), RSTRING_END(spat), enc2) == ' ') {
+		int l;
+		if (rb_enc_ascget(RSTRING_PTR(spat), RSTRING_END(spat), &l, enc2) == ' ' &&
+		    RSTRING_LEN(spat) == l) {
 		    awk_split = Qtrue;
 		}
 	    }
@@ -5298,22 +5288,21 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	    rb_str_modify(str);
 	    enc = rb_enc_get(str);
 	    if (rb_enc_mbminlen(enc) > 1) {
-		len = str_strlen(str, enc);
-		pp = rb_enc_nth(p, e, len-1, enc);
+		pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), enc);
 		if (rb_enc_is_newline(pp, e, enc)) {
 		    e = pp;
-		    len--;
 		}
-		if (len > 0) {
-		    p = rb_enc_nth(p, e, len-1, enc);
-		    if (rb_enc_codepoint(p, e, enc) == '\r') {
-			pp = e = p;
+		pp = e - rb_enc_mbminlen(enc);
+		if (pp >= p) {
+		    pp = rb_enc_left_char_head(p, pp, enc);
+		    if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
+			e = pp;
 		    }
 		}
 		if (e == RSTRING_END(str)) {
 		    return Qnil;
 		}
-		len = pp - RSTRING_PTR(str);
+		len = e - RSTRING_PTR(str);
 		STR_SET_LEN(str, len);
 	    }
 	    else {
