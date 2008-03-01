@@ -1,6 +1,6 @@
 Sat Mar 01 10:31:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* io.c (read_all, rb_io_getline_fast): encoding is rb_input_encoding.
+	* io.c (read_all, rb_io_getline_fast): encoding is io_input_encoding.
 
 Sat Mar  1 10:09:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
