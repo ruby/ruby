@@ -1,3 +1,7 @@
+Sat Mar  1 14:14:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* development snapshot 1.9.0-1 released.
+
 Sat Mar  1 13:46:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* tool/make-snapshot: make prereq uses MINIRUBY.
