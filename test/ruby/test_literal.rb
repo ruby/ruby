@@ -184,4 +184,58 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal __LINE__, __LINE__
   end
 
+  def test_integer
+    head = ['', '0x', '0o', '0b', '0d', '-', '+']
+    chars = ['0', '1', '_', '9', 'f']
+    head.each {|h|
+      4.times {|len|
+        a = [h]
+        len.times { a = a.product(chars).map {|x| x.join('') } }
+        a.each {|s|
+          next if s.empty?
+          begin
+            r1 = Integer(s)
+          rescue ArgumentError
+            r1 = :err
+          end
+          begin
+            r2 = eval(s)
+          rescue NameError, SyntaxError
+            r2 = :err
+          end
+          assert_equal(r1, r2, "Integer(#{s.inspect}) != eval(#{s.inspect})")
+        }
+      }
+    }
+  end
+
+  def test_float
+    head = ['', '-', '+']
+    chars = ['0', '1', '_', '9', 'f', '.']
+    head.each {|h|
+      6.times {|len|
+        a = [h]
+        len.times { a = a.product(chars).map {|x| x.join('') } }
+        a.each {|s|
+          next if s.empty?
+          next if /\.\z/ =~ s
+          next if /\A[-+]?\./ =~ s
+          next if /\A[-+]?0/ =~ s
+          begin
+            r1 = Float(s)
+          rescue ArgumentError
+            r1 = :err
+          end
+          begin
+            r2 = eval(s)
+          rescue NameError, SyntaxError
+            r2 = :err
+          end
+          r2 = :err if Range === r2
+          assert_equal(r1, r2, "Float(#{s.inspect}) != eval(#{s.inspect})")
+        }
+      }
+    }
+  end
+
 end
