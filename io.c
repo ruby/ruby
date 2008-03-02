@@ -2429,19 +2429,17 @@ rb_io_readbyte(VALUE io)
 VALUE
 rb_io_ungetc(VALUE io, VALUE c)
 {
-    rb_encoding *enc;
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (NIL_P(c)) return Qnil;
-    enc = io_read_encoding(fptr);
     if (FIXNUM_P(c)) {
 	int cc = FIX2INT(c);
+	rb_encoding *enc = io_read_encoding(fptr);
 	char buf[16];
 
-	rb_enc_mbcput(cc, buf, enc);
-	c = rb_str_new(buf, rb_enc_codelen(cc, enc));
+	c = rb_str_new(buf, rb_enc_mbcput(cc, buf, enc));
     }
     else {
 	SafeStringValue(c);

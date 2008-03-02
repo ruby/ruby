@@ -1,3 +1,7 @@
+Sun Mar  2 23:03:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_ungetc): reduce redundant call.
+
 Sun Mar  2 10:13:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (load_file): parse shebang in us-ascii.  a patch from
