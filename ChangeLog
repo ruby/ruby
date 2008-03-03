@@ -1,3 +1,11 @@
+Mon Mar  3 17:25:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (add_heap): sort heaps array in ascending order to use
+	  binary search.
+
+	* gc.c (is_pointer_to_heap): use binary search to identify object
+	  in heaps.  works better when number of heap segments grow big.
+
 Mon Mar  3 17:15:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_regsub): remove too strict encoding check.

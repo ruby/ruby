@@ -17,6 +17,7 @@
 #include "ruby/node.h"
 #include "ruby/re.h"
 #include "ruby/io.h"
+#include "ruby/util.h"
 #include "vm_core.h"
 #include "gc.h"
 #include <stdio.h>
@@ -412,6 +413,14 @@ rb_gc_unregister_address(VALUE *addr)
     }
 }
 
+static int
+heap_cmp(const void *ap, const void *bp, void *dummy)
+{
+    const struct heaps_slot *a = ap, *b = bp;
+
+    return a->membase - b->membase;
+}
+
 static void
 add_heap(void)
 {
@@ -465,7 +474,9 @@ add_heap(void)
 	freelist = p;
 	p++;
     }
+    ruby_qsort(heaps, heaps_used, sizeof(struct heaps_slot), heap_cmp, 0);
 }
+
 #define RANY(o) ((RVALUE*)(o))
 
 static VALUE
@@ -720,17 +731,26 @@ static inline int
 is_pointer_to_heap(void *ptr)
 {
     register RVALUE *p = RANY(ptr);
-    register RVALUE *heap_org;
-    register long i;
+    register struct heaps_slot *heap;
+    register long hi, lo, mid;
 
     if (p < lomem || p > himem) return Qfalse;
     if ((VALUE)p % sizeof(RVALUE) != 0) return Qfalse;
 
-    /* check if p looks like a pointer */
-    for (i=0; i < heaps_used; i++) {
-	heap_org = heaps[i].slot;
-	if (heap_org <= p && p < heap_org + heaps[i].limit)
-	    return Qtrue;
+    /* check if p looks like a pointer using bsearch*/
+    lo = 0;
+    hi = heaps_used;
+    while (lo < hi) {
+	mid = (lo + hi) / 2;
+	heap = &heaps[mid];
+	if (heap->slot <= p) {
+	    if (p < heap->slot + heap->limit)
+		return Qtrue;
+	    lo = mid + 1;
+	}
+	else {
+	    hi = mid;
+	}
     }
     return Qfalse;
 }
