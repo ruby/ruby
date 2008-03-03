@@ -2960,7 +2960,6 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
 
-    rb_enc_check(str, src);
     p = s = RSTRING_PTR(str);
     e = s + RSTRING_LEN(str);
 

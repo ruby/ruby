@@ -1,3 +1,8 @@
+Mon Mar  3 17:15:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_regsub): remove too strict encoding check.
+	  [ruby-dev:33966]
+
 Mon Mar  3 16:14:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_any_hash): shrinks all results in Fixnum range.

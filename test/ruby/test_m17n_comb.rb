@@ -1417,7 +1417,6 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal(s1, doit.call)
           next
         end
-        assert(false, "test broken")
         if !str_enc_compatible?(s1.gsub(r2, ''), s3)
           assert_raise(ArgumentError, desc) { doit.call }
           next
@@ -1472,7 +1471,6 @@ class TestM17NComb < Test::Unit::TestCase
           assert_equal([s1, nil], doit.call)
           next
         end
-        assert(false, "test broken")
         if !str_enc_compatible?(s1.gsub(r2, ''), s3)
           assert_raise(ArgumentError, desc) { doit.call }
           next
