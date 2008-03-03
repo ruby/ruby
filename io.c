@@ -5932,11 +5932,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     }
     v = rb_hash_aref(opt, mode);
     if (!NIL_P(v)) {
-	VALUE args[2];
-
-	args[0] = argv[0];
-	args[1] = v;
-	arg->io = rb_f_open(2, args);
+	arg->io = rb_io_open(RSTRING_PTR(argv[0]), StringValueCStr(v));
     }
 
     if (!arg->io) {

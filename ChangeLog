@@ -1,3 +1,8 @@
+Tue Mar 04 05:30:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (open_key_args): use rb_io_open instead of rb_f_open.
+	  [ruby-core:15746]
+
 Mon Mar  3 23:28:37 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: should normalize path
