@@ -259,6 +259,10 @@ EOT
 
   def test_gsub
     s = "abcd".force_encoding("utf-16be")
+    assert_nothing_raised {
+      s.gsub(Regexp.new(".".encode("utf-16be")), "xy")
+    }
+    s = "ab\0\ncd".force_encoding("utf-16be")
     assert_raise(ArgumentError) {
       s.gsub(Regexp.new(".".encode("utf-16be")), "xy")
     }
