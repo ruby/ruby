@@ -1,6 +1,7 @@
 require "test/unit"
 require "webrick"
 require "stringio"
+require File.join(File.dirname(__FILE__), "utils.rb")
 
 class WEBrick::TestFileHandler < Test::Unit::TestCase
   def default_file_handler(filename)
@@ -61,5 +62,63 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
     res = make_range_response(filename, "bytes=0-0, -2")
     assert_match(%r{^multipart/byteranges}, res["content-type"])
+  end
+
+  def test_filehandler
+    config = { :DocumentRoot => File.dirname(__FILE__), }
+    this_file = File.basename(__FILE__)
+    TestWEBrick.start_httpserver(config) do |server, addr, port|
+      http = Net::HTTP.new(addr, port)
+      req = Net::HTTP::Get.new("/")
+      http.request(req){|res|
+        assert_equal("200", res.code)
+        assert_equal("text/html", res.content_type)
+        assert_match(/HREF="#{this_file}"/, res.body)
+      }
+      req = Net::HTTP::Get.new("/#{this_file}")
+      http.request(req){|res|
+        assert_equal("200", res.code)
+        assert_equal("text/plain", res.content_type)
+        assert_equal(File.read(__FILE__), res.body)
+      }
+    end
+  end
+
+  def test_non_disclosure_name
+    config = { :DocumentRoot => File.dirname(__FILE__), }
+    this_file = File.basename(__FILE__)
+    TestWEBrick.start_httpserver(config) do |server, addr, port|
+      http = Net::HTTP.new(addr, port)
+      doc_root_opts = server[:DocumentRootOptions]
+      doc_root_opts[:NondisclosureName] = %w(.ht* *~ test_*)
+      req = Net::HTTP::Get.new("/")
+      http.request(req){|res|
+        assert_equal("200", res.code)
+        assert_equal("text/html", res.content_type)
+        assert_no_match(/HREF="#{File.basename(__FILE__)}"/, res.body)
+      }
+      req = Net::HTTP::Get.new("/#{this_file}")
+      http.request(req){|res|
+        assert_equal("404", res.code)
+      }
+      doc_root_opts[:NondisclosureName] = %w(.ht* *~ TEST_*)
+      http.request(req){|res|
+        assert_equal("404", res.code)
+      }
+    end
+  end
+
+  def test_directory_traversal
+    config = { :DocumentRoot => File.dirname(__FILE__), }
+    this_file = File.basename(__FILE__)
+    TestWEBrick.start_httpserver(config) do |server, addr, port|
+      http = Net::HTTP.new(addr, port)
+      req = Net::HTTP::Get.new("/../../")
+      http.request(req){|res| assert_equal("400", res.code) }
+      req = Net::HTTP::Get.new(
+        "/..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5cboot.ini"
+      )
+      http.request(req){|res| assert_equal("404", res.code) }
+    end
   end
 end
