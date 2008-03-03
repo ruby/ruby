@@ -1,3 +1,13 @@
+Mon Mar  3 23:36:41 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservlet/filehandler.rb: should normalize path
+	  separators in path_info to prevent directory traversal attacks
+	  on DOSISH platforms.
+	  reported by Digital Security Research Group [DSECRG-08-026].
+
+	* lib/webrick/httpservlet/filehandler.rb: pathnames which have
+	  not to be published should be checked case-insensitively.
+
 Sun Sep 23 21:57:25 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>  
 
 	* lib/net/http.rb: an SSL verification (the server hostname should
