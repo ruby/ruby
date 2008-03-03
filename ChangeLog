@@ -1,3 +1,8 @@
+Mon Mar  3 16:14:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_any_hash): shrinks all results in Fixnum range.
+	  [ruby-core:15713]
+
 Sun Mar  2 23:03:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_ungetc): reduce redundant call.
