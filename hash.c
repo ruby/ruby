@@ -89,15 +89,16 @@ rb_any_hash(a)
     VALUE a;
 {
     VALUE hval;
+    int hnum;
 
     switch (TYPE(a)) {
       case T_FIXNUM:
       case T_SYMBOL:
-	return (int)a;
+	hnum = (int)a;
 	break;
 
       case T_STRING:
-	return rb_str_hash(a);
+	hnum = rb_str_hash(a);
 	break;
 
       default:
@@ -105,8 +106,10 @@ rb_any_hash(a)
 	if (!FIXNUM_P(hval)) {
 	    hval = rb_funcall(hval, '%', 1, INT2FIX(536870923));
 	}
-	return (int)FIX2LONG(hval);
+	hnum = (int)FIX2LONG(hval);
     }
+    hnum <<= 1;
+    return RSHIFT(hnum, 1);
 }
 
 static struct st_hash_type objhash = {
