@@ -1,3 +1,7 @@
+Tue Mar  4 16:29:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): disallow non digits '0o' expression.
+
 Tue Mar 04 14:35:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (open_key_args): use rb_io_open_with_args instead of rb_f_open.

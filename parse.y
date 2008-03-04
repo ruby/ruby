@@ -6634,7 +6634,7 @@ parser_yylex(struct parser_params *parser)
 		if (c == 'o' || c == 'O') {
 		    /* prefixed octal */
 		    c = nextc();
-		    if (c == '_') {
+		    if (c == '_' || !ISDIGIT(c)) {
 			yyerror("numeric literal without digits");
 		    }
 		}
