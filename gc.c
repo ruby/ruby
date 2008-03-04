@@ -466,14 +466,15 @@ add_heap(void)
 	}
     }
 
+    membase = p;
     if ((VALUE)p % sizeof(RVALUE) == 0)
 	heap_slots += 1;
     else
 	p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
     if (hi < heaps_used) {
-	MEMMOVE(&heaps[hi+1], &heaps[hi], VALUE, heaps_used - hi);
+	MEMMOVE(&heaps[hi+1], &heaps[hi], struct heaps_slot, heaps_used - hi);
     }
-    heaps[hi].membase = p;
+    heaps[hi].membase = membase;
     heaps[hi].slot = p;
     heaps[hi].limit = heap_slots;
     pend = p + heap_slots;

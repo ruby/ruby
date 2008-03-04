@@ -1,3 +1,7 @@
+Tue Mar  4 13:41:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (add_heap): fix previous change.  [ruby-dev:33988]
+
 Tue Mar  4 10:21:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (add_heap): use binary search to find the place to insert the
