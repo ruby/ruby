@@ -413,18 +413,11 @@ rb_gc_unregister_address(VALUE *addr)
     }
 }
 
-static int
-heap_cmp(const void *ap, const void *bp, void *dummy)
-{
-    const struct heaps_slot *a = ap, *b = bp;
-
-    return a->membase - b->membase;
-}
-
 static void
 add_heap(void)
 {
-    RVALUE *p, *pend;
+    RVALUE *p, *pend, *membase;
+    long hi, lo, mid;
 
     if (heaps_used == heaps_length) {
 	/* Realloc heaps */
@@ -451,17 +444,38 @@ add_heap(void)
 		rb_memerror();
 	    }
 	    heap_slots = HEAP_MIN_SLOTS;
-	    continue;
 	}
-	heaps[heaps_used].membase = p;
-	if ((VALUE)p % sizeof(RVALUE) == 0)
-	    heap_slots += 1;
-	else
-	    p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
-	heaps[heaps_used].slot = p;
-	heaps[heaps_used].limit = heap_slots;
-	break;
+	else {
+	    break;
+	}
     }
+
+    lo = 0;
+    hi = heaps_used;
+    while (lo < hi) {
+	mid = (lo + hi) / 2;
+	membase = heaps[mid].membase;
+	if (membase < p) {
+	    lo = mid + 1;
+	}
+	else if (membase > p) {
+	    hi = mid;
+	}
+	else {
+	    rb_bug("same heap slot is allocated: %p at %ld", p, mid);
+	}
+    }
+
+    if ((VALUE)p % sizeof(RVALUE) == 0)
+	heap_slots += 1;
+    else
+	p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
+    if (hi < heaps_used) {
+	MEMMOVE(&heaps[hi+1], &heaps[hi], VALUE, heaps_used - hi);
+    }
+    heaps[hi].membase = p;
+    heaps[hi].slot = p;
+    heaps[hi].limit = heap_slots;
     pend = p + heap_slots;
     if (lomem == 0 || lomem > p) lomem = p;
     if (himem < pend) himem = pend;
@@ -474,7 +488,6 @@ add_heap(void)
 	freelist = p;
 	p++;
     }
-    ruby_qsort(heaps, heaps_used, sizeof(struct heaps_slot), heap_cmp, 0);
 }
 
 #define RANY(o) ((RVALUE*)(o))
