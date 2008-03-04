@@ -1397,6 +1397,8 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 	return Qfalse;
     if (!RHASH(hash1)->ntbl || !RHASH(hash2)->ntbl)
         return Qtrue;
+    if (RHASH(hash1)->ntbl->type != RHASH(hash2)->ntbl->type)
+	return Qfalse;
 #if 0
     if (!(rb_equal(RHASH(hash1)->ifnone, RHASH(hash2)->ifnone) &&
 	  FL_TEST(hash1, HASH_PROC_DEFAULT) == FL_TEST(hash2, HASH_PROC_DEFAULT)))
