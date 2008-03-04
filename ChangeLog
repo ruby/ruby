@@ -1,3 +1,11 @@
+Tue Mar  4 21:35:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb.rb (IRB::Irb::eval_input): SyntaxError should not be
+	  considered as IRB bug.  [ruby-dev:33991]
+
+	* lib/irb/workspace.rb (IRB::WorkSpace::filter_backtrace): should
+	  filter 'irb.rb' as well for context mode 2 and 3.
+
 Tue Mar  4 19:10:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_aset): should not copy key string when
