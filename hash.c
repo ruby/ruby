@@ -103,6 +103,11 @@ static const struct st_hash_type objhash = {
     rb_any_hash,
 };
 
+static const struct st_hash_type identhash = {
+    st_numcmp,
+    st_numhash,
+};
+
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 
 struct foreach_safe_arg {
@@ -932,7 +937,8 @@ VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
     rb_hash_modify(hash);
-    if (TYPE(key) != T_STRING || st_lookup(RHASH(hash)->ntbl, key, 0)) {
+    if (RHASH(hash)->ntbl->type == &identhash ||
+	TYPE(key) != T_STRING || st_lookup(RHASH(hash)->ntbl, key, 0)) {
 	st_insert(RHASH(hash)->ntbl, key, val);
     }
     else {
@@ -1684,11 +1690,6 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
     rb_funcall2(ary, rb_intern("flatten!"), argc, argv);
     return ary;
 }
-
-static const struct st_hash_type identhash = {
-    st_numcmp,
-    st_numhash,
-};
 
 /*
  *  call-seq:

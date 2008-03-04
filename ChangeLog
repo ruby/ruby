@@ -1,3 +1,8 @@
+Tue Mar  4 19:10:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_aset): should not copy key string when
+	  compare_by_identity is set.  [ruby-dev:33604]
+
 Tue Mar  4 16:29:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): disallow non digits '0o' expression.
