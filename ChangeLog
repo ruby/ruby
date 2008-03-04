@@ -1,3 +1,8 @@
+Tue Mar 04 14:35:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (open_key_args): use rb_io_open_with_args instead of rb_f_open.
+	  [ruby-core:15763]
+
 Tue Mar  4 13:41:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (add_heap): fix previous change.  [ruby-dev:33988]

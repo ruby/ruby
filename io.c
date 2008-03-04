@@ -4093,6 +4093,24 @@ rb_io_open(const char *fname, const char *mode)
 }
 
 static VALUE
+rb_io_open_with_args(int argc, VALUE *argv)
+{
+    const char *mode;
+    VALUE pname, pmode;
+
+    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
+	mode = "r";
+    }
+    else if (FIXNUM_P(pmode)) {
+	mode = rb_io_modenum_mode(FIX2INT(pmode));
+    }
+    else {
+	mode = StringValueCStr(pmode);
+    }
+    return rb_io_open(StringValueCStr(pname), mode);
+}
+
+static VALUE
 io_reopen(VALUE io, VALUE nfile)
 {
     rb_io_t *fptr, *orig;
@@ -5927,15 +5945,14 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	rb_ary_concat(args, v);
 	MEMCPY(RARRAY_PTR(args)+1, RARRAY_PTR(v), VALUE, RARRAY_LEN(v));
 
-	arg->io = rb_f_open(RARRAY_LEN(args), RARRAY_PTR(args));
+	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;
     }
     v = rb_hash_aref(opt, mode);
     if (!NIL_P(v)) {
 	arg->io = rb_io_open(RSTRING_PTR(argv[0]), StringValueCStr(v));
     }
-
-    if (!arg->io) {
+    else {
 	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
     }
 
