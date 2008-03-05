@@ -810,6 +810,17 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(false, str[0..-1].ascii_only?)
   end
 
+  def test_utf8str_aref
+    s = "abcdefghijklmnopqrstuvwxyz\u{3042 3044 3046 3048 304A}"
+    assert_equal("a", s[0])
+    assert_equal("h", s[7])
+    assert_equal("i", s[8])
+    assert_equal("j", s[9])
+    assert_equal("\u{3044}", s[27])
+    assert_equal("\u{3046}", s[28])
+    assert_equal("\u{3048}", s[29])
+  end
+
   def test_str_aref_len
     assert_equal(a("\xa1"), a("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 1])
     assert_equal(a("\xa1\xc2"), a("\xc2\xa1\xc2\xa2\xc2\xa3")[1, 2])

@@ -123,6 +123,8 @@ class TestRegexp < Test::Unit::TestCase
     r = /./
     m = r.match("a")
     assert_equal(r, m.regexp)
+    re = /foo/
+    assert_equal(re, re.match("foo").regexp)
   end
 
   def test_source
@@ -186,11 +188,6 @@ class TestRegexp < Test::Unit::TestCase
     end
     assert_equal([0, 3], m.offset(0))
     assert_equal(/foo/, m.dup.regexp)
-  end
-
-  def test_match_regexp
-    re = /foo/
-    assert_equal(re, re.match("foo").regexp)
   end
 
   def test_match_size

@@ -763,7 +763,7 @@ count_utf8_lead_bytes_with_ulong(const unsigned long *s)
     unsigned long d = *s;
     d |= ~(d>>1);
     d >>= 6;
-    d &= NONASCII_MASK >> 3;
+    d &= NONASCII_MASK >> 7;
     d += (d>>8);
     d += (d>>16);
 #if NONASCII_MASK == 0x8080808080808080UL
@@ -1177,11 +1177,10 @@ str_utf8_nth(const char *p, const char *e, int nth)
 	    if (is_utf8_lead_byte(*p)) nth--;
 	    p++;
 	}
-	while (s < t) {
+	do {
 	    nth -= count_utf8_lead_bytes_with_ulong(s);
-	    if (nth < sizeof(long)) break;
 	    s++;
-	}
+	} while (s < t && sizeof(long) <= nth);
 	p = (char *)s;
     }
     if (0 < nth) {

@@ -1,3 +1,10 @@
+Thu Mar  6 04:32:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (count_utf8_lead_bytes_with_ulong): fix shift size.
+	  [ruby-dev:33993]
+
+	* string.c (str_utf8_nth) fix wrong counting.
+
 Thu Mar  6 00:34:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): size_t returned from strlen() can be
@@ -7,7 +14,7 @@ Thu Mar  6 00:31:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* struct.c (make_struct): preserve encoding of struct name.
 
-Wed Mar 05 22:49:20 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+Wed Mar  5 22:49:20 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (is_utf8_lead_byte, count_utf8_lead_bytes_with_ulong):
 	  defined for UTF-8 optimization.
@@ -22,7 +29,7 @@ Wed Mar  5 17:53:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* file.c (rb_file_flock): returns false on EAGAIN if non-blocking.
 	  [ruby-core:15795]
 
-Web Mar  5 17:43:43 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+Wed Mar  5 17:43:43 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c (transcode_loop): Adjusted detection of invalid
 	  (ill-formed) UTF-8 sequences. Fixing potential security issue, see
@@ -85,7 +92,7 @@ Tue Mar  4 16:29:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): disallow non digits '0o' expression.
 
-Tue Mar 04 14:35:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+Tue Mar  4 14:35:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (open_key_args): use rb_io_open_with_args instead of rb_f_open.
 	  [ruby-core:15763]
@@ -99,7 +106,7 @@ Tue Mar  4 10:21:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* gc.c (add_heap): use binary search to find the place to insert the
 	  new heap slot.  [ruby-dev:33983]
 
-Tue Mar 04 05:30:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+Tue Mar  4 05:30:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (open_key_args): use rb_io_open instead of rb_f_open.
 	  [ruby-core:15746]
@@ -189,7 +196,7 @@ Sat Mar  1 12:15:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* thread.c (remove_event_hook): should not access freed memory.
 	  [ruby-dev:31820]
 
-Sat Mar 01 10:31:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+Sat Mar  1 10:31:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (read_all, rb_io_getline_fast): encoding is io_input_encoding.
 
