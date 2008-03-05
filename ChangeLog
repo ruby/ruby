@@ -1,3 +1,13 @@
+Wed Mar 05 22:49:20 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (is_utf8_lead_byte, count_utf8_lead_bytes_with_ulong):
+	  defined for UTF-8 optimization.
+
+	* string.c (str_strlen): use is_utf8_lead_byte and
+	  count_utf8_lead_bytes_with_ulong.
+
+	* string.c (str_utf8_nth) ditto.
+
 Wed Mar  5 17:53:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_flock): returns false on EAGAIN if non-blocking.

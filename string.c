@@ -755,6 +755,24 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
     return c;
 }
 
+#ifdef NONASCII_MASK
+#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
+static inline const long
+count_utf8_lead_bytes_with_ulong(const unsigned long *s)
+{
+    unsigned long d = *s;
+    d |= ~(d>>1);
+    d >>= 6;
+    d &= NONASCII_MASK >> 3;
+    d += (d>>8);
+    d += (d>>16);
+#if NONASCII_MASK == 0x8080808080808080UL
+    d += (d>>32);
+#endif
+    return (long)(d&0xF);
+}
+#endif
+
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
@@ -774,26 +792,19 @@ str_strlen(VALUE str, rb_encoding *enc)
 	    const VALUE lowbits = sizeof(unsigned long) - 1;
 	    s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
 	    t = (const unsigned long*)(~lowbits & (VALUE)e);
-	    for (len=0; p<(const char *)s; p++) {
-		if (((*p)&0xC0) != 0x80) len++;
+	    while (p < (const char *)s) {
+		if (is_utf8_lead_byte(*p)) len++;
+		p++;
 	    }
 	    while (s < t) {
-		unsigned long d = *s;
-		d = ~d | (d<<1);
-		d &= NONASCII_MASK;
-		d >>= 7;
-		d += (d>>8);
-		d += (d>>16);
-#if NONASCII_MASK == 0x8080808080808080UL
-		d = d + (d>>32);
-#endif
-		len += (long)(d&0xF);
+		len += count_utf8_lead_bytes_with_ulong(s);
 		s++;
 	    }
-	    p = (const char *)t;
+	    p = (const char *)s;
 	}
-	for (; p<e; p++) {
-	    if (((*p)&0xC0) != 0x80) len++;
+	while (p < e) {
+	    if (is_utf8_lead_byte(*p)) len++;
+	    p++;
 	}
 	return len;
     }
@@ -1162,33 +1173,22 @@ str_utf8_nth(const char *p, const char *e, int nth)
 	const VALUE lowbits = sizeof(unsigned long) - 1;
 	s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
 	t = (const unsigned long*)(~lowbits & (VALUE)e);
-	for (; p<(const char *)s && 0<nth; p++) {
-	    if (((*p)&0xC0) != 0x80) nth--;
+	while (p < (const char *)s) {
+	    if (is_utf8_lead_byte(*p)) nth--;
+	    p++;
 	}
 	while (s < t) {
-	    unsigned long d = *s++;
-	    d = ~d | (d<<1);
-	    d &= NONASCII_MASK;
-	    d >>= 7;
-	    d += (d>>8);
-	    d += (d>>16);
-#if NONASCII_MASK == 0x8080808080808080UL
-	    d += (d>>32);
-#endif
-	    nth -= (long)(d&0xF);
-	    if (nth < 8) {
-		t = s;
-		break;
-	    }
+	    nth -= count_utf8_lead_bytes_with_ulong(s);
+	    if (nth < sizeof(long)) break;
+	    s++;
 	}
-	p = (char *)t;
+	p = (char *)s;
     }
     if (0 < nth) {
 	while (p < e) {
-	    if (((*p)&0xC0) != 0x80) {
+	    if (is_utf8_lead_byte(*p)) {
 		nth--;
-		if (nth < 0)
-		    break;
+		if (nth < 0) break;
 	    }
 	    p++;
 	}
