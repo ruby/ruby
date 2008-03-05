@@ -242,6 +242,11 @@ class TestTranscode < Test::Unit::TestCase
   
   def test_invalid_ignore
     # arguments only
-    'abc'.encode('utf-8', invalid: :ignore)
+    assert_nothing_raised { 'abc'.encode('utf-8', invalid: :ignore) }
+    # check handling of UTF-8 ill-formed subsequences
+    assert_equal("\x00\x41\x00\x3E\x00\x42".force_encoding('UTF-16BE'),
+      "\x41\xC2\x3E\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+    assert_equal("\x00\x41\x00\xF1\x00\x42".force_encoding('UTF-16BE'),
+      "\x41\xC2\xC3\xB1\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
   end
 end

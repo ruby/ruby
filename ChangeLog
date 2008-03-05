@@ -1,3 +1,11 @@
+Web Mar  5 17:43:43 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* transcode.c (transcode_loop): Adjusted detection of invalid
+	  (ill-formed) UTF-8 sequences. Fixing potential security issue, see
+	  http://www.unicode.org/versions/Unicode5.1.0/#Notable_Changes.
+
+	* test/ruby/test_transcode.rb: Added two tests for above fix.
+
 Wed Mar  5 14:00:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_to_s): avoid rb_scan_args() when no argument

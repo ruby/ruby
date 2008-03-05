@@ -177,8 +177,10 @@ transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
 	    if (from_utf8) {
 		if ((next_byte&0xC0) == 0x80)
 		    next_byte -= 0x80;
-		else
+		else {
+		    in_p--; /* may need to add more code later to revert other things */
 		    goto invalid;
+		}
 	    }
 	    next_table = (const BYTE_LOOKUP *)next_info;
 	    goto follow_byte;
@@ -390,13 +392,15 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 
 /*
  *  call-seq:
- *     str.encode!(encoding)   => str
- *     str.encode!(to_encoding, from_encoding)   => str
+ *     str.encode!(encoding [, options] )   => str
+ *     str.encode!(to_encoding, from_encoding [, options] )   => str
  *
- *  With one argument, transcodes the contents of <i>str</i> from
+ *  The first form transcodes the contents of <i>str</i> from
  *  str.encoding to +encoding+.
- *  With two arguments, transcodes the contents of <i>str</i> from
+ *  The second form transcodes the contents of <i>str</i> from
  *  from_encoding to to_encoding.
+ *  The options Hash gives details for conversion. See String#encode
+ *  for details.
  *  Returns the string even if no changes were made.
  */
 
@@ -414,13 +418,15 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.encode(encoding)   => str
- *     str.encode(to_encoding, from_encoding)   => str
+ *     str.encode(encoding [, options] )   => str
+ *     str.encode(to_encoding, from_encoding [, options] )   => str
  *
- *  With one argument, returns a copy of <i>str</i> transcoded
+ *  The first form returns a copy of <i>str</i> transcoded
  *  to encoding +encoding+.
- *  With two arguments, returns a copy of <i>str</i> transcoded
+ *  The second form returns a copy of <i>str</i> transcoded
  *  from from_encoding to to_encoding.
+ *  The options Hash gives details for conversion. Details
+ *  to be added.
  */
 
 static VALUE
