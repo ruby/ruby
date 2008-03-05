@@ -2,6 +2,8 @@
 # Copyright (C) 2000  Information-technology Promotion Agency, Japan
 # Copyright (C) 2000-2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
+require 'continuation'
+
 if $SAFE > 0
   STDERR.print "-r debug.rb is not available in safe mode\n"
   exit 1
@@ -295,7 +297,7 @@ class Context
 	  if break_points.find{|b| b[1] == 0}
 	    n = 1
 	    stdout.print "Breakpoints:\n"
-	    for b in break_points
+	    break_points.each do |b|
 	      if b[0] and b[1] == 0
 		stdout.printf "  %d %s:%s\n", n, b[2], b[3] 
 	      end
@@ -591,7 +593,6 @@ EOHELP
   def display_list(b, e, file, line)
     stdout.printf "[%d, %d] in %s\n", b, e, file
     if lines = SCRIPT_LINES__[file] and lines != true
-      n = 0
       b.upto(e) do |n|
 	if n > 0 && lines[n-1]
 	  if n == line
@@ -780,7 +781,7 @@ class << DEBUGGER__
   def resume
     MUTEX.synchronize do
       make_thread_list
-      for th, in @thread_list
+      @thread_list.each do |th,|
 	next if th == Thread.current
 	context(th).clear_suspend
       end
@@ -806,7 +807,7 @@ class << DEBUGGER__
   end
 
   def get_thread(num)
-    th = @thread_list.index(num)
+    th = @thread_list.key(num)
     unless th
       @stdout.print "No thread ##{num}\n"
       throw :debug_error

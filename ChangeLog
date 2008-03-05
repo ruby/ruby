@@ -1,3 +1,17 @@
+Wed Mar  5 11:50:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/debug.rb: require 'continuation' to implement "restart"
+	  command.  [ruby-dev:33992]
+
+	* lib/debug.rb (Context::debug_command): remove local variable
+	  shadowing to shut up warnings.  [ruby-dev:33992]
+
+	* lib/debug.rb (Context::display_list): ditto.
+
+	* lib/debug.rb (Context::resume): ditto.
+
+	* lib/debug.rb (Context::get_thread): no longer use #index for Hash.
+
 Tue Mar  4 21:35:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb.rb (IRB::Irb::eval_input): SyntaxError should not be
