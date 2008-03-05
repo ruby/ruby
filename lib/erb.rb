@@ -744,19 +744,49 @@ class ERB
     end
   end
 
-  def def_method(mod, methodname, fname='(ERB)')  # :nodoc:
+  # Define _methodname_ as instance method of _mod_ from compiled ruby source.
+  #
+  # example:
+  #   filename = 'example.rhtml'   # 'arg1' and 'arg2' are used in example.rhtml
+  #   erb = ERB.new(File.read(filename))
+  #   erb.def_method(MyClass, 'render(arg1, arg2)', filename)
+  #   print MyClass.new.render('foo', 123)
+  def def_method(mod, methodname, fname='(ERB)')
     mod.module_eval("def #{methodname}\n" + self.src + "\nend\n", fname, 0)
   end
 
-  def def_module(methodname='erb')  # :nodoc:
+  # Create unnamed module, define _methodname_ as instance method of it, and return it.
+  #
+  # example:
+  #   filename = 'example.rhtml'   # 'arg1' and 'arg2' are used in example.rhtml
+  #   erb = ERB.new(File.read(filename))
+  #   erb.filename = filename
+  #   MyModule = erb.def_module('render(arg1, arg2)')
+  #   class MyClass
+  #     include MyModule
+  #   end
+  def def_module(methodname='erb')
     mod = Module.new
-    def_method(mod, methodname)
+    def_method(mod, methodname, @filename || '(ERB)')
     mod
   end
 
-  def def_class(superklass=Object, methodname='result')  # :nodoc:
+  # Define unnamed class which has _methodname_ as instance method, and return it.
+  #
+  # example:
+  #   class MyClass_
+  #     def initialize(arg1, arg2)
+  #       @arg1 = arg1;  @arg2 = arg2
+  #     end
+  #   end
+  #   filename = 'example.rhtml'  # @arg1 and @arg2 are used in example.rhtml
+  #   erb = ERB.new(File.read(filename))
+  #   erb.filename = filename
+  #   MyClass = erb.def_class(MyClass_, 'render()')
+  #   print MyClass.new('foo', 123).render()
+  def def_class(superklass=Object, methodname='result')
     cls = Class.new(superklass)
-    def_method(cls, methodname)
+    def_method(cls, methodname, @filename || '(ERB)')
     cls
   end
 end
@@ -810,15 +840,45 @@ end
 #--
 # ERB::DefMethod
 class ERB
-  module DefMethod  # :nodoc:
+  # Utility module to define eRuby script as instance method.
+  #
+  # === Example
+  #
+  # example.rhtml:
+  #   <% for item in @items %>
+  #   <b><%= item %></b>
+  #   <% end %>
+  #
+  # example.rb:
+  #   require 'erb'
+  #   class MyClass
+  #     extend ERB::DefMethod
+  #     def_erb_method('render()', 'example.rhtml')
+  #     def initialize(items)
+  #       @items = items
+  #     end
+  #   end
+  #   print MyClass.new([10,20,30]).render()
+  #
+  # result:
+  #
+  #   <b>10</b>
+  #
+  #   <b>20</b>
+  #
+  #   <b>30</b>
+  #
+  module DefMethod
     public
-    def def_erb_method(methodname, erb)
-      if erb.kind_of? String
-	fname = erb
-	File.open(fname) {|f| erb = ERB.new(f.read) }
-	erb.def_method(self, methodname, fname)
+  # define _methodname_ as instance method of current module, using ERB object or eRuby file
+    def def_erb_method(methodname, erb_or_fname)
+      if erb_or_fname.kind_of? String
+        fname = erb_or_fname
+        erb = ERB.new(File.read(fname))
+        erb.def_method(self, methodname, fname)
       else
-	erb.def_method(self, methodname)
+        erb = erb_or_fname
+        erb.def_method(self, methodname, erb.filename || '(ERB)')
       end
     end
     module_function :def_erb_method

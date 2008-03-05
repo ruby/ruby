@@ -1,3 +1,7 @@
+Thu Mar  6 00:34:11 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb: update RDoc. Thanks Makoto Kuwata [ruby-dev:33702]
+
 Mon Mar  3 23:28:34 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: should normalize path
