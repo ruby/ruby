@@ -3273,7 +3273,7 @@ rb_file_flock(VALUE obj, VALUE operation)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-	    if (op1 & LOCK_NB) goto exit;
+	    if (op1 & LOCK_NB) return Qfalse;
 	    rb_thread_polling();
 	    rb_io_check_closed(fptr);
 	    continue;
@@ -3288,7 +3288,6 @@ rb_file_flock(VALUE obj, VALUE operation)
 	    rb_sys_fail(fptr->path);
 	}
     }
-  exit:
 #endif
     return INT2FIX(0);
 }
