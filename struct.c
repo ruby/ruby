@@ -181,14 +181,12 @@ make_struct(VALUE name, VALUE members, VALUE klass)
 	rb_class_inherited(klass, nstr);
     }
     else {
-	char *cname = StringValuePtr(name);
-
-	id = rb_intern(cname);
+	id = SYM2ID(rb_str_intern(name));
 	if (!rb_is_const_id(id)) {
-	    rb_name_error(id, "identifier %s needs to be constant", cname);
+	    rb_name_error(id, "identifier %s needs to be constant", StringValuePtr(name));
 	}
 	if (rb_const_defined_at(klass, id)) {
-	    rb_warn("redefining constant Struct::%s", cname);
+	    rb_warn("redefining constant Struct::%s", StringValuePtr(name));
 	    rb_mod_remove_const(klass, ID2SYM(id));
 	}
 	nstr = rb_define_class_under(klass, rb_id2name(id), klass);
