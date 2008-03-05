@@ -60,3 +60,7 @@ assert_equal 'ok', %q{
     :ok
   end
 }, '[ruby-core:15551]'
+
+assert_normal_exit %q{
+  sprintf("% 0e", 1.0/0.0)
+}
