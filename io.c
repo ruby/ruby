@@ -4642,10 +4642,12 @@ rb_obj_display(int argc, VALUE *argv, VALUE self)
 {
     VALUE out;
 
-    if (rb_scan_args(argc, argv, "01", &out) == 0) {
+    if (argc == 0) {
 	out = rb_stdout;
     }
-
+    else {
+	rb_scan_args(argc, argv, "01", &out);
+    }
     rb_io_write(out, self);
 
     return Qnil;

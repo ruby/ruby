@@ -573,12 +573,11 @@ enum_first(int argc, VALUE *argv, VALUE obj)
 {
     VALUE n, ary[2];
     
-    rb_scan_args(argc, argv, "01", &n);
-
     if (argc == 0) {
 	ary[0] = ary[1] = Qnil;
     }
     else {
+	rb_scan_args(argc, argv, "01", &n);
 	ary[0] = n;
 	ary[1] = rb_ary_new2(NUM2LONG(n));
     }

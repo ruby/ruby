@@ -731,9 +731,11 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
     VALUE recur, ary, klass;
     st_table *list;
 
-    rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
 	recur = Qtrue;
+    }
+    else {
+	rb_scan_args(argc, argv, "01", &recur);
     }
     klass = CLASS_OF(obj);
     list = st_init_numtable();

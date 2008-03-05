@@ -1263,7 +1263,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
     int ndigits = 0, i;
     long val;
 
-    if (rb_scan_args(argc, argv, "01", &nd) == 1) {
+    if (argc > 0 && rb_scan_args(argc, argv, "01", &nd) == 1) {
 	ndigits = NUM2INT(nd);
     }
     number  = RFLOAT_VALUE(num);
@@ -2008,12 +2008,15 @@ rb_fix2str(VALUE x, int base)
 static VALUE
 fix_to_s(int argc, VALUE *argv, VALUE x)
 {
-    VALUE b;
     int base;
 
-    rb_scan_args(argc, argv, "01", &b);
     if (argc == 0) base = 10;
-    else base = NUM2INT(b);
+    else {
+	VALUE b;
+
+	rb_scan_args(argc, argv, "01", &b);
+	base = NUM2INT(b);
+    }
 
     return rb_fix2str(x, base);
 }

@@ -987,12 +987,15 @@ rb_big2str(VALUE x, int base)
 static VALUE
 rb_big_to_s(int argc, VALUE *argv, VALUE x)
 {
-    VALUE b;
     int base;
 
-    rb_scan_args(argc, argv, "01", &b);
     if (argc == 0) base = 10;
-    else base = NUM2INT(b);
+    else {
+	VALUE b;
+
+	rb_scan_args(argc, argv, "01", &b);
+	base = NUM2INT(b);
+    }
     return rb_big2str(x, base);
 }
 

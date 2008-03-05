@@ -1343,10 +1343,11 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     if (RCLASS_SUPER(klass) != 0) {
 	rb_raise(rb_eTypeError, "already initialized class");
     }
-    if (rb_scan_args(argc, argv, "01", &super) == 0) {
+    if (argc == 0) {
 	super = rb_cObject;
     }
     else {
+	rb_scan_args(argc, argv, "01", &super);
 	rb_check_inheritable(super);
     }
     RCLASS_SUPER(klass) = super;

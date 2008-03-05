@@ -300,17 +300,20 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    if (rb_scan_args(argc, argv, "01", &step) == 0) {
+    if (argc == 0) {
 	step = INT2FIX(1);
 	unit = 1;
     }
-    else if (FIXNUM_P(step)) {
-	unit = NUM2LONG(step);
-    }
     else {
-	VALUE tmp = rb_to_int(step);
-	unit = rb_cmpint(tmp, step, INT2FIX(0));
-	step = tmp;
+	rb_scan_args(argc, argv, "01", &step);
+	if (FIXNUM_P(step)) {
+	    unit = NUM2LONG(step);
+	}
+	else {
+	    VALUE tmp = rb_to_int(step);
+	    unit = rb_cmpint(tmp, step, INT2FIX(0));
+	    step = tmp;
+	}
     }
     if (unit < 0) {
 	rb_raise(rb_eArgError, "step can't be negative");

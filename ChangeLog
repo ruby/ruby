@@ -1,3 +1,24 @@
+Wed Mar  5 14:00:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_to_s): avoid rb_scan_args() when no argument
+	  given. 
+	* bignum.c (rb_big_to_s): ditto.
+	* enum.c (enum_first): ditto.
+	* eval_jump.c (rb_f_catch): ditto.
+	* io.c (rb_obj_display): ditto.
+	* class.c (rb_obj_singleton_methods): ditto.
+	* object.c (rb_class_initialize): ditto.
+	* random.c (rb_f_srand): ditto.
+	* range.c (range_step): ditto.
+	* re.c (rb_reg_s_last_match): ditto.
+	* string.c (rb_str_to_i): ditto.
+	* string.c (rb_str_each_line): ditto.
+	* string.c (rb_str_chomp_bang): ditto.
+	* string.c (rb_str_sum): ditto.
+
+	* string.c (str_modifiable): declare inline.
+	* string.c (str_independent): ditto.
+
 Wed Mar  5 11:50:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/debug.rb: require 'continuation' to implement "restart"

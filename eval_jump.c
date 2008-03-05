@@ -107,9 +107,11 @@ rb_f_catch(int argc, VALUE *argv)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *saved_cfp = th->cfp;
 
-    rb_scan_args(argc, argv, "01", &tag);
     if (argc == 0) {
 	tag = rb_obj_alloc(rb_cObject);
+    }
+    else {
+	rb_scan_args(argc, argv, "01", &tag);
     }
     PUSH_TAG();
 

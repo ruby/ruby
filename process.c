@@ -756,11 +756,11 @@ proc_wait(int argc, VALUE *argv)
 
     rb_secure(2);
     flags = 0;
-    rb_scan_args(argc, argv, "02", &vpid, &vflags);
     if (argc == 0) {
 	pid = -1;
     }
     else {
+	rb_scan_args(argc, argv, "02", &vpid, &vflags);
 	pid = NUM2PIDT(vpid);
 	if (argc == 2 && !NIL_P(vflags)) {
 	    flags = NUM2UINT(vflags);
@@ -1518,7 +1518,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
     int istatus;
 
     rb_secure(4);
-    if (rb_scan_args(argc, argv, "01", &status) == 1) {
+    if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
 	switch (status) {
 	  case Qtrue:
 	    istatus = EXIT_SUCCESS;
@@ -1599,7 +1599,7 @@ rb_f_exit(int argc, VALUE *argv)
     int istatus;
 
     rb_secure(4);
-    if (rb_scan_args(argc, argv, "01", &status) == 1) {
+    if (argc > 0 && rb_scan_args(argc, argv, "01", &status) == 1) {
 	switch (status) {
 	  case Qtrue:
 	    istatus = EXIT_SUCCESS;

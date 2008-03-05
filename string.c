@@ -667,7 +667,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 {
     VALUE orig;
 
-    if (rb_scan_args(argc, argv, "01", &orig) == 1)
+    if (argc > 0 && rb_scan_args(argc, argv, "01", &orig) == 1)
 	rb_str_replace(str, orig);
     return str;
 }
@@ -950,7 +950,7 @@ rb_str_format_m(VALUE str, VALUE arg)
     return rb_str_format(1, &arg, str);
 }
 
-static void
+static inline void
 str_modifiable(VALUE str)
 {
     if (FL_TEST(str, STR_TMPLOCK)) {
@@ -961,7 +961,7 @@ str_modifiable(VALUE str)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
 }
 
-static int
+static inline int
 str_independent(VALUE str)
 {
     str_modifiable(str);
@@ -3620,13 +3620,15 @@ rb_str_include(VALUE str, VALUE arg)
 static VALUE
 rb_str_to_i(int argc, VALUE *argv, VALUE str)
 {
-    VALUE b;
     int base;
 
-    rb_scan_args(argc, argv, "01", &b);
     if (argc == 0) base = 10;
-    else base = NUM2INT(b);
+    else {
+	VALUE b;
 
+	rb_scan_args(argc, argv, "01", &b);
+	base = NUM2INT(b);
+    }
     if (base < 0) {
 	rb_raise(rb_eArgError, "invalid radix %d", base);
     }
@@ -5028,8 +5030,11 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     VALUE line;
     int n;
 
-    if (rb_scan_args(argc, argv, "01", &rs) == 0) {
+    if (argc == 0) {
 	rs = rb_rs;
+    }
+    else {
+	rb_scan_args(argc, argv, "01", &rs);
     }
     RETURN_ENUMERATOR(str, argc, argv);
     if (NIL_P(rs)) {
@@ -5281,7 +5286,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (len == 0) return Qnil;
     p = RSTRING_PTR(str);
     e = p + len;
-    if (rb_scan_args(argc, argv, "01", &rs) == 0) {
+    if (argc == 0) {
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
@@ -5323,6 +5328,9 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	    RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
 	    return str;
 	}
+    }
+    else {
+	rb_scan_args(argc, argv, "01", &rs);
     }
     if (NIL_P(rs)) return Qnil;
     StringValue(rs);
@@ -5812,11 +5820,13 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
     char *ptr, *p, *pend;
     long len;
 
-    if (rb_scan_args(argc, argv, "01", &vbits) == 0) {
+    if (argc == 0) {
 	bits = 16;
     }
-    else bits = NUM2INT(vbits);
-
+    else {
+	rb_scan_args(argc, argv, "01", &vbits);
+	bits = NUM2INT(vbits);
+    }
     ptr = p = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     pend = p + len;
