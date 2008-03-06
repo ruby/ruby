@@ -1,3 +1,10 @@
+Thu Mar  6 15:05:25 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32}/Makefile.sub (RUNRUBY): use $(PROGRAM) instead of
+	  ruby$(EXEEXT). 
+	  suggested by KIMURA Koichi <kimura.koichi at canon.co.jp>.
+	  [ruby-dev:34000]
+
 Thu Mar  6 14:46:08 2008  Tanaka Akira  <akr@fsij.org>
 
 	* missing/lgamma_r.c (loggamma): return 0 for 1 and 2.
