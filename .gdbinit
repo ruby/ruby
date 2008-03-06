@@ -46,7 +46,7 @@ define rp
     print (struct RClass *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_FLOAT
-    printf "T_FLOAT: %.16g ", (((struct RFloat*)$arg0)->value)
+    printf "T_FLOAT: %.16g ", (((struct RFloat*)$arg0)->float_value)
     print (struct RFloat *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRING
