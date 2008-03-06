@@ -802,8 +802,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    blen++;
 			    need--;
 			}
-			while (need-- > strlen(expr)) {
-			    buf[blen++] = '0';
+			if ((need -= strlen(expr)) > 0) {
+			    memset(buf+blen, '0', need);
+			    blen += need;
 			}
 			strncpy(&buf[blen], expr, strlen(expr));
 		    }
