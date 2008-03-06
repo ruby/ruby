@@ -1,3 +1,7 @@
+Thu Mar  6 14:00:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/missing.h (cbrt): add declaration.
+
 Thu Mar  6 11:14:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-add-log-current-method): use ruby style
@@ -362,13 +366,13 @@ Thu Feb 28 11:23:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Thu Feb 28 11:19:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* string.c (rb_str_reverse_bang): removed unsed variables.
+	* string.c (rb_str_reverse_bang): removed unused variables.
 
 	* include/ruby/encoding.h (rb_str_coderange_scan_restartable): added
 	  prototype.
 
 	* string.c (rb_str_coderange_scan_restartable, rb_str_times): removed
-	  unsed variables.
+	  unused variables.
 
 	* string.c (rb_str_reverse_bang): ditto
 
@@ -389,16 +393,16 @@ Thu Feb 28 03:03:32 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  a Tk::Tile::Button widget. Of course, you can back to use 
 	  standard Tk widgets as the default widget set by calling 
 	  "Tk.default_widget_set = :Tk", whenever you want. Based on 
-	  thie feature, you can use Ttk widget styling engine on your 
+	  the feature, you can use Ttk widget styling engine on your 
 	  old Ruby/Tk application without modifying its source, if you 
-	  don'tuse widget options unsupported on Ttk widgets (At first, 
+	  don't use widget options unsupported on Ttk widgets (At first, 
 	  call "Tk.default_widget_set = :Ttk", and next load and run 
 	  your application). 
 	  This is one step for supporting Tcl/Tk8.5 features.
 
 Wed Feb 27 22:55:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* string.c (rb_str_coderange_scan_restartable): coderange scaning
+	* string.c (rb_str_coderange_scan_restartable): coderange scanning
 	  for partial read.
 
 	* io.c (read_all): set coderange when not convert encoding.

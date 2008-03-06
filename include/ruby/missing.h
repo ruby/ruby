@@ -87,6 +87,10 @@ extern double tgamma(double);
 extern double lgamma_r(double, int *);
 #endif
 
+#ifndef HAVE_CBRT
+extern double cbrt(double);
+#endif
+
 #ifndef isinf
 # ifndef HAVE_ISINF
 #  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
