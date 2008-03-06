@@ -113,6 +113,11 @@ EOT
     assert_equal(s.encoding, s.intern.to_s.encoding, "#{encdump s}.intern.to_s.encoding")
   end
 
+  def test_sym_eq
+    s = "aa".force_encoding("utf-16le")
+    assert(s.intern != :aa, "#{encdump s}.intern != :aa")
+  end
+
   def test_compatible
     s1 = "aa".force_encoding("utf-16be")
     s2 = "z".force_encoding("us-ascii")
