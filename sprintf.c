@@ -540,7 +540,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	      bin_retry:
 		switch (TYPE(val)) {
 		  case T_FLOAT:
-		    if (FIXABLE((long)RFLOAT_VALUE(val))) {
+		    if (RFLOAT_VALUE(val) <= LONG_MAX &&
+			RFLOAT_VALUE(val) >= LONG_MIN) {
 			val = LONG2FIX((long)RFLOAT_VALUE(val));
 			goto bin_retry;
 		    }
