@@ -1001,17 +1001,19 @@ balanced expression is found."
   "Return current method string."
   (condition-case nil
       (save-excursion
-	(let ((mlist nil) (indent 0))
+	(let (mname mlist (indent 0))
 	  ;; get current method (or class/module)
 	  (if (re-search-backward
 	       (concat "^[ \t]*\\(def\\|class\\|module\\)[ \t]+"
-		       "\\(" 
-		       ;; \\. for class method
-			"\\(" ruby-symbol-re "\\|\\." "\\)" 
+		       "\\("
+		       ;; \\. and :: for class method
+			"\\([A-Za-z_]" ruby-symbol-re "*\\|\\.\\|::" "\\)" 
 			"+\\)")
 	       nil t)
 	      (progn
-		(setq mlist (list (match-string 2)))
+		(setq mname (match-string 2))
+		(unless (string-equal "def" (match-string 1))
+		  (setq mlist (list mname) mname nil))
 		(goto-char (match-beginning 1))
 		(setq indent (current-column))
 		(beginning-of-line)))
@@ -1020,7 +1022,7 @@ balanced expression is found."
 		      (re-search-backward
 		       (concat
 			"^[ \t]*\\(class\\|module\\)[ \t]+"
-			"\\([A-Z]" ruby-symbol-re "+\\)")
+			"\\([A-Z]" ruby-symbol-re "*\\)")
 		       nil t))
 	    (goto-char (match-beginning 1))
 	    (if (< (current-column) indent)
@@ -1028,10 +1030,33 @@ balanced expression is found."
 		  (setq mlist (cons (match-string 2) mlist))
 		  (setq indent (current-column))
 		  (beginning-of-line))))
+	  (when mname
+	    (let ((mn (split-string mname "\\.\\|::")))
+	      (if (cdr mn)
+		  (progn
+		    (cond
+		     ((string-equal "" (car mn))
+		      (setq mn (cdr mn) mlist nil))
+		     ((string-equal "self" (car mn))
+		      (setq mn (cdr mn)))
+		     ((let ((ml (nreverse mlist)))
+			(while ml
+			  (if (string-equal (car ml) (car mn))
+			      (setq mlist (nreverse (cdr ml)) ml nil))
+			  (or (setq ml (cdr ml)) (nreverse mlist))))))
+		    (if mlist
+			(setcdr (last mlist) mn)
+		      (setq mlist mn))
+		    (setq mn (last mn 2))
+		    (setq mname (concat "." (cadr mn)))
+		    (setcdr mn nil))
+		(setq mname (concat "#" mname)))))
 	  ;; generate string
 	  (if (consp mlist)
-	      (mapconcat (function identity) mlist "::")
-	    nil)))))
+	      (setq mlist (mapconcat (function identity) mlist "::")))
+	  (if mname
+	      (if mlist (concat mlist mname) mname)
+	    mlist)))))
 
 (cond
  ((featurep 'font-lock)

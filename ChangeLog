@@ -1,3 +1,8 @@
+Thu Mar  6 11:14:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-add-log-current-method): use ruby style
+	  method name format.
+
 Thu Mar  6 11:12:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): no need of loop.
