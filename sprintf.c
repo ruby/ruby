@@ -766,7 +766,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (isnan(fval) || isinf(fval)) {
 		    const char *expr;
 
-		    if  (isnan(fval)) {
+		    if (isnan(fval)) {
 			expr = "NaN";
 		    }
 		    else {
@@ -787,25 +787,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    buf[blen++] = '+';
 			else if (flags & FSPACE)
 			    blen++;
-			strncpy(&buf[blen], expr, strlen(expr));
-		    }
-		    else if (flags & FZERO) {
-			if (!isnan(fval) && fval < 0.0) {
-			    buf[blen++] = '-';
-			    need--;
-			}
-			else if (flags & FPLUS) {
-			    buf[blen++] = '+';
-			    need--;
-			}
-			else if (flags & FSPACE) {
-			    blen++;
-			    need--;
-			}
-			if ((need -= strlen(expr)) > 0) {
-			    memset(buf+blen, '0', need);
-			    blen += need;
-			}
 			strncpy(&buf[blen], expr, strlen(expr));
 		    }
 		    else {

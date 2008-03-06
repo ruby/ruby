@@ -1,3 +1,8 @@
+Thu Mar  6 15:11:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): ignore 0 flag for NaN and Inf.
+	  [ruby-dev:33994]
+
 Thu Mar  6 15:05:25 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32}/Makefile.sub (RUNRUBY): use $(PROGRAM) instead of
