@@ -409,10 +409,20 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE newstr = str;
     int encidx = str_transcode(argc, argv, &newstr);
+    int cr = 0;
 
     if (encidx < 0) return str;
     rb_str_shared_replace(str, newstr);
     rb_enc_associate_index(str, encidx);
+
+    /* transcoded string never be broken. */
+    if (rb_enc_asciicompat(rb_enc_from_index(encidx))) {
+	rb_str_coderange_scan_restartable(RSTRING_PTR(str), RSTRING_END(str), 0, &cr);
+    }
+    else {
+	cr = ENC_CODERANGE_VALID;
+    }
+    ENC_CODERANGE_SET(str, cr);
     return str;
 }
 
@@ -432,19 +442,8 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_transcode(int argc, VALUE *argv, VALUE str)
 {
-    VALUE newstr = str;
-    int encidx = str_transcode(argc, argv, &newstr);
-
-    if (newstr == str) {
-	newstr = rb_str_new3(str);
-	if (encidx >= 0) rb_enc_associate_index(newstr, encidx);
-    }
-    else {
-	RBASIC(newstr)->klass = rb_obj_class(str);
-	OBJ_INFECT(newstr, str);
-	rb_enc_associate_index(newstr, encidx);
-    }
-    return newstr;
+    str = rb_str_dup(str);
+    return rb_str_transcode_bang(argc, argv, str);
 }
 
 void
