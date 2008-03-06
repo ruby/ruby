@@ -1,3 +1,8 @@
+Thu Mar  6 17:26:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): space flag is in effect for Inf/NaN too.
+	  [ruby-dev:34002]
+
 Thu Mar  6 15:44:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): casting double to long is undefined
