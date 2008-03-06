@@ -34,6 +34,8 @@ loggamma(double x)  /* the natural logarithm of the Gamma function. */
 {
     double v, w;
 
+    if (x == 1.0 || x == 2.0) return 0.0;
+
     v = 1;
     while (x < N) {  v *= x;  x++;  }
     w = 1 / (x * x);

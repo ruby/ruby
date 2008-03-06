@@ -2,7 +2,8 @@ require 'test/unit'
 
 class TestMath < Test::Unit::TestCase
   def check(a, b)
-    assert_in_delta(a, b, Float::EPSILON * 4)
+    err = [Float::EPSILON * 4, [a.abs, b.abs].max * Float::EPSILON * 256].max
+    assert_in_delta(a, b, err)
   end
 
   def test_atan2
