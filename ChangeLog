@@ -1,3 +1,8 @@
+Thu Mar  6 12:15:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (opt_block_param): command can start just after block param
+	  definition.  [ruby-list:44479]
+
 Thu Mar  6 00:34:11 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb: update RDoc. Thanks Makoto Kuwata [ruby-dev:33702]

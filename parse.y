@@ -1765,14 +1765,17 @@ opt_block_var	: none
 		| '|' /* none */ '|'
 		    {
 			$$ = (NODE*)1;
+			command_start = Qtrue;
 		    }
 		| tOROP
 		    {
 			$$ = (NODE*)1;
+			command_start = Qtrue;
 		    }
 		| '|' block_var '|'
 		    {
 			$$ = $2;
+			command_start = Qtrue;
 		    }
 		;
 
