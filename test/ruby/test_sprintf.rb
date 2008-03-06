@@ -220,6 +220,9 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("0B1", sprintf("%#B", 1))
     assert_equal("1", sprintf("%d", 1.0))
     assert_equal("4294967296", sprintf("%d", (2**32).to_f))
+    assert_equal("-2147483648", sprintf("%d", -(2**31).to_f))
+    assert_equal("18446744073709551616", sprintf("%d", (2**64).to_f))
+    assert_equal("-9223372036854775808", sprintf("%d", -(2**63).to_f))
     assert_equal("1", sprintf("%d", "1"))
     o = Object.new; def o.to_int; 1; end
     assert_equal("1", sprintf("%d", o))
