@@ -1,9 +1,9 @@
 define rp
   if (VALUE)$arg0 & RUBY_FIXNUM_FLAG
-    printf "FIXNUM: %d\n", $arg0 >> 1
+    printf "FIXNUM: %ld\n", $arg0 >> 1
   else
   if ((VALUE)$arg0 & ~(~(VALUE)0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
-    printf "SYMBOL(%d)\n", $arg0 >> RUBY_SPECIAL_SHIFT
+    printf "SYMBOL(%ld)\n", $arg0 >> RUBY_SPECIAL_SHIFT
   else
   if $arg0 == RUBY_Qfalse
     echo false\n
@@ -56,7 +56,7 @@ define rp
 	    ((struct RString*)$arg0)->as.heap.ptr : \
 	    ((struct RString*)$arg0)->as.ary)
     set print address on
-    printf " bytesize:%d ", ($flags & RUBY_FL_USER1) ? \
+    printf " bytesize:%ld ", ($flags & RUBY_FL_USER1) ? \
             ((struct RString*)$arg0)->as.heap.len : \
             (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
     if !($flags & RUBY_FL_USER1)
@@ -90,7 +90,7 @@ define rp
     set print address off
     output ((struct RRegexp*)$arg0)->str
     set print address on
-    printf " len:%d ", ((struct RRegexp*)$arg0)->len
+    printf " len:%ld ", ((struct RRegexp*)$arg0)->len
     if $flags & RUBY_FL_USER6
       printf "(none) "
     end
@@ -104,7 +104,7 @@ define rp
     print (struct RRegexp *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_ARRAY
-    printf "T_ARRAY: len=%d ", ((struct RArray*)$arg0)->len
+    printf "T_ARRAY: len=%ld ", ((struct RArray*)$arg0)->len
     print (struct RArray *)$arg0
     x/xw ((struct RArray*)$arg0)->ptr
   else
@@ -115,12 +115,12 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "T_HASH: ",
     if ((struct RHash *)$arg0)->ntbl
-      printf "len=%d ", ((struct RHash *)$arg0)->ntbl->num_entries
+      printf "len=%ld ", ((struct RHash *)$arg0)->ntbl->num_entries
     end
     print (struct RHash *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
-    printf "T_STRUCT: len=%d ", \
+    printf "T_STRUCT: len=%ld ", \
       (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
        ($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) >> (RUBY_FL_USHIFT+1) : \
        ((struct RStruct *)$arg0)->as.heap.len)
@@ -130,7 +130,7 @@ define rp
           ((struct RStruct *)$arg0)->as.heap.len)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_BIGNUM
-    printf "T_BIGNUM: sign=%d len=%d ", \
+    printf "T_BIGNUM: sign=%d len=%ld ", \
       (($flags & RUBY_FL_USER1) != 0), \
       (($flags & RUBY_FL_USER2) ? \
        ($flags & (RUBY_FL_USER5|RUBY_FL_USER4|RUBY_FL_USER3)) >> (RUBY_FL_USHIFT+3) : \
