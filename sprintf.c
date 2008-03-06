@@ -153,34 +153,36 @@ sign_bits(int base, const char *p)
  *  modify that interpretation. The field type characters are listed
  *  in the table at the end of this section. The flag characters are:
  *
- *    Flag     | Applies to   | Meaning
- *    ---------+--------------+-----------------------------------------
- *    space    | bdeEfgGiouxX | Leave a space at the start of 
- *             |              | positive numbers.
- *    ---------+--------------+-----------------------------------------
- *    (digit)$ | all          | Specifies the absolute argument number
- *             |              | for this field. Absolute and relative
- *             |              | argument numbers cannot be mixed in a
- *             |              | sprintf string.
- *    ---------+--------------+-----------------------------------------
- *     #       | beEfgGoxX    | Use an alternative format. For the
- *             |              | conversions `o', `x', `X', and `b', 
- *             |              | prefix the result with ``0'', ``0x'', ``0X'',
- *             |              |  and ``0b'', respectively. For `e',
- *             |              | `E', `f', `g', and 'G', force a decimal
- *             |              | point to be added, even if no digits follow.
- *             |              | For `g' and 'G', do not remove trailing zeros.
- *    ---------+--------------+-----------------------------------------
- *    +        | bdeEfgGiouxX | Add a leading plus sign to positive numbers.
- *    ---------+--------------+-----------------------------------------
- *    -        | all          | Left-justify the result of this conversion.
- *    ---------+--------------+-----------------------------------------
- *    0 (zero) | bdeEfgGiouxX | Pad with zeros, not spaces.
- *    ---------+--------------+-----------------------------------------
- *    *        | all          | Use the next argument as the field width. 
- *             |              | If negative, left-justify the result. If the
- *             |              | asterisk is followed by a number and a dollar 
- *             |              | sign, use the indicated argument as the width.
+ *    Flag     | Applies to    | Meaning
+ *    ---------+---------------+-----------------------------------------
+ *    space    | bBdeEfgGiouxX | Leave a space at the start of 
+ *             |               | positive numbers.
+ *    ---------+---------------+-----------------------------------------
+ *    (digit)$ | all           | Specifies the absolute argument number
+ *             |               | for this field. Absolute and relative
+ *             |               | argument numbers cannot be mixed in a
+ *             |               | sprintf string.
+ *    ---------+---------------+-----------------------------------------
+ *     #       | bBeEfgGoxX    | Use an alternative format. For the
+ *             |               | conversions `o', raise the precision until
+ *             |               | the first character will be `0'.
+ *             |               | For the conversions `x', `X', `b' and `B', 
+ *             |               | prefix the result with ``0x'', ``0X'',
+ *             |               | ``0b'' and ``0B'', respectively. For `e',
+ *             |               | `E', `f', `g', and 'G', force a decimal
+ *             |               | point to be added, even if no digits follow.
+ *             |               | For `g' and 'G', do not remove trailing zeros.
+ *    ---------+---------------+-----------------------------------------
+ *    +        | bBdeEfgGiouxX | Add a leading plus sign to non-negative numbers.
+ *    ---------+---------------+-----------------------------------------
+ *    -        | all           | Left-justify the result of this conversion.
+ *    ---------+---------------+-----------------------------------------
+ *    0 (zero) | bBdeEfgGiouxX | Pad with zeros, not spaces.
+ *    ---------+---------------+-----------------------------------------
+ *    *        | all           | Use the next argument as the field width. 
+ *             |               | If negative, left-justify the result. If the
+ *             |               | asterisk is followed by a number and a dollar 
+ *             |               | sign, use the indicated argument as the width.
  *
  *     
  *  The field width is an optional integer, followed optionally by a
@@ -192,12 +194,39 @@ sign_bits(int base, const char *p)
  *  sequence <code>%10.10s</code> will always contribute exactly ten
  *  characters to the result.)
  *
+ *                                           width=20
+ *                                     <------------------>
+ *   sprintf("%20.8e", 1234.56789) => "      1.23456789e+03"
+ *                                             <------>
+ *                 number of fractional digits : precision=8
+ *                                    
+ *   sprintf("%20.8f", 1234.56789) => "       1234.56789000"
+ *                                                 <------>
+ *    number of digits after the decimal point : precision=8
+ *
+ *   sprintf("%20.8g", 1234.56789) => "           1234.5679"
+ *                                                <------->
+ *                number of significant digits : precision=8
+ *
+ *   sprintf("%20.8g", 123456789)  => "       1.2345679e+08"
+ *                                            <------->
+ *            number of significant digits : precision=8
+ *
+ *                                              width=20
+ *                                        <------------------>
+ *   sprintf("%20.8s", "string test") => "            string t"
+ *                                                    <------>
+ *                    maximum number of characters : precision=8
+ *
  *  The field types are:
  *
  *      Field |  Conversion
  *      ------+--------------------------------------------------------------
+ *        B   | Equivalent to `b', but uses an uppercase 0B for prefix
+ *            | in the alternative format by #.
  *        b   | Convert argument as a binary number.
- *        c   | Argument is the numeric code for a single character.
+ *        c   | Argument is the numeric code for a single character or
+ *            | a single character string itself.
  *        d   | Convert argument as a decimal number.
  *        E   | Equivalent to `e', but uses an uppercase E to indicate
  *            | the exponent.
@@ -205,12 +234,13 @@ sign_bits(int base, const char *p)
  *            | with one digit before the decimal point. The precision
  *            | determines the number of fractional digits (defaulting to six).
  *        f   | Convert floating point argument as [-]ddd.ddd, 
- *            |  where the precision determines the number of digits after
+ *            | where the precision determines the number of digits after
  *            | the decimal point.
  *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
  *        g   | Convert a floating point number using exponential form
  *            | if the exponent is less than -4 or greater than or
  *            | equal to the precision, or in d.dddd form otherwise.
+ *            | The precision specifies the number of significant digits.
  *        i   | Identical to `d'.
  *        o   | Convert argument as an octal number.
  *        p   | The valuing of argument.inspect.
