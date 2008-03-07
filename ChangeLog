@@ -1,7 +1,11 @@
+Fri Mar  7 21:27:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c: fix indent.
+
 Fri Mar  7 21:12:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c (power_cache_init, power_cache_get_power0, Init_Bignum):
-	  delayed initializing power cache per base.
+	  delayed initializing power cache per base.  [ruby-dev:34003]
 
 Fri Mar  7 20:30:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

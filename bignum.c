@@ -61,32 +61,32 @@ rb_big_realloc(VALUE big, long len)
 {
     BDIGIT *ds;
     if (RBASIC(big)->flags & RBIGNUM_EMBED_FLAG) {
-        if (RBIGNUM_EMBED_LEN_MAX < len) {
-            ds = ALLOC_N(BDIGIT, len);
-            MEMCPY(ds, RBIGNUM(big)->as.ary, BDIGIT, RBIGNUM_EMBED_LEN_MAX);
-            RBIGNUM(big)->as.heap.len = RBIGNUM_LEN(big);
-            RBIGNUM(big)->as.heap.digits = ds;
-            RBASIC(big)->flags &= ~RBIGNUM_EMBED_FLAG;
-        }
+	if (RBIGNUM_EMBED_LEN_MAX < len) {
+	    ds = ALLOC_N(BDIGIT, len);
+	    MEMCPY(ds, RBIGNUM(big)->as.ary, BDIGIT, RBIGNUM_EMBED_LEN_MAX);
+	    RBIGNUM(big)->as.heap.len = RBIGNUM_LEN(big);
+	    RBIGNUM(big)->as.heap.digits = ds;
+	    RBASIC(big)->flags &= ~RBIGNUM_EMBED_FLAG;
+	}
     }
     else {
-        if (len <= RBIGNUM_EMBED_LEN_MAX) {
-            ds = RBIGNUM(big)->as.heap.digits;
-            RBASIC(big)->flags |= RBIGNUM_EMBED_FLAG;
-            RBIGNUM_SET_LEN(big, len);
-            if (ds) {
-                MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
-                free(ds);
-            }
-        }
-        else {
-            if (RBIGNUM_LEN(big) == 0) {
-                RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
-            }
-            else {
-                REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len);
-            }
-        }
+	if (len <= RBIGNUM_EMBED_LEN_MAX) {
+	    ds = RBIGNUM(big)->as.heap.digits;
+	    RBASIC(big)->flags |= RBIGNUM_EMBED_FLAG;
+	    RBIGNUM_SET_LEN(big, len);
+	    if (ds) {
+		MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
+		free(ds);
+	    }
+	}
+	else {
+	    if (RBIGNUM_LEN(big) == 0) {
+		RBIGNUM(big)->as.heap.digits = ALLOC_N(BDIGIT, len);
+	    }
+	    else {
+		REALLOC_N(RBIGNUM(big)->as.heap.digits, BDIGIT, len);
+	    }
+	}
     }
 }
 
@@ -104,11 +104,11 @@ bignew_1(VALUE klass, long len, int sign)
     OBJSETUP(big, klass, T_BIGNUM);
     RBIGNUM_SET_SIGN(big, sign?1:0);
     if (len <= RBIGNUM_EMBED_LEN_MAX) {
-        RBASIC(big)->flags |= RBIGNUM_EMBED_FLAG;
-        RBIGNUM_SET_LEN(big, len);
+	RBASIC(big)->flags |= RBIGNUM_EMBED_FLAG;
+	RBIGNUM_SET_LEN(big, len);
     }
     else {
-        rb_big_resize((VALUE)big, len);
+	rb_big_resize((VALUE)big, len);
     }
 
     return (VALUE)big;
@@ -142,7 +142,7 @@ get2comp(VALUE x)
 	num = BIGDN(num);
     } while (i < RBIGNUM_LEN(x));
     if (num != 0) {
-        rb_big_resize(x, RBIGNUM_LEN(x)+1);
+	rb_big_resize(x, RBIGNUM_LEN(x)+1);
 	ds = BDIGITS(x);
 	ds[RBIGNUM_LEN(x)-1] = 1;
     }
@@ -743,9 +743,9 @@ power_cache_init(void)
 {
     int i, j;
     for (i = 0; i < 35; ++i) {
-        for (j = 0; j < MAX_BIG2STR_TABLE_ENTRIES; ++j) {
-            big2str_power_cache[i][j] = Qnil;
-        }
+	for (j = 0; j < MAX_BIG2STR_TABLE_ENTRIES; ++j) {
+	    big2str_power_cache[i][j] = Qnil;
+	}
     }
 }
 
@@ -753,10 +753,10 @@ static inline VALUE
 power_cache_get_power0(int base, int i)
 {
     if (NIL_P(big2str_power_cache[base - 2][i])) {
-        big2str_power_cache[base - 2][i] =
+	big2str_power_cache[base - 2][i] =
 	    i == 0 ? rb_big_pow(rb_int2big(base), INT2FIX(KARATSUBA_DIGITS))
 		   : bigsqr(power_cache_get_power0(base, i - 1));
-        rb_global_variable(&big2str_power_cache[base - 2][i]);
+	rb_global_variable(&big2str_power_cache[base - 2][i]);
     }
     return big2str_power_cache[base - 2][i];
 }
@@ -768,19 +768,19 @@ power_cache_get_power(int base, long n1, long* m1)
     VALUE t;
 
     if (n1 <= KARATSUBA_DIGITS)
-        rb_bug("n1 > KARATSUBA_DIGITS");
+	rb_bug("n1 > KARATSUBA_DIGITS");
 
     m = ceil_log2(n1);
     if (m1) *m1 = 1 << m;
     i = m - LOG2_KARATSUBA_DIGITS;
     if (i >= MAX_BIG2STR_TABLE_ENTRIES)
-        i = MAX_BIG2STR_TABLE_ENTRIES - 1;
+	i = MAX_BIG2STR_TABLE_ENTRIES - 1;
     t = power_cache_get_power0(base, i);
 
     j = KARATSUBA_DIGITS*(1 << i);
     while (n1 > j) {
-        t = bigsqr(t);
-        j *= 2;
+	t = bigsqr(t);
+	j *= 2;
     }
     return t;
 }
@@ -818,19 +818,19 @@ big2str_find_n1(VALUE x, int base)
     long bits;
 
     if (base < 2 || 36 < base)
-        rb_bug("invalid radix %d", base);
+	rb_bug("invalid radix %d", base);
 
     if (FIXNUM_P(x)) {
-        bits = (SIZEOF_LONG*CHAR_BIT - 1)/2 + 1;
+	bits = (SIZEOF_LONG*CHAR_BIT - 1)/2 + 1;
     }
     else if (BIGZEROP(x)) {
-        return 0;
+	return 0;
     }
     else if (RBIGNUM_LEN(x) >= LONG_MAX/BITSPERDIG) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
     }
     else {
-        bits = BITSPERDIG*RBIGNUM_LEN(x);
+	bits = BITSPERDIG*RBIGNUM_LEN(x);
     }
 
     return (long)ceil(bits/log_2[base - 2]);
@@ -843,71 +843,71 @@ big2str_orig(VALUE x, int base, char* ptr, long len, long hbase, int trim)
     BDIGIT* ds = BDIGITS(x);
 
     while (i && j > 0) {
-        long k = i;
-        BDIGIT_DBL num = 0;
+	long k = i;
+	BDIGIT_DBL num = 0;
 
-        while (k--) {               /* x / hbase */
-            num = BIGUP(num) + ds[k];
-            ds[k] = (BDIGIT)(num / hbase);
-            num %= hbase;
-        }
-        if (trim && ds[i-1] == 0) i--;
-        k = SIZEOF_BDIGITS;
-        while (k--) {
-            ptr[--j] = ruby_digitmap[num % base];
-            num /= base;
-            if (j <= 0) break;
-            if (trim && i == 0 && num == 0) break;
-        }
+	while (k--) {               /* x / hbase */
+	    num = BIGUP(num) + ds[k];
+	    ds[k] = (BDIGIT)(num / hbase);
+	    num %= hbase;
+	}
+	if (trim && ds[i-1] == 0) i--;
+	k = SIZEOF_BDIGITS;
+	while (k--) {
+	    ptr[--j] = ruby_digitmap[num % base];
+	    num /= base;
+	    if (j <= 0) break;
+	    if (trim && i == 0 && num == 0) break;
+	}
     }
     if (trim) {
-        while (j < len && ptr[j] == '0') j++;
-        MEMMOVE(ptr, ptr + j, char, len - j);
-        len -= j;
+	while (j < len && ptr[j] == '0') j++;
+	MEMMOVE(ptr, ptr + j, char, len - j);
+	len -= j;
     }
     return len;
 }
 
 static long
 big2str_karatsuba(VALUE x, int base, char* ptr,
-                  long n1, long len, long hbase, int trim)
+		  long n1, long len, long hbase, int trim)
 {
     long lh, ll, m1;
     VALUE b, q, r;
 
     if (FIXNUM_P(x)) {
-        VALUE str = rb_fix2str(x, base);
-        char* str_ptr = RSTRING_PTR(str);
-        long str_len = RSTRING_LEN(str);
-        if (trim) {
-            if (FIX2INT(x) == 0) return 0;
-            MEMCPY(ptr, str_ptr, char, str_len);
-            return str_len;
-        }
-        else {
-            memset(ptr, '0', len - str_len);
-            MEMCPY(ptr + len - str_len, str_ptr, char, str_len);
-            return len;
-        }
+	VALUE str = rb_fix2str(x, base);
+	char* str_ptr = RSTRING_PTR(str);
+	long str_len = RSTRING_LEN(str);
+	if (trim) {
+	    if (FIX2INT(x) == 0) return 0;
+	    MEMCPY(ptr, str_ptr, char, str_len);
+	    return str_len;
+	}
+	else {
+	    memset(ptr, '0', len - str_len);
+	    MEMCPY(ptr + len - str_len, str_ptr, char, str_len);
+	    return len;
+	}
     }
     if (BIGZEROP(x)) {
-        if (trim) return 0;
-        else {
-            memset(ptr, '0', len);
-            return len;
-        }
+	if (trim) return 0;
+	else {
+	    memset(ptr, '0', len);
+	    return len;
+	}
     }
 
     if (n1 <= KARATSUBA_DIGITS) {
-        return big2str_orig(x, base, ptr, len, hbase, trim);
+	return big2str_orig(x, base, ptr, len, hbase, trim);
     }
 
     b = power_cache_get_power(base, n1, &m1);
     bigdivmod(x, b, &q, &r);
     lh = big2str_karatsuba(q, base, ptr,      (len - m1)/2,
-                           len - m1, hbase, trim);
+			   len - m1, hbase, trim);
     ll = big2str_karatsuba(r, base, ptr + lh, m1/2,
-                           m1,       hbase, !lh && trim);
+			   m1,       hbase, !lh && trim);
 
     return lh + ll;
 }
@@ -921,14 +921,14 @@ rb_big2str0(VALUE x, int base, int trim)
     char* ptr;
 
     if (FIXNUM_P(x)) {
-        return rb_fix2str(x, base);
+	return rb_fix2str(x, base);
     }
     if (BIGZEROP(x)) {
-        return rb_usascii_str_new2("0");
+	return rb_usascii_str_new2("0");
     }
 
     if (base < 2 || 36 < base)
-        rb_raise(rb_eArgError, "invalid radix %d", base);
+	rb_raise(rb_eArgError, "invalid radix %d", base);
 
     n2 = big2str_find_n1(x, base);
     n1 = (n2 + 1) / 2;
@@ -944,11 +944,11 @@ rb_big2str0(VALUE x, int base, int trim)
     xx = rb_big_clone(x);
     RBIGNUM_SET_SIGN(xx, 1);
     if (n1 <= KARATSUBA_DIGITS) {
-        len = off + big2str_orig(xx, base, ptr + off, n2, hbase, trim);
+	len = off + big2str_orig(xx, base, ptr + off, n2, hbase, trim);
     }
     else {
-        len = off + big2str_karatsuba(xx, base, ptr + off, n1,
-                                      n2, hbase, trim);
+	len = off + big2str_karatsuba(xx, base, ptr + off, n1,
+				      n2, hbase, trim);
     }
 
     ptr[len] = '\0';
@@ -1972,8 +1972,8 @@ bigsqr(VALUE x)
     z = bigsqr(b);
     rb_big_realloc(z, (len = 2 * k + RBIGNUM_LEN(a2)) + 1);
     while (RBIGNUM_LEN(z) < 2 * k) {
-          BDIGITS(z)[RBIGNUM_LEN(z)] = 0;
-          RBIGNUM_SET_LEN(z, RBIGNUM_LEN(z)+1);
+	BDIGITS(z)[RBIGNUM_LEN(z)] = 0;
+	RBIGNUM_SET_LEN(z, RBIGNUM_LEN(z)+1);
     }
     MEMCPY(BDIGITS(z) + 2 * k, BDIGITS(a2), BDIGIT, RBIGNUM_LEN(a2));
     RBIGNUM_SET_LEN(z, len);
@@ -1993,7 +1993,7 @@ bigsqr(VALUE x)
 	}
 	if (num) {
 	    BDIGITS(z)[RBIGNUM_LEN(z)] = BIGLO(num);
-            RBIGNUM_SET_LEN(z, RBIGNUM_LEN(z)+1);
+	    RBIGNUM_SET_LEN(z, RBIGNUM_LEN(z)+1);
 	}
     }
     return bigtrunc(z);
