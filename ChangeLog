@@ -1,3 +1,7 @@
+Fri Mar  7 19:56:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: rdoc added.  [ruby-Patches-9762]
+
 Thu Mar  6 17:26:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): space flag is in effect for Inf/NaN too.

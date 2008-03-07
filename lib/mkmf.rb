@@ -66,6 +66,8 @@ $beos = /beos/ =~ RUBY_PLATFORM
 $solaris = /solaris/ =~ RUBY_PLATFORM
 $dest_prefix_pattern = (File::PATH_SEPARATOR == ';' ? /\A([[:alpha:]]:)?/ : /\A/)
 
+# :stopdoc:
+
 def config_string(key, config = CONFIG)
   s = config[key] and !s.empty? and block_given? ? yield(s) : s
 end
@@ -171,14 +173,18 @@ CPPOUTFILE = CONFIG['CPPOUTFILE']
 CONFTEST_C = "conftest.c".freeze
 
 class String
+  # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
   end
+
+  # Generates a string used as cpp macro name.
   def tr_cpp
     strip.upcase.tr_s("^A-Z0-9_", "_")
   end
 end
 class Array
+  # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
@@ -188,6 +194,8 @@ def rm_f(*files)
   FileUtils.rm_f(Dir[*files])
 end
 
+# Returns time stamp of the +target+ file if it exists and is newer
+# than or equal to all of +times+.
 def modified?(target, times)
   (t = File.mtime(target)) rescue return nil
   Array === times or times = [times]
@@ -210,6 +218,12 @@ def merge_libs(*libs)
   end
 end
 
+# This is a custom logging module. It generates an mkmf.log file when you
+# run your extconf.rb script. This can be useful for debugging unexpected
+# failures.
+#
+# This module and its associated methods are meant for internal use only.
+#
 module Logging
   @log = nil
   @logfile = 'mkmf.log'
@@ -538,6 +552,7 @@ ensure
   log_src(src)
 end
 
+# This is used internally by the have_macro? method.
 def macro_defined?(macro, src, opt = "", &b)
   src = src.sub(/[^\n]\z/, "\\&\n")
   try_compile(src + <<"SRC", opt, &b)
@@ -606,7 +621,7 @@ def install_rb(mfile, dest, srcdir = nil)
   install_files(mfile, [["lib/**/*.rb", dest, "lib"]], nil, srcdir)
 end
 
-def append_library(libs, lib)
+def append_library(libs, lib) # :no-doc:
   format(LIBARG, lib) + " " + libs
 end
 
@@ -617,6 +632,11 @@ def message(*s)
   end
 end
 
+# This emits a string to stdout that allows users to see the results of the
+# various have* and find* methods as they are tested.
+#
+# Internal use only.
+#
 def checking_for(m, fmt = nil)
   f = caller[0][/in `(.*)'$/, 1] and f << ": " #` for vim #'
   m = "checking #{/\Acheck/ =~ f ? '' : 'for '}#{m}... "
@@ -646,6 +666,8 @@ def checking_message(target, place = nil, opt = nil)
   end
 end
 
+# :startdoc:
+
 # Returns whether or not +macro+ is defined either in the common header
 # files or within any +headers+ you provide.
 #
@@ -665,7 +687,7 @@ end
 # If +headers+ are provided, it will include those header files as the
 # header files it looks in when searching for +func+.
 #
-# Real name of the library to be linked can be altered by
+# The real name of the library to be linked can be altered by
 # '--with-FOOlib' configuration option.
 #
 def have_library(lib, func = nil, headers = nil, &b)
@@ -945,6 +967,10 @@ def check_sizeof(type, headers = nil, &b)
   end
 end
 
+# :stopdoc:
+
+# Used internally by the what_type? method to determine if +type+ is a scalar
+# pointer.
 def scalar_ptr_type?(type, member = nil, headers = nil, &b)
   try_compile(<<"SRC", &b)   # pointer
 #{COMMON_HEADERS}
@@ -956,6 +982,8 @@ int t() {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
 
+# Used internally by the what_type? method to determine if +type+ is a scalar
+# pointer.
 def scalar_type?(type, member = nil, headers = nil, &b)
   try_compile(<<"SRC", &b)   # pointer
 #{COMMON_HEADERS}
@@ -999,6 +1027,10 @@ def what_type?(type, member = nil, headers = nil, &b)
   end
 end
 
+# This method is used internally by the find_executable method.
+#
+# Internal use only.
+#
 def find_executable0(bin, path = nil)
   ext = config_string('EXEEXT')
   if File.expand_path(bin) == bin
@@ -1019,11 +1051,24 @@ def find_executable0(bin, path = nil)
   nil
 end
 
+# :startdoc:
+
+# Searches for the executable +bin+ on +path+. The default path is your
+# PATH environment variable. If that isn't defined, it will resort to
+# searching /usr/local/bin, /usr/ucb, /usr/bin and /bin.
+#
+# If found, it will return the full path, including the executable name,
+# of where it was found.
+#
+# Note that this method does not actually affect the generated Makefile.
+#
 def find_executable(bin, path = nil)
   checking_for checking_message(bin, path) do
     find_executable0(bin, path)
   end
 end
+
+# :stopdoc:
 
 def arg_config(config, default=nil, &block)
   $arg_config << [config, default]
@@ -1036,6 +1081,20 @@ def arg_config(config, default=nil, &block)
   $configure_args.fetch(config.tr('_', '-'), *defaults, &block)
 end
 
+# :startdoc:
+
+# Tests for the presence of a --with-<tt>config</tt> or --without-<tt>config</tt>
+# option. Returns true if the with option is given, false if the without
+# option is given, and the default value otherwise.
+#
+# This can be useful for adding custom definitions, such as debug information.
+#
+# Example:
+#
+#    if with_config("debug")
+#       $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
+#    end
+#
 def with_config(config, default=nil)
   config = config.sub(/^--with[-_]/, '')
   val = arg_config("--with-"+config) do
@@ -1057,6 +1116,18 @@ def with_config(config, default=nil)
   end
 end
 
+# Tests for the presence of an --enable-<tt>config</tt> or
+# --disable-<tt>config</tt> option. Returns true if the enable option is given,
+# false if the disable option is given, and the default value otherwise.
+#
+# This can be useful for adding custom definitions, such as debug information.
+#
+# Example:
+#
+#    if enable_config("debug")
+#       $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
+#    end
+#
 def enable_config(config, default=nil)
   if arg_config("--enable-"+config)
     true
@@ -1069,6 +1140,32 @@ def enable_config(config, default=nil)
   end
 end
 
+# Generates a header file consisting of the various macro definitions generated
+# by other methods such as have_func and have_header. These are then wrapped in
+# a custom #ifndef based on the +header+ file name, which defaults to
+# 'extconf.h'.
+#
+# For example:
+# 
+#    # extconf.rb
+#    require 'mkmf'
+#    have_func('realpath')
+#    have_header('sys/utime.h')
+#    create_header
+#    create_makefile('foo')
+#
+# The above script would generate the following extconf.h file:
+#
+#    #ifndef EXTCONF_H
+#    #define EXTCONF_H
+#    #define HAVE_REALPATH 1
+#    #define HAVE_SYS_UTIME_H 1
+#    #endif
+#
+# Given that the create_header method generates a file based on definitions
+# set earlier in your extconf.rb file, you will probably want to make this
+# one of the last methods you call in your script.
+#
 def create_header(header = "extconf.h")
   message "creating %s\n", header
     sym = header.tr("a-z./\055", "A-Z___")
@@ -1136,6 +1233,10 @@ def dir_config(target, idefault=nil, ldefault=nil)
   [idir, ldir]
 end
 
+# :stopdoc:
+
+# Handles meta information about installed libraries. Uses your platform's
+# pkg-config program if it has one.
 def pkg_config(pkg)
   if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
     # iff package specific config command is given
@@ -1173,6 +1274,10 @@ def with_destdir(dir)
   /\A\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
 end
 
+# Converts forward slashes to backslashes. Aimed at MS Windows.
+#
+# Internal use only.
+#
 def winsep(s)
   s.tr('/', '\\')
 end
@@ -1283,6 +1388,7 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
   end
   mk
 end
+# :startdoc:
 
 def dummy_makefile(srcdir)
   configuration(srcdir) << <<RULES << CLEANINGS
@@ -1397,6 +1503,10 @@ end
 # It is recommended that you use this approach to generate your makefiles,
 # instead of copying files around manually, because some third party
 # libraries may depend on the +target_prefix+ being set properly.
+#
+# The +srcprefix+ argument can be used to override the default source
+# directory, i.e. the current directory . It is included as part of the VPATH
+# and added to the list of INCFLAGS.
 #
 def create_makefile(target, srcprefix = nil)
   $target = target
@@ -1629,6 +1739,8 @@ ensure
   mfile.close if mfile
 end
 
+# :stopdoc:
+
 def init_mkmf(config = CONFIG)
   $makefile_created = false
   $arg_config = []
@@ -1682,12 +1794,19 @@ details.  You may need configuration options.
 Provided configuration options:
 MESSAGE
 
+# Returns whether or not the Makefile was successfully generated. If not,
+# the script will abort with an error message.
+#
+# Internal use only.
+#
 def mkmf_failed(path)
   unless $makefile_created or File.exist?("Makefile")
     opts = $arg_config.collect {|t, n| "\t#{t}#{n ? "=#{n}" : ""}\n"}
     abort "*** #{path} failed ***\n" + FailedMessage + opts.join
   end
 end
+
+# :startdoc:
 
 init_mkmf
 
