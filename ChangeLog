@@ -1,3 +1,7 @@
+Fri Mar  7 19:56:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: rdoc added.  [ruby-Patches-9762]
+
 Thu Mar  6 15:10:21 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc32,win32}/Makefile.sub (RUNRUBY): use $(PROGRAM) instead of
