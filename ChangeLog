@@ -1,3 +1,8 @@
+Fri Mar  7 21:12:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bignum.c (power_cache_init, power_cache_get_power0, Init_Bignum):
+	  delayed initializing power cache per base.
+
 Fri Mar  7 20:30:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cont.c (cont_restore_0): fixed typo.  [ruby-core:15821]
