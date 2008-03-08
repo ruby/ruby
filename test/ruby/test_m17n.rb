@@ -819,6 +819,8 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("\u{3044}", s[27])
     assert_equal("\u{3046}", s[28])
     assert_equal("\u{3048}", s[29])
+    s = "abcdefghijklmnopqrstuvw\u{3042 3044 3046 3048 304A}"
+    assert_equal("\u{3044}", s[24])
   end
 
   def test_str_aref_len

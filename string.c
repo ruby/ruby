@@ -118,22 +118,22 @@ VALUE rb_fs;
 static inline const char *
 search_nonascii(const char *p, const char *e)
 {
-#if ULONG_MAX == 18446744073709551615UL
-# define NONASCII_MASK 0x8080808080808080UL
-#elif ULONG_MAX == 4294967295UL
+#if SIZEOF_VALUE == 8
+# define NONASCII_MASK 0x8080808080808080LL
+#elif SIZEOF_VALUE == 4
 # define NONASCII_MASK 0x80808080UL
 #endif
 #ifdef NONASCII_MASK
-    if (sizeof(long) * 2 < e - p) {
-        const unsigned long *s, *t;
-        const VALUE lowbits = sizeof(unsigned long) - 1;
-        s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
+    if (sizeof(VALUE) * 2 < e - p) {
+        const VALUE *s, *t;
+        const VALUE lowbits = sizeof(VALUE) - 1;
+        s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
         while (p < (const char *)s) {
             if (!ISASCII(*p))
                 return p;
             p++;
         }
-        t = (const unsigned long*)(~lowbits & (VALUE)e);
+        t = (const VALUE*)(~lowbits & (VALUE)e);
         while (s < t) {
             if (*s & NONASCII_MASK) {
                 t = s;
@@ -757,19 +757,19 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 
 #ifdef NONASCII_MASK
 #define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
-static inline const long
-count_utf8_lead_bytes_with_ulong(const unsigned long *s)
+static inline const VALUE
+count_utf8_lead_bytes_with_word(const VALUE *s)
 {
-    unsigned long d = *s;
+    VALUE d = *s;
     d |= ~(d>>1);
     d >>= 6;
     d &= NONASCII_MASK >> 7;
     d += (d>>8);
     d += (d>>16);
-#if NONASCII_MASK == 0x8080808080808080UL
+#if SIZEOF_VALUE == 8
     d += (d>>32);
 #endif
-    return (long)(d&0xF);
+    return (d&0xF);
 }
 #endif
 
@@ -786,18 +786,18 @@ str_strlen(VALUE str, rb_encoding *enc)
 #ifdef NONASCII_MASK
     if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
         enc == rb_utf8_encoding()) {
-        long len = 0;
-	if (sizeof(long) * 2 < e - p) {
-	    const unsigned long *s, *t;
-	    const VALUE lowbits = sizeof(unsigned long) - 1;
-	    s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
-	    t = (const unsigned long*)(~lowbits & (VALUE)e);
+        VALUE len = 0;
+	if (sizeof(VALUE) * 2 < e - p) {
+	    const VALUE *s, *t;
+	    const VALUE lowbits = sizeof(VALUE) - 1;
+	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
+	    t = (const VALUE*)(~lowbits & (VALUE)e);
 	    while (p < (const char *)s) {
 		if (is_utf8_lead_byte(*p)) len++;
 		p++;
 	    }
 	    while (s < t) {
-		len += count_utf8_lead_bytes_with_ulong(s);
+		len += count_utf8_lead_bytes_with_word(s);
 		s++;
 	    }
 	    p = (const char *)s;
@@ -806,7 +806,7 @@ str_strlen(VALUE str, rb_encoding *enc)
 	    if (is_utf8_lead_byte(*p)) len++;
 	    p++;
 	}
-	return len;
+	return (long)len;
     }
 #endif
     n = rb_enc_strlen_cr(p, e, enc, &cr);
@@ -1168,29 +1168,27 @@ str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singleby
 static char *
 str_utf8_nth(const char *p, const char *e, int nth)
 {
-    if (sizeof(long) * 2 < nth) {
-	const unsigned long *s, *t;
-	const VALUE lowbits = sizeof(unsigned long) - 1;
-	s = (const unsigned long*)(~lowbits & ((VALUE)p + lowbits));
-	t = (const unsigned long*)(~lowbits & (VALUE)e);
+    if (sizeof(VALUE) * 2 < nth) {
+	const VALUE *s, *t;
+	const VALUE lowbits = sizeof(VALUE) - 1;
+	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
+	t = (const VALUE*)(~lowbits & (VALUE)e);
 	while (p < (const char *)s) {
 	    if (is_utf8_lead_byte(*p)) nth--;
 	    p++;
 	}
 	do {
-	    nth -= count_utf8_lead_bytes_with_ulong(s);
+	    nth -= count_utf8_lead_bytes_with_word(s);
 	    s++;
-	} while (s < t && sizeof(long) <= nth);
+	} while (s < t && sizeof(VALUE) <= nth);
 	p = (char *)s;
     }
-    if (0 < nth) {
-	while (p < e) {
-	    if (is_utf8_lead_byte(*p)) {
-		nth--;
-		if (nth < 0) break;
-	    }
-	    p++;
+    while (p < e) {
+	if (is_utf8_lead_byte(*p)) {
+	    if (nth == 0) break;
+	    nth--;
 	}
+	p++;
     }
     return (char *)p;
 }

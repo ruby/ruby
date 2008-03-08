@@ -1,3 +1,14 @@
+Sat Mar  8 06:53:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (search_nonascii): Use VALUE instead of unsigned long
+	  because VALUE can be the fastest unsigned integer type.
+	  On LLP64 unsigned long isn't the fastest.
+	* string.c (str_strlen): ditto.
+	* string.c (str_utf8_nth): ditto.
+	* string.c (count_utf8_lead_bytes_with_ulong): ditto.
+
+	* string.c (count_utf8_lead_bytes_with_word): renamed.
+
 Fri Mar  7 21:27:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bignum.c: fix indent.
