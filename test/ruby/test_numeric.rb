@@ -73,6 +73,8 @@ class TestNumeric < Test::Unit::TestCase
     assert_equal(:mod, DummyNumeric.new.modulo(0))
     assert_equal([42, :mod], DummyNumeric.new.divmod(0))
 
+    assert_kind_of(Integer, 11.divmod(3.5).first, '[ruby-dev:34006]')
+
   ensure
     DummyNumeric.class_eval do
       remove_method :/, :%
