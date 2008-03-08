@@ -1,3 +1,7 @@
+Sat Mar  8 18:50:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (isdirsep): backslash is valid path separator on cygwin too.
+
 Sat Mar  8 06:53:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (search_nonascii): Use VALUE instead of unsigned long
