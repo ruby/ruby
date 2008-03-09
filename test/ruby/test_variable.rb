@@ -54,4 +54,9 @@ class TestVariable < Test::Unit::TestCase
     assert_equal("Zeus", atlas.ruler3)
     assert_equal("Cronus", atlas.ruler4)
   end
+
+  def test_local_variables
+    lvar = 1
+    assert_instance_of(Symbol, local_variables[0], "[ruby-dev:34008]")
+  end
 end
