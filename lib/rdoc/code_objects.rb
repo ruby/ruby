@@ -410,8 +410,8 @@ module RDoc
       end
       if result && method
         if !result.respond_to?(:find_local_symbol)
-          p result.name
-          p method
+          #p result.name
+          #p method
           fail
         end
         result = result.find_local_symbol(method)

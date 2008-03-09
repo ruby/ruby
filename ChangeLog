@@ -1,3 +1,11 @@
+Sun Mar  9 09:52:00 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/code_objects.rb: Remove debugging Kernel#p.  Patch by
+	Lincoln Stoll <lstoll at lstoll.net>
+	* lib/rdoc/generator/html.rb: Fully qualify AllReferences.  Patch by
+	Lincoln Stoll <lstoll at lstoll.net>
+	* lib/rdoc/ri/writer.rb: Fix 1.8 backwards compatibility.
+
 Sat Mar  8 18:50:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (isdirsep): backslash is valid path separator on cygwin too.

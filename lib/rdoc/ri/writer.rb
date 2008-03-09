@@ -12,7 +12,11 @@ class RDoc::RI::Writer
   # form (where punctuation is replaced by %xx)
 
   def self.internal_to_external(name)
-    name.gsub(/\W/) { "%%%02x" % $&[0].ord }
+    if ''.respond_to? :ord then
+      name.gsub(/\W/) { "%%%02x" % $&[0].ord }
+    else
+      name.gsub(/\W/) { "%%%02x" % $&[0] }
+    end
   end
 
   ##

@@ -247,7 +247,7 @@ class RDoc::Generator::HTML
     @main_page = @options.main_page
     @main_page_ref = nil
     if @main_page
-      @main_page_ref = AllReferences[@main_page]
+      @main_page_ref = RDoc::Generator::AllReferences[@main_page]
       if @main_page_ref then
         @main_page_path = @main_page_ref.path
       else
