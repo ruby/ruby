@@ -1653,14 +1653,14 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *
  *     rbfiles = File.join("**", "*.rb")
  *     Dir.glob(rbfiles)                   #=> ["main.rb",
- *                                              "lib/song.rb",
- *                                              "lib/song/karaoke.rb"]
+ *                                         #    "lib/song.rb",
+ *                                         #    "lib/song/karaoke.rb"]
  *     libdirs = File.join("**", "lib")
  *     Dir.glob(libdirs)                   #=> ["lib"]
  *
  *     librbfiles = File.join("**", "lib", "**", "*.rb")
  *     Dir.glob(librbfiles)                #=> ["lib/song.rb",
- *                                              "lib/song/karaoke.rb"]
+ *                                         #    "lib/song/karaoke.rb"]
  *
  *     librbfiles = File.join("**", "lib", "*.rb")
  *     Dir.glob(librbfiles)                #=> ["lib/song.rb"]
@@ -1788,31 +1788,31 @@ dir_entries(VALUE io, VALUE dirname)
  *  parameters. The same glob pattern and flags are used by
  *  <code>Dir::glob</code>.
  *
- *     File.fnmatch('cat',       'cat')        #=> true  : match entire string
- *     File.fnmatch('cat',       'category')   #=> false : only match partial string
- *     File.fnmatch('c{at,ub}s', 'cats')       #=> false : { } isn't supported
+ *     File.fnmatch('cat',       'cat')        #=> true  # match entire string
+ *     File.fnmatch('cat',       'category')   #=> false # only match partial string
+ *     File.fnmatch('c{at,ub}s', 'cats')       #=> false # { } isn't supported
  *
- *     File.fnmatch('c?t',     'cat')          #=> true  : '?' match only 1 character
- *     File.fnmatch('c??t',    'cat')          #=> false : ditto
- *     File.fnmatch('c*',      'cats')         #=> true  : '*' match 0 or more characters
- *     File.fnmatch('c*t',     'c/a/b/t')      #=> true  : ditto
- *     File.fnmatch('ca[a-z]', 'cat')          #=> true  : inclusive bracket expression
- *     File.fnmatch('ca[^t]',  'cat')          #=> false : exclusive bracket expression ('^' or '!')
+ *     File.fnmatch('c?t',     'cat')          #=> true  # '?' match only 1 character
+ *     File.fnmatch('c??t',    'cat')          #=> false # ditto
+ *     File.fnmatch('c*',      'cats')         #=> true  # '*' match 0 or more characters
+ *     File.fnmatch('c*t',     'c/a/b/t')      #=> true  # ditto
+ *     File.fnmatch('ca[a-z]', 'cat')          #=> true  # inclusive bracket expression
+ *     File.fnmatch('ca[^t]',  'cat')          #=> false # exclusive bracket expression ('^' or '!')
  *
- *     File.fnmatch('cat', 'CAT')                     #=> false : case sensitive
- *     File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD) #=> true  : case insensitive
+ *     File.fnmatch('cat', 'CAT')                     #=> false # case sensitive
+ *     File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD) #=> true  # case insensitive
  *
- *     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false : wildcard doesn't match '/' on FNM_PATHNAME
- *     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false : ditto
- *     File.fnmatch('[/]', '/', File::FNM_PATHNAME)  #=> false : ditto
+ *     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false # wildcard doesn't match '/' on FNM_PATHNAME
+ *     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false # ditto
+ *     File.fnmatch('[/]', '/', File::FNM_PATHNAME)  #=> false # ditto
  *
- *     File.fnmatch('\?',   '?')                       #=> true  : escaped wildcard becomes ordinary
- *     File.fnmatch('\a',   'a')                       #=> true  : escaped ordinary remains ordinary
- *     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  : FNM_NOESACPE makes '\' ordinary
- *     File.fnmatch('[\?]', '?')                       #=> true  : can escape inside bracket expression
+ *     File.fnmatch('\?',   '?')                       #=> true  # escaped wildcard becomes ordinary
+ *     File.fnmatch('\a',   'a')                       #=> true  # escaped ordinary remains ordinary
+ *     File.fnmatch('\a',   '\a', File::FNM_NOESCAPE)  #=> true  # FNM_NOESACPE makes '\' ordinary
+ *     File.fnmatch('[\?]', '?')                       #=> true  # can escape inside bracket expression
  *
- *     File.fnmatch('*',   '.profile')                      #=> false : wildcard doesn't match leading
- *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true    period by default.
+ *     File.fnmatch('*',   '.profile')                      #=> false # wildcard doesn't match leading
+ *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true  # period by default.
  *     File.fnmatch('.*',  '.profile')                      #=> true
  *
  *     rbfiles = '**' '/' '*.rb' # you don't have to do like this. just write in single string.

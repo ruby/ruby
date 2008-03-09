@@ -707,7 +707,7 @@ gvar_i(ID key, struct global_entry *entry, VALUE ary)
  *  
  *  Returns an array of the names of global variables.
  *     
- *     global_variables.grep /std/   #=> ["$stderr", "$stdout", "$stdin"]
+ *     global_variables.grep /std/   #=> [:$stdin, :$stdout, :$stderr]
  */
 
 VALUE
@@ -1163,7 +1163,7 @@ ivar_i(ID key, VALUE val, VALUE ary)
  *         @iv = 3
  *       end
  *     end
- *     Fred.new.instance_variables   #=> ["@iv"]
+ *     Fred.new.instance_variables   #=> [:@iv]
  */
 
 VALUE
@@ -1868,8 +1868,8 @@ cv_i(ID key, VALUE value, VALUE ary)
  *     class Two < One
  *       @@var2 = 2
  *     end
- *     One.class_variables   #=> ["@@var1"]
- *     Two.class_variables   #=> ["@@var2"]
+ *     One.class_variables   #=> [:@@var1]
+ *     Two.class_variables   #=> [:@@var2]
  */
 
 VALUE

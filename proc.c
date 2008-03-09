@@ -709,23 +709,6 @@ proc_to_proc(VALUE self)
     return self;
 }
 
-/*
- *  call-seq:
- *     prc.binding    => binding
- *  
- *  Returns the binding associated with <i>prc</i>. Note that
- *  <code>Kernel#eval</code> accepts either a <code>Proc</code> or a
- *  <code>Binding</code> object as its second parameter.
- *     
- *     def fred(param)
- *       proc {}
- *     end
- *     
- *     b = fred(99)
- *     eval("param", b.binding)   #=> 99
- *     eval("param", b)           #=> 99
- */
-
 static void
 bm_mark(struct METHOD *data)
 {
@@ -1587,7 +1570,6 @@ localjump_reason(VALUE exc)
  *     
  *     b = fred(99)
  *     eval("param", b.binding)   #=> 99
- *     eval("param", b)           #=> 99
  */
 static VALUE
 proc_binding(VALUE self)

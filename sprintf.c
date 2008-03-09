@@ -325,7 +325,7 @@ sign_bits(int base, const char *p)
  *   # significant digits                          <------->
  *   sprintf("%20.8g", 1234.56789) #=> "           1234.5679"
  *
- *                                             <------->
+ *   #                                         <------->
  *   sprintf("%20.8g", 123456789)  #=> "       1.2345679e+08"
  *
  *   # precision for `s' is

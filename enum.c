@@ -60,9 +60,9 @@ grep_iter_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
  *     
  *     (1..100).grep 38..44   #=> [38, 39, 40, 41, 42, 43, 44]
  *     c = IO.constants
- *     c.grep(/SEEK/)         #=> ["SEEK_END", "SEEK_SET", "SEEK_CUR"]
+ *     c.grep(/SEEK/)         #=> [:SEEK_SET, :SEEK_CUR, :SEEK_END]
  *     res = c.grep(/SEEK/) {|v| IO.const_get(v) }
- *     res                    #=> [2, 0, 1]
+ *     res                    #=> [0, 1, 2]
  *     
  */
 
@@ -646,7 +646,7 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *  values in <i>enum</i> through the given block.
  *     
  *     %w{ apple pear fig }.sort_by {|word| word.length}
-                     #=> ["fig", "pear", "apple"]
+ *                   #=> ["fig", "pear", "apple"]
  *     
  *  The current implementation of <code>sort_by</code> generates an
  *  array of tuples containing the original collection element and the
@@ -1294,8 +1294,8 @@ member_i(VALUE item, VALUE *memo)
  *  Returns <code>true</code> if any member of <i>enum</i> equals
  *  <i>obj</i>. Equality is tested using <code>==</code>.
  *     
- *     IO.constants.include? "SEEK_SET"          #=> true
- *     IO.constants.include? "SEEK_NO_FURTHER"   #=> false
+ *     IO.constants.include? :SEEK_SET          #=> true
+ *     IO.constants.include? :SEEK_NO_FURTHER   #=> false
  *     
  */
 

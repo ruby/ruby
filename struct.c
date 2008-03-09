@@ -82,7 +82,7 @@ rb_struct_s_members_m(VALUE klass)
  *     
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.members   #=> ["name", "address", "zip"]
+ *     joe.members   #=> [:name, :address, :zip]
  */
 
 static VALUE
@@ -306,11 +306,11 @@ rb_struct_define(const char *name, ...)
  *     
  *     # Create a structure with a name in Struct
  *     Struct.new("Customer", :name, :address)    #=> Struct::Customer
- *     Struct::Customer.new("Dave", "123 Main")   #=> #<Struct::Customer name="Dave", address="123 Main">
+ *     Struct::Customer.new("Dave", "123 Main")   #=> #<struct Struct::Customer name="Dave", address="123 Main">
  *     
  *     # Create a structure named by its constant
  *     Customer = Struct.new(:name, :address)     #=> Customer
- *     Customer.new("Dave", "123 Main")           #=> #<Customer name="Dave", address="123 Main">
+ *     Customer.new("Dave", "123 Main")           #=> #<struct Customer name="Dave", address="123 Main">
  */
 
 static VALUE

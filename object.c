@@ -364,7 +364,7 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *  generate the string.
  *     
  *     [ 1, 2, 3..4, 'five' ].inspect   #=> "[1, 2, 3..4, \"five\"]"
- *     Time.new.inspect                 #=> "Wed Apr 09 08:54:39 CDT 2003"
+ *     Time.new.inspect                 #=> "2008-03-08 19:43:39 +0900"
  */
 
 
@@ -1074,8 +1074,8 @@ rb_obj_not_match(VALUE obj1, VALUE obj2)
  *       end
  *     end
  *     Mod.class              #=> Module
- *     Mod.constants          #=> ["E", "PI", "CONST"]
- *     Mod.instance_methods   #=> ["meth"]
+ *     Mod.constants          #=> [:CONST, :PI, :E]
+ *     Mod.instance_methods   #=> [:meth]
  *     
  */
 
@@ -1422,9 +1422,10 @@ rb_class_new_instance(int argc, VALUE *argv, VALUE klass)
  *  
  *  Returns the superclass of <i>class</i>, or <code>nil</code>.
  *     
- *     File.superclass     #=> IO
- *     IO.superclass       #=> Object
- *     Object.superclass   #=> nil
+ *     File.superclass          #=> IO
+ *     IO.superclass            #=> Object
+ *     Object.superclass        #=> BasicObject
+ *     BasicObject.superclass   #=> nil
  *     
  */
 
@@ -1509,7 +1510,7 @@ rb_mod_attr_writer(int argc, VALUE *argv, VALUE klass)
  *     module Mod
  *       attr_accessor(:one, :two)
  *     end
- *     Mod.instance_methods.sort   #=> ["one", "one=", "two", "two="]
+ *     Mod.instance_methods.sort   #=> [:one, :one=, :two, :two=]
  */
 
 static VALUE
@@ -1625,8 +1626,8 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
  *     end
  *     k = Klass.new
  *     k.methods[0..9]    #=> ["kMethod", "freeze", "nil?", "is_a?", 
- *                             "class", "instance_variable_set",
- *                              "methods", "extend", "__send__", "instance_eval"]
+ *                        #    "class", "instance_variable_set",
+ *                        #    "methods", "extend", "__send__", "instance_eval"]
  *     k.methods.length   #=> 42
  */
 
@@ -2022,7 +2023,7 @@ rb_Integer(VALUE val)
  *     
  *     Integer(123.999)    #=> 123
  *     Integer("0x1a")     #=> 26
- *     Integer(Time.new)   #=> 1049896590
+ *     Integer(Time.new)   #=> 1204973019
  */
 
 static VALUE

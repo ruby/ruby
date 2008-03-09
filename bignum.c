@@ -2001,7 +2001,7 @@ bigsqr(VALUE x)
 
 /*
  *  call-seq:
- *     big ** exponent   #=> numeric
+ *     big ** exponent   => numeric
  *
  *  Raises _big_ to the _exponent_ power (which may be an integer, float,
  *  or anything that will coerce to a number). The result may be

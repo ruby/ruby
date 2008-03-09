@@ -1830,7 +1830,7 @@ time_yday(VALUE time)
  *  Returns <code>true</code> if <i>time</i> occurs during Daylight
  *  Saving Time in its time zone.
  *     
- *   CST6CDT:
+ *   # CST6CDT:
  *     Time.local(2000, 1, 1).zone    #=> "CST"
  *     Time.local(2000, 1, 1).isdst   #=> false
  *     Time.local(2000, 1, 1).dst?    #=> false
@@ -1838,7 +1838,7 @@ time_yday(VALUE time)
  *     Time.local(2000, 7, 1).isdst   #=> true
  *     Time.local(2000, 7, 1).dst?    #=> true
  *
- *   Asia/Tokyo:
+ *   # Asia/Tokyo:
  *     Time.local(2000, 1, 1).zone    #=> "JST"
  *     Time.local(2000, 1, 1).isdst   #=> false
  *     Time.local(2000, 1, 1).dst?    #=> false

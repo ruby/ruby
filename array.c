@@ -1033,7 +1033,7 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
  *     a[0..2] = "A"               #=> ["A", "4"]
  *     a[-1]   = "Z"               #=> ["A", "Z"]
  *     a[1..-1] = nil              #=> ["A", nil]
- *     a[1..-1] = []              #=> ["A"]
+ *     a[1..-1] = []               #=> ["A"]
  */
 
 static VALUE
@@ -3014,13 +3014,14 @@ permute0(long n, long r, long *p, long index, int *used, VALUE values)
  * When invoked without a block, return an enumerator object instead.
  * 
  * Examples:
+ *
  *     a = [1, 2, 3]
  *     a.permutation.to_a     #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
  *     a.permutation(1).to_a  #=> [[1],[2],[3]]
  *     a.permutation(2).to_a  #=> [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]]
  *     a.permutation(3).to_a  #=> [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
- *     a.permutation(0).to_a  #=> [[]]: one permutation of length 0
- *     a.permutation(4).to_a  #=> []  : no permutations of length 4
+ *     a.permutation(0).to_a  #=> [[]] # one permutation of length 0
+ *     a.permutation(4).to_a  #=> []   # no permutations of length 4
  */
 
 static VALUE
@@ -3094,13 +3095,14 @@ combi_len(long n, long k)
  * When invoked without a block, returns an enumerator object instead.
  *     
  * Examples:
+ *
  *     a = [1, 2, 3, 4]
  *     a.combination(1).to_a  #=> [[1],[2],[3],[4]]
  *     a.combination(2).to_a  #=> [[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]]
  *     a.combination(3).to_a  #=> [[1,2,3],[1,2,4],[1,3,4],[2,3,4]]
  *     a.combination(4).to_a  #=> [[1,2,3,4]]
- *     a.combination(0).to_a  #=> [[]]: one combination of length 0
- *     a.combination(5).to_a  #=> []  : no combinations of length 5
+ *     a.combination(0).to_a  #=> [[]] # one combination of length 0
+ *     a.combination(5).to_a  #=> []   # no combinations of length 5
  *     
  */
 

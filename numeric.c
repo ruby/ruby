@@ -312,6 +312,7 @@ num_div(VALUE x, VALUE y)
  *
  *
  *  Examples
+ *
  *     11.divmod(3)         #=> [3, 2]
  *     11.divmod(-3)        #=> [-4, -1]
  *     11.divmod(3.5)       #=> [3, 0.5]

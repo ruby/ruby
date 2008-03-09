@@ -2077,9 +2077,9 @@ rb_io_lineno(VALUE io)
  *     $.                         #=> 1
  *     f.lineno = 1000
  *     f.lineno                   #=> 1000
- *     $. # lineno of last read   #=> 1
+ *     $.                         #=> 1         # lineno of last read
  *     f.gets                     #=> "This is line two\n"
- *     $. # lineno of last read   #=> 1001
+ *     $.                         #=> 1001      # lineno of last read
  */
 
 static VALUE

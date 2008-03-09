@@ -740,11 +740,11 @@ waitall_each(rb_pid_t pid, int status, VALUE ary)
  *     $?.exitstatus                    #=> 99
  *
  *     pid = fork { sleep 3 }           #=> 27440
- *     Time.now                         #=> Wed Apr 09 08:57:09 CDT 2003
+ *     Time.now                         #=> 2008-03-08 19:56:16 +0900
  *     waitpid(pid, Process::WNOHANG)   #=> nil
- *     Time.now                         #=> Wed Apr 09 08:57:09 CDT 2003
+ *     Time.now                         #=> 2008-03-08 19:56:16 +0900
  *     waitpid(pid, 0)                  #=> 27440
- *     Time.now                         #=> Wed Apr 09 08:57:12 CDT 2003
+ *     Time.now                         #=> 2008-03-08 19:56:19 +0900
  */
 
 static VALUE
@@ -1834,11 +1834,11 @@ rb_f_spawn(int argc, VALUE *argv)
  *  thread calls <code>Thread#run</code>. Zero arguments causes +sleep+ to sleep
  *  forever.
  *
- *     Time.new    #=> Wed Apr 09 08:56:32 CDT 2003
+ *     Time.new    #=> 2008-03-08 19:56:19 +0900
  *     sleep 1.2   #=> 1
- *     Time.new    #=> Wed Apr 09 08:56:33 CDT 2003
+ *     Time.new    #=> 2008-03-08 19:56:20 +0900
  *     sleep 1.9   #=> 2
- *     Time.new    #=> Wed Apr 09 08:56:35 CDT 2003
+ *     Time.new    #=> 2008-03-08 19:56:22 +0900
  */
 
 static VALUE

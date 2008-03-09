@@ -946,8 +946,8 @@ rb_str_times(VALUE str, VALUE times)
  *  the values to be substituted. See <code>Kernel::sprintf</code> for details
  *  of the format string.
  *     
- *     "%05d" % 123                       #=> "00123"
- *     "%-5s: %08x" % [ "ID", self.id ]   #=> "ID   : 200e14d6"
+ *     "%05d" % 123                              #=> "00123"
+ *     "%-5s: %08x" % [ "ID", self.object_id ]   #=> "ID   : 200e14d6"
  */
 
 static VALUE
@@ -2097,6 +2097,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
  *     "hello".index('e')             #=> 1
  *     "hello".index('lo')            #=> 3
  *     "hello".index('a')             #=> nil
+ *     "hello".index(?e)              #=> 1
  *     "hello".index(101)             #=> 1
  *     "hello".index(/[aeiou]/, -3)   #=> 4
  */
@@ -2206,6 +2207,7 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
  *     "hello".rindex('e')             #=> 1
  *     "hello".rindex('l')             #=> 3
  *     "hello".rindex('a')             #=> nil
+ *     "hello".rindex(?e)              #=> 1
  *     "hello".rindex(101)             #=> 1
  *     "hello".rindex(/[aeiou]/, -2)   #=> 1
  */
@@ -2276,7 +2278,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *  <code>=~</code> in <code>Object</code> returns <code>false</code>.
  *     
  *     "cat o' 9 tails" =~ /\d/   #=> 7
- *     "cat o' 9 tails" =~ 9      #=> false
+ *     "cat o' 9 tails" =~ 9      #=> nil
  */
 
 static VALUE
@@ -2307,7 +2309,7 @@ static VALUE get_pat(VALUE, int);
  *  parameter is present, it specifies the position in the string to begin the
  *  search.
  *     
- *     'hello'.match('(.)\1')      #=> #<MatchData "ll" "l">
+ *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
  *     'hello'.match('(.)\1')[0]   #=> "ll"
  *     'hello'.match(/(.)\1/)[0]   #=> "ll"
  *     'hello'.match('xx')         #=> nil
@@ -3000,7 +3002,7 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
  *  deleted.
  *     
  *     string = "this is a string"
- *     string.slice!(2)        #=> 105
+ *     string.slice!(2)        #=> "i"
  *     string.slice!(3..6)     #=> " is "
  *     string.slice!(/s.*t/)   #=> "sa st"
  *     string.slice!("r")      #=> "r"
@@ -3185,7 +3187,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
  *     
  *     "hello".sub(/[aeiou]/, '*')                  #=> "h*llo"
  *     "hello".sub(/([aeiou])/, '<\1>')             #=> "h<e>llo"
- *     "hello".sub(/./) {|s| s[0].to_s + ' ' }      #=> "104 ello"
+ *     "hello".sub(/./) {|s| s[0].ord.to_s + ' ' }  #=> "104 ello"
  *     "hello".sub(/(?<foo>[aeiou])/, '*\k<foo>*')  #=> "h*e*llo"
  */
 
@@ -3352,7 +3354,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     
  *     "hello".gsub(/[aeiou]/, '*')                  #=> "h*ll*"
  *     "hello".gsub(/([aeiou])/, '<\1>')             #=> "h<e>ll<o>"
- *     "hello".gsub(/./) {|s| s[0].to_s + ' '}       #=> "104 101 108 108 111 "
+ *     "hello".gsub(/./) {|s| s[0].ord.to_s + ' '}   #=> "104 101 108 108 111 "
  *     "hello".gsub(/(?<foo>[aeiou])/, '{\k<foo>}')  #=> "h{e}ll{o}"
  */
 
@@ -3699,7 +3701,7 @@ prefix_escape(VALUE str, int c, rb_encoding *enc)
  *
  *    str = "hello"
  *    str[3] = "\b"
- *    str.inspect       #=> "\"hel\bo\""
+ *    str.inspect       #=> "\"hel\\bo\""
  */
 
 VALUE
@@ -6230,9 +6232,9 @@ rb_str_is_ascii_only_p(VALUE str)
  *     def Fred()
  *     end
  *     $f3 = :Fred
- *     $f1.id   #=> 2514190
- *     $f2.id   #=> 2514190
- *     $f3.id   #=> 2514190
+ *     $f1.object_id   #=> 2514190
+ *     $f2.object_id   #=> 2514190
+ *     $f3.object_id   #=> 2514190
  *     
  */
 

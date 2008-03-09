@@ -1612,9 +1612,9 @@ marshal_load(int argc, VALUE *argv)
  * first two bytes of marshaled data.
  *
  *     str = Marshal.dump("thing")
- *     RUBY_VERSION   #=> "1.8.0"
- *     str[0]         #=> 4
- *     str[1]         #=> 8
+ *     RUBY_VERSION   #=> "1.9.0"
+ *     str[0].ord     #=> 4
+ *     str[1].ord     #=> 8
  *
  * Some objects cannot be dumped: if the objects to be dumped include
  * bindings, procedure or method objects, instances of class IO, or

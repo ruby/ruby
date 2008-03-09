@@ -326,7 +326,7 @@ rb_reg_source(VALUE re)
  *
  *      /ab+c/ix.inspect        #=> "/ab+c/ix"
  *
-*/
+ */
 
 static VALUE
 rb_reg_inspect(VALUE re)
@@ -559,7 +559,7 @@ reg_names_iter(const OnigUChar *name, const OnigUChar *name_end,
  *     /(?<foo>.)(?<foo>.)/.names
  *     #=> ["foo"]
  *
- *     /(.)(.)/.names' 
+ *     /(.)(.)/.names
  *     #=> []
  */
 
@@ -600,12 +600,12 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
  *    /(?<foo>.)(?<bar>.)/.named_captures
  *    #=> {"foo"=>[1], "bar"=>[2]}
  *
- *    /(?<foo>.)(?<foo>.)/.named_captures'
+ *    /(?<foo>.)(?<foo>.)/.named_captures
  *    #=> {"foo"=>[1, 2]}
  *
  * If there are no named captures, an empty hash is returned.
  *
- *    /(.)(.)/.named_captures' 
+ *    /(.)(.)/.named_captures
  *    #=> {}
  */
 
@@ -1014,16 +1014,16 @@ rb_match_busy(VALUE match)
  *
  *      r = /a/u
  *      r.fixed_encoding?                               #=> true
- *      r.encoding                                      #=> <Encoding:UTF-8>
+ *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        # ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
  *      r =~ "abc".force_encoding("euc-jp")             #=> 0
  *
  *      r = /\u{6666}/
  *      r.fixed_encoding?                               #=> true
- *      r.encoding                                      #=> <Encoding:UTF-8>
+ *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 0
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        # ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
  *      r =~ "abc".force_encoding("euc-jp")             #=> nil
  */
 
@@ -3125,7 +3125,7 @@ match_setter(VALUE val)
  *  <em>n</em> can be a string or symbol to reference a named capture.
  *
  *     /c(.)t/ =~ 'cat'        #=> 0
- *     Regexp.last_match       #=> #<MatchData "cat" "a">
+ *     Regexp.last_match       #=> #<MatchData "cat" 1:"a">
  *     Regexp.last_match(0)    #=> "cat"
  *     Regexp.last_match(1)    #=> "a"
  *     Regexp.last_match(2)    #=> nil

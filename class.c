@@ -628,9 +628,9 @@ class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, lo
  *       def method3()  end
  *     end
  *     
- *     A.instance_methods                #=> ["method1"]
- *     B.instance_methods(false)         #=> ["method2"]
- *     C.instance_methods(false)         #=> ["method3"]
+ *     A.instance_methods                #=> [:method1]
+ *     B.instance_methods(false)         #=> [:method2]
+ *     C.instance_methods(false)         #=> [:method3]
  *     C.instance_methods(true).length   #=> 43
  */
 
@@ -668,8 +668,8 @@ rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
  *       private :method1
  *       def method2()  end
  *     end
- *     Mod.instance_methods           #=> ["method2"]
- *     Mod.private_instance_methods   #=> ["method1"]
+ *     Mod.instance_methods           #=> [:method2]
+ *     Mod.private_instance_methods   #=> [:method1]
  */
 
 VALUE
@@ -720,9 +720,9 @@ rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
  *       end
  *     end
  *     
- *     Single.singleton_methods    #=> ["four"]
- *     a.singleton_methods(false)  #=> ["two", "one"]
- *     a.singleton_methods         #=> ["two", "one", "three"]
+ *     Single.singleton_methods    #=> [:four]
+ *     a.singleton_methods(false)  #=> [:two, :one]
+ *     a.singleton_methods         #=> [:two, :one, :three]
  */
 
 VALUE

@@ -1979,12 +1979,12 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
  *  parameters supply a filename and starting line number that are used
  *  when reporting compilation errors.
  *
- *     class Klass
+ *     class KlassWithSecret
  *       def initialize
  *         @secret = 99
  *       end
  *     end
- *     k = Klass.new
+ *     k = KlassWithSecret.new
  *     k.instance_eval { @secret }   #=> 99
  */
 
@@ -2011,12 +2011,12 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
  *  to _obj_ while the code is executing, giving the code access to
  *  _obj_'s instance variables.  Arguments are passed as block parameters.
  *
- *     class Klass
+ *     class KlassWithSecret
  *       def initialize
  *         @secret = 99
  *       end
  *     end
- *     k = Klass.new
+ *     k = KlassWithSecret.new
  *     k.instance_exec(5) {|x| @secret+x }   #=> 104
  */
 
@@ -2172,7 +2172,7 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *       def c()  end
  *       private :a
  *     end
- *     Mod.private_instance_methods   #=> ["a", "c"]
+ *     Mod.private_instance_methods   #=> [:a, :c]
  */
 
 static VALUE

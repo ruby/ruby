@@ -88,6 +88,7 @@ enumerator_iter_i(VALUE i, VALUE enum_obj, int argc, VALUE *argv)
  *  Returns Enumerable::Enumerator.new(self, method, *args).
  *
  *  e.g.:
+ *
  *     str = "xyz"
  *
  *     enum = str.enum_for(:each_byte)

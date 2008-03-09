@@ -538,7 +538,7 @@ rb_hash_fetch(int argc, VALUE *argv, VALUE hash)
  *     h.default(2)                            #=> "cat"
  *
  *     h = Hash.new {|h,k| h[k] = k.to_i*10}   #=> {}
- *     h.default                               #=> 0
+ *     h.default                               #=> nil
  *     h.default(2)                            #=> 20
  */
 
@@ -837,7 +837,7 @@ rb_hash_reject(VALUE hash)
  *
  *   h = { "cat" => "feline", "dog" => "canine", "cow" => "bovine" }
  *   h.values_at("cow", "cat")  #=> ["bovine", "feline"]
-*/
+ */
 
 VALUE
 rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
@@ -1138,7 +1138,7 @@ to_a_i(VALUE key, VALUE value, VALUE ary)
  *  value</i> <code>]</code> arrays.
  *
  *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
- *     h.to_a   #=> [["a", 100], ["c", 300], ["d", 400]]
+ *     h.to_a   #=> [["c", 300], ["a", 100], ["d", 400]]
  */
 
 static VALUE
@@ -1195,7 +1195,7 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
  * Return the contents of this hash as a string.
  *
  *     h = { "c" => 300, "a" => 100, "d" => 400, "c" => 300  }
- *     h.to_s   #=> "{\"a\"=>100, \"c\"=>300, \"d\"=>400}"
+ *     h.to_s   #=> "{\"c\"=>300, \"a\"=>100, \"d\"=>400}"
  */
 
 static VALUE
@@ -1504,7 +1504,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *  the keys as values.
  *
  *     h = { "n" => 100, "m" => 100, "y" => 300, "d" => 200, "a" => 0 }
- *     h.invert   #=> {0=>"a", 100=>"n", 200=>"d", 300=>"y"}
+ *     h.invert   #=> {0=>"a", 100=>"m", 200=>"d", 300=>"y"}
  *
  */
 
@@ -1552,6 +1552,9 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
  *     h1.merge!(h2)   #=> {"a"=>100, "b"=>254, "c"=>300}
+ *
+ *     h1 = { "a" => 100, "b" => 200 }
+ *     h2 = { "b" => 254, "c" => 300 }
  *     h1.merge!(h2) { |key, v1, v2| v1 }
  *                     #=> {"a"=>100, "b"=>200, "c"=>300}
  */
