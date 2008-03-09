@@ -921,26 +921,27 @@ module RDoc::Generator
     def params
       # params coming from a call-seq in 'C' will start with the
       # method name
-      if p !~ /^\w/
-        p = @context.params.gsub(/\s*\#.*/, '')
-        p = p.tr("\n", " ").squeeze(" ")
-        p = "(" + p + ")" unless p[0] == ?(
+      params = @context.params
+      if params !~ /^\w/
+        params = @context.params.gsub(/\s*\#.*/, '')
+        params = params.tr("\n", " ").squeeze(" ")
+        params = "(" + params + ")" unless params[0] == ?(
 
         if (block = @context.block_params)
          # If this method has explicit block parameters, remove any
          # explicit &block
 
-         p.sub!(/,?\s*&\w+/, '')
+         params.sub!(/,?\s*&\w+/, '')
 
           block.gsub!(/\s*\#.*/, '')
           block = block.tr("\n", " ").squeeze(" ")
           if block[0] == ?(
             block.sub!(/^\(/, '').sub!(/\)/, '')
           end
-          p << " {|#{block.strip}| ...}"
+          params << " {|#{block.strip}| ...}"
         end
       end
-      CGI.escapeHTML(p)
+      CGI.escapeHTML(params)
     end
 
     def create_source_code_file(code_body)
