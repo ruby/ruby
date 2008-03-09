@@ -2074,7 +2074,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
 	pos = rb_memsearch(sptr, slen, s, len);
 	if (pos < 0) return pos;
 	t = rb_enc_right_char_head(s, s+pos, enc);
-	if (t == s) break;
+	if (t == s + pos) break;
 	if ((len -= t - s) <= 0) return -1;
 	offset += t - s;
 	s = t;
