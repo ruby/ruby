@@ -2627,7 +2627,7 @@ rb_f_local_variables(void)
 		    const char *vname = rb_id2name(lid);
 		    /* should skip temporary variable */
 		    if (vname) {
-			rb_ary_push(ary, rb_str_new2(vname));
+			rb_ary_push(ary, ID2SYM(lid));
 		    }
 		}
 	    }

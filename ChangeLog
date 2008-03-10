@@ -3,6 +3,13 @@ Tue Mar 11 00:46:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ruby.c (usage): remove some unimportant lines to fit -h message
 	  in a page.  [ruby-dev:34018]
 
+Mon Mar 10 17:11:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_local_variables): local_variables should return an
+	  array of symbols.  [ruby-dev:34008]
+
+	* vm.c (collect_local_variables_in_env): ditto.
+
 Mon Mar 10 15:53:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (MKSTR): make US-ASCII.  [ruby-dev:34010]

@@ -736,7 +736,7 @@ rb_alias_variable(ID name1, ID name2)
 
     entry2 = rb_global_entry(name2);
     if (!st_lookup(rb_global_tbl, name1, &data1)) {
-	entry1 = ALLOC(struct global_entry);
+ 	entry1 = ALLOC(struct global_entry);
 	entry1->id = name1;
 	st_add_direct(rb_global_tbl, name1, (st_data_t)entry1);
     }

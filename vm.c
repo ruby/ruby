@@ -285,7 +285,7 @@ collect_local_variables_in_env(rb_env_t *env, VALUE ary)
     for (i = 0; i < env->block.iseq->local_table_size; i++) {
 	ID lid = env->block.iseq->local_table[i];
 	if (lid) {
-	    rb_ary_push(ary, rb_str_dup(rb_id2str(lid)));
+	    rb_ary_push(ary, ID2SYM(lid));
 	}
     }
     if (env->prev_envval) {
