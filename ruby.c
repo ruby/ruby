@@ -130,7 +130,6 @@ usage(const char *name)
 	"-Fpattern       split() pattern for autosplit (-a)",
 	"-i[extension]   edit ARGV files in place (make backup if extension supplied)",
 	"-Idirectory     specify $LOAD_PATH directory (may be used more than once)",
-	"-Kkcode         specifies KANJI (Japanese) code-set",
 	"-l              enable line ending processing",
 	"-n              assume 'while gets(); ... end' loop around your script",
 	"-p              assume loop like -n but print line also like sed",
@@ -142,8 +141,6 @@ usage(const char *name)
 	"-w              turn warnings on for your script",
 	"-W[level]       set warning level; 0=silence, 1=medium, 2=verbose (default)",
 	"-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
-	"--enable/--disable-FEATURE --enable/--disable=FEATURE  enable/disable FEATUREs",
-	"                gems: gem libraries, rubyopt: RUBYOPT env, or all",
 	"--copyright     print the copyright",
 	"--version       print the version",
 	NULL

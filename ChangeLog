@@ -1,3 +1,8 @@
+Tue Mar 11 00:46:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (usage): remove some unimportant lines to fit -h message
+	  in a page.  [ruby-dev:34018]
+
 Mon Mar 10 15:53:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (MKSTR): make US-ASCII.  [ruby-dev:34010]
