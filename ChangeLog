@@ -1,3 +1,7 @@
+Mon Mar 10 15:53:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (MKSTR): make US-ASCII.  [ruby-dev:34010]
+
 Mon Mar 10 02:08:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_index): if t == s + pos, the character beginning
