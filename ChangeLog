@@ -26,7 +26,7 @@ Sun Sep 23 21:57:25 2007  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  perform SSL post connection check.
 
 	* ext/openssl/lib/openssl/ssl.c
-	(OpenSSL::SSL::SSLSocket#post_connection_check): refine error message.
+	  (OpenSSL::SSL::SSLSocket#post_connection_check): refine error message.
 
 Sun Sep 23 07:49:49 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -733,7 +733,7 @@ Tue Mar  6 19:03:42 2007  Akinori MUSHA  <knu@iDaemons.org>
 	  moriq.com> in [ruby-dev:30500].
 
 	* ext/digest/lib/sha1.rb (SHA1::new, SHA1::sha1): Ditto.
-	
+
 	* time.c (time_to_s): Back out the format changes; discussed
 	  in [ruby-dev:30495].
 
@@ -973,13 +973,13 @@ Mon Feb 19 18:27:42 2007  Akinori MUSHA  <knu@iDaemons.org>
 	  [ruby-dev:30023] / [ruby-dev:30239]
 
 Thu Feb 15 20:31:07 2007  Akinori MUSHA  <knu@iDaemons.org>
- 
+
 	* lib/uri/ftp.rb: Revert the previous change pending discussion.
- 
+
 Fri Feb 16 11:18:21 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/.document: Apply patch for irb, e2mmap and README by Hugh Sasse
-	<hgs at dmu.ac.uk> from [ruby-core:10135]
+	  <hgs at dmu.ac.uk> from [ruby-core:10135]
 
 	* lib/prettyprint.rb: Suppress RDoc for PrettyPrint test suite.
 
@@ -1097,7 +1097,7 @@ Sat Feb 10 07:41:52 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Sat Feb 10 00:13:11 2007  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd, 
+	* ext/tk/lib/tk.rb: fix typo (TkConfigMethod::__confinfo_cmd,
 	  __conv_keyonly_opts).
 
 Fri Feb  9 20:44:53 2007  Akinori MUSHA  <knu@iDaemons.org>
@@ -1177,7 +1177,7 @@ Wed Jan 24 18:05:39 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  regexp font-lock bug.  [ruby-talk:235758]
 
 Tue Jan 23 11:02:33 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
- 
+
  	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest::read_line):
 
 Tue Jan 23 18:26:12 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1197,8 +1197,8 @@ Mon Jan 22 14:57:25 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Jan 13 23:54:48 2007  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_free, ole_type_free, 
-	  olemethod_free, olevariable_free, oleparam_free, 
+	* ext/win32ole/win32ole.c (ole_free, ole_type_free,
+	  olemethod_free, olevariable_free, oleparam_free,
 	  ole_event_free): fix memory leak.  [ruby-core:09846]
 
 Fri Jan 12 11:13:55 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1228,7 +1228,7 @@ Tue Jan  9 03:54:38 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_upto): String#upto from empty string makes
 	  inifinite loop.  [ruby-core:09864]
 
-Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net> 
+Sun Jan  7 12:13:26 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#find_class_comment):
 	  Look for class and module comments above rb_define_class and
@@ -1252,20 +1252,20 @@ Wed Jan  3 11:36:51 2007  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/c_parser.rb: Make Rdoc accessible.  Update constant
-	value information.
+	  value information.
 
 Mon Jan  1 06:13:11 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* ext/bigdecimal/bigdecimal.c: Update constant comments to provide
-	values for RDoc.
+	  values for RDoc.
 
 Mon Jan  1 06:05:55 2007  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts):
-	Allow RDoc comment to give friendly value for rb_define_const.  Patch
-	by Daniel Berger <djberg96 at gmail.com>, [ruby-patches-7499].
+	  Allow RDoc comment to give friendly value for rb_define_const.  Patch
+	  by Daniel Berger <djberg96 at gmail.com>, [ruby-patches-7499].
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#handle_constansts): Fix
-	whitespace handling in constant comments.
+	  whitespace handling in constant comments.
 
 Sun Dec 31 00:31:16 2006  Tadayoshi Funaba  <tadf@dotrb.org>
 
@@ -2714,7 +2714,7 @@ Thu Jul 13 22:23:56 2006  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Thu Jul 13 20:32:19 2006  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb: updated documents by a patch from
-	Hugh Sasse <hgs at dmu.ac.uk>. [ruby-core:8194]
+	  Hugh Sasse <hgs at dmu.ac.uk>. [ruby-core:8194]
 
 Wed Jul 12 13:54:09 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -5787,8 +5787,8 @@ Sat Sep 17 09:45:26 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Sep 17 08:35:39 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb (RSS::Maker::ItemsBase#normalize): fixed
-	strange RSS::Maker::Item#max_size behavior.
-	Thanks to Kazuhiko <kazuhiko@fdiary.net>.
+	  strange RSS::Maker::Item#max_size behavior.
+	  Thanks to Kazuhiko <kazuhiko@fdiary.net>.
 
 	* test/rss/test_maker_1.0.rb (RSS::TestMaker10#test_items): ditto.
 
@@ -9063,7 +9063,7 @@ Wed Feb  2 21:56:01 2005  Kouhei Sutou  <kou@cozmixng.org>
 Tue Feb  1 22:48:48 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRb::DRbObject#respond_to?): check marshal_dump and
-	_dump.
+	  _dump.
 
 Tue Feb  1 00:20:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -9970,7 +9970,7 @@ Wed Dec 15 18:57:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Dec 15 18:48:42 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/curses.c (window_subwin): call NUM2INT() before
-	GetWINDOW(). (backported from CVS HEAD)
+	  GetWINDOW(). (backported from CVS HEAD)
 
 Wed Dec 15 17:03:50 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -10593,7 +10593,7 @@ Thu Nov 18 18:41:08 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* test/ruby/test_stringchar.rb (test_bang): added.
 
 	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang)
-	(rb_str_swapcase_bang): missing rb_str_modify().  [ruby-dev:24915]
+	  (rb_str_swapcase_bang): missing rb_str_modify().  [ruby-dev:24915]
 
 Thu Nov 18 00:21:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -11209,7 +11209,7 @@ Mon Oct 18 15:58:01 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 Fri Oct 29 16:34:19 2004  Daiki Ueno  <ueno@unixuser.org>
 
 	* misc/ruby-mode.el (ruby-parse-partial): Parse the rest of the
-	line after opening heredoc identifier.  [ruby-dev:24635]
+	  line after opening heredoc identifier.  [ruby-dev:24635]
 
 Mon Oct 18 07:26:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -11405,7 +11405,7 @@ Mon Oct  4 12:53:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Sun Oct  3 21:20:03 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (TEXT_REGEXP): allow 8-bit characters for the german
-	version of Microsoft Exchange Server. (backported from HEAD)
+	  version of Microsoft Exchange Server. (backported from HEAD)
 
 	* lib/net/imap.rb (RTEXT_REGEXP): ditto.
 
@@ -12211,9 +12211,9 @@ Sun Jul 18 03:21:42 2004  Akinori MUSHA  <knu@iDaemons.org>
 Sun Jul 18 03:12:11 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (receive_responses): return if a LOGOUT response
-	received. (backported from HEAD)
+	  received. (backported from HEAD)
 	* lib/net/imap.rb (send_string_data): wait command continuation
-	requests before sending octet data of literals. (backported from HEAD)
+	  requests before sending octet data of literals. (backported from HEAD)
 
 Sat Jul 17 23:54:59 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -12284,7 +12284,7 @@ Thu Jul 15 23:53:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Jul 15 22:59:48 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/extconf.rb: added dir_config for curses, ncurses,
-	termcap. (backported from HEAD)
+	  termcap. (backported from HEAD)
 
 Thu Jul 15 20:29:15 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -12805,7 +12805,7 @@ Tue Jun 22 21:11:36 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 Tue Jun 22 16:47:42 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (MDTM_REGEXP): fix for demon's ftp server.
-	Thanks, Rutger Nijlunsing.
+	  Thanks, Rutger Nijlunsing.
 
 Mon Jun 21 10:19:23 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
