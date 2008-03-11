@@ -1,3 +1,7 @@
+Tue Mar 11 12:39:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (clean-local): removes MINOBJS.
+
 Sat Mar  8 18:50:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (isdirsep): backslash is valid path separator on cygwin too.

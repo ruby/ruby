@@ -460,7 +460,7 @@ post-install-doc::
 	@$(NULLCMD)
 
 clean-local::
-		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) *.tds *.il? $(RUBY_SO_NAME).lib
+		@$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) *.tds *.il? $(RUBY_SO_NAME).lib
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF)
 
