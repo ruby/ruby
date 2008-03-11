@@ -1,3 +1,7 @@
+Wed Mar 12 02:12:20 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/delegate.rb: check $@ to avoid NoMethodError.
+
 Tue Mar 11 19:48:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_coerce): try conversion before type check.

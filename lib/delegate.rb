@@ -139,7 +139,7 @@ class Delegator
 	    begin
 	      __getobj__.__send__(:#{method}, *args, &block)
 	    ensure
-	      $@.delete_if{|s|IgnoreBacktracePat=~s}
+	      $@.delete_if{|s|IgnoreBacktracePat=~s} if $@
 	    end
 	  end
 	EOS
@@ -295,7 +295,7 @@ def DelegateClass(superclass)
 	  begin
 	    @_dc_obj.__send__(:#{method}, *args, &block)
 	  ensure
-	    $@.delete_if{|s| ::Delegator::IgnoreBacktracePat =~ s}
+	    $@.delete_if{|s| ::Delegator::IgnoreBacktracePat =~ s} if $@
 	  end
 	end
       EOS
