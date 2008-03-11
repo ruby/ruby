@@ -657,7 +657,7 @@ $(RUBYDEF):	$(LIBRUBY_A) $(PREP)
 		$(AR) $(ARFLAGS)$@ -def:$<
 
 clean-local::
-		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
+		@$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 		@$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
 

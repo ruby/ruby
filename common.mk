@@ -308,7 +308,7 @@ clear-installed-list:
 
 clean: clean-ext clean-local clean-enc
 clean-local::
-	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
+	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) *.inc $(GOLFOBJS) y.tab.c y.output
 clean-ext:

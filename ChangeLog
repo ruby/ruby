@@ -1,3 +1,7 @@
+Tue Mar 11 12:39:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (clean-local): WINMAINOBJ is Windows specific.
+
 Tue Mar 11 10:19:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (hash): replaced by MurmurHash described in
