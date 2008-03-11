@@ -1424,9 +1424,10 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
     ptr = buffer + (elements+1) * sizeof(char *);
 
     while (curr = cmdhead) {
-	memcpy(ptr, curr->str, curr->len + 1);
+	memcpy(ptr, curr->str, curr->len);
 	*vptr++ = ptr;
-	ptr += curr->len + 1;
+	ptr += curr->len;
+	*ptr++ = '\0';
 	cmdhead = curr->next;
 	if (curr->flags & NTMALLOC) free(curr->str);
 	free(curr);

@@ -1,3 +1,7 @@
+Tue Mar 11 16:43:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_cmdvector): terminate shrunken command line.
+
 Tue Mar 11 12:39:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (clean-local): removes MINOBJS.
