@@ -1,3 +1,8 @@
+Tue Mar 11 17:03:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator#initialize, DelegateClass): skip correct
+	  backtrace.  [ruby-dev:34019]
+
 Tue Mar 11 16:43:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_cmdvector): terminate shrunken command line.
