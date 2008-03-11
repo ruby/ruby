@@ -1347,6 +1347,36 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 
 
 static VALUE
+zip_ary(VALUE val, NODE *memo, int argc, VALUE *argv)
+{
+    volatile VALUE result = memo->u1.value;
+    volatile VALUE args = memo->u2.value;
+    int n = memo->u3.cnt++;
+    volatile VALUE tmp;
+    int i;
+
+    tmp = rb_ary_new2(RARRAY_LEN(args) + 1);
+    rb_ary_store(tmp, 0, enum_values_pack(argc, argv));
+    for (i=0; i<RARRAY_LEN(args); i++) {
+	VALUE e = RARRAY_PTR(args)[i];
+
+	if (RARRAY_LEN(e) < n) {
+	    rb_ary_push(tmp, Qnil);
+	}
+	else {
+	    rb_ary_push(tmp, RARRAY_PTR(e)[n]);
+	}
+    }
+    if (NIL_P(result)) {
+	rb_yield(tmp);
+    }
+    else {
+	rb_ary_push(result, tmp);
+    }
+    return Qnil;
+}
+
+static VALUE
 call_next(VALUE *v)
 {
     return v[0] = rb_funcall(v[1], id_next, 0, 0);
@@ -1423,16 +1453,25 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     ID conv;
     NODE *memo;
     VALUE result = Qnil;
+    int allary = Qtrue;
 
-    conv = rb_intern("to_enum");
     for (i=0; i<argc; i++) {
-	argv[i] = rb_funcall(argv[i], conv, 1, ID2SYM(id_each));
+	if (TYPE(argv[i]) != T_ARRAY) {
+	    allary = Qfalse;
+	    break;
+	}
+    }
+    if (!allary) {
+	conv = rb_intern("to_enum");
+	for (i=0; i<argc; i++) {
+	    argv[i] = rb_funcall(argv[i], conv, 1, ID2SYM(id_each));
+	}
     }
     if (!rb_block_given_p()) {
 	result = rb_ary_new();
     }
     memo = rb_node_newnode(NODE_MEMO, result, rb_ary_new4(argc, argv), 0);
-    rb_block_call(obj, id_each, 0, 0, zip_i, (VALUE)memo);
+    rb_block_call(obj, id_each, 0, 0, allary ? zip_ary : zip_i, (VALUE)memo);
 
     return result;
 }
