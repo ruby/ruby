@@ -1,3 +1,8 @@
+Tue Mar 11 19:48:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_coerce): try conversion before type check.
+	  [ruby-core:15838]
+
 Tue Mar 11 12:39:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (clean-local): WINMAINOBJ is Windows specific.

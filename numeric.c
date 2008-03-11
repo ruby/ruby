@@ -1493,6 +1493,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 SIGNED_VALUE
 rb_num2long(VALUE val)
 {
+  again:
     if (NIL_P(val)) {
 	rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
     }
@@ -1519,7 +1520,7 @@ rb_num2long(VALUE val)
 
       default:
 	val = rb_to_int(val);
-	return NUM2LONG(val);
+	goto again;
     }
 }
 
@@ -2593,6 +2594,15 @@ fix_rev(VALUE num)
     return LONG2NUM(val);
 }
 
+static VALUE
+fix_coerce(VALUE x)
+{
+    while (!FIXNUM_P(x) && TYPE(x) != T_BIGNUM) {
+	x = rb_to_int(x);
+    }
+    return x;
+}
+
 /*
  * call-seq:
  *   fix & other     => integer
@@ -2605,10 +2615,10 @@ fix_and(VALUE x, VALUE y)
 {
     long val;
 
-    if (TYPE(y) == T_BIGNUM) {
+    if (!FIXNUM_P(y = fix_coerce(y))) {
 	return rb_big_and(y, x);
     }
-    val = FIX2LONG(x) & NUM2LONG(y);
+    val = FIX2LONG(x) & FIX2LONG(y);
     return LONG2NUM(val);
 }
 
@@ -2624,10 +2634,10 @@ fix_or(VALUE x, VALUE y)
 {
     long val;
 
-    if (TYPE(y) == T_BIGNUM) {
+    if (!FIXNUM_P(y = fix_coerce(y))) {
 	return rb_big_or(y, x);
     }
-    val = FIX2LONG(x) | NUM2LONG(y);
+    val = FIX2LONG(x) | FIX2LONG(y);
     return LONG2NUM(val);
 }
 
@@ -2643,10 +2653,10 @@ fix_xor(VALUE x, VALUE y)
 {
     long val;
 
-    if (TYPE(y) == T_BIGNUM) {
+    if (!FIXNUM_P(y = fix_coerce(y))) {
 	return rb_big_xor(y, x);
     }
-    val = FIX2LONG(x) ^ NUM2LONG(y);
+    val = FIX2LONG(x) ^ FIX2LONG(y);
     return LONG2NUM(val);
 }
 
@@ -2740,7 +2750,7 @@ fix_aref(VALUE fix, VALUE idx)
     long val = FIX2LONG(fix);
     long i;
 
-    if (TYPE(idx) == T_BIGNUM) {
+    if (!FIXNUM_P(idx = fix_coerce(idx))) {
 	idx = rb_big_norm(idx);
 	if (!FIXNUM_P(idx)) {
 	    if (!RBIGNUM_SIGN(idx) || val >= 0)
@@ -2748,7 +2758,7 @@ fix_aref(VALUE fix, VALUE idx)
 	    return INT2FIX(1);
 	}
     }
-    i = NUM2LONG(idx);
+    i = FIX2LONG(idx);
 
     if (i < 0) return INT2FIX(0);
     if (SIZEOF_LONG*CHAR_BIT-1 < i) {
