@@ -1,3 +1,10 @@
+Tue Mar 11 23:38:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_combination): argument check before creating
+	  Enumerator.
+
+	* array.c (rb_ary_permutation): ditto.
+
 Tue Mar 11 19:48:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_coerce): try conversion before type check.
