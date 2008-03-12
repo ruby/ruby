@@ -1,3 +1,19 @@
+Thu Mar 13 03:12:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/cmd/help.rb: should be updated for new ri structure.
+	  [ruby-core:15825]
+
+	* lib/rdoc/ri/driver.rb (RDoc::initialize): allow options to be optional.
+
+	* lib/rdoc/ri/driver.rb (RDoc::class_cache): map_dirs may be
+	  empty.
+
+	* lib/rdoc/ri/driver.rb (RDoc::get_info_for): revive get_info_for
+	  method.  maybe broken.
+
+	* lib/rdoc/ri/util.rb (RDoc::initialize): should not use RiError
+	  no more.
+
 Thu Mar 13 01:45:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (stdint.h): check if presence.

@@ -8,20 +8,21 @@
 #   
 #
 
-require 'rdoc/ri/ri_driver'
+require 'rdoc/ri/driver'
+require 'rdoc/ri/util'
 
 module IRB
   module ExtendCommand
     module Help
       begin
-        @ri = RiDriver.new
+        @ri = RDoc::RI::Driver.new
       rescue SystemExit
       else
         def self.execute(context, *names)
           names.each do |name|
             begin
               @ri.get_info_for(name.to_s)
-            rescue RiError
+            rescue RDoc::RI::Error
               puts $!.message
             end
           end

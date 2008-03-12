@@ -200,7 +200,10 @@ Options may also be set in the 'RI' environment variable.
     ri.run
   end
 
-  def initialize(options)
+  def initialize(options={})
+    options[:formatter] ||= RDoc::RI::Formatter.for('plain')
+    options[:use_stdout] ||= !$stdout.tty?
+    options[:width] ||= 72
     @names = options[:names]
 
     @class_cache_name = 'classes'
@@ -226,7 +229,7 @@ Options may also be set in the 'RI' environment variable.
     end.max
 
     up_to_date = (File.exist?(class_cache_file_path) and
-                  newest < File.mtime(class_cache_file_path))
+                  newest and newest < File.mtime(class_cache_file_path))
 
     @class_cache = if up_to_date then
                      load_cache_for @class_cache_name
@@ -342,6 +345,11 @@ Options may also be set in the 'RI' environment variable.
 
   def read_yaml(path)
     YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):(RDoc::RI|RI|SM).*/, '')
+  end
+
+  def get_info_for(arg)
+    @names = [arg]
+    run
   end
 
   def run
