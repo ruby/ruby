@@ -190,7 +190,8 @@ rb_global_variable(VALUE *var)
 void
 rb_memerror(void)
 {
-  static int recurse = 0;
+    static int recurse = 0;
+
     if (!nomem_error || (recurse > 0 && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(1);
@@ -616,11 +617,11 @@ static int grow_direction;
 static int
 stack_grow_direction(VALUE *addr)
 {
-  rb_thread_t *th = GET_THREAD();
-  SET_STACK_END;
+    rb_thread_t *th = GET_THREAD();
+    SET_STACK_END;
 
-  if (STACK_END > addr) return grow_direction = 1;
-  return grow_direction = -1;
+    if (STACK_END > addr) return grow_direction = 1;
+    return grow_direction = -1;
 }
 # define stack_growup_p(x) ((grow_direction ? grow_direction : stack_grow_direction(x)) > 0)
 # define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
@@ -631,10 +632,10 @@ stack_grow_direction(VALUE *addr)
 int
 ruby_stack_length(VALUE **p)
 {
-  rb_thread_t *th = GET_THREAD();
-  SET_STACK_END;
-  if (p) *p = STACK_UPPER(STACK_END, STACK_START, STACK_END);
-  return STACK_LENGTH;
+    rb_thread_t *th = GET_THREAD();
+    SET_STACK_END;
+    if (p) *p = STACK_UPPER(STACK_END, STACK_START, STACK_END);
+    return STACK_LENGTH;
 }
 
 int
