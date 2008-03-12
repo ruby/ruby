@@ -518,7 +518,7 @@ init_mark_stack()
 }
 
 #define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
-            
+
 static st_table *source_filenames;
 
 char *
@@ -725,7 +725,7 @@ gc_mark(ptr, lev)
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;
-		mark_stack_ptr++;		
+		mark_stack_ptr++;
 	    }
 	    else {
 		mark_stack_overflow = 1;
@@ -1958,7 +1958,7 @@ id2ref(obj, objid)
  *  call-seq:
  *     obj.__id__       => fixnum
  *     obj.object_id    => fixnum
- *  
+ *
  *  Returns an integer identifier for <i>obj</i>. The same number will
  *  be returned on all calls to <code>id</code> for a given object, and
  *  no two active objects will share an id.
@@ -1970,7 +1970,7 @@ id2ref(obj, objid)
 /*
  *  call-seq:
  *     obj.hash    => fixnum
- *  
+ *
  *  Generates a <code>Fixnum</code> hash value for this object. This
  *  function must have the property that <code>a.eql?(b)</code> implies
  *  <code>a.hash == b.hash</code>. The hash value is used by class
