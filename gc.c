@@ -525,7 +525,7 @@ rb_fill_value_cache(rb_thread_t *th)
     /* LOCK */
     for (i=0; i<RUBY_VM_VALUE_CACHE_SIZE; i++) {
 	VALUE v = rb_newobj_from_heap();
-	
+
 	th->value_cache[i] = v;
 	RBASIC(v)->flags = FL_MARK;
     }
@@ -878,7 +878,7 @@ gc_mark(VALUE ptr, int lev)
 	if (!mark_stack_overflow) {
 	    if (mark_stack_ptr - mark_stack < MARK_STACK_MAX) {
 		*mark_stack_ptr = ptr;
-		mark_stack_ptr++;		
+		mark_stack_ptr++;
 	    }
 	    else {
 		mark_stack_overflow = 1;
@@ -1403,7 +1403,7 @@ obj_free(VALUE obj)
 	break;
 
       default:
-	rb_bug("gc_sweep(): unknown data type 0x%lx(%p)", 
+	rb_bug("gc_sweep(): unknown data type 0x%lx(%p)",
 	       RANY(obj)->as.basic.flags & T_MASK, (void*)obj);
     }
 }
@@ -2132,7 +2132,7 @@ id2ref(VALUE obj, VALUE objid)
  *  call-seq:
  *     obj.__id__       => fixnum
  *     obj.object_id    => fixnum
- *  
+ *
  *  Returns an integer identifier for <i>obj</i>. The same number will
  *  be returned on all calls to <code>id</code> for a given object, and
  *  no two active objects will share an id.
@@ -2144,7 +2144,7 @@ id2ref(VALUE obj, VALUE objid)
 /*
  *  call-seq:
  *     obj.hash    => fixnum
- *  
+ *
  *  Generates a <code>Fixnum</code> hash value for this object. This
  *  function must have the property that <code>a.eql?(b)</code> implies
  *  <code>a.hash == b.hash</code>. The hash value is used by class
