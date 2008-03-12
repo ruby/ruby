@@ -715,7 +715,7 @@ rb_longjmp(int tag, VALUE mesg)
 			0 /* TODO: id */, 0 /* TODO: klass */);
     }
 
-    rb_thread_reset_raised(th);
+    rb_thread_raised_clear(th);
     JUMP_TAG(tag);
 }
 
@@ -1243,16 +1243,9 @@ stack_check(void)
 {
     rb_thread_t *th = GET_THREAD();
 
-    if (!rb_thread_stack_overflowing_p(th) && ruby_stack_check()) {
-	int state;
-	rb_thread_set_stack_overflow(th);
-	PUSH_TAG();
-	if ((state = EXEC_TAG()) == 0) {
-	    rb_exc_raise(sysstack_error);
-	}
-	POP_TAG();
-	rb_thread_reset_stack_overflow(th);
-	JUMP_TAG(state);
+    if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW) && ruby_stack_check()) {
+	rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
+	rb_exc_raise(sysstack_error);
     }
 }
 

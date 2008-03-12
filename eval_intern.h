@@ -195,16 +195,17 @@ while (0)
 void rb_thread_cleanup(void);
 void rb_thread_wait_other_threads(void);
 
-#define RAISED_EXCEPTION     1
-#define RAISED_STACKOVERFLOW 2
+enum {
+    RAISED_EXCEPTION = 1,
+    RAISED_STACKOVERFLOW,
+    RAISED_NOMEMORY,
+};
 int rb_thread_set_raised(rb_thread_t *th);
 int rb_thread_reset_raised(rb_thread_t *th);
-#define rb_thread_set_stack_overflow(th) \
-    ((th)->raised_flag |= RAISED_STACKOVERFLOW)
-#define rb_thread_reset_stack_overflow(th) \
-    ((th)->raised_flag &= ~RAISED_STACKOVERFLOW)
-#define rb_thread_stack_overflowing_p(th) \
-    (((th)->raised_flag & RAISED_STACKOVERFLOW) != 0)
+#define rb_thread_raised_set(th, f)   ((th)->raised_flag |= (f))
+#define rb_thread_raised_reset(th, f) ((th)->raised_flag &= ~(f))
+#define rb_thread_raised_p(th, f)     (((th)->raised_flag & (f)) != 0)
+#define rb_thread_raised_clear(th)    ((th)->raised_flag = 0)
 
 VALUE rb_f_eval(int argc, VALUE *argv, VALUE self);
 VALUE rb_make_exception(int argc, VALUE *argv);

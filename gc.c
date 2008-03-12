@@ -18,6 +18,7 @@
 #include "ruby/re.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
+#include "eval_intern.h"
 #include "vm_core.h"
 #include "gc.h"
 #include <stdio.h>
@@ -190,13 +191,13 @@ rb_global_variable(VALUE *var)
 void
 rb_memerror(void)
 {
-    static int recurse = 0;
-
-    if (!nomem_error || (recurse > 0 && rb_safe_level() < 4)) {
+    rb_thread_t *th = GET_THREAD();
+    if (!nomem_error ||
+	(rb_thread_raised_p(th, RAISED_NOMEMORY) && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(1);
     }
-    recurse++;
+    rb_thread_raised_set(th, RAISED_NOMEMORY);
     rb_exc_raise(nomem_error);
 }
 

@@ -1,3 +1,13 @@
+Wed Mar 12 14:47:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_intern.h (rb_thread_raised_set): use generic flags.
+
+	* eval.c (rb_longjmp): clear all raised flags.
+
+	* eval.c (stack_check): leave clearing flag to rb_longjmp.
+
+	* gc.c (rb_memerror): use thread raised flag instead of static flag.
+
 Tue Mar 11 23:38:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_combination): argument check before creating
