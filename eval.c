@@ -5891,7 +5891,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	}
 	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass);
 	if (event_hooks) {
-	    EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
+	    EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, ruby_current_node, recv, id, klass);
 	}
 	break;
 
@@ -6014,7 +6014,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	    }
 	    POP_TAG();
 	    if (event_hooks) {
-		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
+		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, ruby_current_node, recv, id, klass);
 	    }
 	    POP_VARS();
 	    POP_CLASS();

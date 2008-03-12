@@ -1,3 +1,8 @@
+Thu Mar 13 00:37:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_call0): yields the last executed node line number at
+	  return event.  [ruby-core:15855]
+
 Wed Mar 12 02:12:20 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/delegate.rb: check $@ to avoid NoMethodError.
