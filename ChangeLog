@@ -1,3 +1,7 @@
+Wed Mar 12 17:33:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): fix for a mere underscore.
+
 Wed Mar 12 14:47:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_intern.h (rb_thread_raised_set): use generic flags.

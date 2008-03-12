@@ -2064,7 +2064,7 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	char *e = buf + sizeof(buf) - 1;
 	char prev = 0;
 
-	while (p < end && n < e) *n++ = *p++;
+	while (p < end && n < e) prev = *n++ = *p++;
 	while (*p) {
 	    if (*p == '_') {
 		/* remove underscores between digits */
