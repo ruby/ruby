@@ -253,6 +253,9 @@ Also ignores spaces after parenthesis when 'space."
 	      (if coding-system
 		  (symbol-name coding-system)
 		"ascii-8bit"))
+	;; special treat for compatibility with -Ks
+	(if (string-equal coding-system "shift_jis")
+	    (setq coding-system "cp932"))
 	(if (looking-at "^#![^\n]*ruby") (beginning-of-line 2))
 	(cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]+\\)")
 	       (unless (string= (match-string 2) coding-system)
