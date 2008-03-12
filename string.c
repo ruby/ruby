@@ -25,6 +25,10 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
@@ -1685,6 +1689,13 @@ rb_str_concat(VALUE str1, VALUE str2)
     return rb_str_append(str1, str2);
 }
 
+#if defined __i386__ || defined _M_IX86 || defined __ia64
+#define UNALIGNED_WORD_ACCESS 1
+#endif
+#ifndef UNALIGNED_WORD_ACCESS
+#define UNALIGNED_WORD_ACCESS 0
+#endif
+
 /* MurmurHash described in http://murmurhash.googlepages.com/ */
 unsigned int
 hash(const unsigned char * data, int len, unsigned int h)
@@ -1694,22 +1705,106 @@ hash(const unsigned char * data, int len, unsigned int h)
 
     h += 0xdeadbeef;
 
-    while(len >= 4) {
-	h += *(unsigned int *)data;
-	h *= m;
-	h ^= h >> r;
+    if (len >= 4) {
+#if !UNALIGNED_WORD_ACCESS
+	int align = (VALUE)data & 3;
+	if (align) {
+	    uint32_t t = 0, d = 0;
+	    int sl, sr, pack;
 
-	data += 4;
-	len -= 4;
+	    switch (align) {
+#ifdef WORDS_BIGENDIAN
+	      case 1: t |= data[2];
+	      case 2: t |= data[1] << 8;
+	      case 3: t |= data[0] << 16;
+#else
+	      case 1: t |= data[2] << 16;
+	      case 2: t |= data[1] << 8;
+	      case 3: t |= data[0];
+#endif
+	    }
+
+#ifdef WORDS_BIGENDIAN
+	    t >>= (8 * align) - 8;
+#else
+	    t <<= (8 * align);
+#endif
+
+	    data += 4-align;
+	    len -= 4-align;
+
+	    sl = 8 * (4-align);
+	    sr = 8 * align;
+
+	    while (len >= 4) {
+		d = *(uint32_t *)data;
+#ifdef WORDS_BIGENDIAN
+		t = (t << sr) | (d >> sl);
+#else
+		t = (t >> sr) | (d << sl);
+#endif
+		h += t;
+		h *= m;
+		h ^= h >> r;
+		t = d;
+
+		data += 4;
+		len -= 4;
+	    }
+
+	    pack = len < align ? len : align;
+	    d = 0;
+	    switch (pack) {
+#ifdef WORDS_BIGENDIAN
+	      case 3: d |= data[2] << 8;
+	      case 2: d |= data[1] << 16;
+	      case 1: d |= data[0] << 24;
+	      case 0:
+		h += (t << sr) | (d >> sl);
+#else
+	      case 3: d |= data[2] << 16;
+	      case 2: d |= data[1] << 8;
+	      case 1: d |= data[0];
+	      case 0:
+		h += (t >> sr) | (d << sl);
+#endif
+		h *= m;
+		h ^= h >> r;
+	    }
+
+	    data += pack;
+	    len -= pack;
+	}
+	else
+#endif
+	{
+	    do {
+		h += *(uint32_t *)data;
+		h *= m;
+		h ^= h >> r;
+
+		data += 4;
+		len -= 4;
+	    } while (len >= 4);
+	}
     }
 
     switch(len) {
+#ifdef WORDS_BIGENDIAN
+      case 3:
+	h += data[2] << 8;
+      case 2:
+	h += data[1] << 16;
+      case 1:
+	h += data[0] << 24;
+#else
       case 3:
 	h += data[2] << 16;
       case 2:
 	h += data[1] << 8;
       case 1:
 	h += data[0];
+#endif
 	h *= m;
 	h ^= h >> r;
     };

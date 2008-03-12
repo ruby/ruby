@@ -1,3 +1,11 @@
+Thu Mar 13 01:45:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (stdint.h): check if presence.
+
+	* configure.in (uint32_t): check if defined.
+
+	* string.c (hash): fix for portability.  [ruby-dev:34020]
+
 Wed Mar 12 17:33:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): fix for a mere underscore.
