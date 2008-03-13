@@ -1360,7 +1360,7 @@ zip_ary(VALUE val, NODE *memo, int argc, VALUE *argv)
     for (i=0; i<RARRAY_LEN(args); i++) {
 	VALUE e = RARRAY_PTR(args)[i];
 
-	if (RARRAY_LEN(e) < n) {
+	if (RARRAY_LEN(e) <= n) {
 	    rb_ary_push(tmp, Qnil);
 	}
 	else {
