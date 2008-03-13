@@ -1,3 +1,11 @@
+Thu Mar 13 14:14:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* trunk/configure.in (AC_CHECK_HEADERS): stdint.h is not needed to check.
+
+	* trunk/configure.in (rb_cv_type_uint32_t): unqouted.  [ruby-dev:34030]
+
+	* trunk/string.c (hash): use inttypes.h instead of stdint.h.
+
 Thu Mar 13 03:12:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/cmd/help.rb: should be updated for new ri structure.

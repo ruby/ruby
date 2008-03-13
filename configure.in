@@ -582,7 +582,7 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h sys/
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h pthread.h \
-		 ucontext.h intrinsics.h langinfo.h locale.h stdint.h)
+		 ucontext.h intrinsics.h langinfo.h locale.h)
 
 dnl Check additional types.
 AC_CHECK_SIZEOF(rlim_t, 0, [
@@ -626,10 +626,11 @@ if test ${ac_cv_type_uint32_t} != yes; then
     AC_CACHE_CHECK([unsigned 32bit int],
 	rb_cv_type_uint32_t,
 	[for type in short int long; do
+	    type="unsigned $type"
 	    AC_COMPILE_IFELSE(AC_LANG_BOOL_COMPILE_TRY([], [sizeof($type) == 4]),
 		[rb_cv_type_uint32_t=$type; break], [])
 	done])
-    AC_DEFINE(uint32_t, $rb_cv_type_uint32_t)
+    AC_DEFINE_UNQUOTED(uint32_t, $rb_cv_type_uint32_t)
 fi
 
 AC_CACHE_CHECK(for stack end address, rb_cv_stack_end_address,

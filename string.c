@@ -25,8 +25,8 @@
 #include <unistd.h>
 #endif
 
-#if HAVE_STDINT_H
-#include <stdint.h>
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
 #endif
 
 VALUE rb_cString;
@@ -761,7 +761,7 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 
 #ifdef NONASCII_MASK
 #define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
-static inline const VALUE
+static inline VALUE
 count_utf8_lead_bytes_with_word(const VALUE *s)
 {
     VALUE d = *s;
@@ -1807,7 +1807,7 @@ hash(const unsigned char * data, int len, unsigned int h)
 #endif
 	h *= m;
 	h ^= h >> r;
-    };
+    }
 
     h *= m;
     h ^= h >> 10;
