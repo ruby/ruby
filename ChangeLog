@@ -11,6 +11,10 @@ Thu Mar 13 14:14:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* trunk/string.c (hash): use inttypes.h instead of stdint.h.
 
+Thu Mar 13 10:42:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_divmod): should return integer division.  [ruby-dev:34006]
+
 Thu Mar 13 03:12:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/cmd/help.rb: should be updated for new ri structure.

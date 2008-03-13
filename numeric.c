@@ -708,6 +708,22 @@ flo_mod(VALUE x, VALUE y)
     return DOUBLE2NUM(mod);
 }
 
+static VALUE
+dbl2ival(double d)
+{
+    if (FIXABLE(d)) {
+	d = round(d);
+	return LONG2FIX((long)d);
+    }
+    else if (isnan(d) || isinf(d)) {
+	/* special case: cannot return integer value */
+	return rb_float_new(d);
+    }
+    else {
+	return rb_dbl2big(d);
+    }
+}
+
 /*
  *  call-seq:
  *     flt.divmod(numeric)    => array
@@ -735,16 +751,7 @@ flo_divmod(VALUE x, VALUE y)
 	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
     }
     flodivmod(RFLOAT_VALUE(x), fy, &div, &mod);
-    if (FIXABLE(div)) {
-	val = round(div);
-	a = LONG2FIX(val);
-    }
-    else if (isnan(div) || isinf(div)) {
-	a = rb_float_new(div);
-    }
-    else {
-	a = rb_dbl2big(div);
-    }
+    a = dbl2ival(div);
     b = DOUBLE2NUM(mod);
     return rb_assoc_new(a, b);
 }
@@ -2319,7 +2326,7 @@ fix_divmod(VALUE x, VALUE y)
 	    volatile VALUE a, b;
 
 	    flodivmod((double)FIX2LONG(x), RFLOAT_VALUE(y), &div, &mod);
-	    a = DOUBLE2NUM(div);
+	    a = dbl2ival(div);
 	    b = DOUBLE2NUM(mod);
 	    return rb_assoc_new(a, b);
 	}
