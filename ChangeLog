@@ -17,6 +17,9 @@ Thu Mar 13 10:42:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (zip_ary): wrong boundary condition.
 
+	* test/ruby/test_numeric.rb (TestNumeric::test_num2long): bit-and
+	  should not raise RangeError.
+
 Thu Mar 13 03:12:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/cmd/help.rb: should be updated for new ri structure.
