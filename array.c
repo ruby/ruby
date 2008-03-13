@@ -1790,7 +1790,8 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	    pos = RARRAY_LEN(ary) + pos;
 	    if (pos < 0) return Qnil;
 	}
-	arg2 = rb_ary_subseq(ary, pos, len);
+	arg2 = rb_ary_new4(len, RARRAY_PTR(ary)+pos);
+	RBASIC(arg2)->klass = rb_obj_class(ary);
 	rb_ary_splice(ary, pos, len, Qundef);	/* Qnil/rb_ary_new2(0) */
 	return arg2;
     }
