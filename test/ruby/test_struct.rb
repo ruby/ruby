@@ -91,7 +91,6 @@ class TestStruct < Test::Unit::TestCase
   end
 
   def test_struct_new
-    Struct.instance_eval { const_set(:Foo, nil) }
     assert_raise(NameError) { Struct.new("foo") }
     assert_nothing_raised { Struct.new("Foo") }
     Struct.instance_eval { remove_const(:Foo) }
