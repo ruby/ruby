@@ -1,3 +1,8 @@
+Fri Mar 14 11:24:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-encoding-map, ruby-use-encoding-map): added
+	  to customize.
+
 Fri Mar 14 10:37:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (int8_t, uint8_t,  int16_t,  uint16_t int32_t,

@@ -162,6 +162,14 @@ Also ignores spaces after parenthesis when 'space."
   "Default deep indent style."
   :options '(t nil space) :group 'ruby)
 
+(defcustom ruby-encoding-map '((shift_jis . cp932))
+  "Alist to map encoding name from emacs to ruby."
+  :group 'ruby)
+
+(defcustom ruby-use-encoding-map t
+  "*Use `ruby-encoding-map' to set encoding magic comment if this is non-nil."
+  :type 'boolean :group 'ruby)
+
 (eval-when-compile (require 'cl))
 (defun ruby-imenu-create-index-in-block (prefix beg end)
   (let ((index-alist '()) (case-fold-search nil)
@@ -251,11 +259,11 @@ Also ignores spaces after parenthesis when 'space."
 		  buffer-file-coding-system))))
 	(setq coding-system
 	      (if coding-system
-		  (symbol-name coding-system)
+		  (symbol-name
+		   (or (and ruby-use-encoding-map
+			    (cdr (assq coding-system ruby-encoding-map)))
+		       coding-system))
 		"ascii-8bit"))
-	;; special treat for compatibility with -Ks
-	(if (string-equal coding-system "shift_jis")
-	    (setq coding-system "cp932"))
 	(if (looking-at "^#![^\n]*ruby") (beginning-of-line 2))
 	(cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]+\\)")
 	       (unless (string= (match-string 2) coding-system)
