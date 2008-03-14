@@ -16,4 +16,8 @@
 # define __END_DECLS
 #endif
 
+#if defined(HAVE_INTTYPES_H)
+# include <inttypes.h>
+#endif
+
 #endif /* DEFS_H */
