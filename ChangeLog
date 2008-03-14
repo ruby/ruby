@@ -1,3 +1,7 @@
+Fri Mar 14 16:59:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_LIB_PREFIX): fix for prefix.
+
 Fri Mar 14 16:35:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::Cookie::initialize): performance patch from

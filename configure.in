@@ -1618,28 +1618,25 @@ case "$target_os" in
     rubyw_install_name="$RUBYW_INSTALL_NAME"
     ;;
 esac
-case "$target_os" in
-  cygwin*|mingw*|*djgpp*|os2-emx*)
-    RUBY_LIB_PREFIX="`expr "$libdir" : "$prefix\(/.*\)"`/ruby"
-    ;;
-  *)
-    RUBY_LIB_PREFIX="${libdir}/ruby"
-    ;;
-esac
-RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
+RUBY_LIB_PREFIX=`eval echo \\"${libdir}/ruby\\"`
 
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval],
             [sitedir='${libdir}/ruby/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
+
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
-    RUBY_SITE_LIB_PATH="`expr "$SITE_DIR" : "$prefix\(/.*\)"`" ||
-    RUBY_SITE_LIB_PATH="$SITE_DIR";;
+    RUBY_LIB_PREFIX="`eval echo "$RUBY_LIB_PREFIX" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
+    RUBY_SITE_LIB_PATH="`eval echo "$SITE_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
+    ;;
   *)
-    RUBY_SITE_LIB_PATH="$SITE_DIR";;
+    RUBY_LIB_PREFIX="`eval echo \\"$RUBY_LIB_PREFIX\\" | sed 's|^NONE/|'"$prefix"'/|'`"
+    RUBY_SITE_LIB_PATH="`eval echo \\"$SITE_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
+    ;;
 esac
+RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
 RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${MAJOR}.${MINOR}"
 
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
