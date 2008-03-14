@@ -1689,7 +1689,7 @@ rb_str_concat(VALUE str1, VALUE str2)
     return rb_str_append(str1, str2);
 }
 
-#if defined __i386__ || defined _M_IX86 || defined __ia64
+#if defined __i386__ || defined _M_IX86
 #define UNALIGNED_WORD_ACCESS 1
 #endif
 #ifndef UNALIGNED_WORD_ACCESS

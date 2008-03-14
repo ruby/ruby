@@ -1,3 +1,7 @@
+Fri Mar 14 10:03:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (UNALIGNED_WORD_ACCESS): IA64 cannot access unaligned word.
+
 Thu Mar 13 21:00:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_slice_bang): should not use rb_ary_subseq()
