@@ -365,7 +365,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define rb_pid_t int
 #define rb_gid_t int
 #define rb_uid_t int
-#define uint32_t unsigned int
 #define HAVE_STRUCT_STAT_ST_RDEV 1
 #define HAVE_ST_RDEV 1
 #define int8_t signed char
@@ -385,14 +384,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define uint64_t unsigned __int64
 #define HAVE_INTPTR_T 1
 #define HAVE_UINTPTR_T 1
-!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
-#define intptr_t __int64
-#define uintptr_t unsigned __int64
-!else
-#define intptr_t long
-#define uintptr_t unsigned long
-!endif
-#endif
 #define GETGROUPS_T int
 #define RETSIGTYPE void
 !if !defined(WIN32_WCE)
