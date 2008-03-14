@@ -1,3 +1,8 @@
+Fri Mar 14 16:35:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::Cookie::initialize): performance patch from
+	  Makoto Kuwata <kwa@kuwata-lab.com> in [ruby-dev:34048].
+
 Fri Mar 14 15:49:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_LIB_PREFIX): use libdir.

@@ -792,11 +792,16 @@ class CGI
     #
     # These keywords correspond to attributes of the cookie object.
     def initialize(name = "", *value)
-      options = if name.kind_of?(String)
-                  { "name" => name, "value" => value }
-                else
-                  name
-                end
+      if name.kind_of?(String)
+        @name = name
+        @value = value
+        %r|^(.*/)|.match(ENV["SCRIPT_NAME"])
+        @path = ($1 or "")
+        @secure = false
+        return super(@value)
+      end
+
+      options = name
       unless options.has_key?("name")
         raise ArgumentError, "`name' required"
       end
@@ -880,7 +885,7 @@ class CGI
       if cookies.has_key?(name)
         values = cookies[name].value + values
       end
-      cookies[name] = Cookie::new({ "name" => name, "value" => values })
+      cookies[name] = Cookie::new(name, *values)
     end
 
     cookies
