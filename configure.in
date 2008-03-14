@@ -1620,10 +1620,10 @@ case "$target_os" in
 esac
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
-    RUBY_LIB_PREFIX="/lib/ruby"
+    RUBY_LIB_PREFIX="`expr "$libdir" : "$prefix\(/.*\)"`/ruby"
     ;;
   *)
-    RUBY_LIB_PREFIX="${prefix}/lib/ruby"
+    RUBY_LIB_PREFIX="${libdir}/ruby"
     ;;
 esac
 RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
@@ -1631,7 +1631,7 @@ RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval],
-            [sitedir='${prefix}/lib/ruby/site_ruby'])
+            [sitedir='${libdir}/ruby/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
