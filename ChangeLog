@@ -1,3 +1,13 @@
+Fri Mar 14 10:37:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (int8_t, uint8_t,  int16_t,  uint16_t int32_t,
+	  uint32_t int64_t, uint64_t, int128_t, uint128_t,
+	  intptr_t, uintptr_t): check if defined.
+
+	* win32/Makefile.sub: follow configure.in.
+
+	* ext/digest/defs.h: remove checks for uint8_t, uint32_t and uint64_t.
+
 Fri Mar 14 10:12:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_VARTYPE): should not indent preprocessor
