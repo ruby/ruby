@@ -25,10 +25,6 @@
 #include <unistd.h>
 #endif
 
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif
-
 VALUE rb_cString;
 VALUE rb_cSymbol;
 

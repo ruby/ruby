@@ -58,6 +58,10 @@ extern "C" {
 # include <intrinsics.h>
 #endif
 
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+
 #include <stddef.h>
 #include <stdio.h>
 
