@@ -734,7 +734,7 @@ dbl2ival(double d)
 static VALUE
 flo_divmod(VALUE x, VALUE y)
 {
-    double fy, div, mod, val;
+    double fy, div, mod;
     volatile VALUE a, b;
 
     switch (TYPE(y)) {
