@@ -1,3 +1,8 @@
+Fri Mar 14 10:12:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_VARTYPE): should not indent preprocessor
+	  directives.
+
 Fri Mar 14 10:03:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (UNALIGNED_WORD_ACCESS): IA64 cannot access unaligned word.

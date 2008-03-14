@@ -707,17 +707,19 @@ AC_CACHE_CHECK([for external $1], rb_cv_var_$1,
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 1
 #endif
-    $2
-    const volatile void *volatile t;],
+$2
+;
+const volatile void *volatile t;],
     [t = &(&$1)[0];],
     [for t in $3; do
       AC_TRY_COMPILE([
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 1
 #endif
-        $2
-        extern $t $1;
-        const volatile void *volatile t;],
+$2
+;
+extern $t $1;
+const volatile void *volatile t;],
         [t = &(&$1)[0];],
         [rb_cv_var_$1=$t; break])
     done])])
@@ -725,13 +727,13 @@ if test "[$rb_cv_var_]$1" != no; then
   AC_DEFINE([HAVE_VAR_]m4_toupper($1))
   AC_DEFINE_UNQUOTED([TYPEOF_VAR_]m4_toupper($1), $rb_cv_var_$1)
 fi])
-RUBY_CHECK_VARTYPE(timezone, [#include <time.h>], [long int])
-RUBY_CHECK_VARTYPE(altzone, [#include <time.h>], [long int])
+RUBY_CHECK_VARTYPE(timezone, [@%:@include <time.h>], [long int])
+RUBY_CHECK_VARTYPE(altzone, [@%:@include <time.h>], [long int])
 if test "$rb_cv_var_timezone" = no; then
   AC_CHECK_FUNCS(timezone)
   if test "$ac_cv_func_timezone" = yes; then
     AC_CACHE_CHECK([whether timezone requires zero arguments], rb_cv_func_timezone_void,
-      [AC_TRY_COMPILE([#include <time.h>],
+      [AC_TRY_COMPILE([@%:@include <time.h>],
 	[(void)timezone(0, 0);],
 	[rb_cv_func_timezone_void=no],
 	[rb_cv_func_timezone_void=yes])]
