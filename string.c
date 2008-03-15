@@ -253,13 +253,19 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
     }
 }
 
+static inline void
+str_enc_copy(VALUE str1, VALUE str2)
+{
+    rb_enc_internal_set_index(str1, ENCODING_GET(str2));
+}
+
 static void
 rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
 {
     /* this function is designed for copying encoding and coderange
      * from src to new string "dest" which is made from the part of src.
      */
-    rb_enc_copy(dest, src);
+    str_enc_copy(dest, src);
     switch (ENC_CODERANGE(src)) {
       case ENC_CODERANGE_7BIT:
 	ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
@@ -285,7 +291,7 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
 static void
 rb_enc_cr_str_exact_copy(VALUE dest, VALUE src)
 {
-    rb_enc_copy(dest, src);
+    str_enc_copy(dest, src);
     ENC_CODERANGE_SET(dest, ENC_CODERANGE(src));
 }
 
@@ -1884,14 +1890,12 @@ rb_str_cmp(VALUE str1, VALUE str2)
 {
     long len;
     int retval;
-    rb_encoding *enc;
 
-    enc = rb_enc_compatible(str1, str2);
     len = lesser(RSTRING_LEN(str1), RSTRING_LEN(str2));
     retval = memcmp(RSTRING_PTR(str1), RSTRING_PTR(str2), len);
     if (retval == 0) {
 	if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) {
-	    if (!enc) {
+	    if (!rb_enc_compatible(str1, str2)) {
 		if (ENCODING_GET(str1) - ENCODING_GET(str2) > 0)
 		    return 1;
 		return -1;

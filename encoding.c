@@ -615,7 +615,7 @@ void
 rb_enc_associate_index(VALUE obj, int idx)
 {
     enc_check_capable(obj);
-    if (rb_enc_get_index(obj) == idx)
+    if (rb_enc_internal_get_index(obj) == idx)
     	return;
     if (!ENC_CODERANGE_ASCIIONLY(obj) ||
 	!rb_enc_asciicompat(rb_enc_from_index(idx))) {
