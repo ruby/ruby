@@ -1,5 +1,5 @@
 /*
-  nurat_core.c: Coded by Tadayoshi Funaba 2008
+  rational.c: Coded by Tadayoshi Funaba 2008
 
   This implementation is based on Keiju Ishitsuka's Rational library
   which is written in ruby.

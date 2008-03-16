@@ -1,5 +1,5 @@
 /*
-  nucomp_core.c: Coded by Tadayoshi Funaba 2008
+  complex.c: Coded by Tadayoshi Funaba 2008
 
   This implementation is based on Keiju Ishitsuka's Complex library
   which is written in ruby.
