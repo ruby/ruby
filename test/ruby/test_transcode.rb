@@ -3,7 +3,7 @@
 
 require 'test/unit'
 class TestTranscode < Test::Unit::TestCase
-  def setup # trick to create all the necessary encodings
+  def setup_really_needed? # trick to create all the necessary encodings
     all_encodings = [ 'ISO-8859-1', 'ISO-8859-2',
                       'ISO-8859-3', 'ISO-8859-4',
                       'ISO-8859-5', 'ISO-8859-6',
@@ -248,5 +248,9 @@ class TestTranscode < Test::Unit::TestCase
       "\x41\xC2\x3E\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
     assert_equal("\x00\x41\x00\xF1\x00\x42".force_encoding('UTF-16BE'),
       "\x41\xC2\xC3\xB1\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+    assert_equal("\x00\x42".force_encoding('UTF-16BE'),
+      "\xF0\x80\x80\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+    assert_equal(''.force_encoding('UTF-16BE'),
+      "\x82\xAB".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
   end
 end
