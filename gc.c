@@ -127,6 +127,8 @@ typedef struct RVALUE {
 	struct RFile   file;
 	struct RNode   node;
 	struct RMatch  match;
+	struct RRational rational;
+	struct RComplex complex;
     } as;
 #ifdef GC_DEBUG
     char *file;
@@ -1128,6 +1130,16 @@ gc_mark_children(VALUE ptr, int lev)
 	}
 	break;
 
+      case T_RATIONAL:
+	gc_mark(obj->as.rational.num, lev);
+	gc_mark(obj->as.rational.den, lev);
+	break;
+
+      case T_COMPLEX:
+	gc_mark(obj->as.complex.real, lev);
+	gc_mark(obj->as.complex.image, lev);
+	break;
+
       case T_STRUCT:
 	{
 	    long len = RSTRUCT_LEN(obj);
@@ -1368,6 +1380,9 @@ obj_free(VALUE obj)
 	if (RANY(obj)->as.file.fptr) {
 	    rb_io_fptr_finalize(RANY(obj)->as.file.fptr);
 	}
+	break;
+      case T_RATIONAL:
+      case T_COMPLEX:
 	break;
       case T_ICLASS:
 	/* iClass shares table with the module */

@@ -127,7 +127,7 @@ class Rational
     if other.kind_of?(Rational)
       other2 = other
       if self < 0
-	return Complex.new!(self, 0) ** other
+	return Complex.__send__(:new!, self, 0) ** other
       elsif other == 0
 	return Rational(1,1)
       elsif self == 0
@@ -175,7 +175,7 @@ class Rational
 	num = 1
 	den = 1
       end
-      Rational.new!(num, den)
+      Rational(num, den)
     elsif other.kind_of?(Float)
       Float(self) ** other
     else
@@ -187,7 +187,7 @@ class Rational
   def power2(other)
     if other.kind_of?(Rational)
       if self < 0
-	return Complex(self, 0) ** other
+	return Complex.__send__(:new!, self, 0) ** other
       elsif other == 0
 	return Rational(1,1)
       elsif self == 0
@@ -219,7 +219,7 @@ class Rational
 	num = 1
 	den = 1
       end
-      Rational.new!(num, den)
+      Rational(num, den)
     elsif other.kind_of?(Float)
       Float(self) ** other
     else
@@ -306,4 +306,3 @@ end
 class Complex
   Unify = true
 end
-

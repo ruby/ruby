@@ -23,6 +23,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
+		complex.$(OBJEXT) \
 		dir.$(OBJEXT) \
 		enum.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
@@ -45,6 +46,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		prec.$(OBJEXT) \
 		random.$(OBJEXT) \
 		range.$(OBJEXT) \
+		rational.$(OBJEXT) \
 		re.$(OBJEXT) \
 		regcomp.$(OBJEXT) \
 		regenc.$(OBJEXT) \
@@ -424,6 +426,9 @@ class.$(OBJEXT): {$(VPATH)}class.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
 compar.$(OBJEXT): {$(VPATH)}compar.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h
+complex.$(OBJEXT): {$(VPATH)}complex.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
+  {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
+  {$(VPATH)}st.h
 dir.$(OBJEXT): {$(VPATH)}dir.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h {$(VPATH)}util.h
@@ -528,6 +533,9 @@ random.$(OBJEXT): {$(VPATH)}random.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h
 range.$(OBJEXT): {$(VPATH)}range.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
+  {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
+  {$(VPATH)}st.h
+rational.$(OBJEXT): {$(VPATH)}rational.c {$(VPATH)}ruby.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}missing.h {$(VPATH)}intern.h \
   {$(VPATH)}st.h
 re.$(OBJEXT): {$(VPATH)}re.c {$(VPATH)}ruby.h {$(VPATH)}config.h \

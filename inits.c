@@ -15,6 +15,7 @@ void Init_Array(void);
 void Init_Bignum(void);
 void Init_Binding(void);
 void Init_Comparable(void);
+void Init_Complex(void);
 void Init_transcode(void);
 void Init_Dir(void);
 void Init_Enumerable(void);
@@ -39,6 +40,7 @@ void Init_id(void);
 void Init_process(void);
 void Init_Random(void);
 void Init_Range(void);
+void Init_Rational(void);
 void Init_Regexp(void);
 void Init_signal(void);
 void Init_String(void);
@@ -96,5 +98,7 @@ rb_call_inits()
     Init_ISeq();
     Init_Thread();
     Init_Cont();
+    Init_Rational();
+    Init_Complex();
     Init_version();
 }

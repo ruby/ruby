@@ -646,6 +646,17 @@ flo_div(VALUE x, VALUE y)
     }
 }
 
+static VALUE
+flo_quo(VALUE x, VALUE y)
+{
+    return rb_funcall(x, '/', 1, y);
+}
+
+static VALUE
+flo_rdiv(VALUE x, VALUE y)
+{
+    return rb_funcall(rb_Rational1(x), '/', 1, y);
+}
 
 static void
 flodivmod(double x, double y, double *divp, double *modp)
@@ -1699,6 +1710,17 @@ rb_num2ull(VALUE val)
 
 #endif  /* HAVE_LONG_LONG */
 
+static VALUE
+num_numerator(VALUE num)
+{
+    return rb_funcall(rb_Rational1(num), rb_intern("numerator"), 0);
+}
+
+static VALUE
+num_denominator(VALUE num)
+{
+    return rb_funcall(rb_Rational1(num), rb_intern("denominator"), 0);
+}
 
 /*
  * Document-class: Integer
@@ -1880,6 +1902,18 @@ int_chr(int argc, VALUE *argv, VALUE num)
     return str;
 }
 
+static VALUE
+int_numerator(VALUE num)
+{
+    return num;
+}
+
+static VALUE
+int_denominator(VALUE num)
+{
+    return INT2FIX(1);
+}
+
 /********************************************************************
  *
  * Document-class: Fixnum
@@ -1928,6 +1962,7 @@ rb_int_induced_from(VALUE klass, VALUE x)
       case T_BIGNUM:
 	return x;
       case T_FLOAT:
+      case T_RATIONAL:
 	return rb_funcall(x, id_to_i, 0);
       default:
 	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
@@ -1948,6 +1983,7 @@ rb_flo_induced_from(VALUE klass, VALUE x)
     switch (TYPE(x)) {
       case T_FIXNUM:
       case T_BIGNUM:
+      case T_RATIONAL:
 	return rb_funcall(x, rb_intern("to_f"), 0);
       case T_FLOAT:
 	return x;
@@ -2199,6 +2235,12 @@ fixdivmod(long x, long y, long *divp, long *modp)
 static VALUE
 fix_quo(VALUE x, VALUE y)
 {
+    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
+}
+
+static VALUE
+fix_fdiv(VALUE x, VALUE y)
+{
     if (FIXNUM_P(y)) {
 	return DOUBLE2NUM((double)FIX2LONG(x) / (double)FIX2LONG(y));
     }
@@ -2208,7 +2250,7 @@ fix_quo(VALUE x, VALUE y)
       case T_FLOAT:
 	return DOUBLE2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
       default:
-	return rb_num_coerce_bin(x, y, rb_intern("quo"));
+	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
     }
 }
 
@@ -2392,6 +2434,9 @@ fix_pow(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	long b = FIX2LONG(y);
 
+	if (b < 0)
+	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
 	if (a == 0) {
@@ -2405,13 +2450,14 @@ fix_pow(VALUE x, VALUE y)
 	    else 
 		return INT2FIX(-1);
 	}
-	if (b > 0) {
-	    return int_pow(a, b);
-	}
-	return DOUBLE2NUM(pow((double)a, (double)b));
+	return int_pow(a, b);
     }
     switch (TYPE(y)) {
       case T_BIGNUM:
+
+	if (rb_funcall(y, '<', 1, INT2FIX(0)))
+	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+
 	if (a == 0) return INT2FIX(0);
 	if (a == 1) return INT2FIX(1);
 	if (a == -1) {
@@ -3117,6 +3163,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "quo", num_quo, 1);
+    rb_define_method(rb_cNumeric, "rdiv", num_quo, 1);
     rb_define_method(rb_cNumeric, "fdiv", num_quo, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
@@ -3135,6 +3182,9 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "round", num_round, -1);
     rb_define_method(rb_cNumeric, "truncate", num_truncate, 0);
     rb_define_method(rb_cNumeric, "step", num_step, -1);
+
+    rb_define_method(rb_cNumeric, "numerator", num_numerator, 0);
+    rb_define_method(rb_cNumeric, "denominator", num_denominator, 0);
 
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
     rb_undef_alloc_func(rb_cInteger);
@@ -3163,6 +3213,9 @@ Init_Numeric(void)
     rb_define_singleton_method(rb_cFixnum, "induced_from", rb_fix_induced_from, 1);
     rb_define_singleton_method(rb_cInteger, "induced_from", rb_int_induced_from, 1);
 
+    rb_define_method(rb_cInteger, "numerator", int_numerator, 0);
+    rb_define_method(rb_cInteger, "denominator", int_denominator, 0);
+
     rb_define_method(rb_cFixnum, "to_s", fix_to_s, -1);
 
     rb_define_method(rb_cFixnum, "id2name", fix_id2name, 0);
@@ -3178,7 +3231,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
     rb_define_method(rb_cFixnum, "quo", fix_quo, 1);
-    rb_define_method(rb_cFixnum, "fdiv", fix_quo, 1);
+    rb_define_method(rb_cFixnum, "rdiv", fix_quo, 1);
+    rb_define_method(rb_cFixnum, "fdiv", fix_fdiv, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
     rb_define_method(rb_cFixnum, "abs", fix_abs, 0);
@@ -3233,6 +3287,9 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "-", flo_minus, 1);
     rb_define_method(rb_cFloat, "*", flo_mul, 1);
     rb_define_method(rb_cFloat, "/", flo_div, 1);
+    rb_define_method(rb_cFloat, "quo", flo_quo, 1);
+    rb_define_method(rb_cFloat, "rdiv", flo_rdiv, 1);
+    rb_define_method(rb_cFloat, "fdiv", flo_quo, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
     rb_define_method(rb_cFloat, "modulo", flo_mod, 1);
     rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);

@@ -273,6 +273,11 @@ enum ruby_value_type {
     RUBY_T_SYMBOL = 0x14,
 #define T_SYMBOL RUBY_T_SYMBOL
 
+    RUBY_T_RATIONAL = 0x15,
+#define T_RATIONAL RUBY_T_RATIONAL
+    RUBY_T_COMPLEX = 0x16,
+#define T_COMPLEX RUBY_T_COMPLEX
+
     RUBY_T_VALUES = 0x1a,
 #define T_VALUES RUBY_T_VALUES
     RUBY_T_BLOCK  = 0x1b,
@@ -522,6 +527,18 @@ struct RFile {
     struct rb_io_t *fptr;
 };
 
+struct RRational {
+    struct RBasic basic;
+    VALUE num;
+    VALUE den;
+};
+
+struct RComplex {
+    struct RBasic basic;
+    VALUE real;
+    VALUE image;
+};
+
 struct RData {
     struct RBasic basic;
     void (*dmark)(void*);
@@ -622,6 +639,8 @@ struct RBignum {
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
+#define RRATIONAL(obj) (R_CAST(RRational)(obj))
+#define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
 #define RVALUES(obj) (R_CAST(RValues)(obj))
 
 #define FL_SINGLETON FL_USER0
@@ -851,6 +870,8 @@ RUBY_EXTERN VALUE rb_cNilClass;
 RUBY_EXTERN VALUE rb_cNumeric;
 RUBY_EXTERN VALUE rb_cProc;
 RUBY_EXTERN VALUE rb_cRange;
+RUBY_EXTERN VALUE rb_cRational;
+RUBY_EXTERN VALUE rb_cComplex;
 RUBY_EXTERN VALUE rb_cRegexp;
 RUBY_EXTERN VALUE rb_cStat;
 RUBY_EXTERN VALUE rb_cString;

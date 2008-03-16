@@ -1902,6 +1902,12 @@ static VALUE big_shift(VALUE x, int n)
 static VALUE
 rb_big_quo(VALUE x, VALUE y)
 {
+    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
+}
+
+static VALUE
+rb_big_fdiv(VALUE x, VALUE y)
+{
     double dx = big2dbl(x);
     double dy;
 
@@ -1947,7 +1953,7 @@ rb_big_quo(VALUE x, VALUE y)
 	break;
 
       default:
-	return rb_num_coerce_bin(x, y, rb_intern("quo"));
+	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
     }
     return DOUBLE2NUM(dx / dy);
 }
@@ -2025,13 +2031,19 @@ rb_big_pow(VALUE x, VALUE y)
 	break;
 
       case T_BIGNUM:
+	if (rb_funcall(y, '<', 1, INT2FIX(0)))
+	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+
 	rb_warn("in a**b, b may be too big");
 	d = rb_big2dbl(y);
 	break;
 
       case T_FIXNUM:
 	yy = FIX2LONG(y);
-	if (yy > 0) {
+
+	if (yy < 0)
+	  return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
 	    const long BIGLEN_LIMIT = 1024*1024 / SIZEOF_BDIGITS;
@@ -2050,7 +2062,7 @@ rb_big_pow(VALUE x, VALUE y)
 	    }
 	    return bignorm(z);
 	}
-	d = (double)yy;
+	/* NOTREACHED */
 	break;
 
       default:
@@ -2590,7 +2602,8 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
     rb_define_method(rb_cBignum, "quo", rb_big_quo, 1);
-    rb_define_method(rb_cBignum, "fdiv", rb_big_quo, 1);
+    rb_define_method(rb_cBignum, "rdiv", rb_big_quo, 1);
+    rb_define_method(rb_cBignum, "fdiv", rb_big_fdiv, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
     rb_define_method(rb_cBignum, "|", rb_big_or, 1);

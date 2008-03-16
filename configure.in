@@ -693,7 +693,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit setrlimit sysconf group_member\
 	      dlopen sigprocmask sigaction sigsetjmp _setjmp vsnprintf snprintf\
-	      setsid telldir seekdir fchmod cosh sinh tanh log2 round\
+	      setsid telldir seekdir fchmod cosh sinh tanh log2 round signbit\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
 	      mktime timegm clock_gettime gettimeofday)
 AC_ARG_ENABLE(setreuid,

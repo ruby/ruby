@@ -1,3 +1,43 @@
+Sun Mar 16 08:51:41 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* include/ruby/intern.h: added some declarations.
+
+	* include/ruby/ruby.h: ditto.
+
+	* common.mk: added some entries.
+
+	* configure.in: added a check for signbit.
+
+	* lib/complex.rb: nearly all of core definitions have been removed.
+
+	* lib/rational.rb: ditto.
+
+	* lib/mathn.rb: some trivial adjustments.
+
+	* complex.c: new.
+
+	* rational.c: ditto.
+
+	* numeric.c (flo_{quo,rdiv}, fix_fdiv): added.
+
+	* numeric.c ({num,int}_{numerator,denominator}): ditto.
+
+	* bignum.c (rb_big_fdiv): ditto.
+
+	* numeric.c (fix_{quo,pow}): now may yield rational number.
+
+	* bignum.c (rb_big_{quo,pow}): ditto.
+
+	* numeric.c (rb_{int,flo}_induced_from): now can accept rational.
+
+	* gc.c (gc_mark_children, obj_free): now detects complex and rational.
+
+	* inits.c (rb_call_inits): now calls Init_{Complex,Rational}.
+
+	* test/ruby/test_complex.rb: new.
+
+	* test/ruby/test_rational.rb: ditto.
+
 Sat Mar 15 17:48:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* encoding.c (rb_enc_associate_index): pass unnecessary enc_capable().

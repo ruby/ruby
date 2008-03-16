@@ -117,6 +117,26 @@ VALUE rb_big_or(VALUE, VALUE);
 VALUE rb_big_xor(VALUE, VALUE);
 VALUE rb_big_lshift(VALUE, VALUE);
 VALUE rb_big_rshift(VALUE, VALUE);
+/* rational.c */
+VALUE rb_rational_raw(VALUE, VALUE);
+#define rb_rational_raw1(x) rb_rational_raw(x, INT2FIX(1))
+#define rb_rational_raw2(x,y) rb_rational_raw(x, y)
+VALUE rb_rational_new(VALUE, VALUE);
+#define rb_rational_new1(x) rb_rational_new(x, INT2FIX(1))
+#define rb_rational_new2(x,y) rb_rational_new(x, y)
+VALUE rb_Rational(VALUE, VALUE);
+#define rb_Rational1(x) rb_Rational(x, INT2FIX(1))
+#define rb_Rational2(x,y) rb_Rational(x, y)
+/* complex.c */
+VALUE rb_complex_raw(VALUE, VALUE);
+#define rb_complex_raw1(x) rb_complex_raw(x, INT2FIX(0))
+#define rb_complex_raw2(x,y) rb_complex_raw(x, y)
+VALUE rb_complex_new(VALUE, VALUE);
+#define rb_complex_new1(x) rb_complex_new(x, INT2FIX(0))
+#define rb_complex_new2(x,y) rb_complex_new(x, y)
+VALUE rb_Complex(VALUE, VALUE);
+#define rb_Complex1(x) rb_Complex(x, INT2FIX(0))
+#define rb_Complex2(x,y) rb_Complex(x, y)
 /* class.c */
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_new(VALUE);
