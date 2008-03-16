@@ -1,3 +1,7 @@
+Sun Mar 16 17:28:07 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (LIBRUBY_SO): add dependency to $(BUILTIN_ENCOBJS).
+
 Sun Mar 16 08:51:41 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* include/ruby/intern.h: added some declarations.
