@@ -13,7 +13,7 @@ class Object
   end
 
   def self.const_missing c
-    t = @@golf_hash[ [m,self.class] ] ||= matching_methods(c,constants)[0]
+    t = @@golf_hash[ [c,self.class] ] ||= matching_methods(c,constants)[0]
     t and return const_get(t)
     raise NameError, "uninitialized constant #{c}", caller(1)
   end
