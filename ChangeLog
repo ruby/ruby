@@ -1,3 +1,23 @@
+Tue Mar 18 04:00:27 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_memsearch_ss): simple shift search.
+
+	* re.c (rb_memsearch_qs): quick search.
+
+	* re.c (rb_memsearch_qs_utf8): quick search for UTF-8 string.
+
+	* re.c (rb_memsearch_qs_utf8_hash): hash functions for above.
+
+	* re.c (rb_memsearch): use above functions.
+
+	* string.c (rb_str_index): give enc to rb_memsearch.
+
+	* include/ruby/intern.h (rb_memsearch): move to encoding.h.
+
+	* include/ruby/encoding.h (rb_memsearch): move from intern.h.
+
+	* common.mk (PREP): add dependency.
+
 Mon Mar 17 22:23:54 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_take, rb_ary_take_while, rb_ary_drop,

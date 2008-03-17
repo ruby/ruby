@@ -110,6 +110,8 @@ all: $(MKFILES) $(PREP) encdb transdb $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
+$(PREP): $(MKFILES)
+
 miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
 
 GORUBY = go$(RUBY_INSTALL_NAME)

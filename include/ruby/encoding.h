@@ -176,5 +176,6 @@ int rb_usascii_encindex(void);
 VALUE rb_enc_default_external(void);
 void rb_enc_set_default_external(VALUE encoding);
 VALUE rb_locale_charmap(VALUE klass);
+long rb_memsearch(const void*,long,const void*,long,rb_encoding*);
 
 #endif /* RUBY_ENCODING_H */

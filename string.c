@@ -2088,7 +2088,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     len = RSTRING_LEN(str) - offset;
     for (;;) {
 	char *t;
-	pos = rb_memsearch(sptr, slen, s, len);
+	pos = rb_memsearch(sptr, slen, s, len, enc);
 	if (pos < 0) return pos;
 	t = rb_enc_right_char_head(s, s+pos, enc);
 	if (t == s + pos) break;

@@ -466,7 +466,6 @@ double rb_genrand_real(void);
 /* re.c */
 #define rb_memcmp memcmp
 int rb_memcicmp(const void*,const void*,long);
-long rb_memsearch(const void*,long,const void*,long);
 VALUE rb_reg_nth_defined(int, VALUE);
 VALUE rb_reg_nth_match(int, VALUE);
 VALUE rb_reg_last_match(VALUE);

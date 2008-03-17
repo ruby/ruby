@@ -95,41 +95,145 @@ rb_memcmp(const void *p1, const void *p2, long len)
     return memcmp(p1, p2, len);
 }
 
-long
-rb_memsearch(const void *x0, long m, const void *y0, long n)
+static inline long
+rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
-    const unsigned char *x = x0, *y = y0;
-    const unsigned char *s, *e;
-    long i;
-    int d;
-    unsigned long hx, hy;
+    const unsigned char *x = xs, *xe = xs + m;
+    const unsigned char *y = ys, *ye = ys + n;
+#ifndef VALUE_MAX
+# if SIZEOF_VALUE == 8
+#  define VALUE_MAX 0xFFFFFFFFFFFFFFFFULL
+# elif SIZEOF_VALUE == 4
+#  define VALUE_MAX 0xFFFFFFFFUL
+# endif
+#endif
+    VALUE hx, hy, mask = VALUE_MAX >> ((SIZEOF_VALUE - m) * CHAR_BIT);
 
-#define KR_REHASH(a, b, h) (((h) << 1) - (((unsigned long)(a))<<d) + (b))
+    if (m > SIZEOF_VALUE)
+	rb_bug("!!too long pattern string!!");
 
-    if (m > n) return -1;
-    s = y; e = s + n - m;
-
-    /* Preprocessing */
-    /* computes d = 2^(m-1) with
-       the left-shift operator */
-    d = sizeof(hx) * CHAR_BIT - 1;
-    if (d > m) d = m;
-
-    if (n == m) {
-	return memcmp(x, s, m) == 0 ? 0 : -1;
-    }
-    /* Prepare hash value */
-    for (hy = hx = i = 0; i < d; ++i) {
-	hx = KR_REHASH(0, x[i], hx);
-	hy = KR_REHASH(0, s[i], hy);
+    	/* Prepare hash value */
+    for (hx = *x++, hy = *y++; x < xe; ++x, ++y) {
+	hx <<= CHAR_BIT;
+	hy <<= CHAR_BIT;
+	hx |= *x;
+	hy |= *y;
     }
     /* Searching */
-    while (hx != hy || memcmp(x, s, m)) {
-	if (s >= e) return -1;
-	hy = KR_REHASH(*s, *(s+d), hy);
-	s++;
+    while (hx != hy) {
+	if (y == ye)
+	    return -1;
+	hy <<= CHAR_BIT;
+	hy |= *y;
+	hy &= mask;
+	y++;
     }
-    return s-y;
+    return y - ys - m;
+}
+
+static inline long
+rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n)
+{
+    const unsigned char *x = xs, *xe = xs + m;
+    const unsigned char *y = ys, *ye = ys + n;
+    VALUE i, qstable[256];
+
+    /* Preprocessing */
+    for (i = 0; i < 256; ++i)
+	qstable[i] = m + 1;
+    for (; x < xe; ++x)
+	qstable[*x] = xe - x;
+    /* Searching */
+    for (; y < ye; y += *(qstable + y[m])) {
+	if (*xs == *y && memcmp(xs, y, m) == 0)
+	    return y - ys;
+    }
+    return -1;
+}
+
+static inline unsigned int
+rb_memsearch_qs_utf8_hash(const unsigned char *x)
+{
+    register const unsigned int mix = 8353;
+    register unsigned int h = *x;
+    if (h < 0xC0) {
+	return h + 256;
+    }
+    else if (h < 0xE0) {
+	h *= mix;
+	h += x[1];
+    }
+    else if (h < 0xF0) {
+	h *= mix;
+	h += x[1];
+	h *= mix;
+	h += x[2];
+    }
+    else if (h < 0xF5) {
+	h *= mix;
+	h += x[1];
+	h *= mix;
+	h += x[2];
+	h *= mix;
+	h += x[3];
+    }
+    else {
+	return h + 256;
+    }
+    return (unsigned char)h;
+}
+
+static inline long
+rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, long n)
+{
+    const unsigned char *x = xs, *xe = xs + m;
+    const unsigned char *y = ys, *ye = ys + n;
+    VALUE i, qstable[512];
+
+    /* Preprocessing */
+    for (i = 0; i < 512; ++i) {
+	qstable[i] = m + 1;
+    }
+    for (; x < xe; ++x) {
+	qstable[rb_memsearch_qs_utf8_hash(x)] = xe - x;
+    }
+    /* Searching */
+    for (; y < ye; y += qstable[rb_memsearch_qs_utf8_hash(y+m)]) {
+	if (*xs == *y && memcmp(xs, y, m) == 0)
+	    return y - ys;
+    }
+    return -1;
+}
+
+long
+rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
+{
+    const unsigned char *x = x0, *y = y0;
+
+    if (m > n) return -1;
+    else if (m == n) {
+	return memcmp(x0, y0, m) == 0 ? 0 : -1;
+    }
+    else if (m < 1) {
+	return 0;
+    }
+    else if (m == 1) {
+	const unsigned char *ys = y, *ye = ys + n;
+	for (; y < ye; ++y) {
+	    if (*x == *y)
+		return y - ys;
+	}
+	return -1;
+    }
+    else if (m <= SIZEOF_VALUE) {
+	return rb_memsearch_ss(x0, m, y0, n);
+    }
+    else if (enc == rb_utf8_encoding()){
+	return rb_memsearch_qs_utf8(x0, m, y0, n);
+    }
+    else {
+	return rb_memsearch_qs(x0, m, y0, n);
+    }
 }
 
 #define REG_LITERAL FL_USER5
