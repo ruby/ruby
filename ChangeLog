@@ -1,3 +1,7 @@
+Mon Mar 17 16:41:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: unset GREP_OPTIONS.  [ruby-core:15918]
+
 Sun Mar 16 18:07:07 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/trans/utf_16_32.c: bug fix (some invalid UTF-8 sequences
