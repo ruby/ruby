@@ -1,3 +1,9 @@
+Mon Mar 17 17:11:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-mode): should use `run-mode-hooks' instead
+	  of calling `run-hooks' directly to run the mode hook.  patch from
+	  Chiyuan Zhang <pluskid AT gmail.com> in [ruby-core:15915]
+
 Mon Mar 17 16:41:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: unset GREP_OPTIONS.  [ruby-core:15918]
