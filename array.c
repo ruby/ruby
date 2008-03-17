@@ -3228,6 +3228,96 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+/*
+ *  call-seq:
+ *     ary.take(n)               => array
+ *  
+ *  Returns first n elements from <i>ary</i>.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.take(3)             # => [1, 2, 3]
+ *     
+ */
+
+static VALUE
+rb_ary_take(VALUE obj, VALUE n)
+{
+    return rb_ary_subseq(obj, 0, FIX2LONG(n));
+}
+
+/*
+ *  call-seq:
+ *     ary.take_while {|arr| block }   => array
+ *  
+ *  Passes elements to the block until the block returns nil or false,
+ *  then stops iterating and returns an array of all prior elements.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.take_while {|i| i < 3 }   # => [1, 2]
+ *     
+ */
+
+static VALUE
+rb_ary_take_while(VALUE ary)
+{
+    VALUE result;
+    long i;
+
+    RETURN_ENUMERATOR(ary, 0, 0);
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+	if (!RTEST(rb_yield(RARRAY_PTR(ary)[i]))) break;
+    }
+    return rb_ary_take(ary, LONG2FIX(i));
+}
+
+/*
+ *  call-seq:
+ *     ary.drop(n)               => array
+ *  
+ *  Drops first n elements from <i>ary</i>, and returns rest elements
+ *  in an array.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.drop(3)             # => [4, 5, 0]
+ *     
+ */
+
+static VALUE
+rb_ary_drop(VALUE ary, VALUE n)
+{
+    VALUE result;
+
+    result = rb_ary_subseq(ary, FIX2LONG(n), RARRAY_LEN(ary));
+    if (result == Qnil) result = rb_ary_new();
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     ary.drop_while {|arr| block }   => array
+ *  
+ *  Drops elements up to, but not including, the first element for
+ *  which the block returns nil or false and returns an array
+ *  containing the remaining elements.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.drop_while {|i| i < 3 }   # => [3, 4, 5, 0]
+ *     
+ */
+
+static VALUE
+rb_ary_drop_while(VALUE ary)
+{
+    VALUE result;
+    long i;
+
+    RETURN_ENUMERATOR(ary, 0, 0);
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+	if (!RTEST(rb_yield(RARRAY_PTR(ary)[i]))) break;
+    }
+    return rb_ary_drop(ary, LONG2FIX(i));
+}
+
 
 
 /* Arrays are ordered, integer-indexed collections of any object. 
@@ -3331,6 +3421,11 @@ Init_Array(void)
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
     rb_define_method(rb_cArray, "product", rb_ary_product, -1);
+
+    rb_define_method(rb_cArray, "take", rb_ary_take, 1);
+    rb_define_method(rb_cArray, "take_while", rb_ary_take_while, 0);
+    rb_define_method(rb_cArray, "drop", rb_ary_drop, 1);
+    rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
 
     id_cmp = rb_intern("<=>");
 }

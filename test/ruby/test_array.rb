@@ -1229,4 +1229,20 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[].permutation(0).to_a, @cls[[]])
 
   end
+
+  def test_take
+    assert_equal([1,2,3], [1,2,3,4,5,0].take(3))
+  end
+
+  def test_take_while
+    assert_equal([1,2], [1,2,3,4,5,0].take_while {|i| i < 3 })
+  end
+
+  def test_drop
+    assert_equal([4,5,0], [1,2,3,4,5,0].drop(3))
+  end
+
+  def test_drop_while
+    assert_equal([3,4,5,0], [1,2,3,4,5,0].drop_while {|i| i < 3 })
+  end
 end
