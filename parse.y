@@ -7465,15 +7465,19 @@ list_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
     return head;
 }
 
-static void
+static int
 literal_concat0(struct parser_params *parser, VALUE head, VALUE tail)
 {
     if (!rb_enc_compatible(head, tail)) {
 	compile_error(PARSER_ARG "string literal encodings differ (%s / %s)",
 		      rb_enc_name(rb_enc_get(head)),
 		      rb_enc_name(rb_enc_get(tail)));
+	rb_str_resize(head, 0);
+	rb_str_resize(tail, 0);
+	return 0;
     }
     rb_str_buf_append(head, tail);
+    return 1;
 }
 
 /* concat two string literals */
@@ -7493,7 +7497,12 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
     switch (nd_type(tail)) {
       case NODE_STR:
 	if (htype == NODE_STR) {
-	    literal_concat0(parser, head->nd_lit, tail->nd_lit);
+	    if (!literal_concat0(parser, head->nd_lit, tail->nd_lit)) {
+	      error:
+		rb_gc_force_recycle((VALUE)head);
+		rb_gc_force_recycle((VALUE)tail);
+		return 0;
+	    }
 	    rb_gc_force_recycle((VALUE)tail);
 	}
 	else {
@@ -7503,7 +7512,8 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail)
 
       case NODE_DSTR:
 	if (htype == NODE_STR) {
-	    literal_concat0(parser, head->nd_lit, tail->nd_lit);
+	    if (!literal_concat0(parser, head->nd_lit, tail->nd_lit))
+		goto error;
 	    tail->nd_lit = head->nd_lit;
 	    rb_gc_force_recycle((VALUE)head);
 	    head = tail;
