@@ -240,7 +240,7 @@ class ERB
 
   # Returns revision information for the erb.rb module.
   def self.version
-    "erb.rb [2.0.4 #{ERB::Revision.split[1]}]"
+    "erb.rb [2.1.0 #{ERB::Revision.split[1]}]"
   end
 end
 
@@ -254,11 +254,13 @@ class ERB
       end
       attr_reader :value
       alias :to_s :value
+
+      def empty?
+        @value.empty?
+      end
     end
 
     class Scanner # :nodoc:
-      SplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
-
       @scanner_map = {}
       def self.regist_scanner(klass, trim_mode, percent)
 	@scanner_map[[trim_mode, percent]] = klass
@@ -283,8 +285,6 @@ class ERB
     end
 
     class TrimScanner < Scanner # :nodoc:
-      TrimSplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>\n)|(%>)|(\n)/
-
       def initialize(src, trim_mode, percent)
 	super
 	@trim_mode = trim_mode
@@ -308,9 +308,7 @@ class ERB
 	    percent_line(line, &block)
 	  end
 	else
-	  @src.each do |line|
-	    @scan_line.call(line, &block)
-	  end
+          @scan_line.call(@src, &block)
 	end
 	nil
       end
@@ -329,39 +327,45 @@ class ERB
       end
 
       def scan_line(line)
-	line.split(SplitRegexp).each do |token|
+        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |token|
 	  next if token.empty?
 	  yield(token)
 	end
       end
 
       def trim_line1(line)
-	line.split(TrimSplitRegexp).each do |token|
+        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
+          tokens.each do |token|
 	  next if token.empty?
-	  if token == "%>\n"
-	    yield('%>')
-	    yield(:cr)
-	    break
-	  end
-	  yield(token)
+            if token == "%>\n"
+              yield('%>')
+              yield(:cr)
+            else
+              yield(token)
+            end
+          end
 	end
       end
 
       def trim_line2(line)
 	head = nil
-	line.split(TrimSplitRegexp).each do |token|
-	  next if token.empty?
-	  head = token unless head
-	  if token == "%>\n"
-	    yield('%>')
-	    if  is_erb_stag?(head)
-	      yield(:cr)
-	    else
-	      yield("\n")
-	    end
-	    break
-	  end
-	  yield(token)
+        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
+          tokens.each do |token|
+            next if token.empty?
+            head = token unless head
+            if token == "%>\n"
+              yield('%>')
+              if  is_erb_stag?(head)
+                yield(:cr)
+              else
+                yield("\n")
+              end
+              head = nil
+            else
+              yield(token)
+              head = nil if token == "\n"
+            end
+          end
 	end
       end
 
@@ -392,11 +396,11 @@ class ERB
 
     class SimpleScanner < Scanner # :nodoc:
       def scan
-	@src.each do |line|
-	  line.split(SplitRegexp).each do |token|
-	    next if token.empty?
-	    yield(token)
-	  end
+        @src.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>|\n|\z)/m) do |tokens|
+          tokens.each do |token|
+            next if token.empty?
+            yield(token)
+          end
 	end
       end
     end
@@ -407,15 +411,13 @@ class ERB
       require 'strscan'
       class SimpleScanner2 < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|\z)/
-          etag_reg = /(.*?)(%%>|%>|\n|\z)/
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\z)/m
+          etag_reg = /(.*?)(%%>|%>|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
             scanner.scan(@stag ? etag_reg : stag_reg)
-            text = scanner[1]
-            elem = scanner[2]
-            yield(text) unless text.empty?
-            yield(elem) unless elem.empty?
+            yield(scanner[1])
+            yield(scanner[2])
           end
         end
       end
@@ -423,27 +425,20 @@ class ERB
 
       class PercentScanner < Scanner # :nodoc:
 	def scan
-	  new_line = true
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|\z)/
-          etag_reg = /(.*?)(%%>|%>|\n|\z)/
+          stag_reg = /(.*?)(^%%|^%|<%%|<%=|<%#|<%|\z)/m
+          etag_reg = /(.*?)(%%>|%>|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
-	    if new_line && @stag.nil?
-	      if scanner.scan(/%%/)
-		yield('%')
-		new_line = false
-		next
-	      elsif scanner.scan(/%/)
-		yield(PercentLine.new(scanner.scan(/.*?(\n|\z)/).chomp))
-		next
-	      end
-	    end
 	    scanner.scan(@stag ? etag_reg : stag_reg)
-            text = scanner[1]
+            yield(scanner[1])
+
             elem = scanner[2]
-            yield(text) unless text.empty?
-            yield(elem) unless elem.empty?
-	    new_line = (elem == "\n")
+            if elem == '%%'
+              elem = '%'
+            elsif elem == '%'
+              elem = PercentLine.new(scanner.scan(/.*?(\n|\z)/).chomp)
+            end
+            yield(elem)
           end
         end
       end
@@ -451,31 +446,21 @@ class ERB
 
       class ExplicitScanner < Scanner # :nodoc:
 	def scan
-	  new_line = true
-          stag_reg = /(.*?)(<%%|<%=|<%#|<%-|<%|\n|\z)/
-          etag_reg = /(.*?)(%%>|-%>|%>|\n|\z)/
+          stag_reg = /(.*?)(^[ \t]*<%-|<%%|<%=|<%#|<%-|<%|\z)/m
+          etag_reg = /(.*?)(%%>|-%>|%>|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
-	    if new_line && @stag.nil? && scanner.scan(/[ \t]*<%-/)
-	      yield('<%')
-	      new_line = false
-	      next
-	    end
 	    scanner.scan(@stag ? etag_reg : stag_reg)
-            text = scanner[1]
+            yield(scanner[1])
+
             elem = scanner[2]
-	    new_line = (elem == "\n")
-            yield(text) unless text.empty?
-	    if elem == '-%>'
+            if /[ \t]*<%-/ =~ elem
+              yield('<%')
+            elsif elem == '-%>'
 	      yield('%>')
-	      if scanner.scan(/(\n|\z)/)
-		yield(:cr)
-		new_line = true
-	      end
-	    elsif elem == '<%-'
-	      yield('<%')
+	      yield(:cr) if scanner.scan(/(\n|\z)/)
 	    else
-	      yield(elem) unless elem.empty?
+	      yield(elem)
 	    end
           end
         end
@@ -516,16 +501,27 @@ class ERB
       end
     end
 
+    def content_dump(s)
+      n = s.count("\n")
+      if n > 0
+        s.dump + "\n" * n
+      else
+        s.dump
+      end
+    end
+
     def compile(s)
       out = Buffer.new(self)
 
       content = ''
       scanner = make_scanner(s)
       scanner.scan do |token|
+        next if token.nil? 
+        next if token == ''
 	if scanner.stag.nil?
 	  case token
           when PercentLine
-	    out.push("#{@put_cmd} #{content.dump}") if content.size > 0
+	    out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
 	    content = ''
             out.push(token.to_s)
             out.cr
@@ -533,12 +529,11 @@ class ERB
 	    out.cr
 	  when '<%', '<%=', '<%#'
 	    scanner.stag = token
-	    out.push("#{@put_cmd} #{content.dump}") if content.size > 0
+	    out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
 	    content = ''
 	  when "\n"
 	    content << "\n"
-	    out.push("#{@put_cmd} #{content.dump}")
-	    out.cr
+	    out.push("#{@put_cmd} #{content_dump(content)}")
 	    content = ''
 	  when '<%%'
 	    content << '<%'
@@ -560,7 +555,7 @@ class ERB
 	    when '<%='
 	      out.push("#{@insert_cmd}((#{content}).to_s)")
 	    when '<%#'
-	      # out.push("# #{content.dump}")
+	      # out.push("# #{content_dump(content)}")
 	    end
 	    scanner.stag = nil
 	    content = ''
@@ -571,7 +566,7 @@ class ERB
 	  end
 	end
       end
-      out.push("#{@put_cmd} #{content.dump}") if content.size > 0
+      out.push("#{@put_cmd} #{content_dump(content)}") if content.size > 0
       out.close
       out.script
     end

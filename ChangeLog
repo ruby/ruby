@@ -1,3 +1,7 @@
+Wed Mar 19 00:01:23 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (ERB::Compiler): Make some minor code optimization.
+
 Mon Mar 17 17:11:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode): should use `run-mode-hooks' instead
