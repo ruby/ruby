@@ -142,8 +142,7 @@ char *strrchr(const char *, const char);
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
 
-#define TH_EXEC_TAG() \
-  (FLUSH_REGISTER_WINDOWS, ruby_setjmp(_th->tag->buf))
+#define TH_EXEC_TAG() ruby_setjmp(_th->tag->buf)
 
 #define EXEC_TAG() \
   TH_EXEC_TAG()
