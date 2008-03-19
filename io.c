@@ -4485,6 +4485,9 @@ rb_io_putc(VALUE io, VALUE ch)
 static VALUE
 rb_f_putc(VALUE recv, VALUE ch)
 {
+    if (recv == rb_stdout) {
+	return rb_io_putc(recv, ch);
+    }
     return rb_funcall2(rb_stdout, rb_intern("putc"), 1, &ch);
 }
 
@@ -4562,8 +4565,11 @@ rb_io_puts(int argc, VALUE *argv, VALUE out)
  */
 
 static VALUE
-rb_f_puts(int argc, VALUE *argv)
+rb_f_puts(int argc, VALUE *argv, VALUE recv)
 {
+    if (recv == rb_stdout) {
+	return rb_io_puts(argc, argv, recv);
+    }
     return rb_funcall2(rb_stdout, rb_intern("puts"), argc, argv);
 }
 
