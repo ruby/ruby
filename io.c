@@ -680,12 +680,12 @@ io_fwrite(VALUE str, rb_io_t *fptr)
 	/* the methods in transcode.c are static, so call indirectly */
 	/* Can't use encode! because puts writes a frozen newline */
 	if (fptr->enc2) {
-	    str = rb_funcall(str, id_encode, 2, 
+	    str = rb_funcall(str, id_encode, 2,
 			     rb_enc_from_encoding(fptr->enc2),
 			     rb_enc_from_encoding(fptr->enc));
 	}
 	else {
-	    str = rb_funcall(str, id_encode, 1, 
+	    str = rb_funcall(str, id_encode, 1,
 			     rb_enc_from_encoding(fptr->enc));
 	}
     }
@@ -1348,7 +1348,7 @@ io_enc_str(VALUE str, rb_io_t *fptr)
     if (fptr->enc2) {
 	/* two encodings, so transcode from enc2 to enc */
 	/* the methods in transcode.c are static, so call indirectly */
-	str = rb_funcall(str, id_encode, 2, 
+	str = rb_funcall(str, id_encode, 2,
 			 rb_enc_from_encoding(fptr->enc),
 			 rb_enc_from_encoding(fptr->enc2));
     }
@@ -1502,7 +1502,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int nonblock)
  *  When readpartial doesn't blocks, it returns or raises immediately.
  *  If the buffer is not empty, it returns the data in the buffer.
  *  Otherwise if the stream has some content,
- *  it returns the data in the stream. 
+ *  it returns the data in the stream.
  *  Otherwise if the stream is reached to EOF, it raises EOFError.
  *
  *     r, w = IO.pipe           #               buffer          pipe content
@@ -1656,7 +1656,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     if (NIL_P(length)) {
 	if (!NIL_P(str)) StringValue(str);
 	GetOpenFile(io, fptr);
-	rb_io_check_readable(fptr);	
+	rb_io_check_readable(fptr);
 	return read_all(fptr, remain_size(fptr), str);
     }
     len = NUM2LONG(length);
@@ -1896,7 +1896,7 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 	}
 	if (fptr->enc2) {
             VALUE rs2;
-	    rs2 = rb_funcall(rs, id_encode, 2, 
+	    rs2 = rb_funcall(rs, id_encode, 2,
 			    rb_enc_from_encoding(fptr->enc2),
 			    rb_enc_from_encoding(fptr->enc));
             if (!RTEST(rb_str_equal(rs, rs2))) {
@@ -1952,7 +1952,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
 	    if (c == newline) {
 		const char *s, *p, *pp;
-		
+
 		if (RSTRING_LEN(str) < rslen) continue;
 		s = RSTRING_PTR(str);
 		p = s +  RSTRING_LEN(str) - rslen;
@@ -2232,9 +2232,9 @@ rb_io_each_byte(VALUE io)
  *     str.lines(sep=$/)     => anEnumerator
  *     str.lines(limit)      => anEnumerator
  *     str.lines(sep, limit) => anEnumerator
- *  
+ *
  *  Returns an enumerator that gives each line in the string.
- *     
+ *
  *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
  *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
  */
@@ -2248,9 +2248,9 @@ rb_io_lines(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *     str.bytes   => anEnumerator
- *  
+ *
  *  Returns an enumerator that gives each byte in the string.
- *     
+ *
  *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
  */
 
@@ -2263,10 +2263,10 @@ rb_io_bytes(VALUE str)
 /*
  *  call-seq:
  *     ios.getc   => fixnum or nil
- *  
+ *
  *  Reads a one-character string from <em>ios</em>. Returns
  *  <code>nil</code> if called at end of file.
- *     
+ *
  *     f = File.new("testfile")
  *     f.getc   #=> "8"
  *     f.getc   #=> "1"
@@ -3217,7 +3217,7 @@ mode_enc(rb_io_t *fptr, const char *estr)
     const char *p0, *p1;
     char *enc2name;
     int idx, idx2;
-    
+
     p0 = strrchr(estr, ':');
     if (!p0) p1 = estr;
     else     p1 = p0 + 1;
@@ -3949,7 +3949,7 @@ rb_io_s_sysopen(int argc, VALUE *argv)
  *  the specified mode (defaulting to ``<code>r</code>'').
  *
  *  The mode_enc is
- *  either a string or an integer.  If it is an integer, it must be 
+ *  either a string or an integer.  If it is an integer, it must be
  *  bitwise-or of open(2) flags, such as File::RDWR or File::EXCL.
  *  If it is a string, it is either "mode", "mode:ext_enc", or
  *  "mode:ext_enc:int_enc".
@@ -3971,7 +3971,7 @@ rb_io_s_sysopen(int argc, VALUE *argv)
  *  to int_enc then tagged with the int_enc in read mode,
  *  and in write mode, the output string will be
  *  converted from int_enc to ext_enc before writing.
- *  
+ *
  *  If a file is being created, its initial permissions may be
  *  set using the integer third parameter.
  *
