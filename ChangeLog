@@ -1,3 +1,7 @@
+Wed Mar 19 20:25:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (Init_Dir): define inspect method.  [ruby-core:15960]
+
 Wed Mar 19 14:59:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-{case,label}-indent): fix for labels
