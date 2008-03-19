@@ -202,7 +202,6 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE image)
   }
 }
 
-#if 0
 static VALUE
 nucomp_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 {
@@ -236,7 +235,6 @@ nucomp_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 
   return nucomp_s_canonicalize_internal(klass, real, image);
 }
-#endif
 
 static VALUE
 nucomp_s_new(int argc, VALUE *argv, VALUE klass)
@@ -461,14 +459,12 @@ m_atan2_bang(VALUE y, VALUE x)
   return DOUBLE2NUM(atan2(RFLOAT_VALUE(y), RFLOAT_VALUE(x)));
 }
 
-#if 0
 static VALUE
 m_hypot(VALUE x, VALUE y)
 {
   Need_Float2(x, y);
   return DOUBLE2NUM(hypot(RFLOAT_VALUE(x), RFLOAT_VALUE(y)));
 }
-#endif
 #endif
 
 static VALUE
@@ -630,7 +626,6 @@ nucomp_rdiv(VALUE self, VALUE other)
 			      f_to_r(dat->image)), other);
 }
 
-#if 0
 static VALUE
 nucomp_fdiv(VALUE self, VALUE other)
 {
@@ -640,7 +635,6 @@ nucomp_fdiv(VALUE self, VALUE other)
 			      f_to_f(dat->real),
 			      f_to_f(dat->image)), other);
 }
-#endif
 
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
@@ -794,7 +788,6 @@ nucomp_conjugate(VALUE self)
   return f_complex_new2(CLASS_OF(self), dat->real, f_negate(dat->image));
 }
 
-#if 0
 static VALUE
 nucomp_real_p(VALUE self)
 {
@@ -819,7 +812,6 @@ nucomp_inexact_p(VALUE self)
 {
   return f_boolcast(!nucomp_exact_p(self));
 }
-#endif
 
 inline static long
 i_gcd(long x, long y)
@@ -986,17 +978,17 @@ nucomp_to_s(VALUE self)
     s = rb_str_new2("");
   else {
     s = f_to_s(dat->real);
-    rb_str_cat2(s, (!impos ? "-" : "+"));
+    rb_str_concat(s, rb_str_new2(!impos ? "-" : "+"));
   }
 
   if (k_rational_p(dat->image) &&
       !f_one_p(f_denominator(dat->image))) {
-    rb_str_cat2(s, "(");
+    rb_str_concat(s, rb_str_new2("("));
     rb_str_concat(s, f_to_s(rezero ? dat->image : f_abs(dat->image)));
-    rb_str_cat2(s, ")i");
+    rb_str_concat(s, rb_str_new2(")i"));
   } else {
     rb_str_concat(s, f_to_s(rezero ? dat->image : f_abs(dat->image)));
-    rb_str_cat2(s, "i");
+    rb_str_concat(s, rb_str_new2("i"));
   }
 
   return s;
@@ -1011,9 +1003,9 @@ nucomp_inspect(VALUE self)
 
   s = rb_str_new2("Complex(");
   rb_str_concat(s, f_inspect(dat->real));
-  rb_str_cat2(s, ", ");
+  rb_str_concat(s, rb_str_new2(", "));
   rb_str_concat(s, f_inspect(dat->image));
-  rb_str_cat2(s, ")");
+  rb_str_concat(s, rb_str_new2(")"));
 
   return s;
 }
@@ -1117,7 +1109,7 @@ numeric_to_c(VALUE self)
 }
 
 static VALUE comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
-    image_garbages_pat, null_string;
+  image_garbages_pat, null_string, underscores_pat, an_underscore;
 
 #define DIGITS "(?:\\d(?:_\\d|\\d)*)"
 #define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
@@ -1130,15 +1122,15 @@ static VALUE comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
 static void
 make_patterns(void)
 {
-  static const char comp_pat1_source[] = PATTERN1;
-  static const char comp_pat2_source[] = PATTERN2;
-  static const char image_garbages_pat_source[] = "[+\\(\\)iIjJ]";
-#define REG_NEW(s) rb_reg_new(s, sizeof(s) - 1, 0)
+  static char *comp_pat1_source = PATTERN1;
+  static char *comp_pat2_source = PATTERN2;
+  static char *image_garbages_pat_source = "[+\\(\\)iIjJ]";
+  static char *underscores_pat_source = "_+";
 
-  comp_pat1 = REG_NEW(comp_pat1_source);
+  comp_pat1 = rb_reg_new(comp_pat1_source, strlen(comp_pat1_source), 0);
   rb_global_variable(&comp_pat1);
 
-  comp_pat2 = REG_NEW(comp_pat2_source);
+  comp_pat2 = rb_reg_new(comp_pat2_source, strlen(comp_pat2_source), 0);
   rb_global_variable(&comp_pat2);
 
   a_slash = rb_str_new2("/");
@@ -1147,13 +1139,19 @@ make_patterns(void)
   a_dot_and_an_e = rb_str_new2(".eE");
   rb_global_variable(&a_dot_and_an_e);
 
-  image_garbages_pat = REG_NEW(image_garbages_pat_source);
+  image_garbages_pat = rb_reg_new(image_garbages_pat_source,
+				  strlen(image_garbages_pat_source), 0);
   rb_global_variable(&image_garbages_pat);
 
   null_string = rb_str_new2("");
   rb_global_variable(&null_string);
 
-#undef REG_NEW
+  underscores_pat = rb_reg_new(underscores_pat_source,
+			       strlen(underscores_pat_source), 0);
+  rb_global_variable(&underscores_pat);
+
+  an_underscore = rb_str_new2("_");
+  rb_global_variable(&an_underscore);
 }
 
 #define id_strip rb_intern("strip")
@@ -1248,7 +1246,8 @@ string_to_c_strict(VALUE self)
 static VALUE
 string_to_c(VALUE self)
 {
-  VALUE a = string_to_c_internal(self);
+  VALUE s = f_gsub(self, underscores_pat, an_underscore);
+  VALUE a = string_to_c_internal(s);
   if (!NIL_P(RARRAY_PTR(a)[0]))
     return RARRAY_PTR(a)[0];
   return rb_complex_new1(INT2FIX(0));
