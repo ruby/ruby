@@ -1,3 +1,8 @@
+Wed Mar 19 10:17:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regint.h (CHECK_INTERRUPT_IN_MATCH_AT): add interrupt check
+	  during match.  [ruby-talk:295002]
+
 Tue Mar 18 16:24:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (literal_concat_gen): bail out at different encoding.
