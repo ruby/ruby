@@ -6210,7 +6210,7 @@ argf_set_encoding(int argc, VALUE *argv, VALUE argf)
 }
 
 static VALUE
-argf_tell(void)
+argf_tell(VALUE argf)
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to tell");
@@ -6220,7 +6220,7 @@ argf_tell(void)
 }
 
 static VALUE
-argf_seek_m(int argc, VALUE *argv, VALUE self)
+argf_seek_m(int argc, VALUE *argv, VALUE argf)
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to seek");
@@ -6230,7 +6230,7 @@ argf_seek_m(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-argf_set_pos(VALUE self, VALUE offset)
+argf_set_pos(VALUE argf, VALUE offset)
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to set position");
@@ -6240,7 +6240,7 @@ argf_set_pos(VALUE self, VALUE offset)
 }
 
 static VALUE
-argf_rewind(void)
+argf_rewind(VALUE argf)
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream to rewind");
@@ -6250,7 +6250,7 @@ argf_rewind(void)
 }
 
 static VALUE
-argf_fileno(void)
+argf_fileno(VALUE argf)
 {
     if (!next_argv()) {
 	rb_raise(rb_eArgError, "no stream");
@@ -6260,7 +6260,7 @@ argf_fileno(void)
 }
 
 static VALUE
-argf_to_io(void)
+argf_to_io(VALUE argf)
 {
     next_argv();
     ARGF_FORWARD(0, 0);
@@ -6268,7 +6268,7 @@ argf_to_io(void)
 }
 
 static VALUE
-argf_eof(void)
+argf_eof(VALUE argf)
 {
     if (current_file) {
 	if (init_p == 0) return Qtrue;
@@ -6381,7 +6381,7 @@ argf_readpartial(int argc, VALUE *argv, VALUE argf)
 }
 
 static VALUE
-argf_getc(void)
+argf_getc(VALUE argf)
 {
     VALUE ch;
 
@@ -6403,7 +6403,7 @@ argf_getc(void)
 }
 
 static VALUE
-argf_getbyte(void)
+argf_getbyte(VALUE argf)
 {
     VALUE ch;
 
@@ -6425,7 +6425,7 @@ argf_getbyte(void)
 }
 
 static VALUE
-argf_readchar(void)
+argf_readchar(VALUE argf)
 {
     VALUE ch;
 
@@ -6447,12 +6447,12 @@ argf_readchar(void)
 }
 
 static VALUE
-argf_readbyte(void)
+argf_readbyte(VALUE argf)
 {
     VALUE c;
 
     NEXT_ARGF_FORWARD(0, 0);
-    c = argf_getbyte();
+    c = argf_getbyte(argf);
     if (NIL_P(c)) {
 	rb_eof_error();
     }
@@ -6460,15 +6460,15 @@ argf_readbyte(void)
 }
 
 static VALUE
-argf_each_line(int argc, VALUE *argv, VALUE self)
+argf_each_line(int argc, VALUE *argv, VALUE argf)
 {
-    RETURN_ENUMERATOR(self, argc, argv);
+    RETURN_ENUMERATOR(argf, argc, argv);
     for (;;) {
 	if (!next_argv()) return Qnil;
 	rb_block_call(current_file, rb_intern("each_line"), 0, 0, rb_yield, 0);
 	next_p = 1;
     }
-    return self;
+    return argf;
 }
 
 static VALUE

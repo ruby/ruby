@@ -1,3 +1,9 @@
+Thu Mar 20 00:13:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_tell, argf_seek_m, argf_set_pos, argf_rewind,
+	  argf_fileno, argf_to_io, argf_eofl, argf_getc, argf_getbyte,
+	  argf_readchar, argf_readbyte, argf_each_line): use receiver.
+
 Wed Mar 19 23:52:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_putc, rb_io_puts): ouput directly if the reciever is
