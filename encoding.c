@@ -108,7 +108,7 @@ enc_check_encoding(VALUE obj)
     if (rb_enc_from_index(index) != enc)
 	return -1;
     if (enc_autoload_p(enc)) {
-	index = load_encoding(enc->name);
+	index = rb_enc_find_index(enc->name);
     }
     return index;
 }

@@ -1,3 +1,9 @@
+Wed Mar 19 14:08:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_check_encoding): should not load autoloaded encoding
+	  directly, instead use rb_enc_find_index() which deal with alias and
+	  replica.  [ruby-core:15957]
+
 Wed Mar 19 11:49:47 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* regint.h (include): include ruby.h instead of defines.h and config.h.
