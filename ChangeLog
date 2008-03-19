@@ -1,3 +1,8 @@
+Wed Mar 19 14:36:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_to_inum): treat successive underscores as
+	  nondigit.  [ruby-dev:34089]
+
 Wed Mar 19 14:08:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_check_encoding): should not load autoloaded encoding

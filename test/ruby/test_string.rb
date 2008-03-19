@@ -1213,7 +1213,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(12, "1_2".to_i(10))
     assert_equal(0x40000000, "1073741824".to_i(10))
     assert_equal(0x4000000000000000, "4611686018427387904".to_i(10))
-    assert_equal(12, "1__2".to_i(10))
+    assert_equal(1, "1__2".to_i(10))
     assert_equal(1, "1_z".to_i(10))
   end
 

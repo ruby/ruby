@@ -532,10 +532,11 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
     for (i=len;i--;) zds[i]=0;
     while ((c = *str++) != 0) {
 	if (c == '_') {
-	    if (badcheck) {
-		if (nondigit) goto bad;
-		nondigit = c;
+	    if (nondigit) {
+		if (badcheck) goto bad;
+		break;
 	    }
+	    nondigit = c;
 	    continue;
 	}
 	else if ((c = conv_digit(c)) < 0) {
