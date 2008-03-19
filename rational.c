@@ -230,6 +230,7 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
     return nurat_s_new_internal(klass, num, den);
 }
 
+#if 0
 static VALUE
 nurat_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 {
@@ -259,6 +260,7 @@ nurat_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 
   return nurat_s_canonicalize_internal(klass, num, den);
 }
+#endif
 
 static VALUE
 nurat_s_new(int argc, VALUE *argv, VALUE klass)
@@ -584,11 +586,14 @@ nurat_divmod(VALUE self, VALUE other)
   return rb_assoc_new(val, f_sub(self, f_mul(other, val)));
 }
 
+#if 0
 static VALUE
 nurat_quot(VALUE self, VALUE other)
 {
   return f_truncate(f_div(self, other));
 }
+#endif
+
 static VALUE
 nurat_rem(VALUE self, VALUE other)
 {
@@ -596,12 +601,14 @@ nurat_rem(VALUE self, VALUE other)
   return f_sub(self, f_mul(other, val));
 }
 
+#if 0
 static VALUE
 nurat_quotrem(VALUE self, VALUE other)
 {
   VALUE val = f_truncate(f_div(self, other));
   return rb_assoc_new(val, f_sub(self, f_mul(other, val)));
 }
+#endif
 
 static VALUE
 nurat_abs(VALUE self)
@@ -612,11 +619,13 @@ nurat_abs(VALUE self)
     return f_negate(self);
 }
 
+#if 0
 static VALUE
 nurat_true(VALUE self)
 {
   return Qtrue;
 }
+#endif
 
 static VALUE
 nurat_floor(VALUE self)
@@ -774,7 +783,7 @@ float_to_r(VALUE self)
   return f_mul(RARRAY_PTR(a)[0], f_expt(INT2FIX(FLT_RADIX), RARRAY_PTR(a)[1]));
 }
 
-static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
+static VALUE rat_pat, an_e_pat, a_dot_pat;
 
 #define DIGITS "(?:\\d(?:_\\d|\\d)*)"
 #define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
@@ -784,26 +793,21 @@ static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
 static void
 make_patterns(void)
 {
-  static char *rat_pat_source = PATTERN;
-  static char *an_e_pat_source = "[eE]";
-  static char *a_dot_pat_source = "\\.";
-  static char *underscores_pat_source = "_+";
+  static const char rat_pat_source[] = PATTERN;
+  static const char an_e_pat_source[] = "[eE]";
+  static const char a_dot_pat_source[] = "\\.";
+#define REG_NEW(s) rb_reg_new(s, sizeof(s) - 1, 0)
 
-  rat_pat = rb_reg_new(rat_pat_source, strlen(rat_pat_source), 0);
+  rat_pat = REG_NEW(rat_pat_source);
   rb_global_variable(&rat_pat);
 
-  an_e_pat = rb_reg_new(an_e_pat_source, strlen(an_e_pat_source), 0);
+  an_e_pat = REG_NEW(an_e_pat_source);
   rb_global_variable(&an_e_pat);
 
-  a_dot_pat = rb_reg_new(a_dot_pat_source, strlen(a_dot_pat_source), 0);
+  a_dot_pat = REG_NEW(a_dot_pat_source);
   rb_global_variable(&a_dot_pat);
 
-  underscores_pat = rb_reg_new(underscores_pat_source,
-			       strlen(underscores_pat_source), 0);
-  rb_global_variable(&underscores_pat);
-
-  an_underscore = rb_str_new2("_");
-  rb_global_variable(&an_underscore);
+#undef REG_NEW
 }
 
 #define id_strip rb_intern("strip")
@@ -908,8 +912,7 @@ string_to_r_strict(VALUE self)
 static VALUE
 string_to_r(VALUE self)
 {
-  VALUE s = f_gsub(self, underscores_pat, an_underscore);
-  VALUE a = string_to_r_internal(s);
+  VALUE a = string_to_r_internal(self);
   if (!NIL_P(RARRAY_PTR(a)[0]))
     return RARRAY_PTR(a)[0];
   return rb_rational_new1(INT2FIX(0));

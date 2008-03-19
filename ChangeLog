@@ -1,3 +1,13 @@
+Wed Mar 19 14:53:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (nucomp_to_s, nucomp_inspect): get rid of making
+	  unnecessary intermediate objects.
+
+	* complex.c (make_patterns, string_to_c): do not treat successive
+	  underscores as a part of numeric like as literals.  [ruby-dev:34085]
+
+	* rational.c (make_patterns, string_to_r): ditto.
+
 Wed Mar 19 14:36:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_to_inum): treat successive underscores as
