@@ -1,4 +1,6 @@
-Thu Mar 20 00:13:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar 20 00:21:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_initialize_copy): get rid of segfault.
 
 	* io.c (argf_tell, argf_seek_m, argf_set_pos, argf_rewind,
 	  argf_fileno, argf_to_io, argf_eofl, argf_getc, argf_getbyte,

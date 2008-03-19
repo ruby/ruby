@@ -138,7 +138,8 @@ struct argf {
     rb_encoding *enc, *enc2;
 };
 
-#define ARGF (*(struct argf *)DATA_PTR(argf))
+#define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
+#define ARGF argf_of(argf)
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
 #  ifdef _IO_fpos_t
@@ -4929,16 +4930,22 @@ argf_free(void *ptr)
     free(p->inplace);
 }
 
+static inline void
+argf_init(struct argf *p, VALUE v)
+{
+    p->filename = Qnil;
+    p->current_file = Qnil;
+    p->lineno = Qnil;
+    p->argv = v;
+}
+
 static VALUE
 argf_alloc(VALUE klass)
 {
     struct argf *p;
     VALUE argf = Data_Make_Struct(klass, struct argf, argf_mark, argf_free, p);
 
-    p->filename = Qnil;
-    p->current_file = Qnil;
-    p->lineno = Qnil;
-    p->argv = Qnil;
+    argf_init(p, Qnil);
     return argf;
 }
 
@@ -4957,7 +4964,22 @@ argf_alloc(VALUE klass)
 static VALUE
 argf_initialize(VALUE argf, VALUE argv)
 {
-    rb_argv = argv;
+    memset(&ARGF, 0, sizeof(ARGF));
+    argf_init(&ARGF, argv);
+
+    return argf;
+}
+
+static VALUE
+argf_initialize_copy(VALUE argf, VALUE orig)
+{
+    ARGF = argf_of(orig);
+    rb_argv = rb_obj_dup(rb_argv);
+    if (ARGF.inplace) {
+	const char *inplace = ARGF.inplace;
+	ARGF.inplace = 0;
+	ARGF.inplace = ruby_strdup(inplace);
+    }
     return argf;
 }
 
@@ -6860,13 +6882,13 @@ Init_IO(void)
     rb_define_global_const("STDOUT", rb_stdout);
     rb_define_global_const("STDERR", rb_stderr);
 
-    argf = argf_alloc(rb_cObject);
-    argf_initialize(argf, rb_ary_new());
-    rb_cARGF = rb_singleton_class(argf);
+    rb_cARGF = rb_class_new(rb_cObject);
+    rb_define_alloc_func(rb_cARGF, argf_alloc);
 
     rb_include_module(rb_cARGF, rb_mEnumerable);
 
-    rb_define_method(rb_cARGF, "initialize", argf_initialize, 1);
+    rb_define_method(rb_cARGF, "initialize", argf_initialize, -2);
+    rb_define_method(rb_cARGF, "initialize_copy", argf_initialize_copy, 1);
     rb_define_method(rb_cARGF, "to_s", argf_to_s, 0);
     rb_define_method(rb_cARGF, "argv", argf_argv, 0);
 
@@ -6912,6 +6934,8 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "external_encoding", argf_external_encoding, 0);
     rb_define_method(rb_cARGF, "internal_encoding", argf_internal_encoding, 0);
     rb_define_method(rb_cARGF, "set_encoding", argf_set_encoding, -1);
+
+    argf = rb_class_new_instance(0, 0, rb_cARGF);
 
     rb_define_readonly_variable("$<", &argf);
     rb_define_global_const("ARGF", argf);
