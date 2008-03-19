@@ -1,3 +1,15 @@
+Wed Mar 19 22:27:41 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c: added rb_gcd.
+
+	* complex.c: use rb_gcd.
+
+Wed Mar 19 18:37:00 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: revert.
+
+	* rational.c: revert.
+
 Wed Mar 19 17:31:20 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval_intern.h (TH_EXEC_TAG): need not to FLUSH_REGISTER_WINDOWS.

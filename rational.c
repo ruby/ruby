@@ -133,6 +133,12 @@ f_gcd(VALUE x, VALUE y)
   /* NOTREACHED */
 }
 
+VALUE
+rb_gcd(VALUE x, VALUE y)
+{
+  return f_gcd(x, y);
+}
+
 #define get_dat1(x) \
   struct RRational *dat;\
   dat = ((struct RRational *)(x))

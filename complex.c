@@ -813,80 +813,7 @@ nucomp_inexact_p(VALUE self)
   return f_boolcast(!nucomp_exact_p(self));
 }
 
-inline static long
-i_gcd(long x, long y)
-{
-  long b;
-
-  if (x < 0)
-    x = -x;
-  if (y < 0)
-    y = -y;
-
-  if (x == 0)
-    return y;
-  if (y == 0)
-    return x;
-
-  b = 0;
-  while ((x & 1) == 0 && (y & 1) == 0) {
-    b += 1;
-    x >>= 1;
-    y >>= 1;
-  }
-
-  while ((x & 1) == 0)
-    x >>= 1;
-
-  while ((y & 1) == 0)
-    y >>= 1;
-
-  while (x != y) {
-    if (y > x) {
-      long t;
-      t = x;
-      x = y;
-      y = t;
-    }
-    x -= y;
-    while ((x & 1) == 0)
-      x >>= 1;
-  }
-
-  return x << b;
-}
-
-inline static VALUE
-f_gcd(VALUE x, VALUE y)
-{
-  VALUE z;
-
-  if (FIXNUM_P(x) && FIXNUM_P(y))
-    return LONG2NUM(i_gcd(FIX2LONG(x), FIX2LONG(y)));
-
-  if (f_negative_p(x))
-    x = f_negate(x);
-  if (f_negative_p(y))
-    y = f_negate(y);
-
-  if (f_zero_p(x))
-    return y;
-  if (f_zero_p(y))
-    return x;
-
-  for (;;) {
-    if (FIXNUM_P(x)) {
-      if (FIX2INT(x) == 0)
-	return y;
-      if (FIXNUM_P(y))
-	return LONG2NUM(i_gcd(FIX2LONG(x), FIX2LONG(y)));
-    }
-    z = x;
-    x = f_mod(y, x);
-    y = z;
-  }
-  /* NOTREACHED */
-}
+extern VALUE rb_gcd(VALUE x, VALUE y);
 
 static VALUE
 f_lcm(VALUE x, VALUE y)
@@ -894,7 +821,7 @@ f_lcm(VALUE x, VALUE y)
   if (f_zero_p(x) || f_zero_p(y))
     return ZERO;
   else
-    return f_abs(f_mul(f_div(x, f_gcd(x, y)), y));
+    return f_abs(f_mul(f_div(x, rb_gcd(x, y)), y));
 }
 
 static VALUE
