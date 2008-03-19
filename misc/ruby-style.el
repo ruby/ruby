@@ -1,17 +1,40 @@
 ;;; -*- emacs-lisp -*-
+;;;
+;;; ruby-style.el -
+;;;
 ;;; C/C++ mode style for Ruby.
+;;;
+;;;  $Author: nobu $
+;;;  created at: Thu Apr 26 13:54:01 JST 2007
+;;;
+
+(defconst ruby-style-revision "$Revision: 15588 $"
+  "Ruby style revision string.")
+
+(defconst ruby-style-version
+  (progn
+   (string-match "[0-9.]+" ruby-style-revision)
+   (substring ruby-style-revision (match-beginning 0) (match-end 0)))
+  "Ruby style version number.")
 
 (defun ruby-style-case-indent (x)
   (save-excursion
-    (goto-char (cdr x))
-    (if (looking-at "\\<case\\|default\\>") '*)))
+    (unless (progn (backward-up-list) (back-to-indentation)
+		   (> (point) (cdr x)))
+      (goto-char (cdr x))
+      (if (looking-at "\\<case\\|default\\>") '*))))
 
 (defun ruby-style-label-indent (x)
   (save-excursion
-    (goto-char (cdr x))
-    (backward-up-list)
-    (backward-sexp 2)
-    (if (looking-at "\\<switch\\>") '/)))
+    (unless (progn (backward-up-list) (back-to-indentation)
+		   (>= (point) (cdr x)))
+      (goto-char (cdr x))
+      (condition-case ()
+	  (progn
+	    (backward-up-list)
+	    (backward-sexp 2)
+	    (if (looking-at "\\<switch\\>") '/))
+	(error)))))
 
 (require 'cc-styles)
 (c-add-style
