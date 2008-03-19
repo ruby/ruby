@@ -1,3 +1,8 @@
+Wed Mar 19 14:36:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_to_inum): treat successive underscores as
+	  nondigit.  [ruby-dev:34089]
+
 Wed Mar 19 00:01:23 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (ERB::Compiler): Make some minor code optimization.
