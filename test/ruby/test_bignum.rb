@@ -238,6 +238,10 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(TypeError) { T32 / "foo" }
   end
 
+  def test_idiv
+    assert_equal(715827882, 1073741824.div(Rational(3,2)), ' [ruby-dev:34066]')
+  end
+
   def test_modulo
     assert_raise(TypeError) { T32 % "foo" }
   end
