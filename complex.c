@@ -753,7 +753,7 @@ nucomp_sub(VALUE self, VALUE other)
   default:
     {
       VALUE a = f_coerce(other, self);
-      return f_add(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
+      return f_sub(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
     }
   }
 }
@@ -909,7 +909,7 @@ nucomp_expt(VALUE self, VALUE other)
   default:
     {
       VALUE a = f_coerce(other, self);
-      return f_div(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
+      return f_expt(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
     }
   }
 }

@@ -1,3 +1,7 @@
+Fri Mar 21 01:40:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* complex.c (nucomp_sub, nucomp_expt): call corresponding functions.
+
 Fri Mar 21 01:21:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* missing/tgamma.c: include config.h before math.h.  [ruby-dev:34075]
