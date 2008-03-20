@@ -1,3 +1,7 @@
+Thu Mar 20 21:46:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_getline): use receiver.
+
 Thu Mar 20 21:20:19 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: some improvements (include Shin-ichiro HARA's

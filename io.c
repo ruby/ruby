@@ -5149,7 +5149,7 @@ argf_next_argv(VALUE argf)
 }
 
 static VALUE
-argf_getline(int argc, VALUE *argv)
+argf_getline(int argc, VALUE *argv, VALUE argf)
 {
     VALUE line;
 
@@ -5232,7 +5232,7 @@ rb_f_gets(int argc, VALUE *argv)
 {
     VALUE line;
 
-    line = argf_getline(argc, argv);
+    line = argf_getline(argc, argv, argf);
     rb_lastline_set(line);
     return line;
 }
@@ -5304,7 +5304,7 @@ rb_f_readlines(int argc, VALUE *argv)
     VALUE line, ary;
 
     ary = rb_ary_new();
-    while (!NIL_P(line = argf_getline(argc, argv))) {
+    while (!NIL_P(line = argf_getline(argc, argv, argf))) {
 	rb_ary_push(ary, line);
     }
 
@@ -6883,6 +6883,7 @@ Init_IO(void)
     rb_define_global_const("STDERR", rb_stderr);
 
     rb_cARGF = rb_class_new(rb_cObject);
+    rb_set_class_path(rb_cARGF, rb_cObject, "ARGF.class");
     rb_define_alloc_func(rb_cARGF, argf_alloc);
 
     rb_include_module(rb_cARGF, rb_mEnumerable);
