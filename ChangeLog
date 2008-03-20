@@ -1,3 +1,7 @@
+Fri Mar 21 08:29:33 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_to_f): rearrangement.
+
 Fri Mar 21 06:44:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rational.c (nurat_to_f): C99.

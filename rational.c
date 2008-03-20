@@ -1107,13 +1107,16 @@ nurat_to_f(VALUE self)
   long nl, dl, ml, ne, de;
   int e;
   double f;
-  get_dat1(self);
 
-  if (f_zero_p(dat->num))
-    return rb_float_new(0.0);
+  {
+    get_dat1(self);
 
-  num = dat->num;
-  den = dat->den;
+    if (f_zero_p(dat->num))
+      return rb_float_new(0.0);
+
+    num = dat->num;
+    den = dat->den;
+  }
 
   if (f_negative_p(num)) {
     num = f_negate(num);
