@@ -28,61 +28,264 @@ static ID id_Unify, id_abs, id_abs2, id_arg, id_atan2_bang, id_cmp,
   id_numerator, id_polar, id_quo, id_scalar_p, id_sin, id_sqrt, id_to_f,
   id_to_i, id_to_r, id_to_s, id_truncate;
 
-#define f_add(x,y) rb_funcall(x, '+', 1, y)
-#define f_div(x,y) rb_funcall(x, '/', 1, y)
-#define f_gt_p(x,y) rb_funcall(x, '>', 1, y)
-#define f_lt_p(x,y) rb_funcall(x, '<', 1, y)
-#define f_mod(x,y) rb_funcall(x, '%', 1, y)
-#define f_mul(x,y) rb_funcall(x, '*', 1, y)
-#define f_sub(x,y) rb_funcall(x, '-', 1, y)
-#define f_xor(x,y) rb_funcall(x, '^', 1, y)
-
-#define f_abs(x) rb_funcall(x, id_abs, 0)
-#define f_abs2(x) rb_funcall(x, id_abs2, 0)
-#define f_arg(x) rb_funcall(x, id_arg, 0)
-#define f_conjugate(x) rb_funcall(x, id_conjugate, 0)
-#define f_denominator(x) rb_funcall(x, id_denominator, 0)
-#define f_exact_p(x) rb_funcall(x, id_exact_p, 0)
-#define f_floor(x) rb_funcall(x, id_floor, 0)
-#define f_negate(x) rb_funcall(x, id_negate, 0)
-#define f_numerator(x) rb_funcall(x, id_numerator, 0)
-#define f_polar(x) rb_funcall(x, id_polar, 0)
-#define f_scalar_p(x) rb_funcall(x, id_scalar_p, 0)
-#define f_to_f(x) rb_funcall(x, id_to_f, 0)
-#define f_to_i(x) rb_funcall(x, id_to_i, 0)
-#define f_to_r(x) rb_funcall(x, id_to_r, 0)
-#define f_to_s(x) rb_funcall(x, id_to_s, 0)
-#define f_truncate(x) rb_funcall(x, id_truncate, 0)
-#define f_cmp(x,y) rb_funcall(x, id_cmp, 1, y)
-#define f_coerce(x,y) rb_funcall(x, id_coerce, 1, y)
-#define f_divmod(x,y) rb_funcall(x, id_divmod, 1, y)
-#define f_equal_p(x,y) rb_funcall(x, id_equal_p, 1, y)
-#define f_expt(x,y) rb_funcall(x, id_expt, 1, y)
-#define f_idiv(x,y) rb_funcall(x, id_idiv, 1, y)
-#define f_inspect(x) rb_funcall(x, id_inspect, 0)
-#define f_quo(x,y) rb_funcall(x, id_quo, 1, y)
-
-#if 0
-#define m_cos(x) rb_funcall(rb_mMath, id_cos, 1, x)
-#define m_exp_bang(x) rb_funcall(rb_mMath, id_exp_bang, 1, x)
-#define m_log_bang(x) rb_funcall(rb_mMath, id_log_bang, 1, x)
-#define m_sin(x) rb_funcall(rb_mMath, id_sin, 1, x)
-#define m_sqrt(x) rb_funcall(rb_mMath, id_sqrt, 1, x)
-#define m_atan2_bang(x,y) rb_funcall(rb_mMath, id_atan2_bang, 2, x, y)
-#define m_hypot(x,y) rb_funcall(rb_mMath, id_hypot, 2, x, y)
-#endif
-
-#define f_negative_p(x) f_lt_p(x, ZERO)
-#define f_zero_p(x) f_equal_p(x, ZERO)
-#define f_one_p(x) f_equal_p(x, ONE)
-#define f_kind_of_p(x,c) rb_obj_is_kind_of(x, c)
-#define k_numeric_p(x) f_kind_of_p(x, rb_cNumeric)
-#define k_integer_p(x) f_kind_of_p(x, rb_cInteger)
-#define k_float_p(x) f_kind_of_p(x, rb_cFloat)
-#define k_rational_p(x) f_kind_of_p(x, rb_cRational)
-#define k_complex_p(x) f_kind_of_p(x, rb_cComplex)
-
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
+
+#define binop(n,op) \
+inline static VALUE \
+f_##n(VALUE x, VALUE y)\
+{\
+  return rb_funcall(x, op, 1, y);\
+}
+
+#define fun1(n) \
+inline static VALUE \
+f_##n(VALUE x)\
+{\
+  return rb_funcall(x, id_##n, 0);\
+}
+
+#define fun2(n) \
+inline static VALUE \
+f_##n(VALUE x, VALUE y)\
+{\
+  return rb_funcall(x, id_##n, 1, y);\
+}
+
+#define math1(n) \
+inline static VALUE \
+m_##n(VALUE x)\
+{\
+  return rb_funcall(rb_mMath, id_##n, 1, x);\
+}
+
+#define math2(n) \
+inline static VALUE \
+m_##n(VALUE x, VALUE y)\
+{\
+  return rb_funcall(rb_mMath, id_##n, 2, x, y);\
+}
+
+inline static VALUE
+f_add(VALUE x, VALUE y)
+{
+   VALUE _r;
+   if (FIXNUM_P(y)) {
+     if (FIX2INT(y) == 0)
+       _r = x;
+     else
+       _r = rb_funcall(x, '+', 1, y);
+   } else if (FIXNUM_P(x)) {
+     if (FIX2INT(x) == 0)
+       _r = y;
+     else
+       _r = rb_funcall(x, '+', 1, y);
+   } else
+     _r = rb_funcall(x, '+', 1, y);
+   return _r;
+}
+
+inline static VALUE
+f_div(x, y)
+{
+  VALUE _r;
+  if (FIXNUM_P(y) && FIX2INT(y) == 1)
+    _r = x;
+   else
+     _r = rb_funcall(x, '/', 1, y);
+  return _r;
+}
+
+inline static VALUE
+f_gt_p(VALUE x, VALUE y)
+{
+   VALUE _r;
+  if (FIXNUM_P(x) && FIXNUM_P(y))
+    _r = f_boolcast(FIX2INT(x) > FIX2INT(y));
+  else
+    _r = rb_funcall(x, '>', 1, y);
+  return _r;
+}
+
+inline static VALUE
+f_lt_p(VALUE x, VALUE y)
+{
+   VALUE _r;
+  if (FIXNUM_P(x) && FIXNUM_P(y))
+    _r = f_boolcast(FIX2INT(x) < FIX2INT(y));
+  else
+    _r = rb_funcall(x, '<', 1, y);
+  return _r;
+}
+
+binop(mod, '%')
+
+inline static VALUE
+f_mul(VALUE x, VALUE y)
+{
+   VALUE _r;
+   if (FIXNUM_P(y)) {
+     int _iy = FIX2INT(y);
+     if (_iy == 0) {
+       if (TYPE(x) == T_FLOAT)
+	 _r = rb_float_new(0.0);
+       else
+	 _r = ZERO;
+     } else if (_iy == 1)
+       _r = x;
+     else
+       _r = rb_funcall(x, '*', 1, y);
+   } else if (FIXNUM_P(x)) {
+     int _ix = FIX2INT(x);
+     if (_ix == 0) {
+       if (TYPE(y) == T_FLOAT)
+	 _r = rb_float_new(0.0);
+       else
+	 _r = ZERO;
+     } else if (_ix == 1)
+       _r = y;
+     else
+       _r = rb_funcall(x, '*', 1, y);
+   } else
+     _r = rb_funcall(x, '*', 1, y);
+   return _r;
+}
+
+inline static VALUE
+f_sub(VALUE x, VALUE y)
+{
+   VALUE _r;
+   if (FIXNUM_P(y)) {
+     if (FIX2INT(y) == 0)
+       _r = x;
+     else
+       _r = rb_funcall(x, '-', 1, y);
+   } else
+    _r = rb_funcall(x, '-', 1, y);
+   return _r;
+}
+
+binop(xor, '^')
+
+fun1(abs)
+fun1(abs2)
+fun1(arg)
+fun1(conjugate)
+fun1(denominator)
+fun1(exact_p)
+fun1(floor)
+fun1(inspect)
+fun1(negate)
+fun1(numerator)
+fun1(polar)
+fun1(scalar_p)
+fun1(to_f)
+fun1(to_i)
+fun1(to_r)
+fun1(to_s)
+fun1(truncate)
+
+inline static VALUE
+f_cmp(VALUE x, VALUE y)
+{
+   VALUE _r;
+   if (FIXNUM_P(x) && FIXNUM_P(y)) {
+     int c = FIX2INT(x) - FIX2INT(y);
+     if (c > 0)
+       c = 1;
+     else if (c < 0)
+       c = -1;
+     _r = INT2FIX(c);
+   } else
+     _r = rb_funcall(x, id_cmp, 1, y);
+   return _r;
+}
+
+fun2(coerce)
+fun2(divmod)
+
+inline static VALUE
+f_equal_p(VALUE x, VALUE y)
+{
+   VALUE _r;
+   if (FIXNUM_P(x) && FIXNUM_P(y))
+     _r = f_boolcast(FIX2INT(x) == FIX2INT(y));
+   else
+     _r = rb_funcall(x, id_equal_p, 1, y);
+   return _r;
+}
+
+fun2(expt)
+fun2(idiv)
+fun2(quo)
+
+inline static VALUE
+f_negative_p(VALUE x)
+{
+   VALUE _r;
+  if (FIXNUM_P(x))
+    _r = f_boolcast(FIX2INT(x) < 0);
+  else
+    _r = rb_funcall(x, '<', 1, ZERO);
+  return _r;
+}
+
+inline static VALUE
+f_zero_p(VALUE x)
+{
+   VALUE _r;
+   if (FIXNUM_P(x))
+     _r = f_boolcast(FIX2INT(x) == 0);
+   else
+     _r = rb_funcall(x, id_equal_p, 1, ZERO);
+   return _r;
+}
+
+inline static VALUE
+f_one_p(VALUE x)
+{
+   VALUE _r;
+   if (FIXNUM_P(x))
+     _r = f_boolcast(FIX2INT(x) == 1);
+   else
+     _r = rb_funcall(x, id_equal_p, 1, ONE);
+   return _r;
+}
+
+inline static VALUE
+f_kind_of_p(VALUE x, VALUE c)
+{
+  return rb_obj_is_kind_of(x, c);
+}
+
+inline static VALUE
+k_numeric_p(VALUE x)
+{
+  return f_kind_of_p(x, rb_cNumeric);
+}
+
+inline static VALUE
+k_integer_p(VALUE x)
+{
+  return f_kind_of_p(x, rb_cInteger);
+}
+
+inline static VALUE
+k_float_p(VALUE x)
+{
+  return f_kind_of_p(x, rb_cFloat);
+}
+
+inline static VALUE
+k_rational_p(VALUE x)
+{
+  return f_kind_of_p(x, rb_cRational);
+}
+
+inline static VALUE
+k_complex_p(VALUE x)
+{
+  return f_kind_of_p(x, rb_cComplex);
+}
 
 inline static VALUE
 f_generic_p(VALUE x)
