@@ -1102,12 +1102,12 @@ i_ilog2(VALUE x)
 static VALUE
 nurat_to_f(VALUE self)
 {
-  get_dat1(self);
   VALUE num, den;
   int minus = 0;
   long nl, dl, ml, ne, de;
   int e;
   double f;
+  get_dat1(self);
 
   if (f_zero_p(dat->num))
     return rb_float_new(0.0);

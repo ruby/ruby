@@ -1,3 +1,7 @@
+Fri Mar 21 06:44:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rational.c (nurat_to_f): C99.
+
 Fri Mar 21 01:40:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* complex.c (nucomp_sub, nucomp_expt): call corresponding functions.
