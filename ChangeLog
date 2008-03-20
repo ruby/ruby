@@ -1,3 +1,7 @@
+Fri Mar 21 01:21:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* missing/tgamma.c: include config.h before math.h.  [ruby-dev:34075]
+
 Thu Mar 20 21:46:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_getline): use receiver.
