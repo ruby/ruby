@@ -13,6 +13,9 @@
 #   - Wakou Aoyama
 #   - Akinori MUSHA <knu@iDaemons.org>
 #
+# Contact:
+#   - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+#
 module Shellwords
   #
   # Splits a string into an array of tokens in the same way the UNIX

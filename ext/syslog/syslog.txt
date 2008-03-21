@@ -7,7 +7,10 @@ Amos Gouaux, University of Texas at Dallas
 <amos+ruby@utdallas.edu>
 &
 Akinori MUSHA
-<knu@ruby-lang.org>
+<knu@iDaemons.org>
+
+Contact:
+  - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
 
 ** Syslog(Module)
 

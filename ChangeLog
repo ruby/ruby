@@ -1,3 +1,13 @@
+Fri Mar 21 21:10:00 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb: Say that I am the current maintainer.
+
+	* lib/set.rb: Ditto.
+
+	* lib/shellwords.rb: Ditto.
+
+	* ext/syslog/syslog.txt: Ditto.
+
 Fri Mar 21 09:24:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (open_for_install): write block result and rewrite only
