@@ -5227,8 +5227,18 @@ argf_lineno_setter(VALUE val, ID id, VALUE *var)
  *  parameter is gradually losing favor in the Ruby community.
  */
 
+static VALUE argf_gets(int, VALUE *, VALUE);
 static VALUE
-rb_f_gets(int argc, VALUE *argv)
+rb_f_gets(int argc, VALUE *argv, VALUE recv)
+{
+    if (recv == argf) {
+	return argf_gets(argc, argv, argf);
+    }
+    return rb_funcall2(argf, rb_intern("gets"), argc, argv);
+}
+
+static VALUE
+argf_gets(int argc, VALUE *argv, VALUE argf)
 {
     VALUE line;
 
@@ -5243,7 +5253,7 @@ rb_gets(void)
     VALUE line;
 
     if (rb_rs != rb_default_rs) {
-	return rb_f_gets(0, 0);
+	return rb_f_gets(0, 0, argf);
     }
 
   retry:
@@ -5273,14 +5283,24 @@ rb_gets(void)
  *  +readline+ raises +EOFError+ at end of file.
  */
 
+static VALUE argf_readline(int, VALUE *, VALUE);
 static VALUE
-rb_f_readline(int argc, VALUE *argv)
+rb_f_readline(int argc, VALUE *argv, VALUE recv)
+{
+    if (recv == argf) {
+	return argf_readline(argc, argv, argf);
+    }
+    return rb_funcall2(argf, rb_intern("readline"), argc, argv);
+}
+
+static VALUE
+argf_readline(int argc, VALUE *argv, VALUE argf)
 {
     VALUE line;
 
     if (!next_argv()) rb_eof_error();
     ARGF_FORWARD(argc, argv);
-    line = rb_f_gets(argc, argv);
+    line = argf_gets(argc, argv, argf);
     if (NIL_P(line)) {
 	rb_eof_error();
     }
@@ -5298,8 +5318,18 @@ rb_f_readline(int argc, VALUE *argv)
  *  <code>Kernel.gets(<i>sep</i>)</code> until the end of file.
  */
 
+static VALUE argf_readlines(int, VALUE *, VALUE);
 static VALUE
-rb_f_readlines(int argc, VALUE *argv)
+rb_f_readlines(int argc, VALUE *argv, VALUE recv)
+{
+    if (recv == argf) {
+	return argf_readlines(argc, argv, argf);
+    }
+    return rb_funcall2(argf, rb_intern("readlines"), argc, argv);
+}
+
+static VALUE
+argf_readlines(int argc, VALUE *argv, VALUE argf)
 {
     VALUE line, ary;
 
@@ -6902,10 +6932,10 @@ Init_IO(void)
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);
-    rb_define_method(rb_cARGF, "readlines", rb_f_readlines, -1);
-    rb_define_method(rb_cARGF, "to_a", rb_f_readlines, -1);
-    rb_define_method(rb_cARGF, "gets", rb_f_gets, -1);
-    rb_define_method(rb_cARGF, "readline", rb_f_readline, -1);
+    rb_define_method(rb_cARGF, "readlines", argf_readlines, -1);
+    rb_define_method(rb_cARGF, "to_a", argf_readlines, -1);
+    rb_define_method(rb_cARGF, "gets", argf_gets, -1);
+    rb_define_method(rb_cARGF, "readline", argf_readline, -1);
     rb_define_method(rb_cARGF, "getc", argf_getc, 0);
     rb_define_method(rb_cARGF, "getbyte", argf_getbyte, 0);
     rb_define_method(rb_cARGF, "readchar", argf_readchar, 0);

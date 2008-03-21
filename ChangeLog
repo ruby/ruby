@@ -1,3 +1,8 @@
+Fri Mar 21 21:32:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_f_gets, rb_f_readline, rb_f_readlines): delegates to ARGF
+	  as well as puts and putc.  [ruby-dev:34100]
+
 Fri Mar 21 21:26:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::Hosts): should not use win32/resolv on cygwin.
