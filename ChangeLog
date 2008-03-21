@@ -1,3 +1,13 @@
+Fri Mar 21 21:26:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Hosts): should not use win32/resolv on cygwin.
+	  [ruby-dev:29945], [ruby-dev:34095]
+
+	* lib/win32/registry.rb (Win32::Registry.expand_environ): try upcased
+	  name too for cygwin.  [ruby-dev:29945]
+
+	* lib/win32/resolv.rb (Win32::Resolv.get_hosts_path): use expand_path.
+
 Fri Mar 21 21:10:00 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/ipaddr.rb: Say that I am the current maintainer.

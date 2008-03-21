@@ -493,7 +493,7 @@ module Win32
     # utility functions
     #
     def self.expand_environ(str)
-      str.gsub(/%([^%]+)%/) { ENV[$1] || $& }
+      str.gsub(/%([^%]+)%/) { ENV[$1] || ENV[$1.upcase] || $& }
     end
     
     @@type2name = { }
