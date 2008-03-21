@@ -48,7 +48,7 @@ module Test
       # one suite, creating a new instance of the fixture for
       # each method.
       def self.suite
-        method_names = public_instance_methods(true)
+        method_names = public_instance_methods(true).map { |m| m.to_s }
         tests = method_names.delete_if {|method_name| method_name !~ /^test./}
         suite = TestSuite.new(name)
         tests.sort.each do
