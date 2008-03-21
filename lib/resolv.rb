@@ -160,7 +160,7 @@ class Resolv
   # DNS::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if /mswin32|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
+    if /mswin32|mingw|bccwin/ =~ RUBY_PLATFORM
       require 'win32/resolv'
       DefaultFileName = Win32::Resolv.get_hosts_path
     else
