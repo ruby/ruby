@@ -1,3 +1,8 @@
+Fri Mar 21 09:24:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb (open_for_install): write block result and rewrite only
+	  if changed from existing file.
+
 Fri Mar 21 08:29:33 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_to_f): rearrangement.
