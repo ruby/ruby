@@ -1987,7 +1987,7 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
     VALUE klass;
 
     if (SPECIAL_CONST_P(self)) {
-	klass = CLASS_OF(self); //klass = Qnil;
+	klass = CLASS_OF(self); /* klass = Qnil; */
     }
     else {
 	klass = rb_singleton_class(self);
