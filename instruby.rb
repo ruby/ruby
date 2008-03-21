@@ -80,7 +80,7 @@ def parse_args(argv = ARGV)
   $mflags.unshift(*mflags)
 
   def $mflags.set?(flag)
-    grep(/\A-(?!-).*#{'%c' % flag}/i) { return true }
+    grep(/\A-(?!-).*#{flag.chr}/i) { return true }
     false
   end
   def $mflags.defined?(var)
@@ -183,9 +183,13 @@ def install_recursive(srcdir, dest, options = {})
   end
 end
 
-def open_for_install(path, mode, &block)
+def open_for_install(path, mode)
+  data = open(realpath = with_destdir(path), "rb") {|f| f.read} rescue nil
+  newdata = yield
   unless $dryrun
-    open(realpath = with_destdir(path), "wb", mode, &block)
+    unless newdata == data
+      open(realpath, "wb", mode) {|f| f.write newdata}
+    end
     File.chmod(mode, realpath)
   end
   $installed_list.puts path if $installed_list
@@ -280,7 +284,7 @@ install?(:local, :comm, :bin, :'bin-comm') do
   makedirs [bindir, rubylibdir]
 
   ruby_shebang = File.join(bindir, ruby_install_name)
-  if $cmdtype
+  if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
   end
   for src in Dir["bin/*"]
@@ -301,10 +305,10 @@ install?(:local, :comm, :bin, :'bin-comm') do
 
     cmd = File.join(bindir, name)
     cmd << ".#{$cmdtype}" if $cmdtype
-    open_for_install(cmd, $script_mode) do |f|
+    open_for_install(cmd, $script_mode) do
       case $cmdtype
       when "bat"
-        f.print((<<EOH+shebang+body+<<EOF).gsub(/$/, "\r"))
+        "#{<<EOH}#{shebang}#{body}#{<<EOF}".gsub(/$/, "\r")
 @echo off
 @if not "%~d0" == "~d0" goto WinNT
 #{ruby_bin} -x "#{cmd}" %1 %2 %3 %4 %5 %6 %7 %8 %9
@@ -317,12 +321,12 @@ __END__
 :endofruby
 EOF
       when "cmd"
-        f.print(<<EOH, shebang, body)
+        "#{<<EOH}#{shebang}#{body}"
 @"%~dp0#{ruby_install_name}" -x "%~f0" %*
 @exit /b %ERRORLEVEL%
 EOH
       else
-        f.print shebang, body
+        shebang + body
       end
     end
   end
