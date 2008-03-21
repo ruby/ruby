@@ -48,6 +48,10 @@
 #   s1.subset? s2                         # -> false
 #   s2.subset? s1                         # -> true
 #
+# == Contact
+#
+#   - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+#
 class Set
   include Enumerable
 

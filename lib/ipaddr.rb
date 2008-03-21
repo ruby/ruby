@@ -9,8 +9,12 @@
 #
 # $Id$
 #
+# Contact:
+#   - Akinori MUSHA <knu@iDaemons.org> (current maintainer)
+#
 # TODO:
 #   - scope_id support
+#
 require 'socket'
 
 unless Socket.const_defined? "AF_INET6"
