@@ -959,13 +959,12 @@ class Rational_Test < Test::Unit::TestCase
     if defined?(Rational::Unify)
       assert_instance_of(Fixnum, Rational(1,2) ** 0) # mathn's bug
     end
-  end
 
-=begin
-  def test_known_bug
     n = Float::MAX.to_i * 2
     assert_equal(1.0, Rational(n + 2, n + 1).to_f, '[ruby-dev:33852]')
   end
-=end
+
+  def test_known_bug
+  end
 
 end

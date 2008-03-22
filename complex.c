@@ -70,12 +70,12 @@ f_add(VALUE x, VALUE y)
 {
    VALUE _r;
    if (FIXNUM_P(y)) {
-     if (FIX2INT(y) == 0)
+     if (FIX2LONG(y) == 0)
        _r = x;
      else
        _r = rb_funcall(x, '+', 1, y);
    } else if (FIXNUM_P(x)) {
-     if (FIX2INT(x) == 0)
+     if (FIX2LONG(x) == 0)
        _r = y;
      else
        _r = rb_funcall(x, '+', 1, y);
@@ -85,10 +85,10 @@ f_add(VALUE x, VALUE y)
 }
 
 inline static VALUE
-f_div(x, y)
+f_div(VALUE x, VALUE y)
 {
   VALUE _r;
-  if (FIXNUM_P(y) && FIX2INT(y) == 1)
+  if (FIXNUM_P(y) && FIX2LONG(y) == 1)
     _r = x;
    else
      _r = rb_funcall(x, '/', 1, y);
@@ -100,7 +100,7 @@ f_gt_p(VALUE x, VALUE y)
 {
    VALUE _r;
   if (FIXNUM_P(x) && FIXNUM_P(y))
-    _r = f_boolcast(FIX2INT(x) > FIX2INT(y));
+    _r = f_boolcast(FIX2LONG(x) > FIX2LONG(y));
   else
     _r = rb_funcall(x, '>', 1, y);
   return _r;
@@ -111,7 +111,7 @@ f_lt_p(VALUE x, VALUE y)
 {
    VALUE _r;
   if (FIXNUM_P(x) && FIXNUM_P(y))
-    _r = f_boolcast(FIX2INT(x) < FIX2INT(y));
+    _r = f_boolcast(FIX2LONG(x) < FIX2LONG(y));
   else
     _r = rb_funcall(x, '<', 1, y);
   return _r;
@@ -124,7 +124,7 @@ f_mul(VALUE x, VALUE y)
 {
    VALUE _r;
    if (FIXNUM_P(y)) {
-     int _iy = FIX2INT(y);
+     long _iy = FIX2LONG(y);
      if (_iy == 0) {
        if (TYPE(x) == T_FLOAT)
 	 _r = rb_float_new(0.0);
@@ -135,7 +135,7 @@ f_mul(VALUE x, VALUE y)
      else
        _r = rb_funcall(x, '*', 1, y);
    } else if (FIXNUM_P(x)) {
-     int _ix = FIX2INT(x);
+     long _ix = FIX2LONG(x);
      if (_ix == 0) {
        if (TYPE(y) == T_FLOAT)
 	 _r = rb_float_new(0.0);
@@ -155,7 +155,7 @@ f_sub(VALUE x, VALUE y)
 {
    VALUE _r;
    if (FIXNUM_P(y)) {
-     if (FIX2INT(y) == 0)
+     if (FIX2LONG(y) == 0)
        _r = x;
      else
        _r = rb_funcall(x, '-', 1, y);
@@ -189,7 +189,7 @@ f_cmp(VALUE x, VALUE y)
 {
    VALUE _r;
    if (FIXNUM_P(x) && FIXNUM_P(y)) {
-     int c = FIX2INT(x) - FIX2INT(y);
+     long c = FIX2LONG(x) - FIX2LONG(y);
      if (c > 0)
        c = 1;
      else if (c < 0)
@@ -208,7 +208,7 @@ f_equal_p(VALUE x, VALUE y)
 {
    VALUE _r;
    if (FIXNUM_P(x) && FIXNUM_P(y))
-     _r = f_boolcast(FIX2INT(x) == FIX2INT(y));
+     _r = f_boolcast(FIX2LONG(x) == FIX2LONG(y));
    else
      _r = rb_funcall(x, id_equal_p, 1, y);
    return _r;
@@ -223,7 +223,7 @@ f_negative_p(VALUE x)
 {
    VALUE _r;
   if (FIXNUM_P(x))
-    _r = f_boolcast(FIX2INT(x) < 0);
+    _r = f_boolcast(FIX2LONG(x) < 0);
   else
     _r = rb_funcall(x, '<', 1, ZERO);
   return _r;
@@ -234,7 +234,7 @@ f_zero_p(VALUE x)
 {
    VALUE _r;
    if (FIXNUM_P(x))
-     _r = f_boolcast(FIX2INT(x) == 0);
+     _r = f_boolcast(FIX2LONG(x) == 0);
    else
      _r = rb_funcall(x, id_equal_p, 1, ZERO);
    return _r;
@@ -245,7 +245,7 @@ f_one_p(VALUE x)
 {
    VALUE _r;
    if (FIXNUM_P(x))
-     _r = f_boolcast(FIX2INT(x) == 1);
+     _r = f_boolcast(FIX2LONG(x) == 1);
    else
      _r = rb_funcall(x, id_equal_p, 1, ONE);
    return _r;

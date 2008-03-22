@@ -1,3 +1,9 @@
+Sun Mar 23 02:28:01 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: fixed. [ruby-dev:34109]
+
+	* rational.c: ditto.
+
 Fri Mar 21 21:32:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_f_gets, rb_f_readline, rb_f_readlines): delegates to ARGF
