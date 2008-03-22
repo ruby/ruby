@@ -2213,7 +2213,7 @@ rlimit_resource_value(VALUE rval)
 
       case T_FIXNUM:
       case T_BIGNUM:
-        return NUM2INT(rval);
+        return NUM2RLIM(rval);
     }
 
 #ifdef RLIM_INFINITY

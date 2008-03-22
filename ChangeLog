@@ -1,3 +1,7 @@
+Sun Mar 23 02:51:57 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (rlimit_resource_value): use NUM2RLIM.
+
 Sun Mar 23 02:28:01 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: fixed. [ruby-dev:34109]
