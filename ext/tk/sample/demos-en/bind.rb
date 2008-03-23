@@ -94,33 +94,27 @@ TkText.new($bind_demo){|t|
   }
   d1.bind('1', 
           proc{
-            eval(`cat #{[$demo_dir,'items.rb'].join(File::Separator)}`, 
-                 _null_binding)
+            eval_samplecode(`cat #{[$demo_dir,'items.rb'].join(File::Separator)}`)
           })
   d2.bind('1', 
           proc{
-            eval(`cat #{[$demo_dir,'plot.rb'].join(File::Separator)}`, 
-                 _null_binding)
+            eval_samplecode(`cat #{[$demo_dir,'plot.rb'].join(File::Separator)}`)
           })
   d3.bind('1', 
           proc{
-            eval(`cat #{[$demo_dir,'ctext.rb'].join(File::Separator)}`, 
-                 _null_binding)
+            eval_samplecode(`cat #{[$demo_dir,'ctext.rb'].join(File::Separator)}`)
           })
   d4.bind('1', 
           proc{
-            eval(`cat #{[$demo_dir,'arrow.rb'].join(File::Separator)}`, 
-                 _null_binding)
+            eval_samplecode(`cat #{[$demo_dir,'arrow.rb'].join(File::Separator)}`)
           })
   d5.bind('1', 
           proc{
-            eval(`cat #{[$demo_dir,'ruler.rb'].join(File::Separator)}`, 
-                 _null_binding)
+            eval_samplecode(`cat #{[$demo_dir,'ruler.rb'].join(File::Separator)}`)
           })
   d6.bind('1', 
           proc{
-            eval(`cat #{[$demo_dir,'cscroll.rb'].join(File::Separator)}`, 
-                 _null_binding)
+            eval_samplecode(`cat #{[$demo_dir,'cscroll.rb'].join(File::Separator)}`)
           })
 
   TkTextMarkInsert.new(t, '0.0')

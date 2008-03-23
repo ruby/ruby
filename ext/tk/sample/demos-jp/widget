@@ -634,7 +634,9 @@ end
 private :_null_binding
 
 def eval_samplecode(code)
-  Thread.new{ _null_binding.pseudo_toplevel_eval{ eval(code) } }.run
+  #eval(code)
+  _null_binding.pseudo_toplevel_eval{ eval(code) }
+  #Thread.new{ _null_binding.pseudo_toplevel_eval{ eval(code) } }
   Tk.update
 end
 
@@ -926,7 +928,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.6.0-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.6.2-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 
