@@ -1,3 +1,7 @@
+Mon Mar 24 01:24:24 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (result): use proc instead of Thread. [ruby-dev:33692]
+
 Fri Mar 21 21:26:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::Hosts): should not use win32/resolv on cygwin.

@@ -729,13 +729,12 @@ class ERB
   #
   def result(b=TOPLEVEL_BINDING)
     if @safe_level
-      th = Thread.start { 
+      proc { 
 	$SAFE = @safe_level
 	eval(@src, b, (@filename || '(erb)'), 1)
-      }
-      return th.value
+      }.call
     else
-      return eval(@src, b, (@filename || '(erb)'), 1)
+      eval(@src, b, (@filename || '(erb)'), 1)
     end
   end
 
