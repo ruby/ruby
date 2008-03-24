@@ -4680,11 +4680,8 @@ debug_lines(const char *f)
 	VALUE hash = rb_const_get_at(rb_cObject, rb_intern("SCRIPT_LINES__"));
 	if (TYPE(hash) == T_HASH) {
 	    VALUE fname = rb_str_new2(f);
-	    VALUE lines = rb_hash_lookup(hash, fname);
-	    if (NIL_P(lines)) {
-		lines = rb_ary_new();
-		rb_hash_aset(hash, fname, lines);
-	    }
+	    VALUE lines = rb_ary_new();
+	    rb_hash_aset(hash, fname, lines);
 	    return lines;
 	}
     }
