@@ -1,3 +1,9 @@
+Mon Mar 24 20:07:42 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_eval): Call trace hook for if expression after the
+	  condition has been evaluated, not before; submitted by Rocky
+	  Bernstein in #18722.
+
 Mon Mar 24 19:44:53 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* parse.y (yycompile): Always prepare a new array for each file's

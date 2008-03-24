@@ -3038,13 +3038,16 @@ rb_eval(self, n)
 	RETURN(Qfalse);
 
       case NODE_IF:
-	EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node, self,
-			ruby_frame->last_func,
-			ruby_frame->last_class);
 	if (RTEST(rb_eval(self, node->nd_cond))) {
+	    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node, self,
+			    ruby_frame->last_func,
+			    ruby_frame->last_class);
 	    node = node->nd_body;
 	}
 	else {
+	    EXEC_EVENT_HOOK(RUBY_EVENT_LINE, node, self,
+			    ruby_frame->last_func,
+			    ruby_frame->last_class);
 	    node = node->nd_else;
 	}
 	goto again;
