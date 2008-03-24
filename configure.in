@@ -1785,7 +1785,7 @@ else
 fi
 
 case "$target_os" in
-  mingw*) sitearch="i386-$rb_cv_msvcrt" ;;
+  mingw*) sitearch="$target_cpu-$rb_cv_msvcrt" ;;
   *) sitearch="${arch}" ;;
 esac
 
