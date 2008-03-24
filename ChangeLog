@@ -1,3 +1,7 @@
+Mon Mar 24 10:25:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: sitearch should use target_cpu.  [ruby-core:15986]
+
 Mon Mar 24 01:24:24 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (result): use proc instead of Thread. [ruby-dev:33692]
