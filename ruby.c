@@ -842,14 +842,14 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
             }
 	    else if (strncmp("enable", s, n = 6) == 0 &&
 		     (!s[n] || s[n] == '-' || s[n] == '=')) {
-		if (!(s += n + 1)[-1] && (!--argc || !(s = *++argv))) {
+		if ((s += n + 1)[-1] ? !*s : (!--argc || !(s = *++argv))) {
 		    rb_raise(rb_eRuntimeError, "missing argument for --enable");
 		}
 		ruby_each_words(s, enable_option, &opt->disable);
 	    }
 	    else if (strncmp("disable", s, n = 7) == 0 &&
 		     (!s[n] || s[n] == '-' || s[n] == '=')) {
-		if (!(s += n + 1)[-1] && (!--argc || !(s = *++argv))) {
+		if ((s += n + 1)[-1] ? !*s : (!--argc || !(s = *++argv))) {
 		    rb_raise(rb_eRuntimeError, "missing argument for --disable");
 		}
 		ruby_each_words(s, disable_option, &opt->disable);
@@ -1051,7 +1051,7 @@ process_options(VALUE arg)
     process_sflag(opt);
 
     ruby_init_loadpath();
-    ruby_init_gems(!(opt->disable && DISABLE_BIT(gems)));
+    ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
     if (opt->ext.enc.name != 0) {

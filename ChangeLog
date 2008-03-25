@@ -1,3 +1,9 @@
+Tue Mar 25 16:32:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): checks if the word is empty.
+
+	* ruby.c (process_options): typo fixed.  [ruby-dev:34122]
+
 Tue Mar 25 15:26:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (defined_expr): false short-circuit destination label may
