@@ -1,4 +1,10 @@
-Tue Mar 25 15:09:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Mar 25 15:26:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (defined_expr): false short-circuit destination label may
+	  be needed.  [ruby-talk:295296]
+
+	* compile.c (iseq_compile_each): put nil if false short-circuit is
+	  created.
 
 	* compile.c (compile_massign_opt): no need to use alloca.
 

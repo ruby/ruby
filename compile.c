@@ -2258,7 +2258,7 @@ compile_cpath(LINK_ANCHOR *ret, rb_iseq_t *iseq, NODE *cpath)
 
 static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
-	     NODE * node, LABEL *lfinish, VALUE needstr)
+	     NODE *node, LABEL **lfinish, VALUE needstr)
 {
     char *estr = 0;
     enum node_type type;
@@ -2280,22 +2280,21 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	break;
 
       case NODE_ARRAY:{
-	LABEL *lfalse = NULL;
 	NODE *vals = node;
 
 	do {
 	    defined_expr(iseq, ret, vals->nd_head, lfinish, Qfalse);
 
-	    if (lfalse) {
-		ADD_INSNL(ret, nd_line(node), branchunless, lfalse);
+	    if (lfinish[1]) {
+		ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	    }
 	    else {
 		LABEL *lcont = NEW_LABEL(nd_line(node));
-		lfalse = NEW_LABEL(nd_line(node));
+		lfinish[1] = NEW_LABEL(nd_line(node));
 		ADD_INSNL(ret, nd_line(node), branchif, lcont);
-		ADD_LABEL(ret, lfalse);
+		ADD_LABEL(ret, lfinish[1]);
 		ADD_INSN(ret, nd_line(node), putnil);
-		ADD_INSNL(ret, nd_line(node), jump, lfinish);
+		ADD_INSNL(ret, nd_line(node), jump, lfinish[0]);
 		ADD_LABEL(ret, lcont);
 	    }
 	} while ((vals = vals->nd_next) != NULL);
@@ -2336,28 +2335,18 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		  ID2SYM(node->nd_vid), needstr);
 	return 1;
       case NODE_COLON2:
+	if (!lfinish[1]) {
+	    lfinish[1] = NEW_LABEL(nd_line(node));
+	}
+	defined_expr(iseq, ret, node->nd_head, lfinish, Qfalse);
+	ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
+
 	if (rb_is_const_id(node->nd_mid)) {
-	    LABEL *lcont = NEW_LABEL(nd_line(node));
-	    defined_expr(iseq, ret, node->nd_head, lfinish, Qfalse);
-
-	    ADD_INSNL(ret, nd_line(node), branchif, lcont);
-	    ADD_INSN(ret, nd_line(node), putnil);
-	    ADD_INSNL(ret, nd_line(node), jump, lfinish);
-
-	    ADD_LABEL(ret, lcont);
 	    COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_CONST),
 		      ID2SYM(node->nd_mid), needstr);
 	}
 	else {
-	    LABEL *lcont = NEW_LABEL(nd_line(node));
-	    defined_expr(iseq, ret, node->nd_head, lfinish, Qfalse);
-
-	    ADD_INSNL(ret, nd_line(node), branchif, lcont);
-	    ADD_INSN(ret, nd_line(node), putnil);
-	    ADD_INSNL(ret, nd_line(node), jump, lfinish);
-
-	    ADD_LABEL(ret, lcont);
 	    COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_METHOD),
 		      ID2SYM(node->nd_mid), needstr);
@@ -2374,7 +2363,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_VCALL:
       case NODE_FCALL:
       case NODE_ATTRASGN:{
-	LABEL *lfalse = NULL;
 	int self = Qtrue;
 
 	switch (type) {
@@ -2386,23 +2374,17 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	  default:
 	    /* through */;
 	}
+	if (!lfinish[1]) {
+	    lfinish[1] = NEW_LABEL(nd_line(node));
+	}
 	if (node->nd_args) {
-	    lfalse = NEW_LABEL(nd_line(node));
 	    defined_expr(iseq, ret, node->nd_args, lfinish, Qfalse);
-	    ADD_INSNL(ret, nd_line(node), branchunless, lfalse);
+	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	}
 	if (!self) {
-	    LABEL *lcont = NEW_LABEL(nd_line(node));
-
 	    defined_expr(iseq, ret, node->nd_recv, lfinish, Qfalse);
-	    ADD_INSNL(ret, nd_line(node), branchif, lcont);
-	    if (lfalse) {
-		ADD_LABEL(ret, lfalse);
-	    }
-	    ADD_INSN(ret, nd_line(node), putnil);
-	    ADD_INSNL(ret, nd_line(node), jump, lfinish);
+	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 
-	    ADD_LABEL(ret, lcont);
 	    COMPILE(ret, "defined/recv", node->nd_recv);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_METHOD),
 		      ID2SYM(node->nd_mid), needstr);
@@ -2411,12 +2393,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	    ADD_INSN(ret, nd_line(node), putself);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_FUNC),
 		      ID2SYM(node->nd_mid), needstr);
-	    ADD_INSNL(ret, nd_line(node), jump, lfinish);
-	    if (lfalse) {
-		ADD_LABEL(ret, lfalse);
-		ADD_INSN(ret, nd_line(node), putnil);
-		ADD_INSNL(ret, nd_line(node), jump, lfinish);
-	    }
 	}
 	return 1;
       }
@@ -2458,7 +2434,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       default:{
 	LABEL *lstart = NEW_LABEL(nd_line(node));
 	LABEL *lend = NEW_LABEL(nd_line(node));
-	LABEL *ldefed = NEW_LABEL(nd_line(node));
 	VALUE ensure = NEW_CHILD_ISEQVAL(NEW_NIL(),
 					 rb_str_concat(rb_str_new2
 						       ("defined guard in "),
@@ -2467,10 +2442,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 
 	ADD_LABEL(ret, lstart);
 	COMPILE(ret, "defined expr (others)", node);
-	ADD_INSNL(ret, nd_line(node), branchif, ldefed);
-	ADD_INSN(ret, nd_line(node), putnil);
-	ADD_INSNL(ret, nd_line(node), jump, lend);
-	ADD_LABEL(ret, ldefed);
+	if (!lfinish[1]) {
+	    lfinish[1] = NEW_LABEL(nd_line(node));
+	}
+	ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	if (needstr) {
 	    ADD_INSN1(ret, nd_line(node), putstring, rb_str_new2("expression"));
 	}
@@ -2479,7 +2454,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	}
 	ADD_LABEL(ret, lend);
 
-	ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, lstart, lend, ensure, lfinish);
+	ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, lstart, lend, ensure, lfinish[1]);
 	return 1;
       } /* end of default */
     }
@@ -3609,11 +3584,21 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_OP_ASGN_AND:
       case NODE_OP_ASGN_OR:{
 	LABEL *lfin = NEW_LABEL(nd_line(node));
-	LABEL *lassign = NEW_LABEL(nd_line(node));
+	LABEL *lassign;
 
 	if (nd_type(node) == NODE_OP_ASGN_OR) {
-	    defined_expr(iseq, ret, node->nd_head, lassign, Qfalse);
+	    LABEL *lfinish[2];
+	    lfinish[0] = lfin;
+	    lfinish[1] = 0;
+	    defined_expr(iseq, ret, node->nd_head, lfinish, Qfalse);
+	    lassign = lfinish[1];
+	    if (!lassign) {
+		lassign = NEW_LABEL(nd_line(node));
+	    }
 	    ADD_INSNL(ret, nd_line(node), branchunless, lassign);
+	}
+	else {
+	    lassign = NEW_LABEL(nd_line(node));
 	}
 
 	COMPILE(ret, "NODE_OP_ASGN_AND/OR#nd_head", node->nd_head);
@@ -4459,9 +4444,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DEFINED:{
 	if (!poped) {
-	    LABEL *lfinish = NEW_LABEL(nd_line(node));
+	    LABEL *lfinish[2];
+	    lfinish[0] = NEW_LABEL(nd_line(node));
+	    lfinish[1] = 0;
 	    defined_expr(iseq, ret, node->nd_head, lfinish, Qtrue);
-	    ADD_LABEL(ret, lfinish);
+	    if (lfinish[1]) {
+		ADD_INSNL(ret, nd_line(node), jump, lfinish[0]);
+		ADD_LABEL(ret, lfinish[1]);
+		ADD_INSN(ret, nd_line(node), putnil);
+	    }
+	    ADD_LABEL(ret, lfinish[0]);
 	}
 	break;
       }
