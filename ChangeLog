@@ -1,3 +1,10 @@
+Wed Mar 26 00:28:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rational.rb: add tests to achieve over 90% test
+	  coverage of rational.c.
+
+	* test/ruby/test_complex.rb: ditto for complex.c.
+
 Tue Mar 25 19:34:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* bootstraptest/test_knownbug.rb: add tests.  [ruby-dev:34128]
