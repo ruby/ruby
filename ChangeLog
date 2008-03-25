@@ -1,3 +1,7 @@
+Tue Mar 25 19:34:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* bootstraptest/test_knownbug.rb: add tests.  [ruby-dev:34128]
+
 Tue Mar 25 19:09:04 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (ary_new): fix size check.  [ruby-dev:34123]
