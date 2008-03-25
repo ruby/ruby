@@ -1232,6 +1232,8 @@ class TestArray < Test::Unit::TestCase
 
   def test_take
     assert_equal([1,2,3], [1,2,3,4,5,0].take(3))
+    assert_raise(ArgumentError, '[ruby-dev:34123]') { [1,2].take(-1) }
+    assert_equal([1,2], [1,2].take(1000000000), '[ruby-dev:34123]')
   end
 
   def test_take_while
@@ -1240,6 +1242,8 @@ class TestArray < Test::Unit::TestCase
 
   def test_drop
     assert_equal([4,5,0], [1,2,3,4,5,0].drop(3))
+    assert_raise(ArgumentError, '[ruby-dev:34123]') { [1,2].drop(-1) }
+    assert_equal([], [1,2].drop(1000000000), '[ruby-dev:34123]')
   end
 
   def test_drop_while

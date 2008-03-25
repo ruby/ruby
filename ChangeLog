@@ -1,3 +1,14 @@
+Tue Mar 25 19:09:04 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (ary_new): fix size check.  [ruby-dev:34123]
+
+	* array.c (rb_ary_take, rb_ary_drop): check negative size and use
+	  NUM2LONG instead of FIX2LONG.  [ruby-dev:34123]
+
+	* enum.c (enum_take, enum_drop): check negative size.
+
+	* test/ruby/test_array.rb: add tests for above.
+
 Tue Mar 25 16:32:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (proc_options): checks if the word is empty.

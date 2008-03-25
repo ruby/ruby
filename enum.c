@@ -1499,9 +1499,14 @@ static VALUE
 enum_take(VALUE obj, VALUE n)
 {
     VALUE args[2];
+    long len = NUM2LONG(n);
 
-    args[1] = NUM2LONG(n);
-    args[0] = rb_ary_new2(args[1]);
+    if (len < 0) {
+	rb_raise(rb_eArgError, "attempt to take negative size");
+    }
+
+    args[1] = len;
+    args[0] = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)args);
     return args[0];
 }
@@ -1566,9 +1571,14 @@ static VALUE
 enum_drop(VALUE obj, VALUE n)
 {
     VALUE args[2];
+    long len = NUM2LONG(n);
 
-    args[1] = NUM2ULONG(n);
-    args[0] = rb_ary_new2(args[1]);
+    if (len < 0) {
+	rb_raise(rb_eArgError, "attempt to drop negative size");
+    }
+
+    args[1] = len;
+    args[0] = rb_ary_new();
     rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)args);
     return args[0];
 }

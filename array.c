@@ -114,7 +114,7 @@ ary_new(VALUE klass, long len)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
     }
-    if (len > 0 && len * sizeof(VALUE) <= len) {
+    if (len > 0 && len * (long)sizeof(VALUE) <= len) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     ary = ary_alloc(klass);
@@ -3242,7 +3242,11 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_take(VALUE obj, VALUE n)
 {
-    return rb_ary_subseq(obj, 0, FIX2LONG(n));
+    long len = NUM2LONG(n);
+    if (len < 0) {
+	rb_raise(rb_eArgError, "attempt to take negative size");
+    }
+    return rb_ary_subseq(obj, 0, len);
 }
 
 /*
@@ -3286,8 +3290,12 @@ static VALUE
 rb_ary_drop(VALUE ary, VALUE n)
 {
     VALUE result;
+    long pos = NUM2LONG(n);
+    if (pos < 0) {
+	rb_raise(rb_eArgError, "attempt to drop negative size");
+    }
 
-    result = rb_ary_subseq(ary, FIX2LONG(n), RARRAY_LEN(ary));
+    result = rb_ary_subseq(ary, pos, RARRAY_LEN(ary));
     if (result == Qnil) result = rb_ary_new();
     return result;
 }
