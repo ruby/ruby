@@ -2095,9 +2095,9 @@ static int
 compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		    NODE *rhsn, NODE *orig_lhsn)
 {
-    int memsize = 64;
+    VALUE mem[64];
+    const int memsize = sizeof(mem) / sizeof(mem[0]);
     int memindex = 0;
-    VALUE *mem = ALLOCA_N(VALUE, memsize);
     int llen = 0, rlen = 0;
     int i;
     NODE *lhsn = orig_lhsn;
@@ -2431,7 +2431,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_NTH_REF:
 	ADD_INSN(ret, nd_line(node), putnil);
 	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_REF),
-		  INT2FIX(node->nd_nth << 1 | type == NODE_BACK_REF),
+		  INT2FIX((node->nd_nth << 1) | (type == NODE_BACK_REF)),
 		  needstr);
 	return 1;
 
@@ -3809,11 +3809,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 			for (j=0; j<post_len; j++) {
 			    int idx = liseq->local_size - (post_start + j);
 			    ADD_INSN1(args, nd_line(node), getlocal, INT2FIX(idx));
-		    }
+			}
 			argc = INT2FIX(post_len + post_start);
+		    }
 		}
 	    }
-	}
 	}
 
 	/* dummy reciever */
@@ -4209,34 +4209,34 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_ALIAS:{
-	  COMPILE(ret, "alias arg1", node->u1.node);
-	  COMPILE(ret, "alias arg2", node->u2.node);
+	COMPILE(ret, "alias arg1", node->u1.node);
+	COMPILE(ret, "alias arg2", node->u2.node);
 
-	  ADD_INSN1(ret, nd_line(node), alias, Qfalse);
+	ADD_INSN1(ret, nd_line(node), alias, Qfalse);
 
-	  if (!poped) {
-	      ADD_INSN(ret, nd_line(node), putnil);
-	  }
-	  break;
+	if (!poped) {
+	    ADD_INSN(ret, nd_line(node), putnil);
+	}
+	break;
       }
       case NODE_VALIAS:{
-	  ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u1.id));
-	  ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u2.id));
-	  ADD_INSN1(ret, nd_line(node), alias, Qtrue);
+	ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u1.id));
+	ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u2.id));
+	ADD_INSN1(ret, nd_line(node), alias, Qtrue);
 
-	  if (!poped) {
-	      ADD_INSN(ret, nd_line(node), putnil);
-	  }
-	  break;
+	if (!poped) {
+	    ADD_INSN(ret, nd_line(node), putnil);
+	}
+	break;
       }
       case NODE_UNDEF:{
-	  COMPILE(ret, "undef arg", node->u2.node);
-	  ADD_INSN(ret, nd_line(node), undef);
+	COMPILE(ret, "undef arg", node->u2.node);
+	ADD_INSN(ret, nd_line(node), undef);
 
-	  if (!poped) {
-	      ADD_INSN(ret, nd_line(node), putnil);
-	  }
-	  break;
+	if (!poped) {
+	    ADD_INSN(ret, nd_line(node), putnil);
+	}
+	break;
       }
       case NODE_CLASS:{
 	VALUE iseqval =

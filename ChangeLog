@@ -1,3 +1,7 @@
+Tue Mar 25 15:09:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign_opt): no need to use alloca.
+
 Mon Mar 24 19:23:52 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* parse.y (debug_lines): Always prepare a new array for each
