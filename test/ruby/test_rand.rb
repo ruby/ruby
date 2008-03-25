@@ -128,4 +128,40 @@ class TestRand < Test::Unit::TestCase
     ws.each {|w| assert_equal(w.to_i, rand(-0x10000)) }
   end
 
+  def test_types
+    srand(0)
+    assert_equal(44, rand(100.0))
+    assert_equal(1245085576965981900420779258691, rand((2**100).to_f))
+    assert_equal(914679880601515615685077935113, rand(-(2**100).to_f))
+
+    srand(0)
+    assert_equal(997707939797331598305742933184, rand(2**100))
+    assert_in_delta(0.602763376071644, rand((2**100).coerce(0).first),
+                    0.000000000000001)
+
+    srand(0)
+    assert_in_delta(0.548813503927325, rand(nil),
+                    0.000000000000001)
+    srand(0)
+    o = Object.new
+    def o.to_i; 100; end
+    assert_equal(44, rand(o))
+    assert_equal(47, rand(o))
+    assert_equal(64, rand(o))
+  end
+
+  def test_srand
+    srand
+    assert_kind_of(Integer, rand(2))
+
+    srand(2**100)
+    %w(3258412053).each {|w|
+      assert_equal(w.to_i, rand(0x100000000))
+    }
+  end
+
+  def test_shuffle
+    srand(0)
+    assert_equal([1,4,2,5,3], [1,2,3,4,5].shuffle)
+  end
 end

@@ -1,3 +1,8 @@
+Wed Mar 26 00:55:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_rand.rb: add tests to achieve over 95% test coverage
+	  of random.c.
+
 Wed Mar 26 00:28:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rational.rb: add tests to achieve over 90% test
