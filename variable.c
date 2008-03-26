@@ -1582,8 +1582,8 @@ rb_const_list(void *data)
  *  modules (example at start of section), unless the <i>all</i>
  *  parameter is set to <code>false</code>.
  *
- *    IO.constants.include?("SYNC")         => true
- *    IO.constants(false).include?("SYNC")  => false
+ *    IO.constants.include?(:SYNC)         => true
+ *    IO.constants(false).include?(:SYNC)  => false
  *
  *  Also see <code>Module::const_defined?</code>.
  */
