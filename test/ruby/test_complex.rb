@@ -4,7 +4,7 @@ class ComplexSub < Complex; end
 
 class Complex_Test < Test::Unit::TestCase
 
-  def test_sub
+  def test_compsub
     c = ComplexSub.__send__(:new, 1)
     cc = ComplexSub.__send__(:convert, 1)
     if defined?(ComplexSub::Unify)
@@ -314,7 +314,7 @@ class Complex_Test < Test::Unit::TestCase
     end
   end
 
-  def test_sub2
+  def test_sub
     c = Complex(1,2)
     c2 = Complex(2,3)
 

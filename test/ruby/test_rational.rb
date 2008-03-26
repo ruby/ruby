@@ -4,7 +4,7 @@ class RationalSub < Rational; end
 
 class Rational_Test < Test::Unit::TestCase
 
-  def test_sub
+  def test_ratsub
     c = RationalSub.__send__(:new, 1)
     cc = RationalSub.__send__(:convert, 1)
     if defined?(RationalSub::Unify)
