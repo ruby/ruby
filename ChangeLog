@@ -1,3 +1,13 @@
+Thu Mar 27 20:44:22 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (f_lcm): removed.
+
+	* rational.c (rb_lcm, rb_gcdlcm): added.
+
+	* lib/complex.rb (gcd, lcm, gcdlcm): removed.
+
+	* lib/rational.rb (gcd, lcm, gcdlcm): ditto.
+
 Wed Mar 26 18:11:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_mod_constants): rdoc updated.  a patch from

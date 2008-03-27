@@ -21,9 +21,9 @@
 
 VALUE rb_cRational;
 
-static ID id_Unify, id_cmp, id_coerce, id_convert, id_equal_p, id_expt,
-  id_floor, id_format,id_idiv, id_inspect, id_negate, id_new, id_new_bang,
-  id_to_f, id_to_i, id_to_s, id_truncate;
+static ID id_Unify, id_abs, id_cmp, id_coerce, id_convert, id_equal_p,
+  id_expt, id_floor, id_format,id_idiv, id_inspect, id_negate, id_new,
+  id_new_bang, id_to_f, id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -64,6 +64,22 @@ f_add(VALUE x, VALUE y)
        r = rb_funcall(x, '+', 1, y);
    } else
      r = rb_funcall(x, '+', 1, y);
+   return r;
+}
+
+inline static VALUE
+f_cmp(VALUE x, VALUE y)
+{
+   VALUE r;
+   if (FIXNUM_P(x) && FIXNUM_P(y)) {
+     long c = FIX2LONG(x) - FIX2LONG(y);
+     if (c > 0)
+       c = 1;
+     else if (c < 0)
+       c = -1;
+     r = INT2FIX(c);
+   } else
+     r = rb_funcall(x, id_cmp, 1, y);
    return r;
 }
 
@@ -149,6 +165,7 @@ f_sub(VALUE x, VALUE y)
 
 binop(xor, '^')
 
+fun1(abs)
 fun1(floor)
 fun1(inspect)
 fun1(negate)
@@ -156,22 +173,6 @@ fun1(to_f)
 fun1(to_i)
 fun1(to_s)
 fun1(truncate)
-
-inline static VALUE
-f_cmp(VALUE x, VALUE y)
-{
-   VALUE r;
-   if (FIXNUM_P(x) && FIXNUM_P(y)) {
-     long c = FIX2LONG(x) - FIX2LONG(y);
-     if (c > 0)
-       c = 1;
-     else if (c < 0)
-       c = -1;
-     r = INT2FIX(c);
-   } else
-     r = rb_funcall(x, id_cmp, 1, y);
-   return r;
-}
 
 fun2(coerce)
 
@@ -346,10 +347,13 @@ f_gcd(VALUE x, VALUE y)
 }
 #endif
 
-VALUE
-rb_gcd(VALUE x, VALUE y)
+inline static VALUE
+f_lcm(VALUE x, VALUE y)
 {
-  return f_gcd(x, y);
+  if (f_zero_p(x) || f_zero_p(y))
+    return ZERO;
+  else
+    return f_abs(f_mul(f_div(x, f_gcd(x, y)), y));
 }
 
 #define get_dat1(x) \
@@ -1209,6 +1213,48 @@ nurat_marshal_load(VALUE self, VALUE a)
 /* --- */
 
 VALUE
+rb_gcd(VALUE self, VALUE other)
+{
+  switch (TYPE(other)) {
+  case T_FIXNUM:
+  case T_BIGNUM:
+    break;
+  default:
+    rb_raise(rb_eArgError, "not an integer");
+  }
+
+  return f_gcd(self, other);
+}
+
+VALUE
+rb_lcm(VALUE self, VALUE other)
+{
+  switch (TYPE(other)) {
+  case T_FIXNUM:
+  case T_BIGNUM:
+    break;
+  default:
+    rb_raise(rb_eArgError, "not an integer");
+  }
+
+  return f_lcm(self, other);
+}
+
+VALUE
+rb_gcdlcm(VALUE self, VALUE other)
+{
+  switch (TYPE(other)) {
+  case T_FIXNUM:
+  case T_BIGNUM:
+    break;
+  default:
+    rb_raise(rb_eArgError, "not an integer");
+  }
+
+  return rb_assoc_new(f_gcd(self, other), f_lcm(self, other));
+}
+
+VALUE
 rb_rational_raw(VALUE x, VALUE y)
 {
   return nurat_s_new_internal(rb_cRational, x, y);
@@ -1494,6 +1540,7 @@ Init_Rational(void)
   assert(fprintf(stderr, "assert() is now active\n"));
 
   id_Unify = rb_intern("Unify");
+  id_abs = rb_intern("abs");
   id_cmp = rb_intern("<=>");
   id_coerce = rb_intern("coerce");
   id_convert = rb_intern("convert");
@@ -1582,6 +1629,10 @@ Init_Rational(void)
   rb_define_method(rb_cRational, "marshal_load", nurat_marshal_load, 1);
 
   /* --- */
+
+  rb_define_method(rb_cInteger, "gcd", rb_gcd, 1);
+  rb_define_method(rb_cInteger, "lcm", rb_lcm, 1);
+  rb_define_method(rb_cInteger, "gcdlcm", rb_gcdlcm, 1);
 
   rb_define_method(rb_cNilClass, "to_r", nilclass_to_r, 0);
   rb_define_method(rb_cInteger, "to_r", integer_to_r, 0);
