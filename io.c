@@ -2227,64 +2227,12 @@ rb_io_each_byte(VALUE io)
     return io;
 }
 
-/*
- *  call-seq:
- *     str.lines(sep=$/)     => anEnumerator
- *     str.lines(limit)      => anEnumerator
- *     str.lines(sep, limit) => anEnumerator
- *
- *  Returns an enumerator that gives each line in the string.
- *
- *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
- *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
- */
-
-static VALUE
-rb_io_lines(int argc, VALUE *argv, VALUE str)
+static VALUE 
+io_getc(rb_io_t *fptr, rb_encoding *enc)
 {
-    return rb_enumeratorize(str, ID2SYM(rb_intern("each_line")), argc, argv);
-}
-
-/*
- *  call-seq:
- *     str.bytes   => anEnumerator
- *
- *  Returns an enumerator that gives each byte in the string.
- *
- *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
- */
-
-static VALUE
-rb_io_bytes(VALUE str)
-{
-    return rb_enumeratorize(str, ID2SYM(rb_intern("each_byte")), 0, 0);
-}
-
-/*
- *  call-seq:
- *     ios.getc   => fixnum or nil
- *
- *  Reads a one-character string from <em>ios</em>. Returns
- *  <code>nil</code> if called at end of file.
- *
- *     f = File.new("testfile")
- *     f.getc   #=> "8"
- *     f.getc   #=> "1"
- */
-
-static VALUE
-rb_io_getc(VALUE io)
-{
-    rb_io_t *fptr;
     int r, n;
     VALUE str;
-    rb_encoding *enc;
 
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
-
-    enc = io_input_encoding(fptr);
-    READ_CHECK(fptr);
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
@@ -2317,6 +2265,117 @@ rb_io_getc(VALUE io)
     return io_enc_str(str, fptr);
 }
 
+/*
+ *  call-seq:
+ *     ios.each_char {|c| block }  => ios
+ *
+ *  Calls the given block once for each character in <em>ios</em>,
+ *  passing the character as an argument. The stream must be opened for
+ *  reading or an <code>IOError</code> will be raised.
+ *
+ *     f = File.new("testfile")
+ *     f.each_char {|c| print c, ' ' }   #=> #<File:testfile>
+ */
+
+static VALUE
+rb_io_each_char(VALUE io)
+{
+    rb_io_t *fptr;
+    rb_encoding *enc;
+    VALUE c;
+
+    RETURN_ENUMERATOR(io, 0, 0);
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    enc = io_input_encoding(fptr);
+    READ_CHECK(fptr);
+    while (!NIL_P(c = io_getc(fptr, enc))) {
+        rb_yield(c);
+    }
+    return io;
+}
+
+
+
+/*
+ *  call-seq:
+ *     str.lines(sep=$/)     => anEnumerator
+ *     str.lines(limit)      => anEnumerator
+ *     str.lines(sep, limit) => anEnumerator
+ *
+ *  Returns an enumerator that gives each line in the string.
+ *
+ *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
+ *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
+ */
+
+static VALUE
+rb_io_lines(int argc, VALUE *argv, VALUE io)
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
+}
+
+/*
+ *  call-seq:
+ *     str.bytes   => anEnumerator
+ *
+ *  Returns an enumerator that gives each byte in the string.
+ *
+ *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
+ */
+
+static VALUE
+rb_io_bytes(VALUE io)
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
+}
+
+/*
+ *  call-seq:
+ *     ios.chars   => anEnumerator
+ *  
+ *  Returns an enumerator that gives each character in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *     
+ *     f = File.new("testfile)
+ *     f.chars.each {|c| print c, ' ' }
+ */
+
+static VALUE
+rb_io_chars(VALUE io)
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
+}
+
+/*
+ *  call-seq:
+ *     ios.getc   => fixnum or nil
+ *
+ *  Reads a one-character string from <em>ios</em>. Returns
+ *  <code>nil</code> if called at end of file.
+ *
+ *     f = File.new("testfile")
+ *     f.getc   #=> "8"
+ *     f.getc   #=> "1"
+ */
+
+static VALUE
+rb_io_getc(VALUE io)
+{
+    rb_io_t *fptr;
+    int r, n;
+    VALUE str;
+    rb_encoding *enc;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    enc = io_input_encoding(fptr);
+    READ_CHECK(fptr);
+    return io_getc(fptr, enc);
+}
 int
 rb_getc(FILE *f)
 {
@@ -6535,6 +6594,17 @@ argf_each_byte(VALUE argf)
 }
 
 static VALUE
+argf_each_char(VALUE argf)
+{
+    RETURN_ENUMERATOR(argf, 0, 0);
+    for (;;) {
+	if (!next_argv()) return Qnil;
+	rb_block_call(current_file, rb_intern("each_char"), 0, 0, rb_yield, 0);
+	next_p = 1;
+    }
+}
+
+static VALUE
 argf_filename(VALUE argf)
 {
     next_argv();
@@ -6831,8 +6901,10 @@ Init_IO(void)
     rb_define_method(rb_cIO, "each",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_line",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
+    rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
     rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
     rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
+    rb_define_method(rb_cIO, "chars",  rb_io_chars, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
@@ -6929,6 +7001,7 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "each",  argf_each_line, -1);
     rb_define_method(rb_cARGF, "each_line",  argf_each_line, -1);
     rb_define_method(rb_cARGF, "each_byte",  argf_each_byte, 0);
+    rb_define_method(rb_cARGF, "each_char",  argf_each_char, 0);
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);
