@@ -24,6 +24,7 @@
 .Op Fl r Ar library
 .Op Fl x Ns Op Ar directory
 .Op Fl -disable-gems
+.Op Fl -verbose
 .Op Fl -
 .Op Ar program_file
 .Op Ar argument ...
@@ -301,7 +302,6 @@ but it does not work if the script is being interpreted by
 .Xr csh 1 .
 .Pp
 .It Fl v
-.It Fl -verbose
 Enables verbose mode.  Ruby will print its version at the beginning,
 and set the variable
 .Li "$VERBOSE"
@@ -340,6 +340,14 @@ this switch, unless you are going to debug the Ruby interpreter.
 .It Fl -disable-gems
 Disables RubyGems libraries.  By default, Ruby will load the latest
 version of each installed gem.
+.Pp
+.It Fl -verbose
+Enables verbose mode without printing version message at the
+beginning.  It sets the
+.Li "$VERBOSE"
+variable to true.
+If this switch is given, and no other switches are present, Ruby quits
+after printing its version.
 .El
 .Pp
 .Sh ENVIRONMENT
