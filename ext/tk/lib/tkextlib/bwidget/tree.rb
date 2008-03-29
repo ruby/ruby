@@ -263,14 +263,26 @@ class Tk::BWidget::Tree::Node
   include TkTreatTagFont
 
   TreeNode_TBL = TkCore::INTERP.create_table
-  TreeNode_ID = ['bw:node'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ TreeNode_TBL.clear }
+  (TreeNode_ID = ['bw:node'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    TreeNode_TBL.mutex.synchronize{ TreeNode_TBL.clear }
+  }
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless TreeNode_TBL[tpath]
-    TreeNode_TBL[tpath][id]? TreeNode_TBL[tpath][id]: id
+    TreeNode_TBL.mutex.synchronize{
+      if TreeNode_TBL[tpath]
+        TreeNode_TBL[tpath][id]? TreeNode_TBL[tpath][id]: id
+      else
+        id
+      end
+    }
   end
 
   def initialize(tree, *args)
@@ -311,13 +323,17 @@ class Tk::BWidget::Tree::Node
     if keys.key?('nodename')
       @path = @id = keys.delete('nodename')
     else
-      @path = @id = TreeNode_ID.join(TkCore::INTERP._ip_id_)
-      TreeNode_ID[1].succ!
+      TreeNode_ID.mutex.synchronize{
+        @path = @id = TreeNode_ID.join(TkCore::INTERP._ip_id_)
+        TreeNode_ID[1].succ!
+      }
     end
 
-    TreeNode_TBL[@id] = self
-    TreeNode_TBL[@tpath] = {} unless TreeNode_TBL[@tpath]
-    TreeNode_TBL[@tpath][@id] = self
+    TreeNode_TBL.mutex.synchronize{
+      TreeNode_TBL[@id] = self
+      TreeNode_TBL[@tpath] = {} unless TreeNode_TBL[@tpath]
+      TreeNode_TBL[@tpath][@id] = self
+    }
 
     @tree.insert(index, parent, @id, keys)
   end

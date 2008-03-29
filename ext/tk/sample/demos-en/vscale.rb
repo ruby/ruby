@@ -66,7 +66,6 @@ TkFrame.new($vscale_demo) {|frame|
   scale.set 75
 }.pack
 
-
 def setHeight(w, height)
   height = height + 21
   y2 = height - 30

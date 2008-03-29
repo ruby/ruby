@@ -12,17 +12,24 @@ class TkNamespace < TkObject
   ].freeze
 
   Tk_Namespace_ID_TBL = TkCore::INTERP.create_table
-  Tk_Namespace_ID = ["ns".freeze, "00000".taint].freeze
+
+  (Tk_Namespace_ID = ["ns".freeze, "00000".taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
 
   Tk_NsCode_RetObjID_TBL = TkCore::INTERP.create_table
 
   TkCore::INTERP.init_ip_env{
-    Tk_Namespace_ID_TBL.clear
-    Tk_NsCode_RetObjID_TBL.clear
+    Tk_Namespace_ID_TBL.mutex.synchronize{ Tk_Namespace_ID_TBL.clear }
+    Tk_NsCode_RetObjID_TBL.mutex.synchronize{ Tk_NsCode_RetObjID_TBL.clear }
   }
 
   def TkNamespace.id2obj(id)
-    Tk_Namespace_ID_TBL[id]? Tk_Namespace_ID_TBL[id]: id
+    Tk_Namespace_ID_TBL.mutex.synchronize{
+      Tk_Namespace_ID_TBL[id]? Tk_Namespace_ID_TBL[id]: id
+    }
   end
 
   #####################################
@@ -65,11 +72,13 @@ class TkNamespace < TkObject
     def cget(slot)
       if slot == :namespace || slot == 'namespace'
         ns = super(slot)
-        if TkNamespace::Tk_Namespace_ID_TBL.key?(ns)
-          TkNamespace::Tk_Namespace_ID_TBL[ns]
-        else
-          ns
-        end
+        Tk_Namespace_ID_TBL.mutex.synchronize{
+          if TkNamespace::Tk_Namespace_ID_TBL.key?(ns)
+            TkNamespace::Tk_Namespace_ID_TBL[ns]
+          else
+            ns
+          end
+        }
       else
         super(slot)
       end
@@ -79,9 +88,11 @@ class TkNamespace < TkObject
       if slot
         if slot == :namespace || slot == 'namespace'
           val = super(slot)
-          if TkNamespace::Tk_Namespace_ID_TBL.key?(val)
-            val = TkNamespace::Tk_Namespace_ID_TBL[val]
-          end
+          Tk_Namespace_ID_TBL.mutex.synchronize{
+            if TkNamespace::Tk_Namespace_ID_TBL.key?(val)
+              val = TkNamespace::Tk_Namespace_ID_TBL[val]
+            end
+          }
         else
           val = super(slot)
         end
@@ -96,19 +107,23 @@ class TkNamespace < TkObject
         info = super()
 
         if TkComm::GET_CONFIGINFO_AS_ARRAY
-          info.map!{|inf| 
-            if inf[0] == 'namespace' && 
-                TkNamespace::Tk_Namespace_ID_TBL.key?(inf[-1])
-              [inf[0], TkNamespace::Tk_Namespace_ID_TBL[inf[-1]]]
-            else
-              inf
-            end
+          Tk_Namespace_ID_TBL.mutex.synchronize{
+            info.map!{|inf| 
+              if inf[0] == 'namespace' && 
+                  TkNamespace::Tk_Namespace_ID_TBL.key?(inf[-1])
+                [inf[0], TkNamespace::Tk_Namespace_ID_TBL[inf[-1]]]
+              else
+                inf
+              end
+            }
           }
         else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
           val = info['namespace']
-          if TkNamespace::Tk_Namespace_ID_TBL.key?(val)
-            info['namespace'] = TkNamespace::Tk_Namespace_ID_TBL[val]
-          end
+          Tk_Namespace_ID_TBL.mutex.synchronize{
+            if TkNamespace::Tk_Namespace_ID_TBL.key?(val)
+              info['namespace'] = TkNamespace::Tk_Namespace_ID_TBL[val]
+            end
+          }
         end
 
         info
@@ -215,9 +230,11 @@ class TkNamespace < TkObject
 
   def initialize(name = nil, parent = nil)
     unless name
-      # name = Tk_Namespace_ID.join('')
-      name = Tk_Namespace_ID.join(TkCore::INTERP._ip_id_)
-      Tk_Namespace_ID[1].succ!
+      Tk_Namespace_ID.mutex.synchronize{
+        # name = Tk_Namespace_ID.join('')
+        name = Tk_Namespace_ID.join(TkCore::INTERP._ip_id_)
+        Tk_Namespace_ID[1].succ!
+      }
     end
     name = __tk_call('namespace', 'current') if name == ''
     if parent
@@ -252,7 +269,9 @@ class TkNamespace < TkObject
     # create namespace
     __tk_call('namespace', 'eval', @fullname, '')
 
-    Tk_Namespace_ID_TBL[@fullname] = self
+    Tk_Namespace_ID_TBL.mutex.synchronize{
+      Tk_Namespace_ID_TBL[@fullname] = self
+    }
   end
 
   def self.children(*args)
@@ -260,11 +279,13 @@ class TkNamespace < TkObject
     # <pattern> must be glob-style pattern
     tk_split_simplelist(tk_call('namespace', 'children', *args)).collect{|ns|
       # ns is fullname
-      if Tk_Namespace_ID_TBL.key?(ns)
-        Tk_Namespace_ID_TBL[ns]
-      else
-        ns
-      end
+      Tk_Namespace_ID_TBL.mutex.synchronize{
+        if Tk_Namespace_ID_TBL.key?(ns)
+          Tk_Namespace_ID_TBL[ns]
+        else
+          ns
+        end
+      }
     }
   end
   def children(pattern=None)
@@ -290,14 +311,24 @@ class TkNamespace < TkObject
   def code(script = Proc.new)
     if script.kind_of?(String)
       cmd = proc{|*args|
-        ret = ScopeArgs.new(@fullname,*args).instance_eval(script)
+        if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+          obj = ScopeArgs.new(@fullname,*args)
+          ret = obj.instance_exec(obj, script)
+        else
+          ret = ScopeArgs.new(@fullname,*args).instance_eval(script)
+        end
         id = ret.object_id
         TkNamespace::Tk_NsCode_RetObjID_TBL[id] = ret
         id
       }
     elsif script.kind_of?(Proc)
       cmd = proc{|*args|
-        ret = ScopeArgs.new(@fullname,*args).instance_eval(&script)
+        if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+          obj = ScopeArgs.new(@fullname,*args)
+          ret = obj.instance_exec(obj, &script)
+        else
+          ret = ScopeArgs.new(@fullname,*args).instance_eval(&script)
+        end
         id = ret.object_id
         TkNamespace::Tk_NsCode_RetObjID_TBL[id] = ret
         id
@@ -319,11 +350,13 @@ class TkNamespace < TkObject
 
   def self.current
     ns = self.current_path
-    if Tk_Namespace_ID_TBL.key?(ns)
-      Tk_Namespace_ID_TBL[ns]
-    else
-      ns
-    end
+    Tk_Namespace_ID_TBL.mutex.synchronize{
+      if Tk_Namespace_ID_TBL.key?(ns)
+        Tk_Namespace_ID_TBL[ns]
+      else
+        ns
+      end
+    }
   end
   def current_namespace
     # ns_tk_call('namespace', 'current')
@@ -335,11 +368,13 @@ class TkNamespace < TkObject
   def self.delete(*ns_list)
     tk_call('namespace', 'delete', *ns_list)
     ns_list.each{|ns|
-      if ns.kind_of?(TkNamespace)
-        Tk_Namespace_ID_TBL.delete(ns.path)
-      else
-        Tk_Namespace_ID_TBL.delete(ns.to_s)
-      end
+      Tk_Namespace_ID_TBL.mutex.synchronize{
+        if ns.kind_of?(TkNamespace)
+          Tk_Namespace_ID_TBL.delete(ns.path)
+        else
+          Tk_Namespace_ID_TBL.delete(ns.to_s)
+        end
+      }
     }
   end
   def delete
@@ -371,7 +406,7 @@ class TkNamespace < TkObject
 
   def self.eval(namespace, cmd = Proc.new, *args)
     #tk_call('namespace', 'eval', namespace, cmd, *args)
-    TkNamespace.new(namespece).eval(cmd, *args)
+    TkNamespace.new(namespace).eval(cmd, *args)
   end
 =begin
   def eval(cmd = Proc.new, *args)
@@ -444,11 +479,13 @@ class TkNamespace < TkObject
 
   def self.parent(namespace=None)
     ns = tk_call('namespace', 'parent', namespace)
-    if Tk_Namespace_ID_TBL.key?(ns)
-      Tk_Namespace_ID_TBL[ns]
-    else
-      ns
-    end
+    Tk_Namespace_ID_TBL.mutex.synchronize{
+      if Tk_Namespace_ID_TBL.key?(ns)
+        Tk_Namespace_ID_TBL[ns]
+      else
+        ns
+      end
+    }
   end
   def parent
     tk_call('namespace', 'parent', @fullname)

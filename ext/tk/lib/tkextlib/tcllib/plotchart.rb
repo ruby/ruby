@@ -265,7 +265,9 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def __destroy_hook__
-      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
     end
 
     def plot(series, x, y)
@@ -374,7 +376,9 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def __destroy_hook__
-      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
     end
 
     def plot(series, radius, angle)
@@ -645,7 +649,9 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def __destroy_hook__
-      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
     end
 
     def plot(series, dat, col=None)
@@ -834,23 +840,38 @@ module Tk::Tcllib::Plotchart
   ############################
   class PlotSeries < TkObject
     SeriesID_TBL = TkCore::INTERP.create_table
-    Series_ID = ['series'.freeze, '00000'.taint].freeze
-    TkCore::INTERP.init_ip_env{ SeriesID_TBL.clear }
+
+    (Series_ID = ['series'.freeze, '00000'.taint]).instance_eval{
+      @mutex = Mutex.new
+      def mutex; @mutex; end
+      freeze
+    }
+    TkCore::INTERP.init_ip_env{
+      SeriesID_TBL.mutex.synchronize{ SeriesID_TBL.clear }
+    }
 
     def self.id2obj(chart, id)
       path = chart.path
-      return id unless SeriesID_TBL[path]
-      SeriesID_TBL[path][id]? SeriesID_TBL[path][id]: id
+      SeriesID_TBL.mutex.synchronize{
+        if SeriesID_TBL[path]
+          SeriesID_TBL[path][id]? SeriesID_TBL[path][id]: id
+        else
+          id
+        end
+      }
     end
 
     def initialize(chart, keys=nil)
       @parent = @chart_obj = chart
       @ppath = @chart_obj.path
-      @path = @series = @id = Series_ID.join(TkCore::INTERP._ip_id_)
-      # SeriesID_TBL[@id] = self
-      SeriesID_TBL[@ppath] = {} unless SeriesID_TBL[@ppath]
-      SeriesID_TBL[@ppath][@id] = self
-      Series_ID[1].succ!
+      Series_ID.mutex.synchronize{
+        @path = @series = @id = Series_ID.join(TkCore::INTERP._ip_id_)
+        Series_ID[1].succ!
+      }
+      SeriesID_TBL.mutex.synchronize{
+        SeriesID_TBL[@ppath] ||= {}
+        SeriesID_TBL[@ppath][@id] = self
+      }
       dataconfig(keys) if keys.kind_of?(Hash)
     end
 

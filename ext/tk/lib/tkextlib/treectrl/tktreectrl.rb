@@ -137,6 +137,22 @@ class Tk::TreeCtrl::NotifyEvent
     nil
   ]
 
+  # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+  KEY_TBL.map!{|inf|
+    if inf.kind_of?(Array)
+      inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+      inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+    end
+    inf
+  }
+
+  PROC_TBL.map!{|inf|
+    if inf.kind_of?(Array)
+      inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+    end
+    inf
+  }
+
   # setup tables to be used by scan_args, _get_subst_key, _get_all_subst_keys
   #
   #     _get_subst_key() and _get_all_subst_keys() generates key-string 
@@ -544,10 +560,18 @@ class Tk::TreeCtrl
   #########################
 
   def __destroy_hook__
-    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.delete(@path)
-    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.delete(@path)
-    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.delete(@path)
-    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.delete(@path)
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.delete(@path)
+    }
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.delete(@path)
+    }
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.delete(@path)
+    }
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.delete(@path)
+    }
   end
 
   #########################
@@ -638,9 +662,11 @@ class Tk::TreeCtrl
   end
 
   def column_delete(idx)
-    if Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[self.path]
-      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[self.path].delete(idx)
-    end
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[self.path]
+        Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[self.path].delete(idx)
+      end
+    }
     tk_send('column', 'delete', idx)
     self
   end
@@ -750,11 +776,13 @@ class Tk::TreeCtrl
   end
 
   def element_delete(*elems)
-    if Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[self.path]
-      elems.each{|elem|
-        Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[self.path].delete(elem)
-      }
-    end
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[self.path]
+        elems.each{|elem|
+          Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[self.path].delete(elem)
+        }
+      end
+    }
     tk_send('element', 'delete', *elems)
     self
   end
@@ -885,22 +913,25 @@ class Tk::TreeCtrl
 
   def _erase_children(item)
     item_children(item).each{|i| _erase_children(i)}
+    # table is already locked
     Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path].delete(item)
   end
   private :_erase_children
 
   def item_delete(first, last=None)
-    if Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path]
-      if first == 'all' || first == :all || last == 'all' || last == :all
-        Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path].clear
-      elsif last == None
-        _erase_children(first)
-      else
-        self.range(first, last).each{|id|
-          _erase_children(id)
-        }
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path]
+        if first == 'all' || first == :all || last == 'all' || last == :all
+          Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[self.path].clear
+        elsif last == None
+          _erase_children(first)
+        else
+          self.range(first, last).each{|id|
+            _erase_children(id)
+          }
+        end
       end
-    end
+    }
     tk_send('item', 'delete', first, last)
     self
   end
@@ -1520,11 +1551,13 @@ class Tk::TreeCtrl
   end
 
   def style_delete(*args)
-    if Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[self.path]
-      args.each{|sty|
-        Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[self.path].delete(sty)
-      }
-    end
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[self.path]
+        args.each{|sty|
+          Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[self.path].delete(sty)
+        }
+      end
+    }
     tk_send('style', 'delete', *args)
     self
   end
@@ -1608,15 +1641,29 @@ end
 
 class Tk::TreeCtrl::Column < TkObject
   TreeCtrlColumnID_TBL = TkCore::INTERP.create_table
-  TreeCtrlColumnID = ['treectrl_column'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.clear}
+  (TreeCtrlColumnID = ['treectrl_column'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.clear
+    }
+  }
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath]
-    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath][id]? \
-                 Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath][id] : id
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath]
+        Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath][id]? \
+                   Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[tpath][id] : id
+      else
+        id
+      end
+    }
   end
 
   def initialize(parent, keys={})
@@ -1625,17 +1672,19 @@ class Tk::TreeCtrl::Column < TkObject
 
     keys = _symbolkey2str(keys)
 
-    @path = @id = 
-      keys.delete('tag') ||
-      Tk::TreeCtrl::Column::TreeCtrlColumnID.join(TkCore::INTERP._ip_id_)
+    Tk::TreeCtrl::Column::TreeCtrlColumnID.mutex.synchronize{
+      @path = @id = 
+        keys.delete('tag') ||
+        Tk::TreeCtrl::Column::TreeCtrlColumnID.join(TkCore::INTERP._ip_id_)
+      Tk::TreeCtrl::Column::TreeCtrlColumnID[1].succ!
+    }
 
     keys['tag'] = @id
 
-    unless Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath]
-      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath] = {} 
-    end
-    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath][@id] = self
-    Tk::TreeCtrl::Column::TreeCtrlColumnID[1].succ!
+    Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath] ||= {} 
+      Tk::TreeCtrl::Column::TreeCtrlColumnID_TBL[@tpath][@id] = self
+    }
 
     @tree.column_create(keys)
   end
@@ -1692,11 +1741,18 @@ end
 
 class Tk::TreeCtrl::Element < TkObject
   TreeCtrlElementID_TBL = TkCore::INTERP.create_table
-  TreeCtrlElementID = ['treectrl_element'.freeze, '00000'.taint].freeze
+
+  (TreeCtrlElementID = ['treectrl_element'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
   TreeCtrlElemTypeToClass = {}
 
   TkCore::INTERP.init_ip_env{
-    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.clear
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.clear
+    }
   }
 
   def self.type2class(type)
@@ -1705,22 +1761,30 @@ class Tk::TreeCtrl::Element < TkObject
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath]
-    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath][id]? \
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath]
+        Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath][id]? \
                  Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[tpath][id] : id
+      else
+        id
+      end
+    }
   end
 
   def initialize(parent, type, keys=nil)
     @tree = parent
     @tpath = parent.path
     @type = type.to_s
-    @path = @id = 
-      Tk::TreeCtrl::Element::TreeCtrlElementID.join(TkCore::INTERP._ip_id_)
-    unless Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath]
-      Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath] = {} 
-    end
-    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath][@id] = self
-    Tk::TreeCtrl::Element::TreeCtrlElementID[1].succ!
+    Tk::TreeCtrl::Element::TreeCtrlElementID.mutex.synchronize{
+      @path = @id = 
+        Tk::TreeCtrl::Element::TreeCtrlElementID.join(TkCore::INTERP._ip_id_)
+      Tk::TreeCtrl::Element::TreeCtrlElementID[1].succ!
+    }
+
+    Tk::TreeCtrl::Element::TreeCtrlElementID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath] ||= {} 
+      Tk::TreeCtrl::Element::TreeCtrlElementID_TBL[@tpath][@id] = self
+    }
 
     @tree.element_create(@id, @type, keys)
   end
@@ -1800,13 +1864,22 @@ end
 class Tk::TreeCtrl::Item < TkObject
   TreeCtrlItemID_TBL = TkCore::INTERP.create_table
 
-  TkCore::INTERP.init_ip_env{Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.clear}
+  TkCore::INTERP.init_ip_env{
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.clear
+    }
+  }
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath]
-    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath][id]? \
-                 Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath][id] : id
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath]
+        Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath][id]? \
+                        Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[tpath][id] : id
+      else
+        id
+      end
+    }
   end
 
   def initialize(parent, keys={})
@@ -1814,10 +1887,10 @@ class Tk::TreeCtrl::Item < TkObject
     @tpath = parent.path
     @path = @id = @tree.item_create(keys)
 
-    unless Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath]
-      Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath] = {} 
-    end
-    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath][@id] = self
+    Tk::TreeCtrl::Item::TreeCtrlItemID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath] ||= {} 
+      Tk::TreeCtrl::Item::TreeCtrlItemID_TBL[@tpath][@id] = self
+    }
   end
 
   def id
@@ -2088,27 +2161,45 @@ end
 
 class Tk::TreeCtrl::Style < TkObject
   TreeCtrlStyleID_TBL = TkCore::INTERP.create_table
-  TreeCtrlStyleID = ['treectrl_style'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.clear }
+  (TreeCtrlStyleID = ['treectrl_style'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.clear
+    }
+  }
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath]
-    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath][id]? \
-                 Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath][id] : id
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.mutex.synchronize{
+      if Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath]
+        Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath][id]? \
+                     Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[tpath][id] : id
+      else
+        id
+      end
+    }
   end
 
   def initialize(parent, keys=nil)
     @tree = parent
     @tpath = parent.path
-    @path = @id = 
-      Tk::TreeCtrl::Style::TreeCtrlStyleID.join(TkCore::INTERP._ip_id_)
-    unless Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath]
-      Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath] = {} 
-    end
-    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath][@id] = self
-    Tk::TreeCtrl::Style::TreeCtrlStyleID[1].succ!
+
+    Tk::TreeCtrl::Style::TreeCtrlStyleID.mutex.synchronize{
+      @path = @id = 
+        Tk::TreeCtrl::Style::TreeCtrlStyleID.join(TkCore::INTERP._ip_id_)
+      Tk::TreeCtrl::Style::TreeCtrlStyleID[1].succ!
+    }
+
+    Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL.mutex.synchronize{
+      Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath] ||= {} 
+      Tk::TreeCtrl::Style::TreeCtrlStyleID_TBL[@tpath][@id] = self
+    }
 
     @tree.style_create(@id, keys)
   end

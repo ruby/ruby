@@ -448,6 +448,10 @@ class TclTkIp
        : slave interpreter, same to the TclTkLib module method with
        : the same name. 
 
+    encoding_table
+       : For Ruby m17n. Return encoding relation table between Ruby's 
+       : Encoding object and Tcl's encoding name.
+
 class TkCallbackBreak < StandardError
 class TkCallbackContinue < StandardError
   : They are exception classes to break or continue the Tk callback 
@@ -458,5 +462,8 @@ class TkCallbackContinue < StandardError
   : If raise TkCallbackContinue, returns 'continue' code (Then the Tk
   : interpreter will break the operateion for the current bindtag and 
   : starts the operation for the next buindtag for the current event).
+  : However, current tcltklib supports Ruby's 'break' and 'next' to 
+  : get the same effect. That is, those classes are obsolete. Those 
+  : exist for backward compatibility. 
 
 (eof)

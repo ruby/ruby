@@ -93,6 +93,7 @@ module Tk
   autoload :Scrollable,       'tk/scrollable'
 
   autoload :Wm,               'tk/wm'
+  autoload :Wm_for_General,   'tk/wm'
 
   autoload :MacResource,      'tk/macpkg'
 
@@ -159,7 +160,7 @@ autoload :TkWarningObj,       'tk/dialog'
 autoload :TkEvent,            'tk/event'
 
 autoload :TkFont,             'tk/font'
-autoload :TkTreatTagFont,     'tk/font'
+autoload :TkNamedFont,        'tk/font'
 
 autoload :TkImage,            'tk/image'
 autoload :TkBitmapImage,      'tk/image'
@@ -314,11 +315,16 @@ module Tk
     :TkWinRegistry        => 'tk/winpkg', 
   }
 
+  @TOPLEVEL_ALIAS_OWNER = {}
+
   @TOPLEVEL_ALIAS_SETUP_PROC = {}
 
   @current_default_widget_set = nil
 end
 
+
+############################################
+#  methods to control default widget set
 ############################################
 
 class << Tk
@@ -341,7 +347,8 @@ class << Tk
     @TOPLEVEL_ALIAS_TABLE[target = target.to_sym] ||= {}
     symbols.each{|sym|
       @TOPLEVEL_ALIAS_TABLE[target][sym = sym.to_sym] = obj
-      if @current_default_widget_set == target
+      # if @current_default_widget_set == target
+      if @TOPLEVEL_ALIAS_OWNER[sym] == target
         Object.class_eval{remove_const sym} if Object.const_defined?(sym)
         Object.const_set(sym, obj)
       end
@@ -372,6 +379,7 @@ class << Tk
         # file => loaded class object
         Object.const_set(sym, file)
       end
+      @TOPLEVEL_ALIAS_OWNER[sym] = target
     }
 
     # update current alias
@@ -386,10 +394,11 @@ Tk.default_widget_set = :Tk
 
 ############################################
 #  depend on the version of Tcl/Tk
-major, minor, type, type_name, patchlevel = TclTkLib.get_version
+# major, minor, type, type_name, patchlevel = TclTkLib.get_version
 
 ############################################
 # Ttk (Tile) support
+=begin
 if major > 8 || 
     (major == 8 && minor > 5) || 
     (major == 8 && minor == 5 && type >= TclTkLib::RELEASE_TYPE::BETA) 
@@ -399,3 +408,7 @@ if major > 8 ||
 
   require 'tk/ttk_selector'
 end
+=end
+Object.autoload :Ttk, 'tkextlib/tile'
+Tk.autoload :Tile, 'tkextlib/tile'
+require 'tk/ttk_selector'

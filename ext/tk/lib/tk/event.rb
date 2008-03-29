@@ -15,8 +15,6 @@ require 'tk'
 module TkEvent
   class Event < TkUtil::CallbackSubst
     module Grp
-      major, minor, type, type_name, patchlevel = TclTkLib.get_version
-
       KEY         =           0x1
       BUTTON      =           0x2
       MOTION      =           0x4
@@ -42,6 +40,8 @@ module TkEvent
       CIRCREQ     =           0x400000
 
       MWHEEL      =           KEY
+
+      STRING_DATA =           0x80000000  # special flag for 'data' field
 
       ALL         =           0xFFFFFFFF
 
@@ -157,7 +157,7 @@ module TkEvent
       'borderwidth' => (Grp::CREATE|Grp::CONFIG),
       'button'      => Grp::BUTTON, 
       'count'       => Grp::EXPOSE, 
-      'data'        => Grp::VIRTUAL, 
+      'data'        => (Grp::VIRTUAL|Grp::STRING_DATA), 
       'delta'       => Grp::MWHEEL, 
       'detail'      => (Grp::FOCUS|Grp::CROSSING),
       'focus'       => Grp::CROSSING,
@@ -225,7 +225,8 @@ module TkEvent
         rescue
           next
         end
-        next if !val || val == '??'
+        # next if !val || val == '??'
+        next if !val || (val == '??' && (flag & Grp::STRING_DATA))
         fields[key] = val
       }
 
@@ -369,6 +370,22 @@ module TkEvent
 
       nil
     ]
+
+    # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+    KEY_TBL.map!{|inf|
+      if inf.kind_of?(Array)
+        inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+      end
+      inf
+    }
+
+    PROC_TBL.map!{|inf|
+      if inf.kind_of?(Array)
+        inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+      end
+      inf
+    }
 
     # setup tables to be used by scan_args, _get_subst_key, _get_all_subst_keys
     #

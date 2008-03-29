@@ -12,53 +12,77 @@ module Tk::BLT
 
     ###################################
 
-   class Node < TkObject
+    class Node < TkObject
       TreeNodeID_TBL = TkCore::INTERP.create_table
-      TkCore::INTERP.init_ip_env{ TreeNodeID_TBL.clear }
+
+      TkCore::INTERP.init_ip_env{
+        TreeNodeID_TBL.mutex.synchronize{ TreeNodeID_TBL.clear }
+      }
 
       def self.id2obj(tree, id)
         tpath = tree.path
-        return id unless TreeNodeID_TBL[tpath]
-        if TreeNodeID_TBL[tpath][id]
-          TreeNodeID_TBL[tpath][id]
-        else
-          begin
-            self.new(tree, nil, 'node'=>Integer(id))
-          rescue
+        TreeNodeID_TBL.mutex.synchronize{
+          if TreeNodeID_TBL[tpath]
+            if TreeNodeID_TBL[tpath][id]
+              TreeNodeID_TBL[tpath][id]
+            else
+              begin
+                # self.new(tree, nil, 'node'=>Integer(id))
+                id = Integer(id)
+                if bool(tk_call(@tpath, 'exists', id))
+                  (obj = self.allocate).instance_eval{
+                    @parent = @tree = tree
+                    @tpath = tpath
+                    @path = @id = id
+                    TreeNodeID_TBL[@tpath] = {} unless TreeNodeID_TBL[@tpath]
+                    TreeNodeID_TBL[@tpath][@id] = self
+                  }
+                  obj
+                else
+                  id
+                end
+              rescue
+                id
+              end
+            end
+          else
             id
           end
-        end
+        }
       end
 
       def self.new(tree, parent, keys={})
         keys = _symbolkey2str(keys)
         tpath = tree.path
 
-        if (id = keys['node']) && (obj = TreeNodeID_TBL[tpath][id])
-          keys.delete('node')
-          tk_call(tree.path, 'move', id, parent, keys) if parent
-          return obj
-        end
+        TreeNodeID_TBL.mutex.synchronize{
+          TreeNodeID_TBL[tpath] ||= {}
+          if (id = keys['node']) && (obj = TreeNodeID_TBL[tpath][id])
+            keys.delete('node')
+            tk_call(tree.path, 'move', id, parent, keys) if parent
+            return obj
+          end
 
-        super(tree, parent, keys)
+          (obj = self.allocate).instance_eval{
+            initialize(tree, parent, keys)
+            TreeNodeID_TBL[tpath][@id] = self
+          }
+          obj
+        }
       end
 
       def initialize(tree, parent, keys={})
         @parent = @tree = tree
         @tpath = @parent.path
 
-        parent = tk_call(@tpath, 'root') unless parent
-
         if (id = keys['node']) && bool(tk_call(@tpath, 'exists', id))
           @path = @id = id
           keys.delete('node')
           tk_call(@tpath, 'move', @id, parent, keys) if parent
         else
+          parent = tk_call(@tpath, 'root') unless parent
           @path = @id = tk_call(@tpath, 'insert', parent, keys)
         end
-
-        TreeNodeID_TBL[@tpath] = {} unless TreeNodeID_TBL[@tpath]
-        TreeNodeID_TBL[@tpath][@id] = self
       end
 
       def id
@@ -243,17 +267,42 @@ module Tk::BLT
 
     class Tag < TkObject
       TreeTagID_TBL = TkCore::INTERP.create_table
-      TkCore::INTERP.init_ip_env{ TreeTagID_TBL.clear }
-      TreeTag_ID = ['blt_tree_tag'.freeze, '00000'.taint].freeze
+
+      TkCore::INTERP.init_ip_env{
+        TreeTagID_TBL.mutex.synchronize{ TreeTagID_TBL.clear }
+      }
+
+      (TreeTag_ID = ['blt_tree_tag'.freeze, '00000'.taint]).instance_eval{
+        @mutex = Mutex.new
+        def mutex; @mutex; end
+        freeze
+      }
 
       def self.id2obj(tree, id)
         tpath = tree.path
-        return id unless TreeTagID_TBL[tpath]
-        if TreeTagID_TBL[tpath][id]
-          TreeTagID_TBL[tpath][id]
-        else
-          self.new(tree, id)
-        end
+        TreeTagID_TBL.mutex.synchronize{
+          if TreeTagID_TBL[tpath]
+            if TreeTagID_TBL[tpath][id]
+              TreeTagID_TBL[tpath][id]
+            else
+              begin
+                # self.new(tree, id)
+                (obj = self.allocate).instance_eval{
+                  @parent = @tree = tree
+                  @tpath = @parent.path
+                  @path = @id = id.dup.freeze if id
+                  TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
+                  TreeTagID_TBL[@tpath][@id] = self
+                }
+                obj
+              rescue
+                id
+              end
+            end
+          else
+            id
+          end
+        }
       end
 
       def initialize(tree, tag_str = nil)
@@ -263,12 +312,15 @@ module Tk::BLT
         if tag_str
           @path = @id = tag_str.dup.freeze
         else
-          @path = @id = TreeTag_ID.join(TkCore::INTERP._ip_id_)
-          TreeTagID_TBL[@id] = self
-          TreeTag_ID[1].succ!
+          TreeTag_ID.mutex.synchronize{
+            @path = @id = TreeTag_ID.join(TkCore::INTERP._ip_id_)
+            TreeTag_ID[1].succ!
+          }
         end
-        TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
-        TreeTagID_TBL[@tpath][@id] = self
+        TreeTagID_TBL.mutex.synchronize{
+          TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
+          TreeTagID_TBL[@tpath][@id] = self
+        }
       end
 
       def id
@@ -287,7 +339,9 @@ module Tk::BLT
 
       def forget()
         tk_call(@tpath, 'tag', 'forget', @id)
-        TreeTagID_TBL[@tpath].delete(@id)
+        TreeTagID_TBL.mutex.synchronize{
+          TreeTagID_TBL[@tpath].delete(@id)
+        }
         self
       end
 
@@ -312,43 +366,62 @@ module Tk::BLT
 
     class Notify < TkObject
       NotifyID_TBL = TkCore::INTERP.create_table
-      TkCore::INTERP.init_ip_env{ NotifyID_TBL.clear }
+
+      TkCore::INTERP.init_ip_env{
+        NotifyID_TBL.mutex.synchronize{ NotifyID_TBL.clear }
+      }
 
       def self.id2obj(tree, id)
         tpath = tree.path
-        return id unless NotifyID_TBL[tpath]
-        if NotifyID_TBL[tpath][id]
-          NotifyID_TBL[tpath][id]
-        else
-          begin
-            self.new([tree, id])
-          rescue
-            id
+        NotifyID_TBL.mutex.synchronize{
+          if NotifyID_TBL[tpath]
+            if NotifyID_TBL[tpath][id]
+              NotifyID_TBL[tpath][id]
+            else
+              (obj = self.allocate).instance_eval{
+                @parent = @tree = tree
+                @tpath = @parent.path
+                @path = @id = id
+                NotifyID_TBL[@tpath] ||= {}
+                NotifyID_TBL[@tpath][@id] = self
+              }
+              obj
+            end
+          else
+            return id
           end
-        end
+        }
       end
 
       def self.new(tree, *args, &b)
-        if tree.kind_of?(Array)
-          # not create
-          if obj = NotifyID_TBL[tree[0].path][tree[1]]
+        NotifyID_TBL.mutex.synchronize{
+          if tree.kind_of?(Array)
+            # not create
+            tpath = tree[0].path            
+            NotifyID_TBL[tpath] ||= {}
+            unless (obj = NotifyID_TBL[tpath][tree[1]])
+              (NotifyID_TBL[tpath][tree[1]] = 
+                 obj = self.allocate).instance_eval{
+                @parent = @tree = tree[0]
+                @tpath = @parent.path
+                @path = @id = tree[1]
+              }
+            end
             return obj
-          else
-            return super(false, tree[0], tree[1])
           end
-        end
 
-        super(true, tree, *args, &b)
+          (obj = self.allocate).instance_eval{
+            initialize(tree, *args, &b)
+            NotifyID_TBL[@tpath] ||= {}
+            NotifyID_TBL[@tpath][@id] = self
+          }
+          return obj
+        }
       end
 
-      def initialize(create, tree, *args, &b)
+      def initialize(tree, *args, &b)
         @parent = @tree = tree
         @tpath = @parent.path
-
-        unless create
-          @path = @id = args[0]
-          return
-        end
 
         # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
         if TkComm._callback_entry?(args[0])
@@ -378,7 +451,9 @@ module Tk::BLT
 
       def delete()
         tk_call(@tpath, 'notify', 'delete', @id)
-        NotifyID_TBL[tpath].delete(@id)
+        NotifyID_TBL.mutex.synchronize{
+          NotifyID_TBL[@tpath].delete(@id)
+        }
         self
       end
 
@@ -395,43 +470,68 @@ module Tk::BLT
 
     class Trace < TkObject
       TraceID_TBL = TkCore::INTERP.create_table
-      TkCore::INTERP.init_ip_env{ TraceID_TBL.clear }
+
+      TkCore::INTERP.init_ip_env{
+        TraceID_TBL.mutex.synchronize{ TraceID_TBL.clear }
+      }
 
       def self.id2obj(tree, id)
         tpath = tree.path
-        return id unless TraceID_TBL[tpath]
-        if TraceID_TBL[tpath][id]
-          TraceID_TBL[tpath][id]
-        else
-          begin
-            self.new([tree, id])
-          rescue
+        TraceID_TBL.mutex.synchronize{
+          if TraceID_TBL[tpath]
+            if TraceID_TBL[tpath][id]
+              TraceID_TBL[tpath][id]
+            else
+              begin
+                # self.new([tree, id])
+                (obj = self.allocate).instance_eval{
+                  @parent = @tree = tree
+                  @tpath = @parent.path
+                  @path = @id = node  # == traceID
+                  TraceID_TBL[@tpath] ||= {}
+                  TraceID_TBL[@tpath][@id] = self
+                }
+                obj
+              rescue
+                id
+              end
+            end
+          else
             id
           end
-        end
+        }
       end
 
       def self.new(tree, *args, &b)
-        if tree.kind_of?(Array)
-          # not create
-          if obj = TraceID_TBL[tree[0].path][tree[1]]
+        TraceID_TBL.mutex.synchronize{
+          if tree.kind_of?(Array)
+            # not create
+            tpath = tree[0].path
+            TraceID_TBL[tpath] ||= {}
+            unless (obj = TraceID_TBL[tpath][tree[1]])
+              (TraceID_TBL[tpath][tree[1]] = 
+                 obj = self.allocate).instance_eval{
+                @parent = @tree = tree
+                @tpath = @parent.path
+                @path = @id = tree[1]  # == traceID
+              }
+            end
             return obj
-          else
-            return super(false, tree[0], tree[1])
           end
-        end
 
-        super(true, tree, *args, &b)
+          # super(true, tree, *args, &b)
+          (obj = self.allocate).instance_eval{
+            initialize(tree, *args, &b)
+            TraceID_TBL[@tpath] ||= {}
+            TraceID_TBL[@tpath][@id] = self
+          }
+          return obj
+        }
       end
 
-      def initialize(create, tree, node, key, opts, cmd=nil, &b)
+      def initialize(tree, node, key, opts, cmd=nil, &b)
         @parent = @tree = tree
         @tpath = @parent.path
-
-        unless create
-          @path = @id = node  # == traceID
-          return
-        end
 
         if !cmd
           if b
@@ -459,7 +559,9 @@ module Tk::BLT
 
       def delete()
         tk_call(@tpath, 'trace', 'delete', @id)
-        TraceID_TBL[tpath].delete(@id)
+        TraceID_TBL.mutex.synchronize{
+          TraceID_TBL[tpath].delete(@id)
+        }
         self
       end
 
@@ -475,7 +577,12 @@ module Tk::BLT
     ###################################
 
     TreeID_TBL = TkCore::INTERP.create_table
-    Tree_ID = ['blt_tree'.freeze, '00000'.taint].freeze
+
+    (Tree_ID = ['blt_tree'.freeze, '00000'.taint]).instance_eval{
+      @mutex = Mutex.new
+      def mutex; @mutex; end
+      freeze
+    }
 
     def __keyonly_optkeys
       {
@@ -498,7 +605,9 @@ module Tk::BLT
     end
 
     def self.id2obj(id)
-      TreeID_TBL[id]? TreeID_TBL[id]: id
+      TreeID_TBL.mutex.synchronize{
+        TreeID_TBL[id]? TreeID_TBL[id]: id
+      }
     end
 
     def self.names(pat = None)
@@ -513,27 +622,45 @@ module Tk::BLT
     end
 
     def self.new(name = nil)
-      return TreeID_TBL[name] if name && TreeID_TBL[name]
-      super(name)
+      TreeID_TBL.mutex.synchronize{
+        if name && TreeID_TBL[name]
+          TreeID_TBL[name] 
+        else
+          (obj = self.allocate).instance_eval{
+            initialize(name)
+            TreeID_TBL[@id] = self
+          }
+          obj
+        end
+      }
     end
 
     def initialzie(name = nil)
       if name
         @path = @id = name
       else
-        @path = @id = Tree_ID.join(TkCore::INTERP._ip_id_)
-        TreeID_TBL[@id] = self
-        Tree_ID[1].succ!
+        Tree_ID.mutex.synchronize{
+          @path = @id = Tree_ID.join(TkCore::INTERP._ip_id_)
+          Tree_ID[1].succ!
+        }
       end
-      TreeID_TBL[@id] = self
+
       tk_call('::blt::tree', 'create', @id)
     end
 
     def __destroy_hook__
-      Tk::BLT::Tree::Node::TreeNodeID_TBL.delete(@path)
-      Tk::BLT::Tree::Tag::TreeTagID_TBL.delete(@path)
-      Tk::BLT::Tree::Notify::NotifyID_TBL.delete(@path)
-      Tk::BLT::Tree::Trace::TraceID_TBL.delete(@path)
+      Tk::BLT::Tree::Node::TreeNodeID_TBL.mutex.synchronize{
+        Tk::BLT::Tree::Node::TreeNodeID_TBL.delete(@path)
+      }
+      Tk::BLT::Tree::Tag::TreeTagID_TBL.mutex.synchronize{
+        Tk::BLT::Tree::Tag::TreeTagID_TBL.delete(@path)
+      }
+      Tk::BLT::Tree::Notify::NotifyID_TBL.mutex.synchronize{
+        Tk::BLT::Tree::Notify::NotifyID_TBL.delete(@path)
+      }
+      Tk::BLT::Tree::Trace::TraceID_TBL.mutex.synchronize{
+        Tk::BLT::Tree::Trace::TraceID_TBL.delete(@path)
+      }
     end
 
     def tagid(tag)
@@ -592,12 +719,14 @@ module Tk::BLT
 
     def delete(*nodes)
       tk_call('::blt::tree', 'delete', *(nodes.collect{|node| tagid(node)}))
-      nodes.each{|node|
-        if node.kind_of?(Tk::BLT::Tree::Node)
-          Tk::BLT::Tree::Node::TreeNodeID_TBL[@path].delete(node.id)
-        else
-          Tk::BLT::Tree::Node::TreeNodeID_TBL[@path].delete(node.to_s)
-        end
+      Tk::BLT::Tree::Node::TreeNodeID_TBL.mutex.synchronize{
+        nodes.each{|node|
+          if node.kind_of?(Tk::BLT::Tree::Node)
+            Tk::BLT::Tree::Node::TreeNodeID_TBL[@path].delete(node.id)
+          else
+            Tk::BLT::Tree::Node::TreeNodeID_TBL[@path].delete(node.to_s)
+          end
+        }
       }
       self
     end
@@ -728,7 +857,9 @@ module Tk::BLT
         id.delete
       else
         tk_call(@path, 'notify', 'delete', id)
-        Tk::BLT::Tree::Notify::NotifyID_TBL[@path].delete(id.to_s)
+        Tk::BLT::Tree::Notify::NotifyID_TBL.mutex.synchronize{
+          Tk::BLT::Tree::Notify::NotifyID_TBL[@path].delete(id.to_s)
+        }
       end
       self
     end
@@ -835,7 +966,9 @@ module Tk::BLT
     def tag_forget(tag)
       tag = tag.id if tag.kind_of?(Tk::BLT::Tree::Tag)
       tk_call(@path, 'tag', 'forget', tag)
-      TreeTagID_TBL[@path].delete(tag)
+      TreeTagID_TBL.mutex.synchronize{
+        TreeTagID_TBL[@path].delete(tag)
+      }
       self
     end
 
@@ -889,7 +1022,9 @@ module Tk::BLT
     def trace_delete(*args)
       args = args.collect{|id| tagid(id)}
       tk_call(@path, 'trace', 'delete', *args)
-      args.each{|id| Tk::BLT::Tree::Trace::TraceID_TBL[@path].delete(id.to_s)}
+      Tk::BLT::Tree::Trace::TraceID_TBL.mutex.synchronize{
+        args.each{|id| Tk::BLT::Tree::Trace::TraceID_TBL[@path].delete(id.to_s)}
+      }
       self
     end
 

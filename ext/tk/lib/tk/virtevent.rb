@@ -9,10 +9,17 @@ class TkVirtualEvent<TkObject
 
   TkCommandNames = ['event'.freeze].freeze
 
-  TkVirtualEventID = ["VirtEvent".freeze, "00000".taint].freeze
+  (TkVirtualEventID = ["VirtEvent".freeze, "00000".taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
   TkVirtualEventTBL = TkCore::INTERP.create_table
 
-  TkCore::INTERP.init_ip_env{ TkVirtualEventTBL.clear }
+  TkCore::INTERP.init_ip_env{
+    TkVirtualEventTBL.mutex.synchronize{ TkVirtualEventTBL.clear }
+  }
 
   class PreDefVirtEvent<self
     def self.new(event, *sequences)
@@ -21,22 +28,30 @@ class TkVirtualEvent<TkObject
       elsif event !~ /^<.*>$/
         event = '<' + event + '>'
       end
-      if TkVirtualEvent::TkVirtualEventTBL.has_key?(event)
-        TkVirtualEvent::TkVirtualEventTBL[event]
-      else
-        super(event, *sequences)
-      end
+      TkVirtualEvent::TkVirtualEventTBL.mutex.synchronize{
+        if TkVirtualEvent::TkVirtualEventTBL.has_key?(event)
+          TkVirtualEvent::TkVirtualEventTBL[event]
+        else
+          # super(event, *sequences)
+          (obj = self.allocate).instance_eval{
+            initialize(event, *sequences)
+            TkVirtualEvent::TkVirtualEventTBL[@id] = self
+          }
+        end
+      }
     end
 
     def initialize(event, *sequences)
       @path = @id = event
-      TkVirtualEvent::TkVirtualEventTBL[@id] = self
-      add(*sequences)
+      _add_sequences(sequences)
     end
   end
 
   def TkVirtualEvent.getobj(event)
-    obj = TkVirtualEventTBL[event]
+    obj = nil
+    TkVirtualEventTBL.mutex.synchronize{
+      obj = TkVirtualEventTBL[event]
+    }
     if obj
       obj
     else
@@ -55,19 +70,31 @@ class TkVirtualEvent<TkObject
   end
 
   def initialize(*sequences)
-    # @path = @id = '<' + TkVirtualEventID.join('') + '>'
-    @path = @id = '<' + TkVirtualEventID.join(TkCore::INTERP._ip_id_) + '>'
-    TkVirtualEventID[1].succ!
-    add(*sequences)
+    TkVirtualEventID.mutex.synchronize{
+      # @path = @id = '<' + TkVirtualEventID.join('') + '>'
+      @path = @id = '<' + TkVirtualEventID.join(TkCore::INTERP._ip_id_) + '>'
+      TkVirtualEventID[1].succ!
+    }
+    _add_sequences(sequences)
   end
+
+  def _add_sequences(seq_ary)
+    unless seq_ary.empty?
+      tk_call_without_enc('event', 'add', "<#{@id}>", 
+                          *(seq_ary.collect{|seq| 
+                              "<#{tk_event_sequence(seq)}>"
+                            }) )
+    end
+    self
+  end
+  private :_add_sequences
 
   def add(*sequences)
     if sequences != []
-      tk_call_without_enc('event', 'add', "<#{@id}>", 
-                          *(sequences.collect{|seq| 
-                              "<#{tk_event_sequence(seq)}>"
-                            }) )
-      TkVirtualEventTBL[@id] = self
+      _add_sequences(sequences)
+      TkVirtualEventTBL.mutex.synchronize{
+        TkVirtualEventTBL[@id] = self
+      }
     end
     self
   end
@@ -75,20 +102,26 @@ class TkVirtualEvent<TkObject
   def delete(*sequences)
     if sequences == []
       tk_call_without_enc('event', 'delete', "<#{@id}>")
-      TkVirtualEventTBL.delete(@id)
+      TkVirtualEventTBL.mutex.synchronize{
+        TkVirtualEventTBL.delete(@id)
+      }
     else
       tk_call_without_enc('event', 'delete', "<#{@id}>", 
                           *(sequences.collect{|seq| 
                               "<#{tk_event_sequence(seq)}>"
                             }) )
-      TkVirtualEventTBL.delete(@id) if info == []
+      if tk_call_without_enc('event','info',"<#{@id}>").empty?
+        TkVirtualEventTBL.mutex.synchronize{
+          TkVirtualEventTBL.delete(@id)
+        }
+      end
     end
     self
   end
 
   def info
     tk_call_without_enc('event','info',"<#{@id}>").split(/\s+/).collect!{|seq|
-      l = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
+      lst = seq.scan(/<*[^<>]+>*/).collect!{|subseq|
         case (subseq)
         when /^<<[^<>]+>>$/
           TkVirtualEvent.getobj(subseq[1..-2])
@@ -98,7 +131,7 @@ class TkVirtualEvent<TkObject
           subseq.split('')
         end
       }.flatten
-      (l.size == 1) ? l[0] : l
+      (lst.size == 1) ? lst[0] : lst
     }
   end
 end

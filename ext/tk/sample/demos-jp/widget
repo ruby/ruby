@@ -5,7 +5,7 @@
 if RUBY_VERSION < '1.9.0' ### !!!!!!!!!!!!!!
   $KCODE = 'euc'
 else
-  $TK_ENCODING = 'EUC-JP'
+  DEFAULT_TK_ENCODING = 'EUC-JP'
 end
 
 # tk 関係ライブラリの読み込み
@@ -13,7 +13,8 @@ require 'tk'
 # require 'tkafter'
 
 # widget demo directory 位置の獲得
-$demo_dir = File.dirname($0)
+# $demo_dir = File.dirname($0)
+$demo_dir = File.dirname(__FILE__)
 
 # root の生成
 $root = TkRoot.new{title "Ruby/Tk Widget Demonstration"}
@@ -45,18 +46,17 @@ when /^4.*/
 #  $msg_kanji_font=TkFont.new('Helvetica 16', 'Gothic 16 bold')
 
 when /^8.*/
-  $font = TkFont.new('Helvetica -12')
-  $kanji_font = TkFont.new('Helvetica -12', 'Mincho -12')
+  $font = TkFont.new('Helvetica 12')
+  $kanji_font = TkFont.new('Helvetica 12', 'Mincho 12')
   TkOption.add('*kanjiFont', knjfont, 'startupFile')
-  $msg_kanji_font=TkFont.new('Helvetica 16', 'Gothic 16 bold')
+  $msg_kanji_font=TkFont.new('Helvetica 18 bold', 'Gothic 18 bold')
 
 else
-  $font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*', nil)
+  $font = TkFont.new('Helvetica 14', nil)
   knjfont = '-*--16-*-jisx0208.1983-0'
-  $kanji_font = TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*',
-                           knjfont)
+  $kanji_font = TkFont.new('Helvetic 14', knj)
   TkOption.add('*kanjiFont', knjfont, 'startupFile')
-  $msg_kanji_font=TkFont.new('-*-Helvetica-Medium-R-Normal--*-140-*-*-*-*-*-*',
+  $msg_kanji_font=TkFont.new('Helvetica 14',
                              '-*--24-*-jisx0208.1983-0')
 end
 #######
@@ -185,18 +185,27 @@ else
   textFrame.pack('expand'=>'yes', 'fill'=>'both')
 
   statusBar = TkFrame.new($root) {|f|
+    if $tk_version =~ /^4.*/
+      statusfont = '-*-Helvetica-Medium-R-Normal--*-120-*-*-*-*-*-*'
+    else
+      statusfont = 'Helvetica 10'
+    end
     $statusBarLabel = \
     TkLabel.new(f, 'text'=>"   ", 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
-                'font'=>'-*-Helvetica-Medium-R-Normal--*-120-*-*-*-*-*-*') \
+                'font'=>statusfont) \
     .pack('side'=>'left', 'padx'=>2, 'expand'=>'yes', 'fill'=>'both')
     TkLabel.new(f, 'width'=>8, 'relief'=>'sunken', 'bd'=>1, 'anchor'=>'w', 
-                'font'=>'-*-Helvetica-Medium-R-Normal--*-120-*-*-*-*-*-*') \
+                'font'=>statusfont) \
     .pack('side'=>'left', 'padx'=>2)
   }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
 end
 
 # テキストタグ設定
-tag_title = TkTextTag.new(txt, 'font'=>'-*-Helvetica-Bold-R-Normal--*-180-*-*-*-*-*-*')
+if $tk_version =~ /^4.*/
+  tag_title = TkTextTag.new(txt, 'font'=>'-*-Helvetica-Bold-R-Normal--*-180-*-*-*-*-*-*')
+else
+  tag_title = TkTextTag.new(txt, 'font'=>'Helvetica 18 bold')
+end
 #tag_kanji_title = TkTextTag.new(txt, 'kanjifont'=>$msg_kanji_font)
 #tag_middle = TkTextTag.new(txt, 'kanjifont'=>$kanji_font)
 tag_kanji_title = TkTextTag.new(txt, 'font'=>$msg_kanji_font)
@@ -372,6 +381,8 @@ txt.insert('end', "5. ウィンドウを埋め込んだテキスト (機能に対応したバージョンの
 txt.insert('end', " \n ", tag_demospace)
 txt.insert('end', "6. 検索\n", tag_demo, "demo-search")
 txt.insert('end', " \n ", tag_demospace)
+txt.insert('end', "7. テキストウィジェットの対等化(peering) (機能に対応したバージョンのTkが必要)\n", tag_demo, "demo-textpeer")
+txt.insert('end', " \n ", tag_demospace)
 
 txt.insert('end', "\n")
 #txt.insert('end', "キャンバス\n", tag_middle)
@@ -492,7 +503,11 @@ def showVars1(parent, *args)
       text "変数値:"
       width 20
       anchor 'center'
-      font '-Adobe-helvetica-medium-r-normal--*-180-*-*-*-*-*-*'
+      if $tk_version =~ /^4.*/
+        font '-Adobe-helvetica-medium-r-normal--*-180-*-*-*-*-*-*'
+      else
+        font 'Helvetica 14'
+      end
     }.pack('side'=>'top', 'fill'=>'x')
     len = 1
     args.each{|vnam,vbody|
@@ -639,7 +654,9 @@ end
 private :_null_binding
 
 def eval_samplecode(code)
-  Thread.new{ _null_binding.pseudo_toplevel_eval{ eval(code) } }.run
+  #eval(code)
+  #_null_binding.pseudo_toplevel_eval{ eval(code) }
+  Thread.new{ _null_binding.pseudo_toplevel_eval{ eval(code) } }
   Tk.update
 end
 
@@ -931,7 +948,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.6.0-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.6.3-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

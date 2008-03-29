@@ -207,7 +207,11 @@ def textWindPlot (t)
     cursor 'top_left_arrow'
   }
 
-  font = '-Adobe-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*'
+  if $tk_version =~ /^4.*/
+    font = '-Adobe-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*'
+  else
+    font = 'Helvetica 18'
+  end
 
   TkcLine.new($twind_plot, 100, 250, 400, 250, 'width'=>2)
   TkcLine.new($twind_plot, 100, 250, 100,  50, 'width'=>2)

@@ -10,9 +10,16 @@ class TkImage<TkObject
   TkCommandNames = ['image'.freeze].freeze
 
   Tk_IMGTBL = TkCore::INTERP.create_table
-  Tk_Image_ID = ['i'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ Tk_IMGTBL.clear }
+  (Tk_Image_ID = ['i'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    Tk_IMGTBL.mutex.synchronize{ Tk_IMGTBL.clear }
+  }
 
   def self.new(keys=nil)
     if keys.kind_of?(Hash)
@@ -27,7 +34,10 @@ class TkImage<TkObject
           obj = name
         else
           name = _get_eval_string(name)
-          obj = Tk_IMGTBL[name]
+          obj = nil
+          Tk_IMGTBL.mutex.synchronize{
+            obj = Tk_IMGTBL[name]
+          }
         end
         if obj
           if !(keys[:without_creating] || keys['without_creating'])
@@ -43,7 +53,13 @@ class TkImage<TkObject
         end
       end
     end
-    super(keys)
+    (obj = self.allocate).instance_eval{
+      Tk_IMGTBL.mutex.synchronize{
+        initialize(keys)
+        Tk_IMGTBL[@path] = self
+      }
+    }
+    obj
   end
 
   def initialize(keys=nil)
@@ -55,19 +71,22 @@ class TkImage<TkObject
       without_creating = keys.delete('without_creating')
     end
     unless @path
-      # @path = Tk_Image_ID.join('')
-      @path = Tk_Image_ID.join(TkCore::INTERP._ip_id_)
-      Tk_Image_ID[1].succ!
+      Tk_Image_ID.mutex.synchronize{
+        # @path = Tk_Image_ID.join('')
+        @path = Tk_Image_ID.join(TkCore::INTERP._ip_id_)
+        Tk_Image_ID[1].succ!
+      }
     end
     unless without_creating
       tk_call_without_enc('image', 'create', 
                           @type, @path, *hash_kv(keys, true))
     end
-    Tk_IMGTBL[@path] = self
   end
 
   def delete
-    Tk_IMGTBL.delete(@id) if @id
+    Tk_IMGTBL.mutex.synchronize{
+      Tk_IMGTBL.delete(@id) if @id
+    }
     tk_call_without_enc('image', 'delete', @path)
     self
   end
@@ -85,8 +104,10 @@ class TkImage<TkObject
   end
 
   def TkImage.names
-    Tk.tk_call_without_enc('image', 'names').split.collect!{|id|
-      (Tk_IMGTBL[id])? Tk_IMGTBL[id] : id
+    Tk_IMGTBL.mutex.synchronize{
+      Tk.tk_call_without_enc('image', 'names').split.collect!{|id|
+        (Tk_IMGTBL[id])? Tk_IMGTBL[id] : id
+      }
     }
   end
 

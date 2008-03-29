@@ -66,7 +66,6 @@ TkFrame.new($hscale_demo) {|frame|
   scale.set 75
 }.pack('side'=>'top', 'fill'=>'x')
 
-
 def setWidth(w, width)
   width = width + 21
   x2 = width - 30

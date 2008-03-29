@@ -92,8 +92,13 @@ TkcLine.new(cvs, '0c', '16c', '30c', '16c', 'width'=>2)
 TkcLine.new(cvs, '10c', '0c', '10c', '24c', 'width'=>2)
 TkcLine.new(cvs, '20c', '0c', '20c', '24c', 'width'=>2)
 
-font1 = '-Adobe-Helvetica-Medium-R-Normal--*-120-*-*-*-*-*-*'
-font2 = '-Adobe-Helvetica-Bold-R-Normal--*-240-*-*-*-*-*-*'
+if $tk_version =~ /^4.*/
+  font1 = '-Adobe-Helvetica-Medium-R-Normal--*-120-*-*-*-*-*-*'
+  font2 = '-Adobe-Helvetica-Bold-R-Normal--*-240-*-*-*-*-*-*'
+else
+  font1 = 'Helvetica 12'
+  font2 = 'Helvetica 24 bold'
+end
 if TkWinfo.depth($root).to_i > 1
   blue   = 'DeepSkyBlue3'
   red    = 'red'

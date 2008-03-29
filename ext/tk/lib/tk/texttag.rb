@@ -10,14 +10,26 @@ class TkTextTag<TkObject
   include Tk::Text::IndexModMethods
 
   TTagID_TBL = TkCore::INTERP.create_table
-  Tk_TextTag_ID = ['tag'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ TTagID_TBL.clear }
+  (Tk_TextTag_ID = ['tag'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    TTagID_TBL.mutex.synchronize{ TTagID_TBL.clear }
+  }
 
   def TkTextTag.id2obj(text, id)
     tpath = text.path
-    return id unless TTagID_TBL[tpath]
-    TTagID_TBL[tpath][id]? TTagID_TBL[tpath][id]: id
+    TTagID_TBL.mutex.synchronize{
+      if TTagID_TBL[tpath]
+        TTagID_TBL[tpath][id]? TTagID_TBL[tpath][id]: id
+      else 
+        id
+      end
+    }
   end
 
   def initialize(parent, *args)
@@ -26,12 +38,16 @@ class TkTextTag<TkObject
     #end
     @parent = @t = parent
     @tpath = parent.path
-    # @path = @id = Tk_TextTag_ID.join('')
-    @path = @id = Tk_TextTag_ID.join(TkCore::INTERP._ip_id_).freeze
-    # TTagID_TBL[@id] = self
-    TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
-    TTagID_TBL[@tpath][@id] = self
-    Tk_TextTag_ID[1].succ!
+    Tk_TextTag_ID.mutex.synchronize{
+      # @path = @id = Tk_TextTag_ID.join('')
+      @path = @id = Tk_TextTag_ID.join(TkCore::INTERP._ip_id_).freeze
+      Tk_TextTag_ID[1].succ!
+    }
+    TTagID_TBL.mutex.synchronize{
+      TTagID_TBL[@id] = self
+      TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
+      TTagID_TBL[@tpath][@id] = self
+    }
     #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
     if args != []
       keys = args.pop
@@ -221,7 +237,9 @@ class TkTextTag<TkObject
 
   def destroy
     tk_call_without_enc(@t.path, 'tag', 'delete', @id)
-    TTagID_TBL[@tpath].delete(@id) if TTagID_TBL[@tpath]
+    TTagID_TBL.mutex.synchronize{
+      TTagID_TBL[@tpath].delete(@id) if TTagID_TBL[@tpath]
+    }
     self
   end
 end
@@ -229,33 +247,48 @@ TktTag = TkTextTag
 
 class TkTextNamedTag<TkTextTag
   def self.new(parent, name, *args)
-    if TTagID_TBL[parent.path] && TTagID_TBL[parent.path][name]
-      tagobj = TTagID_TBL[parent.path][name]
-      if args != []
-        keys = args.pop
-        if keys.kind_of?(Hash)
-          tagobj.add(*args) if args != []
-          tagobj.configure(keys)
-        else
-          args.push keys
-          tagobj.add(*args)
-        end
+    tagobj = nil
+    TTagID_TBL.mutex.synchronize{
+      if TTagID_TBL[parent.path] && TTagID_TBL[parent.path][name]
+        tagobj = TTagID_TBL[parent.path][name]
+      else
+        # super(parent, name, *args)
+        (tagobj = self.allocate).instance_eval{
+          @parent = @t = parent
+          @tpath = parent.path
+          @path = @id = name
+          TTagID_TBL[@id] = self
+          TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
+          TTagID_TBL[@tpath][@id] = self unless TTagID_TBL[@tpath][@id]
+          @t._addtag @id, self
+        }
       end
-      return tagobj
-    else
-      super(parent, name, *args)
+    }
+
+    if args != []
+      keys = args.pop
+      if keys.kind_of?(Hash)
+        tagobj.add(*args) if args != []
+        tagobj.configure(keys)
+      else
+        args.push keys
+        tagobj.add(*args)
+      end
     end
+
+    tagobj
   end
 
   def initialize(parent, name, *args)
+    # dummy:: not called by 'new' method
+
     #unless parent.kind_of?(Tk::Text)
     #  fail ArgumentError, "expect Tk::Text for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path
     @path = @id = name
-    TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
-    TTagID_TBL[@tpath][@id] = self unless TTagID_TBL[@tpath][@id]
+
     #if mode
     #  tk_call @t.path, "addtag", @id, *args
     #end
@@ -269,7 +302,7 @@ class TkTextNamedTag<TkTextTag
         add(*args)
       end
     end
-    @t._addtag id, self
+    @t._addtag @id, self
   end
 end
 TktNamedTag = TkTextNamedTag

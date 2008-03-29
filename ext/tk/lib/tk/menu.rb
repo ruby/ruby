@@ -202,6 +202,9 @@ class Tk::Menu<TkWindow
     tk_send_without_enc('unpost')
     self
   end
+  def xposition(index)
+    number(tk_send_without_enc('xposition', _get_eval_enc_str(index)))
+  end
   def yposition(index)
     number(tk_send_without_enc('yposition', _get_eval_enc_str(index)))
   end
@@ -503,9 +506,24 @@ class Tk::Menubutton<Tk::Label
   WidgetClassNames[WidgetClassName] = self
   def create_self(keys)
     if keys and keys != None
-      # tk_call_without_enc('menubutton', @path, *hash_kv(keys, true))
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
-                          *hash_kv(keys, true))
+      unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+        # tk_call_without_enc('menubutton', @path, *hash_kv(keys, true))
+        tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                            *hash_kv(keys, true))
+      else
+        begin
+          tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                              *hash_kv(keys, true))
+        rescue
+          tk_call_without_enc(self.class::TkCommandNames[0], @path)
+          keys = __check_available_configure_options(keys)
+          unless keys.empty?
+            tk_call_without_enc('destroy', @path)
+            tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                                *hash_kv(keys, true))
+          end
+        end
+      end
     else
       # tk_call_without_enc('menubutton', @path)
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -611,6 +629,9 @@ class Tk::OptionMenubutton<Tk::Menubutton
   def delete(index, last=None)
     @menu.delete(index, last)
     self
+  end
+  def xposition(index)
+    @menu.xposition(index)
   end
   def yposition(index)
     @menu.yposition(index)

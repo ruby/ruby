@@ -185,11 +185,17 @@ class Tk::Canvas<TkWindow
   end
 
   def delete(*args)
-    if TkcItem::CItemID_TBL[self.path]
+    tbl = nil
+    TkcItem::CItemID_TBL.mutex.synchronize{
+      tbl = TkcItem::CItemID_TBL[self.path]
+    }
+    if tbl
       args.each{|tag|
         find('withtag', tag).each{|item|
           if item.kind_of?(TkcItem)
-            TkcItem::CItemID_TBL[self.path].delete(item.id)
+            TkcItem::CItemID_TBL.mutex.synchronize{
+              tbl.delete(item.id)
+            }
           end
         }
       }
@@ -584,9 +590,12 @@ class TkcItem<TkObject
 
   CItemTypeName = nil
   CItemTypeToClass = {}
+
   CItemID_TBL = TkCore::INTERP.create_table
 
-  TkCore::INTERP.init_ip_env{ CItemID_TBL.clear }
+  TkCore::INTERP.init_ip_env{
+    CItemID_TBL.mutex.synchronize{ CItemID_TBL.clear }
+  }
 
   def TkcItem.type2class(type)
     CItemTypeToClass[type]
@@ -594,8 +603,13 @@ class TkcItem<TkObject
 
   def TkcItem.id2obj(canvas, id)
     cpath = canvas.path
-    return id unless CItemID_TBL[cpath]
-    CItemID_TBL[cpath][id]? CItemID_TBL[cpath][id]: id
+    CItemID_TBL.mutex.synchronize{
+      if CItemID_TBL[cpath]
+        CItemID_TBL[cpath][id]? CItemID_TBL[cpath][id]: id
+      else
+        id
+      end
+    }
   end
 
   ########################################
@@ -668,8 +682,10 @@ class TkcItem<TkObject
     @path = parent.path
 
     @id = create_self(*args) # an integer number as 'canvas item id'
-    CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
-    CItemID_TBL[@path][@id] = self
+    CItemID_TBL.mutex.synchronize{
+      CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
+      CItemID_TBL[@path][@id] = self
+    }
   end
   def create_self(*args)
     self.class.create(@c, *args) # return an integer number as 'canvas item id'
@@ -690,7 +706,9 @@ class TkcItem<TkObject
 
   def delete
     @c.delete @id
-    CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
+    CItemID_TBL.mutex.synchronize{
+      CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
+    }
     self
   end
   alias remove  delete

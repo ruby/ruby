@@ -20,6 +20,12 @@ def version?(ver)
   TkPackage.vcompare(Tk::Tile.package_version, ver) >= 0
 end
 
+# define Tcl/Tk procedures for compatibility
+Tk::Tile.__define_LoadImages_proc_for_compatibility__!
+Tk::Tile::Style.__define_wrapper_proc_for_compatibility__!
+
+Tk::Tile::Style.theme_create('step')
+
 Tk.load_tclscript(File.join(demodir, 'toolbutton.tcl'))
 Tk.load_tclscript(File.join(demodir, 'repeater.tcl'))
 
@@ -55,7 +61,7 @@ $V = TkVariable.new_hash(:THEME      => 'default',
                          :CHOICE     => 2)
 
 # Add in any available loadable themes.
-TkPackage.names.find_all{|n| n =~ /^tile::theme::/}.each{|pkg|
+TkPackage.names.find_all{|n| n =~ /^(tile|ttk)::theme::/}.each{|pkg|
   name = pkg.split('::')[-1]
   unless $THEMELIST.assoc(name)
     $THEMELIST << [name, Tk.tk_call('string', 'totitle', name)]
@@ -66,7 +72,8 @@ TkPackage.names.find_all{|n| n =~ /^tile::theme::/}.each{|pkg|
 $RUBY_THEMELIST = []
 begin
   load(File.join(demodir, 'themes', 'kroc.rb'), true)
-rescue
+rescue => e
+raise e
   $RUBY_THEMELIST << ['kroc-rb', 'Kroc (by Ruby)', false]
 else
   $RUBY_THEMELIST << ['kroc-rb', 'Kroc (by Ruby)', true]
@@ -79,8 +86,8 @@ def makeThemeControl(parent)
                                   :variable=>$V.ref(:THEME), 
                                   :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
-    unless (TkPackage.names.find{|n| n == "tile::theme::#{theme}"})
-      b.state(:disabled)
+    unless (TkPackage.names.find{|n| n =~ /(tile|ttk)::theme::#{theme}/})
+      b.ttk_state(:disabled)
     end
   }
   $RUBY_THEMELIST.each{|theme, name, available|
@@ -88,7 +95,7 @@ def makeThemeControl(parent)
                                   :variable=>$V.ref(:THEME), 
                                   :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
-    b.state(:disabled) unless available
+    b.ttk_state(:disabled) unless available
   }
   c
 end
@@ -98,7 +105,7 @@ def makeThemeMenu(parent)
   $THEMELIST.each{|theme, name|
     m.add(:radiobutton, :label=>name, :variable=>$V.ref(:THEME), 
           :value=>theme, :command=>proc{setTheme(theme)})
-    unless (TkPackage.names.find{|n| n == "tile::theme::#{theme}"})
+    unless (TkPackage.names.find{|n| n =~ /(tile|ttk)::theme::#{theme}/})
       m.entryconfigure(:end, :state=>:disabled)
     end
   }
@@ -111,8 +118,10 @@ def makeThemeMenu(parent)
 end
 
 def setTheme(theme)
-  if (TkPackage.names.find{|n| n == "tile::theme::#{theme}"})
-    TkPackage.require("tile::theme::#{theme}")
+  if (pkg = TkPackage.names.find{|n| n =~ /(tile|ttk)::theme::#{theme}/})
+    unless Tk::Tile::Style.theme_names.find{|n| n == theme}
+      TkPackage.require(pkg)
+    end
   end
   Tk::Tile::Style.theme_use(theme)
 end
@@ -675,7 +684,7 @@ values = %w(list abc def ghi jkl mno pqr stu vwx yz)
     combo, :values=>values, :textvariable=>$V.ref(:COMBO))
   cb.pack(:side=>:top, :padx=>2, :pady=>2, :expand=>false, :fill=>:x)
   if i == 1
-    cb.state :readonly
+    cb.ttk_state :readonly
     begin
       cb.current = 3 # ignore if unsupported (tile0.4)
     rescue
@@ -922,11 +931,11 @@ end
 def updateStates
   $states_list.each{|st|
     begin
-      $State[st] = $Widget.window.instate(st)
+      $State[st] = $Widget.window.ttk_instate(st)
     rescue
-      $states_btns[st].state('disabled')
+      $states_btns[st].ttk_state('disabled')
     else
-      $states_btns[st].state('!disabled')
+      $states_btns[st].ttk_state('!disabled')
     end
   }
 end
@@ -934,9 +943,9 @@ end
 def changeState(st)
   if $Widget.value != ''
     if $State.bool_element(st)
-      $Widget.window.state(st)
+      $Widget.window.ttk_state(st)
     else
-      $Widget.window.state("!#{st}")
+      $Widget.window.ttk_state("!#{st}")
     end
   end
 end

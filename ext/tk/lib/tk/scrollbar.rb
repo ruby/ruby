@@ -19,9 +19,24 @@ class Tk::Scrollbar<TkWindow
     }
 
     if keys and keys != None
-      #tk_call_without_enc('scrollbar', @path, *hash_kv(keys, true))
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
-                          *hash_kv(keys, true))
+      unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+        #tk_call_without_enc('scrollbar', @path, *hash_kv(keys, true))
+        tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                            *hash_kv(keys, true))
+      else
+        begin
+          tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                              *hash_kv(keys, true))
+        rescue
+          tk_call_without_enc(self.class::TkCommandNames[0], @path)
+          keys = __check_available_configure_options(keys)
+          unless keys.empty?
+            tk_call_without_enc('destroy', @path)
+            tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                                *hash_kv(keys, true))
+          end
+        end
+      end
     else
       #tk_call_without_enc('scrollbar', @path)
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -102,6 +117,26 @@ class Tk::Scrollbar<TkWindow
 
   def activate(element=None)
     tk_send_without_enc('activate', element)
+  end
+
+  def moveto(fraction)
+    tk_send_without_enc('moveto', fraction)
+    self
+  end
+
+  def scroll(*args)
+    tk_send_without_enc('scroll', *args)
+    self
+  end
+
+  def scroll_units(num)
+    scroll(num, 'units')
+    self
+  end
+
+  def scroll_pages(num)
+    scroll(num, 'pages')
+    self
   end
 end
 

@@ -112,19 +112,37 @@ class Tk::BWidget::Dialog
 
   def add(keys={}, &b)
     win = window(tk_send('add', *hash_kv(keys)))
-    win.instance_eval(&b) if b
+    if b
+      if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+        win.instance_exec(self, &b)
+      else
+        win.instance_eval(&b)
+      end
+    end
     win
   end
 
   def get_frame(&b)
     win = window(tk_send('getframe'))
-    win.instance_eval(&b) if b
+    if b
+      if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+        win.instance_exec(self, &b)
+      else
+        win.instance_eval(&b)
+      end
+    end
     win
   end
 
   def get_buttonbox(&b)
     win = window(@path + '.bbox')
-    win.instance_eval(&b) if b
+    if b
+      if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+        win.instance_exec(self, &b)
+      else
+        win.instance_eval(&b)
+      end
+    end
     win
   end
 

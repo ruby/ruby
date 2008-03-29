@@ -56,6 +56,15 @@ module Tk
   @TOPLEVEL_ALIAS_TABLE[:Tile] = @TOPLEVEL_ALIAS_TABLE[:Ttk]
 
   ################################################
+  # register some Ttk widgets as default
+  # (Ttk is a standard library on Tcl/Tk8.5+)
+  @TOPLEVEL_ALIAS_TABLE[:Ttk].each{|sym, file|
+    unless Object.autoload?(sym) || Object.const_defined?(sym)
+      Object.autoload(sym, file)
+    end
+  }
+
+  ################################################
 
   @TOPLEVEL_ALIAS_SETUP_PROC[:Tile] = 
     @TOPLEVEL_ALIAS_SETUP_PROC[:Ttk] = proc{|mod|

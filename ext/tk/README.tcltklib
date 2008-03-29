@@ -16,18 +16,18 @@ some or all of the following options.
  --with-tk-dir=<path> 
       equal to "--with-tk-include=<path>/include --with-tk-lib=<path>/lib"
 
- --with-tcl-include=<dir>      the directry containts 'tcl.h'
- --with-tk-include=<dir>       the directry containts 'tk.h'
+ --with-tcl-include=<dir>      the directry contains 'tcl.h'
+ --with-tk-include=<dir>       the directry contains 'tk.h'
 
- --with-tcl-lib=<dir>          the directry containts 'libtcl<version>.so'
- --with-tk-lib=<dir>           the directry containts 'libtk<version>.so'
+ --with-tcl-lib=<dir>          the directry contains 'libtcl<version>.so'
+ --with-tk-lib=<dir>           the directry contains 'libtk<version>.so'
 
  --enable-mac-tcltk-framework  (MacOS X) use Tcl/Tk framework
                                (Obsolete. Please use '--enable-tcltk-framework'.)
 
  --enable-tcltk-framework      use Tcl/Tk framework
 
- --with-tcltk-framework=<dir>  the directory containts Tcl/Tk framework; 
+ --with-tcltk-framework=<dir>  the directory contains Tcl/Tk framework; 
                                "<dir>/Tcl.framework" and "<dir>/Tk.framework".
                                When this option is given, it is assumed that 
                                --enable-tcltk-framework option is given also.
@@ -46,8 +46,8 @@ some or all of the following options.
  --with-X11-dir=<path> 
       equal to "--with-X11-include=<path>/include --with-X11-lib=<path>/lib"
 
- --with-X11-include=<dir>      the directry contains X11 header files
- --with-X11-lib=<dir>          the directry contains X11 libraries
+ --with-X11-include=<dir>      the directry contais X11 header files
+ --with-X11-lib=<dir>          the directry contais X11 libraries
 
 
 If you forgot to give the options when do 'configure' on toplevel

@@ -74,7 +74,11 @@ class TkMsgCatalog < TkObject
               "\n---< backtrace of Ruby side >-----\n" + 
               _toUTF8(e.backtrace.join("\n")) + 
               "\n---< backtrace of Tk side >-------"
-        msg.instance_variable_set(:@encoding, 'utf-8')
+        if TkCore::WITH_ENCODING
+          msg.force_encoding('utf-8')
+        else
+          msg.instance_variable_set(:@encoding, 'utf-8')
+        end
       rescue Exception
         msg = e.class.inspect + ': ' + e.message + "\n" + 
               "\n---< backtrace of Ruby side >-----\n" + 

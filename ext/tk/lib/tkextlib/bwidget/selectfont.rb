@@ -66,7 +66,7 @@ class Tk::BWidget::SelectFont::Dialog
   end
 
   def create
-    @keys['type'] = 'dialog'
+    @keys['type'] = 'dialog'  # 'dialog' type returns font name
     tk_call(Tk::BWidget::SelectFont::TkCommandNames[0], @path, *hash_kv(@keys))
   end
 end
@@ -79,7 +79,8 @@ class Tk::BWidget::SelectFont::Toolbar
   def create_self(keys)
     keys = {} unless keys
     keys = _symbolkey2str(keys)
-    keys['type'] = 'toolbar'
-    tk_call(Tk::BWidget::SelectFont::TkCommandNames[0], @path, *hash_kv(keys))
+    keys['type'] = 'toolbar'  # 'toolbar' type returns widget path
+    window(tk_call(Tk::BWidget::SelectFont::TkCommandNames[0], 
+                   @path, *hash_kv(keys)))
   end
 end

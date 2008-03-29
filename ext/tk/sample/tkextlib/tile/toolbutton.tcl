@@ -4,18 +4,6 @@
 # Demonstration of custom widget styles.
 #
 
-set tile_ver [package require tile]
-if {[package vcompare $tile_ver 0.8] >= 0} {
-    set style ::ttk::style
-} {
-    set style style
-}
-if {[package vcompare $tile_ver 0.7] >= 0} {
-    set conf_subcmd configure
-} {
-    set conf_subcmd default
-}
-
 #
 # ~ BACKGROUND
 #
@@ -54,8 +42,7 @@ if {[package vcompare $tile_ver 0.7] >= 0} {
 # style; see demo.tcl.)
 #
 
-#$style theme settings "step" {
-$style theme settings "alt" {
+style theme settings "step" {
 
 #
 # First, we use [style layout] to define what elements to
@@ -64,7 +51,7 @@ $style theme settings "alt" {
 # and a label.  (See also the TScrollbar layout definition 
 # in demos/blue.tcl for a more complicated layout spec.)
 #
-    $style layout Toolbutton {
+    style layout Toolbutton {
         Toolbutton.background
         Toolbutton.border -children {
             Toolbutton.padding -children {
@@ -81,7 +68,7 @@ $style theme settings "alt" {
 # For many options (like -background), the defaults
 # inherited from the parent style are sufficient.
 #
-    $style $conf_subcmd Toolbutton -width 0 -padding 1 -relief flat -borderwidth 2
+    style default Toolbutton -width 0 -padding 1 -relief flat -borderwidth 2
 
 #
 # Finally, use [style map] to specify state-specific 
@@ -91,7 +78,7 @@ $style theme settings "alt" {
 # over the widget).  Each state-value pair is checked
 # in order, and the first matching state takes precedence.
 #
-    $style map Toolbutton -relief {
+    style map Toolbutton -relief {
 	disabled 	flat
     	selected	sunken  
 	pressed 	sunken  
@@ -106,19 +93,19 @@ $style theme settings "alt" {
 # design decisions from an aesthetic standpoint.)
 #
 if {![catch {package require tile::theme::blue}]} {
-$style theme settings "blue" {
+style theme settings "blue" {
 
     #
     # Default values:
     #
-    $style $conf_subcmd Toolbutton \
+    style default Toolbutton \
     	-width 0 -relief flat -borderwidth 2 \
 	-background #6699CC -foreground #000000 ;
 
     #
     # Configure state-specific values for -relief, as before:
     #
-    $style map Toolbutton -relief {
+    style map Toolbutton -relief {
 	disabled 	flat
     	selected	sunken  
 	pressed 	sunken  
@@ -129,8 +116,8 @@ $style theme settings "blue" {
     # Adjust the -padding at the same time, to enhance
     # the raised/sunken illusion:
     #
-    $style $conf_subcmd Toolbutton -padding 4
-    $style map Toolbutton -padding {
+    style default Toolbutton -padding 4
+    style map Toolbutton -padding {
 	disabled	{4}
 	selected	{6 6 2 2}
 	pressed		{6 6 2 2}
@@ -141,7 +128,7 @@ $style theme settings "blue" {
     # ... and change the foreground and background colors
     # when the mouse cursor is over the widget:
     #
-    $style map Toolbutton -background {
+    style map Toolbutton -background {
 	active  	#008800
     } -foreground {
 	active  	#FFFFFF

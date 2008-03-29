@@ -7,11 +7,20 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2006-04-06"
+#define TKUTIL_RELEASE_DATE "2008-03-29"
 
-#include "ruby/ruby.h"
+#include "ruby.h"
+
+#ifdef RUBY_VM  /* Ruby 1.9 */
+/* #include "ruby/ruby.h" */
 #include "ruby/signal.h"
 #include "ruby/st.h"
+#else
+/* #include "ruby.h" */
+#include "rubysig.h"
+#include "version.h"
+#include "st.h"
+#endif
 
 static VALUE cMethod;
 
@@ -24,6 +33,8 @@ static VALUE TK_None;
 
 static VALUE cCB_SUBST;
 static VALUE cSUBST_INFO;
+
+static VALUE ENCODING_NAME_UTF8; /* for saving GC cost */
 
 static ID ID_split_tklist;
 static ID ID_toUTF8;
@@ -382,7 +393,7 @@ ary2list(ary, enc_flag, self)
             val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
-            rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));
+            rb_ivar_set(val, ID_at_enc, ENCODING_NAME_UTF8);
         }
         return val;
     } else {
@@ -475,7 +486,7 @@ ary2list2(ary, enc_flag, self)
             val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
-            rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));
+            rb_ivar_set(val, ID_at_enc, ENCODING_NAME_UTF8);
         }
         return val;
     } else {
@@ -780,7 +791,11 @@ get_eval_string_core(obj, enc_flag, self)
                 return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
             }
         } else {
+#ifdef RUBY_VM
+            return rb_sym_to_s(obj);
+#else
             return rb_str_new2(rb_id2name(SYM2ID(obj)));
+#endif
         }
 
     case T_HASH:
@@ -1485,6 +1500,7 @@ tkobj_path(self)
     return rb_ivar_get(self, ID_at_path);
 }
 
+
 /*************************************/
 /* release date */
 const char tkutil_release_date[] = TKUTIL_RELEASE_DATE;
@@ -1607,6 +1623,10 @@ Init_tkutil()
     rb_define_method(mTK, "number", tcl2rb_number, 1);
     rb_define_method(mTK, "string", tcl2rb_string, 1);
     rb_define_method(mTK, "num_or_str", tcl2rb_num_or_str, 1);
+
+    /* --------------------- */
+    rb_global_variable(&ENCODING_NAME_UTF8);
+    ENCODING_NAME_UTF8 = rb_obj_freeze(rb_str_new2("utf-8"));
 
     /* --------------------- */
 }

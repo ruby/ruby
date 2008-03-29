@@ -381,7 +381,7 @@ module Tk::Tile::TreeviewConfig
     when :item, 'item'
       ['width']
     when :column, 'column'
-      super(id[1])
+      super(id[1]) + ['minwidth']
     when :tag, 'tag'
       super(id[1])
     when :heading, 'heading'
@@ -413,7 +413,7 @@ module Tk::Tile::TreeviewConfig
     when :item, 'item'
       ['open']
     when :column, 'column'
-      super(id[1])
+      super(id[1]) + ['stretch']
     when :tag, 'tag'
       super(id[1])
     when :heading, 'heading'
@@ -617,30 +617,43 @@ end
 
 class Tk::Tile::Treeview::Item < TkObject
   ItemID_TBL = TkCore::INTERP.create_table
-  TkCore::INTERP.init_ip_env{ Tk::Tile::Treeview::Item::ItemID_TBL.clear }
+
+  TkCore::INTERP.init_ip_env{
+    Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
+      Tk::Tile::Treeview::Item::ItemID_TBL.clear
+    }
+  }
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless Tk::Tile::Treeview::Item::ItemID_TBL[tpath]
-    (Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id])? \
-          Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id]: id
+    Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
+      if Tk::Tile::Treeview::Item::ItemID_TBL[tpath]
+        (Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id])? \
+             Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id]: id
+      else
+        id
+      end
+    }
   end
 
   def self.assign(tree, id)
     tpath = tree.path
-    if Tk::Tile::Treeview::Item::ItemID_TBL[tpath] &&
-        Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id]
-      return Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id]
-    end
+    obj = nil
+    Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
+      if Tk::Tile::Treeview::Item::ItemID_TBL[tpath] &&
+          Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id]
+        return Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id]
+      end
 
-    obj = self.allocate
-    obj.instance_eval{
-      @parent = @t = tree
-      @tpath = tpath
-      @path = @id = id
+      obj = self.allocate
+      obj.instance_eval{
+        @parent = @t = tree
+        @tpath = tpath
+        @path = @id = id
+      }
+      Tk::Tile::Treeview::Item::ItemID_TBL[tpath] ||= {}
+      Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id] = obj
     }
-    ItemID_TBL[tpath] = {} unless ItemID_TBL[tpath]
-    Tk::Tile::Treeview::Item::ItemID_TBL[tpath][id] = obj
     obj
   end
 
@@ -669,8 +682,10 @@ class Tk::Tile::Treeview::Item < TkObject
     @parent = @t = tree
     @tpath = tree.path
     @path = @id = _insert_item(@t, parent_item, idx, keys)
-    ItemID_TBL[@tpath] = {} unless ItemID_TBL[@tpath]
-    ItemID_TBL[@tpath][@id] = self
+    Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
+      ItemID_TBL[@tpath] = {} unless ItemID_TBL[@tpath]
+      ItemID_TBL[@tpath][@id] = self
+    }
   end
   def id
     @id
@@ -804,22 +819,35 @@ end
 class Tk::Tile::Treeview::Root < Tk::Tile::Treeview::Item
   def self.new(tree, keys = {})
     tpath = tree.path
-    if Tk::Tile::Treeview::Item::ItemID_TBL[tpath] &&
-        Tk::Tile::Treeview::Item::ItemID_TBL[tpath]['']
-      Tk::Tile::Treeview::Item::ItemID_TBL[tpath]['']
-    else
-      super(tree, keys)
-    end
+    obj = nil
+    Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
+      if Tk::Tile::Treeview::Item::ItemID_TBL[tpath] &&
+          Tk::Tile::Treeview::Item::ItemID_TBL[tpath]['']
+        obj = Tk::Tile::Treeview::Item::ItemID_TBL[tpath]['']
+      else
+        #super(tree, keys)
+        (obj = self.allocate).instance_eval{
+          @parent = @t = tree
+          @tpath = tree.path
+          @path = @id = ''
+          Tk::Tile::Treeview::Item::ItemID_TBL[@tpath] ||= {}
+          Tk::Tile::Treeview::Item::ItemID_TBL[@tpath][@id] = self
+        }
+      end
+    }
+    obj.configure(keys) if keys && ! keys.empty?
+    obj
   end
 
   def initialize(tree, keys = {})
+    # dummy:: not called by 'new' method
     @parent = @t = tree
     @tpath = tree.path
     @path = @id = ''
-    unless Tk::Tile::Treeview::Item::ItemID_TBL[@tpath]
-      Tk::Tile::Treeview::Item::ItemID_TBL[@tpath] = {}
-    end
-    Tk::Tile::Treeview::Item::ItemID_TBL[@tpath][@id] = self
+    Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
+      Tk::Tile::Treeview::Item::ItemID_TBL[@tpath] ||= {}
+      Tk::Tile::Treeview::Item::ItemID_TBL[@tpath][@id] = self
+    }
   end
 end
 
@@ -829,24 +857,42 @@ class Tk::Tile::Treeview::Tag < TkObject
   include TkTreatTagFont
 
   TagID_TBL = TkCore::INTERP.create_table
-  Tag_ID = ['tile_treeview_tag'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ Tk::Tile::Treeview::Tag::TagID_TBL.clear }
+  (Tag_ID = ['tile_treeview_tag'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    Tk::Tile::Treeview::Tag::TagID_TBL.mutex.synchronize{
+      Tk::Tile::Treeview::Tag::TagID_TBL.clear
+    }
+  }
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless Tk::Tile::Treeview::Tag::TagID_TBL[tpath]
-    (Tk::Tile::Treeview::Tag::TagID_TBL[tpath][id])? \
-          Tk::Tile::Treeview::Tag::TagID_TBL[tpath][id]: id
+    Tk::Tile::Treeview::Tag::TagID_TBL.mutex.synchronize{
+      if Tk::Tile::Treeview::Tag::TagID_TBL[tpath]
+        (Tk::Tile::Treeview::Tag::TagID_TBL[tpath][id])? \
+               Tk::Tile::Treeview::Tag::TagID_TBL[tpath][id]: id
+      else
+        id
+      end
+    }
   end
 
   def initialize(tree, keys=nil)
     @parent = @t = tree
     @tpath = tree.path
-    @path = @id = Tag_ID.join(TkCore::INTERP._ip_id_)
-    TagID_TBL[@tpath] = {} unless TagID_TBL[@tpath]
-    TagID_TBL[@tpath][@id] = self
-    Tag_ID[1].succ!
+    Tag_ID.mutex.synchronize{
+      @path = @id = Tag_ID.join(TkCore::INTERP._ip_id_)
+      Tag_ID[1].succ!
+    }
+    TagID_TBL.mutex.synchronize{
+      TagID_TBL[@tpath] = {} unless TagID_TBL[@tpath]
+      TagID_TBL[@tpath][@id] = self
+    }
     if keys && keys != None
       tk_call_without_enc(@tpath, 'tag', 'configure', *hash_kv(keys, true))
     end
@@ -919,8 +965,12 @@ class Tk::Tile::Treeview < TkWindow
   WidgetClassNames[WidgetClassName] = self
 
   def __destroy_hook__
-    Tk::Tile::Treeview::Item::ItemID_TBL.delete(@path)
-    Tk::Tile::Treeview::Tag::ItemID_TBL.delete(@path)
+    Tk::Tile::Treeview::Item::ItemID_TBL.mutex.synchronize{
+      Tk::Tile::Treeview::Item::ItemID_TBL.delete(@path)
+    }
+    Tk::Tile::Treeview::Tag::ItemID_TBL.mutex.synchronize{
+      Tk::Tile::Treeview::Tag::ItemID_TBL.delete(@path)
+    }
   end
 
   def self.style(*args)

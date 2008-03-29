@@ -11,7 +11,7 @@ t1 = TkText.new(:height=>5).pack
 t2 = TkText.new(:height=>5).pack
 t3 = TkText.new(:height=>5).pack
 
-src_str = IO.readlines('iso2022-kr.txt').join
+src_str = IO.readlines(File.join(File.dirname(__FILE__),'iso2022-kr.txt')).join
 
 t1.insert('end', 
           "use neither Tk::EncodedString class nor Tk.encoding= method\n\n")
@@ -23,7 +23,8 @@ t2.insert('end',
 t2.insert('end', enc_str)
 
 Tk.encoding = 'iso2022-kr'
-t3.insert('end', "use Tk.encoding = 'iso2022-kr'\n\n")
+t3.insert('end', "use Tk.encoding = 'iso2022-kr' (Tk.force_default_encoding? == #{Tk.force_default_encoding?})\n\n")
+
 t3.insert('end', src_str)
 
 Tk.mainloop

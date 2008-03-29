@@ -250,7 +250,11 @@ class Tk::Text<TkTextWin
   def self.new(*args, &block)
     obj = super(*args){}
     obj.init_instance_variable
-    obj.instance_eval(&block) if defined? yield
+    if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+      obj.instance_exec(obj, &block) if defined? yield
+    else
+      obj.instance_eval(&block) if defined? yield
+    end
     obj
   end
 
@@ -260,8 +264,12 @@ class Tk::Text<TkTextWin
   end
 
   def __destroy_hook__
-    TkTextTag::TTagID_TBL.delete(@path)
-    TkTextMark::TMarkID_TBL.delete(@path)
+    TkTextTag::TTagID_TBL.mutex.synchronize{
+      TkTextTag::TTagID_TBL.delete(@path)
+    }
+    TkTextTag::TMarkID_TBL.mutex.synchronize{
+      TkTextMark::TMarkID_TBL.delete(@path)
+    }
   end
 
   def create_self(keys)
@@ -712,15 +720,17 @@ class Tk::Text<TkTextWin
   def tag_delete(*tags)
     tk_send_without_enc('tag', 'delete', 
                         *(tags.collect{|tag| _get_eval_enc_str(tag)}))
-    if TkTextTag::TTagID_TBL[@path]
-      tags.each{|tag|
-        if tag.kind_of?(TkTextTag)
-          TkTextTag::TTagID_TBL[@path].delete(tag.id) 
-        else
-          TkTextTag::TTagID_TBL[@path].delete(tag) 
-        end
-      }
-    end
+    TkTextTag::TTagID_TBL.mutex.synchronize{
+      if TkTextTag::TTagID_TBL[@path]
+        tags.each{|tag|
+          if tag.kind_of?(TkTextTag)
+            TkTextTag::TTagID_TBL[@path].delete(tag.id) 
+          else
+            TkTextTag::TTagID_TBL[@path].delete(tag) 
+          end
+        }
+      end
+    }
     self
   end
   alias deltag tag_delete

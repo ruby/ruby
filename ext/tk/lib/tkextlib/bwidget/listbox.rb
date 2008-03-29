@@ -211,14 +211,26 @@ class Tk::BWidget::ListBox::Item
   include TkTreatTagFont
 
   ListItem_TBL = TkCore::INTERP.create_table
-  ListItem_ID = ['bw:item'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ ListItem_TBL.clear }
+  (ListItem_ID = ['bw:item'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    ListItem_TBL.mutex.synchronize{ ListItem_TBL.clear }
+  }
 
   def self.id2obj(lbox, id)
     lpath = lbox.path
-    return id unless ListItem_TBL[lpath]
-    ListItem_TBL[lpath][id]? ListItem_TBL[lpath][id]: id
+    ListItem_TBL.mutex.synchronize{
+      if ListItem_TBL[lpath]
+        ListItem_TBL[lpath][id]? ListItem_TBL[lpath][id]: id
+      else
+        id
+      end
+    }
   end
 
   def initialize(lbox, *args)
@@ -250,13 +262,17 @@ class Tk::BWidget::ListBox::Item
     if keys.key?('itemname')
       @path = @id = keys.delete('itemname')
     else
-      @path = @id = ListItem_ID.join(TkCore::INTERP._ip_id_)
-      ListItem_ID[1].succ!
+      ListItem_ID.mutex.synchronize{
+        @path = @id = ListItem_ID.join(TkCore::INTERP._ip_id_)
+        ListItem_ID[1].succ!
+      }
     end
 
-    ListItem_TBL[@id] = self
-    ListItem_TBL[@lpath] = {} unless ListItem_TBL[@lpath]
-    ListItem_TBL[@lpath][@id] = self
+    ListItem_TBL.mutex.synchronize{
+      ListItem_TBL[@id] = self
+      ListItem_TBL[@lpath] = {} unless ListItem_TBL[@lpath]
+      ListItem_TBL[@lpath][@id] = self
+    }
 
     @listbox.insert(index, @id, keys)
   end

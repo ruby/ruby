@@ -40,7 +40,13 @@ class Tk::BWidget::ButtonBox
 
   def add(keys={}, &b)
     win = window(tk_send('add', *hash_kv(keys)))
-    win.instance_eval(&b) if b
+    if b
+      if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+        win.instance_exec(self, &b)
+      else
+        win.instance_eval(&b)
+      end
+    end
     win
   end
 
@@ -62,7 +68,13 @@ class Tk::BWidget::ButtonBox
 
   def insert(idx, keys={}, &b)
     win = window(tk_send('insert', tagid(idx), *hash_kv(keys)))
-    win.instance_eval(&b) if b
+    if b
+      if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+        win.instance_exec(self, &b)
+      else
+        win.instance_eval(&b)
+      end
+    end
     win
   end
 

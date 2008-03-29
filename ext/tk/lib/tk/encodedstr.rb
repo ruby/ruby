@@ -70,13 +70,89 @@ module Tk
       # @encoding = ( enc || 
       #              ((self.class::Encoding)? 
       #                  self.class::Encoding : Tk.encoding_system) )
-      @encoding = ( enc || 
-                   ((self.class::Encoding)?
+      enc ||= (self.class::Encoding)?
                          self.class::Encoding : 
-                         ((Tk.encoding)? Tk.encoding : Tk.encoding_system) ) )
+                         ((Tk.encoding)? Tk.encoding : Tk.encoding_system)
+      if TkCore::WITH_ENCODING
+        unless encobj = Tk::Encoding::ENCODING_TABLE.get_obj(enc)
+          fail ArgumentError, "unsupported Tk encoding '#{enc}'"
+        end
+        self.force_encoding(encobj)
+      else
+        @encoding = enc
+      end
     end
 
-    attr_reader :encoding
+    if TkCore::WITH_ENCODING
+      alias encoding_obj encoding
+      alias __encoding   encoding
+      def encoding
+        Tk::Encoding::ENCODING_TABLE.get_name(super())
+      end
+    else
+      def encoding
+        @encoding
+      end
+      alias encoding_obj encoding
+    end
+
+    if TkCore::WITH_ENCODING
+      # wrapper methods for compatibility
+      alias __instance_variable_get instance_variable_get
+      alias __instance_variable_set instance_variable_set
+      alias __instance_eval         instance_eval
+      alias __instance_variables    instance_variables
+
+      def instance_variable_get(key)
+        if (key.to_s == '@encoding')
+          self.encoding
+        else
+          super(key)
+        end
+      end
+
+      def instance_variable_set(key, value)
+        if (key.to_s == '@encoding')
+          if value
+            self.force_encoding(value)
+          else
+            self.force_encoding(Tk::Encoding::UNKNOWN)
+          end
+          value
+        else
+          super(key, value)
+        end
+      end
+
+      def instance_eval(*args, &b)
+        old_enc = @encoding = self.encoding
+
+        ret = super(*args, &b)
+
+        if @encoding
+          if @encoding != old_enc
+            # modified by user
+            self.force_encoding(@encoding)
+          end
+          remove_instance_variable(:@encoding)
+        else
+          begin
+            remove_instance_variable(:@encoding)
+            # user sets to nil -> use current default
+            self.force_encoding(Tk.encoding)
+          rescue NameError
+            # removed by user -> ignore, because user don't use @encoding
+          end
+        end
+        ret
+      end
+    end
+
+    def instance_variables
+      ret = super()
+      ret << :@encoding  # fake !!
+      ret
+    end
   end
   # def Tk.EncodedString(str, enc = nil)
   #   Tk::EncodedString.new(str, enc)

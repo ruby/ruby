@@ -74,11 +74,19 @@ def arrowSetup(c)
               'arrow'=>'both', 'arrowshape'=>v.smallTips)
   TkcText.new(c, v.x2-5*v.b, tmp+5, 'text'=>v.b, 'anchor'=>'n')
 
-  TkcText.new(c, v.x1, 310, 'text'=>"'width'=>#{v.width}", 'anchor'=>'w', 
-              'font'=>'-*-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*')
-  TkcText.new(c, v.x1, 330, 
-              'text'=>"'arrowshape'=>[#{v.a}, #{v.b}, #{v.c}]", 'anchor'=>'w', 
-              'font'=>'-*-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*')
+  if $tk_version =~ /^4.*/
+    TkcText.new(c, v.x1, 310, 'text'=>"'width'=>#{v.width}", 'anchor'=>'w', 
+                'font'=>'-*-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*')
+    TkcText.new(c, v.x1, 330, 
+                'text'=>"'arrowshape'=>[#{v.a}, #{v.b}, #{v.c}]",'anchor'=>'w',
+                'font'=>'-*-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*')
+  else
+    TkcText.new(c, v.x1, 310, 'text'=>"'width'=>#{v.width}", 'anchor'=>'w', 
+                'font'=>'Helvetica 18')
+    TkcText.new(c, v.x1, 330, 
+                'text'=>"'arrowshape'=>[#{v.a}, #{v.b}, #{v.c}]",
+                'anchor'=>'w', 'font'=>'Helvetica 18')
+  end
 
   v.count += 1
 end

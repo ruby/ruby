@@ -173,6 +173,9 @@ class Tk::BWidget::MessageDlg
   end
 
   def create
-    num_or_str(tk_call(self.class::TkCommandNames[0], @path, *hash_kv(@keys)))
+    # return the index of the pressed button, or nil if it is destroyed
+    ret = num_or_str(tk_call(self.class::TkCommandNames[0], 
+                             @path, *hash_kv(@keys)))
+    (ret < 0)? nil: ret
   end
 end
