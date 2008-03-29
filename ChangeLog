@@ -82,6 +82,11 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tksleep_sample.rb: sample script about Tk.sleep.
 
+Sat Mar 29 04:08:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (clone_method): should copy cref as well.
+	  [ruby-core:15833]
+
 Mon Mar 24 20:07:42 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_eval): Call trace hook for if expression after the
