@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # widget demo prompts the user to select a file (called by 'widget')
 #

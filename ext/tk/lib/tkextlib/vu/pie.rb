@@ -116,13 +116,26 @@ end
 
 class Tk::Vu::PieSlice
   SliceID_TBL = TkCore::INTERP.create_table
-  Pie_Slice_ID = ['vu:pie'.freeze, '00000'.taint].freeze
-  TkCore::INTERP.init_ip_env{ SliceID_TBL.clear }
+
+  (Pie_Slice_ID = ['vu:pie'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    SliceID_TBL.mutex.synchronize{ SliceID_TBL.clear }
+  }
 
   def self.id2obj(pie, id)
     pie_path = pie.path
-    return id unless SliceID_TBL[pie_path]
-    SliceID_TBL[pie_path][id]? SliceID_TBL[pie_path][id]: id
+    SliceID_TBL.mutex.synchronize{
+      if SliceID_TBL[pie_path]
+        SliceID_TBL[pie_path][id]? SliceID_TBL[pie_path][id]: id
+      else
+        id
+      end
+    }
   end
 
   def initialize(parent, *args)
@@ -131,10 +144,14 @@ class Tk::Vu::PieSlice
     end
     @parent = @pie = parent
     @ppath = parent.path
-    @path = @id = Pie_Slice_ID.join(TkCore::INTERP._ip_id_)
-    SliceID_TBL[@ppath] = {} unless SliceID_TBL[@ppath]
-    SliceID_TBL[@ppath][@id] = self
-    Pie_Slice_ID[1].succ!
+    Pie_Slice_ID.mutex.synchronize{
+      @path = @id = Pie_Slice_ID.join(TkCore::INTERP._ip_id_)
+      Pie_Slice_ID[1].succ!
+    }
+    SliceID_TBL.mutex.synchronize{
+      SliceID_TBL[@ppath] = {} unless SliceID_TBL[@ppath]
+      SliceID_TBL[@ppath][@id] = self
+    }
 
     if args[-1].kind_of?(Hash)
       keys = args.unshift
@@ -209,22 +226,48 @@ end
 
 class Tk::Vu::NamedPieSlice
   def self.new(parent, name, *args)
-    if SliceID_TBL[parent.path] && SliceID_TBL[parent.path][name]
-      return SliceID_TBL[parent.path][name]
-    else
-      super(parent, name, *args)
-    end
+    obj = nil
+    SliceID_TBL.mutex.synchronize{
+      if SliceID_TBL[parent.path] && SliceID_TBL[parent.path][name]
+        obj = SliceID_TBL[parent.path][name]
+      else
+        #super(parent, name, *args)
+        unless parent.kind_of?(Tk::Vu::Pie)
+          fail ArgumentError, "expect a Tk::Vu::Pie instance for 1st argument"
+        end
+        obj = self.allocate
+        obj.instance_eval{
+          @parent = @pie = parent
+          @ppath = parent.path
+          @path = @id = name.to_s
+          SliceID_TBL[@ppath] = {} unless SliceID_TBL[@ppath]
+          SliceID_TBL[@ppath][@id] = self
+        }
+      end
+    }
+    obj.instance_eval{
+      if args[-1].kind_of?(Hash)
+        keys = args.unshift
+      end
+      @pie.set(@id, *args)
+      configure(keys)
+    }
+
+    obj
   end
 
   def initialize(parent, name, *args)
+    # dummy:: not called by 'new' method
     unless parent.kind_of?(Tk::Vu::Pie)
       fail ArgumentError, "expect a Tk::Vu::Pie instance for 1st argument"
     end
     @parent = @pie = parent
     @ppath = parent.path
     @path = @id = name.to_s
-    SliceID_TBL[@ppath] = {} unless SliceID_TBL[@ppath]
-    SliceID_TBL[@ppath][@id] = self
+    SliceID_TBL.mutex.synchronize{
+      SliceID_TBL[@ppath] = {} unless SliceID_TBL[@ppath]
+      SliceID_TBL[@ppath][@id] = self
+    }
 
     if args[-1].kind_of?(Hash)
       keys = args.unshift

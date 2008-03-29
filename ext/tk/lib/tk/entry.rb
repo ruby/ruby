@@ -1,6 +1,5 @@
 #
 #               tk/entry.rb - Tk entry classes
-#                       $Date$
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 
 require 'tk'
@@ -8,7 +7,7 @@ require 'tk/label'
 require 'tk/scrollable'
 require 'tk/validation'
 
-class TkEntry<TkLabel
+class Tk::Entry<Tk::Label
   include X_Scrollable
   include TkValidation
 
@@ -115,3 +114,6 @@ class TkEntry<TkLabel
     val
   end
 end
+
+#TkEntry = Tk::Entry unless Object.const_defined? :TkEntry
+Tk.__set_toplevel_aliases__(:Tk, Tk::Entry, :TkEntry)

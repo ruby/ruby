@@ -140,7 +140,7 @@ $search_text = TkText.new($search_demo, 'setgrid'=>true, 'wrap'=>'word') {|t|
     pack('side'=>'right', 'fill'=>'y')
   }
   pack('expand'=>'yes', 'fill'=>'both')
-}  
+}
 
 # Set up display styles for text highlighting.
 
@@ -173,8 +173,13 @@ type a string in the lower entry and type <Return> or click on \
 \"Load File\".  This will cause all of the instances of the string to \
 be tagged with the tag \"search\", and it will arrange for the tag\'s \
 display attributes to change to make all of the strings blink.")
+$search_text.insert('end', "\
+The current directory to load a file is \"#{Dir.pwd}\".\
+")
 $search_text.set_insert '0.0'
 
 $search_fileName.value = ''
 $search_searchString.value = ''
 
+$search_text.width = 60
+$search_text.height = 20

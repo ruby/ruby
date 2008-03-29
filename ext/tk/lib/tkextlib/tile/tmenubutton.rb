@@ -7,13 +7,19 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TMenubutton < TkMenubutton
+    class TMenubutton < Tk::Menubutton
     end
-    Menubutton = TMenubutton
+    TMenuButton = TMenubutton
+    Menubutton  = TMenubutton
+    MenuButton  = TMenubutton
   end
 end
 
-class Tk::Tile::TMenubutton < TkMenubutton
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Menubutton, 
+                            :TkMenubutton, :TkMenuButton)
+
+
+class Tk::Tile::TMenubutton < Tk::Menubutton
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE

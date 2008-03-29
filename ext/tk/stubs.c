@@ -1,5 +1,11 @@
-#include "stubs.h"
+/************************************************
+
+  stubs.c - Tcl/Tk stubs support
+
+************************************************/
+
 #include "ruby.h"
+#include "stubs.h"
 #include <tcl.h>
 #include <tk.h>
 
@@ -86,8 +92,12 @@ static DL_HANDLE tcl_dll = (DL_HANDLE)0;
 static DL_HANDLE tk_dll  = (DL_HANDLE)0;
 
 int
+#ifdef RUBY_VM
+ruby_open_tcl_dll(char *appname)
+#else
 ruby_open_tcl_dll(appname)
     char *appname;
+#endif
 {
     void (*p_Tcl_FindExecutable)(const char *);
     int n;
@@ -141,8 +151,8 @@ ruby_open_tk_dll()
     char tk_name[20];
 
     if (!tcl_dll) {
-        /* int ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
-        int ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+        /* int ret = ruby_open_tcl_dll(RSTRING_PTR(rb_argv0)); */
+        int ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);
         if (ret != TCLTK_STUBS_OK) return ret;
     }
 
@@ -169,8 +179,12 @@ ruby_open_tk_dll()
 }
 
 int
+#ifdef RUBY_VM
+ruby_open_tcltk_dll(char *appname)
+#else
 ruby_open_tcltk_dll(appname)
     char *appname;
+#endif
 {
     return( ruby_open_tcl_dll(appname) || ruby_open_tk_dll() );
 }
@@ -189,8 +203,12 @@ tk_stubs_init_p()
 
 
 Tcl_Interp *
+#ifdef RUBY_VM
+ruby_tcl_create_ip_and_stubs_init(int *st)
+#else
 ruby_tcl_create_ip_and_stubs_init(st)
     int *st;
+#endif
 {
     Tcl_Interp *tcl_ip;
 
@@ -213,8 +231,8 @@ ruby_tcl_create_ip_and_stubs_init(st)
         Tcl_Interp *(*p_Tcl_DeleteInterp)();
 
         if (!tcl_dll) {
-            /* int ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
-            int ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+            /* int ret = ruby_open_tcl_dll(RSTRING_PTR(rb_argv0)); */
+            int ret = ruby_open_tcl_dll(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);
 
             if (ret != TCLTK_STUBS_OK) {
                 if (st) *st = ret;
@@ -272,8 +290,12 @@ ruby_tcl_stubs_init()
 }
 
 int
+#ifdef RUBY_VM
+ruby_tk_stubs_init(Tcl_Interp *tcl_ip)
+#else
 ruby_tk_stubs_init(tcl_ip)
     Tcl_Interp *tcl_ip;
+#endif
 {
     Tcl_ResetResult(tcl_ip);
 
@@ -308,8 +330,12 @@ ruby_tk_stubs_init(tcl_ip)
 }
 
 int
+#ifdef RUBY_VM
+ruby_tk_stubs_safeinit(Tcl_Interp *tcl_ip)
+#else
 ruby_tk_stubs_safeinit(tcl_ip)
     Tcl_Interp *tcl_ip;
+#endif
 {
     Tcl_ResetResult(tcl_ip);
 
@@ -348,8 +374,8 @@ ruby_tcltk_stubs()
     int st;
     Tcl_Interp *tcl_ip;
 
-    /* st = ruby_open_tcltk_dll(RSTRING(rb_argv0)->ptr); */
-    st = ruby_open_tcltk_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+    /* st = ruby_open_tcltk_dll(RSTRING_PTR(rb_argv0)); */
+    st = ruby_open_tcltk_dll(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);
     switch(st) {
     case NO_FindExecutable:
         return -7;
@@ -395,8 +421,12 @@ static int open_tcl_dll = 0;
 static int call_tk_stubs_init = 0;
 
 int
+#ifdef RUBY_VM
+ruby_open_tcl_dll(char *appname)
+#else
 ruby_open_tcl_dll(appname)
     char *appname;
+#endif
 {
     if (appname) {
         Tcl_FindExecutable(appname);
@@ -408,18 +438,24 @@ ruby_open_tcl_dll(appname)
     return TCLTK_STUBS_OK;
 }
 
-int ruby_open_tk_dll()
+int 
+ruby_open_tk_dll()
 {
     if (!open_tcl_dll) {
-        /* ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
-        ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+        /* ruby_open_tcl_dll(RSTRING_PTR(rb_argv0)); */
+        ruby_open_tcl_dll(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);
     }
 
     return TCLTK_STUBS_OK;
 }
 
-int ruby_open_tcltk_dll(appname)
+int 
+#ifdef RUBY_VM
+ruby_open_tcltk_dll(char *appname)
+#else
+ruby_open_tcltk_dll(appname)
     char *appname;
+#endif
 {
     return( ruby_open_tcl_dll(appname) || ruby_open_tk_dll() );
 }
@@ -437,14 +473,18 @@ tk_stubs_init_p()
 }
 
 Tcl_Interp *
+#ifdef RUBY_VM
+ruby_tcl_create_ip_and_stubs_init(int *st)
+#else
 ruby_tcl_create_ip_and_stubs_init(st)
     int *st;
+#endif
 {
     Tcl_Interp *tcl_ip;
 
     if (!open_tcl_dll) {
-        /* ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr); */
-        ruby_open_tcl_dll(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+        /* ruby_open_tcl_dll(RSTRING_PTR(rb_argv0)); */
+        ruby_open_tcl_dll(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);
     }
 
     if (st) *st = 0;
@@ -466,8 +506,12 @@ ruby_tcl_stubs_init()
 }
 
 int 
+#ifdef RUBY_VM
+ruby_tk_stubs_init(Tcl_Interp *tcl_ip)
+#else
 ruby_tk_stubs_init(tcl_ip)
     Tcl_Interp *tcl_ip;
+#endif
 {
     if (Tk_Init(tcl_ip) == TCL_ERROR)
         return FAIL_Tk_Init;
@@ -483,8 +527,12 @@ ruby_tk_stubs_init(tcl_ip)
 }
 
 int
+#ifdef RUBY_VM
+ruby_tk_stubs_safeinit(Tcl_Interp *tcl_ip)
+#else
 ruby_tk_stubs_safeinit(tcl_ip)
     Tcl_Interp *tcl_ip;
+#endif
 {
 #if TCL_MAJOR_VERSION >= 8
     if (Tk_SafeInit(tcl_ip) == TCL_ERROR)
@@ -508,8 +556,8 @@ ruby_tk_stubs_safeinit(tcl_ip)
 int 
 ruby_tcltk_stubs()
 {
-    /* Tcl_FindExecutable(RSTRING(rb_argv0)->ptr); */
-    Tcl_FindExecutable(rb_argv0 ? RSTRING(rb_argv0)->ptr : 0);
+    /* Tcl_FindExecutable(RSTRING_PTR(rb_argv0)); */
+    Tcl_FindExecutable(rb_argv0 ? RSTRING_PTR(rb_argv0) : 0);
     return 0;
 }
 

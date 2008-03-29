@@ -15,7 +15,7 @@ module TkListItemConfig
   private :__item_listval_optkeys
 end
 
-class TkListbox<TkTextWin
+class Tk::Listbox<TkTextWin
   include TkListItemConfig
   include Scrollable
 
@@ -277,3 +277,6 @@ class TkListbox<TkTextWin
   end
 =end
 end
+
+#TkListbox = Tk::Listbox unless Object.const_defined? :TkListbox
+Tk.__set_toplevel_aliases__(:Tk, Tk::Listbox, :TkListbox)

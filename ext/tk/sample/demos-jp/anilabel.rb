@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # animated label widget demo (called by 'widget')
 #

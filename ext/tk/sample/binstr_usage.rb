@@ -16,7 +16,7 @@ to avoid such troubles. Please see the source code of this sample. \
 A Tk::BinaryString instance is used to create the image for the center button. 
 EOM
 
-ImgFile=['images','tcllogo.gif'].join(File::Separator)
+ImgFile=[File.dirname(__FILE__), 'images','tcllogo.gif'].join(File::Separator)
 
 ph1 = TkPhotoImage.new(:file=>ImgFile)
 p ph1.configinfo
@@ -28,12 +28,18 @@ ph2 = TkPhotoImage.new(:data=>b_str)
 p ph2.configinfo
 p ph2.data(:grayscale=>true)
 
-ph3 = TkPhotoImage.new()
-ph3.put(ph2.data(:grayscale=>true))
+ph3 = TkPhotoImage.new(:palette=>256)
+ph3.put(ph2.data)
+
+ph4 = TkPhotoImage.new()
+ph4.put(ph2.data(:grayscale=>true))
+
+#p [b_str.encoding, b_str.rb_encoding]
 
 f = TkFrame.new.pack
 TkButton.new(:parent=>f, :image=>ph1, :command=>proc{exit}).pack(:side=>:left)
 TkButton.new(:parent=>f, :image=>ph2, :command=>proc{exit}).pack(:side=>:left)
 TkButton.new(:parent=>f, :image=>ph3, :command=>proc{exit}).pack(:side=>:left)
+TkButton.new(:parent=>f, :image=>ph4, :command=>proc{exit}).pack(:side=>:left)
 
 Tk.mainloop

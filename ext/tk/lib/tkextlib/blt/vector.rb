@@ -23,14 +23,17 @@ module Tk::BLT
     end
 
     def self.names(pat=None)
-      simplelist(tk_call('::blt::vector', 'names', pat)).collect{|name|
-        if TkVar_ID_TBL[name]
-          TkVar_ID_TBL[name]
-        elsif name[0..1] == '::' && TkVar_ID_TBL[name[2..-1]]
-          TkVar_ID_TBL[name[2..-1]]
-        else
-          name
-        end
+      list = simplelist(tk_call('::blt::vector', 'names', pat))
+      TkVar_ID_TBL.mutex.synchronize{
+        list.collect{|name|
+          if TkVar_ID_TBL[name]
+            TkVar_ID_TBL[name]
+          elsif name[0..1] == '::' && TkVar_ID_TBL[name[2..-1]]
+            TkVar_ID_TBL[name[2..-1]]
+          else
+            name
+          end
+        }
       }
     end
 
@@ -53,7 +56,9 @@ module Tk::BLT
                              "#auto", *hash_kv(keys))
       end
 
-      TkVar_ID_TBL[@id] = self
+      TkVar_ID_TBL.mutex.synchronize{
+        TkVar_ID_TBL[@id] = self
+      }
 
       @def_default = false
       @default_val = nil
@@ -221,13 +226,21 @@ module Tk::BLT
 
   class VectorAccess < Vector
     def self.new(name)
-      return TkVar_ID_TBL[name] if TkVar_ID_TBL[name]
-      super(name, size=nil, keys={})
+      TkVar_ID_TBL.mutex.synchronize{
+        if TkVar_ID_TBL[name]
+          TkVar_ID_TBL[name]
+        else
+          (obj = self.allocate).instance_eval{
+            initialize(name)
+            TkVar_ID_TBL[@id] = self
+          }
+          obj
+        end
+      }
     end
 
     def initialize(vec_name)
       @id = vec_name
-      TkVar_ID_TBL[@id] = self
 
       @def_default = false
       @default_val = nil

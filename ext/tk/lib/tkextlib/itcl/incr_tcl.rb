@@ -40,16 +40,22 @@ module Tk
     class ItclObject < TkObject
       ITCL_CLASSNAME = ''.freeze
 
-      ITCL_OBJ_ID = ['itclobj'.freeze, '00000'.taint].freeze
+      (ITCL_OBJ_ID = ['itclobj'.freeze, '00000'.taint]).instance_eval{
+        @mutex = Mutex.new
+        def mutex; @mutex; end
+        freeze
+      }
       ITCL_OBJ_TBL = {}.taint
 
       def initialize(*args)
         if (@klass = self.class::ITCL_CLASSNAME).empty?
           fail RuntimeError, 'unknown itcl class (abstract class?)'
         end
-        @id = Tk::Itcl::ItclObject::TCL_OBJ_ID.join(TkCore::INTERP._ip_id_)
+        Tk::Itcl::ItclObject::ITCL_OBJ_ID.mutex.synchronize{
+          @id = Tk::Itcl::ItclObject::TCL_OBJ_ID.join(TkCore::INTERP._ip_id_)
+          Tk::Itcl::ItclObject::ITCL_OBJ_ID[1].succ!
+        }
         @path = @id
-        Tk::Itcl::ItclObject::ITCL_OBJ_ID[1].succ!
       end
 
       def self.call_proc(name, *args)

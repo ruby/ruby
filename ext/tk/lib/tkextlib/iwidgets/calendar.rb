@@ -45,6 +45,23 @@ class Tk::Iwidgets::Calendar
     class ValidateArgs < TkUtil::CallbackSubst
       KEY_TBL  = [ [?d, ?s, :date], nil ]
       PROC_TBL = [ [?s, TkComm.method(:string) ], nil ]
+
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
+
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)

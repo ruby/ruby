@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # bitmap widget demo (called by 'widget')
 #

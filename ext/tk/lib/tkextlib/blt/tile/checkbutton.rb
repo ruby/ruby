@@ -9,7 +9,7 @@ require 'tkextlib/blt/tile.rb'
 
 module Tk::BLT
   module Tile
-    class CheckButton < TkCheckButton
+    class CheckButton < Tk::CheckButton
       TkCommandNames = ['::blt::tile::checkbutton'.freeze].freeze
     end
     Checkbutton = CheckButton

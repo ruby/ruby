@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # menus widget demo (called by 'widget')
 #

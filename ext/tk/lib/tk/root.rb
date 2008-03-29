@@ -5,7 +5,7 @@ require 'tk'
 require 'tk/wm'
 require 'tk/menuspec'
 
-class TkRoot<TkWindow
+class Tk::Root<TkWindow
   include Wm
   include TkMenuSpec
 
@@ -14,28 +14,7 @@ class TkRoot<TkWindow
   end
   private :__methodcall_optkeys
 
-=begin
-  ROOT = []
-  def TkRoot.new(keys=nil)
-    if ROOT[0]
-      Tk_WINDOWS["."] = ROOT[0]
-      return ROOT[0]
-    end
-    new = super(:without_creating=>true, :widgetname=>'.')
-    if keys  # wm commands
-      keys.each{|k,v|
-        if v.kind_of? Array
-          new.send(k,*v)
-        else
-          new.send(k,v)
-        end
-      }
-    end
-    ROOT[0] = new
-    Tk_WINDOWS["."] = new
-  end
-=end
-  def TkRoot.new(keys=nil, &b)
+  def Root.new(keys=nil, &b)
     unless TkCore::INTERP.tk_windows['.']
       TkCore::INTERP.tk_windows['.'] = 
         super(:without_creating=>true, :widgetname=>'.'){}
@@ -62,7 +41,13 @@ class TkRoot<TkWindow
       }
     end
 
-    root.instance_eval(&b) if block_given?
+    if block_given?
+      if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+        root.instance_exec(root, &b)
+      else
+        root.instance_eval(&b)
+      end
+    end
     root
   end
 
@@ -102,7 +87,9 @@ class TkRoot<TkWindow
     self.menu
   end
 
-  def TkRoot.destroy
+  def Root.destroy
     TkCore::INTERP._invoke('destroy', '.')
   end
 end
+
+TkRoot = Tk::Root unless Object.const_defined? :TkRoot

@@ -12,14 +12,26 @@ module Tk::BLT
       include TkTreatItemFont
 
       TabID_TBL = TkCore::INTERP.create_table
-      TabsetTab_ID = ['blt_tabset_tab'.freeze, '00000'.taint].freeze
 
-      TkCore::INTERP.init_ip_env{ TabID_TBL.clear }
+      (TabsetTab_ID = ['blt_tabset_tab'.freeze, '00000'.taint]).instance_eval{
+        @mutex = Mutex.new
+        def mutex; @mutex; end
+        freeze
+      }
+
+      TkCore::INTERP.init_ip_env{
+        TabID_TBL.mutex.synchronize{ TabID_TBL.clear }
+      }
 
       def self.id2obj(tabset, id)
         tpath = tabset.path
-        return id unless TabID_TBL[tpath]
-        TabID_TBL[tpath][id]? TabID_TBL[tpath]: id
+        TabID_TBL.mutex.synchronize{
+          if TabID_TBL[tpath]
+            TabID_TBL[tpath][id]? TabID_TBL[tpath]: id
+          else
+            id
+          end
+        }
       end
 
       def self.new(parent, pos=nil, name=nil, keys={})
@@ -32,12 +44,20 @@ module Tk::BLT
           keys = name
           name = nil
         end
-
-        if name && TabID_TBL[parent.path] && TabID_TBL[parent.path][name]
-          TabID_TBL[parent.path][name]
-        else
-          super(parent, pos, name, keys)
-        end
+        obj = nil
+        TabID_TBL.mutex.synchronize{
+          if name && TabID_TBL[parent.path] && TabID_TBL[parent.path][name]
+            obj = TabID_TBL[parent.path][name]
+            obj.configure if keys && ! keys.empty?
+          else
+            (obj = self.allocate).instance_eval{
+              initialize(parent, pos, name, keys)
+              TabID_TBL[@tpath] = {} unless TabID_TBL[@tpath]
+              TabID_TBL[@tpath][@id] = self
+            }
+          end
+        }
+        obj
       end
 
       def initialize(parent, pos, name, keys)
@@ -45,9 +65,6 @@ module Tk::BLT
         @tpath = parent.path
         if name
           @path = @id = name
-          TabID_TBL[@tpath] = {} unless TabID_TBL[@tpath]
-          TabID_TBL[@tpath][@id] = self
-
           unless (list(tk_call(@tpath, 'tab', 'names', @id)).empty?)
             if pos
               idx = tk_call(@tpath, 'index', '-name', @id)
@@ -58,18 +75,18 @@ module Tk::BLT
               end
             end
             tk_call(@tpath, 'tab', 'configure', @id, keys)
-            return
+          else
+            pos = 'end' unless pos
+            tk_call(@tpath, 'insert', pos, @id, keys)
           end
-
         else
-          @path = @id = TabsetTab_ID.join(TkCore::INTERP._ip_id_)
-          TabID_TBL[@tpath] = {} unless TabID_TBL[@tpath]
-          TabID_TBL[@tpath][@id] = self
-          TabsetTab_ID[1].succ!
+          TabsetTab_ID.mutex.synchronize{
+            @path = @id = TabsetTab_ID.join(TkCore::INTERP._ip_id_)
+            TabsetTab_ID[1].succ!
+          }
+          pos = 'end' unless pos
+          tk_call(@tpath, 'insert', pos, @id, keys)
         end
-
-        pos = 'end' unless pos
-        tk_call(@tpath, 'insert', pos, @id, keys)
       end
 
       #def bind(context, cmd=Proc.new, *args)
@@ -123,7 +140,9 @@ module Tk::BLT
 
       def delete()
         @t.delete(@id)
-        TabID_TBL[@tpath].delete(@id)
+        TabID_TBL.mutex.synchronize{
+          TabID_TBL[@tpath].delete(@id)
+        }
         self
       end
 
@@ -184,7 +203,9 @@ module Tk::BLT
     WidgetClassNames[WidgetClassName] = self
 
     def __destroy_hook__
-      Tk::BLT::Tabset::Tab::TabID_TBL.delete(@path)
+      Tk::BLT::Tabset::Tab::TabID_TBL.mutex.synchronize{
+        Tk::BLT::Tabset::Tab::TabID_TBL.delete(@path)
+      }
     end
 
     ########################################
@@ -291,11 +312,15 @@ module Tk::BLT
     def delete(first, last=None)
       tk_send('delete', tagindex(first), tagindex(last))
       if first.kind_of?(Tk::BLT::Tabset::Tab)
-        TabID_TBL[@path].delete(first.id)
+        TabID_TBL.mutex.synchronize{
+          TabID_TBL[@path].delete(first.id)
+        }
       end
       # middle tabs of the range are unknown
       if last.kind_of?(Tk::BLT::Tabset::Tab)
-        TabID_TBL[@path].delete(last.id)
+        TabID_TBL.mutex.synchronize{
+          TabID_TBL[@path].delete(last.id)
+        }
       end
       self
     end

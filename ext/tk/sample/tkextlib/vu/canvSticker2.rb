@@ -20,14 +20,16 @@ c.destroy
 #---
 #--- set STRING {{x0 y0 x1 y1} {...text...} {resize point: center}
 
-#sti_conf = [ [10, 10, 180, 180], "Sticker äöüß@²³¼½¾",  :center ]
-#txt_conf = [ [210, 210],        "Text    äöüß@²³¼½¾",  :center ]
+#sti_conf = [ [10, 10, 180, 180], "Sticker Ã¤Ã¶Ã¼ÃŸ@Â²Â³Â¼Â½Â¾",  :center ]
+#txt_conf = [ [210, 210],        "Text    Ã¤Ã¶Ã¼ÃŸ@Â²Â³Â¼Â½Â¾",  :center ]
 sti_conf = [ [10, 10, 350, 350], 
-             Tk::UTF8_String("Sticker äöüß@²³¼½¾"),  :center ]
+             Tk::UTF8_String('Sticker \u00E4\u00F6\u00FC\u00DF\u0040\u00B2\u00B3\u00BC\u00BD\u00BE'),
+             :center ]
 txt_conf = [ [250, 250],
-             Tk::UTF8_String("Text    äöüß@²³¼½¾"),  :center ]
+             Tk::UTF8_String('Text    \u00E4\u00F6\u00FC\u00DF\u0040\u00B2\u00B3\u00BC\u00BD\u00BE'),
+             :center ]
 
-p sti_conf
+#p sti_conf
 
 fnt = TkFont.new('Helvetica 24 bold')
 

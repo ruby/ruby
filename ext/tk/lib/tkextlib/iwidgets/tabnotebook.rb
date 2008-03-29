@@ -116,6 +116,11 @@ class Tk::Iwidgets::Tabnotebook
     self
   end
 
+  def show_tab(idx)
+    @tabset.show_tab(idx)
+    self
+  end
+
   def scrollcommand(cmd=Proc.new)
     configure_cmd 'scrollcommand', cmd
     self
@@ -147,7 +152,12 @@ class Tk::Iwidgets::Tabnotebook
 
   def view(*index)
     if index.size == 0
-      window(tk_send_without_enc('view'))
+      idx = num_or_str(tk_send_without_enc('view'))
+      if idx.kind_of?(Fixnum) && idx < 0
+        nil
+      else
+        idx
+      end
     else
       tk_send_without_enc('view', *index)
       self
@@ -161,8 +171,8 @@ class Tk::Iwidgets::Tabnotebook
   end
   alias xview_moveto view_moveto
   alias yview_moveto view_moveto
-  def view_scroll(*index)
-    view('scroll', *index)
+  def view_scroll(index, what='pages')
+    view('scroll', index, what)
   end
   alias xview_scroll view_scroll
   alias yview_scroll view_scroll

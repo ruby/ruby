@@ -34,10 +34,15 @@ end
 
 class Tk::Winico
   WinicoID_TBL = TkCore::INTERP.create_table
-  TkCore::INTERP.init_ip_env{ WinicoID_TBL.clear }
+
+  TkCore::INTERP.init_ip_env{
+    WinicoID_TBL.mutex.synchronize{ WinicoID_TBL.clear }
+  }
 
   def self.id2obj(id)
-    (WinicoID_TBL.key?(id))? WinicoID_TBL[id] : id
+    WinicoID_TBL.mutex.synchronize{
+      (WinicoID_TBL.key?(id))? WinicoID_TBL[id] : id
+    }
   end
 
   def self.info
@@ -81,7 +86,9 @@ class Tk::Winico
            "must be given proper information from where loading icons"
     end
     @path = @id
-    WinicoID_TBL[@id] = self
+    WinicoID_TBL.mutex.synchronize{
+      WinicoID_TBL[@id] = self
+    }
   end
 
   def id
@@ -96,7 +103,9 @@ class Tk::Winico
 
   def delete
     tk_call('winico', 'delete', @id)
-    WinicoID_TBL.delete(@id)
+    WinicoID_TBL.mutex.synchronize{
+      WinicoID_TBL.delete(@id)
+    }
     self
   end
   alias destroy delete
@@ -126,14 +135,36 @@ class Tk::Winico
         [ ?n, TkComm.method(:number) ], 
         [ ?s, TkComm.method(:string) ], 
         [ ?x, proc{|id| 
-            if Tk::Winico::WinicoID_TBL.key?(id)
-              Tk::Winico::WinicoID_TBL[id]
-            else
-              Tk::Winico.new(nil, nil, id)
-            end
+            Tk::Winico::WinicoID_TBL.mutex.synchronize{
+              if Tk::Winico::WinicoID_TBL.key?(id)
+                obj = Tk::Winico::WinicoID_TBL[id]
+              else
+                # Tk::Winico.new(nil, nil, id)
+                obj = Tk::Winico.allocate
+                obj.instance_eval{ @path = @id = id }
+                Tk::Winico::WinicoID_TBL[id] = obj
+              end
+              obj
+            }
           } ], 
         nil
       ]
+
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 

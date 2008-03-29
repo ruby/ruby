@@ -171,10 +171,16 @@ class Tk::Iwidgets::Scrolledcanvas
   end
 
   def delete(*args)
-    if TkcItem::CItemID_TBL[self.path]
+    tbl = nil
+    TkcItem::CItemID_TBL.mutex.synchronize{
+      tbl = TkcItem::CItemID_TBL[self.path]
+    }
+    if tbl
       find('withtag', *args).each{|item| 
         if item.kind_of?(TkcItem)
-          TkcItem::CItemID_TBL[self.path].delete(item.id)
+          TkcItem::CItemID_TBL.mutex.synchronize{
+            tbl.delete(item.id)
+          }
         end
       }
     end

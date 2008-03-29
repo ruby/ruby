@@ -13,6 +13,9 @@ module Tk
   end
 end
 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Combobox, :TkCombobox)
+
+
 class Tk::Tile::TCombobox < Tk::Tile::TEntry
   include Tk::Tile::TileWidget
 

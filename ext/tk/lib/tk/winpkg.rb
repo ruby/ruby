@@ -7,9 +7,14 @@
 #
 require 'tk'
 
-module TkWinDDE
+module Tk::WinDDE
+end
+#TkWinDDE = Tk::WinDDE
+Tk.__set_toplevel_aliases__(:Tk, Tk::WinDDE, :TkWinDDE)
+
+module Tk::WinDDE
   extend Tk
-  extend TkWinDDE
+  extend Tk::WinDDE
 
   TkCommandNames = ['dde'.freeze].freeze
 
@@ -85,9 +90,14 @@ module TkWinDDE
                   :poke, :request, :services, :eval
 end
 
-module TkWinRegistry
+module Tk::WinRegistry
+end
+#TkWinRegistry = Tk::WinRegistry
+Tk.__set_toplevel_aliases__(:Tk, Tk::WinRegistry, :TkWinRegistry)
+
+module Tk::WinRegistry
   extend Tk
-  extend TkWinRegistry
+  extend Tk::WinRegistry
 
   TkCommandNames = ['registry'.freeze].freeze
 

@@ -1,3 +1,5 @@
+# -*- coding: euc-jp -*-
+#
 # spin.rb --
 #
 # This demonstration script creates several spinbox widgets.

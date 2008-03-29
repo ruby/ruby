@@ -8,7 +8,11 @@ module TkOptionDB
   extend Tk
 
   TkCommandNames = ['option'.freeze].freeze
-  CmdClassID = ['CMD_CLASS'.freeze, '00000'.taint].freeze
+  (CmdClassID = ['CMD_CLASS'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
 
   module Priority
     WidgetDefault = 20
@@ -250,8 +254,10 @@ module TkOptionDB
   def __create_new_class(klass, func, safe = 4, add = false, parent = nil)
     if klass.kind_of?(TkWindow)
       carrier = klass.path
-      klass = CmdClassID.join(TkCore::INTERP._ip_id_)
-      CmdClassID[1].succ!
+      CmdClassID.mutex.synchronize{
+        klass = CmdClassID.join(TkCore::INTERP._ip_id_)
+        CmdClassID[1].succ!
+      }
       parent = nil # ignore parent
     else
       klass = klass.to_s if klass.kind_of?(Symbol)
@@ -312,7 +318,7 @@ module TkOptionDB
         :singleton_methods, :remove_const, :remove_method, :undef_method, 
         :to_s, :inspect, :display, :method, :methods, :respond_to?, 
         :instance_variable_get, :instance_variable_set, :instance_method, 
-        :instance_eval, :instance_variables, :kind_of?, :is_a?,
+        :instance_eval, :instance_exec, :instance_variables, :kind_of?, :is_a?,
         :private_methods, :protected_methods, :public_methods ].each{|m|
         alias_method(m, :__null_method)
       }
@@ -362,7 +368,7 @@ module TkOptionDB
 
   def new_proc_class_random(klass, func, safe = 4, add = false, &b)
     eval_under_random_base(){
-      TkOption.new_proc_class(klass, func, safe, add, self, &b)
+      TkOptionDB.new_proc_class(klass, func, safe, add, self, &b)
     }
   end
   module_function :new_proc_class_random

@@ -95,8 +95,35 @@ def kroc_rb_settings
   #
   # Elements:
   #
-  if TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
+  if Tk::Tile::TILE_SPEC_VERSION_ID >= 8
+    Tk::Tile::Style.element_create('Button.button', 
+                                   :image, 
+                                   [ $images['button-n'],
+                                     :pressed, $images['button-p'], 
+                                     :active,  $images['button-h'], 
+                                   ], :border=>3, :sticky=>:ew)
 
+    Tk::Tile::Style.element_create('Checkbutton.indicator', 
+                                   :image, 
+                                   [ $images['check-nu'],
+                                     [:pressed, :selected],$images['check-nc'],
+                                     :pressed,             $images['check-nu'],
+                                     [:active, :selected], $images['check-hc'],
+                                     :active,              $images['check-hu'],
+                                     :selected,            $images['check-nc'],
+                                   ], :sticky=>:w)
+
+    Tk::Tile::Style.element_create('Radiobutton.indicator', 
+                                   :image, 
+                                   [ $images['radio-nu'],
+                                     [:pressed,:selected],$images['radio-nc'],
+                                     :pressed,            $images['radio-nu'],
+                                     [:active,:selected], $images['radio-hc'],
+                                     :active,             $images['radio-hu'],
+                                     :selected,           $images['radio-nc'],
+                                   ], :sticky=>:w)
+
+  elsif TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
     Tk::Tile::Style.element_create('Button.button', 
                                    :image, $images['button-n'],
                                    :map=>[
@@ -125,7 +152,6 @@ def kroc_rb_settings
                                    ], :sticky=>:w)
 
   else # tile 0.4 or earlier
-
     Tk::Tile::Style.element_create('Button.button', :pixmap, 
                                    :images=>[
                                      :pressed, $images['button-p'], 

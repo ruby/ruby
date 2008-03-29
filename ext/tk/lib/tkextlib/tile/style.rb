@@ -17,6 +17,97 @@ module Tk::Tile::Style
 end
 
 class << Tk::Tile::Style
+  if Tk::Tile::TILE_SPEC_VERSION_ID < 8
+    TkCommandNames = ['style'.freeze].freeze
+
+    # --- Tk::Tile::Style.__define_wrapper_proc_for_compatibility__! ---
+    # On Ttk (Tile) extension, 'style' command has imcompatible changes 
+    # depend on the version of the extention. It requires modifying the 
+    # Tcl/Tk scripts to define local styles. The rule for modification 
+    # is a simple one. But, if users want to keep compatibility between 
+    # versions of the extension, they will have to contrive to do that. 
+    # It may be troublesome, especially for Ruby/Tk users.
+    # This method may help such work. This method make some definitions 
+    # on the Tcl/Tk interpreter to work with different version of style 
+    # command format. Please give attention to use this method. It may 
+    # conflict with some definitions on Tcl/Tk scripts. 
+    if Tk::Tile::TILE_SPEC_VERSION_ID < 7
+      def __define_wrapper_proc_for_compatibility__!
+        unless Tk.info(:commands, '::ttk::style').empty?
+          fail RuntimeError,
+               "can't define ':ttk::style' command (already exist)"
+        end
+        TkCore::INTERP.add_tk_procs('::ttk::style', 'args', <<-'EOS')
+        if [string equal [lrange $args 0 1] {element create}] {
+          if [string equal [lindex $args 3] image] {
+            set spec [lindex $args 4]
+            set map  [lrange $spec 1 end]
+            if [llength $map] {
+              # return [eval [concat [list ::style element create [lindex $args 2] image [lindex $spec 0] -map $map] [lrange $args 5 end]]]
+              return [uplevel 1 [list ::style element create [lindex $args 2] image [lindex $spec 0] -map $map] [lrange $args 5 end]]
+            }
+          }
+        }
+        # return [eval "::style $args"]
+        return [uplevel 1 ::style $args]
+      EOS
+        #########################
+      end
+    else ### TILE_SPEC_VERSION_ID == 7
+      def __define_wrapper_proc_for_compatibility__!
+        unless Tk.info(:commands, '::ttk::style').empty?
+          fail RuntimeError,
+               "can't define ':ttk::style' command (already exist)"
+        end
+        TkCore::INTERP.add_tk_procs('::ttk::style', 'args', <<-'EOS')
+        if [string equal [lrange $args 0 1] {element create}] {
+          if [string equal [lindex $args 3] image] {
+            set spec [lindex $args 4]
+            set map  [lrange $spec 1 end]
+            if [llength $map] {
+              # return [eval [concat [list ::style element create [lindex $args 2] image [lindex $spec 0] -map $map] [lrange $args 5 end]]]
+              return [uplevel 1 [list ::style element create [lindex $args 2] image [lindex $spec 0] -map $map] [lrange $args 5 end]]]
+            }
+          }
+        } elseif [string equal [lindex $args 0] default] {
+          # return [eval "::style [lreplace $args 0 0 configure]"]
+          return [uplevel 1 ::style [lreplace $args 0 0 configure]]
+        }
+        # return [eval "::style $args"]
+        return [uplevel 1 ::style $args]
+      EOS
+        #########################
+      end
+    end
+  else ### TILE_SPEC_VERSION_ID >= 8
+    TkCommandNames = ['::ttk::style'.freeze].freeze
+
+    def __define_wrapper_proc_for_compatibility__!
+      unless Tk.info(:commands, '::style').empty?
+        fail RuntimeError, "can't define '::style' command (already exist)"
+      end
+      TkCore::INTERP.add_tk_procs('::style', 'args', <<-'EOS')
+        if [string equal [lrange $args 0 1] {element create}] {
+          if [string equal [lindex $args 3] image] {
+            set name [lindex $args 4]
+            set opts [lrange $args 5 end]
+            set idx [lsearch $opts -map]
+            if {$idx >= 0 && [expr $idx % 2 == 0]} {
+             # return [eval [concat [list ::ttk::style element create [lindex $args 2] image [concat $name [lindex $opts [expr $idx + 1]]]] [lreplace $opts $idx [expr $idx + 1]]]]
+              return [uplevel 1 [list ::ttk::style element create [lindex $args 2] image [concat $name [lindex $opts [expr $idx + 1]]]] [lreplace $opts $idx [expr $idx + 1]]]
+            }
+          }
+        } elseif [string equal [lindex $args 0] default] {
+          # return [eval "::ttk::style [lreplace $args 0 0 configure]"]
+          return [uplevel 1 ::ttk::style [lreplace $args 0 0 configure]]
+        }
+        # return [eval "::ttk::style $args"]
+        return [uplevel 1 ::ttk::style $args]
+      EOS
+      #########################
+    end
+  end
+
   def configure(style=nil, keys=nil)
     if style.kind_of?(Hash)
       keys = style
@@ -31,9 +122,9 @@ class << Tk::Tile::Style
     end
 
     if keys && keys != None
-      tk_call('style', sub_cmd, style, *hash_kv(keys))
+      tk_call(TkCommandNames[0], sub_cmd, style, *hash_kv(keys))
     else
-      tk_call('style', sub_cmd, style)
+      tk_call(TkCommandNames[0], sub_cmd, style)
     end
   end
   alias default configure
@@ -46,14 +137,33 @@ class << Tk::Tile::Style
     style = '.' unless style
 
     if keys && keys != None
-      tk_call('style', 'map', style, *hash_kv(keys))
+      if keys.kind_of?(Hash)
+        tk_call(TkCommandNames[0], 'map', style, *hash_kv(keys))
+      else
+        simplelist(tk_call(TkCommandNames[0], 'map', style, '-' << keys.to_s))
+      end
     else
-      tk_call('style', 'map', style)
+      ret = {}
+      Hash[*(simplelist(tk_call(TkCommandNames[0], 'map', style)))].each{|k, v|
+        ret[k[1..-1]] = list(v)
+      }
+      ret
     end
+  end
+  alias map_configure map
+
+  def map_configinfo(style=nil, key=None)
+    style = '.' unless style
+    map(style, key)
+  end
+
+  def map_default_configinfo(key=None)
+    map('.', key)
   end
 
   def lookup(style, opt, state=None, fallback_value=None)
-    tk_call('style', 'lookup', style, '-' << opt.to_s, state, fallback_value)
+    tk_call(TkCommandNames[0], 'lookup', style, 
+            '-' << opt.to_s, state, fallback_value)
   end
 
   include Tk::Tile::ParseStyleLayout
@@ -66,42 +176,93 @@ class << Tk::Tile::Style
     style = '.' unless style
 
     if spec
-      tk_call('style', 'layout', style, spec)
+      tk_call(TkCommandNames[0], 'layout', style, spec)
     else
-      _style_layout(list(tk_call('style', 'layout', style)))
+      _style_layout(list(tk_call(TkCommandNames[0], 'layout', style)))
     end
   end
 
   def element_create(name, type, *args)
-    tk_call('style', 'element', 'create', name, type, *args)
-  end
-
-  def element_names()
-    list(tk_call('style', 'element', 'names'))
-  end
-
-  def element_options(elem)
-    simplelist(tk_call('style', 'element', 'options', elem))
-  end
-
-  def theme_create(name, keys=nil)
-    if keys && keys != None
-      tk_call('style', 'theme', 'create', name, *hash_kv(keys))
+    if type == 'image' || type == :image
+      element_create_image(name, *args)
     else
-      tk_call('style', 'theme', 'create', name)
+      tk_call(TkCommandNames[0], 'element', 'create', name, type, *args)
     end
   end
 
+  def element_create_image(name, *args)
+    fail ArgumentError, 'Must supply a base image' unless (spec = args.shift)
+    if (opts = args.shift)
+      if opts.kind_of?(Hash)
+        opts = _symbolkey2str(opts)
+      else
+        fail ArgumentError, 'bad option'
+      end
+    end
+    fail ArgumentError, 'too many arguments' unless args.empty?
+
+    if spec.kind_of?(Array)
+      # probably, command format is tile 0.8+ (Tcl/Tk8.5+) style
+      if Tk::Tile::TILE_SPEC_VERSION_ID >= 8
+        if opts
+          tk_call(TkCommandNames[0], 
+                  'element', 'create', name, 'image', spec, opts)
+        else
+          tk_call(TkCommandNames[0], 'element', 'create', name, 'image', spec)
+        end
+      else
+        fail ArgumentError, 'illegal arguments' if opts.key?('map')
+        base = spec.shift
+        opts['map'] = spec
+        tk_call(TkCommandNames[0], 
+                'element', 'create', name, 'image', base, opts)
+      end
+    else
+      # probably, command format is tile 0.7.8 or older style
+      if Tk::Tile::TILE_SPEC_VERSION_ID >= 8
+        spec = [spec, *(opts.delete('map'))] if opts.key?('map')
+      end
+      if opts
+        tk_call(TkCommandNames[0], 
+                'element', 'create', name, 'image', spec, opts)
+      else
+        tk_call(TkCommandNames[0], 'element', 'create', name, 'image', spec)
+      end
+    end
+  end
+
+  def element_names()
+    list(tk_call(TkCommandNames[0], 'element', 'names'))
+  end
+
+  def element_options(elem)
+    simplelist(tk_call(TkCommandNames[0], 'element', 'options', elem))
+  end
+
+  def theme_create(name, keys=nil)
+    name = name.to_s
+    if keys && keys != None
+      tk_call(TkCommandNames[0], 'theme', 'create', name, *hash_kv(keys))
+    else
+      tk_call(TkCommandNames[0], 'theme', 'create', name)
+    end
+    name
+  end
+
   def theme_settings(name, cmd=nil, &b)
+    name = name.to_s
     cmd = Proc.new(&b) if !cmd && b
-    tk_call('style', 'theme', 'settings', name, cmd)
+    tk_call(TkCommandNames[0], 'theme', 'settings', name, cmd)
+    name
   end
 
   def theme_names()
-    list(tk_call('style', 'theme', 'names'))
+    list(tk_call(TkCommandNames[0], 'theme', 'names'))
   end
 
   def theme_use(name)
-    tk_call('style', 'theme', 'use', name)
+    name = name.to_s
+    tk_call(TkCommandNames[0], 'theme', 'use', name)
+    name
   end
 end

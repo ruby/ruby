@@ -125,7 +125,9 @@ module Tk::Tcllib::Tkpiechart
 
     def delete
       tk_call_without_enc('::stooop::delete', @tag_key)
-      CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
+      CItemID_TBL.mutex.synchronize{
+        CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
+      }
       self
     end
 
@@ -184,8 +186,10 @@ module Tk::Tcllib::Tkpiechart
       @id = "slices(#{@tag_key})"
       @tag = TkcNamedTag.new(@pie.canvas, @id)
 
-      CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
-      CItemID_TBL[@path][@id] = self
+      CItemID_TBL.mutex.synchronize{
+        CItemID_TBL[@path] = {} unless CItemID_TBL[@path]
+        CItemID_TBL[@path][@id] = self
+      }
     end
 
     def tag_key
@@ -200,7 +204,9 @@ module Tk::Tcllib::Tkpiechart
 
     def delete
       tk_call_without_enc('pie::deleteSlice', @pie.tag_key, @tag_key)
-      CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
+      CItemID_TBL.mutex.synchronize{
+        CItemID_TBL[@path].delete(@id) if CItemID_TBL[@path]
+      }
       @pie._delete_slice(self)
       self
     end

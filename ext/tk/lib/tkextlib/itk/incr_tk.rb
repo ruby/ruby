@@ -145,9 +145,16 @@ module Tk
       private :__config_cmd
 
       ComponentID_TBL = TkCore::INTERP.create_table
-      Itk_Component_ID = ['itk:component'.freeze, '00000'.taint].freeze
 
-      TkCore::INTERP.init_ip_env{ ComponentID_TBL.clear }
+      (Itk_Component_ID = ['itk:component'.freeze, '00000'.taint]).instance_eval{
+        @mutex = Mutex.new
+        def mutex; @mutex; end
+        freeze
+      }
+
+      TkCore::INTERP.init_ip_env{
+        ComponentID_TBL.mutex.synchronize{ ComponentID_TBL.clear }
+      }
 
       def self.id2obj(master, id)
         if master.kind_of?(TkObject)
@@ -155,8 +162,13 @@ module Tk
         else
           master = master.to_s
         end
-        return id unless ComponentID_TBL.key?(master)
-        (ComponentID_TBL.key?(id))? ComponentID_TBL[master][id]: id
+        ComponentID_TBL.mutex.synchronize{
+          if ComponentID_TBL.key?(master)
+            (ComponentID_TBL[master].key?(id))? ComponentID_TBL[master][id]: id
+          else
+            id
+          end
+        }
       end
 
       def self.new(master, component=nil)
@@ -171,17 +183,21 @@ module Tk
         elsif component
           component = component.to_s
         else
-          component = Itk_Component_ID.join(TkCore::INTERP._ip_id_)
-          Itk_Component_ID[1].succ!
+          Itk_Component_ID.mutex.synchronize{
+            component = Itk_Component_ID.join(TkCore::INTERP._ip_id_)
+            Itk_Component_ID[1].succ!
+          }
         end
 
-        if ComponentID_TBL.key?(master)
-          if ComponentID_TBL[master].key?(component)
-            return ComponentID_TBL[master][component] 
+        ComponentID_TBL.mutex.synchronize{
+          if ComponentID_TBL.key?(master)
+            if ComponentID_TBL[master].key?(component)
+              return ComponentID_TBL[master][component] 
+            end
+          else
+            ComponentID_TBL[master] = {}
           end
-        else
-          ComponentID_TBL[master] = {}
-        end
+        }
 
         super(master, component)
       end
@@ -190,7 +206,9 @@ module Tk
         @master = master
         @component = component
 
-        ComponentID_TBL[@master][@component] = self
+        ComponentID_TBL.mutex.synchronize{
+          ComponentID_TBL[@master][@component] = self
+        }
 
         begin
           @widget = window(tk_call(@master, 'component', @component))

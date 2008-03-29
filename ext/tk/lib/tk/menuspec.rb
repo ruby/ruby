@@ -61,8 +61,12 @@ module TkMenuSpec
     tearoff = orig_opts.delete('tearoff') if orig_opts.key?('tearoff')
 
     if menu_name
+      #menu = Tk::Menu.new(parent, :widgetname=>menu_name, :tearoff=>tearoff)
+      # --> use current TkMenu class
       menu = TkMenu.new(parent, :widgetname=>menu_name, :tearoff=>tearoff)
     else
+      #menu = Tk::Menu.new(parent, :tearoff=>tearoff)
+      # --> use current TkMenu class
       menu = TkMenu.new(parent, :tearoff=>tearoff)
     end
 
@@ -150,7 +154,7 @@ module TkMenuSpec
 
   def _use_menubar?(parent)
     use_menubar = false
-    if parent.kind_of?(TkRoot) || parent.kind_of?(TkToplevel)
+    if parent.kind_of?(Tk::Root) || parent.kind_of?(Tk::Toplevel)
       return true 
     else
       begin
@@ -164,7 +168,11 @@ module TkMenuSpec
   private :_use_menubar?
 
   def _create_menu_for_menubar(parent)
-    unless (mbar = parent.menu).kind_of?(TkMenu)
+    #unless (mbar = parent.menu).kind_of?(TkMenu)
+    # --> use current TkMenu class
+    mbar = parent.menu
+    unless parent.menu.kind_of?(Tk::Menu) || parent.menu.kind_of?(TkMenu)
+      #mbar = Tk::Menu.new(parent, :tearoff=>false)
       mbar = TkMenu.new(parent, :tearoff=>false)
       parent.menu(mbar)
     end
@@ -221,6 +229,8 @@ module TkMenuSpec
 
     else
       # menubar by menubuttons
+      #mbtn = Tk::Menubutton.new(parent)
+      # --> use current TkMenubutton class
       mbtn = TkMenubutton.new(parent)
 
       menu_name = nil

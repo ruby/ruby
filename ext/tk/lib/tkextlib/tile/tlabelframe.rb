@@ -9,9 +9,15 @@ module Tk
   module Tile
     class TLabelframe < Tk::Tile::TFrame
     end
-    Labelframe = TLabelframe
+    TLabelFrame = TLabelframe
+    Labelframe  = TLabelframe
+    LabelFrame  = TLabelframe
   end
 end
+
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Labelframe, 
+                            :TkLabelframe, :TkLabelFrame)
+
 
 class Tk::Tile::TLabelframe < Tk::Tile::TFrame
   include Tk::Tile::TileWidget

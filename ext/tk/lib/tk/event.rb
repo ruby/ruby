@@ -39,7 +39,9 @@ module TkEvent
       RESIZEREQ   =           0x200000
       CIRCREQ     =           0x400000
 
-      MWHEEL      =           0x10000000
+      MWHEEL      =           KEY
+
+      STRING_DATA =           0x80000000  # special flag for 'data' field
 
       ALL         =           0xFFFFFFFF
 
@@ -155,7 +157,7 @@ module TkEvent
       'borderwidth' => (Grp::CREATE|Grp::CONFIG),
       'button'      => Grp::BUTTON, 
       'count'       => Grp::EXPOSE, 
-      'data'        => Grp::VIRTUAL, 
+      'data'        => (Grp::VIRTUAL|Grp::STRING_DATA), 
       'delta'       => Grp::MWHEEL, 
       'detail'      => (Grp::FOCUS|Grp::CROSSING),
       'focus'       => Grp::CROSSING,
@@ -223,7 +225,8 @@ module TkEvent
         rescue
           next
         end
-        next if !val || val == '??'
+        # next if !val || val == '??'
+        next if !val || (val == '??' && (flag & Grp::STRING_DATA))
         fields[key] = val
       }
 
@@ -298,31 +301,54 @@ module TkEvent
       [ ?b, ?n, :num ], 
       [ ?c, ?n, :count ], 
       [ ?d, ?s, :detail ], 
+      # ?e
       [ ?f, ?b, :focus ], 
+      # ?g
       [ ?h, ?n, :height ], 
       [ ?i, ?s, :win_hex ], 
+      # ?j
       [ ?k, ?n, :keycode ], 
+      # ?l
       [ ?m, ?s, :mode ], 
+      # ?n
       [ ?o, ?b, :override ], 
       [ ?p, ?s, :place ], 
+      # ?q
+      # ?r
       [ ?s, ?x, :state ], 
       [ ?t, ?n, :time ], 
+      # ?u
+      [ ?v, ?n, :value_mask ], 
       [ ?w, ?n, :width ], 
       [ ?x, ?n, :x ], 
       [ ?y, ?n, :y ], 
+      # ?z
       [ ?A, ?s, :char ], 
       [ ?B, ?n, :borderwidth ], 
+      # ?C
       [ ?D, ?n, :wheel_delta ], 
       [ ?E, ?b, :send_event ], 
+      # ?F
+      # ?G
+      # ?H
+      # ?I
+      # ?J
       [ ?K, ?s, :keysym ], 
+      # ?L
+      # ?M
       [ ?N, ?n, :keysym_num ], 
+      # ?O
       [ ?P, ?s, :property ], 
+      # ?Q
       [ ?R, ?s, :rootwin_id ], 
       [ ?S, ?s, :subwindow ], 
       [ ?T, ?n, :type ], 
+      # ?U
+      # ?V
       [ ?W, ?w, :widget ], 
       [ ?X, ?n, :x_root ], 
       [ ?Y, ?n, :y_root ], 
+      # ?Z
       nil
     ]
 
@@ -344,6 +370,22 @@ module TkEvent
 
       nil
     ]
+
+    # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+    KEY_TBL.map!{|inf|
+      if inf.kind_of?(Array)
+        inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+      end
+      inf
+    }
+
+    PROC_TBL.map!{|inf|
+      if inf.kind_of?(Array)
+        inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+      end
+      inf
+    }
 
     # setup tables to be used by scan_args, _get_subst_key, _get_all_subst_keys
     #

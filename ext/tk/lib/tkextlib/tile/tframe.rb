@@ -7,13 +7,16 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TFrame < TkFrame
+    class TFrame < Tk::Frame
     end
     Frame = TFrame
   end
 end
 
-class Tk::Tile::TFrame < TkFrame
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Frame, :TkFrame)
+
+
+class Tk::Tile::TFrame < Tk::Frame
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE

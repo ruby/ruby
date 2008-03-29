@@ -136,4 +136,8 @@ module TkPackage
   def vsatisfies(version1, version2)
     bool(tk_call('package', 'vsatisfies', version1, version2))
   end
+
+  def prefer(setting = None)
+    tk_call('package', 'prefer', setting)
+  end
 end

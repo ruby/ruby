@@ -3,7 +3,7 @@
 #
 require 'tk'
 
-class TkScrollbar<TkWindow
+class Tk::Scrollbar<TkWindow
   TkCommandNames = ['scrollbar'.freeze].freeze
   WidgetClassName = 'Scrollbar'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -19,9 +19,24 @@ class TkScrollbar<TkWindow
     }
 
     if keys and keys != None
-      #tk_call_without_enc('scrollbar', @path, *hash_kv(keys, true))
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
-                          *hash_kv(keys, true))
+      unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+        #tk_call_without_enc('scrollbar', @path, *hash_kv(keys, true))
+        tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                            *hash_kv(keys, true))
+      else
+        begin
+          tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                              *hash_kv(keys, true))
+        rescue
+          tk_call_without_enc(self.class::TkCommandNames[0], @path)
+          keys = __check_available_configure_options(keys)
+          unless keys.empty?
+            tk_call_without_enc('destroy', @path)
+            tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                                *hash_kv(keys, true))
+          end
+        end
+      end
     else
       #tk_call_without_enc('scrollbar', @path)
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -103,9 +118,33 @@ class TkScrollbar<TkWindow
   def activate(element=None)
     tk_send_without_enc('activate', element)
   end
+
+  def moveto(fraction)
+    tk_send_without_enc('moveto', fraction)
+    self
+  end
+
+  def scroll(*args)
+    tk_send_without_enc('scroll', *args)
+    self
+  end
+
+  def scroll_units(num)
+    scroll(num, 'units')
+    self
+  end
+
+  def scroll_pages(num)
+    scroll(num, 'pages')
+    self
+  end
 end
 
-class TkXScrollbar<TkScrollbar
+#TkScrollbar = Tk::Scrollbar unless Object.const_defined? :TkScrollbar
+Tk.__set_toplevel_aliases__(:Tk, Tk::Scrollbar, :TkScrollbar)
+
+
+class Tk::XScrollbar<Tk::Scrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'horizontal'
@@ -114,7 +153,11 @@ class TkXScrollbar<TkScrollbar
   private :create_self
 end
 
-class TkYScrollbar<TkScrollbar
+#TkXScrollbar = Tk::XScrollbar unless Object.const_defined? :TkXScrollbar
+Tk.__set_toplevel_aliases__(:Tk, Tk::XScrollbar, :TkXScrollbar)
+
+
+class Tk::YScrollbar<Tk::Scrollbar
   def create_self(keys)
     keys = {} unless keys
     keys['orient'] = 'vertical'
@@ -122,3 +165,6 @@ class TkYScrollbar<TkScrollbar
   end
   private :create_self
 end
+
+#TkYScrollbar = Tk::YScrollbar unless Object.const_defined? :TkYScrollbar
+Tk.__set_toplevel_aliases__(:Tk, Tk::YScrollbar, :TkYScrollbar)

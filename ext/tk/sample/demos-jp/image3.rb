@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 # image3.rb
 #
 # This demonstration script creates a simple collection of widgets

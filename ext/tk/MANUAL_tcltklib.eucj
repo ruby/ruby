@@ -221,7 +221,23 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : から抽出されるはずであるから，index_name 引数は nil と
          : せねばならない．
 
+   モジュール TclTkLib::RELEASE_TYPE
+      : Tcl/Tk のリリースタイプ番号の定義
+
+      定数  ALPHA
+         : ALPHA リリース
+
+      定数  BETA
+         : BETA リリース
+
+      定数  FINAL
+         : FINAL リリース
+
    モジュールメソッド
+      get_version()
+         : Tcl/Tk の major, minor, release-type 番号, release-type 名,
+         : patchlevel を配列にして返す．
+
       mainloop(check_root = true)
          : イベントループを起動する．check_root が true であれば，
          : root widget が存在する限り，このメソッドは終了しない．
@@ -543,6 +559,9 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : スレーブ IP の場合には値の設定が許されない (無視される)．
          : それ以外の点では引数を含めて TclTkLib の同名メソッドに同じ．
 
+      encoding_table
+         : Ruby m17n 用に Ruby と Tk との間の encoding 対応表を返す．
+
 クラス TkCallbackBreak < StandardError
 クラス TkCallbackContinue < StandardError
    : これらはイベントコールバックにおいて，コールバック処理を適切に中
@@ -553,5 +572,8 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
    : ドを返す必要がある．Ruby の手続きが普通に値を返すのでは，それが普
    : 通の戻り値であるのか否かを区別ができないため，例外発生を利用した
    : 実装を行っている．
+   : ただし現在では，コールバック手続きを Ruby の break, next で終了す
+   : ることで同等の結果を得ることができるようになっている．それゆえ，
+   : これらは必要ないものではあるが，互換性のために残してある．
 
 (eof)

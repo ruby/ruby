@@ -39,7 +39,10 @@ class Tk::HTML_Widget::ClippingWindow
   WidgetClassNames[WidgetClassName] = self
 
   HtmlClip_TBL = TkCore::INTERP.create_table
-  TkCore::INTERP.init_ip_env{ HtmlClip_TBL.clear }
+
+  TkCore::INTERP.init_ip_env{
+    HtmlClip_TBL.mutex.synchronize{ HtmlClip_TBL.clear }
+  }
 
   def self.new(parent, keys={})
     if parent.kind_of?(Hash)
@@ -54,7 +57,9 @@ class Tk::HTML_Widget::ClippingWindow
     else
       ppath = ''
     end
-    return HtmlClip_TBL[ppath] if HtmlClip_TBL[ppath]
+    HtmlClip_TBL.mutex.synchronize{
+      return HtmlClip_TBL[ppath] if HtmlClip_TBL[ppath]
+    }
 
     widgetname = keys.delete('widgetname')
     if widgetname =~ /^(.*)\.[^.]+$/
@@ -62,7 +67,9 @@ class Tk::HTML_Widget::ClippingWindow
       if ppath2[0] != ?.
         ppath2 = ppath + '.' + ppath2
       end
-      return HtmlClip_TBL[ppath2] if HtmlClip_TBL[ppath2]
+      HtmlClip_TBL.mutex.synchronize{
+        return HtmlClip_TBL[ppath2] if HtmlClip_TBL[ppath2]
+      }
 
       ppath = ppath2
     end
@@ -79,7 +86,9 @@ class Tk::HTML_Widget::ClippingWindow
     @parent = parent
     @ppath = parent.path
     @path = @id = @ppath + '.x'
-    HtmlClip_TBL[@ppath] = self
+    HtmlClip_TBL.mutex.synchronize{
+      HtmlClip_TBL[@ppath] = self
+    }
   end
 
   def method_missing(m, *args, &b)

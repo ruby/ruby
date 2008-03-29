@@ -1,12 +1,11 @@
 #
 #               tk/spinbox.rb - Tk spinbox classes
-#                       $Date$
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>
 #
 require 'tk'
 require 'tk/entry'
 
-class TkSpinbox<TkEntry
+class Tk::Spinbox<Tk::Entry
   TkCommandNames = ['spinbox'.freeze].freeze
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -37,6 +36,22 @@ class TkSpinbox<TkEntry
 
         nil
       ]
+
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -97,3 +112,6 @@ class TkSpinbox<TkEntry
     _fromUTF8(tk_send_without_enc('set', _get_eval_enc_str(str)))
   end
 end
+
+#TkSpinbox = Tk::Spinbox unless Object.const_defined? :TkSpinbox
+Tk.__set_toplevel_aliases__(:Tk, Tk::Spinbox, :TkSpinbox)

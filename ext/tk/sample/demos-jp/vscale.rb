@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 require "tkcanvas"
 
 if defined?($vscale_demo) && $vscale_demo
@@ -66,7 +67,6 @@ TkFrame.new($vscale_demo) {|frame|
   scale.set 75
 }.pack
 
-
 def setHeight(w, height)
   height = height + 21
   y2 = height - 30
@@ -76,3 +76,4 @@ def setHeight(w, height)
   w.coords 'poly',15,20,35,20,35,y2,45,y2,25,height,5,y2,15,y2,15,20
   w.coords 'line',15,20,35,20,35,y2,45,y2,25,height,5,y2,15,y2,15,20
 end
+

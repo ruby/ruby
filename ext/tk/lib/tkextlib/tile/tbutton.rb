@@ -7,13 +7,16 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TButton < TkButton
+    class TButton < Tk::Button
     end
     Button = TButton
   end
 end
 
-class Tk::Tile::TButton < TkButton
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Button, :TkButton)
+
+
+class Tk::Tile::TButton < Tk::Button
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE

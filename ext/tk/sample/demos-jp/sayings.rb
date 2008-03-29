@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # listbox widget demo 'sayings' (called by 'widget')
 #

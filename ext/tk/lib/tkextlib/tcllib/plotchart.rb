@@ -225,7 +225,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class XYPlot < TkCanvas
+  class XYPlot < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -247,7 +247,7 @@ module Tk::Tcllib::Plotchart
         @xaxis = args.shift
         @yaxis = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -265,7 +265,9 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def __destroy_hook__
-      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
     end
 
     def plot(series, x, y)
@@ -337,7 +339,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class PolarPlot < TkCanvas
+  class PolarPlot < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -356,7 +358,7 @@ module Tk::Tcllib::Plotchart
 
         @radius_data = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -374,7 +376,9 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def __destroy_hook__
-      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
     end
 
     def plot(series, radius, angle)
@@ -395,7 +399,7 @@ module Tk::Tcllib::Plotchart
   Polarplot = PolarPlot
 
   ############################
-  class IsometricPlot < TkCanvas
+  class IsometricPlot < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -430,7 +434,7 @@ module Tk::Tcllib::Plotchart
           @stepsize = args.shift
         end
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -475,7 +479,7 @@ module Tk::Tcllib::Plotchart
   Isometricplot = IsometricPlot
 
   ############################
-  class Plot3D < TkCanvas
+  class Plot3D < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -500,7 +504,7 @@ module Tk::Tcllib::Plotchart
         @yaxis = args.shift
         @zaxis = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -557,7 +561,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Piechart < TkCanvas
+  class Piechart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -566,7 +570,7 @@ module Tk::Tcllib::Plotchart
     ].freeze
 
     def initialize(*args) # args := ([parent] [, keys])
-      if args[0].kind_of?(TkCanvas)
+      if args[0].kind_of?(Tk::Canvas)
         parent = args.shift
         @path = parent.path
       else
@@ -588,7 +592,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Barchart < TkCanvas
+  class Barchart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -626,7 +630,7 @@ module Tk::Tcllib::Plotchart
           @series_size  = args.shift
         end
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -645,7 +649,9 @@ module Tk::Tcllib::Plotchart
     private :_create_chart
 
     def __destroy_hook__
-      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.mutex.synchronize{
+        Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+      }
     end
 
     def plot(series, dat, col=None)
@@ -672,7 +678,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Timechart < TkCanvas
+  class Timechart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -699,7 +705,7 @@ module Tk::Tcllib::Plotchart
         @time_end   = args.shift
         @items      = args.shift
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -733,7 +739,7 @@ module Tk::Tcllib::Plotchart
   end
 
   ############################
-  class Gnattchart < TkCanvas
+  class Gnattchart < Tk::Canvas
     include ChartMethod
 
     TkCommandNames = [
@@ -772,7 +778,7 @@ module Tk::Tcllib::Plotchart
           @text_width = None
         end
 
-        if parent.kind_of?(TkCanvas)
+        if parent.kind_of?(Tk::Canvas)
           @path = parent.path
         else
           super(parent, *args) # create canvas widget
@@ -834,23 +840,38 @@ module Tk::Tcllib::Plotchart
   ############################
   class PlotSeries < TkObject
     SeriesID_TBL = TkCore::INTERP.create_table
-    Series_ID = ['series'.freeze, '00000'.taint].freeze
-    TkCore::INTERP.init_ip_env{ SeriesID_TBL.clear }
+
+    (Series_ID = ['series'.freeze, '00000'.taint]).instance_eval{
+      @mutex = Mutex.new
+      def mutex; @mutex; end
+      freeze
+    }
+    TkCore::INTERP.init_ip_env{
+      SeriesID_TBL.mutex.synchronize{ SeriesID_TBL.clear }
+    }
 
     def self.id2obj(chart, id)
       path = chart.path
-      return id unless SeriesID_TBL[path]
-      SeriesID_TBL[path][id]? SeriesID_TBL[path][id]: id
+      SeriesID_TBL.mutex.synchronize{
+        if SeriesID_TBL[path]
+          SeriesID_TBL[path][id]? SeriesID_TBL[path][id]: id
+        else
+          id
+        end
+      }
     end
 
     def initialize(chart, keys=nil)
       @parent = @chart_obj = chart
       @ppath = @chart_obj.path
-      @path = @series = @id = Series_ID.join(TkCore::INTERP._ip_id_)
-      # SeriesID_TBL[@id] = self
-      SeriesID_TBL[@ppath] = {} unless SeriesID_TBL[@ppath]
-      SeriesID_TBL[@ppath][@id] = self
-      Series_ID[1].succ!
+      Series_ID.mutex.synchronize{
+        @path = @series = @id = Series_ID.join(TkCore::INTERP._ip_id_)
+        Series_ID[1].succ!
+      }
+      SeriesID_TBL.mutex.synchronize{
+        SeriesID_TBL[@ppath] ||= {}
+        SeriesID_TBL[@ppath][@id] = self
+      }
       dataconfig(keys) if keys.kind_of?(Hash)
     end
 

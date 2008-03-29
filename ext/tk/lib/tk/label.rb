@@ -3,7 +3,7 @@
 #
 require 'tk'
 
-class TkLabel<TkWindow
+class Tk::Label<TkWindow
   TkCommandNames = ['label'.freeze].freeze
   WidgetClassName = 'Label'.freeze
   WidgetClassNames[WidgetClassName] = self
@@ -16,3 +16,6 @@ class TkLabel<TkWindow
   #end
   #private :create_self
 end
+
+#TkLabel = Tk::Label unless Object.const_defined? :TkLabel
+Tk.__set_toplevel_aliases__(:Tk, Tk::Label, :TkLabel)

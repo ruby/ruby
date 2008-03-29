@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 require "tkcanvas"
 
 def optionMenu(menubutton, varName, firstValue, *rest)

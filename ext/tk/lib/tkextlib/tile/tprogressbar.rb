@@ -13,6 +13,9 @@ module Tk
   end
 end
 
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Progressbar, :TkProgressbar)
+
+
 class Tk::Tile::TProgressbar
   include Tk::Tile::TileWidget
 

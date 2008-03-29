@@ -51,4 +51,8 @@ class Tk::BWidget::ProgressDlg
   def value= (val)
     @keys['variable'].value = val
   end
+
+  def create
+    window(tk_call(self.class::TkCommandNames[0], @path, *hash_kv(@keys)))
+  end
 end

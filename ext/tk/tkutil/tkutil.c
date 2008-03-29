@@ -3,17 +3,24 @@
   tkutil.c -
 
   $Author$
-  $Date$
   created at: Fri Nov  3 00:47:54 JST 1995
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2006-04-06"
+#define TKUTIL_RELEASE_DATE "2008-03-29"
 
 #include "ruby.h"
+
+#ifdef RUBY_VM  /* Ruby 1.9 */
+/* #include "ruby/ruby.h" */
+#include "ruby/signal.h"
+#include "ruby/st.h"
+#else
+/* #include "ruby.h" */
 #include "rubysig.h"
 #include "version.h"
 #include "st.h"
+#endif
 
 static VALUE cMethod;
 
@@ -26,6 +33,8 @@ static VALUE TK_None;
 
 static VALUE cCB_SUBST;
 static VALUE cSUBST_INFO;
+
+static VALUE ENCODING_NAME_UTF8; /* for saving GC cost */
 
 static ID ID_split_tklist;
 static ID ID_toUTF8;
@@ -59,7 +68,7 @@ tk_s_new(argc, argv, klass)
     VALUE obj = rb_class_new_instance(argc, argv, klass);
 
     if (rb_block_given_p()) {
-#if RUBY_VERSION_MAJOR == 1 && RUBY_VERSION_MINOR <= 8 /* ruby 1.8.x */
+#ifndef HAVE_RB_OBJ_INSTANCE_EXEC
       rb_obj_instance_eval(0, 0, obj);
 #else
       rb_obj_instance_exec(1, &obj, obj);
@@ -155,16 +164,16 @@ tk_uninstall_cmd(self, cmd_id)
     int prefix_len = strlen(cmd_id_prefix);
 
     StringValue(cmd_id);
-    if (strncmp(cmd_id_head, RSTRING(cmd_id)->ptr, head_len) != 0) {
+    if (strncmp(cmd_id_head, RSTRING_PTR(cmd_id), head_len) != 0) {
         return Qnil;
     }
     if (strncmp(cmd_id_prefix, 
-                RSTRING(cmd_id)->ptr + head_len, prefix_len) != 0) {
+                RSTRING_PTR(cmd_id) + head_len, prefix_len) != 0) {
         return Qnil;
     }
 
     return rb_hash_delete(CALLBACK_TABLE, 
-                          rb_str_new2(RSTRING(cmd_id)->ptr + head_len));
+                          rb_str_new2(RSTRING_PTR(cmd_id) + head_len));
 }
 
 static VALUE
@@ -227,7 +236,7 @@ tk_symbolkey2str(self, keys)
 
     if NIL_P(keys) return new_keys;
     keys = rb_convert_type(keys, T_HASH, "Hash", "to_hash");
-    st_foreach(RHASH(keys)->tbl, to_strkey, new_keys);
+    st_foreach(RHASH_TBL(keys), to_strkey, new_keys);
     return new_keys;
 }
 
@@ -267,25 +276,24 @@ ary2list(ary, enc_flag, self)
         req_chk_flag = 0;
     }
 
-    /* size = RARRAY(ary)->len; */
+    /* size = RARRAY_LEN(ary); */
     size = 0;
-    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-        if (TYPE(RARRAY(ary)->ptr[idx]) == T_HASH) {
-            size += 2 * RHASH(RARRAY(ary)->ptr[idx])->tbl->num_entries;
+    for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        if (TYPE(RARRAY_PTR(ary)[idx]) == T_HASH) {
+            size += 2 * RHASH_SIZE(RARRAY_PTR(ary)[idx]);
         } else {
             size++;
         }
     }
 
     dst = rb_ary_new2(size);
-    RARRAY(dst)->len = 0;
-    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-        val = RARRAY(ary)->ptr[idx];
+    for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        val = RARRAY_PTR(ary)[idx];
         str_val = Qnil;
         switch(TYPE(val)) {
         case T_ARRAY:
             str_val = ary2list(val, enc_flag, self);
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+            rb_ary_push(dst, str_val);
 
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
@@ -303,19 +311,19 @@ ary2list(ary, enc_flag, self)
             break;
 
         case T_HASH:
-            /* RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self); */
+	    /* rb_ary_push(dst, hash2list(val, self)); */
             if (RTEST(enc_flag)) {
                 val = hash2kv_enc(val, Qnil, self);
             } else {
                 val = hash2kv(val, Qnil, self);
             }
-            size2 = RARRAY(val)->len;
+            size2 = RARRAY_LEN(val);
             for(idx2 = 0; idx2 < size2; idx2++) {
-                val2 = RARRAY(val)->ptr[idx2];
+                val2 = RARRAY_PTR(val)[idx2];
                 switch(TYPE(val2)) {
                 case T_ARRAY:
                     str_val = ary2list(val2, enc_flag, self);
-                    RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                    rb_ary_push(dst, str_val);
                     break;
 
                 case T_HASH:
@@ -324,13 +332,13 @@ ary2list(ary, enc_flag, self)
                     } else {
                         str_val = hash2list(val2, self);
                     }
-                    RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                    rb_ary_push(dst, str_val);
                     break;
 
                 default:
                     if (val2 != TK_None) {
                         str_val = get_eval_string_core(val2, enc_flag, self);
-                        RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                        rb_ary_push(dst, str_val);
                     }
                 }
 
@@ -352,7 +360,7 @@ ary2list(ary, enc_flag, self)
         default:
             if (val != TK_None) {
                 str_val = get_eval_string_core(val, enc_flag, self);
-                RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                rb_ary_push(dst, str_val);
 
                 if (req_chk_flag) {
                     str_enc = rb_ivar_get(str_val, ID_at_enc);
@@ -371,21 +379,21 @@ ary2list(ary, enc_flag, self)
     }
 
     if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
-        for(idx = 0; idx < RARRAY(dst)->len; idx++) {
-            str_val = RARRAY(dst)->ptr[idx];
+        for(idx = 0; idx < RARRAY_LEN(dst); idx++) {
+            str_val = RARRAY_PTR(dst)[idx];
             if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
             }
-            RARRAY(dst)->ptr[idx] = str_val;
+            RARRAY_PTR(dst)[idx] = str_val;
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (TYPE(dst_enc) == T_STRING) {
             val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
-            rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));
+            rb_ivar_set(val, ID_at_enc, ENCODING_NAME_UTF8);
         }
         return val;
     } else {
@@ -421,11 +429,10 @@ ary2list2(ary, enc_flag, self)
         req_chk_flag = 0;
     }
 
-    size = RARRAY(ary)->len;
+    size = RARRAY_LEN(ary);
     dst = rb_ary_new2(size);
-    RARRAY(dst)->len = 0;
-    for(idx = 0; idx < RARRAY(ary)->len; idx++) {
-        val = RARRAY(ary)->ptr[idx];
+    for(idx = 0; idx < RARRAY_LEN(ary); idx++) {
+        val = RARRAY_PTR(ary)[idx];
         str_val = Qnil;
         switch(TYPE(val)) {
         case T_ARRAY:
@@ -447,7 +454,7 @@ ary2list2(ary, enc_flag, self)
         }
 
         if (!NIL_P(str_val)) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+            rb_ary_push(dst, str_val);
 
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
@@ -465,21 +472,21 @@ ary2list2(ary, enc_flag, self)
     }
 
     if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
-        for(idx = 0; idx < RARRAY(dst)->len; idx++) {
-            str_val = RARRAY(dst)->ptr[idx];
+        for(idx = 0; idx < RARRAY_LEN(dst); idx++) {
+            str_val = RARRAY_PTR(dst)[idx];
             if (rb_obj_respond_to(self, ID_toUTF8, Qtrue)) {
                 str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
             } else {
                 str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
             }
-            RARRAY(dst)->ptr[idx] = str_val;
+            RARRAY_PTR(dst)[idx] = str_val;
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (TYPE(dst_enc) == T_STRING) {
             val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
-            rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));
+            rb_ivar_set(val, ID_at_enc, ENCODING_NAME_UTF8);
         }
         return val;
     } else {
@@ -503,38 +510,35 @@ assoc2kv(assoc, ary, self)
     int i, j, len;
     volatile VALUE pair;
     volatile VALUE val;
-    volatile VALUE dst = rb_ary_new2(2 * RARRAY(assoc)->len);
+    volatile VALUE dst = rb_ary_new2(2 * RARRAY_LEN(assoc));
 
-    len = RARRAY(assoc)->len;
+    len = RARRAY_LEN(assoc);
 
     for(i = 0; i < len; i++) {
-        pair = RARRAY(assoc)->ptr[i];
+        pair = RARRAY_PTR(assoc)[i];
         if (TYPE(pair) != T_ARRAY) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
+            rb_ary_push(dst, key2keyname(pair));
             continue;
         }
-        switch(RARRAY(assoc)->len) {
+        switch(RARRAY_LEN(assoc)) {
         case 2:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(pair)->ptr[2];
+            rb_ary_push(dst, RARRAY_PTR(pair)[2]);
 
         case 1:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
         case 0:
             continue;
 
         default:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
-            val = rb_ary_new2(RARRAY(pair)->len - 1);
-            RARRAY(val)->len = 0;
-            for(j = 1; j < RARRAY(pair)->len; j++) {
-                RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
+            val = rb_ary_new2(RARRAY_LEN(pair) - 1);
+            for(j = 1; j < RARRAY_LEN(pair); j++) {
+                rb_ary_push(val, RARRAY_PTR(pair)[j]);
             }
 
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = val;
+            rb_ary_push(dst, val);
         }
     }
 
@@ -554,40 +558,35 @@ assoc2kv_enc(assoc, ary, self)
     int i, j, len;
     volatile VALUE pair;
     volatile VALUE val;
-    volatile VALUE dst = rb_ary_new2(2 * RARRAY(assoc)->len);
+    volatile VALUE dst = rb_ary_new2(2 * RARRAY_LEN(assoc));
 
-    len = RARRAY(assoc)->len;
+    len = RARRAY_LEN(assoc);
 
     for(i = 0; i < len; i++) {
-        pair = RARRAY(assoc)->ptr[i];
+        pair = RARRAY_PTR(assoc)[i];
         if (TYPE(pair) != T_ARRAY) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = key2keyname(pair);
+            rb_ary_push(dst, key2keyname(pair));
             continue;
         }
-        switch(RARRAY(assoc)->len) {
+        switch(RARRAY_LEN(assoc)) {
         case 2:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = get_eval_string_core(RARRAY(pair)->ptr[2], Qtrue, self);
+            rb_ary_push(dst, get_eval_string_core(RARRAY_PTR(pair)[2], Qtrue, self));
 
         case 1:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
         case 0:
             continue;
 
         default:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = key2keyname(RARRAY(pair)->ptr[0]);
+            rb_ary_push(dst, key2keyname(RARRAY_PTR(pair)[0]));
 
-            val = rb_ary_new2(RARRAY(pair)->len - 1);
-            RARRAY(val)->len = 0;
-            for(j = 1; j < RARRAY(pair)->len; j++) {
-                RARRAY(val)->ptr[RARRAY(val)->len++] = RARRAY(pair)->ptr[j];
+            val = rb_ary_new2(RARRAY_LEN(pair) - 1);
+            for(j = 1; j < RARRAY_LEN(pair); j++) {
+                rb_ary_push(val, RARRAY_PTR(pair)[j]);
             }
 
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = get_eval_string_core(val, Qtrue, self);
+            rb_ary_push(dst, get_eval_string_core(val, Qtrue, self));
         }
     }
 
@@ -606,19 +605,18 @@ push_kv(key, val, args)
 {
     volatile VALUE ary;
 
-    ary = RARRAY(args)->ptr[0];
+    ary = RARRAY_PTR(args)[0];
 
     if (key == Qundef) return ST_CONTINUE;
 #if 0
     rb_ary_push(ary, key2keyname(key));
     if (val != TK_None) rb_ary_push(ary, val);
 #endif
-    RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
+    rb_ary_push(ary, key2keyname(key));
 
     if (val == TK_None) return ST_CHECK;
 
-    RARRAY(ary)->ptr[RARRAY(ary)->len++]
-        = get_eval_string_core(val, Qnil, RARRAY(args)->ptr[1]);
+    rb_ary_push(ary, get_eval_string_core(val, Qnil, RARRAY_PTR(args)[1]));
 
     return ST_CHECK;
 }
@@ -629,15 +627,10 @@ hash2kv(hash, ary, self)
     VALUE ary;
     VALUE self;
 {
-    volatile VALUE args = rb_ary_new2(2);
-    volatile VALUE dst = rb_ary_new2(2 * RHASH(hash)->tbl->num_entries);
+    volatile VALUE dst = rb_ary_new2(2 * RHASH_SIZE(hash));
+    volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    RARRAY(dst)->len = 0;
-
-    RARRAY(args)->ptr[0] = dst;
-    RARRAY(args)->ptr[1] = self;
-    RARRAY(args)->len = 2;
-    st_foreach(RHASH(hash)->tbl, push_kv, args);
+    st_foreach(RHASH_TBL(hash), push_kv, args);
 
     if (NIL_P(ary)) {
         return dst;
@@ -654,22 +647,21 @@ push_kv_enc(key, val, args)
 {
     volatile VALUE ary;
 
-    ary = RARRAY(args)->ptr[0];
+    ary = RARRAY_PTR(args)[0];
 
     if (key == Qundef) return ST_CONTINUE;
 #if 0
     rb_ary_push(ary, key2keyname(key));
     if (val != TK_None) {
         rb_ary_push(ary, get_eval_string_core(val, Qtrue, 
-                                              RARRAY(args)->ptr[1]));
+                                              RARRAY_PTR(args)[1]));
     }
 #endif
-    RARRAY(ary)->ptr[RARRAY(ary)->len++] = key2keyname(key);
+    rb_ary_push(ary, key2keyname(key));
 
     if (val == TK_None) return ST_CHECK;
 
-    RARRAY(ary)->ptr[RARRAY(ary)->len++] 
-        = get_eval_string_core(val, Qtrue, RARRAY(args)->ptr[1]);
+    rb_ary_push(ary, get_eval_string_core(val, Qtrue, RARRAY_PTR(args)[1]));
 
     return ST_CHECK;
 }
@@ -680,15 +672,10 @@ hash2kv_enc(hash, ary, self)
     VALUE ary;
     VALUE self;
 {
-    volatile VALUE args = rb_ary_new2(2);
-    volatile VALUE dst = rb_ary_new2(2 * RHASH(hash)->tbl->num_entries);
+    volatile VALUE dst = rb_ary_new2(2 * RHASH_SIZE(hash));
+    volatile VALUE args = rb_ary_new3(2, dst, self);
 
-    RARRAY(dst)->len = 0;
-
-    RARRAY(args)->ptr[0] = dst;
-    RARRAY(args)->ptr[1] = self;
-    RARRAY(args)->len = 2;
-    st_foreach(RHASH(hash)->tbl, push_kv_enc, args);
+    st_foreach(RHASH_TBL(hash), push_kv_enc, args);
 
     if (NIL_P(ary)) {
         return dst;
@@ -804,7 +791,11 @@ get_eval_string_core(obj, enc_flag, self)
                 return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
             }
         } else {
+#ifdef RUBY_VM
+            return rb_sym_to_s(obj);
+#else
             return rb_str_new2(rb_id2name(SYM2ID(obj)));
+#endif
         }
 
     case T_HASH:
@@ -862,7 +853,7 @@ get_eval_string_core(obj, enc_flag, self)
     }
 
     rb_warning("fail to convert '%s' to string for Tk", 
-               RSTRING(rb_funcall(obj, rb_intern("inspect"), 0, 0))->ptr);
+               RSTRING_PTR(rb_funcall(obj, rb_intern("inspect"), 0, 0)));
 
     return obj;
 }
@@ -915,14 +906,13 @@ tk_conv_args(argc, argv, self)
 
     for(size = 0, idx = 2; idx < argc; idx++) {
         if (TYPE(argv[idx]) == T_HASH) {
-            size += 2 * RHASH(argv[idx])->tbl->num_entries;
+            size += 2 * RHASH_SIZE(argv[idx]);
         } else {
             size++;
         }
     }
     /* dst = rb_ary_new2(argc - 2); */
     dst = rb_ary_new2(size);
-    RARRAY(dst)->len = 0;
     for(idx = 2; idx < argc; idx++) {
         if (TYPE(argv[idx]) == T_HASH) {
             if (RTEST(argv[1])) {
@@ -931,8 +921,7 @@ tk_conv_args(argc, argv, self)
                 hash2kv(argv[idx], dst, self);
             }
         } else if (argv[idx] != TK_None) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = get_eval_string_core(argv[idx], argv[1], self);
+            rb_ary_push(dst, get_eval_string_core(argv[idx], argv[1], self));
         }
     }
 
@@ -966,13 +955,13 @@ tcl2rb_bool(self, value)
 
     value = rb_funcall(value, ID_downcase, 0);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return Qnil;
+    if (RSTRING_PTR(value) == (char*)NULL) return Qnil;
 
-    if (RSTRING(value)->ptr[0] == '\0'
-        || strcmp(RSTRING(value)->ptr, "0") == 0
-        || strcmp(RSTRING(value)->ptr, "no") == 0
-        || strcmp(RSTRING(value)->ptr, "off") == 0
-        || strcmp(RSTRING(value)->ptr, "false") == 0) {
+    if (RSTRING_PTR(value)[0] == '\0'
+        || strcmp(RSTRING_PTR(value), "0") == 0
+        || strcmp(RSTRING_PTR(value), "no") == 0
+        || strcmp(RSTRING_PTR(value), "off") == 0
+        || strcmp(RSTRING_PTR(value), "false") == 0) {
         return Qfalse;
     } else {
         return Qtrue;
@@ -983,21 +972,21 @@ static VALUE
 tkstr_to_dec(value)
     VALUE value;
 {
-    return rb_cstr_to_inum(RSTRING(value)->ptr, 10, 1);
+    return rb_cstr_to_inum(RSTRING_PTR(value), 10, 1);
 }
 
 static VALUE
 tkstr_to_int(value)
     VALUE value;
 {
-    return rb_cstr_to_inum(RSTRING(value)->ptr, 0, 1);
+    return rb_cstr_to_inum(RSTRING_PTR(value), 0, 1);
 }
 
 static VALUE
 tkstr_to_float(value)
     VALUE value;
 {
-    return rb_float_new(rb_cstr_to_dbl(RSTRING(value)->ptr, 1));
+    return rb_float_new(rb_cstr_to_dbl(RSTRING_PTR(value), 1));
 }
 
 static VALUE
@@ -1005,7 +994,7 @@ tkstr_invalid_numstr(value)
     VALUE value;
 {
     rb_raise(rb_eArgError, 
-             "invalid value for Number: '%s'", RSTRING(value)->ptr);
+             "invalid value for Number: '%s'", RSTRING_PTR(value));
     return Qnil; /*dummy*/
 }
 
@@ -1024,7 +1013,7 @@ tkstr_to_number(value)
 {
     rb_check_type(value, T_STRING);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return INT2FIX(0);
+    if (RSTRING_PTR(value) == (char*)NULL) return INT2FIX(0);
 
     return rb_rescue2(tkstr_to_int, value, 
                       tkstr_rescue_float, value, 
@@ -1046,8 +1035,8 @@ tkstr_to_str(value)
     char * ptr;
     int len;
 
-    ptr = RSTRING(value)->ptr;
-    len = RSTRING(value)->len;
+    ptr = RSTRING_PTR(value);
+    len = RSTRING_LEN(value);
 
     if (len > 1 && *ptr == '{' && *(ptr + len - 1) == '}') {
         return rb_str_new(ptr + 1, len - 2);
@@ -1062,7 +1051,7 @@ tcl2rb_string(self, value)
 {
     rb_check_type(value, T_STRING);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return rb_tainted_str_new2("");
+    if (RSTRING_PTR(value) == (char*)NULL) return rb_tainted_str_new2("");
 
     return tkstr_to_str(value);
 }
@@ -1074,7 +1063,7 @@ tcl2rb_num_or_str(self, value)
 {
     rb_check_type(value, T_STRING);
 
-    if (RSTRING(value)->ptr == (char*)NULL) return rb_tainted_str_new2("");
+    if (RSTRING_PTR(value) == (char*)NULL) return rb_tainted_str_new2("");
 
     return rb_rescue2(tkstr_to_number, value, 
                       tkstr_to_str, value, 
@@ -1181,7 +1170,7 @@ each_attr_def(key, value, klass)
 
     switch(TYPE(key)) {
     case T_STRING:
-        key_id = rb_intern(RSTRING(key)->ptr);
+        key_id = rb_intern(RSTRING_PTR(key));
         break;
     case T_SYMBOL:
         key_id = SYM2ID(key);
@@ -1193,7 +1182,7 @@ each_attr_def(key, value, klass)
 
     switch(TYPE(value)) {
     case T_STRING:
-        value_id = rb_intern(RSTRING(value)->ptr);
+        value_id = rb_intern(RSTRING_PTR(value));
         break;
     case T_SYMBOL:
         value_id = SYM2ID(value);
@@ -1234,7 +1223,8 @@ cbsubst_get_subst_arg(argc, argv, self)
     VALUE self;
 {
     struct cbsubst_info *inf;
-    char *str, *buf, *ptr;
+    const char *str;
+    char *buf, *ptr;
     int i, j, len;
     ID id;
     volatile VALUE arg_sym, ret;
@@ -1249,7 +1239,7 @@ cbsubst_get_subst_arg(argc, argv, self)
     for(i = 0; i < argc; i++) {
         switch(TYPE(argv[i])) {
         case T_STRING:
-            str = RSTRING(argv[i])->ptr;
+            str = RSTRING_PTR(argv[i]);
             arg_sym = ID2SYM(rb_intern(str));
             break;
         case T_SYMBOL:
@@ -1264,7 +1254,7 @@ cbsubst_get_subst_arg(argc, argv, self)
             str = rb_id2name(SYM2ID(ret));
         }
 
-        id = rb_intern(RSTRING(rb_str_cat2(rb_str_new2("@"), str))->ptr);
+        id = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), str)));
 
         for(j = 0; j < len; j++) {
             if (inf->ivar[j] == id) break;
@@ -1300,11 +1290,11 @@ cbsubst_get_subst_key(self, str)
 
     list = rb_funcall(cTclTkLib, ID_split_tklist, 1, str);
 
-    len = RARRAY(list)->len;
+    len = RARRAY_LEN(list);
     buf = ALLOC_N(char, len + 1);
 
     for(i = 0; i < len; i++) {
-        ptr = RSTRING(RARRAY(list)->ptr[i])->ptr;
+        ptr = RSTRING_PTR(RARRAY_PTR(list)[i]);
         if (*ptr == '%' && *(ptr + 2) == '\0') {
             *(buf + i) = *(ptr + 1);
         } else {
@@ -1355,7 +1345,7 @@ cbsubst_table_setup(self, key_inf, proc_inf)
 {
     struct cbsubst_info *subst_inf;
     int idx;
-    int len = RARRAY(key_inf)->len;
+    int len = RARRAY_LEN(key_inf);
     int real_len = 0;
     char *key = ALLOC_N(char, len + 1);
     char *type = ALLOC_N(char, len + 1);
@@ -1380,20 +1370,20 @@ cbsubst_table_setup(self, key_inf, proc_inf)
      *         ivar  ==> symbol
      */
     for(idx = 0; idx < len; idx++) {
-        inf = RARRAY(key_inf)->ptr[idx];
+        inf = RARRAY_PTR(key_inf)[idx];
         if (TYPE(inf) != T_ARRAY) continue;
-        *(key  + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[0]);
-        *(type + real_len) = (char)NUM2INT(RARRAY(inf)->ptr[1]);
+        *(key  + real_len) = NUM2CHR(RARRAY_PTR(inf)[0]);
+        *(type + real_len) = NUM2CHR(RARRAY_PTR(inf)[1]);
 
         *(ivar + real_len) 
             = rb_intern(
-                RSTRING(
+                RSTRING_PTR(
                   rb_str_cat2(rb_str_new2("@"), 
-                              rb_id2name(SYM2ID(RARRAY(inf)->ptr[2])))
-                )->ptr
+                              rb_id2name(SYM2ID(RARRAY_PTR(inf)[2])))
+                )
               );
 
-        rb_attr(self, SYM2ID(RARRAY(inf)->ptr[2]), 1, 0, Qtrue);
+        rb_attr(self, SYM2ID(RARRAY_PTR(inf)[2]), 1, 0, Qtrue);
         real_len++;
     }
     *(key + real_len) = '\0';
@@ -1405,11 +1395,11 @@ cbsubst_table_setup(self, key_inf, proc_inf)
      *         type  ==> char code 
      *         proc  ==> proc/method/obj (must respond to 'call')
      */
-    len = RARRAY(proc_inf)->len;
+    len = RARRAY_LEN(proc_inf);
     for(idx = 0; idx < len; idx++) {
-        inf = RARRAY(proc_inf)->ptr[idx];
+        inf = RARRAY_PTR(proc_inf)[idx];
         if (TYPE(inf) != T_ARRAY) continue;
-        rb_hash_aset(proc, RARRAY(inf)->ptr[0], RARRAY(inf)->ptr[1]);
+        rb_hash_aset(proc, RARRAY_PTR(inf)[0], RARRAY_PTR(inf)[1]);
     }
 
     rb_const_set(self, ID_SUBST_INFO, 
@@ -1434,7 +1424,7 @@ cbsubst_scan_args(self, arg_key, val_ary)
 {
     struct cbsubst_info *inf;
     int idx;
-    int len = RARRAY(val_ary)->len;
+    int len = RARRAY_LEN(val_ary);
     char c;
     char *ptr;
     volatile VALUE dst = rb_ary_new2(len);
@@ -1450,14 +1440,13 @@ cbsubst_scan_args(self, arg_key, val_ary)
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
                     struct cbsubst_info, inf);
 
-    RARRAY(dst)->len = 0;
     for(idx = 0; idx < len; idx++) {
-        if (idx >= RSTRING(arg_key)->len) {
+        if (idx >= RSTRING_LEN(arg_key)) {
             proc = Qnil;
-        } else if (*(RSTRING(arg_key)->ptr + idx) == ' ') {
+        } else if (*(RSTRING_PTR(arg_key) + idx) == ' ') {
             proc = Qnil;
         } else {
-          ptr = strchr(inf->key, *(RSTRING(arg_key)->ptr + idx));
+          ptr = strchr(inf->key, *(RSTRING_PTR(arg_key) + idx));
           if (ptr == (char*)NULL) {
             proc = Qnil;
           } else {
@@ -1467,10 +1456,9 @@ cbsubst_scan_args(self, arg_key, val_ary)
         }
 
         if (NIL_P(proc)) {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] = RARRAY(val_ary)->ptr[idx];
+            rb_ary_push(dst, RARRAY_PTR(val_ary)[idx]);
         } else {
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                = rb_funcall(proc, ID_call, 1, RARRAY(val_ary)->ptr[idx]);
+            rb_ary_push(dst, rb_funcall(proc, ID_call, 1, RARRAY_PTR(val_ary)[idx]));
         }
     }
 
@@ -1511,6 +1499,7 @@ tkobj_path(self)
 {
     return rb_ivar_get(self, ID_at_path);
 }
+
 
 /*************************************/
 /* release date */
@@ -1634,6 +1623,10 @@ Init_tkutil()
     rb_define_method(mTK, "number", tcl2rb_number, 1);
     rb_define_method(mTK, "string", tcl2rb_string, 1);
     rb_define_method(mTK, "num_or_str", tcl2rb_num_or_str, 1);
+
+    /* --------------------- */
+    rb_global_variable(&ENCODING_NAME_UTF8);
+    ENCODING_NAME_UTF8 = rb_obj_freeze(rb_str_new2("utf-8"));
 
     /* --------------------- */
 }

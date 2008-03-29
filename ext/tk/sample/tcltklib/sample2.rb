@@ -41,7 +41,7 @@ class Othello
          [ 1, -1], [ 1, 0], [ 1, 1]
       ]
       
-      attr :com_disk, TRUE
+      attr_accessor :com_disk
    
       def initialize(othello)
          @othello = othello

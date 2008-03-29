@@ -13,11 +13,23 @@ module Tk::BLT
     TkCommandNames = ['::blt::watch'.freeze].freeze
 
     WATCH_ID_TBL = TkCore::INTERP.create_table
-    BLT_WATCH_ID = ['blt_watch_id'.freeze, '00000'.taint].freeze
+
+    (BLT_WATCH_ID = ['blt_watch_id'.freeze, '00000'.taint]).instance_eval{
+      @mutex = Mutex.new
+      def mutex; @mutex; end
+      freeze
+    }
+
+    TkCore::INTERP.init_ip_env{
+      WATCH_ID_TBL.mutex.synchronize{ WATCH_ID_TBL.clear }
+    }
 
     def self.names(state = None)
-      tk_split_list(tk_call('::blt::watch', 'names', state)).collect{|name|
-        WATCH_ID_TBL[name] || name
+      lst = tk_split_list(tk_call('::blt::watch', 'names', state))
+      WATCH_ID_TBL.mutex.synchronize{
+        lst.collect{|name|
+          WATCH_ID_TBL[name] || name
+        }
       }
     end
 
@@ -45,13 +57,17 @@ module Tk::BLT
       if name
         @id = name.to_s
       else
-        @id = BLT_WATCH_ID.join(TkCore::INTERP._ip_id_)
-        BLT_WATCH_ID[1].succ!
+        BLT_WATCH_ID.mutex.synchronize{
+          @id = BLT_WATCH_ID.join(TkCore::INTERP._ip_id_)
+          BLT_WATCH_ID[1].succ!
+        }
       end
 
       @path = @id
 
-      WATCH_ID_TBL[@id] = self
+      WATCH_ID_TBL.mutex.synchronize{
+        WATCH_ID_TBL[@id] = self
+      }
       tk_call('::blt::watch', 'create', @id, *hash_kv(keys))
     end
 

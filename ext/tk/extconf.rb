@@ -2,7 +2,8 @@
 
 require 'mkmf'
 
-is_win32 = (/mswin32|mingw|cygwin|bccwin32/ =~ RUBY_PLATFORM)
+#is_win32 = (/mswin32|mingw|cygwin|bccwin32/ =~ RUBY_PLATFORM)
+is_win32 = (/mswin|mingw|cygwin|bccwin|wince/ =~ RUBY_PLATFORM)
 #is_macosx = (/darwin/ =~ RUBY_PLATFORM)
 
 def find_framework(tcl_hdr, tk_hdr)
@@ -39,9 +40,13 @@ unless is_win32
   have_library("m", "log") 
 end
 
-dir_config("tk")
-dir_config("tcl")
-dir_config("X11")
+tk_idir,  tk_ldir  = dir_config("tk")
+tcl_idir, tcl_ldir = dir_config("tcl")
+x11_idir, x11_ldir = dir_config("X11")
+
+tk_ldir2  = with_config("tk-lib")
+tcl_ldir2 = with_config("tcl-lib")
+x11_ldir2 = with_config("X11-lib")
 
 tklib = with_config("tklib")
 tcllib = with_config("tcllib")
@@ -49,8 +54,9 @@ stubs = enable_config("tcltk_stubs") || with_config("tcltk_stubs")
 
 use_X = with_config("X11", (! is_win32))
 
-def find_tcl(tcllib, stubs)
-  paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
+def find_tcl(tcllib, stubs, *opt_paths)
+  default_paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
+  paths = opt_paths.compact.concat(default_paths)
   if stubs
     func = "Tcl_InitStubs"
     lib = "tclstub"
@@ -60,20 +66,23 @@ def find_tcl(tcllib, stubs)
   end
   if tcllib
     find_library(tcllib, func, *paths)
-  elsif find_library(lib, func, *paths)
-    true
   else
-    %w[8.5 8.4 8.3 8.2 8.1 8.0 7.6].find { |ver|
+    %w[8.6 8.5 8.4 8.3 8.2 8.1 8.0 7.6].find { |ver|
       find_library("#{lib}#{ver}", func, *paths) or
         find_library("#{lib}#{ver.delete('.')}", func, *paths) or
+        find_library("#{lib}#{ver}g", func, *paths) or
+        find_library("#{lib}#{ver.delete('.')}g", func, *paths) or
         find_library("tcl#{ver}", func, *paths) or
-        find_library("tcl#{ver.delete('.')}", func, *paths)
-    }
+        find_library("tcl#{ver.delete('.')}", func, *paths) or
+        find_library("tcl#{ver}g", func, *paths) or
+        find_library("tcl#{ver.delete('.')}g", func, *paths)
+    } || find_library(lib, func, *paths)
   end
 end
 
-def find_tk(tklib, stubs)
-  paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
+def find_tk(tklib, stubs, *opt_paths)
+  default_paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
+  paths = opt_paths.compact.concat(default_paths)
   if stubs
     func = "Tk_InitStubs"
     lib = "tkstub"
@@ -83,17 +92,26 @@ def find_tk(tklib, stubs)
   end
   if tklib
     find_library(tklib, func, *paths)
-  elsif find_library(lib, func, *paths)
-    true
   else
-    %w[8.5 8.4 8.3 8.2 8.1 8.0 4.2].find { |ver|
+    %w[8.6 8.5 8.4 8.3 8.2 8.1 8.0 4.2].find { |ver|
       find_library("#{lib}#{ver}", func, *paths) or
         find_library("#{lib}#{ver.delete('.')}", func, *paths) or
+        find_library("#{lib}#{ver}g", func, *paths) or
+        find_library("#{lib}#{ver.delete('.')}g", func, *paths) or
         find_library("tk#{ver}", func, *paths) or
-        find_library("tk#{ver.delete('.')}", func, *paths)
-    }
+        find_library("tk#{ver.delete('.')}", func, *paths) or 
+        find_library("tk#{ver}g", func, *paths) or
+        find_library("tk#{ver.delete('.')}g", func, *paths)
+    } || find_library(lib, func, *paths)
   end
 end
+
+def find_X11(*opt_paths)
+  default_paths = 
+    [ "/usr/X11/lib", "/usr/lib/X11", "/usr/X11R6/lib", "/usr/openwin/lib" ]
+  paths = opt_paths.compact.concat(default_paths)
+  find_library("X11", "XOpenDisplay", *paths)
+end 
 
 def pthread_check()
   tcl_major_ver = nil
@@ -273,13 +291,11 @@ EOF
   end
 end
 
-if tcltk_framework || 
-   (have_header("tcl.h") && have_header("tk.h") &&
-      ( !use_X || find_library("X11", "XOpenDisplay",
-                               "/usr/X11/lib", "/usr/lib/X11", 
-                               "/usr/X11R6/lib", "/usr/openwin/lib")) &&
-    find_tcl(tcllib, stubs) &&
-    find_tk(tklib, stubs))
+if have_header("tcl.h") && have_header("tk.h") &&
+    ( tcltk_framework || 
+        ( ( !use_X || find_X11(x11_ldir2, x11_ldir) ) &&
+            find_tcl(tcllib, stubs, tcl_ldir2, tcl_ldir) &&
+            find_tk(tklib, stubs, tk_ldir2, tk_ldir) ) )
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
   $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 
@@ -307,6 +323,8 @@ if tcltk_framework ||
     $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
     # create
+    $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
+    $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
     create_makefile("tcltklib")
   end
 end

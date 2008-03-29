@@ -85,10 +85,13 @@ class Tk::Iwidgets::Radiobox
     self
   end
 
-  def get(idx)
-    simplelist(tk_call(@path, 'get', index(idx))).collect{|id|
-      Tk::Itk::Component.id2obj(self, id)
-    }
+  def get_tag
+    ((tag = tk_call_without_enc(@path, 'get')).empty?)? nil: tag
+  end
+  alias get get_tag
+
+  def get_obj
+    (tag = get_tag)? Tk::Itk::Component.id2obj(self, tag): nil
   end
 
   def index(idx)

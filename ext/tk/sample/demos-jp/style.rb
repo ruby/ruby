@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # text (display styles) widget demo (called by 'widget')
 #
@@ -8,12 +9,14 @@ if defined?($style_demo) && $style_demo
   $style_demo = nil
 end
 
+
 # demo 用の toplevel widget を生成
 $style_demo = TkToplevel.new {|w|
   title("Text Demonstration - Display Styles")
   iconname("style")
   positionWindow(w)
 }
+
 
 # frame 生成
 TkFrame.new($style_demo) {|frame|
@@ -33,13 +36,15 @@ TkFrame.new($style_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
+
 # text 生成
-TkText.new($style_demo){|t|
+txt = TkText.new($style_demo){|t|
   # 生成
   setgrid 'true'
-  width  70
-  height 32
+  #width  70
+  #height 32
   wrap 'word'
+  font $font
   TkScrollbar.new($style_demo) {|s|
     pack('side'=>'right', 'fill'=>'y')
     command proc{|*args| t.yview(*args)}
@@ -48,11 +53,20 @@ TkText.new($style_demo){|t|
   pack('expand'=>'yes', 'fill'=>'both')
 
   # テキストタグ設定 (フォント関連)
-  style_tag_bold = TkTextTag.new(t, 'font'=>'-*-Courier-Bold-O-Normal--*-120-*-*-*-*-*-*')
-  style_tag_big = TkTextTag.new(t, 'font'=>'-*-Courier-Bold-R-Normal--*-140-*-*-*-*-*-*', 'kanjifont'=>$msg_kanji_font)
+  family = 'Courier'
+
+  if $tk_version =~ /^4.*/
+    style_tag_bold = TkTextTag.new(t, 'font'=>'-*-Courier-Bold-O-Normal--*-120-*-*-*-*-*-*')
+    style_tag_big = TkTextTag.new(t, 'font'=>'-*-Courier-Bold-R-Normal--*-140-*-*-*-*-*-*', 'kanjifont'=>$msg_kanji_font)
     style_tag_verybig = TkTextTag.new(t, 'font'=>'-*-Helvetica-Bold-R-Normal--*-240-*-*-*-*-*-*')
-#    style_tag_small = TkTextTag.new(t, 'font'=>'-Adobe-Helvetica-Bold-R-Normal-*-100-*', 'kanjifont'=>$kanji_font)
+    # style_tag_small = TkTextTag.new(t, 'font'=>'-Adobe-Helvetica-Bold-R-Normal-*-100-*', 'kanjifont'=>$kanji_font)
     style_tag_small = TkTextTag.new(t, 'font'=>'-Adobe-Helvetica-Bold-R-Normal-*-100-*')
+  else
+    style_tag_bold = TkTextTag.new(t, 'font'=>[family, 12, :bold, :italic])
+    style_tag_big = TkTextTag.new(t, 'font'=>[family, 14, :bold])
+    style_tag_verybig = TkTextTag.new(t, 'font'=>['Helvetica', 24, :bold])
+    style_tag_small = TkTextTag.new(t, 'font'=>['Times 8 bold'])
+  end
 ###
 #  case($tk_version)
 #  when /^4.*/
@@ -106,8 +120,13 @@ TkText.new($style_demo){|t|
   style_tag_overstrike = TkTextTag.new(t, 'overstrike'=>'on')
   style_tag_right  = TkTextTag.new(t, 'justify'=>'right')
   style_tag_center = TkTextTag.new(t, 'justify'=>'center')
-  style_tag_super = TkTextTag.new(t, 'offset'=>'4p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
-  style_tag_sub = TkTextTag.new(t, 'offset'=>'-2p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
+  if $tk_version =~ /^4.*/
+    style_tag_super = TkTextTag.new(t, 'offset'=>'4p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
+    style_tag_sub = TkTextTag.new(t, 'offset'=>'-2p', 'font'=>'-Adobe-Courier-Medium-R-Normal--*-100-*-*-*-*-*-*')
+  else
+    style_tag_super = TkTextTag.new(t, 'offset'=>'4p', 'font'=>[family, 10])
+    style_tag_sub = TkTextTag.new(t, 'offset'=>'-2p', 'font'=>[family, 10])
+  end
   style_tag_margins = TkTextTag.new(t, 'lmargin1'=>'12m', 'lmargin2'=>'6m',
                                     'rmargin'=>'10m')
   style_tag_spacing = TkTextTag.new(t, 'spacing1'=>'10p', 'spacing2'=>'2p',
@@ -246,3 +265,5 @@ spacing3')
 
 }
 
+txt.width 70
+txt.height 32

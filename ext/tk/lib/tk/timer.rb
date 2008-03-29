@@ -11,7 +11,12 @@ class TkTimer
 
   TkCommandNames = ['after'.freeze].freeze
 
-  Tk_CBID = ['a'.freeze, '00000'.taint].freeze
+  (Tk_CBID = ['a'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
   Tk_CBTBL = {}.taint
 
   TkCore::INTERP.add_tk_procs('rb_after', 'id', <<-'EOL')
@@ -96,9 +101,9 @@ class TkTimer
       return self
     end
     @after_script = "rb_after #{@id}"
-    @after_id = tk_call_without_enc('after', sleep, @after_script)
     @current_args = args
     @current_script = [sleep, @after_script]
+    @after_id = tk_call_without_enc('after', sleep, @after_script)
     self
   end
 
@@ -138,9 +143,11 @@ class TkTimer
   end
 
   def initialize(*args, &b)
-    # @id = Tk_CBID.join('')
-    @id = Tk_CBID.join(TkCore::INTERP._ip_id_)
-    Tk_CBID[1].succ!
+    Tk_CBID.mutex.synchronize{
+      # @id = Tk_CBID.join('')
+      @id = Tk_CBID.join(TkCore::INTERP._ip_id_)
+      Tk_CBID[1].succ!
+    }
 
     @wait_var = TkVariable.new(0)
 

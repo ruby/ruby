@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # checkbutton widget demo2 (called by 'widget')
 #

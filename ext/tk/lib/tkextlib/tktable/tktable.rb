@@ -118,23 +118,39 @@ class Tk::TkTable::CellTag
   include TkTreatTagFont
 
   CellTagID_TBL = TkCore::INTERP.create_table
-  CellTag_ID = ['tktbl:celltag'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ CellTagID_TBL.clear }
+  (CellTag_ID = ['tktbl:celltag'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    CellTagID_TBL.mutex.synchronize{ CellTagID_TBL.clear }
+  }
 
   def self.id2obj(table, id)
     tpath = table.path
-    return id unless CellTagID_TBL[tpath]
-    CellTagID_TBL[tpath][id]? CellTagID_TBL[tpath][id] : id
+    CellTagID_TBL.mutex.synchronize{
+      if CellTagID_TBL[tpath]
+        CellTagID_TBL[tpath][id]? CellTagID_TBL[tpath][id] : id
+      else
+        id
+      end
+    }
   end
 
   def initialize(parent, keys=nil)
     @parent = @t = parent
     @tpath - parent.path
-    @path = @id = CellTag_ID.join(TkCore::INTERP._ip_id_)
-    CellTagID_TBL[@tpath] = {} unless CellTagID_TBL[@tpath]
-    CellTagID_TBL[@tpath][@id] = self
-    CellTag_ID[1].succ!
+    CellTag_ID.mutex.synchronize{
+      @path = @id = CellTag_ID.join(TkCore::INTERP._ip_id_)
+      CellTag_ID[1].succ!
+    }
+    CellTagID_TBL.mutex.synchronize{
+      CellTagID_TBL[@tpath] = {} unless CellTagID_TBL[@tpath]
+      CellTagID_TBL[@tpath][@id] = self
+    }
     configure(keys) if keys
   end
 
@@ -144,7 +160,9 @@ class Tk::TkTable::CellTag
 
   def destroy
     tk_call(@tpath, 'tag', 'delete', @id)
-    CellTagID_TBL[@tpath].delete(@id) if CellTagID_TBL[@tpath]
+    CellTagID_TBL.mutex.synchronize{
+      CellTagID_TBL[@tpath].delete(@id) if CellTagID_TBL[@tpath]
+    }
     self
   end
   alias delete destroy
@@ -189,22 +207,35 @@ end
 
 class Tk::TkTable::NamedCellTag < Tk::TkTable::CellTag
   def self.new(parent, name, keys=nil)
-    if CellTagID_TBL[parent.path] && CellTagID_TBL[parent.path][name]
-      cell = CellTagID_TBL[parent.path][name]
-      cell.configure(keys) if keys
-      return cell
-    else
-      super(parent, name, keys)
-    end
+    obj = nil
+    CellTagID_TBL.mutex.synchronize{
+      if CellTagID_TBL[parent.path] && CellTagID_TBL[parent.path][name]
+        obj = CellTagID_TBL[parent.path][name]
+      else
+        #super(parent, name, keys)
+        (obj = self.allocate).instance_eval{
+          @parent = @t = parent
+          @tpath = parent.path
+          @path = @id = name
+          CellTagID_TBL[@tpath] = {} unless CellTagID_TBL[@tpath]
+          CellTagID_TBL[@tpath][@id] = self
+        }
+      end
+    }
+    obj.configure(keys) if keys && ! keys.empty?
+    obj
   end
 
   def initialize(parent, name, keys=nil)
+    # dummy:: not called by 'new' method
     @parent = @t = parent
-    @tpath - parent.path
+    @tpath = parent.path
     @path = @id = name
-    CellTagID_TBL[@tpath] = {} unless CellTagID_TBL[@tpath]
-    CellTagID_TBL[@tpath][@id] = self
-    configure(keys) if keys
+    CellTagID_TBL.mutex.synchronize{
+      CellTagID_TBL[@tpath] = {} unless CellTagID_TBL[@tpath]
+      CellTagID_TBL[@tpath][@id] = self
+    }
+    configure(keys) if keys && ! keys.empty?
   end
 end
 
@@ -220,7 +251,9 @@ class Tk::TkTable
   include Tk::ValidateConfigure
 
   def __destroy_hook__
-    Tk::TkTable::CelTag::CellTagID_TBL.delete(@path)
+    Tk::TkTable::CelTag::CellTagID_TBL.mutex.synchronize{
+      Tk::TkTable::CelTag::CellTagID_TBL.delete(@path)
+    }
   end
 
   def __boolval_optkeys
@@ -258,6 +291,22 @@ class Tk::TkTable
         nil
       ]
 
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
+
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
@@ -291,6 +340,22 @@ class Tk::TkTable
         nil
       ]
 
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
+
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
@@ -321,6 +386,22 @@ class Tk::TkTable
         [ ?w, TkComm.method(:window) ], 
         nil
       ]
+
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -355,6 +436,22 @@ class Tk::TkTable
         [ ?v, proc{|val| TkComm.tk_tcl2ruby(val, true, false)} ], 
         nil
       ]
+
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
     end
@@ -746,15 +843,17 @@ class Tk::TkTable
   end
 
   def tagid2obj(tagid)
-    if Tk::TkTable::CellTag::CellTagID_TBL.key?(@path)
-      if Tk::TkTable::CellTag::CellTagID_TBL[@path].key?(tagid)
-        Tk::TkTable::CellTag::CellTagID_TBL[@path][tagid]
+    Tk::TkTable::CellTag::CellTagID_TBL.mutex.synchronize{
+      if Tk::TkTable::CellTag::CellTagID_TBL.key?(@path)
+        if Tk::TkTable::CellTag::CellTagID_TBL[@path].key?(tagid)
+          Tk::TkTable::CellTag::CellTagID_TBL[@path][tagid]
+        else
+          tagid
+        end
       else
         tagid
       end
-    else
-      tagid
-    end
+    }
   end
 
   def tag_cell(tag, *cells)
@@ -775,13 +874,15 @@ class Tk::TkTable
   end
   def tag_delete(tag)
     tk_send('tag', 'delete', tagid(tag))
-    if Tk::TkTable::CellTag::CellTagID_TBL[@path]
-      if tag.kind_of? Tk::TkTable::CellTag
-        Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag.id) 
-      else
-        Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag) 
+    Tk::TkTable::CellTag::CellTagID_TBL.mutex.synchronize{
+      if Tk::TkTable::CellTag::CellTagID_TBL[@path]
+        if tag.kind_of? Tk::TkTable::CellTag
+          Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag.id) 
+        else
+          Tk::TkTable::CellTag::CellTagID_TBL[@path].delete(tag) 
+        end
       end
-    end
+    }
     self
   end
   def tag_exist?(tag)

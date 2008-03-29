@@ -43,11 +43,11 @@ def tag_binding_for_bind_demo(tag, enter_style, leave_style)
 end
 
 # text 
-TkText.new($bind_demo){|t|
+txt = TkText.new($bind_demo){|t|
   # 
   setgrid 'true'
-  width  60
-  height 24
+  #width  60
+  #height 24
   font $font
   wrap 'word'
   TkScrollbar.new($bind_demo) {|s|
@@ -120,3 +120,6 @@ TkText.new($bind_demo){|t|
   TkTextMarkInsert.new(t, '0.0')
   configure('state','disabled')
 }
+
+txt.width 60
+txt.width 24

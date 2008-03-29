@@ -18,7 +18,7 @@ TkPackage.require('ipentry')
 
 module Tk
   module Tcllib
-    class IP_Entry < TkEntry
+    class IP_Entry < Tk::Entry
       PACKAGE_NAME = 'ipentry'.freeze
       def self.package_name
         PACKAGE_NAME

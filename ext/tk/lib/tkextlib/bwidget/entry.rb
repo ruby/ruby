@@ -9,7 +9,7 @@ require 'tkextlib/bwidget.rb'
 
 module Tk
   module BWidget
-    class Entry < TkEntry
+    class Entry < Tk::Entry
     end
   end
 end

@@ -7,7 +7,7 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TRadioButton < TkRadioButton
+    class TRadioButton < Tk::RadioButton
     end
     TRadiobutton = TRadioButton
     RadioButton  = TRadioButton
@@ -15,7 +15,11 @@ module Tk
   end
 end
 
-class Tk::Tile::TRadioButton < TkRadioButton
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Radiobutton, 
+                            :TkRadiobutton, :TkRadioButton)
+
+
+class Tk::Tile::TRadioButton < Tk::RadioButton
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE

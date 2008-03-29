@@ -42,7 +42,7 @@ module TkMenuEntryConfig
   private :itemconfiginfo, :current_itemconfiginfo
 end
 
-class TkMenu<TkWindow
+class Tk::Menu<TkWindow
   include Wm
   include TkMenuEntryConfig
   extend TkMenuSpec
@@ -140,9 +140,9 @@ class TkMenu<TkWindow
     type = keys.delete('type') if keys.has_key?('type')
 
     if keys.empty?
-      TkMenuClone.new(self, parent, type)
+      Tk::MenuClone.new(self, parent, type)
     else
-      TkMenuClone.new(self, parent, type, keys)
+      Tk::MenuClone.new(self, parent, type, keys)
     end
   end
 
@@ -201,6 +201,9 @@ class TkMenu<TkWindow
   def unpost
     tk_send_without_enc('unpost')
     self
+  end
+  def xposition(index)
+    number(tk_send_without_enc('xposition', _get_eval_enc_str(index)))
   end
   def yposition(index)
     number(tk_send_without_enc('yposition', _get_eval_enc_str(index)))
@@ -381,8 +384,11 @@ class TkMenu<TkWindow
 =end
 end
 
+#TkMenu = Tk::Menu unless Object.const_defined? :TkMenu
+Tk.__set_toplevel_aliases__(:Tk, Tk::Menu, :TkMenu)
 
-class TkMenuClone<TkMenu
+
+class Tk::MenuClone<Tk::Menu
 =begin
   def initialize(parent, type=None)
     widgetname = nil
@@ -436,9 +442,12 @@ class TkMenuClone<TkMenu
     @src_menu
   end
 end
-TkCloneMenu = TkMenuClone
+Tk::CloneMenu = Tk::MenuClone
+#TkMenuClone = Tk::MenuClone unless Object.const_defined? :TkMenuClone
+#TkCloneMenu = Tk::CloneMenu unless Object.const_defined? :TkCloneMenu
+Tk.__set_toplevel_aliases__(:Tk, Tk::MenuClone, :TkMenuClone, :TkCloneMenu)
 
-module TkSystemMenu
+module Tk::SystemMenu
   def initialize(parent, keys=nil)
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
@@ -461,38 +470,60 @@ module TkSystemMenu
     end
   end
 end
+TkSystemMenu = Tk::SystemMenu
 
 
-class TkSysMenu_Help<TkMenu
+class Tk::SysMenu_Help<Tk::Menu
   # for all platform
-  include TkSystemMenu
+  include Tk::SystemMenu
   SYSMENU_NAME = 'help'
 end
+#TkSysMenu_Help = Tk::SysMenu_Help unless Object.const_defined? :TkSysMenu_Help
+Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Help, :TkSysMenu_Help)
 
 
-class TkSysMenu_System<TkMenu
+class Tk::SysMenu_System<Tk::Menu
   # for Windows
-  include TkSystemMenu
+  include Tk::SystemMenu
   SYSMENU_NAME = 'system'
 end
+#TkSysMenu_System = Tk::SysMenu_System unless Object.const_defined? :TkSysMenu_System
+Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_System, :TkSysMenu_System)
 
 
-class TkSysMenu_Apple<TkMenu
+class Tk::SysMenu_Apple<Tk::Menu
   # for Machintosh
-  include TkSystemMenu
+  include Tk::SystemMenu
   SYSMENU_NAME = 'apple'
 end
+#TkSysMenu_Apple = Tk::SysMenu_Apple unless Object.const_defined? :TkSysMenu_Apple
+Tk.__set_toplevel_aliases__(:Tk, Tk::SysMenu_Apple, :TkSysMenu_Apple)
 
 
-class TkMenubutton<TkLabel
+class Tk::Menubutton<Tk::Label
   TkCommandNames = ['menubutton'.freeze].freeze
   WidgetClassName = 'Menubutton'.freeze
   WidgetClassNames[WidgetClassName] = self
   def create_self(keys)
     if keys and keys != None
-      # tk_call_without_enc('menubutton', @path, *hash_kv(keys, true))
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
-                          *hash_kv(keys, true))
+      unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+        # tk_call_without_enc('menubutton', @path, *hash_kv(keys, true))
+        tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                            *hash_kv(keys, true))
+      else
+        begin
+          tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                              *hash_kv(keys, true))
+        rescue
+          tk_call_without_enc(self.class::TkCommandNames[0], @path)
+          keys = __check_available_configure_options(keys)
+          unless keys.empty?
+            tk_call_without_enc('destroy', @path)
+            tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                                *hash_kv(keys, true))
+          end
+        end
+      end
     else
       # tk_call_without_enc('menubutton', @path)
       tk_call_without_enc(self.class::TkCommandNames[0], @path)
@@ -506,10 +537,13 @@ class TkMenubutton<TkLabel
   private :__boolval_optkeys
 
 end
-TkMenuButton = TkMenubutton
+Tk::MenuButton = Tk::Menubutton
+#TkMenubutton = Tk::Menubutton unless Object.const_defined? :TkMenubutton
+#TkMenuButton = Tk::MenuButton unless Object.const_defined? :TkMenuButton
+Tk.__set_toplevel_aliases__(:Tk, Tk::Menubutton, :TkMenubutton, :TkMenuButton)
 
 
-class TkOptionMenubutton<TkMenubutton
+class Tk::OptionMenubutton<Tk::Menubutton
   TkCommandNames = ['tk_optionMenu'.freeze].freeze
 
   class OptionMenu<TkMenu
@@ -596,6 +630,9 @@ class TkOptionMenubutton<TkMenubutton
     @menu.delete(index, last)
     self
   end
+  def xposition(index)
+    @menu.xposition(index)
+  end
   def yposition(index)
     @menu.yposition(index)
   end
@@ -629,4 +666,9 @@ class TkOptionMenubutton<TkMenubutton
     @menu.current_entryconfiginfo(index, key)
   end
 end
-TkOptionMenuButton = TkOptionMenubutton
+
+Tk::OptionMenuButton = Tk::OptionMenubutton
+#TkOptionMenubutton = Tk::OptionMenubutton unless Object.const_defined? :TkOptionMenubutton
+#TkOptionMenuButton = Tk::OptionMenuButton unless Object.const_defined? :TkOptionMenuButton
+Tk.__set_toplevel_aliases__(:Tk, Tk::OptionMenubutton, 
+                            :TkOptionMenubutton, :TkOptionMenuButton)

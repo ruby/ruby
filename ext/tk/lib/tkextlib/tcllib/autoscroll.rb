@@ -108,7 +108,7 @@ module Tk
   end
 end
 
-class TkScrollbar
+class Tk::Scrollbar
   def autoscroll
     # Arranges for the already existing scrollbar to be mapped 
     # and unmapped as needed.

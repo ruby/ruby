@@ -115,6 +115,14 @@ module TkItemConfigMethod
   include TkTreatItemFont
   include TkItemConfigOptkeys
 
+  def TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+    @mode || false
+  end
+  def TkItemConfigMethod.__set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode)
+    fail SecurityError, "can't change the mode" if $SAFE>=4
+    @mode = (mode)? true: false
+  end
+
   def __item_cget_cmd(id)
     # maybe need to override
     [self.path, 'itemcget', id]
@@ -149,7 +157,7 @@ module TkItemConfigMethod
 
   ################################################
 
-  def itemcget(tagOrId, option)
+  def __itemcget_core(tagOrId, option)
     orig_opt = option
     option = option.to_s
 
@@ -224,8 +232,27 @@ module TkItemConfigMethod
       tk_tcl2ruby(tk_call_without_enc(*(__item_cget_cmd(tagid(tagOrId)) << "-#{option}")), true)
     end
   end
+  private :__itemcget_core
 
-  def itemconfigure(tagOrId, slot, value=None)
+  def itemcget(tagOrId, option)
+    unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      __itemcget_core(tagOrId, option)
+    else
+      begin
+        __itemcget_core(tagOrId, option)
+      rescue => e
+        begin
+          __itemconfiginfo_core(tagOrId)
+          # not tag error -> option is unknown
+          nil
+        rescue
+          fail e  # tag error
+        end
+      end
+    end
+  end
+
+  def __itemconfigure_core(tagOrId, slot, value=None)
     if slot.kind_of? Hash
       slot = _symbolkey2str(slot)
 
@@ -288,6 +315,48 @@ module TkItemConfigMethod
     end
     self
   end
+  private :__itemconfigure_core
+
+  def __check_available_itemconfigure_options(tagOrId, keys)
+    id = tagid(tagOrId)
+    availables = self.current_itemconfiginfo(id).keys
+
+    # add non-standard keys
+    availables |= __font_optkeys.map{|k|
+      [k.to_s, "latin#{k}", "ascii#{k}", "kanji#{k}"]
+    }.flatten
+    availables |= __item_methodcall_optkeys(id).keys.map{|k| k.to_s}
+    availables |= __item_keyonly_optkeys(id).keys.map{|k| k.to_s}
+
+    keys = _symbolkey2str(keys)
+    keys.delete_if{|k, v| !(availables.include?(k))}
+  end
+
+  def itemconfigure(tagOrId, slot, value=None)
+    unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      __itemconfigure_core(tagOrId, slot, value)
+    else
+      if slot.kind_of?(Hash)
+        begin
+          __itemconfigure_core(tagOrId, slot)
+        rescue
+          slot = __check_available_configure_options(tagOrId, slot)
+          __itemconfigure_core(tagOrId, slot) unless slot.empty?
+        end
+      else
+        begin
+          __itemconfigure_core(tagOrId, slot, value)
+        rescue => e
+          begin
+            __itemconfiginfo_core(tagOrId)
+          rescue
+            fail e  # tag error
+          end
+        end
+      end
+    end
+    self
+  end
 
   def __itemconfiginfo_core(tagOrId, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
@@ -299,6 +368,10 @@ module TkItemConfigMethod
           conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
         if ( ! __item_configinfo_struct(tagid(tagOrId))[:alias] \
             || conf.size > __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
+          fnt = conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+          if TkFont.is_system_font?(fnt)
+            conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = TkNamedFont.new(fnt)
+          end
           conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = tagfontobj(tagid(tagOrId), fontkey)
         elsif ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
                && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 \
@@ -635,6 +708,10 @@ module TkItemConfigMethod
             fontconf = ret.assoc(optkey)
             if fontconf && fontconf.size > 2
               ret.delete_if{|inf| inf[0] =~ /^(|latin|ascii|kanji)#{optkey}$/}
+              fnt = fontconf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+              if TkFont.is_system_font?(fnt)
+                fontconf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = TkNamedFont.new(fnt)
+              end
               fontconf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = tagfontobj(tagid(tagOrId), optkey)
               ret.push(fontconf)
             end
@@ -658,7 +735,11 @@ module TkItemConfigMethod
 
         if ( ! __item_configinfo_struct(tagid(tagOrId))[:alias] \
             || conf.size > __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
-          conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = fontobj(tagid(tagOrId), fontkey)
+          fnt = conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+          if TkFont.is_system_font?(fnt)
+            conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = TkNamedFont.new(fnt)
+          end
+          conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = tagfontobj(tagid(tagOrId), fontkey)
           { conf.shift => conf }
         elsif ( __item_configinfo_struct(tagid(tagOrId))[:alias] \
                && conf.size == __item_configinfo_struct(tagid(tagOrId))[:alias] + 1 )
@@ -1006,6 +1087,10 @@ module TkItemConfigMethod
               ret.delete('latin' << optkey)
               ret.delete('ascii' << optkey)
               ret.delete('kanji' << optkey)
+              fnt = fontconf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+              if TkFont.is_system_font?(fnt)
+                fontconf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = TkNamedFont.new(fnt)
+              end
               fontconf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = tagfontobj(tagid(tagOrId), optkey)
               ret[optkey] = fontconf
             end
@@ -1023,7 +1108,21 @@ module TkItemConfigMethod
   private :__itemconfiginfo_core
 
   def itemconfiginfo(tagOrId, slot = nil)
-    __itemconfiginfo_core(tagOrId, slot)
+    if slot && TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      begin
+        __itemconfiginfo_core(tagOrId, slot)
+      rescue => e
+        begin
+          __itemconfiginfo_core(tagOrId)
+          # not tag error -> option is unknown
+          Array.new(__item_configinfo_struct.values.max).unshift(slot.to_s)
+        rescue
+          fail e  # tag error
+        end
+      end
+    else
+      __itemconfiginfo_core(tagOrId, slot)
+    end
   end
 
   def current_itemconfiginfo(tagOrId, slot = nil)

@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # listbox widget demo 'colors' (called by 'widget')
 #

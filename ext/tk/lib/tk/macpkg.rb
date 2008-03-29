@@ -20,9 +20,14 @@ module Tk
   end
 end
 
-module TkMacResource
+module Tk::MacResource
+end
+#TkMacResource = Tk::MacResource
+Tk.__set_toplevel_aliases__(:Tk, Tk::MacResource, :TkMacResource)
+
+module Tk::MacResource
   extend Tk
-  extend TkMacResource
+  extend Tk::MacResource
 
   TkCommandNames = ['resource'.freeze].freeze
 

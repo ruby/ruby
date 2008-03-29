@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # radiobutton widget demo (called by 'widget')
 #

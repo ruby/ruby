@@ -28,7 +28,7 @@ problem.  The second only accepts strings with fewer than ten \
 characters and sounds the bell when an attempt to go over the limit \
 is made.  The third accepts US phone numbers, mapping letters to \
 their digit equivalent and sounding the bell on encountering an \
-illegal character or if trying to type over a character that is not \
+invalid character or if trying to type over a character that is not \
 a digit.  The fourth is a password field that accepts up to eight \
 characters (silently ignoring further ones), and displaying them as \
 asterisk characters.

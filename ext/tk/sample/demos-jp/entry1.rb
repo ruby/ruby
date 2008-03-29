@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # entry (no scrollbars) widget demo (called by 'widget')
 #

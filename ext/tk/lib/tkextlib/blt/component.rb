@@ -327,13 +327,24 @@ module Tk::BLT
     #################
 
     class Axis < TkObject
-      OBJ_ID = ['blt_chart_axis'.freeze, '00000'.taint].freeze
-      OBJ_TBL={}
+      (OBJ_ID = ['blt_chart_axis'.freeze, '00000'.taint]).instance_eval{
+        @mutex = Mutex.new
+        def mutex; @mutex; end
+        freeze
+      }
+
+      AxisID_TBL = TkCore::INTERP.create_table
+
+      TkCore::INTERP.init_ip_env{
+        AxisID_TBL.mutex.synchronize{ AxisID_TBL.clear }
+      }
 
       def self.id2obj(chart, id)
         cpath = chart.path
-        return id unless OBJ_TBL[cpath]
-        OBJ_TBL[cpath][id]? OBJ_TBL[cpath][id]: id
+        AxisID_TBL.mutex.synchronize{
+          return id unless AxisID_TBL[cpath]
+          AxisID_TBL[cpath][id]? AxisID_TBL[cpath][id]: id
+        }
       end
 
       def self.new(chart, axis=nil, keys={})
@@ -341,12 +352,48 @@ module Tk::BLT
           keys = axis
           axis = nil
         end
-        OBJ_TBL[chart.path] = {} unless OBJ_TBL[chart.path]
-        return OBJ_TBL[chart.path][axis] if axis && OBJ_TBL[chart.path][axis]
-        super(chart, axis, keys)
+        if keys
+          keys = _symbolkey2str(keys)
+          not_create = keys.delete('without_creating')
+        else
+          not_create = false
+        end
+
+        obj = nil
+        AxisID_TBL.mutex.synchronize{
+          chart_path = chart.path
+          AxisID_TBL[chart_path] ||= {}
+          if axis && AxisID_TBL[chart_path][axis]
+            obj = AxisID_TBL[chart_path][axis]
+          else
+            (obj = self.allocate).instance_eval{
+              if axis
+                @axis = @id = axis.to_s
+              else
+                OBJ_ID.mutex.synchronize{
+                  @axis = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
+                  OBJ_ID[1].succ!
+                }
+              end
+              @path = @id
+              @parent = @chart = chart
+              @cpath = @chart.path
+              Axis::AxisID_TBL[@cpath][@axis] = self
+              unless not_create
+                tk_call(@chart, 'axis', 'create', @axis, keys)
+                return obj
+              end
+            }
+          end
+        }
+
+        obj.configure(keys) if obj && ! keys.empty?
+        obj
       end
 
       def initialize(chart, axis=nil, keys={})
+        # dummy:: not called by 'new' method
+
         if axis.kind_of?(Hash)
           keys = axis
           axis = nil
@@ -354,13 +401,15 @@ module Tk::BLT
         if axis
           @axis = @id = axis.to_s
         else
-          @axis = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
-          OBJ_ID[1].succ!
+          OBJ_ID.mutex.synchronize{
+            @axis = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
+            OBJ_ID[1].succ!
+          }
         end
         @path = @id
         @parent = @chart = chart
         @cpath = @chart.path
-        Axis::OBJ_TBL[@cpath][@axis] = self
+        # Axis::AxisID_TBL[@cpath][@axis] = self
         keys = _symbolkey2str(keys)
         unless keys.delete('without_creating')
           # @chart.axis_create(@axis, keys)
@@ -438,17 +487,34 @@ module Tk::BLT
     #################
 
     class Crosshairs < TkObject
-      OBJ_TBL={}
+      CrosshairsID_TBL = TkCore::INTERP.create_table
+
+      TkCore::INTERP.init_ip_env{
+        CrosshairsID_TBL.mutex.synchronize{ CrosshairsID_TBL.clear }
+      }
 
       def self.new(chart, keys={})
-        return OBJ_TBL[chart.path] if OBJ_TBL[chart.path]
-        super(chart, keys)
+        obj = nil
+        CrosshairsID_TBL.mutex.synchronize{
+          unless (obj = CrosshairsID_TBL[chart.path])
+            (obj = self.allocate).instance_eval{
+              @parent = @chart = chart
+              @cpath = @chart.path
+              @path = @id = 'crosshairs'
+              Crosshairs::CrosshairsID_TBL[@cpath] = self
+            }
+          end
+        }
+        chart.crosshair_configure(keys) if obj && ! keys.empty?
+        obj
       end
 
       def initialize(chart, keys={})
+        # dummy:: not called by 'new' method
+
         @parent = @chart = chart
         @cpath = @chart.path
-        Crosshairs::OBJ_TBL[@cpath] = self
+        # Crosshairs::CrosshairsID_TBL[@cpath] = self
         @chart.crosshair_configure(keys) unless keys.empty?
         @path = @id = 'crosshairs'
       end
@@ -500,12 +566,18 @@ module Tk::BLT
 
       ElementTypeName = 'element'
       ElementTypeToClass = { ElementTypeName=>self }
+
       ElementID_TBL = TkCore::INTERP.create_table
 
-      TkCore::INTERP.init_ip_env{ ElementID_TBL.clear }
+      TkCore::INTERP.init_ip_env{
+        ElementID_TBL.mutex.synchronize{ ElementID_TBL.clear }
+      }
 
-      OBJ_ID = ['blt_chart_element'.freeze, '00000'.taint].freeze
-      OBJ_TBL={}
+      (OBJ_ID = ['blt_chart_element'.freeze, '00000'.taint]).instance_eval{
+        @mutex = Mutex.new
+        def mutex; @mutex; end
+        freeze
+      }
 
       def Element.type2class(type)
         ElementTypeToClass[type]
@@ -513,8 +585,10 @@ module Tk::BLT
 
       def Element.id2obj(chart, id)
         cpath = chart.path
-        return id unless OBJ_TBL[cpath]
-        OBJ_TBL[cpath][id]? OBJ_TBL[cpath][id]: id
+        ElementID_TBL.mutex.synchronize{
+          return id unless ElementID_TBL[cpath]
+          ElementID_TBL[cpath][id]? ElementID_TBL[cpath][id]: id
+        }
       end
 
       def self.new(chart, element=nil, keys={})
@@ -522,14 +596,49 @@ module Tk::BLT
           keys = element
           element = nil
         end
-        OBJ_TBL[chart.path] = {} unless OBJ_TBL[chart.path]
-        if element && OBJ_TBL[chart.path][element]
-          return OBJ_TBL[chart.path][element]
+        if keys
+          keys = _symbolkey2str(keys)
+          not_create = keys.delete('without_creating')
+        else
+          not_create = false
         end
-        super(chart, element, keys)
+
+        obj = nil
+        ElementID_TBL.mutex.synchronize{
+          chart_path = chart.path
+          ElementID_TBL[chart_path] ||= {}
+          if element && ElementID_TBL[chart_path][element]
+            obj = ElementID_TBL[chart_path][element]
+          else
+            (obj = self.allocate).instance_eval{
+              if element
+                @element = @id = element.to_s
+              else
+                OBJ_ID.mutex.synchronize{
+                  @element = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
+                  OBJ_ID[1].succ!
+                }
+              end
+              @path = @id
+              @parent = @chart = chart
+              @cpath = @chart.path
+              @typename = self.class::ElementTypeName
+              Element::ElementID_TBL[@cpath][@element] = self
+              unless not_create
+                tk_call(@chart, @typename, 'create', @element, keys)
+                return obj
+              end
+            }
+          end
+        }
+
+        obj.configure(keys) if obj && ! keys.empty?
+        obj
       end
 
       def initialize(chart, element=nil, keys={})
+        # dummy:: not called by 'new' method
+
         if element.kind_of?(Hash)
           keys = element
           element = nil
@@ -537,14 +646,16 @@ module Tk::BLT
         if element
           @element = @id = element.to_s
         else
-          @element = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
-          OBJ_ID[1].succ!
+          OBJ_ID.mutex.synchronize{
+            @element = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
+            OBJ_ID[1].succ!
+          }
         end
         @path = @id
         @parent = @chart = chart
         @cpath = @chart.path
         @typename = self.class::ElementTypeName
-        Element::OBJ_TBL[@cpath][@element] = self
+        # Element::ElementID_TBL[@cpath][@element] = self
         keys = _symbolkey2str(keys)
         unless keys.delete('without_creating')
           # @chart.element_create(@element, keys)
@@ -622,17 +733,33 @@ module Tk::BLT
     #################
 
     class GridLine < TkObject
-      OBJ_TBL={}
+      GridLineID_TBL = TkCore::INTERP.create_table
+      TkCore::INTERP.init_ip_env{
+        GridLineID_TBL.mutex.synchronize{ GridLineID_TBL.clear }
+      }
 
       def self.new(chart, keys={})
-        return OBJ_TBL[chart.path] if OBJ_TBL[chart.path]
-        super(chart, keys)
+        obj = nil
+        GridLineID_TBL.mutex.synchronize{
+          unless (obj = GridLineID_TBL[chart.path])
+            (obj = self.allocate).instance_eval{
+              @parent = @chart = chart
+              @cpath = @chart.path
+              @path = @id = 'grid'
+              GridLine::GridLineID_TBL[@cpath] = self
+            }
+          end
+        }
+        chart.gridline_configure(keys) if obj && ! keys.empty?
+        obj
       end
 
       def initialize(chart, keys={})
+        # dummy:: not called by 'new' method
+
         @parent = @chart = chart
         @cpath = @chart.path
-        GridLine::OBJ_TBL[@cpath] = self
+        # GridLine::GridLineID_TBL[@cpath] = self
         @chart.gridline_configure(keys) unless keys.empty?
         @path = @id = 'grid'
       end
@@ -676,18 +803,35 @@ module Tk::BLT
     #################
 
     class Legend < TkObject
-      OBJ_TBL={}
+      LegendID_TBL = TkCore::INTERP.create_table
+
+      TkCore::INTERP.init_ip_env{
+        LegendID_TBL.mutex.synchronize{ LegendID_TBL.clear }
+      }
 
       def self.new(chart, keys={})
-        return OBJ_TBL[chart.path] if OBJ_TBL[chart.path]
-        super(chart, keys)
+        obj = nil
+        LegenedID_TBL.mutex.synchronize{
+          unless (obj = LegenedID_TBL[chart.path])
+            (obj = self.allocate).instance_eval{
+              @parent = @chart = chart
+              @cpath = @chart.path
+              @path = @id = 'crosshairs'
+              Legend::LegenedID_TBL[@cpath] = self
+            }
+          end
+        }
+        chart.legend_configure(keys) if obj && ! keys.empty?
+        obj
       end
 
       def initialize(chart, keys={})
+        # dummy:: not called by 'new' method
+
         @parent = @chart = chart
         @cpath = @chart.path
-        Crosshairs::OBJ_TBL[@cpath] = self
-        @chart.crosshair_configure(keys) unless keys.empty?
+        # Legend::LegendID_TBL[@cpath] = self
+        @chart.legend_configure(keys) unless keys.empty?
         @path = @id = 'legend'
       end
 
@@ -729,13 +873,24 @@ module Tk::BLT
     #################
 
     class Pen < TkObject
-      OBJ_ID = ['blt_chart_pen'.freeze, '00000'.taint].freeze
-      OBJ_TBL={}
+      (OBJ_ID = ['blt_chart_pen'.freeze, '00000'.taint]).instance_eval{
+        @mutex = Mutex.new
+        def mutex; @mutex; end
+        freeze
+      }
+
+      PenID_TBL = TkCore::INTERP.create_table
+
+      TkCore::INTERP.init_ip_env{
+        PenID_TBL.mutex.synchronize{ PenID_TBL.clear }
+      }
 
       def self.id2obj(chart, id)
         cpath = chart.path
-        return id unless OBJ_TBL[cpath]
-        OBJ_TBL[cpath][id]? OBJ_TBL[cpath][id]: id
+        PenID_TBL.mutex.synchronize{
+          return id unless PenID_TBL[cpath]
+          PenID_TBL[cpath][id]? PenID_TBL[cpath][id]: id
+        }
       end
 
       def self.new(chart, pen=nil, keys={})
@@ -743,9 +898,43 @@ module Tk::BLT
           keys = pen
           pen = nil
         end
-        OBJ_TBL[chart.path] = {} unless OBJ_TBL[chart.path]
-        return OBJ_TBL[chart.path][pen] if pen && OBJ_TBL[chart.path][pen]
-        super(chart, pen, keys)
+        if keys
+          keys = _symbolkey2str(keys)
+          not_create = keys.delete('without_creating')
+        else
+          not_create = false
+        end
+
+        obj = nil
+        PenID_TBL.mutex.synchronize{
+          chart_path = chart.path
+          PenID_TBL[chart_path] ||= {}
+          if pen && PenID_TBL[chart_path][pen]
+            obj = PenID_TBL[chart_path][pen]
+          else
+            (obj = self.allocate).instance_eval{
+              if pen
+                @pen = @id = pen.to_s
+              else
+                OBJ_ID.mutex.synchronize{
+                  @pen = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
+                  OBJ_ID[1].succ!
+                }
+              end
+              @path = @id
+              @parent = @chart = chart
+              @cpath = @chart.path
+              Pen::PenID_TBL[@cpath][@pen] = self
+              unless not_create
+                tk_call(@chart, 'pen', 'create', @pen, keys)
+                return obj
+              end
+            }
+          end
+        }
+
+        obj.configure(keys) if obj && ! keys.empty?
+        obj
       end
 
       def initialize(chart, pen=nil, keys={})
@@ -756,13 +945,15 @@ module Tk::BLT
         if pen
           @pen = @id = pen.to_s
         else
-          @pen = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
-          OBJ_ID[1].succ!
+          OBJ_ID.mutex.synchronize{
+            @pen = @id = OBJ_ID.join(TkCore::INTERP._ip_id_).freeze
+            OBJ_ID[1].succ!
+          }
         end
         @path = @id
         @parent = @chart = chart
         @cpath = @chart.path
-        Pen::OBJ_TBL[@cpath][@pen] = self
+        Pen::PenID_TBL[@cpath][@pen] = self
         keys = _symbolkey2str(keys)
         unless keys.delete('without_creating')
           # @chart.pen_create(@pen, keys)
@@ -805,17 +996,34 @@ module Tk::BLT
     #################
 
     class Postscript < TkObject
-      OBJ_TBL={}
+      PostscriptID_TBL = TkCore::INTERP.create_table
+
+      TkCore::INTERP.init_ip_env{
+        PostscriptID_TBL.mutex.synchronize{ PostscriptID_TBL.clear }
+      }
 
       def self.new(chart, keys={})
-        return OBJ_TBL[chart.path] if OBJ_TBL[chart.path]
-        super(chart, keys)
+        obj = nil
+        PostscriptID_TBL.mutex.synchronize{
+          unless (obj = PostscriptID_TBL[chart.path])
+            (obj = self.allocate).instance_eval{
+              @parent = @chart = chart
+              @cpath = @chart.path
+              @path = @id = 'postscript'
+              Postscript::PostscriptID_TBL[@cpath] = self
+            }
+          end
+        }
+        chart.postscript_configure(keys) if obj && ! keys.empty?
+        obj
       end
 
       def initialize(chart, keys={})
+        # dummy:: not called by 'new' method
+
         @parent = @chart = chart
         @cpath = @chart.path
-        Postscript::OBJ_TBL[@cpath] = self
+        # Postscript::PostscriptID_TBL[@cpath] = self
         @chart.postscript_configure(keys) unless keys.empty?
         @path = @id = 'postscript'
       end
@@ -870,7 +1078,9 @@ module Tk::BLT
       MarkerTypeToClass = {}
       MarkerID_TBL = TkCore::INTERP.create_table
 
-      TkCore::INTERP.init_ip_env{ MarkerID_TBL.clear }
+      TkCore::INTERP.init_ip_env{
+        MarkerID_TBL.mutex.synchronize{ MarkerID_TBL.clear }
+      }
 
       def Marker.type2class(type)
         MarkerTypeToClass[type]
@@ -878,8 +1088,13 @@ module Tk::BLT
 
       def Marker.id2obj(chart, id)
         cpath = chart.path
-        return id unless MarkerID_TBL[cpath]
-        MarkerID_TBL[cpath][id]? MarkerID_TBL[cpath][id]: id
+        MarkerID_TBL.mutex.synchronize{
+          if MarkerID_TBL[cpath]
+            MarkerID_TBL[cpath][id]? MarkerID_TBL[cpath][id]: id
+          else
+            id
+          end
+        }
       end
 
       def self._parse_create_args(keys)
@@ -943,10 +1158,10 @@ module Tk::BLT
           @parent = @chart = chart
           @cpath = chart.path
           @id = id
-          unless Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath]
-            Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath] = {}
-          end
-          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath][@id] = self
+          Tk::BLT::PlotComponent::Marker::MarkerID_TBL.mutex.synchronize{
+            Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath] ||= {}
+            Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath][@id] = self
+          }
         }
         obj
       end
@@ -956,10 +1171,10 @@ module Tk::BLT
         @cpath = parent.path
 
         @path = @id = create_self(*args) # an integer number as 'item id'
-        unless Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath]
-          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath] = {}
-        end
-        Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath][@id] = self
+        Tk::BLT::PlotComponent::Marker::MarkerID_TBL.mutex.synchronize{
+          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath] ||= {}
+          Tk::BLT::PlotComponent::Marker::MarkerID_TBL[@cpath][@id] = self
+        }
       end
       def create_self(*args)
         self.class.create(@chart, *args) # return an integer as 'item id'
@@ -1037,14 +1252,14 @@ module Tk::BLT
     #################
 
     def __destroy_hook__
-      Axis::OBJ_TBL.delete(@path)
-      Crosshairs::OBJ_TBL.delete(@path)
-      Element::OBJ_TBL.delete(@path)
-      GridLine::OBJ_TBL.delete(@path)
-      Legend::OBJ_TBL.delete(@path)
-      Pen::OBJ_TBL.delete(@path)
-      Postscript::OBJ_TBL.delete(@path)
-      Marker::OBJ_TBL.delete(@path)
+      Axis::AxisID_TBL.delete(@path)
+      Crosshairs::CrosshairsID_TBL.delete(@path)
+      Element::ElementID_TBL.delete(@path)
+      GridLine::GridLineID_TBL.delete(@path)
+      Legend::LegendID_TBL.delete(@path)
+      Pen::PenID_TBL.delete(@path)
+      Postscript::PostscriptID_TBL.delete(@path)
+      Marker::MarkerID_TBL.delete(@path)
       super()
     end
 

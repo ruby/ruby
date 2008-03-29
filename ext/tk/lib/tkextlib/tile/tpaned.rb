@@ -9,15 +9,23 @@ module Tk
   module Tile
     class TPaned < TkWindow
     end
-    Paned = TPaned
+    PanedWindow = Panedwindow = Paned = TPaned
   end
 end
+
+Tk.__set_toplevel_aliases__(:Ttk, Tk::Tile::Panedwindow, 
+                            :TkPanedwindow, :TkPanedWindow)
+
 
 class Tk::Tile::TPaned < TkWindow
   include Tk::Tile::TileWidget
 
   if Tk::Tile::USE_TTK_NAMESPACE
-    TkCommandNames = ['::ttk::paned'.freeze].freeze
+    if Tk::Tile::TILE_SPEC_VERSION_ID < 8
+      TkCommandNames = ['::ttk::paned'.freeze].freeze
+    else
+      TkCommandNames = ['::ttk::panedwindow'.freeze].freeze
+    end
   else
     TkCommandNames = ['::tpaned'.freeze].freeze
   end

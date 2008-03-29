@@ -146,7 +146,12 @@ class Tk::Iwidgets::Notebook
 
   def view(*idxs)
     if idxs.size == 0
-      window(tk_send_without_enc('view'))
+      idx = num_or_str(tk_send_without_enc('view'))
+      if idx.kind_of?(Fixnum) && idx < 0
+        nil
+      else
+        idx
+      end
     else
       tk_send_without_enc('view', *idxs)
       self
@@ -160,8 +165,8 @@ class Tk::Iwidgets::Notebook
   end
   alias xview_moveto view_moveto
   alias yview_moveto view_moveto
-  def view_scroll(*idxs)
-    view('scroll', *idxs)
+  def view_scroll(index, what='pages')
+    view('scroll', index, what)
   end
   alias xview_scroll view_scroll
   alias yview_scroll view_scroll

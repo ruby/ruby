@@ -10,7 +10,7 @@ require 'tkextlib/bwidget/entry'
 
 module Tk
   module BWidget
-    class SpinBox < TkEntry
+    class SpinBox < Tk::Entry
     end
   end
 end

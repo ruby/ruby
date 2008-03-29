@@ -199,14 +199,26 @@ class TkcTag<TkObject
   include TkcTagAccess
 
   CTagID_TBL = TkCore::INTERP.create_table
-  Tk_CanvasTag_ID = ['ctag'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ CTagID_TBL.clear }
+  (Tk_CanvasTag_ID = ['ctag'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    CTagID_TBL.mutex.synchronize{ CTagID_TBL.clear }
+  }
 
   def TkcTag.id2obj(canvas, id)
     cpath = canvas.path
-    return id unless CTagID_TBL[cpath]
-    CTagID_TBL[cpath][id]? CTagID_TBL[cpath][id]: id
+    CTagID_TBL.mutex.synchronize{
+      if CTagID_TBL[cpath]
+        CTagID_TBL[cpath][id]? CTagID_TBL[cpath][id]: id
+      else 
+        id
+      end
+    }
   end
 
   def initialize(parent, mode=nil, *args)
@@ -215,11 +227,15 @@ class TkcTag<TkObject
     #end
     @c = parent
     @cpath = parent.path
-    # @path = @id = Tk_CanvasTag_ID.join('')
-    @path = @id = Tk_CanvasTag_ID.join(TkCore::INTERP._ip_id_)
-    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
-    CTagID_TBL[@cpath][@id] = self
-    Tk_CanvasTag_ID[1].succ!
+    Tk_CanvasTag_ID.mutex.synchronize{
+      # @path = @id = Tk_CanvasTag_ID.join('')
+      @path = @id = Tk_CanvasTag_ID.join(TkCore::INTERP._ip_id_)
+      Tk_CanvasTag_ID[1].succ!
+    }
+    CTagID_TBL.mutex.synchronize{
+      CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+      CTagID_TBL[@cpath][@id] = self
+    }
     if mode
       tk_call_without_enc(@c.path, "addtag", @id, mode, *args)
     end
@@ -238,7 +254,9 @@ class TkcTag<TkObject
 
   def delete
     @c.delete @id
-    CTagID_TBL[@cpath].delete(@id) if CTagID_TBL[@cpath]
+    CTagID_TBL.mutex.synchronize{
+      CTagID_TBL[@cpath].delete(@id) if CTagID_TBL[@cpath]
+    }
     self
   end
   alias remove  delete
@@ -288,23 +306,38 @@ class TkcTag<TkObject
 end
 
 class TkcTagString<TkcTag
-  def self.new(parent, name, *args)
-    if CTagID_TBL[parent.path] && CTagID_TBL[parent.path][name]
-      return CTagID_TBL[parent.path][name]
-    else
-      super(parent, name, *args)
+  def self.new(parent, name, mode=nil, *args)
+    obj = nil
+    CTagID_TBL.mutex.synchronize{
+      if CTagID_TBL[parent.path] && CTagID_TBL[parent.path][name]
+        obj = CTagID_TBL[parent.path][name]
+      else
+        # super(parent, name, *args)
+        (obj = self.allocate).instance_eval{
+          @c = parent
+          @cpath = parent.path
+          @path = @id = name
+          CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+          CTagID_TBL[@cpath][@id] = self
+        }
+      end
+    }
+    if obj && mode
+      tk_call_without_enc(@c.path, "addtag", @id, mode, *args)
     end
+    obj
   end
 
   def initialize(parent, name, mode=nil, *args)
+    # dummy:: not called by 'new' method
+
     #unless parent.kind_of?(TkCanvas)
     #  fail ArgumentError, "expect TkCanvas for 1st argument"
     #end
     @c = parent
     @cpath = parent.path
     @path = @id = name
-    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
-    CTagID_TBL[@cpath][@id] = self
+
     if mode
       tk_call_without_enc(@c.path, "addtag", @id, mode, *args)
     end
@@ -312,7 +345,11 @@ class TkcTagString<TkcTag
 end
 TkcNamedTag = TkcTagString
 
-class TkcTagAll<TkcTag
+class TkcTagAll<TkcTagString
+  def self.new(parent)
+    super(parent, 'all')
+  end
+=begin
   def initialize(parent)
     #unless parent.kind_of?(TkCanvas)
     #  fail ArgumentError, "expect TkCanvas for 1st argument"
@@ -320,12 +357,19 @@ class TkcTagAll<TkcTag
     @c = parent
     @cpath = parent.path
     @path = @id = 'all'
-    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
-    CTagID_TBL[@cpath][@id] = self
+    CTagID_TBL.mutex.synchronize{
+      CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+      CTagID_TBL[@cpath][@id] = self
+    }
   end
+=end
 end
 
-class TkcTagCurrent<TkcTag
+class TkcTagCurrent<TkcTagString
+  def self.new(parent)
+    super(parent, 'current')
+  end
+=begin
   def initialize(parent)
     #unless parent.kind_of?(TkCanvas)
     #  fail ArgumentError, "expect TkCanvas for 1st argument"
@@ -333,13 +377,21 @@ class TkcTagCurrent<TkcTag
     @c = parent
     @cpath = parent.path
     @path = @id = 'current'
-    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
-    CTagID_TBL[@cpath][@id] = self
+    CTagID_TBL.mutex.synchronize{
+      CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+      CTagID_TBL[@cpath][@id] = self
+    }
   end
+=end
 end
 
 class TkcGroup<TkcTag
-  Tk_cGroup_ID = ['tkcg'.freeze, '00000'.taint].freeze
+  (Tk_cGroup_ID = ['tkcg'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
   #def create_self(parent, *args)
   def initialize(parent, *args)
     #unless parent.kind_of?(TkCanvas)
@@ -347,11 +399,15 @@ class TkcGroup<TkcTag
     #end
     @c = parent
     @cpath = parent.path
-    # @path = @id = Tk_cGroup_ID.join('')
-    @path = @id = Tk_cGroup_ID.join(TkCore::INTERP._ip_id_)
-    CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
-    CTagID_TBL[@cpath][@id] = self
-    Tk_cGroup_ID[1].succ!
+    Tk_cGroup_ID.mutex.synchronize{
+      # @path = @id = Tk_cGroup_ID.join('')
+      @path = @id = Tk_cGroup_ID.join(TkCore::INTERP._ip_id_)
+      Tk_cGroup_ID[1].succ!
+    }
+    CTagID_TBL.mutex.synchronize{
+      CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
+      CTagID_TBL[@cpath][@id] = self
+    }
     include(*args) if args != []
   end
   #private :create_self

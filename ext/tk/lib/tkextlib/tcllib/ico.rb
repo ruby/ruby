@@ -94,8 +94,10 @@ class Tk::Tcllib::ICO
     if keys.key?('name')
       @path = keys['name'].to_s
     else
-      @path = Tk_Image_ID.join(TkCore::INTERP._ip_id_)
-      Tk_Image_ID[1].succ!
+      Tk_Image_ID.mutex.synchronize{
+        @path = Tk_Image_ID.join(TkCore::INTERP._ip_id_)
+        Tk_Image_ID[1].succ!
+      }
     end
     tk_call_without_enc('::ico::getIcon', file, index, '-name', @path, 
                         '-format', 'image', *hash_kv(keys, true))

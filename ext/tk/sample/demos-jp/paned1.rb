@@ -1,3 +1,5 @@
+# -*- coding: euc-jp -*-
+#
 # paned1.rb
 #
 # This demonstration script creates a toplevel window containing

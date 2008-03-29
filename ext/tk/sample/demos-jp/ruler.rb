@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # ruler widget demo (called by 'widget')
 #

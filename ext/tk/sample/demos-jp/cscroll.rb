@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # simple scrollable canvas widget demo (called by 'widget')
 #

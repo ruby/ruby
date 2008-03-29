@@ -4,6 +4,7 @@
 #
 
 require 'tk'
+require 'tk/ttk_selector'
 
 # call setup script for general 'tkextlib' libraries
 require 'tkextlib/setup.rb'
@@ -15,33 +16,66 @@ require 'tkextlib/tile/setup.rb'
 # TkPackage.require('tile', '0.4')
 # TkPackage.require('tile', '0.6')
 # TkPackage.require('tile', '0.7')
-verstr = TkPackage.require('tile')
+if Tk::TK_MAJOR_VERSION > 8 || 
+    (Tk::TK_MAJOR_VERSION == 8 && Tk::TK_MINOR_VERSION >= 5)
+  TkPackage.require('tile') # for compatibility (version check of 'tile')
+  verstr = TkPackage.require('Ttk')
+else
+  verstr = TkPackage.require('tile')
+end
+
 ver = verstr.split('.')
-if ver[0].to_i == 0 && ver[1].to_i <= 4
-  # version 0.4 or former
-  module Tk
-    module Tile
-      USE_TILE_NAMESPACE = true
-      USE_TTK_NAMESPACE  = false
-      TILE_SPEC_VERSION_ID = 0
+if ver[0].to_i == 0
+  # Tile extension package
+  if ver[1].to_i <= 4
+    # version 0.4 or former
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = true
+        USE_TTK_NAMESPACE  = false
+        TILE_SPEC_VERSION_ID = 0
+      end
+    end
+  elsif ver[1].to_i <= 6
+    # version 0.5 -- version 0.6
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = true
+        USE_TTK_NAMESPACE  = true
+        TILE_SPEC_VERSION_ID = 5
+      end
+    end
+  elsif ver[1].to_i <= 7
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = false
+        USE_TTK_NAMESPACE  = true
+        TILE_SPEC_VERSION_ID = 7
+      end
+    end
+  else
+    # version 0.8 or later
+    module Tk
+      module Tile
+        USE_TILE_NAMESPACE = false
+        USE_TTK_NAMESPACE  = true
+        TILE_SPEC_VERSION_ID = 8
+      end
     end
   end
-elsif ver[0].to_i == 0 && ver[1].to_i <= 6
-  # version 0.5 -- version 0.6
-  module Tk
-    module Tile
-      USE_TILE_NAMESPACE = true
-      USE_TTK_NAMESPACE  = true
-      TILE_SPEC_VERSION_ID = 5
-    end
+
+  module Tk::Tile
+    PACKAGE_NAME = 'tile'.freeze
   end
 else
-  # version 0.7 or later
+  # Ttk package merged Tcl/Tk core (Tcl/Tk 8.5+)
   module Tk
     module Tile
       USE_TILE_NAMESPACE = false
       USE_TTK_NAMESPACE  = true
-      TILE_SPEC_VERSION_ID = 7
+      TILE_SPEC_VERSION_ID = 8
+
+      PACKAGE_NAME = 'Ttk'.freeze
     end
   end
 end
@@ -51,30 +85,110 @@ module Tk
   module Tile
     TkComm::TkExtlibAutoloadModule.unshift(self)
 
-    PACKAGE_NAME = 'tile'.freeze
     def self.package_name
       PACKAGE_NAME
     end
 
     def self.package_version
       begin
-        TkPackage.require('tile')
+        TkPackage.require(PACKAGE_NAME)
       rescue
         ''
       end
     end
 
     def self.__Import_Tile_Widgets__!
+      warn 'Warning: "Tk::Tile::__Import_Tile_Widgets__!" is obsolete.' <<
+           ' To control default widget set, use "Tk.default_widget_set = :Ttk"'
       Tk.tk_call('namespace', 'import', '-force', 'ttk::*')
     end
 
-    def self.load_images(imgdir, pat=TkComm::None)
-      images = Hash[*TkComm.simplelist(Tk.tk_call('::tile::LoadImages', 
-                                                  imgdir, pat))]
-      images.keys.each{|k|
-        images[k] = TkPhotoImage.new(:imagename=>images[k], 
-                                     :without_creating=>true)
+    def self.__define_LoadImages_proc_for_compatibility__!
+      # Ttk 8.5 (Tile 0.8) lost 'LoadImages' utility procedure.
+      # So, some old scripts doen't work, because those scripts use the 
+      # procedure to define local styles. 
+      # Of course, rewriting such Tcl/Tk scripts isn't difficult for 
+      # Tcl/Tk users. However, it may be troublesome for Ruby/Tk users 
+      # who use such Tcl/Tk scripts as it is.
+      # This method may help Ruby/Tk users who don't want to modify old 
+      # Tcl/Tk scripts for the latest version of Ttk (Tile) extension.
+      # This method defines a comaptible 'LoadImages' procedure on the 
+      # Tcl/Tk interpreter working under Ruby/Tk. 
+      # Please give attention to use this method. It may conflict with 
+      # some definitions on Tcl/Tk scripts. 
+      klass_name = self.name
+      proc_name = 'LoadImages'
+      if Tk::Tile::USE_TTK_NAMESPACE
+        ns_list = ['::tile']
+        if Tk.info(:commands, "::ttk::#{proc_name}").empty?
+          ns_list << '::ttk'
+        end
+      else # Tk::Tile::USE_TILE_NAMESPACE
+        ns_list = ['::ttk']
+        if Tk.info(:commands, "::tile::#{proc_name}").empty?
+          ns_list << '::tile'
+        end
+      end
+
+      ns_list.each{|ns|
+        cmd = "#{ns}::#{proc_name}"
+        unless Tk.info(:commands, cmd).empty?
+          fail RuntimeError, "can't define '#{cmd}' command (already exist)"
+        end
+        TkNamespace.eval(ns){
+          TkCore::INTERP.add_tk_procs(proc_name, 'imgdir {patterns {*.gif}}', 
+                                      <<-'EOS')
+            foreach pattern $patterns {
+              foreach file [glob -directory $imgdir $pattern] {
+                set img [file tail [file rootname $file]]
+                if {![info exists images($img)]} {
+                  set images($img) [image create photo -file $file]
+                }
+              }
+            }
+            return [array get images]
+          EOS
+        }
       }
+    end
+
+    def self.load_images(imgdir, pat=nil)
+      if Tk::Tile::TILE_SPEC_VERSION_ID < 8
+        if Tk::Tile::USE_TTK_NAMESPACE
+          cmd = '::ttk::LoadImages'
+        else # Tk::Tile::USE_TILE_NAMESPACE
+          cmd = '::tile::LoadImages'
+        end
+        pat ||= TkComm::None
+        images = Hash[*TkComm.simplelist(Tk.tk_call(cmd, imgdir, pat))]
+        images.keys.each{|k|
+          images[k] = TkPhotoImage.new(:imagename=>images[k], 
+                                       :without_creating=>true)
+        }
+      else ## TILE_SPEC_VERSION_ID >= 8
+        pat ||= '*.gif'
+        if pat.kind_of?(Array)
+          pat_list = pat
+        else
+          pat_list = [ pat ]
+        end
+        Dir.chdir(imgdir){
+          pat_list.each{|pat|
+            Dir.glob(pat).each{|f|
+              img = File.basename(f, '.*')
+              unless TkComm.bool(Tk.info('exists', "images(#{img})"))
+                Tk.tk_call('set', "images(#{img})", 
+                           Tk.tk_call('image', 'create', 'photo', '-file', f))
+              end
+            }
+          }
+        }
+        images = Hash[*TkComm.simplelist(Tk.tk_call('array', 'get', 'images'))]
+        images.keys.each{|k|
+          images[k] = TkPhotoImage.new(:imagename=>images[k], 
+                                       :without_creating=>true)
+        }
+      end
 
       images
     end
@@ -84,11 +198,20 @@ module Tk
     end
 
     module KeyNav
-      def self.enableMnemonics(w)
-        Tk.tk_call('::keynav::enableMnemonics', w)
-      end
-      def self.defaultButton(w)
-        Tk.tk_call('::keynav::defaultButton', w)
+      if Tk::Tile::TILE_SPEC_VERSION_ID < 8
+        def self.enableMnemonics(w)
+          Tk.tk_call('::keynav::enableMnemonics', w)
+        end
+        def self.defaultButton(w)
+          Tk.tk_call('::keynav::defaultButton', w)
+        end
+      else # dummy
+        def self.enableMnemonics(w)
+          ""
+        end
+        def self.defaultButton(w)
+          ""
+        end
       end
     end
 
@@ -103,6 +226,12 @@ module Tk
       Menu         = 'TkMenuFont'
       SmallCaption = 'TkSmallCaptionFont'
       Icon         = 'TkIconFont'
+
+      TkFont::SYSTEM_FONT_NAMES.add [
+        'TkDefaultFont', 'TkTextFont', 'TkHeadingFont', 
+        'TkCaptionFont', 'TkTooltipFont', 'TkFixedFont', 
+        'TkMenuFont', 'TkSmallCaptionFont', 'TkIconFont'
+      ]
     end
 
     module ParseStyleLayout
@@ -141,7 +270,7 @@ module Tk
       end
       private :__val2ruby_optkeys
 
-      def instate(state, script=nil, &b)
+      def ttk_instate(state, script=nil, &b)
         if script
           tk_send('instate', state, script)
         elsif b
@@ -150,18 +279,29 @@ module Tk
           bool(tk_send('instate', state))
         end
       end
+      alias tile_instate ttk_instate
 
-      def state(state=nil)
+      def ttk_state(state=nil)
         if state
           tk_send('state', state)
         else
           list(tk_send('state'))
         end
       end
+      alias tile_state ttk_state
 
-      def identify(x, y)
+      def ttk_identify(x, y)
         ret = tk_send_without_enc('identify', x, y)
         (ret.empty?)? nil: ret
+      end
+      alias tile_identify ttk_identify
+
+      # remove instate/state/identify method 
+      # to avoid the conflict with widget options
+      if Tk.const_defined?(:USE_OBSOLETE_TILE_STATE_METHOD) && Tk::USE_OBSOLETE_TILE_STATE_METHOD
+        alias instate  ttk_instate
+        alias state    ttk_state
+        alias identify ttk_identify
       end
     end
 
@@ -200,6 +340,8 @@ module Tk
 
     autoload :TPaned,        'tkextlib/tile/tpaned'
     autoload :Paned,         'tkextlib/tile/tpaned'
+    autoload :PanedWindow,   'tkextlib/tile/tpaned'
+    autoload :Panedwindow,   'tkextlib/tile/tpaned'
 
     autoload :TProgressbar,  'tkextlib/tile/tprogressbar'
     autoload :Progressbar,   'tkextlib/tile/tprogressbar'
@@ -216,6 +358,8 @@ module Tk
 
     autoload :TScrollbar,    'tkextlib/tile/tscrollbar'
     autoload :Scrollbar,     'tkextlib/tile/tscrollbar'
+    autoload :XScrollbar,    'tkextlib/tile/tscrollbar'
+    autoload :YScrollbar,    'tkextlib/tile/tscrollbar'
 
     autoload :TSeparator,    'tkextlib/tile/tseparator'
     autoload :Separator,     'tkextlib/tile/tseparator'
@@ -223,8 +367,13 @@ module Tk
     autoload :TSquare,       'tkextlib/tile/tsquare'
     autoload :Square,        'tkextlib/tile/tsquare'
 
+    autoload :SizeGrip,      'tkextlib/tile/sizegrip'
+    autoload :Sizegrip,      'tkextlib/tile/sizegrip'
+
     autoload :Treeview,      'tkextlib/tile/treeview'
 
     autoload :Style,         'tkextlib/tile/style'
   end
 end
+
+Ttk = Tk::Tile

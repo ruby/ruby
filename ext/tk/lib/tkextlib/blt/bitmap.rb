@@ -13,7 +13,16 @@ module Tk::BLT
     TkCommandNames = ['::blt::bitmap'.freeze].freeze
 
     BITMAP_ID_TBL = TkCore::INTERP.create_table
-    BITMAP_ID = ['blt_bitmap_id'.freeze, '00000'.taint].freeze
+
+    (BITMAP_ID = ['blt_bitmap_id'.freeze, '00000'.taint]).instance_eval{
+      @mutex = Mutex.new
+      def mutex; @mutex; end
+      freeze
+    }
+
+    TkCore::INTERP.init_ip_env{
+      BITMAP_ID_TBL.mutex.synchronize{ BITMAP_ID_TBL.clear }
+    }
 
     def self.data(name)
       dat = tk_simple_list(tk_call('::blt::bitmap', 'data', name))
@@ -64,9 +73,13 @@ module Tk::BLT
       if name
         @id = name
       else
-        @id = BITMAP_ID.join(TkCore::INTERP._ip_id_)
-        BITMAP_ID[1].succ!
-        BITMAP_ID_TBL[@id] = self
+        BITMAP_ID.mutex.synchronize{
+          @id = BITMAP_ID.join(TkCore::INTERP._ip_id_)
+          BITMAP_ID[1].succ!
+        }
+        BITMAP_ID_TBL.mutex.synchronize{
+          BITMAP_ID_TBL[@id] = self
+        }
       end
 
       @path = @id

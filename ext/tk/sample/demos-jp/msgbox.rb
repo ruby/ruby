@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # message boxes widget demo (called by 'widget')
 #

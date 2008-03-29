@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 require "tkcanvas"
 
 if defined?($hscale_demo) && $hscale_deom
@@ -64,7 +65,6 @@ TkFrame.new($hscale_demo) {|frame|
   }.pack('side'=>'bottom', 'expand'=>'yes', 'anchor'=>'n')
   scale.set 75
 }.pack('side'=>'top', 'fill'=>'x')
-
 
 def setWidth(w, width)
   width = width + 21

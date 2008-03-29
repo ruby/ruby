@@ -34,7 +34,8 @@ module TkComposite
 
     if klass
       # WidgetClassName is a known class
-      if klass <= TkFrame || klass < TkComposite
+      #if klass <= TkFrame || klass < TkComposite
+      if klass <= TkFrame || klass < Tk::Frame || klass < TkComposite
         # klass is valid for the base frame
         if self.class <= klass
           # use my classname
@@ -50,7 +51,8 @@ module TkComposite
 
       else
         # klass is invalid for the base frame
-        if self.class < TkFrame || self.class.superclass < TkComposite
+        #if self.class < TkFrame || self.class.superclass < TkComposite
+        if self.class < TkFrame || self.class.superclass < Tk::Frame || self.class.superclass < TkComposite
           # my class name is valid for the base frame -> use my classname
           base_class_name = self.class.name
           if base_class_name == ''
@@ -69,7 +71,8 @@ module TkComposite
 
     else
       # no valid WidgetClassName
-      if self.class < TkFrame || self.class.superclass < TkComposite
+      #if self.class < TkFrame || self.class.superclass < TkComposite
+      if self.class < TkFrame || self.class.superclass < Tk::Frame || self.class.superclass < TkComposite
         # my class name is valid for the base frame -> use my classname
         base_class_name = self.class.name
         if base_class_name == ''
@@ -108,8 +111,12 @@ module TkComposite
     end
 
     if base_class_name
+      # @frame = Tk::Frame.new(parent, :class=>base_class_name)
+      # --> use current TkFrame class
       @frame = TkFrame.new(parent, :class=>base_class_name)
     else
+      # @frame = Tk::Frame.new(parent)
+      # --> use current TkFrame class
       @frame = TkFrame.new(parent)
     end
     @path = @epath = @frame.path
@@ -132,6 +139,11 @@ module TkComposite
 
   def initialize_composite(*args) end
   private :initialize_composite
+
+  def inspect
+    str = super
+    str.chop << ' @epath=' << @epath.inspect << '>'
+  end
 
   def option_methods(*opts)
     opts.each{|m_set, m_cget, m_info|

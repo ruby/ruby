@@ -1,3 +1,4 @@
+# -*- coding: euc-jp -*-
 #
 # Text Search widget demo (called by 'widget')
 #
@@ -168,9 +169,14 @@ $search_text.insert('1.0', "\
 エントリに文字列を入力し、<リターン> を押すか「反転」ボタンを押してく \
 ださい。するとファイル中の、検索文字列と一致する部分に全て \"search_Tag\" \
 というタグがつけられ、タグの表示属性としてその文字列が点滅するように \
-設定されます。")
+設定されます。\n")
+$search_text.insert('end', "\
+ファイル読み込みのカレントディレクトリは \"#{Dir.pwd}\" です。\
+")
 $search_text.set_insert '0.0'
 
 $search_fileName.value = ''
 $search_searchString.value = ''
 
+$search_text.width = 60
+$search_text.height = 20

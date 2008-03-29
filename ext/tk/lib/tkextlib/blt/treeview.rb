@@ -239,6 +239,22 @@ class Tk::BLT::Treeview
         nil
       ]
 
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
+
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
       def self.ret_val(val)
@@ -273,8 +289,12 @@ class Tk::BLT::Treeview
   ########################
 
   def __destroy_hook__
-    Tk::BLT::Treeview::Node::TreeNodeID_TBL.delete(@path)
-    Tk::BLT::Treeview::Tag::TreeTagID_TBL.delete(@path)
+    Tk::BLT::Treeview::Node::TreeNodeID_TBL.mutex.synchronize{
+      Tk::BLT::Treeview::Node::TreeNodeID_TBL.delete(@path)
+    }
+    Tk::BLT::Treeview::Tag::TreeTagID_TBL.mutex.synchronize{
+      Tk::BLT::Treeview::Tag::TreeTagID_TBL.delete(@path)
+    }
   end
 
   def tagid(tag)
@@ -471,6 +491,22 @@ class Tk::BLT::Treeview
         [ ?w, TkComm.method(:window) ], 
         nil
       ]
+
+      # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
+      KEY_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+          inf[1] = inf[1].getbyte(0) if inf[1].kind_of?(String)
+        end
+        inf
+      }
+
+      PROC_TBL.map!{|inf|
+        if inf.kind_of?(Array)
+          inf[0] = inf[0].getbyte(0) if inf[0].kind_of?(String)
+        end
+        inf
+      }
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -967,22 +1003,47 @@ class Tk::BLT::Treeview::Node < TkObject
   include Tk::BLT::Treeview::TagOrID_Methods
 
   TreeNodeID_TBL = TkCore::INTERP.create_table
-  TreeNode_ID = ['blt_treeview_node'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ TreeNodeID_TBL.clear }
+  (TreeNode_ID = ['blt_treeview_node'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
+
+  TkCore::INTERP.init_ip_env{
+    TreeNodeID_TBL.mutex.synchronize{ TreeNodeID_TBL.clear }
+  }
 
   def self.id2obj(tree, id)
     tpath = tree.path
-    return id unless TreeNodeID_TBL[tpath]
-    if TreeNodeID_TBL[tpath][id]
-      TreeNodeID_TBL[tpath][id]
-    else
-      begin
-        self.new(tree, nil, nil, 'node'=>Integer(id))
-      rescue
+    TreeNodeID_TBL.mutex.synchronize{
+      if TreeNodeID_TBL[tpath]
+        if TreeNodeID_TBL[tpath][id]
+          TreeNodeID_TBL[tpath][id]
+        else
+          begin
+            # self.new(tree, nil, nil, 'node'=>Integer(id))
+            unless (tk_call(@tpath, 'get', id)).empty?
+              id = Integer(id)
+              (obj = self.allocate).instance_eval{
+                @parent = @tree = tree
+                @tpath = @parent.path
+                @path = @id = id
+                TreeNodeID_TBL[@tpath] ||= {}
+                TreeNodeID_TBL[@tpath][@id] = self
+              }
+              obj
+            else
+              id
+            end
+          rescue
+            id
+          end
+        end
+      else
         id
       end
-    end
+    }
   end
 
   def self.new(tree, pos, parent=nil, keys={})
@@ -994,13 +1055,21 @@ class Tk::BLT::Treeview::Node < TkObject
     keys = _symbolkey2str(keys)
     tpath = tree.path
 
-    if (id = keys['node']) && (obj = TreeNodeID_TBL[tpath][id])
-      keys.delete('node')
-      tk_call(tree.path, 'move', id, pos, parent) if parent
-      return obj
-    end
+    TreeNodeID_TBL.mutex.synchronize{
+      TreeNodeID_TBL[tpath] ||= {}
+      if (id = keys['node']) && (obj = TreeNodeID_TBL[tpath][id])
+        keys.delete('node')
+        tk_call(tree.path, 'move', id, pos, parent) if parent
+        return obj
+      end
 
-    super(tree, pos, parent, keys)
+      #super(tree, pos, parent, keys)
+      (obj = self.allocate).instance_eval{
+        initialize(tree, pos, parent, keys)
+        TreeNodeID_TBL[tpath][@id] = self
+      }
+      obj
+    }
   end
 
   def initialize(tree, pos, parent, keys)
@@ -1008,11 +1077,18 @@ class Tk::BLT::Treeview::Node < TkObject
     @tpath = @parent.path
 
     if (id = keys['node'])
+      # if tk_call(@tpath, 'get', id).empty?
+      #   fail RuntimeError, "not exist the node '#{id}'"
+      # end
       @path = @id = id
       tk_call(@tpath, 'move', @id, pos, tagid(parent)) if parent
+      configure(keys) if keys && ! keys.empty?
     else
-      name = TreeNode_ID.join(TkCore::INTERP._ip_id_).freeze
-      TreeNode_ID[1].succ!
+      name = nil
+      TreeNode_ID.mutex.synchronize{
+        name = TreeNode_ID.join(TkCore::INTERP._ip_id_).freeze
+        TreeNode_ID[1].succ!
+      }
 
       at = keys.delete['at']
 
@@ -1035,9 +1111,6 @@ class Tk::BLT::Treeview::Node < TkObject
       end
       @path = @id
     end
-
-    TreeNodeID_TBL[@tpath] = {} unless TreeNodeID_TBL[@tpath]
-    TreeNodeID_TBL[@tpath][@id] = self
   end
 
   def id
@@ -1051,37 +1124,66 @@ class Tk::BLT::Treeview::Tag < TkObject
   include Tk::BLT::Treeview::TagOrID_Methods
 
   TreeTagID_TBL = TkCore::INTERP.create_table
-  TreeTag_ID = ['blt_treeview_tag'.freeze, '00000'.taint].freeze
 
-  TkCore::INTERP.init_ip_env{ TreeTagID_TBL.clear }
+  (TreeTag_ID = ['blt_treeview_tag'.freeze, '00000'.taint]).instance_eval{
+    @mutex = Mutex.new
+    def mutex; @mutex; end
+    freeze
+  }
 
-  def self.id2obj(tree, id)
+  TkCore::INTERP.init_ip_env{
+    TreeTagID_TBL.mutex.synchronize{ TreeTagID_TBL.clear }
+  }
+
+  def self.id2obj(tree, name)
     tpath = tree.path
-    return id unless TreeTagID_TBL[tpath]
-    if TreeTagID_TBL[tpath][id]
-      TreeTagID_TBL[tpath][id]
-    else
-      begin
-        self.new(tree, nil, nil, 'name'=>Integer(id))
-      rescue
+    TreeTagID_TBL.mutex.synchronize{
+      if TreeTagID_TBL[tpath]
+        if TreeTagID_TBL[tpath][name]
+          TreeTagID_TBL[tpath][name]
+        else
+          #self.new(tree, name)
+          (obj = self.allocate).instance_eval{
+            @parent = @tree = tree
+            @tpath = @parent.path
+            @path = @id = name
+            TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
+            TreeTagID_TBL[@tpath][@id] = self
+          }
+          obj
+        end
+      else
         id
       end
-    end
+    }
   end
 
   def self.new_by_name(tree, name, *ids)
-    if (obj = TreeTagID_TBL[tree.path][name])
-      return obj
-    end
-    new([tree, name], ids)
+    TreeTagID_TBL.mutex.synchronize{
+      unless (obj = TreeTagID_TBL[tree.path][name])
+        (obj = self.allocate).instance_eval{
+          initialize(tree, name, ids)
+          TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
+          TreeTagID_TBL[@tpath][@id] = self
+        }
+      end
+      obj
+    }
   end
 
   def self.new(tree, *ids)
-    if tree.kind_of?(Array)
-      super(tree[0], tree[1], ids)
-    else
-      super(tree, nil, ids)
-    end
+    TreeTagID_TBL.mutex.synchronize{
+      (obj = self.allocate).instance_eval{
+        if tree.kind_of?(Array)
+          initialize(tree[0], tree[1], ids)
+        else
+          initialize(tree, nil, ids)
+        end
+        TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
+        TreeTagID_TBL[@tpath][@id] = self
+      }
+      obj
+    }
   end
 
   def initialize(tree, name, ids)
@@ -1091,12 +1193,11 @@ class Tk::BLT::Treeview::Tag < TkObject
     if name
       @path = @id = name
     else
-      @path = @id = TreeTag_ID.join(TkCore::INTERP._ip_id_).freeze
-      TreeTag_ID[1].succ!
+      TreeTag_ID.mutex.synchronize{
+        @path = @id = TreeTag_ID.join(TkCore::INTERP._ip_id_).freeze
+        TreeTag_ID[1].succ!
+      }
     end
-
-    TreeTagID_TBL[@tpath] = {} unless TreeTagID_TBL[@tpath]
-    TreeTagID_TBL[@tpath][@id] = self
 
     unless ids.empty?
       tk_call(@tpath, 'tag', 'add', @id, *(ids.collect{|id| tagid(id)}))
