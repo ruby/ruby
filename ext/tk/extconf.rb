@@ -322,6 +322,8 @@ if have_header("tcl.h") && have_header("tk.h") &&
     $INSTALLFILES ||= []
     $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
+    have_func("rb_hash_lookup", "ruby.h")
+
     # create
     $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
     $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]

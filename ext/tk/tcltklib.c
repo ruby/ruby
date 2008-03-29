@@ -189,6 +189,10 @@ static Tcl_ObjType *Tcl_ObjType_String;
 #endif
 #endif
 
+#ifndef HAVE_RB_HASH_LOOKUP
+#define rb_hash_lookup rb_hash_aref
+#endif
+
 /* safe Tcl_Eval and Tcl_GlobalEval */
 static int
 #ifdef RUBY_VM
