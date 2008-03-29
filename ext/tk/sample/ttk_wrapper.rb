@@ -134,7 +134,7 @@ ThemesList.uniq!
 #  set theme of widget style
 ##########################################################################
 if OPTS[:list] || OPTS[:verbose]
-  print "supported theme names: #{ThemesList}\n" 
+  print "supported theme names: #{ThemesList.inspect}\n" 
   exit if OPTS[:list] && ARGV.empty?
 end
 print "use theme: \"#{OPTS[:theme]}\"\n" if OPTS[:theme] && OPTS[:verbose]
