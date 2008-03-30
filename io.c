@@ -6392,7 +6392,7 @@ retry_sendfile:
             if (copy_stream_wait_write(stp) == -1)
                 return -1;
             if (RUBY_VM_INTERRUPTED(stp->th))
-                return;
+                return -1;
             goto retry_sendfile;
         }
         stp->syserr = "sendfile";
