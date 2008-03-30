@@ -2301,14 +2301,18 @@ rb_io_each_char(VALUE io)
 
 /*
  *  call-seq:
- *     str.lines(sep=$/)     => anEnumerator
- *     str.lines(limit)      => anEnumerator
- *     str.lines(sep, limit) => anEnumerator
+ *     ios.lines(sep=$/)     => anEnumerator
+ *     ios.lines(limit)      => anEnumerator
+ *     ios.lines(sep, limit) => anEnumerator
  *
- *  Returns an enumerator that gives each line in the string.
+ *  Returns an enumerator that gives each line in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
  *
- *     "foo\nbar\n".lines.to_a   #=> ["foo\n", "bar\n"]
- *     "foo\nb ar".lines.sort    #=> ["b ar", "foo\n"]
+ *     f = File.new("testfile")
+ *     f.lines.to_a  #=> ["foo\n", "bar\n"]
+ *     f.rewind
+ *     f.lines.sort  #=> ["bar\n", "foo\n"]
  */
 
 static VALUE
@@ -2319,11 +2323,16 @@ rb_io_lines(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     str.bytes   => anEnumerator
+ *     ios.bytes   => anEnumerator
  *
- *  Returns an enumerator that gives each byte in the string.
- *
- *     "hello".bytes.to_a        #=> [104, 101, 108, 108, 111]
+ *  Returns an enumerator that gives each byte (0..255) in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *     
+ *     f = File.new("testfile")
+ *     f.bytes.to_a  #=> [104, 101, 108, 108, 111]
+ *     f.rewind
+ *     f.bytes.sort  #=> [101, 104, 108, 108, 111]
  */
 
 static VALUE
@@ -2340,8 +2349,10 @@ rb_io_bytes(VALUE io)
  *  The stream must be opened for reading or an <code>IOError</code>
  *  will be raised.
  *     
- *     f = File.new("testfile)
- *     f.chars.each {|c| print c, ' ' }
+ *     f = File.new("testfile")
+ *     f.chars.to_a  #=> ["h", "e", "l", "l", "o"]
+ *     f.rewind
+ *     f.chars.sort  #=> ["e", "h", "l", "l", "o"]
  */
 
 static VALUE
