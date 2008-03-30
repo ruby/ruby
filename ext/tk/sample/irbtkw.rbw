@@ -4,7 +4,7 @@
 #
 #                                 by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
-release = '2008/03/08'
+release = '2006/11/06'
 
 require 'tk'
 begin
@@ -15,31 +15,9 @@ end
 
 require 'irb'
 
-if TkCore::WITH_ENCODING
-else
-  # $KCODE setup
-  case Tk.encoding
-  when 'shiftjis', 'cp932'
-    $KCODE='SJIS'
-  when 'euc-jp'
-    $KCODE='EUC'
-  when 'utf-8', 'unicode'
-    $KCODE='UTF8'
-  else
-    # unknown
-  end
-end
-
 # console setup
 top = TkToplevel.new(:title=>'IRB console')
 top.protocol(:WM_DELETE_WINDOW){ Tk.exit }
-
-case (Tk.windowingsystem)
-when 'win32'
-  fnt = ['MS Gothic', '-12']
-else
-  fnt = ['courier', '-12']
-end
 
 console = TkTextIO.new(top, :mode=>:console, 
                        :width=>80).pack(:side=>:left, 

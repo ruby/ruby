@@ -95,6 +95,7 @@ proc_dup(VALUE self)
     dst->envval = src->envval;
     dst->safe_level = dst->safe_level;
     dst->special_cref_stack = src->special_cref_stack;
+    dst->is_lambda = src->is_lambda;
 
     return procval;
 }

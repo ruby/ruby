@@ -1,3 +1,8 @@
+Sun Mar 30 23:16:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (proc_dup): should copy is_lambda attribute as well.
+	  [ruby-talk:296244]
+
 Sun Mar 30 15:33:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: IO.copy_stream implemented.  [ruby-dev:33843]
