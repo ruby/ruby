@@ -17,8 +17,17 @@ TkLabel.new(f2, :text=>'use TkRTTimer class').pack
 label2 = TkLabel.new(:parent=>f2, :relief=>:raised, 
                      :width=>10).pack(:fill=>:both)
 
-TkLabel.new(:text=>'Interval setting of each timer is 10 ms.', 
-            :padx=>10, :pady=>5).pack
+TkLabel.new(:padx=>10, :pady=>5, :justify=>'left', :text=><<EOT).pack
+Interval setting of each timer object is 10 ms.
+Each timer object counts up the value on each callback
+(the value is not the clock data).
+The count of the TkTimer object is delayed by execution 
+time of callbacks and inaccuracy of interval.
+On the other hand, the count of the TkRTTimer object is 
+not delayed. Its callback interval is not accurate too. 
+But it can compute error correction about the time when 
+a callback should start.
+EOT
 
 # define the procedure repeated by the TkTimer object
 tick = proc{|aobj| #<== TkTimer object

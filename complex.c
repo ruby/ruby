@@ -85,6 +85,22 @@ f_add(VALUE x, VALUE y)
 }
 
 inline static VALUE
+f_cmp(VALUE x, VALUE y)
+{
+   VALUE r;
+   if (FIXNUM_P(x) && FIXNUM_P(y)) {
+     long c = FIX2LONG(x) - FIX2LONG(y);
+     if (c > 0)
+       c = 1;
+     else if (c < 0)
+       c = -1;
+     r = INT2FIX(c);
+   } else
+     r = rb_funcall(x, id_cmp, 1, y);
+   return r;
+}
+
+inline static VALUE
 f_div(VALUE x, VALUE y)
 {
   VALUE r;
@@ -183,22 +199,6 @@ fun1(to_i)
 fun1(to_r)
 fun1(to_s)
 fun1(truncate)
-
-inline static VALUE
-f_cmp(VALUE x, VALUE y)
-{
-   VALUE r;
-   if (FIXNUM_P(x) && FIXNUM_P(y)) {
-     long c = FIX2LONG(x) - FIX2LONG(y);
-     if (c > 0)
-       c = 1;
-     else if (c < 0)
-       c = -1;
-     r = INT2FIX(c);
-   } else
-     r = rb_funcall(x, id_cmp, 1, y);
-   return r;
-}
 
 fun2(coerce)
 fun2(divmod)
@@ -1016,22 +1016,13 @@ nucomp_inexact_p(VALUE self)
   return f_boolcast(!nucomp_exact_p(self));
 }
 
-extern VALUE rb_gcd(VALUE x, VALUE y);
-
-static VALUE
-f_lcm(VALUE x, VALUE y)
-{
-  if (f_zero_p(x) || f_zero_p(y))
-    return ZERO;
-  else
-    return f_abs(f_mul(f_div(x, rb_gcd(x, y)), y));
-}
+extern VALUE rb_lcm(VALUE x, VALUE y);
 
 static VALUE
 nucomp_denominator(VALUE self)
 {
   get_dat1(self);
-  return f_lcm(f_denominator(dat->real), f_denominator(dat->image));
+  return rb_lcm(f_denominator(dat->real), f_denominator(dat->image));
 }
 
 static VALUE
