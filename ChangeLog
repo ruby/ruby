@@ -1,3 +1,13 @@
+Sun Mar 30 15:33:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: IO.copy_stream implemented.  [ruby-dev:33843]
+
+	* thread.c (rb_fd_select): new function.
+
+	* configure.in (sys/sendfile.h): check the header file.
+	  (sendfile): check the function.
+	  (pread): check the function.
+
 Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/*: full update Ruby/Tk to support Ruby(1.9|1.8) and Tc/Tk8.5.
