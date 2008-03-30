@@ -2228,42 +2228,59 @@ rb_io_each_byte(VALUE io)
     return io;
 }
 
-static VALUE 
+static VALUE
 io_getc(rb_io_t *fptr, rb_encoding *enc)
 {
-    int r, n;
+    int r, n, cr = 0;
     VALUE str;
 
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;
     }
-    r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
-    if (MBCLEN_CHARFOUND_P(r) &&
-        (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf_len) {
-	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
-	fptr->rbuf_off += n;
-	fptr->rbuf_len -= n;
-    }
-    else if (MBCLEN_NEEDMORE_P(r)) {
-	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, fptr->rbuf_len);
-        fptr->rbuf_len = 0;
-      getc_needmore:
-        if (io_fillbuf(fptr) != -1) {
-            rb_str_cat(str, fptr->rbuf+fptr->rbuf_off, 1);
-            fptr->rbuf_off++;
-            fptr->rbuf_len--;
-            r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), enc);
-            if (MBCLEN_NEEDMORE_P(r)) {
-                goto getc_needmore;
-            }
-        }
+    if (rb_enc_asciicompat(enc) && ISASCII(fptr->rbuf[fptr->rbuf_off])) {
+	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, 1);
+	fptr->rbuf_off += 1;
+	fptr->rbuf_len -= 1;
+	cr = ENC_CODERANGE_7BIT;
     }
     else {
-	str = rb_str_new(fptr->rbuf+fptr->rbuf_off, 1);
-	fptr->rbuf_off++;
-	fptr->rbuf_len--;
+	r = rb_enc_precise_mbclen(fptr->rbuf+fptr->rbuf_off, fptr->rbuf+fptr->rbuf_off+fptr->rbuf_len, enc);
+	if (MBCLEN_CHARFOUND_P(r) &&
+	    (n = MBCLEN_CHARFOUND_LEN(r)) <= fptr->rbuf_len) {
+	    str = rb_str_new(fptr->rbuf+fptr->rbuf_off, n);
+	    fptr->rbuf_off += n;
+	    fptr->rbuf_len -= n;
+	    cr = ENC_CODERANGE_VALID;
+	}
+	else if (MBCLEN_NEEDMORE_P(r)) {
+	    str = rb_str_new(fptr->rbuf+fptr->rbuf_off, fptr->rbuf_len);
+	    fptr->rbuf_len = 0;
+	  getc_needmore:
+	    if (io_fillbuf(fptr) != -1) {
+		rb_str_cat(str, fptr->rbuf+fptr->rbuf_off, 1);
+		fptr->rbuf_off++;
+		fptr->rbuf_len--;
+		r = rb_enc_precise_mbclen(RSTRING_PTR(str), RSTRING_PTR(str)+RSTRING_LEN(str), enc);
+		if (MBCLEN_NEEDMORE_P(r)) {
+		    goto getc_needmore;
+		}
+		else if (MBCLEN_CHARFOUND_P(r)) {
+		    cr = ENC_CODERANGE_VALID;
+		}
+	    }
+	}
+	else {
+	    str = rb_str_new(fptr->rbuf+fptr->rbuf_off, 1);
+	    fptr->rbuf_off++;
+	    fptr->rbuf_len--;
+	}
     }
-    return io_enc_str(str, fptr);
+    if (!cr) cr = ENC_CODERANGE_BROKEN;
+    str = io_enc_str(str, fptr);
+    if (!fptr->enc2) {
+	ENC_CODERANGE_SET(str, cr);
+    }
+    return str;
 }
 
 /*
