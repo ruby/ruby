@@ -1,3 +1,8 @@
+Tue Apr  1 01:55:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Config.default_config_hash): requires
+	  win32/resolv to use Win32::Resolv.  [ruby-dev:34138]
+
 Sun Mar 30 07:00:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/tcltklib.c: rb_hash_lookup has not been backported yet.
