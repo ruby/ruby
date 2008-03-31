@@ -301,6 +301,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define uint64_t unsigned __int64
 \#define HAVE_INTPTR_T 1
 \#define HAVE_UINTPTR_T 1
+\#define HAVE_SSIZE_T 1
+\#define ssize_t int
 \#define GETGROUPS_T int
 \#define RETSIGTYPE void
 \#define HAVE_ALLOCA 1

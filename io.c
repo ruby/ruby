@@ -6587,7 +6587,11 @@ copy_stream_body(VALUE arg)
         src_fptr = 0;
         FilePathValue(stp->src);
         src_path = StringValueCStr(stp->src);
+#ifdef O_NOCTTY
         src_fd = rb_sysopen_internal(src_path, O_RDONLY|O_NOCTTY, 0);
+#else
+        src_fd = rb_sysopen_internal(src_path, O_RDONLY, 0);
+#endif
         if (src_fd == -1) { rb_sys_fail(src_path); }
         stp->close_src = 1;
     }
@@ -6603,7 +6607,11 @@ copy_stream_body(VALUE arg)
         dst_fptr = 0;
         FilePathValue(stp->dst);
         dst_path = StringValueCStr(stp->dst);
+#ifdef O_NOCTTY
         dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC|O_NOCTTY, 0600);
+#else
+        dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+#endif
         if (dst_fd == -1) { rb_sys_fail(dst_path); }
         stp->close_dst = 1;
     }

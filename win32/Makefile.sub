@@ -384,6 +384,12 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define uint64_t unsigned __int64
 #define HAVE_INTPTR_T 1
 #define HAVE_UINTPTR_T 1
+#define HAVE_SSIZE_T 1
+!if "$(ARCH)" == "AMD64" || "$(ARCH)" == "IA64"
+#define ssize_t __int64
+!else
+#define ssize_t int
+!endif
 #define GETGROUPS_T int
 #define RETSIGTYPE void
 !if !defined(WIN32_WCE)
