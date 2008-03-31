@@ -1,8 +1,8 @@
-Tue Apr  1 02:58:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  1 03:20:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_SETJMP, RUBY_LONGJMP, RUBY_JMP_BUF): prefers
-	  __builtin_setjmp, _setjmp over setjmp and sigsetjmp.
-	  [ruby-core:16023], [ruby-core:16086]
+	  _setjmp over setjmp and sigsetjmp.  [ruby-core:16023]
+	  __builtin_setjmp cannot handle a variable.
 
 	* configure.in (--with-setjmp-type): new option to override the
 	  default rule in the above.

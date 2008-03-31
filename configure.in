@@ -712,7 +712,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 
 AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 [AC_TRY_LINK([@%:@include <setjmp.h>
-    jmp_buf jb; void t() {__builtin_longjmp(jb, 1);}],
+    jmp_buf jb; void t(v) int v; {__builtin_longjmp(jb, v);}],
     [__builtin_setjmp(jb);],
     [ac_cv_func___builtin_setjmp=yes],
     [ac_cv_func___builtin_setjmp=no])
