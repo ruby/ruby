@@ -63,7 +63,8 @@ class Gem::Installer
       :force => false,
       :install_dir => Gem.dir,
       :exec_format => false,
-      :env_shebang => false
+      :env_shebang => false,
+      :bin_dir => nil
     }.merge options
 
     @env_shebang = options[:env_shebang]
@@ -74,6 +75,7 @@ class Gem::Installer
     @format_executable = options[:format_executable]
     @security_policy = options[:security_policy]
     @wrappers = options[:wrappers]
+    @bin_dir = options[:bin_dir]
 
     begin
       @format = Gem::Format.from_file_by_path @gem, @security_policy
@@ -104,7 +106,7 @@ class Gem::Installer
 
     unless @force then
       if rrv = @spec.required_ruby_version then
-        unless rrv.satisfied_by? Gem::Version.new(RUBY_VERSION) then
+        unless rrv.satisfied_by? Gem.ruby_version then
           raise Gem::InstallError, "#{@spec.name} requires Ruby version #{rrv}"
         end
       end
@@ -225,7 +227,7 @@ class Gem::Installer
     # If the user has asked for the gem to be installed in a directory that is
     # the system gem directory, then use the system bin directory, else create
     # (or use) a new bin dir under the gem_home.
-    bindir = Gem.bindir @gem_home
+    bindir = @bin_dir ? @bin_dir : (Gem.bindir @gem_home)
 
     Dir.mkdir bindir unless File.exist? bindir
     raise Gem::FilePermissionError.new(bindir) unless File.writable? bindir
@@ -303,7 +305,7 @@ class Gem::Installer
   # necessary.
   def shebang(bin_file_name)
     if @env_shebang then
-      "#!/usr/bin/env ruby"
+      "#!/usr/bin/env " + Gem::ConfigMap[:ruby_install_name]
     else
       path = File.join @gem_dir, @spec.bindir, bin_file_name
 
@@ -352,10 +354,10 @@ TEXT
     <<-TEXT
 @ECHO OFF
 IF NOT "%~f0" == "~f0" GOTO :WinNT
-@"#{Gem.ruby}" "#{File.join(bindir, bin_file_name)}" %1 %2 %3 %4 %5 %6 %7 %8 %9
+@"#{File.basename(Gem.ruby)}" "#{File.join(bindir, bin_file_name)}" %1 %2 %3 %4 %5 %6 %7 %8 %9
 GOTO :EOF
 :WinNT
-"%~dp0ruby.exe" "%~dpn0" %*
+@"#{File.basename(Gem.ruby)}" "%~dpn0" %*
 TEXT
   end
 

@@ -6,10 +6,8 @@ module Gem
     class ListCommand < QueryCommand
 
       def initialize
-        super(
-          'list',
-          'Display all gems whose name starts with STRING'
-        )
+        super 'list', 'Display gems whose name starts with STRING'
+
         remove_option('--name-matches')
       end
 

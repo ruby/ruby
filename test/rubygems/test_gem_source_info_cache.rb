@@ -25,7 +25,12 @@ class TestGemSourceInfoCache < RubyGemTestCase
     @sic = Gem::SourceInfoCache.new
     @sic.instance_variable_set :@fetcher, @fetcher
 
+    @si_new = Gem::SourceIndex.new
+    @sice_new = Gem::SourceInfoCacheEntry.new @si_new, 0
+
     prep_cache_files @sic
+
+    @sic.reset_cache_data
   end
 
   def teardown
@@ -35,8 +40,10 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
   def test_self_cache_refreshes
     Gem.configuration.update_sources = true #true by default
-    source_index = Gem::SourceIndex.new 'key' => 'sys'
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = source_index.dump
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+
+    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = si.dump
 
     Gem.sources.replace %W[#{@gem_repo}]
 
@@ -51,8 +58,10 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
   def test_self_cache_skips_refresh_based_on_configuration
     Gem.configuration.update_sources = false
-    source_index = Gem::SourceIndex.new 'key' => 'sys'
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = source_index.dump
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+
+    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = si.dump
 
     Gem.sources.replace %w[#{@gem_repo}]
 
@@ -66,20 +75,24 @@ class TestGemSourceInfoCache < RubyGemTestCase
   end
 
   def test_self_cache_data
-    source_index = Gem::SourceIndex.new 'key' => 'sys'
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = source_index.dump
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+
+    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = si.dump
 
     Gem::SourceInfoCache.instance_variable_set :@cache, nil
-    sice = Gem::SourceInfoCacheEntry.new source_index, 0
+    sice = Gem::SourceInfoCacheEntry.new si, 0
 
     use_ui @ui do
-      assert_equal source_index.gems,
-                   Gem::SourceInfoCache.cache_data[@gem_repo].source_index.gems
+      gems = Gem::SourceInfoCache.cache_data[@gem_repo].source_index.gems
+      gem_names = gems.map { |_, spec| spec.full_name }
+
+      assert_equal si.gems.map { |_,spec| spec.full_name }, gem_names
     end
   end
 
   def test_cache_data
-    assert_equal [['key','sys']], @sic.cache_data.to_a.sort
+    assert_equal [[@gem_repo, @usr_sice]], @sic.cache_data.to_a.sort
   end
 
   def test_cache_data_dirty
@@ -97,7 +110,14 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
     data = { @gem_repo => { 'totally' => 'borked' } }
 
-    [@sic.system_cache_file, @sic.user_cache_file].each do |fn|
+    cache_files = [
+      @sic.system_cache_file,
+      @sic.latest_system_cache_file,
+      @sic.user_cache_file,
+      @sic.latest_user_cache_file
+    ]
+
+    cache_files.each do |fn|
       FileUtils.mkdir_p File.dirname(fn)
       open(fn, "wb") { |f| f.write Marshal.dump(data) }
     end
@@ -113,7 +133,9 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
   def test_cache_data_none_readable
     FileUtils.chmod 0222, @sic.system_cache_file
+    FileUtils.chmod 0222, @sic.latest_system_cache_file
     FileUtils.chmod 0222, @sic.user_cache_file
+    FileUtils.chmod 0222, @sic.latest_user_cache_file
     return if (File.stat(@sic.system_cache_file).mode & 0222) != 0222
     return if (File.stat(@sic.user_cache_file).mode & 0222) != 0222
     # HACK for systems that don't support chmod
@@ -127,6 +149,16 @@ class TestGemSourceInfoCache < RubyGemTestCase
       @sic.cache_data
     end
     assert_equal 'unable to locate a writable cache file', e.message
+  end
+
+  def test_cache_data_nonexistent
+    FileUtils.rm @sic.system_cache_file
+    FileUtils.rm @sic.latest_system_cache_file
+    FileUtils.rm @sic.user_cache_file
+    FileUtils.rm @sic.latest_user_cache_file
+
+    # TODO test verbose output
+    assert_equal [], @sic.cache_data.to_a.sort
   end
 
   def test_cache_data_repair
@@ -152,7 +184,8 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
   def test_cache_data_user_fallback
     FileUtils.chmod 0444, @sic.system_cache_file
-    assert_equal [['key','usr']], @sic.cache_data.to_a.sort
+
+    assert_equal [[@gem_repo, @usr_sice]], @sic.cache_data.to_a.sort
   end
 
   def test_cache_file
@@ -174,60 +207,118 @@ class TestGemSourceInfoCache < RubyGemTestCase
   end
 
   def test_flush
-    @sic.cache_data['key'] = 'new'
+    @sic.cache_data[@gem_repo] = @sice_new
     @sic.update
     @sic.flush
 
-    assert_equal [['key','new']], read_cache(@sic.system_cache_file).to_a.sort
+    assert_equal [[@gem_repo, @sice_new]],
+                 read_cache(@sic.system_cache_file).to_a.sort
+  end
+
+  def test_latest_cache_data
+    util_make_gems
+
+    sice = Gem::SourceInfoCacheEntry.new @source_index, 0
+
+    @sic.set_cache_data @gem_repo => sice
+    latest = @sic.latest_cache_data
+    gems = latest[@gem_repo].source_index.search('a').map { |s| s.full_name }
+
+    assert_equal %w[a-2 a_evil-9], gems
+  end
+
+  def test_latest_cache_file
+    latest_cache_file = File.join File.dirname(@gemcache),
+                                  "latest_#{File.basename @gemcache}"
+    assert_equal latest_cache_file, @sic.latest_cache_file
+  end
+
+  def test_latest_system_cache_file
+    assert_equal File.join(Gem.dir, "latest_source_cache"),
+                 @sic.latest_system_cache_file
+  end
+
+  def test_latest_user_cache_file
+    assert_equal @latest_usrcache, @sic.latest_user_cache_file
   end
 
   def test_read_system_cache
-    assert_equal [['key','sys']], @sic.cache_data.to_a.sort
+    assert_equal [[@gem_repo, @sys_sice]], @sic.cache_data.to_a.sort
   end
 
   def test_read_user_cache
-    FileUtils.chmod 0444, @sic.system_cache_file
+    FileUtils.chmod 0444, @sic.user_cache_file
+    FileUtils.chmod 0444, @sic.latest_user_cache_file
 
-    assert_equal [['key','usr']], @sic.cache_data.to_a.sort
+    @si = Gem::SourceIndex.new
+    @si.add_specs @a1, @a2
+
+    @sice = Gem::SourceInfoCacheEntry.new @si, 0
+
+    @sic.set_cache_data({ @gem_repo => @sice })
+    @sic.update
+    @sic.write_cache
+    @sic.reset_cache_data
+
+    user_cache_data = @sic.cache_data.to_a.sort
+
+    assert_equal 1, user_cache_data.length
+    user_cache_data = user_cache_data.first
+
+    assert_equal @gem_repo, user_cache_data.first
+
+    gems = user_cache_data.last.source_index.map { |_,spec| spec.full_name }
+    assert_equal [@a2.full_name], gems
   end
 
   def test_search
-    si = Gem::SourceIndex.new @gem1.full_name => @gem1
-    cache_data = {
-      @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil)
-    }
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+    cache_data = { @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil) }
     @sic.instance_variable_set :@cache_data, cache_data
 
-    assert_equal [@gem1], @sic.search(//)
+    assert_equal [@a1], @sic.search(//)
+  end
+
+  def test_search_all
+    util_make_gems
+
+    sice = Gem::SourceInfoCacheEntry.new @source_index, 0
+
+    @sic.set_cache_data @gem_repo => sice
+    @sic.update
+    @sic.write_cache
+    @sic.reset_cache_data
+
+    gem_names = @sic.search(//, false, true).map { |spec| spec.full_name }
+
+    assert_equal %w[a-1 a-2 a_evil-9 c-1.2], gem_names
   end
 
   def test_search_dependency
-    si = Gem::SourceIndex.new @gem1.full_name => @gem1
-    cache_data = {
-      @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil)
-    }
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+    cache_data = { @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil) }
     @sic.instance_variable_set :@cache_data, cache_data
 
-    dep = Gem::Dependency.new @gem1.name, @gem1.version
+    dep = Gem::Dependency.new @a1.name, @a1.version
 
-    assert_equal [@gem1], @sic.search(dep)
+    assert_equal [@a1], @sic.search(dep)
   end
 
   def test_search_no_matches
-    si = Gem::SourceIndex.new @gem1.full_name => @gem1
-    cache_data = {
-      @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil)
-    }
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+    cache_data = { @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil) }
     @sic.instance_variable_set :@cache_data, cache_data
 
     assert_equal [], @sic.search(/nonexistent/)
   end
 
   def test_search_no_matches_in_source
-    si = Gem::SourceIndex.new @gem1.full_name => @gem1
-    cache_data = {
-      @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil)
-    }
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+    cache_data = { @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil) }
     @sic.instance_variable_set :@cache_data, cache_data
     Gem.sources.replace %w[more-gems.example.com]
 
@@ -235,13 +326,12 @@ class TestGemSourceInfoCache < RubyGemTestCase
   end
 
   def test_search_with_source
-    si = Gem::SourceIndex.new @gem1.full_name => @gem1
-    cache_data = {
-      @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil)
-    }
+    si = Gem::SourceIndex.new
+    si.add_spec @a1
+    cache_data = { @gem_repo => Gem::SourceInfoCacheEntry.new(si, nil) }
     @sic.instance_variable_set :@cache_data, cache_data
 
-    assert_equal [[@gem1, @gem_repo]],
+    assert_equal [[@a1, @gem_repo]],
                  @sic.search_with_source(//)
   end
 
@@ -254,45 +344,81 @@ class TestGemSourceInfoCache < RubyGemTestCase
   end
 
   def test_write_cache
-    @sic.cache_data['key'] = 'new'
+    @sic.cache_data[@gem_repo] = @sice_new
     @sic.write_cache
 
-    assert_equal [['key', 'new']],
+    assert_equal [[@gem_repo, @sice_new]],
                  read_cache(@sic.system_cache_file).to_a.sort
-    assert_equal [['key', 'usr']],
+    assert_equal [[@gem_repo, @usr_sice]],
                  read_cache(@sic.user_cache_file).to_a.sort
   end
 
   def test_write_cache_user
     FileUtils.chmod 0444, @sic.system_cache_file
-    @sic.set_cache_data({'key' => 'new'})
+    @sic.set_cache_data({@gem_repo => @sice_new})
     @sic.update
     @sic.write_cache
 
-    assert_equal [['key', 'sys']], read_cache(@sic.system_cache_file).to_a.sort
-    assert_equal [['key', 'new']], read_cache(@sic.user_cache_file).to_a.sort
+    assert File.exist?(@sic.user_cache_file), 'user_cache_file'
+    assert File.exist?(@sic.latest_user_cache_file),
+           'latest_user_cache_file exists'
+
+    assert_equal [[@gem_repo, @sys_sice]],
+                 read_cache(@sic.system_cache_file).to_a.sort
+    assert_equal [[@gem_repo, @sice_new]],
+                 read_cache(@sic.user_cache_file).to_a.sort
   end
 
   def test_write_cache_user_from_scratch
     FileUtils.rm_rf @sic.user_cache_file
+    FileUtils.rm_rf @sic.latest_user_cache_file
+
     FileUtils.chmod 0444, @sic.system_cache_file
-    @sic.set_cache_data({'key' => 'new'})
+    FileUtils.chmod 0444, @sic.latest_system_cache_file
+
+    @si = Gem::SourceIndex.new
+    @si.add_specs @a1, @a2
+
+    @sice = Gem::SourceInfoCacheEntry.new @si, 0
+
+    @sic.set_cache_data({ @gem_repo => @sice })
     @sic.update
     @sic.write_cache
 
-    assert_equal [['key', 'sys']], read_cache(@sic.system_cache_file).to_a.sort
-    assert_equal [['key', 'new']], read_cache(@sic.user_cache_file).to_a.sort
+    assert File.exist?(@sic.user_cache_file), 'system_cache_file'
+    assert File.exist?(@sic.latest_user_cache_file),
+           'latest_system_cache_file'
+
+    user_cache_data = read_cache(@sic.user_cache_file).to_a.sort
+    assert_equal 1, user_cache_data.length
+    user_cache_data = user_cache_data.first
+
+    assert_equal @gem_repo, user_cache_data.first
+
+    gems = user_cache_data.last.source_index.map { |_,spec| spec.full_name }
+    assert_equal [@a1.full_name, @a2.full_name], gems
+
+    user_cache_data = read_cache(@sic.latest_user_cache_file).to_a.sort
+    assert_equal 1, user_cache_data.length
+    user_cache_data = user_cache_data.first
+
+    assert_equal @gem_repo, user_cache_data.first
+
+    gems = user_cache_data.last.source_index.map { |_,spec| spec.full_name }
+    assert_equal [@a2.full_name], gems
   end
 
   def test_write_cache_user_no_directory
     FileUtils.rm_rf File.dirname(@sic.user_cache_file)
     FileUtils.chmod 0444, @sic.system_cache_file
-    @sic.set_cache_data({'key' => 'new'})
+    @sic.set_cache_data({ @gem_repo => @sice_new })
     @sic.update
     @sic.write_cache
 
-    assert_equal [['key','sys']], read_cache(@sic.system_cache_file).to_a.sort
-    assert_equal [['key','new']], read_cache(@sic.user_cache_file).to_a.sort
+    assert_equal [[@gem_repo, @sys_sice]],
+                 read_cache(@sic.system_cache_file).to_a.sort
+    assert_equal [[@gem_repo, @sice_new]],
+                 read_cache(@sic.user_cache_file).to_a.sort
   end
 
 end

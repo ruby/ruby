@@ -22,16 +22,18 @@ class Gem::Indexer::AbstractIndexBuilder
     @files = []
   end
 
+  ##
   # Build a Gem index.  Yields to block to handle the details of the
   # actual building.  Calls +begin_index+, +end_index+ and +cleanup+ at
   # appropriate times to customize basic operations.
+
   def build
     FileUtils.mkdir_p @directory unless File.exist? @directory
     raise "not a directory: #{@directory}" unless File.directory? @directory
 
     file_path = File.join @directory, @filename
 
-    @files << file_path
+    @files << @filename
 
     File.open file_path, "wb" do |file|
       @file = file
@@ -39,14 +41,20 @@ class Gem::Indexer::AbstractIndexBuilder
       yield
       end_index
     end
+
     cleanup
   ensure
     @file = nil
   end
 
+  ##
   # Compress the given file.
+
   def compress(filename, ext="rz")
-    zipped = zip(File.open(filename, 'rb'){ |fp| fp.read })
+    data = open filename, 'rb' do |fp| fp.read end
+
+    zipped = zip data
+
     File.open "#{filename}.#{ext}", "wb" do |file|
       file.write zipped
     end

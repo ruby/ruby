@@ -17,13 +17,55 @@ class TestGemCommandsUnpackCommand < RubyGemTestCase
 
     @cmd.options[:args] = %w[a]
 
-      use_ui @ui do
-        Dir.chdir @tempdir do
-          @cmd.execute
-        end
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
       end
+    end
 
     assert File.exist?(File.join(@tempdir, 'a-2'))
+  end
+
+  def test_execute_gem_path
+    util_make_gems
+
+    Gem.clear_paths
+
+    gemhome2 = File.join @tempdir, 'gemhome2'
+
+    Gem.send :set_paths, [gemhome2, @gemhome].join(File::PATH_SEPARATOR)
+    Gem.send :set_home, gemhome2
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert File.exist?(File.join(@tempdir, 'a-2'))
+  end
+
+  def test_execute_gem_path_missing
+    util_make_gems
+
+    Gem.clear_paths
+
+    gemhome2 = File.join @tempdir, 'gemhome2'
+
+    Gem.send :set_paths, [gemhome2, @gemhome].join(File::PATH_SEPARATOR)
+    Gem.send :set_home, gemhome2
+
+    @cmd.options[:args] = %w[z]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    assert_equal '', @ui.output
   end
 
   def test_execute_with_target_option

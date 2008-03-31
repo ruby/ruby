@@ -1,3 +1,7 @@
+Tue Apr  1 07:31:58 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems* test/rubygems*: Import RubyGems 1.1.0.
+
 Tue Apr  1 03:20:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_SETJMP, RUBY_LONGJMP, RUBY_JMP_BUF): prefers

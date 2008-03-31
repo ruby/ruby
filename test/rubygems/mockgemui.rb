@@ -15,9 +15,8 @@ class MockGemUi < Gem::StreamUI
   def initialize(input="")
     super(StringIO.new(input), StringIO.new, StringIO.new)
     @terminated = false
-    @banged = false
   end
-  
+
   def input
     @ins.string
   end
@@ -30,22 +29,15 @@ class MockGemUi < Gem::StreamUI
     @errs.string
   end
 
-  def banged?
-    @banged
-  end
-
   def terminated?
     @terminated
   end
 
-  def terminate_interaction!(status=1)
-    @terminated = true 
-    @banged = true
-    fail TermError
-  end
-
   def terminate_interaction(status=0)
     @terminated = true
-    fail TermError
+
+    raise TermError
   end
+
 end
+

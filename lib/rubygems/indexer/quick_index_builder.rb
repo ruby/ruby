@@ -1,7 +1,9 @@
 require 'rubygems/indexer'
 
+##
 # Construct a quick index file and all of the individual specs to support
 # incremental loading.
+
 class Gem::Indexer::QuickIndexBuilder < Gem::Indexer::AbstractIndexBuilder
 
   def initialize(filename, directory)
@@ -13,12 +15,12 @@ class Gem::Indexer::QuickIndexBuilder < Gem::Indexer::AbstractIndexBuilder
   def cleanup
     super
 
-    quick_index_file = File.join(@directory, @filename)
+    quick_index_file = File.join @directory, @filename
     compress quick_index_file
 
     # the complete quick index is in a directory, so move it as a whole
-    @files.delete quick_index_file
-    @files << @directory
+    @files.delete 'index'
+    @files << 'quick'
   end
 
   def add(spec)

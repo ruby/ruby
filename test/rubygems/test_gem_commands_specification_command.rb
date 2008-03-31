@@ -12,6 +12,7 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
 
   def test_execute
     foo = quick_gem 'foo'
+    Gem.source_index.add_spec foo
 
     @cmd.options[:args] = %w[foo]
 
@@ -87,7 +88,6 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
 
     assert_match %r|\A--- !ruby/object:Gem::Specification|, @ui.output
     assert_match %r|name: foo|, @ui.output
-    assert_equal "WARNING:  Remote information is not complete\n\n", @ui.error
   end
 
 end

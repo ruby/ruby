@@ -53,6 +53,11 @@ class TestGemIndexer < RubyGemTestCase
     assert_indexed quickdir, "index"
     assert_indexed quickdir, "index.rz"
 
+    assert_indexed quickdir, "latest_index"
+    assert_indexed quickdir, "latest_index.rz"
+
+    assert_no_match %r|a-1|, File.read(File.join(quickdir, 'latest_index'))
+
     assert_indexed quickdir, "#{@a1.full_name}.gemspec.rz"
     assert_indexed quickdir, "#{@a2.full_name}.gemspec.rz"
     assert_indexed quickdir, "#{@b2.full_name}.gemspec.rz"
@@ -74,8 +79,8 @@ class TestGemIndexer < RubyGemTestCase
     end
 
     expected = <<-EOF
-Generating index for 5 gems in #{@tempdir}
-.....
+Generating index for 6 gems in #{@tempdir}
+......
 Loaded all gems
 Generating master indexes (this may take a while)
     EOF

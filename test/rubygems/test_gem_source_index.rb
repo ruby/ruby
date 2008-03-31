@@ -36,7 +36,8 @@ class TestGemSourceIndex < RubyGemTestCase
 
     use_ui @ui do
       fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@gem1.full_name, @gem4.full_name, @gem2.full_name].sort,
+      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
+                    @c1_2.full_name].sort,
                    fetched_index.gems.map { |n,s| n }.sort
     end
 
@@ -82,7 +83,8 @@ class TestGemSourceIndex < RubyGemTestCase
 
     use_ui @ui do
       fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@gem1.full_name, @gem4.full_name, @gem2.full_name].sort,
+      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
+                    @c1_2.full_name].sort,
                    fetched_index.gems.map { |n,s| n }.sort
     end
 
@@ -105,7 +107,8 @@ class TestGemSourceIndex < RubyGemTestCase
 
     use_ui @ui do
       fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@gem1.full_name, @gem4.full_name, @gem2.full_name].sort,
+      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
+                    @c1_2.full_name].sort,
                    fetched_index.gems.map { |n,s| n }.sort
     end
 
@@ -123,7 +126,8 @@ class TestGemSourceIndex < RubyGemTestCase
     util_setup_bulk_fetch false
     use_ui @ui do
       fetched_index = @source_index.fetch_bulk_index @uri
-      assert_equal [@gem1.full_name, @gem4.full_name, @gem2.full_name].sort,
+      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
+                    @c1_2.full_name].sort,
                    fetched_index.gems.map { |n,s| n }.sort
     end
 
@@ -136,11 +140,32 @@ class TestGemSourceIndex < RubyGemTestCase
   end
 
   def test_fetch_quick_index
-    quick_index = util_zip @gem_names
-    @fetcher.data["#{@gem_repo}/quick/index.rz"] = quick_index
+    index = util_zip @gem_names
+    latest_index = util_zip [@a2.full_name, @b2.full_name].join("\n")
 
-    quick_index = @source_index.fetch_quick_index @uri
-    assert_equal [@gem1.full_name, @gem4.full_name, @gem2.full_name].sort,
+    @fetcher.data["#{@gem_repo}/quick/index.rz"] = index
+    @fetcher.data["#{@gem_repo}/quick/latest_index.rz"] = latest_index
+
+    quick_index = @source_index.fetch_quick_index @uri, false
+    assert_equal [@a2.full_name, @b2.full_name].sort,
+                 quick_index.sort
+
+    paths = @fetcher.paths
+
+    assert_equal "#{@gem_repo}/quick/latest_index.rz", paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
+  def test_fetch_quick_index_all
+    index = util_zip @gem_names
+    latest_index = util_zip [@a2.full_name, @b2.full_name].join("\n")
+
+    @fetcher.data["#{@gem_repo}/quick/index.rz"] = index
+    @fetcher.data["#{@gem_repo}/quick/latest_index.rz"] = latest_index
+
+    quick_index = @source_index.fetch_quick_index @uri, true
+    assert_equal [@a1.full_name, @a2.full_name, @b2.full_name].sort,
                  quick_index.sort
 
     paths = @fetcher.paths
@@ -155,7 +180,7 @@ class TestGemSourceIndex < RubyGemTestCase
       proc { raise Exception }
 
     e = assert_raise Gem::OperationNotSupportedError do
-      @source_index.fetch_quick_index @uri
+      @source_index.fetch_quick_index @uri, true
     end
 
     assert_equal 'No quick index found: Exception', e.message
@@ -167,41 +192,201 @@ class TestGemSourceIndex < RubyGemTestCase
     assert paths.empty?, paths.join(', ')
   end
 
+  def test_fetch_quick_index_fallback
+    index = util_zip @gem_names
+
+    @fetcher.data["#{@gem_repo}/quick/index.rz"] = index
+
+    quick_index = @source_index.fetch_quick_index @uri, false
+    assert_equal @gem_names.split, quick_index.sort
+
+    paths = @fetcher.paths
+
+    assert_equal "#{@gem_repo}/quick/latest_index.rz", paths.shift
+    assert_equal "#{@gem_repo}/quick/index.rz", paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
+  def test_fetch_quick_index_subdir
+    latest_index = util_zip [@a2.full_name, @b2.full_name].join("\n")
+    repo = URI.parse "#{@gem_repo}/~nobody/mirror/"
+
+    @fetcher.data["#{repo}quick/latest_index.rz"] = latest_index
+
+    quick_index = @source_index.fetch_quick_index repo, false
+    assert_equal [@a2.full_name, @b2.full_name].sort,
+                 quick_index.sort
+
+    paths = @fetcher.paths
+
+    assert_equal "#{repo}quick/latest_index.rz", paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
+  def test_fetch_single_spec
+    a1_spec_url = "#{@gem_repo}/quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz"
+    @fetcher.data[a1_spec_url] = util_zip Marshal.dump(@a1)
+
+    spec = @source_index.send :fetch_single_spec, URI.parse(@gem_repo),
+                              @a1.full_name
+
+    assert_equal @a1.full_name, spec.full_name
+
+    paths = @fetcher.paths
+
+    assert_equal a1_spec_url, paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
+  def test_fetch_single_spec_subdir
+    repo = URI.parse "#{@gem_repo}/~nobody/mirror/"
+
+    a1_spec_url = "#{repo}quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz"
+    @fetcher.data[a1_spec_url] = util_zip Marshal.dump(@a1)
+
+    spec = @source_index.send :fetch_single_spec, repo, @a1.full_name
+
+    assert_equal @a1.full_name, spec.full_name
+
+    paths = @fetcher.paths
+
+    assert_equal a1_spec_url, paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
+  def test_fetch_single_spec_yaml
+    a1_spec_url = "#{@gem_repo}/quick/#{@a1.full_name}.gemspec.rz"
+    @fetcher.data[a1_spec_url] = util_zip @a1.to_yaml
+
+    repo = URI.parse @gem_repo
+
+    spec = @source_index.send :fetch_single_spec, repo, @a1.full_name
+
+    assert_equal @a1.full_name, spec.full_name
+
+    paths = @fetcher.paths
+
+    assert_equal "#{@gem_repo}/quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz", paths.shift
+    assert_equal a1_spec_url, paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
+  def test_fetch_single_spec_yaml_subdir
+    repo = URI.parse "#{@gem_repo}/~nobody/mirror/"
+
+    a1_spec_url = "#{repo}quick/#{@a1.full_name}.gemspec.rz"
+    @fetcher.data[a1_spec_url] = util_zip @a1.to_yaml
+
+    spec = @source_index.send :fetch_single_spec, repo, @a1.full_name
+
+    assert_equal @a1.full_name, spec.full_name
+
+    paths = @fetcher.paths
+
+    assert_equal "#{repo}quick/Marshal.#{Gem.marshal_version}/#{@a1.full_name}.gemspec.rz", paths.shift
+    assert_equal a1_spec_url, paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
   def test_find_missing
-    missing = @source_index.find_missing [@gem3.full_name]
-    assert_equal [@gem3.full_name], missing
+    missing = @source_index.find_missing [@b2.full_name]
+    assert_equal [@b2.full_name], missing
   end
 
   def test_find_missing_none_missing
-    missing = @source_index.find_missing @gem_names.split
+    missing = @source_index.find_missing [
+      @a1.full_name, @a2.full_name, @c1_2.full_name
+    ]
+
     assert_equal [], missing
   end
 
   def test_latest_specs
-    spec = quick_gem @gem1.name, '1'
-    @source_index.add_spec spec
+    p1_ruby = quick_gem 'p', '1'
+    p1_platform = quick_gem 'p', '1' do |spec|
+      spec.platform = Gem::Platform::CURRENT
+    end
+
+    a1_platform = quick_gem @a1.name, (@a1.version) do |s|
+      s.platform = Gem::Platform.new 'x86-my_platform1'
+    end
+
+    a2_platform = quick_gem @a2.name, (@a2.version) do |s|
+      s.platform = Gem::Platform.new 'x86-my_platform1'
+    end
+
+    a2_platform_other = quick_gem @a2.name, (@a2.version) do |s|
+      s.platform = Gem::Platform.new 'x86-other_platform1'
+    end
+
+    a3_platform_other = quick_gem @a2.name, (@a2.version.bump) do |s|
+      s.platform = Gem::Platform.new 'x86-other_platform1'
+    end
+
+    @source_index.add_spec p1_ruby
+    @source_index.add_spec p1_platform
+    @source_index.add_spec a1_platform
+    @source_index.add_spec a2_platform
+    @source_index.add_spec a2_platform_other
+    @source_index.add_spec a3_platform_other
 
     expected = [
-      @gem1.full_name,
-      @gem2.full_name,
-      @gem4.full_name,
+      @a2.full_name,
+      a2_platform.full_name,
+      a3_platform_other.full_name,
+      @c1_2.full_name,
+      @a_evil9.full_name,
+      p1_ruby.full_name,
+      p1_platform.full_name,
     ].sort
 
-    assert_equal expected, @source_index.latest_specs.map { |s| s.full_name }.sort
+    latest_specs = @source_index.latest_specs.map { |s| s.full_name }.sort
+
+    assert_equal expected, latest_specs
+  end
+
+  def test_load_gems_in
+    spec_dir1 = File.join @gemhome, 'specifications'
+    spec_dir2 = File.join @tempdir, 'gemhome2', 'specifications'
+
+    FileUtils.rm_r spec_dir1
+
+    FileUtils.mkdir_p spec_dir1
+    FileUtils.mkdir_p spec_dir2
+
+    a1 = quick_gem 'a', '1' do |spec| spec.author = 'author 1' end
+    a2 = quick_gem 'a', '1' do |spec| spec.author = 'author 2' end
+
+    File.open File.join(spec_dir1, "#{a1.full_name}.gemspec"), 'w' do |fp|
+      fp.write a1.to_ruby
+    end
+
+    File.open File.join(spec_dir2, "#{a2.full_name}.gemspec"), 'w' do |fp|
+      fp.write a2.to_ruby
+    end
+
+    @source_index.load_gems_in spec_dir1, spec_dir2
+
+    assert_equal a1.author, @source_index.specification(a1.full_name).author
   end
 
   def test_outdated
-    sic = Gem::SourceInfoCache.new
-    Gem::SourceInfoCache.instance_variable_set :@cache, sic
+    util_setup_source_info_cache
 
     assert_equal [], @source_index.outdated
 
-    updated = quick_gem @gem1.name, (@gem1.version.bump)
+    updated = quick_gem @a2.name, (@a2.version.bump)
     util_setup_source_info_cache updated
 
     assert_equal [updated.name], @source_index.outdated
 
-    updated_platform = quick_gem @gem1.name, (updated.version.bump) do |s|
+    updated_platform = quick_gem @a2.name, (updated.version.bump) do |s|
       s.platform = Gem::Platform.new 'x86-other_platform1'
     end
 
@@ -211,28 +396,34 @@ class TestGemSourceIndex < RubyGemTestCase
   end
 
   def test_remove_extra
-    @source_index.remove_extra [@gem1.full_name]
-    assert_equal [@gem1.full_name], @source_index.gems.map { |n,s| n }
+    @source_index.add_spec @a1
+    @source_index.add_spec @a2
+
+    @source_index.remove_extra [@a1.full_name]
+
+    assert_equal [@a1.full_name], @source_index.gems.map { |n,s| n }
   end
 
   def test_remove_extra_no_changes
-    gems = @gem_names.split.sort
+    gems = [@a1.full_name, @a2.full_name]
+    @source_index.add_spec @a1
+    @source_index.add_spec @a2
+
     @source_index.remove_extra gems
+
     assert_equal gems, @source_index.gems.map { |n,s| n }.sort
   end
 
   def test_search
-    assert_equal [@gem1, @gem4], @source_index.search("gem_one")
-    assert_equal [@gem1], @source_index.search("gem_one", "= 2")
+    assert_equal [@a1, @a2, @a_evil9], @source_index.search('a')
+    assert_equal [@a2], @source_index.search('a', '= 2')
 
-    assert_equal [], @source_index.search("bogusstring")
-    assert_equal [], @source_index.search("gem_one", "= 3.2.1")
+    assert_equal [], @source_index.search('bogusstring')
+    assert_equal [], @source_index.search('a', '= 3')
 
-    @a1 = quick_gem 'a', '1'
-    @a2 = quick_gem 'a', '2'
-
-    source_index = Gem::SourceIndex.new @a1.full_name => @a1,
-                                        @a2.full_name => @a2
+    source_index = Gem::SourceIndex.new
+    source_index.add_spec @a1
+    source_index.add_spec @a2
 
     assert_equal [@a1], source_index.search(@a1.name, '= 1')
 
@@ -276,7 +467,7 @@ class TestGemSourceIndex < RubyGemTestCase
   end
 
   def test_specification
-    assert_equal @gem1, @source_index.specification(@gem1.full_name)
+    assert_equal @a1, @source_index.specification(@a1.full_name)
 
     assert_nil @source_index.specification("foo-1.2.4")
   end
@@ -298,9 +489,11 @@ class TestGemSourceIndex < RubyGemTestCase
     assert_equal [], @source_index.gems.keys.sort
 
     use_ui @ui do
-      @source_index.update @uri
+      @source_index.update @uri, true
 
-      assert_equal @gem_names.split, @source_index.gems.keys.sort
+      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
+                    @c1_2.full_name],
+                   @source_index.gems.keys.sort
     end
 
     paths = @fetcher.paths
@@ -315,15 +508,42 @@ class TestGemSourceIndex < RubyGemTestCase
     old_gem_conf = Gem.configuration
     Gem.configuration = Gem::ConfigFile.new([])
 
+    latest_names = [@a2, @a_evil9, @b2, @c1_2].map { |s| s.full_name }
+    latest_index = util_zip latest_names.join("\n")
+    @fetcher.data["#{@gem_repo}/quick/latest_index.rz"] = latest_index
+
+    marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
+                            "#{@b2.full_name}.gemspec.rz"
+    @fetcher.data[marshal_uri] = util_zip Marshal.dump(@b2)
+
+    use_ui @ui do
+      @source_index.update @uri, false
+
+      assert_equal latest_names, @source_index.gems.keys.sort
+    end
+
+    paths = @fetcher.paths
+    assert_equal "#{@gem_repo}/quick/latest_index.rz", paths.shift
+    assert_equal marshal_uri, paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  ensure
+    Gem.configuration = old_gem_conf
+  end
+
+  def test_update_incremental_all
+    old_gem_conf = Gem.configuration
+    Gem.configuration = Gem::ConfigFile.new([])
+
     quick_index = util_zip @all_gem_names.join("\n")
     @fetcher.data["#{@gem_repo}/quick/index.rz"] = quick_index
 
     marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@gem3.full_name}.gemspec.rz"
-    @fetcher.data[marshal_uri] = util_zip Marshal.dump(@gem3)
+                            "#{@b2.full_name}.gemspec.rz"
+    @fetcher.data[marshal_uri] = util_zip Marshal.dump(@b2)
 
     use_ui @ui do
-      @source_index.update @uri
+      @source_index.update @uri, true
 
       assert_equal @all_gem_names, @source_index.gems.keys.sort
     end
@@ -345,13 +565,13 @@ class TestGemSourceIndex < RubyGemTestCase
     @fetcher.data["#{@gem_repo}/quick/index.rz"] = quick_index
 
     marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@gem3.full_name}.gemspec.rz"
+                            "#{@b2.full_name}.gemspec.rz"
 
-    yaml_uri = "#{@gem_repo}/quick/#{@gem3.full_name}.gemspec.rz"
-    @fetcher.data[yaml_uri] = util_zip @gem3.to_yaml
+    yaml_uri = "#{@gem_repo}/quick/#{@b2.full_name}.gemspec.rz"
+    @fetcher.data[yaml_uri] = util_zip @b2.to_yaml
 
     use_ui @ui do
-      @source_index.update @uri
+      @source_index.update @uri, true
 
       assert_equal @all_gem_names, @source_index.gems.keys.sort
     end
@@ -374,16 +594,16 @@ class TestGemSourceIndex < RubyGemTestCase
     @fetcher.data["#{@gem_repo}/quick/index.rz"] = quick_index
 
     marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@gem3.full_name}.gemspec.rz"
-    marshal_data = Marshal.dump(@gem3)
+                            "#{@b2.full_name}.gemspec.rz"
+    marshal_data = Marshal.dump(@b2)
     marshal_data[0] = (Marshal::MAJOR_VERSION - 1).chr
     @fetcher.data[marshal_uri] = util_zip marshal_data
 
-    yaml_uri = "#{@gem_repo}/quick/#{@gem3.full_name}.gemspec.rz"
-    @fetcher.data[yaml_uri] = util_zip @gem3.to_yaml
+    yaml_uri = "#{@gem_repo}/quick/#{@b2.full_name}.gemspec.rz"
+    @fetcher.data[yaml_uri] = util_zip @b2.to_yaml
 
     use_ui @ui do
-      @source_index.update @uri
+      @source_index.update @uri, true
 
       assert_equal @all_gem_names, @source_index.gems.keys.sort
     end
@@ -398,22 +618,48 @@ class TestGemSourceIndex < RubyGemTestCase
     Gem.configuration = old_gem_conf
   end
 
+  def test_update_subdir
+    @gem_repo = @gem_repo + "/subdir"
+
+    util_setup_bulk_fetch true
+
+    @source_index.gems.replace({})
+    assert_equal [], @source_index.gems.keys.sort
+
+    uri = @uri.to_s + "/subdir"
+
+    use_ui @ui do
+      @source_index.update uri, true
+
+      assert_equal [@a1.full_name, @a2.full_name, @a_evil9.full_name,
+                    @c1_2.full_name],
+                   @source_index.gems.keys.sort
+    end
+
+    paths = @fetcher.paths
+
+    assert_equal "#{@gem_repo}/quick/index.rz", paths.shift
+    assert_equal "#{@gem_repo}/Marshal.#{@marshal_version}.Z", paths.shift
+
+    assert paths.empty?, paths.join(', ')
+  end
+
   def test_update_with_missing
     marshal_uri = File.join @gem_repo, "quick", "Marshal.#{@marshal_version}",
-                            "#{@gem3.full_name}.gemspec.rz"
-    dumped = Marshal.dump @gem3
+                            "#{@c1_2.full_name}.gemspec.rz"
+    dumped = Marshal.dump @c1_2
     @fetcher.data[marshal_uri] = util_zip(dumped)
 
     use_ui @ui do
-      @source_index.update_with_missing @uri, [@gem3.full_name]
+      @source_index.update_with_missing @uri, [@c1_2.full_name]
     end
 
-    spec = @source_index.specification(@gem3.full_name)
+    spec = @source_index.specification(@c1_2.full_name)
     # We don't care about the equality of undumped attributes
-    @gem3.files = spec.files
-    @gem3.loaded_from = spec.loaded_from
+    @c1_2.files = spec.files
+    @c1_2.loaded_from = spec.loaded_from
 
-    assert_equal @gem3, spec
+    assert_equal @c1_2, spec
   end
 
   def util_setup_bulk_fetch(compressed)
@@ -427,3 +673,4 @@ class TestGemSourceIndex < RubyGemTestCase
   end
 
 end
+

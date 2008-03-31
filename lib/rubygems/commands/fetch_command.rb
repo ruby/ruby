@@ -44,17 +44,15 @@ class Gem::Commands::FetchCommand < Gem::Command
 
       spec, source_uri = specs_and_sources.last
 
-      gem_file = "#{spec.full_name}.gem"
-
-      gem_path = File.join source_uri, 'gems', gem_file
-
-      gem = Gem::RemoteFetcher.fetcher.fetch_path gem_path
-
-      File.open gem_file, 'wb' do |fp|
-        fp.write gem
+      if spec.nil? then
+        alert_error "Could not find #{gem_name} in any repository"
+        next
       end
 
-      say "Downloaded #{gem_file}"
+      path = Gem::RemoteFetcher.fetcher.download spec, source_uri
+      FileUtils.mv path, "#{spec.full_name}.gem"
+
+      say "Downloaded #{spec.full_name}"
     end
   end
 

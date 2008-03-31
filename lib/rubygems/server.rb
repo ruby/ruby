@@ -1,7 +1,7 @@
 require 'webrick'
-require 'rdoc/template'
 require 'yaml'
 require 'zlib'
+require 'erb'
 
 require 'rubygems'
 
@@ -27,107 +27,87 @@ class Gem::Server
 
   include Gem::UserInteraction
 
-  DOC_TEMPLATE = <<-WEBPAGE
-<?xml version="1.0" encoding="iso-8859-1"?>
-<!DOCTYPE html 
-     PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  DOC_TEMPLATE = <<-'WEBPAGE'
+  <?xml version="1.0" encoding="iso-8859-1"?>
+  <!DOCTYPE html 
+       PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-  <title>RubyGems Documentation Index</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-  <link rel="stylesheet" href="gem-server-rdoc-style.css" type="text/css" media="screen" />
-</head>
-<body>
-  <div id="fileHeader">
-    <h1>RubyGems Documentation Index</h1>
-  </div>
-  <!-- banner header -->
-
-<div id="bodyContent">
-  <div id="contextContent">
-    <div id="description">
-      <h1>Summary</h1>
-<p>There are %gem_count% gems installed:</p>
-<p>
-START:specs
-IFNOT:is_last
-<a href="#%name%">%name%</a>,
-ENDIF:is_last
-IF:is_last
-<a href="#%name%">%name%</a>.
-ENDIF:is_last
-END:specs
-<h1>Gems</h1>
-
-<dl>
-START:specs
-<dt>
-IF:first_name_entry
-  <a name="%name%"></a>
-ENDIF:first_name_entry
-<b>%name% %version%</b>
-IF:rdoc_installed
-  <a href="%doc_path%">[rdoc]</a>
-ENDIF:rdoc_installed
-IFNOT:rdoc_installed
-  <span title="rdoc not installed">[rdoc]</span>
-ENDIF:rdoc_installed
-IF:homepage
-<a href="%homepage%" title="%homepage%">[www]</a>
-ENDIF:homepage
-IFNOT:homepage
-<span title="no homepage available">[www]</span>
-ENDIF:homepage
-IF:has_deps
- - depends on
-START:dependencies
-IFNOT:is_last
-<a href="#%name%" title="%version%">%name%</a>,
-ENDIF:is_last
-IF:is_last
-<a href="#%name%" title="%version%">%name%</a>.
-ENDIF:is_last
-END:dependencies
-ENDIF:has_deps
-</dt>
-<dd>
-%summary%
-IF:executables
-  <br/>
-
-IF:only_one_executable
-    Executable is
-ENDIF:only_one_executable
-  
-IFNOT:only_one_executable
-    Executables are
-ENDIF:only_one_executable
- 
-START:executables
-IFNOT:is_last
-      <span class="context-item-name">%executable%</span>,
-ENDIF:is_last
-IF:is_last
-      <span class="context-item-name">%executable%</span>.
-ENDIF:is_last
-END:executables
-ENDIF:executables
-<br/>
-<br/>
-</dd>
-END:specs
-</dl>
-
+  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>RubyGems Documentation Index</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+    <link rel="stylesheet" href="gem-server-rdoc-style.css" type="text/css" media="screen" />
+  </head>
+  <body>
+    <div id="fileHeader">
+      <h1>RubyGems Documentation Index</h1>
     </div>
-   </div>
+    <!-- banner header -->
+
+  <div id="bodyContent">
+    <div id="contextContent">
+      <div id="description">
+        <h1>Summary</h1>
+  <p>There are <%=values["gem_count"]%> gems installed:</p>
+  <p>
+  <%= values["specs"].map { |v| "<a href=\"#{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>. 
+  <h1>Gems</h1>
+
+  <dl>
+  <% values["specs"].each do |spec| %>
+  	<dt>
+  	<% if spec["first_name_entry"] then %>
+  	  <a name="<%=spec["name"]%>"></a>
+  	<% end %>
+
+  	<b><%=spec["name"]%> <%=spec["version"]%></b>
+
+  	<% if spec["rdoc_installed"] then %>
+  	  <a href="<%=spec["doc_path"]%>">[rdoc]</a>
+  	<% else %>
+  	  <span title="rdoc not installed">[rdoc]</span>
+  	<% end %>
+
+  	<% if spec["homepage"] then %>
+  		<a href="<%=spec["homepage"]%>" title="<%=spec["homepage"]%>">[www]</a>
+  	<% else %>
+  		<span title="no homepage available">[www]</span>
+  	<% end %>
+
+  	<% if spec["has_deps"] then %>
+  	 - depends on
+  		<%= spec["dependencies"].map { |v| "<a href=\"#{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>. 
+  	<% end %>
+  	</dt>
+  	<dd>
+  	<%=spec["summary"]%>
+  	<% if spec["executables"] then %>
+  	  <br/>
+
+  		<% if spec["only_one_executable"] then %>
+  		    Executable is
+  		<% else %>
+  		    Executables are
+  		<%end%>
+
+  		<%= spec["executables"].map { |v| "<span class=\"context-item-name\">#{v["executable"]}</span>"}.join ', ' %>. 
+  		
+  	<%end%>
+  	<br/>
+  	<br/>
+  	</dd>
+  <% end %>
+  </dl>
+
+      </div>
+     </div>
+    </div>
+  <div id="validator-badges">
+    <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
   </div>
-<div id="validator-badges">
-  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
-</div>
-</body>
-</html>
+  </body>
+  </html>
   WEBPAGE
 
   # CSS is copy & paste from rdoc-style.css, RDoc V1.0.1 - 20041108
@@ -496,11 +476,12 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       end
 
       # create page from template
-      template = TemplatePage.new(DOC_TEMPLATE)
+      template = ERB.new(DOC_TEMPLATE)
       res['content-type'] = 'text/html'
-      template.write_html_on res.body,
-                             "gem_count" => specs.size.to_s, "specs" => specs,
-                             "total_file_count" => total_file_count.to_s
+      values = { "gem_count" => specs.size.to_s, "specs" => specs,
+                             "total_file_count" => total_file_count.to_s }
+      result = template.result binding
+      res.body = result
     end
 
     paths = { "/gems" => "/cache/", "/doc_root" => "/doc/" }

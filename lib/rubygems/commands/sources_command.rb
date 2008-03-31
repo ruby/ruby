@@ -39,8 +39,11 @@ class Gem::Commands::SourcesCommand < Gem::Command
     options[:list] = !(options[:add] || options[:remove] || options[:clear_all] || options[:update])
 
     if options[:clear_all] then
-      remove_cache_file("user", Gem::SourceInfoCache.user_cache_file)
-      remove_cache_file("system", Gem::SourceInfoCache.system_cache_file)
+      sic = Gem::SourceInfoCache
+      remove_cache_file 'user',          sic.user_cache_file
+      remove_cache_file 'latest user',   sic.latest_user_cache_file
+      remove_cache_file 'system',        sic.system_cache_file
+      remove_cache_file 'latest system', sic.latest_system_cache_file
     end
 
     if options[:add] then
@@ -48,7 +51,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
 
       sice = Gem::SourceInfoCacheEntry.new nil, nil
       begin
-        sice.refresh source_uri
+        sice.refresh source_uri, true
 
         Gem::SourceInfoCache.cache_data[source_uri] = sice
         Gem::SourceInfoCache.cache.update
@@ -66,7 +69,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
     end
 
     if options[:update] then
-      Gem::SourceInfoCache.cache.refresh
+      Gem::SourceInfoCache.cache.refresh true
       Gem::SourceInfoCache.cache.flush
 
       say "source cache successfully updated"
@@ -78,6 +81,11 @@ class Gem::Commands::SourcesCommand < Gem::Command
       unless Gem.sources.include? source_uri then
         say "source #{source_uri} not present in cache"
       else
+        begin # HACK figure out how to get the cache w/o update
+          Gem::SourceInfoCache.cache
+        rescue Gem::RemoteFetcher::FetchError
+        end
+
         Gem::SourceInfoCache.cache_data.delete source_uri
         Gem::SourceInfoCache.cache.update
         Gem::SourceInfoCache.cache.flush
@@ -100,11 +108,12 @@ class Gem::Commands::SourcesCommand < Gem::Command
 
   private
 
-  def remove_cache_file(desc, fn)
-    FileUtils.rm_rf fn rescue nil
-    if ! File.exist?(fn)
+  def remove_cache_file(desc, path)
+    FileUtils.rm_rf path
+
+    if not File.exist?(path) then
       say "*** Removed #{desc} source cache ***"
-    elsif ! File.writable?(fn)
+    elsif not File.writable?(path) then
       say "*** Unable to remove #{desc} source cache (write protected) ***"
     else
       say "*** Unable to remove #{desc} source cache ***"

@@ -3,6 +3,7 @@ require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
 require 'rubygems/source_info_cache'
+require 'rubygems/format'
 
 class Gem::Commands::SpecificationCommand < Gem::Command
 
@@ -41,13 +42,16 @@ class Gem::Commands::SpecificationCommand < Gem::Command
     gem = get_one_gem_name
 
     if local? then
-      source_index = Gem::SourceIndex.from_installed_gems
-      specs.push(*source_index.search(/\A#{gem}\z/, options[:version]))
+      if File.exist? gem then
+        specs << Gem::Format.from_file_by_path(gem).spec rescue nil
+      end
+
+      if specs.empty? then
+        specs.push(*Gem.source_index.search(/\A#{gem}\z/, options[:version]))
+      end
     end
 
     if remote? then
-      alert_warning "Remote information is not complete\n\n"
-
       Gem::SourceInfoCache.cache_data.each do |_,sice|
         specs.push(*sice.source_index.search(gem, options[:version]))
       end

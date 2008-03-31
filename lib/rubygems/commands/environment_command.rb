@@ -25,19 +25,18 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
   def execute
     out = ''
     arg = options[:args][0]
-    if begins?("packageversion", arg) then
+    case arg
+    when /^packageversion/ then
       out << Gem::RubyGemsPackageVersion
-    elsif begins?("version", arg) then
+    when /^version/ then
       out << Gem::RubyGemsVersion
-    elsif begins?("gemdir", arg) then
+    when /^gemdir/, /^gemhome/, /^home/, /^GEM_HOME/ then
       out << Gem.dir
-    elsif begins?("gempath", arg) then
-      out << Gem.path.join("\n")
-    elsif begins?("remotesources", arg) then
+    when /^gempath/, /^path/, /^GEM_PATH/ then
+      out << Gem.path.join(File::PATH_SEPARATOR)
+    when /^remotesources/ then
       out << Gem.sources.join("\n")
-    elsif arg then
-      fail Gem::CommandLineError, "Unknown enviroment option [#{arg}]"
-    else
+    when nil then
       out = "RubyGems Environment:\n"
 
       out << "  - RUBYGEMS VERSION: #{Gem::RubyGemsVersion} (#{Gem::RubyGemsPackageVersion})\n"
@@ -75,6 +74,9 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
       Gem.sources.each do |s|
         out << "     - #{s}\n"
       end
+
+    else
+      fail Gem::CommandLineError, "Unknown enviroment option [#{arg}]"
     end
     say out
     true

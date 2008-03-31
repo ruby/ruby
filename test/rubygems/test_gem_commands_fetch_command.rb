@@ -15,13 +15,12 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
   def test_execute
     util_setup_fake_fetcher
 
-    util_build_gem @gem1
     @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] =
       @source_index.dump
-    @fetcher.data["#{@gem_repo}/gems/#{@gem1.full_name}.gem"] =
-      File.read(File.join(@gemhome, 'cache', "#{@gem1.full_name}.gem"))
+    @fetcher.data["#{@gem_repo}/gems/#{@a2.full_name}.gem"] =
+      File.read(File.join(@gemhome, 'cache', "#{@a2.full_name}.gem"))
 
-      @cmd.options[:args] = [@gem1.name]
+    @cmd.options[:args] = [@a2.name]
 
     use_ui @ui do
       Dir.chdir @tempdir do
@@ -29,7 +28,7 @@ class TestGemCommandsFetchCommand < RubyGemTestCase
       end
     end
 
-    assert File.exist?(File.join(@tempdir, "#{@gem1.full_name}.gem"))
+    assert File.exist?(File.join(@tempdir, "#{@a2.full_name}.gem"))
   end
 
 end

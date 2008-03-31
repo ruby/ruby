@@ -7,20 +7,31 @@ class TestGemCommandsQueryCommand < RubyGemTestCase
   def setup
     super
 
-    @foo_gem = quick_gem 'foo' do |spec|
-      spec.summary = 'This is a lot of text.  ' * 5
-    end
-    @foo_gem_p = quick_gem 'foo' do |spec|
-      spec.summary = 'This is a lot of text.  ' * 5
-      spec.platform = Gem::Platform::CURRENT
-    end
-    @bar_gem = quick_gem 'bar'
+    util_make_gems
+
+    @a2.summary = 'This is a lot of text. ' * 4
 
     @cmd = Gem::Commands::QueryCommand.new
+
+    @si = util_setup_source_info_cache @a1, @a2, @pl1
+    util_setup_fake_fetcher
+
+    @fetcher.data["#{@gem_repo}/Marshal.#{Gem.marshal_version}"] = proc do
+      raise Gem::RemoteFetcher::FetchError
+    end
   end
 
   def test_execute
-    util_setup_source_info_cache @foo_gem, @foo_gem_p
+    cache = Gem::SourceInfoCache.cache
+    cache.update
+    cache.write_cache
+    cache.reset_cache_data
+
+    a2_name = @a2.full_name
+    @fetcher.data["#{@gem_repo}/quick/latest_index.rz"] = util_zip a2_name
+    @fetcher.data["#{@gem_repo}/quick/Marshal.#{Gem.marshal_version}/#{a2_name}.gemspec.rz"] = util_zip Marshal.dump(@a2)
+    @fetcher.data["#{@gem_repo}/Marshal.#{Gem.marshal_version}"] =
+      Marshal.dump @si
 
     @cmd.handle_options %w[-r]
 
@@ -32,7 +43,43 @@ class TestGemCommandsQueryCommand < RubyGemTestCase
 
 *** REMOTE GEMS ***
 
-foo (2)
+a (2)
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_all
+    cache = Gem::SourceInfoCache.cache
+    cache.update
+    cache.write_cache
+    cache.reset_cache_data
+
+    a1_name = @a1.full_name
+    a2_name = @a2.full_name
+    @fetcher.data["#{@gem_repo}/quick/index.rz"] =
+        util_zip [a1_name, a2_name].join("\n")
+    @fetcher.data["#{@gem_repo}/quick/latest_index.rz"] = util_zip a2_name
+    @fetcher.data["#{@gem_repo}/quick/Marshal.#{Gem.marshal_version}/#{a1_name}.gemspec.rz"] = util_zip Marshal.dump(@a1)
+    @fetcher.data["#{@gem_repo}/quick/Marshal.#{Gem.marshal_version}/#{a2_name}.gemspec.rz"] = util_zip Marshal.dump(@a2)
+    @fetcher.data["#{@gem_repo}/Marshal.#{Gem.marshal_version}"] =
+      Marshal.dump @si
+
+    @cmd.handle_options %w[-r --all]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** REMOTE GEMS ***
+
+Updating metadata for 1 gems from http://gems.example.com/
+.
+complete
+a (2, 1)
     EOF
 
     assert_equal expected, @ui.output
@@ -40,8 +87,6 @@ foo (2)
   end
 
   def test_execute_details
-    util_setup_source_info_cache @foo_gem
-
     @cmd.handle_options %w[-r -d]
 
     use_ui @ui do
@@ -52,18 +97,94 @@ foo (2)
 
 *** REMOTE GEMS ***
 
-foo (2)
-    This is a lot of text.  This is a lot of text.  This is a lot of
-    text.  This is a lot of text.  This is a lot of text.
+a (2, 1)
+    This is a lot of text. This is a lot of text. This is a lot of text.
+    This is a lot of text.
+
+pl (1)
+    this is a summary
     EOF
 
     assert_equal expected, @ui.output
     assert_equal '', @ui.error
   end
 
-  def test_execute_no_versions
-    util_setup_source_info_cache @foo_gem, @bar_gem
+  def test_execute_installed
+    @cmd.handle_options %w[-n c --installed]
 
+    e = assert_raise Gem::SystemExitException do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal 0, e.exit_code
+
+    assert_equal "true\n", @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_installed_no_name
+    @cmd.handle_options %w[--installed]
+
+    e = assert_raise Gem::SystemExitException do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal '', @ui.output
+    assert_equal "ERROR:  You must specify a gem name\n", @ui.error
+
+    assert_equal 4, e.exit_code
+  end
+
+  def test_execute_installed_not_installed
+    @cmd.handle_options %w[-n not_installed --installed]
+
+    e = assert_raise Gem::SystemExitException do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "false\n", @ui.output
+    assert_equal '', @ui.error
+
+    assert_equal 1, e.exit_code
+  end
+
+  def test_execute_installed_version
+    @cmd.handle_options %w[-n c --installed --version 1.2]
+
+    e = assert_raise Gem::SystemExitException do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "true\n", @ui.output
+    assert_equal '', @ui.error
+
+    assert_equal 0, e.exit_code
+  end
+
+  def test_execute_installed_version_not_installed
+    @cmd.handle_options %w[-n c --installed --version 2]
+
+    e = assert_raise Gem::SystemExitException do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "false\n", @ui.output
+    assert_equal '', @ui.error
+
+    assert_equal 1, e.exit_code
+  end
+
+  def test_execute_no_versions
     @cmd.handle_options %w[-r --no-versions]
 
     use_ui @ui do
@@ -74,8 +195,8 @@ foo (2)
 
 *** REMOTE GEMS ***
 
-bar
-foo
+a
+pl
     EOF
 
     assert_equal expected, @ui.output

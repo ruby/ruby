@@ -16,6 +16,8 @@ class Gem::Requirement
 
   include Comparable
 
+  attr_reader :requirements
+
   OPS = {
     "="  =>  lambda { |v, r| v == r },
     "!=" =>  lambda { |v, r| v != r },

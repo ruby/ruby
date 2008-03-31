@@ -19,6 +19,7 @@ class TestGem < RubyGemTestCase
     expected = [
       File.join(@gemhome, *%W[gems #{@a1.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@a2.full_name} lib]),
+      File.join(@gemhome, *%W[gems #{@a_evil9.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@b2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@c1_2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@pl1.full_name} lib]),
@@ -213,6 +214,7 @@ class TestGem < RubyGemTestCase
 
     expected = [
       File.join(@gemhome, *%W[gems #{@a2.full_name} lib]),
+      File.join(@gemhome, *%W[gems #{@a_evil9.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@b2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@c1_2.full_name} lib]),
       File.join(@gemhome, *%W[gems #{@pl1.full_name} lib]),
@@ -226,7 +228,7 @@ class TestGem < RubyGemTestCase
     install_gem foo
     Gem.source_index = nil
 
-    Gem.activate 'foo', false
+    Gem.activate 'foo'
 
     assert_equal true, Gem.loaded_specs.keys.include?('foo')
   end
@@ -235,9 +237,29 @@ class TestGem < RubyGemTestCase
     assert_equal [Gem.dir], Gem.path
   end
 
+  def test_self_path_APPLE_GEM_HOME
+    Gem.clear_paths
+    Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
+
+    assert Gem.path.include?('/tmp/apple_gem_home')
+  ensure
+    Gem.send :remove_const, :APPLE_GEM_HOME
+  end
+
+  def test_self_path_APPLE_GEM_HOME_GEM_PATH
+    Gem.clear_paths
+    ENV['GEM_PATH'] = @gemhome
+    Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
+
+    assert !Gem.path.include?('/tmp/apple_gem_home')
+  ensure
+    Gem.send :remove_const, :APPLE_GEM_HOME
+  end
+
   def test_self_path_ENV_PATH
     Gem.clear_paths
     path_count = Gem.path.size
+    path_count -= 1 if defined? APPLE_GEM_HOME
     Gem.clear_paths
     util_ensure_gem_dirs
 
@@ -257,8 +279,8 @@ class TestGem < RubyGemTestCase
     ENV['GEM_PATH'] = dirs.join File::PATH_SEPARATOR
 
     assert_equal @gemhome, Gem.dir
+
     paths = [Gem.dir]
-    paths << APPLE_GEM_HOME if defined? APPLE_GEM_HOME
     assert_equal @additional + paths, Gem.path
   end
 
@@ -270,8 +292,8 @@ class TestGem < RubyGemTestCase
     ENV['GEM_PATH'] = @additional.join(File::PATH_SEPARATOR)
 
     assert_equal @gemhome, Gem.dir
+
     paths = [Gem.dir]
-    paths.insert(0, APPLE_GEM_HOME) if defined? APPLE_GEM_HOME
     assert_equal @additional + paths, Gem.path
   end
 
@@ -284,6 +306,18 @@ class TestGem < RubyGemTestCase
     assert_equal File.dirname(File.dirname(file_name)), Gem.prefix
   end
 
+  def test_self_prefix_odd
+    orig_sitelibdir = Gem::ConfigMap[:sitelibdir]
+
+    file_name = File.expand_path __FILE__
+    prefix = File.join File.dirname(File.dirname(file_name)), 'lib'
+    Gem::ConfigMap[:sitelibdir] = prefix.sub(/[\w]\//, '\&/')
+
+    assert_nil Gem.prefix
+  ensure
+    Gem::ConfigMap[:sitelibdir] = orig_sitelibdir
+  end
+
   def test_self_required_location
     util_make_gems
 
@@ -293,6 +327,13 @@ class TestGem < RubyGemTestCase
                  Gem.required_location("a", "code.rb", "< 2")
     assert_equal File.join(@tempdir, *%w[gemhome gems a-2 lib code.rb]),
                  Gem.required_location("a", "code.rb", "= 2")
+  end
+
+  def test_self_ruby_version
+    version = RUBY_VERSION.dup
+    version << ".#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
+
+    assert_equal Gem::Version.new(version), Gem.ruby_version
   end
 
   def test_self_searcher

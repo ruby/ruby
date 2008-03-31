@@ -13,7 +13,10 @@ class Gem::DependencyRemovalException < Gem::Exception; end
 
 ##
 # Raised when attempting to uninstall a gem that isn't in GEM_HOME.
-class Gem::GemNotInHomeException < Gem::Exception; end
+
+class Gem::GemNotInHomeException < Gem::Exception
+  attr_accessor :spec
+end
 
 class Gem::DocumentError < Gem::Exception; end
 
@@ -65,3 +68,17 @@ class Gem::RemoteSourceException < Gem::Exception; end
 
 class Gem::VerificationError < Gem::Exception; end
 
+##
+# Raised to indicate that a system exit should occur with the specified
+# exit_code
+
+class Gem::SystemExitException < SystemExit
+  attr_accessor :exit_code
+
+  def initialize(exit_code)
+    @exit_code = exit_code
+
+    super "Exiting RubyGems with exit_code #{exit_code}"
+  end
+
+end

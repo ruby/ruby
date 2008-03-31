@@ -35,6 +35,11 @@ module Gem
           options[:install_dir] = File.expand_path(value)
         end
 
+        add_option('-n', '--bindir DIR',
+                   'Directory to remove binaries from') do |value, options|
+          options[:bin_dir] = File.expand_path(value)
+        end
+
         add_version_option
         add_platform_option
       end
@@ -54,7 +59,13 @@ module Gem
 
       def execute
         get_all_gem_names.each do |gem_name|
-          Gem::Uninstaller.new(gem_name, options).uninstall
+          begin
+            Gem::Uninstaller.new(gem_name, options).uninstall
+          rescue Gem::GemNotInHomeException => e
+            spec = e.spec
+            alert("In order to remove #{spec.name}, please execute:\n" \
+                  "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
+          end
         end
       end
     end

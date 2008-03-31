@@ -4,6 +4,7 @@
 # See LICENSE.txt for permissions.
 #++
 
+require 'rubygems'
 require 'rubygems/gem_openssl'
 
 # = Signed Gems README

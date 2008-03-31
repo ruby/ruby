@@ -123,6 +123,7 @@ module Gem
     end
     
     private
+
     def load_and_instantiate(command_name)
       command_name = command_name.to_s
       retried = false

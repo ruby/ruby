@@ -68,7 +68,7 @@ module Gem
     include DefaultUserInteraction
     [
       :choose_from_list, :ask, :ask_yes_no, :say, :alert, :alert_warning,
-      :alert_error, :terminate_interaction!, :terminate_interaction
+      :alert_error, :terminate_interaction
     ].each do |methname|
       class_eval %{
         def #{methname}(*args)
@@ -182,16 +182,10 @@ module Gem
       ask(question) if question
     end
 
-    # Terminate the application immediately without running any exit
-    # handlers.
-    def terminate_interaction!(status=-1)
-      exit!(status)
-    end
-    
     # Terminate the appliation normally, running any exit handlers
     # that might have been defined.
-    def terminate_interaction(status=0)
-      exit(status)
+    def terminate_interaction(status = 0)
+      raise Gem::SystemExitException, status
     end
 
     # Return a progress reporter object

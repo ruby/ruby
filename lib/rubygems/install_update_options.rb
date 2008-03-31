@@ -25,6 +25,12 @@ module Gem::InstallUpdateOptions
       options[:install_dir] = File.expand_path(value)
     end
 
+    add_option(:"Install/Update", '-n', '--bindir DIR',
+	       'Directory where binary files are',
+	       'located') do |value, options|
+      options[:bin_dir] = File.expand_path(value)
+    end
+
     add_option(:"Install/Update", '-d', '--[no-]rdoc',
                'Generate RDoc documentation for the gem on',
                'install') do |value, options|

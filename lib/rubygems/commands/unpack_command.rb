@@ -38,6 +38,7 @@ class Gem::Commands::UnpackCommand < Gem::Command
   def execute
     gemname = get_one_gem_name
     path = get_path(gemname, options[:version])
+
     if path then
       basename = File.basename(path).sub(/\.gem$/, '')
       target_dir = File.expand_path File.join(options[:target], basename)
@@ -66,16 +67,27 @@ class Gem::Commands::UnpackCommand < Gem::Command
   # source directories?
   def get_path(gemname, version_req)
     return gemname if gemname =~ /\.gem$/i
-    specs = Gem::SourceIndex.from_installed_gems.search(/\A#{gemname}\z/, version_req)
+
+    specs = Gem::source_index.search(/\A#{gemname}\z/, version_req)
+
     selected = specs.sort_by { |s| s.version }.last
+
     return nil if selected.nil?
+
     # We expect to find (basename).gem in the 'cache' directory.
     # Furthermore, the name match must be exact (ignoring case).
     if gemname =~ /^#{selected.name}$/i
       filename = selected.full_name + '.gem'
-      return File.join(Gem.dir, 'cache', filename)
+      path = nil
+
+      Gem.path.find do |gem_dir|
+        path = File.join gem_dir, 'cache', filename
+        File.exist? path
+      end
+
+      path
     else
-      return nil
+      nil
     end
   end
 

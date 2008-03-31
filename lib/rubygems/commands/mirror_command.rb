@@ -2,7 +2,7 @@ require 'yaml'
 require 'zlib'
 
 require 'rubygems/command'
-require 'rubygems/gem_open_uri'
+require 'open-uri'
 
 class Gem::Commands::MirrorCommand < Gem::Command
 

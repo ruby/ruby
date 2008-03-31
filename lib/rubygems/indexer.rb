@@ -11,6 +11,7 @@ end
 
 ##
 # Top level class for building the gem repository index.
+
 class Gem::Indexer
 
   include Gem::UserInteraction
@@ -25,7 +26,9 @@ class Gem::Indexer
 
   attr_reader :directory
 
+  ##
   # Create an indexer that will index the gems in +directory+.
+
   def initialize(directory)
     unless ''.respond_to? :to_xs then
       fail "Gem::Indexer requires that the XML Builder library be installed:" \
@@ -39,52 +42,60 @@ class Gem::Indexer
 
     @master_index = Gem::Indexer::MasterIndexBuilder.new "yaml", @directory
     @marshal_index = Gem::Indexer::MarshalIndexBuilder.new marshal_name, @directory
-    @quick_index = Gem::Indexer::QuickIndexBuilder.new "index", @directory
+    @quick_index = Gem::Indexer::QuickIndexBuilder.new 'index', @directory
+
+    quick_dir = File.join @directory, 'quick'
+    @latest_index = Gem::Indexer::LatestIndexBuilder.new 'latest_index', quick_dir
   end
 
+  ##
   # Build the index.
+
   def build_index
     @master_index.build do
       @quick_index.build do
         @marshal_index.build do
-          progress = ui.progress_reporter gem_file_list.size,
+          @latest_index.build do
+            progress = ui.progress_reporter gem_file_list.size,
                                           "Generating index for #{gem_file_list.size} gems in #{@dest_directory}",
                                           "Loaded all gems"
 
-          gem_file_list.each do |gemfile|
-            if File.size(gemfile.to_s) == 0 then
-              alert_warning "Skipping zero-length gem: #{gemfile}"
-              next
-            end
-
-            begin
-              spec = Gem::Format.from_file_by_path(gemfile).spec
-
-              unless gemfile =~ /\/#{Regexp.escape spec.original_name}.*\.gem\z/i then
-                alert_warning "Skipping misnamed gem: #{gemfile} => #{spec.full_name} (#{spec.original_name})"
+                                          gem_file_list.each do |gemfile|
+              if File.size(gemfile.to_s) == 0 then
+                alert_warning "Skipping zero-length gem: #{gemfile}"
                 next
               end
 
-              abbreviate spec
-              sanitize spec
+              begin
+                spec = Gem::Format.from_file_by_path(gemfile).spec
 
-              @master_index.add spec
-              @quick_index.add spec
-              @marshal_index.add spec
+                unless gemfile =~ /\/#{Regexp.escape spec.original_name}.*\.gem\z/i then
+                  alert_warning "Skipping misnamed gem: #{gemfile} => #{spec.full_name} (#{spec.original_name})"
+                  next
+                end
 
-              progress.updated spec.original_name
+                abbreviate spec
+                sanitize spec
 
-            rescue SignalException => e
-              alert_error "Recieved signal, exiting"
-              raise
-            rescue Exception => e
-              alert_error "Unable to process #{gemfile}\n#{e.message} (#{e.class})\n\t#{e.backtrace.join "\n\t"}"
-            end
+                @master_index.add spec
+                @quick_index.add spec
+                @marshal_index.add spec
+                @latest_index.add spec
+
+                progress.updated spec.original_name
+
+              rescue SignalException => e
+                alert_error "Recieved signal, exiting"
+                raise
+              rescue Exception => e
+                alert_error "Unable to process #{gemfile}\n#{e.message} (#{e.class})\n\t#{e.backtrace.join "\n\t"}"
+              end
+                                          end
+
+            progress.done
+
+            say "Generating master indexes (this may take a while)"
           end
-
-          progress.done
-
-          say "Generating master indexes (this may take a while)"
         end
       end
     end
@@ -95,14 +106,15 @@ class Gem::Indexer
 
     say "Moving index into production dir #{@dest_directory}" if verbose
 
-    files = @master_index.files + @quick_index.files + @marshal_index.files
+    files = @master_index.files + @quick_index.files + @marshal_index.files +
+            @latest_index.files
 
     files.each do |file|
-      relative_name = file[/\A#{Regexp.escape @directory}.(.*)/, 1]
-      dest_name = File.join @dest_directory, relative_name
+      src_name = File.join @directory, file
+      dst_name = File.join @dest_directory, file
 
-      FileUtils.rm_rf dest_name, :verbose => verbose
-      FileUtils.mv file, @dest_directory, :verbose => verbose
+      FileUtils.rm_rf dst_name, :verbose => verbose
+      FileUtils.mv src_name, @dest_directory, :verbose => verbose
     end
   end
 
@@ -160,4 +172,5 @@ require 'rubygems/indexer/abstract_index_builder'
 require 'rubygems/indexer/master_index_builder'
 require 'rubygems/indexer/quick_index_builder'
 require 'rubygems/indexer/marshal_index_builder'
+require 'rubygems/indexer/latest_index_builder'
 

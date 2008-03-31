@@ -10,9 +10,10 @@ at_exit { $SAFE = 1 }
 require 'fileutils'
 require 'test/unit'
 require 'tmpdir'
+require 'tempfile'
 require 'uri'
-require 'rubygems/gem_open_uri'
 require 'rubygems/source_info_cache'
+require 'rubygems/package'
 
 require File.join(File.expand_path(File.dirname(__FILE__)), 'mockgemui')
 
@@ -56,6 +57,20 @@ class FakeFetcher
     data.respond_to?(:call) ? data.call : data.length
   end
 
+  def download spec, source_uri, install_dir = Gem.dir
+    name = "#{spec.full_name}.gem"
+    path = File.join(install_dir, 'cache', name)
+
+    if source_uri =~ /^http/ then
+      File.open(path, "wb") do |f|
+        f.write fetch_path(File.join(source_uri, "gems", name))
+      end
+    else
+      FileUtils.cp source_uri, path
+    end
+
+    path
+  end
 end
 
 class RubyGemTestCase < Test::Unit::TestCase
@@ -76,6 +91,7 @@ class RubyGemTestCase < Test::Unit::TestCase
     @gemhome = File.join @tempdir, "gemhome"
     @gemcache = File.join(@gemhome, "source_cache")
     @usrcache = File.join(@gemhome, ".gem", "user_cache")
+    @latest_usrcache = File.join(@gemhome, ".gem", "latest_user_cache")
 
     FileUtils.mkdir_p @gemhome
 
@@ -101,6 +117,11 @@ class RubyGemTestCase < Test::Unit::TestCase
     end
 
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
+
+    @private_key = File.expand_path File.join(File.dirname(__FILE__),
+                                              'private_key.pem')
+    @public_cert = File.expand_path File.join(File.dirname(__FILE__),
+                                              'public_cert.pem')
   end
 
   def teardown
@@ -135,25 +156,52 @@ class RubyGemTestCase < Test::Unit::TestCase
   end
 
   def prep_cache_files(lc)
-    [ [lc.system_cache_file, 'sys'],
-      [lc.user_cache_file, 'usr'],
-    ].each do |fn, data|
-      FileUtils.mkdir_p File.dirname(fn).untaint
-      open(fn.dup.untaint, "wb") { |f| f.write(Marshal.dump({'key' => data})) }
+    @usr_si ||= Gem::SourceIndex.new
+    @usr_sice ||= Gem::SourceInfoCacheEntry.new @usr_si, 0
+
+    @sys_si ||= Gem::SourceIndex.new
+    @sys_sice ||= Gem::SourceInfoCacheEntry.new @sys_si, 0
+
+    latest_si = Gem::SourceIndex.new
+    latest_si.add_specs(*@sys_si.latest_specs)
+    latest_sys_sice = Gem::SourceInfoCacheEntry.new latest_si, 0
+
+    latest_si = Gem::SourceIndex.new
+    latest_si.add_specs(*@usr_si.latest_specs)
+    latest_usr_sice = Gem::SourceInfoCacheEntry.new latest_si, 0
+
+    [ [lc.system_cache_file, @sys_sice],
+      [lc.latest_system_cache_file, latest_sys_sice],
+      [lc.user_cache_file, @usr_sice],
+      [lc.latest_user_cache_file, latest_usr_sice],
+    ].each do |filename, data|
+      FileUtils.mkdir_p File.dirname(filename).untaint
+
+      open filename.dup.untaint, 'wb' do |f|
+        f.write Marshal.dump({ @gem_repo => data })
+      end
     end
   end
 
-  def read_cache(fn)
-    open(fn.dup.untaint) { |f| Marshal.load f.read }
+  def read_cache(path)
+    open path.dup.untaint, 'rb' do |io|
+      Marshal.load io.read
+    end
+  end
+
+  def read_binary(path)
+    Gem.read_binary path
   end
 
   def write_file(path)
     path = File.join(@gemhome, path)
     dir = File.dirname path
     FileUtils.mkdir_p dir
-    File.open(path, "w") { |io|
-      yield(io)
-    }
+
+    open path, 'wb' do |io|
+      yield io
+    end
+
     path
   end
 
@@ -204,6 +252,23 @@ class RubyGemTestCase < Test::Unit::TestCase
     end
   end
 
+  def util_gem(name, version, &block)
+    spec = quick_gem(name, version, &block)
+
+    util_build_gem spec
+
+    cache_file = File.join @tempdir, 'gems', "#{spec.original_name}.gem"
+    FileUtils.mv File.join(@gemhome, 'cache', "#{spec.original_name}.gem"),
+                 cache_file
+    FileUtils.rm File.join(@gemhome, 'specifications',
+                           "#{spec.full_name}.gemspec")
+
+    spec.loaded_from = nil
+    spec.loaded = false
+
+    [spec, cache_file]
+  end
+
   def util_make_gems
     init = proc do |s|
       s.files = %w[lib/code.rb]
@@ -212,6 +277,7 @@ class RubyGemTestCase < Test::Unit::TestCase
 
     @a1 = quick_gem('a', '1', &init)
     @a2 = quick_gem('a', '2', &init)
+    @a_evil9 = quick_gem('a_evil', '9', &init)
     @b2 = quick_gem('b', '2', &init)
     @c1_2   = quick_gem('c', '1.2',   &init)
     @pl1     = quick_gem 'pl', '1' do |s| # l for legacy
@@ -227,7 +293,7 @@ class RubyGemTestCase < Test::Unit::TestCase
     write_file File.join(*%W[gems #{@c1_2.original_name} lib code.rb]) do end
     write_file File.join(*%W[gems #{@pl1.original_name} lib code.rb]) do end
 
-    [@a1, @a2, @b2, @c1_2, @pl1].each { |spec| util_build_gem spec }
+    [@a1, @a2, @a_evil9, @b2, @c1_2, @pl1].each { |spec| util_build_gem spec }
 
     FileUtils.rm_r File.join(@gemhome, 'gems', @pl1.original_name)
 
@@ -256,32 +322,19 @@ class RubyGemTestCase < Test::Unit::TestCase
     @fetcher = FakeFetcher.new
     @fetcher.uri = @uri
 
-    @gem1 = quick_gem 'gem_one' do |gem|
-      gem.files = %w[Rakefile lib/gem_one.rb]
-    end
+    util_make_gems
 
-    @gem2 = quick_gem 'gem_two' do |gem|
-      gem.files = %w[Rakefile lib/gem_two.rb]
-    end
-
-    @gem3 = quick_gem 'gem_three' do |gem| # missing gem
-      gem.files = %w[Rakefile lib/gem_three.rb]
-    end
-
-    # this gem has a higher version and longer name than the gem we want
-    @gem4 = quick_gem 'gem_one_evil', '666' do |gem|
-      gem.files = %w[Rakefile lib/gem_one.rb]
-    end
-
-    @all_gems = [@gem1, @gem2, @gem3, @gem4].sort
+    @all_gems = [@a1, @a2, @a_evil9, @b2, @c1_2].sort
     @all_gem_names = @all_gems.map { |gem| gem.full_name }
 
-    gem_names = [@gem1.full_name, @gem2.full_name, @gem4.full_name]
+    gem_names = [@a1.full_name, @a2.full_name, @b2.full_name]
     @gem_names = gem_names.sort.join("\n")
 
-    @source_index = Gem::SourceIndex.new @gem1.full_name => @gem1,
-                                         @gem2.full_name => @gem2,
-                                         @gem4.full_name => @gem4
+    @source_index = Gem::SourceIndex.new
+    @source_index.add_spec @a1
+    @source_index.add_spec @a2
+    @source_index.add_spec @a_evil9
+    @source_index.add_spec @c1_2
 
     Gem::RemoteFetcher.instance_variable_set :@fetcher, @fetcher
   end
@@ -294,7 +347,12 @@ class RubyGemTestCase < Test::Unit::TestCase
 
     sice = Gem::SourceInfoCacheEntry.new si, 0
     sic = Gem::SourceInfoCache.new
+
     sic.set_cache_data( { @gem_repo => sice } )
+    sic.update
+    sic.write_cache
+    sic.reset_cache_data
+
     Gem::SourceInfoCache.instance_variable_set :@cache, sic
     si
   end
@@ -309,6 +367,33 @@ class RubyGemTestCase < Test::Unit::TestCase
 
   def win_platform?
     Gem.win_platform?
+  end
+
+end
+
+class TempIO
+
+  @@count = 0
+
+  def initialize(string = '')
+    @tempfile = Tempfile.new "TempIO-#{@@count ++ 1}"
+    @tempfile.binmode
+    @tempfile.write string
+    @tempfile.rewind
+  end
+
+  def method_missing(meth, *args, &block)
+    @tempfile.send(meth, *args, &block)
+  end
+
+  def respond_to?(meth)
+    @tempfile.respond_to? meth
+  end
+
+  def string
+    @tempfile.flush
+
+    Gem.read_binary @tempfile.path
   end
 
 end

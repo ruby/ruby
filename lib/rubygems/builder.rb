@@ -65,13 +65,20 @@ EOM
     end
 
     def write_package
-      Package.open(@spec.file_name, "w", @signer) do |pkg|
-        pkg.metadata = @spec.to_yaml
-        @spec.files.each do |file|
-          next if File.directory? file
-          pkg.add_file_simple(file, File.stat(@spec.file_name).mode & 0777,
-                              File.size(file)) do |os|
-              os.write File.open(file, "rb"){|f|f.read}
+      open @spec.file_name, 'wb' do |gem_io|
+        Gem::Package.open gem_io, 'w', @signer do |pkg|
+          pkg.metadata = @spec.to_yaml
+
+          @spec.files.each do |file|
+            next if File.directory? file
+
+            stat = File.stat file
+            mode = stat.mode & 0777
+            size = stat.size
+
+            pkg.add_file_simple file, mode, size do |tar_io|
+              tar_io.write open(file, "rb") { |f| f.read }
+            end
           end
         end
       end
