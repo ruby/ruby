@@ -8,6 +8,15 @@ Mon Mar 31 18:42:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check for ssize_t.  [ruby-dev:34184]
 
+Mon Mar 31 14:45:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_quo): should convert its operand to Rational.
+
+	* rational.c (string_to_r_strict): should raise TypeError.
+
+	* bignum.c (Init_Bignum): should not redefine Bignum#div.
+	  Numeric#div will do.  [ruby-dev:34066]
+
 Mon Mar 31 04:05:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_getc): set coderange while getting characters.

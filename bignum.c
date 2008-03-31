@@ -1737,7 +1737,6 @@ bigdivmod(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 /*
  *  call-seq:
  *     big / other     => Numeric
- *     big.div(other)  => Numeric
  *
  *  Divides big by other, returning the result.
  */
@@ -1903,7 +1902,7 @@ static VALUE big_shift(VALUE x, int n)
 static VALUE
 rb_big_quo(VALUE x, VALUE y)
 {
-    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
+    return rb_funcall(rb_rational_raw1(x), '/', 1, rb_Rational1(y));
 }
 
 static VALUE
@@ -2598,7 +2597,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
-    rb_define_method(rb_cBignum, "div", rb_big_div, 1);
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);

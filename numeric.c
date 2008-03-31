@@ -257,7 +257,7 @@ num_uminus(VALUE num)
 static VALUE
 num_quo(VALUE x, VALUE y)
 {
-    return rb_funcall(x, '/', 1, y);
+    return rb_funcall(x, '/', 1, rb_Rational1(y));
 }
 
 
@@ -275,7 +275,7 @@ static VALUE num_floor(VALUE num);
 static VALUE
 num_div(VALUE x, VALUE y)
 {
-    return num_floor(rb_funcall(x, '/', 1, y));
+    return rb_funcall(rb_funcall(x, '/', 1, y), rb_intern("floor"), 0, 0);
 }
 
 
