@@ -1,3 +1,8 @@
+Tue Apr  1 01:55:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Config.default_config_hash): requires
+	  win32/resolv to use Win32::Resolv.  [ruby-dev:34138]
+
 Tue Apr  1 01:40:58 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: adopted the ruby's style.

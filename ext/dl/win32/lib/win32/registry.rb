@@ -337,9 +337,10 @@ module Win32
       FormatMessageA = Win32API.new('kernel32.dll', 'FormatMessageA', 'LPLLPLP', 'L')
       def initialize(code)
         @code = code
-        msg = "\0" * 1024
+        msg = "\0".force_encoding(Encoding::ASCII_8BIT) * 1024
         len = FormatMessageA.call(0x1200, 0, code, 0, msg, 1024, 0)
-        super msg[0, len].tr("\r", '').chomp
+        msg = msg[0, len].force_encoding(Encoding.find(Encoding.locale_charmap))
+        super msg.tr("\r", '').chomp
       end
       attr_reader :code
     end

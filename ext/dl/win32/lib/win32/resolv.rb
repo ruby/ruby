@@ -82,10 +82,14 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
               reg.open(iface) do |regif|
                 begin
                   [ 'NameServer', 'DhcpNameServer' ].each do |key|
-                    ns = regif.read_s(key)
-                    unless ns.empty?
-                      nameserver.concat(ns.split(/[,\s]\s*/))
-                      break
+                    begin
+                      ns = regif.read_s(key)
+                    rescue
+                    else
+                      unless ns.empty?
+                        nameserver.concat(ns.split(/[,\s]\s*/))
+                        break
+                      end
                     end
                   end
                 rescue Registry::Error
