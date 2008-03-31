@@ -1,3 +1,16 @@
+Tue Apr  1 02:58:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_SETJMP, RUBY_LONGJMP, RUBY_JMP_BUF): prefers
+	  __builtin_setjmp, _setjmp over setjmp and sigsetjmp.
+	  [ruby-core:16023], [ruby-core:16086]
+
+	* configure.in (--with-setjmp-type): new option to override the
+	  default rule in the above.
+
+	* eval_intern.h (ruby_setjmp, ruby_longjmp), gc.c (rb_setjmp),
+	  vm_core.h (rb_jmpbuf_t): use RUBY_SETJMP, RUBY_LONGJMP and
+	  RUBY_JMP_BUF.
+
 Tue Apr  1 01:55:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::Config.default_config_hash): requires

@@ -346,7 +346,7 @@ enum rb_thread_status {
     THREAD_KILLED,
 };
 
-typedef jmp_buf rb_jmpbuf_t;
+typedef RUBY_JMP_BUF rb_jmpbuf_t;
 
 struct rb_vm_tag {
     rb_jmpbuf_t buf;

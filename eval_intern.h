@@ -81,12 +81,10 @@ char *strrchr(const char *, const char);
 #include "vmsruby_private.h"
 #endif
 
-#if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(sigsetjmp) && !defined(HAVE_SIGSETJMP)
-#define ruby_setjmp(env) _setjmp(env)
-#define ruby_longjmp(env,val) _longjmp(env,val)
-#else
-#define ruby_setjmp(env) setjmp(env)
-#define ruby_longjmp(env,val) longjmp(env,val)
+#define ruby_setjmp(env) RUBY_SETJMP(env)
+#define ruby_longjmp(env,val) RUBY_LONGJMP(env,val)
+#ifdef __CYGWIN__
+int _setjmp(), _longjmp();
 #endif
 
 #include <sys/types.h>

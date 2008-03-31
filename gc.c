@@ -52,9 +52,8 @@
 
 int rb_io_fptr_finalize(struct rb_io_t*);
 
-#if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(sigsetjmp) && !defined(HAVE_SIGSETJMP)
-#define setjmp(env) _setjmp(env)
-#endif
+#define rb_setjmp(env) RUBY_SETJMP(env)
+#define rb_jmp_buf rb_jmpbuf_t
 
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
@@ -1427,6 +1426,8 @@ obj_free(VALUE obj)
 
 #ifdef __GNUC__
 #if defined(__human68k__) || defined(DJGPP)
+#undef rb_setjmp
+#undef rb_jmp_buf
 #if defined(__human68k__)
 typedef unsigned long rb_jmp_buf[8];
 __asm__ (".even\n\
@@ -1435,9 +1436,6 @@ _rb_setjmp:\n\
 	movem.l	d3-d7/a3-a5,(a0)\n\
 	moveq.l	#0,d0\n\
 	rts");
-#ifdef setjmp
-#undef setjmp
-#endif
 #else
 #if defined(DJGPP)
 typedef unsigned long rb_jmp_buf[6];
@@ -1458,8 +1456,6 @@ _rb_setjmp:\n\
 #endif
 #endif
 int rb_setjmp (rb_jmp_buf);
-#define jmp_buf rb_jmp_buf
-#define setjmp rb_setjmp
 #endif /* __human68k__ or DJGPP */
 #endif /* __GNUC__ */
 
@@ -1470,7 +1466,7 @@ void rb_vm_mark(void *ptr);
 static void
 mark_current_machine_context(rb_thread_t *th)
 {
-    jmp_buf save_regs_gc_mark;
+    rb_jmp_buf save_regs_gc_mark;
     VALUE *stack_start, *stack_end;
 
     SET_STACK_END;
@@ -1493,7 +1489,7 @@ mark_current_machine_context(rb_thread_t *th)
 
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf (and stack) */
-    setjmp(save_regs_gc_mark);
+    rb_setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark,
 			 sizeof(save_regs_gc_mark) / sizeof(VALUE));
 
