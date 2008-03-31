@@ -387,7 +387,7 @@ typedef struct {
     volatile int status;
 } rb_jmpbuf_t[1];
 #else
-typedef jmp_buf rb_jmpbuf_t;
+typedef RUBY_JMP_BUF rb_jmpbuf_t;
 #endif
 
 enum rb_thread_status {

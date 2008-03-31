@@ -572,6 +572,54 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
 	      sigaction sigsetjmp _setjmp setsid telldir seekdir fchmod\
 	      mktime timegm gettimeofday\
 	      cosh sinh tanh round setuid setgid setenv unsetenv)
+
+AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
+[AC_TRY_LINK([@%:@include <setjmp.h>
+    jmp_buf jb; void t() {__builtin_longjmp(jb, 1);}],
+    [__builtin_setjmp(jb);],
+    [ac_cv_func___builtin_setjmp=yes],
+    [ac_cv_func___builtin_setjmp=no])
+])
+
+AC_MSG_CHECKING(for setjmp type)
+AC_ARG_WITH(setjmp-type, 
+	[  --with-setjmp-type      select setjmp type], [
+	case $withval in
+	__builtin_setjmp) setjmp_prefix=__builtin_;;
+	_setjmp) setjmp_prefix=_;;
+	sigsetjmp) setjmp_prefix=sig;;
+	setjmp) setjmp_prefix=;;
+	'') unset setjmp_prefix;;
+	*)   AC_MSG_ERROR(invalid setjmp type: $withval);;
+	esac], [unset setjmp_prefix])
+if test ${setjmp_prefix+set}; then
+    if test "${setjmp_prefix}" && eval test '$ac_cv_'${setjmp_prefix}setjmp = no; then
+	AC_MSG_ERROR(${setjmp_prefix}setjmp is not available)
+    fi
+elif test "$ac_cv_func___builtin_setjmp" = yes; then
+    setjmp_prefix=__builtin_
+elif test "$ac_cv_func__setjmp" = yes; then
+    setjmp_prefix=_
+elif test "$ac_cv_func_sigsetjmp" = yes; then
+    case $target_os in
+    solaris*|cygwin*)
+	setjmp_prefix=;;
+    *)
+	setjmp_prefix=sig;;
+    esac
+else
+    setjmp_prefix=
+fi
+if test $setjmp_prefix = sig; then
+    setjmp_sigmask=yes
+else
+    unset setjmp_sigmask
+fi
+AC_MSG_RESULT(${setjmp_prefix}setjmp)
+AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp(env${setjmp_sigmask+,0})])
+AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp(env,val)])
+AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
+
 AC_ARG_ENABLE(setreuid,
        [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
        [use_setreuid=$enableval])

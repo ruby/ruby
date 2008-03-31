@@ -37,8 +37,10 @@
 void re_free_registers _((struct re_registers*));
 void rb_io_fptr_finalize _((struct OpenFile*));
 
-#if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(sigsetjmp) && !defined(HAVE_SIGSETJMP)
-#define setjmp(env) _setjmp(env)
+#define rb_setjmp(env) RUBY_SETJMP(env)
+#define rb_jmp_buf rb_jmpbuf_t
+#ifdef __CYGWIN__
+int _setjmp(), _longjmp();
 #endif
 
 /* Make alloca work the best possible way.  */
@@ -1283,6 +1285,8 @@ rb_gc_mark_frame(frame)
 
 #ifdef __GNUC__
 #if defined(__human68k__) || defined(DJGPP)
+#undef rb_setjmp
+#undef rb_jmp_buf
 #if defined(__human68k__)
 typedef unsigned long rb_jmp_buf[8];
 __asm__ (".even\n\
@@ -1291,9 +1295,6 @@ _rb_setjmp:\n\
 	movem.l	d3-d7/a3-a5,(a0)\n\
 	moveq.l	#0,d0\n\
 	rts");
-#ifdef setjmp
-#undef setjmp
-#endif
 #else
 #if defined(DJGPP)
 typedef unsigned long rb_jmp_buf[6];
@@ -1314,8 +1315,6 @@ _rb_setjmp:\n\
 #endif
 #endif
 int rb_setjmp (rb_jmp_buf);
-#define jmp_buf rb_jmp_buf
-#define setjmp rb_setjmp
 #endif /* __human68k__ or DJGPP */
 #endif /* __GNUC__ */
 
@@ -1364,7 +1363,7 @@ garbage_collect()
 
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf (and stack) */
-    setjmp(save_regs_gc_mark);
+    rb_setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
 #if STACK_GROW_DIRECTION < 0
     rb_gc_mark_locations((VALUE*)STACK_END, rb_gc_stack_start);

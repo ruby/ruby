@@ -193,14 +193,11 @@ static int volatile freebsd_clear_carry_flag = 0;
      POST_GETCONTEXT, \
      (j)->status)
 #else
-#  if !defined(setjmp) && defined(HAVE__SETJMP) && !defined(sigsetjmp) && !defined(HAVE_SIGSETJMP)
-#    define ruby_setjmp(just_before_setjmp, env) \
-       ((just_before_setjmp), _setjmp(env))
-#    define ruby_longjmp(env,val) _longjmp(env,val)
-#  else
-#    define ruby_setjmp(just_before_setjmp, env) \
-       ((just_before_setjmp), setjmp(env))
-#    define ruby_longjmp(env,val) longjmp(env,val)
+#  define ruby_setjmp(just_before_setjmp, env) \
+     ((just_before_setjmp), RUBY_SETJMP(env))
+#  define ruby_longjmp(env,val) RUBY_LONGJMP(env,val)
+#  ifdef __CYGWIN__
+int _setjmp(), _longjmp();
 #  endif
 #endif
 
