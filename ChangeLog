@@ -1,3 +1,9 @@
+Tue Apr  1 01:40:58 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: adopted the ruby's style.
+
+	* rational.c: ditto.
+
 Tue Apr  1 00:17:35 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: revert.
