@@ -1,3 +1,7 @@
+Tue Apr  1 11:36:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: _setjmp is available but _longjmp is not on mingw.
+
 Tue Apr  1 09:41:22 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* {bcc,win}32/Makefile (config.h): need to define RUBY_SETJMP, etc.
