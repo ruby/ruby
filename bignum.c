@@ -1509,9 +1509,6 @@ rb_big_div(x, y)
       case T_BIGNUM:
 	break;
 
-      case T_FLOAT:
-	return rb_float_new(rb_big2dbl(x) / RFLOAT(y)->value);
-
       default:
 	return rb_num_coerce_bin(x, y);
     }
