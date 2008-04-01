@@ -1,4 +1,6 @@
-Tue Apr  1 13:14:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  1 14:43:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: get rid of empty expansion.
 
 	* {bcc,win}32/Makefile (config.h): need to define RUBY_SETJMP, etc.
 
