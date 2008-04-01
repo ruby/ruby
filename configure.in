@@ -569,7 +569,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
 	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\
 	      getgroups setgroups getpriority getrlimit setrlimit sysconf\
 	      group_member dlopen sigprocmask\
-	      sigaction sigsetjmp _setjmp setsid telldir seekdir fchmod\
+	      sigaction sigsetjmp _setjmp _longjmp setsid telldir seekdir fchmod\
 	      mktime timegm gettimeofday\
 	      cosh sinh tanh round setuid setgid setenv unsetenv)
 
@@ -580,6 +580,8 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
     [ac_cv_func___builtin_setjmp=yes],
     [ac_cv_func___builtin_setjmp=no])
 ])
+
+test $ac_cv_func__longjmp = no && ac_cv_func__setjmp=no
 
 AC_MSG_CHECKING(for setjmp type)
 AC_ARG_WITH(setjmp-type, 
@@ -593,7 +595,7 @@ AC_ARG_WITH(setjmp-type,
 	*)   AC_MSG_ERROR(invalid setjmp type: $withval);;
 	esac], [unset setjmp_prefix])
 if test ${setjmp_prefix+set}; then
-    if test "${setjmp_prefix}" && eval test '$ac_cv_'${setjmp_prefix}setjmp = no; then
+    if test "${setjmp_prefix}" && eval test '$ac_cv_func_'${setjmp_prefix}setjmp = no; then
 	AC_MSG_ERROR(${setjmp_prefix}setjmp is not available)
     fi
 elif test "$ac_cv_func___builtin_setjmp" = yes; then

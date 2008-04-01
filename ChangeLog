@@ -1,3 +1,7 @@
+Tue Apr  1 11:36:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: _setjmp is available but _longjmp is not on mingw.
+
 Tue Apr  1 03:20:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_SETJMP, RUBY_LONGJMP, RUBY_JMP_BUF): prefers
