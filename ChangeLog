@@ -1,3 +1,8 @@
+Wed Apr  2 06:52:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* .gdbinit (rp): supports rational and complex numbers.  it's
+	  cheating since it uses rb_p().
+
 Wed Apr  2 06:24:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* include/ruby/node.h: add new constants for rb_call()'s scope.

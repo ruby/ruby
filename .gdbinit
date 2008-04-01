@@ -143,6 +143,14 @@ define rp
           ((struct RBignum*)$arg0)->as.ary : \
           ((struct RBignum*)$arg0)->as.heap.digits)
   else
+  if ($flags & RUBY_T_MASK) == RUBY_T_RATIONAL
+    printf "T_RATIONAL: "
+    rb_p $arg0
+  else
+  if ($flags & RUBY_T_MASK) == RUBY_T_COMPLEX
+    printf "T_COMPLEX: "
+    rb_p $arg0
+  else
   if ($flags & RUBY_T_MASK) == RUBY_T_FILE
     printf "T_FILE: "
     print (struct RFile *)$arg0
@@ -189,6 +197,8 @@ define rp
   else
     printf "unknown: "
     print (struct RBasic *)$arg0
+  end
+  end
   end
   end
   end
