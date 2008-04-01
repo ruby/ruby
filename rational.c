@@ -7,6 +7,7 @@
 
 #include "ruby.h"
 #include <math.h>
+#include <float.h>
 
 #define NDEBUG
 #include <assert.h>
@@ -1110,8 +1111,6 @@ i_ilog2(VALUE x)
     return q + r;
 }
 
-#include <float.h>
-
 static VALUE
 nurat_to_f(VALUE self)
 {
@@ -1297,8 +1296,6 @@ integer_to_r(VALUE self)
 {
     return rb_rational_new1(self);
 }
-
-#include <float.h>
 
 static VALUE
 float_decode(VALUE self)

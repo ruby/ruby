@@ -1,3 +1,7 @@
+Tue Apr  1 21:19:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* rational.c: need to include <float.h> just once.
+
 Tue Apr  1 16:40:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big2dbl): more precise conversion at edge cases.
