@@ -581,7 +581,7 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
     [ac_cv_func___builtin_setjmp=no])
 ])
 
-test $ac_cv_func__longjmp = no && ac_cv_func__setjmp=no
+test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
 
 AC_MSG_CHECKING(for setjmp type)
 AC_ARG_WITH(setjmp-type, 
