@@ -475,6 +475,11 @@ typedef struct RNode {
 #define NOEX_WITH(n, s) ((s << 8) | n)
 #define NOEX_WITH_SAFE(n) NOEX_WITH(n, rb_safe_level())
 
+#define CALL_PUBLIC 0
+#define CALL_FCALL  1
+#define CALL_VCALL  2
+#define CALL_SUPER  3
+
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);

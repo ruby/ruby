@@ -501,7 +501,6 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
     VALUE klass;
     ID id;
     NODE *body;
-    int nosuper = 0;
     rb_control_frame_t *cfp = th->cfp;
 
     if (!cfp->iseq) {
@@ -530,7 +529,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	rb_bug("vm_call_super: not found");
     }
 
-    return vm_call0(th, klass, recv, id, id, argc, argv, body, nosuper);
+    return vm_call0(th, klass, recv, id, id, argc, argv, body, CALL_SUPER);
 }
 
 VALUE

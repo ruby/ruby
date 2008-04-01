@@ -1069,7 +1069,7 @@ iterate_method(VALUE obj)
 
     arg = (struct iter_method_arg *)obj;
     return rb_call(CLASS_OF(arg->obj), arg->obj, arg->mid,
-		   arg->argc, arg->argv, NOEX_PRIVATE);
+		   arg->argc, arg->argv, CALL_FCALL);
 }
 
 VALUE
@@ -1088,8 +1088,7 @@ rb_block_call(VALUE obj, ID mid, int argc, VALUE *argv,
 VALUE
 rb_each(VALUE obj)
 {
-    return rb_call(CLASS_OF(obj), obj, rb_intern("each"), 0, 0,
-		   NOEX_PRIVATE);
+    return rb_call(CLASS_OF(obj), obj, rb_intern("each"), 0, 0, CALL_FCALL);
 }
 
 VALUE
@@ -1458,7 +1457,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     argc = RARRAY_LEN(args);	/* Assigns LONG, but argc is INT */
     argv = ALLOCA_N(VALUE, argc);
     MEMCPY(argv, RARRAY_PTR(args), VALUE, argc);
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, NOEX_NOSUPER);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, CALL_FCALL);
 }
 
 static VALUE
@@ -1538,21 +1537,19 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
     else {
 	argv = 0;
     }
-    return rb_call(CLASS_OF(recv), recv, mid, n, argv,
-		   NOEX_NOSUPER | NOEX_PRIVATE);
+    return rb_call(CLASS_OF(recv), recv, mid, n, argv, CALL_FCALL);
 }
 
 VALUE
 rb_funcall2(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv,
-		   NOEX_NOSUPER | NOEX_PRIVATE);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, CALL_FCALL);
 }
 
 VALUE
 rb_funcall3(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
-    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, NOEX_PUBLIC);
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, CALL_PUBLIC);
 }
 
 static VALUE

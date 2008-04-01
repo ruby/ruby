@@ -1,3 +1,13 @@
+Wed Apr  2 06:24:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* include/ruby/node.h: add new constants for rb_call()'s scope.
+
+	* eval.c (iterate_method): use CALL_* scope constant to specify
+	  proper scope value.
+
+	* eval.c (rb_each, rb_apply, rb_funcall, rb_funcall2, rb_funcall3):
+	  ditto.
+
 Tue Apr  1 21:19:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* rational.c: need to include <float.h> just once.
