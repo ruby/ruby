@@ -1,4 +1,6 @@
-Tue Apr  1 11:36:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  1 14:43:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: get rid of empty expansion.
 
 	* configure.in: _setjmp is available but _longjmp is not on mingw.
 

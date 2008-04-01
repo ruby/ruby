@@ -749,7 +749,7 @@ elif test "$ac_cv_func_sigsetjmp" = yes; then
 else
     setjmp_prefix=
 fi
-if test $setjmp_prefix = sig; then
+if test x$setjmp_prefix = xsig; then
     setjmp_sigmask=yes
 else
     unset setjmp_sigmask
