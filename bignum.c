@@ -1133,15 +1133,64 @@ rb_dbl2big(double d)
     return bignorm(dbl2big(d));
 }
 
+static int
+nlz(BDIGIT x)
+{
+    BDIGIT y;
+    int n = BITSPERDIG;
+#if BITSPERDIG > 64
+    y = x >> 64; if (y) {n -= 64; x = y;}
+#endif
+#if BITSPERDIG > 32
+    y = x >> 32; if (y) {n -= 32; x = y;}
+#endif
+#if BITSPERDIG > 16
+    y = x >> 16; if (y) {n -= 16; x = y;}
+#endif
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return n - x;
+}
+
 static double
 big2dbl(VALUE x)
 {
     double d = 0.0;
-    long i = RBIGNUM_LEN(x);
-    BDIGIT *ds = BDIGITS(x);
+    long i = RBIGNUM_LEN(x), lo = 0, bits;
+    BDIGIT *ds = BDIGITS(x), dl;
 
-    while (i--) {
-	d = ds[i] + BIGRAD*d;
+    if (i) {
+	bits = i * BITSPERDIG - nlz(ds[i-1]);
+	if (bits > DBL_MANT_DIG+DBL_MAX_EXP) {
+	    d = HUGE_VAL;
+	}
+	else {
+	    if (bits > DBL_MANT_DIG+1)
+		lo = (bits -= DBL_MANT_DIG+1) / BITSPERDIG;
+	    else
+		bits = 0;
+	    while (--i > lo) {
+		d = ds[i] + BIGRAD*d;
+	    }
+	    dl = ds[i];
+	    if (bits && (dl & (1UL << (bits %= BITSPERDIG)))) {
+		int carry = dl & ~(~0UL << bits);
+		if (!carry) {
+		    while (i-- > 0) {
+			if ((carry = ds[i]) != 0) break;
+		    }
+		}
+		if (carry) {
+		    dl &= ~0UL << bits;
+		    dl += 1UL << bits;
+		    if (!dl) d += 1;
+		}
+	    }
+	    d = dl + BIGRAD*d;
+	    if (lo) d = ldexp(d, lo * BITSPERDIG);
+	}
     }
     if (!RBIGNUM_SIGN(x)) d = -d;
     return d;

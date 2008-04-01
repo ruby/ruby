@@ -1,3 +1,8 @@
+Tue Apr  1 16:40:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2dbl): more precise conversion at edge cases.
+	  [ruby-dev:34195]
+
 Tue Apr  1 14:43:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: get rid of empty expansion.
