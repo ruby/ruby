@@ -22,7 +22,7 @@
 
 VALUE rb_cRational;
 
-static ID id_Unify, id_abs, id_cmp, id_coerce, id_convert, id_equal_p,
+static ID id_Unify, id_abs, id_cmp, id_convert, id_equal_p,
   id_expt, id_floor, id_format,id_idiv, id_inspect, id_negate, id_new,
   id_new_bang, id_to_f, id_to_i, id_to_s, id_truncate;
 
@@ -174,8 +174,6 @@ fun1(to_f)
 fun1(to_i)
 fun1(to_s)
 fun1(truncate)
-
-fun2(coerce)
 
 inline static VALUE
 f_equal_p(VALUE x, VALUE y)
@@ -681,10 +679,7 @@ nurat_add(VALUE self, VALUE other)
 			  bdat->num, bdat->den, '+');
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_add(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '+');
     }
 }
 
@@ -712,10 +707,7 @@ nurat_sub(VALUE self, VALUE other)
 			  bdat->num, bdat->den, '-');
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_sub(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '-');
     }
 }
 
@@ -781,16 +773,17 @@ nurat_mul(VALUE self, VALUE other)
 			  bdat->num, bdat->den, '*');
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_mul(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '*');
     }
 }
 
+#define id_to_r rb_intern("to_r")
+#define f_to_r(x) rb_funcall(x, id_to_r, 0)
+
 static VALUE
-nurat_div(VALUE self, VALUE other)
+nurat_division(VALUE self, VALUE other, int rdiv)
 {
+  again:
     switch (TYPE(other)) {
       case T_FIXNUM:
       case T_BIGNUM:
@@ -804,7 +797,11 @@ nurat_div(VALUE self, VALUE other)
 			    other, ONE, '/');
 	}
       case T_FLOAT:
-	return f_div(f_to_f(self), other);
+	if (rdiv) {
+	    other = f_to_r(other);
+	    goto again;
+	}
+	return rb_funcall(f_to_f(self), '/', 1, other);
       case T_RATIONAL:
 	if (f_zero_p(other))
 	    rb_raise(rb_eZeroDivError, "devided by zero");
@@ -816,11 +813,20 @@ nurat_div(VALUE self, VALUE other)
 			    bdat->num, bdat->den, '/');
 	}
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_div(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '/');
     }
+}
+
+static VALUE
+nurat_div(VALUE self, VALUE other)
+{
+    return nurat_division(self, other, Qfalse);
+}
+
+static VALUE
+nurat_rdiv(VALUE self, VALUE other)
+{
+    return nurat_division(self, other, Qtrue);
 }
 
 static VALUE
@@ -874,10 +880,7 @@ nurat_expt(VALUE self, VALUE other)
       case T_RATIONAL:
 	return f_expt(f_to_f(self), other);
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_expt(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, rb_intern("**"));
     }
 }
 
@@ -914,10 +917,7 @@ nurat_cmp(VALUE self, VALUE other)
 	  return f_cmp(f_sub(num1, num2), ZERO);
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_cmp(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, rb_intern("<=>"));
     }
 }
 
@@ -1423,9 +1423,6 @@ string_to_r(VALUE self)
     return rb_rational_new1(INT2FIX(0));
 }
 
-#define id_to_r rb_intern("to_r")
-#define f_to_r(x) rb_funcall(x, id_to_r, 0)
-
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 {
@@ -1514,7 +1511,6 @@ Init_Rational(void)
     id_Unify = rb_intern("Unify");
     id_abs = rb_intern("abs");
     id_cmp = rb_intern("<=>");
-    id_coerce = rb_intern("coerce");
     id_convert = rb_intern("convert");
     id_equal_p = rb_intern("==");
     id_expt = rb_intern("**");
@@ -1553,6 +1549,8 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "-", nurat_sub, 1);
     rb_define_method(rb_cRational, "*", nurat_mul, 1);
     rb_define_method(rb_cRational, "/", nurat_div, 1);
+    rb_define_method(rb_cRational, "quo", nurat_rdiv, 1);
+    rb_define_method(rb_cRational, "rdiv", nurat_rdiv, 1);
     rb_define_method(rb_cRational, "fdiv", nurat_fdiv, 1);
     rb_define_method(rb_cRational, "**", nurat_expt, 1);
 

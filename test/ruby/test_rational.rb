@@ -943,7 +943,7 @@ class Rational_Test < Test::Unit::TestCase
 
     assert_equal(Rational(1,2), 1.quo(2))
     assert_equal(Rational(5000000000), 10000000000.quo(2))
-    assert_equal(0.5, 1.0.quo(2))
+    assert_equal(Rational(1,2), 1.0.quo(2))
     assert_equal(Rational(1,4), Rational(1,2).quo(2))
 
     assert_equal(Rational(1,2), 1.rdiv(2))

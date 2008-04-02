@@ -145,11 +145,11 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_RATIONAL
     printf "T_RATIONAL: "
-    rb_p $arg0
+    print (struct RRational *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_COMPLEX
     printf "T_COMPLEX: "
-    rb_p $arg0
+    print (struct RComplex *)$arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_FILE
     printf "T_FILE: "

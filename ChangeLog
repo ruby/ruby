@@ -2,6 +2,15 @@ Wed Apr  2 22:29:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* rational.c (nurat_int_check): function for DRY integer check.
 
+	* numeric.c (num_rdiv): should always return rational number.
+
+	* rational.c (nurat_add, nurat_sub, nurat_mul, nurat_fdiv,
+	  nurat_cmp): use rb_num_coerce_bin().
+
+	* rational.c (nurat_division): does / and rdiv.
+
+	* .gdbinit (rp): no longer use rb_p().
+
 Wed Apr  2 06:52:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* .gdbinit (rp): supports rational and complex numbers.  it's

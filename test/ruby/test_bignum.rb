@@ -262,7 +262,7 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(T32.to_f, T32.quo(1.0))
     assert_equal(T32.to_f, T32.quo(T_ONE))
 
-    assert_raise(TypeError) { T32.quo("foo") }
+    assert_raise(ArgumentError) { T32.quo("foo") }
 
     assert_equal(1024**1024, (1024**1024).quo(1))
     assert_equal(1024**1024, (1024**1024).quo(1.0))

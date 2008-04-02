@@ -51,16 +51,7 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_quo
-    DummyNumeric.class_eval do
-      def /(x); :div; end
-    end
-
-    assert_equal(:div, DummyNumeric.new.quo(0))
-
-  ensure
-    DummyNumeric.class_eval do
-      remove_method :/
-    end
+    assert_raise(ArgumentError) {DummyNumeric.new.quo(0)}
   end
 
   def test_divmod
