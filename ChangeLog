@@ -1,3 +1,7 @@
+Wed Apr  2 22:29:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* rational.c (nurat_int_check): function for DRY integer check.
+
 Wed Apr  2 06:52:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* .gdbinit (rp): supports rational and complex numbers.  it's

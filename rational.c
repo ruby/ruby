@@ -427,6 +427,18 @@ f_rational_new_bang2(VALUE klass, VALUE x, VALUE y)
 
 #define f_unify_p(klass) rb_const_defined(klass, id_Unify)
 
+static inline void
+nurat_int_check(VALUE num)
+{
+    switch (TYPE(num)) {
+      case T_FIXNUM:
+      case T_BIGNUM:
+	break;
+      default:
+	rb_raise(rb_eArgError, "not an integer");
+    }
+}
+
 inline static VALUE
 nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
 {
@@ -487,21 +499,8 @@ nurat_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 	break;
     }
 
-    switch (TYPE(num)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	break;
-      default:
-	rb_raise(rb_eArgError, "not an integer");
-    }
-
-    switch (TYPE(den)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	break;
-      default:
-	rb_raise(rb_eArgError, "not an integer");
-    }
+    nurat_int_check(num);
+    nurat_int_check(den);
 
     return nurat_s_canonicalize_internal(klass, num, den);
 }
@@ -518,21 +517,8 @@ nurat_s_new(int argc, VALUE *argv, VALUE klass)
 	break;
     }
 
-    switch (TYPE(num)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	break;
-      default:
-	rb_raise(rb_eArgError, "not an integer");
-    }
-
-    switch (TYPE(den)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	break;
-      default:
-	rb_raise(rb_eArgError, "not an integer");
-    }
+    nurat_int_check(num);
+    nurat_int_check(den);
 
     return nurat_s_canonicalize_internal(klass, num, den);
 }
@@ -1223,42 +1209,21 @@ nurat_marshal_load(VALUE self, VALUE a)
 VALUE
 rb_gcd(VALUE self, VALUE other)
 {
-    switch (TYPE(other)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	break;
-      default:
-	rb_raise(rb_eArgError, "not an integer");
-    }
-
+    nurat_int_check(other);
     return f_gcd(self, other);
 }
 
 VALUE
 rb_lcm(VALUE self, VALUE other)
 {
-    switch (TYPE(other)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	break;
-      default:
-	rb_raise(rb_eArgError, "not an integer");
-    }
-
+    nurat_int_check(other);
     return f_lcm(self, other);
 }
 
 VALUE
 rb_gcdlcm(VALUE self, VALUE other)
 {
-    switch (TYPE(other)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	break;
-      default:
-	rb_raise(rb_eArgError, "not an integer");
-    }
-
+    nurat_int_check(other);
     return rb_assoc_new(f_gcd(self, other), f_lcm(self, other));
 }
 
