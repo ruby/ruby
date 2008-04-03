@@ -11,20 +11,20 @@
 
 <%= insn_type_chars %>
 
-static char *insn_name_info[] = {
+static const char *const insn_name_info[] = {
 <%= insn_names %>
 };
 
-static char *insn_operand_info[] = {
+static const char *const insn_operand_info[] = {
 <%= operands_info %>
 };
 
-static int insn_len_info[] = {
+static const int insn_len_info[] = {
 <%= operands_num_info %>
 };
 
 #ifdef USE_INSN_RET_NUM
-static int insn_stack_push_num_info[] = {
+static const int insn_stack_push_num_info[] = {
 <%= stack_num_info %>
 };
 #endif
@@ -50,13 +50,13 @@ insn_len(int insn)
   return insn_len_info[insn];
 }
 
-static char *
+static const char *
 insn_name(int insn)
 {
   return insn_name_info[insn];
 }
 
-static char *
+static const char *
 insn_op_types(int insn)
 {
   return insn_operand_info[insn];

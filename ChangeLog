@@ -1,3 +1,14 @@
+Thu Apr  3 09:00:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_sequence, iseq_insns_unification,
+	  insn_data_to_s_detail): constified.
+
+	* iseq.c (insn_operand_intern, ruby_iseq_disasm_insn): ditto.
+
+	* template/{insns_info,opt_sc,optunifs}.inc.tmpl: ditto.
+
+	* tool/instruction.rb (OptUnifsIncGenerator): ditto.
+
 Wed Apr  2 22:29:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* rational.c (nurat_int_check): function for DRY integer check.

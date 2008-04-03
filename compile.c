@@ -1034,7 +1034,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	  case ISEQ_ELEMENT_INSN:
 	    {
 		int j, len, insn;
-		char *types;
+		const char *types;
 		VALUE *operands;
 
 		iobj = (INSN *)list;
@@ -1655,9 +1655,9 @@ iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 	    iobj = (INSN *)list;
 	    id = iobj->insn_id;
 	    if (unified_insns_data[id] != 0) {
-		int **entry = unified_insns_data[id];
+		const int *const *entry = unified_insns_data[id];
 		for (j = 1; j < (int)entry[0]; j++) {
-		    int *unified = entry[j];
+		    const int *unified = entry[j];
 		    LINK_ELEMENT *li = list->next;
 		    for (k = 2; k < unified[1]; k++) {
 			if (li->type != ISEQ_ELEMENT_INSN ||
@@ -4588,7 +4588,7 @@ insn_data_to_s_detail(INSN *iobj)
 
     str = rb_sprintf("%-16s", insn_name(iobj->insn_id));
     if (iobj->operands) {
-	char *types = insn_op_types(iobj->insn_id);
+	const char *types = insn_op_types(iobj->insn_id);
 	int j;
 
 	for (j = 0; types[j]; j++) {

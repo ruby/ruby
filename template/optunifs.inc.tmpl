@@ -13,16 +13,16 @@
  */
 
 /*
-  static int UNIFIED_insn_name_1[] = {id, size, ...};
-  static int UNIFIED_insn_name_2[] = {id, size, ...};
+  static const int UNIFIED_insn_name_1[] = {id, size, ...};
+  static const int UNIFIED_insn_name_2[] = {id, size, ...};
   ...
 
-  static *int UNIFIED_insn_name[] = {size,
+  static const int *const UNIFIED_insn_name[] = {size,
     UNIFIED_insn_name_1,
     UNIFIED_insn_name_2, ...};
   ...
   
-  static **int unified_insns_data[] = {
+  static const int *const *const unified_insns_data[] = {
     UNIFIED_insn_nameA,
     UNIFIED_insn_nameB, ...};
  */

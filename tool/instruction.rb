@@ -1139,7 +1139,7 @@ module RubyVM
 
           uni_insn, uni_insns = *unif
           uni_insns = uni_insns[1..-1]
-          unif_insns_each << "static int UNIFIED_#{insn.name}_#{i}[] = {" +
+          unif_insns_each << "static const int UNIFIED_#{insn.name}_#{i}[] = {" +
                              "  BIN(#{uni_insn.name}), #{uni_insns.size + 2}, \n  " +
                              uni_insns.map{|e| "BIN(#{e.name})"}.join(", ") + "};\n"
           }
@@ -1147,14 +1147,14 @@ module RubyVM
           
         end
         if size > 0
-          unif_insns << "static int *UNIFIED_#{insn.name}[] = {(int *)#{size+1}, \n"
+          unif_insns << "static const int *const UNIFIED_#{insn.name}[] = {(int *)#{size+1}, \n"
           unif_insns << (0...size).map{|e| "  UNIFIED_#{insn.name}_#{e}"}.join(",\n") + "};\n"
           unif_insns_data << "  UNIFIED_#{insn.name}"
         else
           unif_insns_data << "  0"
         end
       }
-      unif_insns_data = "static int **unified_insns_data[] = {\n" +
+      unif_insns_data = "static const int *const *const unified_insns_data[] = {\n" +
                         unif_insns_data.join(",\n") + "};\n"
       ERB.new(vpath.read('template/optunifs.inc.tmpl')).result(binding)
     end

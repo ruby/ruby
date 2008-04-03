@@ -597,7 +597,7 @@ insn_operand_intern(rb_iseq_t *iseq,
 		    int insn, int op_no, VALUE op,
 		    int len, int pos, VALUE *pnop, VALUE child)
 {
-    char *types = insn_op_types(insn);
+    const char *types = insn_op_types(insn);
     char type = types[op_no];
     VALUE ret;
     char buff[0x100];
@@ -706,7 +706,7 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
     int insn = iseq[pos];
     int len = insn_len(insn);
     int i, j;
-    char *types = insn_op_types(insn);
+    const char *types = insn_op_types(insn);
     VALUE str = rb_str_new(0, 0);
     char buff[0x100];
     char insn_name_buff[0x100];
@@ -724,7 +724,7 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
     rb_str_cat2(str, buff);
 
     for (j = 0; types[j]; j++) {
-	char *types = insn_op_types(insn);
+	const char *types = insn_op_types(insn);
 	VALUE opstr = insn_operand_intern(iseqdat, insn, j, iseq[pos + j + 1],
 					  len, pos, &iseq[pos + j + 2],
 					  child);

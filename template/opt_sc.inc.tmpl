@@ -22,11 +22,11 @@
 
 #define SC_ERROR 0xffffffff
 
-static VALUE sc_insn_info[][SC_STATE_SIZE] = {
+static const VALUE sc_insn_info[][SC_STATE_SIZE] = {
 <%= sc_insn_info %>
 };
 
-static VALUE sc_insn_next[] = {
+static const VALUE sc_insn_next[] = {
 <%= sc_insn_next %>
 };
 
