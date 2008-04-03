@@ -10,6 +10,8 @@ Fri Apr  4 00:42:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* complex.c (nucomp_fdiv): fdiv implementation restored.
 
+	* numeric.c (num_quo): RDoc updated.
+
 Thu Apr  3 21:51:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_int_check): function for DRY real check.

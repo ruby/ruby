@@ -268,6 +268,10 @@ num_fdiv(VALUE x, VALUE y)
  *  Suppose to return most accurate division result, which
  *  is either rational or float (if any of operands are float).
  *
+ *
+ *     654321.quo(13731)      #=> Rational(218107, 4577)
+ *     654321.quo(13731.24)   #=> 47.6519964693647
+ *
  */
 
 static VALUE
@@ -2234,10 +2238,6 @@ fixdivmod(long x, long y, long *divp, long *modp)
  *
  *  Returns the floating point result of dividing <i>fix</i> by
  *  <i>numeric</i>.
- *
- *     654321.quo(13731)      #=> Rational(218107, 4577)
- *     654321.quo(13731.24)   #=> xxx
- *
  */
 
 static VALUE
