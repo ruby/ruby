@@ -22,7 +22,7 @@
 VALUE rb_cComplex;
 
 static ID id_Unify, id_abs, id_abs2, id_arg, id_atan2_bang, id_cmp,
-  id_coerce, id_conjugate, id_convert, id_cos, id_denominator, id_divmod,
+  id_conjugate, id_convert, id_cos, id_denominator, id_divmod,
   id_equal_p, id_exact_p, id_exp_bang, id_expt, id_floor, id_format,
   id_hypot, id_idiv, id_inspect, id_log_bang, id_negate, id_new, id_new_bang,
   id_numerator, id_polar, id_quo, id_scalar_p, id_sin, id_sqrt, id_to_f,
@@ -200,7 +200,6 @@ fun1(to_r)
 fun1(to_s)
 fun1(truncate)
 
-fun2(coerce)
 fun2(divmod)
 
 inline static VALUE
@@ -370,6 +369,20 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
 
 #define f_unify_p(klass) rb_const_defined(klass, id_Unify)
 
+inline static void
+nucomp_real_check(VALUE num)
+{
+    switch (TYPE(num)) {
+      case T_FIXNUM:
+      case T_BIGNUM:
+      case T_FLOAT:
+      case T_RATIONAL:
+	break;
+      default:
+	rb_raise(rb_eArgError, "not a real");
+    }
+}
+
 inline static VALUE
 nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE image)
 {
@@ -417,25 +430,8 @@ nucomp_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 	break;
     }
 
-    switch (TYPE(real)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      default:
-	if (!k_rational_p(real))
-	    rb_raise(rb_eArgError, "not a real");
-    }
-
-    switch (TYPE(image)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      default:
-	if (!k_rational_p(image))
-	    rb_raise(rb_eArgError, "not a real");
-    }
+    nucomp_real_check(real);
+    nucomp_real_check(image);
 
     return nucomp_s_canonicalize_internal(klass, real, image);
 }
@@ -452,25 +448,8 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 	break;
     }
 
-    switch (TYPE(real)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      default:
-	if (!k_rational_p(real))
-	    rb_raise(rb_eArgError, "not a real");
-    }
-
-    switch (TYPE(image)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_FLOAT:
-	break;
-      default:
-	if (!k_rational_p(image))
-	    rb_raise(rb_eArgError, "not a real");
-    }
+    nucomp_real_check(real);
+    nucomp_real_check(image);
 
     return nucomp_s_canonicalize_internal(klass, real, image);
 }
@@ -722,10 +701,7 @@ nucomp_add(VALUE self, VALUE other)
 	  return f_complex_new2(CLASS_OF(self), real, image);
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_add(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '+');
     }
 }
 
@@ -755,10 +731,7 @@ nucomp_sub(VALUE self, VALUE other)
 	  return f_complex_new2(CLASS_OF(self), real, image);
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_sub(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '-');
     }
 }
 
@@ -791,10 +764,7 @@ nucomp_mul(VALUE self, VALUE other)
 	  return f_complex_new2(CLASS_OF(self), real, image);
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_mul(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '*');
     }
 }
 
@@ -816,10 +786,7 @@ nucomp_div(VALUE self, VALUE other)
       case T_COMPLEX:
 	return f_div(f_mul(self, f_conjugate(other)), f_abs2(other));
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_div(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, '/');
     }
 }
 
@@ -913,10 +880,7 @@ nucomp_expt(VALUE self, VALUE other)
 	  return nucomp_s_polar(CLASS_OF(self), nr, ntheta);
       }
       default:
-      {
-	  VALUE a = f_coerce(other, self);
-	  return f_expt(RARRAY_PTR(a)[0], RARRAY_PTR(a)[1]);
-      }
+	return rb_num_coerce_bin(self, other, id_expt);
     }
 }
 
@@ -1506,7 +1470,6 @@ Init_Complex(void)
     id_arg = rb_intern("arg");
     id_atan2_bang = rb_intern("atan2!");
     id_cmp = rb_intern("<=>");
-    id_coerce = rb_intern("coerce");
     id_conjugate = rb_intern("conjugate");
     id_convert = rb_intern("convert");
     id_cos = rb_intern("cos");

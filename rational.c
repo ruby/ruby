@@ -425,7 +425,7 @@ f_rational_new_bang2(VALUE klass, VALUE x, VALUE y)
 
 #define f_unify_p(klass) rb_const_defined(klass, id_Unify)
 
-static inline void
+inline static void
 nurat_int_check(VALUE num)
 {
     switch (TYPE(num)) {
@@ -880,7 +880,7 @@ nurat_expt(VALUE self, VALUE other)
       case T_RATIONAL:
 	return f_expt(f_to_f(self), other);
       default:
-	return rb_num_coerce_bin(self, other, rb_intern("**"));
+	return rb_num_coerce_bin(self, other, id_expt);
     }
 }
 
@@ -917,7 +917,7 @@ nurat_cmp(VALUE self, VALUE other)
 	  return f_cmp(f_sub(num1, num2), ZERO);
       }
       default:
-	return rb_num_coerce_bin(self, other, rb_intern("<=>"));
+	return rb_num_coerce_bin(self, other, id_cmp);
     }
 }
 

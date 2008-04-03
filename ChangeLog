@@ -1,3 +1,9 @@
+Thu Apr  3 21:51:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_int_check): function for DRY real check.
+
+	* complex.c (nucomp_{add,sub,mul,div,expt}): use rb_num_coerce_bin().
+
 Thu Apr  3 19:59:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (defineclass): check if cbase is a class or a module.
