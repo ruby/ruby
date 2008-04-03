@@ -724,28 +724,25 @@ insns: $(INSNS)
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
-encdb: $(PREP)
-	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc encdb.h.new
-	$(IFCHANGE) "encdb.h" "encdb.h.new"
+encdb.h: $(PREP)
+	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@.new
+	$(IFCHANGE) "$@" "$@.new"
 
-encdb.h:
-	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@
-
-transdb: $(PREP)
-	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans transdb.h.new
-	$(IFCHANGE) "transdb.h" "transdb.h.new"
-
-transdb.h:
-	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans $@
+transdb.h: $(PREP)
+	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans $@.new
+	$(IFCHANGE) "$@" "$@.new"
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG)
-	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@
+prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $(RBCONFIG) $(PREP)
+	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb \
+		$(srcdir)/prelude.rb $(srcdir)/gem_prelude.rb $@.new
+	$(IFCHANGE) "$@" "$@.new"
 
-golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb
+golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
 	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/golf_prelude.rb $@
+	$(IFCHANGE) "$@" "$@.new"
 
 prereq: incs srcs preludes
 

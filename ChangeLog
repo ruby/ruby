@@ -1,4 +1,7 @@
-Thu Apr  3 12:56:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr  3 13:20:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (endb.h, transdb.h, prelude.c): depend on $(PREP) and
+	  check if really changed.  [ruby-core:16102]
 
 	* Makefile.in, common.mk, configure.in, {win32,bcc32}/Makefile.sub
 	  (MINIOBJS, ARCHMINIOBJS): separated.
