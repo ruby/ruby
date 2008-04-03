@@ -1,3 +1,8 @@
+Thu Apr  3 12:56:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, configure.in, {win32,bcc32}/Makefile.sub
+	  (MINIOBJS, ARCHMINIOBJS): separated.
+
 Thu Apr  3 09:00:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_set_sequence, iseq_insns_unification,

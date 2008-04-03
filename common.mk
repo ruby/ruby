@@ -18,6 +18,7 @@ NORMALMAINOBJ = main.$(OBJEXT)
 MAINOBJ       = $(NORMALMAINOBJ)
 EXTOBJS	      = 
 DLDOBJS	      = $(DMYEXT)
+MINIOBJS      = $(ARCHMINIOBJS) dmyencoding.$(OBJEXT) dmytranscode.$(OBJEXT) miniprelude.$(OBJEXT)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
@@ -106,7 +107,7 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 VCS           = svn
 
-all: $(MKFILES) $(PREP) encdb transdb $(RBCONFIG) $(LIBRUBY) encs
+all: $(MKFILES) $(PREP) incs $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
@@ -314,7 +315,7 @@ clean: clean-ext clean-local clean-enc
 clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
-	@$(RM) *.inc $(GOLFOBJS) y.tab.c y.output
+	@$(RM) *.inc $(GOLFOBJS) y.tab.c y.output encdb.h transdb.h
 clean-ext:
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) clean
 clean-enc:
@@ -717,6 +718,8 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(srcdir)/revision.h
+
+insns: $(INSNS)
 
 node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
