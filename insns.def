@@ -943,6 +943,8 @@ defineclass
 	    cbase = vm_get_cbase(th);
 	}
 
+	vm_check_if_namespace(cbase);
+
 	/* find klass */
 	if (rb_const_defined_at(cbase, id)) {
 	    /* already exist */
@@ -980,6 +982,8 @@ defineclass
 	if (cbase == Qnil) {
 	    cbase = vm_get_cbase(th);
 	}
+
+	vm_check_if_namespace(cbase);
 
 	/* find klass */
 	if (rb_const_defined_at(cbase, id)) {

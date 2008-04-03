@@ -976,6 +976,19 @@ vm_getspecial(rb_thread_t *th, VALUE *lfp, VALUE key, rb_num_t type)
     return val;
 }
 
+static inline void
+vm_check_if_namespace(VALUE klass)
+{
+    switch (TYPE(klass)) {
+      case T_CLASS:
+      case T_MODULE:
+	break;
+      default:
+	rb_raise(rb_eTypeError, "%s is not a class/module",
+		 RSTRING_PTR(rb_obj_as_string(klass)));
+    }
+}
+
 static inline VALUE
 vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 		VALUE klass, ID id, int is_defined)
@@ -1030,14 +1043,7 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 	}
     }
     else {
-	switch (TYPE(klass)) {
-	  case T_CLASS:
-	  case T_MODULE:
-	    break;
-	  default:
-	    rb_raise(rb_eTypeError, "%s is not a class/module",
-		     RSTRING_PTR(rb_obj_as_string(klass)));
-	}
+	vm_check_if_namespace(klass);
 	if (is_defined) {
 	    return rb_const_defined(klass, id);
 	}
