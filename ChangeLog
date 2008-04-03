@@ -1,3 +1,15 @@
+Fri Apr  4 00:42:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (Init_Bignum): rdiv method removed.  [ruby-dev:34242]
+
+	* complex.c (nucomp_quo): ditto.
+
+	* numeric.c (num_rdiv): ditto.
+
+	* rational.c (nurat_div): ditto.
+
+	* complex.c (nucomp_fdiv): fdiv implementation restored.
+
 Thu Apr  3 21:51:45 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_int_check): function for DRY real check.

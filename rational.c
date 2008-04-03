@@ -781,7 +781,7 @@ nurat_mul(VALUE self, VALUE other)
 #define f_to_r(x) rb_funcall(x, id_to_r, 0)
 
 static VALUE
-nurat_division(VALUE self, VALUE other, int rdiv)
+nurat_div(VALUE self, VALUE other)
 {
   again:
     switch (TYPE(other)) {
@@ -797,10 +797,6 @@ nurat_division(VALUE self, VALUE other, int rdiv)
 			    other, ONE, '/');
 	}
       case T_FLOAT:
-	if (rdiv) {
-	    other = f_to_r(other);
-	    goto again;
-	}
 	return rb_funcall(f_to_f(self), '/', 1, other);
       case T_RATIONAL:
 	if (f_zero_p(other))
@@ -815,18 +811,6 @@ nurat_division(VALUE self, VALUE other, int rdiv)
       default:
 	return rb_num_coerce_bin(self, other, '/');
     }
-}
-
-static VALUE
-nurat_div(VALUE self, VALUE other)
-{
-    return nurat_division(self, other, Qfalse);
-}
-
-static VALUE
-nurat_rdiv(VALUE self, VALUE other)
-{
-    return nurat_division(self, other, Qtrue);
 }
 
 static VALUE
@@ -1549,8 +1533,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "-", nurat_sub, 1);
     rb_define_method(rb_cRational, "*", nurat_mul, 1);
     rb_define_method(rb_cRational, "/", nurat_div, 1);
-    rb_define_method(rb_cRational, "quo", nurat_rdiv, 1);
-    rb_define_method(rb_cRational, "rdiv", nurat_rdiv, 1);
+    rb_define_method(rb_cRational, "quo", nurat_div, 1);
     rb_define_method(rb_cRational, "fdiv", nurat_fdiv, 1);
     rb_define_method(rb_cRational, "**", nurat_expt, 1);
 

@@ -266,27 +266,14 @@ num_fdiv(VALUE x, VALUE y)
  *     num.quo(numeric)    =>   result
  *
  *  Suppose to return most accurate division result, which
- *  by default in ratinal number for 1.9.
- *
- */
-
-/*
- * Document-method: rdiv
- *
- *  call-seq:
- *     num.rdiv(numeric)   =>   result
- *
- *  Performs rational number division.
- *
- *     654321.rdiv(13731)     #=> Rational(218107, 4577)
- *     654321.rdiv(13731.5)   #=> Rational(1308642, 27463)
+ *  is either rational or float (if any of operands are float).
  *
  */
 
 static VALUE
-num_rdiv(VALUE x, VALUE y)
+num_quo(VALUE x, VALUE y)
 {
-    return rb_funcall(rb_Rational1(x), rb_intern("rdiv"), 1, y);
+    return rb_funcall(rb_Rational1(x), rb_intern("quo"), 1, y);
 }
 
 static VALUE num_floor(VALUE num);
@@ -2248,8 +2235,8 @@ fixdivmod(long x, long y, long *divp, long *modp)
  *  Returns the floating point result of dividing <i>fix</i> by
  *  <i>numeric</i>.
  *
- *     654321.rdiv(13731)      #=> Rational(218107, 4577)
- *     654321.rdiv(13731.24)   #=> Rational(1308642, 27463)
+ *     654321.quo(13731)      #=> Rational(218107, 4577)
+ *     654321.quo(13731.24)   #=> xxx
  *
  */
 
@@ -3178,8 +3165,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "fdiv", num_fdiv, 1);
-    rb_define_method(rb_cNumeric, "quo", num_rdiv, 1);
-    rb_define_method(rb_cNumeric, "rdiv", num_rdiv, 1);
+    rb_define_method(rb_cNumeric, "quo", num_quo, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);

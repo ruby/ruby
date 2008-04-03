@@ -791,7 +791,7 @@ nucomp_div(VALUE self, VALUE other)
 }
 
 static VALUE
-nucomp_rdiv(VALUE self, VALUE other)
+nucomp_quo(VALUE self, VALUE other)
 {
     get_dat1(self);
 
@@ -800,7 +800,6 @@ nucomp_rdiv(VALUE self, VALUE other)
 				f_to_r(dat->image)), other);
 }
 
-#if 0
 static VALUE
 nucomp_fdiv(VALUE self, VALUE other)
 {
@@ -810,7 +809,6 @@ nucomp_fdiv(VALUE self, VALUE other)
 				f_to_f(dat->real),
 				f_to_f(dat->image)), other);
 }
-#endif
 
 static VALUE
 nucomp_expt(VALUE self, VALUE other)
@@ -1550,9 +1548,8 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "-", nucomp_sub, 1);
     rb_define_method(rb_cComplex, "*", nucomp_mul, 1);
     rb_define_method(rb_cComplex, "/", nucomp_div, 1);
-    rb_define_method(rb_cComplex, "quo", nucomp_rdiv, 1);
-    rb_define_method(rb_cComplex, "rdiv", nucomp_rdiv, 1);
-    rb_define_method(rb_cComplex, "fdiv", nucomp_rdiv, 1);
+    rb_define_method(rb_cComplex, "quo", nucomp_quo, 1);
+    rb_define_method(rb_cComplex, "fdiv", nucomp_fdiv, 1);
     rb_define_method(rb_cComplex, "**", nucomp_expt, 1);
 
     rb_define_method(rb_cComplex, "==", nucomp_equal_p, 1);

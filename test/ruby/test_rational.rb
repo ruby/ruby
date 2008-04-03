@@ -502,16 +502,6 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(0.25), c.quo(2.0))
   end
 
-  def test_rdiv
-    c = Rational(1,2)
-    c2 = Rational(2,3)
-
-    assert_equal(Rational(3,4), c.rdiv(c2))
-
-    assert_equal(Rational(1,4), c.rdiv(2))
-    assert_equal(Rational(0.25), c.rdiv(2.0))
-  end
-
   def test_fdiv
     c = Rational(1,2)
     c2 = Rational(2,3)
@@ -945,11 +935,6 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(5000000000), 10000000000.quo(2))
     assert_equal(Rational(1,2), 1.0.quo(2))
     assert_equal(Rational(1,4), Rational(1,2).quo(2))
-
-    assert_equal(Rational(1,2), 1.rdiv(2))
-    assert_equal(Rational(5000000000), 10000000000.rdiv(2))
-    assert_equal(Rational(1,2), 1.0.rdiv(2))
-    assert_equal(Rational(1,4), Rational(1,2).rdiv(2))
 
     assert_equal(0.5, 1.fdiv(2))
     assert_equal(5000000000.0, 10000000000.fdiv(2))

@@ -2650,7 +2650,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
     rb_define_method(rb_cBignum, "quo", rb_big_quo, 1);
-    rb_define_method(rb_cBignum, "rdiv", rb_big_quo, 1);
     rb_define_method(rb_cBignum, "fdiv", rb_big_fdiv, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);

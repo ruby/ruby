@@ -413,30 +413,6 @@ class Complex_Test < Test::Unit::TestCase
     end
   end
 
-  def test_rdiv
-    if defined?(Rational) && !Rational.instance_variable_get('@RCS_ID')
-      c = Complex(1,2)
-      c2 = Complex(2,3)
-
-      assert_equal(Complex(Rational(8,13),Rational(1,13)), c.rdiv(c2))
-
-      c = Complex(1.0,2.0)
-      c2 = Complex(2.0,3.0)
-
-      r = c.rdiv(c2)
-      assert_in_delta(0.615, r.real, 0.001)
-      assert_in_delta(0.076, r.image, 0.001)
-
-      c = Complex(1,2)
-      c2 = Complex(2,3)
-
-      assert_equal(Complex(Rational(1,2),1), c.rdiv(2))
-
-      assert_equal(Complex(Rational(1,2),Rational(1)), c / Rational(2))
-      assert_equal(Complex(Rational(3,2),Rational(3)), c / Rational(2,3))
-    end
-  end
-
   def test_fdiv
     c = Complex(1,2)
     c2 = Complex(2,3)
@@ -880,10 +856,10 @@ class Complex_Test < Test::Unit::TestCase
     end
 
     if defined?(Rational) && !Rational.instance_variable_get('@RCS_ID')
-      assert_equal(Rational(1,2), 1.rdiv(2))
-      assert_equal(Rational(5000000000), 10000000000.rdiv(2))
-      assert_equal(Rational(1,2), 1.0.rdiv(2))
-      assert_equal(Rational(1,4), Rational(1,2).rdiv(2))
+      assert_equal(Rational(1,2), 1.quo(2))
+      assert_equal(Rational(5000000000), 10000000000.quo(2))
+      assert_equal(Rational(1,2), 1.0.quo(2))
+      assert_equal(Rational(1,4), Rational(1,2).quo(2))
       assert_equal(Complex(Rational(1,2),Rational(1)), Complex(1,2).quo(2))
     end
 
