@@ -690,14 +690,14 @@ unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
 utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
 
-INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc \
+INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
 $(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
 	$(RM) $(PROGRAM)
-	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT)
+	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
 minsns.inc: $(srcdir)/template/minsns.inc.tmpl
 
