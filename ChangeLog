@@ -28,6 +28,12 @@ Thu Apr  3 09:00:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/instruction.rb (OptUnifsIncGenerator): ditto.
 
+Thu Apr  3 08:46:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_include): add RDoc to describe that comparison
+	  for numeric is done according magnitude of values.
+	  [ruby-core:15907]
+
 Wed Apr  2 22:29:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* rational.c (nurat_int_check): function for DRY integer check.

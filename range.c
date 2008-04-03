@@ -720,7 +720,8 @@ range_eqq(VALUE range, VALUE val)
  *     rng.include?(val) =>  true or false
  *  
  *  Returns <code>true</code> if <i>obj</i> is an element of
- *  <i>rng</i>, <code>false</code> otherwise.
+ *  <i>rng</i>, <code>false</code> otherwise.  If beg and end are
+ *  numeric, comparison is done according magnitude of values.
  *     
  *     ("a".."z").include?("g")  # => true
  *     ("a".."z").include?("A")  # => false
