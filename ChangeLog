@@ -1,3 +1,8 @@
+Fri Apr  4 02:17:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): should not round step into integer if
+	  begin and end are numeric.  [ruby-core:15990]
+
 Tue Apr  1 14:43:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: get rid of empty expansion.

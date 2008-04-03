@@ -322,7 +322,6 @@ range_step(argc, argv, range)
     else {
 	VALUE tmp = rb_to_int(step);
 	unit = rb_cmpint(tmp, step, INT2FIX(0));
-	step = tmp;
     }
     if (unit < 0) {
 	rb_raise(rb_eArgError, "step can't be negative");
@@ -354,8 +353,10 @@ range_step(argc, argv, range)
 	    rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i,
 			(VALUE)iter);
 	}
-	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
-	    ID c = rb_intern(EXCL(range) ? "<" : "<=");
+	else if (rb_obj_is_kind_of(b, rb_cNumeric) ||
+		 !NIL_P(rb_check_to_integer(b, "to_int")) ||
+		 !NIL_P(rb_check_to_integer(e, "to_int"))) {
+	    ID c = EXCL(range) ? '<' : rb_intern("<=");
 
 	    while (RTEST(rb_funcall(b, c, 1, e))) {
 		rb_yield(b);
