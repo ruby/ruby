@@ -144,7 +144,7 @@ rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n
     for (; x < xe; ++x)
 	qstable[*x] = xe - x;
     /* Searching */
-    for (; y < ye; y += *(qstable + y[m])) {
+    for (; y + m < ye; y += *(qstable + y[m])) {
 	if (*xs == *y && memcmp(xs, y, m) == 0)
 	    return y - ys;
     }
