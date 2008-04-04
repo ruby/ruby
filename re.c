@@ -135,7 +135,7 @@ static inline long
 rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
     const unsigned char *x = xs, *xe = xs + m;
-    const unsigned char *y = ys, *ye = ys + n;
+    const unsigned char *y = ys;
     VALUE i, qstable[256];
 
     /* Preprocessing */
@@ -144,7 +144,7 @@ rb_memsearch_qs(const unsigned char *xs, long m, const unsigned char *ys, long n
     for (; x < xe; ++x)
 	qstable[*x] = xe - x;
     /* Searching */
-    for (; y + m < ye; y += *(qstable + y[m])) {
+    for (; y + m <= ys + n; y += *(qstable + y[m])) {
 	if (*xs == *y && memcmp(xs, y, m) == 0)
 	    return y - ys;
     }
@@ -187,7 +187,7 @@ static inline long
 rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, long n)
 {
     const unsigned char *x = xs, *xe = xs + m;
-    const unsigned char *y = ys, *ye = ys + n;
+    const unsigned char *y = ys;
     VALUE i, qstable[512];
 
     /* Preprocessing */
@@ -198,7 +198,7 @@ rb_memsearch_qs_utf8(const unsigned char *xs, long m, const unsigned char *ys, l
 	qstable[rb_memsearch_qs_utf8_hash(x)] = xe - x;
     }
     /* Searching */
-    for (; y < ye; y += qstable[rb_memsearch_qs_utf8_hash(y+m)]) {
+    for (; y + m <= ys + n; y += qstable[rb_memsearch_qs_utf8_hash(y+m)]) {
 	if (*xs == *y && memcmp(xs, y, m) == 0)
 	    return y - ys;
     }
