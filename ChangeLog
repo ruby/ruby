@@ -1,3 +1,13 @@
+Sat Apr  5 05:50:57 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc/parsers/parse_rb.rb: Fix uninitialized variable warnings.
+
+	* lib/rdoc/generator/html.rb: ditto.
+
+	* lib/rdoc/options.rb: Fix shadowed variable warning.
+
+	* lib/webrick/httprequest.rb: Fix redefined method warning.
+
 Fri Apr  4 23:24:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_memsearch_qs): wrong boundary condition.

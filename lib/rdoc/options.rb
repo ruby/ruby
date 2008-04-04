@@ -189,7 +189,7 @@ class RDoc::Options
   def parse(argv)
     accessors = []
 
-    opt = OptionParser.new do |opt|
+    opts = OptionParser.new do |opt|
       opt.program_name = File.basename $0
       opt.version = RDoc::VERSION
       opt.summary_indent = ' ' * 4
@@ -513,7 +513,7 @@ Usage: #{opt.program_name} [options] [names...]
       end
     end
 
-    opt.parse! argv
+    opts.parse! argv
 
     @files = argv.dup
 
@@ -539,7 +539,7 @@ Usage: #{opt.program_name} [options] [names...]
     end
 
   rescue OptionParser::InvalidArgument, OptionParser::InvalidOption => e
-    puts opt
+    puts opts
     puts
     puts e
     exit 1

@@ -23,7 +23,7 @@ module WEBrick
     attr_reader :request_method, :unparsed_uri, :http_version
 
     # Request-URI
-    attr_reader :request_uri, :host, :port, :path
+    attr_reader :request_uri, :path
     attr_accessor :script_name, :path_info, :query_string
 
     # Header and entity body
