@@ -50,7 +50,7 @@ domain_check(double x, char *msg)
  *     
  */
 
-static VALUE
+VALUE
 math_atan2(VALUE obj, VALUE y, VALUE x)
 {
     Need_Float2(y, x);
@@ -66,7 +66,7 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
  *  -1..1.
  */
 
-static VALUE
+VALUE
 math_cos(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -81,7 +81,7 @@ math_cos(VALUE obj, VALUE x)
  *  -1..1.
  */
 
-static VALUE
+VALUE
 math_sin(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -172,7 +172,7 @@ cosh(double x)
  *  Computes the hyperbolic cosine of <i>x</i> (expressed in radians).
  */
 
-static VALUE
+VALUE
 math_cosh(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -196,7 +196,7 @@ sinh(double x)
  *  radians).
  */
 
-static VALUE
+VALUE
 math_sinh(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -285,7 +285,7 @@ math_atanh(VALUE obj, VALUE x)
  *  Returns e**x.
  */
 
-static VALUE
+VALUE
 math_exp(VALUE obj, VALUE x)
 {
     Need_Float(x);
@@ -311,7 +311,7 @@ math_exp(VALUE obj, VALUE x)
  *  of logarithm.
  */
 
-static VALUE
+VALUE
 math_log(int argc, VALUE *argv)
 {
     VALUE x, base;
@@ -388,7 +388,7 @@ math_log10(VALUE obj, VALUE x)
  *  Returns the non-negative square root of <i>numeric</i>.
  */
 
-static VALUE
+VALUE
 math_sqrt(VALUE obj, VALUE x)
 {
     double d;

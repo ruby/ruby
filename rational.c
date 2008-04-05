@@ -777,13 +777,9 @@ nurat_mul(VALUE self, VALUE other)
     }
 }
 
-#define id_to_r rb_intern("to_r")
-#define f_to_r(x) rb_funcall(x, id_to_r, 0)
-
 static VALUE
 nurat_div(VALUE self, VALUE other)
 {
-  again:
     switch (TYPE(other)) {
       case T_FIXNUM:
       case T_BIGNUM:
@@ -1406,6 +1402,9 @@ string_to_r(VALUE self)
 	return RARRAY_PTR(a)[0];
     return rb_rational_new1(INT2FIX(0));
 }
+
+#define id_to_r rb_intern("to_r")
+#define f_to_r(x) rb_funcall(x, id_to_r, 0)
 
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)

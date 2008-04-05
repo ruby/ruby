@@ -474,47 +474,29 @@ nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
     return rb_funcall2(rb_cComplex, id_convert, argc, argv);
 }
 
-#if 1
-/* the following code is copied from math.c */
+extern VALUE math_atan2(VALUE obj, VALUE x, VALUE y);
+extern VALUE math_cos(VALUE obj, VALUE x);
+extern VALUE math_cosh(VALUE obj, VALUE x);
+extern VALUE math_exp(VALUE obj, VALUE x);
+extern VALUE math_log(int argc, VALUE *argv);
+extern VALUE math_sin(VALUE obj, VALUE x);
+extern VALUE math_sinh(VALUE obj, VALUE x);
+extern VALUE math_sqrt(VALUE obj, VALUE x);
 
-#include <errno.h>
-
-#define Need_Float(x) (x) = rb_Float(x)
-#define Need_Float2(x,y) do {\
-    Need_Float(x);\
-    Need_Float(y);\
-} while (0)
-
-static void
-domain_check(double x, char *msg)
-{
-    while(1) {
-	if (errno) {
-	    rb_sys_fail(msg);
-	}
-	if (isnan(x)) {
-#if defined(EDOM)
-	    errno = EDOM;
-#elif defined(ERANGE)
-	    errno = ERANGE;
-#endif
-	    continue;
-	}
-	break;
-    }
-}
+#define m_atan2_bang(x,y) math_atan2(Qnil,x,y)
+#define m_cos_bang(x) math_cos(Qnil,x)
+#define m_cosh_bang(x) math_cosh(Qnil,x)
+#define m_exp_bang(x) math_exp(Qnil,x)
 
 static VALUE
-m_cos_bang(VALUE x)
+m_log_bang(VALUE x)
 {
-    Need_Float(x);
-    return DOUBLE2NUM(cos(RFLOAT_VALUE(x)));
+  return math_log(1, &x);
 }
 
-static VALUE m_cos_bang(VALUE);
-static VALUE m_cosh_bang(VALUE);
-static VALUE m_sin_bang(VALUE);
-static VALUE m_sinh_bang(VALUE);
+#define m_sin_bang(x) math_sin(Qnil,x)
+#define m_sinh_bang(x) math_sinh(Qnil,x)
+#define m_sqrt_bang(x) math_sqrt(Qnil,x)
 
 static VALUE
 m_cos(VALUE x)
@@ -531,47 +513,6 @@ m_cos(VALUE x)
 				    m_sinh_bang(dat->image)));
 }
 
-#ifndef HAVE_COSH
-double
-cosh(double x)
-{
-    return (exp(x) + exp(-x)) / 2;
-}
-#endif
-
-static VALUE
-m_cosh_bang(VALUE x)
-{
-    Need_Float(x);
-    return DOUBLE2NUM(cosh(RFLOAT_VALUE(x)));
-}
-
-static VALUE
-m_exp_bang(VALUE x)
-{
-    Need_Float(x);
-    return DOUBLE2NUM(exp(RFLOAT_VALUE(x)));
-}
-
-static VALUE
-m_log_bang(VALUE x)
-{
-    double d;
-
-    Need_Float(x);
-    errno = 0;
-    d = log(RFLOAT_VALUE(x));
-    domain_check(d, "log");
-    return DOUBLE2NUM(d);
-}
-
-static VALUE
-m_sin_bang(VALUE x)
-{
-    Need_Float(x);
-    return DOUBLE2NUM(sin(RFLOAT_VALUE(x)));
-}
-
 static VALUE
 m_sin(VALUE x)
 {
@@ -585,33 +526,6 @@ m_sin(VALUE x)
 				    m_cosh_bang(dat->image)),
 			      f_mul(m_cos_bang(dat->real),
 				    m_sinh_bang(dat->image)));
-}
-
-#ifndef HAVE_SINH
-double
-sinh(double x)
-{
-    return (exp(x) - exp(-x)) / 2;
-}
-#endif
-
-static VALUE
-m_sinh_bang(VALUE x)
-{
-    Need_Float(x);
-    return DOUBLE2NUM(sinh(RFLOAT_VALUE(x)));
-}
-
-static VALUE
-m_sqrt_bang(VALUE x)
-{
-    double d;
-
-    Need_Float(x);
-    errno = 0;
-    d = sqrt(RFLOAT_VALUE(x));
-    domain_check(d, "sqrt");
-    return DOUBLE2NUM(d);
 }
 
 static VALUE
@@ -635,23 +549,6 @@ m_sqrt(VALUE x)
 	}
     }
 }
-
-static VALUE
-m_atan2_bang(VALUE y, VALUE x)
-{
-    Need_Float2(y, x);
-    return DOUBLE2NUM(atan2(RFLOAT_VALUE(y), RFLOAT_VALUE(x)));
-}
-
-#if 0
-static VALUE
-m_hypot(VALUE x, VALUE y)
-{
-    Need_Float2(x, y);
-    return DOUBLE2NUM(hypot(RFLOAT_VALUE(x), RFLOAT_VALUE(y)));
-}
-#endif
-#endif
 
 static VALUE
 nucomp_s_polar(VALUE klass, VALUE abs, VALUE arg)

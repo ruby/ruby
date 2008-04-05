@@ -1,3 +1,13 @@
+Sat Apr  5 23:17:20 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/cmath.rb: new.
+
+	* lib/complex.rb: depends lib/cmath.rb.
+
+	* lib/rational.rb: added rdiv.
+
+	* complex.c: removed some math functions.
+
 Sat Apr  5 05:50:57 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc/parsers/parse_rb.rb: Fix uninitialized variable warnings.

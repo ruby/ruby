@@ -4,6 +4,7 @@ class Fixnum
 
   alias power! **
   alias rpower **
+  alias rdiv quo
 
 end
 
@@ -13,5 +14,6 @@ class Bignum
 
   alias power! **
   alias rpower **
+  alias rdiv quo
 
 end

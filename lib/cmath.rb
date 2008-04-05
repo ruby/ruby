@@ -1,9 +1,6 @@
-require 'cmath'
+module CMath
 
-Math = CMath
-
-=begin
-module Math
+  include Math
 
   alias exp! exp
   alias log! log
@@ -224,4 +221,3 @@ module Math
   module_function :atanh
 
 end
-=end
