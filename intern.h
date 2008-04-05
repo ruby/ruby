@@ -319,6 +319,7 @@ VALUE rb_class_real _((VALUE));
 VALUE rb_class_inherited_p _((VALUE, VALUE));
 VALUE rb_convert_type _((VALUE,int,const char*,const char*));
 VALUE rb_check_convert_type _((VALUE,int,const char*,const char*));
+VALUE rb_check_to_integer _((VALUE, const char *));
 VALUE rb_to_int _((VALUE));
 VALUE rb_Integer _((VALUE));
 VALUE rb_Float _((VALUE));
