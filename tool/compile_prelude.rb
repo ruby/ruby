@@ -8,7 +8,7 @@ $:.unshift(File.expand_path("../..", __FILE__))
 
 preludes = ARGV.dup
 outfile = preludes.pop
-init_name = outfile[/\w+(?=_prelude.c\z)/] || 'prelude'
+init_name = outfile[/\w+(?=_prelude.c\b)/] || 'prelude'
 
 C_ESC = {
   "\\" => "\\\\",
