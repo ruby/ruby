@@ -114,12 +114,6 @@ class TestRange < Test::Unit::TestCase
     (0..10).step(2) {|x| a << x }
     assert_equal([0, 2, 4, 6, 8, 10], a)
 
-    o = Object.new
-    def o.to_int; 2; end
-    a = []
-    (0..10).step(o) {|x| a << x }
-    assert_equal([0, 2, 4, 6, 8, 10], a)
-
     assert_raise(ArgumentError) { (0..10).step(-1) { } }
     assert_raise(ArgumentError) { (0..10).step(0) { } }
 

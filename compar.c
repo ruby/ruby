@@ -15,22 +15,6 @@ VALUE rb_mComparable;
 
 static ID cmp;
 
-int
-rb_cmpint(VALUE val, VALUE a, VALUE b)
-{
-    if (NIL_P(val)) {
-	rb_cmperr(a, b);
-    }
-    if (FIXNUM_P(val)) return FIX2INT(val);
-    if (TYPE(val) == T_BIGNUM) {
-	if (RBIGNUM_SIGN(val)) return 1;
-	return -1;
-    }
-    if (RTEST(rb_funcall(val, '>', 1, INT2FIX(0)))) return 1;
-    if (RTEST(rb_funcall(val, '<', 1, INT2FIX(0)))) return -1;
-    return 0;
-}
-
 void
 rb_cmperr(VALUE x, VALUE y)
 {

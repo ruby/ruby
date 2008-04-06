@@ -22,6 +22,11 @@ Sat Apr  5 05:50:57 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/webrick/httprequest.rb: Fix redefined method warning.
 
+Sat Apr  5 02:13:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_cmpint): moved from compar.c, to check bignum
+	  zero.
+
 Fri Apr  4 23:24:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_memsearch_qs): wrong boundary condition.
@@ -37,6 +42,11 @@ Fri Apr  4 05:57:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/pop.rb (Net::POP3::do_finish): clear @n_mails and
 	  @n_bytes as well.  [ruby-core:16144]
+
+Fri Apr  4 01:59:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): add step for each iteration if begin and
+	  end are numeric.  [ruby-core:15990]
 
 Fri Apr  4 00:42:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

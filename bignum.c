@@ -50,6 +50,23 @@ bigzero_p(VALUE x)
     return 1;
 }
 
+int
+rb_cmpint(VALUE val, VALUE a, VALUE b)
+{
+    if (NIL_P(val)) {
+	rb_cmperr(a, b);
+    }
+    if (FIXNUM_P(val)) return FIX2INT(val);
+    if (TYPE(val) == T_BIGNUM) {
+	if (BIGZEROP(val)) return 0;
+	if (RBIGNUM_SIGN(val)) return 1;
+	return -1;
+    }
+    if (RTEST(rb_funcall(val, '>', 1, INT2FIX(0)))) return 1;
+    if (RTEST(rb_funcall(val, '<', 1, INT2FIX(0)))) return -1;
+    return 0;
+}
+
 #define RBIGNUM_SET_LEN(b,l) \
   ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
    (RBASIC(b)->flags = (RBASIC(b)->flags & ~RBIGNUM_EMBED_LEN_MASK) | \
