@@ -5792,9 +5792,6 @@ rb_str_intern(VALUE s)
     VALUE str = RB_GC_GUARD(s);
     ID id;
 
-    if (OBJ_TAINTED(str) && rb_safe_level() >= 1) {
-	rb_raise(rb_eSecurityError, "Insecure: can't intern tainted string");
-    }
     id = rb_intern_str(str);
     return ID2SYM(id);
 }

@@ -1,3 +1,8 @@
+Mon Apr  7 02:12:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_intern): need not to check if tainted.
+	  [ruby-dev:34219]
+
 Sun Apr  6 09:45:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_tell): check if closed.  [ruby-core:16223]
