@@ -580,7 +580,7 @@ dir_tell(VALUE dir)
     struct dir_data *dirp;
     long pos;
 
-    Data_Get_Struct(dir, struct dir_data, dirp);
+    GetDIR(dir, dirp);
     pos = telldir(dirp->dir);
     return rb_int2inum(pos);
 #else
