@@ -1,3 +1,7 @@
+Sun Apr  6 09:45:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (dir_tell): check if closed.  [ruby-core:16223]
+
 Sat Apr  5 10:05:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_check_to_integer): backported for range_step.
