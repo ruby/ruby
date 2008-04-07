@@ -1,3 +1,9 @@
+Mon Apr  7 21:35:08 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_nitems): Backport Array#nitems with a block;
+	  suggested by Bertram Scharpf <lists@bertram-scharpf.de> in
+	  [ruby-talk:134083].
+
 Sun Apr  6 09:45:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (dir_tell): check if closed.  [ruby-core:16223]
