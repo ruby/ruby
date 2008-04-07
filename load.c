@@ -191,7 +191,13 @@ int
 rb_provided(const char *feature)
 {
     const char *ext = strrchr(feature, '.');
+    volatile VALUE fullpath = 0;
 
+    if (*feature == '.' &&
+	(feature[1] == '/' || strncmp(feature+1, "./", 2) == 0)) {
+	fullpath = rb_file_expand_path(rb_str_new2(feature), Qnil);
+	feature = RSTRING_PTR(fullpath);
+    }
     if (ext && !strchr(ext, '/')) {
 	if (IS_RBEXT(ext)) {
 	    if (rb_feature_p(feature, ext, Qtrue, Qfalse, 0)) return Qtrue;

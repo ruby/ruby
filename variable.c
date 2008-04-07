@@ -1374,7 +1374,7 @@ rb_autoload_load(VALUE klass, ID id)
     VALUE file;
     NODE *load = autoload_delete(klass, id);
 
-    if (!load || !(file = load->nd_lit) || rb_provided(RSTRING_PTR(file))) {
+    if (!load || !(file = load->nd_lit)) {
 	return Qfalse;
     }
     return rb_require_safe(file, load->nd_nth);
@@ -1393,7 +1393,7 @@ autoload_file(VALUE mod, ID id)
     }
     file = ((NODE *)load)->nd_lit;
     Check_Type(file, T_STRING);
-    if (!RSTRING_PTR(file)) {
+    if (!RSTRING_PTR(file) || !*RSTRING_PTR(file)) {
 	rb_raise(rb_eArgError, "empty file name");
     }
     if (!rb_provided(RSTRING_PTR(file))) {
@@ -1433,7 +1433,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 
     tmp = klass;
   retry:
-    while (tmp && !NIL_P(tmp)) {
+    while (RTEST(tmp)) {
 	while (RCLASS_IV_TBL(tmp) && st_lookup(RCLASS_IV_TBL(tmp),id,&value)) {
 	    if (value == Qundef) {
 		if (!RTEST(rb_autoload_load(tmp, id))) break;

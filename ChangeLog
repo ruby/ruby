@@ -1,3 +1,11 @@
+Tue Apr  8 03:39:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_provided): check expanded path for relative path
+	  features, loading or loaded features are already expanded in 1.9.
+
+	* variable.c (rb_autoload_load): no needs to check if provided before
+	  rb_require_safe.  [ruby-dev:34266]
+
 Mon Apr  7 22:41:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* numeric.c: cancelled recent changes (except to remove rdiv).
