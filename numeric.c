@@ -248,37 +248,18 @@ num_uminus(VALUE num)
 
 /*
  *  call-seq:
+ *     num.quo(numeric)    =>   result
  *     num.fdiv(numeric)   =>   result
  *
- *  Performs floating point division.
- */
-
-static VALUE
-num_fdiv(VALUE x, VALUE y)
-{
-    return rb_funcall(rb_Float(x), '/', 1, y);
-}
-
-/*
- * Document-method: quo
- *
- *  call-seq:
- *     num.quo(numeric)    =>   result
- *
- *  Suppose to return most accurate division result, which
- *  is either rational or float (if any of operands are float).
- *
- *
- *     654321.quo(13731)      #=> Rational(218107, 4577)
- *     654321.quo(13731.24)   #=> 47.6519964693647
- *
+ *  Equivalent to <code>Numeric#/</code>, but overridden in subclasses.
  */
 
 static VALUE
 num_quo(VALUE x, VALUE y)
 {
-    return rb_funcall(rb_Rational1(x), rb_intern("quo"), 1, y);
+    return rb_funcall(x, '/', 1, y);
 }
+
 
 static VALUE num_floor(VALUE num);
 
@@ -294,7 +275,7 @@ static VALUE num_floor(VALUE num);
 static VALUE
 num_div(VALUE x, VALUE y)
 {
-    return rb_funcall(rb_funcall(x, '/', 1, y), rb_intern("floor"), 0, 0);
+    return num_floor(rb_funcall(x, '/', 1, y));
 }
 
 
@@ -666,7 +647,7 @@ flo_div(VALUE x, VALUE y)
 }
 
 static VALUE
-flo_fdiv(VALUE x, VALUE y)
+flo_quo(VALUE x, VALUE y)
 {
     return rb_funcall(x, '/', 1, y);
 }
@@ -2234,11 +2215,22 @@ fixdivmod(long x, long y, long *divp, long *modp)
 
 /*
  *  call-seq:
- *     fix.fdiv(numeric)    => float
+ *     fix.quo(numeric)    => float
+ *     fix.fdiv(numeric)   => float
  *
  *  Returns the floating point result of dividing <i>fix</i> by
  *  <i>numeric</i>.
+ *
+ *     654321.quo(13731)      #=> 47.6528293642124
+ *     654321.quo(13731.24)   #=> 47.6519964693647
+ *
  */
+
+static VALUE
+fix_quo(VALUE x, VALUE y)
+{
+    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
+}
 
 static VALUE
 fix_fdiv(VALUE x, VALUE y)
@@ -3164,8 +3156,8 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
-    rb_define_method(rb_cNumeric, "fdiv", num_fdiv, 1);
     rb_define_method(rb_cNumeric, "quo", num_quo, 1);
+    rb_define_method(rb_cNumeric, "fdiv", num_quo, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
@@ -3231,6 +3223,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
+    rb_define_method(rb_cFixnum, "quo", fix_quo, 1);
     rb_define_method(rb_cFixnum, "fdiv", fix_fdiv, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
@@ -3286,7 +3279,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "-", flo_minus, 1);
     rb_define_method(rb_cFloat, "*", flo_mul, 1);
     rb_define_method(rb_cFloat, "/", flo_div, 1);
-    rb_define_method(rb_cFloat, "fdiv", flo_fdiv, 1);
+    rb_define_method(rb_cFloat, "quo", flo_quo, 1);
+    rb_define_method(rb_cFloat, "fdiv", flo_quo, 1);
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
     rb_define_method(rb_cFloat, "modulo", flo_mod, 1);
     rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);

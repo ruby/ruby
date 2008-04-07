@@ -1,3 +1,11 @@
+Mon Apr  7 22:41:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* numeric.c: cancelled recent changes (except to remove rdiv).
+
+	* bignum.c: ditto.
+
+	* bignum.c: added rb_big_idiv.
+
 Mon Apr  7 15:51:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (enc_init_db): moved to enc/encdb.c.

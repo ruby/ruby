@@ -1800,15 +1800,9 @@ bigdivmod(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
     }
 }
 
-/*
- *  call-seq:
- *     big / other     => Numeric
- *
- *  Divides big by other, returning the result.
- */
 
-VALUE
-rb_big_div(VALUE x, VALUE y)
+static VALUE
+rb_big_divide(VALUE x, VALUE y, ID op)
 {
     VALUE z;
 
@@ -1824,11 +1818,30 @@ rb_big_div(VALUE x, VALUE y)
 	return DOUBLE2NUM(rb_big2dbl(x) / RFLOAT_VALUE(y));
 
       default:
-	return rb_num_coerce_bin(x, y, '/');
+	return rb_num_coerce_bin(x, y, op);
     }
     bigdivmod(x, y, &z, 0);
 
     return bignorm(z);
+}
+
+/*
+ *  call-seq:
+ *     big / other     => Numeric
+ *
+ *  Divides big by other, returning the result.
+ */
+
+VALUE
+rb_big_div(VALUE x, VALUE y)
+{
+  return rb_big_divide(x, y, '/');
+}
+
+VALUE
+rb_big_idiv(VALUE x, VALUE y)
+{
+  return rb_big_divide(x, y, rb_intern("div"));
 }
 
 /*
@@ -2663,6 +2676,7 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
+    rb_define_method(rb_cBignum, "div", rb_big_idiv, 1);
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
