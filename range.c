@@ -228,7 +228,7 @@ range_each_func(VALUE range, VALUE (*func) (VALUE, void *), void *arg)
     int c;
     VALUE b = RANGE_BEG(range);
     VALUE e = RANGE_END(range);
-    VALUE v;
+    VALUE v = b;
 
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
@@ -295,9 +295,8 @@ step_i(VALUE i, void *arg)
 static VALUE
 range_step(int argc, VALUE *argv, VALUE range)
 {
-    VALUE b, e, step, tmp, c;
+    VALUE b, e, step, tmp;
     long unit;
-    int nv;
 
     RETURN_ENUMERATOR(range, argc, argv);
 
@@ -360,16 +359,6 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    iter[0] = INT2FIX(1);
 	    iter[1] = step;
 	    rb_block_call(b, rb_intern("upto"), 2, args, step_i, (VALUE)iter);
-	}
-	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
-	    ID c = rb_intern(EXCL(range) ? "<" : "<=");
-
-	    if (rb_equal(step, INT2FIX(0)))
-		rb_raise(rb_eArgError, "step can't be 0");
-	    while (RTEST(rb_funcall(b, c, 1, e))) {
-		rb_yield(b);
-		b = rb_funcall(b, '+', 1, step);
-	    }
 	}
 	else {
 	    VALUE args[2];

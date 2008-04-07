@@ -1,3 +1,10 @@
+Mon Apr  7 12:15:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_each_func): should not leave a variable
+	  uninitialized, which could cause SEGV.
+
+	* range.c (range_step): removed duplicated and unreachable code.
+
 Mon Apr  7 02:12:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_intern): need not to check if tainted.
