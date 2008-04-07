@@ -1,3 +1,14 @@
+Mon Apr  7 15:51:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (enc_init_db): moved to enc/encdb.c.
+
+	* transcode.c (init_transcoder_table): moved to enc/trans/transdb.c.
+
+	* enc/depend (enc/encdb.o enc/trans/transdb.o): depend on
+	  corresponding headers.
+
+	* common.mk (COMMONOBJS): moved transcode.o from OBJS
+
 Mon Apr  7 12:26:32 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb: add a known-bug.

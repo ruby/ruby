@@ -54,5 +54,8 @@ enc/<%=e%>.$(OBJEXT): $(srcdir)/enc/<%=e%>.c
 	<%=COMPILE_C.sub(/\$\(<(?:.*)\)/) {"$(srcdir)/enc/#{e}.c"}%>
 % end
 
+enc/encdb.$(OBJEXT): encdb.h
+enc/trans/transdb.$(OBJEXT): transdb.h
+
 clean:
 	@$(RM) $(ENCSOS) $(ENCDEFS) $(ENCOBJS) $(TRANSSOS) $(TRANSDEFS) $(TRANSOBJS)

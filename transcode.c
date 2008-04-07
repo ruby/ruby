@@ -85,14 +85,6 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
     declare_transcoder(enc2, enc1, lib);
 }
 
-static void
-init_transcoder_table(void)
-{
-#ifndef NO_TRANSDB_H
-#include "transdb.h"
-#endif
-}
-
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
 
 static const rb_transcoder *
@@ -451,7 +443,6 @@ Init_transcode(void)
 {
     transcoder_table = st_init_strcasetable();
     transcoder_lib_table = st_init_strcasetable();
-    init_transcoder_table();
 
     sym_invalid = ID2SYM(rb_intern("invalid"));
     sym_ignore = ID2SYM(rb_intern("ignore"));
