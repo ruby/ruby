@@ -1,3 +1,8 @@
+Tue Apr  8 11:11:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (EXEC_TAG): remove unnecessary FLUSH_REGISTER_WINDOWS for
+	  better performance on SPARC.  [ruby-core:16159]
+
 Tue Apr  8 10:49:54 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_quote): should always copy the quoting string.

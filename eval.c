@@ -1025,7 +1025,7 @@ static struct tag *prot_tag;
 #define PROT_LAMBDA INT2FIX(2)	/* 5 */
 #define PROT_YIELD  INT2FIX(3)	/* 7 */
 
-#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(((void)0), prot_tag->buf))
+#define EXEC_TAG()    ruby_setjmp(((void)0), prot_tag->buf)
 
 #define JUMP_TAG(st) do {		\
     ruby_frame = prot_tag->frame;	\
