@@ -3,6 +3,9 @@ Tue Apr  8 10:34:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* load.c (rb_require_safe): should check fname path after $SAFE is
 	  properly set.  [ruby-dev:34268]
 
+	* re.c (rb_reg_quote): should always copy the quoting string.
+	  [ruby-core:16235]
+
 Tue Apr  8 10:30:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (prelude.c): depends on enc/prelude.rb.

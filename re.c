@@ -2759,11 +2759,11 @@ rb_reg_quote(VALUE str)
 	}
         s += clen;
     }
+    tmp = rb_str_new3(str);
     if (ascii_only) {
-        str = rb_str_new3(str);
-        rb_enc_associate(str, rb_usascii_encoding());
+        rb_enc_associate(tmp, rb_usascii_encoding());
     }
-    return str;
+    return tmp;
 
   meta_found:
     tmp = rb_str_new(0, RSTRING_LEN(str)*2);
