@@ -1,3 +1,7 @@
+Tue Apr  8 11:00:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/complex.rb: remove Math first before overwriting by CMath.
+
 Tue Apr  8 10:34:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* load.c (rb_require_safe): should check fname path after $SAFE is
