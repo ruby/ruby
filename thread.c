@@ -2423,6 +2423,21 @@ rb_mutex_unlock(VALUE self)
     return self;
 }
 
+static VALUE
+rb_mutex_sleep_forever(VALUE time)
+{
+    rb_thread_sleep_forever();
+    return Qnil;
+}
+
+static VALUE
+rb_mutex_wait_for(VALUE time)
+{
+    const struct timeval *t = (struct timeval *)time;
+    rb_thread_wait_for(*t);
+    return Qnil;
+}
+
 VALUE
 rb_mutex_sleep(VALUE self, VALUE timeout)
 {
@@ -2435,19 +2450,18 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     rb_mutex_unlock(self);
     beg = time(0);
     if (NIL_P(timeout)) {
-	rb_thread_sleep_forever();
+	rb_ensure(rb_mutex_sleep_forever, Qnil, rb_mutex_lock, self);
     }
     else {
-	rb_thread_wait_for(t);
+	rb_ensure(rb_mutex_wait_for, (VALUE)&t, rb_mutex_lock, self);
     }
-    rb_mutex_lock(self);
     end = time(0) - beg;
     return INT2FIX(end);
 }
 
 /*
  * call-seq:
- *    mutex.sleep(timeout = nil)    => self
+ *    mutex.sleep(timeout = nil)    => number
  *
  * Releases the lock and sleeps +timeout+ seconds if it is given and
  * non-nil or forever.  Raises +ThreadError+ if +mutex+ wasn't locked by
