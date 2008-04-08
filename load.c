@@ -520,8 +520,6 @@ rb_require_safe(VALUE fname, int safe)
     } volatile saved;
     char *volatile ftptr = 0;
 
-    FilePathValue(fname);
-    RB_GC_GUARD(fname) = rb_str_new4(fname);
     PUSH_TAG();
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
@@ -530,6 +528,8 @@ rb_require_safe(VALUE fname, int safe)
 	int found;
 
 	rb_set_safe_level_force(safe);
+	FilePathValue(fname);
+	RB_GC_GUARD(fname) = rb_str_new4(fname);
 	found = search_required(fname, &path);
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
