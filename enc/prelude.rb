@@ -1,4 +1,4 @@
-%w'enc/init enc/trans/init'.each do |init|
+%w'enc/encdb enc/trans/transdb'.each do |init|
   begin
     require(init)
   rescue LoadError

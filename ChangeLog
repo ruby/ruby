@@ -1,3 +1,9 @@
+Tue Apr  8 10:30:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (prelude.c): depends on enc/prelude.rb.
+
+	* enc/prelude.rb: fixed initial library names.
+
 Tue Apr  8 03:39:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_provided): check expanded path for relative path
