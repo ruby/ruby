@@ -1,4 +1,7 @@
-Tue Apr  8 21:36:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr  8 21:38:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (lock_func): optimized.  based on a patch from Sylvain
+	  Joyeux in [ruby-Patches-19362].
 
 	* thread.c (rb_mutex_sleep): ensures to re-acquire at waking up.
 	  [ruby-Patches-19361]
