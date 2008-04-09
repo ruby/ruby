@@ -450,7 +450,7 @@ rb_ary_pop(ary)
     rb_ary_modify_check(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
     if (!FL_TEST(ary, ELTS_SHARED) &&
-	    RARRAY(ary)->len * 2 < RARRAY(ary)->aux.capa &&
+	    RARRAY(ary)->len * 3 < RARRAY(ary)->aux.capa &&
 	    RARRAY(ary)->aux.capa > ARY_DEFAULT_SIZE) {
 	RARRAY(ary)->aux.capa = RARRAY(ary)->len * 2;
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
