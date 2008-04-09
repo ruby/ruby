@@ -1162,7 +1162,7 @@ rb_ary_each(ary)
 {
     long i;
 
-    RETURN_ENUMERATOR(ary, 0, 0)
+    RETURN_ENUMERATOR(ary, 0, 0);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	rb_yield(RARRAY(ary)->ptr[i]);
     }
