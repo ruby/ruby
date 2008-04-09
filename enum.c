@@ -24,6 +24,7 @@ struct iter_method_arg {
     VALUE *argv;
 };
 
+static VALUE iterate_method _((VALUE obj));
 static VALUE
 iterate_method(obj)
     VALUE obj;
