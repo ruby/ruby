@@ -23,6 +23,7 @@ OBJS	      = array.$(OBJEXT) \
 		dir.$(OBJEXT) \
 		dln.$(OBJEXT) \
 		enum.$(OBJEXT) \
+		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
 		eval.$(OBJEXT) \
 		file.$(OBJEXT) \
@@ -370,6 +371,8 @@ dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}node.h {$(VPATH)}util.h
+enumerator.$(OBJEXT): {$(VPATH)}enumerator.c {$(VPATH)}ruby.h config.h \
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
 error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}env.h {$(VPATH)}st.h

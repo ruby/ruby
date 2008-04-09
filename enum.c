@@ -17,6 +17,41 @@
 VALUE rb_mEnumerable;
 static ID id_each, id_eqq, id_cmp;
 
+struct iter_method_arg {
+    VALUE obj;
+    ID mid;
+    int argc;
+    VALUE *argv;
+};
+
+static VALUE
+iterate_method(obj)
+    VALUE obj;
+{
+    struct iter_method_arg *arg;
+
+    arg = (struct iter_method_arg *)obj;
+    return rb_funcall2(arg->obj, arg->mid, arg->argc, arg->argv);
+}
+
+VALUE
+rb_block_call(obj, mid, argc, argv, bl_proc, data2)
+    VALUE obj;
+    ID mid;
+    int argc;
+    VALUE *argv;
+    VALUE (*bl_proc) (ANYARGS);
+    VALUE data2;
+{
+    struct iter_method_arg arg;
+
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
+}
+
 VALUE
 rb_each(obj)
     VALUE obj;
@@ -813,9 +848,11 @@ static VALUE
 enum_each_with_index(obj)
     VALUE obj;
 {
-    VALUE memo = 0;
+    VALUE memo;
 
-    rb_need_block();
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    memo = 0;
     rb_iterate(rb_each, obj, each_with_index_i, (VALUE)&memo);
     return obj;
 }
@@ -928,6 +965,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);
+    rb_define_method(rb_mEnumerable,"enum_with_index", enum_each_with_index, 0);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
 
     id_eqq  = rb_intern("===");

@@ -1,3 +1,17 @@
+Wed Apr  9 19:58:31 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c, inits.c (rb_call_inits), ruby.h, intern.h,
+	  ext/enumerator, common.mk (OBJS, enumerator.$(OBJEXT)): Make the
+	  enumerator module built-in,
+
+	* enumerator.c: New method: Enumerable::Enumerator#with_index.
+
+	* enum.c (enum_each_with_index): Enumerable#each_with_index now
+	  returns an enumerator instead of raising an exception if no
+	  block is given.  Enumerable#enum_with_index, formerly defined in
+	  the enumerator module, is kept as an alias to each_with_index
+	  for backward compatibility.
+
 Wed Apr  9 19:43:51 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_obj_method, rb_proc_call), intern.h: Export.

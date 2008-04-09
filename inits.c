@@ -18,6 +18,7 @@ void Init_Binding _((void));
 void Init_Comparable _((void));
 void Init_Dir _((void));
 void Init_Enumerable _((void));
+void Init_Enumerator _((void));
 void Init_Exception _((void));
 void Init_syserr _((void));
 void Init_eval _((void));
@@ -79,6 +80,7 @@ rb_call_inits()
     Init_Binding();
     Init_Math();
     Init_GC();
+    Init_Enumerator();
     Init_marshal();
     Init_version();
 }
