@@ -1,8 +1,13 @@
+Wed Apr  9 20:47:16 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_index, rb_ary_index): Array#index and #rindex
+	  take a block instead of an argument; backported from 1.9.
+
 Wed Apr  9 19:58:31 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c, inits.c (rb_call_inits), ruby.h, intern.h,
 	  ext/enumerator, common.mk (OBJS, enumerator.$(OBJEXT)): Make the
-	  enumerator module built-in,
+	  enumerator module built-in.
 
 	* enumerator.c: New method: Enumerable::Enumerator#with_index.
 
