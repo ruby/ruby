@@ -1162,6 +1162,7 @@ rb_ary_each(ary)
 {
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0)
     for (i=0; i<RARRAY(ary)->len; i++) {
 	rb_yield(RARRAY(ary)->ptr[i]);
     }
@@ -1189,6 +1190,7 @@ rb_ary_each_index(ary)
 {
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	rb_yield(LONG2NUM(i));
     }
@@ -1214,8 +1216,10 @@ static VALUE
 rb_ary_reverse_each(ary)
     VALUE ary;
 {
-    long len = RARRAY(ary)->len;
+    long len;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
+    len = RARRAY(ary)->len;
     while (len--) {
 	rb_yield(RARRAY(ary)->ptr[len]);
 	if (RARRAY(ary)->len < len) {
@@ -2033,6 +2037,7 @@ rb_ary_reject_bang(ary)
 {
     long i1, i2;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
 	VALUE v = RARRAY(ary)->ptr[i1];
