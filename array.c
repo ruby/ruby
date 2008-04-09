@@ -2066,6 +2066,7 @@ static VALUE
 rb_ary_reject(ary)
     VALUE ary;
 {
+    RETURN_ENUMERATOR(ary, 0, 0);
     ary = rb_ary_dup(ary);
     rb_ary_reject_bang(ary);
     return ary;

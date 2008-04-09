@@ -29,6 +29,7 @@ with all sufficient information, see the ChangeLog file.
   * Array#each
   * Array#each_index
   * Array#reverse_each
+  * Array#reject
   * Array#reject!
   * Array#delete_if
 
