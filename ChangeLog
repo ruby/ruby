@@ -1,3 +1,8 @@
+Wed Apr  9 12:12:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_thread.rb: new tests from Sylvain Joyeux in
+	  [ruby-Patches-19361].
+
 Tue Apr  8 21:38:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (lock_func): optimized.  based on a patch from Sylvain
