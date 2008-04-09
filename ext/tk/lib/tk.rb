@@ -775,7 +775,7 @@ end
   private :_curr_cmd_id, :_next_cmd_id
   module_function :_curr_cmd_id, :_next_cmd_id
 
-  def install_cmd(cmd)
+  def TkComm.install_cmd(cmd)
     return '' if cmd == ''
     begin
       ns = TkCore::INTERP._invoke_without_enc('namespace', 'current')
@@ -801,14 +801,20 @@ end
       'rb_out' << TkCore::INTERP._ip_id_ << ' ' << id
     end
   end
-  def uninstall_cmd(id)
+  def TkComm.uninstall_cmd(id)
     #id = $1 if /rb_out\S* (c(_\d+_)?\d+)/ =~ id
     id = $4 if id =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
     #Tk_CMDTBL.delete(id)
     TkCore::INTERP.tk_cmd_tbl.delete(id)
   end
   # private :install_cmd, :uninstall_cmd
-  module_function :install_cmd, :uninstall_cmd
+  # module_function :install_cmd, :uninstall_cmd
+  def install_cmd(cmd)
+    TkComm.install_cmd(cmd)
+  end
+  def uninstall_cmd(id)
+    TkComm.uninstall_cmd(id)
+  end
 
 =begin
   def install_win(ppath,name=nil)
@@ -5317,7 +5323,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-03-29'.freeze
+  RELEASE_DATE = '2008-04-02'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

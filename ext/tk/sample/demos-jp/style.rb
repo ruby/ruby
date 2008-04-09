@@ -65,7 +65,7 @@ txt = TkText.new($style_demo){|t|
     style_tag_bold = TkTextTag.new(t, 'font'=>[family, 12, :bold, :italic])
     style_tag_big = TkTextTag.new(t, 'font'=>[family, 14, :bold])
     style_tag_verybig = TkTextTag.new(t, 'font'=>['Helvetica', 24, :bold])
-    style_tag_small = TkTextTag.new(t, 'font'=>['Times 8 bold'])
+    style_tag_small = TkTextTag.new(t, 'font'=>'Times 8 bold')
   end
 ###
 #  case($tk_version)

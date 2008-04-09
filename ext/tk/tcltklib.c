@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-03-29"
+#define TCLTKLIB_RELEASE_DATE "2008-04-02"
 
 #include "ruby.h"
 
@@ -2585,10 +2585,12 @@ ip_set_exc_message(interp, exc)
     if (NIL_P(enc)) {
         encoding = (Tcl_Encoding)NULL;
     } else if (TYPE(enc) == T_STRING) {
-        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
+        /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
+        encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(enc));
     } else {
         enc = rb_funcall(enc, ID_to_s, 0, 0);
-        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
+        /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
+        encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(enc));
     }
 
     /* to avoid a garbled error message dialog */
@@ -7105,7 +7107,9 @@ lib_toUTF8_core(ip_obj, src, encodename)
                         encoding = (Tcl_Encoding)NULL;
                     } else {
                         StringValue(enc);
-                        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
+                        /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
+                        encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+						   RSTRING_PTR(enc));
                         if (encoding == (Tcl_Encoding)NULL) {
                             rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
                         }
@@ -7121,7 +7125,9 @@ lib_toUTF8_core(ip_obj, src, encodename)
                     rb_thread_critical = thr_crit_bup;
                     return str;
                 }
-                encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
+                /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
+                encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+					   RSTRING_PTR(enc));
                 if (encoding == (Tcl_Encoding)NULL) {
                     rb_warning("string has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
                 }
@@ -7139,7 +7145,8 @@ lib_toUTF8_core(ip_obj, src, encodename)
 	  rb_thread_critical = thr_crit_bup;
 	  return str;
 	}
-        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(encodename));
+        /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(encodename)); */
+        encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(encodename));
         if (encoding == (Tcl_Encoding)NULL) {
             /*
             rb_warning("unknown encoding name '%s'", 
@@ -7174,9 +7181,11 @@ lib_toUTF8_core(ip_obj, src, encodename)
     rb_ivar_set(str, ID_at_enc, ENCODING_NAME_UTF8);
     if (taint_flag) OBJ_TAINT(str);
 
+    /*
     if (encoding != (Tcl_Encoding)NULL) {
         Tcl_FreeEncoding(encoding);
     }
+    */
     Tcl_DStringFree(&dstr);
 
     free(buf);
@@ -7284,7 +7293,9 @@ lib_fromUTF8_core(ip_obj, src, encodename)
                 encoding = (Tcl_Encoding)NULL;
             } else {
                 StringValue(enc);
-                encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc));
+                /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
+                encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+					   RSTRING_PTR(enc));
                 if (encoding == (Tcl_Encoding)NULL) {
                     rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
                 } else {
@@ -7314,7 +7325,8 @@ lib_fromUTF8_core(ip_obj, src, encodename)
             return str;
         }
 
-        encoding = Tcl_GetEncoding(interp, RSTRING_PTR(encodename));
+        /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(encodename)); */
+        encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(encodename));
         if (encoding == (Tcl_Encoding)NULL) {
             /* 
             rb_warning("unknown encoding name '%s'", 
@@ -7363,9 +7375,11 @@ lib_fromUTF8_core(ip_obj, src, encodename)
 
     if (taint_flag) OBJ_TAINT(str);
 
+    /*
     if (encoding != (Tcl_Encoding)NULL) {
         Tcl_FreeEncoding(encoding);
     }
+    */
     Tcl_DStringFree(&dstr);
 
     free(buf);
@@ -9110,7 +9124,7 @@ create_dummy_encoding_for_tk_core(interp, name, error_mode)
   StringValue(name);
 
 #if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION >= 1)
-  if (Tcl_GetEncoding(ptr->ip, RSTRING_PTR(name)) == (Tcl_Encoding) NULL) {
+  if (Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(name)) == (Tcl_Encoding)NULL) {
     if (RTEST(error_mode)) {
       rb_raise(rb_eArgError, "invalid Tk encoding name '%s'", 
 	       RSTRING_PTR(name));
@@ -10051,6 +10065,9 @@ Init_tcltklib()
     }
 
     /* --------------------------------------------------------------- */
+
+    /* Tcl stub check */
+    tcl_stubs_check();
 
     Tcl_ObjType_ByteArray = Tcl_GetObjType(Tcl_ObjTypeName_ByteArray);
     Tcl_ObjType_String    = Tcl_GetObjType(Tcl_ObjTypeName_String);

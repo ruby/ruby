@@ -46,15 +46,15 @@ when /^4.*/
 #  $msg_kanji_font=TkFont.new('Helvetica 16', 'Gothic 16 bold')
 
 when /^8.*/
-  $font = TkFont.new('Helvetica 12')
-  $kanji_font = TkFont.new('Helvetica 12', 'Mincho 12')
+  $font = TkFont.new('Helvetica -12')
+  $kanji_font = TkFont.new('Helvetica -12', 'Mincho -12')
   TkOption.add('*kanjiFont', knjfont, 'startupFile')
-  $msg_kanji_font=TkFont.new('Helvetica 18 bold', 'Gothic 18 bold')
+  $msg_kanji_font=TkFont.new('Helvetica 16 bold', 'Gothic 16 bold')
 
 else
   $font = TkFont.new('Helvetica 14', nil)
   knjfont = '-*--16-*-jisx0208.1983-0'
-  $kanji_font = TkFont.new('Helvetic 14', knj)
+  $kanji_font = TkFont.new('Helvetic 14', knjfont)
   TkOption.add('*kanjiFont', knjfont, 'startupFile')
   $msg_kanji_font=TkFont.new('Helvetica 14',
                              '-*--24-*-jisx0208.1983-0')
@@ -276,14 +276,31 @@ txt.insert('end', <<"EOT")
 るために、"コード参照"ボタンをクリックすることができます。あなたが\
 望むなら、そのコードを修正することができます。修正したコードでデモ\
 ンストレーションを再実行するためには、コードが書かれたウィンドウに\
-ある"デモ再実行" ボタンをクリックしてください。
+ある"デモ再実行" ボタンをクリックしてください。\
+コードを修正してもオリジナルのファイルが書き換えられることは\
+ありませんから、心配せずに色々な変更を試してみてください。
 
-一部のデモでは，比較的最近のバージョンの Tk でなければサポートして\
-いない機能を使って実装しています(例えば Tk8.4 以上など)．そのため，\
-そうした機能を持たない Tk ライブラリを使っている場合には，そうした\
-デモは正しく動きません．そのような機能が必要であれば，それをサポート\
-している Tk ライブラリを使うように，tcltklib をコンパイルしなおして\
-ください．
+一部のデモでは、比較的最近のバージョンの Tk でなければサポートして\
+いない機能を使って実装しています(例えば Tk8.4 以上など)。そのため、\
+そうした機能を持たない Tk ライブラリを使っている場合には、そうした\
+デモは正しく動きません。そのような機能が必要であれば、それをサポート\
+している Tk ライブラリを使うように tcltklib をコンパイルしなおして\
+ください。
+
+もしあなたの Tk が (最初から含むかインストールしたかにより) \
+Ttk (Tile) 拡張を利用できる状態であるなら、\
+Ttk 拡張のデモ (sample/tkextlib/tile/demo.rb) もぜひ試してみてください。
+( 多分，現在のあなたの環境には Ttk 拡張は\
+#{
+begin
+  require 'tkextlib/tile'
+  "すでに導入されています"
+rescue
+  "まだインストールされていません"
+end
+}\
+。)
+Ttk 拡張は、Tk8.5 以上では標準の機能として組み込まれています。
 
 
 EOT
@@ -948,7 +965,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.6.3-jp\n\n" + 
+                'message'=>"Ruby/Tk ウィジェットデモ Ver.1.6.4-jp\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

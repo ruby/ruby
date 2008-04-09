@@ -3339,28 +3339,29 @@ end
 
 
 # remove methods for security
-class MultiTkIp
-  INTERP_THREAD = @@DEFAULT_MASTER.instance_variable_get('@interp_thread')
-  INTERP_MUTEX  = INTERP_THREAD[:mutex]
-  INTERP_ROOT_CHECK = INTERP_THREAD[:root_check]
-
-  # undef_method :instance_eval
-  undef_method :instance_variable_get
-  undef_method :instance_variable_set
-end
-
-module TkCore
-  if MultiTkIp::WITH_RUBY_VM && 
-      ! MultiTkIp::RUN_EVENTLOOP_ON_MAIN_THREAD ### check Ruby 1.9 !!!!!!!
+if MultiTkIp::WITH_RUBY_VM && 
+    ! MultiTkIp::RUN_EVENTLOOP_ON_MAIN_THREAD ### check Ruby 1.9 !!!!!!!
+  class MultiTkIp
+    INTERP_THREAD = @@DEFAULT_MASTER.instance_variable_get('@interp_thread')
+    INTERP_MUTEX  = INTERP_THREAD[:mutex]
+    INTERP_ROOT_CHECK = INTERP_THREAD[:root_check]
+  end
+  module TkCore
     INTERP_THREAD = MultiTkIp::INTERP_THREAD
     INTERP_MUTEX  = MultiTkIp::INTERP_MUTEX
     INTERP_ROOT_CHECK = MultiTkIp::INTERP_ROOT_CHECK
   end
+  class MultiTkIp
+    remove_const(:INTERP_THREAD)
+    remove_const(:INTERP_MUTEX)
+    remove_const(:INTERP_ROOT_CHECK)
+  end
 end
+
 class MultiTkIp
-  remove_const(:INTERP_THREAD)
-  remove_const(:INTERP_MUTEX)
-  remove_const(:INTERP_ROOT_CHECK)
+  # undef_method :instance_eval
+  undef_method :instance_variable_get
+  undef_method :instance_variable_set
 end
 # end of MultiTkIp definition
 

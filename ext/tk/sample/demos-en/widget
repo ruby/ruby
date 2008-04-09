@@ -257,7 +257,10 @@ the demonstration.  Once the demonstration window appears, you can \
 click the "See Code" button to see the Ruby/Tk code that created the \
 demonstration.  If you wish, you can edit the code and click the \
 "Rerun Demo" button in the code window to reinvoke the demonstration \
-with the modified code.
+with the modified code. \
+Don't worry about breaking the source code. \
+Your modifications are not reflected on the original file. \
+Please try many kind of changes. 
 
 Some demo scripts require the recent version of Tk library \
 (e.g. Tk8.4 or later) \
@@ -265,6 +268,20 @@ If your Tk library linked to Ruby doesn't support the functions \
 required by the demo script, the demo doesn't work. \
 In such a case, please re-compile tcltklib with the later Tk library \
 which supports the required functions.
+
+If your Tk supports Ttk (Tile) extension (included or installed), \
+please try the demo of Ttk extension (sample/tkextlib/tile/demo.rb) too.
+( Probably, Ttk extension \
+#{
+begin
+  require 'tkextlib/tile'
+  "is already installed on your environment"
+rescue
+  "is not installed on your environment yet"
+end
+}\
+. )
+Ttk extension is a standard feature of Tk8.5 or later.
 
 
 EOT
@@ -914,7 +931,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk widget demonstration Ver.1.6.3-en\n\n" + 
+                'message'=>"Ruby/Tk widget demonstration Ver.1.6.4-en\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 

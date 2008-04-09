@@ -122,4 +122,4 @@ txt = TkText.new($bind_demo){|t|
 }
 
 txt.width 60
-txt.width 24
+txt.height 24

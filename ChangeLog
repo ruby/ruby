@@ -1,3 +1,18 @@
+Wed Apr  9 23:12:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: SEGV when tcltk-stubs is enabled.
+
+	* ext/tk/tcltklib.c: avoid error on a shared object.
+
+	* ext/tk/extconf.rb: support --with-tcltkversion
+
+	* ext/tk/README.tcltklib: add document about --with-tcltkversion
+
+	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget, 
+	  ext/tk/sample/demos-jp/style.rb, ext/tk/sample/demos-en/style.rb, 
+	  ext/tk/sample/demos-jp/bind.rb, ext/tk/sample/demos-en/bind.rb: 
+	  bug fix.
+
 Wed Apr  9 21:54:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_pop): Do not reallocate too often; backported
