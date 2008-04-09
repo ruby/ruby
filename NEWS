@@ -26,7 +26,25 @@ with all sufficient information, see the ChangeLog file.
   * Integer#even? implemented.
   * Integer#pred implemented.
 
+  * Object#to_enum
+  * Object#enum_for
+  * Enumerable#each_slice
+  * Enumerable#enum_slice
+  * Enumerable#each_cons
+  * Enumerable#enum_cons
+
+    New methods for various enumeration defined by the enumerator library.
+
+  * Enumerable::Enumerator
+
+    New class for various enumeration defined by the enumerator library.
+
   * Regexp.union accepts an array of patterns.
+
+* enumerator
+
+  * Enumerator is now a built-in module.  Almost everything has been
+    backported from 1.9, except for the #next and #rewind methods.
 
 * ipaddr
 
