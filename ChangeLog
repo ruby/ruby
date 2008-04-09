@@ -1,12 +1,15 @@
+Wed Apr  9 14:43:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (lock_func): optimized and checks for interrupt_flag.
+	  based on a patch from Sylvain Joyeux in [ruby-Patches-19361] and
+	  [ruby-Patches-19362].
+
 Wed Apr  9 12:12:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_thread.rb: new tests from Sylvain Joyeux in
 	  [ruby-Patches-19361].
 
-Tue Apr  8 21:38:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* thread.c (lock_func): optimized.  based on a patch from Sylvain
-	  Joyeux in [ruby-Patches-19362].
+Tue Apr  8 21:36:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_mutex_sleep): ensures to re-acquire at waking up.
 	  [ruby-Patches-19361]

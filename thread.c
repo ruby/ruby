@@ -2320,30 +2320,19 @@ rb_mutex_trylock(VALUE self)
 static VALUE
 lock_func(rb_thread_t *th, mutex_t *mutex)
 {
-    int locked = 0;
+    native_mutex_lock(&mutex->lock);
+    while (mutex->th) {
+	mutex->cond_waiting++;
+	native_cond_wait(&mutex->cond, &mutex->lock);
 
-    while (locked == 0) {
-	native_mutex_lock(&mutex->lock);
-	{
-	    if (mutex->th == 0) {
-		mutex->th = th;
-		locked = 1;
-	    }
-	    else {
-		mutex->cond_waiting++;
-		native_cond_wait(&mutex->cond, &mutex->lock);
-
-		if (th->interrupt_flag) {
-		    locked = 1;
-		}
-		else if (mutex->th == 0) {
-		    mutex->th = th;
-		    locked = 1;
-		}
-	    }
+	if (th->interrupt_flag) {
+	    native_mutex_unlock(&mutex->lock);
+	    RUBY_VM_CHECK_INTS();
+	    native_mutex_lock(&mutex->lock);
 	}
-	native_mutex_unlock(&mutex->lock);
     }
+    mutex->th = th;
+    native_mutex_unlock(&mutex->lock);
     return Qnil;
 }
 
