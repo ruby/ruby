@@ -21,6 +21,11 @@ with all sufficient information, see the ChangeLog file.
     determine if each element should be counted instead of checking if
     the element is non-nil.
 
+  * Array#index
+  * Array#rindex
+
+    Take a block instead of an argument.
+
   * Integer#ord implemented.
   * Integer#odd? implemented.
   * Integer#even? implemented.
