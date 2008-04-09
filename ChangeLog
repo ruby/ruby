@@ -1,3 +1,7 @@
+Wed Apr  9 19:43:51 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_obj_method, rb_proc_call), intern.h: Export.
+
 Tue Apr  8 11:11:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (EXEC_TAG): remove unnecessary FLUSH_REGISTER_WINDOWS for

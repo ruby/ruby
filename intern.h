@@ -186,6 +186,8 @@ VALUE rb_class_new_instance _((int, VALUE*, VALUE));
 VALUE rb_block_proc _((void));
 VALUE rb_f_lambda _((void));
 VALUE rb_proc_new _((VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE));
+VALUE rb_proc_call _((VALUE, VALUE));
+VALUE rb_obj_method _((VALUE, VALUE));
 VALUE rb_protect _((VALUE (*)(VALUE), VALUE, int*));
 void rb_set_end_proc _((void (*)(VALUE), VALUE));
 void rb_mark_end_proc _((void));

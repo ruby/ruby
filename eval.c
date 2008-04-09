@@ -8691,8 +8691,8 @@ proc_invoke(proc, args, self, klass)
  *     	from prog.rb:5
  */
 
-static VALUE
-proc_call(proc, args)
+VALUE
+rb_proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
     return proc_invoke(proc, args, Qundef, 0);
@@ -9137,7 +9137,7 @@ method_unbind(obj)
  *     m.call   #=> "Hello, @iv = Fred"
  */
 
-static VALUE
+VALUE
 rb_obj_method(obj, vid)
     VALUE obj;
     VALUE vid;
@@ -9708,9 +9708,9 @@ Init_Proc()
 
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
     rb_define_method(rb_cProc, "dup", proc_dup, 0);
-    rb_define_method(rb_cProc, "call", proc_call, -2);
+    rb_define_method(rb_cProc, "call", rb_proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
-    rb_define_method(rb_cProc, "[]", proc_call, -2);
+    rb_define_method(rb_cProc, "[]", rb_proc_call, -2);
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_method(rb_cProc, "to_proc", proc_to_self, 0);
