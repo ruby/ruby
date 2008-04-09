@@ -26,6 +26,14 @@ with all sufficient information, see the ChangeLog file.
 
     Take a block instead of an argument.
 
+  * Array#each
+  * Array#each_index
+  * Array#reverse_each
+  * Array#reject!
+  * Array#delete_if
+
+    Return an enumerator if no block is given.
+
   * Integer#ord implemented.
   * Integer#odd? implemented.
   * Integer#even? implemented.
