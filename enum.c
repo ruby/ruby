@@ -386,6 +386,106 @@ enum_partition(obj)
     return rb_assoc_new(ary[0], ary[1]);
 }
 
+static VALUE
+group_by_i(i, hash)
+    VALUE i;
+    VALUE hash;
+{
+    VALUE group = rb_yield(i);
+    VALUE values;
+
+    values = rb_hash_aref(hash, group);
+    if (NIL_P(values)) {
+	values = rb_ary_new3(1, i);
+	rb_hash_aset(hash, group, values);
+    }
+    else {
+	rb_ary_push(values, i);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.group_by {| obj | block }  => a_hash
+ *  
+ *  Returns a hash, which keys are evaluated result from the
+ *  block, and values are arrays of elements in <i>enum</i>
+ *  corresponding to the key.
+ *     
+ *     (1..6).group_by {|i| i%3}   #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
+ *     
+ */
+
+static VALUE
+enum_group_by(obj)
+    VALUE obj;
+{
+    VALUE hash;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    hash = rb_hash_new();
+    rb_block_call(obj, id_each, 0, 0, group_by_i, hash);
+
+    return hash;
+}
+
+static VALUE
+first_i(i, ary)
+    VALUE i;
+    VALUE *ary;
+{
+    if (NIL_P(ary[0])) {
+	ary[1] = i;
+	rb_iter_break();
+    }
+    else {
+	long n = NUM2LONG(ary[0]);
+
+	if (n <= 0) {
+	    rb_iter_break();
+	}
+	rb_ary_push(ary[1], i);
+	n--;
+	ary[0] = INT2NUM(n);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.first      -> obj or nil
+ *     enum.first(n)   -> an_array
+ *  
+ *  Returns the first element, or the first +n+ elements, of the enumerable.
+ *  If the enumerable is empty, the first form returns <code>nil</code>, and the
+ *  second form returns an empty array.
+ *     
+ */
+
+static VALUE
+enum_first(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE n, ary[2];
+    
+    if (argc == 0) {
+	ary[0] = ary[1] = Qnil;
+    }
+    else {
+	rb_scan_args(argc, argv, "01", &n);
+	ary[0] = n;
+	ary[1] = rb_ary_new2(NUM2LONG(n));
+    }
+    rb_block_call(obj, id_each, 0, 0, first_i, (VALUE)ary);
+
+    return ary[1];
+}
+
+
 /*
  *  call-seq:
  *     enum.sort                     => array
@@ -959,6 +1059,8 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"inject", enum_inject, -1);
     rb_define_method(rb_mEnumerable,"partition", enum_partition, 0);
+    rb_define_method(rb_mEnumerable,"group_by", enum_group_by, 0);
+    rb_define_method(rb_mEnumerable,"first", enum_first, -1);
     rb_define_method(rb_mEnumerable,"all?", enum_all, 0);
     rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);

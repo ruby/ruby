@@ -54,6 +54,11 @@ with all sufficient information, see the ChangeLog file.
 
     New methods for various enumeration defined by the enumerator library.
 
+  * Enumerable#first
+  * Enumerable#group_by
+
+    New methods.
+
   * Integer#ord implemented.
   * Integer#odd? implemented.
   * Integer#even? implemented.
