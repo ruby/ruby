@@ -1,3 +1,8 @@
+Thu Apr 10 16:58:44 2008  Tanaka Akira  <akr@fsij.org>
+
+	* marshal.c (w_object): TYPE_USERDEF assigns id for ivars first.
+	  [ruby-dev:34159] by nagachika.
+
 Thu Apr 10 15:03:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/generator.rb: removed obsolete library.  [ruby-core:16233]

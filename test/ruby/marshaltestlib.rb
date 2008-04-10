@@ -383,6 +383,11 @@ module MarshalTestLib
     marshal_equal(o1) {|o| o.instance_eval { @iv }}
   end
 
+  def test_time_in_array
+    t = Time.now
+    assert_equal([t,t], Marshal.load(Marshal.dump([t, t])), "[ruby-dev:34159]")
+  end
+
   def test_true
     marshal_equal(true)
   end

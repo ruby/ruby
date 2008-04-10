@@ -574,23 +574,10 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
     else {
 	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
 
-	st_add_direct(arg->data, obj, arg->data->num_entries);
-
-        {
-            st_data_t compat_data;
-            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
-            if (st_lookup(compat_allocator_tbl,
-                          (st_data_t)allocator,
-                          &compat_data)) {
-                marshal_compat_t *compat = (marshal_compat_t*)compat_data;
-                VALUE real_obj = obj;
-                obj = compat->dumper(real_obj);
-                st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
-            }
-        }
-
 	if (rb_respond_to(obj, s_mdump)) {
 	    VALUE v;
+
+            st_add_direct(arg->data, obj, arg->data->num_entries);
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    w_class(TYPE_USRMARSHAL, obj, arg, Qfalse);
@@ -618,8 +605,24 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             else if (hasiv) {
 		w_ivar(obj, ivtbl, &c_arg);
 	    }
+            st_add_direct(arg->data, obj, arg->data->num_entries);
 	    return;
 	}
+
+        st_add_direct(arg->data, obj, arg->data->num_entries);
+
+        {
+            st_data_t compat_data;
+            rb_alloc_func_t allocator = rb_get_alloc_func(RBASIC(obj)->klass);
+            if (st_lookup(compat_allocator_tbl,
+                          (st_data_t)allocator,
+                          &compat_data)) {
+                marshal_compat_t *compat = (marshal_compat_t*)compat_data;
+                VALUE real_obj = obj;
+                obj = compat->dumper(real_obj);
+                st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+            }
+        }
 
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_CLASS:
