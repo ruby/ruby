@@ -416,7 +416,6 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     }
 
     th->status = THREAD_STOPPED;
-    pthread_cond_init(&th->native_thread_data.sleep_cond, 0);
 
     thread_debug("native_sleep %ld\n", tv ? tv->tv_sec : -1);
     GVL_UNLOCK_BEGIN();

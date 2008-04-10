@@ -1,3 +1,8 @@
+Thu Apr 10 10:27:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (native_sleep): sleep_cond is initialized at
+	  creation.  [ruby-Patches-19361].
+
 Wed Apr  9 14:43:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (lock_func): optimized and checks for interrupt_flag.
