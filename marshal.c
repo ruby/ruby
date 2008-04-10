@@ -575,7 +575,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
 
 	if (rb_respond_to(obj, s_mdump)) {
-	    VALUE v;
+	    volatile VALUE v;
 
             st_add_direct(arg->data, obj, arg->data->num_entries);
 
