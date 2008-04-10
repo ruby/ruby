@@ -195,6 +195,27 @@ rb_ary_new4(n, elts)
     return ary;
 }
 
+static VALUE
+ary_make_shared(ary)
+    VALUE ary;
+{
+    if (!FL_TEST(ary, ELTS_SHARED)) {
+	NEWOBJ(shared, struct RArray);
+	OBJSETUP(shared, rb_cArray, T_ARRAY);
+
+	shared->len = RARRAY(ary)->len;
+	shared->ptr = RARRAY(ary)->ptr;
+	shared->aux.capa = RARRAY(ary)->aux.capa;
+	RARRAY(ary)->aux.shared = (VALUE)shared;
+	FL_SET(ary, ELTS_SHARED);
+	OBJ_FREEZE(shared);
+	return (VALUE)shared;
+    }
+    else {
+	return RARRAY(ary)->aux.shared;
+    }
+}
+
 VALUE
 rb_assoc_new(car, cdr)
     VALUE car, cdr;
@@ -384,6 +405,50 @@ rb_ary_store(ary, idx, val)
     RARRAY(ary)->ptr[idx] = val;
 }
 
+static VALUE
+ary_shared_array(klass, ary)
+    VALUE klass;
+    VALUE ary;
+{
+    VALUE val = ary_alloc(klass);
+
+    ary_make_shared(ary);
+    RARRAY(val)->ptr = RARRAY(ary)->ptr;
+    RARRAY(val)->len = RARRAY(ary)->len;
+    RARRAY(val)->aux.shared = RARRAY(ary)->aux.shared;
+    FL_SET(val, ELTS_SHARED);
+    return val;
+}
+
+static VALUE
+ary_shared_first(argc, argv, ary, last)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+    int last;
+{
+    VALUE nv, result;
+    long n;
+    long offset = 0;
+
+    rb_scan_args(argc, argv, "1", &nv);
+    n = NUM2LONG(nv);
+    if (n > RARRAY(ary)->len) {
+	n = RARRAY(ary)->len;
+    }
+    else if (n < 0) {
+	rb_raise(rb_eArgError, "negative array size");
+    }
+    if (last) {
+	offset = RARRAY(ary)->len - n;
+    }
+    result = ary_shared_array(rb_cArray, ary);
+    RARRAY(result)->ptr += offset;
+    RARRAY(result)->len = n;
+
+    return result;
+}
+
 /*
  *  call-seq:
  *     array << obj            -> array
@@ -431,18 +496,6 @@ rb_ary_push_m(argc, argv, ary)
     return ary;
 }
 
-/*
- *  call-seq:
- *     array.pop  -> obj or nil
- *  
- *  Removes the last element from <i>self</i> and returns it, or
- *  <code>nil</code> if the array is empty.
- *     
- *     a = [ "a", "m", "z" ]
- *     a.pop   #=> "z"
- *     a       #=> ["a", "m"]
- */
-
 VALUE
 rb_ary_pop(ary)
     VALUE ary;
@@ -458,39 +511,40 @@ rb_ary_pop(ary)
     return RARRAY(ary)->ptr[--RARRAY(ary)->len];
 }
 
-static VALUE
-ary_make_shared(ary)
-    VALUE ary;
-{
-    if (!FL_TEST(ary, ELTS_SHARED)) {
-	NEWOBJ(shared, struct RArray);
-	OBJSETUP(shared, rb_cArray, T_ARRAY);
-
-	shared->len = RARRAY(ary)->len;
-	shared->ptr = RARRAY(ary)->ptr;
-	shared->aux.capa = RARRAY(ary)->aux.capa;
-	RARRAY(ary)->aux.shared = (VALUE)shared;
-	FL_SET(ary, ELTS_SHARED);
-	OBJ_FREEZE(shared);
-	return (VALUE)shared;
-    }
-    else {
-	return RARRAY(ary)->aux.shared;
-    }
-}
-
 /*
  *  call-seq:
- *     array.shift   ->   obj or nil
+ *     array.pop    -> obj or nil
+ *     array.pop(n) -> array
  *  
- *  Returns the first element of <i>self</i> and removes it (shifting all
- *  other elements down by one). Returns <code>nil</code> if the array
- *  is empty.
+ *  Removes the last element from <i>self</i> and returns it, or
+ *  <code>nil</code> if the array is empty.
+ *
+ *  If a number _n_ is given, returns an array of the last n elements
+ *  (or less) just like <code>array.slice!(-n, n)</code> does.
  *     
- *     args = [ "-m", "-q", "filename" ]
- *     args.shift   #=> "-m"
- *     args         #=> ["-q", "filename"]
+ *     a = [ "a", "b", "c", "d" ]
+ *     a.pop     #=> "d"
+ *     a.pop(2)  #=> ["b", "c"]
+ *     a         #=> ["a"]
  */
+
+static VALUE
+rb_ary_pop_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE result;
+
+    if (argc == 0) {
+	return rb_ary_pop(ary);
+    }
+
+    rb_ary_modify_check(ary);
+    result = ary_shared_first(argc, argv, ary, Qtrue);
+    RARRAY(ary)->len -= RARRAY(result)->len;
+    return result;
+}
 
 VALUE
 rb_ary_shift(ary)
@@ -501,19 +555,68 @@ rb_ary_shift(ary)
     rb_ary_modify_check(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
     top = RARRAY(ary)->ptr[0];
-    if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE && !FL_TEST(ary, ELTS_SHARED)) {
-	MEMMOVE(RARRAY_PTR(ary), RARRAY_PTR(ary)+1, VALUE, RARRAY_LEN(ary)-1);
-    }
-    else {
-	if (!FL_TEST(ary, ELTS_SHARED)) {
-	    RARRAY(ary)->ptr[0] = Qnil;
-	}
+    if (!FL_TEST(ary, ELTS_SHARED)) {
+        if (RARRAY(ary)->len < ARY_DEFAULT_SIZE) {
+            MEMMOVE(RARRAY(ary)->ptr, RARRAY(ary)->ptr+1, VALUE, RARRAY(ary)->len-1);
+	    RARRAY(ary)->len--;
+            return top;
+        }
+        RARRAY(ary)->ptr[0] = Qnil;
 	ary_make_shared(ary);
-	RARRAY(ary)->ptr++;		/* shift ptr */
     }
+    RARRAY(ary)->ptr++;		/* shift ptr */
     RARRAY(ary)->len--;
 
     return top;
+}
+
+/*
+ *  call-seq:
+ *     array.shift    -> obj or nil
+ *     array.shift(n) -> array
+ *  
+ *  Returns the first element of <i>self</i> and removes it (shifting all
+ *  other elements down by one). Returns <code>nil</code> if the array
+ *  is empty.
+ *
+ *  If a number _n_ is given, returns an array of the first n elements
+ *  (or less) just like <code>array.slice!(0, n)</code> does.
+ *     
+ *     args = [ "-m", "-q", "filename" ]
+ *     args.shift     #=> "-m"
+ *     args           #=> ["-q", "filename"]
+ *
+ *     args = [ "-m", "-q", "filename" ]
+ *     args.shift(2)  #=> ["-m", "-q"]
+ *     args           #=> ["filename"]
+ */
+
+static VALUE
+rb_ary_shift_m(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE result;
+    long n;
+
+    if (argc == 0) {
+	return rb_ary_shift(ary);
+    }
+
+    rb_ary_modify_check(ary);
+    result = ary_shared_first(argc, argv, ary, Qfalse);
+    n = RARRAY(result)->len;
+    if (FL_TEST(ary, ELTS_SHARED)) {
+	RARRAY(ary)->ptr += n;
+	RARRAY(ary)->len -= n;
+	}
+    else {
+	MEMMOVE(RARRAY(ary)->ptr, RARRAY(ary)->ptr+n, VALUE, RARRAY(ary)->len-n);
+	RARRAY(ary)->len -= n;
+    }
+
+    return result;
 }
 
 VALUE
@@ -748,15 +851,7 @@ rb_ary_first(argc, argv, ary)
 	return RARRAY(ary)->ptr[0];
     }
     else {
-	VALUE nv;
-	long n;
-
-	rb_scan_args(argc, argv, "01", &nv);
-	n = NUM2LONG(nv);
-	if (n < 0) {
-	    rb_raise(rb_eArgError, "negative array size");
-	}
-	return rb_ary_subseq(ary, 0, n);
+	return ary_shared_first(argc, argv, ary, Qfalse);
     }
 }
 
@@ -782,17 +877,7 @@ rb_ary_last(argc, argv, ary)
 	return RARRAY(ary)->ptr[RARRAY(ary)->len-1];
     }
     else {
-	VALUE nv, result;
-	long n, i;
-
-	rb_scan_args(argc, argv, "01", &nv);
-	n = NUM2LONG(nv);
-	if (n > RARRAY(ary)->len) n = RARRAY(ary)->len;
-	result = rb_ary_new2(n);
-	for (i=RARRAY(ary)->len-n; n--; i++) {
-	    rb_ary_push(result, RARRAY(ary)->ptr[i]);
-	}
-	return result;
+	return ary_shared_first(argc, argv, ary, Qtrue);
     }
 }
 
@@ -3062,8 +3147,8 @@ Init_Array()
     rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
-    rb_define_method(rb_cArray, "pop", rb_ary_pop, 0);
-    rb_define_method(rb_cArray, "shift", rb_ary_shift, 0);
+    rb_define_method(rb_cArray, "pop", rb_ary_pop_m, -1);
+    rb_define_method(rb_cArray, "shift", rb_ary_shift_m, -1);
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);

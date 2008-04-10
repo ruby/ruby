@@ -35,6 +35,12 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+  * Array#pop
+  * Array#shift
+
+    Take an optional argument specifying the number of elements to
+    remove.
+
   * Integer#ord implemented.
   * Integer#odd? implemented.
   * Integer#even? implemented.

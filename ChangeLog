@@ -1,3 +1,13 @@
+Thu Apr 10 19:29:48 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_first, rb_ary_last): Return a shared array when
+	  possible.
+
+	* array.c (rb_ary_pop, rb_ary_pop_m, rb_ary_shift, rb_ary_shift_m):
+	  Array#pop and Array#shift can take an optional argument
+	  specifying the number of elements to remove and return;
+	  backported from 1.9.
+
 Thu Apr 10 14:00:44 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS#each_address): backport from 1.9 for
