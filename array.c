@@ -505,7 +505,7 @@ rb_ary_pop(VALUE ary)
  *  <code>nil</code> if the array is empty.
  *
  *  If a number _n_ is given, returns an array of the last n elements
- *  (or less) just like <code>array.slice(-n, n)</code> does.
+ *  (or less) just like <code>array.slice!(-n, n)</code> does.
  *     
  *     a = [ "a", "b", "c", "d" ]
  *     a.pop     #=> "d"
@@ -561,7 +561,7 @@ rb_ary_shift(VALUE ary)
  *  is empty.
  *
  *  If a number _n_ is given, returns an array of the first n elements
- *  (or less) just like <code>array.slice(0, n)</code> does.
+ *  (or less) just like <code>array.slice!(0, n)</code> does.
  *     
  *     args = [ "-m", "-q", "filename" ]
  *     args.shift     #=> "-m"
