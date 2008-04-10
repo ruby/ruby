@@ -1,3 +1,9 @@
+Thu Apr 10 20:29:13 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* misc/rdebug.el, misc/README: Remove rdebug.el as per request
+	  from the maintainer; bug#19043.  Fortunately this file was added
+	  after the last release, so it is kind of safe to remove it.
+
 Thu Apr 10 20:08:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_first, enum_group_by): New methods:
