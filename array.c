@@ -498,10 +498,14 @@ rb_ary_pop(VALUE ary)
 
 /*
  *  call-seq:
- *     array.pop  -> obj or nil
+ *     array.pop    -> obj or nil
+ *     array.pop(n) -> array
  *  
  *  Removes the last element from <i>self</i> and returns it, or
  *  <code>nil</code> if the array is empty.
+ *
+ *  If a number _n_ is given, returns an array of the last n elements
+ *  (or less) just like <code>array.slice(-n, n)</code> does.
  *     
  *     a = [ "a", "b", "c", "d" ]
  *     a.pop     #=> "d"
@@ -549,11 +553,15 @@ rb_ary_shift(VALUE ary)
 
 /*
  *  call-seq:
- *     array.shift   ->   obj or nil
+ *     array.shift    -> obj or nil
+ *     array.shift(n) -> array
  *  
  *  Returns the first element of <i>self</i> and removes it (shifting all
  *  other elements down by one). Returns <code>nil</code> if the array
  *  is empty.
+ *
+ *  If a number _n_ is given, returns an array of the first n elements
+ *  (or less) just like <code>array.slice(0, n)</code> does.
  *     
  *     args = [ "-m", "-q", "filename" ]
  *     args.shift     #=> "-m"
@@ -1759,13 +1767,7 @@ rb_ary_delete_at_m(VALUE ary, VALUE pos)
  *  
  *  Deletes the element(s) given by an index (optionally with a length)
  *  or by a range. Returns the deleted object, subarray, or
- *  <code>nil</code> if the index is out of range. Equivalent to:
- *     
- *     def slice!(*args)
- *       result = self[*args]
- *       self[*args] = nil
- *       result
- *     end
+ *  <code>nil</code> if the index is out of range.
  *     
  *     a = [ "a", "b", "c" ]
  *     a.slice!(1)     #=> "b"

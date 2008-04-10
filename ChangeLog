@@ -1,3 +1,11 @@
+Thu Apr 10 19:23:55 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_pop_m, rb_ary_shift_m): Update documents for
+	  #pop() and #shift().
+
+	* array.c (rb_ary_slice_bang): Update document.  Assigning
+	  array[*args]= nil no longer removes elements.
+
 Thu Apr 10 16:58:44 2008  Tanaka Akira  <akr@fsij.org>
 
 	* marshal.c (w_object): TYPE_USERDEF assigns id for ivars first.
