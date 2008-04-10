@@ -23,7 +23,7 @@ class YAML::Store < PStore
     YAML::load(content)
   end
 
-  def load_file(file)
-    YAML::load(file)
+  def marshal_dump_supports_canonical_option?
+    false
   end
 end

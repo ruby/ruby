@@ -1,3 +1,11 @@
+Thu Apr 10 23:08:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/pstore.rb (PStore::dump, PStore::load): allow subclass
+	  overriding.  [ruby-dev:34305]
+
+	* lib/yaml/store.rb (YAML::Store::marshal_dump_supports_canonical_option?): 
+	  add a method to support faster PStore.
+	
 Thu Apr 10 20:36:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/rdebug.el, misc/README: Remove rdebug.el as per request

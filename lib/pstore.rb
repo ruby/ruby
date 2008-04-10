@@ -399,7 +399,7 @@ class PStore
   def load_data(file, read_only)
     if read_only
       begin
-        table = Marshal.load(file)
+        table = load(file)
         if !table.is_a?(Hash)
           raise Error, "PStore file seems to be corrupted."
         end
@@ -416,7 +416,7 @@ class PStore
         checksum = EMPTY_MARSHAL_CHECKSUM
         size = EMPTY_MARSHAL_DATA.size
       else
-        table = Marshal.load(data)
+        table = load(data)
         checksum = Digest::MD5.digest(data)
         size = data.size
         if !table.is_a?(Hash)
@@ -461,7 +461,7 @@ class PStore
     if marshal_dump_supports_canonical_option?
       new_data = Marshal.dump(@table, -1, true)
     else
-      new_data = Marshal.dump(@table)
+      new_data = dump(@table)
     end
     new_checksum = Digest::MD5.digest(new_data)
     
@@ -497,6 +497,19 @@ class PStore
     file.rewind
     file.truncate(0)
     file.write(data)
+  end
+
+
+  # This method is just a wrapped around Marshal.dump
+  # to allow subclass overriding used in YAML::Store.
+  def dump(table)  # :nodoc:
+    Marshal::dump(table)
+  end
+
+  # This method is just a wrapped around Marshal.load.
+  # to allow subclass overriding used in YAML::Store.
+  def load(content)  # :nodoc:
+    Marshal::load(content)
   end
 end
 
