@@ -1,3 +1,8 @@
+Thu Apr 10 14:00:44 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb (Resolv::DNS#each_address): backport from 1.9 for
+	  CNAME.  [ruby-dev:34200]
+
 Thu Apr 10 01:42:25 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enum.c (iterate_method): add prototype to avoid warning on VC++.

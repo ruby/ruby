@@ -387,16 +387,8 @@ class Resolv
     # be a Resolv::IPv4 or Resolv::IPv6
 
     def each_address(name)
-      buf = []
-      each_resource(name, Resource::IN::ANY) do |resource|
-	case resource.address
-	when Resolv::IPv4
-	  yield resource.address
-	when Resolv::IPv6
-	  buf << resource.address
-	end
-      end
-      buf.each {|resource| yield resource.address}
+      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
+      each_resource(name, Resource::IN::AAAA) {|resource| yield resource.address}
     end
 
     ##
