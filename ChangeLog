@@ -1,3 +1,15 @@
+Thu Apr 10 19:49:10 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (rb_eStopIteration), eval.c (rb_f_loop), ruby.h:
+	  Add a new exception class StopIteration, which breaks Kernel#loop
+	  iteration when raised; backported from 1.9.
+
+	* enumerator.c (enumerator_next, enumerator_rewind): Implement
+	  #next and #rewind using the "generator" library.
+
+	* lib/generator.rb: Implement Enumerable::Enumerator#next and
+	  #rewind.
+
 Thu Apr 10 19:29:48 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_first, rb_ary_last): Return a shared array when

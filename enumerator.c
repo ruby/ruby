@@ -23,6 +23,8 @@
 VALUE rb_cEnumerator;
 static VALUE sym_each, sym_call;
 
+VALUE rb_eStopIteration;
+
 static VALUE
 proc_call(proc, args)
     VALUE proc;
@@ -387,6 +389,45 @@ enumerator_with_index(obj)
 			 enumerator_with_index_i, (VALUE)&memo);
 }
 
+/*
+ * call-seq:
+ *   e.next   => object
+ *
+ * Returns the next object in the enumerator, and move the internal
+ * position forward.  When the position reached at the end, internal
+ * position is rewinded then StopIteration is raised.
+ *
+ * Note that enumeration sequence by next method does not affect other
+ * non-external enumeration methods, unless underlying iteration
+ * methods itself has side-effect, e.g. IO#each_line.
+ *
+ * Caution: Calling this method causes the "generator" library to be
+ * loaded.
+ */
+
+static VALUE
+enumerator_next(obj)
+    VALUE obj;
+{
+    rb_require("generator");
+    return rb_funcall(obj, rb_intern("next"), 0, 0);
+}
+
+/*
+ * call-seq:
+ *   e.rewind   => e
+ *
+ * Rewinds the enumeration sequence by the next method.
+ */
+
+static VALUE
+enumerator_rewind(obj)
+    VALUE obj;
+{
+    rb_require("generator");
+    return rb_funcall(obj, rb_intern("rewind"), 0, 0);
+}
+
 void
 Init_Enumerator()
 {
@@ -406,6 +447,10 @@ Init_Enumerator()
     rb_define_method(rb_cEnumerator, "initialize_copy", enumerator_init_copy, 1);
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
+    rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
+    rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
+
+    rb_eStopIteration   = rb_define_class("StopIteration", rb_eIndexError);
 
     sym_each		= ID2SYM(rb_intern("each"));
     sym_call		= ID2SYM(rb_intern("call"));

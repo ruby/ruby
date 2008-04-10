@@ -659,6 +659,7 @@ RUBY_EXTERN VALUE rb_eFatal;
 RUBY_EXTERN VALUE rb_eArgError;
 RUBY_EXTERN VALUE rb_eEOFError;
 RUBY_EXTERN VALUE rb_eIndexError;
+RUBY_EXTERN VALUE rb_eStopIteration;
 RUBY_EXTERN VALUE rb_eRangeError;
 RUBY_EXTERN VALUE rb_eIOError;
 RUBY_EXTERN VALUE rb_eRuntimeError;

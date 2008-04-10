@@ -5157,6 +5157,16 @@ rb_yield_splat(values)
     return rb_yield_0(values, 0, 0, 0, avalue);
 }
 
+static VALUE
+loop_i()
+{
+    for (;;) {
+	rb_yield_0(Qundef, 0, 0, 0, Qfalse);
+	CHECK_INTS;
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     loop {|| block } 
@@ -5169,15 +5179,14 @@ rb_yield_splat(values)
  *       break if !line or line =~ /^qQ/
  *       # ...
  *     end
+ *
+ *  StopIteration raised in the block breaks the loop.
  */
 
 static VALUE
 rb_f_loop()
 {
-    for (;;) {
-	rb_yield_0(Qundef, 0, 0, 0, Qfalse);
-	CHECK_INTS;
-    }
+    rb_rescue2(loop_i, (VALUE)0, 0, 0, rb_eStopIteration, (VALUE)0);
     return Qnil;		/* dummy */
 }
 

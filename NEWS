@@ -61,10 +61,16 @@ with all sufficient information, see the ChangeLog file.
 
   * Regexp.union accepts an array of patterns.
 
+  * StopIteration
+
+    New exception class that causes Kernel#loop to stop iteration when
+    raised.
+
 * enumerator
 
-  * Enumerator is now a built-in module.  Almost everything has been
-    backported from 1.9, except for the #next and #rewind methods.
+  * Enumerator is now a built-in module.  The #next and #rewind
+    methods are implemented using the "generator" library.  Use with
+    care and be aware of the performance loss.
 
 * ipaddr
 
