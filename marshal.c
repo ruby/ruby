@@ -502,7 +502,7 @@ w_object(obj, arg, limit)
 
 	st_add_direct(arg->data, obj, arg->data->num_entries);
 	if (rb_respond_to(obj, s_mdump)) {
-	    VALUE v;
+	    volatile VALUE v;
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    w_class(TYPE_USRMARSHAL, obj, arg, Qfalse);
