@@ -2,6 +2,8 @@ Thu Apr 10 15:03:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/generator.rb: removed obsolete library.  [ruby-core:16233]
 
+	* lib/pstore.rb: replaced by Hongli Lai's faster version.
+
 Thu Apr 10 10:27:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (native_sleep): sleep_cond is initialized at

@@ -3,12 +3,14 @@
 # pstore.rb -
 #   originally by matz
 #   documentation by Kev Jackson and James Edward Gray II
+#   improved by Hongli Lai
 #
 # See PStore for documentation.
 
 
 require "fileutils"
 require "digest/md5"
+require "thread"
 
 #
 # PStore implements a file based persistance mechanism based on a Hash.  User
@@ -77,6 +79,20 @@ require "digest/md5"
 #    end
 #  end
 #
+# == Transaction modes
+#
+# By default, file integrity is only ensured as long as the operating system
+# (and the underlying hardware) doesn't raise any unexpected I/O errors. If an
+# I/O error occurs while PStore is writing to its file, then the file will
+# become corrupted.
+#
+# You can prevent this by setting <em>pstore.ultra_safe = true</em>.
+# However, this results in a minor performance loss, and only works on platforms
+# that support atomic file renames. Please consult the documentation for
+# +ultra_safe+ for details.
+#
+# Needless to say, if you're storing valuable data with PStore, then you should
+# backup the PStore files from time to time.
 class PStore
   binmode = defined?(File::BINARY) ? File::BINARY : 0
   RDWR_ACCESS = File::RDWR | File::CREAT | binmode
@@ -86,12 +102,24 @@ class PStore
   # The error type thrown by all PStore methods.
   class Error < StandardError
   end
+  
+  # Whether PStore should do its best to prevent file corruptions, even when under
+  # unlikely-to-occur error conditions such as out-of-space conditions and other
+  # unusual OS filesystem errors. Setting this flag comes at the price in the form
+  # of a performance loss.
+  #
+  # This flag only has effect on platforms on which file renames are atomic (e.g.
+  # all POSIX platforms: Linux, MacOS X, FreeBSD, etc). The default value is false.
+  attr_accessor :ultra_safe
 
   # 
   # To construct a PStore object, pass in the _file_ path where you would like 
   # the data to be stored.
+  #
+  # PStore objects are always reentrant. But if _thread_safe_ is set to true,
+  # then it will become thread-safe at the cost of a minor performance hit.
   # 
-  def initialize(file)
+  def initialize(file, thread_safe = false)
     dir = File::dirname(file)
     unless File::directory? dir
       raise PStore::Error, format("directory %s does not exist", dir)
@@ -102,6 +130,12 @@ class PStore
     @transaction = false
     @filename = file
     @abort = false
+    @ultra_safe = false
+    if @thread_safe
+      @lock = Mutex.new
+    else
+      @lock = DummyMutex.new
+    end
   end
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
@@ -142,10 +176,10 @@ class PStore
   def fetch(name, default=PStore::Error)
     in_transaction
     unless @table.key? name
-      if default==PStore::Error
-	raise PStore::Error, format("undefined root name `%s'", name)
+      if default == PStore::Error
+        raise PStore::Error, format("undefined root name `%s'", name)
       else
-	return default
+        return default
       end
     end
     @table[name]
@@ -281,94 +315,188 @@ class PStore
   # 
   # Note that PStore does not support nested transactions.
   #
-  def transaction(read_only=false)  # :yields:  pstore
+  def transaction(read_only = false, &block)  # :yields:  pstore
+    value = nil
     raise PStore::Error, "nested transaction" if @transaction
-    begin
+    @lock.synchronize do
       @rdonly = read_only
-      @abort = false
       @transaction = true
-      value = nil
-      new_file = @filename + ".new"
-
-      content = nil
-      unless read_only
-        file = File.open(@filename, RDWR_ACCESS)
-        file.flock(File::LOCK_EX)
-        commit_new(file) if FileTest.exist?(new_file)
-        content = file.read()
-      else
+      @abort = false
+      file = open_and_lock_file(@filename, read_only)
+      if file
         begin
-          file = File.open(@filename, RD_ACCESS)
-          file.flock(File::LOCK_SH)
-          content = (File.open(new_file, RD_ACCESS) {|n| n.read} rescue file.read())
-        rescue Errno::ENOENT
-          content = ""
-        end
-      end
-
-      if content != ""
-	@table = load(content)
-        if !read_only
-          size = content.size
-          md5 = Digest::MD5.digest(content)
+          @table, checksum, original_data_size = load_data(file, read_only)
+          
+          catch(:pstore_abort_transaction) do
+            value = yield(self)
+          end
+          
+          if !@abort && !read_only
+            save_data(checksum, original_data_size, file)
+          end
+        ensure
+          file.close if !file.closed?
         end
       else
-	@table = {}
+        # This can only occur if read_only == true.
+        @table = {}
+        catch(:pstore_abort_transaction) do
+          value = yield(self)
+        end
       end
-      content = nil		# unreference huge data
-
-      begin
-	catch(:pstore_abort_transaction) do
-	  value = yield(self)
-	end
-      rescue Exception
-	@abort = true
-	raise
-      ensure
-	if !read_only and !@abort
-          tmp_file = @filename + ".tmp"
-	  content = dump(@table)
-	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
-            File.open(tmp_file, WR_ACCESS) {|t| t.write(content)}
-            File.rename(tmp_file, new_file)
-            commit_new(file)
-          end
-          content = nil		# unreference huge data
-	end
-      end
-    ensure
-      @table = nil
-      @transaction = false
-      file.close if file
     end
+  ensure
+    @transaction = false
     value
   end
-
-  # This method is just a wrapped around Marshal.dump.
-  def dump(table)  # :nodoc:
-    Marshal::dump(table)
-  end
-
-  # This method is just a wrapped around Marshal.load.
-  def load(content)  # :nodoc:
-    Marshal::load(content)
-  end
-
-  # This method is just a wrapped around Marshal.load.
-  def load_file(file)  # :nodoc:
-    Marshal::load(file)
-  end
-
+  
   private
-  # Commits changes to the data store file.
-  def commit_new(f)
-    f.truncate(0)
-    f.rewind
-    new_file = @filename + ".new"
-    File.open(new_file, RD_ACCESS) do |nf|
-      FileUtils.copy_stream(nf, f)
+  # Constant for relieving Ruby's garbage collector.
+  EMPTY_STRING = ""
+  EMPTY_MARSHAL_DATA = Marshal.dump({})
+  EMPTY_MARSHAL_CHECKSUM = Digest::MD5.digest(EMPTY_MARSHAL_DATA)
+  
+  class DummyMutex
+    def synchronize
+      yield
     end
-    File.unlink(new_file)
+  end
+  
+  #
+  # Open the specified filename (either in read-only mode or in
+  # read-write mode) and lock it for reading or writing.
+  #
+  # The opened File object will be returned. If _read_only_ is true,
+  # and the file does not exist, then nil will be returned.
+  #
+  # All exceptions are propagated.
+  #
+  def open_and_lock_file(filename, read_only)
+    if read_only
+      begin
+        file = File.new(filename, RD_ACCESS)
+        begin
+          file.flock(File::LOCK_SH)
+          return file
+        rescue
+          file.close
+          raise
+        end
+      rescue Errno::ENOENT
+        return nil
+      end
+    else
+      file = File.new(filename, RDWR_ACCESS)
+      file.flock(File::LOCK_EX)
+      return file
+    end
+  end
+  
+  # Load the given PStore file.
+  # If +read_only+ is true, the unmarshalled Hash will be returned.
+  # If +read_only+ is false, a 3-tuple will be returned: the unmarshalled
+  # Hash, an MD5 checksum of the data, and the size of the data.
+  def load_data(file, read_only)
+    if read_only
+      begin
+        table = Marshal.load(file)
+        if !table.is_a?(Hash)
+          raise Error, "PStore file seems to be corrupted."
+        end
+      rescue EOFError
+        # This seems to be a newly-created file.
+        table = {}
+      end
+      table
+    else
+      data = file.read
+      if data.empty?
+        # This seems to be a newly-created file.
+        table = {}
+        checksum = EMPTY_MARSHAL_CHECKSUM
+        size = EMPTY_MARSHAL_DATA.size
+      else
+        table = Marshal.load(data)
+        checksum = Digest::MD5.digest(data)
+        size = data.size
+        if !table.is_a?(Hash)
+          raise Error, "PStore file seems to be corrupted."
+        end
+      end
+      data.replace(EMPTY_STRING)
+      [table, checksum, size]
+    end
+  end
+  
+  def on_windows?
+    is_windows = RUBY_PLATFORM =~ /mswin/  ||
+                 RUBY_PLATFORM =~ /mingw/  ||
+                 RUBY_PLATFORM =~ /bbcwin/ ||
+                 RUBY_PLATFORM =~ /wince/
+    self.class.__send__(:define_method, :on_windows?) do
+      is_windows
+    end
+    is_windows
+  end
+  
+  # Check whether Marshal.dump supports the 'canonical' option. This option
+  # makes sure that Marshal.dump always dumps data structures in the same order.
+  # This is important because otherwise, the checksums that we generate may differ.
+  def marshal_dump_supports_canonical_option?
+    begin
+      Marshal.dump(nil, -1, true)
+      result = true
+    rescue
+      result = false
+    end
+    self.class.__send__(:define_method, :marshal_dump_supports_canonical_option?) do
+      result
+    end
+    result
+  end
+  
+  def save_data(original_checksum, original_file_size, file)
+    # We only want to save the new data if the size or checksum has changed.
+    # This results in less filesystem calls, which is good for performance.
+    if marshal_dump_supports_canonical_option?
+      new_data = Marshal.dump(@table, -1, true)
+    else
+      new_data = Marshal.dump(@table)
+    end
+    new_checksum = Digest::MD5.digest(new_data)
+    
+    if new_data.size != original_file_size || new_checksum != original_checksum
+      if @ultra_safe && !on_windows?
+        # Windows doesn't support atomic file renames.
+        save_data_with_atomic_file_rename_strategy(new_data, file)
+      else
+        save_data_with_fast_strategy(new_data, file)
+      end
+    end
+    
+    new_data.replace(EMPTY_STRING)
+  end
+  
+  def save_data_with_atomic_file_rename_strategy(data, file)
+    temp_filename = "#{@filename}.tmp.#{Process.pid}.#{rand 1000000}"
+    temp_file = File.new(temp_filename, WR_ACCESS)
+    begin
+      temp_file.flock(File::LOCK_EX)
+      temp_file.write(data)
+      temp_file.flush
+      File.rename(temp_filename, @filename)
+    rescue
+      File.unlink(temp_file) rescue nil
+      raise
+    ensure
+      temp_file.close
+    end
+  end
+  
+  def save_data_with_fast_strategy(data, file)
+    file.rewind
+    file.truncate(0)
+    file.write(data)
   end
 end
 
