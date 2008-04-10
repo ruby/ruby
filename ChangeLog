@@ -25,6 +25,8 @@ Thu Apr 10 15:03:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/generator.rb: removed obsolete library.  [ruby-core:16233]
 
+	* test/test_generator.rb: removed as well.  [ruby-dev:34306]
+
 	* lib/pstore.rb: replaced by Hongli Lai's faster version.
 
 Thu Apr 10 10:27:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
