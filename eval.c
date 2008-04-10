@@ -984,6 +984,8 @@ loop_i()
  *       break if !line or line =~ /^qQ/
  *       # ...
  *     end
+ *
+ *  StopIteration raised in the block breaks the loop.
  */
 
 static VALUE

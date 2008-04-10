@@ -1,3 +1,7 @@
+Thu Apr 10 19:41:00 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_f_loop): Mention StopIteration in the document.
+
 Thu Apr 10 19:23:55 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_pop_m, rb_ary_shift_m): Update documents for
