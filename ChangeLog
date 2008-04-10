@@ -1,7 +1,8 @@
 Thu Apr 10 20:29:13 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/rdebug.el, misc/README: Remove rdebug.el as per request
-	  from the maintainer; bug#19043.
+	  from the maintainer and mention the ruby-debug project at
+	  RubyForge in README; bug#19043.
 
 Thu Apr 10 20:08:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 
