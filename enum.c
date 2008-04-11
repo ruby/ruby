@@ -81,19 +81,23 @@ enum_grep(VALUE obj, VALUE pat)
 }
 
 static VALUE
-count_i(VALUE i, VALUE *arg)
+count_i(VALUE i, VALUE memop)
 {
-    if (rb_equal(i, arg[0])) {
-	arg[1]++;
+    VALUE *memo = (VALUE*)memop;
+
+    if (rb_equal(i, memo[1])) {
+	memo[0]++;
     }
     return Qnil;
 }
 
 static VALUE
-count_iter_i(VALUE i, long *n, int argc, VALUE *argv)
+count_iter_i(VALUE i, VALUE memop, int argc, VALUE *argv)
 {
+    VALUE *memo = (VALUE*)memop;
+
     if (RTEST(enum_yield(argc, argv))) {
-	(*n)++;
+	memo[0]++;
     }
     return Qnil;
 }
@@ -115,31 +119,24 @@ count_iter_i(VALUE i, long *n, int argc, VALUE *argv)
 static VALUE
 enum_count(int argc, VALUE *argv, VALUE obj)
 {
-    if (argc == 1) {
-	VALUE item, args[2];
+    VALUE memo[2];	/* [count, condition value] */
+    rb_block_call_func *func;
 
+    if (argc == 0) {
+	RETURN_ENUMERATOR(obj, 0, 0);
+        func = count_iter_i;
+    }
+    else {
+	rb_scan_args(argc, argv, "1", &memo[1]);
 	if (rb_block_given_p()) {
 	    rb_warn("given block not used");
 	}
-	rb_scan_args(argc, argv, "1", &item);
-	args[0] = item;
-	args[1] = 0;
-	rb_block_call(obj, id_each, 0, 0, count_i, (VALUE)&args);
-	return INT2NUM(args[1]);
+        func = count_i;
     }
-    else if (argc == 0) {
-	long n;
 
-	RETURN_ENUMERATOR(obj, 0, 0);
-	n = 0;
-	rb_block_call(obj, id_each, 0, 0, count_iter_i, (VALUE)&n);
-	return INT2NUM(n);
-    }
-    else {
-        VALUE v;
-	rb_scan_args(argc, argv, "1", &v);
-        return Qnil; /* not reached */
-    }
+    memo[0] = 0;
+    rb_block_call(obj, id_each, 0, 0, func, (VALUE)&memo);
+    return INT2NUM(memo[0]);
 }
 
 static VALUE
@@ -202,6 +199,7 @@ static VALUE
 find_index_iter_i(VALUE i, VALUE memop, int argc, VALUE *argv)
 {
     VALUE *memo = (VALUE*)memop;
+
     if (RTEST(enum_yield(argc, argv))) {
 	memo[0] = UINT2NUM(memo[1]);
 	rb_iter_break();
@@ -234,24 +232,18 @@ enum_find_index(int argc, VALUE *argv, VALUE obj)
 
     if (argc == 0) {
         RETURN_ENUMERATOR(obj, 0, 0);
-        memo[0] = Qnil;
-        memo[1] = 0;
-        memo[2] = Qundef;
         func = find_index_iter_i;
     }
     else {
-        VALUE item;
-
-	rb_scan_args(argc, argv, "1", &item);
+	rb_scan_args(argc, argv, "1", &memo[2]);
 	if (rb_block_given_p()) {
 	    rb_warn("given block not used");
 	}
-        memo[0] = Qnil;
-        memo[1] = 0;
-        memo[2] = item;
         func = find_index_i;
     }
 
+    memo[0] = Qnil;
+    memo[1] = 0;
     rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
     return memo[0];
 }
