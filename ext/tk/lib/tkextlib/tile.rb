@@ -133,7 +133,10 @@ module Tk
       ns_list.each{|ns|
         cmd = "#{ns}::#{proc_name}"
         unless Tk.info(:commands, cmd).empty?
-          fail RuntimeError, "can't define '#{cmd}' command (already exist)"
+          #fail RuntimeError, "can't define '#{cmd}' command (already exist)"
+
+          # do nothing !!!
+          warn "Warning: can't define '#{cmd}' command (already exist)" if $DEBUG
         end
         TkNamespace.eval(ns){
           TkCore::INTERP.add_tk_procs(proc_name, 'imgdir {patterns {*.gif}}', 

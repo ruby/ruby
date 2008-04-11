@@ -1,3 +1,16 @@
+Fri Apr 11 10:22:54 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/tile.rb:
+	  __define_LoadImages_proc_for_compatibility__! do nothing when the 
+	  Tcl command exists.
+
+	* ext/tk/lib/tkextlib/tile/style.rb:
+	  __define_wrapper_proc_for_compatibility__! do nothing when the Tcl
+	  command exists.
+
+	* ext/tk/sample/tkextlib/tile/demo.rb: don't create 'step' theme if 
+	  it already exists.
+
 Fri Apr 11 08:05:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): add volatile to avoid potential GC bug.  a
