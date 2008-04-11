@@ -186,8 +186,10 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-find_index_i(VALUE i, VALUE *memo)
+find_index_i(VALUE i, VALUE memop, int argc, VALUE *argv)
 {
+    VALUE *memo = (VALUE*)memop;
+
     if (rb_equal(i, memo[2])) {
 	memo[0] = UINT2NUM(memo[1]);
 	rb_iter_break();
@@ -197,8 +199,9 @@ find_index_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-find_index_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+find_index_iter_i(VALUE i, VALUE memop, int argc, VALUE *argv)
 {
+    VALUE *memo = (VALUE*)memop;
     if (RTEST(enum_yield(argc, argv))) {
 	memo[0] = UINT2NUM(memo[1]);
 	rb_iter_break();

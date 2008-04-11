@@ -1,3 +1,9 @@
+Fri Apr 11 17:06:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (find_index_i): modified to shut warning up.
+
+	* enum.c (find_index_iter_i): ditto.
+
 Fri Apr 11 16:44:43 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_find_index): Add support for find_index(obj);
