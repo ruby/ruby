@@ -1,3 +1,10 @@
+Fri Apr 11 16:44:43 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enum.c (enum_find_index): Add support for find_index(obj);
+	  [ruby-dev:34313].
+
+	* array.c (rb_ary_index): Define find_index as an alias to index.
+
 Fri Apr 11 16:42:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/yaml/store.rb (YAML::load): modified to support empty

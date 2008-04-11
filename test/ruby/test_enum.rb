@@ -43,8 +43,10 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_find_index
+    assert_equal(1, @obj.find_index(2))
     assert_equal(1, @obj.find_index {|x| x % 2 == 0 })
     assert_equal(nil, @obj.find_index {|x| false })
+    assert_raise(ArgumentError) { @obj.find_index(0, 1) }
   end
 
   def test_find_all

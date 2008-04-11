@@ -186,7 +186,18 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-find_index_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+find_index_i(VALUE i, VALUE *memo)
+{
+    if (rb_equal(i, memo[2])) {
+	memo[0] = UINT2NUM(memo[1]);
+	rb_iter_break();
+    }
+    memo[1]++;
+    return Qnil;
+}
+
+static VALUE
+find_index_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     if (RTEST(enum_yield(argc, argv))) {
 	memo[0] = UINT2NUM(memo[1]);
@@ -198,30 +209,48 @@ find_index_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     enum.find_index()   {| obj | block }  => int
+ *     enum.find_index(value)            => int or nil
+ *     enum.find_index {| obj | block }  => int or nil
  *  
- *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
- *  index for the first for which <em>block</em> is not <code>false</code>.
- *  If no object matches, returns <code>nil</code>
+ *  Compares each entry in <i>enum</i> with <em>value</em> or passes
+ *  to <em>block</em>.  Returns the index for the first for which the
+ *  evaluated value is non-false.  If no object matches, returns
+ *  <code>nil</code>
  *     
  *     (1..10).find_index  {|i| i % 5 == 0 and i % 7 == 0 }   #=> nil
  *     (1..100).find_index {|i| i % 5 == 0 and i % 7 == 0 }   #=> 34
+ *     (1..100).find_index(50)                                #=> 49
  *     
  */
 
 static VALUE
-enum_find_index(VALUE obj)
+enum_find_index(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE memo[2];
+    VALUE memo[3];	/* [return value, current index, condition value] */
+    rb_block_call_func *func;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
-    memo[0] = Qundef;
-    memo[1] = 0;
-    rb_block_call(obj, id_each, 0, 0, find_index_i, (VALUE)memo);
-    if (memo[0] != Qundef) {
-	return memo[0];
+    if (argc == 0) {
+        RETURN_ENUMERATOR(obj, 0, 0);
+        memo[0] = Qnil;
+        memo[1] = 0;
+        memo[2] = Qundef;
+        func = find_index_iter_i;
     }
-    return Qnil;
+    else {
+        VALUE item;
+
+	rb_scan_args(argc, argv, "1", &item);
+	if (rb_block_given_p()) {
+	    rb_warn("given block not used");
+	}
+        memo[0] = Qnil;
+        memo[1] = 0;
+        memo[2] = item;
+        func = find_index_i;
+    }
+
+    rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
+    return memo[0];
 }
 
 static VALUE
@@ -1688,7 +1717,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"count", enum_count, -1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
     rb_define_method(rb_mEnumerable,"detect", enum_find, -1);
-    rb_define_method(rb_mEnumerable,"find_index", enum_find_index, 0);
+    rb_define_method(rb_mEnumerable,"find_index", enum_find_index, -1);
     rb_define_method(rb_mEnumerable,"find_all", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);
