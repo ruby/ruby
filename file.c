@@ -2551,6 +2551,11 @@ rb_path_end(const char *path)
     buflen = RSTRING_LEN(result),\
     pend = p + buflen)
 
+#define SET_EXTERNAL_ENCODING() (\
+    (void)(extenc || (extenc = rb_default_external_encoding())),\
+    rb_enc_associate(result, extenc),\
+    rb_enc_check(fname, result))
+
 static int is_absolute_path(const char*);
 
 static VALUE
@@ -2559,6 +2564,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
     char *s, *buf, *b, *p, *pend, *root;
     long buflen, dirlen;
     int tainted;
+    rb_encoding *extenc = 0;
 
     FilePathValue(fname);
     s = StringValuePtr(fname);
@@ -2586,6 +2592,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 #endif
 	    s++;
 	    tainted = 1;
+	    SET_EXTERNAL_ENCODING();
 	}
 	else {
 #ifdef HAVE_PWD_H
@@ -2641,6 +2648,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 		BUFCHECK(dirlen > buflen);
 		strcpy(buf, dir);
 		free(dir);
+		SET_EXTERNAL_ENCODING();
 	    }
 	    p = chompdirsep(skiproot(buf));
 	    s += 2;
@@ -2660,6 +2668,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 	    BUFCHECK(dirlen > buflen);
 	    strcpy(buf, dir);
 	    free(dir);
+	    SET_EXTERNAL_ENCODING();
 	}
 #if defined DOSISH || defined __CYGWIN__
 	if (isdirsep(*s)) {
@@ -2749,13 +2758,14 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 
     if (tainted) OBJ_TAINT(result);
     rb_str_set_len(result, p - buf);
+    rb_enc_check(fname, result);
     return result;
 }
 
 VALUE
 rb_file_expand_path(VALUE fname, VALUE dname)
 {
-    return file_expand_path(fname, dname, rb_str_new(0, MAXPATHLEN + 2));
+    return file_expand_path(fname, dname, rb_usascii_str_new(0, MAXPATHLEN + 2));
 }
 
 /*

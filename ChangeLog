@@ -1,4 +1,6 @@
-Sat Apr 12 03:12:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 12 03:13:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): set external encoding.
 
 	* file.c (rb_file_s_basename, rb_file_s_dirname, rb_file_s_extname):
 	  copy encoding.
