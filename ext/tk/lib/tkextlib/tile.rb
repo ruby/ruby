@@ -137,6 +137,7 @@ module Tk
 
           # do nothing !!!
           warn "Warning: can't define '#{cmd}' command (already exist)" if $DEBUG
+          next
         end
         TkNamespace.eval(ns){
           TkCore::INTERP.add_tk_procs(proc_name, 'imgdir {patterns {*.gif}}', 

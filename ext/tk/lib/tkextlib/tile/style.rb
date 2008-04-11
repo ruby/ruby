@@ -39,6 +39,7 @@ class << Tk::Tile::Style
 
           # do nothing !!!
           warn "Warning: can't define '::ttk::style' command (already exist)" if $DEBUG
+          return
         end
         TkCore::INTERP.add_tk_procs('::ttk::style', 'args', <<-'EOS')
         if [string equal [lrange $args 0 1] {element create}] {
@@ -59,8 +60,12 @@ class << Tk::Tile::Style
     else ### TILE_SPEC_VERSION_ID == 7
       def __define_wrapper_proc_for_compatibility__!
         unless Tk.info(:commands, '::ttk::style').empty?
-          fail RuntimeError,
-               "can't define ':ttk::style' command (already exist)"
+          # fail RuntimeError,
+          #     "can't define '::ttk::style' command (already exist)"
+
+          # do nothing !!!
+          warn "Warning: can't define '::ttk::style' command (already exist)" if $DEBUG
+          return
         end
         TkCore::INTERP.add_tk_procs('::ttk::style', 'args', <<-'EOS')
         if [string equal [lrange $args 0 1] {element create}] {
@@ -87,7 +92,11 @@ class << Tk::Tile::Style
 
     def __define_wrapper_proc_for_compatibility__!
       unless Tk.info(:commands, '::style').empty?
-        fail RuntimeError, "can't define '::style' command (already exist)"
+        # fail RuntimeError, "can't define '::style' command (already exist)"
+
+        # do nothing !!!
+        warn "Warning: can't define '::style' command (already exist)" if $DEBUG
+        return
       end
       TkCore::INTERP.add_tk_procs('::style', 'args', <<-'EOS')
         if [string equal [lrange $args 0 1] {element create}] {

@@ -1,3 +1,8 @@
+Fri Apr 11 12:43:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb, 
+	  ext/tk/sample/tkextlib/tile/demo.rb: previous patch is not complete.
+
 Fri Apr 11 10:22:54 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tile.rb:
