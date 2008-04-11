@@ -413,8 +413,8 @@ class PStore
       if data.empty?
         # This seems to be a newly-created file.
         table = {}
-        checksum = EMPTY_MARSHAL_CHECKSUM
-        size = EMPTY_MARSHAL_DATA.size
+        checksum = empty_marshal_checksum
+        size = empty_marshal_data.size
       else
         table = load(data)
         checksum = Digest::MD5.digest(data)
@@ -510,6 +510,13 @@ class PStore
   # to allow subclass overriding used in YAML::Store.
   def load(content)  # :nodoc:
     Marshal::load(content)
+  end
+
+  def empty_marshal_data
+    EMPTY_MARSHAL_DATA
+  end
+  def empty_marshal_checksum
+    EMPTY_MARSHAL_CHECKSUM
   end
 end
 
