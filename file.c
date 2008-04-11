@@ -2880,6 +2880,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 	}
     }
     basename = rb_str_new(p, f);
+    rb_enc_copy(basename, fname);
     OBJ_INFECT(basename, fname);
     return basename;
 }
@@ -2931,6 +2932,7 @@ rb_file_s_dirname(VALUE klass, VALUE fname)
     if (has_drive_letter(name) && root == name + 2 && p - name == 2)
 	rb_str_cat(dirname, ".", 1);
 #endif
+    rb_enc_copy(dirname, fname);
     OBJ_INFECT(dirname, fname);
     return dirname;
 }
@@ -2967,6 +2969,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     if (!e || e == p || !e[1])	/* no dot, or the only dot is first or end? */
 	return rb_str_new(0, 0);
     extname = rb_str_new(e, chompdirsep(e) - e);	/* keep the dot, too! */
+    rb_enc_copy(extname, fname);
     OBJ_INFECT(extname, fname);
     return extname;
 }

@@ -1,3 +1,8 @@
+Sat Apr 12 03:12:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_basename, rb_file_s_dirname, rb_file_s_extname):
+	  copy encoding.
+
 Fri Apr 11 17:35:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (count_i): modified to shut warning up.
