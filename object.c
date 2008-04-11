@@ -495,6 +495,29 @@ rb_obj_is_kind_of(obj, c)
 
 
 /*
+ *  call-seq:
+ *     obj.tap{|x|...}    => obj
+ *  
+ *  Yields <code>x</code> to the block, and then returns <code>x</code>.
+ *  The primary purpose of this method is to "tap into" a method chain,
+ *  in order to perform operations on intermediate results within the chain.
+ *
+ *	(1..10)                .tap {|x| puts "original: #{x.inspect}"}
+ *	  .to_a                .tap {|x| puts "array: #{x.inspect}"}
+ *	  .select {|x| x%2==0} .tap {|x| puts "evens: #{x.inspect}"}
+ *	  .map { |x| x*x }     .tap {|x| puts "squares: #{x.inspect}"}
+ *
+ */
+
+VALUE
+rb_obj_tap(VALUE obj)
+{
+    rb_yield(obj);
+    return obj;
+}
+
+
+/*
  * Document-method: inherited
  *
  * call-seq:
@@ -2684,6 +2707,7 @@ Init_Object()
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
+    rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
     rb_define_private_method(rb_mKernel, "singleton_method_added", rb_obj_dummy, 1);
     rb_define_private_method(rb_mKernel, "singleton_method_removed", rb_obj_dummy, 1);
