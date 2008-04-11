@@ -3573,6 +3573,7 @@ Init_process()
 #endif
 #endif
 
+    rb_define_singleton_method(rb_mProcess, "exec", rb_f_exec, -1);
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);   /* in eval.c */
