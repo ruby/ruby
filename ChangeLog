@@ -1,3 +1,7 @@
+Fri Apr 11 17:35:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (count_i): modified to shut warning up.
+
 Fri Apr 11 17:25:09 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (count_i, count_iter_i, enum_count, enum_find_index):

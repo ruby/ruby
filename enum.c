@@ -81,7 +81,7 @@ enum_grep(VALUE obj, VALUE pat)
 }
 
 static VALUE
-count_i(VALUE i, VALUE memop)
+count_i(VALUE i, VALUE memop, int argc, VALUE *argv)
 {
     VALUE *memo = (VALUE*)memop;
 
