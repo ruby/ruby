@@ -181,6 +181,8 @@ beta-gems.example.com is not a URI
     @cmd.handle_options %w[--update]
 
     util_setup_source_info_cache
+    Gem::SourceInfoCache.reset
+
     util_setup_fake_fetcher
     si = Gem::SourceIndex.new
     si.add_spec @a1

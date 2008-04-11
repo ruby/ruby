@@ -25,6 +25,8 @@ class Gem::SourceIndex
 
   include Gem::UserInteraction
 
+  attr_reader :gems # :nodoc:
+
   class << self
     include Gem::UserInteraction
 
@@ -50,14 +52,10 @@ class Gem::SourceIndex
     end
 
     ##
-    # Return a list of directories in the current gem path that
-    # contain specifications.
-    # 
-    # return::
-    #   List of directory paths (all ending in "../specifications").
+    # Returns a list of directories from Gem.path that contain specifications.
 
     def installed_spec_directories
-      Gem.path.collect { |dir| File.join(dir, "specifications") }        
+      Gem.path.collect { |dir| File.join(dir, "specifications") }
     end
 
     ##
@@ -272,12 +270,11 @@ class Gem::SourceIndex
   end
 
   ##
-  # Refresh the source index from the local file system.
-  #
-  # return:: Returns a pointer to itself.
+  # Replaces the gems in the source index from specifications in the
+  # installed_spec_directories,
 
   def refresh!
-    load_gems_in(self.class.installed_spec_directories)
+    load_gems_in(*self.class.installed_spec_directories)
   end
 
   ##
@@ -346,10 +343,6 @@ class Gem::SourceIndex
   def dump
     Marshal.dump(self)
   end
-
-  protected
-
-  attr_reader :gems
 
   private
 
@@ -430,15 +423,22 @@ class Gem::SourceIndex
   # Make a list of full names for all the missing gemspecs.
 
   def find_missing(spec_names)
+    unless defined? @originals then
+      @originals = {}
+      each do |full_name, spec|
+        @originals[spec.original_name] = spec
+      end
+    end
+
     spec_names.find_all { |full_name|
-      specification(full_name).nil?
+      @originals[full_name].nil?
     }
   end
 
   def remove_extra(spec_names)
     dictionary = spec_names.inject({}) { |h, k| h[k] = true; h }
     each do |name, spec|
-      remove_spec name unless dictionary.include? name
+      remove_spec name unless dictionary.include? spec.original_name
     end
   end
 

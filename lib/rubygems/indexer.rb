@@ -85,7 +85,7 @@ class Gem::Indexer
                 progress.updated spec.original_name
 
               rescue SignalException => e
-                alert_error "Recieved signal, exiting"
+                alert_error "Received signal, exiting"
                 raise
               rescue Exception => e
                 alert_error "Unable to process #{gemfile}\n#{e.message} (#{e.class})\n\t#{e.backtrace.join "\n\t"}"

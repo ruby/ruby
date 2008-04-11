@@ -237,23 +237,25 @@ class TestGem < RubyGemTestCase
     assert_equal [Gem.dir], Gem.path
   end
 
-  def test_self_path_APPLE_GEM_HOME
-    Gem.clear_paths
-    Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
-
-    assert Gem.path.include?('/tmp/apple_gem_home')
-  ensure
-    Gem.send :remove_const, :APPLE_GEM_HOME
-  end
-
-  def test_self_path_APPLE_GEM_HOME_GEM_PATH
-    Gem.clear_paths
-    ENV['GEM_PATH'] = @gemhome
-    Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
-
-    assert !Gem.path.include?('/tmp/apple_gem_home')
-  ensure
-    Gem.send :remove_const, :APPLE_GEM_HOME
+  unless win_platform?
+    def test_self_path_APPLE_GEM_HOME
+      Gem.clear_paths
+      Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
+  
+      assert Gem.path.include?('/tmp/apple_gem_home')
+    ensure
+      Gem.send :remove_const, :APPLE_GEM_HOME
+    end
+  
+    def test_self_path_APPLE_GEM_HOME_GEM_PATH
+      Gem.clear_paths
+      ENV['GEM_PATH'] = @gemhome
+      Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
+  
+      assert !Gem.path.include?('/tmp/apple_gem_home')
+    ensure
+      Gem.send :remove_const, :APPLE_GEM_HOME
+    end
   end
 
   def test_self_path_ENV_PATH
@@ -303,19 +305,54 @@ class TestGem < RubyGemTestCase
 
   def test_self_prefix
     file_name = File.expand_path __FILE__
-    assert_equal File.dirname(File.dirname(file_name)), Gem.prefix
+
+    prefix = File.dirname File.dirname(file_name)
+    prefix = File.dirname prefix if File.basename(prefix) == 'test'
+
+    assert_equal prefix, Gem.prefix
   end
 
-  def test_self_prefix_odd
+  def test_self_prefix_libdir
+    orig_libdir = Gem::ConfigMap[:libdir]
+
+    file_name = File.expand_path __FILE__
+    prefix = File.dirname File.dirname(file_name)
+
+    Gem::ConfigMap[:libdir] = prefix
+
+    assert_nil Gem.prefix
+  ensure
+    Gem::ConfigMap[:libdir] = orig_libdir
+  end
+
+  def test_self_prefix_sitelibdir
     orig_sitelibdir = Gem::ConfigMap[:sitelibdir]
 
     file_name = File.expand_path __FILE__
-    prefix = File.join File.dirname(File.dirname(file_name)), 'lib'
-    Gem::ConfigMap[:sitelibdir] = prefix.sub(/[\w]\//, '\&/')
+    prefix = File.dirname File.dirname(file_name)
+
+    Gem::ConfigMap[:sitelibdir] = prefix
 
     assert_nil Gem.prefix
   ensure
     Gem::ConfigMap[:sitelibdir] = orig_sitelibdir
+  end
+
+  def test_self_refresh
+    util_make_gems
+
+    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec" 
+
+    FileUtils.mv a1_spec, @tempdir
+
+    assert !Gem.source_index.gems.include?(@a1.full_name)
+
+    FileUtils.mv File.join(@tempdir, "#{@a1.full_name}.gemspec"), a1_spec
+
+    Gem.refresh
+
+    assert Gem.source_index.gems.include?(@a1.full_name)
+    assert_equal nil, Gem.instance_variable_get(:@searcher)
   end
 
   def test_self_required_location

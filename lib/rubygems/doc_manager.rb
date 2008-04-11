@@ -65,6 +65,12 @@ module Gem
       FileUtils.mkdir_p @doc_dir unless File.exist?(@doc_dir)
 
       begin
+        gem 'rdoc'
+      rescue Gem::LoadError
+        # use built-in RDoc
+      end
+
+      begin
         require 'rdoc/rdoc'
       rescue LoadError => e
         raise Gem::DocumentError,

@@ -23,8 +23,7 @@ module Gem::VersionOption
                "Specify the platform of gem to #{task}", *wrap) do
                  |value, options|
       unless options[:added_platform] then
-        Gem.platforms.clear
-        Gem.platforms << Gem::Platform::RUBY
+        Gem.platforms = [Gem::Platform::RUBY]
         options[:added_platform] = true
       end
 

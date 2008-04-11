@@ -126,6 +126,7 @@ revert the gem.
       end
 
       installer.generate_bin
+      installer.build_extensions
     end
   end
 

@@ -58,7 +58,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
       say "Updating installed gems"
     end
 
-    hig = {}
+    hig = {} # highest installed gems
 
     Gem::SourceIndex.from_installed_gems.each do |name, spec|
       if hig[spec.name].nil? or hig[spec.name].version < spec.version then
@@ -67,7 +67,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
     end
 
     pattern = if options[:args].empty? then
-             //
+                //
               else
                 Regexp.union(*options[:args])
               end
@@ -78,12 +78,14 @@ class Gem::Commands::UpdateCommand < Gem::Command
 
     updated = []
 
-    # HACK use the real API
+    installer = Gem::DependencyInstaller.new options
+
     gems_to_update.uniq.sort.each do |name|
       next if updated.any? { |spec| spec.name == name }
+
       say "Updating #{name}"
-      installer = Gem::DependencyInstaller.new options
       installer.install name
+
       installer.installed_gems.each do |spec|
         updated << spec
         say "Successfully installed #{spec.full_name}"
@@ -115,6 +117,7 @@ class Gem::Commands::UpdateCommand < Gem::Command
     args.push '--prefix', Gem.prefix unless Gem.prefix.nil?
     args << '--no-rdoc' unless options[:generate_rdoc]
     args << '--no-ri' unless options[:generate_ri]
+    args << '--no-format-executable' if options[:no_format_executable]
 
     update_dir = File.join Gem.dir, 'gems', "rubygems-update-#{version}"
 

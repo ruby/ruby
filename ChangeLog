@@ -1,3 +1,7 @@
+Sat Apr 12 05:55:57 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems*, test/rubygems*:  Update to RubyGems 1.1.1 r1701.
+
 Sat Apr 12 03:13:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): set external encoding.

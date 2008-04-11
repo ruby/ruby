@@ -26,6 +26,7 @@ class TestGemCommandsQueryCommand < RubyGemTestCase
     cache.update
     cache.write_cache
     cache.reset_cache_data
+    Gem::SourceInfoCache.reset
 
     a2_name = @a2.full_name
     @fetcher.data["#{@gem_repo}/quick/latest_index.rz"] = util_zip a2_name
@@ -43,6 +44,9 @@ class TestGemCommandsQueryCommand < RubyGemTestCase
 
 *** REMOTE GEMS ***
 
+Updating metadata for 1 gems from http://gems.example.com/
+.
+complete
 a (2)
     EOF
 
@@ -55,6 +59,7 @@ a (2)
     cache.update
     cache.write_cache
     cache.reset_cache_data
+    Gem::SourceInfoCache.reset
 
     a1_name = @a1.full_name
     a2_name = @a2.full_name
@@ -76,8 +81,8 @@ a (2)
 
 *** REMOTE GEMS ***
 
-Updating metadata for 1 gems from http://gems.example.com/
-.
+Updating metadata for 2 gems from http://gems.example.com/
+..
 complete
 a (2, 1)
     EOF
@@ -97,7 +102,7 @@ a (2, 1)
 
 *** REMOTE GEMS ***
 
-a (2, 1)
+a (2)
     This is a lot of text. This is a lot of text. This is a lot of text.
     This is a lot of text.
 

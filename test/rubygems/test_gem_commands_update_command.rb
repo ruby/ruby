@@ -97,6 +97,7 @@ class TestGemCommandsUpdateCommand < RubyGemTestCase
     assert_equal "Updating installed gems", out.shift
     assert_match %r|Bulk updating|, out.shift
     assert_equal "Updating #{@a2.name}", out.shift
+    assert_match %r|Bulk updating|, out.shift
     assert_equal "Successfully installed #{@c2.full_name}", out.shift
     assert_equal "Successfully installed #{@b2.full_name}", out.shift
     assert_equal "Successfully installed #{@a2.full_name}", out.shift

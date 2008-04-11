@@ -15,7 +15,7 @@ class TestGemServer < RubyGemTestCase
 
     @a1 = quick_gem 'a', '1'
 
-    @server = Gem::Server.new Gem.dir, 8809, false
+    @server = Gem::Server.new Gem.dir, process_based_port, false
     @req = WEBrick::HTTPRequest.new :Logger => nil
     @res = WEBrick::HTTPResponse.new :HTTPVersion => '1.0'
   end

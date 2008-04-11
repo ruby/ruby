@@ -287,6 +287,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
     @sic.set_cache_data @gem_repo => sice
     @sic.update
+    @sic.instance_variable_set :@only_latest, false
     @sic.write_cache
     @sic.reset_cache_data
 
@@ -358,6 +359,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
     @sic.set_cache_data({@gem_repo => @sice_new})
     @sic.update
     @sic.write_cache
+    @sic.instance_variable_set :@only_latest, false
 
     assert File.exist?(@sic.user_cache_file), 'user_cache_file'
     assert File.exist?(@sic.latest_user_cache_file),
@@ -383,6 +385,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
 
     @sic.set_cache_data({ @gem_repo => @sice })
     @sic.update
+
     @sic.write_cache
 
     assert File.exist?(@sic.user_cache_file), 'system_cache_file'
@@ -390,7 +393,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
            'latest_system_cache_file'
 
     user_cache_data = read_cache(@sic.user_cache_file).to_a.sort
-    assert_equal 1, user_cache_data.length
+    assert_equal 1, user_cache_data.length, 'user_cache_data length'
     user_cache_data = user_cache_data.first
 
     assert_equal @gem_repo, user_cache_data.first
@@ -414,6 +417,24 @@ class TestGemSourceInfoCache < RubyGemTestCase
     @sic.set_cache_data({ @gem_repo => @sice_new })
     @sic.update
     @sic.write_cache
+
+    assert_equal [[@gem_repo, @sys_sice]],
+                 read_cache(@sic.system_cache_file).to_a.sort
+    assert_equal [[@gem_repo, @sys_sice]],
+                 read_cache(@sic.user_cache_file).to_a.sort
+    assert_equal [[@gem_repo, @sice_new]],
+                 read_cache(@sic.latest_user_cache_file).to_a.sort
+  end
+
+  def test_write_cache_user_only_latest
+    FileUtils.chmod 0444, @sic.system_cache_file
+    @sic.set_cache_data({@gem_repo => @sice_new})
+    @sic.update
+    @sic.write_cache
+
+    assert File.exist?(@sic.user_cache_file), 'user_cache_file'
+    assert File.exist?(@sic.latest_user_cache_file),
+           'latest_user_cache_file exists'
 
     assert_equal [[@gem_repo, @sys_sice]],
                  read_cache(@sic.system_cache_file).to_a.sort

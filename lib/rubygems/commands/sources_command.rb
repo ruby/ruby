@@ -69,7 +69,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
     end
 
     if options[:update] then
-      Gem::SourceInfoCache.cache.refresh true
+      Gem::SourceInfoCache.cache true
       Gem::SourceInfoCache.cache.flush
 
       say "source cache successfully updated"

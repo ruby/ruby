@@ -216,6 +216,8 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
     assert File.exist?(File.join(gemhome2, 'specifications',
                                  "#{@a1.full_name}.gemspec"))
+    assert File.exist?(File.join(gemhome2, 'cache',
+                                 "#{@a1.full_name}.gem"))
   end
 
   def test_install_domain_both

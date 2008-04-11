@@ -76,8 +76,9 @@ gems:
 
   # don't let 1.8 and 1.9 autotest collide
   RUBY_VERSION =~ /(\d+)\.(\d+)\.(\d+)/
-  PROXY_PORT = 12345 + $1.to_i * 100 + $2.to_i * 10 + $3.to_i
-  SERVER_PORT = 23456 + $1.to_i * 100 + $2.to_i * 10 + $3.to_i
+  # don't let parallel runners collide
+  PROXY_PORT = process_based_port + 100 + $1.to_i * 100 + $2.to_i * 10 + $3.to_i
+  SERVER_PORT = process_based_port + 200 + $1.to_i * 100 + $2.to_i * 10 + $3.to_i
 
   def setup
     super

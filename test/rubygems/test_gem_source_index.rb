@@ -395,13 +395,31 @@ class TestGemSourceIndex < RubyGemTestCase
     assert_equal [updated_platform.name], @source_index.outdated
   end
 
+  def test_refresh_bang
+    a1_spec = File.join @gemhome, "specifications", "#{@a1.full_name}.gemspec" 
+
+    FileUtils.mv a1_spec, @tempdir
+
+    source_index = Gem::SourceIndex.from_installed_gems
+
+    assert !source_index.gems.include?(@a1.full_name)
+
+    FileUtils.mv File.join(@tempdir, "#{@a1.full_name}.gemspec"), a1_spec
+
+    source_index.refresh!
+
+    assert source_index.gems.include?(@a1.full_name)
+  end
+
   def test_remove_extra
     @source_index.add_spec @a1
     @source_index.add_spec @a2
+    @source_index.add_spec @pl1
 
-    @source_index.remove_extra [@a1.full_name]
+    @source_index.remove_extra [@a1.full_name, @pl1.full_name]
 
-    assert_equal [@a1.full_name], @source_index.gems.map { |n,s| n }
+    assert_equal [@a1.full_name],
+                 @source_index.gems.map { |n,s| n }.sort
   end
 
   def test_remove_extra_no_changes

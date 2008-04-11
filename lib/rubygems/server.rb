@@ -29,7 +29,7 @@ class Gem::Server
 
   DOC_TEMPLATE = <<-'WEBPAGE'
   <?xml version="1.0" encoding="iso-8859-1"?>
-  <!DOCTYPE html 
+  <!DOCTYPE html
        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -51,7 +51,7 @@ class Gem::Server
         <h1>Summary</h1>
   <p>There are <%=values["gem_count"]%> gems installed:</p>
   <p>
-  <%= values["specs"].map { |v| "<a href=\"#{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>. 
+  <%= values["specs"].map { |v| "<a href=\"##{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>.
   <h1>Gems</h1>
 
   <dl>
@@ -77,7 +77,7 @@ class Gem::Server
 
   	<% if spec["has_deps"] then %>
   	 - depends on
-  		<%= spec["dependencies"].map { |v| "<a href=\"#{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>. 
+  		<%= spec["dependencies"].map { |v| "<a href=\"##{v["name"]}\">#{v["name"]}</a>" }.join ', ' %>.
   	<% end %>
   	</dt>
   	<dd>
@@ -91,8 +91,8 @@ class Gem::Server
   		    Executables are
   		<%end%>
 
-  		<%= spec["executables"].map { |v| "<span class=\"context-item-name\">#{v["executable"]}</span>"}.join ', ' %>. 
-  		
+  		<%= spec["executables"].map { |v| "<span class=\"context-item-name\">#{v["executable"]}</span>"}.join ', ' %>.
+
   	<%end%>
   	<br/>
   	<br/>

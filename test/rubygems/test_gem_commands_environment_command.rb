@@ -20,7 +20,7 @@ class TestGemCommandsEnvironmentCommand < RubyGemTestCase
       @cmd.execute
     end
 
-    assert_match %r|RUBYGEMS VERSION: (\d\.)+\d \((\d\.)+\d\)|, @ui.output
+    assert_match %r|RUBYGEMS VERSION: (\d\.)+\d|, @ui.output
     assert_match %r|RUBY VERSION: \d\.\d\.\d \(.*\) \[.*\]|, @ui.output
     assert_match %r|INSTALLATION DIRECTORY: #{Regexp.escape @gemhome}|,
                  @ui.output

@@ -72,7 +72,7 @@ class Gem::DependencyInstaller
         end
 
         all = requirements.length > 1 ||
-                requirements.first != ">=" || requirements.first != ">"
+                (requirements.first != ">=" and requirements.first != ">")
 
         found = Gem::SourceInfoCache.search_with_source dep, true, all
 
@@ -189,7 +189,13 @@ class Gem::DependencyInstaller
       say "Installing gem #{spec.full_name}" if Gem.configuration.really_verbose
 
       _, source_uri = @specs_and_sources.assoc spec
-      local_gem_path = Gem::RemoteFetcher.fetcher.download spec, source_uri
+      begin
+        local_gem_path = Gem::RemoteFetcher.fetcher.download spec, source_uri,
+                                                             @install_dir
+      rescue Gem::RemoteFetcher::FetchError
+        next if @force
+        raise
+      end
 
       inst = Gem::Installer.new local_gem_path,
                                 :env_shebang => @env_shebang,

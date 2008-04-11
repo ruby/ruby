@@ -82,13 +82,15 @@ class Gem::Commands::QueryCommand < Gem::Command
       say "*** REMOTE GEMS ***"
       say
 
+      all = options[:all]
+
       begin
-        Gem::SourceInfoCache.cache.refresh options[:all]
+        Gem::SourceInfoCache.cache all
       rescue Gem::RemoteFetcher::FetchError
         # no network
       end
 
-      output_query_results Gem::SourceInfoCache.search(name, false, true)
+      output_query_results Gem::SourceInfoCache.search(name, false, all)
     end
   end
 

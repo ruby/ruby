@@ -39,7 +39,7 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
     when nil then
       out = "RubyGems Environment:\n"
 
-      out << "  - RUBYGEMS VERSION: #{Gem::RubyGemsVersion} (#{Gem::RubyGemsPackageVersion})\n"
+      out << "  - RUBYGEMS VERSION: #{Gem::RubyGemsVersion}\n"
 
       out << "  - RUBY VERSION: #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}"
       out << " patchlevel #{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
