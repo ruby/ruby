@@ -1103,16 +1103,15 @@ process_options(VALUE arg)
 	return Qtrue;
     }
 
-    if (tree) {
-	if (opt->do_print) {
-	    tree = rb_parser_append_print(parser, tree);
-	}
-	if (opt->do_loop) {
-	    tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
-	}
+    if (opt->do_print) {
+	tree = rb_parser_append_print(parser, tree);
+    }
+    if (opt->do_loop) {
+	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
     }
 
-    return (VALUE)tree;
+    return rb_iseq_new(tree, rb_str_new2("<main>"),
+		       rb_str_new2(opt->script), Qfalse, ISEQ_TYPE_TOP);
 }
 
 static NODE *

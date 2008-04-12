@@ -1,3 +1,17 @@
+Sat Apr 12 12:41:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ruby_exec_node, ruby_run_node), ruby.c (process_options):
+	  use iseq instead of NODE.
+
+	* gc.c (source_filenames): removed.
+
+	* include/ruby/intern.h, parse.y (yycompile, parser_mark, parser_free,
+	  ripper_initialize): rb_source_filename() is no longer used.
+
+	* compile.c, compile.h (ERROR_ARGS), parse.y (node_newnode, fixpos,
+	  parser_warn, e_option_supplied, warn_unless_e_option, range_op,
+	  cond0): nd_file is no longer used.
+
 Sat Apr 12 05:55:57 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*, test/rubygems*:  Update to RubyGems 1.1.1 r1701.

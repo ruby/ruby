@@ -210,7 +210,7 @@ r_value(VALUE value)
   break;                                           \
 }
 
-#define ERROR_ARGS (node)->nd_file, nd_line(node),
+#define ERROR_ARGS ruby_sourcefile, nd_line(node),
 
 
 #define COMPILE_OK 1

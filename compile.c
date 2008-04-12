@@ -132,6 +132,8 @@ iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
     return COMPILE_OK;
 }
 
+#define ruby_sourcefile		RSTRING_PTR(iseq->filename)
+
 static int
 iseq_add_mark_object_compile_time(rb_iseq_t *iseq, VALUE v)
 {

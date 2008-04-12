@@ -214,22 +214,19 @@ ruby_cleanup(int ex)
 }
 
 int
-ruby_exec_node(void *n, char *file)
+ruby_exec_node(void *n, const char *file)
 {
     int state;
-    VALUE val;
-    NODE *node = n;
+    VALUE iseq = (VALUE)n;
     rb_thread_t *th = GET_THREAD();
 
-    if (!node) return 0;
+    if (!n) return 0;
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	VALUE iseq = rb_iseq_new(n, rb_str_new2("<main>"),
-				 rb_str_new2(file), Qfalse, ISEQ_TYPE_TOP);
 	SAVE_ROOT_JMPBUF(th, {
 	    th->base_block = 0;
-	    val = rb_iseq_eval(iseq);
+	    rb_iseq_eval(iseq);
 	});
     }
     POP_TAG();
@@ -245,17 +242,17 @@ ruby_stop(int ex)
 int
 ruby_run_node(void *n)
 {
-    NODE *node = (NODE *)n;
+    VALUE v = (VALUE)n;
 
-    switch ((VALUE)n) {
+    switch (v) {
       case Qtrue:  return EXIT_SUCCESS;
       case Qfalse: return EXIT_FAILURE;
     }
-    if (FIXNUM_P((VALUE)n)) {
-	return FIX2INT((VALUE)n);
+    if (FIXNUM_P(v)) {
+	return FIX2INT(v);
     }
     Init_stack((void *)&n);
-    return ruby_cleanup(ruby_exec_node(node, node->nd_file));
+    return ruby_cleanup(ruby_exec_node(n, 0));
 }
 
 VALUE

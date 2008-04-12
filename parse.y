@@ -4738,7 +4738,7 @@ yycompile0(VALUE arg, int tracing)
 static NODE*
 yycompile(struct parser_params *parser, const char *f, int line)
 {
-    ruby_sourcefile = rb_source_filename(f);
+    ruby_sourcefile = ruby_strdup(f);
     ruby_sourceline = line - 1;
     return (NODE *)ruby_suppress_tracing(yycompile0, (VALUE)parser, Qtrue);
 }
@@ -7316,7 +7316,6 @@ node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE 
 {
     NODE *n = (rb_node_newnode)(type, a0, a1, a2);
     nd_set_line(n, ruby_sourceline);
-    n->nd_file = ruby_sourcefile;
     return n;
 }
 
@@ -7348,21 +7347,22 @@ fixpos(NODE *node, NODE *orig)
     if (!node) return;
     if (!orig) return;
     if (orig == (NODE*)1) return;
-    node->nd_file = orig->nd_file;
     nd_set_line(node, nd_line(orig));
 }
 
 static void
-parser_warning(NODE *node, const char *mesg)
+parser_warning(struct parser_params *parser, NODE *node, const char *mesg)
 {
-    rb_compile_warning(node->nd_file, nd_line(node), "%s", mesg);
+    rb_compile_warning(ruby_sourcefile, nd_line(node), "%s", mesg);
 }
+#define parser_warning(node, mesg) parser_warning(parser, node, mesg)
 
 static void
-parser_warn(NODE *node, const char *mesg)
+parser_warn(struct parser_params *parser, NODE *node, const char *mesg)
 {
-    rb_compile_warn(node->nd_file, nd_line(node), "%s", mesg);
+    rb_compile_warn(ruby_sourcefile, nd_line(node), "%s", mesg);
 }
+#define parser_warn(node, mesg) parser_warn(parser, node, mesg)
 
 static NODE*
 block_append_gen(struct parser_params *parser, NODE *head, NODE *tail)
@@ -8144,23 +8144,23 @@ assign_in_cond(struct parser_params *parser, NODE *node)
 }
 
 static int
-e_option_supplied(NODE *node)
+e_option_supplied(struct parser_params *parser)
 {
-    if (strcmp(node->nd_file, "-e") == 0)
+    if (strcmp(ruby_sourcefile, "-e") == 0)
 	return Qtrue;
     return Qfalse;
 }
 
 static void
-warn_unless_e_option(NODE *node, const char *str)
+warn_unless_e_option(struct parser_params *parser, NODE *node, const char *str)
 {
-    if (!e_option_supplied(node)) parser_warn(node, str);
+    if (!e_option_supplied(parser)) parser_warn(node, str);
 }
 
 static void
-warning_unless_e_option(NODE *node, const char *str)
+warning_unless_e_option(struct parser_params *parser, NODE *node, const char *str)
 {
-    if (!e_option_supplied(node)) parser_warning(node, str);
+    if (!e_option_supplied(parser)) parser_warning(node, str);
 }
 
 static NODE *cond0(struct parser_params*,NODE*);
@@ -8170,14 +8170,14 @@ range_op(struct parser_params *parser, NODE *node)
 {
     enum node_type type;
 
-    if (!e_option_supplied(node)) return node;
+    if (!e_option_supplied(parser)) return node;
     if (node == 0) return 0;
 
     value_expr(node);
     node = cond0(parser, node);
     type = nd_type(node);
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
-	warn_unless_e_option(node, "integer literal in conditional range");
+	warn_unless_e_option(parser, node, "integer literal in conditional range");
 	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."))));
     }
     return node;
@@ -8219,7 +8219,7 @@ cond0(struct parser_params *parser, NODE *node)
 
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
-	warning_unless_e_option(node, "regex literal in condition");
+	warning_unless_e_option(parser, node, "regex literal in condition");
 	return NEW_MATCH2(node, NEW_GVAR(rb_intern("$_")));
 
       case NODE_AND:
@@ -8234,7 +8234,7 @@ cond0(struct parser_params *parser, NODE *node)
 	node->nd_end = range_op(parser, node->nd_end);
 	if (nd_type(node) == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (nd_type(node) == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
-	if (!e_option_supplied(node)) {
+	if (!e_option_supplied(parser)) {
 	    int b = literal_node(node->nd_beg);
 	    int e = literal_node(node->nd_end);
 	    if ((b == 1 && e == 1) || (b + e >= 2 && RTEST(ruby_verbose))) {
@@ -8249,7 +8249,7 @@ cond0(struct parser_params *parser, NODE *node)
 
       case NODE_LIT:
 	if (TYPE(node->nd_lit) == T_REGEXP) {
-	    warn_unless_e_option(node, "regex literal in condition");
+	    warn_unless_e_option(parser, node, "regex literal in condition");
 	    nd_set_type(node, NODE_MATCH);
 	}
 	else {
@@ -9311,8 +9311,6 @@ parser_initialize(struct parser_params *parser)
     parser->enc = rb_usascii_encoding();
 }
 
-extern void rb_mark_source_filename(char *);
-
 #ifdef RIPPER
 #define parser_mark ripper_parser_mark
 #define parser_free ripper_parser_free
@@ -9331,7 +9329,6 @@ parser_mark(void *ptr)
     rb_gc_mark((VALUE)p->parser_eval_tree_begin) ;
     rb_gc_mark((VALUE)p->parser_eval_tree) ;
     rb_gc_mark(p->debug_lines);
-    rb_mark_source_filename(p->parser_ruby_sourcefile);
 #else
     rb_gc_mark(p->parser_ruby_sourcefile_string);
     rb_gc_mark(p->delayed);
@@ -9358,6 +9355,9 @@ parser_free(void *ptr)
 	prev = local->prev;
 	xfree(local);
     }
+#ifndef RIPPER
+    xfree(p->parser_ruby_sourcefile);
+#endif
     xfree(p);
 }
 
@@ -9784,7 +9784,6 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 {
     struct parser_params *parser;
     VALUE src, fname, lineno;
-    VALUE fname2;
 
     Data_Get_Struct(self, struct parser_params, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
@@ -9798,17 +9797,15 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
     parser->parser_lex_input = src;
     parser->eofp = Qfalse;
     if (NIL_P(fname)) {
-        fname2 = STR_NEW2(" (ripper)");
+        fname = STR_NEW2("(ripper)");
     }
     else {
         StringValue(fname);
-        fname2 = rb_usascii_str_new2(" ");
-        rb_str_append(fname2, fname);
     }
     parser_initialize(parser);
 
-    parser->parser_ruby_sourcefile_string = fname2;
-    parser->parser_ruby_sourcefile = RSTRING_PTR(fname2)+1;
+    parser->parser_ruby_sourcefile_string = fname;
+    parser->parser_ruby_sourcefile = RSTRING_PTR(fname);
     parser->parser_ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
 
     return Qnil;

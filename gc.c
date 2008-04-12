@@ -665,47 +665,6 @@ init_mark_stack(void)
 
 #define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
 
-static st_table *source_filenames;
-
-char *
-rb_source_filename(const char *f)
-{
-    st_data_t name;
-
-    if (!st_lookup(source_filenames, (st_data_t)f, &name)) {
-	long len = strlen(f) + 1;
-	char *ptr = ALLOC_N(char, len + 1);
-
-	name = (st_data_t)ptr;
-	*ptr++ = 0;
-	MEMCPY(ptr, f, char, len);
-	st_add_direct(source_filenames, (st_data_t)ptr, name);
-	return ptr;
-    }
-    return (char *)name + 1;
-}
-
-void
-rb_mark_source_filename(char *f)
-{
-    if (f) {
-	f[-1] = 1;
-    }
-}
-
-static int
-sweep_source_filename(char *key, char *value)
-{
-    if (*value) {
-	*value = 0;
-	return ST_CONTINUE;
-    }
-    else {
-	free(value);
-	return ST_DELETE;
-    }
-}
-
 static void gc_mark(VALUE ptr, int lev);
 static void gc_mark_children(VALUE ptr, int lev);
 
@@ -924,7 +883,6 @@ gc_mark_children(VALUE ptr, int lev)
 	break;
 
       case T_NODE:
-	rb_mark_source_filename(obj->as.node.nd_file);
 	switch (nd_type(obj)) {
 	  case NODE_IF:		/* 1,2,3 */
 	  case NODE_FOR:
@@ -1220,10 +1178,6 @@ gc_sweep(void)
     free_min = free_min * 0.2;
     if (free_min < FREE_MIN)
         free_min = FREE_MIN;
-
-    if (source_filenames) {
-        st_foreach(source_filenames, sweep_source_filename, 0);
-    }
 
     freelist = 0;
     final_list = deferred_final_list;
@@ -2334,8 +2288,6 @@ Init_GC(void)
     rb_global_variable(&finalizers);
     rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
-
-    source_filenames = st_init_strtable();
 
     rb_global_variable(&nomem_error);
     nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");

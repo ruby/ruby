@@ -325,7 +325,6 @@ void ruby_set_stack_size(size_t);
 NORETURN(void rb_memerror(void));
 int ruby_stack_check(void);
 int ruby_stack_length(VALUE**);
-char *rb_source_filename(const char*);
 void rb_gc_mark_locations(VALUE*, VALUE*);
 void rb_mark_tbl(struct st_table*);
 void rb_mark_set(struct st_table*);
