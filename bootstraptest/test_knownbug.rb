@@ -110,3 +110,48 @@ assert_equal %q{[:bar, :foo]}, %q{
   foo
 }, "[ ruby-Bugs-19304 ]"
 
+assert_equal 'ok', %q{
+  def a() end
+  begin
+    if defined?(a(1).a)
+      :ok
+    else
+      :ng
+    end
+  rescue
+    :ng
+  end
+}, '[ruby-core:16010]'
+
+assert_equal 'ok', %q{
+  def a() end
+  begin
+    if defined?(a::B)
+      :ok
+    else
+      :ng
+    end
+  rescue
+    :ng
+  end
+}, '[ruby-core:16010]'
+
+
+assert_equal 'ok', %q{
+  class Module
+    def my_module_eval(&block)
+      module_eval(&block)
+    end
+  end
+  class String
+    Integer.my_module_eval do
+      def hoge; end
+    end
+  end
+  if Integer.instance_methods(false).map{|m|m.to_sym}.include?(:hoge) &&
+     !String.instance_methods(false).map{|m|m.to_sym}.include?(:hoge)
+    :ok
+  else
+    :ng
+  end
+}, "[ruby-dev:34236]"
