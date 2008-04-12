@@ -12,6 +12,13 @@ Sat Apr 12 12:41:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  parser_warn, e_option_supplied, warn_unless_e_option, range_op,
 	  cond0): nd_file is no longer used.
 
+Sat Apr 12 12:17:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* prelude.rb (require_relative): move require_relative from
+	  lib/require_relative.rb.  [ruby-core:16356]
+
+	* lib/require_relative.rb: removed.
+
 Sat Apr 12 05:55:57 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*, test/rubygems*:  Update to RubyGems 1.1.1 r1701.

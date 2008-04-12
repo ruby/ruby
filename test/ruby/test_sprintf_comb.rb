@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'require_relative'
 require_relative 'allpairs'
 
 class TestSprintfComb < Test::Unit::TestCase

@@ -74,7 +74,6 @@ class TestRubyYield < Test::Unit::TestCase
   end
 end
 
-require 'require_relative'
 require_relative 'sentence'
 class TestRubyYieldGen < Test::Unit::TestCase
   Syntax = {

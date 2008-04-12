@@ -1,5 +1,4 @@
 require 'test/unit'
-require 'require_relative'
 require_relative 'ut_eof'
 
 class TestPipe < Test::Unit::TestCase

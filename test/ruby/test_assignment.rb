@@ -490,7 +490,6 @@ class TestAssignment < Test::Unit::TestCase
   end
 end
 
-require 'require_relative'
 require_relative 'sentence'
 class TestAssignmentGen < Test::Unit::TestCase
   Syntax = {

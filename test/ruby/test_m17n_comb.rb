@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'stringio'
-require 'require_relative'
 require_relative 'allpairs'
 
 class TestM17NComb < Test::Unit::TestCase
