@@ -1,3 +1,8 @@
+Sun Apr 13 18:52:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (lock_func): should not check interrupts in
+	  blocking region.  [ruby-dev:34378]
+
 Sat Apr 12 12:41:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_exec_node, ruby_run_node), ruby.c (process_options):

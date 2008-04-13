@@ -2317,23 +2317,23 @@ rb_mutex_trylock(VALUE self)
     return locked;
 }
 
-static VALUE
+static int
 lock_func(rb_thread_t *th, mutex_t *mutex)
 {
+    int interrupted = Qfalse;
+
     native_mutex_lock(&mutex->lock);
-    while (mutex->th) {
+    while (mutex->th || (mutex->th = th, 0)) {
 	mutex->cond_waiting++;
 	native_cond_wait(&mutex->cond, &mutex->lock);
 
 	if (th->interrupt_flag) {
-	    native_mutex_unlock(&mutex->lock);
-	    RUBY_VM_CHECK_INTS();
-	    native_mutex_lock(&mutex->lock);
+	    interrupted = Qtrue;
+	    break;
 	}
     }
-    mutex->th = th;
     native_mutex_unlock(&mutex->lock);
-    return Qnil;
+    return interrupted;
 }
 
 static void
@@ -2364,11 +2364,15 @@ rb_mutex_lock(VALUE self)
 	GetMutexPtr(self, mutex);
 
 	while (mutex->th != th) {
+	    int interrupted;
+
 	    BLOCKING_REGION({
-		lock_func(th, mutex);
+		interrupted = lock_func(th, mutex);
 	    }, lock_interrupt, mutex);
 
-	    RUBY_VM_CHECK_INTS();
+	    if (interrupted) {
+		RUBY_VM_CHECK_INTS();
+	    }
 	}
     }
     return self;
