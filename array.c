@@ -2938,24 +2938,40 @@ rb_ary_choice(VALUE ary)
 /*
  *  call-seq:
  *     ary.cycle {|obj| block }
+ *     ary.cycle(n) {|obj| block }
  *  
- *  Calls <i>block</i> repeatedly forever.
+ *  Calls <i>block</i> for each element repeatedly _n_ times or
+ *  forever if none or nil is given.  If a non-positive number is
+ *  given or the array is empty, does nothing.  Returns nil if the
+ *  loop has finished without getting interrupted.
  *     
  *     a = ["a", "b", "c"]
  *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+ *     a.cycle(2) {|x| puts x }  # print, a, b, c, a, b, c.
  *     
  */
 
 static VALUE
-rb_ary_cycle(VALUE ary)
+rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 {
-    long i;
+    long n, i;
+    VALUE nv = Qnil;
 
-    RETURN_ENUMERATOR(ary, 0, 0);
-    while (RARRAY_LEN(ary) > 0) {
-	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    rb_yield(RARRAY_PTR(ary)[i]);
-	}
+    rb_scan_args(argc, argv, "01", &nv);
+
+    RETURN_ENUMERATOR(ary, argc, argv);
+    if (NIL_P(nv)) {
+        n = -1;
+    }
+    else {
+        n = NUM2LONG(nv);
+        if (n <= 0) return Qnil;
+    }
+
+    while (RARRAY_LEN(ary) > 0 && (n < 0 || 0 < n--)) {
+        for (i=0; i<RARRAY_LEN(ary); i++) {
+            rb_yield(RARRAY_PTR(ary)[i]);
+        }
     }
     return Qnil;
 }
@@ -3430,7 +3446,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
-    rb_define_method(rb_cArray, "cycle", rb_ary_cycle, 0);
+    rb_define_method(rb_cArray, "cycle", rb_ary_cycle, -1);
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
     rb_define_method(rb_cArray, "product", rb_ary_product, -1);

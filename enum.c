@@ -1656,33 +1656,48 @@ cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.cycle {|obj| block }
+ *     enum.cycle(n) {|obj| block }
  *  
- *  Calls <i>block</i> for each element of <i>enum</i> repeatedly
- *  forever. Returns nil if and only if the collection is empty.
+ *  Calls <i>block</i> for each element of <i>enum</i> repeatedly _n_
+ *  times or forever if none or nil is given.  If a non-positive
+ *  number is given or the collection is empty, does nothing.  Returns
+ *  nil if the loop has finished without getting interrupted.
+ *
  *  Enumerable#cycle saves elements in an internal array so changes
  *  to <i>enum</i> after the first pass have no effect.
  *     
  *     a = ["a", "b", "c"]
  *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+ *     a.cycle(2) {|x| puts x }  # print, a, b, c, a, b, c.
  *     
  */
 
 static VALUE
-enum_cycle(VALUE obj)
+enum_cycle(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
-    long i, len;
+    VALUE nv = Qnil;
+    long n, i, len;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    rb_scan_args(argc, argv, "01", &nv);
+
+    RETURN_ENUMERATOR(obj, argc, argv);
+    if (NIL_P(nv)) {
+        n = -1;
+    }
+    else {
+        n = NUM2LONG(nv);
+        if (n <= 0) return Qnil;
+    }
     ary = rb_ary_new();
     RBASIC(ary)->klass = 0;
     rb_block_call(obj, id_each, 0, 0, cycle_i, ary);
     len = RARRAY_LEN(ary);
     if (len == 0) return Qnil;
-    for (;;) {
-	for (i=0; i<len; i++) {
-	    rb_yield(RARRAY_PTR(ary)[i]);
-	}
+    while (n < 0 || 0 < --n) {
+        for (i=0; i<len; i++) {
+            rb_yield(RARRAY_PTR(ary)[i]);
+        }
     }
     return Qnil;		/* not reached */
 }
@@ -1741,7 +1756,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "take_while", enum_take_while, 0);
     rb_define_method(rb_mEnumerable, "drop", enum_drop, 1);
     rb_define_method(rb_mEnumerable, "drop_while", enum_drop_while, 0);
-    rb_define_method(rb_mEnumerable, "cycle", enum_cycle, 0);
+    rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
 
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");
