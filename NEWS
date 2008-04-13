@@ -64,6 +64,10 @@ with all sufficient information, see the ChangeLog file.
   * Integer#even? implemented.
   * Integer#pred implemented.
 
+  * Object#tap implemented.
+
+  * Process.exec implemented.
+
   * Regexp.union accepts an array of patterns.
 
   * StopIteration
@@ -71,9 +75,7 @@ with all sufficient information, see the ChangeLog file.
     New exception class that causes Kernel#loop to stop iteration when
     raised.
 
-  * Symbol#to_proc
-
-    New method.
+  * Symbol#to_proc implemented.
 
 * enumerator
 
