@@ -71,6 +71,10 @@ with all sufficient information, see the ChangeLog file.
     New exception class that causes Kernel#loop to stop iteration when
     raised.
 
+  * Symbol#to_proc
+
+    New method.
+
 * enumerator
 
   * Enumerator is now a built-in module.  The #next and #rewind

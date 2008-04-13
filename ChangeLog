@@ -1,3 +1,8 @@
+Sun Apr 13 15:55:52 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* object.c (sym_to_proc): new method Symbol#to_proc; backported
+	  from 1.9. bug#19012
+
 Fri Apr 11 19:14:30 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* object.c (rb_obj_tap): new method Object#tap; backported from
