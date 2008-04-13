@@ -510,7 +510,8 @@ rb_obj_is_kind_of(obj, c)
  */
 
 VALUE
-rb_obj_tap(VALUE obj)
+rb_obj_tap(obj)
+    VALUE obj;
 {
     rb_yield(obj);
     return obj;
