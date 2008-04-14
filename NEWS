@@ -54,6 +54,8 @@ with all sufficient information, see the ChangeLog file.
 
     New methods for various enumeration defined by the enumerator library.
 
+  * Enumerator#count
+  * Enumerable#find_index
   * Enumerable#first
   * Enumerable#group_by
 

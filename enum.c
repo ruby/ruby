@@ -114,6 +114,75 @@ enum_grep(obj, pat)
 }
 
 static VALUE
+count_i(i, arg)
+     VALUE i;
+     VALUE *arg;
+{
+    if (rb_equal(i, arg[0])) {
+	arg[1]++;
+    }
+    return Qnil;
+}
+
+static VALUE
+count_iter_i(i, n)
+     VALUE i;
+     long *n;
+{
+    if (RTEST(rb_yield(i))) {
+	(*n)++;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.count(item)             => int
+ *     enum.count {| obj | block }  => int
+ *  
+ *  Returns the number of items in <i>enum</i> for which equals to <i>item</i>.
+ *  If a block is given, counts the number of elements yielding a true value.
+ *     
+ *     ary = [1, 2, 4, 2]
+ *     ary.count(2)          # => 2
+ *     ary.count{|x|x%2==0}  # => 3
+ *     
+ */
+
+static VALUE
+enum_count(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    if (argc == 1) {
+	VALUE item, args[2];
+
+	if (rb_block_given_p()) {
+	    rb_warn("given block not used");
+	}
+	rb_scan_args(argc, argv, "1", &item);
+	args[0] = item;
+	args[1] = 0;
+	rb_block_call(obj, id_each, 0, 0, count_i, (VALUE)&args);
+	return INT2NUM(args[1]);
+    }
+    else if (argc == 0) {
+	long n;
+
+	RETURN_ENUMERATOR(obj, 0, 0);
+	n = 0;
+	rb_block_call(obj, id_each, 0, 0, count_iter_i, (VALUE)&n);
+	return INT2NUM(n);
+    }
+    else {
+        VALUE v;
+	rb_scan_args(argc, argv, "1", &v);
+        return Qnil; /* not reached */
+    }
+}
+
+static VALUE
 find_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -158,6 +227,79 @@ enum_find(argc, argv, obj)
 	return rb_funcall(if_none, rb_intern("call"), 0, 0);
     }
     return Qnil;
+}
+
+static VALUE
+find_index_i(i, memop)
+    VALUE i;
+    VALUE memop;
+{
+    VALUE *memo = (VALUE*)memop;
+
+    if (rb_equal(i, memo[2])) {
+	memo[0] = UINT2NUM(memo[1]);
+	rb_iter_break();
+    }
+    memo[1]++;
+    return Qnil;
+}
+
+static VALUE
+find_index_iter_i(i, memop)
+    VALUE i;
+    VALUE memop;
+{
+    VALUE *memo = (VALUE*)memop;
+
+    if (RTEST(rb_yield(i))) {
+	memo[0] = UINT2NUM(memo[1]);
+	rb_iter_break();
+    }
+    memo[1]++;
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.find_index(value)            => int or nil
+ *     enum.find_index {| obj | block }  => int or nil
+ *  
+ *  Compares each entry in <i>enum</i> with <em>value</em> or passes
+ *  to <em>block</em>.  Returns the index for the first for which the
+ *  evaluated value is non-false.  If no object matches, returns
+ *  <code>nil</code>
+ *     
+ *     (1..10).find_index  {|i| i % 5 == 0 and i % 7 == 0 }   #=> nil
+ *     (1..100).find_index {|i| i % 5 == 0 and i % 7 == 0 }   #=> 34
+ *     (1..100).find_index(50)                                #=> 49
+ *     
+ */
+
+static VALUE
+enum_find_index(argc, argc, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE memo[3];	/* [return value, current index, condition value] */
+    rb_block_call_func *func;
+
+    if (argc == 0) {
+        RETURN_ENUMERATOR(obj, 0, 0);
+        func = find_index_iter_i;
+    }
+    else {
+	rb_scan_args(argc, argv, "1", &memo[2]);
+	if (rb_block_given_p()) {
+	    rb_warn("given block not used");
+	}
+        func = find_index_i;
+    }
+
+    memo[0] = Qnil;
+    memo[1] = 0;
+    rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
+    return memo[0];
 }
 
 static VALUE
@@ -1050,8 +1192,10 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"sort", enum_sort, 0);
     rb_define_method(rb_mEnumerable,"sort_by", enum_sort_by, 0);
     rb_define_method(rb_mEnumerable,"grep", enum_grep, 1);
+    rb_define_method(rb_mEnumerable,"count", enum_count, -1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
     rb_define_method(rb_mEnumerable,"detect", enum_find, -1);
+    rb_define_method(rb_mEnumerable,"find_index", enum_find_index, 0);
     rb_define_method(rb_mEnumerable,"find_all", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);

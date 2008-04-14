@@ -945,6 +945,8 @@ rb_ary_fetch(argc, argv, ary)
  *     a.index("b")        #=> 1
  *     a.index("z")        #=> nil
  *     a.index{|x|x=="b"}  #=> 1
+ *
+ *  This is an alias of <code>#find_index</code>.
  */
 
 static VALUE
@@ -3157,6 +3159,7 @@ Init_Array()
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
     rb_define_alias(rb_cArray,  "size", "length");
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
+    rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
     rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
