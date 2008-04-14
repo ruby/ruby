@@ -1,3 +1,16 @@
+Mon Apr 14 19:54:21 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_flatten, rb_ary_flatten_bang): Take an optional
+	  argument that determines the level of recursion to flatten;
+	  backported from 1.9.
+
+	* array.c (rb_ary_shuffle_bang, rb_ary_shuffle, rb_ary_choice,
+	  rb_ary_cycle, rb_ary_permutation, rb_ary_combination,
+	  rb_ary_product, rb_ary_take, rb_ary_take_while, rb_ary_drop,
+	  rb_ary_drop_while): New methods: Array#shuffle, #shuffle!,
+	  #choice, #cycle, #permutation, #combination, #product, #take,
+	  #take_while, #drop, #drop_while; backported from 1.9.
+
 Mon Apr 14 19:52:35 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.h: New macro: RB_GC_GUARD().

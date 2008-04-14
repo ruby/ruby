@@ -21,6 +21,12 @@ with all sufficient information, see the ChangeLog file.
     determine if each element should be counted instead of checking if
     the element is non-nil.
 
+  * Array#flatten
+  * Array#flatten!
+
+    Takes an optional argument that determines the level of recursion
+    to flatten.
+
   * Array#index
   * Array#rindex
 
@@ -42,6 +48,20 @@ with all sufficient information, see the ChangeLog file.
 
     Take an optional argument specifying the number of elements to
     remove.
+
+  * Array#choice
+  * Array#combination
+  * Array#cycle
+  * Array#drop
+  * Array#drop_while
+  * Array#permutation
+  * Array#product
+  * Array#shuffle
+  * Array#shuffle!
+  * Array#take,
+  * Array#take_while
+
+    New methods.
 
   * Dir#each
   * Dir#foreach
