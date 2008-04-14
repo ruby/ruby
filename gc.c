@@ -84,19 +84,9 @@ void *alloca ();
 #endif
 #endif
 
-static unsigned long malloc_increase = 0;
-static unsigned long malloc_limit = GC_MALLOC_LIMIT;
 static VALUE nomem_error;
 
-static int dont_gc;
-static int during_gc;
-static int need_call_final = 0;
-static st_table *finalizer_table = 0;
-
 #define MARK_STACK_MAX 1024
-static VALUE mark_stack[MARK_STACK_MAX];
-static VALUE *mark_stack_ptr;
-static int mark_stack_overflow;
 
 int ruby_gc_debug_indent = 0;
 
@@ -139,24 +129,83 @@ typedef struct RVALUE {
 #pragma pack(pop)
 #endif
 
-static RVALUE *freelist = 0;
-static RVALUE *deferred_final_list = 0;
-
 #define HEAPS_INCREMENT 10
-static struct heaps_slot {
+struct heaps_slot {
     void *membase;
     RVALUE *slot;
     int limit;
-} *heaps;
-static int heaps_length = 0;
-static int heaps_used   = 0;
+};
 
 #define HEAP_MIN_SLOTS 10000
-static int heap_slots = HEAP_MIN_SLOTS;
-
 #define FREE_MIN  4096
 
-static RVALUE *himem, *lomem;
+struct gc_list {
+    VALUE *varptr;
+    struct gc_list *next;
+};
+
+typedef struct {
+    struct {
+	unsigned long limit;
+	unsigned long increase;
+    } params;
+    struct {
+	int slots;
+	struct heaps_slot *ptr;
+	int length;
+	int used;
+	RVALUE *freelist;
+	RVALUE *range[2];
+    } heap;
+    struct {
+	int dont_gc;
+	int during_gc;
+    } flags;
+    struct {
+	int need_call;
+	st_table *table;
+	RVALUE *deferred;
+    } final;
+    struct {
+	VALUE buffer[MARK_STACK_MAX];
+	VALUE *ptr;
+	int overflow;
+    } markstack;
+    struct gc_list *global_list;
+} rb_objspace_t;
+
+static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
+/* #define objspace GET_VM()->objspace */
+#define malloc_limit		objspace->params.limit
+#define malloc_increase 	objspace->params.increase
+#define heap_slots		objspace->heap.slots
+#define heaps			objspace->heap.ptr
+#define heaps_length		objspace->heap.length
+#define heaps_used		objspace->heap.used
+#define freelist		objspace->heap.freelist
+#define lomem			objspace->heap.range[0]
+#define himem			objspace->heap.range[1]
+#define dont_gc 		objspace->flags.dont_gc
+#define during_gc		objspace->flags.during_gc
+#define need_call_final 	objspace->final.need_call
+#define finalizer_table 	objspace->final.table
+#define deferred_final_list	objspace->final.deferred
+#define mark_stack		objspace->markstack.buffer
+#define mark_stack_ptr		objspace->markstack.ptr
+#define mark_stack_overflow	objspace->markstack.overflow
+#define global_List		objspace->global_list
+
+rb_objspace_t *
+rb_objspace_alloc(void)
+{
+    rb_objspace_t *objspace = ALLOC(rb_objspace_t);
+    memset(objspace, 0, sizeof(*objspace));
+    malloc_limit = GC_MALLOC_LIMIT;
+    heap_slots = HEAP_MIN_SLOTS;
+    return objspace;
+}
+
+#define objspace (&rb_objspace)
 
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
@@ -370,11 +419,6 @@ rb_gc_disable(void)
 }
 
 VALUE rb_mGC;
-
-static struct gc_list {
-    VALUE *varptr;
-    struct gc_list *next;
-} *global_List = 0;
 
 void
 rb_gc_register_address(VALUE *addr)

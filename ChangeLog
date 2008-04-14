@@ -1,4 +1,6 @@
-Mon Apr 14 12:44:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Apr 14 12:47:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_objspace_t): packed globals.  [ruby-dev:34348]
 
 	* gc.c (finalizers): removed.  [ruby-dev:34349]
 
