@@ -33,4 +33,19 @@ End
   deftest_id2ref(true)
   deftest_id2ref(false)
   deftest_id2ref(nil)
+
+  def test_count_objects
+    h = {}
+    ObjectSpace.count_objects(h)
+    assert_kind_of(Hash, h)
+    assert(h.keys.all? {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
+    assert(h.values.all? {|x| x.is_a?(Integer) })
+
+    h = ObjectSpace.count_objects
+    assert_kind_of(Hash, h)
+    assert(h.keys.all? {|x| x.is_a?(Symbol) || x.is_a?(Integer) })
+    assert(h.values.all? {|x| x.is_a?(Integer) })
+
+    assert_raise(TypeError) { ObjectSpace.count_objects(1) }
+  end
 end

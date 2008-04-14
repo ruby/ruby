@@ -1,3 +1,8 @@
+Mon Apr 14 23:25:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_objectspace.rb: add a test for
+	  ObjectSpace.count_objects.
+
 Mon Apr 14 22:44:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (SET_EXTERNAL_ENCODING): avoid call rb_enc_check() on
