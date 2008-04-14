@@ -2553,8 +2553,7 @@ rb_path_end(const char *path)
 
 #define SET_EXTERNAL_ENCODING() (\
     (void)(extenc || (extenc = rb_default_external_encoding())),\
-    rb_enc_associate(result, extenc),\
-    rb_enc_check(fname, result))
+    rb_enc_associate(result, extenc))
 
 static int is_absolute_path(const char*);
 

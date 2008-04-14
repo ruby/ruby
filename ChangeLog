@@ -1,3 +1,8 @@
+Mon Apr 14 22:44:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (SET_EXTERNAL_ENCODING): avoid call rb_enc_check() on
+	  half-baked result string.
+
 Mon Apr 14 17:23:27 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c (rb_hash_delete_if, rb_hash_reject_bang, env_delete_if,
