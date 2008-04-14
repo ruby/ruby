@@ -1941,6 +1941,30 @@ get_pat(pat, quote)
     return rb_reg_regcomp(pat);
 }
 
+static VALUE
+get_pat_quoted(pat)
+     VALUE pat;
+{
+    return get_pat(pat, 1);
+}
+
+static VALUE
+regcomp_failed(str)
+    VALUE str;
+{
+    rb_raise(rb_eArgError, "invalid byte sequence");
+    /*NOTREACHED*/
+    return Qundef;
+}
+
+static VALUE
+get_arg_pat(pat, quote)
+     VALUE pat;
+{
+    return rb_rescue2(get_pat_quoted, pat,
+                      regcomp_failed, pat,
+                      rb_eRegexpError, (VALUE)0);
+}
 
 /*
  *  call-seq:
@@ -4718,6 +4742,151 @@ rb_str_center(argc, argv, str)
     return rb_str_justify(argc, argv, str, 'c');
 }
 
+/*
+ *  call-seq:
+ *     str.partition(sep)              => [head, sep, tail]
+ *  
+ *  Searches the string for <i>sep</i> and returns the part before it,
+ *  the <i>sep</i>, and the part after it.  If <i>sep</i> is not
+ *  found, returns <i>str</i> and two empty strings.  If no argument
+ *  is given, Enumerable#partition is called.
+ *     
+ *     "hello".partition("l")         #=> ["he", "l", "lo"]
+ *     "hello".partition("x")         #=> ["hello", "", ""]
+ */
+
+static VALUE
+rb_str_partition(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    VALUE sep;
+    long pos;
+
+    if (argc == 0) return rb_call_super(argc, argv);
+    rb_scan_args(argc, argv, "1", &sep);
+    if (TYPE(sep) != T_REGEXP) {
+	VALUE tmp;
+
+	tmp = rb_check_string_type(sep);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sep));
+	}
+        sep = get_arg_pat(tmp);
+    }
+    pos = rb_reg_search(sep, str, 0, 0);
+    if (pos < 0) {
+      failed:
+	return rb_ary_new3(3, str, rb_str_new(0,0),rb_str_new(0,0));
+    }
+    sep = rb_str_subpat(str, sep, 0);
+    if (pos == 0 && RSTRING(sep)->len == 0) goto failed;
+    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+		          sep,
+		          rb_str_substr(str, pos+RSTRING(sep)->len,
+					     RSTRING(str)->len-pos-RSTRING(sep)->len));
+}
+
+/*
+ *  call-seq:
+ *     str.rpartition(sep)            => [head, sep, tail]
+ *  
+ *  Searches <i>sep</i> in the string from the end of the string, and
+ *  returns the part before it, the <i>sep</i>, and the part after it.
+ *  If <i>sep</i> is not found, returns two empty strings and
+ *  <i>str</i>.
+ *     
+ *     "hello".rpartition("l")         #=> ["hel", "l", "o"]
+ *     "hello".rpartition("x")         #=> ["", "", "hello"]
+ */
+
+static VALUE
+rb_str_rpartition(str, sep)
+    VALUE str;
+    VALUE sep;
+{
+    long pos = RSTRING(str)->len;
+
+    if (TYPE(sep) != T_REGEXP) {
+	VALUE tmp;
+
+	tmp = rb_check_string_type(sep);
+	if (NIL_P(tmp)) {
+	    rb_raise(rb_eTypeError, "type mismatch: %s given",
+		     rb_obj_classname(sep));
+	}
+        sep = get_arg_pat(tmp);
+    }
+    pos = rb_reg_search(sep, str, pos, 1);
+    if (pos < 0) {
+	return rb_ary_new3(3, rb_str_new(0,0),rb_str_new(0,0), str);
+    }
+    sep = rb_reg_nth_match(0, rb_backref_get());
+    return rb_ary_new3(3, rb_str_substr(str, 0, pos),
+		          sep,
+		          rb_str_substr(str, pos+RSTRING(sep)->len,
+					     RSTRING(str)->len-pos-RSTRING(sep)->len));
+}
+
+/*
+ *  call-seq:
+ *     str.start_with?([prefix]+)   => true or false
+ *  
+ *  Returns true if <i>str</i> starts with the prefix given.
+ */
+
+static VALUE
+rb_str_start_with(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    int i;
+    long pos;
+    VALUE pat;
+
+    for (i=0; i<argc; i++) {
+	VALUE prefix = rb_check_string_type(argv[i]);
+	if (NIL_P(prefix)) continue;
+	if (RSTRING(str)->len < RSTRING(prefix)->len) continue;
+        pat = get_arg_pat(prefix);
+        if (rb_reg_search(pat, str, 0, 1) >= 0)
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     str.end_with?([suffix]+)   => true or false
+ *  
+ *  Returns true if <i>str</i> ends with the suffix given.
+ */
+
+static VALUE
+rb_str_end_with(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    int i;
+    long pos;
+    VALUE pat;
+
+    for (i=0; i<argc; i++) {
+	VALUE suffix = rb_check_string_type(argv[i]);
+	if (NIL_P(suffix)) continue;
+	if (RSTRING(str)->len < RSTRING(suffix)->len) continue;
+        pat = get_arg_pat(suffix);
+        pos = rb_reg_adjust_startpos(pat, str, RSTRING(str)->len - RSTRING(suffix)->len, 0);
+        if (rb_reg_search(pat, str, pos, 0) >= 0)
+            return Qtrue;
+    }
+    return Qfalse;
+}
+
 void
 rb_str_setter(val, id, var)
     VALUE val;
@@ -4807,6 +4976,8 @@ Init_String()
     rb_define_method(rb_cString, "to_sym", rb_str_intern, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
+    rb_define_method(rb_cString, "start_with?", rb_str_start_with, -1);
+    rb_define_method(rb_cString, "end_with?", rb_str_end_with, -1);
 
     rb_define_method(rb_cString, "scan", rb_str_scan, 1);
 
@@ -4867,6 +5038,9 @@ Init_String()
 
     rb_define_method(rb_cString, "slice", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "slice!", rb_str_slice_bang, -1);
+
+    rb_define_method(rb_cString, "partition", rb_str_partition, -1);
+    rb_define_method(rb_cString, "rpartition", rb_str_rpartition, 1);
 
     id_to_s = rb_intern("to_s");
 
