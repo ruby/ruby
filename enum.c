@@ -437,62 +437,113 @@ enum_to_a(obj)
 }
 
 static VALUE
-inject_i(i, memo)
+inject_i(i, p)
     VALUE i;
-    VALUE *memo;
+    VALUE p;
 {
-    if (*memo == Qundef) {
-        *memo = i;
+    VALUE *memo = (VALUE *)p;
+    if (memo[0] == Qundef) {
+	memo[0] = i;
     }
     else {
-        *memo = rb_yield_values(2, *memo, i);
+	memo[0] = rb_yield_values(2, memo[0], i);
+    }
+    return Qnil;
+}
+
+static VALUE
+inject_op_i(i, p)
+    VALUE i;
+    VALUE p;
+{
+    VALUE *memo = (VALUE *)p;
+
+    if (memo[0] == Qundef) {
+	memo[0] = i;
+    }
+    else {
+	memo[0] = rb_funcall(memo[0], (ID)memo[1], 1, i);
     }
     return Qnil;
 }
 
 /*
  *  call-seq:
+ *     enum.inject(initial, sym) => obj
+ *     enum.inject(sym)          => obj
  *     enum.inject(initial) {| memo, obj | block }  => obj
  *     enum.inject          {| memo, obj | block }  => obj
+ *
+ *     enum.reduce(initial, sym) => obj
+ *     enum.reduce(sym)          => obj
+ *     enum.reduce(initial) {| memo, obj | block }  => obj
+ *     enum.reduce          {| memo, obj | block }  => obj
  *  
- *  Combines the elements of <i>enum</i> by applying the block to an
- *  accumulator value (<i>memo</i>) and each element in turn. At each
- *  step, <i>memo</i> is set to the value returned by the block. The
- *  first form lets you supply an initial value for <i>memo</i>. The
- *  second form uses the first element of the collection as a the
- *  initial value (and skips that element while iterating).
- *     
+ *  Combines all elements of <i>enum</i> by applying a binary
+ *  operation, specified by a block or a symbol that names a
+ *  method or operator.
+ *
+ *  If you specify a block, then for each element in <i>enum<i>
+ *  the block is passed an accumulator value (<i>memo</i>) and the element.
+ *  If you specify a symbol instead, then each element in the collection
+ *  will be passed to the named method of <i>memo</i>.
+ *  In either case, the result becomes the new value for <i>memo</i>. 
+ *  At the end of the iteration, the final value of <i>memo</i> is the
+ *  return value fo the method.
+ *
+ *  If you do not explicitly specify an <i>initial</i> value for <i>memo</i>,
+ *  then uses the first element of collection is used as the initial value
+ *  of <i>memo</i>.
+ *
+ *  Examples:   
+ *
  *     # Sum some numbers
- *     (5..10).inject {|sum, n| sum + n }              #=> 45
+ *     (5..10).reduce(:+)                            #=> 45
+ *     # Same using a block and inject
+ *     (5..10).inject {|sum, n| sum + n }            #=> 45
  *     # Multiply some numbers
- *     (5..10).inject(1) {|product, n| product * n }   #=> 151200
- *     
+ *     (5..10).reduce(1, :*)                         #=> 151200
+ *     # Same using a block
+ *     (5..10).inject(1) {|product, n| product * n } #=> 151200
  *     # find the longest word
  *     longest = %w{ cat sheep bear }.inject do |memo,word|
  *        memo.length > word.length ? memo : word
  *     end
- *     longest                                         #=> "sheep"
- *     
- *     # find the length of the longest word
- *     longest = %w{ cat sheep bear }.inject(0) do |memo,word|
- *        memo >= word.length ? memo : word.length
- *     end
- *     longest                                         #=> 5
+ *     longest                                       #=> "sheep"
  *     
  */
-
 static VALUE
 enum_inject(argc, argv, obj)
     int argc;
-    VALUE *argv, obj;
+    VALUE *argv;
+    VALUE obj;
 {
-    VALUE memo = Qundef;
+    VALUE memo[2];
+    rb_block_call_func *iter = inject_i;
 
-    if (rb_scan_args(argc, argv, "01", &memo) == 0)
-	memo = Qundef;
-    rb_iterate(rb_each, obj, inject_i, (VALUE)&memo);
-    if (memo == Qundef) return Qnil;
-    return memo;
+    switch (rb_scan_args(argc, argv, "02", &memo[0], &memo[1])) {
+      case 0:
+	memo[0] = Qundef;
+	break;
+      case 1:
+	if (rb_block_given_p()) {
+	    break;
+	}
+	memo[1] = (VALUE)rb_to_id(memo[0]);
+	memo[0] = Qundef;
+	iter = inject_op_i;
+	break;
+      case 2:
+	if (rb_block_given_p()) {
+	    rb_warning("given block not used");
+	}
+	memo[1] = (VALUE)rb_to_id(memo[1]);
+	iter = inject_op_i;
+	break;
+    }
+    rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
+    if (memo[0] == Qundef) return Qnil;
+    return memo[0];
 }
 
 static VALUE
@@ -894,6 +945,105 @@ enum_any(obj)
 }
 
 static VALUE
+one_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    if (RTEST(i)) {
+	if (*memo == Qundef) {
+	    *memo = Qtrue;
+	}
+	else if (*memo == Qtrue) {
+	    *memo = Qfalse;
+	    rb_iter_break();
+	}
+    }
+    return Qnil;
+}
+
+static VALUE
+one_iter_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    return one_i(rb_yield(i), memo);
+}
+
+/*
+ *  call-seq:
+ *     enum.one? [{|obj| block }]   => true or false
+ *  
+ *  Passes each element of the collection to the given block. The method
+ *  returns <code>true</code> if the block returns <code>true</code>
+ *  exactly once. If the block is not given, <code>one?</code> will return
+ *  <code>true</code> only if exactly one of the collection members is
+ *  true.
+ *     
+ *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
+ *     %w{ant bear cat}.one? {|word| word.length > 4}    #=> false
+ *     %w{ant bear cat}.one? {|word| word.length < 4}    #=> false
+ *     [ nil, true, 99 ].one?                            #=> false
+ *     [ nil, true, false ].one?                         #=> true
+ *     
+ */
+
+static VALUE
+enum_one(obj)
+    VALUE obj;
+{
+    VALUE result = Qundef;
+
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? one_iter_i : one_i, (VALUE)&result);
+    if (result == Qundef) return Qfalse;
+    return result;
+}
+
+static VALUE
+none_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    if (RTEST(i)) {
+	*memo = Qfalse;
+	rb_iter_break();
+    }
+    return Qnil;
+}
+
+static VALUE
+none_iter_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    return none_i(rb_yield(i), memo);
+}
+
+/*
+ *  call-seq:
+ *     enum.none? [{|obj| block }]   => true or false
+ *  
+ *  Passes each element of the collection to the given block. The method
+ *  returns <code>true</code> if the block never returns <code>true</code>
+ *  for all elements. If the block is not given, <code>none?</code> will return
+ *  <code>true</code> only if none of the collection members is true.
+ *     
+ *     %w{ant bear cat}.none? {|word| word.length == 5}  #=> true
+ *     %w{ant bear cat}.none? {|word| word.length >= 4}  #=> false
+ *     [].none?                                          #=> true
+ *     [nil].none?                                       #=> true
+ *     [nil,false].none?                                 #=> true
+ */
+static VALUE
+enum_none(obj)
+    VALUE obj;
+{
+    VALUE result = Qtrue;
+
+    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? none_iter_i : none_i, (VALUE)&result);
+    return result;
+}
+
+static VALUE
 min_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -1032,6 +1182,240 @@ enum_max(obj)
     rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)&result);
     if (result == Qundef) return Qnil;
     return result;
+}
+
+static VALUE
+minmax_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    int n;
+
+    if (memo[0] == Qundef) {
+	memo[0] = i;
+	memo[1] = i;
+    }
+    else {
+	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo[0]), i, memo[0]);
+	if (n < 0) {
+	    memo[0] = i;
+	}
+	n = rb_cmpint(rb_funcall(i, id_cmp, 1, memo[1]), i, memo[1]);
+	if (n > 0) {
+	    memo[1] = i;
+	}
+    }
+    return Qnil;
+}
+
+static VALUE
+minmax_ii(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    int n;
+
+    if (memo[0] == Qundef) {
+	memo[0] = i;
+	memo[1] = i;
+    }
+    else {
+	VALUE ary = memo[2];
+
+	RARRAY(ary)->ptr[0] = i;
+	RARRAY(ary)->ptr[1] = memo[0];
+	n = rb_cmpint(rb_yield(ary), i, memo[0]);
+	if (n < 0) {
+	    memo[0] = i;
+	}
+	RARRAY(ary)->ptr[0] = i;
+	RARRAY(ary)->ptr[1] = memo[1];
+	n = rb_cmpint(rb_yield(ary), i, memo[1]);
+	if (n > 0) {
+	    memo[1] = i;
+	}
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.minmax                   => [min,max]
+ *     enum.minmax {|a,b| block }    => [min,max]
+ *  
+ *  Returns two elements array which contains the minimum and the
+ *  maximum value in the enumerable.  The first form assumes all
+ *  objects implement <code>Comparable</code>; the second uses the
+ *  block to return <em>a <=> b</em>.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.minmax                                  #=> ["albatross", "horse"]
+ *     a.minmax {|a,b| a.length <=> b.length }   #=> ["dog", "albatross"]
+ */  
+
+static VALUE
+enum_minmax(obj)
+    VALUE obj;
+{
+    VALUE result[3];
+    VALUE ary = rb_ary_new3(2, Qnil, Qnil);
+
+    result[0] = Qundef;
+    if (rb_block_given_p()) {
+	result[2] = ary;
+	rb_block_call(obj, id_each, 0, 0, minmax_ii, (VALUE)result);
+    }
+    else {
+	rb_block_call(obj, id_each, 0, 0, minmax_i, (VALUE)result);
+    }
+    if (result[0] != Qundef) {
+        RARRAY(ary)->ptr[0] = result[0];
+        RARRAY(ary)->ptr[1] = result[1];
+    }
+    return ary;
+}
+
+static VALUE
+min_by_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    VALUE v;
+
+    v = rb_yield(i);
+    if (memo[0] == Qundef) {
+	memo[0] = v;
+	memo[1] = i;
+    }
+    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[0]), v, memo[0]) < 0) {
+	memo[0] = v;
+	memo[1] = i;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.min_by {| obj| block }   => obj
+ *  
+ *  Returns the object in <i>enum</i> that gives the minimum
+ *  value from the given block.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.min_by {|x| x.length }   #=> "dog"
+ */
+
+static VALUE
+enum_min_by(obj)
+    VALUE obj;
+{
+    VALUE memo[2];
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    memo[0] = Qundef;
+    memo[1] = Qnil;
+    rb_block_call(obj, id_each, 0, 0, min_by_i, (VALUE)memo);
+    return memo[1];
+}
+
+static VALUE
+max_by_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    VALUE v;
+
+    v = rb_yield(i);
+    if (memo[0] == Qundef) {
+	memo[0] = v;
+	memo[1] = i;
+    }
+    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[0]), v, memo[0]) > 0) {
+	memo[0] = v;
+	memo[1] = i;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.max_by {| obj| block }   => obj
+ *  
+ *  Returns the object in <i>enum</i> that gives the maximum
+ *  value from the given block.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.max_by {|x| x.length }   #=> "albatross"
+ */
+
+static VALUE
+enum_max_by(obj)
+    VALUE obj;
+{
+    VALUE memo[2];
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    memo[0] = Qundef;
+    memo[1] = Qnil;
+    rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
+    return memo[1];
+}
+ 
+static VALUE
+minmax_by_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    VALUE v;
+
+    v = rb_yield(i);
+    if (memo[0] == Qundef) {
+	memo[0] = v;
+	memo[1] = v;
+	memo[2] = i;
+	memo[3] = i;
+    }
+    else {
+	if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[0]), v, memo[0]) < 0) {
+	    memo[0] = v;
+	    memo[2] = i;
+	}
+	if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[1]), v, memo[1]) > 0) {
+	    memo[1] = v;
+	    memo[3] = i;
+	}
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.minmax_by {| obj| block }   => [min, max]
+ *  
+ *  Returns two elements array array containing the objects in
+ *  <i>enum</i> that gives the minimum and maximum values respectively
+ *  from the given block.
+ *     
+ *     a = %w(albatross dog horse)
+ *     a.minmax_by {|x| x.length }   #=> ["dog", "albatross"]
+ */
+
+static VALUE
+enum_minmax_by(obj)
+    VALUE obj;
+{
+    VALUE memo[4];
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+
+    memo[0] = Qundef;
+    memo[1] = Qundef;
+    memo[2] = Qnil;
+    memo[3] = Qnil;
+    rb_block_call(obj, id_each, 0, 0, minmax_by_i, (VALUE)memo);
+    return rb_assoc_new(memo[2], memo[3]);
 }
 
 static VALUE
@@ -1179,6 +1563,68 @@ enum_zip(argc, argv, obj)
     return result;
 }
 
+static VALUE
+cycle_i(i, ary)
+    VALUE i;
+    VALUE ary;
+{
+    rb_ary_push(ary, i);
+    rb_yield(i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.cycle {|obj| block }
+ *     enum.cycle(n) {|obj| block }
+ *  
+ *  Calls <i>block</i> for each element of <i>enum</i> repeatedly _n_
+ *  times or forever if none or nil is given.  If a non-positive
+ *  number is given or the collection is empty, does nothing.  Returns
+ *  nil if the loop has finished without getting interrupted.
+ *
+ *  Enumerable#cycle saves elements in an internal array so changes
+ *  to <i>enum</i> after the first pass have no effect.
+ *     
+ *     a = ["a", "b", "c"]
+ *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
+ *     a.cycle(2) {|x| puts x }  # print, a, b, c, a, b, c.
+ *     
+ */
+
+static VALUE
+enum_cycle(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE ary;
+    VALUE nv = Qnil;
+    long n, i, len;
+
+    rb_scan_args(argc, argv, "01", &nv);
+
+    RETURN_ENUMERATOR(obj, argc, argv);
+    if (NIL_P(nv)) {
+        n = -1;
+    }
+    else {
+        n = NUM2LONG(nv);
+        if (n <= 0) return Qnil;
+    }
+    ary = rb_ary_new();
+    RBASIC(ary)->klass = 0;
+    rb_block_call(obj, id_each, 0, 0, cycle_i, ary);
+    len = RARRAY(ary)->len;
+    if (len == 0) return Qnil;
+    while (n < 0 || 0 < --n) {
+        for (i=0; i<len; i++) {
+            rb_yield(RARRAY(ary)->ptr[i]);
+        }
+    }
+    return Qnil;		/* not reached */
+}
+
 /*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
@@ -1204,25 +1650,33 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"count", enum_count, -1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
     rb_define_method(rb_mEnumerable,"detect", enum_find, -1);
-    rb_define_method(rb_mEnumerable,"find_index", enum_find_index, 0);
+    rb_define_method(rb_mEnumerable,"find_index", enum_find_index, -1);
     rb_define_method(rb_mEnumerable,"find_all", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"map", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"inject", enum_inject, -1);
+    rb_define_method(rb_mEnumerable,"reduce", enum_inject, -1);
     rb_define_method(rb_mEnumerable,"partition", enum_partition, 0);
     rb_define_method(rb_mEnumerable,"group_by", enum_group_by, 0);
     rb_define_method(rb_mEnumerable,"first", enum_first, -1);
     rb_define_method(rb_mEnumerable,"all?", enum_all, 0);
     rb_define_method(rb_mEnumerable,"any?", enum_any, 0);
+    rb_define_method(rb_mEnumerable,"one?", enum_one, 0);
+    rb_define_method(rb_mEnumerable,"none?", enum_none, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
+    rb_define_method(rb_mEnumerable,"minmax", enum_minmax, 0);
+    rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);  
+    rb_define_method(rb_mEnumerable,"max_by", enum_max_by, 0);  
+    rb_define_method(rb_mEnumerable,"minmax_by", enum_minmax_by, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);
     rb_define_method(rb_mEnumerable,"enum_with_index", enum_each_with_index, 0);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
+    rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
 
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");

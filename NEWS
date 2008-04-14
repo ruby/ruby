@@ -62,9 +62,16 @@ with all sufficient information, see the ChangeLog file.
     New methods for various enumeration defined by the enumerator library.
 
   * Enumerable#count
+  * Enumerable#cycle
   * Enumerable#find_index
   * Enumerable#first
   * Enumerable#group_by
+  * Enumerable#max_by
+  * Enumerable#min_by
+  * Enumerable#minmax
+  * Enumerable#minmax_by
+  * Enumerable#none?
+  * Enumerable#one?
 
     New methods.
 
@@ -76,6 +83,14 @@ with all sufficient information, see the ChangeLog file.
   * Enumerable#sort_by
 
     Return an enumerator if no block is given.
+
+  * Enumerable#inject
+
+    Accepts a binary operator instead of a block.
+
+  * Enumerable#reduce
+
+    New alias to #inject.
 
   * Hash#delete_if
   * Hash#each

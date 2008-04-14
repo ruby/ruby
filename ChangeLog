@@ -1,7 +1,20 @@
+Mon Apr 14 18:50:15 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enum.c: New methods: Enumerable#one?, #none?, #minmax, #min_by,
+	  #max_by, #minmax_by and #cycle; backported from 1.9.
+
+	* enum.c (enum_find_index): Add support for find_index(obj);
+	  [ruby-dev:34313]; backported from 1.9.
+
+	* enum.c (enum_inject): Add support for Enumerable#inject(:binop);
+	  backported from 1.9.
+
+	* enum.c: Alias Enumerable#reject to #inject; backported from 1.9.
+
 Mon Apr 14 18:14:19 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_find, enum_reject): Return an enumerator if no
-	  block is given.
+	  block is given; backported from 1.9.
 
 	* io.c (rb_io_each_line, rb_io_each_byte, rb_io_s_foreach,
 	  argf_each_line, argf_each_byte): Ditto.
@@ -15,10 +28,9 @@ Mon Apr 14 18:10:05 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 Mon Apr 14 17:55:30 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_collect_bang, rb_ary_select): Return an
-	  enumerator if no block is given.
+	  enumerator if no block is given; backported from 1.9.
 
-	* dir.c (dir_each, dir_foreach): Return an enumerator if no block
-	  is given.
+	* dir.c (dir_each, dir_foreach): Ditto.
 
 	* enum.c (enum_partition, enum_sort_by): Ditto.
 
@@ -52,7 +64,7 @@ Mon Apr 14 14:16:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 Mon Apr 14 13:58:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_each_char): New methods: String#chars and
-	  #each_char.
+	  #each_char; backported from 1.9.
 
 Mon Apr 14 13:42:20 2008  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -63,7 +75,7 @@ Mon Apr 14 13:42:20 2008  Akinori MUSHA  <knu@iDaemons.org>
 Mon Apr 14 13:19:36 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* range.c (range_each, range_step): Return an enumerator if no
-	  block is given.
+	  block is given; backported from 1.9.
 
 	* struct.c (rb_struct_each, rb_struct_each_pair): Ditto.
 
