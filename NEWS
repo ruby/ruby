@@ -63,6 +63,8 @@ with all sufficient information, see the ChangeLog file.
 
   * Enumerable#count
   * Enumerable#cycle
+  * Enumerable#drop
+  * Enumerable#drop_while
   * Enumerable#find_index
   * Enumerable#first
   * Enumerable#group_by
@@ -72,6 +74,8 @@ with all sufficient information, see the ChangeLog file.
   * Enumerable#minmax_by
   * Enumerable#none?
   * Enumerable#one?
+  * Enumerable#take
+  * Enumerable#take_while
 
     New methods.
 

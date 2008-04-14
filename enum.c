@@ -1564,6 +1564,165 @@ enum_zip(argc, argv, obj)
 }
 
 static VALUE
+take_i(i, arg)
+    VALUE i;
+    VALUE *arg;
+{
+    if (arg[1]-- == 0) rb_iter_break();
+    rb_ary_push(arg[0], i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.take(n)               => array
+ *  
+ *  Returns first n elements from <i>enum</i>.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.take(3)             # => [1, 2, 3]
+ *     
+ */
+
+static VALUE
+enum_take(obj, n)
+    VALUE obj;
+    VALUE n;
+{
+    VALUE args[2];
+    long len = NUM2LONG(n);
+
+    if (len < 0) {
+	rb_raise(rb_eArgError, "attempt to take negative size");
+    }
+
+    args[1] = len;
+    args[0] = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)args);
+    return args[0];
+}
+
+
+static VALUE
+take_while_i(i, ary)
+    VALUE i;
+    VALUE *ary;
+{
+    if (!RTEST(rb_yield(i))) rb_iter_break();
+    rb_ary_push(*ary, i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.take_while {|arr| block }   => array
+ *  
+ *  Passes elements to the block until the block returns nil or false,
+ *  then stops iterating and returns an array of all prior elements.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.take_while {|i| i < 3 }   # => [1, 2]
+ *     
+ */
+
+static VALUE
+enum_take_while(obj)
+    VALUE obj;
+{
+    VALUE ary;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+    ary = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, take_while_i, (VALUE)&ary);
+    return ary;
+}
+
+static VALUE
+drop_i(i, arg)
+    VALUE i;
+    VALUE *arg;
+{
+    if (arg[1] == 0) {
+	rb_ary_push(arg[0], i);
+    }
+    else {
+	arg[1]--;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.drop(n)               => array
+ *  
+ *  Drops first n elements from <i>enum</i>, and returns rest elements
+ *  in an array.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.drop(3)             # => [4, 5, 0]
+ *     
+ */
+
+static VALUE
+enum_drop(obj, n)
+    VALUE obj;
+    VALUE n;
+{
+    VALUE args[2];
+    long len = NUM2LONG(n);
+
+    if (len < 0) {
+	rb_raise(rb_eArgError, "attempt to drop negative size");
+    }
+
+    args[1] = len;
+    args[0] = rb_ary_new();
+    rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)args);
+    return args[0];
+}
+
+
+static VALUE
+drop_while_i(i, args)
+    VALUE i;
+    VALUE *args;
+{
+    if (!args[1] && !RTEST(rb_yield(i))) {
+	args[1] = Qtrue;
+    }
+    if (args[1]) {
+	rb_ary_push(args[0], i);
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.drop_while {|arr| block }   => array
+ *  
+ *  Drops elements up to, but not including, the first element for
+ *  which the block returns nil or false and returns an array
+ *  containing the remaining elements.
+ *     
+ *     a = [1, 2, 3, 4, 5, 0]
+ *     a.drop_while {|i| i < 3 }   # => [3, 4, 5, 0]
+ *     
+ */
+
+static VALUE
+enum_drop_while(obj)
+    VALUE obj;
+{
+    VALUE args[2];
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+    args[0] = rb_ary_new();
+    args[1] = Qfalse;
+    rb_block_call(obj, id_each, 0, 0, drop_while_i, (VALUE)args);
+    return args[0];
+}
+
+static VALUE
 cycle_i(i, ary)
     VALUE i;
     VALUE ary;
@@ -1676,6 +1835,10 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);
     rb_define_method(rb_mEnumerable,"enum_with_index", enum_each_with_index, 0);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
+    rb_define_method(rb_mEnumerable, "take", enum_take, 1);
+    rb_define_method(rb_mEnumerable, "take_while", enum_take_while, 0);
+    rb_define_method(rb_mEnumerable, "drop", enum_drop, 1);
+    rb_define_method(rb_mEnumerable, "drop_while", enum_drop_while, 0);
     rb_define_method(rb_mEnumerable, "cycle", enum_cycle, -1);
 
     id_eqq  = rb_intern("===");
