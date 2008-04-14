@@ -114,7 +114,7 @@ ary_new(VALUE klass, long len)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
     }
-    if (len > 0 && len * (long)sizeof(VALUE) <= len) {
+    if (len > LONG_MAX / sizeof(VALUE)) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     ary = ary_alloc(klass);
@@ -313,7 +313,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size");
     }
-    if (len > 0 && len * (long)sizeof(VALUE) <= len) {
+    if (len > LONG_MAX / sizeof(VALUE)) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     rb_ary_modify(ary);
