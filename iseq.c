@@ -241,6 +241,10 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
       if (flag == Qtrue)  { o->mem = 1; } \
       else if (flag == Qfalse)  { o->mem = 0; } \
   }
+#define SET_COMPILE_OPTION_NUM(o, h, mem) \
+  { VALUE num = rb_hash_aref(opt, ID2SYM(rb_intern(#mem))); \
+      if (!NIL_P(num)) o->mem = NUM2INT(num); \
+  }
 	SET_COMPILE_OPTION(option, opt, inline_const_cache);
 	SET_COMPILE_OPTION(option, opt, peephole_optimization);
 	SET_COMPILE_OPTION(option, opt, tailcall_optimization);
@@ -249,7 +253,9 @@ make_compile_option(rb_compile_option_t *option, VALUE opt)
 	SET_COMPILE_OPTION(option, opt, instructions_unification);
 	SET_COMPILE_OPTION(option, opt, stack_caching);
 	SET_COMPILE_OPTION(option, opt, trace_instruction);
+	SET_COMPILE_OPTION_NUM(option, opt, debug_level);
 #undef SET_COMPILE_OPTION
+#undef SET_COMPILE_OPTION_NUM
     }
     else {
 	rb_raise(rb_eTypeError, "Compile option must be Hash/true/false/nil");
@@ -262,6 +268,8 @@ make_compile_option_value(rb_compile_option_t *option)
     VALUE opt = rb_hash_new();
 #define SET_COMPILE_OPTION(o, h, mem) \
   rb_hash_aset(h, ID2SYM(rb_intern(#mem)), o->mem ? Qtrue : Qfalse)
+#define SET_COMPILE_OPTION_NUM(o, h, mem) \
+  rb_hash_aset(h, ID2SYM(rb_intern(#mem)), INT2NUM(o->mem))
     {
 	SET_COMPILE_OPTION(option, opt, inline_const_cache);
 	SET_COMPILE_OPTION(option, opt, peephole_optimization);
@@ -270,8 +278,10 @@ make_compile_option_value(rb_compile_option_t *option)
 	SET_COMPILE_OPTION(option, opt, operands_unification);
 	SET_COMPILE_OPTION(option, opt, instructions_unification);
 	SET_COMPILE_OPTION(option, opt, stack_caching);
+	SET_COMPILE_OPTION_NUM(option, opt, debug_level);
     }
 #undef SET_COMPILE_OPTION
+#undef SET_COMPILE_OPTION_NUM
     return opt;
 }
 

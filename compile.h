@@ -15,6 +15,7 @@
 /*  */
 /**
  * debug function(macro) interface depend on CPDEBUG
+ * if it is less than 0, runtime option is in effect.
  *
  * debug level:
  *  0: no debug output
@@ -29,38 +30,43 @@
 #define CPDEBUG 0
 #endif
 
-#if 0
-#undef  CPDEBUG
-#define CPDEBUG 2
+#if CPDEBUG >= 0
+#define compile_debug CPDEBUG
+#else
+#define compile_debug iseq->compile_data->option->debug_level
 #endif
 
 NORETURN(PRINTF_ARGS(void rb_compile_bug(const char*, int, const char*, ...), 3, 4));
 
-#if CPDEBUG > 0
+#if CPDEBUG
 
-#define debugp(header, value) \
-  (ruby_debug_print_indent(0, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_print_value(0, CPDEBUG, header, value))
+#define compile_debug_print_indent(level) \
+    ruby_debug_print_indent(level, compile_debug, gl_node_level * 2)
 
-#define debugi(header, id) \
-  (ruby_debug_print_indent(0, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_print_id(0, CPDEBUG, header, id))
+#define debugp(header, value) (void) \
+  (compile_debug_print_indent(1) && \
+   ruby_debug_print_value(1, compile_debug, header, value))
 
-#define debugp_param(header, value) \
-  (ruby_debug_print_indent(1, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_print_value(1, CPDEBUG, header, value))
+#define debugi(header, id)  (void) \
+  (compile_debug_print_indent(1) && \
+   ruby_debug_print_id(1, compile_debug, header, id))
 
-#define debugp_verbose(header, value) \
-  (ruby_debug_print_indent(2, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_print_value(2, CPDEBUG, header, value))
+#define debugp_param(header, value)  (void) \
+  (compile_debug_print_indent(1) && \
+   ruby_debug_print_value(1, compile_debug, header, value))
 
-#define debugp_verbose_node(header, value) \
-  (ruby_debug_print_indent(10, CPDEBUG, gl_node_level * 2), \
-   ruby_debug_print_value(10, CPDEBUG, header, value))
+#define debugp_verbose(header, value)  (void) \
+  (compile_debug_print_indent(2) && \
+   ruby_debug_print_value(2, compile_debug, header, value))
 
-#define debug_node_start(node) \
-  (ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), \
-   ruby_debug_print_node(1, CPDEBUG, "", (NODE *)node), gl_node_level++) \
+#define debugp_verbose_node(header, value)  (void) \
+  (compile_debug_print_indent(10) && \
+   ruby_debug_print_value(10, compile_debug, header, value))
+
+#define debug_node_start(node)  ((void) \
+  (compile_debug_print_indent(1) && \
+   (ruby_debug_print_node(1, CPDEBUG, "", (NODE *)node), gl_node_level)), \
+   gl_node_level++)
 
 #define debug_node_end()  gl_node_level --;
 
@@ -83,13 +89,14 @@ r_value(VALUE value)
 #define debugp_verbose(header, value)      r_value(value)
 #define debugp_verbose_node(header, value) r_value(value)
 #define debugp_param(header, value)        r_value(value)
-#define debug_node_start(node)
-#define debug_node_end()
+#define debug_node_start(node)             ((void)0)
+#define debug_node_end()                   ((void)0)
 #endif
 
-#if CPDEBUG > 1
-#define debugs ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), printf
-#define debug_compile(msg, v) (ruby_debug_print_indent(-1, CPDEBUG, gl_node_level*2), printf("%s", msg), (v))
+#if CPDEBUG > 1 || CPDEBUG < 0
+PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
+#define debugs if (compile_debug_print_indent(1)) ruby_debug_printf
+#define debug_compile(msg, v) ((void)(compile_debug_print_indent(1) && fputs(msg, stderr)), (v))
 #else
 #define debugs                             if(0)printf
 #define debug_compile(msg, v) (v)
@@ -201,7 +208,7 @@ r_value(VALUE value)
 #define COMPILE_ERROR(strs)                        \
 {                                                  \
   VALUE tmp = GET_THREAD()->errinfo;               \
-  if(CPDEBUG)rb_bug strs;                          \
+  if (compile_debug) rb_compile_bug strs;          \
   GET_THREAD()->errinfo = iseq->compile_data->err_info;  \
   rb_compile_error strs;                           \
   iseq->compile_data->err_info = GET_THREAD()->errinfo; \

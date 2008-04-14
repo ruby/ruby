@@ -139,6 +139,7 @@ typedef struct rb_compile_option_struct {
     int instructions_unification;
     int stack_caching;
     int trace_instruction;
+    int debug_level;
 } rb_compile_option_t;
 
 struct iseq_compile_data {
@@ -161,6 +162,7 @@ struct iseq_compile_data {
     struct iseq_compile_data_storage *storage_current;
     int last_line;
     int flip_cnt;
+    int node_level;
     const rb_compile_option_t *option;
 };
 

@@ -67,13 +67,24 @@ static const union {
 
 const VALUE RUBY_FL_USER20    = FL_USER20;
 
-void
+int
 ruby_debug_print_indent(int level, int debug_level, int indent_level)
 {
     if (level < debug_level) {
 	fprintf(stderr, "%*s", indent_level, "");
 	fflush(stderr);
+	return Qtrue;
     }
+    return Qfalse;
+}
+
+void
+ruby_debug_printf(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    va_end(ap);
 }
 
 VALUE

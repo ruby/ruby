@@ -92,9 +92,19 @@ struct iseq_compile_data_ensure_node_stack {
 #endif
 
 /* for debug */
-#if CPDEBUG > 0
-static long gl_node_level = 0;
-static void debug_list(LINK_ANCHOR *anchor);
+#if CPDEBUG < 0
+#define ISEQ_ARG iseq,
+#define ISEQ_ARG_DECLARE rb_iseq_t *iseq,
+#else
+#define ISEQ_ARG
+#define ISEQ_ARG_DECLARE
+#endif
+
+#if CPDEBUG
+#define gl_node_level iseq->compile_data->node_level
+#if 0
+static void debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor);
+#endif
 #endif
 
 static void dump_disasm_list(LINK_ELEMENT *elem);
@@ -103,7 +113,7 @@ static int insn_data_length(INSN *iobj);
 static int insn_data_line_no(INSN *iobj);
 static int calc_sp_depth(int depth, INSN *iobj);
 
-static void ADD_ELEM(LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
+static void ADD_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor, LINK_ELEMENT *elem);
 
 static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, int insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, int line);
@@ -122,6 +132,57 @@ static int iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 static int iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *anchor);
 static int iseq_set_exception_table(rb_iseq_t *iseq);
 static int iseq_set_optargs_table(rb_iseq_t *iseq);
+
+/*
+ * To make Array to LinkedList, use link_anchor
+ */
+
+static void
+verify_list(ISEQ_ARG_DECLARE char *info, LINK_ANCHOR *anchor)
+{
+#if CPDEBUG
+    int flag = 0;
+    LINK_ELEMENT *list, *plist;
+
+    if (!compile_debug) return;
+
+    list = anchor->anchor.next;
+    plist = &anchor->anchor;
+    while (list) {
+	if (plist != list->prev) {
+	    flag += 1;
+	}
+	plist = list;
+	list = list->next;
+    }
+
+    if (anchor->last != plist && anchor->last != 0) {
+	flag |= 0x70000;
+    }
+
+    if (flag != 0) {
+	rb_bug("list verify error: %08x (%s)", flag, info);
+    }
+#endif
+}
+#if CPDEBUG < 0
+#define verify_list(info, anchor) verify_list(iseq, info, anchor)
+#endif
+
+/*
+ * elem1, elem2 => elem1, elem2, elem
+ */
+static void
+ADD_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor, LINK_ELEMENT *elem)
+{
+    elem->prev = anchor->last;
+    anchor->last->next = elem;
+    anchor->last = elem;
+    verify_list("add", anchor);
+}
+#if CPDEBUG < 0
+#define ADD_ELEM(anchor, elem) ADD_ELEM(iseq, anchor, elem)
+#endif
 
 static int
 iseq_add_mark_object(rb_iseq_t *iseq, VALUE v)
@@ -310,47 +371,6 @@ compile_data_alloc_adjust(rb_iseq_t *iseq)
 }
 
 /*
- * To make Array to LinkedList, use link_anchor
- */
-
-static void
-verify_list(char *info, LINK_ANCHOR *anchor)
-{
-#if CPDEBUG > 0
-    int flag = 0;
-    LINK_ELEMENT *list = anchor->anchor.next, *plist = &anchor->anchor;
-
-    while (list) {
-	if (plist != list->prev) {
-	    flag += 1;
-	}
-	plist = list;
-	list = list->next;
-    }
-
-    if (anchor->last != plist && anchor->last != 0) {
-	flag |= 0x70000;
-    }
-
-    if (flag != 0) {
-	rb_bug("list verify error: %08x (%s)", flag, info);
-    }
-#endif
-}
-
-/*
- * elem1, elem2 => elem1, elem2, elem
- */
-static void
-ADD_ELEM(LINK_ANCHOR *anchor, LINK_ELEMENT *elem)
-{
-    elem->prev = anchor->last;
-    anchor->last->next = elem;
-    anchor->last = elem;
-    verify_list("add", anchor);
-}
-
-/*
  * elem1, elemX => elem1, elem2, elemX
  */
 static void
@@ -420,7 +440,7 @@ LAST_ELEMENT(LINK_ANCHOR *anchor)
 #endif
 
 static LINK_ELEMENT *
-POP_ELEMENT(LINK_ANCHOR *anchor)
+POP_ELEMENT(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor)
 {
     LINK_ELEMENT *elem = anchor->last;
     anchor->last = anchor->last->prev;
@@ -428,6 +448,9 @@ POP_ELEMENT(LINK_ANCHOR *anchor)
     verify_list("pop", anchor);
     return elem;
 }
+#if CPDEBUG < 0
+#define POP_ELEMENT(anchor) POP_ELEMENT(iseq, anchor)
+#endif
 
 #if 0 /* unused */
 static LINK_ELEMENT *
@@ -474,7 +497,7 @@ LIST_SIZE_ZERO(LINK_ANCHOR *anchor)
  * anc2: e4, e5 (broken)
  */
 static void
-APPEND_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
+APPEND_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
 {
     if (anc2->anchor.next) {
 	anc1->last->next = anc2->anchor.next;
@@ -483,6 +506,9 @@ APPEND_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
     }
     verify_list("append", anc1);
 }
+#if CPDEBUG < 0
+#define APPEND_LIST(anc1, anc2) APPEND_LIST(iseq, anc1, anc2)
+#endif
 
 /*
  * anc1: e1, e2, e3
@@ -492,7 +518,7 @@ APPEND_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
  * anc2: e4, e5 (broken)
  */
 static void
-INSERT_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
+INSERT_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
 {
     if (anc2->anchor.next) {
 	LINK_ELEMENT *first = anc1->anchor.next;
@@ -509,6 +535,9 @@ INSERT_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
 
     verify_list("append", anc1);
 }
+#if CPDEBUG < 0
+#define INSERT_LIST(anc1, anc2) INSERT_LIST(iseq, anc1, anc2)
+#endif
 
 #if 0 /* unused */
 /*
@@ -519,7 +548,7 @@ INSERT_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
  * anc2: e1, e2, e3
  */
 static void
-SWAP_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
+SWAP_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
 {
     LINK_ANCHOR tmp = *anc2;
 
@@ -530,9 +559,12 @@ SWAP_LIST(LINK_ANCHOR *anc1, LINK_ANCHOR *anc2)
     verify_list("swap1", anc1);
     verify_list("swap2", anc2);
 }
+#if CPDEBUG < 0
+#define SWAP_LIST(anc1, anc2) SWAP_LIST(iseq, anc1, anc2)
+#endif
 
 static LINK_ANCHOR *
-REVERSE_LIST(LINK_ANCHOR *anc)
+REVERSE_LIST(ISEQ_ARG_DECLARE LINK_ANCHOR *anc)
 {
     LINK_ELEMENT *first, *last, *elem, *e;
     first = &anc->anchor;
@@ -561,11 +593,14 @@ REVERSE_LIST(LINK_ANCHOR *anc)
     verify_list("reverse", anc);
     return anc;
 }
+#if CPDEBUG < 0
+#define REVERSE_LIST(anc) REVERSE_LIST(iseq, anc)
+#endif
 #endif
 
-#if CPDEBUG > 0
+#if CPDEBUG && 0
 static void
-debug_list(LINK_ANCHOR *anchor)
+debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *anchor)
 {
     LINK_ELEMENT *list = FIRST_ELEMENT(anchor);
     printf("----\n");
@@ -581,6 +616,9 @@ debug_list(LINK_ANCHOR *anchor)
     dump_disasm_list(anchor->anchor.next);
     verify_list("debug list", anchor);
 }
+#if CPDEBUG < 0
+#define debug_list(anc) debug_list(iseq, anc)
+#endif
 #endif
 
 static LABEL *
@@ -678,32 +716,32 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
     /* debugs("[compile step 2] (iseq_array_to_linkedlist)\n"); */
 
-    if (CPDEBUG > 5)
+    if (compile_debug > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
 
     debugs("[compile step 3.1 (iseq_optimize)]\n");
     iseq_optimize(iseq, anchor);
 
-    if (CPDEBUG > 5)
+    if (compile_debug > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
 
     if (iseq->compile_data->option->instructions_unification) {
 	debugs("[compile step 3.2 (iseq_insns_unification)]\n");
 	iseq_insns_unification(iseq, anchor);
-	if (CPDEBUG > 5)
+	if (compile_debug > 5)
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
     }
 
     if (iseq->compile_data->option->stack_caching) {
 	debugs("[compile step 3.3 (iseq_set_sequence_stackcaching)]\n");
 	iseq_set_sequence_stackcaching(iseq, anchor);
-	if (CPDEBUG > 5)
+	if (compile_debug > 5)
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
     }
 
     debugs("[compile step 4.1 (iseq_set_sequence)]\n");
     iseq_set_sequence(iseq, anchor);
-    if (CPDEBUG > 5)
+    if (compile_debug > 5)
 	dump_disasm_list(FIRST_ELEMENT(anchor));
 
     debugs("[compile step 4.2 (iseq_set_exception_table)]\n");
@@ -715,7 +753,7 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
     debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
     iseq_translate_threaded_code(iseq);
 
-    if (CPDEBUG > 1) {
+    if (compile_debug > 1) {
 	VALUE str = ruby_iseq_disasm(iseq->self);
 	printf("%s\n", StringValueCStr(str));
 	fflush(stdout);

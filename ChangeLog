@@ -1,3 +1,19 @@
+Mon Apr 14 14:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c, compile.h (compile_debug): made runtime option.
+
+	* debug.c (ruby_debug_print_indent): returns if debug_level exceeds
+	  the threashold.
+
+	* debug.c (ruby_debug_printf): printf to stderr.
+
+	* iseq.c (make_compile_option, make_compile_option_value): added
+	  debug_level option.
+
+	* vm_core.h (rb_compile_option_t): added debug_level.
+
+	* vm_core.h (struct iseq_compile_data): added node_level.
+
 Mon Apr 14 12:52:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (Init_stack): use ruby_init_stack.  [ruby-dev:34350]
