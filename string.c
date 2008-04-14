@@ -251,6 +251,13 @@ rb_str_buf_new2(ptr)
 }
 
 VALUE
+rb_str_tmp_new(len)
+    long len;
+{
+    return str_new(0, 0, len);
+}
+
+VALUE
 rb_str_to_str(str)
     VALUE str;
 {

@@ -369,6 +369,9 @@ VALUE rb_detach_process _((int));
 VALUE rb_range_new _((VALUE, VALUE, int));
 VALUE rb_range_beg_len _((VALUE, long*, long*, long, int));
 VALUE rb_length_by_each _((VALUE));
+/* random.c */
+unsigned long rb_genrand_int32(void);
+double rb_genrand_real(void);
 /* re.c */
 int rb_memcmp _((const void*,const void*,long));
 int rb_memcicmp _((const void*,const void*,long));
@@ -421,6 +424,7 @@ VALUE rb_tainted_str_new _((const char*, long));
 VALUE rb_tainted_str_new2 _((const char*));
 VALUE rb_str_buf_new _((long));
 VALUE rb_str_buf_new2 _((const char*));
+VALUE rb_str_tmp_new _((long));
 VALUE rb_str_buf_append _((VALUE, VALUE));
 VALUE rb_str_buf_cat _((VALUE, const char*, long));
 VALUE rb_str_buf_cat2 _((VALUE, const char*));

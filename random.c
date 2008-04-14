@@ -146,8 +146,8 @@ next_state()
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-static unsigned long
-genrand_int32(void)
+unsigned long
+rb_genrand_int32(void)
 {
     unsigned long y;
 
@@ -164,10 +164,10 @@ genrand_int32(void)
 }
 
 /* generates a random number on [0,1) with 53-bit resolution*/
-static double
-genrand_real(void) 
+double
+rb_genrand_real(void) 
 { 
-    unsigned long a=genrand_int32()>>5, b=genrand_int32()>>6; 
+    unsigned long a=rb_genrand_int32()>>5, b=rb_genrand_int32()>>6; 
     return(a*67108864.0+b)*(1.0/9007199254740992.0); 
 } 
 /* These real versions are due to Isaku Wada, 2002/01/09 added */
@@ -361,7 +361,7 @@ limited_rand(unsigned long limit)
     val = 0;
     for (i = SIZEOF_LONG/4-1; 0 <= i; i--) {
         if (mask >> (i * 32)) {
-            val |= genrand_int32() << (i * 32);
+            val |= rb_genrand_int32() << (i * 32);
             val &= mask;
             if (limit < val)
                 goto retry;
@@ -399,7 +399,7 @@ limited_big_rand(struct RBignum *limit)
         lim = BIG_GET32(limit, i);
         mask = mask ? 0xffffffff : make_mask(lim);
         if (mask) {
-            rnd = genrand_int32() & mask;
+            rnd = rb_genrand_int32() & mask;
             if (boundary) {
                 if (lim < rnd)
                     goto retry;
@@ -470,7 +470,7 @@ rb_f_rand(argc, argv, obj)
             limit = (struct RBignum *)rb_big_minus((VALUE)limit, INT2FIX(1));
             if (FIXNUM_P((VALUE)limit)) {
                 if (FIX2LONG((VALUE)limit) == -1)
-                    return rb_float_new(genrand_real());
+                    return rb_float_new(rb_genrand_real());
                 return LONG2NUM(limited_rand(FIX2LONG((VALUE)limit)));
             }
             return limited_big_rand(limit);
@@ -488,7 +488,7 @@ rb_f_rand(argc, argv, obj)
     }
 
     if (max == 0) {
-	return rb_float_new(genrand_real());
+	return rb_float_new(rb_genrand_real());
     }
     if (max < 0) max = -max;
     val = limited_rand(max-1);
