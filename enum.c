@@ -436,6 +436,7 @@ enum_to_a(obj)
     return ary;
 }
 
+static VALUE inject_i _((VALUE, VALUE));
 static VALUE
 inject_i(i, p)
     VALUE i;
@@ -451,6 +452,7 @@ inject_i(i, p)
     return Qnil;
 }
 
+static VALUE inject_op_i _((VALUE, VALUE));
 static VALUE
 inject_op_i(i, p)
     VALUE i;
