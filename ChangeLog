@@ -1,3 +1,7 @@
+Mon Apr 14 18:10:05 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enum.c (find_index_i, find_index_iter_i): add prototype for VC.
+
 Mon Apr 14 17:55:30 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_collect_bang, rb_ary_select): Return an

@@ -229,6 +229,7 @@ enum_find(argc, argv, obj)
     return Qnil;
 }
 
+static VALUE find_index_i _((VALUE, VALUE));
 static VALUE
 find_index_i(i, memop)
     VALUE i;
@@ -244,6 +245,7 @@ find_index_i(i, memop)
     return Qnil;
 }
 
+static VALUE find_index_iter_i _((VALUE, VALUE));
 static VALUE
 find_index_iter_i(i, memop)
     VALUE i;
