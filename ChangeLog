@@ -1,3 +1,13 @@
+Tue Apr 15 07:21:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_div): [ruby-dev:34357]
+
+	* complex.c (nucomp_abs): use hypot.
+
+	* complex.c (nucomp_quo): do not force convertion.
+
+	* test/ruby/test_complex.rb: omitted some meaningless tests.
+
 Mon Apr 14 23:25:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_objectspace.rb: add a test for

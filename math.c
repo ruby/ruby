@@ -465,7 +465,7 @@ math_ldexp(VALUE obj, VALUE x, VALUE n)
  *     Math.hypot(3, 4)   #=> 5.0
  */
 
-static VALUE
+VALUE
 math_hypot(VALUE obj, VALUE x, VALUE y)
 {
     Need_Float2(x, y);

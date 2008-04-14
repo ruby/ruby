@@ -478,6 +478,7 @@ extern VALUE math_atan2(VALUE obj, VALUE x, VALUE y);
 extern VALUE math_cos(VALUE obj, VALUE x);
 extern VALUE math_cosh(VALUE obj, VALUE x);
 extern VALUE math_exp(VALUE obj, VALUE x);
+extern VALUE math_hypot(VALUE obj, VALUE x, VALUE y);
 extern VALUE math_log(int argc, VALUE *argv);
 extern VALUE math_sin(VALUE obj, VALUE x);
 extern VALUE math_sinh(VALUE obj, VALUE x);
@@ -487,6 +488,7 @@ extern VALUE math_sqrt(VALUE obj, VALUE x);
 #define m_cos_bang(x) math_cos(Qnil,x)
 #define m_cosh_bang(x) math_cosh(Qnil,x)
 #define m_exp_bang(x) math_exp(Qnil,x)
+#define m_hypot(x,y) math_hypot(Qnil,x,y)
 
 static VALUE
 m_log_bang(VALUE x)
@@ -681,7 +683,21 @@ nucomp_div(VALUE self, VALUE other)
 				f_div(dat->image, other));
       }
       case T_COMPLEX:
-	return f_div(f_mul(self, f_conjugate(other)), f_abs2(other));
+      {
+	  get_dat2(self, other);
+
+	  if (TYPE(adat->real)  == T_FLOAT ||
+	      TYPE(adat->image) == T_FLOAT ||
+	      TYPE(bdat->real)  == T_FLOAT ||
+	      TYPE(bdat->image) == T_FLOAT) {
+	      VALUE magn = m_hypot(bdat->real, bdat->image);
+	      VALUE tmp = f_complex_new_bang2(CLASS_OF(self),
+					      f_div(bdat->real, magn),
+					      f_div(bdat->image, magn));
+	      return f_div(f_mul(self, f_conjugate(tmp)), magn);
+	  }
+	  return f_div(f_mul(self, f_conjugate(other)), f_abs2(other));
+      }
       default:
 	return rb_num_coerce_bin(self, other, '/');
     }
@@ -693,8 +709,8 @@ nucomp_quo(VALUE self, VALUE other)
     get_dat1(self);
 
     return f_div(f_complex_new2(CLASS_OF(self),
-				f_to_r(dat->real),
-				f_to_r(dat->image)), other);
+				f_quo(dat->real, ONE),
+				f_quo(dat->image, ONE)), other);
 }
 
 static VALUE
@@ -824,8 +840,7 @@ static VALUE
 nucomp_abs(VALUE self)
 {
     get_dat1(self);
-    return m_sqrt(f_add(f_mul(dat->real, dat->real),
-			f_mul(dat->image, dat->image)));
+    return m_hypot(dat->real, dat->image);
 }
 
 static VALUE
