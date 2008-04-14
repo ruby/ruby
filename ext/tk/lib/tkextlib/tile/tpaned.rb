@@ -36,9 +36,21 @@ class Tk::Tile::TPaned < TkWindow
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 
-  def add(win, keys)
-    win = _epath(win)
-    tk_send_without_enc('add', win, *hash_kv(keys))
+  def add(*args)
+    keys = args.pop
+    fail ArgumentError, "no window in arguments" unless keys
+
+    if keys && keys.kind_of?(Hash)
+      fail ArgumentError, "no window in arguments" if args == []
+      opts = hash_kv(keys)
+    else
+      args.push(keys) if keys
+      opts = []
+    end
+
+    args.each{|win|
+      tk_send_without_enc('add', _epath(win), *opts)
+    }
     self
   end
 

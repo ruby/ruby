@@ -254,7 +254,15 @@ class TkTextIO < TkText
       Tk.callback_break
     end
   end
-  private :_cb_up, :_cb_down, :_cb_left, :_cb_backspace, :_cb_ctrl_a
+  def _cb_ctrl_u
+    if @console_mode
+      mark_set('insert', @ins_head)
+      delete('insert', 'insert lineend')
+      Tk.callback_break
+    end
+  end
+  private :_cb_up, :_cb_down, :_cb_left, :_cb_backspace, 
+          :_cb_ctrl_a, :_cb_ctrl_u
 
   def _setup_console_bindings
     @bindtag = TkBindTag.new
@@ -328,6 +336,8 @@ class TkTextIO < TkText
 
     @bindtag.bind('Home'){ _cb_ctrl_a }
     @bindtag.bind('Control-a'){ _cb_ctrl_a }
+
+    @bindtag.bind('Control-u'){ _cb_ctrl_u }
   end
   private :_setup_console_bindings
 

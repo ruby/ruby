@@ -52,6 +52,15 @@ end
 
 
 ##########################################################################
+# define Tcl/Tk procedures for compatibility.
+# those are required when want to use themes included 
+# in "sample/tkextlib/tile/demo.rb".
+##########################################################################
+Tk::Tile.__define_LoadImages_proc_for_compatibility__!
+Tk::Tile::Style.__define_wrapper_proc_for_compatibility__!
+
+
+##########################################################################
 #  use themes defined on the demo of Ttk (Tile) extension
 ##########################################################################
 demodir = File.dirname(__FILE__)
@@ -89,15 +98,6 @@ themes_by_ruby.each{|f|
     print "fail to load \"#{f}\"\n" if OPTS[:verbose]
   end
 }
-
-
-##########################################################################
-# define Tcl/Tk procedures for compatibility.
-# those are required when want to use themes included 
-# in "sample/tkextlib/tile/demo.rb".
-##########################################################################
-Tk::Tile.__define_LoadImages_proc_for_compatibility__!
-Tk::Tile::Style.__define_wrapper_proc_for_compatibility__!
 
 
 ##########################################################################

@@ -37,7 +37,7 @@ class Tk::Iwidgets::Scrolledtext
   end
 
   def method_missing(id, *args)
-    if @text.methods.include?(id.id2name)
+    if @text.respond_to?(id)
       @text.__send__(id, *args)
     else
       super(id, *args)

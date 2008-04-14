@@ -72,7 +72,7 @@ class Tk::Toplevel<TkWindow
 
     conf_methods = _symbolkey2str(__methodcall_optkeys())
 
-    keys.each{|k,v|
+    keys.each{|k,v| # k is a String
       if conf_methods.key?(k)
         wm_cmds[conf_methods[k]] = v
       elsif Wm.method_defined?(k)

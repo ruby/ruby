@@ -36,10 +36,10 @@ module TkTextTagConfig
     itemconfigure(['tag', tagOrId], slot, value)
   end
   def tag_configinfo(tagOrId, slot=nil)
-    itemconfigure(['tag', tagOrId], slot)
+    itemconfiginfo(['tag', tagOrId], slot)
   end
   def current_tag_configinfo(tagOrId, slot=nil)
-    itemconfigure(['tag', tagOrId], slot)
+    current_itemconfiginfo(['tag', tagOrId], slot)
   end
 
   def window_cget(tagOrId, option)
@@ -49,10 +49,10 @@ module TkTextTagConfig
     itemconfigure(['window', tagOrId], slot, value)
   end
   def window_configinfo(tagOrId, slot=nil)
-    itemconfigure(['window', tagOrId], slot)
+    itemconfiginfo(['window', tagOrId], slot)
   end
   def current_window_configinfo(tagOrId, slot=nil)
-    itemconfigure(['window', tagOrId], slot)
+    current_itemconfiginfo(['window', tagOrId], slot)
   end
 
   private :itemcget, :itemconfigure

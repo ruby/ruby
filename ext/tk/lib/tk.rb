@@ -3217,7 +3217,13 @@ module TkTreatFont
               next
             else
               fnt = hash_kv(fnt) if fnt.kind_of?(Hash)
-              tk_call(*(__config_cmd << "-#{optkey}" << fnt))
+              begin
+                tk_call(*(__config_cmd << "-#{optkey}" << fnt))
+              rescue => e
+                unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+                  fail e
+                end
+              end
             end
           end
           next
@@ -3271,7 +3277,13 @@ module TkTreatFont
         fobj = fontobj          # create a new TkFont object
       else
         ltn = hash_kv(ltn) if ltn.kind_of?(Hash)
-        tk_call(*(__config_cmd << "-#{optkey}" << ltn))
+        begin
+          tk_call(*(__config_cmd << "-#{optkey}" << ltn))
+        rescue => e
+          unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+            fail e
+          end
+        end
         next
       end
 
@@ -3323,7 +3335,13 @@ module TkTreatFont
         fobj = fontobj          # create a new TkFont object
       else
         knj = hash_kv(knj) if knj.kind_of?(Hash)
-        tk_call(*(__config_cmd << "-#{optkey}" << knj))
+        begin
+          tk_call(*(__config_cmd << "-#{optkey}" << knj))
+        rescue => e
+          unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+            fail e
+          end
+        end
         next
       end
 
@@ -5323,7 +5341,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-04-02'.freeze
+  RELEASE_DATE = '2008-04-13'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

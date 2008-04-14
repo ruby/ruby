@@ -1,3 +1,25 @@
+Tue Apr 15 00:15:29 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/text.rb: typo. call a wrong method.
+
+	* ext/tk/lib/tk/itemconfig.rb: ditto.
+
+	* ext/tk/sample/ttk_wrapper.rb: bug fix.
+
+	* ext/tk/sample/tktextio.rb: add binding for 'Ctrl-u' at console mode.
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/itemfont.rb, ext/tk/lib/font.rb: 
+	  support __IGNORE_UNKNOWN_CONFIGURE_OPTION__ about font options.
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: bug fix. 
+
+	* ext/tk/lib/tkextlib/tile/tpaned.rb: improve TPaned#add.
+
+	* ext/tk/lib/tk/timer.rb: add TkTimer#at_end(proc) to register the 
+	  procedure which called at end of the timer.
+
 Mon Apr 14 19:54:21 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_flatten, rb_ary_flatten_bang): Take an optional

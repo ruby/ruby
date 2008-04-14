@@ -242,7 +242,7 @@ module TkItemConfigMethod
         __itemcget_core(tagOrId, option)
       rescue => e
         begin
-          __itemconfiginfo_core(tagOrId)
+          __itemcget_core(tagOrId)
           # not tag error -> option is unknown
           nil
         rescue
@@ -319,7 +319,8 @@ module TkItemConfigMethod
 
   def __check_available_itemconfigure_options(tagOrId, keys)
     id = tagid(tagOrId)
-    availables = self.current_itemconfiginfo(id).keys
+
+    availables = self.__current_itemconfiginfo(id).keys
 
     # add non-standard keys
     availables |= __font_optkeys.map{|k|
@@ -329,6 +330,7 @@ module TkItemConfigMethod
     availables |= __item_keyonly_optkeys(id).keys.map{|k| k.to_s}
 
     keys = _symbolkey2str(keys)
+
     keys.delete_if{|k, v| !(availables.include?(k))}
   end
 
@@ -340,7 +342,7 @@ module TkItemConfigMethod
         begin
           __itemconfigure_core(tagOrId, slot)
         rescue
-          slot = __check_available_configure_options(tagOrId, slot)
+          slot = __check_available_itemconfigure_options(tagOrId, slot)
           __itemconfigure_core(tagOrId, slot) unless slot.empty?
         end
       else
@@ -349,6 +351,7 @@ module TkItemConfigMethod
         rescue => e
           begin
             __itemconfiginfo_core(tagOrId)
+            # not tag error -> option is unknown
           rescue
             fail e  # tag error
           end
@@ -1125,7 +1128,7 @@ module TkItemConfigMethod
     end
   end
 
-  def current_itemconfiginfo(tagOrId, slot = nil)
+  def __current_itemconfiginfo(tagOrId, slot = nil)
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if slot
         org_slot = slot
@@ -1147,6 +1150,7 @@ module TkItemConfigMethod
             ret[conf[0]] = conf[-1]
           end
         }
+
         ret
       end
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
@@ -1156,5 +1160,9 @@ module TkItemConfigMethod
       }
       ret
     end
+  end
+
+  def current_itemconfiginfo(tagOrId, slot = nil)
+    __current_itemconfiginfo(tagOrId, slot)
   end
 end
