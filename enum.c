@@ -330,7 +330,8 @@ enum_find_all(obj)
     VALUE obj;
 {
     VALUE ary = rb_ary_new();
-    
+
+    RETURN_ENUMERATOR(obj, 0, 0);
     rb_iterate(rb_each, obj, find_all_i, ary);
 
     return ary;
@@ -520,6 +521,8 @@ enum_partition(obj)
     VALUE obj;
 {
     VALUE ary[2];
+
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     ary[0] = rb_ary_new();
     ary[1] = rb_ary_new();
@@ -758,6 +761,8 @@ enum_sort_by(obj)
 {
     VALUE ary;
     long i;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     if (TYPE(obj) == T_ARRAY) {
 	ary  = rb_ary_new2(RARRAY(obj)->len);

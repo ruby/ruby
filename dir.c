@@ -562,6 +562,7 @@ dir_each(dir)
     struct dir_data *dirp;
     struct dirent *dp;
 
+    RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     for (dp = readdir(dirp->dir); dp != NULL; dp = readdir(dirp->dir)) {
@@ -1814,6 +1815,7 @@ dir_foreach(io, dirname)
 {
     VALUE dir;
 
+    RETURN_ENUMERATOR(io, 1, &dirname);
     dir = dir_open_dir(dirname);
     rb_ensure(dir_each, dir, dir_close, dir);
     return Qnil;

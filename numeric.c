@@ -1463,6 +1463,8 @@ num_step(argc, argv, from)
 {
     VALUE to, step;
 
+    RETURN_ENUMERATOR(from, argc, argv);
+
     if (argc == 1) {
 	to = argv[0];
 	step = INT2FIX(1);
@@ -2845,6 +2847,8 @@ static VALUE
 int_upto(from, to)
     VALUE from, to;
 {
+    RETURN_ENUMERATOR(from, 1, &to);
+
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
 
@@ -2884,6 +2888,8 @@ static VALUE
 int_downto(from, to)
     VALUE from, to;
 {
+    RETURN_ENUMERATOR(from, 1, &to);
+
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
 
@@ -2924,6 +2930,8 @@ static VALUE
 int_dotimes(num)
     VALUE num;
 {
+    RETURN_ENUMERATOR(num, 0, 0);
+
     if (FIXNUM_P(num)) {
 	long i, end;
 

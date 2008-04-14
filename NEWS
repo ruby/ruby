@@ -26,6 +26,8 @@ with all sufficient information, see the ChangeLog file.
 
     Take a block instead of an argument.
 
+  * Array#collect!
+  * Array#map!
   * Array#each
   * Array#each_index
   * Array#reverse_each
@@ -41,6 +43,11 @@ with all sufficient information, see the ChangeLog file.
     Take an optional argument specifying the number of elements to
     remove.
 
+  * Dir#each
+  * Dir#foreach
+
+    Return an enumerator if no block is given.
+
   * Enumerable::Enumerator
 
     New class for various enumeration defined by the enumerator library.
@@ -54,19 +61,59 @@ with all sufficient information, see the ChangeLog file.
 
     New methods for various enumeration defined by the enumerator library.
 
-  * Enumerator#count
+  * Enumerable#count
   * Enumerable#find_index
   * Enumerable#first
   * Enumerable#group_by
 
     New methods.
 
-  * Integer#ord implemented.
-  * Integer#odd? implemented.
-  * Integer#even? implemented.
-  * Integer#pred implemented.
+  * Enumerable#find_all
+  * Enumerable#partition
+  * Enumerable#select
+  * Enumerable#sort_by
+
+    Return an enumerator if no block is given.
+
+  * Hash#delete_if
+  * Hash#each
+  * Hash#each_key
+  * Hash#each_pair
+  * Hash#each_value
+  * Hash#reject!
+  * Hash#select
+  * ENV.delete_if
+  * ENV.each
+  * ENV.each_key
+  * ENV.each_pair
+  * ENV.each_value
+  * ENV.reject!
+  * ENV.select
+
+    Return an enumerator if no block is given.
+
+  * Integer#ord
+  * Integer#odd?
+  * Integer#even?
+  * Integer#pred
+
+    New methods.
+
+  * Integer#downto
+  * Integer#times
+  * Integer#upto
+
+    Return an enumerator if no block is given.
+
+  * Numeric#step
+
+    Return an enumerator if no block is given.
 
   * Object#tap implemented.
+
+  * ObjectSpace.each_object
+
+    Return an enumerator if no block is given.
 
   * Process.exec implemented.
 

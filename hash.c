@@ -817,6 +817,7 @@ VALUE
 rb_hash_delete_if(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_modify(hash);
     rb_hash_foreach(hash, delete_if_i, hash);
     return hash;
@@ -834,7 +835,10 @@ VALUE
 rb_hash_reject_bang(hash)
     VALUE hash;
 {
-    int n = RHASH(hash)->tbl->num_entries;
+    int n;
+
+    RETURN_ENUMERATOR(hash, 0, 0);
+    n = RHASH(hash)->tbl->num_entries;
     rb_hash_delete_if(hash);
     if (n == RHASH(hash)->tbl->num_entries) return Qnil;
     return hash;
@@ -912,6 +916,7 @@ rb_hash_select(hash)
 {
     VALUE result;
 
+    RETURN_ENUMERATOR(hash, 0, 0);
     result = rb_ary_new();
     rb_hash_foreach(hash, select_i, result);
     return result;
@@ -1090,6 +1095,7 @@ static VALUE
 rb_hash_each_value(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_value_i, 0);
     return hash;
 }
@@ -1122,6 +1128,7 @@ static VALUE
 rb_hash_each_key(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_key_i, 0);
     return hash;
 }
@@ -1156,6 +1163,7 @@ static VALUE
 rb_hash_each_pair(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_pair_i, 0);
     return hash;
 }
@@ -2003,6 +2011,7 @@ env_each_key(ehash)
     VALUE keys = env_keys();
     long i;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     for (i=0; i<RARRAY(keys)->len; i++) {
 	rb_yield(RARRAY(keys)->ptr[i]);
     }
@@ -2034,6 +2043,7 @@ env_each_value(ehash)
     VALUE values = env_values();
     long i;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     for (i=0; i<RARRAY(values)->len; i++) {
 	rb_yield(RARRAY(values)->ptr[i]);
     }
@@ -2075,6 +2085,7 @@ static VALUE
 env_each(ehash)
     VALUE ehash;
 {
+    RETURN_ENUMERATOR(ehash, 0, 0);
     return env_each_i(ehash, Qfalse);
 }
 
@@ -2086,12 +2097,14 @@ env_each_pair(ehash)
 }
 
 static VALUE
-env_reject_bang()
+env_reject_bang(ehash)
+    VALUE ehash;
 {
     volatile VALUE keys;
     long i;
     int del = 0;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     rb_secure(4);
     keys = env_keys();
 
@@ -2110,9 +2123,10 @@ env_reject_bang()
 }
 
 static VALUE
-env_delete_if()
+env_delete_if(ehash)
+    VALUE ehash;
 {
-    env_reject_bang();
+    env_reject_bang(ehash);
     return envtbl;
 }
 
@@ -2131,11 +2145,13 @@ env_values_at(argc, argv)
 }
 
 static VALUE
-env_select()
+env_select(ehash)
+    VALUE ehash;
 {
     VALUE result;
     char **env;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     result = rb_ary_new();
     env = GET_ENVIRON(environ);
     while (*env) {

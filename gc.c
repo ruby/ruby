@@ -1669,16 +1669,21 @@ os_obj_of(of)
  */
 
 static VALUE
-os_each_obj(argc, argv)
+os_each_obj(argc, argv, os)
     int argc;
     VALUE *argv;
+    VALUE os;
 {
     VALUE of;
 
     rb_secure(4);
-    if (rb_scan_args(argc, argv, "01", &of) == 0) {
+    if (argc == 0) {
 	of = 0;
     }
+    else {
+	rb_scan_args(argc, argv, "01", &of);
+    }
+    RETURN_ENUMERATOR(os, 1, &of);
     return os_obj_of(of);
 }
 

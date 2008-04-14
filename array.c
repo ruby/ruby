@@ -1853,6 +1853,7 @@ rb_ary_collect_bang(ary)
 {
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     rb_ary_modify(ary);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	rb_ary_store(ary, i, rb_yield(RARRAY(ary)->ptr[i]));
@@ -1937,6 +1938,7 @@ rb_ary_select(ary)
     VALUE result;
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     result = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {

@@ -1,3 +1,22 @@
+Mon Apr 14 17:55:30 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_collect_bang, rb_ary_select): Return an
+	  enumerator if no block is given.
+
+	* dir.c (dir_each, dir_foreach): Return an enumerator if no block
+	  is given.
+
+	* enum.c (enum_partition, enum_sort_by): Ditto.
+
+	* gc.c (os_each_obj): Ditto.
+
+	* hash.c (rb_hash_delete_if, rb_hash_reject_bang, rb_hash_select,
+	  rb_hash_each_value, rb_hash_each_key, rb_hash_each_pair,
+	  env_each_key, env_each_value, env_each, env_each_pair,
+	  env_reject_bang, env_delete_if, env_select): Ditto.
+
+	* numeric.c (num_step, int_upto, int_downto, int_dotimes): Ditto.
+
 Mon Apr 14 16:42:53 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ruby.h (rb_block_call_func): Fix prototype.
