@@ -1,3 +1,10 @@
+Mon Apr 14 13:19:36 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* range.c (range_each, range_step): Return an enumerator if no
+	  block is given.
+
+	* struct.c (rb_struct_each, rb_struct_each_pair): Ditto.
+
 Mon Apr 14 13:07:59 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_partition, rb_str_rpartition,
@@ -5,11 +12,6 @@ Mon Apr 14 13:07:59 2008  Akinori MUSHA  <knu@iDaemons.org>
 	  String#partition, #rpartition, #start_with? and #end_with?;
 	  backported from 1.9.  These methods are $KCODE aware unlike
 	  #index, #rindex and #include?.
-
-Mon Apr 14 00:11:22 2008  Akinori MUSHA  <knu@iDaemons.org>
-
-	* struct.c (rb_struct_each, rb_struct_each_pair): Return
-	  an enumerator if no block is given.
 
 Sun Apr 13 15:55:52 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 

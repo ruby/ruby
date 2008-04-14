@@ -68,6 +68,11 @@ with all sufficient information, see the ChangeLog file.
 
   * Process.exec implemented.
 
+  * Range#each
+  * Range#step
+
+    Return an enumerator if no block is given.
+
   * Regexp.union accepts an array of patterns.
 
   * String#partition
@@ -82,6 +87,11 @@ with all sufficient information, see the ChangeLog file.
 
     New exception class that causes Kernel#loop to stop iteration when
     raised.
+
+  * Struct#each
+  * Struct#each_pair
+
+    Return an enumerator if no block is given.
 
   * Symbol#to_proc implemented.
 

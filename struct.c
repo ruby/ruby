@@ -431,6 +431,7 @@ rb_struct_each(s)
 {
     long i;
 
+    RETURN_ENUMERATOR(s, 0, 0);
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	rb_yield(RSTRUCT(s)->ptr[i]);
     }
@@ -462,6 +463,7 @@ rb_struct_each_pair(s)
     VALUE members;
     long i;
 
+    RETURN_ENUMERATOR(s, 0, 0);
     members = rb_struct_members(s);
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	rb_yield_values(2, rb_ary_entry(members, i), RSTRUCT(s)->ptr[i]);

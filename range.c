@@ -310,6 +310,8 @@ range_step(argc, argv, range)
     VALUE b, e, step;
     long unit;
 
+    RETURN_ENUMERATOR(range, argc, argv);
+
     b = rb_ivar_get(range, id_beg);
     e = rb_ivar_get(range, id_end);
     if (rb_scan_args(argc, argv, "01", &step) == 0) {
@@ -410,6 +412,8 @@ range_each(range)
     VALUE range;
 {
     VALUE beg, end;
+
+    RETURN_ENUMERATOR(range, 0, 0);
 
     beg = rb_ivar_get(range, id_beg);
     end = rb_ivar_get(range, id_end);
