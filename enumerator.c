@@ -43,6 +43,7 @@ struct enumerator {
     rb_block_call_func *iter;
 };
 
+static void enumerator_mark _((void *));
 static void
 enumerator_mark(p)
     void *p;
@@ -71,6 +72,7 @@ enumerator_ptr(obj)
     return ptr;
 }
 
+static VALUE enumerator_iter_i _((VALUE, VALUE, int, VALUE *));
 static VALUE
 enumerator_iter_i(i, enum_obj, argc, argv)
     VALUE i;
@@ -226,6 +228,7 @@ enum_each_cons(obj, n)
     return Qnil;
 }
 
+static VALUE enumerator_allocate _((VALUE));
 static VALUE
 enumerator_allocate(klass)
     VALUE klass;
@@ -235,10 +238,13 @@ enumerator_allocate(klass)
 			    enumerator_mark, -1, ptr);
 }
 
+static VALUE enumerator_each_i _((VALUE, VALUE, int, VALUE *));
 static VALUE
-enumerator_each_i(v, enum_obj)
+enumerator_each_i(v, enum_obj, argc, argv)
     VALUE v;
     VALUE enum_obj;
+    int argc;
+    VALUE *argv;
 {
     return rb_yield(v);
 }

@@ -1,3 +1,10 @@
+Mon Apr 14 14:16:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enumerator.c (enumerator_mark, enumerator_iter_i, enumerator_each_i,
+	  enumerator_allocate): add prototype.
+
+	* enumerator.c (enumerator_each_i): declare unused two arguments.
+
 Mon Apr 14 13:58:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_each_char): New methods: String#chars and
