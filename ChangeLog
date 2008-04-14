@@ -1,3 +1,13 @@
+Mon Apr 14 18:14:19 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enum.c (enum_find, enum_reject): Return an enumerator if no
+	  block is given.
+
+	* io.c (rb_io_each_line, rb_io_each_byte, rb_io_s_foreach,
+	  argf_each_line, argf_each_byte): Ditto.
+
+	* string.c (str_gsub): Ditto.
+
 Mon Apr 14 18:10:05 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enum.c (find_index_i, find_index_iter_i): add prototype for VC.

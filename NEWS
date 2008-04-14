@@ -68,8 +68,10 @@ with all sufficient information, see the ChangeLog file.
 
     New methods.
 
+  * Enumerable#find
   * Enumerable#find_all
   * Enumerable#partition
+  * Enumerable#reject
   * Enumerable#select
   * Enumerable#sort_by
 
@@ -105,6 +107,16 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+  * IO#each
+  * IO#each_line
+  * IO#each_byte
+  * IO.foreach
+  * ARGF.each
+  * ARGF.each_line
+  * ARGF.each_byte
+
+    Return an enumerator if no block is given.
+
   * Numeric#step
 
     Return an enumerator if no block is given.
@@ -137,6 +149,7 @@ with all sufficient information, see the ChangeLog file.
   * String#each_byte
   * String#each
   * String#each_lines
+  * String#gsub(pattern)
 
     Return an enumerator if no block is given.
 

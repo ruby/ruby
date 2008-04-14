@@ -219,6 +219,7 @@ enum_find(argc, argv, obj)
     VALUE if_none;
 
     rb_scan_args(argc, argv, "01", &if_none);
+    RETURN_ENUMERATOR(obj, argc, argv);
     rb_iterate(rb_each, obj, find_i, (VALUE)&memo);
     if (memo != Qundef) {
 	return memo;
@@ -366,6 +367,7 @@ enum_reject(obj)
 {
     VALUE ary = rb_ary_new();
     
+    RETURN_ENUMERATOR(obj, 0, 0);
     rb_iterate(rb_each, obj, reject_i, ary);
 
     return ary;

@@ -2096,7 +2096,8 @@ str_gsub(argc, argv, str, bang)
     char *buf, *bp, *sp, *cp;
     int tainted = 0;
 
-    if (argc == 1 && rb_block_given_p()) {
+    if (argc == 1) {
+        RETURN_ENUMERATOR(str, argc, argv);
 	iter = 1;
     }
     else if (argc == 2) {
