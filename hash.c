@@ -787,6 +787,7 @@ delete_if_i(VALUE key, VALUE value, VALUE hash)
 VALUE
 rb_hash_delete_if(VALUE hash)
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_modify(hash);
     rb_hash_foreach(hash, delete_if_i, hash);
     return hash;
@@ -804,6 +805,8 @@ VALUE
 rb_hash_reject_bang(VALUE hash)
 {
     int n;
+
+    RETURN_ENUMERATOR(hash, 0, 0);
     if (!RHASH(hash)->ntbl)
         return Qnil;
     n = RHASH(hash)->ntbl->num_entries;
@@ -2142,12 +2145,13 @@ env_each_pair(VALUE ehash)
 }
 
 static VALUE
-env_reject_bang(void)
+env_reject_bang(VALUE ehash)
 {
     volatile VALUE keys;
     long i;
     int del = 0;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     rb_secure(4);
     keys = env_keys();
     for (i=0; i<RARRAY_LEN(keys); i++) {
@@ -2165,9 +2169,9 @@ env_reject_bang(void)
 }
 
 static VALUE
-env_delete_if(void)
+env_delete_if(VALUE ehash)
 {
-    env_reject_bang();
+    env_reject_bang(ehash);
     return envtbl;
 }
 

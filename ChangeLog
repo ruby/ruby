@@ -1,3 +1,8 @@
+Mon Apr 14 17:23:27 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c (rb_hash_delete_if, rb_hash_reject_bang, env_delete_if,
+	  env_reject_bang): Return an enumerator if no block is given.
+
 Mon Apr 14 14:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c, compile.h (compile_debug): made runtime option.
