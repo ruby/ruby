@@ -276,7 +276,7 @@ find_index_iter_i(i, memop)
  */
 
 static VALUE
-enum_find_index(argc, argc, obj)
+enum_find_index(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
