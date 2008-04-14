@@ -1,3 +1,7 @@
+Mon Apr 14 12:44:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (finalizers): removed.  [ruby-dev:34349]
+
 Mon Apr 14 00:51:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_parse.rb: add tests to achieve over 95% test coverage

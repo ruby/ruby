@@ -1814,57 +1814,6 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
     return os_obj_of(of);
 }
 
-static VALUE finalizers;
-
-/* deprecated
- */
-
-static VALUE
-add_final(VALUE os, VALUE block)
-{
-    rb_warn("ObjectSpace::add_finalizer is deprecated; use define_finalizer");
-    if (!rb_respond_to(block, rb_intern("call"))) {
-	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
-		 rb_obj_classname(block));
-    }
-    rb_ary_push(finalizers, block);
-    return block;
-}
-
-/*
- * deprecated
- */
-static VALUE
-rm_final(VALUE os, VALUE block)
-{
-    rb_warn("ObjectSpace::remove_finalizer is deprecated; use undefine_finalizer");
-    rb_ary_delete(finalizers, block);
-    return block;
-}
-
-/*
- * deprecated
- */
-static VALUE
-finals(void)
-{
-    rb_warn("ObjectSpace::finalizers is deprecated");
-    return finalizers;
-}
-
-/*
- * deprecated
- */
-
-static VALUE
-call_final(VALUE os, VALUE obj)
-{
-    rb_warn("ObjectSpace::call_finalizer is deprecated; use define_finalizer");
-    need_call_final = 1;
-    FL_SET(obj, FL_FINALIZE);
-    return obj;
-}
-
 /*
  *  call-seq:
  *     ObjectSpace.undefine_finalizer(obj)
@@ -1952,14 +1901,7 @@ run_final(VALUE obj)
     objid = rb_obj_id(obj);	/* make obj into id */
     rb_thread_critical = Qtrue;
     args[1] = 0;
-    if (RARRAY_LEN(finalizers) > 0) {
-	args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
-    }
     args[2] = (VALUE)rb_safe_level();
-    for (i=0; i<RARRAY_LEN(finalizers); i++) {
-	args[0] = RARRAY_PTR(finalizers)[i];
-	rb_protect(run_single_final, (VALUE)args, &status);
-    }
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
 	if (!args[1] && RARRAY_LEN(table) > 0) {
 	    args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
@@ -2274,20 +2216,11 @@ Init_GC(void)
     rb_mObSpace = rb_define_module("ObjectSpace");
     rb_define_module_function(rb_mObSpace, "each_object", os_each_obj, -1);
     rb_define_module_function(rb_mObSpace, "garbage_collect", rb_gc_start, 0);
-    rb_define_module_function(rb_mObSpace, "add_finalizer", add_final, 1);
-    rb_define_module_function(rb_mObSpace, "remove_finalizer", rm_final, 1);
-    rb_define_module_function(rb_mObSpace, "finalizers", finals, 0);
-    rb_define_module_function(rb_mObSpace, "call_finalizer", call_final, 1);
 
     rb_define_module_function(rb_mObSpace, "define_finalizer", define_final, -1);
     rb_define_module_function(rb_mObSpace, "undefine_finalizer", undefine_final, 1);
 
     rb_define_module_function(rb_mObSpace, "_id2ref", id2ref, 1);
-
-    rb_gc_register_address(&rb_mObSpace);
-    rb_global_variable(&finalizers);
-    rb_gc_unregister_address(&rb_mObSpace);
-    finalizers = rb_ary_new();
 
     rb_global_variable(&nomem_error);
     nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
