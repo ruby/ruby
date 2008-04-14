@@ -4,7 +4,7 @@ Tue Apr 15 07:21:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_abs): use hypot.
 
-	* complex.c (nucomp_quo): do not force convertion.
+	* complex.c (nucomp_quo): do not force conversion.
 
 	* test/ruby/test_complex.rb: omitted some meaningless tests.
 
