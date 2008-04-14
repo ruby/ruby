@@ -238,6 +238,7 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 
 #define REG_LITERAL FL_USER5
 #define REG_ENCODING_NONE FL_USER6
+#define REG_BUSY FL_USER7
 
 #define KCODE_FIXED FL_USER4
 
@@ -1144,11 +1145,12 @@ static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err);
 
-static void
-rb_reg_prepare_re(VALUE re, VALUE str, int enable_warning)
+
+static rb_encoding*
+rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
-    int need_recompile = 0;
-    rb_encoding *enc;
+    rb_encoding *enc = 0;
+    regex_t *reg;
 
     if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
         rb_raise(rb_eArgError,
@@ -1168,63 +1170,65 @@ rb_reg_prepare_re(VALUE re, VALUE str, int enable_warning)
         }
     }
     else {
-        if ((enc = rb_enc_get(str)) != 0 &&
-	     RREGEXP(re)->ptr->enc != enc) {
-            need_recompile = 1;
-        }
-        if (enable_warning &&
-            (RBASIC(re)->flags & REG_ENCODING_NONE) &&
+	enc = rb_enc_get(str);
+	if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	    enc != rb_ascii8bit_encoding() &&
-            rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-            rb_warn("regexp match /.../n against to %s string",
-                    rb_enc_name(enc));
-        }
-    }
-
-    if (need_recompile) {
-	onig_errmsg_buffer err = "";
-	int r;
-	OnigErrorInfo einfo;
-	regex_t *reg, *reg2;
-	UChar *pattern;
-        VALUE unescaped;
-        rb_encoding *fixed_enc = 0;
-
-	rb_reg_check(re);
-	reg = RREGEXP(re)->ptr;
-	pattern = ((UChar*)RREGEXP(re)->str);
-
-        unescaped = rb_reg_preprocess(
-            RREGEXP(re)->str, RREGEXP(re)->str + RREGEXP(re)->len, enc,
-            &fixed_enc, err);
-
-        if (unescaped == Qnil) {
-            rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
-        }
-
-	r = onig_new(&reg2, (UChar* )RSTRING_PTR(unescaped),
-		     (UChar* )(RSTRING_PTR(unescaped) + RSTRING_LEN(unescaped)),
-		     reg->options, enc,
-		     OnigDefaultSyntax, &einfo);
-	if (r) {
-	    onig_error_code_to_str((UChar*)err, r, &einfo);
-	    rb_reg_raise((char* )pattern, RREGEXP(re)->len, err, re);
+	    rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+	    rb_warn("regexp match /.../n against to %s string",
+		    rb_enc_name(enc));
 	}
-
-	RREGEXP(re)->ptr = reg2;
-	onig_free(reg);
-        RB_GC_GUARD(unescaped);
+	return enc;
     }
+    return RREGEXP(re)->ptr->enc;
+}
+
+static regex_t *
+rb_reg_prepare_re(VALUE re, rb_encoding *enc)
+{
+    regex_t *reg = RREGEXP(re)->ptr;
+    onig_errmsg_buffer err = "";
+    int r;
+    OnigErrorInfo einfo;
+    UChar *pattern;
+    VALUE unescaped;
+    rb_encoding *fixed_enc = 0;
+
+    if (reg->enc == enc) return reg;
+
+    rb_reg_check(re);
+    reg = RREGEXP(re)->ptr;
+    pattern = ((UChar*)RREGEXP(re)->str);
+
+    unescaped = rb_reg_preprocess(
+	pattern, pattern + RREGEXP(re)->len, enc,
+	&fixed_enc, err);
+
+    if (unescaped == Qnil) {
+	rb_raise(rb_eArgError, "regexp preprocess failed: %s", err);
+    }
+
+    r = onig_new(&reg, (UChar* )RSTRING_PTR(unescaped),
+		 (UChar* )(RSTRING_PTR(unescaped) + RSTRING_LEN(unescaped)),
+		 reg->options, enc,
+		 OnigDefaultSyntax, &einfo);
+    if (r) {
+	onig_error_code_to_str((UChar*)err, r, &einfo);
+	rb_reg_raise((char*)pattern, RREGEXP(re)->len, err, re);
+    }
+
+    RB_GC_GUARD(unescaped);
+    return reg;
 }
 
 int
 rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
 {
     int range;
-    OnigEncoding enc;
+    rb_encoding *enc;
     UChar *p, *string;
+    regex_t *reg;
 
-    rb_reg_prepare_re(re, str, 0);
+    enc = rb_reg_prepare_enc(re, str, 0);
 
     if (reverse) {
 	range = -pos;
@@ -1232,8 +1236,6 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
     else {
 	range = RSTRING_LEN(str) - pos;
     }
-
-    enc = (RREGEXP(re)->ptr)->enc;
 
     if (pos > 0 && ONIGENC_MBC_MAXLEN(enc) != 1 && pos < RSTRING_LEN(str)) {
 	 string = (UChar*)RSTRING_PTR(str);
@@ -1257,24 +1259,37 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     VALUE match;
     static struct re_registers regs;
     char *range = RSTRING_PTR(str);
+    regex_t *reg0 = RREGEXP(re)->ptr, *reg;
+    int busy = FL_TEST(re, REG_BUSY);
 
     if (pos > RSTRING_LEN(str) || pos < 0) {
 	rb_backref_set(Qnil);
 	return -1;
     }
 
-    rb_reg_prepare_re(re, str, 1);
+    reg = rb_reg_prepare_re(re, rb_reg_prepare_enc(re, str, 1));
 
+    FL_SET(re, REG_BUSY);
     if (!reverse) {
 	range += RSTRING_LEN(str);
     }
-    result = onig_search(RREGEXP(re)->ptr,
+    result = onig_search(reg,
 			 (UChar*)(RSTRING_PTR(str)),
 			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
 			 ((UChar*)(RSTRING_PTR(str)) + pos),
 			 ((UChar*)range),
 			 &regs, ONIG_OPTION_NONE);
 
+    if (RREGEXP(re)->ptr != reg) {
+	if (busy) {
+	    onig_free(reg);
+	}
+	else {
+	    onig_free(reg0);
+	    RREGEXP(re)->ptr = reg;
+	}
+    }
+    if (!busy) FL_UNSET(re, REG_BUSY);
     if (result < 0) {
 	if (result == ONIG_MISMATCH) {
 	    rb_backref_set(Qnil);

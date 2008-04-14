@@ -670,8 +670,11 @@ x = __ENCODING__
 
   def test_global_variable
     assert_equal(nil, eval('$-x'))
+    assert_equal(nil, eval('alias $preserve_last_match $&'))
     assert_equal(nil, eval('alias $& $test_parse_foobarbazqux'))
     $test_parse_foobarbazqux = nil
+    assert_equal(nil, $&)
+    assert_equal(nil, eval('alias $& $preserve_last_match'))
     assert_raise(SyntaxError) { eval('$#') }
   end
 
