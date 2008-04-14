@@ -1,3 +1,8 @@
+Mon Apr 14 13:58:32 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_each_char): New methods: String#chars and
+	  #each_char.
+
 Mon Apr 14 13:42:20 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_each_line, rb_str_each_byte): Reflect

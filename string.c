@@ -3813,6 +3813,50 @@ rb_str_each_byte(str)
 
 
 /*
+ *  Document-method: chars
+ *  call-seq:
+ *     str.chars                   => anEnumerator
+ *     str.chars {|substr| block } => str
+ *  
+ *  Returns an enumerator that gives each character in the string.
+ *  If a block is given, it iterates over each character in the string.
+ *     
+ *     "foo".chars.to_a   #=> ["f","o","o"]
+ */
+
+/*
+ *  Document-method: each_char
+ *  call-seq:
+ *     str.each_char {|cstr| block }    => str
+ *  
+ *  Passes each character in <i>str</i> to the given block.
+ *     
+ *     "hello".each_char {|c| print c, ' ' }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     h e l l o 
+ */
+
+static VALUE
+rb_str_each_char(VALUE str)
+{
+    int i, len, n;
+    const char *ptr;
+
+    RETURN_ENUMERATOR(str, 0, 0);
+    str = rb_str_new4(str);
+    ptr = RSTRING(str)->ptr;
+    len = RSTRING(str)->len;
+    for (i = 0; i < len; i += n) {
+        n = mbclen(ptr[i]);
+        rb_yield(rb_str_substr(str, i, n));
+    }
+    return str;
+}
+
+
+/*
  *  call-seq:
  *     str.chop!   => str or nil
  *  
@@ -4950,9 +4994,11 @@ Init_String()
     rb_define_method(rb_cString, "each_line", rb_str_each_line, -1);
     rb_define_method(rb_cString, "each",      rb_str_each_line, -1);
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
+    rb_define_method(rb_cString, "each_char", rb_str_each_char, 0);
 
     rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
     rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
+    rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
 
     rb_define_method(rb_cString, "sum", rb_str_sum, -1);
 
