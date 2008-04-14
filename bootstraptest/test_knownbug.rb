@@ -114,9 +114,9 @@ assert_equal 'ok', %q{
   def a() end
   begin
     if defined?(a(1).a)
-      :ok
-    else
       :ng
+    else
+      :ok
     end
   rescue
     :ng
@@ -127,9 +127,9 @@ assert_equal 'ok', %q{
   def a() end
   begin
     if defined?(a::B)
-      :ok
-    else
       :ng
+    else
+      :ok
     end
   rescue
     :ng
