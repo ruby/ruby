@@ -1,3 +1,9 @@
+Mon Apr 14 13:42:20 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_each_line, rb_str_each_byte): Reflect
+	  enumerator integration.  #lines and #bytes are now aliases to
+	  #each_line and #each_byte, respectively.
+
 Mon Apr 14 13:19:36 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* range.c (range_each, range_step): Return an enumerator if no
