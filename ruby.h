@@ -224,6 +224,8 @@ VALUE rb_ull2inum _((unsigned LONG_LONG));
 
 #define TYPE(x) rb_type((VALUE)(x))
 
+#define RB_GC_GUARD(v) (*(volatile VALUE *)&(v))
+
 void rb_check_type _((VALUE,int));
 #define Check_Type(v,t) rb_check_type((VALUE)(v),t)
 

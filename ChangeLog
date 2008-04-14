@@ -1,3 +1,7 @@
+Mon Apr 14 19:52:35 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.h: New macro: RB_GC_GUARD().
+
 Mon Apr 14 19:49:35 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* random.c (rb_genrand_int32, rb_genrand_real), intern.h: Export.
