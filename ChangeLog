@@ -1,3 +1,9 @@
+Mon Apr 14 16:42:53 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.h (rb_block_call_func): Fix prototype.
+
+	* enumerator.c (enumerator_iter_i, enumerator_each_i): Ditto.
+
 Mon Apr 14 15:49:05 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_count, enum_find_index): New methods:

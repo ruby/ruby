@@ -574,7 +574,7 @@ void rb_warning __((const char*, ...));		/* reports if `-w' specified */
 void rb_sys_warning __((const char*, ...));	/* reports if `-w' specified */
 void rb_warn __((const char*, ...));		/* reports always */
 
-typedef VALUE rb_block_call_func _((VALUE, VALUE, int, VALUE*));
+typedef VALUE rb_block_call_func _((VALUE, VALUE));
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));

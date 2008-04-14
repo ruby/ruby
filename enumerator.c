@@ -72,13 +72,11 @@ enumerator_ptr(obj)
     return ptr;
 }
 
-static VALUE enumerator_iter_i _((VALUE, VALUE, int, VALUE *));
+static VALUE enumerator_iter_i _((VALUE, VALUE));
 static VALUE
-enumerator_iter_i(i, enum_obj, argc, argv)
+enumerator_iter_i(i, enum_obj)
     VALUE i;
     VALUE enum_obj;
-    int argc;
-    VALUE *argv;
 {
     struct enumerator *e = (struct enumerator *)enum_obj;
     return rb_yield(proc_call(e->proc, i));
@@ -238,13 +236,11 @@ enumerator_allocate(klass)
 			    enumerator_mark, -1, ptr);
 }
 
-static VALUE enumerator_each_i _((VALUE, VALUE, int, VALUE *));
+static VALUE enumerator_each_i _((VALUE, VALUE));
 static VALUE
-enumerator_each_i(v, enum_obj, argc, argv)
+enumerator_each_i(v, enum_obj)
     VALUE v;
     VALUE enum_obj;
-    int argc;
-    VALUE *argv;
 {
     return rb_yield(v);
 }
