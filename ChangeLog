@@ -1,3 +1,7 @@
+Tue Apr 15 17:45:43 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/smtp.rb: backported from 1.9. bug#19003
+
 Tue Apr 15 17:06:12 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_symbol.rb (TestSymbol#test_to_proc): add tests.
