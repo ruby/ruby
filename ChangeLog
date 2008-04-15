@@ -1,3 +1,8 @@
+Wed Apr 16 02:40:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): preludes and parser need to run in safe
+	  level 0.  [ruby-dev:34407]
+
 Wed Apr 16 02:26:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): dln_find_file returns the pointer to a

@@ -951,6 +951,7 @@ process_options(VALUE arg)
     rb_encoding *enc;
     const char *s;
     int i = proc_options(argc, argv, opt);
+    int safe;
 
     argc -= i;
     argv += i;
@@ -1052,6 +1053,8 @@ process_options(VALUE arg)
     process_sflag(opt);
 
     ruby_init_loadpath();
+    safe = rb_safe_level();
+    rb_set_safe_level_force(0);
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
@@ -1088,6 +1091,7 @@ process_options(VALUE arg)
 	}
 	tree = load_file(parser, opt->script, 1, opt);
     }
+    rb_set_safe_level_force(safe);
 
     if (!tree) return Qfalse;
 
