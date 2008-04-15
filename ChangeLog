@@ -1,3 +1,9 @@
+Tue Apr 15 23:08:46 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb: fix cookie handling. [ruby-dev:34403]
+
+	* test/xmlrpc/test_cookie.rb: add a test for the above fix.
+
 Tue Apr 15 19:20:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c: #undef rb_argv moved before #define.
