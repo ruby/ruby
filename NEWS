@@ -244,6 +244,10 @@ with all sufficient information, see the ChangeLog file.
       These methods now accept a string or an integer instead of an
       IPAddr object as the argument.
 
+* net/smtp
+
+  * Support SSL/TLS.
+
 * openssl
 
   * New classes
