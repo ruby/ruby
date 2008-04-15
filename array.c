@@ -3577,7 +3577,6 @@ static VALUE
 rb_ary_take_while(ary)
     VALUE ary;
 {
-    VALUE result;
     long i;
 
     RETURN_ENUMERATOR(ary, 0, 0);
@@ -3632,7 +3631,6 @@ static VALUE
 rb_ary_drop_while(ary)
     VALUE ary;
 {
-    VALUE result;
     long i;
 
     RETURN_ENUMERATOR(ary, 0, 0);
