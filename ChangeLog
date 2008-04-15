@@ -1,3 +1,8 @@
+Tue Apr 15 18:39:14 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/uri.rb, lib/uri/ldaps.rb: added LDAPS
+	  scheme; backported from 1.9. bug#19015, [ruby-dev:31896]
+
 Tue Apr 15 17:45:43 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/net/smtp.rb: backported from 1.9. bug#19003

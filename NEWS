@@ -284,6 +284,10 @@ with all sufficient information, see the ChangeLog file.
 
       Tempfile.open(['image', 'jpg']) { |tempfile| ... }
 
+* uri
+
+  * added LDAPS scheme.
+
 * rss
 
   * 0.1.6 -> 0.2.4
