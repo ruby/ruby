@@ -139,6 +139,11 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+  * GC.stress
+  * GC.stress=
+
+    New methods.
+
   * Integer#ord
   * Integer#odd?
   * Integer#even?

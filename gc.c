@@ -76,6 +76,8 @@ static void run_final();
 static VALUE nomem_error;
 static void garbage_collect();
 
+int ruby_gc_stress = 0;
+
 void
 rb_memerror()
 {
@@ -87,6 +89,41 @@ rb_memerror()
     }
     recurse++;
     rb_exc_raise(nomem_error);
+}
+
+/*
+ *  call-seq:
+ *    GC.stress                 => true or false
+ *
+ *  returns current status of GC stress mode.
+ */
+
+static VALUE
+gc_stress_get(self)
+    VALUE self;
+{
+    return ruby_gc_stress ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *    GC.stress = bool          => bool
+ *
+ *  updates GC stress mode.
+ *
+ *  When GC.stress = true, GC is invoked for all GC opportunity:
+ *  all memory and object allocation.
+ *
+ *  Since it makes Ruby very slow, it is only for debugging.
+ */
+
+static VALUE
+gc_stress_set(self, bool)
+    VALUE self, bool;
+{
+    rb_secure(2);
+    ruby_gc_stress = RTEST(bool);
+    return bool;
 }
 
 void *
@@ -101,7 +138,7 @@ ruby_xmalloc(size)
     if (size == 0) size = 1;
     malloc_increase += size;
 
-    if (malloc_increase > malloc_limit) {
+    if (ruby_gc_stress || malloc_increase > malloc_limit) {
 	garbage_collect();
     }
     RUBY_CRITICAL(mem = malloc(size));
@@ -141,6 +178,7 @@ ruby_xrealloc(ptr, size)
     if (!ptr) return xmalloc(size);
     if (size == 0) size = 1;
     malloc_increase += size;
+    if (ruby_gc_stress) garbage_collect();
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	garbage_collect();
@@ -383,7 +421,7 @@ rb_newobj()
     if (during_gc)
 	rb_bug("object allocation during garbage collection phase");
 
-    if (!freelist) garbage_collect();
+    if (ruby_gc_stress || !freelist) garbage_collect();
 
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
@@ -2037,6 +2075,8 @@ Init_GC()
     rb_define_singleton_method(rb_mGC, "start", rb_gc_start, 0);
     rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
     rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
+    rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
+    rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set, 1);
     rb_define_method(rb_mGC, "garbage_collect", rb_gc_start, 0);
 
     rb_mObSpace = rb_define_module("ObjectSpace");

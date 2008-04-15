@@ -1,3 +1,9 @@
+Tue Apr 15 16:47:48 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* signal.c, gc.c: New methods: GC.stress, GC.stress=;
+	  backported from 1.9. a patch from Tadashi Saito
+	  in [ruby-dev:34394] and bug#19000
+
 Tue Apr 15 12:35:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rubyio.h (rb_io_t): renamed from OpenFile.
