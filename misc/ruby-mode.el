@@ -162,7 +162,7 @@ Also ignores spaces after parenthesis when 'space."
   "Default deep indent style."
   :options '(t nil space) :group 'ruby)
 
-(defcustom ruby-encoding-map '((shift_jis . cp932))
+(defcustom ruby-encoding-map '((shift_jis . cp932) (shift-jis . cp932))
   "Alist to map encoding name from emacs to ruby."
   :group 'ruby)
 
@@ -242,11 +242,6 @@ Also ignores spaces after parenthesis when 'space."
   (make-local-variable 'paragraph-ignore-fill-prefix)
   (setq paragraph-ignore-fill-prefix t))
 
-(eval-when-compile
-  (unless (fboundp 'coding-system-to-mime-charset)
-    (defun coding-system-to-mime-charset (coding-system)
-      (coding-system-change-eol-conversion coding-system nil))))
-
 (defun ruby-mode-set-encoding ()
   (save-excursion
     (widen)
@@ -254,9 +249,12 @@ Also ignores spaces after parenthesis when 'space."
     (when (re-search-forward "[^\0-\177]" nil t)
       (goto-char (point-min))
       (let ((coding-system
-	     (coding-system-to-mime-charset
-	      (or coding-system-for-write
-		  buffer-file-coding-system))))
+	     (or coding-system-for-write
+		 buffer-file-coding-system)))
+	(if coding-system
+	    (setq coding-system
+		  (or (coding-system-get coding-system 'mime-charset)
+		      (coding-system-change-eol-conversion coding-system nil))))
 	(setq coding-system
 	      (if coding-system
 		  (symbol-name
@@ -265,10 +263,15 @@ Also ignores spaces after parenthesis when 'space."
 		       coding-system))
 		"ascii-8bit"))
 	(if (looking-at "^#![^\n]*ruby") (beginning-of-line 2))
-	(cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]+\\)")
+	(cond ((looking-at "\\s *#.*-\*-\\s *\\(en\\)?coding\\s *:\\s *\\([-a-z0-9_]*\\)\\s *\\(;\\|-\*-\\)")
 	       (unless (string= (match-string 2) coding-system)
 		 (goto-char (match-beginning 2))
 		 (delete-region (point) (match-end 2))
+		 (and (looking-at "-\*-")
+		      (let ((n (skip-chars-backward " ")))
+			(cond ((= n 0) (insert "  ") (backward-char))
+			      ((= n -1) (insert " "))
+			      ((forward-char)))))
 		 (insert coding-system)))
 	      ((looking-at "\\s *#.*coding\\s *[:=]"))
 	      (t (insert "# -*- coding: " coding-system " -*-\n"))
@@ -296,8 +299,13 @@ The variable ruby-indent-level controls the amount of indentation.
   (make-local-variable 'add-log-current-defun-function)
   (setq add-log-current-defun-function 'ruby-add-log-current-method)
 
-  (make-local-variable 'before-save-hook)
-  (add-hook 'before-save-hook 'ruby-mode-set-encoding)
+  (add-hook
+   (cond ((boundp 'before-save-hook)
+	  (make-local-variable 'before-save-hook)
+	  'before-save-hook)
+	 ((boundp 'write-contents-functions) 'write-contents-functions)
+	 ((boundp 'write-contents-hooks) 'write-contents-hooks))
+   'ruby-mode-set-encoding)
 
   (run-mode-hooks 'ruby-mode-hook))
 

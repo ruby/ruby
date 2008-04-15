@@ -1,3 +1,17 @@
+Tue Apr 15 15:38:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-encoding-map): added shift-jis for older
+	  versions.
+
+	* misc/ruby-mode.el (ruby-mode-set-encoding):
+	  coding-system-to-mime-charset is not a standard function.
+	  [carbon-emacs:795]
+	  fix for the case that magic comment exists but coding system is
+	  absent.
+
+	* misc/ruby-mode.el (ruby-mode): use write-contents-functions or
+	  write-contents-hooks for older versions.
+
 Tue Apr 15 07:21:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_div): [ruby-dev:34357]
