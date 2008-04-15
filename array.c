@@ -3284,7 +3284,6 @@ rb_ary_take(VALUE obj, VALUE n)
 static VALUE
 rb_ary_take_while(VALUE ary)
 {
-    VALUE result;
     long i;
 
     RETURN_ENUMERATOR(ary, 0, 0);
@@ -3336,7 +3335,6 @@ rb_ary_drop(VALUE ary, VALUE n)
 static VALUE
 rb_ary_drop_while(VALUE ary)
 {
-    VALUE result;
     long i;
 
     RETURN_ENUMERATOR(ary, 0, 0);
