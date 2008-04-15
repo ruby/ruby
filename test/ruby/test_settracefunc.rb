@@ -53,12 +53,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)     # 1 + 2
     assert_equal(["line", 23, :test_event, TestSetTraceFunc],
                  events.shift)     # if b == 3
-    assert_equal(["line", 23, :test_event, TestSetTraceFunc],
-                 events.shift)     # if b == 3
     assert_equal(["c-call", 23, :==, Fixnum],
                  events.shift)     # b == 3
     assert_equal(["c-return", 23, :==, Fixnum],
                  events.shift)     # b == 3
+    assert_equal(["line", 23, :test_event, TestSetTraceFunc],
+                 events.shift)     # if b == 3
     assert_equal(["line", 24, :test_event, TestSetTraceFunc],
                  events.shift)     # case b
     assert_equal(["line", 25, :test_event, TestSetTraceFunc],
@@ -130,7 +130,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events = bar
     set_trace_func(nil)
     assert_equal(["line", 11, :bar, TestSetTraceFunc], events.shift)
-    assert_equal(["return", 7, :bar, TestSetTraceFunc], events.shift)
+    assert_equal(["return", 11, :bar, TestSetTraceFunc], events.shift)
     assert_equal(["line", 131, :test_event, TestSetTraceFunc], events.shift)
     assert_equal(["c-call", 131, :set_trace_func, Kernel], events.shift)
     assert_equal([], events)
