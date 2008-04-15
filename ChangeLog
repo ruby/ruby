@@ -4,7 +4,7 @@ Wed Apr 16 02:09:14 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/xmlrpc/test_cookie.rb: add a test for the above fix.
 
-Wed Apr 15 23:48:28 2008  Akinori MUSHA  <knu@iDaemons.org>
+Tue Apr 15 23:48:28 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* version.h: Branch off ruby_1_8_7 from ruby_1_8 in preparation
 	  for the forthcoming 1.8.7 release.
