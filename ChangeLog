@@ -1,3 +1,7 @@
+Tue Apr 15 17:06:12 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_symbol.rb (TestSymbol#test_to_proc): add tests.
+
 Tue Apr 15 16:58:55 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/menuspec.rb: option check will fail when 

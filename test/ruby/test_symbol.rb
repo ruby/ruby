@@ -77,5 +77,8 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_to_proc
     assert_equal %w(1 2 3), (1..3).map(&:to_s)
+    assert_nothing_raised(ArgumentError) { :object_id.to_proc.call([]) }
+    assert_nothing_raised(ArgumentError) { :object_id.to_proc.call([1]) }
+    assert_nothing_raised(ArgumentError) { :object_id.to_proc.call([1,2]) }
   end
 end
