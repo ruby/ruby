@@ -1,3 +1,7 @@
+Tue Apr 15 20:32:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (match_inspect): backported from 1.9.
+
 Tue Apr 15 19:03:28 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* eval.c (method_receiver, method_name, method_owner): New

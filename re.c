@@ -1279,6 +1279,55 @@ match_string(match)
     return RMATCH(match)->str;	/* str is frozen */
 }
 
+/*
+ * call-seq:
+ *    mtch.inspect   => str
+ *
+ * Returns a printable version of <i>mtch</i>.
+ *
+ *     puts /.$/.match("foo").inspect
+ *     #=> #<MatchData "o">
+ *
+ *     puts /(.)(.)(.)/.match("foo").inspect
+ *     #=> #<MatchData "foo" 1:"f" 2:"o" 3:"o">
+ *
+ *     puts /(.)(.)?(.)/.match("fo").inspect
+ *     #=> #<MatchData "fo" 1:"f" 2:nil 3:"o">
+ *
+ */
+
+static VALUE
+match_inspect(VALUE match)
+{
+    char *cname = rb_obj_classname(match);
+    VALUE str;
+    int i;
+    struct re_registers *regs = RMATCH(match)->regs;
+    int num_regs = regs->num_regs;
+
+    str = rb_str_buf_new2("#<");
+    rb_str_buf_cat2(str, cname);
+
+    for (i = 0; i < num_regs; i++) {
+        VALUE v;
+        rb_str_buf_cat2(str, " ");
+        if (0 < i) {
+            char buf[sizeof(i)*3+1];
+            snprintf(buf, sizeof(buf), "%d", i);
+            rb_str_buf_cat2(str, buf);
+            rb_str_buf_cat2(str, ":");
+        }
+        v = rb_reg_nth_match(i, match);
+        if (v == Qnil)
+            rb_str_buf_cat2(str, "nil");
+        else
+            rb_str_buf_append(str, rb_str_inspect(v));
+    }
+    rb_str_buf_cat2(str, ">");
+
+    return str;
+}
+
 VALUE rb_cRegexp;
 
 static void
@@ -2280,6 +2329,6 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
-    rb_define_method(rb_cMatch, "inspect", rb_any_to_s, 0); /* in object.c */
+    rb_define_method(rb_cMatch, "inspect", match_inspect, 0);
     rb_define_method(rb_cMatch, "string", match_string, 0);
 }
