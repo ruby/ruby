@@ -5037,6 +5037,7 @@ argf_alloc(VALUE klass)
     return argf;
 }
 
+#undef rb_argv
 #define filename          ARGF.filename
 #define current_file      ARGF.current_file
 #define gets_lineno       ARGF.gets_lineno
@@ -7243,8 +7244,6 @@ rb_get_argv(void)
 {
     return rb_argv;
 }
-
-#undef rb_argv
 
 /*
  *  Class <code>IO</code> is the basis for all input and output in Ruby.

@@ -1,3 +1,7 @@
+Tue Apr 15 19:20:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c: #undef rb_argv moved before #define.
+
 Tue Apr 15 18:02:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_argv): replaced with rb_get_argv().
