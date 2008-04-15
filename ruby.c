@@ -84,6 +84,7 @@ struct cmdline_options {
     int verbose;
     int yydebug;
     char *script;
+    VALUE script_name;
     VALUE e_script;
     struct {
 	struct {
@@ -934,6 +935,8 @@ opt_enc_index(VALUE enc_name)
     return i;
 }
 
+VALUE rb_progname;
+VALUE rb_argv0;
 static int src_encoding_index = -1; /* TODO: VM private */
 
 static VALUE
@@ -1034,16 +1037,17 @@ process_options(VALUE arg)
 		if (!opt->script)
 		    opt->script = argv[0];
 	    }
-#if defined DOSISH || defined __CYGWIN__
-	    /* assume that we can change argv[n] if never change its length. */
-	    translate_char(opt->script, '\\', '/');
-#endif
 	    argc--;
 	    argv++;
 	}
     }
 
     ruby_script(opt->script);
+#if defined DOSISH || defined __CYGWIN__
+    translate_char(RSTRING_PTR(rb_progname), '\\', '/');
+#endif
+    opt->script_name = rb_str_new4(rb_progname);
+    opt->script = RSTRING_PTR(opt->script_name);
     ruby_set_argv(argc, argv);
     process_sflag(opt);
 
@@ -1108,7 +1112,7 @@ process_options(VALUE arg)
     }
 
     return rb_iseq_new(tree, rb_str_new2("<main>"),
-		       rb_str_new2(opt->script), Qfalse, ISEQ_TYPE_TOP);
+		       opt->script_name, Qfalse, ISEQ_TYPE_TOP);
 }
 
 static NODE *
@@ -1270,9 +1274,6 @@ rb_load_file(const char *fname)
     return load_file(rb_parser_new(), fname, 0, &opt);
 }
 
-VALUE rb_progname;
-VALUE rb_argv0;
-
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
 #if !defined(_WIN32) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
 #define USE_ENVSPACE_FOR_ARG0
@@ -1288,6 +1289,7 @@ get_arglen(int argc, char **argv)
     char *s = argv[0];
     int i;
 
+    if (!argc) return 0;
     s += strlen(s);
     /* See if all the arguments are contiguous in memory */
     for (i = 1; i < argc; i++) {

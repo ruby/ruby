@@ -1,3 +1,8 @@
+Wed Apr 16 02:26:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): dln_find_file returns the pointer to a
+	  static buffer, so should copy it.  [ruby-dev:34409]
+
 Tue Apr 15 23:08:46 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/xmlrpc/client.rb: fix cookie handling. [ruby-dev:34403]
