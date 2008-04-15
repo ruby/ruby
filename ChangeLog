@@ -1,3 +1,7 @@
+Tue Apr 15 23:40:39 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syck/rubyext.c (rb_syck_mktime): Avoid buffer overflow.
+
 Tue Apr 15 20:32:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (match_inspect): backported from 1.9.
