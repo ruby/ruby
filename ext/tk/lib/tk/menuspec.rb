@@ -155,15 +155,12 @@ module TkMenuSpec
   def _use_menubar?(parent)
     use_menubar = false
     if parent.kind_of?(Tk::Root) || parent.kind_of?(Tk::Toplevel)
-      return true 
+      true 
+    elsif parent.current_configinfo.has_key?('menu')
+      true
     else
-      begin
-        parent.cget('menu')
-        return true 
-      rescue
-      end
+      false
     end
-    false
   end
   private :_use_menubar?
 
@@ -171,7 +168,7 @@ module TkMenuSpec
     #unless (mbar = parent.menu).kind_of?(TkMenu)
     # --> use current TkMenu class
     mbar = parent.menu
-    unless parent.menu.kind_of?(Tk::Menu) || parent.menu.kind_of?(TkMenu)
+    unless mbar.kind_of?(Tk::Menu) || mbar.kind_of?(TkMenu)
       #mbar = Tk::Menu.new(parent, :tearoff=>false)
       mbar = TkMenu.new(parent, :tearoff=>false)
       parent.menu(mbar)
@@ -198,7 +195,6 @@ module TkMenuSpec
 
     if _use_menubar?(parent)
       # menubar by menu entries
-
       mbar = _create_menu_for_menubar(parent)
 
       menu_name = nil

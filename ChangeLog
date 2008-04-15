@@ -1,3 +1,10 @@
+Tue Apr 15 16:58:55 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/menuspec.rb: option check will fail when 
+	  TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__ is true.
+
+	* ext/tk/lib/tk/palette.rb: bug fix.
+
 Tue Apr 15 16:47:48 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* signal.c, gc.c: New methods: GC.stress, GC.stress=;
