@@ -138,7 +138,7 @@ static VALUE
 rb_file_path(obj)
     VALUE obj;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     rb_io_check_initialized(fptr);
@@ -652,7 +652,7 @@ rb_stat(file, st)
 
     tmp = rb_check_convert_type(file, T_FILE, "IO", "to_io");
     if (!NIL_P(tmp)) {
-	OpenFile *fptr;
+	rb_io_t *fptr;
 
 	rb_secure(2);
 	GetOpenFile(tmp, fptr);
@@ -673,7 +673,7 @@ w32_io_info(file, st)
 
     tmp = rb_check_convert_type(*file, T_FILE, "IO", "to_io");
     if (!NIL_P(tmp)) {
-	OpenFile *fptr;
+	rb_io_t *fptr;
 
 	GetOpenFile(tmp, fptr);
 	f = (HANDLE)rb_w32_get_osfhandle(fileno(fptr->f));
@@ -739,7 +739,7 @@ static VALUE
 rb_io_stat(obj)
     VALUE obj;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -800,7 +800,7 @@ rb_file_lstat(obj)
     VALUE obj;
 {
 #ifdef HAVE_LSTAT
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     rb_secure(2);
@@ -1594,7 +1594,7 @@ static VALUE
 rb_file_atime(obj)
     VALUE obj;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -1639,7 +1639,7 @@ static VALUE
 rb_file_mtime(obj)
     VALUE obj;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -1687,7 +1687,7 @@ static VALUE
 rb_file_ctime(obj)
     VALUE obj;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct stat st;
 
     GetOpenFile(obj, fptr);
@@ -1755,7 +1755,7 @@ static VALUE
 rb_file_chmod(obj, vmode)
     VALUE obj, vmode;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int mode;
 
     rb_secure(2);
@@ -1899,7 +1899,7 @@ static VALUE
 rb_file_chown(obj, owner, group)
     VALUE obj, owner, group;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int o, g;
 
     rb_secure(2);
@@ -3087,7 +3087,7 @@ static VALUE
 rb_file_truncate(obj, len)
     VALUE obj, len;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     FILE *f;
     off_t pos;
 
@@ -3148,7 +3148,7 @@ cygwin_flock(int fd, int op)
 static int
 rb_thread_flock(fd, op, fptr)
     int fd, op;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
 	int ret;
@@ -3214,7 +3214,7 @@ rb_file_flock(obj, operation)
     VALUE operation;
 {
 #ifndef __CHECKER__
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int op;
 
     rb_secure(2);

@@ -19,9 +19,7 @@
 //
 
 // #include <stdarg.h> conflict with varargs.h?
-// There is function-name conflitct, so we rename it
 #if !defined(IN) && !defined(FLOAT)
-#define OpenFile  WINAPI_OpenFile
 #ifdef __BORLANDC__
 #define USE_WINSOCK2
 #endif
@@ -32,7 +30,6 @@
 #include <windows.h>
 #include <winsock.h>
 #endif
-#undef OpenFile
 #endif
 
 #define NT 1			/* deprecated */

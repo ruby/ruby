@@ -416,7 +416,7 @@ pty_getpty(argc, argv, self)
     VALUE res;
     struct pty_info info;
     struct pty_info thinfo;
-    OpenFile *wfptr,*rfptr;
+    rb_io_t *wfptr,*rfptr;
     VALUE rport = rb_obj_alloc(rb_cFile);
     VALUE wport = rb_obj_alloc(rb_cFile);
     char SlaveName[DEVICELEN];

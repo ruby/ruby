@@ -20,15 +20,18 @@
 #include <stdio_ext.h>
 #endif
 
-typedef struct OpenFile {
+typedef struct rb_io_t {
     FILE *f;			/* stdio ptr for read/write */
     FILE *f2;			/* additional ptr for rw pipes */
     int mode;			/* mode flags */
     int pid;			/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
-    void (*finalize) _((struct OpenFile*,int)); /* finalize proc */
-} OpenFile;
+    void (*finalize) _((struct rb_io_t*,int)); /* finalize proc */
+} rb_io_t;
+
+#define HAVE_RB_IO_T 1
+#define OpenFile rb_io_t	/* for backward compatibility */
 
 #define FMODE_READABLE  1
 #define FMODE_WRITABLE  2
@@ -51,7 +54,7 @@ typedef struct OpenFile {
 	RFILE(obj)->fptr = 0;\
     }\
     fp = 0;\
-    fp = RFILE(obj)->fptr = ALLOC(OpenFile);\
+    fp = RFILE(obj)->fptr = ALLOC(rb_io_t);\
     fp->f = fp->f2 = NULL;\
     fp->mode = 0;\
     fp->pid = 0;\
@@ -70,15 +73,15 @@ long rb_io_fread _((char *, long, FILE *));
 long rb_io_fwrite _((const char *, long, FILE *));
 int  rb_io_mode_flags _((const char*));
 int  rb_io_modenum_flags _((int));
-void rb_io_check_writable _((OpenFile*));
-void rb_io_check_readable _((OpenFile*));
-void rb_io_fptr_finalize _((OpenFile*));
-void rb_io_synchronized _((OpenFile*));
-void rb_io_check_initialized _((OpenFile*));
-void rb_io_check_closed _((OpenFile*));
+void rb_io_check_writable _((rb_io_t*));
+void rb_io_check_readable _((rb_io_t*));
+void rb_io_fptr_finalize _((rb_io_t*));
+void rb_io_synchronized _((rb_io_t*));
+void rb_io_check_initialized _((rb_io_t*));
+void rb_io_check_closed _((rb_io_t*));
 int rb_io_wait_readable _((int));
 int rb_io_wait_writable _((int));
-void rb_io_set_nonblock(OpenFile *fptr);
+void rb_io_set_nonblock(rb_io_t *fptr);
 
 VALUE rb_io_taint_check _((VALUE));
 NORETURN(void rb_eof_error _((void)));

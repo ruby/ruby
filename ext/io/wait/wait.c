@@ -56,7 +56,7 @@ static VALUE
 io_ready_p(io)
     VALUE io;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     FILE *fp;
     ioctl_arg n;
 
@@ -84,7 +84,7 @@ io_wait(argc, argv, io)
     VALUE *argv;
     VALUE io;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     fd_set rd;
     FILE *fp;
     int fd;

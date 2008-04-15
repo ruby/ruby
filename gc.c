@@ -35,7 +35,7 @@
 #endif
 
 void re_free_registers _((struct re_registers*));
-void rb_io_fptr_finalize _((struct OpenFile*));
+void rb_io_fptr_finalize _((struct rb_io_t*));
 
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t

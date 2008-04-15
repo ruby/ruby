@@ -1,3 +1,13 @@
+Tue Apr 15 12:35:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rubyio.h (rb_io_t): renamed from OpenFile.
+
+	* ruby.h (struct RHash), file.c, gc.c, io.c, ext/dl/dl.c,
+	  ext/io/wait/wait.c, ext/pty/pty.c, ext/readline/readline.c,
+	  ext/socket/socket.c: ditto.
+
+	* win32/win32.h: removed workaround for OpenFile.
+
 Tue Apr 15 00:15:29 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/text.rb: typo. call a wrong method.

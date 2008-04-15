@@ -244,7 +244,7 @@ init_sock(sock, fd)
     VALUE sock;
     int fd;
 {
-    OpenFile *fp;
+    rb_io_t *fp;
 
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
@@ -259,7 +259,7 @@ static VALUE
 bsock_s_for_fd(klass, fd)
     VALUE klass, fd;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE sock = init_sock(rb_obj_alloc(klass), NUM2INT(fd));
 
     GetOpenFile(sock, fptr);
@@ -275,7 +275,7 @@ bsock_shutdown(argc, argv, sock)
 {
     VALUE howto;
     int how;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't shutdown socket");
@@ -300,7 +300,7 @@ static VALUE
 bsock_close_read(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
@@ -319,7 +319,7 @@ static VALUE
 bsock_close_write(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
@@ -384,7 +384,7 @@ bsock_setsockopt(sock, lev, optname, val)
     VALUE sock, lev, optname, val;
 {
     int level, option;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int i;
     char *v;
     int vlen;
@@ -467,7 +467,7 @@ bsock_getsockopt(sock, lev, optname)
     int level, option;
     socklen_t len;
     char *buf;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     level = NUM2INT(lev);
     option = NUM2INT(optname);
@@ -491,7 +491,7 @@ bsock_getsockname(sock)
 {
     char buf[1024];
     socklen_t len = sizeof buf;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
     if (getsockname(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
@@ -505,7 +505,7 @@ bsock_getpeername(sock)
 {
     char buf[1024];
     socklen_t len = sizeof buf;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
     if (getpeername(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
@@ -521,7 +521,7 @@ bsock_send(argc, argv, sock)
 {
     VALUE mesg, to;
     VALUE flags;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     FILE *f;
     int fd, n;
 
@@ -574,7 +574,7 @@ s_recvfrom(sock, argc, argv, from)
     VALUE *argv;
     enum sock_recv_type from;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE str;
     char buf[1024];
     socklen_t alen = sizeof buf;
@@ -644,7 +644,7 @@ s_recvfrom(sock, argc, argv, from)
 static VALUE
 s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE str;
     char buf[1024];
     socklen_t alen = sizeof buf;
@@ -1350,7 +1350,7 @@ static VALUE
 socks_s_close(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(sock)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
@@ -1483,7 +1483,7 @@ make_fd_nonblock(int fd)
 }
 
 static VALUE
-s_accept_nonblock(VALUE klass, OpenFile *fptr, struct sockaddr *sockaddr, socklen_t *len)
+s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
 
@@ -1542,7 +1542,7 @@ static VALUE
 tcp_accept(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
 
@@ -1585,7 +1585,7 @@ static VALUE
 tcp_accept_nonblock(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
 
@@ -1599,7 +1599,7 @@ static VALUE
 tcp_sysaccept(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_storage from;
     socklen_t fromlen;
 
@@ -1630,7 +1630,7 @@ init_unixsock(sock, path, server)
 {
     struct sockaddr_un sockaddr;
     int fd, status;
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     SafeStringValue(path);
     fd = ruby_socket(AF_UNIX, SOCK_STREAM, 0);
@@ -1682,7 +1682,7 @@ static VALUE
 ip_addr(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_storage addr;
     socklen_t len = sizeof addr;
 
@@ -1697,7 +1697,7 @@ static VALUE
 ip_peeraddr(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_storage addr;
     socklen_t len = sizeof addr;
 
@@ -1778,7 +1778,7 @@ static VALUE
 udp_connect(sock, host, port)
     VALUE sock, host, port;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct udp_arg arg;
     VALUE ret;
 
@@ -1796,7 +1796,7 @@ static VALUE
 udp_bind(sock, host, port)
     VALUE sock, host, port;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct addrinfo *res0, *res;
 
     rb_secure(3);
@@ -1821,7 +1821,7 @@ udp_send(argc, argv, sock)
     VALUE sock;
 {
     VALUE mesg, flags, host, port;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     FILE *f;
     int n;
     struct addrinfo *res0, *res;
@@ -1920,7 +1920,7 @@ static VALUE
 unix_path(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
     if (fptr->path == 0) {
@@ -1967,7 +1967,7 @@ unix_send_io(sock, val)
 {
 #if defined(HAVE_SENDMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     int fd;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct msghdr msg;
     struct iovec vec[1];
     char buf[1];
@@ -1980,7 +1980,7 @@ unix_send_io(sock, val)
 #endif
 
     if (rb_obj_is_kind_of(val, rb_cIO)) {
-        OpenFile *valfptr;
+        rb_io_t *valfptr;
 	GetOpenFile(val, valfptr);
 	fd = fileno(valfptr->f);
     }
@@ -2048,7 +2048,7 @@ unix_recv_io(argc, argv, sock)
 {
 #if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
     VALUE klass, mode;
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct msghdr msg;
     struct iovec vec[2];
     char buf[1];
@@ -2152,7 +2152,7 @@ static VALUE
 unix_accept(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_un from;
     socklen_t fromlen;
 
@@ -2195,7 +2195,7 @@ static VALUE
 unix_accept_nonblock(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_un from;
     socklen_t fromlen;
 
@@ -2209,7 +2209,7 @@ static VALUE
 unix_sysaccept(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_un from;
     socklen_t fromlen;
 
@@ -2231,7 +2231,7 @@ static VALUE
 unix_addr(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_un addr;
     socklen_t len = sizeof addr;
 
@@ -2246,7 +2246,7 @@ static VALUE
 unix_peeraddr(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     struct sockaddr_un addr;
     socklen_t len = sizeof addr;
 
@@ -2526,7 +2526,7 @@ static VALUE
 sock_connect(sock, addr)
     VALUE sock, addr;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int fd;
 
     StringValue(addr);
@@ -2582,7 +2582,7 @@ static VALUE
 sock_connect_nonblock(sock, addr)
     VALUE sock, addr;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int n;
 
     StringValue(addr);
@@ -2680,7 +2680,7 @@ static VALUE
 sock_bind(sock, addr)
     VALUE sock, addr;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
 
     StringValue(addr);
     GetOpenFile(sock, fptr);
@@ -2764,7 +2764,7 @@ static VALUE
 sock_listen(sock, log)
     VALUE sock, log;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     int backlog;
 
     rb_secure(4);
@@ -3040,7 +3040,7 @@ static VALUE
 sock_accept(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
@@ -3103,7 +3103,7 @@ static VALUE
 sock_accept_nonblock(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;
@@ -3156,7 +3156,7 @@ static VALUE
 sock_sysaccept(sock)
     VALUE sock;
 {
-    OpenFile *fptr;
+    rb_io_t *fptr;
     VALUE sock2;
     char buf[1024];
     socklen_t len = sizeof buf;

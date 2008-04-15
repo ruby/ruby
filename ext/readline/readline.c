@@ -79,7 +79,7 @@ readline_readline(argc, argv, self)
     char *prompt = NULL;
     char *buff;
     int status;
-    OpenFile *ofp, *ifp;
+    rb_io_t *ofp, *ifp;
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "02", &tmp, &add_hist) > 0) {
