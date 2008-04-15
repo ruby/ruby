@@ -1,3 +1,8 @@
+Wed Apr 16 06:03:45 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_settracefunc.rb (TestSetTraceFunc#test_event):
+	  Fix tests to reflect the following changes: r15833, r15759.
+
 Wed Apr 16 04:01:43 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* version.h: Welcome to the post-1.8.7 world.  Radical changes are
