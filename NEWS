@@ -167,6 +167,12 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+  * Method#receiver
+  * Method#name
+  * Method#owner
+
+    New methods.
+
   * Numeric#step
 
     Return an enumerator if no block is given.

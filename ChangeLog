@@ -1,3 +1,8 @@
+Tue Apr 15 19:03:28 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* eval.c (method_receiver, method_name, method_owner): New
+	  methods; backported from 1.9. bug#19007
+
 Tue Apr 15 18:39:14 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/uri.rb, lib/uri/ldaps.rb: added LDAPS

@@ -39,4 +39,13 @@ class TestMethod < Test::Unit::TestCase
       um.bind(Base.new)
     end
   end
+
+  def test_receiver_name_owner
+    o = Object.new
+    def o.foo; end
+    m = o.method(:foo)
+    assert_equal(o, m.receiver)
+    assert_equal("foo", m.name)
+    assert_equal(class << o; self; end, m.owner)
+  end
 end
