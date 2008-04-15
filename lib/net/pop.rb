@@ -13,7 +13,7 @@
 # Ruby Distribute License.
 # 
 # NOTE: You can find Japanese version of this document at:
-# http://www.ruby-lang.org/ja/man/index.cgi?cmd=view;name=net%2Fpop.rb
+# http://www.ruby-lang.org/ja/man/html/net_pop.html
 # 
 #   $Id$
 # 

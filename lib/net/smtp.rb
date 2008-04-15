@@ -12,7 +12,7 @@
 # modify this program under the same terms as Ruby itself.
 # 
 # NOTE: You can find Japanese version of this document at:
-# http://www.ruby-lang.org/ja/man/index.cgi?cmd=view;name=net%2Fsmtp.rb
+# http://www.ruby-lang.org/ja/man/html/net_smtp.html
 # 
 # $Id$
 #

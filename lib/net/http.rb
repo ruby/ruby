@@ -19,7 +19,7 @@
 # See Net::HTTP for an overview and examples. 
 # 
 # NOTE: You can find Japanese version of this document here:
-# http://www.ruby-lang.org/ja/man/?cmd=view;name=net%2Fhttp.rb
+# http://www.ruby-lang.org/ja/man/html/net_http.html
 # 
 #--
 # $Id$

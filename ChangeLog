@@ -1,3 +1,8 @@
+Tue Apr 15 17:10:59 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/http.rb, lib/net/smtp.rb, lib/net/pop.rb: update
+	  URLs of Japanese documents.
+
 Tue Apr 15 16:45:14 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_symbol.rb (TestSymbol#test_to_proc): add tests.
