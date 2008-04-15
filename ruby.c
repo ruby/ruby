@@ -66,9 +66,6 @@ VALUE rb_parser_set_yydebug(VALUE, VALUE);
 const char *ruby_get_inplace_mode(void);
 void ruby_set_inplace_mode(const char *);
 
-extern VALUE rb_get_argv(void);
-#define rb_argv rb_get_argv()
-
 #define DISABLE_BIT(bit) (1U << disable_##bit)
 enum disable_flag_bits {
     disable_gems,

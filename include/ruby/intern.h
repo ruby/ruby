@@ -480,7 +480,9 @@ int rb_reg_options(VALUE);
 void rb_set_kcode(const char*);
 const char* rb_get_kcode(void);
 /* ruby.c */
+#define rb_argv rb_get_argv()
 RUBY_EXTERN VALUE rb_argv0;
+VALUE rb_get_argv(void);
 void *rb_load_file(const char*);
 void ruby_script(const char*);
 void ruby_prog_init(void);

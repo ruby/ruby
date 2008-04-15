@@ -1,6 +1,7 @@
-Tue Apr 15 17:55:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr 15 18:02:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* include/ruby/intern.h (rb_argv): removed.  [ ruby-Bugs-19514 ]
+	* include/ruby/intern.h (rb_argv): replaced with rb_get_argv().
+	  [ruby-Bugs-19514]
 
 Tue Apr 15 17:10:59 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
