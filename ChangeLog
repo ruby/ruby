@@ -1,3 +1,10 @@
+Thu Apr 17 00:45:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_process.rb (test_rlimit_nofile): reset RLIMIT_NOFILE
+	  before exit (for gcov).
+	* test/ruby/test_rubyoptions.rb: new tests for option of ruby
+	  interpreter, to achieve over 95% test coverage of ruby.c.
+
 Wed Apr 16 02:40:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): preludes and parser need to run in safe
