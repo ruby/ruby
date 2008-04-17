@@ -2394,8 +2394,6 @@ static VALUE
 rb_io_getc(VALUE io)
 {
     rb_io_t *fptr;
-    int r, n;
-    VALUE str;
     rb_encoding *enc;
 
     GetOpenFile(io, fptr);

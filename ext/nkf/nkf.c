@@ -138,10 +138,6 @@ int nkf_split_options(const char *arg)
 static VALUE
 rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
 {
-    rb_encoding *to_enc;
-    const char *to_e;
-    int to_encidx;
-
     reinit();
     StringValue(opt);
     nkf_split_options(RSTRING_PTR(opt));

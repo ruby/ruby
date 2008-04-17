@@ -3103,7 +3103,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	else {
 	    rb_iseq_t *ip;
-	  next_by_throw:
 	    ip = iseq;
 	    while (ip) {
 		level = 0x8000;
@@ -3165,7 +3164,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	else {
 	    rb_iseq_t *ip;
 	    unsigned long level;
-	  redo_by_throw:
 	    level = 0x8000 | 0x4000;
 	    ip = iseq;
 	    while (ip) {

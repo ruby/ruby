@@ -45,12 +45,12 @@ fun_so_to_utf_16be(const unsigned char* s, unsigned char* o)
         return 2;
     }
     else if ((s[0]&0xF0)==0xE0) {
-        o[0] = (s[0]<<4) | (s[1]>>2)^0x20;
+        o[0] = (s[0]<<4) | ((s[1]>>2)^0x20);
         o[1] = (s[1]<<6) | (s[2]^0x80);
         return 2;
     }
     else {
-        int w = (((s[0]&0x07)<<2) | (s[1]>>4)&0x03) - 1;
+        int w = (((s[0]&0x07)<<2) | ((s[1]>>4)&0x03)) - 1;
         o[0] = 0xD8 | (w>>2);
         o[1] = (w<<6) | ((s[1]&0x0F)<<2) | ((s[2]>>4)-8);
         o[2] = 0xDC | ((s[2]>>2)&0x03);
@@ -106,7 +106,7 @@ fun_so_to_utf_16le(const unsigned char* s, unsigned char* o)
         return 2;
     }
     else {
-        int w = (((s[0]&0x07)<<2) | (s[1]>>4)&0x03) - 1;
+        int w = (((s[0]&0x07)<<2) | ((s[1]>>4)&0x03)) - 1;
         o[1] = 0xD8 | (w>>2);
         o[0] = (w<<6) | ((s[1]&0x0F)<<2) | ((s[2]>>4)-8);
         o[3] = 0xDC | ((s[2]>>2)&0x03);

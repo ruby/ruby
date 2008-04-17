@@ -884,7 +884,6 @@ syck_parser_set_resolver(VALUE self, VALUE resolver)
 static VALUE
 syck_resolver_initialize(VALUE self)
 {
-    VALUE tags = rb_hash_new();
     rb_ivar_set(self, s_tags, rb_hash_new());
     return self;
 }
@@ -916,7 +915,6 @@ syck_resolver_use_types_at(VALUE self, VALUE hsh)
 VALUE
 syck_resolver_detect_implicit(VALUE self, VALUE val)
 {
-    char *type_id;
     return rb_str_new2( "" );
 }
 
@@ -1946,7 +1944,6 @@ VALUE
 syck_emitter_emit(int argc, VALUE *argv, VALUE self)
 {
     VALUE oid, proc;
-    char *anchor_name;
     SyckEmitter *emitter;
     struct emitter_xtra *bonus;
     SYMID symple;

@@ -1,3 +1,18 @@
+Thu Apr 17 22:20:52 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* enc/trans/utf_16_32.c (fun_so_to_utf_16be, fun_so_to_utf_16le): add
+	  parentheses to remove warnings of gcc.
+
+	* io.c (rb_io_getc): remove unused variables.
+
+	* compile.c (NODE_NEXT, NODE_REDO): remove unused labels.
+
+	* ext/nkf/nkf.c (rb_nkf_convert): remove unused variables.
+
+	* ext/syck/rubyext.c (syck_resolver_initialize,
+	  syck_resolver_detect_implicit, syck_emitter_emit): remove unused
+	  variables.
+
 Thu Apr 17 20:12:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_rubyoptions.rb (test_search): enable some assertions.

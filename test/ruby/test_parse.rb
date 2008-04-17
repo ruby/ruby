@@ -759,6 +759,8 @@ x = __ENCODING__
   end
 
   def test_void_expr_stmts_value
+    # This test checks if void contexts are warned correctly.
+    # Thus, warnings MUST NOT be suppressed.
     $VERBOSE = true
     x = 1
     assert_nil eval("x; nil")
