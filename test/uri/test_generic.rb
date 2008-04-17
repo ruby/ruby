@@ -38,6 +38,17 @@ class TestGeneric < Test::Unit::TestCase
     exp = [
       'ftp', 
       nil, 'ftp.is.co.za', URI::FTP.default_port, 
+      'rfc/rfc1808.txt', nil,
+    ]
+    ary = uri_to_ary(url)
+    assert_equal(exp, ary)
+    # 1'
+    url = URI.parse('ftp://ftp.is.co.za/%2Frfc/rfc1808.txt')
+    assert_kind_of(URI::FTP, url)
+
+    exp = [
+      'ftp', 
+      nil, 'ftp.is.co.za', URI::FTP.default_port, 
       '/rfc/rfc1808.txt', nil,
     ]
     ary = uri_to_ary(url)
@@ -124,11 +135,10 @@ class TestGeneric < Test::Unit::TestCase
     assert_kind_of(URI::Generic, url)
 
     # 9
-    # [ruby-dev:25667]
     url = URI.parse('ftp://:pass@localhost/')
-    assert_equal('', url.user)
+    assert_equal('', url.user, "[ruby-dev:25667]")
     assert_equal('pass', url.password)
-    assert_equal(':pass', url.userinfo)
+    assert_equal(':pass', url.userinfo, "[ruby-dev:25667]")
     url = URI.parse('ftp://user@localhost/')
     assert_equal('user', url.user)
     assert_equal(nil, url.password)
@@ -155,9 +165,8 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal(URI.parse('http://foo/baz'), u3 + '/baz')
     assert_equal(URI.parse('http://foo/baz'), u4 + '/baz')
 
-    # from [ruby-dev:11508] Re: uri
     url = URI.parse('http://hoge/a.html') + 'b.html'
-    assert_equal('http://hoge/b.html', url.to_s)
+    assert_equal('http://hoge/b.html', url.to_s, "[ruby-dev:11508]")
 
     # reported by Mr. Kubota <em6t-kbt@asahi-net.or.jp>
     url = URI.parse('http://a/b') + 'http://x/y'
@@ -174,15 +183,13 @@ class TestGeneric < Test::Unit::TestCase
     assert(nil != u.merge!("../baz"))
     assert_equal('http://foo/baz', u.to_s)
 
-    # [ruby-dev:23628]
     u0 = URI.parse('mailto:foo@example.com')
     u1 = URI.parse('mailto:foo@example.com#bar')
-    assert_equal(uri_to_ary(u0 + '#bar'), uri_to_ary(u1))
+    assert_equal(uri_to_ary(u0 + '#bar'), uri_to_ary(u1), "[ruby-dev:23628]")
 
-    # [ruby-list:39838]
     u0 = URI.parse('http://www.example.com/')
     u1 = URI.parse('http://www.example.com/foo/..') + './'
-    assert_equal(u0, u1)
+    assert_equal(u0, u1, "[ruby-list:39838]")
     u0 = URI.parse('http://www.example.com/foo/')
     u1 = URI.parse('http://www.example.com/foo/bar/..') + './'
     assert_equal(u0, u1)
@@ -196,11 +203,10 @@ class TestGeneric < Test::Unit::TestCase
     u1 = URI.parse('http://www.example.com/foo/bar/baz/../..') + './'
     assert_equal(u0, u1)
 
-    # [ruby-list:39844]
     u = URI.parse('http://www.example.com/')
     u0 = u + './foo/'
     u1 = u + './foo/bar/..'
-    assert_equal(u0, u1)
+    assert_equal(u0, u1, "[ruby-list:39844]")
     u = URI.parse('http://www.example.com/')
     u0 = u + './'
     u1 = u + './foo/bar/../..'
@@ -238,7 +244,7 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('', url.to_s)
   end
 
-  def test_rfc2396_examples
+  def test_rfc3986_examples
 #  http://a/b/c/d;p?q
 #        g:h           =  g:h
     url = @base_url.merge('g:h')
@@ -296,11 +302,11 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('//g', url.to_s)
 
 #  http://a/b/c/d;p?q
-#        ?y            =  http://a/b/c/?y
+#        ?y            =  http://a/b/c/d;p?y
     url = @base_url.merge('?y')
     assert_kind_of(URI::HTTP, url)
-    assert_equal('http://a/b/c/?y', url.to_s)
-    url = @base_url.route_to('http://a/b/c/?y')
+    assert_equal('http://a/b/c/d;p?y', url.to_s)
+    url = @base_url.route_to('http://a/b/c/d;p?y')
     assert_kind_of(URI::Generic, url)
     assert_equal('?y', url.to_s)
 
@@ -314,11 +320,11 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('g?y', url.to_s)
 
 #  http://a/b/c/d;p?q
-#        #s            =  (current document)#s
+#        #s            =  http://a/b/c/d;p?q#s
     url = @base_url.merge('#s')
     assert_kind_of(URI::HTTP, url)
-    assert_equal(@base_url.to_s + '#s', url.to_s)
-    url = @base_url.route_to(@base_url.to_s + '#s')
+    assert_equal('http://a/b/c/d;p?q#s', url.to_s)
+    url = @base_url.route_to('http://a/b/c/d;p?q#s')
     assert_kind_of(URI::Generic, url)
     assert_equal('#s', url.to_s)
 
@@ -452,22 +458,22 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('', url.to_s)
 
 #  http://a/b/c/d;p?q
-#        /./g          =  http://a/./g
+#        /./g          =  http://a/g
     url = @base_url.merge('/./g')
     assert_kind_of(URI::HTTP, url)
-    assert_equal('http://a/./g', url.to_s)
-    url = @base_url.route_to('http://a/./g')
-    assert_kind_of(URI::Generic, url)
-    assert_equal('/./g', url.to_s)
+    assert_equal('http://a/g', url.to_s)
+#    url = @base_url.route_to('http://a/./g')
+#    assert_kind_of(URI::Generic, url)
+#    assert_equal('/./g', url.to_s)
 
 #  http://a/b/c/d;p?q
-#        /../g         =  http://a/../g
+#        /../g         =  http://a/g
     url = @base_url.merge('/../g')
     assert_kind_of(URI::HTTP, url)
-    assert_equal('http://a/../g', url.to_s)
-    url = @base_url.route_to('http://a/../g')
-    assert_kind_of(URI::Generic, url)
-    assert_equal('/../g', url.to_s)
+    assert_equal('http://a/g', url.to_s)
+#    url = @base_url.route_to('http://a/../g')
+#    assert_kind_of(URI::Generic, url)
+#    assert_equal('/../g', url.to_s)
 
 #  http://a/b/c/d;p?q
 #        g.            =  http://a/b/c/g.
@@ -506,24 +512,24 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('..g', url.to_s)
 
 #  http://a/b/c/d;p?q
-#        ../../../g    =  http://a/../g
+#        ../../../g    =  http://a/g
     url = @base_url.merge('../../../g')
     assert_kind_of(URI::HTTP, url)
-    assert_equal('http://a/../g', url.to_s)
-    url = @base_url.route_to('http://a/../g')
+    assert_equal('http://a/g', url.to_s)
+    url = @base_url.route_to('http://a/g')
     assert_kind_of(URI::Generic, url)
-    assert('../../../g' != url.to_s) # ok? yes, it confuses you
-    assert_equal('/../g', url.to_s)  # and it is clearly
+    assert('../../../g' != url.to_s)  # ok? yes, it confuses you
+    assert_equal('../../g', url.to_s) # and it is clearly
 
 #  http://a/b/c/d;p?q
-#        ../../../../g =  http://a/../../g
+#        ../../../../g =  http://a/g
     url = @base_url.merge('../../../../g')
     assert_kind_of(URI::HTTP, url)
-    assert_equal('http://a/../../g', url.to_s)
-    url = @base_url.route_to('http://a/../../g')
+    assert_equal('http://a/g', url.to_s)
+    url = @base_url.route_to('http://a/g')
     assert_kind_of(URI::Generic, url)
     assert('../../../../g' != url.to_s) # ok? yes, it confuses you
-    assert_equal('/../../g', url.to_s)  # and it is clearly
+    assert_equal('../../g', url.to_s)   # and it is clearly
 
 #  http://a/b/c/d;p?q
 #        ./../g        =  http://a/b/g
