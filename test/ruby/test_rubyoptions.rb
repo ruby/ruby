@@ -9,13 +9,32 @@ require 'open3'
 require_relative 'envutil'
 
 class TestRubyOptions < Test::Unit::TestCase
+  LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
   def ruby(*args)
     ruby = EnvUtil.rubybin
+    c = "C"
+    env = {}
+    LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
     stdin, stdout, stderr = Open3.popen3(*([ruby] + args))
+    env.each_pair {|lc, v|
+      if v
+        ENV[lc] = v
+      else
+        ENV.delete(lc)
+      end
+    }
+    env = nil
     Timeout.timeout(10) do
       yield(stdin, stdout, stderr)
     end
   ensure
+    env.each_pair {|lc, v|
+      if v
+        ENV[lc] = v
+      else
+        ENV.delete(lc)
+      end
+    } if env
     stdin .close unless !stdin  || stdin .closed?
     stdout.close unless !stdout || stdout.closed?
     stderr.close unless !stderr || stderr.closed?
@@ -76,11 +95,11 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_safe_level
     ruby('-T', '-e', '') do |w, r, e|
-      assert(e.read.chomp =~ /no -e allowed in tainted mode \(SecurityError\)/)
+      assert_match(/no -e allowed in tainted mode \(SecurityError\)/, e.read)
     end
 
     ruby('-T4', '-S', 'foo.rb') do |w, r, e|
-      assert(e.read.chomp =~ /no -S allowed in tainted mode \(SecurityError\)/)
+      assert_match(/no -S allowed in tainted mode \(SecurityError\)/, e.read)
     end
   end
 
@@ -96,7 +115,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_verbose
     ruby('-vve', '') do |w, r, e|
-      assert(r.read.chomp =~ /^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/)
+      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, r.read)
     end
 
     ruby('--verbose', '-e', 'p $VERBOSE') do |w, r, e|
@@ -111,7 +130,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_copyright
     ruby('--copyright') do |w, r, e|
-      assert(r.read.chomp =~ /^ruby - Copyright \(C\) 1993-\d+ Yukihiro Matsumoto$/)
+      assert_match(/^ruby - Copyright \(C\) 1993-\d+ Yukihiro Matsumoto$/, r.read)
     end
 
     ruby('--verbose', '-e', 'p $VERBOSE') do |w, r, e|
@@ -136,11 +155,11 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     ruby('--enable', 'foobarbazqux', '-e', '') do |w, r, e|
-      assert(e.read.chomp =~ /unknown argument for --enable: `foobarbazqux'/)
+      assert_match(/unknown argument for --enable: `foobarbazqux'/, e.read)
     end
 
     ruby('--enable') do |w, r, e|
-      assert(e.read.chomp =~ /missing argument for --enable/)
+      assert_match(/missing argument for --enable/, e.read)
     end
   end
 
@@ -161,11 +180,11 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     ruby('--disable', 'foobarbazqux', '-e', '') do |w, r, e|
-      assert(e.read.chomp =~ /unknown argument for --disable: `foobarbazqux'/)
+      assert_match(/unknown argument for --disable: `foobarbazqux'/, e.read)
     end
 
     ruby('--disable') do |w, r, e|
-      assert(e.read.chomp =~ /missing argument for --disable/)
+      assert_match(/missing argument for --disable/, e.read)
     end
   end
 
@@ -194,13 +213,13 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_version
     ruby('--version') do |w, r, e|
-      assert(r.read.chomp =~ /^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/)
+      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, r.read)
     end
   end
 
   def test_eval
     ruby('-e') do |w, r, e|
-      assert(e.read.chomp =~ /no code specified for -e \(RuntimeError\)/)
+      assert_match(/no code specified for -e \(RuntimeError\)/, e.read)
     end
   end
 
@@ -263,11 +282,11 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_chdir
     ruby('-C') do |w, r, e|
-      assert(e.read.chomp =~ /Can't chdir/)
+      assert_match(/Can't chdir/, e.read)
     end
 
     ruby('-C', 'test_ruby_test_rubyoptions_foobarbazqux') do |w, r, e|
-      assert(e.read.chomp =~ /Can't chdir/)
+      assert_match(/Can't chdir/, e.read)
     end
 
     d = Dir.tmpdir
@@ -293,21 +312,21 @@ class TestRubyOptions < Test::Unit::TestCase
     ruby('-Eutf-8') do |w, r, e|
       w.puts "p '\u3042'"
       w.close
-      assert_equal("\"\u3042\"", r.read.chomp.force_encoding(Encoding.find('utf-8')))
+      assert_match(/invalid multibyte char/, e.read)
     end
 
     ruby('--encoding') do |w, r, e|
-      assert(e.read.chomp =~ /missing argument for --encoding/)
+      assert_match(/missing argument for --encoding/, e.read)
     end
 
     ruby('--encoding', 'test_ruby_test_rubyoptions_foobarbazqux') do |w, r, e|
-      assert(e.read.chomp =~ /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
+      assert_match(/unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/, e.read)
     end
 
     ruby('--encoding', 'utf-8') do |w, r, e|
       w.puts "p '\u3042'"
       w.close
-      assert_equal("\"\u3042\"", r.read.chomp.force_encoding(Encoding.find('utf-8')))
+      assert_match(/invalid multibyte char/, e.read)
     end
   end
 
@@ -319,7 +338,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_invalid_option
     ruby('--foobarbazqux') do |w, r, e|
-      assert(e.read.chomp =~ /invalid option --foobarbazqux/)
+      assert_match(/invalid option --foobarbazqux/, e.read)
     end
 
     ruby("-\r", '-e', '') do |w, r, e|
@@ -328,15 +347,15 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     ruby("-\rx") do |w, r, e|
-      assert(e.read.chomp =~ /invalid option -\\x0D  \(-h will show valid options\) \(RuntimeError\)/)
+      assert_match(/invalid option -\\x0D  \(-h will show valid options\) \(RuntimeError\)/, e.read)
     end
 
     ruby("-\x01") do |w, r, e|
-      assert(e.read.chomp =~ /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
+      assert_match(/invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/, e.read)
     end
 
     ruby('-Z') do |w, r, e|
-      assert(e.read.chomp =~ /invalid option -Z  \(-h will show valid options\) \(RuntimeError\)/)
+      assert_match(/invalid option -Z  \(-h will show valid options\) \(RuntimeError\)/, e.read)
     end
   end
 
@@ -352,12 +371,12 @@ class TestRubyOptions < Test::Unit::TestCase
 
     ENV['RUBYOPT'] = '-e "p 1"'
     ruby do |w, r, e|
-      assert(e.read.chomp =~ /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
+      assert_match(/invalid switch in RUBYOPT: -e \(RuntimeError\)/, e.read)
     end
 
     ENV['RUBYOPT'] = '-T1'
     ruby do |w, r, e|
-      assert(e.read.chomp =~ /no program input from stdin allowed in tainted mode \(SecurityError\)/)
+      assert_match(/no program input from stdin allowed in tainted mode \(SecurityError\)/, e.read)
     end
 
     ENV['RUBYOPT'] = '-T4'
@@ -423,14 +442,14 @@ class TestRubyOptions < Test::Unit::TestCase
     ruby do |w, r, e|
       w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux\r\np 1\r\n"
       w.close
-      assert(e.read.chomp =~ /Can't exec \/test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/)
+      assert_match(/Can't exec \/test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read)
       assert_equal('', r.read.chomp)
     end
 
     ruby do |w, r, e|
       w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n"
       w.close
-      assert(e.read.chomp =~ /Can't exec \/test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/)
+      assert_match(/Can't exec \/test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read)
       assert_equal('', r.read.chomp)
     end
 
@@ -453,14 +472,14 @@ class TestRubyOptions < Test::Unit::TestCase
     ruby('-', '-#') do |w, r, e|
       w.print "#!ruby -s\n"
       w.close
-      assert(e.read.chomp =~ /invalid name for global variable - -# \(NameError\)/)
+      assert_match(/invalid name for global variable - -# \(NameError\)/, e.read)
       assert_equal('', r.read.chomp)
     end
 
     ruby('-', '-#=foo') do |w, r, e|
       w.print "#!ruby -s\n"
       w.close
-      assert(e.read.chomp =~ /invalid name for global variable - -# \(NameError\)/)
+      assert_match(/invalid name for global variable - -# \(NameError\)/, e.read)
       assert_equal('', r.read.chomp)
     end
   end
@@ -468,6 +487,6 @@ end
 
 else
 
-assert(false, "cannot test in win32")
+flunk("cannot test in win32")
 
 end

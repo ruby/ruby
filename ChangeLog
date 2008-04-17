@@ -1,7 +1,15 @@
+Thu Apr 17 16:07:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_rubyoptions.rb (ruby): run in C locale.
+
+	* test/ruby/test_rubyoptions.rb (test_encoding): --encoding does not
+	  affect source code.
+
 Thu Apr 17 00:45:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_process.rb (test_rlimit_nofile): reset RLIMIT_NOFILE
 	  before exit (for gcov).
+
 	* test/ruby/test_rubyoptions.rb: new tests for option of ruby
 	  interpreter, to achieve over 95% test coverage of ruby.c.
 
