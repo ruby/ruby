@@ -1,7 +1,5 @@
 require 'test/unit'
 
-unless /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
-
 require 'timeout'
 require 'tmpdir'
 require 'tempfile'
@@ -9,6 +7,9 @@ require 'open3'
 require_relative 'envutil'
 
 class TestRubyOptions < Test::Unit::TestCase
+
+unless /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
+
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
   def ruby(*args)
     ruby = EnvUtil.rubybin
@@ -412,15 +413,15 @@ class TestRubyOptions < Test::Unit::TestCase
     ENV['PATH'] = File.dirname(t.path)
 
     ruby('-S', File.basename(t.path)) do |w, r, e|
-#      assert_equal('', e.read)
-#      assert_equal('1', r.read)
+      assert_equal('', e.read)
+      assert_equal('1', r.read.chomp)
     end
 
     ENV['RUBYPATH'] = File.dirname(t.path)
 
     ruby('-S', File.basename(t.path)) do |w, r, e|
-#      assert_equal('', e.read)
-#      assert_equal('1', r.read)
+      assert_equal('', e.read)
+      assert_equal('1', r.read.chomp)
     end
 
   ensure
@@ -483,10 +484,13 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal('', r.read.chomp)
     end
   end
-end
 
 else
 
-flunk("cannot test in win32")
+  def test_win32
+    flunk("cannot test in win32")
+  end
+
+end
 
 end
