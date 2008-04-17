@@ -23,7 +23,7 @@
 .Op Fl i Ns Op Ar extension
 .Op Fl r Ar library
 .Op Fl x Ns Op Ar directory
-.Op Fl -disable-gems
+.Op - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
 .Op Fl -verbose
 .Op Fl -
 .Op Ar program_file
@@ -337,9 +337,28 @@ Turns on compiler debug mode.  Ruby will print a bunch of internal
 state messages during compiling scripts.  You don't have to specify
 this switch, unless you are going to debug the Ruby interpreter.
 .Pp
+.It Fl -disable- Ns Ar FEATURE
+.It Fl -enable- Ns Ar FEATURE
+Disables (or enables) the specified
+.Ar FEATURE Ns
+\&.
+.Pp
 .It Fl -disable-gems
-Disables RubyGems libraries.  By default, Ruby will load the latest
-version of each installed gem.
+.It Fl -enable-gems
+Disables (or enables) RubyGems libraries.  By default, Ruby will load the latest
+version of each installed gem. The
+.Li Gem::Enabled
+constant is true if RubyGems is enabled, false if otherwise.
+.Pp
+.It Fl -disable-rubyopt
+.It Fl -enable-rubyopt
+Ignores (or considers) the
+.Ev RUBYOPT
+environment variable. By default, Ruby considers the variable.
+.Pp
+.It Fl -disable-all
+.It Fl -enable-all
+Disables (or enables) all features.
 .Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
