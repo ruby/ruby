@@ -518,7 +518,8 @@ module Tk::TreeCtrl::ConfigMethod
 
   def notify_cget(win, pattern, option)
     pattern = "<#{pattern}>"
-    itemconfigure(['notify', [win, pattern]], option)
+    # "notify" doesn't have cget subcommand.
+    current_itemconfiginfo(['notify', [win, pattern]])[option.to_s]
   end
   def notify_configure(win, pattern, slot, value=None)
     pattern = "<#{pattern}>"
@@ -528,7 +529,10 @@ module Tk::TreeCtrl::ConfigMethod
     pattern = "<#{pattern}>"
     itemconfiginfo(['notify', [win, pattern]], slot)
   end
-  alias current_notify_configinfo notify_configinfo
+  def current_notify_configinfo(tagOrId, slot=nil)
+    pattern = "<#{pattern}>"
+    current_itemconfiginfo(['notify', [win, pattern]], slot)
+  end
 
   def style_cget(tagOrId, option)
     itemcget(['style', tagOrId], option)

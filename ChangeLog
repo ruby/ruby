@@ -1,3 +1,11 @@
+Fri Apr 18 07:56:18 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/scrollbar.rb, ext/tk/lib/tk/scale.rb:
+	  improve unknonw-option check when create a widget. 
+
+	* ext/tk/lib/tkextlib/blt/unix_dnd.rb, ext/tk/lib/tkextlib/blt/ted.rb,
+	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix on 'cget'.
+
 Thu Apr 17 22:03:52 2008  akira yamada  <akira@arika.org>
 
 	* lib/uri/ftp.rb, lib/uri/generic.rb, test/uri/test_common.rb,

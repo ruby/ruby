@@ -4799,8 +4799,15 @@ class TkWindow<TkObject
           tk_call_without_enc(cmd, @path)
           keys = __check_available_configure_options(keys)
           unless keys.empty?
-            tk_call_without_enc('destroy', @path)
-            tk_call_without_enc(cmd, @path, *hash_kv(keys, true))
+            begin
+              tk_call_without_enc('destroy', @path)
+            rescue
+              # cannot destroy
+              configure(keys)
+            else
+              # re-create widget
+              tk_call_without_enc(cmd, @path, *hash_kv(keys, true))
+            end
           end
         end
       end
@@ -5341,7 +5348,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-04-15'.freeze
+  RELEASE_DATE = '2008-04-18'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
