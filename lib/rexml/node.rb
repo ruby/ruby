@@ -27,7 +27,7 @@ module REXML
       unless indent.nil?
         Kernel.warn( "#{self.class.name}.to_s(indent) parameter is deprecated" )
         f = REXML::Formatters::Pretty.new( indent )
-        f.write( self, rv, indent )
+        f.write( self, rv = "" )
       else
         f = REXML::Formatters::Default.new
         f.write( self, rv = "" )

@@ -1,3 +1,9 @@
+Fri Apr 18 16:36:16 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/rexml/node.rb (REXML::Node::indent): should initialize rv
+	  variable.  a patch from Tadayoshi Funaba <tadf AT dotrb.org> in 
+	  [ruby-dev:32783].
+
 Fri Apr 18 16:01:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/rexml: Merge fixes since 1.8.6 made solely on the ruby_1_8_6
