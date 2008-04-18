@@ -794,6 +794,7 @@ rb_gc_mark_locations(VALUE *start, VALUE *end)
 {
     long n;
 
+    if (end <= start) return;
     n = end - start;
     mark_locations_array(start,n);
 }
@@ -1491,10 +1492,9 @@ mark_current_machine_context(rb_thread_t *th)
     mark_locations_array((VALUE*)save_regs_gc_mark,
 			 sizeof(save_regs_gc_mark) / sizeof(VALUE));
 
-    mark_locations_array(stack_start, stack_end - stack_start);
+    rb_gc_mark_locations(stack_start, stack_end);
 #ifdef __ia64
-    mark_locations_array(th->machine_register_stack_start,
-			 th->machine_register_stack_end - th->machine_register_stack_start);
+    rb_gc_mark_locations(th->machine_register_stack_start, th->machine_register_stack_end);
 #endif
 #if defined(__human68k__) || defined(__mc68000__)
     mark_locations_array((VALUE*)((char*)STACK_END + 2),

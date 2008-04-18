@@ -1,3 +1,10 @@
+Fri Apr 18 17:37:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_mark_locations): get rid of underflow.
+
+	* gc.c (mark_current_machine_context): check if the main thread stack
+	  position may shink under the intialized position.  [ruby-core:16436]
+
 Thu Apr 17 22:20:52 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* enc/trans/utf_16_32.c (fun_so_to_utf_16be, fun_so_to_utf_16le): add
