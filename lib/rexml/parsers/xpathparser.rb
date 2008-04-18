@@ -551,7 +551,7 @@ module REXML
           end
         end
         #puts "BEFORE WITH '#{rest}'"
-        rest = LocationPath(rest, n) if rest =~ /^[\/\.\@\[\w_*]/
+        rest = LocationPath(rest, n) if rest =~ /\A[\/\.\@\[\w_*]/
         parsed.concat(n)
         return rest
       end

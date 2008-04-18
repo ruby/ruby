@@ -39,31 +39,26 @@ module REXML
       @string
     end
 
+    # == DEPRECATED
+    # See the rexml/formatters package
+    #
 		# Generates XML output of this object
 		#
 		# output::
 		#   Where to write the string.  Defaults to $stdout
 		# indent::
-		#   An integer.  If -1, no indenting will be used; otherwise, the
-		#   indentation will be this number of spaces, and children will be
-		#   indented an additional amount.  Defaults to -1.
+    #   The amount to indent this node by
 		# transitive::
-		#   If transitive is true and indent is >= 0, then the output will be
-		#   pretty-printed in such a way that the added whitespace does not affect
-		#   the absolute *value* of the document -- that is, it leaves the value
-		#   and number of Text nodes in the document unchanged.
+    #   Ignored
 		# ie_hack::
-		#   Internet Explorer is the worst piece of crap to have ever been
-		#   written, with the possible exception of Windows itself.  Since IE is
-		#   unable to parse proper XML, we have to provide a hack to generate XML
-		#   that IE's limited abilities can handle.  This hack inserts a space 
-		#   before the /> on empty tags.
+    #   Ignored
 		#
 		# _Examples_
 		#  c = CData.new( " Some text " )
 		#  c.write( $stdout )     #->  <![CDATA[ Some text ]]>
 		def write( output=$stdout, indent=-1, transitive=false, ie_hack=false )
-      #indent( output, indent ) unless transitive
+      Kernel.warn( "#{self.class.name}.write is deprecated" )
+			indent( output, indent )
 			output << START
 			output << @string
 			output << STOP

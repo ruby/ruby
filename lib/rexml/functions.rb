@@ -339,7 +339,6 @@ module REXML
         object.to_f
       else
         str = string( object )
-        #puts "STRING OF #{object.inspect} = #{str}"
         # If XPath ever gets scientific notation...
         #if str =~ /^\s*-?(\d*\.?\d+|\d+\.)([Ee]\d*)?\s*$/
         if str =~ /^\s*-?(\d*\.?\d+|\d+\.)\s*$/

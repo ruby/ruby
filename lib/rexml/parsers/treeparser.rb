@@ -1,4 +1,5 @@
 require 'rexml/validation/validationexception'
+require 'rexml/undefinednamespaceexception'
 
 module REXML
   module Parsers
@@ -29,8 +30,7 @@ module REXML
               return
             when :start_element
               tag_stack.push(event[1])
-              # find the observers for namespaces
-              @build_context = @build_context.add_element( event[1], event[2] )
+              el = @build_context = @build_context.add_element( event[1], event[2] )
             when :end_element
               tag_stack.pop
               @build_context = @build_context.parent
@@ -85,6 +85,8 @@ module REXML
             end
           end
         rescue REXML::Validation::ValidationException
+          raise
+        rescue REXML::UndefinedNamespaceException
           raise
         rescue
           raise ParseException.new( $!.message, @parser.source, @parser, $! )
