@@ -1,6 +1,15 @@
 require 'test/unit'
 
 class TestArray < Test::Unit::TestCase
+  def setup
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
+  end
+
   def test_0_literal
     assert_equal([1, 2, 3, 4], [1, 2] + [3, 4])
     assert_equal([1, 2, 1, 2], [1, 2] * 2)
@@ -1248,5 +1257,263 @@ class TestArray < Test::Unit::TestCase
 
   def test_drop_while
     assert_equal([3,4,5,0], [1,2,3,4,5,0].drop_while {|i| i < 3 })
+  end
+
+  def test_modify_check
+    a = []
+    a.freeze
+    assert_raise(RuntimeError) { a.shift }
+    a = [1, 2]
+    assert_raise(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+       a.shift
+      end.value
+    end
+  end
+
+  def test_ary_new
+    assert_raise(ArgumentError) { [].to_enum.first(-1) }
+    assert_raise(ArgumentError) { [].to_enum.first(2**31-1) }
+  end
+
+  def test_try_convert
+    assert_equal([1], Array.try_convert([1]))
+    assert_equal(nil, Array.try_convert("1"))
+  end
+
+  def test_initialize
+    assert_nothing_raised { [].instance_eval { initialize } }
+    assert_nothing_raised { Array.new { } }
+    assert_equal([1, 2, 3], Array.new([1, 2, 3]))
+    assert_raise(ArgumentError) { Array.new(-1, 1) }
+    assert_raise(ArgumentError) { Array.new(2**31-1, 1) }
+    assert_equal([1, 1, 1], Array.new(3, 1))
+    assert_equal([1, 1, 1], Array.new(3) { 1 })
+    assert_equal([1, 1, 1], Array.new(3, 1) { 1 })
+  end
+
+  def test_aset
+    assert_raise(IndexError) { [0][-2] = 1 }
+    assert_raise(ArgumentError) { [0][2**31-1] = 2 }
+    assert_raise(ArgumentError) { [0][2**30-1] = 3 }
+    a = [0]
+    a[2] = 4
+    assert_equal([0, nil, 4], a)
+    assert_raise(ArgumentError) { [0][0, 0, 0] = 0 }
+  end
+
+  def test_first2
+    assert_equal([0], [0].first(2))
+    assert_raise(ArgumentError) { [0].first(-1) }
+  end
+
+  def test_shift2
+    assert_equal(0, ([0] * 16).shift)
+    # check
+    a = [0, 1, 2]
+    a[3] = 3
+    a.shift(2)
+    assert_equal([2, 3], a)
+  end
+
+  def test_unshift2
+    Struct.new(:a, :b, :c)
+  end
+
+  def test_aref
+    assert_raise(ArgumentError) { [][0, 0, 0] }
+  end
+
+  def test_fetch
+    assert_equal(1, [].fetch(0, 0) { 1 })
+    assert_equal(1, [0, 1].fetch(-1))
+    assert_raise(IndexError) { [0, 1].fetch(2) }
+    assert_raise(IndexError) { [0, 1].fetch(-3) }
+    assert_equal(2, [0, 1].fetch(2, 2))
+  end
+
+  def test_index2
+    a = [0, 1, 2]
+    assert_equal(a, a.index.to_a)
+    assert_equal(1, a.index {|x| x == 1 })
+  end
+
+  def test_rindex2
+    a = [0, 1, 2]
+    assert_equal([2, 1, 0], a.rindex.to_a)
+    assert_equal(1, a.rindex {|x| x == 1 })
+
+    a = [0, 1]
+    e = a.rindex
+    assert_equal(1, e.next)
+    a.clear
+    assert_raise(StopIteration) { e.next }
+
+    o = Object.new
+    class << o; self; end.class_eval do
+      define_method(:==) {|x| a.clear; false }
+    end
+    a = [nil, o]
+    assert_equal(nil, a.rindex(0))
+  end
+
+  def test_ary_to_ary
+    o = Object.new
+    def o.to_ary; [1, 2, 3]; end
+    a, b, c = o
+    assert_equal([1, 2, 3], [a, b, c])
+  end
+
+  def test_splice
+    a = [0]
+    assert_raise(IndexError) { a[-2, 0] = nil }
+  end
+
+  def test_insert
+    a = [0]
+    assert_equal([0], a.insert(1))
+    assert_equal([0, 1], a.insert(1, 1))
+    assert_raise(ArgumentError) { a.insert }
+    assert_equal([0, 1, 2], a.insert(-1, 2))
+    assert_equal([0, 1, 3, 2], a.insert(-2, 3))
+  end
+
+  def test_join2
+    a = []
+    a << a
+    assert_equal("[...]", a.join)
+  end
+
+  def test_to_a
+    klass = Class.new(Array)
+    a = klass.new.to_a
+    assert_equal([], a)
+    assert_equal(Array, a.class)
+  end
+
+  def test_values_at2
+    a = [0, 1, 2, 3, 4, 5]
+    assert_equal([1, 2, 3], a.values_at(1..3))
+    assert_equal([], a.values_at(7..8))
+    assert_equal([nil], a.values_at(2**31-1))
+  end
+
+  def test_select
+    assert_equal([0, 2], [0, 1, 2, 3].select {|x| x % 2 == 0 })
+  end
+
+  def test_delete2
+    a = [0] * 1024 + [1] + [0] * 1024
+    a.delete(0)
+    assert_equal([1], a)
+  end
+
+  def test_reject
+    assert_equal([1, 3], [0, 1, 2, 3].reject {|x| x % 2 == 0 })
+  end
+
+  def test_zip
+    assert_equal([[1, :a, "a"], [2, :b, "b"], [3, nil, "c"]],
+      [1, 2, 3].zip([:a, :b], ["a", "b", "c", "d"]))
+    a = []
+    [1, 2, 3].zip([:a, :b], ["a", "b", "c", "d"]) {|x| a << x }
+    assert_equal([[1, :a, "a"], [2, :b, "b"], [3, nil, "c"]], a)
+  end
+
+  def test_transpose
+    assert_equal([[1, :a], [2, :b], [3, :c]],
+      [[1, 2, 3], [:a, :b, :c]].transpose)
+    assert_raise(IndexError) { [[1, 2, 3], [:a, :b]].transpose }
+  end
+
+  def test_clear2
+    assert_equal([], ([0] * 1024).clear)
+  end
+
+  def test_fill2
+    assert_raise(ArgumentError) { [].fill(0, 1, 2**31-1) }
+  end
+
+  def test_times
+    assert_raise(ArgumentError) { [0, 0, 0, 0] * (2**29) }
+  end
+
+  def test_equal
+    o = Object.new
+    def o.to_ary; end
+    def o.==(x); :foo; end
+    assert(:foo, [0, 1, 2] == o)
+    assert([0, 1, 2] != [0, 1, 3])
+  end
+
+  def test_hash2
+    a = []
+    a << a
+    b = []
+    b << b
+    assert_equal(a.hash, b.hash)
+  end
+
+  def test_nitems2
+    assert_equal(3, [5,6,7,8,9].nitems { |x| x % 2 != 0 })
+  end
+
+  def test_flatten2
+    a = []
+    a << a
+    assert_raise(ArgumentError) { a.flatten }
+  end
+
+  def test_shuffle
+    100.times do
+      assert_equal([0, 1, 2], [2, 1, 0].shuffle.sort)
+    end
+  end
+
+  def test_choice
+    100.times do
+      assert([0, 1, 2].include?([2, 1, 0].choice))
+    end
+  end
+
+  def test_cycle
+    a = []
+    [0, 1, 2].cycle do |i|
+      a << i
+      break if a.size == 10
+    end
+    assert_equal([0, 1, 2, 0, 1, 2, 0, 1, 2, 0], a)
+
+    a = [0, 1, 2]
+    assert_nil(a.cycle { a.clear })
+
+    a = []
+    [0, 1, 2].cycle(3) {|i| a << i }
+    assert_equal([0, 1, 2, 0, 1, 2, 0, 1, 2], a)
+  end
+
+  def test_reverse_each2
+    a = [0, 1, 2, 3, 4, 5]
+    r = []
+    a.reverse_each do |x|
+      r << x
+      a.pop
+      a.pop
+    end
+    assert_equal([5, 3, 1], r)
+  end
+
+  def test_combination2
+    assert_raise(RangeError) do
+      (0..100).to_a.combination(50) {}
+    end
+  end
+
+  def test_product2
+    a = (0..100).to_a
+    assert_raise(RangeError) do
+      a.product(a, a, a, a, a, a, a, a, a, a) {}
+    end
   end
 end
