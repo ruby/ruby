@@ -917,7 +917,6 @@ static VALUE
 syck_resolver_initialize( self )
     VALUE self;
 {
-    VALUE tags = rb_hash_new();
     rb_ivar_set(self, s_tags, rb_hash_new());
     return self;
 }
@@ -952,7 +951,6 @@ VALUE
 syck_resolver_detect_implicit( self, val )
     VALUE self, val;
 {
-    char *type_id;
     return rb_str_new2( "" );
 }
 
@@ -1308,7 +1306,6 @@ syck_genericresolver_node_import( self, node )
         break;
 
         case syck_seq_kind:
-            rb_iv_set(obj, "@kind", sym_seq);
             v = rb_ary_new2( syck_seq_count( n ) );
             for ( i = 0; i < syck_seq_count( n ); i++ )
             {
@@ -1319,10 +1316,10 @@ syck_genericresolver_node_import( self, node )
                 style = sym_inline;
             } 
             obj = rb_funcall( cSeq, s_new, 3, t, v, style );
+            rb_iv_set(obj, "@kind", sym_seq);
         break;
 
         case syck_map_kind:
-            rb_iv_set(obj, "@kind", sym_map);
             v = rb_hash_new();
             for ( i = 0; i < syck_map_count( n ); i++ )
             {
@@ -1333,6 +1330,7 @@ syck_genericresolver_node_import( self, node )
                 style = sym_inline;
             } 
             obj = rb_funcall( cMap, s_new, 3, t, v, style );
+            rb_iv_set(obj, "@kind", sym_map);
         break;
     }
 
@@ -2028,7 +2026,6 @@ syck_emitter_emit( argc, argv, self )
     VALUE self;
 {
     VALUE oid, proc;
-    char *anchor_name;
     SyckEmitter *emitter;
     struct emitter_xtra *bonus;
     SYMID symple;
@@ -2284,7 +2281,6 @@ Init_syck()
      */
     cScalar = rb_define_class_under( rb_syck, "Scalar", cNode );
     rb_define_alloc_func( cScalar, syck_scalar_alloc );
-    rb_define_attr( cNode, "value", 1, 0 );
     rb_define_method( cScalar, "initialize", syck_scalar_initialize, 3 );
     rb_define_method( cScalar, "value=", syck_scalar_value_set, 1 );
     rb_define_method( cScalar, "style=", syck_scalar_style_set, 1 );

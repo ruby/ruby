@@ -10,7 +10,6 @@ module YAML
     #
     class PrivateType
         def self.tag_subclasses?; false; end
-        attr_accessor :type_id, :value
         verbose, $VERBOSE = $VERBOSE, nil
         def initialize( type, val )
             @type_id = type; @value = val
@@ -28,7 +27,6 @@ module YAML
     #
     class DomainType
         def self.tag_subclasses?; false; end
-        attr_accessor :domain, :type_id, :value
         verbose, $VERBOSE = $VERBOSE, nil
         def initialize( domain, type, val )
             @domain = domain; @type_id = type; @value = val
