@@ -1,3 +1,13 @@
+Fri Apr 18 18:56:57 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syck/rubyext.c (syck_genericresolver_node_import): should
+	  not set instance variable "@kind" before initializing it.
+	  [ruby-dev:32677]
+
+	* ext/syck/rubyext.c (syck_resolver_initialize,
+	  syck_resolver_detect_implicit, syck_emitter_emit): remove unused
+	  variables.
+
 Fri Apr 18 18:54:57 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syck/rubyext.c: Node#value defined twice.
