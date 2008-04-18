@@ -160,6 +160,7 @@ module REXML
       node_types = ELEMENTS
       return nodeset if path_stack.length == 0 || nodeset.length == 0
       while path_stack.length > 0
+        #puts "#"*5
         #puts "Path stack = #{path_stack.inspect}"
         #puts "Nodeset is #{nodeset.inspect}"
         if nodeset.length == 0
@@ -351,7 +352,8 @@ module REXML
         when :following_sibling
           #puts "FOLLOWING_SIBLING 1: nodeset = #{nodeset}"
           results = []
-          for node in nodeset
+          nodeset.each do |node|
+            next if node.parent.nil?
             all_siblings = node.parent.children
             current_index = all_siblings.index( node )
             following_siblings = all_siblings[ current_index+1 .. -1 ]
@@ -362,13 +364,14 @@ module REXML
 
         when :preceding_sibling
           results = []
-          for node in nodeset
+          nodeset.each do |node|
+            next if node.parent.nil?
             all_siblings = node.parent.children
             current_index = all_siblings.index( node )
-            preceding_siblings = all_siblings[ 0 .. current_index-1 ].reverse
-            #results += expr( path_stack.dclone, preceding_siblings )
+            preceding_siblings = all_siblings[ 0, current_index ].reverse
+            results += preceding_siblings
           end
-          nodeset = preceding_siblings || []
+          nodeset = results
           node_types = ELEMENTS
 
         when :preceding
@@ -389,15 +392,21 @@ module REXML
           node_types = ELEMENTS
 
         when :namespace
+          #puts "In :namespace"
           new_nodeset = []
           prefix = path_stack.shift
           for node in nodeset
             if (node.node_type == :element or node.node_type == :attribute)
-              if (node.node_type == :element)
+              if @namespaces
+                namespaces = @namespaces
+              elsif (node.node_type == :element)
                 namespaces = node.namespaces
               else
                 namespaces = node.element.namesapces
               end
+              #puts "Namespaces = #{namespaces.inspect}"
+              #puts "Prefix = #{prefix.inspect}"
+              #puts "Node.namespace = #{node.namespace}"
               if (node.namespace == namespaces[prefix])
                 new_nodeset << node
               end

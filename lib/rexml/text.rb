@@ -211,16 +211,17 @@ module REXML
       return new_string
     end
  
+    # == DEPRECATED
+    # See REXML::Formatters
+    #
     def write( writer, indent=-1, transitive=false, ie_hack=false ) 
-      s = to_s()
-      if not (@parent and @parent.whitespace) then
-        s = wrap(s, 60, false) if @parent and @parent.context[:wordwrap] == :all
-        if @parent and not @parent.context[:indentstyle].nil? and indent > 0 and s.count("\n") > 0
-          s = indent_text(s, indent, @parent.context[:indentstyle], false)
+      Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters")
+      formatter = if indent > -1
+          REXML::Formatters::Pretty.new( indent )
+        else
+          REXML::Formatters::Default.new
         end
-        s.squeeze!(" \n\t") if @parent and !@parent.whitespace
-      end
-      writer << s
+      formatter.write( self, writer )
     end
 
     # FIXME

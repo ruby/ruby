@@ -13,7 +13,7 @@ module REXML
 		STOP = '\?>';
 
 		attr_accessor :version, :standalone
-    attr_reader :writeencoding
+    attr_reader :writeencoding, :writethis
 
 		def initialize(version=DEFAULT_VERSION, encoding=nil, standalone=nil)
       @writethis = true
@@ -37,9 +37,14 @@ module REXML
 			XMLDecl.new(self)
 		end
 
-		def write writer, indent=-1, transitive=false, ie_hack=false
+    # indent::
+    #   Ignored.  There must be no whitespace before an XML declaration
+    # transitive::
+    #   Ignored
+    # ie_hack::
+    #   Ignored
+		def write(writer, indent=-1, transitive=false, ie_hack=false)
       return nil unless @writethis or writer.kind_of? Output
-			indent( writer, indent )
 			writer << START.sub(/\\/u, '')
       if writer.kind_of? Output
         writer << " #{content writer.encoding}"

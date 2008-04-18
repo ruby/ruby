@@ -1,4 +1,6 @@
 require "rexml/parseexception"
+require "rexml/formatters/pretty"
+require "rexml/formatters/default"
 
 module REXML
 	# Represents a node in the tree.  Nodes are never encountered except as
@@ -18,10 +20,19 @@ module REXML
 			@parent[ ind - 1 ]
 		end
 
-		def to_s indent=-1
-			rv = ""
-			write rv,indent
-			rv
+    # indent::
+    #   *DEPRECATED* This parameter is now ignored.  See the formatters in the
+    #   REXML::Formatters package for changing the output style.
+		def to_s indent=nil
+      unless indent.nil?
+        Kernel.warn( "#{self.class.name}.to_s(indent) parameter is deprecated" )
+        f = REXML::Formatters::Pretty.new( indent )
+        f.write( self, rv, indent )
+      else
+        f = REXML::Formatters::Default.new
+        f.write( self, rv = "" )
+      end
+      return rv
 		end
 
 		def indent to, ind
