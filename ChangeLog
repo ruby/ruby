@@ -1,3 +1,13 @@
+Sat Apr 19 20:16:52 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/yaml/types.rb: Likewise, pass self to YAML::quick_emit;
+	  merged from 1.9.
+
+	* lib/yaml.rb (quick_emit): use combination of object_id and hash to
+	  identify repeated object references, since GC will reuse memory of
+	  objects during output of YAML. [ruby-Bugs-8548] [ruby-Bugs-3698];
+	  merged from 1.9.
+
 Sat Apr 19 20:05:39 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_equal, rb_ary_eql, rb_ary_hash, rb_ary_cmp):
