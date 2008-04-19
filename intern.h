@@ -233,6 +233,7 @@ VALUE rb_thread_main _((void));
 VALUE rb_thread_local_aref _((VALUE, ID));
 VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 void rb_thread_atfork _((void));
+VALUE rb_exec_recursive _((VALUE(*)(VALUE, VALUE, int),VALUE,VALUE));
 VALUE rb_funcall_rescue __((VALUE, ID, int, ...));
 /* file.c */
 VALUE rb_file_s_expand_path _((int, VALUE *));
