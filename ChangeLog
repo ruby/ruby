@@ -1,3 +1,12 @@
+Sat Apr 19 20:05:39 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_equal, rb_ary_eql, rb_ary_hash, rb_ary_cmp):
+	  Make Array#eql?, #hash, #== and #<=> use rb_exec_recursive() and
+	  handle recursive data properly.
+
+	* hash.c (hash_equal, rb_hash_hash): Make Hash#eql?, #hash and #==
+	  use rb_exec_recursive() and handle recursive data properly.
+
 Sat Apr 19 19:26:09 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* intern.h, eval.c (rb_exec_recursive): New internal function to
