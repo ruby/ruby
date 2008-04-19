@@ -270,6 +270,7 @@ VALUE rb_hash _((VALUE));
 VALUE rb_hash_new _((void));
 VALUE rb_hash_freeze _((VALUE));
 VALUE rb_hash_aref _((VALUE, VALUE));
+VALUE rb_hash_lookup _((VALUE, VALUE));
 VALUE rb_hash_aset _((VALUE, VALUE, VALUE));
 VALUE rb_hash_delete_if _((VALUE));
 VALUE rb_hash_delete _((VALUE,VALUE));

@@ -1,3 +1,9 @@
+Sat Apr 19 18:42:04 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* intern.h, hash.c (rb_hash_lookup): New internal function to
+	  check if a key exists in a hash, ignoring #default; backported
+	  from 1.9.
+
 Fri Apr 18 18:56:57 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syck/rubyext.c (syck_genericresolver_node_import): should

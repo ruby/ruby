@@ -454,6 +454,18 @@ rb_hash_aref(hash, key)
     return val;
 }
 
+VALUE
+rb_hash_lookup(hash, key)
+    VALUE hash, key;
+{
+    VALUE val;
+
+    if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
+	return Qnil; /* without Hash#default */
+    }
+    return val;
+}
+
 /*
  *  call-seq:
  *     hsh.fetch(key [, default] )       => obj
