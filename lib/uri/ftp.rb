@@ -11,7 +11,7 @@ require 'uri/generic'
 module URI
 
   #
-  # RFC1738 section 3.2.
+  # FTP URI syntax is defined by RFC1738 section 3.2.
   #
   class FTP < Generic
     DEFAULT_PORT = 21
@@ -22,12 +22,11 @@ module URI
       :path, :typecode
     ].freeze
     #
-    # Typecode is, "a", "i" or "d". 
-    # As for "a" the text, as for "i" binary, 
-    # as for "d" the directory is displayed. 
-    # "A" with the text, as for "i" being binary, 
-    # is because the respective data type was called ASCII and 
-    # IMAGE with the protocol of FTP.
+    # Typecode is "a", "i" or "d". 
+    #
+    # * "a" indicates a text file (the FTP command was ASCII)
+    # * "i" indicates a binary file (FTP command IMAGE)
+    # * "d" indicates the contents of a directory should be displayed
     #
     TYPECODE = ['a', 'i', 'd'].freeze
     TYPECODE_PREFIX = ';type='.freeze
@@ -52,11 +51,43 @@ module URI
     #
     # == Description
     #
-    # Creates a new URI::FTP object from components of URI::FTP with
-    # check.  It is scheme, userinfo, host, port, path and typecode. It
-    # provided by an Array or a Hash. typecode is "a", "i" or "d".
+    # Creates a new URI::FTP object from components, with syntax checking.  
+    #
+    # The components accepted are +userinfo+, +host+, +port+, +path+ and 
+    # +typecode+.
+    #
+    # The components should be provided either as an Array, or as a Hash 
+    # with keys formed by preceding the component names with a colon. 
+    #
+    # If an Array is used, the components must be passed in the order
+    # [userinfo, host, port, path, typecode]
+    #
+    # If the path supplied is absolute, it will be escaped in order to
+    # make it absolute in the URI. Examples:
+    #
+    #     require 'uri'
+    #
+    #     uri = URI::FTP.build(['user:password', 'ftp.example.com', nil, 
+    #       '/path/file.> zip', 'i'])
+    #     puts uri.to_s  ->  ftp://user:password@ftp.example.com/%2Fpath/file.zip;type=a
+    #
+    #     uri2 = URI::FTP.build({:host => 'ftp.example.com', 
+    #       :path => 'ruby/src'})
+    #     puts uri2.to_s  ->  ftp://ftp.example.com/ruby/src
     #
     def self.build(args)
+
+      # Fix the incoming path to be generic URL syntax
+      # FTP path  ->  URL path
+      # foo/bar       /foo/bar
+      # /foo/bar      /%2Ffoo/bar
+      #
+      if args.kind_of?(Array)
+        args[3] = '/' + args[3].sub(/^\//, '%2F')
+      else
+        args[:path] = '/' + args[:path].sub(/^\//, '%2F')
+      end
+
       tmp = Util::make_components_hash(self, args)
 
       if tmp[:typecode]
@@ -72,16 +103,14 @@ module URI
     #
     # == Description
     #
-    # Create a new URI::FTP object from ``generic'' components with no
-    # check.
+    # Creates a new URI::FTP object from generic URL components with no
+    # syntax checking.
     #
-    # == Usage
+    # Unlike build(), this method does not escape the path component as
+    # required by RFC1738; instead it is treated as per RFC2396.
     #
-    #   require 'uri'
-    #   p ftp = URI.parse("ftp://ftp.ruby-lang.org/pub/ruby/;type=d") 
-    #   # => #<URI::FTP:0x201fad08 URL:ftp://ftp.ruby-lang.org/pub/ruby/;type=d>
-    #   p ftp.typecode
-    #   # => "d"
+    # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+, 
+    # +opaque+, +query+ and +fragment+, in that order.
     #
     def initialize(*arg)
       super(*arg)
@@ -128,6 +157,27 @@ module URI
       end
 
       return tmp
+    end
+
+    # Returns the path from an FTP URI.
+    #
+    # RFC 1738 specifically states that the path for an FTP URI does not
+    # include the / which separates the URI path from the URI host. Example:
+    #
+    #     ftp://ftp.example.com/pub/ruby 
+    #
+    # The above URI indicates that the client should connect to 
+    # ftp.example.com then cd pub/ruby from the initial login directory.
+    #
+    # If you want to cd to an absolute directory, you must include an
+    # escaped / (%2F) in the path. Example:
+    #
+    #     ftp://ftp.example.com/%2Fpub/ruby
+    #
+    # This method will then return "/pub/ruby"
+    #
+    def path
+      return @path.sub(/^\//,'').sub(/^%2F/i,'/')
     end
 
     def to_s
