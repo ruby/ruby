@@ -51,11 +51,12 @@ module YAML
 end
 
 class Module
+    # :stopdoc:
 
     # Adds a taguri _tag_ to a class, used when dumping or loading the class
     # in YAML.  See YAML::tag_class for detailed information on typing and
     # taguris.
-    def yaml_as( tag, sc = true ) # :nodoc:
+    def yaml_as( tag, sc = true )
         verbose, $VERBOSE = $VERBOSE, nil
         class_eval <<-"end;", __FILE__, __LINE__+1
             attr_writer :taguri
@@ -79,12 +80,12 @@ class Module
     end
     # Transforms the subclass name into a name suitable for display
     # in a subclassed tag.
-    def yaml_tag_class_name  # :nodoc:
+    def yaml_tag_class_name
         self.name
     end
     # Transforms the subclass name found in the tag into a Ruby
     # constant name.
-    def yaml_tag_read_class( name ) # :nodoc:
+    def yaml_tag_read_class( name )
         name
     end
 end
