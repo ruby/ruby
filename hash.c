@@ -454,6 +454,18 @@ rb_hash_aref(hash, key)
     return val;
 }
 
+VALUE
+rb_hash_lookup(hash, key)
+    VALUE hash, key;
+{
+    VALUE val;
+
+    if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
+	return Qnil; /* without Hash#default */
+    }
+    return val;
+}
+
 /*
  *  call-seq:
  *     hsh.fetch(key [, default] )       => obj
@@ -1489,11 +1501,13 @@ rb_hash_has_value(hash, val)
 struct equal_data {
     int result;
     st_table *tbl;
+    int eql;
 };
 
 static int
-equal_i(key, val1, data)
-    VALUE key, val1;
+eql_i(key, val1, data)
+    VALUE key;
+    VALUE val1;
     struct equal_data *data;
 {
     VALUE val2;
@@ -1503,11 +1517,28 @@ equal_i(key, val1, data)
 	data->result = Qfalse;
 	return ST_STOP;
     }
-    if (!rb_equal(val1, val2)) {
+    if (!(data->eql ? rb_eql(val1, val2) : rb_equal(val1, val2))) {
 	data->result = Qfalse;
 	return ST_STOP;
     }
     return ST_CONTINUE;
+}
+
+static VALUE recursive_eql _((VALUE, VALUE, int));
+static VALUE
+recursive_eql(hash, dt, recur)
+    VALUE hash;
+    VALUE dt;
+    int recur;
+{
+    struct equal_data *data;
+
+    if (recur) return Qfalse;
+    data = (struct equal_data*)dt;
+    data->result = Qtrue;
+    rb_hash_foreach(hash, eql_i, (st_data_t)data);
+
+    return data->result;
 }
 
 static VALUE
@@ -1533,10 +1564,8 @@ hash_equal(hash1, hash2, eql)
     }
 
     data.tbl = RHASH(hash2)->tbl;
-    data.result = Qtrue;
-    rb_hash_foreach(hash1, equal_i, (st_data_t)&data);
-
-    return data.result;
+    data.eql = eql;
+    return rb_exec_recursive(recursive_eql, hash1, (VALUE)&data);
 }
 
 /*
@@ -1563,6 +1592,66 @@ rb_hash_equal(hash1, hash2)
     VALUE hash1, hash2;
 {
     return hash_equal(hash1, hash2, Qfalse);
+}
+
+static int
+hash_i(key, val, hval)
+    VALUE key;
+    VALUE val;
+    int *hval;
+{
+    if (key == Qundef) return ST_CONTINUE;
+    *hval ^= rb_hash(key);
+    *hval *= 137;
+    *hval ^= rb_hash(val);
+    return ST_CONTINUE;
+}
+
+static VALUE
+recursive_hash(hash, dummy, recur)
+    VALUE hash;
+    VALUE dummy;
+    int recur;
+{
+    int hval;
+
+    if (recur) {
+	return LONG2FIX(0);
+    }
+    hval = RHASH(hash)->tbl->num_entries;
+    rb_hash_foreach(hash, hash_i, (st_data_t)&hval);
+    return INT2FIX(hval);
+}
+
+/*
+ *  call-seq:
+ *     array.hash   -> fixnum
+ *
+ *  Compute a hash-code for this array. Two arrays with the same content
+ *  will have the same hash code (and will compare using <code>eql?</code>).
+ */
+
+static VALUE
+rb_hash_hash(hash)
+    VALUE hash;
+{
+    return rb_exec_recursive(recursive_hash, hash, 0);
+}
+
+
+/*
+ *  call-seq:
+ *     hash.eql?(other)  -> true or false
+ *
+ *  Returns <code>true</code> if <i>hash</i> and <i>other</i> are
+ *  both hashes with the same content.
+ */
+
+static VALUE
+rb_hash_eql(hash1, hash2)
+    VALUE hash1, hash2;
+{
+    return hash_equal(hash1, hash2, Qtrue);
 }
 
 static int
@@ -2533,6 +2622,8 @@ Init_Hash()
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
+    rb_define_method(rb_cHash,"hash", rb_hash_hash, 0);
+    rb_define_method(rb_cHash,"eql?", rb_hash_eql, 1);
     rb_define_method(rb_cHash,"fetch", rb_hash_fetch, -1);
     rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);
     rb_define_method(rb_cHash,"store", rb_hash_aset, 2);

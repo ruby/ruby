@@ -233,6 +233,7 @@ VALUE rb_thread_main _((void));
 VALUE rb_thread_local_aref _((VALUE, ID));
 VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
 void rb_thread_atfork _((void));
+VALUE rb_exec_recursive _((VALUE(*)(VALUE, VALUE, int),VALUE,VALUE));
 VALUE rb_funcall_rescue __((VALUE, ID, int, ...));
 /* file.c */
 VALUE rb_file_s_expand_path _((int, VALUE *));
@@ -270,6 +271,7 @@ VALUE rb_hash _((VALUE));
 VALUE rb_hash_new _((void));
 VALUE rb_hash_freeze _((VALUE));
 VALUE rb_hash_aref _((VALUE, VALUE));
+VALUE rb_hash_lookup _((VALUE, VALUE));
 VALUE rb_hash_aset _((VALUE, VALUE, VALUE));
 VALUE rb_hash_delete_if _((VALUE));
 VALUE rb_hash_delete _((VALUE,VALUE));

@@ -27,6 +27,13 @@ with all sufficient information, see the ChangeLog file.
     Takes an optional argument that determines the level of recursion
     to flatten.
 
+  * Array#eql?
+  * Array#hash
+  * Array#==
+  * Array#<=>
+
+    Handle recursive data properly.
+
   * Array#index
   * Array#rindex
 
@@ -121,6 +128,12 @@ with all sufficient information, see the ChangeLog file.
   * Enumerable#reduce
 
     New alias to #inject.
+
+  * Hash#eql?
+  * Hash#hash
+  * Hash#==
+
+    Handle recursive data properly.
 
   * Hash#delete_if
   * Hash#each

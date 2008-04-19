@@ -1,3 +1,47 @@
+Sat Apr 19 20:35:02 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/yaml/baseemitter.rb, lib/yaml/encoding.rb: performance
+	  tuning around String#gsub.
+
+	* lib/yaml/tag.rb: Replace nodoc with stopdoc so Module methods get
+	  documented.
+
+	* lib/yaml/store.rb (YAML::load): modified to support empty
+	  database.
+
+	* lib/yaml/store.rb (YAML::Store::marshal_dump_supports_canonical_option?):
+	  add a method to support faster PStore.
+
+Sat Apr 19 20:16:52 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/yaml/types.rb: Likewise, pass self to YAML::quick_emit;
+	  merged from 1.9.
+
+	* lib/yaml.rb (quick_emit): use combination of object_id and hash to
+	  identify repeated object references, since GC will reuse memory of
+	  objects during output of YAML. [ruby-Bugs-8548] [ruby-Bugs-3698];
+	  merged from 1.9.
+
+Sat Apr 19 20:05:39 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_equal, rb_ary_eql, rb_ary_hash, rb_ary_cmp):
+	  Make Array#eql?, #hash, #== and #<=> use rb_exec_recursive() and
+	  handle recursive data properly.
+
+	* hash.c (hash_equal, rb_hash_hash): Make Hash#eql?, #hash and #==
+	  use rb_exec_recursive() and handle recursive data properly.
+
+Sat Apr 19 19:26:09 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* intern.h, eval.c (rb_exec_recursive): New internal function to
+	  help perform recursive operation; backported from 1.9.
+
+Sat Apr 19 18:42:04 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* intern.h, hash.c (rb_hash_lookup): New internal function to
+	  check if a key exists in a hash, ignoring #default; backported
+	  from 1.9.
+
 Fri Apr 18 18:56:57 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syck/rubyext.c (syck_genericresolver_node_import): should

@@ -13043,6 +13043,109 @@ thgroup_add(group, thread)
 }
 
 
+/* variables for recursive traversals */
+static ID recursive_key;
+
+static VALUE
+recursive_check(hash, obj)
+    VALUE hash;
+    VALUE obj;
+{
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	return Qfalse;
+    }
+    else {
+	VALUE list = rb_hash_aref(hash, ID2SYM(rb_frame_last_func()));
+
+	if (NIL_P(list) || TYPE(list) != T_HASH)
+	    return Qfalse;
+	if (NIL_P(rb_hash_lookup(list, obj)))
+	    return Qfalse;
+	return Qtrue;
+    }
+}
+
+static VALUE
+recursive_push(hash, obj)
+    VALUE hash;
+    VALUE obj;
+{
+    VALUE list, sym;
+
+    sym = ID2SYM(rb_frame_last_func());
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	hash = rb_hash_new();
+	rb_thread_local_aset(rb_thread_current(), recursive_key, hash);
+	list = Qnil;
+    }
+    else {
+	list = rb_hash_aref(hash, sym);
+    }
+    if (NIL_P(list) || TYPE(list) != T_HASH) {
+	list = rb_hash_new();
+	rb_hash_aset(hash, sym, list);
+    }
+    rb_hash_aset(list, obj, Qtrue);
+    return hash;
+}
+
+static void
+recursive_pop(hash, obj)
+    VALUE hash;
+    VALUE obj;
+{
+    VALUE list, sym;
+
+    sym = ID2SYM(rb_frame_last_func());
+    if (NIL_P(hash) || TYPE(hash) != T_HASH) {
+	VALUE symname;
+	VALUE thrname;
+	symname = rb_inspect(sym);
+	thrname = rb_inspect(rb_thread_current());
+
+	rb_raise(rb_eTypeError, "invalid inspect_tbl hash for %s in %s",
+		 StringValuePtr(symname), StringValuePtr(thrname));
+    }
+    list = rb_hash_aref(hash, sym);
+    if (NIL_P(list) || TYPE(list) != T_HASH) {
+	VALUE symname = rb_inspect(sym);
+	VALUE thrname = rb_inspect(rb_thread_current());
+	rb_raise(rb_eTypeError, "invalid inspect_tbl list for %s in %s",
+		 StringValuePtr(symname), StringValuePtr(thrname));
+    }
+    rb_hash_delete(list, obj);
+}
+
+VALUE
+rb_exec_recursive(func, obj, arg)
+    VALUE (*func) _((VALUE, VALUE, int));
+    VALUE obj;
+    VALUE arg;
+{
+    VALUE hash = rb_thread_local_aref(rb_thread_current(), recursive_key);
+    VALUE objid = rb_obj_id(obj);
+
+    if (recursive_check(hash, objid)) {
+	return (*func) (obj, arg, Qtrue);
+    }
+    else {
+	VALUE result = Qundef;
+	int state;
+
+	hash = recursive_push(hash, objid);
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    result = (*func) (obj, arg, Qfalse);
+	}
+	POP_TAG();
+	recursive_pop(hash, objid);
+	if (state)
+	    JUMP_TAG(state);
+	return result;
+    }
+}
+
+
 /*
  *  +Thread+ encapsulates the behavior of a thread of
  *  execution, including the main thread of the Ruby script.
