@@ -1,3 +1,8 @@
+Sun Apr 20 04:45:13 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_body): use readpartial and write method for
+	  non-IOs such as StringIO and ARGF.
+
 Fri Apr 18 20:57:33 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb: add tests to achieve over 95% test coverage

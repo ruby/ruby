@@ -124,7 +124,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_encode;
+static ID id_write, id_read, id_getc, id_flush, id_encode, id_readpartial;
 
 struct timeval rb_time_interval(VALUE);
 
@@ -6250,10 +6250,11 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
 struct copy_stream_struct {
     VALUE src;
     VALUE dst;
+    off_t copy_length; /* (off_t)-1 if not specified */
+    off_t src_offset; /* (off_t)-1 if not specified */
+
     int src_fd;
     int dst_fd;
-    off_t copy_length;
-    off_t src_offset;
     int close_src;
     int close_dst;
     off_t total;
@@ -6567,6 +6568,49 @@ finish:
 }
 
 static VALUE
+copy_stream_fallback_body(VALUE arg)
+{
+    struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
+    const int buflen = 16*1024;
+    VALUE n;
+    VALUE buf = rb_str_buf_new(buflen);
+    if (stp->copy_length == (off_t)-1) {
+        while (1) {
+            rb_funcall(stp->src, id_readpartial,
+                       2, INT2FIX(buflen), buf);
+            n = rb_io_write(stp->dst, buf);
+            stp->total += NUM2LONG(n);
+        }
+    }
+    else {
+        long rest = stp->copy_length;
+        while (0 < rest) {
+            long l = buflen < rest ? buflen : rest;
+            long numwrote;
+            rb_funcall(stp->src, id_readpartial,
+                                 2, INT2FIX(l), buf);
+            n = rb_io_write(stp->dst, buf);
+            numwrote = NUM2LONG(n);
+            stp->total += numwrote;
+            rest -= numwrote;
+        }
+    }
+    return Qnil;
+}
+
+static VALUE
+copy_stream_fallback(struct copy_stream_struct *stp)
+{
+    if (stp->src_offset != (off_t)-1) {
+	rb_raise(rb_eArgError, "cannot specify src_offset");
+    }
+    rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
+               (VALUE (*) (ANYARGS))0, (VALUE)0,
+               rb_eEOFError, (VALUE)0);
+    return Qnil;
+}
+
+static VALUE
 copy_stream_body(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
@@ -6576,6 +6620,21 @@ copy_stream_body(VALUE arg)
     char *src_path = 0, *dst_path = 0;
 
     stp->th = GET_THREAD();
+
+    stp->total = 0;
+
+    if (stp->src == argf ||
+        stp->dst == argf ||
+        !(TYPE(stp->src) == T_FILE ||
+          rb_respond_to(stp->src, rb_intern("to_io")) ||
+          TYPE(stp->src) == T_STRING ||
+          rb_respond_to(stp->src, rb_intern("to_path"))) ||
+        !(TYPE(stp->dst) == T_FILE ||
+          rb_respond_to(stp->dst, rb_intern("to_io")) ||
+          TYPE(stp->dst) == T_STRING ||
+          rb_respond_to(stp->dst, rb_intern("to_path")))) {
+        return copy_stream_fallback(stp);
+    }
 
     src_io = rb_check_convert_type(stp->src, T_FILE, "IO", "to_io");
     if (!NIL_P(src_io)) {
@@ -6615,8 +6674,6 @@ copy_stream_body(VALUE arg)
         stp->close_dst = 1;
     }
     stp->dst_fd = dst_fd;
-
-    stp->total = 0;
 
     if (src_fptr && dst_fptr && src_fptr->rbuf_len && dst_fptr->wbuf_len) {
         long len = src_fptr->rbuf_len;
@@ -6708,6 +6765,9 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "22", &src, &dst, &length, &src_offset);
 
+    st.src = src;
+    st.dst = dst;
+
     if (NIL_P(length))
         st.copy_length = (off_t)-1;
     else
@@ -6717,9 +6777,6 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
         st.src_offset = (off_t)-1;
     else
         st.src_offset = NUM2OFFT(src_offset);
-
-    st.src = src;
-    st.dst = dst;
 
     rb_ensure(copy_stream_body, (VALUE)&st, copy_stream_finalize, (VALUE)&st);
 
@@ -7344,6 +7401,7 @@ Init_IO(void)
     id_getc = rb_intern("getc");
     id_flush = rb_intern("flush");
     id_encode = rb_intern("encode");
+    id_readpartial = rb_intern("readpartial");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 

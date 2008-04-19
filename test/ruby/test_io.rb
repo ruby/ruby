@@ -2,6 +2,7 @@ require 'test/unit'
 require 'tmpdir'
 require 'io/nonblock'
 require 'socket'
+require 'stringio'
 
 class TestIO < Test::Unit::TestCase
   def test_gets_rs
@@ -393,8 +394,33 @@ class TestIO < Test::Unit::TestCase
         result = t.value
         assert_equal(megacontent, result)
       }
-
-
     }
   end
+
+  def test_copy_stream_strio
+    src = StringIO.new("abcd")
+    dst = StringIO.new
+    ret = IO.copy_stream(src, dst)
+    assert_equal(4, ret)
+    assert_equal("abcd", dst.string)
+    assert_equal(4, src.pos)
+  end
+
+  def test_copy_stream_strio_len
+    src = StringIO.new("abcd")
+    dst = StringIO.new
+    ret = IO.copy_stream(src, dst, 3)
+    assert_equal(3, ret)
+    assert_equal("abc", dst.string)
+    assert_equal(3, src.pos)
+  end
+
+  def test_copy_stream_strio_off
+    src = StringIO.new("abcd")
+    dst = StringIO.new
+    assert_raise(ArgumentError) {
+      IO.copy_stream(src, dst, 3, 1)
+    }
+  end
+
 end
