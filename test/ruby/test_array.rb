@@ -4,6 +4,7 @@ class TestArray < Test::Unit::TestCase
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
+    @cls = Array
   end
 
   def teardown
@@ -184,10 +185,6 @@ class TestArray < Test::Unit::TestCase
   end
 
   # From rubicon
-
-  def setup
-    @cls = Array
-  end
 
   def test_00_new
     a = @cls.new()
