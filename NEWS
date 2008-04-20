@@ -232,8 +232,6 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
-  * Symbol#to_proc implemented.
-
 * enumerator
 
   * Enumerator is now a built-in module.  The #next and #rewind
