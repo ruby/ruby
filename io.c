@@ -6517,7 +6517,9 @@ static VALUE
 copy_stream_func(void *arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
+#ifdef USE_SENDFILE
     int ret;
+#endif
 
 #ifdef USE_SENDFILE
     ret = copy_stream_sendfile(stp);
@@ -6527,7 +6529,9 @@ copy_stream_func(void *arg)
 
     copy_stream_read_write(stp);
 
+#ifdef USE_SENDFILE
 finish:
+#endif
     return Qnil;
 }
 

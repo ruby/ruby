@@ -115,7 +115,9 @@ native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 #define native_cleanup_pop  pthread_cleanup_pop
 #define native_thread_yield() sched_yield()
 
+#ifndef __CYGWIN__
 static void add_signal_thread_list(rb_thread_t *th);
+#endif
 static void remove_signal_thread_list(rb_thread_t *th);
 
 static rb_thread_lock_t signal_thread_list_lock;
@@ -462,9 +464,11 @@ struct signal_thread_list {
     struct signal_thread_list *next;
 };
 
+#ifndef __CYGWIN__
 static struct signal_thread_list signal_thread_list_anchor = {
     0, 0, 0,
 };
+#endif
 
 #define FGLOCK(lock, body) do { \
     native_mutex_lock(lock); \
@@ -489,6 +493,7 @@ print_signal_list(char *str)
 }
 #endif
 
+#ifndef __CYGWIN__
 static void
 add_signal_thread_list(rb_thread_t *th)
 {
@@ -514,6 +519,7 @@ add_signal_thread_list(rb_thread_t *th)
 	});
     }
 }
+#endif
 
 static void
 remove_signal_thread_list(rb_thread_t *th)
