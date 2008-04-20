@@ -22,7 +22,7 @@
  * object.
  */
 static VALUE rb_cEnumerator;
-static VALUE sym_each, sym_call;
+static VALUE sym_each;
 
 VALUE rb_eStopIteration;
 
@@ -36,7 +36,8 @@ proc_call(VALUE proc, VALUE args)
 }
 
 struct enumerator {
-    VALUE method;
+    VALUE obj;
+    VALUE meth;
     VALUE proc;
     VALUE args;
     rb_block_call_func *iter;
@@ -49,7 +50,8 @@ static void
 enumerator_mark(void *p)
 {
     struct enumerator *ptr = p;
-    rb_gc_mark(ptr->method);
+    rb_gc_mark(ptr->obj);
+    rb_gc_mark(ptr->meth);
     rb_gc_mark(ptr->proc);
     rb_gc_mark(ptr->args);
     rb_gc_mark(ptr->fib);
@@ -234,7 +236,8 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
     struct enumerator *ptr = enumerator_ptr(enum_obj);
 
-    ptr->method = rb_obj_method(obj, meth);
+    ptr->obj  = obj;
+    ptr->meth = meth;
     if (rb_block_given_p()) {
 	ptr->proc = rb_block_proc();
 	ptr->iter = enumerator_iter_i;
@@ -293,7 +296,8 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     }
     ptr1 = enumerator_ptr(obj);
 
-    ptr1->method = ptr0->method;
+    ptr1->obj  = ptr0->obj;
+    ptr1->meth = ptr0->meth;
     ptr1->proc = ptr0->proc;
     ptr1->iter = ptr0->iter;
     ptr1->args = ptr0->args;
@@ -322,6 +326,7 @@ enumerator_each(VALUE obj)
     struct enumerator *e;
     int argc = 0;
     VALUE *argv = 0;
+    VALUE method;
 
     if (!rb_block_given_p()) return obj;
     e = enumerator_ptr(obj);
@@ -329,7 +334,7 @@ enumerator_each(VALUE obj)
 	argc = RARRAY_LEN(e->args);
 	argv = RARRAY_PTR(e->args);
     }
-    return rb_block_call(e->method, SYM2ID(sym_call), argc, argv, e->iter, (VALUE)e);
+    return rb_block_call(e->obj, rb_to_id(e->meth), argc, argv, e->iter, (VALUE)e);
 }
 
 static VALUE
@@ -355,13 +360,14 @@ enumerator_with_index(VALUE obj)
     VALUE memo = 0;
     int argc = 0;
     VALUE *argv = 0;
+    VALUE method;
 
     RETURN_ENUMERATOR(obj, 0, 0);
     if (e->args) {
 	argc = RARRAY_LEN(e->args);
 	argv = RARRAY_PTR(e->args);
     }
-    return rb_block_call(e->method, SYM2ID(sym_call), argc, argv,
+    return rb_block_call(e->obj, rb_to_id(e->meth), argc, argv,
 			 enumerator_with_index_i, (VALUE)&memo);
 }
 
@@ -466,8 +472,7 @@ Init_Enumerator(void)
 
     rb_eStopIteration   = rb_define_class("StopIteration", rb_eIndexError);
 
-    sym_each		= ID2SYM(rb_intern("each"));
-    sym_call		= ID2SYM(rb_intern("call"));
+    sym_each	 	= ID2SYM(rb_intern("each"));
 
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
