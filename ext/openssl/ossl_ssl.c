@@ -1324,6 +1324,8 @@ Init_ossl_ssl()
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
 
+    Init_ossl_ssl_session();
+
     /* class SSLContext
      *
      * The following attributes are available but don't show up in rdoc.

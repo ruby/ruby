@@ -1,3 +1,6 @@
+Sun Apr 20 14:29:35 2008  Technorama Ltd.  <oss-ruby@technorama.net>
+	* ext/openssl/ossl_ssl.c: initialize session class.
+
 Sat Apr 19 20:35:02 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/yaml/baseemitter.rb, lib/yaml/encoding.rb: performance
