@@ -103,9 +103,9 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
     crl.version = 1
     crl.last_update = lastup
     crl.next_update = nextup
-    revoke_info.each{|serial, time, reason_code|
+    revoke_info.each{|rserial, time, reason_code|
       revoked = OpenSSL::X509::Revoked.new
-      revoked.serial = serial
+      revoked.serial = rserial
       revoked.time = time
       enum = OpenSSL::ASN1::Enumerated(reason_code)
       ext = OpenSSL::X509::Extension.new("CRLReason", enum)

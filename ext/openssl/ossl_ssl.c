@@ -446,6 +446,14 @@ ossl_sslctx_add_extra_chain_cert_i(VALUE i, VALUE arg)
     return i;
 }
 
+/*
+ * call-seq:
+ *    ctx.setup => Qtrue # first time
+ *    ctx.setup => nil # thereafter
+ *
+ * This method is called automatically when a new SSLSocket is created.
+ * Normally you do not need to call this method (unless you are writing an extension in C).
+ */
 static VALUE
 ossl_sslctx_setup(VALUE self)
 {
@@ -779,18 +787,18 @@ ossl_sslctx_get_session_cache_stats(VALUE self)
     Data_Get_Struct(self, SSL_CTX, ctx);
 
     hash = rb_hash_new();
-    rb_hash_aset(hash, rb_str_new2("cache_num"), LONG2NUM(SSL_CTX_sess_number(ctx)));
-    rb_hash_aset(hash, rb_str_new2("connect"), LONG2NUM(SSL_CTX_sess_connect(ctx)));
-    rb_hash_aset(hash, rb_str_new2("connect_good"), LONG2NUM(SSL_CTX_sess_connect_good(ctx)));
-    rb_hash_aset(hash, rb_str_new2("connect_renegotiate"), LONG2NUM(SSL_CTX_sess_connect_renegotiate(ctx)));
-    rb_hash_aset(hash, rb_str_new2("accept"), LONG2NUM(SSL_CTX_sess_accept(ctx)));
-    rb_hash_aset(hash, rb_str_new2("accept_good"), LONG2NUM(SSL_CTX_sess_accept_good(ctx)));
-    rb_hash_aset(hash, rb_str_new2("accept_renegotiate"), LONG2NUM(SSL_CTX_sess_accept_renegotiate(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cache_hits"), LONG2NUM(SSL_CTX_sess_hits(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cb_hits"), LONG2NUM(SSL_CTX_sess_cb_hits(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cache_misses"), LONG2NUM(SSL_CTX_sess_misses(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cache_full"), LONG2NUM(SSL_CTX_sess_cache_full(ctx)));
-    rb_hash_aset(hash, rb_str_new2("timeouts"), LONG2NUM(SSL_CTX_sess_timeouts(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_num")), LONG2NUM(SSL_CTX_sess_number(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("connect")), LONG2NUM(SSL_CTX_sess_connect(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("connect_good")), LONG2NUM(SSL_CTX_sess_connect_good(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("connect_renegotiate")), LONG2NUM(SSL_CTX_sess_connect_renegotiate(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("accept")), LONG2NUM(SSL_CTX_sess_accept(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("accept_good")), LONG2NUM(SSL_CTX_sess_accept_good(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("accept_renegotiate")), LONG2NUM(SSL_CTX_sess_accept_renegotiate(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_hits")), LONG2NUM(SSL_CTX_sess_hits(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cb_hits")), LONG2NUM(SSL_CTX_sess_cb_hits(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_misses")), LONG2NUM(SSL_CTX_sess_misses(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_full")), LONG2NUM(SSL_CTX_sess_cache_full(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("timeouts")), LONG2NUM(SSL_CTX_sess_timeouts(ctx)));
 
     return hash;
 }
@@ -1347,6 +1355,8 @@ Init_ossl_ssl()
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);
 
+    Init_ossl_ssl_session();
+
     /* class SSLContext
      *
      * The following attributes are available but don't show up in rdoc.
@@ -1364,6 +1374,8 @@ Init_ossl_ssl()
     rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+
+    rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
 
     
     rb_define_const(cSSLContext, "SESSION_CACHE_OFF", LONG2FIX(SSL_SESS_CACHE_OFF));

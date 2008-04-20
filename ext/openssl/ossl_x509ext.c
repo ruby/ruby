@@ -110,6 +110,7 @@ ossl_x509extfactory_alloc(VALUE klass)
     VALUE obj;
 
     MakeX509ExtFactory(klass, obj, ctx);
+    rb_iv_set(obj, "@config", Qnil);
 
     return obj;
 }
