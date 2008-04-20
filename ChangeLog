@@ -1,3 +1,10 @@
+Sun Apr 20 21:02:06 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c: Resolve the method every time an enumeration
+	  method is run, not once when the enumerator is initialized as it
+	  was before, so that method_missing() and method (re)definition
+	  afterwards are both in effect; pointed out in: [ruby-core:16441]
+
 Sun Apr 20 17:59:25 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c, NEWS, test/ruby/test_symbol.rb: Revert Symbol#to_proc
