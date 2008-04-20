@@ -493,8 +493,11 @@ class TestIO < Test::Unit::TestCase
       w.write "zz"
       src = StringIO.new("abcd")
       IO.copy_stream(src, w)
-      w.close
+      t = Thread.new {
+        w.close
+      }
       assert_equal("zzabcd", r.read)
+      t.join
     }
   end
 
