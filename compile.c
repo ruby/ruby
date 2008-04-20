@@ -2779,26 +2779,19 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    vals = node->nd_head;
 	    if (vals) {
-		if (nd_type(vals) == NODE_ARRAY) {
+		switch (nd_type(vals)) {
+		  case NODE_ARRAY:
 		    special_literals = when_vals(iseq, cond_seq, vals, l1, special_literals);
-		}
-		else if (nd_type(vals) == NODE_SPLAT ||
-			 nd_type(vals) == NODE_ARGSCAT ||
-			 nd_type(vals) == NODE_ARGSPUSH) {
-		    NODE *val = vals->nd_head;
+		    break;
+		  case NODE_SPLAT:
+		  case NODE_ARGSCAT:
+		  case NODE_ARGSPUSH:
 		    special_literals = 0;
-
-		    if (nd_type(vals) == NODE_ARGSCAT ||
-			nd_type(vals) == NODE_ARGSPUSH) {
-			when_vals(iseq, cond_seq, vals->nd_head, l1, 0);
-			val = vals->nd_body;
-		    }
-
-		    COMPILE(cond_seq, "when/cond splat", val);
-		    ADD_INSN1(cond_seq, nd_line(val), checkincludearray, Qtrue);
-		    ADD_INSNL(cond_seq, nd_line(val), branchif, l1);
-		}
-		else {
+		    COMPILE(cond_seq, "when/cond splat", vals);
+		    ADD_INSN1(cond_seq, nd_line(vals), checkincludearray, Qtrue);
+		    ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
+		    break;
+		  default:
 		    rb_bug("NODE_CASE: unknown node (%s)",
 			   ruby_node_name(nd_type(vals)));
 		}
@@ -3248,15 +3241,35 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    label_hit = NEW_LABEL(nd_line(node));
 
 	    narg = resq->nd_args;
-	    while (narg) {
-		COMPILE(ret, "rescue arg", narg->nd_head);
-		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
-			  INT2FIX(0));
-		ADD_SEND(ret, nd_line(node), ID2SYM(idEqq), INT2FIX(1));
-		ADD_INSNL(ret, nd_line(node), branchif, label_hit);
-		narg = narg->nd_next;
+	    if (narg) {
+		switch (nd_type(narg)) {
+		  case NODE_ARRAY:
+		    while (narg) {
+			COMPILE(ret, "rescue arg", narg->nd_head);
+			ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
+				  INT2FIX(0));
+			ADD_SEND(ret, nd_line(node), ID2SYM(idEqq), INT2FIX(1));
+			ADD_INSNL(ret, nd_line(node), branchif, label_hit);
+			narg = narg->nd_next;
+		    }
+		    break;
+		  case NODE_SPLAT:
+		  case NODE_ARGSCAT:
+		  case NODE_ARGSPUSH:
+		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
+			      INT2FIX(0));
+		    COMPILE(ret, "rescue/cond splat", narg);
+		    ADD_INSN1(ret, nd_line(node), checkincludearray, Qtrue);
+		    ADD_INSN(ret, nd_line(node), swap);
+		    ADD_INSN(ret, nd_line(node), pop);
+		    ADD_INSNL(ret, nd_line(node), branchif, label_hit);
+		    break;
+		  default:
+		    rb_bug("NODE_RESBODY: unknown node (%s)",
+			   ruby_node_name(nd_type(narg)));
+		}
 	    }
-	    if (resq->nd_args == 0) {
+	    else {
 		ADD_INSN1(ret, nd_line(node), putobject,
 			  rb_eStandardError);
 		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),

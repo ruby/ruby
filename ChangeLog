@@ -1,3 +1,9 @@
+Sun Apr 20 14:44:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): fix for splat in when and rescue.
+	  a patch from wanabe <s.wanabe AT gmail.com> in [ruby-dev:34429].
+	  [ruby-core:14537]
+
 Sun Apr 20 13:55:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (copy_stream_fallback): write directly (bypassing write method)
