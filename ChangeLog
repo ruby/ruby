@@ -1,3 +1,7 @@
+Sun Apr 20 21:00:21 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c, include/ruby/ruby.h: Export rb_cEnumerator.
+
 Sun Apr 20 20:47:50 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Resolve the method every time an enumeration
