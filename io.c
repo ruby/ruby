@@ -6630,7 +6630,7 @@ copy_stream_body(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
     VALUE src_io, dst_io;
-    rb_io_t *src_fptr, *dst_fptr;
+    rb_io_t *src_fptr = 0, *dst_fptr = 0;
     int src_fd, dst_fd;
     char *src_path = 0, *dst_path = 0;
 
@@ -6652,7 +6652,6 @@ copy_stream_body(VALUE arg)
             src_fd = src_fptr->fd;
         }
         else {
-            src_fptr = 0;
             FilePathValue(stp->src);
             src_path = StringValueCStr(stp->src);
 #ifdef O_NOCTTY
@@ -6681,7 +6680,6 @@ copy_stream_body(VALUE arg)
             dst_fd = dst_fptr->fd;
         }
         else {
-            dst_fptr = 0;
             FilePathValue(stp->dst);
             dst_path = StringValueCStr(stp->dst);
 #ifdef O_NOCTTY
@@ -6695,7 +6693,7 @@ copy_stream_body(VALUE arg)
     }
     stp->dst_fd = dst_fd;
 
-    if (stp->src_fd == -1 || stp->dst_fd == -1) {
+    if (src_fd == -1 || dst_fd == -1) {
         return copy_stream_fallback(stp);
     }
 
