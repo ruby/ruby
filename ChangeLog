@@ -1,3 +1,8 @@
+Sun Apr 20 12:49:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_fallback): read directly (bypassing readpartial)
+	  if possible.
+
 Sun Apr 20 04:45:13 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (copy_stream_body): use readpartial and write method for

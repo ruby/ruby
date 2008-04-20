@@ -417,9 +417,50 @@ class TestIO < Test::Unit::TestCase
 
   def test_copy_stream_strio_off
     src = StringIO.new("abcd")
-    dst = StringIO.new
-    assert_raise(ArgumentError) {
-      IO.copy_stream(src, dst, 3, 1)
+    with_pipe {|r, w|
+      assert_raise(ArgumentError) {
+        IO.copy_stream(src, w, 3, 1)
+      }
+    }
+  end
+
+  def test_copy_stream_non_io
+    mkcdtmpdir {|d|
+      # filename to StringIO
+      File.open("foo", "w") {|f| f << "abcd" }
+      src = "foo"
+      dst = StringIO.new
+      ret = IO.copy_stream(src, dst, 3)
+      assert_equal(3, ret)
+      assert_equal("abc", dst.string)
+
+      # StringIO to filename
+      src = StringIO.new("abcd")
+      ret = File.open("fooo", "w") {|dst|
+        IO.copy_stream(src, dst, 3)
+      }
+      assert_equal(3, ret)
+      assert_equal("abc", dst.string)
+      assert_equal(3, src.pos)
+
+      # IO to StringIO
+      File.open("bar", "w") {|f| f << "abcd" }
+      File.open("bar") {|src|
+        dst = StringIO.new
+        ret = IO.copy_stream(src, dst, 3)
+        assert_equal(3, ret)
+        assert_equal("abc", dst.string)
+        assert_equal(3, src.pos)
+      }
+
+      # StringIO to IO
+      src = StringIO.new("abcd")
+      ret = File.open("baz", "w") {|dst|
+        IO.copy_stream(src, dst, 3)
+      }
+      assert_equal(3, ret)
+      assert_equal("abc", File.read("baz"))
+      assert_equal(3, src.pos)
     }
   end
 

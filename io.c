@@ -6574,34 +6574,49 @@ copy_stream_fallback_body(VALUE arg)
     const int buflen = 16*1024;
     VALUE n;
     VALUE buf = rb_str_buf_new(buflen);
-    if (stp->copy_length == (off_t)-1) {
-        while (1) {
-            rb_funcall(stp->src, id_readpartial,
-                       2, INT2FIX(buflen), buf);
-            n = rb_io_write(stp->dst, buf);
-            stp->total += NUM2LONG(n);
+    long rest = stp->copy_length;
+    off_t off = stp->src_offset;
+
+    while (1) {
+        long numwrote;
+        long l = buflen < rest ? buflen : rest;
+        if (stp->copy_length == (off_t)-1) {
+            l = buflen;
         }
-    }
-    else {
-        long rest = stp->copy_length;
-        while (0 < rest) {
-            long l = buflen < rest ? buflen : rest;
-            long numwrote;
+        else {
+            if (rest == 0)
+                break;
+            l = buflen < rest ? buflen : rest;
+        }
+        if (stp->src_fd == -1) {
             rb_funcall(stp->src, id_readpartial,
                                  2, INT2FIX(l), buf);
-            n = rb_io_write(stp->dst, buf);
-            numwrote = NUM2LONG(n);
-            stp->total += numwrote;
-            rest -= numwrote;
         }
+        else {
+            ssize_t ss;
+            rb_str_resize(buf, buflen);
+            ss = copy_stream_read(stp, RSTRING_PTR(buf), l, off);
+            if (ss == -1)
+                return Qnil;
+            if (ss == 0)
+                rb_eof_error();
+            rb_str_resize(buf, ss);
+            if (off != (off_t)-1)
+                off += ss;
+        }
+        n = rb_io_write(stp->dst, buf);
+        numwrote = NUM2LONG(n);
+        stp->total += numwrote;
+        rest -= numwrote;
     }
+
     return Qnil;
 }
 
 static VALUE
 copy_stream_fallback(struct copy_stream_struct *stp)
 {
-    if (stp->src_offset != (off_t)-1) {
+    if (stp->src_fd == -1 && stp->src_offset != (off_t)-1) {
 	rb_raise(rb_eArgError, "cannot specify src_offset");
     }
     rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
@@ -6624,56 +6639,65 @@ copy_stream_body(VALUE arg)
     stp->total = 0;
 
     if (stp->src == argf ||
-        stp->dst == argf ||
         !(TYPE(stp->src) == T_FILE ||
           rb_respond_to(stp->src, rb_intern("to_io")) ||
           TYPE(stp->src) == T_STRING ||
-          rb_respond_to(stp->src, rb_intern("to_path"))) ||
+          rb_respond_to(stp->src, rb_intern("to_path")))) {
+        src_fd = -1;
+    }
+    else {
+        src_io = rb_check_convert_type(stp->src, T_FILE, "IO", "to_io");
+        if (!NIL_P(src_io)) {
+            GetOpenFile(src_io, src_fptr);
+            src_fd = src_fptr->fd;
+        }
+        else {
+            src_fptr = 0;
+            FilePathValue(stp->src);
+            src_path = StringValueCStr(stp->src);
+#ifdef O_NOCTTY
+            src_fd = rb_sysopen_internal(src_path, O_RDONLY|O_NOCTTY, 0);
+#else
+            src_fd = rb_sysopen_internal(src_path, O_RDONLY, 0);
+#endif
+            if (src_fd == -1) { rb_sys_fail(src_path); }
+            stp->close_src = 1;
+        }
+    }
+    stp->src_fd = src_fd;
+
+    if (stp->dst == argf ||
         !(TYPE(stp->dst) == T_FILE ||
           rb_respond_to(stp->dst, rb_intern("to_io")) ||
           TYPE(stp->dst) == T_STRING ||
           rb_respond_to(stp->dst, rb_intern("to_path")))) {
-        return copy_stream_fallback(stp);
-    }
-
-    src_io = rb_check_convert_type(stp->src, T_FILE, "IO", "to_io");
-    if (!NIL_P(src_io)) {
-        GetOpenFile(src_io, src_fptr);
-        src_fd = src_fptr->fd;
+        dst_fd = -1;
     }
     else {
-        src_fptr = 0;
-        FilePathValue(stp->src);
-        src_path = StringValueCStr(stp->src);
+        dst_io = rb_check_convert_type(stp->dst, T_FILE, "IO", "to_io");
+        if (!NIL_P(dst_io)) {
+            dst_io = GetWriteIO(dst_io);
+            GetOpenFile(dst_io, dst_fptr);
+            dst_fd = dst_fptr->fd;
+        }
+        else {
+            dst_fptr = 0;
+            FilePathValue(stp->dst);
+            dst_path = StringValueCStr(stp->dst);
 #ifdef O_NOCTTY
-        src_fd = rb_sysopen_internal(src_path, O_RDONLY|O_NOCTTY, 0);
+            dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC|O_NOCTTY, 0600);
 #else
-        src_fd = rb_sysopen_internal(src_path, O_RDONLY, 0);
+            dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC, 0600);
 #endif
-        if (src_fd == -1) { rb_sys_fail(src_path); }
-        stp->close_src = 1;
-    }
-    stp->src_fd = src_fd;
-
-    dst_io = rb_check_convert_type(stp->dst, T_FILE, "IO", "to_io");
-    if (!NIL_P(dst_io)) {
-        dst_io = GetWriteIO(dst_io);
-        GetOpenFile(dst_io, dst_fptr);
-        dst_fd = dst_fptr->fd;
-    }
-    else {
-        dst_fptr = 0;
-        FilePathValue(stp->dst);
-        dst_path = StringValueCStr(stp->dst);
-#ifdef O_NOCTTY
-        dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC|O_NOCTTY, 0600);
-#else
-        dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC, 0600);
-#endif
-        if (dst_fd == -1) { rb_sys_fail(dst_path); }
-        stp->close_dst = 1;
+            if (dst_fd == -1) { rb_sys_fail(dst_path); }
+            stp->close_dst = 1;
+        }
     }
     stp->dst_fd = dst_fd;
+
+    if (stp->src_fd == -1 || stp->dst_fd == -1) {
+        return copy_stream_fallback(stp);
+    }
 
     if (src_fptr && dst_fptr && src_fptr->rbuf_len && dst_fptr->wbuf_len) {
         long len = src_fptr->rbuf_len;
