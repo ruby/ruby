@@ -314,7 +314,7 @@ ruby_xmalloc(size_t size)
 void *
 ruby_xmalloc2(size_t n, size_t size)
 {
-    long len = size * n;
+    size_t len = size * n;
     if (n != 0 && size != len / n) {
 	rb_raise(rb_eArgError, "malloc: possible integer overflow");
     }
