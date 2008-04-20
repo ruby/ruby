@@ -1,4 +1,7 @@
-Sun Apr 20 14:58:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Apr 20 15:00:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_set_exception_table): allocates catch_table only
+	  when entries exist.
 
 	* compile.c (struct iseq_link_element, struct iseq_insn_data): made
 	  enum for debuggers.

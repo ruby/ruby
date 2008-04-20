@@ -1290,7 +1290,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     tlen = RARRAY_LEN(iseq->compile_data->catch_table_ary);
     tptr = RARRAY_PTR(iseq->compile_data->catch_table_ary);
 
-    iseq->catch_table = ALLOC_N(struct iseq_catch_table_entry, tlen);
+    iseq->catch_table = tlen ? ALLOC_N(struct iseq_catch_table_entry, tlen) : 0;
     iseq->catch_table_size = tlen;
 
     for (i = 0; i < tlen; i++) {
