@@ -625,12 +625,11 @@ static LABEL *
 new_label_body(rb_iseq_t *iseq, int line)
 {
     LABEL *labelobj = compile_data_alloc_label(iseq);
-    static int label_no = 0;
 
     labelobj->link.type = ISEQ_ELEMENT_LABEL;
     labelobj->link.next = 0;
 
-    labelobj->label_no = label_no++;
+    labelobj->label_no = iseq->compile_data->label_no++;
     labelobj->sc_state = 0;
     labelobj->sp = -1;
     return labelobj;
