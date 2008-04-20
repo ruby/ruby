@@ -156,14 +156,63 @@ sign_bits(int base, const char *p)
  *  width, and precision indicators, then terminated with a field type
  *  character.  The field type controls how the corresponding
  *  <code>sprintf</code> argument is to be interpreted, while the flags
- *  modify that interpretation.  The field type characters are listed
- *  in the table at the end of this section.  The flag characters are:
+ *  modify that interpretation.
+ *
+ *  The field type characters are:
+ *
+ *      Field |  Integer Format
+ *      ------+--------------------------------------------------------------
+ *        b   | Convert argument as a binary number.
+ *            | Negative numbers will be displayed as a two's complement
+ *            | prefixed with `..1'.
+ *        B   | Equivalent to `b', but uses an uppercase 0B for prefix
+ *            | in the alternative format by #.
+ *        d   | Convert argument as a decimal number.
+ *        i   | Identical to `d'.
+ *        o   | Convert argument as an octal number.
+ *            | Negative numbers will be displayed as a two's complement
+ *            | prefixed with `..7'.
+ *        u   | Identical to `d'.
+ *        x   | Convert argument as a hexadecimal number.
+ *            | Negative numbers will be displayed as a two's complement
+ *            | prefixed with `..f' (representing an infinite string of
+ *            | leading 'ff's).
+ *        X   | Equivalent to `x', but uses uppercase letters.
+ *
+ *      Field |  Float Format
+ *      ------+--------------------------------------------------------------
+ *        e   | Convert floating point argument into exponential notation 
+ *            | with one digit before the decimal point as [-]d.dddddde[+-]dd.
+ *            | The precision specifies the number of digits after the decimal
+ *            | point (defaulting to six).
+ *        E   | Equivalent to `e', but uses an uppercase E to indicate
+ *            | the exponent.
+ *        f   | Convert floating point argument as [-]ddd.dddddd, 
+ *            | where the precision specifies the number of digits after
+ *            | the decimal point.
+ *        g   | Convert a floating point number using exponential form
+ *            | if the exponent is less than -4 or greater than or
+ *            | equal to the precision, or in dd.dddd form otherwise.
+ *            | The precision specifies the number of significant digits.
+ *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
+ *
+ *      Field |  Other Format
+ *      ------+--------------------------------------------------------------
+ *        c   | Argument is the numeric code for a single character or
+ *            | a single character string itself.
+ *        p   | The valuing of argument.inspect.
+ *        s   | Argument is a string to be substituted.  If the format
+ *            | sequence contains a precision, at most that many characters
+ *            | will be copied.
+ *     
+ *  The flags modifies the behavior of the formats.
+ *  The flag characters are:
  *
  *    Flag     | Applies to    | Meaning
  *    ---------+---------------+-----------------------------------------
- *    space    | bBdeEfgGiouxX | Leave a space at the start of 
- *             |               | non-negative numbers.
- *             |               | For `o', `x', `X', `b' and `B', use
+ *    space    | bBdiouxX      | Leave a space at the start of 
+ *             | eEfgG         | non-negative numbers.
+ *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
  *             |               | a minus sign with absolute value for
  *             |               | negative values.
  *    ---------+---------------+-----------------------------------------
@@ -172,8 +221,8 @@ sign_bits(int base, const char *p)
  *             |               | argument numbers cannot be mixed in a
  *             |               | sprintf string.
  *    ---------+---------------+-----------------------------------------
- *     #       | bBeEfgGoxX    | Use an alternative format.
- *             |               | For the conversions `o', increase the precision
+ *     #       | bBoxX         | Use an alternative format.
+ *             | eEfgG         | For the conversions `o', increase the precision
  *             |               | until the first digit will be `0' if
  *             |               | it is not formatted as complements.
  *             |               | For the conversions `x', `X', `b' and `B'
@@ -184,29 +233,23 @@ sign_bits(int base, const char *p)
  *             |               | even if no digits follow.
  *             |               | For `g' and 'G', do not remove trailing zeros.
  *    ---------+---------------+-----------------------------------------
- *    +        | bBdeEfgGiouxX | Add a leading plus sign to non-negative
- *             |               | numbers.
- *             |               | For `o', `x', `X', `b' and `B', use
+ *    +        | bBdiouxX      | Add a leading plus sign to non-negative
+ *             | eEfgG         | numbers.
+ *             | (numeric fmt) | For `o', `x', `X', `b' and `B', use
  *             |               | a minus sign with absolute value for
  *             |               | negative values.
  *    ---------+---------------+-----------------------------------------
  *    -        | all           | Left-justify the result of this conversion.
  *    ---------+---------------+-----------------------------------------
- *    0 (zero) | bBdeEfgGiouxX | Pad with zeros, not spaces.
- *             |               | For `o', `x', `X', `b' and `B', radix-1
- *             |               | is used for negative numbers formatted as
+ *    0 (zero) | bBdiouxX      | Pad with zeros, not spaces.
+ *             | eEfgG         | For `o', `x', `X', `b' and `B', radix-1
+ *             | (numeric fmt) | is used for negative numbers formatted as
  *             |               | complements.
  *    ---------+---------------+-----------------------------------------
  *    *        | all           | Use the next argument as the field width. 
  *             |               | If negative, left-justify the result. If the
  *             |               | asterisk is followed by a number and a dollar 
  *             |               | sign, use the indicated argument as the width.
- *
- *  For `o', `x', `X', `b' and `B',
- *  negative values are formatted by compelements
- *  prefixed with `..' and radix-1.
- *  If a space or `+' flag is specified,
- *  a minus sign and absolute value is used instead.
  *
  *  Examples of flags:
  *
@@ -332,46 +375,6 @@ sign_bits(int base, const char *p)
  *   # maximum number of characters                    <------>
  *   sprintf("%20.8s", "string test") #=> "            string t"
  *
- *  The field types are:
- *
- *      Field |  Conversion
- *      ------+--------------------------------------------------------------
- *        b   | Convert argument as a binary number.
- *        B   | Equivalent to `b', but uses an uppercase 0B for prefix
- *            | in the alternative format by #.
- *        c   | Argument is the numeric code for a single character or
- *            | a single character string itself.
- *        d   | Convert argument as a decimal number.
- *        e   | Convert floating point argument into exponential notation 
- *            | with one digit before the decimal point.  The precision
- *            | determines the number of digits after the decimal point
- *            | (defaulting to six).
- *        E   | Equivalent to `e', but uses an uppercase E to indicate
- *            | the exponent.
- *        f   | Convert floating point argument as [-]ddd.ddd, 
- *            | where the precision determines the number of digits after
- *            | the decimal point.
- *        g   | Convert a floating point number using exponential form
- *            | if the exponent is less than -4 or greater than or
- *            | equal to the precision, or in d.dddd form otherwise.
- *            | The precision specifies the number of significant digits.
- *        G   | Equivalent to `g', but use an uppercase `E' in exponent form.
- *        i   | Identical to `d'.
- *        o   | Convert argument as an octal number.
- *        p   | The valuing of argument.inspect.
- *        s   | Argument is a string to be substituted.  If the format
- *            | sequence contains a precision, at most that many characters
- *            | will be copied.
- *        u   | Identical to `d'.
- *        x   | Convert argument as a hexadecimal number.
- *            | Negative numbers will be displayed with two
- *            | leading periods (representing an infinite string of
- *            | leading 'ff's.
- *        X   | Convert argument as a hexadecimal number using uppercase
- *            | letters.  Negative numbers will be displayed with two
- *            | leading periods (representing an infinite string of
- *            | leading 'FF's.
- *     
  *  Examples:
  *
  *     sprintf("%d %04x", 123, 123)               #=> "123 007b"
