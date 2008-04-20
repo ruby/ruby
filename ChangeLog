@@ -1,7 +1,12 @@
+Sun Apr 20 13:55:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_fallback): write directly (bypassing write method)
+	  if possible.
+
 Sun Apr 20 12:49:03 2008  Tanaka Akira  <akr@fsij.org>
 
-	* io.c (copy_stream_fallback): read directly (bypassing readpartial)
-	  if possible.
+	* io.c (copy_stream_fallback): read directly (bypassing readpartial
+	  method) if possible.
 
 Sun Apr 20 04:45:13 2008  Tanaka Akira  <akr@fsij.org>
 

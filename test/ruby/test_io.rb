@@ -424,25 +424,30 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_copy_stream_non_io
+  def test_copy_stream_fname_to_strio
     mkcdtmpdir {|d|
-      # filename to StringIO
       File.open("foo", "w") {|f| f << "abcd" }
       src = "foo"
       dst = StringIO.new
       ret = IO.copy_stream(src, dst, 3)
       assert_equal(3, ret)
       assert_equal("abc", dst.string)
+    }
+  end
 
+  def test_copy_stream_strio_to_fname
+    mkcdtmpdir {|d|
       # StringIO to filename
       src = StringIO.new("abcd")
-      ret = File.open("fooo", "w") {|dst|
-        IO.copy_stream(src, dst, 3)
-      }
+      ret = IO.copy_stream(src, "fooo", 3)
       assert_equal(3, ret)
-      assert_equal("abc", dst.string)
+      assert_equal("abc", File.read("fooo"))
       assert_equal(3, src.pos)
+    }
+  end
 
+  def test_copy_stream_io_to_strio
+    mkcdtmpdir {|d|
       # IO to StringIO
       File.open("bar", "w") {|f| f << "abcd" }
       File.open("bar") {|src|
@@ -452,7 +457,11 @@ class TestIO < Test::Unit::TestCase
         assert_equal("abc", dst.string)
         assert_equal(3, src.pos)
       }
+    }
+  end
 
+  def test_copy_stream_strio_to_io
+    mkcdtmpdir {|d|
       # StringIO to IO
       src = StringIO.new("abcd")
       ret = File.open("baz", "w") {|dst|

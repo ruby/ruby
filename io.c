@@ -6579,7 +6579,7 @@ copy_stream_fallback_body(VALUE arg)
 
     while (1) {
         long numwrote;
-        long l = buflen < rest ? buflen : rest;
+        long l;
         if (stp->copy_length == (off_t)-1) {
             l = buflen;
         }
@@ -6604,9 +6604,18 @@ copy_stream_fallback_body(VALUE arg)
             if (off != (off_t)-1)
                 off += ss;
         }
-        n = rb_io_write(stp->dst, buf);
-        numwrote = NUM2LONG(n);
-        stp->total += numwrote;
+        if (stp->dst_fd == -1) {
+            n = rb_io_write(stp->dst, buf);
+            numwrote = NUM2LONG(n);
+            stp->total += numwrote;
+        }
+        else {
+            ssize_t ss;
+            numwrote = RSTRING_LEN(buf);
+            ss = copy_stream_write(stp, RSTRING_PTR(buf), numwrote);
+            if (ss == -1)
+                return Qnil;
+        }
         rest -= numwrote;
     }
 
