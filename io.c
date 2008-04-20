@@ -6265,42 +6265,6 @@ struct copy_stream_struct {
     rb_thread_t *th;
 };
 
-static void
-copy_stream_rbuf_to_dst(struct copy_stream_struct *stp,
-        rb_io_t *src_fptr, rb_io_t *dst_fptr, const char *dst_path)
-{
-    ssize_t r;
-    int len;
-retry:
-    len = src_fptr->rbuf_len;
-    if (stp->copy_length != (off_t)-1 && stp->copy_length < len) {
-        len = stp->copy_length;
-    }
-    if (len == 0)
-        return;
-    r = rb_write_internal(dst_fptr->fd, src_fptr->rbuf + src_fptr->rbuf_off, len);
-    if (len == r) {
-        src_fptr->rbuf_len -= len;
-        if (src_fptr->rbuf_len < 0) src_fptr->rbuf_len = 0;
-        if (stp->copy_length != (off_t)-1) stp->copy_length -= len;
-        stp->total += len;
-        return;
-    }
-    else if (0 <= r) {
-        src_fptr->rbuf_off += r;
-        src_fptr->rbuf_len -= r;
-        if (stp->copy_length != (off_t)-1) stp->copy_length -= r;
-        stp->total += r;
-        errno = EAGAIN;
-    }
-    if (rb_io_wait_writable(dst_fptr->fd)) {
-        rb_io_check_closed(dst_fptr);
-        if (src_fptr->rbuf_len)
-            goto retry;
-    }
-    rb_sys_fail(dst_path);
-}
-
 static int
 copy_stream_wait_read(struct copy_stream_struct *stp)
 {
@@ -6589,11 +6553,11 @@ copy_stream_fallback_body(VALUE arg)
             l = buflen < rest ? buflen : rest;
         }
         if (stp->src_fd == -1) {
-            rb_funcall(stp->src, id_readpartial,
-                                 2, INT2FIX(l), buf);
+            rb_funcall(stp->src, id_readpartial, 2, INT2FIX(l), buf);
         }
         else {
             ssize_t ss;
+            rb_thread_wait_fd(stp->src_fd);
             rb_str_resize(buf, buflen);
             ss = copy_stream_read(stp, RSTRING_PTR(buf), l, off);
             if (ss == -1)
@@ -6604,18 +6568,9 @@ copy_stream_fallback_body(VALUE arg)
             if (off != (off_t)-1)
                 off += ss;
         }
-        if (stp->dst_fd == -1) {
-            n = rb_io_write(stp->dst, buf);
-            numwrote = NUM2LONG(n);
-            stp->total += numwrote;
-        }
-        else {
-            ssize_t ss;
-            numwrote = RSTRING_LEN(buf);
-            ss = copy_stream_write(stp, RSTRING_PTR(buf), numwrote);
-            if (ss == -1)
-                return Qnil;
-        }
+        n = rb_io_write(stp->dst, buf);
+        numwrote = NUM2LONG(n);
+        stp->total += numwrote;
         rest -= numwrote;
     }
 
@@ -6626,7 +6581,7 @@ static VALUE
 copy_stream_fallback(struct copy_stream_struct *stp)
 {
     if (stp->src_fd == -1 && stp->src_offset != (off_t)-1) {
-	rb_raise(rb_eArgError, "cannot specify src_offset");
+	rb_raise(rb_eArgError, "cannot specify src_offset for non-IO");
     }
     rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
                (VALUE (*) (ANYARGS))0, (VALUE)0,
@@ -6641,7 +6596,6 @@ copy_stream_body(VALUE arg)
     VALUE src_io, dst_io;
     rb_io_t *src_fptr = 0, *dst_fptr = 0;
     int src_fd, dst_fd;
-    char *src_path = 0, *dst_path = 0;
 
     stp->th = GET_THREAD();
 
@@ -6656,21 +6610,21 @@ copy_stream_body(VALUE arg)
     }
     else {
         src_io = rb_check_convert_type(stp->src, T_FILE, "IO", "to_io");
-        if (!NIL_P(src_io)) {
-            GetOpenFile(src_io, src_fptr);
-            src_fd = src_fptr->fd;
-        }
-        else {
-            FilePathValue(stp->src);
-            src_path = StringValueCStr(stp->src);
+        if (NIL_P(src_io)) {
+            VALUE args[2];
+            int flags = O_RDONLY;
 #ifdef O_NOCTTY
-            src_fd = rb_sysopen_internal(src_path, O_RDONLY|O_NOCTTY, 0);
-#else
-            src_fd = rb_sysopen_internal(src_path, O_RDONLY, 0);
+            flags |= O_NOCTTY;
 #endif
-            if (src_fd == -1) { rb_sys_fail(src_path); }
+            FilePathValue(stp->src);
+            args[0] = stp->src;
+            args[1] = INT2NUM(flags);
+            src_io = rb_class_new_instance(2, args, rb_cFile);
+            stp->src = src_io;
             stp->close_src = 1;
         }
+        GetOpenFile(src_io, src_fptr);
+        src_fd = src_fptr->fd;
     }
     stp->src_fd = src_fd;
 
@@ -6683,30 +6637,30 @@ copy_stream_body(VALUE arg)
     }
     else {
         dst_io = rb_check_convert_type(stp->dst, T_FILE, "IO", "to_io");
-        if (!NIL_P(dst_io)) {
-            dst_io = GetWriteIO(dst_io);
-            GetOpenFile(dst_io, dst_fptr);
-            dst_fd = dst_fptr->fd;
-        }
-        else {
-            FilePathValue(stp->dst);
-            dst_path = StringValueCStr(stp->dst);
+        if (NIL_P(dst_io)) {
+            VALUE args[3];
+            int flags = O_WRONLY|O_CREAT|O_TRUNC;
 #ifdef O_NOCTTY
-            dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC|O_NOCTTY, 0600);
-#else
-            dst_fd = rb_sysopen_internal(dst_path, O_WRONLY|O_CREAT|O_TRUNC, 0600);
+            flags |= O_NOCTTY;
 #endif
-            if (dst_fd == -1) { rb_sys_fail(dst_path); }
+            FilePathValue(stp->dst);
+            args[0] = stp->dst;
+            args[1] = INT2NUM(flags);
+            args[2] = INT2FIX(0600);
+            dst_io = rb_class_new_instance(3, args, rb_cFile);
+            stp->dst = dst_io;
             stp->close_dst = 1;
         }
+        else {
+            dst_io = GetWriteIO(dst_io);
+            stp->dst = dst_io;
+        }
+        GetOpenFile(dst_io, dst_fptr);
+        dst_fd = dst_fptr->fd;
     }
     stp->dst_fd = dst_fd;
 
-    if (src_fd == -1 || dst_fd == -1) {
-        return copy_stream_fallback(stp);
-    }
-
-    if (src_fptr && dst_fptr && src_fptr->rbuf_len && dst_fptr->wbuf_len) {
+    if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf_len) {
         long len = src_fptr->rbuf_len;
         VALUE str;
         if (stp->copy_length != (off_t)-1 && stp->copy_length < len) {
@@ -6715,7 +6669,10 @@ copy_stream_body(VALUE arg)
         str = rb_str_buf_new(len);
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, src_fptr);
-        io_fwrite(str, dst_fptr);
+        if (dst_fptr) /* IO or filename */
+            io_fwrite(str, dst_fptr);
+        else /* others such as StringIO */
+            rb_io_write(stp->dst, str);
         stp->total += len;
         if (stp->copy_length != (off_t)-1)
             stp->copy_length -= len;
@@ -6725,12 +6682,12 @@ copy_stream_body(VALUE arg)
 	rb_raise(rb_eIOError, "flush failed");
     }
 
-    if (src_fptr) {
-        copy_stream_rbuf_to_dst(stp, src_fptr, dst_fptr, dst_path);
-    }
-
     if (stp->copy_length == 0)
         return Qnil;
+
+    if (src_fd == -1 || dst_fd == -1) {
+        return copy_stream_fallback(stp);
+    }
 
     rb_fd_init(&stp->fds);
     rb_fd_set(src_fd, &stp->fds);
@@ -6743,10 +6700,12 @@ static VALUE
 copy_stream_finalize(VALUE arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
-    if (stp->close_src)
-        close(stp->src_fd);
-    if (stp->close_dst)
-        close(stp->dst_fd);
+    if (stp->close_src) {
+        rb_io_close_m(stp->src);
+    }
+    if (stp->close_dst) {
+        rb_io_close_m(stp->dst);
+    }
     rb_fd_term(&stp->fds);
     if (stp->syserr) {
         errno = stp->error_no;

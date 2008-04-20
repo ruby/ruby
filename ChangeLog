@@ -1,3 +1,9 @@
+Sun Apr 20 15:11:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_rbuf_to_dst): removed.
+	  (copy_stream_fallback_body): don't bypass write method.
+	  (copy_stream_body): simplified.
+
 Sun Apr 20 15:01:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (struct iseq_compile_data): moved label_no from

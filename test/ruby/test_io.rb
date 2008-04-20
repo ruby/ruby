@@ -310,6 +310,20 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_rbuf
+    mkcdtmpdir {|d|
+      with_pipe {|r, w|
+        File.open("foo", "w") {|f| f << "abcd" }
+        File.open("foo") {|f|
+          f.read(1)
+          assert_equal(3, IO.copy_stream(f, w, 10, 1))
+        }
+        w.close
+        assert_equal("bcd", r.read)
+      }
+    }
+  end
+
   def with_socketpair
     s1, s2 = UNIXSocket.pair
     begin
@@ -473,4 +487,25 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_strio_flush
+    with_pipe {|r, w|
+      w.sync = false
+      w.write "zz"
+      src = StringIO.new("abcd")
+      IO.copy_stream(src, w)
+      w.close
+      assert_equal("zzabcd", r.read)
+    }
+  end
+
+  def test_copy_stream_strio_rbuf
+    with_pipe {|r, w|
+      w << "abcd"
+      w.close
+      assert_equal("a", r.read(1))
+      sio = StringIO.new
+      IO.copy_stream(r, sio)
+      assert_equal("bcd", sio.string)
+    }
+  end
 end
