@@ -2560,7 +2560,8 @@ static int is_absolute_path(const char*);
 static VALUE
 file_expand_path(VALUE fname, VALUE dname, VALUE result)
 {
-    char *s, *buf, *b, *p, *pend, *root;
+    const char *s, *b;
+    char *buf, *p, *pend, *root;
     long buflen, dirlen;
     int tainted;
     rb_encoding *extenc = 0;
@@ -2706,12 +2707,13 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 		  case '.':
 		    if (*(s+1) == '\0' || isdirsep(*(s+1))) {
 			/* We must go back to the parent */
+			char *n;
 			*p = '\0';
-			if (!(b = strrdirsep(root))) {
+			if (!(n = strrdirsep(root))) {
 			    *p = '/';
 			}
 			else {
-			    p = b;
+			    p = n;
 			}
 			b = ++s;
 		    }
