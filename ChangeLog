@@ -1,3 +1,11 @@
+Mon Apr 21 16:06:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_init): preserve the method name in ID.
+
+	* enumerator.c (enumerator_each): need not to call rb_to_id().
+
+	* enumerator.c (enumerator_with_index): ditto.
+
 Mon Apr 21 17:19:52 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_f_method_name): New gloval function: __method__;
