@@ -505,6 +505,8 @@ fdbm_each_value(VALUE obj)
     struct dbmdata *dbmp;
     DBM *dbm;
 
+    RETURN_ENUMERATOR(obj, 0, 0);
+
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
@@ -521,6 +523,8 @@ fdbm_each_key(VALUE obj)
     struct dbmdata *dbmp;
     DBM *dbm;
 
+    RETURN_ENUMERATOR(obj, 0, 0);
+
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
@@ -536,6 +540,8 @@ fdbm_each_pair(VALUE obj)
     DBM *dbm;
     struct dbmdata *dbmp;
     VALUE keystr, valstr;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     GetDBM2(obj, dbmp, dbm);
 

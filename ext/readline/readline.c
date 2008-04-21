@@ -620,6 +620,8 @@ hist_each(VALUE self)
     HIST_ENTRY *entry;
     int i;
 
+    RETURN_ENUMERATOR(self, 0, 0);
+
     rb_secure(4);
     for (i = 0; i < history_length; i++) {
         entry = history_get(history_base + i);

@@ -389,6 +389,8 @@ ossl_config_each(VALUE self)
 {
     CONF *conf;
 
+    RETURN_ENUMERATOR(self, 0, 0);
+
     GetConfig(self, conf);
     lh_doall_arg(conf->data, LHASH_DOALL_ARG_FN(each_conf_value), (void*)NULL);
 

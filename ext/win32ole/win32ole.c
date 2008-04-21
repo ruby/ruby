@@ -3699,6 +3699,8 @@ fole_each(VALUE self)
     HRESULT hr;
     IEnumVARIANT *pEnum = NULL;
 
+    RETURN_ENUMERATOR(self, 0, 0);
+
     VariantInit(&result);
     dispParams.rgvarg = NULL;
     dispParams.rgdispidNamedArgs = NULL;

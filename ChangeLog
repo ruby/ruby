@@ -1,3 +1,41 @@
+Mon Apr 21 17:45:27 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dbm/dbm.c (fdbm_each_value, fdbm_each_key, fdbm_each_pair):
+	  GDBM#{each,each_pair,each_key,each_value}: Return an enumerator
+	  if no block is given.
+
+	* ext/gdbm/gdbm.c (fgdbm_each_value, fgdbm_each_key,
+	  fgdbm_each_pair): GDBM#{each,each_pair,each_key,each_value}:
+	  Return an enumerator if no block is given.
+
+	* ext/openssl/ossl_config.c (ossl_config_each):
+	  OpenSSL::Config#each: Return an enumerator if no block is given.
+
+	* ext/readline/readline.c (hist_each): Readline::HISTORY#each:
+	  Return an enumerator if no block is given.
+
+	* ext/sdbm/init.c (fsdbm_each_value, fsdbm_each_key,
+	  fsdbm_each_pair): SDBM#{each,each_pair,each_key,each_value}:
+	  Return an enumerator if no block is given.
+
+	* ext/stringio/stringio.c (strio_each_byte, strio_each):
+	  StringIO#{each,each_line,each_byte}: Return an enumerator if no
+	  block is given.
+
+	* ext/stringio/stringio.c (Init_stringio): Add #lines and #bytes,
+	  which are aliases to #each_line and #each_byte, respectively.
+
+	* ext/win32ole/win32ole.c (fole_each): WIN32OLE#each: Return an
+	  enumerator if no block is given.
+
+	* ext/zlib/zlib.c (rb_gzreader_each_byte, rb_gzreader_each):
+	  Zlib::GzipReader#{each,each_line,each_byte}: Return an
+	  enumerator if no block is given.
+
+	* ext/zlib/zlib.c (Init_zlib): Add Zlib::GzipReader#lines and
+	  #bytes, which are aliases to #each_line and #each_byte,
+	  respectively.
+
 Mon Apr 21 17:01:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): check if src is a string.
