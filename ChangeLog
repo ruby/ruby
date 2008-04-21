@@ -1,3 +1,11 @@
+Mon Apr 21 16:06:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enumerator.c (enumerator_init): preserve the method name in ID.
+
+	* enumerator.c (enumerator_each): need not to call rb_to_id().
+
+	* enumerator.c (enumerator_with_index): ditto.
+
 Mon Apr 21 11:00:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (defined_expr): capture exception during defined?

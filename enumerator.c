@@ -37,7 +37,7 @@ proc_call(VALUE proc, VALUE args)
 
 struct enumerator {
     VALUE obj;
-    VALUE meth;
+    ID    meth;
     VALUE proc;
     VALUE args;
     rb_block_call_func *iter;
@@ -51,7 +51,6 @@ enumerator_mark(void *p)
 {
     struct enumerator *ptr = p;
     rb_gc_mark(ptr->obj);
-    rb_gc_mark(ptr->meth);
     rb_gc_mark(ptr->proc);
     rb_gc_mark(ptr->args);
     rb_gc_mark(ptr->fib);
@@ -237,7 +236,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
     struct enumerator *ptr = enumerator_ptr(enum_obj);
 
     ptr->obj  = obj;
-    ptr->meth = meth;
+    ptr->meth = rb_to_id(meth);
     if (rb_block_given_p()) {
 	ptr->proc = rb_block_proc();
 	ptr->iter = enumerator_iter_i;
@@ -334,7 +333,7 @@ enumerator_each(VALUE obj)
 	argc = RARRAY_LEN(e->args);
 	argv = RARRAY_PTR(e->args);
     }
-    return rb_block_call(e->obj, rb_to_id(e->meth), argc, argv, e->iter, (VALUE)e);
+    return rb_block_call(e->obj, e->meth, argc, argv, e->iter, (VALUE)e);
 }
 
 static VALUE
@@ -367,7 +366,7 @@ enumerator_with_index(VALUE obj)
 	argc = RARRAY_LEN(e->args);
 	argv = RARRAY_PTR(e->args);
     }
-    return rb_block_call(e->obj, rb_to_id(e->meth), argc, argv,
+    return rb_block_call(e->obj, e->meth, argc, argv,
 			 enumerator_with_index_i, (VALUE)&memo);
 }
 
