@@ -438,7 +438,7 @@ VALUE
 rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE line, VALUE opt)
 {
     rb_compile_option_t option;
-    NODE *node = compile_string(src, file, line);
+    NODE *node = compile_string(StringValue(src), file, line);
     rb_thread_t *th = GET_THREAD();
     make_compile_option(&option, opt);
 
