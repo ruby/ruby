@@ -1,3 +1,9 @@
+Mon Apr 21 11:00:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (defined_expr): capture exception during defined?
+	  evaluation.  a patch from wanabe <s.wanabe at gmail.com> in
+	  [ruby-dev:34461].  [ruby-core:16010]
+
 Mon Apr 21 10:06:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c: should include <errno.h> to refer errno.

@@ -2421,10 +2421,21 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	}
 	if (!self) {
+	    LABEL *lstart = NEW_LABEL(nd_line(node));
+	    LABEL *lend = NEW_LABEL(nd_line(node));
+	    VALUE rescue = NEW_CHILD_ISEQVAL(NEW_NIL(),
+					     rb_str_concat(rb_str_new2
+							   ("defined guard in "),
+							   iseq->name),
+					     ISEQ_TYPE_DEFINED_GUARD);
+
 	    defined_expr(iseq, ret, node->nd_recv, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 
+	    ADD_LABEL(ret, lstart);
 	    COMPILE(ret, "defined/recv", node->nd_recv);
+	    ADD_LABEL(ret, lend);
+	    ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_METHOD),
 		      ID2SYM(node->nd_mid), needstr);
 	}
