@@ -6407,6 +6407,12 @@ rb_frame_last_func()
     return ruby_frame->last_func;
 }
 
+ID
+rb_frame_this_func()
+{
+    return ruby_frame->orig_func;
+}
+
 static NODE*
 compile(src, file, line)
     VALUE src;
@@ -7990,6 +7996,37 @@ rb_exec_end_proc()
     ruby_safe_level = safe;
 }
 
+/*
+ *  call-seq:
+ *     __method__         => symbol
+ *  
+ *  Returns the name of the current method as a Symbol.
+ *  If called from inside of an aliased method it will return the original
+ *  nonaliased name.
+ *  If called outside of a method, it returns <code>nil</code>.
+ *  
+ *    def foo
+ *      __method__
+ *    end
+ *    alias bar foo
+ *    
+ *    foo                # => :foo
+ *    bar                # => :foo
+ *
+ */
+
+static VALUE
+rb_f_method_name()
+{
+    struct FRAME* prev = ruby_frame->prev;
+    if (prev && prev->orig_func) {
+	return ID2SYM(prev->orig_func);
+    }
+    else {
+	return Qnil;
+    }
+}
+
 void
 Init_eval()
 {
@@ -8045,6 +8082,8 @@ Init_eval()
     rb_define_global_function("throw", rb_f_throw, -1);
     rb_define_global_function("global_variables", rb_f_global_variables, 0); /* in variable.c */
     rb_define_global_function("local_variables", rb_f_local_variables, 0);
+
+    rb_define_global_function("__method__", rb_f_method_name, 0);
 
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
     rb_define_method(rb_mKernel, "__send__", rb_f_send, -1);

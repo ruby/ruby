@@ -95,7 +95,8 @@ class Tempfile < DelegateClass(File)
 
   def _close	# :nodoc:
     @tmpfile.close if @tmpfile
-    @data[1] = @tmpfile = nil
+    @tmpfile = nil
+    @data[1] = nil if @data
   end    
   protected :_close
 
@@ -117,6 +118,7 @@ class Tempfile < DelegateClass(File)
     _close
     @clean_proc.call
     ObjectSpace.undefine_finalizer(self)
+    @data = @tmpname = nil
   end
 
   # Unlinks the file.  On UNIX-like systems, it is often a good idea
