@@ -1,3 +1,17 @@
+Mon Apr 21 10:17:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c: should include <errno.h> to refer errno.
+
+Mon Apr 21 10:02:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* hash.c (recursive_hash): prototype.
+
+Mon Apr 21 10:00:51 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (rb_strftime): check errno to detect strftime(3)'s error.
+	  this is workaround for recent version of MSVCRT.
+	  [ruby-dev:34456]
+
 Sun Apr 20 21:02:06 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Resolve the method every time an enumeration

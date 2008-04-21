@@ -1607,6 +1607,7 @@ hash_i(key, val, hval)
     return ST_CONTINUE;
 }
 
+static VALUE recursive_hash _((VALUE, VALUE, int));
 static VALUE
 recursive_hash(hash, dummy, recur)
     VALUE hash;
