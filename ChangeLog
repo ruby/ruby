@@ -1,3 +1,21 @@
+Mon Apr 21 17:19:52 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_f_method_name): New gloval function: __method__;
+	  backported from matzruby / 1.9.
+
+	* eval.c (rb_frame_this_func), intern.h: New internal function.
+
+	* intern.h (RETURN_ENUMERATOR): Use rb_frame_this_func() instead
+	  of rb_frame_last_func(), to accommodate the behavior to that of
+	  1.9.
+
+Mon Apr 21 15:54:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile::_close): check @data before modifying
+	  it; backported from 1.9.  [ruby-dev:34094]
+
+	* lib/tempfile.rb (Tempfile::close): clear @data and @tmpname.
+
 Mon Apr 21 10:17:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* time.c: should include <errno.h> to refer errno.
@@ -112,13 +130,6 @@ Thu Apr 17 22:03:52 2008  akira yamada  <akira@arika.org>
 	* lib/uri/ftp.rb, lib/uri/generic.rb, test/uri/test_common.rb,
 	  test/uri/test_ftp.rb, test/uri/test_generic.rb: backported from 1.9.
 	  [ruby-dev:31318]
-
-Wed Apr 16 14:22:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* lib/tempfile.rb (Tempfile::_close): check @data before modifying
-	  it backported from 1.9.  [ruby-dev:34094]
-
-	* lib/tempfile.rb (Tempfile::close): clear @data and @tmpname.
 
 Wed Apr 16 06:03:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 

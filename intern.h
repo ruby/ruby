@@ -133,7 +133,7 @@ VALUE rb_block_call _((VALUE, ID, int, VALUE*, VALUE (*)(ANYARGS), VALUE));
 VALUE rb_enumeratorize _((VALUE, VALUE, int, VALUE *));
 #define RETURN_ENUMERATOR(obj, argc, argv) do {				\
 	if (!rb_block_given_p())					\
-	    return rb_enumeratorize(obj, ID2SYM(rb_frame_last_func()),	\
+	    return rb_enumeratorize(obj, ID2SYM(rb_frame_this_func()),	\
 				    argc, argv);			\
     } while (0)
 /* error.c */
@@ -180,6 +180,7 @@ void rb_interrupt _((void));
 VALUE rb_apply _((VALUE, ID, VALUE));
 void rb_backtrace _((void));
 ID rb_frame_last_func _((void));
+ID rb_frame_this_func _((void));
 VALUE rb_obj_instance_eval _((int, VALUE*, VALUE));
 VALUE rb_mod_module_eval _((int, VALUE*, VALUE));
 void rb_load _((VALUE, int));
