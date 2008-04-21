@@ -1,3 +1,9 @@
+Mon Apr 21 09:58:04 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (rb_strftime): check errno to detect strftime(3)'s error.
+	  this is workaround for recent version of MSVCRT.
+	  [ruby-dev:34456]
+
 Mon Apr 21 08:54:30 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c (ruby_xmalloc): use size_t for malloc argument instead of long.
