@@ -1,6 +1,6 @@
 Mon Apr 21 17:01:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* iseq.c (rb_iseq_compile_with_option): check if src is a strring.
+	* iseq.c (rb_iseq_compile_with_option): check if src is a string.
 	  [ruby-core:16453]
 
 Mon Apr 21 16:06:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
