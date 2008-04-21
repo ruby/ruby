@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include <sys/types.h>
 #include <time.h>
+#include <errno.h>
 #include "ruby/encoding.h"
 
 #ifdef HAVE_UNISTD_H
