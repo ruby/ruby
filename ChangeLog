@@ -1,3 +1,8 @@
+Mon Apr 21 19:08:32 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (copy_stream_body): call rb_io_check_readable and
+	  rb_io_check_writable.
+
 Mon Apr 21 17:45:27 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/dbm/dbm.c (fdbm_each_value, fdbm_each_key, fdbm_each_pair):

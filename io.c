@@ -6628,6 +6628,7 @@ copy_stream_body(VALUE arg)
             stp->close_src = 1;
         }
         GetOpenFile(src_io, src_fptr);
+        rb_io_check_readable(src_fptr);
         src_fd = src_fptr->fd;
     }
     stp->src_fd = src_fd;
@@ -6660,6 +6661,7 @@ copy_stream_body(VALUE arg)
             stp->dst = dst_io;
         }
         GetOpenFile(dst_io, dst_fptr);
+        rb_io_check_writable(dst_fptr);
         dst_fd = dst_fptr->fd;
     }
     stp->dst_fd = dst_fd;

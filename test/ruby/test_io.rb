@@ -237,7 +237,6 @@ class TestIO < Test::Unit::TestCase
         }
       }
 
-
       bigcontent = "abc" * 123456
       File.open("bigsrc", "w") {|f| f << bigcontent }
       ret = IO.copy_stream("bigsrc", "bigdst")
@@ -511,4 +510,39 @@ class TestIO < Test::Unit::TestCase
       assert_equal("bcd", sio.string)
     }
   end
+
+  def test_copy_stream_src_wbuf
+    mkcdtmpdir {|d|
+      with_pipe {|r, w|
+        File.open("foe", "w+") {|f|
+          f.write "abcd\n"
+          f.rewind
+          f.write "xy"
+          IO.copy_stream(f, w)
+        }
+        assert_equal("xycd\n", File.read("foe"))
+        w.close
+        assert_equal("cd\n", r.read)
+        r.close
+      }
+    }
+  end
+
+  def test_copy_stream_dst_rbuf
+    mkcdtmpdir {|d|
+      with_pipe {|r, w|
+        w << "xyz"
+        w.close
+        File.open("fom", "w+") {|f|
+          f.write "abcd\n"
+          f.rewind
+          assert_equal("abc", f.read(3))
+          f.ungetc "c"
+          IO.copy_stream(r, f)
+        }
+        assert_equal("abxyz", File.read("fom"))
+      }
+    }
+  end
+
 end
