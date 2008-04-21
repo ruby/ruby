@@ -113,6 +113,13 @@ Thu Apr 17 22:03:52 2008  akira yamada  <akira@arika.org>
 	  test/uri/test_ftp.rb, test/uri/test_generic.rb: backported from 1.9.
 	  [ruby-dev:31318]
 
+Wed Apr 16 14:22:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/tempfile.rb (Tempfile::_close): check @data before modifying
+	  it backported from 1.9.  [ruby-dev:34094]
+
+	* lib/tempfile.rb (Tempfile::close): clear @data and @tmpname.
+
 Wed Apr 16 06:03:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/test_settracefunc.rb (TestSetTraceFunc#test_event):
