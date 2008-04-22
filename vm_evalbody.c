@@ -15,10 +15,10 @@
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
 #elif __GNUC__ && __x86_64__
-#define DECL_SC_REG(type, r, reg) register type reg_##r asm("r" reg)
+#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("r" reg)
 
 #elif __GNUC__ && __i386__
-#define DECL_SC_REG(type, r, reg) register type reg_##r asm("e" reg)
+#define DECL_SC_REG(type, r, reg) register type reg_##r __asm__("e" reg)
 
 #else
 #define DECL_SC_REG(type, r, reg) register type reg_##r

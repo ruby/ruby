@@ -1,3 +1,15 @@
+Tue Apr 22 16:24:27 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* string.c (rb_enc_cr_str_buf_cat): do not use C++ comments.
+
+Tue Apr 22 16:23:53 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* configure.in: use AC_USE_SYSTEM_EXTENSIONS.
+
+Tue Apr 22 16:23:16 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* vm_evalbody.c (DECL_SC_REG): use __asm__ instead.
+
 Tue Apr 22 16:18:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_evalbody.c (DECL_SC_REG): typo fixed.
