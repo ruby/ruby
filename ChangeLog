@@ -1,3 +1,9 @@
+Tue Apr 22 22:40:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/drb/drb.rb (DRb::DRbServer::check_insecure_method): should
+	  check method names by symbols, not by strings.  a patch from
+	  Kazuhiro NISHIYAMA <zn at mbf.nifty.com> in [ruby-dev:34487].
+
 Tue Apr 22 22:15:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-style.el (ruby-style-{case,label}-indent): up list from
