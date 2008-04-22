@@ -1,3 +1,10 @@
+Tue Apr 22 21:24:32 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_proc_new): Turn the BLOCK_LAMBDA flag on.
+
+	* object.c (sym_to_proc), test/ruby/test_symbol.rb: Add back
+	  Symbol#to_proc, now that it passes the tests.
+
 Tue Apr 22 19:35:03 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_initialize): Remove an undocumented

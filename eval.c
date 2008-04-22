@@ -9636,6 +9636,7 @@ rb_proc_new(func, val)
 
     Data_Get_Struct(proc, struct BLOCK, data);
     data->body->nd_state = YIELD_FUNC_AVALUE;
+    data->flags |= BLOCK_LAMBDA;
     return proc;
 }
 
