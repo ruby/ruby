@@ -80,5 +80,6 @@ class TestSymbol < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError) { :object_id.to_proc.call([]) }
     assert_nothing_raised(ArgumentError) { :object_id.to_proc.call([1]) }
     assert_nothing_raised(ArgumentError) { :object_id.to_proc.call([1,2]) }
+    assert_nothing_raised(ArgumentError) { :object_id.to_proc.call([1,[2,3]]) }
   end
 end
