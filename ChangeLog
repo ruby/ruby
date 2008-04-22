@@ -1,3 +1,13 @@
+Tue Apr 22 22:43:05 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_proc_new, YIELD_FUNC_LAMBDA): Add a new nd_state
+	  YIELD_FUNC_LAMBDA which avoids automatic `avalue' conversion for
+	  arguments.  This fixes a bug where [1,[2,3]].map(&:object_id)
+	  fails.
+
+	* intern.h, object.c: Hide rb_proc_new() from intern.h.  It should
+	  not be considered an official API function yet.
+
 Tue Apr 22 21:24:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_proc_new): Turn the BLOCK_LAMBDA flag on.

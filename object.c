@@ -1225,6 +1225,8 @@ sym_call(args, mid)
     return rb_apply(obj, (ID)mid, args);
 }
 
+VALUE rb_proc_new _((VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE));
+
 /*
  * call-seq:
  *   sym.to_proc
