@@ -1307,6 +1307,7 @@ error_print()
     if (!NIL_P(errat)) {
 	long i;
 	struct RArray *ep = RARRAY(errat);
+        int truncate = eclass == rb_eSysStackError;
 
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
 #define TRACE_HEAD 8
@@ -1317,7 +1318,7 @@ error_print()
 	    if (TYPE(ep->ptr[i]) == T_STRING) {
 		warn_printf("\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
 	    }
-	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
+	    if (truncate && i == TRACE_HEAD && ep->len > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
 			ep->len - TRACE_HEAD - TRACE_TAIL);
 		i = ep->len - TRACE_TAIL;

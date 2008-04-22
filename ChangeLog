@@ -1,3 +1,8 @@
+Wed Apr 23 00:42:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (error_print): show full stack grace except SystemStackError.
+	  backport from 1.9.  [ruby-dev:31014]
+
 Wed Apr 23 00:18:45 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_symbol.rb (TestSymbol#test_to_proc): Improve
