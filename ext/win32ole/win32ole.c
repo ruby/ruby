@@ -1326,13 +1326,13 @@ ole_val_ary2variant_ary(VALUE val, VARIANT *var, VARTYPE vt)
     if ((vt & ~VT_BYREF) == VT_ARRAY) {
         vt = (vt | VT_VARIANT);
     }
-    psa = SafeArrayCreate(vt & VT_TYPEMASK, dim, psab);
+    psa = SafeArrayCreate((VARTYPE)(vt & VT_TYPEMASK), dim, psab);
     if (psa == NULL)
         hr = E_OUTOFMEMORY;
     else
         hr = SafeArrayLock(psa);
     if (SUCCEEDED(hr)) {
-        ole_set_safe_array(dim-1, psa, pid, pub, val, dim, vt & VT_TYPEMASK);
+        ole_set_safe_array(dim-1, psa, pid, pub, val, dim, (VARTYPE)(vt & VT_TYPEMASK));
         hr = SafeArrayUnlock(psa);
     }
 
@@ -1643,7 +1643,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
                 V_ARRAYREF(&(pvar->var)) = &(V_ARRAY(&(pvar->realvar)));
             }
         } else {
-            hr = ole_val_ary2variant_ary(val, &(pvar->realvar), (vt & ~VT_BYREF));
+            hr = ole_val_ary2variant_ary(val, &(pvar->realvar), (VARTYPE)(vt & ~VT_BYREF));
             if (SUCCEEDED(hr)) {
                 if (vt & VT_BYREF) {
                     V_VT(&(pvar->var)) = vt;
@@ -1674,7 +1674,7 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
                 }
             }
         } else {
-            ole_val2variant_ex(val, &(pvar->realvar), (vt & ~VT_BYREF));
+            ole_val2variant_ex(val, &(pvar->realvar), (VARTYPE)(vt & ~VT_BYREF));
             if (vt == (VT_BYREF | VT_VARIANT)) {
                 ole_set_byref(&(pvar->realvar), &(pvar->var), vt);
             } else if (vt & VT_BYREF) {
@@ -7752,7 +7752,7 @@ folevariant_s_array(VALUE klass, VALUE elems, VALUE vvt)
         psab[i].lLbound = 0;
     }
 
-    psa = SafeArrayCreate(vt & VT_TYPEMASK, dim, psab);
+    psa = SafeArrayCreate((VARTYPE)(vt & VT_TYPEMASK), dim, psab);
     if (psa == NULL) {
         if (psab) free(psab);
         rb_raise(rb_eRuntimeError, "memory allocation error(SafeArrayCreate)");
