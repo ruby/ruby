@@ -1,3 +1,8 @@
+Tue Apr 22 17:54:05 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* vm_core.h (exec_event_hooks): ``inline'' is a type modifier, not
+	a type itself.
+
 Tue Apr 22 16:24:27 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* string.c (rb_enc_cr_str_buf_cat): do not use C++ comments.

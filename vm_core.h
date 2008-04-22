@@ -653,7 +653,7 @@ void rb_thread_execute_interrupts(rb_thread_t *);
   RUBY_VM_CHECK_INTS_TH(GET_THREAD())
 
 /* tracer */
-static void inline
+static inline void
 exec_event_hooks(rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
 {
     while (hook) {
