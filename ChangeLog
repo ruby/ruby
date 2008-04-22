@@ -1,3 +1,7 @@
+Tue Apr 22 17:12:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_search): string might be NULL.  [ruby-core:16478]
+
 Tue Apr 22 16:44:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* object.c (rb_obj_tap): Correct documentation; pointed out by
