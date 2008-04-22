@@ -19,6 +19,7 @@
 
 (defun ruby-style-case-indent (x)
   (save-excursion
+    (back-to-indentation)
     (unless (progn (backward-up-list) (back-to-indentation)
 		   (> (point) (cdr x)))
       (goto-char (cdr x))
@@ -26,6 +27,7 @@
 
 (defun ruby-style-label-indent (x)
   (save-excursion
+    (back-to-indentation)
     (unless (progn (backward-up-list) (back-to-indentation)
 		   (>= (point) (cdr x)))
       (goto-char (cdr x))

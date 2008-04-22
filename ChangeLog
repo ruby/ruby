@@ -1,3 +1,8 @@
+Tue Apr 22 22:15:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-style.el (ruby-style-{case,label}-indent): up list from
+	  indentation point.
+
 Tue Apr 22 21:09:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (score_table_A0, score_table_F0):
