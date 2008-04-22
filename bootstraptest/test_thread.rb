@@ -229,3 +229,8 @@ assert_finish 3, %{
   end
   th.join
 }
+
+assert_normal_exit %q{
+  STDERR.reopen(STDOUT)
+  exec "/"
+}

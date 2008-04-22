@@ -1,3 +1,8 @@
+Tue Apr 22 13:19:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (rb_thread_stop_timer_thread): should clear
+	  timer_thread_id after stopping it.
+
 Tue Apr 22 13:12:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_join): remove the current thread from the join list

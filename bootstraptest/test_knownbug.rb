@@ -155,7 +155,3 @@ assert_equal 'ok', %q{
     :ng
   end
 }, "[ruby-dev:34236]"
-
-assert_normal_exit %q{
-  exec "/"
-}

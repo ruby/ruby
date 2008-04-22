@@ -2008,6 +2008,7 @@ rb_thread_stop_timer_thread(void)
     if (timer_thread_id) {
 	system_working = 0;
 	native_thread_join(timer_thread_id);
+	timer_thread_id = 0;
     }
 }
 
