@@ -1,3 +1,7 @@
+Tue Apr 22 20:51:58 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (z_conv): characters must be nkf_char.
+
 Tue Apr 22 19:23:05 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_initialize): Remove an undocumented

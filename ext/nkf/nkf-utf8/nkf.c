@@ -3390,7 +3390,7 @@ void z_conv(nkf_char c2, nkf_char c1)
     if (alpha_f & 16) {
 	/* JIS X 0208 Katakana to JIS X 0201 Katakana */
 	if (c2 == 0x21) {
-	    char c = 0;
+	    nkf_char c = 0;
 	    switch (c1) {
 	    case 0x23:
 		/* U+3002 (0x8142) Ideographic Full Stop -> U+FF61 (0xA1) Halfwidth Ideographic Full Stop */
