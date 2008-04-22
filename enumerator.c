@@ -26,19 +26,9 @@ static VALUE sym_each;
 
 VALUE rb_eStopIteration;
 
-static VALUE
-proc_call(VALUE proc, VALUE args)
-{
-    if (TYPE(args) != T_ARRAY) {
-	args = rb_ary_new3(1, args);
-    }
-    return rb_proc_call(proc, args);
-}
-
 struct enumerator {
     VALUE obj;
     ID    meth;
-    VALUE proc;
     VALUE args;
     rb_block_call_func *iter;
     VALUE fib;
@@ -51,7 +41,6 @@ enumerator_mark(void *p)
 {
     struct enumerator *ptr = p;
     rb_gc_mark(ptr->obj);
-    rb_gc_mark(ptr->proc);
     rb_gc_mark(ptr->args);
     rb_gc_mark(ptr->fib);
     rb_gc_mark(ptr->dst);
@@ -72,13 +61,6 @@ enumerator_ptr(VALUE obj)
 	rb_raise(rb_eArgError, "uninitialized enumerator");
     }
     return ptr;
-}
-
-static VALUE
-enumerator_iter_i(VALUE i, VALUE enum_obj, int argc, VALUE *argv)
-{
-    struct enumerator *e = (struct enumerator *)enum_obj;
-    return rb_yield(proc_call(e->proc, i));
 }
 
 /*
@@ -237,13 +219,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 
     ptr->obj  = obj;
     ptr->meth = rb_to_id(meth);
-    if (rb_block_given_p()) {
-	ptr->proc = rb_block_proc();
-	ptr->iter = enumerator_iter_i;
-    }
-    else {
-	ptr->iter = enumerator_each_i;
-    }
+    ptr->iter = enumerator_each_i;
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
     ptr->dst = Qnil;
@@ -297,7 +273,6 @@ enumerator_init_copy(VALUE obj, VALUE orig)
 
     ptr1->obj  = ptr0->obj;
     ptr1->meth = ptr0->meth;
-    ptr1->proc = ptr0->proc;
     ptr1->iter = ptr0->iter;
     ptr1->args = ptr0->args;
     ptr1->fib  = 0;

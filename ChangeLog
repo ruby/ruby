@@ -1,3 +1,9 @@
+Tue Apr 22 19:23:05 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_initialize): Remove an undocumented
+	  feature (passing a block to the constructor) that's broken.
+	  This is not what I intended.
+
 Tue Apr 22 17:54:05 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* vm_core.h (exec_event_hooks): ``inline'' is a type modifier, not
