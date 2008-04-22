@@ -1,3 +1,7 @@
+Wed Apr 23 00:36:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/openssl/test_ssl.rb (start_server): add timeout to server.join.
+
 Wed Apr 23 00:18:45 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_symbol.rb (TestSymbol#test_to_proc): Improve
