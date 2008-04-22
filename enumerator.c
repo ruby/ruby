@@ -51,7 +51,6 @@ enumerator_mark(p)
 {
     struct enumerator *ptr = p;
     rb_gc_mark(ptr->obj);
-    rb_gc_mark(ptr->proc);
     rb_gc_mark(ptr->args);
 }
 
@@ -258,13 +257,7 @@ enumerator_init(enum_obj, obj, meth, argc, argv)
 
     ptr->obj  = obj;
     ptr->meth = rb_to_id(meth);
-    if (rb_block_given_p()) {
-	ptr->proc = rb_block_proc();
-	ptr->iter = enumerator_iter_i;
-    }
-    else {
-	ptr->iter = enumerator_each_i;
-    }
+    ptr->iter = enumerator_each_i;
     if (argc) ptr->args = rb_ary_new4(argc, argv);
 
     return enum_obj;
@@ -316,7 +309,6 @@ enumerator_init_copy(obj, orig)
 
     ptr1->obj  = ptr0->obj;
     ptr1->meth = ptr0->meth;
-    ptr1->proc = ptr0->proc;
     ptr1->iter = ptr0->iter;
     ptr1->args = ptr0->args;
 

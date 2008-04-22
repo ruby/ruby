@@ -232,6 +232,10 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+  * Symbol#to_proc
+
+    New method.
+
   * __method__
 
     New global function that returns the name of the current method as
@@ -334,6 +338,12 @@ with all sufficient information, see the ChangeLog file.
   * Slash module support
 
   * content:encoded with RSS 2.0 support
+
+=== Interpreter Implementation
+
+* stack trace
+
+  On non-SystemStackError exception, full stack trace is shown.
 
 === Compatibility issues (excluding feature bug fixes)
 

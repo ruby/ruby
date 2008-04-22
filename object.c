@@ -502,10 +502,15 @@ rb_obj_is_kind_of(obj, c)
  *  The primary purpose of this method is to "tap into" a method chain,
  *  in order to perform operations on intermediate results within the chain.
  *
- *	(1..10)                .tap {|x| puts "original: #{x.inspect}"}
- *	  .to_a                .tap {|x| puts "array: #{x.inspect}"}
- *	  .select {|x| x%2==0} .tap {|x| puts "evens: #{x.inspect}"}
- *	  .map { |x| x*x }     .tap {|x| puts "squares: #{x.inspect}"}
+ *	(1..10).tap {
+ *	  |x| puts "original: #{x.inspect}"
+ *	}.to_a.tap {
+ *	  |x| puts "array: #{x.inspect}"
+ *	}.select {|x| x%2==0}.tap {
+ *	  |x| puts "evens: #{x.inspect}"
+ *	}.map {|x| x*x}.tap {
+ *	  |x| puts "squares: #{x.inspect}"
+ *	}
  *
  */
 
@@ -1204,6 +1209,37 @@ sym_to_sym(sym)
     VALUE sym;
 {
     return sym;
+}
+
+
+static VALUE
+sym_call(args, mid)
+    VALUE args, mid;
+{
+    VALUE obj;
+
+    if (RARRAY(args)->len < 1) {
+	rb_raise(rb_eArgError, "no receiver given");
+    }
+    obj = rb_ary_shift(args);
+    return rb_apply(obj, (ID)mid, args);
+}
+
+VALUE rb_proc_new _((VALUE (*)(ANYARGS/* VALUE yieldarg[, VALUE procarg] */), VALUE));
+
+/*
+ * call-seq:
+ *   sym.to_proc
+ *
+ * Returns a _Proc_ object which respond to the given method by _sym_.
+ *
+ *   (1..3).collect(&:to_s)  #=> ["1", "2", "3"]
+ */
+
+static VALUE
+sym_to_proc(VALUE sym)
+{
+    return rb_proc_new(sym_call, (VALUE)SYM2ID(sym));
 }
 
 
@@ -2750,6 +2786,7 @@ Init_Object()
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "to_sym", sym_to_sym, 0);
+    rb_define_method(rb_cSymbol, "to_proc", sym_to_proc, 0);
     rb_define_method(rb_cSymbol, "===", rb_obj_equal, 1); 
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);

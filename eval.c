@@ -1111,6 +1111,7 @@ static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 #define YIELD_PUBLIC_DEF  4
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
+#define YIELD_FUNC_LAMBDA 3
 
 static VALUE rb_call _((VALUE,VALUE,ID,int,const VALUE*,int,VALUE));
 static VALUE module_setup _((VALUE,NODE*));
@@ -1306,6 +1307,7 @@ error_print()
     if (!NIL_P(errat)) {
 	long i;
 	struct RArray *ep = RARRAY(errat);
+        int truncate = eclass == rb_eSysStackError;
 
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
 #define TRACE_HEAD 8
@@ -1316,7 +1318,7 @@ error_print()
 	    if (TYPE(ep->ptr[i]) == T_STRING) {
 		warn_printf("\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
 	    }
-	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
+	    if (truncate && i == TRACE_HEAD && ep->len > TRACE_MAX) {
 		warn_printf("\t ... %ld levels...\n",
 			ep->len - TRACE_HEAD - TRACE_TAIL);
 		i = ep->len - TRACE_TAIL;
@@ -5014,12 +5016,18 @@ rb_yield_0(val, self, klass, flags, avalue)
     if ((state = EXEC_TAG()) == 0) {
       redo:
 	if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
-	    if (node->nd_state == YIELD_FUNC_AVALUE) {
+	    switch (node->nd_state) {
+	      case YIELD_FUNC_LAMBDA:
+		if (!avalue) {
+		    val = rb_ary_new3(1, val);
+		}
+		break;
+	      case YIELD_FUNC_AVALUE:
 		if (!avalue) {
 		    val = svalue_to_avalue(val);
 		}
-	    }
-	    else {
+		break;
+	      default:
 		if (avalue) {
 		    val = avalue_to_svalue(val);
 		}
@@ -9635,7 +9643,8 @@ rb_proc_new(func, val)
     VALUE proc = rb_iterate((VALUE(*)_((VALUE)))mproc, 0, func, val);
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    data->body->nd_state = YIELD_FUNC_AVALUE;
+    data->body->nd_state = YIELD_FUNC_LAMBDA;
+    data->flags |= BLOCK_LAMBDA;
     return proc;
 }
 

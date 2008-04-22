@@ -74,4 +74,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_inspect_evaled(':$0')
     assert_inspect_evaled(':$1')
   end
+
+  def test_to_proc
+    assert_equal %w(1 2 3), (1..3).map(&:to_s)
+    [
+      [],
+      [1],
+      [1, 2],
+      [1, [2, 3]],
+    ].each do |ary|
+      ary_id = ary.object_id
+      assert_equal ary_id, :object_id.to_proc.call(ary)
+      ary_ids = ary.collect{|x| x.object_id }
+      assert_equal ary_ids, ary.collect(&:object_id)
+    end
+  end
 end
