@@ -14,7 +14,7 @@
 #if VMDEBUG > 0
 #define DECL_SC_REG(type, r, reg) register type reg_##r
 
-#elif __GNUC__ && __x86_64
+#elif __GNUC__ && __x86_64__
 #define DECL_SC_REG(type, r, reg) register type reg_##r asm("r" reg)
 
 #elif __GNUC__ && __i386__

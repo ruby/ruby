@@ -1,3 +1,7 @@
+Tue Apr 22 16:18:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_evalbody.c (DECL_SC_REG): typo fixed.
+
 Tue Apr 22 15:25:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (struct timespec): needs time.h according to POSIX.
