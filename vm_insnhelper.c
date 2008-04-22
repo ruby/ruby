@@ -1045,10 +1045,10 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
     else {
 	vm_check_if_namespace(klass);
 	if (is_defined) {
-	    return rb_const_defined(klass, id);
+	    return rb_const_defined_from(klass, id);
 	}
 	else {
-	    return rb_const_get(klass, id);
+	    return rb_const_get_from(klass, id);
 	}
     }
 }
