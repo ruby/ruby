@@ -1,3 +1,8 @@
+Tue Apr 22 16:44:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* object.c (rb_obj_tap): Correct documentation; pointed out by
+	  okkez in [ruby-dev:34472].
+
 Tue Apr 22 10:05:51 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (eaccess): workaround for recent msvcrt's behavior.
