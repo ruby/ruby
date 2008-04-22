@@ -339,6 +339,12 @@ with all sufficient information, see the ChangeLog file.
 
   * content:encoded with RSS 2.0 support
 
+=== Interpreter Implementation
+
+* stack trace
+
+  On non-SystemStackError exception, full stack trace is shown.
+
 === Compatibility issues (excluding feature bug fixes)
 
 * tempfile
