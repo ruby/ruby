@@ -1,7 +1,7 @@
 #define RUBY_VERSION "1.9.0"
-#define RUBY_RELEASE_DATE "2008-04-22"
+#define RUBY_RELEASE_DATE "2008-04-23"
 #define RUBY_VERSION_CODE 190
-#define RUBY_RELEASE_CODE 20080422
+#define RUBY_RELEASE_CODE 20080423
 #define RUBY_PATCHLEVEL 0
 
 #define RUBY_VERSION_MAJOR 1
@@ -9,7 +9,7 @@
 #define RUBY_VERSION_TEENY 0
 #define RUBY_RELEASE_YEAR 2008
 #define RUBY_RELEASE_MONTH 4
-#define RUBY_RELEASE_DAY 22
+#define RUBY_RELEASE_DAY 23
 
 #ifdef RUBY_EXTERN
 RUBY_EXTERN const char ruby_version[];
@@ -50,7 +50,7 @@ RUBY_EXTERN const char ruby_copyright[];
     RUBY_RELEASE_STR" "		    \
     STRINGIZE(RUBY_RELEASE_NUM)") " \
     "["RUBY_PLATFORM"]"
-# define RUBY_COPYRIGHT 	    \
+# define RUBY_COPYRIGHT		    \
     "ruby - Copyright (C) "	    \
     STRINGIZE(RUBY_BIRTH_YEAR)"-"   \
     STRINGIZE(RUBY_RELEASE_YEAR)" " \
