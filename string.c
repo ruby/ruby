@@ -1578,7 +1578,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     }
     memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
     STR_SET_LEN(str, total);
-    RSTRING_PTR(str)[total] = '\0'; // sentinel
+    RSTRING_PTR(str)[total] = '\0'; /* sentinel */
 
     ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
     return str;
