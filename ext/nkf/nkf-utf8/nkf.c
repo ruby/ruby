@@ -2456,14 +2456,14 @@ void w_oconv32(nkf_char c2, nkf_char c1)
 
 #define SCORE_INIT (SCORE_iMIME)
 
-static const char score_table_A0[] = {
+static const unsigned char score_table_A0[] = {
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND, SCORE_NO_EXIST,
 };
 
-static const char score_table_F0[] = {
+static const unsigned char score_table_F0[] = {
     SCORE_L2, SCORE_L2, SCORE_L2, SCORE_L2,
     SCORE_L2, SCORE_DEPEND, SCORE_NO_EXIST, SCORE_NO_EXIST,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_CP932, SCORE_CP932,
@@ -3041,7 +3041,7 @@ static void init_broken_state(void)
     memset(&broken_state, 0, sizeof(broken_state));
 }
 
-static void push_broken_buf(c)
+static void push_broken_buf(nkf_char c)
 {
     broken_state.buf[broken_state.count++] = c;
 }
@@ -5599,7 +5599,7 @@ void options(unsigned char *cp)
                 if (strcmp(long_option[i].name, "oc=") == 0){
 		    nkf_str_upcase((char *)p, codeset, 32);
 		    enc = nkf_enc_find(codeset);
-		    if (enc <= 0) continue;
+		    if (enc == 0) continue;
 		    output_encoding = enc;
                     continue;
 		}

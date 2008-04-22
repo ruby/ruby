@@ -1,3 +1,14 @@
+Tue Apr 22 21:09:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (score_table_A0, score_table_F0):
+	  type of content is unsigned char.
+
+	* ext/nkf/nkf-utf8/nkf.c (push_broken_buf): 'c' is nkf_char.
+
+	* ext/nkf/nkf-utf8/nkf.c (push_broken_buf): enc is 0 or pointer.
+
+	* ext/nkf//nkf.c (options): type of option is unsigned char.
+
 Tue Apr 22 20:51:58 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (z_conv): characters must be nkf_char.
