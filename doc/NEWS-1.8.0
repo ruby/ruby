@@ -835,3 +835,7 @@
 : string concatenation
 
   faster by avoiding too frequent realloc(3).
+
+: stack trace
+
+  On non-SystemStackError exception, full stack trace is shown.
