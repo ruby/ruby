@@ -1673,12 +1673,12 @@ rb_syswait(rb_pid_t pid)
 {
     static int overriding;
 #ifdef SIGHUP
-    RETSIGTYPE (*hfunc)(int);
+    RETSIGTYPE (*hfunc)(int) = 0;
 #endif
 #ifdef SIGQUIT
-    RETSIGTYPE (*qfunc)(int);
+    RETSIGTYPE (*qfunc)(int) = 0;
 #endif
-    RETSIGTYPE (*ifunc)(int);
+    RETSIGTYPE (*ifunc)(int) = 0;
     int status;
     int i, hooked = Qfalse;
 

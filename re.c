@@ -1150,7 +1150,6 @@ static rb_encoding*
 rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
     rb_encoding *enc = 0;
-    regex_t *reg;
 
     if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
         rb_raise(rb_eArgError,
@@ -1189,7 +1188,7 @@ rb_reg_prepare_re(VALUE re, rb_encoding *enc)
     onig_errmsg_buffer err = "";
     int r;
     OnigErrorInfo einfo;
-    UChar *pattern;
+    const char *pattern;
     VALUE unescaped;
     rb_encoding *fixed_enc = 0;
 
@@ -1197,7 +1196,7 @@ rb_reg_prepare_re(VALUE re, rb_encoding *enc)
 
     rb_reg_check(re);
     reg = RREGEXP(re)->ptr;
-    pattern = ((UChar*)RREGEXP(re)->str);
+    pattern = RREGEXP(re)->str;
 
     unescaped = rb_reg_preprocess(
 	pattern, pattern + RREGEXP(re)->len, enc,
@@ -1213,7 +1212,7 @@ rb_reg_prepare_re(VALUE re, rb_encoding *enc)
 		 OnigDefaultSyntax, &einfo);
     if (r) {
 	onig_error_code_to_str((UChar*)err, r, &einfo);
-	rb_reg_raise((char*)pattern, RREGEXP(re)->len, err, re);
+	rb_reg_raise(pattern, RREGEXP(re)->len, err, re);
     }
 
     RB_GC_GUARD(unescaped);
@@ -1226,7 +1225,6 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
     int range;
     rb_encoding *enc;
     UChar *p, *string;
-    regex_t *reg;
 
     enc = rb_reg_prepare_enc(re, str, 0);
 

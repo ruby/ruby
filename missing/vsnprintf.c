@@ -550,7 +550,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int fieldsz;		/* field size expanded by sign, etc */
 	int realsz;		/* field size expanded by dprec */
 	int size;		/* size of converted field or string */
-	char *xdigs;		/* digits for [xX] conversion */
+	char *xdigs = 0;	/* digits for [xX] conversion */
 #define NIOV 8
 	struct __suio uio;	/* output information: summary */
 	struct __siov iov[NIOV];/* ... and individual io vectors */
@@ -908,10 +908,11 @@ hex:
 			/* leading 0x/X only if non-zero */
 			if (flags & ALT &&
 #ifdef _HAVE_SANE_QUAD_
-			    (flags & QUADINT ? uqval != 0 : ulval != 0))
+			    (flags & QUADINT ? uqval != 0 : ulval != 0)
 #else /* _HAVE_SANE_QUAD_ */
-			    ulval != 0)
+			    ulval != 0
 #endif /* _HAVE_SANE_QUAD_ */
+			    )
 				flags |= HEXPREFIX;
 
 			/* unsigned conversions */
@@ -935,10 +936,10 @@ number:			if ((dprec = prec) >= 0)
 				if (uqval != 0 || prec != 0)
 					cp = BSD__uqtoa(uqval, cp, base,
 					    flags & ALT, xdigs);
-			} else {
+			} else
 #else /* _HAVE_SANE_QUAD_ */
-			{
 #endif /* _HAVE_SANE_QUAD_ */
+			{
 				if (ulval != 0 || prec != 0)
 					cp = BSD__ultoa(ulval, cp, base,
 					    flags & ALT, xdigs);
