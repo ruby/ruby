@@ -1,3 +1,8 @@
+Tue Apr 22 13:12:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_join): remove the current thread from the join list
+	  of the target thread.
+
 Tue Apr 22 12:03:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_ev_const): search from the base klass if it

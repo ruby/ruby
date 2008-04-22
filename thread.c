@@ -461,20 +461,42 @@ rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 /* +infty, for this purpose */
 #define DELAY_INFTY 1E30
 
-static VALUE
-thread_join(rb_thread_t *target_th, double delay)
-{
-    rb_thread_t *th = GET_THREAD();
-    double now, limit = timeofday() + delay;
+struct join_arg {
+    rb_thread_t *target, *waiting;
+    double limit;
+    int forever;
+};
 
-    thread_debug("thread_join (thid: %p)\n", (void *)target_th->thread_id);
+static VALUE
+remove_from_join_list(VALUE arg)
+{
+    struct join_arg *p = (struct join_arg *)arg;
+    rb_thread_t *target_th = p->target, *th = p->waiting;
 
     if (target_th->status != THREAD_KILLED) {
-	th->join_list_next = target_th->join_list_head;
-	target_th->join_list_head = th;
+	rb_thread_t **pth = &target_th->join_list_head;
+
+	while (*pth) {
+	    if (*pth == th) {
+		*pth = th->join_list_next;
+		break;
+	    }
+	    pth = &(*pth)->join_list_next;
+	}
     }
+
+    return Qnil;
+}
+
+static VALUE
+thread_join_sleep(VALUE arg)
+{
+    struct join_arg *p = (struct join_arg *)arg;
+    rb_thread_t *target_th = p->target, *th = p->waiting;
+    double now, limit = p->limit;
+
     while (target_th->status != THREAD_KILLED) {
-	if (delay == DELAY_INFTY) {
+	if (p->forever) {
 	    sleep_forever(th);
 	}
 	else {
@@ -482,12 +504,36 @@ thread_join(rb_thread_t *target_th, double delay)
 	    if (now > limit) {
 		thread_debug("thread_join: timeout (thid: %p)\n",
 			     (void *)target_th->thread_id);
-		return Qnil;
+		return Qfalse;
 	    }
 	    sleep_wait_for_interrupt(th, limit - now);
 	}
 	thread_debug("thread_join: interrupted (thid: %p)\n",
 		     (void *)target_th->thread_id);
+    }
+    return Qtrue;
+}
+
+static VALUE
+thread_join(rb_thread_t *target_th, double delay)
+{
+    rb_thread_t *th = GET_THREAD();
+    struct join_arg arg;
+
+    arg.target = target_th;
+    arg.waiting = th;
+    arg.limit = timeofday() + delay;
+    arg.forever = delay == DELAY_INFTY;
+
+    thread_debug("thread_join (thid: %p)\n", (void *)target_th->thread_id);
+
+    if (target_th->status != THREAD_KILLED) {
+	th->join_list_next = target_th->join_list_head;
+	target_th->join_list_head = th;
+	if (!rb_ensure(thread_join_sleep, (VALUE)&arg,
+		       remove_from_join_list, (VALUE)&arg)) {
+	    return Qnil;
+	}
     }
 
     thread_debug("thread_join: success (thid: %p)\n",
