@@ -471,7 +471,7 @@ rb_f_sprintf(argc, argv)
 		long v = 0;
 		int base, bignum = 0;
 		int len, pos;
-		VALUE tmp;
+		volatile VALUE tmp;
                 volatile VALUE tmp1;
 
 		switch (*p) {

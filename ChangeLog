@@ -1,3 +1,8 @@
+Tue Apr 22 17:49:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): should protect temporary string from
+	  GC.   [ruby-dev:34480]
+
 Tue Apr 22 17:12:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_search): string might be NULL.  [ruby-core:16478]
