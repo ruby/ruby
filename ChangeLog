@@ -1,3 +1,8 @@
+Tue Apr 22 10:05:51 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (eaccess): workaround for recent msvcrt's behavior.
+	  [ruby-core:16460]
+
 Mon Apr 21 16:06:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enumerator.c (enumerator_init): preserve the method name in ID.
