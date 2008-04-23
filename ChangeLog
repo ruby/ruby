@@ -1,3 +1,8 @@
+Wed Apr 23 15:28:52 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create): failed
+	  notice moved from comment to assertion message. [ruby-dev:29127]
+
 Wed Apr 23 11:49:54 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#each, SortedSet#each, TC_Set#test_each): Return
