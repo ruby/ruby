@@ -1,3 +1,8 @@
+Wed Apr 23 15:28:52 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create): failed
+	  notice moved from comment to assertion message. [ruby-dev:29127]
+
 Wed Apr 23 14:00:05 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb (create_makefile): Add a missing dependency on the

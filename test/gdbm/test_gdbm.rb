@@ -90,8 +90,8 @@ if defined? GDBM
       end
     end
     def test_s_open_no_create
-      # this test is failed on libgdbm 1.8.0
-      assert_nil(gdbm = GDBM.open("tmptest_gdbm", nil))
+      assert_nil(gdbm = GDBM.open("tmptest_gdbm", nil),
+                 "this test is failed on libgdbm 1.8.0")
     ensure
       gdbm.close if gdbm
     end
