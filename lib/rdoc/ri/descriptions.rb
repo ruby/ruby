@@ -8,7 +8,7 @@ require 'rdoc/ri'
 # the documentation
 #++
 
-class RDoc::RI::RDoc::RI::NamedThing
+class RDoc::RI::NamedThing
   attr_reader :name
   def initialize(name)
     @name = name
@@ -26,9 +26,9 @@ class RDoc::RI::RDoc::RI::NamedThing
   end
 end
 
-class RDoc::RI::AliasName < RDoc::RI::RDoc::RI::NamedThing; end
+class RDoc::RI::AliasName < RDoc::RI::NamedThing; end
 
-class RDoc::RI::Attribute < RDoc::RI::RDoc::RI::NamedThing
+class RDoc::RI::Attribute < RDoc::RI::NamedThing
   attr_reader :rw, :comment
   def initialize(name, rw, comment)
     super(name)
