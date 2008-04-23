@@ -1,3 +1,14 @@
+Thu Apr 24 00:20:01 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_settracefunc.rb: add a test for set_trace_func.
+
+	* test/ruby/envutil.rb: move "rubyexec" method from test_rubyoptions.rb.
+
+	* test/ruby/test_rubyoptions.rb: use rubyexec in envutil.rb.
+
+	* test/ruby/test_thread.rb: add tests to achieve over 90% test coverage
+	  of thread.c.
+
 Wed Apr 23 15:28:52 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create): failed

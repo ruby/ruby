@@ -1,3 +1,6 @@
+require "open3"
+require "timeout"
+
 module EnvUtil
   def rubybin
     unless ENV["RUBYOPT"]
@@ -28,4 +31,42 @@ module EnvUtil
     end
   end
   module_function :rubybin
+
+  LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
+  def rubyexec(*args)
+    if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
+      flunk("cannot test in win32")
+      return
+    end
+
+    ruby = EnvUtil.rubybin
+    c = "C"
+    env = {}
+    LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
+    stdin, stdout, stderr = Open3.popen3(*([ruby] + args))
+    env.each_pair {|lc, v|
+      if v
+        ENV[lc] = v
+      else
+        ENV.delete(lc)
+      end
+    }
+    env = nil
+    Timeout.timeout(10) do
+      yield(stdin, stdout, stderr)
+    end
+
+  ensure
+    env.each_pair {|lc, v|
+      if v
+        ENV[lc] = v
+      else
+        ENV.delete(lc)
+      end
+    } if env
+    stdin .close unless !stdin  || stdin .closed?
+    stdout.close unless !stdout || stdout.closed?
+    stderr.close unless !stderr || stderr.closed?
+  end
+  module_function :rubyexec
 end

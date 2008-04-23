@@ -171,4 +171,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal([], events)
   end
+
+  def test_invalid_proc
+    assert_raise(TypeError) { set_trace_func(1) }
+  end
 end
