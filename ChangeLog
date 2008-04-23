@@ -1,3 +1,8 @@
+Wed Apr 23 11:49:54 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#each, SortedSet#each, TC_Set#test_each): Return
+	  an enumerator if no block is given.
+
 Wed Apr 23 00:42:49 2008  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (error_print): show full stack grace except SystemStackError.
