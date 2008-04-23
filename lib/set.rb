@@ -2,7 +2,7 @@
 #--
 # set.rb - defines the Set class
 #++
-# Copyright (c) 2002 Akinori MUSHA <knu@iDaemons.org>
+# Copyright (c) 2002-2008 Akinori MUSHA <knu@iDaemons.org>
 #
 # Documentation by Akinori MUSHA and Gavin Sinclair. 
 #
@@ -204,8 +204,10 @@ class Set
   end
 
   # Calls the given block once for each element in the set, passing
-  # the element as parameter.
+  # the element as parameter.  Returns an enumerator if no block is
+  # given.
   def each
+    block_given? or return enum_for(__method__)
     @hash.each_key { |o| yield(o) }
     self
   end
@@ -511,6 +513,7 @@ class SortedSet < Set
 	  end
 
 	  def each
+	    block_given? or return enum_for(__method__)
 	    to_a.each { |o| yield(o) }
 	  end
 
@@ -925,9 +928,8 @@ class TC_Set < Test::Unit::TestCase
     ary = [1,3,5,7,10,20]
     set = Set.new(ary)
 
-    assert_raises(LocalJumpError) {
-      set.each
-    }
+    e = set.each
+    assert_instance_of(Enumerable::Enumerator, e)
 
     assert_nothing_raised {
       set.each { |o|

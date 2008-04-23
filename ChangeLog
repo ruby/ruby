@@ -1,3 +1,8 @@
+Wed Apr 23 11:49:54 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#each, SortedSet#each, TC_Set#test_each): Return
+	  an enumerator if no block is given.
+
 Wed Apr 23 00:36:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/openssl/test_ssl.rb (start_server): add timeout to server.join.
