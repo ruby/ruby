@@ -8471,6 +8471,35 @@ rb_f_binding(self)
     return bind;
 }
 
+/*
+ *  call-seq:
+ *     binding.eval(string [, filename [,lineno]])  => obj
+ *
+ *  Evaluates the Ruby expression(s) in <em>string</em>, in the
+ *  <em>binding</em>'s context.  If the optional <em>filename</em> and
+ *  <em>lineno</em> parameters are present, they will be used when
+ *  reporting syntax errors.
+ *
+ *     def getBinding(param)
+ *       return binding
+ *     end
+ *     b = getBinding("hello")
+ *     b.eval("param")   #=> "hello"
+ */
+
+static VALUE
+bind_eval(argc, argv, bindval)
+    int argc;
+    VALUE *argv;
+    VALUE bindval;
+{
+    VALUE args[4];
+
+    rb_scan_args(argc, argv, "12", &args[0], &args[2], &args[3]);
+    args[1] = bindval;
+    return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
+}
+
 #define PROC_TSHIFT (FL_USHIFT+1)
 #define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
 #define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
@@ -9899,6 +9928,7 @@ Init_Binding()
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
     rb_define_method(rb_cBinding, "clone", proc_clone, 0);
     rb_define_method(rb_cBinding, "dup", proc_dup, 0);
+    rb_define_method(rb_cBinding, "eval", bind_eval, -1);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 

@@ -73,6 +73,10 @@ with all sufficient information, see the ChangeLog file.
 
     New methods.
 
+  * Binding#eval
+
+    New method.
+
   * Dir#each
   * Dir#foreach
 
