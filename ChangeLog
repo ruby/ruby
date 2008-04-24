@@ -1,3 +1,8 @@
+Thu Apr 24 22:34:52 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_comparable.rb: new tests for Comparable, to achieve
+	  100% test coverage of compar.c.
+
 Thu Apr 24 17:19:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (process_options): set safe_level before loading script.
