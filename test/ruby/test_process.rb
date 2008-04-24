@@ -453,24 +453,21 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_close_others
     with_tmpchdir {|d|
       with_pipe {|r, w|
-        system("exec 2>err; echo ma >&#{w.fileno}", :close_others=>true)
+        system("exec >/dev/null 2>err; echo ma >&#{w.fileno}", :close_others=>true)
         w.close
         assert_equal("", r.read)
-        assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
-        Process.wait spawn("exec 2>err; echo mi >&#{w.fileno}", :close_others=>true)
+        Process.wait spawn("exec >/dev/null 2>err; echo mi >&#{w.fileno}", :close_others=>true)
         w.close
         assert_equal("", r.read)
-        assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
-        Process.wait fork { exec("exec 2>err; echo mu >&#{w.fileno}", :close_others=>true) }
+        Process.wait fork { exec("exec >/dev/null 2>err; echo mu >&#{w.fileno}", :close_others=>true) }
         w.close
         assert_equal("", r.read)
-        assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
