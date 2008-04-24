@@ -109,12 +109,12 @@ class TestThread < Test::Unit::TestCase
     t1.priority = -1
     t2 = Thread.new { loop { c2 += 1 } }
     t2.priority = -3
-    assert(-1, t1.priority)
-    assert(-3, t2.priority)
+    assert_equal(-1, t1.priority)
+    assert_equal(-3, t2.priority)
     sleep 0.5
     t1.kill
     t2.kill
-    #assert(c1 > c2 * 2, "[ruby-dev:33124]")
+    assert(c1 > c2 * 2, "[ruby-dev:33124]")
   end
 
   def test_new
@@ -384,7 +384,7 @@ class TestThread < Test::Unit::TestCase
   def test_select_wait
     assert_nil(IO.select(nil, nil, nil, 1))
     t = Thread.new do
-      assert_nil(IO.select(nil, nil, nil, nil))
+      IO.select(nil, nil, nil, nil)
     end
     sleep 0.5
     t.kill

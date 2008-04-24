@@ -1,3 +1,10 @@
+Thu Apr 24 23:00:58 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_thread.rb: fix typos.
+
+	* test/ruby/envutil.rb (rubyexec): move Open3.popen3 call into timeout
+	  block.
+
 Thu Apr 24 22:34:52 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_comparable.rb: new tests for Comparable, to achieve

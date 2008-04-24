@@ -43,16 +43,17 @@ module EnvUtil
     c = "C"
     env = {}
     LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
-    stdin, stdout, stderr = Open3.popen3(*([ruby] + args))
-    env.each_pair {|lc, v|
-      if v
-        ENV[lc] = v
-      else
-        ENV.delete(lc)
-      end
-    }
-    env = nil
+    stdin = stdout = stderr = nil
     Timeout.timeout(10) do
+      stdin, stdout, stderr = Open3.popen3(*([ruby] + args))
+      env.each_pair {|lc, v|
+        if v
+          ENV[lc] = v
+        else
+          ENV.delete(lc)
+        end
+      }
+      env = nil
       yield(stdin, stdout, stderr)
     end
 
