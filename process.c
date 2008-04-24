@@ -1553,7 +1553,7 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 }
 
 static VALUE
-rb_check_exec_env(hash)
+rb_check_exec_env(VALUE hash)
 {
     VALUE env;
 
