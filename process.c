@@ -57,6 +57,8 @@ struct timeval rb_time_interval(VALUE);
 #undef HAVE_GETPGRP
 #endif
 
+#include <sys/stat.h>
+
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
@@ -2733,7 +2735,6 @@ rb_f_system(int argc, VALUE *argv)
  *
  *  Also, all non-standard unspecified descriptors can be closed by :close_others option.
  *  The "standard" descriptors are 0, 1 and 2.
- *  (Current implementation closes decriptors less than some constant, such as 256.)
  *
  *    # more similar to IO.popen
  *    r, w = IO.pipe

@@ -1,3 +1,7 @@
+Fri Apr 25 00:16:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c: include sys/stat.h for umask.
+
 Thu Apr 24 23:25:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_env_clear): declared.

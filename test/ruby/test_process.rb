@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'tmpdir'
-require 'require_relative'
 require_relative 'envutil'
 
 class TestProcess < Test::Unit::TestCase
