@@ -1,3 +1,8 @@
+Thu Apr 24 14:15:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_find_1): prior files with extensions to files sans
+	  extensions.  [ruby-core:16517]
+
 Wed Apr 23 15:39:31 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (bind_eval): Add Binding#eval, a shorthand method for
