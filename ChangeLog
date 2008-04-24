@@ -1,3 +1,64 @@
+Thu Apr 24 23:25:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_env_clear): declared.
+	  (rb_io_mode_modenum): declared.
+	  (rb_close_before_exec): declared.
+	  (struct rb_exec_arg): add options and redirect_fds field.
+	  (rb_check_argv): removed.
+	  (rb_exec_initarg): declared.
+	  (rb_exec_getargs): declared.
+	  (rb_exec_initarg2): declared.
+	  (rb_fork): add third argument: fds.
+
+	* io.c (max_file_descriptor): new static variable to record maximum
+	  file descriptor ruby used.
+	  (UPDATE_MAXFD): new macro.
+	  (UPDATE_MAXFD_PIPE): new macro.
+	  (rb_io_mode_modenum): externed.
+	  (rb_sysopen): update max_file_descriptor.
+	  (rb_close_before_exec): new function.
+	  (popen_exec): redirection removed because it is done by extended
+	  spawn mechanism.
+	  (pipe_open): generate a hash for spawn options to specify
+	  redirections.
+	  (pipe_open_v): use rb_exec_getargs.
+	  (pipe_open_s): use rb_exec_getargs.
+	  (rb_io_initialize): update max_file_descriptor..
+
+	* process.c (hide_obj): new function.
+	  (check_exec_redirect_fd): new function.
+	  (check_exec_redirect): new function.
+	  (check_exec_options_i): new function.
+	  (check_exec_fds): new function.
+	  (rb_check_exec_options): new function.
+	  (check_exec_env_i): new function.
+	  (rb_check_exec_env): new function.
+	  (rb_exec_getargs): new function.
+	  (rb_exec_initarg2): new function.
+	  (rb_exec_initarg): new function.
+	  (rb_f_exec): use rb_exec_initarg.
+	  (intcmp): new function.
+	  (run_exec_dup2): new function.
+	  (run_exec_close): new function.
+	  (run_exec_open): new function.
+	  (run_exec_pgroup): new function.
+	  (run_exec_rlimit): new function.
+	  (run_exec_options): new function.
+	  (rb_exec): call run_exec_options.
+	  (move_fds_to_avoid_crash): new function.
+	  (pipe_nocrash): new function.
+	  (rb_fork): use pipe_nocrash to avoid file descriptor conflicts.
+	  (rb_spawn): use rb_exec_initarg.
+	  (rlimit_resource_name2int): extracted from rlimit_resource_type.
+	  (rlimit_type_by_hname): new function.
+	  (rlimit_type_by_lname): new function.
+	  (rlimit_resource_type): use rlimit_type_by_hname.
+	  (proc_daemon): add fds argument for rb_fork.
+
+	* hash.c (rb_env_clear): renamed from env_clear and externed.
+
+	[ruby-dev:34086]
+
 Thu Apr 24 23:00:58 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_thread.rb: fix typos.

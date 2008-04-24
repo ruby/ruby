@@ -353,6 +353,7 @@ VALUE rb_hash_delete(VALUE,VALUE);
 struct st_table *rb_hash_tbl(VALUE);
 int rb_path_check(const char*);
 int rb_env_path_tainted(void);
+VALUE rb_env_clear(void);
 /* io.c */
 #define rb_defout rb_stdout
 RUBY_EXTERN VALUE rb_fs;
@@ -377,6 +378,8 @@ VALUE rb_file_open(const char*, const char*);
 VALUE rb_gets(void);
 void rb_write_error(const char*);
 void rb_write_error2(const char*, long);
+int rb_io_mode_modenum(const char *mode);
+void rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds);
 /* marshal.c */
 VALUE rb_marshal_dump(VALUE, VALUE);
 VALUE rb_marshal_load(VALUE);
@@ -444,12 +447,16 @@ struct rb_exec_arg {
     int argc;
     VALUE *argv;
     const char *prog;
+    VALUE options;
+    VALUE redirect_fds;
 };
 int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);
-VALUE rb_check_argv(int, VALUE*);
+VALUE rb_exec_initarg(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
+VALUE rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, VALUE *opthash_ret);
+void rb_exec_initarg2(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_exec_arg *e);
 int rb_exec(const struct rb_exec_arg*);
-rb_pid_t rb_fork(int*, int (*)(void*), void*);
+rb_pid_t rb_fork(int*, int (*)(void*), void*, VALUE);
 VALUE rb_f_exec(int,VALUE*);
 rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);

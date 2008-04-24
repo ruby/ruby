@@ -2215,8 +2215,8 @@ env_select(VALUE ehash)
     return result;
 }
 
-static VALUE
-env_clear(void)
+VALUE
+rb_env_clear(void)
 {
     volatile VALUE keys;
     long i;
@@ -2640,7 +2640,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
     rb_define_singleton_method(envtbl,"delete", env_delete_m, 1);
     rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
-    rb_define_singleton_method(envtbl,"clear", env_clear, 0);
+    rb_define_singleton_method(envtbl,"clear", rb_env_clear, 0);
     rb_define_singleton_method(envtbl,"reject", env_reject, 0);
     rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
     rb_define_singleton_method(envtbl,"select", env_select, 0);

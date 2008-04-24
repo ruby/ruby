@@ -139,6 +139,18 @@ struct argf {
     rb_encoding *enc, *enc2;
 };
 
+static int max_file_descriptor = NOFILE;
+#define UPDATE_MAXFD(fd) \
+    do { \
+        if (max_file_descriptor < (fd)) max_file_descriptor = (fd); \
+    } while (0)
+#define UPDATE_MAXFD_PIPE(filedes) \
+    do { \
+        UPDATE_MAXFD((filedes)[0]); \
+        UPDATE_MAXFD((filedes)[1]); \
+    } while (0)
+
+
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
 
@@ -3228,7 +3240,7 @@ rb_io_modenum_flags(int mode)
     return flags;
 }
 
-static int
+int
 rb_io_mode_modenum(const char *mode)
 {
     int flags = 0;
@@ -3387,6 +3399,7 @@ rb_sysopen(char *fname, int flags, unsigned int mode)
 	    rb_sys_fail(fname);
 	}
     }
+    UPDATE_MAXFD(fd);
     return fd;
 }
 
@@ -3629,26 +3642,41 @@ popen_redirect(struct popen_arg *p)
     }
 }
 
+void
+rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds)
+{
+    int fd, ret;
+    int max = max_file_descriptor;
+    if (max < maxhint)
+        max = maxhint;
+    for (fd = lowfd; fd <= max; fd++) {
+        if (!NIL_P(noclose_fds) &&
+            RTEST(rb_hash_lookup(noclose_fds, INT2FIX(fd))))
+            continue;
+#ifdef FD_CLOEXEC
+	ret = fcntl(fd, F_GETFD);
+	if (ret != -1 && !(ret & FD_CLOEXEC)) {
+            fcntl(fd, F_SETFD, ret|FD_CLOEXEC);
+        }
+#else
+	close(fd);
+#endif
+    }
+}
+
 static int
 popen_exec(void *pp)
 {
     struct popen_arg *p = (struct popen_arg*)pp;
-    int fd;
 
     rb_thread_atfork();
-    popen_redirect(p);
-    for (fd = 3; fd < NOFILE; fd++) {
-#ifdef FD_CLOEXEC
-	if (fcntl(fd, F_GETFD) & FD_CLOEXEC) continue;
-#endif
-	close(fd);
-    }
     return rb_exec(&p->exec);
 }
 #endif
 
 static VALUE
-pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
+pipe_open(VALUE prog, int argc, VALUE *argv,
+    VALUE env, VALUE opthash, const char *mode)
 {
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
@@ -3659,6 +3687,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 #if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
+    VALUE env2 = 0;
 #elif defined(_WIN32)
     int openmode = rb_io_mode_modenum(mode);
     const char *exename = NULL;
@@ -3667,8 +3696,16 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
     FILE *fp = 0;
     int fd = -1;
     int write_fd = -1;
+    const char *cmd = 0;
+
+    if (prog)
+        cmd = StringValueCStr(prog);
 
 #if defined(HAVE_FORK)
+    if (prog) {
+        env2 = rb_hash_new();
+        RBASIC(env2)->klass = 0;
+    }
     arg.modef = modef;
     arg.pair[0] = arg.pair[1] = -1;
     arg.write_pair[0] = arg.write_pair[1] = -1;
@@ -3676,6 +3713,7 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
       case FMODE_READABLE|FMODE_WRITABLE:
         if (pipe(arg.write_pair) < 0)
             rb_sys_fail(cmd);
+        UPDATE_MAXFD_PIPE(arg.write_pair);
         if (pipe(arg.pair) < 0) {
             int e = errno;
             close(arg.write_pair[0]);
@@ -3683,29 +3721,47 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
             errno = e;
             rb_sys_fail(cmd);
         }
+        UPDATE_MAXFD_PIPE(arg.pair);
+        if (env2) {
+            rb_hash_aset(env2, INT2FIX(0), INT2FIX(arg.write_pair[0]));
+            rb_hash_aset(env2, INT2FIX(1), INT2FIX(arg.pair[1]));
+        }
 	break;
       case FMODE_READABLE:
         if (pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
+        UPDATE_MAXFD_PIPE(arg.pair);
+        if (env2)
+            rb_hash_aset(env2, INT2FIX(1), INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
+        UPDATE_MAXFD_PIPE(arg.pair);
+        if (env2)
+            rb_hash_aset(env2, INT2FIX(0), INT2FIX(arg.pair[0]));
 	break;
       default:
         rb_sys_fail(cmd);
     }
-    if (cmd) {
-	arg.exec.argc = argc;
-	arg.exec.argv = argv;
-	arg.exec.prog = cmd;
-	pid = rb_fork(&status, popen_exec, &arg);
+    if (prog) {
+        VALUE close_others = ID2SYM(rb_intern("close_others"));
+        if (NIL_P(opthash) || !st_lookup(RHASH_TBL(opthash), close_others, 0))
+            rb_hash_aset(env2, close_others, Qtrue);
+        if (NIL_P(opthash))
+            opthash = env2;
+        else {
+            opthash = rb_assoc_new(env2, opthash);
+            RBASIC(opthash)->klass = 0;
+        }
+        rb_exec_initarg2(prog, argc, argv, env, opthash, &arg.exec);
+	pid = rb_fork(&status, popen_exec, &arg, arg.exec.redirect_fds);
     }
     else {
 	fflush(stdin);		/* is it really needed? */
 	rb_io_flush(rb_stdout);
 	rb_io_flush(rb_stderr);
-	pid = rb_fork(&status, 0, 0);
+	pid = rb_fork(&status, 0, 0, Qnil);
 	if (pid == 0) {		/* child */
 	    popen_redirect(&arg);
 	    rb_io_synchronized(RFILE(orig_stdout)->fptr);
@@ -3812,27 +3868,29 @@ pipe_open(const char *cmd, int argc, VALUE *argv, const char *mode)
 static VALUE
 pipe_open_v(int argc, VALUE *argv, const char *mode)
 {
-    VALUE prog = rb_check_argv(argc, argv);
-    const char *cmd;
-
-    if (!RB_GC_GUARD(prog)) prog = argv[0];
-    cmd = StringValueCStr(prog);
-    return pipe_open(cmd, argc, argv, mode);
+    VALUE prog, env=Qnil, opthash=Qnil;
+    prog = rb_exec_getargs(&argc, &argv, Qfalse, &env, &opthash);
+    return pipe_open(prog, argc, argv, env, opthash, mode);
 }
 
 static VALUE
 pipe_open_s(VALUE prog, const char *mode)
 {
-    const char *cmd = (rb_check_argv(1, &prog), RSTRING_PTR(prog));
+    const char *cmd = RSTRING_PTR(prog);
+    int argc = 1;
+    VALUE *argv = &prog;
+    VALUE env=Qnil, opthash=Qnil;
 
-    if (strcmp("-", cmd) == 0) {
+    if (RSTRING_LEN(prog) == 1 && cmd[0] == '-') {
 #if !defined(HAVE_FORK)
 	rb_raise(rb_eNotImpError,
 		 "fork() function is unimplemented on this machine");
 #endif
-	cmd = 0;
+        return pipe_open(0, 0, 0, Qnil, Qnil, mode);
     }
-    return pipe_open(cmd, 0, &prog, mode);
+
+    rb_exec_getargs(&argc, &argv, Qtrue, &env, &opthash);
+    return pipe_open(prog, 0, 0, Qnil, Qnil, mode);
 }
 
 /*
@@ -3845,7 +3903,9 @@ pipe_open_s(VALUE prog, const char *mode)
  *  <code>IO</code> object.  If _cmd_ is a +String+
  *  ``<code>-</code>'', then a new instance of Ruby is started as the
  *  subprocess.  If <i>cmd</i> is an +Array+ of +String+, then it will
- *  be used as the subprocess's +argv+ bypassing a shell.  The default
+ *  be used as the subprocess's +argv+ bypassing a shell.
+ *  The array can contains a hash at first for environments and
+ *  a hash at last for options similar to <code>spawn</code>.  The default
  *  mode for the new file object is ``r'', but <i>mode</i> may be set
  *  to any of the modes listed in the description for class IO.
  *
@@ -4873,6 +4933,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     orig = rb_io_check_io(fnum);
     if (NIL_P(orig)) {
 	fd = NUM2INT(fnum);
+        UPDATE_MAXFD(fd);
 	if (argc != 2) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
 	    flags = fcntl(fd, F_GETFL);
@@ -6021,6 +6082,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     rb_scan_args(argc, argv, "02", &v1, &v2);
     if (pipe(pipes) == -1)
 	rb_sys_fail(0);
+    UPDATE_MAXFD_PIPE(pipes);
 
     args[0] = klass;
     args[1] = INT2NUM(pipes[0]);
