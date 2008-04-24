@@ -10471,7 +10471,7 @@ rb_thread_switch(n)
 }
 
 #define THREAD_SAVE_CONTEXT(th) \
-    (rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp(rb_thread_save_context(th), (th)->context))))
+    (rb_thread_switch(ruby_setjmp(rb_thread_save_context(th), (th)->context)))
 
 NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
 NORETURN(NOINLINE(static void rb_thread_restore_context_0(rb_thread_t,int,void*)));

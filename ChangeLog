@@ -1,3 +1,8 @@
+Thu Apr 24 17:06:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (THREAD_SAVE_CONTEXT): remove unnecessary
+	  FLUSH_REGISTER_WINDOWS before calling setjmp().  [ruby-core:16285]
+
 Thu Apr 24 14:15:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): prior files with extensions to files sans
