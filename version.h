@@ -50,7 +50,7 @@ RUBY_EXTERN const char ruby_copyright[];
     RUBY_RELEASE_STR" "		    \
     STRINGIZE(RUBY_RELEASE_NUM)") " \
     "["RUBY_PLATFORM"]"
-# define RUBY_COPYRIGHT		    \
+# define RUBY_COPYRIGHT 	    \
     "ruby - Copyright (C) "	    \
     STRINGIZE(RUBY_BIRTH_YEAR)"-"   \
     STRINGIZE(RUBY_RELEASE_YEAR)" " \

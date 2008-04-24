@@ -1073,6 +1073,7 @@ process_options(VALUE arg)
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
 
+    rb_set_safe_level_force(safe);
     if (opt->e_script) {
 	rb_encoding *eenc;
 	if (opt->src.enc.index >= 0) {
@@ -1091,7 +1092,6 @@ process_options(VALUE arg)
 	}
 	tree = load_file(parser, opt->script, 1, opt);
     }
-    rb_set_safe_level_force(safe);
 
     if (!tree) return Qfalse;
 

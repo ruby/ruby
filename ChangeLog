@@ -1,3 +1,8 @@
+Thu Apr 24 17:19:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (process_options): set safe_level before loading script.
+	  [ruby-dev:34421]
+
 Thu Apr 24 14:15:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_1): prior files with extensions to files sans
