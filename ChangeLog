@@ -1,3 +1,8 @@
+Thu Apr 24 14:15:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_find_1): prior files with extensions to files sans
+	  extensions.  [ruby-core:16517]
+
 Thu Apr 24 00:26:06 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rdoc/ri/descriptions.rb: fixed wrong class nestings.

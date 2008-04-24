@@ -1694,6 +1694,45 @@ dln_find_1(const char *fname, const char *path, int exe_flag /* non 0 if looking
 	}
 	memcpy(bp, fname, i + 1);
 
+#if defined(DOSISH)
+	if (exe_flag) {
+	    static const char extension[][5] = {
+#if defined(MSDOS)
+		".com", ".exe", ".bat",
+#if defined(DJGPP)
+		".btm", ".sh", ".ksh", ".pl", ".sed",
+#endif
+#elif defined(__EMX__) || defined(_WIN32)
+		".exe", ".com", ".cmd", ".bat",
+/* end of __EMX__ or _WIN32 */
+#else
+		".r", ".R", ".x", ".X", ".bat", ".BAT",
+/* __human68k__ */
+#endif
+	    };
+	    int j;
+
+	    for (j = 0; j < sizeof(extension) / sizeof(extension[0]); j++) {
+		if (fspace < strlen(extension[j])) {
+		    fprintf(stderr, "openpath: pathname too long (ignored)\n");
+		    fprintf(stderr, "\tDirectory \"%.*s\"\n", (int) (bp - fbuf), fbuf);
+		    fprintf(stderr, "\tFile \"%s%s\"\n", fname, extension[j]);
+		    continue;
+		}
+		strcpy(bp + i, extension[j]);
+#ifndef __MACOS__
+		if (stat(fbuf, &st) == 0)
+		    return fbuf;
+#else
+		if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf))
+		    return mac_fullpath;
+
+#endif
+	    }
+	    goto next;
+	}
+#endif /* MSDOS or _WIN32 or __human68k__ or __EMX__ */
+
 #ifndef __MACOS__
 	if (stat(fbuf, &st) == 0) {
 	    if (exe_flag == 0) return fbuf;
@@ -1711,44 +1750,6 @@ dln_find_1(const char *fname, const char *path, int exe_flag /* non 0 if looking
 	    }
 	}
 #endif
-#if defined(DOSISH)
-	if (exe_flag) {
-	    static const char *const extension[] = {
-#if defined(MSDOS)
-		".com", ".exe", ".bat",
-#if defined(DJGPP)
-		".btm", ".sh", ".ksh", ".pl", ".sed",
-#endif
-#elif defined(__EMX__) || defined(_WIN32)
-		".exe", ".com", ".cmd", ".bat",
-/* end of __EMX__ or _WIN32 */
-#else
-		".r", ".R", ".x", ".X", ".bat", ".BAT",
-/* __human68k__ */
-#endif
-		(char *) NULL
-	    };
-	    int j;
-
-	    for (j = 0; extension[j]; j++) {
-		if (fspace < strlen(extension[j])) {
-		    fprintf(stderr, "openpath: pathname too long (ignored)\n");
-		    fprintf(stderr, "\tDirectory \"%.*s\"\n", (int) (bp - fbuf), fbuf);
-		    fprintf(stderr, "\tFile \"%s%s\"\n", fname, extension[j]);
-		    continue;
-		}
-		strcpy(bp + i, extension[j]);
-#ifndef __MACOS__
-		if (stat(fbuf, &st) == 0)
-		    return fbuf;
-#else
-		if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf))
-		    return mac_fullpath;
-
-#endif
-	    }
-	}
-#endif /* MSDOS or _WIN32 or __human68k__ or __EMX__ */
 
       next:
 	/* if not, and no other alternatives, life is bleak */
