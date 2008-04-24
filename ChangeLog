@@ -1,3 +1,14 @@
+Thu Apr 24 23:47:50 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/pop.rb: backported from 1.9. bug#19003
+
+	* ext/openssl/lib/openssl/ssl.rb: set_params; backported from 1.9.
+	  bug#19552, [ruby-dev:34402]
+
+	* ext/openssl/ossl_ssl.c: ditto.
+
+	* test/openssl/test_ssl.rb: ditto.
+
 Thu Apr 24 17:06:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (THREAD_SAVE_CONTEXT): remove unnecessary
