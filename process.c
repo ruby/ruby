@@ -2759,21 +2759,26 @@ rb_f_system(int argc, VALUE *argv)
  *    # standard output and standard error is redirected to log file.
  *    pid = spawn(command, [STDOUT, STDERR]=>["log", "w"])
  *
- *  It is possible to specify a file descriptor to close using
- *  <code>:close</code>.
- *
- *    # similar to IO.popen
- *    r, w = IO.pipe
- *    pid = spawn(command, STDOUT=>w, r=>:close, w=>:close)
- *    w.close
- *
- *  Also, all non-standard unspecified descriptors can be closed by :close_others option.
+ *  spawn closes all non-standard unspecified descriptors by default.
  *  The "standard" descriptors are 0, 1 and 2.
+ *  This behavior is specified by :close_others option.
  *
- *    # more similar to IO.popen
+ *    pid = spawn(command, :close_others=>true)  # close 3,4,5,... (default)
+ *    pid = spawn(command, :close_others=>false) # don't close 3,4,5,...
+ *
+ *  :close_others is true by default for spawn and IO.popen.
+ *
+ *  So IO.pipe and spawn can be used as IO.popen.
+ *
+ *    # similar to r = IO.popen(command)
  *    r, w = IO.pipe
- *    pid = spawn(command, STDOUT=>w, :close_others=>true)
+ *    pid = spawn(command, STDOUT=>w)   # r, w is closed in the child process.
  *    w.close
+ *
+ *  :close is specified as a hash value to close a fd individualy.
+ *
+ *    f = open(foo)
+ *    system(command, f=>:close)        # don't inherit f.
  *
  *  It is also possible to exchange file descriptors.
  *
