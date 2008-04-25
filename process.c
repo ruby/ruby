@@ -1434,6 +1434,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
             }
             rb_ary_store(options, EXEC_OPTION_UMASK, LONG2NUM(cmask));
         }
+#ifdef HAVE_FORK
         else if (id == rb_intern("close_others")) {
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {
                 rb_raise(rb_eArgError, "close_others option specified twice");
@@ -1441,6 +1442,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
             val = RTEST(val) ? Qtrue : Qfalse;
             rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, val);
         }
+#endif
         else if (id == rb_intern("in")) {
             key = INT2FIX(0);
             goto redirect;
@@ -1501,9 +1503,11 @@ check_exec_fds(VALUE options)
             }
         }
     }
+#ifdef HAVE_FORK
     if (RTEST(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {
         rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, INT2FIX(maxhint));
     }
+#endif
     return h;
 }
 
@@ -1843,6 +1847,7 @@ run_exec_dup2(VALUE ary)
         if (pairs[i].oldfd == -1)
             continue;
         if (pairs[i].oldfd == pairs[i].newfd) { /* self cycle */
+#ifdef F_GETFD
             int fd = pairs[i].oldfd;
             ret = fcntl(fd, F_GETFD);
             if (ret == -1)
@@ -1853,6 +1858,7 @@ run_exec_dup2(VALUE ary)
                 if (ret == -1)
                     goto fail;
             }
+#endif
             pairs[i].oldfd = -1;
             continue;
         }
@@ -2045,10 +2051,12 @@ run_exec_options(const struct rb_exec_arg *e)
             return -1;
     }
 
+#ifdef HAVE_FORK
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS);
     if (RTEST(obj)) {
         rb_close_before_exec(3, FIX2INT(obj), e->redirect_fds);
     }
+#endif
 
     obj = rb_ary_entry(options, EXEC_OPTION_OPEN);
     if (!NIL_P(obj)) {

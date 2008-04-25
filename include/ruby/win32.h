@@ -89,6 +89,9 @@ typedef unsigned int uintptr_t;
 #  define _UINTPTR_T_DEFINED
 # endif
 #endif
+#ifndef __MINGW32__
+# define mode_t int
+#endif
 
 #ifdef _M_IX86
 # define WIN95 1
