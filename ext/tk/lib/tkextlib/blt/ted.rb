@@ -34,7 +34,7 @@ module Tk::BLT
       private :itemconfiginfo, :current_itemconfiginfo
 
       def cget(master, option)
-        itemconfigure(master, slot, value)
+        itemcget(master, option)
       end
       def configure(master, slot, value=None)
         itemconfigure(master, slot, value)

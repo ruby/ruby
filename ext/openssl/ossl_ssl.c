@@ -141,31 +141,14 @@ ossl_sslctx_s_alloc(VALUE klass)
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
 
-/*
- * call-seq:
- *    SSLContext.new => ctx
- *    SSLContext.new(:TLSv1) => ctx
- *    SSLContext.new("SSLv23_client") => ctx
- *
- * You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
- */
 static VALUE
-ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
+ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
 {
-    VALUE ssl_method;
     SSL_METHOD *method = NULL;
-    SSL_CTX *ctx;
-    int i;
     const char *s;
+    int i;
 
-    for(i = 0; i < numberof(ossl_sslctx_attrs); i++){
-	char buf[32];
-	snprintf(buf, sizeof(buf), "@%s", ossl_sslctx_attrs[i]);
-	rb_iv_set(self, buf, Qnil);
-    }
-    if (rb_scan_args(argc, argv, "01", &ssl_method) == 0){
-        return self;
-    }
+    SSL_CTX *ctx;
     if(TYPE(ssl_method) == T_SYMBOL)
 	s = rb_id2name(SYM2ID(ssl_method));
     else
@@ -183,6 +166,33 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     if (SSL_CTX_set_ssl_version(ctx, method) != 1) {
         ossl_raise(eSSLError, "SSL_CTX_set_ssl_version:");
     }
+
+    return ssl_method;
+}
+
+/*
+ * call-seq:
+ *    SSLContext.new => ctx
+ *    SSLContext.new(:TLSv1) => ctx
+ *    SSLContext.new("SSLv23_client") => ctx
+ *
+ * You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+ */
+static VALUE
+ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE ssl_method;
+    int i;
+
+    for(i = 0; i < numberof(ossl_sslctx_attrs); i++){
+	char buf[32];
+	snprintf(buf, sizeof(buf), "@%s", ossl_sslctx_attrs[i]);
+	rb_iv_set(self, buf, Qnil);
+    }
+    if (rb_scan_args(argc, argv, "01", &ssl_method) == 0){
+        return self;
+    }
+    ossl_sslctx_set_ssl_version(self, ssl_method);
 
     return self;
 }
@@ -436,6 +446,14 @@ ossl_sslctx_add_extra_chain_cert_i(VALUE i, VALUE arg)
     return i;
 }
 
+/*
+ * call-seq:
+ *    ctx.setup => Qtrue # first time
+ *    ctx.setup => nil # thereafter
+ *
+ * This method is called automatically when a new SSLSocket is created.
+ * Normally you do not need to call this method (unless you are writing an extension in C).
+ */
 static VALUE
 ossl_sslctx_setup(VALUE self)
 {
@@ -769,18 +787,18 @@ ossl_sslctx_get_session_cache_stats(VALUE self)
     Data_Get_Struct(self, SSL_CTX, ctx);
 
     hash = rb_hash_new();
-    rb_hash_aset(hash, rb_str_new2("cache_num"), LONG2NUM(SSL_CTX_sess_number(ctx)));
-    rb_hash_aset(hash, rb_str_new2("connect"), LONG2NUM(SSL_CTX_sess_connect(ctx)));
-    rb_hash_aset(hash, rb_str_new2("connect_good"), LONG2NUM(SSL_CTX_sess_connect_good(ctx)));
-    rb_hash_aset(hash, rb_str_new2("connect_renegotiate"), LONG2NUM(SSL_CTX_sess_connect_renegotiate(ctx)));
-    rb_hash_aset(hash, rb_str_new2("accept"), LONG2NUM(SSL_CTX_sess_accept(ctx)));
-    rb_hash_aset(hash, rb_str_new2("accept_good"), LONG2NUM(SSL_CTX_sess_accept_good(ctx)));
-    rb_hash_aset(hash, rb_str_new2("accept_renegotiate"), LONG2NUM(SSL_CTX_sess_accept_renegotiate(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cache_hits"), LONG2NUM(SSL_CTX_sess_hits(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cb_hits"), LONG2NUM(SSL_CTX_sess_cb_hits(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cache_misses"), LONG2NUM(SSL_CTX_sess_misses(ctx)));
-    rb_hash_aset(hash, rb_str_new2("cache_full"), LONG2NUM(SSL_CTX_sess_cache_full(ctx)));
-    rb_hash_aset(hash, rb_str_new2("timeouts"), LONG2NUM(SSL_CTX_sess_timeouts(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_num")), LONG2NUM(SSL_CTX_sess_number(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("connect")), LONG2NUM(SSL_CTX_sess_connect(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("connect_good")), LONG2NUM(SSL_CTX_sess_connect_good(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("connect_renegotiate")), LONG2NUM(SSL_CTX_sess_connect_renegotiate(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("accept")), LONG2NUM(SSL_CTX_sess_accept(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("accept_good")), LONG2NUM(SSL_CTX_sess_accept_good(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("accept_renegotiate")), LONG2NUM(SSL_CTX_sess_accept_renegotiate(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_hits")), LONG2NUM(SSL_CTX_sess_hits(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cb_hits")), LONG2NUM(SSL_CTX_sess_cb_hits(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_misses")), LONG2NUM(SSL_CTX_sess_misses(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("cache_full")), LONG2NUM(SSL_CTX_sess_cache_full(ctx)));
+    rb_hash_aset(hash, ID2SYM(rb_intern("timeouts")), LONG2NUM(SSL_CTX_sess_timeouts(ctx)));
 
     return hash;
 }
@@ -1300,6 +1318,19 @@ ossl_ssl_set_session(VALUE self, VALUE arg1)
     return arg1;
 }
 
+static VALUE
+ossl_ssl_get_verify_result(VALUE self)
+{
+    SSL *ssl;
+
+    Data_Get_Struct(self, SSL, ssl);
+    if (!ssl) {
+        rb_warning("SSL session is not started yet.");
+        return Qnil;
+    }
+
+    return INT2FIX(SSL_get_verify_result(ssl));
+}
 
 void
 Init_ossl_ssl()
@@ -1330,17 +1361,21 @@ Init_ossl_ssl()
      *
      * The following attributes are available but don't show up in rdoc.
      * All attributes must be set before calling SSLSocket.new(io, ctx).
-     * * cert, key, client_ca, ca_file, ca_path, timeout, verify_mode, verify_depth
-     * * client_cert_cb, tmp_dh_callback, session_id_context,
-     * * session_add_cb, session_new_cb, session_remove_cb
+     * * ssl_version, cert, key, client_ca, ca_file, ca_path, timeout,
+     * * verify_mode, verify_depth client_cert_cb, tmp_dh_callback,
+     * * session_id_context, session_add_cb, session_new_cb, session_remove_cb
      */
     cSSLContext = rb_define_class_under(mSSL, "SSLContext", rb_cObject);
     rb_define_alloc_func(cSSLContext, ossl_sslctx_s_alloc);
     for(i = 0; i < numberof(ossl_sslctx_attrs); i++)
         rb_attr(cSSLContext, rb_intern(ossl_sslctx_attrs[i]), 1, 1, Qfalse);
+    rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_method(cSSLContext, "initialize",  ossl_sslctx_initialize, -1);
+    rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+
+    rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
 
     
     rb_define_const(cSSLContext, "SESSION_CACHE_OFF", LONG2FIX(SSL_SESS_CACHE_OFF));
@@ -1395,6 +1430,7 @@ Init_ossl_ssl()
     rb_define_method(cSSLSocket, "pending",    ossl_ssl_pending, 0);
     rb_define_method(cSSLSocket, "session_reused?",    ossl_ssl_session_reused, 0);
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
+    rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
 
 #define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, INT2FIX(SSL_##x))
 

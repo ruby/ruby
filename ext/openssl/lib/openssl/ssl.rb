@@ -20,6 +20,33 @@ require "fcntl"
 
 module OpenSSL
   module SSL
+    class SSLContext
+      DEFAULT_PARAMS = {
+        :ssl_version => "SSLv23",
+        :verify_mode => OpenSSL::SSL::VERIFY_PEER,
+        :ciphers => "ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW",
+        :options => OpenSSL::SSL::OP_ALL,
+      }
+
+      DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
+      DEFAULT_CERT_STORE.set_default_paths
+      if defined?(OpenSSL::X509::V_FLAG_CRL_CHECK_ALL)
+        DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+      end
+
+      def set_params(params={})
+        params = DEFAULT_PARAMS.merge(params)
+        self.ssl_version = params.delete(:ssl_version)
+        params.each{|name, value| self.__send__("#{name}=", value) }
+        if self.verify_mode != OpenSSL::SSL::VERIFY_NONE
+          unless self.ca_file or self.ca_path or self.cert_store
+            self.cert_store = DEFAULT_CERT_STORE
+          end
+        end
+        return params
+      end
+    end
+
     module SocketForwarder
       def addr
         to_io.addr
@@ -59,36 +86,43 @@ module OpenSSL
       end
     end
 
+    def verify_certificate_identity(cert, hostname)
+      should_verify_common_name = true
+      cert.extensions.each{|ext|
+        next if ext.oid != "subjectAltName"
+        ext.value.split(/,\s+/).each{|general_name|
+          if /\ADNS:(.*)/ =~ general_name
+            should_verify_common_name = false
+            reg = Regexp.escape($1).gsub(/\\\*/, "[^.]+")
+            return true if /\A#{reg}\z/i =~ hostname
+          elsif /\AIP Address:(.*)/ =~ general_name
+            should_verify_common_name = false
+            return true if $1 == hostname
+          end
+        }
+      }
+      if should_verify_common_name
+        cert.subject.to_a.each{|oid, value|
+          if oid == "CN"
+            reg = Regexp.escape(value).gsub(/\\\*/, "[^.]+")
+            return true if /\A#{reg}\z/i =~ hostname
+          end
+        }
+      end
+      return false
+    end
+    module_function :verify_certificate_identity
+
     class SSLSocket
       include Buffering
       include SocketForwarder
       include Nonblock
 
       def post_connection_check(hostname)
-        check_common_name = true
-        cert = peer_cert
-        cert.extensions.each{|ext|
-          next if ext.oid != "subjectAltName"
-          ext.value.split(/,\s+/).each{|general_name|
-            if /\ADNS:(.*)/ =~ general_name
-              check_common_name = false
-              reg = Regexp.escape($1).gsub(/\\\*/, "[^.]+")
-              return true if /\A#{reg}\z/i =~ hostname
-            elsif /\AIP Address:(.*)/ =~ general_name
-              check_common_name = false
-              return true if $1 == hostname
-            end
-          }
-        }
-        if check_common_name
-          cert.subject.to_a.each{|oid, value|
-            if oid == "CN"
-              reg = Regexp.escape(value).gsub(/\\\*/, "[^.]+")
-              return true if /\A#{reg}\z/i =~ hostname
-            end
-          }
+        unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
+          raise SSLError, "hostname was not match with the server certificate"
         end
-        raise SSLError, "hostname was not match with the server certificate"
+        return true
       end
 
       def session
@@ -118,6 +152,10 @@ module OpenSSL
 
       def listen(backlog=5)
         @svr.listen(backlog)
+      end
+
+      def shutdown(how=Socket::SHUT_RDWR)
+        @svr.shutdown(how)
       end
 
       def accept

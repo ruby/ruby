@@ -4,7 +4,7 @@
 #
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
-version = '0.1'
+version = '0.1.1'
 #
 ##########################################################################
 #  parse commandline arguments
@@ -144,7 +144,7 @@ setTheme(OPTS[:theme]) if OPTS[:theme]
 ##########################################################################
 #  load script
 ##########################################################################
-if (script = File.expand_path(ARGV.shift))
+if (path = ARGV.shift) && (script = File.expand_path(path))
   print "load script \"#{script}\"\n" if OPTS[:verbose]
   load(script)
 else

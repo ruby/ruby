@@ -1,3 +1,52 @@
+Fri Apr 25 15:46:37 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/scrollbar.rb, ext/tk/lib/tk/scale.rb:
+	  improve unknonw-option check when create a widget. 
+
+	* ext/tk/lib/tkextlib/blt/unix_dnd.rb, ext/tk/lib/tkextlib/blt/ted.rb,
+	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix on 'cget'.
+
+	* ext/tk/lib/tk/menuspec.rb: option check will fail when 
+	  TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__ is true.
+
+	* ext/tk/lib/tk/palette.rb: bug fix.
+
+Fri Apr 25 12:37:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (flatten): returns an instance of same class.
+	  [ruby-core:16554]
+
+Thu Apr 24 23:47:50 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/pop.rb: backported from 1.9. bug#19003
+
+	* ext/openssl/lib/openssl/ssl.rb: set_params; backported from 1.9.
+	  bug#19552, [ruby-dev:34402]
+
+	* ext/openssl/ossl_ssl.c: ditto.
+
+	* test/openssl/test_ssl.rb: ditto.
+
+Thu Apr 24 17:06:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (THREAD_SAVE_CONTEXT): remove unnecessary
+	  FLUSH_REGISTER_WINDOWS before calling setjmp().  [ruby-core:16285]
+
+Thu Apr 24 14:15:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_find_1): prior files with extensions to files sans
+	  extensions.  [ruby-core:16517]
+
+Wed Apr 23 15:39:31 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (bind_eval): Add Binding#eval, a shorthand method for
+	  eval(str, binding, ..); backported from 1.9.
+
+Wed Apr 23 15:28:52 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/gdbm/test_gdbm.rb (TestGDBM#test_s_open_no_create): failed
+	  notice moved from comment to assertion message. [ruby-dev:29127]
+
 Wed Apr 23 14:00:05 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb (create_makefile): Add a missing dependency on the

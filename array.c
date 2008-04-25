@@ -3082,7 +3082,7 @@ flatten(ary, level, modified)
     st_data_t id;
 
     stack = rb_ary_new();
-    result = rb_ary_new();
+    result = ary_new(rb_class_of(ary), RARRAY_LEN(ary));
     memo = st_init_numtable();
     st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
     *modified = 0;
