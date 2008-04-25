@@ -1049,9 +1049,11 @@ rb_proc_exec_n(int argc, VALUE *argv, const char *prog)
 int
 rb_proc_exec(const char *str)
 {
+#ifndef _WIN32
     const char *s = str;
     char *ss, *t;
     char **argv, **a;
+#endif
 
     while (*str && ISSPACE(*str))
 	str++;
@@ -2093,12 +2095,14 @@ rb_exec(const struct rb_exec_arg *e)
     return -1;
 }
 
+#ifdef HAVE_FORK
 static int
 rb_exec_atfork(void* arg)
 {
     rb_thread_atfork();
     return rb_exec(arg);
 }
+#endif
 
 #ifdef HAVE_FORK
 #ifdef FD_CLOEXEC
@@ -2828,7 +2832,9 @@ rb_f_sleep(int argc, VALUE *argv)
 static VALUE
 proc_getpgrp(void)
 {
+#if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID) || defined(HAVE_GETPGID)
     rb_pid_t pgrp;
+#endif
 
     rb_secure(2);
 #if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)
@@ -4089,7 +4095,9 @@ static VALUE
 proc_daemon(int argc, VALUE *argv)
 {
     VALUE nochdir, noclose;
+#if defined(HAVE_DAEMON) || defined(HAVE_FORK)
     int n;
+#endif
 
     rb_secure(2);
     rb_scan_args(argc, argv, "02", &nochdir, &noclose);
