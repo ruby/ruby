@@ -2544,14 +2544,26 @@ rb_syswait(rb_pid_t pid)
     }
 }
 
-rb_pid_t
-rb_spawn(int argc, VALUE *argv)
+static rb_pid_t
+rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
 {
     rb_pid_t status;
     VALUE prog;
     struct rb_exec_arg earg;
+    int argc2 = argc;
+    VALUE *argv2 = argv, env = Qnil, opthash = Qnil;
+    VALUE close_others = ID2SYM(rb_intern("close_others"));
 
-    prog = rb_exec_initarg(argc, argv, Qtrue, &earg);
+    prog = rb_exec_getargs(&argc2, &argv2, Qtrue, &env, &opthash);
+    if (default_close_others) {
+        if (NIL_P(opthash)) {
+            opthash = rb_hash_new();
+            RBASIC(opthash)->klass = 0;
+        }
+        if (!st_lookup(RHASH_TBL(opthash), close_others, 0))
+            rb_hash_aset(opthash, close_others, Qtrue);
+    }
+    rb_exec_initarg2(prog, argc2, argv2, env, opthash, &earg);
 
 #if defined HAVE_FORK
     status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds);
@@ -2579,6 +2591,12 @@ rb_spawn(int argc, VALUE *argv)
 # endif
 #endif
     return status;
+}
+
+rb_pid_t
+rb_spawn(int argc, VALUE *argv)
+{
+    return rb_spawn_internal(argc, argv, Qtrue);
 }
 
 /*
@@ -2618,7 +2636,7 @@ rb_f_system(int argc, VALUE *argv)
 
     chfunc = signal(SIGCHLD, SIG_DFL);
 #endif
-    status = rb_spawn(argc, argv);
+    status = rb_spawn_internal(argc, argv, Qfalse);
 #if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
     if (status > 0) {
 	rb_syswait(status);

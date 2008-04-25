@@ -419,9 +419,9 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("ba\n", r.read)
     }
     with_pipe {|r, w|
-      Process.wait spawn("echo bi >&#{w.fileno}")
+      Process.wait spawn("exec 2>/dev/null; echo bi >&#{w.fileno}")
       w.close
-      assert_equal("bi\n", r.read)
+      assert_equal("", r.read)
     }
     with_pipe {|r, w|
       Process.wait fork { exec("echo bu >&#{w.fileno}") }
@@ -463,6 +463,11 @@ class TestProcess < Test::Unit::TestCase
         w.close
         assert_equal("", r.read)
         File.unlink("err")
+      }
+      with_pipe {|r, w|
+        Process.wait spawn("echo bi >&#{w.fileno}", :close_others=>false)
+        w.close
+        assert_equal("bi\n", r.read)
       }
       with_pipe {|r, w|
         Process.wait fork { exec("exec >/dev/null 2>err; echo mu >&#{w.fileno}", :close_others=>true) }
