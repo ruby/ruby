@@ -129,7 +129,6 @@ typedef struct RVALUE {
 #pragma pack(pop)
 #endif
 
-#define HEAPS_INCREMENT 10
 struct heaps_slot {
     void *membase;
     RVALUE *slot;
@@ -150,12 +149,14 @@ typedef struct {
 	unsigned long increase;
     } params;
     struct {
-	int slots;
+	int delta;
+	int increment;
 	struct heaps_slot *ptr;
 	int length;
 	int used;
 	RVALUE *freelist;
 	RVALUE *range[2];
+	RVALUE *freed;
     } heap;
     struct {
 	int dont_gc;
@@ -185,6 +186,9 @@ static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
 #define freelist		objspace->heap.freelist
 #define lomem			objspace->heap.range[0]
 #define himem			objspace->heap.range[1]
+#define objects_delta		objspace->heap.delta
+#define heaps_inc		objspace->heap.increment
+#define heaps_freed		objspace->heap.freed
 #define dont_gc 		objspace->flags.dont_gc
 #define during_gc		objspace->flags.during_gc
 #define need_call_final 	objspace->final.need_call
@@ -201,9 +205,29 @@ rb_objspace_alloc(void)
     rb_objspace_t *objspace = ALLOC(rb_objspace_t);
     memset(objspace, 0, sizeof(*objspace));
     malloc_limit = GC_MALLOC_LIMIT;
-    heap_slots = HEAP_MIN_SLOTS;
+    objects_delta = HEAP_MIN_SLOTS;
+
     return objspace;
 }
+
+/* tiny heap size */
+/* 32KB */
+/*#define HEAP_SIZE 0x8000 */
+/* 128KB */
+/*#define HEAP_SIZE 0x20000 */
+/* 64KB */
+/*#define HEAP_SIZE 0x10000 */
+/* 16KB */
+#define HEAP_SIZE 0x4000
+/* 8KB */
+/*#define HEAP_SIZE 0x2000 */
+/* 4KB */
+/*#define HEAP_SIZE 0x1000 */
+/* 2KB */
+/*#define HEAP_SIZE 0x800 */
+
+#define HEAP_OBJ_LIMIT (HEAP_SIZE / sizeof(struct RVALUE))
+#define FREE_MIN  4096
 
 #define objspace (&rb_objspace)
 
@@ -226,8 +250,6 @@ size_t rb_gc_stack_maxsize = 65535*sizeof(VALUE);
 #else
 size_t rb_gc_stack_maxsize = 655300*sizeof(VALUE);
 #endif
-
-
 
 static void run_final(VALUE obj);
 static int garbage_collect(void);
@@ -460,42 +482,38 @@ rb_gc_unregister_address(VALUE *addr)
     }
 }
 
+
 static void
-add_heap(void)
+allocate_heaps(void)
+{
+    struct heaps_slot *p;
+    int length;
+
+    heaps_length += objects_delta / HEAP_OBJ_LIMIT;
+    length = heaps_length*sizeof(struct heaps_slot);
+    RUBY_CRITICAL(
+		  if (heaps_used > 0) {
+		      p = (struct heaps_slot *)realloc(heaps, length);
+		      if (p) heaps = p;
+		  }
+		  else {
+		      p = heaps = (struct heaps_slot *)malloc(length);
+		  }
+		  );
+    if (p == 0) rb_memerror();
+}
+
+static void
+assign_heap_slot(void)
 {
     RVALUE *p, *pend, *membase;
     long hi, lo, mid;
-
-    if (heaps_used == heaps_length) {
-	/* Realloc heaps */
-	struct heaps_slot *p;
-	int length;
-
-	heaps_length += HEAPS_INCREMENT;
-	length = heaps_length*sizeof(struct heaps_slot);
-	RUBY_CRITICAL(
-	    if (heaps_used > 0) {
-		p = (struct heaps_slot *)realloc(heaps, length);
-		if (p) heaps = p;
-	    }
-	    else {
-		p = heaps = (struct heaps_slot *)malloc(length);
-	    });
-	if (p == 0) rb_memerror();
-    }
-
-    for (;;) {
-	RUBY_CRITICAL(p = (RVALUE*)malloc(sizeof(RVALUE)*(heap_slots+1)));
-	if (p == 0) {
-	    if (heap_slots == HEAP_MIN_SLOTS) {
-		rb_memerror();
-	    }
-	    heap_slots = HEAP_MIN_SLOTS;
-	}
-	else {
-	    break;
-	}
-    }
+    int objs;
+	
+    objs = HEAP_OBJ_LIMIT;
+    RUBY_CRITICAL(p = (RVALUE*)malloc(HEAP_SIZE));
+    if (p == 0)
+	rb_memerror();
 
     lo = 0;
     hi = heaps_used;
@@ -514,21 +532,25 @@ add_heap(void)
     }
 
     membase = p;
-    if ((VALUE)p % sizeof(RVALUE) == 0)
-	heap_slots += 1;
-    else
+
+    if ((VALUE)p % sizeof(RVALUE) != 0) {
 	p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
+	if ((membase + HEAP_SIZE) < (p + HEAP_SIZE)) {
+	    objs--;
+	}
+    }
+    	
+
     if (hi < heaps_used) {
 	MEMMOVE(&heaps[hi+1], &heaps[hi], struct heaps_slot, heaps_used - hi);
     }
     heaps[hi].membase = membase;
     heaps[hi].slot = p;
-    heaps[hi].limit = heap_slots;
-    pend = p + heap_slots;
+    heaps[hi].limit = objs;
+    pend = p + objs;
     if (lomem == 0 || lomem > p) lomem = p;
     if (himem < pend) himem = pend;
     heaps_used++;
-    heap_slots *= 1.8;
 
     while (p < pend) {
 	p->as.free.flags = 0;
@@ -538,15 +560,56 @@ add_heap(void)
     }
 }
 
+static void
+add_heap(void)
+{
+    int add, i;
+
+    add = objects_delta / HEAP_OBJ_LIMIT;
+    objects_delta *= 1.8;
+
+    if ((heaps_used + add) > heaps_length) {
+    	allocate_heaps();
+    }
+
+    for (i = 0; i < add; i++) {
+    	assign_heap_slot();
+    }
+    heaps_inc = 0;
+}
+
+
+static void
+set_heaps_increment(void)
+{
+    heaps_inc += objects_delta / HEAP_OBJ_LIMIT;
+    objects_delta *= 1.8;
+
+    if ((heaps_used + heaps_inc) > heaps_length) {
+	allocate_heaps();
+    }
+}
+
+static int
+heaps_increment(void)
+{
+    if (heaps_inc > 0) {
+	assign_heap_slot();
+	heaps_inc--;
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
 #define RANY(o) ((RVALUE*)(o))
 
 static VALUE
 rb_newobj_from_heap(void)
 {
     VALUE obj;
-
+	
     if (ruby_gc_stress || !freelist) {
-	if(!garbage_collect()) {
+    	if (!heaps_increment() && !garbage_collect()) {
 	    rb_memerror();
 	}
     }
@@ -559,6 +622,7 @@ rb_newobj_from_heap(void)
     RANY(obj)->file = rb_sourcefile();
     RANY(obj)->line = rb_sourceline();
 #endif
+
     return obj;
 }
 
@@ -1191,10 +1255,16 @@ static void
 free_unused_heaps(void)
 {
     int i, j;
+    RVALUE *last = 0;
 
     for (i = j = 1; j < heaps_used; i++) {
 	if (heaps[i].limit == 0) {
-	    free(heaps[i].membase);
+	    if (!last) {
+		last = heaps[i].membase;
+	    }
+	    else {
+		free(heaps[i].membase);
+	    }
 	    heaps_used--;
 	}
 	else {
@@ -1203,6 +1273,18 @@ free_unused_heaps(void)
 	    }
 	    j++;
 	}
+    }
+    if (last) {
+	if (last < heaps_freed) {
+	    free(heaps_freed);
+	    heaps_freed = last;
+	}
+	else {
+	    free(last);
+	}
+    }
+    if (i != j)	{
+	objects_delta = heaps_used * HEAP_OBJ_LIMIT;
     }
 }
 
@@ -1214,15 +1296,14 @@ gc_sweep(void)
     RVALUE *p, *pend, *final_list;
     int freed = 0;
     int i;
-    unsigned long live = 0;
-    unsigned long free_min = 0;
+    unsigned long live = 0, free_min = 0, do_heap_free = 0;
 
-    for (i = 0; i < heaps_used; i++) {
-        free_min += heaps[i].limit;
-    }
-    free_min = free_min * 0.2;
-    if (free_min < FREE_MIN)
+    do_heap_free = (heaps_used * HEAP_OBJ_LIMIT) * 0.65;
+    free_min = (heaps_used * HEAP_OBJ_LIMIT)  * 0.2;
+    if (free_min < FREE_MIN) {
+	do_heap_free = heaps_used * HEAP_OBJ_LIMIT;
         free_min = FREE_MIN;
+    }
 
     freelist = 0;
     final_list = deferred_final_list;
@@ -1261,7 +1342,7 @@ gc_sweep(void)
 	    }
 	    p++;
 	}
-	if (n == heaps[i].limit && freed > free_min) {
+	if (n == heaps[i].limit && freed > do_heap_free) {
 	    RVALUE *pp;
 
 	    heaps[i].limit = 0;
@@ -1280,7 +1361,8 @@ gc_sweep(void)
     }
     malloc_increase = 0;
     if (freed < free_min) {
-	add_heap();
+    	set_heaps_increment();
+	heaps_increment();
     }
     during_gc = 0;
 
@@ -1566,6 +1648,7 @@ garbage_collect(void)
     }
 
     gc_sweep();
+
     if (GC_NOTIFY) printf("end garbage_collect()\n");
     return Qtrue;
 }

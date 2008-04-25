@@ -1,3 +1,15 @@
+Fri Apr 25 17:56:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (free_unused_heaps): preserve last used heap segment to
+	  reduce malloc() call.
+
+Fri Apr 25 17:54:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (HEAP_SIZE): use smaller heap segment (2K) for more chance
+	  to be freed.  based on patch from authorNari <authornari at gmail.com>.
+
+	* gc.c (rb_newobj_from_heap): eventually allocate heap segments.
+
 Fri Apr 25 15:35:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_spawn): rb_exec_initarg() returns new argc and argv in
