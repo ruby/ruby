@@ -228,6 +228,19 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
+VALUE
+rb_hash_dup(VALUE hash)
+{
+    VALUE ret = hash_alloc(RBASIC(hash)->klass);
+    if (!RHASH_EMPTY_P(hash))
+        RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
+    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
+        FL_SET(ret, HASH_PROC_DEFAULT);
+    }
+    RHASH(ret)->ifnone = RHASH(hash)->ifnone;
+    return ret;
+}
+
 static void
 rb_hash_modify_check(VALUE hash)
 {

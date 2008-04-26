@@ -500,6 +500,21 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_modification
+    h = {}
+    Process.wait spawn(EnvUtil.rubybin, '-e', '', h)
+    assert_equal({}, h)
+
+    h = {}
+    system(EnvUtil.rubybin, '-e', '', h)
+    assert_equal({}, h)
+
+    h = {}
+    io = IO.popen([EnvUtil.rubybin, '-e', '', h])
+    io.close
+    assert_equal({}, h)
+  end
+
   def test_system
     str = "echo fofo"
     assert_nil(system([str, str]))

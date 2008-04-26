@@ -2560,6 +2560,10 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
             opthash = rb_hash_new();
             RBASIC(opthash)->klass = 0;
         }
+        if (RBASIC(opthash)->klass) {
+            opthash = rb_hash_dup(opthash);
+            RBASIC(opthash)->klass = 0;
+        }
         if (!st_lookup(RHASH_TBL(opthash), close_others, 0))
             rb_hash_aset(opthash, close_others, Qtrue);
     }
