@@ -1,3 +1,9 @@
+Sat Apr 26 13:00:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb: double fork is replaced by spawn with Process.detach.
+	  (Open3.popen3w): new method to access the thread returned by
+	  Process.detach.
+
 Sat Apr 26 00:47:43 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (rb_spawn_internal): new function to specify
