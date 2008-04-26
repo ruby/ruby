@@ -3,6 +3,8 @@ require 'tmpdir'
 require_relative 'envutil'
 
 class TestProcess < Test::Unit::TestCase
+  RUBY = EnvUtil.rubybin
+
   def test_rlimit_availability
     begin
       Process.getrlimit(nil)
@@ -85,138 +87,144 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  TRUECOMMAND = [RUBY, '-e', '']
+
   def test_execopts_opts
     assert_nothing_raised {
-      Process.wait Process.spawn("true", {})
+      Process.wait Process.spawn(*TRUECOMMAND, {})
     }
     assert_raise(ArgumentError) {
-      Process.wait Process.spawn("true", :foo => 100)
+      Process.wait Process.spawn(*TRUECOMMAND, :foo => 100)
     }
     assert_raise(ArgumentError) {
-      Process.wait Process.spawn("true", Process => 100)
+      Process.wait Process.spawn(*TRUECOMMAND, Process => 100)
     }
   end
 
   def test_execopts_pgroup
-    ruby = EnvUtil.rubybin
-    assert_nothing_raised { system("true", :pgroup=>false) }
+    assert_nothing_raised { system(*TRUECOMMAND, :pgroup=>false) }
 
-    io = IO.popen([ruby, "-e", "print Process.getpgrp"])
+    io = IO.popen([RUBY, "-e", "print Process.getpgrp"])
     assert_equal(Process.getpgrp.to_s, io.read)
     io.close
 
-    io = IO.popen([ruby, "-e", "print Process.getpgrp", :pgroup=>true])
+    io = IO.popen([RUBY, "-e", "print Process.getpgrp", :pgroup=>true])
     assert_equal(io.pid.to_s, io.read)
     io.close
 
-    assert_raise(ArgumentError) { system("true", :pgroup=>-1) }
-    assert_raise(Errno::EPERM) { Process.wait spawn("true", :pgroup=>1) }
+    assert_raise(ArgumentError) { system(*TRUECOMMAND, :pgroup=>-1) }
+    assert_raise(Errno::EPERM) { Process.wait spawn(*TRUECOMMAND, :pgroup=>1) }
 
-    io1 = IO.popen([ruby, "-e", "print Process.getpgrp", :pgroup=>true])
-    io2 = IO.popen([ruby, "-e", "print Process.getpgrp", :pgroup=>io1.pid])
+    io1 = IO.popen([RUBY, "-e", "print Process.getpgrp", :pgroup=>true])
+    io2 = IO.popen([RUBY, "-e", "print Process.getpgrp", :pgroup=>io1.pid])
     assert_equal(io1.pid.to_s, io1.read)
     assert_equal(io1.pid.to_s, io2.read)
     Process.wait io1.pid
     Process.wait io2.pid
     io1.close
     io2.close
-
   end
 
   def test_execopts_rlimit
     return unless rlimit_exist?
-    assert_raise(ArgumentError) { system("true", :rlimit_foo=>0) }
-    assert_raise(ArgumentError) { system("true", :rlimit_NOFILE=>0) }
-    assert_raise(ArgumentError) { system("true", :rlimit_nofile=>[]) }
-    assert_raise(ArgumentError) { system("true", :rlimit_nofile=>[1,2,3]) }
+    assert_raise(ArgumentError) { system(*TRUECOMMAND, :rlimit_foo=>0) }
+    assert_raise(ArgumentError) { system(*TRUECOMMAND, :rlimit_NOFILE=>0) }
+    assert_raise(ArgumentError) { system(*TRUECOMMAND, :rlimit_nofile=>[]) }
+    assert_raise(ArgumentError) { system(*TRUECOMMAND, :rlimit_nofile=>[1,2,3]) }
 
     max = Process.getrlimit(:CORE).last
 
     n = max
-    IO.popen([EnvUtil.rubybin, "-e",
+    IO.popen([RUBY, "-e",
              "p Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
       assert_equal("[#{n}, #{n}]\n", io.read)
     }
 
     n = 0
-    IO.popen([EnvUtil.rubybin, "-e",
+    IO.popen([RUBY, "-e",
              "p Process.getrlimit(:CORE)", :rlimit_core=>n]) {|io|
       assert_equal("[#{n}, #{n}]\n", io.read)
     }
 
     n = max
-    IO.popen([EnvUtil.rubybin, "-e",
+    IO.popen([RUBY, "-e",
              "p Process.getrlimit(:CORE)", :rlimit_core=>[n]]) {|io|
       assert_equal("[#{n}, #{n}]", io.read.chomp)
     }
 
     m, n = 0, max
-    IO.popen([EnvUtil.rubybin, "-e",
+    IO.popen([RUBY, "-e",
              "p Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
       assert_equal("[#{m}, #{n}]", io.read.chomp)
     }
 
     m, n = 0, 0
-    IO.popen([EnvUtil.rubybin, "-e",
+    IO.popen([RUBY, "-e",
              "p Process.getrlimit(:CORE)", :rlimit_core=>[m,n]]) {|io|
       assert_equal("[#{m}, #{n}]", io.read.chomp)
     }
 
     n = max
-    IO.popen([EnvUtil.rubybin, "-e",
+    IO.popen([RUBY, "-e",
       "p Process.getrlimit(:CORE), Process.getrlimit(:CPU)",
       :rlimit_core=>n, :rlimit_cpu=>3600]) {|io|
       assert_equal("[#{n}, #{n}]\n[3600, 3600]", io.read.chomp)
     }
   end
 
+  ENVCOMMAND = [RUBY, '-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
+
   def test_execopts_env
     assert_raise(ArgumentError) {
-      system({"F=O"=>"BAR"}, "env")
+      system({"F=O"=>"BAR"}, *TRUECOMMAND)
     }
 
     h = {}
     ENV.each {|k,v| h[k] = nil unless k == "PATH" }
-    IO.popen([h, "env"]) {|io|
-      assert_equal(1, io.readlines.length)
+    IO.popen([h, RUBY, '-e', 'puts ENV.keys']) {|io|
+      assert_equal("PATH\n", io.read)
     }
 
-    IO.popen([{"FOO"=>"BAR"}, "env"]) {|io|
-      assert_match(/FOO=BAR/, io.read)
+    IO.popen([{"FOO"=>"BAR"}, *ENVCOMMAND]) {|io|
+      assert_match(/^FOO=BAR$/, io.read)
     }
 
     with_tmpchdir {|d|
-      system({"fofo"=>"haha"}, "env", STDOUT=>"out")
-      assert_match(/fofo=haha/, File.read("out").chomp)
+      system({"fofo"=>"haha"}, *ENVCOMMAND, STDOUT=>"out")
+      assert_match(/^fofo=haha$/, File.read("out").chomp)
     }
   end
 
   def test_execopts_unsetenv_others
-    IO.popen(["/usr/bin/env", :unsetenv_others=>true]) {|io|
+    IO.popen([*ENVCOMMAND, :unsetenv_others=>true]) {|io|
       assert_equal("", io.read)
     }
-    IO.popen([{"A"=>"B"}, "/usr/bin/env", :unsetenv_others=>true]) {|io|
+    IO.popen([{"A"=>"B"}, *ENVCOMMAND, :unsetenv_others=>true]) {|io|
       assert_equal("A=B\n", io.read)
     }
   end
 
+  PWD = [RUBY, '-e', 'puts Dir.pwd']
+
   def test_execopts_chdir
     with_tmpchdir {|d|
-      Process.wait Process.spawn("pwd > dir", :chdir => d)
-      assert_equal(d, File.read("#{d}/dir").chomp)
+      IO.popen([*PWD, :chdir => d]) {|io|
+        assert_equal(d, io.read.chomp)
+      }
       assert_raise(Errno::ENOENT) {
-        Process.wait Process.spawn("true", :chdir => "d/notexist")
+        Process.wait Process.spawn(*PWD, :chdir => "d/notexist")
       }
     }
   end
 
+  UMASK = [RUBY, '-e', 'printf "%04o\n", File.umask']
+
   def test_execopts_umask
-    with_tmpchdir {|d|
-      n = "#{d}/mask"
-      Process.wait Process.spawn("sh -c umask > #{n}", :umask => 0)
-      assert_equal("0000", File.read(n).chomp)
-      Process.wait Process.spawn("sh -c umask > #{n}", :umask => 0777)
-      assert_equal("0777", File.read(n).chomp)
+    IO.popen([*UMASK, :umask => 0]) {|io|
+      assert_equal("0000", io.read.chomp)
+    }
+    IO.popen([*UMASK, :umask => 0777]) {|io|
+      assert_equal("0777", io.read.chomp)
     }
   end
 
@@ -245,50 +253,55 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  ECHO = lambda {|arg| [RUBY, '-e', "puts #{arg.dump}; STDOUT.flush"] }
+  SORT = [RUBY, '-e', "puts ARGF.readlines.sort"]
+  CAT = [RUBY, '-e', "IO.copy_stream STDIN, STDOUT"]
+
   def test_execopts_redirect
     with_tmpchdir {|d|
-      Process.wait Process.spawn("echo a", STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      Process.wait Process.spawn(*ECHO["a"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("a", File.read("out").chomp)
-      Process.wait Process.spawn("echo 0", STDOUT=>["out", File::WRONLY|File::CREAT|File::APPEND, 0644])
+      Process.wait Process.spawn(*ECHO["0"], STDOUT=>["out", File::WRONLY|File::CREAT|File::APPEND, 0644])
       assert_equal("a\n0\n", File.read("out"))
-      Process.wait Process.spawn("sort", STDIN=>["out", File::RDONLY, 0644],
+      Process.wait Process.spawn(*SORT, STDIN=>["out", File::RDONLY, 0644],
                                          STDOUT=>["out2", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("0\na\n", File.read("out2"))
-      Process.wait Process.spawn("echo b", [STDOUT, STDERR]=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      Process.wait Process.spawn(*ECHO["b"], [STDOUT, STDERR]=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("b", File.read("out").chomp)
-      Process.wait Process.spawn("echo a", STDOUT=>:close, STDERR=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      # problem occur with valgrind
+      #Process.wait Process.spawn(*ECHO["a"], STDOUT=>:close, STDERR=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       #p File.read("out")
-      assert(!File.read("out").empty?) # error message such as "echo: write error: Bad file descriptor\n".
-      Process.wait Process.spawn("echo c", STDERR=>STDOUT, STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
+      #assert(!File.read("out").empty?) # error message such as "-e:1:in `flush': Bad file descriptor (Errno::EBADF)"
+      Process.wait Process.spawn(*ECHO["c"], STDERR=>STDOUT, STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644])
       assert_equal("c", File.read("out").chomp)
       File.open("out", "w") {|f|
-        Process.wait Process.spawn("echo d", f=>STDOUT, STDOUT=>f)
+        Process.wait Process.spawn(*ECHO["d"], f=>STDOUT, STDOUT=>f)
         assert_equal("d", File.read("out").chomp)
       }
-      Process.wait Process.spawn("echo e", STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
+      Process.wait Process.spawn(*ECHO["e"], STDOUT=>["out", File::WRONLY|File::CREAT|File::TRUNC, 0644],
                                  3=>STDOUT, 4=>STDOUT, 5=>STDOUT, 6=>STDOUT, 7=>STDOUT)
       assert_equal("e", File.read("out").chomp)
       File.open("out", "w") {|f|
         h = {STDOUT=>f, f=>STDOUT}
         3.upto(30) {|i| h[i] = STDOUT if f.fileno != i }
-        Process.wait Process.spawn("echo f", h)
+        Process.wait Process.spawn(*ECHO["f"], h)
         assert_equal("f", File.read("out").chomp)
       }
       assert_raise(ArgumentError) {
-        Process.wait Process.spawn("echo f", 1=>Process)
+        Process.wait Process.spawn(*ECHO["f"], 1=>Process)
       }
       assert_raise(ArgumentError) {
-        Process.wait Process.spawn("echo f", [Process]=>1)
+        Process.wait Process.spawn(*ECHO["f"], [Process]=>1)
       }
       assert_raise(ArgumentError) {
-        Process.wait Process.spawn("echo f", [1, STDOUT]=>2)
+        Process.wait Process.spawn(*ECHO["f"], [1, STDOUT]=>2)
       }
       assert_raise(ArgumentError) {
-        Process.wait Process.spawn("echo f", -1=>2)
+        Process.wait Process.spawn(*ECHO["f"], -1=>2)
       }
-      Process.wait Process.spawn("echo hhh; echo ggg", STDOUT=>"out")
+      Process.wait Process.spawn(*ECHO["hhh\nggg\n"], STDOUT=>"out")
       assert_equal("hhh\nggg\n", File.read("out"))
-      Process.wait Process.spawn("sort", STDIN=>"out", STDOUT=>"out2")
+      Process.wait Process.spawn(*SORT, STDIN=>"out", STDOUT=>"out2")
       assert_equal("ggg\nhhh\n", File.read("out2"))
 
       assert_raise(Errno::ENOENT) {
@@ -296,14 +309,14 @@ class TestProcess < Test::Unit::TestCase
       }
       assert_equal("", File.read("err"))
 
-      system("echo bb; echo aa", STDOUT=>["out", "w"])
+      system(*ECHO["bb\naa\n"], STDOUT=>["out", "w"])
       assert_equal("bb\naa\n", File.read("out"))
-      system("sort", STDIN=>["out"], STDOUT=>"out2")
+      system(*SORT, STDIN=>["out"], STDOUT=>"out2")
       assert_equal("aa\nbb\n", File.read("out2"))
 
       with_pipe {|r1, w1|
         with_pipe {|r2, w2|
-          pid = spawn("sort", STDIN=>r1, STDOUT=>w2, w1=>:close, r2=>:close)
+          pid = spawn(*SORT, STDIN=>r1, STDOUT=>w2, w1=>:close, r2=>:close)
           r1.close
           w2.close
           w1.puts "c"
@@ -322,7 +335,7 @@ class TestProcess < Test::Unit::TestCase
         rios = pipes.map {|r, w| r }
         wios = pipes.map {|r, w| w }
         child_wfds = wios.map {|w| h2[w].fileno }
-        pid = spawn(EnvUtil.rubybin, "-e",
+        pid = spawn(RUBY, "-e",
                 "[#{child_wfds.join(',')}].each {|fd| IO.new(fd).puts fd }", h)
         pipes.each {|r, w|
           assert_equal("#{h2[w].fileno}\n", r.gets)
@@ -338,7 +351,7 @@ class TestProcess < Test::Unit::TestCase
         rios = pipes.map {|r, w| r }
         wios = pipes.map {|r, w| w }
         child_wfds = wios.map {|w| h2[w].fileno }
-        pid = spawn(EnvUtil.rubybin, "-e",
+        pid = spawn(RUBY, "-e",
                 "[#{child_wfds.join(',')}].each {|fd| IO.new(fd).puts fd }", h)
         pipes.each {|r, w|
           assert_equal("#{h2[w].fileno}\n", r.gets)
@@ -351,21 +364,21 @@ class TestProcess < Test::Unit::TestCase
         io = pipes.last.last
         closed_fd = io.fileno
       }
-      assert_raise(Errno::EBADF) { Process.wait spawn("true", closed_fd=>closed_fd) }
+      assert_raise(Errno::EBADF) { Process.wait spawn(*TRUECOMMAND, closed_fd=>closed_fd) }
 
       with_pipe {|r, w|
         w.close_on_exec = true
-        pid = spawn(EnvUtil.rubybin, "-e", "IO.new(#{w.fileno}).print 'a'", w=>w)
+        pid = spawn(RUBY, "-e", "IO.new(#{w.fileno}).print 'a'", w=>w)
         w.close
         assert_equal("a", r.read)
         Process.wait pid
       }
 
-      system("echo funya", :out=>"out")
+      system(*ECHO["funya"], :out=>"out")
       assert_equal("funya\n", File.read("out"))
-      system("echo henya 1>&2", :err=>"out")
+      system(RUBY, '-e', 'STDOUT.reopen(STDERR); puts "henya"', :err=>"out")
       assert_equal("henya\n", File.read("out"))
-      IO.popen(["cat", :in=>"out"]) {|io|
+      IO.popen([*CAT, :in=>"out"]) {|io|
         assert_equal("henya\n", io.read)
       }
     }
@@ -383,67 +396,74 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_popen
     with_tmpchdir {|d|
-      IO.popen("echo foo") {|io| assert_equal("foo\n", io.read) }
-      assert_raise(Errno::ENOENT) { IO.popen(["echo bar"]) {} }
-      IO.popen(["echo", "baz"]) {|io| assert_equal("baz\n", io.read) }
-      #IO.popen(["echo", "qux", STDOUT=>STDOUT]) {|io| assert_equal("qux\n", io.read) }
-      IO.popen(["echo", "hoge", STDERR=>STDOUT]) {|io|
+      IO.popen("#{RUBY} -e 'puts :foo'") {|io| assert_equal("foo\n", io.read) }
+      assert_raise(Errno::ENOENT) { IO.popen(["echo bar"]) {} } # assuming "echo bar" command not exist.
+      IO.popen(ECHO["baz"]) {|io| assert_equal("baz\n", io.read) }
+      assert_raise(ArgumentError) {
+        IO.popen([*ECHO["qux"], STDOUT=>STDOUT]) {|io| }
+      }
+      IO.popen([*ECHO["hoge"], STDERR=>STDOUT]) {|io|
         assert_equal("hoge\n", io.read)
       }
-      #IO.popen(["echo", "fuga", STDOUT=>"out"]) {|io|
-      #  assert_equal("", io.read)
-      #}
-      #assert_equal("fuga\n", File.read("out"))
-      #IO.popen(["sh", "-c", "echo a >&3", 3=>STDOUT]) {|io|
-      #  assert_equal("a\n", io.read)
-      #}
-      IO.popen(["sh", "-c", "echo b >&9",
+      assert_raise(ArgumentError) {
+        IO.popen([*ECHO["fuga"], STDOUT=>"out"]) {|io| }
+      }
+      with_pipe {|r, w|
+        IO.popen([RUBY, '-e', 'IO.new(3).puts("a"); puts "b"', 3=>w]) {|io|
+          assert_equal("b\n", io.read)
+        }
+        w.close
+        assert_equal("a\n", r.read)
+      }
+      IO.popen([RUBY, '-e', "IO.new(9).puts(:b)",
                9=>["out2", File::WRONLY|File::CREAT|File::TRUNC]]) {|io|
         assert_equal("", io.read)
       }
       assert_equal("b\n", File.read("out2"))
-      IO.popen("-") {|io|
-        if !io
-          puts "fooo"
-        else
-          assert_equal("fooo\n", io.read)
-        end
-      }
+    }
+  end
+
+  def test_popen_fork
+    IO.popen("-") {|io|
+      if !io
+        puts "fooo"
+      else
+        assert_equal("fooo\n", io.read)
+      end
     }
   end
 
   def test_fd_inheritance
     with_pipe {|r, w|
-      system("echo ba >&#{w.fileno}")
+      system(RUBY, '-e', 'IO.new(ARGV[0].to_i).puts(:ba)', w.fileno.to_s)
       w.close
       assert_equal("ba\n", r.read)
     }
     with_pipe {|r, w|
-      Process.wait spawn("exec 2>/dev/null; echo bi >&#{w.fileno}")
+      Process.wait spawn(RUBY, '-e',
+                         'IO.new(ARGV[0].to_i).puts("bi") rescue nil',
+                         w.fileno.to_s)
       w.close
       assert_equal("", r.read)
     }
     with_pipe {|r, w|
-      Process.wait fork { exec("echo bu >&#{w.fileno}") }
+      Process.wait fork {
+        exec(RUBY, '-e',
+             'IO.new(ARGV[0].to_i).puts("bu") rescue nil',
+             w.fileno.to_s)
+      }
       w.close
       assert_equal("bu\n", r.read)
     }
     with_pipe {|r, w|
-      io = IO.popen("echo be 2>&1 >&#{w.fileno}")
+      io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('me')"])
       w.close
       errmsg = io.read
       assert_equal("", r.read)
       assert_not_equal("", errmsg)
     }
     with_pipe {|r, w|
-      io = IO.popen([EnvUtil.rubybin, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('me')"])
-      w.close
-      errmsg = io.read
-      assert_equal("", r.read)
-      assert_not_equal("", errmsg)
-    }
-    with_pipe {|r, w|
-      errmsg = `echo bo 2>&1 >&#{w.fileno}`
+      errmsg = `#{RUBY} -e "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts(123)"`
       w.close
       assert_equal("", r.read)
       assert_not_equal("", errmsg)
@@ -453,44 +473,47 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_close_others
     with_tmpchdir {|d|
       with_pipe {|r, w|
-        system("exec >/dev/null 2>err; echo ma >&#{w.fileno}", :close_others=>true)
+        system(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("ma")', w.fileno.to_s, :close_others=>true)
         w.close
         assert_equal("", r.read)
+        assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
-        Process.wait spawn("exec >/dev/null 2>err; echo mi >&#{w.fileno}", :close_others=>true)
+        Process.wait spawn(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("mi")', w.fileno.to_s, :close_others=>true)
         w.close
         assert_equal("", r.read)
+        assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
-        Process.wait spawn("echo bi >&#{w.fileno}", :close_others=>false)
+        Process.wait spawn(RUBY, '-e', 'IO.new(ARGV[0].to_i).puts("bi")', w.fileno.to_s, :close_others=>false)
         w.close
         assert_equal("bi\n", r.read)
       }
       with_pipe {|r, w|
-        Process.wait fork { exec("exec >/dev/null 2>err; echo mu >&#{w.fileno}", :close_others=>true) }
+        Process.wait fork { exec(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("mu")', w.fileno.to_s, :close_others=>true) }
         w.close
         assert_equal("", r.read)
+        assert_not_equal("", File.read("err"))
         File.unlink("err")
       }
       with_pipe {|r, w|
-        io = IO.popen([EnvUtil.rubybin, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('me')", :close_others=>true])
+        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('me')", :close_others=>true])
         w.close
         errmsg = io.read
         assert_equal("", r.read)
         assert_not_equal("", errmsg)
       }
       with_pipe {|r, w|
-        io = IO.popen([EnvUtil.rubybin, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>false])
+        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>false])
         w.close
         errmsg = io.read
         assert_equal("mo\n", r.read)
         assert_equal("", errmsg)
       }
       with_pipe {|r, w|
-        io = IO.popen([EnvUtil.rubybin, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>nil])
+        io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>nil])
         w.close
         errmsg = io.read
         assert_equal("mo\n", r.read)
@@ -502,15 +525,15 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_modification
     h = {}
-    Process.wait spawn(EnvUtil.rubybin, '-e', '', h)
+    Process.wait spawn(*TRUECOMMAND, h)
     assert_equal({}, h)
 
     h = {}
-    system(EnvUtil.rubybin, '-e', '', h)
+    system(*TRUECOMMAND, h)
     assert_equal({}, h)
 
     h = {}
-    io = IO.popen([EnvUtil.rubybin, '-e', '', h])
+    io = IO.popen([*TRUECOMMAND, h])
     io.close
     assert_equal({}, h)
   end
