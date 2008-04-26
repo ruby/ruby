@@ -42,8 +42,6 @@ module Open3
   #
   # Block form:
   #
-  #   require 'open3'
-  #
   #   Open3.popen3(cmd) { |stdin, stdout, stderr| ... }
   #   # stdin, stdout and stderr is closed automatically in this form.
   #
@@ -82,6 +80,11 @@ module Open3
   #   Open3.popen3w(cmd) { |stdin, stdout, stderr, wait_thr| ... }
   #
   # The parameter +cmd+ is passed directly to Kernel#spawn.
+  #
+  # wait_thr.value waits the termination of the process.
+  # The block form also waits the process when it returns.
+  #
+  # Closing stdin, stdout and stderr does not wait the process.
   #
   def popen3w(*cmd)
     pw = IO::pipe   # pipe[0] for read, pipe[1] for write
