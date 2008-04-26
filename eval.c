@@ -4910,7 +4910,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */
     int flags, avalue;
 {
-    NODE *node;
+    NODE *node, *var;
     volatile VALUE result = Qnil;
     volatile VALUE old_cref;
     volatile VALUE old_wrapper;
@@ -4952,27 +4952,35 @@ rb_yield_0(val, self, klass, flags, avalue)
 	self = block->self;
     }
     node = block->body;
+    var = block->var;
 
-    if (block->var) {
+    if (var) {
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
-	    if (block->var == (NODE*)1) { /* no parameter || */
+	    NODE *bvar = NULL;
+	  block_var:
+	    if (var == (NODE*)1) { /* no parameter || */
 		if (lambda && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
-	    else if (block->var == (NODE*)2) {
+	    else if (var == (NODE*)2) {
 		if (TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
 		    rb_raise(rb_eArgError, "wrong number of arguments (%ld for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
-	    else if (nd_type(block->var) == NODE_MASGN) {
+	    else if (!bvar && nd_type(var) == NODE_BLOCK_PASS) {
+		bvar = var->nd_body;
+		var = var->nd_args;
+		goto block_var;
+	    }
+	    else if (nd_type(var) == NODE_MASGN) {
 		if (!avalue) {
-		    val = svalue_to_mrhs(val, block->var->nd_head);
+		    val = svalue_to_mrhs(val, var->nd_head);
 		}
-		massign(self, block->var, val, lambda);
+		massign(self, var, val, lambda);
 	    }
 	    else {
 		int len = 0;
@@ -4993,13 +5001,21 @@ rb_yield_0(val, self, klass, flags, avalue)
 		    val = Qnil;
 		  multi_values:
 		    {
-			ruby_current_node = block->var;
+			ruby_current_node = var;
 			rb_warn("multiple values for a block parameter (%d for 1)\n\tfrom %s:%d",
 				len, cnode->nd_file, nd_line(cnode));
 			ruby_current_node = cnode;
 		    }
 		}
-		assign(self, block->var, val, lambda);
+		assign(self, var, val, lambda);
+	    }
+	    if (bvar) {
+		VALUE blk;
+		if (flags & YIELD_PROC_CALL)
+		    blk = block->block_obj;
+		else
+		    blk = rb_block_proc();
+		assign(self, bvar, blk, 0);
 	    }
 	}
 	POP_TAG();
@@ -8665,13 +8681,12 @@ proc_invoke(proc, args, self, klass)
     volatile VALUE old_wrapper = ruby_wrapper;
     volatile int pcall, avalue = Qtrue;
     volatile VALUE tmp = args;
+    VALUE bvar = Qnil;
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	if (klass != ruby_frame->last_class)
 	    klass = rb_obj_class(proc);
-	rb_warning("block for %s#%s is useless",
-		   rb_class2name(klass),
-		   rb_id2name(ruby_frame->last_func));
+	bvar = rb_block_proc();
     }
 
     Data_Get_Struct(proc, struct BLOCK, data);
@@ -8687,6 +8702,7 @@ proc_invoke(proc, args, self, klass)
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
+    _block.block_obj = bvar;
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.last_class = klass;
     _block.frame.argc = RARRAY(tmp)->len;
@@ -8707,7 +8723,8 @@ proc_invoke(proc, args, self, klass)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0, pcall, avalue);
+	result = rb_yield_0(args, self, (self!=Qundef)?CLASS_OF(self):0,
+			    pcall | YIELD_PROC_CALL, avalue);
     }
     else if (TAG_DST()) {
 	result = prot_tag->retval;
@@ -8811,30 +8828,36 @@ proc_arity(proc)
     VALUE proc;
 {
     struct BLOCK *data;
-    NODE *list;
+    NODE *var, *list;
     int n;
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    if (data->var == 0) {
+    var = data->var;
+    if (var == 0) {
 	if (data->body && nd_type(data->body) == NODE_IFUNC &&
 	    data->body->nd_cfnc == bmcall) {
 	    return method_arity(data->body->nd_tval);
 	}
 	return INT2FIX(-1);
     }
-    if (data->var == (NODE*)1) return INT2FIX(0);
-    if (data->var == (NODE*)2) return INT2FIX(0);
-    switch (nd_type(data->var)) {
+    if (var == (NODE*)1) return INT2FIX(0);
+    if (var == (NODE*)2) return INT2FIX(0);
+    if (nd_type(var) == NODE_BLOCK_ARG) {
+	var = var->nd_args;
+	if (var == (NODE*)1) return INT2FIX(0);
+	if (var == (NODE*)2) return INT2FIX(0);
+    }
+    switch (nd_type(var)) {
       default:
 	return INT2FIX(1);
       case NODE_MASGN:
-	list = data->var->nd_head;
+	list = var->nd_head;
 	n = 0;
 	while (list) {
 	    n++;
 	    list = list->nd_next;
 	}
-	if (data->var->nd_args) return INT2FIX(-n-1);
+	if (var->nd_args) return INT2FIX(-n-1);
 	return INT2FIX(n);
     }
 }

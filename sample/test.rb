@@ -65,6 +65,30 @@ a = *[*[]]; test_ok(a == nil)
 a = *[*[1]]; test_ok(a == 1)
 a = *[*[1,2]]; test_ok(a == [1,2])
 
+a, = nil; test_ok(a == nil)
+a, = 1; test_ok(a == 1)
+a, = []; test_ok(a == nil)
+a, = [1]; test_ok(a == 1)
+a, = [nil]; test_ok(a == nil)
+a, = [[]]; test_ok(a == [])
+a, = 1,2; test_ok(a == 1)
+a, = [1,2]; test_ok(a == 1)
+a, = [*[]]; test_ok(a == nil)
+a, = [*[1]]; test_ok(a == 1)
+a, = *[1,2]; test_ok(a == 1)
+a, = [*[1,2]]; test_ok(a == 1)
+
+a, = *nil; test_ok(a == nil)
+a, = *1; test_ok(a == 1)
+a, = *[]; test_ok(a == nil)
+a, = *[1]; test_ok(a == 1)
+a, = *[nil]; test_ok(a == nil)
+a, = *[[]]; test_ok(a == [])
+a, = *[1,2]; test_ok(a == 1)
+a, = *[*[]]; test_ok(a == nil)
+a, = *[*[1]]; test_ok(a == 1)
+a, = *[*[1,2]]; test_ok(a == 1)
+
 *a = nil; test_ok(a == [nil])
 *a = 1; test_ok(a == [1])
 *a = []; test_ok(a == [[]])
@@ -125,6 +149,27 @@ def f; yield *[1]; end; f {|a| test_ok(a == 1)}
 def f; yield *[nil]; end; f {|a| test_ok(a == nil)}
 def f; yield *[[]]; end; f {|a| test_ok(a == [])}
 def f; yield *[*[1]]; end; f {|a| test_ok(a == 1)}
+
+def f; yield; end; f {|a,| test_ok(a == nil)}
+def f; yield nil; end; f {|a,| test_ok(a == nil)}
+def f; yield 1; end; f {|a,| test_ok(a == 1)}
+def f; yield []; end; f {|a,| test_ok(a == nil)}
+def f; yield [1]; end; f {|a,| test_ok(a == 1)}
+def f; yield [nil]; end; f {|a,| test_ok(a == nil)}
+def f; yield [[]]; end; f {|a,| test_ok(a == [])}
+def f; yield [*[]]; end; f {|a,| test_ok(a == nil)}
+def f; yield [*[1]]; end; f {|a,| test_ok(a == 1)}
+def f; yield [*[1,2]]; end; f {|a,| test_ok(a == 1)}
+
+def f; yield *nil; end; f {|a,| test_ok(a == nil)}
+def f; yield *1; end; f {|a,| test_ok(a == 1)}
+def f; yield *[]; end; f {|a,| test_ok(a == nil)}
+def f; yield *[1]; end; f {|a,| test_ok(a == 1)}
+def f; yield *[nil]; end; f {|a,| test_ok(a == nil)}
+def f; yield *[[]]; end; f {|a,| test_ok(a == [])}
+def f; yield *[*[]]; end; f {|a,| test_ok(a == nil)}
+def f; yield *[*[1]]; end; f {|a,| test_ok(a == 1)}
+def f; yield *[*[1,2]]; end; f {|a,| test_ok(a == 1)}
 
 def f; yield; end; f {|*a| test_ok(a == [])}
 def f; yield nil; end; f {|*a| test_ok(a == [nil])}
@@ -1000,15 +1045,21 @@ IterTest.new([[8]]).each8 {|x| test_ok(x == [8])}
 IterTest.new([[0,0]]).each0 {|x| test_ok(x == [0,0])}
 IterTest.new([[8,8]]).each8 {|x| test_ok(x == [8,8])}
 
-def m
-  test_ok(block_given?)
+def m0(v)
+  v
 end
-m{p 'test'}
+
+def m1
+  m0(block_given?)
+end
+test_ok(m1{p 'test'})
+test_ok(!m1)
 
 def m
-  test_ok(block_given?,&proc{})
+  m0(block_given?,&proc{})
 end
-m{p 'test'}
+test_ok(m1{p 'test'})
+test_ok(!m1)
 
 class C
   include Enumerable
@@ -1078,6 +1129,9 @@ test_ok(get_block(&lambda).class == Proc)
 
 test_ok(Proc.new{|a,| a}.call(1,2,3) == 1)
 argument_test(true, Proc.new{|a,|}, 1,2)
+
+test_ok(Proc.new{|&b| b.call(10)}.call {|x| x} == 10)
+test_ok(Proc.new{|a,&b| b.call(a)}.call(12) {|x| x} == 12)
 
 def test_return1
   Proc.new {
