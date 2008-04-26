@@ -36,7 +36,7 @@
 # endif
 #endif
 
-static struct signals {
+static const struct signals {
     const char *signm;
     int  signo;
 } siglist [] = {
@@ -178,7 +178,7 @@ static struct signals {
 static int
 signm2signo(const char *nm)
 {
-    struct signals *sigs;
+    const struct signals *sigs;
 
     for (sigs = siglist; sigs->signm; sigs++)
 	if (strcmp(sigs->signm, nm) == 0)
@@ -189,7 +189,7 @@ signm2signo(const char *nm)
 static const char*
 signo2signm(int no)
 {
-    struct signals *sigs;
+    const struct signals *sigs;
 
     for (sigs = siglist; sigs->signm; sigs++)
 	if (sigs->signo == no)
@@ -381,7 +381,9 @@ static struct {
     VALUE cmd;
 } trap_list[NSIG];
 static rb_atomic_t trap_pending_list[NSIG];
+#if 0
 static char rb_trap_accept_nativethreads[NSIG];
+#endif
 rb_atomic_t rb_trap_pending;
 rb_atomic_t rb_trap_immediate;
 int rb_prohibit_interrupt = 1;
@@ -417,7 +419,9 @@ ruby_signal(int signum, sighandler_t handler)
 {
     struct sigaction sigact, old;
 
+#if 0
     rb_trap_accept_nativethreads[signum] = 0;
+#endif
 
     sigemptyset(&sigact.sa_mask);
 #ifdef SA_SIGINFO
@@ -443,8 +447,8 @@ posix_signal(int signum, sighandler_t handler)
 }
 
 #else /* !POSIX_SIGNAL */
-#define ruby_signal(sig,handler) (rb_trap_accept_nativethreads[sig] = 0, signal((sig),(handler)))
-#ifdef HAVE_NATIVETHREAD
+#define ruby_signal(sig,handler) (/* rb_trap_accept_nativethreads[sig] = 0,*/ signal((sig),(handler)))
+#if 0 /* def HAVE_NATIVETHREAD */
 static sighandler_t
 ruby_nativethread_signal(int signum, sighandler_t handler)
 {
@@ -938,7 +942,7 @@ static VALUE
 sig_list(void)
 {
     VALUE h = rb_hash_new();
-    struct signals *sigs;
+    const struct signals *sigs;
 
     for (sigs = siglist; sigs->signm; sigs++) {
 	rb_hash_aset(h, rb_str_new2(sigs->signm), INT2FIX(sigs->signo));

@@ -238,7 +238,7 @@ rb_compile_bug(const char *file, int line, const char *fmt, ...)
     abort();
 }
 
-static struct types {
+static const struct types {
     int type;
     const char *name;
 } builtin_types[] = {
@@ -263,20 +263,21 @@ static struct types {
     {T_MATCH,	"MatchData"},	/* data of $~ */
     {T_NODE,	"Node"},	/* internal use: syntax tree node */
     {T_UNDEF,	"undef"},	/* internal use: #undef; should not happen */
-    {-1,	0}
 };
 
 void
 rb_check_type(VALUE x, int t)
 {
-    struct types *type = builtin_types;
+    const struct types *type = builtin_types;
+    const struct types *const typeend = builtin_types +
+	sizeof(builtin_types) / sizeof(builtin_types[0]);
 
     if (x == Qundef) {
 	rb_bug("undef leaked to the Ruby space");
     }
 
     if (TYPE(x) != t) {
-	while (type->type >= 0) {
+	while (type < typeend) {
 	    if (type->type == t) {
 		const char *etype;
 

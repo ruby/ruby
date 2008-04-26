@@ -82,7 +82,7 @@ static void rehash(st_table *);
 /*
 Table of prime numbers 2^n+a, 2<=n<=30.
 */
-static long primes[] = {
+static const long primes[] = {
 	8 + 3,
 	16 + 3,
 	32 + 5,

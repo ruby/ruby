@@ -127,7 +127,7 @@ static VALUE rb_struct_ref9(VALUE obj) {return RSTRUCT_PTR(obj)[9];}
 
 #define N_REF_FUNC (sizeof(ref_func) / sizeof(ref_func[0]))
 
-static VALUE (*ref_func[])(VALUE) = {
+static VALUE (*const ref_func[])(VALUE) = {
     rb_struct_ref0,
     rb_struct_ref1,
     rb_struct_ref2,
