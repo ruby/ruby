@@ -1,3 +1,9 @@
+Sat Apr 26 17:30:11 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h, gc.c: remove T_BLOCK.
+
+	* include/ruby/ruby.h: re-number T_xxx.
+
 Sat Apr 26 17:31:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_cProcessTms, rb_cProcessStatus): renamed.

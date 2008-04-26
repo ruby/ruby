@@ -1185,7 +1185,6 @@ gc_mark_children(VALUE ptr, int lev)
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
-      case T_BLOCK:
 	break;
 
       case T_MATCH:
@@ -1469,7 +1468,6 @@ obj_free(VALUE obj)
 	break;
 
       case T_FLOAT:
-      case T_BLOCK:
 	break;
       case T_VALUES:
 	break;
@@ -2254,7 +2252,6 @@ count_objects(int argc, VALUE *argv, VALUE os)
           case T_MATCH:         type = ID2SYM(rb_intern("T_MATCH")); break;
           case T_SYMBOL:        type = ID2SYM(rb_intern("T_SYMBOL")); break;
           case T_VALUES:        type = ID2SYM(rb_intern("T_VALUES")); break;
-          case T_BLOCK:         type = ID2SYM(rb_intern("T_BLOCK")); break;
           case T_UNDEF:         type = ID2SYM(rb_intern("T_UNDEF")); break;
           case T_NODE:          type = ID2SYM(rb_intern("T_NODE")); break;
           default:              type = INT2NUM(i); break;
