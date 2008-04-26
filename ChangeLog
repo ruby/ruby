@@ -1,3 +1,8 @@
+Sat Apr 26 18:36:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c, signal.c, thread.c, thread_win32.c, include/ruby/intern.h:
+	  suppress warnings.
+
 Sat Apr 26 17:42:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (builtin_types), gc.c (count_objects): added Complex and

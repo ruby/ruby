@@ -1811,7 +1811,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
     fd_set orig_read, orig_write, orig_except;
 
 #ifndef linux
-    double limit;
+    double limit = 0;
     struct timeval wait_rest;
 
     if (timeout) {
@@ -1862,11 +1862,11 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
     errno = lerrno;
 
     if (result < 0) {
-	if (errno == EINTR
+	switch (errno) {
+	  case EINTR:
 #ifdef ERESTART
-	    || errno == ERESTART
+	  case ERESTART:
 #endif
-	    ) {
 	    if (read) *read = orig_read;
 	    if (write) *write = orig_write;
 	    if (except) *except = orig_except;
@@ -1881,6 +1881,8 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 	    }
 #endif
 	    goto retry;
+	  default:
+	    break;
 	}
     }
     return result;
@@ -1985,8 +1987,8 @@ timer_thread_function(void)
     /* check signal */
     if (vm->buffered_signal_size && vm->main_thread->exec_signal == 0) {
 	vm->main_thread->exec_signal = rb_get_next_signal(vm);
-	thread_debug("buffered_signal_size: %d, sig: %d\n",
-		     vm->buffered_signal_size, vm->main_thread->exec_signal);
+	thread_debug("buffered_signal_size: %ld, sig: %d\n",
+		     (long)vm->buffered_signal_size, vm->main_thread->exec_signal);
 	rb_thread_interrupt(vm->main_thread);
     }
 

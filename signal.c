@@ -473,12 +473,13 @@ sighandler(int sig)
 #endif
 }
 
+#if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
 static sigset_t trap_last_mask;
 # else
 static int trap_last_mask;
 # endif
-
+#endif
 
 #if HAVE_PTHREAD_H
 #include <pthread.h>
@@ -961,6 +962,7 @@ install_sighandler(int signum, sighandler_t handler)
     }
 }
 
+#if defined(SIGCLD) || defined(SIGCHLD)
 static void
 init_sigchld(int sig)
 {
@@ -1001,6 +1003,7 @@ init_sigchld(int sig)
     trap_last_mask = mask;
 #endif
 }
+#endif
 
 void
 ruby_sig_finalize()

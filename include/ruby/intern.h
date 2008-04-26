@@ -226,7 +226,7 @@ typedef fd_set rb_fdset_t;
 #define rb_fd_copy(d, s, n) (*(d) = *(s))
 #define rb_fd_ptr(f)	(f)
 #define rb_fd_init(f)	FD_ZERO(f)
-#define rb_fd_term(f)	(f)
+#define rb_fd_term(f)	(void)(f)
 #define rb_fd_max(f)	FD_SETSIZE
 #define rb_fd_select(n, rfds, wfds, efds, timeout)	select(n, rfds, wfds, efds, timeout)
 

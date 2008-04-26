@@ -73,7 +73,7 @@ w32_error(void)
 		  GetLastError(),
 		  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		  (LPTSTR) & lpMsgBuf, 0, NULL);
-    rb_bug("%s", lpMsgBuf);
+    rb_bug("%s", (char*)lpMsgBuf);
 }
 
 static void
@@ -116,7 +116,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
 
     thread_debug("  WaitForMultipleObjects start (count: %d)\n", count);
     ret = WaitForMultipleObjects(count, targets, FALSE, timeout);
-    thread_debug("  WaitForMultipleObjects end (ret: %d)\n", ret);
+    thread_debug("  WaitForMultipleObjects end (ret: %lu)\n", ret);
 
     if (ret == WAIT_OBJECT_0 + count - 1 && th) {
 	errno = EINTR;
@@ -227,9 +227,9 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    /* interrupted.  return immediate */
 	}
 	else {
-	    thread_debug("native_sleep start (%d)\n", (int)msec);
+	    thread_debug("native_sleep start (%lu)\n", msec);
 	    ret = w32_wait_events(0, 0, msec, th);
-	    thread_debug("native_sleep done (%d)\n", ret);
+	    thread_debug("native_sleep done (%lu)\n", ret);
 	}
 
 	th->unblock_function = 0;
@@ -393,7 +393,7 @@ native_cond_wait(rb_thread_cond_t *cond, rb_thread_lock_t *mutex)
     {
 	r = WaitForSingleObject(entry.event, INFINITE);
 	if (r != WAIT_OBJECT_0) {
-	    rb_bug("native_cond_wait: WaitForSingleObject returns %d", r);
+	    rb_bug("native_cond_wait: WaitForSingleObject returns %lu", r);
 	}
     }
     native_mutex_lock(mutex);

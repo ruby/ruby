@@ -488,7 +488,10 @@ io_alloc(VALUE klass)
 static int
 wsplit_p(rb_io_t *fptr)
 {
+#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(O_NONBLOCK)
     int r;
+#endif
+
     if (!(fptr->mode & FMODE_WSPLIT_INITIALIZED)) {
         struct stat buf;
         if (fstat(fptr->fd, &buf) == 0 &&
