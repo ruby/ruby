@@ -1,4 +1,6 @@
-Sat Apr 26 17:30:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr 26 17:31:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_cProcessTms, rb_cProcessStatus): renamed.
 
 	* error.c (builtin_types), signal.c (siglist), st.c (primes),
 	  struct.c (ref_func), time.c (months): constified.

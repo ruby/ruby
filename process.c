@@ -68,7 +68,7 @@ struct timeval rb_time_interval(VALUE);
 #endif
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
-static VALUE S_Tms;
+static VALUE rb_cProcessTms;
 #endif
 
 #ifndef WIFEXITED
@@ -211,7 +211,7 @@ get_ppid(void)
  *  _stat_, we're referring to this 16 bit value.
  */
 
-static VALUE rb_cProcStatus;
+static VALUE rb_cProcessStatus;
 
 VALUE
 rb_last_status_get(void)
@@ -223,7 +223,7 @@ void
 rb_last_status_set(int status, rb_pid_t pid)
 {
     rb_vm_t *vm = GET_VM();
-    vm->last_status = rb_obj_alloc(rb_cProcStatus);
+    vm->last_status = rb_obj_alloc(rb_cProcessStatus);
     rb_iv_set(vm->last_status, "status", INT2FIX(status));
     rb_iv_set(vm->last_status, "pid", PIDT2NUM(pid));
 }
@@ -4928,7 +4928,7 @@ rb_proc_times(VALUE obj)
     volatile VALUE utime, stime, cutime, sctime;
 
     times(&buf);
-    return rb_struct_new(S_Tms,
+    return rb_struct_new(rb_cProcessTms,
 			 utime = DOUBLE2NUM(buf.tms_utime / hertz),
 			 stime = DOUBLE2NUM(buf.tms_stime / hertz),
 			 cutime = DOUBLE2NUM(buf.tms_cutime / hertz),
@@ -4991,27 +4991,27 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "waitall", proc_waitall, 0);
     rb_define_module_function(rb_mProcess, "detach", proc_detach, 1);
 
-    rb_cProcStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cProcStatus), "new");
+    rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cProcessStatus), "new");
 
-    rb_define_method(rb_cProcStatus, "==", pst_equal, 1);
-    rb_define_method(rb_cProcStatus, "&", pst_bitand, 1);
-    rb_define_method(rb_cProcStatus, ">>", pst_rshift, 1);
-    rb_define_method(rb_cProcStatus, "to_i", pst_to_i, 0);
-    rb_define_method(rb_cProcStatus, "to_int", pst_to_i, 0);
-    rb_define_method(rb_cProcStatus, "to_s", pst_to_s, 0);
-    rb_define_method(rb_cProcStatus, "inspect", pst_inspect, 0);
+    rb_define_method(rb_cProcessStatus, "==", pst_equal, 1);
+    rb_define_method(rb_cProcessStatus, "&", pst_bitand, 1);
+    rb_define_method(rb_cProcessStatus, ">>", pst_rshift, 1);
+    rb_define_method(rb_cProcessStatus, "to_i", pst_to_i, 0);
+    rb_define_method(rb_cProcessStatus, "to_int", pst_to_i, 0);
+    rb_define_method(rb_cProcessStatus, "to_s", pst_to_s, 0);
+    rb_define_method(rb_cProcessStatus, "inspect", pst_inspect, 0);
 
-    rb_define_method(rb_cProcStatus, "pid", pst_pid, 0);
+    rb_define_method(rb_cProcessStatus, "pid", pst_pid, 0);
 
-    rb_define_method(rb_cProcStatus, "stopped?", pst_wifstopped, 0);
-    rb_define_method(rb_cProcStatus, "stopsig", pst_wstopsig, 0);
-    rb_define_method(rb_cProcStatus, "signaled?", pst_wifsignaled, 0);
-    rb_define_method(rb_cProcStatus, "termsig", pst_wtermsig, 0);
-    rb_define_method(rb_cProcStatus, "exited?", pst_wifexited, 0);
-    rb_define_method(rb_cProcStatus, "exitstatus", pst_wexitstatus, 0);
-    rb_define_method(rb_cProcStatus, "success?", pst_success_p, 0);
-    rb_define_method(rb_cProcStatus, "coredump?", pst_wcoredump, 0);
+    rb_define_method(rb_cProcessStatus, "stopped?", pst_wifstopped, 0);
+    rb_define_method(rb_cProcessStatus, "stopsig", pst_wstopsig, 0);
+    rb_define_method(rb_cProcessStatus, "signaled?", pst_wifsignaled, 0);
+    rb_define_method(rb_cProcessStatus, "termsig", pst_wtermsig, 0);
+    rb_define_method(rb_cProcessStatus, "exited?", pst_wifexited, 0);
+    rb_define_method(rb_cProcessStatus, "exitstatus", pst_wexitstatus, 0);
+    rb_define_method(rb_cProcessStatus, "success?", pst_success_p, 0);
+    rb_define_method(rb_cProcessStatus, "coredump?", pst_wcoredump, 0);
 
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
@@ -5101,7 +5101,7 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
-    S_Tms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);
+    rb_cProcessTms = rb_struct_define("Tms", "utime", "stime", "cutime", "cstime", NULL);
 #endif
 
     SAVED_USER_ID = geteuid();
