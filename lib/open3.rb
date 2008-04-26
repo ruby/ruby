@@ -64,10 +64,13 @@ module Open3
   # 
   # Open stdin, stdout, and stderr streams and start external executable.
   # In addition, a thread for waiting the started process is noticed.
+  # The thread has a thread variable :pid which is the pid of the started
+  # process.
   #
   # Non-block form:
   #   
   #   stdin, stdout, stderr, wait_thr = Open3.popen3w(cmd)
+  #   pid = wait_thr[:pid]  # pid of the started process.
   #   ...
   #   stdin.close  # stdin, stdout and stderr should be closed in this form.
   #   stdout.close
