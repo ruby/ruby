@@ -193,6 +193,8 @@ VALUE rb_require_safe _((VALUE, int));
 void rb_obj_call_init _((VALUE, int, VALUE*));
 VALUE rb_class_new_instance _((int, VALUE*, VALUE));
 VALUE rb_block_proc _((void));
+VALUE rb_block_dup _((VALUE, VALUE, VALUE));
+VALUE rb_method_dup _((VALUE, VALUE, VALUE));
 VALUE rb_f_lambda _((void));
 VALUE rb_proc_call _((VALUE, VALUE));
 VALUE rb_obj_method _((VALUE, VALUE));

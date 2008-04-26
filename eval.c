@@ -8430,6 +8430,19 @@ proc_dup(self)
     return bind;
 }
 
+VALUE
+rb_block_dup(self, klass, cref)
+    VALUE self, klass, cref;
+{
+    struct BLOCK *block;
+    VALUE obj = proc_dup(self);
+    Data_Get_Struct(obj, struct BLOCK, block);
+    block->klass = klass;
+    block->cref = NEW_NODE(nd_type(block->cref), cref, block->cref->u2.node,
+			   block->cref->u3.node);
+    return obj;
+}
+
 /*
  *  call-seq:
  *     binding -> a_binding
@@ -9360,6 +9373,29 @@ method_clone(self)
     CLONESETUP(clone, self);
     *data = *orig;
 
+    return clone;
+}
+
+VALUE
+rb_method_dup(self, klass, cref)
+    VALUE self;
+    VALUE klass;
+    VALUE cref;
+{
+    VALUE clone;
+    struct METHOD *orig, *data;
+
+    Data_Get_Struct(self, struct METHOD, orig);
+    clone = Data_Make_Struct(CLASS_OF(self),struct METHOD, bm_mark, free, data);
+    *data = *orig;
+    data->rklass = klass;
+    if (data->body->nd_rval) {
+	NODE *tmp = NEW_NODE(nd_type(data->body->u2.node), cref,
+			     data->body->u2.node->u2.node,
+			     data->body->u2.node->u3.node);
+	data->body = NEW_NODE(nd_type(data->body), data->body->u1.node, tmp,
+			      data->body->u3.node);
+    }
     return clone;
 }
 
