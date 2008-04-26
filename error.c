@@ -333,7 +333,7 @@ VALUE rb_eLoadError;
 
 VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
-static VALUE eNOERROR;
+static VALUE rb_eNOERROR;
 
 VALUE
 rb_exc_new(VALUE etype, const char *ptr, long len)
@@ -989,7 +989,7 @@ syserr_eqq(VALUE self, VALUE exc)
 static VALUE
 errno_missing(VALUE self, VALUE id)
 {
-    return eNOERROR;
+    return rb_eNOERROR;
 }
 
 /*
@@ -1534,7 +1534,7 @@ Init_syserr(void)
 #ifdef EDQUOT
     set_syserr(EDQUOT, "EDQUOT");
 #endif
-    eNOERROR = set_syserr(0, "NOERROR");
+    rb_eNOERROR = set_syserr(0, "NOERROR");
 }
 
 static void
