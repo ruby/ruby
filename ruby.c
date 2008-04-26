@@ -1457,6 +1457,7 @@ void
 ruby_set_argv(int argc, char **argv)
 {
     int i;
+    rb_encoding *enc = rb_locale_encoding();
     VALUE av = rb_argv;
 
 #if defined(USE_DLN_A_OUT)
@@ -1468,6 +1469,7 @@ ruby_set_argv(int argc, char **argv)
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
 	VALUE arg = rb_tainted_str_new2(argv[i]);
+	rb_enc_associate(arg, enc);
 
 	OBJ_FREEZE(arg);
 	rb_ary_push(av, arg);
