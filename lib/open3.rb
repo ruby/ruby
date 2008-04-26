@@ -9,56 +9,29 @@
 #
 
 #
-# Open3 grants you access to stdin, stdout, and stderr when running another
-# program. Example:
+# Open3 grants you access to stdin, stdout, stderr and a thread to wait the
+# child process when running another program.
+#
+# Example:
 #
 #   require "open3"
 #   include Open3
 #   
-#   stdin, stdout, stderr = popen3('nroff -man')
+#   stdin, stdout, stderr, wait_thr = popen3('nroff -man')
 #
-# If the exit status of the child process is required, Open3.popen3w is usable.
+# Open3.popen3 can also take a block which will receive stdin, stdout,
+# stderr and wait_thr as parameters.
+# This ensures stdin, stdout and stderr are closed and
+# the process is terminated once the block exits.
 #
-# Open3.popen3 can also take a block which will receive stdin, stdout and
-# stderr as parameters.  This ensures stdin, stdout and stderr are closed
-# once the block exits. Example:
+# Example:
 #
 #   require "open3"
 #
-#   Open3.popen3('nroff -man') { |stdin, stdout, stderr| ... }
+#   Open3.popen3('nroff -man') { |stdin, stdout, stderr, wait_thr| ... }
 #
 
 module Open3
-  # 
-  # Open stdin, stdout, and stderr streams and start external executable.
-  #
-  # Non-block form:
-  #   
-  #   stdin, stdout, stderr = Open3.popen3(cmd)
-  #   ...
-  #   stdin.close  # stdin, stdout and stderr should be closed in this form.
-  #   stdout.close
-  #   stderr.close
-  #
-  # Block form:
-  #
-  #   Open3.popen3(cmd) { |stdin, stdout, stderr| ... }
-  #   # stdin, stdout and stderr is closed automatically in this form.
-  #
-  # The parameter +cmd+ is passed directly to Kernel#spawn.
-  #
-  def popen3(*cmd)
-    if defined? yield
-      popen3w(*cmd) {|stdin, stdout, stderr, wait_thr|
-        yield stdin, stdout, stderr
-      }
-    else
-      stdin, stdout, stderr, wait_thr = popen3w(*cmd)
-      return stdin, stdout, stderr
-    end
-  end
-  module_function :popen3
-
   # 
   # Open stdin, stdout, and stderr streams and start external executable.
   # In addition, a thread for waiting the started process is noticed.
@@ -67,7 +40,7 @@ module Open3
   #
   # Non-block form:
   #   
-  #   stdin, stdout, stderr, wait_thr = Open3.popen3w(cmd)
+  #   stdin, stdout, stderr, wait_thr = Open3.popen3(cmd)
   #   pid = wait_thr[:pid]  # pid of the started process.
   #   ...
   #   stdin.close  # stdin, stdout and stderr should be closed in this form.
@@ -77,7 +50,7 @@ module Open3
   #
   # Block form:
   #
-  #   Open3.popen3w(cmd) { |stdin, stdout, stderr, wait_thr| ... }
+  #   Open3.popen3(cmd) { |stdin, stdout, stderr, wait_thr| ... }
   #
   # The parameter +cmd+ is passed directly to Kernel#spawn.
   #
@@ -86,7 +59,7 @@ module Open3
   #
   # Closing stdin, stdout and stderr does not wait the process.
   #
-  def popen3w(*cmd)
+  def popen3(*cmd)
     pw = IO::pipe   # pipe[0] for read, pipe[1] for write
     pr = IO::pipe
     pe = IO::pipe
@@ -109,7 +82,7 @@ module Open3
     end
     pi
   end
-  module_function :popen3w
+  module_function :popen3
 end
 
 if $0 == __FILE__

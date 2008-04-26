@@ -1,3 +1,8 @@
+Sun Apr 27 01:46:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open3.rb (Open3.popen3w): removed.
+	  (Open3.popen3): notice wait_thr.
+
 Sun Apr 27 01:13:05 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc, test/rdoc:  Update to RDoc 2.0.0 r56.
