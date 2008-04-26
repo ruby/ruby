@@ -1,3 +1,8 @@
+Sat Apr 26 17:42:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (builtin_types), gc.c (count_objects): added Complex and
+	  Rational.
+
 Sat Apr 26 17:35:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_eNOERROR): renamed.

@@ -256,6 +256,8 @@ static const struct types {
     {T_STRUCT,	"Struct"},
     {T_BIGNUM,	"Bignum"},
     {T_FILE,	"File"},
+    {T_RATIONAL,"Rational"},
+    {T_COMPLEX, "Complex"},
     {T_TRUE,	"true"},
     {T_FALSE,	"false"},
     {T_SYMBOL,	"Symbol"},	/* :symbol */

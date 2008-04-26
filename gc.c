@@ -2231,29 +2231,33 @@ count_objects(int argc, VALUE *argv, VALUE os)
     for (i = 0; i <= T_MASK; i++) {
         VALUE type;
         switch (i) {
-          case T_NONE:          type = ID2SYM(rb_intern("T_NONE")); break;
-          case T_NIL:           type = ID2SYM(rb_intern("T_NIL")); break;
-          case T_OBJECT:        type = ID2SYM(rb_intern("T_OBJECT")); break;
-          case T_CLASS:         type = ID2SYM(rb_intern("T_CLASS")); break;
-          case T_ICLASS:        type = ID2SYM(rb_intern("T_ICLASS")); break;
-          case T_MODULE:        type = ID2SYM(rb_intern("T_MODULE")); break;
-          case T_FLOAT:         type = ID2SYM(rb_intern("T_FLOAT")); break;
-          case T_STRING:        type = ID2SYM(rb_intern("T_STRING")); break;
-          case T_REGEXP:        type = ID2SYM(rb_intern("T_REGEXP")); break;
-          case T_ARRAY:         type = ID2SYM(rb_intern("T_ARRAY")); break;
-          case T_FIXNUM:        type = ID2SYM(rb_intern("T_FIXNUM")); break;
-          case T_HASH:          type = ID2SYM(rb_intern("T_HASH")); break;
-          case T_STRUCT:        type = ID2SYM(rb_intern("T_STRUCT")); break;
-          case T_BIGNUM:        type = ID2SYM(rb_intern("T_BIGNUM")); break;
-          case T_FILE:          type = ID2SYM(rb_intern("T_FILE")); break;
-          case T_TRUE:          type = ID2SYM(rb_intern("T_TRUE")); break;
-          case T_FALSE:         type = ID2SYM(rb_intern("T_FALSE")); break;
-          case T_DATA:          type = ID2SYM(rb_intern("T_DATA")); break;
-          case T_MATCH:         type = ID2SYM(rb_intern("T_MATCH")); break;
-          case T_SYMBOL:        type = ID2SYM(rb_intern("T_SYMBOL")); break;
-          case T_VALUES:        type = ID2SYM(rb_intern("T_VALUES")); break;
-          case T_UNDEF:         type = ID2SYM(rb_intern("T_UNDEF")); break;
-          case T_NODE:          type = ID2SYM(rb_intern("T_NODE")); break;
+#define COUNT_TYPE(t) case t: type = ID2SYM(rb_intern(#t)); break;
+	    COUNT_TYPE(T_NONE);
+	    COUNT_TYPE(T_OBJECT);
+	    COUNT_TYPE(T_CLASS);
+	    COUNT_TYPE(T_MODULE);
+	    COUNT_TYPE(T_FLOAT);
+	    COUNT_TYPE(T_STRING);
+	    COUNT_TYPE(T_REGEXP);
+	    COUNT_TYPE(T_ARRAY);
+	    COUNT_TYPE(T_HASH);
+	    COUNT_TYPE(T_STRUCT);
+	    COUNT_TYPE(T_BIGNUM);
+	    COUNT_TYPE(T_FILE);
+	    COUNT_TYPE(T_DATA);
+	    COUNT_TYPE(T_MATCH);
+	    COUNT_TYPE(T_COMPLEX);
+	    COUNT_TYPE(T_RATIONAL);
+	    COUNT_TYPE(T_NIL);
+	    COUNT_TYPE(T_TRUE);
+	    COUNT_TYPE(T_FALSE);
+	    COUNT_TYPE(T_SYMBOL);
+	    COUNT_TYPE(T_FIXNUM);
+	    COUNT_TYPE(T_VALUES);
+	    COUNT_TYPE(T_UNDEF);
+	    COUNT_TYPE(T_NODE);
+	    COUNT_TYPE(T_ICLASS);
+#undef COUNT_TYPE
           default:              type = INT2NUM(i); break;
         }
         if (counts[i])
