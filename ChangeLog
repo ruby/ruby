@@ -1,3 +1,7 @@
+Sun Apr 27 01:13:05 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rdoc, test/rdoc:  Update to RDoc 2.0.0 r56.
+
 Sat Apr 26 21:30:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_hash_dup): declared.

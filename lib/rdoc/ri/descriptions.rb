@@ -13,6 +13,7 @@ class RDoc::RI::NamedThing
   def initialize(name)
     @name = name
   end
+
   def <=>(other)
     @name <=> other.name
   end
@@ -30,6 +31,7 @@ class RDoc::RI::AliasName < RDoc::RI::NamedThing; end
 
 class RDoc::RI::Attribute < RDoc::RI::NamedThing
   attr_reader :rw, :comment
+
   def initialize(name, rw, comment)
     super(name)
     @rw = rw
@@ -39,6 +41,7 @@ end
 
 class RDoc::RI::Constant < RDoc::RI::NamedThing
   attr_reader :value, :comment
+
   def initialize(name, value, comment)
     super(name)
     @value = value

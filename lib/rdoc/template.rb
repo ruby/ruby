@@ -1,10 +1,12 @@
 require 'erb'
 
+module RDoc; end
+
 ##
-# An ERB wrapper.
+# An ERb wrapper that allows nesting of one ERb template inside another.
 #
 # This TemplatePage operates similarly to RDoc 1.x's TemplatePage, but uses
-# ERB instead of a custom template language.
+# ERb instead of a custom template language.
 #
 # Converting from a RDoc 1.x template to an RDoc 2.x template is fairly easy.
 #
@@ -24,8 +26,6 @@ require 'erb'
 #
 # So you can see what is being used inside which loop.
 
-module RDoc
-end
 class RDoc::TemplatePage
 
   ##

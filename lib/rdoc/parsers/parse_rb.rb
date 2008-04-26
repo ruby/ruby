@@ -2316,7 +2316,7 @@ class RDoc::RubyParser
 
       when "section"
         context.set_current_section(param, comment)
-        comment.clear
+        comment.replace ''
         break
 
       else

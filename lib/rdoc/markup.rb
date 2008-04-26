@@ -11,8 +11,8 @@ require 'rdoc'
 # RDoc::Markup itself does no output formatting: this is left to a different
 # set of classes.
 #
-# RDoc::Markup is extendable at runtime: you can add new markup elements to be
-# recognised in the documents that RDoc::Markup parses.
+# RDoc::Markup is extendable at runtime: you can add \new markup elements to
+# be recognised in the documents that RDoc::Markup parses.
 #
 # RDoc::Markup is intended to be the basis for a family of tools which share
 # the common requirement that simple, plain-text should be rendered in a
@@ -29,10 +29,9 @@ require 'rdoc'
 #   paragraph.
 #
 # * If a paragraph starts with a "*", "-", or with "<digit>.", then it is
-#   taken to be the start of a list.  The margin in increased to be the
-#   first non-space following the list start flag.  Subsequent lines
-#   should be indented to this new margin until the list ends.  For
-#   example:
+#   taken to be the start of a list.  The margin in increased to be the first
+#   non-space following the list start flag.  Subsequent lines should be
+#   indented to this \new margin until the list ends.  For example:
 #
 #      * this is a list with three paragraphs in
 #        the first item.  This is the first paragraph.
@@ -102,7 +101,7 @@ require 'rdoc'
 #   Unlike conventional Wiki markup, general markup can cross line
 #   boundaries.  You can turn off the interpretation of markup by
 #   preceding the first character with a backslash, so \\\<b>bold
-#   text</b> and \\\*bold* produce \<b>bold text</b> and \*bold
+#   text</b> and \\\*bold* produce \<b>bold text</b> and \*bold*
 #   respectively.
 #
 # * Hyperlinks to the web starting http:, mailto:, ftp:, or www. are
@@ -118,17 +117,15 @@ require 'rdoc'
 #
 # == Synopsis
 #
-# This code converts <tt>input_string</tt> to HTML.  The conversion
-# takes place in the +convert+ method, so you can use the same
-# RDoc::Markup object to convert multiple input strings.
+# This code converts +input_string+ to HTML.  The conversion takes place in
+# the +convert+ method, so you can use the same RDoc::Markup converter to
+# convert multiple input strings.
 #
-#   require 'rdoc/markup'
 #   require 'rdoc/markup/to_html'
 #   
-#   p = RDoc::Markup.new
 #   h = RDoc::Markup::ToHtml.new
 #   
-#   puts p.convert(input_string, h)
+#   puts h.convert(input_string)
 #
 # You can extend the RDoc::Markup parser to recognise new markup
 # sequences, and to add special processing for text that matches a
@@ -152,10 +149,10 @@ require 'rdoc'
 #   
 #   m.add_special(/\b([A-Z][a-z]+[A-Z]\w+)/, :WIKIWORD)
 #   
-#   h = WikiHtml.new
-#   h.add_tag(:STRIKE, "<strike>", "</strike>")
+#   wh = WikiHtml.new
+#   wh.add_tag(:STRIKE, "<strike>", "</strike>")
 #   
-#   puts "<body>" + m.convert(ARGF.read, h) + "</body>"
+#   puts "<body>#{wh.convert ARGF.read}</body>"
 #
 #--
 # Author::   Dave Thomas,  dave@pragmaticprogrammer.com

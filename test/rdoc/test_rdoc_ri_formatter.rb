@@ -149,43 +149,6 @@ class TestRDocRIFormatter < Test::Unit::TestCase
     assert_equal "  *   a b c\n\n", @output.string
   end
 
-  def test_display_heading_1
-    @f.display_heading 'heading', 1, '  '
-
-    assert_equal "\nHEADING\n=======\n\n", @output.string
-  end
-
-  def test_display_heading_2
-    @f.display_heading 'heading', 2, '  '
-
-    assert_equal "\nheading\n-------\n\n", @output.string
-  end
-
-  def test_display_heading_3
-    @f.display_heading 'heading', 3, '  '
-
-    assert_equal "  heading\n\n", @output.string
-  end
-
-  def test_display_list
-    list = RDoc::Markup::Flow::LIST.new :NUMBER
-    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
-    list << RDoc::Markup::Flow::LI.new(nil, 'd e f')
-
-    @f.display_list list
-
-    assert_equal "  1.  a b c\n\n  2.  d e f\n\n", @output.string
-  end
-
-  def test_display_list_bullet
-    list = RDoc::Markup::Flow::LIST.new :BULLET
-    list << RDoc::Markup::Flow::LI.new(nil, 'a b c')
-
-    @f.display_list list
-
-    assert_equal "  *   a b c\n\n", @output.string
-  end
-
   def test_display_list_labeled
     list = RDoc::Markup::Flow::LIST.new :LABELED
     list << RDoc::Markup::Flow::LI.new('label', 'a b c')

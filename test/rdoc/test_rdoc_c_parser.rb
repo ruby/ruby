@@ -226,7 +226,7 @@ VALUE foo = rb_define_class("Foo", rb_cObject);
     assert_equal "  \n   a comment for class Foo\n   ", klass.comment
   end
 
-  def test_find_class_comment_define_class
+  def test_find_class_comment_define_class_Init_Foo
     content = <<-EOF
 /*
  * a comment for class Foo on Init

@@ -3,7 +3,7 @@ require 'rdoc/markup'
 
 class RDoc::RI::Formatter
 
-  attr_reader :indent
+  attr_writer :indent
   attr_accessor :output
 
   FORMATTERS = { }
@@ -20,6 +20,7 @@ class RDoc::RI::Formatter
     @output = output
     @width  = width
     @indent = indent
+    @original_indent = indent.dup
   end
 
   def draw_line(label=nil)
@@ -39,6 +40,18 @@ class RDoc::RI::Formatter
       @output.puts
 
       @output.puts label
+    end
+  end
+
+  def indent
+    return @indent unless block_given?
+
+    begin
+      indent = @indent.dup
+      @indent += @original_indent
+      yield
+    ensure
+      @indent = indent
     end
   end
 
@@ -481,13 +494,13 @@ class RDoc::RI::HtmlFormatter < RDoc::RI::AttributeFormatter
     when :LABELED then
       list_type = "dl"
       prefixer = proc do |li|
-          "<dt><b>" + escape(li.label) + "</b><dd>"
+        "<dt><b>" + escape(li.label) + "</b><dd>"
       end
 
     when :NOTE then
       list_type = "table"
       prefixer = proc do |li|
-          %{<tr valign="top"><td>#{li.label.gsub(/ /, '&nbsp;')}</td><td>}
+        %{<tr valign="top"><td>#{li.label.gsub(/ /, '&nbsp;')}</td><td>}
       end
     else
       fail "unknown list type"

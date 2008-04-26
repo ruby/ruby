@@ -228,37 +228,37 @@ module RDoc
     def document(argv)
       TopLevel::reset
 
-      options = Options.new GENERATORS
-      options.parse argv
+      @options = Options.new GENERATORS
+      @options.parse argv
 
       @last_created = nil
 
-      unless options.all_one_file
-        @last_created = setup_output_dir(options.op_dir, options.force_update)
+      unless @options.all_one_file then
+        @last_created = setup_output_dir @options.op_dir, @options.force_update
       end
 
       start_time = Time.now
 
-      file_info = parse_files(options)
+      file_info = parse_files @options
 
       if file_info.empty?
-        $stderr.puts "\nNo newer files." unless options.quiet
+        $stderr.puts "\nNo newer files." unless @options.quiet
       else
-        gen = options.generator
+        gen = @options.generator
 
-        $stderr.puts "\nGenerating #{gen.key.upcase}..." unless options.quiet
+        $stderr.puts "\nGenerating #{gen.key.upcase}..." unless @options.quiet
 
         require gen.file_name
 
         gen_class = ::RDoc::Generator.const_get gen.class_name
-        gen = gen_class.for(options)
+        gen = gen_class.for @options
 
         pwd = Dir.pwd
 
-        Dir.chdir(options.op_dir)  unless options.all_one_file
+        Dir.chdir @options.op_dir unless @options.all_one_file
 
         begin
-          Diagram.new(file_info, options).draw if options.diagram
+          Diagram.new(file_info, @options).draw if @options.diagram
           gen.generate(file_info)
           update_output_dir(".", start_time)
         ensure
@@ -266,7 +266,7 @@ module RDoc
         end
       end
 
-      unless options.quiet
+      unless @options.quiet
         puts
         @stats.print
       end

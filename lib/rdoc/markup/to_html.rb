@@ -1,6 +1,7 @@
 require 'rdoc/markup/formatter'
 require 'rdoc/markup/fragments'
 require 'rdoc/markup/inline'
+require 'rdoc/generator'
 
 require 'cgi'
 
@@ -47,7 +48,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       url = if path[0, 1] == '#' then # is this meaningful?
               path
             else
-              HTML.gen_url @from_path, path
+              RDoc::Generator.gen_url @from_path, path
             end
     end
 

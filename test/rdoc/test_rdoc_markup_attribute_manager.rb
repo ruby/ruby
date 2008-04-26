@@ -43,6 +43,29 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
     #assert_equal(["cat {and} dog" ], @am.flow("cat \\{and} dog"))
   end
 
+  def test_add_word_pair
+    @am.add_word_pair '%', '&', 'percent and'
+
+    assert RDoc::Markup::AttributeManager::WORD_PAIR_MAP.include?(/(%)(\S+)(&)/)
+    assert RDoc::Markup::AttributeManager::PROTECTABLE.include?('%')
+    assert !RDoc::Markup::AttributeManager::PROTECTABLE.include?('&')
+  end
+
+  def test_add_word_pair_angle
+    e = assert_raise ArgumentError do
+      @am.add_word_pair '<', '>', 'angles'
+    end
+
+    assert_equal "Word flags may not start with '<'", e.message
+  end
+
+  def test_add_word_pair_matching
+    @am.add_word_pair '^', '^', 'caret'
+
+    assert RDoc::Markup::AttributeManager::MATCHING_WORD_PAIRS.include?('^')
+    assert RDoc::Markup::AttributeManager::PROTECTABLE.include?('^')
+  end
+
   def test_basic
     assert_equal(["cat"], @am.flow("cat"))
 
@@ -79,7 +102,6 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
 
     assert_equal(["cat ", @em_on, "_", @em_off, " dog"],
                   @am.flow("cat ___ dog"))
-
   end
 
   def test_bold
@@ -99,6 +121,29 @@ class TestRDocMarkupAttributeManager < Test::Unit::TestCase
 
     assert_equal(["cat ", @em_on, "a__nd", @em_off, " ", @bold_on, "dog", @bold_off],
                   @am.flow("cat _a__nd_ *dog*"))
+  end
+
+  def test_convert_attrs
+    str = '+foo+'
+    attrs = RDoc::Markup::AttrSpan.new str.length
+
+    @am.convert_attrs str, attrs
+
+    assert_equal "\000foo\000", str
+
+    str = '+:foo:+'
+    attrs = RDoc::Markup::AttrSpan.new str.length
+
+    @am.convert_attrs str, attrs
+
+    assert_equal "\000:foo:\000", str
+
+    str = '+x-y+'
+    attrs = RDoc::Markup::AttrSpan.new str.length
+
+    @am.convert_attrs str, attrs
+
+    assert_equal "\000x-y\000", str
   end
 
   def test_html_like_em_bold

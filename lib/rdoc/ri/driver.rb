@@ -344,7 +344,11 @@ Options may also be set in the 'RI' environment variable.
   end
 
   def read_yaml(path)
-    YAML.load File.read(path).gsub(/ \!ruby\/(object|struct):(RDoc::RI|RI|SM).*/, '')
+    data = File.read path
+    data = data.gsub(/ \!ruby\/(object|struct):(RDoc::RI|RI).*/, '')
+    data = data.gsub(/ \!ruby\/(object|struct):SM::(\S+)/,
+                     ' !ruby/\1:RDoc::Markup::\2')
+    YAML.load data
   end
 
   def get_info_for(arg)
@@ -418,7 +422,7 @@ Options may also be set in the 'RI' environment variable.
 
 end
 
-class Hash
+class Hash # HACK don't add stuff to Hash.
   def method_missing method, *args
     self[method.to_s]
   end
@@ -428,7 +432,12 @@ class Hash
       if self[k] then
         case v
         when Array then
-          self[k] += v
+          # HACK dunno
+          if String === self[k] and self[k].empty? then
+            self[k] = v
+          else
+            self[k] += v
+          end
         when Hash then
           self[k].merge! v
         else
