@@ -172,3 +172,8 @@ assert_equal 'ok', %q{
   end
   m
 }, '[ruby-dev:34492]'
+
+assert_normal_exit %q{
+  r = 0**-1
+  r + r
+}, '[ruby-dev:34524]'
