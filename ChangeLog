@@ -1,3 +1,14 @@
+Sun Apr 27 12:20:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_t), gc.c (rb_objspace, rb_newobj), vm.c
+	  (Init_BareVM): per-VM object space support, which is disabled now.
+
+	* gc.c (rb_objspace_alloc), vm.c (Init_BareVM): should not use ruby
+	  malloc here.
+
+	* gc.c (garbage_collect, etc): performance improvement by passing the
+	  reference instead of refering the global variable in each functions.
+
 Sun Apr 27 08:06:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ruby.c (ruby_set_argv): ARGV should be locale encoding.

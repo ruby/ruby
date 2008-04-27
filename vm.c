@@ -1846,17 +1846,22 @@ Init_VM(void)
     vm_init_redefined_flag();
 }
 
+struct rb_objspace *rb_objspace_alloc(void);
+
 void
 Init_BareVM(void)
 {
     /* VM bootstrap: phase 1 */
-    rb_vm_t *vm = ALLOC(rb_vm_t);
-    rb_thread_t *th = ALLOC(rb_thread_t);
+    rb_vm_t *vm = malloc(sizeof(*vm));
+    rb_thread_t *th = malloc(sizeof(*th));
     MEMZERO(th, rb_thread_t, 1);
 
     rb_thread_set_current_raw(th);
 
     vm_init2(vm);
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
+    vm->objspace = rb_objspace_alloc();
+#endif
     ruby_current_vm = vm;
 
     th_init2(th);
