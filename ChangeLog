@@ -1,3 +1,7 @@
+Sun Apr 27 18:59:04 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_expt): use f_rational_new2. [ruby-dev:34524]
+
 Sun Apr 27 15:23:40 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_count): add a GC.count method.  This method returns

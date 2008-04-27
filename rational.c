@@ -860,11 +860,7 @@ nurat_expt(VALUE self, VALUE other)
 		den = ONE;
 		break;
 	    }
-	    if (f_negative_p(den)) {	/* or use normal new */
-		num = f_negate(num);
-		den = f_negate(den);
-	    }
-	    return f_rational_new_bang2(CLASS_OF(self), num, den);
+	    return f_rational_new2(CLASS_OF(self), num, den);
 	}
       case T_FLOAT:
       case T_RATIONAL:
