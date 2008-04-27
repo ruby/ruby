@@ -538,9 +538,204 @@ class TestProcess < Test::Unit::TestCase
     assert_equal({}, h)
   end
 
-  def test_system
-    str = "echo fofo"
+  def test_system_noshell
+    str = "echo non existing command name which contains spaces"
     assert_nil(system([str, str]))
+  end
+
+  def test_spawn_noshell
+    str = "echo non existing command name which contains spaces"
+    assert_raise(Errno::ENOENT) { spawn([str, str]) }
+  end
+
+  def test_popen_noshell
+    str = "echo non existing command name which contains spaces"
+    assert_raise(Errno::ENOENT) { IO.popen([str, str]) }
+  end
+
+  def test_exec_noshell
+    str = "echo non existing command name which contains spaces"
+    with_pipe {|r, w|
+      pid = fork {
+        STDOUT.reopen(w)
+        STDERR.reopen(w)
+        begin
+          exec [str, str]
+        rescue Errno::ENOENT
+          w.write "Errno::ENOENT success"
+        end
+      }
+      w.close
+      assert_equal("Errno::ENOENT success", r.read)
+    }
+  end
+
+  def write_file(filename, content)
+    File.open(filename, "w") {|f|
+      f << content
+    }
+  end
+
+  def test_system_wordsplit
+    with_tmpchdir {|d|
+      write_file("script", <<-'End')
+        File.open("result", "w") {|t| t << "haha pid=#{$$} ppid=#{Process.ppid}" }
+        exit 5
+      End
+      str = "#{RUBY} script"
+      ret = system(str)
+      status = $?
+      assert_equal(false, ret)
+      assert(status.exited?)
+      assert_equal(5, status.exitstatus)
+      assert_equal("haha pid=#{status.pid} ppid=#{$$}", File.read("result"))
+    }
+  end
+
+  def test_spawn_wordsplit
+    with_tmpchdir {|d|
+      write_file("script", <<-'End')
+        File.open("result", "w") {|t| t << "hihi pid=#{$$} ppid=#{Process.ppid}" }
+        exit 6
+      End
+      str = "#{RUBY} script"
+      pid = spawn(str)
+      Process.wait pid
+      status = $?
+      assert_equal(pid, status.pid)
+      assert(status.exited?)
+      assert_equal(6, status.exitstatus)
+      assert_equal("hihi pid=#{status.pid} ppid=#{$$}", File.read("result"))
+    }
+  end
+
+  def test_popen_wordsplit
+    with_tmpchdir {|d|
+      write_file("script", <<-'End')
+        print "fufu pid=#{$$} ppid=#{Process.ppid}"
+        exit 7
+      End
+      str = "#{RUBY} script"
+      io = IO.popen(str)
+      pid = io.pid
+      result = io.read
+      io.close
+      status = $?
+      assert_equal(pid, status.pid)
+      assert(status.exited?)
+      assert_equal(7, status.exitstatus)
+      assert_equal("fufu pid=#{status.pid} ppid=#{$$}", result)
+    }
+  end
+
+  def test_exec_wordsplit
+    with_tmpchdir {|d|
+      write_file("script", <<-'End')
+        File.open("result", "w") {|t| t << "hehe pid=#{$$} ppid=#{Process.ppid}" }
+        exit 6
+      End
+      str = "#{RUBY} script"
+      pid = fork {
+        exec str
+      }
+      Process.wait pid
+      status = $?
+      assert_equal(pid, status.pid)
+      assert(status.exited?)
+      assert_equal(6, status.exitstatus)
+      assert_equal("hehe pid=#{status.pid} ppid=#{$$}", File.read("result"))
+    }
+  end
+
+  def test_system_shell
+    with_tmpchdir {|d|
+      write_file("script1", <<-'End')
+        File.open("result1", "w") {|t| t << "taka pid=#{$$} ppid=#{Process.ppid}" }
+        exit 7
+      End
+      write_file("script2", <<-'End')
+        File.open("result2", "w") {|t| t << "taki pid=#{$$} ppid=#{Process.ppid}" }
+        exit 8
+      End
+      ret = system("#{RUBY} script1; #{RUBY} script2")
+      status = $?
+      assert_equal(false, ret)
+      assert(status.exited?)
+      result1 = File.read("result1")
+      result2 = File.read("result2")
+      assert_match(/\Ataka pid=\d+ ppid=\d+\z/, result1)
+      assert_match(/\Ataki pid=\d+ ppid=\d+\z/, result2)
+      assert_not_equal(result1[/\d+/].to_i, status.pid)
+    }
+  end
+
+  def test_spawn_shell
+    with_tmpchdir {|d|
+      write_file("script1", <<-'End')
+        File.open("result1", "w") {|t| t << "taku pid=#{$$} ppid=#{Process.ppid}" }
+        exit 7
+      End
+      write_file("script2", <<-'End')
+        File.open("result2", "w") {|t| t << "take pid=#{$$} ppid=#{Process.ppid}" }
+        exit 8
+      End
+      pid = spawn("#{RUBY} script1; #{RUBY} script2")
+      Process.wait pid
+      status = $?
+      assert(status.exited?)
+      assert(!status.success?)
+      result1 = File.read("result1")
+      result2 = File.read("result2")
+      assert_match(/\Ataku pid=\d+ ppid=\d+\z/, result1)
+      assert_match(/\Atake pid=\d+ ppid=\d+\z/, result2)
+      assert_not_equal(result1[/\d+/].to_i, status.pid)
+    }
+  end
+
+  def test_popen_shell
+    with_tmpchdir {|d|
+      write_file("script1", <<-'End')
+        puts "tako pid=#{$$} ppid=#{Process.ppid}"
+        exit 7
+      End
+      write_file("script2", <<-'End')
+        puts "tika pid=#{$$} ppid=#{Process.ppid}"
+        exit 8
+      End
+      io = IO.popen("#{RUBY} script1; #{RUBY} script2")
+      result = io.read
+      io.close
+      status = $?
+      assert(status.exited?)
+      assert(!status.success?)
+      assert_match(/\Atako pid=\d+ ppid=\d+\ntika pid=\d+ ppid=\d+\n\z/, result)
+      assert_not_equal(result[/\d+/].to_i, status.pid)
+    }
+  end
+
+  def test_exec_shell
+    with_tmpchdir {|d|
+      write_file("script1", <<-'End')
+        File.open("result1", "w") {|t| t << "tiki pid=#{$$} ppid=#{Process.ppid}" }
+        exit 7
+      End
+      write_file("script2", <<-'End')
+        File.open("result2", "w") {|t| t << "tiku pid=#{$$} ppid=#{Process.ppid}" }
+        exit 8
+      End
+      pid = fork {
+        exec("#{RUBY} script1; #{RUBY} script2")
+      }
+      Process.wait pid
+      status = $?
+      assert(status.exited?)
+      assert(!status.success?)
+      result1 = File.read("result1")
+      result2 = File.read("result2")
+      assert_match(/\Atiki pid=\d+ ppid=\d+\z/, result1)
+      assert_match(/\Atiku pid=\d+ ppid=\d+\z/, result2)
+      assert_not_equal(result1[/\d+/].to_i, status.pid)
+    }
   end
 
 end
