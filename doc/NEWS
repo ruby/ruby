@@ -195,7 +195,8 @@ Compatible
           o Process.exec
     * Misc. new methods
           o public_send
-          o GC.stress, GC.stress=
+          o GC.stress, GC.stress=, GC.count
+          o ObjectSpace.count_objects
           o Method#hash, Proc#hash
           o __method__ and __callee__
           o Symbol#to_proc

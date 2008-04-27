@@ -173,6 +173,7 @@ typedef struct rb_objspace {
 	int overflow;
     } markstack;
     struct gc_list *global_list;
+    unsigned int count;
 } rb_objspace_t;
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -1673,6 +1674,7 @@ garbage_collect(rb_objspace_t *objspace)
 	return Qtrue;
     }
     during_gc++;
+    objspace->count++;
 
     SET_STACK_END;
 
@@ -2352,6 +2354,22 @@ count_objects(int argc, VALUE *argv, VALUE os)
 }
 
 /*
+ *  call-seq:
+ *     GC.count -> Integer
+ *
+ *  Counts objects for each type.
+ *
+ *  It returns a number of GC invoke counts.
+ *
+ */
+
+static VALUE
+gc_count(VALUE self)
+{
+    return UINT2NUM((&rb_objspace)->count);
+}
+
+/*
  *  The <code>GC</code> module provides an interface to Ruby's mark and
  *  sweep garbage collection mechanism. Some of the underlying methods
  *  are also available via the <code>ObjectSpace</code> module.
@@ -2368,6 +2386,7 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
     rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set, 1);
+    rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
     rb_define_method(rb_mGC, "garbage_collect", rb_gc_start, 0);
 
     rb_mObSpace = rb_define_module("ObjectSpace");
