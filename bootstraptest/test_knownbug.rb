@@ -155,3 +155,20 @@ assert_equal 'ok', %q{
     :ng
   end
 }, "[ruby-dev:34236]"
+
+assert_equal 'ok', %q{
+  def m
+    t = Thread.new { while true do // =~ "" end }
+    sleep 0.1
+    10.times {
+      if /((ab)*(ab)*)*(b)/ =~ "ab"*7
+        return :ng if !$4
+        return :ng if $~.size != 5
+      end
+    }
+    :ok
+  ensure
+    Thread.kill t
+  end
+  m
+}, '[ruby-dev:34492]'
