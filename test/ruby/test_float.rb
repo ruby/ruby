@@ -277,4 +277,38 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.0, Float.induced_from(1.0))
     assert_raise(TypeError) { Float.induced_from(nil) }
   end
+
+  def test_to_i
+    assert_operator(4611686018427387905.0.to_i, :>, 0)
+    assert_operator(4611686018427387904.0.to_i, :>, 0)
+    assert_operator(4611686018427387903.8.to_i, :>, 0)
+    assert_operator(4611686018427387903.5.to_i, :>, 0)
+    assert_operator(4611686018427387903.2.to_i, :>, 0)
+    assert_operator(4611686018427387903.0.to_i, :>, 0)
+    assert_operator(4611686018427387902.0.to_i, :>, 0)
+
+    assert_operator(1073741825.0.to_i, :>, 0)
+    assert_operator(1073741824.0.to_i, :>, 0)
+    assert_operator(1073741823.8.to_i, :>, 0)
+    assert_operator(1073741823.5.to_i, :>, 0)
+    assert_operator(1073741823.2.to_i, :>, 0)
+    assert_operator(1073741823.0.to_i, :>, 0)
+    assert_operator(1073741822.0.to_i, :>, 0)
+
+    assert_operator((-1073741823.0).to_i, :<, 0)
+    assert_operator((-1073741824.0).to_i, :<, 0)
+    assert_operator((-1073741824.2).to_i, :<, 0)
+    assert_operator((-1073741824.5).to_i, :<, 0)
+    assert_operator((-1073741824.8).to_i, :<, 0)
+    assert_operator((-1073741825.0).to_i, :<, 0)
+    assert_operator((-1073741826.0).to_i, :<, 0)
+
+    assert_operator((-4611686018427387903.0).to_i, :<, 0)
+    assert_operator((-4611686018427387904.0).to_i, :<, 0)
+    assert_operator((-4611686018427387904.2).to_i, :<, 0)
+    assert_operator((-4611686018427387904.5).to_i, :<, 0)
+    assert_operator((-4611686018427387904.8).to_i, :<, 0)
+    assert_operator((-4611686018427387905.0).to_i, :<, 0)
+    assert_operator((-4611686018427387906.0).to_i, :<, 0)
+  end
 end
