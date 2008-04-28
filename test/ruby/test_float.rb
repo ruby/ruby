@@ -278,37 +278,122 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) { Float.induced_from(nil) }
   end
 
-  def test_to_i
-    assert_operator(4611686018427387905.0.to_i, :>, 0)
-    assert_operator(4611686018427387904.0.to_i, :>, 0)
-    assert_operator(4611686018427387903.8.to_i, :>, 0)
-    assert_operator(4611686018427387903.5.to_i, :>, 0)
-    assert_operator(4611686018427387903.2.to_i, :>, 0)
-    assert_operator(4611686018427387903.0.to_i, :>, 0)
-    assert_operator(4611686018427387902.0.to_i, :>, 0)
 
-    assert_operator(1073741825.0.to_i, :>, 0)
-    assert_operator(1073741824.0.to_i, :>, 0)
-    assert_operator(1073741823.8.to_i, :>, 0)
-    assert_operator(1073741823.5.to_i, :>, 0)
-    assert_operator(1073741823.2.to_i, :>, 0)
-    assert_operator(1073741823.0.to_i, :>, 0)
-    assert_operator(1073741822.0.to_i, :>, 0)
+  VS = [
+    18446744073709551617.0,
+    18446744073709551616.0,
+    18446744073709551615.8,
+    18446744073709551615.5,
+    18446744073709551615.2,
+    18446744073709551615.0,
+    18446744073709551614.0,
 
-    assert_operator((-1073741823.0).to_i, :<, 0)
-    assert_operator((-1073741824.0).to_i, :<, 0)
-    assert_operator((-1073741824.2).to_i, :<, 0)
-    assert_operator((-1073741824.5).to_i, :<, 0)
-    assert_operator((-1073741824.8).to_i, :<, 0)
-    assert_operator((-1073741825.0).to_i, :<, 0)
-    assert_operator((-1073741826.0).to_i, :<, 0)
+    4611686018427387905.0,
+    4611686018427387904.0,
+    4611686018427387903.8,
+    4611686018427387903.5,
+    4611686018427387903.2,
+    4611686018427387903.0,
+    4611686018427387902.0,
 
-    assert_operator((-4611686018427387903.0).to_i, :<, 0)
-    assert_operator((-4611686018427387904.0).to_i, :<, 0)
-    assert_operator((-4611686018427387904.2).to_i, :<, 0)
-    assert_operator((-4611686018427387904.5).to_i, :<, 0)
-    assert_operator((-4611686018427387904.8).to_i, :<, 0)
-    assert_operator((-4611686018427387905.0).to_i, :<, 0)
-    assert_operator((-4611686018427387906.0).to_i, :<, 0)
+    4294967297.0,
+    4294967296.0,
+    4294967295.8,
+    4294967295.5,
+    4294967295.2,
+    4294967295.0,
+    4294967294.0,
+
+    1073741825.0,
+    1073741824.0,
+    1073741823.8,
+    1073741823.5,
+    1073741823.2,
+    1073741823.0,
+    1073741822.0,
+
+    -1073741823.0,
+    -1073741824.0,
+    -1073741824.2,
+    -1073741824.5,
+    -1073741824.8,
+    -1073741825.0,
+    -1073741826.0,
+
+    -4294967295.0,
+    -4294967296.0,
+    -4294967296.2,
+    -4294967296.5,
+    -4294967296.8,
+    -4294967297.0,
+    -4294967298.0,
+
+    -4611686018427387903.0,
+    -4611686018427387904.0,
+    -4611686018427387904.2,
+    -4611686018427387904.5,
+    -4611686018427387904.8,
+    -4611686018427387905.0,
+    -4611686018427387906.0,
+
+    -18446744073709551615.0,
+    -18446744073709551616.0,
+    -18446744073709551616.2,
+    -18446744073709551616.5,
+    -18446744073709551616.8,
+    -18446744073709551617.0,
+    -18446744073709551618.0,
+  ]
+
+  def test_truncate
+    VS.each {|f|
+      i = f.truncate
+      assert_equal(i, f.to_i)
+      if f < 0
+        assert_operator(i, :<, 0)
+      else
+        assert_operator(i, :>, 0)
+      end
+      assert_operator(i.abs, :<=, f.abs)
+    }
   end
+
+  def test_ceil
+    VS.each {|f|
+      i = f.ceil
+      if f < 0
+        assert_operator(i, :<, 0)
+      else
+        assert_operator(i, :>, 0)
+      end
+      assert_operator(i, :>=, f)
+    }
+  end
+
+  def test_floor
+    VS.each {|f|
+      i = f.floor
+      if f < 0
+        assert_operator(i, :<, 0)
+      else
+        assert_operator(i, :>, 0)
+      end
+      assert_operator(i, :<=, f)
+    }
+  end
+
+  def test_round
+    VS.each {|f|
+      i = f.round
+      if f < 0
+        assert_operator(i, :<, 0)
+      else
+        assert_operator(i, :>, 0)
+      end
+      d = f - i
+      assert_operator(-0.5, :<=, d)
+      assert_operator(d, :<=, 0.5)
+    }
+  end
+
 end
