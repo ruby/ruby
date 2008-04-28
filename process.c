@@ -2051,7 +2051,7 @@ run_exec_options(const struct rb_exec_arg *e)
 #ifdef HAVE_FORK
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS);
     if (obj != Qfalse) {
-        rb_close_before_exec(3, FIX2INT(obj), e->redirect_fds);
+        rb_close_before_exec(3, FIXNUM_P(obj) ? FIX2LONG(obj) : 0, e->redirect_fds);
     }
 #endif
 

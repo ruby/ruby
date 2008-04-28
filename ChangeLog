@@ -1,3 +1,7 @@
+Mon Apr 28 11:11:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (run_exec_options): don't call FIX2INT for nil.
+
 Mon Apr 28 11:11:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* proc.c (method_name): should return symbols instead of strings.
