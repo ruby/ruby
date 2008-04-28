@@ -355,6 +355,9 @@ class TestFloat < Test::Unit::TestCase
         assert_operator(i, :>, 0)
       end
       assert_operator(i.abs, :<=, f.abs)
+      d = f.abs - i.abs
+      assert_operator(0, :<=, d)
+      assert_operator(d, :<, 1)
     }
   end
 
@@ -367,6 +370,9 @@ class TestFloat < Test::Unit::TestCase
         assert_operator(i, :>, 0)
       end
       assert_operator(i, :>=, f)
+      d = f - i
+      assert_operator(-1, :<, d)
+      assert_operator(d, :<=, 0)
     }
   end
 
@@ -379,6 +385,9 @@ class TestFloat < Test::Unit::TestCase
         assert_operator(i, :>, 0)
       end
       assert_operator(i, :<=, f)
+      d = f - i
+      assert_operator(0, :<=, d)
+      assert_operator(d, :<, 1)
     }
   end
 
