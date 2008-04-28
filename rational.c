@@ -407,9 +407,14 @@ nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
 	if (!k_integer_p(den))
 	    den = f_to_i(den);
 
-	if (f_negative_p(den)) {
+	switch (FIX2INT(f_cmp(den, ZERO))) {
+	  case -1:
 	    num = f_negate(num);
 	    den = f_negate(den);
+	    break;
+	  case 0:
+	    rb_raise(rb_eZeroDivError, "devided by zero");
+	    break;
 	}
 	break;
     }
@@ -452,10 +457,8 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
 
     switch (FIX2INT(f_cmp(den, ZERO))) {
       case -1:
-	if (f_negative_p(den)) {
-	    num = f_negate(num);
-	    den = f_negate(den);
-	}
+	num = f_negate(num);
+	den = f_negate(den);
 	break;
       case 0:
 	rb_raise(rb_eZeroDivError, "devided by zero");
@@ -477,10 +480,8 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 {
     switch (FIX2INT(f_cmp(den, ZERO))) {
       case -1:
-	if (f_negative_p(den)) {
-	    num = f_negate(num);
-	    den = f_negate(den);
-	}
+	num = f_negate(num);
+	den = f_negate(den);
 	break;
       case 0:
 	rb_raise(rb_eZeroDivError, "devided by zero");
@@ -1190,6 +1191,10 @@ nurat_marshal_load(VALUE self, VALUE a)
     get_dat1(self);
     dat->num = RARRAY_PTR(a)[0];
     dat->den = RARRAY_PTR(a)[1];
+
+    if (f_zero_p(dat->den))
+	rb_raise(rb_eZeroDivError, "devided by zero");
+
     return self;
 }
 
