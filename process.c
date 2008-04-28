@@ -1349,12 +1349,10 @@ check_exec_redirect(VALUE key, VALUE val, VALUE options)
 static int rlimit_type_by_lname(const char *name);
 #endif
 
-static int
-check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
+int
+rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
 {
-    VALUE key = (VALUE)st_key;
-    VALUE val = (VALUE)st_val;
-    VALUE options = (VALUE)arg;
+    VALUE options = e->options;
     ID id;
 #ifdef RLIM2NUM
     int rtype;
@@ -1477,6 +1475,15 @@ redirect:
     return ST_CONTINUE;
 }
 
+static int
+check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
+{
+    VALUE key = (VALUE)st_key;
+    VALUE val = (VALUE)st_val;
+    struct rb_exec_arg *e = (struct rb_exec_arg *)arg;
+    return rb_exec_arg_addopt(e, key, val);
+}
+
 static VALUE
 check_exec_fds(VALUE options)
 {
@@ -1513,29 +1520,12 @@ check_exec_fds(VALUE options)
     return h;
 }
 
-static VALUE
-rb_check_exec_options(VALUE opthash, VALUE *fds)
+static void
+rb_check_exec_options(VALUE opthash, struct rb_exec_arg *e)
 {
-    VALUE options, h;
-    int i;
-
-    options = hide_obj(rb_ary_new());
-
-    if (TYPE(opthash) == T_ARRAY) {
-        for (i = 0; i < RARRAY_LEN(opthash); i++) {
-            VALUE hash = RARRAY_PTR(opthash)[i];
-            st_foreach(RHASH_TBL(hash), check_exec_options_i, (st_data_t)options);
-        }
-    }
-    else {
-        st_foreach(RHASH_TBL(opthash), check_exec_options_i, (st_data_t)options);
-    }
-
-    h = check_exec_fds(options);
-    if (fds)
-        *fds = h;
-
-    return options;
+    if (RHASH_EMPTY_P(opthash))
+        return;
+    st_foreach(RHASH_TBL(opthash), check_exec_options_i, (st_data_t)e);
 }
 
 static int
@@ -1602,15 +1592,15 @@ rb_check_argv(int argc, VALUE *argv)
     return prog;
 }
 
-VALUE
-rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, VALUE *options_ret)
+static VALUE
+rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, VALUE *opthash_ret, struct rb_exec_arg *e)
 {
     VALUE hash, prog;
 
     if (0 < *argc_p) {
         hash = rb_check_convert_type((*argv_p)[*argc_p-1], T_HASH, "Hash", "to_hash");
         if (!NIL_P(hash)) {
-            *options_ret = hash;
+            *opthash_ret = hash;
             (*argc_p)--;
         }
     }
@@ -1634,39 +1624,41 @@ rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, V
     return prog;
 }
 
-void
-rb_exec_initarg2(VALUE prog, int argc, VALUE *argv,
-    VALUE env, VALUE opthash, struct rb_exec_arg *e)
+static void
+rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_exec_arg *e)
 {
-    VALUE options=Qnil, fds=Qnil;
-
+    VALUE options;
     MEMZERO(e, struct rb_exec_arg, 1);
+    options = hide_obj(rb_ary_new());
+    e->options = options;
 
     if (!NIL_P(opthash)) {
-        options = rb_check_exec_options(opthash, &fds);
+        rb_check_exec_options(opthash, e);
     }
     if (!NIL_P(env)) {
         env = rb_check_exec_env(env);
-        if (NIL_P(options))
-            options = hide_obj(rb_ary_new());
         rb_ary_store(options, EXEC_OPTION_ENV, env);
     }
 
     e->argc = argc;
     e->argv = argv;
     e->prog = prog ? RSTRING_PTR(prog) : 0;
-    e->options = options;
-    e->redirect_fds = fds;
 }
 
-
 VALUE
-rb_exec_initarg(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
+rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 {
-    VALUE prog, env=Qnil, opthash=Qnil;
-    prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash);
-    rb_exec_initarg2(prog, argc, argv, env, opthash, e);
+    VALUE prog;
+    VALUE env = Qnil, opthash = Qnil;
+    prog = rb_exec_getargs(&argc, &argv, accept_shell, &env, &opthash, e);
+    rb_exec_fillarg(prog, argc, argv, env, opthash, e);
     return prog;
+}
+
+void
+rb_exec_arg_fix(struct rb_exec_arg *e)
+{
+    e->redirect_fds = check_exec_fds(e->options);
 }
 
 /*
@@ -1704,12 +1696,15 @@ rb_exec_initarg(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 VALUE
 rb_f_exec(int argc, VALUE *argv)
 {
-    struct rb_exec_arg e;
+    struct rb_exec_arg earg;
 
-    rb_exec_initarg(argc, argv, Qtrue, &e);
+    rb_exec_arg_init(argc, argv, Qtrue, &earg);
+    if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS)))
+        rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qfalse);
+    rb_exec_arg_fix(&earg);
 
-    rb_exec(&e);
-    rb_sys_fail(e.prog);
+    rb_exec(&earg);
+    rb_sys_fail(earg.prog);
     return Qnil;		/* dummy */
 }
 
@@ -2055,7 +2050,7 @@ run_exec_options(const struct rb_exec_arg *e)
 
 #ifdef HAVE_FORK
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS);
-    if (RTEST(obj)) {
+    if (obj != Qfalse) {
         rb_close_before_exec(3, FIX2INT(obj), e->redirect_fds);
     }
 #endif
@@ -2550,24 +2545,13 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     rb_pid_t status;
     VALUE prog;
     struct rb_exec_arg earg;
-    int argc2 = argc;
-    VALUE *argv2 = argv, env = Qnil, opthash = Qnil;
-    VALUE close_others = ID2SYM(rb_intern("close_others"));
 
-    prog = rb_exec_getargs(&argc2, &argv2, Qtrue, &env, &opthash);
-    if (default_close_others) {
-        if (NIL_P(opthash)) {
-            opthash = rb_hash_new();
-            RBASIC(opthash)->klass = 0;
-        }
-        if (RBASIC(opthash)->klass) {
-            opthash = rb_hash_dup(opthash);
-            RBASIC(opthash)->klass = 0;
-        }
-        if (!st_lookup(RHASH_TBL(opthash), close_others, 0))
-            rb_hash_aset(opthash, close_others, Qtrue);
+    prog = rb_exec_arg_init(argc, argv, Qtrue, &earg);
+    if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS))) {
+        VALUE v = default_close_others ? Qtrue : Qfalse;
+        rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), v);
     }
-    rb_exec_initarg2(prog, argc2, argv2, env, opthash, &earg);
+    rb_exec_arg_fix(&earg);
 
 #if defined HAVE_FORK
     status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds);

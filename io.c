@@ -3608,7 +3608,7 @@ rb_io_unbuffered(rb_io_t *fptr)
 
 #ifdef HAVE_FORK
 struct popen_arg {
-    struct rb_exec_arg exec;
+    struct rb_exec_arg *execp;
     int modef;
     int pair[2];
     int write_pair[2];
@@ -3673,13 +3673,12 @@ popen_exec(void *pp)
     struct popen_arg *p = (struct popen_arg*)pp;
 
     rb_thread_atfork();
-    return rb_exec(&p->exec);
+    return rb_exec(p->execp);
 }
 #endif
 
 static VALUE
-pipe_open(VALUE prog, int argc, VALUE *argv,
-    VALUE env, VALUE opthash, const char *mode)
+pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
 {
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
@@ -3690,7 +3689,6 @@ pipe_open(VALUE prog, int argc, VALUE *argv,
 #if defined(HAVE_FORK)
     int status;
     struct popen_arg arg;
-    VALUE env2 = 0;
 #elif defined(_WIN32)
     int openmode = rb_io_mode_modenum(mode);
     const char *exename = NULL;
@@ -3700,15 +3698,30 @@ pipe_open(VALUE prog, int argc, VALUE *argv,
     int fd = -1;
     int write_fd = -1;
     const char *cmd = 0;
+    int argc;
+    VALUE *argv;
 
     if (prog)
         cmd = StringValueCStr(prog);
 
-#if defined(HAVE_FORK)
-    if (prog) {
-        env2 = rb_hash_new();
-        RBASIC(env2)->klass = 0;
+    if (!eargp) {
+        /* fork : IO.popen("-") */
+        argc = 0;
+        argv = 0;
     }
+    else if (eargp->argc) {
+        /* no shell : IO.popen([prog, arg0], arg1, ...) */
+        argc = eargp->argc;
+        argv = eargp->argv;
+    }
+    else {
+        /* with shell : IO.popen(prog) */
+        argc = 0;
+        argv = 0;
+    }
+
+#if defined(HAVE_FORK)
+    arg.execp = eargp;
     arg.modef = modef;
     arg.pair[0] = arg.pair[1] = -1;
     arg.write_pair[0] = arg.write_pair[1] = -1;
@@ -3725,40 +3738,31 @@ pipe_open(VALUE prog, int argc, VALUE *argv,
             rb_sys_fail(cmd);
         }
         UPDATE_MAXFD_PIPE(arg.pair);
-        if (env2) {
-            rb_hash_aset(env2, INT2FIX(0), INT2FIX(arg.write_pair[0]));
-            rb_hash_aset(env2, INT2FIX(1), INT2FIX(arg.pair[1]));
+        if (eargp) {
+            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.write_pair[0]));
+            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
         }
 	break;
       case FMODE_READABLE:
         if (pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
         UPDATE_MAXFD_PIPE(arg.pair);
-        if (env2)
-            rb_hash_aset(env2, INT2FIX(1), INT2FIX(arg.pair[1]));
+        if (eargp)
+            rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
         if (pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
         UPDATE_MAXFD_PIPE(arg.pair);
-        if (env2)
-            rb_hash_aset(env2, INT2FIX(0), INT2FIX(arg.pair[0]));
+        if (eargp)
+            rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.pair[0]));
 	break;
       default:
         rb_sys_fail(cmd);
     }
-    if (prog) {
-        VALUE close_others = ID2SYM(rb_intern("close_others"));
-        if (NIL_P(opthash) || !st_lookup(RHASH_TBL(opthash), close_others, 0))
-            rb_hash_aset(env2, close_others, Qtrue);
-        if (NIL_P(opthash))
-            opthash = env2;
-        else {
-            opthash = rb_assoc_new(env2, opthash);
-            RBASIC(opthash)->klass = 0;
-        }
-        rb_exec_initarg2(prog, argc, argv, env, opthash, &arg.exec);
-	pid = rb_fork(&status, popen_exec, &arg, arg.exec.redirect_fds);
+    if (eargp) {
+        rb_exec_arg_fix(arg.execp);
+	pid = rb_fork(&status, popen_exec, &arg, arg.execp->redirect_fds);
     }
     else {
 	fflush(stdin);		/* is it really needed? */
@@ -3871,9 +3875,10 @@ pipe_open(VALUE prog, int argc, VALUE *argv,
 static VALUE
 pipe_open_v(int argc, VALUE *argv, const char *mode)
 {
-    VALUE prog, env=Qnil, opthash=Qnil;
-    prog = rb_exec_getargs(&argc, &argv, Qfalse, &env, &opthash);
-    return pipe_open(prog, argc, argv, env, opthash, mode);
+    VALUE prog;
+    struct rb_exec_arg earg;
+    prog = rb_exec_arg_init(argc, argv, Qfalse, &earg);
+    return pipe_open(&earg, prog, mode);
 }
 
 static VALUE
@@ -3882,18 +3887,18 @@ pipe_open_s(VALUE prog, const char *mode)
     const char *cmd = RSTRING_PTR(prog);
     int argc = 1;
     VALUE *argv = &prog;
-    VALUE env=Qnil, opthash=Qnil;
+    struct rb_exec_arg earg;
 
     if (RSTRING_LEN(prog) == 1 && cmd[0] == '-') {
 #if !defined(HAVE_FORK)
 	rb_raise(rb_eNotImpError,
 		 "fork() function is unimplemented on this machine");
 #endif
-        return pipe_open(0, 0, 0, Qnil, Qnil, mode);
+        return pipe_open(0, 0, mode);
     }
 
-    rb_exec_getargs(&argc, &argv, Qtrue, &env, &opthash);
-    return pipe_open(prog, 0, 0, Qnil, Qnil, mode);
+    rb_exec_arg_init(argc, argv, Qtrue, &earg);
+    return pipe_open(&earg, prog, mode);
 }
 
 /*

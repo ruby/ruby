@@ -453,9 +453,9 @@ struct rb_exec_arg {
 };
 int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);
-VALUE rb_exec_initarg(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
-VALUE rb_exec_getargs(int *argc_p, VALUE **argv_p, int accept_shell, VALUE *env_ret, VALUE *opthash_ret);
-void rb_exec_initarg2(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, struct rb_exec_arg *e);
+VALUE rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e);
+int rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val);
+void rb_exec_arg_fix(struct rb_exec_arg *e);
 int rb_exec(const struct rb_exec_arg*);
 rb_pid_t rb_fork(int*, int (*)(void*), void*, VALUE);
 VALUE rb_f_exec(int,VALUE*);

@@ -1,3 +1,34 @@
+Mon Apr 28 09:02:43 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_exec_arg_init): declared.
+	  (rb_exec_arg_addopt): delared.
+	  (rb_exec_arg_fix): declared.
+	  (rb_exec_initarg): removed.
+	  (rb_exec_getargs): removed.
+	  (rb_exec_initarg2): removed.
+
+	* io.c (struct popen_arg): make execarg as a pointer.
+	  (popen_exec): follow popen_arg change.
+	  (pipe_open): add eargp argument.  extract argc and argv from eargp.
+	  use rb_exec_arg_addopt to add redirect options.
+	  (pipe_open_v): set up struct rb_exec_arg.
+	  (pipe_open_s): set up struct rb_exec_arg.
+
+	* process.c (rb_exec_arg_addopt): new function extracted from
+	  check_exec_options_i.
+	  (check_exec_options_i): use rb_exec_arg_addopt.
+	  (rb_check_exec_options): opthash is always a hash now.
+	  (rb_exec_getargs): make it static.
+	  (rb_exec_fillarg): renamed from rb_exec_initarg2.  don't set up
+	  redirect_fds.
+	  (rb_exec_arg_init): new function.
+	  (rb_exec_arg_fix): new function.
+	  (rb_f_exec): use rb_exec_arg_init and rb_exec_arg_fix.  use
+	  rb_exec_arg_addopt to set close_others option.
+	  (run_exec_options): make close_others by default.
+	  (rb_spawn_internal): use rb_exec_arg_init and rb_exec_arg_fix.  use
+	  rb_exec_arg_addopt to set close_others option.
+
 Sun Apr 27 18:59:04 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_expt): use f_rational_new2. [ruby-dev:34524]
