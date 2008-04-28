@@ -1041,8 +1041,8 @@ class TestM17N < Test::Unit::TestCase
      mu = method(u("\xc2\xa1"))
      assert_not_equal(me.name, mu.name)
      assert_not_equal(me.inspect, mu.inspect)
-     assert_equal(e("\xc2\xa1"), me.name)
-     assert_equal(u("\xc2\xa1"), mu.name)
+     assert_equal(e("\xc2\xa1"), me.name.to_s)
+     assert_equal(u("\xc2\xa1"), mu.name.to_s)
   end
 
   def test_symbol

@@ -107,7 +107,7 @@ class TestMethod < Test::Unit::TestCase
     def o.foo; end
     m = o.method(:foo)
     assert_equal(o, m.receiver)
-    assert_equal("foo", m.name)
+    assert_equal(:foo, m.name)
     assert_equal(class << o; self; end, m.owner)
   end
 

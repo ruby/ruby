@@ -1,3 +1,8 @@
+Mon Apr 28 11:11:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (method_name): should return symbols instead of strings.
+	  [ruby-dev:34531]
+
 Mon Apr 28 09:02:43 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_exec_arg_init): declared.

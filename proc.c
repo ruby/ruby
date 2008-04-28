@@ -905,7 +905,7 @@ method_receiver(VALUE obj)
 
 /*
  *  call-seq:
- *     meth.name    => string
+ *     meth.name    => symbol
  *  
  *  Returns the name of the method.
  */
@@ -916,7 +916,7 @@ method_name(VALUE obj)
     struct METHOD *data;
 
     Data_Get_Struct(obj, struct METHOD, data);
-    return rb_str_dup(rb_id2str(data->id));
+    return ID2SYM(data->id);
 }
 
 /*
