@@ -1,6 +1,6 @@
 Mon Apr 28 20:24:27 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* rational (nurat_marshal_load): checks the given
+	* rational.c (nurat_marshal_load): checks the given
 	  denominator. [ruby-dev:34536]
 
 Mon Apr 28 14:21:18 2008  Tanaka Akira  <akr@fsij.org>
