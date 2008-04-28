@@ -1,3 +1,8 @@
+Mon Apr 28 12:48:57 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_exec_arg_addopt, rb_exec_arg_addopt): now can specify
+	  close_exec on having no fork environment (but still meaningless).
+
 Mon Apr 28 11:11:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (run_exec_options): don't call FIX2INT for nil.

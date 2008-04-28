@@ -1434,7 +1434,6 @@ rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
             }
             rb_ary_store(options, EXEC_OPTION_UMASK, LONG2NUM(cmask));
         }
-#ifdef HAVE_FORK
         else if (id == rb_intern("close_others")) {
             if (!NIL_P(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {
                 rb_raise(rb_eArgError, "close_others option specified twice");
@@ -1442,7 +1441,6 @@ rb_exec_arg_addopt(struct rb_exec_arg *e, VALUE key, VALUE val)
             val = RTEST(val) ? Qtrue : Qfalse;
             rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, val);
         }
-#endif
         else if (id == rb_intern("in")) {
             key = INT2FIX(0);
             goto redirect;
@@ -1512,11 +1510,9 @@ check_exec_fds(VALUE options)
             }
         }
     }
-#ifdef HAVE_FORK
     if (RTEST(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {
         rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, INT2FIX(maxhint));
     }
-#endif
     return h;
 }
 
