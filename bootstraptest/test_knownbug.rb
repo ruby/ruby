@@ -177,3 +177,9 @@ assert_normal_exit %q{
   r = 0**-1
   r + r
 }, '[ruby-dev:34524]'
+
+assert_normal_exit %q{
+  r = Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
+  r + r
+}, '[ruby-dev:34536]'
+
