@@ -134,6 +134,10 @@ Sat Apr 26 00:47:43 2008  Tanaka Akira  <akr@fsij.org>
 	  (rb_f_system): call rb_spawn_internal with default_close_others as
 	  false.
 
+Sat Apr 26 12:26:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_each): use INT2FIX() for fixnum values.
+
 Fri Apr 25 17:56:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (free_unused_heaps): preserve last used heap segment to

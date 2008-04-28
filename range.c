@@ -421,7 +421,7 @@ range_each(VALUE range)
 	if (!EXCL(range))
 	    lim += 1;
 	for (i = FIX2LONG(beg); i < lim; i++) {
-	    rb_yield(LONG2NUM(i));
+	    rb_yield(LONG2FIX(i));
 	}
     }
     else if (TYPE(beg) == T_STRING) {
