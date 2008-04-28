@@ -1,7 +1,8 @@
 Mon Apr 28 14:21:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (POSFIXABLE): use FIXNUM_MAX+1 instead of
-	  FIXNUM_MAX to make it possible to convert to double accurately.
+	  FIXNUM_MAX to make it possible to convert to double accurately on
+	  environments with 64bit VALUE and 64bit double.
 	  It assumes FLT_RADIX is 2.
 	  fix RubyForge bug #14102.
 
