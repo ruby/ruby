@@ -738,4 +738,45 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_argv0
+    assert_equal(false, system([RUBY, "asdfg"], "-e", "exit false"))
+    assert_equal(true, system([RUBY, "zxcvb"], "-e", "exit true"))
+
+    Process.wait spawn([RUBY, "poiu"], "-e", "exit 4")
+    assert_equal(4, $?.exitstatus)
+
+    assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]).read)
+
+    pid = fork {
+      exec([RUBY, "lkjh"], "-e", "exit 5")
+    }
+    Process.wait pid
+    assert_equal(5, $?.exitstatus)
+  end
+
+  def test_argv0_noarg
+    with_tmpchdir {|d|
+      open("t", "w") {|f| f.print "exit true" }
+      open("f", "w") {|f| f.print "exit false" }
+
+      assert_equal(true, system([RUBY, "qaz"], STDIN=>"t"))
+      assert_equal(false, system([RUBY, "wsx"], STDIN=>"f"))
+
+      Process.wait spawn([RUBY, "edc"], STDIN=>"t")
+      assert($?.success?)
+      Process.wait spawn([RUBY, "rfv"], STDIN=>"f")
+      assert(!$?.success?)
+
+      IO.popen([[RUBY, "tgb"], STDIN=>"t"]) {|io| assert_equal("", io.read) }
+      assert($?.success?)
+      IO.popen([[RUBY, "yhn"], STDIN=>"f"]) {|io| assert_equal("", io.read) }
+      assert(!$?.success?)
+
+      Process.wait fork { exec([RUBY, "ujm"], STDIN=>"t") }
+      assert($?.success?)
+      Process.wait fork { exec([RUBY, "ik,"], STDIN=>"f") }
+      assert(!$?.success?)
+    }
+  end
+
 end
