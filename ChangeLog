@@ -1,3 +1,8 @@
+Wed Apr 30 16:10:18 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* eval_intern.h: speficy the values of the enumeration constants
+	  explicitly.  [ruby-dev:34489]
+
 Wed Apr 30 12:32:39 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (check_exec_redirect_fd): prohibit duplex IO.
