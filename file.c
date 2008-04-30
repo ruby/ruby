@@ -4292,14 +4292,14 @@ file_load_ok(const char *path)
     return eaccess(path, R_OK) == 0;
 }
 
-extern VALUE rb_load_path;
+VALUE rb_get_load_path(void);
 
 int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     char *path, *found;
     char *f = RSTRING_PTR(*filep);
-    VALUE fname;
+    VALUE fname, load_path;
     long i, j;
 
     if (f[0] == '~') {
@@ -4325,15 +4325,15 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 	return 0;
     }
 
-    if (!rb_load_path) return 0;
+    load_path = rb_get_load_path();
+    if (!load_path) return 0;
 
-    Check_Type(rb_load_path, T_ARRAY);
     for (j=0; ext[j]; j++) {
 	fname = rb_str_dup(*filep);
 	rb_str_cat2(fname, ext[j]);
 	OBJ_FREEZE(fname);
-	for (i=0;i<RARRAY_LEN(rb_load_path);i++) {
-	    VALUE str = RARRAY_PTR(rb_load_path)[i];
+	for (i = 0; i < RARRAY_LEN(load_path); i++) {
+	    VALUE str = RARRAY_PTR(load_path)[i];
 
 	    FilePathValue(str);
 	    if (RSTRING_LEN(str) == 0) continue;
@@ -4351,7 +4351,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 VALUE
 rb_find_file(VALUE path)
 {
-    VALUE tmp;
+    VALUE tmp, load_path;
     char *f = StringValueCStr(path);
     char *lpath;
 
@@ -4384,13 +4384,13 @@ rb_find_file(VALUE path)
 	rb_raise(rb_eSecurityError, "loading from non-absolute path %s", f);
     }
 
-    if (rb_load_path) {
+    load_path = rb_get_load_path();
+    if (load_path) {
 	long i;
 
-	Check_Type(rb_load_path, T_ARRAY);
 	tmp = rb_ary_new();
-	for (i=0;i<RARRAY_LEN(rb_load_path);i++) {
-	    VALUE str = RARRAY_PTR(rb_load_path)[i];
+	for (i = 0; i < RARRAY_LEN(load_path); i++) {
+	    VALUE str = RARRAY_PTR(load_path)[i];
 	    FilePathValue(str);
 	    if (RSTRING_LEN(str) > 0) {
 		rb_ary_push(tmp, str);

@@ -150,7 +150,7 @@ usage(const char *name)
 	printf("  %s\n", *p++);
 }
 
-extern VALUE rb_load_path;
+VALUE rb_get_load_path(void);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 #define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
@@ -224,6 +224,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 {
     const char sep = PATH_SEP_CHAR;
     const char *p, *s;
+    VALUE load_path = GET_VM()->load_path;
 
     p = path;
     while (*p) {
@@ -231,7 +232,7 @@ push_include(const char *path, VALUE (*filter)(VALUE))
 	    p++;
 	if (!*p) break;
 	for (s = p; *s && *s != sep; s = CharNext(s));
-	rb_ary_push(rb_load_path, (*filter)(rubylib_mangled_path(p, s - p)));
+	rb_ary_push(load_path, (*filter)(rubylib_mangled_path(p, s - p)));
 	p = s;
     }
 }
@@ -329,6 +330,7 @@ DllMain(HINSTANCE dll, DWORD reason, LPVOID reserved)
 void
 ruby_init_loadpath(void)
 {
+    VALUE load_path;
 #if defined LOAD_RELATIVE
     char libpath[MAXPATHLEN + 1];
     char *p;
@@ -375,7 +377,8 @@ ruby_init_loadpath(void)
 #else
 #define RUBY_RELATIVE(path) (path)
 #endif
-#define incpush(path) rb_ary_push(rb_load_path, rubylib_mangled_path2(path))
+#define incpush(path) rb_ary_push(load_path, rubylib_mangled_path2(path))
+    load_path = GET_VM()->load_path;
 
     if (rb_safe_level() == 0) {
 	ruby_incpush(getenv("RUBYLIB"));
@@ -1011,7 +1014,7 @@ process_options(VALUE arg)
 
     if (rb_safe_level() >= 4) {
 	OBJ_TAINT(rb_argv);
-	OBJ_TAINT(rb_load_path);
+	OBJ_TAINT(GET_VM()->load_path);
     }
 
     if (!opt->e_script) {
@@ -1100,7 +1103,7 @@ process_options(VALUE arg)
 
     if (rb_safe_level() >= 4) {
 	FL_UNSET(rb_argv, FL_TAINT);
-	FL_UNSET(rb_load_path, FL_TAINT);
+	FL_UNSET(GET_VM()->load_path, FL_TAINT);
     }
 
     if (opt->do_check) {

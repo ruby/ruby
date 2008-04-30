@@ -1,3 +1,16 @@
+Wed Apr 30 18:03:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_load_path), vm_core.h (rb_vm_t): moved to VM.
+
+	* load.c (rb_get_load_path): returns absolute load path.
+
+	* load.c (load_path_getter): $LOAD_PATH getter.
+
+	* file.c (rb_find_file_ext, rb_find_file), ruby.c (push_include,
+	  ruby_init_loadpath): use the accessor.
+
+	* vm.c (rb_vm_mark): mark load_path.
+
 Wed Apr 30 17:47:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_search): use local variable.  a patch from wanabe

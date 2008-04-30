@@ -23,11 +23,10 @@ static const char *const loadable_ext[] = {
     0
 };
 
-VALUE rb_load_path;		/* to be moved to VM */
-static VALUE
-get_load_path(void)
+VALUE
+rb_get_load_path(void)
 {
-    VALUE load_path = rb_load_path;
+    VALUE load_path = GET_VM()->load_path;
     VALUE ary = rb_ary_new2(RARRAY_LEN(load_path));
     long i;
 
@@ -35,6 +34,12 @@ get_load_path(void)
 	rb_ary_push(ary, rb_file_expand_path(RARRAY_PTR(load_path)[i], Qnil));
     }
     return ary;
+}
+
+static VALUE
+load_path_getter(ID id, rb_vm_t *vm)
+{
+    return vm->load_path;
 }
 
 static VALUE
@@ -126,7 +131,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	if ((n = RSTRING_LEN(v)) < len) continue;
 	if (strncmp(f, feature, len) != 0) {
 	    if (expanded) continue;
-	    if (!load_path) load_path = get_load_path();
+	    if (!load_path) load_path = rb_get_load_path();
 	    if (!(p = loaded_feature_path(f, n, feature, len, type, load_path)))
 		continue;
 	    f += RSTRING_LEN(p) + 1;
@@ -151,7 +156,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
 	    fs.name = feature;
 	    fs.len = len;
 	    fs.type = type;
-	    fs.load_path = load_path ? load_path : get_load_path();
+	    fs.load_path = load_path ? load_path : rb_get_load_path();
 	    fs.result = 0;
 	    st_foreach(loading_tbl, loaded_feature_path_i, (st_data_t)&fs);
 	    if ((f = fs.result) != 0) {
@@ -670,14 +675,18 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
 void
 Init_load()
 {
-    rb_define_readonly_variable("$:", &rb_load_path);
-    rb_define_readonly_variable("$-I", &rb_load_path);
-    rb_define_readonly_variable("$LOAD_PATH", &rb_load_path);
-    rb_load_path = rb_ary_new();
+    rb_vm_t *vm = GET_VM();
+    const char *var_load_path = "$:";
+    ID id_load_path = rb_intern(var_load_path);
+
+    rb_define_hooked_variable(var_load_path, (VALUE*)GET_VM(), load_path_getter, 0);
+    rb_alias_variable((rb_intern)("$-I"), id_load_path);
+    rb_alias_variable((rb_intern)("$LOAD_PATH"), id_load_path);
+    vm->load_path = rb_ary_new();
 
     rb_define_virtual_variable("$\"", get_loaded_features, 0);
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
-    GET_VM()->loaded_features = rb_ary_new();
+    vm->loaded_features = rb_ary_new();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
