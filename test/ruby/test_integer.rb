@@ -245,7 +245,11 @@ class TestInteger < Test::Unit::TestCase
       }
     }
 
-    assert_equal(0**-1 == 0, false)
+    assert_not_equal(0, begin
+                          0**-1
+                        rescue
+                          nil
+                        end, "[ruby-dev:32084] [ruby-dev:34547]")
   end
 
   def test_not
