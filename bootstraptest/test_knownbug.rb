@@ -174,12 +174,18 @@ assert_equal 'ok', %q{
 }, '[ruby-dev:34492]'
 
 assert_normal_exit %q{
-  r = 0**-1
-  r + r
+  begin
+    r = 0**-1
+    r + r
+  rescue
+  end
 }, '[ruby-dev:34524]'
 
 assert_normal_exit %q{
-  r = Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
-  r + r
+  begin
+    r = Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
+    r + r
+  rescue
+  end
 }, '[ruby-dev:34536]'
 
