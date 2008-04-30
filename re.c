@@ -78,7 +78,7 @@ rb_memcicmp(x, y, len)
     int tmp;
 
     while (len--) {
-	if (tmp = casetable[(unsigned)*p1++] - casetable[(unsigned)*p2++])
+	if ((tmp = casetable[(unsigned)*p1++] - casetable[(unsigned)*p2++]) != 0)
 	    return tmp;
     }
     return 0;
@@ -892,7 +892,7 @@ rb_reg_search(re, str, pos, reverse)
 {
     long result;
     VALUE match;
-    static struct re_registers regs;
+    struct re_registers regs;
     long range;
 
     if (pos > RSTRING(str)->len || pos < 0) {
@@ -914,6 +914,7 @@ rb_reg_search(re, str, pos, reverse)
     else {
 	range = RSTRING(str)->len - pos;
     }
+    MEMZERO(&regs, struct re_registers, 1);
     result = re_search(RREGEXP(re)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       pos, range, &regs);
 
