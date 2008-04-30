@@ -5,6 +5,20 @@ require_relative 'envutil'
 class TestProcess < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
+  def write_file(filename, content)
+    File.open(filename, "w") {|f|
+      f << content
+    }
+  end
+
+  def with_tmpchdir
+    Dir.mktmpdir {|d|
+      Dir.chdir(d) {
+        yield d
+      }
+    }
+  end
+
   def test_rlimit_availability
     begin
       Process.getrlimit(nil)
@@ -25,26 +39,29 @@ class TestProcess < Test::Unit::TestCase
 
   def test_rlimit_nofile
     return unless rlimit_exist?
-    pid = fork {
-      cur_nofile, max_nofile = Process.getrlimit(Process::RLIMIT_NOFILE)
-      result = 1
-      begin
-        Process.setrlimit(Process::RLIMIT_NOFILE, 0, max_nofile)
-      rescue Errno::EINVAL
-        result = 0
-      end
-      if result == 1
-        begin
-          IO.pipe
-        rescue Errno::EMFILE
-         result = 0
-        end
-      end
-      Process.setrlimit(Process::RLIMIT_NOFILE, cur_nofile, max_nofile)
-      exit result
+    with_tmpchdir {
+      write_file 's', <<-"End"
+	cur_nofile, max_nofile = Process.getrlimit(Process::RLIMIT_NOFILE)
+	result = 1
+	begin
+	  Process.setrlimit(Process::RLIMIT_NOFILE, 0, max_nofile)
+	rescue Errno::EINVAL
+	  result = 0
+	end
+	if result == 1
+	  begin
+	    IO.pipe
+	  rescue Errno::EMFILE
+	   result = 0
+	  end
+	end
+	Process.setrlimit(Process::RLIMIT_NOFILE, cur_nofile, max_nofile)
+	exit result
+      End
+      pid = spawn RUBY, "s"
+      Process.wait pid
+      assert_equal(0, $?.to_i, "#{$?}")
     }
-    Process.wait pid
-    assert_equal(0, $?.to_i, "#{$?}")
   end
 
   def test_rlimit_name
@@ -79,14 +96,6 @@ class TestProcess < Test::Unit::TestCase
     assert_raise(Errno::EPERM) { Process.setrlimit(:NOFILE, "INFINITY") }
   end
 
-  def with_tmpchdir
-    Dir.mktmpdir {|d|
-      Dir.chdir(d) {
-        yield d
-      }
-    }
-  end
-
   TRUECOMMAND = [RUBY, '-e', '']
 
   def test_execopts_opts
@@ -113,7 +122,7 @@ class TestProcess < Test::Unit::TestCase
     io.close
 
     assert_raise(ArgumentError) { system(*TRUECOMMAND, :pgroup=>-1) }
-    assert_raise(Errno::EPERM) { Process.wait spawn(*TRUECOMMAND, :pgroup=>1) }
+    assert_raise(Errno::EPERM) { Process.wait spawn(*TRUECOMMAND, :pgroup=>2) }
 
     io1 = IO.popen([RUBY, "-e", "print Process.getpgrp", :pgroup=>true])
     io2 = IO.popen([RUBY, "-e", "print Process.getpgrp", :pgroup=>io1.pid])
@@ -305,7 +314,7 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("ggg\nhhh\n", File.read("out2"))
 
       assert_raise(Errno::ENOENT) {
-        Process.wait Process.spawn("non-existing-command", (3..100).to_a=>["err", File::WRONLY|File::CREAT])
+        Process.wait Process.spawn("non-existing-command", (3..60).to_a=>["err", File::WRONLY|File::CREAT])
       }
       assert_equal("", File.read("err"))
 
@@ -386,9 +395,8 @@ class TestProcess < Test::Unit::TestCase
 
   def test_execopts_exec
     with_tmpchdir {|d|
-      pid = fork {
-        exec "echo aaa", STDOUT=>"foo"
-      }
+      write_file("s", 'exec "echo aaa", STDOUT=>"foo"')
+      pid = spawn RUBY, 's'
       Process.wait pid
       assert_equal("aaa\n", File.read("foo"))
     }
@@ -447,13 +455,16 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("", r.read)
     }
     with_pipe {|r, w|
-      Process.wait fork {
-        exec(RUBY, '-e',
-             'IO.new(ARGV[0].to_i).puts("bu") rescue nil',
-             w.fileno.to_s)
+      with_tmpchdir {|d|
+	write_file("s", <<-"End")
+	  exec(#{RUBY.dump}, '-e',
+	       'IO.new(ARGV[0].to_i).puts("bu") rescue nil',
+	       #{w.fileno.to_s.dump})
+	End
+	Process.wait spawn(RUBY, "s", :close_others=>false)
+	w.close
+	assert_equal("bu\n", r.read)
       }
-      w.close
-      assert_equal("bu\n", r.read)
     }
     with_pipe {|r, w|
       io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('me')"])
@@ -492,7 +503,13 @@ class TestProcess < Test::Unit::TestCase
         assert_equal("bi\n", r.read)
       }
       with_pipe {|r, w|
-        Process.wait fork { exec(RUBY, '-e', 'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("mu")', w.fileno.to_s, :close_others=>true) }
+	write_file("s", <<-"End")
+	  exec(#{RUBY.dump}, '-e',
+	       'STDERR.reopen("err", "w"); IO.new(ARGV[0].to_i).puts("mu")',
+	       #{w.fileno.to_s.dump},
+	       :close_others=>true)
+	End
+        Process.wait spawn(RUBY, "s", :close_others=>false)
         w.close
         assert_equal("", r.read)
         assert_not_equal("", File.read("err"))
@@ -520,24 +537,6 @@ class TestProcess < Test::Unit::TestCase
         assert_equal("", errmsg)
       }
 
-    }
-  end
-
-  def test_execopts_redirect_self
-    with_pipe {|r, w|
-      w << "haha\n"
-      w.close
-      r.close_on_exec = true
-      IO.popen([RUBY, "-e", "print IO.new(#{r.fileno}).read", r.fileno=>r.fileno, :close_others=>false]) {|io|
-        assert_equal("haha\n", io.read)
-      }
-    }
-  end
-
-  def test_execopts_duplex_io
-    IO.popen("#{RUBY} -e ''", "r+") {|duplex|
-      assert_raise(ArgumentError) { system("#{RUBY} -e ''", duplex=>STDOUT) }
-      assert_raise(ArgumentError) { system("#{RUBY} -e ''", STDOUT=>duplex) }
     }
   end
 
@@ -572,25 +571,23 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_exec_noshell
-    str = "echo non existing command name which contains spaces"
-    with_pipe {|r, w|
-      pid = fork {
-        STDOUT.reopen(w)
-        STDERR.reopen(w)
-        begin
-          exec [str, str]
-        rescue Errno::ENOENT
-          w.write "Errno::ENOENT success"
-        end
+    with_tmpchdir {|d|
+      with_pipe {|r, w|
+	write_file("s", <<-"End")
+	  str = "echo non existing command name which contains spaces"
+	  w = IO.new(#{w.fileno})
+	  STDOUT.reopen(w)
+	  STDERR.reopen(w)
+	  begin
+	    exec [str, str]
+	  rescue Errno::ENOENT
+	    w.write "Errno::ENOENT success"
+	  end
+	End
+	system(RUBY, "s", :close_others=>false)
+	w.close
+	assert_equal("Errno::ENOENT success", r.read)
       }
-      w.close
-      assert_equal("Errno::ENOENT success", r.read)
-    }
-  end
-
-  def write_file(filename, content)
-    File.open(filename, "w") {|f|
-      f << content
     }
   end
 
@@ -652,10 +649,11 @@ class TestProcess < Test::Unit::TestCase
         File.open("result", "w") {|t| t << "hehe pid=#{$$} ppid=#{Process.ppid}" }
         exit 6
       End
-      str = "#{RUBY} script"
-      pid = fork {
-        exec str
-      }
+      write_file("s", <<-"End")
+	ruby = #{RUBY.dump}
+	exec "\#{ruby} script"
+      End
+      pid = spawn(RUBY, "s")
       Process.wait pid
       status = $?
       assert_equal(pid, status.pid)
@@ -741,9 +739,11 @@ class TestProcess < Test::Unit::TestCase
         File.open("result2", "w") {|t| t << "tiku pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
-      pid = fork {
-        exec("#{RUBY} script1; #{RUBY} script2")
-      }
+      write_file("s", <<-"End")
+	ruby = #{RUBY.dump}
+	exec("\#{ruby} script1; \#{ruby} script2")
+      End
+      pid = spawn RUBY, "s"
       Process.wait pid
       status = $?
       assert(status.exited?)
@@ -753,47 +753,6 @@ class TestProcess < Test::Unit::TestCase
       assert_match(/\Atiki pid=\d+ ppid=\d+\z/, result1)
       assert_match(/\Atiku pid=\d+ ppid=\d+\z/, result2)
       assert_not_equal(result1[/\d+/].to_i, status.pid)
-    }
-  end
-
-  def test_argv0
-    assert_equal(false, system([RUBY, "asdfg"], "-e", "exit false"))
-    assert_equal(true, system([RUBY, "zxcvb"], "-e", "exit true"))
-
-    Process.wait spawn([RUBY, "poiu"], "-e", "exit 4")
-    assert_equal(4, $?.exitstatus)
-
-    assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]).read)
-
-    pid = fork {
-      exec([RUBY, "lkjh"], "-e", "exit 5")
-    }
-    Process.wait pid
-    assert_equal(5, $?.exitstatus)
-  end
-
-  def test_argv0_noarg
-    with_tmpchdir {|d|
-      open("t", "w") {|f| f.print "exit true" }
-      open("f", "w") {|f| f.print "exit false" }
-
-      assert_equal(true, system([RUBY, "qaz"], STDIN=>"t"))
-      assert_equal(false, system([RUBY, "wsx"], STDIN=>"f"))
-
-      Process.wait spawn([RUBY, "edc"], STDIN=>"t")
-      assert($?.success?)
-      Process.wait spawn([RUBY, "rfv"], STDIN=>"f")
-      assert(!$?.success?)
-
-      IO.popen([[RUBY, "tgb"], STDIN=>"t"]) {|io| assert_equal("", io.read) }
-      assert($?.success?)
-      IO.popen([[RUBY, "yhn"], STDIN=>"f"]) {|io| assert_equal("", io.read) }
-      assert(!$?.success?)
-
-      Process.wait fork { exec([RUBY, "ujm"], STDIN=>"t") }
-      assert($?.success?)
-      Process.wait fork { exec([RUBY, "ik,"], STDIN=>"f") }
-      assert(!$?.success?)
     }
   end
 
