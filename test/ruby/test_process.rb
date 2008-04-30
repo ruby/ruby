@@ -19,6 +19,12 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def run_in_child(str) # should be called in a temporary directory
+    write_file("test-script", str)
+    Process.wait spawn(RUBY, "test-script")
+    $?
+  end
+
   def test_rlimit_availability
     begin
       Process.getrlimit(nil)
@@ -540,6 +546,24 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_redirect_self
+    with_pipe {|r, w|
+      w << "haha\n"
+      w.close
+      r.close_on_exec = true
+      IO.popen([RUBY, "-e", "print IO.new(#{r.fileno}).read", r.fileno=>r.fileno, :close_others=>false]) {|io|
+        assert_equal("haha\n", io.read)
+      }
+    }
+  end
+
+  def test_execopts_duplex_io
+    IO.popen("#{RUBY} -e ''", "r+") {|duplex|
+      assert_raise(ArgumentError) { system("#{RUBY} -e ''", duplex=>STDOUT) }
+      assert_raise(ArgumentError) { system("#{RUBY} -e ''", STDOUT=>duplex) }
+    }
+  end
+
   def test_execopts_modification
     h = {}
     Process.wait spawn(*TRUECOMMAND, h)
@@ -753,6 +777,50 @@ class TestProcess < Test::Unit::TestCase
       assert_match(/\Atiki pid=\d+ ppid=\d+\z/, result1)
       assert_match(/\Atiku pid=\d+ ppid=\d+\z/, result2)
       assert_not_equal(result1[/\d+/].to_i, status.pid)
+    }
+  end
+
+  def test_argv0
+    with_tmpchdir {|d|
+      assert_equal(false, system([RUBY, "asdfg"], "-e", "exit false"))
+      assert_equal(true, system([RUBY, "zxcvb"], "-e", "exit true"))
+
+      Process.wait spawn([RUBY, "poiu"], "-e", "exit 4")
+      assert_equal(4, $?.exitstatus)
+
+      assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]).read)
+
+      write_file("s", <<-"End")
+        exec([#{RUBY.dump}, "lkjh"], "-e", "exit 5")
+      End
+      pid = spawn RUBY, "s"
+      Process.wait pid
+      assert_equal(5, $?.exitstatus)
+    }
+  end
+
+  def test_argv0_noarg
+    with_tmpchdir {|d|
+      open("t", "w") {|f| f.print "exit true" }
+      open("f", "w") {|f| f.print "exit false" }
+
+      assert_equal(true, system([RUBY, "qaz"], STDIN=>"t"))
+      assert_equal(false, system([RUBY, "wsx"], STDIN=>"f"))
+
+      Process.wait spawn([RUBY, "edc"], STDIN=>"t")
+      assert($?.success?)
+      Process.wait spawn([RUBY, "rfv"], STDIN=>"f")
+      assert(!$?.success?)
+
+      IO.popen([[RUBY, "tgb"], STDIN=>"t"]) {|io| assert_equal("", io.read) }
+      assert($?.success?)
+      IO.popen([[RUBY, "yhn"], STDIN=>"f"]) {|io| assert_equal("", io.read) }
+      assert(!$?.success?)
+
+      status = run_in_child "exec([#{RUBY.dump}, 'ujm'], STDIN=>'t')"
+      assert(status.success?)
+      status = run_in_child "exec([#{RUBY.dump}, 'ik,'], STDIN=>'f')"
+      assert(!status.success?)
     }
   end
 
