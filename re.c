@@ -1255,7 +1255,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 {
     int result;
     VALUE match;
-    static struct re_registers regs;
+    struct re_registers regs;
     char *range = RSTRING_PTR(str);
     regex_t *reg0 = RREGEXP(re)->ptr, *reg;
     int busy = FL_TEST(re, REG_BUSY);
@@ -1271,6 +1271,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     if (!reverse) {
 	range += RSTRING_LEN(str);
     }
+    MEMZERO(&regs, struct re_registers, 1);
     result = onig_search(reg,
 			 (UChar*)(RSTRING_PTR(str)),
 			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
