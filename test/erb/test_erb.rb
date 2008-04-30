@@ -44,15 +44,15 @@ class TestERBCore < Test::Unit::TestCase
     @erb = ERB
   end
 
-  def test_01
-    _test_01(nil)
-    _test_01(0)
-    _test_01(1)
-    _test_01(2)
-    _test_01(3)
+  def test_core
+    _test_core(nil)
+    _test_core(0)
+    _test_core(1)
+    _test_core(2)
+    _test_core(3)
   end
 
-  def _test_01(safe)
+  def _test_core(safe)
     erb = @erb.new("hello")
     assert_equal(erb.result, "hello")
 
@@ -157,14 +157,14 @@ EOS
     assert_equal(ans, erb.result)
   end
 
-  def test_02_safe_04
+  def test_safe_04
     erb = @erb.new('<%=$SAFE%>', 4)
     assert_equal(erb.result(TOPLEVEL_BINDING.taint), '4')
   end
 
   class Foo; end
 
-  def test_03_def_class
+  def test_def_class
     erb = @erb.new('hello')
     cls = erb.def_class
     assert_equal(Object, cls.superclass)
@@ -177,7 +177,7 @@ EOS
     assert(cls.new.respond_to?('erb'))
   end
 
-  def test_04_percent
+  def test_percent
     src = <<EOS
 %n = 1
 <%= n%>
@@ -220,7 +220,7 @@ EOS
 
   class Bar; end
 
-  def test_05_def_method
+  def test_def_method
     assert(! Bar.new.respond_to?('hello'))
     Bar.module_eval do
       extend ERB::DefMethod
@@ -237,7 +237,7 @@ EOS
     assert(Bar.new.respond_to?('hello_world'))    
   end
 
-  def test_06_escape
+  def test_escape
     src = <<EOS
 1.<%% : <%="<%%"%>
 2.%%> : <%="%%>"%>
@@ -274,7 +274,7 @@ EOS
     assert_equal(ans, ERB.new(src, nil, '%').result)
   end
 
-  def test_07_keep_lineno
+  def test_keep_lineno
     src = <<EOS
 Hello, 
 % x = "World"
@@ -378,7 +378,7 @@ EOS
     end
   end
 
-  def test_08_explicit
+  def test_explicit
     src = <<EOS
 <% x = %w(hello world) -%>
 NotSkip <%- y = x -%> NotSkip
@@ -409,5 +409,13 @@ KeepNewLine
 EOS
    assert_equal(ans, ERB.new(src, nil, '-').result)
    assert_equal(ans, ERB.new(src, nil, '-%').result)
+  end
+
+  def test_url_encode
+    assert_equal("Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide",
+                 ERB::Util.url_encode("Programming Ruby:  The Pragmatic Programmer's Guide"))
+
+    assert_equal("%A5%B5%A5%F3%A5%D7%A5%EB",
+                 ERB::Util.url_encode("\xA5\xB5\xA5\xF3\xA5\xD7\xA5\xEB".force_encoding("EUC-JP")))
   end
 end
