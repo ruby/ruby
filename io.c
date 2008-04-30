@@ -3761,7 +3761,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
         rb_sys_fail(cmd);
     }
     if (eargp) {
-        rb_exec_arg_fix(arg.execp);
+        rb_exec_arg_fixup(arg.execp);
 	pid = rb_fork(&status, popen_exec, &arg, arg.execp->redirect_fds);
     }
     else {

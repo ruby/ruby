@@ -1250,6 +1250,8 @@ check_exec_redirect_fd(VALUE v)
     else if (!NIL_P(tmp = rb_check_convert_type(v, T_FILE, "IO", "to_io"))) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
+        if (fptr->tied_io_for_writing)
+            rb_raise(rb_eArgError, "duplex IO redirection");
         fd = fptr->fd;
     }
     else {
@@ -1510,7 +1512,7 @@ check_exec_fds(VALUE options)
             }
         }
     }
-    if (RTEST(rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS))) {
+    if (rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS) != Qfalse) {
         rb_ary_store(options, EXEC_OPTION_CLOSE_OTHERS, INT2FIX(maxhint));
     }
     return h;
@@ -1652,7 +1654,7 @@ rb_exec_arg_init(int argc, VALUE *argv, int accept_shell, struct rb_exec_arg *e)
 }
 
 void
-rb_exec_arg_fix(struct rb_exec_arg *e)
+rb_exec_arg_fixup(struct rb_exec_arg *e)
 {
     e->redirect_fds = check_exec_fds(e->options);
 }
@@ -1697,7 +1699,7 @@ rb_f_exec(int argc, VALUE *argv)
     rb_exec_arg_init(argc, argv, Qtrue, &earg);
     if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS)))
         rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), Qfalse);
-    rb_exec_arg_fix(&earg);
+    rb_exec_arg_fixup(&earg);
 
     rb_exec(&earg);
     rb_sys_fail(earg.prog);
@@ -2047,7 +2049,7 @@ run_exec_options(const struct rb_exec_arg *e)
 #ifdef HAVE_FORK
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE_OTHERS);
     if (obj != Qfalse) {
-        rb_close_before_exec(3, FIXNUM_P(obj) ? FIX2LONG(obj) : 0, e->redirect_fds);
+        rb_close_before_exec(3, FIX2LONG(obj), e->redirect_fds);
     }
 #endif
 
@@ -2547,7 +2549,7 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
         VALUE v = default_close_others ? Qtrue : Qfalse;
         rb_exec_arg_addopt(&earg, ID2SYM(rb_intern("close_others")), v);
     }
-    rb_exec_arg_fix(&earg);
+    rb_exec_arg_fixup(&earg);
 
 #if defined HAVE_FORK
     status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds);
@@ -2746,6 +2748,8 @@ rb_f_system(int argc, VALUE *argv)
  *  spawn closes all non-standard unspecified descriptors by default.
  *  The "standard" descriptors are 0, 1 and 2.
  *  This behavior is specified by :close_others option.
+ *  :close_others doesn't affect the standard descriptors which are
+ *  closed only if :close is specified explicitly.
  *
  *    pid = spawn(command, :close_others=>true)  # close 3,4,5,... (default)
  *    pid = spawn(command, :close_others=>false) # don't close 3,4,5,...

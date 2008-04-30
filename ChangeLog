@@ -1,3 +1,10 @@
+Wed Apr 30 12:32:39 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (check_exec_redirect_fd): prohibit duplex IO.
+	  (check_exec_fds): record maxhint even if close_others is not
+	  specified.
+	  (rb_exec_arg_fixup): renamed from rb_exec_arg_fix.
+
 Mon Apr 28 20:24:27 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_marshal_load): checks the given

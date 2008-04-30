@@ -523,6 +523,24 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_execopts_redirect_self
+    with_pipe {|r, w|
+      w << "haha\n"
+      w.close
+      r.close_on_exec = true
+      IO.popen([RUBY, "-e", "print IO.new(#{r.fileno}).read", r.fileno=>r.fileno, :close_others=>false]) {|io|
+        assert_equal("haha\n", io.read)
+      }
+    }
+  end
+
+  def test_execopts_duplex_io
+    IO.popen("#{RUBY} -e ''", "r+") {|duplex|
+      assert_raise(ArgumentError) { system("#{RUBY} -e ''", duplex=>STDOUT) }
+      assert_raise(ArgumentError) { system("#{RUBY} -e ''", STDOUT=>duplex) }
+    }
+  end
+
   def test_execopts_modification
     h = {}
     Process.wait spawn(*TRUECOMMAND, h)
