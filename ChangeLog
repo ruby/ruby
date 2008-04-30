@@ -1,3 +1,9 @@
+Wed Apr 30 20:11:36 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/net/telnet.rb:  Fixing a bug where line endings would not be properly
+	  escaped when the two character ending was broken up into separate TCP
+	  packets.  Issue reported and patched by Brian Candler.
+
 Wed Apr 30 18:03:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_load_path), vm_core.h (rb_vm_t): moved to VM.
