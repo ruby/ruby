@@ -307,7 +307,7 @@ range_step(argc, argv, range)
     VALUE *argv;
     VALUE range;
 {
-    VALUE b, e, step;
+    VALUE b, e, step, tmp;
     long unit;
 
     RETURN_ENUMERATOR(range, argc, argv);
@@ -320,11 +320,13 @@ range_step(argc, argv, range)
     }
     else {
 	rb_scan_args(argc, argv, "01", &step);
-	if (FIXNUM_P(step)) {
+	tmp = rb_check_to_integer(step, "to_int");
+	if (!NIL_P(tmp)) {
+	    step = tmp;
 	    unit = NUM2LONG(step);
 	}
 	else {
-	    VALUE tmp = rb_funcall(rb_funcall(b, '+', 1, step), '-', 1, b);
+	    tmp = rb_funcall(rb_funcall(b, '+', 1, step), '-', 1, b);
 	    unit = rb_cmpint(tmp, step, INT2FIX(0));
 	}
     }
