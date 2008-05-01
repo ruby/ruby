@@ -1821,7 +1821,7 @@ rb_big_divide(VALUE x, VALUE y, ID op)
 		return DOUBLE2NUM(div);
 	    }
 	    else {
-		return LONG2NUM((long)div);
+		return rb_dbl2big(div);
 	    }
 	}
 

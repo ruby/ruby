@@ -2249,7 +2249,7 @@ fix_fdiv(VALUE x, VALUE y)
 }
 
 static VALUE
-fix_divide(VALUE x, VALUE y, int flo)
+fix_divide(VALUE x, VALUE y, ID op)
 {
     if (FIXNUM_P(y)) {
 	long div;
@@ -2262,15 +2262,17 @@ fix_divide(VALUE x, VALUE y, int flo)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_div(x, y);
       case T_FLOAT:
-	if (flo) {
-	    return DOUBLE2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
-	}
-	else {
-	    long div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
-	    return LONG2NUM(div);
+	{
+	    double div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
+	    if (op == '/') {
+		return DOUBLE2NUM(div);
+	    }
+	    else {
+		return rb_dbl2big(div);
+	    }
 	}
       default:
-	return rb_num_coerce_bin(x, y, flo ? '/' : rb_intern("div"));
+	return rb_num_coerce_bin(x, y, op);
     }
 }
 
@@ -2286,7 +2288,7 @@ fix_divide(VALUE x, VALUE y, int flo)
 static VALUE
 fix_div(VALUE x, VALUE y)
 {
-    return fix_divide(x, y, Qtrue);
+    return fix_divide(x, y, '/');
 }
 
 /*
@@ -2299,7 +2301,7 @@ fix_div(VALUE x, VALUE y)
 static VALUE
 fix_idiv(VALUE x, VALUE y)
 {
-    return fix_divide(x, y, Qfalse);
+    return fix_divide(x, y, rb_intern("div"));
 }
 
 /*

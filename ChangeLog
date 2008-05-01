@@ -1,3 +1,8 @@
+Thu May  1 23:59:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_divide), numeric.c (fix_divide): check for result
+	  domain.  [ruby-dev:34559]
+
 Thu May  1 23:43:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_step): check if step can be converted to an integer.
