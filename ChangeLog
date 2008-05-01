@@ -1,6 +1,6 @@
 Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
-  Merged 16257 from trunk.
+	Merged 16257 from trunk.
 
 	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
 	  can be activated to have net/telnet raise EOFError exceptions when the 
