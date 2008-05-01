@@ -1,3 +1,11 @@
+Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+  Merged 16257 from trunk.
+
+	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
+	  can be activated to have net/telnet raise EOFError exceptions when the 
+	  remote connection is closed.  The default behavior remains unchanged though.
+
 Thu May  1 23:43:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_step): check if step can be converted to an integer.
