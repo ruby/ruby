@@ -1,3 +1,8 @@
+Thu May  1 23:35:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_step): allow float step bigger than zero but less
+	  than one.  [ruby-dev:34557]
+
 Thu May  1 23:20:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_divide): return an integer for idiv.

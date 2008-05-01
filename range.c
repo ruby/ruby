@@ -312,7 +312,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    unit = NUM2LONG(step);
 	}
 	else {
-	    VALUE tmp = rb_to_int(step);
+	    VALUE tmp = rb_funcall(rb_funcall(b, '+', 1, step), '-', 1, b);
 	    unit = rb_cmpint(tmp, step, INT2FIX(0));
 	}
     }
