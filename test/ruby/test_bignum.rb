@@ -236,6 +236,7 @@ class TestBignum < Test::Unit::TestCase
   def test_div
     assert_equal(T32.to_f, T32 / 1.0)
     assert_raise(TypeError) { T32 / "foo" }
+    assert_equal(0x20000000, 0x40000001.div(2.0), "[ruby-dev:34553]")
   end
 
   def test_idiv
