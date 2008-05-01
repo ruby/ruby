@@ -671,6 +671,9 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>2, 3=>4}, Hash[[[1,2],[3,4]]])
     assert_raise(ArgumentError) { Hash[0, 1, 2] }
     assert_equal({1=>2, 3=>4}, Hash[1,2,3,4])
+    o = Object.new
+    def o.to_hash() {1=>2} end
+    assert_equal({1=>2}, Hash[o], "[ruby-dev:34555]")
   end
 
   def test_rehash2
