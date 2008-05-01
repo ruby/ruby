@@ -2184,6 +2184,7 @@ env_reject_bang(VALUE ehash)
 static VALUE
 env_delete_if(VALUE ehash)
 {
+    RETURN_ENUMERATOR(ehash, 0, 0);
     env_reject_bang(ehash);
     return envtbl;
 }

@@ -1,3 +1,8 @@
+Thu May  1 16:10:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_delete_if): return enumerator if no block given.
+	  [ruby-dev:34554]
+
 Wed Apr 30 21:36:40 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (url_encode): [ruby-dev:34497] ERB::Util#url_encode
