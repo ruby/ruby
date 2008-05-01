@@ -1,3 +1,8 @@
+Thu May  1 20:47:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_s_create): should access converted hash value.
+	  [ruby-dev:34555]
+
 Thu May  1 20:31:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_parse.rb (TestParse::test_void_expr_stmts_value):
