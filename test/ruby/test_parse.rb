@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'stringio'
 
 class TestParse < Test::Unit::TestCase
   def setup
@@ -762,6 +763,8 @@ x = __ENCODING__
     # This test checks if void contexts are warned correctly.
     # Thus, warnings MUST NOT be suppressed.
     $VERBOSE = true
+    stderr = $stderr
+    $stderr = StringIO.new("")
     x = 1
     assert_nil eval("x; nil")
     assert_nil eval("1+1; nil")
@@ -785,6 +788,8 @@ x = __ENCODING__
         x = def o.foo; end
       END
     end
+    assert_equal($stderr.string.lines.to_a.size, 14)
+    $stderr = stderr
   end
 
   def test_assign_in_conditional

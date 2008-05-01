@@ -1,3 +1,11 @@
+Thu May  1 20:31:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_parse.rb (TestParse::test_void_expr_stmts_value):
+	  shut up warning.
+
+	* rational.c (nurat_to_f): no need for forceful warning when
+	  converting to float.  overflow is a nature of float values.
+
 Thu May  1 16:10:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_delete_if): return enumerator if no block given.

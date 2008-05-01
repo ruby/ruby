@@ -250,10 +250,6 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(["foo", "bar", "baz"], m.values_at(1, 2, 3))
   end
 
-  def test_match_select
-    assert_equal(["ab", "a", "b"], /(.)(.)/.match("ab").select {|v| true }, "[ruby-dev:34556]")
-  end
-
   def test_match_string
     m = /(?<x>b..)/.match("foobarbaz")
     assert_equal("foobarbaz", m.string)

@@ -1130,7 +1130,7 @@ nurat_to_f(VALUE self)
     e = (int)(ne - de);
 
     if ((e > DBL_MAX_EXP) || (e < DBL_MIN_EXP)) {
-	rb_warn("%s out of Float range", rb_obj_classname(self));
+	rb_warning("%s out of Float range", rb_obj_classname(self));
 	return rb_float_new(e > 0 ? HUGE_VAL : 0.0);
     }
 
@@ -1140,7 +1140,7 @@ nurat_to_f(VALUE self)
     f = ldexp(f, e);
 
     if (isinf(f) || isnan(f))
-	rb_warn("%s out of Float range", rb_obj_classname(self));
+	rb_warning("%s out of Float range", rb_obj_classname(self));
 
     return rb_float_new(f);
 }
