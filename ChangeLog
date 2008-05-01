@@ -1,3 +1,8 @@
+Thu May  1 23:35:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_step): allow float step bigger than zero but less
+	  than one.  [ruby-dev:34557]
+
 Wed Apr 30 20:22:40 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 16241 from trunk.

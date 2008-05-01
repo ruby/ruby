@@ -314,16 +314,19 @@ range_step(argc, argv, range)
 
     b = rb_ivar_get(range, id_beg);
     e = rb_ivar_get(range, id_end);
-    if (rb_scan_args(argc, argv, "01", &step) == 0) {
+    if (argc == 0) {
 	step = INT2FIX(1);
 	unit = 1;
     }
-    else if (FIXNUM_P(step)) {
-	unit = NUM2LONG(step);
-    }
     else {
-	VALUE tmp = rb_to_int(step);
-	unit = rb_cmpint(tmp, step, INT2FIX(0));
+	rb_scan_args(argc, argv, "01", &step);
+	if (FIXNUM_P(step)) {
+	    unit = NUM2LONG(step);
+	}
+	else {
+	    VALUE tmp = rb_funcall(rb_funcall(b, '+', 1, step), '-', 1, b);
+	    unit = rb_cmpint(tmp, step, INT2FIX(0));
+	}
     }
     if (unit < 0) {
 	rb_raise(rb_eArgError, "step can't be negative");
