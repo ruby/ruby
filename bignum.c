@@ -1815,7 +1815,15 @@ rb_big_divide(VALUE x, VALUE y, ID op)
 	break;
 
       case T_FLOAT:
-	return DOUBLE2NUM(rb_big2dbl(x) / RFLOAT_VALUE(y));
+	{
+	    double div = rb_big2dbl(x) / RFLOAT_VALUE(y);
+	    if (op == '/') {
+		return DOUBLE2NUM(div);
+	    }
+	    else {
+		return LONG2NUM((long)div);
+	    }
+	}
 
       default:
 	return rb_num_coerce_bin(x, y, op);
