@@ -1,3 +1,9 @@
+Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
+	  can be activated to have net/telnet raise EOFError exceptions when the 
+	  remote connection is closed.  The default behavior remains unchanged though.
+
 Thu May  1 23:59:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big_divide), numeric.c (fix_divide): check for result
