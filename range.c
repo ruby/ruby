@@ -306,6 +306,9 @@ range_step(int argc, VALUE *argv, VALUE range)
     }
     else {
 	rb_scan_args(argc, argv, "01", &step);
+	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
+	    step = rb_to_int(step);
+	}
 	if (rb_funcall(step, '<', 1, INT2FIX(0))) {
 	    rb_raise(rb_eArgError, "step can't be negative");
 	}
