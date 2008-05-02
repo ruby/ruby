@@ -189,3 +189,10 @@ assert_normal_exit %q{
   end
 }, '[ruby-dev:34536]'
 
+
+assert_normal_exit %q{
+  begin
+    Struct.new(0)
+  rescue
+  end
+}
