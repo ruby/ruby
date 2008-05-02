@@ -1,3 +1,8 @@
+Fri May  2 16:10:57 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): do not forcefully convert steps into
+	  integers.  [ruby-dev:34571]
+
 Fri May  2 14:52:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el: move fontifying code from hook.  a patch from

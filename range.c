@@ -296,7 +296,6 @@ static VALUE
 range_step(int argc, VALUE *argv, VALUE range)
 {
     VALUE b, e, step, tmp;
-    long unit;
 
     RETURN_ENUMERATOR(range, argc, argv);
 
@@ -304,33 +303,20 @@ range_step(int argc, VALUE *argv, VALUE range)
     e = RANGE_END(range);
     if (argc == 0) {
 	step = INT2FIX(1);
-	unit = 1;
     }
     else {
 	rb_scan_args(argc, argv, "01", &step);
-	tmp = rb_check_to_integer(step, "to_int");
-	if (!NIL_P(tmp)) {
-	    if (FIXNUM_P(tmp))
-		unit = FIX2LONG(tmp);
-	    else 
-		unit = rb_cmpint(tmp, step, INT2FIX(0));
-	    step = tmp;
+	if (rb_funcall(step, '<', 1, INT2FIX(0))) {
+	    rb_raise(rb_eArgError, "step can't be negative");
 	}
-	else {
-	    tmp = rb_funcall(rb_funcall(b, '+', 1, step), '-', 1, b);
-	    unit = rb_cmpint(tmp, step, INT2FIX(0));
+	else if (!rb_funcall(step, '>', 1, INT2FIX(0))) {
+	    rb_raise(rb_eArgError, "step can't be 0");
 	}
-    }
-    if (unit < 0) {
-	rb_raise(rb_eArgError, "step can't be negative");
-    }
-    if (unit == 0) {
-	rb_raise(rb_eArgError, "step can't be 0");
     }
 
     if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
 	long end = FIX2LONG(e);
-	long i;
+	long i, unit = FIX2LONG(step);
 
 	if (!EXCL(range))
 	    end += 1;
