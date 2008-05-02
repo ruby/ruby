@@ -1,3 +1,8 @@
+Fri May  2 23:59:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (internal_read_func, internal_write_func): split from
+	  internal_io_func.
+
 Fri May  2 23:55:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* variable.c (rb_define_hooked_variable): guard *var from GC to

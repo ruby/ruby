@@ -512,19 +512,20 @@ struct io_internal_struct {
     int fd;
     void *buf;
     size_t capa;
-    int is_read;
 };
 
 static VALUE
-internal_io_func(void *ptr)
+internal_read_func(void *ptr)
 {
     struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
-    if (iis->is_read) {
-	return read(iis->fd, iis->buf, iis->capa);
-    }
-    else {
-	return write(iis->fd, iis->buf, iis->capa);
-    }
+    return read(iis->fd, iis->buf, iis->capa);
+}
+
+static VALUE
+internal_write_func(void *ptr)
+{
+    struct io_internal_struct *iis = (struct io_internal_struct*)ptr;
+    return write(iis->fd, iis->buf, iis->capa);
 }
 
 static int
@@ -534,9 +535,8 @@ rb_read_internal(int fd, void *buf, size_t count)
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
-    iis.is_read = 1;
 
-    return rb_thread_blocking_region(internal_io_func, &iis, RB_UBF_DFL, 0);
+    return rb_thread_blocking_region(internal_read_func, &iis, RB_UBF_DFL, 0);
 }
 
 static int
@@ -546,9 +546,8 @@ rb_write_internal(int fd, void *buf, size_t count)
     iis.fd = fd;
     iis.buf = buf;
     iis.capa = count;
-    iis.is_read = 0;
 
-    return rb_thread_blocking_region(internal_io_func, &iis, RB_UBF_DFL, 0);
+    return rb_thread_blocking_region(internal_write_func, &iis, RB_UBF_DFL, 0);
 }
 
 static int
