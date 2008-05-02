@@ -1635,7 +1635,6 @@ match_entry(VALUE match, long n)
  *  call-seq:
  *
  *     mtch.values_at([index]*)   => array
- *     mtch.select([index]*)   => array
  *
  *  Uses each <i>index</i> to access the matching values, returning an array of
  *  the corresponding matches.
@@ -3355,7 +3354,6 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "captures", match_captures, 0);
     rb_define_method(rb_cMatch, "values_at", match_values_at, -1);
-    rb_define_method(rb_cMatch, "select", match_values_at, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
     rb_define_method(rb_cMatch, "to_s", match_to_s, 0);
