@@ -147,6 +147,20 @@ class TestRange < Test::Unit::TestCase
     a = []
     (o1...o2).step(1) {|x| a << x }
     assert_equal([o1], a)
+
+    assert_nothing_raised("[ruby-dev:34557]") { (0..2).step(0.5) {|x| } }
+
+    a = []
+    (0..2).step(0.5) {|x| a << x }
+    assert_equal([0, 0.5, 1.0, 1.5, 2.0], a)
+
+    a = []
+    (0x40000000..0x40000002).step(0.5) {|x| a << x }
+    assert_equal([1073741824, 1073741824.5, 1073741825.0, 1073741825.5, 1073741826], a)
+
+    o = Object.new
+    def o.to_int() 1 end
+    assert_nothing_raised("[ruby-dev:34558]") { (0..2).step(o) {|x| } }
   end
 
   def test_each
