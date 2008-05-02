@@ -200,3 +200,12 @@ assert_normal_exit %q{
   defined? C && 0
 }
 
+assert_normal_exit %q{
+  class C
+    def m
+      defined?(super())
+    end
+  end
+  C.new.m
+}
+
