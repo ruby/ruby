@@ -310,8 +310,11 @@ range_step(int argc, VALUE *argv, VALUE range)
 	rb_scan_args(argc, argv, "01", &step);
 	tmp = rb_check_to_integer(step, "to_int");
 	if (!NIL_P(tmp)) {
+	    if (FIXNUM_P(tmp))
+		unit = FIX2LONG(tmp);
+	    else 
+		unit = rb_cmpint(tmp, step, INT2FIX(0));
 	    step = tmp;
-	    unit = NUM2LONG(step);
 	}
 	else {
 	    tmp = rb_funcall(rb_funcall(b, '+', 1, step), '-', 1, b);

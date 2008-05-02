@@ -1,3 +1,7 @@
+Fri May  2 14:10:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): step may be bignum.
+
 Fri May  2 13:52:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (Init_Regexp): remove MatchData#select.  [ruby-dev:34563]
