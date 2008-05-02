@@ -189,10 +189,14 @@ assert_normal_exit %q{
   end
 }, '[ruby-dev:34536]'
 
-
 assert_normal_exit %q{
   begin
     Struct.new(0)
   rescue
   end
 }
+
+assert_normal_exit %q{
+  defined? C && 0
+}
+
