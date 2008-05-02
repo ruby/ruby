@@ -1,3 +1,8 @@
+Fri May  2 13:04:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/dbm.c (Init_dbm): defines DBM::VERSION even when
+	  DB_VERSION_STRING is not available.  [ruby-dev:34569]
+
 Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 16257 from trunk.
