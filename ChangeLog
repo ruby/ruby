@@ -1,7 +1,7 @@
 Fri May  2 14:52:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* misc/ruby-mode.el: move fontifying code from hook.
-	  [ruby-core:16636]
+	* misc/ruby-mode.el: move fontifying code from hook.  a patch from
+	  Phil Hagelberg <phil at hagelb.org> in [ruby-core:16636].
 
 Fri May  2 14:10:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
