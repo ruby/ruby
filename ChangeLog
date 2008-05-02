@@ -1,3 +1,8 @@
+Fri May  2 23:55:15 2008  Tanaka Akira  <akr@fsij.org>
+
+	* variable.c (rb_define_hooked_variable): guard *var from GC to
+	  prevent collecting argf under RUBY_DEBUG=gc_stress.
+
 Fri May  2 17:29:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_step): call to_int if step is not a numeric

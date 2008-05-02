@@ -455,13 +455,20 @@ rb_define_hooked_variable(
     void  (*setter)(ANYARGS))
 {
     struct global_variable *gvar;
-    ID id = global_id(name);
+    ID id;
+    VALUE tmp;
+    
+    if (var)
+        tmp = *var;
 
+    id = global_id(name);
     gvar = rb_global_entry(id)->var;
     gvar->data = (void*)var;
     gvar->getter = getter?getter:var_getter;
     gvar->setter = setter?setter:var_setter;
     gvar->marker = var_marker;
+
+    RB_GC_GUARD(tmp);
 }
 
 void
