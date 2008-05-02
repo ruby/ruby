@@ -1,3 +1,9 @@
+Fri May  2 13:47:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (match_select): restore previous behavior of MatchData#select.
+	  RDoc updated as well, mentioning the plan to remove this method
+	  in the future.  [ruby-dev:34556]
+
 Fri May  2 13:04:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dbm/dbm.c (Init_dbm): defines DBM::VERSION even when
