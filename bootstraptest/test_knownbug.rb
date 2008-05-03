@@ -209,3 +209,6 @@ assert_normal_exit %q{
   C.new.m
 }
 
+assert_normal_exit %q{
+  [1,2,3].slice!(1,10000).inspect
+}
