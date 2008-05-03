@@ -1,3 +1,8 @@
+Sat May  3 18:10:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_timespec): raise TypeError for nil and other objects
+	  which has no divmod method.
+
 Fri May  2 23:59:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (internal_read_func, internal_write_func): split from

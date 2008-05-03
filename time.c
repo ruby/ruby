@@ -217,18 +217,24 @@ time_timespec(VALUE num, int interval)
 	break;
 
       default:
-        ary = rb_check_array_type(rb_funcall(num, id_divmod, 1, INT2FIX(1)));
-        if (NIL_P(ary)) {
+        if (rb_respond_to(num, id_divmod)) {
+            ary = rb_check_array_type(rb_funcall(num, id_divmod, 1, INT2FIX(1)));
+            if (NIL_P(ary)) {
+                goto typeerror;
+            }
+            i = rb_ary_entry(ary, 0);
+            f = rb_ary_entry(ary, 1);
+            t.tv_sec = NUM2LONG(i);
+            if (interval && t.tv_sec < 0)
+                rb_raise(rb_eArgError, "%s must be positive", tstr);
+            f = rb_funcall(f, id_mul, 1, INT2FIX(1000000000));
+            t.tv_nsec = NUM2LONG(f);
+        }
+        else {
+typeerror:
             rb_raise(rb_eTypeError, "can't convert %s into %s",
                      rb_obj_classname(num), tstr);
         }
-        i = rb_ary_entry(ary, 0);
-        f = rb_ary_entry(ary, 1);
-        t.tv_sec = NUM2LONG(i);
-	if (interval && t.tv_sec < 0)
-	    rb_raise(rb_eArgError, "%s must be positive", tstr);
-        f = rb_funcall(f, id_mul, 1, INT2FIX(1000000000));
-        t.tv_nsec = NUM2LONG(f);
 	break;
     }
     return t;
