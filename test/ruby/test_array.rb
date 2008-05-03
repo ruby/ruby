@@ -1513,4 +1513,11 @@ class TestArray < Test::Unit::TestCase
       a.product(a, a, a, a, a, a, a, a, a, a) {}
     end
   end
+
+  class Array2 < Array
+  end
+
+  def test_array_subclass
+    assert_equal(Array2, Array2[1,2,3].uniq.class, "[ruby-dev:34581]")
+  end
 end
