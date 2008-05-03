@@ -71,3 +71,29 @@ module EnvUtil
   end
   module_function :rubyexec
 end
+
+module Test
+  module Unit
+    module Assertions
+      public
+      def assert_normal_exit(testsrc, message = '')
+        IO.popen([EnvUtil.rubybin, '-W0'], 'w') {|io|
+          io.write testsrc
+        }
+        status = $?
+        faildesc = nil
+        if status.signaled?
+          signo = status.termsig
+          signame = Signal.list.invert[signo]
+          sigdesc = "signal #{signo}"
+          if signame
+            sigdesc = "SIG#{signame} (#{sigdesc})"
+          end
+          full_message = build_message(message, "killed by ?", sigdesc)
+        end
+        assert_block(full_message) { !status.signaled? }
+      end
+    end
+  end
+end
+
