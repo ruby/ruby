@@ -149,11 +149,10 @@ typedef struct rb_objspace {
 	unsigned long increase;
     } params;
     struct {
-	int delta;
-	int increment;
+	long increment;
 	struct heaps_slot *ptr;
-	int length;
-	int used;
+	long length;
+	long used;
 	RVALUE *freelist;
 	RVALUE *range[2];
 	RVALUE *freed;
@@ -190,7 +189,6 @@ static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
 #define freelist		objspace->heap.freelist
 #define lomem			objspace->heap.range[0]
 #define himem			objspace->heap.range[1]
-#define objects_delta		objspace->heap.delta
 #define heaps_inc		objspace->heap.increment
 #define heaps_freed		objspace->heap.freed
 #define dont_gc 		objspace->flags.dont_gc
@@ -209,7 +207,6 @@ rb_objspace_alloc(void)
     rb_objspace_t *objspace = malloc(sizeof(rb_objspace_t));
     memset(objspace, 0, sizeof(*objspace));
     malloc_limit = GC_MALLOC_LIMIT;
-    objects_delta = HEAP_MIN_SLOTS;
 
     return objspace;
 }
@@ -520,12 +517,12 @@ rb_gc_unregister_address(VALUE *addr)
 
 
 static void
-allocate_heaps(rb_objspace_t *objspace)
+allocate_heaps(rb_objspace_t *objspace, int next_heaps_length)
 {
     struct heaps_slot *p;
     int length;
 
-    heaps_length += objects_delta / HEAP_OBJ_LIMIT;
+    heaps_length = next_heaps_length;
     length = heaps_length*sizeof(struct heaps_slot);
     RUBY_CRITICAL(
 		  if (heaps_used > 0) {
@@ -597,15 +594,14 @@ assign_heap_slot(rb_objspace_t *objspace)
 }
 
 static void
-add_heap(rb_objspace_t *objspace)
+init_heap(rb_objspace_t *objspace)
 {
     int add, i;
 
-    add = objects_delta / HEAP_OBJ_LIMIT;
-    objects_delta *= 1.8;
+    add = HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT;
 
     if ((heaps_used + add) > heaps_length) {
-    	allocate_heaps(objspace);
+    	allocate_heaps(objspace, heaps_used + add);
     }
 
     for (i = 0; i < add; i++) {
@@ -618,11 +614,10 @@ add_heap(rb_objspace_t *objspace)
 static void
 set_heaps_increment(rb_objspace_t *objspace)
 {
-    heaps_inc += objects_delta / HEAP_OBJ_LIMIT;
-    objects_delta *= 1.8;
+    heaps_inc = heaps_used * 1.8 - heaps_used;
 
     if ((heaps_used + heaps_inc) > heaps_length) {
-	allocate_heaps(objspace);
+	allocate_heaps(objspace, heaps_used + heaps_inc);
     }
 }
 
@@ -1351,9 +1346,6 @@ free_unused_heaps(rb_objspace_t *objspace)
 	    free(last);
 	}
     }
-    if (i != j)	{
-	objects_delta = heaps_used * HEAP_OBJ_LIMIT;
-    }
 }
 
 void rb_gc_abort_threads(void);
@@ -1669,7 +1661,10 @@ garbage_collect(rb_objspace_t *objspace)
 
     if (dont_gc || during_gc) {
 	if (!freelist) {
-	    add_heap(objspace);
+            if (!heaps_increment(objspace)) {
+                set_heaps_increment(objspace);
+                heaps_increment(objspace);
+            }
 	}
 	return Qtrue;
     }
@@ -1864,7 +1859,7 @@ Init_heap(void)
     if (!rb_gc_stack_start) {
 	Init_stack(0);
     }
-    add_heap(&rb_objspace);
+    init_heap(&rb_objspace);
 }
 
 static VALUE

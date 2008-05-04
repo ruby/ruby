@@ -1,3 +1,14 @@
+Mon May  5 02:10:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (set_heaps_increment): fix memory allocation strategy by
+	  determining heaps_inc from heaps_used, not objects_delta.
+	  (struct rb_objspace): delta removed.  change increment, length and
+	  used to long for LP64.
+	  (objects_delta): removed.
+	  (allocate_heaps): add next_heaps_length argument.
+	  (init_heap): renamed from add_heap.
+	  (garbage_collect): use heaps_increment in dont_gc.
+
 Sun May  4 21:09:32 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/getoptlong.rb: use $stderr instead of $deferr.
