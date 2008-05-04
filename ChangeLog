@@ -1,3 +1,8 @@
+Sun May  4 09:35:51 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* sample/erb/erb4html.rb (ERB4Html) : add example of ERB#set_eoutvar.
+	  ERB4Html is an auto-quote ERB.
+
 Sat May  3 22:52:48 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb, 
