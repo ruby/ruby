@@ -212,3 +212,12 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   [1,2,3].slice!(1,10000).inspect
 }
+
+assert_equal 'ok', %q{
+  begin
+    eval("class nil::Foo; end")
+    :ng
+  rescue Exception
+    :ok
+  end
+}
