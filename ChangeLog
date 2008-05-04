@@ -1,3 +1,7 @@
+Sun May  4 16:04:28 2008  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (obj2nsec): fix string argument.
+
 Sun May  4 14:29:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_obj_respond_to): check the result of respond_to? method

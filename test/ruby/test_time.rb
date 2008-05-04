@@ -64,6 +64,12 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_strtime
+    t = nil
+    assert_nothing_raised { t = Time.utc("2000", "1", "2" , "3", "4", "5") }
+    assert_equal(Time.utc(2000,1,2,3,4,5), t)
+  end
+
   def test_huge_difference
     if negative_time_t?
       assert_equal(Time.at(-0x80000000), Time.at(0x7fffffff) - 0xffffffff, "[ruby-dev:22619]")

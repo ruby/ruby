@@ -356,7 +356,7 @@ obj2nsec(VALUE obj, long *nsec)
     if (TYPE(obj) == T_STRING) {
 	obj = rb_str_to_inum(obj, 10, Qfalse);
         *nsec = 0;
-        return NUM2LONG(obj) * 1000;
+        return NUM2LONG(obj);
     }
 
     ts = time_timespec(obj, 1);
