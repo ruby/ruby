@@ -5045,6 +5045,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     long len, rslen; 
     VALUE line;
     int n;
+    VALUE orig = str;
 
     if (argc == 0) {
 	rs = rb_rs;
@@ -5055,7 +5056,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     RETURN_ENUMERATOR(str, argc, argv);
     if (NIL_P(rs)) {
 	rb_yield(str);
-	return str;
+	return orig;
     }
     str = rb_str_new4(str);
     ptr = p = s = RSTRING_PTR(str);
@@ -5124,7 +5125,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 	rb_yield(line);
     }
 
-    return str;
+    return orig;
 }
 
 

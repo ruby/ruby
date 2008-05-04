@@ -1,3 +1,7 @@
+Sun May  4 12:57:58 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_each_line): return original string.
+
 Sat May  3 20:57:06 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_normal_exit):
