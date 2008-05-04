@@ -151,7 +151,7 @@ class GetoptLong
     @argument_flags = Hash.new
 
     #
-    # Whether error messages are output to $deferr.
+    # Whether error messages are output to $stderr.
     #
     @quiet = FALSE
 
@@ -380,7 +380,7 @@ class GetoptLong
   # Set an error (a protected method).
   #
   def set_error(type, message)
-    $deferr.print("#{$0}: #{message}\n") if !@quiet
+    $stderr.print("#{$0}: #{message}\n") if !@quiet
 
     @error = type
     @error_message = message

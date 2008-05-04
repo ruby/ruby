@@ -1,3 +1,7 @@
+Sun May  4 21:09:32 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/getoptlong.rb: use $stderr instead of $deferr.
+
 Sun May  4 16:04:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (obj2nsec): fix string argument.
