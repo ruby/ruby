@@ -1403,4 +1403,12 @@ class TestString < Test::Unit::TestCase
       s1 << 'a'
     }
   end
+
+  def test_respond_to
+    o = Object.new 
+    def o.respond_to?(arg) [:to_str].include?(arg) ? nil : super end
+    def o.to_str() "" end
+    def o.==(other) "" == other end
+    assert_equal(false, "" == o)
+  end
 end

@@ -1,3 +1,8 @@
+Sun May  4 14:29:14 2008  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_obj_respond_to): check the result of respond_to? method
+	  by RTEST.
+
 Sun May  4 12:57:58 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_each_line): return original string.
