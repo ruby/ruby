@@ -1229,9 +1229,9 @@ rb_ary_dup(VALUE ary)
 {
     VALUE dup = rb_ary_new2(RARRAY_LEN(ary));
 
+    DUPSETUP(dup, ary);
     MEMCPY(RARRAY_PTR(dup), RARRAY_PTR(ary), VALUE, RARRAY_LEN(ary));
     RARRAY(dup)->len = RARRAY_LEN(ary);
-    OBJ_INFECT(dup, ary);
 
     return dup;
 }

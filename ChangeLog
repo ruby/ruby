@@ -1,3 +1,8 @@
+Mon May  5 11:36:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_dup): should dupe corresponding information.
+	  [ruby-dev:34581]
+
 Mon May  5 11:13:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (compile_cpath): use Qundef to denote cbase lookup.
