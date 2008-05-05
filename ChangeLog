@@ -1,3 +1,11 @@
+Mon May  5 19:49:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_s_def): Struct.new(0) should not SEGV.
+	  based on the patch from wanabe <s.wanabe at gmail.com> in
+	  [ruby-dev:34594].
+
+	* struct.c (make_struct): call to_str on name object.
+
 Mon May  5 17:17:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (ruby_cleanup): wrap ruby_finalize_0 by SAVE_ROOT_JMPBUF to

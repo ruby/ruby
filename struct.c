@@ -181,7 +181,9 @@ make_struct(VALUE name, VALUE members, VALUE klass)
 	rb_class_inherited(klass, nstr);
     }
     else {
-	id = SYM2ID(rb_str_intern(name));
+	/* old style: should we warn? */
+	name = rb_str_to_str(name);
+	id = rb_to_id(name);
 	if (!rb_is_const_id(id)) {
 	    rb_name_error(id, "identifier %s needs to be constant", StringValuePtr(name));
 	}
@@ -322,13 +324,13 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     ID id;
 
     rb_scan_args(argc, argv, "1*", &name, &rest);
-    for (i=0; i<RARRAY_LEN(rest); i++) {
-	id = rb_to_id(RARRAY_PTR(rest)[i]);
-	RARRAY_PTR(rest)[i] = ID2SYM(id);
-    }
     if (!NIL_P(name) && SYMBOL_P(name)) {
 	rb_ary_unshift(rest, name);
 	name = Qnil;
+    }
+    for (i=0; i<RARRAY_LEN(rest); i++) {
+	id = rb_to_id(RARRAY_PTR(rest)[i]);
+	RARRAY_PTR(rest)[i] = ID2SYM(id);
     }
     st = make_struct(name, rest, klass);
     if (rb_block_given_p()) {
