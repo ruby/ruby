@@ -660,9 +660,14 @@ insn_operand_intern(rb_iseq_t *iseq,
       case TS_ID:		/* ID (symbol) */
 	op = ID2SYM(op);
       case TS_VALUE:		/* VALUE */
-	ret = rb_inspect(op);
-	if (CLASS_OF(op) == rb_cISeq) {
-	    rb_ary_push(child, op);
+	if (op == Qundef) {
+	    ret = rb_str_new2("undef");
+	}
+	else {
+	    ret = rb_inspect(op);
+	    if (CLASS_OF(op) == rb_cISeq) {
+		rb_ary_push(child, op);
+	    }
 	}
 	break;
 
