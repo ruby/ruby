@@ -931,7 +931,7 @@ defineclass
 
 	if (cbase == Qundef) {
 	    cbase = vm_get_cbase(th);
-	    if (NIL_P(klass)) {
+	    if (NIL_P(cbase)) {
 		rb_raise(rb_eTypeError, "no class/module to define constant");
 	    }
 	}
