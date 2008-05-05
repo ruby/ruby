@@ -164,7 +164,13 @@ ruby_cleanup(int ex)
     errs[1] = th->errinfo;
     th->safe_level = 0;
     Init_stack((void *)&state);
-    ruby_finalize_0();
+
+    PUSH_TAG();
+    if ((state = EXEC_TAG()) == 0) {
+	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
+    }
+    POP_TAG();
+
     errs[0] = th->errinfo;
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
