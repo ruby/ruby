@@ -1,3 +1,8 @@
+Mon May  5 20:07:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fflush): IO#flush problem within threads.  a patch from
+	  <s.wanabe at gmail.com> in [ruby-dev:34595].
+
 Mon May  5 19:58:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (defined_expr): protect some expression from

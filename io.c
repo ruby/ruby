@@ -584,8 +584,8 @@ io_fflush(rb_io_t *fptr)
         return 0;
     }
     if (0 <= r) {
-        fptr->wbuf_off = r;
-        fptr->wbuf_len = r;
+        fptr->wbuf_off += r;
+        fptr->wbuf_len -= r;
         errno = EAGAIN;
     }
     if (rb_io_wait_writable(fptr->fd)) {
