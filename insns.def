@@ -972,8 +972,11 @@ defineclass
       case 2:
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
-	if (cbase == Qnil) {
+	if (cbase == Qundef) {
 	    cbase = vm_get_cbase(th);
+	    if (NIL_P(cbase)) {
+		rb_raise(rb_eTypeError, "no class/module to define constant");
+	    }
 	}
 
 	vm_check_if_namespace(cbase);

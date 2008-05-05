@@ -4310,7 +4310,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    rb_sprintf("<module:%s>", rb_id2name(node->nd_cpath->nd_mid)),
 	    ISEQ_TYPE_CLASS);
 
-	COMPILE(ret, "mbase", node->nd_cpath->nd_head);
+	compile_cpath(ret, iseq, node->nd_cpath);
 	ADD_INSN (ret, nd_line(node), putnil); /* dummy */
 	ADD_INSN3(ret, nd_line(node), defineclass,
 		  ID2SYM(node->nd_cpath->nd_mid), iseqval, INT2FIX(2));
