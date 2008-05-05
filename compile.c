@@ -2464,6 +2464,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 		  needstr);
 	return 1;
 
+      case NODE_SUPER:
       case NODE_ZSUPER:
 	ADD_INSN(ret, nd_line(node), putnil);
 	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_ZSUPER), 0,
@@ -2507,7 +2508,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	}
 	ADD_LABEL(ret, lend);
 
-	ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, lstart, lend, ensure, lfinish[1]);
+	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, ensure, lfinish[1]);
 	return 1;
       } /* end of default */
     }

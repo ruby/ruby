@@ -1,3 +1,13 @@
+Mon May  5 19:58:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (defined_expr): protect some expression from
+	  segmentation fault.  a patch from wanabe <s.wanabe at gmail.com>
+	  in [ruby-dev:34593].
+
+Mon May  5 19:57:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (defined_expr): 
+
 Mon May  5 19:49:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_s_def): Struct.new(0) should not SEGV.
