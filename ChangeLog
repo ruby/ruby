@@ -1,3 +1,10 @@
+Tue May  6 02:08:18 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/io/nonblock/test_flush.rb: don't set Thread.abort_on_exception.
+
+	* test/net/imap/test_imap.rb: ensure disconnecting imap to terminate
+	  receiver thread..
+
 Tue May  6 00:29:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* iseq.c (insn_operand_intern): should handle Qundef embedded in

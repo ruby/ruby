@@ -67,12 +67,17 @@ class IMAPTest < Test::Unit::TestCase
   end
 
   def test_starttls
+    imap = nil
     if defined?(OpenSSL)
       starttls_test do |port|
         imap = Net::IMAP.new("localhost", :port => port)
         imap.starttls(:ca_file => CA_FILE)
         imap
       end
+    end
+  ensure
+    if imap && !imap.disconnected?
+      imap.disconnect
     end
   end
 
@@ -105,9 +110,12 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = yield(port)
-      imap.logout
-      imap.disconnect
+      begin
+        imap = yield(port)
+        imap.logout
+      ensure
+        imap.disconnect if imap
+      end
     ensure
       ssl_server.close
     end
@@ -143,9 +151,12 @@ class IMAPTest < Test::Unit::TestCase
       end
     end
     begin
-      imap = yield(port)
-      imap.logout
-      imap.disconnect
+      begin
+        imap = yield(port)
+        imap.logout
+      ensure
+        imap.disconnect if imap
+      end
     ensure
       server.close
     end

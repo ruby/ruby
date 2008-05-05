@@ -5,7 +5,6 @@ begin
 rescue LoadError
 end
 
-Thread.abort_on_exception = true
 class TestIONonblock < Test::Unit::TestCase
   def test_flush
     r,w = IO.pipe
