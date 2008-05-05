@@ -221,3 +221,7 @@ assert_equal 'ok', %q{
     :ok
   end
 }
+
+assert_normal_exit %q{
+  at_exit { Fiber.new{}.resume }
+}
