@@ -240,24 +240,14 @@ setconstant
 (VALUE val, VALUE klass)
 ()
 {
-    if (klass == Qnil) {
+    if (klass == Qundef) {
 	klass = vm_get_cbase(th);
-    }
-    if (NIL_P(klass)) {
-	rb_raise(rb_eTypeError, "no class/module to define constant");
-    }
-
-    switch (TYPE(klass)) {
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default: {
-	volatile VALUE tmp = rb_obj_as_string(klass);
-	rb_raise(rb_eTypeError, "%s is not a class/module",
-		 RSTRING_PTR(tmp));
-      }
+	if (NIL_P(klass)) {
+	    rb_raise(rb_eTypeError, "no class/module to define constant");
+	}
     }
 
+    vm_check_if_namespace(klass);
     rb_const_set(klass, id, val);
     INC_VM_STATE_VERSION();
 }
@@ -939,8 +929,11 @@ defineclass
 	    super = rb_cObject;
 	}
 
-	if (cbase == Qnil) {
+	if (cbase == Qundef) {
 	    cbase = vm_get_cbase(th);
+	    if (NIL_P(klass)) {
+		rb_raise(rb_eTypeError, "no class/module to define constant");
+	    }
 	}
 
 	vm_check_if_namespace(cbase);

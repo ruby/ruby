@@ -1,3 +1,14 @@
+Mon May  5 11:13:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (compile_cpath): use Qundef to denote cbase lookup.
+
+	* insns.def (defineclass): Qudef is passed for cbase.
+
+	* insns.def (setconstant): ditto.
+
+	* vm_insnhelper.c (vm_check_if_namespace): use rb_inspect()
+	  instead of rb_obj_as_string() for better description.
+
 Mon May  5 02:10:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (set_heaps_increment): fix memory allocation strategy by

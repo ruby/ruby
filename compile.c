@@ -2283,14 +2283,17 @@ compile_colon2(rb_iseq_t *iseq, NODE * node,
 static int
 compile_cpath(LINK_ANCHOR *ret, rb_iseq_t *iseq, NODE *cpath)
 {
-    if (cpath->nd_head) {
+    if (nd_type(cpath) == NODE_COLON3) {
+	/* toplevel class ::Foo */
+	ADD_INSN1(ret, nd_line(cpath), putobject, rb_cObject);
+    }
+    else if (cpath->nd_head) {
+	/* Bar::Foo */
 	COMPILE(ret, "nd_else->nd_head", cpath->nd_head);
     }
-    else if (nd_type(cpath) == NODE_COLON2) {
-	COMPILE(ret, "cpath (NODE_COLON2)", cpath->nd_head);
-    }
     else {
-	ADD_INSN1(ret, nd_line(cpath), putobject, rb_cObject);
+	/* class at cbase Foo */
+	ADD_INSN1(ret, nd_line(cpath), putobject, Qundef);
     }
     return COMPILE_OK;
 }
@@ -3432,7 +3435,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	if (node->nd_vid) {
-	    ADD_INSN(ret, nd_line(node), putnil);
+	    ADD_INSN1(ret, nd_line(node), putobject, Qundef);
 	    ADD_INSN1(ret, nd_line(node), setconstant,
 		      ID2SYM(node->nd_vid));
 	}
