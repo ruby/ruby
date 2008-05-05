@@ -1794,6 +1794,9 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	    pos = RARRAY_LEN(ary) + pos;
 	    if (pos < 0) return Qnil;
 	}
+	if (RARRAY_LEN(ary) < len || RARRAY_LEN(ary) < pos + len) {
+	    len = RARRAY_LEN(ary) - pos;
+	}
 	arg2 = rb_ary_new4(len, RARRAY_PTR(ary)+pos);
 	RBASIC(arg2)->klass = rb_obj_class(ary);
 	rb_ary_splice(ary, pos, len, Qundef);	/* Qnil/rb_ary_new2(0) */

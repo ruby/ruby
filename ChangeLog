@@ -1,3 +1,8 @@
+Mon May  5 12:12:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_slice_bang): should adjust length before making
+	  sub-array.
+
 Mon May  5 11:36:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_dup): should dupe corresponding information.
