@@ -309,8 +309,6 @@ class TestFileExhaustive < Test::Unit::TestCase
     return if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
     assert_equal(1, File.lchmod(0444, @file))
     assert_equal(0444, File.stat(@file).mode % 01000)
-    assert_equal(0, File.new(@file).lchmod(0222))
-    assert_equal(0222, File.stat(@file).mode % 01000)
     File.lchmod(0600, @file)
     assert_raise(Errno::ENOENT) { File.lchmod(0600, @nofile) }
   rescue NotImplementedError
