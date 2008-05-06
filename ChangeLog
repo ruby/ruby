@@ -1,3 +1,9 @@
+Wed May  7 00:54:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzreader_gets): may cause infinite loop.
+	  a patch from Kouya <kouyataifu4 at gmail.com> in
+	  [ruby-reference-manual:762].
+
 Sun May  4 09:35:51 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* sample/erb/erb4html.rb (ERB4Html) : add example of ERB#set_eoutvar.
