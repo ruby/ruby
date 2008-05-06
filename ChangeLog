@@ -1,3 +1,8 @@
+Wed May  7 08:46:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_s_def): to_str should be called only once.
+	  [ruby-core:16647]
+
 Wed May  7 00:54:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzreader_gets): may cause infinite loop.
