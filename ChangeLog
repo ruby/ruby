@@ -1,3 +1,8 @@
+Wed May  7 00:54:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzreader_gets): may cause infinite loop.
+	  [ruby-reference-manual:762]
+
 Tue May  6 02:08:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/io/nonblock/test_flush.rb: don't set Thread.abort_on_exception.

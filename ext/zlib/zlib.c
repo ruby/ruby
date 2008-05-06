@@ -3016,6 +3016,8 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     if (NIL_P(rs)) {
 	dst = gzfile_read_all(gz);
 	if (RSTRING_LEN(dst) != 0) gz->lineno++;
+	else
+	    return Qnil;
 	return dst;
     }
 
