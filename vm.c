@@ -911,8 +911,9 @@ vm_make_jump_tag_but_local_jump(int state, VALUE val)
 {
     VALUE result = Qnil;
 
-    if (val == Qundef)
+    if (val == Qundef) {
 	val = GET_THREAD()->tag->retval;
+    }
     switch (state) {
       case 0:
 	break;
@@ -1140,8 +1141,10 @@ vm_eval_body(rb_thread_t *th)
     int state;
     VALUE result, err;
     VALUE initial = 0;
+    VALUE *escape_dfp = NULL;
 
     TH_PUSH_TAG(th);
+    _tag.retval = Qnil;
     if ((state = EXEC_TAG()) == 0) {
       vm_loop_start:
 	result = vm_eval(th, initial);
@@ -1157,7 +1160,6 @@ vm_eval_body(rb_thread_t *th)
 	unsigned long epc, cont_pc, cont_sp;
 	VALUE catch_iseqval;
 	rb_control_frame_t *cfp;
-	VALUE *escape_dfp = NULL;
 	VALUE type;
 
 	err = th->errinfo;

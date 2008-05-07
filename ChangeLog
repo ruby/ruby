@@ -1,3 +1,7 @@
+Wed May  7 17:41:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_eval_body): initialize retval.  [ruby-dev:34576]
+
 Wed May  7 13:02:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_fdiv): flo.fdiv(NaN) should result NaN.
