@@ -238,11 +238,4 @@ class TestFixnum < Test::Unit::TestCase
     assert(!(1.send(:<=, 0.0)))
     assert_raise(ArgumentError) { 1.send(:<=, nil) }
   end
-
-  def test_id2name
-    assert_equal("foo", :foo.to_i.id2name)
-    assert_nil(0.id2name)
-    assert_equal(:foo, :foo.to_i.to_sym)
-    assert_nil(0.to_sym)
-  end
 end

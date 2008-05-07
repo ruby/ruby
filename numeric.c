@@ -2850,52 +2850,6 @@ fix_abs(VALUE fix)
     return LONG2NUM(i);
 }
 
-/*
- *  call-seq:
- *     fix.id2name -> string or nil
- *
- *  Returns the name of the object whose symbol id is <i>fix</i>. If
- *  there is no symbol in the symbol table with this value, returns
- *  <code>nil</code>. <code>id2name</code> has nothing to do with the
- *  <code>Object.id</code> method. See also <code>Fixnum#to_sym</code>,
- *  <code>String#intern</code>, and class <code>Symbol</code>.
- *
- *     symbol = :@inst_var    #=> :@inst_var
- *     id     = symbol.to_i   #=> 9818
- *     id.id2name             #=> "@inst_var"
- */
-
-static VALUE
-fix_id2name(VALUE fix)
-{
-    VALUE name = rb_id2str(FIX2UINT(fix));
-    if (name) return rb_str_dup(name);
-    return Qnil;
-}
-
-
-/*
- *  call-seq:
- *     fix.to_sym -> aSymbol
- *
- *  Returns the symbol whose integer value is <i>fix</i>. See also
- *  <code>Fixnum#id2name</code>.
- *
- *     fred = :fred.to_i
- *     fred.id2name   #=> "fred"
- *     fred.to_sym    #=> :fred
- */
-
-static VALUE
-fix_to_sym(VALUE fix)
-{
-    ID id = FIX2UINT(fix);
-
-    if (rb_id2name(id)) {
-	return ID2SYM(id);
-    }
-    return Qnil;
-}
 
 
 /*
@@ -3204,9 +3158,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "denominator", int_denominator, 0);
 
     rb_define_method(rb_cFixnum, "to_s", fix_to_s, -1);
-
-    rb_define_method(rb_cFixnum, "id2name", fix_id2name, 0);
-    rb_define_method(rb_cFixnum, "to_sym", fix_to_sym, 0);
 
     rb_define_method(rb_cFixnum, "-@", fix_uminus, 0);
     rb_define_method(rb_cFixnum, "+", fix_plus, 1);

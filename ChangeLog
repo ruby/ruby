@@ -1,3 +1,12 @@
+Wed May  7 18:02:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (sym_to_i): remove obsolete method.  preparation for
+	  symbol GC.
+
+	* numeric.c (fix_to_sym): ditto.
+
+	* numeric.c (fix_id2name): ditto.
+
 Wed May  7 17:43:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_puts_ary): check recursion first.  [ruby-dev:34580]
