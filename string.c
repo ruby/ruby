@@ -4219,25 +4219,21 @@ static VALUE rb_str_delete_bang(int,VALUE*,VALUE);
 static VALUE
 tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 {
-    SIGNED_VALUE trans[256];
+    int trans[256];
     rb_encoding *enc, *e1, *e2;
     struct tr trsrc, trrepl;
     int cflag = 0;
-    int c, last = 0, modify = 0, i;
+    int c, c0, last = 0, modify = 0, i, l;
     char *s, *send;
     VALUE hash = 0;
 
     StringValue(src);
     StringValue(repl);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    trsrc.p = RSTRING_PTR(src); trsrc.pend = trsrc.p + RSTRING_LEN(src);
-    if (RSTRING_LEN(src) >= 2 && RSTRING_PTR(src)[0] == '^') {
-	cflag++;
-	trsrc.p++;
-    }
     if (RSTRING_LEN(repl) == 0) {
 	return rb_str_delete_bang(1, &src, str);
     }
+
     e1 = rb_enc_check(str, src);
     e2 = rb_enc_check(str, repl);
     if (e1 == e2) {
@@ -4245,6 +4241,11 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     }
     else {
 	enc = rb_enc_check(src, repl);
+    }
+    trsrc.p = RSTRING_PTR(src); trsrc.pend = trsrc.p + RSTRING_LEN(src);
+    if (RSTRING_LEN(str) > 1 && rb_enc_ascget(trsrc.p, trsrc.pend, &l, enc) == '^') {
+	cflag = 1;
+	trsrc.p += l;
     }
     trrepl.p = RSTRING_PTR(repl);
     trrepl.pend = trrepl.p + RSTRING_LEN(repl);
@@ -4284,7 +4285,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    r = trnext(&trrepl, enc);
 	    if (r == -1) r = trrepl.now;
 	    if (c < 256) {
-		trans[c] = INT2NUM(r);
+		trans[c] = r;
 	    }
 	    else {
 		if (!hash) hash = rb_hash_new();
@@ -4299,35 +4300,37 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	int clen, tlen, max = RSTRING_LEN(str);
 	int offset, save = -1;
 	char *buf = ALLOC_N(char, max), *t = buf;
-	VALUE v;
 
-	if (cflag) tlen = rb_enc_codelen(last, enc);
 	while (s < send) {
-	    c = rb_enc_codepoint(s, send, enc);
+	    c0 = c = rb_enc_codepoint(s, send, enc);
 	    tlen = clen = rb_enc_codelen(c, enc);
 
 	    s += clen;
 	    if (c < 256) {
-		v = trans[c] >= 0 ? trans[c] : Qnil;
+		c = trans[c];
+	    }
+	    else if (hash) {
+		VALUE tmp = rb_hash_lookup(hash, INT2NUM(c));
+		if (NIL_P(tmp)) {
+		    if (cflag) c = last;
+		    else c = -1;
+		}
+		else if (cflag) c = -1;
+		else c = NUM2INT(tmp);
 	    }
 	    else {
-		v = hash ? rb_hash_aref(hash, INT2NUM(c)) : Qnil;
+		c = -1;
 	    }
-	    if (!NIL_P(v)) {
-		if (!cflag) {
-		    c = NUM2INT(v);
-		    if (save == c) continue;
-		    save = c;
-		    tlen = rb_enc_codelen(c, enc);
-		    modify = 1;
-		}
-		else {
-		    save = c = last;
-		    modify = 1;
-		}
+	    if (c >= 0) {
+		if (save == c) continue;
+		save = c;
+		tlen = rb_enc_codelen(c, enc);
+		modify = 1;
 	    }
 	    else {
 		save = -1;
+		modify = 1;
+		c = c0;
 	    }
 	    while (t - buf + tlen >= max) {
 		offset = t - buf;
@@ -4349,7 +4352,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    c = (unsigned char)*s;
 	    if (trans[c] >= 0) {
 		if (!cflag) {
-		    c = FIX2INT(trans[c]);
+		    c = trans[c];
 		    *s = c;
 		    modify = 1;
 		}
@@ -4367,27 +4370,32 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	char *buf = ALLOC_N(char, max), *t = buf;
 	VALUE v;
 
-	if (cflag) tlen = rb_enc_codelen(last, enc);
 	while (s < send) {
-	    c = rb_enc_codepoint(s, send, enc);
+	    c0 = c = rb_enc_codepoint(s, send, enc);
 	    tlen = clen = rb_enc_codelen(c, enc);
 
 	    if (c < 256) {
-		v = trans[c] >= 0 ? trans[c] : Qnil;
+		c = trans[c];
+	    }
+	    else if (hash) {
+		VALUE tmp = rb_hash_lookup(hash, INT2NUM(c));
+		if (NIL_P(tmp)) {
+		    if (cflag) c = last;
+		    else c = -1;
+		}
+		else if (cflag) c = -1;
+		else c = NUM2INT(tmp);
 	    }
 	    else {
-		v = hash ? rb_hash_aref(hash, INT2NUM(c)) : Qnil;
+		c = -1;
 	    }
-	    if (!NIL_P(v)) {
-		if (!cflag) {
-		    c = NUM2INT(v);
-		    tlen = rb_enc_codelen(c, enc);
-		    modify = 1;
-		}
-		else {
-		    c = last;
-		    modify = 1;
-		}
+	    if (c >= 0) {
+		tlen = rb_enc_codelen(c, enc);
+		modify = 1;
+	    }
+	    else {
+		modify = 1;
+		c = c0;
 	    }
 	    while (t - buf + tlen >= max) {
 		offset = t - buf;
@@ -4548,8 +4556,10 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     VALUE del = 0, nodel = 0;
     int modify = 0;
     int i;
-    int cr = ENC_CODERANGE(str);
+    int cr;
 
+    if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
+    cr = ENC_CODERANGE(str);
     if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }

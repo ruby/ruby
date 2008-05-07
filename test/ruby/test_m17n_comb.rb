@@ -804,6 +804,10 @@ class TestM17NComb < Test::Unit::TestCase
 
   def test_str_delete
     combination(STRINGS, STRINGS) {|s1, s2|
+      if s1.empty?
+        assert_equal(s1, s1.delete(s2))
+        next
+      end
       if !s1.valid_encoding? || !s2.valid_encoding?
         assert_raise(ArgumentError) { s1.delete(s2) }
         next

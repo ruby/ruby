@@ -1,3 +1,16 @@
+Thu May  8 01:10:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (tr_trans): should squeeze properly.  [ruby-dev:34587]
+
+	* string.c (tr_trans): had a bug in treating multi-byte character
+	  replacement. 
+
+	* string.c (rb_str_delete_bang): need not to do anything for empty
+	  strings. 
+
+	* test/ruby/test_m17n_comb.rb (TestM17NComb::test_str_delete): add
+	  test for empty receiver.
+
 Wed May  7 20:19:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (process_options, ruby_set_argv): set encoding of rb_argv
