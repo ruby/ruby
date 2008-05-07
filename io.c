@@ -4651,11 +4651,13 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
     VALUE tmp;
     long i;
 
+    if (recur) {
+	tmp = rb_str_new2("[...]");
+	rb_io_puts(1, &tmp, out);
+	return Qnil;
+    }
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_PTR(ary)[i];
-	if (recur) {
-	    tmp = rb_str_new2("[...]");
-	}
 	rb_io_puts(1, &tmp, out);
     }
     return Qnil;

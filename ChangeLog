@@ -1,3 +1,7 @@
+Wed May  7 17:43:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_puts_ary): check recursion first.  [ruby-dev:34580]
+
 Wed May  7 17:41:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_eval_body): initialize retval.  [ruby-dev:34576]
