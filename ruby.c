@@ -953,6 +953,7 @@ process_options(VALUE arg)
     VALUE parser;
     rb_encoding *enc, *lenc;
     const char *s;
+    char fbuf[MAXPATHLEN];
     int i = proc_options(argc, argv, opt);
     int safe;
 
@@ -1033,10 +1034,10 @@ process_options(VALUE arg)
 
 		opt->script = 0;
 		if (path) {
-		    opt->script = dln_find_file(argv[0], path);
+		    opt->script = dln_find_file_r(argv[0], path, fbuf, sizeof(fbuf));
 		}
 		if (!opt->script) {
-		    opt->script = dln_find_file(argv[0], getenv(PATH_ENV));
+		    opt->script = dln_find_file_r(argv[0], getenv(PATH_ENV), fbuf, sizeof(fbuf));
 		}
 		if (!opt->script)
 		    opt->script = argv[0];

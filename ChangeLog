@@ -1,3 +1,11 @@
+Thu May  8 06:43:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_find_exe_r, dln_find_file_r): reentrant versions.
+
+	* file.c (rb_find_file_ext, rb_find_file), process.c (proc_exec_v),
+	  (rb_proc_exec, proc_spawn_v, proc_spawn), ruby.c (process_options):
+	  use reentrant versions.
+
 Thu May  8 06:27:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_key_p): thread local storage stores ID.

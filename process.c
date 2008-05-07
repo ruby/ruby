@@ -51,6 +51,12 @@ struct timeval rb_time_interval(VALUE);
 #ifdef HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #endif
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+#ifndef MAXPATHLEN
+# define MAXPATHLEN 1024
+#endif
 #include "ruby/st.h"
 
 #ifdef __EMX__
@@ -963,7 +969,7 @@ void rb_thread_reset_timer_thread(void);
 #define after_exec() \
   (rb_thread_start_timer_thread(), rb_disable_interrupt())
 
-extern char *dln_find_exe(const char *fname, const char *path);
+#include "dln.h"
 
 static void
 security(const char *str)
@@ -978,9 +984,11 @@ security(const char *str)
 static int
 proc_exec_v(char **argv, const char *prog)
 {
+    char fbuf[MAXPATHLEN];
+
     if (!prog)
 	prog = argv[0];
-    prog = dln_find_exe(prog, 0);
+    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
     if (!prog) {
 	errno = ENOENT;
 	return -1;
@@ -1015,7 +1023,7 @@ proc_exec_v(char **argv, const char *prog)
 		    *p = '\\';
 	    new_argv[0] = COMMAND;
 	    argv = new_argv;
-	    prog = dln_find_exe(argv[0], 0);
+	    prog = dln_find_exe_r(argv[0], 0, fbuf, sizeof(fbuf));
 	    if (!prog) {
 		errno = ENOENT;
 		return -1;
@@ -1081,7 +1089,8 @@ rb_proc_exec(const char *str)
 	    if (status != -1)
 		exit(status);
 #elif defined(__human68k__) || defined(__CYGWIN32__) || defined(__EMX__)
-	    char *shell = dln_find_exe("sh", 0);
+	    char fbuf[MAXPATHLEN];
+	    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
 	    int status = -1;
 	    before_exec();
 	    if (shell)
@@ -1128,13 +1137,14 @@ rb_proc_exec(const char *str)
 static rb_pid_t
 proc_spawn_v(char **argv, char *prog)
 {
+    char fbuf[MAXPATHLEN];
     char *extension;
     rb_pid_t status;
 
     if (!prog)
 	prog = argv[0];
     security(prog);
-    prog = dln_find_exe(prog, 0);
+    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
     if (!prog)
 	return -1;
 
@@ -1155,7 +1165,7 @@ proc_spawn_v(char **argv, char *prog)
 		*p = '\\';
 	new_argv[0] = COMMAND;
 	argv = new_argv;
-	prog = dln_find_exe(argv[0], 0);
+	prog = dln_find_exe_r(argv[0], 0, fbuf, sizeof(fbuf));
 	if (!prog) {
 	    errno = ENOENT;
 	    return -1;
@@ -1192,13 +1202,14 @@ proc_spawn_n(int argc, VALUE *argv, VALUE prog)
 static rb_pid_t
 proc_spawn(char *str)
 {
+    char fbuf[MAXPATHLEN];
     char *s, *t;
     char **argv, **a;
     rb_pid_t status;
 
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
-	    char *shell = dln_find_exe("sh", 0);
+	    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
 	    before_exec();
 	    status = shell?spawnl(P_WAIT,shell,"sh","-c",str,(char*)NULL):system(str);
 	    rb_last_status_set(status == -1 ? 127 : status, 0);

@@ -30,6 +30,8 @@
 
 char *dln_find_exe(const char*,const char*);
 char *dln_find_file(const char*,const char*);
+char *dln_find_exe_r(const char*,const char*,char*,int);
+char *dln_find_file_r(const char*,const char*,char*,int);
 
 #ifdef USE_DLN_A_OUT
 extern char *dln_argv0;

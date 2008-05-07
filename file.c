@@ -4334,11 +4334,12 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 	OBJ_FREEZE(fname);
 	for (i = 0; i < RARRAY_LEN(load_path); i++) {
 	    VALUE str = RARRAY_PTR(load_path)[i];
+	    char fbuf[MAXPATHLEN];
 
 	    FilePathValue(str);
 	    if (RSTRING_LEN(str) == 0) continue;
 	    path = RSTRING_PTR(str);
-	    found = dln_find_file(StringValueCStr(fname), path);
+	    found = dln_find_file_r(StringValueCStr(fname), path, fbuf, sizeof(fbuf));
 	    if (found && file_load_ok(found)) {
 		*filep = rb_str_new2(found);
 		return j+1;
@@ -4354,6 +4355,7 @@ rb_find_file(VALUE path)
     VALUE tmp, load_path;
     char *f = StringValueCStr(path);
     char *lpath;
+    char fbuf[MAXPATHLEN];
 
     if (f[0] == '~') {
 	path = rb_file_expand_path(path, Qnil);
@@ -4411,7 +4413,7 @@ rb_find_file(VALUE path)
     if (!lpath) {
 	return 0;		/* no path, no load */
     }
-    if (!(f = dln_find_file(f, lpath))) {
+    if (!(f = dln_find_file_r(f, lpath, fbuf, sizeof(fbuf)))) {
 	return 0;
     }
     if (rb_safe_level() >= 1 && !fpath_check(f)) {

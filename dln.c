@@ -1568,10 +1568,10 @@ dln_load(const char *file)
     return 0;			/* dummy return */
 }
 
-static char *dln_find_1(const char *fname, const char *path, int exe_flag);
+static char *dln_find_1(const char *fname, const char *path, char *buf, int size, int exe_flag);
 
 char *
-dln_find_exe(const char *fname, const char *path)
+dln_find_exe_r(const char *fname, const char *path, char *buf, int size)
 {
     if (!path) {
 	path = getenv(PATH_ENV);
@@ -1584,25 +1584,38 @@ dln_find_exe(const char *fname, const char *path)
 	path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
 #endif
     }
-    return dln_find_1(fname, path, 1);
+    return dln_find_1(fname, path, buf, size, 1);
 }
 
 char *
-dln_find_file(const char *fname, const char *path)
+dln_find_file_r(const char *fname, const char *path, char *buf, int size)
 {
 #ifndef __MACOS__
     if (!path) path = ".";
-    return dln_find_1(fname, path, 0);
+    return dln_find_1(fname, path, buf, size, 0);
 #else
     if (!path) path = ".";
-    return _macruby_path_conv_posix_to_macos(dln_find_1(fname, path, 0));
+    return _macruby_path_conv_posix_to_macos(dln_find_1(fname, path, buf, size, 0));
 #endif
 }
 
 static char fbuf[MAXPATHLEN];
 
+char *
+dln_find_exe(const char *fname, const char *path)
+{
+    return dln_find_exe_r(fname, path, fbuf, sizeof(fbuf));
+}
+
+char *
+dln_find_file(const char *fname, const char *path)
+{
+    return dln_find_file_r(fname, path, fbuf, sizeof(fbuf));
+}
+
 static char *
-dln_find_1(const char *fname, const char *path, int exe_flag /* non 0 if looking for executable. */)
+dln_find_1(const char *fname, const char *path, char *fbuf, int size,
+	   int exe_flag /* non 0 if looking for executable. */)
 {
     register const char *dp;
     register const char *ep;
@@ -1642,7 +1655,7 @@ dln_find_1(const char *fname, const char *path, int exe_flag /* non 0 if looking
 	/* find the length of that component */
 	l = ep - dp;
 	bp = fbuf;
-	fspace = sizeof fbuf - 2;
+	fspace = size - 2;
 	if (l > 0) {
 	    /*
 	    **	If the length of the component is zero length,
