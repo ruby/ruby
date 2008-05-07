@@ -951,7 +951,7 @@ process_options(VALUE arg)
     char **argv = argp->argv;
     NODE *tree = 0;
     VALUE parser;
-    rb_encoding *enc;
+    rb_encoding *enc, *lenc;
     const char *s;
     int i = proc_options(argc, argv, opt);
     int safe;
@@ -1059,6 +1059,10 @@ process_options(VALUE arg)
     safe = rb_safe_level();
     rb_set_safe_level_force(0);
     ruby_init_gems(!(opt->disable & DISABLE_BIT(gems)));
+    lenc = rb_locale_encoding();
+    for (i = 0; i < RARRAY_LEN(rb_argv); i++) {
+	rb_enc_associate(RARRAY_PTR(rb_argv)[i], lenc);
+    }
     parser = rb_parser_new();
     if (opt->yydebug) rb_parser_set_yydebug(parser, Qtrue);
     if (opt->ext.enc.name != 0) {
@@ -1072,7 +1076,7 @@ process_options(VALUE arg)
 	enc = rb_enc_from_index(opt->ext.enc.index);
     }
     else {
-	enc = rb_locale_encoding();
+	enc = lenc;
     }
     rb_enc_set_default_external(rb_enc_from_encoding(enc));
 
@@ -1083,7 +1087,7 @@ process_options(VALUE arg)
 	    eenc = rb_enc_from_index(opt->src.enc.index);
 	}
 	else {
-	    eenc = rb_locale_encoding();
+	    eenc = lenc;
 	}
 	rb_enc_associate(opt->e_script, eenc);
 	require_libraries();
@@ -1460,7 +1464,6 @@ void
 ruby_set_argv(int argc, char **argv)
 {
     int i;
-    rb_encoding *enc = rb_locale_encoding();
     VALUE av = rb_argv;
 
 #if defined(USE_DLN_A_OUT)
@@ -1472,7 +1475,6 @@ ruby_set_argv(int argc, char **argv)
     rb_ary_clear(av);
     for (i = 0; i < argc; i++) {
 	VALUE arg = rb_tainted_str_new2(argv[i]);
-	rb_enc_associate(arg, enc);
 
 	OBJ_FREEZE(arg);
 	rb_ary_push(av, arg);
