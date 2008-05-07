@@ -4,6 +4,11 @@ Wed May  7 20:19:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	  after Init_prelude() because cannot load encoding extensions before
 	  it.
 
+Wed May  7 19:35:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* thread.c (rb_thread_key_p): should always convert symbol to ID.
+	  [ruby-dev:34588]
+
 Wed May  7 19:30:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_divide): float division should floor() before

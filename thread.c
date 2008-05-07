@@ -1557,15 +1557,17 @@ rb_thread_aset(VALUE self, ID id, VALUE val)
  */
 
 static VALUE
-rb_thread_key_p(VALUE self, ID id)
+rb_thread_key_p(VALUE self, VALUE key)
 {
     rb_thread_t *th;
+    ID id = rb_to_id(key);
+
     GetThreadPtr(self, th);
 
     if (!th->local_storage) {
 	return Qfalse;
     }
-    if (st_lookup(th->local_storage, rb_to_id(id), 0)) {
+    if (st_lookup(th->local_storage, key, 0)) {
 	return Qtrue;
     }
     return Qfalse;
