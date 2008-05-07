@@ -2260,7 +2260,7 @@ fix_divide(VALUE x, VALUE y, ID op)
 		return DOUBLE2NUM(div);
 	    }
 	    else {
-		return rb_dbl2big(div);
+		return rb_dbl2big(floor(div));
 	    }
 	}
       default:
