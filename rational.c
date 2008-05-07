@@ -500,10 +500,8 @@ nurat_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 {
     VALUE num, den;
 
-    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
-      case 1:
+    if (rb_scan_args(argc, argv, "11", &num, &den) == 1) {
 	den = ONE;
-	break;
     }
 
     nurat_int_check(num);
@@ -514,20 +512,23 @@ nurat_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 #endif
 
 static VALUE
-nurat_s_new(int argc, VALUE *argv, VALUE klass)
+nurat_s_new(VALUE klass, VALUE num, VALUE den)
 {
-    VALUE num, den;
-
-    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
-      case 1:
-	den = ONE;
-	break;
-    }
-
     nurat_int_check(num);
     nurat_int_check(den);
 
     return nurat_s_canonicalize_internal(klass, num, den);
+}
+
+static VALUE
+nurat_s_new_m(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE num, den;
+
+    if (rb_scan_args(argc, argv, "11", &num, &den) == 1) {
+	den = ONE;
+    }
+    return nurat_s_new(klass, num, den);
 }
 
 inline static VALUE
@@ -1425,9 +1426,9 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 {
     VALUE a1, a2;
 
-    a1 = Qnil;
-    a2 = Qnil;
-    rb_scan_args(argc, argv, "02", &a1, &a2);
+    if (rb_scan_args(argc, argv, "02", &a1, &a2) == 1) {
+	a2 = ONE;
+    }
 
     switch (TYPE(a1)) {
       case T_COMPLEX:
@@ -1486,12 +1487,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 	return f_div(a1, a2);
     }
 
-    {
-	VALUE argv2[2];
-	argv2[0] = a1;
-	argv2[1] = a2;
-	return nurat_s_new(argc, argv2, klass);
-    }
+    return nurat_s_new(klass, a1, a2);
 }
 
 static VALUE
@@ -1533,7 +1529,7 @@ Init_Rational(void)
     rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("new!")));
 
-    rb_define_singleton_method(rb_cRational, "new", nurat_s_new, -1);
+    rb_define_singleton_method(rb_cRational, "new", nurat_s_new_m, -1);
     rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("new")));
 

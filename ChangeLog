@@ -1,3 +1,17 @@
+Wed May  7 13:02:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_fdiv): flo.fdiv(NaN) should result NaN.
+
+	* numeric.c (num_quo): renamed and moved from bignum.c.
+	  [ruby-dev:34582]
+
+	* bignum.c (rb_big_fdiv): update RDoc description
+
+	* rational.c (nurat_s_new_m): small refactoring.
+
+	* bignum.c (rb_big2dbl): no need for forceful warning when
+	  converting to float.  overflow is a nature of float values.
+
 Wed May  7 00:54:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c (gzreader_gets): may cause infinite loop.

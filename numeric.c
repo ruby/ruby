@@ -249,15 +249,14 @@ num_uminus(VALUE num)
 /*
  *  call-seq:
  *     num.quo(numeric)    =>   result
- *     num.fdiv(numeric)   =>   result
  *
- *  Equivalent to <code>Numeric#/</code>, but overridden in subclasses.
+ *  Returns most exact division (rational for integers, float for floats).
  */
 
 static VALUE
 num_quo(VALUE x, VALUE y)
 {
-    return rb_funcall(x, '/', 1, y);
+    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
 }
 
 
@@ -2215,22 +2214,15 @@ fixdivmod(long x, long y, long *divp, long *modp)
 
 /*
  *  call-seq:
- *     fix.quo(numeric)    => float
  *     fix.fdiv(numeric)   => float
  *
  *  Returns the floating point result of dividing <i>fix</i> by
  *  <i>numeric</i>.
  *
- *     654321.quo(13731)      #=> 47.6528293642124
- *     654321.quo(13731.24)   #=> 47.6519964693647
+ *     654321.fdiv(13731)      #=> 47.6528293642124
+ *     654321.fdiv(13731.24)   #=> 47.6519964693647
  *
  */
-
-static VALUE
-fix_quo(VALUE x, VALUE y)
-{
-    return rb_funcall(rb_rational_raw1(x), '/', 1, y);
-}
 
 static VALUE
 fix_fdiv(VALUE x, VALUE y)
@@ -3225,7 +3217,6 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);
-    rb_define_method(rb_cFixnum, "quo", fix_quo, 1);
     rb_define_method(rb_cFixnum, "fdiv", fix_fdiv, 1);
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 

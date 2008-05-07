@@ -263,14 +263,14 @@ class TestBignum < Test::Unit::TestCase
     assert_equal(T32.to_f, T32.quo(1.0))
     assert_equal(T32.to_f, T32.quo(T_ONE))
 
-    assert_raise(ArgumentError) { T32.quo("foo") }
+    assert_raise(TypeError) { T32.quo("foo") }
 
     assert_equal(1024**1024, (1024**1024).quo(1))
     assert_equal(1024**1024, (1024**1024).quo(1.0))
     assert_equal(1024**1024*2, (1024**1024*2).quo(1))
     inf = 1 / 0.0; nan = inf / inf
 
-    assert_raise(FloatDomainError) { (1024**1024*2).quo(nan) }
+    assert((1024**1024*2).quo(nan).nan?)
   end
 
   def test_pow

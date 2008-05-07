@@ -1219,7 +1219,7 @@ rb_big2dbl(VALUE x)
     double d = big2dbl(x);
 
     if (isinf(d)) {
-	rb_warn("Bignum out of Float range");
+	rb_warning("Bignum out of Float range");
 	d = HUGE_VAL;
     }
     return d;
@@ -1975,22 +1975,15 @@ static VALUE big_shift(VALUE x, int n)
 
 /*
  *  call-seq:
- *     big.quo(numeric) -> float
- *     big.fdiv(numeric) -> float
+  *     big.fdiv(numeric) -> float
  *
  *  Returns the floating point result of dividing <i>big</i> by
  *  <i>numeric</i>.
  *
- *     -1234567890987654321.quo(13731)      #=> -89910996357705.5
- *     -1234567890987654321.quo(13731.24)   #=> -89909424858035.7
+ *     -1234567890987654321.fdiv(13731)      #=> -89910996357705.5
+ *     -1234567890987654321.fdiv(13731.24)   #=> -89909424858035.7
  *
  */
-
-static VALUE
-rb_big_quo(VALUE x, VALUE y)
-{
-    return rb_funcall(rb_rational_raw1(x), '/', 1, rb_Rational1(y));
-}
 
 static VALUE
 rb_big_fdiv(VALUE x, VALUE y)
@@ -2021,6 +2014,7 @@ rb_big_fdiv(VALUE x, VALUE y)
 	    return DOUBLE2NUM(ldexp(big2dbl(z), ex - ey));
 	  }
 	  case T_FLOAT:
+	    if (isnan(RFLOAT_VALUE(y))) return y;
 	    y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &ey), DBL_MANT_DIG));
 	    ey -= DBL_MANT_DIG;
 	    goto bignum;
@@ -2688,7 +2682,6 @@ Init_Bignum(void)
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
-    rb_define_method(rb_cBignum, "quo", rb_big_quo, 1);
     rb_define_method(rb_cBignum, "fdiv", rb_big_fdiv, 1);
     rb_define_method(rb_cBignum, "**", rb_big_pow, 1);
     rb_define_method(rb_cBignum, "&", rb_big_and, 1);
