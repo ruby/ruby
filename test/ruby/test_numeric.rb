@@ -201,9 +201,9 @@ class TestNumeric < Test::Unit::TestCase
 
   def test_num2long
     assert_raise(TypeError) { 1 & nil }
-    assert_equal(1, 1 & 1.0)
-    assert_equal(0, 1 & 2147483648.0)
-    assert_equal(0, 1 & 9223372036854777856.0)
+    assert_raise(TypeError) { 1 & 1.0 }
+    assert_raise(TypeError) { 1 & 2147483648.0 }
+    assert_raise(TypeError) { 1 & 9223372036854777856.0 }
     o = Object.new
     def o.to_int; 1; end
     assert_equal(1, 1 & o)

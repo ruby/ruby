@@ -2636,9 +2636,12 @@ fix_rev(VALUE num)
 }
 
 static VALUE
-fix_coerce(VALUE x)
+bit_coerce(VALUE x)
 {
     while (!FIXNUM_P(x) && TYPE(x) != T_BIGNUM) {
+	if (TYPE(x) == T_FLOAT) {
+	    rb_raise(rb_eTypeError, "can't convert Float into Integer");
+	}
 	x = rb_to_int(x);
     }
     return x;
@@ -2656,7 +2659,7 @@ fix_and(VALUE x, VALUE y)
 {
     long val;
 
-    if (!FIXNUM_P(y = fix_coerce(y))) {
+    if (!FIXNUM_P(y = bit_coerce(y))) {
 	return rb_big_and(y, x);
     }
     val = FIX2LONG(x) & FIX2LONG(y);
@@ -2675,7 +2678,7 @@ fix_or(VALUE x, VALUE y)
 {
     long val;
 
-    if (!FIXNUM_P(y = fix_coerce(y))) {
+    if (!FIXNUM_P(y = bit_coerce(y))) {
 	return rb_big_or(y, x);
     }
     val = FIX2LONG(x) | FIX2LONG(y);
@@ -2694,7 +2697,7 @@ fix_xor(VALUE x, VALUE y)
 {
     long val;
 
-    if (!FIXNUM_P(y = fix_coerce(y))) {
+    if (!FIXNUM_P(y = bit_coerce(y))) {
 	return rb_big_xor(y, x);
     }
     val = FIX2LONG(x) ^ FIX2LONG(y);
@@ -2791,7 +2794,8 @@ fix_aref(VALUE fix, VALUE idx)
     long val = FIX2LONG(fix);
     long i;
 
-    if (!FIXNUM_P(idx = fix_coerce(idx))) {
+    idx = rb_to_int(idx);
+    if (!FIXNUM_P(idx)) {
 	idx = rb_big_norm(idx);
 	if (!FIXNUM_P(idx)) {
 	    if (!RBIGNUM_SIGN(idx) || val >= 0)
