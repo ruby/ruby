@@ -4368,7 +4368,6 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	int clen, tlen, max = RSTRING_LEN(str) * 1.2;
 	int offset;
 	char *buf = ALLOC_N(char, max), *t = buf;
-	VALUE v;
 
 	while (s < send) {
 	    c0 = c = rb_enc_codepoint(s, send, enc);

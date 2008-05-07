@@ -1,3 +1,7 @@
+Thu May  8 06:27:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_key_p): thread local storage stores ID.
+
 Thu May  8 01:10:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (tr_trans): should squeeze properly.  [ruby-dev:34587]

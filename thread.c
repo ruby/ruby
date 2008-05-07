@@ -70,9 +70,9 @@ static VALUE eTerminateSignal = INT2FIX(1);
 static volatile int system_working = 1;
 
 inline static void
-st_delete_wrap(st_table * table, VALUE key)
+st_delete_wrap(st_table *table, st_data_t key)
 {
-    st_delete(table, (st_data_t *) & key, 0);
+    st_delete(table, &key, 0);
 }
 
 /********************************************************************************/
@@ -1522,7 +1522,7 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
 	th->local_storage = st_init_numtable();
     }
     if (NIL_P(val)) {
-	st_delete(th->local_storage, (st_data_t *) & id, 0);
+	st_delete_wrap(th->local_storage, id);
 	return Qnil;
     }
     st_insert(th->local_storage, id, val);
@@ -1567,7 +1567,7 @@ rb_thread_key_p(VALUE self, VALUE key)
     if (!th->local_storage) {
 	return Qfalse;
     }
-    if (st_lookup(th->local_storage, key, 0)) {
+    if (st_lookup(th->local_storage, id, 0)) {
 	return Qtrue;
     }
     return Qfalse;
