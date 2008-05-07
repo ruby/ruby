@@ -1,3 +1,7 @@
+Thu May  8 08:56:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (sort_1, sort_2): check reentered.  [ruby-core:16679]
+
 Thu May  8 06:43:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_find_exe_r, dln_find_file_r): reentrant versions.

@@ -1442,6 +1442,14 @@ rb_ary_reverse_m(VALUE ary)
     return rb_ary_reverse(rb_ary_dup(ary));
 }
 
+static void
+check_reentered(VALUE *klass)
+{
+    if (*klass) {
+	rb_raise(rb_eRuntimeError, "sort! reentered");
+    }
+}
+
 static int
 sort_1(const void *ap, const void *bp, void *dummy)
 {
@@ -1450,6 +1458,7 @@ sort_1(const void *ap, const void *bp, void *dummy)
     int n;
 
     n = rb_cmpint(retval, a, b);
+    check_reentered(dummy);
     return n;
 }
 
@@ -1471,6 +1480,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
     retval = rb_funcall(a, id_cmp, 1, b);
     n = rb_cmpint(retval, a, b);
+    check_reentered(dummy);
 
     return n;
 }
@@ -1500,12 +1510,12 @@ rb_ary_sort_bang(VALUE ary)
 
 	RBASIC(tmp)->klass = 0;
 	ruby_qsort(RARRAY_PTR(tmp), RARRAY_LEN(tmp), sizeof(VALUE),
-		   rb_block_given_p()?sort_1:sort_2, 0);
+		   rb_block_given_p()?sort_1:sort_2, &RBASIC(tmp)->klass);
 	RARRAY(ary)->ptr = RARRAY(tmp)->ptr;
 	RARRAY(ary)->len = RARRAY(tmp)->len;
 	RARRAY(ary)->aux.capa = RARRAY(tmp)->aux.capa;
 	FL_UNSET(ary, ELTS_SHARED);
-	rb_gc_force_recycle(tmp);
+	RBASIC(tmp)->klass = RBASIC(ary)->klass;
     }
     return ary;
 }
