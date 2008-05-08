@@ -1442,21 +1442,23 @@ rb_ary_reverse_m(VALUE ary)
     return rb_ary_reverse(rb_ary_dup(ary));
 }
 
-static void
+static VALUE
 check_reentered(VALUE *klass)
 {
     if (*klass) {
 	rb_raise(rb_eRuntimeError, "sort! reentered");
     }
+    return Qnil;
 }
 
 static int
 sort_1(const void *ap, const void *bp, void *dummy)
 {
+    VALUE retval = check_reentered(dummy);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
-    VALUE retval = rb_yield_values(2, a, b);
     int n;
 
+    retval = rb_yield_values(2, a, b);
     n = rb_cmpint(retval, a, b);
     check_reentered(dummy);
     return n;
@@ -1465,7 +1467,7 @@ sort_1(const void *ap, const void *bp, void *dummy)
 static int
 sort_2(const void *ap, const void *bp, void *dummy)
 {
-    VALUE retval;
+    VALUE retval = check_reentered(dummy);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
@@ -1515,6 +1517,8 @@ rb_ary_sort_bang(VALUE ary)
 	RARRAY(ary)->len = RARRAY(tmp)->len;
 	RARRAY(ary)->aux.capa = RARRAY(tmp)->aux.capa;
 	FL_UNSET(ary, ELTS_SHARED);
+	RARRAY(tmp)->ptr = 0;
+	RARRAY(tmp)->len = 0;
 	RBASIC(tmp)->klass = RBASIC(ary)->klass;
     }
     return ary;

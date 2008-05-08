@@ -1,6 +1,7 @@
-Thu May  8 08:56:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May  8 09:51:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* array.c (sort_1, sort_2): check reentered.  [ruby-core:16679]
+	* array.c (sort_1, sort_2): check for reentered and if elements are
+	  accessible.  [ruby-core:16679]
 
 Thu May  8 06:43:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
