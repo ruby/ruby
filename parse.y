@@ -7162,11 +7162,17 @@ parser_yylex(struct parser_params *parser)
 	if (tokadd_mbchar(c) == -1) return 0;
 	c = nextc();
     } while (parser_is_identchar());
-    if ((c == '!' || c == '?') && !peek('=')) {
-	tokadd(c);
-    }
-    else {
+    switch (tok()[0]) {
+      case '@': case '$':
 	pushback(c);
+	break;
+      default:
+	if ((c == '!' || c == '?') && !peek('=')) {
+	    tokadd(c);
+	}
+	else {
+	    pushback(c);
+	}
     }
     tokfix();
 

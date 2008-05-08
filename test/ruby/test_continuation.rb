@@ -51,19 +51,5 @@ class TestContinuation < Test::Unit::TestCase
       c.call
     }
   end
-
-  def test_sort
-    assert_normal_exit(<<-'End')
-      require 'continuation'
-      n = 1000
-      ary = (1..100).to_a
-      ary.sort! {|a,b|
-        callcc {|k| $k = k } if !defined? $k
-        a <=> b
-      }
-      n -= 1
-      $k.call if 0 < n
-    End
-  end
 end
 
