@@ -1,3 +1,8 @@
+Thu May  8 16:00:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): ! and ? at the bottom are no longer part
+	  of valid symbol names.  [ruby-dev:34590]
+
 Thu May  8 15:36:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (rb_gc_save_machine_context): call FLUSH_REGISTER_WINDOWS
