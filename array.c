@@ -1454,20 +1454,20 @@ sort_reentered(VALUE *klass)
 static int
 sort_1(const void *ap, const void *bp, void *dummy)
 {
-    VALUE retval = check_reentered(dummy);
+    VALUE retval = sort_reentered(dummy);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
     retval = rb_yield_values(2, a, b);
     n = rb_cmpint(retval, a, b);
-    check_reentered(dummy);
+    sort_reentered(dummy);
     return n;
 }
 
 static int
 sort_2(const void *ap, const void *bp, void *dummy)
 {
-    VALUE retval = check_reentered(dummy);
+    VALUE retval = sort_reentered(dummy);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
@@ -1482,7 +1482,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
 
     retval = rb_funcall(a, id_cmp, 1, b);
     n = rb_cmpint(retval, a, b);
-    check_reentered(dummy);
+    sort_reentered(dummy);
 
     return n;
 }
