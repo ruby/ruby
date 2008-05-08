@@ -1,3 +1,8 @@
+Thu May  8 16:41:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIRUBY), common.mk (RUBYOPT): add purelib.rb.
+	  [ruby-core:16642]
+
 Thu May  8 16:00:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): ! and ? at the bottom are no longer part

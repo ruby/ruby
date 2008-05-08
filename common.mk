@@ -4,7 +4,8 @@ dll: $(LIBRUBY_SO)
 
 .SUFFIXES: .inc
 
-RUBYOPT       =
+RUBYLIB       = -
+RUBYOPT       = -rpurelib.rb
 
 STATIC_RUBY   = static-ruby
 
@@ -113,6 +114,9 @@ VCS           = svn
 all: $(MKFILES) $(PREP) incs $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
+
+loadpath: $(PREP)
+	$(MINIRUBY) -e 'p $$:'
 
 $(PREP): $(MKFILES)
 

@@ -1488,6 +1488,8 @@ if test x"$cross_compiling" = xyes; then
   RUNRUBY='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
 else
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib'
+  MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/$(arch) -I$(EXTOUT)/common'
+  MINIRUBY="$MINIRUBY"' -I./- -I$(srcdir)/ext -rpurelib.rb'
   PREP='miniruby$(EXEEXT)'
   RUNRUBY='$(MINIRUBY) $(srcdir)/runruby.rb --extout=$(EXTOUT)'
 fi

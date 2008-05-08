@@ -348,7 +348,7 @@ $ruby << " -I'$(topdir)'"
 unless CROSS_COMPILING
   $ruby << " -I'$(top_srcdir)/lib'"
   $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
-  $ruby << " -I'$(top_srcdir)/ext' -rpurelib.rb"
+  $ruby << " -I./- -I'$(top_srcdir)/ext' -rpurelib.rb"
   ENV["RUBYLIB"] = "-"
   ENV["RUBYOPT"] = "-rpurelib.rb"
 end
