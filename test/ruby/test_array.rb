@@ -1125,6 +1125,25 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], @cls[].sort!)
   end
 
+  def test_sort_with_callcc
+    respond_to?(:callcc) or require 'continuation'
+    n = 1000
+    cont = nil
+    ary = (1..100).to_a
+    begin
+      ary.sort! {|a,b|
+        callcc {|k| cont = k} unless cont
+        assert_equal(100, ary.size, '[ruby-core:16679]')
+        a <=> b
+      }
+    rescue => e
+    end
+    n -= 1
+    cont.call if 0 < n
+    assert_instance_of(RuntimeError, e, '[ruby-core:16679]')
+    assert_match(/reentered/, e.message, '[ruby-core:16679]')
+  end
+
   def test_to_a
     a = @cls[ 1, 2, 3 ]
     a_id = a.__id__
