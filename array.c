@@ -1513,13 +1513,16 @@ rb_ary_sort_bang(VALUE ary)
 	RBASIC(tmp)->klass = 0;
 	ruby_qsort(RARRAY_PTR(tmp), RARRAY_LEN(tmp), sizeof(VALUE),
 		   rb_block_given_p()?sort_1:sort_2, &RBASIC(tmp)->klass);
+	sort_reentered(&RBASIC(tmp)->klass);
 	RARRAY(ary)->ptr = RARRAY(tmp)->ptr;
 	RARRAY(ary)->len = RARRAY(tmp)->len;
 	RARRAY(ary)->aux.capa = RARRAY(tmp)->aux.capa;
 	FL_UNSET(ary, ELTS_SHARED);
 	RARRAY(tmp)->ptr = 0;
 	RARRAY(tmp)->len = 0;
+	RARRAY(tmp)->aux.capa = 0;
 	RBASIC(tmp)->klass = RBASIC(ary)->klass;
+	OBJ_FREEZE(tmp);
     }
     return ary;
 }

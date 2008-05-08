@@ -1,3 +1,7 @@
+Thu May  8 15:14:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): freeze temporary array.
+
 Thu May  8 13:19:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (rb_thread_mark): mark stat_insn_usage only when ptr is not
