@@ -2152,6 +2152,18 @@ rb_big_pow(VALUE x, VALUE y)
     return DOUBLE2NUM(pow(rb_big2dbl(x), d));
 }
 
+static VALUE
+bit_coerce(VALUE x)
+{
+    while (!FIXNUM_P(x) && TYPE(x) != T_BIGNUM) {
+	if (TYPE(x) == T_FLOAT) {
+	    rb_raise(rb_eTypeError, "can't convert Float into Integer");
+	}
+	x = rb_to_int(x);
+    }
+    return x;
+}
+
 /*
  * call-seq:
  *     big & numeric   =>  integer
@@ -2168,7 +2180,7 @@ rb_big_and(VALUE xx, VALUE yy)
     char sign;
 
     x = xx;
-    y = rb_to_int(yy);
+    y = bit_coerce(yy);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }
@@ -2223,7 +2235,7 @@ rb_big_or(VALUE xx, VALUE yy)
     char sign;
 
     x = xx;
-    y = rb_to_int(yy);
+    y = bit_coerce(yy);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }
@@ -2281,7 +2293,7 @@ rb_big_xor(VALUE xx, VALUE yy)
     char sign;
 
     x = xx;
-    y = rb_to_int(yy);
+    y = bit_coerce(yy);
     if (FIXNUM_P(y)) {
 	y = rb_int2big(FIX2LONG(y));
     }

@@ -1,3 +1,12 @@
+Thu May  8 18:14:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_and): bit-wise operation should not take float
+	  values.  [ruby-dev:34612]
+
+	* bignum.c (rb_big_or): ditto.
+
+	* bignum.c (rb_big_xor): ditto.
+
 Thu May  8 17:44:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, ext/extmk.rb, lib/mkmf.rb: use absolute path for RUBYOPT.
