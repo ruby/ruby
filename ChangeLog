@@ -1,3 +1,8 @@
+Thu May  8 15:36:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (rb_gc_save_machine_context): call FLUSH_REGISTER_WINDOWS
+	  to mark the register stack from GC on another thread.
+
 Thu May  8 15:14:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): freeze temporary array.

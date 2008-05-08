@@ -1966,6 +1966,7 @@ void
 rb_gc_save_machine_context(rb_thread_t *th)
 {
     SET_MACHINE_STACK_END(&th->machine_stack_end);
+    FLUSH_REGISTER_WINDOWS;
 #ifdef __ia64
     th->machine_register_stack_end = rb_ia64_bsp();
 #endif

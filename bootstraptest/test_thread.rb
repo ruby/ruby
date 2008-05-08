@@ -234,3 +234,15 @@ assert_normal_exit %q{
   STDERR.reopen(STDOUT)
   exec "/"
 }
+
+assert_normal_exit %q{
+  (0..10).map {
+    Thread.new {
+     10000.times {
+        Object.new.to_s
+      }
+    }
+  }.each {|t|
+    t.join
+  }
+}
