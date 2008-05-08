@@ -1,3 +1,10 @@
+Thu May  8 16:46:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (rb_find_file_ext): guard load_path from GC.
+	  gcc version 4.1.2 20061115 (prerelease) (Debian 4.1.1-21) optimizes
+	  load_path by holding only RARRAY_LEN(load_path) and
+	  RARRAY_PTR(load_path) in registers on IA64 GNU/Linux Etch.
+
 Thu May  8 16:41:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MINIRUBY), common.mk (RUBYOPT): add purelib.rb.

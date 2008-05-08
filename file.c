@@ -4346,6 +4346,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 	    }
 	}
     }
+    RB_GC_GUARD(load_path);
     return 0;
 }
 
