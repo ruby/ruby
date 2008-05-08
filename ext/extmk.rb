@@ -350,7 +350,7 @@ unless CROSS_COMPILING
   $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
   $ruby << " -I./- -I'$(top_srcdir)/ext' -rpurelib.rb"
   ENV["RUBYLIB"] = "-"
-  ENV.delete("RUBYOPT")
+  ENV["RUBYOPT"] = "-r#{File.expand_path('ext/purelib.rb', $top_srcdir)}"
 end
 $config_h = '$(arch_hdrdir)/ruby/config.h'
 $mflags << "ruby=#$ruby"
@@ -555,6 +555,7 @@ if $nmake == ?b
   end
 end
 $mflags.unshift("topdir=#$topdir")
+ENV.delete("RUBYOPT")
 system($make, *sysquote($mflags)) or exit($?.exitstatus)
 
 #Local variables:
