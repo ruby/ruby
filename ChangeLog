@@ -1,4 +1,6 @@
-Thu May  8 16:46:06 2008  Tanaka Akira  <akr@fsij.org>
+Thu May  8 17:29:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, ext/extmk.rb, lib/mkmf.rb: removed RUBYOPT.
 
 	* file.c (rb_find_file_ext): guard load_path from GC.
 	  gcc version 4.1.2 20061115 (prerelease) (Debian 4.1.1-21) optimizes

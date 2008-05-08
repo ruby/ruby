@@ -1312,7 +1312,7 @@ arch_hdrdir = #{$arch_hdrdir}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
   if $extmk
-    mk << "RUBYLIB = -\nRUBYOPT = -rpurelib.rb\n"
+    mk << "RUBYLIB = -\nRUBYOPT =\n"
   end
   if destdir = CONFIG["prefix"][$dest_prefix_pattern, 1]
     mk << "\nDESTDIR = #{destdir}\n"
