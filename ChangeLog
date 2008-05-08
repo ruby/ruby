@@ -1,3 +1,8 @@
+Fri May  9 07:47:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* cont.c (cont_restore_0): dynamic stack direction code should be
+	  consistent with static one.  [ruby-talk:301152]
+
 Fri May  9 00:03:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (arg): operator assignment "a += b rescue c" should be

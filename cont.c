@@ -323,7 +323,7 @@ cont_restore_0(rb_context_t *cont, VALUE *addr_in_prev_frame)
 #else
 	if (addr_in_prev_frame > &space[0]) {
 	    /* Stack grows downward */
-	    if (addr_in_prev_frame > cont->saved_thread.machine_stack_size) {
+	    if (addr_in_prev_frame > cont->machine_stack_src) {
 		cont_restore_0(cont, &space[0]);
 	    }
 	}
