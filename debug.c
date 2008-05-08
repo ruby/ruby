@@ -13,12 +13,14 @@
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 #include "debug.h"
+#include "eval_intern.h"
 #include "vm_core.h"
 
 /* for gdb */
 static const union {
     enum ruby_special_consts    special_consts;
     enum ruby_value_type        value_type;
+    enum ruby_tag_type          tag_type;
     enum node_type              node_type;
     enum {
         RUBY_ENCODING_INLINE_MAX = ENCODING_INLINE_MAX,

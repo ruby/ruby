@@ -151,15 +151,26 @@ int _setjmp(), _longjmp();
 
 #define JUMP_TAG(st) TH_JUMP_TAG(GET_THREAD(), st)
 
-#define TAG_RETURN	0x1
-#define TAG_BREAK	0x2
-#define TAG_NEXT	0x3
-#define TAG_RETRY	0x4
-#define TAG_REDO	0x5
-#define TAG_RAISE	0x6
-#define TAG_THROW	0x7
-#define TAG_FATAL	0x8
-#define TAG_MASK	0xf
+enum ruby_tag_type {
+    RUBY_TAG_RETURN	= 0x1,
+    RUBY_TAG_BREAK	= 0x2,
+    RUBY_TAG_NEXT	= 0x3,
+    RUBY_TAG_RETRY	= 0x4,
+    RUBY_TAG_REDO	= 0x5,
+    RUBY_TAG_RAISE	= 0x6,
+    RUBY_TAG_THROW	= 0x7,
+    RUBY_TAG_FATAL	= 0x8,
+    RUBY_TAG_MASK	= 0xf
+};
+#define TAG_RETURN	RUBY_TAG_RETURN
+#define TAG_BREAK	RUBY_TAG_BREAK
+#define TAG_NEXT	RUBY_TAG_NEXT
+#define TAG_RETRY	RUBY_TAG_RETRY
+#define TAG_REDO	RUBY_TAG_REDO
+#define TAG_RAISE	RUBY_TAG_RAISE
+#define TAG_THROW	RUBY_TAG_THROW
+#define TAG_FATAL	RUBY_TAG_FATAL
+#define TAG_MASK	RUBY_TAG_MASK
 
 #define NEW_THROW_OBJECT(val, pt, st) \
   ((VALUE)NEW_NODE(NODE_LIT, (val), (pt), (st)))
