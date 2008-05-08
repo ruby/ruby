@@ -1,3 +1,9 @@
+Fri May  9 00:03:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): operator assignment "a += b rescue c" should be
+	  parsed as "a += (b rescue c)" just like normal assignment.
+	  [ruby-talk:301000]
+
 Thu May  8 18:14:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_and): bit-wise operation should not take float
