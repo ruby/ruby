@@ -1,3 +1,8 @@
+Thu May  8 13:19:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (rb_thread_mark): mark stat_insn_usage only when ptr is not
+	  null.
+
 Thu May  8 10:44:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (sort_reentered): reentered check may be called from

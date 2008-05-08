@@ -1637,6 +1637,7 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->top_wrapper);
 	RUBY_MARK_UNLESS_NULL(th->fiber);
 	RUBY_MARK_UNLESS_NULL(th->root_fiber);
+	RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
 
 	rb_mark_tbl(th->local_storage);
 
@@ -1650,7 +1651,6 @@ rb_thread_mark(void *ptr)
 	mark_event_hooks(th->event_hooks);
     }
 
-    RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
     RUBY_MARK_LEAVE("thread");
 }
 
