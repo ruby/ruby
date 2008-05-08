@@ -1,3 +1,8 @@
+Thu May  8 10:44:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (sort_reentered): reentered check may be called from
+	  Array#sort.
+
 Thu May  8 09:51:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (sort_1, sort_2): check for reentered and if elements are

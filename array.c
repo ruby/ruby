@@ -1443,10 +1443,10 @@ rb_ary_reverse_m(VALUE ary)
 }
 
 static VALUE
-check_reentered(VALUE *klass)
+sort_reentered(VALUE *klass)
 {
     if (*klass) {
-	rb_raise(rb_eRuntimeError, "sort! reentered");
+	rb_raise(rb_eRuntimeError, "sort reentered");
     }
     return Qnil;
 }
