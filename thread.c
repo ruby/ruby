@@ -674,9 +674,18 @@ rb_thread_sleep_forever()
 static double
 timeofday(void)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (double)tv.tv_sec + (double)tv.tv_usec * 1e-6;
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
+    struct timespec tp;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0) {
+        return (double)tp.tv_sec + (double)tp.tv_nsec * 1e-9;
+    } else
+#endif
+    {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        return (double)tv.tv_sec + (double)tv.tv_usec * 1e-6;
+    }
 }
 
 static void
