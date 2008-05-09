@@ -1,7 +1,7 @@
 Fri May  9 19:16:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (timeofday): use monotonic clock.  based on a patch
-	  from zimbatm <zimbatm@oree.ch> in [ruby-core:16627].
+	  from zimbatm <zimbatm at oree.ch> in [ruby-core:16627].
 
 Fri May  9 07:47:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
