@@ -364,12 +364,16 @@ module Tk
 
     autoload :TLabelframe,   'tkextlib/tile/tlabelframe'
     autoload :Labelframe,    'tkextlib/tile/tlabelframe'
+    autoload :TLabelFrame,   'tkextlib/tile/tlabelframe'
+    autoload :LabelFrame,    'tkextlib/tile/tlabelframe'
 
     autoload :TLabel,        'tkextlib/tile/tlabel'
     autoload :Label,         'tkextlib/tile/tlabel'
 
     autoload :TMenubutton,   'tkextlib/tile/tmenubutton'
     autoload :Menubutton,    'tkextlib/tile/tmenubutton'
+    autoload :TMenuButton,   'tkextlib/tile/tmenubutton'
+    autoload :MenuButton,    'tkextlib/tile/tmenubutton'
 
     autoload :TNotebook,     'tkextlib/tile/tnotebook'
     autoload :Notebook,      'tkextlib/tile/tnotebook'

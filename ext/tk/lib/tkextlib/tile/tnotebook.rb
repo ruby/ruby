@@ -77,9 +77,9 @@ class Tk::Tile::TNotebook < TkWindow
 
   def add(child, keys=nil)
     if keys && keys != None
-      tk_send_without_enc('add', _epath(child), *hash_kv(keys))
+      tk_send('add', _epath(child), *hash_kv(keys))
     else
-      tk_send_without_enc('add', _epath(child))
+      tk_send('add', _epath(child))
     end
     self
   end

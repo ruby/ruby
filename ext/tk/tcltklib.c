@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-04-02"
+#define TCLTKLIB_RELEASE_DATE "2008-05-09"
 
 #include "ruby.h"
 
@@ -7106,7 +7106,8 @@ lib_toUTF8_core(ip_obj, src, encodename)
                     if (NIL_P(enc)) {
                         encoding = (Tcl_Encoding)NULL;
                     } else {
-                        StringValue(enc);
+                        /* StringValue(enc); */
+                        enc = rb_funcall(enc, ID_to_s, 0, 0);
                         /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
                         encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
 						   RSTRING_PTR(enc));
@@ -7292,7 +7293,8 @@ lib_fromUTF8_core(ip_obj, src, encodename)
             if (NIL_P(enc)) {
                 encoding = (Tcl_Encoding)NULL;
             } else {
-                StringValue(enc);
+                /* StringValue(enc); */
+                enc = rb_funcall(enc, ID_to_s, 0, 0);
                 /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
                 encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
 					   RSTRING_PTR(enc));

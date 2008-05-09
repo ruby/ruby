@@ -61,12 +61,14 @@ module TkGrid
     tk_call_without_enc("grid", 'columnconfigure', 
                         master, index, *hash_kv(args))
   end
+  alias column columnconfigure
 
   def rowconfigure(master, index, args)
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
     tk_call_without_enc("grid", 'rowconfigure', master, index, *hash_kv(args))
   end
+  alias row rowconfigure
 
   def columnconfiginfo(master, index, slot=nil)
     # master = master.epath if master.kind_of?(TkObject)
@@ -189,10 +191,10 @@ module TkGrid
     list(tk_call_without_enc('grid', 'slaves', master, *hash_kv(args)))
   end
 
-  module_function :bbox, :forget, :propagate, :info
+  module_function :anchor, :bbox, :add, :forget, :propagate, :info
   module_function :remove, :size, :slaves, :location
   module_function :grid, :configure, :columnconfigure, :rowconfigure
-  module_function :columnconfiginfo, :rowconfiginfo
+  module_function :column, :row, :columnconfiginfo, :rowconfiginfo
 end
 =begin
 def TkGrid(win, *args)
