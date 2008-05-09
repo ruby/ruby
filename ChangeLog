@@ -1,3 +1,18 @@
+Fri May  9 23:33:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/wm.rb: methods of Tk::Wm_for_General module cannot
+	  pass the given block to methods of Tk::Wm module.
+
+	* ext/tk/lib/tk/grid.rb: lack of module-method definitions.
+
+	* ext/tk/lib/tkextlib/tile.rb: lack of autoload definitions.
+
+	* ext/tk/lib/tkextlib/tile/tnotebook.rb: cannot use kanji (not UTF-8) 
+	  characters for headings.
+
+	* ext/tk/tcltklib.c: maybe a little more stable about @encoding value 
+	  of TclTkIp object.
+
 Wed May  7 08:46:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_s_def): to_str should be called only once.
