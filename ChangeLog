@@ -6,6 +6,9 @@ Sat May 10 22:14:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (tr_trans): should check src size, not str size.
 	  [ruby-dev:34637]
 
+	* string.c (tr_trans): should not turn on modify flag if no
+	  modification happens.  [ruby-dev:34631]
+
 Sat May 10 18:11:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_line): zero length record separator should

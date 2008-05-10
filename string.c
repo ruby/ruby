@@ -4331,7 +4331,6 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    }
 	    else {
 		save = -1;
-		modify = 1;
 		c = c0;
 	    }
 	    while (t - buf + tlen >= max) {
