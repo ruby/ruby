@@ -4947,6 +4947,15 @@ class TkWindow<TkObject
     self
   end
 
+  def grid_anchor(anchor=None)
+    if anchor == None
+      TkGrid.anchor(self)
+    else
+      TkGrid.anchor(self, anchor)
+      self
+    end
+  end
+
   def grid_forget
     #tk_call('grid', 'forget', epath)
     TkGrid.forget(self)
@@ -4978,12 +4987,14 @@ class TkWindow<TkObject
     TkGrid.columnconfigure(self, index, keys)
   end
   alias grid_columnconfigure grid_columnconfig
+  alias grid_column grid_columnconfig
 
   def grid_rowconfig(index, keys)
     #tk_call('grid', 'rowconfigure', epath, index, *hash_kv(keys))
     TkGrid.rowconfigure(self, index, keys)
   end
   alias grid_rowconfigure grid_rowconfig
+  alias grid_row grid_rowconfig
 
   def grid_columnconfiginfo(index, slot=nil)
     #if slot
@@ -5348,7 +5359,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-05-10'.freeze
+  RELEASE_DATE = '2008-05-11'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

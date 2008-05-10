@@ -59,7 +59,7 @@ module TkGrid
     if args[-1].kind_of?(Hash)
       opts = args.pop
     else
-      opts = nil
+      opts = {}
     end
     fail ArgumentError, 'no widget is given' if args.empty?
     params = []

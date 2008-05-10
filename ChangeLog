@@ -1,11 +1,18 @@
+Sun May 11 02:48:13 2008    <nagai@orca16.orcabay.ddo.jp>
+
+	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: fail to do pack/grid 
+	  without options.
+
+	* ext/tk/lib/tk.rb: add TkWindow#grid_anchor, grid_column, grid_row.
+
 Sat May 10 18:19:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_line): RDoc updated.  [ruby-dev:34586]
 
 Sat May 10 13:17:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: increase parameter
-	  patterns of configure method.
+	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: increase supported
+	  parameter patterns of configure method.
 
 Sat May 10 09:16:13 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
