@@ -2352,9 +2352,9 @@ count_objects(int argc, VALUE *argv, VALUE os)
  *  call-seq:
  *     GC.count -> Integer
  *
- *  Counts objects for each type.
+ *  The number of times GC occured.
  *
- *  It returns a number of GC invoke counts.
+ *  It returns the number of times GC occured since the process started.
  *
  */
 
