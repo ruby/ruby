@@ -122,6 +122,7 @@ env_mark(void *ptr)
 
 	RUBY_GC_INFO("env->prev_envval\n");
 	RUBY_MARK_UNLESS_NULL(env->prev_envval);
+	RUBY_MARK_UNLESS_NULL(env->block.self);
 	RUBY_MARK_UNLESS_NULL(env->block.proc);
 
 	if (env->block.iseq) {

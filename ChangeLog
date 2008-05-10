@@ -1,3 +1,9 @@
+Sat May 10 11:36:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* vm.c (env_mark): mark env->block.self.  prevent SEGV when GC occur
+	  in prepare_iseq_build with gcc version 3.4.6 [FreeBSD] 20060305 on
+	  FreeBSD/amd64.
+
 Fri May  9 19:16:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* thread.c (timeofday): use monotonic clock.  based on a patch
