@@ -3,6 +3,9 @@ Sat May 10 22:14:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (tr_trans): single '^' does not mean negation.
 	  [ruby-dev:34632]
 
+	* string.c (tr_trans): should check src size, not str size.
+	  [ruby-dev:34637]
+
 Sat May 10 18:11:18 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_line): zero length record separator should
