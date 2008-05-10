@@ -1,3 +1,7 @@
+Sat May 10 18:19:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_each_line): RDoc updated.  [ruby-dev:34586]
+
 Sat May 10 13:17:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: increase parameter

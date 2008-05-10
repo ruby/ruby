@@ -3698,9 +3698,8 @@ rb_f_split(argc, argv)
  *  
  *  Splits <i>str</i> using the supplied parameter as the record separator
  *  (<code>$/</code> by default), passing each substring in turn to the supplied
- *  block. If a zero-length record separator is supplied, the string is split on
- *  <code>\n</code> characters, except that multiple successive newlines are
- *  appended together.
+ *  block. If a zero-length record separator is supplied, the string is split
+ *  into paragraphs delimited by multiple successive newlines.
  *     
  *     print "Example one\n"
  *     "hello\nworld".each {|s| p s}
