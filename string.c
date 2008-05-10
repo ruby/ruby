@@ -5018,9 +5018,8 @@ rb_str_split(VALUE str, const char *sep0)
  *  
  *  Splits <i>str</i> using the supplied parameter as the record separator
  *  (<code>$/</code> by default), passing each substring in turn to the supplied
- *  block. If a zero-length record separator is supplied, the string is split on
- *  <code>\n</code> characters, except that multiple successive newlines are
- *  appended together.
+ *  block. If a zero-length record separator is supplied, the string is split
+ *  into paragraphs delimited by multiple successive newlines.
  *     
  *     print "Example one\n"
  *     "hello\nworld".each {|s| p s}
@@ -5107,8 +5106,13 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     while (p < pend) {
 	int c = rb_enc_codepoint(p, pend, enc);
 
+      again:
 	n = rb_enc_codelen(c, enc);
 	if (rslen == 0 && c == newline) {
+	    p += n;
+	    if (p < pend && (c = rb_enc_codepoint(p, pend, enc)) != newline) {
+		goto again;
+	    }
 	    while (p < pend && rb_enc_codepoint(p, pend, enc) == newline) {
 		p += n;
 	    }
