@@ -4243,7 +4243,9 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	enc = rb_enc_check(src, repl);
     }
     trsrc.p = RSTRING_PTR(src); trsrc.pend = trsrc.p + RSTRING_LEN(src);
-    if (RSTRING_LEN(str) > 1 && rb_enc_ascget(trsrc.p, trsrc.pend, &l, enc) == '^') {
+    if (RSTRING_LEN(str) > 1 &&
+	rb_enc_ascget(trsrc.p, trsrc.pend, &l, enc) == '^' &&
+	trsrc.p + l < trsrc.pend) {
 	cflag = 1;
 	trsrc.p += l;
     }
