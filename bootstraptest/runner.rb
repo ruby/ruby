@@ -52,7 +52,8 @@ def main
     when /\A--ruby=(.*)/
       @ruby = $1
       @ruby.gsub!(/^([^ ]*)/){File.expand_path($1)}
-      @ruby.gsub!(/-I([^ ]*)/){"-I"+File.expand_path($1)}
+      @ruby.gsub!(/(\s+-I\s*)(\S+)/){$1+File.expand_path($2)}
+      @ruby.gsub!(/(\s+-r\s*)(\.\.?\/\S+)/){$1+File.expand_path($2)}
       true
     when /\A--sets=(.*)/
       tests = Dir.glob("#{File.dirname($0)}/test_{#{$1}}*.rb")

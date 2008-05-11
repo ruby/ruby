@@ -1,3 +1,7 @@
+Sun May 11 22:39:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb (main): handle relative path -r options.
+
 Sun May 11 19:04:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_thread.rb: kill and join temporal threads that are
