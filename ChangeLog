@@ -1,4 +1,7 @@
-Sun May 11 22:39:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May 11 22:54:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb (main): leave -I options for purelib.rb
+	  untouched.
 
 	* bootstraptest/runner.rb (main): handle relative path -r options.
 
