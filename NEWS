@@ -187,6 +187,8 @@ with all sufficient information, see the ChangeLog file.
   * Method#receiver
   * Method#name
   * Method#owner
+  * UnboundMethod#name
+  * UnboundMethod#owner
 
     New methods.
 

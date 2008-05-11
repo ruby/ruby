@@ -1,3 +1,8 @@
+Sun May 11 10:36:10 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* eval.c (method_name, method_owner): New methods; backported
+	  from 1.9. (UnboundMethod#name, UnboundMethod#owner)
+
 Sun May 11 02:48:13 2008    <nagai@orca16.orcabay.ddo.jp>
 
 	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: fail to do pack/grid 

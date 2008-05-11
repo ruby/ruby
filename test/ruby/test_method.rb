@@ -47,5 +47,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(o, m.receiver)
     assert_equal("foo", m.name)
     assert_equal(class << o; self; end, m.owner)
+    assert_equal("foo", m.unbind.name)
+    assert_equal(class << o; self; end, m.unbind.owner)
   end
 end
