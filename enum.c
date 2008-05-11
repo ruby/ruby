@@ -844,18 +844,6 @@ enum_sort_by(obj)
 }
 
 static VALUE
-all_iter_i(i, memo)
-    VALUE i;
-    VALUE *memo;
-{
-    if (!RTEST(rb_yield(i))) {
-	*memo = Qfalse;
-	rb_iter_break();
-    }
-    return Qnil;
-}
-
-static VALUE
 all_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -865,6 +853,14 @@ all_i(i, memo)
 	rb_iter_break();
     }
     return Qnil;
+}
+
+static VALUE
+all_iter_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    return all_i(rb_yield(i), memo);
 }
 
 /*
@@ -895,18 +891,6 @@ enum_all(obj)
 }
 
 static VALUE
-any_iter_i(i, memo)
-    VALUE i;
-    VALUE *memo;
-{
-    if (RTEST(rb_yield(i))) {
-	*memo = Qtrue;
-	rb_iter_break();
-    }
-    return Qnil;
-}
-
-static VALUE
 any_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -916,6 +900,14 @@ any_i(i, memo)
 	rb_iter_break();
     }
     return Qnil;
+}
+
+static VALUE
+any_iter_i(i, memo)
+    VALUE i;
+    VALUE *memo;
+{
+    return any_i(rb_yield(i), memo);
 }
 
 /*
