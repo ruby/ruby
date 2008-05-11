@@ -655,7 +655,7 @@ Thu Apr 24 23:25:17 2008  Tanaka Akira  <akr@fsij.org>
 	  redirections.
 	  (pipe_open_v): use rb_exec_getargs.
 	  (pipe_open_s): use rb_exec_getargs.
-	  (rb_io_initialize): update max_file_descriptor..
+	  (rb_io_initialize): update max_file_descriptor.
 
 	* process.c (hide_obj): new function.
 	  (check_exec_redirect_fd): new function.
