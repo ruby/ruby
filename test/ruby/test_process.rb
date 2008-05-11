@@ -799,27 +799,43 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def with_stdin(filename)
+    open(filename) {|f|
+      begin
+        old = STDIN.dup
+        begin
+          STDIN.reopen(filename)
+          yield
+        ensure
+          STDIN.reopen(old)
+        end
+      ensure
+        old.close
+      end
+    }
+  end
+
   def test_argv0_noarg
     with_tmpchdir {|d|
       open("t", "w") {|f| f.print "exit true" }
       open("f", "w") {|f| f.print "exit false" }
 
-      assert_equal(true, system([RUBY, "qaz"], STDIN=>"t"))
-      assert_equal(false, system([RUBY, "wsx"], STDIN=>"f"))
+      with_stdin("t") { assert_equal(true, system([RUBY, "qaz"])) }
+      with_stdin("f") { assert_equal(false, system([RUBY, "wsx"])) }
 
-      Process.wait spawn([RUBY, "edc"], STDIN=>"t")
+      with_stdin("t") { Process.wait spawn([RUBY, "edc"]) }
       assert($?.success?)
-      Process.wait spawn([RUBY, "rfv"], STDIN=>"f")
+      with_stdin("f") { Process.wait spawn([RUBY, "rfv"]) }
       assert(!$?.success?)
 
-      IO.popen([[RUBY, "tgb"], STDIN=>"t"]) {|io| assert_equal("", io.read) }
+      with_stdin("t") { IO.popen([[RUBY, "tgb"]]) {|io| assert_equal("", io.read) } }
       assert($?.success?)
-      IO.popen([[RUBY, "yhn"], STDIN=>"f"]) {|io| assert_equal("", io.read) }
+      with_stdin("f") { IO.popen([[RUBY, "yhn"]]) {|io| assert_equal("", io.read) } }
       assert(!$?.success?)
 
-      status = run_in_child "exec([#{RUBY.dump}, 'ujm'], STDIN=>'t')"
+      status = run_in_child "STDIN.reopen('t'); exec([#{RUBY.dump}, 'ujm'])"
       assert(status.success?)
-      status = run_in_child "exec([#{RUBY.dump}, 'ik,'], STDIN=>'f')"
+      status = run_in_child "STDIN.reopen('f'); exec([#{RUBY.dump}, 'ik,'])"
       assert(!status.success?)
     }
   end

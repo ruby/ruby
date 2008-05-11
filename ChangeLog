@@ -1,3 +1,9 @@
+Sun May 11 17:58:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_process.rb (TestProcess#with_stdin): defined.
+	  (TestProcess#test_argv0_noarg): don't use redirect_fds.
+	  [ruby-dev:34647]
+
 Sun May 11 17:57:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (MINIRUBY): should not include extension library path.
