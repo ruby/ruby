@@ -52,18 +52,18 @@ grep_iter_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
  *  call-seq:
  *     enum.grep(pattern)                   => array
  *     enum.grep(pattern) {| obj | block }  => array
- *  
+ *
  *  Returns an array of every element in <i>enum</i> for which
  *  <code>Pattern === element</code>. If the optional <em>block</em> is
  *  supplied, each matching element is passed to it, and the block's
  *  result is stored in the output array.
- *     
+ *
  *     (1..100).grep 38..44   #=> [38, 39, 40, 41, 42, 43, 44]
  *     c = IO.constants
  *     c.grep(/SEEK/)         #=> [:SEEK_SET, :SEEK_CUR, :SEEK_END]
  *     res = c.grep(/SEEK/) {|v| IO.const_get(v) }
  *     res                    #=> [0, 1, 2]
- *     
+ *
  */
 
 static VALUE
@@ -76,7 +76,7 @@ enum_grep(VALUE obj, VALUE pat)
     arg[1] = ary;
 
     rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)arg);
-    
+
     return ary;
 }
 
@@ -106,14 +106,14 @@ count_iter_i(VALUE i, VALUE memop, int argc, VALUE *argv)
  *  call-seq:
  *     enum.count(item)             => int
  *     enum.count {| obj | block }  => int
- *  
+ *
  *  Returns the number of items in <i>enum</i> for which equals to <i>item</i>.
  *  If a block is given, counts the number of elements yielding a true value.
- *     
+ *
  *     ary = [1, 2, 4, 2]
  *     ary.count(2)          # => 2
  *     ary.count{|x|x%2==0}  # => 3
- *     
+ *
  */
 
 static VALUE
@@ -153,15 +153,15 @@ find_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
  *  call-seq:
  *     enum.detect(ifnone = nil) {| obj | block }  => obj or nil
  *     enum.find(ifnone = nil)   {| obj | block }  => obj or nil
- *  
+ *
  *  Passes each entry in <i>enum</i> to <em>block</em>. Returns the
  *  first for which <em>block</em> is not <code>false</code>.  If no
  *  object matches, calls <i>ifnone</i> and returns its result when it
  *  is specified, or returns <code>nil</code>
- *     
+ *
  *     (1..10).detect  {|i| i % 5 == 0 and i % 7 == 0 }   #=> nil
  *     (1..100).detect {|i| i % 5 == 0 and i % 7 == 0 }   #=> 35
- *     
+ *
  */
 
 static VALUE
@@ -212,16 +212,16 @@ find_index_iter_i(VALUE i, VALUE memop, int argc, VALUE *argv)
  *  call-seq:
  *     enum.find_index(value)            => int or nil
  *     enum.find_index {| obj | block }  => int or nil
- *  
+ *
  *  Compares each entry in <i>enum</i> with <em>value</em> or passes
  *  to <em>block</em>.  Returns the index for the first for which the
  *  evaluated value is non-false.  If no object matches, returns
  *  <code>nil</code>
- *     
+ *
  *     (1..10).find_index  {|i| i % 5 == 0 and i % 7 == 0 }   #=> nil
  *     (1..100).find_index {|i| i % 5 == 0 and i % 7 == 0 }   #=> 34
  *     (1..100).find_index(50)                                #=> 49
- *     
+ *
  */
 
 static VALUE
@@ -261,20 +261,20 @@ find_all_i(VALUE i, VALUE ary, int argc, VALUE *argv)
  *  call-seq:
  *     enum.find_all {| obj | block }  => array
  *     enum.select   {| obj | block }  => array
- *  
+ *
  *  Returns an array containing all elements of <i>enum</i> for which
  *  <em>block</em> is not <code>false</code> (see also
  *  <code>Enumerable#reject</code>).
- *     
+ *
  *     (1..10).find_all {|i|  i % 3 == 0 }   #=> [3, 6, 9]
- *     
+ *
  */
 
 static VALUE
 enum_find_all(VALUE obj)
 {
     VALUE ary;
-    
+
     RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
@@ -295,19 +295,19 @@ reject_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.reject {| obj | block }  => array
- *  
+ *
  *  Returns an array for all elements of <i>enum</i> for which
  *  <em>block</em> is false (see also <code>Enumerable#find_all</code>).
- *     
+ *
  *     (1..10).reject {|i|  i % 3 == 0 }   #=> [1, 2, 4, 5, 7, 8, 10]
- *     
+ *
  */
 
 static VALUE
 enum_reject(VALUE obj)
 {
     VALUE ary;
-    
+
     RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
@@ -336,13 +336,13 @@ collect_all(VALUE i, VALUE ary, int argc, VALUE *argv)
  *  call-seq:
  *     enum.collect {| obj | block }  => array
  *     enum.map     {| obj | block }  => array
- *  
+ *
  *  Returns a new array with the results of running <em>block</em> once
  *  for every element in <i>enum</i>.
- *     
+ *
  *     (1..4).collect {|i| i*i }   #=> [1, 4, 9, 16]
  *     (1..4).collect { "cat"  }   #=> ["cat", "cat", "cat", "cat"]
- *     
+ *
  */
 
 static VALUE
@@ -362,9 +362,9 @@ enum_collect(VALUE obj)
  *  call-seq:
  *     enum.to_a      =>    array
  *     enum.entries   =>    array
- *  
+ *
  *  Returns an array containing the items in <i>enum</i>.
- *     
+ *
  *     (1..7).to_a                       #=> [1, 2, 3, 4, 5, 6, 7]
  *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
  */
@@ -416,7 +416,7 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *     enum.reduce(sym)          => obj
  *     enum.reduce(initial) {| memo, obj | block }  => obj
  *     enum.reduce          {| memo, obj | block }  => obj
- *  
+ *
  *  Combines all elements of <i>enum</i> by applying a binary
  *  operation, specified by a block or a symbol that names a
  *  method or operator.
@@ -425,7 +425,7 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *  the block is passed an accumulator value (<i>memo</i>) and the element.
  *  If you specify a symbol instead, then each element in the collection
  *  will be passed to the named method of <i>memo</i>.
- *  In either case, the result becomes the new value for <i>memo</i>. 
+ *  In either case, the result becomes the new value for <i>memo</i>.
  *  At the end of the iteration, the final value of <i>memo</i> is the
  *  return value fo the method.
  *
@@ -433,7 +433,7 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *  then uses the first element of collection is used as the initial value
  *  of <i>memo</i>.
  *
- *  Examples:   
+ *  Examples:
  *
  *     # Sum some numbers
  *     (5..10).reduce(:+)                            #=> 45
@@ -448,7 +448,7 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
  *        memo.length > word.length ? memo : word
  *     end
  *     longest                                       #=> "sheep"
- *     
+ *
  */
 static VALUE
 enum_inject(int argc, VALUE *argv, VALUE obj)
@@ -496,13 +496,13 @@ partition_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.partition {| obj | block }  => [ true_array, false_array ]
- *  
+ *
  *  Returns two arrays, the first containing the elements of
  *  <i>enum</i> for which the block evaluates to true, the second
  *  containing the rest.
- *     
+ *
  *     (1..6).partition {|i| (i&1).zero?}   #=> [[2, 4, 6], [1, 3, 5]]
- *     
+ *
  */
 
 static VALUE
@@ -539,13 +539,13 @@ group_by_i(VALUE i, VALUE hash, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.group_by {| obj | block }  => a_hash
- *  
+ *
  *  Returns a hash, which keys are evaluated result from the
  *  block, and values are arrays of elements in <i>enum</i>
  *  corresponding to the key.
- *     
+ *
  *     (1..6).group_by {|i| i%3}   #=> {0=>[3, 6], 1=>[1, 4], 2=>[2, 5]}
- *     
+ *
  */
 
 static VALUE
@@ -585,18 +585,18 @@ first_i(VALUE i, VALUE *ary)
  *  call-seq:
  *     enum.first      -> obj or nil
  *     enum.first(n)   -> an_array
- *  
+ *
  *  Returns the first element, or the first +n+ elements, of the enumerable.
  *  If the enumerable is empty, the first form returns <code>nil</code>, and the
  *  second form returns an empty array.
- *     
+ *
  */
 
 static VALUE
 enum_first(int argc, VALUE *argv, VALUE obj)
 {
     VALUE n, ary[2];
-    
+
     if (argc == 0) {
 	ary[0] = ary[1] = Qnil;
     }
@@ -615,7 +615,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *  call-seq:
  *     enum.sort                     => array
  *     enum.sort {| a, b | block }   => array
- *  
+ *
  *  Returns an array containing the items in <i>enum</i> sorted,
  *  either according to their own <code><=></code> method, or by using
  *  the results of the supplied block. The block should return -1, 0, or
@@ -623,7 +623,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *  Ruby 1.8, the method <code>Enumerable#sort_by</code> implements a
  *  built-in Schwartzian Transform, useful when key computation or
  *  comparison is expensive..
- *     
+ *
  *     %w(rhea kea flea).sort         #=> ["flea", "kea", "rhea"]
  *     (1..10).sort {|a,b| b <=> a}   #=> [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
  */
@@ -665,53 +665,53 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
 /*
  *  call-seq:
  *     enum.sort_by {| obj | block }    => array
- *  
+ *
  *  Sorts <i>enum</i> using a set of keys generated by mapping the
  *  values in <i>enum</i> through the given block.
- *     
+ *
  *     %w{ apple pear fig }.sort_by {|word| word.length}
  *                   #=> ["fig", "pear", "apple"]
- *     
+ *
  *  The current implementation of <code>sort_by</code> generates an
  *  array of tuples containing the original collection element and the
  *  mapped value. This makes <code>sort_by</code> fairly expensive when
  *  the keysets are simple
- *     
+ *
  *     require 'benchmark'
  *     include Benchmark
- *     
+ *
  *     a = (1..100000).map {rand(100000)}
- *     
+ *
  *     bm(10) do |b|
  *       b.report("Sort")    { a.sort }
  *       b.report("Sort by") { a.sort_by {|a| a} }
  *     end
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     user     system      total        real
  *     Sort        0.180000   0.000000   0.180000 (  0.175469)
  *     Sort by     1.980000   0.040000   2.020000 (  2.013586)
- *     
+ *
  *  However, consider the case where comparing the keys is a non-trivial
  *  operation. The following code sorts some files on modification time
  *  using the basic <code>sort</code> method.
- *     
+ *
  *     files = Dir["*"]
  *     sorted = files.sort {|a,b| File.new(a).mtime <=> File.new(b).mtime}
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
- *     
+ *
  *  This sort is inefficient: it generates two new <code>File</code>
  *  objects during every comparison. A slightly better technique is to
  *  use the <code>Kernel#test</code> method to generate the modification
  *  times directly.
- *     
+ *
  *     files = Dir["*"]
  *     sorted = files.sort { |a,b|
  *       test(?M, a) <=> test(?M, b)
  *     }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
- *     
+ *
  *  This still generates many unnecessary <code>Time</code> objects. A
  *  more efficient technique is to cache the sort keys (modification
  *  times in this case) before the sort. Perl users often call this
@@ -719,14 +719,14 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *  construct a temporary array, where each element is an array
  *  containing our sort key along with the filename. We sort this array,
  *  and then extract the filename from the result.
- *     
+ *
  *     sorted = Dir["*"].collect { |f|
  *        [test(?M, f), f]
  *     }.sort.collect { |f| f[1] }
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
- *     
+ *
  *  This is exactly what <code>sort_by</code> does internally.
- *     
+ *
  *     sorted = Dir["*"].sort_by {|f| test(?M, f)}
  *     sorted   #=> ["mon", "tues", "wed", "thurs"]
  */
@@ -784,18 +784,18 @@ all_i(VALUE i, VALUE *memo)
 /*
  *  call-seq:
  *     enum.all? [{|obj| block } ]   => true or false
- *  
+ *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block never returns
  *  <code>false</code> or <code>nil</code>. If the block is not given,
  *  Ruby adds an implicit block of <code>{|obj| obj}</code> (that is
  *  <code>all?</code> will return <code>true</code> only if none of the
  *  collection members are <code>false</code> or <code>nil</code>.)
- *     
+ *
  *     %w{ant bear cat}.all? {|word| word.length >= 3}   #=> true
  *     %w{ant bear cat}.all? {|word| word.length >= 4}   #=> false
  *     [ nil, true, 99 ].all?                            #=> false
- *     
+ *
  */
 
 static VALUE
@@ -830,7 +830,7 @@ any_i(VALUE i, VALUE *memo)
 /*
  *  call-seq:
  *     enum.any? [{|obj| block } ]   => true or false
- *  
+ *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block ever returns a value other
  *  than <code>false</code> or <code>nil</code>. If the block is not
@@ -838,11 +838,11 @@ any_i(VALUE i, VALUE *memo)
  *  is <code>any?</code> will return <code>true</code> if at least one
  *  of the collection members is not <code>false</code> or
  *  <code>nil</code>.
- *     
+ *
  *     %w{ant bear cat}.any? {|word| word.length >= 3}   #=> true
  *     %w{ant bear cat}.any? {|word| word.length >= 4}   #=> true
  *     [ nil, true, 99 ].any?                            #=> true
- *     
+ *
  */
 
 static VALUE
@@ -878,19 +878,19 @@ one_iter_i(VALUE i, VALUE *memo)
 /*
  *  call-seq:
  *     enum.one? [{|obj| block }]   => true or false
- *  
+ *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block returns <code>true</code>
  *  exactly once. If the block is not given, <code>one?</code> will return
  *  <code>true</code> only if exactly one of the collection members is
  *  true.
- *     
+ *
  *     %w{ant bear cat}.one? {|word| word.length == 4}   #=> true
  *     %w{ant bear cat}.one? {|word| word.length > 4}    #=> false
  *     %w{ant bear cat}.one? {|word| word.length < 4}    #=> false
  *     [ nil, true, 99 ].one?                            #=> false
  *     [ nil, true, false ].one?                         #=> true
- *     
+ *
  */
 
 static VALUE
@@ -922,12 +922,12 @@ none_iter_i(VALUE i, VALUE *memo)
 /*
  *  call-seq:
  *     enum.none? [{|obj| block }]   => true or false
- *  
+ *
  *  Passes each element of the collection to the given block. The method
  *  returns <code>true</code> if the block never returns <code>true</code>
  *  for all elements. If the block is not given, <code>none?</code> will return
  *  <code>true</code> only if none of the collection members is true.
- *     
+ *
  *     %w{ant bear cat}.none? {|word| word.length == 5}  #=> true
  *     %w{ant bear cat}.none? {|word| word.length >= 4}  #=> false
  *     [].none?                                          #=> true
@@ -985,11 +985,11 @@ min_ii(VALUE i, VALUE *memo)
  *  call-seq:
  *     enum.min                    => obj
  *     enum.min {| a,b | block }   => obj
- *  
+ *
  *  Returns the object in <i>enum</i> with the minimum value. The
  *  first form assumes all objects implement <code>Comparable</code>;
  *  the second uses the block to return <em>a <=> b</em>.
- *     
+ *
  *     a = %w(albatross dog horse)
  *     a.min                                  #=> "albatross"
  *     a.min {|a,b| a.length <=> b.length }   #=> "dog"
@@ -1053,15 +1053,15 @@ max_ii(VALUE i, VALUE *memo)
  *  call-seq:
  *     enum.max                   => obj
  *     enum.max {|a,b| block }    => obj
- *  
+ *
  *  Returns the object in _enum_ with the maximum value. The
  *  first form assumes all objects implement <code>Comparable</code>;
  *  the second uses the block to return <em>a <=> b</em>.
- *     
+ *
  *     a = %w(albatross dog horse)
  *     a.max                                  #=> "horse"
  *     a.max {|a,b| a.length <=> b.length }   #=> "albatross"
- */  
+ */
 
 static VALUE
 enum_max(VALUE obj)
@@ -1134,16 +1134,16 @@ minmax_ii(VALUE i, VALUE *memo)
  *  call-seq:
  *     enum.minmax                   => [min,max]
  *     enum.minmax {|a,b| block }    => [min,max]
- *  
+ *
  *  Returns two elements array which contains the minimum and the
  *  maximum value in the enumerable.  The first form assumes all
  *  objects implement <code>Comparable</code>; the second uses the
  *  block to return <em>a <=> b</em>.
- *     
+ *
  *     a = %w(albatross dog horse)
  *     a.minmax                                  #=> ["albatross", "horse"]
  *     a.minmax {|a,b| a.length <=> b.length }   #=> ["dog", "albatross"]
- */  
+ */
 
 static VALUE
 enum_minmax(VALUE obj)
@@ -1186,10 +1186,10 @@ min_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.min_by {| obj| block }   => obj
- *  
+ *
  *  Returns the object in <i>enum</i> that gives the minimum
  *  value from the given block.
- *     
+ *
  *     a = %w(albatross dog horse)
  *     a.min_by {|x| x.length }   #=> "dog"
  */
@@ -1227,10 +1227,10 @@ max_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.max_by {| obj| block }   => obj
- *  
+ *
  *  Returns the object in <i>enum</i> that gives the maximum
  *  value from the given block.
- *     
+ *
  *     a = %w(albatross dog horse)
  *     a.max_by {|x| x.length }   #=> "albatross"
  */
@@ -1247,7 +1247,7 @@ enum_max_by(VALUE obj)
     rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
     return memo[1];
 }
- 
+
 static VALUE
 minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
@@ -1276,11 +1276,11 @@ minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.minmax_by {| obj| block }   => [min, max]
- *  
+ *
  *  Returns two elements array array containing the objects in
  *  <i>enum</i> that gives the minimum and maximum values respectively
  *  from the given block.
- *     
+ *
  *     a = %w(albatross dog horse)
  *     a.minmax_by {|x| x.length }   #=> ["dog", "albatross"]
  */
@@ -1314,13 +1314,13 @@ member_i(VALUE item, VALUE *memo)
  *  call-seq:
  *     enum.include?(obj)     => true or false
  *     enum.member?(obj)      => true or false
- *  
+ *
  *  Returns <code>true</code> if any member of <i>enum</i> equals
  *  <i>obj</i>. Equality is tested using <code>==</code>.
- *     
+ *
  *     IO.constants.include? :SEEK_SET          #=> true
  *     IO.constants.include? :SEEK_NO_FURTHER   #=> false
- *     
+ *
  */
 
 static VALUE
@@ -1345,16 +1345,16 @@ each_with_index_i(VALUE i, VALUE memo, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.each_with_index {|obj, i| block }  -> enum
- *  
+ *
  *  Calls <em>block</em> with two arguments, the item and its index, for
  *  each item in <i>enum</i>.
- *     
+ *
  *     hash = Hash.new
  *     %w(cat dog wombat).each_with_index {|item, index|
  *       hash[item] = index
  *     }
  *     hash   #=> {"cat"=>0, "wombat"=>2, "dog"=>1}
- *     
+ *
  */
 
 static VALUE
@@ -1451,7 +1451,7 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
  *  call-seq:
  *     enum.zip(arg, ...)                   => enumerator
  *     enum.zip(arg, ...) {|arr| block }    => nil
- *  
+ *
  *  Takes one element from <i>enum</i> and merges corresponding
  *  elements from each <i>args</i>.  This generates a sequence of
  *  <em>n</em>-element arrays, where <em>n</em> is one more than the
@@ -1460,14 +1460,14 @@ zip_i(VALUE val, NODE *memo, int argc, VALUE *argv)
  *  <code>enum#size</code>, <code>nil</code> values are supplied. If
  *  a block is given, it is invoked for each output array, otherwise
  *  an array of arrays is returned.
- *     
+ *
  *     a = [ 4, 5, 6 ]
  *     b = [ 7, 8, 9 ]
- *     
+ *
  *     [1,2,3].zip(a, b)      #=> [[1, 4, 7], [2, 5, 8], [3, 6, 9]]
  *     [1,2].zip(a,b)         #=> [[1, 4, 7], [2, 5, 8]]
  *     a.zip([1,2],[8])       #=> [[4, 1, 8], [5, 2, nil], [6, nil, nil]]
- *     
+ *
  */
 
 static VALUE
@@ -1511,12 +1511,12 @@ take_i(VALUE i, VALUE *arg)
 /*
  *  call-seq:
  *     enum.take(n)               => array
- *  
+ *
  *  Returns first n elements from <i>enum</i>.
- *     
+ *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.take(3)             # => [1, 2, 3]
- *     
+ *
  */
 
 static VALUE
@@ -1547,13 +1547,13 @@ take_while_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.take_while {|arr| block }   => array
- *  
+ *
  *  Passes elements to the block until the block returns nil or false,
  *  then stops iterating and returns an array of all prior elements.
- *     
+ *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.take_while {|i| i < 3 }   # => [1, 2]
- *     
+ *
  */
 
 static VALUE
@@ -1582,13 +1582,13 @@ drop_i(VALUE i, VALUE *arg)
 /*
  *  call-seq:
  *     enum.drop(n)               => array
- *  
+ *
  *  Drops first n elements from <i>enum</i>, and returns rest elements
  *  in an array.
- *     
+ *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.drop(3)             # => [4, 5, 0]
- *     
+ *
  */
 
 static VALUE
@@ -1623,14 +1623,14 @@ drop_while_i(VALUE i, VALUE *args, int argc, VALUE *argv)
 /*
  *  call-seq:
  *     enum.drop_while {|arr| block }   => array
- *  
+ *
  *  Drops elements up to, but not including, the first element for
  *  which the block returns nil or false and returns an array
  *  containing the remaining elements.
- *     
+ *
  *     a = [1, 2, 3, 4, 5, 0]
  *     a.drop_while {|i| i < 3 }   # => [3, 4, 5, 0]
- *     
+ *
  */
 
 static VALUE
@@ -1657,7 +1657,7 @@ cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
  *  call-seq:
  *     enum.cycle {|obj| block }
  *     enum.cycle(n) {|obj| block }
- *  
+ *
  *  Calls <i>block</i> for each element of <i>enum</i> repeatedly _n_
  *  times or forever if none or nil is given.  If a non-positive
  *  number is given or the collection is empty, does nothing.  Returns
@@ -1665,11 +1665,11 @@ cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
  *
  *  Enumerable#cycle saves elements in an internal array so changes
  *  to <i>enum</i> after the first pass have no effect.
- *     
+ *
  *     a = ["a", "b", "c"]
  *     a.cycle {|x| puts x }  # print, a, b, c, a, b, c,.. forever.
  *     a.cycle(2) {|x| puts x }  # print, a, b, c, a, b, c.
- *     
+ *
  */
 
 static VALUE
@@ -1745,8 +1745,8 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);
     rb_define_method(rb_mEnumerable,"minmax", enum_minmax, 0);
-    rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);  
-    rb_define_method(rb_mEnumerable,"max_by", enum_max_by, 0);  
+    rb_define_method(rb_mEnumerable,"min_by", enum_min_by, 0);
+    rb_define_method(rb_mEnumerable,"max_by", enum_max_by, 0);
     rb_define_method(rb_mEnumerable,"minmax_by", enum_minmax_by, 0);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
