@@ -1,3 +1,7 @@
+Sun May 11 23:19:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (all_iter_i, any_iter_i): reduced duplicated code.
+
 Sun May 11 22:54:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/runner.rb (main): leave -I options for purelib.rb
