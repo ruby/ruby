@@ -1,3 +1,7 @@
+Sun May 11 17:57:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIRUBY): should not include extension library path.
+
 Sun May 11 10:36:10 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* eval.c (method_name, method_owner): New methods; backported
