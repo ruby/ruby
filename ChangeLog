@@ -224,7 +224,7 @@ Tue May  6 02:08:18 2008  Tanaka Akira  <akr@fsij.org>
 	* test/io/nonblock/test_flush.rb: don't set Thread.abort_on_exception.
 
 	* test/net/imap/test_imap.rb: ensure disconnecting imap to terminate
-	  receiver thread..
+	  receiver thread.
 
 Tue May  6 00:29:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -284,7 +284,7 @@ Mon May  5 11:13:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (compile_cpath): use Qundef to denote cbase lookup.
 
-	* insns.def (defineclass): Qudef is passed for cbase.
+	* insns.def (defineclass): Qundef is passed for cbase.
 
 	* insns.def (setconstant): ditto.
 
@@ -437,7 +437,7 @@ Wed Apr 30 17:47:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Apr 30 16:10:18 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* eval_intern.h: speficy the values of the enumeration constants
+	* eval_intern.h: specify the values of the enumeration constants
 	  explicitly.  [ruby-dev:34489]
 
 Wed Apr 30 12:32:39 2008  Tanaka Akira  <akr@fsij.org>
@@ -477,7 +477,7 @@ Mon Apr 28 11:11:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Apr 28 09:02:43 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_exec_arg_init): declared.
-	  (rb_exec_arg_addopt): delared.
+	  (rb_exec_arg_addopt): declared.
 	  (rb_exec_arg_fix): declared.
 	  (rb_exec_initarg): removed.
 	  (rb_exec_getargs): removed.
@@ -523,7 +523,7 @@ Sun Apr 27 12:20:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  malloc here.
 
 	* gc.c (garbage_collect, etc): performance improvement by passing the
-	  reference instead of refering the global variable in each functions.
+	  reference instead of referring the global variable in each functions.
 
 Sun Apr 27 08:06:15 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -958,7 +958,7 @@ Fri Apr 18 17:37:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* gc.c (rb_gc_mark_locations): get rid of underflow.
 
 	* gc.c (mark_current_machine_context): check if the main thread stack
-	  position may shink under the intialized position.  [ruby-core:16436]
+	  position may shrink under the initialized position.  [ruby-core:16436]
 
 Thu Apr 17 22:20:52 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -1079,7 +1079,7 @@ Mon Apr 14 14:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* compile.c, compile.h (compile_debug): made runtime option.
 
 	* debug.c (ruby_debug_print_indent): returns if debug_level exceeds
-	  the threashold.
+	  the threshold.
 
 	* debug.c (ruby_debug_printf): printf to stderr.
 
@@ -1540,7 +1540,7 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  instate/state/identify method to avoid the conflict with standard
 	  widget options. Those methods are renamed to ttk_instate/ttk_state/
 	  ttk_identify (tile_instate/tile_state/tile_identify are available 
-	  too). Although I don't recommend, if you realy need old methods, 
+	  too). Although I don't recommend, if you really need old methods, 
 	  please define "Tk::USE_OBSOLETE_TILE_STATE_METHOD = true" before 
 	  "require 'tkextlib/tile'".
 
@@ -1549,18 +1549,18 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  use "Tk.default_widget_set = :Ttk".
 
 	* ext/tk/lib/tk.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ method and 
-	  __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method are defind 
+	  __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method are defined 
 	  as module methods of TkConfigMethod. It may help users to wrap old 
 	  Ruby/Tk scripts (use standard widgets) to force to use Ttk widgets.
 	  Ttk widgets don't have some options of standard widgets which are 
 	  control the view of widgets. When set ignore-mode true, configure 
-	  method tries to ignoure such unknown options with no exception. 
+	  method tries to ignore such unknown options with no exception. 
 	  Of course, it may raise other troubles on the GUI design. 
 	  So, those are a little danger methods. 
 
 	* ext/tk/lib/tk/itemconfig.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ 
 	  method and __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method 
-	  are defind as module methods of TkItemConfigMethod as the same 
+	  are defined as module methods of TkItemConfigMethod as the same 
 	  purpose as TkConfigMethod's ones.
 
 	* ext/tk/sample/ttk_wrapper.rb: A new example. This is a tool for 
@@ -1582,10 +1582,10 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget: bug fix
 
-	* ext/tk/sammple/demos-jp/textpeer.rb, 
-	  ext/tk/sammple/demos-en/textpeer.rb: new widget demo.
+	* ext/tk/sample/demos-jp/textpeer.rb, 
+	  ext/tk/sample/demos-en/textpeer.rb: new widget demo.
 
-	* ext/tk/tcltklib.c: decrase SEGV troubles (probably)
+	* ext/tk/tcltklib.c: decrease SEGV troubles (probably)
 
 	* ext/tk/lib/tk.rb: remove Thread.critical access if Ruby1.9
 
@@ -1594,7 +1594,7 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tkextlib/tile.rb: add method to define Tcl/Tk command 
 	  to make Tcl/Tk theme sources (based on different version of Tile 
 	  extension) available. 
-	  (Tk::Tile::__define_LoadImages_proc_for_comaptibility__)
+	  (Tk::Tile::__define_LoadImages_proc_for_compatibility__)
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tk/wm.rb: support dockable frames
 	  (Tcl/Tk8.5 feature). 'wm' command can treat many kinds of widgets 
@@ -1608,7 +1608,7 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  for 'fixed' option. But metrics method returns numeric value 
 	  (0 or 1) for 'fixed' option, because of backward compatibility. 
 
-	* ext/tk/lib/tk/timer.rb: somtimes fail to set callback procedure.
+	* ext/tk/lib/tk/timer.rb: sometimes fail to set callback procedure.
 
 	* ext/tk/lib/tk.rb: add Tk.sleep and Tk.wakeup method. Tk.sleep 
 	  doesn't block the eventloop. It will be better to use the method 
@@ -1764,7 +1764,7 @@ Thu Mar 20 00:21:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Mar 19 23:52:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* io.c (rb_io_putc, rb_io_puts): ouput directly if the reciever is
+	* io.c (rb_io_putc, rb_io_puts): output directly if the receiver is
 	  rb_stdout to get rid of infinite recursion.  [ruby-dev:34059]
 
 Wed Mar 19 22:27:41 2008  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -1981,7 +1981,7 @@ Thu Mar 13 14:14:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* trunk/configure.in (AC_CHECK_HEADERS): stdint.h is not needed to
 	  check.
 
-	* trunk/configure.in (rb_cv_type_uint32_t): unqouted.  [ruby-dev:34030]
+	* trunk/configure.in (rb_cv_type_uint32_t): unquoted.  [ruby-dev:34030]
 
 	* trunk/string.c (hash): use inttypes.h instead of stdint.h.
 
@@ -2134,7 +2134,7 @@ Thu Mar  6 17:26:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Mar  6 15:44:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): casting double to long is undefined
-	  if the interger part of double is out of the range of long.
+	  if the integer part of double is out of the range of long.
 
 Thu Mar  6 15:11:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
