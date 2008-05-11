@@ -2103,7 +2103,7 @@ rb_exec(const struct rb_exec_arg *e)
 static int
 rb_exec_atfork(void* arg)
 {
-    rb_thread_atfork();
+    rb_thread_atfork_before_exec();
     return rb_exec(arg);
 }
 #endif

@@ -3671,7 +3671,7 @@ popen_exec(void *pp)
 {
     struct popen_arg *p = (struct popen_arg*)pp;
 
-    rb_thread_atfork();
+    rb_thread_atfork_before_exec();
     return rb_exec(p->execp);
 }
 #endif

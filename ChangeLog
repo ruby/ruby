@@ -1,3 +1,21 @@
+Sun May 11 13:14:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* thread.c (thread_cleanup_func_before_exec): extracted from
+	  thread_cleanup_func not to touch pthread data.
+	  pthread_cond_destroy in forked process may cause deadlock on
+	  Debian GNU/Linux Etch on x86, x86-64 and IA64.
+	  this doesn't cause resource leak because the process will exec soon.
+	  (terminate_atfork_before_exec_i): defined.
+	  (rb_thread_atfork_before_exec): defined.
+
+	* include/ruby/intern.h (rb_thread_atfork_before_exec): declared.
+
+	* process.c (rb_exec_atfork): call rb_thread_atfork_before_exec
+	  instead of rb_thread_atfork.
+
+	* io.c (popen_exec): call rb_thread_atfork_before_exec instead of
+	  rb_thread_atfork.
+
 Sat May 10 22:14:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (tr_trans): single '^' does not mean negation.

@@ -308,6 +308,7 @@ VALUE rb_thread_main(void);
 VALUE rb_thread_local_aref(VALUE, ID);
 VALUE rb_thread_local_aset(VALUE, ID, VALUE);
 void rb_thread_atfork(void);
+void rb_thread_atfork_before_exec(void);
 VALUE rb_exec_recursive(VALUE(*)(VALUE, VALUE, int),VALUE,VALUE);
 /* file.c */
 VALUE rb_file_s_expand_path(int, VALUE *);

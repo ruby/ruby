@@ -273,7 +273,7 @@ rb_thread_terminate_all(void)
 }
 
 static void
-thread_cleanup_func(void *th_ptr)
+thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
@@ -281,6 +281,13 @@ thread_cleanup_func(void *th_ptr)
 #ifdef __ia64
     th->machine_register_stack_start = th->machine_register_stack_end = 0;
 #endif
+}
+
+static void
+thread_cleanup_func(void *th_ptr)
+{
+    rb_thread_t *th = th_ptr;
+    thread_cleanup_func_before_exec(th_ptr);
     native_thread_destroy(th);
 }
 
@@ -2060,6 +2067,32 @@ rb_thread_atfork(void)
     vm->main_thread = th;
 
     st_foreach(vm->living_threads, terminate_atfork_i, (st_data_t)th);
+    st_clear(vm->living_threads);
+    st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
+}
+
+static int
+terminate_atfork_before_exec_i(st_data_t key, st_data_t val, rb_thread_t *current_th)
+{
+    VALUE thval = key;
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+
+    if (th != current_th) {
+	thread_cleanup_func_before_exec(th);
+    }
+    return ST_CONTINUE;
+}
+
+void
+rb_thread_atfork_before_exec(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_vm_t *vm = th->vm;
+    VALUE thval = th->self;
+    vm->main_thread = th;
+
+    st_foreach(vm->living_threads, terminate_atfork_before_exec_i, (st_data_t)th);
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
 }
