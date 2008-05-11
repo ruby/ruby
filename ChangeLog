@@ -5720,7 +5720,7 @@ Thu Jan  3 21:56:07 2008  Tanaka Akira  <akr@fsij.org>
 
 Thu Jan  3 20:24:48 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* eval_jump.c (rb_f_catch): Restore cfp if catched thrown object.
+	* eval_jump.c (rb_f_catch): Restore cfp if caught thrown object.
 
 Thu Jan  3 19:45:57 2008  Koichi Sasada  <ko1@atdot.net>
 
