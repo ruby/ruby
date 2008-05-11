@@ -1,3 +1,21 @@
+Sun May 11 14:40:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (SIZET2NUM): new macro.
+	  (NUM2SIZET): new macro.
+
+	* gc.c (struct rb_objspace): use size_t for increment, length and
+	  used for 64bit.
+	  (allocate_heaps): ditto.
+	  (assign_heap_slot): ditto.
+	  (set_heaps_increment): ditto.
+	  (gc_mark_all): ditto.
+	  (is_pointer_to_heap): ditto.
+	  (free_unused_heaps): ditto.
+	  (gc_sweep): ditto.
+	  (os_obj_of): ditto.
+	  (rb_gc_call_finalizer_at_exit): ditto.
+	  (count_objects): ditto.
+
 Sun May 11 13:14:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* thread.c (thread_cleanup_func_before_exec): extracted from

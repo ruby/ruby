@@ -171,6 +171,14 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 # define OFFT2NUM(v) INT2NUM(v)
 #endif
 
+#if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
+# define SIZET2NUM(v) ULL2NUM(v)
+#elif SIZEOF_SIZE_T == SIZEOF_LONG
+# define SIZET2NUM(v) ULONG2NUM(v)
+#else
+# define SIZET2NUM(v) UINT2NUM(v)
+#endif
+
 #ifndef PIDT2NUM
 #define PIDT2NUM(v) LONG2NUM(v)
 #endif
@@ -362,6 +370,12 @@ unsigned LONG_LONG rb_num2ull(VALUE);
 # define NUM2OFFT(x) ((off_t)NUM2LL(x))
 #else
 # define NUM2OFFT(x) NUM2LONG(x)
+#endif
+
+#if defined(HAVE_LONG_LONG) && SIZEOF_SIZE_T > SIZEOF_LONG
+# define NUM2SIZET(x) ((size_t)NUM2ULL(x))
+#else
+# define NUM2SIZET(x) NUM2ULONG(x)
 #endif
 
 double rb_num2dbl(VALUE);

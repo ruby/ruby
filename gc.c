@@ -149,10 +149,10 @@ typedef struct rb_objspace {
 	unsigned long increase;
     } params;
     struct {
-	long increment;
+	size_t increment;
 	struct heaps_slot *ptr;
-	long length;
-	long used;
+	size_t length;
+	size_t used;
 	RVALUE *freelist;
 	RVALUE *range[2];
 	RVALUE *freed;
@@ -517,30 +517,30 @@ rb_gc_unregister_address(VALUE *addr)
 
 
 static void
-allocate_heaps(rb_objspace_t *objspace, int next_heaps_length)
+allocate_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 {
     struct heaps_slot *p;
-    int length;
+    size_t size;
 
-    heaps_length = next_heaps_length;
-    length = heaps_length*sizeof(struct heaps_slot);
+    size = next_heaps_length*sizeof(struct heaps_slot);
     RUBY_CRITICAL(
 		  if (heaps_used > 0) {
-		      p = (struct heaps_slot *)realloc(heaps, length);
+		      p = (struct heaps_slot *)realloc(heaps, size);
 		      if (p) heaps = p;
 		  }
 		  else {
-		      p = heaps = (struct heaps_slot *)malloc(length);
+		      p = heaps = (struct heaps_slot *)malloc(size);
 		  }
 		  );
     if (p == 0) rb_memerror();
+    heaps_length = next_heaps_length;
 }
 
 static void
 assign_heap_slot(rb_objspace_t *objspace)
 {
     RVALUE *p, *pend, *membase;
-    long hi, lo, mid;
+    size_t hi, lo, mid;
     int objs;
 	
     objs = HEAP_OBJ_LIMIT;
@@ -596,7 +596,7 @@ assign_heap_slot(rb_objspace_t *objspace)
 static void
 init_heap(rb_objspace_t *objspace)
 {
-    int add, i;
+    size_t add, i;
 
     add = HEAP_MIN_SLOTS / HEAP_OBJ_LIMIT;
 
@@ -614,10 +614,11 @@ init_heap(rb_objspace_t *objspace)
 static void
 set_heaps_increment(rb_objspace_t *objspace)
 {
-    heaps_inc = heaps_used * 1.8 - heaps_used;
+    size_t next_heaps_length = heaps_used * 1.8;
+    heaps_inc = next_heaps_length - heaps_used;
 
-    if ((heaps_used + heaps_inc) > heaps_length) {
-	allocate_heaps(objspace, heaps_used + heaps_inc);
+    if (next_heaps_length > heaps_length) {
+	allocate_heaps(objspace, next_heaps_length);
     }
 }
 
@@ -818,7 +819,7 @@ static void
 gc_mark_all(rb_objspace_t *objspace)
 {
     RVALUE *p, *pend;
-    int i;
+    size_t i;
 
     init_mark_stack(objspace);
     for (i = 0; i < heaps_used; i++) {
@@ -854,7 +855,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 {
     register RVALUE *p = RANY(ptr);
     register struct heaps_slot *heap;
-    register long hi, lo, mid;
+    register size_t hi, lo, mid;
 
     if (p < lomem || p > himem) return Qfalse;
     if ((VALUE)p % sizeof(RVALUE) != 0) return Qfalse;
@@ -1317,7 +1318,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 static void
 free_unused_heaps(rb_objspace_t *objspace)
 {
-    int i, j;
+    size_t i, j;
     RVALUE *last = 0;
 
     for (i = j = 1; j < heaps_used; i++) {
@@ -1354,9 +1355,9 @@ static void
 gc_sweep(rb_objspace_t *objspace)
 {
     RVALUE *p, *pend, *final_list;
-    int freed = 0;
-    int i;
-    unsigned long live = 0, free_min = 0, do_heap_free = 0;
+    size_t freed = 0;
+    size_t i;
+    size_t live = 0, free_min = 0, do_heap_free = 0;
 
     do_heap_free = (heaps_used * HEAP_OBJ_LIMIT) * 0.65;
     free_min = (heaps_used * HEAP_OBJ_LIMIT)  * 0.2;
@@ -1865,8 +1866,8 @@ Init_heap(void)
 static VALUE
 os_obj_of(rb_objspace_t *objspace, VALUE of)
 {
-    int i;
-    int n = 0;
+    size_t i;
+    size_t n = 0;
 
     for (i = 0; i < heaps_used; i++) {
 	RVALUE *p, *pend;
@@ -1893,7 +1894,7 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 	}
     }
 
-    return INT2FIX(n);
+    return SIZET2NUM(n);
 }
 
 /*
@@ -2075,7 +2076,7 @@ rb_gc_call_finalizer_at_exit(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     RVALUE *p, *pend;
-    int i;
+    size_t i;
 
     /* finalizers are part of garbage collection */
     during_gc++;
@@ -2275,10 +2276,10 @@ static VALUE
 count_objects(int argc, VALUE *argv, VALUE os)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    long counts[T_MASK+1];
-    long freed = 0;
-    long total = 0;
-    int i;
+    size_t counts[T_MASK+1];
+    size_t freed = 0;
+    size_t total = 0;
+    size_t i;
     VALUE hash;
 
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
@@ -2307,8 +2308,8 @@ count_objects(int argc, VALUE *argv, VALUE os)
 
     if (hash == Qnil)
         hash = rb_hash_new();
-    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), LONG2NUM(total));
-    rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), LONG2NUM(freed));
+    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
+    rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(freed));
     for (i = 0; i <= T_MASK; i++) {
         VALUE type;
         switch (i) {
@@ -2342,7 +2343,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
           default:              type = INT2NUM(i); break;
         }
         if (counts[i])
-            rb_hash_aset(hash, type, LONG2NUM(counts[i]));
+            rb_hash_aset(hash, type, SIZET2NUM(counts[i]));
     }
 
     return hash;
