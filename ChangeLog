@@ -1,3 +1,7 @@
+Sun May 11 17:57:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIRUBY): should not include extension library path.
+
 Sun May 11 14:40:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (SIZET2NUM): new macro.

@@ -330,7 +330,7 @@ clean-enc:
 
 distclean: distclean-ext distclean-local distclean-enc
 distclean-local:: clean-local
-	@$(RM) $(MKFILES) config.h rbconfig.rb yasmdata.rb encdb.h
+	@$(RM) $(MKFILES) $(arch_hdrdir)/ruby/config.h rbconfig.rb yasmdata.rb encdb.h
 	@$(RM) config.cache config.log config.status config.status.lineno $(PRELUDES)
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
 distclean-ext:
