@@ -8,10 +8,26 @@ class TestThread < Test::Unit::TestCase
   end
 
   class Thread < ::Thread
+    Threads = []
     def self.new(*)
       th = super
       th.abort_on_exception = true
+      Threads << th
       th
+    end
+  end
+
+  def setup
+    Thread::Threads.clear
+  end
+
+  def teardown
+    Thread::Threads.each do |t|
+      t.kill if t.alive?
+      begin
+        t.join
+      rescue Exception
+      end
     end
   end
 
