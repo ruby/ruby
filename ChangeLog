@@ -1,3 +1,8 @@
+Mon May 12 12:36:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): backport from trunk.
+	  [ruby-talk:300743]
+
 Mon May 12 12:33:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUBYLIB, RUBYOPT): clear.
