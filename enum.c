@@ -24,6 +24,10 @@ enum_values_pack(int argc, VALUE *argv)
     return rb_ary_new4(argc, argv);
 }
 
+#define ENUM_WANT_SVALUE() do { \
+    i = enum_values_pack(argc, argv); \
+} while (0)
+
 static VALUE
 enum_yield(int argc, VALUE *argv)
 {
@@ -33,8 +37,10 @@ enum_yield(int argc, VALUE *argv)
 static VALUE
 grep_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
 {
+    ENUM_WANT_SVALUE();
+
     if (RTEST(rb_funcall(arg[0], id_eqq, 1, i))) {
-	rb_ary_push(arg[1], enum_values_pack(argc, argv));
+	rb_ary_push(arg[1], i);
     }
     return Qnil;
 }
@@ -42,8 +48,10 @@ grep_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
 static VALUE
 grep_iter_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
 {
+    ENUM_WANT_SVALUE();
+
     if (RTEST(rb_funcall(arg[0], id_eqq, 1, i))) {
-	rb_ary_push(arg[1], enum_yield(argc, argv));
+	rb_ary_push(arg[1], rb_yield(i));
     }
     return Qnil;
 }
@@ -84,6 +92,8 @@ static VALUE
 count_i(VALUE i, VALUE memop, int argc, VALUE *argv)
 {
     VALUE *memo = (VALUE*)memop;
+
+    ENUM_WANT_SVALUE();
 
     if (rb_equal(i, memo[1])) {
 	memo[0]++;
@@ -142,7 +152,9 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 static VALUE
 find_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    if (RTEST(enum_yield(argc, argv))) {
+    ENUM_WANT_SVALUE();
+
+    if (RTEST(rb_yield(i))) {
 	*memo = i;
 	rb_iter_break();
     }
@@ -186,6 +198,8 @@ static VALUE
 find_index_i(VALUE i, VALUE memop, int argc, VALUE *argv)
 {
     VALUE *memo = (VALUE*)memop;
+
+    ENUM_WANT_SVALUE();
 
     if (rb_equal(i, memo[2])) {
 	memo[0] = UINT2NUM(memo[1]);
@@ -251,7 +265,9 @@ enum_find_index(int argc, VALUE *argv, VALUE obj)
 static VALUE
 find_all_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 {
-    if (RTEST(enum_yield(argc, argv))) {
+    ENUM_WANT_SVALUE();
+
+    if (RTEST(rb_yield(i))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -286,7 +302,9 @@ enum_find_all(VALUE obj)
 static VALUE
 reject_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 {
-    if (!RTEST(enum_yield(argc, argv))) {
+    ENUM_WANT_SVALUE();
+
+    if (!RTEST(rb_yield(i))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -382,11 +400,14 @@ static VALUE
 inject_i(VALUE i, VALUE p, int argc, VALUE *argv)
 {
     VALUE *memo = (VALUE *)p;
+
+    ENUM_WANT_SVALUE();
+
     if (memo[0] == Qundef) {
 	memo[0] = i;
     }
     else {
-	memo[0] = rb_yield_values(2, memo[0], enum_values_pack(argc, argv));
+	memo[0] = rb_yield_values(2, memo[0], i);
     }
     return Qnil;
 }
@@ -396,8 +417,10 @@ inject_op_i(VALUE i, VALUE p, int argc, VALUE *argv)
 {
     VALUE *memo = (VALUE *)p;
 
+    ENUM_WANT_SVALUE();
+
     if (memo[0] == Qundef) {
-	memo[0] = enum_values_pack(argc, argv);
+	memo[0] = i;
     }
     else {
 	memo[0] = rb_funcall(memo[0], (ID)memo[1], 1, i);
@@ -484,7 +507,9 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
 static VALUE
 partition_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
 {
-    if (RTEST(enum_yield(argc, argv))) {
+    ENUM_WANT_SVALUE();
+
+    if (RTEST(rb_yield(i))) {
 	rb_ary_push(ary[0], i);
     }
     else {
@@ -522,9 +547,12 @@ enum_partition(VALUE obj)
 static VALUE
 group_by_i(VALUE i, VALUE hash, int argc, VALUE *argv)
 {
-    VALUE group = enum_yield(argc, argv);
+    VALUE group;
     VALUE values;
 
+    ENUM_WANT_SVALUE();
+
+    group = rb_yield(i);
     values = rb_hash_aref(hash, group);
     if (NIL_P(values)) {
 	values = rb_ary_new3(1, i);
@@ -562,8 +590,10 @@ enum_group_by(VALUE obj)
 }
 
 static VALUE
-first_i(VALUE i, VALUE *ary)
+first_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
 {
+    ENUM_WANT_SVALUE();
+
     if (NIL_P(ary[0])) {
 	ary[1] = i;
 	rb_iter_break();
@@ -637,14 +667,14 @@ enum_sort(VALUE obj)
 static VALUE
 sort_by_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 {
-    VALUE v;
     NODE *memo;
 
-    v = enum_yield(argc, argv);
+    ENUM_WANT_SVALUE();
+
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
-    memo = rb_node_newnode(NODE_MEMO, v, i, 0);
+    memo = rb_node_newnode(NODE_MEMO, rb_yield(i), i, 0);
     rb_ary_push(ary, (VALUE)memo);
     return Qnil;
 }
@@ -762,9 +792,9 @@ enum_sort_by(VALUE obj)
 }
 
 static VALUE
-all_i(VALUE i, VALUE *memo)
+all_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    if (!RTEST(i)) {
+    if (!RTEST(enum_values_pack(argc, argv))) {
 	*memo = Qfalse;
 	rb_iter_break();
     }
@@ -772,9 +802,13 @@ all_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-all_iter_i(VALUE i, VALUE *memo)
+all_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    return all_i(rb_yield(i), memo);
+    if (!RTEST(enum_yield(argc, argv))) {
+	*memo = Qfalse;
+	rb_iter_break();
+    }
+    return Qnil;
 }
 
 /*
@@ -804,9 +838,9 @@ enum_all(VALUE obj)
 }
 
 static VALUE
-any_i(VALUE i, VALUE *memo)
+any_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    if (RTEST(i)) {
+    if (RTEST(enum_values_pack(argc, argv))) {
 	*memo = Qtrue;
 	rb_iter_break();
     }
@@ -814,9 +848,13 @@ any_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-any_iter_i(VALUE i, VALUE *memo)
+any_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    return any_i(rb_yield(i), memo);
+    if (RTEST(enum_yield(argc, argv))) {
+	*memo = Qtrue;
+	rb_iter_break();
+    }
+    return Qnil;
 }
 
 /*
@@ -847,9 +885,9 @@ enum_any(VALUE obj)
 }
 
 static VALUE
-one_i(VALUE i, VALUE *memo)
+one_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    if (RTEST(i)) {
+    if (RTEST(enum_values_pack(argc, argv))) {
 	if (*memo == Qundef) {
 	    *memo = Qtrue;
 	}
@@ -862,9 +900,18 @@ one_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-one_iter_i(VALUE i, VALUE *memo)
+one_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    return one_i(rb_yield(i), memo);
+    if (RTEST(enum_yield(argc, argv))) {
+	if (*memo == Qundef) {
+	    *memo = Qtrue;
+	}
+	else if (*memo == Qtrue) {
+	    *memo = Qfalse;
+	    rb_iter_break();
+	}
+    }
+    return Qnil;
 }
 
 /*
@@ -896,9 +943,9 @@ enum_one(VALUE obj)
 }
 
 static VALUE
-none_i(VALUE i, VALUE *memo)
+none_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    if (RTEST(i)) {
+    if (RTEST(enum_values_pack(argc, argv))) {
 	*memo = Qfalse;
 	rb_iter_break();
     }
@@ -906,9 +953,13 @@ none_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-none_iter_i(VALUE i, VALUE *memo)
+none_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
-    return none_i(rb_yield(i), memo);
+    if (RTEST(enum_yield(argc, argv))) {
+	*memo = Qfalse;
+	rb_iter_break();
+    }
+    return Qnil;
 }
 
 /*
@@ -936,9 +987,11 @@ enum_none(VALUE obj)
 }
 
 static VALUE
-min_i(VALUE i, VALUE *memo)
+min_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     VALUE cmp;
+
+    ENUM_WANT_SVALUE();
 
     if (*memo == Qundef) {
 	*memo = i;
@@ -953,9 +1006,11 @@ min_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-min_ii(VALUE i, VALUE *memo)
+min_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     VALUE cmp;
+
+    ENUM_WANT_SVALUE();
 
     if (*memo == Qundef) {
 	*memo = i;
@@ -1005,9 +1060,11 @@ enum_min(VALUE obj)
 }
 
 static VALUE
-max_i(VALUE i, VALUE *memo)
+max_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     VALUE cmp;
+
+    ENUM_WANT_SVALUE();
 
     if (*memo == Qundef) {
 	*memo = i;
@@ -1022,9 +1079,11 @@ max_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-max_ii(VALUE i, VALUE *memo)
+max_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     VALUE cmp;
+
+    ENUM_WANT_SVALUE();
 
     if (*memo == Qundef) {
 	*memo = i;
@@ -1073,9 +1132,11 @@ enum_max(VALUE obj)
 }
 
 static VALUE
-minmax_i(VALUE i, VALUE *memo)
+minmax_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     int n;
+
+    ENUM_WANT_SVALUE();
 
     if (memo[0] == Qundef) {
 	memo[0] = i;
@@ -1095,9 +1156,11 @@ minmax_i(VALUE i, VALUE *memo)
 }
 
 static VALUE
-minmax_ii(VALUE i, VALUE *memo)
+minmax_ii(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     int n;
+
+    ENUM_WANT_SVALUE();
 
     if (memo[0] == Qundef) {
 	memo[0] = i;
@@ -1163,7 +1226,9 @@ min_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     VALUE v;
 
-    v = enum_yield(argc, argv);
+    ENUM_WANT_SVALUE();
+
+    v = rb_yield(i);
     if (memo[0] == Qundef) {
 	memo[0] = v;
 	memo[1] = i;
@@ -1204,7 +1269,9 @@ max_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     VALUE v;
 
-    v = enum_yield(argc, argv);
+    ENUM_WANT_SVALUE();
+
+    v = rb_yield(i);
     if (memo[0] == Qundef) {
 	memo[0] = v;
 	memo[1] = i;
@@ -1245,7 +1312,9 @@ minmax_by_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
 {
     VALUE v;
 
-    v = enum_yield(argc, argv);
+    ENUM_WANT_SVALUE();
+
+    v = rb_yield(i);
     if (memo[0] == Qundef) {
 	memo[0] = v;
 	memo[1] = v;
@@ -1293,9 +1362,9 @@ enum_minmax_by(VALUE obj)
 }
 
 static VALUE
-member_i(VALUE item, VALUE *memo)
+member_i(VALUE iter, VALUE *memo, int argc, VALUE *argv)
 {
-    if (rb_equal(item, memo[0])) {
+    if (rb_equal(enum_values_pack(argc, argv), memo[0])) {
 	memo[1] = Qtrue;
 	rb_iter_break();
     }
@@ -1338,14 +1407,15 @@ each_with_index_i(VALUE i, VALUE memo, int argc, VALUE *argv)
  *  call-seq:
  *     enum.each_with_index {|obj, i| block }  -> enum
  *
- *  Calls <em>block</em> with two arguments, the item and its index, for
- *  each item in <i>enum</i>.
+ *  Calls <em>block</em> with two arguments, the item and its index,
+ *  for each item in <i>enum</i>.  Given arguments are passed through
+ *  to #each().
  *
  *     hash = Hash.new
  *     %w(cat dog wombat).each_with_index {|item, index|
  *       hash[item] = index
  *     }
- *     hash   #=> {"cat"=>0, "wombat"=>2, "dog"=>1}
+ *     hash   #=> {"cat"=>0, "dog"=>1, "wombat"=>2}
  *
  */
 
@@ -1493,10 +1563,10 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-take_i(VALUE i, VALUE *arg)
+take_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
 {
     if (arg[1]-- == 0) rb_iter_break();
-    rb_ary_push(arg[0], i);
+    rb_ary_push(arg[0], enum_values_pack(argc, argv));
     return Qnil;
 }
 
@@ -1532,7 +1602,7 @@ static VALUE
 take_while_i(VALUE i, VALUE *ary, int argc, VALUE *argv)
 {
     if (!RTEST(enum_yield(argc, argv))) rb_iter_break();
-    rb_ary_push(*ary, i);
+    rb_ary_push(*ary, enum_values_pack(argc, argv));
     return Qnil;
 }
 
@@ -1560,10 +1630,10 @@ enum_take_while(VALUE obj)
 }
 
 static VALUE
-drop_i(VALUE i, VALUE *arg)
+drop_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
 {
     if (arg[1] == 0) {
-	rb_ary_push(arg[0], i);
+	rb_ary_push(arg[0], enum_values_pack(argc, argv));
     }
     else {
 	arg[1]--;
@@ -1603,7 +1673,9 @@ enum_drop(VALUE obj, VALUE n)
 static VALUE
 drop_while_i(VALUE i, VALUE *args, int argc, VALUE *argv)
 {
-    if (!args[1] && !RTEST(enum_yield(argc, argv))) {
+    ENUM_WANT_SVALUE();
+
+    if (!args[1] && !RTEST(rb_yield(i))) {
 	args[1] = Qtrue;
     }
     if (args[1]) {
@@ -1640,8 +1712,10 @@ enum_drop_while(VALUE obj)
 static VALUE
 cycle_i(VALUE i, VALUE ary, int argc, VALUE *argv)
 {
+    ENUM_WANT_SVALUE();
+
     rb_ary_push(ary, i);
-    enum_yield(argc, argv);
+    rb_yield(i);
     return Qnil;
 }
 

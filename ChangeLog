@@ -1,3 +1,47 @@
+Mon May 12 20:19:55 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enum.c (grep_i): Be aware of multiple values;
+	  fix [ruby-dev:34653].
+	  (grep_iter_i): Ditto.
+	  (count_i): Ditto.
+	  (find_i): Ditto.
+	  (find_index_i): Ditto.
+	  (find_all_i): Ditto.
+	  (reject_i): Ditto.
+	  (inject_i): Ditto.
+	  (inject_op_i): Ditto.
+	  (partition_i): Ditto.
+	  (group_by_i): Ditto.
+	  (first_i): Ditto.
+	  (sort_by_i): Ditto.
+	  (all_i): Ditto.
+	  (all_iter_i): Ditto.
+	  (any_i): Ditto.
+	  (any_iter_i): Ditto.
+	  (one_i): Ditto.
+	  (one_iter_i): Ditto.
+	  (none_i): Ditto.
+	  (none_iter_i): Ditto.
+	  (min_i): Ditto.
+	  (min_ii): Ditto.
+	  (max_i): Ditto.
+	  (max_ii): Ditto.
+	  (minmax_i): Ditto.
+	  (minmax_ii): Ditto.
+	  (min_by_i): Ditto.
+	  (max_by_i): Ditto.
+	  (minmax_by_i): Ditto.
+	  (member_i): Ditto.
+	  (take_i): Ditto.
+	  (take_while_i): Ditto.
+	  (drop_i): Ditto.
+	  (drop_while_i): Ditto.
+	  (cycle_i): Ditto.
+
+	* enum.c (each_with_index): Update rdoc.  each_with_index() takes
+	  argments that are passed through to each(), and a hash preserves
+	  key order.
+
 Mon May 12 19:05:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (rb_spawn_internal): remove calling run_exec_options()
