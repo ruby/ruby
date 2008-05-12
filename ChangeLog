@@ -1,3 +1,8 @@
+Mon May 12 13:57:19 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): add NODE_OP_ASGN_{OR,AND}.  "defined?(a||=1)"
+	  should not operate assignment.  [ruby-dev:34645]
+
 Mon May 12 12:59:23 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/wm.rb: Wm#overrideredirect overwrites arguemnt to

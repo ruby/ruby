@@ -2440,6 +2440,8 @@ is_defined(self, node, buf)
       case NODE_ATTRSET:
       case NODE_OP_ASGN1:
       case NODE_OP_ASGN2:
+      case NODE_OP_ASGN_OR:
+      case NODE_OP_ASGN_AND:
       case NODE_MASGN:
       case NODE_LASGN:
       case NODE_DASGN:
