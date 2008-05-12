@@ -59,4 +59,11 @@ class TestVariable < Test::Unit::TestCase
     lvar = 1
     assert_instance_of(Symbol, local_variables[0], "[ruby-dev:34008]")
   end
+
+  def test_local_variables2
+    x = 1
+    proc do |y|
+      assert_equal([:x, :y], local_variables.sort)
+    end.call
+  end
 end

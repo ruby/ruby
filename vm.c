@@ -280,9 +280,6 @@ static int
 collect_local_variables_in_env(rb_env_t *env, VALUE ary)
 {
     int i;
-    if (env->block.lfp == env->block.dfp) {
-	return 0;
-    }
     for (i = 0; i < env->block.iseq->local_table_size; i++) {
 	ID lid = env->block.iseq->local_table[i];
 	if (lid) {
