@@ -6287,26 +6287,6 @@ sym_equal(VALUE sym1, VALUE sym2)
 
 /*
  *  call-seq:
- *     sym.to_i      => fixnum
- *  
- *  Returns an integer that is unique for each symbol within a
- *  particular execution of a program.
- *     
- *     :fred.to_i           #=> 9809
- *     "fred".to_sym.to_i   #=> 9809
- */
-
-static VALUE
-sym_to_i(VALUE sym)
-{
-    ID id = SYM2ID(sym);
-
-    return LONG2FIX(id);
-}
-
-
-/*
- *  call-seq:
  *     sym.inspect    => string
  *  
  *  Returns the representation of <i>sym</i> as a symbol literal.
@@ -6663,7 +6643,6 @@ Init_String(void)
     rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0); /* in parse.y */
 
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
-    rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
