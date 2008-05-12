@@ -2565,26 +2565,29 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
 #if defined HAVE_FORK
     status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds);
     if (prog && earg.argc) earg.argv[0] = prog;
-#elif defined HAVE_SPAWNV
+#else
+    if (run_exec_options(&earg) < 0) {
+        return -1;
+    }
+
     argc = earg.argc;
     argv = earg.argv;
+    if (prog && argc) argv[0] = prog;
+# if defined HAVE_SPAWNV
     if (!argc) {
 	status = proc_spawn(RSTRING_PTR(prog));
     }
     else {
 	status = proc_spawn_n(argc, argv, prog);
     }
-    if (prog && argc) argv[0] = prog;
-#else
-    argc = earg.argc;
-    argv = earg.argv;
-    if (prog && argc) argv[0] = prog;
+# else
     if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
-# if defined(__human68k__) || defined(__DJGPP__)
+#  if defined(__human68k__) || defined(__DJGPP__)
     rb_last_status_set(status == -1 ? 127 : status, 0);
-# else
+#  else
     rb_last_status_set((status & 0xff) << 8, 0);
+#  endif
 # endif
 #endif
     return status;

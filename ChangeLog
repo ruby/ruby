@@ -1,3 +1,8 @@
+Mon May 12 18:16:44 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_spawn_internal): need to call run_exec_options() before
+	  spawn if the platform doesn't have fork. [ruby-dev:34647]
+
 Mon May 12 15:20:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (ruby_vm_xmalloc): increase malloc_increase only if malloc
