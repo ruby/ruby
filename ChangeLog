@@ -1,3 +1,7 @@
+Mon May 12 12:32:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBYOPT): affected BASERUBY too.  [ruby-talk:301514]
+
 Mon May 12 12:27:55 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (assign_heap_slot): fix condition for number of objects in

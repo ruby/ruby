@@ -5,7 +5,7 @@ dll: $(LIBRUBY_SO)
 .SUFFIXES: .inc
 
 RUBYLIB       = -
-RUBYOPT       = -rpurelib.rb
+RUBYOPT       = -
 
 STATIC_RUBY   = static-ruby
 
