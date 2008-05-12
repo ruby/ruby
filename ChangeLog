@@ -1,3 +1,9 @@
+Tue May 13 08:25:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_f_gets.): re-enable rdoc.
+	  (rb_f_readline): ditto.
+	  (rb_f_readlines): ditto.
+
 Mon May 12 23:37:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm.c (collect_local_variables_in_env): remove unnecessary check

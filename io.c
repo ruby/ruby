@@ -5366,6 +5366,8 @@ argf_lineno_setter(VALUE val, ID id, VALUE *var)
     lineno = INT2FIX(n);
 }
 
+static VALUE argf_gets(int, VALUE *, VALUE);
+
 /*
  *  call-seq:
  *     gets(sep=$/)    => string or nil
@@ -5399,7 +5401,6 @@ argf_lineno_setter(VALUE val, ID id, VALUE *var)
  *  parameter is gradually losing favor in the Ruby community.
  */
 
-static VALUE argf_gets(int, VALUE *, VALUE);
 static VALUE
 rb_f_gets(int argc, VALUE *argv, VALUE recv)
 {
@@ -5445,6 +5446,8 @@ rb_gets(void)
     return line;
 }
 
+static VALUE argf_readline(int, VALUE *, VALUE);
+
 /*
  *  call-seq:
  *     readline(sep=$/)     => string
@@ -5455,7 +5458,6 @@ rb_gets(void)
  *  +readline+ raises +EOFError+ at end of file.
  */
 
-static VALUE argf_readline(int, VALUE *, VALUE);
 static VALUE
 rb_f_readline(int argc, VALUE *argv, VALUE recv)
 {
@@ -5480,6 +5482,8 @@ argf_readline(int argc, VALUE *argv, VALUE argf)
     return line;
 }
 
+static VALUE argf_readlines(int, VALUE *, VALUE);
+
 /*
  *  call-seq:
  *     readlines(sep=$/)    => array
@@ -5490,7 +5494,6 @@ argf_readline(int argc, VALUE *argv, VALUE argf)
  *  <code>Kernel.gets(<i>sep</i>)</code> until the end of file.
  */
 
-static VALUE argf_readlines(int, VALUE *, VALUE);
 static VALUE
 rb_f_readlines(int argc, VALUE *argv, VALUE recv)
 {
