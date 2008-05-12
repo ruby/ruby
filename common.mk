@@ -2,7 +2,8 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
-RUBYOPT       =
+RUBYLIB       = -
+RUBYOPT       = -
 
 STATIC_RUBY   = static-ruby
 

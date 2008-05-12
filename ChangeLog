@@ -1,3 +1,7 @@
+Mon May 12 12:33:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBYLIB, RUBYOPT): clear.
+
 Mon May 12 10:41:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (SimpleDelegator::dup): removed needless argument.
