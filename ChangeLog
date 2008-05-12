@@ -1,3 +1,11 @@
+Mon May 12 15:20:02 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (ruby_vm_xmalloc): increase malloc_increase only if malloc
+	  succeeds.  failed malloc size can be huge.  it may increase
+	  malloc_limit too big which cause less GC and memory full.
+	  (ruby_vm_xrealloc): ditto.
+	  (rb_objspace): make params.limit and params.increase size_t.
+
 Mon May 12 15:04:58 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_prepare_re): made non static with small refactoring.

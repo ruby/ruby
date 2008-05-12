@@ -145,8 +145,8 @@ struct gc_list {
 
 typedef struct rb_objspace {
     struct {
-	unsigned long limit;
-	unsigned long increase;
+	size_t limit;
+	size_t increase;
     } params;
     struct {
 	size_t increment;
@@ -314,9 +314,8 @@ ruby_vm_xmalloc(rb_objspace_t *objspace, size_t size)
 	rb_raise(rb_eNoMemError, "negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
-    malloc_increase += size;
 
-    if (ruby_gc_stress || malloc_increase > malloc_limit) {
+    if (ruby_gc_stress || (malloc_increase+size) > malloc_limit) {
 	garbage_collect(objspace);
     }
     RUBY_CRITICAL(mem = malloc(size));
@@ -328,6 +327,7 @@ ruby_vm_xmalloc(rb_objspace_t *objspace, size_t size)
 	    rb_memerror();
 	}
     }
+    malloc_increase += size;
 
     return mem;
 }
@@ -381,7 +381,6 @@ ruby_vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     }
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
-    malloc_increase += size;
     if (ruby_gc_stress) garbage_collect(objspace);
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
@@ -392,6 +391,7 @@ ruby_vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 	    rb_memerror();
         }
     }
+    malloc_increase += size;
 
     return mem;
 }
