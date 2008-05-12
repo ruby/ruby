@@ -1,3 +1,8 @@
+Mon May 12 10:51:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gem_prelude.rb (load_full_rubygems_library, const_missing): prevent
+	  infinite recursion.  [ruby-dev:34539]
+
 Sun May 11 23:19:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (all_iter_i, any_iter_i): reduced duplicated code.
