@@ -5,10 +5,9 @@ Mon May 12 23:05:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* process.c (save_redirect_fd, save_env_i, save_env, run_exec_dup2,
 	  run_exec_open, run_exec_pgroup, run_exec_rlimit, rb_run_exec_options):
 	  save parent's process environments.
-	  !!!remark!!! these are not thread-safe.
 
 	* process.c (rb_spawn_internal): remove calling run_exec_options()
-	  because cannot restore after spawn. we'll fix this later.
+	  because cannot restore after spawn.
 
 	* io.c (pipe_open): ditto.
 
