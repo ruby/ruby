@@ -1,3 +1,7 @@
+Mon May 12 11:15:55 2008  Yuki Sonoda (Yugui) <yugui@yugui.jp>
+
+	* gc.c (assign_heap_slot):  put the binary search routine in order.
+
 Mon May 12 10:52:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_gems), gem_prelude.rb: check if Gem is defined
