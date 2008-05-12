@@ -551,7 +551,7 @@ assign_heap_slot(rb_objspace_t *objspace)
     membase = p;
     if ((VALUE)p % sizeof(RVALUE) != 0) {
 	p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
-	if ((membase + HEAP_SIZE) < (p + HEAP_SIZE)) {
+	if ((HEAP_SIZE - HEAP_OBJ_LIMIT * sizeof(RVALUE)) < ((char*)p - (char*)membase)) {
 	    objs--;
 	}
     }

@@ -1,3 +1,8 @@
+Mon May 12 12:27:55 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (assign_heap_slot): fix condition for number of objects in
+	  a heap.
+
 Mon May 12 12:24:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (sym_to_i): really removed.  [ruby-dev:34641]
