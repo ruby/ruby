@@ -1,3 +1,7 @@
+Mon May 12 22:23:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/date.rb (once): use Object#object_id instead of Symbol#to_i.
+
 Mon May 12 21:34:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/envutil.rb (rubybin): return expanded rubyexe instead of
