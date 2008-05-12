@@ -1,3 +1,11 @@
+Mon May 12 10:41:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (SimpleDelegator::dup): removed needless argument.
+	  [ruby-list:44910]
+
+	* lib/delegate.rb (clone, dup): keep relationship with the target
+	  object.
+
 Sun May 11 23:19:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (all_iter_i, any_iter_i): reduced duplicated code.
