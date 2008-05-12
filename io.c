@@ -3692,6 +3692,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
     int openmode = rb_io_mode_modenum(mode);
     const char *exename = NULL;
     volatile VALUE cmdbuf;
+    struct rb_exec_arg sarg;
 #endif
     FILE *fp = 0;
     int fd = -1;
@@ -3822,6 +3823,10 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
 	cmd = rb_w32_join_argv(RSTRING_PTR(cmdbuf), args);
 	rb_str_resize(argbuf, 0);
     }
+    if (eargp) {
+	rb_exec_arg_fixup(eargp);
+	rb_run_exec_options(eargp, &sarg);
+    }
     while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fd, &write_fd)) == -1) {
 	/* exec failed */
 	switch (errno) {
@@ -3832,16 +3837,26 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
 	    rb_thread_sleep(1);
 	    break;
 	  default:
+	    if (eargp)
+		rb_run_exec_options(&sarg, NULL);
 	    rb_sys_fail(cmd);
 	    break;
 	}
     }
+    if (eargp)
+	rb_run_exec_options(&sarg, NULL);
 #else
     if (argc) {
 	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 	cmd = StringValueCStr(prog);
     }
+    if (eargp) {
+	rb_exec_arg_fixup(eargp);
+	rb_run_exec_options(eargp, &sarg);
+    }
     fp = popen(cmd, mode);
+    if (eargp)
+	rb_run_exec_options(&sarg, NULL);
     if (!fp) rb_sys_fail(RSTRING_PTR(prog));
     fd = fileno(fp);
 #endif

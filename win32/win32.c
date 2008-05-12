@@ -376,11 +376,10 @@ init_env(void)
     }
 
     if (!GetEnvironmentVariable("USER", env, sizeof env)) {
-	if (GetEnvironmentVariable("USERNAME", env, sizeof env) ||
-	    GetUserName(env, (len = sizeof env, &len))) {
+	if (GetEnvironmentVariable("USERNAME", env, sizeof env)) {
 	    SetEnvironmentVariable("USER", env);
 	}
-	else {
+	else if (!GetUserName(env, (len = sizeof env, &len))) {
 	    NTLoginName = "<Unknown>";
 	    return;
 	}

@@ -1783,13 +1783,61 @@ redirect_open(const char *pathname, int flags, mode_t perm)
 #endif
 
 static int
+save_redirect_fd(int fd, VALUE save)
+{
+    if (!NIL_P(save)) {
+        VALUE newary;
+        int save_fd = redirect_dup(fd);
+        if (save_fd == -1) return -1;
+        newary = rb_ary_entry(save, EXEC_OPTION_DUP2);
+        if (NIL_P(newary)) {
+            newary = hide_obj(rb_ary_new());
+            rb_ary_store(save, EXEC_OPTION_DUP2, newary);
+        }
+        rb_ary_push(newary,
+                    hide_obj(rb_assoc_new(INT2FIX(fd), INT2FIX(save_fd))));
+
+        newary = rb_ary_entry(save, EXEC_OPTION_CLOSE);
+        if (NIL_P(newary)) {
+            newary = hide_obj(rb_ary_new());
+            rb_ary_store(save, EXEC_OPTION_CLOSE, newary);
+        }
+        rb_ary_push(newary, hide_obj(rb_assoc_new(INT2FIX(save_fd), Qnil)));
+    }
+
+    return 0;
+}
+
+static VALUE
+save_env_i(VALUE i, VALUE ary, int argc, VALUE *argv)
+{
+    rb_ary_push(ary, hide_obj(rb_ary_dup(argv[0])));
+    return Qnil;
+}
+
+static void
+save_env(VALUE save)
+{
+    if (!NIL_P(save) && NIL_P(rb_ary_entry(save, EXEC_OPTION_ENV))) {
+        VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
+        if (RTEST(env)) {
+            VALUE ary = hide_obj(rb_ary_new());
+            rb_block_call(env, rb_intern("each"), 0, 0, save_env_i,
+                          (VALUE)ary);
+            rb_ary_store(save, EXEC_OPTION_ENV, ary);
+        }
+        rb_ary_store(save, EXEC_OPTION_UNSETENV_OTHERS, Qtrue);
+    }
+}
+
+static int
 intcmp(const void *a, const void *b)
 {
     return *(int*)a - *(int*)b;
 }
 
 static int
-run_exec_dup2(VALUE ary)
+run_exec_dup2(VALUE ary, VALUE save)
 {
     int n, i;
     int ret;
@@ -1837,6 +1885,8 @@ run_exec_dup2(VALUE ary)
     for (i = 0; i < n; i++) {
         int j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
+            if (save_redirect_fd(pairs[j].newfd, save) < 0)
+                return -1;
             ret = redirect_dup2(pairs[j].oldfd, pairs[j].newfd);
             if (ret == -1)
                 goto fail;
@@ -1919,7 +1969,7 @@ run_exec_close(VALUE ary)
 }
 
 static int
-run_exec_open(VALUE ary)
+run_exec_open(VALUE ary, VALUE save)
 {
     int i, ret;
 
@@ -1940,6 +1990,8 @@ run_exec_open(VALUE ary)
                 need_close = 0;
             }
             else {
+                if (save_redirect_fd(fd, save) < 0)
+                    return -1;
                 ret = redirect_dup2(fd2, fd);
                 if (ret == -1) return -1;
             }
@@ -1955,14 +2007,18 @@ run_exec_open(VALUE ary)
 
 #ifdef HAVE_SETPGID
 static int
-run_exec_pgroup(VALUE obj)
+run_exec_pgroup(VALUE obj, VALUE save)
 {
     /*
      * If FD_CLOEXEC is available, rb_fork waits the child's execve.
      * So setpgid is done in the child when rb_fork is returned in the parent.
      * No race condition, even without setpgid from the parent.
      * (Is there an environment which has setpgid but FD_CLOEXEC?)
-     */ 
+     */
+    if (!NIL_P(save)) {
+        /* maybe meaningless with no fork environment... */
+        rb_ary_store(save, EXEC_OPTION_PGROUP, PIDT2NUM(getpgrp()));
+    }
     pid_t pgroup = NUM2PIDT(obj);
     if (pgroup == 0) {
         pgroup = getpid();
@@ -1973,13 +2029,26 @@ run_exec_pgroup(VALUE obj)
 
 #ifdef RLIM2NUM
 static int
-run_exec_rlimit(VALUE ary)
+run_exec_rlimit(VALUE ary, VALUE save)
 {
     int i;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_PTR(ary)[i];
         int rtype = NUM2INT(RARRAY_PTR(elt)[0]);
         struct rlimit rlim;
+        if (!NIL_P(save)) {
+            if (getrlimit(rtype, &rlim) == -1)
+                return -1;
+            VALUE tmp = hide_obj(rb_ary_new3(3, RARRAY_PTR(elt)[0],
+                                             RLIM2NUM(rlim.rlim_cur),
+                                             RLIM2NUM(rlim.rlim_max)));
+            VALUE newary = rb_ary_entry(save, EXEC_OPTION_RLIMIT);
+            if (NIL_P(newary)) {
+                newary = hide_obj(rb_ary_new());
+                rb_ary_store(save, EXEC_OPTION_RLIMIT, newary);
+            }
+            rb_ary_push(newary, tmp);
+        }
         rlim.rlim_cur = NUM2RLIM(RARRAY_PTR(elt)[1]);
         rlim.rlim_max = NUM2RLIM(RARRAY_PTR(elt)[2]);
         if (setrlimit(rtype, &rlim) == -1)
@@ -1989,19 +2058,28 @@ run_exec_rlimit(VALUE ary)
 }
 #endif
 
-static int
-run_exec_options(const struct rb_exec_arg *e)
+int
+rb_run_exec_options(const struct rb_exec_arg *e, struct rb_exec_arg *s)
 {
     VALUE options = e->options;
+    VALUE soptions = Qnil;
     VALUE obj;
 
     if (!RTEST(options))
         return 0;
 
+    if (s) {
+        s->argc = 0;
+        s->argv = NULL;
+        s->prog = NULL;
+        s->options = soptions = hide_obj(rb_ary_new());
+        s->redirect_fds = Qnil;
+    }
+
 #ifdef HAVE_SETPGID
     obj = rb_ary_entry(options, EXEC_OPTION_PGROUP);
     if (RTEST(obj)) {
-        if (run_exec_pgroup(obj) == -1)
+        if (run_exec_pgroup(obj, soptions) == -1)
             return -1;
     }
 #endif
@@ -2009,19 +2087,21 @@ run_exec_options(const struct rb_exec_arg *e)
 #ifdef RLIM2NUM
     obj = rb_ary_entry(options, EXEC_OPTION_RLIMIT);
     if (!NIL_P(obj)) {
-        if (run_exec_rlimit(obj) == -1)
+        if (run_exec_rlimit(obj, soptions) == -1)
             return -1;
     }
 #endif
 
     obj = rb_ary_entry(options, EXEC_OPTION_UNSETENV_OTHERS);
     if (RTEST(obj)) {
+        save_env(soptions);
         rb_env_clear();
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_ENV);
     if (!NIL_P(obj)) {
         int i;
+        save_env(soptions);
         for (i = 0; i < RARRAY_LEN(obj); i++) {
             VALUE pair = RARRAY_PTR(obj)[i];
             VALUE key = RARRAY_PTR(pair)[0];
@@ -2035,6 +2115,11 @@ run_exec_options(const struct rb_exec_arg *e)
 
     obj = rb_ary_entry(options, EXEC_OPTION_CHDIR);
     if (!NIL_P(obj)) {
+        if (!NIL_P(soptions)) {
+            char *cwd = my_getcwd();
+            rb_ary_store(soptions, EXEC_OPTION_CHDIR,
+                         hide_obj(rb_str_new2(cwd)));
+        }
         if (chdir(RSTRING_PTR(obj)) == -1)
             return -1;
     }
@@ -2042,19 +2127,25 @@ run_exec_options(const struct rb_exec_arg *e)
     obj = rb_ary_entry(options, EXEC_OPTION_UMASK);
     if (!NIL_P(obj)) {
         mode_t mask = NUM2LONG(obj);
-        umask(mask); /* never fail */
+        mode_t oldmask = umask(mask); /* never fail */
+        if (!NIL_P(soptions))
+            rb_ary_store(soptions, EXEC_OPTION_UMASK, LONG2NUM(oldmask));
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_DUP2);
     if (!NIL_P(obj)) {
-        if (run_exec_dup2(obj) == -1)
+        if (run_exec_dup2(obj, soptions) == -1)
             return -1;
     }
 
     obj = rb_ary_entry(options, EXEC_OPTION_CLOSE);
     if (!NIL_P(obj)) {
-        if (run_exec_close(obj) == -1)
-            return -1;
+        if (!NIL_P(soptions))
+            rb_warn("cannot close fd before spawn");
+        else {
+            if (run_exec_close(obj) == -1)
+                return -1;
+        }
     }
 
 #ifdef HAVE_FORK
@@ -2066,7 +2157,7 @@ run_exec_options(const struct rb_exec_arg *e)
 
     obj = rb_ary_entry(options, EXEC_OPTION_OPEN);
     if (!NIL_P(obj)) {
-        if (run_exec_open(obj) == -1)
+        if (run_exec_open(obj, soptions) == -1)
             return -1;
     }
 
@@ -2080,7 +2171,7 @@ rb_exec(const struct rb_exec_arg *e)
     VALUE *argv = e->argv;
     const char *prog = e->prog;
 
-    if (run_exec_options(e) < 0) {
+    if (rb_run_exec_options(e, NULL) < 0) {
         return -1;
     }
 
@@ -2554,6 +2645,9 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     rb_pid_t status;
     VALUE prog;
     struct rb_exec_arg earg;
+#if !defined HAVE_FORK
+    struct rb_exec_arg sarg;
+#endif
 
     prog = rb_exec_arg_init(argc, argv, Qtrue, &earg);
     if (NIL_P(rb_ary_entry(earg.options, EXEC_OPTION_CLOSE_OTHERS))) {
@@ -2566,11 +2660,9 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds);
     if (prog && earg.argc) earg.argv[0] = prog;
 #else
-    /* XXXXX: need to call this func, but cannot restore after spawn...
-    if (run_exec_options(&earg) < 0) {
+    if (rb_run_exec_options(&earg, &sarg) < 0) {
         return -1;
     }
-    */
 
     argc = earg.argc;
     argv = earg.argv;
@@ -2591,6 +2683,8 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     rb_last_status_set((status & 0xff) << 8, 0);
 #  endif
 # endif
+
+    rb_run_exec_options(&sarg, NULL);
 #endif
     return status;
 }

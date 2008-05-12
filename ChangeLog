@@ -1,3 +1,23 @@
+Mon May 12 23:05:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c, include/ruby/intern.h (rb_run_exec_options): externed.
+
+	* process.c (save_redirect_fd, save_env_i, save_env, run_exec_dup2,
+	  run_exec_open, run_exec_pgroup, run_exec_rlimit, rb_run_exec_options):
+	  save parent's process environments.
+	  !!!remark!!! these are not thread-safe.
+
+	* process.c (rb_spawn_internal): remove calling run_exec_options()
+	  because cannot restore after spawn. we'll fix this later.
+
+	* io.c (pipe_open): ditto.
+
+	* test/ruby/test_process.rb (test_execopts_env): upcase environment
+	  variable name for case insensitive platforms.
+
+	* win32/win32.c (init_env): set USER environment variable only when
+	  USERNAME is available.
+
 Mon May 12 22:23:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/date.rb (once): use Object#object_id instead of Symbol#to_i.

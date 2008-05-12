@@ -195,8 +195,8 @@ class TestProcess < Test::Unit::TestCase
     }
 
     h = {}
-    ENV.each {|k,v| h[k] = nil unless k == "PATH" }
-    IO.popen([h, RUBY, '-e', 'puts ENV.keys']) {|io|
+    ENV.each {|k,v| h[k] = nil unless k.upcase == "PATH" }
+    IO.popen([h, RUBY, '-e', 'puts ENV.keys.map{|e|e.upcase}']) {|io|
       assert_equal("PATH\n", io.read)
     }
 
