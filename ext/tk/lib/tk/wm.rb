@@ -362,7 +362,7 @@ module Tk
       end
     end
     def overrideredirect(mode=TkComm::None)
-      Wm.overrideredirect(self, mode=TkComm::None)
+      Wm.overrideredirect(self, mode)
     end
     alias wm_overrideredirect overrideredirect
     TOPLEVEL_METHODCALL_OPTKEYS['overrideredirect'] = 'overrideredirect'

@@ -4,7 +4,7 @@
 #
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
-version = '0.1.2'
+version = '0.1.3'
 #
 ##########################################################################
 #  parse commandline arguments
@@ -120,10 +120,32 @@ Tk::Tile.set_theme(OPTS[:theme]) if OPTS[:theme]
 
 
 ##########################################################################
+#  replace $0 and $RPAGRAM_NAME
+##########################################################################
+#  When the expand_path of the target script is long, ruby sometimes 
+#  fails to set the path to $0 (the path string is trimmed).
+#  The following replaces $0 and $PROGNAME to avoid such trouble.
+progname_obj = $0.dup
+$program_name = progname_obj
+
+alias $REAL_PROGRAM_NAME $0
+alias $PROGRAM_NAME $program_name
+alias $0 $program_name
+
+trace_var(:$program_name){|val|
+  unless progname_obj.object_id == val.object_id
+    progname_obj.replace(val.to_s)
+    $program_name = progname_obj
+  end
+}
+
+
+##########################################################################
 #  load script
 ##########################################################################
 if (path = ARGV.shift) && (script = File.expand_path(path))
   print "load script \"#{script}\"\n" if OPTS[:verbose]
+  $0 = script
   load(script)
 else
   print "Error: no script is given.\n"
