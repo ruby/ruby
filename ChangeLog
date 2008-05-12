@@ -1,3 +1,7 @@
+Mon May 12 13:29:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (bigzero_p): check from MSB to LSB.  [ruby-dev:34649]
+
 Mon May 12 12:32:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUBYOPT): affected BASERUBY too.  [ruby-talk:301514]

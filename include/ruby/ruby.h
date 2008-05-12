@@ -632,6 +632,7 @@ struct RBignum {
      (long)((RBASIC(b)->flags >> RBIGNUM_EMBED_LEN_SHIFT) & \
             (RBIGNUM_EMBED_LEN_MASK >> RBIGNUM_EMBED_LEN_SHIFT)) : \
      RBIGNUM(b)->as.heap.len)
+/* LSB:RBIGNUM_DIGITS(b)[0], MSB:RBIGNUM_DIGITS(b)[RBIGNUM_LEN(b)-1] */
 #define RBIGNUM_DIGITS(b) \
     ((RBASIC(b)->flags & RBIGNUM_EMBED_FLAG) ? \
      RBIGNUM(b)->as.ary : \
