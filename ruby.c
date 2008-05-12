@@ -917,9 +917,7 @@ void Init_prelude(void);
 static void
 ruby_init_gems(int enable)
 {
-    VALUE gem;
-    gem = rb_define_module("Gem");
-    rb_const_set(gem, rb_intern("Enable"), enable ? Qtrue : Qfalse);
+    if (enable) rb_define_module("Gem");
     Init_prelude();
 }
 

@@ -2,9 +2,9 @@
 
 # empty gem_prelude.rb
 #
-# p Gem::Enable
+# p defined?(Gem)
 
-if defined?(Gem::Enable) && Gem::Enable then
+if defined?(Gem) then
 
   module Kernel
 

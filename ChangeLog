@@ -1,4 +1,7 @@
-Mon May 12 10:51:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 12 10:52:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_gems), gem_prelude.rb: check if Gem is defined
+	  instead of Gem::Enable.
 
 	* gem_prelude.rb (load_full_rubygems_library, const_missing): prevent
 	  infinite recursion.  [ruby-dev:34539]
