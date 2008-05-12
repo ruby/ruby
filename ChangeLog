@@ -1,3 +1,10 @@
+Mon May 12 12:59:23 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/wm.rb: Wm#overrideredirect overwrites arguemnt to
+	  an invalid value.
+
+	* ext/tk/sample/ttk_wrapper.rb: support "if __FILE__ == $0" idiom.
+
 Mon May 12 12:36:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): backport from trunk.
