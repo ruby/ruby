@@ -548,24 +548,7 @@ assign_heap_slot(rb_objspace_t *objspace)
     if (p == 0)
 	rb_memerror();
 
-    lo = 0;
-    hi = heaps_used;
-    while (lo < hi) {
-	mid = (lo + hi) / 2;
-	membase = heaps[mid].membase;
-	if (membase < p) {
-	    lo = mid + 1;
-	}
-	else if (membase > p) {
-	    hi = mid;
-	}
-	else {
-	    rb_bug("same heap slot is allocated: %p at %ld", p, mid);
-	}
-    }
-
     membase = p;
-
     if ((VALUE)p % sizeof(RVALUE) != 0) {
 	p = (RVALUE*)((VALUE)p + sizeof(RVALUE) - ((VALUE)p % sizeof(RVALUE)));
 	if ((membase + HEAP_SIZE) < (p + HEAP_SIZE)) {
@@ -574,6 +557,22 @@ assign_heap_slot(rb_objspace_t *objspace)
     }
     	
 
+    lo = 0;
+    hi = heaps_used;
+    while (lo < hi) {
+	register RVALUE *mid_membase;
+	mid = (lo + hi) / 2;
+	mid_membase = heaps[mid].membase;
+	if (mid_membase < membase) {
+	    lo = mid + 1;
+	}
+	else if (mid_membase > membase) {
+	    hi = mid;
+	}
+	else {
+	    rb_bug("same heap slot is allocated: %p at %ld", membase, mid);
+	}
+    }
     if (hi < heaps_used) {
 	MEMMOVE(&heaps[hi+1], &heaps[hi], struct heaps_slot, heaps_used - hi);
     }
