@@ -225,3 +225,10 @@ assert_equal 'ok', %q{
 assert_normal_exit %q{
   at_exit { Fiber.new{}.resume }
 }
+
+assert_equal 'ok', %q{
+  lambda {
+    break :ok
+    :ng
+  }.call
+}, '[ruby-dev:34646]'
