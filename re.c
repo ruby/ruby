@@ -1181,8 +1181,8 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     return RREGEXP(re)->ptr->enc;
 }
 
-static regex_t *
-rb_reg_prepare_re(VALUE re, rb_encoding *enc)
+regex_t *
+rb_reg_prepare_re(VALUE re, VALUE str)
 {
     regex_t *reg = RREGEXP(re)->ptr;
     onig_errmsg_buffer err = "";
@@ -1191,6 +1191,7 @@ rb_reg_prepare_re(VALUE re, rb_encoding *enc)
     const char *pattern;
     VALUE unescaped;
     rb_encoding *fixed_enc = 0;
+    rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
 
     if (reg->enc == enc) return reg;
 
@@ -1265,7 +1266,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	return -1;
     }
 
-    reg = rb_reg_prepare_re(re, rb_reg_prepare_enc(re, str, 1));
+    reg = rb_reg_prepare_re(re, str);
 
     FL_SET(re, REG_BUSY);
     if (!reverse) {

@@ -545,7 +545,7 @@ class TestStringScanner < Test::Unit::TestCase
   def test_generic_regexp
     ss = StringScanner.new("\xA1\xA2".force_encoding("euc-jp"))
     t = ss.scan(/./)
-    assert_equal("\xa1\xa1".force_encoding("euc-jp"), t)
+    assert_equal("\xa1\xa2".force_encoding("euc-jp"), t)
   end
 
 end
