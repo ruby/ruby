@@ -16,7 +16,7 @@ module EnvUtil
         return File.expand_path(ruby)
       end
       if File.exist? rubyexe and File.executable? rubyexe
-        return File.expand_path(ruby)
+        return File.expand_path(rubyexe)
       end
       ruby = File.join("..", ruby)
     end
