@@ -1,3 +1,8 @@
+Mon May 12 19:05:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_spawn_internal): remove calling run_exec_options()
+	  because cannot restore after spawn. we'll fix this later.
+
 Mon May 12 18:16:44 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (rb_spawn_internal): need to call run_exec_options() before

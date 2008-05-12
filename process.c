@@ -2566,9 +2566,11 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     status = rb_fork(&status, rb_exec_atfork, &earg, earg.redirect_fds);
     if (prog && earg.argc) earg.argv[0] = prog;
 #else
+    /* XXXXX: need to call this func, but cannot restore after spawn...
     if (run_exec_options(&earg) < 0) {
         return -1;
     }
+    */
 
     argc = earg.argc;
     argv = earg.argv;
