@@ -40,4 +40,29 @@ class TestStringIO < Test::Unit::TestCase
     end
     assert_equal("hacker\nother ruby\n", stringio.string, "[ruby-core:3836]")
   end
+
+  def test_gets
+    assert_equal(nil, StringIO.new("").gets)
+    assert_equal("\n", StringIO.new("\n").gets)
+    assert_equal("a\n", StringIO.new("a\n").gets)
+    assert_equal("a\n", StringIO.new("a\nb\n").gets)
+    assert_equal("a", StringIO.new("a").gets)
+    assert_equal("a\n", StringIO.new("a\nb").gets)
+    assert_equal("abc\n", StringIO.new("abc\n\ndef\n").gets)
+    assert_equal("abc\n\ndef\n", StringIO.new("abc\n\ndef\n").gets(nil))
+    assert_equal("abc\n\n", StringIO.new("abc\n\ndef\n").gets(""))
+  end
+
+  def test_readlines
+    assert_equal([], StringIO.new("").readlines)
+    assert_equal(["\n"], StringIO.new("\n").readlines)
+    assert_equal(["a\n"], StringIO.new("a\n").readlines)
+    assert_equal(["a\n", "b\n"], StringIO.new("a\nb\n").readlines)
+    assert_equal(["a"], StringIO.new("a").readlines)
+    assert_equal(["a\n", "b"], StringIO.new("a\nb").readlines)
+    assert_equal(["abc\n", "\n", "def\n"], StringIO.new("abc\n\ndef\n").readlines)
+    assert_equal(["abc\n\ndef\n"], StringIO.new("abc\n\ndef\n").readlines(nil), "[ruby-dev:34591]")
+    assert_equal(["abc\n\n", "def\n"], StringIO.new("abc\n\ndef\n").readlines(""))
+  end
+
 end
