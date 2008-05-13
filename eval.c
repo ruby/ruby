@@ -1412,7 +1412,10 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope
 		if (TYPE(defined_class) == T_ICLASS) {
 		    defined_class = RBASIC(defined_class)->klass;
 		}
-		
+
+		if (self == Qundef) {
+		    self = rb_frame_self();
+		}
 		if (!rb_obj_is_kind_of(self, rb_class_real(defined_class))) {
 		    return method_missing(recv, mid, argc, argv, NOEX_PROTECTED);
 		}
@@ -1450,7 +1453,7 @@ rb_call0(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope
 static VALUE
 rb_call(VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int scope)
 {
-    return rb_call0(klass, recv, mid, argc, argv, scope, rb_frame_self());
+    return rb_call0(klass, recv, mid, argc, argv, scope, Qundef);
 }
 
 VALUE

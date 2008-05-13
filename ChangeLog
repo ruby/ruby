@@ -1,3 +1,10 @@
+Wed May 14 07:49:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): defer calling of rb_frame_self() until it
+	  become really necessary.
+
+	* eval.c (rb_call): ditto.
+
 Wed May 14 00:55:56 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_io_m17n.rb: remove a duplicative method.
