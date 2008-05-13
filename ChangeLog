@@ -1,3 +1,8 @@
+Wed May 14 00:45:58 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* eval_method.c (rb_add_method): fix check for warning when
+	  Object#initialize is redefined. (same as 1.8)
+
 Tue May 13 23:32:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_yield): use rb_yield_values2.
