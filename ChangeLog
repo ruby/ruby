@@ -1,3 +1,13 @@
+Tue May 13 15:10:50 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c: Update rdoc.
+	  (enumerator_initialize): Discourage the use.
+	  (enum_each_slice, enum_each_cons, enumerator_each)
+	  (enumerator_with_index): Add a note about a call without a block.
+
+	* NEWS: Intentionally omit enum_slice and enum_cons, which are
+	  removed in 1.9.
+
 Tue May 13 07:56:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_cat): fixed buffer overrun reported by

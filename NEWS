@@ -87,9 +87,7 @@ with all sufficient information, see the ChangeLog file.
     New class for various enumeration defined by the enumerator library.
 
   * Enumerable#each_slice
-  * Enumerable#enum_slice
   * Enumerable#each_cons
-  * Enumerable#enum_cons
   * Object#to_enum
   * Object#enum_for
 
