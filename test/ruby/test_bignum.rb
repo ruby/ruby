@@ -163,7 +163,9 @@ class TestBignum < Test::Unit::TestCase
 
   def test_to_s2
     assert_raise(ArgumentError) { T31P.to_s(37) }
-    assert_equal(32768, (10**32768-1).to_s.size)
+    str = (10**32768-1).to_s
+    assert_equal("q", str.tr_s("9", "q"))
+    assert_equal(32768, str.size)
     assert_raise(RangeError) { Process.wait(1, T64P) }
     assert_equal("0", T_ZERO.to_s)
     assert_equal("1", T_ONE.to_s)
