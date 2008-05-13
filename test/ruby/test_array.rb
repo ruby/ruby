@@ -1401,7 +1401,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal("[...]", a.join)
   end
 
-  def test_to_a
+  def test_to_a2
     klass = Class.new(Array)
     a = klass.new.to_a
     assert_equal([], a)

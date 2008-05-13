@@ -339,7 +339,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(Errno::EEXIST) { File.link(@file, @file) }
   end
 
-  def test_symlink
+  def test_symlink2
     return unless @symlinkfile
     assert_equal(@file, File.readlink(@symlinkfile))
     assert_raise(Errno::EINVAL) { File.readlink(@file) }

@@ -134,7 +134,7 @@ class TestFixnum < Test::Unit::TestCase
     assert_raise(ArgumentError) { 10.to_s(1) }
   end
 
-  def test_plus
+  def test_plus2
     assert_equal(2, 1 + 1)
     assert_equal(4294967297, 1 + 2**32)
     assert_equal(2.0, 1 + 1.0)

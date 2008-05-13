@@ -721,7 +721,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal({3=>4,5=>6}, {1=>2,3=>4,5=>6}.select {|k, v| k + v >= 7 })
   end
 
-  def test_clear
+  def test_clear2
     assert_equal({}, {1=>2,3=>4,5=>6}.clear)
     h = {1=>2,3=>4,5=>6}
     h.each { h.clear }

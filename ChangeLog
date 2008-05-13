@@ -1,3 +1,21 @@
+Wed May 14 00:55:56 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_io_m17n.rb: remove a duplicative method.
+	
+	* test/ruby/test_utf16.rb: rename a conflicting method name.
+
+	* test/ruby/test_array.rb: ditto.
+
+	* test/ruby/test_file_exhaustive.rb: ditto.
+
+	* test/ruby/test_hash.rb: ditto.
+
+	* test/ruby/test_env.rb: ditto.
+
+	* test/ruby/test_fixnum.rb: ditto.
+
+	* test/ruby/test_rational.rb: ditto.
+
 Wed May 14 00:45:58 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* eval_method.c (rb_add_method): fix check for warning when

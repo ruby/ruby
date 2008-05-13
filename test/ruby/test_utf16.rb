@@ -281,7 +281,7 @@ EOT
     assert_str_equal("cd".encode("utf-16be"), r[1])
   end
 
-  def test_count
+  def test_count2
     e = "abc".count("^b")
     assert_equal(e, "abc".encode("utf-16be").count("^b".encode("utf-16be")))
     assert_equal(e, "abc".encode("utf-16le").count("^b".encode("utf-16le")))

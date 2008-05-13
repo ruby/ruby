@@ -266,7 +266,7 @@ class TestEnv < Test::Unit::TestCase
     assert_raise(ArgumentError) { ENV.assoc("foo\0bar") }
   end
 
-  def test_has_value
+  def test_has_value2
     ENV.clear
     assert(!ENV.has_value?("foo"))
     ENV["test"] = "foo"

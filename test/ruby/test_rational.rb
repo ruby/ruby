@@ -951,7 +951,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(0, Rational(0, 2**100))
   end
 
-  def test_unify
+  def test_unify2
     f = defined?(Rational::Unify)
     Rational.const_set(:Unify, true) unless f
 
