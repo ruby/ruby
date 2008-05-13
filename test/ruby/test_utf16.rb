@@ -262,6 +262,10 @@ EOT
                 "Regexp.new(#{encdump s}).encoding")
   end
 
+  def test_regexp_match
+    assert_raise(ArgumentError) { Regexp.new("aa".force_encoding("utf-16be")) =~ "aa" }
+  end
+
   def test_gsub
     s = "abcd".force_encoding("utf-16be")
     assert_nothing_raised {
