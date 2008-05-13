@@ -1,3 +1,13 @@
+Tue May 13 23:32:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_yield): use rb_yield_values2.
+
+	* enum.c (DEFINE_ENUMFUNCS): macro to define enumerator and yielding
+	  functions.
+
+	* enum.c (enum_all_func, enum_any_func, enum_one_func,
+	  enum_none_func): reduced duplicate code.
+
 Tue May 13 15:09:38 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Update rdoc.

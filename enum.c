@@ -28,11 +28,7 @@ enum_values_pack(int argc, VALUE *argv)
     i = enum_values_pack(argc, argv); \
 } while (0)
 
-static VALUE
-enum_yield(int argc, VALUE *argv)
-{
-    return rb_yield(enum_values_pack(argc, argv));
-}
+#define enum_yield rb_yield_values2
 
 static VALUE
 grep_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
@@ -791,25 +787,30 @@ enum_sort_by(VALUE obj)
     return ary;
 }
 
+#define DEFINE_ENUMFUNCS(name) \
+static VALUE \
+name##_i(VALUE i, VALUE *memo, int argc, VALUE *argv) \
+{ \
+    return enum_##name##_func(enum_values_pack(argc, argv), memo); \
+} \
+\
+static VALUE \
+name##_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv) \
+{ \
+    return enum_##name##_func(enum_yield(argc, argv), memo); \
+}
+    
 static VALUE
-all_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+enum_all_func(VALUE result, VALUE *memo)
 {
-    if (!RTEST(enum_values_pack(argc, argv))) {
+    if (!RTEST(result)) {
 	*memo = Qfalse;
 	rb_iter_break();
     }
     return Qnil;
 }
 
-static VALUE
-all_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
-{
-    if (!RTEST(enum_yield(argc, argv))) {
-	*memo = Qfalse;
-	rb_iter_break();
-    }
-    return Qnil;
-}
+DEFINE_ENUMFUNCS(all)
 
 /*
  *  call-seq:
@@ -838,24 +839,16 @@ enum_all(VALUE obj)
 }
 
 static VALUE
-any_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+enum_any_func(VALUE result, VALUE *memo)
 {
-    if (RTEST(enum_values_pack(argc, argv))) {
+    if (RTEST(result)) {
 	*memo = Qtrue;
 	rb_iter_break();
     }
     return Qnil;
 }
 
-static VALUE
-any_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
-{
-    if (RTEST(enum_yield(argc, argv))) {
-	*memo = Qtrue;
-	rb_iter_break();
-    }
-    return Qnil;
-}
+DEFINE_ENUMFUNCS(any)
 
 /*
  *  call-seq:
@@ -885,9 +878,9 @@ enum_any(VALUE obj)
 }
 
 static VALUE
-one_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+enum_one_func(VALUE result, VALUE *memo)
 {
-    if (RTEST(enum_values_pack(argc, argv))) {
+    if (RTEST(result)) {
 	if (*memo == Qundef) {
 	    *memo = Qtrue;
 	}
@@ -899,20 +892,7 @@ one_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
     return Qnil;
 }
 
-static VALUE
-one_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
-{
-    if (RTEST(enum_yield(argc, argv))) {
-	if (*memo == Qundef) {
-	    *memo = Qtrue;
-	}
-	else if (*memo == Qtrue) {
-	    *memo = Qfalse;
-	    rb_iter_break();
-	}
-    }
-    return Qnil;
-}
+DEFINE_ENUMFUNCS(one)
 
 /*
  *  call-seq:
@@ -943,24 +923,16 @@ enum_one(VALUE obj)
 }
 
 static VALUE
-none_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
+enum_none_func(VALUE result, VALUE *memo)
 {
-    if (RTEST(enum_values_pack(argc, argv))) {
+    if (RTEST(result)) {
 	*memo = Qfalse;
 	rb_iter_break();
     }
     return Qnil;
 }
 
-static VALUE
-none_iter_i(VALUE i, VALUE *memo, int argc, VALUE *argv)
-{
-    if (RTEST(enum_yield(argc, argv))) {
-	*memo = Qfalse;
-	rb_iter_break();
-    }
-    return Qnil;
-}
+DEFINE_ENUMFUNCS(none)
 
 /*
  *  call-seq:
