@@ -4,6 +4,11 @@ Tue May 13 08:25:31 2008  Tanaka Akira  <akr@fsij.org>
 	  (rb_f_readline): ditto.
 	  (rb_f_readlines): ditto.
 
+Tue May 13 07:56:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cat): fixed buffer overrun reported by
+	  Christopher Thompson <cthompson at nexopia.com> in [ruby-core:16746]
+
 Mon May 12 23:37:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm.c (collect_local_variables_in_env): remove unnecessary check
