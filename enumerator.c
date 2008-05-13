@@ -114,8 +114,10 @@ each_slice_i(VALUE val, VALUE *memo)
 /*
  *  call-seq:
  *    e.each_slice(n) {...}
+ *    e.each_slice(n)
  *
- *  Iterates the given block for each slice of <n> elements.
+ *  Iterates the given block for each slice of <n> elements.  If no
+ *  block is given, returns an enumerator.
  *
  *  e.g.:
  *      (1..10).each_slice(3) {|a| p a}
@@ -165,9 +167,10 @@ each_cons_i(VALUE val, VALUE *memo)
 /*
  *  call-seq:
  *    each_cons(n) {...}
+ *    each_cons(n)
  *
  *  Iterates the given block for each array of consecutive <n>
- *  elements.
+ *  elements.  If no block is given, returns an enumerator.a
  *
  *  e.g.:
  *      (1..10).each_cons(3) {|a| p a}
@@ -236,12 +239,8 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
  *  used as an Enumerable object using the given object's given
  *  method with the given arguments.
  *
- *  e.g.:
- *      str = "xyz"
- *
- *      enum = Enumerable::Enumerator.new(str, :each_byte)
- *      a = enum.map {|b| '%02x' % b } #=> ["78", "79", "7a"]
- *
+ *  Use of this method is not discouraged.  Use Kernel#enum_for()
+ *  instead.
  */
 static VALUE
 enumerator_initialize(int argc, VALUE *argv, VALUE obj)
@@ -291,7 +290,7 @@ rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
  *    enum.each {...}
  *
  *  Iterates the given block using the object and the method specified
- *  in the first place.
+ *  in the first place.  If no block is given, returns self.
  *
  */
 static VALUE
@@ -321,9 +320,10 @@ enumerator_with_index_i(VALUE val, VALUE *memo)
 /*
  *  call-seq:
  *    e.with_index {|(*args), idx| ... }
+ *    e.with_index
  *
  *  Iterates the given block for each elements with an index, which
- *  start from 0.
+ *  start from 0.  If no block is given, returns an enumerator.
  *
  */
 static VALUE
