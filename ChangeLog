@@ -1,3 +1,8 @@
+Tue May 13 07:56:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cat): fixed buffer overrun reported by
+	  Christopher Thompson <cthompson at nexopia.com> in [ruby-core:16746]
+
 Mon May 12 13:57:19 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): add NODE_OP_ASGN_{OR,AND}.  "defined?(a||=1)"
