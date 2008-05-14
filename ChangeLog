@@ -1,3 +1,7 @@
+Wed May 14 22:09:25 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ChangeLog: fix typo.
+
 Wed May 14 21:49:14 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_object.rb: new tests to achieve over 90% test
@@ -3446,7 +3450,7 @@ Thu Feb 14 00:02:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	  [ruby-dev:33763]
 
 	* test/ruby/test_proc.rb: add tests to achieve over 70% test coverage
-	  of time.c.
+	  of proc.c.
 
 	* test/ruby/test_method.rb: ditto.
 
