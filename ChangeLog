@@ -1,3 +1,35 @@
+Wed May 14 09:52:02 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil/tkutil.c: improve handling callback-subst-keys. 
+	  Now, support longnam-keys (e.g. '%CTT' on tkdnd-2.0; however, still
+	  not support tkdnd-2.0 on tkextlib), and symbols of parameters (e.g. 
+	  :widget=>'%W', :keycode=>'%k', '%x'=>:x, '%X'=>:root_x, and so on; 
+	  those are attributes of event object). It means that Ruby/Tk accepts
+	  not only "widget.bind(ev, '%W', '%k', ...){|w, k, ...| ... }", but 
+	  also "widget.bind(ev, :widget, :keycode, ...){|w, k, ...| ... }". 
+	  It is potentially incompatible, when user passes symbols to the
+	  arguments of the callback block (the block receives the symbols as
+	  strings). I think that is very rare case (probably, used by Ruby/Tk
+	  experts only). When causes such trouble, please give strings instead
+	  of such symbol parameters (e.g. call Symbol#to_s method).
+
+	* ext/tk/lib/tk/event.rb, ext/tk/lib/tk/validation.rb, 
+	  ext/tk/lib/tkextlib/blt/treeview.rb, 
+	  ext/tk/lib/tkextlib/winico/winico.rb: ditto.
+
+	* ext/tk/tkutil/tkutil.c: strings are available on subst_tables on 
+	  TkUtil::CallbackSubst class (it is useful on Ruby 1.9). 
+
+	* ext/tk/lib/tk/spinbox.rb, ext/tk/lib/tkextlib/iwidgets/hierarchy.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/spinner.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/entryfield.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/calendar.rb, 
+	  ext/tk/lib/tkextlib/blt/dragdrop.rb, 
+	  ext/tk/lib/tkextlib/tkDND/tkdnd.rb, 
+	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb, 
+	  ext/tk/lib/tkextlib/tktable/tktable.rb: disable code piece became 
+	  unnecessary by reason of the changes of ext/tk/tkutil/tkutil.c.
+
 Tue May 13 15:10:50 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Update rdoc.

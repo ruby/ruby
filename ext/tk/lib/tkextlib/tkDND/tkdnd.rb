@@ -57,6 +57,7 @@ module Tk
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -72,6 +73,7 @@ module Tk
         end
         inf
       }
+=end
 
       # setup tables
       _setup_subst_table(KEY_TBL, PROC_TBL);

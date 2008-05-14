@@ -150,6 +150,7 @@ class Tk::Winico
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -165,6 +166,7 @@ class Tk::Winico
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -185,7 +187,8 @@ class Tk::Winico
     Winico_callback._config_keys.each{|k|
       if keys[k].kind_of?(Array)
         cmd, *args = keys[k]
-        keys[k] = Winico_callback.new(cmd, args.join(' '))
+        #keys[k] = Winico_callback.new(cmd, args.join(' '))
+        keys[k] = Winico_callback.new(cmd, *args)
        # elsif keys[k].kind_of?(Proc)
       elsif TkComm._callback_entry?(keys[k])
         keys[k] = Winico_callback.new(keys[k])
@@ -201,7 +204,8 @@ class Tk::Winico
     Winico_callback._config_keys.each{|k|
       if keys[k].kind_of?(Array)
         cmd, *args = keys[k]
-        keys[k] = Winico_callback.new(cmd, args.join(' '))
+        #keys[k] = Winico_callback.new(cmd, args.join(' '))
+        keys[k] = Winico_callback.new(cmd, *args)
       # elsif keys[k].kind_of?(Proc)
       elsif TkComm._callback_entry?(keys[k])
         keys[k] = Winico_callback.new(keys[k])

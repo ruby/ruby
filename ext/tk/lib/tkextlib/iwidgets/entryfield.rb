@@ -43,6 +43,7 @@ class Tk::Iwidgets::Entryfield
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -58,6 +59,7 @@ class Tk::Iwidgets::Entryfield
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
     end

@@ -137,6 +137,7 @@ class Tk::TreeCtrl::NotifyEvent
     nil
   ]
 
+=begin
   # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
   KEY_TBL.map!{|inf|
     if inf.kind_of?(Array)
@@ -152,6 +153,7 @@ class Tk::TreeCtrl::NotifyEvent
     end
     inf
   }
+=end
 
   # setup tables to be used by scan_args, _get_subst_key, _get_all_subst_keys
   #
