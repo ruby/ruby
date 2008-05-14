@@ -77,4 +77,32 @@ class TestClass < Test::Unit::TestCase
     assert_equal(BasicObject, ClassTwo.superclass.superclass.superclass)
   end
 
+  def test_class_cmp
+    assert_raise(TypeError) { Class.new <= 1 }
+    assert_raise(TypeError) { Class.new >= 1 }
+    assert_nil(Class.new <=> 1)
+  end
+
+  def test_class_initialize
+    assert_raise(TypeError) do
+      Class.new.instance_eval { initialize }
+    end
+  end
+
+  def test_instanciate_singleton_class
+    c = class << Object.new; self; end
+    assert_raise(TypeError) { c.new }
+  end
+
+  def test_superclass_of_basicobject
+    assert_equal(nil, BasicObject.superclass)
+  end
+
+  def test_module_function
+    c = Class.new
+    assert_raise(TypeError) do
+      Module.instance_method(:module_function).bind(c).call(:foo)
+    end
+  end
+
 end

@@ -1,6 +1,11 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestException < Test::Unit::TestCase
+  def ruby(*r, &b)
+    EnvUtil.rubyexec(*r, &b)
+  end
+
   def test_exception
     begin
       raise "this must be handled"
@@ -182,6 +187,63 @@ class TestException < Test::Unit::TestCase
       assert(true)
     else
       assert(false)
+    end
+  end
+
+  def test_raise_with_wrong_number_of_arguments
+    assert_raise(TypeError) { raise nil }
+    assert_raise(TypeError) { raise 1, 1 }
+    assert_raise(ArgumentError) { raise 1, 1, 1, 1 }
+  end
+
+  def test_errat
+    ruby do |w, r, e|
+      w.puts "p $@"
+      w.close
+      assert_equal("nil", r.read.chomp)
+      assert_equal("", e.read.chomp)
+    end
+
+    ruby do |w, r, e|
+      w.puts "$@ = 1"
+      w.close
+      assert_equal("", r.read.chomp)
+      assert_match(/\$! not set \(ArgumentError\)$/, e.read.chomp)
+    end
+
+    ruby do |w, r, e|
+      w.puts "begin"
+      w.puts "  raise"
+      w.puts "rescue"
+      w.puts "  $@ = 1"
+      w.puts "end"
+      w.close
+      assert_equal("", r.read.chomp)
+      assert_match(/backtrace must be Array of String \(TypeError\)$/, e.read.chomp)
+    end
+
+    ruby do |w, r, e|
+      w.puts "begin"
+      w.puts "  raise"
+      w.puts "rescue"
+      w.puts "  $@ = 'foo'"
+      w.puts "  raise"
+      w.puts "end"
+      w.close
+      assert_equal("", r.read.chomp)
+      assert_match(/^foo: unhandled exception$/, e.read.chomp)
+    end
+
+    ruby do |w, r, e|
+      w.puts "begin"
+      w.puts "  raise"
+      w.puts "rescue"
+      w.puts "  $@ = %w(foo bar baz)"
+      w.puts "  raise"
+      w.puts "end"
+      w.close
+      assert_equal("", r.read.chomp)
+      assert_match(/^foo: unhandled exception\s+from bar\s+from baz$/, e.read.chomp)
     end
   end
 end

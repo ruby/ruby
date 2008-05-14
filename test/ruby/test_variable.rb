@@ -66,4 +66,13 @@ class TestVariable < Test::Unit::TestCase
       assert_equal([:x, :y], local_variables.sort)
     end.call
   end
+
+  def test_local_variables3
+    x = 1
+    proc do |y|
+      1.times do |z|
+        assert_equal([:x, :y, :z], local_variables.sort)
+      end
+    end.call
+  end
 end

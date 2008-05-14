@@ -185,4 +185,9 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
     assert_equal(Bignum, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1).class)
   end
+
+  def test_Integer2
+    assert_equal(2 ** 50, Integer(2.0 ** 50))
+    assert_raise(TypeError) { Integer(nil) }
+  end
 end

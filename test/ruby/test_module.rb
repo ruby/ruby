@@ -1,9 +1,22 @@
 require 'test/unit'
 require 'pp'
+require_relative 'envutil'
 
 $m0 = Module.nesting
 
 class TestModule < Test::Unit::TestCase
+  def setup
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
+  end
+
+  def ruby(*r, &b)
+    EnvUtil.rubyexec(*r, &b)
+  end
 
   def test_LT_0
     assert_equal true, String < Object
@@ -313,4 +326,322 @@ class TestModule < Test::Unit::TestCase
     assert_instance_of(Module, m)
   end
 
+  def test_freeze
+    m = Module.new
+    m.freeze
+    assert_raise(RuntimeError) do
+      m.module_eval do
+        def foo; end
+      end
+    end
+  end
+
+  def test_attr_obsoleted_flag
+    c = Class.new
+    c.class_eval do
+      def initialize
+        @foo = :foo
+        @bar = :bar
+      end
+      attr :foo, true
+      attr :bar, false
+    end
+    o = c.new
+    assert_equal(true, o.respond_to?(:foo))
+    assert_equal(true, o.respond_to?(:foo=))
+    assert_equal(true, o.respond_to?(:bar))
+    assert_equal(false, o.respond_to?(:bar=))
+  end
+
+  def test_const_get2
+    c1 = Class.new
+    c2 = Class.new(c1)
+
+    eval("c1::Foo = :foo")
+    assert_equal(:foo, c1::Foo)
+    assert_equal(:foo, c2::Foo)
+    assert_equal(:foo, c2.const_get(:Foo))
+    assert_raise(NameError) { c2.const_get(:Foo, false) }
+
+    eval("c1::Foo = :foo")
+    assert_raise(NameError) { c1::Bar }
+    assert_raise(NameError) { c2::Bar }
+    assert_raise(NameError) { c2.const_get(:Bar) }
+    assert_raise(NameError) { c2.const_get(:Bar, false) }
+
+    c1.instance_eval do
+      def const_missing(x)
+        x
+      end
+    end
+
+    assert_equal(:Bar, c1::Bar)
+    assert_equal(:Bar, c2::Bar)
+    assert_equal(:Bar, c2.const_get(:Bar))
+    assert_equal(:Bar, c2.const_get(:Bar, false))
+
+    assert_raise(NameError) { c1.const_get(:foo) }
+  end
+
+  def test_const_set2
+    c1 = Class.new
+    assert_raise(NameError) { c1.const_set(:foo, :foo) }
+  end
+
+  def test_const_get3
+    c1 = Class.new
+    assert_raise(NameError) { c1.const_defined?(:foo) }
+  end
+
+  def test_class_variable_get2
+    c = Class.new
+    c.class_eval { @@foo = :foo }
+    assert_equal(:foo, c.class_variable_get(:@@foo))
+    assert_raise(NameError) { c.class_variable_get(:@@bar) } # c.f. instance_variable_get
+    assert_raise(NameError) { c.class_variable_get(:foo) }
+  end
+
+  def test_class_variable_set2
+    c = Class.new
+    c.class_variable_set(:@@foo, :foo)
+    assert_equal(:foo, c.class_eval { @@foo })
+    assert_raise(NameError) { c.class_variable_set(:foo, 1) }
+  end
+
+  def test_class_variable_defined
+    c = Class.new
+    c.class_eval { @@foo = :foo }
+    assert_equal(true, c.class_variable_defined?(:@@foo))
+    assert_equal(false, c.class_variable_defined?(:@@bar))
+    assert_raise(NameError) { c.class_variable_defined?(:foo) }
+  end
+
+  def test_export_method
+    m = Module.new
+    assert_raise(NameError) do
+      m.instance_eval { public(:foo) }
+    end
+  end
+
+  def test_attr
+    ruby do |w, r, e|
+      w.puts "$VERBOSE = true"
+      w.puts "c = Class.new"
+      w.puts "c.instance_eval do"
+      w.puts "  private"
+      w.puts "  attr_reader :foo"
+      w.puts "end"
+      w.puts "o = c.new"
+      w.puts "o.foo rescue p(:ok)"
+      w.puts "p(o.instance_eval { foo })"
+      w.close
+      assert_equal(":ok\nnil", r.read.chomp)
+      assert_match(/warning: private attribute\?$/, e.read.chomp)
+    end
+
+    c = Class.new
+    assert_raise(NameError) do
+      c.instance_eval { attr_reader :"$" }
+    end
+  end
+
+  def test_undef
+    assert_raise(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        Class.instance_eval { undef_method(:foo) }
+      end.join
+    end
+
+    c = Class.new
+    assert_raise(NameError) do
+      c.instance_eval { undef_method(:foo) }
+    end
+
+    m = Module.new
+    assert_raise(NameError) do
+      m.instance_eval { undef_method(:foo) }
+    end
+
+    o = Object.new
+    assert_raise(NameError) do
+      class << o; self; end.instance_eval { undef_method(:foo) }
+    end
+
+    %w(object_id __send__ initialize).each do |m|
+      ruby do |w, r, e|
+        w.puts "$VERBOSE = false"
+        w.puts "Class.new.instance_eval { undef_method(:#{m}) }"
+        w.close
+        assert_equal("", r.read.chomp)
+        assert_match(/warning: undefining `#{m}' may cause serious problem$/, e.read.chomp)
+      end
+    end
+  end
+
+  def test_alias
+    m = Module.new
+    assert_raise(NameError) do
+      m.class_eval { alias foo bar }
+    end
+
+    ruby do |w, r, e|
+      w.puts "$VERBOSE = true"
+      w.puts "c = Class.new"
+      w.puts "c.class_eval do"
+      w.puts "  def foo; 1; end"
+      w.puts "  def bar; 2; end"
+      w.puts "end"
+      w.puts "c.class_eval { alias foo bar }"
+      w.puts "p c.new.foo"
+      w.close
+      assert_equal("2", r.read.chomp)
+      assert_match(/warning: discarding old foo$/, e.read.chomp)
+    end
+  end
+
+  def test_mod_constants
+    Module.const_set(:Foo, :foo)
+    assert_equal([:Foo], Module.constants(true))
+    assert_equal([:Foo], Module.constants(false))
+    Module.instance_eval { remove_const(:Foo) }
+  end
+
+  def test_frozen_class
+    m = Module.new
+    m.freeze
+    assert_raise(RuntimeError) do
+      m.instance_eval { undef_method(:foo) }
+    end
+
+    c = Class.new
+    c.freeze
+    assert_raise(RuntimeError) do
+      c.instance_eval { undef_method(:foo) }
+    end
+
+    o = Object.new
+    c = class << o; self; end
+    c.freeze
+    assert_raise(RuntimeError) do
+      c.instance_eval { undef_method(:foo) }
+    end
+  end
+
+  def test_method_defined
+    c = Class.new
+    c.class_eval do
+      def foo; end
+      def bar; end
+      def baz; end
+      public :foo
+      protected :bar
+      private :baz
+    end
+
+    assert_equal(true, c.public_method_defined?(:foo))
+    assert_equal(false, c.public_method_defined?(:bar))
+    assert_equal(false, c.public_method_defined?(:baz))
+
+    assert_equal(false, c.protected_method_defined?(:foo))
+    assert_equal(true, c.protected_method_defined?(:bar))
+    assert_equal(false, c.protected_method_defined?(:baz))
+
+    assert_equal(false, c.private_method_defined?(:foo))
+    assert_equal(false, c.private_method_defined?(:bar))
+    assert_equal(true, c.private_method_defined?(:baz))
+  end
+
+  def test_change_visibility_under_safe4
+    c = Class.new
+    c.class_eval do
+      def foo; end
+    end
+    assert_raise(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        c.class_eval { private :foo }
+      end.join
+    end
+  end
+
+  def test_top_public_private
+    ruby do |w, r, e|
+      w.puts "private"
+      w.puts "def foo; :foo; end"
+      w.puts "public"
+      w.puts "def bar; :bar; end"
+      w.puts "p self.private_methods.grep(/^foo$|^bar$/)"
+      w.puts "p self.methods.grep(/^foo$|^bar$/)"
+      w.close
+      assert_equal("[:foo]\n[:bar]", r.read.chomp)
+      assert_equal("", e.read.chomp)
+    end
+  end
+
+  def test_append_features
+    t = nil
+    m = Module.new
+    m.module_eval do
+      def foo; :foo; end
+    end
+    class << m; self; end.class_eval do
+      define_method(:append_features) do |mod|
+        t = mod
+        super(mod)
+      end
+    end
+
+    m2 = Module.new
+    m2.module_eval { include(m) }
+    assert_equal(m2, t)
+
+    o = Object.new
+    o.extend(m2)
+    assert_equal(true, o.respond_to?(:foo))
+  end
+
+  def test_append_features_raise
+    m = Module.new
+    m.module_eval do
+      def foo; :foo; end
+    end
+    class << m; self; end.class_eval do
+      define_method(:append_features) {|mod| raise }
+    end
+
+    m2 = Module.new
+    assert_raise(RuntimeError) do
+      m2.module_eval { include(m) }
+    end
+
+    o = Object.new
+    o.extend(m2)
+    assert_equal(false, o.respond_to?(:foo))
+  end
+
+  def test_append_features_type_error
+    assert_raise(TypeError) do
+      Module.new.instance_eval { append_features(1) }
+    end
+  end
+
+  def test_included
+    m = Module.new
+    m.module_eval do
+      def foo; :foo; end
+    end
+    class << m; self; end.class_eval do
+      define_method(:included) {|mod| raise }
+    end
+
+    m2 = Module.new
+    assert_raise(RuntimeError) do
+      m2.module_eval { include(m) }
+    end
+
+    o = Object.new
+    o.extend(m2)
+    assert_equal(true, o.respond_to?(:foo))
+  end
 end

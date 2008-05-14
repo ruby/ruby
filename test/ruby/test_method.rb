@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestMethod < Test::Unit::TestCase
   def setup
@@ -8,6 +9,10 @@ class TestMethod < Test::Unit::TestCase
 
   def teardown
     $VERBOSE = @verbose
+  end
+
+  def ruby(*r, &b)
+    EnvUtil.rubyexec(*r, &b)
   end
 
   def m0() end
@@ -201,5 +206,18 @@ class TestMethod < Test::Unit::TestCase
     c2.class_eval { private :foo }
     m2 = c2.new.method(:foo)
     assert_equal("#<Method: #{ c2.inspect }(#{ c.inspect })#foo>", m2.inspect)
+  end
+
+  def test_callee_top_level
+    ruby do |w, r, e|
+      w.puts "p __callee__"
+      w.close
+      assert_equal("nil", r.read.chomp)
+      assert_match("", e.read.chomp)
+    end
+  end
+
+  def test_caller_negative_level
+    assert_raise(ArgumentError) { caller(-1) }
   end
 end

@@ -18,4 +18,32 @@ class TestTrace < Test::Unit::TestCase
     
     untrace_var :$x
   end
+
+  def test_trace_tainted_proc
+    $x = 1234
+    s = proc { $y = :foo }
+    trace_var :$x, s
+    s.taint
+    $x = 42
+    assert_equal(:foo, $y)
+  ensure
+    untrace_var :$x
+  end
+
+  def test_trace_proc_that_raises_exception
+    $x = 1234
+    trace_var :$x, proc { raise }
+    assert_raise(RuntimeError) { $x = 42 }
+  ensure
+    untrace_var :$x
+  end
+
+  def test_trace_string
+    $x = 1234
+    trace_var :$x, "$y = :bar"
+    $x = 42
+    assert_equal(:bar, $y)
+  ensure
+    untrace_var :$x
+  end
 end

@@ -1,3 +1,26 @@
+Wed May 14 21:49:14 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_object.rb: new tests to achieve over 90% test
+	  coverage of object.c, eval.c and eval_method.c.
+
+	* test/ruby/test_module.rb: ditto.
+
+	* test/ruby/test_trace.rb: ditto.
+
+	* test/ruby/test_integer.rb: ditto.
+
+	* test/ruby/test_float.rb: ditto.
+
+	* test/ruby/test_method.rb: ditto.
+
+	* test/ruby/test_variable.rb: ditto.
+
+	* test/ruby/test_eval.rb: ditto.
+
+	* test/ruby/test_exception.rb: ditto.
+
+	* test/ruby/test_class.rb: ditto.
+
 Wed May 14 12:46:37 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (insn_operand_intern): remove Qundef related code.
