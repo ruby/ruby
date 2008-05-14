@@ -237,18 +237,11 @@ getconstant
 DEFINE_INSN
 setconstant
 (ID id)
-(VALUE val, VALUE klass)
+(VALUE val, VALUE cbase)
 ()
 {
-    if (klass == Qundef) {
-	klass = vm_get_cbase(th);
-	if (NIL_P(klass)) {
-	    rb_raise(rb_eTypeError, "no class/module to define constant");
-	}
-    }
-
-    vm_check_if_namespace(klass);
-    rb_const_set(klass, id, val);
+    vm_check_if_namespace(cbase);
+    rb_const_set(cbase, id, val);
     INC_VM_STATE_VERSION();
 }
 
@@ -311,6 +304,20 @@ putself
 (VALUE val)
 {
     val = GET_SELF();
+}
+
+/**
+  @c put
+  @e put cbase.
+  @j スタックに cbase をプッシュする。
+ */
+DEFINE_INSN
+putcbase
+()
+()
+(VALUE val)
+{
+    val = vm_get_cbase(th);
 }
 
 /**
@@ -929,13 +936,6 @@ defineclass
 	    super = rb_cObject;
 	}
 
-	if (cbase == Qundef) {
-	    cbase = vm_get_cbase(th);
-	    if (NIL_P(cbase)) {
-		rb_raise(rb_eTypeError, "no class/module to define constant");
-	    }
-	}
-
 	vm_check_if_namespace(cbase);
 
 	/* find klass */
@@ -972,12 +972,6 @@ defineclass
       case 2:
 	/* val is dummy.  classdef returns class scope value */
 	/* super is dummy */
-	if (cbase == Qundef) {
-	    cbase = vm_get_cbase(th);
-	    if (NIL_P(cbase)) {
-		rb_raise(rb_eTypeError, "no class/module to define constant");
-	    }
-	}
 
 	vm_check_if_namespace(cbase);
 

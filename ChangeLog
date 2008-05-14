@@ -1,3 +1,10 @@
+Wed May 14 11:29:06 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def: add a "putcbase" instruction.
+
+	* compile.c, insns.def: fix to use putcbase instruction for
+	  class search.  Qundef should not be used.
+
 Wed May 14 07:49:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): defer calling of rb_frame_self() until it
