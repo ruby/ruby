@@ -24,7 +24,7 @@ Wed May 14 07:49:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed May 14 00:55:56 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_io_m17n.rb: remove a duplicative method.
-	
+
 	* test/ruby/test_utf16.rb: rename a conflicting method name.
 
 	* test/ruby/test_array.rb: ditto.
@@ -225,7 +225,7 @@ Sun May 11 19:04:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_thread.rb: kill and join temporal threads that are
 	  created in each test.
- 
+
 Sun May 11 17:58:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_process.rb (TestProcess#with_stdin): defined.
@@ -381,10 +381,10 @@ Thu May  8 01:10:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (tr_trans): should squeeze properly.  [ruby-dev:34587]
 
 	* string.c (tr_trans): had a bug in treating multi-byte character
-	  replacement. 
+	  replacement.
 
 	* string.c (rb_str_delete_bang): need not to do anything for empty
-	  strings. 
+	  strings.
 
 	* test/ruby/test_m17n_comb.rb (TestM17NComb::test_str_delete): add
 	  test for empty receiver.
@@ -480,10 +480,6 @@ Mon May  5 19:58:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* compile.c (defined_expr): protect some expression from
 	  segmentation fault.  a patch from wanabe <s.wanabe at gmail.com>
 	  in [ruby-dev:34593].
-
-Mon May  5 19:57:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* compile.c (defined_expr): 
 
 Mon May  5 19:49:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -598,7 +594,7 @@ Thu May  1 23:59:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
-	  can be activated to have net/telnet raise EOFError exceptions when the 
+	  can be activated to have net/telnet raise EOFError exceptions when the
 	  remote connection is closed.  The default behavior remains unchanged though.
 
 Thu May  1 23:43:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -772,7 +768,7 @@ Sat Apr 26 21:30:40 2008  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/intern.h (rb_hash_dup): declared.
 
 	* hash.c (rb_hash_dup): new function.
-	
+
 	* process.c (rb_spawn_internal): don't modify option hash.
 
 Sat Apr 26 18:36:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1421,9 +1417,9 @@ Thu Apr 10 23:08:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* lib/pstore.rb (PStore::dump, PStore::load): allow subclass
 	  overriding.  [ruby-dev:34305]
 
-	* lib/yaml/store.rb (YAML::Store::marshal_dump_supports_canonical_option?): 
+	* lib/yaml/store.rb (YAML::Store::marshal_dump_supports_canonical_option?):
 	  add a method to support faster PStore.
-	
+
 Thu Apr 10 20:36:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/rdebug.el, misc/README: Remove rdebug.el as per request
@@ -1764,53 +1760,53 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/*: full update Ruby/Tk to support Ruby(1.9|1.8) and Tc/Tk8.5.
 
-	* ext/tk/lib/tkextlib/tile.rb: [incompatible] remove TileWidgets' 
+	* ext/tk/lib/tkextlib/tile.rb: [incompatible] remove TileWidgets'
 	  instate/state/identify method to avoid the conflict with standard
 	  widget options. Those methods are renamed to ttk_instate/ttk_state/
-	  ttk_identify (tile_instate/tile_state/tile_identify are available 
-	  too). Although I don't recommend, if you really need old methods, 
-	  please define "Tk::USE_OBSOLETE_TILE_STATE_METHOD = true" before 
+	  ttk_identify (tile_instate/tile_state/tile_identify are available
+	  too). Although I don't recommend, if you really need old methods,
+	  please define "Tk::USE_OBSOLETE_TILE_STATE_METHOD = true" before
 	  "require 'tkextlib/tile'".
 
 	* ext/tk/lib/tkextlib/tile.rb: "Tk::Tile::__Import_Tile_Widgets__!"
-	  is obsolete. It outputs warning. To control default widget set, 
+	  is obsolete. It outputs warning. To control default widget set,
 	  use "Tk.default_widget_set = :Ttk".
 
-	* ext/tk/lib/tk.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ method and 
-	  __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method are defined 
-	  as module methods of TkConfigMethod. It may help users to wrap old 
+	* ext/tk/lib/tk.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ method and
+	  __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method are defined
+	  as module methods of TkConfigMethod. It may help users to wrap old
 	  Ruby/Tk scripts (use standard widgets) to force to use Ttk widgets.
-	  Ttk widgets don't have some options of standard widgets which are 
-	  control the view of widgets. When set ignore-mode true, configure 
-	  method tries to ignore such unknown options with no exception. 
-	  Of course, it may raise other troubles on the GUI design. 
-	  So, those are a little danger methods. 
+	  Ttk widgets don't have some options of standard widgets which are
+	  control the view of widgets. When set ignore-mode true, configure
+	  method tries to ignore such unknown options with no exception.
+	  Of course, it may raise other troubles on the GUI design.
+	  So, those are a little danger methods.
 
-	* ext/tk/lib/tk/itemconfig.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ 
-	  method and __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method 
-	  are defined as module methods of TkItemConfigMethod as the same 
+	* ext/tk/lib/tk/itemconfig.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__
+	  method and __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method
+	  are defined as module methods of TkItemConfigMethod as the same
 	  purpose as TkConfigMethod's ones.
 
-	* ext/tk/sample/ttk_wrapper.rb: A new example. This is a tool for 
-	  wrapping old Ruby/Tk scripts (which use standard widgets) to use 
+	* ext/tk/sample/ttk_wrapper.rb: A new example. This is a tool for
+	  wrapping old Ruby/Tk scripts (which use standard widgets) to use
 	  Ttk (Tile) widgets as default.
 
-	* ext/tk/sample/tkextlib/tile/demo.rb: use ttk_instate/ttk_state 
+	* ext/tk/sample/tkextlib/tile/demo.rb: use ttk_instate/ttk_state
 	  method instead of instate/state method.
 
 	* ext/tk/lib/tk/root, ext/tk/lib/tk/namespace.rb,
-	  ext/tk/lib/tk/text.rb, ext/tk/lib/tkextlib/*: some 'instance_eval's  
+	  ext/tk/lib/tk/text.rb, ext/tk/lib/tkextlib/*: some 'instance_eval's
 	  are replaced to "instance_exec(self)".
 
-	* ext/tk/lib/tk/event.rb: bug fix on KEY_TBL and PROC_TBL (?x is not 
+	* ext/tk/lib/tk/event.rb: bug fix on KEY_TBL and PROC_TBL (?x is not
 	  a character code on Ruby1.9).
 
-	* ext/tk/lib/tk/variable.rb: support new style of operation argument 
-	  on Tcl/Tk's 'trace' command for variables. 
+	* ext/tk/lib/tk/variable.rb: support new style of operation argument
+	  on Tcl/Tk's 'trace' command for variables.
 
 	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget: bug fix
 
-	* ext/tk/sample/demos-jp/textpeer.rb, 
+	* ext/tk/sample/demos-jp/textpeer.rb,
 	  ext/tk/sample/demos-en/textpeer.rb: new widget demo.
 
 	* ext/tk/tcltklib.c: decrease SEGV troubles (probably)
@@ -1819,27 +1815,27 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/multi-tk.rb: support Ruby1.9 (probably)
 
-	* ext/tk/lib/tkextlib/tile.rb: add method to define Tcl/Tk command 
-	  to make Tcl/Tk theme sources (based on different version of Tile 
-	  extension) available. 
+	* ext/tk/lib/tkextlib/tile.rb: add method to define Tcl/Tk command
+	  to make Tcl/Tk theme sources (based on different version of Tile
+	  extension) available.
 	  (Tk::Tile::__define_LoadImages_proc_for_compatibility__)
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tk/wm.rb: support dockable frames
-	  (Tcl/Tk8.5 feature). 'wm' command can treat many kinds of widgets 
+	  (Tcl/Tk8.5 feature). 'wm' command can treat many kinds of widgets
 	  as toplevel widgets.
 
 	* ext/tk/lib/tkextlib/tile/style.rb: ditto.
 	  (Tk::Tile::Style.__define_wrapper_proc_for_compatibility__)
 
-	* ext/tk/lib/tk/font.rb: add actual_hash and metrics_hash to get 
-	  properties as a hash. metrics_hash method returns a boolean value 
-	  for 'fixed' option. But metrics method returns numeric value 
-	  (0 or 1) for 'fixed' option, because of backward compatibility. 
+	* ext/tk/lib/tk/font.rb: add actual_hash and metrics_hash to get
+	  properties as a hash. metrics_hash method returns a boolean value
+	  for 'fixed' option. But metrics method returns numeric value
+	  (0 or 1) for 'fixed' option, because of backward compatibility.
 
 	* ext/tk/lib/tk/timer.rb: sometimes fail to set callback procedure.
 
-	* ext/tk/lib/tk.rb: add Tk.sleep and Tk.wakeup method. Tk.sleep 
-	  doesn't block the eventloop. It will be better to use the method 
+	* ext/tk/lib/tk.rb: add Tk.sleep and Tk.wakeup method. Tk.sleep
+	  doesn't block the eventloop. It will be better to use the method
 	  in event callbacks.
 
 	* ext/tk/sample/tksleep_sample.rb: sample script about Tk.sleep.
