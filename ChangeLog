@@ -1,3 +1,8 @@
+Wed May 14 12:42:36 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_count): Override Enumerable#count for better
+	  performance.
+
 Wed May 14 11:29:06 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def: add a "putcbase" instruction.

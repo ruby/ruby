@@ -537,6 +537,14 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3, 1, 2, 3], a)
   end
 
+  def test_count
+    a = @cls[1, 2, 3, 1, 2]
+    assert_equal(2, a.count(1))
+    assert_equal(3, a.count {|x| x % 2 == 1 })
+    assert_equal(2, a.count(1) {|x| x % 2 == 1 })
+    assert_raise(ArgumentError) { a.count(0, 1) }
+  end
+
   def test_delete
     a = @cls[*('cab'..'cat').to_a]
     assert_equal('cap', a.delete('cap'))

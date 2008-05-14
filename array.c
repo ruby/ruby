@@ -2776,6 +2776,49 @@ rb_ary_nitems(VALUE ary)
     return LONG2NUM(n);
 }
 
+/*
+ *  call-seq:
+ *     array.count(obj) -> int
+ *     array.count { |item| block }  -> int
+ *  
+ *  Returns the number of elements which equals to <i>obj</i>.
+ *  If a block is given, counts tthe number of elements yielding a true value.
+ *
+ *     ary = [1, 2, 4, 2]
+ *     ary.count(2)          # => 2
+ *     ary.count{|x|x%2==0}  # => 3
+ *
+ */
+
+static VALUE
+rb_ary_count(int argc, VALUE *argv, VALUE ary)
+{
+    long n = 0;
+
+    if (argc == 0) {
+	VALUE *p, *pend;
+
+	RETURN_ENUMERATOR(ary, 0, 0);
+
+	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
+	    if (RTEST(rb_yield(*p))) n++;
+	}
+    }
+    else {
+	VALUE obj, *p, *pend;
+
+	rb_scan_args(argc, argv, "1", &obj);
+	if (rb_block_given_p()) {
+	    rb_warn("given block not used");
+	}
+	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
+	    if (rb_equal(*p, obj)) n++;
+	}
+    }
+
+    return LONG2NUM(n);
+}
+
 static VALUE
 flatten(VALUE ary, int level, int *modified)
 {
@@ -3461,6 +3504,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
     rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
+    rb_define_method(rb_cArray, "count", rb_ary_count, -1);
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
