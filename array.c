@@ -3032,16 +3032,12 @@ rb_ary_compact(ary)
 /*
  *  call-seq:
  *     array.nitems -> int
- *     array.nitems { |item| block }  -> int
  *  
  *  Returns the number of non-<code>nil</code> elements in _self_.
- *  If a block is given, the elements yielding a true value are
- *  counted.
  *
  *  May be zero.
  *     
  *     [ 1, nil, 3, nil, 5 ].nitems   #=> 3
- *     [5,6,7,8,9].nitems { |x| x % 2 != 0 }  #=> 3
  */
 
 static VALUE
@@ -3049,24 +3045,54 @@ rb_ary_nitems(ary)
     VALUE ary;
 {
     long n = 0;
- 
-    if (rb_block_given_p()) {
-	long i;
+    VALUE *p, *pend;
 
-	for (i=0; i<RARRAY(ary)->len; i++) {
-	    VALUE v = RARRAY(ary)->ptr[i];
- 	    if (RTEST(rb_yield(v))) n++;
- 	}
+    for (p = RARRAY(ary)->ptr, pend = p + RARRAY(ary)->len; p < pend; p++) {
+	if (!NIL_P(*p)) n++;
+    }
+    return LONG2NUM(n);
+}
+
+/*
+ *  call-seq:
+ *     array.count(obj) -> int
+ *     array.count { |item| block }  -> int
+ *  
+ *  Returns the number of elements which equals to <i>obj</i>.
+ *  If a block is given, counts tthe number of elements yielding a true value.
+ *
+ *     ary = [1, 2, 4, 2]
+ *     ary.count(2)          # => 2
+ *     ary.count{|x|x%2==0}  # => 3
+ *
+ */
+
+static VALUE
+rb_ary_count(int argc, VALUE *argv, VALUE ary)
+{
+    long n = 0;
+
+    if (argc == 0) {
+	VALUE *p, *pend;
+
+	RETURN_ENUMERATOR(ary, 0, 0);
+
+	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
+	    if (RTEST(rb_yield(*p))) n++;
+	}
     }
     else {
-	VALUE *p = RARRAY(ary)->ptr;
-	VALUE *pend = p + RARRAY(ary)->len;
+	VALUE obj, *p, *pend;
 
- 	while (p < pend) {
- 	    if (!NIL_P(*p)) n++;
- 	    p++;
- 	}
+	rb_scan_args(argc, argv, "1", &obj);
+	if (rb_block_given_p()) {
+	    rb_warn("given block not used");
+	}
+	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
+	    if (rb_equal(*p, obj)) n++;
+	}
     }
+
     return LONG2NUM(n);
 }
 
@@ -3789,6 +3815,7 @@ Init_Array()
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
     rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
+    rb_define_method(rb_cArray, "count", rb_ary_count, -1);
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);

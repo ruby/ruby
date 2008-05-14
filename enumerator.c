@@ -72,16 +72,6 @@ enumerator_ptr(obj)
     return ptr;
 }
 
-static VALUE enumerator_iter_i _((VALUE, VALUE));
-static VALUE
-enumerator_iter_i(i, enum_obj)
-    VALUE i;
-    VALUE enum_obj;
-{
-    struct enumerator *e = (struct enumerator *)enum_obj;
-    return rb_yield(proc_call(e->proc, i));
-}
-
 /*
  *  call-seq:
  *    obj.to_enum(method = :each, *args)
@@ -339,7 +329,6 @@ enumerator_each(obj)
     struct enumerator *e;
     int argc = 0;
     VALUE *argv = 0;
-    VALUE method;
 
     if (!rb_block_given_p()) return obj;
     e = enumerator_ptr(obj);
@@ -377,7 +366,6 @@ enumerator_with_index(obj)
     VALUE memo = 0;
     int argc = 0;
     VALUE *argv = 0;
-    VALUE method;
 
     RETURN_ENUMERATOR(obj, 0, 0);
     if (e->args) {

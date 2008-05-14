@@ -1,3 +1,13 @@
+Wed May 14 19:24:59 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_count): Override Enumerable#count for better
+	  performance.
+	  (rb_ary_nitems): Undo the backport.  Use #count {} instead.
+
+	* enumerator.c (enumerator_iter_i): Remove an unused function.
+	  (enumerator_with_index, enumerator_each): Remove unused
+	  variables.
+
 Wed May 14 17:15:11 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tk/tkutil/extronf.rb: check stdndup() because it's not standard

@@ -17,10 +17,6 @@ with all sufficient information, see the ChangeLog file.
 
 * builtin classes
 
-  * Array#nitems now takes a block optionally, which is used to
-    determine if each element should be counted instead of checking if
-    the element is non-nil.
-
   * Array#flatten
   * Array#flatten!
 
