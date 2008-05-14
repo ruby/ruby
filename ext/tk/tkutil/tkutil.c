@@ -1522,8 +1522,17 @@ cbsubst_table_setup(argc, argv, self)
 
     chr = (unsigned char)(0x80 + idx);
     subst_inf->keylen[chr] = RSTRING_LEN(RARRAY_PTR(inf)[0]);
+#if HAVE_STRNDUP
     subst_inf->key[chr] = strndup(RSTRING_PTR(RARRAY_PTR(inf)[0]), 
 				  RSTRING_LEN(RARRAY_PTR(inf)[0]));
+#else
+    subst_inf->key[chr] = malloc(RSTRING_LEN(RARRAY_PTR(inf)[0]) + 1);
+    if (subst_inf->key[chr]) {
+      strncpy(subst_inf->key[chr], RSTRING_PTR(RARRAY_PTR(inf)[0]),
+	      RSTRING_LEN(RARRAY_PTR(inf)[0]) + 1);
+      subst_inf->key[chr][RSTRING_LEN(RARRAY_PTR(inf)[0])] = '\0';
+    }
+#endif
     if (TYPE(RARRAY_PTR(inf)[1]) == T_STRING) {
       subst_inf->type[chr] = *(RSTRING_PTR(RARRAY_PTR(inf)[1]));
     } else {

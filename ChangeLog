@@ -1,3 +1,11 @@
+Wed May 14 17:15:11 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/tk/tkutil/extronf.rb: check stdndup() because it's not standard
+	  function of C.
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): use malloc() and
+	  strncpy() instead of strndup() if not available.
+
 Wed May 14 09:52:02 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil/tkutil.c: improve handling callback-subst-keys. 
