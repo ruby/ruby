@@ -1,3 +1,12 @@
+Thu May 15 15:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): support for alternative data stream
+	  and ignored trailing garbages of NTFS.
+
+	* file.c (rb_file_s_basename): ditto.
+
+	* file.c (rb_file_s_extname): ditto.
+
 Wed May 14 19:24:59 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_count): Override Enumerable#count for better
