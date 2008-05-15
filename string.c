@@ -4530,12 +4530,12 @@ tr_find(int c, char table[256], VALUE del, VALUE nodel)
     else {
 	VALUE v = INT2NUM(c);
 
-	if (!del || NIL_P(rb_hash_lookup(del, v))) {
-	    return Qfalse;
+	if (del && !NIL_P(rb_hash_lookup(del, v))) {
+	    if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
+		return Qtrue;
+	    }
 	}
-	if (nodel && NIL_P(rb_hash_lookup(nodel, v)))
-	    return Qfalse;
-	return Qtrue;
+	return Qfalse;
     }
 }
 

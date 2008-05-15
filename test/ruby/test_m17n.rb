@@ -894,6 +894,10 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(1, e("\xa1\xa2").delete("z").length)
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
     assert_raise(ArgumentError){s.delete(a("\xa3\xb2"))}
+
+    a = "\u3042\u3044\u3046\u3042\u3044\u3046"
+    a.delete!("\u3042\u3044", "^\u3044")
+    assert_equal("\u3044\u3046\u3044\u3046", a)
   end
 
   def test_include?
