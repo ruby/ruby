@@ -58,6 +58,7 @@ class AnimatedWaveDemo
     @backupCoords = []
     n = 0
     (-10..300).step(5){|n| @waveCoords << [n, 100]; @backupCoords << [n, 100] }
+    n = 305
     @waveCoords << [n, 0]; @backupCoords << [n, 0]
     @waveCoords << [n+5, 200]; @backupCoords << [n+5, 200]
     @coordsLen = @waveCoords.length

@@ -1,3 +1,10 @@
+Fri May 16 08:15:52 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fix memory (object) leak bug.
+
+	* ext/tk/sample/demos-jp/aniwave.rb, ext/tk/sample/demos-en/aniwave.rb:
+	  bug fix.
+
 Thu May 15 17:00:22 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (Init_String): Define #bytesize as an alias for #size
