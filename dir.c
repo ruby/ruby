@@ -66,14 +66,6 @@ char *strchr(char*,char);
 #define lstat stat
 #endif
 
-#ifndef CASEFOLD_FILESYSTEM
-# if defined DOSISH || defined __VMS
-#   define CASEFOLD_FILESYSTEM 1
-# else
-#   define CASEFOLD_FILESYSTEM 0
-# endif
-#endif
-
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_DOTMATCH	0x04

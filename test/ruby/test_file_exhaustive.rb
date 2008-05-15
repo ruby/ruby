@@ -374,6 +374,11 @@ class TestFileExhaustive < Test::Unit::TestCase
 
   def test_expand_path
     assert_equal(@file, File.expand_path(File.basename(@file), File.dirname(@file)))
+    if /cygwin|mingw|mswin|bccwin/ =~ RUBY_PLATFORM
+      assert_equal(@file, File.expand_path(@file + " "))
+      assert_equal(@file, File.expand_path(@file + "."))
+      assert_equal(@file, File.expand_path(@file + "::$DATA"))
+    end
   end
 
   def test_basename
@@ -383,6 +388,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("foo", File.basename("foo", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".*"))
+    if /cygwin|mingw|mswin|bccwin/ =~ RUBY_PLATFORM
+      basename = File.basename(@file)
+      assert_equal(basename, File.basename(@file + " "))
+      assert_equal(basename, File.basename(@file + "."))
+      assert_equal(basename, File.basename(@file + "::$DATA"))
+      basename.chomp!(".test")
+      assert_equal(basename, File.basename(@file + " ", ".test"))
+      assert_equal(basename, File.basename(@file + ".", ".test"))
+      assert_equal(basename, File.basename(@file + "::$DATA", ".test"))
+      assert_equal(basename, File.basename(@file + " ", ".*"))
+      assert_equal(basename, File.basename(@file + ".", ".*"))
+      assert_equal(basename, File.basename(@file + "::$DATA", ".*"))
+    end
   end
 
   def test_dirname
@@ -394,6 +412,13 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert(".test", File.extname(@file))
     assert_equal("", File.extname("foo"))
     assert_equal("", File.extname(""))
+    if /cygwin|mingw|mswin|bccwin/ =~ RUBY_PLATFORM
+      assert_equal("", File.extname("foo "))
+      assert_equal(".ext", File.extname("foo.ext "))
+      assert_equal(".ext", File.extname("foo.ext."))
+      assert_equal(".ext", File.extname("foo.ext::$DATA"))
+      assert_equal("", File.extname("foo::$DATA.ext"))
+    end
   end
 
   def test_split

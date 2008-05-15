@@ -14,6 +14,10 @@
 #ifdef _WIN32
 #include "missing/file.h"
 #endif
+#ifdef __CYGWIN__
+#include <windows.h>
+#include <sys/cygwin.h>
+#endif
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
@@ -2399,6 +2403,18 @@ rb_file_s_umask(int argc, VALUE *argv)
 #define isdirsep(x) ((x) == '/')
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+#define USE_NTFS 1
+#else
+#define USE_NTFS 0
+#endif
+
+#if USE_NTFS
+#define istrailinggabage(x) ((x) == '.' || (x) == ' ')
+#else
+#define istrailinggabage(x) 0
+#endif
+
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # if defined(DJGPP)
 #   define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
@@ -2534,6 +2550,30 @@ rb_path_end(const char *path)
     if (isdirsep(*path)) path++;
     return chompdirsep(path);
 }
+
+#if USE_NTFS
+static char *
+ntfs_tail(const char *path)
+{
+    while (*path && *path != ':') {
+	if (istrailinggabage(*path)) {
+	    const char *last = path++;
+	    while (istrailinggabage(*path)) path++;
+	    if (!*path || *path == ':') return (char *)last;
+	}
+	else if (isdirsep(*path)) {
+	    const char *last = path++;
+	    while (isdirsep(*path)) path++;
+	    if (!*path) return (char *)last;
+	    if (*path == ':') path++;
+	}
+	else {
+	    path = CharNext(path);
+	}
+    }
+    return (char *)path;
+}
+#endif
 
 #define BUFCHECK(cond) do {\
     long bdiff = p - buf;\
@@ -2717,6 +2757,11 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 			}
 			b = ++s;
 		    }
+#if USE_NTFS
+		    else {
+			do *++s; while (istrailinggabage(*s));
+		    }
+#endif
 		    break;
 		  case '/':
 #if defined DOSISH || defined __CYGWIN__
@@ -2729,6 +2774,19 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 		    break;
 		}
 	    }
+#if USE_NTFS
+	    else {
+		--s;
+	      case ' ': {
+		const char *e = s;
+		while (istrailinggabage(*s)) s++;
+		if (!*s) {
+		    s = e;
+		    goto endpath;
+		}
+	      }
+	    }
+#endif
 	    break;
 	  case '/':
 #if defined DOSISH || defined __CYGWIN__
@@ -2751,14 +2809,75 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
     }
 
     if (s > b) {
+#if USE_NTFS
+      endpath:
+	if (s > b + 6 && strncasecmp(s - 6, ":$DATA", 6) == 0) {
+	    /* alias of stream */
+	    /* get rid of a bug of x64 VC++ */
+	    if (*(s-7) == ':') s -= 7;			/* prime */
+	    else if (memchr(b, ':', s - 6 - b)) s -= 6; /* alternative */
+	}
+#endif
 	BUFCHECK(bdiff + (s-b) >= buflen);
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
     if (p == skiproot(buf) - 1) p++;
+    buflen = p - buf;
+
+#if USE_NTFS
+    *p = '\0';
+    if (!strpbrk(b = buf, "*?")) {
+	size_t len;
+	WIN32_FIND_DATA wfd;
+#ifdef __CYGWIN__
+	int lnk_added = 0;
+	struct stat st;
+	char w32buf[MAXPATHLEN], sep = 0;
+	p = 0;
+	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
+	    p = strrdirsep(buf);
+	    if (!p) p = skipprefix(buf);
+	    if (p) {
+		sep = *p;
+		*p = '\0';
+	    }
+	}
+	if (cygwin_conv_to_win32_path(buf, w32buf) == 0) {
+	    b = w32buf;
+	}
+	if (p) *p = sep;
+	else p = buf;
+	if (b == w32buf) {
+	    strlcat(w32buf, p, sizeof(w32buf));
+	    len = strlen(p);
+	    if (len > 4 && STRCASECMP(p + len - 4, ".lnk") != 0) {
+		lnk_added = 1;
+		strlcat(w32buf, ".lnk", sizeof(w32buf));
+	    }
+	}
+#endif
+	HANDLE h = FindFirstFile(b, &wfd);
+	if (h != INVALID_HANDLE_VALUE) {
+	    FindClose(h);
+	    p = strrdirsep(buf);
+	    len = strlen(wfd.cFileName);
+#ifdef __CYGWIN__
+	    if (lnk_added && len > 4 &&
+		STRCASECMP(wfd.cFileName + len - 4, ".lnk") == 0) {
+		len -= 4;
+	    }
+#endif
+	    if (!p) p = buf;
+	    buflen = ++p - buf + len;
+	    rb_str_resize(result, buflen);
+	    memcpy(p, wfd.cFileName, len + 1);
+	}
+    }
+#endif
 
     if (tainted) OBJ_TAINT(result);
-    rb_str_set_len(result, p - buf);
+    rb_str_set_len(result, buflen);
     rb_enc_check(fname, result);
     return result;
 }
@@ -2800,22 +2919,29 @@ rb_file_s_expand_path(int argc, VALUE *argv)
 }
 
 static int
-rmext(const char *p, const char *e)
+rmext(const char *p, int l1, const char *e)
 {
-    int l1, l2;
+    int l2;
 
     if (!e) return 0;
 
-    l1 = chompdirsep(p) - p;
     l2 = strlen(e);
     if (l2 == 2 && e[1] == '*') {
-	e = strrchr(p, *e);
-	if (!e) return 0;
+	unsigned char c = *e;
+	e = p + l1;
+	do {
+	    if (e <= p) return 0;
+	} while (*--e != c);
 	return e - p;
     }
     if (l1 < l2) return l1;
 
-    if (strncmp(p+l1-l2, e, l2) == 0) {
+#if CASEFOLD_FILESYSTEM
+#define fncomp strncasecmp
+#else
+#define fncomp strncmp
+#endif
+    if (fncomp(p+l1-l2, e, l2) == 0) {
 	return l1-l2;
     }
     return 0;
@@ -2843,7 +2969,7 @@ rb_file_s_basename(int argc, VALUE *argv)
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
     char *root;
 #endif
-    int f;
+    int f, n;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
 	StringValue(fext);
@@ -2877,18 +3003,22 @@ rb_file_s_basename(int argc, VALUE *argv)
 #endif
 #endif
     }
-    else if (!(p = strrdirsep(name))) {
-	if (NIL_P(fext) || !(f = rmext(name, StringValueCStr(fext)))) {
-	    f = chompdirsep(name) - name;
-	    if (f == RSTRING_LEN(fname)) return fname;
-	}
-	p = name;
-    }
     else {
-	while (isdirsep(*p)) p++; /* skip last / */
-	if (NIL_P(fext) || !(f = rmext(p, StringValueCStr(fext)))) {
-	    f = chompdirsep(p) - p;
+	if (!(p = strrdirsep(name))) {
+	    p = name;
 	}
+	else {
+	    while (isdirsep(*p)) p++; /* skip last / */
+	}
+#if USE_NTFS
+	n = ntfs_tail(p) - p;
+#else
+	n = chompdirsep(p) - p;
+#endif
+	if (NIL_P(fext) || !(f = rmext(p, n, StringValueCStr(fext)))) {
+	    f = n;
+	}
+	if (f == RSTRING_LEN(fname)) return fname;
     }
     basename = rb_str_new(p, f);
     rb_enc_copy(basename, fname);
@@ -2965,21 +3095,48 @@ rb_file_s_dirname(VALUE klass, VALUE fname)
 static VALUE
 rb_file_s_extname(VALUE klass, VALUE fname)
 {
-    char *name, *p, *e;
+    const char *name, *p, *e;
     VALUE extname;
 
     FilePathStringValue(fname);
     name = StringValueCStr(fname);
     p = strrdirsep(name);	/* get the last path component */
     if (!p)
- 	p = name;
+	p = name;
     else
- 	p++;
- 
-    e = strrchr(p, '.');	/* get the last dot of the last component */
-    if (!e || e == p || !e[1])	/* no dot, or the only dot is first or end? */
+	p++;
+
+    e = 0;
+    while (*p) {
+	if (*p == '.' || istrailinggabage(*p)) {
+#if USE_NTFS
+	    const char *last = p++, *dot = last;
+	    while (istrailinggabage(*p)) {
+		if (*p == '.') dot = p;
+		p++;
+	    }
+	    if (!*p || *p == ':') {
+		p = last;
+		break;
+	    }
+	    e = dot;
+	    continue;
+#else
+	    e = p;	  /* get the last dot of the last component */
+#endif
+	}
+#if USE_NTFS
+	else if (*p == ':') {
+	    break;
+	}
+#endif
+	else if (isdirsep(*p))
+	    break;
+	p = CharNext(p);
+    }
+    if (!e || e+1 == p)	/* no dot, or the only dot is first or end? */
 	return rb_str_new(0, 0);
-    extname = rb_str_new(e, chompdirsep(e) - e);	/* keep the dot, too! */
+    extname = rb_str_new(e, p - e);	/* keep the dot, too! */
     rb_enc_copy(extname, fname);
     OBJ_INFECT(extname, fname);
     return extname;
