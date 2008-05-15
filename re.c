@@ -1146,6 +1146,15 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err);
 
 
+static void
+reg_enc_error(VALUE re, VALUE str)
+{
+    rb_raise(rb_eArgError,
+	     "incompatible encoding regexp match (%s regexp with %s string)",
+	     rb_enc_name(RREGEXP(re)->ptr->enc),
+	     rb_enc_name(rb_enc_get(str)));
+}
+
 static rb_encoding*
 rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
@@ -1158,27 +1167,27 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     }
 
     rb_reg_check(re);
-    /* ignorecase status */
-    if (rb_reg_fixed_encoding_p(re) || !rb_enc_str_asciicompat_p(str)) {
-        if (ENCODING_GET(re) != rb_enc_get_index(str) &&
-            rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-            rb_raise(rb_eArgError,
-                "incompatible encoding regexp match (%s regexp with %s string)",
-                rb_enc_name(rb_enc_from_index(ENCODING_GET(re))),
-                rb_enc_name(rb_enc_get(str)));
-        }
-    }
-    else {
-	enc = rb_enc_get(str);
-	if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
-	    enc != rb_ascii8bit_encoding() &&
-	    rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
-	    rb_warn("regexp match /.../n against to %s string",
-		    rb_enc_name(enc));
+    enc = rb_enc_get(str);
+    if (!rb_enc_str_asciicompat_p(str)) {
+        if (RREGEXP(re)->ptr->enc != enc) {
+	    reg_enc_error(re, str);
 	}
-	return enc;
     }
-    return RREGEXP(re)->ptr->enc;
+    else if (rb_reg_fixed_encoding_p(re)) {
+        if (RREGEXP(re)->ptr->enc != enc &&
+	    (!rb_enc_asciicompat(RREGEXP(re)->ptr->enc) ||
+	     rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT)) {
+	    reg_enc_error(re, str);
+	}
+	enc = RREGEXP(re)->ptr->enc;
+    }
+    if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
+	enc != rb_ascii8bit_encoding() &&
+	rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
+	rb_warn("regexp match /.../n against to %s string",
+		rb_enc_name(enc));
+    }
+    return enc;
 }
 
 regex_t *
@@ -2282,7 +2291,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     }
     
     re->ptr = make_regexp(RSTRING_PTR(unescaped), RSTRING_LEN(unescaped), enc,
-            options & ARG_REG_OPTION_MASK, err);
+			  options & ARG_REG_OPTION_MASK, err);
     if (!re->ptr) return -1;
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
