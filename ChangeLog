@@ -1,3 +1,7 @@
+Thu May 15 22:37:56 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y (ripper_warningS): now used.
+
 Thu May 15 15:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): support for alternative data stream

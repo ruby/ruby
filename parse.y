@@ -558,9 +558,7 @@ static void ripper_warn0(struct parser_params*, const char*);
 static void ripper_warnI(struct parser_params*, const char*, int);
 static void ripper_warnS(struct parser_params*, const char*, const char*);
 static void ripper_warning0(struct parser_params*, const char*);
-#if 0				/* unused in ripper right now */
 static void ripper_warningS(struct parser_params*, const char*, const char*);
-#endif
 #endif
 
 #ifdef RIPPER
@@ -9778,14 +9776,12 @@ ripper_warning0(struct parser_params *parser, const char *fmt)
     rb_funcall(parser->value, rb_intern("warning"), 1, STR_NEW2(fmt));
 }
 
-#if 0				/* unused in ripper right now */
 static void
 ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warning"), 2,
-    	       STR_NEW2(fmt), STR_NEW2(str));
+               STR_NEW2(fmt), STR_NEW2(str));
 }
-#endif
 
 static VALUE
 ripper_lex_get_generic(struct parser_params *parser, VALUE src)
