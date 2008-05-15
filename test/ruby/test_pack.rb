@@ -63,6 +63,7 @@ class TestPack < Test::Unit::TestCase
     assert_equal a, a.pack("P").unpack("P*")
     assert_equal "a", a.pack("P").unpack("P")[0]
     assert_equal a, a.pack("P").freeze.unpack("P*")
+    assert_raise(ArgumentError) { (a.pack("P") + "").unpack("P*") }
   end
 
   def test_pack_p
@@ -70,6 +71,7 @@ class TestPack < Test::Unit::TestCase
     assert_equal a, a.pack("p").unpack("p*")
     assert_equal a[0], a.pack("p").unpack("p")[0]
     assert_equal a, a.pack("p").freeze.unpack("p*")
+    assert_raise(ArgumentError) { (a.pack("p") + "").unpack("p*") }
   end
 
   def test_format_string_modified
@@ -428,5 +430,15 @@ class TestPack < Test::Unit::TestCase
     assert_equal([0x40000000], "\204\200\200\200\000".unpack("w"), [0x40000000])
     assert_equal([0xffffffff], "\217\377\377\377\177".unpack("w"), [0xffffffff])
     assert_equal([0x100000000], "\220\200\200\200\000".unpack("w"), [0x100000000])
+  end
+
+  def test_modify_under_safe4
+    s = "foo"
+    assert_raise(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        s.clear
+      end.join
+    end
   end
 end

@@ -877,6 +877,9 @@ class TestM17N < Test::Unit::TestCase
     }
 
     assert_equal(e("\xA1\xA1"), a("a").tr(a("a"), e("\xA1\xA1")))
+
+    assert_equal("X\u3042\u3044X", "A\u3042\u3044\u3046".tr("^\u3042\u3044", "X"))
+    assert_equal("\u3042\u3046" * 100, ("\u3042\u3044" * 100).tr("\u3044", "\u3046"))
   end
 
   def test_tr_s
@@ -966,6 +969,12 @@ class TestM17N < Test::Unit::TestCase
 
   def test_reverse
     assert_equal(u("\xf0jihgfedcba"), u("abcdefghij\xf0").reverse)
+  end
+
+  def test_reverse_bang
+    s = u("abcdefghij\xf0")
+    s.reverse!
+    assert_equal(u("\xf0jihgfedcba"), s)
   end
 
   def test_plus
@@ -1201,8 +1210,27 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(true, (s.dup << s).valid_encoding?)
     assert_equal(true, "".center(2, s).valid_encoding?)
 
-     s = "\xa1\xa1\x8f".force_encoding("euc-jp")
-     assert_equal(false, s.valid_encoding?)
-     assert_equal(true, s.reverse.valid_encoding?)
-   end
+    s = "\xa1\xa1\x8f".force_encoding("euc-jp")
+    assert_equal(false, s.valid_encoding?)
+    assert_equal(true, s.reverse.valid_encoding?)
+  end
+
+  def test_getbyte
+    assert_equal(0x82, u("\xE3\x81\x82\xE3\x81\x84").getbyte(2))
+    assert_equal(0x82, u("\xE3\x81\x82\xE3\x81\x84").getbyte(-4))
+    assert_nil(u("\xE3\x81\x82\xE3\x81\x84").getbyte(100))
+  end
+
+  def test_setbyte
+    s = u("\xE3\x81\x82\xE3\x81\x84")
+    s.setbyte(2, 0x84)
+    assert_equal(u("\xE3\x81\x84\xE3\x81\x84"), s)
+
+    s = u("\xE3\x81\x82\xE3\x81\x84")
+    assert_raise(IndexError) { s.setbyte(100, 0) }
+
+    s = u("\xE3\x81\x82\xE3\x81\x84")
+    s.setbyte(-4, 0x84)
+    assert_equal(u("\xE3\x81\x84\xE3\x81\x84"), s)
+  end
 end
