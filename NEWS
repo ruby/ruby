@@ -205,6 +205,10 @@ with all sufficient information, see the ChangeLog file.
 
   * Regexp.union accepts an array of patterns.
 
+  * String#bytesize
+
+    New method, returning the size in bytes. (alias length and size)
+
   * String#chars
   * String#each_char
   * String#partition

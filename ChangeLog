@@ -1,3 +1,8 @@
+Thu May 15 17:00:22 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (Init_String): Define #bytesize as an alias for #size
+	  for compatibility with 1.9.
+
 Thu May 15 15:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): support for alternative data stream
