@@ -2048,7 +2048,7 @@ rb_cstr_to_dbl(const char *p, int badcheck)
     d = strtod(p, &end);
     if (errno == ERANGE) {
 	OutOfRange();
-	rb_warn("Float %.*s%s out of range", w, p, ellipsis);
+	rb_warning("Float %.*s%s out of range", w, p, ellipsis);
 	errno = 0;
     }
     if (p == end) {
@@ -2086,7 +2086,7 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	d = strtod(p, &end);
 	if (errno == ERANGE) {
 	    OutOfRange();
-	    rb_warn("Float %.*s%s out of range", w, p, ellipsis);
+	    rb_warning("Float %.*s%s out of range", w, p, ellipsis);
 	    errno = 0;
 	}
 	if (badcheck) {

@@ -6777,7 +6777,7 @@ parser_yylex(struct parser_params *parser)
 	    if (is_float) {
 		double d = strtod(tok(), 0);
 		if (errno == ERANGE) {
-		    rb_warnS("Float %s out of range", tok());
+		    rb_warningS("Float %s out of range", tok());
 		    errno = 0;
 		}
                 set_yylval_literal(DOUBLE2NUM(d));

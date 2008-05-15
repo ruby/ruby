@@ -7,6 +7,13 @@ Thu May 15 15:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): ditto.
 
+Thu May 15 13:43:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): no need for forceful warning when
+	  converting to float.  overflow is a nature of float values.
+
+	* parse.y (parser_yylex): ditto.
+
 Thu May 15 13:23:20 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_prepare_enc): error condition was updated for non
