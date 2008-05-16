@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-05-09"
+#define TCLTKLIB_RELEASE_DATE "2008-05-16"
 
 #include "ruby.h"
 
@@ -3153,6 +3153,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
                          str, "'", (char *)NULL);
         rbtk_pending_exception = rb_exc_new2(rb_eArgError, 
                                              Tcl_GetStringResult(interp));
+        if (old_gc == Qfalse) rb_gc_enable();
         return TCL_ERROR;
 #endif
     }
@@ -5155,6 +5156,8 @@ ip_finalize(ip)
 	Tcl_CreateCommand(ip, "ruby_cmd", ip_null_proc, 
 			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
+        rb_thread_critical = thr_crit_bup;
+        return;
     }
 
     /* delete root widget */
@@ -5162,7 +5165,7 @@ ip_finalize(ip)
     DUMP1("check `destroy'");
     if (Tcl_GetCommandInfo(ip, "destroy", &info)) {
         DUMP1("call `destroy'");
-        Tcl_GlobalEval(ip, "destroy .");
+        Tcl_GlobalEval(ip, "catch {destroy .}");
     }
 #endif
 #if 1
