@@ -1093,7 +1093,7 @@ nucomp_to_f(VALUE self)
 
     if (k_float_p(dat->image) || !f_zero_p(dat->image)) {
 	VALUE s = f_to_s(self);
-	rb_raise(rb_eRangeError, "can't convert %s into Integer",
+	rb_raise(rb_eRangeError, "can't convert %s into Float",
 		 StringValuePtr(s));
     }
     return f_to_f(dat->real);
@@ -1106,7 +1106,7 @@ nucomp_to_r(VALUE self)
 
     if (k_float_p(dat->image) || !f_zero_p(dat->image)) {
 	VALUE s = f_to_s(self);
-	rb_raise(rb_eRangeError, "can't convert %s into Integer",
+	rb_raise(rb_eRangeError, "can't convert %s into Rational",
 		 StringValuePtr(s));
     }
     return f_to_r(dat->real);

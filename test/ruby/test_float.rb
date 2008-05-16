@@ -415,7 +415,7 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) { Float(nil) }
     o = Object.new
     def o.to_f; inf = 1.0/0.0; inf/inf; end
-    assert_raise(ArgumentError) { Float(o) }
+    assert(Float(o).nan?)
   end
 
   def test_num2dbl

@@ -1,3 +1,14 @@
+Fri May 16 12:48:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* math.c (to_flo): rb_Float() accepts even strings for input.
+
+	* complex.c (nucomp_to_f): fix wrong message.
+
+	* complex.c (nucomp_to_r): ditto.
+
+	* object.c (rb_Float): do not check NaN for error.  NaN is a part
+	  of valid float values.
+
 Thu May 15 23:36:09 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_string.rb: add tests to achieve over 90% test

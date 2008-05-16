@@ -2148,13 +2148,7 @@ rb_Float(VALUE val)
 	break;
 
       default:
-      {
-	  VALUE f = rb_convert_type(val, T_FLOAT, "Float", "to_f");
-	  if (isnan(RFLOAT_VALUE(f))) {
-	      rb_raise(rb_eArgError, "invalid value for Float()");
-	  }
-	  return f;
-      }
+	return rb_convert_type(val, T_FLOAT, "Float", "to_f");
     }
 }
 
