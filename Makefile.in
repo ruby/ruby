@@ -196,7 +196,7 @@ update-rubyspec:
 	  git clone $(RUBYSPEC_GIT_URL) rubyspec/spec/rubyspec; \
 	fi
 
-# currently this doesn't work before install.
 test-rubyspec:
 	@if [ ! -d rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
-	./$(PROGRAM) rubyspec/mspec/bin/mspec -t ./$(PROGRAM) rubyspec/spec/rubyspec/1.8
+	$(RUNRUBY) rubyspec/mspec/bin/mspec -r$(srcdir)/ext/purelib.rb rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)
+
