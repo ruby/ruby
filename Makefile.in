@@ -181,3 +181,22 @@ distclean-local::
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ -c ext/extinit.c
+
+MSPEC_GIT_URL=git://github.com/brixen/mspec.git
+RUBYSPEC_GIT_URL=git://github.com/brixen/rubyspec.git
+
+update-rubyspec: 
+	if [ -d rubyspec ]; then \
+	  cd rubyspec/mspec; \
+	  git pull; \
+	  cd ../spec/rubyspec; \
+	  git pull; \
+	else \
+	  git clone $(MSPEC_GIT_URL) rubyspec/mspec; \
+	  git clone $(RUBYSPEC_GIT_URL) rubyspec/spec/rubyspec; \
+	fi
+
+# currently this doesn't work before install.
+test-rubyspec:
+	@if [ ! -d rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
+	./$(PROGRAM) rubyspec/mspec/bin/mspec -t ./$(PROGRAM) rubyspec/spec/rubyspec/1.8

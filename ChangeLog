@@ -1,3 +1,9 @@
+Fri May 16 13:01:43 2008  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (update-rubyspec): new target to download rubyspec.
+	  (test-rubyspec): new target to run rubyspec.  this doesn't work
+	  before install.
+
 Fri May 16 08:15:52 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix memory (object) leak bug.
