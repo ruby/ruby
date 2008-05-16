@@ -5,6 +5,22 @@ require_relative 'envutil'
 $m0 = Module.nesting
 
 class TestModule < Test::Unit::TestCase
+  def assert_method_defined?(klass, mid, message="")
+    message = build_message(message, "#{klass}\##{mid} expected to be defined.")
+    _wrap_assertion do
+      klass.method_defined?(mid) or
+        raise Test::Unit::AssertionFailedError, message, caller(3)
+    end
+  end
+
+  def assert_method_not_defined?(klass, mid, message="")
+    message = build_message(message, "#{klass}\##{mid} expected to not be defined.")
+    _wrap_assertion do
+      klass.method_defined?(mid) and
+        raise Test::Unit::AssertionFailedError, message, caller(3)
+    end
+  end
+
   def setup
     @verbose = $VERBOSE
     $VERBOSE = nil
@@ -245,12 +261,42 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_method_defined?
-    assert(!User.method_defined?(:wombat))
-    assert(User.method_defined?(:user))
-    assert(User.method_defined?(:mixin))
-    assert(!User.method_defined?(:wombat))
-    assert(User.method_defined?(:user))
-    assert(User.method_defined?(:mixin))
+    assert_method_not_defined?(User, :wombat)
+    assert_method_defined?(User, :user)
+    assert_method_defined?(User, :mixin)
+    assert_method_not_defined?(User, :wombat)
+    assert_method_defined?(User, :user)
+    assert_method_defined?(User, :mixin)
+  end
+
+  def module_exec_aux
+    Proc.new do
+      def dynamically_added_method_3; end
+    end
+  end
+  def module_exec_aux_2(&block)
+    User.module_exec(&block)
+  end
+
+  def test_module_exec
+    User.module_exec do
+      def dynamically_added_method_1; end
+    end
+    assert_method_defined?(User, :dynamically_added_method_1)
+
+    block = Proc.new do
+      def dynamically_added_method_2; end
+    end
+    User.module_exec(&block)
+    assert_method_defined?(User, :dynamically_added_method_2)
+
+    User.module_exec(&module_exec_aux)
+    assert_method_defined?(User, :dynamically_added_method_3)
+
+    module_exec_aux_2 do
+      def dynamically_added_method_4; end
+    end
+    assert_method_defined?(User, :dynamically_added_method_4)
   end
 
   def test_module_eval
