@@ -1300,6 +1300,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     }
     if (!busy) FL_UNSET(re, REG_BUSY);
     if (result < 0) {
+	onig_region_free(&regs, 0);
 	if (result == ONIG_MISMATCH) {
 	    rb_backref_set(Qnil);
 	    return result;
@@ -1323,6 +1324,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     }
 
     onig_region_copy(RMATCH_REGS(match), &regs);
+    onig_region_free(&regs, 0);
     RMATCH(match)->str = rb_str_new4(str);
     RMATCH(match)->regexp = re;
     RMATCH(match)->rmatch->char_offset_updated = 0;

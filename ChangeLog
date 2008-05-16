@@ -1,3 +1,17 @@
+Sat May 17 03:21:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): stop memory leak.  [ruby-dev:34726]
+
+	* re.c (rb_reg_search): need to free allocated buffer in re_register.
+
+	* regexec.c (onig_region_new): more pedantic malloc check.
+
+	* regexec.c (onig_region_resize): ditto.
+
+	* regexec.c (STATE_CHECK_BUFF_INIT): ditto.
+
+	* regexec.c (onig_region_copy): use onig_region_resize.
+
 Fri May 16 12:48:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (to_flo): rb_Float() accepts even strings for input.
