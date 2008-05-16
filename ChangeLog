@@ -1,3 +1,8 @@
+Fri May 16 14:54:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (update-rubyspec): move rubyspec to srcdir. 
+	  (test-rubyspec): ditto.
+
 Fri May 16 14:25:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* Makefile.in (test-rubyspec): use RUNRUBY.  suggested by nobu.
