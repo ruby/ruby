@@ -1,3 +1,10 @@
+Sat May 17 12:34:54 2008  Yuki Sonoda (Yugui) <yugui@yugui.jp>
+
+	* thread_pthread.c (Init_native_thread): Kernel#.sleep used never to
+	  sleep on Mac OS X. Reported by arton <artonx AT yahoo.co.jp>.
+
+	* thread_pthread.c (native_sleep): added error checks.
+
 Sat May 17 11:29:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): first dot is not an extension name.

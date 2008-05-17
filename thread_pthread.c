@@ -149,6 +149,7 @@ Init_native_thread(void)
 
     pthread_key_create(&ruby_native_thread_key, NULL);
     th->thread_id = pthread_self();
+    native_cond_initialize(&th->native_thread_data.sleep_cond);
     ruby_thread_set_native(th);
     native_mutex_initialize(&signal_thread_list_lock);
     posix_signal(SIGVTALRM, null_func);
@@ -432,9 +433,11 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	}
 	else {
 	    if (tv == 0 || ts.tv_sec < tvn.tv_sec /* overflow */ ) {
+		int r;
 		thread_debug("native_sleep: pthread_cond_wait start\n");
-		pthread_cond_wait(&th->native_thread_data.sleep_cond,
+		r = pthread_cond_wait(&th->native_thread_data.sleep_cond,
 				  &th->interrupt_lock);
+                if (r) rb_bug("pthread_cond_wait: %d", r);
 		thread_debug("native_sleep: pthread_cond_wait end\n");
 	    }
 	    else {
@@ -443,6 +446,8 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 			     (unsigned long)ts.tv_sec, ts.tv_nsec);
 		r = pthread_cond_timedwait(&th->native_thread_data.sleep_cond,
 					   &th->interrupt_lock, &ts);
+		if (r && r != ETIMEDOUT) rb_bug("pthread_cond_timedwait: %d", r);
+
 		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
 	    }
 	}
