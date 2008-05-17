@@ -556,7 +556,9 @@ static VALUE ripper_id2sym(ID);
 # define rb_warningS(fmt,a) ripper_warningS(parser, fmt, a)
 static void ripper_warn0(struct parser_params*, const char*);
 static void ripper_warnI(struct parser_params*, const char*, int);
+#if 0
 static void ripper_warnS(struct parser_params*, const char*, const char*);
+#endif
 static void ripper_warning0(struct parser_params*, const char*);
 static void ripper_warningS(struct parser_params*, const char*, const char*);
 #endif
@@ -9763,12 +9765,14 @@ ripper_warnI(struct parser_params *parser, const char *fmt, int a)
                STR_NEW2(fmt), INT2NUM(a));
 }
 
+#if 0
 static void
 ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
-    	       STR_NEW2(fmt), STR_NEW2(str));
+               STR_NEW2(fmt), STR_NEW2(str));
 }
+#endif
 
 static void
 ripper_warning0(struct parser_params *parser, const char *fmt)
