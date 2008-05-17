@@ -1,3 +1,8 @@
+Sat May 17 14:01:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): should not free shared pointer, and set
+	  shared.  [ruby-dev:34732]
+
 Sat May 17 12:34:54 2008  Yuki Sonoda (Yugui) <yugui@yugui.jp>
 
 	* thread_pthread.c (Init_native_thread): Kernel#.sleep used never to

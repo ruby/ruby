@@ -1152,6 +1152,16 @@ class TestArray < Test::Unit::TestCase
     assert_match(/reentered/, e.message, '[ruby-core:16679]')
   end
 
+  def test_sort_with_replace
+    xary = (1..100).to_a
+    100.times do
+      ary = (1..100).to_a
+      ary.sort! {|a,b| ary.replace(xary); a <=> b}
+      GC.start
+      assert_equal(xary, ary, '[ruby-dev:34732]')
+    end
+  end
+
   def test_to_a
     a = @cls[ 1, 2, 3 ]
     a_id = a.__id__
