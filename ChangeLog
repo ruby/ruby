@@ -1,3 +1,7 @@
+Sat May 17 11:29:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): first dot is not an extension name.
+
 Sat May 17 03:21:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): stop memory leak.  [ruby-dev:34726]
