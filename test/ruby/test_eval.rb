@@ -358,6 +358,19 @@ class TestEval < Test::Unit::TestCase
     }
   end
 
+  def test_define_method_block
+    cc = Class.new do
+      define_method(:foo) {|&block|
+        block.call if block
+      }
+    end
+
+    c = cc.new
+    x = "ng"
+    c.foo() {x = "ok"}
+    assert_equal("ok", x)
+  end
+
   def test_eval_using_integer_as_binding
     assert_raise(TypeError) { eval("", 1) }
   end
