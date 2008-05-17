@@ -1,3 +1,8 @@
+Sun May 18 01:57:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (isdirsep): backslash is valid path separator on cygwin too.
+	  backported from 1.8 HEAD.
+
 Sat May 17 23:53:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): fix for short file name on Cygwin.
