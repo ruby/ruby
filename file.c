@@ -20,11 +20,13 @@
 #include <sys/cygwin.h>
 #endif
 
+#define OpenFile rb_io_t
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
 #include "util.h"
 #include "dln.h"
+#include <ctype.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -2314,6 +2316,8 @@ rb_file_s_umask(argc, argv)
 # else
 #   define CharNext(p) ((p) + 1)
 # endif
+#endif
+
 #if defined _WIN32 || defined __CYGWIN__
 #define USE_NTFS 1
 #else
@@ -2324,8 +2328,6 @@ rb_file_s_umask(argc, argv)
 #define istrailinggabage(x) ((x) == '.' || (x) == ' ')
 #else
 #define istrailinggabage(x) 0
-#endif
-
 #endif
 
 #ifdef __CYGWIN__

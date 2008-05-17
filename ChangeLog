@@ -1,3 +1,9 @@
+Sat May 17 23:50:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (OpenFile): prevent conflict on Windows.
+
+	* file.c (USE_NTFS): fixed merge miss.
+
 Sat May 17 12:36:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): rb_str_set_len is not backported.
