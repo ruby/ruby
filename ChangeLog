@@ -1,3 +1,7 @@
+Sat May 17 12:36:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): rb_str_set_len is not backported.
+
 Sat May 17 12:15:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): support for alternative data stream
