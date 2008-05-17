@@ -441,4 +441,8 @@ class TestPack < Test::Unit::TestCase
       end.join
     end
   end
+
+  def test_length_too_big
+    assert_raise(RangeError) { [].pack("C100000000000000000000") }
+  end
 end

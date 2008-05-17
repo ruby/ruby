@@ -1,3 +1,11 @@
+Sun May 18 02:54:46 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* pack.c (pack_pack): check errno to detect error of ruby_strtoul.
+
+	* pack.c (pack_unpack): ditto.
+
+	* test/ruby/test_pack.rb: add a test for above.
+
 Sat May 17 23:53:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): fix for short file name on Cygwin.

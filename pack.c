@@ -12,6 +12,7 @@
 #include "ruby/ruby.h"
 #include <sys/types.h>
 #include <ctype.h>
+#include <errno.h>
 
 #define SIZE16 2
 #define SIZE32 4
@@ -491,7 +492,11 @@ pack_pack(VALUE ary, VALUE fmt)
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {
+	    errno = 0;
 	    len = STRTOUL(p, (char**)&p, 10);
+	    if (errno) {
+		rb_raise(rb_eRangeError, "pack length too big");
+	    }
 	}
 	else {
 	    len = 1;
@@ -1350,7 +1355,11 @@ pack_unpack(VALUE str, VALUE fmt)
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {
+	    errno = 0;
 	    len = STRTOUL(p, (char**)&p, 10);
+	    if (errno) {
+		rb_raise(rb_eRangeError, "pack length too big");
+	    }
 	}
 	else {
 	    len = (type != '@');
