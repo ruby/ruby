@@ -1,3 +1,7 @@
+Sat May 17 23:53:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): fix for short file name on Cygwin.
+
 Sat May 17 18:03:52 2008  Yuki Sonoda (Yugui) <yugui@yugui.jp>
 
 	* vm.c (Init_VM): removed the definition of Thread#initialize,
