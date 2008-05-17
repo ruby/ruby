@@ -1771,7 +1771,6 @@ Init_VM(void)
     /* ::Thread */
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
-    rb_define_method(rb_cThread, "initialize", ruby_thread_init, 0);
 
     /* ::VM::USAGE_ANALYSIS_* */
     rb_define_const(rb_cVM, "USAGE_ANALYSIS_INSN", rb_hash_new());

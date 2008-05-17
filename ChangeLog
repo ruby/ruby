@@ -1,3 +1,8 @@
+Sat May 17 18:03:52 2008  Yuki Sonoda (Yugui) <yugui@yugui.jp>
+
+	* vm.c (Init_VM): removed the definition of Thread#initialize,
+	  which is overwritten in Init_Thread and is never used.
+
 Sat May 17 14:01:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): should not free shared pointer, and set
