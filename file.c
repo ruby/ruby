@@ -2740,8 +2740,9 @@ file_expand_path(fname, dname, result)
     if (p == skiproot(buf) - 1) p++;
     buflen = p - buf;
 
-#if USE_NTFS
+    RSTRING(result)->len = buflen;
     *p = '\0';
+#if USE_NTFS
     if (!strpbrk(b = buf, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
@@ -2792,7 +2793,6 @@ file_expand_path(fname, dname, result)
 #endif
 
     if (tainted) OBJ_TAINT(result);
-    rb_str_set_len(result, buflen);
     return result;
 }
 
