@@ -2742,15 +2742,20 @@ file_expand_path(fname, dname, result)
 
 #if USE_NTFS
     *p = '\0';
-    if (!strpbrk(b = buf, "*?")) {
+    if (1 &&
+#ifdef __CYGWIN__
+	!(buf[0] == '/' && !buf[1]) &&
+#endif
+	!strpbrk(b = buf, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
 #ifdef __CYGWIN__
-	int lnk_added = 0;
+	int lnk_added = 0, is_symlink = 0;
 	struct stat st;
 	char w32buf[MAXPATHLEN], sep = 0;
 	p = 0;
 	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
+	    is_symlink = 1;
 	    p = strrdirsep(buf);
 	    if (!p) p = skipprefix(buf);
 	    if (p) {
@@ -2763,8 +2768,7 @@ file_expand_path(fname, dname, result)
 	}
 	if (p) *p = sep;
 	else p = buf;
-	if (b == w32buf) {
-	    strlcat(w32buf, p, sizeof(w32buf));
+	if (is_symlink && b == w32buf) {
 	    len = strlen(p);
 	    if (len > 4 && strcasecmp(p + len - 4, ".lnk") != 0) {
 		lnk_added = 1;

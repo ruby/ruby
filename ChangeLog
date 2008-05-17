@@ -1,3 +1,7 @@
+Sat May 17 23:53:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): fix for short file name on Cygwin.
+
 Sat May 17 11:29:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): first dot is not an extension name.
