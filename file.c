@@ -3023,7 +3023,7 @@ rb_file_s_extname(klass, fname)
     if (!p)
 	p = name;
     else
-	p++;
+	name = ++p;
 
     e = 0;
     while (*p) {
@@ -3053,7 +3053,7 @@ rb_file_s_extname(klass, fname)
 	    break;
 	p = CharNext(p);
     }
-    if (!e || e+1 == p)	/* no dot, or the only dot is first or end? */
+    if (!e || e == name || e+1 == p)	/* no dot, or the only dot is first or end? */
 	return rb_str_new(0, 0);
     extname = rb_str_new(e, p - e);	/* keep the dot, too! */
     OBJ_INFECT(extname, fname);

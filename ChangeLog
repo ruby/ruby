@@ -1,3 +1,7 @@
+Sat May 17 11:29:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): first dot is not an extension name.
+
 Sat May 17 10:18:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (rb_reg_search): need to free allocated buffer in re_register.
