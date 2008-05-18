@@ -1,3 +1,7 @@
+Mon May 19 06:36:37 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* .: Release as Ruby 1.8.7-preview3.
+
 Sun May 18 22:26:51 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: should normalize path
