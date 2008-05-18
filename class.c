@@ -51,6 +51,7 @@ rb_class_new(super)
 struct clone_method_data {
     st_table *tbl;
     VALUE klass;
+    VALUE cref;
 };
 
 static int
@@ -61,15 +62,32 @@ clone_method(mid, body, data)
 {
     NODE *fbody = body->nd_body;
 
-    if (fbody && nd_type(fbody) == NODE_SCOPE) {
-	VALUE cref = data->klass ?
-	    (VALUE)NEW_NODE(NODE_CREF,data->klass,0,fbody->nd_rval) :
-	    fbody->nd_rval;
-	fbody = NEW_NODE(NODE_SCOPE, fbody->nd_tbl, cref, fbody->nd_next);
+    if (fbody && data->cref) {
+	VALUE body;
+
+	switch (nd_type(fbody)) {
+	  case NODE_SCOPE:
+	    if (fbody->nd_rval) {
+		NODE *tmp = NEW_NODE(nd_type(fbody->u2.node), data->cref,
+				     fbody->u2.node->u2.node, fbody->u2.node->u3.node);
+		fbody = NEW_NODE(nd_type(fbody), fbody->u1.node, tmp, fbody->u3.node);
+	    }
+	    break;
+	  case NODE_BMETHOD:
+	    body = rb_block_dup(fbody->nd_cval, data->klass, data->cref);
+	    fbody = NEW_BMETHOD(body);
+	    break;
+	  case NODE_DMETHOD:
+	    body = rb_method_dup(fbody->nd_cval, data->klass, data->cref);
+	    fbody = NEW_DMETHOD(body);
+	    break;
+	}
     }
     st_insert(data->tbl, mid, (st_data_t)NEW_METHOD(fbody, body->nd_noex));
     return ST_CONTINUE;
 }
+
+static VALUE singleton_class_clone_int _((VALUE, VALUE));
 
 /* :nodoc: */
 VALUE
@@ -78,8 +96,7 @@ rb_mod_init_copy(clone, orig)
 {
     rb_obj_init_copy(clone, orig);
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
-	RBASIC(clone)->klass = RBASIC(orig)->klass;
-	RBASIC(clone)->klass = rb_singleton_class_clone(clone);
+	RBASIC(clone)->klass = singleton_class_clone_int(orig, clone);
     }
     RCLASS(clone)->super = RCLASS(orig)->super;
     if (RCLASS(orig)->iv_tbl) {
@@ -94,9 +111,10 @@ rb_mod_init_copy(clone, orig)
     if (RCLASS(orig)->m_tbl) {
 	struct clone_method_data data;
 
-	data.tbl = RCLASS(clone)->m_tbl = st_init_numtable();
-	data.klass = (VALUE)clone;
-
+ 	RCLASS(clone)->m_tbl = st_init_numtable();
+	data.tbl = RCLASS(clone)->m_tbl;
+	data.klass = clone;
+	data.cref = clone;
 	st_foreach(RCLASS(orig)->m_tbl, clone_method, (st_data_t)&data);
     }
 
@@ -117,15 +135,16 @@ rb_class_init_copy(clone, orig)
     return rb_mod_init_copy(clone, orig);
 }
 
-VALUE
-rb_singleton_class_clone(obj)
-    VALUE obj;
+static VALUE
+singleton_class_clone_int(obj, cref)
+    VALUE obj, cref;
 {
     VALUE klass = RBASIC(obj)->klass;
 
     if (!FL_TEST(klass, FL_SINGLETON))
 	return klass;
     else {
+	struct clone_method_data data;
 	/* copy singleton(unnamed) class */
 	NEWOBJ(clone, struct RClass);
 	OBJSETUP(clone, 0, RBASIC(klass)->flags);
@@ -143,26 +162,22 @@ rb_singleton_class_clone(obj)
 	if (RCLASS(klass)->iv_tbl) {
 	    clone->iv_tbl = st_copy(RCLASS(klass)->iv_tbl);
 	}
-	{
-	    struct clone_method_data data;
-
-	    data.tbl = clone->m_tbl = st_init_numtable();
-	    switch (TYPE(obj)) {
-	      case T_CLASS:
-	      case T_MODULE:
-		data.klass = obj;
-		break;
-	      default:
-		data.klass = 0;
-		break;
-	    }
-
-	    st_foreach(RCLASS(klass)->m_tbl, clone_method, (st_data_t)&data);
-	}
+	clone->m_tbl = st_init_numtable();
+	data.tbl = clone->m_tbl;
+	data.klass = (VALUE)clone;
+	data.cref = cref;
+	st_foreach(RCLASS(klass)->m_tbl, clone_method, (st_data_t)&data);
 	rb_singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);
 	FL_SET(clone, FL_SINGLETON);
 	return (VALUE)clone;
     }
+}
+
+VALUE
+rb_singleton_class_clone(obj)
+    VALUE obj;
+{
+    return singleton_class_clone_int(obj, 0);
 }
 
 void
