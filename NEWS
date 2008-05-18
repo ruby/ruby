@@ -352,7 +352,7 @@ with all sufficient information, see the ChangeLog file.
 === Compatibility issues (excluding feature bug fixes)
 
 * String#to_i, String#hex and String#oct no longer accept a sequence
-  of underscores (`__').
+  of underscores (`__') as part of a number.
 
     # Ruby 1.8.6
     '1__0'.to_i     #=> 10
