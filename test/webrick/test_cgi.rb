@@ -1,20 +1,13 @@
 require "webrick"
 require File.join(File.dirname(__FILE__), "utils.rb")
 require "test/unit"
-begin
-  loadpath = $:.dup
-  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
-  require 'envutil'
-ensure
-  $:.replace(loadpath)
-end
 
 class TestWEBrickCGI < Test::Unit::TestCase
   def test_cgi
     accepted = started = stopped = 0
     requested0 = requested1 = 0
     config = {
-      :CGIInterpreter => EnvUtil.rubybin,
+      :CGIInterpreter => TestWEBrick::RubyBin,
       :DocumentRoot => File.dirname(__FILE__),
       :DirectoryIndex => ["webrick.cgi"],
     }
