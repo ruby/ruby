@@ -351,6 +351,24 @@ with all sufficient information, see the ChangeLog file.
 
 === Compatibility issues (excluding feature bug fixes)
 
+* String#to_i, String#hex and String#oct no longer accept a sequence
+  of underscores (`__').
+
+    # Ruby 1.8.6
+    '1__0'.to_i     #=> 10
+    '1__0'.to_i(2)  #=> 2  # 0b10
+    '1__0'.oct      #=> 8  # 010
+    '1__0'.hex      #=> 16 # 0x10
+
+    # Ruby 1.8.7
+    '1__0'.to_i     #=> 1
+    '1__0'.to_i(2)  #=> 1
+    '1__0'.oct      #=> 1
+    '1__0'.hex      #=> 1
+
+  The old behavior was inconsistent with Ruby syntax and considered as
+  a bug.
+
 * tempfile
 
   * The file name format has changed.  No dots are included by default
