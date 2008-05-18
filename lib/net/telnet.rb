@@ -520,10 +520,15 @@ module Net
     #            value specified when this instance was created will be
     #            used, or, failing that, the default value of 0 seconds,
     #            which means not to wait for more input.
+    # FailEOF:: if true, when the remote end closes the connection then an
+    #           EOFError will be raised. Otherwise, defaults to the old
+    #           behaviour that the function will return whatever data
+    #           has been received already, or nil if nothing was received.
     #           
     def waitfor(options) # :yield: recvdata
       time_out = @options["Timeout"]
       waittime = @options["Waittime"]
+      fail_eof = @options["FailEOF"]
 
       if options.kind_of?(Hash)
         prompt   = if options.has_key?("Match")
@@ -535,6 +540,7 @@ module Net
                    end
         time_out = options["Timeout"]  if options.has_key?("Timeout")
         waittime = options["Waittime"] if options.has_key?("Waittime")
+        fail_eof = options["FailEOF"]  if options.has_key?("FailEOF")
       else
         prompt = options
       end
@@ -559,7 +565,8 @@ module Net
                Integer(c.rindex(/#{IAC}#{SB}/no))
               buf = preprocess(c[0 ... c.rindex(/#{IAC}#{SB}/no)])
               rest = c[c.rindex(/#{IAC}#{SB}/no) .. -1]
-            elsif pt = c.rindex(/#{IAC}[^#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]?\z/no)
+            elsif pt = c.rindex(/#{IAC}[^#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]?\z/no) ||
+                       c.rindex(/\r\z/no)
               buf = preprocess(c[0 ... pt])
               rest = c[pt .. -1]
             else
@@ -571,14 +578,21 @@ module Net
            #
            # We cannot use preprocess() on this data, because that
            # method makes some Telnetmode-specific assumptions.
-           buf = c
-           buf.gsub!(/#{EOL}/no, "\n") unless @options["Binmode"]
+           buf = rest + c
            rest = ''
+           unless @options["Binmode"]
+             if pt = buf.rindex(/\r\z/no)
+               buf = buf[0 ... pt]
+               rest = buf[pt .. -1]
+             end
+             buf.gsub!(/#{EOL}/no, "\n")
+           end
           end
           @log.print(buf) if @options.has_key?("Output_log")
           line += buf
           yield buf if block_given?
         rescue EOFError # End of file reached
+          raise if fail_eof
           if line == ''
             line = nil
             yield nil if block_given?

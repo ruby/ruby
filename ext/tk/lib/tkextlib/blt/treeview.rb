@@ -239,6 +239,7 @@ class Tk::BLT::Treeview
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -254,6 +255,7 @@ class Tk::BLT::Treeview
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -492,6 +494,7 @@ class Tk::BLT::Treeview
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -507,6 +510,7 @@ class Tk::BLT::Treeview
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -523,7 +527,8 @@ class Tk::BLT::Treeview
   def _find_exec_flag_value(val)
     if val.kind_of?(Array)
       cmd, *args = val
-      FindExecFlagValue.new(cmd, args.join(' '))
+      #FindExecFlagValue.new(cmd, args.join(' '))
+      FindExecFlagValue.new(cmd, *args)
     elsif TkComm._callback_entry?(val)
       FindExecFlagValue.new(val)
     else

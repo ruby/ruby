@@ -775,7 +775,7 @@ end
   private :_curr_cmd_id, :_next_cmd_id
   module_function :_curr_cmd_id, :_next_cmd_id
 
-  def TkComm.install_cmd(cmd)
+  def TkComm.install_cmd(cmd, local_cmdtbl=nil)
     return '' if cmd == ''
     begin
       ns = TkCore::INTERP._invoke_without_enc('namespace', 'current')
@@ -794,6 +794,15 @@ end
     @cmdtbl = [] unless defined? @cmdtbl
     @cmdtbl.taint unless @cmdtbl.tainted?
     @cmdtbl.push id
+
+    if local_cmdtbl && local_cmdtbl.kind_of?(Array)
+      begin
+        local_cmdtbl << id
+      rescue Exception
+        # ignore
+      end
+    end
+
     #return Kernel.format("rb_out %s", id);
     if ns
       'rb_out' << TkCore::INTERP._ip_id_ << ' ' << ns << ' ' << id
@@ -801,19 +810,29 @@ end
       'rb_out' << TkCore::INTERP._ip_id_ << ' ' << id
     end
   end
-  def TkComm.uninstall_cmd(id)
+  def TkComm.uninstall_cmd(id, local_cmdtbl=nil)
     #id = $1 if /rb_out\S* (c(_\d+_)?\d+)/ =~ id
     id = $4 if id =~ /rb_out\S*(?:\s+(::\S*|[{](::.*)[}]|["](::.*)["]))? (c(_\d+_)?(\d+))/
+
+    if local_cmdtbl && local_cmdtbl.kind_of?(Array)
+      begin
+        local_cmdtbl.delete(id)
+      rescue Exception
+        # ignore
+      end
+    end
+    @cmdtbl.delete(id)
+
     #Tk_CMDTBL.delete(id)
     TkCore::INTERP.tk_cmd_tbl.delete(id)
   end
   # private :install_cmd, :uninstall_cmd
   # module_function :install_cmd, :uninstall_cmd
   def install_cmd(cmd)
-    TkComm.install_cmd(cmd)
+    TkComm.install_cmd(cmd, @cmdtbl)
   end
   def uninstall_cmd(id)
-    TkComm.uninstall_cmd(id)
+    TkComm.uninstall_cmd(id, @cmdtbl)
   end
 
 =begin
@@ -1447,7 +1466,9 @@ module TkCore
 
   def after(ms, cmd=Proc.new)
     cmdid = install_cmd(proc{ret = cmd.call;uninstall_cmd(cmdid); ret})
-    tk_call_without_enc("after",ms,cmdid)  # return id
+    after_id = tk_call_without_enc("after",ms,cmdid)
+    after_id.instance_variable_set('@cmdid', cmdid)
+    after_id
   end
 =begin
   def after(ms, cmd=Proc.new)
@@ -1477,7 +1498,9 @@ module TkCore
 
   def after_idle(cmd=Proc.new)
     cmdid = install_cmd(proc{ret = cmd.call;uninstall_cmd(cmdid); ret})
-    tk_call_without_enc('after','idle',cmdid)
+    after_id = tk_call_without_enc('after','idle',cmdid)
+    after_id.instance_variable_set('@cmdid', cmdid)
+    after_id
   end
 =begin
   def after_idle(cmd=Proc.new)
@@ -1495,6 +1518,11 @@ module TkCore
 
   def after_cancel(afterId)
     tk_call_without_enc('after','cancel',afterId)
+    if (cmdid = afterId.instance_variable_get('@cmdid'))
+      afterId.instance_variable_set('@cmdid', nil)
+      uninstall_cmd(cmdid)
+    end
+    afterId
   end
 
   def windowingsystem
@@ -4947,6 +4975,15 @@ class TkWindow<TkObject
     self
   end
 
+  def grid_anchor(anchor=None)
+    if anchor == None
+      TkGrid.anchor(self)
+    else
+      TkGrid.anchor(self, anchor)
+      self
+    end
+  end
+
   def grid_forget
     #tk_call('grid', 'forget', epath)
     TkGrid.forget(self)
@@ -4978,12 +5015,14 @@ class TkWindow<TkObject
     TkGrid.columnconfigure(self, index, keys)
   end
   alias grid_columnconfigure grid_columnconfig
+  alias grid_column grid_columnconfig
 
   def grid_rowconfig(index, keys)
     #tk_call('grid', 'rowconfigure', epath, index, *hash_kv(keys))
     TkGrid.rowconfigure(self, index, keys)
   end
   alias grid_rowconfigure grid_rowconfig
+  alias grid_row grid_rowconfig
 
   def grid_columnconfiginfo(index, slot=nil)
     #if slot
@@ -5226,11 +5265,13 @@ class TkWindow<TkObject
     end
 
     children.each{|path, obj|
-      if defined?(@cmdtbl)
-        for id in @cmdtbl
-          uninstall_cmd id
+      obj.instance_eval{
+        if defined?(@cmdtbl)
+          for id in @cmdtbl
+            uninstall_cmd id
+          end
         end
-      end
+      }
       TkCore::INTERP.tk_windows.delete(path)
     }
 
@@ -5348,7 +5389,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-04-18'.freeze
+  RELEASE_DATE = '2008-05-16'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

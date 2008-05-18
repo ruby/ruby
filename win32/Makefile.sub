@@ -639,6 +639,11 @@ class File
 end
 <<KEEP
 
+test-rubyspec:
+	@if not exist $(srcdir:/=\)\rubyspec\nul echo No rubyspec here.  put rubyspec to srcdir first. && exit 1
+	$(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec -r$(srcdir)/ext/purelib.rb $(srcdir)/rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)
+
+
 {$(srcdir)/missing}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)
 {$(srcdir)/win32}.c.obj:

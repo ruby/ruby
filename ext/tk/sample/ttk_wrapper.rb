@@ -4,7 +4,7 @@
 #
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
-version = '0.1.1'
+version = '0.1.3'
 #
 ##########################################################################
 #  parse commandline arguments
@@ -108,37 +108,36 @@ TkItemConfigMethod.__set_IGNORE_UNKNOWN_CONFIGURE_OPTION__! true
 
 
 ##########################################################################
-#  define utility method
-##########################################################################
-def setTheme(theme)
-  unless Tk::Tile::Style.theme_names.find{|n| n == theme}
-    if (pkg = TkPackage.names.find{|n| n =~ /(tile|ttk)::theme::#{theme}/})
-      TkPackage.require(pkg)
-    end
-  end
-  Tk::Tile::Style.theme_use(theme)
-end
-
-
-##########################################################################
-#  make theme name list
-##########################################################################
-ThemesList = Tk::Tile::Style.theme_names
-TkPackage.names.find_all{|n| n =~ /^(tile|ttk)::theme::/}.each{|pkg|
-  ThemesList << pkg.split('::')[-1]
-}
-ThemesList.uniq!
-
-
-##########################################################################
 #  set theme of widget style
 ##########################################################################
 if OPTS[:list] || OPTS[:verbose]
-  print "supported theme names: #{ThemesList.inspect}\n" 
+  print "supported theme names: #{Tk::Tile.themes.inspect}\n" 
   exit if OPTS[:list] && ARGV.empty?
 end
 print "use theme: \"#{OPTS[:theme]}\"\n" if OPTS[:theme] && OPTS[:verbose]
-setTheme(OPTS[:theme]) if OPTS[:theme]
+#setTheme(OPTS[:theme]) if OPTS[:theme]
+Tk::Tile.set_theme(OPTS[:theme]) if OPTS[:theme]
+
+
+##########################################################################
+#  replace $0 and $RPAGRAM_NAME
+##########################################################################
+#  When the expand_path of the target script is long, ruby sometimes 
+#  fails to set the path to $0 (the path string is trimmed).
+#  The following replaces $0 and $PROGNAME to avoid such trouble.
+progname_obj = $0.dup
+$program_name = progname_obj
+
+alias $REAL_PROGRAM_NAME $0
+alias $PROGRAM_NAME $program_name
+alias $0 $program_name
+
+trace_var(:$program_name){|val|
+  unless progname_obj.object_id == val.object_id
+    progname_obj.replace(val.to_s)
+    $program_name = progname_obj
+  end
+}
 
 
 ##########################################################################
@@ -146,6 +145,7 @@ setTheme(OPTS[:theme]) if OPTS[:theme]
 ##########################################################################
 if (path = ARGV.shift) && (script = File.expand_path(path))
   print "load script \"#{script}\"\n" if OPTS[:verbose]
+  $0 = script
   load(script)
 else
   print "Error: no script is given.\n"

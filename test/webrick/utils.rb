@@ -1,3 +1,10 @@
+begin
+  loadpath = $:.dup
+  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
+  require 'envutil'
+ensure
+  $:.replace(loadpath)
+end
 require "webrick"
 begin
   require "webrick/https"
@@ -11,6 +18,11 @@ module TestWEBrick
     puts msg if $DEBUG
     return self
   end
+
+  RubyBin = "\"#{EnvUtil.rubybin}\""
+  RubyBin << " \"-I#{File.expand_path("../..", File.dirname(__FILE__))}/lib\""
+  RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/common\""
+  RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}\""
 
   module_function
 

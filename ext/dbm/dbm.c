@@ -812,5 +812,7 @@ Init_dbm()
 
 #ifdef DB_VERSION_STRING
     rb_define_const(rb_cDBM, "VERSION",  rb_str_new2(DB_VERSION_STRING));
+#else
+    rb_define_const(rb_cDBM, "VERSION",  rb_str_new2("unknown"));
 #endif
 }

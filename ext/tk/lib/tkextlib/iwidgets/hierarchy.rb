@@ -31,6 +31,7 @@ class Tk::Iwidgets::Hierarchy
       KEY_TBL  = [ [?n, ?s, :node], nil ]
       PROC_TBL = [ [?s, TkComm.method(:string) ], nil ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -46,6 +47,7 @@ class Tk::Iwidgets::Hierarchy
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -74,6 +76,7 @@ class Tk::Iwidgets::Hierarchy
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -89,6 +92,7 @@ class Tk::Iwidgets::Hierarchy
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -112,6 +116,7 @@ class Tk::Iwidgets::Hierarchy
       ]
       PROC_TBL = [ [ ?s, TkComm.method(:string) ], nil ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -127,6 +132,7 @@ class Tk::Iwidgets::Hierarchy
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 

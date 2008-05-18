@@ -201,6 +201,38 @@ module Tk
       args.map!{|arg| TkComm._get_eval_string(arg)}.join('.')
     end
 
+    def self.themes(glob_ptn = nil)
+      if TILE_SPEC_VERSION_ID < 8 && Tk.info(:commands, '::ttk::themes').empty?
+        fail RuntimeError, 'not support glob option' if glob_ptn
+        cmd = ['::tile::availableThemes']
+      else
+        glob_ptn = '*' unless glob_ptn
+        cmd = ['::ttk::themes', glob_ptn]
+      end
+
+      begin
+        TkComm.simplelist(Tk.tk_call_without_enc(*cmd))
+      rescue
+        TkComm.simplelist(Tk.tk_call('lsearch', '-all', '-inline', 
+                                     Tk::Tile::Style.theme_names, 
+                                     glob_ptn))
+      end
+    end
+
+    def self.set_theme(theme)
+      if TILE_SPEC_VERSION_ID < 8 && Tk.info(:commands, '::ttk::setTheme').empty?
+        cmd = '::tile::setTheme'
+      else
+        cmd = '::ttk::setTheme'
+      end
+
+      begin
+        Tk.tk_call_without_enc(cmd, theme)
+      rescue
+        Tk::Tile::Style.theme_use(theme)
+      end
+    end
+
     module KeyNav
       if Tk::Tile::TILE_SPEC_VERSION_ID < 8
         def self.enableMnemonics(w)
@@ -332,12 +364,16 @@ module Tk
 
     autoload :TLabelframe,   'tkextlib/tile/tlabelframe'
     autoload :Labelframe,    'tkextlib/tile/tlabelframe'
+    autoload :TLabelFrame,   'tkextlib/tile/tlabelframe'
+    autoload :LabelFrame,    'tkextlib/tile/tlabelframe'
 
     autoload :TLabel,        'tkextlib/tile/tlabel'
     autoload :Label,         'tkextlib/tile/tlabel'
 
     autoload :TMenubutton,   'tkextlib/tile/tmenubutton'
     autoload :Menubutton,    'tkextlib/tile/tmenubutton'
+    autoload :TMenuButton,   'tkextlib/tile/tmenubutton'
+    autoload :MenuButton,    'tkextlib/tile/tmenubutton'
 
     autoload :TNotebook,     'tkextlib/tile/tnotebook'
     autoload :Notebook,      'tkextlib/tile/tnotebook'

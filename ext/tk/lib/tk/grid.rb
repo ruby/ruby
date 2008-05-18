@@ -22,6 +22,7 @@ module TkGrid
     list(tk_call_without_enc('grid', 'bbox', *args))
   end
 
+=begin
   def configure(win, *args)
     if args[-1].kind_of?(Hash)
       opts = args.pop
@@ -53,6 +54,48 @@ module TkGrid
       tk_call_without_enc('grid', 'configure', *params)
     end
   end
+=end
+  def configure(*args)
+    if args[-1].kind_of?(Hash)
+      opts = args.pop
+    else
+      opts = {}
+    end
+    fail ArgumentError, 'no widget is given' if args.empty?
+    params = []
+    args.flatten(1).each{|win|
+      case win
+      when '-', ?-              # RELATIVE PLACEMENT (increase columnspan)
+        params.push('-')
+      when /^-+$/             # RELATIVE PLACEMENT (increase columnspan)
+        params.concat(win.to_s.split(//))
+      when '^', ?^              # RELATIVE PLACEMENT (increase rowspan)
+        params.push('^')
+      when /^\^+$/             # RELATIVE PLACEMENT (increase rowspan)
+        params.concat(win.to_s.split(//))
+      when 'x', :x, ?x, nil, '' # RELATIVE PLACEMENT (empty column)
+        params.push('x')
+      when /^x+$/             # RELATIVE PLACEMENT (empty column)
+        params.concat(win.to_s.split(//))
+      else
+        params.push(_epath(win))
+      end
+    }
+    opts.each{|k, v|
+      params.push("-#{k}")
+      params.push(_epath(v))  # have to use 'epath' (hash_kv() is unavailable)
+    }
+    if Tk::TCL_MAJOR_VERSION < 8 ||
+        (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION <= 3)
+      if params[0] == '-' || params[0] == 'x' || params[0] == '^'
+        tk_call_without_enc('grid', *params)
+      else
+        tk_call_without_enc('grid', 'configure', *params)
+      end
+    else
+      tk_call_without_enc('grid', 'configure', *params)
+    end
+  end
   alias grid configure
 
   def columnconfigure(master, index, args)
@@ -61,12 +104,14 @@ module TkGrid
     tk_call_without_enc("grid", 'columnconfigure', 
                         master, index, *hash_kv(args))
   end
+  alias column columnconfigure
 
   def rowconfigure(master, index, args)
     # master = master.epath if master.kind_of?(TkObject)
     master = _epath(master)
     tk_call_without_enc("grid", 'rowconfigure', master, index, *hash_kv(args))
   end
+  alias row rowconfigure
 
   def columnconfiginfo(master, index, slot=nil)
     # master = master.epath if master.kind_of?(TkObject)
@@ -189,10 +234,10 @@ module TkGrid
     list(tk_call_without_enc('grid', 'slaves', master, *hash_kv(args)))
   end
 
-  module_function :bbox, :forget, :propagate, :info
+  module_function :anchor, :bbox, :add, :forget, :propagate, :info
   module_function :remove, :size, :slaves, :location
   module_function :grid, :configure, :columnconfigure, :rowconfigure
-  module_function :columnconfiginfo, :rowconfiginfo
+  module_function :column, :row, :columnconfiginfo, :rowconfiginfo
 end
 =begin
 def TkGrid(win, *args)

@@ -72,16 +72,6 @@ enumerator_ptr(obj)
     return ptr;
 }
 
-static VALUE enumerator_iter_i _((VALUE, VALUE));
-static VALUE
-enumerator_iter_i(i, enum_obj)
-    VALUE i;
-    VALUE enum_obj;
-{
-    struct enumerator *e = (struct enumerator *)enum_obj;
-    return rb_yield(proc_call(e->proc, i));
-}
-
 /*
  *  call-seq:
  *    obj.to_enum(method = :each, *args)
@@ -138,8 +128,10 @@ each_slice_i(val, memo)
 /*
  *  call-seq:
  *    e.each_slice(n) {...}
+ *    e.each_slice(n)
  *
- *  Iterates the given block for each slice of <n> elements.
+ *  Iterates the given block for each slice of <n> elements.  If no
+ *  block is given, returns an enumerator.
  *
  *  e.g.:
  *      (1..10).each_slice(3) {|a| p a}
@@ -192,9 +184,10 @@ each_cons_i(val, memo)
 /*
  *  call-seq:
  *    each_cons(n) {...}
+ *    each_cons(n)
  *
  *  Iterates the given block for each array of consecutive <n>
- *  elements.
+ *  elements.  If no block is given, returns an enumerator.a
  *
  *  e.g.:
  *      (1..10).each_cons(3) {|a| p a}
@@ -271,12 +264,8 @@ enumerator_init(enum_obj, obj, meth, argc, argv)
  *  used as an Enumerable object using the given object's given
  *  method with the given arguments.
  *
- *  e.g.:
- *      str = "xyz"
- *
- *      enum = Enumerable::Enumerator.new(str, :each_byte)
- *      a = enum.map {|b| '%02x' % b } #=> ["78", "79", "7a"]
- *
+ *  Use of this method is not discouraged.  Use Kernel#enum_for()
+ *  instead.
  */
 static VALUE
 enumerator_initialize(argc, argv, obj)
@@ -330,7 +319,7 @@ rb_enumeratorize(obj, meth, argc, argv)
  *    enum.each {...}
  *
  *  Iterates the given block using the object and the method specified
- *  in the first place.
+ *  in the first place.  If no block is given, returns self.
  *
  */
 static VALUE
@@ -340,7 +329,6 @@ enumerator_each(obj)
     struct enumerator *e;
     int argc = 0;
     VALUE *argv = 0;
-    VALUE method;
 
     if (!rb_block_given_p()) return obj;
     e = enumerator_ptr(obj);
@@ -364,9 +352,10 @@ enumerator_with_index_i(val, memo)
 /*
  *  call-seq:
  *    e.with_index {|(*args), idx| ... }
+ *    e.with_index
  *
  *  Iterates the given block for each elements with an index, which
- *  start from 0.
+ *  start from 0.  If no block is given, returns an enumerator.
  *
  */
 static VALUE
@@ -377,7 +366,6 @@ enumerator_with_index(obj)
     VALUE memo = 0;
     int argc = 0;
     VALUE *argv = 0;
-    VALUE method;
 
     RETURN_ENUMERATOR(obj, 0, 0);
     if (e->args) {

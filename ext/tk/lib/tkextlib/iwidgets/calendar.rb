@@ -46,6 +46,7 @@ class Tk::Iwidgets::Calendar
       KEY_TBL  = [ [?d, ?s, :date], nil ]
       PROC_TBL = [ [?s, TkComm.method(:string) ], nil ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -61,6 +62,7 @@ class Tk::Iwidgets::Calendar
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 

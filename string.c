@@ -761,7 +761,7 @@ rb_str_cat(str, ptr, len)
     }
     if (FL_TEST(str, STR_ASSOC)) {
 	rb_str_modify(str);
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len);
+	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len+1);
 	memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
 	RSTRING(str)->len += len;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
@@ -3698,9 +3698,8 @@ rb_f_split(argc, argv)
  *  
  *  Splits <i>str</i> using the supplied parameter as the record separator
  *  (<code>$/</code> by default), passing each substring in turn to the supplied
- *  block. If a zero-length record separator is supplied, the string is split on
- *  <code>\n</code> characters, except that multiple successive newlines are
- *  appended together.
+ *  block. If a zero-length record separator is supplied, the string is split
+ *  into paragraphs delimited by multiple successive newlines.
  *     
  *     print "Example one\n"
  *     "hello\nworld".each {|s| p s}
@@ -4922,6 +4921,7 @@ Init_String()
     rb_define_method(rb_cString, "insert", rb_str_insert, 2);
     rb_define_method(rb_cString, "length", rb_str_length, 0);
     rb_define_method(rb_cString, "size", rb_str_length, 0);
+    rb_define_method(rb_cString, "bytesize", rb_str_length, 0);
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
     rb_define_method(rb_cString, "=~", rb_str_match, 1);
     rb_define_method(rb_cString, "match", rb_str_match_m, 1);

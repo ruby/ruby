@@ -2440,6 +2440,8 @@ is_defined(self, node, buf)
       case NODE_ATTRSET:
       case NODE_OP_ASGN1:
       case NODE_OP_ASGN2:
+      case NODE_OP_ASGN_OR:
+      case NODE_OP_ASGN_AND:
       case NODE_MASGN:
       case NODE_LASGN:
       case NODE_DASGN:
@@ -9917,6 +9919,8 @@ Init_Proc()
     rb_define_method(rb_cUnboundMethod, "arity", method_arity, 0);
     rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);
+    rb_define_method(rb_cUnboundMethod, "name", method_name, 0);
+    rb_define_method(rb_cUnboundMethod, "owner", method_owner, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
 }

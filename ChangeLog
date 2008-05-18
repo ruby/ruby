@@ -1,3 +1,329 @@
+Sun May 18 22:26:51 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservlet/filehandler.rb: should normalize path
+	  name in path_info to prevent script disclosure vulnerability on
+	  DOSISH filesystems. (fix: CVE-2008-1891)
+	  Note: NTFS/FAT filesystem should not be published by the platforms
+	  other than Windows. Pathname interpretation (including short
+	  filename) is less than perfect.
+
+	* lib/webrick/httpservlet/abstract.rb
+	  (WEBrick::HTTPServlet::AbstracServlet#redirect_to_directory_uri):
+	  should escape the value of Location: header.
+
+	* lib/webrick/httpservlet/cgi_runner.rb: accept interpreter
+	  command line arguments.
+
+Sat May 17 23:53:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): fix for short file name on Cygwin.
+
+Sat May 17 11:29:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): first dot is not an extension name.
+
+Sat May 17 10:18:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_search): need to free allocated buffer in re_register.
+
+Fri May 16 17:01:44 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (test-rubyspec): added.
+
+Fri May 16 16:22:40 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: sometimes freeze when receive Interrupt signal.
+
+Fri May 16 14:54:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (update-rubyspec): move rubyspec to srcdir. 
+	  (test-rubyspec): ditto.
+
+Fri May 16 14:25:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (test-rubyspec): use RUNRUBY.  suggested by nobu.
+
+Fri May 16 13:01:43 2008  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (update-rubyspec): new target to download rubyspec.
+	  (test-rubyspec): new target to run rubyspec.  this doesn't work
+	  before install.
+
+Fri May 16 08:15:52 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fix memory (object) leak bug.
+
+	* ext/tk/sample/demos-jp/aniwave.rb, ext/tk/sample/demos-en/aniwave.rb:
+	  bug fix.
+
+Thu May 15 17:00:22 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (Init_String): Define #bytesize as an alias for #size
+	  for compatibility with 1.9.
+
+Thu May 15 15:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): support for alternative data stream
+	  and ignored trailing garbages of NTFS.
+
+	* file.c (rb_file_s_basename): ditto.
+
+	* file.c (rb_file_s_extname): ditto.
+
+Wed May 14 19:24:59 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_count): Override Enumerable#count for better
+	  performance.
+	  (rb_ary_nitems): Undo the backport.  Use #count {} instead.
+
+	* enumerator.c (enumerator_iter_i): Remove an unused function.
+	  (enumerator_with_index, enumerator_each): Remove unused
+	  variables.
+
+Wed May 14 17:15:11 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/tk/tkutil/extronf.rb: check stdndup() because it's not standard
+	  function of C.
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_table_setup): use malloc() and
+	  strncpy() instead of strndup() if not available.
+
+Wed May 14 09:52:02 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil/tkutil.c: improve handling callback-subst-keys. 
+	  Now, support longnam-keys (e.g. '%CTT' on tkdnd-2.0; however, still
+	  not support tkdnd-2.0 on tkextlib), and symbols of parameters (e.g. 
+	  :widget=>'%W', :keycode=>'%k', '%x'=>:x, '%X'=>:root_x, and so on; 
+	  those are attributes of event object). It means that Ruby/Tk accepts
+	  not only "widget.bind(ev, '%W', '%k', ...){|w, k, ...| ... }", but 
+	  also "widget.bind(ev, :widget, :keycode, ...){|w, k, ...| ... }". 
+	  It is potentially incompatible, when user passes symbols to the
+	  arguments of the callback block (the block receives the symbols as
+	  strings). I think that is very rare case (probably, used by Ruby/Tk
+	  experts only). When causes such trouble, please give strings instead
+	  of such symbol parameters (e.g. call Symbol#to_s method).
+
+	* ext/tk/lib/tk/event.rb, ext/tk/lib/tk/validation.rb, 
+	  ext/tk/lib/tkextlib/blt/treeview.rb, 
+	  ext/tk/lib/tkextlib/winico/winico.rb: ditto.
+
+	* ext/tk/tkutil/tkutil.c: strings are available on subst_tables on 
+	  TkUtil::CallbackSubst class (it is useful on Ruby 1.9). 
+
+	* ext/tk/lib/tk/spinbox.rb, ext/tk/lib/tkextlib/iwidgets/hierarchy.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/spinner.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/entryfield.rb, 
+	  ext/tk/lib/tkextlib/iwidgets/calendar.rb, 
+	  ext/tk/lib/tkextlib/blt/dragdrop.rb, 
+	  ext/tk/lib/tkextlib/tkDND/tkdnd.rb, 
+	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb, 
+	  ext/tk/lib/tkextlib/tktable/tktable.rb: disable code piece became 
+	  unnecessary by reason of the changes of ext/tk/tkutil/tkutil.c.
+
+Tue May 13 15:10:50 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c: Update rdoc.
+	  (enumerator_initialize): Discourage the use.
+	  (enum_each_slice, enum_each_cons, enumerator_each)
+	  (enumerator_with_index): Add a note about a call without a block.
+
+	* NEWS: Intentionally omit enum_slice and enum_cons, which are
+	  removed in 1.9.
+
+Tue May 13 07:56:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_cat): fixed buffer overrun reported by
+	  Christopher Thompson <cthompson at nexopia.com> in [ruby-core:16746]
+
+Mon May 12 13:57:19 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): add NODE_OP_ASGN_{OR,AND}.  "defined?(a||=1)"
+	  should not operate assignment.  [ruby-dev:34645]
+
+Mon May 12 12:59:23 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/wm.rb: Wm#overrideredirect overwrites arguemnt to
+	  an invalid value.
+
+	* ext/tk/sample/ttk_wrapper.rb: support "if __FILE__ == $0" idiom.
+
+Mon May 12 12:36:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): backport from trunk.
+	  [ruby-talk:300743]
+
+Mon May 12 12:33:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBYLIB, RUBYOPT): clear.
+
+Mon May 12 10:41:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/delegate.rb (SimpleDelegator::dup): removed needless argument.
+	  [ruby-list:44910]
+
+	* lib/delegate.rb (clone, dup): keep relationship with the target
+	  object.
+
+Sun May 11 23:19:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (all_iter_i, any_iter_i): reduced duplicated code.
+
+Sun May 11 17:57:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIRUBY): should not include extension library path.
+
+Sun May 11 10:36:10 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* eval.c (method_name, method_owner): New methods; backported
+	  from 1.9. (UnboundMethod#name, UnboundMethod#owner)
+
+Sun May 11 02:48:13 2008    <nagai@orca16.orcabay.ddo.jp>
+
+	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: fail to do pack/grid 
+	  without options.
+
+	* ext/tk/lib/tk.rb: add TkWindow#grid_anchor, grid_column, grid_row.
+
+Sat May 10 18:19:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_each_line): RDoc updated.  [ruby-dev:34586]
+
+Sat May 10 13:17:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: increase supported
+	  parameter patterns of configure method.
+
+Sat May 10 09:16:13 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): backported from 1.9.  a patch from Satoshi
+	  Nakagawa <psychs at limechat.net> in [ruby-dev:34625]. 
+	  fixed: [ruby-dev:34623]
+
+Fri May  9 23:33:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/wm.rb: methods of Tk::Wm_for_General module cannot
+	  pass the given block to methods of Tk::Wm module.
+
+	* ext/tk/lib/tk/grid.rb: lack of module-method definitions.
+
+	* ext/tk/lib/tkextlib/tile.rb: lack of autoload definitions.
+
+	* ext/tk/lib/tkextlib/tile/tnotebook.rb: cannot use kanji (not UTF-8) 
+	  characters for headings.
+
+	* ext/tk/tcltklib.c: maybe a little more stable about @encoding value 
+	  of TclTkIp object.
+
+Wed May  7 08:46:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_s_def): to_str should be called only once.
+	  [ruby-core:16647]
+
+Wed May  7 00:54:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (gzreader_gets): may cause infinite loop.
+	  a patch from Kouya <kouyataifu4 at gmail.com> in
+	  [ruby-reference-manual:762].
+
+Sun May  4 09:35:51 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* sample/erb/erb4html.rb (ERB4Html) : add example of ERB#set_eoutvar.
+	  ERB4Html is an auto-quote ERB.
+
+Sat May  3 22:52:48 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb, 
+	  ext/tk/sample/ttk_wrapper.rb: improve treating and control themes. 
+	  add Tk::Tile.themes and Tk::Tile.set_theme(theme).
+
+Fri May  2 14:52:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el: move fontifying code from hook.  a patch from
+	  Phil Hagelberg <phil at hagelb.org> in [ruby-core:16636].
+
+Fri May  2 13:47:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (match_select): restore previous behavior of MatchData#select.
+	  RDoc updated as well, mentioning the plan to remove this method
+	  in the future.  [ruby-dev:34556]
+
+Fri May  2 13:04:04 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/dbm.c (Init_dbm): defines DBM::VERSION even when
+	  DB_VERSION_STRING is not available.  [ruby-dev:34569]
+
+Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 16257 from trunk.
+
+	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
+	  can be activated to have net/telnet raise EOFError exceptions when the 
+	  remote connection is closed.  The default behavior remains unchanged though.
+
+Thu May  1 23:43:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_step): check if step can be converted to an integer.
+	  [ruby-dev:34558]
+
+	* range.c (range_step): allow float step bigger than zero but less
+	  than one.  [ruby-dev:34557]
+
+Wed Apr 30 20:22:40 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 16241 from trunk.
+
+	* lib/net/telnet.rb:  Fixing a bug where line endings would not be properly
+	  escaped when the two character ending was broken up into separate TCP
+	  packets.  Issue reported and patched by Brian Candler.
+
+Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 16257 from trunk.
+
+	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
+	  can be activated to have net/telnet raise EOFError exceptions when the 
+	  remote connection is closed.  The default behavior remains unchanged though.
+
+Thu May  1 23:43:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_step): check if step can be converted to an integer.
+	  [ruby-dev:34558]
+
+	* range.c (range_step): allow float step bigger than zero but less
+	  than one.  [ruby-dev:34557]
+
+Wed Apr 30 20:22:40 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 16241 from trunk.
+
+	* lib/net/telnet.rb:  Fixing a bug where line endings would not be properly
+	  escaped when the two character ending was broken up into separate TCP
+	  packets.  Issue reported and patched by Brian Candler.
+
+Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 16257 from trunk.
+
+	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
+	  can be activated to have net/telnet raise EOFError exceptions when the 
+	  remote connection is closed.  The default behavior remains unchanged though.
+
+Thu May  1 23:43:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_step): check if step can be converted to an integer.
+	  [ruby-dev:34558]
+
+	* range.c (range_step): allow float step bigger than zero but less
+	  than one.  [ruby-dev:34557]
+
+Wed Apr 30 20:22:40 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 16241 from trunk.
+
+	* lib/net/telnet.rb:  Fixing a bug where line endings would not be properly
+	  escaped when the two character ending was broken up into separate TCP
+	  packets.  Issue reported and patched by Brian Candler.
+
 Wed Apr 30 17:47:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_search): use local variable.  a patch from wanabe
