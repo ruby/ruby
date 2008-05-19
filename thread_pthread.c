@@ -358,11 +358,11 @@ native_thread_apply_priority(rb_thread_t *th)
     max = sched_get_priority_max(policy);
     min = sched_get_priority_min(policy);
 
-    if (min < priority) {
-	priority = max;
-    }
-    else if (max > priority) {
+    if (min > priority) {
 	priority = min;
+    }
+    else if (max < priority) {
+	priority = max;
     }
 
     sp.sched_priority = priority;
