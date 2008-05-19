@@ -176,3 +176,19 @@ assert_equal 'ok', %q{
   ObjectSpace.each_object(Module) {|m| m.name.inspect }
   :ok
 }
+
+assert_normal_exit %q{
+  begin
+    r = 0**-1
+    r + r
+  rescue
+  end
+}, '[ruby-dev:34524]'
+
+assert_normal_exit %q{
+  begin
+    r = Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
+    r + r
+  rescue
+  end
+}, '[ruby-dev:34536]'

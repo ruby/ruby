@@ -206,4 +206,10 @@ class TestStruct < Test::Unit::TestCase
     o = klass.new(1)
     assert_equal(1, o.size)
   end
+
+  def test_error
+    assert_raise(TypeError){
+      Struct.new(0)
+    }
+  end
 end

@@ -767,3 +767,53 @@ assert_equal "1\n2\n", %q{
 }
 
 assert_valid_syntax('1.times {|i|print (42),1;}', '[ruby-list:44479]')
+
+assert_equal 'ok', %q{
+  def a() end
+  begin
+    if defined?(a(1).a)
+      :ng
+    else
+      :ok
+    end
+  rescue
+    :ng
+  end
+}, '[ruby-core:16010]'
+
+assert_equal 'ok', %q{
+  def a() end
+  begin
+    if defined?(a::B)
+      :ng
+    else
+      :ok
+    end
+  rescue
+    :ng
+  end
+}, '[ruby-core:16010]'
+
+assert_normal_exit %q{
+  defined? C && 0
+}
+
+assert_normal_exit %q{
+  class C
+    def m
+      defined?(super())
+    end
+  end
+  C.new.m
+}
+
+assert_equal 'ok', %q{
+  class X < RuntimeError;end
+  x = [X]
+  begin
+   raise X
+  rescue *x
+   :ok
+  end
+}, '[ruby-core:14537]'
+

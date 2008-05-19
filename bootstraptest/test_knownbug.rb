@@ -30,28 +30,6 @@ assert_equal 'ok', %q{
 }, '[ruby-core:14813]'
 
 assert_equal 'ok', %q{
-  class X < RuntimeError;end
-  x = [X]
-  begin
-   raise X
-  rescue *x
-   :ok
-  end
-}, '[ruby-core:14537]'
-
-assert_normal_exit %q{
-  "abc".gsub(/./, "a" => "z")
-}
-
-assert_normal_exit %q{
-  Encoding.compatible?("",0)
-}
-
-assert_normal_exit %q{
-  "".center(1, "\x80".force_encoding("utf-8"))
-}, '[ruby-dev:33807]'
-
-assert_equal 'ok', %q{
   a = lambda {|x, y, &b| b }
   b = a.curry[1]
   if b.call(2){} == nil
@@ -60,10 +38,6 @@ assert_equal 'ok', %q{
     :ok
   end
 }, '[ruby-core:15551]'
-
-assert_normal_exit %q{
-  sprintf("% 0e", 1.0/0.0)
-}
 
 assert_normal_exit %q{
   g = Module.enum_for(:new)
@@ -109,102 +83,6 @@ assert_equal %q{[:bar, :foo]}, %q{
   end
   foo
 }, "[ ruby-Bugs-19304 ]"
-
-assert_equal 'ok', %q{
-  def a() end
-  begin
-    if defined?(a(1).a)
-      :ng
-    else
-      :ok
-    end
-  rescue
-    :ng
-  end
-}, '[ruby-core:16010]'
-
-assert_equal 'ok', %q{
-  def a() end
-  begin
-    if defined?(a::B)
-      :ng
-    else
-      :ok
-    end
-  rescue
-    :ng
-  end
-}, '[ruby-core:16010]'
-
-assert_equal 'ok', %q{
-  def m
-    t = Thread.new { while true do // =~ "" end }
-    sleep 0.1
-    10.times {
-      if /((ab)*(ab)*)*(b)/ =~ "ab"*7
-        return :ng if !$4
-        return :ng if $~.size != 5
-      end
-    }
-    :ok
-  ensure
-    Thread.kill t
-  end
-  m
-}, '[ruby-dev:34492]'
-
-assert_normal_exit %q{
-  begin
-    r = 0**-1
-    r + r
-  rescue
-  end
-}, '[ruby-dev:34524]'
-
-assert_normal_exit %q{
-  begin
-    r = Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
-    r + r
-  rescue
-  end
-}, '[ruby-dev:34536]'
-
-assert_normal_exit %q{
-  begin
-    Struct.new(0)
-  rescue
-  end
-}
-
-assert_normal_exit %q{
-  defined? C && 0
-}
-
-assert_normal_exit %q{
-  class C
-    def m
-      defined?(super())
-    end
-  end
-  C.new.m
-}
-
-assert_normal_exit %q{
-  [1,2,3].slice!(1,10000).inspect
-}
-
-assert_equal 'ok', %q{
-  begin
-    eval("class nil::Foo; end")
-    :ng
-  rescue Exception
-    :ok
-  end
-}
-
-assert_normal_exit %q{
-  at_exit { Fiber.new{}.resume }
-}
 
 assert_equal 'ok', %q{
   lambda {

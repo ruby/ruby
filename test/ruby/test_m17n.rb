@@ -1233,4 +1233,13 @@ class TestM17N < Test::Unit::TestCase
     s.setbyte(-4, 0x84)
     assert_equal(u("\xE3\x81\x84\xE3\x81\x84"), s)
   end
+
+  def test_compatible
+    assert_equal(nil, Encoding.compatible?("",0), "moved from btest/knownbug")
+  end
+
+  def test_force_encoding
+    assert(("".center(1, "\x80".force_encoding("utf-8")); true),
+           "moved from btest/knownbug, [ruby-dev:33807]")
+  end
 end

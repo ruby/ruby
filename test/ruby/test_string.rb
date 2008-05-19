@@ -624,6 +624,8 @@ class TestString < Test::Unit::TestCase
     a.taint
     assert(a.gsub(/./, S('X')).tainted?)
 
+    assert_equal("z", "abc".gsub(/./, "a" => "z"), "moved from btest/knownbug")
+
     assert_raise(ArgumentError) { "foo".gsub }
   end
 
@@ -1063,6 +1065,9 @@ class TestString < Test::Unit::TestCase
     assert_equal([S("a"), S(""), S("b"), S("c"), S("")], S("a||b|c|").split(S('|'), -1))
 
     assert_equal([], "".split(//, 1))
+
+    assert_equal("[2, 3]", [1,2,3].slice!(1,10000).inspect, "moved from btest/knownbug")
+
   end
 
   def test_squeeze

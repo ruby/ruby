@@ -210,6 +210,18 @@ class TestProc < Test::Unit::TestCase
     assert_equal(fib, [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89])
   end
 
+  def test_curry_from_knownbug
+    a = lambda {|x, y, &b| b }
+    b = a.curry[1]
+
+    assert_equal(:ok,
+      if b.call(2){} == nil
+        :ng
+      else
+        :ok
+      end, 'moved from btest/knownbug, [ruby-core:15551]')
+  end
+
   def test_dup_clone
     b = proc {|x| x + "bar" }
     class << b; attr_accessor :foo; end

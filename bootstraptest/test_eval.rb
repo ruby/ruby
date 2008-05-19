@@ -227,3 +227,12 @@ assert_equal 'ok', %q{
     :ng
   end
 }, "[ruby-dev:34236]"
+
+assert_equal 'ok', %q{
+  begin
+    eval("class nil::Foo; end")
+    :ng
+  rescue Exception
+    :ok
+  end
+}
