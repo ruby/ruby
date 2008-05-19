@@ -1,3 +1,8 @@
+Mon May 19 23:19:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* regexec.c (slow_search): check the case when the length is 1.
+	  The behavior of memcmp is undefined if the third argument is 0.
+
 Mon May 19 21:07:48 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_pthread.c (native_thread_apply_priority): 

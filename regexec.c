@@ -2765,7 +2765,7 @@ slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
       if (*s == *target) {
 	p = s + 1;
 	t = target + 1;
-	if (memcmp(t, p, target_end - t) == 0)
+	if (target_end == t || memcmp(t, p, target_end - t) == 0)
 	  return s;
       }
       s += n;
@@ -2776,7 +2776,7 @@ slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
     if (*s == *target) {
       p = s + 1;
       t = target + 1;
-      if (memcmp(t, p, target_end - t) == 0)
+      if (target_end == t || memcmp(t, p, target_end - t) == 0)
 	return s;
     }
     s += enclen(enc, s, end);
