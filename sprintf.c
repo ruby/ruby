@@ -729,6 +729,8 @@ rb_f_sprintf(argc, argv)
 		    need = strlen(expr);
 		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
 			need++;
+		    else if (flags & FSPACE)
+			need++;
 		    if ((flags & FWIDTH) && need < width)
 			need = width;
 
