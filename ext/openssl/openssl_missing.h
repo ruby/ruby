@@ -56,14 +56,33 @@ extern "C" {
 	(char *(*)())d2i_PKCS7_RECIP_INFO, (char *)ri)
 #endif
 
+#if !defined(HAVE_EVP_MD_CTX_INIT)
 void HMAC_CTX_init(HMAC_CTX *ctx);
-int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
-void HMAC_CTX_cleanup(HMAC_CTX *ctx);
+#endif
 
+#if !defined(HAVE_HMAC_CTX_COPY)
+void HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
+#endif
+
+#if !defined(HAVE_HMAC_CTX_CLEANUP)
+void HMAC_CTX_cleanup(HMAC_CTX *ctx);
+#endif
+
+#if !defined(HAVE_EVP_MD_CTX_CREATE)
 EVP_MD_CTX *EVP_MD_CTX_create(void);
+#endif
+
+#if !defined(HAVE_EVP_MD_CTX_INIT)
 void EVP_MD_CTX_init(EVP_MD_CTX *ctx);
+#endif
+
+#if !defined(HAVE_EVP_MD_CTX_CLEANUP)
 int EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx);
+#endif
+
+#if !defined(HAVE_EVP_MD_CTX_DESTROY)
 void EVP_MD_CTX_destroy(EVP_MD_CTX *ctx);
+#endif
 
 #if !defined(HAVE_EVP_CIPHER_CTX_COPY)
 int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
@@ -107,19 +126,54 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
 #define OPENSSL_cleanse(p, l) memset(p, 0, l)
 #endif
 
+#if !defined(HAVE_X509_STORE_SET_EX_DATA)
 void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
 int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
+#endif
+
+#if !defined(HAVE_X509_CRL_SET_VERSION)
 int X509_CRL_set_version(X509_CRL *x, long version);
+#endif
+
+#if !defined(HAVE_X509_CRL_SET_ISSUER_NAME)
 int X509_CRL_set_issuer_name(X509_CRL *x, X509_NAME *name);
+#endif
+
+#if !defined(HAVE_X509_CRL_SORT)
 int X509_CRL_sort(X509_CRL *c);
+#endif
+
+#if !defined(HAVE_X509_CRL_ADD0_REVOKED)
 int X509_CRL_add0_revoked(X509_CRL *crl, X509_REVOKED *rev);
+#endif
+
+#if !defined(HAVE_BN_MOD_SQR)
 int BN_mod_sqr(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx);
+#endif
+
+#if !defined(HAVE_BN_MOD_ADD)
 int BN_mod_add(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+#endif
+
+#if !defined(HAVE_BN_MOD_SUB)
 int BN_mod_sub(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m, BN_CTX *ctx);
+#endif
+
+#if !defined(HAVE_BN_RAND_RANGE)
 int BN_rand_range(BIGNUM *r, BIGNUM *range);
+#endif
+
+#if !defined(HAVE_BN_PSEUDO_RAND_RANGE)
 int BN_pseudo_rand_range(BIGNUM *r, BIGNUM *range);
+#endif
+
+#if !defined(HAVE_CONF_GET1_DEFAULT_CONFIG_FILE)
 char *CONF_get1_default_config_file(void);
+#endif
+
+#if !defined(HAVE_PEM_DEF_CALLBACK)
 int PEM_def_callback(char *buf, int num, int w, void *key);
+#endif
 
 #if defined(__cplusplus)
 }

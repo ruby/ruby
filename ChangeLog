@@ -1,3 +1,10 @@
+Mon May 19 11:53:45 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/openssl_missing.c (HMAC_CTX_copy): adopted
+	  prototype change in openssl bundled with newer OpenBSD.
+	  a patch from Takahiro Kambe <taca at back-street.net> in
+	  [ruby-dev:34691].
+
 Sun May 18 22:26:51 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: should normalize path
