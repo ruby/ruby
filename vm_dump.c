@@ -140,7 +140,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 void
 vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-#if 0
+#if 1
     VALUE *sp = cfp->sp, *bp = cfp->bp;
     VALUE *lfp = cfp->lfp;
     VALUE *dfp = cfp->dfp;
@@ -172,6 +172,13 @@ vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 	cfp++;
     }
     fprintf(stderr, "---------------------------\n");
+}
+
+void
+vm_stack_dump_raw_current(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    vm_stack_dump_raw(th, th->cfp);
 }
 
 void

@@ -29,6 +29,8 @@ vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE type,
     rb_control_frame_t *cfp;
     int i;
 
+    /* setup vm value stack */
+    
     /* nil initialize */
     for (i=0; i < local_size; i++) {
 	*sp = Qnil;
@@ -42,6 +44,8 @@ vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE type,
     if (lfp == 0) {
 	lfp = sp;
     }
+
+    /* setup vm control frame stack */
 
     cfp = th->cfp = th->cfp - 1;
     cfp->pc = pc;
@@ -827,45 +831,24 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
     }
 }
 
-/* cref */
+/* svar */
 
-static NODE *
-lfp_get_special_cref(VALUE *lfp)
-{
-    struct RValues *values;
-    if (((VALUE)(values = (void *)lfp[-1])) != Qnil && values->basic.klass) {
-	return (NODE *)values->basic.klass;
-    }
-    else {
-	return 0;
-    }
-}
-
-static struct RValues *
-new_value(void)
-{
-    struct RValues *val = RVALUES(rb_newobj());
-    OBJSETUP(val, 0, T_VALUES);
-    val->v1 = val->v2 = val->v3 = Qnil;
-    return val;
-}
-
-static struct RValues *
+static inline NODE *
 lfp_svar_place(rb_thread_t *th, VALUE *lfp)
 {
-    struct RValues *svar;
+    NODE *svar;
 
     if (th->local_lfp != lfp) {
-	svar = (struct RValues *)lfp[-1];
+	svar = (NODE *)lfp[-1];
 	if ((VALUE)svar == Qnil) {
-	    svar = new_value();
+	    svar = NEW_IF(Qnil, Qnil, Qnil);
 	    lfp[-1] = (VALUE)svar;
 	}
     }
     else {
-	svar = (struct RValues *)th->local_svar;
+	svar = (NODE *)th->local_svar;
 	if ((VALUE)svar == Qnil) {
-	    svar = new_value();
+	    svar = NEW_IF(Qnil, Qnil, Qnil);
 	    th->local_svar = (VALUE)svar;
 	}
     }
@@ -875,17 +858,15 @@ lfp_svar_place(rb_thread_t *th, VALUE *lfp)
 static VALUE
 lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
 {
-    struct RValues *svar = lfp_svar_place(th, lfp);
+    NODE *svar = lfp_svar_place(th, lfp);
 
     switch (key) {
       case 0:
-	return svar->v1;
+	return svar->u1.value;
       case 1:
-	return svar->v2;
-      case 2:
-	return svar->basic.klass;
+	return svar->u2.value;
       default: {
-	VALUE hash = svar->v3;
+	VALUE hash = svar->u3.value;
 
 	if (hash == Qnil) {
 	    return Qnil;
@@ -900,43 +881,24 @@ lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
 static void
 lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
 {
-    struct RValues *svar = lfp_svar_place(th, lfp);
+    NODE *svar = lfp_svar_place(th, lfp);
 
     switch (key) {
       case 0:
-	svar->v1 = val;
+	svar->u1.value = val;
 	return;
       case 1:
-	svar->v2 = val;
-	return;
-      case 2:
-	svar->basic.klass = val;
+	svar->u2.value = val;
 	return;
       default: {
-	VALUE hash = svar->v3;
+	VALUE hash = svar->u3.value;
 
 	if (hash == Qnil) {
-	    svar->v3 = hash = rb_hash_new();
+	    svar->u3.value = hash = rb_hash_new();
 	}
 	rb_hash_aset(hash, key, val);
       }
     }
-}
-
-static NODE *
-get_cref(rb_iseq_t *iseq, VALUE *lfp)
-{
-    NODE *cref;
-    if ((cref = lfp_get_special_cref(lfp)) != 0) {
-	/* */
-    }
-    else if ((cref = iseq->cref_stack) != 0) {
-	/* */
-    }
-    else {
-	rb_bug("get_cref: unreachable");
-    }
-    return cref;
 }
 
 static inline VALUE
@@ -976,6 +938,30 @@ vm_getspecial(rb_thread_t *th, VALUE *lfp, VALUE key, rb_num_t type)
     return val;
 }
 
+static NODE *
+vm_get_cref(rb_iseq_t *iseq, const VALUE * const lfp, const VALUE *dfp)
+{
+    NODE *cref = 0;
+
+    while (1) {
+	if (lfp == dfp) {
+	    cref = iseq->cref_stack;
+	    break;
+	}
+	else if (dfp[-1] != Qnil) {
+	    cref = (NODE *)dfp[-1];
+	    break;
+	}
+	dfp = GET_PREV_DFP(dfp);
+    }
+
+    if (cref == 0) {
+	rb_bug("vm_get_cref: unreachable");
+    }
+    return cref;
+}
+
+
 static inline void
 vm_check_if_namespace(VALUE klass)
 {
@@ -997,7 +983,7 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 
     if (klass == Qnil) {
 	/* in current lexical scope */
-	NODE *root_cref = get_cref(iseq, th->cfp->lfp);
+	NODE *root_cref = vm_get_cref(iseq, th->cfp->lfp, th->cfp->dfp);
 	NODE *cref = root_cref;
 
 	while (cref && cref->nd_next) {
@@ -1054,9 +1040,8 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 }
 
 static inline VALUE
-vm_get_cvar_base(rb_thread_t *th, rb_iseq_t *iseq)
+vm_get_cvar_base(NODE *cref)
 {
-    NODE *cref = get_cref(iseq, th->cfp->lfp);
     VALUE klass = Qnil;
 
     if (cref) {
@@ -1076,8 +1061,8 @@ vm_define_method(rb_thread_t *th, VALUE obj,
 		   ID id, rb_iseq_t *miseq, rb_num_t is_singleton, NODE *cref)
 {
     NODE *newbody;
-    int noex = cref->nd_visi;
     VALUE klass = cref->nd_clss;
+    int noex = cref->nd_visi;
 
     if (is_singleton) {
 	if (FIXNUM_P(obj) || SYMBOL_P(obj)) {

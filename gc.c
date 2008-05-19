@@ -1280,15 +1280,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	}
 	break;
 
-      case T_VALUES:
-	{
-            rb_gc_mark(RVALUES(obj)->v1);
-            rb_gc_mark(RVALUES(obj)->v2);
-            ptr = RVALUES(obj)->v3;
-            goto again;
-	}
-	break;
-
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%lx(%p) %s",
 	       obj->as.basic.flags & T_MASK, obj,
@@ -1530,8 +1521,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_FLOAT:
-	break;
-      case T_VALUES:
 	break;
 
       case T_BIGNUM:
@@ -1878,7 +1867,6 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 		  case T_NONE:
 		  case T_ICLASS:
 		  case T_NODE:
-		  case T_VALUES:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
@@ -2175,7 +2163,7 @@ id2ref(VALUE obj, VALUE objid)
     }
 
     if (!is_pointer_to_heap(objspace, (void *)ptr) ||
-	BUILTIN_TYPE(ptr) >= T_VALUES || BUILTIN_TYPE(ptr) == T_ICLASS) {
+	BUILTIN_TYPE(ptr) > T_FIXNUM || BUILTIN_TYPE(ptr) == T_ICLASS) {
 	rb_raise(rb_eRangeError, "%p is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {
@@ -2334,7 +2322,6 @@ count_objects(int argc, VALUE *argv, VALUE os)
 	    COUNT_TYPE(T_FALSE);
 	    COUNT_TYPE(T_SYMBOL);
 	    COUNT_TYPE(T_FIXNUM);
-	    COUNT_TYPE(T_VALUES);
 	    COUNT_TYPE(T_UNDEF);
 	    COUNT_TYPE(T_NODE);
 	    COUNT_TYPE(T_ICLASS);

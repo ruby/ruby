@@ -183,7 +183,8 @@ getclassvariable
 ()
 (VALUE val)
 {
-    val = rb_cvar_get(vm_get_cvar_base(th, GET_ISEQ()), id);
+    NODE *cref = vm_get_cref(GET_ISEQ(), GET_LFP(), GET_DFP());
+    val = rb_cvar_get(vm_get_cvar_base(cref), id);
 }
 
 /**
@@ -197,7 +198,8 @@ setclassvariable
 (VALUE val)
 ()
 {
-    rb_cvar_set(vm_get_cvar_base(th, GET_ISEQ()), id, val);
+    NODE *cref = vm_get_cref(GET_ISEQ(), GET_LFP(), GET_DFP());
+    rb_cvar_set(vm_get_cvar_base(cref), id, val);
 }
 
 /**
@@ -317,7 +319,7 @@ putcbase
 ()
 (VALUE val)
 {
-    val = vm_get_cbase(th);
+    val = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
 }
 
 /**
@@ -723,8 +725,8 @@ definemethod
 (VALUE obj)
 ()
 {
-    vm_define_method(th, obj, id, body, is_singleton,
-		     get_cref(GET_ISEQ(), GET_LFP()));
+    NODE *cref = vm_get_cref(GET_ISEQ(), GET_LFP(), GET_DFP());
+    vm_define_method(th, obj, id, body, is_singleton, cref);
 }
 
 /**
@@ -744,7 +746,7 @@ alias
 	rb_alias_variable(SYM2ID(sym1), SYM2ID(sym2));
     }
     else {
-	klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
+	klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
 	rb_alias(klass, SYM2ID(sym1), SYM2ID(sym2));
     }
 }
@@ -760,7 +762,7 @@ undef
 (VALUE sym)
 ()
 {
-    VALUE klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
+    VALUE klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
     rb_undef(klass, SYM2ID(sym));
     INC_VM_STATE_VERSION();
 }
@@ -787,7 +789,7 @@ defined
 	}
 	break;
       case DEFINED_IVAR2:
-	klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
+	klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
 	break;
       case DEFINED_GVAR:
 	if (rb_gvar_defined((struct global_entry *)(obj & ~1))) {
@@ -795,7 +797,7 @@ defined
 	}
 	break;
       case DEFINED_CVAR:
-	klass = get_cref(GET_ISEQ(), GET_LFP())->nd_clss;
+	klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
 	if (rb_cvar_defined(klass, SYM2ID(obj))) {
 	    expr_type = "class variable";
 	}

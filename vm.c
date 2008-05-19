@@ -79,7 +79,7 @@ rb_vm_set_top_stack(rb_thread_t *th, VALUE iseqval)
 }
 
 void
-rb_vm_set_eval_stack(rb_thread_t *th, VALUE iseqval)
+rb_vm_set_eval_stack(rb_thread_t *th, VALUE iseqval, NODE *cref)
 {
     rb_iseq_t *iseq;
     rb_block_t *block = th->base_block;
@@ -90,6 +90,10 @@ rb_vm_set_eval_stack(rb_thread_t *th, VALUE iseqval)
     vm_push_frame(th, iseq, FRAME_MAGIC_EVAL, block->self,
 		  GC_GUARDED_PTR(block->dfp), iseq->iseq_encoded,
 		  th->cfp->sp, block->lfp, iseq->local_size);
+
+    if (cref) {
+	th->cfp->dfp[-1] = (VALUE)cref;
+    }
 }
 
 /* Env */
@@ -263,12 +267,6 @@ vm_make_env_each(rb_thread_t *th, rb_control_frame_t *cfp,
     env->block.dfp = cfp->dfp;
     env->block.iseq = cfp->iseq;
 
-    if (VMDEBUG &&
-	(!(cfp->lfp[-1] == Qnil ||
-	  BUILTIN_TYPE(cfp->lfp[-1]) == T_VALUES))) {
-	rb_bug("invalid svar");
-    }
-
     if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	/* TODO */
 	env->block.iseq = 0;
@@ -389,7 +387,6 @@ vm_make_proc(rb_thread_t *th,
     proc->block.proc = procval;
     proc->envval = envval;
     proc->safe_level = th->safe_level;
-    proc->special_cref_stack = lfp_get_special_cref(block->lfp);
 
     if (VMDEBUG) {
 	if (th->stack < block->dfp && block->dfp < th->stack + th->stack_size) {
@@ -540,8 +537,8 @@ rb_call_super(int argc, const VALUE *argv)
 /* C -> Ruby: block */
 
 static VALUE
-invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self,
-	     int argc, VALUE *argv, rb_block_t *blockptr)
+invoke_block_from_c(rb_thread_t *th, rb_block_t *block, VALUE self,
+		    int argc, VALUE *argv, rb_block_t *blockptr, NODE *cref)
 {
     VALUE val;
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
@@ -566,6 +563,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self,
 		      self, GC_GUARDED_PTR(block->dfp),
 		      iseq->iseq_encoded + opt_pc, cfp->sp + arg_size, block->lfp,
 		      iseq->local_size - arg_size);
+	th->cfp->dfp[-1] = (VALUE)cref;
 
 	val = vm_eval_body(th);
     }
@@ -576,7 +574,7 @@ invoke_block(rb_thread_t *th, rb_block_t *block, VALUE self,
 }
 
 VALUE
-vm_yield(rb_thread_t *th, int argc, VALUE *argv)
+vm_yield_with_cref(rb_thread_t *th, int argc, VALUE *argv, NODE *cref)
 {
     rb_block_t *block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
@@ -584,7 +582,13 @@ vm_yield(rb_thread_t *th, int argc, VALUE *argv)
 	vm_localjump_error("no block given", Qnil, 0);
     }
 
-    return invoke_block(th, block, block->self, argc, argv, 0);
+    return invoke_block_from_c(th, block, block->self, argc, argv, 0, cref);
+}
+
+VALUE
+vm_yield(rb_thread_t *th, int argc, VALUE *argv)
+{
+    return vm_yield_with_cref(th, argc, argv, (NODE *)Qnil);
 }
 
 VALUE
@@ -594,22 +598,18 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
     VALUE val = Qundef;
     int state;
     volatile int stored_safe = th->safe_level;
-    volatile NODE *stored_special_cref_stack =
-      lfp_set_special_cref(proc->block.lfp, proc->special_cref_stack);
     rb_control_frame_t * volatile cfp = th->cfp;
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	th->safe_level = proc->safe_level;
-	val = invoke_block(th, &proc->block, self, argc, argv, blockptr);
+	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, (NODE *)Qnil);
     }
     TH_POP_TAG();
 
     if (!proc->is_from_method) {
 	th->safe_level = stored_safe;
     }
-
-    lfp_set_special_cref(proc->block.lfp, (NODE*)stored_special_cref_stack);
 
     if (state) {
 	if (state == TAG_RETURN && proc->is_lambda) {
@@ -773,8 +773,6 @@ vm_backtrace(rb_thread_t *th, int lev)
     return ary;
 }
 
-/* cref */
-
 static void
 check_svar(void)
 {
@@ -783,7 +781,7 @@ check_svar(void)
     while ((void *)(cfp + 1) < (void *)(th->stack + th->stack_size)) {
 	/* printf("cfp: %p\n", cfp->type); */
 	if (cfp->lfp && cfp->lfp[-1] != Qnil &&
-	    TYPE(cfp->lfp[-1]) != T_VALUES) {
+	    TYPE(cfp->lfp[-1]) != T_NODE) {
 	    /* dp(cfp->lfp[-1]); */
 	    rb_bug("!!!invalid svar!!!");
 	}
@@ -791,30 +789,12 @@ check_svar(void)
     }
 }
 
-static NODE *
-lfp_set_special_cref(VALUE *lfp, NODE * cref)
-{
-    struct RValues *values = (void *) lfp[-1];
-    NODE *old_cref;
-
-    if (VMDEBUG) {
-	check_svar();
-    }
-
-    if (cref == 0 && ((VALUE)values == Qnil || values->basic.klass == 0)) {
-	old_cref = 0;
-    }
-    else {
-	old_cref = (NODE *)lfp_svar_get(GET_THREAD(), lfp, 2);
-	lfp_svar_set(GET_THREAD(), lfp, 2, (VALUE)cref);
-    }
-    return old_cref;
-}
-
 NODE *
-vm_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack)
+ruby_cref(void)
 {
-    return lfp_set_special_cref(lfp, cref_stack);
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+    return vm_get_cref(cfp->iseq, cfp->lfp, cfp->dfp);
 }
 
 #if 0
@@ -830,28 +810,21 @@ debug_cref(NODE *cref)
 #endif
 
 NODE *
-vm_get_cref(rb_thread_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp)
-{
-    return get_cref(iseq, cfp->lfp);
-}
-
-NODE *
 vm_cref_push(rb_thread_t *th, VALUE klass, int noex)
 {
     NODE *cref = NEW_BLOCK(klass);
     rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
 
     cref->nd_file = 0;
-    cref->nd_next = get_cref(cfp->iseq, cfp->lfp);
+    cref->nd_next = vm_get_cref(cfp->iseq, cfp->lfp, cfp->dfp);
     cref->nd_visi = noex;
     return cref;
 }
 
-VALUE
-vm_get_cbase(rb_thread_t *th)
+static inline VALUE
+vm_get_cbase(rb_iseq_t *iseq, VALUE *lfp, VALUE *dfp)
 {
-    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-    NODE *cref = get_cref(cfp->iseq, cfp->lfp);
+    NODE *cref = vm_get_cref(iseq, lfp, dfp);
     VALUE klass = Qundef;
 
     while (cref) {
@@ -860,7 +833,16 @@ vm_get_cbase(rb_thread_t *th)
 	}
 	cref = cref->nd_next;
     }
+
     return klass;
+}
+
+VALUE
+rb_vm_cbase(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+    return vm_get_cbase(cfp->iseq, cfp->lfp, cfp->dfp);
 }
 
 /* jump */
@@ -1038,16 +1020,16 @@ vm_init_redefined_flag(void)
   C1      : pushed by send insn (CFUNC)
 
   struct CONTROL_FRAME {
-    VALUE *pc;                  // cfp[0]
-    VALUE *sp;                  // cfp[1]
-    VALUE *bp;                  // cfp[2]
-    rb_iseq_t *iseq;            // cfp[3]
-    VALUE flag;                 // cfp[4]
-    VALUE self;                 // cfp[5]
-    VALUE *lfp;                 // cfp[6]
-    VALUE *dfp;                 // cfp[7]
-    rb_iseq_t * block_iseq;     // cfp[8]
-    VALUE proc;                 // cfp[9] always 0
+    VALUE *pc;                  // cfp[0], program counter
+    VALUE *sp;                  // cfp[1], stack pointer
+    VALUE *bp;                  // cfp[2], base pointer
+    rb_iseq_t *iseq;            // cfp[3], iseq
+    VALUE flag;                 // cfp[4], magic
+    VALUE self;                 // cfp[5], self
+    VALUE *lfp;                 // cfp[6], local frame pointer
+    VALUE *dfp;                 // cfp[7], dynamic frame pointer
+    rb_iseq_t * block_iseq;     // cfp[8], block iseq
+    VALUE proc;                 // cfp[9], always 0
   };
 
   struct BLOCK {
@@ -1055,15 +1037,11 @@ vm_init_redefined_flag(void)
     VALUE *lfp;
     VALUE *dfp;
     rb_iseq_t *block_iseq;
-  };
-
-  struct PROC {
-    VALUE  proc_sig = 0;
-    struct BLOCK;
+    VALUE proc;
   };
 
   struct METHOD_CONTROL_FRAME {
-    struct CONTROL_FRAME;
+    rb_control_frame_t frame;
   };
 
   struct METHOD_FRAME {
@@ -1073,12 +1051,13 @@ vm_init_redefined_flag(void)
     VALUE param0;
     ...
     VALUE paramN;
+    VALUE cref;
     VALUE special;                         // lfp [1]
     struct block_object *block_ptr | 0x01; // lfp [0]
   };
 
   struct BLOCK_CONTROL_FRAME {
-    struct STACK_FRAME;
+    rb_control_frame_t frame;
   };
 
   struct BLOCK_FRAME {
@@ -1088,17 +1067,19 @@ vm_init_redefined_flag(void)
     VALUE param0;
     ...
     VALUE paramN;
+    VALUE cref;
     VALUE *(prev_ptr | 0x01); // DFP[0]
   };
 
   struct CLASS_CONTROL_FRAME {
-    struct STACK_FRAME;
+    rb_control_frame_t frame;
   };
 
   struct CLASS_FRAME {
     VALUE param0;
     ...
     VALUE paramN;
+    VALUE cref;
     VALUE prev_dfp; // for frame jump
   };
 
@@ -1124,11 +1105,6 @@ vm_init_redefined_flag(void)
     VALUE *lfp;                      // lfp
     VALUE *dfp;                      // lfp
     rb_iseq_t * block_iseq; // 0
-  };
-
-  struct C_METHDO_FRAME{
-    VALUE block_ptr;
-    VALUE special;
   };
  */
 
@@ -1315,7 +1291,7 @@ vm_eval_body(rb_thread_t *th)
 	    cfp->sp[0] = err;
 	    vm_push_frame(th, catch_iseq, FRAME_MAGIC_BLOCK,
 			  cfp->self, (VALUE)cfp->dfp, catch_iseq->iseq_encoded,
-			  cfp->sp + 1, cfp->lfp, catch_iseq->local_size - 1);
+			  cfp->sp + 1 /* push value */, cfp->lfp, catch_iseq->local_size - 1);
 
 	    state = 0;
 	    th->errinfo = Qnil;

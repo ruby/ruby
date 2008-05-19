@@ -262,7 +262,6 @@ enum ruby_value_type {
     RUBY_T_SYMBOL = 0x14,
     RUBY_T_FIXNUM = 0x15,
 
-    RUBY_T_VALUES = 0x1a,
     RUBY_T_UNDEF  = 0x1b,
     RUBY_T_NODE   = 0x1c,
     RUBY_T_ICLASS = 0x1d,
@@ -292,7 +291,6 @@ enum ruby_value_type {
 #define T_SYMBOL RUBY_T_SYMBOL
 #define T_RATIONAL RUBY_T_RATIONAL
 #define T_COMPLEX RUBY_T_COMPLEX
-#define T_VALUES RUBY_T_VALUES
 #define T_UNDEF  RUBY_T_UNDEF
 #define T_NODE   RUBY_T_NODE
 #define T_MASK   RUBY_T_MASK
@@ -437,13 +435,6 @@ struct RObject {
     ((RBASIC(o)->flags & ROBJECT_EMBED) ? \
      RCLASS_IV_INDEX_TBL(rb_obj_class(o)) : \
      ROBJECT(o)->as.heap.iv_index_tbl)
-
-struct RValues {
-    struct RBasic basic;
-    VALUE v1;
-    VALUE v2;
-    VALUE v3;
-};
 
 typedef struct {
     VALUE super;
@@ -654,7 +645,6 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 #define RRATIONAL(obj) (R_CAST(RRational)(obj))
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
-#define RVALUES(obj) (R_CAST(RValues)(obj))
 
 #define FL_SINGLETON FL_USER0
 #define FL_MARK      (((VALUE)1)<<5)

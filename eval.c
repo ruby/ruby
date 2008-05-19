@@ -32,7 +32,7 @@ VALUE sysstack_error;
 
 static VALUE exception_error;
 
-static VALUE eval(VALUE, VALUE, VALUE, const char *, int);
+static VALUE eval_string(VALUE, VALUE, VALUE, const char *, int);
 
 static inline VALUE rb_yield_0(int argc, VALUE *argv);
 static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
@@ -264,7 +264,7 @@ ruby_run_node(void *n)
 VALUE
 rb_eval_string(const char *str)
 {
-    return eval(rb_vm_top_self(), rb_str_new2(str), Qnil, "(eval)", 1);
+    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, "(eval)", 1);
 }
 
 VALUE
@@ -329,7 +329,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
-	val = eval(rb_vm_top_self(), cmd, Qnil, 0, 0);
+	val = eval_string(rb_vm_top_self(), cmd, Qnil, 0, 0);
     }
     POP_TAG();
 
@@ -884,11 +884,12 @@ rb_iterator_p()
 
 
 VALUE
-rb_f_block_given_p()
+rb_f_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     cfp = vm_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+
     if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
 	return Qtrue;
     }
@@ -1681,7 +1682,7 @@ rb_frame_self(void)
 }
 
 static VALUE
-eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char *file, int line)
 {
     int state;
     VALUE result = Qundef;
@@ -1689,7 +1690,7 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
     rb_binding_t *bind = 0;
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
-    NODE *stored_cref_stack = 0;
+    rb_block_t block;
 
     if (file == 0) {
 	file = rb_sourcefile();
@@ -1705,7 +1706,6 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	    if (rb_obj_is_kind_of(scope, rb_cBinding)) {
 		GetBindingPtr(scope, bind);
 		envval = bind->env;
-		stored_cref_stack = bind->cref_stack;
 	    }
 	    else {
 		rb_raise(rb_eTypeError,
@@ -1717,7 +1717,9 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	}
 	else {
 	    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-	    th->base_block = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+	    block = *RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+	    th->base_block = &block;
+	    th->base_block->self = self;
 	    th->base_block->iseq = cfp->iseq;	/* TODO */
 	}
 
@@ -1725,7 +1727,8 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	th->parse_in_eval++;
 	iseqval = rb_iseq_compile(src, rb_str_new2(file), INT2FIX(line));
 	th->parse_in_eval--;
-	rb_vm_set_eval_stack(th, iseqval);
+
+	rb_vm_set_eval_stack(th, iseqval, cref);
 	th->base_block = 0;
 
 	if (0) {		/* for debug */
@@ -1739,21 +1742,11 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	    bind->env = vm_make_env_object(th, th->cfp);
 	}
 
-	/* push tag */
-	if (stored_cref_stack) {
-	    stored_cref_stack =
-	      vm_set_special_cref(th, env->block.lfp, stored_cref_stack);
-	}
-
 	/* kick */
 	CHECK_STACK_OVERFLOW(th->cfp, iseq->stack_max);
 	result = vm_eval_body(th);
     }
     POP_TAG();
-
-    if (stored_cref_stack) {
-	vm_set_special_cref(th, env->block.lfp, stored_cref_stack);
-    }
 
     if (state) {
 	if (state == TAG_RAISE) {
@@ -1777,6 +1770,12 @@ eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 	JUMP_TAG(state);
     }
     return result;
+}
+
+static VALUE
+eval_string(VALUE self, VALUE src, VALUE scope, const char *file, int line)
+{
+    return eval_string_with_cref(self, src, scope, 0, file, line);
 }
 
 /*
@@ -1825,90 +1824,36 @@ rb_f_eval(int argc, VALUE *argv, VALUE self)
 
     if (!NIL_P(vfile))
 	file = RSTRING_PTR(vfile);
-    return eval(self, src, scope, file, line);
-}
-
-VALUE vm_cfp_svar_get(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key);
-void vm_cfp_svar_set(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key, VALUE val);
-
-/* function to call func under the specified class/module context */
-static VALUE
-exec_under(VALUE (*func) (VALUE), VALUE under, VALUE self, VALUE args)
-{
-    VALUE val = Qnil;		/* OK */
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
-    rb_control_frame_t *pcfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE stored_self = pcfp->self;
-    NODE *stored_cref = 0;
-
-    rb_block_t block;
-    rb_block_t *blockptr;
-    int state;
-
-    /* replace environment */
-    pcfp->self = self;
-    if ((blockptr = GC_GUARDED_PTR_REF(*th->cfp->lfp)) != 0) {
-	/* copy block info */
-	/* TODO: why? */
-	block = *blockptr;
-	block.self = self;
-	*th->cfp->lfp = GC_GUARDED_PTR(&block);
-    }
-
-    while (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    }
-
-    stored_cref = (NODE *)vm_cfp_svar_get(th, cfp, 2);
-    vm_cfp_svar_set(th, cfp, 2, (VALUE)vm_cref_push(th, under, NOEX_PUBLIC));
-
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
-	val = (*func) (args);
-    }
-    POP_TAG();
-
-    /* restore environment */
-    vm_cfp_svar_set(th, cfp, 2, (VALUE)stored_cref);
-    pcfp->self = stored_self;
-
-    if (state) {
-	JUMP_TAG(state);
-    }
-    return val;
-}
-
-static VALUE
-yield_under_i(VALUE arg)
-{
-    if (arg == Qundef) {
-	return rb_yield_0(0, 0);
-    }
-    else {
-	return rb_yield_0(RARRAY_LEN(arg), RARRAY_PTR(arg));
-    }
+    return eval_string(self, src, scope, file, line);
 }
 
 /* block eval under the class/module context */
 static VALUE
 yield_under(VALUE under, VALUE self, VALUE values)
 {
-    return exec_under(yield_under_i, under, self, values);
-}
+    rb_thread_t *th = GET_THREAD();
+    rb_block_t block, *blockptr;
+    NODE *cref = vm_cref_push(th, under, NOEX_PUBLIC);
 
-static VALUE
-eval_under_i(VALUE arg)
-{
-    VALUE *args = (VALUE *)arg;
-    return eval(args[0], args[1], Qnil, (char *)args[2], (int)args[3]);
+    if ((blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0])) != 0) {
+	block = *blockptr;
+	block.self = self;
+	th->cfp->lfp[0] = GC_GUARDED_PTR(&block);
+    }
+
+    if (values == Qundef) {
+	return vm_yield_with_cref(th, 0, 0, cref);
+    }
+    else {
+	return vm_yield_with_cref(th, RARRAY_LEN(values), RARRAY_PTR(values), cref);
+    }
 }
 
 /* string eval under the class/module context */
 static VALUE
 eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
 {
-    VALUE args[4];
+    NODE *cref = vm_cref_push(GET_THREAD(), under, NOEX_PUBLIC);
 
     if (rb_safe_level() >= 4) {
 	StringValue(src);
@@ -1916,11 +1861,8 @@ eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
     else {
 	SafeStringValue(src);
     }
-    args[0] = self;
-    args[1] = src;
-    args[2] = (VALUE)file;
-    args[3] = (VALUE)line;
-    return exec_under(eval_under_i, under, self, (VALUE)args);
+
+    return eval_string_with_cref(self, src, Qnil, cref, file, line);
 }
 
 static VALUE
@@ -1928,8 +1870,7 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 {
     if (rb_block_given_p()) {
 	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
-		     argc);
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
 	return yield_under(klass, self, Qundef);
     }
@@ -2499,12 +2440,12 @@ errinfo_place(void)
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    if (cfp->iseq->type == ISEQ_TYPE_RESCUE) {
-		return &cfp->dfp[-1];
+		return &cfp->dfp[-2];
 	    }
 	    else if (cfp->iseq->type == ISEQ_TYPE_ENSURE &&
-		     TYPE(cfp->dfp[-1]) != T_NODE &&
-		     !FIXNUM_P(cfp->dfp[-1])) {
-		return &cfp->dfp[-1];
+		     TYPE(cfp->dfp[-2]) != T_NODE &&
+		     !FIXNUM_P(cfp->dfp[-2])) {
+		return &cfp->dfp[-2];
 	    }
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);

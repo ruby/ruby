@@ -208,3 +208,22 @@ assert_normal_exit %q{
   end
   Foo.add_method
 }, '[ruby-core:14556] reported by Frederick Cheung'
+
+assert_equal 'ok', %q{
+  class Module
+    def my_module_eval(&block)
+      module_eval(&block)
+    end
+  end
+  class String
+    Integer.my_module_eval do
+      def hoge; end
+    end
+  end
+  if Integer.instance_methods(false).map{|m|m.to_sym}.include?(:hoge) &&
+     !String.instance_methods(false).map{|m|m.to_sym}.include?(:hoge)
+    :ok
+  else
+    :ng
+  end
+}, "[ruby-dev:34236]"

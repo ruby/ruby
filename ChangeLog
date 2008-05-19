@@ -1,3 +1,17 @@
+Mon May 19 11:32:47 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, insns.def, eval.c, vm_insnhelper.c: fix CREF handling.
+	  VM value stack frame of block contains cref information.
+	 (dfp[-1] points CREF)
+
+	* compile.c, eval_intern.h, eval_method.c, load.c, proc.c,
+	  vm_dump.h, vm_core.h: ditto.
+
+	* include/ruby/ruby.h, gc.c: remove T_VALUES because of above
+	  changes.
+
+	* bootstraptest/test_eval.rb, test_knownbug.rb: move solved test.
+
 Sun May 18 22:26:51 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: should normalize path

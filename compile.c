@@ -280,7 +280,7 @@ iseq_compile(VALUE self, NODE *node)
     }
 
     if (iseq->type == ISEQ_TYPE_RESCUE || iseq->type == ISEQ_TYPE_ENSURE) {
-	ADD_INSN2(ret, 0, getdynamic, INT2FIX(1), INT2FIX(0));
+	ADD_INSN2(ret, 0, getdynamic, INT2FIX(2), INT2FIX(0));
 	ADD_INSN1(ret, 0, throw, INT2FIX(0) /* continue throw */ );
     }
     else {
@@ -771,7 +771,8 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
 	id_dollar_bang = rb_intern("#$!");
     }
     iseq->local_table = (ID *)ALLOC_N(ID *, 1);
-    iseq->local_table_size = iseq->local_size = 1;
+    iseq->local_table_size = 1;
+    iseq->local_size = iseq->local_table_size + 1;
     iseq->local_table[0] = id_dollar_bang;
     return COMPILE_OK;
 }
@@ -992,12 +993,14 @@ iseq_set_local_table(rb_iseq_t *iseq, ID *tbl)
     }
 
     iseq->local_size = iseq->local_table_size = size;
-
-    if (iseq->type == ISEQ_TYPE_METHOD ||
-	iseq->type == ISEQ_TYPE_CLASS  ||
-	iseq->type == ISEQ_TYPE_TOP) {
-	iseq->local_size += 1 /* svar */;
-    }
+    iseq->local_size += 1;
+    /*
+      if (lfp == dfp ) { // top, class, method
+	  dfp[-1]: svar
+      else {             // block
+          dfp[-1]: cref
+      }
+     */
 
     debugs("iseq_set_local_table: %d, %d\n", iseq->local_size, iseq->local_table_size);
     return COMPILE_OK;
@@ -3264,8 +3267,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  case NODE_ARRAY:
 		    while (narg) {
 			COMPILE(ret, "rescue arg", narg->nd_head);
-			ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
-				  INT2FIX(0));
+			ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
 			ADD_SEND(ret, nd_line(node), ID2SYM(idEqq), INT2FIX(1));
 			ADD_INSNL(ret, nd_line(node), branchif, label_hit);
 			narg = narg->nd_next;
@@ -3274,8 +3276,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  case NODE_SPLAT:
 		  case NODE_ARGSCAT:
 		  case NODE_ARGSPUSH:
-		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
-			      INT2FIX(0));
+		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
 		    COMPILE(ret, "rescue/cond splat", narg);
 		    ADD_INSN1(ret, nd_line(node), checkincludearray, Qtrue);
 		    ADD_INSN(ret, nd_line(node), swap);
@@ -3290,8 +3291,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    else {
 		ADD_INSN1(ret, nd_line(node), putobject,
 			  rb_eStandardError);
-		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
-			  INT2FIX(0));
+		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
 		ADD_SEND(ret, nd_line(node), ID2SYM(idEqq), INT2FIX(1));
 		ADD_INSNL(ret, nd_line(node), branchif, label_hit);
 	    }
@@ -4012,8 +4012,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    if (idx < 0) {
 		rb_bug("unknown dvar (%s)", rb_id2name(node->nd_vid));
 	    }
-	    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(ls - idx),
-		      INT2FIX(lv));
+	    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(ls - idx), INT2FIX(lv));
 	}
 	break;
       }
@@ -4485,8 +4484,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_ERRINFO:{
 	if (!poped) {
 	    if (iseq->type == ISEQ_TYPE_RESCUE) {
-		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
-			  INT2FIX(0));
+		ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(0));
 	    }
 	    else {
 		rb_iseq_t *ip = iseq;
@@ -4499,8 +4497,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    level++;
 		}
 		if (ip) {
-		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(1),
-			      INT2FIX(level));
+		    ADD_INSN2(ret, nd_line(node), getdynamic, INT2FIX(2), INT2FIX(level));
 		}
 		else {
 		    ADD_INSN(ret, nd_line(node), putnil);

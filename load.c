@@ -650,7 +650,7 @@ rb_mod_autoload_p(VALUE mod, VALUE sym)
 static VALUE
 rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 {
-    VALUE klass = ruby_cbase();
+    VALUE klass = rb_vm_cbase();
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "Can not set autoload on singleton class");
     }
@@ -664,8 +664,8 @@ rb_f_autoload(VALUE obj, VALUE sym, VALUE file)
 static VALUE
 rb_f_autoload_p(VALUE obj, VALUE sym)
 {
-    /* use ruby_cbase() as same as rb_f_autoload. */
-    VALUE klass = ruby_cbase();
+    /* use rb_vm_cbase() as same as rb_f_autoload. */
+    VALUE klass = rb_vm_cbase();
     if (NIL_P(klass)) {
 	return Qnil;
     }

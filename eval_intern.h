@@ -225,10 +225,11 @@ NORETURN(void rb_print_undef(VALUE, ID, int));
 NORETURN(void vm_localjump_error(const char *, VALUE, int));
 NORETURN(void vm_jump_tag_but_local_jump(int, VALUE));
 
-NODE *vm_get_cref(rb_thread_t *th, rb_iseq_t *iseq, rb_control_frame_t *cfp);
 NODE *vm_cref_push(rb_thread_t *th, VALUE, int);
 NODE *vm_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
 VALUE vm_make_jump_tag_but_local_jump(int state, VALUE val);
+
+NODE *ruby_cref(void);
 
 static rb_control_frame_t *
 vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
@@ -242,22 +243,12 @@ vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
     return 0;
 }
 
-static inline NODE *
-ruby_cref()
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-    return vm_get_cref(th, cfp->iseq, cfp);
-}
-
-VALUE vm_get_cbase(rb_thread_t *th);
 VALUE rb_obj_is_proc(VALUE);
 void rb_vm_check_redefinition_opt_method(NODE *node);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);
-void rb_vm_set_eval_stack(rb_thread_t *, VALUE iseq);
+void rb_vm_set_eval_stack(rb_thread_t *, VALUE iseq, NODE *cref);
 VALUE rb_vm_top_self();
-
-#define ruby_cbase() vm_get_cbase(GET_THREAD())
+VALUE rb_vm_cbase(void);
 
 #endif /* RUBY_EVAL_INTERN_H */

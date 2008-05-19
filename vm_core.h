@@ -497,8 +497,6 @@ typedef struct {
     int safe_level;
     int is_from_method;
     int is_lambda;
-
-    NODE *special_cref_stack;
 } rb_proc_t;
 
 #define GetEnvPtr(obj, ptr) \
@@ -517,7 +515,6 @@ typedef struct {
 
 typedef struct {
     VALUE env;
-    NODE *cref_stack;
 } rb_binding_t;
 
 
@@ -614,6 +611,7 @@ VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE vm_backtrace(rb_thread_t *, int);
 
 VALUE vm_yield(rb_thread_t *th, int argc, VALUE *argv);
+VALUE vm_yield_with_cref(rb_thread_t *th, int argc, VALUE *argv, NODE *cref);
 VALUE vm_call0(rb_thread_t *th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	       int argc, const VALUE *argv, NODE *body, int nosuper);
 

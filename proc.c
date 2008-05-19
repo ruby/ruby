@@ -50,7 +50,6 @@ proc_mark(void *ptr)
 	proc = ptr;
 	RUBY_MARK_UNLESS_NULL(proc->envval);
 	RUBY_MARK_UNLESS_NULL(proc->blockprocval);
-	RUBY_MARK_UNLESS_NULL((VALUE)proc->special_cref_stack);
 	RUBY_MARK_UNLESS_NULL(proc->block.proc);
 	RUBY_MARK_UNLESS_NULL(proc->block.self);
 	if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
@@ -94,7 +93,6 @@ proc_dup(VALUE self)
     dst->block.proc = procval;
     dst->envval = src->envval;
     dst->safe_level = dst->safe_level;
-    dst->special_cref_stack = src->special_cref_stack;
     dst->is_lambda = src->is_lambda;
 
     return procval;
@@ -241,7 +239,6 @@ binding_mark(void *ptr)
     if (ptr) {
 	bind = ptr;
 	RUBY_MARK_UNLESS_NULL(bind->env);
-	RUBY_MARK_UNLESS_NULL((VALUE)bind->cref_stack);
     }
     RUBY_MARK_LEAVE("binding");
 }
@@ -264,7 +261,6 @@ binding_dup(VALUE self)
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
-    dst->cref_stack = src->cref_stack;
     return bindval;
 }
 
@@ -286,7 +282,6 @@ rb_binding_new(void)
 
     GetBindingPtr(bindval, bind);
     bind->env = vm_make_env_object(th, cfp);
-    bind->cref_stack = ruby_cref();
     return bindval;
 }
 
@@ -1587,7 +1582,6 @@ proc_binding(VALUE self)
     }
 
     bind->env = proc->envval;
-    bind->cref_stack = proc->special_cref_stack;
     return bindval;
 }
 
