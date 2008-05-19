@@ -1,3 +1,9 @@
+Mon May 19 13:29:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_f_system): set last_status when status == -1 because
+	  there is no path to set it on win32. this patch is derived from
+	  [ruby-core:16787], submitted by Luis Lavena <luislavena at gmail.com>
+
 Mon May 19 13:01:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk ({MSPEC,RUBYSPEC}_GIT_URL): moved from Makefine.in.
