@@ -21,9 +21,10 @@
 #endif
 
 static inline rb_control_frame_t *
-vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE type,
-	      VALUE self, VALUE specval, VALUE *pc,
-	      VALUE *sp, VALUE *lfp, int local_size)
+vm_push_frame(rb_thread_t * const th, const rb_iseq_t * const iseq,
+	      const VALUE type, const VALUE self, const VALUE specval,
+	      const VALUE * const pc, VALUE *sp, VALUE *lfp,
+	      int const local_size)
 {
     VALUE *dfp;
     rb_control_frame_t *cfp;
@@ -48,14 +49,14 @@ vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE type,
     /* setup vm control frame stack */
 
     cfp = th->cfp = th->cfp - 1;
-    cfp->pc = pc;
+    cfp->pc = (VALUE *)pc;
     cfp->sp = sp + 1;
     cfp->bp = sp + 1;
-    cfp->iseq = iseq;
+    cfp->iseq = (rb_iseq_t *) iseq;
     cfp->flag = type;
     cfp->self = self;
     cfp->lfp = lfp;
-    cfp->dfp = dfp;
+    cfp->dfp = (VALUE *)dfp;
     cfp->proc = 0;
 
 #define COLLECT_PROFILE 0
@@ -72,7 +73,7 @@ vm_push_frame(rb_thread_t *th, rb_iseq_t *iseq, VALUE type,
 }
 
 static inline void
-vm_pop_frame(rb_thread_t *th)
+vm_pop_frame(rb_thread_t * const th)
 {
 #if COLLECT_PROFILE
     rb_control_frame_t *cfp = th->cfp;
@@ -990,37 +991,32 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 	    klass = cref->nd_clss;
 	    cref = cref->nd_next;
 
-	    if (klass == 0) {
-		continue;
-	    }
-	    if (NIL_P(klass)) {
-		if (is_defined) {
-		    /* TODO: check */
-		    return 1;
-		}
-		else {
-		    klass = CLASS_OF(th->cfp->self);
-		    return rb_const_get(klass, id);
-		}
-	    }
-	  search_continue:
-	    if (RCLASS_IV_TBL(klass) &&
-		st_lookup(RCLASS_IV_TBL(klass), id, &val)) {
-		if (val == Qundef) {
-		    rb_autoload_load(klass, id);
-		    goto search_continue;
-		}
-		else {
-		    if (is_defined) {
-			return 1;
+	    if (!NIL_P(klass)) {
+	      search_continue:
+		if (RCLASS_IV_TBL(klass) &&
+		    st_lookup(RCLASS_IV_TBL(klass), id, &val)) {
+		    if (val == Qundef) {
+			rb_autoload_load(klass, id);
+			goto search_continue;
 		    }
 		    else {
-			return val;
+			if (is_defined) {
+			    return 1;
+			}
+			else {
+			    return val;
+			}
 		    }
 		}
 	    }
 	}
+
+	/* search self */
 	klass = root_cref->nd_clss;
+	if (NIL_P(klass)) {
+	    klass = CLASS_OF(th->cfp->self);
+	}
+
 	if (is_defined) {
 	    return rb_const_defined(klass, id);
 	}
@@ -1042,14 +1038,18 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 static inline VALUE
 vm_get_cvar_base(NODE *cref)
 {
-    VALUE klass = Qnil;
+    VALUE klass;
 
-    if (cref) {
-	klass = cref->nd_clss;
+    while (cref && cref->nd_next && (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON))) {
+	cref = cref->nd_next;
+
 	if (!cref->nd_next) {
 	    rb_warn("class variable access from toplevel");
 	}
     }
+
+    klass = cref->nd_clss;
+
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class variables available");
     }
@@ -1063,6 +1063,10 @@ vm_define_method(rb_thread_t *th, VALUE obj,
     NODE *newbody;
     VALUE klass = cref->nd_clss;
     int noex = cref->nd_visi;
+
+    if (NIL_P(klass)) {
+	rb_raise(rb_eTypeError, "no class/module to add method");
+    }
 
     if (is_singleton) {
 	if (FIXNUM_P(obj) || SYMBOL_P(obj)) {

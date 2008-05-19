@@ -236,3 +236,49 @@ assert_equal 'ok', %q{
     :ok
   end
 }
+
+assert_equal 'ok', %q{
+  begin
+    0.instance_eval { def m() :m end }
+    1.m
+    :ng
+  rescue Exception
+    :ok
+  end
+}, '[ruby-dev:34579]'
+
+assert_equal 'ok', %q{
+  begin
+    12.instance_eval { @@a }
+  rescue NameError
+    :ok
+  end
+}, '[ruby-core:16794]'
+
+assert_equal 'ok', %q{
+  begin
+    12.instance_exec { @@a }
+  rescue NameError
+    :ok
+  end
+}, '[ruby-core:16794]'
+
+assert_equal 'ok', %q{
+  begin
+    nil.instance_eval {
+      def a() :a end
+    }
+  rescue => TypeError
+    :ok
+  end
+}, '[ruby-core:16796]'
+
+assert_equal 'ok', %q{
+  begin
+    nil.instance_exec {
+      def a() :a end
+    }
+  rescue => TypeError
+    :ok
+  end
+}, '[ruby-core:16796]'

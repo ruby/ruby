@@ -91,16 +91,6 @@ assert_equal 'ok', %q{
   }.call
 }, '[ruby-dev:34646]'
 
-assert_equal 'ok', %q{
-  begin
-    0.instance_eval { def m() :m end }
-    1.m
-    :ng
-  rescue Exception
-    :ok
-  end
-}, '[ruby-dev:34579]'
-
 assert_normal_exit %q{
   eval("", method(:proc).call {}.binding)
 }

@@ -139,7 +139,7 @@ class TestEval < Test::Unit::TestCase
 
     assert_equal 11,    o.instance_eval("11")
     assert_equal 12,    o.instance_eval("@ivar")
-    assert_raise(NameError) {o.instance_eval("@@cvar")}
+    assert_equal 13,    o.instance_eval("@@cvar")
     assert_equal 14,    o.instance_eval("$gvar__eval")
     assert_equal 15,    o.instance_eval("Const")
     assert_equal 16,    o.instance_eval("7 + 9")
@@ -149,7 +149,7 @@ class TestEval < Test::Unit::TestCase
 
     1.times {
       assert_equal 12,  o.instance_eval("@ivar")
-      assert_raise(NameError) {o.instance_eval("@@cvar")}
+      assert_equal 13,  o.instance_eval("@@cvar")
       assert_equal 14,  o.instance_eval("$gvar__eval")
       assert_equal 15,  o.instance_eval("Const")
     }
@@ -169,7 +169,7 @@ class TestEval < Test::Unit::TestCase
 
     assert_equal 11,    o.instance_eval { 11 }
     assert_equal 12,    o.instance_eval { @ivar }
-    assert_raise(NameError) {o.instance_eval{ @@cvar }}
+    assert_equal 13,    o.instance_eval { @@cvar }
     assert_equal 14,    o.instance_eval { $gvar__eval }
     assert_equal 15,    o.instance_eval { Const }
     assert_equal 16,    o.instance_eval { 7 + 9 }
@@ -179,7 +179,7 @@ class TestEval < Test::Unit::TestCase
 
     1.times {
       assert_equal 12,  o.instance_eval { @ivar }
-      assert_raise(NameError) {o.instance_eval{ @@cvar }}
+      assert_equal 13,  o.instance_eval { @@cvar }
       assert_equal 14,  o.instance_eval { $gvar__eval }
       assert_equal 15,  o.instance_eval { Const }
     }
@@ -187,8 +187,10 @@ class TestEval < Test::Unit::TestCase
 
   def test_instance_eval_cvar
     [Object.new, [], 7, :sym, true, false, nil].each do |obj|
-      assert_raise(NameError){obj.instance_eval("@@cvar")}
-      assert_raise(NameError){obj.instance_eval{@@cvar}}
+      assert_equal(13, obj.instance_eval("@@cvar"))
+      assert_equal(13, obj.instance_eval{@@cvar})
+      # assert_raise(NameError){obj.instance_eval("@@cvar")}
+      # assert_raise(NameError){obj.instance_eval{@@cvar}}
     end
   end
 
@@ -339,9 +341,10 @@ class TestEval < Test::Unit::TestCase
   end
 
   def test_cvar_scope_with_instance_eval
+    # TODO: check
     Fixnum.class_eval "@@test_cvar_scope_with_instance_eval = 1" # depends on [ruby-dev:24229]
     @@test_cvar_scope_with_instance_eval = 4
-    assert_equal(1, 1.instance_eval("@@test_cvar_scope_with_instance_eval"), "[ruby-dev:24223]")
+    assert_equal(4, 1.instance_eval("@@test_cvar_scope_with_instance_eval"), "[ruby-dev:24223]")
     Fixnum.__send__(:remove_class_variable, :@@test_cvar_scope_with_instance_eval)
   end
 
