@@ -46,7 +46,7 @@ RUBY_EXTERN const char ruby_copyright[];
 
 # define RUBY_DESCRIPTION	    \
     "ruby "RUBY_VERSION		    \
-    "2008-05-19"	    \
+    " ("RUBY_RELEASE_DATE" "	    \
     RUBY_RELEASE_STR" "		    \
     STRINGIZE(RUBY_RELEASE_NUM)") " \
     "["RUBY_PLATFORM"]"

@@ -1,3 +1,7 @@
+Mon May 19 14:32:03 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* version.h: fix strange change by version.h update tool.
+
 Mon May 19 14:18:13 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_knownbug.rb: move solved tests.
