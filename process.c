@@ -2674,6 +2674,10 @@ rb_spawn_internal(int argc, VALUE *argv, int default_close_others)
     else {
 	status = proc_spawn_n(argc, argv, prog);
     }
+#  if defined(_WIN32)
+    if (status == -1)
+	rb_last_status_set(0x7f << 8, 0);
+#  endif
 # else
     if (argc) prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
