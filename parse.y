@@ -7752,7 +7752,9 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
     else if (is_class_id(id)) {
 	return NEW_CVASGN(id, val);
     }
-    compile_error(PARSER_ARG "identifier %s is not valid to set", rb_id2name(id));
+    else {
+	compile_error(PARSER_ARG "identifier %s is not valid to set", rb_id2name(id));
+    }
     return 0;
 }
 
