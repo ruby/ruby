@@ -1,3 +1,8 @@
+Tue May 20 01:43:44 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knownbug.rb: fix a test.
+	  "block_given?" returns true if "yield" can be used.
+
 Tue May 20 01:07:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (assignable_gen): when "self = 1" was evalueted, unnecessary

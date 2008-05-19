@@ -7,9 +7,9 @@ assert_equal 'ok', %q{
   class C
     define_method(:foo) {
       if block_given?
-        :ok
-      else
         :ng
+      else
+        :ok
       end
     }
   end
