@@ -536,7 +536,7 @@ rb_call_super(int argc, const VALUE *argv)
 
 /* C -> Ruby: block */
 
-static VALUE
+static inline VALUE
 invoke_block_from_c(rb_thread_t *th, rb_block_t *block, VALUE self,
 		    int argc, VALUE *argv, rb_block_t *blockptr, NODE *cref)
 {
@@ -563,7 +563,10 @@ invoke_block_from_c(rb_thread_t *th, rb_block_t *block, VALUE self,
 		      self, GC_GUARDED_PTR(block->dfp),
 		      iseq->iseq_encoded + opt_pc, cfp->sp + arg_size, block->lfp,
 		      iseq->local_size - arg_size);
-	th->cfp->dfp[-1] = (VALUE)cref;
+
+	if (cref) {
+	    th->cfp->dfp[-1] = (VALUE)cref;
+	}
 
 	val = vm_eval_body(th);
     }
@@ -573,22 +576,30 @@ invoke_block_from_c(rb_thread_t *th, rb_block_t *block, VALUE self,
     return val;
 }
 
-VALUE
-vm_yield_with_cref(rb_thread_t *th, int argc, VALUE *argv, NODE *cref)
+static inline rb_block_t *
+check_block(rb_thread_t *th)
 {
-    rb_block_t *block = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
+    rb_block_t *blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
-    if (block == 0) {
+    if (blockptr == 0) {
 	vm_localjump_error("no block given", Qnil, 0);
     }
 
-    return invoke_block_from_c(th, block, block->self, argc, argv, 0, cref);
+    return blockptr;
+}
+
+VALUE
+vm_yield_with_cref(rb_thread_t *th, int argc, VALUE *argv, NODE *cref)
+{
+    rb_block_t *blockptr = check_block(th);
+    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, cref);
 }
 
 VALUE
 vm_yield(rb_thread_t *th, int argc, VALUE *argv)
 {
-    return vm_yield_with_cref(th, argc, argv, (NODE *)Qnil);
+    rb_block_t *blockptr = check_block(th);
+    return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, 0);
 }
 
 VALUE
@@ -603,7 +614,7 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
 	th->safe_level = proc->safe_level;
-	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, (NODE *)Qnil);
+	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0);
     }
     TH_POP_TAG();
 
