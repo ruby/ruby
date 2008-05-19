@@ -1,3 +1,9 @@
+Mon May 19 18:22:35 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/ossl_pkcs5.c (ossl_pkcs5_pbkdf2_hmac): Fix the type
+	  of md; pointed out by Takahiro Kambe <taca at back-street.net>
+	  in [ruby-dev:34748].
+
 Mon May 19 17:23:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regparse.c (PINC): use optimized enclen() instead of
