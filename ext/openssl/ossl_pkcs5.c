@@ -27,7 +27,7 @@ ossl_pkcs5_pbkdf2_hmac(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE key
 {
 #ifdef HAVE_PKCS5_PBKDF2_HMAC
     VALUE str;
-    const EVP_MD md;
+    const EVP_MD *md;
     int len = NUM2INT(keylen);
 
     StringValue(pass);
