@@ -100,3 +100,7 @@ assert_equal 'ok', %q{
     :ok
   end
 }, '[ruby-dev:34579]'
+
+assert_normal_exit %q{
+  eval("", method(:proc).call {}.binding)
+}
