@@ -471,6 +471,38 @@ distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
+update-rubyspec:
+	@echo SPEC_EXISTS=0 > $@.mk
+	@if exist $(srcdir:/=\)\rubyspec\nul echo SPEC_EXISTS=1 >> $@.mk
+	@type >> $@.mk &&|
+$()update-rubyspec:
+$()	@del $@.mk
+$()!if $$(SPEC_EXISTS)
+$()	cd $(srcdir:/=\)\rubyspec\mspec
+$()	git pull
+$()	cd ..\spec\rubyspec
+$()	git pull
+$()!else
+$()	git clone $(MSPEC_GIT_URL) $(srcdir)/rubyspec/mspec
+$()	git clone $(RUBYSPEC_GIT_URL) $(srcdir)/rubyspec/spec/rubyspec
+$()!endif
+|
+	@$(MAKE) -$(MAKEFLAGS)$(MFLAGS) -f $@.mk
+
+test-rubyspec:
+	@echo SPEC_EXISTS=0 > $@.mk
+	@if exist $(srcdir:/=\)\rubyspec\nul echo SPEC_EXISTS=1 >> $@.mk
+	@type >> $@.mk &&|
+$()test-rubyspec:
+$()!if $$(SPEC_EXISTS)
+$()	$(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec -r$(srcdir)/ext/purelib.rb $(srcdir)/rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)
+$()!else
+$()	@echo No rubyspec here.  put rubyspec to srcdir first.
+$()	@cd $(srcdir:/=\)\rubyspec
+$()!endif
+|
+	@$(MAKE) -$(MAKEFLAGS) -f $@.mk
+
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -o$@ -c ext/extinit.c
 

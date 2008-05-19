@@ -233,14 +233,6 @@ ASMEXT = asm
 
 INSTALLED_LIST= .installed.list
 
-!if [find "revision.h" $(srcdir:/=\)\version.h > nul 2> nul] == 0
-REVISION_H    = revision.h
-REVISION_UP   = revision-up
-!else
-REVISION_H    = version.h
-REVISION_UP   =
-!endif
-
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
@@ -639,10 +631,24 @@ class File
 end
 <<KEEP
 
-test-rubyspec:
-	@if not exist $(srcdir:/=\)\rubyspec\nul echo No rubyspec here.  put rubyspec to srcdir first. && exit 1
-	$(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec -r$(srcdir)/ext/purelib.rb $(srcdir)/rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)
+update-rubyspec:
+!if exist($(srcdir:/=\)\rubyspec)
+	cd $(srcdir:/=\)\rubyspec\mspec
+	git pull
+	cd ..\spec\rubyspec
+	git pull
+!else
+	git clone $(MSPEC_GIT_URL) $(srcdir)/rubyspec/mspec
+	git clone $(RUBYSPEC_GIT_URL) $(srcdir)/rubyspec/spec/rubyspec
+!endif
 
+test-rubyspec:
+!if exist($(srcdir:/=\)\rubyspec)
+	$(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec -r$(srcdir)/ext/purelib.rb $(srcdir)/rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)
+!else
+	@echo No rubyspec here.  put rubyspec to srcdir first.
+	@cd $(srcdir:/=\)\rubyspec
+!endif
 
 {$(srcdir)/missing}.c.obj:
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -c -Tc$(<:\=/)

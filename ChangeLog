@@ -1,3 +1,9 @@
+Mon May 19 13:01:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk ({MSPEC,RUBYSPEC}_GIT_URL): moved from Makefine.in.
+
+	* {win32,bcc32}/Makefile.sub (update-rubyspec): added.
+
 Mon May 19 11:53:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/openssl/openssl_missing.c (HMAC_CTX_copy): adopted

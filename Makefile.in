@@ -182,9 +182,6 @@ distclean-local::
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ -c ext/extinit.c
 
-MSPEC_GIT_URL=git://github.com/brixen/mspec.git
-RUBYSPEC_GIT_URL=git://github.com/brixen/rubyspec.git
-
 update-rubyspec: 
 	if [ -d $(srcdir)/rubyspec ]; then \
 	  cd $(srcdir)/rubyspec/mspec; \
