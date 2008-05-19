@@ -881,9 +881,6 @@ match_init_copy(VALUE obj, VALUE orig)
     RMATCH(obj)->regexp = RMATCH(orig)->regexp;
 
     rm = RMATCH(obj)->rmatch;
-    onig_region_free(&rm->regs, 0);
-    rm->regs.allocated = 0;
-
     onig_region_copy(&rm->regs, RMATCH_REGS(orig));
 
     if (!RMATCH(orig)->rmatch->char_offset_updated) {
@@ -1265,7 +1262,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 {
     int result;
     VALUE match;
-    struct re_registers regs;
+    struct re_registers *regs, regi;
     char *range = RSTRING_PTR(str);
     regex_t *reg0 = RREGEXP(re)->ptr, *reg;
     int busy = FL_TEST(re, REG_BUSY);
@@ -1277,17 +1274,29 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 
     reg = rb_reg_prepare_re(re, str);
 
+    match = rb_backref_get();
+    if (!NIL_P(match)) {
+	if (FL_TEST(match, MATCH_BUSY)) {
+	    match = Qnil;
+	}
+	else {
+	    regs = RMATCH_REGS(match);
+	}
+    }
+    if (NIL_P(match)) {
+	regs = &regi;
+	MEMZERO(regs, struct re_registers, 1);
+    }
     FL_SET(re, REG_BUSY);
     if (!reverse) {
 	range += RSTRING_LEN(str);
     }
-    MEMZERO(&regs, struct re_registers, 1);
     result = onig_search(reg,
 			 (UChar*)(RSTRING_PTR(str)),
 			 ((UChar*)(RSTRING_PTR(str)) + RSTRING_LEN(str)),
 			 ((UChar*)(RSTRING_PTR(str)) + pos),
 			 ((UChar*)range),
-			 &regs, ONIG_OPTION_NONE);
+			 regs, ONIG_OPTION_NONE);
 
     if (RREGEXP(re)->ptr != reg) {
 	if (busy) {
@@ -1300,7 +1309,8 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
     }
     if (!busy) FL_UNSET(re, REG_BUSY);
     if (result < 0) {
-	onig_region_free(&regs, 0);
+	if (regs == &regi)
+	    onig_region_free(regs, 0);
 	if (result == ONIG_MISMATCH) {
 	    rb_backref_set(Qnil);
 	    return result;
@@ -1312,9 +1322,10 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	}
     }
 
-    match = rb_backref_get();
-    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
+    if (NIL_P(match)) {
 	match = match_alloc(rb_cMatch);
+	onig_region_copy(RMATCH_REGS(match), regs);
+	onig_region_free(regs, 0);
     }
     else {
 	if (rb_safe_level() >= 3)
@@ -1323,8 +1334,6 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	    FL_UNSET(match, FL_TAINT);
     }
 
-    onig_region_copy(RMATCH_REGS(match), &regs);
-    onig_region_free(&regs, 0);
     RMATCH(match)->str = rb_str_new4(str);
     RMATCH(match)->regexp = re;
     RMATCH(match)->rmatch->char_offset_updated = 0;
@@ -3088,12 +3097,14 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     int no, clen;
     rb_encoding *str_enc = rb_enc_get(str);
     rb_encoding *src_enc = rb_enc_get(src);
+    int acompat = rb_enc_asciicompat(str_enc);
+#define ASCGET(s,e,cl) (acompat ? (*cl=1,s[0]) : rb_enc_ascget(s, e, cl, str_enc))
 
     p = s = RSTRING_PTR(str);
     e = s + RSTRING_LEN(str);
 
     while (s < e) {
-        int c = rb_enc_ascget(s, e, &clen, str_enc);
+        int c = ASCGET(s, e, &clen);
 	char *ss;
 
 	if (c == -1) {
@@ -3110,7 +3121,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	}
         rb_enc_str_buf_cat(val, p, ss-p, str_enc);
 
-        c = rb_enc_ascget(s, e, &clen, str_enc);
+        c = ASCGET(s, e, &clen);
         if (c == -1) {
             s += mbclen(s, e, str_enc);
 	    rb_enc_str_buf_cat(val, ss, s-ss, str_enc);
@@ -3132,12 +3143,12 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
 	    break;
 
           case 'k':
-            if (s < e && rb_enc_ascget(s, e, &clen, str_enc) == '<') {
+            if (s < e && ASCGET(s, e, &clen) == '<') {
                 char *name, *name_end;
                
                 name_end = name = s + clen;
                 while (name_end < e) {
-                    c = rb_enc_ascget(name_end, e, &clen, str_enc);
+                    c = ASCGET(name_end, e, &clen);
                     if (c == '>') break;
                     name_end += c == -1 ? mbclen(name_end, e, str_enc) : clen;
                 }

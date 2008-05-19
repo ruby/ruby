@@ -256,7 +256,7 @@ rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc
 static inline void
 str_enc_copy(VALUE str1, VALUE str2)
 {
-    rb_enc_internal_set_index(str1, ENCODING_GET(str2));
+    rb_enc_set_index(str1, ENCODING_GET(str2));
 }
 
 static void

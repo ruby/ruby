@@ -1,3 +1,36 @@
+Mon May 19 17:23:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regparse.c (PINC): use optimized enclen() instead of
+	  ONIGENC_MBC_ENC_LEN().
+
+	* regparse.c (PFETCH): ditto.
+
+	* regparse.c (PFETCH): small optimization.
+
+	* regexec.c (slow_search): single byte encoding optimization.
+
+	* regenc.h (enclen): avoid calling function when encoding's
+	  min_len == max_len.
+
+	* re.c (rb_reg_regsub): rb_enc_ascget() optimization for single
+	  byte encoding.
+
+	* re.c (rb_reg_search): avoid allocating new re_registers if we
+	  already have MatchData.
+
+	* re.c (match_init_copy): avoid unnecessary onig_region_free()
+	  before onig_region_copy. 
+
+	* encoding.c (rb_enc_get_index): remove implicit enc_capable check
+	  each time.
+
+	* encoding.c (rb_enc_set_index): ditto.
+
+	* encoding.c (enc_compatible_p): small refactoring.
+
+	* include/ruby/encoding.h (rb_enc_dummy_p): inline
+	  rb_enc_dummy_p() and export related code.
+
 Mon May 19 14:32:03 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* version.h: fix strange change by version.h update tool.

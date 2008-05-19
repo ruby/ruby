@@ -2758,16 +2758,25 @@ slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
 
   s = (UChar* )text;
 
+  if (enc->max_enc_len == enc->min_enc_len) {
+    int n = enc->max_enc_len;
+
+    while (s < end) {
+      if (*s == *target) {
+	p = s + 1;
+	t = target + 1;
+	if (memcmp(t, p, target_end - t) == 0)
+	  return s;
+      }
+      s += n;
+    }
+    return (UChar*)NULL;
+  }
   while (s < end) {
     if (*s == *target) {
       p = s + 1;
       t = target + 1;
-      while (t < target_end) {
-	if (*t != *p++)
-	  break;
-	t++;
-      }
-      if (t == target_end)
+      if (memcmp(t, p, target_end - t) == 0)
 	return s;
     }
     s += enclen(enc, s, end);

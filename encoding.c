@@ -18,7 +18,7 @@
 #endif
 
 static ID id_encoding, id_base_encoding;
-static VALUE rb_cEncoding;
+VALUE rb_cEncoding;
 
 struct rb_encoding_entry {
     const char *name;
@@ -37,14 +37,6 @@ void rb_enc_init(void);
 #define ENCODING_COUNT ENCINDEX_BUILTIN_MAX
 
 #define enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
-
-#define ENC_UNINITIALIZED (&rb_cEncoding)
-#define enc_initialized_p(enc) ((enc)->auxiliary_data != &rb_cEncoding)
-#define ENC_FROM_ENCODING(enc) ((VALUE)(enc)->auxiliary_data)
-
-#define ENC_DUMMY_FLAG FL_USER2
-#define ENC_DUMMY_P(enc) (RBASIC(enc)->flags & ENC_DUMMY_FLAG)
-#define ENC_SET_DUMMY(enc) (RBASIC(enc)->flags |= ENC_DUMMY_FLAG)
 
 static int load_encoding(const char *name);
 static VALUE enc_base_encoding(VALUE self);
@@ -318,15 +310,6 @@ rb_encdb_dummy(const char *name)
     return index;
 }
 
-int
-rb_enc_dummy_p(rb_encoding *enc)
-{
-    VALUE encoding;
-    if (!enc_initialized_p(enc)) return Qfalse;
-    encoding = rb_enc_from_encoding(enc);
-    return ENC_DUMMY_P(encoding);
-}
-
 /*
  * call-seq:
  *   enc.dummy? => true or false
@@ -343,7 +326,7 @@ rb_enc_dummy_p(rb_encoding *enc)
 static VALUE
 enc_dummy_p(VALUE enc)
 {
-    return rb_enc_dummy_p(rb_to_encoding(enc)) ? Qtrue : Qfalse;
+    return ENC_DUMMY_P(enc) ? Qtrue : Qfalse;
 }
 
 static int
@@ -555,7 +538,7 @@ rb_id_encoding(void)
 }
 
 int
-rb_enc_internal_get_index(VALUE obj)
+rb_enc_get_index(VALUE obj)
 {
     int i;
 
@@ -570,7 +553,7 @@ rb_enc_internal_get_index(VALUE obj)
 }
 
 void
-rb_enc_internal_set_index(VALUE obj, int idx)
+rb_enc_set_index(VALUE obj, int idx)
 {
     if (idx < ENCODING_INLINE_MAX) {
 	ENCODING_SET_INLINED(obj, idx);
@@ -584,27 +567,20 @@ rb_enc_internal_set_index(VALUE obj, int idx)
 void
 rb_enc_associate_index(VALUE obj, int idx)
 {
-    enc_check_capable(obj);
-    if (rb_enc_internal_get_index(obj) == idx)
+//    enc_check_capable(obj);
+    if (rb_enc_get_index(obj) == idx)
     	return;
     if (!ENC_CODERANGE_ASCIIONLY(obj) ||
 	!rb_enc_asciicompat(rb_enc_from_index(idx))) {
 	ENC_CODERANGE_CLEAR(obj);
     }
-    rb_enc_internal_set_index(obj, idx);
+    rb_enc_set_index(obj, idx);
 }
 
 void
 rb_enc_associate(VALUE obj, rb_encoding *enc)
 {
     rb_enc_associate_index(obj, rb_enc_to_index(enc));
-}
-
-int
-rb_enc_get_index(VALUE obj)
-{
-    if (!enc_capable(obj)) return -1;
-    return rb_enc_internal_get_index(obj);
 }
 
 rb_encoding*
@@ -906,11 +882,13 @@ enc_find(VALUE klass, VALUE enc)
 static VALUE
 enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
 {
-    rb_encoding *enc = rb_enc_compatible(str1, str2);
-    VALUE encoding = Qnil;
-    if (!enc || !(encoding = rb_enc_from_encoding(enc)))
-	encoding = Qnil;
-    return encoding;
+    rb_encoding *enc;
+
+    if (!enc_capable(str1)) return Qnil;
+    if (!enc_capable(str2)) return Qnil;
+    enc = rb_enc_compatible(str1, str2);
+    if (!enc) return Qnil;
+    return rb_enc_from_encoding(enc);
 }
 
 /* :nodoc: */

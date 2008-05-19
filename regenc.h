@@ -70,7 +70,7 @@ typedef struct {
 #define ONIG_CHECK_NULL_RETURN(p)          if (ONIG_IS_NULL(p)) return NULL
 #define ONIG_CHECK_NULL_RETURN_VAL(p,val)  if (ONIG_IS_NULL(p)) return (val)
 
-#define enclen(enc,p,e)      ONIGENC_MBC_ENC_LEN(enc,p,e)
+#define enclen(enc,p,e) ((enc->max_enc_len == enc->min_enc_len) ? enc->min_enc_len : ONIGENC_MBC_ENC_LEN(enc,p,e))
 
 /* character types bit flag */
 #define BIT_CTYPE_NEWLINE  (1<< ONIGENC_CTYPE_NEWLINE)
