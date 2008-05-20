@@ -912,7 +912,13 @@ rb_ascii8bit_encoding(void)
     if (!enc_table.list) {
 	rb_enc_init();
     }
-    return enc_table.list[0].enc;
+    return enc_table.list[ENCINDEX_ASCII].enc;
+}
+
+int
+rb_ascii8bit_encindex(void)
+{
+    return ENCINDEX_ASCII;
 }
 
 rb_encoding *
@@ -946,7 +952,7 @@ rb_locale_encoding(void)
     int idx;
 
     if (NIL_P(charmap))
-        idx = rb_enc_find_index("US-ASCII");
+        return rb_usascii_encoding();
     else
         idx = rb_enc_find_index(StringValueCStr(charmap));
     if (idx < 0)

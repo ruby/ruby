@@ -1,3 +1,12 @@
+Wed May 21 04:20:20 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_ascii8bit_encoding): use ENCINDEX_ASCII.
+
+	* encoding.c, include/ruby/encoding.h (rb_ascii8bit_encindex):
+	  added.
+
+	* encoding.c (rb_locale_encoding): use rb_usascii_encoding().
+
 Wed May 21 01:45:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_file_exhaustive.rb (setup): workaround for Windows
