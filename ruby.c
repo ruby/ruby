@@ -72,6 +72,11 @@ enum disable_flag_bits {
     disable_rubyopt,
 };
 
+#define DUMP_BIT(bit) (1U << dump_##bit)
+enum dump_flag_bits {
+    dump_insns,
+};
+
 struct cmdline_options {
     int sflag, xflag;
     int do_loop, do_print;
@@ -83,6 +88,7 @@ struct cmdline_options {
     unsigned int disable;
     int verbose;
     int yydebug;
+    unsigned int dump;
     char *script;
     VALUE script_name;
     VALUE e_script;
@@ -587,6 +593,14 @@ disable_option(const char *str, int len, void *arg)
     rb_warn("unknown argument for --disable: `%.*s'", len, str);
 }
 
+static void
+dump_option(const char *str, int len, void *arg)
+{
+#define SET_WHEN_DUMP(bit) SET_WHEN(#bit, DUMP_BIT(bit), str, len)
+    SET_WHEN_DUMP(insns);
+    rb_warn("don't know how to dump `%.*s', (insns)", len, str);
+}
+
 static int
 proc_options(int argc, char **argv, struct cmdline_options *opt)
 {
@@ -874,6 +888,10 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	    }
 	    else if (strcmp("yydebug", s) == 0)
 		opt->yydebug = 1;
+	    else if (strncmp("dump", s, n = 4) == 0 && (!s[n] || s[n] == '=')) {
+		if (!(s += n + 1)[-1] && (!--argc || !(s = *++argv)) && *s != '-') break;
+		ruby_each_words(s, dump_option, &opt->dump);
+	    }
 	    else if (strcmp("help", s) == 0) {
 		usage(origarg.argv[0]);
 		rb_exit(EXIT_SUCCESS);
@@ -949,6 +967,7 @@ process_options(VALUE arg)
     char **argv = argp->argv;
     NODE *tree = 0;
     VALUE parser;
+    VALUE iseq;
     rb_encoding *enc, *lenc;
     const char *s;
     char fbuf[MAXPATHLEN];
@@ -1121,8 +1140,14 @@ process_options(VALUE arg)
 	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
     }
 
-    return rb_iseq_new(tree, rb_str_new2("<main>"),
+    iseq = rb_iseq_new(tree, rb_str_new2("<main>"),
 		       opt->script_name, Qfalse, ISEQ_TYPE_TOP);
+    if (opt->dump & DUMP_BIT(insns)) {
+	rb_io_write(rb_stdout, ruby_iseq_disasm(iseq));
+	rb_io_flush(rb_stdout);
+    }
+
+    return iseq;
 }
 
 static NODE *

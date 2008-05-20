@@ -1,3 +1,7 @@
+Tue May 20 12:13:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options, process_options): --dump option.
+
 Tue May 20 11:36:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (PRI[diouxX]VALUE): printf format for VALUE.
