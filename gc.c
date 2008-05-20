@@ -570,7 +570,7 @@ assign_heap_slot(rb_objspace_t *objspace)
 	    hi = mid;
 	}
 	else {
-	    rb_bug("same heap slot is allocated: %p at %ld", membase, mid);
+	    rb_bug("same heap slot is allocated: %p at %"PRIuVALUE, membase, (VALUE)mid);
 	}
     }
     if (hi < heaps_used) {

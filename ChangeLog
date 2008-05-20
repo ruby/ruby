@@ -1,3 +1,9 @@
+Tue May 20 11:36:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (PRI[diouxX]VALUE): printf format for VALUE.
+
+	* gc.c (assign_heap_slot): suppress a warning.
+
 Tue May 20 03:42:43 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* eval.c, vm_insnhelper.c: fix cref in instance_eval
