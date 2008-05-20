@@ -1306,9 +1306,19 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
+  LONGP = [127, 63, 31, 15, 7].map {|x| 2**x-1 }.find do |x|
+    begin
+      [].first(x)
+    rescue ArgumentError
+      true
+    rescue RangeError
+      false
+    end
+  end
+
   def test_ary_new
     assert_raise(ArgumentError) { [].to_enum.first(-1) }
-    assert_raise(ArgumentError) { [].to_enum.first(2**31-1) }
+    assert_raise(ArgumentError) { [].to_enum.first(LONGP) }
   end
 
   def test_try_convert
@@ -1321,7 +1331,7 @@ class TestArray < Test::Unit::TestCase
     assert_nothing_raised { Array.new { } }
     assert_equal([1, 2, 3], Array.new([1, 2, 3]))
     assert_raise(ArgumentError) { Array.new(-1, 1) }
-    assert_raise(ArgumentError) { Array.new(2**31-1, 1) }
+    assert_raise(ArgumentError) { Array.new(LONGP, 1) }
     assert_equal([1, 1, 1], Array.new(3, 1))
     assert_equal([1, 1, 1], Array.new(3) { 1 })
     assert_equal([1, 1, 1], Array.new(3, 1) { 1 })
@@ -1329,8 +1339,8 @@ class TestArray < Test::Unit::TestCase
 
   def test_aset
     assert_raise(IndexError) { [0][-2] = 1 }
-    assert_raise(ArgumentError) { [0][2**31-1] = 2 }
-    assert_raise(ArgumentError) { [0][2**30-1] = 3 }
+    assert_raise(ArgumentError) { [0][LONGP] = 2 }
+    assert_raise(ArgumentError) { [0][(LONGP + 1) / 2 - 1] = 2 }
     a = [0]
     a[2] = 4
     assert_equal([0, nil, 4], a)
@@ -1466,11 +1476,11 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_fill2
-    assert_raise(ArgumentError) { [].fill(0, 1, 2**31-1) }
+    assert_raise(ArgumentError) { [].fill(0, 1, LONGP) }
   end
 
   def test_times
-    assert_raise(ArgumentError) { [0, 0, 0, 0] * (2**29) }
+    assert_raise(ArgumentError) { [0, 0, 0, 0] * ((LONGP + 1) / 4) }
   end
 
   def test_equal

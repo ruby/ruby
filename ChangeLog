@@ -1,3 +1,7 @@
+Tue May 20 23:26:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_array.rb: fix tests for 64bit CPU.
+
 Tue May 20 20:59:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (rb_nkf_convert) (nkf_enc_without_bom):
