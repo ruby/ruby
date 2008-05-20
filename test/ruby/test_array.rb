@@ -74,7 +74,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_split_0
-    x = "The Boassert of Mormon"
+    x = "The Book of Mormon"
     assert_equal(x.reverse, x.split(//).reverse!.join)
     assert_equal(x.reverse, x.reverse!)
     assert_equal("g:n:i:r:t:s: :e:t:y:b: :1", "1 byte string".split(//).reverse.join(":"))

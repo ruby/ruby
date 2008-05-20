@@ -10,6 +10,22 @@ Mon May 19 23:32:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (invoke_block_from_c): fix call flow.
 
+Tue May 20 08:38:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_enc_strlen_cr): need to set ENC_CODERANGE_7BIT if
+	  search_nonascii() fails.    [ruby-dev:34751]
+
+	* string.c (rb_str_reverse): preserve coderange info if the
+	  receiver is 7bit string.
+
+	* string.c (rb_str_reverse_bang): ditto.
+
+	* string.c (rb_str_reverse_bang): should have called
+	  single_byte_optimizable before rb_str_modify() that clears
+	  coderange info.
+
+	* string.c (tr_trans): handle single bytes more eagerly.
+
 Mon May 19 23:19:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* regexec.c (slow_search): check the case when the length is 1.

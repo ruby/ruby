@@ -726,6 +726,7 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
 	    if (ISASCII(*p)) {
 		q = search_nonascii(p, e);
 		if (!q) {
+		    if (!*cr) *cr = ENC_CODERANGE_7BIT;
 		    return c + (e - p);
 		}
 		c += q - p;
@@ -1237,7 +1238,7 @@ rb_str_substr(VALUE str, long beg, long len)
     rb_encoding *enc = STR_ENC_GET(str);
     VALUE str2;
     char *p, *s = RSTRING_PTR(str), *e = s + RSTRING_LEN(str);
-    int singlebyte = single_byte_optimizable(str);
+    int singlebyte;
 
     if (len < 0) return Qnil;
     if (!RSTRING_LEN(str)) {
@@ -1263,6 +1264,7 @@ rb_str_substr(VALUE str, long beg, long len)
     else if (beg > 0 && beg > str_strlen(str, enc)) {
 	return Qnil;
     }
+    singlebyte = single_byte_optimizable(str);
     if (len == 0) {
 	p = 0;
     }
@@ -3521,14 +3523,15 @@ static VALUE
 rb_str_reverse(VALUE str)
 {
     rb_encoding *enc;
-    VALUE obj;
+    VALUE rev;
     char *s, *e, *p;
+    int single = 1;
 
     if (RSTRING_LEN(str) <= 1) return rb_str_dup(str);
     enc = STR_ENC_GET(str);
-    obj = rb_str_new5(str, 0, RSTRING_LEN(str));
+    rev = rb_str_new5(str, 0, RSTRING_LEN(str));
     s = RSTRING_PTR(str); e = RSTRING_END(str);
-    p = RSTRING_END(obj);
+    p = RSTRING_END(rev);
 
     if (RSTRING_LEN(str) > 1) {
 	if (single_byte_optimizable(str)) {
@@ -3540,17 +3543,26 @@ rb_str_reverse(VALUE str)
 	    while (s < e) {
 		int clen = rb_enc_mbclen(s, e, enc);
 
+		if (clen > 1 || (*s & 0x80)) single = 0;
 		p -= clen;
 		memcpy(p, s, clen);
 		s += clen;
 	    }
 	}
     }
-    STR_SET_LEN(obj, RSTRING_LEN(str));
-    OBJ_INFECT(obj, str);
-    rb_enc_cr_str_copy_for_substr(obj, str);
+    STR_SET_LEN(rev, RSTRING_LEN(str));
+    OBJ_INFECT(rev, str);
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_UNKNOWN) {
+	if (single) {
+	    ENC_CODERANGE_SET(str, ENC_CODERANGE_7BIT);
+	}
+	else {
+	    ENC_CODERANGE_SET(str, ENC_CODERANGE_VALID);
+	}
+    }
+    rb_enc_cr_str_copy_for_substr(rev, str);
 
-    return obj;
+    return rev;
 }
 
 
@@ -3564,19 +3576,25 @@ rb_str_reverse(VALUE str)
 static VALUE
 rb_str_reverse_bang(VALUE str)
 {
-    char *s, *e, c;
-
     if (RSTRING_LEN(str) > 1) {
-	rb_str_modify(str);
-	s = RSTRING_PTR(str);
-	e = RSTRING_END(str) - 1;
-
 	if (single_byte_optimizable(str)) {
+	    char *s, *e, c;
+	    int cr = ENC_CODERANGE(str);
+	    int single = 1;
+
+	    rb_str_modify(str);
+	    s = RSTRING_PTR(str);
+	    e = RSTRING_END(str) - 1;
 	    while (s < e) {
 		c = *s;
+		if (*s & 0x80) single = 0;
 		*s++ = *e;
  		*e-- = c;
 	    }
+	    if (cr == ENC_CODERANGE_UNKNOWN && single) {
+		cr = ENC_CODERANGE_7BIT;
+	    }
+	    ENC_CODERANGE_SET(str, cr);
 	}
 	else {
 	    rb_str_shared_replace(str, rb_str_reverse(str));
@@ -4226,6 +4244,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     int c, c0, last = 0, modify = 0, i, l;
     char *s, *send;
     VALUE hash = 0;
+    int singlebyte = single_byte_optimizable(str);
 
     StringValue(src);
     StringValue(repl);
@@ -4288,6 +4307,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    if (r == -1) r = trrepl.now;
 	    if (c < 256) {
 		trans[c] = r;
+		if (r > 255) singlebyte = 0;
 	    }
 	    else {
 		if (!hash) hash = rb_hash_new();
@@ -4348,7 +4368,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.aux.capa = max;
     }
-    else if (rb_enc_mbmaxlen(enc) == 1) {
+    else if (rb_enc_mbmaxlen(enc) == 1 || (singlebyte && !hash)) {
 	while (s < send) {
 	    c = (unsigned char)*s;
 	    if (trans[c] >= 0) {
