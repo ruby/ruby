@@ -1785,7 +1785,7 @@ lchmod_internal(path, mode)
     const char *path;
     void *mode;
 {
-    if (lchmod(path, (int)mode) < 0)
+    if (lchmod(path, (int)(VALUE)mode) < 0)
 	rb_sys_fail(path);
 }
 
