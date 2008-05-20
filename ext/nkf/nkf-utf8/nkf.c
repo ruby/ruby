@@ -693,6 +693,20 @@ static int nkf_enc_find_index(const char *name)
     return index;
 }
 
+static nkf_encoding *nkf_enc_without_bom(nkf_encoding *enc)
+{
+    int idx;
+    switch (enc->id) {
+    case UTF_8_BOM:    idx = UTF_8; break;
+    case UTF_16BE_BOM: idx = UTF_16BE; break;
+    case UTF_16LE_BOM: idx = UTF_16LE; break;
+    case UTF_32BE_BOM: idx = UTF_32BE; break;
+    case UTF_32LE_BOM: idx = UTF_32LE; break;
+    default: return enc;
+    }
+    return &nkf_encoding_table[idx];
+}
+
 static nkf_encoding *nkf_enc_find(const char *name)
 {
     int idx = -1;
@@ -5897,8 +5911,7 @@ void options(unsigned char *cp)
 		} else if (cp[0] == 'B') {
 		    cp++;
                 } else {
-		    output_encoding = nkf_enc_from_index(enc_idx);
-		    continue;
+		    goto utf_no_endian;
                 }
 		if (cp[0] == '0'){
 		    cp++;
@@ -5907,6 +5920,7 @@ void options(unsigned char *cp)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
 		} else {
 		    output_bom_f = TRUE;
+		  utf_no_endian:
 		    enc_idx = enc_idx == UTF_16
 			? (output_endian == ENDIAN_LITTLE ? UTF_16LE_BOM : UTF_16BE_BOM)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE_BOM : UTF_32BE_BOM);

@@ -160,7 +160,7 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     rb_str_set_len(result, output_ctr);
     OBJ_INFECT(result, src);
 
-    rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
+    rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(nkf_enc_without_bom(output_encoding))));
 
     return result;
 }
@@ -480,8 +480,8 @@ Init_nkf()
     rb_define_const(mNKF, "EUC",	rb_enc_from_encoding(rb_nkf_enc_get("EUC-JP")));
     rb_define_const(mNKF, "SJIS",	rb_enc_from_encoding(rb_nkf_enc_get("Shift_JIS")));
     rb_define_const(mNKF, "UTF8",	rb_enc_from_encoding(rb_utf8_encoding()));
-    rb_define_const(mNKF, "UTF16",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-16")));
-    rb_define_const(mNKF, "UTF32",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-32")));
+    rb_define_const(mNKF, "UTF16",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-16BE")));
+    rb_define_const(mNKF, "UTF32",	rb_enc_from_encoding(rb_nkf_enc_get("UTF-32BE")));
 
     /* Full version string of nkf */
     rb_define_const(mNKF, "VERSION", rb_str_new2(RUBY_NKF_VERSION));
