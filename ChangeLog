@@ -1,3 +1,12 @@
+Wed May 21 01:28:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c, include/ruby/encodng.h (rb_str_transcode):
+	  C API of encoding conversion for Ruby object.
+	  VALUE rb_str_transcode(VALUE str, VALUE to).
+
+	* transcode.c (str_encode, str_encode_bang):
+	  rename from rb_tr_transcode or rb_str_transcode_bang.
+
 Tue May 20 23:26:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb: fix tests for 64bit CPU.

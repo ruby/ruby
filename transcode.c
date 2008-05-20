@@ -397,7 +397,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
  */
 
 static VALUE
-rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
+str_encode_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE newstr = str;
     int encidx = str_transcode(argc, argv, &newstr);
@@ -432,10 +432,19 @@ rb_str_transcode_bang(int argc, VALUE *argv, VALUE str)
  */
 
 static VALUE
-rb_str_transcode(int argc, VALUE *argv, VALUE str)
+str_encode(int argc, VALUE *argv, VALUE str)
 {
     str = rb_str_dup(str);
-    return rb_str_transcode_bang(argc, argv, str);
+    return str_encode_bang(argc, argv, str);
+}
+
+VALUE
+rb_str_transcode(VALUE str, VALUE to)
+{
+    int argc = 1;
+    VALUE argv = rb_ary_new2(1);
+    rb_ary_push(argv, to);
+    return str_encode(argc, &argv, str);
 }
 
 void
@@ -447,6 +456,6 @@ Init_transcode(void)
     sym_invalid = ID2SYM(rb_intern("invalid"));
     sym_ignore = ID2SYM(rb_intern("ignore"));
 
-    rb_define_method(rb_cString, "encode", rb_str_transcode, -1);
-    rb_define_method(rb_cString, "encode!", rb_str_transcode_bang, -1);
+    rb_define_method(rb_cString, "encode", str_encode, -1);
+    rb_define_method(rb_cString, "encode!", str_encode_bang, -1);
 }
