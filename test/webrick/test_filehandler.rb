@@ -9,6 +9,10 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
     klass.new(WEBrick::Config::HTTP, filename)
   end
 
+  def windows?
+    File.directory?("\\")
+  end
+
   def get_res_body(res)
     return res.body.read rescue res.body
   end
@@ -115,10 +119,82 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/../../")
       http.request(req){|res| assert_equal("400", res.code) }
-      req = Net::HTTP::Get.new(
-        "/..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5c..%5cboot.ini"
-      )
+      req = Net::HTTP::Get.new("/..%5c../#{File.basename(__FILE__)}")
+      http.request(req){|res| assert_equal(windows? ? "200" : "404", res.code) }
+      req = Net::HTTP::Get.new("/..%5c..%5cruby.c")
       http.request(req){|res| assert_equal("404", res.code) }
+    end
+  end
+
+  def test_unwise_in_path
+    if windows?
+      config = { :DocumentRoot => File.dirname(__FILE__), }
+      this_file = File.basename(__FILE__)
+      TestWEBrick.start_httpserver(config) do |server, addr, port|
+        http = Net::HTTP.new(addr, port)
+        req = Net::HTTP::Get.new("/..%5c..")
+        http.request(req){|res| assert_equal("301", res.code) }
+      end
+    end
+  end
+
+  def test_short_filename
+    config = {
+      :CGIInterpreter => TestWEBrick::RubyBin,
+      :DocumentRoot => File.dirname(__FILE__),
+      :CGIPathEnv => ENV['PATH'],
+    }
+    TestWEBrick.start_httpserver(config) do |server, addr, port|
+      http = Net::HTTP.new(addr, port)
+
+      req = Net::HTTP::Get.new("/webric~1.cgi/test")
+      http.request(req) do |res|
+        if windows?
+          assert_equal("200", res.code)
+          assert_equal("/test", res.body)
+        else
+          assert_equal("404", res.code)
+        end
+      end
+
+      req = Net::HTTP::Get.new("/.htaccess")
+      http.request(req) {|res| assert_equal("404", res.code) }
+      req = Net::HTTP::Get.new("/htacce~1")
+      http.request(req) {|res| assert_equal("404", res.code) }
+      req = Net::HTTP::Get.new("/HTACCE~1")
+      http.request(req) {|res| assert_equal("404", res.code) }
+    end
+  end
+
+  def test_script_disclosure
+    config = {
+      :CGIInterpreter => TestWEBrick::RubyBin,
+      :DocumentRoot => File.dirname(__FILE__),
+      :CGIPathEnv => ENV['PATH'],
+    }
+    TestWEBrick.start_httpserver(config) do |server, addr, port|
+      http = Net::HTTP.new(addr, port)
+
+      req = Net::HTTP::Get.new("/webrick.cgi/test")
+      http.request(req) do |res|
+        assert_equal("200", res.code)
+        assert_equal("/test", res.body)
+      end
+
+      response_assertion = Proc.new do |res|
+        if windows?
+          assert_equal("200", res.code)
+          assert_equal("/test", res.body)
+        else
+          assert_equal("404", res.code)
+        end
+      end
+      req = Net::HTTP::Get.new("/webrick.cgi%20/test")
+      http.request(req, &response_assertion)
+      req = Net::HTTP::Get.new("/webrick.cgi./test")
+      http.request(req, &response_assertion)
+      req = Net::HTTP::Get.new("/webrick.cgi::$DATA/test")
+      http.request(req, &response_assertion)
     end
   end
 end
