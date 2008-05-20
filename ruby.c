@@ -1142,9 +1142,11 @@ process_options(VALUE arg)
 
     iseq = rb_iseq_new(tree, rb_str_new2("<main>"),
 		       opt->script_name, Qfalse, ISEQ_TYPE_TOP);
+
     if (opt->dump & DUMP_BIT(insns)) {
 	rb_io_write(rb_stdout, ruby_iseq_disasm(iseq));
 	rb_io_flush(rb_stdout);
+	return Qtrue;
     }
 
     return iseq;
