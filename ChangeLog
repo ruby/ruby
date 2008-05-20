@@ -1,3 +1,19 @@
+Wed May 21 01:32:56 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpservlet/filehandler.rb: should normalize path
+	  name in path_info to prevent script disclosure vulnerability on
+	  DOSISH filesystems. (fix: CVE-2008-1891)
+	  Note: NTFS/FAT filesystem should not be published by the platforms
+	  other than Windows. Pathname interpretation (including short
+	  filename) is less than perfect.
+
+	* lib/webrick/httpservlet/abstract.rb
+	  (WEBrick::HTTPServlet::AbstracServlet#redirect_to_directory_uri):
+	  should escape the value of Location: header.
+
+	* lib/webrick/httpservlet/cgi_runner.rb: accept interpreter
+	  command line arguments.
+
 Sun May 18 01:57:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (isdirsep): backslash is valid path separator on cygwin too.

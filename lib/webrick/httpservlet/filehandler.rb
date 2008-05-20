@@ -199,26 +199,38 @@ module WEBrick
 
       private
 
+      def trailing_pathsep?(path)
+        # check for trailing path separator:
+        #   File.dirname("/aaaa/bbbb/")      #=> "/aaaa")
+        #   File.dirname("/aaaa/bbbb/x")     #=> "/aaaa/bbbb")
+        #   File.dirname("/aaaa/bbbb")       #=> "/aaaa")
+        #   File.dirname("/aaaa/bbbbx")      #=> "/aaaa")
+        return File.dirname(path) != File.dirname(path+"x")
+      end
+
       def prevent_directory_traversal(req, res)
-        # Preventing directory traversal on DOSISH platforms;
+        # Preventing directory traversal on Windows platforms;
         # Backslashes (0x5c) in path_info are not interpreted as special
         # character in URI notation. So the value of path_info should be
         # normalize before accessing to the filesystem.
-        if File::ALT_SEPARATOR
+
+        if trailing_pathsep?(req.path_info)
           # File.expand_path removes the trailing path separator.
           # Adding a character is a workaround to save it.
           #  File.expand_path("/aaa/")        #=> "/aaa"
           #  File.expand_path("/aaa/" + "x")  #=> "/aaa/x"
           expanded = File.expand_path(req.path_info + "x")
-          expanded[-1, 1] = ""  # remove trailing "x"
-          req.path_info = expanded
+          expanded.chop!  # remove trailing "x"
+        else
+          expanded = File.expand_path(req.path_info)
         end
+        req.path_info = expanded
       end
 
       def exec_handler(req, res)
         raise HTTPStatus::NotFound, "`#{req.path}' not found" unless @root
         if set_filename(req, res)
-          handler = get_handler(req)
+          handler = get_handler(req, res)
           call_callback(:HandlerCallback, req, res)
           h = handler.get_instance(@config, res.filename)
           h.service(req, res)
@@ -228,9 +240,13 @@ module WEBrick
         return false
       end
 
-      def get_handler(req)
-        suffix1 = (/\.(\w+)$/ =~ req.script_name) && $1.downcase
-        suffix2 = (/\.(\w+)\.[\w\-]+$/ =~ req.script_name) && $1.downcase
+      def get_handler(req, res)
+        suffix1 = (/\.(\w+)\z/ =~ res.filename) && $1.downcase
+        if /\.(\w+)\.([\w\-]+)\z/ =~ res.filename
+          if @options[:AcceptableLanguages].include?($2.downcase)
+            suffix2 = $1.downcase
+          end
+        end
         handler_table = @options[:HandlerTable]
         return handler_table[suffix1] || handler_table[suffix2] ||
                HandlerTable[suffix1] || HandlerTable[suffix2] ||
@@ -243,15 +259,13 @@ module WEBrick
 
         path_info.unshift("")  # dummy for checking @root dir
         while base = path_info.first
-          check_filename(req, res, base)
           break if base == "/"
-          break unless File.directory?(res.filename + base)
+          break unless File.directory?(File.expand_path(res.filename + base))
           shift_path_info(req, res, path_info)
           call_callback(:DirectoryCallback, req, res)
         end
 
         if base = path_info.first
-          check_filename(req, res, base)
           if base == "/"
             if file = search_index_file(req, res)
               shift_path_info(req, res, path_info, file)
@@ -272,12 +286,10 @@ module WEBrick
       end
 
       def check_filename(req, res, name)
-        @options[:NondisclosureName].each{|pattern|
-          if File.fnmatch("/#{pattern}", name, File::FNM_CASEFOLD)
-            @logger.warn("the request refers nondisclosure name `#{name}'.")
-            raise HTTPStatus::NotFound, "`#{req.path}' not found."
-          end
-        }
+        if nondisclosure_name?(name) || windows_ambiguous_name?(name)
+          @logger.warn("the request refers nondisclosure name `#{name}'.")
+          raise HTTPStatus::NotFound, "`#{req.path}' not found."
+        end
       end
 
       def shift_path_info(req, res, path_info, base=nil)
@@ -285,7 +297,8 @@ module WEBrick
         base = base || tmp
         req.path_info = path_info.join
         req.script_name << base
-        res.filename << base
+        res.filename = File.expand_path(res.filename + base)
+        check_filename(req, res, File.basename(res.filename))
       end
 
       def search_index_file(req, res)
@@ -325,6 +338,12 @@ module WEBrick
         end
       end
 
+      def windows_ambiguous_name?(name)
+        return true if /[. ]+\z/ =~ name
+        return true if /::\$DATA\z/ =~ name
+        return false
+      end
+
       def nondisclosure_name?(name)
         @options[:NondisclosureName].each{|pattern|
           if File.fnmatch(pattern, name, File::FNM_CASEFOLD)
@@ -343,7 +362,8 @@ module WEBrick
         list = Dir::entries(local_path).collect{|name|
           next if name == "." || name == ".."
           next if nondisclosure_name?(name)
-          st = (File::stat(local_path + name) rescue nil)
+          next if windows_ambiguous_name?(name)
+          st = (File::stat(File.join(local_path, name)) rescue nil)
           if st.nil?
             [ name, nil, -1 ]
           elsif st.directory?
@@ -383,7 +403,7 @@ module WEBrick
         res.body << "<A HREF=\"?S=#{d1}\">Size</A>\n"
         res.body << "<HR>\n"
        
-        list.unshift [ "..", File::mtime(local_path+".."), -1 ]
+        list.unshift [ "..", File::mtime(local_path+"/.."), -1 ]
         list.each{ |name, time, size|
           if name == ".."
             dname = "Parent Directory"
