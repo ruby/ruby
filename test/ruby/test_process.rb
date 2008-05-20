@@ -697,7 +697,7 @@ class TestProcess < Test::Unit::TestCase
         File.open("result2", "w") {|t| t << "taki pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
-      ret = system("#{RUBY} script1; #{RUBY} script2")
+      ret = system("#{RUBY} script1 || #{RUBY} script2")
       status = $?
       assert_equal(false, ret)
       assert(status.exited?)
@@ -719,7 +719,7 @@ class TestProcess < Test::Unit::TestCase
         File.open("result2", "w") {|t| t << "take pid=#{$$} ppid=#{Process.ppid}" }
         exit 8
       End
-      pid = spawn("#{RUBY} script1; #{RUBY} script2")
+      pid = spawn("#{RUBY} script1 || #{RUBY} script2")
       Process.wait pid
       status = $?
       assert(status.exited?)
@@ -742,7 +742,7 @@ class TestProcess < Test::Unit::TestCase
         puts "tika pid=#{$$} ppid=#{Process.ppid}"
         exit 8
       End
-      io = IO.popen("#{RUBY} script1; #{RUBY} script2")
+      io = IO.popen("#{RUBY} script1 || #{RUBY} script2")
       result = io.read
       io.close
       status = $?
@@ -765,7 +765,7 @@ class TestProcess < Test::Unit::TestCase
       End
       write_file("s", <<-"End")
 	ruby = #{RUBY.dump}
-	exec("\#{ruby} script1; \#{ruby} script2")
+	exec("\#{ruby} script1 || \#{ruby} script2")
       End
       pid = spawn RUBY, "s"
       Process.wait pid

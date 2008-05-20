@@ -20,7 +20,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
     begin
       File.link(@file, @hardlinkfile)
-    rescue NotImplementedError
+    rescue NotImplementedError, Errno::EINVAL	# EINVAL for Windows Vista
       @hardlinkfile = nil
     end
   end

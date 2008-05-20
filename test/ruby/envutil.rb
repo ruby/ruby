@@ -34,11 +34,6 @@ module EnvUtil
 
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
   def rubyexec(*args)
-    if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
-      flunk("cannot test in win32")
-      return
-    end
-
     ruby = EnvUtil.rubybin
     c = "C"
     env = {}

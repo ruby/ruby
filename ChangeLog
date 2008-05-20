@@ -1,3 +1,14 @@
+Wed May 21 01:45:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_file_exhaustive.rb (setup): workaround for Windows
+	  Vista.
+
+	* test/ruby/envutil.rb (rubyexec): now Open3.open3 is supported on
+	  Windows.
+
+	* test/ruby/test_process.rb: use ``||'' instead of ``;'' because
+	  cmd.exe not support it.
+
 Wed May 21 01:28:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c, include/ruby/encodng.h (rb_str_transcode):
