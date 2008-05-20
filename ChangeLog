@@ -1,3 +1,11 @@
+Wed May 21 07:42:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_usascii_str_new): use rb_str_new.
+
+	* string.c (rb_enc_str_new): ditto.
+
+	* string.c (rb_usascii_str_new2): use rb_str_new2.
+
 Wed May 21 07:22:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c, include/ruby/encoding.h

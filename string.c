@@ -385,8 +385,7 @@ rb_str_new(const char *ptr, long len)
 VALUE
 rb_usascii_str_new(const char *ptr, long len)
 {
-    VALUE str = str_new(rb_cString, ptr, len);
-
+    VALUE str = rb_str_new(ptr, len);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
@@ -394,8 +393,7 @@ rb_usascii_str_new(const char *ptr, long len)
 VALUE
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 {
-    VALUE str = str_new(rb_cString, ptr, len);
-
+    VALUE str = rb_str_new(ptr, len);
     rb_enc_associate(str, enc);
     return str;
 }
@@ -412,10 +410,9 @@ rb_str_new2(const char *ptr)
 VALUE
 rb_usascii_str_new2(const char *ptr)
 {
-    if (!ptr) {
-	rb_raise(rb_eArgError, "NULL pointer given");
-    }
-    return rb_usascii_str_new(ptr, strlen(ptr));
+    VALUE str = rb_str_new2(ptr);
+    ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
+    return str;
 }
 
 VALUE
