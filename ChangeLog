@@ -1,3 +1,9 @@
+Wed May 21 07:22:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c, include/ruby/encoding.h
+	  (rb_enc_associate, rb_enc_associate_index):
+	  returns obj. [ruby-dev:34778]
+
 Wed May 21 04:20:20 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_ascii8bit_encoding): use ENCINDEX_ASCII.

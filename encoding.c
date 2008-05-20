@@ -564,10 +564,10 @@ rb_enc_set_index(VALUE obj, int idx)
     return;
 }
 
-void
+VALUE
 rb_enc_associate_index(VALUE obj, int idx)
 {
-//    enc_check_capable(obj);
+/*    enc_check_capable(obj);*/
     if (rb_enc_get_index(obj) == idx)
     	return;
     if (!ENC_CODERANGE_ASCIIONLY(obj) ||
@@ -575,12 +575,13 @@ rb_enc_associate_index(VALUE obj, int idx)
 	ENC_CODERANGE_CLEAR(obj);
     }
     rb_enc_set_index(obj, idx);
+    return obj;
 }
 
-void
+VALUE
 rb_enc_associate(VALUE obj, rb_encoding *enc)
 {
-    rb_enc_associate_index(obj, rb_enc_to_index(enc));
+    return rb_enc_associate_index(obj, rb_enc_to_index(enc));
 }
 
 rb_encoding*

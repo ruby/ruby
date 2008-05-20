@@ -83,8 +83,8 @@ rb_encoding* rb_to_encoding(VALUE);
 rb_encoding* rb_enc_get(VALUE);
 rb_encoding* rb_enc_compatible(VALUE,VALUE);
 rb_encoding* rb_enc_check(VALUE,VALUE);
-void rb_enc_associate_index(VALUE, int);
-void rb_enc_associate(VALUE, rb_encoding*);
+VALUE rb_enc_associate_index(VALUE, int);
+VALUE rb_enc_associate(VALUE, rb_encoding*);
 void rb_enc_copy(VALUE dst, VALUE src);
 
 VALUE rb_enc_str_new(const char*, long, rb_encoding*);
