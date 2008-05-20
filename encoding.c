@@ -569,7 +569,7 @@ rb_enc_associate_index(VALUE obj, int idx)
 {
 /*    enc_check_capable(obj);*/
     if (rb_enc_get_index(obj) == idx)
-    	return;
+    	return obj;
     if (!ENC_CODERANGE_ASCIIONLY(obj) ||
 	!rb_enc_asciicompat(rb_enc_from_index(idx))) {
 	ENC_CODERANGE_CLEAR(obj);
