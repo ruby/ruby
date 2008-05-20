@@ -143,6 +143,15 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     nkf_split_options(RSTRING_PTR(opt));
     if (!output_encoding) rb_raise(rb_eArgError, "no output encoding given");
 
+    switch (nkf_enc_to_index(output_encoding)) {
+    case UTF_8_BOM:    output_encoding = nkf_enc_from_index(UTF_8); break;
+    case UTF_16BE_BOM: output_encoding = nkf_enc_from_index(UTF_16BE); break;
+    case UTF_16LE_BOM: output_encoding = nkf_enc_from_index(UTF_16LE); break;
+    case UTF_32BE_BOM: output_encoding = nkf_enc_from_index(UTF_32BE); break;
+    case UTF_32LE_BOM: output_encoding = nkf_enc_from_index(UTF_32LE); break;
+    }
+    output_bom_f = FALSE;
+
     incsize = INCSIZE;
 
     input_ctr = 0;
@@ -160,7 +169,7 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     rb_str_set_len(result, output_ctr);
     OBJ_INFECT(result, src);
 
-    rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(nkf_enc_without_bom(output_encoding))));
+    rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
 
     return result;
 }

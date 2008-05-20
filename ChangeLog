@@ -1,3 +1,12 @@
+Tue May 20 20:59:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (rb_nkf_convert) (nkf_enc_without_bom):
+	  reverted. nkf-utf8/nkf.c should be independent of ruby.
+
+	* ext/nkf/nkf.c (options):
+	  moved from nkf-utf8/nkf.c. 
+	  override nkf's original settings for Unicode BOM.
+
 Tue May 20 13:20:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_convert), ext/nkf/nkf-utf8/nkf.c

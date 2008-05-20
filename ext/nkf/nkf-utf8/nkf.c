@@ -1,39 +1,39 @@
 /** Network Kanji Filter. (PDS Version)
-** -*- coding: ISO-2022-JP -*-
-************************************************************************
-** Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
-** 連絡先： （株）富士通研究所　ソフト３研　市川　至
-** （E-Mail Address: ichikawa@flab.fujitsu.co.jp）
-** Copyright (C) 1996,1998
-** Copyright (C) 2002
-** 連絡先： 琉球大学情報工学科 河野 真治  mime/X0208 support
-** （E-Mail Address: kono@ie.u-ryukyu.ac.jp）
-** 連絡先： COW for DOS & Win16 & Win32 & OS/2
-** （E-Mail Address: GHG00637@niftyserve.or.p）
-**
-**    このソースのいかなる複写，改変，修正も許諾します。ただし、
-**    その際には、誰が貢献したを示すこの部分を残すこと。
-**    再配布や雑誌の付録などの問い合わせも必要ありません。
-**    営利利用も上記に反しない範囲で許可します。
-**    バイナリの配布の際にはversion messageを保存することを条件とします。
-**    このプログラムについては特に何の保証もしない、悪しからず。
-**
-**    Everyone is permitted to do anything on this program
-**    including copying, modifying, improving,
-**    as long as you don't try to pretend that you wrote it.
-**    i.e., the above copyright notice has to appear in all copies.
-**    Binary distribution requires original version messages.
-**    You don't have to ask before copying, redistribution or publishing.
-**    THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
-***********************************************************************/
+ ** -*- coding: ISO-2022-JP -*-
+ ************************************************************************
+ ** Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
+ ** 連絡先： （株）富士通研究所　ソフト３研　市川　至
+ ** （E-Mail Address: ichikawa@flab.fujitsu.co.jp）
+ ** Copyright (C) 1996,1998
+ ** Copyright (C) 2002
+ ** 連絡先： 琉球大学情報工学科 河野 真治  mime/X0208 support
+ ** （E-Mail Address: kono@ie.u-ryukyu.ac.jp）
+ ** 連絡先： COW for DOS & Win16 & Win32 & OS/2
+ ** （E-Mail Address: GHG00637@niftyserve.or.p）
+ **
+ **    このソースのいかなる複写，改変，修正も許諾します。ただし、
+ **    その際には、誰が貢献したを示すこの部分を残すこと。
+ **    再配布や雑誌の付録などの問い合わせも必要ありません。
+ **    営利利用も上記に反しない範囲で許可します。
+ **    バイナリの配布の際にはversion messageを保存することを条件とします。
+ **    このプログラムについては特に何の保証もしない、悪しからず。
+ **
+ **    Everyone is permitted to do anything on this program
+ **    including copying, modifying, improving,
+ **    as long as you don't try to pretend that you wrote it.
+ **    i.e., the above copyright notice has to appear in all copies.
+ **    Binary distribution requires original version messages.
+ **    You don't have to ask before copying, redistribution or publishing.
+ **    THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
+ ***********************************************************************/
 
 /***********************************************************************
  * 現在、nkf は SorceForge にてメンテナンスが続けられています。
  * http://sourceforge.jp/projects/nkf/
-***********************************************************************/
+ ***********************************************************************/
 #define NKF_IDENT "$Id$"
 #define NKF_VERSION "2.0.8"
-#define NKF_RELEASE_DATE "2008-01-23"
+#define NKF_RELEASE_DATE "2008-02-08"
 #define COPY_RIGHT \
     "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW\n" \
     "Copyright (C) 2002-2008 Kono, Furukawa, Naruse, mastodon"
@@ -45,10 +45,10 @@
 /* state of output_mode and input_mode
 
    c2           0 means ASCII
-                JIS_X_0201
-                ISO_8859_1
-                JIS_X_0208
-                EOF      all termination
+   JIS_X_0201_1976_K
+   ISO_8859_1
+   JIS_X_0208
+   EOF      all termination
    c1           32bit data
 
  */
@@ -74,12 +74,10 @@ enum byte_order {
 #define         CR      0x0d
 #define         ESC     0x1b
 #define         SP      0x20
-#define         AT      0x40
-#define         SSP     0xa0
 #define         DEL     0x7f
 #define         SI      0x0f
 #define         SO      0x0e
-#define         SSO     0x8e
+#define         SS2     0x8e
 #define         SS3     0x8f
 #define         CRLF    0x0D0A
 
@@ -95,10 +93,12 @@ enum nkf_encodings {
     CP50222,
     ISO_2022_JP_1,
     ISO_2022_JP_3,
+    ISO_2022_JP_2004,
     SHIFT_JIS,
     WINDOWS_31J,
     CP10001,
     EUC_JP,
+    EUCJP_NKF,
     CP51932,
     EUCJP_MS,
     EUCJP_ASCII,
@@ -120,26 +120,30 @@ enum nkf_encodings {
     UTF_32BE_BOM,
     UTF_32LE,
     UTF_32LE_BOM,
+    BINARY,
     NKF_ENCODING_TABLE_SIZE,
-    JIS_X_0201=0x1000,
-    JIS_X_0208=0x1001,
-    JIS_X_0212=0x1002,
-    JIS_X_0213_1=0x1003,
-    JIS_X_0213_2=0x1004,
-    BINARY
+    JIS_X_0201_1976_K = 0x1013, /* I */ /* JIS C 6220-1969 */
+    /* JIS_X_0201_1976_R = 0x1014, */ /* J */ /* JIS C 6220-1969 */
+    /* JIS_X_0208_1978   = 0x1040, */ /* @ */ /* JIS C 6226-1978 */
+    /* JIS_X_0208_1983   = 0x1087, */ /* B */ /* JIS C 6226-1983 */
+    JIS_X_0208        = 0x1168, /* @B */
+    JIS_X_0212        = 0x1159, /* D */
+    /* JIS_X_0213_2000_1 = 0x1228, */ /* O */
+    JIS_X_0213_2 = 0x1229, /* P */
+    JIS_X_0213_1 = 0x1233, /* Q */
 };
 
-nkf_char s_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
-nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
-nkf_char w_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
-nkf_char w_iconv16(nkf_char c2, nkf_char c1, nkf_char c0);
-nkf_char w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0);
-void j_oconv(nkf_char c2, nkf_char c1);
-void s_oconv(nkf_char c2, nkf_char c1);
-void e_oconv(nkf_char c2, nkf_char c1);
-void w_oconv(nkf_char c2, nkf_char c1);
-void w_oconv16(nkf_char c2, nkf_char c1);
-void w_oconv32(nkf_char c2, nkf_char c1);
+static nkf_char s_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
+static nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
+static nkf_char w_iconv(nkf_char c2, nkf_char c1, nkf_char c0);
+static nkf_char w_iconv16(nkf_char c2, nkf_char c1, nkf_char c0);
+static nkf_char w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0);
+static void j_oconv(nkf_char c2, nkf_char c1);
+static void s_oconv(nkf_char c2, nkf_char c1);
+static void e_oconv(nkf_char c2, nkf_char c1);
+static void w_oconv(nkf_char c2, nkf_char c1);
+static void w_oconv16(nkf_char c2, nkf_char c1);
+static void w_oconv32(nkf_char c2, nkf_char c1);
 
 typedef struct {
     const char *name;
@@ -170,10 +174,12 @@ nkf_encoding nkf_encoding_table[] = {
     {CP50222,		"CP50222",		&NkfEncodingISO_2022_JP},
     {ISO_2022_JP_1,	"ISO-2022-JP-1",	&NkfEncodingISO_2022_JP},
     {ISO_2022_JP_3,	"ISO-2022-JP-3",	&NkfEncodingISO_2022_JP},
+    {ISO_2022_JP_2004,	"ISO-2022-JP-2004",	&NkfEncodingISO_2022_JP},
     {SHIFT_JIS,		"Shift_JIS",		&NkfEncodingShift_JIS},
     {WINDOWS_31J,	"Windows-31J",		&NkfEncodingShift_JIS},
     {CP10001,		"CP10001",		&NkfEncodingShift_JIS},
     {EUC_JP,		"EUC-JP",		&NkfEncodingEUC_JP},
+    {EUCJP_NKF,		"eucJP-nkf",		&NkfEncodingEUC_JP},
     {CP51932,		"CP51932",		&NkfEncodingEUC_JP},
     {EUCJP_MS,		"eucJP-MS",		&NkfEncodingEUC_JP},
     {EUCJP_ASCII,	"eucJP-ASCII",		&NkfEncodingEUC_JP},
@@ -209,9 +215,11 @@ struct {
     {"ISO2022JP-CP932",		CP50220},
     {"CP50220",			CP50220},
     {"CP50221",			CP50221},
+    {"CSISO2022JP",		CP50221},
     {"CP50222",			CP50222},
     {"ISO-2022-JP-1",		ISO_2022_JP_1},
     {"ISO-2022-JP-3",		ISO_2022_JP_3},
+    {"ISO-2022-JP-2004",	ISO_2022_JP_2004},
     {"SHIFT_JIS",		SHIFT_JIS},
     {"SJIS",			SHIFT_JIS},
     {"WINDOWS-31J",		WINDOWS_31J},
@@ -221,6 +229,7 @@ struct {
     {"CP10001",			CP10001},
     {"EUCJP",			EUC_JP},
     {"EUC-JP",			EUC_JP},
+    {"EUCJP-NKF",		EUCJP_NKF},
     {"CP51932",			CP51932},
     {"EUC-JP-MS",		EUCJP_MS},
     {"EUCJP-MS",		EUCJP_MS},
@@ -258,13 +267,11 @@ struct {
 #define	    DEFAULT_ENCIDX EUC_JP
 #elif defined(DEFAULT_CODE_UTF8)
 #define	    DEFAULT_ENCIDX UTF_8
-#else
-#define	    DEFAULT_ENCIDX 0
 #endif
 
 
 #define		is_alnum(c)  \
-            (('a'<=c && c<='z')||('A'<= c && c<='Z')||('0'<=c && c<='9'))
+    (('a'<=c && c<='z')||('A'<= c && c<='Z')||('0'<=c && c<='9'))
 
 /* I don't trust portablity of toupper */
 #define nkf_toupper(c)  (('a'<=c && c<='z')?(c-('a'-'A')):c)
@@ -278,15 +285,16 @@ struct {
 #define nkf_isprint(c) (SP<=c && c<='~')
 #define nkf_isgraph(c) ('!'<=c && c<='~')
 #define hex2bin(c) (('0'<=c&&c<='9') ? (c-'0') : \
-                    ('A'<=c&&c<='F') ? (c-'A'+10) : \
-                    ('a'<=c&&c<='f') ? (c-'a'+10) : 0)
+		    ('A'<=c&&c<='F') ? (c-'A'+10) : \
+		    ('a'<=c&&c<='f') ? (c-'a'+10) : 0)
 #define bin2hex(c) ("0123456789ABCDEF"[c&15])
 #define is_eucg3(c2) (((unsigned short)c2 >> 8) == SS3)
 #define nkf_noescape_mime(c) ((c == CR) || (c == LF) || \
-    ((c > SP) && (c < DEL) && (c != '?') && (c != '=') && (c != '_') \
-     && (c != '(') && (c != ')') && (c != '.') && (c != 0x22)))
+			      ((c > SP) && (c < DEL) && (c != '?') && (c != '=') && (c != '_') \
+			       && (c != '(') && (c != ')') && (c != '.') && (c != 0x22)))
 
 #define is_ibmext_in_sjis(c2) (CP932_TABLE_BEGIN <= c2 && c2 <= CP932_TABLE_END)
+#define nkf_byte_jisx0201_katakana_p(c) (SP <= c && c < (0xE0&0x7F))
 
 #define         HOLD_SIZE       1024
 #if defined(INT_IS_SHORT)
@@ -324,8 +332,7 @@ static char *input_codename = NULL; /* NULL: unestablished, "": BINARY */
 static nkf_encoding *input_encoding = NULL;
 static nkf_encoding *output_encoding = NULL;
 
-static  nkf_char     kanji_convert(FILE *f);
-static  nkf_char     h_conv(FILE *f,nkf_char c2,nkf_char c1);
+static int kanji_convert(FILE *f);
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
 /* UCS Mapping
  * 0: Shift_JIS, eucJP-ascii
@@ -353,12 +360,6 @@ static  void    w_status(struct input_code *, nkf_char);
 static  int     output_bom_f = FALSE;
 static  int     output_endian = ENDIAN_BIG;
 #endif
-static  void    fold_conv(nkf_char c2,nkf_char c1);
-static  void    eol_conv(nkf_char c2,nkf_char c1);
-static  void    z_conv(nkf_char c2,nkf_char c1);
-static  void    rot_conv(nkf_char c2,nkf_char c1);
-static  void    hira_conv(nkf_char c2,nkf_char c1);
-static  void    iso2022jp_check_conv(nkf_char c2,nkf_char c1);
 
 static  void    std_putc(nkf_char c);
 static  nkf_char     std_getc(FILE *f);
@@ -411,13 +412,17 @@ static nkf_char (*i_ugetc)(FILE *) = std_getc; /* input of ugetc */
 static nkf_char (*i_uungetc)(nkf_char c ,FILE *f) = std_ungetc;
 #endif
 
-#define PREFIX_EUCG3	NKF_INT32_C(0x8F00)
-#define CLASS_MASK	NKF_INT32_C(0xFF000000)
-#define CLASS_UNICODE	NKF_INT32_C(0x01000000)
-#define VALUE_MASK	NKF_INT32_C(0x00FFFFFF)
-#define UNICODE_MAX	NKF_INT32_C(0x0010FFFF)
-#define is_unicode_capsule(c) ((c & CLASS_MASK) == CLASS_UNICODE)
-#define is_unicode_bmp(c) ((c & VALUE_MASK) <= NKF_INT32_C(0xFFFF))
+#define PREFIX_EUCG3    NKF_INT32_C(0x8F00)
+#define CLASS_MASK      NKF_INT32_C(0xFF000000)
+#define CLASS_UNICODE   NKF_INT32_C(0x01000000)
+#define VALUE_MASK      NKF_INT32_C(0x00FFFFFF)
+#define UNICODE_BMP_MAX NKF_INT32_C(0x0000FFFF)
+#define UNICODE_MAX     NKF_INT32_C(0x0010FFFF)
+#define nkf_char_euc3_new(c) ((c) | PREFIX_EUCG3)
+#define nkf_char_unicode_new(c) ((c) | CLASS_UNICODE)
+#define nkf_char_unicode_p(c) ((c & CLASS_MASK) == CLASS_UNICODE)
+#define nkf_char_unicode_bmp_p(c) ((c & VALUE_MASK) <= NKF_INT32_C(UNICODE_BMP_MAX))
+#define nkf_char_unicode_value_p(c) ((c & VALUE_MASK) <= NKF_INT32_C(UNICODE_MAX))
 
 #ifdef NUMCHAR_OPTION
 static int numchar_f = FALSE;
@@ -450,9 +455,7 @@ static int cp932inv_f = TRUE;
 /* static nkf_char cp932_conv(nkf_char c2, nkf_char c1); */
 #endif /* SHIFTJIS_CP932 */
 
-#ifdef X0212_ENABLE
 static int x0212_f = FALSE;
-#endif
 static int x0213_f = FALSE;
 
 static unsigned char prefix_table[256];
@@ -465,8 +468,6 @@ struct input_code input_code_list[] = {
     {"Shift_JIS", 0, 0, 0, {0, 0, 0}, s_status, s_iconv, 0},
 #ifdef UTF8_INPUT_ENABLE
     {"UTF-8",     0, 0, 0, {0, 0, 0}, w_status, w_iconv, 0},
-    {"UTF-16",    0, 0, 0, {0, 0, 0},     NULL, w_iconv16, 0},
-    {"UTF-32",    0, 0, 0, {0, 0, 0},     NULL, w_iconv32, 0},
 #endif
     {0}
 };
@@ -496,14 +497,16 @@ static int             fold_margin  = FOLD_MARGIN;
 
 /* process default */
 
-nkf_char no_connection2(nkf_char c2, nkf_char c1, nkf_char c0)
+static nkf_char
+no_connection2(nkf_char c2, nkf_char c1, nkf_char c0)
 {
     fprintf(stderr,"nkf internal module connection failure.\n");
     exit(1);
     return 0; /* LINT */
 }
 
-void no_connection(nkf_char c2, nkf_char c1)
+static void
+no_connection(nkf_char c2, nkf_char c1)
 {
     no_connection2(c2,c1,0);
 }
@@ -539,9 +542,8 @@ static  nkf_char    (*i_mgetc_buf)(FILE *) = std_getc; /* input of mgetc_buf */
 static  nkf_char    (*i_mungetc_buf)(nkf_char c,FILE *f) = std_ungetc;
 
 /* Global states */
-static int output_mode = ASCII,    /* output kanji mode */
-           input_mode =  ASCII,    /* input kanji mode */
-           shift_mode =  FALSE;    /* TRUE shift out, or X0201  */
+static int output_mode = ASCII;    /* output kanji mode */
+static int input_mode =  ASCII;    /* input kanji mode */
 static int mime_decode_mode =   FALSE;    /* MIME mode B base64, Q hex */
 
 /* X0201 / X0208 conversion tables */
@@ -651,18 +653,8 @@ static int             end_check;
 nkf_char std_gc_buf[STD_GC_BUFSIZE];
 nkf_char std_gc_ndx;
 
-char* nkf_strcpy(const char *str)
-{
-    char* result = malloc(strlen(str) + 1);
-    if (!result){
-	perror(str);
-	return "";
-    }
-    strcpy(result, str);
-    return result;
-}
-
-static void nkf_str_upcase(const char *src, char *dest, size_t length)
+static void
+nkf_str_upcase(const char *src, char *dest, size_t length)
 {
     int i = 0;
     for (; i < length && src[i]; i++) {
@@ -671,17 +663,17 @@ static void nkf_str_upcase(const char *src, char *dest, size_t length)
     dest[i] = 0;
 }
 
-static nkf_encoding *nkf_enc_from_index(int idx)
+static nkf_encoding*
+nkf_enc_from_index(int idx)
 {
     if (idx < 0 || NKF_ENCODING_TABLE_SIZE <= idx) {
-	if (idx == BINARY)
-	    return &nkf_encoding_table[NKF_ENCODING_TABLE_SIZE];
 	return 0;
     }
     return &nkf_encoding_table[idx];
 }
 
-static int nkf_enc_find_index(const char *name)
+static int
+nkf_enc_find_index(const char *name)
 {
     int i, index = -1;
     if (*name == 'X' && *(name+1) == '-') name += 2;
@@ -693,21 +685,8 @@ static int nkf_enc_find_index(const char *name)
     return index;
 }
 
-static nkf_encoding *nkf_enc_without_bom(nkf_encoding *enc)
-{
-    int idx;
-    switch (enc->id) {
-    case UTF_8_BOM:    idx = UTF_8; break;
-    case UTF_16BE_BOM: idx = UTF_16BE; break;
-    case UTF_16LE_BOM: idx = UTF_16LE; break;
-    case UTF_32BE_BOM: idx = UTF_32BE; break;
-    case UTF_32LE_BOM: idx = UTF_32LE; break;
-    default: return enc;
-    }
-    return &nkf_encoding_table[idx];
-}
-
-static nkf_encoding *nkf_enc_find(const char *name)
+static nkf_encoding*
+nkf_enc_find(const char *name)
 {
     int idx = -1;
     idx = nkf_enc_find_index(name);
@@ -721,19 +700,20 @@ static nkf_encoding *nkf_enc_find(const char *name)
 #define nkf_enc_to_iconv(enc) nkf_enc_to_base_encoding(enc)->iconv
 #define nkf_enc_to_oconv(enc) nkf_enc_to_base_encoding(enc)->oconv
 #define nkf_enc_asciicompat(enc) (\
-    nkf_enc_to_base_encoding(enc) == &NkfEncodingASCII ||\
-    nkf_enc_to_base_encoding(enc) == &NkfEncodingISO_2022_JP)
+				  nkf_enc_to_base_encoding(enc) == &NkfEncodingASCII ||\
+				  nkf_enc_to_base_encoding(enc) == &NkfEncodingISO_2022_JP)
 #define nkf_enc_unicode_p(enc) (\
-    nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_8 ||\
-    nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_16 ||\
-    nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_32)
+				nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_8 ||\
+				nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_16 ||\
+				nkf_enc_to_base_encoding(enc) == &NkfEncodingUTF_32)
 #define nkf_enc_cp5022x_p(enc) (\
-    nkf_enc_to_index(enc) == CP50220 ||\
-    nkf_enc_to_index(enc) == CP50221 ||\
-    nkf_enc_to_index(enc) == CP50222)
+				nkf_enc_to_index(enc) == CP50220 ||\
+				nkf_enc_to_index(enc) == CP50221 ||\
+				nkf_enc_to_index(enc) == CP50222)
 
 #ifdef DEFAULT_CODE_LOCALE
-static char* nkf_locale_charmap()
+static char*
+nkf_locale_charmap()
 {
 #ifdef HAVE_LANGINFO_H
     return nl_langinfo(CODESET);
@@ -744,7 +724,8 @@ static char* nkf_locale_charmap()
 #endif
 }
 
-static nkf_encoding* nkf_locale_encoding()
+static nkf_encoding*
+nkf_locale_encoding()
 {
     nkf_encoding *enc = 0;
     char *encname = nkf_locale_charmap();
@@ -755,15 +736,16 @@ static nkf_encoding* nkf_locale_encoding()
 }
 #endif /* DEFAULT_CODE_LOCALE */
 
-static nkf_encoding* nkf_default_encoding()
+static nkf_encoding*
+nkf_default_encoding()
 {
+    nkf_encoding *enc = 0;
 #ifdef DEFAULT_CODE_LOCALE
-    nkf_encoding *enc = nkf_locale_encoding();
-    if (enc <= 0) enc = nkf_enc_from_index(ISO_2022_JP);
-    return enc;
-#else
-    return nkf_enc_from_index(DEFAULT_ENCIDX);
+    enc = nkf_locale_encoding();
+#elif DEFAULT_ENCIDX
+    enc = nkf_enc_from_index(DEFAULT_ENCIDX);
 #endif
+    return enc;
 }
 
 #ifndef PERL_XS
@@ -771,12 +753,14 @@ static nkf_encoding* nkf_default_encoding()
 #define fprintf dllprintf
 #endif
 
-void version(void)
+static void
+version(void)
 {
     fprintf(HELP_OUTPUT,"Network Kanji Filter Version " NKF_VERSION " (" NKF_RELEASE_DATE ") \n" COPY_RIGHT "\n");
 }
 
-void usage(void)
+static void
+usage(void)
 {
     fprintf(HELP_OUTPUT,
 	    "USAGE:  nkf(nkf32,wnkf,nkf2) -[flags] [in file] .. [out file for -O flag]\n"
@@ -844,7 +828,8 @@ void usage(void)
     version();
 }
 
-void show_configuration(void)
+static void
+show_configuration(void)
 {
     fprintf(HELP_OUTPUT,
 	    "Summary of my nkf " NKF_VERSION " (" NKF_RELEASE_DATE ") configuration:\n"
@@ -856,12 +841,11 @@ void show_configuration(void)
     fprintf(HELP_OUTPUT,
 	    "    Default output encoding:     "
 #ifdef DEFAULT_CODE_LOCALE
-	    "%s\n", nkf_enc_name(nkf_default_encoding())
+	    "LOCALE (%s)\n", nkf_enc_name(nkf_default_encoding())
 #elif DEFAULT_ENCIDX
-	    "%s (%s)\n", nkf_locale_encoding() ? "LOCALE" : "DEFAULT",
-	    nkf_enc_name(nkf_default_encoding())
+	    "CONFIG (%s)\n", nkf_enc_name(nkf_default_encoding())
 #else
-            "NONE"
+	    "NONE\n"
 #endif
 	   );
     fprintf(HELP_OUTPUT,
@@ -899,7 +883,8 @@ void show_configuration(void)
 #endif /*PERL_XS*/
 
 #ifdef OVERWRITE
-char *get_backup_filename(const char *suffix, const char *filename)
+static char*
+get_backup_filename(const char *suffix, const char *filename)
 {
     char *backup_filename;
     int asterisk_count = 0;
@@ -940,7 +925,8 @@ char *get_backup_filename(const char *suffix, const char *filename)
 #endif
 
 #ifdef UTF8_INPUT_ENABLE
-void nkf_each_char_to_hex(void (*f)(nkf_char c2,nkf_char c1), nkf_char c)
+static void
+nkf_each_char_to_hex(void (*f)(nkf_char c2,nkf_char c1), nkf_char c)
 {
     int shift = 20;
     c &= VALUE_MASK;
@@ -957,7 +943,8 @@ void nkf_each_char_to_hex(void (*f)(nkf_char c2,nkf_char c1), nkf_char c)
     return;
 }
 
-void encode_fallback_html(nkf_char c)
+static void
+encode_fallback_html(nkf_char c)
 {
     (*oconv)(0, '&');
     (*oconv)(0, '#');
@@ -980,7 +967,8 @@ void encode_fallback_html(nkf_char c)
     return;
 }
 
-void encode_fallback_xml(nkf_char c)
+static void
+encode_fallback_xml(nkf_char c)
 {
     (*oconv)(0, '&');
     (*oconv)(0, '#');
@@ -990,11 +978,12 @@ void encode_fallback_xml(nkf_char c)
     return;
 }
 
-void encode_fallback_java(nkf_char c)
+static void
+encode_fallback_java(nkf_char c)
 {
     (*oconv)(0, '\\');
     c &= VALUE_MASK;
-    if(!is_unicode_bmp(c)){
+    if(!nkf_char_unicode_bmp_p(c)){
 	(*oconv)(0, 'U');
 	(*oconv)(0, '0');
 	(*oconv)(0, '0');
@@ -1010,7 +999,8 @@ void encode_fallback_java(nkf_char c)
     return;
 }
 
-void encode_fallback_perl(nkf_char c)
+static void
+encode_fallback_perl(nkf_char c)
 {
     (*oconv)(0, '\\');
     (*oconv)(0, 'x');
@@ -1020,7 +1010,8 @@ void encode_fallback_perl(nkf_char c)
     return;
 }
 
-void encode_fallback_subchar(nkf_char c)
+static void
+encode_fallback_subchar(nkf_char c)
 {
     c = unicode_subchar;
     (*oconv)((c>>8)&0xFF, c&0xFF);
@@ -1108,9 +1099,13 @@ static const struct {
     {"prefix=", ""},
 };
 
-static void set_input_encoding(nkf_encoding *enc)
+static void
+set_input_encoding(nkf_encoding *enc)
 {
     switch (nkf_enc_to_index(enc)) {
+    case ISO_8859_1:
+	iso8859_f = TRUE;
+	break;
     case CP50220:
     case CP50221:
     case CP50222:
@@ -1122,14 +1117,14 @@ static void set_input_encoding(nkf_encoding *enc)
 #endif
 	break;
     case ISO_2022_JP_1:
-#ifdef X0212_ENABLE
 	x0212_f = TRUE;
-#endif
 	break;
     case ISO_2022_JP_3:
-#ifdef X0212_ENABLE
 	x0212_f = TRUE;
-#endif
+	x0213_f = TRUE;
+	break;
+    case ISO_2022_JP_2004:
+	x0212_f = TRUE;
 	x0213_f = TRUE;
 	break;
     case SHIFT_JIS:
@@ -1142,7 +1137,6 @@ static void set_input_encoding(nkf_encoding *enc)
 	ms_ucs_map_f = UCS_MAP_CP932;
 #endif
 	break;
-    case EUC_JP:
 	break;
     case CP10001:
 #ifdef SHIFTJIS_CP932
@@ -1151,6 +1145,10 @@ static void set_input_encoding(nkf_encoding *enc)
 #ifdef UTF8_OUTPUT_ENABLE
 	ms_ucs_map_f = UCS_MAP_CP10001;
 #endif
+	break;
+    case EUC_JP:
+	break;
+    case EUCJP_NKF:
 	break;
     case CP51932:
 #ifdef SHIFTJIS_CP932
@@ -1218,7 +1216,8 @@ static void set_input_encoding(nkf_encoding *enc)
     }
 }
 
-static void set_output_encoding(nkf_encoding *enc)
+static void
+set_output_encoding(nkf_encoding *enc)
 {
     switch (nkf_enc_to_index(enc)) {
     case CP50220:
@@ -1239,17 +1238,13 @@ static void set_output_encoding(nkf_encoding *enc)
 #endif
 	break;
     case ISO_2022_JP_1:
-#ifdef X0212_ENABLE
 	x0212_f = TRUE;
-#endif
 #ifdef SHIFTJIS_CP932
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
 #endif
 	break;
     case ISO_2022_JP_3:
-#ifdef X0212_ENABLE
 	x0212_f = TRUE;
-#endif
 	x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
@@ -1273,7 +1268,16 @@ static void set_output_encoding(nkf_encoding *enc)
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-	ms_ucs_map_f = UCS_MAP_CP932;
+	ms_ucs_map_f = UCS_MAP_ASCII;
+#endif
+	break;
+    case EUCJP_NKF:
+	x0212_f = FALSE;
+#ifdef SHIFTJIS_CP932
+	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
+#endif
+#ifdef UTF8_OUTPUT_ENABLE
+	ms_ucs_map_f = UCS_MAP_ASCII;
 #endif
 	break;
     case CP51932:
@@ -1285,17 +1289,13 @@ static void set_output_encoding(nkf_encoding *enc)
 #endif
 	break;
     case EUCJP_MS:
-#ifdef X0212_ENABLE
 	x0212_f = TRUE;
-#endif
 #ifdef UTF8_OUTPUT_ENABLE
 	ms_ucs_map_f = UCS_MAP_MS;
 #endif
 	break;
     case EUCJP_ASCII:
-#ifdef X0212_ENABLE
 	x0212_f = TRUE;
-#endif
 #ifdef UTF8_OUTPUT_ENABLE
 	ms_ucs_map_f = UCS_MAP_ASCII;
 #endif
@@ -1309,9 +1309,7 @@ static void set_output_encoding(nkf_encoding *enc)
 	break;
     case EUC_JISX0213:
     case EUC_JIS_2004:
-#ifdef X0212_ENABLE
 	x0212_f = TRUE;
-#endif
 	x0213_f = TRUE;
 #ifdef SHIFTJIS_CP932
 	if (cp932inv_f == TRUE) cp932inv_f = FALSE;
@@ -1348,79 +1346,84 @@ static void set_output_encoding(nkf_encoding *enc)
     }
 }
 
-struct input_code * find_inputcode_byfunc(nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0))
+static struct input_code*
+find_inputcode_byfunc(nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0))
 {
     if (iconv_func){
-        struct input_code *p = input_code_list;
-        while (p->name){
-            if (iconv_func == p->iconv_func){
-                return p;
-            }
-            p++;
-        }
+	struct input_code *p = input_code_list;
+	while (p->name){
+	    if (iconv_func == p->iconv_func){
+		return p;
+	    }
+	    p++;
+	}
     }
     return 0;
 }
 
-void set_iconv(nkf_char f, nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0))
+static void
+set_iconv(nkf_char f, nkf_char (*iconv_func)(nkf_char c2,nkf_char c1,nkf_char c0))
 {
 #ifdef INPUT_CODE_FIX
     if (f || !input_encoding)
 #endif
-        if (estab_f != f){
-            estab_f = f;
-        }
+	if (estab_f != f){
+	    estab_f = f;
+	}
 
     if (iconv_func
 #ifdef INPUT_CODE_FIX
-        && (f == -TRUE || !input_encoding) /* -TRUE means "FORCE" */
+	&& (f == -TRUE || !input_encoding) /* -TRUE means "FORCE" */
 #endif
-        ){
-        iconv = iconv_func;
+       ){
+	iconv = iconv_func;
     }
 #ifdef CHECK_OPTION
     if (estab_f && iconv_for_check != iconv){
-        struct input_code *p = find_inputcode_byfunc(iconv);
-        if (p){
-            set_input_codename(p->name);
-            debug(p->name);
-        }
-        iconv_for_check = iconv;
+	struct input_code *p = find_inputcode_byfunc(iconv);
+	if (p){
+	    set_input_codename(p->name);
+	    debug(p->name);
+	}
+	iconv_for_check = iconv;
     }
 #endif
 }
 
 #ifdef X0212_ENABLE
-nkf_char x0212_shift(nkf_char c)
+static nkf_char
+x0212_shift(nkf_char c)
 {
     nkf_char ret = c;
     c &= 0x7f;
     if (is_eucg3(ret)){
-        if (0x75 <= c && c <= 0x7f){
-            ret = c + (0x109 - 0x75);
-        }
+	if (0x75 <= c && c <= 0x7f){
+	    ret = c + (0x109 - 0x75);
+	}
     }else{
-        if (0x75 <= c && c <= 0x7f){
-            ret = c + (0x113 - 0x75);
-        }
+	if (0x75 <= c && c <= 0x7f){
+	    ret = c + (0x113 - 0x75);
+	}
     }
     return ret;
 }
 
 
-nkf_char x0212_unshift(nkf_char c)
+static nkf_char
+x0212_unshift(nkf_char c)
 {
     nkf_char ret = c;
     if (0x7f <= c && c <= 0x88){
-        ret = c + (0x75 - 0x7f);
+	ret = c + (0x75 - 0x7f);
     }else if (0x89 <= c && c <= 0x92){
-        ret = PREFIX_EUCG3 | 0x80 | (c + (0x75 - 0x89));
+	ret = PREFIX_EUCG3 | 0x80 | (c + (0x75 - 0x89));
     }
     return ret;
 }
 #endif /* X0212_ENABLE */
 
-nkf_char e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
+static nkf_char
+e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 {
     nkf_char ndx;
     if (is_eucg3(c2)){
@@ -1462,7 +1465,8 @@ nkf_char e2s_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
     return 0;
 }
 
-nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
+static nkf_char
+s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 {
 #if defined(SHIFTJIS_CP932) || defined(X0212_ENABLE)
     nkf_char val;
@@ -1470,36 +1474,36 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
     static const char shift_jisx0213_s1a3_table[5][2] ={ { 1, 8}, { 3, 4}, { 5,12}, {13,14}, {15, 0} };
 #ifdef SHIFTJIS_CP932
     if (!cp932inv_f && is_ibmext_in_sjis(c2)){
-        val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
-        if (val){
-            c2 = val >> 8;
-            c1 = val & 0xff;
-        }
+	val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
+	if (val){
+	    c2 = val >> 8;
+	    c1 = val & 0xff;
+	}
     }
     if (cp932inv_f
-        && CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
-        nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
-        if (c){
-            c2 = c >> 8;
-            c1 = c & 0xff;
-        }
+	&& CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
+	nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
+	if (c){
+	    c2 = c >> 8;
+	    c1 = c & 0xff;
+	}
     }
 #endif /* SHIFTJIS_CP932 */
 #ifdef X0212_ENABLE
     if (!x0213_f && is_ibmext_in_sjis(c2)){
-        val = shiftjis_x0212[c2 - 0xfa][c1 - 0x40];
-        if (val){
-            if (val > 0x7FFF){
-                c2 = PREFIX_EUCG3 | ((val >> 8) & 0x7f);
-                c1 = val & 0xff;
-            }else{
-                c2 = val >> 8;
-                c1 = val & 0xff;
-            }
-            if (p2) *p2 = c2;
-            if (p1) *p1 = c1;
-            return 0;
-        }
+	val = shiftjis_x0212[c2 - 0xfa][c1 - 0x40];
+	if (val){
+	    if (val > 0x7FFF){
+		c2 = PREFIX_EUCG3 | ((val >> 8) & 0x7f);
+		c1 = val & 0xff;
+	    }else{
+		c2 = val >> 8;
+		c1 = val & 0xff;
+	    }
+	    if (p2) *p2 = c2;
+	    if (p1) *p1 = c1;
+	    return 0;
+	}
     }
 #endif
     if(c2 >= 0x80){
@@ -1532,59 +1536,80 @@ nkf_char s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
 }
 
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
-void w16w_conv(nkf_char val, nkf_char *p2, nkf_char *p1, nkf_char *p0)
+static void
+nkf_unicode_to_utf8(nkf_char val, int *p1, int *p2, int *p3, int *p4)
 {
     val &= VALUE_MASK;
     if (val < 0x80){
-        *p2 = val;
-        *p1 = 0;
-        *p0 = 0;
+	*p1 = val;
+	*p2 = 0;
+	*p3 = 0;
+	*p4 = 0;
     }else if (val < 0x800){
-	*p2 = 0xc0 | (val >> 6);
-	*p1 = 0x80 | (val & 0x3f);
-        *p0 = 0;
-    } else if (val <= NKF_INT32_C(0xFFFF)) {
-        *p2 = 0xe0 | (val >> 12);
-        *p1 = 0x80 | ((val >> 6) & 0x3f);
-        *p0 = 0x80 | (val        & 0x3f);
-    } else if (val <= NKF_INT32_C(0x10FFFF)) {
-        *p2 = 0xe0 |  (val >> 16);
-        *p1 = 0x80 | ((val >> 12) & 0x3f);
-        *p0 = 0x8080 | ((val << 2) & 0x3f00)| (val & 0x3f);
+	*p1 = 0xc0 | (val >> 6);
+	*p2 = 0x80 | (val & 0x3f);
+	*p3 = 0;
+	*p4 = 0;
+    } else if (nkf_char_unicode_bmp_p(val)) {
+	*p1 = 0xe0 |  (val >> 12);
+	*p2 = 0x80 | ((val >>  6) & 0x3f);
+	*p3 = 0x80 | ( val        & 0x3f);
+	*p4 = 0;
+    } else if (nkf_char_unicode_value_p(val)) {
+	*p1 = 0xe0 |  (val >> 16);
+	*p2 = 0x80 | ((val >> 12) & 0x3f);
+	*p3 = 0x80 | ((val >>  6) & 0x3f);
+	*p4 = 0x80 | ( val        & 0x3f);
     } else {
-        *p2 = 0;
-        *p1 = 0;
-        *p0 = 0;
+	*p1 = 0;
+	*p2 = 0;
+	*p3 = 0;
+	*p4 = 0;
     }
 }
 
-nkf_char ww16_conv(nkf_char c2, nkf_char c1, nkf_char c0)
+static nkf_char
+nkf_utf8_to_unicode(int c1, int c2, int c3, int c4)
 {
-    nkf_char val;
-    if (c2 >= 0xf8) {
-	val = -1;
-    } else if (c2 >= 0xf0){
-	/* c2: 1st, c1: 2nd, c0: 3rd/4th */
-	val = (c2 & 0x0f) << 18;
-        val |= (c1 & 0x3f) << 12;
-        val |= (c0 & 0x3f00) >> 2;
-        val |= (c0 & 0x3f);
-    }else if (c2 >= 0xe0){
-        val = (c2 & 0x0f) << 12;
-        val |= (c1 & 0x3f) << 6;
-        val |= (c0 & 0x3f);
-    }else if (c2 >= 0xc0){
-        val = (c2 & 0x1f) << 6;
-        val |= (c1 & 0x3f);
-    }else{
-        val = c2;
+    nkf_char wc;
+    if (c1 <= 0x7F) {
+	/* single byte */
+	wc = c1;
     }
-    return val;
+    else if (c1 <= 0xC3) {
+	/* trail byte or invalid */
+	return -1;
+    }
+    else if (c1 <= 0xDF) {
+	/* 2 bytes */
+	wc  = (c1 & 0x1F) << 6;
+	wc |= (c2 & 0x3F);
+    }
+    else if (c1 <= 0xEF) {
+	/* 3 bytes */
+	wc  = (c1 & 0x0F) << 12;
+	wc |= (c2 & 0x3F) << 6;
+	wc |= (c3 & 0x3F);
+    }
+    else if (c2 <= 0xF4) {
+	/* 4 bytes */
+	wc  = (c1 & 0x0F) << 18;
+	wc |= (c2 & 0x3F) << 12;
+	wc |= (c3 & 0x3F) << 6;
+	wc |= (c4 & 0x3F);
+    }
+    else {
+	return -1;
+    }
+    return wc;
 }
 #endif
 
 #ifdef UTF8_INPUT_ENABLE
-nkf_char w_iconv_common(nkf_char c1, nkf_char c0, const unsigned short *const *pp, nkf_char psize, nkf_char *p2, nkf_char *p1)
+static int
+unicode_to_jis_common2(nkf_char c1, nkf_char c0,
+		       const unsigned short *const *pp, nkf_char psize,
+		       nkf_char *p2, nkf_char *p1)
 {
     nkf_char c2;
     const unsigned short *p;
@@ -1602,23 +1627,24 @@ nkf_char w_iconv_common(nkf_char c1, nkf_char c0, const unsigned short *const *p
     val = p[c0];
     if (val == 0) return 1;
     if (no_cp932ext_f && (
-	(val>>8) == 0x2D || /* NEC special characters */
-	val > NKF_INT32_C(0xF300) /* IBM extended characters */
-	)) return 1;
+			  (val>>8) == 0x2D || /* NEC special characters */
+			  val > NKF_INT32_C(0xF300) /* IBM extended characters */
+			 )) return 1;
 
     c2 = val >> 8;
-   if (val > 0x7FFF){
-        c2 &= 0x7f;
-        c2 |= PREFIX_EUCG3;
+    if (val > 0x7FFF){
+	c2 &= 0x7f;
+	c2 |= PREFIX_EUCG3;
     }
-    if (c2 == SO) c2 = JIS_X_0201;
-    c1 = val & 0x7f;
+    if (c2 == SO) c2 = JIS_X_0201_1976_K;
+    c1 = val & 0xFF;
     if (p2) *p2 = c2;
     if (p1) *p1 = c1;
     return 0;
 }
 
-nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_char *p1)
+static int
+unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_char *p1)
 {
     const unsigned short *const *pp;
     const unsigned short *const *const *ppp;
@@ -1691,7 +1717,7 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_2bytes_ms :
 	    ms_ucs_map_f == UCS_MAP_CP10001 ? utf8_to_euc_2bytes_mac :
 	    utf8_to_euc_2bytes;
-	ret =  w_iconv_common(c2, c1, pp, sizeof_utf8_to_euc_2bytes, p2, p1);
+	ret =  unicode_to_jis_common2(c2, c1, pp, sizeof_utf8_to_euc_2bytes, p2, p1);
     }else if(c0 < 0xF0){
 	if(no_best_fit_chars_f){
 	    if(ms_ucs_map_f == UCS_MAP_CP932){
@@ -1717,10 +1743,10 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 		case 0xE3:
 		    switch(c1){
 		    case 0x82:
-			    if(c0 == 0x94) return 1;
+			if(c0 == 0x94) return 1;
 			break;
 		    case 0x83:
-			    if(c0 == 0xBB) return 1;
+			if(c0 == 0xBB) return 1;
 			break;
 		    }
 		    break;
@@ -1758,7 +1784,7 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 	    ms_ucs_map_f == UCS_MAP_MS ? utf8_to_euc_3bytes_ms :
 	    ms_ucs_map_f == UCS_MAP_CP10001 ? utf8_to_euc_3bytes_mac :
 	    utf8_to_euc_3bytes;
-	ret = w_iconv_common(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
+	ret = unicode_to_jis_common2(c1, c0, ppp[c2 - 0xE0], sizeof_utf8_to_euc_C2, p2, p1);
     }else return -1;
 #ifdef SHIFTJIS_CP932
     if (!ret && !cp932inv_f && is_eucg3(*p2)) {
@@ -1774,11 +1800,12 @@ nkf_char unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *
 }
 
 #ifdef UTF8_OUTPUT_ENABLE
-nkf_char e2w_conv(nkf_char c2, nkf_char c1)
+static nkf_char
+e2w_conv(nkf_char c2, nkf_char c1)
 {
     const unsigned short *p;
 
-    if (c2 == JIS_X_0201) {
+    if (c2 == JIS_X_0201_1976_K) {
 	if (ms_ucs_map_f == UCS_MAP_CP10001) {
 	    switch (c1) {
 	    case 0x20:
@@ -1787,23 +1814,23 @@ nkf_char e2w_conv(nkf_char c2, nkf_char c1)
 		return 0xA9;
 	    }
 	}
-        p = euc_to_utf8_1byte;
+	p = euc_to_utf8_1byte;
 #ifdef X0212_ENABLE
     } else if (is_eucg3(c2)){
 	if(ms_ucs_map_f == UCS_MAP_ASCII&& c2 == NKF_INT32_C(0x8F22) && c1 == 0x43){
 	    return 0xA6;
 	}
-        c2 = (c2&0x7f) - 0x21;
-        if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
+	c2 = (c2&0x7f) - 0x21;
+	if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
 	    p = x0212_to_utf8_2bytes[c2];
-        else
-            return 0;
+	else
+	    return 0;
 #endif
     } else {
-        c2 &= 0x7f;
-        c2 = (c2&0x7f) - 0x21;
-        if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
-            p =
+	c2 &= 0x7f;
+	c2 = (c2&0x7f) - 0x21;
+	if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
+	    p =
 		ms_ucs_map_f == UCS_MAP_ASCII ? euc_to_utf8_2bytes[c2] :
 		ms_ucs_map_f == UCS_MAP_CP10001 ? euc_to_utf8_2bytes_mac[c2] :
 		euc_to_utf8_2bytes_ms[c2];
@@ -1818,62 +1845,73 @@ nkf_char e2w_conv(nkf_char c2, nkf_char c1)
 }
 #endif
 
-nkf_char w2e_conv(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_char *p1)
+static nkf_char
+w2e_conv(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_char *p1)
 {
     nkf_char ret = 0;
 
     if (!c1){
-        *p2 = 0;
-        *p1 = c2;
+	*p2 = 0;
+	*p1 = c2;
     }else if (0xc0 <= c2 && c2 <= 0xef) {
 	ret =  unicode_to_jis_common(c2, c1, c0, p2, p1);
 #ifdef NUMCHAR_OPTION
-        if (ret > 0){
-            if (p2) *p2 = 0;
-            if (p1) *p1 = CLASS_UNICODE | ww16_conv(c2, c1, c0);
-            ret = 0;
-        }
-#endif
-    }
-    return ret;
-}
-
-#ifdef UTF8_INPUT_ENABLE
-nkf_char w16e_conv(nkf_char val, nkf_char *p2, nkf_char *p1)
-{
-    nkf_char c2, c1, c0;
-    nkf_char ret = 0;
-    val &= VALUE_MASK;
-    if (val < 0x80){
-        *p2 = 0;
-        *p1 = val;
-    }else{
-	w16w_conv(val, &c2, &c1, &c0);
-	ret =  unicode_to_jis_common(c2, c1, c0, p2, p1);
-#ifdef NUMCHAR_OPTION
 	if (ret > 0){
-	    *p2 = 0;
-	    *p1 = CLASS_UNICODE | val;
+	    if (p2) *p2 = 0;
+	    if (p1) *p1 = nkf_char_unicode_new(nkf_utf8_to_unicode(c2, c1, c0, 0));
 	    ret = 0;
 	}
 #endif
     }
     return ret;
 }
+
+#ifdef UTF8_INPUT_ENABLE
+static nkf_char
+w16e_conv(nkf_char val, nkf_char *p2, nkf_char *p1)
+{
+    int c1, c2, c3, c4;
+    nkf_char ret = 0;
+    val &= VALUE_MASK;
+    if (val < 0x80) {
+	*p2 = 0;
+	*p1 = val;
+    }
+    else if (nkf_char_unicode_bmp_p(val)){
+	nkf_unicode_to_utf8(val, &c1, &c2, &c3, &c4);
+	ret =  unicode_to_jis_common(c1, c2, c3, p2, p1);
+	if (ret > 0){
+	    *p2 = 0;
+	    *p1 = nkf_char_unicode_new(val);
+	    ret = 0;
+	}
+    }
+    else {
+	*p2 = 0;
+	*p1 = nkf_char_unicode_new(val);
+    }
+    return ret;
+}
 #endif
 
-nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
+static nkf_char
+e_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 {
-    if (c2 == JIS_X_0201) {
-	c1 &= 0x7f;
+    if (c2 == JIS_X_0201_1976_K || c2 == SS2){
+	if (iso2022jp_f && !x0201_f) {
+	    c2 = GETA1; c1 = GETA2;
+	} else {
+	    c2 = JIS_X_0201_1976_K;
+	    c1 &= 0x7f;
+	}
 #ifdef X0212_ENABLE
     }else if (c2 == 0x8f){
-        if (c0 == 0){
-            return -1;
-        }
+	if (c0 == 0){
+	    return -1;
+	}
 	if (!cp51932_f && !x0213_f && 0xF5 <= c1 && c1 <= 0xFE && 0xA1 <= c0 && c0 <= 0xFE) {
 	    /* encoding is eucJP-ms, so invert to Unicode Private User Area */
-	    c1 = (c1 - 0xF5) * 94 + c0 - 0xA1 + 0xE3AC + CLASS_UNICODE;
+	    c1 = nkf_char_unicode_new((c1 - 0xF5) * 94 + c0 - 0xA1 + 0xE3AC);
 	    c2 = 0;
 	} else {
 	    c2 = (c2 << 8) | (c1 & 0x7f);
@@ -1890,17 +1928,14 @@ nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 		}
 	    }
 #endif /* SHIFTJIS_CP932 */
-        }
+	}
 #endif /* X0212_ENABLE */
-    } else if (c2 == SSO){
-        c2 = JIS_X_0201;
-        c1 &= 0x7f;
-    } else if ((c2 == EOF) || (c2 == 0) || c2 < SP) {
-        /* NOP */
+    } else if ((c2 == EOF) || (c2 == 0) || c2 < SP || c2 == ISO_8859_1) {
+	/* NOP */
     } else {
 	if (!cp51932_f && ms_ucs_map_f && 0xF5 <= c2 && c2 <= 0xFE && 0xA1 <= c1 && c1 <= 0xFE) {
 	    /* encoding is eucJP-ms, so invert to Unicode Private User Area */
-	    c1 = (c2 - 0xF5) * 94 + c1 - 0xA1 + 0xE000 + CLASS_UNICODE;
+	    c1 = nkf_char_unicode_new((c2 - 0xF5) * 94 + c1 - 0xA1 + 0xE000);
 	    c2 = 0;
 	} else {
 	    c1 &= 0x7f;
@@ -1917,34 +1952,40 @@ nkf_char e_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 		}
 	    }
 #endif /* SHIFTJIS_CP932 */
-        }
+	}
     }
     (*oconv)(c2, c1);
     return 0;
 }
 
-nkf_char s_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
+static nkf_char
+s_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 {
-    if (c2 == JIS_X_0201) {
-	c1 &= 0x7f;
+    if (c2 == JIS_X_0201_1976_K || (0xA1 <= c2 && c2 <= 0xDF)) {
+	if (iso2022jp_f && !x0201_f) {
+	    c2 = GETA1; c1 = GETA2;
+	} else {
+	    c1 &= 0x7f;
+	}
     } else if ((c2 == EOF) || (c2 == 0) || c2 < SP) {
-        /* NOP */
+	/* NOP */
     } else if (!x0213_f && 0xF0 <= c2 && c2 <= 0xF9 && 0x40 <= c1 && c1 <= 0xFC) {
 	/* CP932 UDC */
 	if(c1 == 0x7F) return 0;
-	c1 = (c2 - 0xF0) * 188 + (c1 - 0x40 - (0x7E < c1)) + 0xE000 + CLASS_UNICODE;
+	c1 = nkf_char_unicode_new((c2 - 0xF0) * 188 + (c1 - 0x40 - (0x7E < c1)) + 0xE000);
 	c2 = 0;
     } else {
-        nkf_char ret = s2e_conv(c2, c1, &c2, &c1);
-        if (ret) return ret;
+	nkf_char ret = s2e_conv(c2, c1, &c2, &c1);
+	if (ret) return ret;
     }
     (*oconv)(c2, c1);
     return 0;
 }
 
-nkf_char w_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
+static nkf_char
+w_iconv(nkf_char c1, nkf_char c2, nkf_char c3)
 {
-    nkf_char ret = 0;
+    nkf_char ret = 0, c4 = 0;
     static const char w_iconv_utf8_1st_byte[] =
     { /* 0xC0 - 0xFF */
 	20, 20, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
@@ -1952,45 +1993,50 @@ nkf_char w_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 	30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 32, 33, 33,
 	40, 41, 41, 41, 42, 43, 43, 43, 50, 50, 50, 50, 60, 60, 70, 70};
 
-    if (c2 < 0 || 0xff < c2) {
-    }else if (c2 == 0) { /* 0 : 1 byte*/
-	c0 = 0;
-    } else if ((c2 & 0xc0) == 0x80) { /* 0x80-0xbf : trail byte */
+    if (c3 > 0xFF) {
+	c4 = c3 & 0xFF;
+	c3 >>= 8;
+    }
+
+    if (c1 < 0 || 0xff < c1) {
+    }else if (c1 == 0) { /* 0 : 1 byte*/
+	c3 = 0;
+    } else if ((c1 & 0xC0) == 0x80) { /* 0x80-0xbf : trail byte */
 	return 0;
     } else{
-    	switch (w_iconv_utf8_1st_byte[c2 - 0xC0]) {
+	switch (w_iconv_utf8_1st_byte[c1 - 0xC0]) {
 	case 21:
-	    if (c1 < 0x80 || 0xBF < c1) return 0;
+	    if (c2 < 0x80 || 0xBF < c2) return 0;
 	    break;
 	case 30:
-	    if (c0 == 0) return -1;
-	    if (c1 < 0xA0 || 0xBF < c1 || (c0 & 0xc0) != 0x80)
+	    if (c3 == 0) return -1;
+	    if (c2 < 0xA0 || 0xBF < c2 || (c3 & 0xC0) != 0x80)
 		return 0;
 	    break;
 	case 31:
 	case 33:
-	    if (c0 == 0) return -1;
-	    if ((c1 & 0xc0) != 0x80 || (c0 & 0xc0) != 0x80)
+	    if (c3 == 0) return -1;
+	    if ((c2 & 0xC0) != 0x80 || (c3 & 0xC0) != 0x80)
 		return 0;
 	    break;
 	case 32:
-	    if (c0 == 0) return -1;
-	    if (c1 < 0x80 || 0x9F < c1 || (c0 & 0xc0) != 0x80)
+	    if (c3 == 0) return -1;
+	    if (c2 < 0x80 || 0x9F < c2 || (c3 & 0xC0) != 0x80)
 		return 0;
 	    break;
 	case 40:
-	    if (c0 == 0) return -2;
-	    if (c1 < 0x90 || 0xBF < c1 || (c0 & 0xc0c0) != 0x8080)
+	    if (c3 == 0) return -2;
+	    if (c2 < 0x90 || 0xBF < c2 || (c3 & 0xC0) != 0x80 || (c4 & 0xC0) != 0x80)
 		return 0;
 	    break;
 	case 41:
-	    if (c0 == 0) return -2;
-	    if (c1 < 0x80 || 0xBF < c1 || (c0 & 0xc0c0) != 0x8080)
+	    if (c3 == 0) return -2;
+	    if (c2 < 0x80 || 0xBF < c2 || (c3 & 0xC0) != 0x80 || (c4 & 0xC0) != 0x80)
 		return 0;
 	    break;
 	case 42:
-	    if (c0 == 0) return -2;
-	    if (c1 < 0x80 || 0x8F < c1 || (c0 & 0xc0c0) != 0x8080)
+	    if (c3 == 0) return -2;
+	    if (c2 < 0x80 || 0x8F < c2 || (c3 & 0xC0) != 0x80 || (c4 & 0xC0) != 0x80)
 		return 0;
 	    break;
 	default:
@@ -1998,65 +2044,181 @@ nkf_char w_iconv(nkf_char c2, nkf_char c1, nkf_char c0)
 	    break;
 	}
     }
-    if (c2 == 0 || c2 == EOF){
-    } else if ((c2 & 0xf8) == 0xf0) { /* 4 bytes */
-	c1 = CLASS_UNICODE | ww16_conv(c2, c1, c0);
-	c2 = 0;
+    if (c1 == 0 || c1 == EOF){
+    } else if ((c1 & 0xf8) == 0xf0) { /* 4 bytes */
+	c2 = nkf_char_unicode_new(nkf_utf8_to_unicode(c1, c2, c3, c4));
+	c1 = 0;
     } else {
-	ret = w2e_conv(c2, c1, c0, &c2, &c1);
+	ret = w2e_conv(c1, c2, c3, &c1, &c2);
     }
     if (ret == 0){
-        (*oconv)(c2, c1);
+	(*oconv)(c1, c2);
     }
     return ret;
 }
 
-nkf_char w_iconv16(nkf_char c2, nkf_char c1, nkf_char c0)
+#define NKF_ICONV_INVALID_CODE_RANGE -13
+static size_t
+unicode_iconv(nkf_char wc)
 {
-    nkf_char ret = 0;
-    if ((c2==0 && c1 < 0x80) || c2==EOF) {
-	(*oconv)(c2, c1);
-	return 0;
-    }else if (0xD8 <= c2 && c2 <= 0xDB) {
-	if (c0 < NKF_INT32_C(0xDC00) || NKF_INT32_C(0xDFFF) < c0)
-	    return -2;
-	c1 =  CLASS_UNICODE | ((c2 << 18) + (c1 << 10) + c0 - NKF_INT32_C(0x35FDC00));
-	c2 = 0;
-    }else if ((c2>>3) == 27) { /* unpaired surrogate */
-	/*
-	   return 2;
-	*/
-	return 1;
-    }else ret = w16e_conv(((c2 & 0xff)<<8) + c1, &c2, &c1);
-    if (ret) return ret;
-    (*oconv)(c2, c1);
-    return 0;
-}
-
-nkf_char w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0)
-{
+    nkf_char c1, c2;
     int ret = 0;
 
-    if ((c2 == 0 && c1 < 0x80) || c2==EOF) {
-    } else if (is_unicode_bmp(c1)) {
-	ret = w16e_conv(c1, &c2, &c1);
-    } else {
+    if (wc < 0x80) {
 	c2 = 0;
-	c1 =  CLASS_UNICODE | c1;
+	c1 = wc;
+    }else if ((wc>>11) == 27) {
+	/* unpaired surrogate */
+	return NKF_ICONV_INVALID_CODE_RANGE;
+    }else if (wc < 0xFFFF) {
+	ret = w16e_conv(wc, &c2, &c1);
+	if (ret) return ret;
+    }else if (wc < 0x10FFFF) {
+	c2 = 0;
+	c1 = nkf_char_unicode_new(wc);
+    } else {
+	return NKF_ICONV_INVALID_CODE_RANGE;
     }
-    if (ret) return ret;
     (*oconv)(c2, c1);
     return 0;
 }
 
+#define NKF_ICONV_NEED_ONE_MORE_BYTE -1
+#define NKF_ICONV_NEED_TWO_MORE_BYTES -2
+#define UTF16_TO_UTF32(lead, trail) (((lead) << 10) + (trail) - NKF_INT32_C(0x35FDC00))
+static size_t
+nkf_iconv_utf_16(int c1, int c2, int c3, int c4)
+{
+    nkf_char wc;
+
+    if (c1 == EOF) {
+	(*oconv)(EOF, 0);
+	return 0;
+    }
+
+    if (input_endian == ENDIAN_BIG) {
+	if (0xD8 <= c1 && c1 <= 0xDB) {
+	    if (0xDC <= c3 && c3 <= 0xDF) {
+		wc = UTF16_TO_UTF32(c1 << 8 | c2, c3 << 8 | c4);
+	    } else return NKF_ICONV_NEED_TWO_MORE_BYTES;
+	} else {
+	    wc = c1 << 8 | c2;
+	}
+    } else {
+	if (0xD8 <= c2 && c2 <= 0xDB) {
+	    if (0xDC <= c4 && c4 <= 0xDF) {
+		wc = UTF16_TO_UTF32(c2 << 8 | c1, c4 << 8 | c3);
+	    } else return NKF_ICONV_NEED_TWO_MORE_BYTES;
+	} else {
+	    wc = c2 << 8 | c1;
+	}
+    }
+
+    return (*unicode_iconv)(wc);
+}
+
+static nkf_char
+w_iconv16(nkf_char c2, nkf_char c1, nkf_char c0)
+{
+    return 0;
+}
+
+static nkf_char
+w_iconv32(nkf_char c2, nkf_char c1, nkf_char c0)
+{
+    return 0;
+}
+
+static size_t
+nkf_iconv_utf_32(int c1, int c2, int c3, int c4)
+{
+    nkf_char wc;
+
+    if (c1 == EOF) {
+	(*oconv)(EOF, 0);
+	return 0;
+    }
+
+    switch(input_endian){
+    case ENDIAN_BIG:
+	wc = c2 << 16 | c3 << 8 | c4;
+	break;
+    case ENDIAN_LITTLE:
+	wc = c3 << 16 | c2 << 8 | c1;
+	break;
+    case ENDIAN_2143:
+	wc = c1 << 16 | c4 << 8 | c3;
+	break;
+    case ENDIAN_3412:
+	wc = c4 << 16 | c1 << 8 | c2;
+	break;
+    default:
+	return NKF_ICONV_INVALID_CODE_RANGE;
+    }
+
+    return (*unicode_iconv)(wc);
+}
 #endif
 
-void j_oconv(nkf_char c2, nkf_char c1)
+#define output_ascii_escape_sequence(mode) do { \
+	    if (output_mode != ASCII && output_mode != ISO_8859_1) { \
+		    (*o_putc)(ESC); \
+		    (*o_putc)('('); \
+		    (*o_putc)(ascii_intro); \
+		    output_mode = mode; \
+	    } \
+    } while (0)
+
+static void
+output_escape_sequence(int mode)
+{
+    if (output_mode == mode)
+	return;
+    switch(mode) {
+    case ISO_8859_1:
+	(*o_putc)(ESC);
+	(*o_putc)('.');
+	(*o_putc)('A');
+	break;
+    case JIS_X_0201_1976_K:
+	(*o_putc)(ESC);
+	(*o_putc)('(');
+	(*o_putc)('I');
+	break;
+    case JIS_X_0208:
+	(*o_putc)(ESC);
+	(*o_putc)('$');
+	(*o_putc)(kanji_intro);
+	break;
+    case JIS_X_0212:
+	(*o_putc)(ESC);
+	(*o_putc)('$');
+	(*o_putc)('(');
+	(*o_putc)('D');
+	break;
+    case JIS_X_0213_1:
+	(*o_putc)(ESC);
+	(*o_putc)('$');
+	(*o_putc)('(');
+	(*o_putc)('Q');
+	break;
+    case JIS_X_0213_2:
+	(*o_putc)(ESC);
+	(*o_putc)('$');
+	(*o_putc)('(');
+	(*o_putc)('P');
+	break;
+    }
+    output_mode = mode;
+}
+
+static void
+j_oconv(nkf_char c2, nkf_char c1)
 {
 #ifdef NUMCHAR_OPTION
-    if (c2 == 0 && is_unicode_capsule(c1)){
-        w16e_conv(c1, &c2, &c1);
-        if (c2 == 0 && is_unicode_capsule(c1)){
+    if (c2 == 0 && nkf_char_unicode_p(c1)){
+	w16e_conv(c1, &c2, &c1);
+	if (c2 == 0 && nkf_char_unicode_p(c1)){
 	    c2 = c1 & VALUE_MASK;
 	    if (ms_ucs_map_f && 0xE000 <= c2 && c2 <= 0xE757) {
 		/* CP5022x UDC */
@@ -2067,90 +2229,46 @@ void j_oconv(nkf_char c2, nkf_char c1)
 		if (encode_fallback) (*encode_fallback)(c1);
 		return;
 	    }
-        }
+	}
     }
 #endif
-    if (c2 == EOF) {
-        if (output_mode !=ASCII && output_mode!=ISO_8859_1) {
-            (*o_putc)(ESC);
-            (*o_putc)('(');
-            (*o_putc)(ascii_intro);
-	    output_mode = ASCII;
-        }
-        (*o_putc)(EOF);
+    if (c2 == 0) {
+	output_ascii_escape_sequence(ASCII);
+	(*o_putc)(c1);
+    }
+    else if (c2 == EOF) {
+	output_ascii_escape_sequence(ASCII);
+	(*o_putc)(EOF);
+    }
+    else if (c2 == ISO_8859_1) {
+	output_ascii_escape_sequence(ISO_8859_1);
+	(*o_putc)(c1|0x80);
+    }
+    else if (c2 == JIS_X_0201_1976_K) {
+	output_escape_sequence(JIS_X_0201_1976_K);
+	(*o_putc)(c1);
 #ifdef X0212_ENABLE
     } else if (is_eucg3(c2)){
-	if(x0213_f){
-	    if(output_mode!=JIS_X_0213_2){
-		output_mode = JIS_X_0213_2;
-		(*o_putc)(ESC);
-		(*o_putc)('$');
-		(*o_putc)('(');
-		(*o_putc)(0x50);
-	    }
-	}else{
-	    if(output_mode!=JIS_X_0212){
-		output_mode = JIS_X_0212;
-		(*o_putc)(ESC);
-		(*o_putc)('$');
-		(*o_putc)('(');
-		(*o_putc)(0x44);
-	    }
-        }
-        (*o_putc)(c2 & 0x7f);
-        (*o_putc)(c1);
+	output_escape_sequence(x0213_f ? JIS_X_0213_2 : JIS_X_0212);
+	(*o_putc)(c2 & 0x7f);
+	(*o_putc)(c1);
 #endif
-    } else if (c2==JIS_X_0201) {
-        if (output_mode!=JIS_X_0201) {
-            output_mode = JIS_X_0201;
-            (*o_putc)(ESC);
-            (*o_putc)('(');
-            (*o_putc)('I');
-        }
-        (*o_putc)(c1);
-    } else if (c2==ISO_8859_1) {
-            /* iso8859 introduction, or 8th bit on */
-            /* Can we convert in 7bit form using ESC-'-'-A ?
-               Is this popular? */
-	output_mode = ISO_8859_1;
-        (*o_putc)(c1|0x80);
-    } else if (c2 == 0) {
-        if (output_mode !=ASCII && output_mode!=ISO_8859_1) {
-            (*o_putc)(ESC);
-            (*o_putc)('(');
-            (*o_putc)(ascii_intro);
-            output_mode = ASCII;
-        }
-        (*o_putc)(c1);
     } else {
 	if(ms_ucs_map_f
 	   ? c2<0x20 || 0x92<c2 || c1<0x20 || 0x7e<c1
 	   : c2<0x20 || 0x7e<c2 || c1<0x20 || 0x7e<c1) return;
-	if(x0213_f){
-	    if (output_mode!=JIS_X_0213_1) {
-		output_mode = JIS_X_0213_1;
-		(*o_putc)(ESC);
-		(*o_putc)('$');
-		(*o_putc)('(');
-		(*o_putc)(0x4F);
-	    }
-	}else if (output_mode != JIS_X_0208) {
-            output_mode = JIS_X_0208;
-            (*o_putc)(ESC);
-            (*o_putc)('$');
-            (*o_putc)(kanji_intro);
-        }
-        (*o_putc)(c2);
-        (*o_putc)(c1);
+	output_escape_sequence(x0213_f ? JIS_X_0213_1 : JIS_X_0208);
+	(*o_putc)(c2);
+	(*o_putc)(c1);
     }
 }
 
-void e_oconv(nkf_char c2, nkf_char c1)
+static void
+e_oconv(nkf_char c2, nkf_char c1)
 {
-#ifdef NUMCHAR_OPTION
-    if (c2 == 0 && is_unicode_capsule(c1)){
-        w16e_conv(c1, &c2, &c1);
-        if (c2 == 0 && is_unicode_capsule(c1)){
+    if (c2 == 0 && nkf_char_unicode_p(c1)){
+	w16e_conv(c1, &c2, &c1);
+	if (c2 == 0 && nkf_char_unicode_p(c1)){
 	    c2 = c1 & VALUE_MASK;
 	    if (x0212_f && 0xE000 <= c2 && c2 <= 0xE757) {
 		/* eucJP-ms UDC */
@@ -2171,63 +2289,63 @@ void e_oconv(nkf_char c2, nkf_char c1)
 		if (encode_fallback) (*encode_fallback)(c1);
 		return;
 	    }
-        }
+	}
     }
-#endif
+
     if (c2 == EOF) {
-        (*o_putc)(EOF);
-        return;
+	(*o_putc)(EOF);
     } else if (c2 == 0) {
 	output_mode = ASCII;
-        (*o_putc)(c1);
-    } else if (c2 == JIS_X_0201) {
+	(*o_putc)(c1);
+    } else if (c2 == JIS_X_0201_1976_K) {
 	output_mode = EUC_JP;
-        (*o_putc)(SSO); (*o_putc)(c1|0x80);
+	(*o_putc)(SS2); (*o_putc)(c1|0x80);
     } else if (c2 == ISO_8859_1) {
 	output_mode = ISO_8859_1;
-        (*o_putc)(c1 | 0x080);
+	(*o_putc)(c1 | 0x080);
 #ifdef X0212_ENABLE
     } else if (is_eucg3(c2)){
 	output_mode = EUC_JP;
 #ifdef SHIFTJIS_CP932
-        if (!cp932inv_f){
-            nkf_char s2, s1;
-            if (e2s_conv(c2, c1, &s2, &s1) == 0){
-                s2e_conv(s2, s1, &c2, &c1);
-            }
-        }
+	if (!cp932inv_f){
+	    nkf_char s2, s1;
+	    if (e2s_conv(c2, c1, &s2, &s1) == 0){
+		s2e_conv(s2, s1, &c2, &c1);
+	    }
+	}
 #endif
-        if (c2 == 0) {
+	if (c2 == 0) {
 	    output_mode = ASCII;
 	    (*o_putc)(c1);
 	}else if (is_eucg3(c2)){
-            if (x0212_f){
-                (*o_putc)(0x8f);
-                (*o_putc)((c2 & 0x7f) | 0x080);
-                (*o_putc)(c1 | 0x080);
-            }
-        }else{
-            (*o_putc)((c2 & 0x7f) | 0x080);
-            (*o_putc)(c1 | 0x080);
-        }
+	    if (x0212_f){
+		(*o_putc)(0x8f);
+		(*o_putc)((c2 & 0x7f) | 0x080);
+		(*o_putc)(c1 | 0x080);
+	    }
+	}else{
+	    (*o_putc)((c2 & 0x7f) | 0x080);
+	    (*o_putc)(c1 | 0x080);
+	}
 #endif
     } else {
-        if (!nkf_isgraph(c1) || !nkf_isgraph(c2)) {
-            set_iconv(FALSE, 0);
-            return; /* too late to rescue this char */
-        }
+	if (!nkf_isgraph(c1) || !nkf_isgraph(c2)) {
+	    set_iconv(FALSE, 0);
+	    return; /* too late to rescue this char */
+	}
 	output_mode = EUC_JP;
-        (*o_putc)(c2 | 0x080);
-        (*o_putc)(c1 | 0x080);
+	(*o_putc)(c2 | 0x080);
+	(*o_putc)(c1 | 0x080);
     }
 }
 
-void s_oconv(nkf_char c2, nkf_char c1)
+static void
+s_oconv(nkf_char c2, nkf_char c1)
 {
 #ifdef NUMCHAR_OPTION
-    if (c2 == 0 && is_unicode_capsule(c1)){
-        w16e_conv(c1, &c2, &c1);
-        if (c2 == 0 && is_unicode_capsule(c1)){
+    if (c2 == 0 && nkf_char_unicode_p(c1)){
+	w16e_conv(c1, &c2, &c1);
+	if (c2 == 0 && nkf_char_unicode_p(c1)){
 	    c2 = c1 & VALUE_MASK;
 	    if (!x0213_f && 0xE000 <= c2 && c2 <= 0xE757) {
 		/* CP932 UDC */
@@ -2246,215 +2364,193 @@ void s_oconv(nkf_char c2, nkf_char c1)
     }
 #endif
     if (c2 == EOF) {
-        (*o_putc)(EOF);
-        return;
+	(*o_putc)(EOF);
+	return;
     } else if (c2 == 0) {
 	output_mode = ASCII;
-        (*o_putc)(c1);
-    } else if (c2 == JIS_X_0201) {
+	(*o_putc)(c1);
+    } else if (c2 == JIS_X_0201_1976_K) {
 	output_mode = SHIFT_JIS;
-        (*o_putc)(c1|0x80);
+	(*o_putc)(c1|0x80);
     } else if (c2 == ISO_8859_1) {
 	output_mode = ISO_8859_1;
-        (*o_putc)(c1 | 0x080);
+	(*o_putc)(c1 | 0x080);
 #ifdef X0212_ENABLE
     } else if (is_eucg3(c2)){
 	output_mode = SHIFT_JIS;
-        if (e2s_conv(c2, c1, &c2, &c1) == 0){
-            (*o_putc)(c2);
-            (*o_putc)(c1);
-        }
+	if (e2s_conv(c2, c1, &c2, &c1) == 0){
+	    (*o_putc)(c2);
+	    (*o_putc)(c1);
+	}
 #endif
     } else {
-        if (!nkf_isprint(c1) || !nkf_isprint(c2)) {
-            set_iconv(FALSE, 0);
-            return; /* too late to rescue this char */
-        }
+	if (!nkf_isprint(c1) || !nkf_isprint(c2)) {
+	    set_iconv(FALSE, 0);
+	    return; /* too late to rescue this char */
+	}
 	output_mode = SHIFT_JIS;
-        e2s_conv(c2, c1, &c2, &c1);
+	e2s_conv(c2, c1, &c2, &c1);
 
 #ifdef SHIFTJIS_CP932
-        if (cp932inv_f
-            && CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
-            nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
-            if (c){
-                c2 = c >> 8;
-                c1 = c & 0xff;
-            }
-        }
+	if (cp932inv_f
+	    && CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
+	    nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
+	    if (c){
+		c2 = c >> 8;
+		c1 = c & 0xff;
+	    }
+	}
 #endif /* SHIFTJIS_CP932 */
 
-        (*o_putc)(c2);
+	(*o_putc)(c2);
 	if (prefix_table[(unsigned char)c1]){
-            (*o_putc)(prefix_table[(unsigned char)c1]);
+	    (*o_putc)(prefix_table[(unsigned char)c1]);
 	}
-        (*o_putc)(c1);
+	(*o_putc)(c1);
     }
 }
 
 #ifdef UTF8_OUTPUT_ENABLE
-void w_oconv(nkf_char c2, nkf_char c1)
+static void
+w_oconv(nkf_char c2, nkf_char c1)
 {
-    nkf_char c0;
+    int c3, c4;
     nkf_char val;
 
     if (output_bom_f) {
 	output_bom_f = FALSE;
-    	(*o_putc)('\357');
+	(*o_putc)('\357');
 	(*o_putc)('\273');
 	(*o_putc)('\277');
     }
 
     if (c2 == EOF) {
-        (*o_putc)(EOF);
-        return;
+	(*o_putc)(EOF);
+	return;
     }
 
-#ifdef NUMCHAR_OPTION
-    if (c2 == 0 && is_unicode_capsule(c1)){
-        val = c1 & VALUE_MASK;
-        if (val < 0x80){
-            (*o_putc)(val);
-        }else if (val < 0x800){
-            (*o_putc)(0xC0 | (val >> 6));
-            (*o_putc)(0x80 | (val & 0x3f));
-        } else if (val <= NKF_INT32_C(0xFFFF)) {
-            (*o_putc)(0xE0 | (val >> 12));
-            (*o_putc)(0x80 | ((val >> 6) & 0x3f));
-            (*o_putc)(0x80 | (val        & 0x3f));
-        } else if (val <= NKF_INT32_C(0x10FFFF)) {
-            (*o_putc)(0xF0 | ( val>>18));
-            (*o_putc)(0x80 | ((val>>12) & 0x3f));
-            (*o_putc)(0x80 | ((val>> 6) & 0x3f));
-            (*o_putc)(0x80 | ( val      & 0x3f));
-        }
-        return;
+    if (c2 == 0 && nkf_char_unicode_p(c1)){
+	val = c1 & VALUE_MASK;
+	nkf_unicode_to_utf8(val, &c1, &c2, &c3, &c4);
+	(*o_putc)(c1);
+	if (c2) (*o_putc)(c2);
+	if (c3) (*o_putc)(c3);
+	if (c4) (*o_putc)(c4);
+	return;
     }
-#endif
 
     if (c2 == 0) {
-	output_mode = ASCII;
-        (*o_putc)(c1);
-    } else if (c2 == ISO_8859_1) {
-	output_mode = UTF_8;
-        (*o_putc)(c1 | 0x080);
+	(*o_putc)(c1);
     } else {
-        output_mode = UTF_8;
 	val = e2w_conv(c2, c1);
-        if (val){
-            w16w_conv(val, &c2, &c1, &c0);
-            (*o_putc)(c2);
-            if (c1){
-                (*o_putc)(c1);
-                if (c0) (*o_putc)(c0);
-            }
-        }
+	if (val){
+	    nkf_unicode_to_utf8(val, &c1, &c2, &c3, &c4);
+	    (*o_putc)(c1);
+	    if (c2) (*o_putc)(c2);
+	    if (c3) (*o_putc)(c3);
+	    if (c4) (*o_putc)(c4);
+	}
     }
 }
 
-void w_oconv16(nkf_char c2, nkf_char c1)
+static void
+w_oconv16(nkf_char c2, nkf_char c1)
 {
     if (output_bom_f) {
 	output_bom_f = FALSE;
-        if (output_endian == ENDIAN_LITTLE){
-            (*o_putc)((unsigned char)'\377');
-            (*o_putc)('\376');
-        }else{
-            (*o_putc)('\376');
-            (*o_putc)((unsigned char)'\377');
-        }
+	if (output_endian == ENDIAN_LITTLE){
+	    (*o_putc)(0xFF);
+	    (*o_putc)(0xFE);
+	}else{
+	    (*o_putc)(0xFE);
+	    (*o_putc)(0xFF);
+	}
     }
 
     if (c2 == EOF) {
-        (*o_putc)(EOF);
-        return;
+	(*o_putc)(EOF);
+	return;
     }
 
-    if (c2 == ISO_8859_1) {
-        c2 = 0;
-        c1 |= 0x80;
-#ifdef NUMCHAR_OPTION
-    } else if (c2 == 0 && is_unicode_capsule(c1)) {
-        if (is_unicode_bmp(c1)) {
-            c2 = (c1 >> 8) & 0xff;
-            c1 &= 0xff;
-        } else {
-            c1 &= VALUE_MASK;
-            if (c1 <= UNICODE_MAX) {
-                c2 = (c1 >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */
-                c1 = (c1 & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */
-                if (output_endian == ENDIAN_LITTLE){
-                    (*o_putc)(c2 & 0xff);
-                    (*o_putc)((c2 >> 8) & 0xff);
-                    (*o_putc)(c1 & 0xff);
-                    (*o_putc)((c1 >> 8) & 0xff);
-                }else{
-                    (*o_putc)((c2 >> 8) & 0xff);
-                    (*o_putc)(c2 & 0xff);
-                    (*o_putc)((c1 >> 8) & 0xff);
-                    (*o_putc)(c1 & 0xff);
-                }
-            }
-            return;
-        }
-#endif
+    if (c2 == 0 && nkf_char_unicode_p(c1)) {
+	if (nkf_char_unicode_bmp_p(c1)) {
+	    c2 = (c1 >> 8) & 0xff;
+	    c1 &= 0xff;
+	} else {
+	    c1 &= VALUE_MASK;
+	    if (c1 <= UNICODE_MAX) {
+		c2 = (c1 >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */
+		c1 = (c1 & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */
+		if (output_endian == ENDIAN_LITTLE){
+		    (*o_putc)(c2 & 0xff);
+		    (*o_putc)((c2 >> 8) & 0xff);
+		    (*o_putc)(c1 & 0xff);
+		    (*o_putc)((c1 >> 8) & 0xff);
+		}else{
+		    (*o_putc)((c2 >> 8) & 0xff);
+		    (*o_putc)(c2 & 0xff);
+		    (*o_putc)((c1 >> 8) & 0xff);
+		    (*o_putc)(c1 & 0xff);
+		}
+	    }
+	    return;
+	}
     } else if (c2) {
-        nkf_char val = e2w_conv(c2, c1);
-        c2 = (val >> 8) & 0xff;
-        c1 = val & 0xff;
+	nkf_char val = e2w_conv(c2, c1);
+	c2 = (val >> 8) & 0xff;
+	c1 = val & 0xff;
 	if (!val) return;
     }
     if (output_endian == ENDIAN_LITTLE){
-        (*o_putc)(c1);
-        (*o_putc)(c2);
+	(*o_putc)(c1);
+	(*o_putc)(c2);
     }else{
-        (*o_putc)(c2);
-        (*o_putc)(c1);
+	(*o_putc)(c2);
+	(*o_putc)(c1);
     }
 }
 
-void w_oconv32(nkf_char c2, nkf_char c1)
+static void
+w_oconv32(nkf_char c2, nkf_char c1)
 {
     if (output_bom_f) {
 	output_bom_f = FALSE;
-        if (output_endian == ENDIAN_LITTLE){
-            (*o_putc)((unsigned char)'\377');
-            (*o_putc)('\376');
-	    (*o_putc)('\000');
-	    (*o_putc)('\000');
-        }else{
-	    (*o_putc)('\000');
-	    (*o_putc)('\000');
-            (*o_putc)('\376');
-            (*o_putc)((unsigned char)'\377');
-        }
+	if (output_endian == ENDIAN_LITTLE){
+	    (*o_putc)(0xFF);
+	    (*o_putc)(0xFE);
+	    (*o_putc)(0);
+	    (*o_putc)(0);
+	}else{
+	    (*o_putc)(0);
+	    (*o_putc)(0);
+	    (*o_putc)(0xFE);
+	    (*o_putc)(0xFF);
+	}
     }
 
     if (c2 == EOF) {
-        (*o_putc)(EOF);
-        return;
+	(*o_putc)(EOF);
+	return;
     }
 
     if (c2 == ISO_8859_1) {
-        c1 |= 0x80;
-#ifdef NUMCHAR_OPTION
-    } else if (c2 == 0 && is_unicode_capsule(c1)) {
+	c1 |= 0x80;
+    } else if (c2 == 0 && nkf_char_unicode_p(c1)) {
 	c1 &= VALUE_MASK;
-#endif
     } else if (c2) {
-        c1 = e2w_conv(c2, c1);
+	c1 = e2w_conv(c2, c1);
 	if (!c1) return;
     }
     if (output_endian == ENDIAN_LITTLE){
-        (*o_putc)( c1 & NKF_INT32_C(0x000000FF));
-        (*o_putc)((c1 & NKF_INT32_C(0x0000FF00)) >>  8);
-        (*o_putc)((c1 & NKF_INT32_C(0x00FF0000)) >> 16);
-	(*o_putc)('\000');
+	(*o_putc)( c1        & 0xFF);
+	(*o_putc)((c1 >>  8) & 0xFF);
+	(*o_putc)((c1 >> 16) & 0xFF);
+	(*o_putc)(0);
     }else{
-	(*o_putc)('\000');
-        (*o_putc)((c1 & NKF_INT32_C(0x00FF0000)) >> 16);
-        (*o_putc)((c1 & NKF_INT32_C(0x0000FF00)) >>  8);
-        (*o_putc)( c1 & NKF_INT32_C(0x000000FF));
+	(*o_putc)(0);
+	(*o_putc)((c1 >> 16) & 0xFF);
+	(*o_putc)((c1 >>  8) & 0xFF);
+	(*o_putc)( c1        & 0xFF);
     }
 }
 #endif
@@ -2470,60 +2566,64 @@ void w_oconv32(nkf_char c2, nkf_char c1)
 
 #define SCORE_INIT (SCORE_iMIME)
 
-static const unsigned char score_table_A0[] = {
+static const char score_table_A0[] = {
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND, SCORE_NO_EXIST,
 };
 
-static const unsigned char score_table_F0[] = {
+static const char score_table_F0[] = {
     SCORE_L2, SCORE_L2, SCORE_L2, SCORE_L2,
     SCORE_L2, SCORE_DEPEND, SCORE_NO_EXIST, SCORE_NO_EXIST,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_CP932, SCORE_CP932,
     SCORE_CP932, SCORE_NO_EXIST, SCORE_NO_EXIST, SCORE_ERROR,
 };
 
-void set_code_score(struct input_code *ptr, nkf_char score)
+static void
+set_code_score(struct input_code *ptr, nkf_char score)
 {
     if (ptr){
-        ptr->score |= score;
+	ptr->score |= score;
     }
 }
 
-void clr_code_score(struct input_code *ptr, nkf_char score)
+static void
+clr_code_score(struct input_code *ptr, nkf_char score)
 {
     if (ptr){
-        ptr->score &= ~score;
+	ptr->score &= ~score;
     }
 }
 
-void code_score(struct input_code *ptr)
+static void
+code_score(struct input_code *ptr)
 {
     nkf_char c2 = ptr->buf[0];
 #ifdef UTF8_OUTPUT_ENABLE
     nkf_char c1 = ptr->buf[1];
 #endif
     if (c2 < 0){
-        set_code_score(ptr, SCORE_ERROR);
-    }else if (c2 == SSO){
-        set_code_score(ptr, SCORE_KANA);
+	set_code_score(ptr, SCORE_ERROR);
+    }else if (c2 == SS2){
+	set_code_score(ptr, SCORE_KANA);
     }else if (c2 == 0x8f){
-        set_code_score(ptr, SCORE_X0212);
+	set_code_score(ptr, SCORE_X0212);
 #ifdef UTF8_OUTPUT_ENABLE
     }else if (!e2w_conv(c2, c1)){
-        set_code_score(ptr, SCORE_NO_EXIST);
+	set_code_score(ptr, SCORE_NO_EXIST);
 #endif
     }else if ((c2 & 0x70) == 0x20){
-        set_code_score(ptr, score_table_A0[c2 & 0x0f]);
+	set_code_score(ptr, score_table_A0[c2 & 0x0f]);
     }else if ((c2 & 0x70) == 0x70){
-        set_code_score(ptr, score_table_F0[c2 & 0x0f]);
+	set_code_score(ptr, score_table_F0[c2 & 0x0f]);
     }else if ((c2 & 0x70) >= 0x50){
-        set_code_score(ptr, SCORE_L2);
+	set_code_score(ptr, SCORE_L2);
     }
 }
 
-void status_disable(struct input_code *ptr)
+static void
+status_disable(struct input_code *ptr)
 {
     ptr->stat = -1;
     ptr->buf[0] = -1;
@@ -2531,85 +2631,89 @@ void status_disable(struct input_code *ptr)
     if (iconv == ptr->iconv_func) set_iconv(FALSE, 0);
 }
 
-void status_push_ch(struct input_code *ptr, nkf_char c)
+static void
+status_push_ch(struct input_code *ptr, nkf_char c)
 {
     ptr->buf[ptr->index++] = c;
 }
 
-void status_clear(struct input_code *ptr)
+static void
+status_clear(struct input_code *ptr)
 {
     ptr->stat = 0;
     ptr->index = 0;
 }
 
-void status_reset(struct input_code *ptr)
+static void
+status_reset(struct input_code *ptr)
 {
     status_clear(ptr);
     ptr->score = SCORE_INIT;
 }
 
-void status_reinit(struct input_code *ptr)
+static void
+status_reinit(struct input_code *ptr)
 {
     status_reset(ptr);
     ptr->_file_stat = 0;
 }
 
-void status_check(struct input_code *ptr, nkf_char c)
+static void
+status_check(struct input_code *ptr, nkf_char c)
 {
     if (c <= DEL && estab_f){
-        status_reset(ptr);
+	status_reset(ptr);
     }
 }
 
-void s_status(struct input_code *ptr, nkf_char c)
+static void
+s_status(struct input_code *ptr, nkf_char c)
 {
     switch(ptr->stat){
-      case -1:
-          status_check(ptr, c);
-          break;
-      case 0:
-          if (c <= DEL){
-              break;
-#ifdef NUMCHAR_OPTION
-          }else if (is_unicode_capsule(c)){
-              break;
-#endif
-          }else if (0xa1 <= c && c <= 0xdf){
-              status_push_ch(ptr, SSO);
-              status_push_ch(ptr, c);
-              code_score(ptr);
-              status_clear(ptr);
-          }else if ((0x81 <= c && c < 0xa0) || (0xe0 <= c && c <= 0xea)){
-              ptr->stat = 1;
-              status_push_ch(ptr, c);
-          }else if (0xed <= c && c <= 0xee){
-              ptr->stat = 3;
-              status_push_ch(ptr, c);
+    case -1:
+	status_check(ptr, c);
+	break;
+    case 0:
+	if (c <= DEL){
+	    break;
+	}else if (nkf_char_unicode_p(c)){
+	    break;
+	}else if (0xa1 <= c && c <= 0xdf){
+	    status_push_ch(ptr, SS2);
+	    status_push_ch(ptr, c);
+	    code_score(ptr);
+	    status_clear(ptr);
+	}else if ((0x81 <= c && c < 0xa0) || (0xe0 <= c && c <= 0xea)){
+	    ptr->stat = 1;
+	    status_push_ch(ptr, c);
+	}else if (0xed <= c && c <= 0xee){
+	    ptr->stat = 3;
+	    status_push_ch(ptr, c);
 #ifdef SHIFTJIS_CP932
-          }else if (is_ibmext_in_sjis(c)){
-              ptr->stat = 2;
-              status_push_ch(ptr, c);
+	}else if (is_ibmext_in_sjis(c)){
+	    ptr->stat = 2;
+	    status_push_ch(ptr, c);
 #endif /* SHIFTJIS_CP932 */
 #ifdef X0212_ENABLE
-          }else if (0xf0 <= c && c <= 0xfc){
-              ptr->stat = 1;
-              status_push_ch(ptr, c);
+	}else if (0xf0 <= c && c <= 0xfc){
+	    ptr->stat = 1;
+	    status_push_ch(ptr, c);
 #endif /* X0212_ENABLE */
-          }else{
-              status_disable(ptr);
-          }
-          break;
-      case 1:
-          if ((0x40 <= c && c <= 0x7e) || (0x80 <= c && c <= 0xfc)){
-              status_push_ch(ptr, c);
-              s2e_conv(ptr->buf[0], ptr->buf[1], &ptr->buf[0], &ptr->buf[1]);
-              code_score(ptr);
-              status_clear(ptr);
-          }else{
-              status_disable(ptr);
-          }
-          break;
-      case 2:
+	}else{
+	    status_disable(ptr);
+	}
+	break;
+    case 1:
+	if ((0x40 <= c && c <= 0x7e) || (0x80 <= c && c <= 0xfc)){
+	    status_push_ch(ptr, c);
+	    s2e_conv(ptr->buf[0], ptr->buf[1], &ptr->buf[0], &ptr->buf[1]);
+	    code_score(ptr);
+	    status_clear(ptr);
+	}else{
+	    status_disable(ptr);
+	}
+	break;
+    case 2:
 #ifdef SHIFTJIS_CP932
 	if ((0x40 <= c && c <= 0x7e) || (0x80 <= c && c <= 0xfc)) {
 	    status_push_ch(ptr, c);
@@ -2621,205 +2725,208 @@ void s_status(struct input_code *ptr, nkf_char c)
 	}
 #endif /* SHIFTJIS_CP932 */
 	status_disable(ptr);
-          break;
-      case 3:
-          if ((0x40 <= c && c <= 0x7e) || (0x80 <= c && c <= 0xfc)){
-              status_push_ch(ptr, c);
-              s2e_conv(ptr->buf[0], ptr->buf[1], &ptr->buf[0], &ptr->buf[1]);
+	break;
+    case 3:
+	if ((0x40 <= c && c <= 0x7e) || (0x80 <= c && c <= 0xfc)){
+	    status_push_ch(ptr, c);
+	    s2e_conv(ptr->buf[0], ptr->buf[1], &ptr->buf[0], &ptr->buf[1]);
 	    set_code_score(ptr, SCORE_CP932);
 	    status_clear(ptr);
-          }else{
-              status_disable(ptr);
-          }
-          break;
+	}else{
+	    status_disable(ptr);
+	}
+	break;
     }
 }
 
-void e_status(struct input_code *ptr, nkf_char c)
+static void
+e_status(struct input_code *ptr, nkf_char c)
 {
     switch (ptr->stat){
-      case -1:
-          status_check(ptr, c);
-          break;
-      case 0:
-          if (c <= DEL){
-              break;
-#ifdef NUMCHAR_OPTION
-          }else if (is_unicode_capsule(c)){
-              break;
-#endif
-          }else if (SSO == c || (0xa1 <= c && c <= 0xfe)){
-              ptr->stat = 1;
-              status_push_ch(ptr, c);
+    case -1:
+	status_check(ptr, c);
+	break;
+    case 0:
+	if (c <= DEL){
+	    break;
+	}else if (nkf_char_unicode_p(c)){
+	    break;
+	}else if (SS2 == c || (0xa1 <= c && c <= 0xfe)){
+	    ptr->stat = 1;
+	    status_push_ch(ptr, c);
 #ifdef X0212_ENABLE
-          }else if (0x8f == c){
-              ptr->stat = 2;
-              status_push_ch(ptr, c);
+	}else if (0x8f == c){
+	    ptr->stat = 2;
+	    status_push_ch(ptr, c);
 #endif /* X0212_ENABLE */
-          }else{
-              status_disable(ptr);
-          }
-          break;
-      case 1:
-          if (0xa1 <= c && c <= 0xfe){
-              status_push_ch(ptr, c);
-              code_score(ptr);
-              status_clear(ptr);
-          }else{
-              status_disable(ptr);
-          }
-          break;
+	}else{
+	    status_disable(ptr);
+	}
+	break;
+    case 1:
+	if (0xa1 <= c && c <= 0xfe){
+	    status_push_ch(ptr, c);
+	    code_score(ptr);
+	    status_clear(ptr);
+	}else{
+	    status_disable(ptr);
+	}
+	break;
 #ifdef X0212_ENABLE
-      case 2:
-          if (0xa1 <= c && c <= 0xfe){
-              ptr->stat = 1;
-              status_push_ch(ptr, c);
-          }else{
-              status_disable(ptr);
-          }
+    case 2:
+	if (0xa1 <= c && c <= 0xfe){
+	    ptr->stat = 1;
+	    status_push_ch(ptr, c);
+	}else{
+	    status_disable(ptr);
+	}
 #endif /* X0212_ENABLE */
     }
 }
 
 #ifdef UTF8_INPUT_ENABLE
-void w_status(struct input_code *ptr, nkf_char c)
+static void
+w_status(struct input_code *ptr, nkf_char c)
 {
     switch (ptr->stat){
-      case -1:
-          status_check(ptr, c);
-          break;
-      case 0:
-          if (c <= DEL){
-              break;
-#ifdef NUMCHAR_OPTION
-          }else if (is_unicode_capsule(c)){
-              break;
-#endif
-          }else if (0xc0 <= c && c <= 0xdf){
-              ptr->stat = 1;
-              status_push_ch(ptr, c);
-          }else if (0xe0 <= c && c <= 0xef){
-              ptr->stat = 2;
-              status_push_ch(ptr, c);
-          }else if (0xf0 <= c && c <= 0xf4){
-              ptr->stat = 3;
-              status_push_ch(ptr, c);
-          }else{
-              status_disable(ptr);
-          }
-          break;
-      case 1:
-      case 2:
-          if (0x80 <= c && c <= 0xbf){
-              status_push_ch(ptr, c);
-              if (ptr->index > ptr->stat){
-                  int bom = (ptr->buf[0] == 0xef && ptr->buf[1] == 0xbb
-                             && ptr->buf[2] == 0xbf);
-                  w2e_conv(ptr->buf[0], ptr->buf[1], ptr->buf[2],
-                           &ptr->buf[0], &ptr->buf[1]);
-                  if (!bom){
-                      code_score(ptr);
-                  }
-                  status_clear(ptr);
-              }
-          }else{
-              status_disable(ptr);
-          }
-          break;
-      case 3:
+    case -1:
+	status_check(ptr, c);
+	break;
+    case 0:
+	if (c <= DEL){
+	    break;
+	}else if (nkf_char_unicode_p(c)){
+	    break;
+	}else if (0xc0 <= c && c <= 0xdf){
+	    ptr->stat = 1;
+	    status_push_ch(ptr, c);
+	}else if (0xe0 <= c && c <= 0xef){
+	    ptr->stat = 2;
+	    status_push_ch(ptr, c);
+	}else if (0xf0 <= c && c <= 0xf4){
+	    ptr->stat = 3;
+	    status_push_ch(ptr, c);
+	}else{
+	    status_disable(ptr);
+	}
+	break;
+    case 1:
+    case 2:
+	if (0x80 <= c && c <= 0xbf){
+	    status_push_ch(ptr, c);
+	    if (ptr->index > ptr->stat){
+		int bom = (ptr->buf[0] == 0xef && ptr->buf[1] == 0xbb
+			   && ptr->buf[2] == 0xbf);
+		w2e_conv(ptr->buf[0], ptr->buf[1], ptr->buf[2],
+			 &ptr->buf[0], &ptr->buf[1]);
+		if (!bom){
+		    code_score(ptr);
+		}
+		status_clear(ptr);
+	    }
+	}else{
+	    status_disable(ptr);
+	}
+	break;
+    case 3:
 	if (0x80 <= c && c <= 0xbf){
 	    if (ptr->index < ptr->stat){
 		status_push_ch(ptr, c);
 	    } else {
-	    	status_clear(ptr);
+		status_clear(ptr);
 	    }
-          }else{
-              status_disable(ptr);
-          }
-          break;
+	}else{
+	    status_disable(ptr);
+	}
+	break;
     }
 }
 #endif
 
-void code_status(nkf_char c)
+static void
+code_status(nkf_char c)
 {
     int action_flag = 1;
     struct input_code *result = 0;
     struct input_code *p = input_code_list;
     while (p->name){
-        if (!p->status_func) {
+	if (!p->status_func) {
 	    ++p;
 	    continue;
 	}
-        if (!p->status_func)
+	if (!p->status_func)
 	    continue;
-        (p->status_func)(p, c);
-        if (p->stat > 0){
-            action_flag = 0;
-        }else if(p->stat == 0){
-            if (result){
-                action_flag = 0;
-            }else{
-                result = p;
-            }
-        }
-        ++p;
+	(p->status_func)(p, c);
+	if (p->stat > 0){
+	    action_flag = 0;
+	}else if(p->stat == 0){
+	    if (result){
+		action_flag = 0;
+	    }else{
+		result = p;
+	    }
+	}
+	++p;
     }
 
     if (action_flag){
-        if (result && !estab_f){
-            set_iconv(TRUE, result->iconv_func);
-        }else if (c <= DEL){
-            struct input_code *ptr = input_code_list;
-            while (ptr->name){
-                status_reset(ptr);
-                ++ptr;
-            }
-        }
+	if (result && !estab_f){
+	    set_iconv(TRUE, result->iconv_func);
+	}else if (c <= DEL){
+	    struct input_code *ptr = input_code_list;
+	    while (ptr->name){
+		status_reset(ptr);
+		++ptr;
+	    }
+	}
     }
 }
 
 #ifndef WIN32DLL
-nkf_char std_getc(FILE *f)
+static nkf_char
+std_getc(FILE *f)
 {
     if (std_gc_ndx){
-        return std_gc_buf[--std_gc_ndx];
+	return std_gc_buf[--std_gc_ndx];
     }
     return getc(f);
 }
 #endif /*WIN32DLL*/
 
-nkf_char std_ungetc(nkf_char c, FILE *f)
+static nkf_char
+std_ungetc(nkf_char c, FILE *f)
 {
     if (std_gc_ndx == STD_GC_BUFSIZE){
-        return EOF;
+	return EOF;
     }
     std_gc_buf[std_gc_ndx++] = c;
     return c;
 }
 
 #ifndef WIN32DLL
-void std_putc(nkf_char c)
+static void
+std_putc(nkf_char c)
 {
     if(c!=EOF)
-      putchar(c);
+	putchar(c);
 }
 #endif /*WIN32DLL*/
 
 static unsigned char   hold_buf[HOLD_SIZE*2];
 static int             hold_count = 0;
-nkf_char push_hold_buf(nkf_char c2)
+static nkf_char
+push_hold_buf(nkf_char c2)
 {
     if (hold_count >= HOLD_SIZE*2)
-        return (EOF);
+	return (EOF);
     hold_buf[hold_count++] = (unsigned char)c2;
     return ((hold_count >= HOLD_SIZE*2) ? EOF : hold_count);
 }
 
-nkf_char
-h_conv(FILE *f, nkf_char c2, nkf_char c1)
+static int
+h_conv(FILE *f, int c1, int c2)
 {
-    nkf_char ret, c3, c0;
+    int ret, c4, c3;
     int hold_index;
 
 
@@ -2828,33 +2935,33 @@ h_conv(FILE *f, nkf_char c2, nkf_char c1)
     /** and it must be after 2 byte 8bit code            */
 
     hold_count = 0;
-    push_hold_buf(c2);
     push_hold_buf(c1);
+    push_hold_buf(c2);
 
-    while ((c1 = (*i_getc)(f)) != EOF) {
-        if (c1 == ESC){
-	    (*i_ungetc)(c1,f);
-            break;
-        }
-        code_status(c1);
-        if (push_hold_buf(c1) == EOF || estab_f){
-            break;
-        }
+    while ((c2 = (*i_getc)(f)) != EOF) {
+	if (c2 == ESC){
+	    (*i_ungetc)(c2,f);
+	    break;
+	}
+	code_status(c2);
+	if (push_hold_buf(c2) == EOF || estab_f) {
+	    break;
+	}
     }
 
-    if (!estab_f){
-        struct input_code *p = input_code_list;
-        struct input_code *result = p;
-        if (c1 == EOF){
-            code_status(c1);
-        }
-        while (p->name){
-            if (p->status_func && p->score < result->score){
-                result = p;
-            }
-            ++p;
-        }
-        set_iconv(TRUE, result->iconv_func);
+    if (!estab_f) {
+	struct input_code *p = input_code_list;
+	struct input_code *result = p;
+	if (c2 == EOF) {
+	    code_status(c2);
+	}
+	while (p->name) {
+	    if (p->status_func && p->score < result->score) {
+		result = p;
+	    }
+	    p++;
+	}
+	set_iconv(TRUE, result->iconv_func);
     }
 
 
@@ -2867,68 +2974,63 @@ h_conv(FILE *f, nkf_char c2, nkf_char c1)
      ** Kanji codes by oconv and leave estab_f unchanged.
      **/
 
-    ret = c1;
+    ret = c2;
     hold_index = 0;
     while (hold_index < hold_count){
-        c2 = hold_buf[hold_index++];
-        if (c2 <= DEL
-#ifdef NUMCHAR_OPTION
-            || is_unicode_capsule(c2)
-#endif
-            ){
-            (*iconv)(0, c2, 0);
-            continue;
-        }else if (iconv == s_iconv && 0xa1 <= c2 && c2 <= 0xdf){
-            (*iconv)(JIS_X_0201, c2, 0);
-            continue;
-        }
-        if (hold_index < hold_count){
-            c1 = hold_buf[hold_index++];
-        }else{
-            c1 = (*i_getc)(f);
-            if (c1 == EOF){
-                c3 = EOF;
-                break;
-            }
-            code_status(c1);
-        }
-        c0 = 0;
-        switch ((*iconv)(c2, c1, 0)) {  /* can be EUC/SJIS/UTF-8 */
+	c1 = hold_buf[hold_index++];
+	if (c1 <= DEL){
+	    (*iconv)(0, c1, 0);
+	    continue;
+	}else if (iconv == s_iconv && 0xa1 <= c1 && c1 <= 0xdf){
+	    (*iconv)(JIS_X_0201_1976_K, c1, 0);
+	    continue;
+	}
+	if (hold_index < hold_count){
+	    c2 = hold_buf[hold_index++];
+	}else{
+	    c2 = (*i_getc)(f);
+	    if (c2 == EOF){
+		c4 = EOF;
+		break;
+	    }
+	    code_status(c2);
+	}
+	c3 = 0;
+	switch ((*iconv)(c1, c2, 0)) {  /* can be EUC/SJIS/UTF-8 */
 	case -2:
 	    /* 4 bytes UTF-8 */
-            if (hold_index < hold_count){
-                c0 = hold_buf[hold_index++];
-            } else if ((c0 = (*i_getc)(f)) == EOF) {
+	    if (hold_index < hold_count){
+		c3 = hold_buf[hold_index++];
+	    } else if ((c3 = (*i_getc)(f)) == EOF) {
 		ret = EOF;
 		break;
 	    } else {
-                code_status(c0);
-		c0 <<= 8;
+		code_status(c3);
 		if (hold_index < hold_count){
-		    c3 = hold_buf[hold_index++];
-		} else if ((c3 = (*i_getc)(f)) == EOF) {
-		    c0 = ret = EOF;
+		    c4 = hold_buf[hold_index++];
+		} else if ((c4 = (*i_getc)(f)) == EOF) {
+		    c3 = ret = EOF;
 		    break;
 		} else {
-		    code_status(c3);
-		    (*iconv)(c2, c1, c0|c3);
+		    code_status(c4);
+		    (*iconv)(c1, c2, (c3<<8)|c4);
 		}
-            }
+	    }
 	    break;
 	case -1:
 	    /* 3 bytes EUC or UTF-8 */
-            if (hold_index < hold_count){
-                c0 = hold_buf[hold_index++];
-            } else if ((c0 = (*i_getc)(f)) == EOF) {
+	    if (hold_index < hold_count){
+		c3 = hold_buf[hold_index++];
+	    } else if ((c3 = (*i_getc)(f)) == EOF) {
 		ret = EOF;
 		break;
 	    } else {
-                code_status(c0);
-            }
-            (*iconv)(c2, c1, c0);
-            break;
+		code_status(c3);
+	    }
+	    (*iconv)(c1, c2, c3);
+	    break;
 	}
-	if (c0 == EOF) break;
+	if (c3 == EOF) break;
     }
     return ret;
 }
@@ -2936,7 +3038,8 @@ h_conv(FILE *f, nkf_char c2, nkf_char c1)
 /*
  * Check and Ignore BOM
  */
-void check_bom(FILE *f)
+static void
+check_bom(FILE *f)
 {
     int c2;
     switch(c2 = (*i_getc)(f)){
@@ -3050,22 +3153,26 @@ static struct {
     nkf_char buf[3];
 } broken_state;
 
-static void init_broken_state(void)
+static void
+init_broken_state(void)
 {
     memset(&broken_state, 0, sizeof(broken_state));
 }
 
-static void push_broken_buf(nkf_char c)
+static void
+push_broken_buf(c)
 {
     broken_state.buf[broken_state.count++] = c;
 }
 
-static nkf_char pop_broken_buf(void)
+static nkf_char
+pop_broken_buf(void)
 {
     return broken_state.buf[--broken_state.count];
 }
 
-nkf_char broken_getc(FILE *f)
+static nkf_char
+broken_getc(FILE *f)
 {
     nkf_char c, c1;
 
@@ -3074,7 +3181,7 @@ nkf_char broken_getc(FILE *f)
     }
     c = (*i_bgetc)(f);
     if (c=='$' && broken_state.status != ESC
-            && (input_mode==ASCII || input_mode==JIS_X_0201)) {
+	&& (input_mode == ASCII || input_mode == JIS_X_0201_1976_K)) {
 	c1= (*i_bgetc)(f);
 	broken_state.status = 0;
 	if (c1=='@'|| c1=='B') {
@@ -3086,7 +3193,7 @@ nkf_char broken_getc(FILE *f)
 	    return c;
 	}
     } else if (c=='(' && broken_state.status != ESC
-            && (input_mode==JIS_X_0208 || input_mode==JIS_X_0201)) { /* ) */
+	       && (input_mode == JIS_X_0208 || input_mode == JIS_X_0201_1976_K)) {
 	c1= (*i_bgetc)(f);
 	broken_state.status = 0;
 	if (c1=='J'|| c1=='B') {
@@ -3103,14 +3210,16 @@ nkf_char broken_getc(FILE *f)
     }
 }
 
-nkf_char broken_ungetc(nkf_char c, FILE *f)
+static nkf_char
+broken_ungetc(nkf_char c, FILE *f)
 {
     if (broken_state.count < 2)
 	push_broken_buf(c);
     return c;
 }
 
-void eol_conv(nkf_char c2, nkf_char c1)
+static void
+eol_conv(nkf_char c2, nkf_char c1)
 {
     if (guess_f && input_eol != EOF) {
 	if (c2 == 0 && c1 == LF) {
@@ -3131,210 +3240,212 @@ void eol_conv(nkf_char c2, nkf_char c1)
 }
 
 /*
-  Return value of fold_conv()
+   Return value of fold_conv()
 
-       LF  add newline  and output char
-       CR  add newline  and output nothing
-       SP  space
-       0   skip
-       1   (or else) normal output
+   LF  add newline  and output char
+   CR  add newline  and output nothing
+   SP  space
+   0   skip
+   1   (or else) normal output
 
-  fold state in prev (previous character)
+   fold state in prev (previous character)
 
-      >0x80 Japanese (X0208/X0201)
-      <0x80 ASCII
-      LF    new line
-      SP    space
+   >0x80 Japanese (X0208/X0201)
+   <0x80 ASCII
+   LF    new line
+   SP    space
 
-  This fold algorthm does not preserve heading space in a line.
-  This is the main difference from fmt.
-*/
+   This fold algorthm does not preserve heading space in a line.
+   This is the main difference from fmt.
+ */
 
 #define char_size(c2,c1) (c2?2:1)
 
-void fold_conv(nkf_char c2, nkf_char c1)
+static void
+fold_conv(nkf_char c2, nkf_char c1)
 {
     nkf_char prev0;
     nkf_char fold_state;
 
     if (c1== CR && !fold_preserve_f) {
-    	fold_state=0;  /* ignore cr */
+	fold_state=0;  /* ignore cr */
     }else if (c1== LF&&f_prev==CR && fold_preserve_f) {
-        f_prev = LF;
-     	fold_state=0;  /* ignore cr */
+	f_prev = LF;
+	fold_state=0;  /* ignore cr */
     } else if (c1== BS) {
-        if (f_line>0) f_line--;
-        fold_state =  1;
+	if (f_line>0) f_line--;
+	fold_state =  1;
     } else if (c2==EOF && f_line != 0) {    /* close open last line */
-            fold_state = LF;
+	fold_state = LF;
     } else if ((c1==LF && !fold_preserve_f)
-               || ((c1==CR||(c1==LF&&f_prev!=CR))
-                   && fold_preserve_f)) {
-        /* new line */
-        if (fold_preserve_f) {
-            f_prev = c1;
-            f_line = 0;
-            fold_state =  CR;
+	       || ((c1==CR||(c1==LF&&f_prev!=CR))
+		   && fold_preserve_f)) {
+	/* new line */
+	if (fold_preserve_f) {
+	    f_prev = c1;
+	    f_line = 0;
+	    fold_state =  CR;
 	} else if ((f_prev == c1 && !fold_preserve_f)
-                   || (f_prev == LF && fold_preserve_f)
-                   ) {        /* duplicate newline */
-            if (f_line) {
-                f_line = 0;
-                fold_state =  LF;    /* output two newline */
-            } else {
-                f_line = 0;
-                fold_state =  1;
-            }
-        } else  {
-            if (f_prev&0x80) {     /* Japanese? */
-                f_prev = c1;
-                fold_state =  0;       /* ignore given single newline */
-            } else if (f_prev==SP) {
-                fold_state =  0;
-            } else {
-                f_prev = c1;
-                if (++f_line<=fold_len)
-                    fold_state =  SP;
-                else {
-                    f_line = 0;
-                    fold_state =  CR;        /* fold and output nothing */
-                }
-            }
-        }
+		   || (f_prev == LF && fold_preserve_f)
+		  ) {        /* duplicate newline */
+	    if (f_line) {
+		f_line = 0;
+		fold_state =  LF;    /* output two newline */
+	    } else {
+		f_line = 0;
+		fold_state =  1;
+	    }
+	} else  {
+	    if (f_prev&0x80) {     /* Japanese? */
+		f_prev = c1;
+		fold_state =  0;       /* ignore given single newline */
+	    } else if (f_prev==SP) {
+		fold_state =  0;
+	    } else {
+		f_prev = c1;
+		if (++f_line<=fold_len)
+		    fold_state =  SP;
+		else {
+		    f_line = 0;
+		    fold_state =  CR;        /* fold and output nothing */
+		}
+	    }
+	}
     } else if (c1=='\f') {
-        f_prev = LF;
-        f_line = 0;
-        fold_state =  LF;            /* output newline and clear */
+	f_prev = LF;
+	f_line = 0;
+	fold_state =  LF;            /* output newline and clear */
     } else if ( (c2==0  && c1==SP)||
-               (c2==0  && c1==TAB)||
-               (c2=='!'&& c1=='!')) {
-        /* X0208 kankaku or ascii space */
-            if (f_prev == SP) {
-                fold_state = 0;         /* remove duplicate spaces */
-            } else {
-                f_prev = SP;
-                if (++f_line<=fold_len)
-                    fold_state = SP;         /* output ASCII space only */
-                else {
-                    f_prev = SP; f_line = 0;
-                    fold_state = CR;        /* fold and output nothing */
-                }
-            }
+	       (c2==0  && c1==TAB)||
+	       (c2=='!'&& c1=='!')) {
+	/* X0208 kankaku or ascii space */
+	if (f_prev == SP) {
+	    fold_state = 0;         /* remove duplicate spaces */
+	} else {
+	    f_prev = SP;
+	    if (++f_line<=fold_len)
+		fold_state = SP;         /* output ASCII space only */
+	    else {
+		f_prev = SP; f_line = 0;
+		fold_state = CR;        /* fold and output nothing */
+	    }
+	}
     } else {
-        prev0 = f_prev; /* we still need this one... , but almost done */
-        f_prev = c1;
-        if (c2 || c2==JIS_X_0201)
-            f_prev |= 0x80;  /* this is Japanese */
-        f_line += char_size(c2,c1);
-        if (f_line<=fold_len) {   /* normal case */
-            fold_state = 1;
-        } else {
-            if (f_line>fold_len+fold_margin) { /* too many kinsoku suspension */
-                f_line = char_size(c2,c1);
-                fold_state =  LF;       /* We can't wait, do fold now */
-            } else if (c2==JIS_X_0201) {
-            /* simple kinsoku rules  return 1 means no folding  */
-                if (c1==(0xde&0x7f)) fold_state = 1; /* ゛*/
-                else if (c1==(0xdf&0x7f)) fold_state = 1; /* ゜*/
-                else if (c1==(0xa4&0x7f)) fold_state = 1; /* 。*/
-                else if (c1==(0xa3&0x7f)) fold_state = 1; /* ，*/
-                else if (c1==(0xa1&0x7f)) fold_state = 1; /* 」*/
-                else if (c1==(0xb0&0x7f)) fold_state = 1; /* - */
-                else if (SP<=c1 && c1<=(0xdf&0x7f)) {      /* X0201 */
+	prev0 = f_prev; /* we still need this one... , but almost done */
+	f_prev = c1;
+	if (c2 || c2 == JIS_X_0201_1976_K)
+	    f_prev |= 0x80;  /* this is Japanese */
+	f_line += char_size(c2,c1);
+	if (f_line<=fold_len) {   /* normal case */
+	    fold_state = 1;
+	} else {
+	    if (f_line>fold_len+fold_margin) { /* too many kinsoku suspension */
+		f_line = char_size(c2,c1);
+		fold_state =  LF;       /* We can't wait, do fold now */
+	    } else if (c2 == JIS_X_0201_1976_K) {
+		/* simple kinsoku rules  return 1 means no folding  */
+		if (c1==(0xde&0x7f)) fold_state = 1; /* ゛*/
+		else if (c1==(0xdf&0x7f)) fold_state = 1; /* ゜*/
+		else if (c1==(0xa4&0x7f)) fold_state = 1; /* 。*/
+		else if (c1==(0xa3&0x7f)) fold_state = 1; /* ，*/
+		else if (c1==(0xa1&0x7f)) fold_state = 1; /* 」*/
+		else if (c1==(0xb0&0x7f)) fold_state = 1; /* - */
+		else if (SP<=c1 && c1<=(0xdf&0x7f)) {      /* X0201 */
 		    f_line = 1;
 		    fold_state = LF;/* add one new f_line before this character */
 		} else {
 		    f_line = 1;
 		    fold_state = LF;/* add one new f_line before this character */
 		}
-            } else if (c2==0) {
-                /* kinsoku point in ASCII */
+	    } else if (c2==0) {
+		/* kinsoku point in ASCII */
 		if (  c1==')'||    /* { [ ( */
-                     c1==']'||
-                     c1=='}'||
-                     c1=='.'||
-                     c1==','||
-                     c1=='!'||
-                     c1=='?'||
-                     c1=='/'||
-                     c1==':'||
-                     c1==';') {
+		    c1==']'||
+		    c1=='}'||
+		    c1=='.'||
+		    c1==','||
+		    c1=='!'||
+		    c1=='?'||
+		    c1=='/'||
+		    c1==':'||
+		    c1==';') {
 		    fold_state = 1;
-		/* just after special */
+		    /* just after special */
 		} else if (!is_alnum(prev0)) {
 		    f_line = char_size(c2,c1);
 		    fold_state = LF;
 		} else if ((prev0==SP) ||   /* ignored new f_line */
-                      (prev0==LF)||        /* ignored new f_line */
-                      (prev0&0x80)) {        /* X0208 - ASCII */
+			   (prev0==LF)||        /* ignored new f_line */
+			   (prev0&0x80)) {        /* X0208 - ASCII */
 		    f_line = char_size(c2,c1);
-                    fold_state = LF;/* add one new f_line before this character */
-                } else {
-                    fold_state = 1;  /* default no fold in ASCII */
-                }
-            } else {
-                if (c2=='!') {
-                    if (c1=='"')  fold_state = 1; /* 、 */
-                    else if (c1=='#')  fold_state = 1; /* 。 */
-                    else if (c1=='W')  fold_state = 1; /* 」 */
-                    else if (c1=='K')  fold_state = 1; /* ） */
-                    else if (c1=='$')  fold_state = 1; /* ， */
-                    else if (c1=='%')  fold_state = 1; /* ． */
-                    else if (c1=='\'') fold_state = 1; /* ＋ */
-                    else if (c1=='(')  fold_state = 1; /* ； */
-                    else if (c1==')')  fold_state = 1; /* ？ */
-                    else if (c1=='*')  fold_state = 1; /* ！ */
-                    else if (c1=='+')  fold_state = 1; /* ゛ */
-                    else if (c1==',')  fold_state = 1; /* ゜ */
-                         /* default no fold in kinsoku */
+		    fold_state = LF;/* add one new f_line before this character */
+		} else {
+		    fold_state = 1;  /* default no fold in ASCII */
+		}
+	    } else {
+		if (c2=='!') {
+		    if (c1=='"')  fold_state = 1; /* 、 */
+		    else if (c1=='#')  fold_state = 1; /* 。 */
+		    else if (c1=='W')  fold_state = 1; /* 」 */
+		    else if (c1=='K')  fold_state = 1; /* ） */
+		    else if (c1=='$')  fold_state = 1; /* ， */
+		    else if (c1=='%')  fold_state = 1; /* ． */
+		    else if (c1=='\'') fold_state = 1; /* ＋ */
+		    else if (c1=='(')  fold_state = 1; /* ； */
+		    else if (c1==')')  fold_state = 1; /* ？ */
+		    else if (c1=='*')  fold_state = 1; /* ！ */
+		    else if (c1=='+')  fold_state = 1; /* ゛ */
+		    else if (c1==',')  fold_state = 1; /* ゜ */
+		    /* default no fold in kinsoku */
 		    else {
 			fold_state = LF;
 			f_line = char_size(c2,c1);
 			/* add one new f_line before this character */
 		    }
-                } else {
+		} else {
 		    f_line = char_size(c2,c1);
-                    fold_state = LF;
-                    /* add one new f_line before this character */
-                }
-            }
-        }
+		    fold_state = LF;
+		    /* add one new f_line before this character */
+		}
+	    }
+	}
     }
     /* terminator process */
     switch(fold_state) {
-        case LF:
-            OCONV_NEWLINE((*o_fconv));
-            (*o_fconv)(c2,c1);
-            break;
-        case 0:
-            return;
-        case CR:
-            OCONV_NEWLINE((*o_fconv));
-            break;
-        case TAB:
-        case SP:
-            (*o_fconv)(0,SP);
-            break;
-        default:
-            (*o_fconv)(c2,c1);
+    case LF:
+	OCONV_NEWLINE((*o_fconv));
+	(*o_fconv)(c2,c1);
+	break;
+    case 0:
+	return;
+    case CR:
+	OCONV_NEWLINE((*o_fconv));
+	break;
+    case TAB:
+    case SP:
+	(*o_fconv)(0,SP);
+	break;
+    default:
+	(*o_fconv)(c2,c1);
     }
 }
 
-nkf_char z_prev2=0,z_prev1=0;
+static nkf_char z_prev2=0,z_prev1=0;
 
-void z_conv(nkf_char c2, nkf_char c1)
+static void
+z_conv(nkf_char c2, nkf_char c1)
 {
 
     /* if (c2) c1 &= 0x7f; assertion */
 
-    if (c2 == JIS_X_0201 && (c1 == 0x20 || c1 == 0x7D || c1 == 0x7E)) {
+    if (c2 == JIS_X_0201_1976_K && (c1 == 0x20 || c1 == 0x7D || c1 == 0x7E)) {
 	(*o_zconv)(c2,c1);
 	return;
     }
 
     if (x0201_f) {
-	if (z_prev2 == JIS_X_0201) {
-	    if (c2 == JIS_X_0201) {
+	if (z_prev2 == JIS_X_0201_1976_K) {
+	    if (c2 == JIS_X_0201_1976_K) {
 		if (c1 == (0xde&0x7f)) { /* 濁点 */
 		    z_prev2 = 0;
 		    (*o_zconv)(dv[(z_prev1-SP)*2], dv[(z_prev1-SP)*2+1]);
@@ -3348,7 +3459,7 @@ void z_conv(nkf_char c2, nkf_char c1)
 	    z_prev2 = 0;
 	    (*o_zconv)(cv[(z_prev1-SP)*2], cv[(z_prev1-SP)*2+1]);
 	}
-	if (c2 == JIS_X_0201) {
+	if (c2 == JIS_X_0201_1976_K) {
 	    if (dv[(c1-SP)*2] || ev[(c1-SP)*2]) {
 		/* wait for 濁点 or 半濁点 */
 		z_prev1 = c1;
@@ -3362,28 +3473,28 @@ void z_conv(nkf_char c2, nkf_char c1)
     }
 
     if (c2 == EOF) {
-        (*o_zconv)(c2, c1);
-        return;
+	(*o_zconv)(c2, c1);
+	return;
     }
 
     if (alpha_f&1 && c2 == 0x23) {
 	/* JISX0208 Alphabet */
-        c2 = 0;
+	c2 = 0;
     } else if (c2 == 0x21) {
 	/* JISX0208 Kigou */
-       if (0x21==c1) {
-           if (alpha_f&2) {
-               c2 = 0;
-               c1 = SP;
-           } else if (alpha_f&4) {
-                (*o_zconv)(0, SP);
-                (*o_zconv)(0, SP);
-                return;
-           }
-       } else if (alpha_f&1 && 0x20<c1 && c1<0x7f && fv[c1-0x20]) {
-           c2 =  0;
-           c1 = fv[c1-0x20];
-       }
+	if (0x21==c1) {
+	    if (alpha_f&2) {
+		c2 = 0;
+		c1 = SP;
+	    } else if (alpha_f&4) {
+		(*o_zconv)(0, SP);
+		(*o_zconv)(0, SP);
+		return;
+	    }
+	} else if (alpha_f&1 && 0x20<c1 && c1<0x7f && fv[c1-0x20]) {
+	    c2 =  0;
+	    c1 = fv[c1-0x20];
+	}
     }
 
     if (alpha_f&8 && c2 == 0) {
@@ -3404,7 +3515,7 @@ void z_conv(nkf_char c2, nkf_char c1)
     if (alpha_f & 16) {
 	/* JIS X 0208 Katakana to JIS X 0201 Katakana */
 	if (c2 == 0x21) {
-	    nkf_char c = 0;
+	    char c = 0;
 	    switch (c1) {
 	    case 0x23:
 		/* U+3002 (0x8142) Ideographic Full Stop -> U+FF61 (0xA1) Halfwidth Ideographic Full Stop */
@@ -3440,7 +3551,7 @@ void z_conv(nkf_char c2, nkf_char c1)
 		break;
 	    }
 	    if (c) {
-		(*o_zconv)(JIS_X_0201, c);
+		(*o_zconv)(JIS_X_0201_1976_K, c);
 		return;
 	    }
 	} else if (c2 == 0x25) {
@@ -3462,9 +3573,9 @@ void z_conv(nkf_char c2, nkf_char c1)
 	    };
 	    if (fullwidth_to_halfwidth[c1-0x20]){
 		c2 = fullwidth_to_halfwidth[c1-0x20];
-		(*o_zconv)(JIS_X_0201, c2>>8);
+		(*o_zconv)(JIS_X_0201_1976_K, c2>>8);
 		if (c2 & 0xFF) {
-		    (*o_zconv)(JIS_X_0201, c2&0xFF);
+		    (*o_zconv)(JIS_X_0201_1976_K, c2&0xFF);
 		}
 		return;
 	    }
@@ -3475,25 +3586,26 @@ void z_conv(nkf_char c2, nkf_char c1)
 
 
 #define rot13(c)  ( \
-      ( c < 'A') ? c: \
-      (c <= 'M')  ? (c + 13): \
-      (c <= 'Z')  ? (c - 13): \
-      (c < 'a')   ? (c): \
-      (c <= 'm')  ? (c + 13): \
-      (c <= 'z')  ? (c - 13): \
-      (c) \
-)
+		   ( c < 'A') ? c: \
+		   (c <= 'M')  ? (c + 13): \
+		   (c <= 'Z')  ? (c - 13): \
+		   (c < 'a')   ? (c): \
+		   (c <= 'm')  ? (c + 13): \
+		   (c <= 'z')  ? (c - 13): \
+		   (c) \
+		  )
 
 #define  rot47(c) ( \
-      ( c < '!') ? c: \
-      ( c <= 'O') ? (c + 47) : \
-      ( c <= '~') ?  (c - 47) : \
-      c \
-)
+		   ( c < '!') ? c: \
+		   ( c <= 'O') ? (c + 47) : \
+		   ( c <= '~') ?  (c - 47) : \
+		   c \
+		  )
 
-void rot_conv(nkf_char c2, nkf_char c1)
+static void
+rot_conv(nkf_char c2, nkf_char c1)
 {
-    if (c2==0 || c2==JIS_X_0201 || c2==ISO_8859_1) {
+    if (c2 == 0 || c2 == JIS_X_0201_1976_K || c2 == ISO_8859_1) {
 	c1 = rot13(c1);
     } else if (c2) {
 	c1 = rot47(c1);
@@ -3502,62 +3614,64 @@ void rot_conv(nkf_char c2, nkf_char c1)
     (*o_rot_conv)(c2,c1);
 }
 
-void hira_conv(nkf_char c2, nkf_char c1)
+static void
+hira_conv(nkf_char c2, nkf_char c1)
 {
     if (hira_f & 1) {
-        if (c2 == 0x25) {
-            if (0x20 < c1 && c1 < 0x74) {
-                c2 = 0x24;
-                (*o_hira_conv)(c2,c1);
-                return;
-            } else if (c1 == 0x74 && nkf_enc_unicode_p(output_encoding)) {
-                c2 = 0;
-                c1 = CLASS_UNICODE | 0x3094;
-                (*o_hira_conv)(c2,c1);
-                return;
-            }
-        } else if (c2 == 0x21 && (c1 == 0x33 || c1 == 0x34)) {
-            c1 += 2;
-            (*o_hira_conv)(c2,c1);
-            return;
-        }
+	if (c2 == 0x25) {
+	    if (0x20 < c1 && c1 < 0x74) {
+		c2 = 0x24;
+		(*o_hira_conv)(c2,c1);
+		return;
+	    } else if (c1 == 0x74 && nkf_enc_unicode_p(output_encoding)) {
+		c2 = 0;
+		c1 = nkf_char_unicode_new(0x3094);
+		(*o_hira_conv)(c2,c1);
+		return;
+	    }
+	} else if (c2 == 0x21 && (c1 == 0x33 || c1 == 0x34)) {
+	    c1 += 2;
+	    (*o_hira_conv)(c2,c1);
+	    return;
+	}
     }
     if (hira_f & 2) {
-        if (c2 == 0 && c1 == (CLASS_UNICODE | 0x3094)) {
-            c2 = 0x25;
-            c1 = 0x74;
-        } else if (c2 == 0x24 && 0x20 < c1 && c1 < 0x74) {
-            c2 = 0x25;
-        } else if (c2 == 0x21 && (c1 == 0x35 || c1 == 0x36)) {
-            c1 -= 2;
-        }
+	if (c2 == 0 && c1 == nkf_char_unicode_new(0x3094)) {
+	    c2 = 0x25;
+	    c1 = 0x74;
+	} else if (c2 == 0x24 && 0x20 < c1 && c1 < 0x74) {
+	    c2 = 0x25;
+	} else if (c2 == 0x21 && (c1 == 0x35 || c1 == 0x36)) {
+	    c1 -= 2;
+	}
     }
     (*o_hira_conv)(c2,c1);
 }
 
 
-void iso2022jp_check_conv(nkf_char c2, nkf_char c1)
+static void
+iso2022jp_check_conv(nkf_char c2, nkf_char c1)
 {
 #define RANGE_NUM_MAX 18
     static const nkf_char range[RANGE_NUM_MAX][2] = {
-        {0x222f, 0x2239,},
-        {0x2242, 0x2249,},
-        {0x2251, 0x225b,},
-        {0x226b, 0x2271,},
-        {0x227a, 0x227d,},
-        {0x2321, 0x232f,},
-        {0x233a, 0x2340,},
-        {0x235b, 0x2360,},
-        {0x237b, 0x237e,},
-        {0x2474, 0x247e,},
-        {0x2577, 0x257e,},
-        {0x2639, 0x2640,},
-        {0x2659, 0x267e,},
-        {0x2742, 0x2750,},
-        {0x2772, 0x277e,},
-        {0x2841, 0x287e,},
-        {0x4f54, 0x4f7e,},
-        {0x7425, 0x747e},
+	{0x222f, 0x2239,},
+	{0x2242, 0x2249,},
+	{0x2251, 0x225b,},
+	{0x226b, 0x2271,},
+	{0x227a, 0x227d,},
+	{0x2321, 0x232f,},
+	{0x233a, 0x2340,},
+	{0x235b, 0x2360,},
+	{0x237b, 0x237e,},
+	{0x2474, 0x247e,},
+	{0x2577, 0x257e,},
+	{0x2639, 0x2640,},
+	{0x2659, 0x267e,},
+	{0x2742, 0x2750,},
+	{0x2772, 0x277e,},
+	{0x2841, 0x287e,},
+	{0x4f54, 0x4f7e,},
+	{0x7425, 0x747e},
     };
     nkf_char i;
     nkf_char start, end, c;
@@ -3612,7 +3726,7 @@ nkf_char (*mime_priority_func[])(nkf_char c2, nkf_char c1, nkf_char c0) = {
 };
 
 static const nkf_char mime_encode[] = {
-    EUC_JP, SHIFT_JIS, ISO_8859_1, ISO_8859_1, JIS_X_0208, JIS_X_0201,
+    EUC_JP, SHIFT_JIS, ISO_8859_1, ISO_8859_1, JIS_X_0208, JIS_X_0201_1976_K,
 #if defined(UTF8_INPUT_ENABLE)
     UTF_8, UTF_8,
 #endif
@@ -3645,18 +3759,21 @@ static nkf_char (*mime_iconv_back)(nkf_char c2,nkf_char c1,nkf_char c0) = NULL;
 
 #define MAXRECOVER 20
 
-static void mime_input_buf_unshift(nkf_char c)
+static void
+mime_input_buf_unshift(nkf_char c)
 {
     mime_input_buf(--mime_input_state.top) = (unsigned char)c;
 }
 
-nkf_char mime_ungetc(nkf_char c, FILE *f)
+static nkf_char
+mime_ungetc(nkf_char c, FILE *f)
 {
     mime_input_buf_unshift(c);
     return c;
 }
 
-nkf_char mime_ungetc_buf(nkf_char c, FILE *f)
+static nkf_char
+mime_ungetc_buf(nkf_char c, FILE *f)
 {
     if (mimebuf_f)
 	(*i_mungetc_buf)(c,f);
@@ -3665,15 +3782,17 @@ nkf_char mime_ungetc_buf(nkf_char c, FILE *f)
     return c;
 }
 
-nkf_char mime_getc_buf(FILE *f)
+static nkf_char
+mime_getc_buf(FILE *f)
 {
     /* we don't keep eof of mime_input_buf, becase it contains ?= as
        a terminator. It was checked in mime_integrity. */
     return ((mimebuf_f)?
-        (*i_mgetc_buf)(f):mime_input_buf(mime_input_state.input++));
+	    (*i_mgetc_buf)(f):mime_input_buf(mime_input_state.input++));
 }
 
-void switch_mime_getc(void)
+static void
+switch_mime_getc(void)
 {
     if (i_getc!=mime_getc) {
 	i_mgetc = i_getc; i_getc = mime_getc;
@@ -3685,7 +3804,8 @@ void switch_mime_getc(void)
     }
 }
 
-void unswitch_mime_getc(void)
+static void
+unswitch_mime_getc(void)
 {
     if(mime_f==STRICT_MIME) {
 	i_mgetc = i_mgetc_buf;
@@ -3697,7 +3817,8 @@ void unswitch_mime_getc(void)
     mime_iconv_back = NULL;
 }
 
-nkf_char mime_integrity(FILE *f, const unsigned char *p)
+static nkf_char
+mime_integrity(FILE *f, const unsigned char *p)
 {
     nkf_char c,d;
     unsigned int q;
@@ -3710,22 +3831,22 @@ nkf_char mime_integrity(FILE *f, const unsigned char *p)
     d = 0;
     q = mime_input_state.input;
     while((c=(*i_getc)(f))!=EOF) {
-        if (((mime_input_state.input-mime_input_state.top)&MIME_BUF_MASK)==0) {
+	if (((mime_input_state.input-mime_input_state.top)&MIME_BUF_MASK)==0) {
 	    break;   /* buffer full */
 	}
-        if (c=='=' && d=='?') {
-            /* checked. skip header, start decode */
-            mime_input_buf(mime_input_state.input++) = (unsigned char)c;
-            /* mime_last_input = mime_input_state.input; */
-            mime_input_state.input = q;
+	if (c=='=' && d=='?') {
+	    /* checked. skip header, start decode */
+	    mime_input_buf(mime_input_state.input++) = (unsigned char)c;
+	    /* mime_last_input = mime_input_state.input; */
+	    mime_input_state.input = q;
 	    switch_mime_getc();
-            return 1;
-        }
-        if (!( (c=='+'||c=='/'|| c=='=' || c=='?' || is_alnum(c))))
-            break;
-        /* Should we check length mod 4? */
-        mime_input_buf(mime_input_state.input++) = (unsigned char)c;
-        d=c;
+	    return 1;
+	}
+	if (!( (c=='+'||c=='/'|| c=='=' || c=='?' || is_alnum(c))))
+	    break;
+	/* Should we check length mod 4? */
+	mime_input_buf(mime_input_state.input++) = (unsigned char)c;
+	d=c;
     }
     /* In case of Incomplete MIME, no MIME decode  */
     mime_input_buf(mime_input_state.input++) = (unsigned char)c;
@@ -3735,7 +3856,8 @@ nkf_char mime_integrity(FILE *f, const unsigned char *p)
     return 1;
 }
 
-nkf_char mime_begin_strict(FILE *f)
+static nkf_char
+mime_begin_strict(FILE *f)
 {
     nkf_char c1 = 0;
     int i,j,k;
@@ -3749,24 +3871,24 @@ nkf_char mime_begin_strict(FILE *f)
     r[0]='='; r[1]='?';
 
     for(i=2;p[i]>SP;i++) {                   /* start at =? */
-        if (((r[i] = c1 = (*i_getc)(f))==EOF) || nkf_toupper(c1) != p[i]) {
-            /* pattern fails, try next one */
-            q = p;
-            while (mime_pattern[++j]) {
+	if (((r[i] = c1 = (*i_getc)(f))==EOF) || nkf_toupper(c1) != p[i]) {
+	    /* pattern fails, try next one */
+	    q = p;
+	    while (mime_pattern[++j]) {
 		p = mime_pattern[j];
-                for(k=2;k<i;k++)              /* assume length(p) > i */
-                    if (p[k]!=q[k]) break;
-                if (k==i && nkf_toupper(c1)==p[k]) break;
-            }
+		for(k=2;k<i;k++)              /* assume length(p) > i */
+		    if (p[k]!=q[k]) break;
+		if (k==i && nkf_toupper(c1)==p[k]) break;
+	    }
 	    p = mime_pattern[j];
-            if (p) continue;  /* found next one, continue */
-            /* all fails, output from recovery buffer */
-            (*i_ungetc)(c1,f);
-            for(j=0;j<i;j++) {
-                (*oconv)(0,r[j]);
-            }
-            return c1;
-        }
+	    if (p) continue;  /* found next one, continue */
+	    /* all fails, output from recovery buffer */
+	    (*i_ungetc)(c1,f);
+	    for(j=0;j<i;j++) {
+		(*oconv)(0,r[j]);
+	    }
+	    return c1;
+	}
     }
     mime_decode_mode = p[i-2];
 
@@ -3775,18 +3897,19 @@ nkf_char mime_begin_strict(FILE *f)
     clr_code_score(find_inputcode_byfunc(mime_priority_func[j]), SCORE_iMIME);
 
     if (mime_decode_mode=='B') {
-        mimebuf_f = unbuf_f;
-        if (!unbuf_f) {
-            /* do MIME integrity check */
-            return mime_integrity(f,mime_pattern[j]);
-        }
+	mimebuf_f = unbuf_f;
+	if (!unbuf_f) {
+	    /* do MIME integrity check */
+	    return mime_integrity(f,mime_pattern[j]);
+	}
     }
     switch_mime_getc();
     mimebuf_f = TRUE;
     return c1;
 }
 
-nkf_char mime_begin(FILE *f)
+static nkf_char
+mime_begin(FILE *f)
 {
     nkf_char c1;
     int i,k;
@@ -3798,43 +3921,43 @@ nkf_char mime_begin(FILE *f)
     k = mime_input_state.last;
     mime_input_buf(mime_input_state.last++)='='; mime_input_buf(mime_input_state.last++)='?';
     for(i=2;i<MAXRECOVER;i++) {                   /* start at =? */
-        /* We accept any character type even if it is breaked by new lines */
-        c1 = (*i_getc)(f); mime_input_buf(mime_input_state.last++) = (unsigned char)c1;
-        if (c1==LF||c1==SP||c1==CR||
-                c1=='-'||c1=='_'||is_alnum(c1)) continue;
-        if (c1=='=') {
-            /* Failed. But this could be another MIME preemble */
-            (*i_ungetc)(c1,f);
-            mime_input_state.last--;
-            break;
-        }
-        if (c1!='?') break;
-        else {
-            /* c1=='?' */
-            c1 = (*i_getc)(f); mime_input_buf(mime_input_state.last++) = (unsigned char)c1;
-            if (!(++i<MAXRECOVER) || c1==EOF) break;
-            if (c1=='b'||c1=='B') {
-                mime_decode_mode = 'B';
-            } else if (c1=='q'||c1=='Q') {
-                mime_decode_mode = 'Q';
-            } else {
-                break;
-            }
-            c1 = (*i_getc)(f); mime_input_buf(mime_input_state.last++) = (unsigned char)c1;
-            if (!(++i<MAXRECOVER) || c1==EOF) break;
-            if (c1!='?') {
-                mime_decode_mode = FALSE;
-            }
-            break;
-        }
+	/* We accept any character type even if it is breaked by new lines */
+	c1 = (*i_getc)(f); mime_input_buf(mime_input_state.last++) = (unsigned char)c1;
+	if (c1==LF||c1==SP||c1==CR||
+	    c1=='-'||c1=='_'||is_alnum(c1)) continue;
+	if (c1=='=') {
+	    /* Failed. But this could be another MIME preemble */
+	    (*i_ungetc)(c1,f);
+	    mime_input_state.last--;
+	    break;
+	}
+	if (c1!='?') break;
+	else {
+	    /* c1=='?' */
+	    c1 = (*i_getc)(f); mime_input_buf(mime_input_state.last++) = (unsigned char)c1;
+	    if (!(++i<MAXRECOVER) || c1==EOF) break;
+	    if (c1=='b'||c1=='B') {
+		mime_decode_mode = 'B';
+	    } else if (c1=='q'||c1=='Q') {
+		mime_decode_mode = 'Q';
+	    } else {
+		break;
+	    }
+	    c1 = (*i_getc)(f); mime_input_buf(mime_input_state.last++) = (unsigned char)c1;
+	    if (!(++i<MAXRECOVER) || c1==EOF) break;
+	    if (c1!='?') {
+		mime_decode_mode = FALSE;
+	    }
+	    break;
+	}
     }
     switch_mime_getc();
     if (!mime_decode_mode) {
-        /* false MIME premble, restart from mime_buffer */
-        mime_decode_mode = 1;  /* no decode, but read from the mime_buffer */
-        /* Since we are in MIME mode until buffer becomes empty,    */
-        /* we never go into mime_begin again for a while.           */
-        return c1;
+	/* false MIME premble, restart from mime_buffer */
+	mime_decode_mode = 1;  /* no decode, but read from the mime_buffer */
+	/* Since we are in MIME mode until buffer becomes empty,    */
+	/* we never go into mime_begin again for a while.           */
+	return c1;
     }
     /* discard mime preemble, and goto MIME mode */
     mime_input_state.last = k;
@@ -3843,20 +3966,23 @@ nkf_char mime_begin(FILE *f)
 }
 
 #ifdef CHECK_OPTION
-void no_putc(nkf_char c)
+static void
+no_putc(nkf_char c)
 {
     ;
 }
 
-void debug(const char *str)
+static void
+debug(const char *str)
 {
     if (debug_f){
-        fprintf(stderr, "%s\n", str ? str : "NULL");
+	fprintf(stderr, "%s\n", str ? str : "NULL");
     }
 }
 #endif
 
-void set_input_codename(char *codename)
+static void
+set_input_codename(char *codename)
 {
     if (!input_codename) {
 	input_codename = codename;
@@ -3865,7 +3991,8 @@ void set_input_codename(char *codename)
     }
 }
 
-static char* get_guessed_code(void)
+static char*
+get_guessed_code(void)
 {
     if (input_codename && !*input_codename) {
 	input_codename = "BINARY";
@@ -3892,7 +4019,8 @@ static char* get_guessed_code(void)
 }
 
 #if !defined(PERL_XS) && !defined(WIN32DLL)
-void print_guessed_code(char *filename)
+static void
+print_guessed_code(char *filename)
 {
     if (filename != NULL) printf("%s: ", filename);
     if (input_codename && !*input_codename) {
@@ -3916,50 +4044,56 @@ void print_guessed_code(char *filename)
 
 #ifdef INPUT_OPTION
 
-nkf_char hex_getc(nkf_char ch, FILE *f, nkf_char (*g)(FILE *f), nkf_char (*u)(nkf_char c, FILE *f))
+static nkf_char
+hex_getc(nkf_char ch, FILE *f, nkf_char (*g)(FILE *f), nkf_char (*u)(nkf_char c, FILE *f))
 {
     nkf_char c1, c2, c3;
     c1 = (*g)(f);
     if (c1 != ch){
-        return c1;
+	return c1;
     }
     c2 = (*g)(f);
     if (!nkf_isxdigit(c2)){
-        (*u)(c2, f);
-        return c1;
+	(*u)(c2, f);
+	return c1;
     }
     c3 = (*g)(f);
     if (!nkf_isxdigit(c3)){
-        (*u)(c2, f);
-        (*u)(c3, f);
-        return c1;
+	(*u)(c2, f);
+	(*u)(c3, f);
+	return c1;
     }
     return (hex2bin(c2) << 4) | hex2bin(c3);
 }
 
-nkf_char cap_getc(FILE *f)
+static nkf_char
+cap_getc(FILE *f)
 {
     return hex_getc(':', f, i_cgetc, i_cungetc);
 }
 
-nkf_char cap_ungetc(nkf_char c, FILE *f)
+static nkf_char
+cap_ungetc(nkf_char c, FILE *f)
 {
     return (*i_cungetc)(c, f);
 }
 
-nkf_char url_getc(FILE *f)
+static nkf_char
+url_getc(FILE *f)
 {
     return hex_getc('%', f, i_ugetc, i_uungetc);
 }
 
-nkf_char url_ungetc(nkf_char c, FILE *f)
+static nkf_char
+url_ungetc(nkf_char c, FILE *f)
 {
     return (*i_uungetc)(c, f);
 }
 #endif
 
 #ifdef NUMCHAR_OPTION
-nkf_char numchar_getc(FILE *f)
+static nkf_char
+numchar_getc(FILE *f)
 {
     nkf_char (*g)(FILE *) = i_ngetc;
     nkf_char (*u)(nkf_char c ,FILE *f) = i_nungetc;
@@ -3969,50 +4103,51 @@ nkf_char numchar_getc(FILE *f)
 
     buf[i] = (*g)(f);
     if (buf[i] == '&'){
-        buf[++i] = (*g)(f);
-        if (buf[i] == '#'){
-            c = 0;
-            buf[++i] = (*g)(f);
-            if (buf[i] == 'x' || buf[i] == 'X'){
-                for (j = 0; j < 7; j++){
-                    buf[++i] = (*g)(f);
-                    if (!nkf_isxdigit(buf[i])){
-                        if (buf[i] != ';'){
-                            c = -1;
-                        }
-                        break;
-                    }
-                    c <<= 4;
-                    c |= hex2bin(buf[i]);
-                }
-            }else{
-                for (j = 0; j < 8; j++){
-                    if (j){
-                        buf[++i] = (*g)(f);
-                    }
-                    if (!nkf_isdigit(buf[i])){
-                        if (buf[i] != ';'){
-                            c = -1;
-                        }
-                        break;
-                    }
-                    c *= 10;
-                    c += hex2bin(buf[i]);
-                }
-            }
-        }
+	buf[++i] = (*g)(f);
+	if (buf[i] == '#'){
+	    c = 0;
+	    buf[++i] = (*g)(f);
+	    if (buf[i] == 'x' || buf[i] == 'X'){
+		for (j = 0; j < 7; j++){
+		    buf[++i] = (*g)(f);
+		    if (!nkf_isxdigit(buf[i])){
+			if (buf[i] != ';'){
+			    c = -1;
+			}
+			break;
+		    }
+		    c <<= 4;
+		    c |= hex2bin(buf[i]);
+		}
+	    }else{
+		for (j = 0; j < 8; j++){
+		    if (j){
+			buf[++i] = (*g)(f);
+		    }
+		    if (!nkf_isdigit(buf[i])){
+			if (buf[i] != ';'){
+			    c = -1;
+			}
+			break;
+		    }
+		    c *= 10;
+		    c += hex2bin(buf[i]);
+		}
+	    }
+	}
     }
     if (c != -1){
-        return CLASS_UNICODE | c;
+	return nkf_char_unicode_new(c);
     }
     while (i > 0){
-        (*u)(buf[i], f);
-        --i;
+	(*u)(buf[i], f);
+	--i;
     }
     return buf[0];
 }
 
-nkf_char numchar_ungetc(nkf_char c, FILE *f)
+static nkf_char
+numchar_ungetc(nkf_char c, FILE *f)
 {
     return (*i_nungetc)(c, f);
 }
@@ -4021,7 +4156,8 @@ nkf_char numchar_ungetc(nkf_char c, FILE *f)
 #ifdef UNICODE_NORMALIZATION
 
 /* Normalization Form C */
-nkf_char nfc_getc(FILE *f)
+static nkf_char
+nfc_getc(FILE *f)
 {
     nkf_char (*g)(FILE *f) = i_nfc_getc;
     nkf_char (*u)(nkf_char c ,FILE *f) = i_nfc_ungetc;
@@ -4057,35 +4193,37 @@ nkf_char nfc_getc(FILE *f)
     return buf[0];
 }
 
-nkf_char nfc_ungetc(nkf_char c, FILE *f)
+static nkf_char
+nfc_ungetc(nkf_char c, FILE *f)
 {
     return (*i_nfc_ungetc)(c, f);
 }
 #endif /* UNICODE_NORMALIZATION */
 
 
-static nkf_char base64decode(nkf_char c)
+static nkf_char
+base64decode(nkf_char c)
 {
     int             i;
     if (c > '@') {
-        if (c < '[') {
-            i = c - 'A';                        /* A..Z 0-25 */
+	if (c < '[') {
+	    i = c - 'A';                        /* A..Z 0-25 */
 	} else if (c == '_') {
 	    i = '?'         /* 63 */ ;          /* _  63 */
-        } else {
-            i = c - 'G'     /* - 'a' + 26 */ ;  /* a..z 26-51 */
+	} else {
+	    i = c - 'G'     /* - 'a' + 26 */ ;  /* a..z 26-51 */
 	}
     } else if (c > '/') {
-        i = c - '0' + '4'   /* - '0' + 52 */ ;  /* 0..9 52-61 */
+	i = c - '0' + '4'   /* - '0' + 52 */ ;  /* 0..9 52-61 */
     } else if (c == '+' || c == '-') {
-        i = '>'             /* 62 */ ;          /* + and -  62 */
+	i = '>'             /* 62 */ ;          /* + and -  62 */
     } else {
-        i = '?'             /* 63 */ ;          /* / 63 */
+	i = '?'             /* 63 */ ;          /* / 63 */
     }
     return (i);
 }
 
-nkf_char
+static nkf_char
 mime_getc(FILE *f)
 {
     nkf_char c1, c2, c3, c4, cc;
@@ -4096,7 +4234,7 @@ mime_getc(FILE *f)
     nkf_char lwsp_size = 128;
 
     if (mime_input_state.top != mime_input_state.last) {  /* Something is in FIFO */
-        return  mime_input_buf(mime_input_state.top++);
+	return  mime_input_buf(mime_input_state.top++);
     }
     if (mime_decode_mode==1 ||mime_decode_mode==FALSE) {
 	mime_decode_mode=FALSE;
@@ -4105,26 +4243,26 @@ mime_getc(FILE *f)
     }
 
     if (mimebuf_f == FIXED_MIME)
-        exit_mode = mime_decode_mode;
+	exit_mode = mime_decode_mode;
     else
-        exit_mode = FALSE;
+	exit_mode = FALSE;
     if (mime_decode_mode == 'Q') {
-        if ((c1 = (*i_mgetc)(f)) == EOF) return (EOF);
-restart_mime_q:
-        if (c1=='_' && mimebuf_f != FIXED_MIME) return SP;
+	if ((c1 = (*i_mgetc)(f)) == EOF) return (EOF);
+      restart_mime_q:
+	if (c1=='_' && mimebuf_f != FIXED_MIME) return SP;
 	if (c1<=SP || DEL<=c1) {
 	    mime_decode_mode = exit_mode; /* prepare for quit */
 	    return c1;
 	}
-        if (c1!='=' && (c1!='?' || mimebuf_f == FIXED_MIME)) {
+	if (c1!='=' && (c1!='?' || mimebuf_f == FIXED_MIME)) {
 	    return c1;
 	}
 
-        mime_decode_mode = exit_mode; /* prepare for quit */
-        if ((c2 = (*i_mgetc)(f)) == EOF) return (EOF);
-        if (c1=='?'&&c2=='=' && mimebuf_f != FIXED_MIME) {
-            /* end Q encoding */
-            input_mode = exit_mode;
+	mime_decode_mode = exit_mode; /* prepare for quit */
+	if ((c2 = (*i_mgetc)(f)) == EOF) return (EOF);
+	if (c1=='?'&&c2=='=' && mimebuf_f != FIXED_MIME) {
+	    /* end Q encoding */
+	    input_mode = exit_mode;
 	    lwsp_count = 0;
 	    lwsp_buf = malloc((lwsp_size+5)*sizeof(char));
 	    if (lwsp_buf==NULL) {
@@ -4182,57 +4320,57 @@ restart_mime_q:
 		c1 = lwsp_buf[0];
 	    }
 	    free(lwsp_buf);
-            return c1;
-        }
-        if (c1=='='&&c2<SP) { /* this is soft wrap */
-            while((c1 =  (*i_mgetc)(f)) <=SP) {
+	    return c1;
+	}
+	if (c1=='='&&c2<SP) { /* this is soft wrap */
+	    while((c1 =  (*i_mgetc)(f)) <=SP) {
 		if ((c1 = (*i_mgetc)(f)) == EOF) return (EOF);
 	    }
-            mime_decode_mode = 'Q'; /* still in MIME */
+	    mime_decode_mode = 'Q'; /* still in MIME */
 	    goto restart_mime_q;
 	}
-        if (c1=='?') {
-            mime_decode_mode = 'Q'; /* still in MIME */
-            (*i_mungetc)(c2,f);
-            return c1;
-        }
-        if ((c3 = (*i_mgetc)(f)) == EOF) return (EOF);
-        if (c2<=SP) return c2;
-        mime_decode_mode = 'Q'; /* still in MIME */
-        return ((hex2bin(c2)<<4) + hex2bin(c3));
+	if (c1=='?') {
+	    mime_decode_mode = 'Q'; /* still in MIME */
+	    (*i_mungetc)(c2,f);
+	    return c1;
+	}
+	if ((c3 = (*i_mgetc)(f)) == EOF) return (EOF);
+	if (c2<=SP) return c2;
+	mime_decode_mode = 'Q'; /* still in MIME */
+	return ((hex2bin(c2)<<4) + hex2bin(c3));
     }
 
     if (mime_decode_mode != 'B') {
-        mime_decode_mode = FALSE;
-        return (*i_mgetc)(f);
+	mime_decode_mode = FALSE;
+	return (*i_mgetc)(f);
     }
 
 
     /* Base64 encoding */
     /*
-        MIME allows line break in the middle of
-        Base64, but we are very pessimistic in decoding
-        in unbuf mode because MIME encoded code may broken by
-        less or editor's control sequence (such as ESC-[-K in unbuffered
-        mode. ignore incomplete MIME.
-    */
+       MIME allows line break in the middle of
+       Base64, but we are very pessimistic in decoding
+       in unbuf mode because MIME encoded code may broken by
+       less or editor's control sequence (such as ESC-[-K in unbuffered
+       mode. ignore incomplete MIME.
+     */
     mode = mime_decode_mode;
     mime_decode_mode = exit_mode;  /* prepare for quit */
 
     while ((c1 = (*i_mgetc)(f))<=SP) {
-        if (c1==EOF)
-            return (EOF);
+	if (c1==EOF)
+	    return (EOF);
     }
-mime_c2_retry:
+  mime_c2_retry:
     if ((c2 = (*i_mgetc)(f))<=SP) {
-        if (c2==EOF)
-            return (EOF);
+	if (c2==EOF)
+	    return (EOF);
 	if (mime_f != STRICT_MIME) goto mime_c2_retry;
-        if (mimebuf_f!=FIXED_MIME) input_mode = ASCII;
-        return c2;
+	if (mimebuf_f!=FIXED_MIME) input_mode = ASCII;
+	return c2;
     }
     if ((c1 == '?') && (c2 == '=')) {
-        input_mode = ASCII;
+	input_mode = ASCII;
 	lwsp_count = 0;
 	lwsp_buf = malloc((lwsp_size+5)*sizeof(char));
 	if (lwsp_buf==NULL) {
@@ -4293,23 +4431,23 @@ mime_c2_retry:
 	    c1 = lwsp_buf[0];
 	}
 	free(lwsp_buf);
-        return c1;
+	return c1;
     }
-mime_c3_retry:
+  mime_c3_retry:
     if ((c3 = (*i_mgetc)(f))<=SP) {
-        if (c3==EOF)
-            return (EOF);
+	if (c3==EOF)
+	    return (EOF);
 	if (mime_f != STRICT_MIME) goto mime_c3_retry;
-        if (mimebuf_f!=FIXED_MIME) input_mode = ASCII;
-        return c3;
+	if (mimebuf_f!=FIXED_MIME) input_mode = ASCII;
+	return c3;
     }
-mime_c4_retry:
+  mime_c4_retry:
     if ((c4 = (*i_mgetc)(f))<=SP) {
-        if (c4==EOF)
-            return (EOF);
+	if (c4==EOF)
+	    return (EOF);
 	if (mime_f != STRICT_MIME) goto mime_c4_retry;
-        if (mimebuf_f!=FIXED_MIME) input_mode = ASCII;
-        return c4;
+	if (mimebuf_f!=FIXED_MIME) input_mode = ASCII;
+	return c4;
     }
 
     mime_decode_mode = mode; /* still in MIME sigh... */
@@ -4322,22 +4460,22 @@ mime_c4_retry:
     t4 = 0x3f & base64decode(c4);
     cc = ((t1 << 2) & 0x0fc) | ((t2 >> 4) & 0x03);
     if (c2 != '=') {
-        mime_input_buf(mime_input_state.last++) = (unsigned char)cc;
-        cc = ((t2 << 4) & 0x0f0) | ((t3 >> 2) & 0x0f);
-        if (c3 != '=') {
-            mime_input_buf(mime_input_state.last++) = (unsigned char)cc;
-            cc = ((t3 << 6) & 0x0c0) | (t4 & 0x3f);
-            if (c4 != '=')
-                mime_input_buf(mime_input_state.last++) = (unsigned char)cc;
-        }
+	mime_input_buf(mime_input_state.last++) = (unsigned char)cc;
+	cc = ((t2 << 4) & 0x0f0) | ((t3 >> 2) & 0x0f);
+	if (c3 != '=') {
+	    mime_input_buf(mime_input_state.last++) = (unsigned char)cc;
+	    cc = ((t3 << 6) & 0x0c0) | (t4 & 0x3f);
+	    if (c4 != '=')
+		mime_input_buf(mime_input_state.last++) = (unsigned char)cc;
+	}
     } else {
-        return c1;
+	return c1;
     }
     return  mime_input_buf(mime_input_state.top++);
 }
 
 static const char basis_64[] =
-   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 #define MIMEOUT_BUF_LENGTH (60)
 static struct {
@@ -4348,7 +4486,8 @@ static struct {
 
 /*nkf_char mime_lastchar2, mime_lastchar1;*/
 
-static void open_mime(nkf_char mode)
+static void
+open_mime(nkf_char mode)
 {
     const unsigned char *p;
     int i;
@@ -4364,7 +4503,7 @@ static void open_mime(nkf_char mode)
     i = 0;
     if (base64_count>45) {
 	if (mimeout_state.count>0 && nkf_isblank(mimeout_state.buf[i])){
-            (*o_mputc)(mimeout_state.buf[i]);
+	    (*o_mputc)(mimeout_state.buf[i]);
 	    i++;
 	}
 	PUT_NEWLINE((*o_mputc));
@@ -4372,7 +4511,7 @@ static void open_mime(nkf_char mode)
 	base64_count = 1;
 	if (mimeout_state.count>0
 	    && (mimeout_state.buf[i]==SP || mimeout_state.buf[i]==TAB
-	    	|| mimeout_state.buf[i]==CR || mimeout_state.buf[i]==LF)) {
+		|| mimeout_state.buf[i]==CR || mimeout_state.buf[i]==LF)) {
 	    i++;
 	}
     }
@@ -4386,8 +4525,8 @@ static void open_mime(nkf_char mode)
 	}
     }
     while(*p) {
-        (*o_mputc)(*p++);
-        base64_count ++;
+	(*o_mputc)(*p++);
+	base64_count ++;
     }
     j = mimeout_state.count;
     mimeout_state.count = 0;
@@ -4396,25 +4535,26 @@ static void open_mime(nkf_char mode)
     }
 }
 
-static void mime_prechar(nkf_char c2, nkf_char c1)
+static void
+mime_prechar(nkf_char c2, nkf_char c1)
 {
     if (mimeout_mode > 0){
-        if (c2 == EOF){
-            if (base64_count + mimeout_state.count/3*4> 73){
-                (*o_base64conv)(EOF,0);
-                OCONV_NEWLINE((*o_base64conv));
-                (*o_base64conv)(0,SP);
-                base64_count = 1;
-            }
-        } else {
-            if (base64_count + mimeout_state.count/3*4> 66) {
-                (*o_base64conv)(EOF,0);
-                OCONV_NEWLINE((*o_base64conv));
-                (*o_base64conv)(0,SP);
-                base64_count = 1;
-                mimeout_mode = -1;
-            }
-        }
+	if (c2 == EOF){
+	    if (base64_count + mimeout_state.count/3*4> 73){
+		(*o_base64conv)(EOF,0);
+		OCONV_NEWLINE((*o_base64conv));
+		(*o_base64conv)(0,SP);
+		base64_count = 1;
+	    }
+	} else {
+	    if (base64_count + mimeout_state.count/3*4> 66) {
+		(*o_base64conv)(EOF,0);
+		OCONV_NEWLINE((*o_base64conv));
+		(*o_base64conv)(0,SP);
+		base64_count = 1;
+		mimeout_mode = -1;
+	    }
+	}
     } else if (c2) {
 	if (c2 != EOF && base64_count + mimeout_state.count/3*4> 60) {
 	    mimeout_mode =  (output_mode==ASCII ||output_mode == ISO_8859_1) ? 'Q' : 'B';
@@ -4428,7 +4568,8 @@ static void mime_prechar(nkf_char c2, nkf_char c1)
     }
 }
 
-static void close_mime(void)
+static void
+close_mime(void)
 {
     (*o_mputc)('?');
     (*o_mputc)('=');
@@ -4436,7 +4577,8 @@ static void close_mime(void)
     mimeout_mode = 0;
 }
 
-static void eof_mime(void)
+static void
+eof_mime(void)
 {
     switch(mimeout_mode) {
     case 'Q':
@@ -4462,7 +4604,8 @@ static void eof_mime(void)
     }
 }
 
-static void mimeout_addchar(nkf_char c)
+static void
+mimeout_addchar(nkf_char c)
 {
     switch(mimeout_mode) {
     case 'Q':
@@ -4478,60 +4621,61 @@ static void mimeout_addchar(nkf_char c)
 	    (*o_mputc)(c);
 	    base64_count++;
 	}
-        break;
+	break;
     case 'B':
-        mimeout_state.state=c;
-        (*o_mputc)(basis_64[c>>2]);
-        mimeout_mode=2;
-        base64_count ++;
-        break;
+	mimeout_state.state=c;
+	(*o_mputc)(basis_64[c>>2]);
+	mimeout_mode=2;
+	base64_count ++;
+	break;
     case 2:
-        (*o_mputc)(basis_64[((mimeout_state.state & 0x3)<< 4) | ((c & 0xF0) >> 4)]);
-        mimeout_state.state=c;
-        mimeout_mode=1;
-        base64_count ++;
-        break;
+	(*o_mputc)(basis_64[((mimeout_state.state & 0x3)<< 4) | ((c & 0xF0) >> 4)]);
+	mimeout_state.state=c;
+	mimeout_mode=1;
+	base64_count ++;
+	break;
     case 1:
-        (*o_mputc)(basis_64[((mimeout_state.state & 0xF) << 2) | ((c & 0xC0) >>6)]);
-        (*o_mputc)(basis_64[c & 0x3F]);
-        mimeout_mode='B';
-        base64_count += 2;
-        break;
+	(*o_mputc)(basis_64[((mimeout_state.state & 0xF) << 2) | ((c & 0xC0) >>6)]);
+	(*o_mputc)(basis_64[c & 0x3F]);
+	mimeout_mode='B';
+	base64_count += 2;
+	break;
     default:
 	(*o_mputc)(c);
 	base64_count++;
-        break;
+	break;
     }
 }
 
-static void mime_putc(nkf_char c)
+static void
+mime_putc(nkf_char c)
 {
     int i, j;
     nkf_char lastchar;
 
     if (mimeout_f == FIXED_MIME){
-        if (mimeout_mode == 'Q'){
-            if (base64_count > 71){
-                if (c!=CR && c!=LF) {
-                    (*o_mputc)('=');
-                    PUT_NEWLINE((*o_mputc));
-                }
-                base64_count = 0;
-            }
-        }else{
-            if (base64_count > 71){
-                eof_mime();
-                PUT_NEWLINE((*o_mputc));
-                base64_count = 0;
-            }
-            if (c == EOF) { /* c==EOF */
-                eof_mime();
-            }
-        }
-        if (c != EOF) { /* c==EOF */
-            mimeout_addchar(c);
-        }
-        return;
+	if (mimeout_mode == 'Q'){
+	    if (base64_count > 71){
+		if (c!=CR && c!=LF) {
+		    (*o_mputc)('=');
+		    PUT_NEWLINE((*o_mputc));
+		}
+		base64_count = 0;
+	    }
+	}else{
+	    if (base64_count > 71){
+		eof_mime();
+		PUT_NEWLINE((*o_mputc));
+		base64_count = 0;
+	    }
+	    if (c == EOF) { /* c==EOF */
+		eof_mime();
+	    }
+	}
+	if (c != EOF) { /* c==EOF */
+	    mimeout_addchar(c);
+	}
+	return;
     }
 
     /* mimeout_f != FIXED_MIME */
@@ -4564,24 +4708,24 @@ static void mime_putc(nkf_char c)
 		mimeout_addchar(mimeout_state.buf[i]);
 	    }
 	}
-        return;
+	return;
     }
 
     if (mimeout_state.count > 0){
-        lastchar = mimeout_state.buf[mimeout_state.count - 1];
+	lastchar = mimeout_state.buf[mimeout_state.count - 1];
     }else{
-        lastchar = -1;
+	lastchar = -1;
     }
 
     if (mimeout_mode=='Q') {
-        if (c <= DEL && (output_mode==ASCII ||output_mode == ISO_8859_1)) {
+	if (c <= DEL && (output_mode==ASCII ||output_mode == ISO_8859_1)) {
 	    if (c == CR || c == LF) {
 		close_mime();
 		(*o_mputc)(c);
 		base64_count = 0;
 		return;
-            } else if (c <= SP) {
-                close_mime();
+	    } else if (c <= SP) {
+		close_mime();
 		if (base64_count > 70) {
 		    PUT_NEWLINE((*o_mputc));
 		    base64_count = 0;
@@ -4590,7 +4734,7 @@ static void mime_putc(nkf_char c)
 		    (*o_mputc)(SP);
 		    base64_count++;
 		}
-            } else {
+	    } else {
 		if (base64_count > 70) {
 		    close_mime();
 		    PUT_NEWLINE((*o_mputc));
@@ -4605,129 +4749,129 @@ static void mime_putc(nkf_char c)
 	    }
 	    (*o_mputc)(c);
 	    base64_count++;
-        }
-        return;
+	}
+	return;
     }
 
     if (mimeout_mode <= 0) {
-        if (c <= DEL && (output_mode==ASCII ||output_mode == ISO_8859_1)) {
-            if (nkf_isspace(c)) {
+	if (c <= DEL && (output_mode==ASCII ||output_mode == ISO_8859_1)) {
+	    if (nkf_isspace(c)) {
 		int flag = 0;
 		if (mimeout_mode == -1) {
 		    flag = 1;
 		}
-                if (c==CR || c==LF) {
+		if (c==CR || c==LF) {
 		    if (flag) {
 			open_mime(output_mode);
 			output_mode = 0;
 		    } else {
 			base64_count = 0;
 		    }
-                }
-                for (i=0;i<mimeout_state.count;i++) {
-                    (*o_mputc)(mimeout_state.buf[i]);
-                    if (mimeout_state.buf[i] == CR || mimeout_state.buf[i] == LF){
-                        base64_count = 0;
-                    }else{
-                        base64_count++;
-                    }
-                }
+		}
+		for (i=0;i<mimeout_state.count;i++) {
+		    (*o_mputc)(mimeout_state.buf[i]);
+		    if (mimeout_state.buf[i] == CR || mimeout_state.buf[i] == LF){
+			base64_count = 0;
+		    }else{
+			base64_count++;
+		    }
+		}
 		if (flag) {
 		    eof_mime();
 		    base64_count = 0;
 		    mimeout_mode = 0;
-                }
+		}
 		mimeout_state.buf[0] = (char)c;
 		mimeout_state.count = 1;
-            }else{
-                if (base64_count > 1
-                    && base64_count + mimeout_state.count > 76
+	    }else{
+		if (base64_count > 1
+		    && base64_count + mimeout_state.count > 76
 		    && mimeout_state.buf[0] != CR && mimeout_state.buf[0] != LF){
-                    PUT_NEWLINE((*o_mputc));
-                    base64_count = 0;
-                    if (!nkf_isspace(mimeout_state.buf[0])){
-                        (*o_mputc)(SP);
-                        base64_count++;
-                    }
-                }
-                mimeout_state.buf[mimeout_state.count++] = (char)c;
-                if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
-                    open_mime(output_mode);
-                }
-            }
-            return;
-        }else{
-            if (lastchar==CR || lastchar == LF){
-                for (i=0;i<mimeout_state.count;i++) {
-                    (*o_mputc)(mimeout_state.buf[i]);
-                }
-                base64_count = 0;
-                mimeout_state.count = 0;
-            }
-            if (lastchar==SP) {
-                for (i=0;i<mimeout_state.count-1;i++) {
-                    (*o_mputc)(mimeout_state.buf[i]);
-                    base64_count++;
-                }
-                mimeout_state.buf[0] = SP;
-                mimeout_state.count = 1;
-            }
-            open_mime(output_mode);
-        }
-    }else{
-        /* mimeout_mode == 'B', 1, 2 */
-        if ( c<=DEL && (output_mode==ASCII ||output_mode == ISO_8859_1)) {
-            if (lastchar == CR || lastchar == LF){
-                if (nkf_isblank(c)) {
-                    for (i=0;i<mimeout_state.count;i++) {
-                        mimeout_addchar(mimeout_state.buf[i]);
-                    }
-                    mimeout_state.count = 0;
-                } else if (SP<c && c<DEL) {
-                    eof_mime();
-                    for (i=0;i<mimeout_state.count;i++) {
-                        (*o_mputc)(mimeout_state.buf[i]);
-                    }
-                    base64_count = 0;
-                    mimeout_state.count = 0;
-                }
-                mimeout_state.buf[mimeout_state.count++] = (char)c;
-		return;
-            }
-            if (c==SP || c==TAB || c==CR || c==LF) {
-                for (i=0;i<mimeout_state.count;i++) {
-                    if (SP<mimeout_state.buf[i] && mimeout_state.buf[i]<DEL) {
-                        eof_mime();
-                        for (i=0;i<mimeout_state.count;i++) {
-                            (*o_mputc)(mimeout_state.buf[i]);
-                            base64_count++;
-                        }
-                        mimeout_state.count = 0;
-                    }
-                }
-                mimeout_state.buf[mimeout_state.count++] = (char)c;
-                if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
-                    eof_mime();
-                    for (i=0;i<mimeout_state.count;i++) {
-                        (*o_mputc)(mimeout_state.buf[i]);
-                        base64_count++;
-                    }
-                    mimeout_state.count = 0;
-                }
-                return;
+		    PUT_NEWLINE((*o_mputc));
+		    base64_count = 0;
+		    if (!nkf_isspace(mimeout_state.buf[0])){
+			(*o_mputc)(SP);
+			base64_count++;
+		    }
+		}
+		mimeout_state.buf[mimeout_state.count++] = (char)c;
+		if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
+		    open_mime(output_mode);
+		}
 	    }
-            if (mimeout_state.count>0 && SP<c && c!='=') {
-                mimeout_state.buf[mimeout_state.count++] = (char)c;
-                if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
-                    j = mimeout_state.count;
-                    mimeout_state.count = 0;
-                    for (i=0;i<j;i++) {
-                        mimeout_addchar(mimeout_state.buf[i]);
-                    }
-                }
-                return;
-            }
-        }
+	    return;
+	}else{
+	    if (lastchar==CR || lastchar == LF){
+		for (i=0;i<mimeout_state.count;i++) {
+		    (*o_mputc)(mimeout_state.buf[i]);
+		}
+		base64_count = 0;
+		mimeout_state.count = 0;
+	    }
+	    if (lastchar==SP) {
+		for (i=0;i<mimeout_state.count-1;i++) {
+		    (*o_mputc)(mimeout_state.buf[i]);
+		    base64_count++;
+		}
+		mimeout_state.buf[0] = SP;
+		mimeout_state.count = 1;
+	    }
+	    open_mime(output_mode);
+	}
+    }else{
+	/* mimeout_mode == 'B', 1, 2 */
+	if ( c<=DEL && (output_mode==ASCII ||output_mode == ISO_8859_1)) {
+	    if (lastchar == CR || lastchar == LF){
+		if (nkf_isblank(c)) {
+		    for (i=0;i<mimeout_state.count;i++) {
+			mimeout_addchar(mimeout_state.buf[i]);
+		    }
+		    mimeout_state.count = 0;
+		} else if (SP<c && c<DEL) {
+		    eof_mime();
+		    for (i=0;i<mimeout_state.count;i++) {
+			(*o_mputc)(mimeout_state.buf[i]);
+		    }
+		    base64_count = 0;
+		    mimeout_state.count = 0;
+		}
+		mimeout_state.buf[mimeout_state.count++] = (char)c;
+		return;
+	    }
+	    if (c==SP || c==TAB || c==CR || c==LF) {
+		for (i=0;i<mimeout_state.count;i++) {
+		    if (SP<mimeout_state.buf[i] && mimeout_state.buf[i]<DEL) {
+			eof_mime();
+			for (i=0;i<mimeout_state.count;i++) {
+			    (*o_mputc)(mimeout_state.buf[i]);
+			    base64_count++;
+			}
+			mimeout_state.count = 0;
+		    }
+		}
+		mimeout_state.buf[mimeout_state.count++] = (char)c;
+		if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
+		    eof_mime();
+		    for (i=0;i<mimeout_state.count;i++) {
+			(*o_mputc)(mimeout_state.buf[i]);
+			base64_count++;
+		    }
+		    mimeout_state.count = 0;
+		}
+		return;
+	    }
+	    if (mimeout_state.count>0 && SP<c && c!='=') {
+		mimeout_state.buf[mimeout_state.count++] = (char)c;
+		if (mimeout_state.count>MIMEOUT_BUF_LENGTH) {
+		    j = mimeout_state.count;
+		    mimeout_state.count = 0;
+		    for (i=0;i<j;i++) {
+			mimeout_addchar(mimeout_state.buf[i]);
+		    }
+		}
+		return;
+	    }
+	}
     }
     if (mimeout_state.count>0) {
 	j = mimeout_state.count;
@@ -4749,7 +4893,8 @@ static void mime_putc(nkf_char c)
     mimeout_addchar(c);
 }
 
-void base64_conv(nkf_char c2, nkf_char c1)
+static void
+base64_conv(nkf_char c2, nkf_char c1)
 {
     mime_prechar(c2, c1);
     (*o_base64conv)(c2,c1);
@@ -4764,34 +4909,36 @@ typedef struct nkf_iconv_t {
     size_t output_buffer_size;
 }
 
-nkf_iconv_t nkf_iconv_new(char *tocode, char *fromcode)
+static nkf_iconv_t
+nkf_iconv_new(char *tocode, char *fromcode)
 {
     nkf_iconv_t converter;
 
     converter->input_buffer_size = IOBUF_SIZE;
     converter->input_buffer = malloc(converter->input_buffer_size);
     if (converter->input_buffer == NULL)
-        perror("can't malloc");
+	perror("can't malloc");
 
     converter->output_buffer_size = IOBUF_SIZE * 2;
     converter->output_buffer = malloc(converter->output_buffer_size);
     if (converter->output_buffer == NULL)
-        perror("can't malloc");
+	perror("can't malloc");
 
     converter->cd = iconv_open(tocode, fromcode);
     if (converter->cd == (iconv_t)-1)
     {
-        switch (errno) {
-        case EINVAL:
-            perror(fprintf("iconv doesn't support %s to %s conversion.", fromcode, tocode));
-            return -1;
-        default:
-            perror("can't iconv_open");
-        }
+	switch (errno) {
+	case EINVAL:
+	    perror(fprintf("iconv doesn't support %s to %s conversion.", fromcode, tocode));
+	    return -1;
+	default:
+	    perror("can't iconv_open");
+	}
     }
 }
 
-size_t nkf_iconv_convert(nkf_iconv_t *converter, FILE *input)
+static size_t
+nkf_iconv_convert(nkf_iconv_t *converter, FILE *input)
 {
     size_t invalid = (size_t)0;
     char *input_buffer = converter->input_buffer;
@@ -4801,61 +4948,63 @@ size_t nkf_iconv_convert(nkf_iconv_t *converter, FILE *input)
     int c;
 
     do {
-        if (c != EOF) {
-            while ((c = (*i_getc)(f)) != EOF) {
-                input_buffer[input_length++] = c;
-                if (input_length < converter->input_buffer_size) break;
-            }
-        }
+	if (c != EOF) {
+	    while ((c = (*i_getc)(f)) != EOF) {
+		input_buffer[input_length++] = c;
+		if (input_length < converter->input_buffer_size) break;
+	    }
+	}
 
-        size_t ret = iconv(converter->cd, &input_buffer, &input_length, &output_buffer, &output_length);
-        while (output_length-- > 0) {
-            (*o_putc)(output_buffer[converter->output_buffer_size-output_length]);
-        }
-        if (ret == (size_t) - 1) {
-            switch (errno) {
-            case EINVAL:
-                if (input_buffer != converter->input_buffer)
-                    memmove(converter->input_buffer, input_buffer, input_length);
-                break;
-            case E2BIG:
-                converter->output_buffer_size *= 2;
-                output_buffer = realloc(converter->outbuf, converter->output_buffer_size);
-                if (output_buffer == NULL) {
-                    perror("can't realloc");
-                    return -1;
-                }
-                converter->output_buffer = output_buffer;
-                break;
-            default:
-                perror("can't iconv");
-                return -1;
-            }
-        } else {
-            invalid += ret;
-        }
+	size_t ret = iconv(converter->cd, &input_buffer, &input_length, &output_buffer, &output_length);
+	while (output_length-- > 0) {
+	    (*o_putc)(output_buffer[converter->output_buffer_size-output_length]);
+	}
+	if (ret == (size_t) - 1) {
+	    switch (errno) {
+	    case EINVAL:
+		if (input_buffer != converter->input_buffer)
+		    memmove(converter->input_buffer, input_buffer, input_length);
+		break;
+	    case E2BIG:
+		converter->output_buffer_size *= 2;
+		output_buffer = realloc(converter->outbuf, converter->output_buffer_size);
+		if (output_buffer == NULL) {
+		    perror("can't realloc");
+		    return -1;
+		}
+		converter->output_buffer = output_buffer;
+		break;
+	    default:
+		perror("can't iconv");
+		return -1;
+	    }
+	} else {
+	    invalid += ret;
+	}
     } while (1);
 
     return invalid;
 }
 
 
-void nkf_iconv_close(nkf_iconv_t *convert)
+static void
+nkf_iconv_close(nkf_iconv_t *convert)
 {
-        free(converter->inbuf);
-        free(converter->outbuf);
-        iconv_close(converter->cd);
+    free(converter->inbuf);
+    free(converter->outbuf);
+    iconv_close(converter->cd);
 }
 #endif
 
 
-void reinit(void)
+static void
+reinit(void)
 {
     {
-        struct input_code *p = input_code_list;
-        while (p->name){
-            status_reinit(p++);
-        }
+	struct input_code *p = input_code_list;
+	while (p->name){
+	    status_reinit(p++);
+	}
     }
     unbuf_f = FALSE;
     estab_f = FALSE;
@@ -4911,10 +5060,10 @@ void reinit(void)
     x0213_f = FALSE;
 #endif
     {
-        int i;
-        for (i = 0; i < 256; i++){
-            prefix_table[i] = 0;
-        }
+	int i;
+	for (i = 0; i < 256; i++){
+	    prefix_table[i] = 0;
+	}
     }
     hold_count = 0;
     mimeout_state.count = 0;
@@ -4947,7 +5096,6 @@ void reinit(void)
     i_mungetc_buf = std_ungetc;
     output_mode = ASCII;
     input_mode =  ASCII;
-    shift_mode =  FALSE;
     mime_decode_mode = FALSE;
     file_out_f = FALSE;
     eolmode_f = 0;
@@ -4967,11 +5115,16 @@ void reinit(void)
 #endif /*WIN32DLL*/
 }
 
-void module_connection(void)
+static int
+module_connection(void)
 {
     if (input_encoding) set_input_encoding(input_encoding);
     if (!output_encoding) {
 	output_encoding = nkf_default_encoding();
+    }
+    if (!output_encoding) {
+	if (noout_f || guess_f) output_encoding = nkf_enc_from_index(ISO_2022_JP);
+	else return -1;
     }
     set_output_encoding(output_encoding);
     oconv = nkf_enc_to_oconv(output_encoding);
@@ -4982,7 +5135,7 @@ void module_connection(void)
     /* output redicrection */
 #ifdef CHECK_OPTION
     if (noout_f || guess_f){
-        o_putc = no_putc;
+	o_putc = no_putc;
     }
 #endif
     if (mimeout_f) {
@@ -5019,24 +5172,24 @@ void module_connection(void)
     /* input redicrection */
 #ifdef INPUT_OPTION
     if (cap_f){
-        i_cgetc = i_getc; i_getc = cap_getc;
-        i_cungetc = i_ungetc; i_ungetc= cap_ungetc;
+	i_cgetc = i_getc; i_getc = cap_getc;
+	i_cungetc = i_ungetc; i_ungetc= cap_ungetc;
     }
     if (url_f){
-        i_ugetc = i_getc; i_getc = url_getc;
-        i_uungetc = i_ungetc; i_ungetc= url_ungetc;
+	i_ugetc = i_getc; i_getc = url_getc;
+	i_uungetc = i_ungetc; i_ungetc= url_ungetc;
     }
 #endif
 #ifdef NUMCHAR_OPTION
     if (numchar_f){
-        i_ngetc = i_getc; i_getc = numchar_getc;
-        i_nungetc = i_ungetc; i_ungetc= numchar_ungetc;
+	i_ngetc = i_getc; i_getc = numchar_getc;
+	i_nungetc = i_ungetc; i_ungetc= numchar_ungetc;
     }
 #endif
 #ifdef UNICODE_NORMALIZATION
     if (nfc_f){
-        i_nfc_getc = i_getc; i_getc = nfc_getc;
-        i_nfc_ungetc = i_ungetc; i_ungetc= nfc_ungetc;
+	i_nfc_getc = i_getc; i_getc = nfc_getc;
+	i_nfc_ungetc = i_ungetc; i_ungetc= nfc_ungetc;
     }
 #endif
     if (mime_f && mimebuf_f==FIXED_MIME) {
@@ -5048,17 +5201,18 @@ void module_connection(void)
 	i_bungetc = i_ungetc; i_ungetc = broken_ungetc;
     }
     if (input_encoding) {
-        set_iconv(-TRUE, nkf_enc_to_iconv(input_encoding));
+	set_iconv(-TRUE, nkf_enc_to_iconv(input_encoding));
     } else {
-        set_iconv(FALSE, e_iconv);
+	set_iconv(FALSE, e_iconv);
     }
 
     {
-        struct input_code *p = input_code_list;
-        while (p->name){
-            status_reinit(p++);
-        }
+	struct input_code *p = input_code_list;
+	while (p->name){
+	    status_reinit(p++);
+	}
     }
+    return 0;
 }
 
 /*
@@ -5066,22 +5220,38 @@ void module_connection(void)
  */
 
 #if !defined(PERL_XS) && !defined(WIN32DLL)
-nkf_char noconvert(FILE *f)
+static nkf_char
+noconvert(FILE *f)
 {
     nkf_char    c;
 
     if (nop_f == 2)
 	module_connection();
     while ((c = (*i_getc)(f)) != EOF)
-      (*o_putc)(c);
+	(*o_putc)(c);
     (*o_putc)(EOF);
     return 1;
 }
 #endif
 
-nkf_char kanji_convert(FILE *f)
+#define NEXT continue        /* no output, get next */
+#define SKIP c2=0;continue        /* no output, get next */
+#define MORE c2=c1;continue  /* need one more byte */
+#define SEND ;               /* output c1 and c2, get next */
+#define LAST break           /* end of loop, go closing  */
+#define set_input_mode(mode) do { \
+    input_mode = mode; \
+    shift_mode = 0; \
+    set_input_codename("ISO-2022-JP"); \
+    debug("ISO-2022-JP"); \
+} while (0)
+
+static int
+kanji_convert(FILE *f)
 {
-    nkf_char    c3, c2=0, c1, c0=0;
+    nkf_char c1=0, c2=0, c3=0, c4=0;
+    int shift_mode = 0; /* 0, 1, 2, 3 */
+    char g2 = 0;
     int is_8bit = FALSE;
 
     if (input_encoding && !nkf_enc_asciicompat(input_encoding)) {
@@ -5090,325 +5260,278 @@ nkf_char kanji_convert(FILE *f)
 
     input_mode = ASCII;
     output_mode = ASCII;
-    shift_mode = FALSE;
 
-#define NEXT continue      /* no output, get next */
-#define SEND ;             /* output c1 and c2, get next */
-#define LAST break         /* end of loop, go closing  */
-
-    module_connection();
+    if (module_connection() < 0) {
+#if !defined(PERL_XS) && !defined(WIN32DLL)
+	fprintf(stderr, "no output encoding given\n");
+#endif
+	return -1;
+    }
     check_bom(f);
+
+#ifdef UTF8_INPUT_ENABLE
+    if(iconv == w_iconv32){
+	while ((c1 = (*i_getc)(f)) != EOF &&
+	       (c2 = (*i_getc)(f)) != EOF &&
+	       (c3 = (*i_getc)(f)) != EOF &&
+	       (c4 = (*i_getc)(f)) != EOF) {
+	    nkf_iconv_utf_32(c1, c2, c3, c4);
+	}
+	(*i_ungetc)(EOF, f);
+    }
+    else if (iconv == w_iconv16) {
+	while ((c1 = (*i_getc)(f)) != EOF &&
+	       (c2 = (*i_getc)(f)) != EOF) {
+	    if (nkf_iconv_utf_16(c1, c2, 0, 0) == -2 &&
+		(c3 = (*i_getc)(f)) != EOF &&
+		(c4 = (*i_getc)(f)) != EOF) {
+		nkf_iconv_utf_16(c1, c2, c3, c4);
+	    }
+	}
+	(*i_ungetc)(EOF, f);
+    }
+#endif
 
     while ((c1 = (*i_getc)(f)) != EOF) {
 #ifdef INPUT_CODE_FIX
 	if (!input_encoding)
 #endif
 	    code_status(c1);
-        if (c2) {
-            /* second byte */
-            if (c2 > ((input_encoding && nkf_enc_cp5022x_p(input_encoding)) ? 0x92 : DEL)) {
-                /* in case of 8th bit is on */
-                if (!estab_f&&!mime_decode_mode) {
-                    /* in case of not established yet */
-                    /* It is still ambiguious */
-                    if (h_conv(f, c2, c1)==EOF)
-                        LAST;
-                    else
-                        c2 = 0;
-                    NEXT;
-                } else {
+	if (c2) {
+	    /* second byte */
+	    if (c2 > DEL) {
+		/* in case of 8th bit is on */
+		if (!estab_f&&!mime_decode_mode) {
+		    /* in case of not established yet */
+		    /* It is still ambiguious */
+		    if (h_conv(f, c2, c1)==EOF) {
+			LAST;
+		    }
+		    else {
+			SKIP;
+		    }
+		}
+		else {
 		    /* in case of already established */
-		    if (c1 < AT) {
-			/* ignore bogus code and not CP5022x UCD */
-			c2 = 0;
-			NEXT;
+		    if (c1 < 0x40) {
+			/* ignore bogus code */
+			SKIP;
 		    } else {
 			SEND;
 		    }
 		}
-            } else
-                /* second byte, 7 bit code */
-                /* it might be kanji shitfted */
-                if ((c1 == DEL) || (c1 <= SP)) {
-                    /* ignore bogus first code */
-                    c2 = 0;
-                    NEXT;
-                } else
-                    SEND;
-        } else {
-            /* first byte */
-#ifdef UTF8_INPUT_ENABLE
-	    if (iconv == w_iconv16) {
-		if (input_endian == ENDIAN_BIG) {
-		    c2 = c1;
-		    if ((c1 = (*i_getc)(f)) != EOF) {
-			if (0xD8 <= c2 && c2 <= 0xDB) {
-			    if ((c0 = (*i_getc)(f)) != EOF) {
-				c0 <<= 8;
-				if ((c3 = (*i_getc)(f)) != EOF) {
-				    c0 |= c3;
-				} else c2 = EOF;
-			    } else c2 = EOF;
-			}
-		    } else c2 = EOF;
-		} else {
-		    if ((c2 = (*i_getc)(f)) != EOF) {
-			if (0xD8 <= c2 && c2 <= 0xDB) {
-			    if ((c3 = (*i_getc)(f)) != EOF) {
-				if ((c0 = (*i_getc)(f)) != EOF) {
-				    c0 <<= 8;
-				    c0 |= c3;
-				} else c2 = EOF;
-			    } else c2 = EOF;
-			}
-		    } else c2 = EOF;
-		}
+	    }
+	    else {
+		/* 2nd byte of 7 bit code or SJIS */
 		SEND;
-            } else if(iconv == w_iconv32){
-		int c3 = c1;
-		if((c2 = (*i_getc)(f)) != EOF &&
-		   (c1 = (*i_getc)(f)) != EOF &&
-		   (c0 = (*i_getc)(f)) != EOF){
-		    switch(input_endian){
-		    case ENDIAN_BIG:
-			c1 = (c2&0xFF)<<16 | (c1&0xFF)<<8 | (c0&0xFF);
-			break;
-		    case ENDIAN_LITTLE:
-			c1 = (c3&0xFF) | (c2&0xFF)<<8 | (c1&0xFF)<<16;
-			break;
-		    case ENDIAN_2143:
-			c1 = (c3&0xFF)<<16 | (c1&0xFF) | (c0&0xFF)<<8;
-			break;
-		    case ENDIAN_3412:
-			c1 = (c3&0xFF)<<8 | (c2&0xFF) | (c0&0xFF)<<16;
-			break;
-		    }
-		    c2 = 0;
-		}else{
-		    c2 = EOF;
-		}
-		SEND;
-            } else
-#endif
-#ifdef NUMCHAR_OPTION
-            if (is_unicode_capsule(c1)){
-                SEND;
-	    } else
-#endif
-	    if (c1 > ((input_encoding && nkf_enc_cp5022x_p(input_encoding)) ? 0x92 : DEL)) {
-                /* 8 bit code */
-                if (!estab_f && !iso8859_f) {
-                    /* not established yet */
-                    c2 = c1;
-                    NEXT;
-                } else { /* estab_f==TRUE */
-                    if (iso8859_f) {
-                        c2 = ISO_8859_1;
-                        c1 &= 0x7f;
-                        SEND;
-                    } else if (SSP<=c1 && c1<0xe0 && iconv == s_iconv) {
-                        /* SJIS X0201 Case... */
-                        if (iso2022jp_f && !x0201_f) {
-                            (*oconv)(GETA1, GETA2);
-                            NEXT;
-                        } else {
-			    c2 = JIS_X_0201;
-			    c1 &= 0x7f;
-			    SEND;
-			}
-                    } else if (c1==SSO && iconv != s_iconv) {
-                        /* EUC X0201 Case */
-                        c1 = (*i_getc)(f);  /* skip SSO */
-                        code_status(c1);
-                        if (SSP<=c1 && c1<0xe0) {
-			    if (iso2022jp_f && !x0201_f) {
-				(*oconv)(GETA1, GETA2);
-				NEXT;
-			    } else {
-				c2 = JIS_X_0201;
-				c1 &= 0x7f;
-				SEND;
-			    }
-                        } else  { /* bogus code, skip SSO and one byte */
-                            NEXT;
-                        }
-		    } else if (ms_ucs_map_f == UCS_MAP_CP10001 &&
-			       (c1 == 0xFD || c1 == 0xFE)) {
-			/* CP10001 */
-			c2 = JIS_X_0201;
+	    }
+	}
+	else {
+	    /* first byte */
+	    if (input_mode == JIS_X_0208 && DEL <= c1 && c1 < 0x92) {
+		/* CP5022x */
+		MORE;
+	    } else if (c1 > DEL) {
+		/* 8 bit code */
+		if (!estab_f && !iso8859_f) {
+		    /* not established yet */
+		    MORE;
+		} else { /* estab_f==TRUE */
+		    if (iso8859_f) {
+			c2 = ISO_8859_1;
 			c1 &= 0x7f;
 			SEND;
-                    } else {
-                       /* already established */
-                       c2 = c1;
-                       NEXT;
-                    }
-                }
-            } else if ((c1 > SP) && (c1 != DEL)) {
-                /* in case of Roman characters */
-                if (shift_mode) {
-                    /* output 1 shifted byte */
-                    if (iso8859_f) {
-                        c2 = ISO_8859_1;
-                        SEND;
-                    } else if (SP <= c1 && c1 < (0xe0&0x7f)){
-                      /* output 1 shifted byte */
-			if (iso2022jp_f && !x0201_f) {
-			    (*oconv)(GETA1, GETA2);
-			    NEXT;
-			} else {
-			    c2 = JIS_X_0201;
-			    SEND;
-			}
-                    } else {
-                        /* look like bogus code */
-                        NEXT;
-                    }
-                } else if (input_mode == JIS_X_0208 || input_mode == JIS_X_0212 ||
+		    }
+		    else if ((iconv == s_iconv && 0xA0 <= c1 && c1 <= 0xDF) ||
+			     (ms_ucs_map_f == UCS_MAP_CP10001 && (c1 == 0xFD || c1 == 0xFE))) {
+			/* JIS X 0201 */
+			c2 = JIS_X_0201_1976_K;
+			c1 &= 0x7f;
+			SEND;
+		    }
+		    else {
+			/* already established */
+			MORE;
+		    }
+		}
+	    } else if (SP < c1 && c1 < DEL) {
+		/* in case of Roman characters */
+		if (shift_mode) {
+		    /* output 1 shifted byte */
+		    if (iso8859_f) {
+			c2 = ISO_8859_1;
+			SEND;
+		    } else if (nkf_byte_jisx0201_katakana_p(c1)){
+			/* output 1 shifted byte */
+			c2 = JIS_X_0201_1976_K;
+			SEND;
+		    } else {
+			/* look like bogus code */
+			SKIP;
+		    }
+		} else if (input_mode == JIS_X_0208 || input_mode == JIS_X_0212 ||
 			   input_mode == JIS_X_0213_1 || input_mode == JIS_X_0213_2) {
-                    /* in case of Kanji shifted */
-                    c2 = c1;
-                    NEXT;
-                } else if (c1 == '=' && mime_f && !mime_decode_mode) {
-                    /* Check MIME code */
-                    if ((c1 = (*i_getc)(f)) == EOF) {
-                        (*oconv)(0, '=');
-                        LAST;
-                    } else if (c1 == '?') {
-                        /* =? is mime conversion start sequence */
+		    /* in case of Kanji shifted */
+		    MORE;
+		} else if (c1 == '=' && mime_f && !mime_decode_mode) {
+		    /* Check MIME code */
+		    if ((c1 = (*i_getc)(f)) == EOF) {
+			(*oconv)(0, '=');
+			LAST;
+		    } else if (c1 == '?') {
+			/* =? is mime conversion start sequence */
 			if(mime_f == STRICT_MIME) {
 			    /* check in real detail */
 			    if (mime_begin_strict(f) == EOF)
 				LAST;
-			    else
-				NEXT;
+			    SKIP;
 			} else if (mime_begin(f) == EOF)
-                            LAST;
-                        else
-                            NEXT;
-                    } else {
-                        (*oconv)(0, '=');
-                        (*i_ungetc)(c1,f);
-                        NEXT;
-                    }
-                } else {
-                    /* normal ASCII code */
-                    SEND;
-                }
-            } else if (c1 == SI && (!is_8bit || mime_decode_mode)) {
-                shift_mode = FALSE;
-                NEXT;
-            } else if (c1 == SO && (!is_8bit || mime_decode_mode)) {
-                shift_mode = TRUE;
-                NEXT;
-            } else if (c1 == ESC && (!is_8bit || mime_decode_mode)) {
-                if ((c1 = (*i_getc)(f)) == EOF) {
-                    /*  (*oconv)(0, ESC); don't send bogus code */
-                    LAST;
-                } else if (c1 == '$') {
-                    if ((c1 = (*i_getc)(f)) == EOF) {
-                        /*
-                        (*oconv)(0, ESC); don't send bogus code
-                        (*oconv)(0, '$'); */
-                        LAST;
-                    } else if (c1 == '@'|| c1 == 'B') {
-                        /* This is kanji introduction */
-                        input_mode = JIS_X_0208;
-                        shift_mode = FALSE;
-                        set_input_codename("ISO-2022-JP");
-#ifdef CHECK_OPTION
-                        debug("ISO-2022-JP");
-#endif
-                        NEXT;
-                    } else if (c1 == '(') {
-                        if ((c1 = (*i_getc)(f)) == EOF) {
-                            /* don't send bogus code
-                            (*oconv)(0, ESC);
-                            (*oconv)(0, '$');
-                            (*oconv)(0, '(');
-                                */
-                            LAST;
-                        } else if (c1 == '@'|| c1 == 'B') {
-                            /* This is kanji introduction */
-                            input_mode = JIS_X_0208;
-                            shift_mode = FALSE;
-                            NEXT;
+			    LAST;
+			SKIP;
+		    } else {
+			(*oconv)(0, '=');
+			(*i_ungetc)(c1,f);
+			SKIP;
+		    }
+		} else {
+		    /* normal ASCII code */
+		    SEND;
+		}
+	    } else if (c1 == SI && (!is_8bit || mime_decode_mode)) {
+		shift_mode = 0;
+		SKIP;
+	    } else if (c1 == SO && (!is_8bit || mime_decode_mode)) {
+		shift_mode = 1;
+		SKIP;
+	    } else if (c1 == ESC && (!is_8bit || mime_decode_mode)) {
+		if ((c1 = (*i_getc)(f)) == EOF) {
+		    /*  (*oconv)(0, ESC); don't send bogus code */
+		    LAST;
+		}
+		else if (c1 == '&') {
+		    /* IRR */
+		    if ((c1 = (*i_getc)(f)) == EOF) {
+			LAST;
+		    } else {
+			SKIP;
+		    }
+		}
+		else if (c1 == '$') {
+		    /* GZDMx */
+		    if ((c1 = (*i_getc)(f)) == EOF) {
+			/* don't send bogus code
+			   (*oconv)(0, ESC);
+			   (*oconv)(0, '$'); */
+			LAST;
+		    } else if (c1 == '@' || c1 == 'B') {
+			/* JIS X 0208 */
+			set_input_mode(JIS_X_0208);
+			SKIP;
+		    } else if (c1 == '(') {
+			/* GZDM4 */
+			if ((c1 = (*i_getc)(f)) == EOF) {
+			    /* don't send bogus code
+			       (*oconv)(0, ESC);
+			       (*oconv)(0, '$');
+			       (*oconv)(0, '(');
+			     */
+			    LAST;
+			} else if (c1 == '@'|| c1 == 'B') {
+			    /* JIS X 0208 */
+			    set_input_mode(JIS_X_0208);
+			    SKIP;
 #ifdef X0212_ENABLE
-                        } else if (c1 == 'D'){
-                            input_mode = JIS_X_0212;
-                            shift_mode = FALSE;
-                            NEXT;
+			} else if (c1 == 'D'){
+			    set_input_mode(JIS_X_0212);
+			    SKIP;
 #endif /* X0212_ENABLE */
-                        } else if (c1 == 0x4F){
-                            input_mode = JIS_X_0213_1;
-                            shift_mode = FALSE;
-                            NEXT;
-                        } else if (c1 == 0x50){
-                            input_mode = JIS_X_0213_2;
-                            shift_mode = FALSE;
-                            NEXT;
-                        } else {
-                            /* could be some special code */
-                            (*oconv)(0, ESC);
-                            (*oconv)(0, '$');
-                            (*oconv)(0, '(');
-                            (*oconv)(0, c1);
-                            NEXT;
-                        }
-                    } else if (broken_f&0x2) {
-                        /* accept any ESC-(-x as broken code ... */
-                        input_mode = JIS_X_0208;
-                        shift_mode = FALSE;
-                        NEXT;
-                    } else {
-                        (*oconv)(0, ESC);
-                        (*oconv)(0, '$');
-                        (*oconv)(0, c1);
-                        NEXT;
-                    }
-                } else if (c1 == '(') {
-                    if ((c1 = (*i_getc)(f)) == EOF) {
-                        /* don't send bogus code
-                        (*oconv)(0, ESC);
-                        (*oconv)(0, '('); */
-                        LAST;
-                    } else {
-                        if (c1 == 'I') {
-                            /* This is X0201 kana introduction */
-                            input_mode = JIS_X_0201; shift_mode = JIS_X_0201;
-                            NEXT;
-                        } else if (c1 == 'B' || c1 == 'J' || c1 == 'H') {
-                            /* This is X0208 kanji introduction */
-                            input_mode = ASCII; shift_mode = FALSE;
-                            NEXT;
-                        } else if (broken_f&0x2) {
-                            input_mode = ASCII; shift_mode = FALSE;
-                            NEXT;
-                        } else {
-                            (*oconv)(0, ESC);
-                            (*oconv)(0, '(');
-                            /* maintain various input_mode here */
-                            SEND;
-                        }
-                    }
-               } else if ( c1 == 'N' || c1 == 'n'){
-                   /* SS2 */
-                   c3 = (*i_getc)(f);  /* skip SS2 */
-                   if ( (SP<=c3 && c3 < 0x60) || (0xa0<=c3 && c3 < 0xe0)){
-                       c1 = c3;
-                       c2 = JIS_X_0201;
-                       SEND;
-                   }else{
-                       (*i_ungetc)(c3, f);
-                       /* lonely ESC  */
-                       (*oconv)(0, ESC);
-                       SEND;
-                   }
-                } else {
-                    /* lonely ESC  */
-                    (*oconv)(0, ESC);
-                    SEND;
-                }
+			} else if (c1 == 'O' || c1 == 'Q'){
+			    set_input_mode(JIS_X_0213_1);
+			    SKIP;
+			} else if (c1 == 'P'){
+			    set_input_mode(JIS_X_0213_2);
+			    SKIP;
+			} else {
+			    /* could be some special code */
+			    (*oconv)(0, ESC);
+			    (*oconv)(0, '$');
+			    (*oconv)(0, '(');
+			    (*oconv)(0, c1);
+			    SKIP;
+			}
+		    } else if (broken_f&0x2) {
+			/* accept any ESC-(-x as broken code ... */
+			input_mode = JIS_X_0208;
+			shift_mode = 0;
+			SKIP;
+		    } else {
+			(*oconv)(0, ESC);
+			(*oconv)(0, '$');
+			(*oconv)(0, c1);
+			SKIP;
+		    }
+		} else if (c1 == '(') {
+		    /* GZD4 */
+		    if ((c1 = (*i_getc)(f)) == EOF) {
+			/* don't send bogus code
+			   (*oconv)(0, ESC);
+			   (*oconv)(0, '('); */
+			LAST;
+		    }
+		    else if (c1 == 'I') {
+			/* JIS X 0201 Katakana */
+			set_input_mode(JIS_X_0201_1976_K);
+			SKIP;
+		    }
+		    else if (c1 == 'B' || c1 == 'J' || c1 == 'H') {
+			/* ISO-646IRV:1983 or JIS X 0201 Roman or JUNET */
+			set_input_mode(ASCII);
+			SKIP;
+		    }
+		    else if (broken_f&0x2) {
+			set_input_mode(ASCII);
+			SKIP;
+		    }
+		    else {
+			(*oconv)(0, ESC);
+			(*oconv)(0, '(');
+			SEND;
+		    }
+		}
+		else if (c1 == '.') {
+		    /* G2D6 */
+		    if ((c1 = (*i_getc)(f)) == EOF) {
+			LAST;
+		    }
+		    else if (c1 == 'A') {
+			/* ISO-8859-1 */
+			g2 = ISO_8859_1;
+			SKIP;
+		    }
+		    else {
+			(*oconv)(0, ESC);
+			(*oconv)(0, '.');
+			SEND;
+		    }
+		}
+		else if (c1 == 'N') {
+		    /* SS2 */
+		    c1 = (*i_getc)(f);
+		    if (g2 == ISO_8859_1) {
+			c2 = ISO_8859_1;
+			SEND;
+		    }else{
+			(*i_ungetc)(c1, f);
+			/* lonely ESC  */
+			(*oconv)(0, ESC);
+			SEND;
+		    }
+		}
+		else {
+		    /* lonely ESC  */
+		    (*oconv)(0, ESC);
+		    SEND;
+		}
 	    } else if (c1 == ESC && iconv == s_iconv) {
 		/* ESC in Shift_JIS */
 		if ((c1 = (*i_getc)(f)) == EOF) {
@@ -5417,32 +5540,33 @@ nkf_char kanji_convert(FILE *f)
 		} else if (c1 == '$') {
 		    /* J-PHONE emoji */
 		    if ((c1 = (*i_getc)(f)) == EOF) {
-			/*
-			   (*oconv)(0, ESC); don't send bogus code
-			   (*oconv)(0, '$'); */
 			LAST;
-		    } else {
-			if (('E' <= c1 && c1 <= 'G') ||
-			    ('O' <= c1 && c1 <= 'Q')) {
-			    /*
-			       NUM : 0 1 2 3 4 5
-			       BYTE: G E F O P Q
-			       C%7 : 1 6 0 2 3 4
-			       C%7 : 0 1 2 3 4 5 6
-			       NUM : 2 0 3 4 5 X 1
-			     */
-			    static const char jphone_emoji_first_table[7] = {2, 0, 3, 4, 5, 0, 1};
-			    c0 = (jphone_emoji_first_table[c1 % 7] << 8) - SP + 0xE000 + CLASS_UNICODE;
-			    while ((c1 = (*i_getc)(f)) != EOF) {
-				if (SP <= c1 && c1 <= 'z') {
-				    (*oconv)(0, c1 + c0);
-				} else break; /* c1 == SO */
-			    }
+		    } else if (('E' <= c1 && c1 <= 'G') ||
+			       ('O' <= c1 && c1 <= 'Q')) {
+			/*
+			   NUM : 0 1 2 3 4 5
+			   BYTE: G E F O P Q
+			   C%7 : 1 6 0 2 3 4
+			   C%7 : 0 1 2 3 4 5 6
+			   NUM : 2 0 3 4 5 X 1
+			 */
+			static const int jphone_emoji_first_table[7] =
+			{0xE1E0, 0xDFE0, 0xE2E0, 0xE3E0, 0xE4E0, 0xDFE0, 0xE0E0};
+			c3 = nkf_char_unicode_new(jphone_emoji_first_table[c1 % 7]);
+			if ((c1 = (*i_getc)(f)) == EOF) LAST;
+			while (SP <= c1 && c1 <= 'z') {
+			    (*oconv)(0, c1 + c3);
+			    if ((c1 = (*i_getc)(f)) == EOF) LAST;
 			}
+			SKIP;
 		    }
-		    if (c1 == EOF) LAST;
-		    NEXT;
-		} else {
+		    else {
+			(*oconv)(0, ESC);
+			(*oconv)(0, '$');
+			SEND;
+		    }
+		}
+		else {
 		    /* lonely ESC  */
 		    (*oconv)(0, ESC);
 		    SEND;
@@ -5480,33 +5604,29 @@ nkf_char kanji_convert(FILE *f)
 			SEND;
 		    }
 		}
-	    } else if (c1 == DEL && input_mode == JIS_X_0208) {
-		/* CP5022x */
-		c2 = c1;
-		NEXT;
 	    } else
-                SEND;
-        }
-        /* send: */
+		SEND;
+	}
+	/* send: */
 	switch(input_mode){
 	case ASCII:
-	    switch ((*iconv)(c2, c1, c0)) {  /* can be EUC / SJIS / UTF-8 / UTF-16 */
+	    switch ((*iconv)(c2, c1, 0)) {  /* can be EUC / SJIS / UTF-8 */
 	    case -2:
 		/* 4 bytes UTF-8 */
-		if ((c0 = (*i_getc)(f)) != EOF) {
-		    code_status(c0);
-		    c0 <<= 8;
-		    if ((c3 = (*i_getc)(f)) != EOF) {
-			code_status(c3);
-			(*iconv)(c2, c1, c0|c3);
+		if ((c3 = (*i_getc)(f)) != EOF) {
+		    code_status(c3);
+		    c3 <<= 8;
+		    if ((c4 = (*i_getc)(f)) != EOF) {
+			code_status(c4);
+			(*iconv)(c2, c1, c3|c4);
 		    }
 		}
 		break;
 	    case -1:
 		/* 3 bytes EUC or UTF-8 */
-		if ((c0 = (*i_getc)(f)) != EOF) {
-		    code_status(c0);
-		    (*iconv)(c2, c1, c0);
+		if ((c3 = (*i_getc)(f)) != EOF) {
+		    code_status(c3);
+		    (*iconv)(c2, c1, c3);
 		}
 		break;
 	    }
@@ -5517,8 +5637,7 @@ nkf_char kanji_convert(FILE *f)
 		0x7F <= c2 && c2 <= 0x92 &&
 		0x21 <= c1 && c1 <= 0x7E) {
 		/* CP932 UDC */
-		if(c1 == 0x7F) return 0;
-		c1 = (c2 - 0x7F) * 94 + c1 - 0x21 + 0xE000 + CLASS_UNICODE;
+		c1 = nkf_char_unicode_new((c2 - 0x7F) * 94 + c1 - 0x21 + 0xE000);
 		c2 = 0;
 	    }
 	    (*oconv)(c2, c1); /* this is JIS, not SJIS/EUC case */
@@ -5535,10 +5654,10 @@ nkf_char kanji_convert(FILE *f)
 	    (*oconv)(input_mode, c1);  /* other special case */
 	}
 
-        c2 = 0;
-        c0 = 0;
-        continue;
-        /* goto next_word */
+	c2 = 0;
+	c3 = 0;
+	continue;
+	/* goto next_word */
     }
 
     /* epilogue */
@@ -5558,10 +5677,18 @@ nkf_char kanji_convert(FILE *f)
 #endif
 	}
     }
-    return 1;
+    return 0;
 }
 
-void options(unsigned char *cp)
+/*
+ * int options(unsigned char *cp)
+ * 
+ * return values:
+ *    0: success
+ *   -1: ArgumentError
+ */
+static int
+options(unsigned char *cp)
 {
     nkf_char i, j;
     unsigned char *p;
@@ -5570,7 +5697,7 @@ void options(unsigned char *cp)
     nkf_encoding *enc;
 
     if (option_mode==1)
-	return;
+	return 0;
     while(*cp && *cp++!='-');
     while (*cp || cp_back) {
 	if(!*cp){
@@ -5579,188 +5706,190 @@ void options(unsigned char *cp)
 	    continue;
 	}
 	p = 0;
-        switch (*cp++) {
-        case '-':  /* literal options */
+	switch (*cp++) {
+	case '-':  /* literal options */
 	    if (!*cp || *cp == SP) {        /* ignore the rest of arguments */
 		option_mode = 1;
-		return;
+		return 0;
 	    }
-            for (i=0;i<sizeof(long_option)/sizeof(long_option[0]);i++) {
-                p = (unsigned char *)long_option[i].name;
-                for (j=0;*p && *p != '=' && *p == cp[j];p++, j++);
+	    for (i=0;i<sizeof(long_option)/sizeof(long_option[0]);i++) {
+		p = (unsigned char *)long_option[i].name;
+		for (j=0;*p && *p != '=' && *p == cp[j];p++, j++);
 		if (*p == cp[j] || cp[j] == SP){
 		    p = &cp[j] + 1;
 		    break;
 		}
 		p = 0;
-            }
+	    }
 	    if (p == 0) {
+#if !defined(PERL_XS) && !defined(WIN32DLL)
 		fprintf(stderr, "unknown long option: --%s\n", cp);
-		return;
+#endif
+		return -1;
 	    }
 	    while(*cp && *cp != SP && cp++);
-            if (long_option[i].alias[0]){
+	    if (long_option[i].alias[0]){
 		cp_back = cp;
 		cp = (unsigned char *)long_option[i].alias;
 	    }else{
-                if (strcmp(long_option[i].name, "ic=") == 0){
+		if (strcmp(long_option[i].name, "ic=") == 0){
 		    nkf_str_upcase((char *)p, codeset, 32);
 		    enc = nkf_enc_find(codeset);
 		    if (!enc) continue;
 		    input_encoding = enc;
-                    continue;
+		    continue;
 		}
-                if (strcmp(long_option[i].name, "oc=") == 0){
+		if (strcmp(long_option[i].name, "oc=") == 0){
 		    nkf_str_upcase((char *)p, codeset, 32);
 		    enc = nkf_enc_find(codeset);
-		    if (enc == 0) continue;
+		    if (enc <= 0) continue;
 		    output_encoding = enc;
-                    continue;
+		    continue;
 		}
-                if (strcmp(long_option[i].name, "guess=") == 0){
+		if (strcmp(long_option[i].name, "guess=") == 0){
 		    if (p[0] == '0' || p[0] == '1') {
 			guess_f = 1;
 		    } else {
 			guess_f = 2;
 		    }
-                    continue;
-                }
+		    continue;
+		}
 #ifdef OVERWRITE
-                if (strcmp(long_option[i].name, "overwrite") == 0){
-                    file_out_f = TRUE;
-                    overwrite_f = TRUE;
+		if (strcmp(long_option[i].name, "overwrite") == 0){
+		    file_out_f = TRUE;
+		    overwrite_f = TRUE;
 		    preserve_time_f = TRUE;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "overwrite=") == 0){
-                    file_out_f = TRUE;
-                    overwrite_f = TRUE;
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "overwrite=") == 0){
+		    file_out_f = TRUE;
+		    overwrite_f = TRUE;
 		    preserve_time_f = TRUE;
 		    backup_f = TRUE;
 		    backup_suffix = malloc(strlen((char *) p) + 1);
 		    strcpy(backup_suffix, (char *) p);
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "in-place") == 0){
-                    file_out_f = TRUE;
-                    overwrite_f = TRUE;
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "in-place") == 0){
+		    file_out_f = TRUE;
+		    overwrite_f = TRUE;
 		    preserve_time_f = FALSE;
 		    continue;
-                }
-                if (strcmp(long_option[i].name, "in-place=") == 0){
-                    file_out_f = TRUE;
-                    overwrite_f = TRUE;
+		}
+		if (strcmp(long_option[i].name, "in-place=") == 0){
+		    file_out_f = TRUE;
+		    overwrite_f = TRUE;
 		    preserve_time_f = FALSE;
 		    backup_f = TRUE;
 		    backup_suffix = malloc(strlen((char *) p) + 1);
 		    strcpy(backup_suffix, (char *) p);
 		    continue;
-                }
+		}
 #endif
 #ifdef INPUT_OPTION
-                if (strcmp(long_option[i].name, "cap-input") == 0){
-                    cap_f = TRUE;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "url-input") == 0){
-                    url_f = TRUE;
-                    continue;
-                }
+		if (strcmp(long_option[i].name, "cap-input") == 0){
+		    cap_f = TRUE;
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "url-input") == 0){
+		    url_f = TRUE;
+		    continue;
+		}
 #endif
 #ifdef NUMCHAR_OPTION
-                if (strcmp(long_option[i].name, "numchar-input") == 0){
-                    numchar_f = TRUE;
-                    continue;
-                }
+		if (strcmp(long_option[i].name, "numchar-input") == 0){
+		    numchar_f = TRUE;
+		    continue;
+		}
 #endif
 #ifdef CHECK_OPTION
-                if (strcmp(long_option[i].name, "no-output") == 0){
-                    noout_f = TRUE;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "debug") == 0){
-                    debug_f = TRUE;
-                    continue;
-                }
+		if (strcmp(long_option[i].name, "no-output") == 0){
+		    noout_f = TRUE;
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "debug") == 0){
+		    debug_f = TRUE;
+		    continue;
+		}
 #endif
-                if (strcmp(long_option[i].name, "cp932") == 0){
+		if (strcmp(long_option[i].name, "cp932") == 0){
 #ifdef SHIFTJIS_CP932
-                    cp51932_f = TRUE;
-                    cp932inv_f = -TRUE;
+		    cp51932_f = TRUE;
+		    cp932inv_f = -TRUE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-                    ms_ucs_map_f = UCS_MAP_CP932;
+		    ms_ucs_map_f = UCS_MAP_CP932;
 #endif
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "no-cp932") == 0){
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "no-cp932") == 0){
 #ifdef SHIFTJIS_CP932
-                    cp51932_f = FALSE;
-                    cp932inv_f = FALSE;
+		    cp51932_f = FALSE;
+		    cp932inv_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-                    ms_ucs_map_f = UCS_MAP_ASCII;
+		    ms_ucs_map_f = UCS_MAP_ASCII;
 #endif
-                    continue;
-                }
+		    continue;
+		}
 #ifdef SHIFTJIS_CP932
-                if (strcmp(long_option[i].name, "cp932inv") == 0){
-                    cp932inv_f = -TRUE;
-                    continue;
-                }
+		if (strcmp(long_option[i].name, "cp932inv") == 0){
+		    cp932inv_f = -TRUE;
+		    continue;
+		}
 #endif
 
 #ifdef X0212_ENABLE
-                if (strcmp(long_option[i].name, "x0212") == 0){
-                    x0212_f = TRUE;
-                    continue;
-                }
+		if (strcmp(long_option[i].name, "x0212") == 0){
+		    x0212_f = TRUE;
+		    continue;
+		}
 #endif
 
 #ifdef EXEC_IO
-                  if (strcmp(long_option[i].name, "exec-in") == 0){
-                      exec_f = 1;
-                      return;
-                  }
-                  if (strcmp(long_option[i].name, "exec-out") == 0){
-                      exec_f = -1;
-                      return;
-                  }
+		if (strcmp(long_option[i].name, "exec-in") == 0){
+		    exec_f = 1;
+		    return 0;
+		}
+		if (strcmp(long_option[i].name, "exec-out") == 0){
+		    exec_f = -1;
+		    return 0;
+		}
 #endif
 #if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
-                if (strcmp(long_option[i].name, "no-cp932ext") == 0){
+		if (strcmp(long_option[i].name, "no-cp932ext") == 0){
 		    no_cp932ext_f = TRUE;
-                    continue;
-                }
+		    continue;
+		}
 		if (strcmp(long_option[i].name, "no-best-fit-chars") == 0){
 		    no_best_fit_chars_f = TRUE;
 		    continue;
 		}
-                if (strcmp(long_option[i].name, "fb-skip") == 0){
+		if (strcmp(long_option[i].name, "fb-skip") == 0){
 		    encode_fallback = NULL;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "fb-html") == 0){
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "fb-html") == 0){
 		    encode_fallback = encode_fallback_html;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "fb-xml") == 0){
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "fb-xml") == 0){
 		    encode_fallback = encode_fallback_xml;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "fb-java") == 0){
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "fb-java") == 0){
 		    encode_fallback = encode_fallback_java;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "fb-perl") == 0){
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "fb-perl") == 0){
 		    encode_fallback = encode_fallback_perl;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "fb-subchar") == 0){
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "fb-subchar") == 0){
 		    encode_fallback = encode_fallback_subchar;
-                    continue;
-                }
-                if (strcmp(long_option[i].name, "fb-subchar=") == 0){
+		    continue;
+		}
+		if (strcmp(long_option[i].name, "fb-subchar=") == 0){
 		    encode_fallback = encode_fallback_subchar;
 		    unicode_subchar = 0;
 		    if (p[0] != '0'){
@@ -5784,14 +5913,14 @@ void options(unsigned char *cp)
 		    }
 		    w16e_conv(unicode_subchar, &i, &j);
 		    unicode_subchar = i<<8 | j;
-                    continue;
-                }
+		    continue;
+		}
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-                if (strcmp(long_option[i].name, "ms-ucs-map") == 0){
-                    ms_ucs_map_f = UCS_MAP_MS;
-                    continue;
-                }
+		if (strcmp(long_option[i].name, "ms-ucs-map") == 0){
+		    ms_ucs_map_f = UCS_MAP_MS;
+		    continue;
+		}
 #endif
 #ifdef UNICODE_NORMALIZATION
 		if (strcmp(long_option[i].name, "utf8mac-input") == 0){
@@ -5799,24 +5928,28 @@ void options(unsigned char *cp)
 		    continue;
 		}
 #endif
-                if (strcmp(long_option[i].name, "prefix=") == 0){
-                    if (nkf_isgraph(p[0])){
-                        for (i = 1; nkf_isgraph(p[i]); i++){
-                            prefix_table[p[i]] = p[0];
-                        }
-                    }
-                    continue;
-                }
-            }
-            continue;
-        case 'b':           /* buffered mode */
-            unbuf_f = FALSE;
-            continue;
-        case 'u':           /* non bufferd mode */
-            unbuf_f = TRUE;
-            continue;
-        case 't':           /* transparent mode */
-            if (*cp=='1') {
+		if (strcmp(long_option[i].name, "prefix=") == 0){
+		    if (nkf_isgraph(p[0])){
+			for (i = 1; nkf_isgraph(p[i]); i++){
+			    prefix_table[p[i]] = p[0];
+			}
+		    }
+		    continue;
+		}
+#if !defined(PERL_XS) && !defined(WIN32DLL)
+		fprintf(stderr, "unsupported long option: --%s\n", long_option[i].name);
+#endif
+		return -1;
+	    }
+	    continue;
+	case 'b':           /* buffered mode */
+	    unbuf_f = FALSE;
+	    continue;
+	case 'u':           /* non bufferd mode */
+	    unbuf_f = TRUE;
+	    continue;
+	case 't':           /* transparent mode */
+	    if (*cp=='1') {
 		/* alias of -t */
 		cp++;
 		nop_f = TRUE;
@@ -5829,62 +5962,62 @@ void options(unsigned char *cp)
 		 */
 		cp++;
 		nop_f = 2;
-            } else
+	    } else
 		nop_f = TRUE;
-            continue;
-        case 'j':           /* JIS output */
-        case 'n':
-            output_encoding = nkf_enc_from_index(ISO_2022_JP);
-            continue;
-        case 'e':           /* AT&T EUC output */
-            output_encoding = nkf_enc_from_index(EUC_JP);
-            continue;
-        case 's':           /* SJIS output */
-            output_encoding = nkf_enc_from_index(WINDOWS_31J);
-            continue;
-        case 'l':           /* ISO8859 Latin-1 support, no conversion */
-            iso8859_f = TRUE;  /* Only compatible with ISO-2022-JP */
-            input_encoding = nkf_enc_from_index(ISO_8859_1);
-            continue;
-        case 'i':           /* Kanji IN ESC-$-@/B */
-            if (*cp=='@'||*cp=='B')
-                kanji_intro = *cp++;
-            continue;
-        case 'o':           /* ASCII IN ESC-(-J/B */
-            if (*cp=='J'||*cp=='B'||*cp=='H')
-                ascii_intro = *cp++;
-            continue;
-        case 'h':
-            /*
-                bit:1   katakana->hiragana
-                bit:2   hiragana->katakana
-            */
-            if ('9'>= *cp && *cp>='0')
-                hira_f |= (*cp++ -'0');
-            else
-                hira_f |= 1;
-            continue;
-        case 'r':
-            rot_f = TRUE;
-            continue;
+	    continue;
+	case 'j':           /* JIS output */
+	case 'n':
+	    output_encoding = nkf_enc_from_index(ISO_2022_JP);
+	    continue;
+	case 'e':           /* AT&T EUC output */
+	    output_encoding = nkf_enc_from_index(EUCJP_NKF);
+	    continue;
+	case 's':           /* SJIS output */
+	    output_encoding = nkf_enc_from_index(WINDOWS_31J);
+	    continue;
+	case 'l':           /* ISO8859 Latin-1 support, no conversion */
+	    iso8859_f = TRUE;  /* Only compatible with ISO-2022-JP */
+	    input_encoding = nkf_enc_from_index(ISO_8859_1);
+	    continue;
+	case 'i':           /* Kanji IN ESC-$-@/B */
+	    if (*cp=='@'||*cp=='B')
+		kanji_intro = *cp++;
+	    continue;
+	case 'o':           /* ASCII IN ESC-(-J/B */
+	    if (*cp=='J'||*cp=='B'||*cp=='H')
+		ascii_intro = *cp++;
+	    continue;
+	case 'h':
+	    /*
+	       bit:1   katakana->hiragana
+	       bit:2   hiragana->katakana
+	     */
+	    if ('9'>= *cp && *cp>='0')
+		hira_f |= (*cp++ -'0');
+	    else
+		hira_f |= 1;
+	    continue;
+	case 'r':
+	    rot_f = TRUE;
+	    continue;
 #if defined(MSDOS) || defined(__OS2__)
-        case 'T':
-            binmode_f = FALSE;
-            continue;
+	case 'T':
+	    binmode_f = FALSE;
+	    continue;
 #endif
 #ifndef PERL_XS
-        case 'V':
-            show_configuration();
-            exit(1);
-            break;
-        case 'v':
-            usage();
-            exit(1);
-            break;
+	case 'V':
+	    show_configuration();
+	    exit(1);
+	    break;
+	case 'v':
+	    usage();
+	    exit(1);
+	    break;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-        case 'w':           /* UTF-8 output */
-            if (cp[0] == '8') {
+	case 'w':           /* UTF-8 output */
+	    if (cp[0] == '8') {
 		cp++;
 		if (cp[0] == '0'){
 		    cp++;
@@ -5910,9 +6043,10 @@ void options(unsigned char *cp)
 		    output_endian = ENDIAN_LITTLE;
 		} else if (cp[0] == 'B') {
 		    cp++;
-                } else {
-		    goto utf_no_endian;
-                }
+		} else {
+		    output_encoding = nkf_enc_from_index(enc_idx);
+		    continue;
+		}
 		if (cp[0] == '0'){
 		    cp++;
 		    enc_idx = enc_idx == UTF_16
@@ -5920,17 +6054,16 @@ void options(unsigned char *cp)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
 		} else {
 		    output_bom_f = TRUE;
-		  utf_no_endian:
 		    enc_idx = enc_idx == UTF_16
 			? (output_endian == ENDIAN_LITTLE ? UTF_16LE_BOM : UTF_16BE_BOM)
 			: (output_endian == ENDIAN_LITTLE ? UTF_32LE_BOM : UTF_32BE_BOM);
 		}
 		output_encoding = nkf_enc_from_index(enc_idx);
 	    }
-            continue;
+	    continue;
 #endif
 #ifdef UTF8_INPUT_ENABLE
-        case 'W':           /* UTF input */
+	case 'W':           /* UTF input */
 	    if (cp[0] == '8') {
 		cp++;
 		input_encoding = nkf_enc_from_index(UTF_8);
@@ -5960,58 +6093,58 @@ void options(unsigned char *cp)
 		    : (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
 		input_encoding = nkf_enc_from_index(enc_idx);
 	    }
-            continue;
+	    continue;
 #endif
-        /* Input code assumption */
+	    /* Input code assumption */
 	case 'J':   /* ISO-2022-JP input */
 	    input_encoding = nkf_enc_from_index(ISO_2022_JP);
 	    continue;
 	case 'E':   /* EUC-JP input */
-	    input_encoding = nkf_enc_from_index(EUC_JP);
+	    input_encoding = nkf_enc_from_index(EUCJP_NKF);
 	    continue;
 	case 'S':   /* Windows-31J input */
 	    input_encoding = nkf_enc_from_index(WINDOWS_31J);
 	    continue;
-        case 'Z':   /* Convert X0208 alphabet to asii */
-            /* alpha_f
+	case 'Z':   /* Convert X0208 alphabet to asii */
+	    /* alpha_f
 	       bit:0   Convert JIS X 0208 Alphabet to ASCII
 	       bit:1   Convert Kankaku to one space
 	       bit:2   Convert Kankaku to two spaces
 	       bit:3   Convert HTML Entity
 	       bit:4   Convert JIS X 0208 Katakana to JIS X 0201 Katakana
-            */
+	     */
 	    while ('0'<= *cp && *cp <='9') {
 		alpha_f |= 1 << (*cp++ - '0');
 	    }
-            if (!alpha_f) alpha_f = 1;
-            continue;
-        case 'x':   /* Convert X0201 kana to X0208 or X0201 Conversion */
-            x0201_f = FALSE;    /* No X0201->X0208 conversion */
-            /* accept  X0201
-                    ESC-(-I     in JIS, EUC, MS Kanji
-                    SI/SO       in JIS, EUC, MS Kanji
-                    SSO         in EUC, JIS, not in MS Kanji
-                    MS Kanji (0xa0-0xdf)
-               output  X0201
-                    ESC-(-I     in JIS (0x20-0x5f)
-                    SSO         in EUC (0xa0-0xdf)
-                    0xa0-0xd    in MS Kanji (0xa0-0xdf)
-            */
-            continue;
-        case 'X':   /* Convert X0201 kana to X0208 */
-            x0201_f = TRUE;
-            continue;
-        case 'F':   /* prserve new lines */
+	    if (!alpha_f) alpha_f = 1;
+	    continue;
+	case 'x':   /* Convert X0201 kana to X0208 or X0201 Conversion */
+	    x0201_f = FALSE;    /* No X0201->X0208 conversion */
+	    /* accept  X0201
+	       ESC-(-I     in JIS, EUC, MS Kanji
+	       SI/SO       in JIS, EUC, MS Kanji
+	       SS2         in EUC, JIS, not in MS Kanji
+	       MS Kanji (0xa0-0xdf)
+	       output  X0201
+	       ESC-(-I     in JIS (0x20-0x5f)
+	       SS2         in EUC (0xa0-0xdf)
+	       0xa0-0xd    in MS Kanji (0xa0-0xdf)
+	     */
+	    continue;
+	case 'X':   /* Convert X0201 kana to X0208 */
+	    x0201_f = TRUE;
+	    continue;
+	case 'F':   /* prserve new lines */
 	    fold_preserve_f = TRUE;
-        case 'f':   /* folding -f60 or -f */
-            fold_f = TRUE;
-            fold_len = 0;
-            while('0'<= *cp && *cp <='9') { /* we don't use atoi here */
+	case 'f':   /* folding -f60 or -f */
+	    fold_f = TRUE;
+	    fold_len = 0;
+	    while('0'<= *cp && *cp <='9') { /* we don't use atoi here */
 		fold_len *= 10;
 		fold_len += *cp++ - '0';
 	    }
-            if (!(0<fold_len && fold_len<BUFSIZ))
-                fold_len = DEFAULT_FOLD;
+	    if (!(0<fold_len && fold_len<BUFSIZ))
+		fold_len = DEFAULT_FOLD;
 	    if (*cp=='-') {
 		fold_margin = 0;
 		cp++;
@@ -6020,99 +6153,103 @@ void options(unsigned char *cp)
 		    fold_margin += *cp++ - '0';
 		}
 	    }
-            continue;
-        case 'm':   /* MIME support */
-            /* mime_decode_f = TRUE; */ /* this has too large side effects... */
-            if (*cp=='B'||*cp=='Q') {
-                mime_decode_mode = *cp++;
-                mimebuf_f = FIXED_MIME;
-            } else if (*cp=='N') {
-                mime_f = TRUE; cp++;
-            } else if (*cp=='S') {
-                mime_f = STRICT_MIME; cp++;
-            } else if (*cp=='0') {
-                mime_decode_f = FALSE;
-                mime_f = FALSE; cp++;
-            } else {
-                mime_f = STRICT_MIME;
-            }
-            continue;
-        case 'M':   /* MIME output */
-            if (*cp=='B') {
-                mimeout_mode = 'B';
-                mimeout_f = FIXED_MIME; cp++;
-            } else if (*cp=='Q') {
-                mimeout_mode = 'Q';
-                mimeout_f = FIXED_MIME; cp++;
-            } else {
+	    continue;
+	case 'm':   /* MIME support */
+	    /* mime_decode_f = TRUE; */ /* this has too large side effects... */
+	    if (*cp=='B'||*cp=='Q') {
+		mime_decode_mode = *cp++;
+		mimebuf_f = FIXED_MIME;
+	    } else if (*cp=='N') {
+		mime_f = TRUE; cp++;
+	    } else if (*cp=='S') {
+		mime_f = STRICT_MIME; cp++;
+	    } else if (*cp=='0') {
+		mime_decode_f = FALSE;
+		mime_f = FALSE; cp++;
+	    } else {
+		mime_f = STRICT_MIME;
+	    }
+	    continue;
+	case 'M':   /* MIME output */
+	    if (*cp=='B') {
+		mimeout_mode = 'B';
+		mimeout_f = FIXED_MIME; cp++;
+	    } else if (*cp=='Q') {
+		mimeout_mode = 'Q';
+		mimeout_f = FIXED_MIME; cp++;
+	    } else {
 		mimeout_f = TRUE;
 	    }
-            continue;
-        case 'B':   /* Broken JIS support */
-            /*  bit:0   no ESC JIS
-                bit:1   allow any x on ESC-(-x or ESC-$-x
-                bit:2   reset to ascii on NL
-            */
-            if ('9'>= *cp && *cp>='0')
-                broken_f |= 1<<(*cp++ -'0');
-            else
-                broken_f |= TRUE;
-            continue;
+	    continue;
+	case 'B':   /* Broken JIS support */
+	    /*  bit:0   no ESC JIS
+	       bit:1   allow any x on ESC-(-x or ESC-$-x
+	       bit:2   reset to ascii on NL
+	     */
+	    if ('9'>= *cp && *cp>='0')
+		broken_f |= 1<<(*cp++ -'0');
+	    else
+		broken_f |= TRUE;
+	    continue;
 #ifndef PERL_XS
-        case 'O':/* for Output file */
-            file_out_f = TRUE;
-            continue;
+	case 'O':/* for Output file */
+	    file_out_f = TRUE;
+	    continue;
 #endif
-        case 'c':/* add cr code */
-            eolmode_f = CRLF;
-            continue;
-        case 'd':/* delete cr code */
-            eolmode_f = LF;
-            continue;
+	case 'c':/* add cr code */
+	    eolmode_f = CRLF;
+	    continue;
+	case 'd':/* delete cr code */
+	    eolmode_f = LF;
+	    continue;
 	case 'I':   /* ISO-2022-JP output */
 	    iso2022jp_f = TRUE;
 	    continue;
-        case 'L':  /* line mode */
-            if (*cp=='u') {         /* unix */
-                eolmode_f = LF; cp++;
-            } else if (*cp=='m') { /* mac */
-                eolmode_f = CR; cp++;
-            } else if (*cp=='w') { /* windows */
-                eolmode_f = CRLF; cp++;
-            } else if (*cp=='0') { /* no conversion  */
-                eolmode_f = 0; cp++;
-            }
-            continue;
+	case 'L':  /* line mode */
+	    if (*cp=='u') {         /* unix */
+		eolmode_f = LF; cp++;
+	    } else if (*cp=='m') { /* mac */
+		eolmode_f = CR; cp++;
+	    } else if (*cp=='w') { /* windows */
+		eolmode_f = CRLF; cp++;
+	    } else if (*cp=='0') { /* no conversion  */
+		eolmode_f = 0; cp++;
+	    }
+	    continue;
 #ifndef PERL_XS
-        case 'g':
-            if ('2' <= *cp && *cp <= '9') {
-                guess_f = 2;
-                cp++;
-            } else if (*cp == '0' || *cp == '1') {
+	case 'g':
+	    if ('2' <= *cp && *cp <= '9') {
+		guess_f = 2;
+		cp++;
+	    } else if (*cp == '0' || *cp == '1') {
 		guess_f = 1;
-                cp++;
-            } else {
+		cp++;
+	    } else {
 		guess_f = 1;
-            }
-            continue;
+	    }
+	    continue;
 #endif
-        case SP:
-        /* module muliple options in a string are allowed for Perl moudle  */
+	case SP:
+	    /* module muliple options in a string are allowed for Perl moudle  */
 	    while(*cp && *cp++!='-');
-            continue;
-        default:
+	    continue;
+	default:
+#if !defined(PERL_XS) && !defined(WIN32DLL)
 	    fprintf(stderr, "unknown option: -%c\n", *(cp-1));
-            /* bogus option but ignored */
-            continue;
-        }
+#endif
+	    /* bogus option but ignored */
+	    return -1;
+	}
     }
+    return 0;
 }
 
 #ifdef WIN32DLL
 #include "nkf32dll.c"
 #elif defined(PERL_XS)
 #else /* WIN32DLL */
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
     FILE  *fin;
     unsigned char  *cp;
@@ -6123,37 +6260,38 @@ int main(int argc, char **argv)
 #ifdef EASYWIN /*Easy Win */
     _BufferSize.y = 400;/*Set Scroll Buffer Size*/
 #endif
+#ifdef DEFAULT_CODE_LOCALE
     setlocale(LC_CTYPE, "");
-
+#endif
     for (argc--,argv++; (argc > 0) && **argv == '-'; argc--, argv++) {
-        cp = (unsigned char *)*argv;
-        options(cp);
+	cp = (unsigned char *)*argv;
+	options(cp);
 #ifdef EXEC_IO
-        if (exec_f){
-            int fds[2], pid;
-            if (pipe(fds) < 0 || (pid = fork()) < 0){
-                abort();
-            }
-            if (pid == 0){
-                if (exec_f > 0){
-                    close(fds[0]);
-                    dup2(fds[1], 1);
-                }else{
-                    close(fds[1]);
-                    dup2(fds[0], 0);
-                }
-                execvp(argv[1], &argv[1]);
-            }
-            if (exec_f > 0){
-                close(fds[1]);
-                dup2(fds[0], 0);
-            }else{
-                close(fds[0]);
-                dup2(fds[1], 1);
-            }
-            argc = 0;
-            break;
-        }
+	if (exec_f){
+	    int fds[2], pid;
+	    if (pipe(fds) < 0 || (pid = fork()) < 0){
+		abort();
+	    }
+	    if (pid == 0){
+		if (exec_f > 0){
+		    close(fds[0]);
+		    dup2(fds[1], 1);
+		}else{
+		    close(fds[1]);
+		    dup2(fds[0], 0);
+		}
+		execvp(argv[1], &argv[1]);
+	    }
+	    if (exec_f > 0){
+		close(fds[1]);
+		dup2(fds[0], 0);
+	    }else{
+		close(fds[0]);
+		dup2(fds[1], 1);
+	    }
+	    argc = 0;
+	    break;
+	}
 #endif
     }
 
@@ -6178,158 +6316,156 @@ int main(int argc, char **argv)
 #ifdef EXEC_IO
 	exec_f = exec_f_back;
 #endif
-#ifdef X0212_ENABLE
 	x0212_f = x0212_f_back;
-#endif
 	x0213_f = x0213_f_back;
     }
 
     if (binmode_f == TRUE)
 #if defined(__OS2__) && (defined(__IBMC__) || defined(__IBMCPP__))
-    if (freopen("","wb",stdout) == NULL)
-        return (-1);
+	if (freopen("","wb",stdout) == NULL)
+	    return (-1);
 #else
     setbinmode(stdout);
 #endif
 
     if (unbuf_f)
-      setbuf(stdout, (char *) NULL);
+	setbuf(stdout, (char *) NULL);
     else
-      setvbuffer(stdout, (char *) stdobuf, IOBUF_SIZE);
+	setvbuffer(stdout, (char *) stdobuf, IOBUF_SIZE);
 
     if (argc == 0) {
-      if (binmode_f == TRUE)
+	if (binmode_f == TRUE)
 #if defined(__OS2__) && (defined(__IBMC__) || defined(__IBMCPP__))
-      if (freopen("","rb",stdin) == NULL) return (-1);
+	    if (freopen("","rb",stdin) == NULL) return (-1);
 #else
-      setbinmode(stdin);
+	setbinmode(stdin);
 #endif
-      setvbuffer(stdin, (char *) stdibuf, IOBUF_SIZE);
-      if (nop_f)
-          noconvert(stdin);
-      else {
-          kanji_convert(stdin);
-          if (guess_f) print_guessed_code(NULL);
-      }
+	setvbuffer(stdin, (char *) stdibuf, IOBUF_SIZE);
+	if (nop_f)
+	    noconvert(stdin);
+	else {
+	    kanji_convert(stdin);
+	    if (guess_f) print_guessed_code(NULL);
+	}
     } else {
-      int nfiles = argc;
+	int nfiles = argc;
 	int is_argument_error = FALSE;
-      while (argc--) {
+	while (argc--) {
 	    input_codename = NULL;
 	    input_eol = 0;
 #ifdef CHECK_OPTION
 	    iconv_for_check = 0;
 #endif
-          if ((fin = fopen((origfname = *argv++), "r")) == NULL) {
+	    if ((fin = fopen((origfname = *argv++), "r")) == NULL) {
 		perror(*(argv-1));
 		is_argument_error = TRUE;
 		continue;
-          } else {
+	    } else {
 #ifdef OVERWRITE
-              int fd = 0;
-              int fd_backup = 0;
+		int fd = 0;
+		int fd_backup = 0;
 #endif
 
-/* reopen file for stdout */
-              if (file_out_f == TRUE) {
+		/* reopen file for stdout */
+		if (file_out_f == TRUE) {
 #ifdef OVERWRITE
-                  if (overwrite_f){
-                      outfname = malloc(strlen(origfname)
-                                        + strlen(".nkftmpXXXXXX")
-                                        + 1);
-                      if (!outfname){
-                          perror(origfname);
-                          return -1;
-                      }
-                      strcpy(outfname, origfname);
+		    if (overwrite_f){
+			outfname = malloc(strlen(origfname)
+					  + strlen(".nkftmpXXXXXX")
+					  + 1);
+			if (!outfname){
+			    perror(origfname);
+			    return -1;
+			}
+			strcpy(outfname, origfname);
 #ifdef MSDOS
-                      {
-                          int i;
-                          for (i = strlen(outfname); i; --i){
-                              if (outfname[i - 1] == '/'
-                                  || outfname[i - 1] == '\\'){
-                                  break;
-                              }
-                          }
-                          outfname[i] = '\0';
-                      }
-                      strcat(outfname, "ntXXXXXX");
-                      mktemp(outfname);
+			{
+			    int i;
+			    for (i = strlen(outfname); i; --i){
+				if (outfname[i - 1] == '/'
+				    || outfname[i - 1] == '\\'){
+				    break;
+				}
+			    }
+			    outfname[i] = '\0';
+			}
+			strcat(outfname, "ntXXXXXX");
+			mktemp(outfname);
 			fd = open(outfname, O_WRONLY | O_CREAT | O_TRUNC | O_EXCL,
-                                S_IREAD | S_IWRITE);
+				  S_IREAD | S_IWRITE);
 #else
-                      strcat(outfname, ".nkftmpXXXXXX");
-                      fd = mkstemp(outfname);
+			strcat(outfname, ".nkftmpXXXXXX");
+			fd = mkstemp(outfname);
 #endif
-                      if (fd < 0
-                          || (fd_backup = dup(fileno(stdout))) < 0
-                          || dup2(fd, fileno(stdout)) < 0
-                          ){
-                          perror(origfname);
-                          return -1;
-                      }
-                  }else
+			if (fd < 0
+			    || (fd_backup = dup(fileno(stdout))) < 0
+			    || dup2(fd, fileno(stdout)) < 0
+			   ){
+			    perror(origfname);
+			    return -1;
+			}
+		    }else
 #endif
-		  if(argc == 1) {
-		      outfname = *argv++;
-		      argc--;
-		  } else {
-		      outfname = "nkf.out";
-		  }
+		    if(argc == 1) {
+			outfname = *argv++;
+			argc--;
+		    } else {
+			outfname = "nkf.out";
+		    }
 
-		  if(freopen(outfname, "w", stdout) == NULL) {
-		      perror (outfname);
-		      return (-1);
-		  }
-                  if (binmode_f == TRUE) {
+		    if(freopen(outfname, "w", stdout) == NULL) {
+			perror (outfname);
+			return (-1);
+		    }
+		    if (binmode_f == TRUE) {
 #if defined(__OS2__) && (defined(__IBMC__) || defined(__IBMCPP__))
-                      if (freopen("","wb",stdout) == NULL)
-                           return (-1);
+			if (freopen("","wb",stdout) == NULL)
+			    return (-1);
 #else
-                      setbinmode(stdout);
+			setbinmode(stdout);
 #endif
-                  }
-              }
-              if (binmode_f == TRUE)
+		    }
+		}
+		if (binmode_f == TRUE)
 #if defined(__OS2__) && (defined(__IBMC__) || defined(__IBMCPP__))
-                 if (freopen("","rb",fin) == NULL)
-                    return (-1);
+		    if (freopen("","rb",fin) == NULL)
+			return (-1);
 #else
-                 setbinmode(fin);
+		setbinmode(fin);
 #endif
-              setvbuffer(fin, (char *) stdibuf, IOBUF_SIZE);
-              if (nop_f)
-                  noconvert(fin);
-              else {
-                  char *filename = NULL;
-                  kanji_convert(fin);
-                  if (nfiles > 1) filename = origfname;
-                  if (guess_f) print_guessed_code(filename);
-              }
-              fclose(fin);
+		setvbuffer(fin, (char *) stdibuf, IOBUF_SIZE);
+		if (nop_f)
+		    noconvert(fin);
+		else {
+		    char *filename = NULL;
+		    kanji_convert(fin);
+		    if (nfiles > 1) filename = origfname;
+		    if (guess_f) print_guessed_code(filename);
+		}
+		fclose(fin);
 #ifdef OVERWRITE
-              if (overwrite_f) {
-                  struct stat     sb;
+		if (overwrite_f) {
+		    struct stat     sb;
 #if defined(MSDOS) && !defined(__MINGW32__) && !defined(__WIN32__) && !defined(__WATCOMC__) && !defined(__EMX__) && !defined(__OS2__) && !defined(__DJGPP__)
-                  time_t tb[2];
+		    time_t tb[2];
 #else
-                  struct utimbuf  tb;
+		    struct utimbuf  tb;
 #endif
 
-                  fflush(stdout);
-                  close(fd);
-                  if (dup2(fd_backup, fileno(stdout)) < 0){
-                      perror("dup2");
-                  }
-                  if (stat(origfname, &sb)) {
-                      fprintf(stderr, "Can't stat %s\n", origfname);
-                  }
-                  /* パーミッションを復元 */
-                  if (chmod(outfname, sb.st_mode)) {
-                      fprintf(stderr, "Can't set permission %s\n", outfname);
-                  }
+		    fflush(stdout);
+		    close(fd);
+		    if (dup2(fd_backup, fileno(stdout)) < 0){
+			perror("dup2");
+		    }
+		    if (stat(origfname, &sb)) {
+			fprintf(stderr, "Can't stat %s\n", origfname);
+		    }
+		    /* パーミッションを復元 */
+		    if (chmod(outfname, sb.st_mode)) {
+			fprintf(stderr, "Can't set permission %s\n", outfname);
+		    }
 
-                  /* タイムスタンプを復元 */
+		    /* タイムスタンプを復元 */
 		    if(preserve_time_f){
 #if defined(MSDOS) && !defined(__MINGW32__) && !defined(__WIN32__) && !defined(__WATCOMC__) && !defined(__EMX__) && !defined(__OS2__) && !defined(__DJGPP__)
 			tb[0] = tb[1] = sb.st_mtime;
@@ -6361,27 +6497,27 @@ int main(int argc, char **argv)
 			}
 #endif
 		    }
-                  if (rename(outfname, origfname)) {
-                      perror(origfname);
-                      fprintf(stderr, "Can't rename %s to %s\n",
-                              outfname, origfname);
-                  }
-                  free(outfname);
-              }
+		    if (rename(outfname, origfname)) {
+			perror(origfname);
+			fprintf(stderr, "Can't rename %s to %s\n",
+				outfname, origfname);
+		    }
+		    free(outfname);
+		}
 #endif
-          }
-      }
+	    }
+	}
 	if (is_argument_error)
 	    return(-1);
     }
 #ifdef EASYWIN /*Easy Win */
     if (file_out_f == FALSE)
-        scanf("%d",&end_check);
+	scanf("%d",&end_check);
     else
-        fclose(stdout);
+	fclose(stdout);
 #else /* for Other OS */
     if (file_out_f == TRUE)
-        fclose(stdout);
+	fclose(stdout);
 #endif /*Easy Win */
     return (0);
 }
