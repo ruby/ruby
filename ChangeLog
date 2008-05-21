@@ -1,3 +1,23 @@
+Wed May 21 23:31:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_get_method_body, rb_alias, rb_eval): should not cache
+	  uninitialized value, since search_method doesn't set origin if the
+	  method wasn't found.
+
+	* eval.c (search_method, remove_method, error_print, rb_alias)
+	  (rb_eval, rb_rescue2, search_required, Init_eval, rb_thread_create),
+	  gc.c (rb_source_filename, Init_stack), io.c (rb_io_getline),
+	  parse.y (rb_id2name, rb_parser_free): suppress warnings.
+
+Wed May 21 12:34:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_delete): rdoc fix based on a patch from Gaston Ramos
+	  <ramos.gaston AT gmail.com>.  [ruby-core:16825]
+
+Tue May 20 13:15:46 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* file.c (lchmod_internal): Remove a compiler warning.
+
 Mon May 19 18:22:35 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/openssl/ossl_pkcs5.c (ossl_pkcs5_pbkdf2_hmac): Fix the type

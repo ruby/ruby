@@ -467,16 +467,16 @@ search_method(klass, id, origin)
     VALUE klass, *origin;
     ID id;
 {
-    NODE *body;
+    st_data_t body;
 
     if (!klass) return 0;
-    while (!st_lookup(RCLASS(klass)->m_tbl, id, (st_data_t *)&body)) {
+    while (!st_lookup(RCLASS(klass)->m_tbl, id, &body)) {
 	klass = RCLASS(klass)->super;
 	if (!klass) return 0;
     }
 
     if (origin) *origin = klass;
-    return body;
+    return (NODE *)body;
 }
 
 static NODE*
@@ -487,7 +487,7 @@ rb_get_method_body(klassp, idp, noexp)
 {
     ID id = *idp;
     VALUE klass = *klassp;
-    VALUE origin;
+    VALUE origin = 0;
     NODE * volatile body;
     struct cache_entry *ent;
 
@@ -555,7 +555,8 @@ remove_method(klass, mid)
     VALUE klass;
     ID mid;
 {
-    NODE *body;
+    st_data_t data;
+    NODE *body = 0;
 
     if (klass == rb_cObject) {
 	rb_secure(4);
@@ -567,10 +568,11 @@ remove_method(klass, mid)
     if (mid == __id__ || mid == __send__ || mid == init) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
-    if (st_lookup(RCLASS(klass)->m_tbl, mid, (st_data_t *)&body)) {
+    if (st_lookup(RCLASS(klass)->m_tbl, mid, &data)) {
+	body = (NODE *)data;
 	if (!body || !body->nd_body) body = 0;
 	else {
-	    st_delete(RCLASS(klass)->m_tbl, &mid, (st_data_t *)&body);
+	    st_delete(RCLASS(klass)->m_tbl, &mid, &data);
 	}
     }
     if (!body) {
@@ -1286,7 +1288,7 @@ error_print()
 	    long len = elen;
 
 	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
-	    if (tail = memchr(einfo, '\n', elen)) {
+	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
 		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
@@ -2159,9 +2161,10 @@ rb_alias(klass, name, def)
     VALUE klass;
     ID name, def;
 {
-    VALUE origin;
+    VALUE origin = 0;
     NODE *orig, *body, *node;
     VALUE singleton = 0;
+    st_data_t data;
 
     rb_frozen_class_p(klass);
     if (name == def) return;
@@ -2189,7 +2192,8 @@ rb_alias(klass, name, def)
     }
 
     rb_clear_cache_by_id(name);
-    if (RTEST(ruby_verbose) && st_lookup(RCLASS(klass)->m_tbl, name, (st_data_t *)&node)) {
+    if (RTEST(ruby_verbose) && st_lookup(RCLASS(klass)->m_tbl, name, &data)) {
+	node = (NODE *)data;
 	if (node->nd_cnt == 0 && node->nd_body) {
 	    rb_warning("discarding old %s", rb_id2name(name));
 	}
@@ -2940,6 +2944,7 @@ rb_eval(self, n)
     NODE * volatile node = n;
     int state;
     volatile VALUE result = Qnil;
+    st_data_t data;
 
 #define RETURN(v) do { \
     result = (v); \
@@ -3916,7 +3921,7 @@ rb_eval(self, n)
       case NODE_DEFN:
 	if (node->nd_defn) {
 	    NODE *body,  *defn;
-	    VALUE origin;
+	    VALUE origin = 0;
 	    int noex;
 
 	    if (NIL_P(ruby_class)) {
@@ -3978,7 +3983,8 @@ rb_eval(self, n)
 
 	    if (OBJ_FROZEN(recv)) rb_error_frozen("object");
 	    klass = rb_singleton_class(recv);
-	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, (st_data_t *)&body)) {
+	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &data)) {
+		body = (NODE *)data;
 		if (ruby_safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "redefining method prohibited");
 		}
@@ -5441,7 +5447,7 @@ rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
 	if (handle) break;
 	handle = Qfalse;
 	va_init_list(args, data2);
-	while (eclass = va_arg(args, VALUE)) {
+	while ((eclass = va_arg(args, VALUE)) != 0) {
 	    if (rb_obj_is_kind_of(ruby_errinfo, eclass)) {
 		handle = Qtrue;
 		break;
@@ -7206,7 +7212,7 @@ search_required(fname, featurep, path)
 #else
 	    rb_str_cat2(tmp, DLEXT);
 	    OBJ_FREEZE(tmp);
-	    if (*path = rb_find_file(tmp)) {
+	    if ((*path = rb_find_file(tmp)) != 0) {
 		return 's';
 	    }
 #endif
@@ -8058,11 +8064,11 @@ Init_eval()
     __id__ = rb_intern("__id__");
     __send__ = rb_intern("__send__");
 
-    rb_global_variable((VALUE*)&top_scope);
-    rb_global_variable((VALUE*)&ruby_eval_tree_begin);
+    rb_global_variable((void *)&top_scope);
+    rb_global_variable((void *)&ruby_eval_tree_begin);
 
-    rb_global_variable((VALUE*)&ruby_eval_tree);
-    rb_global_variable((VALUE*)&ruby_dyna_vars);
+    rb_global_variable((void *)&ruby_eval_tree);
+    rb_global_variable((void *)&ruby_dyna_vars);
 
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_hooked_variable("$!", &ruby_errinfo, 0, errinfo_setter);
@@ -8075,7 +8081,7 @@ Init_eval()
 
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
     respond_to   = rb_intern("respond_to?");
-    rb_global_variable((VALUE*)&basic_respond_to);
+    rb_global_variable((void *)&basic_respond_to);
     basic_respond_to = rb_method_node(rb_cObject, respond_to);
     
     rb_define_global_function("raise", rb_f_raise, -1);
@@ -11958,7 +11964,7 @@ rb_thread_alloc(klass)
     return th;
 }
 
-static int thread_init = 0;
+static int thread_init;
 
 #if defined(_THREAD_SAFE)
 static void
@@ -12171,7 +12177,7 @@ rb_thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
-    Init_stack((VALUE*)&arg);
+    Init_stack((void *)&arg);
     return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
 }
 

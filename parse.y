@@ -6128,6 +6128,7 @@ rb_id2name(id)
     ID id;
 {
     char *name;
+    st_data_t data;
 
     if (id < tLAST_TOKEN) {
 	int i;
@@ -6138,8 +6139,8 @@ rb_id2name(id)
 	}
     }
 
-    if (st_lookup(sym_rev_tbl, id, (st_data_t *)&name))
-	return name;
+    if (st_lookup(sym_rev_tbl, id, &data))
+	return (char *)data;
 
     if (is_attrset_id(id)) {
 	ID id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
@@ -6352,7 +6353,7 @@ rb_parser_free(ptr)
 {
     NODE **prev = &parser_heap, *n;
 
-    while (n = *prev) {
+    while ((n = *prev) != 0) {
 	if (n->u1.node == ptr) {
 	    *prev = n->u2.node;
 	    rb_gc_force_recycle((VALUE)n);
