@@ -936,6 +936,7 @@ module Net
       @continuation_request_arrival = new_cond
       @logout_command_tag = nil
       @debug_output_bol = true
+      @exception = nil
 
       @greeting = get_response
       if @greeting.name == "BYE"
@@ -951,14 +952,24 @@ module Net
 
     def receive_responses
       while true
+        synchronize do
+          @exception = nil
+        end
         begin
           resp = get_response
-        rescue Exception
-          @sock.close
-          @client_thread.raise($!)
+        rescue Exception => e
+          synchronize do
+            @sock.close
+            @exception = e
+          end
           break
         end
-        break unless resp
+        unless resp
+          synchronize do
+            @exception = EOFError.new("end of file reached")
+          end
+          break
+        end
         begin
           synchronize do
             case resp
@@ -976,7 +987,8 @@ module Net
               end
               if resp.name == "BYE" && @logout_command_tag.nil?
                 @sock.close
-                raise ByeResponseError, resp.raw_data
+                @exception = ByeResponseError.new(resp.raw_data)
+                break
               end
             when ContinuationRequest
               @continuation_request_arrival.signal
@@ -985,14 +997,23 @@ module Net
               handler.call(resp)
             end
           end
-        rescue Exception
-          @client_thread.raise($!)
+        rescue Exception => e
+          @exception = e
+          synchronize do
+            @tagged_response_arrival.broadcast
+            @continuation_request_arrival.broadcast
+          end
         end
+      end
+      synchronize do
+        @tagged_response_arrival.broadcast
+        @continuation_request_arrival.broadcast
       end
     end
 
     def get_tagged_response(tag, cmd)
       until @tagged_responses.key?(tag)
+        raise @exception if @exception
         @tagged_response_arrival.wait
       end
       resp = @tagged_responses.delete(tag)
@@ -1119,6 +1140,7 @@ module Net
     def send_literal(str)
       put_string("{" + str.length.to_s + "}" + CRLF)
       @continuation_request_arrival.wait
+      raise @exception if @exception
       put_string(str)
     end
 

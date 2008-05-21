@@ -81,6 +81,37 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_unexpected_eof
+    server = TCPServer.new(0)
+    port = server.addr[1]
+    Thread.start do
+      begin
+        sock = server.accept
+        begin
+          sock.print("* OK test server\r\n")
+          sock.gets
+#          sock.print("* BYE terminating connection\r\n")
+#          sock.print("RUBY0001 OK LOGOUT completed\r\n")
+        ensure
+          sock.close
+        end
+      rescue
+      end
+    end
+    begin
+      begin
+        imap = Net::IMAP.new("localhost", :port => port)
+        assert_raise(EOFError) do
+          imap.logout
+        end
+      ensure
+        imap.disconnect if imap
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
   def imaps_test

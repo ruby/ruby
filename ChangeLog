@@ -1,3 +1,7 @@
+Thu May 22 02:46:08 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: do not use Thread#raise. [ruby-dev:34739]
+
 Thu May 22 00:30:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_require.rb: new tests for library requiring, to
