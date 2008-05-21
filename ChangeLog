@@ -1,3 +1,8 @@
+Wed May 21 17:46:17 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (nkf_enc_find_index):
+	  use strcasecmp. [ruby-dev:34787]
+
 Wed May 21 16:48:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_compact_bang): avoid forceful realloc.

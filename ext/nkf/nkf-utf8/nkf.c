@@ -678,7 +678,7 @@ nkf_enc_find_index(const char *name)
     int i, index = -1;
     if (*name == 'X' && *(name+1) == '-') name += 2;
     for (i = 0; encoding_name_to_id_table[i].id >= 0; i++) {
-	if (strcmp(name, encoding_name_to_id_table[i].name) == 0) {
+	if (strcasecmp(name, encoding_name_to_id_table[i].name) == 0) {
 	    return encoding_name_to_id_table[i].id;
 	}
     }
