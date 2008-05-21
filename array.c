@@ -2710,11 +2710,13 @@ rb_ary_compact_bang(VALUE ary)
 	if (NIL_P(*t)) t++;
 	else *p++ = *t++;
     }
-    if (RARRAY_LEN(ary) == (p - RARRAY_PTR(ary))) {
+    n = p - RARRAY_PTR(ary);
+    if (RARRAY_LEN(ary) == n) {
 	return Qnil;
     }
-    n = p - RARRAY_PTR(ary);
-    RESIZE_CAPA(ary, n);
+    if (n * 2 < ARY_CAPA(ary) && ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
+	RESIZE_CAPA(ary, ARY_DEFAULT_SIZE * 2);
+    }
     RARRAY(ary)->len = n;
 
     return ary;

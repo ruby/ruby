@@ -1,3 +1,7 @@
+Wed May 21 16:48:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_compact_bang): avoid forceful realloc.
+
 Wed May 21 07:42:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_usascii_str_new): use rb_str_new.
