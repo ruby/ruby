@@ -1,3 +1,7 @@
+Wed May 21 23:20:21 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_eval.rb: fix syntax.
+
 Wed May 21 17:46:17 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_enc_find_index):

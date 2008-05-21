@@ -268,7 +268,7 @@ assert_equal 'ok', %q{
     nil.instance_eval {
       def a() :a end
     }
-  rescue => TypeError
+  rescue TypeError
     :ok
   end
 }, '[ruby-core:16796]'
@@ -278,7 +278,7 @@ assert_equal 'ok', %q{
     nil.instance_exec {
       def a() :a end
     }
-  rescue => TypeError
+  rescue TypeError
     :ok
   end
 }, '[ruby-core:16796]'
