@@ -1,3 +1,7 @@
+Thu May 22 00:15:44 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* insns.def, vm_insnhelper.c: specify "const".
+
 Wed May 21 23:20:21 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* bootstraptest/test_eval.rb: fix syntax.

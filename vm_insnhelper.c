@@ -26,8 +26,7 @@ vm_push_frame(rb_thread_t * const th, const rb_iseq_t * const iseq,
 	      const VALUE * const pc, VALUE *sp, VALUE *lfp,
 	      int const local_size)
 {
-    VALUE *dfp;
-    rb_control_frame_t *cfp;
+    rb_control_frame_t * const cfp = th->cfp = th->cfp - 1;
     int i;
 
     /* setup vm value stack */
@@ -40,7 +39,6 @@ vm_push_frame(rb_thread_t * const th, const rb_iseq_t * const iseq,
 
     /* set special val */
     *sp = GC_GUARDED_PTR(specval);
-    dfp = sp;
 
     if (lfp == 0) {
 	lfp = sp;
@@ -48,7 +46,6 @@ vm_push_frame(rb_thread_t * const th, const rb_iseq_t * const iseq,
 
     /* setup vm control frame stack */
 
-    cfp = th->cfp = th->cfp - 1;
     cfp->pc = (VALUE *)pc;
     cfp->sp = sp + 1;
     cfp->bp = sp + 1;
@@ -56,7 +53,7 @@ vm_push_frame(rb_thread_t * const th, const rb_iseq_t * const iseq,
     cfp->flag = type;
     cfp->self = self;
     cfp->lfp = lfp;
-    cfp->dfp = (VALUE *)dfp;
+    cfp->dfp = sp;
     cfp->proc = 0;
 
 #define COLLECT_PROFILE 0
@@ -101,24 +98,26 @@ vm_pop_frame(rb_thread_t * const th)
 
 /* method dispatch */
 
-static int
-vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
-		    int argc, VALUE *argv, rb_block_t **block)
+static inline int
+vm_callee_setup_arg(rb_thread_t * const th, const rb_iseq_t * const iseq,
+		    const int orig_argc, VALUE * const orig_argv,
+		    rb_block_t ** const block)
 {
     const int m = iseq->argc;
-    const int orig_argc = argc;
 
     if (LIKELY(iseq->arg_simple & 0x01)) {
 	/* simple check */
-	if (argc != m) {
+	if (orig_argc != m) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		     argc, m);
+		     orig_argc, m);
 	}
 	return 0;
     }
     else {
-	VALUE * const dst = argv;
+	int argc = orig_argc;
+	VALUE *argv = orig_argv;
 	int opt_pc = 0;
+
 	th->mark_stack_len = argc + iseq->arg_size;
 
 	/* mandatory */
@@ -138,7 +137,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 		argv = new_argv;
 	    }
 
-	    MEMCPY(&dst[iseq->arg_post_start], &argv[argc -= iseq->arg_post_len],
+	    MEMCPY(&orig_argv[iseq->arg_post_start], &argv[argc -= iseq->arg_post_len],
 		   VALUE, iseq->arg_post_len);
 	}
 
@@ -159,7 +158,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 	    else {
 		int i;
 		for (i = argc; i<opts; i++) {
-		    dst[i + m] = Qnil;
+		    orig_argv[i + m] = Qnil;
 		}
 		opt_pc = iseq->arg_opt_table[argc];
 		argc = 0;
@@ -168,7 +167,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 
 	/* rest arguments */
 	if (iseq->arg_rest != -1) {
-	    dst[iseq->arg_rest] = rb_ary_new4(argc, argv);
+	    orig_argv[iseq->arg_rest] = rb_ary_new4(argc, argv);
 	    argc = 0;
 	}
 
@@ -197,7 +196,7 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 		}
 	    }
 
-	    dst[iseq->arg_block] = blockval; /* Proc or nil */
+	    orig_argv[iseq->arg_block] = blockval; /* Proc or nil */
 	}
 
 	th->mark_stack_len = 0;
@@ -206,8 +205,9 @@ vm_callee_setup_arg(rb_thread_t *th, rb_iseq_t *iseq,
 }
 
 static inline int
-caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp, VALUE flag,
-		  int argc, rb_iseq_t *blockiseq, rb_block_t **block)
+caller_setup_args(const rb_thread_t * const th,
+		  rb_control_frame_t * const cfp, const VALUE flag, int argc,
+		  rb_iseq_t * const blockiseq, rb_block_t ** const block)
 {
     rb_block_t *blockptr = 0;
 
@@ -270,7 +270,8 @@ caller_setup_args(rb_thread_t *th, rb_control_frame_t *cfp, VALUE flag,
 }
 
 static inline VALUE
-call_cfunc(VALUE (*func)(), VALUE recv, int len, int argc, const VALUE *argv)
+call_cfunc(VALUE (* const func)(), const VALUE recv,
+	   const int len, const int argc, const VALUE * const argv)
 {
     /* printf("len: %d, argc: %d\n", len, argc); */
 
@@ -357,9 +358,9 @@ call_cfunc(VALUE (*func)(), VALUE recv, int len, int argc, const VALUE *argv)
 }
 
 static inline VALUE
-vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, int num,
-	      ID id, VALUE recv, VALUE klass, VALUE flag,
-	      NODE *mn, rb_block_t *blockptr)
+vm_call_cfunc(rb_thread_t * const th, rb_control_frame_t * const reg_cfp,
+	      const int num, const ID id, const VALUE recv, const VALUE klass,
+	      const VALUE flag, const NODE * const mn, const rb_block_t * const blockptr)
 {
     VALUE val;
 
@@ -386,8 +387,8 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, int num,
     return val;
 }
 
-static int
-vm_cfunc_flags(rb_control_frame_t *cfp)
+static inline int
+vm_cfunc_flags(const rb_control_frame_t * const cfp)
 {
     if (RUBYVM_CFUNC_FRAME_P(cfp))
 	return cfp->flag >> FRAME_MAGIC_MASK_BITS;
@@ -395,8 +396,9 @@ vm_cfunc_flags(rb_control_frame_t *cfp)
 }
 
 static inline VALUE
-vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
-		VALUE klass, int argc, VALUE *argv, rb_block_t *blockptr)
+vm_call_bmethod(rb_thread_t * const th, const ID id, const VALUE procval,
+		const VALUE recv, const VALUE klass, const int argc, VALUE *argv,
+		rb_block_t * const blockptr)
 {
     rb_control_frame_t *cfp = th->cfp;
     rb_proc_t *proc;
@@ -412,10 +414,10 @@ vm_call_bmethod(rb_thread_t *th, ID id, VALUE procval, VALUE recv,
 }
 
 static inline VALUE
-vm_method_missing(rb_thread_t *th, ID id, VALUE recv, int num,
-		  rb_block_t *blockptr, int opt)
+vm_method_missing(rb_thread_t * const th, const ID id, const VALUE recv,
+		  const int num, rb_block_t * const blockptr, const int opt)
 {
-    rb_control_frame_t *reg_cfp = th->cfp;
+    rb_control_frame_t * const reg_cfp = th->cfp;
     VALUE *argv = STACK_ADDR_FROM_TOP(num + 1);
     VALUE val;
     argv[0] = ID2SYM(id);
@@ -427,9 +429,9 @@ vm_method_missing(rb_thread_t *th, ID id, VALUE recv, int num,
 }
 
 static inline void
-vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
-		int argc, rb_block_t *blockptr, VALUE flag,
-		VALUE iseqval, VALUE recv, VALUE klass)
+vm_setup_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
+		const int argc, rb_block_t *blockptr, const VALUE flag,
+		const VALUE iseqval, const VALUE recv, const VALUE klass)
 {
     rb_iseq_t *iseq;
     int opt_pc, i;
@@ -461,7 +463,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
     }
     else {
 	VALUE *p_rsp;
-	cfp = ++th->cfp; /* pop cf */
+	th->cfp++; /* pop cf */
 	p_rsp = th->cfp->sp;
 
 	/* copy arguments */
@@ -483,15 +485,15 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 }
 
 static inline VALUE
-vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
-	       int num, rb_block_t *blockptr, VALUE flag,
-	       ID id, NODE *mn, VALUE recv, VALUE klass)
+vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
+	       const int num, rb_block_t * const blockptr, const VALUE flag,
+	       const ID id, const NODE * mn, const VALUE recv, VALUE klass)
 {
     VALUE val;
 
   start_method_dispatch:
 
-    if ((mn != 0)) {
+    if (mn != 0) {
 	if ((mn->nd_noex == 0)) {
 	    /* dispatch method */
 	    NODE *node;
@@ -606,8 +608,9 @@ vm_call_method(rb_thread_t *th, rb_control_frame_t *cfp,
 }
 
 static inline void
-vm_send_optimize(rb_control_frame_t *reg_cfp,
-		 NODE **mn, rb_num_t *flag, rb_num_t *num, ID *id, VALUE klass)
+vm_send_optimize(rb_control_frame_t * const reg_cfp, NODE ** const mn,
+		 rb_num_t * const flag, rb_num_t * const num,
+		 ID * const id, const VALUE klass)
 {
     if (*mn && nd_type((*mn)->nd_body) == NODE_CFUNC) {
 	NODE *node = (*mn)->nd_body;
@@ -634,7 +637,7 @@ vm_send_optimize(rb_control_frame_t *reg_cfp,
 /* yield */
 
 static inline int
-block_proc_is_lambda(VALUE procval)
+block_proc_is_lambda(const VALUE procval)
 {
     rb_proc_t *proc;
 
@@ -648,8 +651,8 @@ block_proc_is_lambda(VALUE procval)
 }
 
 static inline VALUE
-vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
-		    VALUE self, int argc, VALUE *argv)
+vm_yield_with_cfunc(rb_thread_t *const th, rb_block_t * const block,
+		    const VALUE self, const int argc, const VALUE * const argv)
 {
     NODE *ifunc = (NODE *) block->iseq;
     VALUE val;
@@ -677,11 +680,12 @@ vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 }
 
 static inline int
-vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
-		    int argc, VALUE *argv, rb_block_t *blockptr, int lambda)
+vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t * const iseq,
+		    const int orig_argc, VALUE * const argv,
+		    rb_block_t *blockptr, const int lambda)
 {
     if (0) { /* for debug */
-	printf("     argc: %d\n", argc);
+	printf("     argc: %d\n", orig_argc);
 	printf("iseq argc: %d\n", iseq->argc);
 	printf("iseq opts: %d\n", iseq->arg_opts);
 	printf("iseq rest: %d\n", iseq->arg_rest);
@@ -693,10 +697,11 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 
     if (lambda) {
 	/* call as method */
-	return vm_callee_setup_arg(th, iseq, argc, argv, &blockptr);
+	return vm_callee_setup_arg(th, iseq, orig_argc, argv, &blockptr);
     }
     else {
 	int i;
+	int argc = orig_argc;
 	const int m = iseq->argc;
 
 	th->mark_stack_len = argc;
@@ -794,10 +799,10 @@ vm_yield_setup_args(rb_thread_t *th, rb_iseq_t *iseq,
 }
 
 static VALUE
-vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_num_t flag)
+vm_invoke_block(rb_thread_t * const th, rb_control_frame_t *const reg_cfp,
+		const rb_num_t num, const rb_num_t flag)
 {
-    VALUE val;
-    rb_block_t *block = GET_BLOCK_PTR();
+    rb_block_t * const block = GET_BLOCK_PTR();
     rb_iseq_t *iseq;
     int argc = num;
 
@@ -811,7 +816,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
     if (BUILTIN_TYPE(iseq) != T_NODE) {
 	int opt_pc;
 	const int arg_size = iseq->arg_size;
-	VALUE *rsp = GET_SP() - argc;
+	VALUE * const rsp = GET_SP() - argc;
 	SET_SP(rsp);
 
 	CHECK_STACK_OVERFLOW(GET_CFP(), iseq->stack_max);
@@ -826,7 +831,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 	return Qundef;
     }
     else {
-	val = vm_yield_with_cfunc(th, block, block->self, argc, STACK_ADDR_FROM_TOP(argc));
+	VALUE val = vm_yield_with_cfunc(th, block, block->self, argc, STACK_ADDR_FROM_TOP(argc));
 	POPN(argc); /* TODO: should put before C/yield? */
 	return val;
     }
@@ -835,7 +840,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 /* svar */
 
 static inline NODE *
-lfp_svar_place(rb_thread_t *th, VALUE *lfp)
+lfp_svar_place(rb_thread_t * const th, VALUE * const lfp)
 {
     NODE *svar;
 
@@ -857,7 +862,7 @@ lfp_svar_place(rb_thread_t *th, VALUE *lfp)
 }
 
 static VALUE
-lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
+lfp_svar_get(rb_thread_t * const th, VALUE * const lfp, const VALUE key)
 {
     NODE *svar = lfp_svar_place(th, lfp);
 
@@ -867,7 +872,7 @@ lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
       case 1:
 	return svar->u2.value;
       default: {
-	VALUE hash = svar->u3.value;
+	const VALUE hash = svar->u3.value;
 
 	if (hash == Qnil) {
 	    return Qnil;
@@ -880,7 +885,8 @@ lfp_svar_get(rb_thread_t *th, VALUE *lfp, VALUE key)
 }
 
 static void
-lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
+lfp_svar_set(rb_thread_t * const th, VALUE * const lfp,
+	     const VALUE key, const VALUE val)
 {
     NODE *svar = lfp_svar_place(th, lfp);
 
@@ -903,13 +909,17 @@ lfp_svar_set(rb_thread_t *th, VALUE *lfp, VALUE key, VALUE val)
 }
 
 static inline VALUE
-vm_getspecial(rb_thread_t *th, VALUE *lfp, VALUE key, rb_num_t type)
+vm_getspecial(rb_thread_t * const th, VALUE * const lfp,
+	      const VALUE key, const rb_num_t type)
 {
     VALUE val;
 
     if (type == 0) {
-	if (FIXNUM_P(key)) key = FIX2INT(key);
-	val = lfp_svar_get(th, lfp, key);
+	VALUE k = key;
+	if (FIXNUM_P(key)) {
+	    k = FIX2INT(key);
+	}
+	val = lfp_svar_get(th, lfp, k);
     }
     else {
 	VALUE backref = lfp_svar_get(th, lfp, 1);
@@ -940,7 +950,8 @@ vm_getspecial(rb_thread_t *th, VALUE *lfp, VALUE key, rb_num_t type)
 }
 
 static NODE *
-vm_get_cref(rb_iseq_t *iseq, const VALUE * const lfp, const VALUE *dfp)
+vm_get_cref(const rb_iseq_t * const iseq,
+	    const VALUE * const lfp, const VALUE *dfp)
 {
     NODE *cref = 0;
 
@@ -964,7 +975,7 @@ vm_get_cref(rb_iseq_t *iseq, const VALUE * const lfp, const VALUE *dfp)
 
 
 static inline void
-vm_check_if_namespace(VALUE klass)
+vm_check_if_namespace(const VALUE klass)
 {
     switch (TYPE(klass)) {
       case T_CLASS:
@@ -977,15 +988,16 @@ vm_check_if_namespace(VALUE klass)
 }
 
 static inline VALUE
-vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
-		VALUE klass, ID id, int is_defined)
+vm_get_ev_const(rb_thread_t * const th, const rb_iseq_t * const iseq,
+		const VALUE orig_klass, const ID id, const int is_defined)
 {
     VALUE val;
 
-    if (klass == Qnil) {
+    if (orig_klass == Qnil) {
 	/* in current lexical scope */
-	NODE *root_cref = vm_get_cref(iseq, th->cfp->lfp, th->cfp->dfp);
-	NODE *cref = root_cref;
+	const NODE * const root_cref = vm_get_cref(iseq, th->cfp->lfp, th->cfp->dfp);
+	const NODE *cref = root_cref;
+	VALUE klass = orig_klass;
 
 	while (cref && cref->nd_next) {
 	    klass = cref->nd_clss;
@@ -1025,12 +1037,12 @@ vm_get_ev_const(rb_thread_t *th, rb_iseq_t *iseq,
 	}
     }
     else {
-	vm_check_if_namespace(klass);
+	vm_check_if_namespace(orig_klass);
 	if (is_defined) {
-	    return rb_const_defined_from(klass, id);
+	    return rb_const_defined_from(orig_klass, id);
 	}
 	else {
-	    return rb_const_get_from(klass, id);
+	    return rb_const_get_from(orig_klass, id);
 	}
     }
 }
@@ -1057,8 +1069,9 @@ vm_get_cvar_base(NODE *cref)
 }
 
 static inline void
-vm_define_method(rb_thread_t *th, VALUE obj,
-		   ID id, rb_iseq_t *miseq, rb_num_t is_singleton, NODE *cref)
+vm_define_method(rb_thread_t * const th, const VALUE obj, const ID id,
+		 rb_iseq_t * const miseq, const rb_num_t is_singleton,
+		 NODE * const cref)
 {
     NODE *newbody;
     VALUE klass = cref->nd_clss;
@@ -1097,7 +1110,7 @@ vm_define_method(rb_thread_t *th, VALUE obj,
 }
 
 static inline NODE *
-vm_method_search(VALUE id, VALUE klass, IC ic)
+vm_method_search(const VALUE id, const VALUE klass, const IC ic)
 {
     NODE *mn;
 
@@ -1121,7 +1134,7 @@ vm_method_search(VALUE id, VALUE klass, IC ic)
 }
 
 static inline VALUE
-vm_search_normal_superclass(VALUE klass, VALUE recv)
+vm_search_normal_superclass(VALUE klass, const VALUE recv)
 {
     if (BUILTIN_TYPE(klass) == T_CLASS) {
 	klass = RCLASS_SUPER(klass);
@@ -1140,7 +1153,9 @@ vm_search_normal_superclass(VALUE klass, VALUE recv)
 }
 
 static void
-vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip, VALUE recv, VALUE sigval, ID *idp, VALUE *klassp)
+vm_search_superclass(rb_control_frame_t *const reg_cfp, rb_iseq_t * ip,
+		     const VALUE recv, const VALUE sigval,
+		     ID * const idp, VALUE * const klassp)
 {
     ID id;
     VALUE klass;
@@ -1186,7 +1201,8 @@ vm_search_superclass(rb_control_frame_t *reg_cfp, rb_iseq_t *ip, VALUE recv, VAL
 }
 
 static VALUE
-vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
+vm_throw(rb_thread_t *const th, rb_control_frame_t * const reg_cfp,
+	 const rb_num_t throw_state, const VALUE throwobj)
 {
     rb_num_t state = throw_state & 0xff;
     rb_num_t flag = throw_state & 0x8000;
@@ -1331,7 +1347,8 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VAL
 }
 
 static inline void
-vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
+vm_expandarray(rb_control_frame_t * const cfp, VALUE ary,
+	       const int num, const int flag)
 {
     int is_splat = flag & 0x01;
     int space_size = num + is_splat;
@@ -1392,7 +1409,7 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, int num, int flag)
 }
 
 static inline int
-check_cfunc(NODE *mn, void *func)
+check_cfunc(const NODE * const mn, const void * const func)
 {
     if (mn && nd_type(mn->nd_body) == NODE_CFUNC &&
 	mn->nd_body->nd_cfnc == func) {
@@ -1403,16 +1420,14 @@ check_cfunc(NODE *mn, void *func)
     }
 }
 
-static VALUE
-opt_eq_func(VALUE recv, VALUE obj, IC ic)
+static inline VALUE
+opt_eq_func(const VALUE recv, const VALUE obj, const IC ic)
 {
     VALUE val = Qundef;
 
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_EQ)) {
-	long a = FIX2LONG(recv), b = FIX2LONG(obj);
-
-	if (a == b) {
+	if (recv == obj) {
 	    val = Qtrue;
 	}
 	else {
