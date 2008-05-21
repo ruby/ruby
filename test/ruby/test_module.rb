@@ -690,4 +690,23 @@ class TestModule < Test::Unit::TestCase
     o.extend(m2)
     assert_equal(true, o.respond_to?(:foo))
   end
+
+  def test_cyclic_include
+    m1 = Module.new
+    m2 = Module.new
+    m1.instance_eval { include(m2) }
+    assert_raise(ArgumentError) do
+      m2.instance_eval { include(m1) }
+    end
+  end
+
+  def test_include_p
+    m = Module.new
+    c1 = Class.new
+    c1.instance_eval { include(m) }
+    c2 = Class.new(c1)
+    assert_equal(true, c1.include?(m))
+    assert_equal(true, c2.include?(m))
+    assert_equal(false, m.include?(m))
+  end
 end

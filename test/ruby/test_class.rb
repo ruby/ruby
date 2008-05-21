@@ -1,6 +1,10 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestClass < Test::Unit::TestCase
+  def ruby(*r, &b)
+    EnvUtil.rubyexec(*r, &b)
+  end
 
   # ------------------
   # Various test classes
@@ -105,4 +109,41 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
+  def test_check_inheritable
+    assert_raise(TypeError) { Class.new(Object.new) }
+
+    o = Object.new
+    c = class << o; self; end
+    assert_raise(TypeError) { Class.new(c) }
+
+    assert_nothing_raised { Class.new(Class) } # is it OK?
+    assert_raise(TypeError) { eval("class Foo < Class; end") }
+  end
+
+  def test_initialize_copy
+    c = Class.new
+    assert_raise(TypeError) { c.instance_eval { initialize_copy(1) } }
+
+    o = Object.new
+    c = class << o; self; end
+    assert_raise(TypeError) { c.dup }
+  end
+
+  def test_singleton_class
+    assert_raise(TypeError) { 1.extend(Module.new) }
+    assert_raise(TypeError) { :foo.extend(Module.new) }
+
+    ruby do |w, r, e|
+      w.puts "module Foo; def foo; :foo; end; end"
+      w.puts "false.extend(Foo)"
+      w.puts "true.extend(Foo)"
+      w.puts "p false.foo"
+      w.puts "p true.foo"
+      w.puts "p FalseClass.include?(Foo)"
+      w.puts "p TrueClass.include?(Foo)"
+      w.close
+      assert_equal("", e.read)
+      assert_equal(":foo\n:foo\ntrue\ntrue", r.read.chomp)
+    end
+  end
 end
