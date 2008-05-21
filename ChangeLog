@@ -1,3 +1,9 @@
+Thu May 22 05:45:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (proc_dup): should copy safe_level from src proc
+	  properly.  a patch from Keita Yamaguchi
+	  <keita.yamaguchi at gmail.com>
+
 Thu May 22 02:46:08 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: do not use Thread#raise. [ruby-dev:34739]
