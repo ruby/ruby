@@ -1,3 +1,7 @@
+Thu May 22 06:30:10 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* array.c (flatten): fix memory leak.
+
 Thu May 22 06:21:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (nkf_str_caseeql): added.
