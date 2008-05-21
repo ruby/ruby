@@ -487,7 +487,7 @@ rb_get_method_body(klassp, idp, noexp)
 {
     ID id = *idp;
     VALUE klass = *klassp;
-    VALUE origin;
+    VALUE origin = 0;
     NODE * volatile body;
     struct cache_entry *ent;
 
@@ -2161,7 +2161,7 @@ rb_alias(klass, name, def)
     VALUE klass;
     ID name, def;
 {
-    VALUE origin;
+    VALUE origin = 0;
     NODE *orig, *body, *node;
     VALUE singleton = 0;
     st_data_t data;
@@ -3921,7 +3921,7 @@ rb_eval(self, n)
       case NODE_DEFN:
 	if (node->nd_defn) {
 	    NODE *body,  *defn;
-	    VALUE origin;
+	    VALUE origin = 0;
 	    int noex;
 
 	    if (NIL_P(ruby_class)) {

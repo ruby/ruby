@@ -1,4 +1,8 @@
-Wed May 21 23:29:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 21 23:31:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_get_method_body, rb_alias, rb_eval): should not cache
+	  uninitialized value, since search_method doesn't set origin if the
+	  method wasn't found.
 
 	* eval.c (search_method, remove_method, error_print, rb_alias)
 	  (rb_eval, rb_rescue2, search_required, Init_eval, rb_thread_create),
