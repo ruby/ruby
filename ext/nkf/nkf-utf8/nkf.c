@@ -653,14 +653,15 @@ static int             end_check;
 nkf_char std_gc_buf[STD_GC_BUFSIZE];
 nkf_char std_gc_ndx;
 
-static void
-nkf_str_upcase(const char *src, char *dest, size_t length)
+static int
+nkf_str_caseeql(const char *src, const char *target)
 {
-    int i = 0;
-    for (; i < length && src[i]; i++) {
-	dest[i] = nkf_toupper(src[i]);
+    int i;
+    for (i = 0; src[i] && target[i]; i++) {
+	if (nkf_toupper(src[i]) != nkf_toupper(target[i])) return FALSE;
     }
-    dest[i] = 0;
+    if (src[i] || target[i]) return FALSE;
+    else return TRUE;
 }
 
 static nkf_encoding*
@@ -675,14 +676,14 @@ nkf_enc_from_index(int idx)
 static int
 nkf_enc_find_index(const char *name)
 {
-    int i, index = -1;
-    if (*name == 'X' && *(name+1) == '-') name += 2;
+    int i;
+    if (name[0] == 'X' && *(name+1) == '-') name += 2;
     for (i = 0; encoding_name_to_id_table[i].id >= 0; i++) {
-	if (strcasecmp(name, encoding_name_to_id_table[i].name) == 0) {
+	if (nkf_str_caseeql(encoding_name_to_id_table[i].name, name)) {
 	    return encoding_name_to_id_table[i].id;
 	}
     }
-    return index;
+    return -1;
 }
 
 static nkf_encoding*
@@ -914,8 +915,7 @@ get_backup_filename(const char *suffix, const char *filename)
 	}
 	backup_filename[j] = '\0';
     }else{
-	j = strlen(suffix) + filename_length;
-	backup_filename = malloc( + 1);
+	backup_filename = malloc(filename_length + strlen(suffix) + 1);
 	strcpy(backup_filename, filename);
 	strcat(backup_filename, suffix);
 	backup_filename[j] = '\0';
@@ -5693,7 +5693,6 @@ options(unsigned char *cp)
     nkf_char i, j;
     unsigned char *p;
     unsigned char *cp_back = NULL;
-    char codeset[32];
     nkf_encoding *enc;
 
     if (option_mode==1)
@@ -5733,15 +5732,13 @@ options(unsigned char *cp)
 		cp = (unsigned char *)long_option[i].alias;
 	    }else{
 		if (strcmp(long_option[i].name, "ic=") == 0){
-		    nkf_str_upcase((char *)p, codeset, 32);
-		    enc = nkf_enc_find(codeset);
+		    enc = nkf_enc_find((char *)p);
 		    if (!enc) continue;
 		    input_encoding = enc;
 		    continue;
 		}
 		if (strcmp(long_option[i].name, "oc=") == 0){
-		    nkf_str_upcase((char *)p, codeset, 32);
-		    enc = nkf_enc_find(codeset);
+		    enc = nkf_enc_find((char *)p);
 		    if (enc <= 0) continue;
 		    output_encoding = enc;
 		    continue;
@@ -6490,6 +6487,7 @@ main(int argc, char **argv)
 			    fprintf(stderr, "Can't rename %s to %s\n",
 				    origfname, backup_filename);
 			}
+			free(backup_filename);
 		    }else{
 #ifdef MSDOS
 			if (unlink(origfname)){
