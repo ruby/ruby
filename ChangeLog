@@ -41,7 +41,7 @@ Wed May 21 01:28:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* transcode.c (str_encode, str_encode_bang):
 	  rename from rb_tr_transcode or rb_str_transcode_bang.
 
-Tue May 20 23:26:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+Tue May 20 23:26:05 2008  Yusuke Endoh	<mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb: fix tests for 64bit CPU.
 
@@ -62,9 +62,35 @@ Tue May 20 13:20:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/nkf/nkf.c (Init_nkf), ext/nkf/nkf-utf8/nkf.c (options):
 	  UTF-{16,32} without endian have no sense.
 
-Mon May 19 23:32:12 2008  Koichi Sasada  <ko1@atdot.net>
+Tue May 20 12:13:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* vm.c (invoke_block_from_c): fix call flow.
+	* ruby.c (proc_options, process_options): --dump option.
+
+Tue May 20 11:36:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (PRI[diouxX]VALUE): printf format for VALUE.
+
+	* gc.c (assign_heap_slot): suppress a warning.
+
+Tue May 20 03:42:43 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, vm_insnhelper.c: fix cref in instance_eval
+	  and cvar_base search protocol.
+
+	* bootstraptest/test_knownbug.rb, test_eval.rb: move soleved test
+	  and add new tests.
+
+	* test/ruby/test_eval.rb: fix tests for spec.
+
+Tue May 20 01:43:44 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knownbug.rb: fix a test.
+	  "block_given?" returns true if "yield" can be used.
+
+Tue May 20 01:07:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* parse.y (assignable_gen): when "self = 1" was evalueted, unnecessary
+	  error message was output, which might cause null pointer access.
 
 Tue May 20 08:38:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -81,6 +107,10 @@ Tue May 20 08:38:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  coderange info.
 
 	* string.c (tr_trans): handle single bytes more eagerly.
+
+Mon May 19 23:32:12 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (invoke_block_from_c): fix call flow.
 
 Mon May 19 23:19:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
