@@ -271,9 +271,9 @@ esignal_init(argc, argv, self)
 
 static VALUE
 interrupt_init(argc, argv, self)
-     int argc;
-     VALUE *argv;
-     VALUE self;
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
     VALUE args[2];
 
@@ -572,16 +572,17 @@ sighandler(sig)
 
 #if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
     if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        sigsend_to_ruby_thread(sig);
-        return;
+	sigsend_to_ruby_thread(sig);
+	return;
     }
 #endif
 
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     if (rb_trap_accept_nativethreads[sig]) {
-        ruby_nativethread_signal(sig, sighandler);
-    } else {
-        ruby_signal(sig, sighandler);
+	ruby_nativethread_signal(sig, sighandler);
+    }
+    else {
+	ruby_signal(sig, sighandler);
     }
 #endif
 

@@ -1,3 +1,10 @@
+Wed May 21 23:29:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (search_method, remove_method, error_print, rb_alias)
+	  (rb_eval, rb_rescue2, search_required, Init_eval, rb_thread_create),
+	  gc.c (rb_source_filename, Init_stack), io.c (rb_io_getline),
+	  parse.y (rb_id2name, rb_parser_free): suppress warnings.
+
 Wed May 21 12:34:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_delete): rdoc fix based on a patch from Gaston Ramos
