@@ -3143,6 +3143,8 @@ flatten(ary, level, modified)
 	ary = rb_ary_pop(stack);
     }
 
+    st_free_table(memo);
+
     return result;
 }
 

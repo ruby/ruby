@@ -1,3 +1,7 @@
+Thu May 22 06:30:10 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* array.c (flatten): fix memory leak.
+
 Thu May 22 05:45:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* proc.c (proc_dup): should copy safe_level from src proc
