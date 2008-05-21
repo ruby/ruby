@@ -702,10 +702,9 @@ rb_hash_indexes(argc, argv, hash)
  *     hsh.delete(key) {| key | block }  => value
  *
  *  Deletes and returns a key-value pair from <i>hsh</i> whose key is
- *  equal to <i>key</i>. If the key is not found, returns the
- *  <em>default value</em>. If the optional code block is given and the
- *  key is not found, pass in the key and return the result of
- *  <i>block</i>.
+ *  equal to <i>key</i>. If the key is not found, returns <code>nil</code>.
+ *  If the optional code block is given and the key is not found,
+ *  pass in the key and return the result of <i>block</i>.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.delete("a")                              #=> 100

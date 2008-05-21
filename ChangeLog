@@ -1,3 +1,8 @@
+Wed May 21 12:34:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_delete): rdoc fix based on a patch from Gaston Ramos
+	  <ramos.gaston AT gmail.com>.  [ruby-core:16825]
+
 Tue May 20 13:15:46 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* file.c (lchmod_internal): Remove a compiler warning.
