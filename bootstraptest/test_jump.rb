@@ -248,3 +248,14 @@ assert_equal "1", %q{
     end
   end
 }, "[ruby-dev:31698]"
+
+assert_normal_exit %q{
+  f = 0
+  1.times do
+    begin
+      f += 1
+    ensure
+      redo unless f > 2
+    end
+  end
+}

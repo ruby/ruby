@@ -1,3 +1,8 @@
+Thu May 22 23:45:17 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (get_destination_insn, get_next_insn, get_prev_insn):
+	  peephole optimization should not ignore ISEQ_ELEMENT_ADJUST.
+
 Thu May 22 20:20:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (check_dump_arg, check_load_arg): check if reentered.

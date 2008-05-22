@@ -1362,7 +1362,7 @@ get_destination_insn(INSN *iobj)
 
     list = lobj->link.next;
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN) {
+	if (list->type == ISEQ_ELEMENT_INSN || list->type == ISEQ_ELEMENT_ADJUST) {
 	    break;
 	}
 	list = list->next;
@@ -1376,7 +1376,7 @@ get_next_insn(INSN *iobj)
     LINK_ELEMENT *list = iobj->link.next;
 
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN) {
+	if (list->type == ISEQ_ELEMENT_INSN || list->type == ISEQ_ELEMENT_ADJUST) {
 	    return list;
 	}
 	list = list->next;
@@ -1390,7 +1390,7 @@ get_prev_insn(INSN *iobj)
     LINK_ELEMENT *list = iobj->link.prev;
 
     while (list) {
-	if (list->type == ISEQ_ELEMENT_INSN) {
+	if (list->type == ISEQ_ELEMENT_INSN || list->type == ISEQ_ELEMENT_ADJUST) {
 	    return list;
 	}
 	list = list->prev;
