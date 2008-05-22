@@ -1,3 +1,7 @@
+Fri May 23 06:15:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): get rid of segv.
+
 Fri May 23 02:29:14 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* insns.def (opt_gt|ge|lt|le): use values directly to compare.

@@ -443,7 +443,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE line, VALUE opt)
     rb_thread_t *th = GET_THREAD();
     make_compile_option(&option, opt);
 
-    if (th->base_block) {
+    if (th->base_block && th->base_block->iseq) {
 	return rb_iseq_new_with_opt(node, th->base_block->iseq->name,
 				    file, th->base_block->iseq->self,
 				    ISEQ_TYPE_EVAL, &option);
