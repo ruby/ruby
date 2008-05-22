@@ -522,7 +522,7 @@ Tue May 13 15:09:38 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 Tue May 13 08:25:31 2008  Tanaka Akira  <akr@fsij.org>
 
-	* io.c (rb_f_gets.): re-enable rdoc.
+	* io.c (rb_f_gets): re-enable rdoc.
 	  (rb_f_readline): ditto.
 	  (rb_f_readlines): ditto.
 
