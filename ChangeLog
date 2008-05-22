@@ -1,3 +1,9 @@
+Thu May 22 21:24:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (top_local_setup): fixed memory leak bug based on a
+	  patch from Roger Pack <rogerpack2005 at gmail.com> in
+	  [ruby-core:16610].
+
 Thu May 22 14:20:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (flatten): check if reentered.  [ruby-dev:34798]
