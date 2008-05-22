@@ -51,5 +51,17 @@ class TestContinuation < Test::Unit::TestCase
       c.call
     }
   end
+
+  def test_ary_flatten
+    assert_normal_exit %q{
+      require 'continuation'
+      n = 0
+      o = Object.new
+      def o.to_ary() callcc {|k| $k = k; [1,2,3]} end
+      [10,20,o,30,o,40].flatten.inspect
+      n += 1
+      $k.call if n < 100
+    }, '[ruby-dev:34798]'
+  end
 end
 

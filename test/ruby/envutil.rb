@@ -72,9 +72,16 @@ module Test
     module Assertions
       public
       def assert_normal_exit(testsrc, message = '')
-        IO.popen([EnvUtil.rubybin, '-W0'], 'w') {|io|
-          io.write testsrc
-        }
+        in_c, in_p = IO.pipe
+        out_p, out_c = IO.pipe
+        pid = spawn(EnvUtil.rubybin, '-W0', STDIN=>in_c, STDOUT=>out_c, STDERR=>out_c)
+        in_c.close
+        out_c.close
+        in_p.write testsrc
+        in_p.close
+        msg = out_p.read
+        out_p.close
+        Process.wait pid
         status = $?
         faildesc = nil
         if status.signaled?
@@ -84,9 +91,20 @@ module Test
           if signame
             sigdesc = "SIG#{signame} (#{sigdesc})"
           end
-          full_message = build_message(message, "killed by ?", sigdesc)
+          if msg.empty?
+            full_message = build_message(message, "killed by ?", sigdesc)
+          else
+            msg << "\n" if /\n\z/ !~ msg
+            full_message = build_message(message, "killed by ?\n?", sigdesc,
+                                         AssertionMessage::Literal.new(msg.gsub(/^/, '| ')))
+          end
         end
         assert_block(full_message) { !status.signaled? }
+      ensure
+        in_c.close if in_c && !in_c.closed?
+        in_p.close if in_p && !in_p.closed?
+        out_c.close if out_c && !out_c.closed?
+        out_p.close if out_p && !out_p.closed?
       end
     end
   end
