@@ -14,7 +14,7 @@
 #include "eval_intern.h"
 
 VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
-VALUE rb_binding_new();
+VALUE rb_binding_new(void);
 
 VALUE rb_f_block_given_p(void);
 
@@ -34,7 +34,7 @@ static VALUE exception_error;
 
 static VALUE eval_string(VALUE, VALUE, VALUE, const char *, int);
 
-static inline VALUE rb_yield_0(const int argc, const VALUE * const argv);
+static inline VALUE rb_yield_0(int argc, const VALUE *argv);
 static VALUE rb_call(VALUE, VALUE, ID, int, const VALUE *, int);
 
 #include "eval_error.c"
@@ -909,13 +909,13 @@ rb_need_block()
 }
 
 static inline VALUE
-rb_yield_0(const int argc, const VALUE * const argv)
+rb_yield_0(int argc, const VALUE * argv)
 {
     return vm_yield(GET_THREAD(), argc, argv);
 }
 
 VALUE
-rb_yield(const VALUE val)
+rb_yield(VALUE val)
 {
     volatile VALUE tmp = val;
     if (val == Qundef) {
@@ -928,7 +928,7 @@ rb_yield(const VALUE val)
 }
 
 VALUE
-rb_yield_values(const int n, ...)
+rb_yield_values(int n, ...)
 {
     int i;
     VALUE *argv;
@@ -950,13 +950,13 @@ rb_yield_values(const int n, ...)
 }
 
 VALUE
-rb_yield_values2(const int argc, VALUE * const argv)
+rb_yield_values2(int argc, const VALUE *argv)
 {
     return rb_yield_0(argc, argv);
 }
 
 VALUE
-rb_yield_splat(const VALUE values)
+rb_yield_splat(VALUE values)
 {
     VALUE tmp = rb_check_array_type(values);
     volatile VALUE v;
@@ -1000,8 +1000,8 @@ rb_f_loop(void)
 }
 
 VALUE
-rb_iterate(VALUE (* const it_proc) (VALUE), const VALUE data1,
-	   VALUE (* const bl_proc) (ANYARGS), VALUE const data2)
+rb_iterate(VALUE (* it_proc) (VALUE), VALUE data1,
+	   VALUE (* bl_proc) (ANYARGS), VALUE data2)
 {
     int state;
     volatile VALUE retval = Qnil;
@@ -1069,9 +1069,9 @@ struct iter_method_arg {
 };
 
 static VALUE
-iterate_method(const VALUE obj)
+iterate_method(VALUE obj)
 {
-    const struct iter_method_arg * const arg =
+    const struct iter_method_arg * arg =
       (struct iter_method_arg *) obj;
 
     return rb_call(CLASS_OF(arg->obj), arg->obj, arg->mid,
@@ -1079,8 +1079,8 @@ iterate_method(const VALUE obj)
 }
 
 VALUE
-rb_block_call(const VALUE obj, const ID mid, const int argc, VALUE * const argv,
-	      VALUE (*const bl_proc) (ANYARGS), const VALUE data2)
+rb_block_call(VALUE obj, ID mid, int argc, VALUE * argv,
+	      VALUE (*bl_proc) (ANYARGS), VALUE data2)
 {
     struct iter_method_arg arg;
 
@@ -1092,17 +1092,17 @@ rb_block_call(const VALUE obj, const ID mid, const int argc, VALUE * const argv,
 }
 
 VALUE
-rb_each(const VALUE obj)
+rb_each(VALUE obj)
 {
     return rb_call(CLASS_OF(obj), obj, idEach, 0, 0, CALL_FCALL);
 }
 
 VALUE
-rb_rescue2(VALUE (* const b_proc) (ANYARGS), const VALUE data1,
-	   VALUE (* const r_proc) (ANYARGS), VALUE data2, ...)
+rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
+	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
 {
     int state;
-    rb_thread_t * const th = GET_THREAD();
+    rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
     volatile VALUE result;
     volatile VALUE e_info = th->errinfo;
@@ -1160,15 +1160,15 @@ rb_rescue2(VALUE (* const b_proc) (ANYARGS), const VALUE data1,
 }
 
 VALUE
-rb_rescue(VALUE (* const b_proc)(ANYARGS), const VALUE data1,
-	  VALUE (* const r_proc)(ANYARGS), const VALUE data2)
+rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
+	  VALUE (* r_proc)(ANYARGS), VALUE data2)
 {
     return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError,
 		      (VALUE)0);
 }
 
 VALUE
-rb_protect(VALUE (* const proc) (VALUE), const VALUE data, int * const state)
+rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
 {
     VALUE result = Qnil;	/* OK */
     int status;

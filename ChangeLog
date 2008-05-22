@@ -1,3 +1,8 @@
+Fri May 23 01:15:09 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, eval_intern.h, include/ruby/intern.h, include/ruby/ruby.h,
+	  vm.c, vm_core.h, vm_insnhelper.c: remove pointless "const".
+
 Thu May 22 23:45:17 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (get_destination_insn, get_next_insn, get_prev_insn):

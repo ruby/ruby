@@ -788,7 +788,7 @@ VALUE rb_funcall(VALUE, ID, int, ...);
 VALUE rb_funcall2(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall3(VALUE, ID, int, const VALUE*);
 int rb_scan_args(int, const VALUE*, const char*, ...);
-VALUE rb_call_super(const int, const VALUE* const);
+VALUE rb_call_super(int, const VALUE*);
 
 VALUE rb_gv_set(const char*, VALUE);
 VALUE rb_gv_get(const char*);
@@ -817,17 +817,17 @@ PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
 typedef VALUE rb_block_call_func(VALUE, VALUE, int, VALUE*);
 
-VALUE rb_each(const VALUE);
-VALUE rb_yield(const VALUE);
-VALUE rb_yield_values(const int n, ...);
-VALUE rb_yield_values2(const int n, VALUE * const argv);
-VALUE rb_yield_splat(const VALUE);
+VALUE rb_each(VALUE);
+VALUE rb_yield(VALUE);
+VALUE rb_yield_values(int n, ...);
+VALUE rb_yield_values2(int n, const VALUE *argv);
+VALUE rb_yield_splat(VALUE);
 int rb_block_given_p(void);
 void rb_need_block(void);
-VALUE rb_iterate(VALUE(* const)(VALUE),const VALUE,VALUE(* const)(ANYARGS),const VALUE);
-VALUE rb_block_call(const VALUE,const ID,const int,VALUE* const,VALUE(* const)(ANYARGS),const VALUE);
-VALUE rb_rescue(VALUE(* const)(ANYARGS),const VALUE,VALUE(* const)(ANYARGS),const VALUE);
-VALUE rb_rescue2(VALUE(* const)(ANYARGS),const VALUE,VALUE(* const)(ANYARGS),VALUE,...);
+VALUE rb_iterate(VALUE(*)(VALUE),VALUE,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_block_call(VALUE,ID,int,VALUE*,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_rescue(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
+VALUE rb_rescue2(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...);
 VALUE rb_ensure(VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE);
 VALUE rb_catch(const char*,VALUE(*)(ANYARGS),VALUE);
 VALUE rb_catch_obj(VALUE,VALUE(*)(ANYARGS),VALUE);

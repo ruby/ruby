@@ -222,21 +222,19 @@ NORETURN(void rb_fiber_start(void));
 
 NORETURN(void rb_raise_jump(VALUE));
 NORETURN(void rb_print_undef(VALUE, ID, int));
-NORETURN(void vm_localjump_error(const char * const, const VALUE, const int));
-NORETURN(void vm_jump_tag_but_local_jump(const int, const VALUE));
+NORETURN(void vm_localjump_error(const char *,VALUE, int));
+NORETURN(void vm_jump_tag_but_local_jump(int, VALUE));
 
-NODE *vm_cref_push(rb_thread_t * const th, const VALUE, const int);
-NODE *vm_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
-VALUE vm_make_jump_tag_but_local_jump(const int state, VALUE val);
+NODE *vm_cref_push(rb_thread_t * th, VALUE, int);
+NODE *vm_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE *cref_stack);
+VALUE vm_make_jump_tag_but_local_jump(int state, VALUE val);
 NODE *ruby_cref(void);
 rb_control_frame_t *vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE rb_obj_is_proc(VALUE);
-void rb_vm_check_redefinition_opt_method(NODE * const node);
-VALUE rb_vm_call_cfunc(const VALUE recv, VALUE (* const func)(VALUE),
-		       const VALUE arg, rb_block_t * const blockptr,
-		       const VALUE filename);
+void rb_vm_check_redefinition_opt_method(const NODE *node);
+VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, const rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);
-void rb_vm_set_eval_stack(rb_thread_t * const, const VALUE iseq, NODE * const cref);
+void rb_vm_set_eval_stack(rb_thread_t *, VALUE iseq, const NODE *cref);
 VALUE rb_vm_top_self();
 VALUE rb_vm_cbase(void);
 
