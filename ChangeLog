@@ -1,3 +1,7 @@
+Thu May 22 12:51:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* insns.def (newhash): fix a variable definition: "const k".
+
 Thu May 22 12:40:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (flatten): check if reentered.  [ruby-dev:34798]

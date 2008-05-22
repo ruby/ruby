@@ -564,7 +564,7 @@ newhash
 
     for (i = num; i > 0; i -= 2) {
 	const VALUE v = TOPN(i - 2);
-	const k = TOPN(i - 1);
+	const VALUE k = TOPN(i - 1);
 	rb_hash_aset(val, k, v);
     }
     POPN(num);
