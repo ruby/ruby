@@ -1,3 +1,8 @@
+Fri May 23 00:48:10 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_copy_node_scope), node.h: Rename from copy_node_scope
+	  and export.
+
 Thu May 22 21:24:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (top_local_setup): fixed memory leak bug based on a
