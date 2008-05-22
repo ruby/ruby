@@ -1,3 +1,7 @@
+Fri May 23 03:48:10 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (clone_method): Just use ruby_cref as cref.
+
 Fri May 23 01:03:23 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (rb_singleton_class_clone): Pass Qnil, not 0.

@@ -57,19 +57,18 @@ clone_method(mid, body, nklass)
     NODE *fbody = body->nd_body;
 
     if (fbody) {
-	NODE *cref = NEW_NODE(NODE_CREF, nklass, 0, 0);
 	VALUE nbody;
 
 	switch (nd_type(fbody)) {
 	  case NODE_SCOPE:
-	    fbody = rb_copy_node_scope(fbody, cref);
+	    fbody = rb_copy_node_scope(fbody, ruby_cref);
     	    break;
 	  case NODE_BMETHOD:
-	    nbody = rb_block_dup(fbody->nd_cval, nklass, (VALUE)cref);
+	    nbody = rb_block_dup(fbody->nd_cval, nklass, (VALUE)ruby_cref);
 	    fbody = NEW_BMETHOD(nbody);
 	    break;
 	  case NODE_DMETHOD:
-	    nbody = rb_method_dup(fbody->nd_cval, nklass, (VALUE)cref);
+	    nbody = rb_method_dup(fbody->nd_cval, nklass, (VALUE)ruby_cref);
 	    fbody = NEW_DMETHOD(nbody);
 	    break;
 	}
