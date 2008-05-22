@@ -1,6 +1,8 @@
-Thu May 22 18:55:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May 22 19:01:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_get_ruby_level_cfp): moved from eval_intern.h.
+
+	* vm.c (sdr, nsdr): define methods only if VMDEBUG is defined.
 
 Thu May 22 17:18:35 2008  Tanaka Akira  <akr@fsij.org>
 

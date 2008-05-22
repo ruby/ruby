@@ -1826,8 +1826,10 @@ Init_VM(void)
     rb_define_const(rb_cVM, "INSTRUCTION_NAMES", insns_name_array());
 
     /* debug functions ::VM::SDR(), ::VM::NSDR() */
-    /* rb_define_singleton_method(rb_cVM, "SDR", sdr, 0); */
-    /* rb_define_singleton_method(rb_cVM, "NSDR", nsdr, 0); */
+#if VMDEBUG
+    rb_define_singleton_method(rb_cVM, "SDR", sdr, 0);
+    rb_define_singleton_method(rb_cVM, "NSDR", nsdr, 0);
+#endif
 
     /* VM bootstrap: phase 2 */
     {
