@@ -63,5 +63,19 @@ class TestContinuation < Test::Unit::TestCase
       $k.call if n < 100
     }, '[ruby-dev:34798]'
   end
+
+  def test_marshal_dump
+    assert_normal_exit %q{
+      require 'continuation'
+      n = 0
+      o = Object.new
+      def o.marshal_dump() callcc {|k| $k = k };  "fofof" end
+      a = [1,2,3,o,4,5,6]
+      Marshal.dump(a).inspect
+      n += 1
+      $k.call if n < 100
+    }, '[ruby-dev:34802]'
+  end
+
 end
 
