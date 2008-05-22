@@ -277,7 +277,7 @@ VALUE rb_obj_method(VALUE, VALUE);
 VALUE rb_method_call(int, VALUE*, VALUE);
 int rb_mod_method_arity(VALUE, ID);
 int rb_obj_method_arity(VALUE, ID);
-VALUE rb_protect(VALUE (*)(VALUE), VALUE, int*);
+VALUE rb_protect(VALUE (* const)(VALUE), const VALUE, int* const);
 void rb_set_end_proc(void (*)(VALUE), VALUE);
 void rb_mark_end_proc(void);
 void rb_exec_end_proc(void);
@@ -438,9 +438,9 @@ int rb_symname_p(const char*);
 int rb_sym_interned_p(VALUE);
 void rb_gc_mark_symbols(void);
 VALUE rb_backref_get(void);
-void rb_backref_set(VALUE);
+void rb_backref_set(const VALUE);
 VALUE rb_lastline_get(void);
-void rb_lastline_set(VALUE);
+void rb_lastline_set(const VALUE);
 VALUE rb_sym_all_symbols(void);
 /* process.c */
 void rb_last_status_set(int status, rb_pid_t pid);
@@ -662,7 +662,7 @@ VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
 void Init_stack(VALUE*);
 void rb_frame_pop(void);
-int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
+int rb_frame_method_id_and_class(ID * const idp, VALUE * const klassp);
 
 #if defined(__cplusplus)
 #if 0

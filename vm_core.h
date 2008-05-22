@@ -586,7 +586,7 @@ typedef rb_control_frame_t *
 
 /* VM related object allocate functions */
 /* TODO: should be static functions */
-VALUE rb_thread_alloc(VALUE klass);
+VALUE rb_thread_alloc(const VALUE klass);
 VALUE rb_proc_alloc(VALUE klass);
 
 /* for debug */
@@ -598,22 +598,28 @@ void rb_vm_bugreport(void);
 
 /* functions about thread/vm execution */
 
-VALUE rb_iseq_eval(VALUE iseqval);
+VALUE rb_iseq_eval(const VALUE iseqval);
 void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
-int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
+int rb_thread_method_id_and_class(rb_thread_t * const th, ID * const idp,
+				  VALUE * const klassp);
 
-VALUE vm_eval_body(rb_thread_t *th);
-VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
-		     int argc, const VALUE *argv, rb_block_t *blockptr);
-VALUE vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, rb_block_t *block);
-VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
-VALUE vm_backtrace(rb_thread_t *, int);
+VALUE vm_eval_body(rb_thread_t * const th);
+VALUE vm_invoke_proc(rb_thread_t *const th, rb_proc_t * const proc,
+		     const VALUE self, const int argc, const VALUE * const argv,
+		     rb_block_t * const blockptr);
+VALUE vm_make_proc(rb_thread_t * const th, rb_control_frame_t *const cfp,
+		   rb_block_t * const block);
+VALUE vm_make_env_object(rb_thread_t * const th, rb_control_frame_t *cfp);
+VALUE vm_backtrace(rb_thread_t * const, int);
 
-VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
-VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, NODE *cref);
-VALUE vm_call0(rb_thread_t *th, VALUE klass, VALUE recv, VALUE id, ID oid,
-	       int argc, const VALUE *argv, NODE *body, int nosuper);
+VALUE vm_yield(rb_thread_t * const th, const int argc,
+	       const VALUE * const argv);
+VALUE vm_yield_with_cref(rb_thread_t * const th, const int argc,
+			 const VALUE * const argv, NODE * const cref);
+VALUE vm_call0(rb_thread_t * const th, const VALUE klass, const VALUE recv,
+	       const VALUE id, const ID oid, const int argc,
+	       const VALUE * const argv, NODE *const body, const int nosuper);
 
 int vm_get_sourceline(rb_control_frame_t *);
 

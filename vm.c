@@ -150,7 +150,7 @@ env_alloc(void)
     return obj;
 }
 
-static VALUE check_env_value(VALUE envval);
+static VALUE check_env_value(const VALUE envval);
 
 static int
 check_env(rb_env_t * const env)
