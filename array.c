@@ -2848,6 +2848,7 @@ flatten(VALUE ary, int level, int *modified)
 		*modified = 1;
 		id = (st_data_t)tmp;
 		if (st_lookup(memo, id, 0)) {
+		    st_free_table(memo);
 		    rb_raise(rb_eArgError, "tried to flatten recursive array");
 		}
 		st_insert(memo, id, (st_data_t)Qtrue);
