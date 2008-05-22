@@ -1,3 +1,10 @@
+Fri May 23 00:51:48 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (clone_method): Totally revamp the previous fix which
+	  was incorrect.
+	  (rb_mod_init_copy): Ditto.
+	  (singleton_class_clone_int): Ditto.
+
 Fri May 23 00:48:10 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_copy_node_scope), node.h: Rename from copy_node_scope
