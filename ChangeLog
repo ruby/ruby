@@ -1,3 +1,8 @@
+Thu May 22 08:28:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (flatten): free memo hash table before raising exception.
+	  [ruby-dev:34789]
+
 Thu May 22 06:30:10 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* array.c (flatten): fix memory leak.
