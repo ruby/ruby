@@ -1,3 +1,9 @@
+Thu May 22 13:24:43 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c, vm.c, vm_core.h, vm_insnhelper.c: specify "const".
+
+	* vm_opts.h: add a OPT_TOKEN_THREADED_CODE macro.
+
 Thu May 22 12:51:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* insns.def (newhash): fix a variable definition: "const k".

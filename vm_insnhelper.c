@@ -1209,7 +1209,7 @@ vm_throw(rb_thread_t *const th, rb_control_frame_t * const reg_cfp,
     rb_num_t level = throw_state >> 16;
 
     if (state != 0) {
-	VALUE *pt;
+	VALUE *pt = 0;
 	int i;
 	if (flag != 0) {
 	    if (throw_state & 0x4000) {
