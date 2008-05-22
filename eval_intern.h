@@ -228,21 +228,8 @@ NORETURN(void vm_jump_tag_but_local_jump(const int, const VALUE));
 NODE *vm_cref_push(rb_thread_t * const th, const VALUE, const int);
 NODE *vm_set_special_cref(rb_thread_t *th, VALUE *lfp, NODE * cref_stack);
 VALUE vm_make_jump_tag_but_local_jump(const int state, VALUE val);
-
 NODE *ruby_cref(void);
-
-static rb_control_frame_t *
-vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
-{
-    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	    return cfp;
-	}
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    }
-    return 0;
-}
-
+rb_control_frame_t *vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE rb_obj_is_proc(VALUE);
 void rb_vm_check_redefinition_opt_method(NODE * const node);
 VALUE rb_vm_call_cfunc(const VALUE recv, VALUE (* const func)(VALUE),

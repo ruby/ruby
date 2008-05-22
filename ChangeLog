@@ -1,3 +1,7 @@
+Thu May 22 18:55:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_get_ruby_level_cfp): moved from eval_intern.h.
+
 Thu May 22 17:18:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* array.c (rb_ary_compact_bang): fix reallocation size.

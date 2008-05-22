@@ -94,6 +94,18 @@ rb_vm_set_eval_stack(rb_thread_t * const th, const VALUE iseqval, NODE * const c
     }
 }
 
+rb_control_frame_t *
+vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
+{
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+	    return cfp;
+	}
+	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    return 0;
+}
+
 /* Env */
 
 static void
@@ -787,6 +799,7 @@ vm_backtrace(rb_thread_t * const th, int lev)
     return ary;
 }
 
+#if 0
 static void
 check_svar(void)
 {
@@ -802,6 +815,7 @@ check_svar(void)
 	cfp++;
     }
 }
+#endif
 
 NODE *
 ruby_cref(void)
@@ -1545,6 +1559,7 @@ rb_thread_recycle_stack_release(VALUE * const stack)
 #endif
 }
 
+#ifdef USE_THREAD_RECYCLE
 static rb_thread_t *
 thread_recycle_struct(void)
 {
@@ -1552,6 +1567,7 @@ thread_recycle_struct(void)
     memset(p, 0, sizeof(rb_thread_t));
     return p;
 }
+#endif
 
 static void
 thread_free(void * const ptr)
@@ -1721,6 +1737,7 @@ extern VALUE *rb_gc_register_stack_start;
 #endif
 
 /* debug functions */
+#if VMDEBUG
 
 static VALUE
 sdr(void)
@@ -1752,6 +1769,7 @@ nsdr(void)
 #endif
     return ary;
 }
+#endif
 
 void
 Init_VM(void)
