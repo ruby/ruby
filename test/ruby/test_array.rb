@@ -726,6 +726,20 @@ class TestArray < Test::Unit::TestCase
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
   end
 
+  def test_flatten_with_callcc
+    respond_to?(:callcc) or require 'continuation'
+    o = Object.new
+    def o.to_ary() callcc {|k| @cont = k; [1,2,3]} end
+    begin
+      assert_equal([10, 20, 1, 2, 3, 30, 1, 2, 3, 40], [10, 20, o, 30, o, 40].flatten)
+    rescue => e
+    else
+      o.instance_eval {@cont}.call
+    end
+    assert_instance_of(RuntimeError, e, '[ruby-dev:34798]')
+    assert_match(/reentered/, e.message, '[ruby-dev:34798]')
+  end
+
   def test_hash
     a1 = @cls[ 'cat', 'dog' ]
     a2 = @cls[ 'cat', 'dog' ]

@@ -1,3 +1,7 @@
+Thu May 22 12:40:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (flatten): check if reentered.  [ruby-dev:34798]
+
 Thu May 22 11:39:59 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_normal_exit): capture stdout and stderr
