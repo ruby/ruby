@@ -1,3 +1,7 @@
+Thu May 22 14:20:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (flatten): check if reentered.  [ruby-dev:34798]
+
 Thu May 22 08:28:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (flatten): free memo hash table before raising exception.

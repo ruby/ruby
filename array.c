@@ -3107,8 +3107,8 @@ flatten(ary, level, modified)
     st_table *memo;
     st_data_t id;
 
-    stack = rb_ary_new();
-    result = ary_new(rb_class_of(ary), RARRAY_LEN(ary));
+    stack = ary_new(0, ARY_DEFAULT_SIZE);
+    result = ary_new(0, RARRAY_LEN(ary));
     memo = st_init_numtable();
     st_insert(memo, (st_data_t)ary, (st_data_t)Qtrue);
     *modified = 0;
@@ -3117,6 +3117,9 @@ flatten(ary, level, modified)
 	while (i < RARRAY(ary)->len) {
 	    elt = RARRAY(ary)->ptr[i++];
 	    tmp = rb_check_array_type(elt);
+	    if (RBASIC(result)->klass) {
+		rb_raise(rb_eRuntimeError, "flatten reentered");
+	    }
 	    if (NIL_P(tmp) || (level >= 0 && RARRAY(stack)->len / 2 >= level)) {
 		rb_ary_push(result, elt);
 	    }
@@ -3146,6 +3149,7 @@ flatten(ary, level, modified)
 
     st_free_table(memo);
 
+    RBASIC(result)->klass = rb_class_of(ary);
     return result;
 }
 
