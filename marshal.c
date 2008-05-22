@@ -149,6 +149,14 @@ struct dump_call_arg {
 };
 
 static void
+check_dump_arg(struct dump_arg *arg)
+{
+    if (!DATA_PTR(arg->wrapper)) {
+	rb_raise(rb_eRuntimeError, "Marshal.dump reentered");
+    }
+}
+
+static void
 mark_dump_arg(void *ptr)
 {
     struct dump_arg *p = ptr;
@@ -580,6 +588,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             st_add_direct(arg->data, obj, arg->data->num_entries);
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
+	    check_dump_arg(arg);
 	    w_class(TYPE_USRMARSHAL, obj, arg, Qfalse);
 	    w_object(v, arg, limit);
 	    if (hasiv) w_ivar(obj, 0, &c_arg);
@@ -591,6 +600,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             int hasiv2;
 
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
+	    check_dump_arg(arg);
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
@@ -754,6 +764,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);
+		check_dump_arg(arg);
 		w_class(TYPE_DATA, obj, arg, Qtrue);
 		w_object(v, arg, limit);
 	    }
@@ -784,6 +795,7 @@ dump(struct dump_call_arg *arg)
 static VALUE
 dump_ensure(struct dump_arg *arg)
 {
+    if (!DATA_PTR(arg->wrapper)) return 0;
     st_free_table(arg->symbols);
     st_free_table(arg->data);
     st_free_table(arg->compat_tbl);
@@ -887,6 +899,14 @@ struct load_arg {
     VALUE compat_tbl_wrapper;
 };
 
+static void
+check_load_arg(struct load_arg *arg)
+{
+    if (!DATA_PTR(arg->compat_tbl_wrapper)) {
+	rb_raise(rb_eRuntimeError, "Marshal.load reentered");
+    }
+}
+
 static VALUE r_entry(VALUE v, struct load_arg *arg);
 static VALUE r_object(struct load_arg *arg);
 static VALUE path2class(const char *path);
@@ -907,6 +927,7 @@ r_byte(struct load_arg *arg)
     else {
 	VALUE src = arg->src;
 	VALUE v = rb_funcall2(src, s_getbyte, 0, 0);
+	check_load_arg(arg);
 	if (NIL_P(v)) rb_eof_error();
 	c = (unsigned char)NUM2CHR(v);
     }
@@ -983,6 +1004,7 @@ r_bytes0(long len, struct load_arg *arg)
 	VALUE src = arg->src;
 	VALUE n = LONG2NUM(len);
 	str = rb_funcall2(src, s_read, 1, &n);
+	check_load_arg(arg);
 	if (NIL_P(str)) goto too_short;
 	StringValue(str);
 	if (RSTRING_LEN(str) != len) goto too_short;
@@ -1077,6 +1099,7 @@ r_leave(VALUE v, struct load_arg *arg)
     }
     if (arg->proc) {
 	v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
+	check_load_arg(arg);
     }
     return v;
 }
@@ -1156,11 +1179,13 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
       case TYPE_LINK:
 	id = r_long(arg);
 	v = rb_hash_aref(arg->data, LONG2FIX(id));
+	check_load_arg(arg);
 	if (NIL_P(v)) {
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
 	if (arg->proc) {
 	    v = rb_funcall(arg->proc, rb_intern("call"), 1, v);
+	    check_load_arg(arg);
 	}
 	break;
 
@@ -1404,6 +1429,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		*ivp = Qfalse;
 	    }
 	    v = rb_funcall(klass, s_load, 1, data);
+	    check_load_arg(arg);
 	    v = r_entry(v, arg);
             v = r_leave(v, arg);
 	}
@@ -1428,6 +1454,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = r_entry(v, arg);
 	    data = r_object(arg);
 	    rb_funcall(v, s_mload, 1, data);
+	    check_load_arg(arg);
             v = r_leave(v, arg);
 	}
         break;
@@ -1454,6 +1481,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 		   warn = Qfalse;
 	       }
 	       v = rb_funcall(klass, s_alloc, 0);
+	       check_load_arg(arg);
            }
 	   else {
 	       v = rb_obj_alloc(klass);
@@ -1468,6 +1496,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
                         rb_class2name(klass));
            }
            rb_funcall(v, s_load_data, 1, r_object0(arg, 0, extmod));
+	   check_load_arg(arg);
            v = r_leave(v, arg);
        }
        break;
@@ -1533,6 +1562,7 @@ load(struct load_arg *arg)
 static VALUE
 load_ensure(struct load_arg *arg)
 {
+    if (!DATA_PTR(arg->compat_tbl_wrapper)) return 0;
     st_free_table(arg->symbols);
     st_free_table(arg->compat_tbl);
     DATA_PTR(arg->compat_tbl_wrapper) = 0;
@@ -1593,6 +1623,7 @@ marshal_load(int argc, VALUE *argv)
 
     arg.symbols = st_init_numtable();
     arg.data   = rb_hash_new();
+    RBASIC(arg.data)->klass = 0;
     if (NIL_P(proc)) arg.proc = 0;
     else             arg.proc = proc;
     v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);

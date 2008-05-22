@@ -1,3 +1,8 @@
+Thu May 22 20:20:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (check_dump_arg, check_load_arg): check if reentered.
+	  [ruby-dev:34802]
+
 Thu May 22 20:14:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* iseq.c (iseq_load, iseq_data_to_ary): support
