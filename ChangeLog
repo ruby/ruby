@@ -1,3 +1,18 @@
+Thu May 22 08:28:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (flatten): free memo hash table before raising exception.
+	  [ruby-dev:34789]
+
+Thu May 22 06:30:10 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* array.c (flatten): fix memory leak.
+
+Thu May 22 05:45:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (proc_dup): should copy safe_level from src proc
+	  properly.  a patch from Keita Yamaguchi
+	  <keita.yamaguchi at gmail.com>
+
 Wed May 21 23:31:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_get_method_body, rb_alias, rb_eval): should not cache

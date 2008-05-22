@@ -8408,16 +8408,25 @@ proc_clone(self)
  * MISSING: documentation
  */
 
+#define PROC_TSHIFT (FL_USHIFT+1)
+#define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
+#define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
+
+static int proc_get_safe_level(VALUE);
+
 static VALUE
 proc_dup(self)
     VALUE self;
 {
     struct BLOCK *orig, *data;
     VALUE bind;
+    int safe = proc_get_safe_level(self);
 
     Data_Get_Struct(self, struct BLOCK, orig);
     bind = Data_Make_Struct(rb_obj_class(self),struct BLOCK,blk_mark,blk_free,data);
     blk_dup(data, orig);
+    if (safe > PROC_TMAX) safe = PROC_TMAX;
+    FL_SET(bind, (safe << PROC_TSHIFT) & PROC_TMASK);
 
     return bind;
 }
@@ -8520,10 +8529,6 @@ bind_eval(argc, argv, bindval)
     args[1] = bindval;
     return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
 }
-
-#define PROC_TSHIFT (FL_USHIFT+1)
-#define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
-#define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
 
 #define SAFE_LEVEL_MAX PROC_TMASK
 
