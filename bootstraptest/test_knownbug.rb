@@ -94,3 +94,9 @@ assert_equal 'ok', %q{
 assert_normal_exit %q{
   eval("", method(:proc).call {}.binding)
 }
+
+assert_normal_exit %q{
+  a = []
+  100.times {|i| a << i << nil << nil }
+  p a.compact!
+}
