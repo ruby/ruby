@@ -727,7 +727,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_flatten_with_callcc
-    respond_to?(:callcc) or require 'continuation'
+    respond_to?(:callcc, true) or require 'continuation'
     o = Object.new
     def o.to_ary() callcc {|k| @cont = k; [1,2,3]} end
     begin
@@ -1148,7 +1148,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_sort_with_callcc
-    respond_to?(:callcc) or require 'continuation'
+    respond_to?(:callcc, true) or require 'continuation'
     n = 1000
     cont = nil
     ary = (1..100).to_a
