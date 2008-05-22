@@ -1,3 +1,7 @@
+Thu May 22 17:18:35 2008  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_compact_bang): fix reallocation size.
+
 Thu May 22 15:20:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval_intern.h, vm_core.h, include/ruby/intern.h, include/ruby/ruby.h,
