@@ -159,7 +159,7 @@ VALUE
 rb_singleton_class_clone(obj)
     VALUE obj;
 {
-    return singleton_class_clone_int(obj, 0);
+    return singleton_class_clone_int(obj, Qnil);
 }
 
 void

@@ -1,3 +1,7 @@
+Fri May 23 01:03:23 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* class.c (rb_singleton_class_clone): Pass Qnil, not 0.
+
 Fri May 23 00:51:48 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* class.c (clone_method): Totally revamp the previous fix which
