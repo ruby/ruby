@@ -1692,7 +1692,7 @@ opt_lt
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_LT)) {
-	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+	SIGNED_VALUE a = recv, b = obj;
 
 	if (a < b) {
 	    val = Qtrue;
@@ -1721,7 +1721,7 @@ opt_le
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_LE)) {
-	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+	SIGNED_VALUE a = recv, b = obj;
 
 	if (a <= b) {
 	    val = Qtrue;
@@ -1751,7 +1751,7 @@ opt_gt
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_GT)) {
-	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+	SIGNED_VALUE a = recv, b = obj;
 
 	if (a > b) {
 	    val = Qtrue;
@@ -1780,7 +1780,7 @@ opt_ge
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_GE)) {
-	long a = FIX2LONG(recv), b = FIX2LONG(obj);
+	SIGNED_VALUE a = recv, b = obj;
 
 	if (a >= b) {
 	    val = Qtrue;
