@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-05-16"
+#define TCLTKLIB_RELEASE_DATE "2008-05-23"
 
 #include "ruby.h"
 
@@ -171,7 +171,7 @@ static ID ID_inspect;
 
 static VALUE ip_invoke_real _((int, VALUE*, VALUE));
 static VALUE ip_invoke _((int, VALUE*, VALUE));
-
+static VALUE ip_invoke_with_position _((int, VALUE*, VALUE, Tcl_QueuePosition));
 static VALUE tk_funcall _((VALUE(), int, VALUE*, VALUE));
 
 /* Tcl's object type */
@@ -397,19 +397,24 @@ static VALUE eventloop_thread;
 Tcl_ThreadId tk_eventloop_thread_id;  /* native thread ID of Tcl interpreter */
 #endif
 static VALUE eventloop_stack;
-static int   window_event_mode = ~(TCL_WINDOW_EVENTS | TCL_IDLE_EVENTS);
+static int   window_event_mode = ( ~ TCL_IDLE_EVENTS | TCL_WINDOW_EVENTS );
 
 static VALUE watchdog_thread;
 
 Tcl_Interp  *current_interp;
 
 /* thread control strategy */ 
-#define CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE 0
+/* multi-tk works with the following settings only ???
+    : CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE 1
+    : USE_TOGGLE_WINDOW_MODE_FOR_IDLE 0
+    : DO_THREAD_SCHEDULE_AT_CALLBACK_DONE 0
+*/
+#define CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE 1
 #define USE_TOGGLE_WINDOW_MODE_FOR_IDLE 0
-#define DO_THREAD_SCHEDULE_AT_CALLBACK_DONE 1
+#define DO_THREAD_SCHEDULE_AT_CALLBACK_DONE 0
 
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-static int have_rb_thread_waited_for_value = 0;
+#if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
+static int have_rb_thread_waiting_for_value = 0;
 #endif
 
 /* 
@@ -426,9 +431,6 @@ static int have_rb_thread_waited_for_value = 0;
 #define WATCHDOG_INTERVAL              10/*milliseconds ( 1 -- 999 ) */
 #define DEFAULT_TIMER_TICK              0/*milliseconds ( 0 -- 999 ) */
 #define NO_THREAD_INTERRUPT_TIME      100/*milliseconds ( 1 -- 999 ) */
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-#define DEFAULT_HAS_WAIT_THREAD_TICK   50/*counts*/
-#endif
 #else /* ! RUBY_VM */
 #define DEFAULT_EVENT_LOOP_MAX        800/*counts*/
 #define DEFAULT_NO_EVENT_TICK          10/*counts*/
@@ -436,9 +438,6 @@ static int have_rb_thread_waited_for_value = 0;
 #define WATCHDOG_INTERVAL              10/*milliseconds ( 1 -- 999 ) */
 #define DEFAULT_TIMER_TICK              0/*milliseconds ( 0 -- 999 ) */
 #define NO_THREAD_INTERRUPT_TIME      100/*milliseconds ( 1 -- 999 ) */
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-#define DEFAULT_HAS_WAIT_THREAD_TICK   50/*counts*/
-#endif
 #endif
 
 static int event_loop_max = DEFAULT_EVENT_LOOP_MAX;
@@ -447,9 +446,6 @@ static int no_event_wait  = DEFAULT_NO_EVENT_WAIT;
 static int timer_tick     = DEFAULT_TIMER_TICK;
 static int req_timer_tick = DEFAULT_TIMER_TICK;
 static int run_timer_flag = 0;
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-static int has_wait_thread_tick = DEFAULT_HAS_WAIT_THREAD_TICK;
-#endif
 
 static int event_loop_wait_event   = 0;
 static int event_loop_abort_on_exc = 1;
@@ -967,8 +963,10 @@ call_original_exit(ptr, state)
     int  thr_crit_bup;
     Tcl_CmdInfo *info;
 #if TCL_MAJOR_VERSION >= 8
+    Tcl_Obj *cmd_obj;
     Tcl_Obj *state_obj;
 #endif
+    DUMP1("original_exit is called");
 
     if (!(ptr->has_orig_exit)) return;
 
@@ -986,35 +984,54 @@ call_original_exit(ptr, state)
 
     if (info->isNativeObjectProc) {
         Tcl_Obj **argv;
-        /* argv = (Tcl_Obj **)ALLOC_N(Tcl_Obj *, 3); */ /* XXXXXXXXXX */
+#define USE_RUBY_ALLOC 0
+#if USE_RUBY_ALLOC
+        argv = (Tcl_Obj **)ALLOC_N(Tcl_Obj *, 3);
+#else /* not USE_RUBY_ALLOC */
         argv = (Tcl_Obj **)ckalloc(sizeof(Tcl_Obj *) * 3);
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Preserve((ClientData)argv); /* XXXXXXXX */
 #endif
-        argv[0] = Tcl_NewStringObj("exit", 4);
+#endif
+	cmd_obj = Tcl_NewStringObj("exit", 4);
+	Tcl_IncrRefCount(cmd_obj);
+
+        argv[0] = cmd_obj;
         argv[1] = state_obj;
         argv[2] = (Tcl_Obj *)NULL;
 
         ptr->return_value 
             = (*(info->objProc))(info->objClientData, ptr->ip, 2, argv);
 
+	Tcl_DecrRefCount(cmd_obj);
+
+#if USE_RUBY_ALLOC
+        free(argv);
+#else /* not USE_RUBY_ALLOC */
 #if 0 /* use Tcl_EventuallyFree */
 	Tcl_EventuallyFree((ClientData)argv, TCL_DYNAMIC); /* XXXXXXXX */
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
         /* free(argv); */
         ckfree((char*)argv);
 #endif
+#endif
+#endif
+#undef USE_RUBY_ALLOC
 
     } else {
         /* string interface */
         char **argv;
-        /* argv = (char **)ALLOC_N(char *, 3); */ /* XXXXXXXXXX */
+#define USE_RUBY_ALLOC 0
+#if USE_RUBY_ALLOC
+        argv = (char **)ALLOC_N(char *, 3); /* XXXXXXXXXX */
+#else /* not USE_RUBY_ALLOC */
         argv = (char **)ckalloc(sizeof(char *) * 3);
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Preserve((ClientData)argv); /* XXXXXXXX */
+#endif
 #endif
         argv[0] = "exit";
         /* argv[1] = Tcl_GetString(state_obj); */
@@ -1024,15 +1041,21 @@ call_original_exit(ptr, state)
         ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 
                                             2, (CONST84 char **)argv);
 
+#if USE_RUBY_ALLOC
+        free(argv);
+#else /* not USE_RUBY_ALLOC */
 #if 0 /* use Tcl_EventuallyFree */
 	Tcl_EventuallyFree((ClientData)argv, TCL_DYNAMIC); /* XXXXXXXX */
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
         /* free(argv); */
         ckfree((char*)argv);
 #endif
+#endif
+#endif
+#undef USE_RUBY_ALLOC
     }
 
     Tcl_DecrRefCount(state_obj);
@@ -1041,10 +1064,14 @@ call_original_exit(ptr, state)
     {
         /* string interface */
         char **argv;
-        /* argv = (char **)ALLOC_N(char *, 3); */
+#define USE_RUBY_ALLOC 0
+#if USE_RUBY_ALLOC
+        argv = (char **)ALLOC_N(char *, 3);
+#else /* not USE_RUBY_ALLOC */
         argv = (char **)ckalloc(sizeof(char *) * 3);
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Preserve((ClientData)argv); /* XXXXXXXX */
+#endif
 #endif
         argv[0] = "exit";
         argv[1] = RSTRING_PTR(rb_fix2str(INT2NUM(state), 10));
@@ -1053,17 +1080,24 @@ call_original_exit(ptr, state)
         ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 
                                             2, argv);
 
+#if USE_RUBY_ALLOC
+        free(argv);
+#else /* not USE_RUBY_ALLOC */
 #if 0 /* use Tcl_EventuallyFree */
 	Tcl_EventuallyFree((ClientData)argv, TCL_DYNAMIC); /* XXXXXXXX */
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
         /* free(argv); */
         ckfree(argv);
 #endif
+#endif
+#endif
+#undef USE_RUBY_ALLOC
     }
 #endif
+    DUMP1("complete original_exit");
 
     rb_thread_critical = thr_crit_bup;
 }
@@ -1110,10 +1144,14 @@ static int
 toggle_eventloop_window_mode_for_idle()
 {
   if (window_event_mode & TCL_IDLE_EVENTS) {
+    /* idle -> event */
+    window_event_mode |= TCL_WINDOW_EVENTS;
     window_event_mode &= ~TCL_IDLE_EVENTS;
     return 1;
   } else {
+    /* event -> idle */
     window_event_mode |= TCL_IDLE_EVENTS;
+    window_event_mode &= ~TCL_WINDOW_EVENTS;
     return 0;
   }
 }
@@ -1443,7 +1481,11 @@ static VALUE
 lib_num_of_mainwindows(self)
     VALUE self;
 {
+#ifdef RUBY_VM  /* Ruby 1.9+ !!! */
     return tk_funcall(lib_num_of_mainwindows_core, 0, (VALUE*)NULL, self);
+#else
+    return lib_num_of_mainwindows_core(self, 0, (VALUE*)NULL);
+#endif
 }
 
 
@@ -1789,10 +1831,10 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
 		      if (!st) {
 			if (toggle_eventloop_window_mode_for_idle()) {
 			  /* idle-mode -> event-mode*/
-			  tick_counter = 0;
+			  tick_counter = event_loop_max;
 			} else {
 			  /* event-mode -> idle-mode */
-			  tick_counter = event_loop_max;
+			  tick_counter = 0;
 			}
 		      }
 #endif
@@ -1802,6 +1844,14 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     st = RTEST(rb_protect(call_DoOneEvent, 
                                           INT2FIX(event_flag), &status)); 
 #endif
+
+#if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
+		    if (have_rb_thread_waiting_for_value) {
+		      have_rb_thread_waiting_for_value = 0;
+		      rb_thread_schedule();
+		    }
+#endif
+
                     if (status) {
                         switch (status) {
                         case TAG_RAISE:
@@ -1877,13 +1927,6 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                         return 0;
                     }
 
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-		    if (have_rb_thread_waited_for_value) {
-		      tick_counter += no_event_tick;
-		      have_rb_thread_waited_for_value = 0;
-		    }
-#endif
-
                     if (st) {
                         tick_counter++;
                     } else {
@@ -1950,7 +1993,8 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                 } else {
                     DUMP2("sleep eventloop %lx", current);
                     DUMP2("eventloop thread is %lx", eventloop_thread);
-                    rb_thread_stop();
+                    /* rb_thread_stop(); */
+                    rb_thread_sleep_forever();
                 }
 
                 if (!NIL_P(watchdog_thread) && eventloop_thread != current) {
@@ -2126,7 +2170,8 @@ lib_eventloop_ensure(args)
           break; 
         }
 
-        if (RTEST(rb_funcall(eventloop_thread, ID_alive_p, 0, 0))) {
+        /* if (RTEST(rb_funcall(eventloop_thread, ID_alive_p, 0, 0))) { */
+	if (RTEST(rb_thread_alive_p(eventloop_thread))) {
             DUMP2("eventloop-enshure: wake up parent %lx", eventloop_thread);
             rb_thread_wakeup(eventloop_thread);
 
@@ -2444,7 +2489,8 @@ lib_thread_callback(argc, argv, self)
     foundEvent = RTEST(lib_eventloop_launcher(/* not check root-widget */0, 0, 
                                               q->done, (Tcl_Interp*)NULL));
 
-    if (RTEST(rb_funcall(th, ID_alive_p, 0))) {
+    /* if (RTEST(rb_funcall(th, ID_alive_p, 0))) { */
+    if (RTEST(rb_thread_alive_p(th))) {
         rb_funcall(th, ID_kill, 0);
         ret = Qnil;
     } else {
@@ -2658,12 +2704,15 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
     int status = 0;
     int thr_crit_bup = rb_thread_critical;
 
+    Tcl_ResetResult(interp);
+
     rb_thread_critical = Qfalse;
     ret = rb_protect(proc, data, &status);
     rb_thread_critical = Qtrue;
     if (status) {
         char *buf;
-        VALUE old_gc, type, str;
+        VALUE old_gc;
+        volatile VALUE type, str;
 
         old_gc = rb_gc_disable();
 
@@ -3125,10 +3174,6 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 #endif
     }
 
-    /* allocate */
-    arg = ALLOC(struct cmd_body_arg);
-    /* arg = (struct cmd_body_arg *)ckalloc(sizeof(struct cmd_body_arg)); */
-
     /* get arguments from Tcl objects */
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
@@ -3193,6 +3238,10 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 
     if (old_gc == Qfalse) rb_gc_enable();
     rb_thread_critical = thr_crit_bup;
+
+    /* allocate */
+    arg = ALLOC(struct cmd_body_arg);
+    /* arg = (struct cmd_body_arg *)ckalloc(sizeof(struct cmd_body_arg)); */
 
     arg->receiver = receiver;
     arg->method = method;
@@ -3393,6 +3442,8 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 #endif
 #endif
 
+    Tcl_ResetResult(interp);
+
     if (objc == 1) {
         flags = TCL_DONT_WAIT;
 
@@ -3561,6 +3612,8 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 
     DUMP1("start Ruby's 'thread_update' body");
 
+    Tcl_ResetResult(interp);
+
     if (objc == 1) {
         flags = TCL_DONT_WAIT;
 
@@ -3620,7 +3673,8 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 
     while(!param->done) {
         DUMP1("wait for complete idle proc");
-        rb_thread_stop();
+        /* rb_thread_stop(); */
+        rb_thread_sleep_forever();
     }
 
 #if 0 /* use Tcl_EventuallyFree */
@@ -3628,9 +3682,10 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)param);
-#endif
+#else
     /* Tcl_Free((char *)param); */
     ckfree((char *)param);
+#endif
 #endif
 
     DUMP1("finish Ruby's 'thread_update'");
@@ -3742,6 +3797,8 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
     }
 #endif
 #endif
+
+    Tcl_ResetResult(interp);
 
     if (objc != 2) {
 #ifdef Tcl_WrongNumArgs
@@ -3978,6 +4035,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 #endif
 
     Tcl_Preserve(interp);
+    Tcl_ResetResult(interp);
 
     if (objc != 3) {
 #ifdef Tcl_WrongNumArgs
@@ -4334,7 +4392,7 @@ rb_threadVwaitProc(clientData, interp, name1, name2, flags)
     } else {
         param->done = 1;
     }
-    rb_thread_wakeup(param->thread);
+    if (param->done != 0) rb_thread_wakeup(param->thread);
 
     return (char *)NULL;
 }
@@ -4356,7 +4414,7 @@ rb_threadWaitVisibilityProc(clientData, eventPtr)
     if (eventPtr->type == DestroyNotify) {
         param->done = TKWAIT_MODE_DESTROY;
     }
-    rb_thread_wakeup(param->thread);
+    if (param->done != 0) rb_thread_wakeup(param->thread);
 }
 
 static void rb_threadWaitWindowProc _((ClientData, XEvent *));
@@ -4370,7 +4428,7 @@ rb_threadWaitWindowProc(clientData, eventPtr)
     if (eventPtr->type == DestroyNotify) {
         param->done = TKWAIT_MODE_DESTROY;
     }
-    rb_thread_wakeup(param->thread);
+    if (param->done != 0) rb_thread_wakeup(param->thread);
 }
 
 #if TCL_MAJOR_VERSION >= 8
@@ -4413,6 +4471,7 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
     }
 
     Tcl_Preserve(interp);
+    Tcl_ResetResult(interp);
 
     if (objc != 2) {
 #ifdef Tcl_WrongNumArgs
@@ -4449,7 +4508,7 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 
     /* param = (struct th_vwait_param *)Tcl_Alloc(sizeof(struct th_vwait_param)); */
     param = (struct th_vwait_param *)ckalloc(sizeof(struct th_vwait_param));
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
     Tcl_Preserve((ClientData)param);
 #endif
     param->thread = current_thread;
@@ -4472,11 +4531,12 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 #if 0 /* use Tcl_EventuallyFree */
 	Tcl_EventuallyFree((ClientData)param, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
         Tcl_Release((ClientData)param);
-#endif
+#else
         /* Tcl_Free((char *)param); */
         ckfree((char *)param);
+#endif
 #endif
 
 #if TCL_MAJOR_VERSION >= 8
@@ -4486,9 +4546,9 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
         return TCL_ERROR;
     }
 
-    /* if (!param->done) { */
     while(!param->done) {
-        rb_thread_stop();
+        /* rb_thread_stop(); */
+        rb_thread_sleep_forever();
     }
 
     thr_crit_bup = rb_thread_critical;
@@ -4503,11 +4563,12 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)param, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)param);
-#endif
+#else
     /* Tcl_Free((char *)param); */
     ckfree((char *)param);
+#endif
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -4566,6 +4627,8 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
     Tcl_Preserve(interp);
     Tcl_Preserve(tkwin);
+
+    Tcl_ResetResult(interp);
 
     if (objc != 3) {
 #ifdef Tcl_WrongNumArgs
@@ -4651,7 +4714,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
     /* param = (struct th_vwait_param *)Tcl_Alloc(sizeof(struct th_vwait_param)); */
     param = (struct th_vwait_param *)ckalloc(sizeof(struct th_vwait_param));
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
     Tcl_Preserve((ClientData)param);
 #endif
     param->thread = current_thread;
@@ -4680,11 +4743,12 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #if 0 /* use Tcl_EventuallyFree */
             Tcl_EventuallyFree((ClientData)param, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
             Tcl_Release(param);
-#endif
+#else
             /* Tcl_Free((char *)param); */
             ckfree((char *)param);
+#endif
 #endif
 
 #if TCL_MAJOR_VERSION >= 8
@@ -4696,9 +4760,9 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
             return TCL_ERROR;
         }
 
-        /* if (!param->done) { */
         while(!param->done) {
-            rb_thread_stop();
+            /* rb_thread_stop(); */
+            rb_thread_sleep_forever();
         }
 
         thr_crit_bup = rb_thread_critical;
@@ -4752,11 +4816,12 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #if 0 /* use Tcl_EventuallyFree */
 	    Tcl_EventuallyFree((ClientData)param, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
             Tcl_Release(param);
-#endif
+#else
             /* Tcl_Free((char *)param); */
             ckfree((char *)param);
+#endif
 #endif
 
 #if TCL_MAJOR_VERSION >= 8
@@ -4774,15 +4839,10 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
         rb_thread_critical = thr_crit_bup;
 
-        /* if (!param->done) { */
-        /*
-        while(!param->done) {
-            rb_thread_stop();
-        }
-        */
         while(param->done != TKWAIT_MODE_VISIBILITY) {
             if (param->done == TKWAIT_MODE_DESTROY) break;
-            rb_thread_stop();
+            /* rb_thread_stop(); */
+            rb_thread_sleep_forever();
         }
 
         thr_crit_bup = rb_thread_critical;
@@ -4809,11 +4869,12 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #if 0 /* use Tcl_EventuallyFree */
 	    Tcl_EventuallyFree((ClientData)param, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
             Tcl_Release(param);
-#endif
+#else
             /* Tcl_Free((char *)param); */
             ckfree((char *)param);
+#endif
 #endif
 
 #if TCL_MAJOR_VERSION >= 8
@@ -4873,11 +4934,12 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #if 0 /* use Tcl_EventuallyFree */
 	    Tcl_EventuallyFree((ClientData)param, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
             Tcl_Release(param);
-#endif
+#else
             /* Tcl_Free((char *)param); */
             ckfree((char *)param);
+#endif
 #endif
 
             Tcl_Release(tkwin);
@@ -4892,14 +4954,9 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
         rb_thread_critical = thr_crit_bup;
 
-        /* if (!param->done) { */
-        /* 
-        while(!param->done) {
-            rb_thread_stop();
-        }
-        */
         while(param->done != TKWAIT_MODE_DESTROY) {
-            rb_thread_stop();
+            /* rb_thread_stop(); */
+            rb_thread_sleep_forever();
         }
 
         Tcl_Release(window);
@@ -4920,11 +4977,12 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)param, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 0 /* use Tcl_Preserve/Release */
+#if 1 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)param);
-#endif
+#else
     /* Tcl_Free((char *)param); */
     ckfree((char *)param);
+#endif
 #endif
 
     /*
@@ -4950,7 +5008,7 @@ ip_thread_vwait(self, var)
     argv[0] = cmd_str;
     argv[1] = var;
 
-    return ip_invoke_real(2, argv, self);
+    return ip_invoke_with_position(2, argv, self, TCL_QUEUE_TAIL);
 }
 
 static VALUE
@@ -4966,7 +5024,7 @@ ip_thread_tkwait(self, mode, target)
     argv[1] = mode;
     argv[2] = target;
 
-    return ip_invoke_real(3, argv, self);
+    return ip_invoke_with_position(3, argv, self, TCL_QUEUE_TAIL);
 }
 
 
@@ -5156,15 +5214,17 @@ ip_finalize(ip)
 	Tcl_CreateCommand(ip, "ruby_cmd", ip_null_proc, 
 			  (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);
 #endif
-        rb_thread_critical = thr_crit_bup;
-        return;
+	/* 
+	  rb_thread_critical = thr_crit_bup;
+	  return;
+	*/
     }
 
     /* delete root widget */
-#if 0
+#if 1
     DUMP1("check `destroy'");
     if (Tcl_GetCommandInfo(ip, "destroy", &info)) {
-        DUMP1("call `destroy'");
+        DUMP1("call `destroy .'");
         Tcl_GlobalEval(ip, "catch {destroy .}");
     }
 #endif
@@ -5183,10 +5243,14 @@ ip_finalize(ip)
          *  Although it is the problem, it is possibly avoidable by
          *  rescuing exceptions and the finalize hook of the interp.
          */
+        Tk_Window win = Tk_MainWindow(ip);
+
         DUMP1("call Tk_DestroyWindow");
         ruby_debug   = Qfalse;
         ruby_verbose = Qnil;
-        Tk_DestroyWindow(Tk_MainWindow(ip));
+	if (! (((Tk_FakeWin*)win)->flags & TK_ALREADY_DEAD)) {
+	  Tk_DestroyWindow(win);
+	}
         ruby_debug   = rb_debug_bup;
         ruby_verbose = rb_verbose_bup;
     }
@@ -5209,7 +5273,7 @@ ip_finalize(ip)
         DUMP1("cancel after callbacks");
         ruby_debug   = Qfalse;
         ruby_verbose = Qnil;
-        Tcl_GlobalEval(ip, "foreach id [after info] {after cancel $id}");
+        Tcl_GlobalEval(ip, "catch {foreach id [after info] {after cancel $id}}");
         ruby_debug   = rb_debug_bup;
         ruby_verbose = rb_verbose_bup;
     }
@@ -5251,8 +5315,8 @@ ip_free(ptr)
 
         if (ptr->ip == (Tcl_Interp*)NULL) {
             DUMP1("ip_free is called for deleted IP");
-            /* free(ptr); */
-            ckfree((char*)ptr);
+            free(ptr);
+            /* ckfree((char*)ptr); */
             rb_thread_critical = thr_crit_bup;
             return;
         }
@@ -5405,9 +5469,10 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
         /* Tcl_Free((char*)argv); */
         ckfree((char*)argv);
+#endif
 #endif
     }
 
@@ -6282,18 +6347,24 @@ call_queue_handler(evPtr, flags)
     struct call_queue *q = (struct call_queue *)evPtr;
     volatile VALUE ret;
     volatile VALUE q_dat;
+    volatile VALUE thread = q->thread;
     struct tcltkip *ptr;
 
     DUMP2("do_call_queue_handler : evPtr = %p", evPtr);
     DUMP2("call_queue_handler thread : %lx", rb_thread_current());
-    DUMP2("added by thread : %lx", q->thread);
-
+    DUMP2("added by thread : %lx", thread);
 
     if (*(q->done)) {
         DUMP1("processed by another event-loop");
         return 0;
     } else {
         DUMP1("process it on current event-loop");
+    }
+
+    if (RTEST(rb_thread_alive_p(thread)) 
+	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
+      DUMP1("caller is not yet ready to receive the result -> pending");
+      return 0;
     }
 
     /* process it */
@@ -6316,14 +6387,16 @@ call_queue_handler(evPtr, flags)
         ret = rb_funcall(rb_proc_new(callq_safelevel_handler, q_dat), 
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
+	q_dat = (VALUE)NULL;
     } else {
-        DUMP2("call function (for caller thread:%lx)", q->thread);
+        DUMP2("call function (for caller thread:%lx)", thread);
         DUMP2("call function (current thread:%lx)", rb_thread_current());
         ret = (q->func)(q->interp, q->argc, q->argv);
     }
 
     /* set result */
     RARRAY_PTR(q->result)[0] = ret;
+    ret = (VALUE)NULL;
 
     /* decr internal handler mark */
     rbtk_internal_eventloop_handler--;
@@ -6331,22 +6404,29 @@ call_queue_handler(evPtr, flags)
     /* complete */
     *(q->done) = -1;
 
+    /* unlink ruby objects */
+    q->argv = (VALUE*)NULL;
+    q->interp = (VALUE)NULL;
+    q->result = (VALUE)NULL;
+    q->thread = (VALUE)NULL;
+
     /* back to caller */
-    if (RTEST(rb_funcall(q->thread, ID_alive_p, 0, 0))) {
-      DUMP2("back to caller (caller thread:%lx)", q->thread);
+    /* if (RTEST(rb_funcall(thread, ID_alive_p, 0, 0))) { */
+    if (RTEST(rb_thread_alive_p(thread))) {
+      DUMP2("back to caller (caller thread:%lx)", thread);
       DUMP2("               (current thread:%lx)", rb_thread_current());
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-      have_rb_thread_waited_for_value = 1;
-      rb_thread_wakeup(q->thread);
+#if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
+      have_rb_thread_waiting_for_value = 1;
+      rb_thread_wakeup(thread);
 #else
-      rb_thread_run(q->thread);
+      rb_thread_run(thread);
 #endif
       DUMP1("finish back to caller");
 #if DO_THREAD_SCHEDULE_AT_CALLBACK_DONE
       rb_thread_schedule();
 #endif
     } else {
-      DUMP2("caller is dead (caller thread:%lx)", q->thread);
+      DUMP2("caller is dead (caller thread:%lx)", thread);
       DUMP2("               (current thread:%lx)", rb_thread_current());
     }
 
@@ -6434,7 +6514,7 @@ tk_funcall(func, argc, argv, obj)
     /* allocate memory (freed by Tcl_ServiceEvent) */
     /* callq = (struct call_queue *)Tcl_Alloc(sizeof(struct call_queue)); */
     callq = (struct call_queue *)ckalloc(sizeof(struct call_queue));
-#if 1 /* use Tcl_Preserve/Release */
+#if 0 /* use Tcl_Preserve/Release */
     Tcl_Preserve(callq);
 #endif
 
@@ -6456,17 +6536,24 @@ tk_funcall(func, argc, argv, obj)
     DUMP1("add handler");
 #ifdef RUBY_VM
     if (ptr && ptr->tk_thread_id) {
-      Tcl_ThreadQueueEvent(ptr->tk_thread_id, &(callq->ev), TCL_QUEUE_HEAD);
+      /* Tcl_ThreadQueueEvent(ptr->tk_thread_id, 
+			   &(callq->ev), TCL_QUEUE_HEAD); */
+      Tcl_ThreadQueueEvent(ptr->tk_thread_id, 
+			   (Tcl_Event*)callq, TCL_QUEUE_HEAD);
       Tcl_ThreadAlert(ptr->tk_thread_id);
     } else if (tk_eventloop_thread_id) {
+      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+			   &(callq->ev), TCL_QUEUE_HEAD); */
       Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
-			   &(callq->ev), TCL_QUEUE_HEAD);
+			   (Tcl_Event*)callq, TCL_QUEUE_HEAD);
       Tcl_ThreadAlert(tk_eventloop_thread_id);
     } else {
-      Tcl_QueueEvent(&(callq->ev), TCL_QUEUE_HEAD);
+      /* Tcl_QueueEvent(&(callq->ev), TCL_QUEUE_HEAD); */
+      Tcl_QueueEvent((Tcl_Event*)callq, TCL_QUEUE_HEAD);
     }
 #else
-    Tcl_QueueEvent(&(callq->ev), TCL_QUEUE_HEAD);
+    /* Tcl_QueueEvent(&(callq->ev), TCL_QUEUE_HEAD); */
+    Tcl_QueueEvent((Tcl_Event*)callq, TCL_QUEUE_HEAD);
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -6475,7 +6562,8 @@ tk_funcall(func, argc, argv, obj)
     DUMP2("wait for handler (current thread:%lx)", current);
     while(*alloc_done >= 0) {
       DUMP2("*** wait for handler (current thread:%lx)", current);
-      rb_thread_stop();
+      /* rb_thread_stop(); */
+      rb_thread_sleep_forever();
       DUMP2("*** wakeup (current thread:%lx)", current);
     }
     DUMP2("back from handler (current thread:%lx)", current);
@@ -6487,27 +6575,34 @@ tk_funcall(func, argc, argv, obj)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)alloc_done); /* XXXXXXXX */
-#endif
+#else
     /* free(alloc_done); */
     ckfree((char*)alloc_done);
+#endif
 #endif
     /* if (argv) free(argv); */
     if (argv) {
       /* if argv != NULL, alloc as 'temp' */
+      int i;
+      for(i = 0; i < argc; i++) { argv[i] = (VALUE)NULL; }
+
 #if 0 /* use Tcl_EventuallyFree */
       Tcl_EventuallyFree((ClientData)argv, TCL_DYNAMIC); /* XXXXXXXX */
 #else
 #if 0 /* use Tcl_Preserve/Release */
       Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
       ckfree((char*)argv);
+#endif
 #endif
     }
 
-#if 1 /* use Tcl_Preserve/Release */
+#if 0 /* callq is freed by Tcl_ServiceEvent */
+#if 0 /* use Tcl_Preserve/Release */
     Tcl_Release(callq);
 #else
     ckfree((char*)callq);
+#endif
 #endif
 
     /* exception? */
@@ -6714,17 +6809,24 @@ eval_queue_handler(evPtr, flags)
     struct eval_queue *q = (struct eval_queue *)evPtr;
     volatile VALUE ret;
     volatile VALUE q_dat;
+    volatile VALUE thread = q->thread;
     struct tcltkip *ptr;
 
     DUMP2("do_eval_queue_handler : evPtr = %p", evPtr);
     DUMP2("eval_queue_thread : %lx", rb_thread_current());
-    DUMP2("added by thread : %lx", q->thread);
+    DUMP2("added by thread : %lx", thread);
 
     if (*(q->done)) {
         DUMP1("processed by another event-loop");
         return 0;
     } else {
         DUMP1("process it on current event-loop");
+    }
+
+    if (RTEST(rb_thread_alive_p(thread)) 
+	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
+      DUMP1("caller is not yet ready to receive the result -> pending");
+      return 0;
     }
 
     /* process it */
@@ -6760,12 +6862,14 @@ eval_queue_handler(evPtr, flags)
         ret = rb_funcall(rb_proc_new(evq_safelevel_handler, q_dat), 
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
+	q_dat = (VALUE)NULL;
     } else {
         ret = ip_eval_real(q->interp, q->str, q->len);
     }
 
     /* set result */
     RARRAY_PTR(q->result)[0] = ret;
+    ret = (VALUE)NULL;
 
     /* decr internal handler mark */
     rbtk_internal_eventloop_handler--;
@@ -6773,22 +6877,28 @@ eval_queue_handler(evPtr, flags)
     /* complete */
     *(q->done) = -1;
 
+    /* unlink ruby objects */
+    q->interp = (VALUE)NULL;
+    q->result = (VALUE)NULL;
+    q->thread = (VALUE)NULL;
+
     /* back to caller */
-    if (RTEST(rb_funcall(q->thread, ID_alive_p, 0, 0))) {
-      DUMP2("back to caller (caller thread:%lx)", q->thread);
+    /* if (RTEST(rb_funcall(thread, ID_alive_p, 0, 0))) { */
+    if (RTEST(rb_thread_alive_p(thread))) {
+      DUMP2("back to caller (caller thread:%lx)", thread);
       DUMP2("               (current thread:%lx)", rb_thread_current());
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-      have_rb_thread_waited_for_value = 1;
-      rb_thread_wakeup(q->thread);
+#if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
+      have_rb_thread_waiting_for_value = 1;
+      rb_thread_wakeup(thread);
 #else
-      rb_thread_run(q->thread);
+      rb_thread_run(thread);
 #endif
       DUMP1("finish back to caller");
 #if DO_THREAD_SCHEDULE_AT_CALLBACK_DONE
       rb_thread_schedule();
 #endif
     } else {
-      DUMP2("caller is dead (caller thread:%lx)", q->thread);
+      DUMP2("caller is dead (caller thread:%lx)", thread);
       DUMP2("               (current thread:%lx)", rb_thread_current());
     }
 
@@ -6847,7 +6957,7 @@ ip_eval(self, str)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    /* allocate memory (protected from Tcl_ServiceEvent) */
+    /* allocate memory (keep result) */
     /* alloc_done = (int*)ALLOC(int); */
     alloc_done = (int*)ckalloc(sizeof(int));
 #if 0 /* use Tcl_Preserve/Release */
@@ -6866,7 +6976,7 @@ ip_eval(self, str)
     /* allocate memory (freed by Tcl_ServiceEvent) */
     /* evq = (struct eval_queue *)Tcl_Alloc(sizeof(struct eval_queue)); */
     evq = (struct eval_queue *)ckalloc(sizeof(struct eval_queue));
-#if 1 /* use Tcl_Preserve/Release */
+#if 0 /* use Tcl_Preserve/Release */
     Tcl_Preserve(evq);
 #endif
 
@@ -6889,13 +6999,21 @@ ip_eval(self, str)
     DUMP1("add handler");
 #ifdef RUBY_VM
     if (ptr->tk_thread_id) {
-      Tcl_ThreadQueueEvent(ptr->tk_thread_id, &(evq->ev), position);
+      /* Tcl_ThreadQueueEvent(ptr->tk_thread_id, &(evq->ev), position); */
+      Tcl_ThreadQueueEvent(ptr->tk_thread_id, (Tcl_Event*)evq, position);
       Tcl_ThreadAlert(ptr->tk_thread_id);
+    } else if (tk_eventloop_thread_id) {
+      Tcl_ThreadQueueEvent(tk_eventloop_thread_id, (Tcl_Event*)evq, position);
+      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+			   &(evq->ev), position); */
+      Tcl_ThreadAlert(tk_eventloop_thread_id);
     } else {
-      Tcl_QueueEvent(&(evq->ev), position);
+      /* Tcl_QueueEvent(&(evq->ev), position); */
+      Tcl_QueueEvent((Tcl_Event*)evq, position);
     }
 #else
-    Tcl_QueueEvent(&(evq->ev), position);
+    /* Tcl_QueueEvent(&(evq->ev), position); */
+    Tcl_QueueEvent((Tcl_Event*)evq, position);
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -6904,7 +7022,8 @@ ip_eval(self, str)
     DUMP2("wait for handler (current thread:%lx)", current);
     while(*alloc_done >= 0) {
       DUMP2("*** wait for handler (current thread:%lx)", current);
-      rb_thread_stop();
+      /* rb_thread_stop(); */
+      rb_thread_sleep_forever();
       DUMP2("*** wakeup (current thread:%lx)", current);
     }
     DUMP2("back from handler (current thread:%lx)", current);
@@ -6917,23 +7036,27 @@ ip_eval(self, str)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)alloc_done); /* XXXXXXXX */
-#endif
+#else
     /* free(alloc_done); */
     ckfree((char*)alloc_done);
+#endif
 #endif
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)eval_str, TCL_DYNAMIC); /* XXXXXXXX */
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)eval_str); /* XXXXXXXX */
-#endif
+#else
     /* free(eval_str); */
     ckfree(eval_str);
 #endif
-#if 1 /* use Tcl_Preserve/Release */
+#endif
+#if 0 /* evq is freed by Tcl_ServiceEvent */
+#if 0 /* use Tcl_Preserve/Release */
     Tcl_Release(evq);
 #else
     ckfree((char*)evq);
+#endif
 #endif
 
     if (rb_obj_is_kind_of(ret, rb_eException)) {
@@ -7112,11 +7235,15 @@ lib_toUTF8_core(ip_obj, src, encodename)
                         /* StringValue(enc); */
                         enc = rb_funcall(enc, ID_to_s, 0, 0);
                         /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
-                        encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
-						   RSTRING_PTR(enc));
-                        if (encoding == (Tcl_Encoding)NULL) {
+			if (!RSTRING_LEN(enc)) {
+			  encoding = (Tcl_Encoding)NULL;
+			} else {
+			  encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+						     RSTRING_PTR(enc));
+			  if (encoding == (Tcl_Encoding)NULL) {
                             rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
-                        }
+			  }
+			}
                     }
                 }
             } else {
@@ -7299,13 +7426,17 @@ lib_fromUTF8_core(ip_obj, src, encodename)
                 /* StringValue(enc); */
                 enc = rb_funcall(enc, ID_to_s, 0, 0);
                 /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
-                encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
-					   RSTRING_PTR(enc));
-                if (encoding == (Tcl_Encoding)NULL) {
+		if (!RSTRING_LEN(enc)) {
+		  encoding = (Tcl_Encoding)NULL;
+		} else {
+		  encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, 
+					     RSTRING_PTR(enc));
+		  if (encoding == (Tcl_Encoding)NULL) {
                     rb_warning("Tk-interp has unknown encoding information (@encoding:'%s')", RSTRING_PTR(enc));
-                } else {
-                  encodename = rb_obj_dup(enc);
-                }
+		  } else {
+		    encodename = rb_obj_dup(enc);
+		  }
+		}
             }
         }
 
@@ -7313,14 +7444,17 @@ lib_fromUTF8_core(ip_obj, src, encodename)
         StringValue(encodename);
 
         if (strcmp(RSTRING_PTR(encodename), "binary") == 0) {
+	    Tcl_Obj *tclstr;
             char *s;
             int  len;
 
             StringValue(str);
-            s = Tcl_GetByteArrayFromObj(Tcl_NewStringObj(RSTRING_PTR(str), 
-                                                         RSTRING_LEN(str)), 
-                                        &len);
+            tclstr = Tcl_NewStringObj(RSTRING_PTR(str), RSTRING_LEN(str));
+	    Tcl_IncrRefCount(tclstr);
+            s = Tcl_GetByteArrayFromObj(tclstr, &len);
             str = rb_tainted_str_new(s, len);
+	    s = (char*)NULL;
+	    Tcl_DecrRefCount(tclstr);
 #ifdef RUBY_VM
 	    rb_enc_associate_index(str, ENCODING_INDEX_BINARY);
 #endif
@@ -7482,18 +7616,20 @@ lib_UTF_backslash_core(self, str, all_bs)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)src_buf); /* XXXXXXXX */
-#endif
+#else
     /* free(src_buf); */
     ckfree(src_buf);
+#endif
 #endif
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)dst_buf, TCL_DYNAMIC); /* XXXXXXXX */
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)dst_buf); /* XXXXXXXX */
-#endif
+#else
     /* free(dst_buf); */
     ckfree(dst_buf);
+#endif
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -7619,9 +7755,10 @@ invoke_tcl_proc(arg)
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
         /* free(argv); */
         ckfree((char*)argv);
+#endif
 #endif
 
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -7852,9 +7989,10 @@ ip_invoke_core(interp, argc, argv)
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
         /* free(argv); */
         ckfree((char*)argv);
+#endif
 #endif
 
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -7873,11 +8011,12 @@ ip_invoke_core(interp, argc, argv)
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)objv); /* XXXXXXXX */
-#endif
+#else
         /* free(objv); */
         ckfree((char*)objv);
 #endif
-#else
+#endif
+#else /* TCL_MAJOR_VERSION < 8 */
         free(argv[0]);
         /* ckfree(argv[0]); */
 #if 0 /* use Tcl_EventuallyFree */
@@ -7885,9 +8024,10 @@ ip_invoke_core(interp, argc, argv)
 #else
 #if 0 /* use Tcl_Preserve/Release */
 	Tcl_Release((ClientData)argv); /* XXXXXXXX */
-#endif
+#else
         /* free(argv); */
         ckfree((char*)argv);
+#endif
 #endif
 #endif
     }
@@ -7986,8 +8126,10 @@ free_invoke_arguments(argc, av)
     for (i = 0; i < argc; ++i) {
 #if TCL_MAJOR_VERSION >= 8
         Tcl_DecrRefCount(av[i]);
+	av[i] = (Tcl_Obj*)NULL;
 #else /* TCL_MAJOR_VERSION < 8 */
         free(av[i]);
+	av[i] = (char*)NULL;
 #endif
     }
 #if TCL_MAJOR_VERSION >= 8
@@ -7996,8 +8138,9 @@ free_invoke_arguments(argc, av)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)av); /* XXXXXXXX */
-#endif
+#else
     ckfree((char*)av);
+#endif
 #endif
 #else /* TCL_MAJOR_VERSION < 8 */
 #if 0 /* use Tcl_EventuallyFree */
@@ -8005,9 +8148,10 @@ free_invoke_arguments(argc, av)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)av); /* XXXXXXXX */
-#endif
+#else
     /* free(av); */
     ckfree((char*)av);
+#endif
 #endif
 #endif
 }
@@ -8072,17 +8216,24 @@ invoke_queue_handler(evPtr, flags)
     struct invoke_queue *q = (struct invoke_queue *)evPtr;
     volatile VALUE ret;
     volatile VALUE q_dat;
+    volatile VALUE thread = q->thread;
     struct tcltkip *ptr;
 
     DUMP2("do_invoke_queue_handler : evPtr = %p", evPtr);
     DUMP2("invoke queue_thread : %lx", rb_thread_current());
-    DUMP2("added by thread : %lx", q->thread);
+    DUMP2("added by thread : %lx", thread);
 
     if (*(q->done)) {
         DUMP1("processed by another event-loop");
         return 0;
     } else {
         DUMP1("process it on current event-loop");
+    }
+
+    if (RTEST(rb_thread_alive_p(thread)) 
+	&& ! RTEST(rb_funcall(thread, ID_stop_p, 0))) {
+      DUMP1("caller is not yet ready to receive the result -> pending");
+      return 0;
     }
 
     /* process it */
@@ -8105,14 +8256,16 @@ invoke_queue_handler(evPtr, flags)
         ret = rb_funcall(rb_proc_new(ivq_safelevel_handler, q_dat), 
                          ID_call, 0);
         rb_gc_force_recycle(q_dat);
+	q_dat = (VALUE)NULL;
     } else {
-        DUMP2("call invoke_real (for caller thread:%lx)", q->thread);
+        DUMP2("call invoke_real (for caller thread:%lx)", thread);
         DUMP2("call invoke_real (current thread:%lx)", rb_thread_current());
         ret = ip_invoke_core(q->interp, q->argc, q->argv);
     }
 
     /* set result */
     RARRAY_PTR(q->result)[0] = ret;
+    ret = (VALUE)NULL;
 
     /* decr internal handler mark */
     rbtk_internal_eventloop_handler--;
@@ -8120,22 +8273,28 @@ invoke_queue_handler(evPtr, flags)
     /* complete */
     *(q->done) = -1;
 
+    /* unlink ruby objects */
+    q->interp = (VALUE)NULL;
+    q->result = (VALUE)NULL;
+    q->thread = (VALUE)NULL;
+
     /* back to caller */
-    if (RTEST(rb_funcall(q->thread, ID_alive_p, 0, 0))) {
-      DUMP2("back to caller (caller thread:%lx)", q->thread);
+    /* if (RTEST(rb_funcall(thread, ID_alive_p, 0, 0))) { */
+    if (RTEST(rb_thread_alive_p(thread))) {
+      DUMP2("back to caller (caller thread:%lx)", thread);
       DUMP2("               (current thread:%lx)", rb_thread_current());
-#if CONTROL_BY_STATUS_OF_RB_THREAD_WAIT_FOR_VALUE
-      have_rb_thread_waited_for_value = 1;
-      rb_thread_wakeup(q->thread);
+#if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
+      have_rb_thread_waiting_for_value = 1;
+      rb_thread_wakeup(thread);
 #else
-      rb_thread_run(q->thread);
+      rb_thread_run(thread);
 #endif
       DUMP1("finish back to caller");
 #if DO_THREAD_SCHEDULE_AT_CALLBACK_DONE
       rb_thread_schedule();
 #endif
     } else {
-      DUMP2("caller is dead (caller thread:%lx)", q->thread);
+      DUMP2("caller is dead (caller thread:%lx)", thread);
       DUMP2("               (current thread:%lx)", rb_thread_current());
     }
 
@@ -8216,7 +8375,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     /* allocate memory (freed by Tcl_ServiceEvent) */
     /* ivq = (struct invoke_queue *)Tcl_Alloc(sizeof(struct invoke_queue)); */
     ivq = (struct invoke_queue *)ckalloc(sizeof(struct invoke_queue));
-#if 1 /* use Tcl_Preserve/Release */
+#if 0 /* use Tcl_Preserve/Release */
     Tcl_Preserve((ClientData)ivq); /* XXXXXXXX */
 #endif
 
@@ -8237,13 +8396,22 @@ ip_invoke_with_position(argc, argv, obj, position)
     DUMP1("add handler");
 #ifdef RUBY_VM
     if (ptr->tk_thread_id) {
-      Tcl_ThreadQueueEvent(ptr->tk_thread_id, &(ivq->ev), position);
+      /* Tcl_ThreadQueueEvent(ptr->tk_thread_id, &(ivq->ev), position); */
+      Tcl_ThreadQueueEvent(ptr->tk_thread_id, (Tcl_Event*)ivq, position);
       Tcl_ThreadAlert(ptr->tk_thread_id);
+    } else if (tk_eventloop_thread_id) {
+      /* Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+			   &(ivq->ev), position); */
+      Tcl_ThreadQueueEvent(tk_eventloop_thread_id, 
+			   (Tcl_Event*)ivq, position);
+      Tcl_ThreadAlert(tk_eventloop_thread_id);
     } else {
-      Tcl_QueueEvent(&(ivq->ev), position);
+      /* Tcl_QueueEvent(&(ivq->ev), position); */
+      Tcl_QueueEvent((Tcl_Event*)ivq, position);
     }
 #else
-    Tcl_QueueEvent(&(ivq->ev), position);
+    /* Tcl_QueueEvent(&(ivq->ev), position); */
+    Tcl_QueueEvent((Tcl_Event*)ivq, position);
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -8251,7 +8419,8 @@ ip_invoke_with_position(argc, argv, obj, position)
     /* wait for the handler to be processed */
     DUMP2("wait for handler (current thread:%lx)", current);
     while(*alloc_done >= 0) {
-        rb_thread_stop();
+	/* rb_thread_stop(); */
+	rb_thread_sleep_forever();
     }
     DUMP2("back from handler (current thread:%lx)", current);
 
@@ -8262,18 +8431,21 @@ ip_invoke_with_position(argc, argv, obj, position)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)alloc_done); /* XXXXXXXX */
-#endif
+#else
     /* free(alloc_done); */
     ckfree((char*)alloc_done);
 #endif
+#endif
 
+#if 0 /* ivq is freed by Tcl_ServiceEvent */
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)ivq, TCL_DYNAMIC); /* XXXXXXXX */
 #else
-#if 1 /* use Tcl_Preserve/Release */
+#if 0 /* use Tcl_Preserve/Release */
     Tcl_Release(ivq);
 #else
     ckfree((char*)ivq);
+#endif
 #endif
 #endif
 
@@ -8961,9 +9133,10 @@ lib_merge_tklist(argc, argv, obj)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)flagPtr);
-#endif
+#else
     /* free(flagPtr); */
     ckfree((char*)flagPtr);
+#endif
 #endif
 
     /* create object */
@@ -8974,9 +9147,10 @@ lib_merge_tklist(argc, argv, obj)
 #else
 #if 0 /* use Tcl_Preserve/Release */
     Tcl_Release((ClientData)result); /* XXXXXXXXXXX */
-#endif
+#else
     /* Tcl_Free(result); */
     ckfree(result);
+#endif
 #endif
 
     if (old_gc == Qfalse) rb_gc_enable();
@@ -9727,6 +9901,7 @@ ip_make_menu_embeddable_core(interp, argc, argv)
        char *s = "normal";
        /* Tcl_SetStringObj((menuRefPtr->menuPtr)->menuTypePtr, s, strlen(s));*/
        (menuRefPtr->menuPtr)->menuTypePtr = Tcl_NewStringObj(s, strlen(s));
+       /* Tcl_IncrRefCount((menuRefPtr->menuPtr)->menuTypePtr); */
        /* (menuRefPtr->menuPtr)->menuType = TEAROFF_MENU; */
        (menuRefPtr->menuPtr)->menuType = MASTER_MENU;
     }

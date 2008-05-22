@@ -18,12 +18,14 @@ $msgbox_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($msgbox_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($msgbox_demo, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
             'text'=>"Choose the icon and type option of the message box. Then press the \"Message Box\" button to see the message box.").pack('side'=>'top')
 
 # frame
-TkFrame.new($msgbox_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -45,8 +47,8 @@ TkFrame.new($msgbox_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame
-$msgbox_leftframe  = TkFrame.new($msgbox_demo)
-$msgbox_rightframe = TkFrame.new($msgbox_demo)
+$msgbox_leftframe  = TkFrame.new(base_frame)
+$msgbox_rightframe = TkFrame.new(base_frame)
 $msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y', 
                         'pady'=>'.5c', 'padx'=>'.5c')
 $msgbox_rightframe.pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y', 

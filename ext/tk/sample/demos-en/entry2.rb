@@ -19,8 +19,10 @@ $entry2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($entry2_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-msg = TkLabel.new($entry2_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
@@ -29,7 +31,7 @@ msg = TkLabel.new($entry2_demo) {
 msg.pack('side'=>'top')
 
 # frame
-TkFrame.new($entry2_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -46,7 +48,7 @@ TkFrame.new($entry2_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame
-TkFrame.new($entry2_demo, 'borderwidth'=>10) {|w|
+TkFrame.new(base_frame, 'borderwidth'=>10) {|w|
   # entry 1
   s1 = TkScrollbar.new(w, 'relief'=>'sunken', 'orient'=>'horiz')
   e1 = TkEntry.new(w, 'relief'=>'sunken') {

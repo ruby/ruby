@@ -33,16 +33,18 @@ $menubu_demo = TkToplevel.new {|w|
 
 positionWindow($menubu_demo)
 
+base_frame = TkFrame.new($menubu_demo).pack(:fill=>:both, :expand=>true)
+
 # version check
 if $tk_version.to_f < 8.0
 
 # label 生成
-TkLabel.new($menubu_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
     text("実行しようとしたスクリプトは Tk8.0 以上で利用できる機能を利用しているため、あなたの Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''} では正常に実行できません。よってデモの実行を中止しました。ただし、下のコード参照ボタンを押すことで、実行が中止されたスクリプトのソースを参照することは可能です。")
 }.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($menubu_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -61,7 +63,7 @@ TkFrame.new($menubu_demo) {|frame|
 
 else ; # Tk8.x
 
-body = TkFrame.new($menubu_demo)
+body = TkFrame.new(base_frame)
 body.pack('expand'=>'yes', 'fill'=>'both')
 
 below = TkMenubutton.new(body) {
@@ -156,7 +158,7 @@ center = TkFrame.new(body) {
   grid('row'=>1, 'column'=>1, 'sticky'=>'news')
 }
 
-TkFrame.new($menubu_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'

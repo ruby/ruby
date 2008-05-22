@@ -16,8 +16,10 @@ $image2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($image2_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($image2_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($image2_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($image2_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -51,21 +53,21 @@ $dirName = TkVariable.new([$demo_dir,'..','images'].join(File::Separator))
 $image2a = TkPhotoImage.new
 
 # ファイル名入力部
-TkLabel.new($image2_demo, 'text'=>'ディレクトリ:')\
+TkLabel.new(base_frame, 'text'=>'ディレクトリ:')\
 .pack('side'=>'top', 'anchor'=>'w')
 
-image2_e = TkEntry.new($image2_demo) {
+image2_e = TkEntry.new(base_frame) {
   width 30
   textvariable $dirName
 }.pack('side'=>'top', 'anchor'=>'w')
 
-TkFrame.new($image2_demo, 'height'=>'3m', 'width'=>20)\
+TkFrame.new(base_frame, 'height'=>'3m', 'width'=>20)\
 .pack('side'=>'top', 'anchor'=>'w')
 
-TkLabel.new($image2_demo, 'text'=>'ファイル:')\
+TkLabel.new(base_frame, 'text'=>'ファイル:')\
 .pack('side'=>'top', 'anchor'=>'w')
 
-TkFrame.new($image2_demo){|w|
+TkFrame.new(base_frame){|w|
   s = TkScrollbar.new(w)
   l = TkListbox.new(w) {
     width 20
@@ -84,9 +86,10 @@ TkFrame.new($image2_demo){|w|
 }.pack('side'=>'top', 'anchor'=>'w')
 
 # image 配置
-[ TkFrame.new($image2_demo, 'height'=>'3m', 'width'=>20),
-  TkLabel.new($image2_demo, 'text'=>'画像:'),
-  TkLabel.new($image2_demo, 'image'=>$image2a)
+[ TkFrame.new(base_frame, 'height'=>'3m', 'width'=>20),
+  TkLabel.new(base_frame, 'text'=>'画像:'),
+  # TkLabel.new(base_frame, 'image'=>$image2a)
+  Tk::Label.new(base_frame, 'image'=>$image2a)
 ].each{|w| w.pack('side'=>'top', 'anchor'=>'w')}
 
 # メソッド定義

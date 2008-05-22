@@ -16,8 +16,10 @@ $radio_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($radio_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($radio_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -30,7 +32,7 @@ size = TkVariable.new
 color = TkVariable.new
 
 # frame 生成
-TkFrame.new($radio_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -50,14 +52,14 @@ TkFrame.new($radio_demo) {|frame|
   TkButton.new(frame) {
     text '変数参照'
     command proc{
-      showVars($radio_demo, ['size', size], ['color', color])
+      showVars(base_frame, ['size', size], ['color', color])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 生成
-f_left = TkFrame.new($radio_demo)
-f_right = TkFrame.new($radio_demo)
+f_left = TkFrame.new(base_frame)
+f_right = TkFrame.new(base_frame)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 

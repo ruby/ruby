@@ -18,7 +18,9 @@ $paned2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-TkLabel.new($paned2_demo, 
+base_frame = TkFrame.new($paned2_demo).pack(:fill=>:both, :expand=>true)
+
+TkLabel.new(base_frame, 
             :font=>$font, :wraplength=>'4i', :justify=>:left, 
             :text=><<EOL).pack(:side=>:top)
 下のスクロールバー付きのウィジェットが置かれた二つのウィンドウの間の仕切り枠は、一つの領域をそれぞれのウィンドウのために分割するためのものです。左ボタンで仕切りを操作すると、分割サイズ変更の操作途中では再表示はなされず、確定させたときに表示が更新されます。マウスによる仕切りの操作に追随してサイズを変更した表示がなわれるようにしたい場合は、マウスの中央ボタンを使ってください。
@@ -29,7 +31,7 @@ TkLabel.new($paned2_demo,
 EOL
 
 # The bottom buttons
-TkFrame.new($paned2_demo){|f|
+TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
@@ -66,7 +68,7 @@ paneList.value = [         # ruby's array --> tcl's list
 ]
 
 # Create the pane itself
-TkPanedwindow.new($paned2_demo, :orient=>:vertical){|f|
+TkPanedwindow.new(base_frame, :orient=>:vertical){|f|
   pack(:side=>:top, :expand=>true, :fill=>:both, :pady=>2, :padx=>'2m')
 
   add(TkFrame.new(f){|paned2_top|

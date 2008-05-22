@@ -15,8 +15,10 @@ $twind2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($twind2_demo).pack(:fill=>:both, :expand=>true)
+
 # frame
-$twind2_buttons = TkFrame.new($twind2_demo) {|frame|
+$twind2_buttons = TkFrame.new(base_frame) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x', 
@@ -38,7 +40,7 @@ $twind2_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame
 $twind2_text = nil
-TkFrame.new($twind2_demo, 'highlightthickness'=>2, 'borderwidth'=>2, 
+TkFrame.new(base_frame, 'highlightthickness'=>2, 'borderwidth'=>2, 
             'relief'=>'sunken') {|f|
   $twind2_text = TkText.new(f, 'setgrid'=>true, 'font'=>$font,
                             # 'width'=>'70', 'height'=>35, 'wrap'=>'word', 

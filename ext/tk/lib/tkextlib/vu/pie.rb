@@ -177,6 +177,10 @@ class Tk::Vu::PieSlice
     @pie.itemcget(@id, slot)
   end
 
+  def cget_strict(slot)
+    @pie.itemcget_strict(@id, slot)
+  end
+
   def configure(*args)
     @pie.itemconfigure(@id, *args)
     self

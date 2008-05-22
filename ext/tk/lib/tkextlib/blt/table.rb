@@ -29,6 +29,9 @@ module Tk::BLT
       def blt_table_cget(*args)
         Tk::BLT::Table.cget(self, *args)
       end
+      def blt_table_cget_strict(*args)
+        Tk::BLT::Table.cget_strict(self, *args)
+      end
 
       def blt_table_configure(*args)
         Tk::BLT::Table.configure(self, *args)
@@ -92,6 +95,9 @@ module Tk::BLT
       def blt_table_itemcget(*args)
         Tk::BLT::Table.itemcget(self, *args)
       end
+      def blt_table_itemcget_strict(*args)
+        Tk::BLT::Table.itemcget_strict(self, *args)
+      end
 
       def blt_table_itemconfigure(*args)
         Tk::BLT::Table.itemconfigure(self, *args)
@@ -136,12 +142,13 @@ class << Tk::BLT::Table
   private :__item_pathname
 
   alias __itemcget itemcget
+  alias __itemcget_strict itemcget_strict
   alias __itemconfigure itemconfigure
   alias __itemconfiginfo itemconfiginfo
   alias __current_itemconfiginfo current_itemconfiginfo
 
-  private :__itemcget, :__itemconfigure
-  private :__itemconfiginfo, :__current_itemconfiginfo
+  private :__itemcget, :__itemcget_strict
+  private :__itemconfigure, :__itemconfiginfo, :__current_itemconfiginfo
 
   def __boolval_optkeys
     super() << 'propagate'
@@ -176,6 +183,9 @@ class << Tk::BLT::Table
   def cget(container, option)
     __itemcget([container], option)
   end
+  def cget_strict(container, option)
+    __itemcget_strict([container], option)
+  end
 
   def configure(container, *args)
     __itemconfigure([container], *args)
@@ -191,6 +201,9 @@ class << Tk::BLT::Table
 
   def itemcget(container, item, option)
     __itemcget([container, tagid(item)], option)
+  end
+  def itemcget_strict(container, item, option)
+    __itemcget_strict([container, tagid(item)], option)
   end
 
   def itemconfigure(container, *args)

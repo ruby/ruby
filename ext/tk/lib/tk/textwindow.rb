@@ -72,6 +72,9 @@ class TkTextWindow<TkObject
   def cget(slot)
     @t.window_cget(@index, slot)
   end
+  def cget_strict(slot)
+    @t.window_cget_strict(@index, slot)
+  end
 
   def configure(slot, value=None)
     if slot.kind_of?(Hash)

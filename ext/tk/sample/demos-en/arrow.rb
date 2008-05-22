@@ -107,14 +107,16 @@ $arrow_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($arrow_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($arrow_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
             'text'=>"This widget allows you to experiment with different widths and arrowhead shapes for lines in canvases.  To change the line width or the shape of the arrowhead, drag any of the three boxes attached to the oversized arrow.  The arrows on the right give examples at normal scale.  The text at the bottom shows the configuration options as you'd enter them for a canvas line item."){
   pack('side'=>'top')
 }
 
 # frame
-$arrow_buttons = TkFrame.new($arrow_demo) {|frame|
+$arrow_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -132,7 +134,7 @@ $arrow_buttons = TkFrame.new($arrow_demo) {|frame|
 $arrow_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # canvas 
-$arrow_canvas = TkCanvas.new($arrow_demo, 'width'=>500, 'height'=>350, 
+$arrow_canvas = TkCanvas.new(base_frame, 'width'=>500, 'height'=>350, 
                              'relief'=>'sunken', 'borderwidth'=>2)
 $arrow_canvas.pack('expand'=>'yes', 'fill'=>'both')
 

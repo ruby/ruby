@@ -16,8 +16,10 @@ $label_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($label_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($label_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($label_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($label_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -45,8 +47,8 @@ TkFrame.new($label_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # label demo 用フレーム生成
-f_left = TkFrame.new($label_demo)
-f_right = TkFrame.new($label_demo)
+f_left = TkFrame.new(base_frame)
+f_right = TkFrame.new(base_frame)
 [f_left, f_right].each{|w| w.pack('side'=>'left', 'expand'=>'yes', 
                                   'padx'=>10, 'pady'=>10, 'fill'=>'both')}
 
@@ -57,7 +59,8 @@ f_right = TkFrame.new($label_demo)
   TkLabel.new(f_left, 'text'=>'3 番目。沈んでいます ', 'relief'=>'sunken')
 ].each{|w| w.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'anchor'=>'w')}
 
-TkLabel.new(f_right) {
+# TkLabel.new(f_right) {
+Tk::Label.new(f_right) {
   bitmap('@' + [$demo_dir,'..','images','face.xbm'].join(File::Separator))
   borderwidth 2
   relief 'sunken'

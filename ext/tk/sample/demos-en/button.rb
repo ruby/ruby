@@ -29,7 +29,7 @@ msg = TkLabel.new($button_demo) {
 msg.pack('side'=>'top')
 
 # frame 
-$button_buttons = TkFrame.new($button_demo) {|frame|
+$button_buttons = Tk::Frame.new($button_demo) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{

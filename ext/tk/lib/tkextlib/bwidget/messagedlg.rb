@@ -65,6 +65,17 @@ class Tk::BWidget::MessageDlg
     end
     @keys[slot]
   end
+  def cget_strict(slot)
+    slot = slot.to_s
+    if slot == 'relative'
+      slot = 'parent'
+    end
+    if winfo_exist?
+      val = super(slot)
+      @keys[slot] = val
+    end
+    @keys[slot]
+  end
 
   def configure(slot, value=None)
     if winfo_exist?

@@ -16,8 +16,10 @@ $menu_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($menu_demo).pack(:fill=>:both, :expand=>true)
+
 # menu frame 生成
-$menu_frame = TkFrame.new($menu_demo, 'relief'=>'raised', 'bd'=>2)
+$menu_frame = TkFrame.new(base_frame, 'relief'=>'raised', 'bd'=>2)
 $menu_frame.pack('side'=>'top', 'fill'=>'x')
 
 begin
@@ -27,7 +29,7 @@ rescue
 end
 
 # label 生成
-TkLabel.new($menu_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
   if $tk_platform['platform'] == 'macintosh' ||
       windowingsystem == "classic" || windowingsystem == "aqua"
     text("このウィンドウは様々なメニューとカスケードメニューから構成されています。Command-X を入力すると、Xがコマンドキー記号に続いて表示されている文字ならば、アクセラレータを使った項目起動を行うことができます。メニュー要素中、最後のものは、そのメニューの最初の項目を選択することで独立させることができます。")
@@ -37,7 +39,7 @@ TkLabel.new($menu_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 }.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($menu_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -108,7 +110,8 @@ TkMenubutton.new($menu_frame, 'text'=>'Cascades', 'underline'=>0) {|m|
         'accelerator'=>"#{modifier}+G", 'underline'=>6)
     $menu_demo.bind("#{modifier}-g", proc{print "Goodbye(さようなら)\n"})
 
-    TkMenu.new(m, 'tearoff'=>false) {|cascade_check|
+    # TkMenu.new(m, 'tearoff'=>false) {|cascade_check|
+    TkMenu.new(cascade_menu, 'tearoff'=>false) {|cascade_check|
       cascade_menu.add('cascade', 'label'=>'Check buttons(チェックボタン)', 
                        'menu'=>cascade_check, 'underline'=>0)
       oil = TkVariable.new(0)
@@ -130,7 +133,8 @@ TkMenubutton.new($menu_frame, 'text'=>'Cascades', 'underline'=>0) {|m|
       invoke 3
     }
 
-    TkMenu.new(m, 'tearoff'=>false) {|cascade_radio|
+    #TkMenu.new(m, 'tearoff'=>false) {|cascade_radio|
+    TkMenu.new(cascade_menu, 'tearoff'=>false) {|cascade_radio|
       cascade_menu.add('cascade', 'label'=>'Radio buttons(ラジオボタン)', 
                        'menu'=>cascade_radio, 'underline'=>0)
       pointSize = TkVariable.new

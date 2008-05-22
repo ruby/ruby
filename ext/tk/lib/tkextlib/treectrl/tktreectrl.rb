@@ -417,6 +417,9 @@ module Tk::TreeCtrl::ConfigMethod
   def column_cget(tagOrId, option)
     itemcget(['column', tagOrId], option)
   end
+  def column_cget_strict(tagOrId, option)
+    itemcget_strict(['column', tagOrId], option)
+  end
   def column_configure(tagOrId, slot, value=None)
     itemconfigure(['column', tagOrId], slot, value)
   end
@@ -429,6 +432,9 @@ module Tk::TreeCtrl::ConfigMethod
 
   def column_dragcget(option)
     itemcget(['column', 'drag'], option)
+  end
+  def column_dragcget_strict(option)
+    itemcget_strict(['column', 'drag'], option)
   end
   def column_dragconfigure(slot, value=None)
     itemconfigure(['column', 'drag'], slot, value)
@@ -443,6 +449,9 @@ module Tk::TreeCtrl::ConfigMethod
   def debug_cget(option)
     itemcget('debug', option)
   end
+  def debug_cget_strict(option)
+    itemcget_strict('debug', option)
+  end
   def debug_configure(slot, value=None)
     itemconfigure('debug', slot, value)
   end
@@ -455,6 +464,9 @@ module Tk::TreeCtrl::ConfigMethod
 
   def dragimage_cget(option)
     itemcget('dragimage', option)
+  end
+  def dragimage_cget_strict(option)
+    itemcget_strict('dragimage', option)
   end
   def dragimage_configure(slot, value=None)
     itemconfigure('dragimage', slot, value)
@@ -469,6 +481,9 @@ module Tk::TreeCtrl::ConfigMethod
   def element_cget(tagOrId, option)
     itemcget(['element', tagOrId], option)
   end
+  def element_cget_strict(tagOrId, option)
+    itemcget_strict(['element', tagOrId], option)
+  end
   def element_configure(tagOrId, slot, value=None)
     itemconfigure(['element', tagOrId], slot, value)
   end
@@ -481,6 +496,9 @@ module Tk::TreeCtrl::ConfigMethod
 
   def item_cget(tagOrId, option)
     itemcget(['item', tagOrId], option)
+  end
+  def item_cget_strict(tagOrId, option)
+    itemcget_strict(['item', tagOrId], option)
   end
   def item_configure(tagOrId, slot, value=None)
     itemconfigure(['item', tagOrId], slot, value)
@@ -495,6 +513,9 @@ module Tk::TreeCtrl::ConfigMethod
   def item_element_cget(item, column, elem, option)
     itemcget([['item', 'element'], [item, column, elem]], option)
   end
+  def item_element_cget_strict(item, column, elem, option)
+    itemcget_strict([['item', 'element'], [item, column, elem]], option)
+  end
   def item_element_configure(item, column, elem, slot, value=None)
     itemconfigure([['item', 'element'], [item, column, elem]], slot, value)
   end
@@ -507,6 +528,9 @@ module Tk::TreeCtrl::ConfigMethod
 
   def marquee_cget(option)
     itemcget('marquee', option)
+  end
+  def marquee_cget_strict(option)
+    itemcget_strict('marquee', option)
   end
   def marquee_configure(slot, value=None)
     itemconfigure('marquee', slot, value)
@@ -522,6 +546,17 @@ module Tk::TreeCtrl::ConfigMethod
     pattern = "<#{pattern}>"
     # "notify" doesn't have cget subcommand.
     current_itemconfiginfo(['notify', [win, pattern]])[option.to_s]
+  end
+  def notify_cget_strict(win, pattern, option)
+    pattern = "<#{pattern}>"
+    # "notify" doesn't have cget subcommand.
+    info = current_itemconfiginfo(['notify', [win, pattern]])
+    option = option.to_s
+    unless info.has_key?(option)
+      fail RuntimeError, "unknown option \"#{option}\""
+    else
+      info[option]
+    end
   end
   def notify_configure(win, pattern, slot, value=None)
     pattern = "<#{pattern}>"
@@ -539,6 +574,9 @@ module Tk::TreeCtrl::ConfigMethod
   def style_cget(tagOrId, option)
     itemcget(['style', tagOrId], option)
   end
+  def style_cget_strict(tagOrId, option)
+    itemcget_strict(['style', tagOrId], option)
+  end
   def style_configure(tagOrId, slot, value=None)
     itemconfigure(['style', tagOrId], slot, value)
   end
@@ -549,8 +587,8 @@ module Tk::TreeCtrl::ConfigMethod
     current_itemconfiginfo(['style', tagOrId], slot)
   end
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
 ##############################################
@@ -1706,6 +1744,9 @@ class Tk::TreeCtrl::Column < TkObject
   def cget(opt)
     @tree.column_cget(@tree.column_index(@id), opt)
   end
+  def cget_strict(opt)
+    @tree.column_cget_strict(@tree.column_index(@id), opt)
+  end
 
   def configure(*args)
     @tree.column_configure(@tree.column_index(@id), *args)
@@ -1805,6 +1846,9 @@ class Tk::TreeCtrl::Element < TkObject
 
   def cget(opt)
     @tree.element_cget(@id, opt)
+  end
+  def cget_strict(opt)
+    @tree.element_cget_strict(@id, opt)
   end
 
   def configure(*args)
@@ -1937,6 +1981,9 @@ class Tk::TreeCtrl::Item < TkObject
   def cget(opt)
     @tree.item_cget(@id, opt)
   end
+  def cget_strict(opt)
+    @tree.item_cget_strict(@id, opt)
+  end
 
   def configure(*args)
     @tree.item_configure(@id, *args)
@@ -1969,6 +2016,9 @@ class Tk::TreeCtrl::Item < TkObject
 
   def element_cget(opt)
     @tree.item_element_cget(@id, opt)
+  end
+  def element_cget_strict(opt)
+    @tree.item_element_cget_strict(@id, opt)
   end
 
   def element_configure(*args)
@@ -2220,6 +2270,9 @@ class Tk::TreeCtrl::Style < TkObject
 
   def cget(opt)
     @tree.style_cget(@id, opt)
+  end
+  def cget_strict(opt)
+    @tree.style_cget_strict(@id, opt)
   end
 
   def configure(*args)

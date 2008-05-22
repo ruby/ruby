@@ -16,7 +16,9 @@ $paned2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-TkLabel.new($paned2_demo, 
+base_frame = TkFrame.new($paned2_demo).pack(:fill=>:both, :expand=>true)
+
+TkLabel.new(base_frame, 
             :font=>$font, :wraplength=>'4i', :justify=>:left, 
             :text=><<EOL).pack(:side=>:top)
 The sash between the two scrolled windows below can be used to divide the area between them.  Use the left mouse button to resize without redrawing by just moving the sash, and use the middle mouse button to resize opaquely (always redrawing the windows in each position.)
@@ -24,7 +26,7 @@ If your Tk library linked to Ruby doesn't include a 'panedwindow', this demo doe
 EOL
 
 # The bottom buttons
-TkFrame.new($paned2_demo){|f|
+TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'Dismiss', :width=>15, :command=>proc{
@@ -61,7 +63,7 @@ paneList.value = [         # ruby's array --> tcl's list
 ]
 
 # Create the pane itself
-TkPanedwindow.new($paned2_demo, :orient=>:vertical){|f|
+TkPanedwindow.new(base_frame, :orient=>:vertical){|f|
   pack(:side=>:top, :expand=>true, :fill=>:both, :pady=>2, :padx=>'2m')
 
   add(TkFrame.new(f){|paned2_top|

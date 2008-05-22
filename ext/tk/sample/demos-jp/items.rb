@@ -16,8 +16,10 @@ $items_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($items_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($items_demo) {
+TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
@@ -25,7 +27,7 @@ TkLabel.new($items_demo) {
 }.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($items_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -44,7 +46,7 @@ TkFrame.new($items_demo) {|frame|
 
 # frame 生成
 cvs = nil
-TkFrame.new($items_demo) {|cf|
+TkFrame.new(base_frame) {|cf|
   # canvas 生成
   cvs = TkCanvas.new(cf) {|c|
     focus

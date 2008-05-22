@@ -19,8 +19,10 @@ $radio3_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($radio3_demo).pack(:fill=>:both, :expand=>true)
+
 # label 
-msg = TkLabel.new($radio3_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
@@ -34,14 +36,14 @@ color = TkVariable.new
 align = TkVariable.new
 
 # frame 
-TkFrame.new($radio3_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x', 
          TkButton.new(frame, :text=>'See Variables', 
                       :image=>$image['view'], :compound=>:left, 
                       :command=>proc{
-                        showVars($radio3_demo, ['size', size], 
+                        showVars(base_frame, ['size', size], 
                                  ['color', color], ['compound', align])
                       }), 
          TkButton.new(frame, :text=>'See Code', 
@@ -61,17 +63,17 @@ TkFrame.new($radio3_demo) {|frame|
 }
 
 # frame 
-f_left  = TkLabelFrame.new($radio3_demo, 'text'=>'Point Size', 
+f_left  = TkLabelFrame.new(base_frame, 'text'=>'Point Size', 
                            'pady'=>2, 'padx'=>2)
-f_mid   = TkLabelFrame.new($radio3_demo, 'text'=>'Color', 
+f_mid   = TkLabelFrame.new(base_frame, 'text'=>'Color', 
                            'pady'=>2, 'padx'=>2)
-f_right = TkLabelFrame.new($radio3_demo, 'text'=>'Alignment', 
+f_right = TkLabelFrame.new(base_frame, 'text'=>'Alignment', 
                            'pady'=>2, 'padx'=>2)
 f_left .grid('column'=>0, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_mid  .grid('column'=>1, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c', 'rowspan'=>2)
 f_right.grid('column'=>2, 'row'=>1, 'pady'=>'.5c', 'padx'=>'.5c')
 
-TkButton.new($radio3_demo, 'text'=>'Tristate', 
+TkButton.new(base_frame, 'text'=>'Tristate', 
              'command'=>proc{size.value = 'multi'; color.value = 'multi'}){
   grid('column'=>2, 'row'=>2, 'pady'=>'.5c', 'padx'=>'.5c')
 }
@@ -99,7 +101,8 @@ TkButton.new($radio3_demo, 'text'=>'Tristate',
   }.pack('side'=>'top', 'pady'=>2, 'fill'=>'x')
 }
 
-label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
+# label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
+label = Tk::Label.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
                     'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))

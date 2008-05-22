@@ -90,7 +90,7 @@ class Tk::Tcllib::Swaplist_Dialog
   end
   alias selected value
 
-  def cget(slot)
+  def cget_strict(slot)
     slot = slot.to_s
     if slot == 'complete_list'
       @complete_list
@@ -99,6 +99,9 @@ class Tk::Tcllib::Swaplist_Dialog
     else
       @keys[slot]
     end
+  end
+  def cget(slot)
+    cget_strict(slot)
   end
 
   def configure(slot, value=None)

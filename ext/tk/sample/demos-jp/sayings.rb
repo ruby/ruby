@@ -16,8 +16,10 @@ $sayings_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($sayings_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($sayings_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($sayings_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($sayings_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -46,7 +48,7 @@ TkFrame.new($sayings_demo) {|frame|
 
 # frame 生成
 sayings_lbox = nil
-TkFrame.new($sayings_demo, 'borderwidth'=>10) {|w|
+TkFrame.new(base_frame, 'borderwidth'=>10) {|w|
   sv = TkScrollbar.new(w)
   sh = TkScrollbar.new(w, 'orient'=>'horizontal')
   sayings_lbox = TkListbox.new(w) {

@@ -7,7 +7,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2008-05-14"
+#define TKUTIL_RELEASE_DATE "2008-05-23"
 
 #include "ruby.h"
 
@@ -1100,7 +1100,10 @@ subst_free(ptr)
 
     if (ptr) {
       for(i = 0; i < CBSUBST_TBL_MAX; i++) {
-	if (ptr->key[i] != (unsigned char *)NULL) free(ptr->key[i]);
+	if (ptr->key[i] != (unsigned char *)NULL) {
+	  free(ptr->key[i]);
+	  ptr->key[i] = (unsigned char *)NULL;
+	}
       }
       free(ptr);
     }
@@ -1445,6 +1448,7 @@ cbsubst_get_all_subst_keys(self)
     ret = rb_ary_new3(2, rb_str_new2(keys_buf), rb_str_new2((const char*)buf));
 
     free(buf);
+    free(keys_buf);
 
     return ret;
 }

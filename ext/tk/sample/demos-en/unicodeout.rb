@@ -16,7 +16,9 @@ $unicodeout_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-TkLabel.new($unicodeout_demo, 
+base_frame = TkFrame.new($unicodeout_demo).pack(:fill=>:both, :expand=>true)
+
+TkLabel.new(base_frame, 
             :font=>$font, :wraplength=>'5.4i', :justify=>:left, 
             :text=><<EOL).pack(:side=>:top)
 This is a sample of Tk's support for languages that use non-Western \
@@ -36,7 +38,7 @@ The strings are converted to the encoded string objects \
 And the Tk::UTF8_String objects are passed to the label widgets. 
 EOL
 
-TkFrame.new($unicodeout_demo){|f|
+TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'Dismiss', :width=>15, :command=>proc{
@@ -49,7 +51,7 @@ TkFrame.new($unicodeout_demo){|f|
                }).pack(:side=>:left, :expand=>true)
 }
 
-wait_msg = TkLabel.new($unicodeout_demo, 
+wait_msg = TkLabel.new(base_frame, 
                        :text=>"Please wait while loading fonts...", 
                        :font=>"Helvetica 12 italic").pack
 
@@ -63,8 +65,8 @@ class Unicodeout_SampleFrame < TkFrame
   # @@font = 'Newspaper 12'
   # @@font = '{New century schoolbook} 12'
 
-  def initialize()
-    super($unicodeout_demo)
+  def initialize(base)
+    super(base)
     grid_columnconfig(1, :weight=>1)
   end
 
@@ -79,7 +81,7 @@ class Unicodeout_SampleFrame < TkFrame
     l.grid_config(:padx, '1m')
   end
 end
-f = Unicodeout_SampleFrame.new
+f = Unicodeout_SampleFrame.new(base_frame)
 f.pack(:expand=>true, :fill=>:both, :padx=>'2m', :pady=>'1m')
 
 # Processing when some characters are missing might take a while, so make

@@ -19,14 +19,16 @@ $plot_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($plot_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($plot_demo, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left', 
             'text'=>"This window displays a canvas widget containing a simple 2-dimensional plot.  You can doctor the data by dragging any of the points with mouse button 1."){
   pack('side'=>'top')
 }
 
 # frame
-$plot_buttons = TkFrame.new($plot_demo) {|frame|
+$plot_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -47,7 +49,7 @@ $plot_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 plotFont = '-*-Helvetica-Medium-R-Normal--*-180-*-*-*-*-*-*'
 
 # canvas 
-$plot_canvas = TkCanvas.new($plot_demo,'relief'=>'raised','width'=>450,'height'=>300)
+$plot_canvas = TkCanvas.new(base_frame,'relief'=>'raised','width'=>450,'height'=>300)
 $plot_canvas.pack('side'=>'top', 'fill'=>'x')
 
 # plot 

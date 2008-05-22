@@ -16,8 +16,10 @@ $form_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($form_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($form_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($form_demo) {
 msg.pack('side'=>'top', 'fill'=>'x')
 
 # frame 生成
-TkFrame.new($form_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -46,7 +48,7 @@ TkFrame.new($form_demo) {|frame|
 # entry 生成
 form_data = []
 (1..5).each{|i|
-  f = TkFrame.new($form_demo, 'bd'=>2)
+  f = TkFrame.new(base_frame, 'bd'=>2)
   e = TkEntry.new(f, 'relief'=>'sunken', 'width'=>40)
   l = TkLabel.new(f)
   e.pack('side'=>'right')

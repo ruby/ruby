@@ -1298,7 +1298,7 @@ module TkCore
                              }) << ' %W')
 
   INTERP.add_tk_procs(TclTkLib::FINALIZE_PROC_NAME, '', 
-                      "bind all <#{WIDGET_DESTROY_HOOK}> {}")
+                      "catch { bind all <#{WIDGET_DESTROY_HOOK}> {} }")
 
   INTERP.add_tk_procs('rb_out', 'ns args', <<-'EOL')
     if [regexp {^::} $ns] {
@@ -3245,11 +3245,13 @@ module TkTreatFont
               next
             else
               fnt = hash_kv(fnt) if fnt.kind_of?(Hash)
-              begin
+              unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
                 tk_call(*(__config_cmd << "-#{optkey}" << fnt))
-              rescue => e
-                unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
-                  fail e
+              else
+                begin
+                  tk_call(*(__config_cmd << "-#{optkey}" << fnt))
+                rescue
+                  # ignore
                 end
               end
             end
@@ -3305,11 +3307,13 @@ module TkTreatFont
         fobj = fontobj          # create a new TkFont object
       else
         ltn = hash_kv(ltn) if ltn.kind_of?(Hash)
-        begin
+        unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
           tk_call(*(__config_cmd << "-#{optkey}" << ltn))
-        rescue => e
-          unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
-            fail e
+        else
+          begin
+            tk_call(*(__config_cmd << "-#{optkey}" << ltn))
+          rescue => e
+            # ignore
           end
         end
         next
@@ -3363,11 +3367,13 @@ module TkTreatFont
         fobj = fontobj          # create a new TkFont object
       else
         knj = hash_kv(knj) if knj.kind_of?(Hash)
-        begin
+        unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
           tk_call(*(__config_cmd << "-#{optkey}" << knj))
-        rescue => e
-          unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
-            fail e
+        else
+          begin
+            tk_call(*(__config_cmd << "-#{optkey}" << knj))
+          rescue => e
+            # ignore
           end
         end
         next
@@ -3499,6 +3505,11 @@ module TkConfigMethod
   end
   private :__configinfo_struct
 
+  def __optkey_aliases
+    {}
+  end
+  private :__optkey_aliases
+
   def __numval_optkeys
     []
   end
@@ -3613,6 +3624,11 @@ module TkConfigMethod
       fail ArgumentError, "Invalid option `#{orig_slot.inspect}'"
     end
 
+    alias_name, real_name = __optkey_aliases.find{|k, v| k.to_s == slot}
+    if real_name
+      slot = real_name.to_s
+    end
+
     if ( method = _symbolkey2str(__val2ruby_optkeys())[slot] )
       optval = tk_call_without_enc(*(__cget_cmd << "-#{slot}"))
       begin
@@ -3687,13 +3703,34 @@ module TkConfigMethod
     unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
       __cget_core(slot)
     else
-      __cget_core(slot) rescue nil
+      begin
+        __cget_core(slot)
+      rescue => e
+        if current_configinfo.has_key?(slot.to_s)
+          # error on known option
+          fail e
+        else
+          # unknown option
+          nil
+        end
+      end
     end
+  end
+  def cget_strict(slot)
+    # never use TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+    __cget_core(slot)
   end
 
   def __configure_core(slot, value=None)
     if slot.kind_of? Hash
       slot = _symbolkey2str(slot)
+
+      __optkey_aliases.each{|alias_name, real_name|
+        alias_name = alias_name.to_s
+        if slot.has_key?(alias_name)
+          slot[real_name.to_s] = slot.delete(alias_name)
+        end
+      }
 
       __methodcall_optkeys.each{|key, method|
         value = slot.delete(key.to_s)
@@ -3729,6 +3766,11 @@ module TkConfigMethod
       slot = slot.to_s
       if slot.length == 0
         fail ArgumentError, "Invalid option `#{orig_slot.inspect}'"
+      end
+
+      alias_name, real_name = __optkey_aliases.find{|k, v| k.to_s == slot}
+      if real_name
+        slot = real_name.to_s
       end
 
       if ( conf = __keyonly_optkeys.find{|k, v| k.to_s == slot} )
@@ -3782,7 +3824,17 @@ module TkConfigMethod
           __configure_core(slot) unless slot.empty?
         end
       else
-        __configure_core(slot, value) rescue nil
+        begin
+          __configure_core(slot, value)
+        rescue => e
+          if current_configinfo.has_key?(slot.to_s)
+            # error on known option
+            fail e
+          else
+            # unknown option
+            nil
+          end
+        end
       end
     end
     self
@@ -3818,6 +3870,12 @@ module TkConfigMethod
       else
         if slot
           slot = slot.to_s
+
+          alias_name, real_name = __optkey_aliases.find{|k, v| k.to_s == slot}
+          if real_name
+            slot = real_name.to_s
+          end
+
           case slot
           when /^(#{__val2ruby_optkeys().keys.join('|')})$/
             method = _symbolkey2str(__val2ruby_optkeys())[slot]
@@ -4191,6 +4249,12 @@ module TkConfigMethod
       else
         if slot
           slot = slot.to_s
+
+          alias_name, real_name = __optkey_aliases.find{|k, v| k.to_s == slot}
+          if real_name
+            slot = real_name.to_s
+          end
+
           case slot
           when /^(#{__val2ruby_optkeys().keys.join('|')})$/
             method = _symbolkey2str(__val2ruby_optkeys())[slot]
@@ -4786,6 +4850,13 @@ class TkWindow<TkObject
           fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
         }
 
+        __optkey_aliases.each{|alias_name, real_name|
+          alias_name = alias_name.to_s
+          if keys.has_key?(alias_name)
+            keys[real_name.to_s] = keys.delete(alias_name)
+          end
+        }
+
         __methodcall_optkeys.each{|key|
           key = key.to_s
           methodkeys[key] = keys.delete(key) if keys.key?(key)
@@ -4823,18 +4894,24 @@ class TkWindow<TkObject
       else
         begin
           tk_call_without_enc(cmd, @path, *hash_kv(keys, true))
-        rescue
+        rescue => e
           tk_call_without_enc(cmd, @path)
           keys = __check_available_configure_options(keys)
           unless keys.empty?
             begin
-              tk_call_without_enc('destroy', @path)
-            rescue
-              # cannot destroy
+              # try to configure
               configure(keys)
-            else
-              # re-create widget
-              tk_call_without_enc(cmd, @path, *hash_kv(keys, true))
+            rescue
+              # fail => includes options adaptable when creattion only?
+              begin
+                tk_call_without_enc('destroy', @path)
+              rescue
+                # cannot rescue options error
+                fail e 
+              else
+                # re-create widget
+                tk_call_without_enc(cmd, @path, *hash_kv(keys, true))
+              end
             end
           end
         end
@@ -5389,7 +5466,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-05-16'.freeze
+  RELEASE_DATE = '2008-05-23'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

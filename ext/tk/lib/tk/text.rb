@@ -32,6 +32,9 @@ module TkTextTagConfig
   def tag_cget(tagOrId, option)
     itemcget(['tag', tagOrId], option)
   end
+  def tag_cget_strict(tagOrId, option)
+    itemcget_strict(['tag', tagOrId], option)
+  end
   def tag_configure(tagOrId, slot, value=None)
     itemconfigure(['tag', tagOrId], slot, value)
   end
@@ -45,6 +48,9 @@ module TkTextTagConfig
   def window_cget(tagOrId, option)
     itemcget(['window', tagOrId], option)
   end
+  def window_cget_strict(tagOrId, option)
+    itemcget_strict(['window', tagOrId], option)
+  end
   def window_configure(tagOrId, slot, value=None)
     itemconfigure(['window', tagOrId], slot, value)
   end
@@ -55,8 +61,8 @@ module TkTextTagConfig
     current_itemconfiginfo(['window', tagOrId], slot)
   end
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
 class Tk::Text<TkTextWin
@@ -403,7 +409,7 @@ class Tk::Text<TkTextWin
   end
   alias previous_mark mark_previous
 
-  def image_cget(index, slot)
+  def image_cget_strict(index, slot)
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       _fromUTF8(tk_send_without_enc('image', 'cget', 
@@ -412,6 +418,28 @@ class Tk::Text<TkTextWin
       tk_tcl2ruby(_fromUTF8(tk_send_without_enc('image', 'cget', 
                                                 _get_eval_enc_str(index), 
                                                 "-#{slot}")))
+    end
+  end
+
+  def image_cget(index, slot)
+    unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      image_cget_strict(index, slot)
+    else
+      begin
+        image_cget_strict(index, slot)
+      rescue => e
+        begin
+          if current_image_configinfo(index).has_key?(slot.to_s)
+            # not tag error & option is known -> error on known option
+            fail e
+          else
+            # not tag error & option is unknown
+            nil
+          end
+        rescue
+          fail e  # tag error
+        end
+      end
     end
   end
 

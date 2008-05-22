@@ -47,12 +47,13 @@ class Tk::Iwidgets::Messagebox
   private :__item_boolval_optkeys
 
   alias typecget itemcget
+  alias typecget_strict itemcget_strict
   alias typeconfigure itemconfigure
   alias typeconfiginfo itemconfiginfo
   alias current_typeconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
 

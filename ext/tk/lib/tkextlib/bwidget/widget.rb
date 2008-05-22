@@ -29,6 +29,13 @@ module Tk::BWidget::Widget
     ['Widget::configure']
   end
 
+  def self.cget_strict(slot)
+    slot = slot.to_s
+    info = {}
+    self.current_configinfo.each{|k,v| info[k.to_s] = v if k.to_s == slot}
+    fail RuntimeError, "unknown option \"-#{slot}\""  if info.empty?
+    info.values[0]
+  end
   def self.cget(slot)
     self.current_configinfo(slot).values[0]
   end
@@ -105,8 +112,11 @@ module Tk::BWidget::Widget
     tk_call('Widget::setoption', win, option, value)
   end
 
-  def self.sub_cget(win, subwidget)
+  def self.sub_cget_strict(win, subwidget)
     tk_call('Widget::subcget', win, subwidget)
+  end
+  def self.sub_cget(win, subwidget)
+    self.sub_cget_strict(win, subwidget)
   end
 
   def self.sync_options(klass, subclass, subpath, options)
