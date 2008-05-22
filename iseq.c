@@ -388,6 +388,7 @@ iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt)
 	st_insert(type_map, ID2SYM(rb_intern("rescue")), ISEQ_TYPE_RESCUE);
 	st_insert(type_map, ID2SYM(rb_intern("ensure")), ISEQ_TYPE_ENSURE);
 	st_insert(type_map, ID2SYM(rb_intern("eval")), ISEQ_TYPE_EVAL);
+	st_insert(type_map, ID2SYM(rb_intern("defined_guard")), ISEQ_TYPE_DEFINED_GUARD);
     }
 
     if (st_lookup(type_map, type, &iseq_type) == 0) {
@@ -1000,6 +1001,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
     DECL_SYMBOL(rescue);
     DECL_SYMBOL(ensure);
     DECL_SYMBOL(eval);
+    DECL_SYMBOL(defined_guard);
 
     if (sym_top == 0) {
 	int i;
@@ -1013,6 +1015,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
 	INIT_SYMBOL(rescue);
 	INIT_SYMBOL(ensure);
 	INIT_SYMBOL(eval);
+	INIT_SYMBOL(defined_guard);
     }
 
     /* type */
@@ -1024,6 +1027,7 @@ iseq_data_to_ary(rb_iseq_t *iseq)
       case ISEQ_TYPE_RESCUE: type = sym_rescue; break;
       case ISEQ_TYPE_ENSURE: type = sym_ensure; break;
       case ISEQ_TYPE_EVAL:   type = sym_eval;   break;
+      case ISEQ_TYPE_DEFINED_GUARD: type = sym_defined_guard; break;
       default: rb_bug("unsupported iseq type");
     };
 

@@ -1,3 +1,8 @@
+Thu May 22 20:14:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* iseq.c (iseq_load, iseq_data_to_ary): support
+	  ISEQ_TYPE_DEFINED_GUARD.
+
 Thu May 22 19:01:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_get_ruby_level_cfp): moved from eval_intern.h.
