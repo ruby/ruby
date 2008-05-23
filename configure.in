@@ -1635,6 +1635,11 @@ case "$build_os" in
 esac
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
+test -z "$CFLAGS" || CFLAGS="$CFLAGS "; CFLAGS="$CFLAGS"'${cflags}'
+test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
+AC_SUBST(cppflags, [])dnl
+AC_SUBST(optflags)dnl
+AC_SUBST(debugflags)dnl
 AC_SUBST(XCFLAGS)dnl
 AC_SUBST(XLDFLAGS)dnl
 AC_SUBST(LIBRUBY_LDSHARED)

@@ -1,3 +1,10 @@
+Fri May 23 09:52:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (MINIRUBY), common.mk (RUBYOPT): add purelib.rb.
+	  [ruby-core:16642]
+
+	* ext/extmk.rb: load purelib.rb only when not cross compiling.
+
 Fri May 23 04:22:19 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c, ext/tk/tkutil/tkutil.c: fix memory leak.
