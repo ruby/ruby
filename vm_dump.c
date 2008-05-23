@@ -148,11 +148,11 @@ vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 
     fprintf(stderr, "-- stack frame ------------\n");
     for (p = st = th->stack; p < sp; p++) {
-	fprintf(stderr, "%04ld (%p): %08lx", p - st, p, *p);
+	fprintf(stderr, "%04ld (%p): %08"PRIxVALUE, (long)(p - st), p, *p);
 
 	t = (VALUE *)*p;
 	if (th->stack <= t && t < sp) {
-	    fprintf(stderr, " (= %ld)", (VALUE *)GC_GUARDED_PTR_REF(t) - th->stack);
+	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF(t) - th->stack));
 	}
 
 	if (p == lfp)
