@@ -297,6 +297,9 @@ class Tk::BWidget::ListBox::Item
   def cget(key)
     @listbox.itemcget(@id, key)
   end
+  def cget_strict(key)
+    @listbox.itemcget_strict(@id, key)
+  end
 
   def configure(key, val=None)
     @listbox.itemconfigure(@id, key, val)

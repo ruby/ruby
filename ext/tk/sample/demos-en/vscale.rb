@@ -15,7 +15,9 @@ $vscale_demo = TkToplevel.new {|w|
 }
 positionWindow($vscale_demo)
 
-msg = TkLabel.new($vscale_demo) {
+base_frame = TkFrame.new($vscale_demo).pack(:fill=>:both, :expand=>true)
+
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '3.5i'
   justify 'left'
@@ -23,7 +25,7 @@ msg = TkLabel.new($vscale_demo) {
 }
 msg.pack('side'=>'top', 'padx'=>'.5c')
 
-TkFrame.new($vscale_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc {
@@ -39,7 +41,17 @@ TkFrame.new($vscale_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-TkFrame.new($vscale_demo) {|frame|
+def setHeight(w, height)
+  height = height + 21
+  y2 = height - 30
+  if y2 < 21
+    y2 = 21
+  end
+  w.coords 'poly',15,20,35,20,35,y2,45,y2,25,height,5,y2,15,y2,15,20
+  w.coords 'line',15,20,35,20,35,y2,45,y2,25,height,5,y2,15,y2,15,20
+end
+
+TkFrame.new(base_frame) {|frame|
   borderwidth 10
   canvas = TkCanvas.new(frame) {|c|
     width 50
@@ -65,13 +77,3 @@ TkFrame.new($vscale_demo) {|frame|
   }.pack('side'=>'left', 'anchor'=>'ne')
   scale.set 75
 }.pack
-
-def setHeight(w, height)
-  height = height + 21
-  y2 = height - 30
-  if y2 < 21
-    y2 = 21
-  end
-  w.coords 'poly',15,20,35,20,35,y2,45,y2,25,height,5,y2,15,y2,15,20
-  w.coords 'line',15,20,35,20,35,y2,45,y2,25,height,5,y2,15,y2,15,20
-end

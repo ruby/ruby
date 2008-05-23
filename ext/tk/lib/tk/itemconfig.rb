@@ -8,6 +8,11 @@ require 'tk/itemfont.rb'
 module TkItemConfigOptkeys
   include TkUtil
 
+  def __item_optkey_aliases(id)
+    {}
+  end
+  private :__item_optkey_aliases
+
   def __item_numval_optkeys(id)
     []
   end
@@ -165,6 +170,11 @@ module TkItemConfigMethod
       fail ArgumentError, "Invalid option `#{orig_opt.inspect}'"
     end
 
+    alias_name, real_name = __item_optkey_aliases(tagid(tagOrId)).find{|k, v| k.to_s == option}
+    if real_name
+      option = real_name.to_s
+    end
+
     if ( method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[option] )
       optval = tk_call_without_enc(*(__item_cget_cmd(tagid(tagOrId)) << "-#{option}"))
       begin
@@ -242,19 +252,34 @@ module TkItemConfigMethod
         __itemcget_core(tagOrId, option)
       rescue => e
         begin
-          __itemcget_core(tagOrId)
-          # not tag error -> option is unknown
-          nil
+          if __current_itemconfiginfo(tagOrId).has_key?(option.to_s)
+            # not tag error & option is known -> error on known option
+            fail e
+          else
+            # not tag error & option is unknown
+            nil
+          end
         rescue
           fail e  # tag error
         end
       end
     end
   end
+  def itemcget_strict(tagOrId, option)
+    # never use TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+    __itemcget_core(tagOrId, option)
+  end
 
   def __itemconfigure_core(tagOrId, slot, value=None)
     if slot.kind_of? Hash
       slot = _symbolkey2str(slot)
+
+      __item_optkey_aliases(tagid(tagOrId)).each{|alias_name, real_name|
+        alias_name = alias_name.to_s
+        if slot.has_key?(alias_name)
+          slot[real_name.to_s] = slot.delete(alias_name)
+        end
+      }
 
       __item_methodcall_optkeys(tagid(tagOrId)).each{|key, method|
         value = slot.delete(key.to_s)
@@ -290,6 +315,11 @@ module TkItemConfigMethod
       slot = slot.to_s
       if slot.length == 0
         fail ArgumentError, "Invalid option `#{orig_slot.inspect}'"
+      end
+
+      alias_name, real_name = __item_optkey_aliases(tagid(tagOrId)).find{|k, v| k.to_s == slot}
+      if real_name
+        slot = real_name.to_s
       end
 
       if ( conf = __item_keyonly_optkeys(tagid(tagOrId)).find{|k, v| k.to_s == slot } )
@@ -350,8 +380,13 @@ module TkItemConfigMethod
           __itemconfigure_core(tagOrId, slot, value)
         rescue => e
           begin
-            __itemconfiginfo_core(tagOrId)
-            # not tag error -> option is unknown
+            if __current_itemconfiginfo(tagOrId).has_key?(slot.to_s)
+              # not tag error & option is known -> error on known option
+              fail e
+            else
+              # not tag error & option is unknown
+              nil
+            end
           rescue
             fail e  # tag error
           end
@@ -386,6 +421,12 @@ module TkItemConfigMethod
       else
         if slot
           slot = slot.to_s
+
+          alias_name, real_name = __item_optkey_aliases(tagid(tagOrId)).find{|k, v| k.to_s == slot}
+          if real_name
+            slot = real_name.to_s
+          end
+
           case slot
           when /^(#{__item_val2ruby_optkeys(tagid(tagOrId)).keys.join('|')})$/
             method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[slot]
@@ -757,6 +798,12 @@ module TkItemConfigMethod
       else
         if slot
           slot = slot.to_s
+
+          alias_name, real_name = __item_optkey_aliases(tagid(tagOrId)).find{|k, v| k.to_s == slot}
+          if real_name
+            slot = real_name.to_s
+          end
+
           case slot
           when /^(#{__item_val2ruby_optkeys(tagid(tagOrId)).keys.join('|')})$/
             method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[slot]

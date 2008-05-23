@@ -83,6 +83,20 @@ class TkNamespace < TkObject
         super(slot)
       end
     end
+    def cget_strict(slot)
+      if slot == :namespace || slot == 'namespace'
+        ns = super(slot)
+        Tk_Namespace_ID_TBL.mutex.synchronize{
+          if TkNamespace::Tk_Namespace_ID_TBL.key?(ns)
+            TkNamespace::Tk_Namespace_ID_TBL[ns]
+          else
+            ns
+          end
+        }
+      else
+        super(slot)
+      end
+    end
 
     def configinfo(slot = nil)
       if slot

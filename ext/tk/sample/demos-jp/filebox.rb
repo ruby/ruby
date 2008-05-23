@@ -16,12 +16,14 @@ $filebox_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($filebox_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($filebox_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
             'text'=>"エントリにファイル名を直接入力するか、\"Browse\" ボタンを押してファイル選択ダイアログからファイル名を選んで下さい。").pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($filebox_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -40,7 +42,7 @@ TkFrame.new($filebox_demo) {|frame|
 
 # frame 生成
 ['開く', '保存'].each{|type|
-  TkFrame.new($filebox_demo) {|f|
+  TkFrame.new(base_frame) {|f|
     TkLabel.new(f, 'text'=>"ファイルを#{type}: ", 'anchor'=>'e')\
     .pack('side'=>'left')
 
@@ -48,7 +50,7 @@ TkFrame.new($filebox_demo) {|frame|
       pack('side'=>'left', 'expand'=>'yes', 'fill'=>'x')
 
       TkButton.new(f, 'text'=>'Browse ...', 
-                   'command'=>proc{fileDialog $filebox_demo,e,type})\
+                   'command'=>proc{fileDialog base_frame,e,type})\
       .pack('side'=>'left')
     }
 
@@ -58,7 +60,7 @@ TkFrame.new($filebox_demo) {|frame|
 
 $tk_strictMotif = TkVarAccess.new('tk_strictMotif')
 if ($tk_platform['platform'] == 'unix')
-  TkCheckButton.new($filebox_demo, 
+  TkCheckButton.new(base_frame, 
                     'text'=>'Motifスタイルのダイアログを用いる', 
                     'variable'=>$tk_strictMotif, 
                     'onvalue'=>1, 'offvalue'=>0 ).pack('anchor'=>'c')
@@ -91,7 +93,10 @@ def fileDialog(w,ent,operation)
   if file != ""
     ent.delete 0, 'end'
     ent.insert 0, file
-    ent.xview 'end'
+    # ent.xview 'end'
+    Tk.update_idletasks # need this for Tk::Tile::Entry
+                        # (to find right position of 'xview').
+    ent.xview(ent.index('end'))
   end
 end
 

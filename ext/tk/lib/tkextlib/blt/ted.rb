@@ -30,11 +30,14 @@ module Tk::BLT
       end
       private :__item_config_cmd
 
-      private :itemcget, :itemconfigure
-      private :itemconfiginfo, :current_itemconfiginfo
+      private :itemcget, :itemcget_strict
+      private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
       def cget(master, option)
         itemcget(master, option)
+      end
+      def cget_strict(master, option)
+        itemcget_strict(master, option)
       end
       def configure(master, slot, value=None)
         itemconfigure(master, slot, value)

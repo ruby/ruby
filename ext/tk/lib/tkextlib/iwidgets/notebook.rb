@@ -42,12 +42,13 @@ class Tk::Iwidgets::Notebook
   end
 
   alias pagecget itemcget
+  alias pagecget_strict itemcget_strict
   alias pageconfigure itemconfigure
   alias pageconfiginfo itemconfiginfo
   alias current_pageconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
 

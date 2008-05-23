@@ -70,6 +70,9 @@ module Tk::Tcllib::TablelistItemConfig
   def cell_cget(tagOrId, option)
     itemcget(['cell', tagOrId], option)
   end
+  def cell_cget_strict(tagOrId, option)
+    itemcget_strict(['cell', tagOrId], option)
+  end
   def cell_configure(tagOrId, slot, value=None)
     itemconfigure(['cell', tagOrId], slot, value)
   end
@@ -80,12 +83,16 @@ module Tk::Tcllib::TablelistItemConfig
     current_itemconfiginfo(['cell', tagOrId], slot)
   end
   alias cellcget cell_cget
+  alias cellcget_strict cell_cget_strict
   alias cellconfigure cell_configure
   alias cellconfiginfo cell_configinfo
   alias current_cellconfiginfo current_cell_configinfo
 
   def column_cget(tagOrId, option)
     itemcget(['column', tagOrId], option)
+  end
+  def column_cget_strict(tagOrId, option)
+    itemcget_strict(['column', tagOrId], option)
   end
   def column_configure(tagOrId, slot, value=None)
     itemconfigure(['column', tagOrId], slot, value)
@@ -97,12 +104,16 @@ module Tk::Tcllib::TablelistItemConfig
     current_itemconfiginfo(['column', tagOrId], slot)
   end
   alias columncget column_cget
+  alias columncget_strict column_cget_strict
   alias columnconfigure column_configure
   alias columnconfiginfo column_configinfo
   alias current_columnconfiginfo current_column_configinfo
 
   def row_cget(tagOrId, option)
     itemcget(['row', tagOrId], option)
+  end
+  def row_cget_strict(tagOrId, option)
+    itemcget_strict(['row', tagOrId], option)
   end
   def row_configure(tagOrId, slot, value=None)
     itemconfigure(['row', tagOrId], slot, value)
@@ -114,12 +125,13 @@ module Tk::Tcllib::TablelistItemConfig
     current_itemconfiginfo(['row', tagOrId], slot)
   end
   alias rowcget row_cget
+  alias rowcget_strict row_cget_strict
   alias rowconfigure row_configure
   alias rowconfiginfo row_configinfo
   alias current_rowconfiginfo current_row_configinfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
 class Tk::Tcllib::Tablelist

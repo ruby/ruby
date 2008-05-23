@@ -62,12 +62,13 @@ class Tk::Iwidgets::Menubar
   end
 
   alias menucget itemcget
+  alias menucget_strict itemcget_strict
   alias menuconfigure itemconfigure
   alias menuconfiginfo itemconfiginfo
   alias current_menuconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
 

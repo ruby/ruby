@@ -116,7 +116,7 @@ class Tk::Iwidgets::Scrolledtext
     get('-displaychars', *index)
   end
 
-  def image_cget(index, slot)
+  def image_cget_strict(index, slot)
     case slot.to_s
     when 'text', 'label', 'show', 'data', 'file'
       _fromUTF8(tk_send_without_enc('image', 'cget', 
@@ -125,6 +125,27 @@ class Tk::Iwidgets::Scrolledtext
       tk_tcl2ruby(_fromUTF8(tk_send_without_enc('image', 'cget', 
                                                 _get_eval_enc_str(index), 
                                                 "-#{slot}")))
+    end
+  end
+  def image_cget(index, slot)
+    unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      image_cget_strict(index, slot)
+    else
+      begin
+        image_cget_strict(index, slot)
+      rescue => e
+        begin
+          if current_image_configinfo.has_key?(slot.to_s)
+            # error on known option
+            fail e
+          else
+            # unknown option
+            nil
+          end
+        rescue
+          fail e  # tag error
+        end
+      end
     end
   end
 

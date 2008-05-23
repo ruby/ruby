@@ -19,8 +19,10 @@ $twind_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($twind_demo).pack(:fill=>:both, :expand=>true)
+
 # frame
-$twind_buttons = TkFrame.new($twind_demo) {|frame|
+$twind_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -39,13 +41,13 @@ $twind_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame
 $twind_text = nil
-TkFrame.new($twind_demo, 'highlightthickness'=>2, 'borderwidth'=>2, 
+TkFrame.new(base_frame, 'highlightthickness'=>2, 'borderwidth'=>2, 
             'relief'=>'sunken') {|f|
   $twind_text = TkText.new(f, 'setgrid'=>'true', 'font'=>$font, 
                           'width'=>'70', 'height'=>35, 'wrap'=>'word', 
                           'highlightthickness'=>0, 'borderwidth'=>0 ){|t|
     TkScrollbar.new(f) {|s|
-      command proc{|*args| t.yview(args)}
+      command proc{|*args| t.yview(*args)}
       t.yscrollcommand proc{|first,last| s.set first,last}
     }.pack('side'=>'right', 'fill'=>'y')
   }.pack('expand'=>'yes', 'fill'=>'both')

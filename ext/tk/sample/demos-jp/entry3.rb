@@ -18,7 +18,9 @@ $entry3_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-TkLabel.new($entry3_demo, 
+base_frame = TkFrame.new($entry3_demo).pack(:fill=>:both, :expand=>true)
+
+TkLabel.new(base_frame, 
             :font=>$font, :wraplength=>'5i', :justify=>:left, 
             :text=><<EOL).pack(:side=>:top)
 以下には４種類のエントリボックスが表示されています．各エントリボックスは，\
@@ -39,7 +41,7 @@ TkLabel.new($entry3_demo,
 入力された文字はアスタリスク記号に置き換えて表示されます．
 EOL
 
-TkFrame.new($entry3_demo){|f|
+TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
@@ -65,23 +67,41 @@ TkFrame.new($entry3_demo){|f|
 # count -       Counter to control the number of times flashed
 def focusAndFlash(widget, fg, bg, count=5)
   return if count <= 0
-  TkTimer.new(100, count, 
-              proc{widget.configure(:foreground=>bg, :background=>fg)}, 
-              proc{widget.configure(:foreground=>fg, :background=>bg)}
-              ).start
+  if fg && !fg.empty? && bg && !bg.empty?
+    TkTimer.new(200, count, 
+                proc{widget.configure(:foreground=>bg, :background=>fg)}, 
+                proc{widget.configure(:foreground=>fg, :background=>bg)}
+                ).start
+  else
+    # TkTimer.new(150, 3){Tk.bell}.start
+    Tk.bell
+    TkTimer.new(200, count, 
+                proc{widget.configure(:foreground=>'white', 
+                                      :background=>'black')}, 
+                proc{widget.configure(:foreground=>'black', 
+                                      :background=>'white')}
+                ).at_end{begin
+                           widget.configure(:foreground=>fg, 
+                                            :background=>bg)
+                         rescue
+                           # ignore
+                         end}.start
+  end
   widget.focus(true)
 end
 
-l1 = TkLabelFrame.new($entry3_demo, :text=>"整数エントリ")
+l1 = TkLabelFrame.new(base_frame, :text=>"整数エントリ")
 TkEntry.new(l1, :validate=>:focus, 
             :vcmd=>[
               proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
             ]) {|e|
-  invalidcommand [proc{|w| focusAndFlash(w, e.fg, e.bg)}, '%W']
+  fg = e.foreground
+  bg = e.background
+  invalidcommand [proc{|w| focusAndFlash(w, fg, bg)}, '%W']
   pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 }
 
-l2 = TkLabelFrame.new($entry3_demo, :text=>"長さ制約付きエントリ")
+l2 = TkLabelFrame.new(base_frame, :text=>"長さ制約付きエントリ")
 TkEntry.new(l2, :validate=>:key, :invcmd=>proc{Tk.bell}, 
             :vcmd=>[proc{|s| s.length < 10}, '%P']
             ).pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
@@ -162,15 +182,15 @@ def validatePhoneChange(widget, vmode, idx, char)
     widget.delete(idx)
     widget.insert(idx, $phoneNumberMap[char] || char)
     Tk.after_idle(proc{phoneSkipRight(widget, -1)})
-    # Tk.update(true) # Don't work 'update' inter validation callback.
-                      # It depends on Tcl/Tk side (tested on Tcl/Tk8.5a1). 
+    # Tk.update(true)  # <- Don't work 'update' inter validation callback.
+                       #    It depends on Tcl/Tk side (tested on Tcl/Tk8.5a1).
     return true
   end
   return false
 end
 
 
-l3 = TkLabelFrame.new($entry3_demo, :text=>"米国電話番号エントリ")
+l3 = TkLabelFrame.new(base_frame, :text=>"米国電話番号エントリ")
 TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell}, 
             :textvariable=>entry3content, 
             :vcmd=>[
@@ -189,14 +209,14 @@ TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell},
   pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 }
 
-l4 = TkLabelFrame.new($entry3_demo, :text=>"パスワードエントリ")
+l4 = TkLabelFrame.new(base_frame, :text=>"パスワードエントリ")
 TkEntry.new(l4, :validate=>:key, :show=>'*', 
             :vcmd=>[
               proc{|s| s.length <= 8}, 
               '%P'
             ]).pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 
-TkFrame.new($entry3_demo){|f|
+TkFrame.new(base_frame){|f|
   lower
   TkGrid.configure(l1, l2, :in=>f, :padx=>'3m', :pady=>'1m', :sticky=>:ew)
   TkGrid.configure(l3, l4, :in=>f, :padx=>'3m', :pady=>'1m', :sticky=>:ew)

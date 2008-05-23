@@ -19,8 +19,10 @@ $ctext_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($ctext_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($ctext_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
             'text'=>"This window displays a string of text to demonstrate the text facilities of canvas widgets.  You can click in the boxes to adjust the position of the text relative to its positioning point or change its justification.  The text also supports the following simple bindings for editing:
   1. You can point, click, and type.
   2. You can also select with button 1.
@@ -33,7 +35,7 @@ TkLabel.new($ctext_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
 }
 
 # frame
-$ctext_buttons = TkFrame.new($ctext_demo) {|frame|
+$ctext_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -51,7 +53,7 @@ $ctext_buttons = TkFrame.new($ctext_demo) {|frame|
 $ctext_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # canvas 
-$ctext_canvas = TkCanvas.new($ctext_demo, 'relief'=>'flat', 
+$ctext_canvas = TkCanvas.new(base_frame, 'relief'=>'flat', 
                              'borderwidth'=>0, 'width'=>500, 'height'=>350)
 $ctext_canvas.pack('side'=>'top', 'expand'=>'yes', 'fill'=>'both')
 

@@ -34,12 +34,13 @@ module TkMenuEntryConfig
   private :__item_val2ruby_optkeys
 
   alias entrycget itemcget
+  alias entrycget_strict itemcget_strict
   alias entryconfigure itemconfigure
   alias entryconfiginfo itemconfiginfo
   alias current_entryconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
 class Tk::Menu<TkWindow
@@ -518,7 +519,7 @@ class Tk::Menubutton<Tk::Label
           tk_call_without_enc(self.class::TkCommandNames[0], @path)
           keys = __check_available_configure_options(keys)
           unless keys.empty?
-            tk_call_without_enc('destroy', @path)
+            tk_call_without_enc('destroy', @path) rescue nil
             tk_call_without_enc(self.class::TkCommandNames[0], @path, 
                                 *hash_kv(keys, true))
           end
@@ -642,6 +643,9 @@ class Tk::OptionMenubutton<Tk::Menubutton
   def menucget(key)
     @menu.cget(key)
   end
+  def menucget_strict(key)
+    @menu.cget_strict(key)
+  end
   def menuconfigure(key, val=None)
     @menu.configure(key, val)
     self
@@ -654,6 +658,9 @@ class Tk::OptionMenubutton<Tk::Menubutton
   end
   def entrycget(index, key)
     @menu.entrycget(index, key)
+  end
+  def entrycget_strict(index, key)
+    @menu.entrycget_strict(index, key)
   end
   def entryconfigure(index, key, val=None)
     @menu.entryconfigure(index, key, val)

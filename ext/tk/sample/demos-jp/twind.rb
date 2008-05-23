@@ -16,8 +16,10 @@ $twind_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($twind_demo).pack(:fill=>:both, :expand=>true)
+
 # frame 生成
-$twind_buttons = TkFrame.new($twind_demo) {|frame|
+$twind_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -37,7 +39,7 @@ $twind_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 生成
 $twind_text = nil
-TkFrame.new($twind_demo, 'highlightthickness'=>2, 'borderwidth'=>2, 
+TkFrame.new(base_frame, 'highlightthickness'=>2, 'borderwidth'=>2, 
             'relief'=>'sunken') {|f|
   $twind_text = TkText.new(f, 'setgrid'=>'true', 'font'=>$font, 
                           'width'=>'70', 'height'=>35, 'wrap'=>'word', 

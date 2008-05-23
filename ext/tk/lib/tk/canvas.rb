@@ -168,6 +168,8 @@ class Tk::Canvas<TkWindow
     #tk_tcl2ruby(tk_send_without_enc('canvasy', screen_y, *args))
     number(tk_send_without_enc('canvasy', screen_y, *args))
   end
+  alias canvas_x canvasx
+  alias canvas_y canvasy
 
   def coords(tag, *args)
     if args == []
@@ -640,6 +642,13 @@ class TkcItem<TkObject
 
         fkey = "ascii#{key}"
         fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
+      }
+
+      __item_optkey_aliases(nil).each{|alias_name, real_name|
+        alias_name = alias_name.to_s
+        if keys.has_key?(alias_name)
+          keys[real_name.to_s] = keys.delete(alias_name)
+        end
       }
 
       __item_methodcall_optkeys(nil).each{|key|

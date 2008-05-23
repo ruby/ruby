@@ -17,9 +17,10 @@ $style_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($style_demo).pack(:fill=>:both, :expand=>true)
 
 # frame 生成
-TkFrame.new($style_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -38,14 +39,14 @@ TkFrame.new($style_demo) {|frame|
 
 
 # text 生成
-txt = TkText.new($style_demo){|t|
+txt = TkText.new(base_frame){|t|
   # 生成
   setgrid 'true'
   #width  70
   #height 32
   wrap 'word'
   font $font
-  TkScrollbar.new($style_demo) {|s|
+  TkScrollbar.new(base_frame) {|s|
     pack('side'=>'right', 'fill'=>'y')
     command proc{|*args| t.yview(*args)}
     t.yscrollcommand proc{|first,last| s.set first,last}

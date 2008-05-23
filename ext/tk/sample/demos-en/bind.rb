@@ -19,8 +19,10 @@ $bind_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($bind_demo).pack(:fill=>:both, :expand=>true)
+
 # frame
-TkFrame.new($bind_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -43,14 +45,14 @@ def tag_binding_for_bind_demo(tag, enter_style, leave_style)
 end
 
 # text 
-txt = TkText.new($bind_demo){|t|
+txt = TkText.new(base_frame){|t|
   # 
   setgrid 'true'
   #width  60
   #height 24
   font $font
   wrap 'word'
-  TkScrollbar.new($bind_demo) {|s|
+  TkScrollbar.new(base_frame) {|s|
     pack('side'=>'right', 'fill'=>'y')
     command proc{|*args| t.yview(*args)}
     t.yscrollcommand proc{|first,last| s.set first,last}
@@ -94,32 +96,32 @@ txt = TkText.new($bind_demo){|t|
   }
   d1.bind('1', 
           proc{
-            eval_samplecode(`cat #{[$demo_dir,'items.rb'].join(File::Separator)}`)
+            eval_samplecode(`cat #{[$demo_dir,'items.rb'].join(File::Separator)}`, 'items.rb')
           })
   d2.bind('1', 
           proc{
-            eval_samplecode(`cat #{[$demo_dir,'plot.rb'].join(File::Separator)}`)
+            eval_samplecode(`cat #{[$demo_dir,'plot.rb'].join(File::Separator)}`, 'plot.rb')
           })
   d3.bind('1', 
           proc{
-            eval_samplecode(`cat #{[$demo_dir,'ctext.rb'].join(File::Separator)}`)
+            eval_samplecode(`cat #{[$demo_dir,'ctext.rb'].join(File::Separator)}`, 'ctext.rb')
           })
   d4.bind('1', 
           proc{
-            eval_samplecode(`cat #{[$demo_dir,'arrow.rb'].join(File::Separator)}`)
+            eval_samplecode(`cat #{[$demo_dir,'arrow.rb'].join(File::Separator)}`, 'arrow.rb')
           })
   d5.bind('1', 
           proc{
-            eval_samplecode(`cat #{[$demo_dir,'ruler.rb'].join(File::Separator)}`)
+            eval_samplecode(`cat #{[$demo_dir,'ruler.rb'].join(File::Separator)}`, 'ruler.rb')
           })
   d6.bind('1', 
           proc{
-            eval_samplecode(`cat #{[$demo_dir,'cscroll.rb'].join(File::Separator)}`)
+            eval_samplecode(`cat #{[$demo_dir,'cscroll.rb'].join(File::Separator)}`, 'cscroll.rb')
           })
 
   TkTextMarkInsert.new(t, '0.0')
   configure('state','disabled')
 }
 
-txt.width 60
+txt.width  60
 txt.height 24

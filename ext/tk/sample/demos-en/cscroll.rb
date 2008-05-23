@@ -19,14 +19,16 @@ $cscroll_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($cscroll_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($cscroll_demo, 'font'=>$font, 'wraplength'=>'4i', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 
             'justify'=>'left', 'text'=>"This window displays a canvas widget that can be scrolled either using the scrollbars or by dragging with button 2 in the canvas.  If you click button 1 on one of the rectangles, its indices will be printed on stdout."){
   pack('side'=>'top')
 }
 
 # frame
-$cscroll_buttons = TkFrame.new($cscroll_demo) {|frame|
+$cscroll_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -45,7 +47,7 @@ $cscroll_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 
 unless $tk_version =~ /^4\.[01]/
-  $cscroll_grid = TkFrame.new($cscroll_demo) {
+  $cscroll_grid = TkFrame.new(base_frame) {
     pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>1)
   }
   TkGrid.rowconfigure($cscroll_grid, 0, 'weight'=>1, 'minsize'=>0)
@@ -53,7 +55,7 @@ unless $tk_version =~ /^4\.[01]/
 end
 
 # canvas
-$cscroll_canvas = TkCanvas.new($cscroll_demo, 
+$cscroll_canvas = TkCanvas.new(base_frame, 
                                'relief'=>'sunken', 'borderwidth'=>2,
                                'scrollregion'=>['-11c', '-11c', '50c', '20c']
                                ) {|c|
@@ -64,7 +66,7 @@ $cscroll_canvas = TkCanvas.new($cscroll_demo,
          'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
   end
 
-  TkScrollbar.new($cscroll_demo, 'command'=>proc{|*args| c.yview(*args)}) {|vs|
+  TkScrollbar.new(base_frame, 'command'=>proc{|*args| c.yview(*args)}) {|vs|
     c.yscrollcommand(proc{|first,last| vs.set first,last})
     if $tk_version =~ /^4\.[01]/
       pack('side'=>'right', 'fill'=>'y')
@@ -74,7 +76,7 @@ $cscroll_canvas = TkCanvas.new($cscroll_demo,
     end
   }
 
-  TkScrollbar.new($cscroll_demo, 'orient'=>'horiz', 
+  TkScrollbar.new(base_frame, 'orient'=>'horiz', 
                   'command'=>proc{|*args| c.xview(*args)}) {|hs|
     c.xscrollcommand(proc{|first,last| hs.set first,last})
     if $tk_version =~ /^4\.[01]/

@@ -20,8 +20,10 @@ $sayings_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($sayings_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-msg = TkLabel.new($sayings_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -30,7 +32,7 @@ msg = TkLabel.new($sayings_demo) {
 msg.pack('side'=>'top')
 
 # frame
-TkFrame.new($sayings_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -49,7 +51,7 @@ TkFrame.new($sayings_demo) {|frame|
 
 # frame
 sayings_lbox = nil
-TkFrame.new($sayings_demo, 'borderwidth'=>10) {|w|
+TkFrame.new(base_frame, 'borderwidth'=>10) {|w|
   sv = TkScrollbar.new(w)
   sh = TkScrollbar.new(w, 'orient'=>'horizontal')
   sayings_lbox = TkListbox.new(w) {

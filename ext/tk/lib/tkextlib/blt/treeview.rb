@@ -98,6 +98,9 @@ module Tk::BLT::Treeview::ConfigMethod
   def column_cget(name, option)
     itemcget(['column', name], option)
   end
+  def column_cget_strict(name, option)
+    itemcget_strict(['column', name], option)
+  end
   def column_configure(name, slot, value=None)
     itemconfigure(['column', name], slot, value)
   end
@@ -111,6 +114,9 @@ module Tk::BLT::Treeview::ConfigMethod
   def button_cget(option)
     itemcget('button', option)
   end
+  def button_cget_strict(option)
+    itemcget_strict('button', option)
+  end
   def button_configure(slot, value=None)
     itemconfigure('button', slot, value)
   end
@@ -123,6 +129,14 @@ module Tk::BLT::Treeview::ConfigMethod
 
   def entry_cget(option)
     ret = itemcget('entry', option)
+    if option == 'bindtags' || option == :bindtags
+      ret.collect{|tag| TkBindTag.id2obj(tag)}
+    else
+      ret
+    end
+  end
+  def entry_cget_strict(option)
+    ret = itemcget_strict('entry', option)
     if option == 'bindtags' || option == :bindtags
       ret.collect{|tag| TkBindTag.id2obj(tag)}
     else
@@ -170,6 +184,9 @@ module Tk::BLT::Treeview::ConfigMethod
   def sort_cget(option)
     itemcget('sort', option)
   end
+  def sort_cget_strict(option)
+    itemcget_strict('sort', option)
+  end
   def sort_configure(slot, value=None)
     itemconfigure('sort', slot, value)
   end
@@ -183,6 +200,9 @@ module Tk::BLT::Treeview::ConfigMethod
   def text_cget(option)
     itemcget('text', option)
   end
+  def text_cget_strict(option)
+    itemcget_strict('text', option)
+  end
   def text_configure(slot, value=None)
     itemconfigure('text', slot, value)
   end
@@ -193,8 +213,8 @@ module Tk::BLT::Treeview::ConfigMethod
     current_itemconfiginfo('text', slot)
   end
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
 class Tk::BLT::Treeview

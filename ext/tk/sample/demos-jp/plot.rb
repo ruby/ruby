@@ -16,14 +16,16 @@ $plot_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($plot_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($plot_demo, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left', 
             'text'=>"このウィンドウは簡単な2次元のプロットを含んだキャンバス widgetです。表示された点をマウスボタン1でドラッグしてデータをいじることができます。"){
   pack('side'=>'top')
 }
 
 # frame 生成
-$plot_buttons = TkFrame.new($plot_demo) {|frame|
+$plot_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -49,7 +51,7 @@ $plot_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
   end
 
 # canvas 設定
-$plot_canvas = TkCanvas.new($plot_demo,'relief'=>'raised','width'=>450,'height'=>300)
+$plot_canvas = TkCanvas.new(base_frame,'relief'=>'raised','width'=>450,'height'=>300)
 $plot_canvas.pack('side'=>'top', 'fill'=>'x')
 
 # plot 生成

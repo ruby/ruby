@@ -29,14 +29,16 @@ $ruler_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($ruler_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($ruler_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
             'text'=>"このキャンバスwidgetはルーラーの模型です。ルーラーの右にあるのはタブストップの井戸で、ここから引っ張ってくることによってタブストップを作ることができます。また、すでにあるタブストップを動かすこともできます。タブストップを上方または下方にかすれて表示されるまでドラッグすると、マウスボタンを離した時にそのタブストップは消えます。"){
   pack('side'=>'top')
 }
 
 # frame 生成
-$ruler_buttons = TkFrame.new($ruler_demo) {|frame|
+$ruler_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -55,7 +57,7 @@ $ruler_buttons = TkFrame.new($ruler_demo) {|frame|
 $ruler_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # canvas 設定
-$ruler_canvas = TkCanvas.new($ruler_demo, 'width'=>'14.8c', 'height'=>'2.5c')
+$ruler_canvas = TkCanvas.new(base_frame, 'width'=>'14.8c', 'height'=>'2.5c')
 $ruler_canvas.pack('side'=>'top', 'fill'=>'x')
 
 # 値設定

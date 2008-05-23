@@ -1587,14 +1587,16 @@ $floor2_demo = TkToplevel.new {|w|
   minsize(100,100)
 }
 
+base_frame = TkFrame.new($floor2_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($floor2_demo, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left', 
             'text'=>"このウィンドウにはディジタルエクイップメント社のウェスタンリサーチラボラトリ (DECWRL) の間取りが書かれたキャンバス widget が入っています。これは 3階建てで、常にそのうちの1階分が選択、つまりその間取りが表示されるようになっています。ある階を選択するには、その上でマウスの左ボタンをクリックしてください。マウスが選択されている階の上を動くと、その下にある部屋の色が変わり、部屋番号が「部屋番号:」エントリに表示されます。また、エントリに部屋番号を書くとその部屋の色が変わります。"){
   pack('side'=>'top')
 }
 
 # frame 生成
-$floor2_buttons = TkFrame.new($floor2_demo) {|frame|
+$floor2_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -1618,17 +1620,17 @@ $floorItems2 = {}
 
 # canvas 設定
 if $tk_version =~ /^4\.[01]/
-  $floor2_canvas_frame = TkFrame.new($floor2_demo,'bd'=>2,'relief'=>'sunken',
+  $floor2_canvas_frame = TkFrame.new(base_frame,'bd'=>2,'relief'=>'sunken',
                                     'highlightthickness'=>2)
   $floor2_canvas = TkCanvas.new($floor2_canvas_frame, 
                                'width'=>900, 'height'=>500, 'borderwidth'=>0, 
                                'highlightthickness'=>0) {|c|
-    TkScrollbar.new($floor2_demo, 'orient'=>'horiz', 
+    TkScrollbar.new(base_frame, 'orient'=>'horiz', 
                     'command'=>proc{|*args| c.xview(*args)}){|hs|
       c.xscrollcommand(proc{|first,last| hs.set first,last})
       pack('side'=>'bottom', 'fill'=>'x')
     }
-    TkScrollbar.new($floor2_demo, 'command'=>proc{|*args| c.yview(*args)}){|vs|
+    TkScrollbar.new(base_frame, 'command'=>proc{|*args| c.yview(*args)}){|vs|
       c.yscrollcommand(proc{|first,last| vs.set first,last})
       pack('side'=>'right', 'fill'=>'y')
     }
@@ -1637,7 +1639,7 @@ if $tk_version =~ /^4\.[01]/
   $floor2_canvas.pack('expand'=>'yes', 'fill'=>'both')
 
 else
-  TkFrame.new($floor2_demo) {|f|
+  TkFrame.new(base_frame) {|f|
     pack('side'=>'top', 'fill'=>'both', 'expand'=>'yes')
 
     h = TkScrollbar.new(f, 'highlightthickness'=>0, 'orient'=>'horizontal')

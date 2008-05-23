@@ -11,8 +11,9 @@ $hscale_demo = TkToplevel.new {|w|
 }
 positionWindow($hscale_demo)
 
+base_frame = TkFrame.new($hscale_demo).pack(:fill=>:both, :expand=>true)
 
-msg = TkLabel.new($hscale_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '3.5i'
   justify 'left'
@@ -20,7 +21,7 @@ msg = TkLabel.new($hscale_demo) {
 }
 msg.pack('side'=>'top')
 
-TkFrame.new($hscale_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc {
@@ -36,7 +37,18 @@ TkFrame.new($hscale_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
-TkFrame.new($hscale_demo) {|frame|
+
+def setWidth(w, width)
+  width = width + 21
+  x2 = width - 30
+  if x2 < 21
+    x2 = 21
+  end
+  w.coords 'poly',20,15,20,35,x2,35,x2,45,width,25,x2,5,x2,15,20,15
+  w.coords 'line',20,15,20,35,x2,35,x2,45,width,25,x2,5,x2,15,20,15
+end
+
+TkFrame.new(base_frame) {|frame|
   canvas = TkCanvas.new(frame) {|c|
     width 50
     height 50
@@ -61,14 +73,3 @@ TkFrame.new($hscale_demo) {|frame|
   }.pack('side'=>'bottom', 'expand'=>'yes', 'anchor'=>'n')
   scale.set 75
 }.pack('side'=>'top', 'fill'=>'x')
-
-def setWidth(w, width)
-  width = width + 21
-  x2 = width - 30
-  if x2 < 21
-    x2 = 21
-  end
-  w.coords 'poly',20,15,20,35,x2,35,x2,45,width,25,x2,5,x2,15,20,15
-  w.coords 'line',20,15,20,35,x2,35,x2,45,width,25,x2,5,x2,15,20,15
-end
-

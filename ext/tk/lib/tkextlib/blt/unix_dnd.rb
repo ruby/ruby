@@ -30,11 +30,14 @@ module Tk::BLT
       end
       private :__item_config_cmd
 
-      private :itemcget, :itemconfigure
-      private :itemconfiginfo, :current_itemconfiginfo
+      private :itemcget, :itemcget_strict
+      private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
       def cget(win, option)
         itemcget(['cget', win], option)
+      end
+      def cget_strict(win, option)
+        itemcget_strict(['cget', win], option)
       end
       def configure(win, slot, value=None)
         itemconfigure(['configure', win], slot, value)
@@ -48,6 +51,9 @@ module Tk::BLT
 
       def token_cget(win, option)
         itemcget(['token', 'cget', win], option)
+      end
+      def token_cget_strict(win, option)
+        itemcget_strict(['token', 'cget', win], option)
       end
       def token_configure(win, slot, value=None)
         itemconfigure(['token', 'configure', win], slot, value)

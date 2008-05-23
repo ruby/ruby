@@ -15,8 +15,10 @@ $check2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($check2_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-msg = TkLabel.new($check2_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -31,7 +33,7 @@ brakes = TkVariable.new(0)
 sober  = TkVariable.new(0)
 
 # frame
-TkFrame.new($check2_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x', 
@@ -59,15 +61,15 @@ TkFrame.new($check2_demo) {|frame|
 
 
 # checkbutton
-TkCheckButton.new($check2_demo, :text=>'Safety Check', :variable=>safety, 
+TkCheckButton.new(base_frame, :text=>'Safety Check', :variable=>safety, 
                   :relief=>:flat, :onvalue=>'all', :offvalue=>'none', 
                   :tristatevalue=>'partial'){
   pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')
 }
 
-[ TkCheckButton.new($check2_demo, 'text'=>'Wipers OK', 'variable'=>wipers),
-  TkCheckButton.new($check2_demo, 'text'=>'Brakes OK', 'variable'=>brakes),
-  TkCheckButton.new($check2_demo, 'text'=>'Driver Sober', 'variable'=>sober)
+[ TkCheckButton.new(base_frame, 'text'=>'Wipers OK', 'variable'=>wipers),
+  TkCheckButton.new(base_frame, 'text'=>'Brakes OK', 'variable'=>brakes),
+  TkCheckButton.new(base_frame, 'text'=>'Driver Sober', 'variable'=>sober)
 ].each{|w| 
   w.relief('flat')
   w.pack('side'=>'top', 'padx'=>15, 'pady'=>2, 'anchor'=>'w')

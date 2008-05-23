@@ -66,9 +66,32 @@ class Tk::Tile::TPaned < TkWindow
     self
   end
 
-  def panecget(pane, slot)
+  def panecget_strict(pane, slot)
     pane = _epath(pane)
     tk_tcl2ruby(tk_send_without_enc('pane', pane, "-#{slot}"))
+  end
+  alias pane_cget_strict panecget_strict
+
+  def panecget(pane, slot)
+    unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      panecget_strict(pane, slot)
+    else
+      begin
+        panecget_strict(pane, slot)
+      rescue => e
+        begin
+          if current_paneconfiginfo(pane).has_key?(slot.to_s)
+            # not tag error & option is known -> error on known option
+            fail e
+          else
+            # not tag error & option is unknown
+            nil
+          end
+        rescue
+          fail e  # tag error
+        end
+      end
+    end
   end
   alias pane_cget panecget
 

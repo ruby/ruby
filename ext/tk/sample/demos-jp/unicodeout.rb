@@ -18,7 +18,9 @@ $unicodeout_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-TkLabel.new($unicodeout_demo, 
+base_frame = TkFrame.new($unicodeout_demo).pack(:fill=>:both, :expand=>true)
+
+TkLabel.new(base_frame, 
             :font=>$font, :wraplength=>'5.4i', :justify=>:left, 
             :text=><<EOL).pack(:side=>:top)
 これは，Tkにおける非欧米文字集合を用いる言語に対するサポートについての\
@@ -40,7 +42,7 @@ Tclのエスケープ表現を用いたUNICODE文字列で書かれています．\
 EOL
 #'
 
-TkFrame.new($unicodeout_demo){|f|
+TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
@@ -53,7 +55,7 @@ TkFrame.new($unicodeout_demo){|f|
                }).pack(:side=>:left, :expand=>true)
 }
 
-wait_msg = TkLabel.new($unicodeout_demo, 
+wait_msg = TkLabel.new(base_frame, 
                        :text=>"フォント読み込みの完了まで" + 
                               "しばらくお待ち下さい．．．", 
                        :font=>"Helvetica 12 italic").pack
@@ -68,8 +70,8 @@ class Unicodeout_SampleFrame < TkFrame
   # @@font = 'Newspaper 12'
   # @@font = '{New century schoolbook} 12'
 
-  def initialize()
-    super($unicodeout_demo)
+  def initialize(base)
+    super(base)
     grid_columnconfig(1, :weight=>1)
   end
 
@@ -84,7 +86,7 @@ class Unicodeout_SampleFrame < TkFrame
     l.grid_config(:padx, '1m')
   end
 end
-f = Unicodeout_SampleFrame.new
+f = Unicodeout_SampleFrame.new(base_frame)
 f.pack(:expand=>true, :fill=>:both, :padx=>'2m', :pady=>'1m')
 
 # Processing when some characters are missing might take a while, so make

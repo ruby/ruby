@@ -54,6 +54,8 @@ $goldberg_demo = TkToplevel.new {|w|
 #  positionWindow(w)
 }
 
+base_frame = TkFrame.new($goldberg_demo).pack(:fill=>:both, :expand=>true)
+
 =begin
 # label
 msg = TkLabel.new($goldberg_demo) {
@@ -175,7 +177,8 @@ class TkGoldberg_Demo
     do_ctrl_frame
     do_detail_frame
 
-    msg = TkLabel.new(@parent, :bg=>@C['bg'], :fg=>'white') {
+    # msg = TkLabel.new(@parent, :bg=>@C['bg'], :fg=>'white') {
+    msg = Tk::Label.new(@parent, :bg=>@C['bg'], :fg=>'white') {
       font 'Arial 10'
       wraplength 600
       justify 'left'
@@ -185,7 +188,8 @@ class TkGoldberg_Demo
 
     frame = TkFrame.new(@parent, :bg=>@C['bg'])
 
-    TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+    # TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+    Tk::Button.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
       text 'Dismiss'
       command proc{
         tmppath = $goldberg_demo
@@ -194,12 +198,14 @@ class TkGoldberg_Demo
       }
     }.pack('side'=>'left')
 
-    TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+    # TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+    Tk::Button.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
       text 'See Code'
       command proc{showCode 'goldberg'}
     }.pack('side'=>'left', 'padx'=>5)
 
-    @show = TkButton.new(frame, :text=>'>>', :command=>proc{show_ctrl}, 
+    # @show = TkButton.new(frame, :text=>'>>', :command=>proc{show_ctrl}, 
+    @show = Tk::Button.new(frame, :text=>'>>', :command=>proc{show_ctrl}, 
                          :bg=>@C['bg'], :activebackground=>@C['bg'])
     @show.pack('side'=>'left')
     frame.place(:in=>@canvas, :relx=>1, :rely=>0, :anchor=>:ne)
@@ -208,10 +214,11 @@ class TkGoldberg_Demo
   end
 
   def do_ctrl_frame
-    @start = TkButton.new(@parent, :text=>'Start', :bd=>6, 
+    @start = Tk::Button.new(@parent, :text=>'Start', :bd=>6, 
                           :command=>proc{do_button(0)})
-    @start.font(@start['font'].weight('bold'))
-    font = @start['font']
+    if font = @start['font']
+      @start.font(font.weight('bold'))
+    end
 
     @pause = TkCheckbutton.new(@parent, :text=>'Pause', :font=>font, 
                                :command=>proc{do_button(1)}, :relief=>:raised, 
@@ -1996,4 +2003,4 @@ class TkGoldberg_Demo
   end
 end
 
-TkGoldberg_Demo.new($goldberg_demo)
+TkGoldberg_Demo.new(base_frame)

@@ -54,9 +54,21 @@ class Tk::Tile::Dialog
     window(tk_call_without_enc('::ttk::dialog::clientframe', @path))
   end
 
-  def cget(slot)
-    @keys[slot]
+  def cget_strict(slot)
+    @keys[slot.to_s]
   end
+  def cget(slot)
+    @keys[slot.to_s]
+  end
+=begin
+  def cget(slot)
+    unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      cget_strict(slot)
+    else
+      cget_strict(slot) rescue nil
+    end
+  end
+=end
 
   def configure(slot, value=None)
     if slot.kind_of?(Hash)

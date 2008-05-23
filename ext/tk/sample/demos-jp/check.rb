@@ -16,8 +16,10 @@ $check_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($check_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($check_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -31,7 +33,7 @@ brakes = TkVariable.new(0)
 sober  = TkVariable.new(0)
 
 # frame 生成
-TkFrame.new($check_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -52,7 +54,7 @@ TkFrame.new($check_demo) {|frame|
   TkButton.new(frame) {
     text '変数参照'
     command proc{
-      showVars($check_demo, 
+      showVars(base_frame, 
                ['wipers', wipers], ['brakes', brakes], ['sober', sober])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
@@ -61,8 +63,8 @@ TkFrame.new($check_demo) {|frame|
 
 
 # checkbutton 生成
-[ TkCheckButton.new($check_demo, 'text'=>'ワイパー OK', 'variable'=>wipers),
-  TkCheckButton.new($check_demo, 'text'=>'ブレーキ OK', 'variable'=>brakes),
-  TkCheckButton.new($check_demo, 'text'=>'運転手 素面', 'variable'=>sober)
+[ TkCheckButton.new(base_frame, 'text'=>'ワイパー OK', 'variable'=>wipers),
+  TkCheckButton.new(base_frame, 'text'=>'ブレーキ OK', 'variable'=>brakes),
+  TkCheckButton.new(base_frame, 'text'=>'運転手 素面', 'variable'=>sober)
 ].each{|w| w.relief('flat'); w.pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')}
 

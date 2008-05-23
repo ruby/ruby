@@ -17,8 +17,10 @@ $anilabel_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($anilabel_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($anilabel_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -27,7 +29,7 @@ msg = TkLabel.new($anilabel_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($anilabel_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -46,8 +48,8 @@ TkFrame.new($anilabel_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # label demo 用フレーム生成
-f_left = TkLabelFrame.new($anilabel_demo,  :text=>'Scrolling Texts')
-f_right = TkLabelFrame.new($anilabel_demo, :text=>'GIF Image')
+f_left = TkLabelFrame.new(base_frame,  :text=>'Scrolling Texts')
+f_right = TkLabelFrame.new(base_frame, :text=>'GIF Image')
 Tk.pack(f_left, f_right, 'side'=>'left', 'expand'=>'yes', 'fill'=>'both', 
         'padx'=>10, 'pady'=>10)
 

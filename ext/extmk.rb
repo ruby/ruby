@@ -298,7 +298,7 @@ def parse_args()
   $mflags.unshift(*rest) unless rest.empty?
 
   def $mflags.set?(flag)
-    grep(/\A-(?!-).*#{'%c' % flag}/i) { return true }
+    grep(/\A-(?!-).*#{flag.chr}/i) { return true }
     false
   end
   def $mflags.defined?(var)
@@ -354,12 +354,16 @@ elsif sep = config_string('BUILD_FILE_SEPARATOR')
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I'$(topdir)' -I'$(top_srcdir)/lib'"
-$ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
-$ruby << " -I'$(top_srcdir)/ext' -rpurelib.rb"
+$ruby << " -I'$(topdir)'"
+unless CROSS_COMPILING
+  $ruby << " -I'$(top_srcdir)/lib'"
+  $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
+  $ruby << " -I./- -I'$(top_srcdir)/ext' -rpurelib.rb"
+  ENV["RUBYLIB"] = "-"
+  ENV["RUBYOPT"] = "-rpurelib.rb"
+end
 $config_h = '$(topdir)/config.h'
-ENV["RUBYLIB"] = "-"
-ENV["RUBYOPT"] = "-rpurelib.rb"
+$mflags << "ruby=#$ruby"
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
 

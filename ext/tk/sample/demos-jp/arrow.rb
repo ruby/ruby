@@ -104,14 +104,16 @@ $arrow_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($arrow_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($arrow_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
             'text'=>"この widget で、キャンバスで使われるラインについて様々な幅や矢印の頭の形を試してみることができます。線の幅や矢印の形を変えるには、拡大された矢印についている 3つの四角をドラッグしてください。右側の矢印は普通の大きさでのサンプルを示しています。下のテキストはラインアイテムに対する設定オプションです。"){
   pack('side'=>'top')
 }
 
 # frame 生成
-$arrow_buttons = TkFrame.new($arrow_demo) {|frame|
+$arrow_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -130,7 +132,7 @@ $arrow_buttons = TkFrame.new($arrow_demo) {|frame|
 $arrow_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # canvas 設定
-$arrow_canvas = TkCanvas.new($arrow_demo, 'width'=>500, 'height'=>350, 
+$arrow_canvas = TkCanvas.new(base_frame, 'width'=>500, 'height'=>350, 
                              'relief'=>'sunken', 'borderwidth'=>2)
 $arrow_canvas.pack('expand'=>'yes', 'fill'=>'both')
 

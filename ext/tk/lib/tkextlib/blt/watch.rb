@@ -146,12 +146,29 @@ module Tk::BLT
         end
       end
     end
-    def cget(key)
+    def cget_strict(key)
       key = key.to_s
       begin
         info.assoc(key)[1]
       rescue
         fail ArgumentError, "unknown option '#{key}'"
+      end
+    end
+    def cget(key)
+      unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+        cget_strict(key)
+      else
+        begin
+          cget_strict(key)
+        rescue => e
+          if current_configinfo.has_key?(key.to_s)
+            # error on known option
+            fail e
+          else
+            # unknown option
+            nil
+          end
+        end
       end
     end
   end

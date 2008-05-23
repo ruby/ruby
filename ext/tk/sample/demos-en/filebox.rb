@@ -17,12 +17,14 @@ $filebox_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($filebox_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($filebox_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
             'text'=>"Enter a file name in the entry box or click on the \"Browse\" buttons to select a file name using the file selection dialog.").pack('side'=>'top')
 
 # frame
-TkFrame.new($filebox_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -40,7 +42,7 @@ TkFrame.new($filebox_demo) {|frame|
 
 # frame
 ['open', 'save'].each{|type|
-  TkFrame.new($filebox_demo) {|f|
+  TkFrame.new(base_frame) {|f|
     TkLabel.new(f, 'text'=>"Select a file to #{type}: ", 'anchor'=>'e')\
     .pack('side'=>'left')
 
@@ -48,7 +50,7 @@ TkFrame.new($filebox_demo) {|frame|
       pack('side'=>'left', 'expand'=>'yes', 'fill'=>'x')
 
       TkButton.new(f, 'text'=>'Browse ...', 
-                   'command'=>proc{fileDialog $filebox_demo,e,type})\
+                   'command'=>proc{fileDialog base_frame,e,type})\
       .pack('side'=>'left')
     }
 
@@ -58,7 +60,7 @@ TkFrame.new($filebox_demo) {|frame|
 
 $tk_strictMotif = TkVarAccess.new('tk_strictMotif')
 if ($tk_platform['platform'] == 'unix')
-  TkCheckButton.new($filebox_demo, 
+  TkCheckButton.new(base_frame, 
                     'text'=>'Use Motif Style Dialog', 
                     'variable'=>$tk_strictMotif, 
                     'onvalue'=>1, 'offvalue'=>0 ).pack('anchor'=>'c')
@@ -91,7 +93,10 @@ def fileDialog(w,ent,operation)
   if file != ""
     ent.delete 0, 'end'
     ent.insert 0, file
-    ent.xview 'end'
+    # ent.xview 'end'
+    Tk.update_idletasks # need this for Tk::Tile::Entry
+                        # (to find right position of 'xview').
+    ent.xview(ent.index('end'))
   end
 end
 

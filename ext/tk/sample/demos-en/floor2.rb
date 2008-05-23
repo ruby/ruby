@@ -1590,14 +1590,16 @@ $floor2_demo = TkToplevel.new {|w|
   minsize(100,100)
 }
 
+base_frame = TkFrame.new($floor2_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($floor2_demo, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'8i', 'justify'=>'left', 
             'text'=>"This window contains a canvas widget showing the floorplan of Digital Equipment Corporation's Western Research Laboratory.  It has three levels.  At any given time one of the levels is active, meaning that you can see its room structure.  To activate a level, click the left mouse button anywhere on it.  As the mouse moves over the active level, the room under the mouse lights up and its room number appears in the \"Room:\" entry.  You can also type a room number in the entry and the room will light up."){
   pack('side'=>'top')
 }
 
 # frame
-$floor2_buttons = TkFrame.new($floor2_demo) {|frame|
+$floor2_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -1620,17 +1622,17 @@ $floorItems2 = {}
 
 # canvas 
 if $tk_version =~ /^4\.[01]/
-  $floor2_canvas_frame = TkFrame.new($floor2_demo,'bd'=>2,'relief'=>'sunken',
+  $floor2_canvas_frame = TkFrame.new(base_frame,'bd'=>2,'relief'=>'sunken',
                                     'highlightthickness'=>2)
   $floor2_canvas = TkCanvas.new($floor2_canvas_frame, 
                                'width'=>900, 'height'=>500, 'borderwidth'=>0, 
                                'highlightthickness'=>0) {|c|
-    TkScrollbar.new($floor2_demo, 'orient'=>'horiz', 
+    TkScrollbar.new(base_frame, 'orient'=>'horiz', 
                     'command'=>proc{|*args| c.xview(*args)}){|hs|
       c.xscrollcommand(proc{|first,last| hs.set first,last})
       pack('side'=>'bottom', 'fill'=>'x')
     }
-    TkScrollbar.new($floor2_demo, 'command'=>proc{|*args| c.yview(*args)}){|vs|
+    TkScrollbar.new(base_frame, 'command'=>proc{|*args| c.yview(*args)}){|vs|
       c.yscrollcommand(proc{|first,last| vs.set first,last})
       pack('side'=>'right', 'fill'=>'y')
     }
@@ -1639,7 +1641,7 @@ if $tk_version =~ /^4\.[01]/
   $floor2_canvas.pack('expand'=>'yes', 'fill'=>'both')
 
 else
-  TkFrame.new($floor2_demo) {|f|
+  TkFrame.new(base_frame) {|f|
     pack('side'=>'top', 'fill'=>'both', 'expand'=>'yes')
 
     h = TkScrollbar.new(f, 'highlightthickness'=>0, 'orient'=>'horizontal')

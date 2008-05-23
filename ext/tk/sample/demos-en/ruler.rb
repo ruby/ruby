@@ -32,14 +32,16 @@ $ruler_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($ruler_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($ruler_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
             'text'=>"This canvas widget shows a mock-up of a ruler.  You can create tab stops by dragging them out of the well to the right of the ruler.  You can also drag existing tab stops.  If you drag a tab stop far enough up or down so that it turns dim, it will be deleted when you release the mouse button."){
   pack('side'=>'top')
 }
 
 # frame
-$ruler_buttons = TkFrame.new($ruler_demo) {|frame|
+$ruler_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -57,7 +59,7 @@ $ruler_buttons = TkFrame.new($ruler_demo) {|frame|
 $ruler_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # canvas 
-$ruler_canvas = TkCanvas.new($ruler_demo, 'width'=>'14.8c', 'height'=>'2.5c')
+$ruler_canvas = TkCanvas.new(base_frame, 'width'=>'14.8c', 'height'=>'2.5c')
 $ruler_canvas.pack('side'=>'top', 'fill'=>'x')
 
 # 

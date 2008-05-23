@@ -33,6 +33,12 @@ module Tk::Tile::TreeviewConfig
       else
         if slot
           slot = slot.to_s
+
+          alias_name, real_name = __item_optkey_aliases(tagid(tagOrId)).find{|k, v| k.to_s == slot}
+          if real_name
+            slot = real_name.to_s
+          end
+
           case slot
           when /^(#{__tile_specific_item_optkeys(tagid(tagOrId)).join('|')})$/
             begin
@@ -198,6 +204,12 @@ module Tk::Tile::TreeviewConfig
       else
         if slot
           slot = slot.to_s
+
+          alias_name, real_name = __item_optkey_aliases(tagid(tagOrId)).find{|k, v| k.to_s == slot}
+          if real_name
+            slot = real_name.to_s
+          end
+
           case slot
           when /^(#{__tile_specific_item_optkeys(tagid(tagOrId)).join('|')})$/
             begin
@@ -508,16 +520,20 @@ module Tk::Tile::TreeviewConfig
   end
 
   alias __itemcget itemcget
+  alias __itemcget_strict itemcget_strict
   alias __itemconfigure itemconfigure
   alias __itemconfiginfo itemconfiginfo
   alias __current_itemconfiginfo current_itemconfiginfo
 
-  private :__itemcget, :__itemconfigure
-  private :__itemconfiginfo, :__current_itemconfiginfo
+  private :__itemcget, :__itemcget_strict
+  private :__itemconfigure, :__itemconfiginfo, :__current_itemconfiginfo
 
   # Treeview Item
   def itemcget(tagOrId, option)
     __itemcget([:item, tagOrId], option)
+  end
+  def itemcget_strict(tagOrId, option)
+    __itemcget_strict([:item, tagOrId], option)
   end
   def itemconfigure(tagOrId, slot, value=None)
     __itemconfigure([:item, tagOrId], slot, value)
@@ -533,6 +549,9 @@ module Tk::Tile::TreeviewConfig
   def columncget(tagOrId, option)
     __itemcget([:column, tagOrId], option)
   end
+  def columncget_strict(tagOrId, option)
+    __itemcget_strict([:column, tagOrId], option)
+  end
   def columnconfigure(tagOrId, slot, value=None)
     __itemconfigure([:column, tagOrId], slot, value)
   end
@@ -543,12 +562,13 @@ module Tk::Tile::TreeviewConfig
     __current_itemconfiginfo([:column, tagOrId], slot)
   end
   alias column_cget columncget
+  alias column_cget_strict columncget_strict
   alias column_configure columnconfigure
   alias column_configinfo columnconfiginfo
   alias current_column_configinfo current_columnconfiginfo
 
   # Treeview Heading
-  def headingcget(tagOrId, option)
+  def headingcget_strict(tagOrId, option)
     if __tile_specific_item_optkeys([:heading, tagOrId]).index(option.to_s)
       begin
         # On tile-0.7.{2-8}, 'state' options has no '-' at its head.
@@ -558,7 +578,28 @@ module Tk::Tile::TreeviewConfig
         tk_call(*(__item_cget_cmd([:heading, tagOrId]) << "-#{option}"))
       end
     else
-      __itemcget([:heading, tagOrId], option)
+      __itemcget_strict([:heading, tagOrId], option)
+    end
+  end
+  def headingcget(tagOrId, option)
+    unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      headingcget_strict(tagOrId, option)
+    else
+      begin
+        headingcget_strict(tagOrId, option)
+      rescue => e
+        begin
+          if current_headingconfiginfo(tagOrId).has_key?(option.to_s)
+            # not tag error & option is known -> error on known option
+            fail e
+          else
+            # not tag error & option is unknown
+            nil
+          end
+        rescue
+          fail e  # tag error
+        end
+      end
     end
   end
   def headingconfigure(tagOrId, slot, value=None)
@@ -590,6 +631,7 @@ module Tk::Tile::TreeviewConfig
     __current_itemconfiginfo([:heading, tagOrId], slot)
   end
   alias heading_cget headingcget
+  alias heading_cget_strict headingcget_strict
   alias heading_configure headingconfigure
   alias heading_configinfo headingconfiginfo
   alias current_heading_configinfo current_headingconfiginfo
@@ -597,6 +639,9 @@ module Tk::Tile::TreeviewConfig
   # Treeview Tag
   def tagcget(tagOrId, option)
     __itemcget([:tag, tagOrId], option)
+  end
+  def tagcget_strict(tagOrId, option)
+    __itemcget_strict([:tag, tagOrId], option)
   end
   def tagconfigure(tagOrId, slot, value=None)
     __itemconfigure([:tag, tagOrId], slot, value)
@@ -608,6 +653,7 @@ module Tk::Tile::TreeviewConfig
     __current_itemconfiginfo([:tag, tagOrId], slot)
   end
   alias tag_cget tagcget
+  alias tag_cget_strict tagcget_strict
   alias tag_configure tagconfigure
   alias tag_configinfo tagconfiginfo
   alias current_tag_configinfo current_tagconfiginfo
@@ -693,6 +739,9 @@ class Tk::Tile::Treeview::Item < TkObject
 
   def cget(option)
     @t.itemcget(@id, option)
+  end
+  def cget_strict(option)
+    @t.itemcget_strict(@id, option)
   end
 
   def configure(key, value=None)
@@ -932,6 +981,9 @@ class Tk::Tile::Treeview::Tag < TkObject
 
   def cget(option)
     @t.tagcget(@id, option)
+  end
+  def cget_strict(option)
+    @t.tagcget_strict(@id, option)
   end
 
   def configure(key, value=None)

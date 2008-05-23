@@ -42,12 +42,13 @@ class Tk::Iwidgets::Tabset
   end
 
   alias tabcget itemcget
+  alias tabcget_strict itemcget_strict
   alias tabconfigure itemconfigure
   alias tabconfiginfo itemconfiginfo
   alias current_tabconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
 

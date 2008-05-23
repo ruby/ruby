@@ -19,7 +19,7 @@ def bitmapRow(w,*args)
       TkFrame.new(row){|base|
         pack('side'=>'left', 'fill'=>'both', 'pady'=>'.25c', 'padx'=>'.25c')
         TkLabel.new(base, 'text'=>bitmap, 'width'=>9).pack('side'=>'bottom')
-        TkLabel.new(base, 'bitmap'=>bitmap).pack('side'=>'bottom')
+        Tk::Label.new(base, 'bitmap'=>bitmap).pack('side'=>'bottom')
       }
     end
   }
@@ -38,14 +38,16 @@ $bitmap_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($bitmap_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($bitmap_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left', 
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left', 
             'text'=>"このウィンドウには、Tk に組み込まれたすべてのビットマップが、それらの名前と共に表示されています。Tcl のスクリプト中では、それぞれの名前を用いて参照します。"){
   pack('side'=>'top')
 }
 
 # frame 生成
-$bitmap_buttons = TkFrame.new($bitmap_demo) {|frame|
+$bitmap_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -64,7 +66,7 @@ $bitmap_buttons = TkFrame.new($bitmap_demo) {|frame|
 $bitmap_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 設定
-TkFrame.new($bitmap_demo){|f|
+TkFrame.new(base_frame){|f|
   bitmapRow(f,'error','gray25','gray50','hourglass')
   bitmapRow(f,'info','question','questhead','warning')
   pack('side'=>'top', 'expand'=>'yes', 'fill'=>'both')

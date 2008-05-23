@@ -59,6 +59,13 @@ class Tk::BWidget::Dialog
     end
   end
 
+  def cget_strict(slot)
+    if slot.to_s == 'relative'
+      super('parent')
+    else
+      super(slot)
+    end
+  end
   def cget(slot)
     if slot.to_s == 'relative'
       super('parent')

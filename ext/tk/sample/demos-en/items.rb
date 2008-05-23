@@ -19,8 +19,10 @@ $items_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($items_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-TkLabel.new($items_demo) {
+TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
@@ -28,7 +30,7 @@ TkLabel.new($items_demo) {
 }.pack('side'=>'top')
 
 # frame
-TkFrame.new($items_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -46,7 +48,7 @@ TkFrame.new($items_demo) {|frame|
 
 # frame
 cvs = nil
-TkFrame.new($items_demo) {|cf|
+TkFrame.new(base_frame) {|cf|
   # canvas 
   cvs = TkCanvas.new(cf) {|c|
     focus

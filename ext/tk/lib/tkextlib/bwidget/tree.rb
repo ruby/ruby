@@ -358,6 +358,9 @@ class Tk::BWidget::Tree::Node
   def cget(key)
     @tree.itemcget(@id, key)
   end
+  def cget_strict(key)
+    @tree.itemcget_strict(@id, key)
+  end
 
   def configure(key, val=None)
     @tree.itemconfigure(@id, key, val)

@@ -15,8 +15,10 @@ $form_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($form_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-msg = TkLabel.new($form_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -25,7 +27,7 @@ msg = TkLabel.new($form_demo) {
 msg.pack('side'=>'top', 'fill'=>'x')
 
 # frame
-TkFrame.new($form_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -44,7 +46,7 @@ TkFrame.new($form_demo) {|frame|
 # entry 
 form_data = []
 (1..5).each{|i|
-  f = TkFrame.new($form_demo, 'bd'=>2)
+  f = TkFrame.new(base_frame, 'bd'=>2)
   e = TkEntry.new(f, 'relief'=>'sunken', 'width'=>40)
   l = TkLabel.new(f)
   e.pack('side'=>'right')

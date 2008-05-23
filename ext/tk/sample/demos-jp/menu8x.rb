@@ -16,16 +16,18 @@ $menu8x_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($menu8x_demo).pack(:fill=>:both, :expand=>true)
+
 # version check
 if $tk_version.to_f < 8.0
 
 # label 生成
-TkLabel.new($menu8x_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
     text("実行しようとしたスクリプトは Tk8.0 以上で利用できる機能を利用しているため、あなたの Ruby#{VERSION}/Tk#{$tk_version}#{(Tk::JAPANIZED_TK)? 'jp': ''} では正常に実行できません。よってデモの実行を中止しました。ただし、下のコード参照ボタンを押すことで、実行が中止されたスクリプトのソースを参照することは可能です。")
 }.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($menu8x_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -51,7 +53,7 @@ rescue
 end
 
 # label 生成
-TkLabel.new($menu8x_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
   if $tk_platform['platform'] == 'macintosh' ||
       windowingsystem == "classic" || windowingsystem == "aqua"
     text("このウィンドウは様々なメニューとカスケードメニューから構成されています。Command-X を入力すると、Xがコマンドキー記号に続いて表示されている文字ならば、アクセラレータを使った項目起動を行うことができます。メニュー要素中、最後のものは、そのメニューの最初の項目を選択することで独立させることができます。")
@@ -62,14 +64,14 @@ TkLabel.new($menu8x_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 
 # 状態表示の生成
 $menu8xstatus = TkVariable.new("    ")
-TkFrame.new($menu8x_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkLabel.new(frame, 'textvariable'=>$menu8xstatus, 'relief'=>'sunken', 
               'bd'=>1, 'font'=>['Helvetica', '10'], 'anchor'=>'w')\
   .pack('side'=>'left', 'padx'=>2, 'expand'=>'yes', 'fill'=>'both')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>2)
 
 # frame 生成
-TkFrame.new($menu8x_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'

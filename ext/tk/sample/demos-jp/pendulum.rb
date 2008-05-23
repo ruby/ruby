@@ -19,8 +19,10 @@ $pendulum_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($pendulum_demo).pack(:fill=>:both, :expand=>true)
+
 # create label
-msg = TkLabel.new($pendulum_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -29,7 +31,7 @@ msg = TkLabel.new($pendulum_demo) {
 msg.pack('side'=>'top')
 
 # create frame
-TkFrame.new($pendulum_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text 'Î»²ò'
     text 'ÊÄ¤¸¤ë'
@@ -51,7 +53,7 @@ TkFrame.new($pendulum_demo) {|frame|
 class PendulumAnimationDemo
   def initialize(frame)
     # Create some structural widgets
-    @pane = TkPanedWindow.new(frame).pack(:fill=>:both, :expand=>true)
+    @pane = TkPanedWindow.new(frame, :orient=>:horizontal).pack(:fill=>:both, :expand=>true)
 #    @pane.add(@lf1 = TkLabelFrame.new(@pane, :text=>'Pendulum Simulation'))
 #    @pane.add(@lf2 = TkLabelFrame.new(@pane, :text=>'Phase Space'))
     @lf1 = TkLabelFrame.new(@pane, :text=>'Pendulum Simulation')
@@ -237,4 +239,4 @@ class PendulumAnimationDemo
 end
 
 # Start the animation processing
-PendulumAnimationDemo.new($pendulum_demo)
+PendulumAnimationDemo.new(base_frame)

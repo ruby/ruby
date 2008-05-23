@@ -19,8 +19,10 @@ $icon_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($icon_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-msg = TkLabel.new($icon_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
@@ -29,7 +31,7 @@ msg = TkLabel.new($icon_demo) {
 msg.pack('side'=>'top')
 
 # frame
-TkFrame.new($icon_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -63,16 +65,18 @@ TkBitmapImage.new('file'=>[$demo_dir,'..',
 letters = TkVariable.new
 
 # frame
-TkFrame.new($icon_demo, 'borderwidth'=>10){|w|
+TkFrame.new(base_frame, 'borderwidth'=>10){|w|
   TkFrame.new(w) {|f|
-    TkRadioButton.new(f){
+    # TkRadioButton.new(f){
+    Tk::RadioButton.new(f){
       bitmap '@' + [$demo_dir,'..',
                     'images','letters.xbm'].join(File::Separator)
       variable letters
       value 'full'
     }.pack('side'=>'top', 'expand'=>'yes')
 
-    TkRadioButton.new(f){
+    # TkRadioButton.new(f){
+    Tk::RadioButton.new(f){
       bitmap '@' + [$demo_dir,'..',
                      'images','noletter.xbm'].join(File::Separator)
       variable letters
@@ -81,14 +85,16 @@ TkFrame.new($icon_demo, 'borderwidth'=>10){|w|
 
   }.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'5m')
 
-  TkCheckButton.new(w) {
+  # TkCheckButton.new(w) {
+  Tk::CheckButton.new(w) {
     image flagdown
     selectimage flagup
     indicatoron 0
     selectcolor self['background']
   }.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'5m')
 
-  TkCheckButton.new(w) {
+  # TkCheckButton.new(w) {
+  Tk::CheckButton.new(w) {
     bitmap '@' + [$demo_dir,'..',
                    'images','letters.xbm'].join(File::Separator)
     indicatoron 0

@@ -87,13 +87,16 @@ class Tk::Tcllib::GetString_Dialog
     @variable.value
   end
 
-  def cget(slot)
+  def cget_strict(slot)
     slot = slot.to_s
     if slot == 'text'
       @text
     else
       @keys[slot]
     end
+  end
+  def cget(slot)
+    cget_strict(slot)
   end
 
   def configure(slot, value=None)

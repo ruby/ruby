@@ -42,12 +42,13 @@ class Tk::Iwidgets::Panedwindow
   end
 
   alias panecget itemcget
+  alias panecget_strict itemcget_strict
   alias paneconfigure itemconfigure
   alias paneconfiginfo itemconfiginfo
   alias current_paneconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
 

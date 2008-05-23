@@ -2431,7 +2431,7 @@ class MultiTkIp
   def mainloop(check_root = true, restart_on_dead = true)
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
 
-    unless WITH_RUBY_VM  ### Ruby 1.9 !!!!!!!!!!!
+    if WITH_RUBY_VM  ### Ruby 1.9 !!!!!!!!!!!
       return @interp_thread.value if @interp_thread
     end
 
