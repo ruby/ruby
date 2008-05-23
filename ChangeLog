@@ -1,3 +1,10 @@
+Fri May 23 17:55:11 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_slice_bang): Be consistent with Array#slice()
+	  and String#slice!().  Just return nil when a negative length or
+	  out of boundary index is given instead of raising an exception
+	  via internal functions.
+
 Fri May 23 16:44:34 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (Init_Enumerator): Override

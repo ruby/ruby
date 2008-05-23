@@ -1803,18 +1803,21 @@ static VALUE
 rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 {
     VALUE arg1, arg2;
-    long pos, len;
+    long pos, len, orig_len;
 
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	pos = NUM2LONG(arg1);
 	len = NUM2LONG(arg2);
       delete_pos_len:
+	if (len < 0) return Qnil;
+	orig_len = RARRAY_LEN(ary);
 	if (pos < 0) {
-	    pos = RARRAY_LEN(ary) + pos;
+	    pos += orig_len;
 	    if (pos < 0) return Qnil;
 	}
-	if (RARRAY_LEN(ary) < len || RARRAY_LEN(ary) < pos + len) {
-	    len = RARRAY_LEN(ary) - pos;
+	else if (orig_len <= pos) return Qnil;
+	if (orig_len < pos + len) {
+	    len = orig_len - pos;
 	}
 	arg2 = rb_ary_new4(len, RARRAY_PTR(ary)+pos);
 	RBASIC(arg2)->klass = rb_obj_class(ary);
