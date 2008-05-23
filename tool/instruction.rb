@@ -66,13 +66,14 @@ module RubyVM
         ret = "int inc = 0;\n"
 
         @opes.each_with_index{|(t, v), i|
-          if t == 'rb_num_t'
-            ret << "        unsigned long #{v} = FIX2INT(opes[#{i}]);\n"
+          if t == 'rb_num_t' && ((re = /\b#{v}\b/n) =~ @sp_inc ||
+                                 @defopes.any?{|t, val| re =~ val})
+            ret << "        #{t} #{v} = FIX2INT(opes[#{i}]);\n"
           end
         }
         @defopes.each_with_index{|((t, var), val), i|
-          if t == 'rb_num_t' && val != '*'
-            ret << "        unsigned long #{var} = #{val};\n"
+          if t == 'rb_num_t' && val != '*' && /\b#{var}\b/ =~ @sp_inc
+            ret << "        #{t} #{var} = #{val};\n"
           end
         }
 
@@ -707,7 +708,10 @@ module RubyVM
           break
         end
 
-        ops << "  #{type} #{var} = (#{type})GET_OPERAND(#{i+1});"
+        re = /\b#{var}\b/n
+        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v}
+          ops << "  #{type} #{var} = (#{type})GET_OPERAND(#{i+1});"
+        end
         n   += 1
       }
       @opn = n

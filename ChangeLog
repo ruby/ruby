@@ -1,3 +1,11 @@
+Fri May 23 12:23:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_num_t): moved form vm.h.
+
+	* tool/instruction.rb (RubyVM::Instruction#sp_increase_c_expr),
+	  tool/instruction.rb (RubyVM::VmBodyGenerator#make_header_operands):
+	  omit unused variables.
+
 Fri May 23 06:15:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): get rid of segv.

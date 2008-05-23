@@ -13,7 +13,6 @@
 #define RUBY_VM_H
 
 typedef long OFFSET;
-typedef unsigned long rb_num_t;
 typedef unsigned long lindex_t;
 typedef unsigned long dindex_t;
 typedef rb_num_t GENTRY;

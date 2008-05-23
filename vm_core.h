@@ -88,6 +88,8 @@
 #define UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
+typedef unsigned long rb_num_t;
+
 #define ISEQ_TYPE_TOP    INT2FIX(1)
 #define ISEQ_TYPE_METHOD INT2FIX(2)
 #define ISEQ_TYPE_BLOCK  INT2FIX(3)
