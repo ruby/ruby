@@ -441,10 +441,7 @@ str_encode(int argc, VALUE *argv, VALUE str)
 VALUE
 rb_str_transcode(VALUE str, VALUE to)
 {
-    int argc = 1;
-    VALUE argv = rb_ary_new2(1);
-    rb_ary_push(argv, to);
-    return str_encode(argc, &argv, str);
+    return str_encode(1, &to, str);
 }
 
 void

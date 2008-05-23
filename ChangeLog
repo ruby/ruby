@@ -1,3 +1,7 @@
+Sat May 24 08:13:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (rb_str_transcode): argc is 1, and argv is &to.
+
 Fri May 23 17:55:11 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_slice_bang): Be consistent with Array#slice()
