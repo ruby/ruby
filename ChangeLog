@@ -22010,7 +22010,7 @@ Tue Jul 18 10:53:37 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Jul 18 00:43:05 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod): stop at dot not followed by digits.
-	  fixed: [ruby-dev:29035]
+	  fixed: [ruby-dev:29036]
 
 Tue Jul 18 00:01:27 2006  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
