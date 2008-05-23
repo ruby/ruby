@@ -177,10 +177,6 @@ define rp
     printf "T_SYMBOL: "
     print (struct RBasic *)$arg0
   else
-  if ($flags & RUBY_T_MASK) == RUBY_T_VALUES
-    printf "T_VALUES: "
-    print (struct RValues *)$arg0
-  else
   if ($flags & RUBY_T_MASK) == RUBY_T_UNDEF
     printf "T_UNDEF: "
     print (struct RBasic *)$arg0
@@ -193,7 +189,6 @@ define rp
   else
     printf "unknown: "
     print (struct RBasic *)$arg0
-  end
   end
   end
   end
