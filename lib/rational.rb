@@ -344,12 +344,12 @@ class Rational < Numeric
   # Converts the rational to an Integer.  Not the _nearest_ integer, the
   # truncated integer.  Study the following example carefully:
   #   Rational(+7,4).to_i             # -> 1
-  #   Rational(-7,4).to_i             # -> -2
+  #   Rational(-7,4).to_i             # -> -1
   #   (-1.75).to_i                    # -> -1
   #
   # In other words:
   #   Rational(-7,4) == -1.75                 # -> true
-  #   Rational(-7,4).to_i == (-1.75).to_i     # false
+  #   Rational(-7,4).to_i == (-1.75).to_i     # -> true
   #
 
 
