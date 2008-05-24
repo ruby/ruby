@@ -1204,12 +1204,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	VALUE *pt = 0;
 	int i;
 	if (flag != 0) {
-	    if (throw_state & 0x4000) {
-		pt = (void *)1;
-	    }
-	    else {
-		pt = 0;
-	    }
+	    pt = (void *) 1;
 	}
 	else {
 	    if (state == TAG_BREAK) {

@@ -1317,8 +1317,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 	    /* TODO: Dirty Hack!  Fix me */
 	    if (entry->type == CATCH_TYPE_RESCUE ||
 		entry->type == CATCH_TYPE_BREAK ||
-		(((ptr[0] & 0x10000) == 0)
-		 && entry->type == CATCH_TYPE_NEXT)) {
+		entry->type == CATCH_TYPE_NEXT) {
 		entry->sp--;
 	    }
 	}
@@ -2935,12 +2934,24 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	LABEL *break_label = iseq->compile_data->end_label = NEW_LABEL(nd_line(node));	/* break */
 	LABEL *end_label = NEW_LABEL(nd_line(node));
 
+	LABEL *next_catch_label = NEW_LABEL(nd_line(node));
+	LABEL *tmp_label = NULL;
+
 	iseq->compile_data->loopval_popped = 0;
 	iseq->compile_data->ensure_node_stack = 0;
 
 	if (type == NODE_OPT_N || node->nd_state == 1) {
 	    ADD_INSNL(ret, nd_line(node), jump, next_label);
 	}
+	else {
+	    tmp_label = NEW_LABEL(nd_line(node));
+	    ADD_INSNL(ret, nd_line(node), jump, tmp_label);
+	}
+	ADD_INSN(ret, nd_line(node), putnil);
+	ADD_LABEL(ret, next_catch_label);
+	ADD_INSN(ret, nd_line(node), pop);
+	ADD_INSNL(ret, nd_line(node), jump, next_label);
+	if (tmp_label) ADD_LABEL(ret, tmp_label);
 
 	ADD_LABEL(ret, redo_label);
 	COMPILE_POPED(ret, "while body", node->nd_body);
@@ -2972,7 +2983,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    ADD_INSN(ret, nd_line(node), putnil);
 	}
 
-	ADD_LABEL(ret, break_label);	/* braek */
+	ADD_LABEL(ret, break_label);	/* break */
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -2980,8 +2991,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label,
 			0, break_label);
-	ADD_CATCH_ENTRY(CATCH_TYPE_NEXT | 0x10000, redo_label,
-			break_label, 0, iseq->compile_data->start_label);
+	ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, 0,
+			next_catch_label);
 	ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, 0,
 			iseq->compile_data->redo_label);
 
@@ -3119,13 +3130,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    rb_iseq_t *ip;
 	    ip = iseq;
 	    while (ip) {
-		level = 0x8000;
+		level = 0x8000 | 0x4000;
 		if (ip->compile_data->redo_label != 0) {
 		    /* while loop */
 		    break;
 		}
 		else if (ip->type == ISEQ_TYPE_BLOCK) {
-		    level |= 0x4000;
 		    break;
 		}
 		else if (ip->type == ISEQ_TYPE_EVAL) {

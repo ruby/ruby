@@ -1,3 +1,10 @@
+Sat May 24 15:26:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (iseq_set_exception_table, NODE_WHILE, NODE_NEXT): remove
+	  special handling that decrements sp in CATCH_TYPE_NEXT for NODE_WHILE.
+
+	* vm.c (vm_eval_body), vm_insnhelper.c (vm_throw): remove unused code.
+
 Sat May 24 08:13:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (rb_str_transcode): argc is 1, and argv is &to.

@@ -1259,9 +1259,7 @@ vm_eval_body(rb_thread_t *th)
 			cfp->pc = cfp->iseq->iseq_encoded + entry->cont;
 			cfp->sp = cfp->bp + entry->sp;
 
-			if (!(state == TAG_REDO) &&
-			    !(state == TAG_NEXT && !escape_dfp) &&
-			    !(state == TAG_BREAK && !escape_dfp)) {
+			if (state != TAG_REDO) {
 #if OPT_STACK_CACHING
 			    initial = (GET_THROWOBJ_VAL(err));
 #else
@@ -1276,12 +1274,10 @@ vm_eval_body(rb_thread_t *th)
 	}
 	else if (state == TAG_REDO) {
 	    type = CATCH_TYPE_REDO;
-	    escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
 	    goto search_restart_point;
 	}
 	else if (state == TAG_NEXT) {
 	    type = CATCH_TYPE_NEXT;
-	    escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
 	    goto search_restart_point;
 	}
 	else {
