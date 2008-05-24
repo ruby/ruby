@@ -68,6 +68,10 @@ class TestModule < Test::Unit::TestCase
     list.reject {|c| c == PP::ObjectMixin }
   end
 
+  def remove_json_mixins(list)
+    list.reject {|c| c.instance_methods(false).include?(:to_json) }
+  end
+
   module Mixin
     MIXIN = 1
     def mixin
@@ -194,9 +198,10 @@ class TestModule < Test::Unit::TestCase
     assert_equal([User, Mixin],      User.ancestors)
     assert_equal([Mixin],            Mixin.ancestors)
 
-    assert_equal([Object, Kernel, BasicObject], remove_pp_mixins(Object.ancestors))
+    assert_equal([Object, Kernel, BasicObject],
+                 remove_json_mixins(remove_pp_mixins(Object.ancestors)))
     assert_equal([String, Comparable, Object, Kernel, BasicObject],
-                 remove_pp_mixins(String.ancestors))
+                 remove_json_mixins(remove_pp_mixins(String.ancestors)))
   end
 
   def test_class_eval
@@ -242,9 +247,10 @@ class TestModule < Test::Unit::TestCase
   def test_included_modules
     assert_equal([], Mixin.included_modules)
     assert_equal([Mixin], User.included_modules)
-    assert_equal([Kernel], remove_pp_mixins(Object.included_modules))
+    assert_equal([Kernel],
+                 remove_json_mixins(remove_pp_mixins(Object.included_modules)))
     assert_equal([Comparable, Kernel],
-                 remove_pp_mixins(String.included_modules))
+                 remove_json_mixins(remove_pp_mixins(String.included_modules)))
   end
 
   def test_instance_methods
