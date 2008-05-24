@@ -1,3 +1,7 @@
+Sun May 25 03:13:09 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (Init_Thread): Initialize recursive_key.
+
 Sun May 25 02:45:49 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* error.c (syserr_eqq): Use en.

@@ -13312,6 +13312,7 @@ Init_Thread()
 {
     VALUE cThGroup;
 
+    recursive_key = rb_intern("__recursive_key__");
     rb_eThreadError = rb_define_class("ThreadError", rb_eStandardError);
     rb_cThread = rb_define_class("Thread", rb_cObject);
     rb_undef_alloc_func(rb_cThread);
