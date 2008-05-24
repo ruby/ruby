@@ -1,3 +1,8 @@
+Sun May 25 04:30:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_modules.rb (remove_json_mixins): change judgment
+	  condition.
+
 Sun May 25 03:54:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_modules.rb (test_ancestors, test_included_modules):

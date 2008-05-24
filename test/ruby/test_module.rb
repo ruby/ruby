@@ -69,7 +69,7 @@ class TestModule < Test::Unit::TestCase
   end
 
   def remove_json_mixins(list)
-    list.reject {|c| c.instance_methods(false).include?(:to_json) }
+    list.reject {|c| c.to_s.start_with?("JSON") }
   end
 
   module Mixin
