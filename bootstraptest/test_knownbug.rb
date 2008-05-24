@@ -100,3 +100,8 @@ assert_normal_exit %q{
   100.times {|i| a << i << nil << nil }
   p a.compact!
 }
+
+assert_equal 'ok', %q{
+  a = [false]
+  (a[0] &&= true) == false ? :ok : :ng
+}, '[ruby-dev:34679]'
