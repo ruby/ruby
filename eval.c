@@ -5542,7 +5542,7 @@ rb_ensure(b_proc, data1, e_proc, data2)
     POP_TAG();
     retval = prot_tag ? prot_tag->retval : Qnil;	/* save retval */
     if (!thread_no_ensure()) {
-    (*e_proc)(data2);
+	(*e_proc)(data2);
     }
     if (prot_tag) return_value(retval);
     if (state) JUMP_TAG(state);

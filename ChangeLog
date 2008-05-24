@@ -3,6 +3,11 @@ Sat May 24 00:34:59 2008  Tanaka Akira  <akr@fsij.org>
 	* lib/rational.rb (Rational#to_i): fix rdoc.  Rational(-7,4).to_i
 	  should be -1.
 
+Fri May 23 20:22:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (reentrant_check): check reentrance via callcc.
+	  [ruby-dev:34802]
+
 Fri May 23 16:46:28 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (proc_call): Remove an unused static function.
