@@ -2078,17 +2078,24 @@ rb_ary_slice_bang(argc, argv, ary)
     VALUE ary;
 {
     VALUE arg1, arg2;
-    long pos, len;
+    long pos, len, orig_len;
 
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	pos = NUM2LONG(arg1);
 	len = NUM2LONG(arg2);
       delete_pos_len:
+	if (len < 0) return Qnil;
+	orig_len = RARRAY_LEN(ary);
 	if (pos < 0) {
-	    pos = RARRAY(ary)->len + pos;
+	    pos += orig_len;
 	    if (pos < 0) return Qnil;
 	}
-	arg2 = rb_ary_subseq(ary, pos, len);
+	else if (orig_len <= pos) return Qnil;
+	if (orig_len < pos + len) {
+	    len = orig_len - pos;
+	}
+	arg2 = rb_ary_new4(len, RARRAY_PTR(ary)+pos);
+	RBASIC(arg2)->klass = rb_obj_class(ary);
 	rb_ary_splice(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
 	return arg2;
     }

@@ -1,3 +1,18 @@
+Sun May 25 05:07:19 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_slice_bang): Be consistent with Array#slice()
+	  and String#slice!().  Just return nil when a negative length or
+	  out of boundary index is given instead of raising an exception
+	  via internal functions.
+	  (rb_ary_slice_bang): should not use rb_ary_subseq() which shares
+	  internal pointer.  splice modifies the receiver right after
+	  subseq.  [ruby-dev:34005]
+	  (rb_ary_slice_bang): should adjust length before making
+	  sub-array.
+
+	* enumerator.c (Init_Enumerator): Override
+	  Enumerable::Enumerator#each_with_index with #with_index.
+
 Sun May 25 03:13:09 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (Init_Thread): Initialize recursive_key.
