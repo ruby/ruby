@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 # use of $= is deprecated after 1.7.1
 def pre_1_7_1
@@ -1506,6 +1507,73 @@ class TestString < Test::Unit::TestCase
     assert_equal(676, count)
   end
 
+  def test_mod_check
+    assert_raise(RuntimeError) {
+      s = ""
+      s.sub!(/\A/) { s.replace "z" * 2000; "zzz" }
+    }
+  end
+
+  def test_frozen_check
+    assert_raise(RuntimeError) {
+      s = ""
+      s.sub!(/\A/) { s.freeze; "zzz" }
+    }
+  end
+
+  def test_tainted_str_new
+    a = []
+    a << a
+    s = a.inspect
+    assert(s.tainted?)
+    assert_equal("[[...]]", s)
+  end
+
+  class S2 < String
+  end
+  def test_str_new4
+    s = (0..54).to_a.join # length = 100
+    s2 = S2.new(s[10,90])
+    s3 = s2[10,80]
+    assert_equal((10..54).to_a.to_a.join, s2)
+    assert_equal((15..54).to_a.to_a.join, s3)
+  end
+
+  def test_rb_str_new4
+    s = "a" * 100
+    s2 = s[10,90]
+    assert_equal("a" * 90, s2)
+    s3 = s2[10,80]
+    assert_equal("a" * 80, s3)
+  end
+
+  class StringLike
+    def initialize(str)
+      @str = str
+    end
+
+    def to_str
+      @str
+    end
+  end
+
+  def test_rb_str_to_str
+    assert_equal("ab", "a" + StringLike.new("b"))
+  end
+
+  def test_rb_str_shared_replace
+    s = "a" * 100
+    s.succ!
+    assert_equal("a" * 99 + "b", s)
+    s = ""
+    s.succ!
+    assert_equal("", s)
+  end
+
+  def test_times
+    assert_raise(ArgumentError) { "a" * (-1) }
+  end
+
   def test_splice!
     l = S("1234\n234\n34\n4\n")
     assert_equal(S("1234\n"), l.slice!(/\A.*\n/), "[ruby-dev:31665]")
@@ -1604,5 +1672,9 @@ class TestString < Test::Unit::TestCase
       c.class_eval { attr o }
     end
     assert_equal(:foo, c.new.foo)
+  end
+
+  def test_gsub_enumerator
+    assert_normal_exit %q{"abc".gsub(/./).next}, "[ruby-dev:34828]"
   end
 end
