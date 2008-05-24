@@ -67,10 +67,10 @@ Fri May 23 04:22:19 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: avoid trouble when finalize TclTkIp.
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/tk/*: help to fix troubles when 
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/*: help to fix troubles when
 	  use Ttk widgets on old Tk scripts.
 
-	* ext/tk/sample/*: update and add demo stcipts. some of them are 
+	* ext/tk/sample/*: update and add demo scripts. some of them are
 	  introduction about new features of Tcl/Tk8.5.
 
 Fri May 23 03:48:10 2008  Akinori MUSHA  <knu@iDaemons.org>
