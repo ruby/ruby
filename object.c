@@ -2354,6 +2354,7 @@ rb_cstr_to_dbl(p, badcheck)
     else {
 	while (ISSPACE(*p) || *p == '_') p++;
     }
+    errno = 0;
     d = strtod(p, &end);
     if (errno == ERANGE) {
 	OutOfRange();

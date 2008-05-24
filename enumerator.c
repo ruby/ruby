@@ -25,17 +25,6 @@ static VALUE sym_each;
 
 VALUE rb_eStopIteration;
 
-static VALUE
-proc_call(proc, args)
-    VALUE proc;
-    VALUE args;
-{
-    if (TYPE(args) != T_ARRAY) {
-	args = rb_ary_new3(1, args);
-    }
-    return rb_proc_call(proc, args);
-}
-
 struct enumerator {
     VALUE obj;
     ID    meth;

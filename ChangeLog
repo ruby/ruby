@@ -1,3 +1,31 @@
+Sun May 25 02:45:49 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* error.c (syserr_eqq): Use en.
+
+Sat May 24 22:32:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): should clear errno before calling
+	  strtod(3).  [ruby-dev:34834]
+
+Sat May 24 22:27:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (marshal_load): should initialize arg.data used for
+	  reentrant check.  [ruby-dev:34837]
+
+Sat May 24 00:34:59 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/rational.rb (Rational#to_i): fix rdoc.  Rational(-7,4).to_i
+	  should be -1.
+
+Fri May 23 20:22:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (reentrant_check): check reentrance via callcc.
+	  [ruby-dev:34802]
+
+Fri May 23 16:46:28 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (proc_call): Remove an unused static function.
+
 Fri May 23 13:46:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (cflags): commit miss.
@@ -8,6 +36,11 @@ Fri May 23 09:52:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  [ruby-core:16642]
 
 	* ext/extmk.rb: load purelib.rb only when not cross compiling.
+
+Fri May 23 08:47:02 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (syserr_eqq): === should be able to handle delegated
+	  objects as well.
 
 Fri May 23 04:22:19 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
