@@ -1176,10 +1176,12 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
 	}
     }
     if ((state = EXEC_TAG()) == 0) {
+	VALUE rb_vm_call(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
+			 int argc, const VALUE *argv, const NODE *body, int nosuper);
+
 	PASS_PASSED_BLOCK();
-	result = vm_call0(GET_THREAD(),
-			  data->oclass, data->recv, data->id, data->oid,
-			  argc, argv, data->body, 0);
+	result = rb_vm_call(GET_THREAD(), data->oclass, data->recv, data->id, data->oid,
+			    argc, argv, data->body, 0);
     }
     POP_TAG();
     if (safe >= 0)

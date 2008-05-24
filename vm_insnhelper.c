@@ -100,7 +100,7 @@ vm_pop_frame(rb_thread_t *th)
 
 static inline int
 vm_callee_setup_arg(rb_thread_t *th, const rb_iseq_t * iseq,
-		    int orig_argc, VALUE * orig_argv, rb_block_t **block)
+		    int orig_argc, VALUE * orig_argv, const rb_block_t **block)
 {
     const int m = iseq->argc;
 
@@ -426,8 +426,8 @@ vm_method_missing(rb_thread_t *th, ID id, VALUE recv,
 }
 
 static inline void
-vm_setup_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
-		const int argc, rb_block_t *blockptr, const VALUE flag,
+vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
+		const int argc, const rb_block_t *blockptr, const VALUE flag,
 		const VALUE iseqval, const VALUE recv, const VALUE klass)
 {
     rb_iseq_t *iseq;
@@ -648,7 +648,7 @@ block_proc_is_lambda(const VALUE procval)
 }
 
 static inline VALUE
-vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
+vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		    VALUE self, int argc, const VALUE *argv)
 {
     NODE *ifunc = (NODE *) block->iseq;
@@ -679,7 +679,7 @@ vm_yield_with_cfunc(rb_thread_t *th, rb_block_t *block,
 static inline int
 vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
 		    int orig_argc, VALUE *argv,
-		    rb_block_t *blockptr, int lambda)
+		    const rb_block_t *blockptr, int lambda)
 {
     if (0) { /* for debug */
 	printf("     argc: %d\n", orig_argc);

@@ -1,11 +1,18 @@
 /* -*-c-*- */
 /*
- * This file is included by eval.c
+ * This file is included by vm_eval.c
  */
 
 #define CACHE_SIZE 0x800
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
+
+static void rb_vm_check_redefinition_opt_method(const NODE *node);
+
+static ID __send__, object_id;
+static ID removed, singleton_removed, undefined, singleton_undefined;
+static ID eqq, each, aref, aset, match, missing;
+static ID added, singleton_added;
 
 struct cache_entry {		/* method hash table. */
     ID mid;			/* method's id */
@@ -16,7 +23,8 @@ struct cache_entry {		/* method hash table. */
 };
 
 static struct cache_entry cache[CACHE_SIZE];
-static int ruby_running = 0;
+#define ruby_running (GET_VM()->running)
+/* int ruby_running = 0; */
 
 void
 rb_clear_cache(void)
@@ -154,7 +162,7 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
 		}
 	    }
 	}
-	if (klass == rb_cObject && node && mid == init) {
+	if (klass == rb_cObject && node && mid == idInitialize) {
 	    rb_warn("redefining Object#initialize may cause infinite loop");
 	}
 
@@ -304,7 +312,7 @@ remove_method(VALUE klass, ID mid)
     }
     if (OBJ_FROZEN(klass))
 	rb_error_frozen("class/module");
-    if (mid == object_id || mid == __send__ || mid == init) {
+    if (mid == object_id || mid == __send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problem", rb_id2name(mid));
     }
     if (st_lookup(RCLASS_M_TBL(klass), mid, &data)) {
@@ -471,7 +479,7 @@ rb_undef(VALUE klass, ID id)
 		 rb_id2name(id));
     }
     rb_frozen_class_p(klass);
-    if (id == object_id || id == __send__ || id == init) {
+    if (id == object_id || id == __send__ || id == idInitialize) {
 	rb_warn("undefining `%s' may cause serious problem", rb_id2name(id));
     }
     body = search_method(klass, id, &origin);
@@ -560,6 +568,160 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
     return mod;
 }
 
+/*
+ *  call-seq:
+ *     mod.method_defined?(symbol)    => true or false
+ *
+ *  Returns +true+ if the named method is defined by
+ *  _mod_ (or its included modules and, if _mod_ is a class,
+ *  its ancestors). Public and protected methods are matched.
+ *
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *
+ *     A.method_defined? :method1    #=> true
+ *     C.method_defined? "method1"   #=> true
+ *     C.method_defined? "method2"   #=> true
+ *     C.method_defined? "method3"   #=> true
+ *     C.method_defined? "method4"   #=> false
+ */
+
+static VALUE
+rb_mod_method_defined(VALUE mod, VALUE mid)
+{
+    return rb_method_boundp(mod, rb_to_id(mid), 1);
+}
+
+#define VISI_CHECK(x,f) (((x)&NOEX_MASK) == (f))
+
+/*
+ *  call-seq:
+ *     mod.public_method_defined?(symbol)   => true or false
+ *
+ *  Returns +true+ if the named public method is defined by
+ *  _mod_ (or its included modules and, if _mod_ is a class,
+ *  its ancestors).
+ *
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       protected
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *
+ *     A.method_defined? :method1           #=> true
+ *     C.public_method_defined? "method1"   #=> true
+ *     C.public_method_defined? "method2"   #=> false
+ *     C.method_defined? "method2"          #=> true
+ */
+
+static VALUE
+rb_mod_public_method_defined(VALUE mod, VALUE mid)
+{
+    ID id = rb_to_id(mid);
+    NODE *method;
+
+    method = rb_method_node(mod, id);
+    if (method) {
+	if (VISI_CHECK(method->nd_noex, NOEX_PUBLIC))
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     mod.private_method_defined?(symbol)    => true or false
+ *
+ *  Returns +true+ if the named private method is defined by
+ *  _ mod_ (or its included modules and, if _mod_ is a class,
+ *  its ancestors).
+ *
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       private
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *
+ *     A.method_defined? :method1            #=> true
+ *     C.private_method_defined? "method1"   #=> false
+ *     C.private_method_defined? "method2"   #=> true
+ *     C.method_defined? "method2"           #=> false
+ */
+
+static VALUE
+rb_mod_private_method_defined(VALUE mod, VALUE mid)
+{
+    ID id = rb_to_id(mid);
+    NODE *method;
+
+    method = rb_method_node(mod, id);
+    if (method) {
+	if (VISI_CHECK(method->nd_noex, NOEX_PRIVATE))
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     mod.protected_method_defined?(symbol)   => true or false
+ *
+ *  Returns +true+ if the named protected method is defined
+ *  by _mod_ (or its included modules and, if _mod_ is a
+ *  class, its ancestors).
+ *
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       protected
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       include A
+ *       def method3()  end
+ *     end
+ *
+ *     A.method_defined? :method1              #=> true
+ *     C.protected_method_defined? "method1"   #=> false
+ *     C.protected_method_defined? "method2"   #=> true
+ *     C.method_defined? "method2"             #=> true
+ */
+
+static VALUE
+rb_mod_protected_method_defined(VALUE mod, VALUE mid)
+{
+    ID id = rb_to_id(mid);
+    NODE *method;
+
+    method = rb_method_node(mod, id);
+    if (method) {
+	if (VISI_CHECK(method->nd_noex, NOEX_PROTECTED))
+	    return Qtrue;
+    }
+    return Qfalse;
+}
+
 void
 rb_alias(VALUE klass, ID name, ID def)
 {
@@ -646,9 +808,338 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 }
 
 static void
+secure_visibility(VALUE self)
+{
+    if (rb_safe_level() >= 4 && !OBJ_TAINTED(self)) {
+	rb_raise(rb_eSecurityError,
+		 "Insecure: can't change method visibility");
+    }
+}
+
+static void
+set_method_visibility(VALUE self, int argc, VALUE *argv, ID ex)
+{
+    int i;
+    secure_visibility(self);
+    for (i = 0; i < argc; i++) {
+	rb_export_method(self, rb_to_id(argv[i]), ex);
+    }
+    rb_clear_cache_by_class(self);
+}
+
+/*
+ *  call-seq:
+ *     public                 => self
+ *     public(symbol, ...)    => self
+ *
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to public. With arguments, sets the named methods to
+ *  have public visibility.
+ */
+
+static VALUE
+rb_mod_public(int argc, VALUE *argv, VALUE module)
+{
+    secure_visibility(module);
+    if (argc == 0) {
+	SCOPE_SET(NOEX_PUBLIC);
+    }
+    else {
+	set_method_visibility(module, argc, argv, NOEX_PUBLIC);
+    }
+    return module;
+}
+
+/*
+ *  call-seq:
+ *     protected                => self
+ *     protected(symbol, ...)   => self
+ *
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to protected. With arguments, sets the named methods
+ *  to have protected visibility.
+ */
+
+static VALUE
+rb_mod_protected(int argc, VALUE *argv, VALUE module)
+{
+    secure_visibility(module);
+    if (argc == 0) {
+	SCOPE_SET(NOEX_PROTECTED);
+    }
+    else {
+	set_method_visibility(module, argc, argv, NOEX_PROTECTED);
+    }
+    return module;
+}
+
+/*
+ *  call-seq:
+ *     private                 => self
+ *     private(symbol, ...)    => self
+ *
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to private. With arguments, sets the named methods
+ *  to have private visibility.
+ *
+ *     module Mod
+ *       def a()  end
+ *       def b()  end
+ *       private
+ *       def c()  end
+ *       private :a
+ *     end
+ *     Mod.private_instance_methods   #=> [:a, :c]
+ */
+
+static VALUE
+rb_mod_private(int argc, VALUE *argv, VALUE module)
+{
+    secure_visibility(module);
+    if (argc == 0) {
+	SCOPE_SET(NOEX_PRIVATE);
+    }
+    else {
+	set_method_visibility(module, argc, argv, NOEX_PRIVATE);
+    }
+    return module;
+}
+
+/*
+ *  call-seq:
+ *     mod.public_class_method(symbol, ...)    => mod
+ *
+ *  Makes a list of existing class methods public.
+ */
+
+static VALUE
+rb_mod_public_method(int argc, VALUE *argv, VALUE obj)
+{
+    set_method_visibility(CLASS_OF(obj), argc, argv, NOEX_PUBLIC);
+    return obj;
+}
+
+/*
+ *  call-seq:
+ *     mod.private_class_method(symbol, ...)   => mod
+ *
+ *  Makes existing class methods private. Often used to hide the default
+ *  constructor <code>new</code>.
+ *
+ *     class SimpleSingleton  # Not thread safe
+ *       private_class_method :new
+ *       def SimpleSingleton.create(*args, &block)
+ *         @me = new(*args, &block) if ! @me
+ *         @me
+ *       end
+ *     end
+ */
+
+static VALUE
+rb_mod_private_method(int argc, VALUE *argv, VALUE obj)
+{
+    set_method_visibility(CLASS_OF(obj), argc, argv, NOEX_PRIVATE);
+    return obj;
+}
+
+/*
+ *  call-seq:
+ *     public
+ *     public(symbol, ...)
+ *
+ *  With no arguments, sets the default visibility for subsequently
+ *  defined methods to public. With arguments, sets the named methods to
+ *  have public visibility.
+ */
+
+static VALUE
+top_public(int argc, VALUE *argv)
+{
+    return rb_mod_public(argc, argv, rb_cObject);
+}
+
+static VALUE
+top_private(int argc, VALUE *argv)
+{
+    return rb_mod_private(argc, argv, rb_cObject);
+}
+
+/*
+ *  call-seq:
+ *     module_function(symbol, ...)    => self
+ *
+ *  Creates module functions for the named methods. These functions may
+ *  be called with the module as a receiver, and also become available
+ *  as instance methods to classes that mix in the module. Module
+ *  functions are copies of the original, and so may be changed
+ *  independently. The instance-method versions are made private. If
+ *  used with no arguments, subsequently defined methods become module
+ *  functions.
+ *
+ *     module Mod
+ *       def one
+ *         "This is one"
+ *       end
+ *       module_function :one
+ *     end
+ *     class Cls
+ *       include Mod
+ *       def callOne
+ *         one
+ *       end
+ *     end
+ *     Mod.one     #=> "This is one"
+ *     c = Cls.new
+ *     c.callOne   #=> "This is one"
+ *     module Mod
+ *       def one
+ *         "This is the new one"
+ *       end
+ *     end
+ *     Mod.one     #=> "This is one"
+ *     c.callOne   #=> "This is the new one"
+ */
+
+static VALUE
+rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
+{
+    int i;
+    ID id;
+    NODE *fbody;
+
+    if (TYPE(module) != T_MODULE) {
+	rb_raise(rb_eTypeError, "module_function must be called for modules");
+    }
+
+    secure_visibility(module);
+    if (argc == 0) {
+	SCOPE_SET(NOEX_MODFUNC);
+	return module;
+    }
+
+    set_method_visibility(module, argc, argv, NOEX_PRIVATE);
+
+    for (i = 0; i < argc; i++) {
+	VALUE m = module;
+
+	id = rb_to_id(argv[i]);
+	for (;;) {
+	    fbody = search_method(m, id, &m);
+	    if (fbody == 0) {
+		fbody = search_method(rb_cObject, id, &m);
+	    }
+	    if (fbody == 0 || fbody->nd_body == 0) {
+		rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
+	    }
+	    if (nd_type(fbody->nd_body->nd_body) != NODE_ZSUPER) {
+		break;		/* normal case: need not to follow 'super' link */
+	    }
+	    m = RCLASS_SUPER(m);
+	    if (!m)
+		break;
+	}
+	rb_add_method(rb_singleton_class(module), id, fbody->nd_body->nd_body,
+		      NOEX_PUBLIC);
+    }
+    return module;
+}
+
+/*
+ *  call-seq:
+ *     obj.respond_to?(symbol, include_private=false) => true or false
+ *
+ *  Returns +true+> if _obj_ responds to the given
+ *  method. Private methods are included in the search only if the
+ *  optional second parameter evaluates to +true+.
+ */
+
+static NODE *basic_respond_to = 0;
+
+int
+rb_obj_respond_to(VALUE obj, ID id, int priv)
+{
+    VALUE klass = CLASS_OF(obj);
+
+    if (rb_method_node(klass, idRespond_to) == basic_respond_to) {
+	return rb_method_boundp(klass, id, !priv);
+    }
+    else {
+	VALUE args[2];
+	int n = 0;
+	args[n++] = ID2SYM(id);
+	if (priv)
+	    args[n++] = Qtrue;
+	return RTEST(rb_funcall2(obj, idRespond_to, n, args));
+    }
+}
+
+int
+rb_respond_to(VALUE obj, ID id)
+{
+    return rb_obj_respond_to(obj, id, Qfalse);
+}
+
+/*
+ *  call-seq:
+ *     obj.respond_to?(symbol, include_private=false) => true or false
+ *
+ *  Returns +true+> if _obj_ responds to the given
+ *  method. Private methods are included in the search only if the
+ *  optional second parameter evaluates to +true+.
+ */
+
+static VALUE
+obj_respond_to(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE mid, priv;
+    ID id;
+
+    rb_scan_args(argc, argv, "11", &mid, &priv);
+    id = rb_to_id(mid);
+    if (rb_method_boundp(CLASS_OF(obj), id, !RTEST(priv))) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
+void
 Init_eval_method(void)
 {
+    rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
+    basic_respond_to = rb_method_node(rb_cObject, idRespond_to);
+    rb_register_mark_object((VALUE)basic_respond_to);
+
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
+    rb_define_private_method(rb_cModule, "public", rb_mod_public, -1);
+    rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
+    rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
+    rb_define_private_method(rb_cModule, "module_function", rb_mod_modfunc, -1);
+
+    rb_define_method(rb_cModule, "method_defined?", rb_mod_method_defined, 1);
+    rb_define_method(rb_cModule, "public_method_defined?", rb_mod_public_method_defined, 1);
+    rb_define_method(rb_cModule, "private_method_defined?", rb_mod_private_method_defined, 1);
+    rb_define_method(rb_cModule, "protected_method_defined?", rb_mod_protected_method_defined, 1);
+    rb_define_method(rb_cModule, "public_class_method", rb_mod_public_method, -1);
+    rb_define_method(rb_cModule, "private_class_method", rb_mod_private_method, -1);
+
+    rb_define_singleton_method(rb_vm_top_self(), "public", top_public, -1);
+    rb_define_singleton_method(rb_vm_top_self(), "private", top_private, -1);
+
+    object_id = rb_intern("object_id");
+    __send__ = rb_intern("__send__");
+    eqq = rb_intern("===");
+    each = rb_intern("each");
+    aref = rb_intern("[]");
+    aset = rb_intern("[]=");
+    match = rb_intern("=~");
+    missing = rb_intern("method_missing");
+    added = rb_intern("method_added");
+    singleton_added = rb_intern("singleton_method_added");
+    removed = rb_intern("method_removed");
+    singleton_removed = rb_intern("singleton_method_removed");
+    undefined = rb_intern("method_undefined");
+    singleton_undefined = rb_intern("singleton_method_undefined");
 }
+

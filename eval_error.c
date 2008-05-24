@@ -3,34 +3,6 @@
  * included by eval.c
  */
 
-const char *
-rb_sourcefile(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-
-    if (cfp) {
-	return RSTRING_PTR(cfp->iseq->filename);
-    }
-    else {
-	return 0;
-    }
-}
-
-int
-rb_sourceline(void)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-
-    if (cfp) {
-	return vm_get_sourceline(cfp);
-    }
-    else {
-	return 0;
-    }
-}
-
 static void
 warn_printf(const char *fmt, ...)
 {
@@ -77,6 +49,12 @@ get_backtrace(VALUE info)
     if (NIL_P(info))
 	return Qnil;
     return rb_check_backtrace(info);
+}
+
+VALUE
+rb_get_backtrace(VALUE info)
+{
+    return get_backtrace(info);
 }
 
 static void

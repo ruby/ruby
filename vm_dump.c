@@ -97,6 +97,8 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	    iseq_name = "<ifunc>";
 	}
 	else {
+	    int vm_get_sourceline(rb_control_frame_t *);
+
 	    pc = cfp->pc - cfp->iseq->iseq_encoded;
 	    iseq_name = RSTRING_PTR(cfp->iseq->name);
 	    line = vm_get_sourceline(cfp);
@@ -579,7 +581,7 @@ rb_vm_bugreport(void)
 	int i;
 	SDR();
 
-	bt = vm_backtrace(th, 0);
+	bt = rb_make_backtrace(th, 0);
 	if (TYPE(bt) == T_ARRAY)
 	for (i = 0; i < RARRAY_LEN(bt); i++) {
 	    dp(RARRAY_PTR(bt)[i]);

@@ -50,5 +50,6 @@ extern ID idBitblt;
 extern ID idAnswer;
 extern ID idSend;
 extern ID id__send__;
-
+extern ID idRespond_to;
+extern ID idInitialize;
 #endif /* RUBY_ID_H */

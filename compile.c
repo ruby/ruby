@@ -26,11 +26,7 @@
 #define va_init_list(a,b) va_start(a)
 #endif
 
-/* iseq.c */
 VALUE iseq_load(VALUE self, VALUE data, VALUE parent, VALUE opt);
-
-/* vm.c */
-VALUE vm_eval(void *);
 
 /* types */
 
@@ -294,12 +290,11 @@ int
 iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-
+    extern const void **vm_get_insns_address_table(void);
 #if OPT_DIRECT_THREADED_CODE
-    const void *const *table = (const void **)vm_eval(0);
+    const void * const *table = vm_get_insns_address_table();
 #else
-    extern const void *const *get_insns_address_table();
-    const void *const *table = get_insns_address_table();
+    const void * const *table = vm_get_insns_address_table();
 #endif
     int i;
 

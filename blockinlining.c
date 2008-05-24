@@ -195,7 +195,7 @@ invoke_Integer_times_special_block(VALUE num)
 	    th->cfp->lfp[0] = GC_GUARDED_PTR(&block);
 	    argv[0] = INT2FIX(0);
 	    argv[1] = num;
-	    val = vm_yield(th, 2, argv);
+	    val = rb_yield_values(2, argv);
 	    if (val == Qundef) {
 		return num;
 	    }
@@ -314,7 +314,7 @@ invoke_Range_each_special_block(VALUE range,
 	    th->cfp->lfp[0] = GC_GUARDED_PTR(&block);
 	    argv[0] = beg;
 	    argv[1] = end;
-	    val = vm_yield(th, 2, argv);
+	    val = rb_yield_values(2, argv);
 	    if (val == Qundef) {
 		return range;
 	    }
@@ -444,7 +444,7 @@ invoke_Array_each_special_block(VALUE ary)
 	    th->cfp->lfp[0] = GC_GUARDED_PTR(&block);
 	    argv[0] = 0;
 	    argv[1] = ary;
-	    val = vm_yield(th, 2, argv);
+	    val = rb_yield_values(2, argv);
 	    if (val == Qundef) {
 		return ary;
 	    }

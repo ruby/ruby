@@ -16,6 +16,7 @@
 
 #include "insnhelper.h"
 #include "vm_insnhelper.c"
+#include "vm_eval.c"
 
 #define BUFSIZE 0x100
 #define PROCDEBUG 0
@@ -58,8 +59,8 @@ rb_vm_set_finish_env(rb_thread_t * th)
     return Qtrue;
 }
 
-void
-rb_vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
+static void
+vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
 {
     rb_iseq_t *iseq;
     GetISeqPtr(iseqval, iseq);
@@ -76,8 +77,8 @@ rb_vm_set_top_stack(rb_thread_t * th, VALUE iseqval)
 		  th->cfp->sp, 0, iseq->local_size);
 }
 
-void
-rb_vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref)
+static void
+vm_set_eval_stack(rb_thread_t * th, VALUE iseqval, const NODE *cref)
 {
     rb_iseq_t *iseq;
     rb_block_t * const block = th->base_block;
@@ -411,152 +412,18 @@ vm_make_proc(rb_thread_t *th,
     return procval;
 }
 
-/* C -> Ruby: method */
-
-VALUE
-vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
-	 int argc, const VALUE *argv, const NODE *body, int nosuper)
-{
-    VALUE val;
-    rb_block_t *blockptr = 0;
-
-    if (0) printf("id: %s, nd: %s, argc: %d, passed: %p\n",
-		  rb_id2name(id), ruby_node_name(nd_type(body)),
-		  argc, th->passed_block);
-
-    if (th->passed_block) {
-	blockptr = th->passed_block;
-	th->passed_block = 0;
-    }
-    switch (nd_type(body)) {
-      case RUBY_VM_METHOD_NODE:{
-	rb_control_frame_t *reg_cfp;
-	VALUE iseqval = (VALUE)body->nd_body;
-	int i;
-
-	rb_vm_set_finish_env(th);
-	reg_cfp = th->cfp;
-
-	CHECK_STACK_OVERFLOW(reg_cfp, argc + 1);
-
-	*reg_cfp->sp++ = recv;
-	for (i = 0; i < argc; i++) {
-	    *reg_cfp->sp++ = argv[i];
-	}
-
-	vm_setup_method(th, reg_cfp, argc, blockptr, 0, iseqval, recv, klass);
-	val = vm_eval_body(th);
-	break;
-      }
-      case NODE_CFUNC: {
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
-	{
-	    rb_control_frame_t *reg_cfp = th->cfp;
-	    rb_control_frame_t *cfp =
-		vm_push_frame(th, 0, FRAME_MAGIC_CFUNC,
-			      recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
-
-	    cfp->method_id = id;
-	    cfp->method_class = klass;
-
-	    val = call_cfunc(body->nd_cfnc, recv, body->nd_argc, argc, argv);
-
-	    if (reg_cfp != th->cfp + 1) {
-		SDR2(reg_cfp);
-		SDR2(th->cfp-5);
-		rb_bug("cfp consistency error - call0");
-		th->cfp = reg_cfp;
-	    }
-	    vm_pop_frame(th);
-	}
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
-	break;
-      }
-      case NODE_ATTRSET:{
-	if (argc != 1) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 1)", argc);
-	}
-	val = rb_ivar_set(recv, body->nd_vid, argv[0]);
-	break;
-      }
-      case NODE_IVAR: {
-	if (argc != 0) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
-		     argc);
-	}
-	val = rb_attr_get(recv, body->nd_vid);
-	break;
-      }
-      case NODE_BMETHOD:{
-	val = vm_call_bmethod(th, id, body->nd_cval,
-			      recv, klass, argc, (VALUE *)argv, blockptr);
-	break;
-      }
-      default:
-	rb_bug("unsupported: vm_call0(%s)", ruby_node_name(nd_type(body)));
-    }
-    RUBY_VM_CHECK_INTS();
-    return val;
-}
-
-static VALUE
-vm_call_super(rb_thread_t * const th, const int argc, const VALUE * const argv)
-{
-    VALUE recv = th->cfp->self;
-    VALUE klass;
-    ID id;
-    NODE *body;
-    rb_control_frame_t *cfp = th->cfp;
-
-    if (!cfp->iseq) {
-	klass = cfp->method_class;
-	klass = RCLASS_SUPER(klass);
-
-	if (klass == 0) {
-	    klass = vm_search_normal_superclass(cfp->method_class, recv);
-	}
-
-	id = cfp->method_id;
-    }
-    else {
-	rb_bug("vm_call_super: should not be reached");
-    }
-
-    body = rb_method_node(klass, id);	/* this returns NODE_METHOD */
-
-    if (body) {
-	body = body->nd_body;
-    }
-    else {
-	dp(recv);
-	dp(klass);
-	dpi(id);
-	rb_bug("vm_call_super: not found");
-    }
-
-    return vm_call0(th, klass, recv, id, id, argc, argv, body, CALL_SUPER);
-}
-
-VALUE
-rb_call_super(int argc, const VALUE *argv)
-{
-    PASS_PASSED_BLOCK();
-    return vm_call_super(GET_THREAD(), argc, argv);
-}
-
 /* C -> Ruby: block */
 
 static inline VALUE
-invoke_block_from_c(rb_thread_t *th, rb_block_t *block,
+invoke_block_from_c(rb_thread_t *th, const rb_block_t *block,
 		    VALUE self, int argc, const VALUE *argv,
-		    rb_block_t *blockptr, const NODE *cref)
+		    const rb_block_t *blockptr, const NODE *cref)
 {
     if (BUILTIN_TYPE(block->iseq) != T_NODE) {
-	rb_iseq_t *iseq = block->iseq;
-	rb_control_frame_t *cfp = th->cfp;
-	int i, opt_pc;
-	const int arg_size = iseq->arg_size;
-	const int type = block_proc_is_lambda(block->proc) ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
+	const rb_iseq_t *iseq = block->iseq;
+	const rb_control_frame_t *cfp = th->cfp;
+	int i, opt_pc, arg_size = iseq->arg_size;
+	int type = block_proc_is_lambda(block->proc) ? FRAME_MAGIC_LAMBDA : FRAME_MAGIC_BLOCK;
 
 	rb_vm_set_finish_env(th);
 
@@ -585,10 +452,10 @@ invoke_block_from_c(rb_thread_t *th, rb_block_t *block,
     }
 }
 
-static inline rb_block_t *
+static inline const rb_block_t *
 check_block(rb_thread_t *th)
 {
-    rb_block_t *blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
+    const rb_block_t *blockptr = GC_GUARDED_PTR_REF(th->cfp->lfp[0]);
 
     if (blockptr == 0) {
 	vm_localjump_error("no block given", Qnil, 0);
@@ -597,17 +464,17 @@ check_block(rb_thread_t *th)
     return blockptr;
 }
 
-VALUE
+static inline VALUE
 vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref)
 {
-    rb_block_t *blockptr = check_block(th);
+    const rb_block_t *blockptr = check_block(th);
     return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, cref);
 }
 
-VALUE
+static inline VALUE
 vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 {
-    rb_block_t *blockptr = check_block(th);
+    const rb_block_t *blockptr = check_block(th);
     return invoke_block_from_c(th, blockptr, blockptr->self, argc, argv, 0, 0);
 }
 
@@ -654,7 +521,7 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 
 /* special variable */
 
-VALUE
+static VALUE
 vm_cfp_svar_get(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key)
 {
     while (cfp->pc == 0) {
@@ -663,7 +530,7 @@ vm_cfp_svar_get(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key)
     return lfp_svar_get(th, cfp->lfp, key);
 }
 
-void
+static void
 vm_cfp_svar_set(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key, const VALUE val)
 {
     while (cfp->pc == 0) {
@@ -713,10 +580,10 @@ rb_lastline_set(VALUE val)
 /* backtrace */
 
 int
-vm_get_sourceline(rb_control_frame_t *cfp)
+vm_get_sourceline(const rb_control_frame_t *cfp)
 {
     int line_no = 0;
-    rb_iseq_t *iseq = cfp->iseq;
+    const rb_iseq_t *iseq = cfp->iseq;
 
     if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	int i;
@@ -736,7 +603,7 @@ vm_get_sourceline(rb_control_frame_t *cfp)
 
 static VALUE
 vm_backtrace_each(rb_thread_t *th,
-		  rb_control_frame_t *limit_cfp, rb_control_frame_t *cfp,
+		  const rb_control_frame_t *limit_cfp, const rb_control_frame_t *cfp,
 		  const char * file, int line_no, VALUE ary)
 {
     VALUE str;
@@ -765,12 +632,12 @@ vm_backtrace_each(rb_thread_t *th,
     return rb_ary_reverse(ary);
 }
 
-VALUE
+static inline VALUE
 vm_backtrace(rb_thread_t *th, int lev)
 {
     VALUE ary;
-    rb_control_frame_t *cfp = th->cfp;
-    rb_control_frame_t *top_of_cfp = (void *)(th->stack + th->stack_size);
+    const rb_control_frame_t *cfp = th->cfp;
+    const rb_control_frame_t *top_of_cfp = (void *)(th->stack + th->stack_size);
     top_of_cfp -= 2;
 
     if (lev < 0) {
@@ -792,26 +659,36 @@ vm_backtrace(rb_thread_t *th, int lev)
     return ary;
 }
 
-#if 0
-static void
-check_svar(void)
+const char *
+rb_sourcefile(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
-    while ((void *)(cfp + 1) < (void *)(th->stack + th->stack_size)) {
-	/* printf("cfp: %p\n", cfp->type); */
-	if (cfp->lfp && cfp->lfp[-1] != Qnil &&
-	    TYPE(cfp->lfp[-1]) != T_NODE) {
-	    /* dp(cfp->lfp[-1]); */
-	    rb_bug("!!!invalid svar!!!");
-	}
-	cfp++;
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+
+    if (cfp) {
+	return RSTRING_PTR(cfp->iseq->filename);
+    }
+    else {
+	return 0;
     }
 }
-#endif
+
+int
+rb_sourceline(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+
+    if (cfp) {
+	return vm_get_sourceline(cfp);
+    }
+    else {
+	return 0;
+    }
+}
 
 NODE *
-ruby_cref(void)
+vm_cref(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
@@ -830,7 +707,7 @@ debug_cref(NODE *cref)
 }
 #endif
 
-NODE *
+static NODE *
 vm_cref_push(rb_thread_t *th, VALUE klass, int noex)
 {
     NODE *cref = NEW_BLOCK(klass);
@@ -973,7 +850,7 @@ rb_iter_break(void)
 VALUE ruby_vm_redefined_flag = 0;
 static st_table *vm_opt_method_table = 0;
 
-void
+static void
 rb_vm_check_redefinition_opt_method(const NODE *node)
 {
     VALUE bop;
@@ -1130,7 +1007,7 @@ vm_init_redefined_flag(void)
  */
 
 
-VALUE
+static VALUE
 vm_eval_body(rb_thread_t *th)
 {
     int state;
@@ -1341,7 +1218,7 @@ rb_iseq_eval(VALUE iseqval)
     VALUE val;
     volatile VALUE tmp;
 
-    rb_vm_set_top_stack(th, iseqval);
+    vm_set_top_stack(th, iseqval);
 
     if (!rb_const_defined(rb_cObject, rb_intern("TOPLEVEL_BINDING"))) {
 	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
@@ -1388,9 +1265,9 @@ rb_frame_method_id_and_class(ID *idp, VALUE *klassp)
 }
 
 VALUE
-rb_thread_current_status(rb_thread_t *th)
+rb_thread_current_status(const rb_thread_t *th)
 {
-    rb_control_frame_t *cfp = th->cfp;
+    const rb_control_frame_t *cfp = th->cfp;
     VALUE str = Qnil;
 
     if (cfp->iseq != 0) {
@@ -1416,12 +1293,13 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 		 const rb_block_t *blockptr, VALUE filename)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *reg_cfp = th->cfp;
+    const rb_control_frame_t *reg_cfp = th->cfp;
     volatile VALUE iseqval = rb_iseq_new(0, filename, filename, 0, ISEQ_TYPE_TOP);
     VALUE val;
 
     vm_push_frame(th, DATA_PTR(iseqval), FRAME_MAGIC_TOP,
 		  recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
+
     val = (*func)(arg);
 
     vm_pop_frame(th);
@@ -1429,7 +1307,7 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 }
 
 int
-rb_vm_cfunc_funcall_p(rb_control_frame_t * cfp)
+rb_vm_cfunc_funcall_p(const rb_control_frame_t *cfp)
 {
     if (vm_cfunc_flags(cfp) & (VM_CALL_FCALL_BIT | VM_CALL_VCALL_BIT))
 	return Qtrue;

@@ -297,6 +297,7 @@ typedef struct rb_vm_struct {
     VALUE thgroup_default;
     VALUE last_status; /* $? */
 
+    int running;
     int thread_abort_on_exception;
     unsigned long trace_flag;
 
@@ -605,19 +606,10 @@ void rb_enable_interrupt(void);
 void rb_disable_interrupt(void);
 int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
 
-VALUE vm_eval_body(rb_thread_t *th);
 VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 		     int argc, const VALUE *argv, rb_block_t *blockptr);
 VALUE vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, const rb_block_t *block);
 VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
-VALUE vm_backtrace(rb_thread_t *, int);
-
-VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
-VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const NODE *cref);
-VALUE vm_call0(rb_thread_t *th, VALUE klass, VALUE recv, VALUE id, ID oid,
-	       int argc, const VALUE *argv, const NODE *body, int nosuper);
-
-int vm_get_sourceline(rb_control_frame_t *);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 

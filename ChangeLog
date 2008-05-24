@@ -1,3 +1,19 @@
+Sun May 25 02:37:25 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval_method.c: renamed from vm_method.c.  "vm_method.c" is included
+	  by "vm.c".
+
+	* vm_eval.c: added.  Some codes are moved from "eval.c"
+
+	* common.mk: fix for above changes.
+
+	* compile.c: make a vm_eval(0)
+
+	* eval.c, eval_error.c, eval_intern.h, eval_jump.c, proc.c, vm.c,
+	  id.c, id.h, vm_core.h, vm_dump.c, vm_evalbody.c, vm_insnhelper.c,
+	  blockinlining.c: fix for above changes.  and do some refactoring.
+	  this changes improve rb_yield() performance.
+
 Sat May 24 22:32:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): should clear errno before calling
