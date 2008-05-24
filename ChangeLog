@@ -1,3 +1,8 @@
+Sat May 24 22:32:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): should clear errno before calling
+	  strtod(3).  [ruby-dev:34834]
+
 Sat May 24 15:26:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_set_exception_table, NODE_WHILE, NODE_NEXT): remove
