@@ -89,7 +89,7 @@ reentrant_check(obj, sym)
     VALUE obj;
     ID sym;
 {
-    if (RBASIC(obj)->klass) {
+    if (obj && RBASIC(obj)->klass) {
         rb_raise(rb_eRuntimeError, "%s reentered", rb_id2name(sym));
     }
 }
@@ -1431,6 +1431,7 @@ marshal_load(argc, argv)
     }
     arg.src = port;
     arg.offset = 0;
+    arg.data = 0;
 
     major = r_byte(&arg);
     minor = r_byte(&arg);
