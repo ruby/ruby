@@ -1,3 +1,7 @@
+Sun May 25 02:45:49 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* error.c (syserr_eqq): Use en.
+
 Sat May 24 22:32:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): should clear errno before calling

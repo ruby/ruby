@@ -959,7 +959,7 @@ syserr_eqq(self, exc)
     }
     else if (self == rb_eSystemCallError) return Qtrue;
 
-    num = rb_attr_get(exc, rb_intern("errno"));
+    num = rb_attr_get(exc, en);
     if (NIL_P(num)) {
 	num = rb_funcall(exc, en, 0, 0);
     }
