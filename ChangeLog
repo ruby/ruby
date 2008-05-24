@@ -18,6 +18,11 @@ Fri May 23 09:52:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: load purelib.rb only when not cross compiling.
 
+Fri May 23 08:47:02 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (syserr_eqq): === should be able to handle delegated
+	  objects as well.
+
 Fri May 23 04:22:19 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c, ext/tk/tkutil/tkutil.c: fix memory leak.
