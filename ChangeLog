@@ -34,6 +34,14 @@ Fri May 23 12:23:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  tool/instruction.rb (RubyVM::VmBodyGenerator#make_header_operands):
 	  omit unused variables.
 
+Fri May 23 08:47:02 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (exc_equal): == operator should be transitional.  
+	  [ruby-dev:34808]
+
+	* error.c (syserr_eqq): === should be able to handle delegated
+	  objects as well.
+
 Fri May 23 06:15:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (rb_iseq_compile_with_option): get rid of segv.

@@ -556,7 +556,7 @@ exc_equal(VALUE exc, VALUE obj)
 
     if (exc == obj) return Qtrue;
     if (rb_obj_class(exc) != rb_obj_class(obj))
-	return Qfalse;
+	return rb_equal(obj, exc);
     if (!rb_equal(rb_attr_get(exc, id_mesg), rb_attr_get(obj, id_mesg)))
 	return Qfalse;
     if (!rb_equal(exc_backtrace(exc), exc_backtrace(obj)))
@@ -963,18 +963,16 @@ static VALUE
 syserr_eqq(VALUE self, VALUE exc)
 {
     VALUE num, e;
+    ID en = rb_intern("errno");
 
-    if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) return Qfalse;
-    if (self == rb_eSystemCallError) return Qtrue;
+    if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) {
+	if (!rb_respond_to(exc, en)) return Qfalse;
+    }
+    else if (self == rb_eSystemCallError) return Qtrue;
 
     num = rb_attr_get(exc, rb_intern("errno"));
     if (NIL_P(num)) {
-	VALUE klass = CLASS_OF(exc);
-
-	while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
-	    klass = (VALUE)RCLASS_SUPER(klass);
-	}
-	num = rb_const_get(klass, rb_intern("Errno"));
+	num = rb_funcall(exc, en, 0, 0);
     }
     e = rb_const_get(self, rb_intern("Errno"));
     if (FIXNUM_P(num) ? num == e : rb_equal(num, e))
