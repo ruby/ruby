@@ -268,6 +268,7 @@ iseq_compile(VALUE self, NODE *node)
 	    COMPILE_POPED(ret, "ensure", node);
 	    break;
 	  case ISEQ_TYPE_DEFINED_GUARD:
+	    iseq_set_local_table(iseq, 0);
 	    COMPILE(ret, "defined guard", node);
 	    break;
 	  default:
