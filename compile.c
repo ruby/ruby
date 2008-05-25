@@ -4955,6 +4955,7 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 			{
 			    int i;
 			    op = rb_convert_type(op, T_ARRAY, "Array", "to_ary");
+			    op = rb_ary_dup(op);
 			    for (i=0; i<RARRAY_LEN(op); i+=2) {
 				VALUE sym = rb_ary_entry(op, i+1);
 				LABEL *label =

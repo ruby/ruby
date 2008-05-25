@@ -1,3 +1,8 @@
+Sun May 25 17:52:25 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (iseq_build_body): remove side effect from
+	  VM::InstructionSequence.load.
+
 Sun May 25 04:30:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_modules.rb (remove_json_mixins): change judgment
