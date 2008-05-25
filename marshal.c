@@ -81,7 +81,7 @@ shortlen(len, ds)
 #define TYPE_LINK	'@'
 
 static ID s_dump, s_load, s_mdump, s_mload;
-static ID s_dump_data, s_load_data, s_alloc;
+static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getc, s_read, s_write, s_binmode;
 
 static void
@@ -1364,7 +1364,6 @@ r_object0(arg, proc, ivp, extmod)
 	break;
     }
     if (proc) {
-	ID s_call = 
 	rb_funcall(proc, s_call, 1, v);
 	reentrant_check(arg->data, s_call);
     }
@@ -1502,6 +1501,7 @@ Init_marshal()
     s_dump_data = rb_intern("_dump_data");
     s_load_data = rb_intern("_load_data");
     s_alloc = rb_intern("_alloc");
+    s_call = rb_intern("call");
     s_getc = rb_intern("getc");
     s_read = rb_intern("read");
     s_write = rb_intern("write");
