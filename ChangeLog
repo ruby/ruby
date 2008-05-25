@@ -1,3 +1,7 @@
+Mon May 26 00:37:16 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c (env_each_value): Do not call env_values() twice.
+
 Sun May 25 17:54:36 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (iseq_compile): set local_table for

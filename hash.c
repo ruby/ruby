@@ -2117,7 +2117,7 @@ env_values(void)
 static VALUE
 env_each_value(VALUE ehash)
 {
-    VALUE values = env_values();
+    VALUE values;
     long i;
 
     RETURN_ENUMERATOR(ehash, 0, 0);
