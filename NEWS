@@ -369,6 +369,15 @@ with all sufficient information, see the ChangeLog file.
   The old behavior was inconsistent with Ruby syntax and considered as
   a bug.
 
+* date
+
+  * Date.parse
+
+    '##.##.##' (where each '#' is a digit) is now taken as 'YY.MM.DD'
+    instead of 'MM.DD.YY'.  While the change may confuse you, you can
+    always use Date.strptime() when you know what you are dealing
+    with.
+
 * tempfile
 
   * The file name format has changed.  No dots are included by default
