@@ -2097,10 +2097,11 @@ static VALUE
 env_each_key(ehash)
     VALUE ehash;
 {
-    VALUE keys = env_keys();
+    VALUE keys;
     long i;
 
     RETURN_ENUMERATOR(ehash, 0, 0);
+    keys = env_keys();
     for (i=0; i<RARRAY(keys)->len; i++) {
 	rb_yield(RARRAY(keys)->ptr[i]);
     }
@@ -2215,6 +2216,7 @@ static VALUE
 env_delete_if(ehash)
     VALUE ehash;
 {
+    RETURN_ENUMERATOR(ehash, 0, 0);
     env_reject_bang(ehash);
     return envtbl;
 }

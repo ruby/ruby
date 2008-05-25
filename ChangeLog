@@ -1,3 +1,10 @@
+Sun May 25 19:48:12 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c (env_delete_if): Return an enumerator if no block is
+	  given.
+	  (env_each_key): Delay a variable initialization after
+	  RETURN_ENUMERATOR().
+
 Sun May 25 05:07:19 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_slice_bang): Be consistent with Array#slice()
