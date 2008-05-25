@@ -571,6 +571,8 @@ thread_dump_state(VALUE self)
     return Qnil;
 }
 
+VALUE rb_make_backtrace(void);
+
 void
 rb_vm_bugreport(void)
 {
@@ -581,7 +583,7 @@ rb_vm_bugreport(void)
 	int i;
 	SDR();
 
-	bt = rb_make_backtrace(th, 0);
+	bt = rb_make_backtrace();
 	if (TYPE(bt) == T_ARRAY)
 	for (i = 0; i < RARRAY_LEN(bt); i++) {
 	    dp(RARRAY_PTR(bt)[i]);
