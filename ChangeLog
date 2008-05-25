@@ -1,3 +1,19 @@
+Mon May 26 03:16:20 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c (rb_hash_default): Fix rdoc.
+	  (rb_hash_each, env_each_value, env_each_pair): Return an
+	  enumerator if no block is given.
+	  (rb_hash_update): Update rdoc.
+	  (envix): Conditionalize the definition itself.
+	  (rb_f_getenv, env_fetch, env_keys, env_values, env_values_at)
+	  (env_select, env_inspect, env_to_a, env_empty_p, env_has_key)
+	  (env_has_value, env_index, env_indexes, env_to_hash, env_shift)
+	  (env_update): Require secure level 4.
+	  (env_each_value, env_each_i): Delay variable initialization.
+	  (env_each_key, env_each_value, env_reject_bang)
+	  (env_clear, env_replace): Omit duplicated secure level check.
+	  (env_has_value): Do to_str conversion.
+
 Sun May 25 19:48:12 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c (env_delete_if): Return an enumerator if no block is
