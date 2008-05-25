@@ -1,3 +1,8 @@
+Mon May 26 00:52:52 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c (env_each_key, env_each_value, env_reject_bang)
+	  (rb_env_clear, env_replace): Omit duplicated secure level check.
+
 Mon May 26 00:37:16 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c (env_each_value): Do not call env_values() twice.
