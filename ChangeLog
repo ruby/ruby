@@ -1,3 +1,8 @@
+Mon May 26 01:17:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_normal_exit): signal description
+	  refined.
+
 Mon May 26 00:52:52 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c (env_each_key, env_each_value, env_reject_bang)
