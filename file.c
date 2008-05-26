@@ -2730,8 +2730,10 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
     }
     if (p > buf && p[-1] == '/')
 	--p;
-    else
+    else {
+	BUFCHECK(bdiff >= ++buflen);
 	*p = '/';
+    }
 
     p[1] = 0;
     root = skipprefix(buf);
@@ -2864,6 +2866,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 #endif
 	HANDLE h = FindFirstFile(b, &wfd);
 	if (h != INVALID_HANDLE_VALUE) {
+	    long bdiff;
 	    FindClose(h);
 	    p = strrdirsep(buf);
 	    len = strlen(wfd.cFileName);
@@ -2875,7 +2878,9 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 #endif
 	    if (!p) p = buf;
 	    buflen = ++p - buf + len;
+	    bdiff = p - buf;
 	    rb_str_resize(result, buflen);
+	    p = RSTRING_PTR(result) + bdiff;
 	    memcpy(p, wfd.cFileName, len + 1);
 	}
     }
