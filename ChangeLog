@@ -1,3 +1,11 @@
+Mon May 26 12:12:26 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* marshal.c (dump_ensure, load_ensure): should return values.
+
+	* eval.c (yield_under, yield_under_i, yield_args_under_i)
+	  (specific_eval, rb_obj_instance_exec, Init_eval): Implement
+	  Object#instance_exec(), a 1.9 feature.
+
 Mon May 26 11:53:21 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_yield_0, proc_invoke, proc_arity): allow passing a
