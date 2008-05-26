@@ -348,6 +348,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Interpreter Implementation
 
+* passing a block to a Proc [experimental]
+
+  This implementation in current shape is known to be buggy/broken,
+  especially with nested block invocation.  Take this as an
+  experimental feature.
+
 * stack trace
 
   On non-SystemStackError exception, full stack trace is shown.
