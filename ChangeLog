@@ -1,3 +1,9 @@
+Mon May 26 18:24:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (BUFCHECK): no resize if enough room.
+
+	* file.c (file_expand_path): use BUFCHECK.
+
 Mon May 26 17:48:42 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (struct enumerator, enumerator_init)

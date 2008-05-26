@@ -2578,13 +2578,13 @@ ntfs_tail(const char *path)
 
 #define BUFCHECK(cond) do {\
     long bdiff = p - buf;\
-    while (cond) {\
-	buflen *= 2;\
+    if (!(cond)) {\
+	do {buflen *= 2;} while (cond);\
+	rb_str_resize(result, buflen);\
+	buf = RSTRING_PTR(result);\
+	p = buf + bdiff;\
+	pend = buf + buflen;\
     }\
-    rb_str_resize(result, buflen);\
-    buf = RSTRING_PTR(result);\
-    p = buf + bdiff;\
-    pend = buf + buflen;\
 } while (0)
 
 #define BUFINIT() (\
@@ -2731,7 +2731,8 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
     if (p > buf && p[-1] == '/')
 	--p;
     else {
-	BUFCHECK(bdiff >= ++buflen);
+	++buflen;
+	BUFCHECK(bdiff >= buflen);
 	*p = '/';
     }
 
@@ -2866,7 +2867,6 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 #endif
 	HANDLE h = FindFirstFile(b, &wfd);
 	if (h != INVALID_HANDLE_VALUE) {
-	    long bdiff;
 	    FindClose(h);
 	    p = strrdirsep(buf);
 	    len = strlen(wfd.cFileName);
@@ -2877,10 +2877,8 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 	    }
 #endif
 	    if (!p) p = buf;
-	    buflen = ++p - buf + len;
-	    bdiff = p - buf;
-	    rb_str_resize(result, buflen);
-	    p = RSTRING_PTR(result) + bdiff;
+	    ++p;
+	    BUFCHECK(bdiff + len >= buflen);
 	    memcpy(p, wfd.cFileName, len + 1);
 	}
     }
