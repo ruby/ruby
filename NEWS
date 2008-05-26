@@ -190,7 +190,10 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
-  * Object#tap implemented.
+  * Object#instance_exec
+  * Object#tap
+
+    New methods.
 
   * ObjectSpace.each_object
 
