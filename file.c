@@ -2497,13 +2497,13 @@ ntfs_tail(const char *path)
 
 #define BUFCHECK(cond) do {\
     long bdiff = p - buf;\
-    while (cond) {\
-	buflen *= 2;\
+    if (!(cond)) {\
+	do {buflen *= 2;} while (cond);\
+	rb_str_resize(result, buflen);\
+	buf = RSTRING_PTR(result);\
+	p = buf + bdiff;\
+	pend = buf + buflen;\
     }\
-    rb_str_resize(result, buflen);\
-    buf = RSTRING(result)->ptr;\
-    p = buf + bdiff;\
-    pend = buf + buflen;\
 } while (0)
 
 #define BUFINIT() (\
@@ -2789,8 +2789,8 @@ file_expand_path(fname, dname, result)
 	    }
 #endif
 	    if (!p) p = buf;
-	    buflen = ++p - buf + len;
-	    rb_str_resize(result, buflen);
+	    ++p;
+	    BUFCHECK(bdiff + len >= buflen);
 	    memcpy(p, wfd.cFileName, len + 1);
 	}
     }
