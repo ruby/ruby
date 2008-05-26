@@ -1,3 +1,9 @@
+Mon May 26 16:49:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-mode): use run-hooks if run-mode-hook is
+	  not available.  a patch from Kazuhiro NISHIYAMA <zn at mbf.nifty.com>
+	  in [ruby-dev:34853].
+
 Mon May 26 16:41:35 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (ntfs_tail): filename which starts with '.' is valid.
