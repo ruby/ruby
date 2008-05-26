@@ -66,8 +66,8 @@ Sun May 25 02:37:25 2008  Koichi Sasada  <ko1@atdot.net>
 
 Sat May 24 22:32:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* object.c (rb_cstr_to_dbl): should clear errno before calling
-	  strtod(3).  [ruby-dev:34834]
+	* util.c (ruby_strtod): clear errno at the top of our own
+	  impelementation of strtod(3).  [ruby-dev:34834] [ruby-dev:34839]
 
 Sat May 24 15:26:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 

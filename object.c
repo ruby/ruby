@@ -2045,7 +2045,6 @@ rb_cstr_to_dbl(const char *p, int badcheck)
     if (!p) return 0.0;
     q = p;
     while (ISSPACE(*p)) p++;
-    errno = 0;
     d = strtod(p, &end);
     if (errno == ERANGE) {
 	OutOfRange();

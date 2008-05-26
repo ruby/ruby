@@ -1000,8 +1000,6 @@ static double private_mem[PRIVATE_mem], *pmem_next = private_mem;
 #define IEEE_Arith
 #endif
 
-#include "errno.h"
-
 #ifdef Bad_float_h
 
 #ifdef IEEE_Arith
@@ -2206,6 +2204,7 @@ ruby_strtod(const char *s00, char **se)
     const char *s2;
 #endif
 
+    errno = 0;
     sign = nz0 = nz = 0;
     dval(rv) = 0.;
     for (s = s00;;s++)
