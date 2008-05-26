@@ -6746,12 +6746,28 @@ yield_under_i(self)
     return rb_yield_0(self, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
 }
 
+static VALUE
+yield_args_under_i(vinfo)
+    VALUE vinfo;
+{
+    VALUE *info = (VALUE *)vinfo;
+
+    return rb_yield_0(info[0], info[1], ruby_class, YIELD_PUBLIC_DEF, Qtrue);
+}
+
 /* block eval under the class/module context */
 static VALUE
-yield_under(under, self)
-    VALUE under, self;
+yield_under(under, self, args)
+    VALUE under, self, args;
 {
-    return exec_under(yield_under_i, under, 0, self);
+    if (args == Qundef) {
+	return exec_under(yield_under_i, under, 0, self);
+    }
+    else {
+	VALUE info[2] = { args, self };
+
+	return exec_under(yield_args_under_i, under, 0, (VALUE)info);
+    }
 }
 
 static VALUE
@@ -6764,7 +6780,7 @@ specific_eval(argc, argv, klass, self)
 	if (argc > 0) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
-	return yield_under(klass, self);
+	return yield_under(klass, self, Qundef);
     }
     else {
 	char *file = "(eval)";
@@ -6832,6 +6848,41 @@ rb_obj_instance_eval(argc, argv, self)
 	klass = rb_singleton_class(self);
     }
     return specific_eval(argc, argv, klass, self);
+}
+
+/*
+ *  call-seq:
+ *     obj.instance_exec(arg...) {|var...| block }                       => obj
+ *
+ *  Executes the given block within the context of the receiver
+ *  (_obj_). In order to set the context, the variable +self+ is set
+ *  to _obj_ while the code is executing, giving the code access to
+ *  _obj_'s instance variables.  Arguments are passed as block parameters.
+ *
+ *     class KlassWithSecret
+ *       def initialize
+ *         @secret = 99
+ *       end
+ *     end
+ *     k = KlassWithSecret.new
+ *     k.instance_exec(5) {|x| @secret+x }   #=> 104
+ */
+
+VALUE
+rb_obj_instance_exec(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    VALUE klass;
+
+    if (SPECIAL_CONST_P(self)) {
+	klass = Qnil;
+    }
+    else {
+	klass = rb_singleton_class(self);
+    }
+    return yield_under(klass, self, rb_ary_new4(argc, argv));
 }
 
 /*
@@ -8120,6 +8171,7 @@ Init_eval()
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
     rb_define_method(rb_mKernel, "__send__", rb_f_send, -1);
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
+    rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
 
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
