@@ -1,3 +1,9 @@
+Mon May 26 16:41:35 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (ntfs_tail): filename which starts with '.' is valid.
+
+	* file.c (file_expand_path): cygwin symlink support.
+
 Mon May 26 07:15:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_dump.c (rb_vm_bugreport): rb_make_backtrace has no arguments.
