@@ -1,3 +1,13 @@
+Mon May 26 11:53:21 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_yield_0, proc_invoke, proc_arity): allow passing a
+	  block to a Proc.  [ruby-dev:23533]; by nobu; backported from
+	  1.9.  This implementation in current shape is known to be
+	  buggy/broken, especially with nested block invocation.  Take
+	  this as an experimental feature.
+
+	* parse.y (block_par, block_var): ditto.
+
 Mon May 26 08:00:52 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* marshal.c (r_object0, Init_marshal): Fix the garbled s_call

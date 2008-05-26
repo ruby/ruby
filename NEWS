@@ -190,7 +190,10 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
-  * Object#tap implemented.
+  * Object#instance_exec
+  * Object#tap
+
+    New methods.
 
   * ObjectSpace.each_object
 
@@ -344,6 +347,12 @@ with all sufficient information, see the ChangeLog file.
   * content:encoded with RSS 2.0 support
 
 === Interpreter Implementation
+
+* passing a block to a Proc [experimental]
+
+  This implementation in current shape is known to be buggy/broken,
+  especially with nested block invocation.  Take this as an
+  experimental feature.
 
 * stack trace
 
