@@ -1,3 +1,7 @@
+Mon May 26 12:16:43 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* .: Release as Ruby 1.8.7-preview4.
+
 Mon May 26 12:12:26 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* marshal.c (dump_ensure, load_ensure): should return values.
