@@ -2474,6 +2474,7 @@ rb_path_end(path)
 static char *
 ntfs_tail(const char *path)
 {
+    while (*path == '.') path++;
     while (*path && *path != ':') {
 	if (istrailinggabage(*path)) {
 	    const char *last = path++;
@@ -2784,7 +2785,7 @@ file_expand_path(fname, dname, result)
 #ifdef __CYGWIN__
 	    if (lnk_added && len > 4 &&
 		strcasecmp(wfd.cFileName + len - 4, ".lnk") == 0) {
-		len -= 4;
+		wfd.cFileName[len -= 4] = '\0';
 	    }
 #endif
 	    if (!p) p = buf;
