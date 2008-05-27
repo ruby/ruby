@@ -260,6 +260,20 @@ num_quo(VALUE x, VALUE y)
 }
 
 
+/*
+ *  call-seq:
+ *     num.fdiv(numeric)    =>   float
+ *
+ *  Returns float division.
+ */
+
+static VALUE
+num_fdiv(VALUE x, VALUE y)
+{
+    return rb_funcall(rb_Float(x), '/', 1, y);
+}
+
+
 static VALUE num_floor(VALUE num);
 
 /*
@@ -3101,7 +3115,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "quo", num_quo, 1);
-    rb_define_method(rb_cNumeric, "fdiv", num_quo, 1);
+    rb_define_method(rb_cNumeric, "fdiv", num_fdiv, 1);
     rb_define_method(rb_cNumeric, "div", num_div, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);

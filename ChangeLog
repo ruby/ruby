@@ -28,6 +28,9 @@ Tue May 27 15:36:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (check_uint, rb_num2fix, int_chr): ditto.
 
+	* numeric.c (num_fdiv): fallback to_f should always return float
+	  result.  should not use #quo that may return rational.
+
 Tue May 27 13:14:53 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_to_a): Pass arguments through to #each().
