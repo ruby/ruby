@@ -2497,7 +2497,7 @@ ntfs_tail(const char *path)
 
 #define BUFCHECK(cond) do {\
     long bdiff = p - buf;\
-    if (!(cond)) {\
+    if (cond) {\
 	do {buflen *= 2;} while (cond);\
 	rb_str_resize(result, buflen);\
 	buf = RSTRING_PTR(result);\
@@ -2739,7 +2739,6 @@ file_expand_path(fname, dname, result)
 	p += s-b;
     }
     if (p == skiproot(buf) - 1) p++;
-    buflen = p - buf;
 
 #if USE_NTFS
     *p = '\0';
@@ -2792,12 +2791,13 @@ file_expand_path(fname, dname, result)
 	    ++p;
 	    BUFCHECK(bdiff + len >= buflen);
 	    memcpy(p, wfd.cFileName, len + 1);
+	    p += len;
 	}
     }
 #endif
 
     if (tainted) OBJ_TAINT(result);
-    rb_str_set_len(result, buflen);
+    rb_str_set_len(result, p - buf);
     return result;
 }
 
