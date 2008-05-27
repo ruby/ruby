@@ -7650,6 +7650,9 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "each_line",  argf_each_line, -1);
     rb_define_method(rb_cARGF, "each_byte",  argf_each_byte, 0);
     rb_define_method(rb_cARGF, "each_char",  argf_each_char, 0);
+    rb_define_method(rb_cARGF, "lines", argf_each_line, -1);
+    rb_define_method(rb_cARGF, "bytes", argf_each_byte, 0);
+    rb_define_method(rb_cARGF, "chars", argf_each_char, 0);
 
     rb_define_method(rb_cARGF, "read",  argf_read, -1);
     rb_define_method(rb_cARGF, "readpartial",  argf_readpartial, -1);
