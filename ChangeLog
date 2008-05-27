@@ -1,3 +1,8 @@
+Tue May 27 15:36:37 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* io.c (rb_io_each_char, argf_each_char, Init_IO):
+	  Add {IO#,ARGF.}{each_char,chars}.
+
 Tue May 27 13:46:52 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/stringio/stringio.c (Init_stringio): Define
@@ -5,7 +10,7 @@ Tue May 27 13:46:52 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 Tue May 27 13:38:51 2008  Akinori MUSHA  <knu@iDaemons.org>
 
-	* io.c (Init_IO): Define {IO,ARGF}#{getbyte,readbyte}.
+	* io.c (Init_IO): Define {IO#,ARGF.}{getbyte,readbyte}.
 
 Tue May 27 13:26:15 2008  Akinori MUSHA  <knu@iDaemons.org>
 

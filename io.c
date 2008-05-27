@@ -21,6 +21,7 @@
 #include "rubyio.h"
 #include "rubysig.h"
 #include "env.h"
+#include "re.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -2023,6 +2024,51 @@ rb_io_each_byte(io)
 	rb_yield(INT2FIX(c & 0xff));
     }
     if (ferror(f)) rb_sys_fail(fptr->path);
+    return io;
+}
+
+VALUE rb_io_getc _((VALUE));
+
+/*
+ *  call-seq:
+ *     ios.each_char {|c| block }  => ios
+ *
+ *  Calls the given block once for each character in <em>ios</em>,
+ *  passing the character as an argument. The stream must be opened for
+ *  reading or an <code>IOError</code> will be raised.  Multibyte
+ *  characters are dealt with according to $KCODE.
+ *
+ *     f = File.new("testfile")
+ *     f.each_char {|c| print c, ' ' }   #=> #<File:testfile>
+ */
+
+static VALUE
+rb_io_each_char(io)
+    VALUE io;
+{
+    VALUE ch;
+
+    RETURN_ENUMERATOR(io, 0, 0);
+
+    while (!NIL_P(ch = rb_io_getc(io))) {
+	unsigned char c;
+	int n;
+	VALUE str;
+
+	c= FIX2INT(ch);
+	n = mbclen(c);
+	str = rb_tainted_str_new((const char *)&c, 1);
+
+	while (--n > 0) {
+	    if (NIL_P(ch = rb_io_getc(io))) {
+		rb_yield(str);
+		return io;
+	    }
+	    c = FIX2INT(ch);
+	    rb_str_cat(str, (const char *)&c, 1);
+	}
+	rb_yield(str);
+    }
     return io;
 }
 
@@ -5613,6 +5659,42 @@ argf_each_byte(argf)
 }
 
 static VALUE
+argf_each_char(argf)
+    VALUE argf;
+{
+    VALUE ch;
+
+    RETURN_ENUMERATOR(argf, 0, 0);
+
+    while (!NIL_P(ch = argf_getc())) {
+	unsigned char c;
+	int n;
+	VALUE str, file;
+
+      first_char:
+	c = FIX2INT(ch);
+	n = mbclen(c);
+	str = rb_tainted_str_new((const char *)&c, 1);
+	file = current_file;
+
+	while (--n > 0) {
+	    if (NIL_P(ch = argf_getc())) {
+		rb_yield(str);
+		return argf;
+	    }
+	    if (current_file != file) {
+		rb_yield(str);
+		goto first_char;
+	    }
+	    c = FIX2INT(ch);
+	    rb_str_cat(str, (const char *)&c, 1);
+	}
+	rb_yield(str);
+    }
+    return argf;
+}
+
+static VALUE
 argf_filename()
 {
     next_argv();
@@ -5854,8 +5936,10 @@ Init_IO()
     rb_define_method(rb_cIO, "each",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_line",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
+    rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
     rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
     rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
+    rb_define_method(rb_cIO, "chars",  rb_io_each_char, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
@@ -5945,8 +6029,10 @@ Init_IO()
     rb_define_singleton_method(argf, "each",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_line",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_byte",  argf_each_byte, 0);
+    rb_define_singleton_method(argf, "each_char",  argf_each_char, 0);
     rb_define_singleton_method(argf, "lines",  argf_each_line, -1);
     rb_define_singleton_method(argf, "bytes",  argf_each_byte, 0);
+    rb_define_singleton_method(argf, "chars",  argf_each_char, 0);
 
     rb_define_singleton_method(argf, "read",  argf_read, -1);
     rb_define_singleton_method(argf, "readlines", rb_f_readlines, -1);

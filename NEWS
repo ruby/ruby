@@ -179,10 +179,14 @@ with all sufficient information, see the ChangeLog file.
     Return an enumerator if no block is given.
 
   * IO#bytes
+  * IO#chars
+  * IO#each_char
   * IO#getbyte
   * IO#lines
   * IO#readbyte
   * ARGF.bytes
+  * ARGF.chars
+  * ARGF.each_char
   * ARGF.getbyte
   * ARGF.lines
   * ARGF.readbyte
