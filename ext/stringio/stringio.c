@@ -710,11 +710,14 @@ strio_each_byte(self)
     VALUE self;
 {
     struct StringIO *ptr = readable(StringIO(self));
-    while (ptr->pos < RSTRING(ptr->string)->len) {
-	char c = RSTRING(ptr->string)->ptr[ptr->pos++];
+
+    RETURN_ENUMERATOR(self, 0, 0);
+
+    while (ptr->pos < RSTRING_LEN(ptr->string)) {
+	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
 	rb_yield(CHR2FIX(c));
     }
-    return Qnil;
+    return self;
 }
 
 /*
@@ -970,6 +973,8 @@ strio_each(argc, argv, self)
 {
     struct StringIO *ptr = StringIO(self);
     VALUE line;
+
+    RETURN_ENUMERATOR(self, argc, argv);
 
     while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
 	rb_yield(line);

@@ -1981,7 +1981,7 @@ rb_io_each_line(argc, argv, io)
 
 /*
  *  call-seq:
- *     ios.each_byte {|byte| block }  => nil
+ *     ios.each_byte {|byte| block }  => ios
  *  
  *  Calls the given block once for each byte (0..255) in <em>ios</em>,
  *  passing the byte as an argument. The stream must be opened for

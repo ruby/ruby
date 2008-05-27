@@ -1,3 +1,13 @@
+Tue May 27 17:59:34 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/stringio/stringio.c (strio_each): Return an enumerator if no
+	  block is given.
+	  (strio_each_byte): Return an enumerator if no block is given,
+	  and return self if one is given as the rdoc says.
+
+	* io.c (rb_io_each_byte): Fix rdoc.  IO#each_byte returns self,
+	  not nil.
+
 Tue May 27 16:02:58 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (rb_mod_module_exec, Init_eval): Add
