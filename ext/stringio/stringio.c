@@ -755,6 +755,25 @@ strio_readbyte(VALUE self)
     return c;
 }
 
+/*
+ * call-seq:
+ *   strio.each_char {|char| block }  -> strio
+ *
+ * See IO#each_char.
+ */
+static VALUE
+strio_each_char(VALUE self)
+{
+    VALUE c;
+
+    RETURN_ENUMERATOR(self, 0, 0);
+
+    while (!NIL_P(c = strio_getc(self))) {
+	rb_yield(c);
+    }
+    return self;
+}
+
 /* Boyer-Moore search: copied from regex.c */
 static void
 bm_init_skip(long *skip, const char *pat, long m)
@@ -1237,10 +1256,12 @@ Init_stringio()
     rb_define_method(StringIO, "path", strio_path, 0);
 
     rb_define_method(StringIO, "each", strio_each, -1);
-    rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
-    rb_define_method(StringIO, "bytes", strio_each_byte, -1);
     rb_define_method(StringIO, "each_line", strio_each, -1);
     rb_define_method(StringIO, "lines", strio_each, -1);
+    rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
+    rb_define_method(StringIO, "bytes", strio_each_byte, 0);
+    rb_define_method(StringIO, "each_char", strio_each_char, 0);
+    rb_define_method(StringIO, "chars", strio_each_char, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "readchar", strio_readchar, 0);
