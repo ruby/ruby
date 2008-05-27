@@ -1,4 +1,3 @@
-<<<<<<< .mine
 Tue May 27 13:12:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* io.c (Init_IO): Define ARGF.{lines,bytes,chars}.
