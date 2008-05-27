@@ -1295,7 +1295,9 @@ Init_stringio()
 
     rb_define_method(StringIO, "each", strio_each, -1);
     rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
+    rb_define_method(StringIO, "bytes", strio_each_byte, 0);
     rb_define_method(StringIO, "each_line", strio_each, -1);
+    rb_define_method(StringIO, "lines", strio_each, -1);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "readchar", strio_readchar, 0);
