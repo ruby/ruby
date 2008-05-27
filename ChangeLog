@@ -1,3 +1,65 @@
+Tue May 27 18:54:02 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/stringio/stringio.c (strio_each_char, Init_stringio): Add
+	  StringIO#{each_char,chars}.
+
+Tue May 27 17:59:34 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/stringio/stringio.c (strio_each): Return an enumerator if no
+	  block is given.
+	  (strio_each_byte): Return an enumerator if no block is given,
+	  and return self if one is given as the rdoc says.
+
+	* io.c (rb_io_each_byte): Fix rdoc.  IO#each_byte returns self,
+	  not nil.
+
+Tue May 27 16:02:58 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_mod_module_exec, Init_eval): Add
+	  Module#{module_exec,class_exec}.
+
+Tue May 27 15:36:37 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* io.c (rb_io_each_char, argf_each_char, Init_IO):
+	  Add {IO#,ARGF.}{each_char,chars}.
+
+Tue May 27 13:46:52 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/stringio/stringio.c (Init_stringio): Define
+	  StringIO#{getbyte,readbyte}.
+
+Tue May 27 13:38:51 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* io.c (Init_IO): Define {IO#,ARGF.}{getbyte,readbyte}.
+
+Tue May 27 13:26:15 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/stringio/stringio.c (Init_stringio): Define #bytes and
+	  #lines.
+
+Tue May 27 13:20:35 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* io.c: (rb_io_lines, rb_io_bytes, Init_IO): Define
+	  IO#{lines,bytes} and ARGF.{lines,bytes}.
+
+Tue May 27 12:13:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (BUFCHECK): wrong condition. [ruby-core:16921]
+
+	* file.c (file_expand_buf): shouldn't use buflen for length of string.
+
+Mon May 26 18:24:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (BUFCHECK): no resize if enough room.
+
+	* file.c (file_expand_path): use BUFCHECK.
+
+Mon May 26 16:46:19 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* file.c (ntfs_tail): filename which starts with '.' is valid.
+
+	* file.c (file_expand_path): cygwin symlink support.
+
 Mon May 26 12:16:43 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* .: Release as Ruby 1.8.7-preview4.

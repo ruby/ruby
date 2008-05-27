@@ -1632,6 +1632,10 @@ rb_f_sleep(argc, argv)
 }
 
 
+#if defined(SIGCLD) && !defined(SIGCHLD)
+# define SIGCHLD SIGCLD
+#endif
+
 /*
  *  call-seq:
  *     Process.getpgrp   => integer
@@ -1642,10 +1646,6 @@ rb_f_sleep(argc, argv)
  *     Process.getpgid(0)   #=> 25527
  *     Process.getpgrp      #=> 25527
  */
-
-#if defined(SIGCLD) && !defined(SIGCHLD)
-# define SIGCHLD SIGCLD
-#endif
 
 static VALUE
 proc_getpgrp()

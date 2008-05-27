@@ -21,6 +21,7 @@
 #include "rubyio.h"
 #include "rubysig.h"
 #include "env.h"
+#include "re.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -1980,7 +1981,7 @@ rb_io_each_line(argc, argv, io)
 
 /*
  *  call-seq:
- *     ios.each_byte {|byte| block }  => nil
+ *     ios.each_byte {|byte| block }  => ios
  *  
  *  Calls the given block once for each byte (0..255) in <em>ios</em>,
  *  passing the byte as an argument. The stream must be opened for
@@ -2024,6 +2025,97 @@ rb_io_each_byte(io)
     }
     if (ferror(f)) rb_sys_fail(fptr->path);
     return io;
+}
+
+VALUE rb_io_getc _((VALUE));
+
+/*
+ *  call-seq:
+ *     ios.each_char {|c| block }  => ios
+ *
+ *  Calls the given block once for each character in <em>ios</em>,
+ *  passing the character as an argument. The stream must be opened for
+ *  reading or an <code>IOError</code> will be raised.  Multibyte
+ *  characters are dealt with according to $KCODE.
+ *
+ *     f = File.new("testfile")
+ *     f.each_char {|c| print c, ' ' }   #=> #<File:testfile>
+ */
+
+static VALUE
+rb_io_each_char(io)
+    VALUE io;
+{
+    VALUE ch;
+
+    RETURN_ENUMERATOR(io, 0, 0);
+
+    while (!NIL_P(ch = rb_io_getc(io))) {
+	unsigned char c;
+	int n;
+	VALUE str;
+
+	c= FIX2INT(ch);
+	n = mbclen(c);
+	str = rb_tainted_str_new((const char *)&c, 1);
+
+	while (--n > 0) {
+	    if (NIL_P(ch = rb_io_getc(io))) {
+		rb_yield(str);
+		return io;
+	    }
+	    c = FIX2INT(ch);
+	    rb_str_cat(str, (const char *)&c, 1);
+	}
+	rb_yield(str);
+    }
+    return io;
+}
+
+/*
+ *  call-seq:
+ *     ios.lines(sep=$/)     => anEnumerator
+ *     ios.lines(limit)      => anEnumerator
+ *     ios.lines(sep, limit) => anEnumerator
+ *
+ *  Returns an enumerator that gives each line in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *
+ *     f = File.new("testfile")
+ *     f.lines.to_a  #=> ["foo\n", "bar\n"]
+ *     f.rewind
+ *     f.lines.sort  #=> ["bar\n", "foo\n"]
+ */
+
+static VALUE
+rb_io_lines(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
+}
+
+/*
+ *  call-seq:
+ *     ios.bytes   => anEnumerator
+ *
+ *  Returns an enumerator that gives each byte (0..255) in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *     
+ *     f = File.new("testfile")
+ *     f.bytes.to_a  #=> [104, 101, 108, 108, 111]
+ *     f.rewind
+ *     f.bytes.sort  #=> [101, 104, 108, 108, 111]
+ */
+
+static VALUE
+rb_io_bytes(io)
+    VALUE io;
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
 }
 
 /*
@@ -5567,6 +5659,42 @@ argf_each_byte(argf)
 }
 
 static VALUE
+argf_each_char(argf)
+    VALUE argf;
+{
+    VALUE ch;
+
+    RETURN_ENUMERATOR(argf, 0, 0);
+
+    while (!NIL_P(ch = argf_getc())) {
+	unsigned char c;
+	int n;
+	VALUE str, file;
+
+      first_char:
+	c = FIX2INT(ch);
+	n = mbclen(c);
+	str = rb_tainted_str_new((const char *)&c, 1);
+	file = current_file;
+
+	while (--n > 0) {
+	    if (NIL_P(ch = argf_getc())) {
+		rb_yield(str);
+		return argf;
+	    }
+	    if (current_file != file) {
+		rb_yield(str);
+		goto first_char;
+	    }
+	    c = FIX2INT(ch);
+	    rb_str_cat(str, (const char *)&c, 1);
+	}
+	rb_yield(str);
+    }
+    return argf;
+}
+
+static VALUE
 argf_filename()
 {
     next_argv();
@@ -5808,6 +5936,10 @@ Init_IO()
     rb_define_method(rb_cIO, "each",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_line",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
+    rb_define_method(rb_cIO, "each_char",  rb_io_each_char, 0);
+    rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
+    rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
+    rb_define_method(rb_cIO, "chars",  rb_io_each_char, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
@@ -5833,7 +5965,9 @@ Init_IO()
     rb_define_method(rb_cIO, "gets",  rb_io_gets_m, -1);
     rb_define_method(rb_cIO, "readline",  rb_io_readline, -1);
     rb_define_method(rb_cIO, "getc",  rb_io_getc, 0);
+    rb_define_method(rb_cIO, "getbyte",  rb_io_getc, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
+    rb_define_method(rb_cIO, "readbyte",  rb_io_readchar, 0);
     rb_define_method(rb_cIO, "ungetc",rb_io_ungetc, 1);
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
@@ -5895,6 +6029,10 @@ Init_IO()
     rb_define_singleton_method(argf, "each",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_line",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_byte",  argf_each_byte, 0);
+    rb_define_singleton_method(argf, "each_char",  argf_each_char, 0);
+    rb_define_singleton_method(argf, "lines",  argf_each_line, -1);
+    rb_define_singleton_method(argf, "bytes",  argf_each_byte, 0);
+    rb_define_singleton_method(argf, "chars",  argf_each_char, 0);
 
     rb_define_singleton_method(argf, "read",  argf_read, -1);
     rb_define_singleton_method(argf, "readlines", rb_f_readlines, -1);
@@ -5902,7 +6040,9 @@ Init_IO()
     rb_define_singleton_method(argf, "gets", rb_f_gets, -1);
     rb_define_singleton_method(argf, "readline", rb_f_readline, -1);
     rb_define_singleton_method(argf, "getc", argf_getc, 0);
+    rb_define_singleton_method(argf, "getbyte", argf_getc, 0);
     rb_define_singleton_method(argf, "readchar", argf_readchar, 0);
+    rb_define_singleton_method(argf, "readbyte", argf_readchar, 0);
     rb_define_singleton_method(argf, "tell", argf_tell, 0);
     rb_define_singleton_method(argf, "seek", argf_seek_m, -1);
     rb_define_singleton_method(argf, "rewind", argf_rewind, 0);

@@ -178,9 +178,26 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
-  * Method#receiver
+  * IO#bytes
+  * IO#chars
+  * IO#each_char
+  * IO#getbyte
+  * IO#lines
+  * IO#readbyte
+  * ARGF.bytes
+  * ARGF.chars
+  * ARGF.each_char
+  * ARGF.getbyte
+  * ARGF.lines
+  * ARGF.readbyte
+
+    New methods. 
+
+  * Method#class_exec
+  * Method#module_exec
   * Method#name
   * Method#owner
+  * Method#receiver
   * UnboundMethod#name
   * UnboundMethod#owner
 
@@ -309,6 +326,24 @@ with all sufficient information, see the ChangeLog file.
     * Shellwords.split (alias shellwords)
     * String#shellsplit
 
+* stringio
+
+  * StringIO#getbyte
+  * StringIO#readbyte
+
+    New methods. (aliases for compatibility with 1.9)
+
+  * StringIO#each_char
+  * StringIO#chars
+
+    New methods.
+
+  * StringIO#each
+  * StringIO#each_line
+  * StringIO#each_byte
+
+    Return an enumerator if no block is given.
+
 * tempfile
 
   * Tempfile.open and Tempfile.new now accept a suffix for the
@@ -386,6 +421,13 @@ with all sufficient information, see the ChangeLog file.
     instead of 'MM.DD.YY'.  While the change may confuse you, you can
     always use Date.strptime() when you know what you are dealing
     with.
+
+* stringio
+
+  * StringIO#each_byte
+
+    The return value changed from nil to self.  This is what the
+    document says and the same as each_line() does.
 
 * tempfile
 

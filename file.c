@@ -2474,6 +2474,7 @@ rb_path_end(path)
 static char *
 ntfs_tail(const char *path)
 {
+    while (*path == '.') path++;
     while (*path && *path != ':') {
 	if (istrailinggabage(*path)) {
 	    const char *last = path++;
@@ -2496,13 +2497,13 @@ ntfs_tail(const char *path)
 
 #define BUFCHECK(cond) do {\
     long bdiff = p - buf;\
-    while (cond) {\
-	buflen *= 2;\
+    if (cond) {\
+	do {buflen *= 2;} while (cond);\
+	rb_str_resize(result, buflen);\
+	buf = RSTRING_PTR(result);\
+	p = buf + bdiff;\
+	pend = buf + buflen;\
     }\
-    rb_str_resize(result, buflen);\
-    buf = RSTRING(result)->ptr;\
-    p = buf + bdiff;\
-    pend = buf + buflen;\
 } while (0)
 
 #define BUFINIT() (\
@@ -2738,7 +2739,6 @@ file_expand_path(fname, dname, result)
 	p += s-b;
     }
     if (p == skiproot(buf) - 1) p++;
-    buflen = p - buf;
 
 #if USE_NTFS
     *p = '\0';
@@ -2784,19 +2784,20 @@ file_expand_path(fname, dname, result)
 #ifdef __CYGWIN__
 	    if (lnk_added && len > 4 &&
 		strcasecmp(wfd.cFileName + len - 4, ".lnk") == 0) {
-		len -= 4;
+		wfd.cFileName[len -= 4] = '\0';
 	    }
 #endif
 	    if (!p) p = buf;
-	    buflen = ++p - buf + len;
-	    rb_str_resize(result, buflen);
+	    ++p;
+	    BUFCHECK(bdiff + len >= buflen);
 	    memcpy(p, wfd.cFileName, len + 1);
+	    p += len;
 	}
     }
 #endif
 
     if (tainted) OBJ_TAINT(result);
-    rb_str_set_len(result, buflen);
+    rb_str_set_len(result, p - buf);
     return result;
 }
 

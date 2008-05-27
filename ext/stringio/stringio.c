@@ -14,6 +14,7 @@
 
 #include "ruby.h"
 #include "rubyio.h"
+#include "re.h"
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -162,6 +163,7 @@ static VALUE strio_rewind _((VALUE));
 static VALUE strio_seek _((int, VALUE *, VALUE));
 static VALUE strio_get_sync _((VALUE));
 static VALUE strio_each_byte _((VALUE));
+static VALUE strio_each_char _((VALUE));
 static VALUE strio_getc _((VALUE));
 static VALUE strio_ungetc _((VALUE, VALUE));
 static VALUE strio_readchar _((VALUE));
@@ -710,11 +712,14 @@ strio_each_byte(self)
     VALUE self;
 {
     struct StringIO *ptr = readable(StringIO(self));
-    while (ptr->pos < RSTRING(ptr->string)->len) {
-	char c = RSTRING(ptr->string)->ptr[ptr->pos++];
+
+    RETURN_ENUMERATOR(self, 0, 0);
+
+    while (ptr->pos < RSTRING_LEN(ptr->string)) {
+	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
 	rb_yield(CHR2FIX(c));
     }
-    return Qnil;
+    return self;
 }
 
 /*
@@ -801,6 +806,41 @@ strio_readchar(self)
     VALUE c = strio_getc(self);
     if (NIL_P(c)) rb_eof_error();
     return c;
+}
+
+/*
+ * call-seq:
+ *   strio.each_char {|char| block }  -> strio
+ *
+ * See IO#each_char.
+ */
+static VALUE
+strio_each_char(self)
+    VALUE self;
+{
+    struct StringIO *sio;
+    VALUE str;
+    const char *ptr;
+    size_t len;
+
+    RETURN_ENUMERATOR(self, 0, 0);
+
+    sio = readable(StringIO(self));
+    str = sio->string;
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+
+    while (sio->pos < len) {
+	int pos = sio->pos;
+	char c = ptr[pos];
+        int n = mbclen(c);
+
+	if (len < pos + n) n = len - pos;
+
+	sio->pos += n;
+        rb_yield(rb_str_substr(str, pos, n));
+    }
+    return self;
 }
 
 static void
@@ -970,6 +1010,8 @@ strio_each(argc, argv, self)
 {
     struct StringIO *ptr = StringIO(self);
     VALUE line;
+
+    RETURN_ENUMERATOR(self, argc, argv);
 
     while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
 	rb_yield(line);
@@ -1294,11 +1336,17 @@ Init_stringio()
     rb_define_method(StringIO, "path", strio_path, 0);
 
     rb_define_method(StringIO, "each", strio_each, -1);
-    rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
     rb_define_method(StringIO, "each_line", strio_each, -1);
+    rb_define_method(StringIO, "lines", strio_each, -1);
+    rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
+    rb_define_method(StringIO, "bytes", strio_each_byte, 0);
+    rb_define_method(StringIO, "each_char", strio_each_char, 0);
+    rb_define_method(StringIO, "chars", strio_each_char, 0);
     rb_define_method(StringIO, "getc", strio_getc, 0);
+    rb_define_method(StringIO, "getbyte", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
     rb_define_method(StringIO, "readchar", strio_readchar, 0);
+    rb_define_method(StringIO, "readbyte", strio_readchar, 0);
     rb_define_method(StringIO, "gets", strio_gets, -1);
     rb_define_method(StringIO, "readline", strio_readline, -1);
     rb_define_method(StringIO, "readlines", strio_readlines, -1);
