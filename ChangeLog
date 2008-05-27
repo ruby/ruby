@@ -31,6 +31,13 @@ Tue May 27 15:36:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* numeric.c (num_fdiv): fallback to_f should always return float
 	  result.  should not use #quo that may return rational.
 
+	* numeric.c (num_div): should raise ZeroDivisionError.
+
+	* numeric.c (fix_divide): ditto.
+
+	* test/ruby/test_numeric.rb (TestNumeric::test_divmod): avoid
+	  ZeroDivisionError in tests.
+
 Tue May 27 13:14:53 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_to_a): Pass arguments through to #each().

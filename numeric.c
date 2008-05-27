@@ -288,6 +288,7 @@ static VALUE num_floor(VALUE num);
 static VALUE
 num_div(VALUE x, VALUE y)
 {
+    if (rb_equal(INT2FIX(0), y)) rb_num_zerodiv();
     return num_floor(rb_funcall(x, '/', 1, y));
 }
 
@@ -2261,11 +2262,15 @@ fix_divide(VALUE x, VALUE y, ID op)
 	return rb_big_div(x, y);
       case T_FLOAT:
 	{
-	    double div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
+	    double div;
+
 	    if (op == '/') {
+		div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
 		return DOUBLE2NUM(div);
 	    }
 	    else {
+		if (RFLOAT_VALUE(y) == 0) rb_num_zerodiv();
+		div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
 		return rb_dbl2big(floor(div));
 	    }
 	}

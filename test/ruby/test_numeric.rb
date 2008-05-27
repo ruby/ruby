@@ -60,9 +60,9 @@ class TestNumeric < Test::Unit::TestCase
       def %(x); :mod; end
     end
 
-    assert_equal(42, DummyNumeric.new.div(0))
-    assert_equal(:mod, DummyNumeric.new.modulo(0))
-    assert_equal([42, :mod], DummyNumeric.new.divmod(0))
+    assert_equal(42, DummyNumeric.new.div(1))
+    assert_equal(:mod, DummyNumeric.new.modulo(1))
+    assert_equal([42, :mod], DummyNumeric.new.divmod(1))
 
     assert_kind_of(Integer, 11.divmod(3.5).first, '[ruby-dev:34006]')
 
