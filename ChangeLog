@@ -22,6 +22,12 @@ Tue May 27 17:54:35 2008  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/stringio/stringio.c (strio_each_byte): Return self instead
 	  of nil as the rdoc says.
 
+Tue May 27 15:36:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (check_int): use PRIxVALUE format specifier.
+
+	* numeric.c (check_uint, rb_num2fix, int_chr): ditto.
+
 Tue May 27 13:14:53 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_to_a): Pass arguments through to #each().
