@@ -331,7 +331,12 @@ with all sufficient information, see the ChangeLog file.
   * StringIO#getbyte
   * StringIO#readbyte
 
-    Add new methods. (aliases for compatibility with 1.9)
+    New methods. (aliases for compatibility with 1.9)
+
+  * StringIO#each_char
+  * StringIO#chars
+
+    New methods.
 
   * StringIO#each
   * StringIO#each_line

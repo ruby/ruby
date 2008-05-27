@@ -1,3 +1,8 @@
+Tue May 27 18:54:02 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/stringio/stringio.c (strio_each_char, Init_stringio): Add
+	  StringIO#{each_char,chars}.
+
 Tue May 27 17:59:34 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/stringio/stringio.c (strio_each): Return an enumerator if no
