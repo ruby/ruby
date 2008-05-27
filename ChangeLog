@@ -1,3 +1,9 @@
+Tue May 27 13:14:53 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enum.c (enum_to_a): Pass arguments through to #each().
+	  (enum_sort): Follow the enum_to_a signature change.
+	  (enum_reverse_each): Add #reverse_each().
+
 Tue May 27 13:12:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* io.c (Init_IO): Define ARGF.{lines,bytes,chars}.

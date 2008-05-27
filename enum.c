@@ -383,11 +383,11 @@ enum_collect(VALUE obj)
  *     { 'a'=>1, 'b'=>2, 'c'=>3 }.to_a   #=> [["a", 1], ["b", 2], ["c", 3]]
  */
 static VALUE
-enum_to_a(VALUE obj)
+enum_to_a(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary = rb_ary_new();
 
-    rb_block_call(obj, id_each, 0, 0, collect_all, ary);
+    rb_block_call(obj, id_each, argc, argv, collect_all, ary);
 
     return ary;
 }
@@ -657,7 +657,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enum_sort(VALUE obj)
 {
-    return rb_ary_sort(enum_to_a(obj));
+    return rb_ary_sort(enum_to_a(0, 0, obj));
 }
 
 static VALUE
@@ -1404,6 +1404,31 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 }
 
 
+/*
+ *  call-seq:
+ *     enum.reverse_each {|item| block } 
+ *  
+ *  Traverses <i>enum</i> in reverse order.
+ */
+
+static VALUE
+enum_reverse_each(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE ary;
+    long i;
+
+    RETURN_ENUMERATOR(obj, argc, argv);
+
+    ary = enum_to_a(argc, argv, obj);
+
+    for (i = RARRAY_LEN(ary); --i >= 0; ) {
+	rb_yield(RARRAY_PTR(ary)[i]);
+    }
+
+    return obj;
+}
+
+
 static VALUE
 zip_ary(VALUE val, NODE *memo, int argc, VALUE *argv)
 {
@@ -1756,8 +1781,8 @@ Init_Enumerable(void)
 {
     rb_mEnumerable = rb_define_module("Enumerable");
 
-    rb_define_method(rb_mEnumerable, "to_a", enum_to_a, 0);
-    rb_define_method(rb_mEnumerable, "entries", enum_to_a, 0);
+    rb_define_method(rb_mEnumerable, "to_a", enum_to_a, -1);
+    rb_define_method(rb_mEnumerable, "entries", enum_to_a, -1);
 
     rb_define_method(rb_mEnumerable, "sort", enum_sort, 0);
     rb_define_method(rb_mEnumerable, "sort_by", enum_sort_by, 0);
@@ -1789,6 +1814,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "member?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "include?", enum_member, 1);
     rb_define_method(rb_mEnumerable, "each_with_index", enum_each_with_index, -1);
+    rb_define_method(rb_mEnumerable, "reverse_each", enum_reverse_each, -1);
     rb_define_method(rb_mEnumerable, "zip", enum_zip, -1);
     rb_define_method(rb_mEnumerable, "take", enum_take, 1);
     rb_define_method(rb_mEnumerable, "take_while", enum_take_while, 0);
