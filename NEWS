@@ -187,7 +187,7 @@ with all sufficient information, see the ChangeLog file.
   * ARGF.lines
   * ARGF.readbyte
 
-    New methods.
+    New methods. 
 
   * Method#receiver
   * Method#name
@@ -319,6 +319,14 @@ with all sufficient information, see the ChangeLog file.
   * Add shorthand methods:
     * Shellwords.split (alias shellwords)
     * String#shellsplit
+
+* stringio
+
+  * Add new methods. (aliases for compatibility with 1.9)
+
+    * StringIO#getbyte
+    * StringIO#readbyte
+
 
 * tempfile
 
