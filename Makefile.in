@@ -96,7 +96,7 @@ RANLIB        = @RANLIB@
 AS            = @AS@
 ASFLAGS       = @ASFLAGS@
 IFCHANGE      = $(srcdir)/tool/ifchange
-SET_LC_MESSAGES = LC_MESSAGES=C
+SET_LC_MESSAGES = env LC_MESSAGES=C
 
 OBJEXT        = @OBJEXT@
 ASMEXT        = S
@@ -204,3 +204,5 @@ distclean-local::
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
+
+MKPREP = $(PREP)

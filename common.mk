@@ -111,7 +111,7 @@ BOOTSTRAPRUBY = $(BASERUBY)
 
 VCS           = svn
 
-all: $(MKFILES) $(PREP) incs $(RBCONFIG) $(LIBRUBY) encs
+all: $(MKFILES) incs $(PREP) $(RBCONFIG) $(LIBRUBY) encs
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
@@ -372,12 +372,12 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
-encs: enc.mk
+encs: enc.mk $(LIBRUBY)
 	$(MINIRUBY) -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc/trans" enc/trans
 	$(MAKE) -f enc.mk $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
-	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
+	$(srcdir)/lib/mkmf.rb $(MKPREP) $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" $@
 
 .PRECIOUS: $(MKFILES)
@@ -742,12 +742,12 @@ transdb.h: $(PREP)
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(PRELUDE_SCRIPTS) $(RBCONFIG) $(PREP)
+prelude.c: $(srcdir)/tool/compile_prelude.rb $(PRELUDE_SCRIPTS) $(MKPREP) $(RBCONFIG)
 	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb \
 		$(PRELUDE_SCRIPTS) $@.new
 	$(IFCHANGE) "$@" "$@.new"
 
-golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(PREP)
+golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(MKPREP) $(RBCONFIG)
 	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/golf_prelude.rb $@.new
 	$(IFCHANGE) "$@" "$@.new"
 
