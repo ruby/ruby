@@ -395,6 +395,37 @@ with all sufficient information, see the ChangeLog file.
 
 === Compatibility issues (excluding feature bug fixes)
 
+* String#slice! had some unintentional bugs and they have been fixed
+  because either they disagreed with documentation or their respective
+  behavior of #slice.  Unfortunately, this causes some
+  incompatibilities in the following (somewhat rare) cases.
+
+  * #slice! no longer expands the array when an out-of-boundary value
+    is given.
+
+      # Ruby 1.8.6
+      a = [1,2]
+      a.slice!(4,0)   #=> nil
+      a               #=> [1,2,nil,nil]
+
+      # Ruby 1.8.7
+      a = [1,2]
+      a.slice!(4,0)   #=> nil
+      a               #=> [1,2]
+
+  * #slice! no longer raises an exception but returns nil when a
+    negative length or out-of-boundary negative position is given.
+
+      # Ruby 1.8.6
+      a = [1,2]
+      a.slice!(1,-1)  #=> (raises IndexError)
+      a.slice!(-5,1)  #=> (raises IndexError)
+
+      # Ruby 1.8.7
+      a = [1,2]
+      a.slice!(1,-1)  #=> nil
+      a.slice!(-5,1)  #=> nil
+
 * String#to_i, String#hex and String#oct no longer accept a sequence
   of underscores (`__') as part of a number.
 
