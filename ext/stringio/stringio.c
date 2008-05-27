@@ -621,7 +621,7 @@ strio_each_byte(VALUE self)
 	char c = RSTRING_PTR(ptr->string)[ptr->pos++];
 	rb_yield(CHR2FIX(c));
     }
-    return Qnil;
+    return self;
 }
 
 /*
