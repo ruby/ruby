@@ -53,8 +53,6 @@ Incompatible (Trivial)
           o Kernel#open takes encoding specified
           o IO#initialize now accepts an IO argument
           o StringIO#readpartial
-          o IO#lines
-          o IO#bytes
           o IO.try_convert
           o Limit input in IO#gets, IO#readline, IO#readlines, IO#each_line, IO#lines, IO.foreach, IO.readlines, StringIO#gets, StringIO#readline, StringIO#each, StringIO#readlines
           o IO#ungetc, StringIO#ungetc
@@ -89,9 +87,7 @@ Compatible
           o Newlines allowed before ternary colon
     * Kernel and Object
           o BasicObject
-          o #instance_exec
           o Object#=~
-          o Object#tap
           o Kernel#instance_variable_defined?
           o Kernel#define_singleton_method
           o Kernel#singleton_methods, Kernel#methods
@@ -110,48 +106,18 @@ Compatible
           o Passing blocks to #[]
           o Proc#lambda?
     * Enumerable and Enumerator
-          o Enumerable methods called without a block
-          o Enumerable#cycle
-          o Enumerable#each_with_index
-          o Enumerable#first(n)
-          o Enumerable#group_by
-          o Enumerable#find_index
-          o Enumerable#take
-          o Enumerable#drop
-          o Enumerable#take_while
-          o Enumerable#drop_while
-          o Enumerator#each
-          o Enumerable#inject (#reduce) without a block
-          o Enumerable#count
-          o Enumerable#reduce
-          o Enumerator#with_index
-          o Enumerable##min_by, #max_by
-          o Enumerable#zip
-          o Enumerable#minmax and minmax_by
-          o Enumerator#rewind
-          o Enumerator#next
+          o Enumerable#map,collect_all called without a block returns
+            an enumerator.
     * Regexp#match, String#match
           o Regexp#match, String#match
     * Fiber: coroutines/micro-threads
     * Array
-          o Block argument to Array#index, Array#rindex [Ruby2]
-          o Array#combination
-          o Array#permutation
-          o Array#product
-          o Array#pop, Array#shift
           o Array#to_s is equivalent to Array#inspect
           o Array.try_convert
     * Hash
           o preserving item insertion order
           o Hash#_compare_by_identity and Hash#compare_by_identity?
           o Hash.try_convert
-    * Integer
-          o Integer#odd?, #even?
-          o Integer#pred
-    * Method
-          o Method#receiver
-          o Method#name
-          o Method#owner
     * Numeric
           o Numeric#upto, #downto, #times, #step
           o Numeric#scalar?, Complex#scalar?
@@ -166,14 +132,9 @@ Compatible
           o Regexp.try_convert
     * String
           o String#clear
-          o String#each_char
           o String#ord
-          o String#partition, #rpartition
-          o String#lines
-          o String#bytes
           o String#encoding
           o String#force_encoding
-          o String#start_with?, #end_with?
           o String#unpack with a block
           o String#hash
           o String#upto
@@ -190,16 +151,13 @@ Compatible
     * File and Dir operations
           o New methods
     * Process
-          o Process.setrlimit
           o Process.daemon
-          o Process.exec
     * Misc. new methods
           o public_send
-          o GC.stress, GC.stress=, GC.count
+          o GC.count
           o ObjectSpace.count_objects
           o Method#hash, Proc#hash
-          o __method__ and __callee__
-          o Symbol#to_proc
+          o __callee__
 
 * Implementation
     * Memory Diet
