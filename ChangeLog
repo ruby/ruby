@@ -1,3 +1,7 @@
+Wed May 28 08:42:51 2008  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c: "%" is required before PRI?VALUE.
+
 Tue May 27 22:10:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval_error.c (error_handle): SystemExit and SignalException throws

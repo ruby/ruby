@@ -1574,14 +1574,14 @@ check_int(SIGNED_VALUE num)
     else {
 	return;
     }
-    rb_raise(rb_eRangeError, "integer " PRIdVALUE " too %s to convert to `int'", num, s);
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `int'", num, s);
 }
 
 static void
 check_uint(VALUE num)
 {
     if (num > UINT_MAX) {
-	rb_raise(rb_eRangeError, "integer " PRIuVALUE " too big to convert to `unsigned int'", num);
+	rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too big to convert to `unsigned int'", num);
     }
 }
 
@@ -1651,7 +1651,7 @@ rb_num2fix(VALUE val)
 
     v = rb_num2long(val);
     if (!FIXABLE(v))
-	rb_raise(rb_eRangeError, "integer " PRIdVALUE " out of range of fixnum", v);
+	rb_raise(rb_eRangeError, "integer %"PRIdVALUE " out of range of fixnum", v);
     return LONG2FIX(v);
 }
 
@@ -1879,7 +1879,7 @@ int_chr(int argc, VALUE *argv, VALUE num)
       case 0:
 	if (i < 0 || 0xff < i) {
 	  out_of_range:
-	    rb_raise(rb_eRangeError, PRIdVALUE " out of char range", i);
+	    rb_raise(rb_eRangeError, "%"PRIdVALUE " out of char range", i);
 	}
 	c = i;
 	if (i < 0x80) {
