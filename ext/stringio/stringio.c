@@ -1336,12 +1336,12 @@ Init_stringio()
     rb_define_method(StringIO, "path", strio_path, 0);
 
     rb_define_method(StringIO, "each", strio_each, -1);
+    rb_define_method(StringIO, "each_line", strio_each, -1);
+    rb_define_method(StringIO, "lines", strio_each, -1);
     rb_define_method(StringIO, "each_byte", strio_each_byte, 0);
     rb_define_method(StringIO, "bytes", strio_each_byte, 0);
     rb_define_method(StringIO, "each_char", strio_each_char, 0);
     rb_define_method(StringIO, "chars", strio_each_char, 0);
-    rb_define_method(StringIO, "each_line", strio_each, -1);
-    rb_define_method(StringIO, "lines", strio_each, -1);
     rb_define_method(StringIO, "getc", strio_getc, 0);
     rb_define_method(StringIO, "getbyte", strio_getc, 0);
     rb_define_method(StringIO, "ungetc", strio_ungetc, 1);
