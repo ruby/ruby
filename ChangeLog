@@ -1,4 +1,7 @@
-Tue May 27 21:53:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue May 27 22:10:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_error.c (error_handle): SystemExit and SignalException throws
+	  TAG_RAISE but not TAG_FATAL.
 
 	* thread.c (rb_thread_execute_interrupts): delay interrupts during
 	  raising exceptions.  [ruby-dev:34855]
