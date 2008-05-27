@@ -171,10 +171,14 @@ with all sufficient information, see the ChangeLog file.
   * IO#each
   * IO#each_line
   * IO#each_byte
+  * IO#lines
+  * IO#bytes
   * IO.foreach
   * ARGF.each
   * ARGF.each_line
   * ARGF.each_byte
+  * ARGF.lines
+  * ARGF.bytes
 
     Return an enumerator if no block is given.
 

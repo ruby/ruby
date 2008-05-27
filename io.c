@@ -2028,6 +2028,52 @@ rb_io_each_byte(io)
 
 /*
  *  call-seq:
+ *     ios.lines(sep=$/)     => anEnumerator
+ *     ios.lines(limit)      => anEnumerator
+ *     ios.lines(sep, limit) => anEnumerator
+ *
+ *  Returns an enumerator that gives each line in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *
+ *     f = File.new("testfile")
+ *     f.lines.to_a  #=> ["foo\n", "bar\n"]
+ *     f.rewind
+ *     f.lines.sort  #=> ["bar\n", "foo\n"]
+ */
+
+static VALUE
+rb_io_lines(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
+}
+
+/*
+ *  call-seq:
+ *     ios.bytes   => anEnumerator
+ *
+ *  Returns an enumerator that gives each byte (0..255) in <em>ios</em>.
+ *  The stream must be opened for reading or an <code>IOError</code>
+ *  will be raised.
+ *     
+ *     f = File.new("testfile")
+ *     f.bytes.to_a  #=> [104, 101, 108, 108, 111]
+ *     f.rewind
+ *     f.bytes.sort  #=> [101, 104, 108, 108, 111]
+ */
+
+static VALUE
+rb_io_bytes(io)
+    VALUE io;
+{
+    return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
+}
+
+/*
+ *  call-seq:
  *     ios.getc   => fixnum or nil
  *  
  *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
@@ -5808,6 +5854,8 @@ Init_IO()
     rb_define_method(rb_cIO, "each",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_line",  rb_io_each_line, -1);
     rb_define_method(rb_cIO, "each_byte",  rb_io_each_byte, 0);
+    rb_define_method(rb_cIO, "lines",  rb_io_lines, -1);
+    rb_define_method(rb_cIO, "bytes",  rb_io_bytes, 0);
 
     rb_define_method(rb_cIO, "syswrite", rb_io_syswrite, 1);
     rb_define_method(rb_cIO, "sysread",  rb_io_sysread, -1);
@@ -5895,6 +5943,8 @@ Init_IO()
     rb_define_singleton_method(argf, "each",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_line",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_byte",  argf_each_byte, 0);
+    rb_define_singleton_method(argf, "lines",  argf_lines, -1);
+    rb_define_singleton_method(argf, "bytes",  argf_bytes, 0);
 
     rb_define_singleton_method(argf, "read",  argf_read, -1);
     rb_define_singleton_method(argf, "readlines", rb_f_readlines, -1);
