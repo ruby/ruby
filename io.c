@@ -5881,7 +5881,9 @@ Init_IO()
     rb_define_method(rb_cIO, "gets",  rb_io_gets_m, -1);
     rb_define_method(rb_cIO, "readline",  rb_io_readline, -1);
     rb_define_method(rb_cIO, "getc",  rb_io_getc, 0);
+    rb_define_method(rb_cIO, "getbyte",  rb_io_getc, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
+    rb_define_method(rb_cIO, "readbyte",  rb_io_readchar, 0);
     rb_define_method(rb_cIO, "ungetc",rb_io_ungetc, 1);
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
@@ -5943,8 +5945,8 @@ Init_IO()
     rb_define_singleton_method(argf, "each",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_line",  argf_each_line, -1);
     rb_define_singleton_method(argf, "each_byte",  argf_each_byte, 0);
-    rb_define_singleton_method(argf, "lines",  argf_lines, -1);
-    rb_define_singleton_method(argf, "bytes",  argf_bytes, 0);
+    rb_define_singleton_method(argf, "lines",  argf_each_line, -1);
+    rb_define_singleton_method(argf, "bytes",  argf_each_byte, 0);
 
     rb_define_singleton_method(argf, "read",  argf_read, -1);
     rb_define_singleton_method(argf, "readlines", rb_f_readlines, -1);
@@ -5952,7 +5954,9 @@ Init_IO()
     rb_define_singleton_method(argf, "gets", rb_f_gets, -1);
     rb_define_singleton_method(argf, "readline", rb_f_readline, -1);
     rb_define_singleton_method(argf, "getc", argf_getc, 0);
+    rb_define_singleton_method(argf, "getbyte", argf_getc, 0);
     rb_define_singleton_method(argf, "readchar", argf_readchar, 0);
+    rb_define_singleton_method(argf, "readbyte", argf_readchar, 0);
     rb_define_singleton_method(argf, "tell", argf_tell, 0);
     rb_define_singleton_method(argf, "seek", argf_seek_m, -1);
     rb_define_singleton_method(argf, "rewind", argf_rewind, 0);
