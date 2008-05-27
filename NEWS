@@ -193,9 +193,11 @@ with all sufficient information, see the ChangeLog file.
 
     New methods. 
 
-  * Method#receiver
+  * Method#class_exec
+  * Method#module_exec
   * Method#name
   * Method#owner
+  * Method#receiver
   * UnboundMethod#name
   * UnboundMethod#owner
 

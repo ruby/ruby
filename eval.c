@@ -6918,6 +6918,35 @@ rb_mod_module_eval(argc, argv, mod)
     return specific_eval(argc, argv, mod, mod);
 }
 
+/*
+ *  call-seq:
+ *     mod.module_exec(arg...) {|var...| block }       => obj
+ *     mod.class_exec(arg...) {|var...| block }        => obj
+ *
+ *  Evaluates the given block in the context of the class/module.
+ *  The method defined in the block will belong to the receiver.
+ *
+ *     class Thing
+ *     end
+ *     Thing.class_exec{
+ *       def hello() "Hello there!" end
+ *     }
+ *     puts Thing.new.hello()
+ *
+ *  <em>produces:</em>
+ *
+ *     Hello there!
+ */
+
+VALUE
+rb_mod_module_exec(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    return yield_under(mod, mod, rb_ary_new4(argc, argv));
+}
+
 VALUE rb_load_path;
 
 NORETURN(static void load_failed _((VALUE)));
@@ -8187,7 +8216,9 @@ Init_eval()
     rb_define_method(rb_cModule, "public_class_method", rb_mod_public_method, -1);
     rb_define_method(rb_cModule, "private_class_method", rb_mod_private_method, -1);
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
+    rb_define_method(rb_cModule, "module_exec", rb_mod_module_exec, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
+    rb_define_method(rb_cModule, "class_exec", rb_mod_module_exec, -1);
 
     rb_undef_method(rb_cClass, "module_function");
 

@@ -1,3 +1,8 @@
+Tue May 27 16:02:58 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_mod_module_exec, Init_eval): Add
+	  Module#{module_exec,class_exec}.
+
 Tue May 27 15:36:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* io.c (rb_io_each_char, argf_each_char, Init_IO):
