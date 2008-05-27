@@ -1,3 +1,9 @@
+Tue May 27 20:18:30 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_slice_bang): Return an empty array instead of
+	  nil when pos is valid and len is adjusted from a valid value to
+	  zero; caught by RubySpec.
+
 Tue May 27 19:12:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (MKPREP), common.mk, win32/Makefile.sub (prelude.c): get
