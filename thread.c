@@ -814,6 +814,7 @@ thread_s_pass(VALUE klass)
 void
 rb_thread_execute_interrupts(rb_thread_t *th)
 {
+    if (th->raised_flag) return;
     while (th->interrupt_flag) {
 	int status = th->status;
 	th->status = THREAD_RUNNABLE;
