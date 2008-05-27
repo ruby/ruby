@@ -2090,18 +2090,19 @@ rb_ary_slice_bang(argc, argv, ary)
 	    pos += orig_len;
 	    if (pos < 0) return Qnil;
 	}
-	else if (orig_len <= pos) return Qnil;
+	else if (orig_len < pos) return Qnil;
 	if (orig_len < pos + len) {
 	    len = orig_len - pos;
 	}
+	if (len == 0) return rb_ary_new2(0);
 	arg2 = rb_ary_new4(len, RARRAY_PTR(ary)+pos);
 	RBASIC(arg2)->klass = rb_obj_class(ary);
-	rb_ary_splice(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
+	rb_ary_splice(ary, pos, len, Qnil);	/* Qundef in 1.9 */
 	return arg2;
     }
 
     if (!FIXNUM_P(arg1)) {
-	switch (rb_range_beg_len(arg1, &pos, &len, RARRAY(ary)->len, 0)) {
+	switch (rb_range_beg_len(arg1, &pos, &len, RARRAY_LEN(ary), 0)) {
 	  case Qtrue:
 	    /* valid range */
 	    goto delete_pos_len;
