@@ -90,6 +90,7 @@ class Exports::Mswin < Exports
           case filetype
           when /OBJECT/, /LIBRARY/
             next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
+            next unless /External/ =~ l
             next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
             is_data = !$1
             if noprefix or /^[@_]/ =~ l
