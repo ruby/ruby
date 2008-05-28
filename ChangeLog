@@ -1,3 +1,7 @@
+Wed May 28 15:18:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/singleton.rb (SingletonClassMethods): _load should be public.
+
 Wed May 28 12:52:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search
