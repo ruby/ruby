@@ -1,9 +1,25 @@
+Wed May 28 16:12:44 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb (WEBrick::HTTPServlet::CGIHandler#do_GET):
+	  Set the HTTP status code to 302 if a Location header field is
+	  present and the status code is not valid as a client
+	  redirection.  cf. RFC 3875 6.2.3, 6.2.4.
+
+Wed May 28 15:18:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/singleton.rb (SingletonClassMethods): _load should be public.
+
 Wed May 28 12:52:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search
 	  private methods too.  [ruby-dev:34671]
 
 	* object.c (convert_type): ditto.
+
+Tue May 27 23:26:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_bug): description from rb_bug() should include
+	  patchlevel.  [ruby-dev:34826]
 
 Tue May 27 20:19:22 2008  Akinori MUSHA  <knu@iDaemons.org>
 

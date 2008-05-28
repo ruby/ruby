@@ -30,6 +30,7 @@
 #endif
 
 extern const char ruby_version[], ruby_release_date[], ruby_platform[];
+extern const int ruby_patchlevel;
 
 int ruby_nerrs;
 
@@ -208,8 +209,8 @@ rb_bug(fmt, va_alist)
 	va_init_list(args, fmt);
 	vfprintf(out, fmt, args);
 	va_end(args);
-	fprintf(out, "\nruby %s (%s) [%s]\n\n",
-		ruby_version, ruby_release_date, ruby_platform);
+	fprintf(out, "\nruby %s (%s patchlevel %d) [%s]\n\n",
+		ruby_version, ruby_release_date, ruby_patchlevel, ruby_platform);
     }
     abort();
 }

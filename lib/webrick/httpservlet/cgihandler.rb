@@ -85,6 +85,10 @@ module WEBrick
             res.status = $1.to_i
             header.delete('status')
           end
+          if header.has_key?('location')
+            # RFC 3875 6.2.3, 6.2.4
+            res.status = 302 unless (300...400) === res.status
+          end
           if header.has_key?('set-cookie')
             header['set-cookie'].each{|k|
               res.cookies << Cookie.parse_set_cookie(k)
