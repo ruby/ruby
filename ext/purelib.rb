@@ -1,3 +1,10 @@
-if nul = $:.find_index {|path| /\A(?:\.\/)*-\z/ =~ path}
+nul = nil
+$:.each_with_index {|path, index|
+  if /\A(?:\.\/)*-\z/ =~ path
+    nul = index
+    break
+  end
+}
+if nul
   $:[nul..-1] = ["."]
 end
