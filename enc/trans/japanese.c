@@ -13332,7 +13332,7 @@ to_SHIFT_JIS_EF_offsets[64] = {
       7,  7,  7,  7,  7,  7,  7,  7,    7,  7,  7,  7,  3,  4,  5,  6,
 };
 static const struct byte_lookup* const
-to_SHIFT_JIS_EF_infos[7] = {
+to_SHIFT_JIS_EF_infos[8] = {
      &to_SHIFT_JIS_EF_A4, &to_SHIFT_JIS_EF_A7,
      &to_SHIFT_JIS_EF_A8, &to_SHIFT_JIS_EF_BC,
      &to_SHIFT_JIS_EF_BD, &to_SHIFT_JIS_EF_BE,
