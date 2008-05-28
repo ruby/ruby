@@ -7,6 +7,8 @@ Incompatible (Severe)
           o Block arguments
           o New semantics for block arguments
           o Block local variables
+    * Array
+          o Array#nitems was removed (use count {|i| i})
     * String
           o No longer an Enumerable
           o ?c semantics
@@ -33,7 +35,6 @@ Incompatible (Trivial)
           o SecurityError
           o Removed Exception#to_str [Ruby2]
     * Array
-          o Array#nitems
           o Array#[m,n] = nil places nil in the array.
     * Hash
           o Hash#to_s is equivalent to Hash#inspect

@@ -1,3 +1,8 @@
+Wed May 28 18:05:28 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_nitems, Init_Array): Axe Array#nitems().
+	  cf. [ruby-dev:34676]-[ruby-dev:34713]
+
 Wed May 28 17:50:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb (Exports#objdump, Exports#each_line): extracted.

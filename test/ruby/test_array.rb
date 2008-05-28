@@ -827,14 +827,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
-  def test_nitems
-    assert_equal(0, @cls[].nitems)
-    assert_equal(1, @cls[1].nitems)
-    assert_equal(1, @cls[1, nil].nitems)
-    assert_equal(1, @cls[nil, 1].nitems)
-    assert_equal(3, @cls[1, nil, nil, 2, nil, 3, nil].nitems)
-  end
-
   def test_pack
     a = @cls[*%w( cat wombat x yy)]
     assert_equal("catwomx  yy ", a.pack("A3A3A3A3"))
@@ -1511,10 +1503,6 @@ class TestArray < Test::Unit::TestCase
     b = []
     b << b
     assert_equal(a.hash, b.hash)
-  end
-
-  def test_nitems2
-    assert_equal(3, [5,6,7,8,9].nitems { |x| x % 2 != 0 })
   end
 
   def test_flatten2

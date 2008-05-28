@@ -2747,46 +2747,6 @@ rb_ary_compact(VALUE ary)
 
 /*
  *  call-seq:
- *     array.nitems -> int
- *     array.nitems { |item| block }  -> int
- *  
- *  Returns the number of non-<code>nil</code> elements in _self_.
- *  If a block is given, the elements yielding a true value are
- *  counted.
- *
- *  May be zero.
- *     
- *     [ 1, nil, 3, nil, 5 ].nitems   #=> 3
- *     [5,6,7,8,9].nitems { |x| x % 2 != 0 }  #=> 3
- */
-
-static VALUE
-rb_ary_nitems(VALUE ary)
-{
-    long n = 0;
- 
-    if (rb_block_given_p()) {
-	long i;
-
-	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    VALUE v = RARRAY_PTR(ary)[i];
- 	    if (RTEST(rb_yield(v))) n++;
- 	}
-    }
-    else {
-	VALUE *p = RARRAY_PTR(ary);
-	VALUE *pend = p + RARRAY_LEN(ary);
-
- 	while (p < pend) {
- 	    if (!NIL_P(*p)) n++;
- 	    p++;
- 	}
-    }
-    return LONG2NUM(n);
-}
-
-/*
- *  call-seq:
  *     array.count(obj) -> int
  *     array.count { |item| block }  -> int
  *  
@@ -3519,7 +3479,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "compact!", rb_ary_compact_bang, 0);
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);
     rb_define_method(rb_cArray, "flatten!", rb_ary_flatten_bang, -1);
-    rb_define_method(rb_cArray, "nitems", rb_ary_nitems, 0);
     rb_define_method(rb_cArray, "count", rb_ary_count, -1);
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
