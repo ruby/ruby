@@ -1,3 +1,7 @@
+Wed May 28 15:18:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/singleton.rb (SingletonClassMethods): _load should be public.
+
 Wed May 28 13:30:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/japanese.c: add workarround for Unicode to CP932.

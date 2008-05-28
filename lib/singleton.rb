@@ -30,7 +30,7 @@
 # *  Klass.new and Klass.allocate - as private
 #
 # Providing (or modifying) the class methods
-# *  Klass.inherited(sub_klass) and Klass.clone()  - 
+# *  Klass.inherited(sub_klass) and Klass.clone()  -
 #    to ensure that the Singleton pattern is properly
 #    inherited and cloned.
 #
@@ -70,31 +70,31 @@ module Singleton
   def dup
     raise TypeError, "can't dup instance of singleton #{self.class}"
   end
-  
-  private 
+
+  private
 
   #  default marshalling strategy
-  def _dump(depth = -1) 
+  def _dump(depth = -1)
     ''
   end
 
-  module SingletonClassMethods  
+  module SingletonClassMethods
     # properly clone the Singleton pattern - did you know
-    # that duping doesn't copy class methods?  
+    # that duping doesn't copy class methods?
     def clone
       Singleton.__init__(super)
     end
 
+    def _load(str)
+      instance
+    end
+
     private
-    
-    #  ensure that the Singleton pattern is properly inherited   
+
+    #  ensure that the Singleton pattern is properly inherited
     def inherited(sub_klass)
       super
       Singleton.__init__(sub_klass)
-    end
-    
-    def _load(str) 
-      instance 
     end
   end
 
@@ -114,12 +114,12 @@ module Singleton
       end
       klass
     end
-    
+
     private
 
     #  extending an object with Singleton is a bad idea
     undef_method :extend_object
-    
+
     def append_features(mod)
       #  help out people counting on transitive mixins
       unless mod.instance_of?(Class)
@@ -127,7 +127,7 @@ module Singleton
       end
       super
     end
-    
+
     def included(klass)
       super
       klass.private_class_method  :new, :allocate
@@ -135,7 +135,7 @@ module Singleton
       Singleton.__init__(klass)
     end
   end
-  
+
 end
 
 
@@ -143,14 +143,14 @@ if __FILE__ == $0
 
 def num_of_instances(klass)
     "#{ObjectSpace.each_object(klass){}} #{klass} instance(s)"
-end 
+end
 
 # The basic and most important example.
 
 class SomeSingletonClass
   include Singleton
 end
-puts "There are #{num_of_instances(SomeSingletonClass)}" 
+puts "There are #{num_of_instances(SomeSingletonClass)}"
 
 a = SomeSingletonClass.instance
 b = SomeSingletonClass.instance # a and b are same object
@@ -173,23 +173,23 @@ class Ups < SomeSingletonClass
     puts "initialize called by thread ##{Thread.current[:i]}"
   end
 end
-  
+
 class << Ups
   def _instantiate?
     @enter.push Thread.current[:i]
     while false.equal?(@singleton__instance__)
       @singleton__mutex__.unlock
-      sleep 0.08 
+      sleep 0.08
       @singleton__mutex__.lock
     end
     @leave.push Thread.current[:i]
     @singleton__instance__
   end
-  
+
   def __sleep
     sleep(rand(0.08))
   end
-  
+
   def new
     begin
       __sleep
@@ -201,12 +201,12 @@ class << Ups
       end
     end
   end
-  
+
   def instantiate_all
     @enter = []
     @leave = []
-    1.upto(9) {|i|  
-      Thread.new { 
+    1.upto(9) {|i|
+      Thread.new {
         begin
           Thread.current[:i] = i
           __sleep
@@ -296,7 +296,7 @@ end
 class Down < Middle; end
 
 puts  "and basic \"Down test\" is #{Down.instance == Down.instance}\n
-Various exceptions"  
+Various exceptions"
 
 begin
   module AModule
