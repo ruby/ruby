@@ -4582,16 +4582,17 @@ to_SHIFT_JIS_E2_80_offsets[64] = {
   /* used from to_SHIFT_JIS_E2_80 */
   /* used from to_EUC_JP_E2_80 */
      15, 15, 15, 15, 15, 15, 15, 15,   15, 15, 15, 15, 15, 15, 15, 15,
-      0, 15, 15, 15,  1, 15,  2, 15,    3,  4, 15, 15,  5,  6, 15, 15,
+      0, 15, 15, 15,  1, 16,  2, 15,    3,  4, 15, 15,  5,  6, 15, 15,
       7,  8, 15, 15, 15,  9, 10, 15,   15, 15, 15, 15, 15, 15, 15, 15,
      11, 15, 12, 13, 15, 15, 15, 15,   15, 15, 15, 14, 15, 15, 15, 15,
 };
 static const struct byte_lookup* const
-to_SHIFT_JIS_E2_80_infos[16] = {
+to_SHIFT_JIS_E2_80_infos[17] = {
      o2(0x81,0x5D), o2(0x81,0x5C), o2(0x81,0x61), o2(0x81,0x65),
      o2(0x81,0x66), o2(0x81,0x67), o2(0x81,0x68), o2(0x81,0xF5),
      o2(0x81,0xF6), o2(0x81,0x64), o2(0x81,0x63), o2(0x81,0xF1),
      o2(0x81,0x8C), o2(0x81,0x8D), o2(0x81,0xA6),         UNDEF,
+     o2(0x81,0x5C),
 };
 static const BYTE_LOOKUP
 to_SHIFT_JIS_E2_80 = {
@@ -4688,17 +4689,18 @@ to_SHIFT_JIS_E2_88_offsets[64] = {
   /* used from to_EUC_JP_E2_88 */
       0, 23,  1,  2, 23, 23, 23,  3,    4, 23, 23,  5, 23, 23, 23, 23,
      23,  6,  7, 23, 23, 23, 23, 23,   23, 23,  8, 23, 23,  9, 10, 11,
-     12, 23, 23, 23, 23, 23, 23, 13,   14, 15, 16, 17, 18, 23, 19, 23,
+     12, 23, 23, 23, 23, 24, 23, 13,   14, 15, 16, 17, 18, 23, 19, 23,
      23, 23, 23, 23, 20, 21, 23, 23,   23, 23, 23, 23, 23, 22, 23, 23,
 };
 static const struct byte_lookup* const
-to_SHIFT_JIS_E2_88_infos[24] = {
+to_SHIFT_JIS_E2_88_infos[25] = {
      o2(0x81,0xCD), o2(0x81,0xDD), o2(0x81,0xCE), o2(0x81,0xDE),
      o2(0x81,0xB8), o2(0x81,0xB9), o2(0x87,0x94), o2(0x81,0x7C),
      o2(0x87,0x95), o2(0x81,0xE5), o2(0x81,0x87), o2(0x87,0x98),
      o2(0x87,0x97), o2(0x81,0xC8), o2(0x81,0xC9), o2(0x87,0x9B),
      o2(0x87,0x9C), o2(0x87,0x92), o2(0x81,0xE8), o2(0x87,0x93),
      o2(0x81,0x88), o2(0x87,0x9A), o2(0x81,0xE4),         UNDEF,
+     o2(0x81,0x61),
 };
 static const BYTE_LOOKUP
 to_SHIFT_JIS_E2_88 = {
@@ -13210,13 +13212,13 @@ static const unsigned char
 to_SHIFT_JIS_EF_BC_offsets[64] = {
   /* used from to_SHIFT_JIS_EF_BC */
   /* used from to_EUC_JP_EF_BC */
-     61,  0,  1,  2,  3,  4,  5,  6,    7,  8,  9, 10, 61, 61, 11, 12,
+     61,  0,  1,  2,  3,  4,  5,  6,    7,  8,  9, 10, 61, 62, 11, 12,
      13, 14, 15, 16, 17, 18, 19, 20,   21, 22, 23, 24, 25, 26, 27, 28,
      29, 30, 31, 32, 33, 34, 35, 36,   37, 38, 39, 40, 41, 42, 43, 44,
      45, 46, 47, 48, 49, 50, 51, 52,   53, 54, 55, 56, 57, 58, 59, 60,
 };
 static const struct byte_lookup* const
-to_SHIFT_JIS_EF_BC_infos[62] = {
+to_SHIFT_JIS_EF_BC_infos[63] = {
      o2(0x81,0x49), o2(0xFA,0x57), o2(0x81,0x94), o2(0x81,0x90),
      o2(0x81,0x93), o2(0x81,0x95), o2(0xFA,0x56), o2(0x81,0x69),
      o2(0x81,0x6A), o2(0x81,0x96), o2(0x81,0x7B), o2(0x81,0x44),
@@ -13232,7 +13234,7 @@ to_SHIFT_JIS_EF_BC_infos[62] = {
      o2(0x82,0x72), o2(0x82,0x73), o2(0x82,0x74), o2(0x82,0x75),
      o2(0x82,0x76), o2(0x82,0x77), o2(0x82,0x78), o2(0x82,0x79),
      o2(0x81,0x6D), o2(0x81,0x5F), o2(0x81,0x6E), o2(0x81,0x4F),
-     o2(0x81,0x51),         UNDEF,
+     o2(0x81,0x51),         UNDEF, o2(0x81,0x7C),
 };
 static const BYTE_LOOKUP
 to_SHIFT_JIS_EF_BC = {
@@ -13245,12 +13247,12 @@ to_SHIFT_JIS_EF_BD_offsets[64] = {
   /* used from to_SHIFT_JIS_EF_BD */
   /* used from to_EUC_JP_EF_BD */
       0,  1,  2,  3,  4,  5,  6,  7,    8,  9, 10, 11, 12, 13, 14, 15,
-     16, 17, 18, 19, 20, 21, 22, 23,   24, 25, 26, 27, 28, 29, 61, 61,
+     16, 17, 18, 19, 20, 21, 22, 23,   24, 25, 26, 27, 28, 29, 62, 61,
      61, 30, 31, 32, 33, 34, 35, 36,   37, 38, 39, 40, 41, 42, 43, 44,
      45, 46, 47, 48, 49, 50, 51, 52,   53, 54, 55, 56, 57, 58, 59, 60,
 };
 static const struct byte_lookup* const
-to_SHIFT_JIS_EF_BD_infos[62] = {
+to_SHIFT_JIS_EF_BD_infos[63] = {
      o2(0x81,0x4D), o2(0x82,0x81), o2(0x82,0x82), o2(0x82,0x83),
      o2(0x82,0x84), o2(0x82,0x85), o2(0x82,0x86), o2(0x82,0x87),
      o2(0x82,0x88), o2(0x82,0x89), o2(0x82,0x8A), o2(0x82,0x8B),
@@ -13266,7 +13268,7 @@ to_SHIFT_JIS_EF_BD_infos[62] = {
           o1(0xB3),      o1(0xB4),      o1(0xB5),      o1(0xB6),
           o1(0xB7),      o1(0xB8),      o1(0xB9),      o1(0xBA),
           o1(0xBB),      o1(0xBC),      o1(0xBD),      o1(0xBE),
-          o1(0xBF),         UNDEF,
+          o1(0xBF),         UNDEF, o2(0x81,0x60),
 };
 static const BYTE_LOOKUP
 to_SHIFT_JIS_EF_BD = {
@@ -13302,20 +13304,39 @@ to_SHIFT_JIS_EF_BE = {
 };
 
 static const unsigned char
+to_SHIFT_JIS_EF_BF_offsets[64] = {
+  /* used from to_SHIFT_JIS_EF_BF */
+  /* used from to_EUC_JP_EF_BF */
+      3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
+      3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
+      0,  1,  2,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
+      3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
+};
+static const struct byte_lookup* const
+to_SHIFT_JIS_EF_BF_infos[33] = {
+     o2(0x81,0x91), o2(0x81,0x92), o2(0x81,0xCA), UNDEF,
+};
+static const BYTE_LOOKUP
+to_SHIFT_JIS_EF_BF = {
+    to_SHIFT_JIS_EF_BF_offsets,
+    to_SHIFT_JIS_EF_BF_infos
+};
+
+static const unsigned char
 to_SHIFT_JIS_EF_offsets[64] = {
   /* used from to_SHIFT_JIS_EF */
   /* used from to_EUC_JP_EF */
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  0,  6,  6,  1,    2,  6,  6,  6,  6,  6,  6,  6,
-      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  3,  4,  5,  6,
+      7,  7,  7,  7,  7,  7,  7,  7,    7,  7,  7,  7,  7,  7,  7,  7,
+      7,  7,  7,  7,  7,  7,  7,  7,    7,  7,  7,  7,  7,  7,  7,  7,
+      7,  7,  7,  7,  0,  7,  7,  1,    2,  7,  7,  7,  7,  7,  7,  7,
+      7,  7,  7,  7,  7,  7,  7,  7,    7,  7,  7,  7,  3,  4,  5,  6,
 };
 static const struct byte_lookup* const
 to_SHIFT_JIS_EF_infos[7] = {
      &to_SHIFT_JIS_EF_A4, &to_SHIFT_JIS_EF_A7,
      &to_SHIFT_JIS_EF_A8, &to_SHIFT_JIS_EF_BC,
      &to_SHIFT_JIS_EF_BD, &to_SHIFT_JIS_EF_BE,
-                   UNDEF,
+     &to_SHIFT_JIS_EF_BF,               UNDEF,
 };
 static const BYTE_LOOKUP
 to_SHIFT_JIS_EF = {

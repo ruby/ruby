@@ -1,3 +1,9 @@
+Wed May 28 13:30:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/japanese.c: add workarround for Unicode to CP932.
+	  U+2015->0x815C, U+2225->0x8161, U+FF0D->0x817C, U+FF3C->0x815F,
+	  U+FF5E->0x8160, U+FFE0->0x8191, U+FFE1->0x8192, U+FFE2->0x81CA
+
 Wed May 28 12:52:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search
