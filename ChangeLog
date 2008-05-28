@@ -1,3 +1,8 @@
+Wed May 28 16:41:59 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_slice_bang): Call rb_ary_modify_check() at the
+	  beginning. [rubyspec]
+
 Wed May 28 16:12:44 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb (WEBrick::HTTPServlet::CGIHandler#do_GET):

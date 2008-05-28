@@ -1805,6 +1805,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
     VALUE arg1, arg2;
     long pos, len, orig_len;
 
+    rb_ary_modify_check(ary);
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	pos = NUM2LONG(arg1);
 	len = NUM2LONG(arg2);
