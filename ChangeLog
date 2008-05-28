@@ -5,6 +5,11 @@ Wed May 28 12:52:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (convert_type): ditto.
 
+Tue May 27 23:26:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_bug): description from rb_bug() should include
+	  patchlevel.  [ruby-dev:34826]
+
 Tue May 27 20:19:22 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_slice_bang): Return an empty array instead of
