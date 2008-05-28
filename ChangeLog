@@ -1,3 +1,10 @@
+Wed May 28 16:12:44 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb (WEBrick::HTTPServlet::CGIHandler#do_GET):
+	  Set the HTTP status code to 302 if a Location header field is
+	  present and the status code is not valid as a client
+	  redirection.  cf. RFC 3875 6.2.3, 6.2.4.
+
 Wed May 28 15:53:52 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enc/trans/japanese.c (to_SHIFT_JIS_EF_infos): typo.
