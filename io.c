@@ -2422,9 +2422,7 @@ rb_getc(FILE *f)
 {
     int c;
 
-    if (!STDIO_READ_DATA_PENDING(f)) {
-	rb_thread_wait_fd(fileno(f));
-    }
+    rb_read_check(f);
     TRAP_BEG;
     c = getc(f);
     TRAP_END;
