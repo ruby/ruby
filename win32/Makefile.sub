@@ -752,11 +752,3 @@ dir.$(OBJEXT) win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
-
-!if !exist(prelude.c)
-prelude.c: $(PREP)
-!endif
-
-!if !exist(golf_prelude.c)
-golf_prelude.c: $(PREP)
-!endif

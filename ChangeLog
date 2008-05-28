@@ -1,3 +1,12 @@
+Wed May 28 17:41:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (MKPREP): appended $(RBCONFIG).
+
+	* common.mk (enc.mk, prelude.c): not depend on $(RBCONFIG) on mswin32
+	  to get of compiling twice each time.
+
+	* win32/Makefile.sub (prelude.c): not depend on $(PREP).
+
 Wed May 28 17:37:07 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/mkexports.rb (Exports::Mswin#each_export): speed up.

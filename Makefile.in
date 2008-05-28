@@ -205,4 +205,4 @@ distclean-local::
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
-MKPREP = $(PREP)
+MKPREP = $(PREP) $(RBCONFIG)

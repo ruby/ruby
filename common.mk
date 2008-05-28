@@ -377,7 +377,7 @@ encs: enc.mk $(LIBRUBY)
 	$(MAKE) -f enc.mk $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
-	$(srcdir)/lib/mkmf.rb $(MKPREP) $(RBCONFIG)
+	$(srcdir)/lib/mkmf.rb $(MKPREP)
 	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" $@
 
 .PRECIOUS: $(MKFILES)
@@ -742,12 +742,12 @@ transdb.h: $(PREP)
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb
 	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $@
 
-prelude.c: $(srcdir)/tool/compile_prelude.rb $(PRELUDE_SCRIPTS) $(MKPREP) $(RBCONFIG)
+prelude.c: $(srcdir)/tool/compile_prelude.rb $(PRELUDE_SCRIPTS) $(MKPREP)
 	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb \
 		$(PRELUDE_SCRIPTS) $@.new
 	$(IFCHANGE) "$@" "$@.new"
 
-golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(MKPREP) $(RBCONFIG)
+golf_prelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb $(srcdir)/golf_prelude.rb $(MKPREP)
 	$(MINIRUBY) -I$(srcdir) -rrbconfig $(srcdir)/tool/compile_prelude.rb $(srcdir)/golf_prelude.rb $@.new
 	$(IFCHANGE) "$@" "$@.new"
 
