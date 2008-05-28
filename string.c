@@ -1514,7 +1514,8 @@ rb_str_upto(beg, end, excl)
 static VALUE
 rb_str_upto_m(argc, argv, beg)
     int argc;
-    VALUE argv, beg;
+    VALUE *argv;
+    VALUE beg;
 {
     VALUE end, exclusive;
 
@@ -4836,7 +4837,6 @@ rb_str_start_with(argc, argv, str)
     VALUE str;
 {
     int i;
-    long pos;
     VALUE pat;
 
     for (i=0; i<argc; i++) {

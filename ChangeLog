@@ -1,3 +1,8 @@
+Wed May 28 17:54:29 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_start_with): Remove an unused variable.
+	  (rb_str_upto_m): Fix a prototype.
+
 Wed May 28 17:48:28 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* range.c (range_step): Fix brokenness when a non-integer numeric
