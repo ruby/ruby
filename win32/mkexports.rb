@@ -27,7 +27,7 @@ class Exports
 
   def self.output(output = $output, &block)
     if output
-      open(output, 'w', &block)
+      open(output, 'wb', &block)
     else
       yield STDOUT
     end
@@ -74,38 +74,50 @@ class Exports
   def each_export(objs)
   end
 
+  def objdump(objs, &block)
+    if objs.empty?
+      $stdin.each_line(&block)
+    else
+      each_line(objs, &block)
+    end
+  end
+
   def symbols()
     @syms.sort.collect {|k, v| v ? v == true ? "#{k} DATA" : "#{k}=#{v}" : k}
   end
 end
 
 class Exports::Mswin < Exports
+  def each_line(objs, &block)
+    IO.popen(%w"dumpbin -symbols -exports" + objs) do |f|
+      f.each(&block)
+    end
+  end
+
   def each_export(objs)
     noprefix = ($arch ||= nil and /^(sh|i\d86)/ !~ $arch)
     objs = objs.collect {|s| s.tr('/', '\\')}
     filetype = nil
-    IO.popen(%w"dumpbin -symbols -exports" + objs) do |f|
-      f.each do |l|
-        if (filetype = l[/^File Type: (.+)/, 1])..(/^\f/ =~ l)
-          case filetype
-          when /OBJECT/, /LIBRARY/
-            next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
-            next unless /External/ =~ l
-            next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
-            is_data = !$1
-            if noprefix or /^[@_]/ =~ l
-              next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{16}$/ =~ l
-              l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
-            elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
-              next
-            end
-          when /DLL/
-            next unless l.sub!(/^\s*\d+\s+[[:xdigit:]]+\s+[[:xdigit:]]+\s+/, '')
-          else
+    objdump(objs) do |l|
+      if (filetype = l[/^File Type: (.+)/, 1])..(/^\f/ =~ l)
+        case filetype
+        when /OBJECT/, /LIBRARY/
+          next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
+          next unless /External/ =~ l
+          next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, '')
+          is_data = !$1
+          if noprefix or /^[@_]/ =~ l
+            next if /(?!^)@.*@/ =~ l || /@[[:xdigit:]]{16}$/ =~ l
+            l.sub!(/^[@_]/, '') if /@\d+$/ !~ l
+          elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
             next
           end
-          yield l.strip, is_data
+        when /DLL/
+          next unless l.sub!(/^\s*\d+\s+[[:xdigit:]]+\s+[[:xdigit:]]+\s+/, '')
+        else
+          next
         end
+        yield l.strip, is_data
       end
     end
     yield "strcasecmp", "msvcrt.stricmp"
@@ -118,9 +130,13 @@ class Exports::Mingw < Exports
     @@nm ||= RbConfig::CONFIG["NM"]
   end
 
+  def each_line(objs, &block)
+    IO.foreach("|#{self.class.nm} --extern --defined #{objs.join(' ')}", &block)
+  end
+
   def each_export(objs)
-    IO.popen([self.class.nm, "--extern", "--defined", *objs]) do |f|
-      f.each {|l| yield $1 if / [[:upper:]] _(.*)$/ =~ l}
+    objdump(objs) do |l|
+      yield $1 if / [[:upper:]] _(.*)$/ =~ l
     end
     yield "strcasecmp", "_stricmp"
     yield "strncasecmp", "_strnicmp"

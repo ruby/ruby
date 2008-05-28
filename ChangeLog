@@ -1,3 +1,7 @@
+Wed May 28 17:50:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/mkexports.rb (Exports#objdump, Exports#each_line): extracted.
+
 Wed May 28 17:41:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (MKPREP): appended $(RBCONFIG).
