@@ -1,3 +1,10 @@
+Wed May 28 12:52:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search
+	  private methods too.  [ruby-dev:34671]
+
+	* object.c (convert_type): ditto.
+
 Wed May 28 08:42:51 2008  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c: "%" is required before PRI?VALUE.
