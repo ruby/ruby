@@ -246,6 +246,11 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+  * String#upto
+
+    An optional second argument is added to specify if the last value
+    should be included.
+
   * StopIteration
 
     New exception class that causes Kernel#loop to stop iteration when

@@ -1,3 +1,13 @@
+Wed May 28 17:48:28 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* range.c (range_step): Fix brokenness when a non-integer numeric
+	  value is specified as step. [rubyspec]
+	  (range_step): Make use of String#step internally if a string (or
+	  string-alike) range is given.
+
+	* string.c (rb_str_upto_m, Init_String): Add an optional second
+	  argument to specify if the last value should be included.
+
 Wed May 28 16:53:39 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_slice_bang): Call rb_ary_modify_check() at the
