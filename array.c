@@ -3068,7 +3068,7 @@ rb_ary_nitems(ary)
  *     array.count { |item| block }  -> int
  *  
  *  Returns the number of elements which equals to <i>obj</i>.
- *  If a block is given, counts tthe number of elements yielding a true value.
+ *  If a block is given, counts the number of elements yielding a true value.
  *
  *     ary = [1, 2, 4, 2]
  *     ary.count(2)          # => 2
