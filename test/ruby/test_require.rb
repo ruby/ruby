@@ -212,4 +212,24 @@ class TestRequire < Test::Unit::TestCase
       assert_equal(":ok", r.read.chomp)
     end
   end
+
+  def test_load
+    t = Tempfile.new(["test_ruby_test_require", ".rb"])
+    t.puts "module Foo; end"
+    t.puts "at_exit { p :wrap_end }"
+    t.puts "at_exit { raise 'error in at_exit test' }"
+    t.puts "p :ok"
+    t.close
+
+    ruby do |w, r, e|
+      w.puts "load(#{ t.path.dump }, true)"
+      w.puts "GC.start"
+      w.puts "p :end"
+      w.close
+      assert_match(/error in at_exit test/, e.read)
+      assert_equal(":ok\n:end\n:wrap_end", r.read.chomp)
+    end
+
+    assert_raise(ArgumentError) { at_exit }
+  end
 end
