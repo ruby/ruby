@@ -116,9 +116,9 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
     VALUE size, gen, obj;
 	
     if (rb_scan_args(argc, argv, "11", &size, &gen) == 2) {
-	g = FIX2INT(gen);
+	g = NUM2INT(gen);
     }
-    dh = dh_generate(FIX2INT(size), g);
+    dh = dh_generate(NUM2INT(size), g);
     obj = dh_instance(klass, dh);
     if (obj == Qfalse) {
 	DH_free(dh);
@@ -158,7 +158,7 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     }
     else if (FIXNUM_P(arg)) {
 	if (!NIL_P(gen)) {
-	    g = FIX2INT(gen);
+	    g = NUM2INT(gen);
 	}
 	if (!(dh = dh_generate(FIX2INT(arg), g))) {
 	    ossl_raise(eDHError, NULL);

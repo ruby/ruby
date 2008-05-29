@@ -110,7 +110,7 @@ dsa_generate(int size)
 static VALUE
 ossl_dsa_s_generate(VALUE klass, VALUE size)
 {
-    DSA *dsa = dsa_generate(FIX2INT(size)); /* err handled by dsa_instance */
+    DSA *dsa = dsa_generate(NUM2INT(size)); /* err handled by dsa_instance */
     VALUE obj = dsa_instance(klass, dsa);
 
     if (obj == Qfalse) {
