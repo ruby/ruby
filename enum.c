@@ -15,7 +15,7 @@
 #include "util.h"
 
 VALUE rb_mEnumerable;
-static ID id_each, id_eqq, id_cmp;
+static ID id_each, id_eqq, id_cmp, id_size;
 
 struct iter_method_arg {
     VALUE obj;
@@ -114,36 +114,53 @@ enum_grep(obj, pat)
 }
 
 static VALUE
-count_i(i, arg)
-     VALUE i;
-     VALUE *arg;
+count_i(i, memop)
+    VALUE i, memop;
 {
-    if (rb_equal(i, arg[0])) {
-	arg[1]++;
+    VALUE *memo = (VALUE*)memop;
+
+    if (rb_equal(i, memo[1])) {
+	memo[0]++;
     }
     return Qnil;
 }
 
 static VALUE
-count_iter_i(i, n)
-     VALUE i;
-     long *n;
+count_iter_i(i, memop)
+    VALUE i, memop;
 {
+    VALUE *memo = (VALUE*)memop;
+
     if (RTEST(rb_yield(i))) {
-	(*n)++;
+	memo[0]++;
     }
+    return Qnil;
+}
+
+static VALUE
+count_all_i(i, memop)
+    VALUE i, memop;
+{
+    VALUE *memo = (VALUE*)memop;
+
+    memo[0]++;
     return Qnil;
 }
 
 /*
  *  call-seq:
+ *     enum.count                   => int
  *     enum.count(item)             => int
  *     enum.count {| obj | block }  => int
  *
- *  Returns the number of items in <i>enum</i> for which equals to <i>item</i>.
- *  If a block is given, counts the number of elements yielding a true value.
+ *  Returns the number of items in <i>enum</i>, where #size is called
+ *  if it responds to it, otherwise the items are counted through
+ *  enumeration.  If an argument is given, counts the number of items
+ *  in <i>enum</i>, for which equals to <i>item</i>.  If a block is
+ *  given, counts the number of elements yielding a true value.
  *
  *     ary = [1, 2, 4, 2]
+ *     ary.count             # => 4
  *     ary.count(2)          # => 2
  *     ary.count{|x|x%2==0}  # => 3
  *
@@ -155,31 +172,31 @@ enum_count(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    if (argc == 1) {
-	VALUE item, args[2];
+    VALUE memo[2];	/* [count, condition value] */
+    rb_block_call_func *func;
 
+    if (argc == 0) {
+	if (rb_block_given_p()) {
+	    func = count_iter_i;
+	}
+	else {
+	    if (rb_respond_to(obj, id_size)) {
+		return rb_funcall(obj, id_size, 0, 0);
+	    }
+	    func = count_all_i;
+	}
+    }
+    else {
+	rb_scan_args(argc, argv, "1", &memo[1]);
 	if (rb_block_given_p()) {
 	    rb_warn("given block not used");
 	}
-	rb_scan_args(argc, argv, "1", &item);
-	args[0] = item;
-	args[1] = 0;
-	rb_block_call(obj, id_each, 0, 0, count_i, (VALUE)&args);
-	return INT2NUM(args[1]);
+        func = count_i;
     }
-    else if (argc == 0) {
-	long n;
 
-	RETURN_ENUMERATOR(obj, 0, 0);
-	n = 0;
-	rb_block_call(obj, id_each, 0, 0, count_iter_i, (VALUE)&n);
-	return INT2NUM(n);
-    }
-    else {
-        VALUE v;
-	rb_scan_args(argc, argv, "1", &v);
-        return Qnil; /* not reached */
-    }
+    memo[0] = 0;
+    rb_block_call(obj, id_each, 0, 0, func, (VALUE)&memo);
+    return INT2NUM(memo[0]);
 }
 
 static VALUE
@@ -1866,5 +1883,6 @@ Init_Enumerable()
     id_eqq  = rb_intern("===");
     id_each = rb_intern("each");
     id_cmp  = rb_intern("<=>");
+    id_size = rb_intern("size");
 }
 
