@@ -3,6 +3,9 @@ require 'tmpdir'
 require 'io/nonblock'
 require 'socket'
 require 'stringio'
+require 'timeout'
+require 'tempfile'
+require_relative 'envutil'
 
 class TestIO < Test::Unit::TestCase
   def test_gets_rs
@@ -545,4 +548,675 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def safe_4
+    Thread.new do
+      Timeout.timeout(10) do
+        $SAFE = 4
+        yield
+      end
+    end.join
+  end
+
+  def pipe
+    r, w = IO.pipe
+    Timeout.timeout(10) do
+      yield(r, w)
+    end
+  ensure
+    r.close unless !r || r.closed?
+    w.close unless !w || w.closed?
+  end
+
+  def pipe2(&b)
+    a = []
+    a << IO.pipe while true
+  rescue Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM
+    yield(*a.last)
+  ensure
+    a.each do |r, w|
+      r.close unless !r || r.closed?
+      w.close unless !w || w.closed?
+    end
+  end
+
+  def ruby(*args)
+    args = ['-e', '$>.write($<.read)'] if args.empty?
+    ruby = EnvUtil.rubybin
+    f = IO.popen([ruby] + args, 'r+')
+    yield(f)
+  ensure
+    f.close unless !f || f.closed?
+  end
+
+  def test_try_convert
+    assert_equal(STDOUT, IO.try_convert(STDOUT))
+    assert_equal(nil, IO.try_convert("STDOUT"))
+  end
+
+  def test_ungetc
+    pipe do |r, w|
+      r.ungetc("0" * 10000)
+      w.write("1" * 10000)
+      w.close
+      assert_equal("0" * 10000 + "1" * 10000, r.read)
+    end
+  end
+
+  def test_write_non_writable
+    pipe do |r, w|
+      assert_raise(IOError) do
+        r.write "foobarbaz"
+      end
+    end
+  end
+
+  def test_dup
+    ruby do |f|
+      f2 = f.dup
+      f.puts "foo"
+      f2.puts "bar"
+      f.close_write
+      f2.close_write
+      assert_equal("foo\nbar\n", f.read)
+      assert_equal("", f2.read)
+    end
+
+    pipe2 do |r, w|
+      assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::NOMEM) do
+        r2, w2 = r.dup, w.dup
+      end
+    end
+  end
+
+  def test_inspect
+    pipe do |r, w|
+      assert(r.inspect =~ /^#<IO:0x[0-9a-f]+>$/)
+      assert_raise(SecurityError) do
+        safe_4 { r.inspect }
+      end
+    end
+  end
+
+  def test_readpartial
+    pipe do |r, w|
+      w.write "foobarbaz"
+      w.close
+      assert_raise(ArgumentError) { r.readpartial(-1) }
+      assert_equal("fooba", r.readpartial(5))
+      r.readpartial(5, s = "")
+      assert_equal("rbaz", s)
+    end
+  end
+
+  def test_readpartial_error
+    pipe do |r, w|
+      s = ""
+      t = Thread.new { r.readpartial(5, s) }
+      0 until s.size == 5
+      s.clear
+      w.write "foobarbaz"
+      w.close
+      assert_raise(RuntimeError) { t.join }
+    end
+  end
+
+  def test_read
+    pipe do |r, w|
+      w.write "foobarbaz"
+      w.close
+      assert_raise(ArgumentError) { r.read(-1) }
+      assert_equal("fooba", r.read(5))
+      r.read(nil, s = "")
+      assert_equal("rbaz", s)
+    end
+  end
+
+  def test_read_error
+    pipe do |r, w|
+      s = ""
+      t = Thread.new { r.read(5, s) }
+      0 until s.size == 5
+      s.clear
+      w.write "foobarbaz"
+      w.close
+      assert_raise(RuntimeError) { t.join }
+    end
+  end
+
+  def test_write_nonblock
+    pipe do |r, w|
+      w.write_nonblock(1)
+      w.close
+      assert_equal("1", r.read)
+    end
+  end
+
+  def test_gets
+    pipe do |r, w|
+      w.write "foobarbaz"
+      w.close
+      assert_equal("", r.gets(0))
+      assert_equal("foobarbaz", r.gets(9))
+    end
+  end
+
+  def test_close_read
+    ruby do |f|
+      f.close_read
+      f.write "foobarbaz"
+      assert_raise(IOError) { f.read }
+    end
+  end
+
+  def test_close_read_pipe
+    pipe do |r, w|
+      r.close_read
+      assert_raise(Errno::EPIPE) { w.write "foobarbaz" }
+    end
+  end
+
+  def test_close_read_security_error
+    pipe do |r, w|
+      assert_raise(SecurityError) do
+        safe_4 { r.close_read }
+      end
+    end
+  end
+
+  def test_close_read_non_readable
+    pipe do |r, w|
+      assert_raise(IOError) do
+        w.close_read
+      end
+    end
+  end
+
+  def test_close_write
+    ruby do |f|
+      f.write "foobarbaz"
+      f.close_write
+      assert_equal("foobarbaz", f.read)
+    end
+  end
+
+  def test_close_write_security_error
+    pipe do |r, w|
+      assert_raise(SecurityError) do
+        safe_4 { r.close_write }
+      end
+    end
+  end
+
+  def test_close_write_non_readable
+    pipe do |r, w|
+      assert_raise(IOError) do
+        r.close_write
+      end
+    end
+  end
+
+  def test_pid
+    r, w = IO.pipe
+    assert_equal(nil, r.pid)
+    assert_equal(nil, w.pid)
+
+    pipe = IO.popen(EnvUtil.rubybin, "r+")
+    pid1 = pipe.pid
+    pipe.puts "p $$"
+    pipe.close_write
+    pid2 = pipe.read.chomp.to_i
+    assert_equal(pid2, pid1)
+    assert_equal(pid2, pipe.pid)
+    pipe.close
+    assert_raise(IOError) { pipe.pid }
+  end
+
+  def make_tempfile
+    t = Tempfile.new("foo")
+    t.puts "foo"
+    t.puts "bar"
+    t.puts "baz"
+    t.close
+    t
+  end
+
+  def test_set_lineno
+    t = make_tempfile
+
+    ruby("-e", <<-SRC, t.path) do |f|
+      open(ARGV[0]) do |f|
+        p $.
+        f.gets; p $.
+        f.gets; p $.
+        f.lineno = 1000; p $.
+        f.gets; p $.
+        f.gets; p $.
+        f.rewind; p $.
+        f.gets; p $.
+        f.gets; p $.
+        f.gets; p $.
+        f.gets; p $.
+      end
+    SRC
+      assert_equal("nil,1,2,2,1001,1001,1001,1,2,3,3", f.read.chomp.gsub("\n", ","))
+    end
+
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      r.gets; assert_equal(1, $.)
+      r.gets; assert_equal(2, $.)
+      r.lineno = 1000; assert_equal(2, $.)
+      r.gets; assert_equal(1001, $.)
+      r.gets; assert_equal(1001, $.)
+    end
+  end
+
+  def test_readline
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      r.readline; assert_equal(1, $.)
+      r.readline; assert_equal(2, $.)
+      r.lineno = 1000; assert_equal(2, $.)
+      r.readline; assert_equal(1001, $.)
+      assert_raise(EOFError) { r.readline }
+    end
+  end
+
+  def test_each_char
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      a = []
+      r.each_char {|c| a << c }
+      assert_equal(%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"], a)
+    end
+  end
+
+  def test_lines
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      e = r.lines
+      assert_equal("foo\n", e.next)
+      assert_equal("bar\n", e.next)
+      assert_equal("baz\n", e.next)
+      assert_raise(StopIteration) { e.next }
+    end
+  end
+
+  def test_bytes
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      e = r.bytes
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c.ord, e.next)
+      end
+      assert_raise(StopIteration) { e.next }
+    end
+  end
+
+  def test_chars
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      e = r.chars
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c, e.next)
+      end
+      assert_raise(StopIteration) { e.next }
+    end
+  end
+
+  def test_readbyte
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c.ord, r.readbyte)
+      end
+      assert_raise(EOFError) { r.readbyte }
+    end
+  end
+
+  def test_readchar
+    pipe do |r, w|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
+        assert_equal(c, r.readchar)
+      end
+      assert_raise(EOFError) { r.readchar }
+    end
+  end
+
+  def test_close_on_exec
+    # xxx
+    ruby do |f|
+      assert_equal(false, f.close_on_exec?)
+      f.close_on_exec = true
+      assert_equal(true, f.close_on_exec?)
+      f.close_on_exec = false
+      assert_equal(false, f.close_on_exec?)
+    end
+
+    pipe do |r, w|
+      assert_equal(false, r.close_on_exec?)
+      r.close_on_exec = true
+      assert_equal(true, r.close_on_exec?)
+      r.close_on_exec = false
+      assert_equal(false, r.close_on_exec?)
+
+      assert_equal(false, w.close_on_exec?)
+      w.close_on_exec = true
+      assert_equal(true, w.close_on_exec?)
+      w.close_on_exec = false
+      assert_equal(false, w.close_on_exec?)
+    end
+  end
+
+  def test_close_security_error
+    pipe do |r, w|
+      assert_raise(SecurityError) do
+        safe_4 { r.close }
+      end
+    end
+  end
+
+  def test_sysseek
+    t = make_tempfile
+
+    open(t.path) do |f|
+      f.sysseek(-4, IO::SEEK_END)
+      assert_equal("baz\n", f.read)
+    end
+
+    open(t.path) do |f|
+      a = [f.getc, f.getc, f.getc]
+      a.reverse_each {|c| f.ungetc c }
+      assert_raise(IOError) { f.sysseek(1) }
+    end
+  end
+
+  def test_syswrite
+    t = make_tempfile
+
+    open(t.path, "w") do |f|
+      o = Object.new
+      def o.to_s; "FOO\n"; end
+      f.syswrite(o)
+    end
+    assert_equal("FOO\n", File.read(t.path))
+  end
+
+  def test_sysread
+    t = make_tempfile
+
+    open(t.path) do |f|
+      a = [f.getc, f.getc, f.getc]
+      a.reverse_each {|c| f.ungetc c }
+      assert_raise(IOError) { f.sysread(1) }
+    end
+  end
+
+  def test_flag
+    t = make_tempfile
+
+    assert_raise(ArgumentError) do
+      open(t.path, "z") { }
+    end
+
+    assert_raise(ArgumentError) do
+      open(t.path, "rr") { }
+    end
+  end
+
+  def test_sysopen
+    t = make_tempfile
+    
+    fd = IO.sysopen(t.path)
+    assert_kind_of(Integer, fd)
+    f = IO.for_fd(fd)
+    assert_equal("foo\nbar\nbaz\n", f.read)
+    f.close
+    
+    fd = IO.sysopen(t.path, "w", 0666)
+    assert_kind_of(Integer, fd)
+    f = IO.for_fd(fd)
+    f.write("FOO\n")
+    f.close
+    
+    fd = IO.sysopen(t.path, "r")
+    assert_kind_of(Integer, fd)
+    f = IO.for_fd(fd)
+    assert_equal("FOO\n", f.read)
+    f.close
+  end
+
+  def test_open_redirect
+    o = Object.new
+    def o.to_open; self; end
+    assert_equal(o, open(o))
+    o2 = nil
+    open(o) do |f|
+      o2 = f
+    end
+    assert_equal(o, o2)
+  end
+
+  def test_open_pipe
+    open("|" + EnvUtil.rubybin, "r+") do |f|
+      f.puts "puts 'foo'"
+      f.close_write
+      assert_equal("foo\n", f.read)
+    end
+  end
+
+  def test_reopen
+    t = make_tempfile
+
+    pipe do |r, w|
+      assert_raise(SecurityError) do
+        safe_4 { r.reopen(t.path) }
+      end
+    end
+  end
+
+  def test_foreach
+    a = []
+    IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
+    assert_equal(["foo\n", "bar\n", "baz\n"], a)
+
+    t = make_tempfile
+
+    a = []
+    IO.foreach(t.path, {:mode => "r" }) {|x| a << x }
+    assert_equal(["foo\n", "bar\n", "baz\n"], a)
+
+    a = []
+    IO.foreach(t.path, {:open_args => [] }) {|x| a << x }
+    assert_equal(["foo\n", "bar\n", "baz\n"], a)
+
+    a = []
+    IO.foreach(t.path, {:open_args => ["r"] }) {|x| a << x }
+    assert_equal(["foo\n", "bar\n", "baz\n"], a)
+  end
+
+  def test_printf
+    pipe do |r, w|
+      printf(w, "foo %s baz\n", "bar")
+      w.close_write
+      assert_equal("foo bar baz\n", r.read)
+    end
+  end
+
+  def test_print
+    t = make_tempfile
+
+    EnvUtil.rubyexec("-", t.path) do |w, r, e|
+      w.puts "print while $<.gets"
+      w.close
+      assert_equal("", e.read)
+      assert_equal("foo\nbar\nbaz\n", r.read)
+    end
+  end
+
+  def test_putc
+    pipe do |r, w|
+      w.putc "A"
+      w.putc "BC"
+      w.putc 68
+      w.close_write
+      assert_equal("ABD", r.read)
+    end
+
+    EnvUtil.rubyexec do |w, r, e|
+      w.puts "putc 65"
+      w.close
+      assert_equal("", e.read)
+      assert_equal("A", r.read)
+    end
+  end
+
+  def test_puts_recursive_array
+    a = ["foo"]
+    a << a
+    pipe do |r, w|
+      w.puts a
+      w.close
+      assert_equal("foo\n[...]\n", r.read)
+    end
+  end
+
+  def test_display
+    pipe do |r, w|
+      "foo".display(w)
+      w.close
+      assert_equal("foo", r.read)
+    end
+
+    EnvUtil.rubyexec do |w, r, e|
+      w.puts "'foo'.display"
+      w.close
+      assert_equal("", e.read)
+      assert_equal("foo", r.read)
+    end
+  end
+
+  def test_set_stdout
+    assert_raise(TypeError) { $> = Object.new }
+
+    EnvUtil.rubyexec do |w, r, e|
+      w.puts "$> = $stderr"
+      w.puts "puts 'foo'"
+      w.close
+      assert_equal("foo\n", e.read)
+      assert_equal("", r.read)
+    end
+  end
+
+  def test_initialize
+    t = make_tempfile
+    
+    fd = IO.sysopen(t.path)
+    assert_kind_of(Integer, fd)
+    f = IO.new(fd, "w")
+    f.write("FOO\n")
+    f.close
+
+    assert_equal("foo\nbar\nbaz\n", File.read(t.path))
+
+    pipe do |r, w|
+      assert_raise(RuntimeError) do
+        o = Object.new
+        class << o; self; end.instance_eval do
+          define_method(:to_io) { r }
+        end
+        w.instance_eval { initialize(o) }
+      end
+    end
+
+    pipe do |r, w|
+      r, w = IO.new(r), IO.new(w)
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      assert_equal("foo\nbar\nbaz\n", r.read)
+    end
+
+    pipe do |r, w|
+      assert_raise(ArgumentError) { IO.new(r, "r+") }
+    end
+
+    f = open(t.path)
+    assert_raise(RuntimeError) do
+      f.instance_eval { initialize }
+    end
+  end
+  
+  def test_new_with_block
+    EnvUtil.rubyexec do |w, r, e|
+      w.puts "r, w = IO.pipe"
+      w.puts "IO.new(r) {}"
+      w.close
+      assert_not_equal("", e.read)
+      assert_equal("", r.read)
+    end
+  end
+
+  def test_readline2
+    EnvUtil.rubyexec("-e", <<-SRC) do |w, r, e|
+      puts readline
+      puts readline
+      puts readline
+      begin
+        puts readline
+      rescue EOFError
+        puts "end"
+      end
+    SRC
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      assert_equal("", e.read)
+      assert_equal("foo\nbar\nbaz\nend\n", r.read)
+    end
+  end
+
+  def test_readlines
+    EnvUtil.rubyexec("-e", "p readlines") do |w, r, e|
+      w.puts "foo"
+      w.puts "bar"
+      w.puts "baz"
+      w.close
+      assert_equal("", e.read)
+      assert_equal("[\"foo\\n\", \"bar\\n\", \"baz\\n\"]\n", r.read)
+    end
+  end
+
+  def test_s_read
+    t = make_tempfile
+
+    assert_equal("bar\n", File.read(t.path, 4, 4))
+  end
 end

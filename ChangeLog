@@ -1,3 +1,10 @@
+Thu May 29 22:47:53 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_argf.rb: new tests for ARGF, to achieve over 85% test
+	  coverage of file.c.
+
+	* test/ruby/test_io.rb: add tests.
+
 Thu May 29 22:41:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (argf_readchar): raise EOFError, synchronizing IO#readchar.
