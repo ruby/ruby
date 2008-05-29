@@ -8,7 +8,7 @@ Incompatible (Severe)
           o New semantics for block arguments
           o Block local variables
     * Array
-          o Array#nitems was removed (use count {|i| i})
+          o Array#nitems was removed (use count {|i| !i.nil?})
     * String
           o No longer an Enumerable
           o ?c semantics
