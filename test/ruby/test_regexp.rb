@@ -512,6 +512,17 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A\a\z/, "\007")
     check(/\A\e\z/, "\033")
     check(/\A\v\z/, "\v")
+    failcheck('(')
+    failcheck('(?foo)')
+  end
+
+  def test_parse_look_behind
+    check(/(?<=A)B(?=C)/, [%w(B ABC)], %w(aBC ABc aBc))
+    check(/(?<!A)B(?!C)/, [%w(B aBc)], %w(ABC aBC ABc))
+    failcheck('(?<=.*)')
+    failcheck('(?<!.*)')
+    check(/(?<=A|B.)C/, [%w(C AC), %w(C BXC)], %w(C BC))
+    check(/(?<!A|B.)C/, [%w(C C), %w(C BC)], %w(AC BXC))
   end
 
   def test_parse_kg
@@ -533,6 +544,20 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('()\g<-2>')
     check(/\A(?<x>.)(?<x>.)\k<x>\z/, %w(aba abb), %w(abc .. ....))
     check(/\k\g/, "kg")
+    failcheck('(.\g<1>)')
+    failcheck('(.\g<2>)')
+    failcheck('(?=\g<1>)')
+    failcheck('((?=\g<1>))')
+    failcheck('(\g<1>|.)')
+    failcheck('(.|\g<1>)')
+    check(/A*B/, %w(B AB AAB AAAB), %w(A))
+    check(/\w*!/, %w(! a! ab! abc!), %w(abc))
+    check(/\w*\W/, %w(! a" ab# abc$), %w(abc))
+    check(/\w*\w/, %w(z az abz abcz), %w(!))
+    check(/[a-z]*\w/, %w(z az abz abcz), %w(!))
+    check(/[a-z]*\W/, %w(! a" ab# abc$), %w(A))
+    check(/(!)(?<=(a)|\g<1>)/, ["!"], %w(a))
+    check(/((a|bb|ccc|dddd)(1|22|333|4444))/i, %w(a1 bb1 a22), %w(a2 b1))
   end
 
   def test_parse_curly_brace
@@ -595,6 +620,7 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A[a-f&&[^b-c]&&[^e]]\z/, %w(a d f), %w(b c e g 0))
     check(/\A[[^b-c]&&[^e]&&a-f]\z/, %w(a d f), %w(b c e g 0))
     check(/\A[\n\r\t]\z/, ["\n", "\r", "\t"])
+    failcheck('[9-1]')
   end
 
   def test_posix_bracket

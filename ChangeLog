@@ -1,3 +1,7 @@
+Fri May 30 00:59:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_regexp.rb: add tests.
+
 Thu May 29 22:51:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_require.rb: add a test for load with wrap flag, to
