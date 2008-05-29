@@ -51,6 +51,9 @@ $archdir = CONFIG["archdir"]
 $sitedir = CONFIG["sitedir"]
 $sitelibdir = CONFIG["sitelibdir"]
 $sitearchdir = CONFIG["sitearchdir"]
+$vendordir = CONFIG["vendordir"]
+$vendorlibdir = CONFIG["vendorlibdir"]
+$vendorarchdir = CONFIG["vendorarchdir"]
 
 $mswin = /mswin/ =~ RUBY_PLATFORM
 $bccwin = /bccwin/ =~ RUBY_PLATFORM
@@ -76,11 +79,14 @@ end
 INSTALL_DIRS = [
   [dir_re('commondir'), "$(RUBYCOMMONDIR)"],
   [dir_re('sitedir'), "$(RUBYCOMMONDIR)"],
+  [dir_re('vendordir'), "$(RUBYCOMMONDIR)"],
   [dir_re('rubylibdir'), "$(RUBYLIBDIR)"],
   [dir_re('archdir'), "$(RUBYARCHDIR)"],
   [dir_re('sitelibdir'), "$(RUBYLIBDIR)"],
+  [dir_re('vendorlibdir'), "$(RUBYLIBDIR)"],
   [dir_re('sitearchdir'), "$(RUBYARCHDIR)"],
   [dir_re('bindir'), "$(BINDIR)"],
+  [dir_re('vendorarchdir'), "$(RUBYARCHDIR)"],
 ]
 
 def install_dirs(target_prefix = nil)
@@ -99,6 +105,13 @@ def install_dirs(target_prefix = nil)
       ['RUBYCOMMONDIR', '$(rubylibdir)'],
       ['RUBYLIBDIR',    '$(rubylibdir)$(target_prefix)'],
       ['RUBYARCHDIR',   '$(archdir)$(target_prefix)'],
+    ]
+  elsif $configure_args.has_key?('--vendor')
+    dirs = [
+      ['BINDIR',        '$(bindir)'],
+      ['RUBYCOMMONDIR', '$(vendordir)$(target_prefix)'],
+      ['RUBYLIBDIR',    '$(vendorlibdir)$(target_prefix)'],
+      ['RUBYARCHDIR',   '$(vendorarchdir)$(target_prefix)'],
     ]
   else
     dirs = [

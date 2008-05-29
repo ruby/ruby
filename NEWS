@@ -9,6 +9,25 @@ with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.8.6 release
 
+=== Configuration changes
+
+* vendor_ruby directory
+
+  A new library directory named `vendor_ruby' is introduced in
+  addition to `site_ruby'.  The idea is to separate libraries
+  installed by the package system (`vendor') from manually (`site')
+  installed libraries preventing the former from getting overwritten
+  by the latter, while preserving the user option to override vendor
+  libraries with site libraries. (`site_ruby' takes precedence over
+  `vendor_ruby')
+
+  If you are a package maintainer, make each library package configure
+  the library passing the `--vendor' option to `extconf.rb' so that
+  the library files will get installed under `vendor_ruby'.
+
+  You can change the directory locations using configure options such
+  as `--with-sitedir=DIR' and `--with-vendordir=DIR'.
+
 === Library updates (outstanding ones only)
 
 * new library

@@ -213,6 +213,8 @@ rubylibdir = CONFIG["rubylibdir"]
 archlibdir = CONFIG["archdir"]
 sitelibdir = CONFIG["sitelibdir"]
 sitearchlibdir = CONFIG["sitearchdir"]
+vendorlibdir = CONFIG["vendorlibdir"]
+vendorarchlibdir = CONFIG["vendorarchdir"]
 mandir = File.join(CONFIG["mandir"], "man")
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
@@ -253,7 +255,7 @@ if $extout
   extout = "#$extout"
   install?(:ext, :arch, :'ext-arch') do
     puts "installing extension objects"
-    makedirs [archlibdir, sitearchlibdir]
+    makedirs [archlibdir, sitearchlibdir, vendorarchlibdir]
     if noinst = CONFIG["no_install_files"] and noinst.empty?
       noinst = nil
     end
@@ -261,7 +263,7 @@ if $extout
   end
   install?(:ext, :comm, :'ext-comm') do
     puts "installing extension scripts"
-    makedirs [rubylibdir, sitelibdir]
+    makedirs [rubylibdir, sitelibdir, vendorlibdir]
     install_recursive("#{extout}/common", rubylibdir, :mode => $data_mode)
   end
 end

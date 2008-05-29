@@ -1710,9 +1710,28 @@ AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB2, "${RUBY_SITE_LIB_PATH2}")
 
+AC_ARG_WITH(vendordir,
+	    [  --with-vendordir=DIR    vendor libraries in DIR [PREFIX/lib/ruby/vendor_ruby]],
+            [vendordir=$withval],
+            [vendordir='${prefix}/lib/ruby/vendor_ruby'])
+VENDOR_DIR=`eval echo \\"${vendordir}\\"`
+case "$target_os" in
+  cygwin*|mingw*|*djgpp*|os2-emx*)
+    RUBY_VENDOR_LIB_PATH="`expr "$VENDOR_DIR" : "$prefix\(/.*\)"`" ||
+    RUBY_VENDOR_LIB_PATH="$VENDOR_DIR";;
+  *)
+    RUBY_VENDOR_LIB_PATH="$VENDOR_DIR";;
+esac
+RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${MAJOR}.${MINOR}"
+
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
+AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${RUBY_VENDOR_LIB_PATH}")
+AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB2, "${RUBY_VENDOR_LIB_PATH2}")
+
 AC_SUBST(arch)dnl
 AC_SUBST(sitearch)dnl
 AC_SUBST(sitedir)dnl
+AC_SUBST(vendordir)dnl
 
 configure_args=$ac_configure_args
 AC_SUBST(configure_args)dnl
@@ -1725,6 +1744,8 @@ if test "$fat_binary" != no ; then
 
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
                  "${RUBY_SITE_LIB_PATH}/" __ARCHITECTURE__ "-${target_os}")
+    AC_DEFINE_UNQUOTED(RUBY_VENDOR_THIN_ARCHLIB,
+                 "${RUBY_VENDOR_LIB_PATH}/" __ARCHITECTURE__ "-${target_os}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, __ARCHITECTURE__ "-${target_os}")
 else
     arch="${target_cpu}-${target_os}"
@@ -1738,6 +1759,7 @@ esac
 
 AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${RUBY_LIB_PATH}/${arch}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${RUBY_SITE_LIB_PATH2}/${sitearch}")
+AC_DEFINE_UNQUOTED(RUBY_VENDOR_ARCHLIB, "${RUBY_VENDOR_LIB_PATH2}/${sitearch}")
 
 AC_ARG_WITH(search-path,
 		[  --with-search-path=DIR specify the additional search path],
