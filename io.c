@@ -7193,7 +7193,7 @@ argf_readchar(VALUE argf)
     VALUE ch;
 
   retry:
-    if (!next_argv()) return Qnil;
+    if (!next_argv()) return rb_eof_error();
     if (TYPE(current_file) != T_FILE) {
 	ch = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
     }
