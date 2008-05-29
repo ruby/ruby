@@ -1,3 +1,8 @@
+Fri May 30 03:12:18 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_s_rand, ossl_bn_s_pseudo_rand):
+	  Int should be enough here.
+
 Fri May 30 02:35:00 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_s_rand, ossl_bn_s_pseudo_rand),

@@ -96,7 +96,7 @@ static VALUE
 ossl_rand_bytes(VALUE self, VALUE len)
 {
     VALUE str;
-    long n = NUM2INT(len);
+    int n = NUM2INT(len);
 
     str = rb_str_new(0, n);
     if (!RAND_bytes(RSTRING_PTR(str), n)) {
@@ -115,7 +115,7 @@ static VALUE
 ossl_rand_pseudo_bytes(VALUE self, VALUE len)
 {
     VALUE str;
-    long n = NUM2INT(len);
+    int n = NUM2INT(len);
 
     str = rb_str_new(0, n);
     if (!RAND_pseudo_bytes(RSTRING_PTR(str), n)) {
