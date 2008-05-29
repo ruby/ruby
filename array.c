@@ -2747,13 +2747,16 @@ rb_ary_compact(VALUE ary)
 
 /*
  *  call-seq:
+ *     array.count      -> int
  *     array.count(obj) -> int
  *     array.count { |item| block }  -> int
  *  
- *  Returns the number of elements which equals to <i>obj</i>.
- *  If a block is given, counts the number of elements yielding a true value.
+ *  Returns the number of elements.  If an argument is given, counts
+ *  the number of elements which equals to <i>obj</i>.  If a block is
+ *  given, counts the number of elements yielding a true value.
  *
  *     ary = [1, 2, 4, 2]
+ *     ary.count             # => 4
  *     ary.count(2)          # => 2
  *     ary.count{|x|x%2==0}  # => 3
  *
@@ -2767,7 +2770,8 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
     if (argc == 0) {
 	VALUE *p, *pend;
 
-	RETURN_ENUMERATOR(ary, 0, 0);
+	if (!rb_block_given_p())
+	    return LONG2NUM(RARRAY_LEN(ary));
 
 	for (p = RARRAY_PTR(ary), pend = p + RARRAY_LEN(ary); p < pend; p++) {
 	    if (RTEST(rb_yield(*p))) n++;

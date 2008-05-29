@@ -30,6 +30,7 @@ class TestEnumerable < Test::Unit::TestCase
   end
 
   def test_count
+    assert_equal(5, @obj.count)
     assert_equal(2, @obj.count(1))
     assert_equal(3, @obj.count {|x| x % 2 == 1 })
     assert_equal(2, @obj.count(1) {|x| x % 2 == 1 })

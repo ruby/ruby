@@ -1,3 +1,9 @@
+Fri May 30 04:17:13 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enum.c (enum_count, count_all_i, Init_Enumerable),
+	  array.c (rb_ary_count): If no argument or block is given, count
+	  the number of all elements.
+
 Fri May 30 03:12:18 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/openssl/ossl_bn.c (ossl_bn_s_rand, ossl_bn_s_pseudo_rand):

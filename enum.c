@@ -14,7 +14,7 @@
 #include "ruby/util.h"
 
 VALUE rb_mEnumerable;
-static ID id_each, id_eqq, id_cmp, id_next;
+static ID id_each, id_eqq, id_cmp, id_next, id_size;
 
 static VALUE
 enum_values_pack(int argc, VALUE *argv)
@@ -108,15 +108,29 @@ count_iter_i(VALUE i, VALUE memop, int argc, VALUE *argv)
     return Qnil;
 }
 
+static VALUE
+count_all_i(VALUE i, VALUE memop, int argc, VALUE *argv)
+{
+    VALUE *memo = (VALUE*)memop;
+
+    memo[0]++;
+    return Qnil;
+}
+
 /*
  *  call-seq:
+ *     enum.count                   => int
  *     enum.count(item)             => int
  *     enum.count {| obj | block }  => int
  *
- *  Returns the number of items in <i>enum</i> for which equals to <i>item</i>.
- *  If a block is given, counts the number of elements yielding a true value.
+ *  Returns the number of items in <i>enum</i>, where #size is called
+ *  if it responds to it, otherwise the items are counted through
+ *  enumeration.  If an argument is given, counts the number of items
+ *  in <i>enum</i>, for which equals to <i>item</i>.  If a block is
+ *  given, counts the number of elements yielding a true value.
  *
  *     ary = [1, 2, 4, 2]
+ *     ary.count             # => 4
  *     ary.count(2)          # => 2
  *     ary.count{|x|x%2==0}  # => 3
  *
@@ -129,8 +143,15 @@ enum_count(int argc, VALUE *argv, VALUE obj)
     rb_block_call_func *func;
 
     if (argc == 0) {
-	RETURN_ENUMERATOR(obj, 0, 0);
-        func = count_iter_i;
+	if (rb_block_given_p()) {
+	    func = count_iter_i;
+	}
+	else {
+	    if (rb_respond_to(obj, id_size)) {
+		return rb_funcall(obj, id_size, 0, 0);
+	    }
+	    func = count_all_i;
+	}
     }
     else {
 	rb_scan_args(argc, argv, "1", &memo[1]);
@@ -1826,5 +1847,6 @@ Init_Enumerable(void)
     id_each = rb_intern("each");
     id_cmp  = rb_intern("<=>");
     id_next = rb_intern("next");
+    id_size = rb_intern("size");
 }
 
