@@ -1,3 +1,8 @@
+Fri May 30 02:08:20 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* signal.c (esignal_init): handle a non-integer argument correctly,
+	  allowing SignalException.new(:INT).
+
 Fri May 30 00:59:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_regexp.rb: add tests.

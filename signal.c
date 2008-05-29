@@ -222,6 +222,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
     if (argc > 0) {
 	sig = rb_check_to_integer(argv[0], "to_int");
 	if (!NIL_P(sig)) argnum = 2;
+	else sig = argv[0];
     }
     if (argc < 1 || argnum < argc) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
