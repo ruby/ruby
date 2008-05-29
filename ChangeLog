@@ -1,3 +1,9 @@
+Thu May 29 20:07:45 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in, win32/Makefile.sub, mkconfig.rb, instruby.rb,
+	  ruby.c, lib/mkmf.rb, README.EXT, README.EXT.ja: Backport the
+	  vendor_ruby directory support.
+
 Wed May 28 17:54:29 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_start_with): Remove an unused variable.

@@ -662,6 +662,11 @@ Try generating the Makefile by:
 
   ruby extconf.rb
 
+If the library should be installed under vendor_ruby directory
+instead of site_ruby directory, use --vendor option as follows.
+
+  ruby extconf.rb --vendor
+
 You don't need this step if you put the extension library under the ext
 directory of the ruby source tree.  In that case, compilation of the
 interpreter will do this step for you.

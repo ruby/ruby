@@ -765,6 +765,12 @@ Makefileを実際に生成するためには
 
 としてください．
 
+site_ruby ディレクトリでなく、
+vendor_ruby ディレクトリにインストールする場合には
+以下のように --vendor オプションを加えてください．
+
+  ruby extconf.rb --vendor
+
 ディレクトリをext以下に用意した場合にはRuby全体のmakeの時に
 自動的にMakefileが生成されますので，このステップは不要です．
 

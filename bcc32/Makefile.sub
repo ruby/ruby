@@ -294,9 +294,12 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR)"
 \#define RUBY_SITE_LIB "/lib/ruby/site_ruby"
 \#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)"
+\#define RUBY_VENDOR_LIB "/lib/ruby/vendor_ruby"
+\#define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR)"
 \#define RUBY_PLATFORM "$(ARCH)-$(OS)"
 \#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 \#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
+\#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 |
 	@exit > $@
 
@@ -409,6 +412,7 @@ s,@EXPORT_PREFIX@,_,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
 s,@sitearch@,$(ARCH)-$(OS),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
+s,@vendordir@,$${prefix}/lib/ruby/vendor_ruby,;t t
 s,@configure_args@,--enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
 s,@srcdir@,$(srcdir),;t t
