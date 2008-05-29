@@ -6942,13 +6942,19 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
 static VALUE
 argf_external_encoding(VALUE argf)
 {
-    return rb_io_external_encoding(current_file);
+    if (!RTEST(current_file)) {
+	return rb_enc_from_encoding(rb_default_external_encoding());
+    }
+    return rb_io_external_encoding(rb_io_check_io(current_file));
 }
 
 static VALUE
 argf_internal_encoding(VALUE argf)
 {
-    return rb_io_internal_encoding(current_file);
+    if (!RTEST(current_file)) {
+	return rb_enc_from_encoding(rb_default_external_encoding());
+    }
+    return rb_io_internal_encoding(rb_io_check_io(current_file));
 }
 
 static VALUE

@@ -1,3 +1,8 @@
+Thu May 29 22:29:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (argf_external_encoding, argf_internal_encoding): fix SEGV by
+	  ARGF.external_encoding.
+
 Wed May 28 18:05:28 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_nitems, Init_Array): Axe Array#nitems().
