@@ -458,7 +458,7 @@ ossl_x509stctx_set_error(VALUE self, VALUE err)
     X509_STORE_CTX *ctx;
 
     GetX509StCtx(self, ctx);
-    X509_STORE_CTX_set_error(ctx, FIX2INT(err));
+    X509_STORE_CTX_set_error(ctx, NUM2INT(err));
 
     return err;
 }
