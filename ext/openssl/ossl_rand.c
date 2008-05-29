@@ -96,9 +96,10 @@ static VALUE
 ossl_rand_bytes(VALUE self, VALUE len)
 {
     VALUE str;
-	
-    str = rb_str_new(0, FIX2INT(len));
-    if (!RAND_bytes(RSTRING_PTR(str), FIX2INT(len))) {
+    long n = NUM2INT(len);
+
+    str = rb_str_new(0, n);
+    if (!RAND_bytes(RSTRING_PTR(str), n)) {
 	ossl_raise(eRandomError, NULL);
     }
 
@@ -114,9 +115,10 @@ static VALUE
 ossl_rand_pseudo_bytes(VALUE self, VALUE len)
 {
     VALUE str;
+    long n = NUM2INT(len);
 
-    str = rb_str_new(0, FIX2INT(len));
-    if (!RAND_pseudo_bytes(RSTRING_PTR(str), FIX2INT(len))) {
+    str = rb_str_new(0, n);
+    if (!RAND_pseudo_bytes(RSTRING_PTR(str), n)) {
 	ossl_raise(eRandomError, NULL);
     }
 
@@ -147,9 +149,11 @@ ossl_rand_egd(VALUE self, VALUE filename)
 static VALUE
 ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
 {
+    long n = NUM2INT(len);
+
     SafeStringValue(filename);
 
-    if (!RAND_egd_bytes(RSTRING_PTR(filename), FIX2INT(len))) {
+    if (!RAND_egd_bytes(RSTRING_PTR(filename), n)) {
 	ossl_raise(eRandomError, NULL);
     }
     return Qtrue;

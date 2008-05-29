@@ -515,7 +515,7 @@ BIGNUM_SELF_SHIFT(rshift);
 	    bottom = (odd == Qtrue) ? 1 : 0;			\
 	    /* FALLTHROUGH */					\
 	case 2:							\
-	    top = FIX2INT(fill);				\
+	    top = NUM2INT(fill);				\
 	}							\
 	b = NUM2INT(bits);					\
 	if (!(result = BN_new())) {				\

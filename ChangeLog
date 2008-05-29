@@ -1,3 +1,15 @@
+Fri May 30 02:35:00 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/ossl_bn.c (ossl_bn_s_rand, ossl_bn_s_pseudo_rand),
+	  ext/openssl/ossl_pkey_dh.c (ossl_dh_s_generate)
+	  (ossl_dh_initialize),
+	  ext/openssl/ossl_pkey_dsa.c (ossl_dsa_s_generate),
+	  ext/openssl/ossl_rand.c (ossl_rand_bytes)
+	  (ossl_rand_pseudo_bytes, ossl_rand_egd_bytes),
+	  ext/openssl/ossl_x509store.c (ossl_x509stctx_set_error): Do not
+	  use FIX2INT() without checking the value type.  Use NUM2INT()
+	  instead; found by akr in [ruby-dev:34890].
+
 Fri May 30 02:08:20 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* signal.c (esignal_init): handle a non-integer argument correctly,
