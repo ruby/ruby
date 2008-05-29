@@ -530,6 +530,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_count
     a = @cls[1, 2, 3, 1, 2]
+    assert_equal(5, a.count)
     assert_equal(2, a.count(1))
     assert_equal(3, a.count {|x| x % 2 == 1 })
     assert_equal(2, a.count(1) {|x| x % 2 == 1 })
