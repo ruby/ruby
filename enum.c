@@ -113,6 +113,7 @@ enum_grep(obj, pat)
     return ary;
 }
 
+static VALUE count_i _((VALUE, VALUE));
 static VALUE
 count_i(i, memop)
     VALUE i, memop;
@@ -125,6 +126,7 @@ count_i(i, memop)
     return Qnil;
 }
 
+static VALUE count_iter_i _((VALUE, VALUE));
 static VALUE
 count_iter_i(i, memop)
     VALUE i, memop;
@@ -137,6 +139,7 @@ count_iter_i(i, memop)
     return Qnil;
 }
 
+static VALUE count_all_i _((VALUE, VALUE));
 static VALUE
 count_all_i(i, memop)
     VALUE i, memop;
