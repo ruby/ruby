@@ -1,3 +1,7 @@
+Fri May 30 06:09:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/utf_8.c: add UTF8-MAC (UTF-8-MAC).
+
 Fri May 30 04:17:13 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (enum_count, count_all_i, Init_Enumerable),
