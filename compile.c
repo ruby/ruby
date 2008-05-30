@@ -2327,18 +2327,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	do {
 	    defined_expr(iseq, ret, vals->nd_head, lfinish, Qfalse);
 
-	    if (lfinish[1]) {
-		ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
-	    }
-	    else {
-		LABEL *lcont = NEW_LABEL(nd_line(node));
+	    if (!lfinish[1]) {
 		lfinish[1] = NEW_LABEL(nd_line(node));
-		ADD_INSNL(ret, nd_line(node), branchif, lcont);
-		ADD_LABEL(ret, lfinish[1]);
-		ADD_INSN(ret, nd_line(node), putnil);
-		ADD_INSNL(ret, nd_line(node), jump, lfinish[0]);
-		ADD_LABEL(ret, lcont);
 	    }
+	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	} while ((vals = vals->nd_next) != NULL);
       }
       case NODE_STR:

@@ -1,3 +1,7 @@
+Fri May 30 22:14:37 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* compile.c (defined_expr): fix SEGV by defined?([1]).
+
 Fri May 30 12:18:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (prelude.c): simply depends on PREP.  [ruby-dev:34877]
