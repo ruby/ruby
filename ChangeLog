@@ -32,6 +32,11 @@ Thu May 29 20:07:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 	  ruby.c, lib/mkmf.rb, README.EXT, README.EXT.ja: Backport the
 	  vendor_ruby directory support.
 
+Thu May 29 17:52:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/extconf.rb: search zlib1, and regard mswin32 later than VC6
+	  as WIN32.  [ruby-core:16984]
+
 Wed May 28 17:54:29 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c (rb_str_start_with): Remove an unused variable.
