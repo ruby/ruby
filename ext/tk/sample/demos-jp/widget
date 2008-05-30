@@ -864,10 +864,21 @@ def showCode1(demo)
         TkGrid.columnconfigure(f, 0, 'weight'=>1, 'minsize'=>0)
       }
     end
+
+    btag = TkBindTag.new
+
+    btag.bind('Key', $set_linenum, '%W')
+    btag.bind('Button', $set_linenum, '%W')
+
+    btags = $code_text.bindtags
+    btags.insert(btags.index($code_text.class) + 1, btag)
+    $code_text.bindtags = btags
+
   else
     $code_window.deiconify
     $code_window.raise
   end
+
   $code_window.title("Demo code: #{file}")
   $code_window.iconname(file)
 #  fid = open(file, 'r')
@@ -878,15 +889,6 @@ def showCode1(demo)
   #$code_mark = TkTextMark.new($code_text, '1.0')
   #$code_text.set_insert('1.0')
   TkTextMarkInsert.new($code_text,'1.0')
-
-  btag = TkBindTag.new
-
-  btag.bind('Key', $set_linenum, '%W')
-  btag.bind('Button', $set_linenum, '%W')
-
-  btags = $code_text.bindtags
-  btags.insert(btags.index($code_text.class) + 1, btag)
-  $code_text.bindtags = btags
 
   $set_linenum.call($code_text)
 
@@ -954,6 +956,16 @@ def showCode2(demo)
     $code_window.bindinfo('Return').each{|cmd, arg|
       $code_window.bind_append('Escape', cmd, arg)
     }
+
+    btag = TkBindTag.new
+
+    btag.bind('Key', $set_linenum, '%W')
+    btag.bind('Button', $set_linenum, '%W')
+
+    btags = $code_text.bindtags
+    btags.insert(btags.index($code_text.class) + 1, btag)
+    $code_text.bindtags = btags
+
   else
     $code_window.deiconify
     $code_window.raise
@@ -965,15 +977,6 @@ def showCode2(demo)
   $code_text.delete('1.0', 'end')
   $code_text.insert('1.0', fid.read)
   TkTextMarkInsert.new($code_text,'1.0')
-
-  btag = TkBindTag.new
-
-  btag.bind('Key', $set_linenum, '%W')
-  btag.bind('Button', $set_linenum, '%W')
-
-  btags = $code_text.bindtags
-  btags.insert(btags.index($code_text.class) + 1, btag)
-  $code_text.bindtags = btags
 
   $set_linenum.call($code_text)
 
