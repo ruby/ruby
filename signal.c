@@ -253,14 +253,25 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	if (!signo) {
 	    rb_raise(rb_eArgError, "unsupported name `SIG%s'", signm);
 	}
-	if (SYMBOL_P(sig)) {
-	    sig = rb_str_new2(signm);
-	}
+	sig = rb_sprintf("SIG%s", signm);
     }
     rb_call_super(1, &sig);
     rb_iv_set(self, "signo", INT2NUM(signo));
 
     return self;
+}
+
+/*
+ * call-seq:
+ *    signal_exception.signo   =>  num
+ *
+ *  Returns a signal number.
+ */
+
+static VALUE
+esignal_signo(VALUE self)
+{
+    return rb_iv_get(self, "signo");
 }
 
 static VALUE
@@ -1070,7 +1081,7 @@ Init_signal(void)
     rb_define_module_function(mSignal, "list", sig_list, 0);
 
     rb_define_method(rb_eSignal, "initialize", esignal_init, -1);
-    rb_attr(rb_eSignal, rb_intern("signo"), 1, 0, 0);
+    rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
     rb_alias(rb_eSignal, rb_intern("signm"), rb_intern("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
 

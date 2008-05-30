@@ -1,3 +1,11 @@
+Fri May 30 22:28:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* signal.c (esignal_signo): fix SignalException#signo which returned
+	  nil absolutely.
+
+	* signal.c (esignal_init): always prepend "SIG" to a string that is
+	  returned by SignalException#signm.
+
 Fri May 30 22:17:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_argf.rb: rename a conflicting method name.
