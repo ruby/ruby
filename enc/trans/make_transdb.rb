@@ -31,12 +31,6 @@ Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
   end
 end
 result = converters.map {|k, v| %[rb_declare_transcoder("%s", "%s", "%s");\n] % v}.join
-mode = IO::RDWR|IO::CREAT
-mode |= IO::BINARY if defined?(IO::BINARY)
-open(outhdr, mode) do |f|
-  unless f.read == result
-    f.rewind
-    f.truncate(0)
-    f.print result
-  end
+open(outhdr, 'wb') do |f|
+  f.print result
 end

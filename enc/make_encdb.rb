@@ -65,12 +65,6 @@ end
 
 result = encodings.map {|e| %[ENC_DEFINE("#{e}");\n]}.join + lines.join + 
   "\n#define ENCODING_COUNT #{count}\n"
-mode = IO::RDWR|IO::CREAT
-mode |= IO::BINARY if defined?(IO::BINARY)
-open(outhdr, mode) do |f|
-  unless f.read == result
-    f.rewind
-    f.truncate(0)
-    f.print result
-  end
+open(outhdr, 'wb') do |f|
+  f.print result
 end
