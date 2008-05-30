@@ -1,3 +1,12 @@
+Fri May 30 10:55:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (struct rb_unblock_callback), thread.c
+	  (set_unblock_function), thread_{pthread,win32}.c (native_sleep):
+	  extracted from struct rb_thread_struct.
+
+	* thread.c (reset_unblock_function): not check interrupts at leaving
+	  blocking region.  [ruby-dev:34874]
+
 Fri May 30 06:09:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/utf_8.c: add UTF8-MAC (UTF-8-MAC).
