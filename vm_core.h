@@ -373,6 +373,11 @@ struct rb_vm_trap_tag {
 #define RUBY_VM_VALUE_CACHE_SIZE 0x1000
 #define USE_VALUE_CACHE 0
 
+struct rb_unblock_callback {
+    rb_unblock_function_t *func;
+    void *arg;
+};
+
 typedef struct rb_thread_struct rb_thread_t;
 
 struct rb_thread_struct
@@ -418,9 +423,8 @@ struct rb_thread_struct
     int exec_signal;
 
     int interrupt_flag;
-    rb_unblock_function_t *unblock_function;
-    void *unblock_function_arg;
     rb_thread_lock_t interrupt_lock;
+    struct rb_unblock_callback unblock;
 
     struct rb_vm_tag *tag;
     struct rb_vm_trap_tag *trap_tag;

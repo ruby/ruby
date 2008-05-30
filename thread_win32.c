@@ -220,8 +220,8 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	int status = th->status;
 
 	th->status = THREAD_STOPPED;
-	th->unblock_function = ubf_handle;
-	th->unblock_function_arg = th;
+	th->unblock.func = ubf_handle;
+	th->unblock.arg = th;
 
 	if (RUBY_VM_INTERRUPTED(th)) {
 	    /* interrupted.  return immediate */
@@ -232,8 +232,8 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    thread_debug("native_sleep done (%lu)\n", ret);
 	}
 
-	th->unblock_function = 0;
-	th->unblock_function_arg = 0;
+	th->unblock.func = 0;
+	th->unblock.arg = 0;
 	th->status = status;
     }
     GVL_UNLOCK_END();

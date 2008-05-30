@@ -424,8 +424,8 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     GVL_UNLOCK_BEGIN();
     {
 	pthread_mutex_lock(&th->interrupt_lock);
-	th->unblock_function = ubf_pthread_cond_signal;
-	th->unblock_function_arg = th;
+	th->unblock.func = ubf_pthread_cond_signal;
+	th->unblock.arg = th;
 
 	if (RUBY_VM_INTERRUPTED(th)) {
 	    /* interrupted.  return immediate */
@@ -451,8 +451,8 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 		thread_debug("native_sleep: pthread_cond_timedwait end (%d)\n", r);
 	    }
 	}
-	th->unblock_function = 0;
-	th->unblock_function_arg = 0;
+	th->unblock.func = 0;
+	th->unblock.arg = 0;
 
 	pthread_mutex_unlock(&th->interrupt_lock);
 	th->status = prev_status;
