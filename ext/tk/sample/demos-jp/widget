@@ -814,6 +814,12 @@ def showCode1(demo)
     TkLabel.new(f,'text'=>'  pos:').pack('side'=>'left')
     posnum =TkLabel.new(f,'text'=>'').pack('side'=>'left')
 
+    $set_linenum = proc{|w|
+      line, pos = w.index('insert').split('.')
+      linenum.text = line
+      posnum.text  = pos
+    }
+
     f.pack('side'=>'bottom', 'expand'=>'true', 'fill'=>'x')
 
     if $tk_version =~ /^4\.[01]/
@@ -875,20 +881,14 @@ def showCode1(demo)
 
   btag = TkBindTag.new
 
-  set_linenum = proc{|w|
-    line, pos = w.index('insert').split('.')
-    linenum.text = line
-    posnum.text  = pos
-  }
-
-  btag.bind('Key', set_linenum, '%W')
-  btag.bind('Button', set_linenum, '%W')
+  btag.bind('Key', $set_linenum, '%W')
+  btag.bind('Button', $set_linenum, '%W')
 
   btags = $code_text.bindtags
   btags.insert(btags.index($code_text.class) + 1, btag)
   $code_text.bindtags = btags
 
-  set_linenum.call($code_text)
+  $set_linenum.call($code_text)
 
   fid.close
 end
@@ -916,6 +916,12 @@ def showCode2(demo)
     linenum =TkLabel.new(lf, :text=>'').pack(:side=>:left)
     TkLabel.new(lf, :text=>'  pos:').pack(:side=>:left)
     posnum =TkLabel.new(lf, :text=>'').pack(:side=>:left)
+
+    $set_linenum = proc{|w|
+      line, pos = w.index('insert').split('.')
+      linenum.text = line
+      posnum.text  = pos
+    }
 
     #b_dis = TkButton.new(bf, :text=>'Î»²ò', :default=>:active, 
     b_dis = TkButton.new(bf, :text=>'ÊÄ¤¸¤ë', :default=>:active, 
@@ -962,20 +968,14 @@ def showCode2(demo)
 
   btag = TkBindTag.new
 
-  set_linenum = proc{|w|
-    line, pos = w.index('insert').split('.')
-    linenum.text = line
-    posnum.text  = pos
-  }
-
-  btag.bind('Key', set_linenum, '%W')
-  btag.bind('Button', set_linenum, '%W')
+  btag.bind('Key', $set_linenum, '%W')
+  btag.bind('Button', $set_linenum, '%W')
 
   btags = $code_text.bindtags
   btags.insert(btags.index($code_text.class) + 1, btag)
   $code_text.bindtags = btags
 
-  set_linenum.call($code_text)
+  $set_linenum.call($code_text)
 
   fid.close
 end

@@ -18,11 +18,11 @@ $ttkprogress_demo = TkToplevel.new {|w|
 base_frame = TkFrame.new($ttkprogress_demo).pack(:fill=>:both, :expand=>true)
 
 Ttk::Label.new(base_frame, :font=>$font, :wraplength=>'4i', :justify=>:left, 
-               :text=><<EOL).pack(:side=>:top, :fill=>:x)
+               :text=>Tk::UTF8_String.new(<<EOL)).pack(:side=>:top, :fill=>:x)
 Below are two progress bars. \
-The top one is a \u201Cdeterminate\u201D progress bar, \
+The top one is a \\u201Cdeterminate\\u201D progress bar, \
 which is used for showing how far through a defined task the program has got. \
-The bottom one is an \u201Cindeterminate\u201D progress bar, \
+The bottom one is an \\u201Cindeterminate\\u201D progress bar, \
 which is used to show that the program is busy \
 but does not know how long for. Both are run here in self-animated mode, \
 which can be turned on and off using the buttons underneath.
