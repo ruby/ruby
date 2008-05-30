@@ -272,7 +272,7 @@ class TestRegexp < Test::Unit::TestCase
       Thread.new { $SAFE = 4; re.instance_eval { initialize(re) } }.join
     end
 
-    assert_equal(Encoding::ASCII_8BIT, Regexp.new("b..", nil, "n").encoding)
+    assert_equal(Encoding.find("ASCII-8BIT"), Regexp.new("b..", nil, "n").encoding)
     assert_equal("bar", "foobarbaz"[Regexp.new("b..", nil, "n")])
 
     assert_raise(RegexpError) { Regexp.new(")(") }
@@ -471,12 +471,12 @@ class TestRegexp < Test::Unit::TestCase
     ss = [ss] unless ss.is_a?(Array)
     ss.each do |e, s|
       s ||= e
+      assert_match(re, s)
       m = re.match(s)
-      assert_kind_of(MatchData, m)
       assert_equal(e, m[0])
     end
     fs = [fs] unless fs.is_a?(Array)
-    fs.each {|s| assert_nil(re.match(s)) }
+    fs.each {|s| assert_no_match(re, s) }
   end
 
   def failcheck(re)
@@ -514,6 +514,40 @@ class TestRegexp < Test::Unit::TestCase
     check(/\A\v\z/, "\v")
     failcheck('(')
     failcheck('(?foo)')
+    failcheck('/\p{foobarbazqux}/')
+    failcheck('/\p{foobarbazqux' + 'a' * 1000 + '}/')
+    failcheck('/[1-\w]/')
+  end
+
+  def test_exec
+    check(/A*B/, %w(B AB AAB AAAB), %w(A))
+    check(/\w*!/, %w(! a! ab! abc!), %w(abc))
+    check(/\w*\W/, %w(! a" ab# abc$), %w(abc))
+    check(/\w*\w/, %w(z az abz abcz), %w(!))
+    check(/[a-z]*\w/, %w(z az abz abcz), %w(!))
+    check(/[a-z]*\W/, %w(! a" ab# abc$), %w(A))
+    check(/((a|bb|ccc|dddd)(1|22|333|4444))/i, %w(a1 bb1 a22), %w(a2 b1))
+    check(/\u0080/, (1..4).map {|i| ["\u0080", "\u0080" * i] }, ["\u0081"])
+    check(/\u0080\u0080/, (2..4).map {|i| ["\u0080" * 2, "\u0080" * i] }, ["\u0081"])
+    check(/\u0080\u0080\u0080/, (3..4).map {|i| ["\u0080" * 3, "\u0080" * i] }, ["\u0081"])
+    check(/\u0080\u0080\u0080\u0080/, (4..4).map {|i| ["\u0080" * 4, "\u0080" * i] }, ["\u0081"])
+    check(/[^\u3042\u3043\u3044]/, %W(a b \u0080 \u3041 \u3045), %W(\u3042 \u3043 \u3044))
+    check(/a.+/m, %W(a\u0080 a\u0080\u0080 a\u0080\u0080\u0080), %W(a))
+    check(/a.+z/m, %W(a\u0080z a\u0080\u0080z a\u0080\u0080\u0080z), %W(az))
+    check(/abc\B.\Bxyz/, %w(abcXxyz abc0xyz), %w(abc|xyz abc-xyz))
+    check(/\Bxyz/, [%w(xyz abcXxyz), %w(xyz abc0xyz)], %w(abc xyz abc-xyz))
+    check(/abc\B/, [%w(abc abcXxyz), %w(abc abc0xyz)], %w(abc xyz abc-xyz))
+    failcheck('(?<foo>abc)\1')
+    check(/^(A+|B+)(?>\g<1>)*[BC]$/, %w(AC BC ABC BAC AABBC), %w(AABB))
+    check(/^(A+|B(?>\g<1>)*)[AC]$/, %w(AAAC BBBAAAAC), %w(BBBAAA))
+    check(/^()(?>\g<1>)*$/, "", "a")
+    check(/^(?>(?=a)(#{ "a" * 1000 }|))++$/, ["a" * 1000, "a" * 2000, "a" * 3000], ["", "a" * 500, "b" * 1000])
+    check(/^(?:a?)?$/, ["", "a"], ["aa"])
+    check(/^(?:a+)?$/, ["", "a", "aa"], ["ab"])
+    check(/^(?:a?)+?$/, ["", "a", "aa"], ["ab"])
+    check(/^a??[ab]/, [["a", "a"], ["a", "aa"], ["b", "b"], ["a", "ab"]], ["c"])
+    check(/^(?:a*){3,5}$/, ["", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa"], ["b"])
+    check(/^(?:a+){3,5}$/, ["aaa", "aaaa", "aaaaa", "aaaaaa"], ["", "a", "aa", "b"])
   end
 
   def test_parse_look_behind
@@ -543,6 +577,7 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('()\k<-2>')
     failcheck('()\g<-2>')
     check(/\A(?<x>.)(?<x>.)\k<x>\z/, %w(aba abb), %w(abc .. ....))
+    check(/\A(?<x>.)(?<x>.)\k<x>\z/i, %w(aba ABa abb ABb), %w(abc .. ....))
     check(/\k\g/, "kg")
     failcheck('(.\g<1>)')
     failcheck('(.\g<2>)')
@@ -550,14 +585,14 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('((?=\g<1>))')
     failcheck('(\g<1>|.)')
     failcheck('(.|\g<1>)')
-    check(/A*B/, %w(B AB AAB AAAB), %w(A))
-    check(/\w*!/, %w(! a! ab! abc!), %w(abc))
-    check(/\w*\W/, %w(! a" ab# abc$), %w(abc))
-    check(/\w*\w/, %w(z az abz abcz), %w(!))
-    check(/[a-z]*\w/, %w(z az abz abcz), %w(!))
-    check(/[a-z]*\W/, %w(! a" ab# abc$), %w(A))
     check(/(!)(?<=(a)|\g<1>)/, ["!"], %w(a))
-    check(/((a|bb|ccc|dddd)(1|22|333|4444))/i, %w(a1 bb1 a22), %w(a2 b1))
+    check(/^(a|b\g<1>c)$/, %w(a bac bbacc bbbaccc), %w(bbac bacc))
+    check(/^(a|b\g<2>c)(B\g<1>C){0}$/, %w(a bBaCc bBbBaCcCc bBbBbBaCcCcCc), %w(bBbBaCcC BbBaCcCc))
+    check(/\A(?<n>.|X\g<n>)(?<x>\g<n>){0}(?<y>\k<n+0>){0}\g<x>\g<y>\z/, "XXaXbXXa", %w(XXabXa abb))
+    check(/\A(?<n>.|X\g<n>)(?<x>\g<n>){0}(?<y>\k<n+1>){0}\g<x>\g<y>\z/, "XaXXbXXb", %w(aXXbXb aba))
+    failcheck('(?<x>)(?<x>)(\g<x>)')
+    check(/^(?<x>foo)(bar)\k<x>/, %w(foobarfoo), %w(foobar barfoo))
+    check(/^(?<a>f)(?<a>o)(?<a>o)(?<a>b)(?<a>a)(?<a>r)(?<a>b)(?<a>a)(?<a>z)\k<a>{9}$/, %w(foobarbazfoobarbaz foobarbazbazbarfoo foobarbazzabraboof), %w(foobar barfoo))
   end
 
   def test_parse_curly_brace
