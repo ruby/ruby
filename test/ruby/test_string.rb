@@ -1587,7 +1587,7 @@ class TestString < Test::Unit::TestCase
     assert("abc".end_with?("c"))
   end
 
-  def test_times
+  def test_times2
     s1 = ''
     100.times {|n|
       s2 = "a" * n

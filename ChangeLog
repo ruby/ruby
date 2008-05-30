@@ -1,3 +1,11 @@
+Fri May 30 22:17:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_argf.rb: rename a conflicting method name.
+
+	* test/ruby/test_string.rb: ditto.
+
+	* test/ruby/test_io.rb: ditto.
+
 Fri May 30 22:14:37 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (defined_expr): fix SEGV by defined?([1]).

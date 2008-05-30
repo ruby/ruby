@@ -593,7 +593,7 @@ class TestIO < Test::Unit::TestCase
     assert_equal(nil, IO.try_convert("STDOUT"))
   end
 
-  def test_ungetc
+  def test_ungetc2
     pipe do |r, w|
       r.ungetc("0" * 10000)
       w.write("1" * 10000)

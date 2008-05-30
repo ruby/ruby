@@ -93,7 +93,7 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
-  def test_lineno
+  def test_lineno2
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       a = ARGF.dup
       a.gets; p $.  #=> 1
