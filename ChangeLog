@@ -1,3 +1,7 @@
+Fri May 30 23:55:56 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_rubyoptions.rb: add a test of RUBY_DESCRIPTION.
+
 Fri May 30 22:47:17 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_regexp.rb: add tests.

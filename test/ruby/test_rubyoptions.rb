@@ -84,7 +84,9 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_verbose
     ruby('-vve', '') do |w, r, e|
-      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, r.read)
+      description = r.read
+      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, description)
+      assert_equal RUBY_DESCRIPTION, description.chomp
     end
 
     ruby('--verbose', '-e', 'p $VERBOSE') do |w, r, e|
