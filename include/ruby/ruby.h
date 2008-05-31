@@ -778,8 +778,8 @@ VALUE rb_id2str(ID);
         rb_intern(str))
 #endif
 
-char *rb_class2name(VALUE);
-char *rb_obj_classname(VALUE);
+const char *rb_class2name(VALUE);
+const char *rb_obj_classname(VALUE);
 
 void rb_p(VALUE);
 

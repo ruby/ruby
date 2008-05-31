@@ -1753,7 +1753,7 @@ match_inspect_name_iter(const OnigUChar *name, const OnigUChar *name_end,
 static VALUE
 match_inspect(VALUE match)
 {
-    char *cname = rb_obj_classname(match);
+    const char *cname = rb_obj_classname(match);
     VALUE str;
     int i;
     struct re_registers *regs = RMATCH_REGS(match);

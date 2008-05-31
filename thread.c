@@ -1471,7 +1471,7 @@ rb_thread_safe_level(VALUE thread)
 static VALUE
 rb_thread_inspect(VALUE thread)
 {
-    char *cname = rb_obj_classname(thread);
+    const char *cname = rb_obj_classname(thread);
     rb_thread_t *th;
     const char *status;
     VALUE str;
@@ -2491,7 +2491,7 @@ VALUE
 rb_mutex_unlock(VALUE self)
 {
     mutex_t *mutex;
-    char *err = NULL;
+    const char *err = NULL;
     GetMutexPtr(self, mutex);
 
     native_mutex_lock(&mutex->lock);
@@ -3039,7 +3039,7 @@ thread_set_trace_func_m(VALUE obj, VALUE trace)
     return trace;
 }
 
-static char *
+static const char *
 get_event_name(rb_event_flag_t event)
 {
     switch (event) {

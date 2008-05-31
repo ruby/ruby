@@ -134,7 +134,7 @@ static int iseq_set_optargs_table(rb_iseq_t *iseq);
  */
 
 static void
-verify_list(ISEQ_ARG_DECLARE char *info, LINK_ANCHOR *anchor)
+verify_list(ISEQ_ARG_DECLARE const char *info, LINK_ANCHOR *anchor)
 {
 #if CPDEBUG
     int flag = 0;
@@ -2302,7 +2302,7 @@ static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
 	     NODE *node, LABEL **lfinish, VALUE needstr)
 {
-    char *estr = 0;
+    const char *estr = 0;
     enum node_type type;
 
     switch (type = nd_type(node)) {

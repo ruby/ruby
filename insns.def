@@ -775,7 +775,7 @@ defined
 (VALUE val)
 {
     VALUE klass;
-    char *expr_type = 0;
+    const char *expr_type = 0;
     val = Qnil;
 
     switch (type) {

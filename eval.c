@@ -326,7 +326,7 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
 void
 rb_frozen_class_p(VALUE klass)
 {
-    char *desc = "something(?!)";
+    const char *desc = "something(?!)";
 
     if (OBJ_FROZEN(klass)) {
 	if (FL_TEST(klass, FL_SINGLETON))

@@ -217,7 +217,7 @@ typedef	struct __sFILE {
  * I/O descriptors for __sfvwrite().
  */
 struct __siov {
-	void	*iov_base;
+	const void *iov_base;
 	size_t	iov_len;
 };
 struct __suio {
@@ -422,7 +422,7 @@ BSD__uqtoa(register u_quad_t val, char *endp, int base, int octzero, char *xdigs
  * use the given digits.
  */
 static char *
-BSD__ultoa(register u_long val, char *endp, int base, int octzero, char *xdigs)
+BSD__ultoa(register u_long val, char *endp, int base, int octzero, const char *xdigs)
 {
 	register char *cp = endp;
 	register long sval;
@@ -523,10 +523,10 @@ static int exponent __P((char *, int, int));
 static int
 BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 {
-	register char *fmt;	/* format string */
+	register const char *fmt; /* format string */
 	register int ch;	/* character from fmt */
 	register int n;		/* handy integer (short term usage) */
-	register char *cp;	/* handy char pointer (short term usage) */
+	register const char *cp;/* handy char pointer (short term usage) */
 	register struct __siov *iovp;/* for PRINT macro */
 	register int flags;	/* flags as above */
 	int ret;		/* return value accumulator */
@@ -550,12 +550,13 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int fieldsz;		/* field size expanded by sign, etc */
 	int realsz;		/* field size expanded by dprec */
 	int size;		/* size of converted field or string */
-	char *xdigs = 0;	/* digits for [xX] conversion */
+	const char *xdigs = 0;	/* digits for [xX] conversion */
 #define NIOV 8
 	struct __suio uio;	/* output information: summary */
 	struct __siov iov[NIOV];/* ... and individual io vectors */
 	char buf[BUF];		/* space for %c, %[diouxX], %[eEfgG] */
 	char ox[2];		/* space for 0x hex-prefix */
+	char *const ebuf = buf + sizeof(buf);
 
 	/*
 	 * Choose PADSIZE to trade efficiency vs. size.  If larger printf
@@ -616,7 +617,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	    fp->_file >= 0)
 		return (BSD__sbprintf(fp, fmt0, ap));
 
-	fmt = (char *)fmt0;
+	fmt = fmt0;
 	uio.uio_iov = iovp = iov;
 	uio.uio_resid = 0;
 	uio.uio_iovcnt = 0;
@@ -720,7 +721,8 @@ reswitch:	switch (ch) {
 			goto rflag;
 #endif /* _HAVE_SANE_QUAD_ */
 		case 'c':
-			*(cp = buf) = va_arg(ap, int);
+			cp = buf;
+			*buf = (char)va_arg(ap, int);
 			size = 1;
 			sign = '\0';
 			break;
@@ -868,7 +870,7 @@ fp_begin:		_double = va_arg(ap, double);
 				 * NUL in the first `prec' characters, and
 				 * strlen() will go further.
 				 */
-				char *p = (char *)memchr(cp, 0, prec);
+				const char *p = (char *)memchr(cp, 0, prec);
 
 				if (p != NULL) {
 					size = p - cp;
@@ -930,28 +932,27 @@ number:			if ((dprec = prec) >= 0)
 			 * explicit precision of zero is no characters.''
 			 *	-- ANSI X3J11
 			 */
-			cp = buf + BUF;
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT) {
 				if (uqval != 0 || prec != 0)
-					cp = BSD__uqtoa(uqval, cp, base,
+					cp = BSD__uqtoa(uqval, ebuf, base,
 					    flags & ALT, xdigs);
 			} else
 #else /* _HAVE_SANE_QUAD_ */
 #endif /* _HAVE_SANE_QUAD_ */
 			{
 				if (ulval != 0 || prec != 0)
-					cp = BSD__ultoa(ulval, cp, base,
+					cp = BSD__ultoa(ulval, ebuf, base,
 					    flags & ALT, xdigs);
 			}
-			size = buf + BUF - cp;
+			size = ebuf - cp;
 			break;
 		default:	/* "%?" prints ?, unless ? is NUL */
 			if (ch == '\0')
 				goto done;
 			/* pretend it was %c with argument ch */
 			cp = buf;
-			*cp = ch;
+			*buf = ch;
 			size = 1;
 			sign = '\0';
 			break;

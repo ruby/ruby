@@ -69,7 +69,7 @@ error_print(void)
     VALUE errat = Qnil;		/* OK */
     VALUE errinfo = GET_THREAD()->errinfo;
     volatile VALUE eclass, e;
-    char *einfo;
+    const char *einfo;
     long elen;
 
     if (NIL_P(errinfo))
@@ -188,7 +188,7 @@ ruby_error_print(void)
 void
 rb_print_undef(VALUE klass, ID id, int scope)
 {
-    char *v;
+    const char *v;
 
     switch (scope) {
       default:

@@ -484,7 +484,7 @@ rb_undef(VALUE klass, ID id)
     }
     body = search_method(klass, id, &origin);
     if (!body || !body->nd_body) {
-	char *s0 = " class";
+	const char *s0 = " class";
 	VALUE c = klass;
 
 	if (FL_TEST(c, FL_SINGLETON)) {

@@ -270,13 +270,13 @@ rb_class_name(VALUE klass)
     return rb_class_path(rb_class_real(klass));
 }
 
-char *
+const char *
 rb_class2name(VALUE klass)
 {
     return RSTRING_PTR(rb_class_name(klass));
 }
 
-char *
+const char *
 rb_obj_classname(VALUE obj)
 {
     return rb_class2name(CLASS_OF(obj));

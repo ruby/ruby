@@ -475,7 +475,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	    continue;
 	}
         if (*p == '_' || *p == '!') {
-	    const char *natstr = "sSiIlL";
+	    static const char natstr[] = "sSiIlL";
 
 	    if (strchr(natstr, type)) {
 #ifdef NATINT_PACK
@@ -1335,7 +1335,7 @@ pack_unpack(VALUE str, VALUE fmt)
 	}
 	star = 0;
 	if (*p == '_' || *p == '!') {
-	    const char *natstr = "sSiIlL";
+	    static const char natstr[] = "sSiIlL";
 
 	    if (strchr(natstr, type)) {
 #ifdef NATINT_PACK

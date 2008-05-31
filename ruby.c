@@ -89,7 +89,7 @@ struct cmdline_options {
     int verbose;
     int yydebug;
     unsigned int dump;
-    char *script;
+    const char *script;
     VALUE script_name;
     VALUE e_script;
     struct {

@@ -41,7 +41,7 @@
 extern UChar*
 onig_error_code_to_format(int code)
 {
-  char *p;
+  const char *p;
 
   if (code >= 0) return (UChar* )0;
 

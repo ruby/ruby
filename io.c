@@ -1248,7 +1248,7 @@ static VALUE
 rb_io_inspect(VALUE obj)
 {
     rb_io_t *fptr;
-    char *cname;
+    const char *cname;
     const char *st = "";
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
@@ -5057,7 +5057,7 @@ static VALUE
 rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 {
     if (rb_block_given_p()) {
-	char *cname = rb_class2name(klass);
+	const char *cname = rb_class2name(klass);
 
 	rb_warn("%s::new() does not take block; use %s::open() instead",
 		cname, cname);
@@ -6345,9 +6345,9 @@ struct copy_stream_struct {
     int close_src;
     int close_dst;
     off_t total;
-    char *syserr;
+    const char *syserr;
     int error_no;
-    char *notimp;
+    const char *notimp;
     rb_fdset_t fds;
     rb_thread_t *th;
 };

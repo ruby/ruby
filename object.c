@@ -298,7 +298,7 @@ rb_obj_init_copy(VALUE obj, VALUE orig)
 VALUE
 rb_any_to_s(VALUE obj)
 {
-    char *cname = rb_obj_classname(obj);
+    const char *cname = rb_obj_classname(obj);
     VALUE str;
 
     str = rb_sprintf("#<%s:%p>", cname, (void*)obj);
@@ -387,9 +387,8 @@ rb_obj_inspect(VALUE obj)
 
         if (has_ivar) {
             VALUE str;
-            char *c;
+            const char *c = rb_obj_classname(obj);
 
-            c = rb_obj_classname(obj);
             str = rb_sprintf("-<%s:%p", c, (void*)obj);
             return rb_exec_recursive(inspect_obj, obj, str);
         }
@@ -1916,7 +1915,7 @@ rb_convert_type(VALUE val, int type, const char *tname, const char *method)
     if (TYPE(val) == type) return val;
     v = convert_type(val, tname, method, Qtrue);
     if (TYPE(v) != type) {
-	char *cname = rb_obj_classname(val);
+	const char *cname = rb_obj_classname(val);
 	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
 		 cname, tname, cname, method, rb_obj_classname(v));
     }
@@ -1933,7 +1932,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
     v = convert_type(val, tname, method, Qfalse);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
-	char *cname = rb_obj_classname(val);
+	const char *cname = rb_obj_classname(val);
 	rb_raise(rb_eTypeError, "can't convert %s to %s (%s#%s gives %s)",
 		 cname, tname, cname, method, rb_obj_classname(v));
     }
@@ -1949,7 +1948,7 @@ rb_to_integer(VALUE val, const char *method)
     if (FIXNUM_P(val)) return val;
     v = convert_type(val, "Integer", method, Qtrue);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
-	char *cname = rb_obj_classname(val);
+	const char *cname = rb_obj_classname(val);
 	rb_raise(rb_eTypeError, "can't convert %s to Integer (%s#%s gives %s)",
 		 cname, cname, method, rb_obj_classname(v));
     }

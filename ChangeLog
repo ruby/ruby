@@ -1,3 +1,7 @@
+Sat May 31 18:28:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* suppress warnings with -Wwrite-string.
+
 Sat May 31 18:26:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_delete_if): should return enumerator if no block

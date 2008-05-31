@@ -414,7 +414,7 @@ hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
 {
-    char *path;
+    const char *path;
 
     if (check && FL_TEST(klass, FL_SINGLETON)) {
 	if (RCLASS_M_TBL(klass)->num_entries ||

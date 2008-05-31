@@ -293,7 +293,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
     ID id;
     VALUE exc = rb_eNoMethodError;
-    char *format = 0;
+    const char *format = 0;
     rb_thread_t *th = GET_THREAD();
     int last_call_status = th->method_missing_reason;
     if (argc == 0 || !SYMBOL_P(argv[0])) {
@@ -773,7 +773,7 @@ VALUE
 rb_f_eval(int argc, VALUE *argv, VALUE self)
 {
     VALUE src, scope, vfile, vline;
-    char *file = "(eval)";
+    const char *file = "(eval)";
     int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
@@ -925,7 +925,7 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 	return yield_under(klass, self, Qundef);
     }
     else {
-	char *file = "(eval)";
+	const char *file = "(eval)";
 	int line = 1;
 
 	if (argc == 0) {

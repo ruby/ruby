@@ -661,7 +661,7 @@ proc_to_s(VALUE self)
 {
     VALUE str = 0;
     rb_proc_t *proc;
-    char *cname = rb_obj_classname(self);
+    const char *cname = rb_obj_classname(self);
     rb_iseq_t *iseq;
     const char *is_lambda;
     
@@ -1417,7 +1417,7 @@ method_inspect(VALUE method)
     struct METHOD *data;
     VALUE str;
     const char *s;
-    char *sharp = "#";
+    const char *sharp = "#";
 
     Data_Get_Struct(method, struct METHOD, data);
     str = rb_str_buf_new2("#<");

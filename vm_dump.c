@@ -576,7 +576,6 @@ VALUE rb_make_backtrace(void);
 void
 rb_vm_bugreport(void)
 {
-    rb_thread_t *th = GET_THREAD();
     VALUE bt;
 
     if (GET_THREAD()->vm) {

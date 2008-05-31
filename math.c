@@ -35,7 +35,7 @@ to_flo(VALUE x)
 } while (0)
 
 static void
-domain_check(double x, char *msg)
+domain_check(double x, const char *msg)
 {
     while(1) {
 	if (errno) {

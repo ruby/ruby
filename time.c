@@ -333,7 +333,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
     return t;
 }
 
-static const char *const months[] = {
+static const char const months[][4] = {
     "jan", "feb", "mar", "apr", "may", "jun",
     "jul", "aug", "sep", "oct", "nov", "dec",
 };

@@ -5914,7 +5914,8 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     VALUE w;
     long width, len, flen = 1, fclen = 1;
     VALUE res;
-    char *p, *f = " ";
+    char *p;
+    const char *f = " ";
     long n, llen, rlen;
     volatile VALUE pad;
     int singlebyte = 1;

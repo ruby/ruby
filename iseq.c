@@ -774,7 +774,7 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
     return len;
 }
 
-static char *
+static const char *
 catch_type(int type)
 {
     switch (type) {
