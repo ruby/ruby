@@ -11,6 +11,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Configuration changes
 
+* default C flags
+
+  Some C compiler flags may be added by default depending on your
+  environment.  Specify optflags=.. and warnflags=.. as necessary to
+  override them.
+
 * vendor_ruby directory
 
   A new library directory named `vendor_ruby' is introduced in
