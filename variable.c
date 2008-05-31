@@ -195,7 +195,7 @@ rb_class_path(klass)
 	return path;
     }
     else {
-	char *s = "Class";
+	const char *s = "Class";
 	size_t len;
 
 	if (TYPE(klass) == T_MODULE) {
@@ -294,14 +294,14 @@ rb_class_name(klass)
     return rb_class_path(rb_class_real(klass));
 }
 
-char *
+const char *
 rb_class2name(klass)
     VALUE klass;
 {
     return RSTRING(rb_class_name(klass))->ptr;
 }
 
-char *
+const char *
 rb_obj_classname(obj)
     VALUE obj;
 {
@@ -789,7 +789,7 @@ rb_f_global_variables()
 {
     VALUE ary = rb_ary_new();
     char buf[4];
-    char *s = "&`'+123456789";
+    const char *s = "&`'+123456789";
 
     st_foreach(rb_global_tbl, gvar_i, ary);
     if (!NIL_P(rb_backref_get())) {
@@ -1653,7 +1653,7 @@ mod_av_set(klass, id, val, isconst)
     VALUE val;
     int isconst;
 {
-    char *dest = isconst ? "constant" : "class variable";
+    const char *dest = isconst ? "constant" : "class variable";
 
     if (!OBJ_TAINTED(klass) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set %s", dest);

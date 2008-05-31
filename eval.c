@@ -1103,8 +1103,8 @@ static void scope_dup _((struct SCOPE *));
 } while (0)
 
 static VALUE rb_eval _((VALUE,NODE*));
-static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
-static NODE *compile _((VALUE, char*, int));
+static VALUE eval _((VALUE,VALUE,VALUE,const char*,int));
+static NODE *compile _((VALUE, const char*, int));
 
 static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 
@@ -1227,7 +1227,7 @@ error_print()
 {
     VALUE errat = Qnil;		/* OK */
     volatile VALUE eclass, e;
-    char *einfo;
+    const char *einfo;
     long elen;
 
     if (NIL_P(ruby_errinfo)) return;
@@ -2032,7 +2032,7 @@ void
 rb_frozen_class_p(klass)
     VALUE klass;
 {
-    char *desc = "something(?!)";
+    const char *desc = "something(?!)";
 
     if (OBJ_FROZEN(klass)) {
 	if (FL_TEST(klass, FL_SINGLETON))
@@ -2070,7 +2070,7 @@ rb_undef(klass, id)
     }
     body = search_method(klass, id, &origin);
     if (!body || !body->nd_body) {
-	char *s0 = " class";
+	const char *s0 = " class";
 	VALUE c = klass;
 
 	if (FL_TEST(c, FL_SINGLETON)) {
@@ -2322,9 +2322,9 @@ rb_copy_node_scope(node, rval)
 
 #define MATCH_DATA *rb_svar(node->nd_cnt)
 
-static char* is_defined _((VALUE, NODE*, char*));
+static const char* is_defined _((VALUE, NODE*, char*));
 
-static char*
+static const char*
 arg_defined(self, node, buf, type)
     VALUE self;
     NODE *node;
@@ -2351,7 +2351,7 @@ arg_defined(self, node, buf, type)
     return type;
 }
 
-static char*
+static const char*
 is_defined(self, node, buf)
     VALUE self;
     NODE *node;			/* OK */
@@ -2671,27 +2671,27 @@ set_trace_func(obj, trace)
     return trace;
 }
 
-static char *
+static const char *
 get_event_name(rb_event_t event)
 {
     switch (event) {
-    case RUBY_EVENT_LINE:
+      case RUBY_EVENT_LINE:
 	return "line";
-    case RUBY_EVENT_CLASS:
+      case RUBY_EVENT_CLASS:
 	return "class";
-    case RUBY_EVENT_END:
+      case RUBY_EVENT_END:
 	return "end";
-    case RUBY_EVENT_CALL:
+      case RUBY_EVENT_CALL:
 	return "call";
-    case RUBY_EVENT_RETURN:
+      case RUBY_EVENT_RETURN:
 	return "return";
-    case RUBY_EVENT_C_CALL:
+      case RUBY_EVENT_C_CALL:
 	return "c-call";
-    case RUBY_EVENT_C_RETURN:
+      case RUBY_EVENT_C_RETURN:
 	return "c-return";
-    case RUBY_EVENT_RAISE:
+      case RUBY_EVENT_RAISE:
 	return "raise";
-    default:
+      default:
 	return "unknown";
     }
 }
@@ -2708,7 +2708,7 @@ call_trace_func(event, node, self, id, klass)
     struct FRAME *prev;
     NODE *node_save;
     VALUE srcfile;
-    char *event_name;
+    const char *event_name;
 
     if (!trace_func) return;
     if (tracing) return;
@@ -4136,7 +4136,7 @@ rb_eval(self, n)
       case NODE_DEFINED:
 	{
 	    char buf[20];
-	    char *desc = is_defined(self, node->nd_head, buf);
+	    const char *desc = is_defined(self, node->nd_head, buf);
 
 	    if (desc) result = rb_str_new2(desc);
 	    else result = Qnil;
@@ -4804,7 +4804,7 @@ proc_jump_error(state, result)
     VALUE result;
 {
     char mesg[32];
-    char *statement;
+    const char *statement;
 
     switch (state) {
       case TAG_BREAK:
@@ -5638,7 +5638,7 @@ rb_method_missing(argc, argv, obj)
 {
     ID id;
     VALUE exc = rb_eNoMethodError;
-    char *format = 0;
+    const char *format = 0;
     NODE *cnode = ruby_current_node;
 
     if (argc == 0 || !SYMBOL_P(argv[0])) {
@@ -6448,7 +6448,7 @@ rb_frame_this_func()
 static NODE*
 compile(src, file, line)
     VALUE src;
-    char *file;
+    const char *file;
     int line;
 {
     NODE *node;
@@ -6468,7 +6468,7 @@ compile(src, file, line)
 static VALUE
 eval(self, src, scope, file, line)
     VALUE self, src, scope;
-    char *file;
+    const char *file;
     int line;
 {
     struct BLOCK *data = NULL;
@@ -6629,7 +6629,7 @@ rb_f_eval(argc, argv, self)
     VALUE self;
 {
     VALUE src, scope, vfile, vline;
-    char *file = "(eval)";
+    const char *file = "(eval)";
     int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
@@ -6783,7 +6783,7 @@ specific_eval(argc, argv, klass, self)
 	return yield_under(klass, self, Qundef);
     }
     else {
-	char *file = "(eval)";
+	const char *file = "(eval)";
 	int   line = 1;
 
 	if (argc == 0) {
@@ -9014,7 +9014,7 @@ proc_to_s(self)
 {
     struct BLOCK *data;
     NODE *node;
-    char *cname = rb_obj_classname(self);
+    const char *cname = rb_obj_classname(self);
     const int w = (sizeof(VALUE) * CHAR_BIT) / 4;
     long len = strlen(cname)+6+w; /* 6:tags 16:addr */
     VALUE str;
@@ -9748,7 +9748,7 @@ method_inspect(method)
     struct METHOD *data;
     VALUE str;
     const char *s;
-    char *sharp = "#";
+    const char *sharp = "#";
 
     Data_Get_Struct(method, struct METHOD, data);
     str = rb_str_buf_new2("#<");
@@ -12923,7 +12923,7 @@ static VALUE
 rb_thread_inspect(thread)
     VALUE thread;
 {
-    char *cname = rb_obj_classname(thread);
+    const char *cname = rb_obj_classname(thread);
     rb_thread_t th = rb_thread_check(thread);
     const char *status = thread_status_name(th->status);
     VALUE str;

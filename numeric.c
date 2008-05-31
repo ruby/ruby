@@ -2776,7 +2776,7 @@ static VALUE
 fix_id2name(fix)
     VALUE fix;
 {
-    char *name = rb_id2name(FIX2UINT(fix));
+    const char *name = rb_id2name(FIX2UINT(fix));
     if (name) return rb_str_new2(name);
     return Qnil;
 }

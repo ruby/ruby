@@ -20,7 +20,7 @@ static VALUE struct_alloc _((VALUE));
 VALUE
 rb_struct_iv_get(c, name)
     VALUE c;
-    char *name;
+    const char *name;
 {
     ID id;
 
@@ -470,7 +470,7 @@ static VALUE
 inspect_struct(s)
     VALUE s;
 {
-    char *cname = rb_class2name(rb_obj_class(s));
+    const char *cname = rb_class2name(rb_obj_class(s));
     VALUE str, members;
     long i;
 
@@ -481,7 +481,7 @@ inspect_struct(s)
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	VALUE slot;
 	ID id;
-	char *p;
+	const char *p;
 
 	if (i > 0) {
 	    rb_str_cat2(str, ", ");
@@ -517,7 +517,7 @@ rb_struct_inspect(s)
     VALUE s;
 {
     if (rb_inspecting_p(s)) {
-	char *cname = rb_class2name(rb_obj_class(s));
+	const char *cname = rb_class2name(rb_obj_class(s));
 	size_t len = strlen(cname) + 14;
 	VALUE str = rb_str_new(0, len);
 

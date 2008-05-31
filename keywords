@@ -1,4 +1,4 @@
-struct kwtable {char *name; int id[2]; enum lex_state state;};
+struct kwtable {const char *name; int id[2]; enum lex_state state;};
 %%
 __LINE__, {k__LINE__, k__LINE__}, EXPR_END
 __FILE__, {k__FILE__, k__FILE__}, EXPR_END

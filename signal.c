@@ -36,7 +36,7 @@
 #endif
 
 static struct signals {
-    char *signm;
+    const char *signm;
     int  signo;
 } siglist [] = {
     {"EXIT", 0},
@@ -186,7 +186,7 @@ signm2signo(nm)
     return 0;
 }
 
-static char*
+static const char*
 signo2signm(no)
     int no;
 {
@@ -327,7 +327,7 @@ rb_f_kill(argc, argv)
     int negative = 0;
     int sig;
     int i;
-    char *s;
+    const char *s;
 
     rb_secure(2);
     if (argc < 2)
@@ -706,7 +706,7 @@ trap(arg)
     sighandler_t func, oldfunc;
     VALUE command, oldcmd;
     int sig = -1;
-    char *s;
+    const char *s;
 
     func = sighandler;
     command = arg->cmd;

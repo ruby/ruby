@@ -1,3 +1,7 @@
+Sat May 31 18:28:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* suppress warnings with -Wwrite-string.
+
 Sat May 31 15:58:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in (warnflags): defaulted to -Wall

@@ -338,7 +338,7 @@ w_symbol(id, arg)
     ID id;
     struct dump_arg *arg;
 {
-    char *sym = rb_id2name(id);
+    const char *sym = rb_id2name(id);
     st_data_t num;
 
     if (st_lookup(arg->symbols, id, &num)) {
@@ -381,7 +381,7 @@ w_extended(klass, arg, check)
     struct dump_arg *arg;
     int check;
 {
-    char *path;
+    const char *path;
 
     if (check && FL_TEST(klass, FL_SINGLETON)) {
 	if (RCLASS(klass)->m_tbl->num_entries ||
@@ -948,7 +948,7 @@ r_symbol(arg)
     return r_symreal(arg);
 }
 
-static char*
+static const char*
 r_unique(arg)
     struct load_arg *arg;
 {
