@@ -156,16 +156,13 @@ AC_ARG_PROGRAM
 
 dnl Checks for programs.
 
-: ${CFLAGS=} ${CXXFLAGS=}
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
-test $ac_cv_prog_cc_g = yes && : ${debugflags=-g}
 if test "$GCC" = yes; then
     linker_flag=-Wl,
-    : ${optflags=-O2} ${warnflags="-Wall -Wno-parentheses"}
 else
     linker_flag=
 fi
@@ -1641,10 +1638,9 @@ CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CFLAGS" || CFLAGS="$CFLAGS "; CFLAGS="$CFLAGS"'${cflags}'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
 AC_SUBST(cppflags, [])dnl
-AC_SUBST(cflags, ['${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cflags, ['${optflags} ${debugflags}'])dnl
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
-AC_SUBST(warnflags)dnl
 AC_SUBST(XCFLAGS)dnl
 AC_SUBST(XLDFLAGS)dnl
 AC_SUBST(LIBRUBY_LDSHARED)
