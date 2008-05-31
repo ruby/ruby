@@ -132,14 +132,12 @@ utf16be_code_to_mbc(OnigCodePoint code, UChar *buf,
   UChar* p = buf;
 
   if (code > 0xffff) {
-    unsigned int plane, high;
-
-    plane = code >> 16;
-    *p++ = (plane >> 2) + 0xd8;
-    high = (code & 0xff00) >> 8;
-    *p++ = ((plane & 0x03) << 6) + (high >> 2);
-    *p++ = (high & 0x02) + 0xdc;
-    *p   = (UChar )(code & 0xff);
+    unsigned int high = (code >> 10) + 0xD7C0;
+    unsigned int low = (code & 0x3FF) + 0xDC00;
+    *p++ = (high >> 8) & 0xFF;
+    *p++ = high & 0xFF;
+    *p++ = (low >> 8) & 0xFF;
+    *p++ = low & 0xFF;
     return 4;
   }
   else {

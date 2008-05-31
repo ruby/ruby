@@ -1,3 +1,8 @@
+Sat May 31 19:11:39 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/utf_16{be,le}.c (utf16{be,le}_code_to_mbc):
+	  fix codepoint to bytes.
+
 Sat May 31 18:28:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* suppress warnings with -Wwrite-string.
