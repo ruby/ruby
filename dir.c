@@ -475,7 +475,7 @@ dir_inspect(dir)
 
     Data_Get_Struct(dir, struct dir_data, dirp);
     if (dirp->path) {
-	char *c = rb_obj_classname(dir);
+	const char *c = rb_obj_classname(dir);
 	int len = strlen(c) + strlen(dirp->path) + 4;
 	VALUE s = rb_str_new(0, len);
 	snprintf(RSTRING_PTR(s), len+1, "#<%s:%s>", c, dirp->path);

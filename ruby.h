@@ -538,11 +538,11 @@ void rb_gc_register_address _((VALUE*));
 void rb_gc_unregister_address _((VALUE*));
 
 ID rb_intern _((const char*));
-char *rb_id2name _((ID));
+const char *rb_id2name _((ID));
 ID rb_to_id _((VALUE));
 
-char *rb_class2name _((VALUE));
-char *rb_obj_classname _((VALUE));
+const char *rb_class2name _((VALUE));
+const char *rb_obj_classname _((VALUE));
 
 void rb_p _((VALUE));
 

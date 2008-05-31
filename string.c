@@ -545,7 +545,8 @@ rb_str_associated(str)
     return Qfalse;
 }
 
-static char *null_str = "";
+static const char null_str[] = "";
+#define null_str ((char *)null_str)
 
 VALUE
 rb_string_value(ptr)
@@ -4480,7 +4481,7 @@ rb_str_crypt(str, salt)
 {
     extern char *crypt();
     VALUE result;
-    char *s;
+    const char *s;
 
     StringValue(salt);
     if (RSTRING(salt)->len < 2)
@@ -4607,7 +4608,8 @@ rb_str_justify(argc, argv, str, jflag)
     VALUE w;
     long width, flen = 0;
     VALUE res;
-    char *p, *pend, *f = " ";
+    char *p, *pend;
+    const char *f = " ";
     long n;
     VALUE pad;
 
@@ -4633,7 +4635,7 @@ rb_str_justify(argc, argv, str, jflag)
 	    }
 	}
 	else {
-	    char *q = f;
+	    const char *q = f;
 	    while (p + flen <= pend) {
 		memcpy(p,f,flen);
 		p += flen;

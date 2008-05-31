@@ -260,7 +260,7 @@ with all sufficient information, see the ChangeLog file.
 
   * String#each_byte
   * String#each
-  * String#each_lines
+  * String#each_line
   * String#gsub(pattern)
 
     Return an enumerator if no block is given.

@@ -595,7 +595,7 @@ static VALUE
 rb_reg_kcode_m(re)
     VALUE re;
 {
-    char *kcode;
+    const char *kcode;
 
     if (FL_TEST(re, KCODE_FIXED)) {
 	switch (RBASIC(re)->flags & KCODE_MASK) {
@@ -1340,7 +1340,7 @@ match_string(match)
 static VALUE
 match_inspect(VALUE match)
 {
-    char *cname = rb_obj_classname(match);
+    const char *cname = rb_obj_classname(match);
     VALUE str;
     int i;
     struct re_registers *regs = RMATCH(match)->regs;
@@ -1477,8 +1477,9 @@ rb_reg_regcomp(str)
 
     case_cache = ruby_ignorecase;
     kcode_cache = reg_kcode;
-    return reg_cache = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
-				  ruby_ignorecase);
+    reg_cache = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len, ruby_ignorecase);
+    RB_GC_GUARD(save_str);
+    return reg_cache;
 }
 
 static int

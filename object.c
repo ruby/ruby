@@ -314,7 +314,7 @@ VALUE
 rb_any_to_s(obj)
     VALUE obj;
 {
-    char *cname = rb_obj_classname(obj);
+    const char *cname = rb_obj_classname(obj);
     size_t len;
     VALUE str;
 
@@ -341,7 +341,7 @@ inspect_i(id, value, str)
     VALUE str;
 {
     VALUE str2;
-    char *ivname;
+    const char *ivname;
 
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
@@ -397,9 +397,8 @@ rb_obj_inspect(obj)
 	&& ROBJECT(obj)->iv_tbl->num_entries > 0) {
 	VALUE str;
 	size_t len;
-	char *c;
+	const char *c = rb_obj_classname(obj);
 
-	c = rb_obj_classname(obj);
 	if (rb_inspecting_p(obj)) {
 	    len = strlen(c)+10+16+1;
 	    str = rb_str_new(0, len); /* 10:tags 16:addr 1:nul */
@@ -1161,7 +1160,7 @@ sym_inspect(sym)
     VALUE sym;
 {
     VALUE str;
-    char *name;
+    const char *name;
     ID id = SYM2ID(sym);
 
     name = rb_id2name(id);

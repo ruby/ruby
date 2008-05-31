@@ -1,3 +1,16 @@
+Sat May 31 18:28:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* suppress warnings with -Wwrite-string.
+
+Sat May 31 15:58:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in (warnflags): defaulted to -Wall
+	  -Wno-parentheses with gcc.  [ruby-dev:34810]
+
+Fri May 30 05:28:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* enum.c (count_i, count_iter_i, count_all_i): add prototypes for VC.
+
 Fri May 30 04:32:07 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enum.c (count_i, count_iter_i): Sync with trunk.
@@ -27,6 +40,11 @@ Thu May 29 20:07:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 	* configure.in, win32/Makefile.sub, mkconfig.rb, instruby.rb,
 	  ruby.c, lib/mkmf.rb, README.EXT, README.EXT.ja: Backport the
 	  vendor_ruby directory support.
+
+Thu May 29 17:52:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/extconf.rb: search zlib1, and regard mswin32 later than VC6
+	  as WIN32.  [ruby-core:16984]
 
 Wed May 28 17:54:29 2008  Akinori MUSHA  <knu@iDaemons.org>
 

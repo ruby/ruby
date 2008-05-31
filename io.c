@@ -1000,7 +1000,8 @@ rb_io_inspect(obj)
     VALUE obj;
 {
     rb_io_t *fptr;
-    char *buf, *cname, *st = "";
+    char *buf;
+    const char *cname, *st = "";
     long len;
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
@@ -1703,7 +1704,7 @@ rb_io_getline(rs, io)
     }
     else {
 	int c, newline;
-	char *rsptr;
+	const char *rsptr;
 	long rslen;
 	int rspara = 0;
 
@@ -2705,7 +2706,7 @@ rb_io_binmode(io)
     return io;
 }
 
-char*
+const char*
 rb_io_flags_mode(flags)
     int flags;
 {
@@ -2858,7 +2859,7 @@ rb_io_mode_modenum(mode)
 
 #define MODENUM_MAX 4
 
-static char*
+static const char*
 rb_io_modenum_mode(flags)
     int flags;
 {
@@ -3005,7 +3006,7 @@ rb_file_sysopen_internal(io, fname, flags, mode)
 {
     rb_io_t *fptr;
     int fd;
-    char *m;
+    const char *m;
 
     MakeOpenFile(io, fptr);
 
@@ -3123,12 +3124,12 @@ rb_io_unbuffered(fptr)
     rb_io_synchronized(fptr);
 }
 
-static VALUE pipe_open(VALUE pstr, char *pname, char *mode);
+static VALUE pipe_open(VALUE pstr, const char *pname, const char *mode);
 
 static VALUE
 pipe_open(pstr, pname, mode)
     VALUE pstr;
-    char *pname, *mode;
+    const char *pname, *mode;
 {
     int modef = rb_io_mode_flags(mode);
     rb_io_t *fptr;
@@ -3350,7 +3351,7 @@ rb_io_s_popen(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    char *mode;
+    const char *mode;
     VALUE pname, pmode, port;
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
@@ -3388,7 +3389,7 @@ rb_open_file(argc, argv, io)
     VALUE io;
 {
     VALUE fname, vmode, perm;
-    char *path, *mode;
+    const char *path, *mode;
     int flags, fmode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
@@ -3606,7 +3607,7 @@ rb_io_check_io(io)
     return rb_check_convert_type(io, T_FILE, "IO", "to_io");
 }
 
-static char*
+static const char*
 rb_io_mode_string(fptr)
     rb_io_t *fptr;
 {
@@ -3626,7 +3627,7 @@ io_reopen(io, nfile)
     VALUE io, nfile;
 {
     rb_io_t *fptr, *orig;
-    char *mode;
+    const char *mode;
     int fd, fd2;
     off_t pos = 0;
 
@@ -3742,7 +3743,7 @@ rb_io_reopen(argc, argv, file)
     VALUE file;
 {
     VALUE fname, nmode;
-    char *mode;
+    const char *mode;
     rb_io_t *fptr;
 
     rb_secure(4);
@@ -3805,7 +3806,7 @@ rb_io_init_copy(dest, io)
 {
     rb_io_t *fptr, *orig;
     int fd;
-    char *mode;
+    const char *mode;
 
     io = rb_io_get_io(io);
     if (dest == io) return dest;
@@ -4425,7 +4426,7 @@ rb_io_s_new(argc, argv, klass)
     VALUE klass;
 {
     if (rb_block_given_p()) {
-	char *cname = rb_class2name(klass);
+	const char *cname = rb_class2name(klass);
 
 	rb_warn("%s::new() does not take block; use %s::open() instead",
 		cname, cname);

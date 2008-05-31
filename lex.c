@@ -1,6 +1,6 @@
 /* C code produced by gperf version 2.7.2 */
 /* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' ./keywords  */
-struct kwtable {char *name; int id[2]; enum lex_state state;};
+struct kwtable {const char *name; int id[2]; enum lex_state state;};
 
 #define TOTAL_KEYWORDS 40
 #define MIN_WORD_LENGTH 2

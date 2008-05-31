@@ -1495,7 +1495,7 @@ static VALUE
 rb_file_ftype(st)
     struct stat *st;
 {
-    char *t;
+    const char *t;
 
     if (S_ISREG(st->st_mode)) {
 	t = "file";

@@ -65,7 +65,7 @@ static VALUE do_loop = Qfalse, do_print = Qfalse;
 static VALUE do_check = Qfalse, do_line = Qfalse;
 static VALUE do_split = Qfalse;
 
-static char *script;
+static const char *script;
 
 static int origargc;
 static char **origargv;

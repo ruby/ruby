@@ -171,7 +171,7 @@ time_timeval(time, interval)
     int interval;
 {
     struct timeval t;
-    char *tstr = interval ? "time interval" : "time";
+    const char *tstr = interval ? "time interval" : "time";
 
 #ifndef NEGATIVE_TIME_T
     interval = 1;
@@ -279,7 +279,7 @@ time_s_at(argc, argv, klass)
     return t;
 }
 
-static char *months [12] = {
+static const char months[][4] = {
     "jan", "feb", "mar", "apr", "may", "jun",
     "jul", "aug", "sep", "oct", "nov", "dec",
 };

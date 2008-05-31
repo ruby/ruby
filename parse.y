@@ -4524,7 +4524,7 @@ yylex()
 	    }
 
 	    if (lex_state != EXPR_DOT) {
-		struct kwtable *kw;
+		const struct kwtable *kw;
 
 		/* See if it is a reserved word.  */
 		kw = rb_reserved_word(tok(), toklen());
@@ -5178,7 +5178,7 @@ static void
 void_expr0(node)
     NODE *node;
 {
-    char *useless = 0;
+    const char *useless = 0;
 
     if (!RTEST(ruby_verbose)) return;
 
@@ -5945,7 +5945,7 @@ rb_parser_while_loop(chop, split)
 
 static struct {
     ID token;
-    char *name;
+    const char *name;
 } op_tbl[] = {
     {tDOT2,	".."},
     {tDOT3,	"..."},
@@ -6193,11 +6193,11 @@ rb_intern(name)
     return id;
 }
 
-char *
+const char *
 rb_id2name(id)
     ID id;
 {
-    char *name;
+    const char *name;
     st_data_t data;
 
     if (id < tLAST_TOKEN) {

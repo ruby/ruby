@@ -18,11 +18,12 @@ $toolbar_demo = TkToplevel.new {|w|
 base_frame = Ttk::Frame.new($toolbar_demo).pack(:fill=>:both, :expand=>true)
 
 if Tk.windowingsystem != 'aqua'
-  msg = Ttk::Label.new(base_frame, :wraplength=>'4i', :text=><<EOL)
+  msg = Ttk::Label.new(base_frame, :wraplength=>'4i', 
+                       :text=>Tk::UTF8_String.new(<<EOL))
 This is a demonstration of how to do \
 a toolbar that is styled correctly \
 and which can be torn off (this feature reqrires Tcl/Tk8.5). \
-The buttons are configured to be \u201Ctoolbar style\u201D buttons by \
+The buttons are configured to be \\u201Ctoolbar style\\u201D buttons by \
 telling them that they are to use the Toolbutton style. At the left \
 end of the toolbar is a simple marker that the cursor changes to a \
 movement icon over; drag that away from the toolbar to tear off the \
@@ -31,10 +32,11 @@ toolbar is no longer needed, just close it like any normal toplevel \
 and it will reattach to the window it was torn off from.
 EOL
 else
-  msg = Ttk::Label.new(base_frame, :wraplength=>'4i', :text=><<EOL)
+  msg = Ttk::Label.new(base_frame, :wraplength=>'4i', 
+                       :text=>Tk::UTF8_String.new(<<EOL))
 This is a demonstration of how to do \
 a toolbar that is styled correctly. The buttons are configured to \
-be \u201Ctoolbar style\u201D buttons by telling them that they are \
+be \\u201Ctoolbar style\\u201D buttons by telling them that they are \
 to use the Toolbutton style.
 EOL
 end
