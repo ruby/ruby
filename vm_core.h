@@ -17,6 +17,7 @@
 #include <setjmp.h>
 
 #include "ruby/ruby.h"
+#include "ruby/mvm.h"
 #include "ruby/signal.h"
 #include "ruby/st.h"
 #include "ruby/node.h"
@@ -285,7 +286,8 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #define GetVMPtr(obj, ptr) \
   GetCoreDataFromValue(obj, rb_vm_t, ptr)
 
-typedef struct rb_vm_struct {
+struct rb_vm_struct
+{
     VALUE self;
 
     rb_thread_lock_t global_interpreter_lock;
@@ -320,7 +322,7 @@ typedef struct rb_vm_struct {
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     struct rb_objspace *objspace;
 #endif
-} rb_vm_t;
+};
 
 typedef struct {
     VALUE *pc;			/* cfp[0] */
@@ -377,8 +379,6 @@ struct rb_unblock_callback {
     rb_unblock_function_t *func;
     void *arg;
 };
-
-typedef struct rb_thread_struct rb_thread_t;
 
 struct rb_thread_struct
 {

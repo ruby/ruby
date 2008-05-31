@@ -1,3 +1,8 @@
+Sat May 31 15:17:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/mvm.h: new header file for MVM, and moved rb_vm_t and
+	  rb_thread_t from vm_core.h.
+
 Sat May 31 12:02:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_normal_exit): show pid when fail.
