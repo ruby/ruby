@@ -1,3 +1,10 @@
+Sat May 31 22:11:15 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* version.c (ruby_description, ruby_copyright): backported from
+	  1.9. bug#19002, [ruby-dev:34883]
+
+	* error.c (report_bug): uses ruby_description.
+
 Sat May 31 20:56:04 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_delete_if): should return enumerator if no block
