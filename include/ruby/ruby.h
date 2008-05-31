@@ -1,18 +1,18 @@
 /**********************************************************************
 
-  ruby.h -
+  ruby/ruby.h -
 
   $Author$
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1993-2007 Yukihiro Matsumoto
+  Copyright (C) 1993-2008 Yukihiro Matsumoto
   Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
 
-#ifndef RUBY_H
-#define RUBY_H 1
+#ifndef RUBY_RUBY_H
+#define RUBY_RUBY_H 1
 
 #if defined(__cplusplus)
 extern "C" {
@@ -21,9 +21,11 @@ extern "C" {
 #endif
 #endif
 
+#ifndef RUBY_LIB
 #include "ruby/config.h"
 #ifdef RUBY_EXTCONF_H
 #include RUBY_EXTCONF_H
+#endif
 #endif
 
 #define NORETURN_STYLE_NEW 1
@@ -1066,4 +1068,4 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 #endif
 }  /* extern "C" { */
 #endif
-#endif /* RUBY_H */
+#endif /* RUBY_RUBY_H */
