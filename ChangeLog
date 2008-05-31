@@ -1,3 +1,8 @@
+Sat May 31 18:26:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_delete_if): should return enumerator if no block
+	  is given.  [ruby-dev:34901]
+
 Sat May 31 15:58:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in (warnflags): defaulted to -Wall

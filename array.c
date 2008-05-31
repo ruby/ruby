@@ -1907,6 +1907,7 @@ rb_ary_reject(VALUE ary)
 static VALUE
 rb_ary_delete_if(VALUE ary)
 {
+    RETURN_ENUMERATOR(ary, 0, 0);
     rb_ary_reject_bang(ary);
     return ary;
 }
