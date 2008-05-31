@@ -1,3 +1,7 @@
+Sat May 31 20:28:10 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_regexp.rb: add tests.
+
 Sat May 31 19:11:39 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/utf_16{be,le}.c (utf16{be,le}_code_to_mbc):

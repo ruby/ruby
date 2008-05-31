@@ -669,4 +669,11 @@ class TestRegexp < Test::Unit::TestCase
     failcheck('[[:alpha:')
     failcheck('[[:alp:]]')
   end
+
+  def test_backward
+    assert_equal(3, "foobar".rindex(/b.r/i))
+    assert_equal(nil, "foovar".rindex(/b.r/i))
+    assert_equal(3, ("foo" + "bar" * 1000).rindex(/#{"bar"*1000}/))
+    assert_equal(4, ("foo\nbar\nbaz\n").rindex(/bar/i))
+  end
 end
