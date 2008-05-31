@@ -42,6 +42,7 @@ CFLAGS = @CFLAGS@ @ARCH_FLAG@
 cflags = @cflags@
 optflags = @optflags@
 debugflags = @debugflags@
+warnflags = @warnflags@
 XCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) @XCFLAGS@
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@

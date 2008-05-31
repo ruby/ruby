@@ -1,3 +1,8 @@
+Sat May 31 15:58:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in (warnflags): defaulted to -Wall
+	  -Wno-parentheses with gcc.  [ruby-dev:34810]
+
 Sat May 31 15:17:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/mvm.h: new header file for MVM, and moved rb_vm_t and
