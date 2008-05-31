@@ -2239,6 +2239,15 @@ rb_obj_id(VALUE obj)
     return (VALUE)((SIGNED_VALUE)obj|FIXNUM_FLAG);
 }
 
+static int
+set_zero(st_data_t key, st_data_t val, st_data_t arg)
+{
+    VALUE k = (VALUE)key;
+    VALUE hash = (VALUE)arg;
+    rb_hash_aset(hash, k, INT2FIX(0));
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     ObjectSpace.count_objects([result_hash]) -> hash
@@ -2272,6 +2281,9 @@ count_objects(int argc, VALUE *argv, VALUE os)
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
         if (TYPE(hash) != T_HASH)
             rb_raise(rb_eTypeError, "non-hash given");
+        if (!RHASH_EMPTY_P(hash)) {
+            st_foreach(RHASH_TBL(hash), set_zero, hash);
+        }
     }
 
     for (i = 0; i <= T_MASK; i++) {
