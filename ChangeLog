@@ -1,3 +1,8 @@
+Sat May 31 15:58:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in (warnflags): defaulted to -Wall
+	  -Wno-parentheses with gcc.  [ruby-dev:34810]
+
 Fri May 30 05:28:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enum.c (count_i, count_iter_i, count_all_i): add prototypes for VC.
