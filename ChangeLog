@@ -1,3 +1,7 @@
+Sat May 31 12:02:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_normal_exit): show pid when fail.
+
 Fri May 30 23:55:56 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_rubyoptions.rb: add a test of RUBY_DESCRIPTION.

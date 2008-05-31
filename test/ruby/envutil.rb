@@ -92,11 +92,13 @@ module Test
             sigdesc = "SIG#{signame} (#{sigdesc})"
           end
           if msg.empty?
-            full_message = build_message(message, "killed by ?",
+            full_message = build_message(message, "pid ? killed by ?",
+                                         pid,
                                          AssertionMessage::Literal.new(sigdesc))
           else
             msg << "\n" if /\n\z/ !~ msg
-            full_message = build_message(message, "killed by ?\n?",
+            full_message = build_message(message, "pid ? killed by ?\n?",
+                                         pid,
                                          AssertionMessage::Literal.new(sigdesc),
                                          AssertionMessage::Literal.new(msg.gsub(/^/, '| ')))
           end
