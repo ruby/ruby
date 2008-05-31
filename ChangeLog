@@ -1,3 +1,7 @@
+Sat May 31 23:33:34 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* README, README.ja: Add a note about default C flags.
+
 Sat May 31 22:11:15 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* version.c (ruby_description, ruby_copyright): backported from
