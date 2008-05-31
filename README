@@ -65,6 +65,10 @@ This is what you need to do to compile and install Ruby:
 
   2. Run ./configure, which will generate config.h and Makefile.
 
+     Some C compiler flags may be added by default depending on your
+     environment.  Specify optflags=.. and warnflags=.. as necessary
+     to override them.
+
   3. Edit defines.h if you need.  Usually this step will not be needed.
 
   4. Remove comment mark(#) before the module names from ext/Setup (or

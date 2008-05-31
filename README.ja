@@ -88,6 +88,10 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリストと
 
   2. configureを実行してMakefileなどを生成する
 
+     環境によってはデフォルトのCコンパイラ用オプションが付き
+     ます．configureオプションで optflags=.. warnflags=.. 等
+     で上書きできます．
+
   3. (必要ならば)defines.hを編集する
 
      多分，必要無いと思います．
