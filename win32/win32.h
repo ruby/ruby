@@ -159,7 +159,7 @@ struct timezone {
 #endif
 extern void   NtInitialize(int *, char ***);
 extern int    rb_w32_cmdvector(const char *, char ***);
-extern rb_pid_t pipe_exec(char *, int, FILE **, FILE **);
+extern rb_pid_t pipe_exec(const char *, int, FILE **, FILE **);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_accept(int, struct sockaddr *, int *);
 extern int    rb_w32_bind(int, struct sockaddr *, int);
@@ -205,8 +205,8 @@ extern int chown(const char *, int, int);
 extern int link(char *, char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern rb_pid_t waitpid (rb_pid_t, int *, int);
-extern int do_spawn(int, char *);
-extern int do_aspawn(int, char *, char **);
+extern int do_spawn(int, const char *);
+extern int do_aspawn(int, const char *, char **);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern rb_pid_t rb_w32_getpid(void);

@@ -623,7 +623,7 @@ make_regexp(s, len, flags)
     int flags;
 {
     Regexp *rp;
-    char *err;
+    const char *err;
 
     /* Handle escaped characters first. */
 
@@ -846,7 +846,7 @@ rb_reg_prepare_re(re)
     }
 
     if (need_recompile) {
-	char *err;
+	const char *err;
 
 	if (FL_TEST(re, KCODE_FIXED))
 	    rb_kcode_set_option(re);

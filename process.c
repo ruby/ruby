@@ -1024,9 +1024,11 @@ int
 rb_proc_exec(str)
     const char *str;
 {
+#ifndef _WIN32
     const char *s = str;
     char *ss, *t;
     char **argv, **a;
+#endif
 
     while (*str && ISSPACE(*str))
 	str++;
@@ -1089,7 +1091,9 @@ proc_spawn_v(argv, prog)
     char **argv;
     char *prog;
 {
+#if defined(__human68k__)
     char *extension;
+#endif
     int status;
 
     if (!prog)
@@ -1650,7 +1654,9 @@ rb_f_sleep(argc, argv)
 static VALUE
 proc_getpgrp()
 {
+#if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)
     int pgrp;
+#endif
 
     rb_secure(2);
 #if defined(HAVE_GETPGRP) && defined(GETPGRP_VOID)

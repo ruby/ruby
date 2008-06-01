@@ -21,6 +21,9 @@
 #ifdef _WIN32
 #include "missing/file.h"
 #endif
+#if defined(__CYGWIN32__) || defined(_WIN32)
+#include <io.h>
+#endif
 
 #include "util.h"
 #ifndef HAVE_STRING_H
@@ -228,6 +231,12 @@ fallback:
 }
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
+#if defined __CYGWIN32__ || defined __MINGW32__
+extern int _open(const char *, int, ...);
+extern int _close(int);
+extern int _unlink(const char *);
+#endif
+
 static int 
 valid_filename(char *s)
 {

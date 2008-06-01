@@ -1689,31 +1689,31 @@ static char fbuf[MAXPATHLEN];
 
 static char *
 dln_find_1(fname, path, exe_flag)
-    char *fname;
-    char *path;
+    const char *fname;
+    const char *path;
     int exe_flag;		/* non 0 if looking for executable. */
 {
-    register char *dp;
-    register char *ep;
+    register const char *dp;
+    register const char *ep;
     register char *bp;
     struct stat st;
 #ifdef __MACOS__
     const char* mac_fullpath;
 #endif
 
-    if (!fname) return fname;
-    if (fname[0] == '/') return fname;
+    if (!fname) return (char *)fname;
+    if (fname[0] == '/') return (char *)fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
-      return fname;
-    if (exe_flag && strchr(fname, '/')) return fname;
+      return (char *)fname;
+    if (exe_flag && strchr(fname, '/')) return (char *)fname;
 #ifdef DOSISH
-    if (fname[0] == '\\') return fname;
+    if (fname[0] == '\\') return (char *)fname;
 # ifdef DOSISH_DRIVE_LETTER
-    if (strlen(fname) > 2 && fname[1] == ':') return fname;
+    if (strlen(fname) > 2 && fname[1] == ':') return (char *)fname;
 # endif
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
-      return fname;
-    if (exe_flag && strchr(fname, '\\')) return fname;
+      return (char *)fname;
+    if (exe_flag && strchr(fname, '\\')) return (char *)fname;
 #endif
 
     for (dp = path;; dp = ++ep) {

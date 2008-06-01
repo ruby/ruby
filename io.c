@@ -50,6 +50,9 @@
 #elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
 #endif
+#ifdef __CYGWIN__
+#include <io.h>
+#endif
 
 #if !HAVE_OFF_T && !defined(off_t)
 # define off_t  long
@@ -429,7 +432,10 @@ static int
 wsplit_p(rb_io_t *fptr)
 {
     FILE *f = GetWriteFile(fptr);
+#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(O_NONBLOCK)
     int r;
+#endif
+
     if (!(fptr->mode & FMODE_WSPLIT_INITIALIZED)) {
         struct stat buf;
         if (fstat(fileno(f), &buf) == 0 &&
@@ -4522,7 +4528,10 @@ next_argv()
 		FILE *fr = rb_fopen(fn, "r");
 
 		if (ruby_inplace_mode) {
-		    struct stat st, st2;
+		    struct stat st;
+#ifndef NO_SAFE_RENAME
+		    struct stat st2;
+#endif
 		    VALUE str;
 		    FILE *fw;
 

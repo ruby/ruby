@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include <windows.h>
 #include <winbase.h>
@@ -208,7 +209,7 @@ rb_w32_map_errno(DWORD winerr)
 
 #define map_errno rb_w32_map_errno
 
-static char *NTLoginName;
+static const char *NTLoginName;
 
 #ifdef WIN95
 static DWORD Win32System = (DWORD)-1;
@@ -448,10 +449,6 @@ init_env(void)
 void
 NtInitialize(int *argc, char ***argv)
 {
-
-    WORD version;
-    int ret;
-
 #if _MSC_VER >= 1400
     static void set_pioinfo_extra(void);
 
@@ -490,7 +487,7 @@ NtInitialize(int *argc, char ***argv)
 char *
 getlogin()
 {
-    return NTLoginName;
+    return (char *)NTLoginName;
 }
 
 #define MAXCHILDNUM 256	/* max num of child processes */
@@ -504,15 +501,6 @@ static struct ChildRecord {
     struct ChildRecord* v; \
     for (v = ChildRecord; v < ChildRecord + sizeof(ChildRecord) / sizeof(ChildRecord[0]); ++v)
 #define END_FOREACH_CHILD } while (0)
-
-static struct ChildRecord *
-FindFirstChildSlot(void)
-{
-    FOREACH_CHILD(child) {
-	if (child->pid) return child;
-    } END_FOREACH_CHILD;
-    return NULL;
-}
 
 static struct ChildRecord *
 FindChildSlot(rb_pid_t pid)
@@ -665,7 +653,7 @@ rb_w32_get_osfhandle(int fh)
 }
 
 rb_pid_t
-pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
+pipe_exec(const char *cmd, int mode, FILE **fpr, FILE **fpw)
 {
     struct ChildRecord* child;
     HANDLE hReadIn, hReadOut;
@@ -804,7 +792,7 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 extern VALUE rb_last_status;
 
 int
-do_spawn(int mode, char *cmd)
+do_spawn(int mode, const char *cmd)
 {
     struct ChildRecord *child;
     DWORD exitcode;
@@ -841,7 +829,7 @@ do_spawn(int mode, char *cmd)
 }
 
 int
-do_aspawn(int mode, char *prog, char **argv)
+do_aspawn(int mode, const char *prog, char **argv)
 {
     char *cmd, *p, *q, *s, **t;
     int len, n, bs, quote;
@@ -1211,7 +1199,7 @@ skipspace(char *ptr)
 int 
 rb_w32_cmdvector(const char *cmd, char ***vec)
 {
-    int cmdlen, globbing, len, i;
+    int globbing, len;
     int elements, strsz, done;
     int slashes, escape;
     char *ptr, *base, *buffer, *cmdline;
@@ -3936,9 +3924,7 @@ int
 rb_w32_utime(const char *path, struct utimbuf *times)
 {
     HANDLE hFile;
-    SYSTEMTIME st;
     FILETIME atime, mtime;
-    struct tm *tm;
     struct stat stat;
     int ret = 0;
 

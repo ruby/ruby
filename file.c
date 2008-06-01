@@ -2320,6 +2320,10 @@ rb_file_s_umask(argc, argv)
 #define USE_NTFS 0
 #endif
 
+#ifdef DOSISH_DRIVE_LETTER
+#include <ctype.h>
+#endif
+
 #if USE_NTFS
 #define istrailinggabage(x) ((x) == '.' || (x) == ' ')
 #else
@@ -2532,7 +2536,7 @@ file_expand_path(fname, dname, result)
 
     if (s[0] == '~') {
 	if (isdirsep(s[1]) || s[1] == '\0') {
-	    char *dir = getenv("HOME");
+	    const char *dir = getenv("HOME");
 
 	    if (!dir) {
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
@@ -2891,9 +2895,9 @@ rb_file_s_basename(argc, argv)
     VALUE *argv;
 {
     VALUE fname, fext, basename;
-    char *name, *p;
+    const char *name, *p;
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
-    char *root;
+    const char *root;
 #endif
     int f, n;
 
@@ -3103,7 +3107,7 @@ rb_file_join(ary, sep)
     long len, i;
     int taint = 0;
     VALUE result, tmp;
-    char *name, *tail;
+    const char *name, *tail;
 
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
     if (OBJ_TAINTED(ary)) taint = 1;
@@ -4288,7 +4292,7 @@ path_check_0(fpath, execpath)
      int execpath;
 {
     struct stat st;
-    char *p0 = StringValueCStr(fpath);
+    const char *p0 = StringValueCStr(fpath);
     char *p = 0, *s;
 
     if (!is_absolute_path(p0)) {
@@ -4327,7 +4331,7 @@ path_check_0(fpath, execpath)
 
 static int
 fpath_check(path)
-    char *path;
+    const char *path;
 {
 #if ENABLE_PATH_CHECK
     return path_check_0(rb_str_new2(path), Qfalse);
@@ -4338,10 +4342,10 @@ fpath_check(path)
 
 int
 rb_path_check(path)
-    char *path;
+    const char *path;
 {
 #if ENABLE_PATH_CHECK
-    char *p0, *p, *pend;
+    const char *p0, *p, *pend;
     const char sep = PATH_SEP_CHAR;
 
     if (!path) return 1;
@@ -4376,7 +4380,7 @@ is_macos_native_path(path)
 
 static int
 file_load_ok(file)
-    char *file;
+    const char *file;
 {
     FILE *f;
 
@@ -4394,8 +4398,8 @@ rb_find_file_ext(filep, ext)
     VALUE *filep;
     const char * const *ext;
 {
-    char *path, *found;
-    char *f = RSTRING(*filep)->ptr;
+    const char *path, *found;
+    const char *f = RSTRING(*filep)->ptr;
     VALUE fname;
     long i, j;
 
@@ -4450,8 +4454,8 @@ rb_find_file(path)
     VALUE path;
 {
     VALUE tmp;
-    char *f = StringValueCStr(path);
-    char *lpath;
+    const char *f = StringValueCStr(path);
+    const char *lpath;
 
     if (f[0] == '~') {
 	path = rb_file_expand_path(path, Qnil);

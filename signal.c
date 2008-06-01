@@ -685,11 +685,13 @@ struct trap_arg {
     VALUE sig, cmd;
 };
 
+#if USE_TRAP_MASK
 # ifdef HAVE_SIGPROCMASK
 static sigset_t trap_last_mask;
 # else
 static int trap_last_mask;
 # endif
+#endif
 
 static RETSIGTYPE sigexit _((int));
 static RETSIGTYPE
@@ -991,6 +993,7 @@ install_nativethread_sighandler(signum, handler)
 #endif
 #endif
 
+#if defined(SIGCLD) || defined(SIGCHLD)
 static void
 init_sigchld(sig)
     int sig;
@@ -1032,6 +1035,7 @@ init_sigchld(sig)
     trap_last_mask = mask;
 #endif
 }
+#endif
 
 /*
  * Many operating systems allow signals to be sent to running

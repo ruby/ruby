@@ -277,7 +277,7 @@ VALUE rb_hash_lookup _((VALUE, VALUE));
 VALUE rb_hash_aset _((VALUE, VALUE, VALUE));
 VALUE rb_hash_delete_if _((VALUE));
 VALUE rb_hash_delete _((VALUE,VALUE));
-int rb_path_check _((char*));
+int rb_path_check _((const char*));
 int rb_env_path_tainted _((void));
 /* io.c */
 #define rb_defout rb_stdout

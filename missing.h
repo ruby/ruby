@@ -32,7 +32,7 @@ extern double atanh _((double));
 #endif
 
 #ifndef HAVE_CRYPT
-extern char *crypt _((char *, char *));
+extern char *crypt _((const char *, const char *));
 #endif
 
 #ifndef HAVE_DUP2

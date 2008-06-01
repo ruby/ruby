@@ -184,7 +184,7 @@ typedef struct
 
 #ifdef __STDC__
 
-extern char *re_compile_pattern (const char *, int, struct re_pattern_buffer *);
+extern const char *re_compile_pattern (const char *, int, struct re_pattern_buffer *);
 void re_free_pattern (struct re_pattern_buffer *);
 /* Is this really advertised?  */
 extern int re_adjust_startpos (struct re_pattern_buffer *, const char*, int, int, int);
@@ -205,7 +205,7 @@ extern int re_exec (const char *);
 
 #else /* !__STDC__ */
 
-extern char *re_compile_pattern ();
+extern const char *re_compile_pattern ();
 void re_free_regexp ();
 /* Is this really advertised? */
 extern int re_adjust_startpos ();

@@ -5891,6 +5891,10 @@ int
 ruby_parser_stack_on_heap()
 {
 #if defined(YYMALLOC)
+    (void)rb_parser_realloc;
+    (void)rb_parser_calloc;
+    (void)nodetype;
+    (void)nodeline;
     return Qfalse;
 #else
     return Qtrue;
