@@ -1,3 +1,10 @@
+Mon Jun  2 03:23:25 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/gb18030.c (gb18030_mbc_to_code): mask by 0x7FFFFFFF
+	  because OnigCodePoint will be used as 32bit signed int.
+	  Masking by 0x7FFFFFFF is ok on GB18030;
+	  Minumum 4bytes character is 0x81308130.
+
 Sun Jun  1 22:29:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* rational.c (string_to_r_internal): use rb_isdigit.
