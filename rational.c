@@ -1371,7 +1371,7 @@ string_to_r_internal(VALUE self)
 	    VALUE l;
 
 	    while (*p) {
-		if (isdigit(*p))
+		if (rb_isdigit(*p))
 		    count++;
 		p++;
 	    }

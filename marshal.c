@@ -937,7 +937,7 @@ r_byte(struct load_arg *arg)
 static void
 long_toobig(int size)
 {
-    rb_raise(rb_eTypeError, "long too big for this architecture (size %d, given %d)",
+    rb_raise(rb_eTypeError, "long too big for this architecture (size %zd, given %d)",
 	     sizeof(long), size);
 }
 

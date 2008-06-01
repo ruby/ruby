@@ -1357,7 +1357,7 @@ get_arglen(int argc, char **argv)
 static void
 set_arg0(VALUE val, ID id)
 {
-    char *s, *t;
+    char *s;
     long i;
 
     if (origarg.argv == 0)
@@ -1388,13 +1388,12 @@ set_arg0(VALUE val, ID id)
     }
 
     memcpy(origarg.argv[0], s, i);
-    t = origarg.argv[0] + i;
-    *t = '\0';
-
-    if (i + 1 < origarg.len) memset(t + 1, ' ', origarg.len - i - 1);
 
     {
-	int j;
+	char *t = origarg.argv[0] + i;
+	*t = '\0';
+
+	if (i + 1 < origarg.len) memset(t + 1, ' ', origarg.len - i - 1);
 	for (j = 1; j < origarg.argc; j++) {
 	    origarg.argv[j] = t;
 	}

@@ -1,3 +1,11 @@
+Sun Jun  1 22:29:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* rational.c (string_to_r_internal): use rb_isdigit.
+
+	* marshal.c (long_toobig): use %zd.
+
+	* ruby.c (set_arg0): move unused variable definition.
+
 Sun Jun  1 12:18:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* insns.def (DEFINE_INSN): subtract of pointers is ptrdiff_t.
