@@ -1,3 +1,8 @@
+Mon Jun  2 08:46:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_strtod, dtoa): initialize more variables for error
+	  handling.
+
 Mon Jun  2 05:27:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rscheck), marshal.c (w_nbyte, w_bytes, w_unique),
