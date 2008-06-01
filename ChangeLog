@@ -1,3 +1,8 @@
+Mon Jun  2 04:35:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/gb18030.c (gb18030_code_to_mbc): add 0x80000000
+	  for 4bytes character.
+
 Mon Jun  2 03:52:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (set_arg0): reverted used variable definition.

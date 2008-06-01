@@ -185,6 +185,9 @@ gb18030_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 static int
 gb18030_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc)
 {
+  if ((code & 0xff000000) != 0) {
+	code |= 0x80000000;
+  }
   return onigenc_mb4_code_to_mbc(enc, code, buf);
 }
 
