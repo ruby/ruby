@@ -503,6 +503,7 @@ enc_capable(VALUE obj)
     }
 }
 
+#if 0
 static void
 enc_check_capable(VALUE x)
 {
@@ -527,6 +528,7 @@ enc_check_capable(VALUE x)
 	rb_raise(rb_eTypeError, "wrong argument type %s (not encode capable)", etype);
     }
 }
+#endif
 
 ID
 rb_id_encoding(void)

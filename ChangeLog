@@ -1,3 +1,7 @@
+Mon Jun  2 04:55:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* suppress warnings on cygwin, mingw and mswin.
+
 Mon Jun  2 04:35:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/gb18030.c (gb18030_code_to_mbc): add 0x80000000

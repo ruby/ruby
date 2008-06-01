@@ -2614,7 +2614,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 
     if (s[0] == '~') {
 	if (isdirsep(s[1]) || s[1] == '\0') {
-	    char *dir = getenv("HOME");
+	    const char *dir = getenv("HOME");
 
 	    if (!dir) {
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
@@ -2973,9 +2973,9 @@ static VALUE
 rb_file_s_basename(int argc, VALUE *argv)
 {
     VALUE fname, fext, basename;
-    char *name, *p;
+    const char *name, *p;
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
-    char *root;
+    const char *root;
 #endif
     int f, n;
 
@@ -3202,7 +3202,7 @@ rb_file_join(VALUE ary, VALUE sep)
 {
     long len, i;
     VALUE result, tmp;
-    char *name, *tail;
+    const char *name, *tail;
 
     if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
 
@@ -4368,7 +4368,7 @@ static int
 path_check_0(VALUE path, int execpath)
 {
     struct stat st;
-    char *p0 = StringValueCStr(path);
+    const char *p0 = StringValueCStr(path);
     char *p = 0, *s;
 
     if (!is_absolute_path(p0)) {
@@ -4462,8 +4462,8 @@ VALUE rb_get_load_path(void);
 int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
-    char *path, *found;
-    char *f = RSTRING_PTR(*filep);
+    const char *path, *found;
+    const char *f = RSTRING_PTR(*filep);
     VALUE fname, load_path;
     long i, j;
 
@@ -4519,8 +4519,8 @@ VALUE
 rb_find_file(VALUE path)
 {
     VALUE tmp, load_path;
-    char *f = StringValueCStr(path);
-    char *lpath;
+    const char *f = StringValueCStr(path);
+    const char *lpath;
     char fbuf[MAXPATHLEN];
 
     if (f[0] == '~') {

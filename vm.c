@@ -1600,7 +1600,6 @@ extern VALUE *rb_gc_register_stack_start;
 #endif
 
 /* debug functions */
-#if VMDEBUG
 
 static VALUE
 sdr(void)
@@ -1632,7 +1631,6 @@ nsdr(void)
 #endif
     return ary;
 }
-#endif
 
 void
 Init_VM(void)
@@ -1692,6 +1690,9 @@ Init_VM(void)
 #if VMDEBUG
     rb_define_singleton_method(rb_cVM, "SDR", sdr, 0);
     rb_define_singleton_method(rb_cVM, "NSDR", nsdr, 0);
+#else
+    (void)sdr;
+    (void)nsdr;
 #endif
 
     /* VM bootstrap: phase 2 */

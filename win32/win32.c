@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include <windows.h>
 #include <winbase.h>
@@ -189,7 +190,7 @@ rb_w32_map_errno(DWORD winerr)
 
 #define map_errno rb_w32_map_errno
 
-static char *NTLoginName;
+static const char *NTLoginName;
 
 #ifdef WIN95
 static DWORD Win32System = (DWORD)-1;
@@ -419,10 +420,6 @@ exit_handler(void)
 void
 rb_w32_sysinit(int *argc, char ***argv)
 {
-
-    WORD version;
-    int ret;
-
 #if _MSC_VER >= 1400
     static void set_pioinfo_extra(void);
 
@@ -461,7 +458,7 @@ rb_w32_sysinit(int *argc, char ***argv)
 char *
 getlogin(void)
 {
-    return NTLoginName;
+    return (char *)NTLoginName;
 }
 
 #define MAXCHILDNUM 256	/* max num of child processes */
@@ -475,15 +472,6 @@ static struct ChildRecord {
     struct ChildRecord* v; \
     for (v = ChildRecord; v < ChildRecord + sizeof(ChildRecord) / sizeof(ChildRecord[0]); ++v)
 #define END_FOREACH_CHILD } while (0)
-
-static struct ChildRecord *
-FindFirstChildSlot(void)
-{
-    FOREACH_CHILD(child) {
-	if (child->pid) return child;
-    } END_FOREACH_CHILD;
-    return NULL;
-}
 
 static struct ChildRecord *
 FindChildSlot(rb_pid_t pid)
@@ -715,8 +703,6 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe, int *wr
     HANDLE hCurProc;
     SECURITY_ATTRIBUTES sa;
     BOOL reading, writing;
-    SOCKET pair[2];
-    int fd;
     int binmode;
     int ret;
 
@@ -1145,7 +1131,7 @@ skipspace(char *ptr)
 int 
 rb_w32_cmdvector(const char *cmd, char ***vec)
 {
-    int cmdlen, globbing, len, i;
+    int globbing, len;
     int elements, strsz, done;
     int slashes, escape;
     char *ptr, *base, *buffer, *cmdline;
@@ -2694,7 +2680,6 @@ rb_w32_getservbyport(int port, const char *proto)
 static int
 socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 {
-    const char *localhost = NULL;
     SOCKET svr = INVALID_SOCKET, r = INVALID_SOCKET, w = INVALID_SOCKET;
     struct sockaddr_in sock_in4;
 #ifdef INET6
@@ -3761,7 +3746,7 @@ rb_w32_asynchronize(asynchronous_func_t func, uintptr_t self,
     });
 
     if (!thr) {
-	rb_fatal("failed to launch waiter thread:%d", GetLastError());
+	rb_fatal("failed to launch waiter thread:%ld", GetLastError());
     }
 
     return val;
@@ -3790,7 +3775,6 @@ rb_w32_get_environ(void)
     myenvtop = (char **)malloc(sizeof(char *) * (num + 1));
     for (env = envtop, myenv = myenvtop; *env; env += strlen(env) + 1) {
 	if (*env != '=') {
-	    int len = strlen(env) + 1;
 	    if (!(*myenv = strdup(env))) {
 		break;
 	    }
@@ -3919,9 +3903,7 @@ int
 rb_w32_utime(const char *path, const struct utimbuf *times)
 {
     HANDLE hFile;
-    SYSTEMTIME st;
     FILETIME atime, mtime;
-    struct tm *tm;
     struct stati64 stat;
     int ret = 0;
 
