@@ -1390,6 +1390,7 @@ set_arg0(VALUE val, ID id)
     memcpy(origarg.argv[0], s, i);
 
     {
+	int j;
 	char *t = origarg.argv[0] + i;
 	*t = '\0';
 

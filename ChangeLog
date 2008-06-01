@@ -1,3 +1,7 @@
+Mon Jun  2 03:52:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (set_arg0): reverted used variable definition.
+
 Mon Jun  2 03:23:25 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/gb18030.c (gb18030_mbc_to_code): mask by 0x7FFFFFFF
