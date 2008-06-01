@@ -1409,12 +1409,12 @@ rb_syswait(pid)
 {
     static int overriding;
 #ifdef SIGHUP
-    RETSIGTYPE (*hfunc)_((int));
+    RETSIGTYPE (*hfunc)_((int)) = 0;
 #endif
 #ifdef SIGQUIT
-    RETSIGTYPE (*qfunc)_((int));
+    RETSIGTYPE (*qfunc)_((int)) = 0;
 #endif
-    RETSIGTYPE (*ifunc)_((int));
+    RETSIGTYPE (*ifunc)_((int)) = 0;
     int status;
     int i, hooked = Qfalse;
 

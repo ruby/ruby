@@ -130,7 +130,7 @@ static void w_long _((long, struct dump_arg*));
 
 static void
 w_nbyte(s, n, arg)
-    char *s;
+    const char *s;
     int n;
     struct dump_arg *arg;
 {
@@ -153,7 +153,7 @@ w_byte(c, arg)
 
 static void
 w_bytes(s, n, arg)
-    char *s;
+    const char *s;
     int n;
     struct dump_arg *arg;
 {
@@ -354,7 +354,7 @@ w_symbol(id, arg)
 
 static void
 w_unique(s, arg)
-    char *s;
+    const char *s;
     struct dump_arg *arg;
 {
     if (s[0] == '#') {
@@ -991,7 +991,7 @@ r_ivar(obj, arg)
 
 static VALUE
 path2class(path)
-    char *path;
+    const char *path;
 {
     VALUE v = rb_path2class(path);
 
@@ -1003,7 +1003,7 @@ path2class(path)
 
 static VALUE
 path2module(path)
-    char *path;
+    const char *path;
 {
     VALUE v = rb_path2class(path);
 

@@ -1,3 +1,10 @@
+Mon Jun  2 05:27:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rscheck), marshal.c (w_nbyte, w_bytes, w_unique),
+	  (path2class, path2module): constified.
+
+	* pack.c (pack_unpack), process.c (rb_syswait): suppress warnings.
+
 Mon Jun  2 04:55:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* suppress warnings on cygwin, mingw and mswin.

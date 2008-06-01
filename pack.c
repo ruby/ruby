@@ -1884,8 +1884,8 @@ pack_unpack(str, fmt)
 
 	  case 'P':
 	    if (sizeof(char *) <= send - s) {
+		VALUE tmp = Qnil;
 		char *t;
-		VALUE tmp;
 
 		memcpy(&t, s, sizeof(char *));
 		s += sizeof(char *);
@@ -1915,9 +1915,6 @@ pack_unpack(str, fmt)
 			rb_raise(rb_eArgError, "non associated pointer");
 		    }
 		}
-		else {
-		    tmp = Qnil;
-		}
 		rb_ary_push(ary, tmp);
 	    }
 	    break;
@@ -1929,7 +1926,7 @@ pack_unpack(str, fmt)
 		if (send - s < sizeof(char *))
 		    break;
 		else {
-		    VALUE tmp;
+		    VALUE tmp = Qnil;
 		    char *t;
 
 		    memcpy(&t, s, sizeof(char *));
@@ -1953,9 +1950,6 @@ pack_unpack(str, fmt)
 			if (p == pend) {
 			    rb_raise(rb_eArgError, "non associated pointer");
 			}
-		    }
-		    else {
-			tmp = Qnil;
 		    }
 		    rb_ary_push(ary, tmp);
 		}

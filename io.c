@@ -1681,7 +1681,7 @@ rb_io_getline_fast(fptr, delim)
 
 static int
 rscheck(rsptr, rslen, rs)
-    char *rsptr;
+    const char *rsptr;
     long rslen;
     VALUE rs;
 {
