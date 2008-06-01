@@ -21,8 +21,8 @@ static void
 control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     int pc = -1, bp = -1, line = 0;
-    unsigned int lfp = cfp->lfp - th->stack;
-    unsigned int dfp = cfp->dfp - th->stack;
+    ptrdiff_t lfp = cfp->lfp - th->stack;
+    ptrdiff_t dfp = cfp->dfp - th->stack;
     char lfp_in_heap = ' ', dfp_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
 
@@ -34,11 +34,11 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     if (lfp < 0 || lfp > th->stack_size) {
-	lfp = (unsigned int)cfp->lfp;
+	lfp = (ptrdiff_t)cfp->lfp;
 	lfp_in_heap = 'p';
     }
     if (dfp < 0 || dfp > th->stack_size) {
-	dfp = (unsigned int)cfp->dfp;
+	dfp = (ptrdiff_t)cfp->dfp;
 	dfp_in_heap = 'p';
     }
     if (cfp->bp) {
@@ -115,7 +115,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	line = -1;
     }
 
-    fprintf(stderr, "c:%04d ",
+    fprintf(stderr, "c:%04td ",
 	    (rb_control_frame_t *)(th->stack + th->stack_size) - cfp);
     if (pc == -1) {
 	fprintf(stderr, "p:---- ");
@@ -123,9 +123,9 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     else {
 	fprintf(stderr, "p:%04d ", pc);
     }
-    fprintf(stderr, "s:%04d b:%04d ", cfp->sp - th->stack, bp);
-    fprintf(stderr, lfp_in_heap == ' ' ? "l:%06d " : "l:%06x ", lfp % 10000);
-    fprintf(stderr, dfp_in_heap == ' ' ? "d:%06d " : "d:%06x ", dfp % 10000);
+    fprintf(stderr, "s:%04td b:%04d ", cfp->sp - th->stack, bp);
+    fprintf(stderr, lfp_in_heap == ' ' ? "l:%06td " : "l:%06tx ", lfp % 10000);
+    fprintf(stderr, dfp_in_heap == ' ' ? "d:%06td " : "d:%06tx ", dfp % 10000);
     fprintf(stderr, "%-6s ", magic);
     if (line) {
 	fprintf(stderr, "%s", posbuf);
@@ -308,7 +308,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	    else {
 		rstr = rb_inspect(*ptr);
 	    }
-	    fprintf(stderr, "  stack %2d: %8s (%d)\n", i, StringValueCStr(rstr),
+	    fprintf(stderr, "  stack %2d: %8s (%td)\n", i, StringValueCStr(rstr),
 		   ptr - th->stack);
 	}
     }
@@ -345,7 +345,7 @@ debug_print_register(rb_thread_t *th)
 	dfp = -1;
 
     cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
-    fprintf(stderr, "  [PC] %04d, [SP] %04d, [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
+    fprintf(stderr, "  [PC] %04d, [SP] %04td, [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
 	   pc, cfp->sp - th->stack, lfp, dfp, cfpi);
 }
 
@@ -366,7 +366,7 @@ debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 	VALUE *seq = iseq->iseq;
 	int pc = cfp->pc - iseq->iseq_encoded;
 
-	printf("%3d ", VM_CFP_CNT(th, cfp));
+	printf("%3td ", VM_CFP_CNT(th, cfp));
 	ruby_iseq_disasm_insn(0, seq, pc, iseq, 0);
     }
 

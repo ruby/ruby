@@ -1,3 +1,18 @@
+Sun Jun  1 12:18:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (DEFINE_INSN): subtract of pointers is ptrdiff_t.
+	  this is not int on 64bit system.
+
+	* vm_dump.c (control_frame_dump): ditto.
+
+	* vm_dump.c (stack_dump_each): ditto.
+
+	* vm_dump.c (debug_print_register): ditto.
+
+	* vm_dump.c (debug_print_pre): ditto.
+
+	* transcode.c (str_transcode): ditto.
+
 Sun Jun  1 10:32:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/envutil.rb (assert_normal_exit): show coredump status.
