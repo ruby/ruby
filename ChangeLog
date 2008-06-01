@@ -1,3 +1,7 @@
+Sun Jun  1 10:32:18 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/envutil.rb (assert_normal_exit): show coredump status.
+
 Sat May 31 23:33:34 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* README, README.ja: Add a note about default C flags.

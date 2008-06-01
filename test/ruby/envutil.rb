@@ -91,6 +91,9 @@ module Test
           if signame
             sigdesc = "SIG#{signame} (#{sigdesc})"
           end
+          if status.coredump?
+            sigdesc << " (core dumped)"
+          end
           if msg.empty?
             full_message = build_message(message, "pid ? killed by ?",
                                          pid,
