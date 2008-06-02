@@ -1,8 +1,10 @@
 Mon Jun  2 16:30:17 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/delegate.rb (DelegateClass, Delegator#respond_to?):
-	  respond_to? should now take optional second argument; submitted
-	  by Jeremy Kemper <jeremy at bitsweat.net> in [ruby-core:17045].
+	  respond_to? must take optional second argument.  This was a
+	  latent bug exposed by a recent internal change of marshal.c to
+	  call respond_to? with a second argument; submitted by Jeremy
+	  Kemper <jeremy at bitsweat.net> in [ruby-core:17045].
 
 Mon Jun  2 15:56:36 2008  Akinori MUSHA  <knu@iDaemons.org>
 
