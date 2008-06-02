@@ -44,15 +44,15 @@ class TestERBCore < Test::Unit::TestCase
     @erb = ERB
   end
 
-  def test_01
-    _test_01(nil)
-    _test_01(0)
-    _test_01(1)
-    _test_01(2)
-    _test_01(3)
+  def test_core
+    _test_core(nil)
+    _test_core(0)
+    _test_core(1)
+    _test_core(2)
+    _test_core(3)
   end
 
-  def _test_01(safe)
+  def _test_core(safe)
     erb = @erb.new("hello")
     assert_equal("hello", erb.result)
 
@@ -157,14 +157,14 @@ EOS
     assert_equal(ans, erb.result)
   end
 
-  def test_02_safe_04
+  def test_safe_04
     erb = @erb.new('<%=$SAFE%>', 4)
     assert_equal('4', erb.result(TOPLEVEL_BINDING.taint))
   end
 
   class Foo; end
 
-  def test_03_def_class
+  def test_def_class
     erb = @erb.new('hello')
     cls = erb.def_class
     assert_equal(Object, cls.superclass)
@@ -177,7 +177,7 @@ EOS
     assert(cls.new.respond_to?('erb'))
   end
 
-  def test_04_percent
+  def test_percent
     src = <<EOS
 %n = 1
 <%= n%>
@@ -218,26 +218,24 @@ EOS
     assert_equal(ans, ERB.new(src, nil, '%').result)
   end
 
-  class Bar; end
-
-  def test_05_def_method
-    assert(! Bar.new.respond_to?('hello'))
-    Bar.module_eval do
+  def test_def_method
+    klass = Class.new
+    klass.module_eval do
       extend ERB::DefMethod
       fname = File.join(File.dirname(File.expand_path(__FILE__)), 'hello.erb')
       def_erb_method('hello', fname)
     end
-    assert(Bar.new.respond_to?('hello'))
+    assert(klass.new.respond_to?('hello'))
 
-    assert(! Bar.new.respond_to?('hello_world'))
+    assert(! klass.new.respond_to?('hello_world'))
     erb = @erb.new('hello, world')
-    Bar.module_eval do
+    klass.module_eval do
       def_erb_method('hello_world', erb)
     end
-    assert(Bar.new.respond_to?('hello_world'))    
+    assert(klass.new.respond_to?('hello_world'))    
   end
 
-  def test_06_escape
+  def test_escape
     src = <<EOS
 1.<%% : <%="<%%"%>
 2.%%> : <%="%%>"%>
@@ -274,7 +272,7 @@ EOS
     assert_equal(ans, ERB.new(src, nil, '%').result)
   end
 
-  def test_07_keep_lineno
+  def test_keep_lineno
     src = <<EOS
 Hello, 
 % x = "World"
@@ -378,7 +376,7 @@ EOS
     end
   end
 
-  def test_08_explicit
+  def test_explicit
     src = <<EOS
 <% x = %w(hello world) -%>
 NotSkip <%- y = x -%> NotSkip
@@ -409,5 +407,18 @@ KeepNewLine
 EOS
    assert_equal(ans, ERB.new(src, nil, '-').result)
    assert_equal(ans, ERB.new(src, nil, '-%').result)
+  end
+end
+
+class TestERBCoreWOStrScan < TestERBCore
+  def setup
+    @save_map = ERB::Compiler::Scanner.instance_variable_get('@scanner_map')
+    map = {[nil, false]=>ERB::Compiler::SimpleScanner}
+    ERB::Compiler::Scanner.instance_variable_set('@scanner_map', map)
+    super
+  end
+
+  def teardown
+    ERB::Compiler::Scanner.instance_variable_set('@scanner_map', @save_map)
   end
 end
