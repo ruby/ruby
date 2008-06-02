@@ -54,16 +54,16 @@ class TestERBCore < Test::Unit::TestCase
 
   def _test_core(safe)
     erb = @erb.new("hello")
-    assert_equal(erb.result, "hello")
+    assert_equal("hello", erb.result)
 
     erb = @erb.new("hello", safe, 0)
-    assert_equal(erb.result, "hello")
+    assert_equal("hello", erb.result)
 
     erb = @erb.new("hello", safe, 1)
-    assert_equal(erb.result, "hello")
+    assert_equal("hello", erb.result)
 
     erb = @erb.new("hello", safe, 2)
-    assert_equal(erb.result, "hello")
+    assert_equal("hello", erb.result)
 
     src = <<EOS
 %% hi
@@ -159,7 +159,7 @@ EOS
 
   def test_safe_04
     erb = @erb.new('<%=$SAFE%>', 4)
-    assert_equal(erb.result(TOPLEVEL_BINDING.taint), '4')
+    assert_equal('4', erb.result(TOPLEVEL_BINDING.taint))
   end
 
   class Foo; end

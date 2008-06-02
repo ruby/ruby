@@ -329,15 +329,17 @@ class ERB
       end
 
       def scan_line(line)
-	line.split(SplitRegexp).each do |token|
-	  next if token.empty?
-	  yield(token)
+	line.split(SplitRegexp).each do |tokens|
+          tokens.each do |token|
+            next if token.empty?
+            yield(token)
+          end
 	end
       end
 
       def trim_line1(line)
 	line.split(TrimSplitRegexp).each do |token|
-	  next if token.empty?
+          next if token.empty?
 	  if token == "%>\n"
 	    yield('%>')
 	    yield(:cr)
