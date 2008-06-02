@@ -220,4 +220,14 @@ class TestMethod < Test::Unit::TestCase
   def test_caller_negative_level
     assert_raise(ArgumentError) { caller(-1) }
   end
+
+  def test_attrset_ivar
+    c = Class.new
+    c.class_eval { attr_accessor :foo }
+    o = c.new
+    o.method(:foo=).call(42)
+    assert_equal(42, o.foo)
+    assert_raise(ArgumentError) { o.method(:foo=).call(1, 2, 3) }
+    assert_raise(ArgumentError) { o.method(:foo).call(1) }
+  end
 end

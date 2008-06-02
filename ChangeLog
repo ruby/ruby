@@ -1,3 +1,7 @@
+Tue Jun  3 01:21:51 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_method.rb: add a test.
+
 Tue Jun  3 00:26:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* marshal.c (w_object): add a check for modification of array during
