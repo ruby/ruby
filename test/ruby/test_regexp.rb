@@ -542,8 +542,8 @@ class TestRegexp < Test::Unit::TestCase
     check(/^(A+|B(?>\g<1>)*)[AC]$/, %w(AAAC BBBAAAAC), %w(BBBAAA))
     check(/^()(?>\g<1>)*$/, "", "a")
     check(/^(?>(?=a)(#{ "a" * 1000 }|))++$/, ["a" * 1000, "a" * 2000, "a" * 3000], ["", "a" * 500, "b" * 1000])
-    check(/^(?:a?)?$/, ["", "a"], ["aa"])
-    check(/^(?:a+)?$/, ["", "a", "aa"], ["ab"])
+    check(eval('/^(?:a?)?$/'), ["", "a"], ["aa"])
+    check(eval('/^(?:a+)?$/'), ["", "a", "aa"], ["ab"])
     check(/^(?:a?)+?$/, ["", "a", "aa"], ["ab"])
     check(/^a??[ab]/, [["a", "a"], ["a", "aa"], ["b", "b"], ["a", "ab"]], ["c"])
     check(/^(?:a*){3,5}$/, ["", "a", "aa", "aaa", "aaaa", "aaaaa", "aaaaaa"], ["b"])
@@ -716,5 +716,43 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) { $` }
     assert_raise(TypeError) { $' }
     assert_raise(TypeError) { $+ }
+  end
+
+  def test_unicode
+    assert_match(/^\u3042{0}\p{Any}$/, "a")
+    assert_match(/^\u3042{0}\p{Any}$/, "\u3041")
+    assert_match(/^\u3042{0}\p{Any}$/, "\0")
+    assert_no_match(/^\u3042{0}\p{Any}$/, "\0\0")
+    assert_no_match(/^\u3042{0}\p{Any}$/, "")
+    assert_raise(SyntaxError) { eval('/^\u3042{0}\p{' + "\u3042" + '}$/') }
+    assert_raise(SyntaxError) { eval('/^\u3042{0}\p{' + 'a' * 1000 + '}$/') }
+    assert_raise(SyntaxError) { eval('/^\u3042{0}\p{foobarbazqux}$/') }
+    assert_match(/^(\uff21)(a)\1\2$/i, "\uff21A\uff41a")
+    assert_no_match(/^(\uff21)\1$/i, "\uff21A")
+    assert_no_match(/^(\uff41)\1$/i, "\uff41a")
+    assert_match(/^\u00df$/i, "\u00df")
+    assert_match(/^\u00df$/i, "ss")
+    #assert_match(/^(\u00df)\1$/i, "\u00dfss") # this must be bug...
+    assert_match(/^\u00df{2}$/i, "\u00dfss")
+    assert_match(/^\u00c5$/i, "\u00c5")
+    assert_match(/^\u00c5$/i, "\u00e5")
+    assert_match(/^\u00c5$/i, "\u212b")
+    assert_match(/^(\u00c5)\1\1$/i, "\u00c5\u00e5\u212b")
+    assert_match(/^\u0149$/i, "\u0149")
+    assert_match(/^\u0149$/i, "\u02bcn")
+    #assert_match(/^(\u0149)\1$/i, "\u0149\u02bcn") # this must be bug...
+    assert_match(/^\u0149{2}$/i, "\u0149\u02bcn")
+    assert_match(/^\u0390$/i, "\u0390")
+    assert_match(/^\u0390$/i, "\u03b9\u0308\u0301")
+    #assert_match(/^(\u0390)\1$/i, "\u0390\u03b9\u0308\u0301") # this must be bug...
+    assert_match(/^\u0390{2}$/i, "\u0390\u03b9\u0308\u0301")
+    assert_match(/^\ufb05$/i, "\ufb05")
+    assert_match(/^\ufb05$/i, "\ufb06")
+    assert_match(/^\ufb05$/i, "st")
+    #assert_match(/^(\ufb05)\1\1$/i, "\ufb05\ufb06st") # this must be bug...
+    assert_match(/^\ufb05{3}$/i, "\ufb05\ufb06st")
+    assert_match(/^\u03b9\u0308\u0301$/i, "\u0390")
+    assert_nothing_raised { 0x03ffffff.chr("utf-8").size }
+    assert_nothing_raised { 0x7fffffff.chr("utf-8").size }
   end
 end

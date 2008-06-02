@@ -1,3 +1,17 @@
+Mon Jun  2 22:27:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* enc/iso_8859_5.c: Large omicron should lowercase to small omicron.
+
+	* test/ruby/test_big5.rb, test/ruby/test_cp949.rb,
+	  test/ruby/test_euc_jp.rb, test/ruby/test_euc_kr.rb,
+	  test/ruby/test_euc_tw.rb, test/ruby/test_gb18030.rb,
+	  test/ruby/test_gbk.rb, test/ruby/test_iso_8859.rb,
+	  test/ruby/test_koi8.rb, test/ruby/test_shift_jis.rb,
+	  test/ruby/test_windows_1251.rb: new tests for encoding.
+
+	* test/ruby/test_utf16.rb, test/ruby/test_utf32.rb,
+	  test/ruby/test_regexp.rb: add tests.
+
 Mon Jun  2 21:56:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_file.rb: add tests for uninitialized object.
