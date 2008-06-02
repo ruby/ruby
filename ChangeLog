@@ -1,3 +1,8 @@
+Mon Jun  2 16:14:18 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/erb.rb (ERB::Compiler::TrimScanner#scan_line): Oops.  This
+	  change did not apply to trunk.  Backed out.
+
 Mon Jun  2 16:08:24 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/erb.rb (ERB::Compiler::TrimScanner#scan_line): Fix a bug
