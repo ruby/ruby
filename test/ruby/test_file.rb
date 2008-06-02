@@ -115,4 +115,7 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_uninitialized
+    assert_raise(TypeError) { File::Stat.allocate.readable? }
+  end
 end

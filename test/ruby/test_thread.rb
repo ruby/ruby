@@ -499,4 +499,10 @@ class TestThreadGroup < Test::Unit::TestCase
     }.join
     t.join
   end
+
+  def test_uninitialized
+    c = Class.new(Thread)
+    c.class_eval { def initialize; end }
+    assert_raise(ThreadError) { c.new.start }
+  end
 end

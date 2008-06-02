@@ -146,4 +146,9 @@ class TestClass < Test::Unit::TestCase
       assert_equal(":foo\n:foo\ntrue\ntrue", r.read.chomp)
     end
   end
+
+  def test_uninitialized
+    assert_raise(TypeError) { Class.allocate.new }
+    assert_raise(TypeError) { Class.allocate.superclass }
+  end
 end
