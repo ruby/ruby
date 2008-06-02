@@ -1,3 +1,7 @@
+Mon Jun  2 19:17:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_argf.rb (teardown): remove renamed temporary files.
+
 Mon Jun  2 18:51:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (wait_writable): wait until target files can be

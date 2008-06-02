@@ -18,6 +18,14 @@ class TestArgf < Test::Unit::TestCase
     @t3.puts "5"
     @t3.puts "6"
     @t3.close
+    @tmps = [@t1, @t2, @t3]
+  end
+
+  def teardown
+    @tmps.each {|t|
+      bak = t.path + ".bak"
+      File.unlink bak if File.file? bak
+    }
   end
 
   def make_tempfile
@@ -26,6 +34,7 @@ class TestArgf < Test::Unit::TestCase
     t.puts "bar"
     t.puts "baz"
     t.close
+    @tmps << t
     t
   end
 
