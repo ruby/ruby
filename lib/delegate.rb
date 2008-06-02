@@ -163,9 +163,9 @@ class Delegator
   # Checks for a method provided by this the delegate object by fowarding the 
   # call through \_\_getobj\_\_.
   # 
-  def respond_to?(m)
+  def respond_to?(m, include_private = false)
     return true if super
-    return self.__getobj__.respond_to?(m)
+    return self.__getobj__.respond_to?(m, include_private)
   end
 
   #
@@ -270,9 +270,9 @@ def DelegateClass(superclass)
       end
       @_dc_obj.__send__(m, *args)
     end
-    def respond_to?(m)  # :nodoc:
+    def respond_to?(m, include_private = false)  # :nodoc:
       return true if super
-      return @_dc_obj.respond_to?(m)
+      return @_dc_obj.respond_to?(m, include_private)
     end
     def __getobj__  # :nodoc:
       @_dc_obj
