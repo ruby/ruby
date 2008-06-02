@@ -75,6 +75,7 @@ File.foreach "config.status" do |line|
     next if /^\$ac_\w+$/ =~ val
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
+    next if /^(?:X|(?:MINI|RUN)RUBY$)/ =~ name
     if /^program_transform_name$/ =~ name and /^s(\\?.)(.*)\1$/ =~ val
       next if $install_name
       sep = %r"#{Regexp.quote($1)}"

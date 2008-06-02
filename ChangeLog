@@ -1,3 +1,7 @@
+Mon Jun  2 13:20:23 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* mkconfig.rb: hide build path from rbconfig.rb.
+
 Mon Jun  2 08:46:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_strtod, dtoa): initialize more variables for error
