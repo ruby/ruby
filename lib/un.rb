@@ -214,6 +214,33 @@ def touch
 end
 
 ##
+# Wait until the file becomes writable.
+#
+#   ruby -run -e wait_writable -- [OPTION] FILE
+#
+
+def wait_writable
+  setup("n:w:v") do |argv, options|
+    verbose = options[:verbose]
+    n = options[:n] and n = Integer(n)
+    wait = (wait = options[:w]) ? Float(wait) : 0.2
+    argv.each do |file|
+      begin
+        open(file, "r+b")
+      rescue Errno::ENOENT
+        break
+      rescue Errno::EACCES => e
+        raise if n and (n -= 1) <= 0
+        puts e
+        STDOUT.flush
+        sleep wait
+        retry
+      end
+    end
+  end
+end
+
+##
 # Display help message.
 #
 #   ruby -run -e help [COMMAND]

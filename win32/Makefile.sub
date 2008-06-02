@@ -184,6 +184,7 @@ XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)
 # Prevents VC++ 2005 (cl ver 14) warnings
 DEFS = -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE
 MANIFESTTOOL = mt -nologo
+LDSHARED_0 = @$(MINIRUBY) -run -e wait_writable -- -n 10 $@
 LDSHARED_1 = $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
 LDSHARED_2 = @$(RM) $(@:/=\).manifest
 !endif
@@ -610,6 +611,7 @@ s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
 s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS) -implib:$$(*F:.so=)-$$(arch).lib -pdb:$$(*F:.so=)-$$(arch).pdb -def:$$(DEFFILE),;t t
 !if $(MSC_VER) >= 1400
+s,@LINK_SO@,@$$(RUBY) -run -e wait_writable -- -n 10 $$(@),;t t
 s,@LINK_SO@,$(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
 s,@LINK_SO@,@$$(RM) $$(@:/=\).manifest,;t t
 !endif
@@ -639,7 +641,7 @@ s,@top_srcdir@,$(srcdir),;t t
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ $(LDFLAGS)
-		miniruby.exe -v
+		$(LDSHARED_0)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 
@@ -647,6 +649,7 @@ miniruby$(EXEEXT):
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS)
+		$(LDSHARED_0)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 !endif
@@ -656,6 +659,7 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) \
 			$(RUBYW_INSTALL_NAME).res $(OUTFLAG)$@ $(LIBRUBYARG) \
 			$(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
+		$(LDSHARED_0)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 !endif
@@ -672,6 +676,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
+		$(LDSHARED_0)
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 

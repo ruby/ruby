@@ -1,3 +1,11 @@
+Mon Jun  2 18:51:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/un.rb (wait_writable): wait until target files can be
+	  written actually.
+
+	* win32/Makefile.sub (LDSHARED_0, LINK_SO): get rid of failure of
+	  mt.exe.
+
 Mon Jun  2 16:26:17 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/delegate.rb (Delegator::MethodDelegation#respond_to):
