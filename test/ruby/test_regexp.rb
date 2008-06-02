@@ -676,4 +676,45 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(3, ("foo" + "bar" * 1000).rindex(/#{"bar"*1000}/))
     assert_equal(4, ("foo\nbar\nbaz\n").rindex(/bar/i))
   end
+
+  def test_uninitialized
+    assert_raise(TypeError) { Regexp.allocate.hash }
+    assert_raise(TypeError) { Regexp.allocate.eql? Regexp.allocate }
+    assert_raise(TypeError) { Regexp.allocate == Regexp.allocate }
+    assert_raise(TypeError) { Regexp.allocate =~ "" }
+    assert_equal(false, Regexp.allocate === Regexp.allocate)
+    assert_nil(~Regexp.allocate)
+    assert_raise(TypeError) { Regexp.allocate.match("") }
+    assert_raise(TypeError) { Regexp.allocate.to_s }
+    assert_raise(TypeError) { Regexp.allocate.inspect }
+    assert_raise(TypeError) { Regexp.allocate.source }
+    assert_raise(TypeError) { Regexp.allocate.casefold? }
+    assert_raise(TypeError) { Regexp.allocate.options }
+    assert_equal(Encoding.find("ASCII-8BIT"), Regexp.allocate.encoding)
+    assert_equal(false, Regexp.allocate.fixed_encoding?)
+    assert_raise(TypeError) { Regexp.allocate.names }
+    assert_raise(TypeError) { Regexp.allocate.named_captures }
+
+    assert_raise(TypeError) { MatchData.allocate.regexp }
+    assert_raise(TypeError) { MatchData.allocate.names }
+    assert_raise(TypeError) { MatchData.allocate.size }
+    assert_raise(TypeError) { MatchData.allocate.length }
+    assert_raise(TypeError) { MatchData.allocate.offset(0) }
+    assert_raise(TypeError) { MatchData.allocate.begin(0) }
+    assert_raise(TypeError) { MatchData.allocate.end(0) }
+    assert_raise(TypeError) { MatchData.allocate.to_a }
+    assert_raise(TypeError) { MatchData.allocate[:foo] }
+    assert_raise(TypeError) { MatchData.allocate.captures }
+    assert_raise(TypeError) { MatchData.allocate.values_at }
+    assert_raise(TypeError) { MatchData.allocate.pre_match }
+    assert_raise(TypeError) { MatchData.allocate.post_match }
+    assert_raise(TypeError) { MatchData.allocate.to_s }
+    assert_match(/^#<MatchData:.*>$/, MatchData.allocate.inspect)
+    assert_raise(TypeError) { MatchData.allocate.string }
+    $~ = MatchData.allocate
+    assert_raise(TypeError) { $& }
+    assert_raise(TypeError) { $` }
+    assert_raise(TypeError) { $' }
+    assert_raise(TypeError) { $+ }
+  end
 end

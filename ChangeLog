@@ -1,3 +1,13 @@
+Mon Jun  2 21:44:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* re.c: fix SEGV by Regexp.allocate.names, Match.allocate.names, etc.
+
+	* test/ruby/test_regexp.rb: add tests for above.
+
+	* io.c: fix SEGV by IO.allocate.print, etc.
+
+	* test/ruby/test_io.rb: add tests for above.
+
 Mon Jun  2 19:17:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* test/ruby/test_argf.rb (teardown): remove renamed temporary files.

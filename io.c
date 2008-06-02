@@ -271,6 +271,7 @@ VALUE
 rb_io_get_write_io(VALUE io)
 {
     VALUE write_io;
+    rb_io_check_initialized(RFILE(io)->fptr);
     write_io = RFILE(io)->fptr->tied_io_for_writing;
     if (write_io) {
         return write_io;

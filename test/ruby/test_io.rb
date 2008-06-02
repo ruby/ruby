@@ -1219,4 +1219,8 @@ class TestIO < Test::Unit::TestCase
 
     assert_equal("bar\n", File.read(t.path, 4, 4))
   end
+
+  def test_uninitialized
+    assert_raise(IOError) { IO.allocate.print "" }
+  end
 end
