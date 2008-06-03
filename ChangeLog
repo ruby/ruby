@@ -1,3 +1,7 @@
+Tue Jun  3 10:34:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (SPEC_GIT_BASE): update RubySpec GIT URL.
+
 Tue Jun  3 03:52:41 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (ERB::Compiler::TrimScanner#explicit_trim_line): Fix 
