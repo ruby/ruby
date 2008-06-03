@@ -255,31 +255,12 @@ class Set
     self
   end
 
-  # Calls the given block once for each element and returns a new set
-  # containing the values returned by the block.
-  def collect
-    block_given? or return enum_for(__method__)
-    set = self.class.new
-    each { |o| set << yield(o) }
-  end
-  alias map collect
-
-  # Replaces the values with ones returned by collect().
+  # Replaces the elements with ones returned by collect().
   def collect!
     block_given? or return enum_for(__method__)
     replace(collect)
   end
   alias map! collect!
-
-  # Calls the given block once for each element and returns a new set
-  # containing those elements for which the block returns a true
-  # value.
-  def select
-    block_given? or return enum_for(__method__)
-    set = self.class.new
-    each { |o| set << o if yield(o) }
-    set
-  end
 
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made.
