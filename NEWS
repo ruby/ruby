@@ -9,7 +9,18 @@ with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.8.7 release
 
+=== Library updates (outstanding ones only)
 
+* set
+
+  Set#classify
+  Set#collect!
+  Set#delete_if
+  Set#delete_if
+  Set#divide
+  Set#reject!
+
+    Return an enumerator if no block is given.
 
 == Changes since the 1.8.6 release
 
