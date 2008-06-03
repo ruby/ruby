@@ -1,3 +1,15 @@
+Tue Jun  3 10:16:40 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/erb.rb (ERB::Compiler::TrimScanner#scan_line): Fix a bug
+	  where tokens are not yilelded one by one.
+	  (ERB::Compiler::TrimScanner#explicit_trim_line): Fix without-
+	  strscan problems. [ruby_core:17028].
+
+	* test/erb/test_erb.rb (TestERBCore#_test_01)
+	  (TestERBCore#test_02_safe_04): The expected value should come
+	  first for assert_equal().
+	  (TestERBCoreWOStrScan): Add test class for without-strscan.
+
 Mon Jun  2 19:47:16 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/delegate.rb (DelegateClass, Delegator#respond_to?):
