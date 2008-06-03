@@ -1,3 +1,9 @@
+Tue Jun  3 16:15:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yyerror): limit error message length.  [ruby-dev:31848]
+
+	* regex.c (re_mbc_startpos): separated from re_adjust_startpos.
+
 Tue Jun  3 15:45:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (os_obj_of, os_each_obj): hide objects to be finalized.
