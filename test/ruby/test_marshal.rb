@@ -84,4 +84,72 @@ class TestMarshal < Test::Unit::TestCase
     s2 = o2.str
     assert_equal(s1, s2)
   end
+
+  def test_pipe
+    o1 = C.new("a" * 10000)
+
+    r, w = IO.pipe
+    Marshal.dump(o1, w)
+    o2 = Marshal.load(r)
+    assert_equal(o1.str, o2.str)
+
+    r, w = IO.pipe
+    Marshal.dump(o1, w, 2)
+    o2 = Marshal.load(r)
+    assert_equal(o1.str, o2.str)
+
+    assert_raise(TypeError) { Marshal.dump("foo", Object.new) }
+    assert_raise(TypeError) { Marshal.load(Object.new) }
+  end
+
+  def test_limit
+    assert_equal([[[]]], Marshal.load(Marshal.dump([[[]]], 3)))
+    assert_raise(ArgumentError) { Marshal.dump([[[]]], 2) }
+  end
+
+  def test_userdef_invalid
+    o = C.new(nil)
+    assert_raise(TypeError) { Marshal.dump(o) }
+  end
+
+  def test_class
+    o = class << Object.new; self; end
+    assert_raise(TypeError) { Marshal.dump(o) }
+    assert_equal(Object, Marshal.load(Marshal.dump(Object)))
+    assert_equal(Enumerable, Marshal.load(Marshal.dump(Enumerable)))
+  end
+
+  class C2
+    def initialize(ary)
+      @ary = ary
+    end
+    def _dump(s)
+      @ary.clear
+      "foo"
+    end
+  end
+
+  def test_modify_array_during_dump
+    a = []
+    o = C2.new(a)
+    a << o << nil
+    assert_raise(RuntimeError) { Marshal.dump(a) }
+  end
+
+  def test_change_class_name
+    eval("class C3; def _dump(s); 'foo'; end; end")
+    m = Marshal.dump(C3.new)
+    assert_raise(TypeError) { Marshal.load(m) }
+    eval("C3 = nil")
+    assert_raise(TypeError) { Marshal.load(m) }
+  end
+
+  def test_change_struct
+    eval("C3 = Struct.new(:foo, :bar)")
+    m = Marshal.dump(C3.new("FOO", "BAR"))
+    eval("C3 = Struct.new(:foo)")
+    assert_raise(TypeError) { Marshal.load(m) }
+    eval("C3 = Struct.new(:foo, :baz)")
+    assert_raise(TypeError) { Marshal.load(m) }
+  end
 end

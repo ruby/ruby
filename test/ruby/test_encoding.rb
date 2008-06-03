@@ -25,4 +25,30 @@ class TestEncoding < Test::Unit::TestCase
       assert_equal(e.object_id, Marshal.load(Marshal.dump(e)).object_id)
     end    
   end
+
+  def test_find
+    assert_raise(ArgumentError) { Encoding.find("foobarbazqux") }
+  end
+
+  def test_dummy_p
+    assert_equal(true, Encoding::ISO_2022_JP.dummy?)
+    assert_equal(false, Encoding::UTF_8.dummy?)
+  end
+
+  def test_name_list
+    assert_instance_of(Array, Encoding.name_list)
+    Encoding.name_list.each do |x|
+      assert_instance_of(String, x)
+    end
+  end
+
+  def test_aliases
+    assert_instance_of(Hash, Encoding.aliases)
+    Encoding.aliases.each do |k, v|
+      assert(Encoding.name_list.include?(k))
+      assert(Encoding.name_list.include?(v))
+      assert_instance_of(String, k)
+      assert_instance_of(String, v)
+    end
+  end
 end

@@ -7,6 +7,7 @@ class TestDir < Test::Unit::TestCase
 
   def setup
     @root = Dir.mktmpdir('__test_dir__')
+    @nodir = File.join(@root, "dummy")
     for i in ?a..?z
       if i.ord % 2 == 0
         FileUtils.touch(File.join(@root, i))
@@ -45,6 +46,120 @@ class TestDir < Test::Unit::TestCase
       d.close
     }
     assert_raise(SecurityError) { b.call }
+  end
+
+  def test_nodir
+    assert_raise(Errno::ENOENT) { Dir.open(@nodir) }
+  end
+
+  def test_inspect
+    d = Dir.open(@root)
+    assert_match(/^#<Dir:#{ Regexp.quote(@root) }>$/, d.inspect)
+    assert_match(/^#<Dir:.*>$/, Dir.allocate.inspect)
+  ensure
+    d.close
+  end
+
+  def test_path
+    d = Dir.open(@root)
+    assert_equal(@root, d.path)
+    assert_nil(Dir.allocate.path)
+  ensure
+    d.close
+  end
+
+  def test_set_pos
+    d = Dir.open(@root)
+    loop do
+      i = d.pos
+      break unless x = d.read
+      d.pos = i
+      assert_equal(x, d.read)
+    end
+  ensure
+    d.close
+  end
+
+  def test_rewind
+    d = Dir.open(@root)
+    a = (0..5).map { d.read }
+    d.rewind
+    b = (0..5).map { d.read }
+    assert_equal(a, b)
+    assert_raise(SecurityError) do
+      Thread.new do
+        $SAFE = 4
+        d.rewind
+      end.join
+    end
+  ensure
+    d.close
+  end
+
+  def test_chdir
+    @pwd = Dir.pwd
+    @env_home = ENV["HOME"]
+    @env_logdir = ENV["LOGDIR"]
+    ENV.delete("HOME")
+    ENV.delete("LOGDIR")
+
+    assert_raise(Errno::ENOENT) { Dir.chdir(@nodir) }
+    assert_raise(ArgumentError) { Dir.chdir }
+    ENV["HOME"] = @pwd
+    Dir.chdir do
+      assert_equal(@pwd, Dir.pwd)
+      Dir.chdir(@root)
+      assert_equal(@root, Dir.pwd)
+    end
+
+  ensure
+    begin
+      Dir.chdir(@pwd)
+    rescue
+      abort("cannot return the original directory: #{ @pwd }")
+    end
+    if @env_home
+      ENV["HOME"] = @env_home
+    else
+      ENV.delete("HOME")
+    end
+    if @env_logdir
+      ENV["LOGDIR"] = @env_logdir
+    else
+      ENV.delete("LOGDIR")
+    end
+  end
+
+  def test_chroot_nodir
+    assert_raise(NotImplementedError, Errno::ENOENT) { Dir.chroot(File.join(@nodir, "")) }
+  end
+
+  def test_close
+    d = Dir.open(@root)
+    d.close
+    assert_raise(IOError) { d.read }
+  end
+
+  def test_glob
+    assert_equal((%w(. ..) + (?a..?z).to_a).map{|f| File.join(@root, f) },
+                 Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH).sort)
+    assert_equal([@root] + (?a..?z).map {|f| File.join(@root, f) },
+                 Dir.glob([@root, File.join(@root, "*")]))
+    assert_equal([@root] + (?a..?z).map {|f| File.join(@root, f) },
+                 Dir.glob(@root + "\0\0\0" + File.join(@root, "*")))
+
+    assert_equal((?a..?z).step(2).map {|f| File.join(File.join(@root, f), "") },
+                 Dir.glob(File.join(@root, "*/")))
+
+    FileUtils.touch(File.join(@root, "{}"))
+    assert_equal(%w({} a).map{|f| File.join(@root, f) },
+                 Dir.glob(File.join(@root, '{\{\},a}')))
+    assert_equal([], Dir.glob(File.join(@root, '[')))
+    assert_equal([], Dir.glob(File.join(@root, '[a-\\')))
+  end
+
+  def test_foreach
+    assert_equal(Dir.foreach(@root).to_a.sort, %w(. ..) + (?a..?z).to_a)
   end
 
 end
