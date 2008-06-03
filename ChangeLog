@@ -1,3 +1,8 @@
+Tue Jun  3 15:12:01 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#classify): Back out the `group_by' alias.
+	  Better think twice.
+
 Tue Jun  3 15:00:22 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb (Set#collect, Set#select): Back out.  I thought it

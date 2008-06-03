@@ -370,7 +370,6 @@ class Set
 
     h
   end
-  alias group_by classify
 
   # Divides the set into a set of subsets according to the commonality
   # defined by the given block.
