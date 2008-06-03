@@ -1,3 +1,8 @@
+Tue Jun  3 15:27:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (os_obj_of, os_each_obj): hide objects to be finalized.
+	  [ruby-dev:31810]
+
 Tue Jun  3 15:05:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (struct rb_exec_arg): proc should be a VALUE.
