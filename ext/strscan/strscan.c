@@ -530,11 +530,11 @@ strscan_check(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: scan_full(pattern, return_string_p, advance_pointer_p)
+ * call-seq: scan_full(pattern, advance_pointer_p, return_string_p)
  *
  * Tests whether the given +pattern+ is matched from the current scan pointer.
- * Returns the matched string if +return_string_p+ is true.
  * Advances the scan pointer if +advance_pointer_p+ is true.
+ * Returns the matched string if +return_string_p+ is true.
  * The match register is affected.
  *
  * "full" means "#scan with full parameters".
@@ -624,12 +624,12 @@ strscan_check_until(VALUE self, VALUE re)
 }
 
 /*
- * call-seq: search_full(pattern, return_string_p, advance_pointer_p)
+ * call-seq: search_full(pattern, advance_pointer_p, return_string_p)
  *
  * Scans the string _until_ the +pattern+ is matched.
+ * Advances the scan pointer if +advance_pointer_p+, otherwise not.
  * Returns the matched string if +return_string_p+ is true, otherwise
  * returns the number of bytes advanced.
- * Advances the scan pointer if +advance_pointer_p+, otherwise not.
  * This method does affect the match register.
  */
 static VALUE

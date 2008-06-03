@@ -1,3 +1,8 @@
+Tue Jun  3 23:06:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/strscan/strscan.c (strscan_scan_full, strscan_search_full): fix
+	  document.
+
 Tue Jun  3 22:37:26 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/strscan/strscan.c (strscan_exist_p): fix document.
