@@ -1,3 +1,8 @@
+Tue Jun  3 19:33:22 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_init_copy): Take care of
+	  initialize_copy as well as initialize.
+
 Tue Jun  3 16:06:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): fix for non-existent files and SFN of

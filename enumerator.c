@@ -276,7 +276,12 @@ enumerator_init_copy(VALUE obj, VALUE orig)
 	/* Fibers cannot be copied */
 	rb_raise(rb_eTypeError, "can't copy execution context");
     }
-    ptr1 = enumerator_ptr(obj);
+
+    Data_Get_Struct(obj, struct enumerator, ptr1);
+
+    if (!ptr1) {
+	rb_raise(rb_eArgError, "unallocated enumerator");
+    }
 
     ptr1->obj  = ptr0->obj;
     ptr1->meth = ptr0->meth;
