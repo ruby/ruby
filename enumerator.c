@@ -358,6 +358,42 @@ enumerator_with_index(VALUE obj)
 }
 
 static VALUE
+enumerator_with_memo_i(VALUE val, VALUE memo)
+{
+    return rb_yield_values(2, val, memo);
+}
+
+/*
+ *  call-seq:
+ *    e.with_memo(memo) {|(*args), memo| ... }
+ *    e.with_memo(memo)
+ *
+ *  Iterates the given block for each elements with an arbitrary
+ *  object given, and returns the memo object.
+ *
+ *  If no block is given, returns an enumerator.
+ *
+ */
+static VALUE
+enumerator_with_memo(VALUE obj, VALUE memo)
+{
+    struct enumerator *e;
+    int argc = 0;
+    VALUE *argv = 0;
+
+    RETURN_ENUMERATOR(obj, 0, 0);
+    e = enumerator_ptr(obj);
+    if (e->args) {
+	argc = RARRAY_LEN(e->args);
+	argv = RARRAY_PTR(e->args);
+    }
+    rb_block_call(e->obj, e->meth, argc, argv,
+		  enumerator_with_memo_i, memo);
+
+    return memo;
+}
+
+static VALUE
 next_ii(VALUE i, VALUE obj, int argc, VALUE *argv)
 {
     rb_fiber_yield(argc, argv);
@@ -454,6 +490,7 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "each_with_index", enumerator_with_index, 0);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
+    rb_define_method(rb_cEnumerator, "with_memo", enumerator_with_memo, 1);
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
 

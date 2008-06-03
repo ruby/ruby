@@ -91,6 +91,25 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[1,0],[2,1],[3,2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
   end
 
+  def test_with_memo
+    r = 1..10
+    assert_equal([55, 3628800], (1..10).each.with_memo([0,1]) {|i, memo|
+        memo[0] += i
+        memo[1] *= i
+      })
+
+    a = [2,5,2,1,5,3,4,2,1,0]
+    a.delete_if.with_memo({}) {|i, seen|
+      if seen.key?(i)
+        true
+      else
+        seen[i] = true
+        false
+      end
+    }
+    assert_equal([2, 5, 1, 3, 4, 0], a)
+  end
+
   def test_next_rewind
     e = @obj.to_enum(:foo, 1, 2, 3)
     assert_equal(1, e.next)
