@@ -258,7 +258,9 @@ class Set
   # Replaces the elements with ones returned by collect().
   def collect!
     block_given? or return enum_for(__method__)
-    replace(collect)
+    set = self.class.new
+    each { |o| set << yield(o) }
+    replace(set)
   end
   alias map! collect!
 
