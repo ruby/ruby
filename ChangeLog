@@ -1,3 +1,11 @@
+Tue Jun  3 19:33:22 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_init_copy): Take care of
+	  initialize_copy as well as initialize.
+
+	* test/ruby/test_enumerator.rb: Pull in the test suite for
+	  enumerator from trunk.
+
 Tue Jun  3 12:51:57 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_allocate, enumerator_ptr): Properly
