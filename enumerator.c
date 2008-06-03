@@ -55,7 +55,7 @@ enumerator_ptr(obj)
 		 "wrong argument type %s (expected Enumerable::Enumerator)",
 		 rb_obj_classname(obj));
     }
-    if (!ptr) {
+    if (!ptr || ptr->obj == Qundef) {
 	rb_raise(rb_eArgError, "uninitialized enumerator");
     }
     return ptr;
@@ -214,8 +214,13 @@ enumerator_allocate(klass)
     VALUE klass;
 {
     struct enumerator *ptr;
-    return Data_Make_Struct(klass, struct enumerator,
-			    enumerator_mark, -1, ptr);
+    VALUE enum_obj;
+
+    enum_obj = Data_Make_Struct(klass, struct enumerator,
+				enumerator_mark, -1, ptr);
+    ptr->obj = Qundef;
+
+    return enum_obj;
 }
 
 static VALUE enumerator_each_i _((VALUE, VALUE));
@@ -235,7 +240,13 @@ enumerator_init(enum_obj, obj, meth, argc, argv)
     int argc;
     VALUE *argv;
 {
-    struct enumerator *ptr = enumerator_ptr(enum_obj);
+    struct enumerator *ptr;
+
+    Data_Get_Struct(enum_obj, struct enumerator, ptr);
+
+    if (!ptr) {
+	rb_raise(rb_eArgError, "unallocated enumerator");
+    }
 
     ptr->obj  = obj;
     ptr->meth = rb_to_id(meth);
@@ -253,8 +264,7 @@ enumerator_init(enum_obj, obj, meth, argc, argv)
  *  used as an Enumerable object using the given object's given
  *  method with the given arguments.
  *
- *  Use of this method is not discouraged.  Use Kernel#enum_for()
- *  instead.
+ *  Use of this method is discouraged.  Use Kernel#enum_for() instead.
  */
 static VALUE
 enumerator_initialize(argc, argv, obj)

@@ -1,3 +1,10 @@
+Tue Jun  3 12:51:57 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_allocate, enumerator_ptr): Properly
+	  detect if the object is initialized and raise error when
+	  appropriate.
+	  (enumerator_initialize): Fix a typo in rdoc. [ruby-core:17052]
+
 Tue Jun  3 10:16:40 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/erb.rb (ERB::Compiler::TrimScanner#scan_line): Fix a bug
