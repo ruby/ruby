@@ -2521,7 +2521,9 @@ static int
 yyerror(msg)
     const char *msg;
 {
-    char *p, *pe, *buf;
+    const int max_line_margin = 30;
+    const char *p, *pe;
+    char *buf;
     int len, i;
 
     rb_compile_error("%s", msg);
@@ -2540,17 +2542,32 @@ yyerror(msg)
 
     len = pe - p;
     if (len > 4) {
+	char *p2;
+	const char *pre = "", *post = "";
+
+	if (len > max_line_margin * 2 + 10) {
+	    int re_mbc_startpos _((const char *, int, int, int));
+	    if ((len = lex_p - p) > max_line_margin) {
+		p = p + re_mbc_startpos(p, len, len - max_line_margin, 0);
+		pre = "...";
+	    }
+	    if ((len = pe - lex_p) > max_line_margin) {
+		pe = lex_p + re_mbc_startpos(lex_p, len, max_line_margin, 1);
+		post = "...";
+	    }
+	    len = pe - p;
+	}
 	buf = ALLOCA_N(char, len+2);
 	MEMCPY(buf, p, char, len);
 	buf[len] = '\0';
-	rb_compile_error_append("%s", buf);
+	rb_compile_error_append("%s%s%s", pre, buf, post);
 
 	i = lex_p - p;
-	p = buf; pe = p + len;
+	p2 = buf; pe = buf + len;
 
-	while (p < pe) {
-	    if (*p != '\t') *p = ' ';
-	    p++;
+	while (p2 < pe) {
+	    if (*p2 != '\t') *p2 = ' ';
+	    p2++;
 	}
 	buf[i] = '^';
 	buf[i+1] = '\0';

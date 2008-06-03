@@ -3109,6 +3109,28 @@ re_compile_fastmap(bufp)
 
 /* adjust startpos value to the position between characters. */
 int
+re_mbc_startpos(string, size, startpos, range)
+     const char *string;
+     int size, startpos, range;
+{
+  int i = mbc_startpos(string, startpos);
+
+  if (i < startpos) {
+    if (range > 0) {
+      startpos = i + mbclen(string[i]);
+    }
+    else {
+      int len = mbclen(string[i]);
+      if (i + len <= startpos)
+	startpos = i + len;
+      else
+	startpos = i;
+    }
+  }
+  return startpos;
+}
+
+int
 re_adjust_startpos(bufp, string, size, startpos, range)
      struct re_pattern_buffer *bufp;
      const char *string;
@@ -3121,20 +3143,7 @@ re_adjust_startpos(bufp, string, size, startpos, range)
 
   /* Adjust startpos for mbc string */
   if (current_mbctype && startpos>0 && !(bufp->options&RE_OPTIMIZE_BMATCH)) {
-    int i = mbc_startpos(string, startpos);
-
-    if (i < startpos) {
-      if (range > 0) {
-	startpos = i + mbclen(string[i]);
-      }
-      else {
-	int len = mbclen(string[i]);
-	if (i + len <= startpos)
-	  startpos = i + len;
-	else
-	  startpos = i;
-      }
-    }
+    startpos = re_mbc_startpos(string, size, startpos, range);
   }
   return startpos;
 }
