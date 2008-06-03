@@ -573,7 +573,7 @@ strscan_scan_until(VALUE self, VALUE re)
  *   s = StringScanner.new('test string')
  *   s.exist? /s/            # -> 3
  *   s.scan /test/           # -> "test"
- *   s.exist? /s/            # -> 6
+ *   s.exist? /s/            # -> 2
  *   s.exist? /e/            # -> nil
  */
 static VALUE

@@ -1,3 +1,7 @@
+Tue Jun  3 22:37:26 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/strscan/strscan.c (strscan_exist_p): fix document.
+
 Tue Jun  3 22:33:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_dir.rb: add tests to achieve over 90% test coverage
