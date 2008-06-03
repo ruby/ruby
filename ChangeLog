@@ -1,3 +1,15 @@
+Tue Jun  3 15:22:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (struct rb_exec_arg): proc should be a VALUE.
+
+	* process.c (rb_f_exec): suppress a warning.
+
+       * process.c (rb_detach_process): cast for the platforms where size of
+         pointer differs from size of int.
+
+       * process.c (rb_f_exec, rb_f_system): should not exceptions after
+         fork.  [ruby-core:08262]
+
 Wed May 21 01:32:56 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: should normalize path
