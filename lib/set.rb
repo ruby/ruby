@@ -234,12 +234,14 @@ class Set
   # Deletes every element of the set for which block evaluates to
   # true, and returns self.
   def delete_if
+    block_given? or return enum_for(__method__)
     @hash.delete_if { |o,| yield(o) }
     self
   end
 
-  # Do collect() destructively.
+  # Replaces the elements with ones returned by collect().
   def collect!
+    block_given? or return enum_for(__method__)
     set = self.class.new
     each { |o| set << yield(o) }
     replace(set)
@@ -249,6 +251,7 @@ class Set
   # Equivalent to Set#delete_if, but returns nil if no changes were
   # made.
   def reject!
+    block_given? or return enum_for(__method__)
     n = size
     delete_if { |o| yield(o) }
     size == n ? nil : self
@@ -346,6 +349,8 @@ class Set
   #             #     2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
   #             #     2002=>#<Set: {"f.rb"}>}
   def classify # :yields: o
+    block_given? or return enum_for(__method__)
+
     h = {}
 
     each { |i|
@@ -373,6 +378,8 @@ class Set
   #             #            #<Set: {3, 4}>,
   #             #            #<Set: {6}>}>
   def divide(&func)
+    func or return enum_for(__method__)
+
     if func.arity == 2
       require 'tsort'
 
@@ -491,6 +498,7 @@ class SortedSet < Set
 	  end
 
 	  def delete_if
+            block_given? or return enum_for(__method__)
 	    n = @hash.size
 	    @hash.delete_if { |o,| yield(o) }
 	    @keys = nil if @hash.size != n
