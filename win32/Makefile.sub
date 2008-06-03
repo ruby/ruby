@@ -641,7 +641,7 @@ s,@top_srcdir@,$(srcdir),;t t
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ $(LDFLAGS)
-		$(LDSHARED_0)
+		miniruby.exe -v
 		$(LDSHARED_1)
 		$(LDSHARED_2)
 

@@ -1,3 +1,8 @@
+Tue Jun  3 20:04:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (miniruby$(EXEEXT)): miniruby cannot be
+	  written by miniruby itself.
+
 Tue Jun  3 19:33:22 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_init_copy): Take care of
