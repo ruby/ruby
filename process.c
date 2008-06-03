@@ -2015,11 +2015,12 @@ run_exec_pgroup(VALUE obj, VALUE save)
      * No race condition, even without setpgid from the parent.
      * (Is there an environment which has setpgid but FD_CLOEXEC?)
      */
+    pid_t pgroup;
     if (!NIL_P(save)) {
         /* maybe meaningless with no fork environment... */
         rb_ary_store(save, EXEC_OPTION_PGROUP, PIDT2NUM(getpgrp()));
     }
-    pid_t pgroup = NUM2PIDT(obj);
+    pgroup = NUM2PIDT(obj);
     if (pgroup == 0) {
         pgroup = getpid();
     }
