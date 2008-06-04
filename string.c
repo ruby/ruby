@@ -1698,7 +1698,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 #endif
 
 /* MurmurHash described in http://murmurhash.googlepages.com/ */
-unsigned int
+static unsigned int
 hash(const unsigned char * data, int len, unsigned int h)
 {
     const unsigned int m = 0x7fd652ad;
