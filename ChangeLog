@@ -1,3 +1,7 @@
+Wed Jun  4 23:10:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/zlib/zlib.c (rb_gzfile_set_mtime): fix typo.
+
 Wed Jun  4 18:53:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_obj_alloc): RDoc updated.  a patch from Gaston
