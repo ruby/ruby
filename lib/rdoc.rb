@@ -20,7 +20,7 @@ $DEBUG_RDOC = nil
 # * If you want to include extensions written in C, see RDoc::C_Parser
 # * For information on the various markups available in comment blocks, see
 #   RDoc::Markup.
-# * If you want to drive RDoc programatically, see RDoc::RDoc.
+# * If you want to drive RDoc programmatically, see RDoc::RDoc.
 # * If you want to use the library to format text blocks into HTML, have a look
 #   at RDoc::Markup.
 # * If you want to try writing your own HTML output template, see
@@ -206,7 +206,7 @@ $DEBUG_RDOC = nil
 #   Stop and start adding new documentation elements to the current container.
 #   For example, if a class has a number of constants that you don't want to
 #   document, put a +:stopdoc:+ before the first, and a +:startdoc:+ after the
-#   last.  If you don't specifiy a +:startdoc:+ by the end of the container,
+#   last.  If you don't specify a +:startdoc:+ by the end of the container,
 #   disables documentation for the entire class or module.
 # 
 # = Other stuff

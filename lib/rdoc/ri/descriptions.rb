@@ -83,7 +83,7 @@ class RDoc::RI::ModuleDescription < RDoc::RI::Description
   attr_accessor :constants
   attr_accessor :includes
 
-  # merge in another class desscription into this one
+  # merge in another class description into this one
   def merge_in(old)
     merge(@class_methods, old.class_methods)
     merge(@instance_methods, old.instance_methods)

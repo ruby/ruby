@@ -117,10 +117,10 @@ module RDoc
   # method in the HTML output. This method must be in the same source file
   # as the rb_define_method.
   #
-  # C classes can be diagramed (see /tc/dl/ruby/ruby/error.c), and RDoc
+  # C classes can be diagrammed (see /tc/dl/ruby/ruby/error.c), and RDoc
   # integrates C and Ruby source into one tree
   #
-  # The comment blocks may include special direcives:
+  # The comment blocks may include special directives:
   #
   # [Document-class: <i>name</i>]
   #   This comment block is documentation for the given class. Use this
@@ -131,10 +131,10 @@ module RDoc
   #   automatically find the method from it's declaration
   #
   # [call-seq:  <i>text up to an empty line</i>]
-  #   Because C source doesn't give descripive names to Ruby-level parameters,
+  #   Because C source doesn't give descriptive names to Ruby-level parameters,
   #   you need to document the calling sequence explicitly
   #
-  # In additon, RDoc assumes by default that the C method implementing a 
+  # In addition, RDoc assumes by default that the C method implementing a 
   # Ruby function is in the same source file as the rb_define_method call.
   # If this isn't the case, add the comment 
   #

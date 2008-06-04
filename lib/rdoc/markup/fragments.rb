@@ -12,7 +12,7 @@ class RDoc::Markup
     attr_accessor :type
 
     ######
-    # This is a simple factory system that lets us associate fragement
+    # This is a simple factory system that lets us associate fragment
     # types (a string) with a subclass of fragment
 
     TYPE_MAP = {}

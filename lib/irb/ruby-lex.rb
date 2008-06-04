@@ -1,5 +1,5 @@
 #
-#   irb/ruby-lex.rb - ruby lexcal analizer
+#   irb/ruby-lex.rb - ruby lexcal analyzer
 #   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)

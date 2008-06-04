@@ -19,7 +19,7 @@ class Gem::Commands::CertCommand < Gem::Command
       Dir::glob(glob_str) do |path|
         begin
           cert = OpenSSL::X509::Certificate.new(File.read(path))
-          # this could proably be formatted more gracefully
+          # this could probably be formatted more gracefully
           say cert.subject.to_s
         rescue OpenSSL::X509::CertificateError
           next

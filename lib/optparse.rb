@@ -826,7 +826,7 @@ class OptionParser
   #
   # Directs to reject specified class argument.
   #
-  # +t+:: Argument class speficier, any object including Class.
+  # +t+:: Argument class specifier, any object including Class.
   #
   #   reject(t)
   #
@@ -1037,13 +1037,13 @@ class OptionParser
   #     "-x[OPTIONAL]"
   #     "-x"
   #   There is also a special form which matches character range (not full
-  #   set of regural expression):
+  #   set of regular expression):
   #     "-[a-z]MANDATORY"
   #     "-[a-z][OPTIONAL]" 
   #     "-[a-z]"
   #
   # [Argument style and description:]
-  #   Instead of specifying mandatory or optional orguments directly in the
+  #   Instead of specifying mandatory or optional arguments directly in the
   #   switch parameter, this separate parameter can be used.
   #     "=MANDATORY"
   #     "=[OPTIONAL]"

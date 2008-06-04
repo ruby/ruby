@@ -72,7 +72,7 @@ end # module Module
 #
 class String
   rake_extension("ext") do
-    # Replace the file extension with +newext+.  If there is no extenson on
+    # Replace the file extension with +newext+.  If there is no extension on
     # the string, append the new extension to the end.  If the new extension
     # is not given, or is the empty string, remove any existing extension.
     #
@@ -145,7 +145,7 @@ class String
     # * <b>%x</b> -- The file extension of the path.  An empty string if there
     #   is no extension.
     # * <b>%X</b> -- Everything *but* the file extension.
-    # * <b>%s</b> -- The alternate file separater if defined, otherwise use
+    # * <b>%s</b> -- The alternate file separator if defined, otherwise use
     #   the standard file separator.
     # * <b>%%</b> -- A percent sign.
     #
@@ -160,8 +160,8 @@ class String
     #   'a/b/c/d/file.txt'.pathmap("%-2d")  => 'c/d'
     #
     # Also the %d, %p, $f, $n, %x, and %X operators can take a
-    # pattern/replacement argument to perform simple string substititions on a
-    # particular part of the path.  The pattern and replacement are speparated
+    # pattern/replacement argument to perform simple string substitutions on a
+    # particular part of the path.  The pattern and replacement are separated
     # by a comma and are enclosed by curly braces.  The replacement spec comes
     # after the % character but before the operator letter.  (e.g.
     # "%{old,new}d").  Muliple replacement specs should be separated by
@@ -1029,7 +1029,7 @@ module RakeFileUtils
     oldvalue
   end
 
-  # Use this function to prevent protentially destructive ruby code from
+  # Use this function to prevent potentially destructive ruby code from
   # running when the :nowrite flag is set.
   #
   # Example:
@@ -1352,7 +1352,7 @@ module Rake
     private :resolve_exclude
 
     # Return a new FileList with the results of running +sub+ against each
-    # element of the oringal list.
+    # element of the original list.
     #
     # Example:
     #   FileList['a.c', 'b.c'].sub(/\.c$/, '.o')  => ['a.o', 'b.o']
@@ -1942,7 +1942,7 @@ module Rake
       [name, args]
     end
 
-    # Provide standard execption handling for the given block.
+    # Provide standard exception handling for the given block.
     def standard_exception_handling
       begin
         yield

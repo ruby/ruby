@@ -7,12 +7,12 @@ require 'rdoc/template'
 module RDoc::Generator
 
   ##
-  # Name of sub-direcory that holds file descriptions
+  # Name of sub-directory that holds file descriptions
 
   FILE_DIR  = "files"
 
   ##
-  # Name of sub-direcory that holds class descriptions
+  # Name of sub-directory that holds class descriptions
 
   CLASS_DIR = "classes"
 

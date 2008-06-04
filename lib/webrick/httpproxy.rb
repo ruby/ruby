@@ -186,7 +186,7 @@ module WEBrick
 
     private
 
-    # Some header fields shuold not be transfered.
+    # Some header fields should not be transferred.
     HopByHop = %w( connection keep-alive proxy-authenticate upgrade
                    proxy-authorization te trailers transfer-encoding )
     ShouldNotTransfer = %w( set-cookie proxy-connection )
@@ -272,7 +272,7 @@ module WEBrick
         response = yield(http, path, header)
       end
 
-      # Persistent connction requirements are mysterious for me.
+      # Persistent connection requirements are mysterious for me.
       # So I will close the connection in every response.
       res['proxy-connection'] = "close"
       res['connection'] = "close"

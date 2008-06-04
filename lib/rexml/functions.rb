@@ -235,7 +235,7 @@ module REXML
       # from string then we ignore the second &
       # subsequent mappings
       #
-      # if a charactcer maps to nil then we delete it
+      # if a character maps to nil then we delete it
       # in the output.  This happens if the from
       # string is longer than the to string
       #

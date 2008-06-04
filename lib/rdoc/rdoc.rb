@@ -134,7 +134,7 @@ module RDoc
     # subdirectories.
     #
     # The effect of this is that if you want a file with a non-standard
-    # extension parsed, you must name it explicity.
+    # extension parsed, you must name it explicitly.
 
     def normalized_file_list(options, relative_files, force_doc = false,
                              exclude_pattern = nil)

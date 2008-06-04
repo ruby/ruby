@@ -84,7 +84,7 @@ class Shell
       end
     end
 
-    # for shell-command complete finish at this prosess exit.
+    # for shell-command complete finish at this process exit.
     USING_AT_EXIT_WHEN_PROCESS_EXIT = true
     at_exit do
       wait_to_finish_all_process_controllers unless $@

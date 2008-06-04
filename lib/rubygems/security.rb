@@ -557,7 +557,7 @@ module Gem::Security
   #
   # Medium security policy: verify the signing certificate, verify the signing
   # certificate chain all the way to the root certificate, and only trust root
-  # certificates that we have explicity allowed trust for.
+  # certificates that we have explicitly allowed trust for.
   #
   # This security policy is reasonable, but it allows unsigned packages, so a
   # malicious person could simply delete the package signature and pass the
@@ -576,7 +576,7 @@ module Gem::Security
   # High security policy: only allow signed gems to be installed, verify the
   # signing certificate, verify the signing certificate chain all the way to
   # the root certificate, and only trust root certificates that we have
-  # explicity allowed trust for.
+  # explicitly allowed trust for.
   #
   # This security policy is significantly more difficult to bypass, and offers
   # a reasonable guarantee that the contents of the gem have not been altered.

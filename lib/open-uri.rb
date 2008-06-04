@@ -657,7 +657,7 @@ module OpenURI
     # :redirect=>false is used to disable HTTP redirects at all.
     # OpenURI::HTTPRedirect exception raised on redirection.
     # It is true by default.
-    # The true means redirectoins between http and ftp is permitted.
+    # The true means redirections between http and ftp is permitted.
     #
     def open(*rest, &block)
       OpenURI.open_uri(self, *rest, &block)

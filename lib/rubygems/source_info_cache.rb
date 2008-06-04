@@ -8,7 +8,7 @@ require 'rubygems/user_interaction'
 # SourceInfoCache stores a copy of the gem index for each gem source.
 #
 # There are two possible cache locations, the system cache and the user cache:
-# * The system cache is prefered if it is writable or can be created.
+# * The system cache is preferred if it is writable or can be created.
 # * The user cache is used otherwise
 #
 # Once a cache is selected, it will be used for all operations.

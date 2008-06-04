@@ -65,11 +65,11 @@ It can be replaced by the following code:
 
 : key, key=((|key|))
     Sets an OpenSSL::PKey::RSA or OpenSSL::PKey::DSA object.
-    (This method is appeared in Michal Rokos's OpenSSL extention.)
+    (This method is appeared in Michal Rokos's OpenSSL extension.)
 
 : cert, cert=((|cert|))
     Sets an OpenSSL::X509::Certificate object as client certificate
-    (This method is appeared in Michal Rokos's OpenSSL extention).
+    (This method is appeared in Michal Rokos's OpenSSL extension).
 
 : ca_file, ca_file=((|path|))
     Sets path of a CA certification file in PEM format.

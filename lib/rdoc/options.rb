@@ -571,7 +571,7 @@ Usage: #{opt.program_name} [options] [names...]
     end
   end
 
-  # Check that the right version of 'dot' is available.  Unfortuately this
+  # Check that the right version of 'dot' is available.  Unfortunately this
   # doesn't work correctly under Windows NT, so we'll bypass the test under
   # Windows.
 

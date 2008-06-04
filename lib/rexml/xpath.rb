@@ -30,7 +30,7 @@ module REXML
 			parser.parse(path, element).flatten[0]
 		end
 
-		# Itterates over nodes that match the given path, calling the supplied
+		# Iterates over nodes that match the given path, calling the supplied
 		# block with the match.
 		# element::
 		#   The context element

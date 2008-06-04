@@ -7,7 +7,7 @@ require 'rdoc/generator/html/one_page_html'
 # This is a template for RDoc that uses XHTML 1.0 Transitional and dictates a
 # bit more of the appearance of the output to cascading stylesheets than the
 # default. It was designed for clean inline code display, and uses DHTMl to
-# toggle the visbility of each method's source with each click on the '[source]'
+# toggle the visibility of each method's source with each click on the '[source]'
 # link.
 #
 # == Authors

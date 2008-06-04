@@ -38,7 +38,7 @@
 #       @q = [ ]    # prepare delegate object
 #     end
 #     
-#     # setup prefered interface, enq() and deq()...
+#     # setup preferred interface, enq() and deq()...
 #     def_delegator :@q, :push, :enq
 #     def_delegator :@q, :shift, :deq
 #     

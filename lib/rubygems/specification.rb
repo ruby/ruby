@@ -40,7 +40,7 @@ module Gem
     # Allows deinstallation of gems with legacy platforms.
     attr_accessor :original_platform # :nodoc:
 
-    # ------------------------- Specification version contstants.
+    # ------------------------- Specification version constants.
 
     # The the version number of a specification that does not specify one
     # (i.e. RubyGems 0.7 or earlier).

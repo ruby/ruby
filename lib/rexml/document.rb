@@ -147,7 +147,7 @@ module REXML
     # A controversial point is whether Document should always write the XML
     # declaration (<?xml version='1.0'?>) whether or not one is given by the
     # user (or source document).  REXML does not write one if one was not
-    # specified, because it adds unneccessary bandwidth to applications such
+    # specified, because it adds unnecessary bandwidth to applications such
     # as XML-RPC.
     #
     # See also the classes in the rexml/formatters package for the proper way

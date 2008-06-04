@@ -108,7 +108,7 @@ class Gem::Requirement
   end
 
   ##
-  # Is the requirement satifised by +version+.
+  # Is the requirement satisfied by +version+.
   #
   # version:: [Gem::Version] the version to compare against
   # return:: [Boolean] true if this requirement is satisfied by

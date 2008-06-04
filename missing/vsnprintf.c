@@ -560,7 +560,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 
 	/*
 	 * Choose PADSIZE to trade efficiency vs. size.  If larger printf
-	 * fields occur frequently, increase PADSIZE and make the initialisers
+	 * fields occur frequently, increase PADSIZE and make the initializers
 	 * below longer.
 	 */
 #define	PADSIZE	16		/* pad chunk size */

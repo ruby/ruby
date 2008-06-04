@@ -17,7 +17,7 @@ module Gem
       @ssl_available
     end
 
-    # Set the value of the ssl_avilable flag.
+    # Set the value of the ssl_available flag.
     attr_writer :ssl_available
 
     # Ensure that SSL is available.  Throw an exception if it is not.

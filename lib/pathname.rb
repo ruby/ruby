@@ -262,7 +262,7 @@ class Pathname
     SEPARATOR_PAT = /#{Regexp.quote File::SEPARATOR}/
   end
 
-  # Return a pathname which the extention of the basename is substituted by
+  # Return a pathname which the extension of the basename is substituted by
   # <i>repl</i>.
   #
   # If self has no extension part, <i>repl</i> is appended.

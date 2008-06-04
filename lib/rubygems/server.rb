@@ -9,7 +9,7 @@ require 'rubygems'
 # Gem::Server and allows users to serve gems for consumption by
 # `gem --remote-install`.
 #
-# gem_server starts an HTTP server on the given port and serves the folowing:
+# gem_server starts an HTTP server on the given port and serves the following:
 # * "/" - Browsing of gem spec files for installed gems
 # * "/Marshal" - Full SourceIndex dump of metadata for installed gems
 # * "/yaml" - YAML dump of metadata for installed gems - deprecated

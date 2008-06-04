@@ -17,7 +17,7 @@ require 'rdoc'
 # RDoc::Markup is intended to be the basis for a family of tools which share
 # the common requirement that simple, plain-text should be rendered in a
 # variety of different output formats and media.  It is envisaged that
-# RDoc::Markup could be the basis for formating RDoc style comment blocks,
+# RDoc::Markup could be the basis for formatting RDoc style comment blocks,
 # Wiki entries, and online FAQs.
 #
 # = Basic Formatting
@@ -129,7 +129,7 @@ require 'rdoc'
 #
 # You can extend the RDoc::Markup parser to recognise new markup
 # sequences, and to add special processing for text that matches a
-# regular epxression.  Here we make WikiWords significant to the parser,
+# regular expression.  Here we make WikiWords significant to the parser,
 # and also make the sequences {word} and \<no>text...</no> signify
 # strike-through text.  When then subclass the HTML output class to deal
 # with these:
@@ -197,7 +197,7 @@ class RDoc::Markup
 
   ##
   # Add to the sequences used to add formatting to an individual word (such
-  # as *bold*).  Matching entries will generate attibutes that the output
+  # as *bold*).  Matching entries will generate attributes that the output
   # formatters can recognize by their +name+.
 
   def add_word_pair(start, stop, name)

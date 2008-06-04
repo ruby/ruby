@@ -252,7 +252,7 @@ class Resolv
     end
 
     ##
-    # Iterates over all hostnames for +address+ retrived from the hosts file.
+    # Iterates over all hostnames for +address+ retrieved from the hosts file.
 
     def each_name(address, &proc)
       lazy_initialize
@@ -2026,7 +2026,7 @@ class Resolv
     end
 
     ##
-    # A String reperesentation of this IPv4 address.
+    # A String representation of this IPv4 address.
 
     ##
     # The raw IPv4 address as a String.

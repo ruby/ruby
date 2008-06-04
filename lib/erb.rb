@@ -658,7 +658,7 @@ class ERB
   #    
   #    def build
   #      b = binding
-  #      # create and run templates, filling member data variebles
+  #      # create and run templates, filling member data variables
   #      ERB.new(<<-'END_PRODUCT'.gsub(/^\s+/, ""), 0, "", "@product").result b
   #        <%= PRODUCT[:name] %>
   #        <%= PRODUCT[:desc] %>

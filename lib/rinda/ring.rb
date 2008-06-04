@@ -19,7 +19,7 @@ module Rinda
   # 1. A RingServer begins listening on the broadcast UDP address.
   # 2. A RingFinger sends a UDP packet containing the DRb URI where it will
   #    listen for a reply.
-  # 3. The RingServer recieves the UDP packet and connects back to the
+  # 3. The RingServer receives the UDP packet and connects back to the
   #    provided DRb URI with the DRb service.
 
   class RingServer
@@ -119,7 +119,7 @@ module Rinda
     end
 
     ##
-    # Contains all discoverd TupleSpaces except for the primary.
+    # Contains all discovered TupleSpaces except for the primary.
 
     def self.to_a
       finger.to_a

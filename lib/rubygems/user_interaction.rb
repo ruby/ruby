@@ -17,7 +17,7 @@ module Gem
       DefaultUserInteraction.ui
     end
 
-    # Set the default UI.  If the default UI is never explicity set, a
+    # Set the default UI.  If the default UI is never explicitly set, a
     # simple console based UserInteraction will be used automatically.
     def ui=(new_ui)
       DefaultUserInteraction.ui = new_ui
@@ -182,7 +182,7 @@ module Gem
       ask(question) if question
     end
 
-    # Terminate the appliation normally, running any exit handlers
+    # Terminate the application normally, running any exit handlers
     # that might have been defined.
     def terminate_interaction(status = 0)
       raise Gem::SystemExitException, status

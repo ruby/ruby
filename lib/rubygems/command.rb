@@ -342,7 +342,7 @@ module Gem
 
     add_common_option('-V', '--[no-]verbose',
                       'Set the verbose level of output') do |value, options|
-      # Set us to "really verbose" so the progess meter works
+      # Set us to "really verbose" so the progress meter works
       if Gem.configuration.verbose and value then
         Gem.configuration.verbose = 1
       else

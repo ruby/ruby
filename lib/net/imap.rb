@@ -3243,7 +3243,7 @@ module Net
 	return @nc[nonce]
       end
 
-      # some reponses needs quoting
+      # some responses need quoting
       def qdval(k, v)
 	return if k.nil? or v.nil?
 	if %w"username authzid realm nonce cnonce digest-uri qop".include? k

@@ -1,3 +1,8 @@
+Wed Jun  4 18:36:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rdoc.rb: massive spelling correction patch from Evan Farrar
+	  <evanfarrar at gmail.com> in [ruby-doc:1382] applied.
+
 Wed Jun  4 17:52:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_iconv): fix for length argument and now

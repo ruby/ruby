@@ -813,7 +813,7 @@ class CSV
   # <b><tt>:all</tt></b>::        All built-in converters.  A combination of 
   #                               <tt>:date_time</tt> and <tt>:numeric</tt>.
   # 
-  # This Hash is intetionally left unfrozen and users should feel free to add
+  # This Hash is intentionally left unfrozen and users should feel free to add
   # values to it that can be accessed by all CSV objects.
   # 
   # To add a combo field, the value should be an Array of names.  Combo fields
@@ -1148,7 +1148,7 @@ class CSV
   # Hash containing any +options+ CSV::new() understands.
   # 
   # This method works like Ruby's open() call, in that it will pass a CSV object
-  # to a provided block and close it when the block termminates, or it will
+  # to a provided block and close it when the block terminates, or it will
   # return the CSV object when no block is provided.  (*Note*: This is different
   # from the Ruby 1.8 CSV library which passed rows to the block.  Use
   # CSV::foreach() for that behavior.)
@@ -1313,7 +1313,7 @@ class CSV
   #                                       unconverted_fields() method will be
   #                                       added to all returned rows (Array or
   #                                       CSV::Row) that will return the fields
-  #                                       as they were before convertion.  Note
+  #                                       as they were before conversion.  Note
   #                                       that <tt>:headers</tt> supplied by
   #                                       Array or String were not fields of the
   #                                       document and thus will have an empty
@@ -1744,7 +1744,7 @@ class CSV
 
     instance_variable_set("@#{field_name}", Array.new)
     
-    # find the correct method to add the coverters
+    # find the correct method to add the converters
     convert = method(field_name.to_s.sub(/ers\Z/, ""))
     
     # load converters
