@@ -177,4 +177,4 @@ distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG)
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
-	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -o$@ -c ext/extinit.c
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ -c ext/extinit.c
