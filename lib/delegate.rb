@@ -250,7 +250,7 @@ SimpleDelegater = SimpleDelegator
 # your class.
 #
 #   class MyClass < DelegateClass( ClassToDelegateTo )    # Step 1
-#     def initiaize
+#     def initialize
 #       super(obj_of_ClassToDelegateTo)                   # Step 2
 #     end
 #   end

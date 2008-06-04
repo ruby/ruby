@@ -112,7 +112,7 @@ module IRB
       end
     end
 
-    # aliases = [commans_alias, flag], ...
+    # aliases = [commands_alias, flag], ...
     def self.def_extend_command(cmd_name, cmd_class, load_file = nil, *aliases)
       case cmd_class
       when Symbol

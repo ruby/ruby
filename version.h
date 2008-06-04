@@ -16,14 +16,4 @@ RUBY_EXTERN const char ruby_version[];
 RUBY_EXTERN const char ruby_release_date[];
 RUBY_EXTERN const char ruby_platform[];
 RUBY_EXTERN const int ruby_patchlevel;
-RUBY_EXTERN const char *ruby_description;
-RUBY_EXTERN const char *ruby_copyright;
 #endif
-
-#define RUBY_AUTHOR "Yukihiro Matsumoto"
-#define RUBY_BIRTH_YEAR 1993
-#define RUBY_BIRTH_MONTH 2
-#define RUBY_BIRTH_DAY 24
-
-#define RUBY_RELEASE_STR "patchlevel"
-#define RUBY_RELEASE_NUM RUBY_PATCHLEVEL
