@@ -1,3 +1,7 @@
+Wed Jun  4 18:50:47 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* version.h: corrupted.
+
 Wed Jun  4 18:36:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rdoc.rb: massive spelling correction patch from Evan Farrar
