@@ -1361,8 +1361,21 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
  *  call-seq:
  *     class.allocate()   =>   obj
  *  
- *  Allocates space for a new object of <i>class</i>'s class. The
- *  returned object must be an instance of <i>class</i>.
+ *  Allocates space for a new object of <i>class</i>'s class and does not
+ *  call initialize on the new instance. The returned object must be an
+ *  instance of <i>class</i>.
+ *  
+ *      klass = Class.new do
+ *        def initialize(*args)
+ *          @initialized = true
+ *        end
+ *      
+ *        def initialized?
+ *          @initialized || false
+ *        end
+ *      end
+ *      
+ *      klass.allocate.initialized? #=> false
  *     
  */
 
