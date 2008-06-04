@@ -82,14 +82,22 @@ class TestEtc < Test::Unit::TestCase
   end
 
   def test_getgrgid
+    groups = []
     Etc.group do |s|
+      groups << s
+    end
+    groups.each do |s|
       assert_equal(s, Etc.getgrgid(s.gid))
       assert_equal(s, Etc.getgrgid) if Etc.getlogin == s.name
     end
   end
 
   def test_getgrnam
+    groups = []
     Etc.group do |s|
+      groups << s
+    end
+    groups.each do |s|
       assert_equal(s, Etc.getgrnam(s.name))
     end
   end
