@@ -218,13 +218,16 @@ with all sufficient information, see the ChangeLog file.
 
     New methods. 
 
-  * Method#class_exec
-  * Method#module_exec
   * Method#name
   * Method#owner
   * Method#receiver
   * UnboundMethod#name
   * UnboundMethod#owner
+
+    New methods.
+
+  * Module#class_exec
+  * Module#module_exec
 
     New methods.
 
@@ -382,6 +385,12 @@ with all sufficient information, see the ChangeLog file.
 
       Tempfile.open(['image', 'jpg']) { |tempfile| ... }
 
+* tmpdir
+
+  * New method:
+
+    * Dir.mktmpdir
+
 * uri
 
   * added LDAPS scheme.
@@ -495,11 +504,6 @@ with all sufficient information, see the ChangeLog file.
   * The file name format has changed.  No dots are included by default
     in temporary file names any more.  See above for how to specify a
     suffix.
-
-* tmpdir
-
-  * New method:
-    * Dir.mktmpdir
 
 * uri
 
