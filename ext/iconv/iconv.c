@@ -101,7 +101,7 @@ static void iconv_dfree _((void *cd));
 static VALUE iconv_free _((VALUE cd));
 static VALUE iconv_try _((iconv_t cd, const char **inptr, size_t *inlen, char **outptr, size_t *outlen));
 static VALUE rb_str_derive _((VALUE str, const char* ptr, int len));
-static VALUE iconv_convert _((iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* env));
+static VALUE iconv_convert _((iconv_t cd, VALUE str, long start, long length, struct iconv_env_t* env));
 static VALUE iconv_s_allocate _((VALUE klass));
 static VALUE iconv_initialize _((VALUE self, VALUE to, VALUE from));
 static VALUE iconv_s_open _((VALUE self, VALUE to, VALUE from));
@@ -170,7 +170,7 @@ iconv_create
 	}
 	if (cd == (iconv_t)-1) {
 	    int inval = errno == EINVAL;
-	    char *s = inval ? "invalid encoding " : "iconv";
+	    const char *s = inval ? "invalid encoding " : "iconv";
 	    volatile VALUE msg = rb_str_new(0, strlen(s) + RSTRING(to)->len +
 					    RSTRING(from)->len + 8);
 
@@ -362,13 +362,13 @@ rb_str_derive
 static VALUE
 iconv_convert
 #ifdef HAVE_PROTOTYPES
-    (iconv_t cd, VALUE str, int start, int length, struct iconv_env_t* env)
+    (iconv_t cd, VALUE str, long start, long length, struct iconv_env_t* env)
 #else /* HAVE_PROTOTYPES */
     (cd, str, start, length, env)
     iconv_t cd;
     VALUE str;
-    int start;
-    int length;
+    long start;
+    long length;
     struct iconv_env_t *env;
 #endif /* HAVE_PROTOTYPES */
 {
@@ -417,17 +417,9 @@ iconv_convert
 	slen = RSTRING(str)->len;
 	inptr = RSTRING(str)->ptr;
 
-	if (start < 0 ? (start += slen) < 0 : start >= slen)
-	    length = 0;
-	else if (length < 0 && (length += slen + 1) < 0)
-	    length = 0;
-	else if ((length -= start) < 0)
-	    length = 0;
-	else {
-	    inptr += start;
-	    if (length > slen)
-		length = slen;
-	}
+	inptr += start;
+	if (length < 0 || length > start + slen)
+	    length = slen - start;
     }
     instart = inptr;
     inlen = length;
@@ -757,14 +749,17 @@ iconv_iconv
 {
     VALUE str, n1, n2;
     VALUE cd = check_iconv(self);
+    long start = 0, length = 0, slen = 0;
 
-    n1 = n2 = Qnil;
     rb_scan_args(argc, argv, "12", &str, &n1, &n2);
+    if (!NIL_P(str)) slen = RSTRING_LEN(StringValue(str));
+    if (argc != 2 || !RTEST(rb_range_beg_len(n1, &start, &length, slen, 0))) {
+	if (NIL_P(n1) || ((start = NUM2LONG(n1)) < 0 ? (start += slen) >= 0 : start < slen)) {
+	    if (!NIL_P(n2)) length = NUM2LONG(n2);
+	}
+    }
 
-    return iconv_convert(VALUE2ICONV(cd), str,
-			 NIL_P(n1) ? 0 : NUM2INT(n1),
-			 NIL_P(n2) ? -1 : NUM2INT(n2),
-			 NULL);
+    return iconv_convert(VALUE2ICONV(cd), str, start, length, NULL);
 }
 
 /*
@@ -828,7 +823,7 @@ iconv_failure_inspect
     VALUE self;
 #endif /* HAVE_PROTOTYPES */
 {
-    char *cname = rb_class2name(CLASS_OF(self));
+    const char *cname = rb_class2name(CLASS_OF(self));
     VALUE success = rb_attr_get(self, rb_success);
     VALUE failed = rb_attr_get(self, rb_failed);
     VALUE str = rb_str_buf_cat2(rb_str_new2("#<"), cname);

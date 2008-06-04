@@ -1,3 +1,8 @@
+Wed Jun  4 17:52:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fix for length argument and now
+	  allows range.  [ruby-core:17092]
+
 Wed Jun  4 13:06:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (CFLAGS, CXXFLAGS): include additional flags to
