@@ -156,7 +156,10 @@ AC_ARG_PROGRAM
 
 dnl Checks for programs.
 
-: ${CFLAGS=} ${CXXFLAGS=}
+: ${CFLAGS=} ${cflags='${optflags} ${debugflags} ${warnflags}'}
+: ${CXXFLAGS=} ${cxxflags='${optflags} ${debugflags} ${warnflags}'}
+CFLAGS="${CFLAGS} `eval echo $cflags`"
+CXXFLAGS="${CXXFLAGS} `eval echo $cxxflags`"
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
@@ -1638,8 +1641,11 @@ case "$build_os" in
 esac
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
-test -z "$CFLAGS" || CFLAGS="$CFLAGS "; CFLAGS="$CFLAGS"'${cflags}'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
+cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[][|.*]/\\&/g'`
+CFLAGS=`echo "$CFLAGS" | sed "s|$cflagspat"'|${cflags}|'`
+cxxflagspat=`eval echo '"'"${cxxflags}"'"' | sed 's/[][|.*]/\\&/g'`
+CXXFLAGS=`echo "$CXXFLAGS" | sed "s|$cxxflagspat"'|${cxxflags}|'`
 AC_SUBST(cppflags, [])dnl
 AC_SUBST(cflags, ['${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(optflags)dnl
