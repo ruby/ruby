@@ -1,3 +1,8 @@
+Wed Jun  4 16:39:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (ext/extinit.o): use $(OUTFLAG) as well as other
+	  objects.  [ruby-Bugs-14228]
+
 Tue Jun  3 16:13:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yyerror): limit error message length.  [ruby-dev:31848]
