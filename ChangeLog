@@ -1,3 +1,7 @@
+Thu Jun  5 01:27:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_process.rb: add tests.
+
 Wed Jun  4 23:10:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (rb_gzfile_set_mtime): fix typo.

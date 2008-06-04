@@ -5,6 +5,14 @@ require_relative 'envutil'
 class TestProcess < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
+  def setup
+    Process.waitall
+  end
+
+  def teardown
+    Process.waitall
+  end
+
   def write_file(filename, content)
     File.open(filename, "w") {|f|
       f << content
@@ -339,6 +347,7 @@ class TestProcess < Test::Unit::TestCase
           w1.puts "b"
           w1.close
           assert_equal("a\nb\nc\n", r2.read)
+          Process.wait(pid)
         }
       }
 
@@ -478,6 +487,7 @@ class TestProcess < Test::Unit::TestCase
       errmsg = io.read
       assert_equal("", r.read)
       assert_not_equal("", errmsg)
+      Process.wait
     }
     with_pipe {|r, w|
       errmsg = `#{RUBY} -e "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts(123)"`
@@ -527,6 +537,7 @@ class TestProcess < Test::Unit::TestCase
         errmsg = io.read
         assert_equal("", r.read)
         assert_not_equal("", errmsg)
+        Process.wait
       }
       with_pipe {|r, w|
         io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>false])
@@ -534,6 +545,7 @@ class TestProcess < Test::Unit::TestCase
         errmsg = io.read
         assert_equal("mo\n", r.read)
         assert_equal("", errmsg)
+        Process.wait
       }
       with_pipe {|r, w|
         io = IO.popen([RUBY, "-e", "STDERR.reopen(STDOUT); IO.new(#{w.fileno}).puts('mo')", :close_others=>nil])
@@ -541,6 +553,7 @@ class TestProcess < Test::Unit::TestCase
         errmsg = io.read
         assert_equal("mo\n", r.read)
         assert_equal("", errmsg)
+        Process.wait
       }
 
     }
@@ -789,6 +802,7 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(4, $?.exitstatus)
 
       assert_equal("1", IO.popen([[RUBY, "qwerty"], "-e", "print 1"]).read)
+      Process.wait
 
       write_file("s", <<-"End")
         exec([#{RUBY.dump}, "lkjh"], "-e", "exit 5")
@@ -838,6 +852,133 @@ class TestProcess < Test::Unit::TestCase
       status = run_in_child "STDIN.reopen('f'); exec([#{RUBY.dump}, 'ik,'])"
       assert(!status.success?)
     }
+  end
+
+  def test_status
+    with_tmpchdir do
+      s = run_in_child("exit 1")
+      assert_equal("#<Process::Status: pid #{ s.pid } exit #{ s.exitstatus }>", s.inspect)
+
+      assert_equal(s, s)
+      assert_equal(s, s.to_i)
+
+      assert_equal(s.to_i & 0x55555555, s & 0x55555555)
+      assert_equal(s.to_i >> 1, s >> 1)
+      assert_equal(false, s.stopped?)
+      assert_equal(nil, s.stopsig)
+    end
+  end
+
+  def test_status_kill
+    return unless Process.respond_to?(:kill)
+    return unless Signal.list.include?("QUIT")
+
+    with_tmpchdir do
+      write_file("foo", "sleep 30")
+      pid = spawn(RUBY, "foo")
+      Thread.new { sleep 1; Process.kill(:SIGQUIT, pid) }
+      Process.wait(pid)
+      s = $?
+      assert_equal("#<Process::Status: pid #{ s.pid } SIGQUIT (signal #{ s.termsig })>", s.inspect)
+      assert_equal(false, s.exited?)
+      assert_equal(nil, s.success?)
+    end
+  end
+
+  def test_wait_without_arg
+    with_tmpchdir do
+      write_file("foo", "sleep 0.1")
+      pid = spawn(RUBY, "foo")
+      assert_equal(pid, Process.wait)
+    end
+  end
+
+  def test_wait2
+    with_tmpchdir do
+      write_file("foo", "sleep 0.1")
+      pid = spawn(RUBY, "foo")
+      assert_equal([pid, 0], Process.wait2)
+    end
+  end
+
+  def test_waitall
+    with_tmpchdir do
+      write_file("foo", "sleep 0.1")
+      ps = (0...3).map { spawn(RUBY, "foo") }.sort
+      ss = Process.waitall.sort
+      ps.zip(ss) do |p1, (p2, s)|
+        assert_equal(p1, p2)
+        assert_equal(p1, s.pid)
+      end
+    end
+  end
+
+  def test_abort
+    with_tmpchdir do
+      s = run_in_child("abort")
+      assert_not_equal(0, s.exitstatus)
+    end
+  end
+
+  def test_sleep
+    assert_raise(ArgumentError) { sleep(1, 1) }
+  end
+
+  def test_getpgid
+    assert_kind_of(Integer, Process.getpgid(Process.ppid))
+  rescue NotImplementedError
+  end
+
+  def test_getpriority
+    assert_kind_of(Integer, Process.getpriority(Process::PRIO_USER, 0))
+  rescue NotImplementedError
+  end
+
+  def test_setpriority
+    assert_nothing_raised do
+      pr = Process.getpriority(Process::PRIO_USER, 0)
+      Process.setpriority(Process::PRIO_USER, 0, pr)
+    end
+  rescue NotImplementedError
+  end
+
+  def test_getuid
+    assert_kind_of(Integer, Process.uid)
+  end
+
+  def test_groups
+    gs = Process.groups
+    assert_instance_of(Array, gs)
+    gs.each {|g| assert_kind_of(Integer, g) }
+  rescue NotImplementedError
+  end
+
+  def test_maxgroups
+    assert_kind_of(Integer, Process.maxgroups)
+  end
+
+  def test_geteuid
+    assert_kind_of(Integer, Process.egid)
+  end
+
+  def test_uid_re_exchangeable_p
+    r = Process::UID.re_exchangeable?
+    assert(true == r || false == r)
+  end
+
+  def test_gid_re_exchangeable_p
+    r = Process::GID.re_exchangeable?
+    assert(true == r || false == r)
+  end
+
+  def test_uid_sid_available?
+    r = Process::UID.sid_available?
+    assert(true == r || false == r)
+  end
+
+  def test_gid_sid_available?
+    r = Process::GID.sid_available?
+    assert(true == r || false == r)
   end
 
 end
