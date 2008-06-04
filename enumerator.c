@@ -335,7 +335,7 @@ enumerator_with_index_i(VALUE val, VALUE *memo)
  *    e.with_index {|(*args), idx| ... }
  *    e.with_index
  *
- *  Iterates the given block for each elements with an index, which
+ *  Iterates the given block for each element with an index, which
  *  start from 0.  If no block is given, returns an enumerator.
  *
  */
@@ -365,10 +365,10 @@ enumerator_with_memo_i(VALUE val, VALUE memo)
 
 /*
  *  call-seq:
- *    e.with_memo(memo) {|(*args), memo| ... }
- *    e.with_memo(memo)
+ *    e.with_memo(obj) {|(*args), memo_obj| ... }
+ *    e.with_memo(obj)
  *
- *  Iterates the given block for each elements with an arbitrary
+ *  Iterates the given block for each element with an arbitrary
  *  object given, and returns the memo object.
  *
  *  If no block is given, returns an enumerator.
