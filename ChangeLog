@@ -1,3 +1,8 @@
+Wed Jun  4 13:06:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (CFLAGS, CXXFLAGS): include additional flags to
+	  CFLAGS and CXXFLAGS while configuration.
+
 Tue Jun  3 23:06:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/strscan/strscan.c (strscan_scan_full, strscan_search_full): fix
