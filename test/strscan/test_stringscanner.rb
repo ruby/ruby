@@ -548,4 +548,127 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal("\xa1\xa2".force_encoding("euc-jp"), t)
   end
 
+  def test_set_pos
+    s = StringScanner.new("test string")
+    s.pos = 7
+    assert_equal("ring", s.rest)
+  end
+
+  def test_match_p
+    s = StringScanner.new("test string")
+    assert_equal(4, s.match?(/\w+/))
+    assert_equal(4, s.match?(/\w+/))
+    assert_equal(nil, s.match?(/\s+/))
+  end
+
+  def test_check
+    s = StringScanner.new("Foo Bar Baz")
+    assert_equal("Foo", s.check(/Foo/))
+    assert_equal(0, s.pos)
+    assert_equal("Foo", s.matched)
+    assert_equal(nil, s.check(/Bar/))
+    assert_equal(nil, s.matched)
+  end
+
+  def test_scan_full
+    s = StringScanner.new("Foo Bar Baz")
+    assert_equal(4, s.scan_full(/Foo /, false, false))
+    assert_equal(0, s.pos)
+    assert_equal(nil, s.scan_full(/Baz/, false, false))
+    assert_equal("Foo ", s.scan_full(/Foo /, false, true))
+    assert_equal(0, s.pos)
+    assert_equal(nil, s.scan_full(/Baz/, false, false))
+    assert_equal(4, s.scan_full(/Foo /, true, false))
+    assert_equal(4, s.pos)
+    assert_equal(nil, s.scan_full(/Baz /, false, false))
+    assert_equal("Bar ", s.scan_full(/Bar /, true, true))
+    assert_equal(8, s.pos)
+    assert_equal(nil, s.scan_full(/az/, false, false))
+  end
+
+  def test_exist_p
+    s = StringScanner.new("test string")
+    assert_equal(3, s.exist?(/s/))
+    assert_equal(0, s.pos)
+    s.scan(/test/)
+    assert_equal(2, s.exist?(/s/))
+    assert_equal(4, s.pos)
+    assert_equal(nil, s.exist?(/e/))
+  end
+
+  def test_skip_until
+    s = StringScanner.new("Foo Bar Baz")
+    assert_equal(3, s.skip_until(/Foo/))
+    assert_equal(3, s.pos)
+    assert_equal(4, s.skip_until(/Bar/))
+    assert_equal(7, s.pos)
+    assert_equal(nil, s.skip_until(/Qux/))
+  end
+
+  def test_check_until
+    s = StringScanner.new("Foo Bar Baz")
+    assert_equal("Foo", s.check_until(/Foo/))
+    assert_equal(0, s.pos)
+    assert_equal("Foo Bar", s.check_until(/Bar/))
+    assert_equal(0, s.pos)
+    assert_equal(nil, s.check_until(/Qux/))
+  end
+
+  def test_search_full
+    s = StringScanner.new("Foo Bar Baz")
+    assert_equal(8, s.search_full(/Bar /, false, false))
+    assert_equal(0, s.pos)
+    assert_equal("Foo Bar ", s.search_full(/Bar /, false, true))
+    assert_equal(0, s.pos)
+    assert_equal(8, s.search_full(/Bar /, true, false))
+    assert_equal(8, s.pos)
+    assert_equal("Baz", s.search_full(/az/, true, true))
+    assert_equal(11, s.pos)
+  end
+
+  def test_peek
+    s = StringScanner.new("test string")
+    assert_equal("test st", s.peek(7))
+    assert_equal("test st", s.peek(7))
+    s.scan(/test/)
+    assert_equal(" stri", s.peek(5))
+    assert_equal(" string", s.peek(10))
+    s.scan(/ string/)
+    assert_equal("", s.peek(10))
+  end
+
+  def test_unscan
+    s = StringScanner.new('test string')
+    assert_equal("test", s.scan(/\w+/))
+    s.unscan
+    assert_equal("te", s.scan(/../))
+    assert_equal(nil, s.scan(/\d/))
+    assert_raise(ScanError) { s.unscan }
+  end
+
+  def test_rest
+    s = StringScanner.new('test string')
+    assert_equal("test string", s.rest)
+    s.scan(/test/)
+    assert_equal(" string", s.rest)
+    s.scan(/ string/)
+    assert_equal("", s.rest)
+    s.scan(/ string/)
+  end
+
+  def test_rest_size
+    s = StringScanner.new('test string')
+    assert_equal(11, s.rest_size)
+    s.scan(/test/)
+    assert_equal(7, s.rest_size)
+    s.scan(/ string/)
+    assert_equal(0, s.rest_size)
+    s.scan(/ string/)
+  end
+
+  def test_inspect
+    s = StringScanner.new('test string test')
+    s.scan(/test strin/)
+    assert_equal('#<StringScanner 10/16 "...strin" @ "g tes...">', s.inspect)
+  end
 end
