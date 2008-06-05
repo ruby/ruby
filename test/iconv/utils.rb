@@ -5,7 +5,21 @@ else
   require 'test/unit'
 end
 
-class TestIconv < Test::Unit::TestCase
+module TestIconv
+  if defined?(::Iconv)
+    def self.testcase(name, &block)
+      const_set(name, klass = Class.new(::Test::Unit::TestCase))
+      klass.name
+      klass.__send__(:include, self)
+      klass.class_eval(&block)
+    end
+  else
+    def self.testcase(name)
+    end
+  end
+end
+
+module TestIconv
   if defined?(::Encoding) and String.method_defined?(:force_encoding)
     def self.encode(str, enc)
       str.force_encoding(enc)
