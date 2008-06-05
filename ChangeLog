@@ -1,3 +1,8 @@
+Thu Jun  5 12:22:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): valid id should not refer T_VALUE nor T_ICLASS.
+	  [ruby-dev:31911]
+
 Wed Jun  4 16:41:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (ext/extinit.o): use $(OUTFLAG) as well as other
