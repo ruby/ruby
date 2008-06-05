@@ -1,3 +1,12 @@
+Thu Jun  5 23:56:18 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_gc.rb: add tests to achieve over 90% test coverage of
+	  gc.c.
+
+	* test/ruby/test_objectspace.rb: ditto.
+
+	* test/ruby/test_marshal.rb: ditto.
+
 Thu Jun  5 23:40:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* gc.c (rb_objspace_alloc): this function is needed only when

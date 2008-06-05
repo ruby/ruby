@@ -32,4 +32,23 @@ class TestGc < Test::Unit::TestCase
 
     GC.stress = prev_stress
   end
+
+  def test_enable_disable
+    GC.enable
+    assert_equal(false, GC.enable)
+    assert_equal(false, GC.disable)
+    assert_equal(true, GC.disable)
+    assert_equal(true, GC.disable)
+    assert_nil(GC.start)
+    assert_equal(true, GC.enable)
+    assert_equal(false, GC.enable)
+  ensure
+    GC.enable
+  end
+
+  def test_count
+    c = GC.count
+    GC.start
+    assert_operator(c, :<, GC.count)
+  end
 end

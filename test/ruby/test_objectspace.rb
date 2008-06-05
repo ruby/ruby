@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestObjectSpace < Test::Unit::TestCase
   def self.deftest_id2ref(obj)
@@ -52,5 +53,19 @@ End
     h = ObjectSpace.count_objects(h0)
     assert_same(h0, h)
     assert_equal(0, h0[:T_FOO])
+  end
+
+  def test_finalizer
+    EnvUtil.rubyexec("-e", <<-END) do |w, r, e|
+      a = []
+      ObjectSpace.define_finalizer(a) { p :ok }
+      b = a.dup
+      ObjectSpace.define_finalizer(a) { p :ok }
+    END
+      assert_equal("", e.read)
+      assert_equal(":ok\n:ok\n:ok\n:ok\n", r.read)
+
+      assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
+    end
   end
 end

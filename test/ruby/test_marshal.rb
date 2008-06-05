@@ -152,4 +152,20 @@ class TestMarshal < Test::Unit::TestCase
     eval("C3 = Struct.new(:foo, :baz)")
     assert_raise(TypeError) { Marshal.load(m) }
   end
+
+  class C4
+    def initialize(gc)
+      @gc = gc
+    end
+    def _dump(s)
+      GC.start if @gc
+      "foo"
+    end
+  end
+
+  def test_gc
+    assert_nothing_raised do
+      Marshal.dump((0..1000).map {|x| C4.new(x % 50 == 25) })
+    end
+  end
 end
