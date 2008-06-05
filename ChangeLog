@@ -1,3 +1,9 @@
+Thu Jun  5 21:46:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* st.c (st_reverse_foreach): comment out unused function.
+
+	* util.c (dtoa): ditto.
+
 Thu Jun  5 20:30:46 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_initialize):

@@ -686,6 +686,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     return 0;
 }
 
+#if 0  /* unused right now */
 int
 st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
@@ -767,6 +768,7 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
     }
     return 0;
 }
+#endif
 
 /*
  * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code

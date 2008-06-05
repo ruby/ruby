@@ -3265,6 +3265,7 @@ freedtoa(char *s)
  *     calculation.
  */
 
+#if 0  /* unused right now */
 char *
 dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 {
@@ -3934,6 +3935,7 @@ ret1:
         *rve = s;
     return s0;
 }
+#endif
 
 void
 ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *arg)
