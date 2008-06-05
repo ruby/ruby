@@ -1313,10 +1313,13 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 		if (!(slashes & 1)) {
 		    if (!quote)
 			quote = *ptr;
-		    else if (quote == *ptr)
+		    else if (quote == *ptr) {
+			if (quote == '"' && quote == ptr[1])
+			    ptr++;
 			quote = '\0';
-		    escape++;
+		    }
 		}
+		escape++;
 		slashes = 0;
 		break;
 
@@ -1343,10 +1346,10 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 	//
 
 	if (escape) {
-	    char *p = base;
+	    char *p = base, c;
 	    slashes = quote = 0;
 	    while (p < base + len) {
-		switch (*p) {
+		switch (c = *p) {
 		  case '\\':
 		    p++;
 		    if (quote != '\'') slashes++;
@@ -1354,33 +1357,27 @@ rb_w32_cmdvector(const char *cmd, char ***vec)
 
 		  case '\'':
 		  case '"':
-		    if (!(slashes & 1)) {
-			if (!quote)
-			    quote = *p;
-			else if (quote == *p)
-			    quote = '\0';
-			else {
-			    p++;
-			    slashes = 0;
-			    break;
-			}
-		    }
-		    if (base + slashes == p) {
-			base += slashes >> 1;
-			len -= slashes >> 1;
-			slashes &= 1;
-		    }
-		    if (base == p) {
-			base = ++p;
-			--len;
-		    }
-		    else {
-			memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1), base + len - p);
-			slashes >>= 1;
-			p -= slashes;
-			len -= slashes + 1;
+		    if (!(slashes & 1) && quote && quote != c) {
+			p++;
 			slashes = 0;
+			break;
 		    }
+		    memcpy(p - ((slashes + 1) >> 1), p + (~slashes & 1),
+			   base + len - p);
+		    len -= ((slashes + 1) >> 1) + (~slashes & 1);
+		    p -= (slashes + 1) >> 1;
+		    if (!(slashes & 1)) {
+			if (quote) {
+			    if (quote == '"' && quote == *p)
+				p++;
+			    quote = '\0';
+			}
+			else
+			    quote = c;
+		    }
+		    else
+			p++;
+		    slashes = 0;
 		    break;
 
 		  default:
