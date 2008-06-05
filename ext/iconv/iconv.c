@@ -158,7 +158,13 @@ iconv_create(VALUE to, VALUE from, struct rb_iconv_opt_t *opt, int *idx)
     const char* fromcode = map_charset(&from);
     iconv_t cd;
 
-    *idx = rb_enc_find_index(tocode);
+    if ((*idx = rb_enc_find_index(tocode)) < 0) {
+	const char *slash = strchr(tocode, '/');
+	if (slash && slash[1] == '/') {
+	    VALUE tmp = rb_str_new(tocode, slash - tocode);
+	    *idx = rb_enc_find_index(RSTRING_PTR(tmp));
+	}
+    }
 
     cd = iconv_open(tocode, fromcode);
     if (cd == (iconv_t)-1) {
