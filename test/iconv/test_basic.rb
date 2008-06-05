@@ -1,6 +1,6 @@
 require File.join(File.dirname(__FILE__), "utils.rb")
 
-class TestIconv
+TestIconv.testcase(:Basic) do
   def test_euc2sjis
     iconv = Iconv.open('SHIFT_JIS', 'EUC-JP')
     str = iconv.iconv(EUCJ_STR)
