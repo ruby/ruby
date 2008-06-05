@@ -1,3 +1,13 @@
+Thu Jun  5 11:01:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
+	  [ruby-core:17115]
+
+Thu Jun  5 11:00:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
+	  [ruby-core:17115]
+
 Wed Jun  4 19:36:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* object.c (rb_obj_alloc): RDoc updated.  a patch from Gaston
