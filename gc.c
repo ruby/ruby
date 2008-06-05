@@ -1856,9 +1856,19 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 {
     size_t i;
     size_t n = 0;
+    RVALUE *membase = 0;
+    RVALUE *p, *pend;
+    volatile VALUE v;
 
-    for (i = 0; i < heaps_used; i++) {
-	RVALUE *p, *pend;
+    i = 0;
+    while (i < heaps_used) {
+        while (0 < i && (uintptr_t)membase < (uintptr_t)heaps[i-1].membase)
+            i--;
+        while (i < heaps_used && (uintptr_t)heaps[i].membase <= (uintptr_t)membase )
+            i++;
+        if (heaps_used <= i)
+            break;
+        membase = heaps[i].membase;
 
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	for (;p < pend; p++) {
@@ -1872,8 +1882,9 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
 		    if (!p->as.basic.klass) continue;
-		    if (!of || rb_obj_is_kind_of((VALUE)p, of)) {
-			rb_yield((VALUE)p);
+                    v = (VALUE)p;
+		    if (!of || rb_obj_is_kind_of(v, of)) {
+			rb_yield(v);
 			n++;
 		    }
 		}

@@ -1,3 +1,7 @@
+Thu Jun  5 22:50:50 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (os_obj_of): heaps may be modified in yield.
+
 Thu Jun  5 21:46:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* st.c (st_reverse_foreach): comment out unused function.
