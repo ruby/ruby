@@ -1,3 +1,10 @@
+Thu Jun  5 20:17:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/rexml/document.rb (REXML::Document:write): leaky modification
+	  trans -> transitive.  [ruby-dev:32040], r13686
+	
+	* lib/rexml/text.rb (Text.check): fix check for illigal characher.
+
 Thu Jun  5 14:03:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): find encoding without options.

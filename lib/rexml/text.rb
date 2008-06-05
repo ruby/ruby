@@ -150,7 +150,7 @@ module REXML
       end
 
       # context sensitive
-      string.scan(pattern).each do
+      string.scan(pattern) do
         if $1[-1] != ?;
           raise "Illegal character '#{$1}' in raw string \"#{string}\""
         elsif $1[0] == ?&
