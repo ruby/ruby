@@ -1,3 +1,13 @@
+Thu Jun  5 12:26:45 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (init_env): initialize HOME and USER environment
+	  variables unless set. [ruby-core:12328] (merge from trunk)
+
+	* win32/win32.c (NtInitialize, getlogin): ditto.
+
+	* configure.in, win32/Makefile.sub (LIBS): need to link shell32
+	  library for SH* functions on mswin32 and mingw32.
+
 Thu Jun  5 12:22:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (id2ref): valid id should not refer T_VALUE nor T_ICLASS.
