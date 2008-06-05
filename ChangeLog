@@ -1,3 +1,8 @@
+Fri Jun  6 00:05:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/time.rb (Time.xmlschema): don't use float.  fix
+	  http://rubyforge.org/tracker/index.php?func=detail&group_id=426&atid=1698&aid=20504
+
 Thu Jun  5 23:56:18 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_gc.rb: add tests to achieve over 90% test coverage of
