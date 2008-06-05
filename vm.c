@@ -1728,7 +1728,9 @@ Init_VM(void)
     vm_init_redefined_flag();
 }
 
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 struct rb_objspace *rb_objspace_alloc(void);
+#endif
 
 void
 Init_BareVM(void)

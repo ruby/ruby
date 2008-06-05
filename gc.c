@@ -201,6 +201,7 @@ static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
 #define mark_stack_overflow	objspace->markstack.overflow
 #define global_List		objspace->global_list
 
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 rb_objspace_t *
 rb_objspace_alloc(void)
 {
@@ -210,6 +211,7 @@ rb_objspace_alloc(void)
 
     return objspace;
 }
+#endif
 
 /* tiny heap size */
 /* 32KB */

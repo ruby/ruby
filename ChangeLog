@@ -1,3 +1,10 @@
+Thu Jun  5 23:40:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* gc.c (rb_objspace_alloc): this function is needed only when
+	  ENABLE_VM_OBJSPACE macro is defined.
+
+	* vm.c: ditto.
+
 Thu Jun  5 23:31:21 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/stringio/test_stringio.rb: add tests to achieve over 95% test
