@@ -3032,7 +3032,7 @@ thread_set_trace_func_m(VALUE obj, VALUE trace)
     GetThreadPtr(obj, th);
     rb_thread_remove_event_hook(th, call_trace_func);
 
-    if (!NIL_P(trace)) {
+    if (NIL_P(trace)) {
 	return Qnil;
     }
     thread_add_trace_func(th, trace);

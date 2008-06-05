@@ -1,3 +1,7 @@
+Thu Jun  5 20:24:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (thread_set_trace_func_m): fix check for proc argument.
+
 Thu Jun  5 20:17:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rexml/document.rb (REXML::Document:write): leaky modification
