@@ -130,11 +130,13 @@ RFLAGS = -r
 !if !defined(EXTLIBS)
 EXTLIBS =
 !endif
+LIBS = oldnames.lib user32.lib advapi32.lib shell32.lib
 !if !defined(USE_WINSOCK2)
-LIBS = oldnames.lib user32.lib advapi32.lib wsock32.lib $(EXTLIBS)
+LIBS = $(LIBS) wsock32.lib
 !else
-LIBS = oldnames.lib user32.lib advapi32.lib ws2_32.lib $(EXTLIBS)
+LIBS = $(LIBS) ws2_32.lib
 !endif
+LIBS = $(LIBS) $(EXTLIBS)
 MISSING = acosh.obj crypt.obj erf.obj win32.obj
 
 ARFLAGS = -machine:$(MACHINE) -out:

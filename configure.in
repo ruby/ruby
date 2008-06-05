@@ -346,6 +346,7 @@ mingw*)		if test "$with_winsock2" = yes; then
 		else
 		  LIBS="-lwsock32 $LIBS"
 		fi
+		LIBS="-lshell32 $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
 		ac_cv_header_utime_h=no
