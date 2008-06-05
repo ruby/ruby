@@ -1,3 +1,10 @@
+Thu Jun  5 23:25:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* eval.c (ruby_finalize_0): clear trace_func after executing END
+	  procs.
+
+	* thread.c: fix typo.
+
 Thu Jun  5 22:50:50 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (os_obj_of): heaps may be modified in yield.

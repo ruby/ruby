@@ -115,13 +115,13 @@ ruby_options(int argc, char **argv)
 static void
 ruby_finalize_0(void)
 {
-    rb_clear_trace_func();
     PUSH_TAG();
     if (EXEC_TAG() == 0) {
 	rb_trap_exit();
     }
     POP_TAG();
     rb_exec_end_proc();
+    rb_clear_trace_func();
 }
 
 static void

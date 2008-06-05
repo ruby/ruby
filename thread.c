@@ -2817,7 +2817,7 @@ rb_exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE arg)
 /* tracer */
 
 static rb_event_hook_t *
-alloc_event_fook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
+alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
     rb_event_hook_t *hook = ALLOC(rb_event_hook_t);
     hook->func = func;
@@ -2842,7 +2842,7 @@ void
 rb_thread_add_event_hook(rb_thread_t *th,
 			 rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
-    rb_event_hook_t *hook = alloc_event_fook(func, events, data);
+    rb_event_hook_t *hook = alloc_event_hook(func, events, data);
     hook->next = th->event_hooks;
     th->event_hooks = hook;
     thread_reset_event_flags(th);
@@ -2873,7 +2873,7 @@ set_threads_event_flags(int flag)
 void
 rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
-    rb_event_hook_t *hook = alloc_event_fook(func, events, data);
+    rb_event_hook_t *hook = alloc_event_hook(func, events, data);
     rb_vm_t *vm = GET_VM();
 
     hook->next = vm->event_hooks;
