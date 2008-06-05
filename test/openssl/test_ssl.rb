@@ -511,7 +511,12 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc, :server_proc => server_proc) do |server, port|
       10.times do |i|
         sock = TCPSocket.new("127.0.0.1", port)
-        ssl = OpenSSL::SSL::SSLSocket.new(sock)
+        ctx = OpenSSL::SSL::SSLContext.new
+        if defined?(OpenSSL::SSL::OP_NO_TICKET)
+          # disable RFC4507 support
+          ctx.options = OpenSSL::SSL::OP_NO_TICKET
+        end
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.sync_close = true
         ssl.session = first_session if first_session
         ssl.connect

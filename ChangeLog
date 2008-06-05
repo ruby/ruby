@@ -1,3 +1,17 @@
+Thu Jun  5 20:30:46 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_initialize):
+	  Add a null check for ssl; submitted by akira yamada
+	  in [ruby-dev:34950].
+
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Define OP_NO_TICKET if
+	  SSL_OP_NO_TICKET is present; submitted by akira yamada
+	  in [ruby-dev:34944].
+
+	* test/openssl/test_ssl.rb (OpenSSL#test_server_session): Add a
+	  workaround for the case where OpenSSL is configured with
+	  --enable-tlsext; submitted by akira yamada in [ruby-dev:34944].
+
 Thu Jun  5 20:24:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (thread_set_trace_func_m): fix check for proc argument.
@@ -6,7 +20,7 @@ Thu Jun  5 20:17:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/rexml/document.rb (REXML::Document:write): leaky modification
 	  trans -> transitive.  [ruby-dev:32040], r13686
-	
+
 	* lib/rexml/text.rb (Text.check): fix check for illigal characher.
 
 Thu Jun  5 14:03:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
