@@ -1878,6 +1878,7 @@ id2ref(obj, objid)
     VALUE obj, objid;
 {
     unsigned long ptr, p0;
+    int type;
 
     rb_secure(4);
     p0 = ptr = NUM2ULONG(objid);
@@ -1894,7 +1895,8 @@ id2ref(obj, objid)
         return ID2SYM(symid);
     }
 
-    if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLKTAG) {
+    if (!is_pointer_to_heap((void *)ptr)||
+	(type = BUILTIN_TYPE(ptr)) >= T_BLKTAG || type == T_ICLASS) {
 	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {
