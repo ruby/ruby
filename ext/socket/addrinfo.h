@@ -61,10 +61,15 @@
 #undef NI_NUMERICSERV
 #undef NI_DGRAM
 
+#undef addrinfo
 #define addrinfo addrinfo__compat
+#undef getaddrinfo
 #define getaddrinfo getaddrinfo__compat
+#undef getnameinfo
 #define getnameinfo getnameinfo__compat
+#undef freehostent
 #define freehostent freehostent__compat
+#undef freeaddrinfo
 #define freeaddrinfo freeaddrinfo__compat
 
 #ifndef __P
