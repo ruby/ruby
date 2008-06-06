@@ -2294,9 +2294,6 @@ count_objects(int argc, VALUE *argv, VALUE os)
     if (rb_scan_args(argc, argv, "01", &hash) == 1) {
         if (TYPE(hash) != T_HASH)
             rb_raise(rb_eTypeError, "non-hash given");
-        if (!RHASH_EMPTY_P(hash)) {
-            st_foreach(RHASH_TBL(hash), set_zero, hash);
-        }
     }
 
     for (i = 0; i <= T_MASK; i++) {
@@ -2318,8 +2315,12 @@ count_objects(int argc, VALUE *argv, VALUE os)
         total += heaps[i].limit;
     }
 
-    if (hash == Qnil)
+    if (hash == Qnil) {
         hash = rb_hash_new();
+    }
+    else if (!RHASH_EMPTY_P(hash)) {
+        st_foreach(RHASH_TBL(hash), set_zero, hash);
+    }
     rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
     rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(freed));
     for (i = 0; i <= T_MASK; i++) {
