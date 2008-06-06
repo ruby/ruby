@@ -1,5 +1,16 @@
 Fri Jun  6 17:04:56 2008  Akinori MUSHA  <knu@iDaemons.org>
 
+	* win32/win32.h: include ws2tcpip.h. fixed [ruby-Bugs-20528]
+
+	* lib/time.rb (Time.xmlschema): don't use float.  fix
+	  http://rubyforge.org/tracker/index.php?func=detail&group_id=426&atid=1698&aid=20504
+
+	* object.c (rb_obj_alloc): RDoc updated.  a patch from Gaston
+	  Ramos <ramos.gaston at gmail.com> in [ruby-core:17073].
+
+	* lib/rdoc.rb: massive spelling correction patch from Evan Farrar
+	  <evanfarrar at gmail.com> in [ruby-doc:1382] applied.
+
 	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_initialize):
 	  Add a null check for ssl; submitted by akira yamada
 	  in [ruby-dev:34950].
