@@ -1,3 +1,13 @@
+Fri Jun  6 21:51:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (COMMON_HEADERS): include ws2tcpip.h.
+
+	* ext/socket/addrinfo.h (addrinfo, getaddrinfo, getnameinfo,
+	  freehostent, freeaddrinfo): undef before define because these are
+	  macros in some versions of Windows SDK.
+
+	  merged from ruby_1_8.
+
 Fri Jun  6 18:25:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/iconv/utils.rb (default_test): override not to croak.

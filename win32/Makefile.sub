@@ -261,7 +261,7 @@ COMMON_LIBS  = m
 COMMON_MACROS = WIN32_LEAN_AND_MEAN WIN32
 !endif
 !ifndef COMMON_HEADERS
-COMMON_HEADERS = winsock2.h windows.h
+COMMON_HEADERS = winsock2.h ws2tcpip.h windows.h
 !endif
 
 arch_hdrdir = $(EXTOUT)/include/$(arch)
