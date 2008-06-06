@@ -41,8 +41,8 @@ MAKE = nmake
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
 EXTSTATIC = $(EXTSTATIC)
-!if "$(USE_WINSOCK2)" != "0"
-USE_WINSOCK2 = 1
+!if defined(USE_WINSOCK2)
+USE_WINSOCK2 = $(USE_WINSOCK2)
 !endif
 !if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)
