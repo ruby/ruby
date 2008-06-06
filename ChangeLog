@@ -1,3 +1,8 @@
+Fri Jun  6 12:20:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
+	  [ruby-core:17115]
+
 Fri Jun  6 00:05:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.xmlschema): don't use float.  fix
@@ -16,16 +21,6 @@ Thu Jun  5 20:30:46 2008  Akinori MUSHA  <knu@iDaemons.org>
 	* test/openssl/test_ssl.rb (OpenSSL#test_server_session): Add a
 	  workaround for the case where OpenSSL is configured with
 	  --enable-tlsext; submitted by akira yamada in [ruby-dev:34944].
-
-Thu Jun  5 11:01:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
-	  [ruby-core:17115]
-
-Thu Jun  5 11:00:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
-	  [ruby-core:17115]
 
 Wed Jun  4 19:36:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 

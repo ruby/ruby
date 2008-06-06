@@ -755,7 +755,12 @@ iconv_iconv
     if (!NIL_P(str)) slen = RSTRING_LEN(StringValue(str));
     if (argc != 2 || !RTEST(rb_range_beg_len(n1, &start, &length, slen, 0))) {
 	if (NIL_P(n1) || ((start = NUM2LONG(n1)) < 0 ? (start += slen) >= 0 : start < slen)) {
-	    if (!NIL_P(n2)) length = NUM2LONG(n2);
+	    if (NIL_P(n2)) {
+		length = -1;
+	    }
+	    else if ((length = NUM2LONG(n2)) >= slen - start) {
+		length = slen - start;
+	    }
 	}
     }
 
