@@ -759,7 +759,10 @@ make_time_t(tptr, utc_p)
     int utc_p;
 {
     time_t t;
-    struct tm *tmp, buf;
+#ifdef NEGATIVE_TIME_T
+    struct tm *tmp;
+#endif
+    struct tm buf;
     buf = *tptr;
     if (utc_p) {
 #if defined(HAVE_TIMEGM)

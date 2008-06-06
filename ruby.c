@@ -809,6 +809,9 @@ proc_options(argc, argv)
 	}
 	else {
 	    script = argv[0];
+#if defined DOSISH || defined __CYGWIN__
+	    translate_char(argv[0], '\\', '/');
+#endif
 	    if (script[0] == '\0') {
 		script = "-";
 	    }
@@ -825,10 +828,10 @@ proc_options(argc, argv)
 		if (!script) script = argv[0];
 		script = ruby_sourcefile = rb_source_filename(script);
 		script_node = NEW_NEWLINE(0);
-	    }
 #if defined DOSISH || defined __CYGWIN__
-	    translate_char(script, '\\', '/');
+		translate_char(ruby_sourcefile, '\\', '/');
 #endif
+	    }
 	    argc--; argv++;
 	}
     }

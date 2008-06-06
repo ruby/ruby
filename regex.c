@@ -164,7 +164,7 @@ static void store_jump _((char*, int, char*));
 static void insert_jump _((int, char*, char*, char*));
 static void store_jump_n _((char*, int, char*, unsigned));
 static void insert_jump_n _((int, char*, char*, char*, unsigned));
-static void insert_op _((int, char*, char*));
+/*static void insert_op _((int, char*, char*));*/
 static void insert_op_2 _((int, char*, char*, int, int));
 static int memcmp_translate _((unsigned char*, unsigned char*, int));
 
@@ -508,6 +508,7 @@ utf8_firstbyte(c)
 #endif
 }
 
+#if 0
 static void
 print_mbc(c)
      unsigned int c;
@@ -538,6 +539,7 @@ print_mbc(c)
     printf("%c%c", (int)(c >> BYTEWIDTH), (int)(c &0xff));
   }
 }
+#endif
 
 /* If the buffer isn't allocated when it comes in, use this.  */
 #define INIT_BUF_SIZE  28
@@ -752,6 +754,7 @@ is_in_list(c, b)
   return is_in_list_sbc(c, b) || (current_mbctype ? is_in_list_mbc(c, b) : 0);
 }
 
+#if 0
 static void
 print_partial_compiled_pattern(start, end)
     unsigned char *start;
@@ -1006,6 +1009,7 @@ print_compiled_pattern(bufp)
 
   print_partial_compiled_pattern(buffer, buffer + bufp->used);
 }
+#endif
 
 static char*
 calculate_must_string(start, end)
@@ -1208,7 +1212,7 @@ read_special(p, pend, pp)
    the `struct re_pattern_buffer' that bufp pointed to, after
    re_compile_pattern returns. */
 
-char *
+const char *
 re_compile_pattern(pattern, size, bufp)
      const char *pattern;
      int size;
@@ -2580,6 +2584,7 @@ insert_jump_n(op, from, to, current_end, n)
 }
 
 
+#if 0
 /* Open up space at location THERE, and insert operation OP.
    CURRENT_END gives the end of the storage in use, so
    we know how much data to copy up.
@@ -2599,6 +2604,7 @@ insert_op(op, there, current_end)
 
   there[0] = (char)op;
 }
+#endif
 
 
 /* Open up space at location THERE, and insert operation OP followed by

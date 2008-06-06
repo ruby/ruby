@@ -4479,7 +4479,7 @@ static VALUE
 rb_str_crypt(str, salt)
     VALUE str, salt;
 {
-    extern char *crypt();
+    extern char *crypt _((const char *, const char*));
     VALUE result;
     const char *s;
 
