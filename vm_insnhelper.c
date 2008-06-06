@@ -98,109 +98,111 @@ vm_pop_frame(rb_thread_t *th)
 
 /* method dispatch */
 
+#define VM_CALLEE_SETUP_ARG(ret, th, iseq, orig_argc, orig_argv, block) \
+    if (LIKELY(iseq->arg_simple & 0x01)) { \
+	/* simple check */ \
+	if (orig_argc != iseq->argc) { \
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", orig_argc, iseq->argc); \
+	} \
+	ret = 0; \
+    } \
+    else { \
+	ret = vm_callee_setup_arg_complex(th, iseq, orig_argc, orig_argv, block); \
+    }
+
 static inline int
-vm_callee_setup_arg(rb_thread_t *th, const rb_iseq_t * iseq,
-		    int orig_argc, VALUE * orig_argv, const rb_block_t **block)
+vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
+			    int orig_argc, VALUE * orig_argv,
+			    const rb_block_t **block)
 {
     const int m = iseq->argc;
+    int argc = orig_argc;
+    VALUE *argv = orig_argv;
+    int opt_pc = 0;
 
-    if (LIKELY(iseq->arg_simple & 0x01)) {
-	/* simple check */
-	if (orig_argc != m) {
-	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		     orig_argc, m);
-	}
-	return 0;
+    th->mark_stack_len = argc + iseq->arg_size;
+
+    /* mandatory */
+    if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		 argc, m + iseq->arg_post_len);
     }
-    else {
-	int argc = orig_argc;
-	VALUE *argv = orig_argv;
-	int opt_pc = 0;
 
-	th->mark_stack_len = argc + iseq->arg_size;
+    argv += m;
+    argc -= m;
 
-	/* mandatory */
-	if (argc < (m + iseq->arg_post_len)) { /* check with post arg */
+    /* post arguments */
+    if (iseq->arg_post_len) {
+	if (!(orig_argc < iseq->arg_post_start)) {
+	    VALUE *new_argv = ALLOCA_N(VALUE, argc);
+	    MEMCPY(new_argv, argv, VALUE, argc);
+	    argv = new_argv;
+	}
+
+	MEMCPY(&orig_argv[iseq->arg_post_start], &argv[argc -= iseq->arg_post_len],
+	       VALUE, iseq->arg_post_len);
+    }
+
+    /* opt arguments */
+    if (iseq->arg_opts) {
+	const int opts = iseq->arg_opts - 1 /* no opt */;
+
+	if (iseq->arg_rest == -1 && argc > opts) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		     argc, m + iseq->arg_post_len);
+		     orig_argc, m + opts + iseq->arg_post_len);
 	}
 
-	argv += m;
-	argc -= m;
-
-	/* post arguments */
-	if (iseq->arg_post_len) {
-	    if (!(orig_argc < iseq->arg_post_start)) {
-		VALUE *new_argv = ALLOCA_N(VALUE, argc);
-		MEMCPY(new_argv, argv, VALUE, argc);
-		argv = new_argv;
-	    }
-
-	    MEMCPY(&orig_argv[iseq->arg_post_start], &argv[argc -= iseq->arg_post_len],
-		   VALUE, iseq->arg_post_len);
+	if (argc > opts) {
+	    argc -= opts;
+	    argv += opts;
+	    opt_pc = iseq->arg_opt_table[opts]; /* no opt */
 	}
-
-	/* opt arguments */
-	if (iseq->arg_opts) {
-	    const int opts = iseq->arg_opts - 1 /* no opt */;
-
-	    if (iseq->arg_rest == -1 && argc > opts) {
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-			 orig_argc, m + opts + iseq->arg_post_len);
+	else {
+	    int i;
+	    for (i = argc; i<opts; i++) {
+		orig_argv[i + m] = Qnil;
 	    }
-
-	    if (argc > opts) {
-		argc -= opts;
-		argv += opts;
-		opt_pc = iseq->arg_opt_table[opts]; /* no opt */
-	    }
-	    else {
-		int i;
-		for (i = argc; i<opts; i++) {
-		    orig_argv[i + m] = Qnil;
-		}
-		opt_pc = iseq->arg_opt_table[argc];
-		argc = 0;
-	    }
-	}
-
-	/* rest arguments */
-	if (iseq->arg_rest != -1) {
-	    orig_argv[iseq->arg_rest] = rb_ary_new4(argc, argv);
+	    opt_pc = iseq->arg_opt_table[argc];
 	    argc = 0;
 	}
+    }
 
-	/* block arguments */
-	if (block && iseq->arg_block != -1) {
-	    VALUE blockval = Qnil;
-	    const rb_block_t *blockptr = *block;
+    /* rest arguments */
+    if (iseq->arg_rest != -1) {
+	orig_argv[iseq->arg_rest] = rb_ary_new4(argc, argv);
+	argc = 0;
+    }
 
-	    if (argc != 0) {
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-			 orig_argc, m + iseq->arg_post_len);
-	    }
+    /* block arguments */
+    if (block && iseq->arg_block != -1) {
+	VALUE blockval = Qnil;
+	const rb_block_t *blockptr = *block;
 
-	    if (blockptr) {
-		/* make Proc object */
-		if (blockptr->proc == 0) {
-		    rb_proc_t *proc;
-
-		    blockval = vm_make_proc(th, th->cfp, blockptr);
-
-		    GetProcPtr(blockval, proc);
-		    *block = &proc->block;
-		}
-		else {
-		    blockval = blockptr->proc;
-		}
-	    }
-
-	    orig_argv[iseq->arg_block] = blockval; /* Proc or nil */
+	if (argc != 0) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
+		     orig_argc, m + iseq->arg_post_len);
 	}
 
-	th->mark_stack_len = 0;
-	return opt_pc;
+	if (blockptr) {
+	    /* make Proc object */
+	    if (blockptr->proc == 0) {
+		rb_proc_t *proc;
+
+		blockval = vm_make_proc(th, th->cfp, blockptr);
+
+		GetProcPtr(blockval, proc);
+		*block = &proc->block;
+	    }
+	    else {
+		blockval = blockptr->proc;
+	    }
+	}
+
+	orig_argv[iseq->arg_block] = blockval; /* Proc or nil */
     }
+
+    th->mark_stack_len = 0;
+    return opt_pc;
 }
 
 static inline int
@@ -436,7 +438,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 
     /* TODO: eliminate it */
     GetISeqPtr(iseqval, iseq);
-    opt_pc = vm_callee_setup_arg(th, iseq, argc, rsp, &blockptr);
+    VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, argc, rsp, &blockptr);
 
     /* stack overflow check */
     CHECK_STACK_OVERFLOW(cfp, iseq->stack_max);
@@ -694,7 +696,9 @@ vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
 
     if (lambda) {
 	/* call as method */
-	return vm_callee_setup_arg(th, iseq, orig_argc, argv, &blockptr);
+	int opt_pc;
+	VM_CALLEE_SETUP_ARG(opt_pc, th, iseq, orig_argc, argv, &blockptr);
+	return opt_pc;
     }
     else {
 	int i;

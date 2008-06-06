@@ -1,3 +1,8 @@
+Fri Jun  6 23:46:19 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_callee_setup_arg): check simple flag before
+	  calling setup_arg function().  this change reduce function call.
+
 Fri Jun  6 21:51:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (COMMON_HEADERS): include ws2tcpip.h.
