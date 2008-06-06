@@ -1,3 +1,11 @@
+Fri Jun  6 20:58:25 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (COMMON_HEADERS): include ws2tcpip.h.
+
+	* ext/socket/addrinfo.h (addrinfo, getaddrinfo, getnameinfo,
+	  freehostent, freeaddrinfo): undef before define because these are
+	  macros in some versions of Windows SDK.
+
 Fri Jun  6 20:13:01 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/setup.mak: maybe commit miss.

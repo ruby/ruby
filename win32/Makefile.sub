@@ -249,7 +249,7 @@ COMMON_MACROS = WIN32_LEAN_AND_MEAN WIN32
 !if !defined(USE_WINSOCK2)
 COMMON_HEADERS = winsock.h
 !else
-COMMON_HEADERS = winsock2.h
+COMMON_HEADERS = winsock2.h ws2tcpip.h
 !endif
 COMMON_HEADERS = $(COMMON_HEADERS) windows.h
 !endif
