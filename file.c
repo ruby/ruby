@@ -2742,57 +2742,54 @@ file_expand_path(fname, dname, result)
 
 #if USE_NTFS
     *p = '\0';
-    if (1 &&
-#ifdef __CYGWIN__
-	!(buf[0] == '/' && !buf[1]) &&
-#endif
-	!strpbrk(b = buf, "*?")) {
+    if (*(s = skipprefix(b = buf)) && !strpbrk(s, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
 #ifdef __CYGWIN__
 	int lnk_added = 0, is_symlink = 0;
 	struct stat st;
-	char w32buf[MAXPATHLEN], sep = 0;
-	p = 0;
+	char w32buf[MAXPATHLEN];
+	p = strrdirsep(s);
 	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
 	    is_symlink = 1;
-	    p = strrdirsep(buf);
-	    if (!p) p = skipprefix(buf);
-	    if (p) {
-		sep = *p;
-		*p = '\0';
-	    }
+	    *p = '\0';
 	}
-	if (cygwin_conv_to_win32_path(buf, w32buf) == 0) {
+	if (cygwin_conv_to_win32_path((*buf ? buf : "/"), w32buf) == 0) {
 	    b = w32buf;
 	}
-	if (p) *p = sep;
-	else p = buf;
 	if (is_symlink && b == w32buf) {
+	    *p = '\\';
+	    strlcat(w32buf, p, sizeof(w32buf));
 	    len = strlen(p);
 	    if (len > 4 && strcasecmp(p + len - 4, ".lnk") != 0) {
 		lnk_added = 1;
 		strlcat(w32buf, ".lnk", sizeof(w32buf));
 	    }
 	}
+	*p = '/';
 #endif
 	HANDLE h = FindFirstFile(b, &wfd);
 	if (h != INVALID_HANDLE_VALUE) {
 	    FindClose(h);
-	    p = strrdirsep(buf);
 	    len = strlen(wfd.cFileName);
 #ifdef __CYGWIN__
 	    if (lnk_added && len > 4 &&
 		strcasecmp(wfd.cFileName + len - 4, ".lnk") == 0) {
 		wfd.cFileName[len -= 4] = '\0';
 	    }
+#else
+	    p = strrdirsep(s);
 #endif
-	    if (!p) p = buf;
 	    ++p;
 	    BUFCHECK(bdiff + len >= buflen);
 	    memcpy(p, wfd.cFileName, len + 1);
 	    p += len;
 	}
+#ifdef __CYGWIN__
+	else {
+	    p += strlen(p);
+	}
+#endif
     }
 #endif
 

@@ -1,3 +1,8 @@
+Fri Jun  6 19:23:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): fix for non-existent files and SFN of
+	  symlinks.  [ruby-talk:303736]
+
 Fri Jun  6 18:25:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/iconv: Tests fixed.
