@@ -28,6 +28,7 @@ extern "C" {
 // #include <stdarg.h> conflict with varargs.h?
 #if !defined(WSAAPI)
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #endif
 
 #define NT 1			/* deprecated */
