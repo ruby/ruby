@@ -11,14 +11,14 @@ require "fileutils"
 require "digest/md5"
 
 #
-# PStore implements a file based persistance mechanism based on a Hash.  User
+# PStore implements a file based persistence mechanism based on a Hash.  User
 # code can store hierarchies of Ruby objects (values) into the data store file
 # by name (keys).  An object hierarchy may be just a single object.  User code 
 # may later read values back from the data store or even update data, as needed.
 # 
 # The transactional behavior ensures that any changes succeed or fail together.
 # This can be used to ensure that the data store is not left in a transitory
-# state, where some values were upated but others were not.
+# state, where some values were updated but others were not.
 # 
 # Behind the scenes, Ruby objects are stored to the data store file with 
 # Marshal.  That carries the usual limitations.  Proc objects cannot be 

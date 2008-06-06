@@ -496,7 +496,7 @@ BSD_vfprintf(fp, fmt0, ap)
 
 	/*
 	 * Choose PADSIZE to trade efficiency vs. size.  If larger printf
-	 * fields occur frequently, increase PADSIZE and make the initialisers
+	 * fields occur frequently, increase PADSIZE and make the initializers
 	 * below longer.
 	 */
 #define	PADSIZE	16		/* pad chunk size */

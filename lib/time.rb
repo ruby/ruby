@@ -363,7 +363,7 @@ class Time
         min = $5.to_i
         sec = $6.to_i
         usec = 0
-        usec = $7.to_f * 1000000 if $7
+        usec = ($7[1..-1] + '000000')[0,6].to_i if $7
         if $8
           zone = $8
           year, mon, day, hour, min, sec =
@@ -621,6 +621,8 @@ if __FILE__ == $0
         t = Time.utc(1960, 12, 31, 23, 0, 0, 123456)
         assert_equal("1960-12-31T23:00:00.123456Z", t.xmlschema(6))
       end
+
+      assert_equal(249, Time.xmlschema("2008-06-05T23:49:23.000249+09:00").usec)
     end
 
     def test_completion

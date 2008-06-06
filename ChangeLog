@@ -1,3 +1,17 @@
+Fri Jun  6 17:04:56 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_initialize):
+	  Add a null check for ssl; submitted by akira yamada
+	  in [ruby-dev:34950].
+
+	* ext/openssl/ossl_ssl.c (Init_ossl_ssl): Define OP_NO_TICKET if
+	  SSL_OP_NO_TICKET is present; submitted by akira yamada
+	  in [ruby-dev:34944].
+
+	* test/openssl/test_ssl.rb (OpenSSL#test_server_session): Add a
+	  workaround for the case where OpenSSL is configured with
+	  --enable-tlsext; submitted by akira yamada in [ruby-dev:34944].
+
 Fri Jun  6 16:58:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_iconv): fix for length argument and now

@@ -1466,6 +1466,9 @@ Init_ossl_ssl()
     ossl_ssl_def_const(OP_NO_SSLv2);
     ossl_ssl_def_const(OP_NO_SSLv3);
     ossl_ssl_def_const(OP_NO_TLSv1);
+#if defined(SSL_OP_NO_TICKET)
+    ossl_ssl_def_const(OP_NO_TICKET);
+#endif
     ossl_ssl_def_const(OP_PKCS1_CHECK_1);
     ossl_ssl_def_const(OP_PKCS1_CHECK_2);
     ossl_ssl_def_const(OP_NETSCAPE_CA_DN_BUG);

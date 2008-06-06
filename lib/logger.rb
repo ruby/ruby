@@ -1,4 +1,4 @@
-# logger.rb - saimple logging utility
+# logger.rb - simple logging utility
 # Copyright (C) 2000-2003, 2005  NAKAMURA, Hiroshi <nakahiro@sarion.co.jp>.
 
 require 'monitor'
