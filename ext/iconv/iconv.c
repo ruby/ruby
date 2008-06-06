@@ -828,7 +828,6 @@ iconv_iconv(int argc, VALUE *argv, VALUE self)
     VALUE cd = check_iconv(self);
     long start = 0, length = 0, slen = 0;
 
-    n1 = n2 = Qnil;
     rb_scan_args(argc, argv, "12", &str, &n1, &n2);
     if (!NIL_P(str)) {
 	VALUE n = rb_str_length(StringValue(str));
