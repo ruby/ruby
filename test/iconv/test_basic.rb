@@ -1,6 +1,6 @@
 require File.join(File.dirname(__FILE__), "utils.rb")
 
-TestIconv.testcase(:Basic) do
+class TestIconv::Basic < TestIconv
   def test_euc2sjis
     iconv = Iconv.open('SHIFT_JIS', 'EUC-JP')
     str = iconv.iconv(EUCJ_STR)
@@ -46,4 +46,4 @@ TestIconv.testcase(:Basic) do
   def test_unknown_encoding
     assert_raise(Iconv::InvalidEncoding) { Iconv.iconv("utf-8", "X-UKNOWN", "heh") }
   end
-end
+end if defined?(TestIconv)

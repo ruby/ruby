@@ -1,6 +1,6 @@
 require File.join(File.dirname(__FILE__), "utils.rb")
 
-TestIconv.testcase(:Option) do
+class TestIconv::Option < TestIconv
   def test_ignore_option
     iconv = Iconv.new('SHIFT_JIS', 'EUC-JP//ignore')
     str = iconv.iconv(EUCJ_STR)
@@ -28,4 +28,4 @@ TestIconv.testcase(:Option) do
     assert_equal(SJIS_STR, str)
     iconv.close
   end
-end
+end if defined?(TestIconv)
