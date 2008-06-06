@@ -1,3 +1,8 @@
+Fri Jun  6 16:58:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fix for length argument and now
+	  allows range.  [ruby-core:17092] [ruby-core:17115]
+
 Wed Jun  4 17:22:30 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* NEWS: Fix typos and move misplaced entries.
