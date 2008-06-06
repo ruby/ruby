@@ -1,6 +1,6 @@
 require File.join(File.dirname(__FILE__), "utils.rb")
 
-TestIconv.testcase(:Partial) do
+class TestIconv::Partial < TestIconv
   def test_partial_ascii
     c = Iconv.open(ASCII, ASCII)
     ref = '[ruby-core:17092]'
@@ -38,4 +38,4 @@ TestIconv.testcase(:Partial) do
   ensure
     c.close
   end
-end
+end if defined?(TestIconv)
