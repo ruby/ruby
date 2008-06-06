@@ -1,3 +1,7 @@
+Fri Jun  6 18:25:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/iconv/utils.rb (default_test): override not to croak.
+
 Fri Jun  6 16:41:45 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h: include ws2tcpip.h. fixed [ruby-Bugs-20528]
