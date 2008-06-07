@@ -2168,6 +2168,9 @@ rb_alias(klass, name, def)
     st_insert(RCLASS(klass)->m_tbl, name,
 	      (st_data_t)NEW_METHOD(NEW_FBODY(body, def, origin),
 				    NOEX_WITH_SAFE(orig->nd_noex)));
+
+    if (!ruby_running) return;
+
     if (singleton) {
 	rb_funcall(singleton, singleton_added, 1, ID2SYM(name));
     }
