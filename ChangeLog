@@ -1,3 +1,22 @@
+Sun Jun  8 03:34:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (round): fallback definition.
+
+	* numeric.c (flo_divmod, flo_round): use round() always.
+	  [ruby-dev:32269]
+
+Sun Jun  8 03:34:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flodivmod): work around for inifinity.
+
+	* numeric.c (flo_divmod): work around for platforms have no round().
+	  [ruby-dev:32247]
+
+Sun Jun  8 03:34:23 2008  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* numeric.c (flo_divmod): round to the nearest integer.
+	  [ ruby-Bugs-14540 ]
+
 Sun Jun  8 03:08:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/encodings/SHIFT-JIS.rb (REXML::Encoding): place -x for
