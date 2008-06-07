@@ -1,3 +1,13 @@
+Sun Jun  8 01:15:50 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/net/http.rb, lib/open-uri.rb: remove
+	  Net::HTTP#enable_post_connection_check.  [ruby-dev:31960]
+
+	* lib/net/imap.rb: hostname should be verified against server's
+	  indentity as persented in the server's certificate. [ruby-dev:31960]
+
+	* ext/openssl/lib/net/telnets.rb, ext/openssl/lib/net/ftptls.rb: ditto.
+
 Thu Jun  5 16:21:16 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (make_cmdvector): adjust escaped successive
