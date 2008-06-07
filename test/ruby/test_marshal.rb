@@ -45,4 +45,24 @@ class TestMarshal < Test::Unit::TestCase
       assert_equal(a, b)
     }
   end
+
+  class C
+    def initialize(str)
+      @str = str
+    end
+    def _dump(limit)
+      @str
+    end
+    def self._load(s)
+      new(s)
+    end
+  end
+
+  def test_too_long_string
+    (data = Marshal.dump(C.new("a")))[-2, 1] = "\003\377\377\377"
+    e = assert_raise(ArgumentError, "[ruby-dev:32054]") {
+      Marshal.load(data)
+    }
+    assert_equal("marshal data too short", e.message)
+  end
 end
