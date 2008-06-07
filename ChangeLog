@@ -1,3 +1,7 @@
+Sun Jun  8 06:03:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_arg): use converted object.  [ruby-core:14759]
+
 Sun Jun  8 06:01:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fptr_finalize): clear errno first.  [ruby-talk:284492]
