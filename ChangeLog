@@ -1,3 +1,9 @@
+Sun Jun  8 03:28:53 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/rexml/encodings/SHIFT-JIS.rb (REXML::Encoding): place -x for
+	  nkf conversion.  a patch from <moonwolf AT moonwolf.com>.
+	  [ruby-dev:32183]
+
 Sun Jun  8 03:07:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Switch::summarize): fix for long form

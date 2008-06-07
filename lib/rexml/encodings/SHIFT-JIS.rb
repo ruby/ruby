@@ -13,8 +13,8 @@ module REXML
     rescue LoadError
       require 'nkf'
 
-      SJISTOU8 = '-Swm0'
-      U8TOSJIS = '-Wsm0'
+      SJISTOU8 = '-Swm0x'
+      U8TOSJIS = '-Wsm0x'
 
       def decode_sjis(str)
         NKF.nkf(SJISTOU8, str)
