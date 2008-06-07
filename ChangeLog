@@ -1,3 +1,8 @@
+Sun Jun  8 05:53:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (TIMEZONE_VOID): check whether timezone requires zero
+	  arguments.  [ruby-dev:32631]
+
 Sun Jun  8 05:35:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_rest_arg): check if duplicated.  [ruby-core:14140]
