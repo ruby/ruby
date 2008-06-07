@@ -1,3 +1,7 @@
+Sun Jun  8 06:01:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): clear errno first.  [ruby-talk:284492]
+
 Sun Jun  8 05:53:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (TIMEZONE_VOID): check whether timezone requires zero
