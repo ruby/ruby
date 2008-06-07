@@ -706,7 +706,7 @@ rb_big2str0(x, base, trim)
 	while (k--) {
 	    s[--j] = ruby_digitmap[num % base];
 	    num /= base;
-	    if (!trim && j < 1) break;
+	    if (!trim && j <= 1) break;
 	    if (trim && i == 0 && num == 0) break;
 	}
     }
