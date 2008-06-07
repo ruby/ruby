@@ -158,8 +158,6 @@ dnl Checks for programs.
 
 : ${CFLAGS=} ${cflags='${optflags} ${debugflags} ${warnflags}'}
 : ${CXXFLAGS=} ${cxxflags='${optflags} ${debugflags} ${warnflags}'}
-CFLAGS="${CFLAGS} `eval echo $cflags`"
-CXXFLAGS="${CXXFLAGS} `eval echo $cxxflags`"
 if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
@@ -172,6 +170,8 @@ if test "$GCC" = yes; then
 else
     linker_flag=
 fi
+CFLAGS="${CFLAGS} `eval echo $cflags`"
+CXXFLAGS="${CXXFLAGS} `eval echo $cxxflags`"
 
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
