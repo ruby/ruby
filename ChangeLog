@@ -1,3 +1,8 @@
+Sun Jun  8 05:00:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_to_inum): trailing spaces may exist at sqeezing
+	  preceeding 0s.  [ruby-core:13873]
+
 Sun Jun  8 04:56:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (error_print): put newline unless multiple line message ends
