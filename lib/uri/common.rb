@@ -110,7 +110,7 @@ module URI
       SERVER = "(?:#{USERINFO}@)?#{HOSTPORT}"
       # reg_name      = 1*( unreserved | escaped | "$" | "," |
       #                     ";" | ":" | "@" | "&" | "=" | "+" )
-      REG_NAME = "(?:[#{UNRESERVED}$,;+@&=+]|#{ESCAPED})+"
+      REG_NAME = "(?:[#{UNRESERVED}$,;:@&=+]|#{ESCAPED})+"
       # authority     = server | reg_name
       AUTHORITY = "(?:#{SERVER}|#{REG_NAME})"
 
