@@ -449,12 +449,13 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 #  if ( __GNUC__ == 3 && __GNUC_MINOR__ > 0 ) || __GNUC__ > 3
 __attribute__ ((noinline))
 #  endif
-static VALUE *
-stack_end_address(void)
+static void
+stack_end_address(VALUE **stack_end_p)
 {
-    return (VALUE *)__builtin_frame_address(0);
+    VALUE stack_end;
+    *stack_end_p = &stack_end;
 }
-#  define  SET_STACK_END    VALUE *stack_end = stack_end_address()
+#  define  SET_STACK_END    VALUE *stack_end; stack_end_address(&stack_end)
 # else
 #  define  SET_STACK_END    VALUE *stack_end = alloca(1)
 # endif
