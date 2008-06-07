@@ -1,3 +1,7 @@
+Sun Jun  8 06:02:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): clear errno first.  [ruby-talk:284492]
+
 Sun Jun  8 05:59:36 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: don't freeze nil even if 1.8 will not be aware of
