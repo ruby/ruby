@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.30 2006-12-30 21:43:41+09 tadf Exp $
+# $Id: date.rb,v 2.33 2007-12-22 14:41:34+09 tadf Exp $
 #++
 #
 # == Overview
@@ -250,7 +250,7 @@ class Date
   ABBR_DAYNAMES = %w(Sun Mon Tue Wed Thu Fri Sat)
 
   [MONTHNAMES, DAYNAMES, ABBR_MONTHNAMES, ABBR_DAYNAMES].each do |xs|
-    xs.each{|x| x.freeze}.freeze
+    xs.each{|x| x.freeze unless x.nil?}.freeze
   end
 
   class Infinity < Numeric # :nodoc:

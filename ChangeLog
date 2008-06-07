@@ -1,3 +1,8 @@
+Sun Jun  8 05:59:36 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb: don't freeze nil even if 1.8 will not be aware of
+	  the issue. [ruby-dev:32677]
+
 Sun Jun  8 05:54:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (TIMEZONE_VOID): check whether timezone requires zero
