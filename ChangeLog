@@ -1,3 +1,17 @@
+Sun Jun  8 05:24:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_VARTYPE): check if a variable is defined
+	  and its type.
+
+	* configure.in (timezone, altzone): check for recent cygwin.
+
+	* missing/strftime.c (strftime): fix for timezone.  [ruby-dev:32536]
+
+	* lib/mkmf.rb (try_var): should fail for functions.
+
+	* ext/readline/extconf.rb: should use have_func for functions instead
+	  of have_var.
+
 Sun Jun  8 05:08:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb (read_multipart): exclude blanks from header values.

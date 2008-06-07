@@ -438,7 +438,7 @@ def try_var(var, headers = nil, &b)
 #{headers}
 /*top*/
 int main() { return 0; }
-int t() { const volatile void *volatile p; p = (void *)&#{var}; return 0; }
+int t() { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
 SRC
 end
 
