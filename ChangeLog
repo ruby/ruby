@@ -1,3 +1,7 @@
+Sat Jun  7 16:06:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (CFLAGS, CXXFLAGS): append default flags.
+
 Sat Jun  7 01:23:59 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (rb_open_file, rb_io_s_sysopen): fmode should be unsigned int.
