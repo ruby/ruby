@@ -1,3 +1,8 @@
+Sun Jun  8 04:56:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (error_print): put newline unless multiple line message ends
+	  with a newline.  [ruby-dev:32429]
+
 Sun Jun  8 04:54:36 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
 	Merged 14070 from trunk.

@@ -1301,8 +1301,9 @@ error_print()
 		warn_print2(RSTRING(epath)->ptr, RSTRING(epath)->len);
 		warn_print(")\n");
 	    }
-	    if (tail) {
+	    if (tail && elen>len+1) {
 		warn_print2(tail, elen-len-1);
+		if (einfo[elen-1] != '\n') warn_print2("\n", 1);
 	    }
 	}
     }
