@@ -1,3 +1,7 @@
+Sun Jun  8 01:15:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* hash.c (hash_i): make Hash#hash order insensitive.
+
 Sat Jun  7 22:15:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (VENDOR_DIR): use LIBDIR instead of PREFIX as well as

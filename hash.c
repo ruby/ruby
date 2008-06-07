@@ -1602,7 +1602,6 @@ hash_i(key, val, hval)
 {
     if (key == Qundef) return ST_CONTINUE;
     *hval ^= rb_hash(key);
-    *hval *= 137;
     *hval ^= rb_hash(val);
     return ST_CONTINUE;
 }

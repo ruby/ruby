@@ -635,4 +635,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], expected - vals)
   end
 
+  def test_hash_hash
+    assert_equal({0=>2,11=>1}.hash, {11=>1,0=>2}.hash)
+  end
 end
