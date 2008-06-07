@@ -391,8 +391,9 @@ class CGI
 	unless @hash
 	  @hash = {}
           begin
+            lockf = File.open(@path+".lock", "r")
+            lockf.flock File::LOCK_SH
 	    f = File.open(@path, 'r')
-	    f.flock File::LOCK_SH
 	    for line in f
 	      line.chomp!
 	      k, v = line.split('=',2)
@@ -400,6 +401,7 @@ class CGI
 	    end
           ensure
 	    f.close unless f.nil?
+            lockf.close if lockf
           end
 	end
 	@hash
@@ -409,13 +411,17 @@ class CGI
       def update
 	return unless @hash
         begin
-	  f = File.open(@path, File::CREAT|File::TRUNC|File::RDWR, 0600)
-	  f.flock File::LOCK_EX
+          lockf = File.open(@path+".lock", File::CREAT|File::RDWR, 0600)
+	  lockf.flock File::LOCK_EX
+          f = File.open(@path+".new", File::CREAT|File::TRUNC|File::WRONLY, 0600)
    	  for k,v in @hash
 	    f.printf "%s=%s\n", CGI::escape(k), CGI::escape(String(v))
 	  end
+          f.close
+          File.rename @path+".new", @path
         ensure
-          f.close unless f.nil?
+          f.close if f and !f.closed?
+          lockf.close if lockf
         end
       end
 
@@ -426,6 +432,8 @@ class CGI
 
       # Close and delete the session's FileStore file.
       def delete
+        File::unlink @path+".lock" rescue nil
+        File::unlink @path+".new" rescue nil
         File::unlink @path
       rescue Errno::ENOENT
       end
