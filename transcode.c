@@ -309,7 +309,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	return -1;
     }
 
-    while (!final_encoding) { /* loop for multistep transcoding */
+    do { /* loop for multistep transcoding */
 	/* later, maybe use smaller intermediate strings for very long strings */
 	if (!(my_transcoder = transcode_dispatch(from_e, to_e))) {
 	    rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
@@ -372,7 +372,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    from_e = my_transcoder->to_encoding;
 	    str = dest;
 	}
-    }
+    } while (!final_encoding);
     /* set encoding */
     if (!to_enc) {
 	to_encidx = rb_define_dummy_encoding(to_e);

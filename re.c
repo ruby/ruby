@@ -1279,7 +1279,7 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 {
     int result;
     VALUE match;
-    struct re_registers *regs, regi;
+    struct re_registers regi, *regs = &regi;
     char *range = RSTRING_PTR(str);
     regex_t *reg0 = RREGEXP(re)->ptr, *reg;
     int busy = FL_TEST(re, REG_BUSY);
@@ -1301,7 +1301,6 @@ rb_reg_search(VALUE re, VALUE str, int pos, int reverse)
 	}
     }
     if (NIL_P(match)) {
-	regs = &regi;
 	MEMZERO(regs, struct re_registers, 1);
     }
     FL_SET(re, REG_BUSY);

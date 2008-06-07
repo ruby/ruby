@@ -3067,6 +3067,7 @@ ret:
     return sign ? -dval(rv) : dval(rv);
 }
 
+#if 0  /* unused right now */
 static int
 quorem(Bigint *b, Bigint *S)
 {
@@ -3177,11 +3178,13 @@ quorem(Bigint *b, Bigint *S)
     }
     return q;
 }
+#endif
 
 #ifndef MULTIPLE_THREADS
 static char *dtoa_result;
 #endif
 
+#if 0  /* unused right now */
 static char *
 rv_alloc(int i)
 {
@@ -3212,6 +3215,7 @@ nrv_alloc(const char *s, char **rve, int n)
         *rve = t;
     return rv;
 }
+#endif
 
 /* freedtoa(s) must be used to free values s returned by dtoa
  * when MULTIPLE_THREADS is #defined.  It should be used in all cases,

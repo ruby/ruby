@@ -4215,7 +4215,7 @@ rb_io_s_sysopen(int argc, VALUE *argv)
 static VALUE
 rb_f_open(int argc, VALUE *argv)
 {
-    ID to_open;
+    ID to_open = 0;
     int redirect = Qfalse;
 
     if (argc >= 1) {
