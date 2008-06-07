@@ -1,3 +1,12 @@
+Sun Jun  8 04:49:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (newline_node): set line from outermost node before removing
+	  NODE_BEGIN.  [ruby-dev:32406]
+
+Sun Jun  8 04:37:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt): remove unnecessary NODE_BEGIN.  [ruby-core:13814]
+
 Sun Jun  8 04:16:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_alias): do not call hook functions until initialization

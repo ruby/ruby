@@ -406,7 +406,7 @@ stmts		: none
 		    }
 		| error stmt
 		    {
-			$$ = $2;
+			$$ = remove_begin($2);
 		    }
 		;
 
@@ -436,7 +436,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| stmt kIF_MOD expr_value
 		    {
-			$$ = NEW_IF(cond($3), $1, 0);
+			$$ = NEW_IF(cond($3), remove_begin($1), 0);
 		        fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 		            $$->nd_else = $$->nd_body;
@@ -445,7 +445,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| stmt kUNLESS_MOD expr_value
 		    {
-			$$ = NEW_UNLESS(cond($3), $1, 0);
+			$$ = NEW_UNLESS(cond($3), remove_begin($1), 0);
 		        fixpos($$, $3);
 			if (cond_negative(&$$->nd_cond)) {
 		            $$->nd_body = $$->nd_else;
@@ -478,7 +478,8 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| stmt kRESCUE_MOD stmt
 		    {
-			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
+			NODE *resq = NEW_RESBODY(0, remove_begin($3), 0);
+			$$ = NEW_RESCUE(remove_begin($1), resq, 0);
 		    }
 		| klBEGIN
 		    {
@@ -4550,10 +4551,13 @@ newline_node(node)
 {
     NODE *nl = 0;
     if (node) {
+	int line;
 	if (nd_type(node) == NODE_NEWLINE) return node;
-        nl = NEW_NEWLINE(node);
-        fixpos(nl, node);
-        nl->nd_nth = nd_line(node);
+	line = nd_line(node);
+	node = remove_begin(node);
+	nl = NEW_NEWLINE(node);
+	nd_set_line(nl, line);
+	nl->nd_nth = line;
     }
     return nl;
 }
@@ -5208,7 +5212,7 @@ void_stmts(node)
 
     for (;;) {
 	if (!node->nd_next) return;
-	void_expr(node->nd_head);
+	void_expr0(node->nd_head);
 	node = node->nd_next;
     }
 }
