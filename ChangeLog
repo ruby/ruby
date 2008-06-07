@@ -1,3 +1,8 @@
+Sun Jun  8 05:05:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi.rb (read_multipart): exclude blanks from header values.
+	  [ruby-list:44327]
+
 Sun Jun  8 05:00:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_cstr_to_inum): trailing spaces may exist at sqeezing
