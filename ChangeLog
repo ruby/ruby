@@ -1,3 +1,7 @@
+Sat Jun  7 17:11:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (os_obj_of): assure to not free the scanning heap.
+
 Sat Jun  7 16:06:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (CFLAGS, CXXFLAGS): append default flags.
