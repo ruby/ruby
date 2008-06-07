@@ -639,11 +639,11 @@ class Server < WEBrickServlet
   
   def serve
     if RUBY_PLATFORM =~ /mingw|mswin32/
-      signal = 1
+      signals = [1]
     else
-      signal = "HUP"
+      signals = %w[INT TERM HUP]
     end
-    trap(signal) { @server.shutdown }
+    signals.each { |signal| trap(signal) { @server.shutdown } }
 
     @server.start
   end
