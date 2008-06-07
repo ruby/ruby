@@ -1,3 +1,9 @@
+Sat Jun  7 22:15:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (VENDOR_DIR): use LIBDIR instead of PREFIX as well as
+	  SITE_DIR.  a patch from Richard Brown <rbrown AT exherbo.org> in
+	  [ruby-core:17129].
+
 Sat Jun  7 17:11:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (os_obj_of): assure to not free the scanning heap.
