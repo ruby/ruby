@@ -1,3 +1,8 @@
+Sun Jun  8 01:37:58 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c (s_accept_nonblock): make accepted fd
+	  nonblocking.  [ruby-talk:274079]
+
 Sun Jun  8 01:28:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb: deal with __fastcall name decorations.
