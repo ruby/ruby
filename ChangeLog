@@ -1,3 +1,11 @@
+Sun Jun  8 04:54:36 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 14070 from trunk.
+	
+	* lib/xmlrpc/server.rb (XMLRPC::Server#server): Improve signal handling so
+	  pressing control-c in the controlling terminal or sending SIGTERM stops
+	  the XML-RPC server.
+
 Sun Jun  8 04:46:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (newline_node): set line from outermost node before removing
