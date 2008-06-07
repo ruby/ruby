@@ -425,7 +425,7 @@ s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(hdrdir)}.%s{}.
 s,@RULE_SUBST@,{.;$$(srcdir);$$(topdir);$$(hdrdir)}%s,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
 s,@COMMON_LIBS@,m,;t t
-s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN;t t
+s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN WIN32,;t t
 !if defined(USE_WINSOCK2)
 s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
 !else
