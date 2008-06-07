@@ -1,3 +1,7 @@
+Sun Jun  8 05:37:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_rest_arg): check if duplicated.  [ruby-core:14140]
+
 Sun Jun  8 05:32:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (stack_end_address): use local variable address instead of
