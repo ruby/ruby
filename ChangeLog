@@ -1,3 +1,17 @@
+Sun Jun  8 02:57:32 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 13781 from trunk.
+
+	* lib/net/telnet.rb (Net::Telnet#login): Allowing "passphrase" in
+	  addition to "password" for Telnet login prompts. [ruby-Bugs-10746]
+
+Wed Oct 25 06:46:21 2007  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 13779 from trunk.
+
+	* lib/net/telnet.rb (Net::Telnet#login): Making the password prompt
+	  pattern case insensitive. [ruby-Bugs-10746]
+
 Sun Jun  8 02:54:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_tell, rb_io_seek): check errno too.  [ruby-dev:32093]
