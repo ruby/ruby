@@ -1,3 +1,7 @@
+Sun Jun  8 03:49:15 2008  Tanaka Akira  <akr@fsij.org>
+
+	* missing/isinf.c (isinf): don't define if the macro is defined.
+
 Sun Jun  8 03:42:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (round): fallback definition.
@@ -7,7 +11,7 @@ Sun Jun  8 03:42:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Jun  8 03:42:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* numeric.c (flodivmod): work around for inifinity.
+	* numeric.c (flodivmod): work around for infinity.
 
 	* numeric.c (flo_divmod): work around for platforms have no round().
 	  [ruby-dev:32247]
