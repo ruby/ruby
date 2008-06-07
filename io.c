@@ -245,6 +245,7 @@ flush_before_seek(fptr)
     if (fptr->mode & FMODE_WBUF) {
 	io_fflush(GetWriteFile(fptr), fptr);
     }
+    errno = 0;
     return fptr;
 }
 
@@ -668,7 +669,7 @@ rb_io_tell(io)
 
     GetOpenFile(io, fptr);
     pos = io_tell(fptr);
-    if (pos < 0) rb_sys_fail(fptr->path);
+    if (pos < 0 && errno) rb_sys_fail(fptr->path);
     return OFFT2NUM(pos);
 }
 
@@ -683,7 +684,7 @@ rb_io_seek(io, offset, whence)
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, whence);
-    if (pos < 0) rb_sys_fail(fptr->path);
+    if (pos < 0 && errno) rb_sys_fail(fptr->path);
     clearerr(fptr->f);
 
     return INT2FIX(0);
