@@ -7,8 +7,9 @@ IO.foreach("|dumpbin -symbols " + objs.join(' ')) do |l|
   next if /^[0-9A-F]+ 0+ UNDEF / =~ l
   next unless l.sub!(/.*?\s(\(\)\s+)?External\s+\|\s+/, "")
   is_data = !$1
-  if l.sub!(/^_/, '')
-    next if /@.*@/ =~ l || /@[0-9a-f]{16}$/ =~ l
+  if /^[@_](?!\w+@\d+$)/ =~ l
+    next if /(?!^)@.*@/ =~ l || /@[0-9a-f]{16}$/ =~ l
+    l.sub!(/^[@_]/, '')
   elsif !l.sub!(/^(\S+) \([^@?\`\']*\)$/, '\1')
     next
   end

@@ -1,3 +1,8 @@
+Sun Jun  8 01:28:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/mkexports.rb: deal with __fastcall name decorations.
+	  [ruby-list:44111]
+
 Sun Jun  8 01:23:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/rexml/source.rb (REXML::SourceFactory::SourceFactory): typo
