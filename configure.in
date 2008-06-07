@@ -491,7 +491,8 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid syscall chroot fsync getcwd eaccess\
 	      lchown lchmod getpgrp setpgrp getpgid setpgid initgroups\
 	      getgroups setgroups getpriority getrlimit setrlimit sysconf\
 	      group_member dlopen sigprocmask\
-	      sigaction _setjmp setsid telldir seekdir fchmod mktime timegm\
+	      sigaction _setjmp setsid telldir seekdir fchmod\
+	      mktime timegm gettimeofday\
 	      cosh sinh tanh round setuid setgid setenv unsetenv)
 AC_ARG_ENABLE(setreuid,
        [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
@@ -518,6 +519,31 @@ AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
 if test "$rb_cv_have_daylight" = yes; then
   AC_DEFINE(HAVE_DAYLIGHT)
 fi
+AC_DEFUN([RUBY_CHECK_VARTYPE], [dnl
+AC_CACHE_CHECK([for external $1], rb_cv_var_$1,
+  [rb_cv_var_$1=no
+  AC_TRY_COMPILE([#define _XOPEN_SOURCE 1
+    $2
+    const volatile void *volatile t;],
+    [t = &(&$1)[0];],
+    [for t in $3; do
+      AC_TRY_COMPILE([#define _XOPEN_SOURCE 1
+        $2
+        extern $t $1;
+        const volatile void *volatile t;],
+        [t = &(&$1)[0];],
+        [rb_cv_var_$1=$t; break])
+    done])])
+if test "[$rb_cv_var_]$1" != no; then
+  AC_DEFINE([HAVE_VAR_]m4_toupper($1))
+  AC_DEFINE_UNQUOTED([TYPEOF_VAR_]m4_toupper($1), $rb_cv_var_$1)
+fi])
+RUBY_CHECK_VARTYPE(timezone, [#include <time.h>], [long int])
+RUBY_CHECK_VARTYPE(altzone, [#include <time.h>], [long int])
+if test "$rb_cv_var_timezone" = no; then
+  AC_CHECK_FUNCS(timezone)
+fi
+
 AC_CACHE_CHECK(for negative time_t for gmtime(3), rb_cv_negative_time_t,
   [AC_TRY_RUN([
 #include <time.h>
@@ -1146,7 +1172,7 @@ case "$target_os" in
   human*)
     AC_CHECK_LIB(signal, _harderr)
     AC_CHECK_LIB(hmem, hmemset)
-    AC_CHECK_FUNCS(select gettimeofday)
+    AC_CHECK_FUNCS(select)
     AC_CACHE_CHECK(whether PD libc _dtos18 fail to convert big number,
 		   rb_cv_missing__dtos18,
     [AC_TRY_RUN(
