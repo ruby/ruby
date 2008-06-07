@@ -1,3 +1,9 @@
+Sun Jun  8 05:32:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (stack_end_address): use local variable address instead of
+	  __builtin_frame_address(0) to avoid SEGV on SunOS 5.11 on x86 with 
+	  gcc (GCC) 3.4.3 (csl-sol210-3_4-20050802).
+
 Sun Jun  8 05:24:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_VARTYPE): check if a variable is defined
