@@ -1,3 +1,8 @@
+Sun Jun  8 04:16:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_alias): do not call hook functions until initialization
+	  finishes.  [ruby-talk:279538]
+
 Sun Jun  8 04:14:16 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): bug fix. [ruby-talk:279100]
