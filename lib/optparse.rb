@@ -383,7 +383,7 @@ class OptionParser
       while s = lopts.shift
         l = left[-1].length + s.length
         l += arg.length if left.size == 1 && arg
-        l < max or left << ''
+        l < max or sopts.empty? or left << ''
         left[-1] << if left[-1].empty? then ' ' * 4 else ', ' end << s
       end
 

@@ -1,3 +1,9 @@
+Sun Jun  8 03:05:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Switch::summarize): fix for long form
+	  option with very long argument.  a patch from Kobayashi Noritada
+	  <nori1 AT dolphin.c.u-tokyo.ac.jp> in [ruby-list:44179].
+
 Sun Jun  8 03:03:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_pow): returns infinity for 0**-1.  [ruby-dev:32084]
