@@ -1,3 +1,9 @@
+Sat Jun  7 22:15:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (VENDOR_DIR): use LIBDIR instead of PREFIX as well as
+	  SITE_DIR.  a patch from Richard Brown <rbrown AT exherbo.org> in
+	  [ruby-core:17129].
+
 Sat Jun  7 21:37:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_f_open), re.c (rb_reg_search), transcode.c (str_transcode):

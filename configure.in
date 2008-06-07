@@ -1791,15 +1791,15 @@ esac
 RUBY_LIB_PREFIX=`eval echo \\"${libdir}/ruby\\"`
 
 AC_ARG_WITH(sitedir,
-	    [  --with-sitedir=DIR      site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
+	    [  --with-sitedir=DIR      site libraries in DIR [[LIBDIR/ruby/site_ruby]]],
             [sitedir=$withval],
             [sitedir='${libdir}/ruby/site_ruby'])
 SITE_DIR=`eval echo \\"${sitedir}\\"`
 
 AC_ARG_WITH(vendordir,
-	    [  --with-vendordir=DIR    vendor libraries in DIR [PREFIX/lib/ruby/vendor_ruby]],
+	    [  --with-vendordir=DIR    vendor libraries in DIR [[LIBDIR/ruby/vendor_ruby]]],
             [vendordir=$withval],
-            [vendordir='${prefix}/lib/ruby/vendor_ruby'])
+            [vendordir='${libdir}/ruby/vendor_ruby'])
 VENDOR_DIR=`eval echo \\"${vendordir}\\"`
 
 case "$target_os" in
