@@ -446,7 +446,7 @@ rb_cstr_to_inum(str, base, badcheck)
     }
     if (*str == '0') {		/* squeeze preceeding 0s */
 	while (*++str == '0');
-	if (!*str) --str;
+	if (!(c = *str) || ISSPACE(c)) --str;
     }
     c = *str;
     c = conv_digit(c);
