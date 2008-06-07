@@ -1,3 +1,10 @@
+Sun Jun  8 01:36:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (AC_SYS_LARGEFILE): keep results also in command
+	  options, to vail out of mismatch.  [ruby-list:44114]
+
+	* mkconfig.rb, lib/mkmf.rb (configuration): add DEFS.
+
 Sun Jun  8 01:31:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/mkexports.rb: deal with __fastcall name decorations.

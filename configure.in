@@ -234,7 +234,12 @@ else
 fi
 
 dnl check for large file stuff
+mv confdefs.h confdefs1.h
+: > confdefs.h
 AC_SYS_LARGEFILE
+mv confdefs.h largefile.h
+mv confdefs1.h confdefs.h
+cat largefile.h >> confdefs.h
 
 AC_CHECK_TYPES([long long, off_t])
 
@@ -1504,6 +1509,7 @@ case "$build_os" in
   *msdosdjgpp*) FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in;;
 esac
 
+CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 AC_SUBST(XCFLAGS)dnl
 AC_SUBST(XLDFLAGS)dnl
 AC_SUBST(LIBRUBY_LDSHARED)
@@ -1640,7 +1646,7 @@ else
   echo "creating config.h"
   tr -d '\015' < confdefs.h > config.h
 fi
-: > confdefs.h
+tr -d '\015' < largefile.h > confdefs.h
 
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{
