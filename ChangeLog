@@ -1,3 +1,8 @@
+Sun Jun  8 06:07:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_define_alloc_func, rb_undef_alloc_func): should
+	  define/undef on a signleton class.  [ruby-core:09959]
+
 Sun Jun  8 06:03:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (time_arg): use converted object.  [ruby-core:14759]
