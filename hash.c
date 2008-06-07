@@ -231,14 +231,16 @@ rb_hash_new(void)
 VALUE
 rb_hash_dup(VALUE hash)
 {
-    VALUE ret = hash_alloc(RBASIC(hash)->klass);
+    NEWOBJ(ret, struct RHash);
+    DUPSETUP(ret, hash);
+
     if (!RHASH_EMPTY_P(hash))
-        RHASH(ret)->ntbl = st_copy(RHASH(hash)->ntbl);
+        ret->ntbl = st_copy(RHASH(hash)->ntbl);
     if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
         FL_SET(ret, HASH_PROC_DEFAULT);
     }
-    RHASH(ret)->ifnone = RHASH(hash)->ifnone;
-    return ret;
+    ret->ifnone = RHASH(hash)->ifnone;
+    return (VALUE)ret;
 }
 
 static void
@@ -1470,7 +1472,6 @@ hash_i(VALUE key, VALUE val, int *hval)
 {
     if (key == Qundef) return ST_CONTINUE;
     *hval ^= rb_hash(key);
-    *hval *= 137;
     *hval ^= rb_hash(val);
     return ST_CONTINUE;
 }

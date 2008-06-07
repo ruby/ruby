@@ -1,3 +1,8 @@
+Sun Jun  8 01:15:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* hash.c (hash_i): make Hash#hash order insensitive.
+	  (rb_hash_dup): use DUPSETUP.
+
 Sat Jun  7 23:47:35 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/zlib/zlib.c (rb_deflate_initialize, Init_zlib): Fix up
