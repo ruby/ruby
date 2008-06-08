@@ -1,3 +1,9 @@
+Mon Jun  9 03:12:23 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/pending.rb: move/remove solved issues.
+
+	* bootstraptest/test_class.rb: ditto.
+
 Mon Jun  9 02:32:58 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/zlib/zlib.c (rb_deflate_init_copy): Copy buffers as well.

@@ -112,106 +112,21 @@ assert_equal 'String',  %q( class A; ::C = "OK"; end;  C.class )
 assert_equal 'Class',   %q( class C; end;  C.dup.class )
 assert_equal 'Module',  %q( module M; end;  M.dup.class )
 
-__END__
 
-  def test_singletonclass
-    ae %q{
-      obj = ''
-      class << obj
-        def m
-          :OK
-        end
-      end
-      obj.m
-    }
-    ae %q{
-      obj = ''
-      Const = :NG
-      class << obj
-        Const = :OK
-        def m
-          Const
-        end
-      end
-      obj.m
-    }
-    ae %q{
-      obj = ''
-      class C
-        def m
-          :NG
-        end
-      end
-      class << obj
-        class C
-          def m
-            :OK
-          end
-        end
-        def m
-          C.new.m
-        end
-      end
-      obj.m
-    }
-    ae %q{ # [yarv-dev:818]
-      class A
-      end
-      class << A
-        C = "OK"
-        def m
-          class << Object
-            $a = C
-          end
-        end
-      end
-      A.m
-      $a
-    }
+assert_equal "ok", %q{
+  module Foo
   end
 
-  def test_initialize
-      class C
-        def initialize
-          @a = :C
-        end
-        def a
-          @a
-        end
+  begin
+    def foo(&b)
+      Foo.module_eval &b
+    end
+    foo{
+      def bar
       end
-      C.new.a
+    }
+    bar()
+  rescue NameError
+    :ok
   end
-
-  def test_attr
-      class C
-        def set
-          @a = 1
-        end
-        def get
-          @a
-        end
-      end
-      c = C.new
-      c.set
-      c.get
-  end
-
-  def test_attr_accessor
-      class C
-        attr_accessor :a
-        attr_reader   :b
-        attr_writer   :c
-        def b_write
-          @b = 'huga'
-        end
-        def m a
-          'test_attr_accessor' + @b + @c
-        end
-      end
-
-      c = C.new
-      c.a = true
-      c.c = 'hoge'
-      c.b_write
-      c.m(c.b)
-  end
+}, '[ruby-core:14378]'
