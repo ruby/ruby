@@ -1,3 +1,15 @@
+Sun Jun  8 19:17:59 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add a build option "CALC_EXACT_MALLOC_SIZE".
+	  This option enables to calculate exact size of current 
+	  allocated size by malloc().  You can access these information
+	  with GC.malloc_allocated_size and GC.malloc_allocations.
+	  This option consume additional memory as a header of each memory
+	  object.  This option also helps to find out xmalloc()/xfree()
+	  consistency.  If you get trouble with this option, some extension
+	  using "free()" instead of "xfree()".
+	  This options is disabled by default.
+
 Sun Jun  8 18:15:38 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* array.c, bignum.c, cont.c, dir.c, dln.c, encoding.c, enumerator.c,

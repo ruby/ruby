@@ -143,11 +143,17 @@ struct gc_list {
     struct gc_list *next;
 };
 
+#define CALC_EXACT_MALLOC_SIZE 0
+
 typedef struct rb_objspace {
     struct {
 	size_t limit;
 	size_t increase;
-    } params;
+#if CALC_EXACT_MALLOC_SIZE
+	size_t allocated_size;
+	size_t allocations;
+#endif
+    } malloc_params;
     struct {
 	size_t increment;
 	struct heaps_slot *ptr;
@@ -180,8 +186,8 @@ typedef struct rb_objspace {
 #else
 static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
 #endif
-#define malloc_limit		objspace->params.limit
-#define malloc_increase 	objspace->params.increase
+#define malloc_limit		objspace->malloc_params.limit
+#define malloc_increase 	objspace->malloc_params.increase
 #define heap_slots		objspace->heap.slots
 #define heaps			objspace->heap.ptr
 #define heaps_length		objspace->heap.length
@@ -307,8 +313,8 @@ gc_stress_set(VALUE self, VALUE bool)
     return bool;
 }
 
-void *
-ruby_vm_xmalloc(rb_objspace_t *objspace, size_t size)
+static void *
+vm_xmalloc(rb_objspace_t *objspace, size_t size)
 {
     void *mem;
 
@@ -316,6 +322,10 @@ ruby_vm_xmalloc(rb_objspace_t *objspace, size_t size)
 	rb_raise(rb_eNoMemError, "negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
+
+#if CALC_EXACT_MALLOC_SIZE
+    size += sizeof(size_t);
+#endif
 
     if (ruby_gc_stress || (malloc_increase+size) > malloc_limit) {
 	garbage_collect(objspace);
@@ -331,50 +341,18 @@ ruby_vm_xmalloc(rb_objspace_t *objspace, size_t size)
     }
     malloc_increase += size;
 
-    return mem;
-}
-
-void *
-ruby_xmalloc(size_t size)
-{
-    return ruby_vm_xmalloc(&rb_objspace, size);
-}
-
-void *
-ruby_vm_xmalloc2(rb_objspace_t *objspace, size_t n, size_t size)
-{
-    size_t len = size * n;
-    if (n != 0 && size != len / n) {
-	rb_raise(rb_eArgError, "malloc: possible integer overflow");
-    }
-    return ruby_vm_xmalloc(objspace, len);
-}
-
-void *
-ruby_xmalloc2(size_t n, size_t size)
-{
-    return ruby_vm_xmalloc2(&rb_objspace, n, size);
-}
-
-void *
-ruby_vm_xcalloc(rb_objspace_t *objspace, size_t n, size_t size)
-{
-    void *mem;
-
-    mem = ruby_vm_xmalloc2(objspace, n, size);
-    memset(mem, 0, n * size);
+#if CALC_EXACT_MALLOC_SIZE
+    objspace->malloc_params.allocated_size += size;
+    objspace->malloc_params.allocations++;
+    ((size_t *)mem)[0] = size;
+    mem = (size_t *)mem + 1;
+#endif
 
     return mem;
 }
 
-void *
-ruby_xcalloc(size_t n, size_t size)
-{
-    return ruby_vm_xcalloc(&rb_objspace, n, size);
-}
-
-void *
-ruby_vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
+static void *
+vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
 {
     void *mem;
 
@@ -384,6 +362,13 @@ ruby_vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
     if (ruby_gc_stress) garbage_collect(objspace);
+
+#if CALC_EXACT_MALLOC_SIZE
+    size += sizeof(size_t);
+    objspace->malloc_params.allocated_size -= size;
+    ptr = (size_t *)ptr - 1;
+#endif
+
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
 	if (garbage_collect(objspace)) {
@@ -395,36 +380,75 @@ ruby_vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     }
     malloc_increase += size;
 
+#if CALC_EXACT_MALLOC_SIZE
+    objspace->malloc_params.allocated_size += size;
+    ((size_t *)mem)[0] = size;
+    mem = (size_t *)mem + 1;
+#endif
+
+    return mem;
+}
+
+static void
+vm_xfree(rb_objspace_t *objspace, void *ptr)
+{
+#if CALC_EXACT_MALLOC_SIZE
+    size_t size;
+    ptr = ((size_t *)ptr) - 1;
+    size = ((size_t*)ptr)[0];
+    objspace->malloc_params.allocated_size -= size;
+    objspace->malloc_params.allocations--;
+#endif
+
+    RUBY_CRITICAL(free(ptr));
+}
+
+void *
+ruby_xmalloc(size_t size)
+{
+    return vm_xmalloc(&rb_objspace, size);
+}
+
+void *
+ruby_xmalloc2(size_t n, size_t size)
+{
+    size_t len = size * n;
+    if (n != 0 && size != len / n) {
+	rb_raise(rb_eArgError, "malloc: possible integer overflow");
+    }
+    return vm_xmalloc(&rb_objspace, len);
+}
+
+void *
+ruby_xcalloc(size_t n, size_t size)
+{
+    void *mem = ruby_xmalloc2(n, size);
+    memset(mem, 0, n * size);
+
     return mem;
 }
 
 void *
 ruby_xrealloc(void *ptr, size_t size)
 {
-    return ruby_vm_xrealloc(&rb_objspace, ptr, size);
-}
-
-void *
-ruby_vm_xrealloc2(rb_objspace_t *objspace, void *ptr, size_t n, size_t size)
-{
-    size_t len = size * n;
-    if (n != 0 && size != len / n) {
-	rb_raise(rb_eArgError, "realloc: possible integer overflow");
-    }
-    return ruby_vm_xrealloc(objspace, ptr, len);
+    return vm_xrealloc(&rb_objspace, ptr, size);
 }
 
 void *
 ruby_xrealloc2(void *ptr, size_t n, size_t size)
 {
-    return ruby_vm_xrealloc2(&rb_objspace, ptr, n, size);
+    size_t len = size * n;
+    if (n != 0 && size != len / n) {
+	rb_raise(rb_eArgError, "realloc: possible integer overflow");
+    }
+    return ruby_xrealloc(ptr, len);
 }
 
 void
 ruby_xfree(void *x)
 {
     if (x)
-	RUBY_CRITICAL(free(x));
+      vm_xfree(&rb_objspace, x);
 }
 
 
@@ -2377,6 +2401,38 @@ gc_count(VALUE self)
     return UINT2NUM((&rb_objspace)->count);
 }
 
+#if CALC_EXACT_MALLOC_SIZE
+/*
+ *  call-seq:
+ *     GC.malloc_allocated_size -> Integer
+ *
+ *  The allocated size by malloc().
+ *
+ *  It returns the allocated size by malloc().
+ */
+
+static VALUE
+gc_malloc_allocated_size(VALUE self)
+{
+    return UINT2NUM((&rb_objspace)->malloc_params.allocated_size);
+}
+
+/*
+ *  call-seq:
+ *     GC.malloc_allocations -> Integer
+ *
+ *  The number of allocated memory object by malloc().
+ *
+ *  It returns the number of allocated memory object by malloc().
+ */
+
+static VALUE
+gc_malloc_allocations(VALUE self)
+{
+    return UINT2NUM((&rb_objspace)->malloc_params.allocations);
+}
+#endif
+
 /*
  *  The <code>GC</code> module provides an interface to Ruby's mark and
  *  sweep garbage collection mechanism. Some of the underlying methods
@@ -2414,4 +2470,9 @@ Init_GC(void)
     rb_define_method(rb_mKernel, "object_id", rb_obj_id, 0);
 
     rb_define_module_function(rb_mObSpace, "count_objects", count_objects, -1);
+
+#if CALC_EXACT_MALLOC_SIZE
+    rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
+    rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
+#endif
 }
