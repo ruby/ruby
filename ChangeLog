@@ -1,3 +1,8 @@
+Mon Jun  9 03:28:05 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/zlib/zlib.c (rb_deflate_initialize, Init_zlib): Fix up
+	  initialize_copy; [ruby-list:45016], [ruby-list:45018].
+
 Mon Jun  9 03:26:03 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: Mention new constants.
