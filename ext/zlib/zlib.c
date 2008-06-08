@@ -1182,14 +1182,19 @@ static VALUE
 rb_deflate_init_copy(self, orig)
     VALUE self, orig;
 {
-    struct zstream *z1 = get_zstream(self);
-    struct zstream *z2 = get_zstream(orig);
+    struct zstream *z1, *z2;
     int err;
+
+    Data_Get_Struct(self, struct zstream, z1);
+    z2 = get_zstream(orig);
 
     err = deflateCopy(&z1->stream, &z2->stream);
     if (err != Z_OK) {
 	raise_zlib_error(err, 0);
     }
+    z1->input = NIL_P(z2->input) ? Qnil : rb_str_dup(z2->input);
+    z1->buf   = NIL_P(z2->buf)   ? Qnil : rb_str_dup(z2->buf);
+    z1->buf_filled = z2->buf_filled;
     z1->flags = z2->flags;
 
     return self;
@@ -3371,7 +3376,7 @@ void Init_zlib()
     rb_define_singleton_method(cDeflate, "deflate", rb_deflate_s_deflate, -1);
     rb_define_alloc_func(cDeflate, rb_deflate_s_allocate);
     rb_define_method(cDeflate, "initialize", rb_deflate_initialize, -1);
-    rb_define_method(cDeflate, "initialize_copy", rb_deflate_init_copy, 0);
+    rb_define_method(cDeflate, "initialize_copy", rb_deflate_init_copy, 1);
     rb_define_method(cDeflate, "deflate", rb_deflate_deflate, -1);
     rb_define_method(cDeflate, "<<", rb_deflate_addstr, 1);
     rb_define_method(cDeflate, "flush", rb_deflate_flush, -1);
