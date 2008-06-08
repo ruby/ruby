@@ -89,13 +89,15 @@ class TestMarshal < Test::Unit::TestCase
     o1 = C.new("a" * 10000)
 
     r, w = IO.pipe
+    t = Thread.new { Marshal.load(r) }
     Marshal.dump(o1, w)
-    o2 = Marshal.load(r)
+    o2 = t.value
     assert_equal(o1.str, o2.str)
 
     r, w = IO.pipe
+    t = Thread.new { Marshal.load(r) }
     Marshal.dump(o1, w, 2)
-    o2 = Marshal.load(r)
+    o2 = t.value
     assert_equal(o1.str, o2.str)
 
     assert_raise(TypeError) { Marshal.dump("foo", Object.new) }
