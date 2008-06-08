@@ -1644,6 +1644,7 @@ os_obj_of(of)
 {
     int i;
     int n = 0;
+    volatile VALUE v;
 
     for (i = 0; i < heaps_used; i++) {
 	RVALUE *p, *pend;
@@ -1662,8 +1663,9 @@ os_obj_of(of)
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
 		    if (!p->as.basic.klass) continue;
-		    if (!of || rb_obj_is_kind_of((VALUE)p, of)) {
-			rb_yield((VALUE)p);
+                    v = (VALUE)p;
+		    if (!of || rb_obj_is_kind_of(v, of)) {
+			rb_yield(v);
 			n++;
 		    }
 		}
