@@ -1,3 +1,8 @@
+Sun Jun  8 21:50:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/zlib/test_zlib.rb: add tests to achieve over 90% test coverage
+	  of zlib.
+
 Sun Jun  8 20:12:47 2008  wanabe  <s.wanabe@gmail.com>
 
 	* vm_insnhelper.c (vm_throw): regard break as return in lambda.
