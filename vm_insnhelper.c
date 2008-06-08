@@ -1234,7 +1234,8 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_LAMBDA) {
 		    /* lambda{... break ...} */
 		    is_orphan = 0;
-		    pt = dfp;
+		    pt = GET_LFP();
+		    state = TAG_RETURN;
 		}
 		else {
 		    dfp = GC_GUARDED_PTR_REF((VALUE *) *dfp);

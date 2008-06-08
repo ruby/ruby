@@ -1,3 +1,8 @@
+Sun Jun  8 20:12:47 2008  wanabe  <s.wanabe@gmail.com>
+
+	* vm_insnhelper.c (vm_throw): regard break as return in lambda.
+	  [ruby-dev:34646]
+
 Sun Jun  8 19:17:59 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add a build option "CALC_EXACT_MALLOC_SIZE".
