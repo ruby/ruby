@@ -1126,6 +1126,9 @@ rb_deflate_init_copy(VALUE self, VALUE orig)
     if (err != Z_OK) {
 	raise_zlib_error(err, 0);
     }
+    z1->input = NIL_P(z2->input) ? Qnil : rb_str_dup(z2->input);
+    z1->buf   = NIL_P(z2->buf)   ? Qnil : rb_str_dup(z2->buf);
+    z1->buf_filled = z2->buf_filled;
     z1->flags = z2->flags;
 
     return self;
