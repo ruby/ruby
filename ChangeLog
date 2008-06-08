@@ -1,3 +1,20 @@
+Sun Jun  8 18:15:38 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* array.c, bignum.c, cont.c, dir.c, dln.c, encoding.c, enumerator.c,
+	  enumerator.c (enumerator_allocate), eval_jump.c, file.c, hash.c,
+	  io.c, load.c, pack.c, proc.c, random.c, re.c, ruby.c, st.c,
+	  string.c, thread.c, thread_pthread.c, time.c, util.c, variable.c,
+	  vm.c, gc.c:
+	  allocated memory objects by xmalloc (ruby_xmalloc) should be
+	  freed by xfree (ruby_xfree).
+
+	* ext/curses/curses.c, ext/dbm/dbm.c, ext/digest/digest.c, 
+	  ext/gdbm/gdbm.c, ext/json/ext/parser/parser.c, 
+	  ext/json/ext/parser/unicode.c, ext/openssl/ossl_cipher.c,
+	  ext/openssl/ossl_hmac.c, ext/openssl/ossl_pkey_ec.c,
+	  ext/sdbm/init.c, ext/strscan/strscan.c, ext/zlib/zlib.c:
+	  ditto.
+
 Sun Jun  8 01:15:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* hash.c (hash_i): make Hash#hash order insensitive.

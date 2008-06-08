@@ -166,7 +166,7 @@ static void
 strscan_free(struct strscanner *p)
 {
     onig_region_free(&(p->regs), 0);
-    free(p);
+    ruby_xfree(p);
 }
 
 static VALUE

@@ -248,8 +248,7 @@ binding_alloc(VALUE klass)
 {
     VALUE obj;
     rb_binding_t *bind;
-    obj = Data_Make_Struct(klass, rb_binding_t,
-			   binding_mark, binding_free, bind);
+    obj = Data_Make_Struct(klass, rb_binding_t, binding_mark, binding_free, bind);
     return obj;
 }
 
@@ -869,8 +868,7 @@ method_unbind(VALUE obj)
 
     Data_Get_Struct(obj, struct METHOD, orig);
     method =
-	Data_Make_Struct(rb_cUnboundMethod, struct METHOD, bm_mark, free,
-			 data);
+	Data_Make_Struct(rb_cUnboundMethod, struct METHOD, bm_mark, -1, data);
     data->oclass = orig->oclass;
     data->recv = Qundef;
     data->id = orig->id;
@@ -1135,8 +1133,7 @@ method_clone(VALUE self)
     struct METHOD *orig, *data;
 
     Data_Get_Struct(self, struct METHOD, orig);
-    clone =
-	Data_Make_Struct(CLASS_OF(self), struct METHOD, bm_mark, free, data);
+    clone = Data_Make_Struct(CLASS_OF(self), struct METHOD, bm_mark, -1, data);
     CLONESETUP(clone, self);
     *data = *orig;
 
@@ -1299,7 +1296,7 @@ umethod_bind(VALUE method, VALUE recv)
 	}
     }
 
-    method = Data_Make_Struct(rb_cMethod, struct METHOD, bm_mark, free, bound);
+    method = Data_Make_Struct(rb_cMethod, struct METHOD, bm_mark, -1, bound);
     *bound = *data;
     bound->recv = recv;
     bound->rclass = CLASS_OF(recv);

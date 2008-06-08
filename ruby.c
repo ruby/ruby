@@ -455,8 +455,8 @@ require_libraries(void)
     while (list) {
 	VALUE feature = rb_str_new2(list->name);
 	tmp = list->next;
-	free(list->name);
-	free(list);
+	xfree(list->name);
+	xfree(list);
 	list = tmp;
 	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
     }

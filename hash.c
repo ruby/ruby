@@ -1984,7 +1984,7 @@ ruby_setenv(const char *name, const char *value)
 	char **envp = origenviron;
 	while (*envp && *envp != environ[i]) envp++;
 	if (!*envp)
-	    free(environ[i]);
+	    xfree(environ[i]);
 	if (!value) {
 	    while (environ[i]) {
 		environ[i] = environ[i+1];

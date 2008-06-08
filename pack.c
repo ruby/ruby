@@ -67,8 +67,8 @@ TOKEN_PASTE(swap,x)(xtype z)		\
 	t[sizeof(xtype)-i-1] = s[i];	\
     }					\
     r = *(xtype *)t;			\
-    free(t);				\
-    free(zp);				\
+    xfree(t);				\
+    xfree(zp);				\
     return r;				\
 }
 

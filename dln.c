@@ -42,6 +42,8 @@ void *xcalloc();
 void *xrealloc();
 #endif
 
+#define free(x) xfree(x)
+
 #include <stdio.h>
 #if defined(_WIN32) || defined(__VMS)
 #include "missing/file.h"

@@ -609,7 +609,7 @@ rb_str_shared_replace(VALUE str, VALUE str2)
 	return;
     }
     if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
-	free(RSTRING_PTR(str));
+	xfree(RSTRING_PTR(str));
     }
     STR_SET_NOEMBED(str);
     STR_UNSET_NOCAPA(str);
@@ -3405,7 +3405,7 @@ rb_str_replace(VALUE str, VALUE str2)
     }
     if (STR_SHARED_P(str2)) {
 	if (str_independent(str) && !STR_EMBED_P(str)) {
-	    free(RSTRING_PTR(str));
+	    xfree(RSTRING_PTR(str));
 	}
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.len = len;
@@ -3439,7 +3439,7 @@ rb_str_clear(VALUE str)
 {
     /* rb_str_modify() */	/* no need for str_make_independent */
     if (str_independent(str) && !STR_EMBED_P(str)) {
-	free(RSTRING_PTR(str));
+	xfree(RSTRING_PTR(str));
     }
     STR_SET_EMBED(str);
     STR_SET_EMBED_LEN(str, 0);
@@ -4425,7 +4425,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    t += tlen;
 	}
 	if (!STR_EMBED_P(str)) {
-	    free(RSTRING(str)->as.heap.ptr);
+	    xfree(RSTRING(str)->as.heap.ptr);
 	}
 	*t = '\0';
 	RSTRING(str)->as.heap.ptr = buf;

@@ -39,7 +39,7 @@ struct time_object {
 static void
 time_free(void *tobj)
 {
-    if (tobj) free(tobj);
+    if (tobj) xfree(tobj);
 }
 
 static VALUE
@@ -2028,7 +2028,7 @@ rb_strftime(char **buf, const char *format, struct tm *time)
 	 * format string, it's not failing for lack of room.
 	 */
 	if (len > 0 || size >= 1024 * flen) return len;
-	free(*buf);
+	xfree(*buf);
     }
     /* not reached */
 }
@@ -2108,7 +2108,7 @@ time_strftime(VALUE time, VALUE format)
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p);
 	    if (buf != buffer) {
-		free(buf);
+		xfree(buf);
 		buf = buffer;
 	    }
 	    for (fmt = p; p < pe && !*p; ++p);
@@ -2120,7 +2120,7 @@ time_strftime(VALUE time, VALUE format)
 	len = rb_strftime(&buf, RSTRING_PTR(format), &tobj->tm);
     }
     str = rb_str_new(buf, len);
-    if (buf != buffer) free(buf);
+    if (buf != buffer) xfree(buf);
     rb_enc_copy(str, format);
     return str;
 }

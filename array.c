@@ -292,7 +292,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify(ary);
     if (argc ==  0) {
 	if (RARRAY_PTR(ary) && !ARY_SHARED_P(ary)) {
-	    free(RARRAY(ary)->ptr);
+	    xfree(RARRAY(ary)->ptr);
 	}
 	RARRAY(ary)->len = 0;
 	if (rb_block_given_p()) {

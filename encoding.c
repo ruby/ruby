@@ -154,7 +154,7 @@ enc_register_at(int index, const char *name, rb_encoding *encoding)
 	return -1;
     }
     if (!ent->enc) {
-	ent->enc = malloc(sizeof(rb_encoding));
+	ent->enc = xmalloc(sizeof(rb_encoding));
     }
     else {
 	obj = ent->enc->auxiliary_data;

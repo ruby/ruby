@@ -93,7 +93,7 @@ rb_big_realloc(VALUE big, long len)
 	    RBIGNUM_SET_LEN(big, len);
 	    if (ds) {
 		MEMCPY(RBIGNUM(big)->as.ary, ds, BDIGIT, len);
-		free(ds);
+		xfree(ds);
 	    }
 	}
 	else {

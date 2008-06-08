@@ -67,7 +67,7 @@ ossl_cipher_free(EVP_CIPHER_CTX *ctx)
 {
     if (ctx) {
 	EVP_CIPHER_CTX_cleanup(ctx);
-	free(ctx);
+	ruby_xfree(ctx);
     }
 }
 

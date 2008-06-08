@@ -564,7 +564,7 @@ remove_trace(struct global_variable *var)
 	next = trace->next;
 	if (next->removed) {
 	    trace->next = next->next;
-	    free(next);
+	    xfree(next);
 	}
 	else {
 	    trace = next;
@@ -757,10 +757,10 @@ rb_alias_variable(ID name1, ID name2)
 	    struct trace_var *trace = var->trace;
 	    while (trace) {
 		struct trace_var *next = trace->next;
-		free(trace);
+		xfree(trace);
 		trace = next;
 	    }
-	    free(var);
+	    xfree(var);
 	}
     }
     else {

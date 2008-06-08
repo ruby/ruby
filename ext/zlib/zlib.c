@@ -398,7 +398,7 @@ zlib_mem_alloc(voidpf opaque, uInt items, uInt size)
 static void
 zlib_mem_free(voidpf opaque, voidpf address)
 {
-    free(address);
+    xfree(address);
 }
 
 static void
@@ -793,7 +793,7 @@ zstream_free(struct zstream *z)
     if (ZSTREAM_IS_READY(z)) {
 	zstream_finalize(z);
     }
-    free(z);
+    xfree(z);
 }
 
 static VALUE
@@ -1676,7 +1676,7 @@ gzfile_free(struct gzfile *gz)
 	}
 	zstream_finalize(z);
     }
-    free(gz);
+    xfree(gz);
 }
 
 static VALUE

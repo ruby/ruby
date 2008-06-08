@@ -255,7 +255,7 @@ rand_init(VALUE vseed)
     }
     old = saved_seed;
     saved_seed = seed;
-    free(buf);
+    xfree(buf);
     return old;
 }
 

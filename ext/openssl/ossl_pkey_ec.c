@@ -695,7 +695,7 @@ static void ossl_ec_group_free(ossl_ec_group *ec_group)
 {
     if (!ec_group->dont_free && ec_group->group)
         EC_GROUP_clear_free(ec_group->group);
-    free(ec_group);
+    ruby_xfree(ec_group);
 }
 
 static VALUE ossl_ec_group_alloc(VALUE klass)
@@ -1201,7 +1201,7 @@ static void ossl_ec_point_free(ossl_ec_point *ec_point)
 {
     if (!ec_point->dont_free && ec_point->point)
         EC_POINT_clear_free(ec_point->point);
-    free(ec_point);
+    ruby_xfree(ec_point);
 }
 
 static VALUE ossl_ec_point_alloc(VALUE klass)

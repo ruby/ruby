@@ -476,6 +476,13 @@ rb_gc_disable(void)
 VALUE rb_mGC;
 
 void
+rb_register_mark_object(VALUE obj)
+{
+    VALUE ary = GET_THREAD()->vm->mark_object_ary;
+    rb_ary_push(ary, obj);
+}
+
+void
 rb_gc_register_address(VALUE *addr)
 {
     rb_objspace_t *objspace = &rb_objspace;
@@ -488,13 +495,6 @@ rb_gc_register_address(VALUE *addr)
 }
 
 void
-rb_register_mark_object(VALUE obj)
-{
-    VALUE ary = GET_THREAD()->vm->mark_object_ary;
-    rb_ary_push(ary, obj);
-}
-
-void
 rb_gc_unregister_address(VALUE *addr)
 {
     rb_objspace_t *objspace = &rb_objspace;
@@ -502,7 +502,7 @@ rb_gc_unregister_address(VALUE *addr)
 
     if (tmp->varptr == addr) {
 	global_List = tmp->next;
-	RUBY_CRITICAL(free(tmp));
+	xfree(tmp);
 	return;
     }
     while (tmp->next) {
@@ -510,7 +510,7 @@ rb_gc_unregister_address(VALUE *addr)
 	    struct gc_list *t = tmp->next;
 
 	    tmp->next = tmp->next->next;
-	    RUBY_CRITICAL(free(t));
+	    xfree(t);
 	    break;
 	}
 	tmp = tmp->next;
@@ -1457,7 +1457,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_OBJECT:
 	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
             RANY(obj)->as.object.as.heap.ivptr) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.object.as.heap.ivptr));
+	    xfree(RANY(obj)->as.object.as.heap.ivptr);
 	}
 	break;
       case T_MODULE:
@@ -1470,7 +1470,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (RCLASS_IV_INDEX_TBL(obj)) {
 	    st_free_table(RCLASS_IV_INDEX_TBL(obj));
 	}
-        RUBY_CRITICAL(free(RANY(obj)->as.klass.ptr));
+        xfree(RANY(obj)->as.klass.ptr);
 	break;
       case T_STRING:
 	rb_str_free(obj);
@@ -1488,13 +1488,13 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    onig_free(RANY(obj)->as.regexp.ptr);
 	}
 	if (RANY(obj)->as.regexp.str) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.regexp.str));
+	    xfree(RANY(obj)->as.regexp.str);
 	}
 	break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
 	    if ((long)RANY(obj)->as.data.dfree == -1) {
-		RUBY_CRITICAL(free(DATA_PTR(obj)));
+		xfree(DATA_PTR(obj));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
 		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
@@ -1506,8 +1506,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             struct rmatch *rm = RANY(obj)->as.match.rmatch;
 	    onig_region_free(&rm->regs, 0);
             if (rm->char_offset)
-                RUBY_CRITICAL(free(rm->char_offset));
-	    RUBY_CRITICAL(free(rm));
+	      xfree(rm->char_offset);
+	    xfree(rm);
 	}
 	break;
       case T_FILE:
@@ -1527,18 +1527,18 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
       case T_BIGNUM:
 	if (!(RBASIC(obj)->flags & RBIGNUM_EMBED_FLAG) && RBIGNUM_DIGITS(obj)) {
-	    RUBY_CRITICAL(free(RBIGNUM_DIGITS(obj)));
+	    xfree(RBIGNUM_DIGITS(obj));
 	}
 	break;
       case T_NODE:
 	switch (nd_type(obj)) {
 	  case NODE_SCOPE:
 	    if (RANY(obj)->as.node.u1.tbl) {
-		RUBY_CRITICAL(free(RANY(obj)->as.node.u1.tbl));
+		xfree(RANY(obj)->as.node.u1.tbl);
 	    }
 	    break;
 	  case NODE_ALLOCA:
-	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.node));
+	    xfree(RANY(obj)->as.node.u1.node);
 	    break;
 	}
 	return;			/* no need to free iv_tbl */
@@ -1546,7 +1546,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_STRUCT:
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
 	    RANY(obj)->as.rstruct.as.heap.ptr) {
-	    RUBY_CRITICAL(free(RANY(obj)->as.rstruct.as.heap.ptr));
+	    xfree(RANY(obj)->as.rstruct.as.heap.ptr);
 	}
 	break;
 
@@ -2106,7 +2106,7 @@ rb_gc_call_finalizer_at_exit(void)
 		RANY(p)->as.basic.klass != rb_cThread) {
 		p->as.free.flags = 0;
 		if ((long)RANY(p)->as.data.dfree == -1) {
-		    RUBY_CRITICAL(free(DATA_PTR(p)));
+		    xfree(DATA_PTR(p));
 		}
 		else if (RANY(p)->as.data.dfree) {
 		    (*RANY(p)->as.data.dfree)(DATA_PTR(p));

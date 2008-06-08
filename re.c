@@ -2296,7 +2296,7 @@ rb_reg_initialize(VALUE obj, const char *s, int len, rb_encoding *enc,
     if (FL_TEST(obj, REG_LITERAL))
 	rb_raise(rb_eSecurityError, "can't modify literal regexp");
     if (re->ptr) onig_free(re->ptr);
-    if (re->str) free(re->str);
+    if (re->str) xfree(re->str);
     re->ptr = 0;
     re->str = 0;
 

@@ -1536,8 +1536,7 @@ thread_alloc(VALUE klass)
     obj = Data_Wrap_Struct(klass, rb_thread_mark, thread_free, th);
 #else
     rb_thread_t *th;
-    obj = Data_Make_Struct(klass, rb_thread_t,
-			   rb_thread_mark, thread_free, th);
+    obj = Data_Make_Struct(klass, rb_thread_t, rb_thread_mark, thread_free, th);
 #endif
     return obj;
 }
@@ -1627,7 +1626,7 @@ nsdr(void)
     for (i=0; i<n; i++) {
 	rb_ary_push(ary, rb_str_new2(syms[i]));
     }
-    free(syms);
+    free(syms); /* OK */
 #endif
     return ary;
 }
@@ -1708,8 +1707,7 @@ Init_VM(void)
 	vm->self = Data_Wrap_Struct(rb_cVM, rb_vm_mark, vm_free, vm);
 
 	/* create main thread */
-	th_self = th->self = Data_Wrap_Struct(rb_cThread, rb_thread_mark,
-					      thread_free, th);
+	th_self = th->self = Data_Wrap_Struct(rb_cThread, rb_thread_mark, thread_free, th);
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;

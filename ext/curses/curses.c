@@ -635,7 +635,7 @@ static void
 curses_mousedata_free(struct mousedata *mdata)
 {
   if (mdata->mevent)
-    free(mdata->mevent);
+    xfree(mdata->mevent);
 }
 
 static VALUE

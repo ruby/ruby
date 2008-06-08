@@ -469,7 +469,7 @@ rb_digest_base_alloc(VALUE klass)
     pctx = xmalloc(algo->ctx_size);
     algo->init_func(pctx);
 
-    obj = Data_Wrap_Struct(klass, 0, free, pctx);
+    obj = Data_Wrap_Struct(klass, 0, xfree, pctx);
 
     return obj;
 }

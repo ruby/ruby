@@ -206,8 +206,7 @@ enumerator_allocate(VALUE klass)
     struct enumerator *ptr;
     VALUE enum_obj;
 
-    enum_obj = Data_Make_Struct(klass, struct enumerator,
-				enumerator_mark, -1, ptr);
+    enum_obj = Data_Make_Struct(klass, struct enumerator, enumerator_mark, -1, ptr);
     ptr->obj = Qundef;
 
     return enum_obj;

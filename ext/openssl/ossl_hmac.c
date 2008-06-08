@@ -42,7 +42,7 @@ static void
 ossl_hmac_free(HMAC_CTX *ctx)
 {
     HMAC_CTX_cleanup(ctx);
-    free(ctx);
+    ruby_xfree(ctx);
 }
 
 static VALUE

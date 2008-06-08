@@ -52,7 +52,7 @@ free_dbm(struct dbmdata *dbmp)
 {
     if (dbmp) {
 	if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
-	free(dbmp);
+	xfree(dbmp);
     }
 }
 

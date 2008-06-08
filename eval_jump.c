@@ -120,7 +120,7 @@ rb_exec_end_proc(void)
 	    }
 	    tmp = link;
 	    tmp_end_procs = link = link->next;
-	    free(tmp);
+	    xfree(tmp);
 	}
     }
     while (end_procs) {
@@ -138,7 +138,7 @@ rb_exec_end_proc(void)
 	    }
 	    tmp = link;
 	    tmp_end_procs = link = link->next;
-	    free(tmp);
+	    xfree(tmp);
 	}
     }
     rb_set_safe_level_force(safe);

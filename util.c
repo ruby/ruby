@@ -748,7 +748,7 @@ ruby_getcwd(void)
 
     while (!getcwd(buf, size)) {
 	if (errno != ERANGE) {
-	    free(buf);
+	    xfree(buf);
 	    rb_sys_fail("getcwd");
 	}
 	size *= 2;
@@ -761,7 +761,7 @@ ruby_getcwd(void)
     char *buf = xmalloc(PATH_MAX+1);
 
     if (!getwd(buf)) {
-	free(buf);
+	xfree(buf);
 	rb_sys_fail("getwd");
     }
 #endif

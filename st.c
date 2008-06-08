@@ -63,6 +63,7 @@ static void rehash(st_table *);
 #ifdef RUBY
 #define malloc xmalloc
 #define calloc xcalloc
+#define free(x) xfree(x)
 #endif
 
 #define alloc(type) (type*)malloc((size_t)sizeof(type))

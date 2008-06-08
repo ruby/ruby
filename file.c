@@ -184,7 +184,7 @@ stat_new_0(VALUE klass, struct stat *st)
 	nst = ALLOC(struct stat);
 	*nst = *st;
     }
-    return Data_Wrap_Struct(klass, NULL, free, nst);
+    return Data_Wrap_Struct(klass, NULL, -1, nst);
 }
 
 static VALUE
@@ -2276,11 +2276,11 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 	buf = xrealloc(buf, size);
     }
     if (rv < 0) {
-	free(buf);
+	xfree(buf);
 	rb_sys_fail(RSTRING_PTR(path));
     }
     v = rb_tainted_str_new(buf, rv);
-    free(buf);
+    xfree(buf);
 
     return v;
 #else
@@ -2453,7 +2453,7 @@ getcwdofdrv(int drv)
     if (chdir(drive) == 0) {
 	drvcwd = my_getcwd();
 	chdir(oldcwd);
-	free(oldcwd);
+	xfree(oldcwd);
     }
     else {
 	/* perhaps the drive is not exist. we return only drive letter */
@@ -2688,7 +2688,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 		dirlen = strlen(dir);
 		BUFCHECK(dirlen > buflen);
 		strcpy(buf, dir);
-		free(dir);
+		xfree(dir);
 		SET_EXTERNAL_ENCODING();
 	    }
 	    p = chompdirsep(skiproot(buf));
@@ -2708,7 +2708,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 	    dirlen = strlen(dir);
 	    BUFCHECK(dirlen > buflen);
 	    strcpy(buf, dir);
-	    free(dir);
+	    xfree(dir);
 	    SET_EXTERNAL_ENCODING();
 	}
 #if defined DOSISH || defined __CYGWIN__
@@ -3726,7 +3726,7 @@ rb_stat_init(VALUE obj, VALUE fname)
 	rb_sys_fail(RSTRING_PTR(fname));
     }
     if (DATA_PTR(obj)) {
-	free(DATA_PTR(obj));
+	xfree(DATA_PTR(obj));
 	DATA_PTR(obj) = NULL;
     }
     nst = ALLOC(struct stat);
@@ -3749,7 +3749,7 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
     if (DATA_PTR(copy)) {
-	free(DATA_PTR(copy));
+	xfree(DATA_PTR(copy));
 	DATA_PTR(copy) = 0;
     }
     if (DATA_PTR(orig)) {
@@ -4373,7 +4373,7 @@ path_check_0(VALUE path, int execpath)
 	VALUE newpath;
 
 	newpath = rb_str_new2(buf);
-	free(buf);
+	xfree(buf);
 
 	rb_str_cat2(newpath, "/");
 	rb_str_cat2(newpath, p0);

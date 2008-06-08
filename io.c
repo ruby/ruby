@@ -18,6 +18,8 @@
 #include <ctype.h>
 #include <errno.h>
 
+#define free(x) xfree(x)
+
 #if defined(DOSISH) || defined(__CYGWIN__)
 #include <io.h>
 #endif

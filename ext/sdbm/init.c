@@ -44,7 +44,7 @@ free_sdbm(struct dbmdata *dbmp)
 {
 
     if (dbmp->di_dbm) sdbm_close(dbmp->di_dbm);
-    free(dbmp);
+    ruby_xfree(dbmp);
 }
 
 static VALUE

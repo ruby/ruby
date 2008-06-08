@@ -1712,7 +1712,7 @@ rb_fd_init(volatile rb_fdset_t *fds)
 void
 rb_fd_term(rb_fdset_t *fds)
 {
-    if (fds->fdset) free(fds->fdset);
+    if (fds->fdset) xfree(fds->fdset);
     fds->maxfd = 0;
     fds->fdset = 0;
 }
@@ -2129,7 +2129,7 @@ thgroup_s_alloc(VALUE klass)
     VALUE group;
     struct thgroup *data;
 
-    group = Data_Make_Struct(klass, struct thgroup, 0, free, data);
+    group = Data_Make_Struct(klass, struct thgroup, 0, -1, data);
     data->enclosed = 0;
     data->group = group;
 
@@ -2668,8 +2668,7 @@ barrier_alloc(VALUE klass)
     VALUE volatile obj;
     rb_barrier_t *barrier;
 
-    obj = Data_Make_Struct(klass, rb_barrier_t,
-			   barrier_mark, barrier_free, barrier);
+    obj = Data_Make_Struct(klass, rb_barrier_t, barrier_mark, barrier_free, barrier);
     barrier->owner = GET_THREAD();
     barrier->waiting = 0;
     barrier->tail = &barrier->waiting;

@@ -372,7 +372,7 @@ load_unlock(const char *ftptr)
 	st_table *loading_tbl = get_loading_table();
 
 	if (st_delete(loading_tbl, &key, &data)) {
-	    free((char *)key);
+	    xfree((char *)key);
 	    rb_barrier_release((VALUE)data);
 	}
     }
