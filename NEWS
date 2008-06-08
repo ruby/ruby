@@ -28,6 +28,13 @@ with all sufficient information, see the ChangeLog file.
   You can change the directory locations using configure options such
   as `--with-sitedir=DIR' and `--with-vendordir=DIR'.
 
+=== Global constants
+
+* new constants
+
+  * RUBY_COPYRIGHT
+  * RUBY_DESCRIPTION
+
 === Library updates (outstanding ones only)
 
 * new library
@@ -512,6 +519,12 @@ with all sufficient information, see the ChangeLog file.
 * Visual C++ 8 SP1
 
 * autoconf 2.6x
+
+=== Global constants
+
+* RUBY_PATCHLEVEL
+
+  New constant since 1.8.5-p1.
 
 === Library updates (outstanding ones only)
 

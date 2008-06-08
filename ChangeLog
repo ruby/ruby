@@ -1,3 +1,7 @@
+Mon Jun  9 03:26:03 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: Mention new constants.
+
 Mon Jun  9 03:24:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* hash.c (hash_i): make Hash#hash order insensitive.
