@@ -1784,6 +1784,8 @@ ruby_set_stack_size(size_t size)
     rb_gc_stack_maxsize = size;
 }
 
+#undef Init_stack
+
 void
 Init_stack(VALUE *addr)
 {

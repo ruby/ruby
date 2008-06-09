@@ -660,7 +660,7 @@ void ruby_show_copyright(void);
 ID rb_frame_callee(void);
 VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
-void Init_stack(VALUE*);
+#define Init_stack(addr) ruby_init_stack(addr)
 void rb_frame_pop(void);
 int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 

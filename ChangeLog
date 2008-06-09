@@ -1,3 +1,7 @@
+Mon Jun  9 09:54:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (Init_stack): make to call ruby_init_stack.
+
 Mon Jun  9 08:12:40 2008  wanabe  <s.wanabe@gmail.com>
 
 	* vm_insnhelper.c, vm.c, proc.c : revert r17021. [ruby-dev:34997]
