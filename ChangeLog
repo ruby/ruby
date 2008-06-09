@@ -1,3 +1,17 @@
+Mon Jun  9 13:20:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (struct rb_vm_struct): moved src_encoding_index.
+
+	* ruby.c (struct cmdline_options): moved setids and req_list, and the
+	  latter is now an array, to prevent memory leak.
+
+	* ruby.c (cmdline_options_init): added.
+
+	* ruby.c (add_modules, require_libraries, init_ids, forbid_setid): use
+	  struct cmdline_options.
+
+	* vm.c (vm_init2): initialize src_encoding_index.
+
 Mon Jun  9 09:54:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (Init_stack): make to call ruby_init_stack.

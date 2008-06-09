@@ -88,6 +88,7 @@ struct cmdline_options {
     unsigned int disable;
     int verbose;
     int yydebug;
+    unsigned int setids;
     unsigned int dump;
     const char *script;
     VALUE script_name;
@@ -98,7 +99,21 @@ struct cmdline_options {
 	    int index;
 	} enc;
     } src, ext;
+    VALUE req_list;
 };
+
+static void init_ids(struct cmdline_options *);
+
+#define src_encoding_index GET_VM()->src_encoding_index
+
+static struct cmdline_options *
+cmdline_options_init(struct cmdline_options *opt)
+{
+    MEMZERO(opt, *opt, 1);
+    init_ids(opt);
+    opt->src.enc.index = src_encoding_index;
+    return opt;
+}
 
 struct cmdline_arguments {
     int argc;
@@ -107,7 +122,8 @@ struct cmdline_arguments {
 };
 
 static NODE *load_file(VALUE, const char *, int, struct cmdline_options *);
-static void forbid_setid(const char *);
+static void forbid_setid(const char *, struct cmdline_options *);
+#define forbid_setid(s) forbid_setid(s, opt)
 
 static struct {
     int argc;
@@ -419,48 +435,34 @@ ruby_init_loadpath(void)
     }
 }
 
-struct req_list {
-    char *name;
-    struct req_list *next;
-};
-static struct {
-    struct req_list *last, head;
-} req_list = {&req_list.head,};
 
 static void
-add_modules(const char *mod)
+add_modules(struct cmdline_options *opt, const char *mod)
 {
-    struct req_list *list;
+    VALUE list = opt->req_list;
 
-    list = ALLOC(struct req_list);
-    list->name = ALLOC_N(char, strlen(mod) + 1);
-    strcpy(list->name, mod);
-    list->next = 0;
-    req_list.last->next = list;
-    req_list.last = list;
+    if (!list) {
+	opt->req_list = list = rb_ary_new();
+	RBASIC(list)->klass = 0;
+    }
+    rb_ary_push(list, rb_obj_freeze(rb_str_new2(mod)));
 }
 
 extern void Init_ext(void);
 extern VALUE rb_vm_top_self(void);
 
 static void
-require_libraries(void)
+require_libraries(struct cmdline_options *opt)
 {
-    struct req_list *list = req_list.head.next;
-    struct req_list *tmp;
+    VALUE list = opt->req_list;
     ID require = rb_intern("require");
 
     Init_ext();		/* should be called here for some reason :-( */
-    req_list.last = 0;
-    while (list) {
-	VALUE feature = rb_str_new2(list->name);
-	tmp = list->next;
-	xfree(list->name);
-	xfree(list);
-	list = tmp;
+    while (RARRAY_LEN(list)) {
+	VALUE feature = rb_ary_shift(list);
 	rb_funcall2(rb_vm_top_self(), require, 1, &feature);
     }
-    req_list.head.next = 0;
+    opt->req_list = 0;
 }
 
 static void
@@ -727,10 +729,10 @@ proc_options(int argc, char **argv, struct cmdline_options *opt)
 	  case 'r':
 	    forbid_setid("-r");
 	    if (*++s) {
-		add_modules(s);
+		add_modules(opt, s);
 	    }
 	    else if (argv[1]) {
-		add_modules(argv[1]);
+		add_modules(opt, argv[1]);
 		argc--, argv++;
 	    }
 	    break;
@@ -956,7 +958,6 @@ opt_enc_index(VALUE enc_name)
 
 VALUE rb_progname;
 VALUE rb_argv0;
-static int src_encoding_index = -1; /* TODO: VM private */
 
 static VALUE
 process_options(VALUE arg)
@@ -1108,7 +1109,7 @@ process_options(VALUE arg)
 	    eenc = lenc;
 	}
 	rb_enc_associate(opt->e_script, eenc);
-	require_libraries();
+	require_libraries(opt);
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
@@ -1278,7 +1279,7 @@ load_file(VALUE parser, const char *fname, int script, struct cmdline_options *o
 	else if (!NIL_P(c)) {
 	    rb_io_ungetc(f, c);
 	}
-	require_libraries();	/* Why here? unnatural */
+	require_libraries(opt);	/* Why here? unnatural */
     }
     if (opt->src.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->src.enc.index);
@@ -1306,9 +1307,7 @@ rb_load_file(const char *fname)
 {
     struct cmdline_options opt;
 
-    MEMZERO(&opt, opt, 1);
-    opt.src.enc.index = src_encoding_index;
-    return load_file(rb_parser_new(), fname, 0, &opt);
+    return load_file(rb_parser_new(), fname, 0, cmdline_options_init(&opt));
 }
 
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
@@ -1411,30 +1410,32 @@ ruby_script(const char *name)
     }
 }
 
-static int uid, euid, gid, egid;
-
 static void
-init_ids(void)
+init_ids(struct cmdline_options *opt)
 {
-    uid = (int)getuid();
-    euid = (int)geteuid();
-    gid = (int)getgid();
-    egid = (int)getegid();
+    rb_uid_t uid = getuid();
+    rb_uid_t euid = geteuid();
+    rb_gid_t gid = getgid();
+    rb_gid_t egid = getegid();
+
 #ifdef VMS
     uid |= gid << 16;
     euid |= egid << 16;
 #endif
-    if (uid && (euid != uid || egid != gid)) {
+    if (uid != euid) opt->setids |= 1;
+    if (egid != gid) opt->setids |= 2;
+    if (uid && opt->setids) {
 	rb_set_safe_level(1);
     }
 }
 
+#undef forbid_setid
 static void
-forbid_setid(const char *s)
+forbid_setid(const char *s, struct cmdline_options *opt)
 {
-    if (euid != uid)
+    if (opt->setids & 1)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
-    if (egid != gid)
+    if (opt->setids & 2)
         rb_raise(rb_eSecurityError, "no %s allowed while running setgid", s);
     if (rb_safe_level() > 0)
         rb_raise(rb_eSecurityError, "no %s allowed in tainted mode", s);
@@ -1461,8 +1462,6 @@ opt_W_getter(VALUE val, ID id)
 void
 ruby_prog_init(void)
 {
-    init_ids();
-
     rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
@@ -1529,13 +1528,11 @@ ruby_process_options(int argc, char **argv)
     struct cmdline_options opt;
     NODE *tree;
 
-    MEMZERO(&opt, opt, 1);
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_progname;
     args.argc = argc;
     args.argv = argv;
-    args.opt = &opt;
-    opt.src.enc.index = src_encoding_index;
+    args.opt = cmdline_options_init(&opt);
     opt.ext.enc.index = -1;
     tree = (NODE *)rb_vm_call_cfunc(rb_vm_top_self(),
 				    process_options, (VALUE)&args,

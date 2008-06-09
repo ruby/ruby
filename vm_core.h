@@ -319,6 +319,8 @@ struct rb_vm_struct
     /* hook */
     rb_event_hook_t *event_hooks;
 
+    int src_encoding_index;
+
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     struct rb_objspace *objspace;
 #endif

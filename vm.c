@@ -1381,6 +1381,7 @@ static void
 vm_init2(rb_vm_t *vm)
 {
     MEMZERO(vm, rb_vm_t, 1);
+    vm->src_encoding_index = -1;
 }
 
 /* Thread */
