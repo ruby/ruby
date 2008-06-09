@@ -1105,6 +1105,8 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 void
 Init_eval_method(void)
 {
+#undef rb_intern
+
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
     basic_respond_to = rb_method_node(rb_cObject, idRespond_to);
     rb_register_mark_object((VALUE)basic_respond_to);

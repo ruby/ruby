@@ -7761,9 +7761,9 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 static void
 shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
-    static ID uscore;
+    ID uscore;
 
-    if (!uscore) uscore = rb_intern("_");
+    CONST_ID(uscore, "_");
     if (uscore == name) return;
     if (dyna_in_block()) {
 	if (dvar_curr(name)) {

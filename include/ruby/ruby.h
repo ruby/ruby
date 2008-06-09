@@ -764,17 +764,21 @@ const char *rb_id2name(ID);
 ID rb_to_id(VALUE);
 VALUE rb_id2str(ID);
 
+#define CONST_ID_CACHE(result, str)			\
+    ({							\
+	static ID rb_intern_id_cache;			\
+	if (!rb_intern_id_cache)			\
+	    rb_intern_id_cache = (rb_intern)(str);	\
+	result rb_intern_id_cache;			\
+    })
+#define CONST_ID(var, str) \
+    do {CONST_ID_CACHE(var =, str);} while (0)
 #ifdef __GNUC__
 /* __builtin_constant_p and statement expression is available
  * since gcc-2.7.2.3 at least. */
 #define rb_intern(str) \
     (__builtin_constant_p(str) ? \
-        ({ \
-            static ID rb_intern_id_cache; \
-            if (!rb_intern_id_cache) \
-                rb_intern_id_cache = rb_intern(str); \
-            rb_intern_id_cache; \
-        }) : \
+        CONST_ID_CACHE(/**/, str) : \
         rb_intern(str))
 #endif
 

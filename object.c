@@ -2365,6 +2365,8 @@ boot_defclass(const char *name, VALUE super)
 void
 Init_Object(void)
 {
+#undef rb_intern
+
     VALUE metaclass;
 
     rb_cBasicObject = boot_defclass("BasicObject", 0);

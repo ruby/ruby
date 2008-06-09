@@ -124,6 +124,8 @@ prec_included(VALUE module, VALUE include)
 void
 Init_Precision(void)
 {
+#undef rb_intern
+
     rb_mPrecision = rb_define_module("Precision");
     rb_define_singleton_method(rb_mPrecision, "included", prec_included, 1);
     rb_define_method(rb_mPrecision, "prec", prec_prec, 1);

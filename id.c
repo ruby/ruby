@@ -18,6 +18,8 @@
 void
 Init_id(void)
 {
+#undef rb_intern
+
     /* Symbols */
     symIFUNC = ID2SYM(rb_intern("<IFUNC>"));
     symCFUNC = ID2SYM(rb_intern("<CFUNC>"));

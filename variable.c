@@ -26,9 +26,9 @@ Init_var_tables(void)
 {
     rb_global_tbl = st_init_numtable();
     rb_class_tbl = st_init_numtable();
-    autoload = rb_intern("__autoload__");
-    classpath = rb_intern("__classpath__");
-    tmp_classpath = rb_intern("__tmp_classpath__");
+    CONST_ID(autoload, "__autoload__");
+    CONST_ID(classpath, "__classpath__");
+    CONST_ID(tmp_classpath, "__tmp_classpath__");
 }
 
 struct fc_result {
@@ -142,7 +142,9 @@ classname(VALUE klass)
     if (!klass) klass = rb_cObject;
     if (RCLASS_IV_TBL(klass)) {
 	if (!st_lookup(RCLASS_IV_TBL(klass), classpath, &path)) {
-	    ID classid = rb_intern("__classid__");
+	    ID classid;
+
+	    CONST_ID(classid, "__classid__");
 
 	    if (!st_lookup(RCLASS_IV_TBL(klass), classid, &path)) {
 		return find_class_path(klass);

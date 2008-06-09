@@ -3092,6 +3092,8 @@ fix_even_p(VALUE num)
 void
 Init_Numeric(void)
 {
+#undef rb_intern
+
 #if defined(__FreeBSD__) && __FreeBSD__ < 4
     /* allow divide by zero -- Inf */
     fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV|FP_X_OFL));

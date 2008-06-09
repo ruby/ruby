@@ -496,9 +496,9 @@ exc_inspect(VALUE exc)
 static VALUE
 exc_backtrace(VALUE exc)
 {
-    static ID bt;
+    ID bt;
 
-    if (!bt) bt = rb_intern("bt");
+    CONST_ID(bt, "bt");
     return rb_attr_get(exc, bt);
 }
 
@@ -506,7 +506,7 @@ VALUE
 rb_check_backtrace(VALUE bt)
 {
     long i;
-    static const char *err = "backtrace must be Array of String";
+    static const char err[] = "backtrace must be Array of String";
 
     if (!NIL_P(bt)) {
 	int t = TYPE(bt);
@@ -552,11 +552,12 @@ exc_set_backtrace(VALUE exc, VALUE bt)
 static VALUE
 exc_equal(VALUE exc, VALUE obj)
 {
-    ID id_mesg = rb_intern("mesg");
+    ID id_mesg;
 
     if (exc == obj) return Qtrue;
     if (rb_obj_class(exc) != rb_obj_class(obj))
 	return rb_equal(obj, exc);
+    CONST_ID(id_mesg, "mesg");
     if (!rb_equal(rb_attr_get(exc, id_mesg), rb_attr_get(obj, id_mesg)))
 	return Qfalse;
     if (!rb_equal(exc_backtrace(exc), exc_backtrace(obj)))
@@ -963,7 +964,9 @@ static VALUE
 syserr_eqq(VALUE self, VALUE exc)
 {
     VALUE num, e;
-    ID en = rb_intern("errno");
+    ID en;
+
+    CONST_ID(en, "errno");
 
     if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) {
 	if (!rb_respond_to(exc, en)) return Qfalse;

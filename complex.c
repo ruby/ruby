@@ -1387,6 +1387,8 @@ numeric_conjugate(VALUE self)
 void
 Init_Complex(void)
 {
+#undef rb_intern
+
     assert(fprintf(stderr, "assert() is now active\n"));
 
     id_Unify = rb_intern("Unify");

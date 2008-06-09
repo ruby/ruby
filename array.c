@@ -3400,6 +3400,8 @@ rb_ary_drop_while(VALUE ary)
 void
 Init_Array(void)
 {
+#undef rb_intern
+
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);
 

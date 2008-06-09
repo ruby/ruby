@@ -425,18 +425,16 @@ debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 void
 vm_analysis_insn(int insn)
 {
-    static ID usage_hash;
-    static ID bigram_hash;
+    ID usage_hash;
+    ID bigram_hash;
     static int prev_insn = -1;
 
     VALUE uh;
     VALUE ihash;
     VALUE cv;
 
-    if (usage_hash == 0) {
-	usage_hash = rb_intern("USAGE_ANALYSIS_INSN");
-	bigram_hash = rb_intern("USAGE_ANALYSIS_INSN_BIGRAM");
-    }
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
+    CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
     uh = rb_const_get(rb_cVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
 	ihash = rb_hash_new();
@@ -473,7 +471,7 @@ extern VALUE insn_operand_intern(int insn, int op_no, VALUE op,
 void
 vm_analysis_operand(int insn, int n, VALUE op)
 {
-    static ID usage_hash;
+    ID usage_hash;
 
     VALUE uh;
     VALUE ihash;
@@ -481,9 +479,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
     VALUE valstr;
     VALUE cv;
 
-    if (usage_hash == 0) {
-	usage_hash = rb_intern("USAGE_ANALYSIS_INSN");
-    }
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
 
     uh = rb_const_get(rb_cVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
@@ -507,11 +503,11 @@ vm_analysis_operand(int insn, int n, VALUE op)
 void
 vm_analysis_register(int reg, int isset)
 {
-    static ID usage_hash;
+    ID usage_hash;
     VALUE uh;
     VALUE rhash;
     VALUE valstr;
-    char *regstrs[] = {
+    static const char regstrs[][5] = {
 	"pc",			/* 0 */
 	"sp",			/* 1 */
 	"cfp",			/* 2 */
@@ -520,7 +516,7 @@ vm_analysis_register(int reg, int isset)
 	"self",			/* 5 */
 	"iseq",			/* 6 */
     };
-    char *getsetstr[] = {
+    static const char getsetstr[][4] = {
 	"get",
 	"set",
     };
@@ -528,11 +524,10 @@ vm_analysis_register(int reg, int isset)
 
     VALUE cv;
 
-    if (usage_hash == 0) {
+    CONST_ID(usage_hash, "USAGE_ANALYSIS_REGS");
+    if (syms[0] == 0) {
 	char buff[0x10];
 	int i;
-
-	usage_hash = rb_intern("USAGE_ANALYSIS_REGS");
 
 	for (i = 0; i < sizeof(regstrs) / sizeof(regstrs[0]); i++) {
 	    int j;

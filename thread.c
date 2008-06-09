@@ -3167,6 +3167,8 @@ ruby_suppress_tracing(VALUE (*func)(VALUE, int), VALUE arg, int always)
 void
 Init_Thread(void)
 {
+#undef rb_intern
+
     VALUE cThGroup;
 
     rb_define_singleton_method(rb_cThread, "new", thread_s_new, -1);

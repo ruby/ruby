@@ -2632,7 +2632,7 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 
     rb_scan_args(argc, argv, "11", &end, &exclusive);
     excl = RTEST(exclusive);
-    succ = rb_intern("succ");
+    CONST_ID(succ, "succ");
     StringValue(end);
     enc = rb_enc_check(beg, end);
     if (RSTRING_LEN(beg) == 1 && RSTRING_LEN(end) == 1 &&
@@ -6526,6 +6526,8 @@ rb_to_id(VALUE name)
 void
 Init_String(void)
 {
+#undef rb_intern
+
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, str_alloc);

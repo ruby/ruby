@@ -1566,7 +1566,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 	}
     }
     if (!allary) {
-	conv = rb_intern("to_enum");
+	CONST_ID(conv, "to_enum");
 	for (i=0; i<argc; i++) {
 	    argv[i] = rb_funcall(argv[i], conv, 1, ID2SYM(id_each));
 	}
@@ -1800,6 +1800,8 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
 void
 Init_Enumerable(void)
 {
+#undef rb_intern
+
     rb_mEnumerable = rb_define_module("Enumerable");
 
     rb_define_method(rb_mEnumerable, "to_a", enum_to_a, -1);

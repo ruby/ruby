@@ -533,9 +533,7 @@ enc_check_capable(VALUE x)
 ID
 rb_id_encoding(void)
 {
-    if (!id_encoding) {
-	id_encoding = rb_intern("encoding");
-    }
+    CONST_ID(id_encoding, "encoding");
     return id_encoding;
 }
 
@@ -1162,6 +1160,8 @@ rb_enc_aliases(VALUE klass)
 void
 Init_Encoding(void)
 {
+#undef rb_intern
+
     id_base_encoding = rb_intern("#base_encoding");
 
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);

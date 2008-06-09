@@ -129,9 +129,11 @@ build_Integer_times_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
        end
        }
      */
-    ID _self = rb_intern("#_self");
+    ID _self;
+    CONST_ID(_self, "#_self");
     if (iseq->argc == 0) {
-	ID e = rb_intern("#e");
+	ID e;
+	CONST_ID(e, "#e");
 	rb_ary_push(param_vars, ID2SYM(e));
 	rb_ary_push(param_vars, ID2SYM(_self));
 	iseq->argc += 2;
@@ -145,10 +147,11 @@ build_Integer_times_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
 		      Qundef);
     }
     else {
-	ID _e = rb_intern("#_e");
+	ID _e;
 	ID e = SYM2ID(rb_ary_entry(param_vars, 0));
 	NODE *assign;
 
+	CONST_ID(_e, "#_e");
 	rb_ary_push(param_vars, ID2SYM(_self));
 	rb_ary_push(local_vars, ID2SYM(_e));
 	iseq->argc++;
@@ -230,9 +233,11 @@ build_Range_each_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
        end
        }
      */
-    ID _last = rb_intern("#_last");
+    ID _last;
+    CONST_ID(_last, "#_last");
     if (iseq->argc == 0) {
-	ID e = rb_intern("#e");
+	ID e;
+	CONST_ID(e, "#e");
 	rb_ary_push(param_vars, ID2SYM(e));
 	rb_ary_push(param_vars, ID2SYM(_last));
 	iseq->argc += 2;
@@ -245,10 +250,11 @@ build_Range_each_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
 		      Qundef);
     }
     else {
-	ID _e = rb_intern("#_e");
+	ID _e;
 	ID e = SYM2ID(rb_ary_entry(param_vars, 0));
 	NODE *assign;
 
+	CONST_ID(_e, "#_e");
 	rb_ary_push(param_vars, ID2SYM(_last));
 	rb_ary_push(local_vars, ID2SYM(_e));
 	iseq->argc++;
@@ -362,11 +368,13 @@ build_Array_each_node(rb_iseq_t *iseq, NODE * node, NODE * lnode,
        }
      */
 
-    ID _self = rb_intern("#_self");
-    ID _i = rb_intern("#_i");
+    ID _self, _i;
 
+    CONST_ID(_self, "#_self");
+    CONST_ID(_i, "#_i");
     if (iseq->argc == 0) {
-	ID _e = rb_intern("#_e");
+	ID _e;
+	CONST_ID(_e, "#_e");
 	rb_ary_push(param_vars, ID2SYM(_e));
 	rb_ary_push(param_vars, ID2SYM(_self));
 	iseq->argc += 2;

@@ -956,12 +956,12 @@ exception_type2symbol(VALUE type)
 {
     ID id;
     switch(type) {
-      case CATCH_TYPE_RESCUE: id = rb_intern("rescue"); break;
-      case CATCH_TYPE_ENSURE: id = rb_intern("ensure"); break;
-      case CATCH_TYPE_RETRY:  id = rb_intern("retry");  break;
-      case CATCH_TYPE_BREAK:  id = rb_intern("break");  break;
-      case CATCH_TYPE_REDO:   id = rb_intern("redo");   break;
-      case CATCH_TYPE_NEXT:   id = rb_intern("next");   break;
+      case CATCH_TYPE_RESCUE: CONST_ID(id, "rescue"); break;
+      case CATCH_TYPE_ENSURE: CONST_ID(id, "ensure"); break;
+      case CATCH_TYPE_RETRY:  CONST_ID(id, "retry");  break;
+      case CATCH_TYPE_BREAK:  CONST_ID(id, "break");  break;
+      case CATCH_TYPE_REDO:   CONST_ID(id, "redo");   break;
+      case CATCH_TYPE_NEXT:   CONST_ID(id, "next");   break;
       default:
 	rb_bug("...");
     }

@@ -452,9 +452,10 @@ static void
 require_libraries(struct cmdline_options *opt)
 {
     VALUE list = opt->req_list;
-    ID require = rb_intern("require");
+    ID require;
 
     Init_ext();		/* should be called here for some reason :-( */
+    CONST_ID(require, "require");
     while (list && RARRAY_LEN(list) > 0) {
 	VALUE feature = rb_ary_shift(list);
 	rb_funcall2(rb_vm_top_self(), require, 1, &feature);

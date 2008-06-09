@@ -507,7 +507,7 @@ rb_make_exception(int argc, VALUE *argv)
       case 3:
 	n = 1;
       exception_call:
-	exception = rb_intern("exception");
+	CONST_ID(exception, "exception");
 	if (!rb_respond_to(argv[0], exception)) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
 	}

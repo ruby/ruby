@@ -102,9 +102,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 	ID id;
 
 	RCLASS_IV_TBL(clone) = st_copy(RCLASS_IV_TBL(orig));
-	id = rb_intern("__classpath__");
+	CONST_ID(id, "__classpath__");
 	st_delete(RCLASS_IV_TBL(clone), (st_data_t*)&id, 0);
-	id = rb_intern("__classid__");
+	CONST_ID(id, "__classid__");
 	st_delete(RCLASS_IV_TBL(clone), (st_data_t*)&id, 0);
     }
     if (RCLASS_M_TBL(orig)) {
@@ -169,10 +169,12 @@ void
 rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
+	ID attached;
 	if (!RCLASS_IV_TBL(klass)) {
 	    RCLASS_IV_TBL(klass) = st_init_numtable();
 	}
-	st_insert(RCLASS_IV_TBL(klass), rb_intern("__attached__"), obj);
+	CONST_ID(attached, "__attached__");
+	st_insert(RCLASS_IV_TBL(klass), attached, obj);
     }
 }
 
@@ -214,8 +216,10 @@ rb_define_class_id(ID id, VALUE super)
 VALUE
 rb_class_inherited(VALUE super, VALUE klass)
 {
+    ID inherited;
     if (!super) super = rb_cObject;
-    return rb_funcall(super, rb_intern("inherited"), 1, klass);
+    CONST_ID(inherited, "inherited");
+    return rb_funcall(super, inherited, 1, klass);
 }
 
 VALUE

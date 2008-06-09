@@ -1501,6 +1501,8 @@ nurat_s_induced_from(VALUE klass, VALUE n)
 void
 Init_Rational(void)
 {
+#undef rb_intern
+
     assert(fprintf(stderr, "assert() is now active\n"));
 
     id_Unify = rb_intern("Unify");

@@ -198,6 +198,8 @@ cmp_between(VALUE x, VALUE min, VALUE max)
 void
 Init_Comparable(void)
 {
+#undef rb_intern
+
     rb_mComparable = rb_define_module("Comparable");
     rb_define_method(rb_mComparable, "==", cmp_equal, 1);
     rb_define_method(rb_mComparable, ">", cmp_gt, 1);

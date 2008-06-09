@@ -754,22 +754,22 @@ make_localjump_error(const char *mesg, VALUE value, int reason)
 
     switch (reason) {
       case TAG_BREAK:
-	id = rb_intern("break");
+	CONST_ID(id, "break");
 	break;
       case TAG_REDO:
-	id = rb_intern("redo");
+	CONST_ID(id, "redo");
 	break;
       case TAG_RETRY:
-	id = rb_intern("retry");
+	CONST_ID(id, "retry");
 	break;
       case TAG_NEXT:
-	id = rb_intern("next");
+	CONST_ID(id, "next");
 	break;
       case TAG_RETURN:
-	id = rb_intern("return");
+	CONST_ID(id, "return");
 	break;
       default:
-	id = rb_intern("noreason");
+	CONST_ID(id, "noreason");
 	break;
     }
     rb_iv_set(exc, "@exit_value", value);
@@ -1241,7 +1241,7 @@ rb_thread_method_id_and_class(rb_thread_t *th,
     }
     while (iseq) {
 	if (RUBY_VM_IFUNC_P(iseq)) {
-	    if (idp) *idp = rb_intern("<ifunc>");
+	    if (idp) CONST_ID(*idp, "<ifunc>");
 	    if (klassp) *klassp = 0;
 	    return 1;
 	}

@@ -102,15 +102,14 @@ static VALUE
 rb_get_path_check(VALUE obj, int check)
 {
     VALUE tmp;
-    static ID to_path;
+    ID to_path;
 
     if (check) rb_check_safe_obj(obj);
     tmp = rb_check_string_type(obj);
     if (!NIL_P(tmp)) goto exit;
 
-    if (!to_path) {
-	to_path = rb_intern("to_path");
-    }
+
+    CONST_ID(to_path, "to_path");
     if (rb_respond_to(obj, to_path)) {
 	tmp = rb_funcall(obj, to_path, 0, 0);
     }

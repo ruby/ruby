@@ -4231,7 +4231,7 @@ rb_f_open(int argc, VALUE *argv)
     int redirect = Qfalse;
 
     if (argc >= 1) {
-	to_open = rb_intern("to_open");
+	CONST_ID(to_open, "to_open");
 	if (rb_respond_to(argv[0], to_open)) {
 	    redirect = Qtrue;
 	}
@@ -6178,11 +6178,11 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     if (!encoding) {
 	ID id;
 
-	id = rb_intern("encoding");
+	CONST_ID(id, "encoding");
 	encoding = ID2SYM(id);
-	id = rb_intern("mode");
+	CONST_ID(id, "mode");
 	mode = ID2SYM(id);
-	id = rb_intern("open_args");
+	CONST_ID(id, "open_args");
 	open_args = ID2SYM(id);
     }
     v = rb_hash_aref(opt, open_args);
@@ -7484,6 +7484,8 @@ rb_get_argv(void)
 void
 Init_IO(void)
 {
+#undef rb_intern
+
     VALUE rb_cARGF;
 #ifdef __CYGWIN__
 #include <sys/cygwin.h>

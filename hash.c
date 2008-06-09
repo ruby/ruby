@@ -2564,6 +2564,8 @@ env_update(VALUE env, VALUE hash)
 void
 Init_Hash(void)
 {
+#undef rb_intern
+
     id_hash = rb_intern("hash");
     id_yield = rb_intern("yield");
     id_default = rb_intern("default");

@@ -761,11 +761,9 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 static int
 iseq_set_exception_local_table(rb_iseq_t *iseq)
 {
-    static ID id_dollar_bang;
+    ID id_dollar_bang;
 
-    if (!id_dollar_bang) {
-	id_dollar_bang = rb_intern("#$!");
-    }
+    CONST_ID(id_dollar_bang, "#$!");
     iseq->local_table = (ID *)ALLOC_N(ID *, 1);
     iseq->local_table_size = 1;
     iseq->local_size = iseq->local_table_size + 1;
@@ -3718,15 +3716,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	/* only joke */
 	{
-	    static ID goto_id;
-	    static ID label_id;
+	    ID goto_id;
+	    ID label_id;
 	    VALUE label;
 	    VALUE label_sym;
 
-	    if (goto_id == 0) {
-		goto_id = rb_intern("__goto__");
-		label_id = rb_intern("__label__");
-	    }
+	    
+	    CONST_ID(goto_id, "__goto__");
+	    CONST_ID(label_id, "__label__");
 
 	    if (nd_type(node) == NODE_FCALL &&
 		(mid == goto_id || mid == label_id)) {
@@ -4319,14 +4316,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	break;
       }
       case NODE_SCLASS:{
+	ID singletonclass;
 	VALUE iseqval =
 	    NEW_ISEQVAL(node->nd_body, rb_str_new2("singletonclass"),
 			ISEQ_TYPE_CLASS);
 
 	COMPILE(ret, "sclass#recv", node->nd_recv);
 	ADD_INSN (ret, nd_line(node), putnil);
+	CONST_ID(singletonclass, "singletonclass");
 	ADD_INSN3(ret, nd_line(node), defineclass,
-		  ID2SYM(rb_intern("singletonclass")), iseqval, INT2FIX(1));
+		  ID2SYM(singletonclass), iseqval, INT2FIX(1));
 
 	if (poped) {
 	    ADD_INSN(ret, nd_line(node), pop);
@@ -4787,6 +4786,7 @@ register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
 static VALUE
 get_exception_sym2type(VALUE sym)
 {
+#undef rb_intern
     static VALUE symRescue, symEnsure, symRetry;
     static VALUE symBreak, symRedo, symNext;
 

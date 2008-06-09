@@ -896,6 +896,8 @@ range_alloc(VALUE klass)
 void
 Init_Range(void)
 {
+#undef rb_intern
+
     id_cmp = rb_intern("<=>");
     id_succ = rb_intern("succ");
     id_beg = rb_intern("begin");

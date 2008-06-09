@@ -2338,6 +2338,8 @@ time_load(VALUE klass, VALUE str)
 void
 Init_Time(void)
 {
+#undef rb_intern
+
     id_divmod = rb_intern("divmod");
     id_mul = rb_intern("*");
     id_submicro = rb_intern("submicro");

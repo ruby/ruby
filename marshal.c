@@ -1669,6 +1669,8 @@ marshal_load(int argc, VALUE *argv)
 void
 Init_marshal(void)
 {
+#undef rb_intern
+
     VALUE rb_mMarshal = rb_define_module("Marshal");
 
     s_dump = rb_intern("_dump");
