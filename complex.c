@@ -1132,7 +1132,7 @@ static VALUE comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
 #define DENOMINATOR "[-+]?" DIGITS
 #define NUMBER "[-+]?" NUMERATOR "(?:\\/" DENOMINATOR ")?"
 #define NUMBERNOS NUMERATOR "(?:\\/" DENOMINATOR ")?"
-#define PATTERN1 "\\A(" NUMBER "|\\(" NUMBER "\\))?[iIjJ]"
+#define PATTERN1 "\\A((" NUMBER ")|\\((" NUMBER ")\\))?[iIjJ]"
 #define PATTERN2 "\\A(" NUMBER ")(([-+])(?:(" NUMBERNOS ")|\\((" NUMBER ")\\))?[iIjJ])?"
 
 static void
@@ -1209,7 +1209,12 @@ string_to_c_internal(VALUE self)
 	    sr = Qnil;
 	    si = f_aref(m, INT2FIX(1));
 	    if (NIL_P(si))
-	      si = rb_str_new2("1");
+		si = rb_str_new2("1");
+	    else {
+		si = f_aref(m, INT2FIX(2));
+		if (NIL_P(si))
+		    si = f_aref(m, INT2FIX(3));
+	    }
 	    re = f_post_match(m);
 	}
 	if (NIL_P(m)) {
@@ -1218,17 +1223,17 @@ string_to_c_internal(VALUE self)
 		return rb_assoc_new(Qnil, self);
 	    sr = f_aref(m, INT2FIX(1));
 	    if (NIL_P(f_aref(m, INT2FIX(2))))
-	      si = Qnil;
+		si = Qnil;
 	    else {
-	      VALUE t;
+		VALUE t;
 
-	      si = f_aref(m, INT2FIX(3));
-	      t = f_aref(m, INT2FIX(4));
-	      if (NIL_P(t))
-		t = f_aref(m, INT2FIX(5));
-	      if (NIL_P(t))
-		t = rb_str_new2("1");
-	      rb_str_concat(si, t);
+		si = f_aref(m, INT2FIX(3));
+		t = f_aref(m, INT2FIX(4));
+		if (NIL_P(t))
+		    t = f_aref(m, INT2FIX(5));
+		if (NIL_P(t))
+		    t = rb_str_new2("1");
+		rb_str_concat(si, t);
 	    }
 	    re = f_post_match(m);
 	}
