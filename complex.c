@@ -1138,10 +1138,12 @@ static VALUE comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
 static void
 make_patterns(void)
 {
-    static char comp_pat1_source[] = PATTERN1;
-    static char comp_pat2_source[] = PATTERN2;
-    static char image_garbages_pat_source[] = "[+\\(\\)iIjJ]";
-    static char underscores_pat_source[] = "_+";
+    static const char comp_pat1_source[] = PATTERN1;
+    static const char comp_pat2_source[] = PATTERN2;
+    static const char image_garbages_pat_source[] = "[+\\(\\)iIjJ]";
+    static const char underscores_pat_source[] = "_+";
+
+    if (comp_pat1) return;
 
     comp_pat1 = rb_reg_new(comp_pat1_source, sizeof comp_pat1_source - 1, 0);
     rb_global_variable(&comp_pat1);
