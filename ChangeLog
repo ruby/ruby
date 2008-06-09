@@ -146,6 +146,10 @@ Fri Jun  6 15:05:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (count_objects): clear hash after counting objects.
 
+Fri Jun  6 12:43:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_dir.rb (TestDir::test_glob): glob file names not sorted.
+
 Fri Jun  6 00:05:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.xmlschema): don't use float.  fix

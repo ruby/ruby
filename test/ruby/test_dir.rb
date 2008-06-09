@@ -143,13 +143,13 @@ class TestDir < Test::Unit::TestCase
   def test_glob
     assert_equal((%w(. ..) + (?a..?z).to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH).sort)
-    assert_equal([@root] + (?a..?z).map {|f| File.join(@root, f) },
-                 Dir.glob([@root, File.join(@root, "*")]))
-    assert_equal([@root] + (?a..?z).map {|f| File.join(@root, f) },
-                 Dir.glob(@root + "\0\0\0" + File.join(@root, "*")))
+    assert_equal([@root] + (?a..?z).map {|f| File.join(@root, f) }.sort,
+                 Dir.glob([@root, File.join(@root, "*")]).sort)
+    assert_equal([@root] + (?a..?z).map {|f| File.join(@root, f) }.sort,
+                 Dir.glob(@root + "\0\0\0" + File.join(@root, "*")).sort)
 
-    assert_equal((?a..?z).step(2).map {|f| File.join(File.join(@root, f), "") },
-                 Dir.glob(File.join(@root, "*/")))
+    assert_equal((?a..?z).step(2).map {|f| File.join(File.join(@root, f), "") }.sort,
+                 Dir.glob(File.join(@root, "*/")).sort)
 
     FileUtils.touch(File.join(@root, "{}"))
     assert_equal(%w({} a).map{|f| File.join(@root, f) },
