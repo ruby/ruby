@@ -1,4 +1,6 @@
-Mon Jun  9 21:13:51 2008  Koichi Sasada  <ko1@atdot.net>
+Mon Jun  9 21:17:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (clean): remove build directories.
 
 	* test_knownbug.rb -> KNOWNBUGS.rb: renamed.
 

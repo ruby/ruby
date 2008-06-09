@@ -59,3 +59,7 @@ enc/trans/transdb.$(OBJEXT): transdb.h
 
 clean:
 	@$(RM) $(ENCSOS) $(ENCDEFS) $(ENCOBJS) $(TRANSSOS) $(TRANSDEFS) $(TRANSOBJS)
+% %w[$(ENCSODIR)/trans $(ENCSODIR) enc/trans enc].each do|dir|
+%   dir = dir.gsub('/', File::ALT_SEPARATOR) if File::ALT_SEPARATOR
+	@-rmdir <%=dir%>
+% end
