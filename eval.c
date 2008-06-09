@@ -43,7 +43,6 @@ void rb_clear_trace_func(void);
 void rb_thread_stop_timer_thread(void);
 
 void rb_call_inits(void);
-void Init_stack(VALUE *);
 void Init_heap(void);
 void Init_ext(void);
 void Init_BareVM(void);

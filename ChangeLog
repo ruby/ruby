@@ -1,3 +1,7 @@
+Mon Jun  9 23:10:50 2008  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (Init_stack): don't declare.  it is a macro now.
+
 Mon Jun  9 22:46:47 2008  wanabe  <s.wanabe@gmail.com>
 
 	* compile.c : treat []&&= in virtually the same way as []||=.
