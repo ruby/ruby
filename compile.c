@@ -3513,7 +3513,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      }
 	      else {
 		  /* and */
+		  ADD_INSN(ret, nd_line(node), dup);
 		  ADD_INSNL(ret, nd_line(node), branchunless, label);
+		  ADD_INSN(ret, nd_line(node), pop);
 	      }
 
 	      COMPILE(ret, "NODE_OP_ASGN1 args->head: ", node->nd_args->nd_head);
@@ -3529,16 +3531,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	      }
 	      ADD_INSNL(ret, nd_line(node), jump, lfin);
 	      ADD_LABEL(ret, label);
-	      if (id == 0) {	/* or */
+	      if (id == 0 || id == 1) {	/* 0: or, 1: and */
 		  ADD_INSN(ret, nd_line(node), swap);
 		  ADD_INSN(ret, nd_line(node), pop);
 		  ADD_INSN(ret, nd_line(node), swap);
 		  ADD_INSN(ret, nd_line(node), pop);
-	      }
-	      else if (id == 1) {	/* and */
-		  ADD_INSN(ret, nd_line(node), pop);
-		  ADD_INSN(ret, nd_line(node), pop);
-		  ADD_INSN(ret, nd_line(node), putnil);
 	      }
 	      ADD_LABEL(ret, lfin);
 	  }

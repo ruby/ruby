@@ -1,3 +1,8 @@
+Mon Jun  9 22:46:47 2008  wanabe  <s.wanabe@gmail.com>
+
+	* compile.c : treat []&&= in virtually the same way as []||=.
+	  [ruby-dev:34679]
+
 Mon Jun  9 21:17:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend (clean): remove build directories.
