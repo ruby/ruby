@@ -1290,6 +1290,10 @@ LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
 LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 
 RUBY_EXTCONF_H = #{$extconf_h}
+cflags   = #{CONFIG['cflags']}
+optflags = #{CONFIG['optflags']}
+debugflags = #{CONFIG['debugflags']}
+warnflags = #{CONFIG['warnflags']}
 CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
 INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
