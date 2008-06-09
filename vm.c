@@ -1777,3 +1777,26 @@ Init_top_self(void)
     vm->top_self = rb_obj_alloc(rb_cObject);
     rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
 }
+
+VALUE *
+ruby_vm_verbose_ptr(rb_vm_t *vm)
+{
+    return &vm->verbose;
+}
+
+VALUE *
+ruby_vm_debug_ptr(rb_vm_t *vm)
+{
+    return &vm->debug;
+}
+
+VALUE *
+rb_ruby_verbose_ptr(void)
+{
+    return ruby_vm_verbose_ptr(GET_VM());
+}
+
+VALUE *rb_ruby_debug_ptr(void)
+{
+    return ruby_vm_debug_ptr(GET_VM());
+}

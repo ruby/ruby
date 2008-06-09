@@ -1,6 +1,9 @@
-Mon Jun  9 13:20:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jun  9 14:18:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* vm_core.h (struct rb_vm_struct): moved src_encoding_index.
+	* vm_core.h (struct rb_vm_struct): moved src_encoding_index,
+	  ruby_debug, ruby_verbose, and rb_progname.
+
+	* ruby.c (rb_argv0): no longer used.
 
 	* ruby.c (struct cmdline_options): moved setids and req_list, and the
 	  latter is now an array, to prevent memory leak.
@@ -11,6 +14,8 @@ Mon Jun  9 13:20:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  struct cmdline_options.
 
 	* vm.c (vm_init2): initialize src_encoding_index.
+
+	* vm.c: getters/setters for ruby_{debug,verbose}.
 
 Mon Jun  9 09:54:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

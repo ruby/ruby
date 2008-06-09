@@ -57,9 +57,6 @@
 char *getenv();
 #endif
 
-/* TODO: move to VM */
-VALUE ruby_debug = Qfalse;
-VALUE ruby_verbose = Qfalse;
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 
@@ -956,8 +953,7 @@ opt_enc_index(VALUE enc_name)
     return i;
 }
 
-VALUE rb_progname;
-VALUE rb_argv0;
+#define rb_progname (GET_VM()->progname)
 
 static VALUE
 process_options(VALUE arg)
@@ -1473,7 +1469,6 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
     rb_define_global_const("ARGV", rb_argv);
-    rb_global_variable(&rb_argv0);
 
 #ifdef MSDOS
     /*
@@ -1529,7 +1524,6 @@ ruby_process_options(int argc, char **argv)
     NODE *tree;
 
     ruby_script(argv[0]);	/* for the time being */
-    rb_argv0 = rb_progname;
     args.argc = argc;
     args.argv = argv;
     args.opt = cmdline_options_init(&opt);
