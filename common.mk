@@ -361,7 +361,7 @@ test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
 
 test-knownbug: miniruby$(EXEEXT) $(PROGRAM) PHONY
-	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(srcdir)/test_knownbug.rb
+	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(srcdir)/KNOWNBUGS.rb
 
 test: test-sample btest-miniruby test-knownbug
 
