@@ -1125,22 +1125,21 @@ numeric_to_c(VALUE self)
 }
 
 static VALUE comp_pat1, comp_pat2, a_slash, a_dot_and_an_e,
-    image_garbages_pat, null_string, underscores_pat, an_underscore;
+    null_string, underscores_pat, an_underscore;
 
 #define DIGITS "(?:\\d(?:_\\d|\\d)*)"
 #define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
 #define DENOMINATOR "[-+]?" DIGITS
 #define NUMBER "[-+]?" NUMERATOR "(?:\\/" DENOMINATOR ")?"
 #define NUMBERNOS NUMERATOR "(?:\\/" DENOMINATOR ")?"
-#define PATTERN1 "\\A(" NUMBER "|\\(" NUMBER "\\))[iIjJ]"
-#define PATTERN2 "\\A(" NUMBER ")([-+](?:" NUMBERNOS "|\\(" NUMBER "\\))[iIjJ])?"
+#define PATTERN1 "\\A(" NUMBER "|\\(" NUMBER "\\))?[iIjJ]"
+#define PATTERN2 "\\A(" NUMBER ")(([-+])(?:(" NUMBERNOS ")|\\((" NUMBER ")\\))?[iIjJ])?"
 
 static void
 make_patterns(void)
 {
     static const char comp_pat1_source[] = PATTERN1;
     static const char comp_pat2_source[] = PATTERN2;
-    static const char image_garbages_pat_source[] = "[+\\(\\)iIjJ]";
     static const char underscores_pat_source[] = "_+";
 
     if (comp_pat1) return;
@@ -1156,10 +1155,6 @@ make_patterns(void)
 
     a_dot_and_an_e = rb_str_new2(".eE");
     rb_global_variable(&a_dot_and_an_e);
-
-    image_garbages_pat = rb_reg_new(image_garbages_pat_source,
-				    sizeof image_garbages_pat_source - 1, 0);
-    rb_global_variable(&image_garbages_pat);
 
     null_string = rb_str_new2("");
     rb_global_variable(&null_string);
@@ -1213,6 +1208,8 @@ string_to_c_internal(VALUE self)
 	if (!NIL_P(m)) {
 	    sr = Qnil;
 	    si = f_aref(m, INT2FIX(1));
+	    if (NIL_P(si))
+	      si = rb_str_new2("1");
 	    re = f_post_match(m);
 	}
 	if (NIL_P(m)) {
@@ -1220,7 +1217,19 @@ string_to_c_internal(VALUE self)
 	    if (NIL_P(m))
 		return rb_assoc_new(Qnil, self);
 	    sr = f_aref(m, INT2FIX(1));
-	    si = f_aref(m, INT2FIX(2));
+	    if (NIL_P(f_aref(m, INT2FIX(2))))
+	      si = Qnil;
+	    else {
+	      VALUE t;
+
+	      si = f_aref(m, INT2FIX(3));
+	      t = f_aref(m, INT2FIX(4));
+	      if (NIL_P(t))
+		t = f_aref(m, INT2FIX(5));
+	      if (NIL_P(t))
+		t = rb_str_new2("1");
+	      rb_str_concat(si, t);
+	    }
 	    re = f_post_match(m);
 	}
 	r = INT2FIX(0);
@@ -1234,7 +1243,6 @@ string_to_c_internal(VALUE self)
 		r = f_to_i(sr);
 	}
 	if (!NIL_P(si)) {
-	    f_gsub_bang(si, image_garbages_pat, null_string);
 	    if (f_include_p(si, a_slash))
 		i = f_to_r(si);
 	    else if (f_gt_p(f_count(si, a_dot_and_an_e), INT2FIX(0)))

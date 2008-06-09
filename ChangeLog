@@ -1,3 +1,8 @@
+Mon Jun  9 21:00:32 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_s_convert): can accept Complex('i').
+	  [ruby-dev:34991]
+
 Mon Jun  9 18:25:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (CONST_ID): constant ID cache for non-gcc.
