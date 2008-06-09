@@ -1413,13 +1413,10 @@ rb_thread_recycle_stack_release(VALUE *stack)
 #if USE_THREAD_DATA_RECYCLE
     if (thread_recycle_stack_count < RECYCLE_MAX) {
 	thread_recycle_stack_slot[thread_recycle_stack_count++] = stack;
+	return;
     }
-    else {
-	ruby_xfree(stack);
-    }
-#else
-	ruby_xfree(stack);
 #endif
+    ruby_xfree(stack);
 }
 
 #ifdef USE_THREAD_RECYCLE
