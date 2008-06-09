@@ -360,7 +360,10 @@ btest-miniruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
 
-test: test-sample btest-miniruby
+test-knownbug: miniruby$(EXEEXT) $(PROGRAM) PHONY
+	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(srcdir)/test_knownbug.rb
+
+test: test-sample btest-miniruby test-knownbug
 
 test-all:
 	$(RUNRUBY) "$(srcdir)/test/runner.rb" --basedir="$(TESTSDIR)" --runner=$(TESTUI) $(TESTS)

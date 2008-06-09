@@ -1,3 +1,9 @@
+Mon Jun  9 21:09:02 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_knownbug.rb -> ./test_knownbug.rb: moved.
+
+	* common.mk: add a rule "test-knownbug".
+
 Mon Jun  9 21:00:32 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_s_convert): can accept Complex('i').
