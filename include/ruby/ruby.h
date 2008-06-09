@@ -824,6 +824,8 @@ PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
+typedef struct rb_block_struct *rb_blockptr;
+
 typedef VALUE rb_block_call_func(VALUE, VALUE, int, VALUE*);
 
 VALUE rb_each(VALUE);

@@ -490,7 +490,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
     rb_block_t *blockptr = 0;
     GetProcPtr(procval, proc);
 
-    if (BUILTIN_TYPE(proc->block.iseq) != T_NODE &&
+    if (BUILTIN_TYPE(proc->block.iseq) == T_NODE ||
 	proc->block.iseq->arg_block != -1) {
 
 	if (rb_block_given_p()) {
@@ -507,12 +507,12 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 }
 
 VALUE
-rb_proc_call(VALUE self, VALUE args)
+rb_proc_call(VALUE self, VALUE args, rb_blockptr blockptr)
 {
     rb_proc_t *proc;
     GetProcPtr(self, proc);
     return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			  RARRAY_LEN(args), RARRAY_PTR(args), 0);
+			  RARRAY_LEN(args), RARRAY_PTR(args), blockptr);
 }
 
 /*
@@ -1584,7 +1584,7 @@ proc_binding(VALUE self)
     return bindval;
 }
 
-static VALUE curry(VALUE dummy, VALUE args, int argc, VALUE *argv);
+static VALUE curry(VALUE dummy, VALUE args, int argc, VALUE *argv, rb_blockptr blockptr);
 
 static VALUE
 make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
@@ -1600,7 +1600,7 @@ make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
 }
 
 static VALUE
-curry(VALUE dummy, VALUE args, int argc, VALUE *argv)
+curry(VALUE dummy, VALUE args, int argc, VALUE *argv, rb_blockptr blockptr)
 {
     VALUE proc, passed, arity;
     proc = RARRAY_PTR(args)[0];
@@ -1610,10 +1610,13 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv)
     passed = rb_ary_plus(passed, rb_ary_new4(argc, argv));
     rb_ary_freeze(passed);
     if(RARRAY_LEN(passed) < FIX2INT(arity)) {
+	if (blockptr) {
+	    rb_warn("given block not used");
+	}
 	arity = make_curry_proc(proc, passed, arity);
 	return arity;
     }
-    arity = rb_proc_call(proc, passed);
+    arity = rb_proc_call(proc, passed, blockptr);
     return arity;
 }
 

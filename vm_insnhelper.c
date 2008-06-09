@@ -651,7 +651,8 @@ block_proc_is_lambda(const VALUE procval)
 
 static inline VALUE
 vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
-		    VALUE self, int argc, const VALUE *argv)
+		    VALUE self, int argc, const VALUE *argv,
+		    const rb_block_t *blockptr)
 {
     NODE *ifunc = (NODE *) block->iseq;
     VALUE val;
@@ -672,7 +673,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		  self, (VALUE)block->dfp,
 		  0, th->cfp->sp, block->lfp, 1);
 
-    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv);
+    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv, blockptr);
 
     th->cfp++;
     return val;
@@ -831,7 +832,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 	return Qundef;
     }
     else {
-	VALUE val = vm_yield_with_cfunc(th, block, block->self, argc, STACK_ADDR_FROM_TOP(argc));
+	VALUE val = vm_yield_with_cfunc(th, block, block->self, argc, STACK_ADDR_FROM_TOP(argc), 0);
 	POPN(argc); /* TODO: should put before C/yield? */
 	return val;
     }

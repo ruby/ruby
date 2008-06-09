@@ -345,7 +345,7 @@ typedef struct {
     VALUE prof_time_chld;       /* cfp[13] */
 } rb_control_frame_t;
 
-typedef struct {
+typedef struct rb_block_struct {
     VALUE self;			/* share with method frame if it's only block */
     VALUE *lfp;			/* share with method frame if it's only block */
     VALUE *dfp;			/* share with method frame if it's only block */

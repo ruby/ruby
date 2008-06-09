@@ -1,3 +1,24 @@
+Tue Jun 10 00:50:51 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* include/ruby/ruby.h, vm_core.h: add a type rb_blockptr.
+
+	* vm_insnhelper.c (vm_yield_with_cfunc): vm_yield_with_cfunc receives
+	  blockptr and passes it to iterating block.
+
+	* proc.c (rb_proc_call), include/ruby/intern.h: rb_proc_call receives
+	  blockptr.  "rb_proc_call(self, args, blockptr)" in C corresponds to
+	  "self.call(*args, &block)" in Ruby.
+
+	* proc.c (proc_call): pass blockptr to block that is written in C.
+
+	* proc.c (curry): receive blockptr and pass it to original proc.
+	  [ruby-core:15551]
+
+	* vm.c (invoke_block_from_c): fix for change of vm_yield_with_cfunc.
+
+	* thread.c (call_trace_proc), eval_jump.c (rb_call_end_proc): fix for
+	  change of rb_proc_call.
+
 Tue Jun 10 00:10:49 2008  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (test-knownbug): give $(OPTS) for bootstraptest/runner.rb.

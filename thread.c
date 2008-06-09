@@ -3105,7 +3105,7 @@ call_trace_proc(VALUE args, int tracing)
 					     eventname, filename, INT2FIX(line),
 					     id ? ID2SYM(id) : Qnil,
 					     p->self ? rb_binding_new() : Qnil,
-					     klass ? klass : Qnil));
+					     klass ? klass : Qnil), 0);
 }
 
 static void
