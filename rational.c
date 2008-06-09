@@ -1287,10 +1287,12 @@ static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
 static void
 make_patterns(void)
 {
-    static char rat_pat_source[] = PATTERN;
-    static char an_e_pat_source[] = "[eE]";
-    static char a_dot_pat_source[] = "\\.";
-    static char underscores_pat_source[] = "_+";
+    static char const rat_pat_source[] = PATTERN;
+    static char const an_e_pat_source[] = "[eE]";
+    static char const a_dot_pat_source[] = "\\.";
+    static char const underscores_pat_source[] = "_+";
+
+    if (rat_pat) return;
 
     rat_pat = rb_reg_new(rat_pat_source, sizeof rat_pat_source - 1, 0);
     rb_global_variable(&rat_pat);
