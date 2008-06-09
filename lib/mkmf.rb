@@ -1345,6 +1345,10 @@ OUTFLAG = #{OUTFLAG}
 COUTFLAG = #{COUTFLAG}
 
 RUBY_EXTCONF_H = #{$extconf_h}
+cflags   = #{CONFIG['cflags']}
+optflags = #{CONFIG['optflags']}
+debugflags = #{CONFIG['debugflags']}
+warnflags = #{CONFIG['warnflags']}
 CFLAGS   = #{$static ? '' : CONFIG['CCDLFLAGS']} #$CFLAGS #$ARCH_FLAG
 INCFLAGS = -I. #$INCFLAGS
 DEFS     = #{CONFIG['DEFS']}
