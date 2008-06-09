@@ -1,3 +1,8 @@
+Mon Jun  9 17:47:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (fptr_finalize): close IO object if fd is already closed.
+	  (rb_p): call rb_io_write just once.
+
 Mon Jun  9 15:37:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (require_libraries): req_list may be NULL.  [ruby-dev:35008]

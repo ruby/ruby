@@ -2673,6 +2673,7 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
+    int ebadf = 0;
     if (fptr->wbuf_len) {
         io_fflush(fptr);
     }
@@ -2690,13 +2691,22 @@ fptr_finalize(rb_io_t *fptr, int noraise)
     }
     else if (0 <= fptr->fd) {
         if (close(fptr->fd) < 0 && !noraise) {
-            /* fptr->fd is still not closed */
-            rb_sys_fail(fptr->path);
+            if (errno != EBADF) {
+                /* fptr->fd is still not closed */
+                rb_sys_fail(fptr->path);
+            }
+            else {
+                /* fptr->fd is already closed. */
+                ebadf = 1;
+            }
         }
     }
     fptr->fd = -1;
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
+    if (ebadf) {
+        rb_sys_fail(fptr->path);
+    }
 }
 
 static void
@@ -4750,8 +4760,9 @@ rb_f_puts(int argc, VALUE *argv, VALUE recv)
 void
 rb_p(VALUE obj) /* for debug print within C code */
 {
-    rb_io_write(rb_stdout, rb_obj_as_string(rb_inspect(obj)));
-    rb_io_write(rb_stdout, rb_default_rs);
+    VALUE str = rb_obj_as_string(rb_inspect(obj));
+    rb_str_buf_append(str, rb_default_rs);
+    rb_io_write(rb_stdout, str);
 }
 
 /*
