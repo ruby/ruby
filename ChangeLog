@@ -1,3 +1,7 @@
+Mon Jun  9 15:37:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (require_libraries): req_list may be NULL.  [ruby-dev:35008]
+
 Mon Jun  9 14:18:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (struct rb_vm_struct): moved src_encoding_index,
