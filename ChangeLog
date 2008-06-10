@@ -1,3 +1,8 @@
+Tue Jun 10 17:01:58 2008  wanabe  <s.wanabe@gmail.com>
+
+	* util.c (ruby_strtod): ruby_strtod don't allow a trailing
+	  decimal point like "7.". [ruby-dev:34835] [ruby-dev:35009]
+
 Tue Jun 10 13:40:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_select), string.c (str_gsub): suppress warnings.

@@ -2171,6 +2171,8 @@ break2:
     }
 #endif
     if (c == '.') {
+        if (!ISDIGIT(s[1]))
+            goto dig_done;
         c = *++s;
         if (!nd) {
             for (; c == '0'; c = *++s)
