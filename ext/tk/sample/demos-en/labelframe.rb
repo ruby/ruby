@@ -17,8 +17,10 @@ $labelframe_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($labelframe_demo).pack(:fill=>:both, :expand=>true)
+
 # Some information
-TkLabel.new($labelframe_demo, 
+TkLabel.new(base_frame, 
             :font=>$font, :wraplength=>'4i', :justify=>:left, 
             :text=><<EOL).pack(:side=>:top)
 Labelframes are used to group related widgets together. \
@@ -29,7 +31,7 @@ which supports a 'labelframe' widget.
 EOL
 
 # The bottom buttons
-TkFrame.new($labelframe_demo){|f|
+TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'Dismiss', :width=>15, :command=>proc{
@@ -43,7 +45,7 @@ TkFrame.new($labelframe_demo){|f|
 }
 
 # Demo area
-w = TkFrame.new($labelframe_demo).pack(:side=>:bottom, :fill=>:both, 
+w = TkFrame.new(base_frame).pack(:side=>:bottom, :fill=>:both, 
                                        :expand=>true)
 
 # A group of radiobuttons in a labelframe

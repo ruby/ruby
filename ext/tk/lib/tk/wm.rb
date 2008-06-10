@@ -362,7 +362,7 @@ module Tk
       end
     end
     def overrideredirect(mode=TkComm::None)
-      Wm.overrideredirect(self, mode=TkComm::None)
+      Wm.overrideredirect(self, mode)
     end
     alias wm_overrideredirect overrideredirect
     TOPLEVEL_METHODCALL_OPTKEYS['overrideredirect'] = 'overrideredirect'
@@ -545,7 +545,7 @@ module Tk
   module Wm_for_General
     Wm.instance_methods.each{|m|
       if (m = m.to_s) =~ /^wm_(.*)$/
-        eval "def #{m}(*args); Tk::Wm.#{$1}(self, *args); end"
+        eval "def #{m}(*args, &b); Tk::Wm.#{$1}(self, *args, &b); end"
       end
     }
   end

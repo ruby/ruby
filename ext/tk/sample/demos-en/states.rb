@@ -19,8 +19,10 @@ $states_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($states_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-msg = TkLabel.new($states_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -29,7 +31,7 @@ msg = TkLabel.new($states_demo) {
 msg.pack('side'=>'top')
 
 # frame
-TkFrame.new($states_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -48,7 +50,7 @@ TkFrame.new($states_demo) {|frame|
 
 # frame
 states_lbox = nil
-TkFrame.new($states_demo, 'borderwidth'=>'.5c') {|w|
+TkFrame.new(base_frame, 'borderwidth'=>'.5c') {|w|
   s = TkScrollbar.new(w)
   states_lbox = TkListbox.new(w) {
     setgrid 1

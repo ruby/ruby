@@ -75,8 +75,10 @@ $search_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($search_demo).pack(:fill=>:both, :expand=>true)
+
 # frame 生成
-$search_buttons = TkFrame.new($search_demo) {|frame|
+$search_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -95,7 +97,7 @@ $search_buttons = TkFrame.new($search_demo) {|frame|
 $search_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 生成
-TkFrame.new($search_demo) {|f|
+TkFrame.new(base_frame) {|f|
   TkLabel.new(f, 'text'=>'ファイル名:', 
               'width'=>13, 'anchor'=>'w').pack('side'=>'left')
   $search_fileName = TkVariable.new
@@ -112,7 +114,7 @@ TkFrame.new($search_demo) {|f|
   .pack('side'=>'left', 'pady'=>5, 'padx'=>10)
 }.pack('side'=>'top', 'fill'=>'x')
 
-TkFrame.new($search_demo) {|f|
+TkFrame.new(base_frame) {|f|
   TkLabel.new(f, 'text'=>'検索文字列:', 
               'width'=>13, 'anchor'=>'w').pack('side'=>'left')
   $search_searchString = TkVariable.new
@@ -130,9 +132,9 @@ TkFrame.new($search_demo) {|f|
   }
 }.pack('side'=>'top', 'fill'=>'x')
 
-$search_text = TkText.new($search_demo, 'setgrid'=>true) {|t|
+$search_text = TkText.new(base_frame, 'setgrid'=>true) {|t|
   $search_Tag = TkTextTag.new(t)
-  TkScrollbar.new($search_demo, 'command'=>proc{|*args| t.yview(*args)}) {|sc|
+  TkScrollbar.new(base_frame, 'command'=>proc{|*args| t.yview(*args)}) {|sc|
     t.yscrollcommand(proc{|first,last| sc.set first,last})
     pack('side'=>'right', 'fill'=>'y')
   }

@@ -19,6 +19,8 @@ $text_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($text_demo).pack(:fill=>:both, :expand=>true)
+
 # version check
 if ((Tk::TK_VERSION.split('.').collect{|n| n.to_i} <=> [8,4]) < 0)
   undo_support = false
@@ -27,7 +29,7 @@ else
 end
 
 # frame
-TkFrame.new($text_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -44,7 +46,7 @@ TkFrame.new($text_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # text 
-TkText.new($text_demo){|t|
+TkText.new(base_frame){|t|
   relief 'sunken'
   bd 2
   setgrid 1
@@ -53,7 +55,7 @@ TkText.new($text_demo){|t|
     undo true
     autoseparators true
   end
-  TkScrollbar.new($text_demo) {|s|
+  TkScrollbar.new(base_frame) {|s|
     pack('side'=>'right', 'fill'=>'y')
     command proc{|*args| t.yview(*args)}
     t.yscrollcommand proc{|first,last| s.set first,last}

@@ -156,12 +156,29 @@ class TkPhotoImage<TkImage
     self
   end
 
-  def cget(option)
+  def cget_strict(option)
     case option.to_s
     when 'data', 'file'
       tk_send 'cget', '-' << option.to_s
     else
       tk_tcl2ruby(tk_send('cget', '-' << option.to_s))
+    end
+  end
+  def cget(option)
+    unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      cget_strict(option)
+    else
+      begin
+        cget_strict(option)
+      rescue => e
+        if current_configinfo.has_key?(option.to_s)
+          # error on known option
+          fail e
+        else
+          # unknown option
+          nil
+        end
+      end
     end
   end
 

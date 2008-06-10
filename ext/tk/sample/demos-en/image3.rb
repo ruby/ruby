@@ -19,27 +19,29 @@ $image3_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($image3_demo).pack(:fill=>:both, :expand=>true)
+
 # 
-def loadDir(w)
+def loadDir3(w)
   w.delete(0,'end')
   Dir.glob([$dirName,'*'].join(File::Separator)).sort.each{|f|
     w.insert('end',File.basename(f))
   }
 end
 
-# selectAndLoadDir --
+# selectAndLoadDir3 --
 # This procedure pops up a dialog to ask for a directory to load into
 # the listobx and (if the user presses OK) reloads the directory
 # listbox from the directory named in the demo's entry.
 #
 # Arguments:
 # w -                   Name of the toplevel window of the demo.
-def selectAndLoadDir(w, lbox)
+def selectAndLoadDir3(w, lbox)
   dir = Tk.chooseDirectory(:initialdir=>$dirName.value, 
                            :parent=>w, :mustexist=>true)
   if dir.length > 0
     $dirName.value = dir 
-    loadDir(lbox)
+    loadDir3(lbox)
   end
 end
 
@@ -49,7 +51,7 @@ end
 
 
 # label
-msg = TkLabel.new($image3_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -58,7 +60,7 @@ msg = TkLabel.new($image3_demo) {
 msg.pack('side'=>'top')
 
 # frame
-TkFrame.new($image3_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -86,11 +88,11 @@ end
 $image3a = TkPhotoImage.new
 
 #
-image3_f = TkFrame.new($image3_demo).pack(:fill=>:both, :expand=>true)
+image3_f = TkFrame.new(base_frame).pack(:fill=>:both, :expand=>true)
 
-image3_df = TkLabelFrame.new($image3_demo, :text=>'Directory:')
+image3_df = TkLabelFrame.new(base_frame, :text=>'Directory:')
 
-image3_ff = TkLabelFrame.new($image3_demo, :text=>'File:', 
+image3_ff = TkLabelFrame.new(base_frame, :text=>'File:', 
                              :padx=>'2m', :pady=>'2m')
 image3_lbx = TkListbox.new(image3_ff, :width=>20, :height=>10) {
   pack(:side=>:left, :fill=>:y, :expand=>true)
@@ -102,16 +104,17 @@ image3_lbx = TkListbox.new(image3_ff, :width=>20, :height=>10) {
 
 image3_ent = TkEntry.new(image3_df, :width=>30, :textvariable=>$dirName){
   pack(:side=>:left, :fill=>:both, :padx=>'2m', :pady=>'2m', :expand=>true)
-  bind('Return', proc{loadDir(image3_lbx)})
+  bind('Return', proc{loadDir3(image3_lbx)})
 }
 
 TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"Select Dir.", 
-             :command=>proc{selectAndLoadDir(image3_ent, image3_lbx)}) {
+             :command=>proc{selectAndLoadDir3(image3_ent, image3_lbx)}) {
   pack(:side=>:left, :fill=>:y, :padx=>[0, '2m'], :pady=>'2m')
 }
 
-image3_if = TkLabelFrame.new($image3_demo, :text=>'Image:') {|f|
-  TkLabel.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
+image3_if = TkLabelFrame.new(base_frame, :text=>'Image:') {|f|
+  # TkLabel.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
+  Tk::Label.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
 }
 
 Tk.grid(image3_df,  '-',

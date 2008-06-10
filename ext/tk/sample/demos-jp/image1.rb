@@ -16,8 +16,10 @@ $image1_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($image1_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($image1_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($image1_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($image1_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -53,7 +55,10 @@ TkPhotoImage.new('file'=>[$demo_dir,'..',
                           'images','earthris.gif'].join(File::Separator))
 
 # label 生成
-[ TkLabel.new($image1_demo, 'image'=>image1a, 'bd'=>1, 'relief'=>'sunken'),
-  TkLabel.new($image1_demo, 'image'=>image1b, 'bd'=>1, 'relief'=>'sunken')
+#[ TkLabel.new(base_frame, 'image'=>image1a, 'bd'=>1, 'relief'=>'sunken'),
+#  TkLabel.new(base_frame, 'image'=>image1b, 'bd'=>1, 'relief'=>'sunken')
+#].each{|w| w.pack('side'=>'top', 'padx'=>'.5m', 'pady'=>'.5m')}
+[ Tk::Label.new(base_frame, 'image'=>image1a, 'bd'=>1, 'relief'=>'sunken'),
+  Tk::Label.new(base_frame, 'image'=>image1b, 'bd'=>1, 'relief'=>'sunken')
 ].each{|w| w.pack('side'=>'top', 'padx'=>'.5m', 'pady'=>'.5m')}
 

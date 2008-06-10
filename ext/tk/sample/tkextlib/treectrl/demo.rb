@@ -9,11 +9,12 @@ $HasColumnCreate = Tk::TreeCtrl::HasColumnCreateCommand
 
 $Version_1_1_OrLater = (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
 
-if Hash.instance_methods.include?('key')
-  # probably ruby 1.9.x --> use Hash#key
+#if Hash.instance_methods.include?(:key)
+if TkCore::WITH_RUBY_VM  ### Ruby 1.9 !!!!
+  # ruby 1.9.x --> use Hash#key
   # Because Hash#index show warning "Hash#index is deprecated; use Hash#key".
 else
-  # probably ruby 1.8.x --> use Hash#index
+  # ruby 1.8.x --> use Hash#index
   class Hash
     alias key index
   end

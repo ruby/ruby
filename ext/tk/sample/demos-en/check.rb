@@ -19,8 +19,10 @@ $check_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($check_demo).pack(:fill=>:both, :expand=>true)
+
 # label 
-msg = TkLabel.new($check_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -34,7 +36,7 @@ brakes = TkVariable.new(0)
 sober  = TkVariable.new(0)
 
 # frame 
-TkFrame.new($check_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -54,7 +56,7 @@ TkFrame.new($check_demo) {|frame|
   TkButton.new(frame) {
     text 'See Variables'
     command proc{
-      showVars($check_demo, 
+      showVars(base_frame, 
                ['wipers', wipers], ['brakes', brakes], ['sober', sober])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
@@ -63,8 +65,8 @@ TkFrame.new($check_demo) {|frame|
 
 
 # checkbutton
-[ TkCheckButton.new($check_demo, 'text'=>'Wipers  OK', 'variable'=>wipers),
-  TkCheckButton.new($check_demo, 'text'=>'Brakes  OK', 'variable'=>brakes),
-  TkCheckButton.new($check_demo, 'text'=>'Driver Sober', 'variable'=>sober)
+[ TkCheckButton.new(base_frame, 'text'=>'Wipers  OK', 'variable'=>wipers),
+  TkCheckButton.new(base_frame, 'text'=>'Brakes  OK', 'variable'=>brakes),
+  TkCheckButton.new(base_frame, 'text'=>'Driver Sober', 'variable'=>sober)
 ].each{|w| w.relief('flat'); w.pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')}
 

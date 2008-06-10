@@ -15,6 +15,8 @@ $menu84_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($menu84_demo).pack(:fill=>:both, :expand=>true)
+
 begin
   windowingsystem = Tk.windowingsystem()
 rescue
@@ -22,7 +24,7 @@ rescue
 end
 
 # label
-TkLabel.new($menu84_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
   if $tk_platform['platform'] == 'macintosh' ||
       windowingsystem == "classic" || windowingsystem == "aqua"
     text("This window contains a menubar with cascaded menus.  You can invoke entries with an accelerator by typing Command+x, where \"x\" is the character next to the command key symbol. The rightmost menu can be torn off into a palette by dragging outside of its bounds and releasing the mouse.")
@@ -33,7 +35,7 @@ TkLabel.new($menu84_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 
 
 menustatus = TkVariable.new("    ")
-TkFrame.new($menu84_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkLabel.new(frame, 'textvariable'=>menustatus, 'relief'=>'sunken', 
               'bd'=>1, 'font'=>['Helvetica', '10'], 
               'anchor'=>'w').pack('side'=>'left', 'padx'=>2, 
@@ -43,7 +45,7 @@ TkFrame.new($menu84_demo) {|frame|
 
 
 # frame
-TkFrame.new($menu84_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{

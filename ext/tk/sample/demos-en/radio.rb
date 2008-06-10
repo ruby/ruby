@@ -19,8 +19,10 @@ $radio_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($radio_demo).pack(:fill=>:both, :expand=>true)
+
 # label 
-msg = TkLabel.new($radio_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -33,7 +35,7 @@ size = TkVariable.new
 color = TkVariable.new
 
 # frame 
-TkFrame.new($radio_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -52,14 +54,14 @@ TkFrame.new($radio_demo) {|frame|
   TkButton.new(frame) {
     text 'See Variables'
     command proc{
-      showVars($radio_demo, ['size', size], ['color', color])
+      showVars(base_frame, ['size', size], ['color', color])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 
-f_left = TkFrame.new($radio_demo)
-f_right = TkFrame.new($radio_demo)
+f_left = TkFrame.new(base_frame)
+f_right = TkFrame.new(base_frame)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 

@@ -16,8 +16,10 @@ $colors_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($colors_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($colors_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($colors_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($colors_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -46,7 +48,7 @@ TkFrame.new($colors_demo) {|frame|
 
 # frame 生成
 colors_lbox = nil
-TkFrame.new($colors_demo, 'borderwidth'=>10) {|w|
+TkFrame.new(base_frame, 'borderwidth'=>10) {|w|
   s = TkScrollbar.new(w)
   colors_lbox = TkListbox.new(w) {
     setgrid 1
@@ -59,7 +61,15 @@ TkFrame.new($colors_demo, 'borderwidth'=>10) {|w|
   colors_lbox.pack('side'=>'left', 'expand'=>1, 'fill'=>'both')
 }.pack('side'=>'top', 'expand'=>'yes', 'fill'=>'y')
 
-colors_lbox.bind('Double-1', proc{TkPalette.setPalette TkSelection.get})
+#colors_lbox.bind('Double-1', proc{TkPalette.setPalette TkSelection.get})
+colors_lbox.bind('Double-1', proc{
+                   begin
+                     TkPalette.setPalette TkSelection.get
+                   rescue => e
+                     p e
+                     Tk.tk_call_without_enc('destroy', '.___tk_set_palette')
+                   end
+                   })
 
 ins_data = [
   'gray60','gray70','gray80','gray85','gray90','gray95',

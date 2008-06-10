@@ -1056,7 +1056,13 @@ class TkFont
 
     keys = _symbolkey2str(args.pop).update(fontslot)
     args.concat(hash_kv(keys))
-    tk_call(*args)
+    begin
+      tk_call(*args)
+    rescue => e
+      unless TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+        fail e
+      end
+    end
     Tk_FontUseTBL.mutex.synchronize{
       Tk_FontUseTBL[[win, tag, optkey].join(';')] = self
     }

@@ -52,6 +52,10 @@ class TkTextImage<TkObject
     @t.image_cget(@index, slot)
   end
 
+  def cget_strict(slot)
+    @t.image_cget_strict(@index, slot)
+  end
+
   def configure(slot, value=None)
     @t.image_configure(@index, slot, value)
     self

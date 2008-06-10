@@ -28,7 +28,13 @@ class << TclTkIp
     if Thread.current.group != ThreadGroup::Default
       raise SecurityError, 'only ThreadGroup::Default can call TclTkIp.new'
     end
-    __new__(*args)
+    obj = __new__(*args)
+    obj.instance_eval{
+      @force_default_encoding ||= [false].taint
+      @encoding ||= [nil].taint
+      def @encoding.to_s; self.join(nil); end
+    }
+    obj
   end
 end
 
@@ -115,7 +121,8 @@ class MultiTkIp
   BASE_DIR = File.dirname(__FILE__)
 
   WITH_RUBY_VM  = Object.const_defined?(:VM) && ::VM.class == Class
-  WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
+  WITH_ENCODING = defined?(::Encoding.default_external)
+  #WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
 
   (@@SLAVE_IP_ID = ['slave'.freeze, '0'.taint]).instance_eval{
     @mutex = Mutex.new
@@ -226,8 +233,8 @@ class MultiTkIp
     def call(*args)
       unless @ip.deleted?
         current = Thread.current
-        backup_ip = current['callback_ip']
-        current['callback_ip'] = @ip
+        backup_ip = current[:callback_ip]
+        current[:callback_ip] = @ip
         begin
           ret = @ip.cb_eval(@cmd, *args)
           fail ret if ret.kind_of?(Exception)
@@ -260,7 +267,7 @@ class MultiTkIp
             fail e
           end
         ensure
-          current['callback_ip'] = backup_ip
+          current[:callback_ip] = backup_ip
         end
       end
     end
@@ -753,14 +760,23 @@ class MultiTkIp
         current[:mutex] = mutex = Mutex.new
         current[:root_check] = cond_var = ConditionVariable.new
 
+        status = [nil]
+        def status.value
+          self[0]
+        end
+        def status.value=(val)
+          self[0] = val
+        end
+        current[:status] = status
+
         begin
-          current[:status] = interp.mainloop(true)
+          current[:status].value = interp.mainloop(true)
         rescue Exception=>e
-          current[:status] = e
+          current[:status].value = e
         ensure
           mutex.synchronize{ cond_var.broadcast }
         end
-        current[:status] = interp.mainloop(false)
+        current[:status].value = interp.mainloop(false)
       }
       until @interp_thread[:interp]
         Thread.pass
@@ -777,6 +793,12 @@ class MultiTkIp
         end
       end
     end
+
+    @interp.instance_eval{
+      @force_default_encoding ||= [false].taint
+      @encoding ||= [nil].taint
+      def @encoding.to_s; self.join(nil); end
+    }
 
     @ip_name = nil
 
@@ -951,8 +973,9 @@ class MultiTkIp
       begin
         class << subclass
           self.methods.each{|m|
+            name = m.to_s
             begin
-              unless m == '__id__' || m == '__send__' || m == 'freeze'
+              unless name == '__id__' || name == '__send__' || name == 'freeze'
                 undef_method(m)
               end
             rescue Exception
@@ -1157,6 +1180,11 @@ class MultiTkIp
     # safe interpreter
     ip_name = _create_slave_ip_name
     slave_ip = @interp.create_slave(ip_name, true)
+    slave_ip.instance_eval{
+      @force_default_encoding ||= [false].taint
+      @encoding ||= [nil].taint
+      def @encoding.to_s; self.join(nil); end
+    }
     @slave_ip_tbl[ip_name] = slave_ip
     def slave_ip.safe_base?
       true
@@ -1199,6 +1227,11 @@ class MultiTkIp
 
     ip_name = _create_slave_ip_name
     slave_ip = @interp.create_slave(ip_name, false)
+    slave_ip.instance_eval{
+      @force_default_encoding ||= [false].taint
+      @encoding ||= [nil].taint
+      def @encoding.to_s; self.join(nil); end
+    }
     slave_ip._invoke('set', 'argv0', name) if name.kind_of?(String)
     slave_ip._invoke('set', 'argv', _keys2opts(keys))
     @interp._invoke('load', '', 'Tk', ip_name)
@@ -1268,9 +1301,21 @@ class MultiTkIp
       # create master-ip
       unless WITH_RUBY_VM
         @interp = TclTkIp.new(name, _keys2opts(tk_opts))
+        @interp.instance_eval{
+          @force_default_encoding ||= [false].taint
+          @encoding ||= [nil].taint
+          def @encoding.to_s; self.join(nil); end
+        }
+
       else ### Ruby 1.9 !!!!!!!!!!!
         @interp_thread = Thread.new{
           Thread.current[:interp] = interp = TclTkIp.new(name, _keys2opts(tk_opts))
+          interp.instance_eval{
+            @force_default_encoding ||= [false].taint
+            @encoding ||= [nil].taint
+            def @encoding.to_s; self.join(nil); end
+          }
+
           #sleep
           TclTkLib.mainloop(true)
         }
@@ -1400,8 +1445,8 @@ class MultiTkIp
 
   def self.__getip
     current = Thread.current
-    if TclTkLib.mainloop_thread? != false && current['callback_ip']
-      return current['callback_ip']
+    if TclTkLib.mainloop_thread? != false && current[:callback_ip]
+      return current[:callback_ip]
     end
     if current.group == ThreadGroup::Default
       @@DEFAULT_MASTER
@@ -1993,12 +2038,12 @@ class MultiTkIp
       cmd = args.shift
     end
     current = Thread.current
-    backup_ip = current['callback_ip']
-    current['callback_ip'] = self
+    backup_ip = current[:callback_ip]
+    current[:callback_ip] = self
     begin
       eval_proc_core(false, cmd, *args)
     ensure
-      current['callback_ip'] = backup_ip
+      current[:callback_ip] = backup_ip
     end
   end
 
@@ -2016,8 +2061,8 @@ class MultiTkIp
     if TclTkLib.mainloop_thread? == true
       # call from eventloop
       current = Thread.current
-      backup_ip = current['callback_ip']
-      current['callback_ip'] = self
+      backup_ip = current[:callback_ip]
+      current[:callback_ip] = self
       begin
         eval_proc_core(false, 
 	               proc{|safe, *params|
@@ -2025,7 +2070,7 @@ class MultiTkIp
                          cmd.call(*params)
                        }, *args)
       ensure
-        current['callback_ip'] = backup_ip
+        current[:callback_ip] = backup_ip
       end
     else
       eval_proc_core(true, 
@@ -2170,6 +2215,10 @@ end
 # event loop
 # all master/slave IPs are controled by only one event-loop
 class << MultiTkIp
+  def default_master?
+    __getip == @@DEFAULT_MASTER
+  end
+
   def mainloop(check_root = true)
     __getip.mainloop(check_root)
   end
@@ -2431,7 +2480,7 @@ class MultiTkIp
   def mainloop(check_root = true, restart_on_dead = true)
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
 
-    unless WITH_RUBY_VM  ### Ruby 1.9 !!!!!!!!!!!
+    if WITH_RUBY_VM  ### Ruby 1.9 !!!!!!!!!!!
       return @interp_thread.value if @interp_thread
     end
 
@@ -3289,6 +3338,42 @@ class << MultiTkIp
   def encoding_table
     __getip.encoding_table
   end
+
+  def force_default_encoding=(mode)
+    __getip.force_default_encoding=(mode)
+  end
+
+  def force_default_encoding?
+    __getip.force_default_encoding?
+  end
+
+  def default_encoding=(enc)
+    __getip.default_encoding=(enc)
+  end
+
+  def encoding=(enc)
+    __getip.encoding=(enc)
+  end
+
+  def encoding_name
+    __getip.encoding_name
+  end
+
+  def encoding_obj
+    __getip.encoding_obj
+  end
+  alias encoding encoding_name
+  alias default_encoding encoding_name
+
+  def encoding_convertfrom(str, enc=None)
+    __getip.encoding_convertfrom(str, enc)
+  end
+  alias encoding_convert_from encoding_convertfrom
+
+  def encoding_convertto(str, enc=None)
+    __getip.encoding_convertto(str, enc)
+  end
+  alias encoding_convert_to encoding_convertto
 end
 class MultiTkIp
   def encoding_table
@@ -3339,6 +3424,7 @@ end
 
 
 # remove methods for security
+=begin
 class MultiTkIp
   INTERP_THREAD = @@DEFAULT_MASTER.instance_variable_get('@interp_thread')
   INTERP_MUTEX  = INTERP_THREAD[:mutex]
@@ -3361,6 +3447,34 @@ class MultiTkIp
   remove_const(:INTERP_THREAD)
   remove_const(:INTERP_MUTEX)
   remove_const(:INTERP_ROOT_CHECK)
+end
+=end
+if MultiTkIp::WITH_RUBY_VM && 
+    ! MultiTkIp::RUN_EVENTLOOP_ON_MAIN_THREAD ### check Ruby 1.9 !!!!!!!
+  class MultiTkIp
+    INTERP_THREAD = @@DEFAULT_MASTER.instance_variable_get('@interp_thread')
+    INTERP_THREAD_STATUS = INTERP_THREAD[:status]
+    INTERP_MUTEX  = INTERP_THREAD[:mutex]
+    INTERP_ROOT_CHECK = INTERP_THREAD[:root_check]
+  end
+  module TkCore
+    INTERP_THREAD = MultiTkIp::INTERP_THREAD
+    INTERP_THREAD_STATUS = MultiTkIp::INTERP_THREAD_STATUS
+    INTERP_MUTEX  = MultiTkIp::INTERP_MUTEX
+    INTERP_ROOT_CHECK = MultiTkIp::INTERP_ROOT_CHECK
+  end
+  class MultiTkIp
+    remove_const(:INTERP_THREAD)
+    remove_const(:INTERP_THREAD_STATUS)
+    remove_const(:INTERP_MUTEX)
+    remove_const(:INTERP_ROOT_CHECK)
+  end
+end
+
+class MultiTkIp
+  # undef_method :instance_eval
+  undef_method :instance_variable_get
+  undef_method :instance_variable_set
 end
 # end of MultiTkIp definition
 

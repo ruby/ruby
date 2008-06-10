@@ -128,6 +128,9 @@ module Tk::BLT
       def cget(*args)
         @t.tab_cget(@id, *args)
       end
+      def cget_strict(*args)
+        @t.tab_cget_strict(@id, *args)
+      end
       def configure(*args)
         @t.tab_configure(@id, *args)
       end
@@ -240,6 +243,7 @@ module Tk::BLT
     private :__item_pathname
 
     alias tab_cget itemcget
+    alias tab_cget_strict itemcget_strict
     alias tab_configure itemconfigure
     alias tab_configinfo itemconfiginfo
     alias current_tab_configinfo current_itemconfiginfo

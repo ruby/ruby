@@ -111,7 +111,8 @@ class TkTimer
     if @running == false || @proc_max == 0 || @do_loop == 0
       Tk_CBTBL.delete(@id) ;# for GC
       @running = false
-      @wait_var.value = 0
+      # @wait_var.value = 0
+      __at_end__
       return
     end
     if @current_pos >= @proc_max
@@ -120,7 +121,8 @@ class TkTimer
       else
         Tk_CBTBL.delete(@id) ;# for GC
         @running = false
-        @wait_var.value = 0
+        # @wait_var.value = 0
+        __at_end__
         return
       end
     end
@@ -150,6 +152,8 @@ class TkTimer
     }
 
     @wait_var = TkVariable.new(0)
+
+    @at_end_proc = nil
 
     @cb_cmd = TkCore::INTERP.get_cb_entry(self.method(:do_callback))
 
@@ -209,6 +213,12 @@ class TkTimer
   attr :return_value
 
   attr_accessor :loop_exec
+
+  def __at_end__
+    @at_end_proc.call(self) if @at_end_proc
+    @wait_var.value = 0  # for wait
+  end
+  private :__at_end__
 
   def cb_call
     @cb_cmd.call
@@ -427,7 +437,8 @@ class TkTimer
 
   def cancel
     @running = false
-    @wait_var.value = 0
+    # @wait_var.value = 0
+    __at_end__
     tk_call 'after', 'cancel', @after_id if @after_id
     @after_id = nil
 
@@ -469,6 +480,21 @@ class TkTimer
     else
       nil
     end
+  end
+
+  def at_end(*arg, &b)
+    if arg.empty?
+      if b 
+        @at_end_proc = b
+      else 
+        # no proc
+        return @at_end_proc 
+      end
+    else
+      fail ArgumentError, "wrong number of arguments" if arg.length != 1 || b
+      @at_end_proc = arg[0]
+    end
+    self
   end
 
   def wait(on_thread = true, check_root = false)
@@ -569,7 +595,8 @@ class TkRTTimer < TkTimer
     if @running == false || @proc_max == 0 || @do_loop == 0
       Tk_CBTBL.delete(@id) ;# for GC
       @running = false
-      @wait_var.value = 0
+      # @wait_var.value = 0
+      __at_end__
       return
     end
     if @current_pos >= @proc_max
@@ -578,7 +605,8 @@ class TkRTTimer < TkTimer
       else
         Tk_CBTBL.delete(@id) ;# for GC
         @running = false
-        @wait_var.value = 0
+        # @wait_var.value = 0
+        __at_end__
         return
       end
     end

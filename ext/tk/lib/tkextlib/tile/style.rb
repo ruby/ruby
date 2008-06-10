@@ -33,9 +33,15 @@ class << Tk::Tile::Style
     # conflict with some definitions on Tcl/Tk scripts. 
     if Tk::Tile::TILE_SPEC_VERSION_ID < 7
       def __define_wrapper_proc_for_compatibility__!
+        __define_themes_and_setTheme_proc__!
+
         unless Tk.info(:commands, '::ttk::style').empty?
-          fail RuntimeError,
-               "can't define ':ttk::style' command (already exist)"
+          # fail RuntimeError,
+          #      "can't define '::ttk::style' command (already exist)"
+
+          # do nothing !!!
+          warn "Warning: can't define '::ttk::style' command (already exist)" if $DEBUG
+          return
         end
         TkCore::INTERP.add_tk_procs('::ttk::style', 'args', <<-'EOS')
         if [string equal [lrange $args 0 1] {element create}] {
@@ -55,9 +61,15 @@ class << Tk::Tile::Style
       end
     else ### TILE_SPEC_VERSION_ID == 7
       def __define_wrapper_proc_for_compatibility__!
+        __define_themes_and_setTheme_proc__!
+
         unless Tk.info(:commands, '::ttk::style').empty?
-          fail RuntimeError,
-               "can't define ':ttk::style' command (already exist)"
+          # fail RuntimeError,
+          #     "can't define '::ttk::style' command (already exist)"
+
+          # do nothing !!!
+          warn "Warning: can't define '::ttk::style' command (already exist)" if $DEBUG
+          return
         end
         TkCore::INTERP.add_tk_procs('::ttk::style', 'args', <<-'EOS')
         if [string equal [lrange $args 0 1] {element create}] {
@@ -83,8 +95,14 @@ class << Tk::Tile::Style
     TkCommandNames = ['::ttk::style'.freeze].freeze
 
     def __define_wrapper_proc_for_compatibility__!
+      __define_themes_and_setTheme_proc__!
+
       unless Tk.info(:commands, '::style').empty?
-        fail RuntimeError, "can't define '::style' command (already exist)"
+        # fail RuntimeError, "can't define '::style' command (already exist)"
+
+        # do nothing !!!
+        warn "Warning: can't define '::style' command (already exist)" if $DEBUG
+        return
       end
       TkCore::INTERP.add_tk_procs('::style', 'args', <<-'EOS')
         if [string equal [lrange $args 0 1] {element create}] {
@@ -107,6 +125,36 @@ class << Tk::Tile::Style
       #########################
     end
   end
+
+  def __define_themes_and_setTheme_proc__!
+    TkCore::INTERP.add_tk_procs('::ttk::themes', '{ptn *}', <<-'EOS')
+      #set themes [list]
+      set themes [::ttk::style theme names]
+      foreach pkg [lsearch -inline -all -glob [package names] ttk::theme::$ptn] {
+          set theme [namespace tail $pkg]
+          if {[lsearch -exact $themes $theme] < 0} {
+              lappend themes $theme
+          }
+      }
+      foreach pkg [lsearch -inline -all -glob [package names] tile::theme::$ptn] {
+          set theme [namespace tail $pkg]
+          if {[lsearch -exact $themes $theme] < 0} {
+              lappend themes $theme
+          }
+      }
+      return $themes
+    EOS
+    #########################
+    TkCore::INTERP.add_tk_procs('::ttk::setTheme', 'theme', <<-'EOS')
+      variable currentTheme
+      if {[lsearch -exact [::ttk::style theme names] $theme] < 0} {
+          package require [lsearch -inline -regexp [package names] (ttk|tile)::theme::$theme]
+      }
+      ::ttk::style theme use $theme
+      set currentTheme $theme
+    EOS
+  end
+  private :__define_themes_and_setTheme_proc__!
 
   def configure(style=nil, keys=nil)
     if style.kind_of?(Hash)

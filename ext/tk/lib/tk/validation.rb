@@ -50,7 +50,8 @@ module Tk
       key2class.each{|key, klass|
         if keys[key].kind_of?(Array)
           cmd, *args = keys[key]
-          keys[key] = klass.new(cmd, args.join(' '))
+          #keys[key] = klass.new(cmd, args.join(' '))
+          keys[key] = klass.new(cmd, *args)
         # elsif keys[key].kind_of?(Proc) ||  keys[key].kind_of?(Method)
         elsif TkComm._callback_entry?(keys[key])
           keys[key] = klass.new(keys[key])
@@ -151,7 +152,8 @@ module Tk
       key2class.each{|key, klass|
         if keys[key].kind_of?(Array)
           cmd, *args = keys[key]
-          keys[key] = klass.new(cmd, args.join(' '))
+          #keys[key] = klass.new(cmd, args.join(' '))
+          keys[key] = klass.new(cmd, *args)
         # elsif keys[key].kind_of?(Proc) || keys[key].kind_of?(Method)
         elsif TkComm._callback_entry?(keys[key])
           keys[key] = klass.new(keys[key])
@@ -249,6 +251,7 @@ class TkValidateCommand
       nil
     ]
 
+=begin
     # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
     KEY_TBL.map!{|inf|
       if inf.kind_of?(Array)
@@ -264,6 +267,7 @@ class TkValidateCommand
       end
       inf
     }
+=end
 
     _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -293,6 +297,7 @@ class TkValidateCommand
     extra_args_tbl = klass._get_extra_args_tbl
 
     if args.compact.size > 0
+      args.map!{|arg| klass._sym2subst(arg)}
       args = args.join(' ')
       keys = klass._get_subst_key(args)
       if cmd.kind_of?(String)

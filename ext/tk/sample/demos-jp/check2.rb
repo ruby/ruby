@@ -16,8 +16,10 @@ $check2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($check2_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($check2_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -32,7 +34,7 @@ brakes = TkVariable.new(0)
 sober  = TkVariable.new(0)
 
 # frame 生成
-TkFrame.new($check2_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkGrid(TkFrame.new(frame, :height=>2, :relief=>:sunken, :bd=>2), 
          :columnspan=>4, :row=>0, :sticky=>'ew', :pady=>2)
   TkGrid('x', 
@@ -60,15 +62,15 @@ TkFrame.new($check2_demo) {|frame|
 
 
 # checkbutton 生成
-TkCheckButton.new($check2_demo, :text=>'安全性検査', :variable=>safety, 
+TkCheckButton.new(base_frame, :text=>'安全性検査', :variable=>safety, 
                   :relief=>:flat, :onvalue=>'all', :offvalue=>'none', 
                   :tristatevalue=>'partial'){
   pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')
 }
 
-[ TkCheckButton.new($check2_demo, 'text'=>'ワイパー OK', 'variable'=>wipers),
-  TkCheckButton.new($check2_demo, 'text'=>'ブレーキ OK', 'variable'=>brakes),
-  TkCheckButton.new($check2_demo, 'text'=>'運転手 素面', 'variable'=>sober)
+[ TkCheckButton.new(base_frame, 'text'=>'ワイパー OK', 'variable'=>wipers),
+  TkCheckButton.new(base_frame, 'text'=>'ブレーキ OK', 'variable'=>brakes),
+  TkCheckButton.new(base_frame, 'text'=>'運転手 素面', 'variable'=>sober)
 ].each{|w| 
   w.relief('flat')
   w.pack('side'=>'top', 'padx'=>15, 'pady'=>2, 'anchor'=>'w')

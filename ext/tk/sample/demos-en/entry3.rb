@@ -17,7 +17,9 @@ $entry3_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
-TkLabel.new($entry3_demo, 
+base_frame = TkFrame.new($entry3_demo).pack(:fill=>:both, :expand=>true)
+
+TkLabel.new(base_frame, 
             :font=>$font, :wraplength=>'5i', :justify=>:left, 
             :text=><<EOL).pack(:side=>:top)
 Four different entries are displayed below.  You can add characters \
@@ -34,7 +36,7 @@ characters (silently ignoring further ones), and displaying them as \
 asterisk characters.
 EOL
 
-TkFrame.new($entry3_demo){|f|
+TkFrame.new(base_frame){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
   TkButton.new(f, :text=>'Dismiss', :width=>15, :command=>proc{
@@ -60,23 +62,41 @@ TkFrame.new($entry3_demo){|f|
 # count -       Counter to control the number of times flashed
 def focusAndFlash(widget, fg, bg, count=5)
   return if count <= 0
-  TkTimer.new(200, count, 
-              proc{widget.configure(:foreground=>bg, :background=>fg)}, 
-              proc{widget.configure(:foreground=>fg, :background=>bg)}
-              ).start
+  if fg && !fg.empty? && bg && !bg.empty?
+    TkTimer.new(200, count, 
+                proc{widget.configure(:foreground=>bg, :background=>fg)}, 
+                proc{widget.configure(:foreground=>fg, :background=>bg)}
+                ).start
+  else
+    # TkTimer.new(150, 3){Tk.bell}.start
+    Tk.bell
+    TkTimer.new(200, count,
+                proc{widget.configure(:foreground=>'white',
+                                      :background=>'black')},
+                proc{widget.configure(:foreground=>'black',
+                                      :background=>'white')}
+                ).at_end{begin
+                           widget.configure(:foreground=>fg,
+                                            :background=>bg)
+                         rescue
+                           # ignore
+                         end}.start
+  end
   widget.focus(true)
 end
 
-l1 = TkLabelFrame.new($entry3_demo, :text=>"Integer Entry")
+l1 = TkLabelFrame.new(base_frame, :text=>"Integer Entry")
 TkEntry.new(l1, :validate=>:focus, 
             :vcmd=>[
               proc{|s| s == '' || /^[+-]?\d+$/ =~ s }, '%P'
             ]) {|e|
-  invalidcommand [proc{|w| focusAndFlash(w, e.fg, e.bg)}, '%W']
+  fg = e.foreground
+  bg = e.background
+  invalidcommand [proc{|w| focusAndFlash(w, fg, bg)}, '%W']
   pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 }
 
-l2 = TkLabelFrame.new($entry3_demo, :text=>"Length-Constrained Entry")
+l2 = TkLabelFrame.new(base_frame, :text=>"Length-Constrained Entry")
 TkEntry.new(l2, :validate=>:key, :invcmd=>proc{Tk.bell}, 
             :vcmd=>[proc{|s| s.length < 10}, '%P']
             ).pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
@@ -158,14 +178,14 @@ def validatePhoneChange(widget, vmode, idx, char)
     widget.insert(idx, $phoneNumberMap[char] || char)
     Tk.after_idle(proc{phoneSkipRight(widget, -1)})
     return true
-    # Tk.update(true) # Don't work 'update' inter validation callback.
-                      # It depends on Tcl/Tk side (tested on Tcl/Tk8.5a1). 
+    # Tk.update(true) # <- Don't work 'update' inter validation callback.
+                      #    It depends on Tcl/Tk side (tested on Tcl/Tk8.5a1). 
   end
   return false
 end
 
 
-l3 = TkLabelFrame.new($entry3_demo, :text=>"US Phone-Number Entry")
+l3 = TkLabelFrame.new(base_frame, :text=>"US Phone-Number Entry")
 TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell}, 
             :textvariable=>entry3content, 
             :vcmd=>[
@@ -184,14 +204,14 @@ TkEntry.new(l3, :validate=>:key, :invcmd=>proc{Tk.bell},
   pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 }
 
-l4 = TkLabelFrame.new($entry3_demo, :text=>"Password Entry")
+l4 = TkLabelFrame.new(base_frame, :text=>"Password Entry")
 TkEntry.new(l4, :validate=>:key, :show=>'*', 
             :vcmd=>[
               proc{|s| s.length <= 8}, 
               '%P'
             ]).pack(:fill=>:x, :expand=>true, :padx=>'1m', :pady=>'1m')
 
-TkFrame.new($entry3_demo){|f|
+TkFrame.new(base_frame){|f|
   lower
   TkGrid.configure(l1, l2, :in=>f, :padx=>'3m', :pady=>'1m', :sticky=>:ew)
   TkGrid.configure(l3, l4, :in=>f, :padx=>'3m', :pady=>'1m', :sticky=>:ew)

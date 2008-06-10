@@ -19,8 +19,10 @@ $image2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($image2_demo).pack(:fill=>:both, :expand=>true)
+
 # label
-msg = TkLabel.new($image2_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -29,7 +31,7 @@ msg = TkLabel.new($image2_demo) {
 msg.pack('side'=>'top')
 
 # frame
-TkFrame.new($image2_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -53,21 +55,21 @@ $dirName = TkVariable.new([$demo_dir,'..','images'].join(File::Separator))
 $image2a = TkPhotoImage.new
 
 #
-TkLabel.new($image2_demo, 'text'=>'Directory:')\
+TkLabel.new(base_frame, 'text'=>'Directory:')\
 .pack('side'=>'top', 'anchor'=>'w')
 
-image2_e = TkEntry.new($image2_demo) {
+image2_e = TkEntry.new(base_frame) {
   width 30
   textvariable $dirName
 }.pack('side'=>'top', 'anchor'=>'w')
 
-TkFrame.new($image2_demo, 'height'=>'3m', 'width'=>20)\
+TkFrame.new(base_frame, 'height'=>'3m', 'width'=>20)\
 .pack('side'=>'top', 'anchor'=>'w')
 
-TkLabel.new($image2_demo, 'text'=>'File:')\
+TkLabel.new(base_frame, 'text'=>'File:')\
 .pack('side'=>'top', 'anchor'=>'w')
 
-TkFrame.new($image2_demo){|w|
+TkFrame.new(base_frame){|w|
   s = TkScrollbar.new(w)
   l = TkListbox.new(w) {
     width 20
@@ -86,9 +88,9 @@ TkFrame.new($image2_demo){|w|
 }.pack('side'=>'top', 'anchor'=>'w')
 
 # image 
-[ TkFrame.new($image2_demo, 'height'=>'3m', 'width'=>20),
-  TkLabel.new($image2_demo, 'text'=>'Image:'),
-  TkLabel.new($image2_demo, 'image'=>$image2a)
+[ TkFrame.new(base_frame, 'height'=>'3m', 'width'=>20),
+  TkLabel.new(base_frame, 'text'=>'Image:'),
+  TkLabel.new(base_frame, 'image'=>$image2a)
 ].each{|w| w.pack('side'=>'top', 'anchor'=>'w')}
 
 # 

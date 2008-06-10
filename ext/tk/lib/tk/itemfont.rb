@@ -94,7 +94,16 @@ module TkTreatItemFont
                                       *(__item_config_cmd(tagid(tagOrId)) << {}))
               next
             else
-              tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << fnt))
+              fnt = hash_kv(fnt) if fnt.kind_of?(Hash)
+              unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+                tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << fnt))
+              else
+                begin
+                  tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << fnt))
+                rescue => e
+                  # ignore
+                end
+              end
             end
           end
           next
@@ -147,7 +156,16 @@ module TkTreatItemFont
       elsif Tk::JAPANIZED_TK
         fobj = fontobj          # create a new TkFont object
       else
-        tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << ltn))
+        ltn = hash_kv(ltn) if ltn.kind_of?(Hash)
+        unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+          tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << ltn))
+        else
+          begin
+            tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << ltn))
+          rescue => e
+            # ignore
+          end
+        end
         next
       end
 
@@ -198,7 +216,16 @@ module TkTreatItemFont
       elsif Tk::JAPANIZED_TK
         fobj = fontobj          # create a new TkFont object
       else
-        tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << knj))
+        knj = hash_kv(knj) if knj.kind_of?(Hash)
+        unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+          tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << knj))
+        else
+          begin
+            tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{optkey}" << knj))
+          rescue => e
+            # ignore
+          end
+        end
         next
       end
 

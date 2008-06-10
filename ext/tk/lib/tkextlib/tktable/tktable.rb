@@ -77,6 +77,9 @@ module Tk::TkTable::ConfigMethod
   def tag_cget(tagOrId, option)
     itemcget(['tag', tagid(tagOrId)], option)
   end
+  def tag_cget_strict(tagOrId, option)
+    itemcget_strict(['tag', tagid(tagOrId)], option)
+  end
   def tag_configure(tagOrId, slot, value=None)
     itemconfigure(['tag', tagid(tagOrId)], slot, value)
   end
@@ -89,6 +92,9 @@ module Tk::TkTable::ConfigMethod
 
   def window_cget(tagOrId, option)
     itemcget(['window', tagid(tagOrId)], option)
+  end
+  def window_cget_strict(tagOrId, option)
+    itemcget_strict(['window', tagid(tagOrId)], option)
   end
   def window_configure(tagOrId, slot, value=None)
     if slot == :window || slot == 'window'
@@ -108,8 +114,8 @@ module Tk::TkTable::ConfigMethod
     current_itemconfiginfo(['window', tagid(tagOrId)], slot)
   end
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
 #####################################################
@@ -193,6 +199,9 @@ class Tk::TkTable::CellTag
 
   def cget(key)
     @t.tag_cget(@id, key)
+  end
+  def cget_strict(key)
+    @t.tag_cget_strict(@id, key)
   end
   def configure(key, val=None)
     @t.tag_configure(@id, key, val)
@@ -291,6 +300,7 @@ class Tk::TkTable
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -306,6 +316,7 @@ class Tk::TkTable
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -340,6 +351,7 @@ class Tk::TkTable
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -355,6 +367,7 @@ class Tk::TkTable
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -387,6 +400,7 @@ class Tk::TkTable
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -402,6 +416,7 @@ class Tk::TkTable
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
 
@@ -437,6 +452,7 @@ class Tk::TkTable
         nil
       ]
 
+=begin
       # for Ruby m17n :: ?x --> String --> char-code ( getbyte(0) )
       KEY_TBL.map!{|inf|
         if inf.kind_of?(Array)
@@ -452,6 +468,7 @@ class Tk::TkTable
         end
         inf
       }
+=end
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
     end

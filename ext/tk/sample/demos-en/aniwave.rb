@@ -16,8 +16,10 @@ $aniwave_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($aniwave_demo).pack(:fill=>:both, :expand=>true)
+
 # create label
-msg = TkLabel.new($aniwave_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($aniwave_demo) {
 msg.pack('side'=>'top')
 
 # create frame
-TkFrame.new($aniwave_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -58,6 +60,7 @@ class AnimatedWaveDemo
     @backupCoords = []
     n = 0
     (-10..300).step(5){|n| @waveCoords << [n, 100]; @backupCoords << [n, 100] }
+    n = 305
     @waveCoords << [n, 0]; @backupCoords << [n, 0]
     @waveCoords << [n+5, 200]; @backupCoords << [n+5, 200]
     @coordsLen = @waveCoords.length
@@ -112,4 +115,4 @@ class AnimatedWaveDemo
 end
 
 # Start the animation processing
-AnimatedWaveDemo.new($aniwave_demo, :left).move
+AnimatedWaveDemo.new(base_frame, :left).move

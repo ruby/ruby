@@ -34,6 +34,13 @@ module Tk::BWidget::DynamicHelp
     ['DynamicHelp::configure']
   end
 
+  def self.cget_strict(slot)
+    slot = slot.to_s
+    info = {}
+    self.current_configinfo.each{|k,v| info[k.to_s] = v if k.to_s == slot}
+    fail RuntimeError, "unknown option \"-#{slot}\""  if info.empty?
+    info.values[0]
+  end
   def self.cget(slot)
     self.current_configinfo(slot).values[0]
   end

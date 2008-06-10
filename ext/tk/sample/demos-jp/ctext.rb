@@ -16,8 +16,10 @@ $ctext_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($ctext_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($ctext_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left', 
             'text'=>"このウィンドウにはキャンバスwidgetのテキスト機能をデモするためのテキスト文字列が表示されています。マウスを四角の中に持っていき、クリックすると位置ぎめ用の点からの相対位置を変えたり、行揃えを変えたりすることができます。また以下のような編集のための簡単なバインディングをサポートしています。
 
   1. マウスを持っていき、クリックし、入力できます。
@@ -29,7 +31,7 @@ TkLabel.new($ctext_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
 }
 
 # frame 生成
-$ctext_buttons = TkFrame.new($ctext_demo) {|frame|
+$ctext_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -48,7 +50,7 @@ $ctext_buttons = TkFrame.new($ctext_demo) {|frame|
 $ctext_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # canvas 生成
-$ctext_canvas = TkCanvas.new($ctext_demo, 'relief'=>'flat', 
+$ctext_canvas = TkCanvas.new(base_frame, 'relief'=>'flat', 
                              'borderwidth'=>0, 'width'=>500, 'height'=>350)
 $ctext_canvas.pack('side'=>'top', 'expand'=>'yes', 'fill'=>'both')
 

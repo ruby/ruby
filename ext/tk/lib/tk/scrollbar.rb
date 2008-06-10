@@ -31,9 +31,16 @@ class Tk::Scrollbar<TkWindow
           tk_call_without_enc(self.class::TkCommandNames[0], @path)
           keys = __check_available_configure_options(keys)
           unless keys.empty?
-            tk_call_without_enc('destroy', @path)
-            tk_call_without_enc(self.class::TkCommandNames[0], @path, 
-                                *hash_kv(keys, true))
+            begin
+              tk_call_without_enc('destroy', @path)
+            rescue
+              # cannot destroy
+              configure(keys)
+            else
+              # re-create widget
+              tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                                  *hash_kv(keys, true))
+            end
           end
         end
       end

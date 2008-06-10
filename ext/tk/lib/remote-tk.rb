@@ -88,6 +88,10 @@ class RemoteTkIp
     @slave_ip_tbl = {}
     @slave_ip_top = {}
 
+    @force_default_encoding ||= [false].taint
+    @encoding ||= [nil].taint
+    def @encoding.to_s; self.join(nil); end
+
     @tk_windows.taint unless @tk_windows.tainted?
     @tk_table_list.taint unless @tk_table_list.tainted?
     @slave_ip_tbl.taint unless @slave_ip_tbl.tainted?

@@ -42,7 +42,7 @@ class Tk::Iwidgets::Scrolledlistbox
   end
 
   def method_missing(id, *args)
-    if @listbox.methods.include?(id.id2name)
+    if @listbox.respond_to?(id)
       @listbox.__send__(id, *args)
     else
       super(id, *args)

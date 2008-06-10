@@ -2,6 +2,7 @@
 #
 # button widget demo (called by 'widget')
 #
+#
 
 # toplevel widget が存在すれば削除する
 if defined?($button_demo) && $button_demo
@@ -26,7 +27,7 @@ msg = TkLabel.new($button_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-$button_buttons = TkFrame.new($button_demo) {|frame|
+$button_buttons = Tk::Frame.new($button_demo) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'

@@ -16,6 +16,8 @@ $menu84_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($menu84_demo).pack(:fill=>:both, :expand=>true)
+
 begin
   windowingsystem = Tk.windowingsystem()
 rescue
@@ -23,7 +25,7 @@ rescue
 end
 
 # label
-TkLabel.new($menu84_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
   if $tk_platform['platform'] == 'macintosh' ||
       windowingsystem == "classic" || windowingsystem == "aqua"
     text("このウィンドウにはカスケードメニューを持つメニューバーが付けられています。Command+x ('x'はコマンドキーシンボルに続けて表示されている文字です) とタイプすることによっても項目の機能を呼び出すことができます。最後のメニューは、マウスでウィンドウの外にドラッグすることによって、独立したパレットとなるように切り放すことが可能です。")
@@ -34,7 +36,7 @@ TkLabel.new($menu84_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 
 
 menustatus = TkVariable.new("    ")
-TkFrame.new($menu84_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkLabel.new(frame, 'textvariable'=>menustatus, 'relief'=>'sunken', 
               'bd'=>1, 'font'=>['Helvetica', '10'], 
               'anchor'=>'w').pack('side'=>'left', 'padx'=>2, 
@@ -44,7 +46,7 @@ TkFrame.new($menu84_demo) {|frame|
 
 
 # frame
-TkFrame.new($menu84_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'

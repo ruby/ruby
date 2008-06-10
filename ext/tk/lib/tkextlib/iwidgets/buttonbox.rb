@@ -47,12 +47,13 @@ class Tk::Iwidgets::Buttonbox
   end
 
   alias buttoncget itemcget
+  alias buttoncget_strict itemcget_strict
   alias buttonconfigure itemconfigure
   alias buttonconfiginfo itemconfiginfo
   alias current_buttonconfiginfo current_itemconfiginfo
 
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
+  private :itemcget, :itemcget_strict
+  private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
 

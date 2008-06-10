@@ -22,6 +22,7 @@ module Tk::BLT
     WidgetClassNames[WidgetClassName] = self
 
     alias window_cget itemcget
+    alias window_cget_strict itemcget_strict
     alias window_configure itemconfigure
     alias window_configuinfo itemconfiginfo
     alias current_window_configuinfo current_itemconfiginfo

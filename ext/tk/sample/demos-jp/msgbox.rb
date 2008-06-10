@@ -16,12 +16,14 @@ $msgbox_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($msgbox_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($msgbox_demo, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
-            'text'=>"表示するアイコンとメッセージボックスの種類を選んで下さい。そして \"メッセージボックス\" ボタンを押すと、指定したメッセージボックスが表示されます。").pack('side'=>'top')
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
+            'text'=>"まず表示するアイコンとメッセージボックスの種類を選んで下さい。その後に\"メッセージボックス\"ボタンを押すと、指定したメッセージボックスが表示されます。").pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($msgbox_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -44,8 +46,8 @@ TkFrame.new($msgbox_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 生成
-$msgbox_leftframe  = TkFrame.new($msgbox_demo)
-$msgbox_rightframe = TkFrame.new($msgbox_demo)
+$msgbox_leftframe  = TkFrame.new(base_frame)
+$msgbox_rightframe = TkFrame.new(base_frame)
 $msgbox_leftframe .pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y', 
                         'pady'=>'.5c', 'padx'=>'.5c')
 $msgbox_rightframe.pack('side'=>'left', 'expand'=>'yes', 'fill'=>'y', 
@@ -79,7 +81,7 @@ $msgboxType = TkVariable.new('ok')
 def showMessageBox(w)
   button = Tk.messageBox('icon'=>$msgboxIcon.value, 'type'=>$msgboxType.value, 
                          'title'=>'Message', 'parent'=>w,
-                         'message'=>"これは \"#{$msgboxType.value}\" という種類のメッセージボックスで、\"#{$msgboxIcon.value}\" のアイコンが表示されています。")
+                         'message'=>"これは\"#{$msgboxType.value}\"という種類のメッセージボックスで、\"#{$msgboxIcon.value}\"のアイコンが表示されています。")
 
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'parent'=>w, 
                 'message'=>"あなたは \"#{button}\" を押しましたね。")

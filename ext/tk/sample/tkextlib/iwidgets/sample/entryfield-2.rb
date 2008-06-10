@@ -4,7 +4,11 @@
 #  set $KCODE to 'utf' for a utf8 charecter
 #
 #########################################################
-$KCODE='utf'
+unless defined?(::Encoding.default_external)
+  $KCODE='utf'
+else
+  DEFAULT_TK_ENCODING = 'UTF-8'
+end
 
 require 'tk'
 require 'tkextlib/iwidgets'

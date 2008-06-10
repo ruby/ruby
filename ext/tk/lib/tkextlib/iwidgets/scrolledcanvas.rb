@@ -37,7 +37,7 @@ class Tk::Iwidgets::Scrolledcanvas
   end
 
   def method_missing(id, *args)
-    if @canvas.methods.include?(id.id2name)
+    if @canvas.respond_to?(id)
       @canvas.__send__(id, *args)
     else
       super(id, *args)

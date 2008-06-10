@@ -19,8 +19,10 @@ $radio2_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($radio2_demo).pack(:fill=>:both, :expand=>true)
+
 # label 
-msg = TkLabel.new($radio2_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '5i'
   justify 'left'
@@ -34,7 +36,7 @@ color = TkVariable.new
 align = TkVariable.new
 
 # frame 
-TkFrame.new($radio2_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -53,18 +55,18 @@ TkFrame.new($radio2_demo) {|frame|
   TkButton.new(frame) {
     text 'See Variables'
     command proc{
-      showVars($radio2_demo, 
+      showVars(base_frame, 
                ['size', size], ['color', color], ['compound', align])
     }
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 
-f_left  = TkLabelFrame.new($radio2_demo, 'text'=>'Point Size', 
+f_left  = TkLabelFrame.new(base_frame, 'text'=>'Point Size', 
                            'pady'=>2, 'padx'=>2)
-f_mid   = TkLabelFrame.new($radio2_demo, 'text'=>'Color', 
+f_mid   = TkLabelFrame.new(base_frame, 'text'=>'Color', 
                            'pady'=>2, 'padx'=>2)
-f_right = TkLabelFrame.new($radio2_demo, 'text'=>'Alignment', 
+f_right = TkLabelFrame.new(base_frame, 'text'=>'Alignment', 
                            'pady'=>2, 'padx'=>2)
 f_left.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
 f_mid.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
@@ -90,7 +92,8 @@ f_right.pack('side'=>'left', 'expand'=>'yes', 'padx'=>'.5c', 'pady'=>'.5c')
   }.pack('side'=>'top', 'pady'=>2, 'fill'=>'x')
 }
 
-label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
+# label = TkLabel.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
+label = Tk::Label.new(f_right, 'text'=>'Label', 'bitmap'=>'questhead', 
                     'compound'=>'left')
 label.configure('width'=>TkWinfo.reqwidth(label), 'compound'=>'top')
 label.height(TkWinfo.reqheight(label))

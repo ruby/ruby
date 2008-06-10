@@ -11,15 +11,15 @@ require 'tkextlib/setup.rb'
 # call setup script
 require 'tkextlib/tkDND/setup.rb'
 
-# TkPackage.require('shape', '0.3')
-TkPackage.require('shape')
+# TkPackage.require('Shape', '0.3')
+TkPackage.require('Shape')
 
 module Tk
   module TkDND
     module Shape
       extend TkCore
 
-      PACKAGE_NAME = 'shape'.freeze
+      PACKAGE_NAME = 'Shape'.freeze
       def self.package_name
         PACKAGE_NAME
       end
@@ -27,26 +27,28 @@ module Tk
 =begin
       def self.package_version
         begin
-          TkPackage.require('shape')
+          TkPackage.require('Shape')
         rescue
           ''
         end
       end
 =end
-      def self.package_version
-        Tk.tk_call('set', 'shape_version')
-      end
-      alias shape_version package_version
+      class << self
+        def package_version
+          Tk.tk_call('set', 'shape_version')
+        end
+        alias shape_version package_version
 
-      def self.package_patchlevel
-        Tk.tk_call('set', 'shape_patchlevel')
-      end
-      alias shape_patchlevel package_patchlevel
+        def package_patchlevel
+          Tk.tk_call('set', 'shape_patchLevel')
+        end
+        alias shape_patchlevel package_patchlevel
 
-      def self.version
-        tk_call('shape', 'version')
+        def version
+          tk_call('shape', 'version')
+        end
+        alias xshape_version version
       end
-      alias xshape_version version
 
       ############################
 

@@ -27,6 +27,11 @@ class Tk::Tile::TEntry < Tk::Entry
   WidgetClassName = 'TEntry'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __optkey_aliases
+    {:vcmd=>:validatecommand, :invcmd=>:invalidcommand}
+  end
+  private :__optkey_aliases
+
   def __boolval_optkeys
     super() << 'exportselection'
   end

@@ -76,10 +76,31 @@ class Tk::PanedWindow<TkWindow
     self
   end
 
-  def panecget(win, key)
+  def panecget_strict(win, key)
     # win = win.epath if win.kind_of?(TkObject)
     win = _epath(win)
     tk_tcl2ruby(tk_send_without_enc('panecget', win, "-#{key}"))
+  end
+  def panecget(win, key)
+    unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+      panecget_strict(win, key)
+    else
+      begin
+        panecget_strict(win, key)
+      rescue => e
+        begin
+          if current_paneconfiginfo(win).has_key?(option.to_s)
+            # not tag error & option is known -> error on known option
+            fail e
+          else
+            # not tag error & option is unknown
+            nil
+          end
+        rescue
+          fail e  # tag error
+        end
+      end
+    end
   end
 
   def paneconfigure(win, key, value=nil)

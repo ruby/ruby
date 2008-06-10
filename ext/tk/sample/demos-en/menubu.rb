@@ -37,16 +37,18 @@ $menubu_demo = TkToplevel.new {|w|
 
 positionWindow($menubu_demo)
 
+base_frame = TkFrame.new($menubu_demo).pack(:fill=>:both, :expand=>true)
+
 # version check
 if $tk_version.to_f < 8.0
 
 # label
-TkLabel.new($menubu_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
+TkLabel.new(base_frame,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
     text("This is a demonstration of menubuttons. The \"Below\" menubutton pops its menu below the button; the \"Right\" button pops to the right, etc. There are two option menus directly below this text; one is just a standard menu and the other is a 16-color palette.")
 }.pack('side'=>'top')
 
 # frame
-TkFrame.new($menubu_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -64,7 +66,7 @@ TkFrame.new($menubu_demo) {|frame|
 
 else ; # Tk8.x
 
-body = TkFrame.new($menubu_demo)
+body = TkFrame.new(base_frame)
 body.pack('expand'=>'yes', 'fill'=>'both')
 
 below = TkMenubutton.new(body) {
@@ -159,7 +161,7 @@ center = TkFrame.new(body) {
   grid('row'=>1, 'column'=>1, 'sticky'=>'news')
 }
 
-TkFrame.new($menubu_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc {

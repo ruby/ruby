@@ -85,6 +85,9 @@ module Tk::BLT
     def axis_cget(id, option)
       ret = itemcget(['axis', tagid(id)], option)
     end
+    def axis_cget_strict(id, option)
+      ret = itemcget_strict(['axis', tagid(id)], option)
+    end
     def axis_configure(*args)
       slot = args.pop
       if slot.kind_of?(Hash)
@@ -118,6 +121,9 @@ module Tk::BLT
     def crosshairs_cget(option)
       itemcget('crosshairs', option)
     end
+    def crosshairs_cget_strict(option)
+      itemcget_strict('crosshairs', option)
+    end
     def crosshairs_configure(slot, value=None)
       itemconfigure('crosshairs', slot, value)
     end
@@ -130,6 +136,9 @@ module Tk::BLT
 
     def element_cget(id, option)
       itemcget(['element', tagid(id)], option)
+    end
+    def element_cget_strict(id, option)
+      itemcget_strict(['element', tagid(id)], option)
     end
     def element_configure(*args)
       slot = args.pop
@@ -152,6 +161,9 @@ module Tk::BLT
     def bar_cget(id, option)
       itemcget(['bar', tagid(id)], option)
     end
+    def bar_cget_strict(id, option)
+      itemcget_strict(['bar', tagid(id)], option)
+    end
     def bar_configure(*args)
       slot = args.pop
       if slot.kind_of?(Hash)
@@ -172,6 +184,9 @@ module Tk::BLT
 
     def line_cget(id, option)
       itemcget(['line', tagid(id)], option)
+    end
+    def line_cget_strict(id, option)
+      itemcget_strict(['line', tagid(id)], option)
     end
     def line_configure(*args)
       slot = args.pop
@@ -194,6 +209,9 @@ module Tk::BLT
     def gridline_cget(option)
       itemcget('grid', option)
     end
+    def gridline_cget_strict(option)
+      itemcget_strict('grid', option)
+    end
     def gridline_configure(slot, value=None)
       itemconfigure('grid', slot, value)
     end
@@ -207,6 +225,9 @@ module Tk::BLT
     def legend_cget(option)
       itemcget('legend', option)
     end
+    def legend_cget_strict(option)
+      itemcget_strict('legend', option)
+    end
     def legend_configure(slot, value=None)
       itemconfigure('legend', slot, value)
     end
@@ -219,6 +240,9 @@ module Tk::BLT
 
     def pen_cget(id, option)
       itemcget(['pen', tagid(id)], option)
+    end
+    def pen_cget_strict(id, option)
+      itemcget_strict(['pen', tagid(id)], option)
     end
     def pen_configure(*args)
       slot = args.pop
@@ -241,6 +265,9 @@ module Tk::BLT
     def postscript_cget(option)
       itemcget('postscript', option)
     end
+    def postscript_cget_strict(option)
+      itemcget_strict('postscript', option)
+    end
     def postscript_configure(slot, value=None)
       itemconfigure('postscript', slot, value)
     end
@@ -253,6 +280,9 @@ module Tk::BLT
 
     def marker_cget(id, option)
       itemcget(['marker', tagid(id)], option)
+    end
+    def marker_cget_strict(id, option)
+      itemcget_strict(['marker', tagid(id)], option)
     end
     def marker_configure(*args)
       slot = args.pop
@@ -273,16 +303,38 @@ module Tk::BLT
     end
 
     alias __itemcget itemcget
+    alias __itemcget_strict itemcget_strict
     alias __itemconfiginfo itemconfiginfo
     alias __current_itemconfiginfo current_itemconfiginfo
     private :__itemcget, :__itemconfiginfo, :__current_itemconfiginfo
 
-    def itemcget(tagOrId, option)
+    def itemcget_strict(tagOrId, option)
       ret = __itemcget(tagid(tagOrId), option)
       if option == 'bindtags' || option == :bindtags
         ret.collect{|tag| TkBindTag.id2obj(tag)}
       else
         ret
+      end
+    end
+    def itemcget(tagOrId, option)
+      unless TkItemConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__
+        itemcget_strict(tagOrId, option)
+      else
+        begin
+          itemcget_strict(tagOrId, option)
+        rescue => e
+          begin
+            if current_itemconfiginfo(tagOrId).has_key?(option.to_s)
+              # error on known option
+              fail e
+            else
+              # unknown option
+              nil
+            end
+          rescue
+            fail e  # tag error
+          end
+        end
       end
     end
     def itemconfiginfo(tagOrId, slot = nil)
@@ -321,8 +373,8 @@ module Tk::BLT
       ret
     end
 
-    private :itemcget, :itemconfigure
-    private :itemconfiginfo, :current_itemconfiginfo
+    private :itemcget, :itemcget_strict
+    private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 
     #################
 
@@ -428,6 +480,9 @@ module Tk::BLT
       def cget(option)
         @chart.axis_cget(@id, option)
       end
+      def cget_strict(option)
+        @chart.axis_cget_strict(@id, option)
+      end
       def configure(key, value=None)
         @chart.axis_configure(@id, key, value)
         self
@@ -529,6 +584,9 @@ module Tk::BLT
 
       def cget(option)
         @chart.crosshair_cget(option)
+      end
+      def cget_strict(option)
+        @chart.crosshair_cget_strict(option)
       end
       def configure(key, value=None)
         @chart.crosshair_configure(key, value)
@@ -675,6 +733,9 @@ module Tk::BLT
         # @chart.element_cget(@id, option)
         @chart.__send__(@typename + '_cget', @id, option)
       end
+      def cget_strict(option)
+        @chart.__send__(@typename + '_cget_strict', @id, option)
+      end
       def configure(key, value=None)
         # @chart.element_configure(@id, key, value)
         @chart.__send__(@typename + '_configure', @id, key, value)
@@ -775,6 +836,9 @@ module Tk::BLT
       def cget(option)
         @chart.gridline_cget(option)
       end
+      def cget_strict(option)
+        @chart.gridline_cget_strict(option)
+      end
       def configure(key, value=None)
         @chart.gridline_configure(key, value)
         self
@@ -845,6 +909,9 @@ module Tk::BLT
 
       def cget(option)
         @chart.legend_cget(option)
+      end
+      def cget_strict(option)
+        @chart.legend_cget_strict(option)
       end
       def configure(key, value=None)
         @chart.legend_configure(key, value)
@@ -972,6 +1039,9 @@ module Tk::BLT
       def cget(option)
         @chart.pen_cget(@id, option)
       end
+      def cget_strict(option)
+        @chart.pen_cget_strict(@id, option)
+      end
       def configure(key, value=None)
         @chart.pen_configure(@id, key, value)
         self
@@ -1038,6 +1108,9 @@ module Tk::BLT
 
       def cget(option)
         @chart.postscript_cget(option)
+      end
+      def cget_strict(option)
+        @chart.postscript_cget_strict(option)
       end
       def configure(key, value=None)
         @chart.postscript_configure(key, value)
@@ -1117,6 +1190,13 @@ module Tk::BLT
             fontkeys[fkey] = keys.delete(fkey) if keys.key?(fkey)
           }
 
+          __item_optkey_aliases(nil).each{|alias_name, real_name|
+            alias_name = alias_name.to_s
+            if keys.has_key?(alias_name)
+              keys[real_name.to_s] = keys.delete(alias_name)
+            end
+          }
+
           __item_methodcall_optkeys(nil).each{|key|
             key = key.to_s
             methodkeys[key] = keys.delete(key) if keys.key?(key)
@@ -1191,6 +1271,9 @@ module Tk::BLT
 
       def cget(option)
         @chart.marker_cget(@id, option)
+      end
+      def cget_strict(option)
+        @chart.marker_cget_strict(@id, option)
       end
       def configure(key, value=None)
         @chart.marker_configure(@id, key, value)
@@ -1774,6 +1857,9 @@ module Tk::BLT
     def xaxis_cget(option)
       itemcget('xaxis', option)
     end
+    def xaxis_cget_strict(option)
+      itemcget_strict('xaxis', option)
+    end
     def xaxis_configure(slot, value=None)
       if slot.kind_of?(Hash)
         slot = _symbolkey2str(slot)
@@ -1842,6 +1928,9 @@ module Tk::BLT
 
     def x2axis_cget(option)
       itemcget('x2axis', option)
+    end
+    def x2axis_cget_strict(option)
+      itemcget_strict('x2axis', option)
     end
     def x2axis_configure(slot, value=None)
       if slot.kind_of?(Hash)
@@ -1912,6 +2001,9 @@ module Tk::BLT
     def yaxis_cget(option)
       itemcget('yaxis', option)
     end
+    def yaxis_cget_strict(option)
+      itemcget_strict('yaxis', option)
+    end
     def yaxis_configure(slot, value=None)
       if slot.kind_of?(Hash)
         slot = _symbolkey2str(slot)
@@ -1980,6 +2072,9 @@ module Tk::BLT
 
     def y2axis_cget(option)
       itemcget('y2axis', option)
+    end
+    def y2axis_cget_strict(option)
+      itemcget_strict('y2axis', option)
     end
     def y2axis_configure(slot, value=None)
       if slot.kind_of?(Hash)

@@ -181,6 +181,57 @@ module TkComposite
     delegate_alias(option, option, *wins)
   end
 
+  def __cget_delegates(slot)
+    slot = slot.to_s
+
+    if @option_methods.include?(slot)
+      if @option_methods[slot][:cget]
+        return self.__send__(@option_methods[slot][:cget])
+      else
+        if @option_setting[slot]
+          return @option_setting[slot]
+        else
+          return ''
+        end
+      end
+    end
+
+    tbl = @delegates[slot]
+    tbl = @delegates['DEFAULT'] unless tbl
+
+    begin
+      if tbl
+        opt, wins = tbl[-1]
+        opt = slot if opt == 'DEFAULT'
+        if wins && wins[-1]
+          # return wins[-1].cget(opt)
+          return wins[-1].cget_strict(opt)
+        end
+      end
+    rescue
+    end
+
+    return None
+  end
+  private :__cget_delegates
+
+  def cget(slot)
+    if (ret = __cget_delegates(slot)) == None
+      super(slot)
+    else
+      ret
+    end
+  end
+
+  def cget_strict(slot)
+    if (ret = __cget_delegates(slot)) == None
+      super(slot)
+    else
+      ret
+    end
+  end
+
+=begin
   def cget(slot)
     slot = slot.to_s
 
@@ -212,6 +263,7 @@ module TkComposite
 
     super(slot)
   end
+=end
 
   def configure(slot, value=None)
     if slot.kind_of? Hash

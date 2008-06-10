@@ -16,8 +16,10 @@ $puzzle_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($puzzle_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-msg = TkLabel.new($puzzle_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -26,7 +28,7 @@ msg = TkLabel.new($puzzle_demo) {
 msg.pack('side'=>'top')
 
 # frame 生成
-TkFrame.new($puzzle_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -51,18 +53,27 @@ TkFrame.new($puzzle_demo) {|frame|
 #
 begin
   if Tk.windowingsystem() == 'aqua'
-    frameSize = 160
+    frameWidth  = 168
+    frameHeight = 168
+  elsif Tk.default_widget_set == :Ttk
+    frameWidth  = 148
+    frameHeight = 124
   else
-    frameSize = 120
+    frameWidth  = 120
+    frameHeight = 120
   end
 rescue
-  frameSize = 120
+  frameWidth  = 120
+  frameHeight = 120
 end
+
+# depend_on_button_width = true
+depend_on_button_width = false
  
-s = TkScrollbar.new($puzzle_demo)
-base = TkFrame.new($puzzle_demo) {
-  width  frameSize
-  height frameSize
+s = TkScrollbar.new(base_frame)
+base = TkFrame.new(base_frame) {
+  width  frameWidth
+  height frameHeight
   borderwidth 2
   relief 'sunken'
   bg s['troughcolor']
@@ -89,6 +100,9 @@ order = [3,1,6,2,5,7,15,13,4,11,8,9,14,10,12]
     text num
     highlightthickness 0
     command def_puzzleswitch_proc(w, num)
+    if depend_on_button_width && (w.winfo_reqwidth * 4 > base.width)
+      base.width = w.winfo_reqwidth * 4
+    end
   }.place('relx'=>$xpos[num], 'rely'=>$ypos[num], 
           'relwidth'=>0.25, 'relheight'=>0.25)
 }

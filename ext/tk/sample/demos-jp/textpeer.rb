@@ -16,10 +16,12 @@ $textpeer_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($textpeer_demo).pack(:fill=>:both, :expand=>true)
+
 count = [0]
 
 ## Define a widget that we peer from; it won't ever actually be shown though
-first = TkText.new($textpeer_demo, :widgetname=>"text#{count[0] += 1}")
+first = TkText.new(base_frame, :widgetname=>"text#{count[0] += 1}")
 first.insert :end,"このデモは一つの組を成したテキストウィジェットを示します。"
 first.insert :end,"それらのテキストウィジェットは対等(ピア;peer)の関係に"
 first.insert :end,"なっています。"
@@ -31,6 +33,8 @@ first.insert :end,"「ピア(peer)の作成」ボタンを使えば、"
 first.insert :end,"新たなピアを追加することが可能です。"
 first.insert :end,"また「ピア(peer)の消去」ボタンを使えば、"
 first.insert :end,"特定のピアウィジェットを消去することもできます。"
+
+Tk.update_idletasks  ## for 'first' widget
 
 ## Procedures to make and kill clones; most of this is just so that the demo
 ## looks nice...
@@ -58,12 +62,12 @@ def killClone(win, cnt)
 end
 
 ## Now set up the GUI
-makeClone(count, $textpeer_demo, first)
-makeClone(count, $textpeer_demo, first)
+makeClone(count, base_frame, first)
+makeClone(count, base_frame, first)
 first.destroy
 
 ## See Code / Dismiss buttons
-TkFrame.new($textpeer_demo){|f|
+TkFrame.new(base_frame){|f|
   TkButton.new(f, :text=>'閉じる', :width=>15, :command=>proc{
                  $textpeer_demo.destroy
                  $textpeer_demo = nil
@@ -75,4 +79,4 @@ TkFrame.new($textpeer_demo){|f|
 
   TkGrid.configure(f, '-', '-', :sticky=>'ew', :row=>5000)
 }
-TkGrid.columnconfigure($textpeer_demo, 0, :weight=>1)
+TkGrid.columnconfigure(base_frame, 0, :weight=>1)

@@ -132,6 +132,9 @@ class TkTextTag<TkObject
   def cget(key)
     @t.tag_cget @id, key
   end
+  def cget_strict(key)
+    @t.tag_cget_strict @id, key
+  end
 =begin
   def cget(key)
     case key.to_s

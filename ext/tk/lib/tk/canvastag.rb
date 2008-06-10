@@ -63,6 +63,9 @@ module TkcTagAccess
   def cget(option)
     @c.itemcget(@id, option)
   end
+  def cget_strict(option)
+    @c.itemcget_strict(@id, option)
+  end
 
   def configure(key, value=None)
     @c.itemconfigure(@id, key, value)

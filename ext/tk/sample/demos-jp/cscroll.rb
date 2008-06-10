@@ -16,14 +16,16 @@ $cscroll_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($cscroll_demo).pack(:fill=>:both, :expand=>true)
+
 # label 生成
-TkLabel.new($cscroll_demo, 'font'=>$font, 'wraplength'=>'4i', 
+TkLabel.new(base_frame, 'font'=>$font, 'wraplength'=>'4i', 
             'justify'=>'left', 'text'=>"このウィンドウにはスクロールバーやマウスのボタン2 でスクロールできるキャンバス widget が表示されています。四角の上でボタン1 をクリックすると、そのインデックスが標準出力に出力されます。"){
   pack('side'=>'top')
 }
 
 # frame 生成
-$cscroll_buttons = TkFrame.new($cscroll_demo) {|frame|
+$cscroll_buttons = TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -43,7 +45,7 @@ $cscroll_buttons.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # frame 設定
 unless $tk_version =~ /^4\.[01]/
-  $cscroll_grid = TkFrame.new($cscroll_demo) {
+  $cscroll_grid = TkFrame.new(base_frame) {
     pack('expand'=>'yes', 'fill'=>'both', 'padx'=>1, 'pady'=>1)
   }
   TkGrid.rowconfigure($cscroll_grid, 0, 'weight'=>1, 'minsize'=>0)
@@ -51,7 +53,7 @@ unless $tk_version =~ /^4\.[01]/
 end
 
 # canvas 設定
-$cscroll_canvas = TkCanvas.new($cscroll_demo, 
+$cscroll_canvas = TkCanvas.new(base_frame, 
                                'relief'=>'sunken', 'borderwidth'=>2,
                                'scrollregion'=>['-11c', '-11c', '50c', '20c']
                                ) {|c|
@@ -62,7 +64,7 @@ $cscroll_canvas = TkCanvas.new($cscroll_demo,
          'rowspan'=>1, 'columnspan'=>1, 'sticky'=>'news')
   end
 
-  TkScrollbar.new($cscroll_demo, 'command'=>proc{|*args| c.yview(*args)}) {|vs|
+  TkScrollbar.new(base_frame, 'command'=>proc{|*args| c.yview(*args)}) {|vs|
     c.yscrollcommand(proc{|first,last| vs.set first,last})
     if $tk_version =~ /^4\.[01]/
       pack('side'=>'right', 'fill'=>'y')
@@ -72,7 +74,7 @@ $cscroll_canvas = TkCanvas.new($cscroll_demo,
     end
   }
 
-  TkScrollbar.new($cscroll_demo, 'orient'=>'horiz', 
+  TkScrollbar.new(base_frame, 'orient'=>'horiz', 
                   'command'=>proc{|*args| c.xview(*args)}) {|hs|
     c.xscrollcommand(proc{|first,last| hs.set first,last})
     if $tk_version =~ /^4\.[01]/

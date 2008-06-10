@@ -5,10 +5,14 @@ Tcl/Tk libraries or header files are installed but are not found, you can
 give the information by arguments of the 'configure' script. Please give 
 some or all of the following options. 
 
+ --with-tcltkversion=<version> 
+      force version of Tcl/Tk libaray
+      (e.g. libtcl8.4g.so ==> --with-tcltkversion=8.4g)
+
  --with-tcllib=<libname>       (e.g. libtcl8.4.so ==> --with-tcllib=tcl8.4)
  --with-tklib=<libname>        (e.g. libtk8.4.so  ==> --with-tklib=tk8.4)
 
- --enable-tcltk_stubs          (if you force to enable stubs)
+ --enable-tcltk-stubs          (if you force to enable stubs)
 
  --with-tcl-dir=<path> 
       equal to "--with-tcl-include=<path>/include --with-tcl-lib=<path>/lib"

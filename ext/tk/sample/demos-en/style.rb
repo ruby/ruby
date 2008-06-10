@@ -19,8 +19,10 @@ $style_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($style_demo).pack(:fill=>:both, :expand=>true)
+
 # frame
-TkFrame.new($style_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     text 'Dismiss'
     command proc{
@@ -37,14 +39,14 @@ TkFrame.new($style_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # text 
-TkText.new($style_demo){|t|
+txt = TkText.new(base_frame){|t|
   # 
   setgrid 'true'
   #width  70
   #height 32
   wrap 'word'
   font $font
-  TkScrollbar.new($style_demo) {|s|
+  TkScrollbar.new(base_frame) {|s|
     pack('side'=>'right', 'fill'=>'y')
     command proc{|*args| t.yview(*args)}
     t.yscrollcommand proc{|first,last| s.set first,last}
@@ -64,7 +66,7 @@ TkText.new($style_demo){|t|
     style_tag_bold = TkTextTag.new(t, 'font'=>[family, 12, :bold, :italic])
     style_tag_big = TkTextTag.new(t, 'font'=>[family, 14, :bold])
     style_tag_verybig = TkTextTag.new(t, 'font'=>['Helvetica', 24, :bold])
-    style_tag_small = TkTextTag.new(t, 'font'=>['Times 8 bold'])
+    style_tag_small = TkTextTag.new(t, 'font'=>'Times 8 bold')
   end
 ###
 #  case($tk_version)

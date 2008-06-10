@@ -24,7 +24,9 @@ end
 Tk::Tile.__define_LoadImages_proc_for_compatibility__!
 Tk::Tile::Style.__define_wrapper_proc_for_compatibility__!
 
-Tk::Tile::Style.theme_create('step')
+unless Tk::Tile::Style.theme_names.include?('step')
+  Tk::Tile::Style.theme_create('step')
+end
 
 Tk.load_tclscript(File.join(demodir, 'toolbutton.tcl'))
 Tk.load_tclscript(File.join(demodir, 'repeater.tcl'))

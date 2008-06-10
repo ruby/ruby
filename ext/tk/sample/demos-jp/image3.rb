@@ -20,6 +20,8 @@ $image3_demo = TkToplevel.new {|w|
   positionWindow(w)
 }
 
+base_frame = TkFrame.new($image3_demo).pack(:fill=>:both, :expand=>true)
+
 # 
 def loadDir3(w)
   w.delete(0,'end')
@@ -50,7 +52,7 @@ end
 
 
 # label
-msg = TkLabel.new($image3_demo) {
+msg = TkLabel.new(base_frame) {
   font $font
   wraplength '4i'
   justify 'left'
@@ -59,7 +61,7 @@ msg = TkLabel.new($image3_demo) {
 msg.pack('side'=>'top')
 
 # frame
-TkFrame.new($image3_demo) {|frame|
+TkFrame.new(base_frame) {|frame|
   TkButton.new(frame) {
     #text '了解'
     text '閉じる'
@@ -88,11 +90,11 @@ end
 $image3a = TkPhotoImage.new
 
 #
-image3_f = TkFrame.new($image3_demo).pack(:fill=>:both, :expand=>true)
+image3_f = TkFrame.new(base_frame).pack(:fill=>:both, :expand=>true)
 
-image3_df = TkLabelFrame.new($image3_demo, :text=>'ディレクトリ:')
+image3_df = TkLabelFrame.new(base_frame, :text=>'ディレクトリ:')
 
-image3_ff = TkLabelFrame.new($image3_demo, :text=>'ファイル:', 
+image3_ff = TkLabelFrame.new(base_frame, :text=>'ファイル:', 
                              :padx=>'2m', :pady=>'2m')
 image3_lbx = TkListbox.new(image3_ff, :width=>20, :height=>10) {
   pack(:side=>:left, :fill=>:y, :expand=>true)
@@ -112,8 +114,9 @@ TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"ディレクトリ選択",
   pack(:side=>:left, :fill=>:y, :padx=>[0, '2m'], :pady=>'2m')
 }
 
-image3_if = TkLabelFrame.new($image3_demo, :text=>'イメージ:') {|f|
-  TkLabel.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
+image3_if = TkLabelFrame.new(base_frame, :text=>'イメージ:') {|f|
+  # TkLabel.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
+  Tk::Label.new(f, :image=>$image3a).pack(:padx=>'2m', :pady=>'2m')
 }
 
 Tk.grid(image3_df,  '-',

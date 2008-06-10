@@ -7,7 +7,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2008-03-29"
+#define TKUTIL_RELEASE_DATE "2008-05-23"
 
 #include "ruby.h"
 
@@ -1073,11 +1073,13 @@ tcl2rb_num_or_str(self, value)
 
 /*************************************/
 
+#define CBSUBST_TBL_MAX (256)
 struct cbsubst_info {
-    int   size;
-    char  *key;
-    char  *type;
-    ID    *ivar;
+    int   full_subst_length;
+    int   keylen[CBSUBST_TBL_MAX];
+    unsigned char  *key[CBSUBST_TBL_MAX];
+    unsigned char  type[CBSUBST_TBL_MAX];
+    ID    ivar[CBSUBST_TBL_MAX];
     VALUE proc;
     VALUE aliases;
 };
@@ -1094,42 +1096,52 @@ static void
 subst_free(ptr)
     struct cbsubst_info *ptr;
 {
+    int i;
+
     if (ptr) {
-        if (ptr->key != (char*)NULL) free(ptr->key);
-        if (ptr->type != (char*)NULL) free(ptr->type);
-        if (ptr->ivar != (ID*)NULL) free(ptr->ivar);
-        free(ptr);
+      for(i = 0; i < CBSUBST_TBL_MAX; i++) {
+	if (ptr->key[i] != (unsigned char *)NULL) {
+	  free(ptr->key[i]);
+	  ptr->key[i] = (unsigned char *)NULL;
+	}
+      }
+      free(ptr);
     }
+}
+
+static struct cbsubst_info *
+allocate_cbsubst_info()
+{
+  struct cbsubst_info *inf;
+  volatile VALUE proc, aliases;
+  int idx;
+
+  inf = ALLOC(struct cbsubst_info);
+
+  inf->full_subst_length = 0;
+
+  for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
+    inf->keylen[idx] = 0;
+    inf->key[idx]    = (unsigned char *) NULL;
+    inf->type[idx]   = '\0';
+    inf->ivar[idx]   = (ID) 0;
+  }
+
+  proc = rb_hash_new();
+  inf->proc = proc;
+
+  aliases = rb_hash_new();
+  inf->aliases = aliases;
+
+  return inf;
 }
 
 static void
 cbsubst_init()
 {
-    struct cbsubst_info *inf;
-    ID *ivar;
-    volatile VALUE proc, aliases;
-
-    inf = ALLOC(struct cbsubst_info);
-
-    inf->size = 0;
-
-    inf->key = ALLOC_N(char, 1);
-    inf->key[0] = '\0';
-
-    inf->type = ALLOC_N(char, 1);
-    inf->type[0] = '\0';
-
-    ivar = ALLOC_N(ID, 1);
-    inf->ivar = ivar;
-
-    proc = rb_hash_new();
-    inf->proc = proc;
-
-    aliases = rb_hash_new();
-    inf->aliases = aliases;
-
     rb_const_set(cCB_SUBST, ID_SUBST_INFO, 
-                 Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, inf));
+		 Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, 
+				  allocate_cbsubst_info()));
 }
 
 static VALUE
@@ -1139,24 +1151,29 @@ cbsubst_initialize(argc, argv, self)
     VALUE self;
 {
     struct cbsubst_info *inf;
-    int idx;
+    int idx, iv_idx;
 
     Data_Get_Struct(rb_const_get(rb_obj_class(self), ID_SUBST_INFO), 
                     struct cbsubst_info, inf);
 
-    for(idx = 0; idx < argc; idx++) {
-        rb_ivar_set(self, inf->ivar[idx], argv[idx]);
+   idx = 0;
+    for(iv_idx = 0; iv_idx < CBSUBST_TBL_MAX; iv_idx++) {
+      if ( inf->ivar[iv_idx] == (ID) 0 ) continue;
+      rb_ivar_set(self, inf->ivar[iv_idx], argv[idx++]);
+      if (idx >= argc) break;
     }
 
     return self;
 }
-
 
 static VALUE
 cbsubst_ret_val(self, val)
     VALUE self;
     VALUE val;
 {
+    /* This method may be overwritten on some sub-classes.                  */
+    /* This method is used for converting from ruby's callback-return-value */
+    /* to tcl's value (e.g. validation procedure of entry widget).          */
     return val;
 }
 
@@ -1217,6 +1234,59 @@ cbsubst_def_attr_aliases(self, tbl)
 }
 
 static VALUE
+cbsubst_sym_to_subst(self, sym)
+    VALUE self;
+    VALUE sym;
+{
+    struct cbsubst_info *inf;
+    const char *str;
+    unsigned char *buf, *ptr;
+    int idx, len;
+    ID id;
+    volatile VALUE ret;
+
+    if (TYPE(sym) != T_SYMBOL) return sym;
+
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+                    struct cbsubst_info, inf);
+
+    if (!NIL_P(ret = rb_hash_aref(inf->aliases, sym))) {
+      str = rb_id2name(SYM2ID(ret));
+    } else {
+      str = rb_id2name(SYM2ID(sym));
+    }
+
+    id = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), str)));
+
+    for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
+      if (inf->ivar[idx] == id) break;
+    }
+    if (idx >= CBSUBST_TBL_MAX)  return sym;
+
+    ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
+
+    *(ptr++) = '%';
+
+    if (len = inf->keylen[idx]) {
+      /* longname */
+      strncpy(ptr, inf->key[idx], len);
+      ptr += len;
+    } else {
+      /* single char */
+      *(ptr++) = idx;
+    }
+
+    *(ptr++) = ' ';
+    *(ptr++) = '\0';
+
+    ret = rb_str_new2(buf);
+
+    free(buf);
+
+    return ret;
+}
+
+static VALUE
 cbsubst_get_subst_arg(argc, argv, self)
     int   argc;
     VALUE *argv;
@@ -1224,17 +1294,15 @@ cbsubst_get_subst_arg(argc, argv, self)
 {
     struct cbsubst_info *inf;
     const char *str;
-    char *buf, *ptr;
-    int i, j, len;
+    unsigned char *buf, *ptr;
+    int i, idx, len;
     ID id;
     volatile VALUE arg_sym, ret;
 
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
                     struct cbsubst_info, inf);
 
-    buf = ALLOC_N(char, 3*argc + 1);
-    ptr = buf;
-    len = strlen(inf->key);
+    ptr = buf = ALLOC_N(char, inf->full_subst_length + 1);
 
     for(i = 0; i < argc; i++) {
         switch(TYPE(argv[i])) {
@@ -1256,17 +1324,25 @@ cbsubst_get_subst_arg(argc, argv, self)
 
         id = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), str)));
 
-        for(j = 0; j < len; j++) {
-            if (inf->ivar[j] == id) break;
-        }
-
-        if (j >= len) {
+	for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
+	  if (inf->ivar[idx] == id) break;
+	}
+        if (idx >= CBSUBST_TBL_MAX) {
             rb_raise(rb_eArgError, "cannot find attribute :%s", str);
         }
 
-        *(ptr++) = '%';
-        *(ptr++) = *(inf->key + j);
-        *(ptr++) = ' ';
+	*(ptr++) = '%';
+
+	if (len = inf->keylen[idx]) {
+	  /* longname */
+	  strncpy(ptr, inf->key[idx], len);
+	  ptr += len;
+	} else {
+	  /* single char */
+	  *(ptr++) = idx;
+	}
+
+	*(ptr++) = ' ';
     }
 
     *ptr = '\0';
@@ -1283,27 +1359,50 @@ cbsubst_get_subst_key(self, str)
     VALUE self;
     VALUE str;
 {
+    struct cbsubst_info *inf;
     volatile VALUE list;
     volatile VALUE ret;
-    int i, len;
-    char *buf, *ptr;
+    VALUE keyval;
+    int i, len, keylen, idx;
+    unsigned char *buf, *ptr, *key;
 
     list = rb_funcall(cTclTkLib, ID_split_tklist, 1, str);
-
     len = RARRAY_LEN(list);
-    buf = ALLOC_N(char, len + 1);
+
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+                    struct cbsubst_info, inf);
+
+    ptr = buf = ALLOC_N(unsigned char, inf->full_subst_length + len + 1);
 
     for(i = 0; i < len; i++) {
-        ptr = RSTRING_PTR(RARRAY_PTR(list)[i]);
-        if (*ptr == '%' && *(ptr + 2) == '\0') {
-            *(buf + i) = *(ptr + 1);
-        } else {
-            *(buf + i) = ' ';
-        }
+      keyval = RARRAY_PTR(list)[i];
+      key = (unsigned char*)RSTRING_PTR(keyval);
+      if (*key == '%') {
+	if (*(key + 2) == '\0') {
+	  /* single char */
+	  *(ptr++) = *(key + 1);
+	} else {
+	  /* search longname-key */
+	  keylen = RSTRING_LEN(keyval) - 1;
+	  for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
+	    if (inf->keylen[idx] != keylen) continue;
+	    if (inf->key[idx][0] != *(key + 1)) continue;
+	    if (strncmp(inf->key[idx], key + 1, keylen)) continue;
+	    break;
+	  }
+	  if (idx < CBSUBST_TBL_MAX) {
+	    *(ptr++) = (unsigned char)idx;
+	  } else {
+	    *(ptr++) = ' ';
+	  }
+	}
+      } else {
+	*(ptr++) = ' ';
+      }
     }
-    *(buf + len) = '\0';
+    *ptr = '\0';
 
-    ret = rb_str_new2(buf);
+    ret = rb_str_new2((const char*)buf);
     free(buf);
     return ret;
 }
@@ -1313,100 +1412,166 @@ cbsubst_get_all_subst_keys(self)
     VALUE self;
 {
     struct cbsubst_info *inf;
-    char *buf, *ptr;
-    int i, len;
+    unsigned char *buf, *ptr;
+    unsigned char *keys_buf, *keys_ptr;
+    int idx, len;
     volatile VALUE ret;
 
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
                     struct cbsubst_info, inf);
 
-    len = strlen(inf->key);
-    buf = ALLOC_N(char, 3*len + 1);
-    ptr = buf;
-    for(i = 0; i < len; i++) {
-        *(ptr++) = '%';
-        *(ptr++) = *(inf->key + i);
-        *(ptr++) = ' ';
-    }
-    *(buf + 3*len) = '\0';
+    ptr = buf = ALLOC_N(unsigned char, inf->full_subst_length + 1);
+    keys_ptr = keys_buf = ALLOC_N(unsigned char, CBSUBST_TBL_MAX + 1);
 
-    ret = rb_ary_new3(2, rb_str_new2(inf->key), rb_str_new2(buf));
+    for(idx = 0; idx < CBSUBST_TBL_MAX; idx++) {
+      if (inf->ivar[idx] == (ID) 0) continue;
+
+      *(keys_ptr++) = (unsigned char)idx;
+
+      *(ptr++) = '%';
+
+      if (len = inf->keylen[idx]) {
+	/* longname */
+	strncpy(ptr, inf->key[idx], len);
+	ptr += len;
+      } else {
+	/* single char */
+	*(ptr++) = (unsigned char)idx;
+      }
+
+      *(ptr++) = ' ';
+    }
+
+    *ptr = '\0';
+    *keys_ptr = '\0';
+
+    ret = rb_ary_new3(2, rb_str_new2(keys_buf), rb_str_new2((const char*)buf));
 
     free(buf);
+    free(keys_buf);
 
     return ret;
 }
 
 static VALUE
-cbsubst_table_setup(self, key_inf, proc_inf)
-    VALUE self;
-    VALUE key_inf;
-    VALUE proc_inf;
+cbsubst_table_setup(argc, argv, self)
+     int   argc;
+     VALUE *argv;
+     VALUE self;
 {
-    struct cbsubst_info *subst_inf;
-    int idx;
-    int len = RARRAY_LEN(key_inf);
-    int real_len = 0;
-    char *key = ALLOC_N(char, len + 1);
-    char *type = ALLOC_N(char, len + 1);
-    ID *ivar = ALLOC_N(ID, len + 1);
-    volatile VALUE proc = rb_hash_new();
-    volatile VALUE aliases = rb_hash_new();
-    volatile VALUE inf;
+  volatile VALUE key_inf;
+  volatile VALUE longkey_inf;
+  volatile VALUE proc_inf;
+  VALUE inf;
+  ID id;
+  struct cbsubst_info *subst_inf;
+  int idx, len;
+  unsigned char chr;
 
-    /* init */
-    subst_inf = ALLOC(struct cbsubst_info);
-    /* subst_inf->size = len; */
-    subst_inf->key  = key;
-    subst_inf->type = type;
-    subst_inf->ivar = ivar;
-    subst_inf->proc = proc;
-    subst_inf->aliases = aliases;
+  /* accept (key_inf, proc_inf) or (key_inf, longkey_inf, procinf) */
+  if (rb_scan_args(argc, argv, "21", &key_inf, &longkey_inf, &proc_inf) == 2) {
+    proc_inf = longkey_inf;
+    longkey_inf = rb_ary_new();
+  }
 
-    /*
-     * keys : array of [subst, type, ivar]
-     *         subst ==> char code 
-     *         type  ==> char code 
-     *         ivar  ==> symbol
-     */
-    for(idx = 0; idx < len; idx++) {
-        inf = RARRAY_PTR(key_inf)[idx];
-        if (TYPE(inf) != T_ARRAY) continue;
-        *(key  + real_len) = NUM2CHR(RARRAY_PTR(inf)[0]);
-        *(type + real_len) = NUM2CHR(RARRAY_PTR(inf)[1]);
+  /* check the number of longkeys */
+  if (RARRAY_LEN(longkey_inf) > 125 /* from 0x80 to 0xFD */) {
+    rb_raise(rb_eArgError, "too many longname-key definitions");
+  }
 
-        *(ivar + real_len) 
-            = rb_intern(
-                RSTRING_PTR(
-                  rb_str_cat2(rb_str_new2("@"), 
-                              rb_id2name(SYM2ID(RARRAY_PTR(inf)[2])))
-                )
-              );
+  /* init */
+  subst_inf = allocate_cbsubst_info();
 
-        rb_attr(self, SYM2ID(RARRAY_PTR(inf)[2]), 1, 0, Qtrue);
-        real_len++;
+  /*
+   * keys : array of [subst, type, ivar]
+   *         subst ==> char code or string
+   *         type  ==> char code or string
+   *         ivar  ==> symbol
+   */
+  len = RARRAY_LEN(key_inf);
+  for(idx = 0; idx < len; idx++) {
+    inf = RARRAY_PTR(key_inf)[idx];
+    if (TYPE(inf) != T_ARRAY) continue;
+
+    if (TYPE(RARRAY_PTR(inf)[0]) == T_STRING) {
+      chr = *(RSTRING_PTR(RARRAY_PTR(inf)[0]));
+    } else {
+      chr = NUM2CHR(RARRAY_PTR(inf)[0]);
     }
-    *(key + real_len) = '\0';
-    *(type + real_len) = '\0';
-    subst_inf->size = real_len;
-
-    /*
-     * procs : array of [type, proc]
-     *         type  ==> char code 
-     *         proc  ==> proc/method/obj (must respond to 'call')
-     */
-    len = RARRAY_LEN(proc_inf);
-    for(idx = 0; idx < len; idx++) {
-        inf = RARRAY_PTR(proc_inf)[idx];
-        if (TYPE(inf) != T_ARRAY) continue;
-        rb_hash_aset(proc, RARRAY_PTR(inf)[0], RARRAY_PTR(inf)[1]);
+    if (TYPE(RARRAY_PTR(inf)[1]) == T_STRING) {
+      subst_inf->type[chr] = *(RSTRING_PTR(RARRAY_PTR(inf)[1]));
+    } else {
+      subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
     }
 
-    rb_const_set(self, ID_SUBST_INFO, 
-                 Data_Wrap_Struct(cSUBST_INFO, subst_mark, 
-                                  subst_free, subst_inf));
+    subst_inf->full_subst_length += 3;
 
-    return self;
+    id = SYM2ID(RARRAY_PTR(inf)[2]);
+    subst_inf->ivar[chr] = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), rb_id2name(id))));
+
+    rb_attr(self, id, 1, 0, Qtrue);
+  }
+
+
+  /*
+   * longkeys : array of [name, type, ivar]
+   *         name ==> longname key string
+   *         type ==> char code or string
+   *         ivar ==> symbol
+   */
+  len = RARRAY_LEN(longkey_inf);
+  for(idx = 0; idx < len; idx++) {
+    inf = RARRAY_PTR(longkey_inf)[idx];
+    if (TYPE(inf) != T_ARRAY) continue;
+
+    chr = (unsigned char)(0x80 + idx);
+    subst_inf->keylen[chr] = RSTRING_LEN(RARRAY_PTR(inf)[0]);
+#if HAVE_STRNDUP
+    subst_inf->key[chr] = strndup(RSTRING_PTR(RARRAY_PTR(inf)[0]), 
+				  RSTRING_LEN(RARRAY_PTR(inf)[0]));
+#else
+    subst_inf->key[chr] = malloc(RSTRING_LEN(RARRAY_PTR(inf)[0]) + 1);
+    if (subst_inf->key[chr]) {
+      strncpy(subst_inf->key[chr], RSTRING_PTR(RARRAY_PTR(inf)[0]),
+	      RSTRING_LEN(RARRAY_PTR(inf)[0]) + 1);
+      subst_inf->key[chr][RSTRING_LEN(RARRAY_PTR(inf)[0])] = '\0';
+    }
+#endif
+    if (TYPE(RARRAY_PTR(inf)[1]) == T_STRING) {
+      subst_inf->type[chr] = *(RSTRING_PTR(RARRAY_PTR(inf)[1]));
+    } else {
+      subst_inf->type[chr] = NUM2CHR(RARRAY_PTR(inf)[1]);
+    }
+
+    subst_inf->full_subst_length += (subst_inf->keylen[chr] + 2);
+
+    id = SYM2ID(RARRAY_PTR(inf)[2]);
+    subst_inf->ivar[chr] = rb_intern(RSTRING_PTR(rb_str_cat2(rb_str_new2("@"), rb_id2name(id))));
+
+    rb_attr(self, id, 1, 0, Qtrue);
+  }
+
+  /*
+   * procs : array of [type, proc]
+   *         type  ==> char code or string
+   *         proc  ==> proc/method/obj (must respond to 'call')
+   */
+  len = RARRAY_LEN(proc_inf);
+  for(idx = 0; idx < len; idx++) {
+    inf = RARRAY_PTR(proc_inf)[idx];
+    if (TYPE(inf) != T_ARRAY) continue;
+    rb_hash_aset(subst_inf->proc, 
+		 ((TYPE(RARRAY_PTR(inf)[0]) == T_STRING)? 
+		  INT2FIX(*(RSTRING_PTR(RARRAY_PTR(inf)[0]))) : 
+		  RARRAY_PTR(inf)[0]), 
+		 RARRAY_PTR(inf)[1]);
+  }
+
+  rb_const_set(self, ID_SUBST_INFO, 
+	       Data_Wrap_Struct(cSUBST_INFO, subst_mark, 
+				subst_free, subst_inf));
+
+  return self;
 }
 
 static VALUE
@@ -1424,10 +1589,11 @@ cbsubst_scan_args(self, arg_key, val_ary)
 {
     struct cbsubst_info *inf;
     int idx;
-    int len = RARRAY_LEN(val_ary);
-    char c;
-    char *ptr;
-    volatile VALUE dst = rb_ary_new2(len);
+    unsigned char *keyptr = (unsigned char*)RSTRING_PTR(arg_key);
+    int keylen = RSTRING_LEN(arg_key);
+    int vallen = RARRAY_LEN(val_ary);
+    unsigned char type_chr;
+    volatile VALUE dst = rb_ary_new2(vallen);
     volatile VALUE proc;
     int thr_crit_bup;
     VALUE old_gc;
@@ -1440,26 +1606,25 @@ cbsubst_scan_args(self, arg_key, val_ary)
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
                     struct cbsubst_info, inf);
 
-    for(idx = 0; idx < len; idx++) {
-        if (idx >= RSTRING_LEN(arg_key)) {
-            proc = Qnil;
-        } else if (*(RSTRING_PTR(arg_key) + idx) == ' ') {
-            proc = Qnil;
-        } else {
-          ptr = strchr(inf->key, *(RSTRING_PTR(arg_key) + idx));
-          if (ptr == (char*)NULL) {
-            proc = Qnil;
-          } else {
-            c = *(inf->type + (ptr - inf->key));
-            proc = rb_hash_aref(inf->proc, INT2FIX(c));
-          }
-        }
+    for(idx = 0; idx < vallen; idx++) {
+      if (idx >= keylen) {
+	proc = Qnil;
+      } else if (*(keyptr + idx) == ' ') {
+	proc = Qnil;
+      } else {
+	if (type_chr = inf->type[*(keyptr + idx)]) {
+	  proc = rb_hash_aref(inf->proc, INT2FIX((int)type_chr));
+	} else {
+	  proc = Qnil;
+	}
+      }
 
-        if (NIL_P(proc)) {
-            rb_ary_push(dst, RARRAY_PTR(val_ary)[idx]);
-        } else {
-            rb_ary_push(dst, rb_funcall(proc, ID_call, 1, RARRAY_PTR(val_ary)[idx]));
-        }
+      if (NIL_P(proc)) {
+	rb_ary_push(dst, RARRAY_PTR(val_ary)[idx]);
+      } else {
+	rb_ary_push(dst, rb_funcall(proc, ID_call, 1, 
+				    RARRAY_PTR(val_ary)[idx]));
+      }
     }
 
     if (old_gc == Qfalse) rb_gc_enable();
@@ -1543,6 +1708,8 @@ Init_tkutil()
     ID_SUBST_INFO = rb_intern("SUBST_INFO");
     rb_define_singleton_method(cCB_SUBST, "ret_val", cbsubst_ret_val, 1);
     rb_define_singleton_method(cCB_SUBST, "scan_args", cbsubst_scan_args, 2);
+    rb_define_singleton_method(cCB_SUBST, "_sym2subst", 
+			       cbsubst_sym_to_subst, 1);
     rb_define_singleton_method(cCB_SUBST, "subst_arg", 
                                cbsubst_get_subst_arg, -1);
     rb_define_singleton_method(cCB_SUBST, "_get_subst_key", 
@@ -1550,7 +1717,7 @@ Init_tkutil()
     rb_define_singleton_method(cCB_SUBST, "_get_all_subst_keys", 
                                cbsubst_get_all_subst_keys,  0);
     rb_define_singleton_method(cCB_SUBST, "_setup_subst_table", 
-                               cbsubst_table_setup, 2);
+                               cbsubst_table_setup, -1);
     rb_define_singleton_method(cCB_SUBST, "_get_extra_args_tbl", 
                                cbsubst_get_extra_args_tbl,  0);
     rb_define_singleton_method(cCB_SUBST, "_define_attribute_aliases", 
