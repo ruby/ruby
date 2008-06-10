@@ -1,3 +1,8 @@
+Tue Jun 10 16:00:29 2008  wanabe  <s.wanabe@gmail.com>
+
+	* util.c (ruby_strtod): ruby_strtod don't allow a trailing
+	  decimal point like "7.". [ruby-dev:34835] [ruby-dev:35009]
+
 Tue Jun 10 13:48:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* rational.c (nurat_s_convert): need not to initialize optional
