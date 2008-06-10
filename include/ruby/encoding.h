@@ -12,11 +12,7 @@
 #ifndef RUBY_ENCODING_H
 #define RUBY_ENCODING_H 1
 
-#ifdef HAVE_STDARG_PROTOTYPES
-# include <stdarg.h>
-#else
-# include <varargs.h>
-#endif
+#include <stdarg.h>
 #include "ruby/oniguruma.h"
 
 #define ENCODING_INLINE_MAX 1023

@@ -1,3 +1,7 @@
+Tue Jun 10 11:24:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h: not to use varargs.h since requiring C89.
+
 Tue Jun 10 00:50:51 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* include/ruby/ruby.h, vm_core.h: add a type rb_blockptr.
