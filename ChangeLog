@@ -1,3 +1,7 @@
+Tue Jun 10 12:43:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (CONST_ID_CACHE): fixed statement expression.
+
 Tue Jun 10 11:25:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (rb_argv0): revised for ext/tk.
