@@ -399,13 +399,15 @@ if $extension
 else
   withes, withouts = %w[--with --without].collect {|w|
     if not (w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
-      proc {false}
+      nil
     elsif (w = w.grep(String)).empty?
       proc {true}
     else
       proc {|c1| w.collect {|o| o.split(/,/)}.flatten.any?(&c1)}
     end
   }
+  withes ||= proc {false}
+  withouts ||= proc {true}
   cond = proc {|ext, *|
     cond1 = proc {|n| File.fnmatch(n, ext)}
     withes.call(cond1) or !withouts.call(cond1)
