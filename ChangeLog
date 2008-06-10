@@ -1,3 +1,7 @@
+Tue Jun 10 12:58:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (FIONREAD_POSSIBLE_P): suppress warnings.
+
 Tue Jun 10 12:43:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (CONST_ID_CACHE): fixed statement expression.

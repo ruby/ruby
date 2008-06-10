@@ -30,7 +30,7 @@
 #ifdef HAVE_RB_W32_IS_SOCKET
 #define FIONREAD_POSSIBLE_P(fd) rb_w32_is_socket(fd)
 #else
-#define FIONREAD_POSSIBLE_P(fd) ((fd),Qtrue)
+#define FIONREAD_POSSIBLE_P(fd) ((void)(fd),Qtrue)
 #endif
 
 static VALUE io_ready_p _((VALUE io));
