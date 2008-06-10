@@ -1,3 +1,7 @@
+Tue Jun 10 17:43:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_shuffle_bang): update RDoc.  [ruby-dev:35034]
+
 Tue Jun 10 17:30:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_obj_instance_exec, rb_mod_module_exec):

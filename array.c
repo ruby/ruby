@@ -2918,7 +2918,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *     array.shuffle!        -> array or nil
+ *     array.shuffle!        -> array
  *  
  *  Shuffles elements in _self_ in place.
  */
