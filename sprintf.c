@@ -204,6 +204,7 @@ sign_bits(int base, const char *p)
  *        s   | Argument is a string to be substituted.  If the format
  *            | sequence contains a precision, at most that many characters
  *            | will be copied.
+ *        %   | A percent sign itself will be displayed.  No argument taken.
  *     
  *  The flags modifies the behavior of the formats.
  *  The flag characters are:
