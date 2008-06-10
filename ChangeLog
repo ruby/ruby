@@ -1,3 +1,7 @@
+Tue Jun 10 18:12:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: negate default of --without-ext.
+
 Tue Jun 10 17:01:58 2008  wanabe  <s.wanabe@gmail.com>
 
 	* util.c (ruby_strtod): ruby_strtod don't allow a trailing

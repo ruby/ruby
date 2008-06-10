@@ -408,13 +408,15 @@ if $extension
 else
   withes, withouts = %w[--with --without].collect {|w|
     if not (w = %w[-extensions -ext].collect {|opt|arg_config(w+opt)}).any?
-      proc {false}
+      nil
     elsif (w = w.grep(String)).empty?
       proc {true}
     else
       proc {|c1| w.collect {|opt| opt.split(/,/)}.flatten.any?(&c1)}
     end
   }
+  withes ||= proc {false}
+  withouts ||= proc {true}
   cond = proc {|ext|
     cond1 = proc {|n| File.fnmatch(n, ext, File::FNM_PATHNAME)}
     withes.call(cond1) or !withouts.call(cond1)
