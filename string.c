@@ -2140,7 +2140,7 @@ str_gsub(argc, argv, str, bang)
     slen = RSTRING(str)->len;
 
     rb_str_locktmp(dest);
-    while (beg >= 0) {
+    do {
 	n++;
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
@@ -2187,7 +2187,7 @@ str_gsub(argc, argv, str, bang)
 	cp = RSTRING(str)->ptr + offset;
 	if (offset > RSTRING(str)->len) break;
 	beg = rb_reg_search(pat, str, offset, 0);
-    }
+    } while (beg >= 0);
     if (RSTRING(str)->len > offset) {
 	len = bp - buf;
 	if (blen - len < RSTRING(str)->len - offset) {

@@ -11262,7 +11262,7 @@ rb_thread_select(max, read, write, except, timeout)
     struct timeval *timeout;
 {
 #ifndef linux
-    double limit;
+    double limit = 0;
 #endif
     int n;
 

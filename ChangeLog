@@ -1,4 +1,6 @@
-Tue Jun 10 12:58:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun 10 13:40:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_select), string.c (str_gsub): suppress warnings.
 
 	* ext/io/wait/wait.c (FIONREAD_POSSIBLE_P): suppress warnings.
 
