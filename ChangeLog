@@ -1,4 +1,4 @@
-Tue Jun 10 16:00:29 2008  wanabe  <s.wanabe@gmail.com>
+Tue Jun 10 17:00:29 2008  wanabe  <s.wanabe@gmail.com>
 
 	* util.c (ruby_strtod): ruby_strtod don't allow a trailing
 	  decimal point like "7.". [ruby-dev:34835] [ruby-dev:35009]
