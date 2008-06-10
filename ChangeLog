@@ -1,4 +1,7 @@
-Tue Jun 10 18:12:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jun 10 20:13:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: negate default of --without-ext if --with-ext is
+	  given.
 
 	* ext/extmk.rb: negate default of --without-ext.
 

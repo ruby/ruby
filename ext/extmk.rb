@@ -415,8 +415,12 @@ else
       proc {|c1| w.collect {|opt| opt.split(/,/)}.flatten.any?(&c1)}
     end
   }
-  withes ||= proc {false}
-  withouts ||= proc {true}
+  if withes
+    withouts ||= proc {true}
+  else
+    withes = proc {false}
+    withouts ||= withes
+  end
   cond = proc {|ext|
     cond1 = proc {|n| File.fnmatch(n, ext, File::FNM_PATHNAME)}
     withes.call(cond1) or !withouts.call(cond1)
