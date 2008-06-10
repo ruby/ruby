@@ -1,3 +1,8 @@
+Tue Jun 10 17:30:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_obj_instance_exec, rb_mod_module_exec):
+	  added prototypes.
+
 Tue Jun 10 17:00:29 2008  wanabe  <s.wanabe@gmail.com>
 
 	* util.c (ruby_strtod): ruby_strtod don't allow a trailing
