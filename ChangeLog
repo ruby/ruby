@@ -1,3 +1,8 @@
+Wed Jun 11 03:40:37 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/find.rb (Find#find): Return an enumerator if no block is
+	  given.
+
 Wed Jun 11 01:28:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/intern.h, proc.c: revert rb_proc_call() and
