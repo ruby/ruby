@@ -406,8 +406,12 @@ else
       proc {|c1| w.collect {|o| o.split(/,/)}.flatten.any?(&c1)}
     end
   }
-  withes ||= proc {false}
-  withouts ||= proc {true}
+  if withes
+    withouts ||= proc {true}
+  else
+    withes = proc {false}
+    withouts ||= withes
+  end
   cond = proc {|ext, *|
     cond1 = proc {|n| File.fnmatch(n, ext)}
     withes.call(cond1) or !withouts.call(cond1)
