@@ -66,7 +66,7 @@ vm_call0(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 	{
 	    rb_control_frame_t *reg_cfp = th->cfp;
 	    rb_control_frame_t *cfp =
-		vm_push_frame(th, 0, FRAME_MAGIC_CFUNC,
+		vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
 			      recv, (VALUE)blockptr, 0, reg_cfp->sp, 0, 1);
 
 	    cfp->method_id = id;
@@ -412,13 +412,15 @@ send_internal(int argc, VALUE *argv, VALUE recv, int scope)
 {
     VALUE vid;
     VALUE self = RUBY_VM_PREVIOUS_CONTROL_FRAME(GET_THREAD()->cfp)->self;
+    rb_thread_t *th = GET_THREAD();
 
     if (argc == 0) {
 	rb_raise(rb_eArgError, "no method name given");
     }
 
     vid = *argv++; argc--;
-    PASS_PASSED_BLOCK();
+    PASS_PASSED_BLOCK_TH(th);
+
     return rb_call0(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, scope, self);
 }
 
@@ -687,11 +689,17 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	    th->base_block = &env->block;
 	}
 	else {
-	    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
-	    block = *RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
-	    th->base_block = &block;
-	    th->base_block->self = self;
-	    th->base_block->iseq = cfp->iseq;	/* TODO */
+	    rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
+
+	    if (cfp != 0) {
+		block = *RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+		th->base_block = &block;
+		th->base_block->self = self;
+		th->base_block->iseq = cfp->iseq;	/* TODO */
+	    }
+	    else {
+		rb_raise(rb_eRuntimeError, "Can't eval on top of Fiber or Thread");
+	    }
 	}
 
 	/* make eval iseq */

@@ -17,8 +17,6 @@ VALUE proc_invoke(VALUE, VALUE, VALUE, VALUE);
 VALUE rb_binding_new(void);
 NORETURN(void rb_raise_jump(VALUE));
 
-VALUE rb_f_block_given_p(void);
-
 ID rb_frame_callee(void);
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
@@ -586,9 +584,9 @@ rb_f_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->cfp;
-    cfp = vm_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
 
-    if (GC_GUARDED_PTR_REF(cfp->lfp[0])) {
+    if (cfp != 0 && GC_GUARDED_PTR_REF(cfp->lfp[0])) {
 	return Qtrue;
     }
     else {
@@ -1089,10 +1087,10 @@ rb_f_local_variables(void)
     VALUE ary = rb_ary_new();
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
-	vm_get_ruby_level_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
+	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
     int i;
 
-    while (1) {
+    while (cfp) {
 	if (cfp->iseq) {
 	    for (i = 0; i < cfp->iseq->local_table_size; i++) {
 		ID lid = cfp->iseq->local_table[i];

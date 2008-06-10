@@ -2,9 +2,15 @@
 #ifndef RUBY_EVAL_INTERN_H
 #define RUBY_EVAL_INTERN_H
 
-#define PASS_PASSED_BLOCK() \
-  (GET_THREAD()->passed_block = \
-   GC_GUARDED_PTR_REF((rb_block_t *)GET_THREAD()->cfp->lfp[0]))
+#define PASS_PASSED_BLOCK_TH(th) do { \
+    (th)->passed_block = GC_GUARDED_PTR_REF((rb_block_t *)(th)->cfp->lfp[0]); \
+    (th)->cfp->flag |= VM_FRAME_FLAG_PASSED; \
+} while (0)
+
+#define PASS_PASSED_BLOCK() do { \
+    rb_thread_t * const __th__ = GET_THREAD(); \
+    PASS_PASSED_BLOCK_TH(__th__); \
+} while (0)
 
 #include "ruby/ruby.h"
 #include "ruby/node.h"
@@ -219,7 +225,7 @@ NORETURN(void vm_jump_tag_but_local_jump(int, VALUE));
 
 VALUE vm_make_jump_tag_but_local_jump(int state, VALUE val);
 NODE *vm_cref(void);
-rb_control_frame_t *vm_get_ruby_level_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
+rb_control_frame_t *vm_get_ruby_level_caller_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 VALUE rb_obj_is_proc(VALUE);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, const rb_block_t *blockptr, VALUE filename);
 void rb_thread_terminate_all(void);

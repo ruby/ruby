@@ -259,3 +259,20 @@ assert_equal %Q{ok\n}, %q{
   GC.start
   block.call
 }, '[ruby-core:14885]'
+
+assert_equal 'ok', %q{
+  a = lambda {|x, y, &b| b }
+  b = a.curry[1]
+  if b.call(2){} == nil
+    :ng
+  else
+    :ok
+  end
+}, '[ruby-core:15551]'
+
+assert_equal 'ok', %q{
+  lambda {
+    break :ok
+    :ng
+  }.call
+}, '[ruby-dev:34646]'

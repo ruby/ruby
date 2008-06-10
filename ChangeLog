@@ -1,3 +1,18 @@
+Wed Jun 11 05:53:20 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, eval_intern.h (PASS_PASSED_BLOCK):
+	  set a VM_FRAME_FLAG_PASSED flag to skip this frame when
+	  searching ruby-level-cfp.
+
+	* eval.c, eval_intern.h, proc.c: fix to check cfp.  if there is
+	  no valid ruby-level-cfp, cause RuntimeError exception.
+	  [ruby-dev:34128]
+
+	* vm_core.h, vm_evalbody.c, vm.c, vm_dump.c, vm_insnhelper.c,
+	  insns.def: rename FRAME_MAGIC_* to VM_FRAME_MAGIC_*.
+
+	* KNOWNBUGS.rb, bootstraptest/test*.rb: move solved bugs.
+
 Wed Jun 11 05:55:31 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c: SEGV when tcltk-stubs is enabled.

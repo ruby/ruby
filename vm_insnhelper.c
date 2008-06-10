@@ -367,7 +367,7 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, id, klass);
     {
 	rb_control_frame_t *cfp =
-	    vm_push_frame(th, 0, FRAME_MAGIC_CFUNC | (flag << FRAME_MAGIC_MASK_BITS),
+	    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC,
 			  recv, (VALUE) blockptr, 0, reg_cfp->sp, 0, 1);
 
 	cfp->method_id = id;
@@ -380,19 +380,12 @@ vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	if (reg_cfp != th->cfp + 1) {
 	    rb_bug("cfp consistency error - send");
 	}
+
 	vm_pop_frame(th);
     }
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, id, klass);
 
     return val;
-}
-
-static inline int
-vm_cfunc_flags(const rb_control_frame_t *cfp)
-{
-    if (RUBYVM_CFUNC_FRAME_P(cfp))
-	return cfp->flag >> FRAME_MAGIC_MASK_BITS;
-    return 0;
 }
 
 static inline VALUE
@@ -455,7 +448,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	}
 
 	vm_push_frame(th, iseq,
-		      FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		      VM_FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
 		      iseq->iseq_encoded + opt_pc, sp, 0, 0);
 
 	cfp->sp = rsp - 1 /* recv */;
@@ -478,7 +471,7 @@ vm_setup_method(rb_thread_t *th, rb_control_frame_t *cfp,
 	}
 
 	vm_push_frame(th, iseq,
-		      FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
+		      VM_FRAME_MAGIC_METHOD, recv, (VALUE) blockptr,
 		      iseq->iseq_encoded + opt_pc, sp, 0, 0);
     }
 }
@@ -675,7 +668,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 	blockarg = Qnil;
     }
 
-    vm_push_frame(th, 0, FRAME_MAGIC_IFUNC,
+    vm_push_frame(th, 0, VM_FRAME_MAGIC_IFUNC,
 		  self, (VALUE)block->dfp,
 		  0, th->cfp->sp, block->lfp, 1);
 
@@ -831,7 +824,7 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 				     block_proc_is_lambda(block->proc));
 
 	vm_push_frame(th, iseq,
-		      FRAME_MAGIC_BLOCK, block->self, (VALUE) block->dfp,
+		      VM_FRAME_MAGIC_BLOCK, block->self, (VALUE) block->dfp,
 		      iseq->iseq_encoded + opt_pc, rsp + arg_size, block->lfp,
 		      iseq->local_size - arg_size);
 
@@ -849,23 +842,18 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t num, rb_n
 static inline NODE *
 lfp_svar_place(rb_thread_t *th, VALUE *lfp)
 {
-    NODE *svar;
+    VALUE *svar;
 
-    if (th->local_lfp != lfp) {
-	svar = (NODE *)lfp[-1];
-	if ((VALUE)svar == Qnil) {
-	    svar = NEW_IF(Qnil, Qnil, Qnil);
-	    lfp[-1] = (VALUE)svar;
-	}
+    if (lfp && th->local_lfp != lfp) {
+	svar = &lfp[-1];
     }
     else {
-	svar = (NODE *)th->local_svar;
-	if ((VALUE)svar == Qnil) {
-	    svar = NEW_IF(Qnil, Qnil, Qnil);
-	    th->local_svar = (VALUE)svar;
-	}
+	svar = &th->local_svar;
     }
-    return svar;
+    if (NIL_P(*svar)) {
+	*svar = (VALUE)NEW_IF(Qnil, Qnil, Qnil);
+    }
+    return (NODE *)*svar;
 }
 
 static VALUE
@@ -1238,7 +1226,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		    rb_bug("VM (throw): can't find break base.");
 		}
 
-		if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_LAMBDA) {
+		if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
 		    /* lambda{... break ...} */
 		    is_orphan = 0;
 		    pt = GET_LFP();
@@ -1297,7 +1285,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		 */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
 		    if (GET_DFP() == dfp) {
-			if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_LAMBDA) {
+			if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
 			    /* in lambda */
 			    is_orphan = 0;
 			    break;

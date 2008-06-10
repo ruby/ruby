@@ -275,9 +275,13 @@ VALUE
 rb_binding_new(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_cfp(th, th->cfp);
+    rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->cfp);
     VALUE bindval = binding_alloc(rb_cBinding);
     rb_binding_t *bind;
+
+    if (cfp == 0) {
+	rb_raise(rb_eRuntimeError, "Can't create Binding Object on top of Fiber.");
+    }
 
     GetBindingPtr(bindval, bind);
     bind->env = vm_make_env_object(th, cfp);
@@ -1187,11 +1191,12 @@ rb_method_call(int argc, VALUE *argv, VALUE method)
 	}
     }
     if ((state = EXEC_TAG()) == 0) {
+	rb_thread_t *th = GET_THREAD();
 	VALUE rb_vm_call(rb_thread_t * th, VALUE klass, VALUE recv, VALUE id, ID oid,
 			 int argc, const VALUE *argv, const NODE *body, int nosuper);
 
-	PASS_PASSED_BLOCK();
-	result = rb_vm_call(GET_THREAD(), data->oclass, data->recv, data->id, data->oid,
+	PASS_PASSED_BLOCK_TH(th);
+	result = rb_vm_call(th, data->oclass, data->recv, data->id, data->oid,
 			    argc, argv, data->body, 0);
     }
     POP_TAG();

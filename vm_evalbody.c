@@ -131,7 +131,7 @@ vm_eval(rb_thread_t *th, VALUE initial)
 	}
     }
 
-    if (VM_FRAME_TYPE(th->cfp) != FRAME_MAGIC_FINISH) {
+    if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_FINISH) {
 	rb_bug("cfp consistency error");
     }
 

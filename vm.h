@@ -219,27 +219,6 @@ default:                        \
   (!((th)->stack < (env) && (env) < ((th)->stack + (th)->stack_size)))
 #define ENV_VAL(env)        ((env)[1])
 
-#define FRAME_MAGIC_METHOD 0x11
-#define FRAME_MAGIC_BLOCK  0x21
-#define FRAME_MAGIC_CLASS  0x31
-#define FRAME_MAGIC_TOP    0x41
-#define FRAME_MAGIC_FINISH 0x51
-#define FRAME_MAGIC_CFUNC  0x61
-#define FRAME_MAGIC_PROC   0x71
-#define FRAME_MAGIC_IFUNC  0x81
-#define FRAME_MAGIC_EVAL   0x91
-#define FRAME_MAGIC_LAMBDA 0xa1
-#define FRAME_MAGIC_MASK_BITS   8
-#define FRAME_MAGIC_MASK   (~(~0<<FRAME_MAGIC_MASK_BITS))
-
-#define VM_FRAME_FLAG(type) ((VALUE)((type) & FRAME_MAGIC_MASK))
-
-#define VM_FRAME_TYPE(cfp) \
-  ((cfp)->flag & FRAME_MAGIC_MASK)
-
-#define RUBYVM_CFUNC_FRAME_P(cfp) \
-  (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_CFUNC)
-
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     th->errinfo = (VALUE)(exc); \

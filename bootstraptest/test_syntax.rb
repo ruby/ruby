@@ -817,3 +817,14 @@ assert_equal 'ok', %q{
   end
 }, '[ruby-core:14537]'
 
+assert_equal 'ok', %q{
+  a = [false]
+  (a[0] &&= true) == false ? :ok : :ng
+}, '[ruby-dev:34679]'
+
+assert_normal_exit %q{
+  a = []
+  100.times {|i| a << i << nil << nil }
+  p a.compact!
+}
+

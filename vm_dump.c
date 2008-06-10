@@ -46,34 +46,34 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     switch (VM_FRAME_TYPE(cfp)) {
-      case FRAME_MAGIC_TOP:
+      case VM_FRAME_MAGIC_TOP:
 	magic = "TOP";
 	break;
-      case FRAME_MAGIC_METHOD:
+      case VM_FRAME_MAGIC_METHOD:
 	magic = "METHOD";
 	break;
-      case FRAME_MAGIC_CLASS:
+      case VM_FRAME_MAGIC_CLASS:
 	magic = "CLASS";
 	break;
-      case FRAME_MAGIC_BLOCK:
+      case VM_FRAME_MAGIC_BLOCK:
 	magic = "BLOCK";
 	break;
-      case FRAME_MAGIC_FINISH:
+      case VM_FRAME_MAGIC_FINISH:
 	magic = "FINISH";
 	break;
-      case FRAME_MAGIC_CFUNC:
+      case VM_FRAME_MAGIC_CFUNC:
 	magic = "CFUNC";
 	break;
-      case FRAME_MAGIC_PROC:
+      case VM_FRAME_MAGIC_PROC:
 	magic = "PROC";
 	break;
-      case FRAME_MAGIC_LAMBDA:
+      case VM_FRAME_MAGIC_LAMBDA:
 	magic = "LAMBDA";
 	break;
-      case FRAME_MAGIC_IFUNC:
+      case VM_FRAME_MAGIC_IFUNC:
 	magic = "IFUNC";
 	break;
-      case FRAME_MAGIC_EVAL:
+      case VM_FRAME_MAGIC_EVAL:
 	magic = "EVAL";
 	break;
       case 0:
@@ -271,15 +271,15 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
     /* stack trace header */
 
-    if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_METHOD ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_TOP ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_BLOCK ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_CLASS ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_PROC ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_LAMBDA ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_CFUNC ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_IFUNC ||
-	VM_FRAME_TYPE(cfp) == FRAME_MAGIC_EVAL) {
+    if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_METHOD ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_BLOCK ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CLASS ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_PROC ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
+	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL) {
 
 	VALUE *ptr = dfp - local_size;
 
@@ -312,7 +312,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		   ptr - th->stack);
 	}
     }
-    else if (VM_FRAME_TYPE(cfp) == FRAME_MAGIC_FINISH) {
+    else if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_FINISH) {
 	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 2)) {
 	    stack_dump_each(th, cfp + 1);
 	}
@@ -362,7 +362,7 @@ debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
-    if (iseq != 0 && VM_FRAME_TYPE(cfp) != FRAME_MAGIC_FINISH) {
+    if (iseq != 0 && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_FINISH) {
 	VALUE *seq = iseq->iseq;
 	int pc = cfp->pc - iseq->iseq_encoded;
 
