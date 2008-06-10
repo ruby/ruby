@@ -3079,6 +3079,7 @@ call_trace_proc(VALUE args, int tracing)
     struct call_trace_func_args *p = (struct call_trace_func_args *)args;
     VALUE eventname = rb_str_new2(get_event_name(p->event));
     VALUE filename = rb_str_new2(rb_sourcefile());
+    VALUE argv[6];
     int line = rb_sourceline();
     ID id = 0;
     VALUE klass = 0;
@@ -3101,11 +3102,15 @@ call_trace_proc(VALUE args, int tracing)
 	    klass = rb_iv_get(klass, "__attached__");
 	}
     }
-    return rb_proc_call(p->proc, rb_ary_new3(6,
-					     eventname, filename, INT2FIX(line),
-					     id ? ID2SYM(id) : Qnil,
-					     p->self ? rb_binding_new() : Qnil,
-					     klass ? klass : Qnil), 0);
+
+    argv[0] = eventname;
+    argv[1] = filename;
+    argv[2] = INT2FIX(line);
+    argv[3] = id ? ID2SYM(id) : Qnil;
+    argv[4] = p->self ? rb_binding_new() : Qnil;
+    argv[5] = klass ? klass : Qnil;
+    
+    return rb_proc_call_with_block(p->proc, 6, argv, Qnil);
 }
 
 static void

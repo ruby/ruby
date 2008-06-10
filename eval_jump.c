@@ -10,7 +10,7 @@
 void
 rb_call_end_proc(VALUE data)
 {
-    rb_proc_call(data, rb_ary_new(), 0);
+    rb_proc_call(data, rb_ary_new());
 }
 
 /*

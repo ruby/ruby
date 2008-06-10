@@ -655,8 +655,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 		    const rb_block_t *blockptr)
 {
     NODE *ifunc = (NODE *) block->iseq;
-    VALUE val;
-    VALUE arg;
+    VALUE val, arg, blockarg;
     int lambda = block_proc_is_lambda(block->proc);
 
     if (lambda) {
@@ -669,11 +668,18 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
 	arg = argv[0];
     }
 
+    if (blockptr) {
+	blockarg = vm_make_proc(th, th->cfp, blockptr);
+    }
+    else {
+	blockarg = Qnil;
+    }
+
     vm_push_frame(th, 0, FRAME_MAGIC_IFUNC,
 		  self, (VALUE)block->dfp,
 		  0, th->cfp->sp, block->lfp, 1);
 
-    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv, blockptr);
+    val = (*ifunc->nd_cfnc) (arg, ifunc->nd_tval, argc, argv, blockarg);
 
     th->cfp++;
     return val;

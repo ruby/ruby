@@ -1,3 +1,11 @@
+Wed Jun 11 01:28:12 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/intern.h, proc.c: revert rb_proc_call() and
+	  create rb_proc_call_with_block() instaed.
+
+	* include/ruby/ruby.h, eval_jump.c, thread.c, vm_insnhelper.c: 
+	  rb_blockptr should not be exposed.
+
 Tue Jun 10 21:07:19 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_float.rb: add tests. [ruby-dev:35009]
