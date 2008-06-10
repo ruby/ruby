@@ -1,3 +1,8 @@
+Tue Jun 10 13:48:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* rational.c (nurat_s_convert): need not to initialize optional
+	  argument for rb_scan_args().
+
 Tue Jun 10 12:58:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/wait.c (FIONREAD_POSSIBLE_P): suppress warnings.
