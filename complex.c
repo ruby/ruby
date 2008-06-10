@@ -1289,8 +1289,6 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 {
     VALUE a1, a2;
 
-    a1 = Qnil;
-    a2 = Qnil;
     rb_scan_args(argc, argv, "02", &a1, &a2);
 
     switch (TYPE(a1)) {

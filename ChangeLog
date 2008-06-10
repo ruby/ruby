@@ -1,3 +1,8 @@
+Tue Jun 10 20:55:57 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_s_convert): need not to initialize optional
+	  argument for rb_scan_args().
+
 Tue Jun 10 20:13:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: negate default of --without-ext if --with-ext is
