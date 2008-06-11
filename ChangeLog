@@ -1,3 +1,7 @@
+Thu Jun 12 02:49:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/stringio/stringio.c (strio_init): rewind when reopened.
+
 Thu Jun 12 02:43:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* array.c (rb_ary_zip): ANSI style.

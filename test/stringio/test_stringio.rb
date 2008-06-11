@@ -252,11 +252,11 @@ class TestStringIO < Test::Unit::TestCase
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal("foo\n", f.gets)
     f.reopen("qux\nquux\nquuux\n")
-    assert_equal("quux\n", f.gets)
+    assert_equal("qux\n", f.gets)
 
     f2 = StringIO.new("")
     f2.reopen(f)
-    assert_equal("quuux\n", f2.gets)
+    assert_equal("quux\n", f2.gets)
   ensure
     f.close unless f.closed?
   end

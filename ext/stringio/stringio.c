@@ -192,6 +192,8 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr)
 	break;
     }
     ptr->string = string;
+    ptr->pos = 0;
+    ptr->lineno = 0;
 }
 
 static VALUE
