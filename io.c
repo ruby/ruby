@@ -4463,6 +4463,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     if (fptr->mode & FMODE_WRITABLE) {
         io_fflush(fptr);
     }
+    fptr->rbuf_off = fptr->rbuf_len = 0;
 
     if (fptr->stdio_file) {
         if (freopen(fptr->path, mode, fptr->stdio_file) == 0) {

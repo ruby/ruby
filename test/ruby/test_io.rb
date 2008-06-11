@@ -1038,6 +1038,14 @@ class TestIO < Test::Unit::TestCase
         safe_4 { r.reopen(t.path) }
       end
     end
+
+    open(__FILE__) do |f|
+      f.gets
+      assert_nothing_raised {
+        f.reopen(t.path)
+        assert_equal("foo\n", f.gets)
+      }
+    end
   end
 
   def test_foreach
