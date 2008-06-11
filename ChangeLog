@@ -1,3 +1,9 @@
+Wed Jun 11 23:33:13 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_fread): bypass buffered read if reading buffer is empty.
+
+	* io.c (remain_size): do not add extra one byte.
+
 Wed Jun 11 12:15:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* bootstraptest/runner.rb (assert_normal_exit): hide stderr output

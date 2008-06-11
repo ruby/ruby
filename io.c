@@ -1298,6 +1298,20 @@ io_fread(VALUE str, long offset, rb_io_t *fptr)
     long n = len;
     int c;
 
+    if (READ_DATA_PENDING(fptr) == 0) {
+	while (n > 0) {
+	    c = rb_read_internal(fptr->fd, RSTRING_PTR(str)+offset, n);
+	    if (c == 0) break;
+	    if (c < 0) {
+		rb_sys_fail(fptr->path);
+	    }
+	    offset += c;
+	    if ((n -= c) <= 0) break;
+	    rb_thread_wait_fd(fptr->fd);
+	}
+	return len - n;
+    }
+
     while (n > 0) {
 	c = read_buffered_data(RSTRING_PTR(str)+offset, n, fptr);
 	if (c > 0) {
@@ -1347,7 +1361,7 @@ remain_size(rb_io_t *fptr)
 	io_fflush(fptr);
 	pos = lseek(fptr->fd, 0, SEEK_CUR);
 	if (st.st_size >= pos && pos >= 0) {
-	    siz += st.st_size - pos + 1;
+	    siz += st.st_size - pos;
 	    if (siz > LONG_MAX) {
 		rb_raise(rb_eIOError, "file too big for single read");
 	    }
