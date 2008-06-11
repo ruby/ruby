@@ -379,7 +379,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 
 encs: enc.mk $(LIBRUBY)
 	$(MINIRUBY) -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc/trans" enc/trans
-	$(MAKE) -f enc.mk $(MFLAGS)
+	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(PREP)
