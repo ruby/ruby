@@ -1397,7 +1397,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     long bytes = 0;
     long n;
     long pos = 0;
-    rb_encoding *enc = io_input_encoding(fptr);
+    rb_encoding *enc = io_read_encoding(fptr);
     int cr = fptr->enc2 ? ENC_CODERANGE_BROKEN : 0;
 
     if (siz == 0) siz = BUFSIZ;
@@ -1835,12 +1835,11 @@ swallow(rb_io_t *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(rb_io_t *fptr)
+rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
 {
     VALUE str = Qnil;
     int len = 0;
     long pos = 0;
-    rb_encoding *enc = io_input_encoding(fptr);
     int cr = fptr->enc2 ? ENC_CODERANGE_BROKEN : 0;
 
     for (;;) {
@@ -1950,7 +1949,6 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    enc = io_input_encoding(fptr);
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
@@ -1959,8 +1957,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	return rb_enc_str_new(0, 0, io_read_encoding(fptr));
     }
     else if (rs == rb_default_rs && limit < 0 &&
-             rb_enc_asciicompat(io_read_encoding(fptr))) {
-	return rb_io_getline_fast(fptr);
+             rb_enc_asciicompat(enc = io_read_encoding(fptr))) {
+	return rb_io_getline_fast(fptr, enc);
     }
     else {
 	int c, newline;
@@ -1981,6 +1979,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 	newline = rsptr[rslen - 1];
 
+	enc = io_input_encoding(fptr);
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
 	    if (c == newline) {
 		const char *s, *p, *pp;
@@ -2034,7 +2033,7 @@ rb_io_gets(VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    return rb_io_getline_fast(fptr);
+    return rb_io_getline_fast(fptr, io_read_encoding(fptr));
 }
 
 /*

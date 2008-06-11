@@ -1,3 +1,13 @@
+Thu Jun 12 08:47:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): should use io_read_encoding(), not
+	  io_input_encoding().
+
+	* io.c (rb_io_getline_1): reduce calling of io_read_encoding().
+
+	* string.c (rb_str_scan): need not to restore $~ value, so avoid
+	  pinning match object.
+
 Thu Jun 12 02:49:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/stringio/stringio.c (strio_init): rewind when reopened.
