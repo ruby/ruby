@@ -1,3 +1,7 @@
+Thu Jun 12 02:43:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* array.c (rb_ary_zip): ANSI style.
+
 Thu Jun 12 02:25:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_reopen): clear read buffer.

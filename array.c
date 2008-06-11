@@ -1955,10 +1955,7 @@ take_items(VALUE obj, long n)
  */
 
 static VALUE
-rb_ary_zip(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 {
     int i, j;
     long len;
