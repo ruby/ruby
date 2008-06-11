@@ -1,3 +1,7 @@
+Thu Jun 12 00:56:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk: check proper conditions.  [ruby-dev:35047]
+
 Wed Jun 11 23:33:13 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fread): bypass buffered read if reading buffer is empty.
