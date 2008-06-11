@@ -11,7 +11,7 @@
 
 #include "ruby.h"
 
-#ifdef RUBY_VM  /* Ruby 1.9 */
+#ifdef HAVE_RUBY_RUBY_H
 /* #include "ruby/ruby.h" */
 #include "ruby/signal.h"
 #include "ruby/st.h"
@@ -117,8 +117,8 @@ tk_do_callback(argc, argv, self)
                        ID_call, argc - 1, argv + 1);
 }
 
-static char *cmd_id_head = "ruby_cmd TkUtil callback ";
-static char *cmd_id_prefix = "cmd";
+static const char cmd_id_head[] = "ruby_cmd TkUtil callback ";
+static const char cmd_id_prefix[] = "cmd";
 
 static VALUE
 tk_install_cmd_core(cmd)
@@ -791,7 +791,7 @@ get_eval_string_core(obj, enc_flag, self)
                 return fromDefaultEnc_toUTF8(rb_str_new2(rb_id2name(SYM2ID(obj))), self);
             }
         } else {
-#ifdef RUBY_VM
+#ifdef HAVE_RB_SYM_TO_S
             return rb_sym_to_s(obj);
 #else
             return rb_str_new2(rb_id2name(SYM2ID(obj)));
