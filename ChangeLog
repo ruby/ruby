@@ -1,3 +1,7 @@
+Thu Jun 12 03:20:59 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/stringio/stringio.c (strio_init): rewind when reopened.
+
 Thu Jun 12 00:56:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk: check proper conditions.  [ruby-dev:35047]

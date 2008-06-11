@@ -40,4 +40,17 @@ class TestStringIO < Test::Unit::TestCase
     end
     assert_equal("hacker\nother ruby\n", stringio.string)
   end
+  
+  def test_reopen
+    f = StringIO.new("foo\nbar\nbaz\n")
+    assert_equal("foo\n", f.gets)
+    f.reopen("qux\nquux\nquuux\n")
+    assert_equal("qux\n", f.gets)
+
+    f2 = StringIO.new("")
+    f2.reopen(f)
+    assert_equal("quux\n", f2.gets)
+  ensure
+    f.close unless f.closed?
+  end
 end
