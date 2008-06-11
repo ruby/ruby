@@ -193,15 +193,30 @@ def assert_normal_exit(testsrc, message = '')
   $stderr.puts "\##{@count} #{@location}" if @verbose
   faildesc = nil
   filename = make_srcfile(testsrc)
-  `#{@ruby} -W0 #{filename}`
-  if $?.signaled?
-    signo = $?.termsig
+  old_stderr = $stderr.dup
+  begin
+    $stderr.reopen("assert_normal_exit_stderr.log", "w")
+    `#{@ruby} -W0 #{filename}`
+    status = $?
+  ensure
+    $stderr.reopen(old_stderr)
+    old_stderr.close
+  end
+  if status.signaled?
+    signo = status.termsig
     signame = Signal.list.invert[signo]
     sigdesc = "signal #{signo}"
     if signame
       sigdesc = "SIG#{signame} (#{sigdesc})"
     end
     faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
+    stderr_log = File.read("assert_normal_exit_stderr.log")
+    if !stderr_log.empty?
+      faildesc << "\n" if /\n\z/ !~ faildesc
+      stderr_log << "\n" if /\n\z/ !~ stderr_log
+      stderr_log.gsub!(/^.*\n/) { '| ' + $& }
+      faildesc << stderr_log
+    end
   end
   if !faildesc
     $stderr.print '.'
