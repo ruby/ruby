@@ -1,3 +1,8 @@
+Thu Jun 12 17:11:24 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regint.h: undefine USE_CAPTURE_HISTORY which is mentioned as
+	  unsupported in the Onigiruma document.
+
 Thu Jun 12 13:36:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (rb_intern): use rb_intern2 with strlen for

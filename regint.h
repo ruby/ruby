@@ -90,7 +90,7 @@
 #undef ONIG_ESCAPE_UCHAR_COLLISION
 #endif
 #undef USE_MATCH_RANGE_IS_COMPLETE_RANGE
-#define USE_CAPTURE_HISTORY
+#undef USE_CAPTURE_HISTORY
 #define USE_VARIABLE_META_CHARS
 #define USE_WORD_BEGIN_END          /* "\<": word-begin, "\>": word-end */
 #define USE_POSIX_REGION_OPTION     /* needed for POSIX API support */
