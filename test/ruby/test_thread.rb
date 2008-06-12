@@ -439,6 +439,28 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
+  def test_mutex_fifo_like_lock
+    m1 = Mutex.new
+    m2 = Mutex.new
+    m1.lock
+    m2.lock
+    m1.unlock
+    m2.unlock
+    assert_equal(false, m1.locked?)
+    assert_equal(false, m2.locked?)
+
+    m3 = Mutex.new
+    m1.lock
+    m2.lock
+    m3.lock
+    m1.unlock
+    m2.unlock
+    m3.unlock
+    assert_equal(false, m1.locked?)
+    assert_equal(false, m2.locked?)
+    assert_equal(false, m3.locked?)
+  end
+
   def test_recursive_error
     o = Object.new
     def o.inspect
