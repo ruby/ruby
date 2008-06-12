@@ -1470,6 +1470,13 @@ thread_free(void *ptr)
 	    RUBY_FREE_UNLESS_NULL(th->stack);
 	}
 
+	if (th->locking_mutex != Qfalse) {
+	    rb_bug("thread_free: locking_mutex must be NULL (%p:%ld)", th, th->locking_mutex);
+	}
+	if (th->keeping_mutexes != Qfalse) {
+	    rb_bug("thread_free: keeping_mutexes must be NULL (%p:%ld)", th, th->locking_mutex);
+	}
+
 	if (th->local_storage) {
 	    st_free_table(th->local_storage);
 	}
@@ -1536,6 +1543,8 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->fiber);
 	RUBY_MARK_UNLESS_NULL(th->root_fiber);
 	RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
+
+	RUBY_MARK_UNLESS_NULL(th->locking_mutex);
 
 	rb_mark_tbl(th->local_storage);
 

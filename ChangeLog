@@ -1,3 +1,10 @@
+Thu Jun 12 21:59:17 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c, vm_core.h, vm.c, thread_pthread.c, thread_win32.c: add
+	  deadlock detection.  [ruby-dev:35044]
+
+	* bootstraptest/test_thread.rb: add tests for above.
+
 Thu Jun 12 21:39:55 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: refactoring.

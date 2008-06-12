@@ -57,10 +57,13 @@ VALUE rb_cBarrier;
 
 static void sleep_timeval(rb_thread_t *th, struct timeval time);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec);
-static void sleep_forever(rb_thread_t *th);
+static void sleep_forever(rb_thread_t *th, int nodeadlock);
 static double timeofday(void);
 struct timeval rb_time_interval(VALUE);
 static int rb_thread_dead(rb_thread_t *th);
+
+static void rb_mutex_unlock_all(VALUE);
+static void rb_check_deadlock(rb_vm_t *vm);
 
 void rb_signal_exec(rb_thread_t *th, int sig);
 void rb_disable_interrupt(void);
@@ -93,12 +96,12 @@ static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_call
   rb_thread_set_current(_th_stored); \
 } while(0)
 
-#define BLOCKING_REGION(exec, ubf, ubfarg) do { \
+#define BLOCKING_REGION(exec, ubf, ubfarg, stopped) do { \
     rb_thread_t *__th = GET_THREAD(); \
     int __prev_status = __th->status; \
     struct rb_unblock_callback __oldubf; \
     set_unblock_function(__th, ubf, ubfarg, &__oldubf); \
-    __th->status = THREAD_STOPPED; \
+    if (stopped) __th->status = THREAD_STOPPED; \
     thread_debug("enter blocking region (%p)\n", __th); \
     GVL_UNLOCK_BEGIN(); {\
 	    exec; \
@@ -107,10 +110,9 @@ static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_call
     thread_debug("leave blocking region (%p)\n", __th); \
     remove_signal_thread_list(__th); \
     reset_unblock_function(__th, &__oldubf); \
-    if (__th->status == THREAD_STOPPED) { \
+    if (stopped && __th->status == THREAD_STOPPED) { \
 	__th->status = __prev_status; \
     } \
-    RUBY_VM_CHECK_INTS(); \
 } while(0)
 
 #if THREAD_DEBUG
@@ -263,6 +265,11 @@ rb_thread_terminate_all(void)
 	rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)", vm->main_thread, th);
     }
 
+    /* unlock all locking mutexes */
+    if (th->keeping_mutexes) {
+	rb_mutex_unlock_all(th->keeping_mutexes);
+    }
+
     thread_debug("rb_thread_terminate_all (main thread: %p)\n", th);
     st_foreach(vm->living_threads, terminate_i, (st_data_t)th);
 
@@ -361,6 +368,18 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
 	TH_POP_TAG();
 
+	/* locking_mutex must be Qfalse */
+	if (th->locking_mutex != Qfalse) {
+	    rb_bug("thread_start_func_2: locking_mutex must be NULL (%p:%ld)", th, th->locking_mutex);
+	}
+
+	/* unlock all locking mutexes */
+	if (th->keeping_mutexes) {
+	    rb_mutex_unlock_all(th->keeping_mutexes);
+	    th->keeping_mutexes = Qfalse;
+	}
+
+	/* delete self from living_threads */
 	st_delete_wrap(th->vm->living_threads, th->self);
 
 	/* wake up joinning threads */
@@ -371,6 +390,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    join_th = join_th->join_list_next;
 	}
 	st_delete_wrap(th->vm->living_threads, th->self);
+	if (th != main_th) rb_check_deadlock(th->vm);
 
 	if (!th->root_fiber) {
 	    rb_thread_recycle_stack_release(th->stack);
@@ -511,7 +531,7 @@ thread_join_sleep(VALUE arg)
 
     while (target_th->status != THREAD_KILLED) {
 	if (p->forever) {
-	    sleep_forever(th);
+	    sleep_forever(th, 1);
 	}
 	else {
 	    now = timeofday();
@@ -667,22 +687,29 @@ double2timeval(double d)
 }
 
 static void
-sleep_forever(rb_thread_t *th)
+sleep_forever(rb_thread_t *th, int deadlockable)
 {
-    native_sleep(th, 0);
+    native_sleep(th, 0, deadlockable);
 }
 
 static void
 sleep_timeval(rb_thread_t *th, struct timeval tv)
 {
-    native_sleep(th, &tv);
+    native_sleep(th, &tv, 0);
 }
 
 void
 rb_thread_sleep_forever()
 {
     thread_debug("rb_thread_sleep_forever\n");
-    sleep_forever(GET_THREAD());
+    sleep_forever(GET_THREAD(), 0);
+}
+
+static void
+rb_thread_sleep_deadly()
+{
+    thread_debug("rb_thread_sleep_deadly\n");
+    sleep_forever(GET_THREAD(), 1);
 }
 
 static double
@@ -782,7 +809,8 @@ rb_thread_blocking_region(
 
     BLOCKING_REGION({
 	val = func(data1);
-    }, ubf, data2);
+    }, ubf, data2, 1);
+    RUBY_VM_CHECK_INTS();
 
     return val;
 }
@@ -1128,7 +1156,7 @@ rb_thread_stop(void)
 	rb_raise(rb_eThreadError,
 		 "stopping only thread\n\tnote: use sleep to stop forever");
     }
-    rb_thread_sleep_forever();
+    rb_thread_sleep_deadly();
     return Qnil;
 }
 
@@ -1142,6 +1170,7 @@ thread_list_i(st_data_t key, st_data_t val, void *data)
     switch (th->status) {
       case THREAD_RUNNABLE:
       case THREAD_STOPPED:
+      case THREAD_STOPPED_FOREVER:
       case THREAD_TO_KILL:
 	rb_ary_push(ary, th->self);
       default:
@@ -1336,6 +1365,7 @@ thread_status_name(enum rb_thread_status status)
       case THREAD_RUNNABLE:
 	return "run";
       case THREAD_STOPPED:
+      case THREAD_STOPPED_FOREVER:
 	return "sleep";
       case THREAD_TO_KILL:
 	return "aborting";
@@ -1435,7 +1465,7 @@ rb_thread_stop_p(VALUE thread)
 
     if (rb_thread_dead(th))
 	return Qtrue;
-    if (th->status == THREAD_STOPPED)
+    if (th->status == THREAD_STOPPED || th->status == THREAD_STOPPED_FOREVER)
 	return Qtrue;
     return Qfalse;
 }
@@ -1875,14 +1905,16 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 		    if (except) *except = orig_except;
 		    wait = &wait_100ms;
 		} while (__th->interrupt_flag == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
-	    }, 0, 0);
+	    }, 0, 0, 1);
+	    RUBY_VM_CHECK_INTS();
 	} while (result == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
     }
 #else
     BLOCKING_REGION({
 	result = select(n, read, write, except, timeout);
 	if (result < 0) lerrno = errno;
-    }, ubf_select, GET_THREAD());
+    }, ubf_select, GET_THREAD(), 1);
+    RUBY_VM_CHECK_INTS();
 #endif
 
     errno = lerrno;
@@ -2319,11 +2351,14 @@ typedef struct mutex_struct {
     rb_thread_lock_t lock;
     rb_thread_cond_t cond;
     rb_thread_t volatile *th;
-    volatile int cond_waiting;
+    volatile int cond_waiting, cond_notified;
+    VALUE next_mutex;
 } mutex_t;
 
 #define GetMutexPtr(obj, tobj) \
   Data_Get_Struct(obj, mutex_t, tobj)
+
+static const char *mutex_unlock(mutex_t *mutex);
 
 static void
 mutex_mark(void *ptr)
@@ -2341,6 +2376,10 @@ mutex_free(void *ptr)
 {
     if (ptr) {
 	mutex_t *mutex = ptr;
+	if (mutex->th) {
+	    /* rb_warn("free locked mutex"); */
+	    mutex_unlock(mutex);
+	}
 	native_mutex_destroy(&mutex->lock);
 	native_cond_destroy(&mutex->cond);
     }
@@ -2391,6 +2430,17 @@ rb_mutex_locked_p(VALUE self)
     return mutex->th ? Qtrue : Qfalse;
 }
 
+static void
+mutex_locked(rb_thread_t *th, VALUE self)
+{
+    if (th->keeping_mutexes) {
+	mutex_t *mutex;
+	GetMutexPtr(self, mutex);
+	mutex->next_mutex = th->keeping_mutexes;
+    }
+    th->keeping_mutexes = self;
+}
+
 /*
  * call-seq:
  *    mutex.try_lock  => true or false
@@ -2413,6 +2463,8 @@ rb_mutex_trylock(VALUE self)
     if (mutex->th == 0) {
 	mutex->th = GET_THREAD();
 	locked = Qtrue;
+
+	mutex_locked(GET_THREAD(), self);
     }
     native_mutex_unlock(&mutex->lock);
 
@@ -2420,17 +2472,23 @@ rb_mutex_trylock(VALUE self)
 }
 
 static int
-lock_func(rb_thread_t *th, mutex_t *mutex)
+lock_func(rb_thread_t *th, mutex_t *mutex, int last_thread)
 {
-    int interrupted = Qfalse;
+    int interrupted = 0;
 
     native_mutex_lock(&mutex->lock);
     while (mutex->th || (mutex->th = th, 0)) {
+	if (last_thread) {
+	    interrupted = 2;
+	    break;
+	}
+
 	mutex->cond_waiting++;
 	native_cond_wait(&mutex->cond, &mutex->lock);
+	mutex->cond_notified--;
 
-	if (th->interrupt_flag) {
-	    interrupted = Qtrue;
+	if (RUBY_VM_INTERRUPTED(th)) {
+	    interrupted = 1;
 	    break;
 	}
     }
@@ -2445,6 +2503,7 @@ lock_interrupt(void *ptr)
     native_mutex_lock(&mutex->lock);
     if (mutex->cond_waiting > 0) {
 	native_cond_broadcast(&mutex->cond);
+	mutex->cond_notified = mutex->cond_waiting;
 	mutex->cond_waiting = 0;
     }
     native_mutex_unlock(&mutex->lock);
@@ -2467,10 +2526,29 @@ rb_mutex_lock(VALUE self)
 
 	while (mutex->th != th) {
 	    int interrupted;
+	    int prev_status = th->status;
+	    int last_thread = 0;
+
+	    th->locking_mutex = self;
+	    th->status = THREAD_STOPPED_FOREVER;
+	    th->vm->sleeper++;
+	    if (th->vm->living_threads->num_entries == th->vm->sleeper) {
+		last_thread = 1;
+	    }
 
 	    BLOCKING_REGION({
-		interrupted = lock_func(th, mutex);
-	    }, lock_interrupt, mutex);
+		interrupted = lock_func(th, mutex, last_thread);
+	    }, lock_interrupt, mutex, 0);
+
+	    th->locking_mutex = Qfalse;
+	    if (interrupted == 2) {
+		rb_check_deadlock(th->vm);
+		RUBY_VM_SET_TIMER_INTERRUPT(th);
+	    }
+	    th->status = prev_status;
+	    th->vm->sleeper--;
+
+	    if (mutex->th == th) mutex_locked(th, self);
 
 	    if (interrupted) {
 		RUBY_VM_CHECK_INTS();
@@ -2480,19 +2558,12 @@ rb_mutex_lock(VALUE self)
     return self;
 }
 
-/*
- * call-seq:
- *    mutex.unlock    => self
- *
- * Releases the lock.
- * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
- */
-VALUE
-rb_mutex_unlock(VALUE self)
+static const char *
+mutex_unlock(mutex_t *mutex)
 {
-    mutex_t *mutex;
     const char *err = NULL;
-    GetMutexPtr(self, mutex);
+    rb_thread_t *th = GET_THREAD();
+    mutex_t *th_mutex;
 
     native_mutex_lock(&mutex->lock);
 
@@ -2513,15 +2584,68 @@ rb_mutex_unlock(VALUE self)
 
     native_mutex_unlock(&mutex->lock);
 
+    if (!err) {
+	GetMutexPtr(th->keeping_mutexes, th_mutex);
+	if (th_mutex == mutex) {
+	    th->keeping_mutexes = mutex->next_mutex;
+	}
+	else {
+	    while (1) {
+		mutex_t *tmp_mutex;
+		GetMutexPtr(th_mutex->next_mutex, tmp_mutex);
+		if (tmp_mutex == mutex) {
+		    th_mutex->next_mutex = tmp_mutex->next_mutex;
+		    break;
+		}
+		th_mutex = tmp_mutex;
+	    }
+	}
+	mutex->next_mutex = Qfalse;
+    }
+
+    return err;
+}
+
+/*
+ * call-seq:
+ *    mutex.unlock    => self
+ *
+ * Releases the lock.
+ * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
+ */
+VALUE
+rb_mutex_unlock(VALUE self)
+{
+    const char *err;
+    mutex_t *mutex;
+    GetMutexPtr(self, mutex);
+
+    err = mutex_unlock(mutex);
     if (err) rb_raise(rb_eThreadError, err);
 
     return self;
 }
 
+static void
+rb_mutex_unlock_all(VALUE mutexes)
+{
+    const char *err;
+    mutex_t *mutex;
+
+    while (mutexes) {
+	GetMutexPtr(mutexes, mutex);
+	/* rb_warn("mutex #<%s:%p> remains to be locked by terminated thread",
+		rb_obj_classname(mutexes), (void*)mutexes); */
+	mutexes = mutex->next_mutex;
+	err = mutex_unlock(mutex);
+	if (err) rb_bug("invalid keeping_mutexes");
+    }
+}
+
 static VALUE
 rb_mutex_sleep_forever(VALUE time)
 {
-    rb_thread_sleep_forever();
+    rb_thread_sleep_deadly();
     return Qnil;
 }
 
@@ -3274,4 +3398,45 @@ ruby_native_thread_p(void)
     rb_thread_t *th = ruby_thread_from_native();
 
     return th ? Qtrue : Qfalse;
+}
+
+static int
+check_deadlock_i(st_data_t key, st_data_t val, int *found)
+{
+    VALUE thval = key;
+    rb_thread_t *th;
+    GetThreadPtr(thval, th);
+
+    if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th)) {
+	*found = 1;
+    }
+    else if (th->locking_mutex) {
+	mutex_t *mutex;
+	GetMutexPtr(th->locking_mutex, mutex);
+
+	native_mutex_lock(&mutex->lock);
+	if (mutex->th == th || (!mutex->th && mutex->cond_notified)) {
+	    *found = 1;
+	}
+	native_mutex_unlock(&mutex->lock);
+    }
+
+    return (*found) ? ST_STOP : ST_CONTINUE;
+}
+
+static void
+rb_check_deadlock(rb_vm_t *vm)
+{
+    int found = 0;
+
+    if (vm->living_threads->num_entries != vm->sleeper) return;
+
+    st_foreach(vm->living_threads, check_deadlock_i, (st_data_t)&found);
+
+    if (!found) {
+	VALUE argv[2];
+	argv[0] = rb_eFatal;
+	argv[1] = rb_str_new2("deadlock detected");
+	rb_thread_raise(2, argv, vm->main_thread);
+    }
 }

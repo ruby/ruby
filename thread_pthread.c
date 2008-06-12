@@ -402,7 +402,7 @@ ubf_select(void *ptr)
 #endif
 
 static void
-native_sleep(rb_thread_t *th, struct timeval *tv)
+native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 {
     int prev_status = th->status;
     struct timespec ts;
@@ -418,7 +418,14 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
         }
     }
 
-    th->status = THREAD_STOPPED;
+    if (!tv && deadlockable) {
+	th->status = THREAD_STOPPED_FOREVER;
+	th->vm->sleeper++;
+	rb_check_deadlock(th->vm);
+    }
+    else {
+	th->status = THREAD_STOPPED;
+    }
 
     thread_debug("native_sleep %ld\n", tv ? tv->tv_sec : -1);
     GVL_UNLOCK_BEGIN();
@@ -455,9 +462,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	th->unblock.arg = 0;
 
 	pthread_mutex_unlock(&th->interrupt_lock);
-	th->status = prev_status;
     }
     GVL_UNLOCK_END();
+    th->status = prev_status;
+    if (!tv && deadlockable) th->vm->sleeper--;
     RUBY_VM_CHECK_INTS();
 
     thread_debug("native_sleep done\n");

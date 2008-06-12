@@ -302,6 +302,7 @@ struct rb_vm_struct
     int running;
     int thread_abort_on_exception;
     unsigned long trace_flag;
+    volatile int sleeper;
 
     /* object management */
     VALUE mark_object_ary;
@@ -360,6 +361,7 @@ enum rb_thread_status {
     THREAD_TO_KILL,
     THREAD_RUNNABLE,
     THREAD_STOPPED,
+    THREAD_STOPPED_FOREVER,
     THREAD_KILLED,
 };
 
@@ -429,6 +431,8 @@ struct rb_thread_struct
     int interrupt_flag;
     rb_thread_lock_t interrupt_lock;
     struct rb_unblock_callback unblock;
+    VALUE locking_mutex;
+    VALUE keeping_mutexes;
 
     struct rb_vm_tag *tag;
     struct rb_vm_trap_tag *trap_tag;

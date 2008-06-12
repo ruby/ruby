@@ -204,7 +204,7 @@ rb_w32_Sleep(unsigned long msec)
 }
 
 static void
-native_sleep(rb_thread_t *th, struct timeval *tv)
+native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 {
     DWORD msec;
     if (tv) {
@@ -214,12 +214,19 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	msec = INFINITE;
     }
 
+    if (!tv && deadlockable) {
+	th->status = THREAD_STOPPED_FOREVER;
+	th->vm->sleeper++;
+	rb_check_deadlock(th->vm);
+    }
+    else {
+	th->status = THREAD_STOPPED;
+    }
     GVL_UNLOCK_BEGIN();
     {
 	DWORD ret;
 	int status = th->status;
 
-	th->status = THREAD_STOPPED;
 	th->unblock.func = ubf_handle;
 	th->unblock.arg = th;
 
@@ -234,9 +241,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 
 	th->unblock.func = 0;
 	th->unblock.arg = 0;
-	th->status = status;
     }
     GVL_UNLOCK_END();
+    th->status = status;
+    if (!tv && deadlockable) th->vm->sleeper++;
     RUBY_VM_CHECK_INTS();
 }
 
