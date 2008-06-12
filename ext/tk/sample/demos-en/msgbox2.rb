@@ -42,7 +42,7 @@ TkFrame.new(base_frame) {|frame|
 
   TkButton.new(frame) {
     text 'Message Box'
-    command proc{showMessageBox $msgbox2_demo}
+    command proc{showMessageBox2 $msgbox2_demo}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
@@ -79,7 +79,7 @@ $msgboxType = TkVariable.new('ok')
                                         'anchor'=>'w', 'fill'=>'x')
 }
 
-def showMessageBox(w)
+def showMessageBox2(w)
   button = Tk.messageBox('icon'=>$msgboxIcon.value, 'type'=>$msgboxType.value, 
                          'title'=>'Message', 'parent'=>w,
                          'message'=>"\"#{$msgboxType.value}\" Type MessageBox",

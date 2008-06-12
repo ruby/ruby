@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-06-11"
+#define TCLTKLIB_RELEASE_DATE "2008-06-12"
 
 #include "ruby.h"
 
@@ -116,7 +116,7 @@ fprintf(stderr, ARG1, ARG2, ARG3); fprintf(stderr, "\n"); fflush(stderr); }
 */
 
 /* release date */
-const const char tcltklib_release_date[] = TCLTKLIB_RELEASE_DATE;
+static const char tcltklib_release_date[] = TCLTKLIB_RELEASE_DATE;
 
 /* finalize_proc_name */
 static char *finalize_hook_name = "INTERP_FINALIZE_HOOK";
@@ -424,9 +424,15 @@ Tcl_Interp  *current_interp;
     : USE_TOGGLE_WINDOW_MODE_FOR_IDLE 0
     : DO_THREAD_SCHEDULE_AT_CALLBACK_DONE 0
 */
+#ifdef RUBY_USE_NATIVE_THREAD
+#define CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE 1
+#define USE_TOGGLE_WINDOW_MODE_FOR_IDLE 0
+#define DO_THREAD_SCHEDULE_AT_CALLBACK_DONE 1
+#else /* ! RUBY_USE_NATIVE_THREAD */
 #define CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE 1
 #define USE_TOGGLE_WINDOW_MODE_FOR_IDLE 0
 #define DO_THREAD_SCHEDULE_AT_CALLBACK_DONE 0
+#endif
 
 #if CONTROL_BY_STATUS_OF_RB_THREAD_WAITING_FOR_VALUE
 static int have_rb_thread_waiting_for_value = 0;
