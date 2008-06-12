@@ -2579,6 +2579,7 @@ mutex_unlock(mutex_t *mutex)
 	    /* waiting thread */
 	    native_cond_signal(&mutex->cond);
 	    mutex->cond_waiting--;
+	    mutex->cond_notified++;
 	}
     }
 
