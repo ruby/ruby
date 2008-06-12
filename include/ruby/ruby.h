@@ -768,7 +768,7 @@ VALUE rb_id2str(ID);
     {							\
 	static ID rb_intern_id_cache;			\
 	if (!rb_intern_id_cache)			\
-	    rb_intern_id_cache = (rb_intern)(str);	\
+	    rb_intern_id_cache = rb_intern2(str, strlen(str));	\
 	result rb_intern_id_cache;			\
     }
 #define CONST_ID(var, str) \

@@ -1,3 +1,8 @@
+Thu Jun 12 13:36:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (rb_intern): use rb_intern2 with strlen for
+	  constant symbols to optimize strlen.
+
 Thu Jun 12 08:47:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (read_all): should use io_read_encoding(), not
