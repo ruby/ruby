@@ -68,72 +68,53 @@ m_##n(VALUE x, VALUE y)\
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    VALUE r;
     if (FIXNUM_P(y)) {
 	if (FIX2LONG(y) == 0)
-	    r = x;
-	else
-	    r = rb_funcall(x, '+', 1, y);
+	    return x;
     }
     else if (FIXNUM_P(x)) {
 	if (FIX2LONG(x) == 0)
-	    r = y;
-	else
-	    r = rb_funcall(x, '+', 1, y);
+	    return y;
     }
-    else
-	r = rb_funcall(x, '+', 1, y);
-    return r;
+    return rb_funcall(x, '+', 1, y);
 }
 
 inline static VALUE
 f_cmp(VALUE x, VALUE y)
 {
-    VALUE r;
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
 	long c = FIX2LONG(x) - FIX2LONG(y);
 	if (c > 0)
 	    c = 1;
 	else if (c < 0)
 	    c = -1;
-	r = INT2FIX(c);
+	return INT2FIX(c);
     }
-    else
-	r = rb_funcall(x, id_cmp, 1, y);
-    return r;
+    return rb_funcall(x, id_cmp, 1, y);
 }
 
 inline static VALUE
 f_div(VALUE x, VALUE y)
 {
-    VALUE r;
     if (FIXNUM_P(y) && FIX2LONG(y) == 1)
-	r = x;
-    else
-	r = rb_funcall(x, '/', 1, y);
-    return r;
+	return x;
+    return rb_funcall(x, '/', 1, y);
 }
 
 inline static VALUE
 f_gt_p(VALUE x, VALUE y)
 {
-    VALUE r;
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	r = f_boolcast(FIX2LONG(x) > FIX2LONG(y));
-    else
-	r = rb_funcall(x, '>', 1, y);
-    return r;
+	return f_boolcast(FIX2LONG(x) > FIX2LONG(y));
+    return rb_funcall(x, '>', 1, y);
 }
 
 inline static VALUE
 f_lt_p(VALUE x, VALUE y)
 {
-    VALUE r;
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	r = f_boolcast(FIX2LONG(x) < FIX2LONG(y));
-    else
-	r = rb_funcall(x, '<', 1, y);
-    return r;
+	return f_boolcast(FIX2LONG(x) < FIX2LONG(y));
+    return rb_funcall(x, '<', 1, y);
 }
 
 binop(mod, '%')
@@ -141,51 +122,38 @@ binop(mod, '%')
 inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
-    VALUE r;
     if (FIXNUM_P(y)) {
 	long _iy = FIX2LONG(y);
 	if (_iy == 0) {
 	    if (TYPE(x) == T_FLOAT)
-		r = rb_float_new(0.0);
+		return rb_float_new(0.0);
 	    else
-		r = ZERO;
+		return ZERO;
 	}
 	else if (_iy == 1)
-	    r = x;
-	else
-	    r = rb_funcall(x, '*', 1, y);
+	    return x;
     }
     else if (FIXNUM_P(x)) {
 	long _ix = FIX2LONG(x);
 	if (_ix == 0) {
 	    if (TYPE(y) == T_FLOAT)
-		r = rb_float_new(0.0);
+		return rb_float_new(0.0);
 	    else
-		r = ZERO;
+		return ZERO;
 	}
 	else if (_ix == 1)
-	    r = y;
-	else
-	    r = rb_funcall(x, '*', 1, y);
+	    return y;
     }
-    else
-	r = rb_funcall(x, '*', 1, y);
-    return r;
+    return rb_funcall(x, '*', 1, y);
 }
 
 inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
-    VALUE r;
-    if (FIXNUM_P(y)) {
+    if (FIXNUM_P(y))
 	if (FIX2LONG(y) == 0)
-	    r = x;
-	else
-	    r = rb_funcall(x, '-', 1, y);
-    }
-    else
-	r = rb_funcall(x, '-', 1, y);
-    return r;
+	    return x;
+    return rb_funcall(x, '-', 1, y);
 }
 
 binop(xor, '^')
@@ -213,12 +181,9 @@ fun2(divmod)
 inline static VALUE
 f_equal_p(VALUE x, VALUE y)
 {
-    VALUE r;
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	r = f_boolcast(FIX2LONG(x) == FIX2LONG(y));
-    else
-	r = rb_funcall(x, id_equal_p, 1, y);
-    return r;
+	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
+    return rb_funcall(x, id_equal_p, 1, y);
 }
 
 fun2(expt)
@@ -228,34 +193,25 @@ fun2(quo)
 inline static VALUE
 f_negative_p(VALUE x)
 {
-    VALUE r;
     if (FIXNUM_P(x))
-	r = f_boolcast(FIX2LONG(x) < 0);
-    else
-	r = rb_funcall(x, '<', 1, ZERO);
-    return r;
+	return f_boolcast(FIX2LONG(x) < 0);
+    return rb_funcall(x, '<', 1, ZERO);
 }
 
 inline static VALUE
 f_zero_p(VALUE x)
 {
-    VALUE r;
     if (FIXNUM_P(x))
-	r = f_boolcast(FIX2LONG(x) == 0);
-    else
-	r = rb_funcall(x, id_equal_p, 1, ZERO);
-    return r;
+	return f_boolcast(FIX2LONG(x) == 0);
+    return rb_funcall(x, id_equal_p, 1, ZERO);
 }
 
 inline static VALUE
 f_one_p(VALUE x)
 {
-    VALUE r;
     if (FIXNUM_P(x))
-	r = f_boolcast(FIX2LONG(x) == 1);
-    else
-	r = rb_funcall(x, id_equal_p, 1, ONE);
-    return r;
+	return f_boolcast(FIX2LONG(x) == 1);
+    return rb_funcall(x, id_equal_p, 1, ONE);
 }
 
 inline static VALUE
@@ -517,12 +473,11 @@ m_cos(VALUE x)
 
     if (f_generic_p(x))
 	return m_cos_bang(x);
-    else
-	return f_complex_new2(rb_cComplex,
-			      f_mul(m_cos_bang(dat->real),
-				    m_cosh_bang(dat->image)),
-			      f_mul(f_negate(m_sin_bang(dat->real)),
-				    m_sinh_bang(dat->image)));
+    return f_complex_new2(rb_cComplex,
+			  f_mul(m_cos_bang(dat->real),
+				m_cosh_bang(dat->image)),
+			  f_mul(f_negate(m_sin_bang(dat->real)),
+				m_sinh_bang(dat->image)));
 }
 
 static VALUE
@@ -532,12 +487,11 @@ m_sin(VALUE x)
 
     if (f_generic_p(x))
 	return m_sin_bang(x);
-    else
-	return f_complex_new2(rb_cComplex,
-			      f_mul(m_sin_bang(dat->real),
-				    m_cosh_bang(dat->image)),
-			      f_mul(m_cos_bang(dat->real),
-				    m_sinh_bang(dat->image)));
+    return f_complex_new2(rb_cComplex,
+			  f_mul(m_sin_bang(dat->real),
+				m_cosh_bang(dat->image)),
+			  f_mul(m_cos_bang(dat->real),
+				m_sinh_bang(dat->image)));
 }
 
 static VALUE
@@ -546,8 +500,7 @@ m_sqrt(VALUE x)
     if (f_generic_p(x)) {
 	if (!f_negative_p(x))
 	    return m_sqrt_bang(x);
-	else
-	    return f_complex_new2(rb_cComplex, ZERO, m_sqrt_bang(f_negate(x)));
+	return f_complex_new2(rb_cComplex, ZERO, m_sqrt_bang(f_negate(x)));
     }
     else {
 	get_dat1(x);
@@ -771,9 +724,7 @@ nucomp_expt(VALUE self, VALUE other)
 	    }
 	    return z;
 	}
-	else {
-	    return f_expt(f_div(f_to_r(ONE), self), f_negate(other));
-	}
+	return f_expt(f_div(f_to_r(ONE), self), f_negate(other));
       case T_FLOAT:
       case T_RATIONAL:
 	{
