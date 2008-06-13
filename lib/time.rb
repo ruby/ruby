@@ -353,7 +353,7 @@ class Time
           (-?\d+)-(\d\d)-(\d\d)
           T
           (\d\d):(\d\d):(\d\d)
-          (\.\d*)?
+          (\.\d+)?
           (Z|[+-]\d\d:\d\d)?
           \s*\z/ix =~ date
         year = $1.to_i
@@ -528,6 +528,9 @@ if __FILE__ == $0
                    Time.httpdate("Tue, 15 Nov 1994 12:45:26 GMT"))
       assert_equal(Time.utc(1999, 12, 31, 23, 59, 59),
                    Time.httpdate("Fri, 31 Dec 1999 23:59:59 GMT"))
+
+      assert_equal(Time.utc(2007, 12, 23, 11, 22, 33),
+                   Time.httpdate('Sunday, 23-Dec-07 11:22:33 GMT'))
     end
 
     def test_rfc3339
@@ -598,6 +601,7 @@ if __FILE__ == $0
                    Time.xmlschema("2000-01-12T12:13:14Z"))
       assert_equal(Time.utc(2001, 4, 17, 19, 23, 17, 300000),
                    Time.xmlschema("2001-04-17T19:23:17.3Z"))
+      assert_raise(ArgumentError) { Time.xmlschema("2000-01-01T00:00:00.+00:00") }
     end
 
     def test_encode_xmlschema
@@ -784,6 +788,10 @@ if __FILE__ == $0
       assert_equal(t, Time.xmlschema("1999-01-01T01:00:00+01:00"))
       assert_equal(t, Time.xmlschema("1999-01-01T00:00:00+00:00"))
       assert_equal(t, Time.xmlschema("1998-12-31T23:00:00-01:00"))
+    end
+
+    def test_xmlschema_fraction
+      assert_equal(500000, Time.xmlschema("2000-01-01T00:00:00.5+00:00").tv_usec)
     end
 
     def test_ruby_talk_152866
