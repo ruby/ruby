@@ -1,3 +1,7 @@
+Fri Jun 13 12:10:13 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/benchmark.rb (Job::Benchmark#item): fix typo.
+
 Fri Jun 13 12:06:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): use strtod() for more
