@@ -1,4 +1,9 @@
-Tue Jun 13 17:06:20 2008  wanabe  <s.wanabe@gmail.com>
+Fri Jun 13 17:20:40 2008  wanabe  <s.wanabe@gmail.com>
+
+	* complex.c (string_to_c_internal): save and restore backref.
+	  fixed [ruby-dev:34991]
+
+Fri Jun 13 17:06:20 2008  wanabe  <s.wanabe@gmail.com>
 
 	* rational.c (string_to_r_internal): save and restore backref.
 	  fixed [ruby-dev:34990]

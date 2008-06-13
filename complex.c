@@ -1153,8 +1153,10 @@ string_to_c_internal(VALUE self)
 	return rb_assoc_new(Qnil, self);
 
     {
-	VALUE m, sr, si, re, r, i;
+	VALUE m, sr, si, re, r, i, backref;
 
+	backref = rb_backref_get();
+	rb_match_busy(backref);
 	m = f_match(comp_pat1, s);
 	if (!NIL_P(m)) {
 	    sr = Qnil;
@@ -1170,8 +1172,10 @@ string_to_c_internal(VALUE self)
 	}
 	if (NIL_P(m)) {
 	    m = f_match(comp_pat2, s);
-	    if (NIL_P(m))
+	    if (NIL_P(m)) {
+		rb_backref_set(backref);
 		return rb_assoc_new(Qnil, self);
+	    }
 	    sr = f_aref(m, INT2FIX(1));
 	    if (NIL_P(f_aref(m, INT2FIX(2))))
 		si = Qnil;
@@ -1206,6 +1210,7 @@ string_to_c_internal(VALUE self)
 	    else
 		i = f_to_i(si);
 	}
+	rb_backref_set(backref);
 	return rb_assoc_new(rb_complex_new2(r, i), re);
     }
 }
