@@ -22,6 +22,16 @@
 #include <setjmp.h>
 #include <sys/types.h>
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
+#ifndef EXIT_FAILURE
+#define EXIT_FAILURE 1
+#endif
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -85,7 +95,7 @@ rb_memerror()
 
     if (!nomem_error || (recurse > 0 && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
     recurse++;
     rb_exc_raise(nomem_error);
