@@ -1,3 +1,10 @@
+Fri Jun 13 12:55:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* enum.c (sort_by_i): use NODE_DOT2 instead of NODE_MEMO to avoid
+	  extra calls to is_pointer_to_heap() in GC.
+
+	* enum.c (enum_zip): ditto.
+
 Fri Jun 13 00:41:58 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_thread.rb: add a test.
