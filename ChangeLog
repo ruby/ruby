@@ -1,3 +1,8 @@
+Fri Jun 13 12:01:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb.rb (IRB::Irb::eval_input): rescues Interrupt and other than
+	  SystemExit and SignalException.  [ruby-core:15359]
+
 Fri Jun 13 11:57:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/benchmark.rb (Benchmark::realtime): make Benchmark#realtime
