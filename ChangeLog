@@ -1,4 +1,6 @@
-Fri Jun 13 14:18:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 13 14:24:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_memerror): exit with EXIT_FAILURE instead of magic number.
 
 	* gc.c (ruby_stack_check): STACK_LENGTH should be less than
 	  STACK_LEVEL_MAX.

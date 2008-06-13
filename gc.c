@@ -273,7 +273,7 @@ rb_memerror(void)
     if (!nomem_error ||
 	(rb_thread_raised_p(th, RAISED_NOMEMORY) && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
     rb_thread_raised_set(th, RAISED_NOMEMORY);
     rb_exc_raise(nomem_error);
