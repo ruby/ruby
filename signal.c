@@ -554,12 +554,12 @@ sigsegv(int sig)
 {
     if (segv_received) {
 	fprintf(stderr, "SEGV recieved in SEGV handler\n");
-	exit(1);
+	exit(EXIT_FAILURE);
     }
     else {
-	extern int ruby_gc_stress;
+	extern int ruby_disable_gc_stress;
 	segv_received = 1;
-	ruby_gc_stress = 0;
+	ruby_disable_gc_stress = 1;
 	rb_bug("Segmentation fault");
     }
 }

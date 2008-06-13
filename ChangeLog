@@ -1,3 +1,11 @@
+Sat Jun 14 00:09:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (ruby_gc_stress): moved to rb_objspace_t.
+
+	* gc.c (gc_stress_get, gc_stress_set): VM local attribute.
+
+	* signal.c (sigsegv): ditto.
+
 Fri Jun 13 21:55:48 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_equal_p): Rational(0,x) and 0 are equivalent,

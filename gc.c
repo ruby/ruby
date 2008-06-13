@@ -179,6 +179,7 @@ typedef struct rb_objspace {
     } markstack;
     struct gc_list *global_list;
     unsigned int count;
+    int gc_stress;
 } rb_objspace_t;
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -206,6 +207,7 @@ static rb_objspace_t rb_objspace = {{GC_MALLOC_LIMIT}, {HEAP_MIN_SLOTS}};
 #define mark_stack_ptr		objspace->markstack.ptr
 #define mark_stack_overflow	objspace->markstack.overflow
 #define global_List		objspace->global_list
+#define ruby_gc_stress		objspace->gc_stress
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 rb_objspace_t *
@@ -243,7 +245,7 @@ VALUE *rb_gc_stack_start = 0;
 VALUE *rb_gc_register_stack_start = 0;
 #endif
 
-int ruby_gc_stress = 0;
+int ruby_disable_gc_stress = 0;
 
 
 #ifdef DJGPP
@@ -289,6 +291,7 @@ rb_memerror(void)
 static VALUE
 gc_stress_get(VALUE self)
 {
+    rb_objspace_t *objspace = &rb_objspace;
     return ruby_gc_stress ? Qtrue : Qfalse;
 }
 
@@ -307,6 +310,7 @@ gc_stress_get(VALUE self)
 static VALUE
 gc_stress_set(VALUE self, VALUE bool)
 {
+    rb_objspace_t *objspace = &rb_objspace;
     rb_secure(2);
     ruby_gc_stress = RTEST(bool);
     return bool;
@@ -326,7 +330,8 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
     size += sizeof(size_t);
 #endif
 
-    if (ruby_gc_stress || (malloc_increase+size) > malloc_limit) {
+    if ((ruby_gc_stress && !ruby_disable_gc_stress) ||
+	(malloc_increase+size) > malloc_limit) {
 	garbage_collect(objspace);
     }
     RUBY_CRITICAL(mem = malloc(size));
@@ -360,7 +365,7 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     }
     if (!ptr) return ruby_xmalloc(size);
     if (size == 0) size = 1;
-    if (ruby_gc_stress) garbage_collect(objspace);
+    if (ruby_gc_stress && !ruby_disable_gc_stress) garbage_collect(objspace);
 
 #if CALC_EXACT_MALLOC_SIZE
     size += sizeof(size_t);
@@ -664,7 +669,7 @@ rb_newobj_from_heap(rb_objspace_t *objspace)
 {
     VALUE obj;
 	
-    if (ruby_gc_stress || !freelist) {
+    if ((ruby_gc_stress && !ruby_disable_gc_stress) || !freelist) {
     	if (!heaps_increment(objspace) && !garbage_collect(objspace)) {
 	    rb_memerror();
 	}
