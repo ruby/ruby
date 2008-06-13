@@ -378,6 +378,9 @@ rb_newobj()
 {
     VALUE obj;
 
+    if (during_gc)
+	rb_bug("object allocation during garbage collection phase");
+
     if (!freelist) garbage_collect();
 
     obj = (VALUE)freelist;

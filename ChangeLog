@@ -1,3 +1,18 @@
+Fri Jun 13 13:14:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dl/ptr.c (dlmem_each_i): typo fixed.  a patch from IKOMA
+	  Yoshiki <ikoma@mb.i-chubu.ne.jp> in [ruby-dev:33776].
+
+Fri Jun 13 13:13:23 2008  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* gc.c (rb_newobj): prohibit call of rb_newobj() during gc.
+	  Submitted by Sylvain Joyeux [ruby-core:12099].
+
+	* ext/dl/ptr.c: do not use LONG2NUM() inside dlptr_free().
+	  Slightly modified fix bassed on a patch by Sylvain Joyeux
+	  [ruby-core:12099] [ ruby-bugs-11859 ] [ ruby-bugs-11882 ]
+	  [ ruby-patches-13151 ].
+
 Fri Jun 13 12:10:13 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/benchmark.rb (Job::Benchmark#item): fix typo.
