@@ -4,30 +4,22 @@
 
 #include <ruby.h>
 #include <ctype.h>
-#include <version.h> /* for ruby version code */
+#include "st.h"
 #include "dl.h"
 
 VALUE rb_cDLPtrData;
 VALUE rb_mDLMemorySpace;
-static VALUE DLMemoryTable;
+static st_table* st_memory_table;
 
 #ifndef T_SYMBOL
 # define T_SYMBOL T_FIXNUM
-#endif
-
-#if RUBY_VERSION_CODE < 171
-static VALUE
-rb_hash_delete(VALUE hash, VALUE key)
-{
-  return rb_funcall(hash, rb_intern("delete"), 1, key);
-}
 #endif
 
 static void
 rb_dlmem_delete(void *ptr)
 {
   rb_secure(4);
-  rb_hash_delete(DLMemoryTable, DLLONG2NUM(ptr));
+  st_delete(st_memory_table, (st_data_t*)&ptr, NULL);
 }
 
 static void
@@ -37,7 +29,7 @@ rb_dlmem_aset(void *ptr, VALUE obj)
     rb_dlmem_delete(ptr);
   }
   else{
-    rb_hash_aset(DLMemoryTable, DLLONG2NUM(ptr), DLLONG2NUM(obj));
+    st_insert(st_memory_table, (st_data_t)ptr, (st_data_t)obj);
   }
 }
 
@@ -46,8 +38,8 @@ rb_dlmem_aref(void *ptr)
 {
   VALUE val;
 
-  val = rb_hash_aref(DLMemoryTable, DLLONG2NUM(ptr));
-  return val == Qnil ? Qnil : (VALUE)DLNUM2LONG(val);
+  if(!st_lookup(st_memory_table, (st_data_t)ptr, &val)) return Qnil;
+  return val == Qundef ? Qnil : val;
 }
 
 void
@@ -1010,20 +1002,18 @@ rb_dlptr_size(int argc, VALUE argv[], VALUE self)
   }
 }
 
-static VALUE
-dlmem_each_i(VALUE assoc, void *data)
+static int
+dlmem_each_i(void* key, VALUE value, void* arg)
 {
-  VALUE key, val;
-  key = rb_ary_entry(assoc, 0);
-  val = rb_ary_entry(assoc, 1);
-  rb_yield(rb_assoc_new(key,(VALUE)DLNUM2LONG(val)));
+  VALUE vkey = DLLONG2NUM(key);
+  rb_yield(rb_assoc_new(vkey, value));
   return Qnil;
 }
 
 VALUE
 rb_dlmem_each(VALUE self)
 {
-  rb_iterate(rb_each, DLMemoryTable, dlmem_each_i, 0);
+  st_foreach(st_memory_table, dlmem_each_i, 0);
   return Qnil;
 }
 
@@ -1062,7 +1052,7 @@ Init_dlptr()
   rb_define_method(rb_cDLPtrData, "size=", rb_dlptr_size, -1);
 
   rb_mDLMemorySpace = rb_define_module_under(rb_mDL, "MemorySpace");
-  DLMemoryTable = rb_hash_new();
-  rb_define_const(rb_mDLMemorySpace, "MemoryTable", DLMemoryTable);
+  st_memory_table = st_init_numtable();
+  rb_define_const(rb_mDLMemorySpace, "MemoryTable", Qnil); /* historical */
   rb_define_module_function(rb_mDLMemorySpace, "each", rb_dlmem_each, 0);
 }
