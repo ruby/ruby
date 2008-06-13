@@ -1,3 +1,12 @@
+Fri Jun 13 12:06:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_to_f): use strtod() for more
+	  precision.  [ruby-talk:290296]
+
+	* ext/bigdecimal/bigdecimal.c (BASE_FIG): made constant.
+
+	* ext/bigdecimal/extconf.rb: ditto.  [ruby-dev:33658]
+
 Fri Jun 13 12:01:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb.rb (IRB::Irb::eval_input): rescues Interrupt and other than
