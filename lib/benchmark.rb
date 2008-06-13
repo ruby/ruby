@@ -304,7 +304,10 @@ module Benchmark
   # Returns the elapsed real time used to execute the given block.
   #
   def realtime(&blk) # :yield:
-    Benchmark::measure(&blk).real
+    r0 = Time.now
+    yield
+    r1 = Time.now
+    r1.to_f - r0.to_f
   end
 
 

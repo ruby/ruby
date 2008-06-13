@@ -1,3 +1,9 @@
+Fri Jun 13 11:56:28 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/benchmark.rb (Benchmark::realtime): make Benchmark#realtime
+	  a bit faster.  a patch from Alexander Dymo <dymo@ukrpost.ua> in
+	  [ruby-core:15337].
+
 Fri Jun 13 11:42:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_open_file): should check NUL in path.
