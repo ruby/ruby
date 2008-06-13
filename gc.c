@@ -236,7 +236,6 @@ rb_objspace_alloc(void)
 /*#define HEAP_SIZE 0x800 */
 
 #define HEAP_OBJ_LIMIT (HEAP_SIZE / sizeof(struct RVALUE))
-#define FREE_MIN  4096
 
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
@@ -818,11 +817,11 @@ ruby_stack_check(void)
     int ret;
     rb_thread_t *th = GET_THREAD();
     SET_STACK_END;
-    ret = STACK_LENGTH > STACK_LEVEL_MAX + GC_WATER_MARK;
+    ret = STACK_LENGTH > STACK_LEVEL_MAX - GC_WATER_MARK;
 #ifdef __ia64
     if (!ret) {
         ret = (VALUE*)rb_ia64_bsp() - th->machine_register_stack_start >
-              th->machine_register_stack_maxsize/sizeof(VALUE) + GC_WATER_MARK;
+              th->machine_register_stack_maxsize/sizeof(VALUE) - GC_WATER_MARK;
     }
 #endif
     return ret;

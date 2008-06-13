@@ -1,3 +1,8 @@
+Fri Jun 13 14:18:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (ruby_stack_check): STACK_LENGTH should be less than
+	  STACK_LEVEL_MAX.
+
 Fri Jun 13 12:55:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* enum.c (sort_by_i): use NODE_DOT2 instead of NODE_MEMO to avoid
