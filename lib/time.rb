@@ -374,7 +374,7 @@ class Time
           (-?\d+)-(\d\d)-(\d\d)
           T
           (\d\d):(\d\d):(\d\d)
-          (\.\d*)?
+          (\.\d+)?
           (Z|[+-]\d\d:\d\d)?
           \s*\z/ix =~ date
         year = $1.to_i
@@ -385,7 +385,7 @@ class Time
         sec = $6.to_i
         usec = 0
         if $7
-          usec = Rational(($7[1..-1] + '000000000')[0,9].to_i, 1000)
+          usec = Rational($7) * 1000000
         end
         if $8
           zone = $8
@@ -624,6 +624,7 @@ if __FILE__ == $0
                    Time.xmlschema("2000-01-12T12:13:14Z"))
       assert_equal(Time.utc(2001, 4, 17, 19, 23, 17, 300000),
                    Time.xmlschema("2001-04-17T19:23:17.3Z"))
+      assert_raise(ArgumentError) { Time.xmlschema("2000-01-01T00:00:00.+00:00") }
     end
 
     def test_encode_xmlschema
@@ -810,6 +811,10 @@ if __FILE__ == $0
       assert_equal(t, Time.xmlschema("1999-01-01T01:00:00+01:00"))
       assert_equal(t, Time.xmlschema("1999-01-01T00:00:00+00:00"))
       assert_equal(t, Time.xmlschema("1998-12-31T23:00:00-01:00"))
+    end
+
+    def test_xmlschema_fraction
+      assert_equal(500000, Time.xmlschema("2000-01-01T00:00:00.5+00:00").tv_usec)
     end
 
     def test_ruby_talk_152866
