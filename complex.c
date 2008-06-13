@@ -1153,10 +1153,8 @@ string_to_c_internal(VALUE self)
 	return rb_assoc_new(Qnil, self);
 
     {
-	VALUE m, sr, si, re, r, i, backref;
+	VALUE m, sr, si, re, r, i;
 
-	backref = rb_backref_get();
-	rb_match_busy(backref);
 	m = f_match(comp_pat1, s);
 	if (!NIL_P(m)) {
 	    sr = Qnil;
@@ -1173,7 +1171,6 @@ string_to_c_internal(VALUE self)
 	if (NIL_P(m)) {
 	    m = f_match(comp_pat2, s);
 	    if (NIL_P(m)) {
-		rb_backref_set(backref);
 		return rb_assoc_new(Qnil, self);
 	    }
 	    sr = f_aref(m, INT2FIX(1));
@@ -1210,7 +1207,6 @@ string_to_c_internal(VALUE self)
 	    else
 		i = f_to_i(si);
 	}
-	rb_backref_set(backref);
 	return rb_assoc_new(rb_complex_new2(r, i), re);
     }
 }
@@ -1233,8 +1229,16 @@ string_to_c_strict(VALUE self)
 static VALUE
 string_to_c(VALUE self)
 {
-    VALUE s = f_gsub(self, underscores_pat, an_underscore);
-    VALUE a = string_to_c_internal(s);
+    VALUE s, a, backref;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    s = f_gsub(self, underscores_pat, an_underscore);
+    a = string_to_c_internal(s);
+
+    rb_backref_set(backref);
+
     if (!NIL_P(RARRAY_PTR(a)[0]))
 	return RARRAY_PTR(a)[0];
     return rb_complex_new1(INT2FIX(0));
@@ -1243,9 +1247,12 @@ string_to_c(VALUE self)
 static VALUE
 nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE a1, a2;
+    VALUE a1, a2, backref;
 
     rb_scan_args(argc, argv, "02", &a1, &a2);
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
 
     switch (TYPE(a1)) {
       case T_FIXNUM:
@@ -1266,6 +1273,8 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	a2 = string_to_c_strict(a2);
 	break;
     }
+
+    rb_backref_set(backref);
 
     switch (TYPE(a1)) {
       case T_COMPLEX:

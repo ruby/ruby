@@ -1274,15 +1274,13 @@ make_patterns(void)
 static VALUE
 string_to_r_internal(VALUE self)
 {
-    VALUE s, m, backref;
+    VALUE s, m;
 
     s = f_strip(self);
 
     if (RSTRING_LEN(s) == 0)
 	return rb_assoc_new(Qnil, self);
 
-    backref = rb_backref_get();
-    rb_match_busy(backref);
     m = f_match(rat_pat, s);
 
     if (!NIL_P(m)) {
@@ -1335,10 +1333,8 @@ string_to_r_internal(VALUE self)
 	if (!NIL_P(de))
 	    v = f_div(v, f_to_i(de));
 
-	rb_backref_set(backref);
 	return rb_assoc_new(v, re);
     }
-    rb_backref_set(backref);
     return rb_assoc_new(Qnil, self);
 }
 
@@ -1360,8 +1356,16 @@ string_to_r_strict(VALUE self)
 static VALUE
 string_to_r(VALUE self)
 {
-    VALUE s = f_gsub(self, underscores_pat, an_underscore);
-    VALUE a = string_to_r_internal(s);
+    VALUE s, a, backref;
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
+
+    s = f_gsub(self, underscores_pat, an_underscore);
+    a = string_to_r_internal(s);
+
+    rb_backref_set(backref);
+
     if (!NIL_P(RARRAY_PTR(a)[0]))
 	return RARRAY_PTR(a)[0];
     return rb_rational_new1(INT2FIX(0));
@@ -1373,7 +1377,7 @@ string_to_r(VALUE self)
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE a1, a2;
+    VALUE a1, a2, backref;
 
     rb_scan_args(argc, argv, "02", &a1, &a2);
 
@@ -1396,6 +1400,9 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 	}
 	a2 = RCOMPLEX(a2)->real;
     }
+
+    backref = rb_backref_get();
+    rb_match_busy(backref);
 
     switch (TYPE(a1)) {
       case T_FIXNUM:
@@ -1420,6 +1427,8 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 	a2 = string_to_r_strict(a2);
 	break;
     }
+
+    rb_backref_set(backref);
 
     switch (TYPE(a1)) {
       case T_RATIONAL:

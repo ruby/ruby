@@ -1,3 +1,12 @@
+Fri Jun 13 21:26:39 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (string_to_c, nucomp_s_convert): preserve the current
+	  backref.
+
+	* rational.c (string_to_r, nurat_s_convert): ditto.
+
+	* include/ruby/intern.h (rb_match_busy): added a declaration.
+
 Fri Jun 13 18:08:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (Time.xmlschema): don't accept decimal dot without
