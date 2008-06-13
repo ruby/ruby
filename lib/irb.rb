@@ -149,10 +149,15 @@ module IRB
             line.untaint
 	    @context.evaluate(line, line_no)
 	    output_value if @context.echo?
-	  rescue StandardError, ScriptError, Abort
-	    $! = RuntimeError.new("unknown exception raised") unless $!
-	    print $!.class, ": ", $!, "\n"
-	    if  $@[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && $!.class.to_s !~ /^IRB/
+	    exc = nil
+	  rescue Interrupt => exc
+	  rescue SystemExit, SignalException
+	    raise
+	  rescue Exception => exc
+	  end
+	  if exc
+	    print exc.class, ": ", exc, "\n"
+	    if exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/
 	      irb_bug = true 
 	    else
 	      irb_bug = false
@@ -161,7 +166,7 @@ module IRB
 	    messages = []
 	    lasts = []
 	    levels = 0
-	    for m in $@
+	    for m in exc.backtrace
 	      m = @context.workspace.filter_backtrace(m) unless irb_bug
 	      if m
 		if messages.size < @context.back_trace_limit
@@ -183,8 +188,7 @@ module IRB
 	    print "Maybe IRB bug!!\n" if irb_bug
 	  end
           if $SAFE > 2
-            warn "Error: irb does not work for $SAFE level higher than 2"
-            exit 1
+            abort "Error: irb does not work for $SAFE level higher than 2"
           end
 	end
       end
