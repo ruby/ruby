@@ -141,13 +141,13 @@ set_debug_option(const char *str, int len, void *arg)
 #define SET_WHEN(name, var) do {	    \
 	if (len == sizeof(name) - 1 &&	    \
 	    strncmp(str, name, len) == 0) { \
-	    extern int ruby_##var;	    \
-	    ruby_##var = 1;		    \
+	    extern int var;	    \
+	    var = 1;		    \
 	    return;			    \
 	}				    \
     } while (0)
-    SET_WHEN("gc_stress", gc_stress);
-    SET_WHEN("core", enable_coredump);
+    SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr);
+    SET_WHEN("core", ruby_enable_coredump);
     fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
 }
 

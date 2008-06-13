@@ -1,3 +1,11 @@
+Sat Jun 14 07:52:53 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (ruby_initial_gc_stress): defined.
+	  (ruby_initial_gc_stress_ptr): defined.
+
+	* debug.c (set_debug_option): use ruby_initial_gc_stress_ptr for
+	  gc_stress option.
+
 Sat Jun 14 00:09:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (ruby_gc_stress): moved to rb_objspace_t.
