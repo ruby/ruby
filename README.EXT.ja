@@ -35,7 +35,7 @@ Rubyにはユーザが使う可能性のある以下のタイプがあります．
 	T_STRING	文字列
 	T_REGEXP	正規表現
 	T_ARRAY		配列
-	T_FIXNUM	Fixnum(31bit長整数)
+	T_FIXNUM	Fixnum(31bitまたは63bit長整数)
 	T_HASH		連想配列
 	T_STRUCT	(Rubyの)構造体
 	T_BIGNUM	多倍長整数
@@ -99,13 +99,15 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 れnil, false, trueです．このデータタイプのオブジェクトはひと
 つずつしか存在しません．
 
-データタイプがT_FIXNUMの時，これは31bitのサイズを持つ整数で
-す．FIXNUMをCの整数に変換するためにはマクロ「FIX2INT()」を使
-います．それから，FIXNUMに限らずRubyのデータを整数に変換する
-「NUM2INT()」というマクロがあります．このマクロはデータタイ
-プのチェック無しで使えます(整数に変換できない場合には例外が
-発生する)．同様にチェック無しで使える変換マクロはdoubleを
-取り出す「NUM2DBL()」があります。
+データタイプがT_FIXNUMの時，これは31bitまたは63bitのサイズを
+持つ整数です．longのサイズが32bitのプラットフォームであれば
+31bitに, longのサイズが64bitのプラットフォームであれば63bit
+になります. FIXNUM を C の整数に変換するためにはマクロ
+「FIX2INT()」を使います．それから，FIXNUMに限らずRubyのデー
+タを整数に変換する「NUM2INT()」というマクロがあります．この
+マクロはデータタイプのチェック無しで使えます(整数に変換でき
+ない場合には例外が発生する)．同様にチェック無しで使える変換
+マクロはdoubleを取り出す「NUM2DBL()」があります。
 
 char* を取り出す場合、version 1.6 以前では「STR2CSTR()」とい
 うマクロを使っていましたが、これは to_str() による暗黙の型変
@@ -113,10 +115,17 @@ char* を取り出す場合、version 1.6 以前では「STR2CSTR()」とい
 obsolete となり、代わりに StringValue() と StringValuePtr() 
 を使う事を推奨しています。StringValue(var) は var が String 
 であれば何もせず、そうでなければ var を var.to_str() の結果
-に置き換えるマクロ、StringValuePtr(var) は同様に var を置き
-換えてから var の文字列表現に対する char* を返すマクロです。
-var の内容を直接置き換える処理が入るので、var は lvalue であ
-る必要があります。
+に置き換えるマクロ、StringValuePtr(var) は同様に var を
+String に置き換えてから var のバイト列表現に対する char* を
+返すマクロです。var の内容を直接置き換える処理が入るので、
+var は lvalue である必要があります。
+また、StringValuePtr() に類似した StringValueCStr() というマ
+クロもあります。StringValueCStr(var) は var を String に置き
+換えてから var の文字列表現に対する char* を返します。返され
+る文字列の末尾には nul 文字が付加されます。なお、途中に nul
+文字が含まれる場合は ArgumentError が発生します。
+一方、StringValuePtr() では、末尾に nul 文字がある保証はなく、
+途中に nul 文字が含まれている可能性もあります。
 
 それ以外のデータタイプは対応するCの構造体があります．対応す
 る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
@@ -166,7 +175,8 @@ FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
 からVALUEに変換するマクロは以下のものがあります．必要に応じ
 て使い分けてください．
 
-  INT2FIX()	もとの整数が31bit以内に収まる自信がある時
+  INT2FIX()	もとの整数が31bitまたは63bit以内に収まる自信
+		がある時
   INT2NUM()	任意の整数からVALUEへ
 
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
