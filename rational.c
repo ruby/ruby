@@ -1274,13 +1274,15 @@ make_patterns(void)
 static VALUE
 string_to_r_internal(VALUE self)
 {
-    VALUE s, m;
+    VALUE s, m, backref;
 
     s = f_strip(self);
 
     if (RSTRING_LEN(s) == 0)
 	return rb_assoc_new(Qnil, self);
 
+    backref = rb_backref_get();
+    rb_match_busy(backref);
     m = f_match(rat_pat, s);
 
     if (!NIL_P(m)) {
@@ -1333,8 +1335,10 @@ string_to_r_internal(VALUE self)
 	if (!NIL_P(de))
 	    v = f_div(v, f_to_i(de));
 
+	rb_backref_set(backref);
 	return rb_assoc_new(v, re);
     }
+    rb_backref_set(backref);
     return rb_assoc_new(Qnil, self);
 }
 
