@@ -524,7 +524,7 @@ stack_grow_direction(addr)
 
 #define CHECK_STACK(ret) do {\
     SET_STACK_END;\
-    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX + GC_WATER_MARK);\
+    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX - GC_WATER_MARK);\
 } while (0)
 
 int
