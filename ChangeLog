@@ -1,3 +1,26 @@
+Fri Jun 13 11:42:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+Sun Jan 27 03:48:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+Sun Jan 27 03:47:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+Mon Jan 28 01:21:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_open_file): should check NUL in path.
+	  <http://www.rubyist.net/~matz/20080125.html#c01>.
+
+	* io.c (rb_io_s_popen): ditto.
+
+	* io.c (rb_io_reopen): ditto.
+
+	* io.c (next_argv): ditto.
+
+	* io.c (rb_io_s_foreach): ditto.
+
+	* io.c (rb_io_s_readlines): ditto.
+
+	* io.c (rb_io_s_read): ditto.
+
 Wed Jun 11 15:06:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic::inspect): use Kernel#to_s instead
