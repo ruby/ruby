@@ -5,6 +5,8 @@ Fri Jun 13 14:41:26 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* README.EXT.ja: describe about StringValueCStr().
 
+	* README.EXT: ditto.
+
 Fri Jun 13 14:24:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_memerror): exit with EXIT_FAILURE instead of magic number.
