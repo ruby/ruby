@@ -1,3 +1,8 @@
+Fri Jun 13 21:55:48 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c (nurat_equal_p): Rational(0,x) and 0 are equivalent,
+	  anyway.
+
 Fri Jun 13 21:26:39 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (string_to_c, nucomp_s_convert): preserve the current

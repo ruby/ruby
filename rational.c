@@ -865,6 +865,9 @@ nurat_equal_p(VALUE self, VALUE other)
 	{
 	    get_dat1(self);
 
+	    if (f_zero_p(dat->num) && f_zero_p(other))
+		return Qtrue;
+
 	    if (!FIXNUM_P(dat->den))
 		return Qfalse;
 	    if (FIX2LONG(dat->den) != 1)
@@ -878,6 +881,9 @@ nurat_equal_p(VALUE self, VALUE other)
       case T_RATIONAL:
 	{
 	    get_dat2(self, other);
+
+	    if (f_zero_p(adat->num) && f_zero_p(bdat->num))
+		return Qtrue;
 
 	    return f_boolcast(f_equal_p(adat->num, bdat->num) &&
 			      f_equal_p(adat->den, bdat->den));
