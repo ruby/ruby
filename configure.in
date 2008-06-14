@@ -1727,14 +1727,14 @@ AC_ARG_WITH(vendordir,
 VENDOR_DIR=`eval echo \\"${vendordir}\\"`
 case "$target_os" in
   cygwin*|mingw*|*djgpp*|os2-emx*)
-    RUBY_VENDOR_LIB_PATH="`expr "$VENDOR_DIR" : "$prefix\(/.*\)"`" ||
-    RUBY_VENDOR_LIB_PATH="$VENDOR_DIR";;
+    RUBY_VENDOR_LIB_PATH="`eval echo "$VENDOR_DIR" | sed 's|^NONE/|/|;s|^'"$prefix"'/|/|'`"
+    ;;
   *)
-    RUBY_VENDOR_LIB_PATH="$VENDOR_DIR";;
+    RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
+    ;;
 esac
 RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${MAJOR}.${MINOR}"
 
-AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${RUBY_VENDOR_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB2, "${RUBY_VENDOR_LIB_PATH2}")
 
