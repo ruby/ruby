@@ -309,6 +309,12 @@ extern void ruby_error_print(void);
 static VALUE rb_thread_raise(int, VALUE *, rb_thread_t *);
 void rb_thread_recycle_stack_release(VALUE *);
 
+void
+ruby_thread_init_stack(rb_thread_t *th)
+{
+    native_thread_init_stack(th);
+}
+
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {

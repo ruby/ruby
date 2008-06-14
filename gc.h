@@ -57,5 +57,19 @@ rb_gc_debug_body(char *mode, char *msg, int st, void *ptr)
 
 #define RUBY_MARK_UNLESS_NULL(ptr) if(RTEST(ptr)){rb_gc_mark(ptr);}
 #define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);}
-#endif /* RUBY_GC_H */
 
+#if STACK_GROW_DIRECTION > 0
+# define STACK_UPPER(x, a, b) a
+#elif STACK_GROW_DIRECTION < 0
+# define STACK_UPPER(x, a, b) b
+#else
+RUBY_EXTERN int ruby_stack_grow_direction;
+int ruby_get_stack_grow_direction(VALUE *addr);
+# define stack_growup_p(x) (			\
+	(ruby_stack_grow_direction ?		\
+	 ruby_stack_grow_direction :		\
+	 ruby_get_stack_grow_direction(x)) > 0)
+# define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
+#endif
+
+#endif /* RUBY_GC_H */

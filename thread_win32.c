@@ -424,6 +424,32 @@ native_cond_destroy(rb_thread_cond_t *cond)
     /* */
 }
 
+void
+ruby_init_stack(VALUE *addr)
+{
+}
+
+#define CHECK_ERR(expr) \
+    {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
+
+static void
+native_thread_init_stack(rb_thread_t *th)
+{
+    MEMORY_BASIC_INFORMATION mi;
+    char *base, *end;
+    DWORD size, space;
+
+    CHECK_ERR(VirtualQuery(&mi, &mi, sizeof(mi)));
+    base = mi.AllocationBase;
+    end = mi.BaseAddress;
+    end += mi.RegionSize;
+    size = end - base;
+    space = size / 5;
+    if (space > 1024*1024) space = 1024*1024;
+    th->machine_stack_start = (VALUE *)end - 1;
+    th->machine_stack_maxsize = size - space;
+}
+
 static void
 native_thread_destroy(rb_thread_t *th)
 {
@@ -441,6 +467,7 @@ thread_start_func_1(void *th_ptr)
     VALUE stack_start;
     volatile HANDLE thread_id = th->thread_id;
 
+    native_thread_init_stack(th);
     th->native_thread_data.interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
 
     /* run */
@@ -453,15 +480,11 @@ thread_start_func_1(void *th_ptr)
     return 0;
 }
 
-extern size_t rb_gc_stack_maxsize;
-
 static int
 native_thread_create(rb_thread_t *th)
 {
     size_t stack_size = 4 * 1024; /* 4KB */
     th->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
-
-    th->machine_stack_maxsize = rb_gc_stack_maxsize; /* not tested. */
 
     if ((th->thread_id) == 0) {
 	st_delete_wrap(th->vm->living_threads, th->self);

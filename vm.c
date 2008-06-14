@@ -1576,8 +1576,10 @@ thread_alloc(VALUE klass)
 }
 
 static void
-th_init2(rb_thread_t *th)
+th_init2(rb_thread_t *th, VALUE self)
 {
+    th->self = self;
+
     /* allocate thread stack */
     th->stack_size = RUBY_VM_THREAD_STACK_SIZE;
     th->stack = thread_recycle_stack(th->stack_size);
@@ -1596,9 +1598,9 @@ th_init2(rb_thread_t *th)
 }
 
 static void
-th_init(rb_thread_t *th)
+th_init(rb_thread_t *th, VALUE self)
 {
-    th_init2(th);
+    th_init2(th, self);
 }
 
 static VALUE
@@ -1608,8 +1610,7 @@ ruby_thread_init(VALUE self)
     rb_vm_t *vm = GET_THREAD()->vm;
     GetThreadPtr(self, th);
 
-    th_init(th);
-    th->self = self;
+    th_init(th, self);
     th->vm = vm;
 
     th->top_wrapper = 0;
@@ -1763,6 +1764,7 @@ Init_VM(void)
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 struct rb_objspace *rb_objspace_alloc(void);
 #endif
+void ruby_thread_init_stack(rb_thread_t *th);
 
 void
 Init_BareVM(void)
@@ -1780,15 +1782,9 @@ Init_BareVM(void)
 #endif
     ruby_current_vm = vm;
 
-    th_init2(th);
+    th_init2(th, 0);
     th->vm = vm;
-    th->machine_stack_start = rb_gc_stack_start;
-    th->machine_stack_maxsize = rb_gc_stack_maxsize;
-#ifdef __ia64
-    th->machine_register_stack_start = rb_gc_register_stack_start;
-    th->machine_stack_maxsize /= 2;
-    th->machine_register_stack_maxsize = th->machine_stack_maxsize;
-#endif
+    ruby_thread_init_stack(th);
 }
 
 /* top self */
@@ -1832,7 +1828,8 @@ rb_ruby_verbose_ptr(void)
     return ruby_vm_verbose_ptr(GET_VM());
 }
 
-VALUE *rb_ruby_debug_ptr(void)
+VALUE *
+rb_ruby_debug_ptr(void)
 {
     return ruby_vm_debug_ptr(GET_VM());
 }

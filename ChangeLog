@@ -1,3 +1,17 @@
+Sat Jun 14 11:59:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.h (STACK_UPPER): moved from gc.c
+
+	* thread.c, thread_{pthread,win32}.c (ruby_init_stack,
+	  ruby_thread_init_stack): moved stack initialization from gc.c.
+
+Sat Jun 14 11:57:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.h (STACK_UPPER): moved from gc.c
+
+	* thread.c, thread_{pthread,win32}.c (ruby_init_stack,
+	  ruby_thread_init_stack): moved stack initialization from gc.c.
+
 Sat Jun 14 07:52:53 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (ruby_initial_gc_stress): defined.

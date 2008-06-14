@@ -244,24 +244,8 @@ rb_objspace_alloc(void)
 #define HEAP_OBJ_LIMIT (HEAP_SIZE / sizeof(struct RVALUE))
 
 extern st_table *rb_class_tbl;
-VALUE *rb_gc_stack_start = 0;
-#ifdef __ia64
-VALUE *rb_gc_register_stack_start = 0;
-#endif
 
 int ruby_disable_gc_stress = 0;
-
-
-#ifdef DJGPP
-/* set stack size (http://www.delorie.com/djgpp/v2faq/faq15_9.html) */
-unsigned int _stklen = 0x180000; /* 1.5 kB */
-#endif
-
-#if defined(DJGPP) || defined(_WIN32_WCE)
-size_t rb_gc_stack_maxsize = 65535*sizeof(VALUE);
-#else
-size_t rb_gc_stack_maxsize = 655300*sizeof(VALUE);
-#endif
 
 static void run_final(rb_objspace_t *objspace, VALUE obj);
 static int garbage_collect(rb_objspace_t *objspace);
@@ -790,23 +774,17 @@ rb_data_object_alloc(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_F
 # define STACK_LENGTH  ((STACK_END < STACK_START) ? STACK_START - STACK_END\
                                            : STACK_END - STACK_START + 1)
 #endif
-#if STACK_GROW_DIRECTION > 0
-# define STACK_UPPER(x, a, b) a
-#elif STACK_GROW_DIRECTION < 0
-# define STACK_UPPER(x, a, b) b
-#else
-static int grow_direction;
-static int
-stack_grow_direction(VALUE *addr)
+#if !STACK_GROW_DIRECTION
+int ruby_stack_grow_direction;
+int
+ruby_get_stack_grow_direction(VALUE *addr)
 {
     rb_thread_t *th = GET_THREAD();
     SET_STACK_END;
 
-    if (STACK_END > addr) return grow_direction = 1;
-    return grow_direction = -1;
+    if (STACK_END > addr) return ruby_stack_grow_direction = 1;
+    return ruby_stack_grow_direction = -1;
 }
-# define stack_growup_p(x) ((grow_direction ? grow_direction : stack_grow_direction(x)) > 0)
-# define STACK_UPPER(x, a, b) (stack_growup_p(x) ? a : b)
 #endif
 
 #define GC_WATER_MARK 512
@@ -1786,65 +1764,12 @@ rb_gc_start(void)
     return Qnil;
 }
 
-void
-ruby_set_stack_size(size_t size)
-{
-    rb_gc_stack_maxsize = size;
-}
-
 #undef Init_stack
 
 void
 Init_stack(VALUE *addr)
 {
     ruby_init_stack(addr);
-}
-
-#undef ruby_init_stack
-void
-ruby_init_stack(VALUE *addr
-#ifdef __ia64
-    , void *bsp
-#endif
-    )
-{
-    if (!rb_gc_stack_start ||
-        STACK_UPPER(&addr,
-                    rb_gc_stack_start > addr,
-                    rb_gc_stack_start < addr)) {
-        rb_gc_stack_start = addr;
-    }
-#ifdef __ia64
-    if (!rb_gc_register_stack_start ||
-        (VALUE*)bsp < rb_gc_register_stack_start) {
-        rb_gc_register_stack_start = (VALUE*)bsp;
-    }
-#endif
-#ifdef HAVE_GETRLIMIT
-    {
-	struct rlimit rlim;
-
-	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
-	    unsigned int space = rlim.rlim_cur/5;
-
-	    if (space > 1024*1024) space = 1024*1024;
-	    rb_gc_stack_maxsize = rlim.rlim_cur - space;
-	}
-    }
-#elif defined _WIN32
-    {
-	MEMORY_BASIC_INFORMATION mi;
-	DWORD size;
-	DWORD space;
-
-	if (VirtualQuery(&mi, &mi, sizeof(mi))) {
-	    size = (char *)mi.BaseAddress - (char *)mi.AllocationBase;
-	    space = size / 5;
-	    if (space > 1024*1024) space = 1024*1024;
-            rb_gc_stack_maxsize = size - space;
-	}
-    }
-#endif
 }
 
 /*
@@ -1881,9 +1806,6 @@ ruby_init_stack(VALUE *addr
 void
 Init_heap(void)
 {
-    if (!rb_gc_stack_start) {
-	Init_stack(0);
-    }
     init_heap(&rb_objspace);
 }
 
