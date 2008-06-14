@@ -1,3 +1,8 @@
+Sat Jun 14 16:12:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/timeout.rb (Timeout::timeout): made sensitive to location on the
+	  stack.  [ruby-core:15458]
+
 Fri Jun 13 13:10:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/ptr.c (dlmem_each_i): typo fixed.  a patch from IKOMA
