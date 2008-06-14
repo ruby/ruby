@@ -1,3 +1,8 @@
+Sat Jun 14 22:52:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_sysread): should not raise at empty
+	  read.  a patch from Arthur Schreiber at [ruby-core:17245].
+
 Sat Jun 14 22:16:09 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Fix $LOAD_PATH.  Properly expand vendor_ruby
