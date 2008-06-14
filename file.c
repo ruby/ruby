@@ -2829,14 +2829,14 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 
 #if USE_NTFS
     *p = '\0';
-    if (*(s = skipprefix(b = buf)) && !strpbrk(s, "*?")) {
+    if ((s = strrdirsep(b = buf)) != 0 && !strpbrk(s, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
 #ifdef __CYGWIN__
 	int lnk_added = 0, is_symlink = 0;
 	struct stat st;
 	char w32buf[MAXPATHLEN];
-	p = strrdirsep(s);
+	p = (char *)s;
 	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
 	    is_symlink = 1;
 	    *p = '\0';
@@ -2865,7 +2865,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 		wfd.cFileName[len -= 4] = '\0';
 	    }
 #else
-	    p = strrdirsep(s);
+	    p = (char *)s;
 #endif
 	    ++p;
 	    BUFCHECK(bdiff + len >= buflen);

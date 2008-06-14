@@ -1,3 +1,8 @@
+Sat Jun 14 16:55:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): no need to expand root path which has no
+	  short file name.  [ruby-dev:35095]
+
 Sat Jun 14 11:59:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.h (STACK_UPPER): moved from gc.c
