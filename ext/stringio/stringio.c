@@ -1152,7 +1152,7 @@ static VALUE
 strio_sysread(int argc, VALUE *argv, VALUE self)
 {
     VALUE val = strio_read(argc, argv, self);
-    if (NIL_P(val) || RSTRING_LEN(val) == 0) {
+    if (NIL_P(val)) {
 	rb_eof_error();
     }
     return val;
