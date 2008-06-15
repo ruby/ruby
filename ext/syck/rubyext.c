@@ -511,6 +511,7 @@ yaml_org_handler( SyckNode *n, VALUE *ref )
             else if ( strcmp( type_id, "str" ) == 0 )
             {
                 obj = rb_str_new( n->data.str->ptr, n->data.str->len );
+                rb_enc_associate(obj, rb_utf8_encoding());
             }
             else
             {
@@ -1237,6 +1238,7 @@ syck_genericresolver_node_import(VALUE self, VALUE node)
         case syck_str_kind:
         {
             v = rb_str_new( n->data.str->ptr, n->data.str->len );
+	    rb_enc_associate(v, rb_utf8_encoding());
             if ( n->data.str->style == scalar_1quote )
             {
                 style = sym_1quote;

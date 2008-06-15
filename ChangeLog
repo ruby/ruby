@@ -1,3 +1,9 @@
+Sun Jun 15 18:40:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/syck/rubyext.c (yaml_org_handler): associate encoding.
+
+	* ext/syck/rubyext.c (syck_genericresolver_node_import): ditto.
+
 Sun Jun 15 18:17:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_vm_t), vm.c (rb_vm_mark): moved preallocated special
