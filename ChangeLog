@@ -1,3 +1,7 @@
+Sun Jun 15 19:54:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2str_find_n1): check integer overflow.
+
 Sun Jun 15 19:52:20 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (STACK_LENGTH) [SPARC] : 0x80 offset removed.  [ruby-dev:33857]
