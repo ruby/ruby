@@ -1,3 +1,9 @@
+Sun Jun 15 22:46:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): backported from 1.9.  a patch from Satoshi
+	  Nakagawa <psychs at limechat.net> in [ruby-dev:34625]. 
+	  fixed: [ruby-dev:34623]
+
 Sun Jun 15 22:44:25 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* struct.c (rb_struct_s_def): to_str should be called only once.
