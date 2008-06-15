@@ -1,3 +1,8 @@
+Sun Jun 15 21:59:22 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_quote): should always copy the quoting string.
+	  [ruby-core:16235]
+
 Sun Jun 15 21:27:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/pop.rb (Net::POP3::do_finish): clear @n_mails and

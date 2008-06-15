@@ -1754,7 +1754,7 @@ rb_reg_quote(str)
 	    goto meta_found;
 	}
     }
-    return str;
+    return rb_str_new3(str);
 
   meta_found:
     tmp = rb_str_new(0, RSTRING(str)->len*2);
