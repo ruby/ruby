@@ -42,17 +42,32 @@ static ID completion_proc, completion_case_fold;
 # define rl_completion_matches completion_matches
 #endif
 
-static int readline_event(void);
 static char **readline_attempted_completion_function(const char *text,
                                                      int start, int end);
 
+#ifdef HAVE_RL_EVENT_HOOK
+#ifdef DOSISH
+#define BUSY_WAIT 1
+#else
+#define BUSY_WAIT 0
+#endif
+
+static int readline_event(void);
 static int
 readline_event()
 {
-    CHECK_INTS;
+#if BUSY_WAIT
     rb_thread_schedule();
+#else
+    fd_set rset;
+
+    FD_ZERO(&rset);
+    FD_SET(fileno(rl_instream), &rset);
+    rb_thread_select(fileno(rl_instream) + 1, &rset, NULL, NULL, NULL);
     return 0;
+#endif
 }
+#endif
 
 static VALUE
 readline_readline(argc, argv, self)
