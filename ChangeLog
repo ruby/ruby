@@ -1,3 +1,9 @@
+Sun Jun 15 20:27:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-mode): should use `run-mode-hooks' instead
+	  of calling `run-hooks' directly to run the mode hook.  patch from
+	  Chiyuan Zhang <pluskid AT gmail.com> in [ruby-core:15915]
+
 Sun Jun 15 20:20:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (fix_coerce): try conversion before type check.
