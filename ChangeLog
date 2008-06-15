@@ -1,3 +1,8 @@
+Sun Jun 15 19:21:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/lib/expect.rb (IO#expect): check if peer is closed.
+	  [ruby-Bugs-17940]
+
 Sun Jun 15 19:19:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_convert): check upper bound.  a patch from
