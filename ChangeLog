@@ -1,3 +1,8 @@
+Mon Jun 16 07:14:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_readline, strio_each)
+	  (strio_readlines): set lastline.  [ruby-core:17257]
+
 Sat Jun 14 22:52:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_sysread): should not raise at empty
