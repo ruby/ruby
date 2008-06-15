@@ -1,3 +1,8 @@
+Sun Jun 15 23:19:53 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_cstr_to_dbl): should clear errno before calling
+	  strtod(3).  [ruby-dev:34834]
+
 Sun Jun 15 23:18:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (marshal_load): should initialize arg.data used for
