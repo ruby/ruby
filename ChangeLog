@@ -1,3 +1,8 @@
+Sun Jun 15 21:27:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/pop.rb (Net::POP3::do_finish): clear @n_mails and
+	  @n_bytes as well.  [ruby-core:16144]
+
 Sun Jun 15 21:08:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::Config.default_config_hash): requires
