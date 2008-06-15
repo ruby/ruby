@@ -3,6 +3,11 @@ Sun Jun 15 23:12:02 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (top_local_setup): fixed memory leak bug based on a
 	  patch from Roger Pack <rogerpack2005 at gmail.com> in
 	  [ruby-core:16610].
+Sun Jun 15 23:15:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (reentrant_check): check reentrance via callcc.
+	  [ruby-dev:34802]
+
 
 Sun Jun 15 23:08:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
