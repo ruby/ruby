@@ -5742,7 +5742,7 @@ top_local_setup()
 		    rb_mem_clear(vars+i, len-i);
 		}
 		else {
-		    *vars++ = (VALUE)ruby_scope;
+		    *vars++ = 0;
 		    rb_mem_clear(vars, len);
 		}
 		ruby_scope->local_vars = vars;
@@ -5758,6 +5758,7 @@ top_local_setup()
                if (!(ruby_scope->flags & SCOPE_CLONE))
                    xfree(ruby_scope->local_tbl);
 	    }
+            ruby_scope->local_vars[-1] = 0; /* no reference needed */
 	    ruby_scope->local_tbl = local_tbl();
 	}
     }
