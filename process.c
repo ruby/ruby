@@ -1524,6 +1524,9 @@ rb_f_system(argc, argv)
     }
 #if !defined(_WIN32)
     last_status_set(status == -1 ? 127 : status, 0);
+#else
+    if (status == -1)
+	last_status_set(0x7f << 8, 0);
 #endif
 #elif defined(__VMS)
     VALUE cmd;
