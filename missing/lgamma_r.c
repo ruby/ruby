@@ -1,4 +1,4 @@
-/* lgamma_r.c  - public domain implementation of error function lgamma_r(3m)
+/* lgamma_r.c  - public domain implementation of function lgamma_r(3m)
 
 lgamma_r() is based on gamma().  modified by Tanaka Akira.
 
