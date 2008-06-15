@@ -89,10 +89,10 @@ static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_call
 #define GVL_UNLOCK_BEGIN() do { \
   rb_thread_t *_th_stored = GET_THREAD(); \
   rb_gc_save_machine_context(_th_stored); \
-  native_mutex_unlock(&_th_stored->vm->global_interpreter_lock)
+  native_mutex_unlock(&_th_stored->vm->global_vm_lock)
 
 #define GVL_UNLOCK_END() \
-  native_mutex_lock(&_th_stored->vm->global_interpreter_lock); \
+  native_mutex_lock(&_th_stored->vm->global_vm_lock); \
   rb_thread_set_current(_th_stored); \
 } while(0)
 
@@ -331,7 +331,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 #endif
     thread_debug("thread start: %p\n", th);
 
-    native_mutex_lock(&th->vm->global_interpreter_lock);
+    native_mutex_lock(&th->vm->global_vm_lock);
     {
 	thread_debug("thread start (get lock): %p\n", th);
 	rb_thread_set_current(th);
@@ -404,7 +404,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	}
     }
     thread_cleanup_func(th);
-    native_mutex_unlock(&th->vm->global_interpreter_lock);
+    native_mutex_unlock(&th->vm->global_vm_lock);
 
     return 0;
 }
@@ -785,11 +785,11 @@ rb_thread_schedule(void)
 	thread_debug("rb_thread_schedule/switch start\n");
 
 	rb_gc_save_machine_context(th);
-	native_mutex_unlock(&th->vm->global_interpreter_lock);
+	native_mutex_unlock(&th->vm->global_vm_lock);
 	{
 	    native_thread_yield();
 	}
-	native_mutex_lock(&th->vm->global_interpreter_lock);
+	native_mutex_lock(&th->vm->global_vm_lock);
 
 	rb_thread_set_current(th);
 	thread_debug("rb_thread_schedule/switch done\n");
@@ -3385,7 +3385,7 @@ Init_Thread(void)
 	/* main thread setting */
 	{
 	    /* acquire global interpreter lock */
-	    rb_thread_lock_t *lp = &GET_THREAD()->vm->global_interpreter_lock;
+	    rb_thread_lock_t *lp = &GET_THREAD()->vm->global_vm_lock;
 	    native_mutex_initialize(lp);
 	    native_mutex_lock(lp);
 	    native_mutex_initialize(&GET_THREAD()->interrupt_lock);

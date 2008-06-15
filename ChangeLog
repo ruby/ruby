@@ -1,3 +1,8 @@
+Mon Jun 16 01:33:08 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h, thread.c: rename global_interpreter_lock to
+	  global_vm_lock.
+
 Sun Jun 15 18:40:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/syck/rubyext.c (yaml_org_handler): associate encoding.

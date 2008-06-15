@@ -297,7 +297,7 @@ struct rb_vm_struct
 {
     VALUE self;
 
-    rb_thread_lock_t global_interpreter_lock;
+    rb_thread_lock_t global_vm_lock;
 
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
