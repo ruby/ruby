@@ -462,6 +462,8 @@ module Net
 
     def do_finish
       @mails = nil
+      @n_mails = nil
+      @n_bytes = nil
       @command.quit if @command
     ensure
       @started = false
