@@ -1,3 +1,9 @@
+Sun Jun 15 23:13:23 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (top_local_setup): fixed memory leak bug based on a
+	  patch from Roger Pack <rogerpack2005 at gmail.com> in
+	  [ruby-core:16610].
+
 Sun Jun 15 23:09:00 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): fixed SEGV on win32 with "% 0e" % 1.0/0.0.
