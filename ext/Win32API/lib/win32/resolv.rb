@@ -11,7 +11,7 @@ module Win32
     
     def self.get_hosts_path
       path = get_hosts_dir
-      path = File.join(path.gsub(/\\/, File::SEPARATOR), 'hosts')
+      path = File.expand_path('hosts', path)
       File.exist?(path) ? path : nil
     end
     
