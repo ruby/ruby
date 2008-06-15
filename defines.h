@@ -251,6 +251,14 @@ void rb_ia64_flushrs(void);
 #define ENV_IGNORECASE
 #endif
 
+#ifndef CASEFOLD_FILESYSTEM
+# if defined DOSISH || defined __VMS
+#   define CASEFOLD_FILESYSTEM 1
+# else
+#   define CASEFOLD_FILESYSTEM 0
+# endif
+#endif
+
 #ifndef DLEXT_MAXLEN
 #define DLEXT_MAXLEN 4
 #endif
