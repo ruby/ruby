@@ -1,3 +1,10 @@
+Sun Jun 15 23:28:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search
+	  private methods too.  [ruby-dev:34671]
+
+	* object.c (convert_type): ditto.
+
 Sun Jun 15 23:26:50 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* numeric.c (flo_divmod): Revert the behavior change; do not
