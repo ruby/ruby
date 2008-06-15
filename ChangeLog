@@ -1,3 +1,7 @@
+Mon Jun 16 01:48:08 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_dump.c (vm_stack_dump_raw): disable verbose debug output.
+
 Mon Jun 16 01:33:08 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h, thread.c: rename global_interpreter_lock to

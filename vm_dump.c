@@ -142,7 +142,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 void
 vm_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-#if 1
+#if 0
     VALUE *sp = cfp->sp, *bp = cfp->bp;
     VALUE *lfp = cfp->lfp;
     VALUE *dfp = cfp->dfp;
