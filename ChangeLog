@@ -82,6 +82,11 @@ Sat Jun 14 16:49:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Jun 13 13:14:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/ptr.c (dlmem_each_i): typo fixed.  a patch from IKOMA
+Sun Jun 15 21:06:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (clone_method): should copy cref as well.
+	  [ruby-core:15833]
+
 	  Yoshiki <ikoma@mb.i-chubu.ne.jp> in [ruby-dev:33776].
 
 Fri Jun 13 13:13:23 2008  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
