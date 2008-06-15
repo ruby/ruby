@@ -1,3 +1,11 @@
+Sun Jun 15 19:24:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yycompile): clear ruby_eval_tree_begin if parse failed.
+
+Sun Jun 15 19:23:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yycompile): clear ruby_eval_tree_begin too before parse.
+
 Sun Jun 15 19:21:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/lib/expect.rb (IO#expect): check if peer is closed.
