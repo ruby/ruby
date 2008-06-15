@@ -3177,6 +3177,10 @@ re_search(bufp, string, size, startpos, range, regs)
   /* Check for out-of-range starting position.  */
   if (startpos < 0  ||  startpos > size)
     return -1;
+  if (!string) {
+    if (size == 0) string = "";
+    else return -1;
+  }
 
   /* Update the fastmap now if not correct already.  */
   if (fastmap && !bufp->fastmap_accurate) {
