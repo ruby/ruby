@@ -1272,6 +1272,14 @@ EOY
       assert_equal([{}], o.keys)
     end
 
+    #
+    # contributed by riley lynch [ruby-Bugs-8548]
+    #
+    def test_object_id_collision
+      omap = YAML::Omap.new
+      1000.times { |i| omap["key_#{i}"] = { "value" => i } }
+      raise "id collision in ordered map" if omap.to_yaml =~ /id\d+/
+    end
 end
 
 if $0 == __FILE__

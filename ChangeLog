@@ -1,3 +1,13 @@
+Sun Jun 15 22:10:14 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/yaml/types.rb: Likewise, pass self to YAML::quick_emit;
+	  merged from 1.9.
+
+	* lib/yaml.rb (quick_emit): use combination of object_id and hash to
+	  identify repeated object references, since GC will reuse memory of
+	  objects during output of YAML. [ruby-Bugs-8548] [ruby-Bugs-3698];
+	  merged from 1.9.
+
 Sun Jun 15 22:05:45 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syck/rubyext.c: Node#value defined twice.
