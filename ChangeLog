@@ -1,3 +1,8 @@
+Sun Jun 15 23:21:22 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* marshal.c (r_object0, Init_marshal): Fix the garbled s_call
+	  definition; fixes [ruby-dev:34843].
+
 Sun Jun 15 23:19:53 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_cstr_to_dbl): should clear errno before calling
