@@ -2309,6 +2309,18 @@ rb_file_s_umask(argc, argv)
 #define isdirsep(x) ((x) == '/')
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+#define USE_NTFS 1
+#else
+#define USE_NTFS 0
+#endif
+
+#if USE_NTFS
+#define istrailinggabage(x) ((x) == '.' || (x) == ' ')
+#else
+#define istrailinggabage(x) 0
+#endif
+
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # if defined(DJGPP)
 #   define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
@@ -2457,6 +2469,30 @@ rb_path_end(path)
     }
     return (char *)path;
 }
+
+#if USE_NTFS
+static char *
+ntfs_tail(const char *path)
+{
+    while (*path && *path != ':') {
+	if (istrailinggabage(*path)) {
+	    const char *last = path++;
+	    while (istrailinggabage(*path)) path++;
+	    if (!*path || *path == ':') return (char *)last;
+	}
+	else if (isdirsep(*path)) {
+	    const char *last = path++;
+	    while (isdirsep(*path)) path++;
+	    if (!*path) return (char *)last;
+	    if (*path == ':') path++;
+	}
+	else {
+	    path = CharNext(path);
+	}
+    }
+    return (char *)path;
+}
+#endif
 
 #if USE_NTFS
 static char *
@@ -2728,23 +2764,17 @@ file_expand_path(fname, dname, result)
     if (p == skiproot(buf) - 1) p++;
     buflen = p - buf;
 
-    RSTRING(result)->len = buflen;
-    *p = '\0';
 #if USE_NTFS
-    if (1 &&
-#ifdef __CYGWIN__
-	!(buf[0] == '/' && !buf[1]) &&
-#endif
-	!strpbrk(b = buf, "*?")) {
+    *p = '\0';
+    if (!strpbrk(b = buf, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
 #ifdef __CYGWIN__
-	int lnk_added = 0, is_symlink = 0;
+	int lnk_added = 0;
 	struct stat st;
 	char w32buf[MAXPATHLEN], sep = 0;
 	p = 0;
 	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
-	    is_symlink = 1;
 	    p = strrdirsep(buf);
 	    if (!p) p = skipprefix(buf);
 	    if (p) {
@@ -2757,7 +2787,8 @@ file_expand_path(fname, dname, result)
 	}
 	if (p) *p = sep;
 	else p = buf;
-	if (is_symlink && b == w32buf) {
+	if (b == w32buf) {
+	    strlcat(w32buf, p, sizeof(w32buf));
 	    len = strlen(p);
 	    if (len > 4 && strcasecmp(p + len - 4, ".lnk") != 0) {
 		lnk_added = 1;
@@ -2785,6 +2816,8 @@ file_expand_path(fname, dname, result)
 #endif
 
     if (tainted) OBJ_TAINT(result);
+    RSTRING(result)->len = buflen;
+    RSTRING(result)->ptr[buflen] = '\0';
     return result;
 }
 
@@ -2847,7 +2880,12 @@ rmext(p, l1, e)
     }
     if (l1 < l2) return l1;
 
-    if (strncmp(p+l1-l2, e, l2) == 0) {
+#if CASEFOLD_FILESYSTEM
+#define fncomp strncasecmp
+#else
+#define fncomp strncmp
+#endif
+    if (fncomp(p+l1-l2, e, l2) == 0) {
 	return l1-l2;
     }
     return 0;
@@ -2926,7 +2964,7 @@ rb_file_s_basename(argc, argv)
 	if (NIL_P(fext) || !(f = rmext(p, n, StringValueCStr(fext)))) {
 	    f = n;
 	}
-	if (f == RSTRING(fname)->len) return fname;
+        if (f == RSTRING(fname)->len) return fname;
     }
     basename = rb_str_new(p, f);
     OBJ_INFECT(basename, fname);
@@ -3009,7 +3047,7 @@ rb_file_s_extname(klass, fname)
     if (!p)
 	p = name;
     else
-	name = ++p;
+	p++;
 
     e = 0;
     while (*p) {
@@ -3039,7 +3077,7 @@ rb_file_s_extname(klass, fname)
 	    break;
 	p = CharNext(p);
     }
-    if (!e || e == name || e+1 == p)	/* no dot, or the only dot is first or end? */
+    if (!e || e+1 == p)	/* no dot, or the only dot is first or end? */
 	return rb_str_new(0, 0);
     extname = rb_str_new(e, p - e);	/* keep the dot, too! */
     OBJ_INFECT(extname, fname);
