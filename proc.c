@@ -1756,7 +1756,7 @@ Init_Proc(void)
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eException);
     sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
     OBJ_TAINT(sysstack_error);
-    rb_register_mark_object(sysstack_error);
+    OBJ_FREEZE(sysstack_error);
 
     /* utility functions */
     rb_define_global_function("proc", rb_block_proc, 0);

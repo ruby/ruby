@@ -20,9 +20,8 @@ NORETURN(void rb_raise_jump(VALUE));
 ID rb_frame_callee(void);
 VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
-VALUE sysstack_error;
 
-static VALUE exception_error;
+#define exception_error GET_VM()->special_exceptions[ruby_error_reenter]
 
 #include "eval_error.c"
 #include "eval_safe.c"
@@ -372,6 +371,9 @@ rb_longjmp(int tag, VALUE mesg)
 	at = get_backtrace(mesg);
 	if (NIL_P(at)) {
 	    at = rb_make_backtrace();
+	    if (OBJ_FROZEN(mesg)) {
+		mesg = rb_obj_dup(mesg);
+	    }
 	    set_backtrace(mesg, at);
 	}
     }
@@ -1198,7 +1200,8 @@ Init_eval(void)
 
     exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
     rb_ivar_set(exception_error, idThrowState, INT2FIX(TAG_FATAL));
-    rb_register_mark_object(exception_error);
+    OBJ_TAINT(exception_error);
+    OBJ_FREEZE(exception_error);
 }
 
 

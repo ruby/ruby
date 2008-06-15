@@ -1393,6 +1393,7 @@ rb_vm_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(vm->load_path);
 	RUBY_MARK_UNLESS_NULL(vm->loaded_features);
 	RUBY_MARK_UNLESS_NULL(vm->top_self);
+	rb_gc_mark_locations(vm->special_exceptions, vm->special_exceptions + ruby_special_error_count - 1);
 
 	if (vm->loading_table) {
 	    rb_mark_tbl(vm->loading_table);

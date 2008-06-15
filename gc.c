@@ -84,7 +84,7 @@ void *alloca ();
 #endif
 #endif
 
-static VALUE nomem_error;
+#define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
 #define MARK_STACK_MAX 1024
 
@@ -264,6 +264,11 @@ rb_memerror(void)
 	(rb_thread_raised_p(th, RAISED_NOMEMORY) && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
+    }
+    if (rb_thread_raised_p(th, RAISED_NOMEMORY)) {
+	rb_thread_raised_clear(th);
+	GET_THREAD()->errinfo = nomem_error;
+	JUMP_TAG(TAG_RAISE);
     }
     rb_thread_raised_set(th, RAISED_NOMEMORY);
     rb_exc_raise(nomem_error);
@@ -2394,8 +2399,9 @@ Init_GC(void)
 
     rb_define_module_function(rb_mObSpace, "_id2ref", id2ref, 1);
 
-    rb_global_variable(&nomem_error);
     nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
+    OBJ_TAINT(nomem_error);
+    OBJ_FREEZE(nomem_error);
 
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);

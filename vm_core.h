@@ -281,6 +281,13 @@ struct rb_iseq_struct {
     struct iseq_compile_data *compile_data;
 };
 
+enum ruby_special_exceptions {
+    ruby_error_reenter,
+    ruby_error_nomemory,
+    ruby_error_sysstack,
+    ruby_special_error_count
+};
+
 typedef struct rb_iseq_struct rb_iseq_t;
 
 #define GetVMPtr(obj, ptr) \
@@ -306,6 +313,8 @@ struct rb_vm_struct
 
     /* object management */
     VALUE mark_object_ary;
+
+    VALUE special_exceptions[ruby_special_error_count];
 
     /* load */
     VALUE top_self;
@@ -648,7 +657,7 @@ VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));
 
-RUBY_EXTERN VALUE sysstack_error;
+#define sysstack_error GET_VM()->special_exceptions[ruby_error_sysstack]
 
 /* for thread */
 

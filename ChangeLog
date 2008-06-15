@@ -1,3 +1,17 @@
+Sun Jun 15 18:17:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_t), vm.c (rb_vm_mark): moved preallocated special
+	  exceptions.
+
+	* eval.c (Init_eval), gc.c (Init_GC), proc.c (Init_Proc): freeze
+	  preallocated special exceptions.
+
+	* eval.c (rb_longjmp): duplicate the thrown exception to set backtrace
+	  if it was frozen.
+
+	* gc.c (rb_memerror): raise nomem_error without backtrace if failed to
+	  make backtrace.
+
 Sat Jun 14 22:52:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_sysread): should not raise at empty
