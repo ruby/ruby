@@ -2607,11 +2607,8 @@ yycompile(f, line)
 	hash = rb_const_get(rb_cObject, rb_intern("SCRIPT_LINES__"));
 	if (TYPE(hash) == T_HASH) {
 	    fname = rb_str_new2(f);
-	    ruby_debug_lines = rb_hash_aref(hash, fname);
-	    if (NIL_P(ruby_debug_lines)) {
-		ruby_debug_lines = rb_ary_new();
-		rb_hash_aset(hash, fname, ruby_debug_lines);
-	    }
+	    ruby_debug_lines = rb_ary_new();
+	    rb_hash_aset(hash, fname, ruby_debug_lines);
 	}
 	if (line > 1) {
 	    VALUE str = rb_str_new(0,0);
