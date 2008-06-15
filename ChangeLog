@@ -1,3 +1,10 @@
+Sun Jun 15 19:02:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (sigsetmask): check when signal semantics is not POSIX.
+
+	* signal.c (USE_TRAP_MASK): set true if sigprocmask or sigsetmask is
+	  available.
+
 Sat Jun 14 16:49:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout::timeout): made sensitive to location on the

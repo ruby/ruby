@@ -645,6 +645,7 @@ fi
 if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; then
    AC_DEFINE(POSIX_SIGNAL)
 else
+  AC_CHECK_FUNCS(sigsetmask)
   AC_CACHE_CHECK(for BSD signal semantics, rb_cv_bsd_signal,
     [AC_TRY_RUN([
 #include <stdio.h>
@@ -667,7 +668,7 @@ main()
 ],
 	rb_cv_bsd_signal=yes,
 	rb_cv_bsd_signal=no,
-	rb_cv_bsd_signal=no)])
+	rb_cv_bsd_signal=$ac_cv_func_sigsetmask)])
   if test "$rb_cv_bsd_signal" = yes; then
     AC_DEFINE(BSD_SIGNAL)
   fi
