@@ -464,9 +464,7 @@ stack_end_address(VALUE **stack_end_p)
 # endif
 # define STACK_END (stack_end)
 #endif
-#if defined(sparc) || defined(__sparc__)
-# define STACK_LENGTH  (rb_gc_stack_start - STACK_END + 0x80)
-#elif STACK_GROW_DIRECTION < 0
+#if STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (rb_gc_stack_start - STACK_END)
 #elif STACK_GROW_DIRECTION > 0
 # define STACK_LENGTH  (STACK_END - rb_gc_stack_start + 1)

@@ -1,3 +1,7 @@
+Sun Jun 15 19:51:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (STACK_LENGTH) [SPARC] : 0x80 offset removed.  [ruby-dev:33857]
+
 Sun Jun 15 19:49:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_event): prevent polling.  based on
