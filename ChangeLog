@@ -1,3 +1,8 @@
+Sun Jun 15 22:31:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_search): use local variable.  a patch from wanabe
+	  <s.wanabe AT gmail.com> in [ruby-dev:34537].  [ruby-dev:34492]
+
 Sun Jun 15 22:20:45 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): should protect temporary string from
