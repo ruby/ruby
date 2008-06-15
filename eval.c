@@ -545,7 +545,9 @@ int
 rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
-    if (GC_GUARDED_PTR_REF(th->cfp->lfp[0])) {
+
+    if ((th->cfp->lfp[0] & 0x02) == 0 &&
+	GC_GUARDED_PTR_REF(th->cfp->lfp[0])) {
 	return Qtrue;
     }
     else {
@@ -588,7 +590,9 @@ rb_f_block_given_p(void)
     rb_control_frame_t *cfp = th->cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
 
-    if (cfp != 0 && GC_GUARDED_PTR_REF(cfp->lfp[0])) {
+    if (cfp != 0 &&
+	(cfp->lfp[0] & 0x02) == 0 &&
+	GC_GUARDED_PTR_REF(cfp->lfp[0])) {
 	return Qtrue;
     }
     else {

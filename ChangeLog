@@ -1,3 +1,10 @@
+Mon Jun 16 01:49:39 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* eval.c (rb_f_block_given_p): fix to skip class frame.
+	  [ruby-core:14813]
+
+	* KNOWNBUGS.rb, bootstraptest/test_method.rb: move solved test.
+
 Mon Jun 16 01:48:08 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_dump.c (vm_stack_dump_raw): disable verbose debug output.

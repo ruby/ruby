@@ -1026,3 +1026,34 @@ assert_not_match /method_missing/, %q{
   STDERR.reopen(STDOUT)
   variable_or_mehtod_not_exist
 }
+
+assert_equal '[false, false, false, false, true, true]', %q{
+  class C
+    define_method(:foo) {
+      block_given?
+    }
+  end
+
+  C.new.foo {}
+
+  class D
+    def foo
+      D.module_eval{
+        define_method(:m1){
+          block_given?
+        }
+      }
+    end
+    def bar
+      D.module_eval{
+        define_method(:m2){
+          block_given?
+        }
+      }
+    end
+  end
+
+  D.new.foo
+  D.new.bar{}
+  [C.new.foo, C.new.foo{}, D.new.m1, D.new.m1{}, D.new.m2, D.new.m2{}]
+}, '[ruby-core:14813]'
