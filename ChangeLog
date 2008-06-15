@@ -1,3 +1,13 @@
+Sun Jun 15 20:30:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/resolv.rb (Resolv::Hosts): should not use win32/resolv on cygwin.
+	  [ruby-dev:29945], [ruby-dev:34095]
+
+	* lib/win32/registry.rb (Win32::Registry.expand_environ): try upcased
+	  name too for cygwin.  [ruby-dev:29945]
+
+	* lib/win32/resolv.rb (Win32::Resolv.get_hosts_path): use expand_path.
+
 Sun Jun 15 20:27:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-mode): should use `run-mode-hooks' instead
