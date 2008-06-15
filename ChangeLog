@@ -1,3 +1,9 @@
+Sun Jun 15 23:31:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/extconf.rb: search zlib1, and regard mswin32 later than VC6
+	  as WIN32.  [ruby-core:16984]
+
+
 Sun Jun 15 23:27:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search

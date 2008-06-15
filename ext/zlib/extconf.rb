@@ -10,7 +10,7 @@ require 'rbconfig'
 dir_config 'zlib'
 
 
-if %w'z libz zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
+if %w'z libz zlib1 zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
     have_header('zlib.h') then
 
   defines = []
@@ -22,7 +22,7 @@ if %w'z libz zlib zdll'.find {|z| have_library(z, 'deflateReset')} and
       os_code = 'AMIGA'
     when /\Aos2[\-_]emx\z/ then
       os_code = 'OS2'
-    when 'mswin32', 'mingw32', 'bccwin32' then
+    when /mswin|mingw|bccwin/ then
       # NOTE: cygwin should be regarded as Unix.
       os_code = 'WIN32'
     else
