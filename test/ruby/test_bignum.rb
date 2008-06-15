@@ -84,4 +84,12 @@ class TestBignum < Test::Unit::TestCase
     shift_test(-4518325415524767873)
     shift_test(-0xfffffffffffffffff)
   end
+
+  def test_too_big_to_s
+    if (big = 2**31-1).is_a?(Fixnum)
+      return
+    end
+    e = assert_raise(RangeError) {(1 << big).to_s}
+    assert_match(/too big to convert/, e.message)
+  end
 end

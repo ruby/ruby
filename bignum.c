@@ -636,6 +636,9 @@ rb_big2str(x, base)
     if (BIGZEROP(x)) {
 	return rb_str_new2("0");
     }
+    if (i >= LONG_MAX/SIZEOF_BDIGITS/CHAR_BIT) {
+	rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+    }
     j = SIZEOF_BDIGITS*CHAR_BIT*i;
     switch (base) {
       case 2: break;
