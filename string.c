@@ -747,7 +747,7 @@ rb_str_cat(str, ptr, len)
     }
     if (FL_TEST(str, STR_ASSOC)) {
 	rb_str_modify(str);
-	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len);
+	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+len+1);
 	memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
 	RSTRING(str)->len += len;
 	RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
