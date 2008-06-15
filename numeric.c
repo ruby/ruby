@@ -760,9 +760,6 @@ flo_divmod(x, y)
         val = round(div);
 	a = LONG2FIX(val);
     }
-    else if (isnan(div) || isinf(div)) {
-	a = rb_float_new(div);
-    }
     else {
 	a = rb_dbl2big(div);
     }
