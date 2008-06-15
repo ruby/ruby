@@ -228,13 +228,15 @@ class SimpleDelegator<Delegator
 
   # Clone support for the object returned by \_\_getobj\_\_.
   def clone
-    super
-    __setobj__(__getobj__.clone)
+    new = super
+    new.__setobj__(__getobj__.clone)
+    new
   end
   # Duplication support for the object returned by \_\_getobj\_\_.
-  def dup(obj)
-    super
-    __setobj__(__getobj__.dup)
+  def dup
+    new = super
+    new.__setobj__(__getobj__.clone)
+    new
   end
 end
 
@@ -281,12 +283,14 @@ def DelegateClass(superclass)
       @_dc_obj = obj
     end
     def clone  # :nodoc:
-      super
-      __setobj__(__getobj__.clone)
+      new = super
+      new.__setobj__(__getobj__.clone)
+      new
     end
     def dup  # :nodoc:
-      super
-      __setobj__(__getobj__.dup)
+      new = super
+      new.__setobj__(__getobj__.clone)
+      new
     end
   }
   for method in methods
