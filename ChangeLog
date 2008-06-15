@@ -1,3 +1,9 @@
+Sun Jun 15 22:09:02 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syck/rubyext.c: Node#value defined twice.
+
+	* lib/yaml/: several method redefinitions causing warnings.
+
 Sun Jun 15 22:04:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): add volatile to avoid potential GC bug.  a

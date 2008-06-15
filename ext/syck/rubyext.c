@@ -2280,7 +2280,6 @@ Init_syck()
      */
     cScalar = rb_define_class_under( rb_syck, "Scalar", cNode );
     rb_define_alloc_func( cScalar, syck_scalar_alloc );
-    rb_define_attr( cNode, "value", 1, 0 );
     rb_define_method( cScalar, "initialize", syck_scalar_initialize, 3 );
     rb_define_method( cScalar, "value=", syck_scalar_value_set, 1 );
     rb_define_method( cScalar, "style=", syck_scalar_style_set, 1 );
