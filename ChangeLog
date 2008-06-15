@@ -1,3 +1,7 @@
+Sun Jun 15 19:55:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (BIGZEROP): fix for longer Bignum zeros.  [ruby-Bugs-17454]
+
 Sun Jun 15 19:53:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big2str_find_n1): check integer overflow.

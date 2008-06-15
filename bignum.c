@@ -36,7 +36,21 @@ VALUE rb_cBignum;
 #define BIGLO(x) ((BDIGIT)((x) & (BIGRAD-1)))
 #define BDIGMAX ((BDIGIT)-1)
 
-#define BIGZEROP(x) (RBIGNUM(x)->len == 0 || (RBIGNUM(x)->len == 1 && BDIGITS(x)[0] == 0))
+#define BIGZEROP(x) (RBIGNUM(x)->len == 0 || \
+		     (BDIGITS(x)[0] == 0 && \
+		      (RBIGNUM(x)->len == 1 || bigzero_p(x))))
+
+static int bigzero_p(VALUE);
+static int
+bigzero_p(x)
+    VALUE x;
+{
+    long i;
+    for (i = 0; i < RBIGNUM(x)->len; ++i) {
+	if (BDIGITS(x)[i]) return 0;
+    }
+    return 1;
+}
 
 static VALUE
 bignew_1(klass, len, sign)
