@@ -1,3 +1,11 @@
+Sun Jun 15 22:34:09 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	Merged 16241 from trunk.
+
+	* lib/net/telnet.rb:  Fixing a bug where line endings would not be properly
+	  escaped when the two character ending was broken up into separate TCP
+	  packets.  Issue reported and patched by Brian Candler.
+
 Sun Jun 15 22:31:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_search): use local variable.  a patch from wanabe
