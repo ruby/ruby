@@ -1,3 +1,10 @@
+Sun Jun 15 20:54:07 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* parse.y (yycompile): Always prepare a new array for each file's
+	  SCRIPT_LINES__ storage, instead of appending source lines every
+	  time a file is re-loaded; submitted by Rocky Bernstein in
+	  #18517.
+
 Sun Jun 15 20:30:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/resolv.rb (Resolv::Hosts): should not use win32/resolv on cygwin.
