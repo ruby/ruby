@@ -83,4 +83,16 @@ EOW
     assert_nil $?.exitstatus
     assert_equal Signal.list["INT"], $?.termsig
   end
+
+  def test_begin_and_eval
+    $test_begin_and_eval = :ok
+    begin
+      eval("BEGIN{$test_begin_and_eval = :ng}\n_/a:a")
+    rescue SyntaxError
+      x1 = x2 = $test_begin_and_eval
+      eval("x2 = $test_begin_and_eval")
+    end
+    assert_equal(:ok, x1)
+    assert_equal(:ok, x2)
+  end
 end

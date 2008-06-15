@@ -2619,6 +2619,7 @@ yycompile(f, line)
 
     ruby__end__seen = 0;
     ruby_eval_tree = 0;
+    ruby_eval_tree_begin = 0;
     heredoc_end = 0;
     lex_strterm = 0;
     ruby_current_node = 0;
@@ -2644,7 +2645,7 @@ yycompile(f, line)
 	rb_gc_force_recycle((VALUE)tmp);
     }
     if (n == 0) node = ruby_eval_tree;
-    else ruby_eval_tree_begin = 0;
+    if (ruby_nerrs) ruby_eval_tree_begin = 0;
     return node;
 }
 
