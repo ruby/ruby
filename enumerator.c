@@ -357,15 +357,15 @@ enumerator_with_index(VALUE obj)
 }
 
 static VALUE
-enumerator_with_memo_i(VALUE val, VALUE memo)
+enumerator_with_object_i(VALUE val, VALUE memo)
 {
     return rb_yield_values(2, val, memo);
 }
 
 /*
  *  call-seq:
- *    e.with_memo(obj) {|(*args), memo_obj| ... }
- *    e.with_memo(obj)
+ *    e.with_object(obj) {|(*args), memo_obj| ... }
+ *    e.with_object(obj)
  *
  *  Iterates the given block for each element with an arbitrary
  *  object given, and returns the memo object.
@@ -374,7 +374,7 @@ enumerator_with_memo_i(VALUE val, VALUE memo)
  *
  */
 static VALUE
-enumerator_with_memo(VALUE obj, VALUE memo)
+enumerator_with_object(VALUE obj, VALUE memo)
 {
     struct enumerator *e;
     int argc = 0;
@@ -387,7 +387,7 @@ enumerator_with_memo(VALUE obj, VALUE memo)
 	argv = RARRAY_PTR(e->args);
     }
     rb_block_call(e->obj, e->meth, argc, argv,
-		  enumerator_with_memo_i, memo);
+		  enumerator_with_object_i, memo);
 
     return memo;
 }
@@ -489,7 +489,9 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "each_with_index", enumerator_with_index, 0);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
-    rb_define_method(rb_cEnumerator, "with_memo", enumerator_with_memo, 1);
+#if 0
+    rb_define_method(rb_cEnumerator, "with_object", enumerator_with_object, 1);
+#endif
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
 

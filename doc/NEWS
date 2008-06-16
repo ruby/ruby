@@ -107,7 +107,6 @@ Compatible
     * Enumerable and Enumerator
           o Enumerable#map,collect_all called without a block returns
             an enumerator.
-          o Enumerable::Enumerator#with_memo
     * Regexp#match, String#match
           o Regexp#match, String#match
     * Fiber: coroutines/micro-threads
