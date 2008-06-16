@@ -376,7 +376,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	/* locking_mutex must be Qfalse */
 	if (th->locking_mutex != Qfalse) {
-	    rb_bug("thread_start_func_2: locking_mutex must be NULL (%p:%ld)", th, th->locking_mutex);
+	    rb_bug("thread_start_func_2: locking_mutex must not be set (%p:%"PRIxVALUE")",
+		   th, th->locking_mutex);
 	}
 
 	/* unlock all locking mutexes */
@@ -3401,7 +3402,6 @@ Init_Thread(void)
 int
 ruby_native_thread_p(void)
 {
-    rb_thread_t *rb_thread_check_ptr(rb_thread_t *ptr);
     rb_thread_t *th = ruby_thread_from_native();
 
     return th ? Qtrue : Qfalse;
