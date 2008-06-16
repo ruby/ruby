@@ -1,3 +1,8 @@
+Mon Jun 16 21:58:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_each, strio_readlines): IO#each and
+	  IO#readlines do not affect $_.  [ruby-core:17277]
+
 Mon Jun 16 18:52:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/thwait.rb (ThreadsWait): Exception2MessageMapper no longer has
