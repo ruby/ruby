@@ -1483,9 +1483,8 @@ EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 
 hdr = []
 config_string('COMMON_MACROS') do |s|
-  Shellwords.shellwords(s).each do |s|
-    /(.*?)(?:=(.*))/ =~ s
-    hdr << "#define #$1 #$2"
+  Shellwords.shellwords(s).each do |w|
+    hdr << "#define " + w.split(/=/, 2).join(" ")
   end
 end
 config_string('COMMON_HEADERS') do |s|

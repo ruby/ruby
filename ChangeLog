@@ -1,3 +1,7 @@
+Mon Jun 16 19:18:35 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb: fixed the bug of handling COMMON_MACROS.
+
 Mon Jun 16 17:11:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: autoconf 2.61 support.  [ruby-core:10016]
