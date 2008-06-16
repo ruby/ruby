@@ -1,3 +1,8 @@
+Mon Jun 16 18:52:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/thwait.rb (ThreadsWait): Exception2MessageMapper no longer has
+	  extend_to method.  [ruby-core:17267]
+
 Mon Jun 16 14:46:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/e2mmap.rb (E2MM.def_e2message): typo.

@@ -53,7 +53,7 @@ require "e2mmap.rb"
 class ThreadsWait
   RCS_ID='-$Id: thwait.rb,v 1.3 1998/06/26 03:19:34 keiju Exp keiju $-'
   
-  Exception2MessageMapper.extend_to(binding)
+  extend Exception2MessageMapper
   def_exception("ErrNoWaitingThread", "No threads for waiting.")
   def_exception("ErrNoFinishedThread", "No finished threads.")
   
