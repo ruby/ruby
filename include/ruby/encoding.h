@@ -165,6 +165,7 @@ rb_encoding *rb_ascii8bit_encoding(void);
 rb_encoding *rb_utf8_encoding(void);
 rb_encoding *rb_usascii_encoding(void);
 rb_encoding *rb_locale_encoding(void);
+rb_encoding *rb_filesystem_encoding(void);
 rb_encoding *rb_default_external_encoding(void);
 int rb_usascii_encindex(void);
 int rb_ascii8bit_encindex(void);

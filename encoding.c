@@ -962,6 +962,22 @@ rb_locale_encoding(void)
     return rb_enc_from_index(idx);
 }
 
+rb_encoding *
+rb_filesystem_encoding(void)
+{
+    static rb_encoding *enc;
+    if (!enc) {
+#if defined _WIN32
+	enc = rb_locale_encoding();
+#elif defined __APPLE__
+	enc = rb_enc_find("UTF8-MAC");
+#else
+	enc = rb_ascii8bit_encoding();
+#endif
+    }
+    return enc;
+}
+
 static int default_external_index;
 
 rb_encoding *
