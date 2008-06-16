@@ -73,7 +73,7 @@ if Tk.windowingsystem != 'aqua'
     w.grid_remove
     self.wm_manage
     # self.wm_title('Toolbar') # もしウィジェット名をウィンドウタイトルにしたくないなら，ここで設定してください
-    self.wm_protocol('WM_DELETE_WINDOW'){ self.untearoff(self) }
+    self.wm_protocol('WM_DELETE_WINDOW'){ self.untearoff(w) }
   end
   def tbar_base.untearoff(w)
     self.wm_forget

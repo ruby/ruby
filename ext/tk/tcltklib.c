@@ -6562,11 +6562,26 @@ ip_eval_real(self, cmd_str, cmd_len)
         return rbtk_pending_exception;
     }
 
-    if (ptr->return_value == TCL_ERROR) {
+    /* if (ptr->return_value == TCL_ERROR) { */
+    if (ptr->return_value != TCL_OK) {
         if (event_loop_abort_on_exc > 0 && !Tcl_InterpDeleted(ptr->ip)) {
             volatile VALUE exc;
-            exc = create_ip_exc(self, rb_eRuntimeError, 
-                                "%s", Tcl_GetStringResult(ptr->ip));
+
+	    switch (ptr->return_value) {
+	    case TCL_RETURN:
+	      exc = create_ip_exc(self, eTkCallbackReturn, 
+				  "ip_eval_real receives TCL_RETURN");
+	    case TCL_BREAK:
+	      exc = create_ip_exc(self, eTkCallbackBreak, 
+				  "ip_eval_real receives TCL_BREAK");
+	    case TCL_CONTINUE:
+	      exc = create_ip_exc(self, eTkCallbackContinue, 
+				  "ip_eval_real receives TCL_CONTINUE");
+	    default:
+	      exc = create_ip_exc(self, rb_eRuntimeError, "%s", 
+				  Tcl_GetStringResult(ptr->ip));
+	    } 
+
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
             return exc;
@@ -6608,10 +6623,23 @@ ip_eval_real(self, cmd_str, cmd_len)
         return rbtk_pending_exception;
     }
 
-    if (ptr->return_value == TCL_ERROR) {
+    /* if (ptr->return_value == TCL_ERROR) { */
+    if (ptr->return_value != TCL_OK) {
         volatile VALUE exc;
 
-        exc = create_ip_exc(self, rb_eRuntimeError, "%s", ptr->ip->result);
+	switch (ptr->return_value) {
+	case TCL_RETURN:
+	  exc = create_ip_exc(self, eTkCallbackReturn, 
+			      "ip_eval_real receives TCL_RETURN");
+	case TCL_BREAK:
+	  exc = create_ip_exc(self, eTkCallbackBreak, 
+			      "ip_eval_real receives TCL_BREAK");
+	case TCL_CONTINUE:
+	  exc = create_ip_exc(self, eTkCallbackContinue, 
+			       "ip_eval_real receives TCL_CONTINUE");
+	default:
+	  exc = create_ip_exc(self, rb_eRuntimeError, "%s", ptr->ip->result);
+	} 
 
         rbtk_release_ip(ptr);
         return exc;
@@ -7855,11 +7883,24 @@ ip_invoke_core(interp, argc, argv)
 
     rb_thread_critical = thr_crit_bup;
 
-    if (ptr->return_value == TCL_ERROR) {
+    /* if (ptr->return_value == TCL_ERROR) { */
+    if (ptr->return_value != TCL_OK) {
         if (event_loop_abort_on_exc > 0 && !Tcl_InterpDeleted(ptr->ip)) {
+	    switch (ptr->return_value) {
+	    case TCL_RETURN:
+	      return create_ip_exc(interp, eTkCallbackReturn, 
+				   "ip_invoke_core receives TCL_RETURN");
+	    case TCL_BREAK:
+	      return create_ip_exc(interp, eTkCallbackBreak, 
+				   "ip_invoke_core receives TCL_BREAK");
+	    case TCL_CONTINUE:
+	      return create_ip_exc(interp, eTkCallbackContinue, 
+				   "ip_invoke_core receives TCL_CONTINUE");
+	    default:
+	      return create_ip_exc(interp, rb_eRuntimeError, "%s", 
+				   Tcl_GetStringResult(ptr->ip));
+	    } 
 
-            return create_ip_exc(interp, rb_eRuntimeError, 
-                                 "%s", Tcl_GetStringResult(ptr->ip));
         } else {
             if (event_loop_abort_on_exc < 0) {
                 rb_warning("%s (ignore)", Tcl_GetStringResult(ptr->ip));
