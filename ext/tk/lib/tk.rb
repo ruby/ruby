@@ -1110,7 +1110,7 @@ module TkCore
   extend TkComm
 
   WITH_RUBY_VM  = Object.const_defined?(:VM) && ::VM.class == Class
-  WITH_ENCODING = defined?(::Encoding.default_external)
+  WITH_ENCODING = defined?(::Encoding.default_external) && true
   #WITH_ENCODING = Object.const_defined?(:Encoding) && ::Encoding.class == Class
 
   unless self.const_defined? :RUN_EVENTLOOP_ON_MAIN_THREAD
@@ -2174,7 +2174,7 @@ module Tk
   end
 
   def Tk.exit
-    tk_call_without_enc('destroy', '.')
+    TkCore::INTERP.has_mainwindow? && tk_call_without_enc('destroy', '.')
   end
 
   ################################################
@@ -5501,7 +5501,7 @@ TkWidget = TkWindow
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2008-06-11'.freeze
+  RELEASE_DATE = '2008-06-17'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

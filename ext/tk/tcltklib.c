@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2008-06-12"
+#define TCLTKLIB_RELEASE_DATE "2008-06-17"
 
 #include "ruby.h"
 
@@ -448,7 +448,7 @@ static int have_rb_thread_waiting_for_value = 0;
 #ifdef RUBY_USE_NATIVE_THREAD
 #define DEFAULT_EVENT_LOOP_MAX        800/*counts*/
 #define DEFAULT_NO_EVENT_TICK          10/*counts*/
-#define DEFAULT_NO_EVENT_WAIT          10/*milliseconds ( 1 -- 999 ) */
+#define DEFAULT_NO_EVENT_WAIT           1/*milliseconds ( 1 -- 999 ) */
 #define WATCHDOG_INTERVAL              10/*milliseconds ( 1 -- 999 ) */
 #define DEFAULT_TIMER_TICK              0/*milliseconds ( 0 -- 999 ) */
 #define NO_THREAD_INTERRUPT_TIME      100/*milliseconds ( 1 -- 999 ) */
@@ -1554,6 +1554,10 @@ eventloop_sleep(dummy)
     VALUE dummy;
 {
     struct timeval t;
+
+    if (no_event_wait <= 0) {
+      return Qnil;
+    }
 
     t.tv_sec = (time_t)0;
     t.tv_usec = (time_t)(no_event_wait*1000.0);
@@ -5096,7 +5100,7 @@ ip_finalize(ip)
     }
 
     /* delete root widget */
-#if 1
+#if 0 /* cause SEGV on Ruby 1.9 */
     DUMP1("check `destroy'");
     if (Tcl_GetCommandInfo(ip, "destroy", &info)) {
         DUMP1("call `destroy .'");
