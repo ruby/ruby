@@ -1,3 +1,7 @@
+Mon Jun 16 17:11:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: autoconf 2.61 support.  [ruby-core:10016]
+
 Mon Jun 16 15:40:37 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* proc.c (proc_dup): should copy safe_level from src proc

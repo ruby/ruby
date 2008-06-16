@@ -36,12 +36,39 @@ v_fast = []
 v_others = []
 vars = {}
 has_version = false
+continued_name = nil
+continued_line = nil
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
-  if /^s([%,])@(\w+)@\1(?:\|\#_!!_\#\|)?(.*)\1/ =~ line
+  name = nil
+  case line
+  when /^s([%,])@(\w+)@\1(?:\|\#_!!_\#\|)?(.*)\1/
     name = $2
     val = $3.gsub(/\\(?=,)/, '')
-    next if /^(?:ac_.*|DEFS|configure_input)$/ =~ name
+  when /^S\["(\w+)"\]\s*=\s*"(.*)"\s*(\\)?$/
+    name = $1
+    val = $2
+    if $3
+      continued_line = []
+      continued_line << val
+      continued_name = name
+      next
+    end
+  when /^"(.+)"\s*(\\)?$/
+    if continued_line
+      continued_line <<  $1
+      unless $2
+	val = continued_line.join("")
+	name = continued_name
+	continued_line = nil
+      end
+    end
+  when /^(?:ac_given_)?INSTALL=(.*)/
+    v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
+  end
+
+  if name
+    next if /^(?:ac_.*|DEFS|configure_input|(?:top_)?srcdir|\w+OBJS)$/ =~ name
     next if /^\$\(ac_\w+\)$/ =~ val
     next if /^\$\{ac_\w+\}$/ =~ val
     next if /^\$ac_\w+$/ =~ val
@@ -54,6 +81,7 @@ File.foreach "config.status" do |line|
       name = "ruby_install_name"
       val = "ruby".sub(/#{ptn[0]}/, ptn[1])
     end
+    val.gsub!(/ +(?!-)/, "=") if name == "configure_args" && /mswin32/ =~ RUBY_PLATFORM
     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
     if /^prefix$/ =~ name
       val = "(TOPDIR || DESTDIR + #{val})"
@@ -66,8 +94,6 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     has_version = true if name == "MAJOR"
-  elsif /^(?:ac_given_)?INSTALL=(.*)/ =~ line
-    v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
 end
@@ -109,7 +135,8 @@ if $so_name
   v_fast << "  CONFIG[\"RUBY_SO_NAME\"] = \"" + $so_name + "\"\n"
 end
 
-print v_fast, v_others
+print(*v_fast)
+print(*v_others)
 print <<EOS
   CONFIG["ruby_version"] = "$(MAJOR).$(MINOR)"
   CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
