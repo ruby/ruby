@@ -127,6 +127,7 @@ VALUE rb_default_rs;
 static VALUE argf;
 
 static ID id_write, id_read, id_getc, id_flush, id_encode, id_readpartial;
+static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 
 struct timeval rb_time_interval(VALUE);
 
@@ -4037,15 +4038,89 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     return port;
 }
 
+static void
+io_set_encoding(VALUE io, VALUE opt)
+{
+    rb_io_t *fptr;
+    VALUE encoding=Qnil, extenc=Qnil, intenc=Qnil;
+    if (!NIL_P(opt)) {
+	VALUE v;
+	v = rb_hash_aref(opt, sym_encoding);
+	if (!NIL_P(v)) encoding = v;
+	v = rb_hash_aref(opt, sym_extenc);
+	if (!NIL_P(v)) extenc = v;
+	v = rb_hash_aref(opt, sym_intenc);
+	if (!NIL_P(v)) intenc = v;
+    }
+    if (!NIL_P(extenc)) {
+	rb_encoding *extencoding = rb_to_encoding(extenc);
+	GetOpenFile(io, fptr);
+	if (!NIL_P(encoding)) {
+	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
+		    RSTRING_PTR(encoding));
+	}
+	if (!NIL_P(intenc)) {
+	    rb_encoding *intencoding = rb_to_encoding(intenc);
+	    if (extencoding == intencoding) {
+		rb_warn("Ignoring internal encoding '%s': it is identical to external encoding '%s'",
+			RSTRING_PTR(rb_inspect(intenc)),
+			RSTRING_PTR(rb_inspect(extenc)));
+	    }
+	    else {
+		fptr->enc2 = intencoding;
+	    }
+	}
+	fptr->enc = extencoding;
+    }
+    else {
+	if (!NIL_P(intenc)) {
+	    rb_raise(rb_eArgError, "External encoding must be specified when internal encoding is given");
+	}
+	if (!NIL_P(encoding)) {
+	    GetOpenFile(io, fptr);
+	    mode_enc(fptr, StringValueCStr(encoding));
+	}
+    }
+}
+
 static VALUE
 rb_open_file(int argc, VALUE *argv, VALUE io)
 {
-    VALUE fname, vmode, perm;
+    VALUE opt, fname, vmode, perm;
     const char *mode;
     int flags;
     unsigned int fmode;
 
+    opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+    if (!NIL_P(opt)) {
+	VALUE v;
+	v = rb_hash_aref(opt, sym_mode);
+	if (!NIL_P(v)) vmode = v;
+	v = rb_hash_aref(opt, sym_perm);
+	if (!NIL_P(v)) perm = v;
+	argc -= 1;
+    }
+
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+#if defined _WIN32 || defined __APPLE__
+    {
+	static int fs_encoding;
+	int fname_encoding = rb_enc_get_index(fname);
+	if (!fs_encoding)
+	    fs_encoding = rb_filesystem_encoding();
+	if (rb_usascii_encoding() != fname_encoding
+	    && rb_ascii8bit_encoding() != fname_encoding
+#if defined __APPLE__
+	    && rb_utf8_encoding() != fname_encoding
+#endif
+	    && fs_encoding != fname_encoding) {
+	    static VALUE fs_enc;
+	    if (!fs_enc)
+		fs_enc = rb_enc_from_encoding(fs_encoding);
+	    fname = rb_str_transcode(fname, fs_enc);
+	}
+    }
+#endif
     FilePathValue(fname);
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
@@ -4061,10 +4136,11 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 	rb_file_sysopen_internal(io, RSTRING_PTR(fname), flags, fmode);
     }
     else {
-
 	mode = NIL_P(vmode) ? "r" : StringValueCStr(vmode);
 	rb_file_open_internal(io, RSTRING_PTR(fname), mode);
     }
+
+    io_set_encoding(io, opt);
     return io;
 }
 
@@ -6174,7 +6250,6 @@ static void
 open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 {
     VALUE opt, v;
-    static VALUE encoding, mode, open_args;
 
     FilePathValue(argv[0]);
     arg->io = 0;
@@ -6189,17 +6264,8 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     if (NIL_P(opt)) goto no_key;
     if (argc > 2) arg->argc = 1;
     else arg->argc = 0;
-    if (!encoding) {
-	ID id;
 
-	CONST_ID(id, "encoding");
-	encoding = ID2SYM(id);
-	CONST_ID(id, "mode");
-	mode = ID2SYM(id);
-	CONST_ID(id, "open_args");
-	open_args = ID2SYM(id);
-    }
-    v = rb_hash_aref(opt, open_args);
+    v = rb_hash_aref(opt, sym_open_args);
     if (!NIL_P(v)) {
 	VALUE args;
 
@@ -6212,7 +6278,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;
     }
-    v = rb_hash_aref(opt, mode);
+    v = rb_hash_aref(opt, sym_mode);
     if (!NIL_P(v)) {
 	arg->io = rb_io_open(RSTRING_PTR(argv[0]), StringValueCStr(v));
     }
@@ -6220,12 +6286,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
     }
 
-    v = rb_hash_aref(opt, encoding);
-    if (!NIL_P(v)) {
-	rb_io_t *fptr;
-	GetOpenFile(arg->io, fptr);
-        mode_enc(fptr, StringValueCStr(v));
-    }
+    io_set_encoding(arg->io, opt);
 }
 
 static VALUE
@@ -7771,4 +7832,11 @@ Init_IO(void)
 #ifdef O_SYNC
     rb_file_const("SYNC", INT2FIX(O_SYNC));
 #endif
+
+    sym_mode = ID2SYM(rb_intern("mode"));
+    sym_perm = ID2SYM(rb_intern("perm"));
+    sym_extenc = ID2SYM(rb_intern("external_encoding"));
+    sym_intenc = ID2SYM(rb_intern("internal_encoding"));
+    sym_encoding = ID2SYM(rb_intern("encoding"));
+    sym_open_args = ID2SYM(rb_intern("open_args"));
 }

@@ -1,3 +1,12 @@
+Tue Jun 17 06:28:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* io.c (io_set_encoding): defined.
+
+	* io.c (rb_open_file): convert path on Windows and Mac OS X.
+
+	* io.c (open_key_args): use io_set_encoding and now accept
+	  internal_encoding and exernal_encoding.
+
 Tue Jun 17 06:26:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_filesystem_encoding): defined.
