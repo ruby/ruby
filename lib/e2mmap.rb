@@ -105,7 +105,7 @@ module Exception2MessageMapper
   # {[class, exp] => message, ...}
   @MessageMap = {}
 
-  # E2MM.def_exception(k, e, m)
+  # E2MM.def_e2message(k, e, m)
   #	    k:  class to define exception under.
   #	    e:  exception
   #	    m:  message_form
