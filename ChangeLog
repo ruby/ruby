@@ -1,3 +1,7 @@
+Mon Jun 16 14:46:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/e2mmap.rb (E2MM.def_e2message): typo.
+
 Mon Jun 16 13:49:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (test-knownbug): new target for KNOWNBUGS.rb.
