@@ -301,6 +301,9 @@ realclean-ext::
 
 check: test test-all
 
+test-knownbug: $(PROGRAM) PHONY
+	        $(RUNRUBY) $(srcdir)/KNOWNBUGS.rb
+
 test: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
 

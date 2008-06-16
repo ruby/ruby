@@ -1,3 +1,7 @@
+Mon Jun 16 13:49:28 2008  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk (test-knownbug): new target for KNOWNBUGS.rb.
+
 Mon Jun 16 11:48:47 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* KNOWNBUGS.rb: New file to address known bugs.
