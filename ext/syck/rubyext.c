@@ -8,6 +8,7 @@
  */
 
 #include "ruby/ruby.h"
+#include "ruby/encoding.h"
 #include "syck.h"
 #include <sys/types.h>
 #include <time.h>
