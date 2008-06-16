@@ -1016,7 +1016,6 @@ strio_each(argc, argv, self)
     RETURN_ENUMERATOR(self, argc, argv);
 
     while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
-	rb_lastline_set(line);
 	rb_yield(line);
     }
     return self;
@@ -1039,7 +1038,6 @@ strio_readlines(argc, argv, self)
     while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
 	rb_ary_push(ary, line);
     }
-    rb_lastline_set(Qnil);
     return ary;
 }
 
