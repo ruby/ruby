@@ -12,6 +12,7 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "ruby/encoding.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -342,6 +343,8 @@ VALUE rb_cDir;
 struct dir_data {
     DIR *dir;
     char *path;
+    rb_encoding *intenc;
+    rb_encoding *extenc;
 };
 
 static void
@@ -364,6 +367,8 @@ dir_s_alloc(VALUE klass)
 
     dirp->dir = NULL;
     dirp->path = NULL;
+    dirp->intenc = NULL;
+    dirp->extenc = NULL;
 
     return obj;
 }
@@ -375,16 +380,71 @@ dir_s_alloc(VALUE klass)
  *  Returns a new directory object for the named directory.
  */
 static VALUE
-dir_initialize(VALUE dir, VALUE dirname)
+dir_initialize(int argc, VALUE *argv, VALUE dir)
 {
     struct dir_data *dp;
+    static rb_encoding *fs_encoding;
+    rb_encoding  *intencoding, *extencoding;
+    VALUE dirname, opt;
+    static VALUE sym_intenc, sym_extenc;
 
+    if (!sym_intenc) {
+	sym_intenc = ID2SYM(rb_intern("internal_encoding"));
+	sym_extenc = ID2SYM(rb_intern("external_encoding"));
+	fs_encoding = rb_filesystem_encoding();
+    }
+
+    intencoding = NULL;
+    extencoding = fs_encoding;
+    rb_scan_args(argc, argv, "11", &dirname, &opt);
+
+    if (!NIL_P(opt)) {
+        VALUE v, extenc=Qnil, intenc=Qnil;
+        opt = rb_check_convert_type(opt, T_HASH, "Hash", "to_hash");
+
+        v = rb_hash_aref(opt, sym_intenc);
+        if (!NIL_P(v)) intenc = v;
+        v = rb_hash_aref(opt, sym_extenc);
+        if (!NIL_P(v)) extenc = v;
+
+	if (!NIL_P(extenc)) {
+	    extencoding = rb_to_encoding(extenc);
+	    if (!NIL_P(intenc)) {
+		intencoding = rb_to_encoding(intenc);
+		if (extencoding == intencoding) {
+		    rb_warn("Ignoring internal encoding '%s': it is identical to external encoding '%s'",
+			    RSTRING_PTR(rb_inspect(intenc)),
+			    RSTRING_PTR(rb_inspect(extenc)));
+		    intencoding = NULL;
+		}
+	    }
+	}
+	else if (!NIL_P(intenc)) {
+	    rb_raise(rb_eArgError, "External encoding must be specified when internal encoding is given");
+	}
+    }
+
+    {
+	rb_encoding  *dirname_encoding = rb_enc_get(dirname);
+	if (rb_usascii_encoding() != dirname_encoding
+	    && rb_ascii8bit_encoding() != dirname_encoding
+#if defined __APPLE__
+	    && rb_utf8_encoding() != dirname_encoding
+#endif
+	    && extencoding != dirname_encoding) {
+	    if (!intencoding) intencoding = dirname_encoding;
+	    dirname = rb_str_transcode(dirname, rb_enc_from_encoding(extencoding));
+	}
+    }
     FilePathValue(dirname);
+
     Data_Get_Struct(dir, struct dir_data, dp);
     if (dp->dir) closedir(dp->dir);
     if (dp->path) xfree(dp->path);
     dp->dir = NULL;
     dp->path = NULL;
+    dp->intenc = intencoding;
+    dp->extenc = extencoding;
     dp->dir = opendir(RSTRING_PTR(dirname));
     if (dp->dir == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
@@ -412,12 +472,12 @@ dir_initialize(VALUE dir, VALUE dirname)
  *  block.
  */
 static VALUE
-dir_s_open(VALUE klass, VALUE dirname)
+dir_s_open(int argc, VALUE *argv, VALUE klass)
 {
     struct dir_data *dp;
     VALUE dir = Data_Make_Struct(klass, struct dir_data, 0, free_dir, dp);
 
-    dir_initialize(dir, dirname);
+    dir_initialize(argc, argv, dir);
     if (rb_block_given_p()) {
 	return rb_ensure(rb_yield, dir, dir_close, dir);
     }
@@ -444,6 +504,16 @@ dir_check(VALUE dir)
     Data_Get_Struct(obj, struct dir_data, dirp);\
     if (dirp->dir == NULL) dir_closed();\
 } while (0)
+
+static VALUE
+dir_enc_str(VALUE str, struct dir_data *dirp)
+{
+    rb_enc_associate(str, dirp->extenc);
+    if (dirp->intenc) {
+        str = rb_str_transcode(str, rb_enc_from_encoding(dirp->intenc));
+    }
+    return str;
+}
 
 /*
  *  call-seq:
@@ -483,7 +553,7 @@ dir_path(VALUE dir)
 
     Data_Get_Struct(dir, struct dir_data, dirp);
     if (!dirp->path) return Qnil;
-    return rb_str_new2(dirp->path);
+    return dir_enc_str(rb_str_new2(dirp->path), dirp);
 }
 
 /*
@@ -508,7 +578,7 @@ dir_read(VALUE dir)
     errno = 0;
     dp = readdir(dirp->dir);
     if (dp) {
-	return rb_tainted_str_new(dp->d_name, NAMLEN(dp));
+	return dir_enc_str(rb_tainted_str_new(dp->d_name, NAMLEN(dp)), dirp);
     }
     else if (errno == 0) {	/* end of stream */
 	return Qnil;
@@ -546,7 +616,7 @@ dir_each(VALUE dir)
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     for (dp = readdir(dirp->dir); dp != NULL; dp = readdir(dirp->dir)) {
-	rb_yield(rb_tainted_str_new(dp->d_name, NAMLEN(dp)));
+	rb_yield(dir_enc_str(rb_tainted_str_new(dp->d_name, NAMLEN(dp)), dirp));
 	if (dirp->dir == NULL) dir_closed();
     }
     return dir;
@@ -1686,9 +1756,9 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-dir_open_dir(VALUE path)
+dir_open_dir(int argc, VALUE *argv)
 {
-    VALUE dir = rb_funcall(rb_cDir, rb_intern("open"), 1, path);
+    VALUE dir = rb_funcall2(rb_cDir, rb_intern("open"), argc, argv);
 
     if (TYPE(dir) != T_DATA ||
 	RDATA(dir)->dfree != (RUBY_DATA_FUNC)free_dir) {
@@ -1717,12 +1787,12 @@ dir_open_dir(VALUE path)
  *
  */
 static VALUE
-dir_foreach(VALUE io, VALUE dirname)
+dir_foreach(int argc, VALUE *argv, VALUE io)
 {
     VALUE dir;
 
-    RETURN_ENUMERATOR(io, 1, &dirname);
-    dir = dir_open_dir(dirname);
+    RETURN_ENUMERATOR(io, argc, argv);
+    dir = dir_open_dir(argc, argv);
     rb_ensure(dir_each, dir, dir_close, dir);
     return Qnil;
 }
@@ -1739,11 +1809,11 @@ dir_foreach(VALUE io, VALUE dirname)
  *
  */
 static VALUE
-dir_entries(VALUE io, VALUE dirname)
+dir_entries(int argc, VALUE *argv, VALUE io)
 {
     VALUE dir;
 
-    dir = dir_open_dir(dirname);
+    dir = dir_open_dir(argc, argv);
     return rb_ensure(rb_Array, dir, dir_close, dir);
 }
 
@@ -1868,11 +1938,11 @@ Init_Dir(void)
     rb_include_module(rb_cDir, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
-    rb_define_singleton_method(rb_cDir, "open", dir_s_open, 1);
+    rb_define_singleton_method(rb_cDir, "open", dir_s_open, -1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, 1);
-    rb_define_singleton_method(rb_cDir, "entries", dir_entries, 1);
+    rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
 
-    rb_define_method(rb_cDir,"initialize", dir_initialize, 1);
+    rb_define_method(rb_cDir,"initialize", dir_initialize, -1);
     rb_define_method(rb_cDir,"path", dir_path, 0);
     rb_define_method(rb_cDir,"inspect", dir_inspect, 0);
     rb_define_method(rb_cDir,"read", dir_read, 0);

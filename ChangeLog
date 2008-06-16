@@ -1,3 +1,28 @@
+Tue Jun 17 06:32:55 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (dir_data): add intenc and extenc.
+
+	* dir.c (dir_s_alloc): ditto.
+
+	* dir.c (dir_initialize): now accept internal_encoding and
+	  exernal_encoding.
+
+	* dir.c (dir_s_open): changed for dir_initialize.
+
+	* dir.c (dir_open_dir): ditto.
+	
+	* dir.c (dir_foreach): changed for dir_oepn_dir.
+
+	* dir.c (dir_entries): changed for dir_oepn_dir.
+
+	* dir.c (dir_enc_str): defined.
+
+	* dir.c (dir_path): use dir_enc_str.
+
+	* dir.c (dir_read): ditto.
+
+	* dir.c (dir_each): ditto.
+
 Tue Jun 17 06:28:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (io_set_encoding): defined.
