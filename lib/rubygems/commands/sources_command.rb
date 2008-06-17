@@ -111,10 +111,10 @@ Will cause RubyGems to revert to legacy indexes, degrading performance.
       fetcher = Gem::SpecFetcher.fetcher
 
       if fetcher.legacy_repos.empty? then
-        Gem.sources.each do |source_uri|
-          source_uri = URI.parse source_uri
-          fetcher.load_specs source_uri, 'specs'
-          fetcher.load_specs source_uri, 'latest_specs'
+        Gem.sources.each do |update_uri|
+          update_uri = URI.parse update_uri
+          fetcher.load_specs update_uri, 'specs'
+          fetcher.load_specs update_uri, 'latest_specs'
         end
       else
         Gem::SourceInfoCache.cache true

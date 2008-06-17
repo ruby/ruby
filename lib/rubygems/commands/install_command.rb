@@ -50,7 +50,11 @@ class Gem::Commands::InstallCommand < Gem::Command
 
     installed_gems = []
 
-    ENV['GEM_PATH'] = options[:install_dir] # HACK what does this do?
+    if options[:install_dir].nil? and RUBY_VERSION > '1.9' then
+      ENV.delete 'GEM_PATH'
+    else
+      ENV['GEM_PATH'] = options[:install_dir] # HACK what does this do?
+    end
 
     install_options = {
       :env_shebang => options[:env_shebang],

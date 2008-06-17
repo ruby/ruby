@@ -128,13 +128,8 @@ WARNING:  Invalid .gemspec format in '#{spec_file}'
 
     assert_equal '', @ui.output
 
-    expected = <<-EOF
-WARNING:  compile error
-#{spec_file}:1: syntax error, unexpected $end
-WARNING:  1 +
-    EOF
-
-    assert_equal expected, @ui.error
+    assert_match(/syntax error/, @ui.error)
+    assert_match(/1 \+/, @ui.error)
   end
 
   def test_self_load_specification_system_exit

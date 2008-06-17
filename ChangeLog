@@ -1,3 +1,10 @@
+Wed Jun 18 08:58:16 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems/*:  Fix errors for 1.9.
+
+	* gem_prelude.rb:  Only remove methods from gem_prelude.rb when
+	loading real RubyGems.
+
 Wed Jun 18 07:03:30 2008  Eric Hodel  <drbrain@egment7.net>
 
 	* lib/rubygems/*:  Update to RubyGems r1778 (pre 1.2).

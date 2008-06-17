@@ -42,7 +42,7 @@ module Gem
     # 
     # gem_path:: [String] Path to gem file
     def verify_gem_file(gem_path)
-      File.open gem_path, 'rb' do |file|
+      open gem_path, Gem.binary_mode do |file|
         gem_data = file.read
         verify_gem gem_data
       end
@@ -91,7 +91,7 @@ module Gem
     
         begin
           verify_gem_file(gem_path)
-          File.open(gem_path, 'rb') do |file|
+          open gem_path, Gem.binary_mode do |file|
             format = Gem::Format.from_file_by_path(gem_path)
             format.file_entries.each do |entry, data|
               # Found this file.  Delete it from list
@@ -99,7 +99,7 @@ module Gem
 
               next unless data # HACK `gem check -a mkrf`
 
-              File.open(File.join(gem_directory, entry['path']), 'rb') do |f|
+              open File.join(gem_directory, entry['path']), Gem.binary_mode do |f|
                 unless Gem::MD5.hexdigest(f.read).to_s ==
                        Gem::MD5.hexdigest(data).to_s then
                   errors[gem_name] << ErrorData.new(entry['path'], "installed file doesn't match original from gem")

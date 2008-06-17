@@ -300,14 +300,12 @@ class Gem::SourceIndex
     outdateds = []
 
     latest_specs.each do |local|
-      name = local.name
-
-      dependency = Gem::Dependency.new name, ">= #{local.version}"
+      dependency = Gem::Dependency.new local.name, ">= #{local.version}"
 
       begin
         fetcher = Gem::SpecFetcher.fetcher
         remotes = fetcher.find_matching dependency
-        remotes = remotes.map { |(name, version,),| version }
+        remotes = remotes.map { |(name, version,_),_| version }
       rescue Gem::RemoteFetcher::FetchError => e
         raise unless fetcher.warn_legacy e do
           require 'rubygems/source_info_cache'
@@ -320,7 +318,7 @@ class Gem::SourceIndex
 
       latest = remotes.sort.last
 
-      outdateds << name if latest and local.version < latest
+      outdateds << local.name if latest and local.version < latest
     end
 
     outdateds
