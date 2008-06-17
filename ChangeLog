@@ -1,3 +1,7 @@
+Tue Jun 17 18:39:11 2008  Ryan Davis  <ryan@wrath.local>
+
+	* common.mk: fixed dependencies on miniruby.
+
 Tue Jun 17 18:11:01 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (pipe): expand pipe buffer size.
