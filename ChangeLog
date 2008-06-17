@@ -1,3 +1,12 @@
+Tue Jun 17 22:04:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* enc/euc_jp.c (property_name_to_ctype): core dumped when sizeof(int)
+	  differs from sizeof(long).
+
+	* enc/shift_jis.c (property_name_to_ctype): ditto.
+
+	* enc/unicode.c (onigenc_unicode_property_name_to_ctype): ditto.
+
 Tue Jun 17 20:32:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (miniruby$(EXEEXT)): $(PREP) isn't always same as

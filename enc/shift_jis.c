@@ -294,11 +294,11 @@ init_property_list(void)
 static int
 property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
-  int ctype;
+  st_data_t ctype;
 
   PROPERTY_LIST_INIT_CHECK;
 
-  if (onig_st_lookup_strend(PropertyNameTable, p, end, (void*)&ctype) == 0) {
+  if (onig_st_lookup_strend(PropertyNameTable, p, end, &ctype) == 0) {
     return onigenc_minimum_property_name_to_ctype(enc, p, end);
   }
 

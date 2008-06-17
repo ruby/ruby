@@ -10817,7 +10817,8 @@ static int init_name_ctype_table(void)
 extern int
 onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end)
 {
-  int len, ctype;
+  int len;
+  st_data_t ctype;
   UChar buf[PROPERTY_NAME_MAX_SIZE];
   UChar *p;
   OnigCodePoint code;
@@ -10841,7 +10842,7 @@ onigenc_unicode_property_name_to_ctype(OnigEncoding enc, UChar* name, UChar* end
   if (NameTableInited == 0)  init_name_ctype_table();
 
   if (onig_st_lookup_strend(NameCtypeTable, buf, buf + len,
-			    (void*)&ctype) == 0) {
+			    &ctype) == 0) {
     return ONIGERR_INVALID_CHAR_PROPERTY_NAME;
   }
 
