@@ -27,6 +27,14 @@ class TestGem < RubyGemTestCase
 
     assert_equal expected, Gem.all_load_paths.sort
   end
+  
+  def test_self_available?
+    util_make_gems
+    assert(Gem.available?("a"))
+    assert(Gem.available?("a", "1"))
+    assert(Gem.available?("a", ">1"))
+    assert(!Gem.available?("monkeys"))
+  end
 
   def test_self_bindir
     assert_equal File.join(@gemhome, 'bin'), Gem.bindir
@@ -129,7 +137,7 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_default_sources
-    assert_equal %w[http://gems.rubyforge.org], Gem.default_sources
+    assert_equal %w[http://gems.rubyforge.org/], Gem.default_sources
   end
 
   def test_self_dir
@@ -235,6 +243,18 @@ class TestGem < RubyGemTestCase
 
   def test_self_path
     assert_equal [Gem.dir], Gem.path
+  end
+
+  def test_self_path_default
+    if defined? APPLE_GEM_HOME
+      orig_APPLE_GEM_HOME = APPLE_GEM_HOME
+      Object.send :remove_const, :APPLE_GEM_HOME
+    end
+    Gem.instance_variable_set :@gem_path, nil
+
+    assert_equal [Gem.default_path, Gem.dir], Gem.path
+  ensure
+    Object.const_set :APPLE_GEM_HOME, orig_APPLE_GEM_HOME
   end
 
   unless win_platform?
@@ -382,7 +402,7 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_sources
-    assert_equal %w[http://gems.example.com], Gem.sources
+    assert_equal %w[http://gems.example.com/], Gem.sources
   end
 
   def test_ssl_available_eh

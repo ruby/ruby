@@ -67,11 +67,14 @@ module Gem
     :RUBY_SO_NAME => RbConfig::CONFIG["RUBY_SO_NAME"],
     :arch => RbConfig::CONFIG["arch"],
     :bindir => RbConfig::CONFIG["bindir"],
+    :datadir => RbConfig::CONFIG["datadir"],
     :libdir => RbConfig::CONFIG["libdir"],
     :ruby_install_name => RbConfig::CONFIG["ruby_install_name"],
     :ruby_version => RbConfig::CONFIG["ruby_version"],
     :sitedir => RbConfig::CONFIG["sitedir"],
-    :sitelibdir => RbConfig::CONFIG["sitelibdir"]
+    :sitelibdir => RbConfig::CONFIG["sitelibdir"],
+    :vendordir => RbConfig::CONFIG["vendordir"] ,
+    :vendorlibdir => RbConfig::CONFIG["vendorlibdir"]
   )
 
   DIRECTORIES = %w[cache doc gems specifications] unless defined?(DIRECTORIES)
@@ -137,7 +140,7 @@ module Gem
 
       unless matches.any? { |spec| spec.version == existing_spec.version } then
         raise Gem::Exception,
-              "can't activate #{gem}, already activated #{existing_spec.full_name}]"
+              "can't activate #{gem}, already activated #{existing_spec.full_name}"
       end
 
       return false
@@ -151,7 +154,7 @@ module Gem
     @loaded_specs[spec.name] = spec
 
     # Load dependent gems first
-    spec.dependencies.each do |dep_gem|
+    spec.runtime_dependencies.each do |dep_gem|
       activate dep_gem
     end
 
@@ -203,6 +206,19 @@ module Gem
 
   private_class_method :all_partials
 
+  ##
+  # See if a given gem is available.
+  
+  def self.available?(gem, *requirements)
+    requirements = Gem::Requirement.default if requirements.empty?
+    
+    unless gem.respond_to?(:name) && gem.respond_to?(:version_requirements) 
+      gem = Gem::Dependency.new(gem, requirements)
+    end
+    
+    !Gem.source_index.search(gem).empty?
+  end
+  
   ##
   # The mode needed to read a file as straight binary.
 
@@ -265,6 +281,13 @@ module Gem
     spec = @loaded_specs[gem_name]
     return nil if spec.nil?
     File.join(spec.full_gem_path, 'data', gem_name)
+  end
+
+  ##
+  # A Zlib::Deflate.deflate wrapper
+
+  def self.deflate(data)
+    Zlib::Deflate.deflate data
   end
 
   ##
@@ -344,6 +367,33 @@ module Gem
   end
 
   private_class_method :find_home
+
+  ##
+  # Zlib::GzipReader wrapper that unzips +data+.
+
+  def self.gunzip(data)
+    data = StringIO.new data
+
+    Zlib::GzipReader.new(data).read
+  end
+
+  ##
+  # Zlib::GzipWriter wrapper that zips +data+.
+
+  def self.gzip(data)
+    zipped = StringIO.new
+
+    Zlib::GzipWriter.wrap zipped do |io| io.write data end
+
+    zipped.string
+  end
+
+  ##
+  # A Zlib::Inflate#inflate wrapper
+
+  def self.inflate(data)
+    Zlib::Inflate.inflate data
+  end
 
   ##
   # Return a list of all possible load paths for the latest version for all
@@ -438,7 +488,11 @@ module Gem
     @gem_path ||= nil
 
     unless @gem_path then
-      paths = [ENV['GEM_PATH']] || [default_path]
+      paths = if ENV['GEM_PATH'] then
+                [ENV['GEM_PATH']]
+              else
+                [default_path]
+              end
 
       if defined?(APPLE_GEM_HOME) and not ENV['GEM_PATH'] then
         paths << APPLE_GEM_HOME
@@ -459,7 +513,7 @@ module Gem
 
   ##
   # Array of platforms this RubyGems supports.
-  
+
   def self.platforms
     @platforms ||= []
     if @platforms.empty?
@@ -586,13 +640,13 @@ module Gem
   def self.set_paths(gpaths)
     if gpaths
       @gem_path = gpaths.split(File::PATH_SEPARATOR)
-      
+
       if File::ALT_SEPARATOR then
         @gem_path.map! do |path|
           path.gsub File::ALT_SEPARATOR, File::SEPARATOR
         end
       end
-      
+
       @gem_path << Gem.dir
     else
       @gem_path = [Gem.dir]
@@ -683,24 +737,25 @@ module Gem
 
   end
 
+  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/"
+
+  YAML_SPEC_DIR = 'quick/'
+
 end
 
-# Modify the non-gem version of datadir to handle gem package names.
-
-require 'rbconfig/datadir'
-
-module Config # :nodoc:
+module Config
+  # :stopdoc:
   class << self
-    alias gem_original_datadir datadir
-
     # Return the path to the data directory associated with the named
     # package.  If the package is loaded as a gem, return the gem
     # specific data directory.  Otherwise return a path to the share
     # area as define by "#{ConfigMap[:datadir]}/#{package_name}".
     def datadir(package_name)
-      Gem.datadir(package_name) || Config.gem_original_datadir(package_name)
+      Gem.datadir(package_name) ||
+        File.join(Gem::ConfigMap[:datadir], package_name)
     end
   end
+  # :startdoc:
 end
 
 require 'rubygems/exceptions'
@@ -711,6 +766,18 @@ require 'rubygems/gem_path_searcher'    # Needed for Kernel#gem
 require 'rubygems/source_index'         # Needed for Kernel#gem
 require 'rubygems/platform'
 require 'rubygems/builder'              # HACK: Needed for rake's package task.
+
+begin
+  require 'rubygems/defaults/operating_system'
+rescue LoadError
+end
+
+if defined?(RUBY_ENGINE) then
+  begin
+    require "rubygems/defaults/#{RUBY_ENGINE}"
+  rescue LoadError
+  end
+end
 
 if RUBY_VERSION < '1.9' then
   require 'rubygems/custom_require'

@@ -7,6 +7,7 @@
 require 'rubygems'
 require 'rubygems/user_interaction'
 require 'rubygems/specification'
+require 'rubygems/spec_fetcher'
 
 ##
 # The SourceIndex object indexes all the gems available from a
@@ -27,6 +28,11 @@ class Gem::SourceIndex
 
   attr_reader :gems # :nodoc:
 
+  ##
+  # Directories to use to refresh this SourceIndex when calling refresh!
+
+  attr_accessor :spec_dirs
+
   class << self
     include Gem::UserInteraction
 
@@ -39,7 +45,7 @@ class Gem::SourceIndex
     #   +from_gems_in+.  This argument is deprecated and is provided
     #   just for backwards compatibility, and should not generally
     #   be used.
-    # 
+    #
     # return::
     #   SourceIndex instance
 
@@ -63,7 +69,9 @@ class Gem::SourceIndex
     # +spec_dirs+.
 
     def from_gems_in(*spec_dirs)
-      self.new.load_gems_in(*spec_dirs)
+      source_index = new
+      source_index.spec_dirs = spec_dirs
+      source_index.refresh!
     end
 
     ##
@@ -79,6 +87,8 @@ class Gem::SourceIndex
           return gemspec
         end
         alert_warning "File '#{file_name}' does not evaluate to a gem specification"
+      rescue SignalException, SystemExit
+        raise
       rescue SyntaxError => e
         alert_warning e
         alert_warning spec_code
@@ -100,6 +110,7 @@ class Gem::SourceIndex
 
   def initialize(specifications={})
     @gems = specifications
+    @spec_dirs = nil
   end
 
   ##
@@ -121,8 +132,8 @@ class Gem::SourceIndex
   end
 
   ##
-  # Returns a Hash of name => Specification of the latest versions of each
-  # gem in this index.
+  # Returns an Array specifications for the latest versions of each gem in
+  # this index.
 
   def latest_specs
     result = Hash.new { |h,k| h[k] = [] }
@@ -241,7 +252,9 @@ class Gem::SourceIndex
     when Gem::Dependency then
       only_platform = platform_only
       version_requirement = gem_pattern.version_requirements
-      gem_pattern = if gem_pattern.name.empty? then
+      gem_pattern = if Regexp === gem_pattern.name then
+                      gem_pattern.name
+                    elsif gem_pattern.name.empty? then
                       //
                     else
                       /^#{Regexp.escape gem_pattern.name}$/
@@ -271,29 +284,43 @@ class Gem::SourceIndex
 
   ##
   # Replaces the gems in the source index from specifications in the
-  # installed_spec_directories,
+  # directories this source index was created from.  Raises an exception if
+  # this source index wasn't created from a directory (via from_gems_in or
+  # from_installed_gems, or having spec_dirs set).
 
   def refresh!
-    load_gems_in(*self.class.installed_spec_directories)
+    raise 'source index not created from disk' if @spec_dirs.nil?
+    load_gems_in(*@spec_dirs)
   end
 
   ##
   # Returns an Array of Gem::Specifications that are not up to date.
 
   def outdated
-    dep = Gem::Dependency.new '', Gem::Requirement.default
-
-    remotes = Gem::SourceInfoCache.search dep, true
-
     outdateds = []
 
     latest_specs.each do |local|
       name = local.name
-      remote = remotes.select { |spec| spec.name == name }.
-        sort_by { |spec| spec.version.to_ints }.
-        last
 
-      outdateds << name if remote and local.version < remote.version
+      dependency = Gem::Dependency.new name, ">= #{local.version}"
+
+      begin
+        fetcher = Gem::SpecFetcher.fetcher
+        remotes = fetcher.find_matching dependency
+        remotes = remotes.map { |(name, version,),| version }
+      rescue Gem::RemoteFetcher::FetchError => e
+        raise unless fetcher.warn_legacy e do
+          require 'rubygems/source_info_cache'
+
+          specs = Gem::SourceInfoCache.search_with_source dependency, true
+
+          remotes = specs.map { |spec,| spec.version }
+        end
+      end
+
+      latest = remotes.sort.last
+
+      outdateds << name if latest and local.version < latest
     end
 
     outdateds
@@ -387,7 +414,8 @@ class Gem::SourceIndex
   end
 
   def fetch_bulk_index(source_uri)
-    say "Bulk updating Gem source index for: #{source_uri}"
+    say "Bulk updating Gem source index for: #{source_uri}" if
+      Gem.configuration.verbose
 
     index = fetch_index_from(source_uri)
     if index.nil? then
@@ -447,7 +475,7 @@ class Gem::SourceIndex
 
   def unzip(string)
     require 'zlib'
-    Zlib::Inflate.inflate(string)
+    Gem.inflate string
   end
 
   ##

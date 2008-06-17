@@ -28,7 +28,10 @@ class TestGemGemPathSearcher < RubyGemTestCase
     @bar1 = quick_gem 'bar', '0.1'
     @bar2 = quick_gem 'bar', '0.2'
 
-    Gem.source_index = util_setup_source_info_cache @foo1, @foo2, @bar1, @bar2
+    @fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @fetcher
+
+    Gem.source_index = util_setup_spec_fetcher @foo1, @foo2, @bar1, @bar2
 
     @gps = Gem::GemPathSearcher.new
   end

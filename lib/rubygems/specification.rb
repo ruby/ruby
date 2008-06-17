@@ -6,6 +6,7 @@
 
 require 'rubygems'
 require 'rubygems/version'
+require 'rubygems/requirement'
 require 'rubygems/platform'
 
 # :stopdoc:
@@ -16,6 +17,9 @@ if RUBY_VERSION < '1.9' then
     t - ((t.to_f + t.gmt_offset) % 86400)
   end unless defined? Time.today
 end
+
+class Date; end # for ruby_code if date.rb wasn't required
+
 # :startdoc:
 
 module Gem
@@ -37,22 +41,32 @@ module Gem
   #
   class Specification
 
+    ##
     # Allows deinstallation of gems with legacy platforms.
+
     attr_accessor :original_platform # :nodoc:
 
     # ------------------------- Specification version constants.
 
+    ##
     # The the version number of a specification that does not specify one
     # (i.e. RubyGems 0.7 or earlier).
+
     NONEXISTENT_SPECIFICATION_VERSION = -1
 
+    ##
     # The specification version applied to any new Specification instances
     # created.  This should be bumped whenever something in the spec format
     # changes.
-    CURRENT_SPECIFICATION_VERSION = 2
+    #--
+    # When updating this number, be sure to also update #to_ruby.
 
+    CURRENT_SPECIFICATION_VERSION = 3
+
+    ##
     # An informal list of changes to the specification.  The highest-valued
     # key should be equal to the CURRENT_SPECIFICATION_VERSION.
+
     SPECIFICATION_VERSION_HISTORY = {
       -1 => ['(RubyGems versions up to and including 0.7 did not have versioned specifications)'],
       1  => [
@@ -63,10 +77,13 @@ module Gem
         'Added "required_rubygems_version"',
         'Now forward-compatible with future versions',
       ],
+      3  => [
+        'Added dependency types',
+      ],
     }
 
     # :stopdoc:
-    MARSHAL_FIELDS = { -1 => 16, 1 => 16, 2 => 16 }
+    MARSHAL_FIELDS = { -1 => 16, 1 => 16, 2 => 16, 3 => 16 }
 
     now = Time.at(Time.now.to_i)
     TODAY = now - ((now.to_i + now.gmt_offset) % 86400)
@@ -334,6 +351,14 @@ module Gem
     array_attribute :dependencies
 
     read_only :dependencies
+
+    def runtime_dependencies
+      dependencies.select { |d| d.type == :runtime || d.type == nil }
+    end
+
+    def development_dependencies
+      dependencies.select { |d| d.type == :development }
+    end
 
     # ALIASED gemspec attributes -------------------------------------
     
@@ -629,27 +654,31 @@ module Gem
       end
     end
 
-    # Adds a dependency to this Gem.  For example,
+    # Adds a development dependency to this Gem.  For example,
     #
-    #   spec.add_dependency('jabber4r', '> 0.1', '<= 0.5')
+    #   spec.add_development_dependency('jabber4r', '> 0.1', '<= 0.5')
+    #
+    # Development dependencies aren't installed by default, and
+    # aren't activated when a gem is required.
     #
     # gem:: [String or Gem::Dependency] The Gem name/dependency.
     # requirements:: [default=">= 0"] The version requirements.
-    #
-    def add_dependency(gem, *requirements)
-      requirements = if requirements.empty? then
-                       Gem::Requirement.default
-                     else
-                       requirements.flatten
-                     end
-
-      unless gem.respond_to?(:name) && gem.respond_to?(:version_requirements)
-        gem = Dependency.new(gem, requirements)
-      end
-
-      dependencies << gem
+    def add_development_dependency(gem, *requirements)
+      add_dependency_with_type(gem, :development, *requirements)
     end
-    
+
+    # Adds a runtime dependency to this Gem.  For example,
+    #
+    #   spec.add_runtime_dependency('jabber4r', '> 0.1', '<= 0.5')
+    #
+    # gem:: [String or Gem::Dependency] The Gem name/dependency.
+    # requirements:: [default=">= 0"] The version requirements.
+    def add_runtime_dependency(gem, *requirements)
+      add_dependency_with_type(gem, :runtime, *requirements)
+    end
+
+    alias add_dependency add_runtime_dependency
+
     # Returns the full name (name-version) of this Gem.  Platform information
     # is included (name-version-platform) if it is specified (and not the
     # default Ruby platform).
@@ -673,30 +702,31 @@ module Gem
       end
     end
 
+    ##
     # The full path to the gem (install path + full name).
-    #
-    # return:: [String] the full gem path
-    #
+
     def full_gem_path
       path = File.join installation_path, 'gems', full_name
       return path if File.directory? path
       File.join installation_path, 'gems', original_name
     end
-    
+
+    ##
     # The default (generated) file name of the gem.
+
     def file_name
       full_name + ".gem"
     end
-    
-    # The root directory that the gem was installed into.
-    #
-    # return:: [String] the installation path
-    #
+
+    ##
+    # The directory that this gem was installed into.
+
     def installation_path
-      (File.dirname(@loaded_from).split(File::SEPARATOR)[0..-2]).
-        join(File::SEPARATOR)
+      path = File.dirname(@loaded_from).split(File::SEPARATOR)[0..-2]
+      path = path.join File::SEPARATOR
+      File.expand_path path
     end
-    
+
     # Checks if this Specification meets the requirement of the supplied
     # dependency.
     # 
@@ -778,9 +808,11 @@ module Gem
       self.platform = Gem::Platform.new @platform
     end
 
+    ##
     # Returns a Ruby code representation of this specification, such that it
     # can be eval'ed and reconstruct the same specification later.  Attributes
     # that still have their default values are omitted.
+
     def to_ruby
       mark_version
       result = []
@@ -791,8 +823,6 @@ module Gem
       unless platform.nil? or platform == Gem::Platform::RUBY then
         result << "  s.platform = #{ruby_code original_platform}"
       end
-      result << ""
-      result << "  s.specification_version = #{specification_version} if s.respond_to? :specification_version="
       result << ""
       result << "  s.required_rubygems_version = #{ruby_code required_rubygems_version} if s.respond_to? :required_rubygems_version="
 
@@ -816,15 +846,42 @@ module Gem
         end
       end
 
-      result << "" unless dependencies.empty?
+      result << nil
+      result << "  if s.respond_to? :specification_version then"
+      result << "    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION"
+      result << "    s.specification_version = #{specification_version}"
+      result << nil
 
-      dependencies.each do |dep|
-        version_reqs_param = dep.requirements_list.inspect
-        result << "  s.add_dependency(%q<#{dep.name}>, #{version_reqs_param})"
+      result << "    if current_version >= 3 then"
+
+      unless dependencies.empty? then
+        dependencies.each do |dep|
+          version_reqs_param = dep.requirements_list.inspect
+          dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
+          result << "      s.add_#{dep.type}_dependency(%q<#{dep.name}>, #{version_reqs_param})"
+        end
       end
 
+      result << "    else"
+
+      unless dependencies.empty? then
+        dependencies.each do |dep|
+          version_reqs_param = dep.requirements_list.inspect
+          result << "      s.add_dependency(%q<#{dep.name}>, #{version_reqs_param})"
+        end
+      end
+
+      result << '    end'
+
+      result << "  else"
+        dependencies.each do |dep|
+          version_reqs_param = dep.requirements_list.inspect
+          result << "    s.add_dependency(%q<#{dep.name}>, #{version_reqs_param})"
+        end
+      result << "  end"
+
       result << "end"
-      result << ""
+      result << nil
 
       result.join "\n"
     end
@@ -939,6 +996,22 @@ module Gem
     end
 
     private
+
+    def add_dependency_with_type(dependency, type, *requirements)
+      requirements = if requirements.empty? then
+                       Gem::Requirement.default
+                     else
+                       requirements.flatten
+                     end
+
+      unless dependency.respond_to?(:name) &&
+        dependency.respond_to?(:version_requirements)
+
+        dependency = Dependency.new(dependency, requirements, type)
+      end
+
+      dependencies << dependency
+    end
 
     def find_all_satisfiers(dep)
       Gem.source_index.each do |name,gem|

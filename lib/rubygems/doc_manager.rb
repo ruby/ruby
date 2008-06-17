@@ -9,9 +9,9 @@ require 'fileutils'
 module Gem
 
   class DocManager
-  
+
     include UserInteraction
-  
+
     # Create a document manager for the given gem spec.
     #
     # spec::      The Gem::Specification object representing the gem.
@@ -22,12 +22,12 @@ module Gem
       @doc_dir = File.join(spec.installation_path, "doc", spec.full_name)
       @rdoc_args = rdoc_args.nil? ? [] : rdoc_args.split
     end
-    
+
     # Is the RDoc documentation installed?
     def rdoc_installed?
       return File.exist?(File.join(@doc_dir, "rdoc"))
     end
-    
+
     # Generate the RI documents for this gem spec.
     #
     # Note that if both RI and RDoc documents are generated from the
@@ -102,7 +102,7 @@ module Gem
       args << '--quiet'
       args << @spec.require_paths.clone
       args << @spec.extra_rdoc_files
-      args.flatten!
+      args = args.flatten.map do |arg| arg.to_s end
 
       r = RDoc::RDoc.new
 

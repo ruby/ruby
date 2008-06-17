@@ -51,6 +51,8 @@ class Gem::Commands::EnvironmentCommand < Gem::Command
 
       out << "  - RUBY EXECUTABLE: #{Gem.ruby}\n"
 
+      out << "  - EXECUTABLE DIRECTORY: #{Gem.bindir}\n"
+
       out << "  - RUBYGEMS PLATFORMS:\n"
       Gem.platforms.each do |platform|
         out << "    - #{platform}\n"

@@ -52,7 +52,7 @@ class TestKernel < RubyGemTestCase
       gem 'a', '= 2'
     end
 
-    assert_match(/activate a \(= 2\)/, ex.message)
+    assert_match(/activate a \(= 2, runtime\)/, ex.message)
     assert_match(/activated a-1/, ex.message)
 
     assert $:.any? { |p| %r{a-1/lib} =~ p }

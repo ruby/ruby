@@ -71,10 +71,14 @@ class TestGemVersion < RubyGemTestCase
   end
 
   def test_eql_eh
-    v = Gem::Version.new("1.2")
+    v1_2   = Gem::Version.new '1.2'
+    v1_2_0 = Gem::Version.new '1.2.0'
 
-    assert_equal true, v.eql?(@v1_2)
-    assert_equal true, @v1_2.eql?(v)
+    assert_equal true, v1_2.eql?(@v1_2)
+    assert_equal true, @v1_2.eql?(v1_2)
+
+    assert_equal false, v1_2_0.eql?(@v1_2)
+    assert_equal false, @v1_2.eql?(v1_2_0)
 
     assert_equal false, @v1_2.eql?(@v1_3)
     assert_equal false, @v1_3.eql?(@v1_2)
@@ -91,8 +95,13 @@ class TestGemVersion < RubyGemTestCase
   end
 
   def test_hash
-    v = Gem::Version.new("1.2")
-    assert_equal v.hash, @v1_2.hash
+    v1_2   = Gem::Version.new "1.2"
+    v1_2_0 = Gem::Version.new "1.2.0"
+
+    assert_equal v1_2.hash, @v1_2.hash
+
+    assert_not_equal v1_2_0.hash, @v1_2.hash
+
     assert_not_equal @v1_2.hash, @v1_3.hash
   end
 

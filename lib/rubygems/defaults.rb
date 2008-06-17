@@ -2,7 +2,7 @@ module Gem
 
   # An Array of the default sources that come with RubyGems.
   def self.default_sources
-    %w[http://gems.rubyforge.org]
+    %w[http://gems.rubyforge.org/]
   end
 
   # Default home directory path to be used if an alternate value is not

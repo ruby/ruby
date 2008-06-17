@@ -80,7 +80,7 @@ lock it down to the exact version.
       say "gem '#{spec.name}', '= #{spec.version}'" unless locked[spec.name]
       locked[spec.name] = true
 
-      spec.dependencies.each do |dep|
+      spec.runtime_dependencies.each do |dep|
         next if locked[dep.name]
         candidates = Gem.source_index.search dep.name, dep.requirement_list
 

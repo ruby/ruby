@@ -176,9 +176,10 @@ class Gem::Uninstaller
   end
 
   def path_ok?(spec)
-    match_path = File.join @gem_home, 'gems', spec.full_name
+    full_path = File.join @gem_home, 'gems', spec.full_name
+    original_path = File.join @gem_home, 'gems', spec.original_name
 
-    match_path == spec.full_gem_path
+    full_path == spec.full_gem_path || original_path == spec.full_gem_path
   end
 
   def dependencies_ok?(spec)

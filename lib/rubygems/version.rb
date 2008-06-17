@@ -8,6 +8,7 @@ require 'rubygems'
 
 ##
 # The Version class processes string versions into comparable values
+
 class Gem::Version
 
   include Comparable
@@ -17,11 +18,8 @@ class Gem::Version
   attr_reader :version
 
   ##
-  # Checks if version string is valid format
-  #
-  # str:: [String] the version string
-  # return:: [Boolean] true if the string format is correct, otherwise false
-  #
+  # Returns true if +version+ is a valid version string.
+
   def self.correct?(version)
     case version
     when Integer, /\A\s*(\d+(\.\d+)*)*\s*\z/ then true
@@ -36,7 +34,7 @@ class Gem::Version
   #   ver1 = Version.create('1.3.17')   # -> (Version object)
   #   ver2 = Version.create(ver1)       # -> (ver1)
   #   ver3 = Version.create(nil)        # -> nil
-  #
+
   def self.create(input)
     if input.respond_to? :version then
       input
@@ -48,10 +46,9 @@ class Gem::Version
   end
 
   ##
-  # Constructs a version from the supplied string
-  #
-  # version:: [String] The version string.  Format is digit.digit...
-  #
+  # Constructs a Version from the +version+ string.  A version string is a
+  # series of digits separated by dots.
+
   def initialize(version)
     raise ArgumentError, "Malformed version number string #{version}" unless
       self.class.correct?(version)
@@ -73,7 +70,9 @@ class Gem::Version
     self.version = array[0]
   end
 
+  ##
   # Strip ignored trailing zeros.
+
   def normalize
     @ints = build_array_from_version_string
 
@@ -94,10 +93,8 @@ class Gem::Version
   end
 
   ##
-  # Convert version to integer array
-  #
-  # return:: [Array] list of integers
-  #
+  # Returns an integer array representation of this Version.
+
   def to_ints
     normalize unless @ints
     @ints
@@ -117,20 +114,25 @@ class Gem::Version
   end
 
   ##
-  # Compares two versions
-  #
-  # other:: [Version or .ints] other version to compare to
-  # return:: [Fixnum] -1, 0, 1
-  #
+  # Compares this version with +other+ returning -1, 0, or 1 if the other
+  # version is larger, the same, or smaller than this one.
+
   def <=>(other)
+    return nil unless self.class === other
     return 1 unless other
     @ints <=> other.ints
   end
 
-  alias eql? == # :nodoc:
+  ##
+  # A Version is only eql? to another version if it has the same version
+  # string.  "1.0" is not the same version as "1".
+
+  def eql?(other)
+    self.class === other and @version == other.version
+  end
 
   def hash # :nodoc:
-    to_ints.inject { |hash_code, n| hash_code + n }
+    @version.hash
   end
 
   # Return a new version object where the next to the last revision

@@ -12,6 +12,7 @@ require 'rubygems/version'
 #
 # A Requirement object can actually contain multiple, er,
 # requirements, as in (> 1.2, < 2.0).
+
 class Gem::Requirement
 
   include Comparable
@@ -35,7 +36,7 @@ class Gem::Requirement
   # Version, a String, or nil.  Intended to simplify client code.
   #
   # If the input is "weird", the default version requirement is returned.
-  #
+
   def self.create(input)
     case input
     when Gem::Requirement then
@@ -57,6 +58,7 @@ class Gem::Requirement
   # This comment once said:
   #
   # "A default "version requirement" can surely _only_ be '> 0'."
+
   def self.default
     self.new ['>= 0']
   end
@@ -65,6 +67,7 @@ class Gem::Requirement
   # Constructs a Requirement from +requirements+ which can be a String, a
   # Gem::Version, or an Array of those.  See parse for details on the
   # formatting of requirement strings.
+
   def initialize(requirements)
     @requirements = case requirements
                     when Array then
@@ -77,13 +80,17 @@ class Gem::Requirement
     @version = nil   # Avoid warnings.
   end
 
+  ##
   # Marshal raw requirements, rather than the full object
-  def marshal_dump
+
+  def marshal_dump # :nodoc:
     [@requirements]
   end
 
+  ##
   # Load custom marshal format
-  def marshal_load(array)
+
+  def marshal_load(array) # :nodoc:
     @requirements = array[0]
     @version = nil
   end
@@ -108,20 +115,16 @@ class Gem::Requirement
   end
 
   ##
-  # Is the requirement satisfied by +version+.
-  #
-  # version:: [Gem::Version] the version to compare against
-  # return:: [Boolean] true if this requirement is satisfied by
-  #          the version, otherwise false
-  #
+  # True if this requirement satisfied by the Gem::Version +version+.
+
   def satisfied_by?(version)
     normalize
     @requirements.all? { |op, rv| satisfy?(op, version, rv) }
   end
 
   ##
-  # Is "version op required_version" satisfied?
-  #
+  # Is "+version+ +op+ +required_version+" satisfied?
+
   def satisfy?(op, version, required_version)
     OPS[op].call(version, required_version)
   end
@@ -132,6 +135,7 @@ class Gem::Requirement
   # The requirement can be a String or a Gem::Version.  A String can be an
   # operator (<, <=, =, =>, >, !=, ~>), a version number, or both, operator
   # first.
+
   def parse(obj)
     case obj
     when /^\s*(#{OP_RE})\s*([0-9.]+)\s*$/o then
@@ -147,7 +151,7 @@ class Gem::Requirement
     end
   end
 
-  def <=>(other)
+  def <=>(other) # :nodoc:
     to_s <=> other.to_s
   end
 

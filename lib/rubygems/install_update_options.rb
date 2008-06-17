@@ -89,6 +89,12 @@ module Gem::InstallUpdateOptions
                'foo_exec18') do |value, options|
       options[:format_executable] = value
     end
+
+    add_option(:"Install/Update", "--development",
+                "Install any additional development",
+                "dependencies") do |value, options|
+      options[:development] = true
+    end
   end
 
   # Default options for the gem install command.

@@ -1,6 +1,6 @@
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
-require 'rubygems/source_info_cache'
+require 'rubygems/spec_fetcher'
 require 'rubygems/version_option'
 
 class Gem::Commands::QueryCommand < Gem::Command
@@ -74,7 +74,13 @@ class Gem::Commands::QueryCommand < Gem::Command
       say "*** LOCAL GEMS ***"
       say
 
-      output_query_results Gem.source_index.search(name)
+      specs = Gem.source_index.search name
+
+      spec_tuples = specs.map do |spec|
+        [[spec.name, spec.version, spec.original_platform, spec], :local]
+      end
+
+      output_query_results spec_tuples
     end
 
     if remote? then
@@ -84,13 +90,26 @@ class Gem::Commands::QueryCommand < Gem::Command
 
       all = options[:all]
 
+      dep = Gem::Dependency.new name, Gem::Requirement.default
       begin
-        Gem::SourceInfoCache.cache all
-      rescue Gem::RemoteFetcher::FetchError
-        # no network
+        fetcher = Gem::SpecFetcher.fetcher
+        spec_tuples = fetcher.find_matching dep, all, false
+      rescue Gem::RemoteFetcher::FetchError => e
+        raise unless fetcher.warn_legacy e do
+          require 'rubygems/source_info_cache'
+
+          dep.name = '' if dep.name == //
+
+          specs = Gem::SourceInfoCache.search_with_source dep, false, all
+
+          spec_tuples = specs.map do |spec, source_uri|
+            [[spec.name, spec.version, spec.original_platform, spec],
+             source_uri]
+          end
+        end
       end
 
-      output_query_results Gem::SourceInfoCache.search(name, false, all)
+      output_query_results spec_tuples
     end
   end
 
@@ -104,28 +123,30 @@ class Gem::Commands::QueryCommand < Gem::Command
     !Gem.source_index.search(dep).empty?
   end
 
-  def output_query_results(gemspecs)
+  def output_query_results(spec_tuples)
     output = []
-    gem_list_with_version = {}
+    versions = Hash.new { |h,name| h[name] = [] }
 
-    gemspecs.flatten.each do |gemspec|
-      gem_list_with_version[gemspec.name] ||= []
-      gem_list_with_version[gemspec.name] << gemspec
+    spec_tuples.each do |spec_tuple, source_uri|
+      versions[spec_tuple.first] << [spec_tuple, source_uri]
     end
 
-    gem_list_with_version = gem_list_with_version.sort_by do |name, spec|
+    versions = versions.sort_by do |(name,),|
       name.downcase
     end
 
-    gem_list_with_version.each do |gem_name, list_of_matching|
-      list_of_matching = list_of_matching.sort_by { |x| x.version.to_ints }.reverse
-      seen_versions = {}
+    versions.each do |gem_name, matching_tuples|
+      matching_tuples = matching_tuples.sort_by do |(name, version,),|
+        version
+      end.reverse
 
-      list_of_matching.delete_if do |item|
-        if seen_versions[item.version] then
+      seen = {}
+
+      matching_tuples.delete_if do |(name, version,),|
+        if seen[version] then
           true
         else
-          seen_versions[item.version] = true
+          seen[version] = true
           false
         end
       end
@@ -133,12 +154,50 @@ class Gem::Commands::QueryCommand < Gem::Command
       entry = gem_name.dup
 
       if options[:versions] then
-        versions = list_of_matching.map { |s| s.version }.uniq
+        versions = matching_tuples.map { |(name, version,),| version }.uniq
         entry << " (#{versions.join ', '})"
       end
 
-      entry << "\n" << format_text(list_of_matching[0].summary, 68, 4) if
-        options[:details]
+      if options[:details] then
+        detail_tuple = matching_tuples.first
+
+        spec = if detail_tuple.first.length == 4 then
+                 detail_tuple.first.last
+               else
+                 uri = URI.parse detail_tuple.last
+                 Gem::SpecFetcher.fetcher.fetch_spec detail_tuple.first, uri
+               end
+
+        entry << "\n"
+        authors = "Author#{spec.authors.length > 1 ? 's' : ''}: "
+        authors << spec.authors.join(', ')
+        entry << format_text(authors, 68, 4)
+
+        if spec.rubyforge_project and not spec.rubyforge_project.empty? then
+          rubyforge = "Rubyforge: http://rubyforge.org/projects/#{spec.rubyforge_project}"
+          entry << "\n" << format_text(rubyforge, 68, 4)
+        end
+
+        if spec.homepage and not spec.homepage.empty? then
+          entry << "\n" << format_text("Homepage: #{spec.homepage}", 68, 4)
+        end
+
+        if spec.loaded_from then
+          if matching_tuples.length == 1 then
+            loaded_from = File.dirname File.dirname(spec.loaded_from)
+            entry << "\n" << "    Installed at: #{loaded_from}"
+          else
+            label = 'Installed at'
+            matching_tuples.each do |(_,version,_,s),|
+              loaded_from = File.dirname File.dirname(s.loaded_from)
+              entry << "\n" << "    #{label} (#{version}): #{loaded_from}"
+              label = ' ' * label.length
+            end
+          end
+        end
+
+        entry << "\n\n" << format_text(spec.summary, 68, 4)
+      end
       output << entry
     end
 

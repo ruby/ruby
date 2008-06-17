@@ -52,9 +52,10 @@ class Gem::Commands::SpecificationCommand < Gem::Command
     end
 
     if remote? then
-      Gem::SourceInfoCache.cache_data.each do |_,sice|
-        specs.push(*sice.source_index.search(gem, options[:version]))
-      end
+      dep = Gem::Dependency.new gem, options[:version]
+      found = Gem::SpecFetcher.fetcher.fetch dep
+
+      specs.push(*found.map { |spec,| spec })
     end
 
     if specs.empty? then

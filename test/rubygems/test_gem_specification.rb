@@ -213,6 +213,15 @@ end
     assert_equal 'old_platform', same_spec.original_platform
   end
 
+  def test_add_dependency_with_explicit_type
+    gem = quick_gem "awesome", "1.0" do |awesome|
+      awesome.add_development_dependency "monkey"
+    end
+
+    monkey = gem.dependencies.detect { |d| d.name == "monkey" }
+    assert_equal(:development, monkey.type)
+  end
+
   def test_author
     assert_equal 'A User', @a1.author
   end
@@ -280,6 +289,20 @@ end
     pqa = Gem::Dependency.new 'pqa', ['> 0.4', '<= 0.6']
 
     assert_equal [rake, jabber, pqa], @a1.dependencies
+  end
+
+  def test_dependencies_scoped_by_type
+    gem = quick_gem "awesome", "1.0" do |awesome|
+      awesome.add_runtime_dependency "bonobo", []
+      awesome.add_development_dependency "monkey", []
+    end
+
+    bonobo = Gem::Dependency.new("bonobo", [])
+    monkey = Gem::Dependency.new("monkey", [], :development)
+
+    assert_equal([bonobo, monkey], gem.dependencies)
+    assert_equal([bonobo], gem.runtime_dependencies)
+    assert_equal([monkey], gem.development_dependencies)
   end
 
   def test_description
@@ -423,6 +446,15 @@ end
                  @a1.full_gem_path
   end
 
+  def test_full_gem_path_double_slash
+    gemhome = @gemhome.sub(/\w\//, '\&/')
+    @a1.loaded_from = File.join gemhome, 'specifications',
+                                "#{@a1.full_name}.gemspec"
+
+    assert_equal File.join(@gemhome, 'gems', @a1.full_name),
+                 @a1.full_gem_path
+  end
+
   def test_full_name
     assert_equal 'a-1', @a1.full_name
 
@@ -531,6 +563,17 @@ end
     assert_equal ['A working computer'], @a1.requirements
   end
 
+  def test_runtime_dependencies_legacy
+    # legacy gems don't have a type
+    @a1.runtime_dependencies.each do |dep|
+      dep.instance_variable_set :@type, nil
+    end
+
+    expected = %w[rake jabber4r pqa]
+
+    assert_equal expected, @a1.runtime_dependencies.map { |d| d.name }
+  end
+
   def test_spaceship_name
     s1 = quick_gem 'a', '1'
     s2 = quick_gem 'b', '1'
@@ -570,6 +613,8 @@ end
   end
 
   def test_to_ruby
+    @a2.add_runtime_dependency 'b', '1'
+    @a2.dependencies.first.instance_variable_set :@type, nil
     @a2.required_rubygems_version = Gem::Requirement.new '> 0'
 
     ruby_code = @a2.to_ruby
@@ -577,8 +622,6 @@ end
     expected = "Gem::Specification.new do |s|
   s.name = %q{a}
   s.version = \"2\"
-
-  s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION} if s.respond_to? :specification_version=
 
   s.required_rubygems_version = Gem::Requirement.new(\"> 0\") if s.respond_to? :required_rubygems_version=
   s.authors = [\"A User\"]
@@ -591,6 +634,19 @@ end
   s.require_paths = [\"lib\"]
   s.rubygems_version = %q{#{Gem::RubyGemsVersion}}
   s.summary = %q{this is a summary}
+
+  if s.respond_to? :specification_version then
+    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
+    s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
+
+    if current_version >= 3 then
+      s.add_runtime_dependency(%q<b>, [\"= 1\"])
+    else
+      s.add_dependency(%q<b>, [\"= 1\"])
+    end
+  else
+    s.add_dependency(%q<b>, [\"= 1\"])
+  end
 end
 "
 
@@ -613,8 +669,6 @@ end
   s.version = \"1\"
   s.platform = Gem::Platform.new(#{expected_platform})
 
-  s.specification_version = 2 if s.respond_to? :specification_version=
-
   s.required_rubygems_version = Gem::Requirement.new(\">= 0\") if s.respond_to? :required_rubygems_version=
   s.authors = [\"A User\"]
   s.date = %q{#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}}
@@ -633,9 +687,24 @@ end
   s.summary = %q{this is a summary}
   s.test_files = [\"test/suite.rb\"]
 
-  s.add_dependency(%q<rake>, [\"> 0.4\"])
-  s.add_dependency(%q<jabber4r>, [\"> 0.0.0\"])
-  s.add_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
+  if s.respond_to? :specification_version then
+    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
+    s.specification_version = 3
+
+    if current_version >= 3 then
+      s.add_runtime_dependency(%q<rake>, [\"> 0.4\"])
+      s.add_runtime_dependency(%q<jabber4r>, [\"> 0.0.0\"])
+      s.add_runtime_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
+    else
+      s.add_dependency(%q<rake>, [\"> 0.4\"])
+      s.add_dependency(%q<jabber4r>, [\"> 0.0.0\"])
+      s.add_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
+    end
+  else
+    s.add_dependency(%q<rake>, [\"> 0.4\"])
+    s.add_dependency(%q<jabber4r>, [\"> 0.0.0\"])
+    s.add_dependency(%q<pqa>, [\"> 0.4\", \"<= 0.6\"])
+  end
 end
 "
 

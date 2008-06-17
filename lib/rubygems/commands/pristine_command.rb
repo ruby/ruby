@@ -82,51 +82,10 @@ revert the gem.
       end
 
       # TODO use installer options
-      installer = Gem::Installer.new gem, :wrappers => true
+      installer = Gem::Installer.new gem, :wrappers => true, :force => true
+      installer.install
 
-      gem_file = File.join install_dir, "cache", "#{spec.full_name}.gem"
-
-      security_policy = nil # TODO use installer option
-
-      format = Gem::Format.from_file_by_path gem_file, security_policy
-
-      target_directory = File.join(install_dir, "gems", format.spec.full_name)
-      target_directory.untaint
-
-      pristine_files = format.file_entries.collect { |data| data[0]["path"] }
-      file_map = {}
-
-      format.file_entries.each do |entry, file_data|
-        file_map[entry["path"]] = file_data
-      end
-
-      Dir.chdir target_directory do
-        deployed_files = Dir.glob(File.join("**", "*")) +
-                         Dir.glob(File.join("**", ".*"))
-
-        pristine_files = pristine_files.map { |f| File.expand_path f }
-        deployed_files = deployed_files.map { |f| File.expand_path f }
-
-        to_redeploy = (pristine_files - deployed_files)
-        to_redeploy = to_redeploy.map { |path| path.untaint}
-
-        if to_redeploy.length > 0 then
-          say "Restoring #{to_redeploy.length} file#{to_redeploy.length == 1 ? "" : "s"} to #{spec.full_name}..."
-
-          to_redeploy.each do |path|
-            say "  #{path}"
-            FileUtils.mkdir_p File.dirname(path)
-            File.open(path, "wb") do |out|
-              out.write file_map[path]
-            end
-          end
-        else
-          say "#{spec.full_name} is in pristine condition"
-        end
-      end
-
-      installer.generate_bin
-      installer.build_extensions
+      say "Restored #{spec.full_name}"
     end
   end
 

@@ -24,7 +24,7 @@ require 'rubygems/remote_fetcher'
 # Note that the proxy server is not a *real* proxy server.  But our
 # software doesn't really care, as long as we hit the proxy URL when a
 # proxy is configured.
-#
+
 class TestGemRemoteFetcher < RubyGemTestCase
 
   include Gem::DefaultUserInteraction
@@ -105,7 +105,7 @@ gems:
 
     @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
 
-    Gem::RemoteFetcher.instance_variable_set :@fetcher, nil
+    Gem::RemoteFetcher.fetcher = nil
   end
 
   def test_self_fetcher
@@ -144,7 +144,7 @@ gems:
 
   def test_fetch_size_socket_error
     fetcher = Gem::RemoteFetcher.new nil
-    def fetcher.connect_to(host, port)
+    def fetcher.connection_for(uri)
       raise SocketError
     end
 
@@ -153,7 +153,8 @@ gems:
       fetcher.fetch_size uri
     end
 
-    assert_equal "SocketError (SocketError)\n\tgetting size of #{uri}", e.message
+    assert_equal "SocketError (SocketError)\n\tfetching size (#{uri})",
+                 e.message
   end
 
   def test_no_proxy
@@ -182,7 +183,7 @@ gems:
           @test_data
         end
 
-        raise Gem::RemoteFetcher::FetchError, "haha!"
+        raise Gem::RemoteFetcher::FetchError.new("haha!", nil)
       end
     end
 
@@ -371,7 +372,8 @@ gems:
       fetcher.fetch_path 'uri'
     end
 
-    assert_equal 'EOFError: EOFError reading uri', e.message
+    assert_equal 'EOFError: EOFError (uri)', e.message
+    assert_equal 'uri', e.uri
   end
 
   def test_fetch_path_socket_error
@@ -383,7 +385,8 @@ gems:
       fetcher.fetch_path 'uri'
     end
 
-    assert_equal 'SocketError: SocketError reading uri', e.message
+    assert_equal 'SocketError: SocketError (uri)', e.message
+    assert_equal 'uri', e.uri
   end
 
   def test_fetch_path_system_call_error
@@ -397,8 +400,9 @@ gems:
       fetcher.fetch_path 'uri'
     end
 
-    assert_match %r|ECONNREFUSED:.*connect\(2\) reading uri\z|,
+    assert_match %r|ECONNREFUSED:.*connect\(2\) \(uri\)\z|,
                  e.message
+    assert_equal 'uri', e.uri
   end
 
   def test_get_proxy_from_env_empty
@@ -494,7 +498,8 @@ gems:
       fetcher.send :open_uri_or_path, 'http://gems.example.com/redirect'
     end
 
-    assert_equal 'too many redirects', e.message
+    assert_equal 'too many redirects (http://gems.example.com/redirect)',
+                 e.message
   end
 
   def test_zip

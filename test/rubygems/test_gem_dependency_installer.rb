@@ -15,8 +15,12 @@ class TestGemDependencyInstaller < RubyGemTestCase
       fp.puts "#!/usr/bin/ruby"
     end
     @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
+    @aa1, @aa1_gem = util_gem 'aa', '1' 
 
-    @b1, @b1_gem = util_gem 'b', '1' do |s| s.add_dependency 'a' end
+    @b1, @b1_gem = util_gem 'b', '1' do |s|
+      s.add_dependency 'a'
+      s.add_development_dependency 'aa'
+    end
 
     @d1, @d1_gem = util_gem 'd', '1'
     @d2, @d2_gem = util_gem 'd', '2'
@@ -38,15 +42,13 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
     @z1, @z1_gem = util_gem 'z', '1'   do |s| s.add_dependency 'y' end
 
-    si = util_setup_source_info_cache @a1, @b1, @d1, @d2, @x1_m, @x1_o, @w1,
-                                      @y1, @y1_1_p, @z1
+    @fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @fetcher
 
-    @fetcher = FakeFetcher.new
-    Gem::RemoteFetcher.instance_variable_set :@fetcher, @fetcher
-    @fetcher.uri = URI.parse 'http://gems.example.com'
-    @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
+    si = util_setup_spec_fetcher @a1, @b1, @d1, @d2, @x1_m, @x1_o, @w1, @y1,
+                                 @y1_1_p, @z1
 
-    FileUtils.rm_rf File.join(@gemhome, 'gems')
+    util_clear_gems
   end
 
   def test_install
@@ -64,6 +66,52 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal [@a1], inst.installed_gems
   end
 
+  def test_install_cache_dir
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new :cache_dir => @tempdir
+      inst.install 'b'
+    end
+
+    assert_equal %w[a-1 b-1], inst.installed_gems.map { |s| s.full_name }
+
+    assert File.exist?(File.join(@tempdir, 'cache', "#{@a1.full_name}.gem"))
+    assert File.exist?(File.join(@tempdir, 'cache', "#{@b1.full_name}.gem"))
+  end
+
+  def test_install_dependencies_satisfied
+    a2, a2_gem = util_gem 'a', '2'
+
+    FileUtils.rm_rf File.join(@gemhome, 'gems')
+    Gem.source_index.refresh!
+
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv a2_gem, @tempdir # not in index
+    FileUtils.mv @b1_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new
+      inst.install 'a-2'
+    end
+
+    FileUtils.rm File.join(@tempdir, "#{a2.full_name}.gem")
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new
+      inst.install 'b'
+    end
+
+    installed = Gem::SourceIndex.from_installed_gems.map { |n,s| s.full_name }
+
+    assert_equal %w[a-2 b-1], installed.sort
+
+    assert_equal %w[b-1], inst.installed_gems.map { |s| s.full_name }
+  end
+
   def test_install_dependency
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
@@ -75,6 +123,20 @@ class TestGemDependencyInstaller < RubyGemTestCase
     end
 
     assert_equal %w[a-1 b-1], inst.installed_gems.map { |s| s.full_name }
+  end
+
+  def test_install_dependency_development
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @aa1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new(:development => true)
+      inst.install 'b'
+    end
+
+    assert_equal %w[a-1 aa-1 b-1], inst.installed_gems.map { |s| s.full_name }
   end
 
   def test_install_dependency_existing
@@ -177,7 +239,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
   def test_install_force
     FileUtils.mv @b1_gem, @tempdir
-    si = util_setup_source_info_cache @b1
+    si = util_setup_spec_fetcher @b1
     @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
     inst = nil
 
@@ -249,8 +311,6 @@ class TestGemDependencyInstaller < RubyGemTestCase
   end
 
   def test_install_domain_both_no_network
-    Gem::SourceInfoCache.instance_variable_set :@cache, nil
-
     @fetcher.data["http://gems.example.com/gems/Marshal.#{@marshal_version}"] =
       proc do
         raise Gem::RemoteFetcher::FetchError
@@ -272,12 +332,14 @@ class TestGemDependencyInstaller < RubyGemTestCase
     FileUtils.mv @b1_gem, @tempdir
     inst = nil
 
+    Gem.source_index.gems.delete @a1.full_name
+
     Dir.chdir @tempdir do
       e = assert_raise Gem::InstallError do
         inst = Gem::DependencyInstaller.new :domain => :local
         inst.install 'b'
       end
-      assert_equal 'b requires a (>= 0)', e.message
+      assert_equal 'b requires a (>= 0, runtime)', e.message
     end
 
     assert_equal [], inst.installed_gems.map { |s| s.full_name }
@@ -295,6 +357,30 @@ class TestGemDependencyInstaller < RubyGemTestCase
     inst.install 'a'
 
     assert_equal %w[a-1], inst.installed_gems.map { |s| s.full_name }
+  end
+
+  def test_install_dual_repository
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+    inst = nil
+
+    gemhome2 = "#{@gemhome}2"
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new :install_dir => gemhome2
+      inst.install 'a'
+    end
+
+    ENV['GEM_HOME'] = @gemhome
+    ENV['GEM_PATH'] = [@gemhome, gemhome2].join ':'
+    Gem.clear_paths
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new
+      inst.install 'b'
+    end
+
+    assert_equal %w[b-1], inst.installed_gems.map { |s| s.full_name }
   end
 
   def test_install_remote
@@ -337,7 +423,9 @@ class TestGemDependencyInstaller < RubyGemTestCase
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 
-    si = util_setup_source_info_cache @a1, a2_o
+    util_clear_gems
+
+    si = util_setup_spec_fetcher @a1, a2_o
 
     @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
 
@@ -439,7 +527,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
     inst = Gem::DependencyInstaller.new
     dep = Gem::Dependency.new 'b', '>= 0'
 
-    assert_equal [[@b1, 'http://gems.example.com']],
+    assert_equal [[@b1, @gem_repo]],
                  inst.find_gems_with_sources(dep)
   end
 
@@ -456,7 +544,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal 2, gems.length
     remote = gems.first
     assert_equal 'a-1', remote.first.full_name, 'remote spec'
-    assert_equal 'http://gems.example.com', remote.last, 'remote path'
+    assert_equal @gem_repo, remote.last, 'remote path'
 
     local = gems.last
     assert_equal 'a-1', local.first.full_name, 'local spec'
@@ -476,12 +564,9 @@ class TestGemDependencyInstaller < RubyGemTestCase
     b2, = util_gem 'b', '2'
     c1, = util_gem 'c', '1' do |s| s.add_dependency 'b' end
 
-    si = util_setup_source_info_cache @a1, @b1, b2, c1
+    util_clear_gems
 
-    @fetcher = FakeFetcher.new
-    Gem::RemoteFetcher.instance_variable_set :@fetcher, @fetcher
-    @fetcher.uri = URI.parse 'http://gems.example.com'
-    @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
+    si = util_setup_spec_fetcher @a1, @b1, b2, c1
 
     inst = Gem::DependencyInstaller.new
     inst.find_spec_by_name_and_version 'c'
@@ -512,12 +597,9 @@ class TestGemDependencyInstaller < RubyGemTestCase
   def test_gather_dependencies_old_required
     e1, = util_gem 'e', '1' do |s| s.add_dependency 'd', '= 1' end
 
-    si = util_setup_source_info_cache @d1, @d2, e1
+    util_clear_gems
 
-    @fetcher = FakeFetcher.new
-    Gem::RemoteFetcher.instance_variable_set :@fetcher, @fetcher
-    @fetcher.uri = URI.parse 'http://gems.example.com'
-    @fetcher.data['http://gems.example.com/gems/yaml'] = si.to_yaml
+    si = util_setup_spec_fetcher @d1, @d2, e1
 
     inst = Gem::DependencyInstaller.new
     inst.find_spec_by_name_and_version 'e'
@@ -525,5 +607,6 @@ class TestGemDependencyInstaller < RubyGemTestCase
 
     assert_equal %w[d-1 e-1], inst.gems_to_install.map { |s| s.full_name }
   end
+
 end
 

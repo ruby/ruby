@@ -36,6 +36,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
   def teardown
     super
     Gem.sources.replace @original_sources
+    Gem::SourceInfoCache.instance_variable_set :@cache, nil
   end
 
   def test_self_cache_refreshes
@@ -43,7 +44,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
     si = Gem::SourceIndex.new
     si.add_spec @a1
 
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = si.dump
+    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = si.dump
 
     Gem.sources.replace %W[#{@gem_repo}]
 
@@ -52,8 +53,9 @@ class TestGemSourceInfoCache < RubyGemTestCase
       assert_kind_of Gem::SourceInfoCache, Gem::SourceInfoCache.cache
       assert_equal Gem::SourceInfoCache.cache.object_id,
                    Gem::SourceInfoCache.cache.object_id
-      assert_match %r|Bulk updating|, @ui.output
     end
+
+    assert_match %r|Bulk updating|, @ui.output
   end
 
   def test_self_cache_skips_refresh_based_on_configuration
@@ -61,7 +63,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
     si = Gem::SourceIndex.new
     si.add_spec @a1
 
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = si.dump
+    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = si.dump
 
     Gem.sources.replace %w[#{@gem_repo}]
 
@@ -78,7 +80,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
     si = Gem::SourceIndex.new
     si.add_spec @a1
 
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = si.dump
+    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = si.dump
 
     Gem::SourceInfoCache.instance_variable_set :@cache, nil
     sice = Gem::SourceInfoCacheEntry.new si, 0
@@ -106,7 +108,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
   end
 
   def test_cache_data_irreparable
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] = @source_index.dump
+    @fetcher.data["#{@gem_repo}Marshal.#{@marshal_version}"] = @source_index.dump
 
     data = { @gem_repo => { 'totally' => 'borked' } }
 

@@ -12,11 +12,6 @@ require 'rubygems'
 
 class TestConfig < RubyGemTestCase
 
-  def test_gem_original_datadir
-    datadir = Config::CONFIG['datadir']
-    assert_equal "#{datadir}/xyz", Config.gem_original_datadir('xyz')
-  end
-
   def test_datadir
     datadir = Config::CONFIG['datadir']
     assert_equal "#{datadir}/xyz", Config.datadir('xyz')

@@ -1,7 +1,8 @@
 require 'rubygems'
 
+##
 # Available list of platforms for targeting Gem installations.
-#
+
 class Gem::Platform
 
   @local = nil
@@ -122,10 +123,19 @@ class Gem::Platform
     to_a.compact.join '-'
   end
 
+  ##
+  # Is +other+ equal to this platform?  Two platforms are equal if they have
+  # the same CPU, OS and version.
+
   def ==(other)
     self.class === other and
       @cpu == other.cpu and @os == other.os and @version == other.version
   end
+
+  ##
+  # Does +other+ match this platform?  Two platforms match if they have the
+  # same CPU, or either has a CPU of 'universal', they have the same OS, and
+  # they have the same version, or either has no version.
 
   def ===(other)
     return nil unless Gem::Platform === other
@@ -139,6 +149,10 @@ class Gem::Platform
     # version
     (@version.nil? or other.version.nil? or @version == other.version)
   end
+
+  ##
+  # Does +other+ match this platform?  If +other+ is a String it will be
+  # converted to a Gem::Platform first.  See #=== for matching rules.
 
   def =~(other)
     case other

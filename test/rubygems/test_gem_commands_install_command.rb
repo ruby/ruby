@@ -72,7 +72,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     end
 
     # HACK no repository was checked
-    assert_equal "ERROR:  could not find no_such_gem locally or in a repository\n",
+    assert_equal "ERROR:  could not find gem no_such_gem locally or in a repository\n",
                  @ui.error
   end
 
@@ -86,8 +86,7 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
 
   def test_execute_nonexistent
     util_setup_fake_fetcher
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] =
-      @source_index.dump
+    util_setup_spec_fetcher
 
     @cmd.options[:args] = %w[nonexistent]
 
@@ -98,18 +97,18 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
       assert_equal 2, e.exit_code
     end
 
-    assert_equal "ERROR:  could not find nonexistent locally or in a repository\n",
+    assert_equal "ERROR:  could not find gem nonexistent locally or in a repository\n",
                  @ui.error
   end
 
   def test_execute_remote
     @cmd.options[:generate_rdoc] = true
     @cmd.options[:generate_ri] = true
-    util_setup_fake_fetcher
 
-    @fetcher.data["#{@gem_repo}/Marshal.#{@marshal_version}"] =
-      @source_index.dump
-    @fetcher.data["#{@gem_repo}/gems/#{@a2.full_name}.gem"] =
+    util_setup_fake_fetcher
+    util_setup_spec_fetcher @a2
+
+    @fetcher.data["#{@gem_repo}gems/#{@a2.full_name}.gem"] =
       read_binary(File.join(@gemhome, 'cache', "#{@a2.full_name}.gem"))
 
     @cmd.options[:args] = [@a2.name]
@@ -122,7 +121,6 @@ class TestGemCommandsInstallCommand < RubyGemTestCase
     end
 
     out = @ui.output.split "\n"
-    assert_match %r|Bulk updating|, out.shift
     assert_equal "Successfully installed #{@a2.full_name}", out.shift
     assert_equal "1 gem installed", out.shift
     assert_equal "Installing ri documentation for #{@a2.full_name}...",

@@ -46,37 +46,67 @@ class Gem::Commands::DependencyCommand < Gem::Command
     options[:args] << '.' if options[:args].empty?
     specs = {}
 
-    source_indexes = []
+    source_indexes = Hash.new do |h, source_uri|
+      h[source_uri] = Gem::SourceIndex.new
+    end
+
+    pattern = /\A#{Regexp.union(*options[:args])}/
+    dependency = Gem::Dependency.new pattern, options[:version]
+
+    if options[:reverse_dependencies] and remote? and not local? then
+      alert_error 'Only reverse dependencies for local gems are supported.'
+      terminate_interaction 1
+    end
 
     if local? then
-      source_indexes << Gem::SourceIndex.from_installed_gems
-    end
-
-    if remote? then
-      Gem::SourceInfoCache.cache_data.map do |_, sice|
-        source_indexes << sice.source_index
+      Gem.source_index.search(dependency).each do |spec|
+        source_indexes[:local].add_spec spec
       end
     end
 
-    options[:args].each do |name|
-      new_specs = nil
-      source_indexes.each do |source_index|
-        new_specs =  find_gems(name, source_index)
+    if remote? and not options[:reverse_dependencies] then
+      fetcher = Gem::SpecFetcher.fetcher
+
+      begin
+        fetcher.find_matching(dependency).each do |spec_tuple, source_uri|
+          spec = fetcher.fetch_spec spec_tuple, URI.parse(source_uri)
+
+          source_indexes[source_uri].add_spec spec
+        end
+      rescue Gem::RemoteFetcher::FetchError => e
+        raise unless fetcher.warn_legacy e do
+          require 'rubygems/source_info_cache'
+
+          specs = Gem::SourceInfoCache.search_with_source dependency, false
+
+          specs.each do |spec, source_uri|
+            source_indexes[source_uri].add_spec spec
+          end
+        end
       end
-
-      say "No match found for #{name} (#{options[:version]})" if
-        new_specs.empty?
-
-      specs = specs.merge new_specs
     end
 
-    terminate_interaction 1 if specs.empty?
+    if source_indexes.empty? then
+      patterns = options[:args].join ','
+      say "No gems found matching #{patterns} (#{options[:version]})" if
+        Gem.configuration.verbose
+
+      terminate_interaction 1
+    end
+
+    specs = {}
+
+    source_indexes.values.each do |source_index|
+      source_index.gems.each do |name, spec|
+        specs[spec.full_name] = [source_index, spec]
+      end
+    end
 
     reverse = Hash.new { |h, k| h[k] = [] }
 
     if options[:reverse_dependencies] then
-      specs.values.each do |source_index, spec|
-        reverse[spec.full_name] = find_reverse_dependencies spec, source_index
+      specs.values.each do |_, spec|
+        reverse[spec.full_name] = find_reverse_dependencies spec
       end
     end
 
@@ -118,10 +148,10 @@ class Gem::Commands::DependencyCommand < Gem::Command
   end
 
   # Retuns list of [specification, dep] that are satisfied by spec.
-  def find_reverse_dependencies(spec, source_index)
+  def find_reverse_dependencies(spec)
     result = []
 
-    source_index.each do |name, sp|
+    Gem.source_index.each do |name, sp|
       sp.dependencies.each do |dep|
         dep = Gem::Dependency.new(*dep) unless Gem::Dependency === dep
 
@@ -146,5 +176,6 @@ class Gem::Commands::DependencyCommand < Gem::Command
 
     specs
   end
+
 end
 

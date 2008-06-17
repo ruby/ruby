@@ -33,12 +33,14 @@ class Gem::Commands::FetchCommand < Gem::Command
 
   def execute
     version = options[:version] || Gem::Requirement.default
+    all = Gem::Requirement.default
 
     gem_names = get_all_gem_names
 
     gem_names.each do |gem_name|
       dep = Gem::Dependency.new gem_name, version
-      specs_and_sources = Gem::SourceInfoCache.search_with_source dep, true
+
+      specs_and_sources = Gem::SpecFetcher.fetcher.fetch dep, all
 
       specs_and_sources.sort_by { |spec,| spec.version }
 

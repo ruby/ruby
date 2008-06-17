@@ -74,7 +74,10 @@ class TestGemCommandsSpecificationCommand < RubyGemTestCase
   def test_execute_remote
     foo = quick_gem 'foo'
 
-    util_setup_source_info_cache foo
+    @fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @fetcher
+
+    util_setup_spec_fetcher foo
 
     FileUtils.rm File.join(@gemhome, 'specifications',
                            "#{foo.full_name}.gemspec")

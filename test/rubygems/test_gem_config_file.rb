@@ -17,7 +17,21 @@ class TestGemConfigFile < RubyGemTestCase
     @temp_conf = File.join @tempdir, '.gemrc'
 
     @cfg_args = %W[--config-file #{@temp_conf}]
+
+    @orig_SYSTEM_WIDE_CONFIG_FILE = Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE
+    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
+    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
+                         File.join(@tempdir, 'system-gemrc')
+
     util_config_file
+  end
+
+  def teardown
+    Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
+    Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
+                         @orig_SYSTEM_WIDE_CONFIG_FILE
+
+    super
   end
 
   def test_initialize
@@ -28,7 +42,7 @@ class TestGemConfigFile < RubyGemTestCase
     assert_equal false, @cfg.benchmark
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
     assert_equal true, @cfg.verbose
-    assert_equal %w[http://gems.example.com], Gem.sources
+    assert_equal [@gem_repo], Gem.sources
 
     File.open @temp_conf, 'w' do |fp|
       fp.puts ":backtrace: true"
@@ -200,6 +214,23 @@ class TestGemConfigFile < RubyGemTestCase
     assert_equal '--wrappers --no-rdoc', @cfg[:install], 'install'
 
     assert_equal %w[http://even-more-gems.example.com], Gem.sources
+  end
+
+  def test_global_config_file
+    File.open(@temp_conf, 'w') do |fp|
+      fp.puts ":backtrace: true"
+    end
+
+    File.open(File.join(Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE),
+                'w') do |fp|
+      fp.puts ":backtrace: false"
+      fp.puts ":bulk_threshold: 2048"
+                end
+
+    util_config_file
+
+    assert_equal 2048, @cfg.bulk_threshold
+    assert @cfg.backtrace
   end
 
   def util_config_file(args = @cfg_args)

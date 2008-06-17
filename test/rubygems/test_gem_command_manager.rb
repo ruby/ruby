@@ -66,7 +66,7 @@ class TestGemCommandManager < RubyGemTestCase
       assert_equal :both, check_options[:domain]
       assert_equal true, check_options[:wrappers]
       assert_equal Gem::Requirement.default, check_options[:version]
-      assert_equal Gem.dir, check_options[:install_dir]
+      assert_equal nil, check_options[:install_dir]
       assert_equal nil, check_options[:bin_dir]
 
       #check settings

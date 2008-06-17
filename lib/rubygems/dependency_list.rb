@@ -69,7 +69,7 @@ class Gem::DependencyList
   # Are all the dependencies in the list satisfied?
   def ok?
     @specs.all? do |spec|
-      spec.dependencies.all? do |dep|
+      spec.runtime_dependencies.all? do |dep|
         @specs.find { |s| s.satisfies_requirement? dep }
       end
     end

@@ -1,3 +1,7 @@
+Wed Jun 18 07:03:30 2008  Eric Hodel  <drbrain@egment7.net>
+
+	* lib/rubygems/*:  Update to RubyGems r1778 (pre 1.2).
+
 Wed Jun 18 04:27:58 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* KNOWNBUGS.rb, bootstraptest/pending.rb: move pending bug.

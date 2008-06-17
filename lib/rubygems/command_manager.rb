@@ -46,6 +46,7 @@ module Gem
       register_command :server
       register_command :sources
       register_command :specification
+      register_command :stale
       register_command :uninstall
       register_command :unpack
       register_command :update
