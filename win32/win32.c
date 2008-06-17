@@ -878,7 +878,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     if (!psa) {
 	sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
 	sa.lpSecurityDescriptor = NULL;
-	sa.bInheritHandle       = TRUE;
+	sa.bInheritHandle       = FALSE;
 	psa = &sa;
     }
 
