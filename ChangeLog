@@ -1,3 +1,8 @@
+Tue Jun 17 23:04:24 2008  James Edward Gray II  <jeg2@ruby-lang.org>
+
+	* lib/net/telnet.rb:  Fixing Telnet#wairfor() which was broken by changes to
+	  the Kernel::Integer() method.  [ruby-core:17272]
+
 Tue Jun 17 23:02:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (opt_W_getter): made a hooked variable.
