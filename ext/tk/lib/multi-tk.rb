@@ -2214,11 +2214,12 @@ end
 
 # event loop
 # all master/slave IPs are controled by only one event-loop
-class << MultiTkIp
-  def default_master?
+class MultiTkIp
+  def self.default_master?
     __getip == @@DEFAULT_MASTER
   end
-
+end
+class << MultiTkIp
   def mainloop(check_root = true)
     __getip.mainloop(check_root)
   end

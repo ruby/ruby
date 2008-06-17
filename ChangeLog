@@ -1,3 +1,8 @@
+Wed Jun 18 01:51:10 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: cannot access class variable from
+	  singleton method. 
+
 Wed Jun 18 00:03:33 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c (Init_Dir): dir_foreach() takes variable argument.
