@@ -1,3 +1,8 @@
+Tue Jun 17 15:09:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (file_expand_path): no need to expand root path which has no
+	  short file name.  [ruby-dev:35095]
+
 Sun Jun 15 19:27:40 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Fix $LOAD_PATH.  Properly expand vendor_ruby
