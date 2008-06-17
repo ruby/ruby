@@ -1,3 +1,8 @@
+Tue Jun 17 22:16:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (LIBPATHFLAG, RPATHFLAG): no needs to be quoted,
+	  it is done by libpathflag in mkmf.rb.
+
 Mon Jun 16 15:43:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* proc.c (proc_dup): should copy safe_level from src proc
