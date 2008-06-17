@@ -1939,7 +1939,7 @@ Init_Dir(void)
 
     rb_define_alloc_func(rb_cDir, dir_s_alloc);
     rb_define_singleton_method(rb_cDir, "open", dir_s_open, -1);
-    rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, 1);
+    rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, -1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
 
     rb_define_method(rb_cDir,"initialize", dir_initialize, -1);

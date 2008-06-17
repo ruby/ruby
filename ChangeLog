@@ -1,7 +1,11 @@
+Wed Jun 18 00:03:33 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* dir.c (Init_Dir): dir_foreach() takes variable argument.
+
 Tue Jun 17 23:04:24 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 
-	* lib/net/telnet.rb:  Fixing Telnet#wairfor() which was broken by changes to
-	  the Kernel::Integer() method.  [ruby-core:17272]
+	* lib/net/telnet.rb:  Fixing Telnet#wairfor() which was broken by
+	  changes to the Kernel::Integer() method.  [ruby-core:17272]
 
 Tue Jun 17 23:02:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
