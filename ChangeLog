@@ -1,3 +1,7 @@
+Tue Jun 17 23:02:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (opt_W_getter): made a hooked variable.
+
 Tue Jun 17 22:04:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* enc/euc_jp.c (property_name_to_ctype): core dumped when sizeof(int)

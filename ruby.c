@@ -1446,14 +1446,16 @@ verbose_setter(VALUE val, ID id, VALUE *variable)
 }
 
 static VALUE
-opt_W_getter(VALUE val, ID id)
+opt_W_getter(VALUE val, ID id, VALUE *variable)
 {
-    if (ruby_verbose == Qnil)
+    switch (*variable) {
+      case Qnil:
 	return INT2FIX(0);
-    if (ruby_verbose == Qfalse)
+      case Qfalse:
 	return INT2FIX(1);
-    if (ruby_verbose == Qtrue)
+      case Qtrue:
 	return INT2FIX(2);
+    }
     return Qnil;		/* not reached */
 }
 
@@ -1463,7 +1465,7 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
     rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
-    rb_define_virtual_variable("$-W", opt_W_getter, 0);
+    rb_define_hooked_variable("$-W", &ruby_verbose, opt_W_getter, 0);
     rb_define_variable("$DEBUG", &ruby_debug);
     rb_define_variable("$-d", &ruby_debug);
 
