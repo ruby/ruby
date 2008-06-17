@@ -122,7 +122,7 @@ loadpath: $(PREP)
 
 $(PREP): $(MKFILES)
 
-$(PREP): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
+miniruby$(EXEEXT): config.status $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(ARCHFILE)
 
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS)
@@ -323,7 +323,7 @@ clear-installed-list:
 clean: clean-ext clean-local clean-enc
 clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
-	@$(RM) $(PROGRAM) $(WPROGRAM) $(PREP) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
+	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) *.inc $(GOLFOBJS) y.tab.c y.output encdb.h transdb.h
 clean-ext: $(PREP)
 	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) clean
@@ -351,16 +351,16 @@ realclean-enc:: distclean-enc
 
 check: test test-all
 
-btest: $(PREP) PHONY
+btest: miniruby$(EXEEXT) PHONY
 	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" $(OPTS)
 
-btest-miniruby: $(PREP) $(RBCONFIG) $(PROGRAM) PHONY
+btest-miniruby: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(MINIRUBY)" -q
 
-test-sample: $(PREP) $(RBCONFIG) $(PROGRAM) PHONY
+test-sample: miniruby$(EXEEXT) $(RBCONFIG) $(PROGRAM) PHONY
 	@$(MINIRUBY) $(srcdir)/rubytest.rb
 
-test-knownbug: $(PREP) $(PROGRAM) PHONY
+test-knownbug: miniruby$(EXEEXT) $(PROGRAM) PHONY
 	$(BOOTSTRAPRUBY) "$(srcdir)/bootstraptest/runner.rb" --ruby="$(PROGRAM)" $(OPTS) $(srcdir)/KNOWNBUGS.rb
 
 test: test-sample btest-miniruby test-knownbug
@@ -772,13 +772,13 @@ $(srcdir)/ext/ripper/ripper.c:
 
 ##
 
-run: $(PREP) PHONY
+run: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/test.rb $(RUNOPT)
 
 runruby: $(PROGRAM) PHONY
 	$(RUNRUBY) $(srcdir)/test.rb
 
-parse: $(PREP) PHONY
+parse: miniruby$(EXEEXT) PHONY
 	$(MINIRUBY) $(srcdir)/tool/parse.rb $(srcdir)/test.rb
 
 COMPARE_RUBY = $(BASERUBY)
@@ -816,15 +816,15 @@ run.gdb:
 	echo source $(srcdir)/.gdbinit        >> run.gdb
 	echo run                              >> run.gdb
 
-gdb: $(PREP) run.gdb PHONY
+gdb: miniruby$(EXEEXT) run.gdb PHONY
 	gdb -x run.gdb --quiet --args $(MINIRUBY) $(srcdir)/test.rb
 
 # Intel VTune
 
-vtune: $(PREP)
-	vtl activity -c sampling -app ".\$(PREP)","-I$(srcdir)/lib $(srcdir)/test.rb" run
-	vtl view -hf -mn $(PREP) -sum -sort -cd
-	vtl view -ha -mn $(PREP) -sum -sort -cd | $(RUNRUBY) $(srcdir)/tool/vtlh.rb > ha.lines
+vtune: miniruby$(EXEEXT)
+	vtl activity -c sampling -app ".\miniruby$(EXEEXT)","-I$(srcdir)/lib $(srcdir)/test.rb" run
+	vtl view -hf -mn miniruby$(EXEEXT) -sum -sort -cd
+	vtl view -ha -mn miniruby$(EXEEXT) -sum -sort -cd | $(RUNRUBY) $(srcdir)/tool/vtlh.rb > ha.lines
 
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb

@@ -1,3 +1,9 @@
+Tue Jun 17 20:32:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (miniruby$(EXEEXT)): $(PREP) isn't always same as
+	  miniruby, and tests, debug, etc have no meaning when
+	  cross-compiling.
+
 Tue Jun 17 18:39:11 2008  Ryan Davis  <ryan@wrath.local>
 
 	* common.mk: fixed dependencies on miniruby.
