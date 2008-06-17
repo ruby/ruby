@@ -229,13 +229,15 @@ native_thread_init_stack(rb_thread_t *th)
     else {
 #ifdef HAVE_PTHREAD_GETATTR_NP
 	pthread_attr_t attr;
+	void *start;
 	CHECK_ERR(pthread_getattr_np(curr, &attr));
 # if defined HAVE_PTHREAD_ATTR_GETSTACK
-	CHECK_ERR(pthread_attr_getstack(&attr, &th->machine_stack_start, &th->machine_stack_maxsize));
+	CHECK_ERR(pthread_attr_getstack(&attr, &start, &th->machine_stack_maxsize));
 # elif defined HAVE_PTHREAD_ATTR_GETSTACKSIZE && defined HAVE_PTHREAD_ATTR_GETSTACKADDR
-	CHECK_ERR(pthread_attr_getstackaddr(&attr, &th->machine_stack_start));
+	CHECK_ERR(pthread_attr_getstackaddr(&attr, &start));
 	CHECK_ERR(pthread_attr_getstacksize(&attr, &th->machine_stack_maxsize));
 # endif
+	th->machine_stack_start = start;
 #else
 	rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
 #endif
