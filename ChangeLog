@@ -1,3 +1,7 @@
+Wed Jun 18 04:27:58 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* KNOWNBUGS.rb, bootstraptest/pending.rb: move pending bug.
+
 Wed Jun 18 04:24:20 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, vm_insnhelper.c: fix escape process with "braek" and "return"
