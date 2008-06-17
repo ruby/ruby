@@ -276,3 +276,91 @@ assert_equal 'ok', %q{
     :ng
   }.call
 }, '[ruby-dev:34646]'
+
+assert_equal %q{[:bar, :foo]}, %q{
+  def foo
+    klass = Class.new do
+      define_method(:bar) do
+        return :bar
+      end
+    end
+    [klass.new.bar, :foo]
+  end
+  foo
+}, "[ ruby-Bugs-19304 ]"
+
+assert_equal 'ok', %q{
+   $x = :ok
+   def def7(x, y)
+      x[y]
+      $x = :ng
+   end
+   def test_def7
+      def7(lambda {|x| x.call}, Proc.new {return})
+      $x = :ng
+   end
+   test_def7
+   $x
+}, '[ruby-core:17164]'
+
+assert_equal 'ok', %q{
+  lambda { a = lambda { return }; $x = :ng; a[]; $x = :ok }.call
+  $x
+}, '[ruby-core:17164]'
+
+assert_equal 'ok', %q{
+  lambda { a = lambda { break }; $x = :ng; a[]; $x = :ok }.call
+  $x
+}, '[ruby-core:17164]'
+
+assert_equal 'ok', %q{
+  def def8
+    $x = :ng
+    lambda { a = Proc.new { return }; a[]}.call
+    $x = :ok
+  end
+  def8
+  $x
+}, '[ruby-core:17164]'
+
+
+assert_equal 'ok', %q{
+   def def9
+      lambda {|a| $x = :ok; a[]; $x = :ng }.call(Proc.new { return })
+      $x = :ng
+   end
+   def9
+   $x
+}, '[ruby-core:17164]'
+
+assert_equal 'ok', %q{
+   def def10
+     $x = :ng
+     lambda { 1.times { return } }.call
+     $x = :ok
+   end
+   $x = :ok
+   def10
+   $x
+}, '[ruby-core:17164]'
+
+assert_equal 'ok', %q{
+   def def11
+      yield
+   end
+   begin
+      lambda { def11 { return } }.call
+   rescue LocalJumpError
+      :ng
+   else
+      :ok
+   end
+}, '[ruby-core:17164]'
+
+assert_equal 'ok', %q{
+   def def12
+      b = Proc.new { $x = :ng; lambda { return }.call; $x = :ok }.call
+   end
+   def12
+   $x
+}, '[ruby-core:17164]'

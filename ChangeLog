@@ -1,3 +1,10 @@
+Wed Jun 18 04:24:20 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, vm_insnhelper.c: fix escape process with "braek" and "return"
+	  syntax in "lambda".  [ ruby-Bugs-19304 ], [ruby-core:17164]
+
+	* KNOWNBUGS.rb, bootstraptest/test_proc.rb: add/move solved test.
+
 Wed Jun 18 01:51:10 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: cannot access class variable from

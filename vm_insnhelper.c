@@ -1044,7 +1044,8 @@ vm_get_cvar_base(NODE *cref)
 {
     VALUE klass;
 
-    while (cref && cref->nd_next && (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON))) {
+    while (cref && cref->nd_next &&
+	   (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON))) {
 	cref = cref->nd_next;
 
 	if (!cref->nd_next) {
@@ -1221,7 +1222,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			if (cfp->dfp == dfp) {
 			    goto search_parent;
 			}
-			cfp++;
+			cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 		    }
 		    rb_bug("VM (throw): can't find break base.");
 		}
@@ -1229,7 +1230,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
 		    /* lambda{... break ...} */
 		    is_orphan = 0;
-		    pt = GET_LFP();
+		    pt = cfp->dfp;
 		    state = TAG_RETURN;
 		}
 		else {
@@ -1261,7 +1262,7 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			    is_orphan = 0;
 			    break;
 			}
-			cfp++;
+			cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 		    }
 		}
 
@@ -1284,26 +1285,29 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		 * check orphan:
 		 */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
-		    if (GET_DFP() == dfp) {
+		    if (dfp == cfp->dfp) {
 			if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
 			    /* in lambda */
 			    is_orphan = 0;
 			    break;
 			}
+
+			if (GET_LFP() == dfp && cfp->iseq->type == ISEQ_TYPE_METHOD) {
+			    is_orphan = 0;
+			    break;
+			}
+
+			dfp = GC_GUARDED_PTR_REF(dfp[0]);
 		    }
-		    if (GET_LFP() == cfp->lfp &&
-			cfp->iseq->type == ISEQ_TYPE_METHOD) {
-			is_orphan = 0;
-			break;
-		    }
-		    cfp++;
+
+		    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 		}
 
 		if (is_orphan) {
 		    vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
 		}
 
-		pt = GET_LFP();
+		pt = dfp;
 	    }
 	    else {
 		rb_bug("isns(throw): unsupport throw type");

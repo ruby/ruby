@@ -3,15 +3,18 @@
 # So all tests will cause failure.
 #
 
-assert_equal %q{[:bar, :foo]}, %q{
-  def foo
-    klass = Class.new do
-      define_method(:bar) do
-        return :bar
-      end
+assert_equal 'A', %q{
+  class A
+    @@a = 'A'
+    def a=(x)
+      @@a = x
     end
-    [klass.new.bar, :foo]
+    def a
+      @@a
+    end
   end
-  foo
-}, "[ ruby-Bugs-19304 ]"
 
+  B = A.dup
+  B.new.a = 'B'
+  A.new.a
+}

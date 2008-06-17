@@ -525,9 +525,9 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 	if (state == TAG_RETURN && proc->is_lambda) {
 	    VALUE err = th->errinfo;
 	    VALUE *escape_dfp = GET_THROWOBJ_CATCH_POINT(err);
-	    VALUE *cdfp = proc->block.dfp;
 
-	    if (escape_dfp == cdfp) {
+	    if (escape_dfp == cfp->dfp) {
+		printf("ok\n");
 		state = 0;
 		th->errinfo = Qnil;
 		th->cfp = cfp;
