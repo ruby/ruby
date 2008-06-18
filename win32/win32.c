@@ -2007,9 +2007,9 @@ is_pipe(SOCKET sock) /* DONT call this for SOCKET! it clains it is PIPE. */
 {
     int ret;
 
-    RUBY_CRITICAL(
-	ret = (GetFileType((HANDLE)sock) == FILE_TYPE_PIPE)
-    );
+    RUBY_CRITICAL({
+	ret = (GetFileType((HANDLE)sock) == FILE_TYPE_PIPE);
+    });
 
     return ret;
 }
@@ -2857,8 +2857,12 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 	err = GetLastError();
 	if (err == ERROR_INVALID_PARAMETER)
 	    errno = ECHILD;
-	else
-	    errno = map_errno(GetLastError());
+	else {
+	    if (GetLastError() == ERROR_INVALID_HANDLE)
+		errno = EINVAL;
+	    else
+		errno = map_errno(GetLastError());
+	}
 	CloseChildHandle(child);
 	return -1;
     }

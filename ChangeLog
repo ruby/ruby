@@ -1,3 +1,8 @@
+Wed Jun 18 18:09:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (poll_child_status): set EINVAL to errno when
+	  GetExitCodeProcess() fails with ERROR_INVALID_HANDLE.
+
 Wed Jun 18 15:01:18 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* io.c (rb_open_file): fs_encoding and fname_encoding is
