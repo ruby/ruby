@@ -4105,7 +4105,7 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 #if defined _WIN32 || defined __APPLE__
     {
 	static int fs_encoding;
-	int fname_encoding = rb_enc_get_index(fname);
+	int fname_encoding = rb_enc_get(fname);
 	if (!fs_encoding)
 	    fs_encoding = rb_filesystem_encoding();
 	if (rb_usascii_encoding() != fname_encoding
