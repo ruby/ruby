@@ -536,7 +536,7 @@ class TestIO < Test::Unit::TestCase
       with_pipe {|r, w|
         w << "xyz"
         w.close
-        File.open("fom", "w+") {|f|
+        File.open("fom", "w+b") {|f|
           f.write "abcd\n"
           f.rewind
           assert_equal("abc", f.read(3))
@@ -773,6 +773,7 @@ class TestIO < Test::Unit::TestCase
 
   def make_tempfile
     t = Tempfile.new("foo")
+    t.binmode
     t.puts "foo"
     t.puts "bar"
     t.puts "baz"
