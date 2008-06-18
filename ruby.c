@@ -1440,15 +1440,17 @@ forbid_setid(const char *s, struct cmdline_options *opt)
 }
 
 static void
-verbose_setter(VALUE val, ID id, VALUE *variable)
+verbose_setter(VALUE val, ID id, void *data)
 {
-    ruby_verbose = RTEST(val) ? Qtrue : val;
+    VALUE *variable = data;
+    *variable = RTEST(val) ? Qtrue : val;
 }
 
 static VALUE
-opt_W_getter(VALUE val, ID id, VALUE *variable)
+opt_W_getter(ID id, void *data)
 {
-    switch (ruby_verbose) {
+    VALUE *variable = data;
+    switch (*variable) {
       case Qnil:
 	return INT2FIX(0);
       case Qfalse:
