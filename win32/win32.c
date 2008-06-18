@@ -156,6 +156,14 @@ static struct {
     {	ERROR_INFLOOP_IN_RELOC_CHAIN,	ENOEXEC		},
     {	ERROR_FILENAME_EXCED_RANGE,	ENOENT		},
     {	ERROR_NESTING_NOT_ALLOWED,	EAGAIN		},
+#ifndef ERROR_PIPE_LOCAL
+#define ERROR_PIPE_LOCAL	229L
+#endif
+    {	ERROR_PIPE_LOCAL,		EPIPE		},
+    {	ERROR_BAD_PIPE,			EPIPE		},
+    {	ERROR_PIPE_BUSY,		EAGAIN		},
+    {	ERROR_NO_DATA,			EPIPE		},
+    {	ERROR_PIPE_NOT_CONNECTED,	EPIPE		},
     {	ERROR_NOT_ENOUGH_QUOTA,		ENOMEM		},
     {	WSAENAMETOOLONG,		ENAMETOOLONG	},
     {	WSAENOTEMPTY,			ENOTEMPTY	},
@@ -3873,8 +3881,12 @@ rb_w32_write(int fd, const void *buf, size_t size)
 {
     SOCKET sock = TO_SOCKET(fd);
 
-    if (!is_socket(sock))
-	return write(fd, buf, size);
+    if (!is_socket(sock)) {
+	size_t ret = write(fd, buf, size);
+	if ((int)ret < 0 && errno == EINVAL)
+	    errno = map_errno(GetLastError());
+	return ret;
+    }
     else
 	return rb_w32_send(fd, buf, size, 0);
 }
