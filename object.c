@@ -2205,7 +2205,7 @@ convert_type(val, tname, method, raise)
     ID m;
 
     m = rb_intern(method);
-    if (!rb_obj_respond_to(val, m, Qtrue)) {
+    if (!rb_respond_to(val, m)) {
 	if (raise) {
 	    rb_raise(rb_eTypeError, "can't convert %s into %s",
 		     NIL_P(val) ? "nil" :
