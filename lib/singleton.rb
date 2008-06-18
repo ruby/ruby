@@ -70,8 +70,7 @@ module Singleton
   def dup
     raise TypeError, "can't dup instance of singleton #{self.class}"
   end
-  
-  private 
+
   #  default marshalling strategy
   def _dump(depth=-1) 
     ''
