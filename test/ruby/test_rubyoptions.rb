@@ -413,14 +413,14 @@ class TestRubyOptions < Test::Unit::TestCase
     ruby do |w, r, e|
       w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux\r\np 1\r\n"
       w.close
-      assert_match(/Can't exec (?:\/|\\)test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
+      assert_match(/Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
       assert_equal('', r.read.chomp)
     end
 
     ruby do |w, r, e|
       w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n"
       w.close
-      assert_match(/Can't exec (?:\/|\\)test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
+      assert_match(/Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
       assert_equal('', r.read.chomp)
     end
 
