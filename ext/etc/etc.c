@@ -196,7 +196,7 @@ passwd_iterate()
 /* Provides a convenient Ruby iterator which executes a block for each entry 
  * in the /etc/passwd file.
  *
- * The code block is passed an Etc::Passwd struct; see getpwent above for 
+ * The code block is passed an Struct::Passwd struct; see getpwent above for 
  * details.
  *
  * Example:
@@ -401,7 +401,7 @@ group_iterate()
 /* Provides a convenient Ruby iterator which executes a block for each entry 
  * in the /etc/group file.
  *
- * The code block is passed an Etc::Group struct; see getgrent above for 
+ * The code block is passed an Struct::Group struct; see getgrent above for 
  * details.
  *
  * Example:
