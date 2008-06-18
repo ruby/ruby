@@ -1448,7 +1448,7 @@ verbose_setter(VALUE val, ID id, VALUE *variable)
 static VALUE
 opt_W_getter(VALUE val, ID id, VALUE *variable)
 {
-    switch (*variable) {
+    switch (ruby_verbose) {
       case Qnil:
 	return INT2FIX(0);
       case Qfalse:
