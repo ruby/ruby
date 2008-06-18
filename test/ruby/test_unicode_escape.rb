@@ -45,9 +45,9 @@ EOS
     assert_equal('\u00fc', "\\" + "u00fc")
 
     # \u in %x strings
-    assert_equal(`echo "\u0041"`.chop, "A")
-    assert_equal(%x{echo "\u0041"}.chop, "A")
-    assert_equal(`echo "\u{FC}"`.force_encoding("utf-8"), "ü\n")
+    assert_match(/^("?)A\1$/, `echo "\u0041"`) #"
+    assert_match(/^("?)A\1$/, %x{echo "\u0041"}) #"
+    assert_match(/^("?)ü\1$/, `echo "\u{FC}"`.force_encoding("utf-8")) #"
 
     # \u in quoted symbols
     assert_equal(:A, :"\u0041")
