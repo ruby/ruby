@@ -1,3 +1,8 @@
+Wed Jun 18 10:18:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/etc/etc.c (etc_passwd, etc_group): fixed rdoc.  a patch from
+	  okkez <okkez000 AT gmail.com> in [ruby-dev:35141].
+
 Wed Jun 18 08:58:16 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems/*:  Fix errors for 1.9.
