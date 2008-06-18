@@ -28,14 +28,18 @@ class TestEtc < Test::Unit::TestCase
   end
 
   def test_getpwuid
-    Etc.passwd do |s|
+    passwd = []
+    Etc.passwd {|s| passwd << s }
+    passwd.each do |s|
       assert_equal(s, Etc.getpwuid(s.uid))
       assert_equal(s, Etc.getpwuid) if Etc.getlogin == s.name
     end
   end
 
   def test_getpwnam
-    Etc.passwd do |s|
+    passwd = []
+    Etc.passwd {|s| passwd << s }
+    passwd.each do |s|
       assert_equal(s, Etc.getpwnam(s.name))
     end
   end
