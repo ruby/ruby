@@ -126,7 +126,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     ruby('--enable', 'foobarbazqux', '-e', '') do |w, r, e|
-      assert_match(/unknown argument for --enable: `foobarbazqux'/, e.read)
+      assert_match(/unknown argument for --enable: `foobarbazqux'/, e.read) #`
     end
 
     ruby('--enable') do |w, r, e|
@@ -151,7 +151,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     ruby('--disable', 'foobarbazqux', '-e', '') do |w, r, e|
-      assert_match(/unknown argument for --disable: `foobarbazqux'/, e.read)
+      assert_match(/unknown argument for --disable: `foobarbazqux'/, e.read) #`
     end
 
     ruby('--disable') do |w, r, e|
@@ -413,14 +413,14 @@ class TestRubyOptions < Test::Unit::TestCase
     ruby do |w, r, e|
       w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux\r\np 1\r\n"
       w.close
-      assert_match(/Can't exec \/test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read)
+      assert_match(/Can't exec (?:\/|\\)test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
       assert_equal('', r.read.chomp)
     end
 
     ruby do |w, r, e|
       w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n"
       w.close
-      assert_match(/Can't exec \/test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read)
+      assert_match(/Can't exec (?:\/|\\)test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
       assert_equal('', r.read.chomp)
     end
 
