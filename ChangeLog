@@ -1,3 +1,8 @@
+Wed Jun 18 23:07:19 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* gc.c (rb_newobj): prohibit call of rb_newobj() during gc.
+	  a patch from Sylvain Joyeux in [ruby-core:12099].
+
 Wed Jun 18 21:08:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (verbose_setter, opt_W_getter): fixed prototypes.

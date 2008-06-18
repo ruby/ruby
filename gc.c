@@ -714,6 +714,9 @@ rb_newobj(void)
     rb_objspace_t *objspace = &rb_objspace;
 #endif
 
+    if (during_gc)
+        rb_bug("object allocation during garbage collection phase");
+
     if (v) {
 	RBASIC(v)->flags = 0;
 	th->value_cache_ptr++;
