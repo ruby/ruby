@@ -7,14 +7,17 @@ require_relative 'envutil'
 class TestArgf < Test::Unit::TestCase
   def setup
     @t1 = Tempfile.new("foo")
+    @t1.binmode
     @t1.puts "1"
     @t1.puts "2"
     @t1.close
     @t2 = Tempfile.new("bar")
+    @t2.binmode
     @t2.puts "3"
     @t2.puts "4"
     @t2.close
     @t3 = Tempfile.new("baz")
+    @t3.binmode
     @t3.puts "5"
     @t3.puts "6"
     @t3.close
@@ -45,6 +48,10 @@ class TestArgf < Test::Unit::TestCase
     yield(f)
   ensure
     f.close unless !f || f.closed?
+  end
+
+  def no_safe_rename
+    /cygwin|mswin|mingw|bccwin/ =~ RUBY_PLATFORM
   end
 
   def test_argf
@@ -203,9 +210,15 @@ class TestArgf < Test::Unit::TestCase
       w.puts "  puts line.chomp + '.new'"
       w.puts "end"
       w.close
-      assert_match(/Can't rename .* to .*: .*. skipping file/, e.read) #'
-      assert_equal("", r.read)
-      assert_equal("foo\nbar\nbaz\n", File.read(t.path))
+      if no_safe_rename
+        assert_equal("", e.read)
+        assert_equal("", r.read)
+        assert_equal("foo.new\nbar.new\nbaz.new\n", File.read(t.path))
+      else
+        assert_match(/Can't rename .* to .*: .*. skipping file/, e.read) #'
+        assert_equal("", r.read)
+        assert_equal("foo\nbar\nbaz\n", File.read(t.path))
+      end
     end
   end
 
@@ -218,9 +231,13 @@ class TestArgf < Test::Unit::TestCase
       w.puts "  puts line.chomp + '.new'"
       w.puts "end"
       w.close
-      assert_equal("", e.read)
-      assert_equal("", r.read)
-      assert_equal("foo.new\nbar.new\nbaz.new\n", File.read(t.path))
+      if no_safe_rename
+        assert_match(/Can't do inplace edit without backup/, e.read) #'
+      else
+        assert_equal("", e.read)
+        assert_equal("", r.read)
+        assert_equal("foo.new\nbar.new\nbaz.new\n", File.read(t.path))
+      end
     end
   end
 
@@ -284,6 +301,7 @@ class TestArgf < Test::Unit::TestCase
   def test_tell
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       begin
+        ARGF.binmode
         loop do
           p ARGF.tell
           p ARGF.gets
@@ -642,13 +660,9 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_binmode
-    r = ""
-    @tmps.each do |f|
-      r << IO.read(f.path, mode:"rb")
-    end
     ruby('-e', "ARGF.binmode; STDOUT.binmode; puts ARGF.read", @t1.path, @t2.path, @t3.path) do |f|
       f.binmode
-      assert_equal(r, f.read)
+      assert_equal("1\n2\n3\n4\n5\n6\n", f.read)
     end
   end
 
