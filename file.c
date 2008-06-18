@@ -16,11 +16,12 @@
 #include "missing/file.h"
 #endif
 #ifdef __CYGWIN__
+#define OpenFile WINAPI_OpenFile
 #include <windows.h>
 #include <sys/cygwin.h>
+#undef OpenFile
 #endif
 
-#define OpenFile rb_io_t
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
@@ -2329,18 +2330,6 @@ rb_file_s_umask(argc, argv)
 # endif
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__
-#define USE_NTFS 1
-#else
-#define USE_NTFS 0
-#endif
-
-#if USE_NTFS
-#define istrailinggabage(x) ((x) == '.' || (x) == ' ')
-#else
-#define istrailinggabage(x) 0
-#endif
-
 #ifdef DOSISH_DRIVE_LETTER
 static inline int
 has_drive_letter(buf)
@@ -2452,9 +2441,8 @@ rb_path_last_separator(path)
     return last;
 }
 
-#define chompdirsep rb_path_end
 char *
-rb_path_end(path)
+chompdirsep(path)
     const char *path;
 {
     while (*path) {
@@ -2469,35 +2457,20 @@ rb_path_end(path)
     }
     return (char *)path;
 }
-
-#if USE_NTFS
-static char *
-ntfs_tail(const char *path)
+ 
+char *
+rb_path_end(path)
+    const char *path;
 {
-    while (*path && *path != ':') {
-	if (istrailinggabage(*path)) {
-	    const char *last = path++;
-	    while (istrailinggabage(*path)) path++;
-	    if (!*path || *path == ':') return (char *)last;
-	}
-	else if (isdirsep(*path)) {
-	    const char *last = path++;
-	    while (isdirsep(*path)) path++;
-	    if (!*path) return (char *)last;
-	    if (*path == ':') path++;
-	}
-	else {
-	    path = CharNext(path);
-	}
-    }
-    return (char *)path;
+    if (isdirsep(*path)) path++;
+    return chompdirsep(path);
 }
-#endif
 
 #if USE_NTFS
 static char *
 ntfs_tail(const char *path)
 {
+    while (*path == '.') path++;
     while (*path && *path != ':') {
 	if (istrailinggabage(*path)) {
 	    const char *last = path++;
@@ -2527,10 +2500,6 @@ ntfs_tail(const char *path)
 	p = buf + bdiff;\
 	pend = buf + buflen;\
     }\
-    rb_str_resize(result, buflen);\
-    buf = RSTRING(result)->ptr;\
-    p = buf + bdiff;\
-    pend = buf + buflen;\
 } while (0)
 
 #define BUFINIT() (\
@@ -2769,28 +2738,23 @@ file_expand_path(fname, dname, result)
 
 #if USE_NTFS
     *p = '\0';
-    if (!strpbrk(b = buf, "*?")) {
+    if ((s = strrdirsep(b = buf)) != 0 && !strpbrk(s, "*?")) {
 	size_t len;
 	WIN32_FIND_DATA wfd;
 #ifdef __CYGWIN__
-	int lnk_added = 0;
+	int lnk_added = 0, is_symlink = 0;
 	struct stat st;
-	char w32buf[MAXPATHLEN], sep = 0;
-	p = 0;
+	char w32buf[MAXPATHLEN];
+	p = (char *)s;
 	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
-	    p = strrdirsep(buf);
-	    if (!p) p = skipprefix(buf);
-	    if (p) {
-		sep = *p;
-		*p = '\0';
-	    }
+	    is_symlink = 1;
+	    *p = '\0';
 	}
-	if (cygwin_conv_to_win32_path(buf, w32buf) == 0) {
+	if (cygwin_conv_to_win32_path((*buf ? buf : "/"), w32buf) == 0) {
 	    b = w32buf;
 	}
-	if (p) *p = sep;
-	else p = buf;
-	if (b == w32buf) {
+	if (is_symlink && b == w32buf) {
+	    *p = '\\';
 	    strlcat(w32buf, p, sizeof(w32buf));
 	    len = strlen(p);
 	    if (len > 4 && strcasecmp(p + len - 4, ".lnk") != 0) {
@@ -2798,24 +2762,30 @@ file_expand_path(fname, dname, result)
 		strlcat(w32buf, ".lnk", sizeof(w32buf));
 	    }
 	}
+	*p = '/';
 #endif
 	HANDLE h = FindFirstFile(b, &wfd);
 	if (h != INVALID_HANDLE_VALUE) {
 	    FindClose(h);
-	    p = strrdirsep(buf);
 	    len = strlen(wfd.cFileName);
 #ifdef __CYGWIN__
 	    if (lnk_added && len > 4 &&
 		strcasecmp(wfd.cFileName + len - 4, ".lnk") == 0) {
-		len -= 4;
+		wfd.cFileName[len -= 4] = '\0';
 	    }
+#else
+	    p = (char *)s;
 #endif
-	    if (!p) p = buf;
-	    buflen = ++p - buf + len;
-	    rb_str_resize(result, buflen);
+	    ++p;
+	    BUFCHECK(bdiff + len >= buflen);
 	    memcpy(p, wfd.cFileName, len + 1);
 	    p += len;
 	}
+#ifdef __CYGWIN__
+	else {
+	    p += strlen(p);
+	}
+#endif
     }
 #endif
 
@@ -3051,7 +3021,7 @@ rb_file_s_extname(klass, fname)
     if (!p)
 	p = name;
     else
-	p++;
+	name = ++p;
 
     e = 0;
     while (*p) {
@@ -3081,7 +3051,7 @@ rb_file_s_extname(klass, fname)
 	    break;
 	p = CharNext(p);
     }
-    if (!e || e+1 == p)	/* no dot, or the only dot is first or end? */
+    if (!e || e == name || e+1 == p)	/* no dot, or the only dot is first or end? */
 	return rb_str_new(0, 0);
     extname = rb_str_new(e, p - e);	/* keep the dot, too! */
     OBJ_INFECT(extname, fname);
