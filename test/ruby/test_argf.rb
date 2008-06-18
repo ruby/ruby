@@ -203,7 +203,7 @@ class TestArgf < Test::Unit::TestCase
       w.puts "  puts line.chomp + '.new'"
       w.puts "end"
       w.close
-      assert_match(/Can't rename .* to .*: .*. skipping file/, e.read)
+      assert_match(/Can't rename .* to .*: .*. skipping file/, e.read) #'
       assert_equal("", r.read)
       assert_equal("foo\nbar\nbaz\n", File.read(t.path))
     end
@@ -642,8 +642,13 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_binmode
-    ruby('-e', "ARGF.binmode; puts ARGF.read", @t1.path, @t2.path, @t3.path) do |f|
-      assert_equal("1\n2\n3\n4\n5\n6\n", f.read)
+    r = ""
+    @tmps.each do |f|
+      r << IO.read(f.path, mode:"rb")
+    end
+    ruby('-e', "ARGF.binmode; STDOUT.binmode; puts ARGF.read", @t1.path, @t2.path, @t3.path) do |f|
+      f.binmode
+      assert_equal(r, f.read)
     end
   end
 
