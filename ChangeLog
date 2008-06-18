@@ -1,3 +1,8 @@
+Wed Jun 18 13:19:55 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* file.c: fixes to compile on mswin32.  Patch from U. Nakamura
+	  <usa at garbagecollect.jp>. [ruby-dev:35127]
+
 Tue Jun 17 22:16:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (LIBPATHFLAG, RPATHFLAG): no needs to be quoted,
