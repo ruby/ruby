@@ -1,3 +1,8 @@
+Thu Jun 19 23:48:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/net/http/test_http.rb: compare encodings of two strings before
+	  comparing themself, which suppress too big error output.
+
 Thu Jun 19 23:46:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/json/ext/parser/parser.rl, ext/json/ext/parser/parser.c: JSON

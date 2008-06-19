@@ -194,6 +194,7 @@ module TestNetHTTP_version_1_2_methods
       f = StringIO.new
       res.read_body f
       assert_equal $test_net_http_data.size, f.string.size
+      assert_equal $test_net_http_data.encoding, f.string.encoding
       assert_equal $test_net_http_data, f.string
     }
   end
