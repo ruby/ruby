@@ -1,3 +1,7 @@
+Thu Jun 19 21:38:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): check if compile before showing message.
+
 Thu Jun 19 20:37:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/net/pop.rb (Net::POP3#set_all_uids): speed
