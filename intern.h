@@ -400,6 +400,7 @@ const char *ruby_signal_name _((int));
 void ruby_default_signal _((int));
 /* sprintf.c */
 VALUE rb_f_sprintf _((int, VALUE*));
+VALUE rb_str_format _((int, VALUE*, VALUE));
 /* string.c */
 VALUE rb_str_new _((const char*, long));
 VALUE rb_str_new2 _((const char*));

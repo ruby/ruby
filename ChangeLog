@@ -1,3 +1,18 @@
+Wed Jun 18 22:25:10 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* array.c (ary_new, rb_ary_initialize, rb_ary_store,
+	  rb_ary_aplice, rb_ary_times): integer overflows should be
+	  checked. based on patches from Drew Yao <ayao at apple.com>
+	  fixed CVE-2008-2726
+
+	* string.c (rb_str_buf_append): fixed unsafe use of alloca,
+	  which led memory corruption. based on a patch from Drew Yao
+	  <ayao at apple.com> fixed CVE-2008-2726
+
+	* sprintf.c (rb_str_format): backported from trunk.
+
+	* intern.h: ditto.
+
 Fri Jun 20 01:40:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_equal, rb_ary_eql, rb_ary_hash, rb_ary_cmp):
