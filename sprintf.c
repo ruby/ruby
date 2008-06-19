@@ -247,7 +247,15 @@ rb_f_sprintf(argc, argv)
     int argc;
     VALUE *argv;
 {
+    return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
+}
+
+VALUE
+rb_str_format(argc, argv, fmt)
+    int argc;
+    VALUE *argv;
     VALUE fmt;
+{
     const char *p, *end;
     char *buf;
     int blen, bsiz;
@@ -276,7 +284,8 @@ rb_f_sprintf(argc, argv)
 	rb_raise(rb_eArgError, "flag after precision"); \
     }
 
-    fmt = GETNTHARG(0);
+    ++argc;
+    --argv;
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     fmt = rb_str_new4(fmt);
