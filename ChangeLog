@@ -1,7 +1,7 @@
-Thu Jun 19 23:57:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 20 01:40:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_equal, rb_ary_eql, rb_ary_hash, rb_ary_cmp):
-	  Make Array#eql?, #hash, #== and #<=> use rb_exec_recursive() and
+	  Make Array#eql?, #hash, #== and #<=> use rb_protect_inspect() and
 	  handle recursive data properly.  [ruby-dev:35181]
 
 Wed Jun 18 15:17:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
