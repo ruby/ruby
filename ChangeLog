@@ -1,3 +1,10 @@
+Fri Jun 20 03:19:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/testunit/collector/test_dir.rb: r15825 made it unnecessary to change
+	  String to Symbol.
+
+	* test/testunit/collector/test_objectspace.rb: ditto.
+
 Fri Jun 20 03:14:31 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*, test/rubygems/*:  Update to RubyGems 1.1.1 r1784 (pre

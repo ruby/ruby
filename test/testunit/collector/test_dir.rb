@@ -394,7 +394,7 @@ module Test
         def test_filtering
           expected = TestSuite.new('.')
           expected << @t1.suite
-          @c.filter = proc{|t| t.method_name == :test_1a || t.method_name == :test_1b}
+          @c.filter = proc{|t| t.method_name == "test_1a" || t.method_name == "test_1b"}
           assert_equal(expected, @c.collect)
         end
 

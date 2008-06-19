@@ -43,8 +43,8 @@ module Test
 
         def full_suite(name=ObjectSpace::NAME)
           expected = TestSuite.new(name)
-          expected << (TestSuite.new(@tc1.name) << @tc1.new(:test_1) << @tc1.new(:test_2))
-          expected << (TestSuite.new(@tc2.name) << @tc2.new(:test_0))
+          expected << (TestSuite.new(@tc1.name) << @tc1.new("test_1") << @tc1.new("test_2"))
+          expected << (TestSuite.new(@tc2.name) << @tc2.new("test_0"))
         end
 
         def empty_suite
@@ -81,15 +81,15 @@ module Test
           assert_equal(full_suite, @c.collect)
           
           expected = TestSuite.new(ObjectSpace::NAME)
-          expected << (TestSuite.new(@tc1.name) << @tc1.new(:test_1))
-          expected << (TestSuite.new(@tc2.name) << @tc2.new(:test_0))
-          @c.filter = proc{|test| [:test_1, :test_0].include?(test.method_name)}
+          expected << (TestSuite.new(@tc1.name) << @tc1.new("test_1"))
+          expected << (TestSuite.new(@tc2.name) << @tc2.new("test_0"))
+          @c.filter = proc{|test| ["test_1", "test_0"].include?(test.method_name)}
           assert_equal(expected, @c.collect)
 
           expected = TestSuite.new(ObjectSpace::NAME)
-          expected << (TestSuite.new(@tc1.name) << @tc1.new(:test_1))
-          expected << (TestSuite.new(@tc2.name) << @tc2.new(:test_0))
-          @c.filter = [proc{|t| t.method_name == :test_1 ? true : nil}, proc{|t| t.method_name == :test_0 ? true : nil}, proc{false}]
+          expected << (TestSuite.new(@tc1.name) << @tc1.new("test_1"))
+          expected << (TestSuite.new(@tc2.name) << @tc2.new("test_0"))
+          @c.filter = [proc{|t| t.method_name == "test_1" ? true : nil}, proc{|t| t.method_name == "test_0" ? true : nil}, proc{false}]
           assert_equal(expected, @c.collect)
         end
       end
