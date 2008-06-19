@@ -1,3 +1,8 @@
+Fri Jun 20 02:11:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): should preserve last successful match
+	  data.  [ruby-dev:35182]
+
 Fri Jun 20 01:07:28 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* KNOWNBUGS.rb, bootstraptest/pending.rb: move a bug (?) to pending.

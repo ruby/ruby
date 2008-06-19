@@ -392,6 +392,5 @@ assert_equal 'ok', %q{
 
   f = Foo.new
   a_proc = give_it
-  p :call_it
   f.call_it(&give_it())
 }, '[ruby-core:15711]'

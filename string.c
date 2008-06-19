@@ -3084,8 +3084,7 @@ get_pat(VALUE pat, int quote)
 static VALUE
 rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 {
-    VALUE pat, repl, match, hash = Qnil;
-    struct re_registers *regs;
+    VALUE pat, repl, hash = Qnil;
     int iter = 0;
     int tainted = 0;
     long plen;
@@ -3109,15 +3108,13 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     if (rb_reg_search(pat, str, 0, 0) >= 0) {
 	rb_encoding *enc;
 	int cr = ENC_CODERANGE(str);
-
-	match = rb_backref_get();
-	regs = RMATCH_REGS(match);
+	VALUE match = rb_backref_get();
+	struct re_registers *regs = RMATCH_REGS(match);
 
 	if (iter || !NIL_P(hash)) {
 	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
 
             if (iter) {
-                rb_match_busy(match);
                 repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
             }
             else {
@@ -3126,7 +3123,6 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
             }
 	    str_mod_check(str, p, len);
 	    str_frozen_check(str);
-	    if (iter) rb_backref_set(match);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs, pat);
@@ -3217,7 +3213,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     VALUE pat, val, repl, match, dest, hash = Qnil;
     struct re_registers *regs;
     long beg, n;
-    long offset, blen, slen, len;
+    long beg0, end0;
+    long offset, blen, slen, len, last;
     int iter = 0;
     char *sp, *cp;
     int tainted = 0;
@@ -3241,13 +3238,14 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat(argv[0], 1);
-    offset=0; n=0;
     beg = rb_reg_search(pat, str, 0, 0);
     if (beg < 0) {
 	if (bang) return Qnil;	/* no match, no substitution */
 	return rb_str_dup(str);
     }
 
+    offset = 0;
+    n = 0;
     blen = RSTRING_LEN(str) + 30; /* len + margin */
     dest = rb_str_buf_new(blen);
     sp = RSTRING_PTR(str);
@@ -3259,9 +3257,10 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	n++;
 	match = rb_backref_get();
 	regs = RMATCH_REGS(match);
+	beg0 = BEG(0);
+	end0 = END(0);
 	if (iter || !NIL_P(hash)) {
             if (iter) {
-                rb_match_busy(match);
                 val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
             }
             else {
@@ -3273,7 +3272,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 	    if (val == dest) { 	/* paranoid check [ruby-dev:24827] */
 		rb_raise(rb_eRuntimeError, "block should not cheat");
 	    }
-	    if (iter) rb_backref_set(match);
 	}
 	else {
 	    val = rb_reg_regsub(repl, str, regs, pat);
@@ -3288,16 +3286,17 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
         rb_str_buf_append(dest, val);
 
-	offset = END(0);
-	if (BEG(0) == END(0)) {
+	last = offset;
+	offset = end0;
+	if (beg0 == end0) {
 	    /*
 	     * Always consume at least one character of the input string
 	     * in order to prevent infinite loops.
 	     */
-	    if (RSTRING_LEN(str) <= END(0)) break;
-	    len = rb_enc_mbclen(RSTRING_PTR(str)+END(0), RSTRING_END(str), str_enc);
-            rb_enc_str_buf_cat(dest, RSTRING_PTR(str)+END(0), len, str_enc);
-	    offset = END(0) + len;
+	    if (RSTRING_LEN(str) <= end0) break;
+	    len = rb_enc_mbclen(RSTRING_PTR(str)+end0, RSTRING_END(str), str_enc);
+            rb_enc_str_buf_cat(dest, RSTRING_PTR(str)+end0, len, str_enc);
+	    offset = end0 + len;
 	}
 	cp = RSTRING_PTR(str) + offset;
 	if (offset > RSTRING_LEN(str)) break;
@@ -3306,7 +3305,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     if (RSTRING_LEN(str) > offset) {
         rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
     }
-    rb_backref_set(match);
+    rb_reg_search(pat, str, last, 0);
     if (bang) {
         rb_str_shared_replace(str, dest);
     }
