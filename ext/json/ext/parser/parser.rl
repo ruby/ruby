@@ -3,6 +3,7 @@
 #include "ruby.h"
 #include "ruby/re.h"
 #include "ruby/st.h"
+#include "ruby/encoding.h"
 #include "unicode.h"
 
 #define EVIL 0x666
@@ -332,7 +333,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
 
 static VALUE json_string_unescape(char *p, char *pe)
 {
-    VALUE result = rb_str_buf_new(pe - p + 1);
+    VALUE result = rb_enc_str_new(0, pe - p + 1, rb_utf8_encoding());
 
     while (p < pe) {
         if (*p == '\\') {
@@ -406,7 +407,7 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 {
     int cs = EVIL;
 
-    *result = rb_str_new("", 0);
+    *result = rb_enc_str_new("", 0, rb_utf8_encoding());
     %% write init;
     json->memo = p;
     %% write exec;
@@ -592,7 +593,7 @@ static void JSON_mark(JSON_Parser *json)
 
 static void JSON_free(JSON_Parser *json)
 {
-    free(json);
+    ruby_xfree(json);
 }
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
