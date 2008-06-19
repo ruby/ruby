@@ -1,3 +1,7 @@
+Thu Jun 19 16:06:01 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/tile/treeview.rb: cannot configure tags.
+
 Wed Jun 18 12:05:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search

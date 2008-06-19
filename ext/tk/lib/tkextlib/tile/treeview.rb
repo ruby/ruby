@@ -379,12 +379,12 @@ module Tk::Tile::TreeviewConfig
   ###################
 
   def __item_cget_cmd(id)
-    [self.path, id[0], id[1]]
+    [self.path, *id]
   end
   private :__item_cget_cmd
 
   def __item_config_cmd(id)
-    [self.path, id[0], id[1]]
+    [self.path, *id]
   end
   private :__item_config_cmd
 
@@ -638,19 +638,19 @@ module Tk::Tile::TreeviewConfig
 
   # Treeview Tag
   def tagcget(tagOrId, option)
-    __itemcget([:tag, tagOrId], option)
+    __itemcget([:tag, :configure, tagOrId], option)
   end
   def tagcget_strict(tagOrId, option)
-    __itemcget_strict([:tag, tagOrId], option)
+    __itemcget_strict([:tag, :configure, tagOrId], option)
   end
   def tagconfigure(tagOrId, slot, value=None)
-    __itemconfigure([:tag, tagOrId], slot, value)
+    __itemconfigure([:tag, :configure, tagOrId], slot, value)
   end
   def tagconfiginfo(tagOrId, slot=nil)
-    __itemconfiginfo([:tag, tagOrId], slot)
+    __itemconfiginfo([:tag, :configure, tagOrId], slot)
   end
   def current_tagconfiginfo(tagOrId, slot=nil)
-    __current_itemconfiginfo([:tag, tagOrId], slot)
+    __current_itemconfiginfo([:tag, :configure, tagOrId], slot)
   end
   alias tag_cget tagcget
   alias tag_cget_strict tagcget_strict
@@ -943,7 +943,7 @@ class Tk::Tile::Treeview::Tag < TkObject
       TagID_TBL[@tpath][@id] = self
     }
     if keys && keys != None
-      tk_call_without_enc(@tpath, 'tag', 'configure', *hash_kv(keys, true))
+      tk_call_without_enc(@tpath, 'tag', 'configure', @id, *hash_kv(keys,true))
     end
   end
   def id
@@ -1034,7 +1034,8 @@ class Tk::Tile::Treeview < TkWindow
         id.kind_of?(Tk::Tile::Treeview::Tag)
       id.id
     elsif id.kind_of?(Array)
-      [id[0], _get_eval_string(id[1])]
+      # size is 2 or 3
+      id[0..-2] << _get_eval_string(id[-1])
     else
       _get_eval_string(id)
     end
