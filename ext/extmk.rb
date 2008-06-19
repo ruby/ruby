@@ -87,15 +87,6 @@ end
 def extmake(target)
   print "#{$message} #{target}\n"
   $stdout.flush
-  if $force_static or $static_ext[target]
-    $static = target
-  else
-    $static = false
-  end
-
-  unless $ignore
-    return true if $nodynamic and not $static
-  end
 
   FileUtils.mkpath target unless File.directory?(target)
   begin
@@ -439,7 +430,11 @@ Dir::chdir('ext')
 hdrdir = $hdrdir
 $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 exts.each do |d|
-  extmake(d) or abort
+  $static = $force_static ? $static_ext[target] : false
+
+  if $ignore or !$nodynamic or $static
+    extmake(d) or abort
+  end
 end
 $top_srcdir = srcdir
 $topdir = "."
