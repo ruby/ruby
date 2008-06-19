@@ -2123,6 +2123,7 @@ rb_thread_atfork(void)
     st_foreach(vm->living_threads, terminate_atfork_i, (st_data_t)th);
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
+    vm->sleeper = 0;
 }
 
 static int
@@ -2149,6 +2150,7 @@ rb_thread_atfork_before_exec(void)
     st_foreach(vm->living_threads, terminate_atfork_before_exec_i, (st_data_t)th);
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
+    vm->sleeper = 0;
 }
 
 struct thgroup {
@@ -2513,6 +2515,7 @@ lock_func(rb_thread_t *th, mutex_t *mutex, int last_thread)
     th->transition_for_lock = 1;
     native_mutex_unlock(&mutex->lock);
 
+    if (interrupted == 2) native_thread_yield();
 #if 0 /* for debug */
     native_thread_yield();
 #endif
@@ -2573,7 +2576,6 @@ rb_mutex_lock(VALUE self)
 	    th->locking_mutex = Qfalse;
 	    if (mutex->th && interrupted == 2) {
 		rb_check_deadlock(th->vm);
-		RUBY_VM_SET_TIMER_INTERRUPT(th);
 	    }
 	    if (th->status == THREAD_STOPPED_FOREVER) {
 		th->status = prev_status;
@@ -2671,7 +2673,7 @@ rb_mutex_unlock_all(VALUE mutexes)
 		rb_obj_classname(mutexes), (void*)mutexes); */
 	mutexes = mutex->next_mutex;
 	err = mutex_unlock(mutex);
-	if (err) rb_bug("invalid keeping_mutexes");
+	if (err) rb_bug("invalid keeping_mutexes: %s", err);
     }
 }
 
