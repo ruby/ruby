@@ -1562,6 +1562,9 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
 	capa = RSTRING(str)->as.heap.aux.capa;
     }
     total = RSTRING_LEN(str)+len;
+    if (total < 0 || capa + 1 > LONG_MAX / 2) {
+	rb_raise(rb_eArgError, "string sizes too big");
+    }
     if (capa <= total) {
 	while (total > capa) {
 	    capa = (capa + 1) * 2;
