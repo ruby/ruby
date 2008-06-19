@@ -11808,18 +11808,13 @@ catch_timer(sig)
     /* cause EINTR */
 }
 
-static int time_thread_alive_p = 0;
 static pthread_t time_thread;
 
 static void*
 thread_timer(dummy)
     void *dummy;
 {
-#ifdef _THREAD_SAFE
 #define test_cancel() pthread_testcancel()
-#else
-#define test_cancel() /* void */
-#endif
 
     sigset_t all_signals;
 
@@ -11865,21 +11860,18 @@ rb_thread_stop_timer()
 void
 rb_child_atfork()
 {
-    time_thread_alive_p = 0;
+    thread_init = 0;
 }
 
 void
 rb_thread_cancel_timer()
 {
-#ifdef _THREAD_SAFE
-    if( time_thread_alive_p )
+    if (thread_init)
     {
-	pthread_cancel( time_thread );
-	pthread_join( time_thread, NULL );
-	time_thread_alive_p = 0;
+	pthread_cancel(time_thread);
+	pthread_join(time_thread, NULL);
     }
     thread_init = 0;
-#endif
 }
 #elif defined(HAVE_SETITIMER)
 static void
@@ -11923,7 +11915,6 @@ void
 rb_thread_cancel_timer()
 {
 }
-
 #else  /* !(_THREAD_SAFE || HAVE_SETITIMER) */
 int rb_thread_tick = THREAD_TICK;
 
@@ -11961,7 +11952,6 @@ rb_thread_start_0(fn, arg, th)
 
 #ifdef _THREAD_SAFE
 	pthread_create(&time_thread, 0, thread_timer, 0);
-        time_thread_alive_p = 1;
         pthread_atfork(0, 0, rb_child_atfork);
 #else
 	rb_thread_start_timer();
