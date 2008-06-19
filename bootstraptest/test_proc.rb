@@ -378,3 +378,20 @@ assert_equal 'ok', %q{
   m()
 }
 
+assert_equal 'ok', %q{
+  class Foo
+    def call_it
+      p = Proc.new
+      p.call
+    end
+  end
+
+  def give_it
+    proc { :ok }
+  end
+
+  f = Foo.new
+  a_proc = give_it
+  p :call_it
+  f.call_it(&give_it())
+}, '[ruby-core:15711]'

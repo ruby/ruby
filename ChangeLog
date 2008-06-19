@@ -1,3 +1,10 @@
+Fri Jun 20 00:40:08 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c (proc_new): fix to return Proc object if block is already
+	  in heap.  [ruby-core:15711]
+
+	* bootstraptest/test_proc.rb: add a test.
+
 Fri Jun 20 00:18:04 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread_win32.c (native_sleep): fix to decrement sleeper count.

@@ -358,6 +358,10 @@ proc_new(VALUE klass, int is_lambda)
 
 	    block = GC_GUARDED_PTR_REF(cfp->lfp[0]);
 
+	    if (block->proc) {
+		return block->proc;
+	    }
+
 	    /* TODO: check more (cfp limit, called via cfunc, etc) */
 	    while (cfp->dfp != block->dfp) {
 		cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
