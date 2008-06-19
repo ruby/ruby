@@ -1279,34 +1279,36 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	    else if (state == TAG_RETURN) {
 		rb_control_frame_t *cfp = GET_CFP();
 		VALUE *dfp = GET_DFP();
-		int is_orphan = 1;
+		VALUE * const lfp = GET_LFP();
 
-		/**
-		 * check orphan:
-		 */
+		/* check orphan and get dfp */
 		while ((VALUE *) cfp < th->stack + th->stack_size) {
-		    if (dfp == cfp->dfp) {
+		    if (cfp->lfp == lfp) {
 			if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA) {
-			    /* in lambda */
-			    is_orphan = 0;
-			    break;
-			}
+			    VALUE *tdfp = dfp;
 
-			if (GET_LFP() == dfp && cfp->iseq->type == ISEQ_TYPE_METHOD) {
-			    is_orphan = 0;
-			    break;
+			    while (lfp != tdfp) {
+				if (cfp->dfp == tdfp) {
+				    /* in lambda */
+				    dfp = cfp->dfp;
+				    goto valid_return;
+				}
+				tdfp = GC_GUARDED_PTR_REF((VALUE *)*dfp);
+			    }
 			}
+		    }
 
-			dfp = GC_GUARDED_PTR_REF(dfp[0]);
+		    if (cfp->dfp == lfp && cfp->iseq->type == ISEQ_TYPE_METHOD) {
+			dfp = lfp;
+			goto valid_return;
 		    }
 
 		    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 		}
 
-		if (is_orphan) {
-		    vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
-		}
+		vm_localjump_error("unexpected return", throwobj, TAG_RETURN);
 
+	      valid_return:
 		pt = dfp;
 	    }
 	    else {

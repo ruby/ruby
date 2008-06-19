@@ -13,3 +13,20 @@ assert_equal 'A', %q{
   B.new.a = 'B'
   A.new.a
 }, '[ruby-core:17019]'
+
+assert_equal 'ok', %q{
+  def m
+    lambda{
+      proc{
+        return :ng1
+      }
+    }.call.call
+    :ng2
+  end
+
+  begin
+    m()
+  rescue LocalJumpError
+    :ok
+  end
+}

@@ -364,3 +364,17 @@ assert_equal 'ok', %q{
    def12
    $x
 }, '[ruby-core:17164]'
+
+assert_equal 'ok', %q{
+  def m
+    pr = proc{
+      proc{
+        return :ok
+      }
+    }.call
+    pr.call
+    :ng
+  end
+  m()
+}
+

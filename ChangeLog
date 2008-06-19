@@ -1,3 +1,11 @@
+Thu Jun 19 11:40:55 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c (vm_throw): fix "return" process from "lambda".
+
+	* bootstraptest/test_proc.rb: add a test.
+
+	* bootstraptest/pending.rb: add a pending bug.
+
 Thu Jun 19 00:33:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/etc/test_etc.rb: avoid infinite loop.  [ruby-dev:35158]
