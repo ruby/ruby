@@ -1,38 +1,100 @@
 #!/bin/bash
 
-LC_ALL=C LANG=C
-SVNURL=http://svn.ruby-lang.org/repos/ruby/trunk
+nLC_ALL=C LANG=C
+SVNURL=http://svn.ruby-lang.org/repos/ruby
 export LC_ALL LANG
 : ${VPATH=include/ruby} ${YACC=bison} ${BASERUBY=ruby} ${RUBY=ruby} ${MV=mv} ${MINIRUBY=ruby}
+for var in YACC BASERUBY RUBY MV MINIRUBY; do
+    eval 'cmd="${'$var'}"'
+    type -p ${cmd%% *} > /dev/null || {
+	echo "$0: $var command not found${cmd:+ - $cmd}" 1>&2
+	exit 1
+    }
+done
 export VPATH YACC BASERUBY RUBY MV MINIRUBY
 
 if [ ! "$1" ]; then
-    echo usage: `basename $0` new-directory-to-save 1>&2
+    echo "usage: $(basename $0) new-directory-to-save [version ...]" 1>&2
     exit 1
 fi
 [ -d "$1" ] || mkdir "$1" || exit 1
-dest=`cd "$1"; pwd`
+dest=$(cd "$1"; pwd)
+shift
+
+[ "$#" = 0 ] && set trunk
 
 tmp="${TMP_DIR-/tmp}/ruby-snapshot-$$"
 mkdir -p "$tmp"
-(cd "$tmp"
-revision=`svn export $SVNURL ruby | sed -n '$s/[^0-9]//gp'`
-[ $revision ] || revision=`svn info $SVNURL | sed -n 's/Revision: //p'`
-echo "#define RUBY_REVISION $revision" > ruby/revision.h
-version=`sed -n -e '/^#define RUBY_VERSION /s/[^0-9.]//gp' ruby/version.h`
-v=ruby-$version-${2-r$revision}
-mv ruby $v
-(cd $v; autoconf; (sed '/lex\.c/,/^$/!d' Makefile.in; sed 's/{[^{}]*}//g' common.mk) | make -f - prereq srcdir=.)
+trap "cd /; exec rm -fr $tmp" 0 2 3 13 15
+cd "$tmp"
+files=
 
-for cmd in "bzip tarball.tar.bz2 tar cjf" "gzip tarball.tar.gz tar czf" "zip archive.zip zip -qr"; do
-    mesg="${cmd%%.*}" cmd="${cmd#*.}"
-    ext="${cmd%% *}" cmd="${cmd#* }"
-    echo -n creating $mesg... $dest/$v.$ext
-    if $cmd $dest/$v.$ext $v; then
-	echo " done"
-    else
-	echo " failed"
+exec 3>&1
+for rev; do
+    tag=
+    case "$rev" in
+	trunk | branches/* | tags/*)
+	    url=$SVNURL/rev;;
+	stable)
+	    url=$SVNURL/brances/$(svn ls $SVNURL/branches | grep '^ruby_[0-9]_[0-9]/' | tail -1);;
+	*.*.*-p* | *.*.*-*)
+	    tag=${rev##*-}; url=${rev/-p/_}; url=${url/-/_}; url=$SVNURL/tags/v${url//./_};;
+	*.*)
+	    url=$SVNURL/branches/ruby_${rev//./_};;
+	*)
+	    echo "$0: unknown version - $rev" 1>&2
+	    continue;;
+    esac
+
+    revision=$(svn info "$url" 2>&1 | sed -n 's/Last Changed Rev: //p')
+    if [ "$revision" = "" ]; then
+	url="$SVNURL/trunk"
+	version=$(svn cat "$url/version.h" | sed -n -e '/^#define RUBY_VERSION /s/[^0-9.]//gp')
+	[ "$rev" = "$version" ] || { echo "$0: $rev not found"; exit 1; }
+	revision=$(svn info "$url" | sed -n 's/Last Changed Rev: //p' 2>/dev/null)
     fi
+    echo "Exporting $rev@$revision"
+    status=$(exec 4>&1; { svn export "$url" ruby; echo $? 1>&4; } | grep -v '^A' 1>&3)
+    [ "$status" = 0 ] || exit $status
+    echo "#define RUBY_REVISION $revision" > ruby/revision.h
+    version=$(sed -n -e '/^#define RUBY_VERSION /s/[^0-9.]//gp' ruby/version.h)
+    if [ x"$tag" = x ]; then
+	patchlevel=$(sed -n -e '/^#define RUBY_PATCHLEVEL /s/[^0-9.]//gp' ruby/version.h)
+	if [ "${patchlevel:-0}" = 0 ]; then
+	    tag=r$revision
+	else
+	    tag=p$patchlevel
+	fi
+    fi
+    v=ruby-$version-$tag
+    mv ruby $v
+    (cd $v
+    autoconf
+    rm -fr autom4te.cache
+    if [ -f common.mk ] && grep '^prereq' common.mk > /dev/null; then
+	(sed '/lex\.c/,/^$/!d' Makefile.in; sed 's/{[^{}]*}//g' common.mk) |
+	make -f - prereq srcdir=. IFCHANGE=tool/ifchange
+    else
+	${YACC} -o parse.c parse.y
+    fi || exit $?) || exit $?
+
+    for cmd in "bzip tarball.tar.bz2 tar cjf" "gzip tarball.tar.gz tar czf" "zip archive.zip zip -qr"; do
+	mesg="${cmd%%.*}" cmd="${cmd#*.}"
+	ext="${cmd%% *}" cmd="${cmd#* }"
+	echo -n creating $mesg... $dest/$v.$ext
+	if $cmd $dest/$v.$ext $v; then
+	    echo " done"
+	else
+	    echo " failed"
+	fi
+	files="$files $dest/$v.$ext"
+    done
+    rm -fr $v
 done
-exec rm -fr $v)
-exec rmdir "$tmp"
+for file in $files; do
+    md5=$(md5sum $file)
+    sha256=$(sha256sum $file)
+    echo "MD5(${file##*/})= ${md5%% *}"
+    echo "SHA256(${file##*/})= ${sha256%% *}"
+    echo "SIZE(${file##*/})= `find $file -printf %s`"
+done
