@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <float.h>
 #include <math.h>
+#include "ruby.h"
 
 /* DBL_MANT_DIG must be less than 4 times of bits of int */
 #ifndef DBL_MANT_DIG
@@ -79,6 +80,14 @@ atanh(double x)
     if (z < SMALL_CRITERIA) return x;
     z = log(z > 1 ? -1 : (1 + z) / (1 - z)) / 2;
     if (neg) z = -z;
+    if (isinf(z))
+#if defined(ERANGE)
+	errno = ERANGE;
+#elif defined(EDOM)
+	errno = EDOM;
+#else
+	;
+#endif
     return z;
 }
 #endif
