@@ -1,3 +1,7 @@
+Fri Jun 20 02:16:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Rational::power2): typo fixed.  [ruby-core:17293]
+
 Fri Jun 20 02:11:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_gsub): should preserve last successful match
