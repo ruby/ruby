@@ -1,3 +1,7 @@
+Fri Jun 20 00:18:04 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread_win32.c (native_sleep): fix to decrement sleeper count.
+
 Thu Jun 19 23:48:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/net/http/test_http.rb: compare encodings of two strings before

@@ -246,7 +246,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
     }
     GVL_UNLOCK_END();
     th->status = prev_status;
-    if (!tv && deadlockable) th->vm->sleeper++;
+    if (!tv && deadlockable) th->vm->sleeper--;
     RUBY_VM_CHECK_INTS();
 }
 
