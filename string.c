@@ -336,16 +336,12 @@ str_frozen_check(VALUE s)
     }
 }
 
-static VALUE
+static inline VALUE
 str_alloc(VALUE klass)
 {
     NEWOBJ(str, struct RString);
     OBJSETUP(str, klass, T_STRING);
 
-    if (klass == rb_cSymbol) {
-	/* need to be registered in table */
-	RBASIC(str)->klass = rb_cString;
-    }
     str->as.heap.ptr = 0;
     str->as.heap.len = 0;
     str->as.heap.aux.capa = 0;
@@ -5617,16 +5613,15 @@ rb_str_strip(VALUE str)
 static VALUE
 scan_once(VALUE str, VALUE pat, long *start)
 {
-    rb_encoding *enc;
     VALUE result, match;
     struct re_registers *regs;
     long i;
 
-    enc = STR_ENC_GET(str);
     if (rb_reg_search(pat, str, *start, 0) >= 0) {
 	match = rb_backref_get();
 	regs = RMATCH_REGS(match);
 	if (BEG(0) == END(0)) {
+	    rb_encoding *enc = STR_ENC_GET(str);
 	    /*
 	     * Always consume at least one character of the input string
 	     */

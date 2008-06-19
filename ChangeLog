@@ -1,3 +1,13 @@
+Thu Jun 19 17:37:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_alloc): specify 'inline' modifier.
+
+	* string.c (str_alloc): remove cSymbol hack that no longer
+	  necessary. 
+
+	* string.c (scan_once): avoid retrieving encoding info unless
+	  necessary.
+
 Thu Jun 19 17:19:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_scan): String#scan should preserve last
