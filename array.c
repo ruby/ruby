@@ -20,6 +20,7 @@ VALUE rb_cArray;
 static ID id_cmp;
 
 #define ARY_DEFAULT_SIZE 16
+#define ARY_MAX_SIZE (LONG_MAX / sizeof(VALUE))
 
 void
 rb_mem_clear(register VALUE *mem, register long size)
@@ -114,7 +115,7 @@ ary_new(VALUE klass, long len)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
     }
-    if (len > LONG_MAX / sizeof(VALUE)) {
+    if (len > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     ary = ary_alloc(klass);
@@ -313,7 +314,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size");
     }
-    if (len > LONG_MAX / sizeof(VALUE)) {
+    if (len > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     rb_ary_modify(ary);
@@ -371,6 +372,9 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 		     idx - RARRAY_LEN(ary));
 	}
     }
+    else if (idx >= ARY_MAX_SIZE) {
+	rb_raise(rb_eIndexError, "index %ld too big", idx);
+    }
 
     rb_ary_modify(ary);
     if (idx >= ARY_CAPA(ary)) {
@@ -379,13 +383,10 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 	if (new_capa < ARY_DEFAULT_SIZE) {
 	    new_capa = ARY_DEFAULT_SIZE;
 	}
-	if (new_capa + idx < new_capa) {
-	    rb_raise(rb_eArgError, "index too big");
+	else if (new_capa >= ARY_MAX_SIZE - idx) {
+	    new_capa = (ARY_MAX_SIZE - idx) / 2;
 	}
 	new_capa += idx;
-	if (new_capa * (long)sizeof(VALUE) <= new_capa) {
-	    rb_raise(rb_eArgError, "index too big");
-	}
 	RESIZE_CAPA(ary, new_capa);
     }
     if (idx > RARRAY_LEN(ary)) {
@@ -986,6 +987,9 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
     rb_ary_modify(ary);
     if (beg >= RARRAY_LEN(ary)) {
 	len = beg + rlen;
+	if (len < 0 || len > ARY_MAX_SIZE) {
+	    rb_raise(rb_eIndexError, "index %ld too big", beg);
+	}
 	if (len >= ARY_CAPA(ary)) {
 	    RESIZE_CAPA(ary, len);
 	}
@@ -2250,7 +2254,7 @@ rb_ary_times(VALUE ary, VALUE times)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
-    if (LONG_MAX/len < RARRAY_LEN(ary)) {
+    if (ARY_MAX_SIZE/len < RARRAY_LEN(ary)) {
 	rb_raise(rb_eArgError, "argument too big");
     }
     len *= RARRAY_LEN(ary);

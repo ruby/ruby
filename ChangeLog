@@ -1,3 +1,14 @@
+Wed Jun 18 21:52:38 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* array.c (ary_new, rb_ary_initialize, rb_ary_store,
+	  rb_ary_aplice, rb_ary_times): integer overflows should be
+	  checked. based on patches from Drew Yao <ayao at apple.com>
+	  fixed CVE-2008-2726
+
+	* string.c (rb_enc_cr_str_buf_cat): fixed unsafe use of alloca,
+	  which led memory corruption. based on a patch from Drew Yao
+	  <ayao at apple.com> fixed CVE-2008-2726
+
 Fri Jun 20 03:26:00 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (rb_f_fork): NetBSD 4.0 or later can fork.
