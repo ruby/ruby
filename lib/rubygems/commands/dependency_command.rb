@@ -43,14 +43,21 @@ class Gem::Commands::DependencyCommand < Gem::Command
   end
 
   def execute
-    options[:args] << '.' if options[:args].empty?
+    options[:args] << '' if options[:args].empty?
     specs = {}
 
     source_indexes = Hash.new do |h, source_uri|
       h[source_uri] = Gem::SourceIndex.new
     end
 
-    pattern = /\A#{Regexp.union(*options[:args])}/
+    pattern = if options[:args].length == 1 and
+                 options[:args].first =~ /\A\/(.*)\/(i)?\z/m then
+                flags = $2 ? Regexp::IGNORECASE : nil
+                Regexp.new $1, flags
+              else
+                /\A#{Regexp.union(*options[:args])}/
+              end
+
     dependency = Gem::Dependency.new pattern, options[:version]
 
     if options[:reverse_dependencies] and remote? and not local? then

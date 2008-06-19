@@ -30,6 +30,34 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
     assert_equal '', @ui.error
   end
 
+  def test_execute_no_args
+    Gem.source_index = nil
+
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+Gem a-1
+
+Gem a-2
+
+Gem a_evil-9
+
+Gem b-2
+
+Gem c-1.2
+
+Gem pl-1-x86-linux
+
+    EOF
+
+    assert_equal expected, @ui.output
+    assert_equal '', @ui.error
+  end
+
   def test_execute_no_match
     @cmd.options[:args] = %w[foo]
 
@@ -56,6 +84,30 @@ class TestGemCommandsDependencyCommand < RubyGemTestCase
     end
 
     assert_equal "bar --version '> 1'\n", @ui.output
+    assert_equal '', @ui.error
+  end
+
+  def test_execute_regexp
+    Gem.source_index = nil
+
+    @cmd.options[:args] = %w[/[ab]/]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+Gem a-1
+
+Gem a-2
+
+Gem a_evil-9
+
+Gem b-2
+
+    EOF
+
+    assert_equal expected, @ui.output
     assert_equal '', @ui.error
   end
 

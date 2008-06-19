@@ -79,6 +79,7 @@ class Gem::ConfigFile
     arg_list = arg_list.map do |arg|
       if need_config_file_name then
         @config_file_name = arg
+        need_config_file_name = false
         nil
       elsif arg =~ /^--config-file=(.*)/ then
         @config_file_name = $1

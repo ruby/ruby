@@ -27,7 +27,7 @@ class TestGem < RubyGemTestCase
 
     assert_equal expected, Gem.all_load_paths.sort
   end
-  
+
   def test_self_available?
     util_make_gems
     assert(Gem.available?("a"))
@@ -252,7 +252,7 @@ class TestGem < RubyGemTestCase
     end
     Gem.instance_variable_set :@gem_path, nil
 
-    assert_equal [Gem.default_path, Gem.dir], Gem.path
+    assert_equal [Gem.default_path, Gem.dir].flatten, Gem.path
   ensure
     Object.const_set :APPLE_GEM_HOME, orig_APPLE_GEM_HOME
   end

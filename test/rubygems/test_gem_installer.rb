@@ -327,8 +327,10 @@ load 'my_exec'
     real_exec = File.join util_gem_dir, 'bin', 'my_exec'
 
     # fake --no-wrappers for previous install
-    FileUtils.mkdir_p File.dirname(installed_exec)
-    FileUtils.ln_s real_exec, installed_exec
+    unless Gem.win_platform? then
+      FileUtils.mkdir_p File.dirname(installed_exec)
+      FileUtils.ln_s real_exec, installed_exec
+    end
 
     @installer.generate_bin
     assert_equal true, File.directory?(util_inst_bindir)

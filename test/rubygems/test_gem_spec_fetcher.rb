@@ -284,7 +284,7 @@ RubyGems will revert to legacy indexes degrading performance.
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}"] =
       ' ' * Marshal.dump(@latest_specs).length
 
-    cache_dir = File.join Gem.user_home, '.gem', 'specs', 'gems.example.com:80'
+    cache_dir = File.join Gem.user_home, '.gem', 'specs', 'gems.example.com%80'
 
     FileUtils.mkdir_p cache_dir
 

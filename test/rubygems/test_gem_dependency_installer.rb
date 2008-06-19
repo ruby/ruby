@@ -372,7 +372,7 @@ class TestGemDependencyInstaller < RubyGemTestCase
     end
 
     ENV['GEM_HOME'] = @gemhome
-    ENV['GEM_PATH'] = [@gemhome, gemhome2].join ':'
+    ENV['GEM_PATH'] = [@gemhome, gemhome2].join File::PATH_SEPARATOR
     Gem.clear_paths
 
     Dir.chdir @tempdir do

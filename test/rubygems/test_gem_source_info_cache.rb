@@ -401,7 +401,7 @@ class TestGemSourceInfoCache < RubyGemTestCase
     assert_equal @gem_repo, user_cache_data.first
 
     gems = user_cache_data.last.source_index.map { |_,spec| spec.full_name }
-    assert_equal [@a1.full_name, @a2.full_name], gems
+    assert_equal [@a1.full_name, @a2.full_name], gems.sort
 
     user_cache_data = read_cache(@sic.latest_user_cache_file).to_a.sort
     assert_equal 1, user_cache_data.length

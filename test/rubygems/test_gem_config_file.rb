@@ -72,6 +72,12 @@ class TestGemConfigFile < RubyGemTestCase
     assert_equal @temp_conf, @cfg.config_file_name
   end
 
+  def test_initialize_handle_arguments_config_file_with_other_params
+    util_config_file %W[--config-file #{@temp_conf} --backtrace]
+
+    assert_equal @temp_conf, @cfg.config_file_name
+  end
+
   def test_initialize_handle_arguments_config_file_equals
     util_config_file %W[--config-file=#{@temp_conf}]
 
