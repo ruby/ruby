@@ -92,7 +92,7 @@ static DL_HANDLE tcl_dll = (DL_HANDLE)0;
 static DL_HANDLE tk_dll  = (DL_HANDLE)0;
 
 int
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_open_tcl_dll(char *appname)
 #else
 ruby_open_tcl_dll(appname)
@@ -179,7 +179,7 @@ ruby_open_tk_dll()
 }
 
 int
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_open_tcltk_dll(char *appname)
 #else
 ruby_open_tcltk_dll(appname)
@@ -203,7 +203,7 @@ tk_stubs_init_p()
 
 
 Tcl_Interp *
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_tcl_create_ip_and_stubs_init(int *st)
 #else
 ruby_tcl_create_ip_and_stubs_init(st)
@@ -290,7 +290,7 @@ ruby_tcl_stubs_init()
 }
 
 int
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_tk_stubs_init(Tcl_Interp *tcl_ip)
 #else
 ruby_tk_stubs_init(tcl_ip)
@@ -330,7 +330,7 @@ ruby_tk_stubs_init(tcl_ip)
 }
 
 int
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_tk_stubs_safeinit(Tcl_Interp *tcl_ip)
 #else
 ruby_tk_stubs_safeinit(tcl_ip)
@@ -421,7 +421,7 @@ static int open_tcl_dll = 0;
 static int call_tk_stubs_init = 0;
 
 int
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_open_tcl_dll(char *appname)
 #else
 ruby_open_tcl_dll(appname)
@@ -450,7 +450,7 @@ ruby_open_tk_dll()
 }
 
 int 
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_open_tcltk_dll(char *appname)
 #else
 ruby_open_tcltk_dll(appname)
@@ -473,7 +473,7 @@ tk_stubs_init_p()
 }
 
 Tcl_Interp *
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_tcl_create_ip_and_stubs_init(int *st)
 #else
 ruby_tcl_create_ip_and_stubs_init(st)
@@ -506,7 +506,7 @@ ruby_tcl_stubs_init()
 }
 
 int 
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_tk_stubs_init(Tcl_Interp *tcl_ip)
 #else
 ruby_tk_stubs_init(tcl_ip)
@@ -527,7 +527,7 @@ ruby_tk_stubs_init(tcl_ip)
 }
 
 int
-#ifdef HAVE_PROTOTYPES
+#ifdef RUBY_VM
 ruby_tk_stubs_safeinit(Tcl_Interp *tcl_ip)
 #else
 ruby_tk_stubs_safeinit(tcl_ip)

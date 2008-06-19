@@ -1,3 +1,7 @@
+Fri Jun 20 02:16:43 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Rational::power2): typo fixed.  [ruby-core:17293]
+
 Thu Jun 19 21:38:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): check if compile before showing message.

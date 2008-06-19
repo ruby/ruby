@@ -46,11 +46,7 @@ extern "C" {
 
 #if defined(_WIN32)
 #  define OSSL_NO_CONF_API 1
-#  ifdef USE_WINSOCK2
-#    include <winsock2.h>
-#  else
-#    include <winsock.h>
-#  endif
+#  include <winsock2.h>
 #endif
 #include <errno.h>
 #include <openssl/err.h>

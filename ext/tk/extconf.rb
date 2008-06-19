@@ -2,16 +2,9 @@
 
 require 'mkmf'
 
+#is_win32 = (/mswin32|mingw|cygwin|bccwin32/ =~ RUBY_PLATFORM)
 is_win32 = (/mswin|mingw|cygwin|bccwin|wince/ =~ RUBY_PLATFORM)
 #is_macosx = (/darwin/ =~ RUBY_PLATFORM)
-
-have_header("ruby/ruby.h")
-have_header("ruby/encoding.h")
-have_func("ruby_native_thread_p", "ruby.h")
-have_func("rb_errinfo", "ruby.h")
-have_func("rb_safe_level", "ruby.h")
-have_struct_member("struct RArray", "ptr", "ruby.h")
-have_struct_member("struct RArray", "len", "ruby.h")
 
 def find_framework(tcl_hdr, tk_hdr)
   if framework_dir = with_config("tcltk-framework")

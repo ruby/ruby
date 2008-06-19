@@ -201,7 +201,7 @@ class Rational
       neard = self.denominator.to_f ** (1.0/other.denominator.to_f)
       loop do
 	if (neard**other.denominator == self.denominator)
-	  dem = neaed
+	  dem = neard
 	  break
 	end
       end
