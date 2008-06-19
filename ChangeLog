@@ -1,3 +1,9 @@
+Thu Jun 19 23:57:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_equal, rb_ary_eql, rb_ary_hash, rb_ary_cmp):
+	  Make Array#eql?, #hash, #== and #<=> use rb_exec_recursive() and
+	  handle recursive data properly.  [ruby-dev:35181]
+
 Wed Jun 18 15:20:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search
