@@ -1,3 +1,8 @@
+Thu Jun 19 17:19:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_scan): String#scan should preserve last
+	  successful match data.  [ruby-dev:35106]
+
 Thu Jun 19 16:49:36 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* missing/acosh.c (atanh): should set ERANGE to errno if parameter
