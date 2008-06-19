@@ -1,3 +1,7 @@
+Thu Jun 19 21:38:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): check if compile before showing message.
+
 Thu Jun 19 21:35:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot: supported multiple snapshots.
