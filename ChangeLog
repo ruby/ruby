@@ -1,3 +1,8 @@
+Thu Jun 19 17:44:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/etc/etc.c (Init_etc): define constant aliases Etc::Passwd
+	  and Etc::Group.  [ruby-dev:35150]
+
 Thu Jun 19 17:37:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_alloc): specify 'inline' modifier.

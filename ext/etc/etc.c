@@ -482,8 +482,6 @@ etc_getgrent(VALUE obj)
     return Qnil;
 }
 
-static VALUE mEtc;
-
 /* The etc module provides access to information from the /etc/passwd and
  * /etc/group files on Linux and Unix systems.
  *
@@ -492,8 +490,9 @@ static VALUE mEtc;
 void
 Init_etc(void)
 {
-    mEtc = rb_define_module("Etc");
+    VALUE mEtc;
 
+    mEtc = rb_define_module("Etc");
     rb_define_module_function(mEtc, "getlogin", etc_getlogin, 0);
 
     rb_define_module_function(mEtc, "getpwuid", etc_getpwuid, -1);
@@ -535,8 +534,7 @@ Init_etc(void)
 				"expire",
 #endif
 				NULL);
-
-    rb_register_mark_object(sPasswd);
+    rb_define_const(mEtc, "Passwd", sPasswd);
 
 #ifdef HAVE_GETGRENT
     sGroup = rb_struct_define("Group", "name",
@@ -545,6 +543,6 @@ Init_etc(void)
 #endif
 			      "gid", "mem", NULL);
 
-    rb_register_mark_object(sGroup);
+    rb_define_const(mEtc, "Group", sGroup);
 #endif
 }
