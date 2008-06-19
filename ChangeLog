@@ -1,3 +1,8 @@
+Thu Jun 19 20:37:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/pop.rb (Net::POP3#set_all_uids): speed
+	  up. a patch from <m-sumi AT techfirm.co.jp> [ruby-list:45047]
+
 Thu Jun 19 16:06:01 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tile/treeview.rb: cannot configure tags.

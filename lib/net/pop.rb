@@ -683,9 +683,8 @@ module Net
     end
 
     def set_all_uids   #:nodoc: internal use only (called from POPMail#uidl)
-      command().uidl.each do |num, uid|
-        @mails.find {|m| m.number == num }.uid = uid
-      end
+      uidl = command().uidl
+      @mails.each {|m| m.uid = uidl[m.number] }
     end
 
     def logging(msg)
