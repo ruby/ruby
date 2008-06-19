@@ -1,3 +1,8 @@
+Thu Jun 19 20:37:00 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/net/pop.rb (Net::POP3#set_all_uids): speed
+	  up. a patch from <m-sumi AT techfirm.co.jp> [ruby-list:45047]
+
 Thu Jun 19 17:44:15 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/etc/etc.c (Init_etc): define constant aliases Etc::Passwd
@@ -8,7 +13,7 @@ Thu Jun 19 17:37:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (str_alloc): specify 'inline' modifier.
 
 	* string.c (str_alloc): remove cSymbol hack that no longer
-	  necessary. 
+	  necessary.
 
 	* string.c (scan_once): avoid retrieving encoding info unless
 	  necessary.
