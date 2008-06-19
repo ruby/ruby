@@ -93,6 +93,7 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_with_memo
     r = 1..10
+    return unless r.each.respond_to? :with_memo
     assert_equal([55, 3628800], (1..10).each.with_memo([0,1]) {|i, memo|
         memo[0] += i
         memo[1] *= i
