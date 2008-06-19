@@ -20,6 +20,7 @@ VALUE rb_cArray;
 static ID id_cmp;
 
 #define ARY_DEFAULT_SIZE 16
+#define ARY_MAX_SIZE (LONG_MAX / sizeof(VALUE))
 
 void
 rb_mem_clear(mem, size)
@@ -120,7 +121,7 @@ ary_new(klass, len)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size (or size too big)");
     }
-    if (len > 0 && len * sizeof(VALUE) <= len) {
+    if (len > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     if (len == 0) len++;
@@ -314,7 +315,7 @@ rb_ary_initialize(argc, argv, ary)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative array size");
     }
-    if (len > 0 && len * (long)sizeof(VALUE) <= len) {
+    if (len > ARY_MAX_SIZE) {
 	rb_raise(rb_eArgError, "array size too big");
     }
     if (len > RARRAY(ary)->aux.capa) {
@@ -379,6 +380,9 @@ rb_ary_store(ary, idx, val)
 		    idx - RARRAY(ary)->len);
 	}
     }
+    else if (idx >= ARY_MAX_SIZE) {
+	rb_raise(rb_eIndexError, "index %ld too big", idx);
+    }
 
     rb_ary_modify(ary);
     if (idx >= RARRAY(ary)->aux.capa) {
@@ -387,10 +391,10 @@ rb_ary_store(ary, idx, val)
 	if (new_capa < ARY_DEFAULT_SIZE) {
 	    new_capa = ARY_DEFAULT_SIZE;
 	}
-	new_capa += idx;
-	if (new_capa * (long)sizeof(VALUE) <= new_capa) {
-	    rb_raise(rb_eArgError, "index too big");
+	else if (new_capa >= ARY_MAX_SIZE - idx) {
+	    new_capa = (ARY_MAX_SIZE - idx) / 2;
 	}
+	new_capa += idx;
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, new_capa);
 	RARRAY(ary)->aux.capa = new_capa;
     }
@@ -1091,6 +1095,9 @@ rb_ary_splice(ary, beg, len, rpl)
 
     if (beg >= RARRAY(ary)->len) {
 	len = beg + rlen;
+	if (len < 0 || len > ARY_MAX_SIZE) {
+	    rb_raise(rb_eIndexError, "index %ld too big", beg);
+	}
 	if (len >= RARRAY(ary)->aux.capa) {
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, len);
 	    RARRAY(ary)->aux.capa = len;
@@ -2522,7 +2529,7 @@ rb_ary_times(ary, times)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
-    if (LONG_MAX/len < RARRAY(ary)->len) {
+    if (ARY_MAX_SIZE/len < RARRAY(ary)->len) {
 	rb_raise(rb_eArgError, "argument too big");
     }
     len *= RARRAY(ary)->len;
