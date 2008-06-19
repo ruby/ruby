@@ -1,3 +1,8 @@
+Thu Jun 19 23:17:56 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c, thread_win32.c, vm_core.h: try to remove false positive of
+	  deadlock detection.
+
 Thu Jun 19 21:38:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): check if compile before showing message.

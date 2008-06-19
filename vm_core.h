@@ -442,6 +442,7 @@ struct rb_thread_struct
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     VALUE keeping_mutexes;
+    int transition_for_lock;
 
     struct rb_vm_tag *tag;
     struct rb_vm_trap_tag *trap_tag;

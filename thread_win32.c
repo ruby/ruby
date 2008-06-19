@@ -147,7 +147,7 @@ rb_w32_wait_events(HANDLE *events, int num, DWORD timeout)
     int ret;
 
     BLOCKING_REGION(ret = rb_w32_wait_events_blocking(events, num, timeout),
-		    ubf_handle, GET_THREAD(), 1);
+		    ubf_handle, GET_THREAD());
     return ret;
 }
 
@@ -199,7 +199,7 @@ rb_w32_Sleep(unsigned long msec)
     int ret;
 
     BLOCKING_REGION(ret = rb_w32_sleep(msec),
-		    ubf_handle, GET_THREAD(), 1);
+		    ubf_handle, GET_THREAD());
     return ret;
 }
 
