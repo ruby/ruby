@@ -687,18 +687,14 @@ rb_str_resize(str, len)
     return str;
 }
 
-VALUE
-rb_str_buf_cat(str, ptr, len)
+static VALUE
+str_buf_cat(str, ptr, len)
     VALUE str;
     const char *ptr;
     long len;
 {
     long capa, total;
 
-    if (len == 0) return str;
-    if (len < 0) {
-	rb_raise(rb_eArgError, "negative string size (or size too big)");
-    }
     rb_str_modify(str);
     if (FL_TEST(str, STR_ASSOC)) {
 	FL_UNSET(str, STR_ASSOC);
@@ -707,9 +703,16 @@ rb_str_buf_cat(str, ptr, len)
     else {
 	capa = RSTRING(str)->aux.capa;
     }
+    if (RSTRING(str)->len >= LONG_MAX - len) {
+	rb_raise(rb_eArgError, "string sizes too big");
+    }
     total = RSTRING(str)->len+len;
     if (capa <= total) {
 	while (total > capa) {
+	    if (capa + 1 >= LONG_MAX / 2) {
+		capa = total;
+		break;
+	    }
 	    capa = (capa + 1) * 2;
 	}
 	RESIZE_CAPA(str, capa);
@@ -719,6 +722,19 @@ rb_str_buf_cat(str, ptr, len)
     RSTRING(str)->ptr[total] = '\0'; /* sentinel */
 
     return str;
+}
+
+VALUE
+rb_str_buf_cat(str, ptr, len)
+    VALUE str;
+    const char *ptr;
+    long len;
+{
+    if (len == 0) return str;
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+    return str_buf_cat(str, ptr, len);
 }
 
 VALUE
@@ -762,33 +778,7 @@ VALUE
 rb_str_buf_append(str, str2)
     VALUE str, str2;
 {
-    long capa, len;
-
-    rb_str_modify(str);
-    if (FL_TEST(str, STR_ASSOC)) {
-	FL_UNSET(str, STR_ASSOC);
-	capa = RSTRING(str)->aux.capa = RSTRING(str)->len;
-    }
-    else {
-	capa = RSTRING(str)->aux.capa;
-    }
-    len = RSTRING(str)->len+RSTRING(str2)->len;
-    if (len < 0 || (capa+1) > LONG_MAX / 2) {
-	rb_raise(rb_eArgError, "string sizes too big");
-    }
-    if (capa <= len) {
-	while (len > capa) {
-	    capa = (capa + 1) * 2;
-	}
-	RESIZE_CAPA(str, capa);
-    }
-    memcpy(RSTRING(str)->ptr + RSTRING(str)->len,
-	   RSTRING(str2)->ptr, RSTRING(str2)->len);
-    RSTRING(str)->len += RSTRING(str2)->len;
-    RSTRING(str)->ptr[RSTRING(str)->len] = '\0'; /* sentinel */
-    OBJ_INFECT(str, str2);
-
-    return str;
+    return str_buf_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
 }
 
 VALUE

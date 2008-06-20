@@ -1,3 +1,10 @@
+Fri Jun 20 15:52:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_store, rb_ary_splice): not depend on unspecified
+	  behavior at integer overflow.
+
+	* string.c (str_buf_cat): ditto.
+
 Wed Jun 18 22:25:10 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* array.c (ary_new, rb_ary_initialize, rb_ary_store,
