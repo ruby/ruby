@@ -1,3 +1,8 @@
+Fri Jun 20 11:57:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_sub_bang): should preserve replacement points
+	  since they may be altered in the yielded block.
+
 Fri Jun 20 11:07:56 2008  Tanaka Akira  <akr@fsij.org>
 
         * string.c (rb_memhash): randomize hash to avoid algorithmic

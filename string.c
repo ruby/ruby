@@ -3121,6 +3121,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	int cr = ENC_CODERANGE(str);
 	VALUE match = rb_backref_get();
 	struct re_registers *regs = RMATCH_REGS(match);
+	long beg0 = BEG(0);
+	long end0 = END(0);
 
 	if (iter || !NIL_P(hash)) {
 	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
@@ -3129,7 +3131,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
             }
             else {
-                repl = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+                repl = rb_hash_aref(hash, rb_str_subseq(str, beg0, end0 - beg0));
                 repl = rb_obj_as_string(repl);
             }
 	    str_mod_check(str, p, len);
@@ -3141,9 +3143,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         enc = rb_enc_compatible(str, repl);
         if (!enc) {
             rb_encoding *str_enc = STR_ENC_GET(str);
-            if (coderange_scan(RSTRING_PTR(str), BEG(0), str_enc) != ENC_CODERANGE_7BIT ||
-                coderange_scan(RSTRING_PTR(str)+END(0),
-			       RSTRING_LEN(str)-END(0), str_enc) != ENC_CODERANGE_7BIT) {
+            if (coderange_scan(RSTRING_PTR(str), beg0, str_enc) != ENC_CODERANGE_7BIT ||
+                coderange_scan(RSTRING_PTR(str)+end0,
+			       RSTRING_LEN(str)-end0, str_enc) != ENC_CODERANGE_7BIT) {
                 rb_raise(rb_eArgError, "character encodings differ: %s and %s",
 			 rb_enc_name(str_enc),
 			 rb_enc_name(STR_ENC_GET(repl)));
@@ -3157,16 +3159,16 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    int cr2 = ENC_CODERANGE(repl);
 	    if (cr2 == ENC_CODERANGE_UNKNOWN || cr2 > cr) cr = cr2;
 	}
-	plen = END(0) - BEG(0);
+	plen = end0 - beg0;
 	if (RSTRING_LEN(repl) > plen) {
 	    RESIZE_CAPA(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
 	}
 	if (RSTRING_LEN(repl) != plen) {
-	    memmove(RSTRING_PTR(str) + BEG(0) + RSTRING_LEN(repl),
-		    RSTRING_PTR(str) + BEG(0) + plen,
-		    RSTRING_LEN(str) - BEG(0) - plen);
+	    memmove(RSTRING_PTR(str) + beg0 + RSTRING_LEN(repl),
+		    RSTRING_PTR(str) + beg0 + plen,
+		    RSTRING_LEN(str) - beg0 - plen);
 	}
-	memcpy(RSTRING_PTR(str) + BEG(0),
+	memcpy(RSTRING_PTR(str) + beg0,
 	       RSTRING_PTR(repl), RSTRING_LEN(repl));
 	STR_SET_LEN(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
