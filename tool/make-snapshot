@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nLC_ALL=C LANG=C
+LC_ALL=C LANG=C
 SVNURL=http://svn.ruby-lang.org/repos/ruby
 export LC_ALL LANG
 : ${VPATH=include/ruby} ${YACC=bison} ${BASERUBY=ruby} ${RUBY=ruby} ${MV=mv} ${MINIRUBY=ruby}
@@ -92,15 +92,14 @@ for rev; do
     done
     rm -fr $v
 done
-for file in $files; do
-    ${BASERUBY} -r digest/md5 -r digest/sha2 <<EOF     
-	name = "$file"
-	str = ARGF.read
+${BASERUBY} -r digest -e '
+    ARGV.each do |name|
+	str = open(name, "rb") {|f| f.read}
 	md5 = Digest::MD5.hexdigest str
 	sha = Digest::SHA256.hexdigest str
 	printf "MD5(%s)= %s\nSHA256(%s)= %s\nSIZE(%s)= %s\n\n",
 		name, md5,
 		name, sha,
 		name, str.size
-EOF
-done
+    end
+' $files
