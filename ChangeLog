@@ -1,3 +1,8 @@
+Fri Jun 20 12:39:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_detach_process): store detached process ID in the
+	  thread local storage.  moved from lib/open3.rb.
+
 Fri Jun 20 11:57:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_sub_bang): should preserve replacement points
