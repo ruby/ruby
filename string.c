@@ -1394,16 +1394,16 @@ rb_str_resize(VALUE str, long len)
     return str;
 }
 
-VALUE
-rb_str_buf_cat(VALUE str, const char *ptr, long len)
+static long
+str_buf_cat(VALUE str, const char *ptr, long len)
 {
-    long capa, total;
+    long capa, total, off = -1;
 
-    if (len == 0) return str;
-    if (len < 0) {
-	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
+        off = ptr - RSTRING_PTR(str);
     }
     rb_str_modify(str);
+    if (len == 0) return 0;
     if (STR_ASSOC_P(str)) {
 	FL_UNSET(str, STR_ASSOC);
 	capa = RSTRING(str)->as.heap.aux.capa = RSTRING_LEN(str);
@@ -1414,18 +1414,38 @@ rb_str_buf_cat(VALUE str, const char *ptr, long len)
     else {
 	capa = RSTRING(str)->as.heap.aux.capa;
     }
+    if (RSTRING_LEN(str) >= LONG_MAX - len) {
+	rb_raise(rb_eArgError, "string sizes too big");
+    }
     total = RSTRING_LEN(str)+len;
     if (capa <= total) {
 	while (total > capa) {
+	    if (capa + 1 >= LONG_MAX / 2) {
+		capa = (total + 4095) / 4096;
+		break;
+	    }
 	    capa = (capa + 1) * 2;
 	}
 	RESIZE_CAPA(str, capa);
+    }
+    if (off != -1) {
+        ptr = RSTRING_PTR(str) + off;
     }
     memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
     STR_SET_LEN(str, total);
     RSTRING_PTR(str)[total] = '\0'; /* sentinel */
 
     return str;
+}
+
+VALUE
+rb_str_buf_cat(VALUE str, const char *ptr, long len)
+{
+    if (len == 0) return str;
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+    return str_buf_cat(str, ptr, len);
 }
 
 VALUE
@@ -1463,8 +1483,6 @@ static VALUE
 rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int ptr_encindex, int ptr_cr, int *ptr_cr_ret)
 {
-    long capa, total, off = -1;
-
     int str_encindex = ENCODING_GET(str);
     int res_encindex;
     int str_cr, res_cr;
@@ -1543,41 +1561,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
-    if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
-        off = ptr - RSTRING_PTR(str);
-    }
-    rb_str_modify(str);
-    if (len == 0) {
-        ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
-        return str;
-    }
-    if (STR_ASSOC_P(str)) {
-	FL_UNSET(str, STR_ASSOC);
-	capa = RSTRING(str)->as.heap.aux.capa = RSTRING_LEN(str);
-    }
-    else if (STR_EMBED_P(str)) {
-	capa = RSTRING_EMBED_LEN_MAX;
-    }
-    else {
-	capa = RSTRING(str)->as.heap.aux.capa;
-    }
-    total = RSTRING_LEN(str)+len;
-    if (total < 0 || capa + 1 > LONG_MAX / 2) {
-	rb_raise(rb_eArgError, "string sizes too big");
-    }
-    if (capa <= total) {
-	while (total > capa) {
-	    capa = (capa + 1) * 2;
-	}
-	RESIZE_CAPA(str, capa);
-    }
-    if (off != -1) {
-        ptr = RSTRING_PTR(str) + off;
-    }
-    memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
-    STR_SET_LEN(str, total);
-    RSTRING_PTR(str)[total] = '\0'; /* sentinel */
-
+    str_buf_cat(str, ptr, len);
     ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
     return str;
 }
