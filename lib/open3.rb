@@ -66,7 +66,6 @@ module Open3
 
     pid = spawn(*cmd, STDIN=>pw[0], STDOUT=>pr[1], STDERR=>pe[1])
     wait_thr = Process.detach(pid)
-    wait_thr[:pid] = pid
     pw[0].close
     pr[1].close
     pe[1].close

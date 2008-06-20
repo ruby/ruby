@@ -1,3 +1,42 @@
+Fri Jun 20 15:40:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_store, rb_ary_splice): not depend on unspecified
+	  behavior at integer overflow.
+
+	* string.c (str_buf_cat): ditto.
+
+Fri Jun 20 12:39:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_detach_process): store detached process ID in the
+	  thread local storage.  moved from lib/open3.rb.
+
+Fri Jun 20 11:57:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_sub_bang): should preserve replacement points
+	  since they may be altered in the yielded block.
+
+Fri Jun 20 11:07:56 2008  Tanaka Akira  <akr@fsij.org>
+
+        * string.c (rb_memhash): randomize hash to avoid algorithmic
+          complexity attacks.
+          (rb_str_hash): use rb_memhash.
+
+        * include/ruby/intern.h (rb_reset_random_seed): declared.
+
+        * thread.c (rb_thread_atfork): call rb_reset_random_seed.
+
+        * inits.c (rb_call_inits): call Init_RandomSeed at first.
+
+        * random.c (seed_initialized): defined.
+          (fill_random_seed): extracted from random_seed.
+          (make_seed_value): extracted from random_seed.
+          (rb_f_rand): initialize random seed at first.
+          (initial_seed): defined.
+          (Init_RandomSeed): defined.
+          (Init_RandomSeed2): defined.
+          (rb_reset_random_seed): defined.
+          (Init_Random): call Init_RandomSeed2.
+
 Wed Jun 18 21:52:38 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* array.c (ary_new, rb_ary_initialize, rb_ary_store,

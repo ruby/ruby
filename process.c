@@ -885,6 +885,20 @@ proc_waitall(void)
     return result;
 }
 
+static inline ID
+id_pid(void)
+{
+    ID pid;
+    CONST_ID(pid, "pid");
+    return pid;
+}
+
+static VALUE
+detach_process_pid(VALUE thread)
+{
+    return rb_thread_local_aref(thread, id_pid());
+}
+
 static VALUE
 detach_process_watcher(void *arg)
 {
@@ -900,7 +914,10 @@ detach_process_watcher(void *arg)
 VALUE
 rb_detach_process(rb_pid_t pid)
 {
-    return rb_thread_create(detach_process_watcher, (void*)(VALUE)pid);
+    VALUE watcher = rb_thread_create(detach_process_watcher, (void*)(VALUE)pid);
+    rb_thread_local_aset(watcher, id_pid(), PIDT2NUM(pid));
+    rb_define_singleton_method(watcher, "pid", detach_process_pid, 0);
+    return watcher;
 }
 
 

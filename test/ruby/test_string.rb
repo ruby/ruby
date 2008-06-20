@@ -683,6 +683,17 @@ class TestString < Test::Unit::TestCase
     assert(S("hello").hash != S("helLO").hash)
   end
 
+  def test_hash_random
+    str = 'abc'
+    a = [str.hash.to_s]
+    3.times {
+      EnvUtil.rubyexec("-e", "print #{str.dump}.hash") {|i,o,e|
+        a << o.read
+      }
+    }
+    assert_not_equal([str.hash.to_s], a.uniq)
+  end
+
   def test_hex
     assert_equal(255,  S("0xff").hex)
     assert_equal(-255, S("-0xff").hex)

@@ -1394,16 +1394,16 @@ rb_str_resize(VALUE str, long len)
     return str;
 }
 
-VALUE
-rb_str_buf_cat(VALUE str, const char *ptr, long len)
+static long
+str_buf_cat(VALUE str, const char *ptr, long len)
 {
-    long capa, total;
+    long capa, total, off = -1;
 
-    if (len == 0) return str;
-    if (len < 0) {
-	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
+        off = ptr - RSTRING_PTR(str);
     }
     rb_str_modify(str);
+    if (len == 0) return 0;
     if (STR_ASSOC_P(str)) {
 	FL_UNSET(str, STR_ASSOC);
 	capa = RSTRING(str)->as.heap.aux.capa = RSTRING_LEN(str);
@@ -1414,18 +1414,38 @@ rb_str_buf_cat(VALUE str, const char *ptr, long len)
     else {
 	capa = RSTRING(str)->as.heap.aux.capa;
     }
+    if (RSTRING_LEN(str) >= LONG_MAX - len) {
+	rb_raise(rb_eArgError, "string sizes too big");
+    }
     total = RSTRING_LEN(str)+len;
     if (capa <= total) {
 	while (total > capa) {
+	    if (capa + 1 >= LONG_MAX / 2) {
+		capa = (total + 4095) / 4096;
+		break;
+	    }
 	    capa = (capa + 1) * 2;
 	}
 	RESIZE_CAPA(str, capa);
+    }
+    if (off != -1) {
+        ptr = RSTRING_PTR(str) + off;
     }
     memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
     STR_SET_LEN(str, total);
     RSTRING_PTR(str)[total] = '\0'; /* sentinel */
 
     return str;
+}
+
+VALUE
+rb_str_buf_cat(VALUE str, const char *ptr, long len)
+{
+    if (len == 0) return str;
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+    return str_buf_cat(str, ptr, len);
 }
 
 VALUE
@@ -1463,8 +1483,6 @@ static VALUE
 rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     int ptr_encindex, int ptr_cr, int *ptr_cr_ret)
 {
-    long capa, total, off = -1;
-
     int str_encindex = ENCODING_GET(str);
     int res_encindex;
     int str_cr, res_cr;
@@ -1543,41 +1561,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative string size (or size too big)");
     }
-    if (ptr >= RSTRING_PTR(str) && ptr <= RSTRING_END(str)) {
-        off = ptr - RSTRING_PTR(str);
-    }
-    rb_str_modify(str);
-    if (len == 0) {
-        ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
-        return str;
-    }
-    if (STR_ASSOC_P(str)) {
-	FL_UNSET(str, STR_ASSOC);
-	capa = RSTRING(str)->as.heap.aux.capa = RSTRING_LEN(str);
-    }
-    else if (STR_EMBED_P(str)) {
-	capa = RSTRING_EMBED_LEN_MAX;
-    }
-    else {
-	capa = RSTRING(str)->as.heap.aux.capa;
-    }
-    total = RSTRING_LEN(str)+len;
-    if (total < 0 || capa + 1 > LONG_MAX / 2) {
-	rb_raise(rb_eArgError, "string sizes too big");
-    }
-    if (capa <= total) {
-	while (total > capa) {
-	    capa = (capa + 1) * 2;
-	}
-	RESIZE_CAPA(str, capa);
-    }
-    if (off != -1) {
-        ptr = RSTRING_PTR(str) + off;
-    }
-    memcpy(RSTRING_PTR(str) + RSTRING_LEN(str), ptr, len);
-    STR_SET_LEN(str, total);
-    RSTRING_PTR(str)[total] = '\0'; /* sentinel */
-
+    str_buf_cat(str, ptr, len);
     ENCODING_CODERANGE_SET(str, res_encindex, res_cr);
     return str;
 }
@@ -1820,13 +1804,21 @@ hash(const unsigned char * data, int len, unsigned int h)
 int
 rb_memhash(const void *ptr, long len)
 {
-    return hash(ptr, len, 0);
+    static int hashseed_init = 0;
+    static unsigned int hashseed;
+
+    if (!hashseed_init) {
+        hashseed = rb_genrand_int32();
+        hashseed_init = 1;
+    }
+
+    return hash(ptr, len, hashseed);
 }
 
 int
 rb_str_hash(VALUE str)
 {
-    return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str), 0);
+    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str));
 }
 
 int
@@ -3113,6 +3105,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	int cr = ENC_CODERANGE(str);
 	VALUE match = rb_backref_get();
 	struct re_registers *regs = RMATCH_REGS(match);
+	long beg0 = BEG(0);
+	long end0 = END(0);
 
 	if (iter || !NIL_P(hash)) {
 	    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
@@ -3121,7 +3115,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
                 repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
             }
             else {
-                repl = rb_hash_aref(hash, rb_str_subseq(str, BEG(0), END(0) - BEG(0)));
+                repl = rb_hash_aref(hash, rb_str_subseq(str, beg0, end0 - beg0));
                 repl = rb_obj_as_string(repl);
             }
 	    str_mod_check(str, p, len);
@@ -3133,9 +3127,9 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         enc = rb_enc_compatible(str, repl);
         if (!enc) {
             rb_encoding *str_enc = STR_ENC_GET(str);
-            if (coderange_scan(RSTRING_PTR(str), BEG(0), str_enc) != ENC_CODERANGE_7BIT ||
-                coderange_scan(RSTRING_PTR(str)+END(0),
-			       RSTRING_LEN(str)-END(0), str_enc) != ENC_CODERANGE_7BIT) {
+            if (coderange_scan(RSTRING_PTR(str), beg0, str_enc) != ENC_CODERANGE_7BIT ||
+                coderange_scan(RSTRING_PTR(str)+end0,
+			       RSTRING_LEN(str)-end0, str_enc) != ENC_CODERANGE_7BIT) {
                 rb_raise(rb_eArgError, "character encodings differ: %s and %s",
 			 rb_enc_name(str_enc),
 			 rb_enc_name(STR_ENC_GET(repl)));
@@ -3149,16 +3143,16 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    int cr2 = ENC_CODERANGE(repl);
 	    if (cr2 == ENC_CODERANGE_UNKNOWN || cr2 > cr) cr = cr2;
 	}
-	plen = END(0) - BEG(0);
+	plen = end0 - beg0;
 	if (RSTRING_LEN(repl) > plen) {
 	    RESIZE_CAPA(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
 	}
 	if (RSTRING_LEN(repl) != plen) {
-	    memmove(RSTRING_PTR(str) + BEG(0) + RSTRING_LEN(repl),
-		    RSTRING_PTR(str) + BEG(0) + plen,
-		    RSTRING_LEN(str) - BEG(0) - plen);
+	    memmove(RSTRING_PTR(str) + beg0 + RSTRING_LEN(repl),
+		    RSTRING_PTR(str) + beg0 + plen,
+		    RSTRING_LEN(str) - beg0 - plen);
 	}
-	memcpy(RSTRING_PTR(str) + BEG(0),
+	memcpy(RSTRING_PTR(str) + beg0,
 	       RSTRING_PTR(repl), RSTRING_LEN(repl));
 	STR_SET_LEN(str, RSTRING_LEN(str) + RSTRING_LEN(repl) - plen);
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
