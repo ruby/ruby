@@ -169,7 +169,7 @@ each_cons_i(VALUE val, VALUE *memo)
  *    each_cons(n)
  *
  *  Iterates the given block for each array of consecutive <n>
- *  elements.  If no block is given, returns an enumerator.a
+ *  elements.  If no block is given, returns an enumerator.
  *
  *  e.g.:
  *      (1..10).each_cons(3) {|a| p a}
