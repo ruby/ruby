@@ -52,7 +52,7 @@ module Jacobian
       s = f.zero
       deriv = []
       if(nRetry>100) then
-         raize "Singular Jacobian matrix. No change at x[" + i.to_s + "]"
+         raise "Singular Jacobian matrix. No change at x[" + i.to_s + "]"
       end
       dx = dx*f.two
       x[i] += dx
