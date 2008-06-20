@@ -529,7 +529,7 @@ Init_RandomSeed(void)
     seed_initialized = 1;
 }
 
-static VALUE
+static void
 Init_RandomSeed2(void)
 {
     saved_seed = make_seed_value(initial_seed);
