@@ -34,9 +34,10 @@ for rev; do
     tag=
     case "$rev" in
 	trunk | branches/* | tags/*)
-	    url=$SVNURL/rev;;
+	    url=$SVNURL/$rev;;
 	stable)
-	    url=$SVNURL/brances/$(svn ls $SVNURL/branches | grep '^ruby_[0-9]_[0-9]/' | tail -1);;
+	    url=$SVNURL/branches
+	    url=/$(svn ls $url | grep '^ruby_[0-9]_[0-9]/' | tail -1);;
 	*.*.*-p* | *.*.*-*)
 	    tag=${rev##*-}; url=${rev/-p/_}; url=${url/-/_}; url=$SVNURL/tags/v${url//./_};;
 	*.*)
