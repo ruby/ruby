@@ -1,3 +1,22 @@
+Fri Jun 20 16:34:14 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (Init_process): Process::Status#to_int removed.
+	  (PST2INT): defined.
+	  (pst_to_s): use PST2INT.
+	  (pst_inspect): ditto.
+	  (pst_equal): ditto.
+	  (pst_bitand): ditto.
+	  (pst_rshift): ditto.
+	  (pst_wifstopped): ditto.
+	  (pst_wstopsig): ditto.
+	  (pst_wifsignaled): ditto.
+	  (pst_wtermsig): ditto.
+	  (pst_wifexited): ditto.
+	  (pst_wexitstatus): ditto.
+	  (pst_success_p): ditto.
+	  (pst_wcoredump): ditto.
+	  (rb_f_system): ditto.
+
 Fri Jun 20 15:40:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_store, rb_ary_splice): not depend on unspecified

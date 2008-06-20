@@ -260,6 +260,7 @@ pst_to_i(VALUE st)
     return rb_iv_get(st, "status");
 }
 
+#define PST2INT(st) NUM2INT(pst_to_i(st))
 
 /*
  *  call-seq:
@@ -333,7 +334,7 @@ pst_to_s(VALUE st)
     VALUE str;
 
     pid = NUM2LONG(pst_pid(st));
-    status = NUM2INT(pst_to_i(st));
+    status = PST2INT(st);
 
     str = rb_str_buf_new(0);
     pst_message(str, pid, status);
@@ -356,7 +357,7 @@ pst_inspect(VALUE st)
     VALUE str;
 
     pid = NUM2LONG(pst_pid(st));
-    status = NUM2INT(pst_to_i(st));
+    status = PST2INT(st);
 
     str = rb_sprintf("#<%s: ", rb_class2name(CLASS_OF(st)));
     pst_message(str, pid, status);
@@ -396,7 +397,7 @@ pst_equal(VALUE st1, VALUE st2)
 static VALUE
 pst_bitand(VALUE st1, VALUE st2)
 {
-    int status = NUM2INT(st1) & NUM2INT(st2);
+    int status = PST2INT(st1) & NUM2INT(st2);
 
     return INT2NUM(status);
 }
@@ -417,7 +418,7 @@ pst_bitand(VALUE st1, VALUE st2)
 static VALUE
 pst_rshift(VALUE st1, VALUE st2)
 {
-    int status = NUM2INT(st1) >> NUM2INT(st2);
+    int status = PST2INT(st1) >> NUM2INT(st2);
 
     return INT2NUM(status);
 }
@@ -435,7 +436,7 @@ pst_rshift(VALUE st1, VALUE st2)
 static VALUE
 pst_wifstopped(VALUE st)
 {
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (WIFSTOPPED(status))
 	return Qtrue;
@@ -455,7 +456,7 @@ pst_wifstopped(VALUE st)
 static VALUE
 pst_wstopsig(VALUE st)
 {
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (WIFSTOPPED(status))
 	return INT2NUM(WSTOPSIG(status));
@@ -474,7 +475,7 @@ pst_wstopsig(VALUE st)
 static VALUE
 pst_wifsignaled(VALUE st)
 {
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (WIFSIGNALED(status))
 	return Qtrue;
@@ -495,7 +496,7 @@ pst_wifsignaled(VALUE st)
 static VALUE
 pst_wtermsig(VALUE st)
 {
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (WIFSIGNALED(status))
 	return INT2NUM(WTERMSIG(status));
@@ -515,7 +516,7 @@ pst_wtermsig(VALUE st)
 static VALUE
 pst_wifexited(VALUE st)
 {
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (WIFEXITED(status))
 	return Qtrue;
@@ -546,7 +547,7 @@ pst_wifexited(VALUE st)
 static VALUE
 pst_wexitstatus(VALUE st)
 {
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (WIFEXITED(status))
 	return INT2NUM(WEXITSTATUS(status));
@@ -565,7 +566,7 @@ pst_wexitstatus(VALUE st)
 static VALUE
 pst_success_p(VALUE st)
 {
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (!WIFEXITED(status))
 	return Qnil;
@@ -585,7 +586,7 @@ static VALUE
 pst_wcoredump(VALUE st)
 {
 #ifdef WCOREDUMP
-    int status = NUM2INT(st);
+    int status = PST2INT(st);
 
     if (WCOREDUMP(status))
 	return Qtrue;
@@ -2766,7 +2767,7 @@ rb_f_system(int argc, VALUE *argv)
     if (status < 0) {
 	return Qnil;
     }
-    status = NUM2INT(rb_last_status_get());
+    status = PST2INT(rb_last_status_get());
     if (status == EXIT_SUCCESS) return Qtrue;
     return Qfalse;
 }
@@ -5118,7 +5119,6 @@ Init_process(void)
     rb_define_method(rb_cProcessStatus, "&", pst_bitand, 1);
     rb_define_method(rb_cProcessStatus, ">>", pst_rshift, 1);
     rb_define_method(rb_cProcessStatus, "to_i", pst_to_i, 0);
-    rb_define_method(rb_cProcessStatus, "to_int", pst_to_i, 0);
     rb_define_method(rb_cProcessStatus, "to_s", pst_to_s, 0);
     rb_define_method(rb_cProcessStatus, "inspect", pst_inspect, 0);
 
