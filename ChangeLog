@@ -1,3 +1,10 @@
+Fri Jun 20 15:40:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_store, rb_ary_splice): not depend on unspecified
+	  behavior at integer overflow.
+
+	* string.c (str_buf_cat): ditto.
+
 Fri Jun 20 12:39:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_detach_process): store detached process ID in the
