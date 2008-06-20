@@ -775,7 +775,9 @@ VALUE
 rb_str_buf_append(str, str2)
     VALUE str, str2;
 {
-    return str_buf_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    str_buf_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    OBJ_INFECT(str, str2);
+    return str;
 }
 
 VALUE
