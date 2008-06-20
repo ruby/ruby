@@ -1,3 +1,7 @@
+Fri Jun 20 18:24:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_buf_append): should infect.
+
 Fri Jun 20 15:52:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_store, rb_ary_splice): not depend on unspecified
