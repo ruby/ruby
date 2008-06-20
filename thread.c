@@ -2124,6 +2124,7 @@ rb_thread_atfork(void)
     st_clear(vm->living_threads);
     st_insert(vm->living_threads, thval, (st_data_t) th->thread_id);
     vm->sleeper = 0;
+    rb_reset_random_seed();
 }
 
 static int

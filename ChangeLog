@@ -1,3 +1,25 @@
+Fri Jun 20 11:07:56 2008  Tanaka Akira  <akr@fsij.org>
+
+        * string.c (rb_memhash): randomize hash to avoid algorithmic
+          complexity attacks.
+          (rb_str_hash): use rb_memhash.
+
+        * include/ruby/intern.h (rb_reset_random_seed): declared.
+
+        * thread.c (rb_thread_atfork): call rb_reset_random_seed.
+
+        * inits.c (rb_call_inits): call Init_RandomSeed at first.
+
+        * random.c (seed_initialized): defined.
+          (fill_random_seed): extracted from random_seed.
+          (make_seed_value): extracted from random_seed.
+          (rb_f_rand): initialize random seed at first.
+          (initial_seed): defined.
+          (Init_RandomSeed): defined.
+          (Init_RandomSeed2): defined.
+          (rb_reset_random_seed): defined.
+          (Init_Random): call Init_RandomSeed2.
+
 Wed Jun 18 21:52:38 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* array.c (ary_new, rb_ary_initialize, rb_ary_store,

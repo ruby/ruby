@@ -475,6 +475,7 @@ VALUE rb_range_beg_len(VALUE, long*, long*, long, int);
 /* random.c */
 unsigned long rb_genrand_int32(void);
 double rb_genrand_real(void);
+void rb_reset_random_seed(void);
 /* re.c */
 #define rb_memcmp memcmp
 int rb_memcicmp(const void*,const void*,long);

@@ -1820,13 +1820,21 @@ hash(const unsigned char * data, int len, unsigned int h)
 int
 rb_memhash(const void *ptr, long len)
 {
-    return hash(ptr, len, 0);
+    static int hashseed_init = 0;
+    static unsigned int hashseed;
+
+    if (!hashseed_init) {
+        hashseed = rb_genrand_int32();
+        hashseed_init = 1;
+    }
+
+    return hash(ptr, len, hashseed);
 }
 
 int
 rb_str_hash(VALUE str)
 {
-    return hash((const void *)RSTRING_PTR(str), RSTRING_LEN(str), 0);
+    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str));
 }
 
 int
