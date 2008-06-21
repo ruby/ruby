@@ -1,3 +1,7 @@
+Sun Jun 22 07:16:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_buf_cat): check for self concatenation.
+
 Sat Jun 21 15:57:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc#collect_first_comment): skip
