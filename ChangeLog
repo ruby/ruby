@@ -1,3 +1,10 @@
+Sat Jun 21 16:29:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (call_args2, open_args): removed.
+
+	* parse.y (parser_yylex): unified warnings at space between method
+	  name and argument parenthese.  [ruby-dev:33943]
+
 Sat Jun 21 16:21:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round): get rid of overflow.
