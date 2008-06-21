@@ -90,25 +90,25 @@ Fri Jun 20 11:57:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jun 20 11:07:56 2008  Tanaka Akira  <akr@fsij.org>
 
-        * string.c (rb_memhash): randomize hash to avoid algorithmic
-          complexity attacks.
-          (rb_str_hash): use rb_memhash.
+	* string.c (rb_memhash): randomize hash to avoid algorithmic
+	  complexity attacks.
+	  (rb_str_hash): use rb_memhash.
 
-        * include/ruby/intern.h (rb_reset_random_seed): declared.
+	* include/ruby/intern.h (rb_reset_random_seed): declared.
 
-        * thread.c (rb_thread_atfork): call rb_reset_random_seed.
+	* thread.c (rb_thread_atfork): call rb_reset_random_seed.
 
-        * inits.c (rb_call_inits): call Init_RandomSeed at first.
+	* inits.c (rb_call_inits): call Init_RandomSeed at first.
 
-        * random.c (seed_initialized): defined.
-          (fill_random_seed): extracted from random_seed.
-          (make_seed_value): extracted from random_seed.
-          (rb_f_rand): initialize random seed at first.
-          (initial_seed): defined.
-          (Init_RandomSeed): defined.
-          (Init_RandomSeed2): defined.
-          (rb_reset_random_seed): defined.
-          (Init_Random): call Init_RandomSeed2.
+	* random.c (seed_initialized): defined.
+	  (fill_random_seed): extracted from random_seed.
+	  (make_seed_value): extracted from random_seed.
+	  (rb_f_rand): initialize random seed at first.
+	  (initial_seed): defined.
+	  (Init_RandomSeed): defined.
+	  (Init_RandomSeed2): defined.
+	  (rb_reset_random_seed): defined.
+	  (Init_Random): call Init_RandomSeed2.
 
 Wed Jun 18 21:52:38 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
@@ -8741,7 +8741,7 @@ Fri Dec 28 18:45:29 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 Fri Dec 28 01:55:04 2007  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* transcode.c (transcode_dispatch): reverted some of the changes
-          in r14746.
+	  in r14746.
 
 	* transcode.c, enc/trans/single_byte.c: Added conversions to/from
 	  US-ASCII and ASCII-8BIT (using data tables).
