@@ -1,6 +1,8 @@
-Sat Jun 21 08:39:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 21 15:31:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* tool/make-snapshot: fixed digets.
+	* tool/make-snapshot: ported to ruby.
+
+	* tool/make-snapshot: fixed digests.
 
 Sat Jun 21 04:36:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
