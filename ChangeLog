@@ -1,3 +1,7 @@
+Sat Jun 21 16:21:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): get rid of overflow.
+
 Sat Jun 21 15:57:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc#collect_first_comment): skip

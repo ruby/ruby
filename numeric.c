@@ -1299,11 +1299,16 @@ flo_round(int argc, VALUE *argv, VALUE num)
     while  (--i >= 0)
 	f = f*10.0;
 
-    if (ndigits < 0) number /= f;
-    else number *= f;
-    number = round(number);
-    if (ndigits < 0) number *= f;
-    else number /= f;
+    if (isinf(f)) {
+	if (ndigits < 0) number = 0;
+    }
+    else {
+	if (ndigits < 0) number /= f;
+	else number *= f;
+	number = round(number);
+	if (ndigits < 0) number *= f;
+	else number /= f;
+    }
 
     if (ndigits > 0) return DOUBLE2NUM(number);
 
