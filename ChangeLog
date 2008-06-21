@@ -1,3 +1,8 @@
+Sun Jun 22 00:01:36 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_io_binmode_p, argf_binmode_p, Init_IO): new method
+	  IO#binmode? and ARGF.binmode?  [ruby-dev:35148]
+
 Sat Jun 21 17:33:50 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_spawn): no longer support P_WAIT.

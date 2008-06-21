@@ -3167,6 +3167,20 @@ rb_io_binmode_m(VALUE io)
     return io;
 }
 
+/*
+ *  call-seq:
+ *     ios.binmode?    => true or false
+ *
+ *  Returns <code>true</code> if <em>ios</em> is binmode.
+ */
+static VALUE
+rb_io_binmode_p(VALUE io)
+{
+    rb_io_t *fptr;
+    GetOpenFile(io, fptr);
+    return fptr->mode & FMODE_BINMODE ? Qtrue : Qfalse;
+}
+
 static const char*
 rb_io_flags_mode(int flags)
 {
@@ -7378,6 +7392,12 @@ argf_binmode_m(VALUE argf)
 }
 
 static VALUE
+argf_binmode_p(VALUE argf)
+{
+    return argf_binmode ? Qtrue : Qfalse;
+}
+
+static VALUE
 argf_skip(VALUE argf)
 {
     if (next_p != -1) {
@@ -7703,6 +7723,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "isatty", rb_io_isatty, 0);
     rb_define_method(rb_cIO, "tty?", rb_io_isatty, 0);
     rb_define_method(rb_cIO, "binmode",  rb_io_binmode_m, 0);
+    rb_define_method(rb_cIO, "binmode?", rb_io_binmode_p, 0);
     rb_define_method(rb_cIO, "sysseek", rb_io_sysseek, -1);
 
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);
@@ -7769,6 +7790,7 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "eof", argf_eof, 0);
     rb_define_method(rb_cARGF, "eof?", argf_eof, 0);
     rb_define_method(rb_cARGF, "binmode", argf_binmode_m, 0);
+    rb_define_method(rb_cARGF, "binmode?", argf_binmode_p, 0);
 
     rb_define_method(rb_cARGF, "filename", argf_filename, 0);
     rb_define_method(rb_cARGF, "path", argf_filename, 0);
