@@ -1,3 +1,9 @@
+Sun Jun 22 00:09:20 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/delegate.rb (DelegateClass, Delegator#respond_to?):
+	  respond_to? should now take optional second argument; submitted
+	  by Jeremy Kemper <jeremy at bitsweat.net> in [ruby-core:17045].
+
 Fri Jun 20 18:24:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_buf_append): should infect.
