@@ -1,3 +1,7 @@
+Sat Jun 21 17:33:50 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_spawn): no longer support P_WAIT.
+
 Sat Jun 21 16:46:09 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (native_sleep): must block reentrance when accessing

@@ -819,7 +819,6 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     DWORD exitcode;
 
     switch (mode) {
-      case P_WAIT:
       case P_NOWAIT:
       case P_OVERLAY:
 	break;
@@ -834,9 +833,6 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
     }
 
     switch (mode) {
-      case P_WAIT:
-	rb_syswait(child->pid);
-	return NUM2INT(rb_last_status_get());
       case P_NOWAIT:
 	return child->pid;
       case P_OVERLAY:
