@@ -1,3 +1,7 @@
+Sat Jun 21 15:54:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if fork works with pthread.
+
 Sat Jun 21 15:31:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot: ported to ruby.
