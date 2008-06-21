@@ -1,3 +1,8 @@
+Sat Jun 21 15:57:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc#collect_first_comment): skip
+	  magic comment.
+
 Fri Jun 20 18:16:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_buf_append): should infect.
