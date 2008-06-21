@@ -200,14 +200,13 @@ rb_w32_map_errno(DWORD winerr)
 
 static const char *NTLoginName;
 
+static OSVERSIONINFO osver;
 #ifdef WIN95
 static DWORD Win32System = (DWORD)-1;
 
 DWORD
 rb_w32_osid(void)
 {
-    static OSVERSIONINFO osver;
-
     if (osver.dwPlatformId != Win32System) {
 	memset(&osver, 0, sizeof(OSVERSIONINFO));
 	osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -217,6 +216,19 @@ rb_w32_osid(void)
     return (Win32System);
 }
 #endif
+static DWORD Win32Version = (DWORD)-1;
+
+static DWORD
+rb_w32_osver(void)
+{
+    if (osver.dwMajorVersion != Win32Version) {
+	memset(&osver, 0, sizeof(OSVERSIONINFO));
+	osver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	GetVersionEx(&osver);
+	Win32Version = osver.dwMajorVersion;
+    }
+    return (Win32Version);
+}
 
 #define IsWinNT() rb_w32_iswinnt()
 #define IsWin95() rb_w32_iswin95()
@@ -882,7 +894,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     if (!psa) {
 	sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
 	sa.lpSecurityDescriptor = NULL;
-	sa.bInheritHandle       = FALSE;
+	sa.bInheritHandle       = IsWinNT() && rb_w32_osver() > 5 ? FALSE : TRUE;
 	psa = &sa;
     }
 
