@@ -48,5 +48,3 @@ ruby_show_copyright(void)
     PRINT(copyright);
     exit(0);
 }
-
-
