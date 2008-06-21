@@ -1536,10 +1536,15 @@ class RDoc::RubyParser
 
     tk = get_tk
     while tk.kind_of?(TkCOMMENT)
-      if first_line && tk.text[0,2] == "#!"
+      if first_line && /\A#!/ =~ tk.text
+        skip_tkspace
+        tk = get_tk
+      elsif first_line && /\A#\s*-\*-/ =~ tk.text
+        first_line = false
         skip_tkspace
         tk = get_tk
       else
+        first_line = false
         res << tk.text << "\n"
         tk = get_tk
         if tk.kind_of? TkNL
@@ -1547,7 +1552,6 @@ class RDoc::RubyParser
           tk = get_tk
         end
       end
-      first_line = false
     end
     unget_tk(tk)
     res
