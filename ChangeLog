@@ -1,3 +1,9 @@
+Sat Jun 21 16:46:09 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (native_sleep): must block reentrance when accessing
+	  th->unblock.
+	  fixed [ruby-core:17341], reported by Bill Kelly <billk at cts.com>
+
 Sat Jun 21 16:29:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (call_args2, open_args): removed.

@@ -229,8 +229,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
     {
 	DWORD ret;
 
+	native_mutex_lock(&th->interrupt_lock);
 	th->unblock.func = ubf_handle;
 	th->unblock.arg = th;
+	native_mutex_unlock(&th->interrupt_lock);
 
 	if (RUBY_VM_INTERRUPTED(th)) {
 	    /* interrupted.  return immediate */
@@ -241,8 +243,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 	    thread_debug("native_sleep done (%lu)\n", ret);
 	}
 
+	native_mutex_lock(&th->interrupt_lock);
 	th->unblock.func = 0;
 	th->unblock.arg = 0;
+	native_mutex_unlock(&th->interrupt_lock);
     }
     GVL_UNLOCK_END();
     th->status = prev_status;
