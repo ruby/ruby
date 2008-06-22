@@ -1437,6 +1437,12 @@ rb_class_new_instance(int argc, VALUE *argv, VALUE klass)
  *     File.superclass          #=> IO
  *     IO.superclass            #=> Object
  *     Object.superclass        #=> BasicObject
+ *     class Foo; end
+ *     class Bar < Foo; end
+ *     Bar.superclass           #=> Foo
+ *
+ *  returns nil when the given class hasn't a parent class:
+ *
  *     BasicObject.superclass   #=> nil
  *     
  */
