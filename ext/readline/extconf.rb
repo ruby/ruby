@@ -15,6 +15,10 @@ def have_readline_var(var)
   return have_var(var, $readline_headers)
 end
 
+def have_readline_func(func)
+  return have_func(func, $readline_headers)
+end
+
 dir_config('curses')
 dir_config('ncurses')
 dir_config('termcap')
@@ -42,9 +46,9 @@ else
   end
 end
 
-have_func("rl_filename_completion_function")
-have_func("rl_username_completion_function")
-have_func("rl_completion_matches")
+have_readline_func("rl_filename_completion_function")
+have_readline_func("rl_username_completion_function")
+have_readline_func("rl_completion_matches")
 have_readline_var("rl_deprep_term_function")
 have_readline_var("rl_completion_append_character")
 have_readline_var("rl_basic_word_break_characters")
@@ -56,10 +60,10 @@ have_readline_var("rl_attempted_completion_over")
 have_readline_var("rl_library_version")
 # workaround for native windows.
 /mswin|bccwin|mingw/ !~ RUBY_PLATFORM && have_readline_var("rl_event_hook")
-have_func("rl_cleanup_after_signal")
-have_func("rl_clear_signals")
-have_func("rl_vi_editing_mode")
-have_func("rl_emacs_editing_mode")
-have_func("replace_history_entry")
-have_func("remove_history")
+have_readline_func("rl_cleanup_after_signal")
+have_readline_func("rl_clear_signals")
+have_readline_func("rl_vi_editing_mode")
+have_readline_func("rl_emacs_editing_mode")
+have_readline_func("replace_history_entry")
+have_readline_func("remove_history")
 create_makefile("readline")
