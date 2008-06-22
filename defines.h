@@ -51,6 +51,11 @@ void *xcalloc _((long,long));
 void *xrealloc _((void*,long));
 void xfree _((void*));
 
+#define STRINGIZE(expr) STRINGIZE0(expr)
+#ifndef STRINGIZE0
+#define STRINGIZE0(expr) #expr
+#endif
+
 #if SIZEOF_LONG_LONG > 0
 # define LONG_LONG long long
 #elif SIZEOF___INT64 > 0

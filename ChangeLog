@@ -1,3 +1,13 @@
+Sun Jun 22 10:07:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (STRINGIZE, NO_STRING_LITERAL_CONCATENATION): added
+	  check.  [ruby-dev:34883]
+
+	* version.c (ruby_description, ruby_copyright): made constants if
+	  possible.
+
+	* defines.h (STRINGIZE): default definition for C89.
+
 Sun Jun 22 09:51:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_class_superclass): rdoc improvement, a patch from
