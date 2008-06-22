@@ -79,4 +79,3 @@ ruby_show_copyright()
     PRINT(copyright);
     exit(0);
 }
-
