@@ -458,6 +458,10 @@ function to free the pointer allocation.  If this is -1, the pointer
 will be just freed.  The functions mark and free will be called from
 garbage collector.
 
+These mark / free functions are invoked during GC execution.  No
+object allocations are allowed during it, so do not allocate ruby
+objects inside them.
+
 You can allocate and wrap the structure in one step.
 
   Data_Make_Struct(klass, type, mark, free, sval)
