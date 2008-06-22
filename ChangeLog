@@ -1,3 +1,8 @@
+Sun Jun 22 14:16:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/readline/extconf.rb (have_readline_func): readline on Mac OS X
+	  needs headers to detect some functions.
+
 Sun Jun 22 10:07:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (STRINGIZE, NO_STRING_LITERAL_CONCATENATION): added
