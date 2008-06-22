@@ -1,3 +1,8 @@
+Sun Jun 22 09:51:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_class_superclass): rdoc improvement, a patch from
+	  Gaston Ramos <ramos.gaston AT gmail.com> in [ruby-core:17371].
+
 Sun Jun 22 07:16:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_buf_cat): check for self concatenation.

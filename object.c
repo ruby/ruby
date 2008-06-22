@@ -1652,9 +1652,16 @@ rb_class_new_instance(argc, argv, klass)
  *  
  *  Returns the superclass of <i>class</i>, or <code>nil</code>.
  *     
- *     File.superclass     #=> IO
- *     IO.superclass       #=> Object
- *     Object.superclass   #=> nil
+ *     File.superclass         #=> IO
+ *     IO.superclass           #=> Object
+ *
+ *     class Foo; end
+ *     class Bar < Foo; end
+ *     Bar.superclass          #=> Foo
+ *
+ *  returns nil when the given class hasn't a parent class:
+ *
+ *     Object.superclass       #=> nil
  *     
  */
 
