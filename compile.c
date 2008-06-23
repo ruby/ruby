@@ -5019,7 +5019,8 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 	iseq->arg_post_len = FIX2INT(arg_post_len);
 	iseq->arg_post_start = FIX2INT(arg_post_start);
 	iseq->arg_block = FIX2INT(arg_block);
-	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, RARRAY_LEN(arg_opt_labels));
+	iseq->arg_opts = RARRAY_LEN(arg_opt_labels);
+	iseq->arg_opt_table = (VALUE *)ALLOC_N(VALUE, iseq->arg_opts);
 
 	if (iseq->arg_block != -1) {
 	    iseq->arg_size = iseq->arg_block + 1;
@@ -5031,7 +5032,7 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 	    iseq->arg_size = iseq->arg_rest + 1;
 	}
 	else {
-	    iseq->arg_size = iseq->argc + iseq->arg_opts;
+	    iseq->arg_size = iseq->argc + (iseq->arg_opts ? iseq->arg_opts - 1 : 0);
 	}
 
 	for (i=0; i<RARRAY_LEN(arg_opt_labels); i++) {
