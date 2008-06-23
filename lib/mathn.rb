@@ -183,50 +183,6 @@ class Rational
       x ** y
     end
   end
-
-  def power2(other)
-    if other.kind_of?(Rational)
-      if self < 0
-	return Complex.__send__(:new!, self, 0) ** other
-      elsif other == 0
-	return Rational(1,1)
-      elsif self == 0
-	return Rational(0,1)
-      elsif self == 1
-	return Rational(1,1)
-      end
-      
-      dem = nil
-      x = self.denominator.to_f.to_i
-      neard = self.denominator.to_f ** (1.0/other.denominator.to_f)
-      loop do
-	if (neard**other.denominator == self.denominator)
-	  dem = neard
-	  break
-	end
-      end
-      nearn = self.numerator.to_f ** (1.0/other.denominator.to_f)
-      Rational(num,den)
-      
-    elsif other.kind_of?(Integer)
-      if other > 0
-	num = numerator ** other
-	den = denominator ** other
-      elsif other < 0
-	num = denominator ** -other
-	den = numerator ** -other
-      elsif other == 0
-	num = 1
-	den = 1
-      end
-      Rational(num, den)
-    elsif other.kind_of?(Float)
-      Float(self) ** other
-    else
-      x , y = other.coerce(self)
-      x ** y
-    end
-  end
 end
 
 module Math

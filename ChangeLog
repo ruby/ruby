@@ -1,3 +1,8 @@
+Mon Jun 23 11:31:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Rational::power2): removed incomplete method.
+	  see [ruby-dev:35195].   [ruby-core:17293]
+
 Sun Jun 22 14:16:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/extconf.rb (have_readline_func): readline on Mac OS X
