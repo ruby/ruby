@@ -1,3 +1,7 @@
+Tue Jun 24 00:10:53 2008  wanabe  <s.wanabe@gmail.com>
+	* compile.c (iseq_build_from_ary): fix expression to obtain 
+	  iseq->local_size and iseq->local_table_size.  [ruby-dev:35205]
+
 Mon Jun 23 11:31:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mathn.rb (Rational::power2): removed incomplete method.

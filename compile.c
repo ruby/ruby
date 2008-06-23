@@ -4983,22 +4983,16 @@ iseq_build_from_ary(rb_iseq_t *iseq, VALUE locals, VALUE args,
 		    VALUE exception, VALUE body)
 {
     int i;
-    int opt = 0;
     ID *tbl;
     struct st_table *labels_table = st_init_numtable();
 
     DECL_ANCHOR(anchor);
 
     INIT_ANCHOR(anchor);
-    if (iseq->type == ISEQ_TYPE_METHOD ||
-	iseq->type == ISEQ_TYPE_TOP ||
-	iseq->type == ISEQ_TYPE_CLASS) {
-	opt = 1;
-    }
 
-    iseq->local_table_size = opt + RARRAY_LEN(locals);
+    iseq->local_table_size = RARRAY_LEN(locals);
     iseq->local_table = tbl = (ID *)ALLOC_N(ID *, iseq->local_table_size);
-    iseq->local_size = opt + iseq->local_table_size;
+    iseq->local_size = iseq->local_table_size + 1;
 
     for (i=0; i<RARRAY_LEN(locals); i++) {
 	VALUE lv = RARRAY_PTR(locals)[i];
