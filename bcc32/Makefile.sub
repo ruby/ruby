@@ -61,6 +61,7 @@ AR = tlib
 
 PURIFY =
 AUTOCONF = autoconf
+IFCHANGE = $(srcdir:/=\)\win32\ifchange.bat
 RM = $(srcdir:/=\)\win32\rm.bat
 
 !if !defined(PROCESSOR_ARCHITECTURE)
@@ -201,6 +202,9 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
+revision.h: revision.h.tmp
+	@$(IFCHANGE) "$(srcdir)/$@" "revision.h.tmp"
+
 $(MKFILES): $(srcdir)/bcc32/Makefile.sub $(srcdir)/bcc32/configure.bat $(srcdir)/bcc32/setup.mak
 	$(COMSPEC) /C $(srcdir:/=\)\bcc32\configure.bat $(configure_args)
 	@echo $(MKFILES) should be updated, re-run $(MAKE).
@@ -216,7 +220,7 @@ config: config.status
 config.status: $(CONFIG_H)
 
 $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
-	@$(srcdir:/=\)\win32\ifchange.bat config.h &&|
+	@$(IFCHANGE) config.h &&|
 \#define HAVE_SYS_TYPES_H 1
 \#define HAVE_SYS_STAT_H 1
 \#define HAVE_STDLIB_H 1

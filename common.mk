@@ -78,6 +78,8 @@ PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil'
 TESTSDIR      = $(srcdir)/test
 TESTWORKDIR   = testwork
 
+VCS           = svn
+
 all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
@@ -464,7 +466,12 @@ variable.$(OBJEXT): {$(VPATH)}variable.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}env.h {$(VPATH)}node.h {$(VPATH)}st.h {$(VPATH)}util.h
 version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
-  {$(VPATH)}version.h
+  {$(VPATH)}version.h {$(VPATH)}revision.h
 
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb
+
+revision.h.tmp: $(REVISION_FORCE)
+	@set LC_MESSAGES=C
+	-@$(SET_LC_MESSAGES) $(VCS) info "$(srcdir)" | \
+	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@"

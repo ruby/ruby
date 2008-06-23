@@ -1,13 +1,23 @@
 @echo off
 :: usage: ifchange target temporary
 
+if "%1" == "" goto :end
+
+set dest=%1
+set src=%2
+set dest=%dest:/=\%
+set src=%src:/=\%
+if not "%dest%" == "" if not "%dest%" == "%%dest:/=\%%" goto :nt
+
+if not exist %2 goto :end
+
 :: check if fc.exe works.
-echo foo > conftest1.tmp
-echo bar > conftest2.tmp
-fc.exe conftest1.tmp conftest2.tmp > nul
+echo foo > conftst1.tmp
+echo bar > conftst2.tmp
+fc.exe conftst1.tmp conftst2.tmp > nul
 if not errorlevel 1 goto :brokenfc
-del conftest1.tmp > nul
-del conftest2.tmp > nul
+del conftst1.tmp > nul
+del conftst2.tmp > nul
 
 :: target does not exist or new file differs from it.
 if not exist %1 goto :update
@@ -27,6 +37,23 @@ echo assuming %1 should be changed.
 
 :update
 echo %1 updated.
-if exist %1 del %1
-copy %2 %1 > nul
+:: if exist %1 del %1
+dir /b %2
+copy %2 %1
+del %2
+goto :end
+
+:nt
+if not exist %src% goto :end
+if exist %dest% (
+    fc.exe %dest% %src% > nul && (
+	echo %dest% unchanged.
+	del %src%
+	goto :end
+    )
+)
+echo %dest% updated.
+copy %src% %dest% > nul
+del %src%
+
 :end

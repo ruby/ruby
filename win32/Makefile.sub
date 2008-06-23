@@ -57,6 +57,7 @@ YACC = byacc
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
+IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 
 !if !defined(PROCESSOR_ARCHITECTURE)
@@ -261,6 +262,9 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
+revision.h: revision.h.tmp
+	@$(IFCHANGE) "$(srcdir)/$@" "revision.h.tmp"
+
 $(MKFILES): $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat $(win_srcdir)/setup.mak
 	$(COMSPEC) /C $(win_srcdir:/=\)\configure.bat $(configure_args)
 	@echo $(MKFILES) should be updated, re-run $(MAKE).
@@ -280,7 +284,7 @@ BANG = !
 
 $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 	@echo Creating config.h
-	@$(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat config.h <<
+	@$(IFCHANGE) config.h <<
 #if _MSC_VER != $(MSC_VER)
 #error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif

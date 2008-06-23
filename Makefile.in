@@ -201,3 +201,10 @@ test-rubyspec:
 	@if [ ! -d $(srcdir)/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
 	$(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec -r$(srcdir)/ext/purelib.rb $(srcdir)/rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)
 
+
+$(srcdir)/revision.h: revision.h.tmp
+	@if [ -f "$@" ] && { [ ! -s $? ] || cmp "$@" $? >/dev/null; }; then \
+	  $(RM) $?; \
+	else \
+	  mv -f $? "$@"; \
+	fi

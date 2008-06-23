@@ -1,3 +1,8 @@
+Mon Jun 23 11:17:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, {win,bcc}32/Makefile.sub (revision.h): auto
+	  update.  [ruby-core:17373]
+
 Sun Jun 22 14:16:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/readline/extconf.rb (have_readline_func): readline on Mac OS X
