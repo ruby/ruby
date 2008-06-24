@@ -4410,7 +4410,6 @@ io_reopen(VALUE io, VALUE nfile)
     GetOpenFile(nfile, orig);
 
     if (fptr == orig) return io;
-#if !defined __CYGWIN__
     if (IS_PREP_STDIO(fptr)) {
         if ((fptr->stdio_file == stdin && !(orig->mode & FMODE_READABLE)) ||
             (fptr->stdio_file == stdout && !(orig->mode & FMODE_WRITABLE)) ||
@@ -4421,7 +4420,6 @@ io_reopen(VALUE io, VALUE nfile)
 		     rb_io_flags_mode(orig->mode));
 	}
     }
-#endif
     if (orig->mode & FMODE_READABLE) {
 	pos = io_tell(orig);
     }
@@ -4444,14 +4442,12 @@ io_reopen(VALUE io, VALUE nfile)
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
-#if !defined __CYGWIN__
 	if (IS_PREP_STDIO(fptr)) {
 	    /* need to keep stdio objects */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
 	}
 	else {
-#endif
             if (fptr->stdio_file)
                 fclose(fptr->stdio_file);
             else
@@ -4461,9 +4457,7 @@ io_reopen(VALUE io, VALUE nfile)
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
             fptr->fd = fd;
-#if !defined __CYGWIN__
 	}
-#endif
 	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
 	    if (io_seek(fptr, pos, SEEK_SET) < 0) {
