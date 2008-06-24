@@ -365,21 +365,22 @@ class ERB
 	end
       end
 
-      ExplicitTrimRegexp = /(^[ \t]*<%-)|(-%>\n?\z)|(<%-)|(-%>)|(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
       def explicit_trim_line(line)
-	line.split(ExplicitTrimRegexp).each do |token|
-	  next if token.empty?
-	  if @stag.nil? && /[ \t]*<%-/ =~ token
-	    yield('<%')
-	  elsif @stag && /-%>\n/ =~ token
-	    yield('%>')
-	    yield(:cr)
-	  elsif @stag && token == '-%>'
-	    yield('%>')
-	  else
-	    yield(token)
-	  end
-	end
+        line.scan(/(.*?)(^[ \t]*<%\-|<%\-|<%%|%%>|<%=|<%#|<%|-%>\n|-%>|%>|\z)/m) do |tokens|
+          tokens.each do |token|
+            next if token.empty?
+            if @stag.nil? && /[ \t]*<%-/ =~ token
+              yield('<%')
+            elsif @stag && token == "-%>\n"
+              yield('%>')
+              yield(:cr)
+            elsif @stag && token == '-%>'
+              yield('%>')
+            else
+              yield(token)
+            end
+          end
+        end
       end
 
       ERB_STAG = %w(<%= <%# <%)

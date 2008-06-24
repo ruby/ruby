@@ -1,3 +1,11 @@
+Tue Jun 24 15:38:52 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (ERB::Compiler::TrimScanner#explicit_trim_line): Fix 
+	  without strscan problems. [ruby_core:17028].
+
+	* test/erb/test_erb.rb (TestERBCoreWOStrScan): Add test class for 
+	  without strscan.
+
 Sun Jun 22 00:09:20 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/delegate.rb (DelegateClass, Delegator#respond_to?):
