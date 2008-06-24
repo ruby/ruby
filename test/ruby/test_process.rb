@@ -454,6 +454,7 @@ class TestProcess < Test::Unit::TestCase
         assert_equal("fooo\n", io.read)
       end
     }
+  rescue NotImplementedError
   end
 
   def test_fd_inheritance
@@ -931,15 +932,16 @@ class TestProcess < Test::Unit::TestCase
 
   def test_getpriority
     assert_kind_of(Integer, Process.getpriority(Process::PRIO_USER, 0))
-  rescue NotImplementedError
+  rescue NameError, NotImplementedError
   end
 
   def test_setpriority
-    assert_nothing_raised do
-      pr = Process.getpriority(Process::PRIO_USER, 0)
-      Process.setpriority(Process::PRIO_USER, 0, pr)
+    if defined? Process::PRIO_USER
+      assert_nothing_raised do
+        pr = Process.getpriority(Process::PRIO_USER, 0)
+        Process.setpriority(Process::PRIO_USER, 0, pr)
+      end
     end
-  rescue NotImplementedError
   end
 
   def test_getuid
