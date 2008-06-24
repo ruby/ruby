@@ -471,6 +471,13 @@ version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb
 
+{$(VPATH)}revision.h: revision.h.tmp
+	@if [ -f $(srcdir)/revision.h ] && { [ ! -s $? ] || cmp $(srcdir)/revision.h $? >/dev/null; }; then \
+	  $(RM) $?; \
+	else \
+	  mv -f $? $(srcdir)/revision.h; \
+	fi
+
 revision.h.tmp: $(REVISION_FORCE)
 	@set LC_MESSAGES=C
 	-@$(SET_LC_MESSAGES) $(VCS) info "$(srcdir)" | \

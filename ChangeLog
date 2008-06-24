@@ -1,3 +1,7 @@
+Wed Jun 25 00:01:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (revision.h): moved from Makefile.in.
+
 Tue Jun 24 21:34:15 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(ole_invoke): fix memory leak.
