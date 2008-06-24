@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.4"
+#define WIN32OLE_VERSION "1.1.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -264,6 +264,7 @@ static UINT ole_encoding2cp(rb_encoding *enc);
 static UINT ole_init_cp();
 static char *ole_wc2mb(LPWSTR pw);
 static VALUE ole_hresult2msg(HRESULT hr);
+static void ole_freeexceptinfo(EXCEPINFO *pExInfo);
 static VALUE ole_excepinfo2msg(EXCEPINFO *pExInfo);
 static void ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...);
 static void ole_initialize();
@@ -963,6 +964,14 @@ ole_hresult2msg(HRESULT hr)
     return msg;
 }
 
+static void
+ole_freeexceptinfo(EXCEPINFO *pExInfo)
+{
+    SysFreeString(pExInfo->bstrDescription);
+    SysFreeString(pExInfo->bstrSource);
+    SysFreeString(pExInfo->bstrHelpFile);
+}
+
 static VALUE
 ole_excepinfo2msg(EXCEPINFO *pExInfo)
 {
@@ -1001,9 +1010,7 @@ ole_excepinfo2msg(EXCEPINFO *pExInfo)
     }
     if(pSource) free(pSource);
     if(pDescription) free(pDescription);
-    SysFreeString(pExInfo->bstrDescription);
-    SysFreeString(pExInfo->bstrSource);
-    SysFreeString(pExInfo->bstrHelpFile);
+    ole_freeexceptinfo(pExInfo);
     return error_msg;
 }
 
@@ -3167,6 +3174,9 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                 param = rb_ary_entry(paramS, i-cNamedArgs);
                 ole_val2variant(param, &op.dp.rgvarg[n]);
             }
+            if (hr == DISP_E_EXCEPTION) {
+                ole_freeexceptinfo(&excepinfo);
+            }
             memset(&excepinfo, 0, sizeof(EXCEPINFO));
             VariantInit(&result);
             hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
@@ -3179,6 +3189,9 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
              * hResult == DISP_E_EXCEPTION. this only happens on
              * functions whose DISPID > 0x8000 */
             if ((hr == DISP_E_EXCEPTION || hr == DISP_E_MEMBERNOTFOUND) && DispID > 0x8000) {
+                if (hr == DISP_E_EXCEPTION) {
+                    ole_freeexceptinfo(&excepinfo);
+                }
                 memset(&excepinfo, 0, sizeof(EXCEPINFO));
                 hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
                         &IID_NULL, lcid, wFlags,
@@ -3199,6 +3212,9 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                     n = op.dp.cArgs - i + cNamedArgs - 1;
                     param = rb_ary_entry(paramS, i-cNamedArgs);
                     ole_val2variant2(param, &op.dp.rgvarg[n]);
+                }
+                if (hr == DISP_E_EXCEPTION) {
+                    ole_freeexceptinfo(&excepinfo);
                 }
                 memset(&excepinfo, 0, sizeof(EXCEPINFO));
                 VariantInit(&result);

@@ -1,3 +1,8 @@
+Tue Jun 24 22:09:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_invoke): fix memory leak.
+	  [ruby-bugs-20792]
+
 Tue Jun 24 17:20:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_fork_with_pthread): check after check for
