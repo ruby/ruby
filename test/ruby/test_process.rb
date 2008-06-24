@@ -684,7 +684,13 @@ class TestProcess < Test::Unit::TestCase
   def test_exec_wordsplit
     with_tmpchdir {|d|
       write_file("script", <<-'End')
-        File.open("result", "w") {|t| t << "hehe pid=#{$$} ppid=#{Process.ppid}" }
+        File.open("result", "w") {|t|
+          if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+            t << "hehe ppid=#{Process.ppid}"
+          else
+            t << "hehe pid=#{$$} ppid=#{Process.ppid}"
+          end
+        }
         exit 6
       End
       write_file("s", <<-"End")
@@ -697,7 +703,12 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(pid, status.pid)
       assert(status.exited?)
       assert_equal(6, status.exitstatus)
-      assert_equal("hehe pid=#{status.pid} ppid=#{$$}", File.read("result"))
+      if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+        expected = "hehe ppid=#{status.pid}"
+      else
+        expected = "hehe pid=#{status.pid} ppid=#{$$}"
+      end
+      assert_equal(expected, File.read("result"))
     }
   end
 
