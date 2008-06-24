@@ -1,3 +1,8 @@
+Tue Jun 24 17:20:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_fork_with_pthread): check after check for
+	  pthread library, and define the macro when checked only.
+
 Tue Jun 24 17:04:39 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/io/wait/extconf.rb: check sys/socket.h for cygwin.
