@@ -2,7 +2,7 @@ require 'mkmf'
 target = "io/wait"
 
 unless macro_defined?("DOSISH", "#include <ruby.h>")
-  fionread = %w[sys/ioctl.h sys/filio.h].find do |h|
+  fionread = %w[sys/ioctl.h sys/filio.h sys/socket.h].find do |h|
     have_macro("FIONREAD", h)
   end
   if fionread
