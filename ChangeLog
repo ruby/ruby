@@ -1,3 +1,10 @@
+Tue Jun 24 11:12:33 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h, win32/win32.c (rb_w32_getppid): now support
+	  getppid() on win32 (but only Win2k or later).
+
+	* process.c (get_ppid): remove win32 special logic.
+
 Tue Jun 24 09:40:47 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (init_sock): socket is binmode on platforms

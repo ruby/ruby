@@ -179,11 +179,7 @@ static VALUE
 get_ppid(void)
 {
     rb_secure(2);
-#ifdef _WIN32
-    return INT2FIX(0);
-#else
     return PIDT2NUM(getppid());
-#endif
 }
 
 

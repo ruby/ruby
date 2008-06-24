@@ -3829,6 +3829,40 @@ rb_w32_getpid(void)
     return pid;
 }
 
+
+rb_pid_t
+rb_w32_getppid(void)
+{
+    static long (WINAPI *pNtQueryInformationProcess)(HANDLE, int, void *, ULONG, ULONG *) = NULL;
+    rb_pid_t ppid = 0;
+
+    if (!IsWin95() && rb_w32_osver() >= 5) {
+	if (!pNtQueryInformationProcess) {
+	    HANDLE hNtDll = GetModuleHandle("ntdll.dll");
+	    if (hNtDll) {
+		pNtQueryInformationProcess = (long (WINAPI *)(HANDLE, int, void *, ULONG, ULONG *))GetProcAddress(hNtDll, "NtQueryInformationProcess");
+		if (pNtQueryInformationProcess) {
+		    struct {
+			long ExitStatus;
+			void* PebBaseAddress;
+			ULONG AffinityMask;
+			ULONG BasePriority;
+			ULONG UniqueProcessId;
+			ULONG ParentProcessId;
+		    } pbi;
+		    ULONG len;
+		    long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
+		    if (!ret) {
+			ppid = pbi.ParentProcessId;
+		    }
+		}
+	    }
+	}
+    }
+
+    return ppid;
+}
+
 int
 rb_w32_fclose(FILE *fp)
 {

@@ -140,6 +140,7 @@ extern DWORD rb_w32_osid(void);
 #define read(f, b, s)		rb_w32_read(f, b, s)
 #define write(f, b, s)		rb_w32_write(f, b, s)
 #define getpid()		rb_w32_getpid()
+#define getppid()		rb_w32_getppid()
 #define sleep(x)		rb_w32_Sleep((x)*1000)
 #define Sleep(msec)		(void)rb_w32_Sleep(msec)
 #define fstat(fd,st)		_fstati64(fd,st)
@@ -262,6 +263,7 @@ extern rb_pid_t rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern rb_pid_t rb_w32_getpid(void);
+extern rb_pid_t rb_w32_getppid(void);
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 extern int rb_w32_isatty(int);
 #endif
