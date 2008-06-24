@@ -664,12 +664,14 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
     rb_block_t block;
+    volatile int parse_in_eval;
 
     if (file == 0) {
 	file = rb_sourcefile();
 	line = rb_sourceline();
     }
 
+    parse_in_eval = th->parse_in_eval;
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_iseq_t *iseq;
@@ -726,6 +728,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	result = vm_eval_body(th);
     }
     POP_TAG();
+    th->parse_in_eval = parse_in_eval;
 
     if (state) {
 	if (state == TAG_RAISE) {
