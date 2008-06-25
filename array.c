@@ -2145,10 +2145,10 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	break;
     }
     rb_ary_modify(ary);
-    end = beg + len;
-    if (end < 0) {
+    if (len > ARY_MAX_SIZE - beg) {
 	rb_raise(rb_eArgError, "argument too big");
     }
+    end = beg + len;
     if (RARRAY_LEN(ary) < end) {
 	if (end >= ARY_CAPA(ary)) {
 	    RESIZE_CAPA(ary, end);

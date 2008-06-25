@@ -1,3 +1,8 @@
+Wed Jun 25 15:28:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_fill): not depend on unspecified behavior at integer
+	  overflow.  reported by Vincenzo Iozzo <snagg AT openssl.it>.
+
 Wed Jun 25 13:42:44 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/erb.rb (ERB::Compiler:Buffer#new): push magic comment first.
