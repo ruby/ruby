@@ -1,3 +1,8 @@
+Wed Jun 25 15:28:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_fill): not depend on unspecified behavior at integer
+	  overflow.  reported by Vincenzo Iozzo <snagg AT openssl.it>.
+
 Wed Jun 25 00:01:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (revision.h): moved from Makefile.in.
