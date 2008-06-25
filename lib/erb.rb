@@ -518,7 +518,7 @@ class ERB
 
     def compile(s)
       out = Buffer.new(self)
-      out.push("# -*- coding: #{s.encoding} -*-")
+      out.push("# -*- coding: #{s.encoding} -*-\n")
 
       content = ''
       scanner = make_scanner(s)

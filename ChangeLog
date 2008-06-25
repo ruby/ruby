@@ -1,3 +1,7 @@
+Wed Jun 25 12:10:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Compiler#compile): magic comment needs LF.
+
 Wed Jun 25 09:31:11 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/erb.rb (ERB::Compiler#compile): output magic comment.
