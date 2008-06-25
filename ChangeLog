@@ -1,3 +1,7 @@
+Thu Jun 26 00:48:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): not operand might be empty.  [ruby-dev:35227]
+
 Wed Jun 25 21:54:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): make functional-style not operator to act
