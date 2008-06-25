@@ -1,4 +1,4 @@
-warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: cgi-lib is deprecated after Ruby 1.8.1; use cgi instead"
+warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')+':' if caller[0]} cgi-lib is deprecated after Ruby 1.8.1; use cgi instead"
 
 =begin
 
