@@ -486,10 +486,10 @@ class ERB
     end
 
     class Buffer # :nodoc:
-      def initialize(compiler)
+      def initialize(compiler, enc=nil)
 	@compiler = compiler
 	@line = []
-	@script = ""
+        @script = enc ? "#coding:#{enc.to_s}\n" : ""
 	@compiler.pre_cmd.each do |x|
 	  push(x)
 	end
@@ -517,11 +517,10 @@ class ERB
     end
 
     def compile(s)
-      out = Buffer.new(self)
-      out.push("# -*- coding: #{s.encoding} -*-\n")
+      out = Buffer.new(self, s.encoding)
 
       content = ''
-      scanner = make_scanner(s)
+      scanner = make_scanner(s.dup.force_encoding("ASCII-8BIT"))
       scanner.scan do |token|
 	if scanner.stag.nil?
 	  case token
