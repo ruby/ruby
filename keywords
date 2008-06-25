@@ -31,7 +31,7 @@ in, {keyword_in, keyword_in}, EXPR_VALUE
 module, {keyword_module, keyword_module}, EXPR_VALUE
 next, {keyword_next, keyword_next}, EXPR_MID
 nil, {keyword_nil, keyword_nil}, EXPR_END
-not, {keyword_not, keyword_not}, EXPR_VALUE
+not, {keyword_not, keyword_not}, EXPR_ARG
 or, {keyword_or, keyword_or}, EXPR_VALUE
 redo, {keyword_redo, keyword_redo}, EXPR_END
 rescue, {keyword_rescue, modifier_rescue}, EXPR_MID

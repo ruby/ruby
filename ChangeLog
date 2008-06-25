@@ -1,3 +1,8 @@
+Wed Jun 25 21:54:34 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): make functional-style not operator to act
+	  like function.  see <http://d.hatena.ne.jp/ku-ma-me/20080624/p1>.
+
 Wed Jun 25 15:28:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_fill): not depend on unspecified behavior at integer
