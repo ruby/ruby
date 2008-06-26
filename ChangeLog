@@ -1,3 +1,9 @@
+Fri Jun 27 06:52:54 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* configure.in: need a ",".
+
+	* process.c (rb_fork): check CANNOT_FORK_WITH_PTHREAD macro.
+
 Fri Jun 27 06:50:56 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_eval.c (vm_call_super): fix to call method_missing.

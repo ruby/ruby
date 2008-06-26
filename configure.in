@@ -1159,7 +1159,7 @@ main(int argc, char *argv[])
     }
 
     return EXIT_SUCCESS;
-}]
+}],
 	rb_cv_fork_with_pthread=yes,
 	rb_cv_fork_with_pthread=no,
 	rb_cv_fork_with_pthread=yes)])
