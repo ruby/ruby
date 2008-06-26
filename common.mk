@@ -471,11 +471,13 @@ version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
 dist: $(PROGRAM)
 	$(RUNRUBY) $(srcdir)/distruby.rb
 
-{$(VPATH)}revision.h: revision.h.tmp
-	@if [ -f $(srcdir)/revision.h ] && { [ ! -s $? ] || cmp $(srcdir)/revision.h $? >/dev/null; }; then \
-	  $(RM) $?; \
+{$(VPATH)}revision.h:
+	@$(MAKE) revision.h.tmp
+	@if [ -f $(srcdir)/revision.h ] && \
+	    { [ ! -s revision.h.tmp ] || cmp $(srcdir)/revision.h revision.h.tmp >/dev/null; }; then \
+	  $(RM) revision.h.tmp; \
 	else \
-	  mv -f $? $(srcdir)/revision.h; \
+	  mv -f revision.h.tmp $(srcdir)/revision.h; \
 	fi
 
 revision.h.tmp: $(REVISION_FORCE)
