@@ -1,7 +1,7 @@
 Thu Jun 26 17:43:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_f_trace_var): should not be allowed at safe level 4.  
-	  a patch from Keita Yamaguchi <keita.yamaguchi@gmail.com>.
+	  a patch from Keita Yamaguchi <keita.yamaguchi at gmail.com>.
 
 Thu Jun 26 11:04:30 2008  Eric Hodel  <drbrain@segment7.net>
 
