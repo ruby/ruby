@@ -1,3 +1,8 @@
+Fri Jun 27 00:00:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (set_arg0, ruby_prog_init): freeze $0.  a patch from Keita
+	  Yamaguchi <keita.yamaguchi at gmail.com>.
+
 Thu Jun 26 23:58:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (rb_str_index_m, rb_str_rindex_m, rb_str_include): fix

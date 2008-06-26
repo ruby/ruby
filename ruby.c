@@ -1397,14 +1397,14 @@ set_arg0(VALUE val, ID id)
 	}
     }
 #endif
-    rb_progname = rb_tainted_str_new(s, i);
+    rb_progname = rb_obj_freeze(rb_tainted_str_new(s, i));
 }
 
 void
 ruby_script(const char *name)
 {
     if (name) {
-	rb_progname = rb_tainted_str_new2(name);
+	rb_progname = rb_obj_freeze(rb_tainted_str_new2(name));
     }
 }
 
