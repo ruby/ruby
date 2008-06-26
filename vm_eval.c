@@ -148,10 +148,12 @@ vm_call_super(rb_thread_t * const th, const int argc, const VALUE * const argv)
 	body = body->nd_body;
     }
     else {
-	dp(recv);
-	dp(klass);
-	dpi(id);
-	rb_bug("vm_call_super: not found");
+	VALUE *argv_m = ALLOCA_N(VALUE, argc+1);
+	MEMCPY(argv_m + 1, argv, VALUE, argc);
+	argv_m[0] = ID2SYM(id);
+	th->method_missing_reason = 0;
+	th->passed_block = 0;
+	return rb_funcall2(recv, idMethodMissing, argc + 1, argv);
     }
 
     return vm_call0(th, klass, recv, id, id, argc, argv, body, CALL_SUPER);

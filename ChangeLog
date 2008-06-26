@@ -1,3 +1,8 @@
+Fri Jun 27 06:50:56 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_eval.c (vm_call_super): fix to call method_missing.
+	  [ruby-core:15719], [ruby-core:17340]
+
 Fri Jun 27 00:00:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (set_arg0, ruby_prog_init): freeze $0.  a patch from Keita
