@@ -2093,19 +2093,17 @@ rb_str_index(VALUE str, VALUE sub, long offset)
 /*
  *  call-seq:
  *     str.index(substring [, offset])   => fixnum or nil
- *     str.index(fixnum [, offset])      => fixnum or nil
  *     str.index(regexp [, offset])      => fixnum or nil
  *  
- *  Returns the index of the first occurrence of the given <i>substring</i>,
- *  character (<i>fixnum</i>), or pattern (<i>regexp</i>) in <i>str</i>. Returns
- *  <code>nil</code> if not found. If the second parameter is present, it
- *  specifies the position in the string to begin the search.
+ *  Returns the index of the first occurrence of the given <i>substring</i> or
+ *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
+ *  found. If the second parameter is present, it specifies the position in the
+ *  string to begin the search.
  *     
  *     "hello".index('e')             #=> 1
  *     "hello".index('lo')            #=> 3
  *     "hello".index('a')             #=> nil
  *     "hello".index(?e)              #=> 1
- *     "hello".index(101)             #=> 1
  *     "hello".index(/[aeiou]/, -3)   #=> 4
  */
 
@@ -2202,20 +2200,18 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 /*
  *  call-seq:
  *     str.rindex(substring [, fixnum])   => fixnum or nil
- *     str.rindex(fixnum [, fixnum])   => fixnum or nil
  *     str.rindex(regexp [, fixnum])   => fixnum or nil
  *  
- *  Returns the index of the last occurrence of the given <i>substring</i>,
- *  character (<i>fixnum</i>), or pattern (<i>regexp</i>) in <i>str</i>. Returns
- *  <code>nil</code> if not found. If the second parameter is present, it
- *  specifies the position in the string to end the search---characters beyond
- *  this point will not be considered.
+ *  Returns the index of the last occurrence of the given <i>substring</i> or
+ *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
+ *  found. If the second parameter is present, it specifies the position in the
+ *  string to end the search---characters beyond this point will not be
+ *  considered.
  *     
  *     "hello".rindex('e')             #=> 1
  *     "hello".rindex('l')             #=> 3
  *     "hello".rindex('a')             #=> nil
  *     "hello".rindex(?e)              #=> 1
- *     "hello".rindex(101)             #=> 1
  *     "hello".rindex(/[aeiou]/, -2)   #=> 1
  */
 
@@ -3596,7 +3592,6 @@ rb_str_reverse_bang(VALUE str)
 /*
  *  call-seq:
  *     str.include? other_str   => true or false
- *     str.include? fixnum      => true or false
  *  
  *  Returns <code>true</code> if <i>str</i> contains the given string or
  *  character.
