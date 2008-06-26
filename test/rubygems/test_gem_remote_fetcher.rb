@@ -10,6 +10,7 @@ require File.join(File.expand_path(File.dirname(__FILE__)), 'gemutilities')
 require 'webrick'
 require 'zlib'
 require 'rubygems/remote_fetcher'
+require 'ostruct'
 
 # = Testing Proxy Settings
 #
@@ -106,6 +107,8 @@ gems:
     @a1, @a1_gem = util_gem 'a', '1' do |s| s.executables << 'a_bin' end
 
     Gem::RemoteFetcher.fetcher = nil
+
+    @fetcher = Gem::RemoteFetcher.fetcher
   end
 
   def test_self_fetcher
@@ -117,7 +120,10 @@ gems:
   def test_self_fetcher_with_proxy
     proxy_uri = 'http://proxy.example.com'
     Gem.configuration[:http_proxy] = proxy_uri
+    Gem::RemoteFetcher.fetcher = nil
+
     fetcher = Gem::RemoteFetcher.fetcher
+
     assert_not_nil fetcher
     assert_kind_of Gem::RemoteFetcher, fetcher
     assert_equal proxy_uri, fetcher.instance_variable_get(:@proxy_uri).to_s
@@ -145,7 +151,7 @@ gems:
   def test_fetch_size_socket_error
     fetcher = Gem::RemoteFetcher.new nil
     def fetcher.connection_for(uri)
-      raise SocketError
+      raise SocketError, "tarded"
     end
 
     uri = 'http://gems.example.com/yaml'
@@ -153,15 +159,13 @@ gems:
       fetcher.fetch_size uri
     end
 
-    assert_equal "SocketError (SocketError)\n\tfetching size (#{uri})",
-                 e.message
+    assert_equal "SocketError: tarded (#{uri})", e.message
   end
 
   def test_no_proxy
     use_ui @ui do
-      fetcher = Gem::RemoteFetcher.new nil
-      assert_data_from_server fetcher.fetch_path(@server_uri)
-      assert_equal SERVER_DATA.size, fetcher.fetch_size(@server_uri)
+      assert_data_from_server @fetcher.fetch_path(@server_uri)
+      assert_equal SERVER_DATA.size, @fetcher.fetch_size(@server_uri)
     end
   end
 
@@ -238,6 +242,7 @@ gems:
     install_dir = File.join @tempdir, 'more_gems'
 
     a1_cache_gem = File.join install_dir, 'cache', "#{@a1.full_name}.gem"
+    FileUtils.mkdir_p(File.dirname(a1_cache_gem))
     actual = fetcher.download(@a1, 'http://gems.example.com', install_dir)
 
     assert_equal a1_cache_gem, actual
@@ -247,7 +252,7 @@ gems:
     assert File.exist?(a1_cache_gem)
   end
 
-  unless win_platform? then # File.chmod doesn't work
+  unless win_platform? # File.chmod doesn't work
     def test_download_local_read_only
       FileUtils.mv @a1_gem, @tempdir
       local_path = File.join @tempdir, "#{@a1.full_name}.gem"
@@ -261,6 +266,19 @@ gems:
       assert_equal File.join(@tempdir, "#{@a1.full_name}.gem"),
         inst.download(@a1, local_path)
     ensure
+      File.chmod 0755, File.join(@gemhome, 'cache')
+    end
+    
+    def test_download_read_only
+      File.chmod 0555, File.join(@gemhome, 'cache')
+      File.chmod 0555, File.join(@gemhome)
+
+      fetcher = util_fuck_with_fetcher File.read(@a1_gem)
+      fetcher.download(@a1, 'http://gems.example.com')
+      assert File.exist?(File.join(@userhome, '.gem',
+                                   'cache', "#{@a1.full_name}.gem"))
+    ensure
+      File.chmod 0755, File.join(@gemhome)
       File.chmod 0755, File.join(@gemhome, 'cache')
     end
   end
@@ -363,10 +381,22 @@ gems:
     end
   end
 
+  def test_fetch_path_gzip
+    fetcher = Gem::RemoteFetcher.new nil
+
+    def fetcher.open_uri_or_path(uri, mtime, head = nil)
+      Gem.gzip 'foo'
+    end
+
+    assert_equal 'foo', fetcher.fetch_path(@uri + 'foo.gz')
+  end
+
   def test_fetch_path_io_error
     fetcher = Gem::RemoteFetcher.new nil
 
-    def fetcher.open_uri_or_path(uri) raise EOFError; end
+    def fetcher.open_uri_or_path(uri, mtime, head = nil)
+      raise EOFError
+    end
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path 'uri'
@@ -379,7 +409,9 @@ gems:
   def test_fetch_path_socket_error
     fetcher = Gem::RemoteFetcher.new nil
 
-    def fetcher.open_uri_or_path(uri) raise SocketError; end
+    def fetcher.open_uri_or_path(uri, mtime, head = nil)
+      raise SocketError
+    end
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
       fetcher.fetch_path 'uri'
@@ -392,7 +424,7 @@ gems:
   def test_fetch_path_system_call_error
     fetcher = Gem::RemoteFetcher.new nil
 
-    def fetcher.open_uri_or_path(uri);
+    def fetcher.open_uri_or_path(uri, mtime = nil, head = nil)
       raise Errno::ECONNREFUSED, 'connect(2)'
     end
 
@@ -403,6 +435,16 @@ gems:
     assert_match %r|ECONNREFUSED:.*connect\(2\) \(uri\)\z|,
                  e.message
     assert_equal 'uri', e.uri
+  end
+
+  def test_fetch_path_unmodified
+    fetcher = Gem::RemoteFetcher.new nil
+
+    def fetcher.open_uri_or_path(uri, mtime, head = nil)
+      ''
+    end
+
+    assert_equal '', fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
   end
 
   def test_get_proxy_from_env_empty
@@ -475,9 +517,9 @@ gems:
     conn = { 'gems.example.com:80' => conn }
     fetcher.instance_variable_set :@connections, conn
 
-    fetcher.send :open_uri_or_path, 'http://gems.example.com/redirect' do |io|
-      assert_equal 'real_path', io.read
-    end
+    data = fetcher.open_uri_or_path 'http://gems.example.com/redirect'
+
+    assert_equal 'real_path', data
   end
 
   def test_open_uri_or_path_limited_redirects
@@ -495,29 +537,43 @@ gems:
     fetcher.instance_variable_set :@connections, conn
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
-      fetcher.send :open_uri_or_path, 'http://gems.example.com/redirect'
+      fetcher.open_uri_or_path 'http://gems.example.com/redirect'
     end
 
     assert_equal 'too many redirects (http://gems.example.com/redirect)',
                  e.message
   end
 
-  def test_zip
-    use_ui @ui do
-      self.class.enable_zip = true
-      fetcher = Gem::RemoteFetcher.new nil
-      assert_equal SERVER_DATA.size, fetcher.fetch_size(@server_uri), "probably not from proxy"
-      zip_data = fetcher.fetch_path(@server_z_uri)
-      assert zip_data.size < SERVER_DATA.size, "Zipped data should be smaller"
-    end
+  def test_request
+    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
+    util_stub_connection_for :body => :junk, :code => 200
+
+    response = @fetcher.request uri, Net::HTTP::Get
+
+    assert_equal 200, response.code
+    assert_equal :junk, response.body
   end
 
-  def test_no_zip
-    use_ui @ui do
-      self.class.enable_zip = false
-      fetcher = Gem::RemoteFetcher.new nil
-      assert_error { fetcher.fetch_path(@server_z_uri) }
-    end
+  def test_request_head
+    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
+    util_stub_connection_for :body => '', :code => 200
+    response = @fetcher.request uri, Net::HTTP::Head
+
+    assert_equal 200, response.code
+    assert_equal '', response.body
+  end
+
+  def test_request_unmodifed
+    uri = URI.parse "#{@gem_repo}/specs.#{Gem.marshal_version}"
+    conn = util_stub_connection_for :body => '', :code => 304
+
+    t = Time.now
+    response = @fetcher.request uri, Net::HTTP::Head, t
+
+    assert_equal 304, response.code
+    assert_equal '', response.body
+
+    assert_equal t.rfc2822, conn.payload['if-modified-since']
   end
 
   def test_yaml_error_on_size
@@ -528,7 +584,17 @@ gems:
     end
   end
 
-  private
+  def util_stub_connection_for hash
+    def @fetcher.connection= conn
+      @conn = conn
+    end
+
+    def @fetcher.connection_for uri
+      @conn
+    end
+
+    @fetcher.connection = Conn.new OpenStruct.new(hash)
+  end
 
   def assert_error(exception_class=Exception)
     got_exception = false
@@ -546,6 +612,20 @@ gems:
 
   def assert_data_from_proxy(data)
     assert_block("Data is not from proxy") { data =~ /0\.4\.2/ }
+  end
+
+  class Conn
+    attr_accessor :payload
+
+    def initialize(response)
+      @response = response
+      self.payload = nil
+    end
+
+    def request(req)
+      self.payload = req
+      @response
+    end
   end
 
   class NilLog < WEBrick::Log

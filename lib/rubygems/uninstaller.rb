@@ -30,7 +30,7 @@ class Gem::Uninstaller
     @force_executables = options[:executables]
     @force_all = options[:all]
     @force_ignore = options[:ignore]
-    @bin_dir = options[:bin_dir] 
+    @bin_dir = options[:bin_dir]
   end
 
   ##
@@ -41,17 +41,17 @@ class Gem::Uninstaller
     list = Gem.source_index.search(/^#{@gem}$/, @version)
 
     if list.empty? then
-      raise Gem::InstallError, "Unknown gem #{@gem}-#{@version}"
+      raise Gem::InstallError, "Unknown gem #{@gem} #{@version}"
     elsif list.size > 1 && @force_all
-      remove_all(list.dup) 
+      remove_all(list.dup)
       remove_executables(list.last)
-    elsif list.size > 1 
-      say 
+    elsif list.size > 1
+      say
       gem_names = list.collect {|gem| gem.full_name} + ["All versions"]
       gem_name, index =
         choose_from_list("Select gem to uninstall:", gem_names)
       if index == list.size
-        remove_all(list.dup) 
+        remove_all(list.dup)
         remove_executables(list.last)
       elsif index >= 0 && index < list.size
         to_remove = list[index]
@@ -65,7 +65,7 @@ class Gem::Uninstaller
       remove_executables(list.last)
     end
   end
-  
+
   ##
   # Removes installed executables and batch files (windows only) for
   # +gemspec+.
@@ -111,7 +111,7 @@ class Gem::Uninstaller
       end
     end
   end
-  
+
   ##
   # Removes all gems in +list+.
   #

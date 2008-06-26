@@ -133,7 +133,9 @@ class Gem::DependencyInstaller
         deps.each do |dep|
           results = find_gems_with_sources(dep).reverse
 
-          results.reject! do
+          results.reject! do |dep_spec,|
+            to_do.push dep_spec
+
             @source_index.any? do |_, installed_spec|
               dep.name == installed_spec.name and
                 dep.version_requirements.satisfied_by? installed_spec.version
@@ -144,7 +146,6 @@ class Gem::DependencyInstaller
             next if seen[dep_spec.name]
             @specs_and_sources << [dep_spec, source_uri]
             dependency_list.add dep_spec
-            to_do.push dep_spec
           end
         end
       end

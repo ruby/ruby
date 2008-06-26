@@ -71,6 +71,8 @@ end
     File.open File.join(@tempdir, 'bin', 'exec'), 'w' do |fp|
       fp.puts "#!#{Gem.ruby}"
     end
+
+    @current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
   end
 
   def test_self_attribute_names
@@ -110,6 +112,19 @@ end
     actual_value = Gem::Specification.attribute_names.map { |a| a.to_s }.sort
 
     assert_equal expected_value, actual_value
+  end
+
+  def test_self__load_future
+    spec = Gem::Specification.new
+    spec.name = 'a'
+    spec.version = '1'
+    spec.specification_version = @current_version + 1
+
+    new_spec = Marshal.load Marshal.dump(spec)
+
+    assert_equal 'a', new_spec.name
+    assert_equal Gem::Version.new(1), new_spec.version
+    assert_equal @current_version, new_spec.specification_version
   end
 
   def test_self_load
@@ -689,7 +704,7 @@ end
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
-    s.specification_version = 3
+    s.specification_version = 2
 
     if current_version >= 3 then
       s.add_runtime_dependency(%q<rake>, [\"> 0.4\"])

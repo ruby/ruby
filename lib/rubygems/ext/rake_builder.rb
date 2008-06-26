@@ -16,7 +16,7 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
     end
 
     cmd = ENV['rake'] || 'rake'
-    cmd << " RUBYARCHDIR=#{dest_path} RUBYLIBDIR=#{dest_path}"
+    cmd += " RUBYARCHDIR=#{dest_path} RUBYLIBDIR=#{dest_path}" # ENV is frozen
 
     run cmd, results
 

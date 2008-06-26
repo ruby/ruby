@@ -19,9 +19,9 @@ module Gem
     end
   end
 
-  # Default gem path.
+  # Default gem load path.
   def self.default_path
-    default_dir
+    [File.join(ENV['HOME'], '.gem'), default_dir]
   end
 
   # Deduce Ruby's --program-prefix and --program-suffix from its install name.

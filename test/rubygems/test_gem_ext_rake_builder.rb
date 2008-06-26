@@ -34,7 +34,7 @@ class TestGemExtRakeBuilder < RubyGemTestCase
     expected = [
       "#{Gem.ruby} mkrf_conf.rb",
       "",
-      "rake RUBYARCHDIR=#{@dest_path} RUBYLIBDIR=#{@dest_path}",
+      "#{ENV['rake'] || 'rake'} RUBYARCHDIR=#{@dest_path} RUBYLIBDIR=#{@dest_path}",
       "(in #{realdir})\n"
     ]
 
@@ -63,7 +63,7 @@ rake failed:
 
 #{Gem.ruby} mkrf_conf.rb
 
-rake RUBYARCHDIR=#{@dest_path} RUBYLIBDIR=#{@dest_path}
+#{ENV['rake'] || 'rake'} RUBYARCHDIR=#{@dest_path} RUBYLIBDIR=#{@dest_path}
     EOF
 
     assert_equal expected, error.message.split("\n")[0..4].join("\n")

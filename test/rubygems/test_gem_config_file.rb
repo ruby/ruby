@@ -22,11 +22,15 @@ class TestGemConfigFile < RubyGemTestCase
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
                          File.join(@tempdir, 'system-gemrc')
+    Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS.clear
+    Gem::ConfigFile::PLATFORM_DEFAULTS.clear
 
     util_config_file
   end
 
   def teardown
+    Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS.clear
+    Gem::ConfigFile::PLATFORM_DEFAULTS.clear
     Gem::ConfigFile.send :remove_const, :SYSTEM_WIDE_CONFIG_FILE
     Gem::ConfigFile.send :const_set, :SYSTEM_WIDE_CONFIG_FILE,
                          @orig_SYSTEM_WIDE_CONFIG_FILE
@@ -82,6 +86,48 @@ class TestGemConfigFile < RubyGemTestCase
     util_config_file %W[--config-file=#{@temp_conf}]
 
     assert_equal @temp_conf, @cfg.config_file_name
+  end
+
+  def test_initialize_operating_system_override
+    Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS[:bulk_threshold] = 1
+    Gem::ConfigFile::OPERATING_SYSTEM_DEFAULTS['install'] = '--no-env-shebang'
+
+    Gem::ConfigFile::PLATFORM_DEFAULTS[:bulk_threshold] = 2
+
+    util_config_file
+
+    assert_equal 2, @cfg.bulk_threshold
+    assert_equal '--no-env-shebang', @cfg[:install]
+  end
+
+  def test_initialize_platform_override
+    Gem::ConfigFile::PLATFORM_DEFAULTS[:bulk_threshold] = 2
+    Gem::ConfigFile::PLATFORM_DEFAULTS['install'] = '--no-env-shebang'
+
+    File.open Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE, 'w' do |fp|
+      fp.puts ":bulk_threshold: 3"
+    end
+
+    util_config_file
+
+    assert_equal 3, @cfg.bulk_threshold
+    assert_equal '--no-env-shebang', @cfg[:install]
+  end
+
+  def test_initialize_system_wide_override
+    File.open Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE, 'w' do |fp|
+      fp.puts ":backtrace: false"
+      fp.puts ":bulk_threshold: 2048"
+    end
+
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts ":backtrace: true"
+    end
+
+    util_config_file
+
+    assert_equal 2048, @cfg.bulk_threshold
+    assert_equal true, @cfg.backtrace
   end
 
   def test_handle_arguments
@@ -220,23 +266,6 @@ class TestGemConfigFile < RubyGemTestCase
     assert_equal '--wrappers --no-rdoc', @cfg[:install], 'install'
 
     assert_equal %w[http://even-more-gems.example.com], Gem.sources
-  end
-
-  def test_global_config_file
-    File.open(@temp_conf, 'w') do |fp|
-      fp.puts ":backtrace: true"
-    end
-
-    File.open(File.join(Gem::ConfigFile::SYSTEM_WIDE_CONFIG_FILE),
-                'w') do |fp|
-      fp.puts ":backtrace: false"
-      fp.puts ":bulk_threshold: 2048"
-                end
-
-    util_config_file
-
-    assert_equal 2048, @cfg.bulk_threshold
-    assert @cfg.backtrace
   end
 
   def util_config_file(args = @cfg_args)

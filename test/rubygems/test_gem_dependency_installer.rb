@@ -66,6 +66,31 @@ class TestGemDependencyInstaller < RubyGemTestCase
     assert_equal [@a1], inst.installed_gems
   end
 
+  def test_install_all_dependencies
+    e1, e1_gem = util_gem 'e', '1' do |s|
+      s.add_dependency 'b'
+    end
+
+    util_clear_gems
+
+    FileUtils.mv @a1_gem, @tempdir
+    FileUtils.mv @b1_gem, @tempdir
+    FileUtils.mv e1_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+      inst.install 'b'
+    end
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new
+      inst.install 'e'
+    end
+
+    assert_equal %w[e-1 a-1], inst.installed_gems.map { |s| s.full_name }
+  end
+
   def test_install_cache_dir
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir

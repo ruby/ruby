@@ -1,3 +1,8 @@
+Thu Jun 26 11:04:30 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* lib/rubygems: Update to RubyGems 1.2.0 r1824.  Incorporates patch by
+	Yusuke ENDOH [ruby-core:17353].
+
 Thu Jun 26 00:48:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): not operand might be empty.  [ruby-dev:35227]

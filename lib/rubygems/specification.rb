@@ -60,8 +60,10 @@ module Gem
     # changes.
     #--
     # When updating this number, be sure to also update #to_ruby.
+    #
+    # NOTE RubyGems < 1.2 cannot load specification versions > 2.
 
-    CURRENT_SPECIFICATION_VERSION = 3
+    CURRENT_SPECIFICATION_VERSION = 2
 
     ##
     # An informal list of changes to the specification.  The highest-valued
@@ -77,13 +79,10 @@ module Gem
         'Added "required_rubygems_version"',
         'Now forward-compatible with future versions',
       ],
-      3  => [
-        'Added dependency types',
-      ],
     }
 
     # :stopdoc:
-    MARSHAL_FIELDS = { -1 => 16, 1 => 16, 2 => 16, 3 => 16 }
+    MARSHAL_FIELDS = { -1 => 16, 1 => 16, 2 => 16 }
 
     now = Time.at(Time.now.to_i)
     TODAY = now - ((now.to_i + now.gmt_offset) % 86400)
@@ -248,10 +247,12 @@ module Gem
       }
     end
 
+    ##
     # Dump only crucial instance variables.
-    #
+    #--
     # MAINTAIN ORDER!
-    def _dump(limit) # :nodoc:
+
+    def _dump(limit)
       Marshal.dump [
         @rubygems_version,
         @specification_version,
@@ -273,7 +274,9 @@ module Gem
       ]
     end
 
+    ##
     # Load custom marshal format, re-initializing defaults as needed
+
     def self._load(str)
       array = Marshal.load str
 
@@ -282,9 +285,15 @@ module Gem
 
       current_version = CURRENT_SPECIFICATION_VERSION
 
-      field_count = MARSHAL_FIELDS[spec.specification_version]
+      field_count = if spec.specification_version > current_version then
+                      spec.instance_variable_set :@specification_version,
+                                                 current_version
+                      MARSHAL_FIELDS[current_version]
+                    else
+                      MARSHAL_FIELDS[spec.specification_version]
+                    end
 
-      if field_count.nil? or array.size < field_count then
+      if array.size < field_count then
         raise TypeError, "invalid Gem::Specification format #{array.inspect}"
       end
 

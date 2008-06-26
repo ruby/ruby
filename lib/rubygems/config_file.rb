@@ -18,6 +18,18 @@ class Gem::ConfigFile
   DEFAULT_VERBOSITY = true
   DEFAULT_UPDATE_SOURCES = true
 
+  ##
+  # For Ruby packagers to set configuration defaults.  Set in
+  # rubygems/defaults/operating_system.rb
+
+  OPERATING_SYSTEM_DEFAULTS = {}
+
+  ##
+  # For Ruby implementers to set configuration defaults.  Set in
+  # rubygems/defaults/#{RUBY_ENGINE}.rb
+
+  PLATFORM_DEFAULTS = {}
+
   system_config_path = 
     begin
       require 'Win32API'
@@ -98,8 +110,14 @@ class Gem::ConfigFile
     @verbose = DEFAULT_VERBOSITY
     @update_sources = DEFAULT_UPDATE_SOURCES
 
-    @hash = load_file(SYSTEM_WIDE_CONFIG_FILE)
-    @hash.merge!(load_file(config_file_name.dup.untaint))
+    operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
+    platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
+    system_config = load_file SYSTEM_WIDE_CONFIG_FILE
+    user_config = load_file config_file_name.dup.untaint
+
+    @hash = operating_system_config.merge platform_config
+    @hash = @hash.merge system_config
+    @hash = @hash.merge user_config
 
     # HACK these override command-line args, which is bad
     @backtrace = @hash[:backtrace] if @hash.key? :backtrace

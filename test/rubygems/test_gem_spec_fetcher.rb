@@ -280,7 +280,7 @@ RubyGems will revert to legacy indexes degrading performance.
   end
 
   def test_load_specs_cached
-    @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] = nil
+    @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}.gz"] = ''
     @fetcher.data["#{@gem_repo}latest_specs.#{Gem.marshal_version}"] =
       ' ' * Marshal.dump(@latest_specs).length
 
@@ -294,9 +294,9 @@ RubyGems will revert to legacy indexes degrading performance.
       Marshal.dump @latest_specs, io
     end
 
-    specs = @sf.load_specs @uri, 'specs'
+    latest_specs = @sf.load_specs @uri, 'latest_specs'
 
-    assert_equal @specs, specs
+    assert_equal @latest_specs, latest_specs
   end
 
 end

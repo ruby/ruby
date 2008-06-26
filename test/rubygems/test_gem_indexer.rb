@@ -21,7 +21,6 @@ class TestGemIndexer < RubyGemTestCase
     util_make_gems
 
     @d2_0 = quick_gem 'd', '2.0'
-    write_file File.join(*%W[gems #{@d2_0.original_name} lib code.rb]) do end
     util_build_gem @d2_0
 
     gems = File.join(@tempdir, 'gems')
@@ -36,6 +35,41 @@ class TestGemIndexer < RubyGemTestCase
     assert_equal @tempdir, @indexer.dest_directory
     assert_equal File.join(Dir.tmpdir, "gem_generate_index_#{$$}"),
                  @indexer.directory
+  end
+
+  def test_build_indicies
+    spec = quick_gem 'd', '2.0'
+    spec.instance_variable_set :@original_platform, ''
+
+    @indexer.make_temp_directories
+
+    index = Gem::SourceIndex.new
+    index.add_spec spec
+
+    use_ui @ui do
+      @indexer.build_indicies index
+    end
+
+    specs_path = File.join @indexer.directory, "specs.#{@marshal_version}"
+    specs_dump = Gem.read_binary specs_path
+    specs = Marshal.load specs_dump
+
+    expected = [
+      ['d',      Gem::Version.new('2.0'), 'ruby'],
+    ]
+
+    assert_equal expected, specs, 'specs'
+
+    latest_specs_path = File.join @indexer.directory,
+                                  "latest_specs.#{@marshal_version}"
+    latest_specs_dump = Gem.read_binary latest_specs_path
+    latest_specs = Marshal.load latest_specs_dump
+
+    expected = [
+      ['d',      Gem::Version.new('2.0'), 'ruby'],
+    ]
+
+    assert_equal expected, latest_specs, 'latest_specs'
   end
 
   def test_generate_index

@@ -29,12 +29,12 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
       Gem::Ext::ConfigureBuilder.build nil, nil, @dest_path, output
     end
 
-    expected = [
-      "sh ./configure --prefix=#{@dest_path}",
-      "", "make", "ok\n", "make install", "ok\n"
-    ]
-
-    assert_equal expected, output
+    assert_equal "sh ./configure --prefix=#{@dest_path}", output.shift
+    assert_equal "", output.shift
+    assert_equal "make", output.shift
+    assert_match(/^ok$/m, output.shift)
+    assert_equal "make install", output.shift
+    assert_match(/^ok$/m, output.shift)
   end
 
   def test_self_build_fail

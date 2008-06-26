@@ -279,16 +279,16 @@ class TestGem < RubyGemTestCase
   end
 
   def test_self_path_ENV_PATH
-    Gem.clear_paths
+    Gem.send :set_paths, nil
     path_count = Gem.path.size
-    path_count -= 1 if defined? APPLE_GEM_HOME
     Gem.clear_paths
-    util_ensure_gem_dirs
 
     ENV['GEM_PATH'] = @additional.join(File::PATH_SEPARATOR)
 
     assert_equal @additional, Gem.path[0,2]
-    assert_equal path_count + @additional.size, Gem.path.size
+
+    assert_equal path_count + @additional.size, Gem.path.size,
+                 "extra path components: #{Gem.path[2..-1].inspect}"
     assert_match Gem.dir, Gem.path.last
   end
 
@@ -337,6 +337,7 @@ class TestGem < RubyGemTestCase
 
     file_name = File.expand_path __FILE__
     prefix = File.dirname File.dirname(file_name)
+    prefix = File.dirname prefix if File.basename(prefix) == 'test'
 
     Gem::ConfigMap[:libdir] = prefix
 
@@ -350,6 +351,7 @@ class TestGem < RubyGemTestCase
 
     file_name = File.expand_path __FILE__
     prefix = File.dirname File.dirname(file_name)
+    prefix = File.dirname prefix if File.basename(prefix) == 'test'
 
     Gem::ConfigMap[:sitelibdir] = prefix
 

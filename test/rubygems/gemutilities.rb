@@ -7,6 +7,8 @@
 
 at_exit { $SAFE = 1 }
 
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+
 require 'fileutils'
 require 'test/unit'
 require 'tmpdir'
@@ -23,6 +25,10 @@ module Gem
 
   def self.win_platform=(val)
     @@win_platform = val
+  end
+  
+  module DefaultUserInteraction
+    @ui = MockGemUi.new
   end
 end
 
