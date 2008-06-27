@@ -1,3 +1,7 @@
+Sat Jun 28 01:08:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_timespec): fix rounding negative float.
+
 Fri Jun 27 21:38:57 2008  Tanaka Akira  <akr@fsij.org>
 
 	* struct.c: __size__ removed.  use the length of __members__ instead.

@@ -105,6 +105,18 @@ class TestTime < Test::Unit::TestCase
     assert_equal(100, Time.at(0.0000001).nsec)
     assert_equal(10, Time.at(0.00000001).nsec)
     assert_equal(1, Time.at(0.000000001).nsec)
+    assert_equal(0, Time.at(1e-10).nsec)
+    assert_equal(0, Time.at(4e-10).nsec)
+    assert_equal(1, Time.at(6e-10).nsec)
+    assert_equal(1, Time.at(14e-10).nsec)
+    assert_equal(2, Time.at(16e-10).nsec)
+    if negative_time_t?
+      assert_equal(0, Time.at(-1e-10).nsec)
+      assert_equal(0, Time.at(-4e-10).nsec)
+      assert_equal(999999999, Time.at(-6e-10).nsec)
+      assert_equal(999999999, Time.at(-14e-10).nsec)
+      assert_equal(999999998, Time.at(-16e-10).nsec)
+    end
   end
 
   def test_at2
