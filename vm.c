@@ -1072,6 +1072,7 @@ vm_eval_body(rb_thread_t *th)
 	err = th->errinfo;
 
 	if (state == TAG_RAISE) {
+	    if (OBJ_FROZEN(err)) rb_exc_raise(err);
 	    rb_ivar_set(err, idThrowState, INT2FIX(state));
 	}
 

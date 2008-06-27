@@ -1,3 +1,8 @@
+Fri Jun 27 14:25:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_eval_body): if thrown exception is frozen, reraise it to
+	  create a new instance.
+
 Fri Jun 27 13:29:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_new2, rb_tainted_str_new2,
