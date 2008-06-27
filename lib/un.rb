@@ -20,6 +20,7 @@
 #   ruby -run -e chmod -- [OPTION] OCTAL-MODE FILE
 #   ruby -run -e touch -- [OPTION] FILE
 #   ruby -run -e wait_writable -- [OPTION] FILE
+#   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
 #   ruby -run -e help [COMMAND]
 
 require "fileutils"
@@ -30,30 +31,32 @@ module FileUtils
   @fileutils_output = $stdout
 end
 
-def setup(options = "")
-  ARGV.map! do |x|
-    case x
-    when /^-/
-      x.delete "^-#{options}v"
-    when /[*?\[{]/
-      Dir[x]
-    else
-      x
-    end
-  end
-  ARGV.flatten!
-  ARGV.delete_if{|x| x == "-"}
+def setup(options = "", *long_options)
   opt_hash = {}
+  argv = []
   OptionParser.new do |o|
     options.scan(/.:?/) do |s|
+      opt_name = s.delete(":").intern
       o.on("-" + s.tr(":", " ")) do |val|
-        opt_hash[s.delete(":").intern] = val
+        opt_hash[opt_name] = val
+      end
+    end
+    long_options.each do |s|
+      opt_name = s[/\A(?:--)?([^\s=]+)/, 1].intern
+      o.on(s.sub(/\A(?!--)/, '--')) do |val|
+        opt_hash[opt_name] = val
       end
     end
     o.on("-v") do opt_hash[:verbose] = true end
-    o.parse!
+    o.order!(ARGV) do |x|
+      if /[*?\[{]/ =~ x
+        argv.concat(Dir[x])
+      else
+        argv << x
+      end
+    end
   end
-  yield ARGV, opt_hash
+  yield argv, opt_hash
 end
 
 ##
@@ -242,6 +245,38 @@ def wait_writable
         retry
       end
     end
+  end
+end
+
+##
+# Create makefile using mkmf.
+#
+#   ruby -run -e mkmf -- [OPTION] EXTNAME [OPTION]
+#
+#   -d ARGS	run dir_config
+#   -h ARGS	run have_header
+#   -l ARGS	run have_library
+#   -f ARGS	run have_func
+#   -v ARGS	run have_var
+#   -t ARGS	run have_type
+#   -m ARGS	run have_macro
+#   -c ARGS	run have_const
+#   --vendor	install to vendor_ruby
+#
+
+def mkmf
+  setup("d:h:l:f:v:t:m:c:", "vendor") do |argv, options|
+    require 'mkmf'
+    opt = options[:d] and opt.split(/:/).each {|n| dir_config(*n.split(/,/))}
+    opt = options[:h] and opt.split(/:/).each {|n| have_header(*n.split(/,/))}
+    opt = options[:l] and opt.split(/:/).each {|n| have_library(*n.split(/,/))}
+    opt = options[:f] and opt.split(/:/).each {|n| have_func(*n.split(/,/))}
+    opt = options[:v] and opt.split(/:/).each {|n| have_var(*n.split(/,/))}
+    opt = options[:t] and opt.split(/:/).each {|n| have_type(*n.split(/,/))}
+    opt = options[:m] and opt.split(/:/).each {|n| have_macro(*n.split(/,/))}
+    opt = options[:c] and opt.split(/:/).each {|n| have_const(*n.split(/,/))}
+    $configure_args["--vendor"] = true if options[:vendor]
+    create_makefile(*argv)
   end
 end
 
