@@ -1,3 +1,10 @@
+Sat Jun 28 08:40:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c : check String encoding when
+	  converting String to VT_BSTR in OLE.
+
+	* test/win32ole/test_win32ole.rb : ditto.
+
 Sat Jun 28 01:08:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_timespec): fix rounding negative float.

@@ -282,8 +282,8 @@ if defined?(WIN32OLE)
       fso = WIN32OLE.new("Scripting.FileSystemObject")
       fname = fso.getTempName
       begin
+        obj = WIN32OLE_VARIANT.new([0x3042].pack("U*").force_encoding("UTF-8"))
         WIN32OLE.codepage = WIN32OLE::CP_UTF8
-        obj = WIN32OLE_VARIANT.new([0x3042].pack("U*"))
         assert_equal("\xE3\x81\x82".force_encoding("CP65001"), obj.value)
 
         begin
@@ -302,9 +302,9 @@ if defined?(WIN32OLE)
           assert_equal("\xA4\xA2".force_encoding("CP20932"), obj.value)
         end
 
-        WIN32OLE.codepage = WIN32OLE::CP_UTF8
+        WIN32OLE.codepage = cp 
         file = fso.opentextfile(fname, 2, true)
-        file.write [0x3042].pack("U*")
+        file.write [0x3042].pack("U*").force_encoding("UTF-8")
         file.close
         str = ""
         open(fname, "r:ascii-8bit") {|ifs|
@@ -318,8 +318,9 @@ if defined?(WIN32OLE)
         rescue WIN32OLERuntimeError
         end
         if (WIN32OLE.codepage == 20932)
+          WIN32OLE.codepage = cp
           file = fso.opentextfile(fname, 2, true)
-          file.write [164, 162].pack("c*")
+          file.write [164, 162].pack("c*").force_encoding("EUC-JP")
           file.close
           open(fname, "r:ascii-8bit") {|ifs|
             str = ifs.read

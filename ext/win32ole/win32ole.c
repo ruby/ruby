@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.5"
+#define WIN32OLE_VERSION "1.1.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -201,6 +201,7 @@ static rb_encoding *cWIN32OLE_enc;
 static UINT g_cp_to_check = CP_ACP;
 static char g_lcid_to_check[8 + 1];
 static VARTYPE g_nil_to = VT_ERROR;
+static st_table *enc2cp_table;
 
 struct oledata {
     IDispatch *pDispatch;
@@ -274,6 +275,7 @@ static void oletype_free(struct oletypedata *poletype);
 static void olemethod_free(struct olemethoddata *polemethod);
 static void olevariable_free(struct olevariabledata *polevar);
 static void oleparam_free(struct oleparamdata *pole);
+static LPWSTR ole_vstr2wc(VALUE vstr);
 static LPWSTR ole_mb2wc(char *pm, int len);
 static VALUE ole_wc2vstr(LPWSTR pw, BOOL isfree);
 static VALUE ole_ary_m_entry(VALUE val, long *pid);
@@ -518,6 +520,8 @@ static VALUE folevariant_ary_aset(int argc, VALUE *argv, VALUE self);
 static VALUE folevariant_value(VALUE self);
 static VALUE folevariant_vartype(VALUE self);
 static VALUE folevariant_set_value(VALUE self, VALUE val);
+static void init_enc2cp();
+static void free_enc2cp();
   
 typedef struct _Win32OLEIDispatch
 {
@@ -1106,6 +1110,38 @@ oleparam_free(struct oleparamdata *pole)
 }
 
 static LPWSTR
+ole_vstr2wc(VALUE vstr)
+{
+    rb_encoding *enc;
+    int cp;
+    int size;
+    LPWSTR pw;
+    st_data_t data;
+    enc = rb_enc_get(vstr);
+    if (st_lookup(enc2cp_table, (st_data_t)enc, &data)) {
+        cp = data;
+    } else {
+        cp = ole_encoding2cp(enc);
+        if (code_page_installed(cp) ||
+            cp == CP_ACP ||
+            cp == CP_OEMCP ||
+            cp == CP_MACCP ||
+            cp == CP_THREAD_ACP ||
+            cp == CP_SYMBOL ||
+            cp == CP_UTF7 ||
+            cp == CP_UTF8 ) {
+            st_insert(enc2cp_table, (st_data_t)enc, (st_data_t)cp);
+        } else {
+            rb_raise(eWIN32OLERuntimeError, "not installed Windows codepage(%d) according to `%s'", cp, rb_enc_name(enc));
+        }
+    }
+    size = MultiByteToWideChar(cp, 0, StringValuePtr(vstr), -1, NULL, 0);
+    pw = SysAllocStringLen(NULL, size - 1);
+    MultiByteToWideChar(cp, 0, StringValuePtr(vstr), -1, pw, size);
+    return pw;
+}
+
+static LPWSTR
 ole_mb2wc(char *pm, int len)
 {
     int size;
@@ -1387,7 +1423,7 @@ ole_val2variant(VALUE val, VARIANT *var)
         break;
     case T_STRING:
         V_VT(var) = VT_BSTR;
-        V_BSTR(var) = ole_mb2wc(StringValuePtr(val), -1);
+        V_BSTR(var) = ole_vstr2wc(val);
         break;
     case T_FIXNUM:
         V_VT(var) = VT_I4;
@@ -1465,7 +1501,7 @@ ole_val2ptr_variant(VALUE val, VARIANT *var)
     switch (TYPE(val)) {
     case T_STRING:
         if (V_VT(var) == (VT_BSTR | VT_BYREF)) {
-            *V_BSTRREF(var) = ole_mb2wc(StringValuePtr(val), -1);
+            *V_BSTRREF(var) = ole_vstr2wc(val);
         }
         break;
     case T_FIXNUM:
@@ -2347,7 +2383,7 @@ ole_create_dcom(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eRuntimeError, "CoCreateInstanceEx is not supported in this environment");
     rb_scan_args(argc, argv, "2*", &ole, &host, &others);
 
-    pbuf  = ole_mb2wc(StringValuePtr(ole), -1);
+    pbuf  = ole_vstr2wc(ole);
     hr = CLSIDFromProgID(pbuf, &clsid);
     if (FAILED(hr))
         hr = clsid_from_remote(host, ole, &clsid);
@@ -2359,7 +2395,7 @@ ole_create_dcom(int argc, VALUE *argv, VALUE self)
                   "unknown OLE server: `%s'",
                   StringValuePtr(ole));
     memset(&serverinfo, 0, sizeof(COSERVERINFO));    
-    serverinfo.pwszName = ole_mb2wc(StringValuePtr(host), -1);
+    serverinfo.pwszName = ole_vstr2wc(host);
     memset(&multi_qi, 0, sizeof(MULTI_QI));
     multi_qi.pIID = &IID_IDispatch;
     hr = gCoCreateInstanceEx(&clsid, NULL, clsctx, &serverinfo, 1, &multi_qi);
@@ -2392,7 +2428,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
                   "failed to create bind context");
     }
 
-    pbuf  = ole_mb2wc(StringValuePtr(moniker), -1);
+    pbuf  = ole_vstr2wc(moniker);
     hr = MkParseDisplayName(pBindCtx, pbuf, &eaten, &pMoniker);
     SysFreeString(pbuf);
     if(FAILED(hr)) {
@@ -2446,7 +2482,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
     }
 
     /* get CLSID from OLE server name */
-    pBuf  = ole_mb2wc(StringValuePtr(svr_name), -1);
+    pBuf = ole_vstr2wc(svr_name);
     hr = CLSIDFromProgID(pBuf, &clsid);
     if(FAILED(hr)) {
         hr = CLSIDFromString(pBuf, &clsid);
@@ -2551,7 +2587,7 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
         if (file == Qnil) {
             file = ole;
         }
-        pBuf = ole_mb2wc(StringValuePtr(file), -1);
+        pBuf = ole_vstr2wc(file);
         hr = LoadTypeLibEx(pBuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pBuf);
         if (FAILED(hr))
@@ -2954,7 +2990,7 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     }
 
     /* get CLSID from OLE server name */
-    pBuf  = ole_mb2wc(StringValuePtr(svr_name), -1);
+    pBuf  = ole_vstr2wc(svr_name);
     hr = CLSIDFromProgID(pBuf, &clsid);
     if(FAILED(hr)) {
         hr = CLSIDFromString(pBuf, &clsid);
@@ -3007,7 +3043,7 @@ hash2named_arg(VALUE pair, struct oleparam* pOp)
     }
 
     /* pNamedArgs[0] is <method name>, so "index + 1" */
-    pOp->pNamedArgs[index + 1] = ole_mb2wc(StringValuePtr(key), -1);
+    pOp->pNamedArgs[index + 1] = ole_vstr2wc(key);
 
     value = rb_ary_entry(pair, 1);
     VariantInit(&(pOp->dp.rgvarg[index]));
@@ -3075,7 +3111,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         argc += 1;
         rb_funcall(paramS, rb_intern("unshift"), 1, cmd);
     } else {
-        wcmdname = ole_mb2wc(StringValuePtr(cmd), -1);
+        wcmdname = ole_vstr2wc(cmd);
         hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
                 &wcmdname, 1, lcid, &DispID);
         SysFreeString(wcmdname);
@@ -3103,7 +3139,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
         rb_block_call(param, rb_intern("each"), 0, 0, hash2named_arg, (VALUE)&op);
 
         pDispID = ALLOCA_N(DISPID, cNamedArgs + 1);
-        op.pNamedArgs[0] = ole_mb2wc(StringValuePtr(cmd), -1);
+        op.pNamedArgs[0] = ole_vstr2wc(cmd);
         hr = pole->pDispatch->lpVtbl->GetIDsOfNames(pole->pDispatch,
                                                     &IID_NULL,
                                                     op.pNamedArgs,
@@ -3614,7 +3650,7 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
     OLEData_Get_Struct(self, pole);
 
     /* get ID from property name */
-    pBuf[0]  = ole_mb2wc(StringValuePtr(property), -1);
+    pBuf[0]  = ole_vstr2wc(property);
     hr = pole->pDispatch->lpVtbl->GetIDsOfNames(pole->pDispatch, &IID_NULL,
                                                 pBuf, 1, lcid, &dispID);
     SysFreeString(pBuf[0]);
@@ -4210,7 +4246,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
     struct oledata *pole;
     IDispatch *pDispatch;
          
-    pBuf  = ole_mb2wc(StringValuePtr(str_iid), -1);
+    pBuf  = ole_vstr2wc(str_iid);
     hr = CLSIDFromString(pBuf, &iid);
     SysFreeString(pBuf);
     if(FAILED(hr)) {
@@ -4868,7 +4904,7 @@ foletypelib_initialize(VALUE self, VALUE args)
         found = oletypelib_search_registry2(self, args);
     }
     if (found == Qfalse) {
-        pbuf = ole_mb2wc(StringValuePtr(typelib), -1);
+        pbuf = ole_vstr2wc(typelib);
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
         SysFreeString(pbuf);
         if (SUCCEEDED(hr)) {
@@ -5029,7 +5065,7 @@ oletypelib2itypelib(VALUE self, ITypeLib **ppTypeLib)
     HRESULT hr = S_OK;
     path = rb_funcall(self, rb_intern("path"), 0);
     if (path != Qnil) {
-        pbuf = ole_mb2wc(StringValuePtr(path), -1);
+        pbuf = ole_vstr2wc(path);
         hr = LoadTypeLibEx(pbuf, REGKIND_NONE, ppTypeLib);
         SysFreeString(pbuf);
         if (FAILED(hr))
@@ -5166,7 +5202,7 @@ foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass)
     if (file == Qnil) {
         file = typelib;
     }
-    pbuf = ole_mb2wc(StringValuePtr(file), -1);
+    pbuf = ole_vstr2wc(file);
     hr = LoadTypeLibEx(pbuf, REGKIND_NONE, &pTypeLib);
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLERuntimeError, "failed to LoadTypeLibEx");
@@ -8108,6 +8144,18 @@ folevariant_set_value(VALUE self, VALUE val)
     return Qnil;
 }
 
+static void 
+init_enc2cp()
+{
+    enc2cp_table = st_init_numtable();
+}
+
+static void
+free_enc2cp()
+{
+    st_free_table(enc2cp_table);
+}
+
 void
 Init_win32ole()
 {
@@ -8327,6 +8375,8 @@ Init_win32ole()
 
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 
+    init_enc2cp();
+    atexit((void (*)(void))free_enc2cp);
     ole_init_cp();
     cWIN32OLE_enc = ole_cp2encoding(cWIN32OLE_cp);
 }
