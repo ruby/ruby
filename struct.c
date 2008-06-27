@@ -206,7 +206,6 @@ make_struct(name, members, klass)
 	}
 	nstr = rb_define_class_under(klass, rb_id2name(id), klass);
     }
-    rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(members)->len));
     rb_iv_set(nstr, "__members__", members);
 
     rb_define_alloc_func(nstr, struct_alloc);
@@ -326,6 +325,17 @@ rb_struct_s_def(argc, argv, klass)
     return st;
 }
 
+static size_t
+num_members(VALUE klass)
+{
+    VALUE members;
+    members = rb_struct_iv_get(klass, "__members__");
+    if (TYPE(members) != T_ARRAY) {
+       rb_raise(rb_eTypeError, "broken members");
+    }
+    return RARRAY_LEN(members);
+}
+
 /*
  */
 
@@ -334,12 +344,10 @@ rb_struct_initialize(self, values)
     VALUE self, values;
 {
     VALUE klass = rb_obj_class(self);
-    VALUE size;
     long n;
 
     rb_struct_modify(self);
-    size = rb_struct_iv_get(klass, "__size__");
-    n = FIX2LONG(size);
+    n = num_members(klass);
     if (n < RARRAY(values)->len) {
 	rb_raise(rb_eArgError, "struct size differs");
     }
@@ -355,13 +363,11 @@ static VALUE
 struct_alloc(klass)
     VALUE klass;
 {
-    VALUE size;
     long n;
     NEWOBJ(st, struct RStruct);
     OBJSETUP(st, klass, T_STRUCT);
 
-    size = rb_struct_iv_get(klass, "__size__");
-    n = FIX2LONG(size);
+    n = num_members(klass);
 
     st->ptr = ALLOC_N(VALUE, n);
     rb_mem_clear(st->ptr, n);
@@ -386,12 +392,11 @@ rb_struct_new(klass, va_alist)
     va_dcl
 #endif
 {
-    VALUE sz, *mem;
+    VALUE *mem;
     long size, i;
     va_list args;
 
-    sz = rb_struct_iv_get(klass, "__size__");
-    size = FIX2LONG(sz); 
+    size = num_members(klass);
     mem = ALLOCA_N(VALUE, size);
     va_init_list(args, klass);
     for (i=0; i<size; i++) {
