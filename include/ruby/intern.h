@@ -535,6 +535,11 @@ VALUE rb_str_buf_new2(const char*);
 VALUE rb_str_tmp_new(long);
 VALUE rb_usascii_str_new(const char*, long);
 VALUE rb_usascii_str_new2(const char*);
+#ifdef __GNUC__
+#define rb_str_new2(str) ({const char *_s = (str); rb_str_new(_s, strlen(_s));})
+#define rb_tainted_str_new2(str) ({const char *_s = (str); rb_tainted_str_new(_s, strlen(_s));})
+#define rb_usascii_str_new2(str) ({const char *_s = (str); rb_usascii_str_new(_s, strlen(_s));})
+#endif
 void rb_str_free(VALUE);
 void rb_str_shared_replace(VALUE, VALUE);
 VALUE rb_str_buf_append(VALUE, VALUE);

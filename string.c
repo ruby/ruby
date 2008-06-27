@@ -25,6 +25,10 @@
 #include <unistd.h>
 #endif
 
+#undef rb_str_new2
+#undef rb_tainted_str_new2
+#undef rb_usascii_str_new2
+
 VALUE rb_cString;
 VALUE rb_cSymbol;
 

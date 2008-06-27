@@ -1,3 +1,9 @@
+Fri Jun 27 13:18:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_str_new2, rb_tainted_str_new2,
+	  rb_usascii_str_new2): use with-length versions with strlen to
+	  optimize strlen.
+
 Fri Jun 27 12:28:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (mkmf): new command to create makefile.
