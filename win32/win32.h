@@ -27,6 +27,7 @@
 #endif
 #ifdef USE_WINSOCK2
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #else
 #include <windows.h>
