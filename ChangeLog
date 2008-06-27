@@ -1,6 +1,6 @@
 Fri Jun 27 21:38:57 2008  Tanaka Akira  <akr@fsij.org>
 
-	* gc.c: __size__ removed.  use the length of __members__ instead.
+	* struct.c: __size__ removed.  use the length of __members__ instead.
 	  (num_members): new function.
 
 Fri Jun 27 21:19:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
