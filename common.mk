@@ -484,3 +484,12 @@ revision.h.tmp: $(REVISION_FORCE)
 	@set LC_MESSAGES=C
 	-@$(SET_LC_MESSAGES) $(VCS) info "$(srcdir)" | \
 	sed -n "s/.*Rev:/#define RUBY_REVISION/p" > "$@"
+-IF-NO-STRING-LITERAL-CONCATENATION-::
+	@{ \
+	echo '#include "$@"'; \
+	echo '#include "ruby.h"'; \
+	echo '#include "version.h"'; \
+	echo '%define_RUBY_DESCRIPTION RUBY_DESCRIPTION'; \
+	echo '%define_RUBY_COPYRIGHT RUBY_COPYRIGHT'; \
+	} | $(CPP) -I. -I$(srcdir) - | \
+	sed '/^%/!d;s//#/;s/_/ /;s/" *"//g' >> "$@"

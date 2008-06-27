@@ -29,7 +29,7 @@
 #define EXIT_SUCCESS 0
 #endif
 
-extern const char *ruby_description;
+extern const char ruby_description[];
 
 int ruby_nerrs;
 

@@ -1849,7 +1849,10 @@ AC_CONFIG_FILES(Makefile, [{
 	sed '/^MISSING/s/\$U\././g' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
-	sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
+	if_no_string_literal_concatenation=""
+	test "$rb_cv_string_literal_concatenation" = yes ||
+	    if_no_string_literal_concatenation=';/^-IF-NO-STRING-LITERAL-CONCATENATION-:/d'
+	sed ['s/{\$([^(){}]*)[^{}]*}//g'"$if_no_string_literal_concatenation"] ${srcdir}/common.mk
       } >> confmk$$.tmp && mv -f confmk$$.tmp Makefile],
 [RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT])
 AC_OUTPUT

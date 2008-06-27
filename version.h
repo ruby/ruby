@@ -16,13 +16,8 @@ RUBY_EXTERN const char ruby_version[];
 RUBY_EXTERN const char ruby_release_date[];
 RUBY_EXTERN const char ruby_platform[];
 RUBY_EXTERN const int ruby_patchlevel;
-#if !NO_STRING_LITERAL_CONCATENATION
 RUBY_EXTERN const char ruby_description[];
 RUBY_EXTERN const char ruby_copyright[];
-#else
-RUBY_EXTERN char ruby_description[];
-RUBY_EXTERN char ruby_copyright[];
-#endif
 #endif
 
 #define RUBY_AUTHOR "Yukihiro Matsumoto"
@@ -49,14 +44,18 @@ RUBY_EXTERN char ruby_copyright[];
 #define RUBY_RELEASE_NUM RUBY_REVISION
 #endif
 
+#ifndef RUBY_DESCRIPTION
 # define RUBY_DESCRIPTION	    \
     "ruby "RUBY_VERSION		    \
     " ("RUBY_RELEASE_DATE" "	    \
     RUBY_RELEASE_STR" "		    \
     STRINGIZE(RUBY_RELEASE_NUM)") " \
     "["RUBY_PLATFORM"]"
+#endif
+#ifndef RUBY_COPYRIGHT
 # define RUBY_COPYRIGHT 	    \
     "ruby - Copyright (C) "	    \
     STRINGIZE(RUBY_BIRTH_YEAR)"-"   \
     STRINGIZE(RUBY_RELEASE_YEAR)" " \
     RUBY_AUTHOR
+#endif

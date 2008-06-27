@@ -1,3 +1,13 @@
+Fri Jun 27 15:05:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (-IF-NO-STRING-LITERAL-CONCATENATION-): make description
+	  and copyright literals.
+
+	* configure.in: enable to make description and copyright literals if
+	  string literal concatenation is not available.
+
+	* version.c (ruby_description, ruby_copyright): now always constant.
+
 Fri Jun 27 12:28:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/un.rb (mkmf): new command to create makefile.
