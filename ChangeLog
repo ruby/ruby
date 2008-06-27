@@ -1,3 +1,8 @@
+Fri Jun 27 17:28:39 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (rb_open_file, rb_io_s_sysopen): fmode should be unsigned int.
+	  fixed [ruby-dev:34979]
+
 Fri Jun 27 17:20:40 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.h: include ws2tcpip.h. fixed [ruby-Bugs-20528]
