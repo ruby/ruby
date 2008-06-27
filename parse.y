@@ -2624,7 +2624,7 @@ primary		: literal
 		| keyword_not '(' rparen
 		    {
 		    /*%%%*/
-			$$ = NEW_LIT(Qtrue);
+			$$ = call_uni_op(cond(NEW_NIL()), '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("not"), Qnil);
 		    %*/
