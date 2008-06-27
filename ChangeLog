@@ -1,8 +1,8 @@
-Fri Jun 27 13:18:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jun 27 13:29:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_new2, rb_tainted_str_new2,
 	  rb_usascii_str_new2): use with-length versions with strlen to
-	  optimize strlen.
+	  optimize strlen, if optimized.
 
 Fri Jun 27 12:28:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
