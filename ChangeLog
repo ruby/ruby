@@ -1,3 +1,13 @@
+Fri Jun 27 15:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
+	  [ruby-core:17115]
+
+Fri Jun 27 15:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fix for length argument and now
+	  allows range.  [ruby-core:17092]
+
 Tue Jun 24 15:38:52 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (ERB::Compiler::TrimScanner#explicit_trim_line): Fix 
