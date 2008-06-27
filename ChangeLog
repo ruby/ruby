@@ -1,10 +1,3 @@
-Fri Jun 27 21:19:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* test/inlinetest.rb (InlineTest.in_progname): workaround for frozen
-	  $0.  [ruby-dev:35261]
-
-	* lib/test/unit/ui/console/testrunner.rb (TestRunner#finished): ditto.
-
 Fri Jun 27 15:05:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (-IF-NO-STRING-LITERAL-CONCATENATION-): make description
