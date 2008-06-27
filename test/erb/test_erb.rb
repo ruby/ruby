@@ -220,7 +220,7 @@ EOS
 
   class Bar; end
 
-  def test_def_method
+  def test_def_erb_method
     assert(! Bar.new.respond_to?('hello'))
     Bar.module_eval do
       extend ERB::DefMethod
@@ -235,6 +235,31 @@ EOS
       def_erb_method('hello_world', erb)
     end
     assert(Bar.new.respond_to?('hello_world'))    
+  end
+
+  class DefMethodWithoutFname; end
+  class DefMethodWithFname; end
+
+  def test_def_method_without_filename
+    erb = ERB.new("<% raise ::TestERB::MyError %>")
+    erb.filename = "test filename"
+    assert(! DefMethodWithoutFname.new.respond_to?('my_error'))
+    erb.def_method(DefMethodWithoutFname, 'my_error')
+    e = assert_raise(::TestERB::MyError) {
+       DefMethodWithoutFname.new.my_error
+    }
+    assert_match(/\A\(ERB\):1\b/, e.backtrace[0])
+  end
+
+  def test_def_method_with_fname
+    erb = ERB.new("<% raise ::TestERB::MyError %>")
+    erb.filename = "test filename"
+    assert(! DefMethodWithFname.new.respond_to?('my_error'))
+    erb.def_method(DefMethodWithFname, 'my_error', 'test fname')
+    e = assert_raise(::TestERB::MyError) {
+       DefMethodWithFname.new.my_error
+    }
+    assert_match(/\Atest fname:1\b/, e.backtrace[0])
   end
 
   def test_escape

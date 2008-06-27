@@ -736,16 +736,16 @@ class ERB
     if @safe_level
       th = Thread.start { 
 	$SAFE = @safe_level
-	eval(@src, b, (@filename || '(erb)'), 1)
+	eval(@src, b, (@filename || '(erb)'), 0)
       }
       return th.value
     else
-      return eval(@src, b, (@filename || '(erb)'), 1)
+      return eval(@src, b, (@filename || '(erb)'), 0)
     end
   end
 
   def def_method(mod, methodname, fname='(ERB)')  # :nodoc:
-    mod.module_eval("def #{methodname}\n" + self.src + "\nend\n", fname, 0)
+    mod.module_eval("def #{methodname}\n" + self.src + "\nend\n", fname, -1)
   end
 
   def def_module(methodname='erb')  # :nodoc:

@@ -1,3 +1,9 @@
+Fri Jun 27 17:45:17 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/erb.rb: adjust line number for magic comment.
+
+	* test/erb/test_erb.rb: add tests for def_method.
+
 Fri Jun 27 14:25:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_eval_body): if thrown exception is frozen, reraise it to
