@@ -192,6 +192,10 @@ time_timeval(time, interval)
 	    double f, d;
 
 	    d = modf(RFLOAT(time)->value, &f);
+            if (d < 0) {
+                d += 1;
+                f -= 1;
+            }
 	    t.tv_sec = (time_t)f;
 	    if (f != t.tv_sec) {
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT(time)->value);
