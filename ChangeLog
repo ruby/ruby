@@ -1,3 +1,7 @@
+Fri Jun 27 12:28:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/un.rb (mkmf): new command to create makefile.
+
 Fri Jun 27 00:34:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (revision.h): split the temporary file.  [ruby-core:17407]
