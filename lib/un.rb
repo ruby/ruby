@@ -19,6 +19,7 @@
 #   ruby -run -e install -- [OPTION] SOURCE DEST
 #   ruby -run -e chmod -- [OPTION] OCTAL-MODE FILE
 #   ruby -run -e touch -- [OPTION] FILE
+#   ruby -run -e wait_writable -- [OPTION] FILE
 #   ruby -run -e help [COMMAND]
 
 require "fileutils"
@@ -217,6 +218,10 @@ end
 # Wait until the file becomes writable.
 #
 #   ruby -run -e wait_writable -- [OPTION] FILE
+#
+#   -n RETRY	count to retry
+#   -w SEC	each wait time in seconds
+#   -v		verbose
 #
 
 def wait_writable
