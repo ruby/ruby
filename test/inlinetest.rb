@@ -33,12 +33,12 @@ module InlineTest
   end
 
   def self.in_progname(progname)
-    progname_backup = $0.dup
-    $0.replace(progname)
+    $program_name = progname
+    alias $0 $program_name
     begin
       yield
     ensure
-      $0.replace(progname_backup)
+      alias $0 $PROGRAM_NAME
     end
   end
 
