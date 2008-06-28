@@ -2239,8 +2239,8 @@ rb_mod_alias_method(mod, newname, oldname)
     return mod;
 }
 
-static NODE*
-copy_node_scope(node, rval)
+NODE *
+rb_copy_node_scope(node, rval)
     NODE *node;
     NODE *rval;
 {
@@ -3948,7 +3948,7 @@ rb_eval(self, n)
 		noex |= NOEX_NOSUPER;
 	    }
 
-	    defn = copy_node_scope(node->nd_defn, ruby_cref);
+	    defn = rb_copy_node_scope(node->nd_defn, ruby_cref);
 	    rb_add_method(ruby_class, node->nd_mid, defn, noex);
 	    if (scope_vmode == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(ruby_class),
@@ -3984,7 +3984,7 @@ rb_eval(self, n)
 		    rb_warning("redefine %s", rb_id2name(node->nd_mid));
 		}
 	    }
-	    defn = copy_node_scope(node->nd_defn, ruby_cref);
+	    defn = rb_copy_node_scope(node->nd_defn, ruby_cref);
 	    rb_add_method(klass, node->nd_mid, defn,
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    result = Qnil;

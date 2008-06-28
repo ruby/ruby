@@ -1,3 +1,8 @@
+Sat Jun 28 19:25:56 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (rb_copy_node_scope), node.h: Rename from copy_node_scope
+	  and export.
+
 Fri Jun 27 17:38:21 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/zlib/zlib.c (rb_deflate_initialize, Init_zlib): Fix up
