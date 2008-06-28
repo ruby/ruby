@@ -116,7 +116,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.6"
+#define WIN32OLE_VERSION "1.1.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -768,12 +768,10 @@ static VALUE
 date2time_str(double date)
 {
     int y, m, d, hh, mm, ss;
-    char szTime[20];
     double2time(date, &y, &m, &d, &hh, &mm, &ss);
-    sprintf(szTime,
+    return rb_sprintf(
             "%04d/%02d/%02d %02d:%02d:%02d",
             y, m, d, hh, mm, ss);
-    return rb_str_new2(szTime);
 }
 
 #define ENC_MACHING_CP(enc,encname,cp) if(strcasecmp(rb_enc_name((enc)),(encname)) == 0) return cp
