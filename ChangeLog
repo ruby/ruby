@@ -1,3 +1,8 @@
+Sat Jun 28 13:12:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/rubygems/test_gem.rb (test_self_path_APPLE_GEM_HOME): don't use
+	  fixed /tmp/apple_gem_home directory.
+
 Sat Jun 28 08:40:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c : check String encoding when

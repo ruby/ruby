@@ -3,6 +3,7 @@ require 'rubygems'
 require 'rubygems/gem_openssl'
 require 'rubygems/installer'
 require 'pathname'
+require 'tmpdir'
 
 class TestGem < RubyGemTestCase
 
@@ -260,9 +261,10 @@ class TestGem < RubyGemTestCase
   unless win_platform?
     def test_self_path_APPLE_GEM_HOME
       Gem.clear_paths
-      Gem.const_set :APPLE_GEM_HOME, '/tmp/apple_gem_home'
-  
-      assert Gem.path.include?('/tmp/apple_gem_home')
+      Dir.mktmpdir("apple_gem_home") {|d|
+        Gem.const_set :APPLE_GEM_HOME, d
+        assert Gem.path.include?(d)
+      }
     ensure
       Gem.send :remove_const, :APPLE_GEM_HOME
     end
