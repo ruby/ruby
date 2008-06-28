@@ -62,10 +62,7 @@ clone_method(mid, body, data)
     NODE *fbody = body->nd_body;
 
     if (fbody && nd_type(fbody) == NODE_SCOPE) {
-	VALUE cref = data->klass ?
-	    (VALUE)NEW_NODE(NODE_CREF,data->klass,0,fbody->nd_rval) :
-	    fbody->nd_rval;
-	fbody = NEW_NODE(NODE_SCOPE, fbody->nd_tbl, cref, fbody->nd_next);
+	fbody = rb_copy_node_scope(fbody, ruby_cref);
     }
     st_insert(data->tbl, mid, (st_data_t)NEW_METHOD(fbody, body->nd_noex));
     return ST_CONTINUE;
