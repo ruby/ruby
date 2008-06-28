@@ -1,3 +1,8 @@
+Sun Jun 29 00:13:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_obj_respond_to): use RTEST to test the result of
+	  respond_to? method.
+
 Sat Jun 28 19:13:41 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* class.c (clone_method): use rb_copy_node_scope.
