@@ -535,10 +535,25 @@ VALUE rb_str_buf_new2(const char*);
 VALUE rb_str_tmp_new(long);
 VALUE rb_usascii_str_new(const char*, long);
 VALUE rb_usascii_str_new2(const char*);
-#if __GNUC__ >= 4 && defined __OPTIMIZE__ && __OPTIMIZE__
-#define rb_str_new2(str) ({const char *_s = (str); rb_str_new(_s, strlen(_s));})
-#define rb_tainted_str_new2(str) ({const char *_s = (str); rb_tainted_str_new(_s, strlen(_s));})
-#define rb_usascii_str_new2(str) ({const char *_s = (str); rb_usascii_str_new(_s, strlen(_s));})
+#if defined __GNUC__
+#define rb_str_new2(str) (			\
+{						\
+    (__builtin_constant_p(str)) ?	       \
+	rb_str_new(str, strlen(str)) :		\
+	rb_str_new2(str);			\
+})
+#define rb_tainted_str_new2(str) ( \
+{					       \
+    (__builtin_constant_p(str)) ?	       \
+	rb_tainted_str_new(str, strlen(str)) : \
+	rb_tainted_str_new2(str);	       \
+})
+#define rb_usascii_str_new2(str) ( \
+{					       \
+    (__builtin_constant_p(str)) ?	       \
+	rb_usascii_str_new(str, strlen(str)) : \
+	rb_usascii_str_new2(str);	       \
+})
 #endif
 void rb_str_free(VALUE);
 void rb_str_shared_replace(VALUE, VALUE);

@@ -1,7 +1,8 @@
-Sat Jun 28 20:50:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Jun 28 21:15:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_new2, rb_tainted_str_new2,
-	  rb_usascii_str_new2): use inline versions for gcc 4 or lator.
+	  rb_usascii_str_new2): use inline versions only for constant
+	  literals.
 
 Sat Jun 28 13:12:06 2008  Tanaka Akira  <akr@fsij.org>
 
