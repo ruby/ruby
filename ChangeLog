@@ -1,3 +1,9 @@
+Sat Jun 28 19:13:41 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* class.c (clone_method): use rb_copy_node_scope.
+	  fixed [ruby-list:45102]
+	  fixed [ruby-core:17393]
+
 Sat Jun 28 18:48:48 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* class.c: revert to r15855.
