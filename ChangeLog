@@ -235,7 +235,7 @@ Sat Jun 21 16:29:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* parse.y (call_args2, open_args): removed.
 
 	* parse.y (parser_yylex): unified warnings at space between method
-	  name and argument parenthese.  [ruby-dev:33943]
+	  name and argument parenthesis.  [ruby-dev:33943]
 
 Sat Jun 21 16:21:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -330,7 +330,7 @@ Fri Jun 20 11:07:56 2008  Tanaka Akira  <akr@fsij.org>
 Wed Jun 18 21:52:38 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* array.c (ary_new, rb_ary_initialize, rb_ary_store,
-	  rb_ary_aplice, rb_ary_times): integer overflows should be
+	  rb_ary_splice, rb_ary_times): integer overflows should be
 	  checked. based on patches from Drew Yao <ayao at apple.com>
 	  fixed CVE-2008-2726
 
@@ -496,7 +496,7 @@ Wed Jun 18 14:30:06 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Wed Jun 18 13:49:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* include/ruby/win32.h (pipe): now pipe is textmode. although this
-	  change is experimental, it will be spec if no compatiblity problem
+	  change is experimental, it will be spec if no compatibility problem
 	  is reported.
 
 Wed Jun 18 12:05:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -589,15 +589,15 @@ Tue Jun 17 06:32:55 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* dir.c (dir_s_alloc): ditto.
 
 	* dir.c (dir_initialize): now accept internal_encoding and
-	  exernal_encoding.
+	  external_encoding.
 
 	* dir.c (dir_s_open): changed for dir_initialize.
 
 	* dir.c (dir_open_dir): ditto.
 	
-	* dir.c (dir_foreach): changed for dir_oepn_dir.
+	* dir.c (dir_foreach): changed for dir_open_dir.
 
-	* dir.c (dir_entries): changed for dir_oepn_dir.
+	* dir.c (dir_entries): changed for dir_open_dir.
 
 	* dir.c (dir_enc_str): defined.
 
@@ -614,7 +614,7 @@ Tue Jun 17 06:28:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* io.c (rb_open_file): convert path on Windows and Mac OS X.
 
 	* io.c (open_key_args): use io_set_encoding and now accept
-	  internal_encoding and exernal_encoding.
+	  internal_encoding and external_encoding.
 
 Tue Jun 17 06:26:28 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -921,7 +921,7 @@ Wed Jun 11 05:55:31 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/wm.rb: methods of Tk::Wm_for_General module cannot
 	  pass the given block to methods of Tk::Wm module.
 
-	* ext/tk/lib/tk/wm.rb: Wm#overrideredirect overwrites arguemnt to 
+	* ext/tk/lib/tk/wm.rb: Wm#overrideredirect overwrites argument to 
 	  an invalid value.
 
 	* ext/tk/lib/tk.rb: fix memory (object) leak bug.
@@ -1002,7 +1002,7 @@ Wed Jun 11 03:40:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 Wed Jun 11 01:28:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/intern.h, proc.c: revert rb_proc_call() and
-	  create rb_proc_call_with_block() instaed.
+	  create rb_proc_call_with_block() instead.
 
 	* include/ruby/ruby.h, eval_jump.c, thread.c, vm_insnhelper.c: 
 	  rb_blockptr should not be exposed.
@@ -1354,7 +1354,7 @@ Thu Jun  5 20:17:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* lib/rexml/document.rb (REXML::Document:write): leaky modification
 	  trans -> transitive.  [ruby-dev:32040], r13686
 
-	* lib/rexml/text.rb (Text.check): fix check for illigal characher.
+	* lib/rexml/text.rb (Text.check): fix check for illegal character.
 
 Thu Jun  5 14:03:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1541,7 +1541,7 @@ Mon Jun  2 16:14:18 2008  Akinori MUSHA  <knu@iDaemons.org>
 Mon Jun  2 16:08:24 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/erb.rb (ERB::Compiler::TrimScanner#scan_line): Fix a bug
-	  where tokens are not yilelded one by one.
+	  where tokens are not yielded one by one.
 
 	* test/erb/test_erb.rb (TestERBCore#_test_01)
 	  (TestERBCore#test_02_safe_04): The expected value should come
@@ -1574,7 +1574,7 @@ Mon Jun  2 03:23:25 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* enc/gb18030.c (gb18030_mbc_to_code): mask by 0x7FFFFFFF
 	  because OnigCodePoint will be used as 32bit signed int.
 	  Masking by 0x7FFFFFFF is ok on GB18030;
-	  Minumum 4bytes character is 0x81308130.
+	  Minimum 4bytes character is 0x81308130.
 
 Sun Jun  1 22:29:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -1797,7 +1797,7 @@ Wed May 28 15:18:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed May 28 13:30:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* enc/trans/japanese.c: add workarround for Unicode to CP932.
+	* enc/trans/japanese.c: add workaround for Unicode to CP932.
 	  U+2015->0x815C, U+2225->0x8161, U+FF0D->0x817C, U+FF3C->0x815F,
 	  U+FF5E->0x8160, U+FFE0->0x8191, U+FFE1->0x8192, U+FFE2->0x81CA
 
@@ -1966,7 +1966,7 @@ Sun May 25 02:37:25 2008  Koichi Sasada  <ko1@atdot.net>
 Sat May 24 22:32:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): clear errno at the top of our own
-	  impelementation of strtod(3).  [ruby-dev:34834] [ruby-dev:34839]
+	  implementation of strtod(3).  [ruby-dev:34834] [ruby-dev:34839]
 
 Sat May 24 15:26:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -2157,7 +2157,7 @@ Wed May 21 01:45:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Wed May 21 01:28:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* transcode.c, include/ruby/encodng.h (rb_str_transcode):
+	* transcode.c, include/ruby/encoding.h (rb_str_transcode):
 	  C API of encoding conversion for Ruby object.
 	  VALUE rb_str_transcode(VALUE str, VALUE to).
 
@@ -2200,7 +2200,7 @@ Tue May 20 03:42:43 2008  Koichi Sasada  <ko1@atdot.net>
 	* eval.c, vm_insnhelper.c: fix cref in instance_eval
 	  and cvar_base search protocol.
 
-	* bootstraptest/test_knownbug.rb, test_eval.rb: move soleved test
+	* bootstraptest/test_knownbug.rb, test_eval.rb: move solved test
 	  and add new tests.
 
 	* test/ruby/test_eval.rb: fix tests for spec.
@@ -2212,7 +2212,7 @@ Tue May 20 01:43:44 2008  Koichi Sasada  <ko1@atdot.net>
 
 Tue May 20 01:07:19 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* parse.y (assignable_gen): when "self = 1" was evalueted, unnecessary
+	* parse.y (assignable_gen): when "self = 1" was evaluated, unnecessary
 	  error message was output, which might cause null pointer access.
 
 Tue May 20 08:38:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2329,7 +2329,7 @@ Sun May 18 22:26:51 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  filename) is less than perfect.
 
 	* lib/webrick/httpservlet/abstract.rb
-	  (WEBrick::HTTPServlet::AbstracServlet#redirect_to_directory_uri):
+	  (WEBrick::HTTPServlet::AbstractServlet#redirect_to_directory_uri):
 	  should escape the value of Location: header.
 
 	* lib/webrick/httpservlet/cgi_runner.rb: accept interpreter
@@ -2418,7 +2418,7 @@ Thu May 15 22:37:56 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 Thu May 15 15:33:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (file_expand_path): support for alternative data stream
-	  and ignored trailing garbages of NTFS.
+	  and ignored trailing garbage of NTFS.
 
 	* file.c (rb_file_s_basename): ditto.
 
@@ -2620,7 +2620,7 @@ Mon May 12 20:19:55 2008  Akinori MUSHA  <knu@iDaemons.org>
 	  (cycle_i): Ditto.
 
 	* enum.c (each_with_index): Update rdoc.  each_with_index() takes
-	  argments that are passed through to each(), and a hash preserves
+	  arguments that are passed through to each(), and a hash preserves
 	  key order.
 
 Mon May 12 19:05:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
