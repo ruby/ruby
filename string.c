@@ -2247,7 +2247,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     switch (TYPE(sub)) {
       case T_REGEXP:
 	/* enc = rb_get_check(str, sub); */
-	if (RREGEXP(sub)->len) {
+	if (!RREGEXP(sub)->ptr || RREGEXP_SRC_LEN(sub)) {
 	    pos = rb_reg_adjust_startpos(sub, str, pos, 1);
 	    pos = rb_reg_search(sub, str, pos, 1);
 	    pos = rb_str_sublen(str, pos);

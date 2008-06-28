@@ -1,3 +1,21 @@
+Sat Jun 28 21:25:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (struct RRegexp): new field usecnt.  replace
+	  str and len by src.
+
+	* gc.c (gc_mark_children): mark src field of regexp.
+	  (obj_free): don't free str field.
+
+	* re.c (REG_BUSY): removed.
+	  (rb_reg_initialize): prohibit re-initialize regexp.
+	  (rb_reg_search): use usecnt to prevent freeing regexp currently
+	  using.  this prevents SEGV by:
+	    r = /\A((a.)*(a.)*)*b/
+	    r =~ "ab" + "\xc2\xa1".force_encoding("euc-jp")
+	    t = Thread.new { r =~ "ab"*8 + "\xc2\xa1".force_encoding("utf-8")}
+	    sleep 0.2
+	    r =~ "ab"*8 + "\xc2\xa1".force_encoding("euc-jp")
+
 Sat Jun 28 21:15:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_new2, rb_tainted_str_new2,

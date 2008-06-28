@@ -522,9 +522,12 @@ struct RArray {
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    long len;
-    char *str;
+    VALUE src;
+    unsigned long usecnt;
 };
+#define RREGEXP_SRC(r) RREGEXP(r)->src
+#define RREGEXP_SRC_PTR(r) RSTRING_PTR(RREGEXP(r)->src)
+#define RREGEXP_SRC_LEN(r) RSTRING_LEN(RREGEXP(r)->src)
 
 struct RHash {
     struct RBasic basic;
