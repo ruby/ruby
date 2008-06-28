@@ -582,6 +582,16 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_each_line_paragraph
+    EnvUtil.rubyexec('-e', 'ARGF.each_line("") {|para| p para}') do |w, r, e|
+      w << "a\n\nb\n"
+      w.close
+      assert_equal("\"a\\n\\n\"\n", r.gets, "[ruby-dev:34958]")
+      assert_equal("\"b\\n\"\n", r.gets)
+      assert_equal(nil, r.gets)
+    end
+  end
+
   def test_each_byte
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       s = []
