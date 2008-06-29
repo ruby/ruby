@@ -2413,6 +2413,7 @@ rb_ary_fill(argc, argv, ary)
 	    if (beg < 0) beg = 0;
 	}
 	len = NIL_P(arg2) ? RARRAY(ary)->len - beg : NUM2LONG(arg2);
+	if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
 	break;
     }
     rb_ary_modify(ary);

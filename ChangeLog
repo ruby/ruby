@@ -1,3 +1,7 @@
+Sun Jun 29 19:19:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_fill): check for negative length.
+
 Sun Jun 29 18:09:00 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* NEWS: add an entry for rss.
