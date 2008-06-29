@@ -361,9 +361,7 @@ module RSS
     def start_else_element(local, prefix, attrs, ns)
       class_name = self.class.class_name(_ns(ns, prefix), local)
       current_class = @last_element.class
-      if class_name and
-          (current_class.const_defined?(class_name, false) or
-           current_class.constants.include?(class_name.to_sym))
+      if known_class?(current_class, class_name)
         next_class = current_class.const_get(class_name)
         start_have_something_element(local, prefix, attrs, ns, next_class)
       else
@@ -376,6 +374,20 @@ module RSS
           end
           raise NotExpectedTagError.new(local, _ns(ns, prefix), parent)
         end
+      end
+    end
+
+    if Module.method(:const_defined?).arity == -1
+      def known_class?(target_class, class_name)
+        class_name and
+          (target_class.const_defined?(class_name, false) or
+           target_class.constants.include?(class_name.to_sym))
+      end
+    else
+      def known_class?(target_class, class_name)
+        class_name and
+          (target_class.const_defined?(class_name) or
+           target_class.constants.include?(class_name))
       end
     end
 

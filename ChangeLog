@@ -1,3 +1,8 @@
+Sun Jun 29 17:44:23 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb (RSS::ListenerMixin#known_class): define to
+	work with ruby 1.8.x too.
+
 Sun Jun 29 17:41:42 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb (RSS::Maker::RSSBase#to_feed): raise
