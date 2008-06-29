@@ -191,9 +191,9 @@ module TestNetHTTP_version_1_2_methods
       assert_kind_of Net::HTTPResponse, res
       assert_not_nil res['content-length']
       assert_equal $test_net_http_data.size, res['content-length'].to_i
-      f = StringIO.new
+      f = StringIO.new("".force_encoding("ASCII-8BIT"))
       res.read_body f
-      assert_equal $test_net_http_data.size, f.string.size
+      assert_equal $test_net_http_data.bytesize, f.string.bytesize
       assert_equal $test_net_http_data.encoding, f.string.encoding
       assert_equal $test_net_http_data, f.string
     }

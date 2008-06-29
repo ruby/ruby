@@ -1,3 +1,10 @@
+Mon Jun 30 03:01:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/net/http/test_http.rb (_test_request__file): specify encoding
+	  explicitly.
+
+	* test/net/http/utils.rb: ditto.
+
 Mon Jun 30 02:31:07 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_utf8_encindex): defined.

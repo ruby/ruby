@@ -71,6 +71,7 @@ module TestNetHTTPUtils
 
   $test_net_http = nil
   $test_net_http_data = (0...256).to_a.map {|i| i.chr }.join('') * 64
+  $test_net_http_data.force_encoding("ASCII-8BIT")
   $test_net_http_data_type = 'application/octet-stream'
 
   class Servlet < WEBrick::HTTPServlet::AbstractServlet
