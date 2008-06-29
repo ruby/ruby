@@ -1,3 +1,8 @@
+Sun Jun 29 21:39:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* eval.c (rb_obj_respond_to): use RTEST to test the result of
+	  respond_to? method.
+
 Sun Jun 29 21:20:17 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* array.c (rb_ary_fill): (compatibility) do not raise
