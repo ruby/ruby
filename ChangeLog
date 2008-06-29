@@ -1,3 +1,10 @@
+Sun Jun 29 17:41:42 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb (RSS::Maker::RSSBase#to_feed): raise
+	exception not return nil if RSS::Maker.make can't get required
+	information.
+	* test/rss/rss-assertions.rb: follow the above change.
+
 Sun Jun 29 17:37:23 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb (RSS::Maker::RSSBase#make): require block.

@@ -420,11 +420,8 @@ module RSS
         setup_xml_stylesheets(feed)
         setup_elements(feed)
         setup_other_elements(feed)
-        if feed.valid?
-          feed
-        else
-          nil
-        end
+        feed.validate
+        feed
       end
       
       private

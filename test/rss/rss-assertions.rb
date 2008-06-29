@@ -1272,22 +1272,32 @@ EOA
                                     invalid_feed_checker=nil)
       _wrap_assertion do
         elements = []
-        invalid_feed = false
-        feed = RSS::Maker.make("atom:#{feed_type}") do |maker|
-          yield maker
-          targets = chain_reader(maker, maker_readers)
-          targets.each do |target|
-            element = maker_extractor.call(target)
-            elements << element if element
+        invalid_feed_exception = nil
+        feed = nil
+        begin
+          feed = RSS::Maker.make("atom:#{feed_type}") do |maker|
+            yield maker
+            targets = chain_reader(maker, maker_readers)
+            targets.each do |target|
+              element = maker_extractor.call(target)
+              elements << element if element
+            end
+            if invalid_feed_checker
+              invalid_feed_exception = invalid_feed_checker.call(targets)
+            end
           end
-          if invalid_feed_checker
-            invalid_feed = invalid_feed_checker.call(targets)
+        rescue RSS::Error
+          if invalid_feed_exception.is_a?(RSS::TooMuchTagError)
+            assert_too_much_tag(invalid_feed_exception.tag,
+                                invalid_feed_exception.parent) do
+              raise
+            end
+          else
+            raise
           end
         end
 
-        if invalid_feed
-          assert_nil(feed)
-        else
+        if invalid_feed_exception.nil?
           actual_elements = chain_reader(feed, feed_readers) || []
           actual_elements = actual_elements.collect do |target|
             feed_extractor.call(target)
@@ -1542,18 +1552,24 @@ EOA
           :length => target.length,
         }
       end
+
+      if feed_readers.first == "entries"
+        parent = "entry"
+      else
+        parent = feed_type
+      end
       invalid_feed_checker = Proc.new do |targets|
         infos = {}
-        invalid = false
+        invalid_exception = nil
         targets.each do |target|
           key = [target.hreflang, target.type]
           if infos.has_key?(key)
-            invalid = true
+            invalid_exception = RSS::TooMuchTagError.new("link", parent)
             break
           end
           infos[key] = true if target.rel.nil? or target.rel == "alternate"
         end
-        invalid
+        invalid_exception
       end
       invalid_feed_checker = nil if allow_duplication
       _assert_maker_atom_elements(feed_type, maker_readers, feed_readers,
