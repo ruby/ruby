@@ -4231,7 +4231,7 @@ rb_obj_respond_to(obj, id, priv)
 	int n = 0;
 	args[n++] = ID2SYM(id);
 	if (priv) args[n++] = Qtrue;
-	return rb_funcall2(obj, respond_to, n, args);
+	return RTEST(rb_funcall2(obj, respond_to, n, args));
     }
 }
 
