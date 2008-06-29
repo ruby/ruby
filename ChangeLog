@@ -1,3 +1,9 @@
+Sun Jun 29 18:19:11 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c (PUSH_FRAME, PUSH_CLASS): Add volatile to avoid a
+	  possible optimization bug on OS X/PPC.  This at least makes
+	  build with gcc -O1 and `make test' pass.
+
 Sun Jun 29 17:24:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc#collect_first_comment): skip

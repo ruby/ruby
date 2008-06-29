@@ -758,7 +758,7 @@ static struct SCOPE *top_scope;
 static unsigned long frame_unique = 0;
 
 #define PUSH_FRAME() do {		\
-    struct FRAME _frame;		\
+    volatile struct FRAME _frame;	\
     _frame.prev = ruby_frame;		\
     _frame.tmp  = 0;			\
     _frame.node = ruby_current_node;	\
@@ -1055,7 +1055,7 @@ VALUE ruby_class;
 static VALUE ruby_wrapper;	/* security wrapper */
 
 #define PUSH_CLASS(c) do {		\
-    VALUE _class = ruby_class;		\
+    volatile VALUE _class = ruby_class;	\
     ruby_class = (c)
 
 #define POP_CLASS() ruby_class = _class; \
