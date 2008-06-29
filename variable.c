@@ -642,6 +642,7 @@ rb_f_untrace_var(argc, argv)
     struct global_entry *entry;
     struct trace_var *trace;
 
+    rb_secure(4);
     rb_scan_args(argc, argv, "11", &var, &cmd);
     id = rb_to_id(var);
     if (!st_lookup(rb_global_tbl, id, (st_data_t *)&entry)) {
