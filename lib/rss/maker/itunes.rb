@@ -176,7 +176,7 @@ module RSS
 
         %w(hour minute second).each do |name|
           attr_reader(name)
-          add_need_initialize_variable(name, '0')
+          add_need_initialize_variable(name, 0)
         end
 
         def content=(content)

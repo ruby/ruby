@@ -1,3 +1,8 @@
+Sun Jun 29 17:33:34 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb, lib/rss/maker/itunes.rb: don't use
+	instance_eval to initialize variables. (speed up)
+
 Sun Jun 29 17:31:15 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, test/rss/test_version.rb (RSS::VERSION):
