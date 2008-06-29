@@ -1,3 +1,8 @@
+Sun Jun 29 18:22:06 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_invoke): fix memory leak.
+	  [ruby-bugs-20792]
+
 Sun Jun 29 18:19:11 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c (PUSH_FRAME, PUSH_CLASS): Add volatile to avoid a

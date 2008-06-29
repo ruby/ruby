@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.7.4"
+#define WIN32OLE_VERSION "0.7.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -522,6 +522,15 @@ ole_hresult2msg(hr)
     return msg;
 }
 
+static void
+ole_freeexceptinfo(pExInfo)
+    EXCEPINFO *pExInfo;
+{
+    SysFreeString(pExInfo->bstrDescription);
+    SysFreeString(pExInfo->bstrSource);
+    SysFreeString(pExInfo->bstrHelpFile);
+}
+
 static VALUE
 ole_excepinfo2msg(pExInfo)
     EXCEPINFO *pExInfo;
@@ -561,9 +570,7 @@ ole_excepinfo2msg(pExInfo)
     }
     if(pSource) free(pSource);
     if(pDescription) free(pDescription);
-    SysFreeString(pExInfo->bstrDescription);
-    SysFreeString(pExInfo->bstrSource);
-    SysFreeString(pExInfo->bstrHelpFile);
+    ole_freeexceptinfo(pExInfo);
     return error_msg;
 }
 
@@ -2109,6 +2116,9 @@ ole_invoke(argc, argv, self, wFlags)
                 param = rb_ary_entry(paramS, i-cNamedArgs);
                 ole_val2variant(param, &op.dp.rgvarg[n]);
             }
+            if (hr == DISP_E_EXCEPTION) {
+                ole_freeexceptinfo(&excepinfo);
+            }
             memset(&excepinfo, 0, sizeof(EXCEPINFO));
             VariantInit(&result);
             hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
@@ -2121,6 +2131,9 @@ ole_invoke(argc, argv, self, wFlags)
              * hResult == DISP_E_EXCEPTION. this only happens on
              * functions whose DISPID > 0x8000 */
             if ((hr == DISP_E_EXCEPTION || hr == DISP_E_MEMBERNOTFOUND) && DispID > 0x8000) {
+                if (hr == DISP_E_EXCEPTION) {
+                    ole_freeexceptinfo(&excepinfo);
+                }
                 memset(&excepinfo, 0, sizeof(EXCEPINFO));
                 hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
                         &IID_NULL, lcid, wFlags,
@@ -2139,6 +2152,9 @@ ole_invoke(argc, argv, self, wFlags)
                     n = op.dp.cArgs - i + cNamedArgs - 1;
                     param = rb_ary_entry(paramS, i-cNamedArgs);
                     ole_val2variant2(param, &op.dp.rgvarg[n]);
+                }
+                if (hr == DISP_E_EXCEPTION) {
+                    ole_freeexceptinfo(&excepinfo);
                 }
                 memset(&excepinfo, 0, sizeof(EXCEPINFO));
                 VariantInit(&result);
