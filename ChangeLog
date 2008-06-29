@@ -1,3 +1,7 @@
+Mon Jun 30 02:10:32 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* process.c (Init_process): fix to avoid a warning.
+
 Mon Jun 30 01:52:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_parse.rb: remove tests for open_args.

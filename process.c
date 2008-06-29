@@ -5152,12 +5152,12 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
 #ifdef RLIM2NUM
     {
-        VALUE inf = RLIM2NUM(RLIM_INFINITY), v;
-        rb_define_const(rb_mProcess, "RLIM_INFINITY", inf);
+        VALUE inf = RLIM2NUM(RLIM_INFINITY);
 #ifdef RLIM_SAVED_MAX
-        v = RLIM_INFINITY == RLIM_SAVED_MAX ? inf : RLIM2NUM(RLIM_SAVED_MAX);
+	VALUE v = RLIM_INFINITY == RLIM_SAVED_MAX ? inf : RLIM2NUM(RLIM_SAVED_MAX);
         rb_define_const(rb_mProcess, "RLIM_SAVED_MAX", v);
 #endif
+        rb_define_const(rb_mProcess, "RLIM_INFINITY", inf);
 #ifdef RLIM_SAVED_CUR
         v = RLIM_INFINITY == RLIM_SAVED_CUR ? inf : RLIM2NUM(RLIM_SAVED_CUR);
         rb_define_const(rb_mProcess, "RLIM_SAVED_CUR", v);
