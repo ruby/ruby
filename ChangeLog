@@ -1,3 +1,8 @@
+Sun Jun 29 17:21:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_each, strio_readlines): IO#each and
+	  IO#readlines do not affect $_.  [ruby-core:17277]
+
 Sun Jun 29 17:18:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_readline, strio_each)
