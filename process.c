@@ -42,7 +42,7 @@ struct timeval rb_time_interval _((VALUE));
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
 #endif
-#ifdef HAVE_GETPRIORITY
+#ifdef HAVE_SYS_RESOURCE_H
 # include <sys/resource.h>
 #endif
 #include "st.h"
