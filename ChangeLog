@@ -1,3 +1,7 @@
+Sun Jun 29 20:06:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (time_timeval): fix rounding negative float.
+
 Sun Jun 29 18:35:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/inlinetest.rb (InlineTest.in_progname): workaround for frozen
