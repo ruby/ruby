@@ -3,6 +3,9 @@ Sun Jun 29 18:25:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* variable.c (rb_f_trace_var): should not be allowed at safe level 4.  
 	  a patch from Keita Yamaguchi <keita.yamaguchi at gmail.com>.
 
+	* eval.c (rb_call0): wrong condition to check insecure method.
+	  a patch from Keita Yamaguchi <keita.yamaguchi at gmail.com>.
+
 Sun Jun 29 18:24:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_fill): not depend on unspecified behavior at integer

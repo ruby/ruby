@@ -5794,8 +5794,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
     TMP_PROTECT;
     volatile int safe = -1;
 
-    if (NOEX_SAFE(flags) > ruby_safe_level &&
-	ruby_safe_level == 0 && NOEX_SAFE(flags) > 2) {
+    if (NOEX_SAFE(flags) > ruby_safe_level && NOEX_SAFE(flags) > 2) {
 	rb_raise(rb_eSecurityError, "calling insecure method: %s",
 		 rb_id2name(id));
     }
