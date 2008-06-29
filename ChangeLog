@@ -1,3 +1,9 @@
+Sun Jun 29 21:20:17 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* array.c (rb_ary_fill): (compatibility) do not raise
+	  ArgumentError on negative length.  This behaviour shall change
+	  in a future release.
+
 Sun Jun 29 20:08:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* time.c (time_timeval): fix rounding negative float.
