@@ -1351,6 +1351,7 @@ glob_helper(
 
 	    new_beg = new_end = GLOB_ALLOC_N(struct glob_pattern *, (end - beg) * 2);
 	    if (!new_beg) {
+		GLOB_FREE(buf);
 		status = -1;
 		break;
 	    }

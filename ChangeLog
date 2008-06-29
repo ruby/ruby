@@ -1,3 +1,7 @@
+Sun Jun 29 11:36:20 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* dir.rb: fix resource leak.
+
 Sun Jun 29 09:43:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tmpdir.rb (@@systmpdir): prior LOCAL_APPDATA if possible, and
