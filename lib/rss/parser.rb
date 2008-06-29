@@ -34,7 +34,8 @@ module RSS
   class NotValidXMLParser < Error
     def initialize(parser)
       super("#{parser} is not an available XML parser. " <<
-            "Available XML parser is " <<
+            "Available XML parser" <<
+            (AVAILABLE_PARSERS.size > 1 ? "s are " : " is ") <<
             "#{AVAILABLE_PARSERS.inspect}.")
     end
   end
