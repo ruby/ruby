@@ -34,7 +34,7 @@ domain_check(x, msg)
 	if (isnan(x)) {
 #if defined(EDOM)
 	    errno = EDOM;
-#elif define(ERANGE)
+#elif defined(ERANGE)
 	    errno = ERANGE;
 #endif
 	    continue;

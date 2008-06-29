@@ -1,3 +1,7 @@
+Sun Jun 29 10:59:12 2008  Tanaka Akira  <akr@fsij.org>
+
+	* math.c (domain_check): fix preprocess condition.
+
 Sun Jun 29 09:43:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/tmpdir.rb (@@systmpdir): prior LOCAL_APPDATA if possible, and
