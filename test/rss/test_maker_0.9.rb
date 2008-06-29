@@ -6,8 +6,9 @@ module RSS
   class TestMaker09 < TestCase
 
     def test_rss
-      rss = RSS::Maker.make("0.91")
-      assert_nil(rss)
+      assert_raise(LocalJumpError) do
+        RSS::Maker.make("0.91")
+      end
       
       rss = RSS::Maker.make("0.9") do |maker|
         setup_dummy_channel(maker)

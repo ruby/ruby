@@ -411,12 +411,8 @@ module RSS
       end
       
       def make
-        if block_given?
-          yield(self)
-          to_feed
-        else
-          nil
-        end
+        yield(self)
+        to_feed
       end
 
       def to_feed

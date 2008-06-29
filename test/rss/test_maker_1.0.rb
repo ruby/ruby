@@ -6,6 +6,10 @@ module RSS
   class TestMaker10 < TestCase
 
     def test_rdf
+      assert_raise(LocalJumpError) do
+        RSS::Maker.make("1.0")
+      end
+
       rss = RSS::Maker.make("1.0") do |maker|
         setup_dummy_channel(maker)
         setup_dummy_item(maker)
@@ -48,9 +52,6 @@ module RSS
       link = "http://hoge.com"
       description = "fugafugafugafuga"
 
-      rss = RSS::Maker.make("1.0")
-      assert_nil(rss)
-      
       rss = RSS::Maker.make("1.0") do |maker|
         maker.channel.about = about
         maker.channel.title = title
