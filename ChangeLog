@@ -1,3 +1,8 @@
+Sun Jun 29 18:24:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_fill): not depend on unspecified behavior at integer
+	  overflow.  reported by Vincenzo Iozzo <snagg AT openssl.it>.
+
 Sun Jun 29 18:21:23 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(ole_invoke): fix memory leak.

@@ -2272,10 +2272,10 @@ rb_ary_fill(argc, argv, ary)
 	break;
     }
     rb_ary_modify(ary);
-    end = beg + len;
-    if (end < 0) {
+    if (len > ARY_MAX_SIZE - beg) {
 	rb_raise(rb_eArgError, "argument too big");
     }
+    end = beg + len;
     if (end > RARRAY(ary)->len) {
 	if (end >= RARRAY(ary)->aux.capa) {
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, end);
