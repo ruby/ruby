@@ -1,3 +1,7 @@
+Sun Jun 29 18:01:30 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/parser.rb, lib/rss/utils.rb: merge documents from ruby_1_8.
+
 Sun Jun 29 17:44:23 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb (RSS::ListenerMixin#known_class): define to
