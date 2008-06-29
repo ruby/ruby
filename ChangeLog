@@ -1,3 +1,10 @@
+Sun Jun 29 16:49:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (search_method, remove_method, error_print, rb_alias)
+	  (rb_eval, rb_rescue2, search_required, Init_eval, rb_thread_create),
+	  gc.c (rb_source_filename, Init_stack), io.c (rb_io_getline),
+	  parse.y (rb_id2name, rb_parser_free): suppress warnings.
+
 Sat Jun 28 19:26:43 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* class.c (clone_method): use rb_copy_node_scope.

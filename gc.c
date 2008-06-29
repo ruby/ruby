@@ -525,17 +525,18 @@ char *
 rb_source_filename(f)
     const char *f;
 {
-    char *name;
+    st_data_t name;
 
-    if (!st_lookup(source_filenames, (st_data_t)f, (st_data_t *)&name)) {
+    if (!st_lookup(source_filenames, (st_data_t)f, &name)) {
 	long len = strlen(f) + 1;
-	char *ptr = name = ALLOC_N(char, len + 1);
+	char *ptr = ALLOC_N(char, len + 1);
+	name = (st_data_t)ptr;
 	*ptr++ = 0;
 	MEMCPY(ptr, f, char, len);
-	st_add_direct(source_filenames, (st_data_t)ptr, (st_data_t)name);
+	st_add_direct(source_filenames, (st_data_t)ptr, name);
 	return ptr;
     }
-    return name + 1;
+    return (char *)name + 1;
 }
 
 static void
@@ -1255,7 +1256,7 @@ obj_free(obj)
 	if (RANY(obj)->as.scope.local_vars &&
             RANY(obj)->as.scope.flags != SCOPE_ALLOCA) {
 	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
-           if (!(RANY(obj)->as.scope.flags & SCOPE_CLONE) && vars[0] == 0)
+	    if (!(RANY(obj)->as.scope.flags & SCOPE_CLONE) && vars[0] == 0)
 		RUBY_CRITICAL(free(RANY(obj)->as.scope.local_tbl));
 	    if (RANY(obj)->as.scope.flags & SCOPE_MALLOC)
 		RUBY_CRITICAL(free(vars));
@@ -1490,7 +1491,7 @@ Init_stack(addr)
         rb_gc_stack_start = STACK_END_ADDRESS;
     }
 #else
-    if (!addr) addr = (VALUE *)&addr;
+    if (!addr) addr = (void *)&addr;
     STACK_UPPER(&addr, addr, ++addr);
     if (rb_gc_stack_start) {
 	if (STACK_UPPER(&addr,
@@ -1613,7 +1614,7 @@ os_obj_of(of)
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	for (;p < pend; p++) {
 	    if (p->as.basic.flags) {
-		switch (TYPE(p)) {
+		switch (BUILTIN_TYPE(p)) {
 		  case T_NONE:
 		  case T_ICLASS:
 		  case T_VARMAP:

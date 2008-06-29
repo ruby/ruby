@@ -1723,7 +1723,7 @@ rb_io_getline(rs, io)
 
 	while ((c = appendline(fptr, newline, &str)) != EOF &&
 	       (c != newline || RSTRING(str)->len < rslen ||
-		(rspara || rscheck(rsptr,rslen,rs), 0) ||
+		((rspara || rscheck(rsptr,rslen,rs)) && 0) ||
 		memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen)));
 
 	if (rspara) {
