@@ -1,3 +1,8 @@
+Sun Jun 29 17:09:48 2008  wanabe  <s.wanabe@gmail.com>
+
+	* util.c (ruby_strtod): ruby_strtod don't allow a trailing
+	  decimal point like "7.". [ruby-dev:34835] [ruby-dev:35009]
+
 Sat Jun 28 19:23:40 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* class.c (clone_method): use rb_copy_node_scope.
