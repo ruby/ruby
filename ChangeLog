@@ -1,3 +1,8 @@
+Sun Jun 29 23:01:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_format_m): make tmp volatile to avoid possible GC
+	  problem.
+
 Sun Jun 29 18:01:30 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb, lib/rss/utils.rb: merge documents from ruby_1_8.
