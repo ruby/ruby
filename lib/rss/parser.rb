@@ -34,8 +34,8 @@ module RSS
   class NotValidXMLParser < Error
     def initialize(parser)
       super("#{parser} is not an available XML parser. " <<
-            "Available XML parser"<<
-            (AVAILABLE_PARSERS.size > 1 ? "s are ": " is ") <<
+            "Available XML parser" <<
+            (AVAILABLE_PARSERS.size > 1 ? "s are " : " is ") <<
             "#{AVAILABLE_PARSERS.inspect}.")
     end
   end
@@ -113,7 +113,7 @@ module RSS
       source.is_a?(String) and /</ =~ source
     end
 
-    # Attempt to convert rss to a URI, but just return it if 
+    # Attempt to convert rss to a URI, but just return it if
     # there's a ::URI::Error
     def to_uri(rss)
       return rss if rss.is_a?(::URI::Generic)
@@ -220,9 +220,7 @@ module RSS
         name = (@@class_names[uri] || {})[tag_name]
         return name if name
 
-        tag_name = tag_name.gsub(/[_\-]([a-z]?)/) do
-          $1.upcase
-        end
+        tag_name = tag_name.gsub(/[_\-]([a-z]?)/) {$1.upcase}
         tag_name[0, 1].upcase + tag_name[1..-1]
       end
 
@@ -389,9 +387,7 @@ module RSS
     def start_else_element(local, prefix, attrs, ns)
       class_name = self.class.class_name(_ns(ns, prefix), local)
       current_class = @last_element.class
-      if class_name and
-          (current_class.const_defined?(class_name) or
-           current_class.constants.include?(class_name))
+      if known_class?(current_class, class_name)
         next_class = current_class.const_get(class_name)
         start_have_something_element(local, prefix, attrs, ns, next_class)
       else
@@ -404,6 +400,20 @@ module RSS
           end
           raise NotExpectedTagError.new(local, _ns(ns, prefix), parent)
         end
+      end
+    end
+
+    if Module.method(:const_defined?).arity == -1
+      def known_class?(target_class, class_name)
+        class_name and
+          (target_class.const_defined?(class_name, false) or
+           target_class.constants.include?(class_name.to_sym))
+      end
+    else
+      def known_class?(target_class, class_name)
+        class_name and
+          (target_class.const_defined?(class_name) or
+           target_class.constants.include?(class_name))
       end
     end
 
@@ -504,7 +514,7 @@ module RSS
         else
           if klass.have_content?
             if @last_element.need_base64_encode?
-              text = Base64.decode64(text.lstrip)
+              text = text.lstrip.unpack("m").first
             end
             @last_element.content = text
           end

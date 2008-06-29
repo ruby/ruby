@@ -462,7 +462,7 @@ module RSS
                                      "all of your answers here.",
                                      maker_readers, feed_readers)
         _assert_maker_itunes_summary("This week we talk about surviving in a " +
-                                     "Red state if you’re a Blue person. Or " +
+                                     "Red state if you're a Blue person. Or " +
                                      "vice versa.",
                                      maker_readers, feed_readers)
       end

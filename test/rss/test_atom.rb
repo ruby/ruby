@@ -658,7 +658,7 @@ module RSS
         content.content = original_content
         xml = REXML::Document.new(content.to_s).root
         assert_rexml_element([], {"type" => type},
-                             Base64.encode64(original_content), xml)
+                             [original_content].pack("m").delete("\n"), xml)
       end
     end
 

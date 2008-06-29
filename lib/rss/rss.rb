@@ -45,6 +45,7 @@ class Time
   end
 end
 
+
 require "English"
 require "rss/utils"
 require "rss/converter"
@@ -52,7 +53,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.2.4"
+  VERSION = "0.2.5"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -1200,7 +1201,7 @@ EOC
         __send__(self.class.xml_getter).to_s
       else
         _content = content
-        _content = Base64.encode64(_content) if need_base64_encode?
+        _content = [_content].pack("m").delete("\n") if need_base64_encode?
         h(_content)
       end
     end

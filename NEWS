@@ -22,6 +22,14 @@ with all sufficient information, see the ChangeLog file.
 
     Return an enumerator if no block is given.
 
+* rss
+
+  * 0.2.4 -> 0.2.5
+
+  * RSS::Maker.make
+    * raise an exception not returns nil for invalid feed making.
+    * requires block.
+
 == Changes since the 1.8.6 release
 
 === Configuration changes

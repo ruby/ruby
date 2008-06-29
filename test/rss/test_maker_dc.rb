@@ -86,9 +86,8 @@ module RSS
         elems.each do |name, values, plural|
           dc_elems = item.__send__("dc_#{plural}")
           values.each do |value|
-            dc_elems.__send__("new_#{name}") do |elem|
-              elem.value = value
-            end
+            elem = dc_elems.__send__("new_#{name}")
+            elem.value = value
           end
         end
 

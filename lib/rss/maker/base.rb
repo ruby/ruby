@@ -31,7 +31,9 @@ module RSS
           self::OTHER_ELEMENTS << variable_name
         end
 
-        def add_need_initialize_variable(variable_name, init_value="nil")
+        def add_need_initialize_variable(variable_name, init_value=nil,
+                                         &init_block)
+          init_value ||= init_block
           self::NEED_INITIALIZE_VARIABLES << [variable_name, init_value]
         end
 
@@ -45,7 +47,7 @@ module RSS
           def_delegators("@#{plural}", :push, :pop, :shift, :unshift)
           def_delegators("@#{plural}", :each, :size, :empty?, :clear)
 
-          add_need_initialize_variable(plural, "[]")
+          add_need_initialize_variable(plural) {[]}
 
           module_eval(<<-EOC, __FILE__, __LINE__ + 1)
             def new_#{name}
@@ -74,7 +76,9 @@ module RSS
         def def_classed_element_without_accessor(name, class_name=nil)
           class_name ||= Utils.to_class_name(name)
           add_other_element(name)
-          add_need_initialize_variable(name, "make_#{name}")
+          add_need_initialize_variable(name) do |object|
+            object.send("make_#{name}")
+          end
           module_eval(<<-EOC, __FILE__, __LINE__ + 1)
             private
             def setup_#{name}(feed, current)
@@ -185,7 +189,19 @@ module RSS
       private
       def initialize_variables
         self.class.need_initialize_variables.each do |variable_name, init_value|
-          instance_eval("@#{variable_name} = #{init_value}", __FILE__, __LINE__)
+          if init_value.nil?
+            value = nil
+          else
+            if init_value.respond_to?(:call)
+              value = init_value.call(self)
+            elsif init_value.is_a?(String)
+              # just for backward compatibility
+              value = instance_eval(init_value, __FILE__, __LINE__)
+            else
+              value = init_value
+            end
+          end
+          instance_variable_set("@#{variable_name}", value)
         end
       end
 
@@ -238,7 +254,8 @@ module RSS
 
       def variables
         self.class.need_initialize_variables.find_all do |name, init|
-          "nil" == init
+          # init == "nil" is just for backward compatibility
+          init.nil? or init == "nil"
         end.collect do |name, init|
           name
         end
@@ -364,7 +381,9 @@ module RSS
 
       %w(xml_stylesheets channel image items textinput).each do |element|
         attr_reader element
-        add_need_initialize_variable(element, "make_#{element}")
+        add_need_initialize_variable(element) do |object|
+          object.send("make_#{element}")
+        end
         module_eval(<<-EOC, __FILE__, __LINE__)
           private
           def setup_#{element}(feed)
@@ -392,12 +411,8 @@ module RSS
       end
       
       def make
-        if block_given?
-          yield(self)
-          to_feed
-        else
-          nil
-        end
+        yield(self)
+        to_feed
       end
 
       def to_feed
@@ -405,11 +420,8 @@ module RSS
         setup_xml_stylesheets(feed)
         setup_elements(feed)
         setup_other_elements(feed)
-        if feed.valid?
-          feed
-        else
-          nil
-        end
+        feed.validate
+        feed
       end
       
       private
