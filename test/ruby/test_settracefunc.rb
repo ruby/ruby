@@ -2,15 +2,15 @@ require 'test/unit'
 
 class TestSetTraceFunc < Test::Unit::TestCase
   def setup
-    @original_compile_option = VM::InstructionSequence.compile_option
-    VM::InstructionSequence.compile_option = {
+    @original_compile_option = RubyVM::InstructionSequence.compile_option
+    RubyVM::InstructionSequence.compile_option = {
       :trace_instruction => true,
       :specialized_instruction => false
     }
   end
 
   def teardown
-    VM::InstructionSequence.compile_option = @original_compile_option
+    RubyVM::InstructionSequence.compile_option = @original_compile_option
   end
 
   def test_c_call

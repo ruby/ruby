@@ -70,7 +70,7 @@ class TestMethod < Test::Unit::TestCase
   def test_body
     o = Object.new
     def o.foo; end
-    assert_nothing_raised { VM::InstructionSequence.disasm(o.method(:foo)) }
+    assert_nothing_raised { RubyVM::InstructionSequence.disasm(o.method(:foo)) }
   end
 
   def test_new

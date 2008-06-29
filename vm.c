@@ -21,7 +21,7 @@
 #define BUFSIZE 0x100
 #define PROCDEBUG 0
 
-VALUE rb_cVM;
+VALUE rb_cRubyVM;
 VALUE rb_cThread;
 VALUE rb_cEnv;
 
@@ -1674,11 +1674,11 @@ Init_VM(void)
     VALUE opts;
 
     /* ::VM */
-    rb_cVM = rb_define_class("VM", rb_cObject);
-    rb_undef_alloc_func(rb_cVM);
+    rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
+    rb_undef_alloc_func(rb_cRubyVM);
 
     /* Env */
-    rb_cEnv = rb_define_class_under(rb_cVM, "Env", rb_cObject);
+    rb_cEnv = rb_define_class_under(rb_cRubyVM, "Env", rb_cObject);
     rb_undef_alloc_func(rb_cEnv);
 
     /* ::Thread */
@@ -1686,10 +1686,10 @@ Init_VM(void)
     rb_undef_alloc_func(rb_cThread);
 
     /* ::VM::USAGE_ANALYSIS_* */
-    rb_define_const(rb_cVM, "USAGE_ANALYSIS_INSN", rb_hash_new());
-    rb_define_const(rb_cVM, "USAGE_ANALYSIS_REGS", rb_hash_new());
-    rb_define_const(rb_cVM, "USAGE_ANALYSIS_INSN_BIGRAM", rb_hash_new());
-    rb_define_const(rb_cVM, "OPTS", opts = rb_ary_new());
+    rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN", rb_hash_new());
+    rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_REGS", rb_hash_new());
+    rb_define_const(rb_cRubyVM, "USAGE_ANALYSIS_INSN_BIGRAM", rb_hash_new());
+    rb_define_const(rb_cRubyVM, "OPTS", opts = rb_ary_new());
 
 #if   OPT_DIRECT_THREADED_CODE
     rb_ary_push(opts, rb_str_new2("direct threaded code"));
@@ -1720,12 +1720,12 @@ Init_VM(void)
 #endif
 
     /* ::VM::InsnNameArray */
-    rb_define_const(rb_cVM, "INSTRUCTION_NAMES", insns_name_array());
+    rb_define_const(rb_cRubyVM, "INSTRUCTION_NAMES", insns_name_array());
 
     /* debug functions ::VM::SDR(), ::VM::NSDR() */
 #if VMDEBUG
-    rb_define_singleton_method(rb_cVM, "SDR", sdr, 0);
-    rb_define_singleton_method(rb_cVM, "NSDR", nsdr, 0);
+    rb_define_singleton_method(rb_cRubyVM, "SDR", sdr, 0);
+    rb_define_singleton_method(rb_cRubyVM, "NSDR", nsdr, 0);
 #else
     (void)sdr;
     (void)nsdr;
@@ -1741,7 +1741,7 @@ Init_VM(void)
 	rb_iseq_t *iseq;
 
 	/* create vm object */
-	vm->self = Data_Wrap_Struct(rb_cVM, rb_vm_mark, vm_free, vm);
+	vm->self = Data_Wrap_Struct(rb_cRubyVM, rb_vm_mark, vm_free, vm);
 
 	/* create main thread */
 	th_self = th->self = Data_Wrap_Struct(rb_cThread, rb_thread_mark, thread_free, th);

@@ -435,7 +435,7 @@ vm_analysis_insn(int insn)
 
     CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
     CONST_ID(bigram_hash, "USAGE_ANALYSIS_INSN_BIGRAM");
-    uh = rb_const_get(rb_cVM, usage_hash);
+    uh = rb_const_get(rb_cRubyVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
 	ihash = rb_hash_new();
 	rb_hash_aset(uh, INT2FIX(insn), ihash);
@@ -455,7 +455,7 @@ vm_analysis_insn(int insn)
 	ary[1] = INT2FIX(insn);
 	bi = rb_ary_new4(2, &ary[0]);
 
-	uh = rb_const_get(rb_cVM, bigram_hash);
+	uh = rb_const_get(rb_cRubyVM, bigram_hash);
 	if ((cv = rb_hash_aref(uh, bi)) == Qnil) {
 	    cv = INT2FIX(0);
 	}
@@ -481,7 +481,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
 
     CONST_ID(usage_hash, "USAGE_ANALYSIS_INSN");
 
-    uh = rb_const_get(rb_cVM, usage_hash);
+    uh = rb_const_get(rb_cRubyVM, usage_hash);
     if ((ihash = rb_hash_aref(uh, INT2FIX(insn))) == Qnil) {
 	ihash = rb_hash_new();
 	rb_hash_aset(uh, INT2FIX(insn), ihash);
@@ -540,7 +540,7 @@ vm_analysis_register(int reg, int isset)
     }
     valstr = syms[reg][isset];
 
-    uh = rb_const_get(rb_cVM, usage_hash);
+    uh = rb_const_get(rb_cRubyVM, usage_hash);
     if ((cv = rb_hash_aref(uh, valstr)) == Qnil) {
 	cv = INT2FIX(0);
     }

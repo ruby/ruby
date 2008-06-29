@@ -502,6 +502,9 @@ VALUE ruby_iseq_disasm(VALUE self);
 VALUE ruby_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos, rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
 
+RUBY_EXTERN VALUE rb_cISeq;
+RUBY_EXTERN VALUE rb_cRubyVM;
+RUBY_EXTERN VALUE rb_cEnv;
 
 /* each thread has this size stack : 128KB */
 #define RUBY_VM_THREAD_STACK_SIZE (128 * 1024)

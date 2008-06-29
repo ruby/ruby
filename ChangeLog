@@ -1,3 +1,14 @@
+Mon Jun 30 02:14:34 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, vm_core.h,vm_core.h, vm_dump.c, iseq.c: rename class name
+	  VM -> RubyVM, and rename rb_cVM -> rb_cRubyVM.
+	  "VM" is too short name for class.
+
+	* test/ruby/test_method.rb, test/ruby/test_settracefunc.rb: ditto.
+
+	* include/ruby/ruby.h: rb_cRubyVM, rb_cEnv, rb_cISeq should not be
+	  exposed.
+
 Mon Jun 30 02:10:32 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* process.c (Init_process): fix to avoid a warning.
