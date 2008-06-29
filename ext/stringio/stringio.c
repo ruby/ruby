@@ -947,7 +947,7 @@ strio_readline(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE line = strio_getline(argc, argv, readable(StringIO(self)));
+    VALUE line = strio_gets(argc, argv, self);
     if (NIL_P(line)) rb_eof_error();
     return line;
 }
@@ -969,6 +969,7 @@ strio_each(argc, argv, self)
     VALUE line;
 
     while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
+	rb_lastline_set(line);
 	rb_yield(line);
     }
     return self;
@@ -991,6 +992,7 @@ strio_readlines(argc, argv, self)
     while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
 	rb_ary_push(ary, line);
     }
+    rb_lastline_set(Qnil);
     return ary;
 }
 
