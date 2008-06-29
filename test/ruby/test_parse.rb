@@ -123,44 +123,9 @@ class TestParse < Test::Unit::TestCase
     end
 
     assert_nothing_raised do
-      t.instance_eval "baz ()"
-    end
-    assert_equal([], t.instance_eval { @baz })
-
-    assert_nothing_raised do
       t.instance_eval "baz (1), 2"
     end
     assert_equal([1, 2], t.instance_eval { @baz })
-
-    assert_nothing_raised do
-      t.instance_eval "baz (3, 4)"
-    end
-    assert_equal([3, 4], t.instance_eval { @baz })
-
-    assert_nothing_raised do
-      t.instance_eval "baz (5, &proc{6})"
-    end
-    assert_equal([5, 6], t.instance_eval { @baz })
-
-    assert_nothing_raised do
-      t.instance_eval "baz (7 => 8)"
-    end
-    assert_equal([{ 7 => 8 }], t.instance_eval { @baz })
-
-    assert_nothing_raised do
-      t.instance_eval "baz (9, 10 => 11)"
-    end
-    assert_equal([9, { 10 => 11 }], t.instance_eval { @baz })
-
-    assert_nothing_raised do
-      t.instance_eval "baz (12, 13, 14 => 15)"
-    end
-    assert_equal([12, 13, { 14 => 15 }], t.instance_eval { @baz })
-
-    assert_nothing_raised do
-      t.instance_eval "baz (&proc {16})"
-    end
-    assert_equal([16], t.instance_eval { @baz })
   end
 
   def test_mlhs_node
@@ -286,19 +251,6 @@ class TestParse < Test::Unit::TestCase
       END
     end
     assert_equal(-4.0, a)
-  end
-
-  def test_open_args
-    o = Object.new
-    def o.foo(*r); r.inject(42, :+); end
-
-    a = nil
-    assert_nothing_raised do
-      o.instance_eval <<-END
-        a = foo ()
-      END
-    end
-    assert_equal(42, a)
   end
 
   def test_block_variable

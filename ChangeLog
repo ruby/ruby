@@ -1,3 +1,7 @@
+Mon Jun 30 01:52:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_parse.rb: remove tests for open_args.
+
 Sun Jun 29 23:01:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_format_m): make tmp volatile to avoid possible GC
