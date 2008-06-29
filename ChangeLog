@@ -1,3 +1,13 @@
+Sun Jun 29 16:56:57 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#delete_if): Call to_a.
+	  (SortedSet#delete_if, TC_SortedSet#test_sortedset): Use super to
+	  yield elements in sorted order; [ruby-core:17144] by Arthur
+	  Schreiber.
+	  (SortedSet#each, SortedSet#each, TC_Set#test_each)
+	  (TC_SortedSet#test_sortedset): Return self; [ruby-dev:35002] by
+	  Arthur Schreiber.
+
 Sun Jun 29 16:49:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_method, remove_method, error_print, rb_alias)

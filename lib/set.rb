@@ -228,7 +228,7 @@ class Set
   # Deletes every element of the set for which block evaluates to
   # true, and returns self.
   def delete_if
-    @hash.delete_if { |o,| yield(o) }
+    to_a.each { |o| @hash.delete(o) if yield(o) }
     self
   end
 
@@ -486,7 +486,7 @@ class SortedSet < Set
 
 	  def delete_if
 	    n = @hash.size
-	    @hash.delete_if { |o,| yield(o) }
+	    super
 	    @keys = nil if @hash.size != n
 	    self
 	  end
@@ -498,6 +498,7 @@ class SortedSet < Set
 
 	  def each
 	    to_a.each { |o| yield(o) }
+	    self
 	  end
 
 	  def to_a
@@ -1161,11 +1162,33 @@ class TC_SortedSet < Test::Unit::TestCase
     assert_equal([-10,-8,-6,-4,-2], s.to_a)
 
     prev = nil
-    s.each { |o| assert(prev < o) if prev; prev = o }
+    ret = s.each { |o| assert(prev < o) if prev; prev = o }
     assert_not_nil(prev)
+    assert_same(s, ret)
 
     s = SortedSet.new([2,1,3]) { |o| o * -2 }
     assert_equal([-6,-4,-2], s.to_a)
+
+    s = SortedSet.new(['one', 'two', 'three', 'four'])
+    a = []
+    ret = s.delete_if { |o| a << o; o[0] == ?t }
+    assert_same(s, ret)
+    assert_equal(['four', 'one'], s.to_a)
+    assert_equal(['four', 'one', 'three', 'two'], a)
+
+    s = SortedSet.new(['one', 'two', 'three', 'four'])
+    a = []
+    ret = s.reject! { |o| a << o; o[0] == ?t }
+    assert_same(s, ret)
+    assert_equal(['four', 'one'], s.to_a)
+    assert_equal(['four', 'one', 'three', 'two'], a)
+
+    s = SortedSet.new(['one', 'two', 'three', 'four'])
+    a = []
+    ret = s.reject! { |o| a << o; false }
+    assert_same(nil, ret)
+    assert_equal(['four', 'one', 'three', 'two'], s.to_a)
+    assert_equal(['four', 'one', 'three', 'two'], a)
   end
 end
 
