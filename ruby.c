@@ -1034,6 +1034,7 @@ set_arg0(val, id)
     VALUE val;
     ID id;
 {
+    VALUE progname;
     char *s;
     long i;
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
@@ -1058,10 +1059,10 @@ set_arg0(val, id)
 	j.pst_command = s;
 	pstat(PSTAT_SETCMD, j, i, 0, 0);
     }
-    rb_progname = rb_tainted_str_new(s, i);
+    progname = rb_tainted_str_new(s, i);
 #elif defined(HAVE_SETPROCTITLE)
     setproctitle("%.*s", (int)i, s);
-    rb_progname = rb_tainted_str_new(s, i);
+    progname = rb_tainted_str_new(s, i);
 #else
     if (len == 0) {
 	char *s = origargv[0];
@@ -1096,8 +1097,9 @@ set_arg0(val, id)
     if (++i < len) memset(s + 1, ' ', len - i);
     for (i = 1; i < origargc; i++)
 	origargv[i] = s;
-    rb_progname = rb_tainted_str_new2(origargv[0]);
+    progname = rb_tainted_str_new2(origargv[0]);
 #endif
+    rb_progname = rb_obj_freeze(progname);
 }
 
 void
@@ -1105,7 +1107,7 @@ ruby_script(name)
     const char *name;
 {
     if (name) {
-	rb_progname = rb_tainted_str_new2(name);
+	rb_progname = rb_obj_freeze(rb_tainted_str_new2(name));
 	ruby_sourcefile = rb_source_filename(name);
     }
 }
