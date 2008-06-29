@@ -1,3 +1,9 @@
+Mon Jun 30 02:31:07 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_utf8_encindex): defined.
+
+	* include/ruby/encoding.h (rb_utf8_encindex): ditto.
+
 Mon Jun 30 02:14:34 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, vm_core.h,vm_core.h, vm_dump.c, iseq.c: rename class name

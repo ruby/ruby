@@ -931,6 +931,12 @@ rb_utf8_encoding(void)
     return enc_table.list[ENCINDEX_UTF_8].enc;
 }
 
+int
+rb_utf8_encindex(void)
+{
+    return ENCINDEX_UTF_8;
+}
+
 rb_encoding *
 rb_usascii_encoding(void)
 {
