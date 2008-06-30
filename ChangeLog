@@ -57,29 +57,31 @@ Sun Jun 29 18:01:30 2008  Kouhei Sutou  <kou@cozmixng.org>
 Sun Jun 29 17:44:23 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb (RSS::ListenerMixin#known_class): define to
-	work with ruby 1.8.x too.
+	  work with ruby 1.8.x too.
 
 Sun Jun 29 17:41:42 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb (RSS::Maker::RSSBase#to_feed): raise
-	exception not return nil if RSS::Maker.make can't get required
-	information.
+	  exception not return nil if RSS::Maker.make can't get required
+	  information.
+
 	* test/rss/rss-assertions.rb: follow the above change.
 
 Sun Jun 29 17:37:23 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb (RSS::Maker::RSSBase#make): require block.
+
 	* test/rss/test_maker_{0.9,1.0,2.0}.rb: follow the above change.
 
 Sun Jun 29 17:33:34 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb, lib/rss/maker/itunes.rb: don't use
-	instance_eval to initialize variables. (speed up)
+	  instance_eval to initialize variables. (speed up)
 
 Sun Jun 29 17:31:15 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb, test/rss/test_version.rb (RSS::VERSION):
-	0.2.4 -> 0.2.5.
+	  0.2.4 -> 0.2.5.
 
 Sun Jun 29 11:36:20 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -207,7 +209,7 @@ Thu Jun 26 17:43:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Jun 26 11:04:30 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems: Update to RubyGems 1.2.0 r1824.  Incorporates patch by
-	Yusuke ENDOH [ruby-core:17353].
+	  Yusuke ENDOH [ruby-core:17353].
 
 Thu Jun 26 00:48:31 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -450,7 +452,7 @@ Fri Jun 20 03:19:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 Fri Jun 20 03:14:31 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rubygems*, test/rubygems/*:  Update to RubyGems 1.1.1 r1784 (pre
-	1.2).
+	  1.2).
 
 Fri Jun 20 03:01:59 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -617,7 +619,7 @@ Wed Jun 18 08:58:16 2008  Eric Hodel  <drbrain@segment7.net>
 	* lib/rubygems/*:  Fix errors for 1.9.
 
 	* gem_prelude.rb:  Only remove methods from gem_prelude.rb when
-	loading real RubyGems.
+	  loading real RubyGems.
 
 Wed Jun 18 07:03:30 2008  Eric Hodel  <drbrain@egment7.net>
 
@@ -692,7 +694,7 @@ Tue Jun 17 06:32:55 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* dir.c (dir_s_open): changed for dir_initialize.
 
 	* dir.c (dir_open_dir): ditto.
-	
+
 	* dir.c (dir_foreach): changed for dir_open_dir.
 
 	* dir.c (dir_entries): changed for dir_open_dir.
@@ -3571,7 +3573,7 @@ Tue Apr 22 19:23:05 2008  Akinori MUSHA  <knu@iDaemons.org>
 Tue Apr 22 17:54:05 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* vm_core.h (exec_event_hooks): ``inline'' is a type modifier, not
-	a type itself.
+	  a type itself.
 
 Tue Apr 22 16:24:27 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
@@ -12790,7 +12792,7 @@ Fri Nov 16 02:51:59 2007  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml.rb (quick_emit): use combination of object_id and hash to
 	  identify repeated object references, since GC will reuse memory of
-		objects during output of YAML. [ruby-Bugs-8548] [ruby-Bugs-3698]
+	  objects during output of YAML. [ruby-Bugs-8548] [ruby-Bugs-3698]
 
 Thu Nov 15 19:49:03 2007  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -13116,7 +13118,7 @@ Sat Nov 10 16:34:21 2007  Eric Hodel  <drbrain@segment7.net>
 Sat Nov 10 14:43:30 2007  David Flanagan  <davidflanagan@ruby-lang.org>
 
 	* parse.y: use ASCII encoding for string literals that are
-		7-bit clean, fixing regression from my previous patch
+	  7-bit clean, fixing regression from my previous patch
 
 Sat Nov 10 13:18:54 2007  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -30243,7 +30245,7 @@ Sun Jul 11 05:18:17 2005  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server): Switch from GServer over to
 	  WEBrick. This makes file lib/xmlrpc/httpserver.rb obsolete (at least it is
-		no further used by the XML-RPC library).
+	  no further used by the XML-RPC library).
 
 Mon Jul 11 02:50:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
