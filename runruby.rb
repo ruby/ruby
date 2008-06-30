@@ -46,6 +46,7 @@ libs << File.expand_path("lib", srcdir)
 config["bindir"] = abs_archdir
 ENV["RUBY"] = File.expand_path(ruby)
 ENV["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
+ENV["rake"] = ENV["RUBY"] + " " + File.join(abs_archdir, "bin", "rake")
 
 if pure
   libs << File.expand_path("ext", srcdir) << "-"

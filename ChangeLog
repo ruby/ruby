@@ -1,3 +1,11 @@
+Tue Jul  1 03:28:16 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* test/rubygems/test_ext_configure_builder.rb:  Apply locale-free
+	patch by Yusuke ENDOH.  [ruby-core:17444].
+
+	* runruby.rb:  Set ENV['rake'].  Patch by Yusuke ENDOH
+	[ruby-core:17442].
+
 Tue Jul  1 01:07:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension.read_multipart): blanks inside

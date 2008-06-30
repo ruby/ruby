@@ -47,9 +47,9 @@ class TestGemExtConfigureBuilder < RubyGemTestCase
       end
     end
 
-    shell_error_msg = %r{(\./configure: No such file or directory)|(Can't open \./configure)}
+    shell_error_msg = %r{(\./configure: .*)|(Can't open \./configure)}
     sh_prefix_configure = "sh ./configure --prefix="
-    
+
     expected = %r(configure failed:
 
 #{Regexp.escape sh_prefix_configure}#{Regexp.escape @dest_path}
