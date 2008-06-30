@@ -1,3 +1,8 @@
+Mon Jun 30 22:49:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_array.rb (test_aset): access with too big index
+	  raises not ArgumentError but IndexError now.
+
 Mon Jun 30 22:30:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb (recursive_collect): r15662 reverted.

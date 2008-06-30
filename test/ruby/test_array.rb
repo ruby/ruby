@@ -1346,8 +1346,8 @@ class TestArray < Test::Unit::TestCase
 
   def test_aset
     assert_raise(IndexError) { [0][-2] = 1 }
-    assert_raise(ArgumentError) { [0][LONGP] = 2 }
-    assert_raise(ArgumentError) { [0][(LONGP + 1) / 2 - 1] = 2 }
+    assert_raise(IndexError) { [0][LONGP] = 2 }
+    assert_raise(IndexError) { [0][(LONGP + 1) / 2 - 1] = 2 }
     a = [0]
     a[2] = 4
     assert_equal([0, nil, 4], a)
