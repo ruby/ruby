@@ -22,6 +22,7 @@ static void syslog_write(int pri, int argc, VALUE *argv)
 {
     VALUE str;
 
+    rb_secure(4);
     if (argc < 1) {
         rb_raise(rb_eArgError, "no log message supplied");
     }
@@ -38,6 +39,7 @@ static void syslog_write(int pri, int argc, VALUE *argv)
 /* Syslog module methods */
 static VALUE mSyslog_close(VALUE self)
 {
+    rb_secure(4);
     if (!syslog_opened) {
         rb_raise(rb_eRuntimeError, "syslog not opened");
     }
@@ -132,6 +134,7 @@ static VALUE mSyslog_get_mask(VALUE self)
 
 static VALUE mSyslog_set_mask(VALUE self, VALUE mask)
 {
+    rb_secure(4);
     if (!syslog_opened) {
         rb_raise(rb_eRuntimeError, "must open syslog before setting log mask");
     }

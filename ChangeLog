@@ -1,3 +1,13 @@
+Mon Jun 30 10:28:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syslog/syslog.c (syslog_write): syslog operations should be
+	  protected from $SAFE level 4.  a patch from Keita Yamaguchi
+	  <keita.yamaguchi at gmail.com>.
+
+	* ext/syslog/syslog.c (mSyslog_close): ditto.
+
+	* ext/syslog/syslog.c (mSyslog_set_mask): ditto.
+
 Mon Jun 30 03:01:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/net/http/test_http.rb (_test_request__file): specify encoding
