@@ -137,4 +137,12 @@ class TestUNIXSocket < Test::Unit::TestCase
     s2.close if s2
   end
 
+  def test_epipe # [ruby-dev:34619]
+    s1, s2 = UNIXSocket.pair
+    s1.shutdown(Socket::SHUT_WR)
+    assert_raise(Errno::EPIPE) { s1.write "a" }
+    s2.write "a"
+    assert_equal("a", s1.read(1))
+  end
+
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM
