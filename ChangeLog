@@ -1,3 +1,8 @@
+Mon Jun 30 22:27:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/stringio/stringio.c (strio_getline): fix for nil and "" as
+	  separator.  [ruby-dev:34591]
+
 Mon Jun 30 22:21:30 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (argf_each_line): pass args to each_line. [ruby-dev:34958]

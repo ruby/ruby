@@ -835,7 +835,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 		str = tmp;
 	    }
 	}
-	else {
+	else if (!NIL_P(str)) {
 	    StringValue(str);
 	}
     }
@@ -862,7 +862,7 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	s = p;
 	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
 	    if (*++p == '\n') {
-		e = p;
+		e = p + 1;
 		break;
 	    }
 	}
