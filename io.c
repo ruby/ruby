@@ -7327,7 +7327,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
     RETURN_ENUMERATOR(argf, argc, argv);
     for (;;) {
 	if (!next_argv()) return Qnil;
-	rb_block_call(current_file, rb_intern("each_line"), 0, 0, rb_yield, 0);
+	rb_block_call(current_file, rb_intern("each_line"), argc, argv, rb_yield, 0);
 	next_p = 1;
     }
     return argf;

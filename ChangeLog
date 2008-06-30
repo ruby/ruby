@@ -1,3 +1,7 @@
+Mon Jun 30 22:21:30 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (argf_each_line): pass args to each_line. [ruby-dev:34958]
+
 Mon Jun 30 22:12:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (chain_finalized_object): should not delete from finalizer
