@@ -1,3 +1,8 @@
+Mon Jun 30 23:01:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBY_H_INCLUDES): common headers which are included with
+	  ruby.h together.
+
 Mon Jun 30 22:57:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_settracefunc.rb (test_raise): reveal an exception
