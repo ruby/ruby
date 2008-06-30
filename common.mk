@@ -363,109 +363,76 @@ win32.$(OBJEXT): {$(VPATH)}win32.c
 
 ###
 
-array.$(OBJEXT): {$(VPATH)}array.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+RUBY_H_INCLUDES = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
+		  {$(VPATH)}intern.h {$(VPATH)}missing.h
+
+array.$(OBJEXT): {$(VPATH)}array.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}util.h {$(VPATH)}st.h
-bignum.$(OBJEXT): {$(VPATH)}bignum.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-class.$(OBJEXT): {$(VPATH)}class.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+bignum.$(OBJEXT): {$(VPATH)}bignum.c $(RUBY_H_INCLUDES)
+class.$(OBJEXT): {$(VPATH)}class.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}rubysig.h {$(VPATH)}node.h {$(VPATH)}st.h
-compar.$(OBJEXT): {$(VPATH)}compar.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-dir.$(OBJEXT): {$(VPATH)}dir.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+compar.$(OBJEXT): {$(VPATH)}compar.c $(RUBY_H_INCLUDES)
+dir.$(OBJEXT): {$(VPATH)}dir.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}util.h
-dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+dln.$(OBJEXT): {$(VPATH)}dln.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}dln.h
 dmydln.$(OBJEXT): {$(VPATH)}dmydln.c dln.$(OBJEXT)
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
-enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}node.h {$(VPATH)}util.h
-enumerator.$(OBJEXT): {$(VPATH)}enumerator.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-error.$(OBJEXT): {$(VPATH)}error.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES)
+error.$(OBJEXT): {$(VPATH)}error.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}env.h {$(VPATH)}st.h
-eval.$(OBJEXT): {$(VPATH)}eval.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+eval.$(OBJEXT): {$(VPATH)}eval.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}node.h {$(VPATH)}env.h {$(VPATH)}util.h \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}dln.h
-file.$(OBJEXT): {$(VPATH)}file.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+file.$(OBJEXT): {$(VPATH)}file.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}rubyio.h {$(VPATH)}rubysig.h {$(VPATH)}util.h \
   {$(VPATH)}dln.h
-gc.$(OBJEXT): {$(VPATH)}gc.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h {$(VPATH)}node.h \
   {$(VPATH)}env.h {$(VPATH)}re.h {$(VPATH)}regex.h
-hash.$(OBJEXT): {$(VPATH)}hash.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h {$(VPATH)}util.h {$(VPATH)}rubysig.h
-inits.$(OBJEXT): {$(VPATH)}inits.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-io.$(OBJEXT): {$(VPATH)}io.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES)
+io.$(OBJEXT): {$(VPATH)}io.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}rubyio.h {$(VPATH)}rubysig.h  {$(VPATH)}util.h \
   {$(VPATH)}env.h
-main.$(OBJEXT): {$(VPATH)}main.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-marshal.$(OBJEXT): {$(VPATH)}marshal.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+main.$(OBJEXT): {$(VPATH)}main.c $(RUBY_H_INCLUDES)
+marshal.$(OBJEXT): {$(VPATH)}marshal.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}rubyio.h {$(VPATH)}st.h {$(VPATH)}util.h
-math.$(OBJEXT): {$(VPATH)}math.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-numeric.$(OBJEXT): {$(VPATH)}numeric.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}env.h {$(VPATH)}defines.h {$(VPATH)}intern.h \
-  {$(VPATH)}missing.h
-object.$(OBJEXT): {$(VPATH)}object.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+math.$(OBJEXT): {$(VPATH)}math.c $(RUBY_H_INCLUDES)
+numeric.$(OBJEXT): {$(VPATH)}numeric.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}env.h
+object.$(OBJEXT): {$(VPATH)}object.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h {$(VPATH)}util.h
-pack.$(OBJEXT): {$(VPATH)}pack.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-parse.$(OBJEXT): {$(VPATH)}parse.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+pack.$(OBJEXT): {$(VPATH)}pack.c $(RUBY_H_INCLUDES)
+parse.$(OBJEXT): {$(VPATH)}parse.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}env.h {$(VPATH)}node.h {$(VPATH)}st.h \
   {$(VPATH)}regex.h {$(VPATH)}util.h {$(VPATH)}lex.c
-prec.$(OBJEXT): {$(VPATH)}prec.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-process.$(OBJEXT): {$(VPATH)}process.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+prec.$(OBJEXT): {$(VPATH)}prec.c $(RUBY_H_INCLUDES)
+process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}rubysig.h {$(VPATH)}st.h
-random.$(OBJEXT): {$(VPATH)}random.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-range.$(OBJEXT): {$(VPATH)}range.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-re.$(OBJEXT): {$(VPATH)}re.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES)
+range.$(OBJEXT): {$(VPATH)}range.c $(RUBY_H_INCLUDES)
+re.$(OBJEXT): {$(VPATH)}re.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}re.h {$(VPATH)}regex.h
 regex.$(OBJEXT): {$(VPATH)}regex.c config.h {$(VPATH)}regex.h
-ruby.$(OBJEXT): {$(VPATH)}ruby.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+ruby.$(OBJEXT): {$(VPATH)}ruby.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}dln.h {$(VPATH)}node.h {$(VPATH)}util.h
-signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+signal.$(OBJEXT): {$(VPATH)}signal.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}rubysig.h
-sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES)
 st.$(OBJEXT): {$(VPATH)}st.c config.h {$(VPATH)}st.h
-string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}re.h {$(VPATH)}regex.h
-struct.$(OBJEXT): {$(VPATH)}struct.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-time.$(OBJEXT): {$(VPATH)}time.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
-util.$(OBJEXT): {$(VPATH)}util.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+struct.$(OBJEXT): {$(VPATH)}struct.c $(RUBY_H_INCLUDES)
+time.$(OBJEXT): {$(VPATH)}time.c $(RUBY_H_INCLUDES)
+util.$(OBJEXT): {$(VPATH)}util.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}util.h
-variable.$(OBJEXT): {$(VPATH)}variable.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+variable.$(OBJEXT): {$(VPATH)}variable.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}env.h {$(VPATH)}node.h {$(VPATH)}st.h {$(VPATH)}util.h
-version.$(OBJEXT): {$(VPATH)}version.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+version.$(OBJEXT): {$(VPATH)}version.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}version.h {$(VPATH)}revision.h
 
 dist: $(PROGRAM)

@@ -1,3 +1,8 @@
+Mon Jun 30 23:01:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBY_H_INCLUDES): common headers which are included with
+	  ruby.h together.
+
 Mon Jun 30 10:28:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syslog/syslog.c (syslog_write): syslog operations should be
