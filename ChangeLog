@@ -1,3 +1,13 @@
+Mon Jun 30 10:28:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syslog/syslog.c (syslog_write): syslog operations should be
+	  protected from $SAFE level 4.  a patch from Keita Yamaguchi
+	  <keita.yamaguchi at gmail.com>.
+
+	* ext/syslog/syslog.c (mSyslog_close): ditto.
+
+	* ext/syslog/syslog.c (mSyslog_set_mask): ditto.
+
 Sun Jun 29 23:01:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_format_m): make tmp volatile to avoid possible GC
