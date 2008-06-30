@@ -732,6 +732,8 @@ rb_newobj(void)
     return v;
 #else
     rb_objspace_t *objspace = &rb_objspace;
+    if (during_gc)
+        rb_bug("object allocation during garbage collection phase");
     return rb_newobj_from_heap(objspace);
 #endif
 }
