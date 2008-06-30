@@ -118,7 +118,9 @@ num_coerce(VALUE x, VALUE y)
 {
     if (CLASS_OF(x) == CLASS_OF(y))
 	return rb_assoc_new(y, x);
-    return rb_assoc_new(rb_Float(y), rb_Float(x));
+    x = rb_Float(x);
+    y = rb_Float(y);
+    return rb_assoc_new(y, x);
 }
 
 static VALUE
