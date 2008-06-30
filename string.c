@@ -708,9 +708,13 @@ str_buf_cat(str, ptr, len)
     const char *ptr;
     long len;
 {
-    long capa, total;
+    long capa, total, off = -1;;
 
     rb_str_modify(str);
+    if (ptr >= RSTRING(str)->ptr && ptr <= RSTRING(str)->ptr + RSTRING(str)->len) {
+        off = ptr - RSTRING(str)->ptr;
+    }
+    if (len == 0) return 0;
     if (FL_TEST(str, STR_ASSOC)) {
 	FL_UNSET(str, STR_ASSOC);
 	capa = RSTRING(str)->aux.capa = RSTRING(str)->len;
@@ -731,6 +735,9 @@ str_buf_cat(str, ptr, len)
 	    capa = (capa + 1) * 2;
 	}
 	RESIZE_CAPA(str, capa);
+    }
+    if (off != -1) {
+        ptr = RSTRING(str)->ptr + off;
     }
     memcpy(RSTRING(str)->ptr + RSTRING(str)->len, ptr, len);
     RSTRING(str)->len = total;
