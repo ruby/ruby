@@ -1,3 +1,8 @@
+Tue Jul  1 00:59:43 2008  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (num_coerce): call rb_Float(x) first.  don't depend on
+	  evaluation order of function arguments.
+
 Mon Jun 30 23:01:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUBY_H_INCLUDES): common headers which are included with
