@@ -1,3 +1,8 @@
+Mon Jun 30 23:15:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/openssl/test_ssl.rb (start_server): shutdown TCPServer before
+	  close.
+
 Mon Jun 30 23:01:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RUBY_H_INCLUDES): common headers which are included with

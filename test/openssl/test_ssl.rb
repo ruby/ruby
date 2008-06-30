@@ -128,14 +128,19 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
       block.call(server, port.to_i)
     ensure
-      tcps.close if (tcps)
-      if (server)
-        server.join(5)
-        if server.alive?
-          server.kill
-          server.join
-          flunk("TCPServer was closed and SSLServer is still alive") unless $!
+      tcps.shutdown if (tcps)
+      begin
+        if (server)
+          server.join(5)
+          if server.alive?
+            server.kill
+            server.join
+            flunk("TCPServer was closed and SSLServer is still alive") unless $!
+          end
         end
+      rescue Errno::EINVAL, Errno::EBADF
+      ensure
+        tcps.close if (tcps)
       end
     end
   end
