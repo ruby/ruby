@@ -168,7 +168,6 @@ typedef struct rb_objspace {
 	int during_gc;
     } flags;
     struct {
-	int need_call;
 	st_table *table;
 	RVALUE *deferred;
     } final;
@@ -203,7 +202,6 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define heaps_freed		objspace->heap.freed
 #define dont_gc 		objspace->flags.dont_gc
 #define during_gc		objspace->flags.during_gc
-#define need_call_final 	objspace->final.need_call
 #define finalizer_table 	objspace->final.table
 #define deferred_final_list	objspace->final.deferred
 #define mark_stack		objspace->markstack.buffer
@@ -211,6 +209,8 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define mark_stack_overflow	objspace->markstack.overflow
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
+
+#define need_call_final 	(finalizer_table && finalizer_table->num_entries)
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 rb_objspace_t *
@@ -1364,8 +1364,6 @@ free_unused_heaps(rb_objspace_t *objspace)
     }
 }
 
-void rb_gc_abort_threads(void);
-
 static void
 gc_sweep(rb_objspace_t *objspace)
 {
@@ -1953,7 +1951,6 @@ define_final(int argc, VALUE *argv, VALUE os)
 	rb_raise(rb_eArgError, "wrong type argument %s (should be callable)",
 		 rb_obj_classname(block));
     }
-    need_call_final = 1;
     FL_SET(obj, FL_FINALIZE);
 
     block = rb_ary_new3(2, INT2FIX(rb_safe_level()), block);
@@ -2022,19 +2019,29 @@ gc_finalize_deferred(rb_objspace_t *objspace)
 {
     RVALUE *p = deferred_final_list;
 
-    during_gc++;
     deferred_final_list = 0;
     if (p) {
 	finalize_list(objspace, p);
     }
     free_unused_heaps(objspace);
-    during_gc = 0;
 }
 
 void
 rb_gc_finalize_deferred(void)
 {
     gc_finalize_deferred(&rb_objspace);
+}
+
+static int
+chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
+{
+    RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
+    if (p->as.basic.flags & FL_FINALIZE) {
+	p->as.free.flags = FL_MARK; /* remain marked */
+	p->as.free.next = *final_list;
+	*final_list = p;
+    }
+    return ST_DELETE;
 }
 
 void
@@ -2044,25 +2051,17 @@ rb_gc_call_finalizer_at_exit(void)
     RVALUE *p, *pend;
     size_t i;
 
-    /* finalizers are part of garbage collection */
-    during_gc++;
     /* run finalizers */
     if (need_call_final) {
-	p = deferred_final_list;
-	deferred_final_list = 0;
-	finalize_list(objspace, p);
-	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i].slot; pend = p + heaps[i].limit;
-	    while (p < pend) {
-		if (FL_TEST(p, FL_FINALIZE)) {
-		    FL_UNSET(p, FL_FINALIZE);
-		    p->as.basic.klass = 0;
-		    run_final(objspace, (VALUE)p);
-		}
-		p++;
-	    }
+	while ((p = deferred_final_list) != 0) {
+	    deferred_final_list = 0;
+	    finalize_list(objspace, p);
+	    st_foreach(finalizer_table, chain_finalized_object,
+		       (st_data_t)&deferred_final_list);
 	}
     }
+    /* finalizers are part of garbage collection */
+    during_gc++;
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
 	p = heaps[i].slot; pend = p + heaps[i].limit;
