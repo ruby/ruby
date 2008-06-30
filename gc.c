@@ -705,18 +705,25 @@ rb_fill_value_cache(rb_thread_t *th)
 VALUE
 rb_newobj(void)
 {
-#if USE_VALUE_CACHE
+#if USE_VALUE_CACHE || (defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE)
     rb_thread_t *th = GET_THREAD();
+#endif
+#if USE_VALUE_CACHE
     VALUE v = *th->value_cache_ptr;
+#endif
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     rb_objspace_t *objspace = th->vm->objspace;
 #else
     rb_objspace_t *objspace = &rb_objspace;
 #endif
 
-    if (during_gc)
-        rb_bug("object allocation during garbage collection phase");
+    if (during_gc) {
+	dont_gc = 1;
+	during_gc = 0;
+	rb_bug("object allocation during garbage collection phase");
+    }
 
+#if USE_VALUE_CACHE
     if (v) {
 	RBASIC(v)->flags = 0;
 	th->value_cache_ptr++;
@@ -731,9 +738,6 @@ rb_newobj(void)
 #endif
     return v;
 #else
-    rb_objspace_t *objspace = &rb_objspace;
-    if (during_gc)
-        rb_bug("object allocation during garbage collection phase");
     return rb_newobj_from_heap(objspace);
 #endif
 }
@@ -920,7 +924,7 @@ gc_mark_locations(rb_objspace_t *objspace, VALUE *start, VALUE *end)
 
     if (end <= start) return;
     n = end - start;
-    mark_locations_array(&rb_objspace, start,n);
+    mark_locations_array(objspace, start, n);
 }
 
 void

@@ -1,3 +1,7 @@
+Tue Jul  1 00:49:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_newobj): abort GC phase before rb_bug.
+
 Mon Jun 30 23:15:07 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/openssl/test_ssl.rb (start_server): shutdown TCPServer before
