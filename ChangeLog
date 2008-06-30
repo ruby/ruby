@@ -1,3 +1,7 @@
+Mon Jun 30 22:30:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/collector/dir.rb (recursive_collect): r15662 reverted.
+
 Mon Jun 30 22:27:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/stringio/stringio.c (strio_getline): fix for nil and "" as

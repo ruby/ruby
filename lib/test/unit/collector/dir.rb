@@ -16,7 +16,7 @@ module Test
           @file = file
           @object_space = object_space
           @req = req
-          @pattern = []
+          @pattern = [/\btest_.*\.rb\Z/m]
           @exclude = []
         end
 
@@ -64,7 +64,6 @@ module Test
                 sub_suites << sub_suite unless(sub_suite.empty?)
               else
                 next if /~\z/ =~ e_name or /\A\.\#/ =~ e
-                next unless /\Atest_.*\.rb\z/m =~ e
                 if @pattern and !@pattern.empty?
                   next unless @pattern.any? {|pat| pat =~ e_name}
                 end
