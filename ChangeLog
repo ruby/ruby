@@ -1,3 +1,7 @@
+Mon Jun 30 20:34:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_buf_cat): check for self concatenation.
+
 Sun Jun 29 21:38:52 2008  Tanaka Akira  <akr@fsij.org>
 
 	* eval.c (rb_obj_respond_to): use RTEST to test the result of
