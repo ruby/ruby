@@ -1,3 +1,8 @@
+Mon Jun 30 22:57:50 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_settracefunc.rb (test_raise): reveal an exception
+	  hided by rescue modifier.
+
 Mon Jun 30 22:49:32 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_array.rb (test_aset): access with too big index

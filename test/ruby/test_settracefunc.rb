@@ -10,6 +10,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def teardown
+    set_trace_func(nil)
     RubyVM::InstructionSequence.compile_option = @original_compile_option
   end
 
@@ -134,8 +135,11 @@ class TestSetTraceFunc < Test::Unit::TestCase
      1: set_trace_func(Proc.new { |event, file, lineno, mid, binding, klass|
      2:   events << [event, lineno, mid, klass]
      3: })
-     4: raise "error" rescue nil
-     5: set_trace_func(nil)
+     4: begin
+     5:   raise TypeError, "error"
+     6: rescue TypeError
+     7: end
+     8: set_trace_func(nil)
     EOF
     assert_equal(["c-return", 3, :set_trace_func, Kernel],
                  events.shift)
