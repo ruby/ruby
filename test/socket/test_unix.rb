@@ -141,6 +141,7 @@ class TestUNIXSocket < Test::Unit::TestCase
     s1, s2 = UNIXSocket.pair
     s1.shutdown(Socket::SHUT_WR)
     assert_raise(Errno::EPIPE) { s1.write "a" }
+    assert_equal(nil, s2.read(1))
     s2.write "a"
     assert_equal("a", s1.read(1))
   end
