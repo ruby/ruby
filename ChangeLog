@@ -1,3 +1,11 @@
+Mon Jun 30 22:12:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (chain_finalized_object): should not delete from finalizer
+	  table until run.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): deferred_final_list may be
+	  empty first.
+
 Mon Jun 30 18:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_finalize_deferred): allow object allocation in finalizers.

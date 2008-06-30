@@ -2041,7 +2041,7 @@ chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 	p->as.free.next = *final_list;
 	*final_list = p;
     }
-    return ST_DELETE;
+    return ST_CONTINUE;
 }
 
 void
@@ -2053,12 +2053,13 @@ rb_gc_call_finalizer_at_exit(void)
 
     /* run finalizers */
     if (need_call_final) {
-	while ((p = deferred_final_list) != 0) {
+	do {
+	    p = deferred_final_list;
 	    deferred_final_list = 0;
 	    finalize_list(objspace, p);
 	    st_foreach(finalizer_table, chain_finalized_object,
 		       (st_data_t)&deferred_final_list);
-	}
+	} while (deferred_final_list);
     }
     /* finalizers are part of garbage collection */
     during_gc++;
