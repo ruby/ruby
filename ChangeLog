@@ -1,3 +1,7 @@
+Tue Jul  1 15:09:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_fill): check if beg is too big.
+
 Mon Jun 30 20:34:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_buf_cat): check for self concatenation.
