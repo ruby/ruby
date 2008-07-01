@@ -1,3 +1,7 @@
+Tue Jul  1 17:56:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/vsnprintf.c (BSD__uqtoa): constified.
+
 Tue Jul  1 17:50:44 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* enc/make_encdb.h: always add ';' at the end of line.

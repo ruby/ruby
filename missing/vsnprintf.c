@@ -357,7 +357,7 @@ BSD__sbprintf(register FILE *fp, const char *fmt, va_list ap)
  * use the given digits.
  */
 static char *
-BSD__uqtoa(register u_quad_t val, char *endp, int base, int octzero, char *xdigs)
+BSD__uqtoa(register u_quad_t val, char *endp, int base, int octzero, const char *xdigs)
 {
 	register char *cp = endp;
 	register long sval;
