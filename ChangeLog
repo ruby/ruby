@@ -1,3 +1,8 @@
+Wed Jul  2 03:42:44 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_settracefunc.rb: fix expected traces for
+	  RubyVM::FrozenCore's event and r17744.
+
 Wed Jul  2 03:10:41 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.h, insns.def: reduce insn operand of "trace".

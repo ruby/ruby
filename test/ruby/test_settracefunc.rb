@@ -54,9 +54,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
+    assert_equal(["c-call", 4, :core_define_method, RubyVM::FrozenCore],
+                 events.shift)
     assert_equal(["c-call", 4, :method_added, Module],
                  events.shift)
     assert_equal(["c-return", 4, :method_added, Module],
+                 events.shift)
+    assert_equal(["c-return", 4, :core_define_method, RubyVM::FrozenCore],
                  events.shift)
     assert_equal(["line", 7, __method__, self.class],
                  events.shift)
@@ -102,9 +106,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 5, nil, nil],
                  events.shift)
+    assert_equal(["c-call", 5, :core_define_method, RubyVM::FrozenCore],
+                 events.shift)
     assert_equal(["c-call", 5, :method_added, Module],
                  events.shift)
     assert_equal(["c-return", 5, :method_added, Module],
+                 events.shift)
+    assert_equal(["c-return", 5, :core_define_method, RubyVM::FrozenCore],
                  events.shift)
     assert_equal(["end", 7, nil, nil],
                  events.shift)
@@ -145,33 +153,35 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 4, :raise, Kernel],
-                 events.shift)
-    assert_equal(["c-call", 4, :new, Class],
-                 events.shift)
-    assert_equal(["c-call", 4, :initialize, Exception],
-                 events.shift)
-    assert_equal(["c-return", 4, :initialize, Exception],
-                 events.shift)
-    assert_equal(["c-return", 4, :new, Class],
-                 events.shift)
-    assert_equal(["c-call", 4, :backtrace, Exception],
-                 events.shift)
-    assert_equal(["c-return", 4, :backtrace, Exception],
-                 events.shift)
-    assert_equal(["c-call", 4, :set_backtrace, Exception],
-                 events.shift)
-    assert_equal(["c-return", 4, :set_backtrace, Exception],
-                 events.shift)
-    assert_equal(["raise", 4, :test_raise, TestSetTraceFunc],
-                 events.shift)
-    assert_equal(["c-call", 4, :===, Module],
-                 events.shift)
-    assert_equal(["c-return", 4, :===, Module],
-                 events.shift)
     assert_equal(["line", 5, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 5, :set_trace_func, Kernel],
+    assert_equal(["c-call", 5, :raise, Kernel],
+                 events.shift)
+    assert_equal(["c-call", 5, :exception, Exception],
+                 events.shift)
+    assert_equal(["c-call", 5, :initialize, Exception],
+                 events.shift)
+    assert_equal(["c-return", 5, :initialize, Exception],
+                 events.shift)
+    assert_equal(["c-return", 5, :exception, Exception],
+                 events.shift)
+    assert_equal(["c-call", 5, :backtrace, Exception],
+                 events.shift)
+    assert_equal(["c-return", 5, :backtrace, Exception],
+                 events.shift)
+    assert_equal(["c-call", 5, :set_backtrace, Exception],
+                 events.shift)
+    assert_equal(["c-return", 5, :set_backtrace, Exception],
+                 events.shift)
+    assert_equal(["raise", 5, :test_raise, TestSetTraceFunc],
+                 events.shift)
+    assert_equal(["c-call", 6, :===, Module],
+                 events.shift)
+    assert_equal(["c-return", 6, :===, Module],
+                 events.shift)
+    assert_equal(["line", 8, __method__, self.class],
+                 events.shift)
+    assert_equal(["c-call", 8, :set_trace_func, Kernel],
                  events.shift)
     assert_equal([], events)
   end
