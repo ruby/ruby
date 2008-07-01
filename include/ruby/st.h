@@ -56,6 +56,9 @@ struct st_table {
     const struct st_hash_type *type;
     st_index_t num_bins;
     unsigned int entries_packed : 1;
+#ifdef __GNUC__
+    __extension__
+#endif
     st_index_t num_entries : ST_INDEX_BITS - 1;
     struct st_table_entry **bins;
     struct st_table_entry *head;

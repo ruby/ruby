@@ -1,4 +1,7 @@
-Tue Jul  1 16:51:35 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+Tue Jul  1 16:57:44 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/st.h (struct st_table): type of bit-field
+	  'num_entries' is a GCC extension
 
 	* include/ruby/ruby.h (rb_intern): prefix __extnsion__ for
 	  braced-groups within expressions.
