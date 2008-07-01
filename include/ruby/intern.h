@@ -536,19 +536,19 @@ VALUE rb_str_tmp_new(long);
 VALUE rb_usascii_str_new(const char*, long);
 VALUE rb_usascii_str_new2(const char*);
 #if defined __GNUC__
-#define rb_str_new2(str) (			\
+#define rb_str_new2(str) __extension__ (	\
 {						\
     (__builtin_constant_p(str)) ?	       \
 	rb_str_new(str, strlen(str)) :		\
 	rb_str_new2(str);			\
 })
-#define rb_tainted_str_new2(str) ( \
+#define rb_tainted_str_new2(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
 	rb_tainted_str_new(str, strlen(str)) : \
 	rb_tainted_str_new2(str);	       \
 })
-#define rb_usascii_str_new2(str) ( \
+#define rb_usascii_str_new2(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
 	rb_usascii_str_new(str, strlen(str)) : \

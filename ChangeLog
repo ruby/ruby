@@ -1,3 +1,14 @@
+Tue Jul  1 16:51:35 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_intern): prefix __extnsion__ for
+	  braced-groups within expressions.
+
+	* include/ruby/intern.h (rb_usascii_str_new2): ditto.
+
+	* include/ruby/intern.h (rb_tainted_str_new2): ditto.
+
+	* include/ruby/intern.h (rb_str_new2): ditto.
+
 Tue Jul  1 15:01:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems/ext/builder.rb (Gem::Ext::Builder.make),
