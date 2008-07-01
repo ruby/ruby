@@ -2419,7 +2419,7 @@ rb_ary_fill(argc, argv, ary)
     if (len < 0) {
         return ary;
     }
-    if (len > ARY_MAX_SIZE - beg) {
+    if (beg >= ARY_MAX_SIZE || len > ARY_MAX_SIZE - beg) {
 	rb_raise(rb_eArgError, "argument too big");
     }
     end = beg + len;
