@@ -1,3 +1,7 @@
+Tue Jul  1 13:19:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_fill): check if beg is too big.
+
 Tue Jul  1 01:07:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension.read_multipart): blanks inside

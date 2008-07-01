@@ -2417,7 +2417,7 @@ rb_ary_fill(argc, argv, ary)
 	break;
     }
     rb_ary_modify(ary);
-    if (len > ARY_MAX_SIZE - beg) {
+    if (beg >= ARY_MAX_SIZE || len > ARY_MAX_SIZE - beg) {
 	rb_raise(rb_eArgError, "argument too big");
     }
     end = beg + len;
