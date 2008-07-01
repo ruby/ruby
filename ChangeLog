@@ -1,4 +1,11 @@
-Tue Jul  1 17:30:30 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+Tue Jul  1 17:37:43 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* enc/ascii.c: ISO C does not allow extra ';' outside of a
+	  function
+
+	* enc/us_ascii.c: ditto.
+
+	* enc/utf_8.c: ditto.
 
 	* process.c (run_exec_rlimit): ISO C90 forbids mixed declarations
 	  and code

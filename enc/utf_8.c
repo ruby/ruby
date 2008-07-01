@@ -442,7 +442,7 @@ OnigEncodingDefine(utf_8, UTF_8) = {
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
-ENC_ALIAS("CP65001", "UTF-8");
+ENC_ALIAS("CP65001", "UTF-8")
 
 /*
  * Name: UTF8-MAC
@@ -450,6 +450,6 @@ ENC_ALIAS("CP65001", "UTF-8");
  * Link: http://developer.apple.com/qa/qa2001/qa1235.html
  * Link: http://developer.apple.com/jp/qa/qa2001/qa1235.html
  */
-ENC_REPLICATE("UTF8-MAC", "UTF-8");
-ENC_ALIAS("UTF-8-MAC", "UTF8-MAC");
+ENC_REPLICATE("UTF8-MAC", "UTF-8")
+ENC_ALIAS("UTF-8-MAC", "UTF8-MAC")
 
