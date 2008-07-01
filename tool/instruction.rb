@@ -4,7 +4,7 @@
 
 require 'erb'
 
-module RubyVM
+class RubyVM
   class Instruction
     def initialize name, opes, pops, rets, comm, body, tvars, sp_inc,
                    orig = self, defopes = [], type = nil,

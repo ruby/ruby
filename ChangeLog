@@ -1,3 +1,7 @@
+Tue Jul  1 20:44:36 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* tool/instruction.rb: RubyVM is not module.
+
 Tue Jul  1 19:31:24 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ext/digest/digest.c (rb_digest_instance_inspect): constified.
