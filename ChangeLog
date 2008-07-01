@@ -1,3 +1,8 @@
+Tue Jul  1 19:01:00 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/shift_jis.c (code_is_ctype): HALF WIDTH KATAKANA is
+	  a character.
+
 Tue Jul  1 17:56:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/vsnprintf.c (BSD__uqtoa): constified.
