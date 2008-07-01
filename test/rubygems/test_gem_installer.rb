@@ -529,8 +529,10 @@ load 'my_exec'
     Dir.mkdir util_inst_bindir
     util_setup_gem
 
-    use_ui @ui do
-      assert_equal @spec, @installer.install
+    build_rake_in do
+      use_ui @ui do
+        assert_equal @spec, @installer.install
+      end
     end
 
     gemdir = File.join @gemhome, 'gems', @spec.full_name
@@ -600,8 +602,10 @@ load 'my_exec'
     util_setup_gem
     @installer.ignore_dependencies = true
 
-    use_ui @ui do
-      assert_equal @spec, @installer.install
+    build_rake_in do
+      use_ui @ui do
+        assert_equal @spec, @installer.install
+      end
     end
 
     gemdir = File.join @gemhome, 'gems', @spec.full_name
@@ -646,9 +650,11 @@ load 'my_exec'
       install_dir = File.join @userhome, '.gem', 'gems', @spec.full_name
       @spec.executables = ["executable"]
 
-      use_ui @ui do
-        util_setup_gem
-        @installer.install
+      build_rake_in do
+        use_ui @ui do
+          util_setup_gem
+          @installer.install
+        end
       end
     
       assert File.exist?(File.join(install_dir, 'lib', 'code.rb'))
@@ -663,10 +669,12 @@ load 'my_exec'
       File.chmod 0755, @userhome
       File.chmod 0000, util_inst_bindir
 
-      use_ui @ui do
-        setup
-        util_setup_gem
-        @installer.install
+      build_rake_in do
+        use_ui @ui do
+          setup
+          util_setup_gem
+          @installer.install
+        end
       end
       
       assert File.exist?(File.join(@userhome, '.gem', 'bin', 'executable'))

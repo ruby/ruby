@@ -10,8 +10,10 @@ class TestGemUninstaller < GemInstallerTestCase
     ui = MockGemUi.new
     util_setup_gem ui
 
-    use_ui ui do
-      @installer.install
+    build_rake_in do
+      use_ui ui do
+        @installer.install
+      end
     end
   end
 

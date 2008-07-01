@@ -1,3 +1,19 @@
+Tue Jul  1 21:32:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/test/unit/ui/console/testrunner.rb: prevent destructive
+	  modification to $0.
+
+	* test/rubygems/gemutilities.rb (build_rake_in): move from
+	  test_gem_ext_rake_builder.rb.
+
+	* test/rubygems/test_gem_ext_rake_builder.rb: ditto.
+
+	* test/rubygems/test_gem_installer.rb: override Gem.ruby and
+	  ENV["rake"].
+
+	* test/rubygems/test_gem_uninstaller.rb: ditto.
+
+
 Tue Jul  1 21:13:17 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, vm.c, insns.def: call FrozenCore.set_postexe method

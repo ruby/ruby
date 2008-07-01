@@ -392,5 +392,50 @@ class RubyGemTestCase < Test::Unit::TestCase
     self.class.process_based_port
   end
 
+  def build_rake_in
+    gem_ruby = Gem.ruby
+    ruby = @@ruby
+    Gem.module_eval {@ruby = ruby}
+    env_rake = ENV["rake"]
+    ENV["rake"] = @@rake
+    yield @@rake
+  ensure
+    Gem.module_eval {@ruby = gem_ruby}
+    if env_rake
+      ENV["rake"] = env_rake
+    else
+      ENV.delete("rake")
+    end
+  end
+
+  def self.rubybin
+    if ruby = ENV["RUBY"]
+      return ruby
+    end
+    ruby = "ruby"
+    rubyexe = ruby+".exe"
+    3.times do
+      if File.exist? ruby and File.executable? ruby and !File.directory? ruby
+        return File.expand_path(ruby)
+      end
+      if File.exist? rubyexe and File.executable? rubyexe
+        return File.expand_path(rubyexe)
+      end
+      ruby = File.join("..", ruby)
+    end
+    begin
+      require "rbconfig"
+      File.join(
+        RbConfig::CONFIG["bindir"],
+	RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"]
+      )
+    rescue LoadError
+      "ruby"
+    end
+  end
+
+  @@ruby = rubybin
+  @@rake = ENV["rake"] || (@@ruby + " " + File.expand_path("../../../bin/rake", __FILE__))
+
 end
 

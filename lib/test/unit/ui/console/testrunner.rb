@@ -90,10 +90,8 @@ module Test
           end
           
           def test_started(name)
-            unless defined? $program_name
-              $program_name = $0
-              alias $0 $program_name
-            end
+            $program_name = $0
+            alias $0 $program_name
             $PROGRAM_NAME += "\0#{name}"
             output_single(name + ": ", VERBOSE)
           end
