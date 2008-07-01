@@ -245,7 +245,7 @@ rb_path2class(const char *path)
 	}
 	if (!rb_const_defined(c, id)) {
 	  undefined_class:
-	    rb_raise(rb_eArgError, "undefined class/module %.*s", p-path, path);
+	    rb_raise(rb_eArgError, "undefined class/module %.*s", (int)(p-path), path);
 	}
 	c = rb_const_get_at(c, id);
 	switch (TYPE(c)) {

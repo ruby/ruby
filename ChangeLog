@@ -1,3 +1,9 @@
+Tue Jul  1 19:31:24 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ext/digest/digest.c (rb_digest_instance_inspect): constified.
+
+	* variable.c (rb_path2class): field precision should have type int.
+
 Tue Jul  1 19:01:00 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/shift_jis.c (code_is_ctype): HALF WIDTH KATAKANA is

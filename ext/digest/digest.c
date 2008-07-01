@@ -266,7 +266,7 @@ rb_digest_instance_inspect(VALUE self)
 {
     VALUE str;
     size_t digest_len = 32;	/* about this size at least */
-    char *cname;
+    const char *cname;
 
     cname = rb_obj_classname(self);
 
