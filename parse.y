@@ -70,7 +70,7 @@ enum lex_state_e {
     EXPR_FNAME,			/* ignore newline, no reserved words. */
     EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
-    EXPR_VALUE,			/* alike EXPR_BEG but label is disallowed. */
+    EXPR_VALUE			/* alike EXPR_BEG but label is disallowed. */
 };
 
 # ifdef HAVE_LONG_LONG
@@ -4843,7 +4843,7 @@ enum string_type {
     str_sword  = (STR_FUNC_QWORDS),
     str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
     str_ssym   = (STR_FUNC_SYMBOL),
-    str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND),
+    str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND)
 };
 
 static VALUE

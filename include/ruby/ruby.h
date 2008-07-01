@@ -235,7 +235,7 @@ enum ruby_special_consts {
     RUBY_IMMEDIATE_MASK = 0x03,
     RUBY_FIXNUM_FLAG    = 0x01,
     RUBY_SYMBOL_FLAG    = 0x0e,
-    RUBY_SPECIAL_SHIFT  = 8,
+    RUBY_SPECIAL_SHIFT  = 8
 };
 
 #define Qfalse ((VALUE)RUBY_Qfalse)
@@ -280,7 +280,7 @@ enum ruby_value_type {
     RUBY_T_NODE   = 0x1c,
     RUBY_T_ICLASS = 0x1d,
 
-    RUBY_T_MASK   = 0x1f,
+    RUBY_T_MASK   = 0x1f
 };
 
 #define T_NONE   RUBY_T_NONE

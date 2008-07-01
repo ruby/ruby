@@ -35,7 +35,7 @@ typedef struct iseq_link_element {
 	ISEQ_ELEMENT_NONE   = INT2FIX(0x00),
 	ISEQ_ELEMENT_LABEL  = INT2FIX(0x01),
 	ISEQ_ELEMENT_INSN   = INT2FIX(0x02),
-	ISEQ_ELEMENT_ADJUST = INT2FIX(0x03),
+	ISEQ_ELEMENT_ADJUST = INT2FIX(0x03)
     } type;
     struct iseq_link_element *next;
     struct iseq_link_element *prev;

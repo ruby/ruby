@@ -371,7 +371,7 @@ enum rb_thread_status {
     THREAD_RUNNABLE,
     THREAD_STOPPED,
     THREAD_STOPPED_FOREVER,
-    THREAD_KILLED,
+    THREAD_KILLED
 };
 
 typedef RUBY_JMP_BUF rb_jmpbuf_t;

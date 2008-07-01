@@ -63,7 +63,7 @@ static const union {
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
         RUBY_NODE_LSHIFT    = NODE_LSHIFT,
         RUBY_NODE_LMASK     = NODE_LMASK,
-        RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE,
+        RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE
     } various;
 } dummy_gdb_enums;
 

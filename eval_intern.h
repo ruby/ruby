@@ -205,7 +205,7 @@ void rb_thread_wait_other_threads(void);
 enum {
     RAISED_EXCEPTION = 1,
     RAISED_STACKOVERFLOW = 2,
-    RAISED_NOMEMORY = 4,
+    RAISED_NOMEMORY = 4
 };
 int rb_thread_set_raised(rb_thread_t *th);
 int rb_thread_reset_raised(rb_thread_t *th);

@@ -1,3 +1,24 @@
+Tue Jul  1 17:14:59 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/ruby.h (enum ruby_special_consts): ISO C forbids
+	  comma at end of enumerator list
+
+	* include/ruby/ruby.h (enum ruby_value_type): ditto.
+
+	* eval_intern.h (enum): ditto.
+
+	* vm_core.h (enum rb_thread_status): ditto.
+
+	* parse.y (enum lex_state_e): ditto.
+
+	* parse.y (enum string_type): ditto.
+
+	* process.c (enum): ditto.
+
+	* ruby.c (enum dump_flag_bits): ditto.
+
+	* ruby.c (enum disable_flag_bits): ditto.
+
 Tue Jul  1 17:21:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regexec.c (stack_double): use MatchStackLimitSize atomically.

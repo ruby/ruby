@@ -17,7 +17,7 @@
 enum context_type {
     CONTINUATION_CONTEXT = 0,
     FIBER_CONTEXT = 1,
-    ROOT_FIBER_CONTEXT = 2,
+    ROOT_FIBER_CONTEXT = 2
 };
 
 typedef struct rb_context_struct {
