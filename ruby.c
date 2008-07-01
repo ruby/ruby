@@ -71,7 +71,7 @@ enum disable_flag_bits {
 
 #define DUMP_BIT(bit) (1U << dump_##bit)
 enum dump_flag_bits {
-    dump_insns,
+    dump_insns
 };
 
 struct cmdline_options {

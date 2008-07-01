@@ -231,4 +231,4 @@ OnigEncodingDefine(euc_tw, EUC_TW) = {
   euctw_left_adjust_char_head,
   euctw_is_allowed_reverse_match
 };
-ENC_ALIAS("eucTW", "EUC-TW");
+ENC_ALIAS("eucTW", "EUC-TW")

@@ -215,5 +215,5 @@ OnigEncodingDefine(koi8_r, KOI8_R) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
-ENC_ALIAS("CP878", "KOI8-R");
+ENC_ALIAS("CP878", "KOI8-R")
 

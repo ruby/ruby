@@ -21,6 +21,60 @@ Tue Jul  1 17:37:43 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* enc/utf_8.c: ditto.
 
+	* enc/big5.c: ditto.
+
+	* enc/euc_jp.c: ditto.
+
+	* enc/euc_kr.c: ditto.
+
+	* enc/euc_tw.c: ditto.
+
+	* enc/gb2312.c: ditto.
+
+	* enc/gbk.c: ditto.
+
+	* enc/iso_8859_1.c: ditto.
+
+	* enc/iso_8859_2.c: ditto.
+
+	* enc/iso_8859_3.c: ditto.
+
+	* enc/iso_8859_4.c: ditto.
+
+	* enc/iso_8859_5.c: ditto.
+
+	* enc/iso_8859_6.c: ditto.
+
+	* enc/iso_8859_7.c: ditto.
+
+	* enc/iso_8859_8.c: ditto.
+
+	* enc/iso_8859_9.c: ditto.
+
+	* enc/iso_8859_10.c: ditto.
+
+	* enc/iso_8859_11.c: ditto.
+
+	* enc/iso_8859_13.c: ditto.
+
+	* enc/iso_8859_14.c: ditto.
+
+	* enc/iso_8859_15.c: ditto.
+
+	* enc/iso_8859_16.c: ditto.
+
+	* enc/koi8_r.c: ditto.
+
+	* enc/shift_jis.c: ditto.
+
+	* enc/utf_16be.c: ditto.
+
+	* enc/utf_32be.c: ditto.
+
+	* enc/utf_32le.c: ditto.
+
+	* enc/windows_1251.c: ditto.
+
 	* process.c (run_exec_rlimit): ISO C90 forbids mixed declarations
 	  and code
 
@@ -42,6 +96,8 @@ Tue Jul  1 17:37:43 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	* ruby.c (enum dump_flag_bits): ditto.
 
 	* ruby.c (enum disable_flag_bits): ditto.
+
+	* enc/gb18030.c (enum): ditto.
 
 Tue Jul  1 17:21:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

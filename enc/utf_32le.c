@@ -191,4 +191,4 @@ OnigEncodingDefine(utf_32le, UTF_32LE) = {
   utf32le_left_adjust_char_head,
   onigenc_always_false_is_allowed_reverse_match
 };
-ENC_ALIAS("UCS-4LE", "UTF-32LE");
+ENC_ALIAS("UCS-4LE", "UTF-32LE")

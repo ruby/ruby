@@ -245,7 +245,7 @@ enum state {
   S_even_CM_odd_C4CM,
   S_odd_CM_odd_C4CM,
   S_even_CM_even_C4CM,
-  S_odd_CM_even_C4CM,
+  S_odd_CM_even_C4CM
 };
 
 static UChar*

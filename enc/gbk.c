@@ -219,4 +219,4 @@ OnigEncodingDefine(gbk, GBK) = {
  * Link: http://www.iana.org/assignments/charset-reg/GBK
  * Link: http://www.microsoft.com/globaldev/reference/dbcs/936.mspx
  */
-ENC_ALIAS("CP936", "GBK");
+ENC_ALIAS("CP936", "GBK")

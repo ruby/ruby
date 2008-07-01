@@ -237,4 +237,4 @@ OnigEncodingDefine(iso_8859_15, ISO_8859_15) = {
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match
 };
-ENC_ALIAS("ISO8859-15", "ISO-8859-15");
+ENC_ALIAS("ISO8859-15", "ISO-8859-15")

@@ -213,4 +213,4 @@ OnigEncodingDefine(big5, BIG5) = {
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match
 };
-ENC_ALIAS("CP950", "BIG5");
+ENC_ALIAS("CP950", "BIG5")
