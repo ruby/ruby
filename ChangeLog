@@ -1,3 +1,9 @@
+Tue Jul  1 17:44:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (COMPILE_OPTION_FALSE), time.c (timegm_noleapsecond),
+	  thread.c (eKillSignal, eTerminateSignal),
+	  missing/vsnprintf.c (BSD_vfprintf): constified.
+
 Tue Jul  1 17:37:43 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* enc/ascii.c: ISO C does not allow extra ';' outside of a

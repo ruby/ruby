@@ -564,9 +564,9 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	 * below longer.
 	 */
 #define	PADSIZE	16		/* pad chunk size */
-	static char blanks[PADSIZE] =
+	static const char blanks[PADSIZE] =
 	 {' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' '};
-	static char zeroes[PADSIZE] =
+	static const char zeroes[PADSIZE] =
 	 {'0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'};
 
 	/*

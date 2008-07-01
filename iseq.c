@@ -219,7 +219,7 @@ static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
     OPT_STACK_CACHING, /* int stack_caching; */
     OPT_TRACE_INSTRUCTION, /* int trace_instruction */
 };
-static const rb_compile_option_t COMPILE_OPTION_FALSE;
+static const rb_compile_option_t COMPILE_OPTION_FALSE = {0};
 
 static void
 make_compile_option(rb_compile_option_t *option, VALUE opt)

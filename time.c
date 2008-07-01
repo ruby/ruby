@@ -494,7 +494,7 @@ leap_year_p(long y)
 static time_t
 timegm_noleapsecond(struct tm *tm)
 {
-    static int common_year_yday_offset[] = {
+    static const int common_year_yday_offset[] = {
 	-1,
 	-1 + 31,
 	-1 + 31 + 28,
@@ -509,7 +509,7 @@ timegm_noleapsecond(struct tm *tm)
 	-1 + 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30
 	  /* 1    2    3    4    5    6    7    8    9    10   11 */
     };
-    static int leap_year_yday_offset[] = {
+    static const int leap_year_yday_offset[] = {
 	-1,
 	-1 + 31,
 	-1 + 31 + 29,

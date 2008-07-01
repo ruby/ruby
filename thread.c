@@ -68,8 +68,8 @@ static void rb_check_deadlock(rb_vm_t *vm);
 void rb_signal_exec(rb_thread_t *th, int sig);
 void rb_disable_interrupt(void);
 
-static VALUE eKillSignal = INT2FIX(0);
-static VALUE eTerminateSignal = INT2FIX(1);
+static const VALUE eKillSignal = INT2FIX(0);
+static const VALUE eTerminateSignal = INT2FIX(1);
 static volatile int system_working = 1;
 
 inline static void
