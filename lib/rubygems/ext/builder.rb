@@ -35,7 +35,7 @@ class Gem::Ext::Builder
       results << `#{cmd} #{redirector}`
 
       raise Gem::InstallError, "make#{target} failed:\n\n#{results}" unless
-        $?.exitstatus.zero?
+        $?.success?
     end
   end
 
@@ -47,7 +47,7 @@ class Gem::Ext::Builder
     results << command
     results << `#{command} #{redirector}`
 
-    unless $?.exitstatus.zero? then
+    unless $?.success? then
       raise Gem::InstallError, "#{class_name} failed:\n\n#{results.join "\n"}"
     end
   end

@@ -1,3 +1,14 @@
+Tue Jul  1 15:01:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/ext/builder.rb (Gem::Ext::Builder.make),
+	  (Gem::Ext::Builder.run): EXIT_SUCCESS may be 0 or may not.
+
+	* test/rubygems/test_gem_ext_rake_builder.rb (build_rake_in): override
+	  Gem.ruby and ENV["rake"].
+
+	* runruby.rb: bin/rake does not exist in archdir where architecture
+	  depend script (i.e. rbconfig.rb) exists.
+
 Tue Jul  1 13:19:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_fill): check if beg is too big.
