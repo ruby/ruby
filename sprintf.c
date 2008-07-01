@@ -979,8 +979,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
      */
     if (posarg >= 0 && nextarg < argc) {
 	const char *mesg = "too many arguments for format string";
-	if (RTEST(ruby_debug)) rb_raise(rb_eArgError, mesg);
-	if (RTEST(ruby_verbose)) rb_warn(mesg);
+	if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
+	if (RTEST(ruby_verbose)) rb_warn("%s", mesg);
     }
     rb_str_resize(result, blen);
 

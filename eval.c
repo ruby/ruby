@@ -435,8 +435,7 @@ rb_exc_fatal(VALUE mesg)
 void
 rb_interrupt(void)
 {
-    static const char fmt[1] = {'\0'};
-    rb_raise(rb_eInterrupt, fmt);
+    rb_raise(rb_eInterrupt, "%s", "");
 }
 
 static VALUE get_errinfo(void);

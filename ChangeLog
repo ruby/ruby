@@ -1,3 +1,9 @@
+Tue Jul  1 20:55:07 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* eval.c (rb_interrupt): trick to suppress GCC warning.
+
+	* sprintf.c (rb_str_format): ditto.
+
 Tue Jul  1 20:44:36 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* tool/instruction.rb: RubyVM is not module.
