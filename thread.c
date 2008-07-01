@@ -3280,7 +3280,7 @@ call_trace_proc(VALUE args, int tracing)
 	rb_thread_method_id_and_class(GET_THREAD(), &id, &klass);
     }
     if (id == ID_ALLOCATOR)
-	return Qnil;
+      return Qnil;
     if (klass) {
 	if (TYPE(klass) == T_ICLASS) {
 	    klass = RBASIC(klass)->klass;
@@ -3296,7 +3296,7 @@ call_trace_proc(VALUE args, int tracing)
     argv[3] = id ? ID2SYM(id) : Qnil;
     argv[4] = p->self ? rb_binding_new() : Qnil;
     argv[5] = klass ? klass : Qnil;
-    
+
     return rb_proc_call_with_block(p->proc, 6, argv, Qnil);
 }
 

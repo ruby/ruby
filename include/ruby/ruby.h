@@ -1001,18 +1001,19 @@ void ruby_sysinit(int *, char ***);
 #define HAVE_NATIVETHREAD
 int ruby_native_thread_p(void);
 
-#define RUBY_EVENT_NONE     0x00
-#define RUBY_EVENT_LINE     0x01
-#define RUBY_EVENT_CLASS    0x02
-#define RUBY_EVENT_END      0x04
-#define RUBY_EVENT_CALL     0x08
-#define RUBY_EVENT_RETURN   0x10
-#define RUBY_EVENT_C_CALL   0x20
-#define RUBY_EVENT_C_RETURN 0x40
-#define RUBY_EVENT_RAISE    0x80
-#define RUBY_EVENT_ALL      0xff
-#define RUBY_EVENT_VM      0x100
-#define RUBY_EVENT_SWITCH  0x200
+#define RUBY_EVENT_NONE      0x0000
+#define RUBY_EVENT_LINE      0x0001
+#define RUBY_EVENT_CLASS     0x0002
+#define RUBY_EVENT_END       0x0004
+#define RUBY_EVENT_CALL      0x0008
+#define RUBY_EVENT_RETURN    0x0010
+#define RUBY_EVENT_C_CALL    0x0020
+#define RUBY_EVENT_C_RETURN  0x0040
+#define RUBY_EVENT_RAISE     0x0080
+#define RUBY_EVENT_ALL       0xffff
+#define RUBY_EVENT_VM       0x10000
+#define RUBY_EVENT_SWITCH   0x20000
+#define RUBY_EVENT_COVERAGE 0x40000
 
 typedef unsigned int rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t, VALUE data, VALUE, ID, VALUE klass);

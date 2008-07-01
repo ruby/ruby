@@ -847,23 +847,29 @@ defined
  */
 DEFINE_INSN
 trace
-(rb_num_t nf, VALUE coverage)
+(rb_num_t nf)
 ()
 ()
 {
     rb_event_flag_t flag = nf;
-    if (coverage) {
-	long line = rb_sourceline() - 1;
-	long count;
-	if (RARRAY_PTR(coverage)[line] == Qnil) {
-	    rb_bug("bug");
-	}
-	count = FIX2LONG(RARRAY_PTR(coverage)[line]) + 1;
-	if (POSFIXABLE(count)) {
-	    RARRAY_PTR(coverage)[line] = LONG2FIX(count);
+
+    if (flag == RUBY_EVENT_COVERAGE) {
+	VALUE coverage = GET_ISEQ()->coverage;
+	if (coverage) {
+	    long line = vm_get_sourceline(GET_CFP()) - 1;
+	    long count;
+	    if (RARRAY_PTR(coverage)[line] == Qnil) {
+		rb_bug("bug");
+	    }
+	    count = FIX2LONG(RARRAY_PTR(coverage)[line]) + 1;
+	    if (POSFIXABLE(count)) {
+		RARRAY_PTR(coverage)[line] = LONG2FIX(count);
+	    }
 	}
     }
-    EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* TODO: id, klass */);
+    else {
+	EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* TODO: id, klass */);
+    }
 }
 
 /**********************************************************/

@@ -1,3 +1,9 @@
+Wed Jul  2 03:10:41 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.h, insns.def: reduce insn operand of "trace".
+
+	* include/ruby/ruby.h: add RUBY_EVENT_COVERAGE event.
+
 Wed Jul  2 02:02:34 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c, vm.c: fix to refer next ruby level cfp to make binding.
