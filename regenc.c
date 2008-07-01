@@ -451,7 +451,7 @@ static int
 ss_apply_all_case_fold(OnigCaseFoldType flag ARG_UNUSED,
 		       OnigApplyAllCaseFoldFunc f, void* arg)
 {
-  static OnigCodePoint ss[] = { 0x73, 0x73 };
+  OnigCodePoint ss[] = { 0x73, 0x73 };
 
   return (*f)((OnigCodePoint )0xdf, ss, 2, arg);
 }
@@ -783,7 +783,7 @@ onigenc_mb4_code_to_mbc(OnigEncoding enc, OnigCodePoint code, UChar *buf)
 extern int
 onigenc_minimum_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
 {
-  static PosixBracketEntryType PBS[] = {
+  static const PosixBracketEntryType PBS[] = {
     { (UChar* )"Alnum",  ONIGENC_CTYPE_ALNUM,  5 },
     { (UChar* )"Alpha",  ONIGENC_CTYPE_ALPHA,  5 },
     { (UChar* )"Blank",  ONIGENC_CTYPE_BLANK,  5 },
@@ -801,7 +801,7 @@ onigenc_minimum_property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
     { (UChar* )NULL, -1, 0 }
   };
 
-  PosixBracketEntryType *pb;
+  const PosixBracketEntryType *pb;
   int len;
 
   len = onigenc_strlen(enc, p, end);

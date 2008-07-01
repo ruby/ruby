@@ -4380,7 +4380,7 @@ add_char_amb_opt_map_info(OptMapInfo* map, UChar* p, UChar* end,
 static void
 select_opt_map_info(OptMapInfo* now, OptMapInfo* alt)
 {
-  static int z = 1<<15; /* 32768: something big value */
+  const int z = 1<<15; /* 32768: something big value */
 
   int v1, v2;
 
@@ -5547,7 +5547,7 @@ static int onig_inited = 0;
 extern int
 onig_alloc_init(regex_t** reg, OnigOptionType option,
 		OnigCaseFoldType case_fold_flag,
-                OnigEncoding enc, OnigSyntaxType* syntax)
+                OnigEncoding enc, const OnigSyntaxType* syntax)
 {
   if (! onig_inited)
     onig_init();
@@ -5591,7 +5591,7 @@ onig_alloc_init(regex_t** reg, OnigOptionType option,
 
 extern int
 onig_new(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
-	  OnigOptionType option, OnigEncoding enc, OnigSyntaxType* syntax,
+	  OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
 	  OnigErrorInfo* einfo)
 {
   int r;

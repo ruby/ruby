@@ -1,3 +1,12 @@
+Tue Jul  1 17:21:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regexec.c (stack_double): use MatchStackLimitSize atomically.
+
+	* regparse.c (onig_free_shared_cclass_table): OnigTypeCClassTable
+	  needs atomicity
+
+	* regsyntax.c: constified all predefined OnigSyntaxTypes.
+
 Tue Jul  1 16:57:44 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* include/ruby/st.h (struct st_table): type of bit-field

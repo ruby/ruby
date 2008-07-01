@@ -279,7 +279,7 @@ typedef struct {
   OnigOptionType   option;
   OnigCaseFoldType case_fold_flag;
   OnigEncoding     enc;
-  OnigSyntaxType*  syntax;
+  const OnigSyntaxType* syntax;
   BitStatusType    capture_history;
   BitStatusType    bt_mem_start;
   BitStatusType    bt_mem_end;

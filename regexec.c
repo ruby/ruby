@@ -454,12 +454,13 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     n *= 2;
   }
   else {
+    unsigned int limit_size = MatchStackLimitSize;
     n *= 2;
-    if (MatchStackLimitSize != 0 && n > MatchStackLimitSize) {
-      if ((unsigned int )(stk_end - stk_base) == MatchStackLimitSize)
+    if (limit_size != 0 && n > limit_size) {
+      if ((unsigned int )(stk_end - stk_base) == limit_size)
         return ONIGERR_MATCH_STACK_LIMIT_OVER;
       else
-        n = MatchStackLimitSize;
+        n = limit_size;
     }
     x = (OnigStackType* )xrealloc(stk_base, sizeof(OnigStackType) * n);
     if (IS_NULL(x)) {
@@ -1249,7 +1250,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 	 const UChar* sstart, UChar* sprev, OnigMatchArg* msa)
 {
-  static UChar FinishCode[] = { OP_FINISH };
+  static const UChar FinishCode[] = { OP_FINISH };
 
   int i, n, num_mem, best_len, pop_level;
   LengthType tlen, tlen2;
@@ -1295,7 +1296,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  (int )(end - str), (int )(sstart - str));
 #endif
 
-  STACK_PUSH_ENSURED(STK_ALT, FinishCode);  /* bottom stack */
+  STACK_PUSH_ENSURED(STK_ALT, (UChar *)FinishCode);  /* bottom stack */
   best_len = ONIG_MISMATCH;
   s = (UChar* )sstart;
   while (1) {
@@ -3555,7 +3556,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
     }
   }
   else if (str == end) { /* empty string */
-    static const UChar* address_for_empty_string = (UChar* )"";
+    static const UChar address_for_empty_string[] = "";
 
 #ifdef ONIG_DEBUG_SEARCH
     fprintf(stderr, "onig_search: empty string.\n");
@@ -3785,7 +3786,7 @@ onig_get_case_fold_flag(regex_t* reg)
   return reg->case_fold_flag;
 }
 
-extern OnigSyntaxType*
+extern const OnigSyntaxType*
 onig_get_syntax(regex_t* reg)
 {
   return reg->syntax;

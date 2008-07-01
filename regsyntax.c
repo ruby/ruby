@@ -29,7 +29,7 @@
 
 #include "regint.h"
 
-OnigSyntaxType OnigSyntaxASIS = {
+const OnigSyntaxType OnigSyntaxASIS = {
     0
   , ONIG_SYN_OP2_INEFFECTIVE_ESCAPE
   , 0
@@ -45,7 +45,7 @@ OnigSyntaxType OnigSyntaxASIS = {
   }
 };
 
-OnigSyntaxType OnigSyntaxPosixBasic = {
+const OnigSyntaxType OnigSyntaxPosixBasic = {
   ( SYN_POSIX_COMMON_OP | ONIG_SYN_OP_ESC_LPAREN_SUBEXP |
     ONIG_SYN_OP_ESC_BRACE_INTERVAL )
   , 0
@@ -62,7 +62,7 @@ OnigSyntaxType OnigSyntaxPosixBasic = {
   }
 };
 
-OnigSyntaxType OnigSyntaxPosixExtended = {
+const OnigSyntaxType OnigSyntaxPosixExtended = {
   ( SYN_POSIX_COMMON_OP | ONIG_SYN_OP_LPAREN_SUBEXP |
     ONIG_SYN_OP_BRACE_INTERVAL |
     ONIG_SYN_OP_PLUS_ONE_INF | ONIG_SYN_OP_QMARK_ZERO_ONE | ONIG_SYN_OP_VBAR_ALT )
@@ -83,7 +83,7 @@ OnigSyntaxType OnigSyntaxPosixExtended = {
   }
 };
 
-OnigSyntaxType OnigSyntaxEmacs = {
+const OnigSyntaxType OnigSyntaxEmacs = {
   ( ONIG_SYN_OP_DOT_ANYCHAR | ONIG_SYN_OP_BRACKET_CC |
     ONIG_SYN_OP_ESC_BRACE_INTERVAL |
     ONIG_SYN_OP_ESC_LPAREN_SUBEXP | ONIG_SYN_OP_ESC_VBAR_ALT |
@@ -104,7 +104,7 @@ OnigSyntaxType OnigSyntaxEmacs = {
   }
 };
 
-OnigSyntaxType OnigSyntaxGrep = {
+const OnigSyntaxType OnigSyntaxGrep = {
   ( ONIG_SYN_OP_DOT_ANYCHAR | ONIG_SYN_OP_BRACKET_CC | ONIG_SYN_OP_POSIX_BRACKET |
     ONIG_SYN_OP_ESC_BRACE_INTERVAL | ONIG_SYN_OP_ESC_LPAREN_SUBEXP |
     ONIG_SYN_OP_ESC_VBAR_ALT |
@@ -126,7 +126,7 @@ OnigSyntaxType OnigSyntaxGrep = {
   }
 };
 
-OnigSyntaxType OnigSyntaxGnuRegex = {
+const OnigSyntaxType OnigSyntaxGnuRegex = {
   SYN_GNU_REGEX_OP
   , 0
   , SYN_GNU_REGEX_BV
@@ -142,7 +142,7 @@ OnigSyntaxType OnigSyntaxGnuRegex = {
   }
 };
 
-OnigSyntaxType OnigSyntaxJava = {
+const OnigSyntaxType OnigSyntaxJava = {
   (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
      ONIG_SYN_OP_ESC_CONTROL_CHARS | ONIG_SYN_OP_ESC_C_CONTROL |
      ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 )
@@ -165,7 +165,7 @@ OnigSyntaxType OnigSyntaxJava = {
   }
 };
 
-OnigSyntaxType OnigSyntaxPerl = {
+const OnigSyntaxType OnigSyntaxPerl = {
   (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
      ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
      ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS |
@@ -189,7 +189,7 @@ OnigSyntaxType OnigSyntaxPerl = {
 };
 
 /* Perl + named group */
-OnigSyntaxType OnigSyntaxPerl_NG = {
+const OnigSyntaxType OnigSyntaxPerl_NG = {
   (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
      ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
      ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS |
@@ -220,7 +220,7 @@ OnigSyntaxType OnigSyntaxPerl_NG = {
 
 
 extern int
-onig_set_default_syntax(OnigSyntaxType* syntax)
+onig_set_default_syntax(const OnigSyntaxType* syntax)
 {
   if (IS_NULL(syntax))
     syntax = ONIG_SYNTAX_RUBY;
@@ -230,7 +230,7 @@ onig_set_default_syntax(OnigSyntaxType* syntax)
 }
 
 extern void
-onig_copy_syntax(OnigSyntaxType* to, OnigSyntaxType* from)
+onig_copy_syntax(OnigSyntaxType* to, const OnigSyntaxType* from)
 {
   *to = *from;
 }
