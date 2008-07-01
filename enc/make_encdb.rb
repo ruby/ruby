@@ -57,7 +57,7 @@ Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
           next
         end
         check_duplication(defs, $1, fn, $.)
-        lines << line.sub(/;.*/m, ";\n") if line
+        lines << line.sub(/;.*/m, "").chomp + ";\n" if line
       end
     end
   end
