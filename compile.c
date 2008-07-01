@@ -2291,7 +2291,7 @@ compile_cpath(LINK_ANCHOR *ret, rb_iseq_t *iseq, NODE *cpath)
     }
     else {
 	/* class at cbase Foo */
-	ADD_INSN(ret, nd_line(cpath), putcbase);
+	ADD_INSN1(ret, nd_line(cpath), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	return Qtrue;
     }
 }
@@ -3436,7 +3436,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 
 	if (node->nd_vid) {
-	    ADD_INSN (ret, nd_line(node), putcbase);
+	    ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	    ADD_INSN1(ret, nd_line(node), setconstant, ID2SYM(node->nd_vid));
 	}
 	else {
@@ -4227,12 +4227,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defn/iseq", iseqval);
 
-	ADD_INSN (ret, nd_line(node), putnil);
-	ADD_INSN3(ret, nd_line(node), definemethod,
-		  ID2SYM(node->nd_mid), iseqval, INT2FIX(0));
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
+	ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->nd_mid));
+	ADD_INSN1(ret, nd_line(node), putiseq, iseqval);
+	ADD_SEND (ret, nd_line(node), ID2SYM(id_core_define_method), INT2FIX(3));
+
+	if (poped) {
+	    ADD_INSN(ret, nd_line(node), pop);
 	}
+
 	debugp_param("defn", iseqval);
 	break;
       }
@@ -4243,41 +4247,48 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	debugp_param("defs/iseq", iseqval);
 
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	COMPILE(ret, "defs: recv", node->nd_recv);
-	ADD_INSN3(ret, nd_line(node), definemethod,
-		  ID2SYM(node->nd_mid), iseqval, INT2FIX(1));
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
+	ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->nd_mid));
+	ADD_INSN1(ret, nd_line(node), putiseq, iseqval);
+	ADD_SEND (ret, nd_line(node), ID2SYM(id_core_define_singleton_method), INT2FIX(3));
+
+	if (poped) {
+	    ADD_INSN(ret, nd_line(node), pop);
 	}
 	break;
       }
       case NODE_ALIAS:{
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	COMPILE(ret, "alias arg1", node->u1.node);
 	COMPILE(ret, "alias arg2", node->u2.node);
+	ADD_SEND(ret, nd_line(node), ID2SYM(id_core_set_method_alias), INT2FIX(3));
 
-	ADD_INSN1(ret, nd_line(node), alias, Qfalse);
-
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
+	if (poped) {
+	    ADD_INSN(ret, nd_line(node), pop);
 	}
 	break;
       }
       case NODE_VALIAS:{
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u1.id));
 	ADD_INSN1(ret, nd_line(node), putobject, ID2SYM(node->u2.id));
-	ADD_INSN1(ret, nd_line(node), alias, Qtrue);
+	ADD_SEND(ret, nd_line(node), ID2SYM(id_core_set_variable_alias), INT2FIX(2));
 
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
+	if (poped) {
+	    ADD_INSN(ret, nd_line(node), pop);
 	}
 	break;
       }
       case NODE_UNDEF:{
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 	COMPILE(ret, "undef arg", node->u2.node);
-	ADD_INSN(ret, nd_line(node), undef);
+	ADD_SEND(ret, nd_line(node), ID2SYM(id_core_undef_method), INT2FIX(2));
 
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
+	if (poped) {
+	    ADD_INSN(ret, nd_line(node), pop);
 	}
 	break;
       }

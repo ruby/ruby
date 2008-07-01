@@ -24,6 +24,7 @@
 VALUE rb_cRubyVM;
 VALUE rb_cThread;
 VALUE rb_cEnv;
+VALUE rb_mRubyVMFrozenCore;
 
 VALUE ruby_vm_global_state_version = 1;
 rb_thread_t *ruby_current_thread = 0;
@@ -1628,6 +1629,46 @@ rb_thread_alloc(VALUE klass)
     return self;
 }
 
+static VALUE
+m_core_set_method_alias(VALUE self, VALUE cbase, VALUE sym1, VALUE sym2)
+{
+    rb_alias(cbase, SYM2ID(sym1), SYM2ID(sym2));
+    return Qnil;
+}
+
+static VALUE
+m_core_set_variable_alias(VALUE self, VALUE sym1, VALUE sym2)
+{
+    rb_alias_variable(SYM2ID(sym1), SYM2ID(sym2));
+    return Qnil;
+}
+
+static VALUE
+m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
+{
+    rb_undef(cbase, SYM2ID(sym));
+    INC_VM_STATE_VERSION();
+    return Qnil;
+}
+
+static VALUE
+m_core_define_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(iseqval, iseq);
+    vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseq, 0, vm_cref());
+    return Qnil;
+}
+
+static VALUE
+m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
+{
+    rb_iseq_t *iseq;
+    GetISeqPtr(iseqval, iseq);
+    vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseq, 1, vm_cref());
+    return Qnil;
+}
+
 VALUE insns_name_array(void);
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
@@ -1677,7 +1718,16 @@ Init_VM(void)
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
 
-    /* Env */
+    /* ::VM::FrozenCore */
+    rb_mRubyVMFrozenCore = rb_define_module_under(rb_cRubyVM, "FrozenCore");
+    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_set_method_alias", m_core_set_method_alias, 3);
+    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_set_variable_alias", m_core_set_variable_alias, 2);
+    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_undef_method", m_core_undef_method, 2);
+    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_define_method", m_core_define_method, 3);
+    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_define_singleton_method", m_core_define_singleton_method, 3);
+    rb_obj_freeze(rb_mRubyVMFrozenCore);
+
+    /* ::VM::Env */
     rb_cEnv = rb_define_class_under(rb_cRubyVM, "Env", rb_cObject);
     rb_undef_alloc_func(rb_cEnv);
 

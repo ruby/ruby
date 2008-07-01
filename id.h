@@ -52,4 +52,11 @@ extern ID idSend;
 extern ID id__send__;
 extern ID idRespond_to;
 extern ID idInitialize;
+
+extern ID id_core_set_method_alias;
+extern ID id_core_set_variable_alias;
+extern ID id_core_undef_method;
+extern ID id_core_define_method;
+extern ID id_core_define_singleton_method;
+
 #endif /* RUBY_ID_H */

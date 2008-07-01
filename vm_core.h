@@ -505,6 +505,7 @@ const char *ruby_node_name(int node);
 RUBY_EXTERN VALUE rb_cISeq;
 RUBY_EXTERN VALUE rb_cRubyVM;
 RUBY_EXTERN VALUE rb_cEnv;
+RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
 
 /* each thread has this size stack : 128KB */
 #define RUBY_VM_THREAD_STACK_SIZE (128 * 1024)
@@ -555,6 +556,9 @@ typedef struct {
 #define VM_CALL_TAILRECURSION_BIT  (0x01 << 6)
 #define VM_CALL_SUPER_BIT          (0x01 << 7)
 #define VM_CALL_SEND_BIT           (0x01 << 8)
+
+#define VM_SPECIAL_OBJECT_VMCORE   0x01
+#define VM_SPECIAL_OBJECT_CBASE    0x02
 
 #define VM_FRAME_MAGIC_METHOD 0x11
 #define VM_FRAME_MAGIC_BLOCK  0x21

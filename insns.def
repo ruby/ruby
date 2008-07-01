@@ -310,20 +310,6 @@ putself
 
 /**
   @c put
-  @e put cbase.
-  @j スタックに cbase をプッシュする。
- */
-DEFINE_INSN
-putcbase
-()
-()
-(VALUE val)
-{
-    val = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
-}
-
-/**
-  @c put
   @e put some object.
      i.e. Fixnum, true, false, nil, and so on.
   @j オブジェクト val をスタックにプッシュする。
@@ -336,6 +322,44 @@ putobject
 (VALUE val)
 {
     /* */
+}
+
+/**
+  @c put
+  @e put special object.  "value_type" is for expansion.
+  @j 特別なオブジェクト val をスタックにプッシュする。
+     オブジェクトの種類は value_type による．
+ */
+DEFINE_INSN
+putspecialobject
+(rb_num_t value_type)
+()
+(VALUE val)
+{
+    switch (value_type) {
+      case VM_SPECIAL_OBJECT_VMCORE:
+	val = rb_mRubyVMFrozenCore;
+	break;
+      case VM_SPECIAL_OBJECT_CBASE:
+	val = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
+	break;
+      default:
+	rb_bug("putspecialobject insn: unknown value_type");
+    }
+}
+
+/**
+  @c put
+  @e put iseq value.
+  @j put iseq value.
+ */
+DEFINE_INSN
+putiseq
+(ISEQ iseq)
+()
+(VALUE ret)
+{
+    ret = iseq->self;
 }
 
 /**
@@ -711,57 +735,6 @@ adjuststack
 /**********************************************************/
 /* deal with setting                                      */
 /**********************************************************/
-
-/**
-  @c setting
-  @e define (singleton) method id as body
-  @j （特異）メソッド id を body として定義する。
- */
-DEFINE_INSN
-definemethod
-(ID id, ISEQ body, rb_num_t is_singleton)
-(VALUE obj)
-()
-{
-    NODE *cref = vm_get_cref(GET_ISEQ(), GET_LFP(), GET_DFP());
-    vm_define_method(th, obj, id, body, is_singleton, cref);
-}
-
-/**
-  @c setting
-  @e make alias (if v_p is Qtrue, make valias)
-  @j alias を作る。もし v_p が Qtrue なら、valias (global variable) を作る。
- */
-DEFINE_INSN
-alias
-(VALUE v_p)
-(VALUE sym1, VALUE sym2)
-()
-{
-    if (v_p == Qtrue) {
-	rb_alias_variable(SYM2ID(sym1), SYM2ID(sym2));
-    }
-    else {
-	const VALUE klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
-	rb_alias(klass, SYM2ID(sym1), SYM2ID(sym2));
-    }
-}
-
-/**
-  @c setting
-  @e undef
-  @j undef を行う。
- */
-DEFINE_INSN
-undef
-()
-(VALUE sym)
-()
-{
-    const VALUE klass = vm_get_cbase(GET_ISEQ(), GET_LFP(), GET_DFP());
-    rb_undef(klass, SYM2ID(sym));
-    INC_VM_STATE_VERSION();
-}
 
 /**
   @c setting

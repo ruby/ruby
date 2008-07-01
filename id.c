@@ -68,4 +68,10 @@ Init_id(void)
 
     idRespond_to = rb_intern("respond_to?");
     idInitialize = rb_intern("initialize");
+
+    id_core_set_method_alias = rb_intern("core_set_method_alias");
+    id_core_set_variable_alias = rb_intern("core_set_variable_alias");
+    id_core_undef_method = rb_intern("core_undef_method");
+    id_core_define_method = rb_intern("core_define_method");
+    id_core_define_singleton_method = rb_intern("core_define_singleton_method");
 }

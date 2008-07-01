@@ -1,3 +1,14 @@
+Tue Jul  1 12:01:16 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, insns.def, vm.c, vm_core.h: remove some insns
+	  (undef, alias, definemethod).
+	  Call RubyVM::FrozenCore's singleton method instead.
+	  Add "putiseq" and "putspecialobject" instructions.
+
+	* id.c, id.h: add ids for above.
+
+	* tool/parse.rb: "VM" no longer exists.  Use RubyVM instead.
+
 Tue Jul  1 03:28:16 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_ext_configure_builder.rb:  Apply locale-free
