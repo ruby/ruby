@@ -4528,9 +4528,13 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_POSTEXE:{
 	VALUE block = NEW_CHILD_ISEQVAL(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK);
-	ADD_INSN1(ret, nd_line(node), postexe, block);
-	if (!poped) {
-	    ADD_INSN(ret, nd_line(node), putnil);
+
+	ADD_INSN1(ret, nd_line(node), putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+	ADD_INSN1(ret, nd_line(node), putiseq, block);
+	ADD_SEND (ret, nd_line(node), ID2SYM(id_core_set_postexe), INT2FIX(1));
+
+	if (poped) {
+	    ADD_INSN(ret, nd_line(node), pop);
 	}
 	break;
       }

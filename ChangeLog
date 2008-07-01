@@ -1,3 +1,10 @@
+Tue Jul  1 21:13:17 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.c, vm.c, insns.def: call FrozenCore.set_postexe method
+	  instead to use "postexe" insn.
+
+	* id.c, id.h: add a prepared id for above.
+
 Tue Jul  1 21:09:58 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/mkmf.rb (create_tmpsrc): we need to include COMMON_HEADERS,

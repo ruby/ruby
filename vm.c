@@ -1669,6 +1669,28 @@ m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval
     return Qnil;
 }
 
+static VALUE
+m_core_set_postexe(VALUE self, VALUE iseqval)
+{
+    rb_iseq_t *blockiseq;
+    rb_block_t *blockptr;
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+    VALUE proc;
+    extern void rb_call_end_proc(VALUE data);
+
+    GetISeqPtr(iseqval, blockiseq);
+
+    blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+    blockptr->iseq = blockiseq;
+    blockptr->proc = 0;
+
+    proc = vm_make_proc(th, cfp, blockptr);
+    rb_set_end_proc(rb_call_end_proc, proc);
+
+    return Qnil;
+}
+
 VALUE insns_name_array(void);
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
@@ -1725,6 +1747,7 @@ Init_VM(void)
     rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_undef_method", m_core_undef_method, 2);
     rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_define_method", m_core_define_method, 3);
     rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_define_singleton_method", m_core_define_singleton_method, 3);
+    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_set_postexe", m_core_set_postexe, 1);
     rb_obj_freeze(rb_mRubyVMFrozenCore);
 
     /* ::VM::Env */

@@ -58,5 +58,6 @@ extern ID id_core_set_variable_alias;
 extern ID id_core_undef_method;
 extern ID id_core_define_method;
 extern ID id_core_define_singleton_method;
+extern ID id_core_set_postexe;
 
 #endif /* RUBY_ID_H */

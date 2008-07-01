@@ -74,4 +74,5 @@ Init_id(void)
     id_core_undef_method = rb_intern("core_undef_method");
     id_core_define_method = rb_intern("core_define_method");
     id_core_define_singleton_method = rb_intern("core_define_singleton_method");
+    id_core_set_postexe = rb_intern("core_set_postexe");
 }

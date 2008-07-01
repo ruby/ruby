@@ -842,29 +842,6 @@ defined
 
 /**
   @c setting
-  @e END{}
-  @j END{} に対応するためにブロックを登録する。
- */
-DEFINE_INSN
-postexe
-(ISEQ blockiseq)
-()
-()
-{
-    rb_block_t *blockptr;
-    VALUE proc;
-    extern void rb_call_end_proc(VALUE data);
-
-    blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(GET_CFP());
-    blockptr->iseq = blockiseq;
-    blockptr->proc = 0;
-
-    proc = vm_make_proc(th, GET_CFP(), blockptr);
-    rb_set_end_proc(rb_call_end_proc, proc);
-}
-
-/**
-  @c setting
   @e trace
   @j trace 用の命令。
  */
