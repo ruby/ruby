@@ -667,6 +667,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     rb_env_t *env = NULL;
     rb_block_t block;
     volatile int parse_in_eval;
+    volatile int mild_compile_error;
 
     if (file == 0) {
 	file = rb_sourcefile();
@@ -674,6 +675,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
     }
 
     parse_in_eval = th->parse_in_eval;
+    mild_compile_error = th->mild_compile_error;
     PUSH_TAG();
     if ((state = EXEC_TAG()) == 0) {
 	rb_iseq_t *iseq;
@@ -708,7 +710,9 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 
 	/* make eval iseq */
 	th->parse_in_eval++;
+	th->mild_compile_error++;
 	iseqval = rb_iseq_compile(src, rb_str_new2(file), INT2FIX(line));
+	th->mild_compile_error--;
 	th->parse_in_eval--;
 
 	vm_set_eval_stack(th, iseqval, cref);
@@ -730,6 +734,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, NODE *cref, const char
 	result = vm_eval_body(th);
     }
     POP_TAG();
+    th->mild_compile_error = mild_compile_error;
     th->parse_in_eval = parse_in_eval;
 
     if (state) {

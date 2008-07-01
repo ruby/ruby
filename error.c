@@ -1546,7 +1546,7 @@ err_append(const char *s)
     rb_thread_t *th = GET_THREAD();
     VALUE err = th->errinfo;
 
-    if (th->parse_in_eval) {
+    if (th->mild_compile_error) {
 	if (!RTEST(err)) {
 	    err = rb_exc_new2(rb_eSyntaxError, s);
 	    th->errinfo = err;

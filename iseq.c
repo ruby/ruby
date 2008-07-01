@@ -81,6 +81,7 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(iseq->filename);
 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->cref_stack);
 	RUBY_MARK_UNLESS_NULL(iseq->klass);
+	RUBY_MARK_UNLESS_NULL(iseq->coverage);
 /* 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node); */
 /*	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block); */
 
@@ -190,6 +191,17 @@ prepare_iseq_build(rb_iseq_t *iseq,
     iseq->compile_data->option = option;
 
     set_relation(iseq, parent);
+
+    iseq->coverage = Qfalse;
+    if (!GET_THREAD()->parse_in_eval) {
+	if (rb_const_defined_at(rb_cObject, rb_intern("COVERAGE__"))) {
+	    VALUE hash = rb_const_get_at(rb_cObject, rb_intern("COVERAGE__"));
+	    if (TYPE(hash) == T_HASH) {
+		iseq->coverage = rb_hash_aref(hash, filename);
+		if (NIL_P(iseq->coverage)) iseq->coverage = Qfalse;
+	    }
+	}
+    }
 
     return Qtrue;
 }

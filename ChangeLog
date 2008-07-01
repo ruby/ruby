@@ -1,3 +1,34 @@
+Wed Jul  2 01:53:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* Add coverage measurement constant COVERAGE__.  This constant is not
+	  for casual use.  Usage: (1) assign {} to COVERAGE__, (2) require or
+	  load Ruby source file, and (3) COVERAGE__["sourcefilepath"] will
+	  return an array whose elements represent number of executions per
+	  line of source code.
+
+	* vm_core.h: add field of coverage array to iseq.
+
+	* iseq.c (prepare_iseq_build): ditto.
+
+	* insns.def (trace): update coverage array.
+
+	* parse.y (coverage): create and initialize coverage array.
+
+	* compile.h (ADD_TRACE): add trace instruction to update covearge
+	  array.
+
+	* thread.c (clear_coverage): delete coverage array when forking.
+	  Otherwise, double count of coverage may occur.
+
+	* lib/coverage.rb: sample coverage measurement tool.
+
+	* error.c: distinguish explicitly between parse_in_eval and
+	  mild_compile_error.
+
+	* load.c: ditto.
+
+	* vm_eval.c: ditto.
+
 Tue Jul  1 21:32:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/test/unit/ui/console/testrunner.rb: prevent destructive

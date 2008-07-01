@@ -201,6 +201,7 @@ struct rb_iseq_struct {
     VALUE *iseq_encoded; /* encoded iseq */
     unsigned long iseq_size;
     VALUE mark_ary;	/* Array: includes operands which should be GC marked */
+    VALUE coverage;     /* coverage array */
 
     /* insn info, must be freed */
     struct iseq_insn_info_entry *insn_info_table;
@@ -448,6 +449,7 @@ struct rb_thread_struct
     struct rb_vm_trap_tag *trap_tag;
 
     int parse_in_eval;
+    int mild_compile_error;
 
     /* storage */
     st_table *local_storage;
