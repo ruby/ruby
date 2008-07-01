@@ -454,7 +454,8 @@ dmyencoding.$(OBJEXT): {$(VPATH)}dmyencoding.c \
 encoding.$(OBJEXT): dmyencoding.$(OBJEXT)
 enum.$(OBJEXT): {$(VPATH)}enum.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h {$(VPATH)}node.h {$(VPATH)}util.h
-enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h {$(VPATH)}debug.h {$(VPATH)}node.h
+enumerator.$(OBJEXT): {$(VPATH)}enumerator.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}st.h {$(VPATH)}debug.h {$(VPATH)}node.h
 error.$(OBJEXT): {$(VPATH)}error.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h {$(VPATH)}node.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
@@ -625,7 +626,8 @@ prelude.$(OBJEXT): {$(VPATH)}prelude.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
   {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
-golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
+golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c $(RUBY_H_INCLUDES) \
+  {$(VPATH)}st.h {$(VPATH)}vm_core.h {$(VPATH)}signal.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 goruby.$(OBJEXT): {$(VPATH)}goruby.c {$(VPATH)}main.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h
