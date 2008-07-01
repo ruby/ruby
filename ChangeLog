@@ -1,3 +1,7 @@
+Wed Jul  2 02:02:34 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* proc.c, vm.c: fix to refer next ruby level cfp to make binding.
+
 Wed Jul  2 01:58:19 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* insns.def (trace): C99ism.
