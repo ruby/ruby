@@ -854,10 +854,11 @@ trace
     rb_event_flag_t flag = nf;
     if (coverage) {
 	long line = rb_sourceline() - 1;
+	long count;
 	if (RARRAY_PTR(coverage)[line] == Qnil) {
 	    rb_bug("bug");
 	}
-	long count = FIX2LONG(RARRAY_PTR(coverage)[line]) + 1;
+	count = FIX2LONG(RARRAY_PTR(coverage)[line]) + 1;
 	if (POSFIXABLE(count)) {
 	    RARRAY_PTR(coverage)[line] = LONG2FIX(count);
 	}
