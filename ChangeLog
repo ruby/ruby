@@ -1,3 +1,7 @@
+Tue Jul  1 13:19:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_fill): check if beg is too big.
+
 Tue Jul  1 12:01:16 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.c, insns.def, vm.c, vm_core.h: remove some insns
@@ -12,10 +16,10 @@ Tue Jul  1 12:01:16 2008  Koichi Sasada  <ko1@atdot.net>
 Tue Jul  1 03:28:16 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* test/rubygems/test_ext_configure_builder.rb:  Apply locale-free
-	patch by Yusuke ENDOH.  [ruby-core:17444].
+	  patch by Yusuke ENDOH.  [ruby-core:17444].
 
 	* runruby.rb:  Set ENV['rake'].  Patch by Yusuke ENDOH
-	[ruby-core:17442].
+	  [ruby-core:17442].
 
 Tue Jul  1 01:07:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
