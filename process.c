@@ -2052,12 +2052,13 @@ run_exec_rlimit(VALUE ary, VALUE save)
         int rtype = NUM2INT(RARRAY_PTR(elt)[0]);
         struct rlimit rlim;
         if (!NIL_P(save)) {
+            VALUE tmp, newary;
             if (getrlimit(rtype, &rlim) == -1)
                 return -1;
-            VALUE tmp = hide_obj(rb_ary_new3(3, RARRAY_PTR(elt)[0],
-                                             RLIM2NUM(rlim.rlim_cur),
-                                             RLIM2NUM(rlim.rlim_max)));
-            VALUE newary = rb_ary_entry(save, EXEC_OPTION_RLIMIT);
+            tmp = hide_obj(rb_ary_new3(3, RARRAY_PTR(elt)[0],
+                                       RLIM2NUM(rlim.rlim_cur),
+                                       RLIM2NUM(rlim.rlim_max)));
+            newary = rb_ary_entry(save, EXEC_OPTION_RLIMIT);
             if (NIL_P(newary)) {
                 newary = hide_obj(rb_ary_new());
                 rb_ary_store(save, EXEC_OPTION_RLIMIT, newary);
