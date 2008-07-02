@@ -1,3 +1,13 @@
+Thu Jul  3 01:23:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	 * sprintf.c: include ieeefp.h to refer isinf.
+
+	 * ext/bigdecimal/bigdecimal.c: ditto.
+
+	 * ext/json/ext/generator/generator.c: ditto.
+
+	 * rational.c: ditto.
+
 Thu Jul  3 01:01:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* missing/tgamma.c (tgamma): remove unused variable.

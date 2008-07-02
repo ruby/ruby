@@ -12,6 +12,10 @@
 #define NDEBUG
 #include <assert.h>
 
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
+
 #ifndef RATIONAL_NAME
 #define RATIONAL_NAME "Rational"
 #endif

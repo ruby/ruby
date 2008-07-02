@@ -22,6 +22,10 @@
 #include <float.h>
 #include <math.h>
 #include "math.h"
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
  
 /* #define ENABLE_NUMERIC_STRING */
 

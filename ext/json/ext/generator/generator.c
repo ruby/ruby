@@ -6,6 +6,10 @@
 #include <string.h>
 #include <math.h>
 
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
+
 #define check_max_nesting(state, depth) do {                                   \
     long current_nesting = 1 + depth;                                          \
     if (state->max_nesting != 0 && current_nesting > state->max_nesting)       \
