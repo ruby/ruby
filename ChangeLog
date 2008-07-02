@@ -1,3 +1,13 @@
+Wed Jul  2 18:55:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syslog/syslog.c (syslog_write): syslog operations should be
+	  protected from $SAFE level 4.  a patch from Keita Yamaguchi
+	  <keita.yamaguchi at gmail.com>.
+
+	* ext/syslog/syslog.c (mSyslog_close): ditto.
+
+	* ext/syslog/syslog.c (mSyslog_set_mask): ditto.
+
 Wed Jul  2 18:25:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* math.c (domain_check): fix preprocess condition.
