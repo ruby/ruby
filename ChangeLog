@@ -1,3 +1,9 @@
+Wed Jul  2 18:22:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/tmpdir.rb (@@systmpdir): prior LOCAL_APPDATA if possible, and
+	  should be clean.  based on a patch from arton <artonx AT
+	  yahoo.co.jp> at [ruby-dev:35269]
+
 Wed Jul  2 18:16:19 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (date2time_str): fix the overflow in
