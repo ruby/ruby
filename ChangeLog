@@ -1,3 +1,10 @@
+Thu Jul  3 02:47:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* gc.c: add rb_during_gc(). based on a patch from arton <artonx AT
+	  yahoo.co.jp> at [ruby-dev:35313].   
+
+	* intern.h: ditto.
+
 Wed Jul  2 17:48:51 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/mkmf.rb (create_tmpsrc): we need to include COMMON_HEADERS,
