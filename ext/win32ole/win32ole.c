@@ -459,7 +459,7 @@ date2time_str(date)
     double date;
 {
     int y, m, d, hh, mm, ss;
-    char szTime[20];
+    char szTime[40];
     double2time(date, &y, &m, &d, &hh, &mm, &ss);
     sprintf(szTime,
             "%4.4d/%02.2d/%02.2d %02.2d:%02.2d:%02.2d",

@@ -1,3 +1,8 @@
+Wed Jul  2 18:13:30 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (date2time_str): fix the overflow in
+	  some situation. [ruby-bugs-20793]
+
 Wed Jul  2 17:38:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
