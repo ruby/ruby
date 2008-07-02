@@ -1,3 +1,7 @@
+Thu Jul  3 04:39:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_during_gc): VALUE cache is irrelevant.
+
 Thu Jul  3 01:44:01 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* regint.h (GET_ALIGNMENT_PAD_SIZE, ALIGNMENT_RIGHT): cast pointer to
