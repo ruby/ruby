@@ -1,3 +1,7 @@
+Thu Jul  3 05:09:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (Makefile): need to pass a variable explicitly.
+
 Thu Jul  3 02:47:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* gc.c: add rb_during_gc(). based on a patch from arton <artonx AT

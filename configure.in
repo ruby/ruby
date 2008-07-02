@@ -1852,5 +1852,6 @@ AC_CONFIG_FILES(Makefile, [{
 	    if_no_string_literal_concatenation=';/^-IF-NO-STRING-LITERAL-CONCATENATION-:/d'
 	sed ['s/{\$([^(){}]*)[^{}]*}//g'"$if_no_string_literal_concatenation"] ${srcdir}/common.mk
       } >> confmk$$.tmp && mv -f confmk$$.tmp Makefile],
-[RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT])
+[RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT
+ rb_cv_string_literal_concatenation=$rb_cv_string_literal_concatenation])
 AC_OUTPUT
