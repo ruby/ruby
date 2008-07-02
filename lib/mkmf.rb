@@ -295,6 +295,7 @@ end
 
 def create_tmpsrc(src)
   src = yield(src) if block_given?
+  src[0, 0] = COMMON_HEADERS + "\n"
   src = src.gsub(/[ \t]+$/, '').gsub(/\A\n+|^\n+$/, '').sub(/[^\n]\z/, "\\&\n")
   open(CONFTEST_C, "wb") do |cfile|
     cfile.print src
@@ -1768,7 +1769,7 @@ split = Shellwords.method(:shellwords).to_proc
 
 EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 
-hdr = []
+hdr = ['#include "ruby.h"' "\n"]
 config_string('COMMON_MACROS') do |s|
   Shellwords.shellwords(s).each do |w|
     hdr << "#define " + w.split(/=/, 2).join(" ")

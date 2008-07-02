@@ -1,3 +1,9 @@
+Wed Jul  2 17:48:51 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/mkmf.rb (create_tmpsrc): we need to include COMMON_HEADERS,
+	  namely inclusion of ruby.h, because _GNU_SOURCE is now defined
+	  there (if any) and socket.so requires it on Linux systems.
+
 Tue Jul  1 13:19:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_fill): check if beg is too big.

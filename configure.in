@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT()
 
-AC_PREREQ(2.58)
+AC_PREREQ(2.60)
 
 AC_DEFUN([RUBY_MINGW32],
 [case "$host_os" in
@@ -240,8 +240,7 @@ AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 
 # checks for UNIX variants that set C preprocessor variables
-AC_AIX
-AC_MINIX
+AC_USE_SYSTEM_EXTENSIONS
 
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
@@ -1575,7 +1574,6 @@ AC_SUBST(RDOCTARGET)
 
 case "$target_os" in
     linux*)
-	XCFLAGS="$XCFLAGS -D_GNU_SOURCE=1"
 	;;
     netbsd*)
     	CFLAGS="$CFLAGS -pipe"
