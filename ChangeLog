@@ -1,12 +1,17 @@
+Thu Jul  3 01:44:01 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* regint.h (GET_ALIGNMENT_PAD_SIZE, ALIGNMENT_RIGHT): cast pointer to
+	  uintptr_t instead of unsigned int.
+
 Thu Jul  3 01:23:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	 * sprintf.c: include ieeefp.h to refer isinf.
+	* sprintf.c: include ieeefp.h to refer isinf.
 
-	 * ext/bigdecimal/bigdecimal.c: ditto.
+	* ext/bigdecimal/bigdecimal.c: ditto.
 
-	 * ext/json/ext/generator/generator.c: ditto.
+	* ext/json/ext/generator/generator.c: ditto.
 
-	 * rational.c: ditto.
+	* rational.c: ditto.
 
 Thu Jul  3 01:01:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
