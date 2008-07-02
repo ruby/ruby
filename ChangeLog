@@ -1,3 +1,8 @@
+Wed Jul  2 17:38:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_iconv): fixed backport miss.
+	  [ruby-core:17115]
+
 Tue Jul  1 15:09:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_fill): check if beg is too big.
