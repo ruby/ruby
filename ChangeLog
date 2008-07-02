@@ -1,3 +1,10 @@
+Thu Jul  3 07:03:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_exc_new3): keeps the given string itself.
+
+	* eval.c (Init_Proc), gc.c (Init_GC): freeze messages of preallocated
+	  special exceptions also.
+
 Thu Jul  3 06:17:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_longjmp): duplicate the thrown exception to set backtrace

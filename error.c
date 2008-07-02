@@ -333,7 +333,7 @@ rb_exc_new3(etype, str)
     VALUE etype, str;
 {
     StringValue(str);
-    return rb_exc_new(etype, RSTRING(str)->ptr, RSTRING(str)->len);
+    return rb_funcall(etype, rb_intern("new"), 1, str);
 }
 
 /*
