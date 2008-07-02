@@ -1,3 +1,8 @@
+Thu Jul  3 07:02:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (Init_eval), gc.c (Init_GC), proc.c (Init_Proc): freeze
+	  messages of preallocated special exceptions also.
+
 Thu Jul  3 04:39:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_during_gc): VALUE cache is irrelevant.

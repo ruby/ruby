@@ -1760,7 +1760,8 @@ Init_Proc(void)
     rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
 
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eException);
-    sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
+    sysstack_error = rb_exc_new3(rb_eSysStackError,
+				 rb_obj_freeze(rb_str_new2("stack level too deep")));
     OBJ_TAINT(sysstack_error);
     OBJ_FREEZE(sysstack_error);
 

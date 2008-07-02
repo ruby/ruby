@@ -1201,7 +1201,8 @@ Init_eval(void)
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 
-    exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
+    exception_error = rb_exc_new2(rb_eFatal,
+				  rb_obj_freeze(rb_str_new2("exception reentered")));
     rb_ivar_set(exception_error, idThrowState, INT2FIX(TAG_FATAL));
     OBJ_TAINT(exception_error);
     OBJ_FREEZE(exception_error);

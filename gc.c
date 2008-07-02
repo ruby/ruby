@@ -2531,7 +2531,8 @@ Init_GC(void)
 
     rb_define_module_function(rb_mObSpace, "_id2ref", id2ref, 1);
 
-    nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
+    nomem_error = rb_exc_new3(rb_eNoMemError,
+			      rb_obj_freeze(rb_str_new2("failed to allocate memory")));
     OBJ_TAINT(nomem_error);
     OBJ_FREEZE(nomem_error);
 
