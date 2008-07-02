@@ -1,3 +1,8 @@
+Wed Jul  2 09:49:10 2008  Narihiro Nakamura  <authorNari@gmail.com>
+	* gc.c (gc_lazy_sweep) : use lazy sweep algorithm for response performance gain.
+	 (garbage_collect_force) : mark and lazysweep invoke, after erasing all mark.
+	 (GC_NOT_LAZY_SWEEP) : not lazy sweep flag. for debug.
+
 Wed Jul  2 03:42:44 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_settracefunc.rb: fix expected traces for
