@@ -766,7 +766,7 @@ static unsigned long frame_unique = 0;
     _frame.argc = 0;			\
     _frame.flags = 0;			\
     _frame.uniq = frame_unique++;	\
-    ruby_frame = &_frame
+    ruby_frame = (struct FRAME *)&_frame
 
 #define POP_FRAME()  			\
     ruby_current_node = _frame.node;	\
@@ -2329,7 +2329,7 @@ arg_defined(self, node, buf, type)
     VALUE self;
     NODE *node;
     char *buf;
-    char *type;
+    const char *type;
 {
     int argc;
     int i;
