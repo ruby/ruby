@@ -86,6 +86,7 @@ PREP          = @PREP@
 ARCHFILE      = @ARCHFILE@
 SETUP         =
 EXTSTATIC     = @EXTSTATIC@
+SET_LC_MESSAGES = env LC_MESSAGES=C
 
 CP            = cp
 MV            = mv

@@ -1,3 +1,7 @@
+Thu Jul  3 07:06:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (SET_LC_MESSAGES): LC_MESSAGES must be C.
+
 Thu Jul  3 07:02:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (Init_eval), gc.c (Init_GC), proc.c (Init_Proc): freeze
