@@ -723,6 +723,23 @@ rb_fill_value_cache(rb_thread_t *th)
 }
 #endif
 
+int
+rb_during_gc(void)
+{
+#if USE_VALUE_CACHE
+    rb_thread_t *th = GET_THREAD();
+    VALUE v = *th->value_cache_ptr;
+#if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
+    rb_objspace_t *objspace = th->vm->objspace;
+#else
+    rb_objspace_t *objspace = &rb_objspace;
+#endif
+#else
+    rb_objspace_t *objspace = &rb_objspace;
+#endif
+    return during_gc;
+}
+ 
 VALUE
 rb_newobj(void)
 {
