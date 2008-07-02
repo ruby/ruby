@@ -1,3 +1,10 @@
+Thu Jul  3 00:18:00 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: avoid creating Ruby object during
+	  GC. thanks to arton <artonx AT yahoo.co.jp>. [ruby-dev:35313]
+
+	* test/win32ole/test_win32ole_event.rb: ditto.
+
 Thu Jul  3 00:09:31 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* gc.c: add rb_during_gc(). based on a patch from arton <artonx AT
