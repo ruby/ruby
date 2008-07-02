@@ -10,16 +10,23 @@ class Dir
 
   begin
     require 'Win32API'
+    CSIDL_LOCAL_APPDATA = 0x001c
     max_pathlen = 260
     windir = ' '*(max_pathlen+1)
     begin
-      getdir = Win32API.new('kernel32', 'GetSystemWindowsDirectory', 'PL', 'L')
+      getdir = Win32API.new('shell32', 'SHGetFolderPath', 'LLLLP', 'L')
+      raise RuntimeError if getdir.call(0, CSIDL_LOCAL_APPDATA, 0, 0, windir) != 0
+      windir = File.expand_path(windir.rstrip)
     rescue RuntimeError
-      getdir = Win32API.new('kernel32', 'GetWindowsDirectory', 'PL', 'L')
+      begin
+        getdir = Win32API.new('kernel32', 'GetSystemWindowsDirectory', 'PL', 'L')
+      rescue RuntimeError
+        getdir = Win32API.new('kernel32', 'GetWindowsDirectory', 'PL', 'L')
+      end
+      len = getdir.call(windir, windir.size)
+      windir = File.expand_path(windir[0, len])
     end
-    len = getdir.call(windir, windir.size)
-    windir = File.expand_path(windir[0, len])
-    temp = File.join(windir, 'temp')
+    temp = File.join(windir.untaint, 'temp')
     @@systmpdir = temp if File.directory?(temp) and File.writable?(temp)
   rescue LoadError
   end
@@ -39,7 +46,7 @@ class Dir
 	  break
 	end
       end
+      File.expand_path(tmp)
     end
-    File.expand_path(tmp)
   end
 end
