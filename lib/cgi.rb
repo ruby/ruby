@@ -1043,7 +1043,7 @@ class CGI
 
         body.rewind
 
-        /Content-Disposition:.* filename=(?:"((?:\\.|[^\"\s])*)"|([^;\s]*))/ni.match(head)
+        /Content-Disposition:.* filename=(?:"((?:\\.|[^\"])*)"|([^;\s]*))/ni.match(head)
 	filename = ($1 or $2 or "")
 	if /Mac/ni.match(env_table['HTTP_USER_AGENT']) and
 	    /Mozilla/ni.match(env_table['HTTP_USER_AGENT']) and

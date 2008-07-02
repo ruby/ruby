@@ -1,3 +1,8 @@
+Wed Jul  2 19:06:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::QueryExtension.read_multipart): blanks inside
+	  double quotes are allowed.  [ruby-list:45140]
+
 Wed Jul  2 19:03:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* numeric.c (num_coerce): call rb_Float(x) first.  don't depend on
