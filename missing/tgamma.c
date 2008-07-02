@@ -24,7 +24,6 @@ double tgamma(double x)
         return 1/x < 0 ? -HUGE_VAL : HUGE_VAL;
     }
     if (x < 0) {
-        int sign;
         static double zero = 0.0;
         double i, f;
         f = modf(-x, &i);
