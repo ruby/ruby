@@ -91,26 +91,6 @@ if defined?(WIN32OLE_EVENT)
       assert(@event!="")
     end
 
-    def test_unadvise
-      ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
-      ev.on_event {|*args| default_handler(*args)}
-      @ie.navigate("file:///#{@f}")
-      while @ie.busy
-        sleep 0.1
-      end
-      assert_match(/BeforeNavigate/, @event)
-      ev.unadvise
-      @event = ""
-      @ie.navigate("file:///#{@f}")
-      while @ie.busy
-        sleep 0.1
-      end
-      assert_equal("", @event);
-      assert_raise(WIN32OLERuntimeError) {
-        ev.on_event {|*args| default_handler(*args)}
-      }
-    end
-
     def handler1
       @event2 = "handler1"
     end
