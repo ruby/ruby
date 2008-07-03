@@ -1,3 +1,10 @@
+Thu Jul  3 12:49:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP::start): use 'localhost' instead of
+	  'localhost.localdomain'.  [ruby-dev:35333]
+
+	* lib/net/smtp.rb (Net::SMTP::SMTP.start): ditto.
+
 Thu Jul  3 10:21:43 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: should not check "tcl.h" & "tk.h" when
