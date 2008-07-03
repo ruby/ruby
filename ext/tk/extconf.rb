@@ -378,11 +378,11 @@ end
 
 tclver, tkver = check_tcltk_version(tcltk_version)
 
-if have_header("tcl.h") && have_header("tk.h") && 
-    ( tcltk_framework || 
-        ( ( !use_X || find_X11(x11_ldir2, x11_ldir) ) &&
-            find_tcl(tcllib, stubs, tclver, *tcl_ldir_list) &&
-            find_tk(tklib, stubs, tkver, *tk_ldir_list) ) )
+if ( tcltk_framework || 
+       ( have_header("tcl.h") && have_header("tk.h") && 
+           ( !use_X || find_X11(x11_ldir2, x11_ldir) ) &&
+           find_tcl(tcllib, stubs, tclver, *tcl_ldir_list) &&
+           find_tk(tklib, stubs, tkver, *tk_ldir_list) ) )
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
   $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 

@@ -1,3 +1,8 @@
+Thu Jul  3 10:21:43 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: should not check "tcl.h" & "tk.h" when
+	  --enable-tcltk-framework on MacOS X.
+
 Thu Jul  3 10:03:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (Init_GC): fix syntax error.
