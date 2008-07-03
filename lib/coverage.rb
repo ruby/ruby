@@ -1,4 +1,5 @@
-COVERAGE__ ||= {}
+require "coverage.so"
+
 ext = ENV["COVERUBY_EXT"] || ".cov"
 accum = ENV["COVERUBY_ACCUM"]
 accum = !accum || accum == "" || !(%w(f n 0).include?(accum[0]))
@@ -6,7 +7,7 @@ pwd = Dir.pwd
 
 at_exit do
   Dir.chdir(pwd) do
-    COVERAGE__.each do |sfile, covs|
+    Coverage.result.each do |sfile, covs|
       cfile = sfile + ext
 
       writable = proc do |f|

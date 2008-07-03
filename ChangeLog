@@ -1,3 +1,32 @@
+Thu Jul  3 21:51:21 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/coverage/coverage.c, ext/coverage/extconf.rb: eliminate
+	  COVERAGE__ and introduce coverage.so instead.  How to measure
+	  coverage: (1) require "coverage.so", (2) require or load Ruby source
+	  file, and (3) Coverage.result will return the same hash as COVERAGE__.
+	  [ruby-dev:35324]
+
+	* thread.c (rb_enable_coverages): start coverage measurement by using
+	  rb_add_event_hook.
+
+	* thread.c (rb_get_coverages): returns current results of coverage
+	  measurement.
+
+	* include/ruby/intern.h: add prototype for above two functions.
+
+	* vm_core.h, vm.c: add field of coverages to rb_vm_t.
+
+	* insns.def (trace): remove special handling for COVERAGE__.
+
+	* iseq.c (prepare_iseq_build): switch COVERAGE__ to
+	  rb_get_coverages().
+
+	* parse.y (coverage): ditto.
+
+	* thread.c (clear_coverage): ditto.
+
+	* lib/coverage.rb: use coverage.so instead of COVERAGE__.
+
 Thu Jul  3 21:20:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (thread_initialize): NUM2INT returns long.

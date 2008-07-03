@@ -194,12 +194,10 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->coverage = Qfalse;
     if (!GET_THREAD()->parse_in_eval) {
-	if (rb_const_defined_at(rb_cObject, rb_intern("COVERAGE__"))) {
-	    VALUE hash = rb_const_get_at(rb_cObject, rb_intern("COVERAGE__"));
-	    if (TYPE(hash) == T_HASH) {
-		iseq->coverage = rb_hash_aref(hash, filename);
-		if (NIL_P(iseq->coverage)) iseq->coverage = Qfalse;
-	    }
+	VALUE coverages = rb_get_coverages();
+	if (RTEST(coverages)) {
+	    iseq->coverage = rb_hash_aref(coverages, filename);
+	    if (NIL_P(iseq->coverage)) iseq->coverage = Qfalse;
 	}
     }
 

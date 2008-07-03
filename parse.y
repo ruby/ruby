@@ -4672,17 +4672,15 @@ debug_lines(const char *f)
 static VALUE
 coverage(const char *f, int n)
 {
-    if (rb_const_defined_at(rb_cObject, rb_intern("COVERAGE__"))) {
-	VALUE hash = rb_const_get_at(rb_cObject, rb_intern("COVERAGE__"));
-	if (TYPE(hash) == T_HASH) {
-	    VALUE fname = rb_str_new2(f);
-	    VALUE lines = rb_ary_new2(n);
-	    int i;
-	    for (i = 0; i < n; i++) RARRAY_PTR(lines)[i] = Qnil;
-	    RARRAY(lines)->len = n;
-	    rb_hash_aset(hash, fname, lines);
-	    return lines;
-	}
+    VALUE coverages = rb_get_coverages();
+    if (RTEST(coverages)) {
+	VALUE fname = rb_str_new2(f);
+	VALUE lines = rb_ary_new2(n);
+	int i;
+	for (i = 0; i < n; i++) RARRAY_PTR(lines)[i] = Qnil;
+	RARRAY(lines)->len = n;
+	rb_hash_aset(coverages, fname, lines);
+	return lines;
     }
     return 0;
 }

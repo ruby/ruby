@@ -626,6 +626,8 @@ VALUE rb_mutex_synchronize(VALUE self);
 VALUE rb_barrier_new(void);
 VALUE rb_barrier_wait(VALUE self);
 VALUE rb_barrier_release(VALUE self);
+VALUE rb_get_coverages(void);
+void rb_enable_coverages(void);
 /* time.c */
 VALUE rb_time_new(time_t, long);
 VALUE rb_time_nano_new(time_t, long);

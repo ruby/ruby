@@ -333,6 +333,7 @@ struct rb_vm_struct
     int src_encoding_index;
 
     VALUE verbose, debug, progname;
+    VALUE coverages;
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
     struct rb_objspace *objspace;
