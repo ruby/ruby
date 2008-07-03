@@ -1,3 +1,10 @@
+Thu Jul  3 12:49:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP::start): use 'localhost' instead of
+	  'localhost.localdomain'.  [ruby-dev:35333]
+
+	* lib/net/smtp.rb (Net::SMTP::SMTP.start): ditto.
+
 Thu Jul  3 07:06:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (SET_LC_MESSAGES): LC_MESSAGES must be C.
