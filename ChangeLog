@@ -1,3 +1,10 @@
+Thu Jul  3 16:08:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (erfc): erfc of glibc comes with Debian GNU/Linux Etch
+	  on IA64 is broken.  erfc(10000.0) aborts.
+	  use missing/erf.c instead.
+	  http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
+
 Thu Jul  3 12:49:39 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP::start): use 'localhost' instead of
