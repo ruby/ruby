@@ -1,3 +1,11 @@
+Thu Jul  3 16:46:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (POSFIXABLE): use FIXNUM_MAX+1 instead of
+	  FIXNUM_MAX to make it possible to convert to double accurately.
+	  It assumes FLT_RADIX is 2.
+	  fix RubyForge bug #14102.
+	  backported from 1.9.
+
 Thu Jul  3 16:08:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (erfc): erfc of glibc comes with Debian GNU/Linux Etch
