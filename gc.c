@@ -2126,7 +2126,7 @@ Init_GC()
 
     rb_global_variable(&nomem_error);
     nomem_error = rb_exc_new3(rb_eNoMemError,
-			      rb_obj_freeze(rb_str_new2"failed to allocate memory"));
+			      rb_obj_freeze(rb_str_new2("failed to allocate memory")));
     OBJ_TAINT(nomem_error);
     OBJ_FREEZE(nomem_error);
 
