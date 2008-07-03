@@ -1,7 +1,11 @@
+Fri Jul  4 05:01:26 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (rb_num2uint, rb_fix2uint): typo.
+
 Fri Jul  4 02:21:06 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* numeric.c (check_uint, rb_num2uint): also needs checking negative
-	  value. see [ruby-dev:33683]
+	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): also needs checking
+	  negative value. see [ruby-dev:33683]
 
 Thu Jul  3 23:26:36 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -123,10 +127,14 @@ Thu Jul  3 00:09:31 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* include/ruby/intern.h: ditto.
 
 Wed Jul  2 09:49:10 2008  Narihiro Nakamura  <authorNari@gmail.com>
-	
-	* gc.c (gc_lazy_sweep) : use lazy sweep algorithm for response performance gain.
-	 (garbage_collect_force) : mark and lazysweep invoke, after erasing all mark.
-	 (GC_NOT_LAZY_SWEEP) : not lazy sweep flag. for debug.
+
+	* gc.c (gc_lazy_sweep) : use lazy sweep algorithm for response
+	  performance gain.
+
+	* gc.c (garbage_collect_force) : mark and lazysweep invoke, after
+	  erasing all mark.
+
+	* gc.c (GC_NOT_LAZY_SWEEP) : not lazy sweep flag. for debug.
 
 Wed Jul  2 03:42:44 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
