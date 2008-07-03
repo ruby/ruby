@@ -1,7 +1,11 @@
+Fri Jul  4 05:05:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (rb_fix2uint): typo.
+
 Fri Jul  4 02:38:24 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* numeric.c (check_uint, rb_num2uint): also needs checking negative
-	  value. see [ruby-dev:33683]
+	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): also needs checking
+	  negative value. see [ruby-dev:33683]
 
 Thu Jul  3 19:35:45 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 

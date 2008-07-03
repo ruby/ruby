@@ -1649,7 +1649,7 @@ rb_fix2uint(val)
         return rb_num2uint(val);
     }
     num = FIX2ULONG(val);
-    check_uint(num, RTEST(rb_funcall(val, '<', INT2FIX(0))));
+    check_uint(num, RTEST(rb_funcall(val, '<', 1, INT2FIX(0))));
     return num;
 }
 #else
