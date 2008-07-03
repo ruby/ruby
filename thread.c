@@ -490,7 +490,7 @@ thread_initialize(VALUE thread, VALUE args)
 	    rb_raise(rb_eThreadError, "already initialized thread - %s",
 		     file);
 	}
-        rb_raise(rb_eThreadError, "already initialized thread - %s:%d",
+        rb_raise(rb_eThreadError, "already initialized thread - %s:%ld",
                  file, NUM2INT(line));
     }
     return thread_create_core(thread, args, 0);
