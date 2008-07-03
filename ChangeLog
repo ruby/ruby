@@ -1,3 +1,8 @@
+Thu Jul  3 17:15:04 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* win32/win32.c: revert r17290, requested by NAKAMURA Usaku
+	  <usa at ruby-lang.org>
+
 Wed Jul  2 19:05:35 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension.read_multipart): blanks inside
