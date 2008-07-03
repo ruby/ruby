@@ -1,3 +1,8 @@
+Fri Jul  4 02:21:06 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (check_uint, rb_num2uint): also needs checking negative
+	  value. see [ruby-dev:33683]
+
 Thu Jul  3 23:26:36 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* include/ruby/intern.h: remove prototypes about coverage.
