@@ -1600,11 +1600,12 @@ check_int(num)
 }
 
 static void
-check_uint(num)
+check_uint(num, sign)
     unsigned long num;
+    int sign;
 {
     if (num > UINT_MAX) {
-	rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
+	rb_raise(rb_eRangeError, "integer %lu too %s to convert to `unsigned int'", num, sign ? "small" : "big");
     }
 }
 
@@ -1634,9 +1635,7 @@ rb_num2uint(val)
 {
     unsigned long num = rb_num2ulong(val);
 
-    if (RTEST(rb_funcall(INT2FIX(0), '<', 1, val))) {
-	check_uint(num);
-    }
+    check_uint(num, RTEST(rb_funcall(val, '<', 1, INT2FIX(0))));
     return num;
 }
 
@@ -1650,9 +1649,7 @@ rb_fix2uint(val)
         return rb_num2uint(val);
     }
     num = FIX2ULONG(val);
-    if (FIX2LONG(val) > 0) {
-	check_uint(num);
-    }
+    check_uint(num, RTEST(rb_funcall(val, '<', INT2FIX(0))));
     return num;
 }
 #else
