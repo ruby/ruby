@@ -1,3 +1,8 @@
+Thu Jul  3 19:35:45 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ruby.c: Mac OS X needs origargc times of '\0' in
+	  origargv. [ruby-dev:35308]
+
 Thu Jul  3 19:23:20 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: avoid creating Ruby object during
