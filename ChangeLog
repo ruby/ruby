@@ -1,3 +1,21 @@
+Thu Jul  3 23:26:36 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* include/ruby/intern.h: remove prototypes about coverage.
+
+	* iseq.c (prepare_iseq_build): add prototype.
+
+	* parse.y (coverage): ditto.
+
+	* thread.c (clear_coverage): ditto.
+
+	* thread.c (update_coverage): use rb_sourceline.
+
+	* thread.c (rb_get_coverages): rename and move to vm.c.
+
+	* vm.c (rb_vm_get_coverages): ditto.
+
+	* ext/coverage/coverage.c: add rdoc.
+
 Thu Jul  3 21:51:21 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/coverage/coverage.c, ext/coverage/extconf.rb: eliminate

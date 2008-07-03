@@ -4672,7 +4672,8 @@ debug_lines(const char *f)
 static VALUE
 coverage(const char *f, int n)
 {
-    VALUE coverages = rb_get_coverages();
+    extern VALUE rb_vm_get_coverages(void);
+    VALUE coverages = rb_vm_get_coverages();
     if (RTEST(coverages)) {
 	VALUE fname = rb_str_new2(f);
 	VALUE lines = rb_ary_new2(n);

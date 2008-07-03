@@ -194,7 +194,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     iseq->coverage = Qfalse;
     if (!GET_THREAD()->parse_in_eval) {
-	VALUE coverages = rb_get_coverages();
+	extern VALUE rb_vm_get_coverages(void);
+	VALUE coverages = rb_vm_get_coverages();
 	if (RTEST(coverages)) {
 	    iseq->coverage = rb_hash_aref(coverages, filename);
 	    if (NIL_P(iseq->coverage)) iseq->coverage = Qfalse;
