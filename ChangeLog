@@ -1,3 +1,14 @@
+Thu Jul  3 19:23:20 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: avoid creating Ruby object during
+	  GC. thanks to arton <artonx AT yahoo.co.jp>. [ruby-dev:35313]
+
+	* ext/win32ole/tests: add test_win32ole_event.rb, remove
+	  testOLEEVENT.rb
+
+	* ext/win32ole/tests/testWIN32OLE.rb(test_convert_bignum):
+	  fix test.
+
 Thu Jul  3 16:46:56 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (POSFIXABLE): use FIXNUM_MAX+1 instead of

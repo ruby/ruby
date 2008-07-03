@@ -156,7 +156,8 @@ class TestWin32OLE < RUNIT::TestCase
       sheet.range("A3").value = "=A1*10 + 9"
       assert_equal(9999999999, sheet.range("A2").value)
       assert_equal(9999999999, sheet.range("A3").value)
-     
+      sheet.range("A4").value = "2008/03/04"
+      assert_equal("2008/03/04 00:00:00", sheet.range("A4").value)
     ensure
       book.saved = true
     end
