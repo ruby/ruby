@@ -1,3 +1,13 @@
+Thu Jul  3 20:13:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (w_object, marshal_dump, r_object0, marshal_load): search
+	  public methods only.  [ruby-core:17283]
+
+	* object.c (convert_type): ditto.
+
+	* lib/singleton.rb (Singleton#_dump): conversion method should be
+	  public.
+
 Wed Jul  2 19:06:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::QueryExtension.read_multipart): blanks inside

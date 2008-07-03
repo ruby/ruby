@@ -511,7 +511,7 @@ w_object(obj, arg, limit)
 	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
 
 	st_add_direct(arg->data, obj, arg->data->num_entries);
-	if (rb_obj_respond_to(obj, s_mdump, Qtrue)) {
+	if (rb_respond_to(obj, s_mdump)) {
 	    volatile VALUE v;
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
@@ -521,7 +521,7 @@ w_object(obj, arg, limit)
 	    if (ivtbl) w_ivar(0, &c_arg);
 	    return;
 	}
-	if (rb_obj_respond_to(obj, s_dump, Qtrue)) {
+	if (rb_respond_to(obj, s_dump)) {
 	    VALUE v;
 
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
@@ -664,7 +664,7 @@ w_object(obj, arg, limit)
 	    {
 		VALUE v;
 
-		if (!rb_obj_respond_to(obj, s_dump_data, Qtrue)) {
+		if (!rb_respond_to(obj, s_dump_data)) {
 		    rb_raise(rb_eTypeError,
 			     "no marshal_dump is defined for class %s",
 			     rb_obj_classname(obj));
@@ -765,12 +765,12 @@ marshal_dump(argc, argv)
     arg.str = rb_str_buf_new(0);
     RBASIC(arg.str)->klass = 0;
     if (!NIL_P(port)) {
-	if (!rb_obj_respond_to(port, s_write, Qtrue)) {
+	if (!rb_respond_to(port, s_write)) {
 	  type_error:
 	    rb_raise(rb_eTypeError, "instance of IO needed");
 	}
 	arg.dest = port;
-	if (rb_obj_respond_to(port, s_binmode, Qtrue)) {
+	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	    reentrant_check(arg.str, s_dump_data);
 	}
@@ -1245,7 +1245,7 @@ r_object0(arg, proc, ivp, extmod)
 	    VALUE klass = path2class(r_unique(arg));
 	    VALUE data;
 
-	    if (!rb_obj_respond_to(klass, s_load, Qtrue)) {
+	    if (!rb_respond_to(klass, s_load)) {
 		rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
 			 rb_class2name(klass));
 	    }
@@ -1272,7 +1272,7 @@ r_object0(arg, proc, ivp, extmod)
                     rb_extend_object(v, m);
                 }
             }
-	    if (!rb_obj_respond_to(v, s_mload, Qtrue)) {
+	    if (!rb_respond_to(v, s_mload)) {
 		rb_raise(rb_eTypeError, "instance of %s needs to have method `marshal_load'",
 			 rb_class2name(klass));
 	    }
@@ -1299,7 +1299,7 @@ r_object0(arg, proc, ivp, extmod)
       case TYPE_DATA:
        {
            VALUE klass = path2class(r_unique(arg));
-           if (rb_obj_respond_to(klass, s_alloc, Qtrue)) {
+           if (rb_respond_to(klass, s_alloc)) {
 	       static int warn = Qtrue;
 	       if (warn) {
 		   rb_warn("define `allocate' instead of `_alloc'");
@@ -1315,7 +1315,7 @@ r_object0(arg, proc, ivp, extmod)
                rb_raise(rb_eArgError, "dump format error");
            }
            r_entry(v, arg);
-           if (!rb_obj_respond_to(v, s_load_data, Qtrue)) {
+           if (!rb_respond_to(v, s_load_data)) {
                rb_raise(rb_eTypeError,
                         "class %s needs to have instance method `_load_data'",
                         rb_class2name(klass));
@@ -1420,8 +1420,8 @@ marshal_load(argc, argv)
 	arg.taint = OBJ_TAINTED(port); /* original taintedness */
 	port = v;
     }
-    else if (rb_obj_respond_to(port, s_getc, Qtrue) && rb_obj_respond_to(port, s_read, Qtrue)) {
-	if (rb_obj_respond_to(port, s_binmode, Qtrue)) {
+    else if (rb_respond_to(port, s_getc) && rb_respond_to(port, s_read)) {
+	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
 	arg.taint = Qtrue;
