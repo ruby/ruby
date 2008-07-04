@@ -24,6 +24,7 @@
 #include <olectl.h>
 #include <ole2.h>
 #include <stdlib.h>
+#include <math.h>
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
@@ -117,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.1.8"
+#define WIN32OLE_VERSION "1.1.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -763,7 +764,7 @@ d2time(double v, int *hh, int *mm, int *ss)
     double d_hh, d_mm, d_ss;
     int    i_hh, i_mm, i_ss;
 
-    double d = v * 86400.0;
+    double d = fabs(v * 86400.0);
 
     d_hh = d / 3600.0;
     i_hh = (int)d_hh;

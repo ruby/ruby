@@ -1,3 +1,10 @@
+Fri Jul  4 23:12:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE 
+	  to String conversion when negative value.
+	  
+	* test/win32ole/test_win32ole_variant.rb: ditto.
+
 Fri Jul  4 22:15:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/test/unit/testcase.rb: collect decendants of

@@ -540,6 +540,44 @@ if defined?(WIN32OLE_VARIANT)
       }
     end
 
+    def test_conversion_vt_date
+      obj = WIN32OLE_VARIANT.new(-657434, WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("0100/01/01 00:00:00", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("1500/12/29 23:59:59", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("1500/12/29 23:59:59", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("1500/12/30 00:00:00", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("1500/12/30 00:00:00", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("1500/12/30 00:00:01", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("1500/12/30 00:00:01", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("1899/12/29 23:59:59", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("1899/12/29 23:59:59", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("1899/12/30 00:00:00", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("1899/12/30 00:00:00", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("1899/12/30 00:00:01", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("1899/12/30 00:00:01", obj.value)
+
+      obj = WIN32OLE_VARIANT.new(0, WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("1899/12/30 00:00:00", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("2008/12/29 23:59:59", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("2008/12/29 23:59:59", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("2008/12/30 00:00:00", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("2008/12/30 00:00:00", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("2008/12/30 00:00:01", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("2008/12/30 00:00:01", obj.value)
+
+      obj = WIN32OLE_VARIANT.new("9999/12/31 23:59:59", WIN32OLE::VARIANT::VT_DATE)
+      assert_equal("9999/12/31 23:59:59", obj.value)
+    end
+
     def test_create_nil_dispatch
       var = WIN32OLE_VARIANT.new(nil, WIN32OLE::VARIANT::VT_DISPATCH)
       assert_nil(var.value)
