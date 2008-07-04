@@ -1,3 +1,9 @@
+Sat Jul  5 00:33:08 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb (PercentScanner#scan): fix %% line bug. [ruby-core:17491]
+
+	* test/erb/test_erb.rb (test_percent): ditto.
+
 Sat Jul  5 00:31:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE 

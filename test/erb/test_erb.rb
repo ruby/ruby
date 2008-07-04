@@ -209,11 +209,13 @@ EOS
 n.times do |i|%>
 %% %%><%%<%= i%><%
 end%>
+%%%
 EOS
     ans = <<EOS
 % 
 % %%><%0
 % %%><%1
+%%
 EOS
     assert_equal(ans, ERB.new(src, nil, '%').result)
   end

@@ -427,7 +427,7 @@ class ERB
       Scanner.regist_scanner(SimpleScanner2, nil, false)
 
       class PercentScanner < Scanner # :nodoc:
-	def scan
+	def scan(&blk)
           stag_reg = /(.*?)(^%%|^%|<%%|<%=|<%#|<%|\z)/m
           etag_reg = /(.*?)(%%>|%>|\z)/m
           scanner = StringScanner.new(@src)
@@ -437,11 +437,24 @@ class ERB
 
             elem = scanner[2]
             if elem == '%%'
-              elem = '%'
+              yield('%')
+              inline_scan(scanner.scan(/.*?(\n|\z)/), &blk)
             elsif elem == '%'
-              elem = PercentLine.new(scanner.scan(/.*?(\n|\z)/).chomp)
+              yield(PercentLine.new(scanner.scan(/.*?(\n|\z)/).chomp))
+            else
+              yield(elem)
             end
-            yield(elem)
+          end
+        end
+
+        def inline_scan(line)
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\z)/m
+          etag_reg = /(.*?)(%%>|%>|\z)/m
+          scanner = StringScanner.new(line)
+          while ! scanner.eos?
+            scanner.scan(@stag ? etag_reg : stag_reg)
+            yield(scanner[1])
+            yield(scanner[2])
           end
         end
       end
