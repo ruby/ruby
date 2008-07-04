@@ -1,3 +1,10 @@
+Sat Jul  5 08:48:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (unescape_nonascii): add has_property argument not to
+	  raise error by /\p{Hiragana}\u{3042}/ in EUC-JP script.
+	  (rb_reg_preprocess): use has_property argument to make regexp
+	  encoding fixed.
+
 Sat Jul  5 08:29:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (unescape_nonascii): make regexp fixed_encoding if \p is used.

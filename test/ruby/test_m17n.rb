@@ -510,6 +510,14 @@ class TestM17N < Test::Unit::TestCase
     r = /\p{Hiragana}/e
     assert(r.fixed_encoding?)
     assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
+
+    r = eval('/\u{3042}\p{Hiragana}/'.force_encoding("euc-jp"))
+    assert(r.fixed_encoding?)
+    assert_equal(Encoding::UTF_8, r.encoding)
+
+    r = eval('/\p{Hiragana}\u{3042}/'.force_encoding("euc-jp"))
+    assert(r.fixed_encoding?)
+    assert_equal(Encoding::UTF_8, r.encoding)
   end
 
   def test_regexp_embed_preprocess

@@ -2085,7 +2085,8 @@ unescape_unicode_bmp(const char **pp, const char *end,
 
 static int
 unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
-        VALUE buf, rb_encoding **encp, onig_errmsg_buffer err)
+        VALUE buf, rb_encoding **encp, int *has_property,
+        onig_errmsg_buffer err)
 {
     char c;
     char smallbuf[2];
@@ -2165,7 +2166,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
 
               case 'p': /* \p{Hiragana} */
                 if (!*encp) {
-                    *encp = enc;
+                    *has_property = 1;
                 }
                 goto escape_asis;
 
@@ -2192,6 +2193,7 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err)
 {
     VALUE buf;
+    int has_property = 0;
 
     buf = rb_str_buf_new(0);
 
@@ -2202,8 +2204,12 @@ rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_enc_associate(buf, enc);
     }
 
-    if (unescape_nonascii(p, end, enc, buf, fixed_enc, err) != 0)
+    if (unescape_nonascii(p, end, enc, buf, fixed_enc, &has_property, err) != 0)
         return Qnil;
+
+    if (has_property && !*fixed_enc) {
+        *fixed_enc = enc;
+    }
 
     if (*fixed_enc) {
         rb_enc_associate(buf, *fixed_enc);
