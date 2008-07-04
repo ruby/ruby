@@ -70,7 +70,7 @@ typedef OnigEncodingType rb_encoding;
 
 int rb_enc_replicate(const char *, rb_encoding *);
 int rb_define_dummy_encoding(const char *);
-#define rb_enc_to_index(enc) ((enc) ? ((enc)->ruby_encoding_index) : 0)
+#define rb_enc_to_index(enc) ((enc) ? ENC_TO_ENCINDEX(enc) : 0)
 int rb_enc_get_index(VALUE obj);
 void rb_enc_set_index(VALUE obj, int encindex);
 int rb_enc_find_index(const char *name);
@@ -176,20 +176,21 @@ VALUE rb_locale_charmap(VALUE klass);
 long rb_memsearch(const void*,long,const void*,long,rb_encoding*);
 
 RUBY_EXTERN VALUE rb_cEncoding;
+#define enc_initialized_p(enc) ((enc)->ruby_encoding_index != ENC_UNINITIALIZED)
+#define ENC_DUMMY_FLAG (1<<24)
+#define ENC_INDEX_MASK (~(~0U<<24))
 
-#define ENC_UNINITIALIZED (&rb_cEncoding)
-#define enc_initialized_p(enc) ((enc)->auxiliary_data != &rb_cEncoding)
-#define ENC_FROM_ENCODING(enc) ((VALUE)(enc)->auxiliary_data)
+#define ENC_TO_ENCINDEX(enc)   ((enc)->ruby_encoding_index & ENC_INDEX_MASK)
+#define ENC_FROM_ENCINDEX(idx) (RARRAY_PTR(rb_encoding_list)[idx])
+#define ENC_FROM_ENCODING(enc) ENC_FROM_ENCINDEX(ENC_TO_ENCINDEX(enc))
 
-#define ENC_DUMMY_FLAG FL_USER2
-#define ENC_DUMMY_P(enc) (RBASIC(enc)->flags & ENC_DUMMY_FLAG)
-#define ENC_SET_DUMMY(enc) (RBASIC(enc)->flags |= ENC_DUMMY_FLAG)
+#define ENC_DUMMY_P(enc) ((enc)->ruby_encoding_index & ENC_DUMMY_FLAG)
+#define ENC_SET_DUMMY(enc) ((enc)->ruby_encoding_index |= ENC_DUMMY_FLAG)
 
 static inline int
 rb_enc_dummy_p(rb_encoding *enc)
 {
-    if (!enc_initialized_p(enc)) return Qfalse;
-    return ENC_DUMMY_P(ENC_FROM_ENCODING(enc));
+    return ENC_DUMMY_P(enc) != 0;
 }
 
 VALUE rb_str_transcode(VALUE str, VALUE to);
