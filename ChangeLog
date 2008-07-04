@@ -1,3 +1,8 @@
+Sat Jul  5 00:31:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE 
+	  to String conversion when negative value.
+
 Fri Jul  4 20:31:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_join): new API.
