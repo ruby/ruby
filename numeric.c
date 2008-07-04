@@ -1604,7 +1604,7 @@ check_uint(num)
     unsigned long num;
 {
     if (num > UINT_MAX) {
-	rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too big to convert to `unsigned int'", num);
+	rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
     }
 }
 

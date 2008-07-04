@@ -1,3 +1,7 @@
+Fri Jul  4 20:20:09 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (check_uint): sorry, backport misstake.
+
 Fri Jul  4 17:53:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): proper check.
