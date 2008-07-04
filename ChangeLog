@@ -7,7 +7,7 @@ Fri Jul  4 20:31:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jul  4 20:20:09 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* numeric.c (check_uint): sorry, backport misstake.
+	* numeric.c (check_uint): sorry, backport mistake.
 
 Fri Jul  4 17:53:29 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
