@@ -1585,10 +1585,10 @@ check_int(SIGNED_VALUE num)
 }
 
 static void
-check_uint(VALUE num, int sign)
+check_uint(VALUE num)
 {
     if (num > UINT_MAX) {
-	rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too %s to convert to `unsigned int'", num, sign ? "small" : "big");
+	rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too big to convert to `unsigned int'", num);
     }
 }
 
@@ -1615,7 +1615,10 @@ rb_num2uint(VALUE val)
 {
     unsigned long num = rb_num2ulong(val);
 
-    check_uint(num, RTEST(rb_funcall(val, '<', 1, INT2FIX(0))));
+    if (RTEST(rb_funcall(val, '<', 1, INT2FIX(0))))
+	check_int(num);
+    else
+	check_uint(num);
     return num;
 }
 
@@ -1628,7 +1631,10 @@ rb_fix2uint(VALUE val)
 	return rb_num2uint(val);
     }
     num = FIX2ULONG(val);
-    check_uint(num, RTEST(rb_funcall(val, '<', 1, INT2FIX(0))));
+    if (RTEST(rb_funcall(val, '<', 1, INT2FIX(0))))
+	check_int(num);
+    else
+	check_uint(num);
     return num;
 }
 #else

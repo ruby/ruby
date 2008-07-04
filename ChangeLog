@@ -1,3 +1,7 @@
+Fri Jul  4 17:51:07 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): proper check.
+
 Fri Jul  4 14:17:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/ftp.rb (Net::FTP#sendport): use divmod.  [ruby-core:17557]
