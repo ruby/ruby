@@ -1,3 +1,7 @@
+Fri Jul  4 14:17:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#sendport): use divmod.  [ruby-core:17557]
+
 Fri Jul  4 11:08:37 2008  nari  <authorNari@gmail.com>
 
 	* gc.c (garbage_collect_force): sweep is completely ended.
