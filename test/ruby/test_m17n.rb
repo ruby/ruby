@@ -493,6 +493,25 @@ class TestM17N < Test::Unit::TestCase
     assert_match(/[[:space:]]/, "\u{00a0}")
   end
 
+  def test_regexp_property
+    s = '\p{Hiragana}'.force_encoding("euc-jp")
+    assert_equal(Encoding::EUC_JP, s.encoding)
+    r = nil
+    assert_nothing_raised {
+      r = Regexp.new(s)
+    }
+    assert(r.fixed_encoding?)
+    assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
+
+    r = eval('/\p{Hiragana}/'.force_encoding("euc-jp"))
+    assert(r.fixed_encoding?)
+    assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
+
+    r = /\p{Hiragana}/e
+    assert(r.fixed_encoding?)
+    assert_match(r, "\xa4\xa2".force_encoding("euc-jp"))
+  end
+
   def test_regexp_embed_preprocess
     r1 = /\xa4\xa2/e
     r2 = /#{r1}/

@@ -2163,6 +2163,12 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                     break;
                 }
 
+              case 'p': /* \p{Hiragana} */
+                if (!*encp) {
+                    *encp = enc;
+                }
+                goto escape_asis;
+
               default: /* \n, \\, \d, \9, etc. */
 escape_asis:
                 smallbuf[0] = '\\';

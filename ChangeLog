@@ -1,3 +1,8 @@
+Sat Jul  5 08:29:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (unescape_nonascii): make regexp fixed_encoding if \p is used.
+	  fixed [ruby-core:17279].
+
 Fri Jul  4 23:12:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE 
