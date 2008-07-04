@@ -1,3 +1,9 @@
+Fri Jul  4 11:08:37 2008  nari  <authorNari@gmail.com>
+
+	* gc.c (garbage_collect_force): sweep is completely ended.
+
+	* gc.c (os_obj_of): invoke garbage_collect_force() when freelist none.
+
 Fri Jul  4 05:01:26 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (rb_num2uint, rb_fix2uint): typo.

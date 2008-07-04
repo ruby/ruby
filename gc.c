@@ -191,6 +191,7 @@ typedef struct rb_objspace {
     struct gc_list *global_list;
     unsigned int count;
     int gc_stress;
+    int gc_not_lazy_sweep;
 } rb_objspace_t;
 
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
@@ -226,6 +227,7 @@ int *ruby_initial_gc_stress_ptr = &rb_objspace.gc_stress;
 #define mark_stack_overflow	objspace->markstack.overflow
 #define global_List		objspace->global_list
 #define ruby_gc_stress		objspace->gc_stress
+#define ruby_gc_not_lazy_sweep	objspace->gc_not_lazy_sweep
 
 #define need_call_final 	(finalizer_table && finalizer_table->num_entries)
 
@@ -1446,7 +1448,6 @@ heap_sweep(rb_objspace_t *objspace)
 
 #define GC_NOT_LAZY_SWEEP 0
 
-#ifdef GC_NOT_LAZY_SWEEP
 static void
 heap_all_sweep(rb_objspace_t *objspace)
 {
@@ -1455,7 +1456,6 @@ heap_all_sweep(rb_objspace_t *objspace)
 	heaps_sweep_index++;
     }
 }
-#endif
 
 static int
 gc_lazy_sweep(rb_objspace_t *objspace, rb_thread_t *th)
@@ -1468,9 +1468,9 @@ gc_lazy_sweep(rb_objspace_t *objspace, rb_thread_t *th)
 	heap_sweep(objspace);
     }
 
-#ifdef GC_NOT_LAZY_SWEEP
-    if (GC_NOT_LAZY_SWEEP) heap_all_sweep(objspace);
-#endif
+    if (ruby_gc_not_lazy_sweep || GC_NOT_LAZY_SWEEP) {
+        heap_all_sweep(objspace);
+    }
 
     if (!freelist) {
 	return Qfalse;
@@ -1813,13 +1813,17 @@ gc_marks(rb_objspace_t *objspace, rb_thread_t *th)
 static int
 garbage_collect_force(rb_objspace_t *objspace)
 {
+    int is_gc_success;
+
     if (malloc_increase > malloc_limit) {
 	malloc_limit += (malloc_increase - malloc_limit) * (double)live / (heaps_used * HEAP_OBJ_LIMIT);
 	if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
     }
     malloc_increase = 0;
-    gc_marks(objspace, GET_THREAD());
-    return garbage_collect(objspace);
+    ruby_gc_not_lazy_sweep = Qtrue;
+    is_gc_success = garbage_collect(objspace);
+    ruby_gc_not_lazy_sweep = Qfalse;
+    return is_gc_success;
 }
 
 static int
@@ -1966,6 +1970,7 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	for (;p < pend; p++) {
+	    if (!freelist) garbage_collect_force(objspace);
 	    if (p->as.basic.flags) {
 		switch (BUILTIN_TYPE(p)) {
 		  case T_NONE:
