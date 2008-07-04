@@ -1,3 +1,7 @@
+Fri Jul  4 14:17:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#sendport): use divmod.  [ruby-core:17557]
+
 Fri Jul  4 05:05:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (rb_fix2uint): typo.
