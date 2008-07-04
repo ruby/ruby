@@ -11360,10 +11360,10 @@ rb_thread_select(max, read, write, except, timeout)
     return curr_thread->select_value;
 }
 
-static int rb_thread_join _((rb_thread_t, double));
+static int rb_thread_join0 _((rb_thread_t, double));
 
 static int
-rb_thread_join(th, limit)
+rb_thread_join0(th, limit)
     rb_thread_t th;
     double limit;
 {
@@ -11403,6 +11403,15 @@ rb_thread_join(th, limit)
     }
 
     return Qtrue;
+}
+
+int
+rb_thread_join(thread, limit)
+    VALUE thread;
+    double limit;
+{
+    if (limit < 0) limit = DELAY_INFTY;
+    return rb_thread_join0(rb_thread_check(thread), limit);
 }
 
 
@@ -11454,11 +11463,10 @@ rb_thread_join_m(argc, argv, thread)
 {
     VALUE limit;
     double delay = DELAY_INFTY;
-    rb_thread_t th = rb_thread_check(thread);
 
     rb_scan_args(argc, argv, "01", &limit);
     if (!NIL_P(limit)) delay = rb_num2dbl(limit);
-    if (!rb_thread_join(th, delay))
+    if (!rb_thread_join0(rb_thread_check(thread), delay))
 	return Qnil;
     return thread;
 }

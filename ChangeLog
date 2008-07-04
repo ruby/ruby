@@ -1,3 +1,10 @@
+Fri Jul  4 20:31:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_join): new API.
+
+	* ext/thread/thread.c (wait_mutex, lock_mutex): wait until the locking
+	  thread exits.  [ruby-dev:34856]
+
 Fri Jul  4 20:20:09 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (check_uint): sorry, backport misstake.
