@@ -34,6 +34,11 @@ module Test
       PASSTHROUGH_EXCEPTIONS = [NoMemoryError, SignalException, Interrupt,
                                 SystemExit]
 
+      DECENDANT_CLASSES = []
+      def self.inherited(decendant)
+        DECENDANT_CLASSES << decendant
+      end
+
       # Creates a new instance of the fixture for running the
       # test represented by test_method_name.
       def initialize(test_method_name)

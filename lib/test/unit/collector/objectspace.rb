@@ -10,9 +10,9 @@ module Test
       class ObjectSpace
         include Test::Unit::Collector
         
-        NAME = 'collected from the ObjectSpace'
+        NAME = 'collected from the subclasses of TestSuite'
         
-        def initialize(source=::ObjectSpace)
+        def initialize(source=nil)
           super()
           @source = source
         end
@@ -20,8 +20,14 @@ module Test
         def collect(name=NAME)
           suite = TestSuite.new(name)
           sub_suites = []
-          @source.each_object(Class) do |klass|
-            if(Test::Unit::TestCase > klass)
+          if @source
+            @source.each_object(Class) do |klass|
+              if(Test::Unit::TestCase > klass)
+                add_suite(sub_suites, klass.suite)
+              end
+            end
+          else
+            TestCase::DECENDANT_CLASSES.each do |klass|
               add_suite(sub_suites, klass.suite)
             end
           end

@@ -14,10 +14,7 @@ module Test
       
       def self.standalone?
         return false unless("-e" == $0)
-        ObjectSpace.each_object(Class) do |klass|
-          return false if(klass < TestCase)
-        end
-        true
+        TestCase::DECENDANT_CLASSES.empty?
       end
 
       RUNNERS = {

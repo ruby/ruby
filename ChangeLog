@@ -1,3 +1,16 @@
+Fri Jul  4 22:15:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/test/unit/testcase.rb: collect decendants of
+	  Test::Unit::TestCase using inherited.
+
+	* lib/test/unit/autorunner.rb: don't use ObjectSpace.each_object.
+
+	* lib/test/unit/collector/dir.rb: ditto.
+
+	* lib/test/unit/collector/objectspace.rb: ditto.
+
+	[ruby-core:17126]
+
 Fri Jul  4 20:43:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/oniguruma.h (OnigEncoding): removed auxiliary_data.

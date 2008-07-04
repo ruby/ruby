@@ -10,7 +10,7 @@ module Test
         attr_reader :pattern, :exclude
         attr_accessor :base
 
-        def initialize(dir=::Dir, file=::File, object_space=::ObjectSpace, req=nil)
+        def initialize(dir=::Dir, file=::File, object_space=nil, req=nil)
           super()
           @dir = dir
           @file = file
@@ -43,8 +43,14 @@ module Test
 
         def find_test_cases(ignore=[])
           cases = []
-          @object_space.each_object(Class) do |c|
-            cases << c if(c < TestCase && !ignore.include?(c))
+          if @object_space
+            @object_space.each_object(Class) do |c|
+              cases << c if(c < TestCase && !ignore.include?(c))
+            end
+          else
+            TestCase::DECENDANT_CLASSES.each do |c|
+              cases << c if !ignore.include?(c)
+            end
           end
           ignore.concat(cases)
           cases
