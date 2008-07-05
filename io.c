@@ -3638,8 +3638,8 @@ rb_io_unbuffered(rb_io_t *fptr)
     rb_io_synchronized(fptr);
 }
 
-static int
-rb_pipe_internal(int *pipes)
+int
+rb_pipe(int *pipes)
 {
     int ret;
     ret = pipe(pipes);
@@ -3778,9 +3778,9 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
     arg.write_pair[0] = arg.write_pair[1] = -1;
     switch (modef & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
-        if (rb_pipe_internal(arg.write_pair) < 0)
+        if (rb_pipe(arg.write_pair) < 0)
             rb_sys_fail(cmd);
-        if (rb_pipe_internal(arg.pair) < 0) {
+        if (rb_pipe(arg.pair) < 0) {
             int e = errno;
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
@@ -3793,13 +3793,13 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
         }
 	break;
       case FMODE_READABLE:
-        if (rb_pipe_internal(arg.pair) < 0)
+        if (rb_pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
-        if (rb_pipe_internal(arg.pair) < 0)
+        if (rb_pipe(arg.pair) < 0)
             rb_sys_fail(cmd);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.pair[0]));
@@ -6227,7 +6227,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     rb_io_t *fptr;
 
     rb_scan_args(argc, argv, "02", &v1, &v2);
-    if (rb_pipe_internal(pipes) == -1)
+    if (rb_pipe(pipes) == -1)
         rb_sys_fail(0);
 
     args[0] = klass;

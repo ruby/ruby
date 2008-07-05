@@ -386,6 +386,7 @@ void rb_write_error(const char*);
 void rb_write_error2(const char*, long);
 int rb_io_mode_modenum(const char *mode);
 void rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds);
+int rb_pipe(int *pipes);
 /* marshal.c */
 VALUE rb_marshal_dump(VALUE, VALUE);
 VALUE rb_marshal_load(VALUE);

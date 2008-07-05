@@ -2255,7 +2255,7 @@ static int
 pipe_nocrash(int filedes[2], VALUE fds)
 {
     int ret;
-    ret = pipe(filedes);
+    ret = rb_pipe(filedes);
     if (ret == -1)
         return -1;
     if (RTEST(fds)) {
