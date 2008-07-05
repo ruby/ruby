@@ -1,3 +1,10 @@
+Sat Jul  5 23:42:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (NUM2INT): cast to int.
+	  (FIX2INT): ditto.
+	  (NUM2UINT): cast to unsigned int.
+	  (FIX2UINT): ditto.
+
 Sat Jul  5 23:10:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_pipe): new function for handling EMFILE and ENFILE

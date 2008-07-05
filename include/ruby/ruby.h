@@ -357,13 +357,13 @@ VALUE rb_num2ulong(VALUE);
 #define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
-#define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):rb_num2int((VALUE)x))
+#define NUM2INT(x) ((int)(FIXNUM_P(x)?FIX2INT(x):rb_num2int((VALUE)x)))
 long rb_fix2int(VALUE);
-#define FIX2INT(x) rb_fix2int((VALUE)x)
+#define FIX2INT(x) ((int)rb_fix2int((VALUE)x))
 unsigned long rb_num2uint(VALUE);
-#define NUM2UINT(x) rb_num2uint(x)
+#define NUM2UINT(x) ((unsigned int)rb_num2uint(x))
 unsigned long rb_fix2uint(VALUE);
-#define FIX2UINT(x) rb_fix2uint(x)
+#define FIX2UINT(x) ((unsigned int)rb_fix2uint(x))
 #else
 #define NUM2INT(x) ((int)NUM2LONG(x))
 #define NUM2UINT(x) ((unsigned int)NUM2ULONG(x))
