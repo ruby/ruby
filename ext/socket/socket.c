@@ -850,7 +850,8 @@ host_str(VALUE host, char *hbuf, size_t len)
 	    make_inetaddr(INADDR_BROADCAST, hbuf, len);
 	}
 	else if (strlen(name) >= len) {
-	    rb_raise(rb_eArgError, "hostname too long (%d)", strlen(name));
+	    rb_raise(rb_eArgError, "hostname too long (%"PRIuVALUE")",
+                (VALUE)strlen(name));
 	}
 	else {
 	    strcpy(hbuf, name);
@@ -875,7 +876,8 @@ port_str(VALUE port, char *pbuf, size_t len)
 	SafeStringValue(port);
 	serv = RSTRING_PTR(port);
 	if (strlen(serv) >= len) {
-	    rb_raise(rb_eArgError, "service name too long (%d)", strlen(serv));
+	    rb_raise(rb_eArgError, "service name too long (%"PRIuVALUE")",
+                (VALUE)strlen(serv));
 	}
 	strcpy(pbuf, serv);
 	return pbuf;
@@ -2044,12 +2046,12 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     if (msg.msg_controllen != CMSG_SPACE(sizeof(int))) {
       rb_raise(rb_eSocket,
           "file descriptor was not passed (msg_controllen=%d, %d expected)",
-          msg.msg_controllen, CMSG_SPACE(sizeof(int)));
+          (int)msg.msg_controllen, (int)CMSG_SPACE(sizeof(int)));
     }
     if (cmsg.hdr.cmsg_len != CMSG_LEN(sizeof(int))) {
       rb_raise(rb_eSocket,
           "file descriptor was not passed (cmsg_len=%d, %d expected)",
-          cmsg.hdr.cmsg_len, CMSG_LEN(sizeof(int)));
+          (int)cmsg.hdr.cmsg_len, (int)CMSG_LEN(sizeof(int)));
     }
     if (cmsg.hdr.cmsg_level != SOL_SOCKET) {
       rb_raise(rb_eSocket,
@@ -2065,7 +2067,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     if (msg.msg_accrightslen != sizeof(fd)) {
 	rb_raise(rb_eSocket,
             "file descriptor was not passed (accrightslen) : %d != %d",
-            msg.msg_accrightslen, sizeof(fd));
+            msg.msg_accrightslen, (int)sizeof(fd));
     }
 #endif
 
@@ -3474,7 +3476,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
     }
     if (sizeof(struct sockaddr_un) < RSTRING_LEN(addr)) {
 	rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
-		 RSTRING_LEN(addr), sizeof(struct sockaddr_un));
+		 RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
     sun_path = unixpath(sockaddr, RSTRING_LEN(addr));
     if (sizeof(struct sockaddr_un) == RSTRING_LEN(addr) &&
