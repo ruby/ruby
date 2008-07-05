@@ -1,3 +1,9 @@
+Sat Jul  5 09:55:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: add WIN32OLE#ole_respond_to?
+
+	* test/win32ole/test_win32ole.rb: ditto.
+
 Sat Jul  5 08:48:05 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (unescape_nonascii): add has_property argument not to

@@ -246,6 +246,16 @@ if defined?(WIN32OLE)
       assert_instance_of(WIN32OLE, shell2)
     end
 
+    def test_ole_respond_to
+      fso = WIN32OLE.new('Scripting.FileSystemObject')
+      assert(fso.ole_respond_to?('getFolder'))
+      assert(fso.ole_respond_to?('GETFOLDER'))
+      assert(!fso.ole_respond_to?('XXXXX'))
+      assert_raise(TypeError) {
+        assert_raise(fso.ole_respond_to?(1))
+      }
+    end
+
     def test_s_const_load
       assert(!defined?(CONST1::SsfWINDOWS))
       shell=WIN32OLE.new('Shell.Application')
