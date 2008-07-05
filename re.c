@@ -927,6 +927,7 @@ rb_reg_search(re, str, pos, reverse)
     }
 
     if (result < 0) {
+	re_free_registers(&regs);
 	rb_backref_set(Qnil);
 	return result;
     }
@@ -943,6 +944,7 @@ rb_reg_search(re, str, pos, reverse)
     }
 
     re_copy_registers(RMATCH(match)->regs, &regs);
+    re_free_registers(&regs);
     RMATCH(match)->str = rb_str_new4(str);
     rb_backref_set(match);
 

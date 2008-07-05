@@ -911,6 +911,10 @@ Sat May 17 12:15:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): ditto.
 
+Sat May 17 10:18:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_search): need to free allocated buffer in re_register.
+
 Mon Mar  3 23:34:13 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb: should normalize path
