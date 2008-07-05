@@ -151,6 +151,7 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 #endif
 NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *stack_start,
 					VALUE *register_stack_start));
+static void timer_thread_function(void *);
 
 #if   defined(_WIN32)
 #include "thread_win32.c"
@@ -490,7 +491,7 @@ thread_initialize(VALUE thread, VALUE args)
 	    rb_raise(rb_eThreadError, "already initialized thread - %s",
 		     file);
 	}
-        rb_raise(rb_eThreadError, "already initialized thread - %s:%ld",
+        rb_raise(rb_eThreadError, "already initialized thread - %s:%d",
                  file, NUM2INT(line));
     }
     return thread_create_core(thread, args, 0);
@@ -2050,9 +2051,9 @@ rb_gc_save_machine_context(rb_thread_t *th)
 int rb_get_next_signal(rb_vm_t *vm);
 
 static void
-timer_thread_function(void)
+timer_thread_function(void *arg)
 {
-    rb_vm_t *vm = GET_VM(); /* TODO: fix me for Multi-VM */
+    rb_vm_t *vm = arg; /* TODO: fix me for Multi-VM */
 
     /* for time slice */
     RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);

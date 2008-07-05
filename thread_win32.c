@@ -537,8 +537,6 @@ ubf_handle(void *ptr)
     w32_set_event(th->native_thread_data.interrupt_event);
 }
 
-static void timer_thread_function(void);
-
 static HANDLE timer_thread_id = 0;
 
 static unsigned long _stdcall
@@ -547,7 +545,7 @@ timer_thread_func(void *dummy)
     thread_debug("timer_thread\n");
     while (system_working) {
 	Sleep(WIN32_WAIT_TIMEOUT);
-	timer_thread_function();
+	timer_thread_function(dummy);
     }
     thread_debug("timer killed\n");
     return 0;
@@ -557,7 +555,7 @@ void
 rb_thread_create_timer_thread(void)
 {
     if (timer_thread_id == 0) {
-	timer_thread_id = w32_create_thread(1024, timer_thread_func, 0);
+	timer_thread_id = w32_create_thread(1024, timer_thread_func, GET_VM());
 	w32_resume_thread(timer_thread_id);
     }
 }

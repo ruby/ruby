@@ -1,3 +1,11 @@
+Sat Jul  5 22:22:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_initialize): NUM2INT() returns int.
+
+	* thread.c (timer_thread_function), thread_pthread.c (thread_timer),
+	  thread_win32.c (timer_thread_func), thread_{pthread,win32}.c
+	  (rb_thread_create_timer_thread): passing VM.
+
 Sat Jul  5 20:53:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_word.rb: check word installed.
