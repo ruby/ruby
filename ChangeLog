@@ -1,10 +1,14 @@
-Sat Jul  5 22:37:00 2008  Tanaka Akira  <akr@fsij.org>
+Sat Jul  5 23:10:41 2008  Tanaka Akira  <akr@fsij.org>
 
-	* io.c (rb_pipe_internal): new function for handling EMFILE and ENFILE
+	* io.c (rb_pipe): new function for handling EMFILE and ENFILE
 	  error of pipe().
 	  (UPDATE_MAXFD_PIPE): removed.
-	  (pipe_open): use rb_pipe_internal.
+	  (pipe_open): use rb_pipe.
 	  (rb_io_s_pipe): ditto.
+
+	* process.c (pipe_nocrash): use rb_pipe.
+
+	* include/ruby/intern.h (rb_pipe): declared.
 
 Sat Jul  5 22:22:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
