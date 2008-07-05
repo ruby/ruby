@@ -1122,6 +1122,8 @@ class TestM17NComb < Test::Unit::TestCase
 
   def test_str_slice!
     each_slice_call {|s, *args|
+      desc_slice = "#{encdump s}.slice#{encdumpargs args}"
+      desc_slice_bang = "#{encdump s}.slice!#{encdumpargs args}"
       t = s.dup
       begin
         r = t.slice!(*args)
@@ -1129,14 +1131,14 @@ class TestM17NComb < Test::Unit::TestCase
         e = $!
       end
       if e
-        assert_raise(e.class, "#{encdump s}.slice#{encdumpargs args}") { s.slice(*args) }
+        assert_raise(e.class, desc_slice) { s.slice(*args) }
         next
       end
       if !r
-        assert_nil(s.slice(*args))
+        assert_nil(s.slice(*args), desc_slice)
         next
       end
-      assert_equal(s.slice(*args), r)
+      assert_equal(s.slice(*args), r, desc_slice_bang)
       assert_equal(s.bytesize, r.bytesize + t.bytesize)
       if args.length == 1 && String === args[0]
         assert_equal(args[0].encoding, r.encoding,
