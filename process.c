@@ -2778,6 +2778,10 @@ rb_f_system(int argc, VALUE *argv)
  *
  *  If a hash is given as +env+, the environment is
  *  updated by +env+ before <code>exec(2)</code> in the child process.
+ *  If a pair in +env+ has nil as the value, the variable is deleted.
+ *
+ *    # set FOO as BAR and unset BAZ.
+ *    pid = spawn({"FOO"=>"BAR", "BAZ"=>nil}, command)
  *
  *  If a hash is given as +options+,
  *  it specifies
