@@ -1,3 +1,11 @@
+Sat Jul  5 22:37:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_pipe_internal): new function for handling EMFILE and ENFILE
+	  error of pipe().
+	  (UPDATE_MAXFD_PIPE): removed.
+	  (pipe_open): use rb_pipe_internal.
+	  (rb_io_s_pipe): ditto.
+
 Sat Jul  5 22:22:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_initialize): NUM2INT() returns int.

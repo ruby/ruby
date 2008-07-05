@@ -147,12 +147,6 @@ static int max_file_descriptor = NOFILE;
     do { \
         if (max_file_descriptor < (fd)) max_file_descriptor = (fd); \
     } while (0)
-#define UPDATE_MAXFD_PIPE(filedes) \
-    do { \
-        UPDATE_MAXFD((filedes)[0]); \
-        UPDATE_MAXFD((filedes)[1]); \
-    } while (0)
-
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
@@ -3644,6 +3638,24 @@ rb_io_unbuffered(rb_io_t *fptr)
     rb_io_synchronized(fptr);
 }
 
+static int
+rb_pipe_internal(int *pipes)
+{
+    int ret;
+    ret = pipe(pipes);
+    if (ret == -1) {
+        if (errno == EMFILE || errno == ENFILE) {
+            rb_gc();
+            ret = pipe(pipes);
+        }
+    }
+    if (ret == 0) {
+        UPDATE_MAXFD(pipes[0]);
+        UPDATE_MAXFD(pipes[1]);
+    }
+    return ret;
+}
+
 #ifdef HAVE_FORK
 struct popen_arg {
     struct rb_exec_arg *execp;
@@ -3766,33 +3778,29 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
     arg.write_pair[0] = arg.write_pair[1] = -1;
     switch (modef & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
-        if (pipe(arg.write_pair) < 0)
+        if (rb_pipe_internal(arg.write_pair) < 0)
             rb_sys_fail(cmd);
-        UPDATE_MAXFD_PIPE(arg.write_pair);
-        if (pipe(arg.pair) < 0) {
+        if (rb_pipe_internal(arg.pair) < 0) {
             int e = errno;
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
             errno = e;
             rb_sys_fail(cmd);
         }
-        UPDATE_MAXFD_PIPE(arg.pair);
         if (eargp) {
             rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.write_pair[0]));
             rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
         }
 	break;
       case FMODE_READABLE:
-        if (pipe(arg.pair) < 0)
+        if (rb_pipe_internal(arg.pair) < 0)
             rb_sys_fail(cmd);
-        UPDATE_MAXFD_PIPE(arg.pair);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(1), INT2FIX(arg.pair[1]));
 	break;
       case FMODE_WRITABLE:
-        if (pipe(arg.pair) < 0)
+        if (rb_pipe_internal(arg.pair) < 0)
             rb_sys_fail(cmd);
-        UPDATE_MAXFD_PIPE(arg.pair);
         if (eargp)
             rb_exec_arg_addopt(eargp, INT2FIX(0), INT2FIX(arg.pair[0]));
 	break;
@@ -6219,9 +6227,8 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     rb_io_t *fptr;
 
     rb_scan_args(argc, argv, "02", &v1, &v2);
-    if (pipe(pipes) == -1)
-	rb_sys_fail(0);
-    UPDATE_MAXFD_PIPE(pipes);
+    if (rb_pipe_internal(pipes) == -1)
+        rb_sys_fail(0);
 
     args[0] = klass;
     args[1] = INT2NUM(pipes[0]);
