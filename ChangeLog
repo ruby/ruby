@@ -1,3 +1,7 @@
+Sat Jul  5 20:53:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_word.rb: check word installed.
+
 Sat Jul  5 16:12:54 2008  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c: revert. before lazy sweep.
