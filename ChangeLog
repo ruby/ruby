@@ -1,3 +1,8 @@
+Sun Jul  6 01:44:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* Makefile.in (update-rubyspec): create intermediate directories
+	  before git clone to avoid problem of git 1.5.6.  [ruby-core:17609]
+
 Sat Jul  5 13:09:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_value): missed to change at r17874.  [ruby-core:17595]
