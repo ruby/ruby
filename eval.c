@@ -11361,6 +11361,7 @@ rb_thread_select(max, read, write, except, timeout)
 }
 
 static int rb_thread_join0 _((rb_thread_t, double));
+int rb_thread_join _((VALUE, double));
 
 static int
 rb_thread_join0(th, limit)
@@ -12456,7 +12457,7 @@ rb_thread_value(thread)
 {
     rb_thread_t th = rb_thread_check(thread);
 
-    while (!rb_thread_join(th, DELAY_INFTY));
+    while (!rb_thread_join0(th, DELAY_INFTY));
 
     return th->result;
 }

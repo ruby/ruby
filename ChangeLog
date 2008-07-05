@@ -1,3 +1,7 @@
+Sat Jul  5 13:09:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_value): missed to change at r17874.  [ruby-core:17595]
+
 Sat Jul  5 00:33:08 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner#scan): fix %% line bug. [ruby-core:17491]
