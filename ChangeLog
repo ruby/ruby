@@ -1,3 +1,8 @@
+Mon Jul  7 01:24:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): fix for file name with spaces.
+	  [ruby-talk:307404]
+
 Mon Jul  7 00:59:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): prior STACK_END_ADDRESS if
