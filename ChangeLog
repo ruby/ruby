@@ -1,3 +1,8 @@
+Sun Jul  6 23:48:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (bsock_send, s_recvfrom, ruby_connect, s_accept),
+	  (udp_send, unix_send_io, unix_recv_io): blocking region support.
+
 Sun Jul  6 18:34:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_type.rb (test_initialize): add 
