@@ -179,6 +179,10 @@ static struct {
 #endif
 } native_main_thread;
 
+#ifdef STACK_END_ADDRESS
+extern void *STACK_END_ADDRESS;
+#endif
+
 #undef ruby_init_stack
 void
 ruby_init_stack(VALUE *addr
@@ -188,12 +192,16 @@ ruby_init_stack(VALUE *addr
     )
 {
     native_main_thread.id = pthread_self();
+#ifdef STACK_END_ADDRESS
+    native_main_thread.stack_start = STACK_END_ADDRESS;
+#else
     if (!native_main_thread.stack_start ||
         STACK_UPPER(&addr,
                     native_main_thread.stack_start > addr,
                     native_main_thread.stack_start < addr)) {
         native_main_thread.stack_start = addr;
     }
+#endif
 #ifdef __ia64
     if (!native_main_thread.register_stack_start ||
         (VALUE*)bsp < native_main_thread.register_stack_start) {
