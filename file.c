@@ -3044,7 +3044,7 @@ rb_file_s_extname(klass, fname)
 		p = last;
 		break;
 	    }
-	    e = dot;
+	    if (*last == '.') e = dot;
 	    continue;
 #else
 	    e = p;	  /* get the last dot of the last component */

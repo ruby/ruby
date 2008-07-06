@@ -1,3 +1,8 @@
+Mon Jul  7 01:24:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): fix for file name with spaces.
+	  [ruby-talk:307404]
+
 Sun Jul  6 01:44:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* Makefile.in (update-rubyspec): create intermediate directories
