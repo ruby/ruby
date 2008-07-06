@@ -1,3 +1,8 @@
+Sun Jul  6 10:12:21 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/test/unit/collector/objectspace.rb
+	(Test::Unit::Collector::ObjectSpace::NAME): fix a typo.
+
 Sun Jul  6 00:56:51 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/socket/socket.c (host_str): fix type mismatch in rb_raise

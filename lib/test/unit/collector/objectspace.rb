@@ -10,7 +10,7 @@ module Test
       class ObjectSpace
         include Test::Unit::Collector
         
-        NAME = 'collected from the subclasses of TestSuite'
+        NAME = 'collected from the subclasses of TestCase'
         
         def initialize(source=nil)
           super()
