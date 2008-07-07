@@ -289,7 +289,7 @@ module Net
     # +port+ is the port to connect to; it defaults to port 25.
     #
     # +helo+ is the _HELO_ _domain_ provided by the client to the
-    # server (see overview comments); it defaults to 'localhost.localdomain'. 
+    # server (see overview comments); it defaults to 'localhost'. 
     #
     # The remaining arguments are used for SMTP authentication, if required
     # or desired.  +user+ is the account name; +secret+ is your password
@@ -310,7 +310,7 @@ module Net
     # * TimeoutError
     #
     def SMTP.start( address, port = nil,
-                    helo = 'localhost.localdomain',
+                    helo = 'localhost',
                     user = nil, secret = nil, authtype = nil,
                     &block) # :yield: smtp
       new(address, port).start(helo, user, secret, authtype, &block)
@@ -371,7 +371,7 @@ module Net
     # * IOError
     # * TimeoutError
     #
-    def start( helo = 'localhost.localdomain',
+    def start( helo = 'localhost',
                user = nil, secret = nil, authtype = nil ) # :yield: smtp
       if block_given?
         begin
