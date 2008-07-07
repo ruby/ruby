@@ -1,3 +1,8 @@
+Tue Jul  8 00:22:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_succ): limit carrying in an alphanumeric region if
+	  exists.  [ruby-dev:35094]
+
 Mon Jul  7 20:39:28 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(Init_win32ole): add

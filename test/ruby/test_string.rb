@@ -1222,6 +1222,7 @@ class TestString < Test::Unit::TestCase
     assert_equal(S("124"),  S("123").succ)
     assert_equal(S("1000"), S("999").succ)
 
+    assert_equal(S("No.10"), S("No.9").succ)
     assert_equal(S("2000aaa"),  S("1999zzz").succ)
     assert_equal(S("AAAAA000"), S("ZZZZ999").succ)
     assert_equal(S("*+"), S("**").succ)
@@ -1268,6 +1269,10 @@ class TestString < Test::Unit::TestCase
     a = S("**")
     assert_equal(S("*+"), a.succ!)
     assert_equal(S("*+"), a)
+
+    a = S("No.9")
+    assert_equal(S("No.10"), a.succ!)
+    assert_equal(S("No.10"), a)
 
     assert_equal("aaaaaaaaaaaa", "zzzzzzzzzzz".succ!)
     assert_equal("aaaaaaaaaaaaaaaaaaaaaaaa", "zzzzzzzzzzzzzzzzzzzzzzz".succ!)

@@ -2535,13 +2535,16 @@ rb_str_succ(VALUE orig)
         enum neighbor_char neighbor;
 	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
         neighbor = enc_succ_alnum_char(s, l, enc, carry);
-        if (neighbor == NEIGHBOR_NOT_CHAR)
-            continue;
-        if (neighbor == NEIGHBOR_FOUND)
+        if (neighbor == NEIGHBOR_NOT_CHAR) {
+	    if (c == -1) continue;
+            s++;
+	}
+        else if (neighbor == NEIGHBOR_FOUND)
             return str;
         c = 1;
         carry_pos = s - sbeg;
         carry_len = l;
+        if (neighbor == NEIGHBOR_NOT_CHAR) break;
     }
     if (c == -1) {		/* str contains no alnum */
 	s = e;
