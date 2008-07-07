@@ -1,3 +1,9 @@
+Tue Jul  8 02:27:23 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c: preserve encoding of strings in glob and fnmatch.
+
+	* include/ruby/ruby.h: related changes.
+
 Tue Jul  8 00:22:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_succ): limit carrying in an alphanumeric region if
