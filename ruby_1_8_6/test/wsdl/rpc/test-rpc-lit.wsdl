@@ -1,0 +1,364 @@
+<?xml version="1.0"?>
+
+<definitions name="RPC-Literal-TestDefinitions"
+  targetNamespace="http://whitemesa.net/wsdl/rpc-lit-test"
+  xmlns="http://schemas.xmlsoap.org/wsdl/"
+  xmlns:soap11="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:tns="http://whitemesa.net/wsdl/rpc-lit-test"
+  xmlns:types="http://soapbuilders.org/rpc-lit-test/types"
+  xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <types>
+    <schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://soapbuilders.org/rpc-lit-test/types">
+
+      <element name="stringItem" type="xsd:string" />
+      <complexType name="ArrayOfstring">
+        <sequence>
+          <element ref="types:stringItem" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+      </complexType>
+
+      <complexType name="ArrayOfstringInline">
+        <sequence>
+          <element name="stringItem" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+      </complexType>
+
+      <complexType name="ArrayOfint">
+        <sequence>
+          <element name="integer" type="xsd:int" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+      </complexType>
+
+      <element name="structItem" type="types:SOAPStruct" />
+      <complexType name="SOAPStruct">
+        <all>
+          <element name="varString" type="xsd:string"/>
+          <element name="varInt" type="xsd:int"/>
+          <element name="varFloat" type="xsd:float"/>
+        </all>
+      </complexType>
+
+      <complexType name="ArrayOfSOAPStruct">
+        <sequence>
+          <element ref="types:structItem" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+      </complexType>
+
+      <complexType name="SOAPStructStruct">
+        <all>
+          <element name="varString" type="xsd:string"/>
+          <element name="varInt" type="xsd:int"/>
+          <element name="varFloat" type="xsd:float"/>
+          <element ref="types:structItem" />
+        </all>
+      </complexType>
+
+      <complexType name="SOAPArrayStruct">
+        <all>
+          <element name="varString" type="xsd:string"/>
+          <element name="varInt" type="xsd:int"/>
+          <element name="varFloat" type="xsd:float"/>
+          <element name="varArray" type="types:ArrayOfstring"/>
+        </all>
+      </complexType>
+
+    </schema>
+
+  </types>
+
+  <!-- echoStruct rpc operation -->
+  <message name="echoStructRequest">
+    <part name="inputStruct" type="types:SOAPStruct"/>
+  </message>
+  <message name="echoStructResponse">
+    <part name="return" type="types:SOAPStruct"/>
+  </message>
+
+  <!-- echoStructArray rpc operation -->
+  <message name="echoStructArrayRequest">
+    <part name="inputStructArray" type="types:ArrayOfSOAPStruct"/>
+  </message>
+  <message name="echoStructArrayResponse">
+    <part name="return" type="types:ArrayOfSOAPStruct"/>
+  </message>
+
+  <!-- echoStructAsSimpleTypes rpc operation -->
+  <message name="echoStructAsSimpleTypesRequest">
+    <part name="inputStruct" type="types:SOAPStruct"/>
+  </message>
+  <message name="echoStructAsSimpleTypesResponse">
+    <part name="outputString" type="xsd:string"/>
+    <part name="outputInteger" type="xsd:int"/>
+    <part name="outputFloat" type="xsd:float"/>
+  </message>
+
+  <!-- echoSimpleTypesAsStruct rpc operation -->
+  <message name="echoSimpleTypesAsStructRequest">
+    <part name="inputString" type="xsd:string"/>
+    <part name="inputInteger" type="xsd:int"/>
+    <part name="inputFloat" type="xsd:float"/>
+  </message>
+  <message name="echoSimpleTypesAsStructResponse">
+    <part name="return" type="types:SOAPStruct"/>
+  </message>
+
+  <!-- echoNestedStruct rpc operation -->
+  <message name="echoNestedStructRequest">
+    <part name="inputStruct" type="types:SOAPStructStruct"/>
+  </message>
+  <message name="echoNestedStructResponse">
+    <part name="return" type="types:SOAPStructStruct"/>
+  </message>
+
+  <!-- echoNestedArray rpc operation -->
+  <message name="echoNestedArrayRequest">
+    <part name="inputStruct" type="types:SOAPArrayStruct"/>
+  </message>
+  <message name="echoNestedArrayResponse">
+    <part name="return" type="types:SOAPArrayStruct"/>
+  </message>
+
+  <!-- echoStringArray rpc operation -->
+  <message name="echoStringArrayRequest">
+    <part name="inputStringArray" type="types:ArrayOfstring"/>
+  </message>
+  <message name="echoStringArrayResponse">
+    <part name="return" type="types:ArrayOfstring"/>
+  </message>
+
+  <message name="echoStringArrayInlineRequest">
+    <part name="inputStringArray" type="types:ArrayOfstringInline"/>
+  </message>
+  <message name="echoStringArrayInlineResponse">
+    <part name="return" type="types:ArrayOfstringInline"/>
+  </message>
+
+  <!-- echoIntegerArray rpc operation -->
+  <message name="echoIntegerArrayRequest">
+    <part name="inputIntegerArray" type="types:ArrayOfint"/>
+  </message>
+  <message name="echoIntegerArrayResponse">
+    <part name="return" type="types:ArrayOfint"/>
+  </message>
+
+  <!-- echoBoolean rpc operation -->
+  <message name="echoBooleanRequest">
+    <part name="inputBoolean" type="xsd:boolean"/>
+  </message>
+  <message name="echoBooleanResponse">
+    <part name="return" type="xsd:boolean"/>
+  </message>
+
+  <!-- echoString rpc operation -->
+  <message name="echoStringRequest">
+    <part name="inputString" type="xsd:string"/>
+  </message>
+  <message name="echoStringResponse">
+    <part name="return" type="xsd:string"/>
+  </message>
+
+
+  <portType name="SoapTestPortTypeRpc">
+
+    <!-- echoStruct rpc operation -->
+    <operation name="echoStruct" parameterOrder="inputStruct">
+      <input message="tns:echoStructRequest"/>
+      <output message="tns:echoStructResponse"/>
+    </operation>
+
+    <!-- echoStructArray rpc operation -->
+    <operation name="echoStructArray" parameterOrder="inputStructArray">
+      <input message="tns:echoStructArrayRequest"/>
+      <output message="tns:echoStructArrayResponse"/>
+    </operation>
+
+    <!-- echoStructAsSimpleTypes rpc operation -->
+    <operation name="echoStructAsSimpleTypes" parameterOrder="inputStruct outputString outputInteger outputFloat">
+      <input message="tns:echoStructAsSimpleTypesRequest"/>
+      <output message="tns:echoStructAsSimpleTypesResponse"/>
+    </operation>
+
+    <!-- echoSimpleTypesAsStruct rpc operation -->
+    <operation name="echoSimpleTypesAsStruct" parameterOrder="inputString inputInteger inputFloat">
+      <input message="tns:echoSimpleTypesAsStructRequest"/>
+      <output message="tns:echoSimpleTypesAsStructResponse"/>
+    </operation>
+
+    <!-- echoNestedStruct rpc operation -->
+    <operation name="echoNestedStruct" parameterOrder="inputStruct">
+      <input message="tns:echoNestedStructRequest"/>
+      <output message="tns:echoNestedStructResponse"/>
+    </operation>
+
+    <!-- echoNestedArray rpc operation -->
+    <operation name="echoNestedArray" parameterOrder="inputStruct">
+      <input message="tns:echoNestedArrayRequest"/>
+      <output message="tns:echoNestedArrayResponse"/>
+    </operation>
+
+    <!-- echoStringArray rpc operation -->
+    <operation name="echoStringArray" parameterOrder="inputStringArray">
+      <input message="tns:echoStringArrayRequest"/>
+      <output message="tns:echoStringArrayResponse"/>
+    </operation>
+
+    <operation name="echoStringArrayInline" parameterOrder="inputStringArray">
+      <input message="tns:echoStringArrayInlineRequest"/>
+      <output message="tns:echoStringArrayInlineResponse"/>
+    </operation>
+
+    <!-- echoIntegerArray rpc operation -->
+    <operation name="echoIntegerArray" parameterOrder="inputIntegerArray">
+      <input message="tns:echoIntegerArrayRequest"/>
+      <output message="tns:echoIntegerArrayResponse"/>
+    </operation>
+
+    <!-- echoBoolean rpc operation -->
+    <operation name="echoBoolean" parameterOrder="inputBoolean">
+      <input message="tns:echoBooleanRequest"/>
+      <output message="tns:echoBooleanResponse"/>
+    </operation>
+
+    <!-- echoString rpc operation -->
+    <operation name="echoString" parameterOrder="inputString">
+      <input message="tns:echoStringRequest"/>
+      <output message="tns:echoStringResponse"/>
+    </operation>
+
+  </portType>
+
+  <binding name="Soap11TestRpcLitBinding" type="tns:SoapTestPortTypeRpc">
+    <soap11:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+    <!-- echoStruct rpc operation -->
+    <operation name="echoStruct">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!--  echoStructArray rpc operation -->
+    <operation name="echoStructArray">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoStructAsSimpleTypes rpc operation -->
+    <operation name="echoStructAsSimpleTypes">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoSimpleTypesAsStruct rpc operation -->
+    <operation name="echoSimpleTypesAsStruct">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoNestedStruct rpc operation -->
+    <operation name="echoNestedStruct">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoNestedArray rpc operation -->
+    <operation name="echoNestedArray">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoStringArray rpc operation -->
+    <operation name="echoStringArray">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <operation name="echoStringArrayInline">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoIntegerArray rpc operation -->
+    <operation name="echoIntegerArray">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoBoolean rpc operation -->
+    <operation name="echoBoolean">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+    <!-- echoString rpc operation -->
+    <operation name="echoString">
+      <soap11:operation soapAction="http://soapinterop.org/"/>
+      <input>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </input>
+      <output>
+        <soap11:body use="literal" namespace="http://soapbuilders.org/rpc-lit-test" />
+      </output>
+    </operation>
+
+  </binding>
+
+  <service name="WhiteMesaSoapRpcLitTestSvc">
+
+    <port name="Soap11TestRpcLitPort" binding="tns:Soap11TestRpcLitBinding">
+      <soap11:address location="http://www.whitemesa.net/test-rpc-lit"/>
+    </port>
+
+  </service>
+
+</definitions>

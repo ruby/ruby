@@ -1,0 +1,266 @@
+=begin
+
+= Ruby/DL
+
+Ruby/DL provides an interface to the dynamic linker such as dlopen() on UNIX
+and LoadLibrary() on Windows.
+
+= Building and Installing
+
+  $ ruby extconf.rb    # to create the Makefile
+  $ make               # to build the library 'dl.so'
+  $ make libtest.so    # to build the C library 'libtest.so' for the test script
+  $ make test          # to run the test script
+  $ make install       # to install the library
+  $ make clean         # to remove the created files without Makefile
+  $ make distclean     # to remove the all created files
+
+= Using Ruby/DL
+
+We should usually use DL::Importable module provided by "dl/import.rb".
+It has high-level functions to access library functions. We use
+DL::Importable module to extend a module as follows:
+
+  require "dl/import"
+  module LIBC
+    extend DL::Importable
+  end
+
+Now we can use methods dlload and extern in this module. We load the
+libraries using dlload, and define wrapper methods to library functions
+using extern respectively as follows:
+
+  module LIBC
+    extend DL::Importable
+    dlload "libc.so.6","libm.so.6"
+    extern "int strlen(char*)"
+  end
+  # Note that we should not include the module LIBC from some reason.
+
+We can call the library function strlen() using LIBC.strlen. If the first
+character of given function name is an uppercase, the first character of the
+defined method name becomes lowercase.
+We can also construct memory images of structures and unions using functions
+struct and union which are defined in "dl/struct.rb" as follows:
+
+  require "dl/import"
+  require "dl/struct"
+  module LIBC
+    extend DL::Importable
+    Timeval = struct [       # define timeval structure.
+      "long tv_sec",
+      "long tv_uses",
+    ]
+  end
+  val = LIBC::Timeval.malloc # allocate memory.
+
+Notice that the above example takes LIBC::Timeval.malloc to allocate memory,
+rather than LIBC::Timeval.new. It is because DL::Timeval.new is for wrapping
+an object, PtrData, which has already been created.
+
+We can define a callback using the module function "callback" as follows:
+
+  module Foo
+    extend DL::Importable
+    def my_comp(str1,str2)
+      str1 <=> str2
+    end
+    COMPARE = callback "int my_comp(char*,char*)"
+  end
+
+where Foo::COMPARE is a Symbol object which invokes the method "my_comp".
+
+DL::Importable module is very useful. However, we sometimes encounter a case
+that we must directly use low-level functions such as dlsym(). In such case,
+we would use DL module functions. They are described in next section.
+
+= DL module
+
+Module DL consists of three classes, a few module functions and constants.
+The class Symbol represents the symbol we can call. The class PtrData
+indicates a memory block such as a pointer in C. An object instantiated from
+the class Handle keeps a handle to opened library.
+
+== Constants
+
+* VERSION
+* MAJOR_VERSION
+* MINOR_VERSION
+* PATCH_VERSION
+* RTLD_GLOBAL
+* RTLD_LAZY
+* RTLD_NOW
+* MAX_ARG
+* MAX_CBARG
+* MAX_CBENT
+
+== Functions
+
+* handle = dlopen(lib){|handle| ... }
+  * is quite equal to `Handle.new(lib)'
+
+* sym = set_callback(cbtype, entry){|args| ... }
+* sym = set_callback(cbtype, entry, proc)
+  * makes entry-th pre-defined function to call the proc or given block. the 
+    entry-th pre-defined function is specified by cbtype and entry. cbtype is a
+    prototype of the callback. see also the section `Type specifiers' about 
+    cbtype.
+
+* sym = get_callback(cbtype, entry)
+  * returns the Proc object which is given by the above function
+   `set_callback'.
+
+* ptr = malloc(size, [free = nil])
+  * allocates the size bytes, and returns the pointer as a PtrData object ptr.
+
+* ptr = strdup(str)
+  * returns a PtrData object ptr which represents the pointer to a new string
+    which is a duplicate of the string str.
+
+* size = sizeof(type)
+  * returns the size of type. `sizeof("C") + sizeof("L")' is not equal to
+    `sizeof("CL")'. the latter is assumed to returns the enough size of the
+    structure `struct foo { char c; long l; }', but the size may not equal to
+    `sizeof(foo)' of C.
+
+== Handle class
+
+* handle = Handle.new(lib){|handle| ... }
+  * opens a library lib and returns a Handle object handle. if a block is
+    given, the handle is automatically closed as the block ends.
+
+* Handle#close
+  * closes the handle opened by the above Handle.new(lib).
+
+* sym = Handle#sym(func, prototype = "0"),
+  sym = Handle#[func, prototype = nil]
+
+  * obtains the pointer to a function called func and returns a Symbol object
+    or a DataPtr object. prototype is a string which consists of type
+    specifiers, it indicates the function's prototype. see also the section
+    `Type specifiers'.
+
+== Symbol class
+
+* sym = Symbol.new(addr, type = nil, name = nil)
+  * creates the Symbol object sym with the type type if type is not nil. addr
+    is the address where the function is allocated. If type is nil, it returns
+    a DataPtr object.
+
+* Symbol::char2type(char)
+  * takes a character char that represents a type and returns the type
+    specifier of the C language.
+
+* str = Symbol#proto()
+  * returns the function prototype.
+
+* str = Symbol#name()
+  * Returns the function name.
+
+* str = Symbol#cproto(),
+  str = Symbol#to_s()
+  * returns the prototype of the C language.
+
+* str = Symbol#inspect()
+  * returns the inspectable string.
+
+* r,rs = Symbol#call(arg1,arg2,...,argN),
+  r,rs = Symbol#[](arg1,arg2,...,argN)
+  * calls the function with parameters arg1, arg2, ..., argN. and the result
+    consists of the return value r and parameters rs. rs is an array.
+
+* ptr = Symbol#to_ptr
+  * returns the corresponding PtrData object ptr.
+
+== PtrData class
+
+* ptr = PtrData.new(addr, [size = 0, free = nil])
+  * returns the PtrData object representing the pointer which indicates the
+    address addr. GC frees the memory using the free function.
+
+* PtrData#free=(sym)
+  * If you specify a symbol object sym, GC frees the memory using the function
+    represented by sym.
+
+* sym = PtrData#free
+  * returns a symbol object sym which is used when GC frees the memory. it
+    usually configured by `PtrData#free=' or `PtrData.new'.
+
+* size = PtrData#size, PtrData#size=(size)
+  * gets and sets allocated size of the memory.
+
+* ary = PtrData#to_a(type, [size])
+  * returns an array of the type which specified with type. type must be one of
+    'S','P','I','L','D' and 'F'.
+
+* str = PtrData#to_s([len])
+  * returns a string which length is len. if len is omitted, the end of the
+    string is '\0'.
+
+* ptr = PtrData#ptr,+@
+  * returns the pointed value as a PtrData object ptr.
+
+* ptr = PtrData#ref,-@
+  * returns the reference as a PtrData object ptr.
+
+* ptr = PtrData#+
+  * returns the PtrData object
+
+* ptr = PtrData#-
+  * returns the PtrData object
+
+* PtrData#struct!(type, *members)
+  * defines the data type to get access to a structure member with a symbol.
+    (see also PtrData#[])
+
+* PtrData#union!(type, *members)
+  * defines the data type to get access to a union member with a symbol. (see
+    also PtrData#[])
+
+* val = PtrData#[key], PtrData#[key, num = 0]
+  * if the key is a string or symbol, this method returns the value of the
+    structure/union member which has the type defined by PtrData#
+    {struct!,union!}. if the key is a integer value and this object represents
+    the pointer ptr, it returns the value of `(ptr + key).to_s(num)'
+
+* PtrData#[key,num]=val, PtrData#[key]=val
+  * if the key is a string or symbol, this method substitute the value of the
+    structure/union member with val. if the key is a integer value and val is a
+    string, this method copies num bytes of val to the memory area ptr using
+    memcpy(3).
+
+== Type specifiers
+
+the prototype consists of the following type specifiers, first element of 
+prototype represents the type of return value, and remaining elements represent
+the type of each argument.
+
+    C : char
+    c : char *
+    H : short
+    h : short *
+    I : int
+    i : int *
+    L : long
+    l : long *
+    F : float
+    f : float *
+    D : double
+    d : double *
+    S : const char *
+    s : char *
+    A : const type[]
+    a : type[] (allocates new memory space)
+    P : void * (same as 'p')
+    p : void * (same as 'P')
+    0 : void function (this must be a first character of the prototype)
+
+the cbtype consists of type specifiers 0, C, I, H, L, F, D, S and P.
+for example:
+
+    DL.callback('IPP'){|ptr1,ptr2|
+      str1 = ptr1.ptr.to_s
+      str2 = ptr2.ptr.to_s
+      str1 <=> str2
+    }
+=end

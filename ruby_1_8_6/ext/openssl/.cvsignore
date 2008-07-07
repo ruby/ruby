@@ -1,0 +1,5 @@
+GNUmakefile
+Makefile
+mkmf.log
+dep
+extconf.h

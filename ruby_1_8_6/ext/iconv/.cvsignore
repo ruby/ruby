@@ -1,0 +1,5 @@
+Makefile
+mkmf.log
+*.def
+iconv.rb
+config.charset

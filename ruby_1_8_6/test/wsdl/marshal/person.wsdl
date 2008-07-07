@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<definitions name="Person"
+    targetNamespace="http://www.jin.gr.jp/~nahi/xmlns/sample/Person"
+    xmlns:tns="http://www.jin.gr.jp/~nahi/xmlns/sample/Person"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+  <types>
+    <xsd:schema xmlns="http://www.w3.org/2001/XMLSchema" 
+        targetNamespace="http://www.jin.gr.jp/~nahi/xmlns/sample/Person">
+      <complexType name="Person">
+        <all>
+          <element name="familyname" type="xsd:string"/>
+          <element name="givenname" type="xsd:string"/>
+          <element name="var1" type="xsd:int"/>
+          <element name="var2" type="xsd:double"/>
+          <element name="var3" type="xsd:string"/>
+        </all>
+      </complexType>
+    </xsd:schema>
+  </types>
+</definitions>

@@ -1,0 +1,11 @@
+# Add files to this as they become documented
+
+enumerator/enumerator.c
+iconv/iconv.c
+nkf/lib/kconv.rb
+nkf/nkf.c
+socket/socket.c
+stringio/stringio.c
+strscan/strscan.c
+win32ole
+zlib/zlib.c

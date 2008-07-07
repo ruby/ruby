@@ -1,0 +1,26 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:lp="urn:lp" targetNamespace="urn:lp" elementFormDefault="unqualified">
+
+  <xs:complexType name="login">
+    <xs:sequence>
+      <xs:element name="username" type="xs:string"/>
+      <xs:element name="password" type="xs:string"/>
+      <xs:element name="timezone" type="xs:string" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="login" type="lp:login"/>
+
+  <xs:complexType name="loginResponse">
+    <xs:sequence>
+      <xs:element name="loginResult">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="sessionID" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="loginResponse" type="lp:loginResponse"/>
+</xs:schema>

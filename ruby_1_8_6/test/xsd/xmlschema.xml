@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema
+    attributeFormDefault="qualified"
+    elementFormDefault="qualified"
+    targetNamespace="urn:jp.gr.jin.rrr.example.fakeschema"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="MessageDataSet">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
