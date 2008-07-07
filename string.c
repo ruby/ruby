@@ -1416,6 +1416,10 @@ rb_str_succ(orig)
 	    if ((c = succ_char(s)) == 0) break;
 	    n = s - sbeg;
 	}
+	else if (c != -1) {
+	    n = ++s - sbeg;
+	    break;
+	}
 	s--;
     }
     if (c == -1) {		/* str contains no alnum */
@@ -1425,8 +1429,9 @@ rb_str_succ(orig)
 	    if ((*s += 1) != 0) break;
 	    s--;
 	}
+	c = 0;
     }
-    if (s < sbeg) {
+    if (s < sbeg || c > 0) {
 	RESIZE_CAPA(str, RSTRING(str)->len + 1);
 	s = RSTRING(str)->ptr + n;
 	memmove(s+1, s, RSTRING(str)->len - n);
