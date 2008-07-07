@@ -1442,9 +1442,6 @@ int ruby_in_eval;
 static void rb_thread_cleanup _((void));
 static void rb_thread_wait_other_threads _((void));
 
-static int thread_set_raised();
-static int thread_reset_raised();
-
 static int thread_no_ensure _((void));
 
 static VALUE exception_error;
@@ -1463,8 +1460,10 @@ error_handle(ex)
     int ex;
 {
     int status = EXIT_FAILURE;
+    rb_thread_t th = curr_thread;
 
-    if (thread_set_raised()) return EXIT_FAILURE;
+    if (rb_thread_set_raised(th))
+	return EXIT_FAILURE;
     switch (ex & TAG_MASK) {
       case 0:
 	status = EXIT_SUCCESS;
@@ -1517,7 +1516,7 @@ error_handle(ex)
 	rb_bug("Unknown longjmp status %d", ex);
 	break;
     }
-    thread_reset_raised();
+    rb_thread_reset_raised(th);
     return status;
 }
 
@@ -2710,6 +2709,7 @@ call_trace_func(event, node, self, id, klass)
     NODE *node_save;
     VALUE srcfile;
     char *event_name;
+    rb_thread_t th = curr_thread;
 
     if (!trace_func) return;
     if (tracing) return;
@@ -2741,7 +2741,7 @@ call_trace_func(event, node, self, id, klass)
 	}
     }
     PUSH_TAG(PROT_NONE);
-    raised = thread_reset_raised();
+    raised = rb_thread_reset_raised(th);
     if ((state = EXEC_TAG()) == 0) {
 	srcfile = rb_str_new2(ruby_sourcefile?ruby_sourcefile:"(ruby)");
 	event_name = get_event_name(event);
@@ -2753,7 +2753,7 @@ call_trace_func(event, node, self, id, klass)
 					    klass),
 		    Qundef, 0);
     }
-    if (raised) thread_set_raised();
+    if (raised) rb_thread_set_raised(th);
     POP_TAG();
     POP_FRAME();
 
@@ -4569,8 +4569,9 @@ rb_longjmp(tag, mesg)
     VALUE mesg;
 {
     VALUE at;
+    rb_thread_t th = curr_thread;
 
-    if (thread_set_raised()) {
+    if (rb_thread_set_raised(th)) {
 	ruby_errinfo = exception_error;
 	JUMP_TAG(TAG_FATAL);
     }
@@ -4584,6 +4585,9 @@ rb_longjmp(tag, mesg)
 	at = get_backtrace(mesg);
 	if (NIL_P(at)) {
 	    at = make_backtrace();
+	    if (OBJ_FROZEN(mesg)) {
+		mesg = rb_obj_dup(mesg);
+	    }
 	    set_backtrace(mesg, at);
 	}
     }
@@ -4609,7 +4613,7 @@ rb_longjmp(tag, mesg)
 	    ruby_errinfo = mesg;
 	}
 	else if (status) {
-	    thread_reset_raised();
+	    rb_thread_reset_raised(th);
 	    JUMP_TAG(status);
 	}
     }
@@ -4624,8 +4628,17 @@ rb_longjmp(tag, mesg)
     if (!prot_tag) {
 	error_print();
     }
-    thread_reset_raised();
+    rb_thread_raised_clear(th);
     JUMP_TAG(tag);
+}
+
+void
+rb_exc_jump(mesg)
+    VALUE mesg;
+{
+    rb_thread_raised_clear(rb_curr_thread);
+    ruby_errinfo = mesg;
+    JUMP_TAG(TAG_RAISE);
 }
 
 void
@@ -5544,18 +5557,11 @@ rb_with_disable_interrupt(proc, data)
 static void
 stack_check()
 {
-    static int overflowing = 0;
+    rb_thread_t th = rb_curr_thread;
 
-    if (!overflowing && ruby_stack_check()) {
-	int state;
-	overflowing = 1;
-	PUSH_TAG(PROT_NONE);
-	if ((state = EXEC_TAG()) == 0) {
-	    rb_exc_raise(sysstack_error);
-	}
-	POP_TAG();
-	overflowing = 0;
-	JUMP_TAG(state);
+    if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW) && ruby_stack_check()) {
+	rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
+	rb_exc_raise(sysstack_error);
     }
 }
 
@@ -9710,11 +9716,14 @@ Init_Proc()
 
     rb_global_variable(&exception_error);
     exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
+    OBJ_TAINT(exception_error);
+    OBJ_FREEZE(exception_error);
 
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
     rb_global_variable(&sysstack_error);
     sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
     OBJ_TAINT(sysstack_error);
+    OBJ_FREEZE(sysstack_error);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_alloc_func(rb_cProc);
@@ -9886,10 +9895,9 @@ extern VALUE rb_last_status;
 # endif
 #endif
 
-#define THREAD_RAISED 0x200	 /* temporary flag */
 #define THREAD_TERMINATING 0x400 /* persistent flag */
-#define THREAD_NO_ENSURE 0x800   /* persistent flag */
-#define THREAD_FLAGS_MASK  0xc00 /* mask for persistent flags */
+#define THREAD_NO_ENSURE   0x800 /* persistent flag */
+#define THREAD_FLAGS_MASK 0xfc00 /* mask for persistent flags */
 
 #define FOREACH_THREAD_FROM(f,x) x = f; do { x = x->next;
 #define END_FOREACH_FROM(f,x) } while (x != f)
@@ -9941,19 +9949,25 @@ struct thread_status_t {
     (dst)->join = (src)->join,			\
     0)
 
-static int
-thread_set_raised()
+int
+rb_thread_set_raised(th)
+    rb_thread_t th;
 {
-    if (curr_thread->flags & THREAD_RAISED) return 1;
-    curr_thread->flags |= THREAD_RAISED;
+    if (th->flags & RAISED_EXCEPTION) {
+	return 1;
+    }
+    th->flags |= RAISED_EXCEPTION;
     return 0;
 }
 
-static int
-thread_reset_raised()
+int
+rb_thread_reset_raised(th)
+    rb_thread_t th;
 {
-    if (!(curr_thread->flags & THREAD_RAISED)) return 0;
-    curr_thread->flags &= ~THREAD_RAISED;
+    if (!(th->flags & RAISED_EXCEPTION)) {
+	return 0;
+    }
+    th->flags &= ~RAISED_EXCEPTION;
     return 1;
 }
 
@@ -11091,7 +11105,7 @@ rb_thread_join(th, limit)
 	if (!rb_thread_dead(th)) return Qfalse;
     }
 
-    if (!NIL_P(th->errinfo) && (th->flags & THREAD_RAISED)) {
+    if (!NIL_P(th->errinfo) && (th->flags & RAISED_EXCEPTION)) {
 	VALUE oldbt = get_backtrace(th->errinfo);
 	VALUE errat = make_backtrace();
 	VALUE errinfo = rb_obj_dup(th->errinfo);
@@ -12020,7 +12034,7 @@ rb_thread_start_0(fn, arg, th)
     }
 
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
-	th->flags |= THREAD_RAISED;
+	th->flags |= RAISED_EXCEPTION;
 	if (state == TAG_FATAL) {
 	    /* fatal error within this thread, need to stop whole script */
 	    main_thread->errinfo = ruby_errinfo;
@@ -12238,7 +12252,7 @@ rb_thread_status_name(thread)
     rb_thread_t th = rb_thread_check(thread);
 
     if (rb_thread_dead(th)) {
-	if (!NIL_P(th->errinfo) && (th->flags & THREAD_RAISED))
+	if (!NIL_P(th->errinfo) && (th->flags & RAISED_EXCEPTION))
 	    return Qnil;
 	return Qfalse;
     }
