@@ -1,3 +1,24 @@
+Mon Jul  7 15:02:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_longjmp): duplicate the thrown exception to set backtrace
+	  if it was frozen.  clear all raised flags.
+
+	* eval.c (stack_check): leave clearing flag to rb_longjmp.
+
+	* eval.c (rb_thread_set_raised, rb_thread_reset_raised): use generic
+	  flags.
+
+	* eval.c (Init_Proc), gc.c (Init_GC): freeze preallocated special exceptions.
+
+	* gc.c (rb_memerror): use thread raised flag instead of static flag,
+	  and raise nomem_error without backtrace if failed to make backtrace.
+	  [ruby-dev:34724]
+
+	* gc.c (ruby_xmalloc): increase malloc_increase only if malloc
+	  succeeds.  failed malloc size can be huge.  it may increase
+	  malloc_limit too big which cause less GC and memory full.
+	  (ruby_xrealloc): ditto.
+
 Mon Jul  7 12:23:05 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: avoid creating Ruby object during

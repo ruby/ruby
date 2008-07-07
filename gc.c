@@ -78,16 +78,22 @@ static void garbage_collect();
 
 int ruby_gc_stress = 0;
 
+NORETURN(void rb_exc_jump _((VALUE)));
+
 void
 rb_memerror()
 {
-    static int recurse = 0;
+    rb_thread_t th = rb_curr_thread;
 
-    if (!nomem_error || (recurse > 0 && rb_safe_level() < 4)) {
+    if (!nomem_error ||
+	(rb_thread_raised_p(th, RAISED_NOMEMORY) && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(1);
     }
-    recurse++;
+    if (rb_thread_raised_p(th, RAISED_NOMEMORY)) {
+	rb_exc_jump(nomem_error);
+    }
+    rb_thread_raised_set(th, RAISED_NOMEMORY);
     rb_exc_raise(nomem_error);
 }
 
@@ -136,9 +142,8 @@ ruby_xmalloc(size)
 	rb_raise(rb_eNoMemError, "negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
-    malloc_increase += size;
 
-    if (ruby_gc_stress || malloc_increase > malloc_limit) {
+    if (ruby_gc_stress || (malloc_increase+size) > malloc_limit) {
 	garbage_collect();
     }
     RUBY_CRITICAL(mem = malloc(size));
@@ -149,6 +154,7 @@ ruby_xmalloc(size)
 	    rb_memerror();
 	}
     }
+    malloc_increase += size;
 
     return mem;
 }
@@ -177,7 +183,6 @@ ruby_xrealloc(ptr, size)
     }
     if (!ptr) return xmalloc(size);
     if (size == 0) size = 1;
-    malloc_increase += size;
     if (ruby_gc_stress) garbage_collect();
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
@@ -187,6 +192,7 @@ ruby_xrealloc(ptr, size)
 	    rb_memerror();
         }
     }
+    malloc_increase += size;
 
     return mem;
 }
@@ -2110,6 +2116,8 @@ Init_GC()
 
     rb_global_variable(&nomem_error);
     nomem_error = rb_exc_new2(rb_eNoMemError, "failed to allocate memory");
+    OBJ_TAINT(nomem_error);
+    OBJ_FREEZE(nomem_error);
 
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);

@@ -468,6 +468,19 @@ extern VALUE (*ruby_sandbox_restore)_((rb_thread_t));
 extern rb_thread_t rb_curr_thread;
 extern rb_thread_t rb_main_thread;
 
+enum {
+    RAISED_EXCEPTION     = 0x1000,
+    RAISED_STACKOVERFLOW = 0x2000,
+    RAISED_NOMEMORY      = 0x4000,
+    RAISED_MASK          = 0xf000
+};
+int rb_thread_set_raised(rb_thread_t th);
+int rb_thread_reset_raised(rb_thread_t th);
+#define rb_thread_raised_set(th, f)   ((th)->flags |= (f))
+#define rb_thread_raised_reset(th, f) ((th)->flags &= ~(f))
+#define rb_thread_raised_p(th, f)     (((th)->flags & (f)) != 0)
+#define rb_thread_raised_clear(th)    ((th)->flags = 0)
+
 #if defined(__cplusplus)
 }  /* extern "C" { */
 #endif
