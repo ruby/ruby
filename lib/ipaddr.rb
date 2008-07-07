@@ -483,7 +483,7 @@ class IPAddr
     if prefixlen
       mask!(prefixlen)
     else
-      @mask_addr = (family == Socket::AF_INET) ? IN4MASK : IN6MASK
+      @mask_addr = (@family == Socket::AF_INET) ? IN4MASK : IN6MASK
     end
   end
 
