@@ -252,6 +252,7 @@ VALUE rb_file_directory_p _((VALUE,VALUE));
 NORETURN(void rb_memerror __((void)));
 int ruby_stack_check _((void));
 int ruby_stack_length _((VALUE**));
+int rb_during_gc _((void));
 char *rb_source_filename _((const char*));
 void rb_gc_mark_locations _((VALUE*, VALUE*));
 void rb_mark_tbl _((struct st_table*));
