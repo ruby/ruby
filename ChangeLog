@@ -1,3 +1,7 @@
+Tue Jul  8 07:59:40 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (Next): use rb_enc_precise_mbclen.
+
 Tue Jul  8 02:27:23 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c: preserve encoding of strings in glob and fnmatch.

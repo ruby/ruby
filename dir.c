@@ -80,8 +80,8 @@ char *strchr(char*,char);
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
 
-# define Next(p, enc) (rb_enc_right_char_head(p, p+1, enc))
-# define Inc(p, enc) ((p) = Next(p, enc))
+# define Next(p, e, enc) (p + rb_enc_precise_mbclen(p, e, enc))
+# define Inc(p, e, enc) ((p) = Next(p, e, enc))
 
 static int
 char_casecmp(const char *p1, const char *p2, rb_encoding *enc, const int nocase)
@@ -110,6 +110,7 @@ bracket(
     int flags,
     rb_encoding *enc)
 {
+    const char *pend = p + strlen(p);
     const int nocase = flags & FNM_CASEFOLD;
     const int escape = !(flags & FNM_NOESCAPE);
 
@@ -126,14 +127,14 @@ bracket(
 	    t1++;
 	if (!*t1)
 	    return NULL;
-	p = Next(t1, enc);
+	p = Next(t1, pend, enc);
 	if (p[0] == '-' && p[1] != ']') {
 	    const char *t2 = p + 1;
 	    if (escape && *t2 == '\\')
 		t2++;
 	    if (!*t2)
 		return NULL;
-	    p = Next(t2, enc);
+	    p = Next(t2, pend, enc);
 	    if (!ok && char_casecmp(t1, s, enc, nocase) <= 0 && char_casecmp(s, t2, enc, nocase) <= 0)
 		ok = 1;
 	}
@@ -170,7 +171,9 @@ fnmatch_helper(
     const char *stmp = 0;
 
     const char *p = *pcur;
+    const char *pend = p + strlen(p);
     const char *s = *scur;
+    const char *send = s + strlen(s);
 
     if (period && *s == '.' && *UNESCAPE(p) != '.') /* leading period */
 	RETURN(FNM_NOMATCH);
@@ -193,7 +196,7 @@ fnmatch_helper(
 	    if (ISEND(s))
 		RETURN(FNM_NOMATCH);
 	    p++;
-	    Inc(s, enc);
+	    Inc(s, send, enc);
 	    continue;
 
 	  case '[': {
@@ -202,7 +205,7 @@ fnmatch_helper(
 		RETURN(FNM_NOMATCH);
 	    if ((t = bracket(p + 1, s, flags, enc)) != 0) {
 		p = t;
-		Inc(s, enc);
+		Inc(s, send, enc);
 		continue;
 	    }
 	    goto failed;
@@ -217,14 +220,14 @@ fnmatch_helper(
 	    goto failed;
 	if (char_casecmp(p, s, enc, nocase) != 0)
 	    goto failed;
-	Inc(p, enc);
-	Inc(s, enc);
+	Inc(p, pend, enc);
+	Inc(s, send, enc);
 	continue;
 
       failed: /* try next '*' position */
 	if (ptmp && stmp) {
 	    p = ptmp;
-	    Inc(stmp, enc); /* !ISEND(*stmp) */
+	    Inc(stmp, send, enc); /* !ISEND(*stmp) */
 	    s = stmp;
 	    continue;
 	}
@@ -240,6 +243,7 @@ fnmatch(
 {
     const char *p = RSTRING_PTR(pattern); /* pattern */
     const char *s = RSTRING_PTR(string); /* string */
+    const char *send = RSTRING_END(string);
     const int period = !(flags & FNM_DOTMATCH);
     const int pathname = flags & FNM_PATHNAME;
     rb_encoding *enc = rb_enc_get(pattern);
@@ -255,7 +259,7 @@ fnmatch(
 		stmp = s;
 	    }
 	    if (fnmatch_helper(&p, &s, flags, enc) == 0) {
-		while (*s && *s != '/') Inc(s, enc);
+		while (*s && *s != '/') Inc(s, send, enc);
 		if (*p && *s) {
 		    p++;
 		    s++;
@@ -266,7 +270,7 @@ fnmatch(
 	    }
 	    /* failed : try next recursion */
 	    if (ptmp && stmp && !(period && *stmp == '.')) {
-		while (*stmp && *stmp != '/') Inc(stmp, enc);
+		while (*stmp && *stmp != '/') Inc(stmp, send, enc);
 		if (*stmp) {
 		    p = ptmp;
 		    stmp++;
@@ -979,6 +983,7 @@ has_magic(const char *s, int flags, rb_encoding *enc)
     const int nocase = flags & FNM_CASEFOLD;
 
     register const char *p = s;
+    register const char *pend = p + strlen(p);
     register char c;
 
     while ((c = *p++) != 0) {
@@ -998,7 +1003,7 @@ has_magic(const char *s, int flags, rb_encoding *enc)
 		return 1;
 	}
 
-	p = Next(p-1, enc);
+	p = Next(p-1, pend, enc);
     }
 
     return 0;
@@ -1011,6 +1016,7 @@ find_dirsep(const char *s, int flags, rb_encoding *enc)
     const int escape = !(flags & FNM_NOESCAPE);
 
     register const char *p = s;
+    register const char *pend = p + strlen(p);
     register char c;
     int open = 0;
 
@@ -1034,7 +1040,7 @@ find_dirsep(const char *s, int flags, rb_encoding *enc)
 	    continue;
 	}
 
-	p = Next(p-1, enc);
+	p = Next(p-1, pend, enc);
     }
 
     return (char *)p-1;
@@ -1044,6 +1050,7 @@ find_dirsep(const char *s, int flags, rb_encoding *enc)
 static void
 remove_backslashes(char *p, rb_encoding *enc)
 {
+    register const char *pend = p + strlen(p);
     char *t = p;
     char *s = p;
 
@@ -1055,7 +1062,7 @@ remove_backslashes(char *p, rb_encoding *enc)
 	    s = ++p;
 	    if (!*p) break;
 	}
-	Inc(p, enc);
+	Inc(p, pend, enc);
     }
 
     while (*p++);
@@ -1456,6 +1463,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg, r
 {
     const int escape = !(flags & FNM_NOESCAPE);
     const char *p = str;
+    const char *pend = p + strlen(p);
     const char *s = p;
     const char *lbrace = 0, *rbrace = 0;
     int nest = 0, status = 0;
@@ -1471,7 +1479,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg, r
 	if (*p == '\\' && escape) {
 	    if (!*++p) break;
 	}
-	Inc(p, enc);
+	Inc(p, pend, enc);
     }
 
     if (lbrace && rbrace) {
@@ -1491,7 +1499,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg, r
 		if (*p == '\\' && escape) {
 		    if (++p == rbrace) break;
 		}
-		Inc(p, enc);
+		Inc(p, pend, enc);
 	    }
 	    memcpy(buf+shift, t, p-t);
 	    strcpy(buf+shift+(p-t), rbrace+1);
