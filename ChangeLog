@@ -1,3 +1,10 @@
+Mon Jul  7 16:21:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP::start): use 'localhost' instead of
+	  'localhost.localdomain'.  [ruby-dev:35333]
+
+	* lib/net/smtp.rb (Net::SMTP::SMTP.start): ditto.
+
 Mon Jul  7 15:02:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_longjmp): duplicate the thrown exception to set backtrace
