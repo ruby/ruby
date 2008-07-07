@@ -1,3 +1,11 @@
+Mon Jul  7 20:39:28 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(Init_win32ole): add
+	  WIN32OLE_TYPE#source_ole_types, WIN32OLE_TYPE#default_ole_types,
+	  WIN32OLE_TYPE#default_event_sources.
+
+	* test/win32ole/test_win32ole_type.rb: ditto.
+
 Mon Jul  7 19:45:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/test_dir.rb (test_chroot_nodir): add Errno::EPERM.
