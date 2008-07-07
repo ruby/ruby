@@ -131,7 +131,8 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_chroot_nodir
-    assert_raise(NotImplementedError, Errno::ENOENT) { Dir.chroot(File.join(@nodir, "")) }
+    assert_raise(NotImplementedError, Errno::ENOENT, Errno::EPERM
+		) { Dir.chroot(File.join(@nodir, "")) }
   end
 
   def test_close
