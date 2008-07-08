@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.2"
+#define WIN32OLE_VERSION "1.2.3"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -501,6 +501,8 @@ static long ole_search_event_at(VALUE ary, VALUE ev);
 static VALUE ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default);
 static void ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams);
 static HRESULT find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo);
+static HRESULT find_coclass(ITypeInfo *pTypeInfo, TYPEATTR *pTypeAttr, ITypeInfo **pTypeInfo2, TYPEATTR **pTypeAttr2);
+static HRESULT find_default_source_from_typeinfo(ITypeInfo *pTypeInfo, TYPEATTR *pTypeAttr, ITypeInfo **ppTypeInfo);
 static HRESULT find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo);
 static void ole_event_free(struct oleeventdata *poleev);
 static VALUE fev_s_allocate(VALUE klass);
@@ -7597,6 +7599,117 @@ find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo)
     return hr;
 }
 
+static HRESULT 
+find_coclass(
+    ITypeInfo *pTypeInfo, 
+    TYPEATTR *pTypeAttr, 
+    ITypeInfo **pCOTypeInfo, 
+    TYPEATTR **pCOTypeAttr)
+{
+    HRESULT hr = E_NOINTERFACE;
+    ITypeLib *pTypeLib;
+    int count;
+    BOOL found = FALSE;
+    ITypeInfo *pTypeInfo2;
+    TYPEATTR *pTypeAttr2;
+    int flags;
+    int i,j;
+    HREFTYPE href;
+    ITypeInfo *pRefTypeInfo;
+    TYPEATTR *pRefTypeAttr;
+
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, NULL);
+    if (FAILED(hr)) {
+	return hr;
+    }
+    count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
+    for (i = 0; i < count && !found; i++) {
+	hr = pTypeLib->lpVtbl->GetTypeInfo(pTypeLib, i, &pTypeInfo2);
+	if (FAILED(hr))
+	    continue;
+	hr = OLE_GET_TYPEATTR(pTypeInfo2, &pTypeAttr2);
+	if (FAILED(hr)) {
+	    OLE_RELEASE(pTypeInfo2);
+	    continue;
+	}
+	if (pTypeAttr2->typekind != TKIND_COCLASS) {
+	    OLE_RELEASE_TYPEATTR(pTypeInfo2, pTypeAttr2);
+	    OLE_RELEASE(pTypeInfo2);
+	    continue;
+	}
+	for (j = 0; j < pTypeAttr2->cImplTypes && !found; j++) {
+	    hr = pTypeInfo2->lpVtbl->GetImplTypeFlags(pTypeInfo2, j, &flags);
+	    if (FAILED(hr))
+		continue;
+	    if (!(flags & IMPLTYPEFLAG_FDEFAULT)) 
+		continue;
+	    hr = pTypeInfo2->lpVtbl->GetRefTypeOfImplType(pTypeInfo2, j, &href);
+	    if (FAILED(hr))
+		continue;
+	    hr = pTypeInfo2->lpVtbl->GetRefTypeInfo(pTypeInfo2, href, &pRefTypeInfo);
+	    if (FAILED(hr)) 
+		continue;
+	    hr = OLE_GET_TYPEATTR(pRefTypeInfo, &pRefTypeAttr);
+	    if (FAILED(hr))  {
+		OLE_RELEASE(pRefTypeInfo);
+		continue;
+	    }
+	    if (IsEqualGUID(&(pTypeAttr->guid), &(pRefTypeAttr->guid))) {
+		found = TRUE;
+	    }
+	}
+	if (!found) {
+	    OLE_RELEASE_TYPEATTR(pTypeInfo2, pTypeAttr2);
+	    OLE_RELEASE(pTypeInfo2);
+	}
+    }
+    OLE_RELEASE(pTypeLib);
+    if (found) {
+	*pCOTypeInfo = pTypeInfo2;
+	*pCOTypeAttr = pTypeAttr2;
+	hr = S_OK;
+    } else {
+	hr = E_NOINTERFACE;
+    }
+    return hr;
+}
+
+static HRESULT
+find_default_source_from_typeinfo(
+    ITypeInfo *pTypeInfo, 
+    TYPEATTR *pTypeAttr, 
+    ITypeInfo **ppTypeInfo)
+{
+    int i = 0;
+    HRESULT hr = E_NOINTERFACE;
+    int flags;
+    HREFTYPE hRefType;
+    /* Enumerate all implemented types of the COCLASS */
+    for (i = 0; i < pTypeAttr->cImplTypes; i++) {
+        hr = pTypeInfo->lpVtbl->GetImplTypeFlags(pTypeInfo, i, &flags);
+        if (FAILED(hr))
+            continue;
+
+        /*
+           looking for the [default] [source]
+           we just hope that it is a dispinterface :-)
+        */
+        if ((flags & IMPLTYPEFLAG_FDEFAULT) &&
+            (flags & IMPLTYPEFLAG_FSOURCE)) {
+
+            hr = pTypeInfo->lpVtbl->GetRefTypeOfImplType(pTypeInfo,
+                                                         i, &hRefType);
+            if (FAILED(hr))
+                continue;
+            hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo,
+                                                   hRefType, ppTypeInfo);
+            if (SUCCEEDED(hr))
+                break;
+        }
+    }
+    return hr;
+}
+
 static HRESULT
 find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
 {
@@ -7606,18 +7719,9 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
 
     IDispatch *pDispatch;
     ITypeInfo *pTypeInfo;
-    ITypeInfo *pTypeInfo2;
-    ITypeInfo *pRefTypeInfo;
-    ITypeLib  *pTypeLib;
+    ITypeInfo *pTypeInfo2 = NULL;
     TYPEATTR *pTypeAttr;
-    TYPEATTR *pTypeAttr2;
-    TYPEATTR *pRefTypeAttr;
-    int i, j;
-    int iFlags;
-    int flags;
-    HREFTYPE hRefType, href;
-    int count;
-    BOOL found = FALSE;
+    TYPEATTR *pTypeAttr2 = NULL;
 
     struct oledata *pole;
 
@@ -7658,99 +7762,18 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
         return hr;
     }
 
-    /*
-     *  if the ole is not COCLASS, then try to find COCLASS which
-     *  has ole as [default] interface.
-     */
-    if (pTypeAttr->typekind != TKIND_COCLASS) {
-        /* 
-         * search coclass
-         */
-        hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, NULL);
-        if (FAILED(hr)) {
-            OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
-            OLE_RELEASE(pTypeInfo);
-            return hr;
-        }
-        count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
-
-        for (i = 0; i < count && !found; i++) {
-             hr = pTypeLib->lpVtbl->GetTypeInfo(pTypeLib, i, &pTypeInfo2);
-             if (FAILED(hr))
-                 continue;
-             hr = OLE_GET_TYPEATTR(pTypeInfo2, &pTypeAttr2);
-             if (FAILED(hr)) {
-                 OLE_RELEASE(pTypeInfo2);
-                 continue;
-             }
-             if (pTypeAttr2->typekind != TKIND_COCLASS) {
-                 OLE_RELEASE_TYPEATTR(pTypeInfo2, pTypeAttr2);
-                 OLE_RELEASE(pTypeInfo2);
-                 continue;
-             }
-             for (j = 0; j < pTypeAttr2->cImplTypes && !found; j++) {
-                 hr = pTypeInfo2->lpVtbl->GetImplTypeFlags(pTypeInfo2, j, &flags);
-                 if (FAILED(hr))
-                     continue;
-                 if (!(flags & IMPLTYPEFLAG_FDEFAULT)) 
-                     continue;
-                 hr = pTypeInfo2->lpVtbl->GetRefTypeOfImplType(pTypeInfo2, j, &href);
-                 if (FAILED(hr))
-                     continue;
-                 hr = pTypeInfo2->lpVtbl->GetRefTypeInfo(pTypeInfo2, href, &pRefTypeInfo);
-                 if (FAILED(hr)) 
-                     continue;
-                 hr = OLE_GET_TYPEATTR(pRefTypeInfo, &pRefTypeAttr);
-                 if (FAILED(hr))  {
-                     OLE_RELEASE(pRefTypeInfo);
-                     continue;
-                 }
-                 if (IsEqualGUID(&(pTypeAttr->guid), &(pRefTypeAttr->guid))) {
-                     found = TRUE;
-                 }
-                 OLE_RELEASE_TYPEATTR(pRefTypeInfo, pRefTypeAttr);
-                 OLE_RELEASE(pRefTypeInfo);
-             }
-             if (!found) {
-                 OLE_RELEASE_TYPEATTR(pTypeInfo2, pTypeAttr2);
-                 OLE_RELEASE(pTypeInfo2);
-             }
-        }
-        if (found) {
-            OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
-            OLE_RELEASE(pTypeInfo);
-            pTypeInfo = pTypeInfo2;
-            pTypeAttr = pTypeAttr2;
-        }
+    *ppTypeInfo = 0;
+    hr = find_default_source_from_typeinfo(pTypeInfo, pTypeAttr, ppTypeInfo);
+    if (!*ppTypeInfo) {
+	hr = find_coclass(pTypeInfo, pTypeAttr, &pTypeInfo2, &pTypeAttr2);
+	if (SUCCEEDED(hr)) {
+	    hr = find_default_source_from_typeinfo(pTypeInfo2, pTypeAttr2, ppTypeInfo);
+	    OLE_RELEASE_TYPEATTR(pTypeInfo2, pTypeAttr2);
+	    OLE_RELEASE(pTypeInfo2);
+	}
     }
-
-    /* Enumerate all implemented types of the COCLASS */
-    for (i = 0; i < pTypeAttr->cImplTypes; i++) {
-        hr = pTypeInfo->lpVtbl->GetImplTypeFlags(pTypeInfo, i, &iFlags);
-        if (FAILED(hr))
-            continue;
-
-        /*
-           looking for the [default] [source]
-           we just hope that it is a dispinterface :-)
-        */
-        if ((iFlags & IMPLTYPEFLAG_FDEFAULT) &&
-            (iFlags & IMPLTYPEFLAG_FSOURCE)) {
-
-            hr = pTypeInfo->lpVtbl->GetRefTypeOfImplType(pTypeInfo,
-                                                         i, &hRefType);
-            if (FAILED(hr))
-                continue;
-            hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo,
-                                                   hRefType, ppTypeInfo);
-            if (SUCCEEDED(hr))
-                break;
-        }
-    }
-
     OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
     OLE_RELEASE(pTypeInfo);
-
     /* Now that would be a bad surprise, if we didn't find it, wouldn't it? */
     if (!*ppTypeInfo) {
         if (SUCCEEDED(hr))
@@ -7799,7 +7822,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     char *pitf;
     HRESULT hr;
     IID iid;
-    ITypeInfo *pTypeInfo;
+    ITypeInfo *pTypeInfo = 0;
     IDispatch *pDispatch;
     IConnectionPointContainer *pContainer;
     IConnectionPoint *pConnectionPoint;

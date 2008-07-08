@@ -1,3 +1,10 @@
+Tue Jul  8 23:02:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (find_default_source): bug fix when
+	  OLE object does not have default source interface.
+
+	* test/win32ole/test_win32ole_event.rb: ditto.
+
 Tue Jul  8 22:56:23 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* thread.c (rb_enable_coverages): hide coverage array by setting 0 to

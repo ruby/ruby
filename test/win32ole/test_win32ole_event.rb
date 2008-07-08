@@ -125,6 +125,16 @@ if defined?(WIN32OLE_EVENT)
       }
     end
 
+    def test_non_exist_event
+      assert_raise(RuntimeError) {
+        ev = WIN32OLE_EVENT.new(@ie, 'XXXX')
+      }
+      dict = WIN32OLE.new('Scripting.Dictionary')
+      assert_raise(RuntimeError) {
+        ev = WIN32OLE_EVENT.new(dict)
+      }
+    end
+
     def handler1
       @event2 = "handler1"
     end
