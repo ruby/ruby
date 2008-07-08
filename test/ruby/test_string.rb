@@ -1221,6 +1221,7 @@ class TestString < Test::Unit::TestCase
 
     assert_equal(S("124"),  S("123").succ)
     assert_equal(S("1000"), S("999").succ)
+    assert_equal(S("2.000"), S("1.999").succ)
 
     assert_equal(S("No.10"), S("No.9").succ)
     assert_equal(S("2000aaa"),  S("1999zzz").succ)

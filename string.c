@@ -2516,11 +2516,12 @@ rb_str_succ(VALUE orig)
 {
     rb_encoding *enc;
     VALUE str;
-    char *sbeg, *s, *e;
+    char *sbeg, *s, *e, *last_alnum = 0;
     int c = -1;
     long l;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
     int carry_pos = 0, carry_len = 1;
+    enum neighbor_char neighbor = NEIGHBOR_FOUND;
 
     str = rb_str_new5(orig, RSTRING_PTR(orig), RSTRING_LEN(orig));
     rb_enc_cr_str_copy_for_substr(str, orig);
@@ -2532,19 +2533,27 @@ rb_str_succ(VALUE orig)
     s = e = sbeg + RSTRING_LEN(str);
 
     while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
-        enum neighbor_char neighbor;
+	if (neighbor == NEIGHBOR_NOT_CHAR && last_alnum) {
+	    if (ISALPHA(*last_alnum) ? ISDIGIT(*s) :
+		ISDIGIT(*last_alnum) ? ISALPHA(*s) : 0) {
+		s = last_alnum;
+		break;
+	    }
+	}
 	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
         neighbor = enc_succ_alnum_char(s, l, enc, carry);
-        if (neighbor == NEIGHBOR_NOT_CHAR) {
-	    if (c == -1) continue;
-            s++;
+        switch (neighbor) {
+	  case NEIGHBOR_NOT_CHAR:
+	    continue;
+	  case NEIGHBOR_FOUND:
+	    return str;
+	  case NEIGHBOR_WRAPPED:
+	    last_alnum = s;
+	    break;
 	}
-        else if (neighbor == NEIGHBOR_FOUND)
-            return str;
         c = 1;
         carry_pos = s - sbeg;
         carry_len = l;
-        if (neighbor == NEIGHBOR_NOT_CHAR) break;
     }
     if (c == -1) {		/* str contains no alnum */
 	s = e;
