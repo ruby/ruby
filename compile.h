@@ -164,11 +164,14 @@ PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 
 #define ADD_TRACE(seq, line, event) \
   do { \
-      if ((event) == RUBY_EVENT_LINE && iseq->coverage && RARRAY_PTR(iseq->coverage)[(line) - 1] == Qnil) { \
+      if ((event) == RUBY_EVENT_LINE && iseq->coverage && \
+	  RARRAY_PTR(iseq->coverage)[(line) - 1] == Qnil) { \
 	  RARRAY_PTR(iseq->coverage)[(line) - 1] = INT2FIX(0); \
 	  ADD_INSN1(seq, line, trace, INT2FIX(RUBY_EVENT_COVERAGE)); \
       } \
-      ADD_INSN1(seq, line, trace, INT2FIX(event)); \
+      if (iseq->compile_data->option->trace_instruction) { \
+	  ADD_INSN1(seq, line, trace, INT2FIX(event)); \
+      } \
   }while(0);
 
 /* add label */

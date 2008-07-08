@@ -1,3 +1,7 @@
+Tue Jul  8 13:38:22 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* compile.h: fix to skip inserting a trace insn.
+
 Tue Jul  8 11:41:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* dir.c: shoudn't use ruby object in globbing, because glob service
