@@ -1,3 +1,9 @@
+Wed Jul  9 01:38:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_succ): alphabets or numerics mutually enclosing
+	  non-alphanumeric characters can carry up.  e.g., "1.999".succ should
+	  be "2.000".
+
 Tue Jul  8 00:22:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_succ): limit carrying in an alphanumeric region if
