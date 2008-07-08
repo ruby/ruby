@@ -1,3 +1,7 @@
+Tue Jul  8 21:45:22 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm.c (rb_vm_mark): mark the last element of special_exceptions.
+
 Tue Jul  8 19:55:40 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (find_default_source): try to
