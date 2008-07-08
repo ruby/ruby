@@ -1,3 +1,18 @@
+Tue Jul  8 22:56:23 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_enable_coverages): hide coverage array by setting 0 to
+	  klass during measurement.
+
+	* parse.y (coverage, yycompile0): ditto.
+
+	* iseq.c (prepare_iseq_build): use rb_hash_lookup instead of
+	  rb_hash_aref.
+
+	* thread.c (rb_coverage_result): restore klass of coverage array
+	  and return it.
+
+	* theaad.c (update_coverage): chcek whether its klass is 0.
+
 Tue Jul  8 22:28:25 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* lib/debug.rb, lib/profile.rb: fix to use RubyVM.
