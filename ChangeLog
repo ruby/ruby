@@ -1,3 +1,9 @@
+Tue Jul  8 13:44:01 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* lib/debug.rb, lib/profile.rb: fix to use RubyVM.
+
+	* lib/rdoc/parsers/parse_c.rb: ditto.
+
 Tue Jul  8 13:38:22 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* compile.h: fix to skip inserting a trace insn.
