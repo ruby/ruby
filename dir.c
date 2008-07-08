@@ -80,7 +80,7 @@ char *strchr(char*,char);
 #define FNM_NOMATCH	1
 #define FNM_ERROR	2
 
-# define Next(p, e, enc) (p + rb_enc_precise_mbclen(p, e, enc))
+# define Next(p, e, enc) (p + rb_enc_mbclen(p, e, enc))
 # define Inc(p, e, enc) ((p) = Next(p, e, enc))
 
 static int

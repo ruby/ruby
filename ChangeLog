@@ -1,3 +1,7 @@
+Tue Jul  8 10:08:40 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (Next): use rb_enc_mbclen. [ruby-dev:35390]
+
 Tue Jul  8 07:59:40 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (Next): use rb_enc_precise_mbclen.
