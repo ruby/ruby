@@ -725,8 +725,8 @@ struct RBignum {
 
 void rb_obj_infect(VALUE,VALUE);
 
-typedef int ruby_glob_func(VALUE,VALUE);
-void rb_glob(const char*,void(*)(VALUE,VALUE),VALUE);
+typedef int ruby_glob_func(const char*,VALUE, void*);
+void rb_glob(const char*,void(*)(const char*,VALUE,void*),VALUE);
 int ruby_glob(const char*,int,ruby_glob_func*,VALUE);
 int ruby_brace_glob(const char*,int,ruby_glob_func*,VALUE);
 

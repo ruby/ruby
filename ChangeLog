@@ -1,3 +1,9 @@
+Tue Jul  8 11:41:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* dir.c: shoudn't use ruby object in globbing, because glob service
+	  routines are called before initializing ruby on some platforms (ex.
+	  windows).
+
 Tue Jul  8 10:08:40 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (Next): use rb_enc_mbclen. [ruby-dev:35390]
