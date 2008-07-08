@@ -30,6 +30,20 @@ if defined?(WIN32OLE_EVENT)
       @event += event
     end
 
+    def test_s_new_without_itf
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event {|*args| default_handler(*args)}
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        WIN32OLE_EVENT.new(@ie)
+        GC.start  
+        WIN32OLE_EVENT.message_loop
+        sleep 0.1
+      end
+      assert_match(/BeforeNavigate/, @event)
+      assert_match(/NavigateComplete/, @event)
+    end
+
     def test_on_event
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
       ev.on_event {|*args| default_handler(*args)}
