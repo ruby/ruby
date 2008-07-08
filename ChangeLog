@@ -1,3 +1,21 @@
+Wed Jul  9 00:12:31 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (rb_set_coverages, rb_reset_coverages): enable and disable
+	  coverage measurement.
+
+	* thread.c (rb_get_coverages): rename and move from vm.c.
+
+	* vm.c (rb_vm_get_coverages): ditto.
+
+	* iseq.c (prepare_iseq_build): ditto.
+
+	* thread.c (clear_coverage): ditto.
+
+	* parse.y (coverage): ditto.
+
+	* ext/coverage/coverage.c: use above functions, add new method
+	  Coverage.start and fix rdoc .
+
 Tue Jul  8 23:02:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (find_default_source): bug fix when

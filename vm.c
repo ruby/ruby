@@ -1909,9 +1909,3 @@ rb_ruby_debug_ptr(void)
 {
     return ruby_vm_debug_ptr(GET_VM());
 }
-
-VALUE
-rb_vm_get_coverages(void)
-{
-    return GET_VM()->coverages;
-}
