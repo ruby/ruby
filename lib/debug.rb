@@ -904,7 +904,7 @@ stdout.printf "Emacs support available.\n\n"
 set_trace_func proc { |event, file, line, id, binding, klass, *rest|
   DEBUGGER__.context.trace_func event, file, line, id, binding, klass
 }
-VM::InstructionSequence.compile_option = {
+RubyVM::InstructionSequence.compile_option = {
   trace_instruction: true
 }
 end

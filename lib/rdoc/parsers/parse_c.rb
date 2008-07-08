@@ -36,7 +36,7 @@ module RDoc
     "rb_cTime"             => "Time",
     "rb_cTrueClass"        => "TrueClass",
     "rb_cStruct"           => "Struct",
-    "rb_cVM"               => "VM",
+    "rb_cRubyVM"           => "RubyVM",
     "rb_eException"        => "Exception",
     "rb_eStandardError"    => "StandardError",
     "rb_eSystemExit"       => "SystemExit",

@@ -1,3 +1,9 @@
+Tue Jul  8 22:28:25 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* lib/debug.rb, lib/profile.rb: fix to use RubyVM.
+
+	* lib/rdoc/parsers/parse_c.rb: ditto.
+
 Tue Jul  8 21:45:22 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm.c (rb_vm_mark): mark the last element of special_exceptions.
@@ -8,12 +14,6 @@ Tue Jul  8 19:55:40 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	  find COCLASS when WIN32OLE object is not COCLASS. 
 
 	* test/win32ole/test_win32ole_event.rb: ditto
-
-Tue Jul  8 13:44:01 2008  Koichi Sasada  <ko1@atdot.net>
-
-	* lib/debug.rb, lib/profile.rb: fix to use RubyVM.
-
-	* lib/rdoc/parsers/parse_c.rb: ditto.
 
 Tue Jul  8 13:38:22 2008  Koichi Sasada  <ko1@atdot.net>
 
