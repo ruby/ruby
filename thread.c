@@ -718,9 +718,47 @@ sleep_forever(rb_thread_t *th, int deadlockable)
 }
 
 static void
+getclockofday(struct timeval *tp)
+{
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
+    struct timespec ts;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+	tp->tv_sec = ts.tv_sec;
+	tp->tv_usec = ts.tv_nsec / 1000;
+    } else
+#endif
+    {
+        gettimeofday(tp, NULL);
+    }
+}
+
+static void
 sleep_timeval(rb_thread_t *th, struct timeval tv)
 {
-    native_sleep(th, &tv, 0);
+    struct timeval to, tvn;
+
+    getclockofday(&to);
+    to.tv_sec += tv.tv_sec;
+    if ((to.tv_usec += tv.tv_usec) >= 1000000) {
+	to.tv_sec++;
+	to.tv_usec -= 1000000;
+    }
+
+    for (;;) {
+	native_sleep(th, &tv, 0);
+	getclockofday(&tvn);
+	if (to.tv_sec < tvn.tv_sec) break;
+	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
+	thread_debug("sleep_timeval: %ld.%.6ld > %ld.%.6ld\n",
+		     (long)to.tv_sec, to.tv_usec,
+		     (long)tvn.tv_sec, tvn.tv_usec);
+	tv.tv_sec = to.tv_sec - tvn.tv_sec;
+	if ((tv.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
+	    --tv.tv_sec;
+	    tv.tv_usec += 1000000;
+	}
+    }
 }
 
 void

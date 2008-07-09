@@ -496,7 +496,6 @@ static void
 native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 {
     int prev_status = th->status;
-    int retry = 0;
     struct timespec ts;
     struct timeval tvn;
 
@@ -520,7 +519,6 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
     }
 
     thread_debug("native_sleep %ld\n", tv ? tv->tv_sec : -1);
-  sleep_again:
     GVL_UNLOCK_BEGIN();
     {
 	pthread_mutex_lock(&th->interrupt_lock);
@@ -532,7 +530,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
 	else {
-	    if (tv == 0 || (!retry && ts.tv_sec < tvn.tv_sec /* overflow */)) {
+	    if (tv == 0 || ts.tv_sec < tvn.tv_sec /* overflow */ ) {
 		int r;
 		thread_debug("native_sleep: pthread_cond_wait start\n");
 		r = pthread_cond_wait(&th->native_thread_data.sleep_cond,
@@ -542,7 +540,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 	    }
 	    else {
 		int r;
-		thread_debug("native_sleep: pthread_cond_timedwait start (%ld.%.9ld)\n",
+		thread_debug("native_sleep: pthread_cond_timedwait start (%ld, %ld)\n",
 			     (unsigned long)ts.tv_sec, ts.tv_nsec);
 		r = pthread_cond_timedwait(&th->native_thread_data.sleep_cond,
 					   &th->interrupt_lock, &ts);
@@ -560,17 +558,6 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
     th->status = prev_status;
     if (!tv && deadlockable) th->vm->sleeper--;
     RUBY_VM_CHECK_INTS();
-    if (tv) {
-	gettimeofday(&tvn, NULL);
-	if (ts.tv_sec > tvn.tv_sec ||
-	    (ts.tv_sec == tvn.tv_sec && ts.tv_nsec > tvn.tv_usec * 1000)) {
-	    thread_debug("native_sleep: %ld.%.9ld > %ld.%.6ld\n",
-			 (long)ts.tv_sec, ts.tv_nsec,
-			 (long)tvn.tv_sec, tvn.tv_usec);
-	    retry = 1;
-	    goto sleep_again;
-	}
-    }
 
     thread_debug("native_sleep done\n");
 }
