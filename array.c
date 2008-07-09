@@ -2413,10 +2413,12 @@ rb_ary_fill(argc, argv, ary)
 	    if (beg < 0) beg = 0;
 	}
 	len = NIL_P(arg2) ? RARRAY(ary)->len - beg : NUM2LONG(arg2);
-	if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
 	break;
     }
     rb_ary_modify(ary);
+    if (len < 0) {
+        return ary;
+    }
     if (beg >= ARY_MAX_SIZE || len > ARY_MAX_SIZE - beg) {
 	rb_raise(rb_eArgError, "argument too big");
     }

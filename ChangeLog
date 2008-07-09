@@ -1,3 +1,8 @@
+Wed Jul  9 20:58:16 2008  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_fill): don't raise even if length is negative.
+	  [ruby-core:17483], [ruby-core:17661]
+
 Wed Jul  9 01:38:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_succ): alphabets or numerics mutually enclosing
