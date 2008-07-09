@@ -34,7 +34,7 @@ module_function
     total = Process.times[0] - @@start
     if total == 0 then total = 0.01 end
     data = @@map.values
-    data = data.sort_by{|x| x[2]}
+    data = data.sort_by{|x| -x[2]}
     sum = 0
     f.printf "  %%   cumulative   self              self     total\n"
     f.printf " time   seconds   seconds    calls  ms/call  ms/call  name\n"

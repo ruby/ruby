@@ -1,3 +1,8 @@
+Wed Jul  9 11:13:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/profiler.rb (Profiler__#print_profile): sort in the descending
+	  order of cumulative time.
+
 Wed Jul  9 11:11:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (struct glob_args, rb_glob_caller, rb_glob2, push_pattern),
