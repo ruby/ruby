@@ -207,9 +207,17 @@ static void
 native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 {
     int prev_status = th->status;
-    DWORD msec;
+    int retry = 0;
+    DWORD msec, ret;
+    struct timeval tvn, limit;
 
     if (tv) {
+	gettimeofday(&limit, NULL);
+	limit.tv_sec += tv->tv_sec;
+	if ((limit.tv_usec += tv->tv_usec) >= 1000000) {
+	    limit.tv_sec += limit.tv_usec / 1000000;
+	    limit.tv_usec %= 1000000;
+	}
 	msec = tv->tv_sec * 1000 + tv->tv_usec / 1000;
     }
     else {
@@ -225,10 +233,9 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
 	th->status = THREAD_STOPPED;
     }
 
+  sleep_again:
     GVL_UNLOCK_BEGIN();
     {
-	DWORD ret;
-
 	native_mutex_lock(&th->interrupt_lock);
 	th->unblock.func = ubf_handle;
 	th->unblock.arg = th;
@@ -252,6 +259,17 @@ native_sleep(rb_thread_t *th, struct timeval *tv, int deadlockable)
     th->status = prev_status;
     if (!tv && deadlockable) th->vm->sleeper--;
     RUBY_VM_CHECK_INTS();
+    if (tv) {
+	gettimeofday(&tvn, NULL);
+	if (limit.tv_sec > tvn.tv_sec ||
+	    (limit.tv_sec == tvn.tv_sec && limit.tv_usec > tvn.tv_usec)) {
+	    thread_debug("native_sleep: %ld.%.6ld > %ld.%.6ld\n",
+			 (long)limit.tv_sec, limit.tv_usec,
+			 (long)tvn.tv_sec, tvn.tv_usec);
+	    retry = 1;
+	    goto sleep_again;
+	}
+    }
 }
 
 static int
