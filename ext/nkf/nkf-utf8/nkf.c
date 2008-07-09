@@ -6086,8 +6086,8 @@ options(unsigned char *cp)
 		    input_endian = ENDIAN_BIG;
 		}
 		enc_idx = enc_idx == UTF_16
-		    ? (output_endian == ENDIAN_LITTLE ? UTF_16LE : UTF_16BE)
-		    : (output_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
+		    ? (input_endian == ENDIAN_LITTLE ? UTF_16LE : UTF_16BE)
+		    : (input_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
 		input_encoding = nkf_enc_from_index(enc_idx);
 	    }
 	    continue;
