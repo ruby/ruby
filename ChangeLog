@@ -1,6 +1,6 @@
 Wed Jul  9 22:41:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* thread.c (sleep_forever): wait until timed out.  [ruby-core:17270]
+	* thread.c (sleep_timeval): wait until timed out.  [ruby-core:17270]
 
 Wed Jul  9 20:58:16 2008  Tanaka Akira  <akr@fsij.org>
 
