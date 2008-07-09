@@ -167,7 +167,7 @@ static void timer_thread_function(void *);
 
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
-  printf("%p - %s", pthread_self(), buf); \
+  printf("%#"PRIxVALUE" - %s", (VALUE)pthread_self(), buf); \
   fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 

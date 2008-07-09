@@ -693,7 +693,8 @@ rb_thread_create_timer_thread(void)
 
 	pthread_attr_init(&attr);
 #ifdef PTHREAD_STACK_MIN
-	pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN);
+	pthread_attr_setstacksize(&attr,
+				  PTHREAD_STACK_MIN + (THREAD_DEBUG ? BUFSIZ : 0));
 #endif
 	err = pthread_create(&timer_thread_id, &attr, thread_timer, GET_VM());
 	if (err != 0) {

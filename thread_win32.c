@@ -555,7 +555,8 @@ void
 rb_thread_create_timer_thread(void)
 {
     if (timer_thread_id == 0) {
-	timer_thread_id = w32_create_thread(1024, timer_thread_func, GET_VM());
+	timer_thread_id = w32_create_thread(1024 + (THREAD_DEBUG ? BUFSIZ : 0),
+					    timer_thread_func, GET_VM());
 	w32_resume_thread(timer_thread_id);
     }
 }

@@ -1,3 +1,8 @@
+Wed Jul  9 18:17:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_{pthread,win32}.c (rb_thread_create_timer_thread): needs more
+	  stack for debug.
+
 Wed Jul  9 11:13:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/profiler.rb (Profiler__#print_profile): sort in the descending
