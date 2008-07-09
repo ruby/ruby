@@ -121,7 +121,17 @@ static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_call
 } while(0)
 
 #if THREAD_DEBUG
+#ifdef HAVE_VA_ARGS_MACRO
+void rb_thread_debug(const char *file, int line, const char *fmt, ...);
+#define thread_debug(fmt, ...) rb_thread_debug(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define POSITION_FORMAT "%s:%d:"
+#define POSITION_ARGS ,file, line
+#else
 void rb_thread_debug(const char *fmt, ...);
+#define thread_debug rb_thread_debug
+#define POSITION_FORMAT
+#define POSITION_ARGS
+#endif
 
 # if THREAD_DEBUG < 0
 static int rb_thread_debug_enabled;
@@ -141,7 +151,6 @@ rb_thread_s_debug_set(VALUE self, VALUE val)
 # else
 # define rb_thread_debug_enabled THREAD_DEBUG
 # endif
-#define thread_debug rb_thread_debug
 #else
 #define thread_debug if(0)printf
 #endif
@@ -158,7 +167,7 @@ static void timer_thread_function(void *);
 
 #define DEBUG_OUT() \
   WaitForSingleObject(&debug_mutex, INFINITE); \
-  printf("%p - %s", GetCurrentThreadId(), buf); \
+  printf(POSITION_FORMAT"%p - %s" POSITION_ARGS, GetCurrentThreadId(), buf); \
   fflush(stdout); \
   ReleaseMutex(&debug_mutex);
 
@@ -167,7 +176,7 @@ static void timer_thread_function(void *);
 
 #define DEBUG_OUT() \
   pthread_mutex_lock(&debug_mutex); \
-  printf("%#"PRIxVALUE" - %s", (VALUE)pthread_self(), buf); \
+  printf(POSITION_FORMAT"%#"PRIxVALUE" - %s" POSITION_ARGS, (VALUE)pthread_self(), buf); \
   fflush(stdout); \
   pthread_mutex_unlock(&debug_mutex);
 
@@ -180,7 +189,11 @@ static int debug_mutex_initialized = 1;
 static rb_thread_lock_t debug_mutex;
 
 void
-rb_thread_debug(const char *fmt, ...)
+rb_thread_debug(
+#ifdef HAVE_VA_ARGS_MACRO
+    const char *file, int line,
+#endif
+    const char *fmt, ...)
 {
     va_list args;
     char buf[BUFSIZ];

@@ -395,6 +395,15 @@ if test "$rb_cv_stdarg" = yes; then
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 fi
 
+AC_CACHE_CHECK(for variable length macro, rb_cv_va_args_macro,
+  [AC_TRY_COMPILE([@%:@define FOO(a, ...) foo(a, @%:@@%:@__VA_ARGS__)],
+  [FOO(1);FOO(1,2);FOO(1,2,3);],
+  rb_cv_va_args_macro=yes,
+  rb_cv_va_args_macro=no)])
+if test "$rb_cv_va_args_macro" = yes; then
+  AC_DEFINE(HAVE_VA_ARGS_MACRO)
+fi
+
 AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl
   [AS_VAR_PUSHDEF([attrib],[$2])], dnl
