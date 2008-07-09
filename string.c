@@ -1401,7 +1401,7 @@ rb_str_succ(orig)
     VALUE orig;
 {
     VALUE str;
-    char *sbeg, *s, *last_alnum = 0;
+    char *sbeg, *s;
     int c = -1;
     long n = 0;
 
@@ -1413,15 +1413,6 @@ rb_str_succ(orig)
 
     while (sbeg <= s) {
 	if (ISALNUM(*s)) {
-	    if (last_alnum && last_alnum > s + 1) {
-		if (ISALPHA(*last_alnum) ? ISDIGIT(*s) :
-		    ISDIGIT(*last_alnum) ? ISALPHA(*s) : 0) {
-		    s = last_alnum;
-		    n = s - sbeg;
-		    break;
-		}
-	    }
-	    last_alnum = s;
 	    if ((c = succ_char(s)) == 0) break;
 	    n = s - sbeg;
 	}
@@ -1434,9 +1425,8 @@ rb_str_succ(orig)
 	    if ((*s += 1) != 0) break;
 	    s--;
 	}
-	c = 0;
     }
-    if (s < sbeg || c > 0) {
+    if (s < sbeg) {
 	RESIZE_CAPA(str, RSTRING(str)->len + 1);
 	s = RSTRING(str)->ptr + n;
 	memmove(s+1, s, RSTRING(str)->len - n);

@@ -1,3 +1,7 @@
+Wed Jul  9 22:11:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_succ): reverted previous changes.  [ruby-dev:35389]
+
 Wed Jul  9 20:58:16 2008  Tanaka Akira  <akr@fsij.org>
 
 	* array.c (rb_ary_fill): don't raise even if length is negative.
