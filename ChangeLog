@@ -1,6 +1,7 @@
-Wed Jul  9 20:35:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul  9 20:36:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_{pthread,win32}.c (native_sleep): wait until timed out.
+	  [ruby-core:17270]
 
 Wed Jul  9 20:18:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
