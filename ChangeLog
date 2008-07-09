@@ -1,3 +1,11 @@
+Wed Jul  9 11:11:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (struct glob_args, rb_glob_caller, rb_glob2, push_pattern),
+	  (glob_brace): make consistent prototypes.
+
+	* dir.c (push_glob): set enc in the caller of rb_glob_caller as well
+	  as rb_glob2.
+
 Wed Jul  9 09:12:11 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (options): use input_endian.
@@ -135,7 +143,7 @@ Sun Jul  6 18:34:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 Sun Jul  6 10:12:21 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/test/unit/collector/objectspace.rb
-	(Test::Unit::Collector::ObjectSpace::NAME): fix a typo.
+	  (Test::Unit::Collector::ObjectSpace::NAME): fix a typo.
 
 Sun Jul  6 00:56:51 2008  Tanaka Akira  <akr@fsij.org>
 

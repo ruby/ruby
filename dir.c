@@ -1181,7 +1181,7 @@ enum answer { YES, NO, UNKNOWN };
 #endif
 
 struct glob_args {
-    void (*func)(const char *, VALUE, rb_encoding *);
+    void (*func)(const char *, VALUE, void *);
     const char *path;
     VALUE value;
     rb_encoding *enc;
@@ -1429,20 +1429,19 @@ ruby_glob(const char *path, int flags, ruby_glob_func *func, VALUE arg)
 }
 
 static int
-rb_glob_caller(const char *path, VALUE a, rb_encoding *enc)
+rb_glob_caller(const char *path, VALUE a, void *enc)
 {
     int status;
     struct glob_args *args = (struct glob_args *)a;
 
     args->path = path;
-    args->enc = enc;
     rb_protect(glob_func_caller, a, &status);
     return status;
 }
 
 static int
 rb_glob2(const char *path, int flags,
-	 void (*func)(const char *, VALUE, rb_encoding *), VALUE arg,
+	 void (*func)(const char *, VALUE, void *), VALUE arg,
 	 rb_encoding* enc)
 {
     struct glob_args args;
@@ -1467,7 +1466,7 @@ rb_glob(const char *path, void (*func)(const char *, VALUE, void *), VALUE arg)
 }
 
 static void
-push_pattern(const char *path, VALUE ary, rb_encoding *enc)
+push_pattern(const char *path, VALUE ary, void *enc)
 {
     VALUE vpath = rb_tainted_str_new2(path);
     rb_enc_associate(vpath, enc);
@@ -1539,7 +1538,7 @@ struct brace_args {
 };
 
 static int
-glob_brace(const char *path, VALUE val, rb_encoding *enc)
+glob_brace(const char *path, VALUE val, void *enc)
 {
     struct brace_args *arg = (struct brace_args *)val;
 
@@ -1569,11 +1568,14 @@ static int
 push_glob(VALUE ary, VALUE str, int flags)
 {
     struct glob_args args;
+    rb_encoding *enc = rb_enc_get(str);
 
     args.func = push_pattern;
     args.value = ary;
+    args.enc = enc;
+
     return ruby_brace_glob0(RSTRING_PTR(str), flags | GLOB_VERBOSE,
-			    rb_glob_caller, (VALUE)&args, rb_enc_get(str));
+			    rb_glob_caller, (VALUE)&args, enc);
 }
 
 static VALUE
