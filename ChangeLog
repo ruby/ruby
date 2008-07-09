@@ -1,3 +1,8 @@
+Thu Jul 10 02:12:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb: support for '\c'. [ruby-talk:263508]
+	  backported from trunk.  [ruby-talk:307631]
+
 Wed Jul  9 22:11:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_succ): reverted previous changes.  [ruby-dev:35389]
