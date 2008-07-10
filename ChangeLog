@@ -1,3 +1,8 @@
+Thu Jul 10 12:09:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_wait_for): wait until timed out only when
+	  sleeping with timeout.
+
 Wed Jul  9 22:41:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (sleep_timeval): wait until timed out.  [ruby-core:17270]
