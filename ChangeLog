@@ -1,3 +1,8 @@
+Thu Jul 10 18:35:07 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ruby.c: Mac OS X needs origargc times of '\0' in
+	  origargv. [ruby-dev:35308]
+
 Thu Jul 10 13:51:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (POSFIXABLE): use FIXNUM_MAX+1 instead of
