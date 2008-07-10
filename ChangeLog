@@ -1,3 +1,8 @@
+Thu Jul 10 18:46:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): fix for file name with spaces.
+	  [ruby-talk:307404]
+
 Thu Jul 10 18:42:37 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/erb.rb (PercentScanner#scan): fix %% line bug. [ruby-core:17491]
