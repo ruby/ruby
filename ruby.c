@@ -1039,6 +1039,39 @@ set_arg0space()
 #define set_arg0space() ((void)0)
 #endif
 
+static int
+get_arglen(int argc, char **argv)
+{
+    char *s = argv[0];
+    int i;
+
+    if (!argc) return 0;
+    s += strlen(s);
+    /* See if all the arguments are contiguous in memory */
+    for (i = 1; i < argc; i++) {
+	if (argv[i] == s + 1) {
+	    s++;
+	    s += strlen(s);	/* this one is ok too */
+	}
+	else {
+	    break;
+	}
+    }
+#if defined(USE_ENVSPACE_FOR_ARG0)
+    if (environ && (s == environ[0])) {
+	s += strlen(s);
+	for (i = 1; environ[i]; i++) {
+	    if (environ[i] == s + 1) {
+		s++;
+		s += strlen(s);	/* this one is ok too */
+	    }
+	}
+	ruby_setenv("", NULL); /* duplicate environ vars */
+    }
+#endif
+    return s - argv[0];
+}
+
 static void
 set_arg0(val, id)
     VALUE val;
@@ -1047,8 +1080,9 @@ set_arg0(val, id)
     VALUE progname;
     char *s;
     long i;
+    int j;
 #if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
-    static int len;
+    static int len = 0;
 #endif
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
@@ -1075,27 +1109,7 @@ set_arg0(val, id)
     progname = rb_tainted_str_new(s, i);
 #else
     if (len == 0) {
-	char *s = origargv[0];
-	int i;
-
-	s += strlen(s);
-	/* See if all the arguments are contiguous in memory */
-	for (i = 1; i < origargc; i++) {
-	    if (origargv[i] == s + 1) {
-		s++;
-		s += strlen(s);	/* this one is ok too */
-	    }
-	    else {
-		break;
-	    }
-	}
-#if defined(USE_ENVSPACE_FOR_ARG0)
-	if (s + 1 == envspace.begin) {
-	    s = envspace.end;
-	    ruby_setenv("", NULL); /* duplicate environ vars */
-	}
-#endif
-	len = s - origargv[0];
+	len = get_arglen(origargc, origargv);
     }
 
     if (i >= len) {
@@ -1105,8 +1119,10 @@ set_arg0(val, id)
     s = origargv[0] + i;
     *s = '\0';
     if (++i < len) memset(s + 1, ' ', len - i);
-    for (i = 1; i < origargc; i++)
-	origargv[i] = s;
+    for (i = len-1, j = origargc-1; j > 0 && i >= 0; --i, --j) {
+	origargv[j] = origargv[0] + i;
+	*origargv[j] = '\0';
+    }
     progname = rb_tainted_str_new2(origargv[0]);
 #endif
     rb_progname = rb_obj_freeze(progname);
