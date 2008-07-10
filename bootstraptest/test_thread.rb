@@ -360,4 +360,4 @@ assert_equal 'ok', %q{
   t = Thread.new {`echo`}
   t.join
   $? ? :ng : :ok
-}
+}, '[ruby-dev:35414]'
