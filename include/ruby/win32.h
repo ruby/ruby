@@ -134,7 +134,7 @@ extern DWORD rb_w32_osid(void);
 #define utime(_p, _t)		rb_w32_utime(_p, _t)
 #define lseek(_f, _o, _w)	_lseeki64(_f, _o, _w)
 
-#define pipe(p)			_pipe(p, 65536L, 0)
+#define pipe(p)			_pipe(p, 65536L, _O_NOINHERIT)
 #define close(h)		rb_w32_close(h)
 #define fclose(f)		rb_w32_fclose(f)
 #define read(f, b, s)		rb_w32_read(f, b, s)

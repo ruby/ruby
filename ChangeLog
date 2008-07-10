@@ -1,3 +1,8 @@
+Fri Jul 11 05:07:46 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/win32.h (pipe): prohibit inheritance.
+	  fixed: [ruby-dev:35421]
+
 Fri Jul 11 00:56:46 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (thread_create_core): fix GC problem.
