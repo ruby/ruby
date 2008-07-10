@@ -1,3 +1,7 @@
+Thu Jul 10 12:41:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_wait_for): fixed variable name.
+
 Thu Jul 10 12:09:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (rb_thread_t), vm.c (rb_thread_mark), process.c

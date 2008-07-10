@@ -792,8 +792,8 @@ rb_thread_wait_for(struct timeval time)
     struct timeval to, tvn;
 
     getclockofday(&to);
-    to.tv_sec += tv.tv_sec;
-    if ((to.tv_usec += tv.tv_usec) >= 1000000) {
+    to.tv_sec += time.tv_sec;
+    if ((to.tv_usec += time.tv_usec) >= 1000000) {
 	to.tv_sec++;
 	to.tv_usec -= 1000000;
     }
@@ -806,10 +806,10 @@ rb_thread_wait_for(struct timeval time)
 	thread_debug("sleep_timeval: %ld.%.6ld > %ld.%.6ld\n",
 		     (long)to.tv_sec, to.tv_usec,
 		     (long)tvn.tv_sec, tvn.tv_usec);
-	tv.tv_sec = to.tv_sec - tvn.tv_sec;
-	if ((tv.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
-	    --tv.tv_sec;
-	    tv.tv_usec += 1000000;
+	time.tv_sec = to.tv_sec - tvn.tv_sec;
+	if ((time.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
+	    --time.tv_sec;
+	    time.tv_usec += 1000000;
 	}
     }
 }
