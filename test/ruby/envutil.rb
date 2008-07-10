@@ -74,11 +74,11 @@ module Test
       def assert_normal_exit(testsrc, message = '')
         in_c, in_p = IO.pipe
         out_p, out_c = IO.pipe
-        in_p.write testsrc
-        in_p.close
         pid = spawn(EnvUtil.rubybin, '-W0', STDIN=>in_c, STDOUT=>out_c, STDERR=>out_c)
         in_c.close
         out_c.close
+        in_p.write testsrc
+        in_p.close
         msg = out_p.read
         out_p.close
         Process.wait pid

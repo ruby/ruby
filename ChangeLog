@@ -1,3 +1,6 @@
+Thu Jul 10 19:38:35 2008  wanabe  <s.wanabe@gmail.com>
+	* test/ruby/envutil.rb (assert_normal_exit): r17993 revert.
+
 Thu Jul 10 18:29:41 2008  wanabe  <s.wanabe@gmail.com>
 	* test/ruby/envutil.rb (assert_normal_exit): finish writing script
 	  before spawn("ruby") to avoid blocking in win32.
