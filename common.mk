@@ -511,7 +511,7 @@ proc.$(OBJEXT): {$(VPATH)}proc.c {$(VPATH)}eval_intern.h \
   {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h {$(VPATH)}dln.h {$(VPATH)}gc.h
 process.$(OBJEXT): {$(VPATH)}process.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
-  {$(VPATH)}signal.h {$(VPATH)}vm_core.h \
+  {$(VPATH)}signal.h {$(VPATH)}vm_core.h {$(VPATH)}util.h \
   {$(VPATH)}node.h {$(VPATH)}debug.h {$(VPATH)}vm_opts.h {$(VPATH)}id.h \
   {$(VPATH)}thread_$(THREAD_MODEL).h
 random.$(OBJEXT): {$(VPATH)}random.c $(RUBY_H_INCLUDES) \
