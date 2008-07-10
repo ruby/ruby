@@ -1,3 +1,8 @@
+Thu Jul 10 10:20:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_string.rb (test_succ, test_succ!): reverted stale
+	  tests.  [ruby-core:17704]
+
 Thu Jul 10 02:12:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb: support for '\c'. [ruby-talk:263508]

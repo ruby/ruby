@@ -27,7 +27,6 @@ class TestString < Test::Unit::TestCase
     assert_equal("1000", "999".succ)
     assert_equal("2.000", "1.999".succ)
 
-    assert_equal("No.10", "No.9".succ)
     assert_equal("2000aaa",  "1999zzz".succ)
     assert_equal("AAAAA000", "ZZZZ999".succ)
     assert_equal("*+", "**".succ)
@@ -74,10 +73,6 @@ class TestString < Test::Unit::TestCase
     a = "**"
     assert_equal("*+", a.succ!)
     assert_equal("*+", a)
-
-    a = "No.9"
-    assert_equal("No.10", a.succ!)
-    assert_equal("No.10", a)
 
     assert_equal("aaaaaaaaaaaa", "zzzzzzzzzzz".succ!)
     assert_equal("aaaaaaaaaaaaaaaaaaaaaaaa", "zzzzzzzzzzzzzzzzzzzzzzz".succ!)
