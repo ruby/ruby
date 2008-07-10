@@ -1,3 +1,8 @@
+Thu Jul 10 22:06:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pstore.rb (PStore#transaction): return the result from the
+	  block.  [ruby-core:17718]
+
 Thu Jul 10 21:15:49 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_typelib.rb: add some illegal argument

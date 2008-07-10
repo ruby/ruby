@@ -345,9 +345,9 @@ class PStore
         end
       end
     end
+    value
   ensure
     @transaction = false
-    value
   end
   
   private
