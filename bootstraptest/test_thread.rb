@@ -355,3 +355,9 @@ assert_equal 'ok', %q{
   sleep 1; m.lock
   :ok
 }
+
+assert_equal 'ok', %q{
+  t = Thread.new {`echo`}
+  t.join
+  $? ? :ng : :ok
+}

@@ -305,7 +305,6 @@ struct rb_vm_struct
 
     st_table *living_threads;
     VALUE thgroup_default;
-    VALUE last_status; /* $? */
 
     int running;
     int thread_abort_on_exception;
@@ -408,6 +407,7 @@ struct rb_thread_struct
     rb_control_frame_t *cfp;
     int safe_level;
     int raised_flag;
+    VALUE last_status; /* $? */
     
     /* passing state */
     int state;

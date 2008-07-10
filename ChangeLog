@@ -1,3 +1,11 @@
+Thu Jul 10 12:09:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_thread_t), vm.c (rb_thread_mark), process.c
+	  (rb_last_status_get, rb_last_status_set, rb_last_status_clear):
+	  moved last_status from rb_vm_t.  [ruby-dev:35414]
+
+	* vm.c (th_init2): initialize last_status with nil.
+
 Thu Jul 10 12:09:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_wait_for): wait until timed out only when

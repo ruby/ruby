@@ -218,23 +218,22 @@ static VALUE rb_cProcessStatus;
 VALUE
 rb_last_status_get(void)
 {
-    return GET_VM()->last_status;
+    return GET_THREAD()->last_status;
 }
 
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
-    rb_vm_t *vm = GET_VM();
-    vm->last_status = rb_obj_alloc(rb_cProcessStatus);
-    rb_iv_set(vm->last_status, "status", INT2FIX(status));
-    rb_iv_set(vm->last_status, "pid", PIDT2NUM(pid));
+    rb_thread_t *th = GET_THREAD();
+    th->last_status = rb_obj_alloc(rb_cProcessStatus);
+    rb_iv_set(th->last_status, "status", INT2FIX(status));
+    rb_iv_set(th->last_status, "pid", PIDT2NUM(pid));
 }
 
 static void
 rb_last_status_clear(void)
 {
-    rb_vm_t *vm = GET_VM();
-    vm->last_status = Qnil;
+    GET_THREAD()->last_status = Qnil;
 }
 
 /*
