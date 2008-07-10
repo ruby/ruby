@@ -1039,7 +1039,7 @@ typedef struct _NtCmdLineElement {
 #define NTSTRING 0x4	// element contains a quoted string
 
 static int
-insert(const char *path, VALUE vinfo)
+insert(const char *path, VALUE vinfo, void *enc)
 {
     NtCmdLineElement *tmpcurr;
     NtCmdLineElement ***tail = (NtCmdLineElement ***)vinfo;
