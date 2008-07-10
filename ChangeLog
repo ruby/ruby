@@ -1,3 +1,11 @@
+Thu Jul 10 13:53:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (POSFIXABLE): use FIXNUM_MAX+1 instead of
+	  FIXNUM_MAX to make it possible to convert to double accurately.
+	  It assumes FLT_RADIX is 2.
+	  fix RubyForge bug #14102.
+	  backported from 1.9.
+
 Mon Jul  7 16:21:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP::start): use 'localhost' instead of

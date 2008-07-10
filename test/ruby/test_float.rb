@@ -110,4 +110,38 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-3.5, (-11.5).remainder(4))
     assert_equal(-3.5, (-11.5).remainder(-4))
   end
+
+  def test_to_i
+    assert_operator(4611686018427387905.0.to_i, :>, 0)
+    assert_operator(4611686018427387904.0.to_i, :>, 0)
+    assert_operator(4611686018427387903.8.to_i, :>, 0)
+    assert_operator(4611686018427387903.5.to_i, :>, 0)
+    assert_operator(4611686018427387903.2.to_i, :>, 0)
+    assert_operator(4611686018427387903.0.to_i, :>, 0)
+    assert_operator(4611686018427387902.0.to_i, :>, 0)
+
+    assert_operator(1073741825.0.to_i, :>, 0)
+    assert_operator(1073741824.0.to_i, :>, 0)
+    assert_operator(1073741823.8.to_i, :>, 0)
+    assert_operator(1073741823.5.to_i, :>, 0)
+    assert_operator(1073741823.2.to_i, :>, 0)
+    assert_operator(1073741823.0.to_i, :>, 0)
+    assert_operator(1073741822.0.to_i, :>, 0)
+
+    assert_operator((-1073741823.0).to_i, :<, 0)
+    assert_operator((-1073741824.0).to_i, :<, 0)
+    assert_operator((-1073741824.2).to_i, :<, 0)
+    assert_operator((-1073741824.5).to_i, :<, 0)
+    assert_operator((-1073741824.8).to_i, :<, 0)
+    assert_operator((-1073741825.0).to_i, :<, 0)
+    assert_operator((-1073741826.0).to_i, :<, 0)
+
+    assert_operator((-4611686018427387903.0).to_i, :<, 0)
+    assert_operator((-4611686018427387904.0).to_i, :<, 0)
+    assert_operator((-4611686018427387904.2).to_i, :<, 0)
+    assert_operator((-4611686018427387904.5).to_i, :<, 0)
+    assert_operator((-4611686018427387904.8).to_i, :<, 0)
+    assert_operator((-4611686018427387905.0).to_i, :<, 0)
+    assert_operator((-4611686018427387906.0).to_i, :<, 0)
+  end
 end
