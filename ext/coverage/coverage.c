@@ -30,6 +30,7 @@ rb_coverage_start(VALUE klass)
 	RBASIC(coverages)->klass = 0;
 	rb_set_coverages(coverages);
     }
+    return Qnil;
 }
 
 static int
