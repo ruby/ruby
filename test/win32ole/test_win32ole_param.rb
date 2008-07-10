@@ -29,6 +29,13 @@ if defined?(WIN32OLE_PARAM)
       @param_overwritefiles = m_copyfile.params[2]
     end
 
+    def test_s_new
+      assert_raise(ArgumentError) {
+        WIN32OLE_PARAM.new("hoge")
+      }
+    end
+
+
     def test_name
       assert_equal('URL', @param_url.name)
       assert_equal('Flags', @param_flags.name)

@@ -22,6 +22,12 @@ if defined?(WIN32OLE_TYPE)
       assert_raise(ArgumentError) {
         WIN32OLE_TYPE.new("foo")
       }
+      assert_raise(TypeError) {
+        WIN32OLE_TYPE.new(1, 2)
+      }
+      assert_raise(TypeError) {
+        WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", 1)
+      }
       assert_raise(WIN32OLERuntimeError) {
         WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "foo")
       }

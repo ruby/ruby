@@ -18,6 +18,11 @@ if defined?(WIN32OLE_TYPELIB)
       assert_raise(ArgumentError) {
         WIN32OLE_TYPELIB.new(1,2,3,4)
       }
+
+      assert_raise(TypeError) {
+        WIN32OLE_TYPELIB.new(100)
+      }
+
       tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
       assert_instance_of(WIN32OLE_TYPELIB, tlib)
 

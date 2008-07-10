@@ -33,6 +33,9 @@ if defined?(WIN32OLE_METHOD)
       assert_raise(WIN32OLERuntimeError) {
         method = WIN32OLE_METHOD.new(ole_type, "NonExistMethod")
       }
+      assert_raise(TypeError) {
+        method = WIN32OLE_METHOD.new(ole_type, 1)
+      }
       method  = WIN32OLE_METHOD.new(ole_type, "Open")
       assert_instance_of(WIN32OLE_METHOD, method)
       method  = WIN32OLE_METHOD.new(ole_type, "open")

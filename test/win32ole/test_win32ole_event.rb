@@ -30,6 +30,12 @@ if defined?(WIN32OLE_EVENT)
       @event += event
     end
 
+    def test_s_new
+      assert_raise(TypeError) {
+        ev = WIN32OLE_EVENT.new("A")
+      }
+    end
+
     def test_s_new_without_itf
       ev = WIN32OLE_EVENT.new(@ie)
       ev.on_event {|*args| default_handler(*args)}

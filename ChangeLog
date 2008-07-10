@@ -1,3 +1,16 @@
+Thu Jul 10 21:15:49 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_typelib.rb: add some illegal argument
+	  test.
+	
+	* test/win32ole/test_win32ole_type.rb: ditto.
+
+	* test/win32ole/test_win32ole_event.rb: ditto.
+
+	* test/win32ole/test_win32ole_param.rb: ditto. 
+	
+	* test/win32ole/test_win32ole_method.rb: ditto.
+
 Thu Jul 10 19:38:35 2008  wanabe  <s.wanabe@gmail.com>
 	* test/ruby/envutil.rb (assert_normal_exit): r17993 revert.
 
