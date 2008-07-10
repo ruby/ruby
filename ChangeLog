@@ -1,3 +1,7 @@
+Thu Jul 10 18:39:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/ftp.rb (Net::FTP#sendport): use divmod.  [ruby-core:17557]
+
 Thu Jul 10 18:35:07 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ruby.c: Mac OS X needs origargc times of '\0' in
