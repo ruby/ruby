@@ -440,9 +440,9 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     GetThreadPtr(thval, th);
 
     /* setup thread environment */
-    th->first_args = args;
-    th->first_proc = fn ? Qfalse : rb_block_proc();
     th->first_func = fn;
+    th->first_proc = fn ? Qfalse : rb_block_proc();
+    th->first_args = args; /* GC: shouldn't put before above line */
 
     th->priority = GET_THREAD()->priority;
     th->thgroup = GET_THREAD()->thgroup;

@@ -1,3 +1,8 @@
+Fri Jul 11 00:56:46 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (thread_create_core): fix GC problem.
+	  [ruby-core:17669]
+
 Thu Jul 10 22:06:00 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb (PStore#transaction): return the result from the
