@@ -2018,6 +2018,9 @@ rb_thread_wait_fd_rw(int fd, int read)
     int result = 0;
     thread_debug("rb_thread_wait_fd_rw(%d, %s)\n", fd, read ? "read" : "write");
 
+    if (fd < 0) {
+	rb_raise(rb_eIOError, "closed stream");
+    }
     while (result <= 0) {
 	rb_fdset_t set;
 	rb_fd_init(&set);

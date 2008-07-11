@@ -188,7 +188,7 @@ def assert_valid_syntax(testsrc, message = '')
   }
 end
 
-def assert_normal_exit(testsrc, message = '')
+def assert_normal_exit(testsrc, message = '', ignore_signals = nil)
   newtest
   $stderr.puts "\##{@count} #{@location}" if @verbose
   faildesc = nil
@@ -205,28 +205,33 @@ def assert_normal_exit(testsrc, message = '')
   if status.signaled?
     signo = status.termsig
     signame = Signal.list.invert[signo]
-    sigdesc = "signal #{signo}"
-    if signame
-      sigdesc = "SIG#{signame} (#{sigdesc})"
-    end
-    faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
-    stderr_log = File.read("assert_normal_exit_stderr.log")
-    if !stderr_log.empty?
-      faildesc << "\n" if /\n\z/ !~ faildesc
-      stderr_log << "\n" if /\n\z/ !~ stderr_log
-      stderr_log.gsub!(/^.*\n/) { '| ' + $& }
-      faildesc << stderr_log
+    unless ignore_signals and ignore_signals.include?(signame)
+      sigdesc = "signal #{signo}"
+      if signame
+        sigdesc = "SIG#{signame} (#{sigdesc})"
+      end
+      faildesc = pretty(testsrc, "killed by #{sigdesc}", nil)
+      stderr_log = File.read("assert_normal_exit_stderr.log")
+      if !stderr_log.empty?
+        faildesc << "\n" if /\n\z/ !~ faildesc
+        stderr_log << "\n" if /\n\z/ !~ stderr_log
+        stderr_log.gsub!(/^.*\n/) { '| ' + $& }
+        faildesc << stderr_log
+      end
     end
   end
   if !faildesc
     $stderr.print '.'
+    true
   else
     $stderr.print 'F'
     error faildesc, message
+    false
   end
 rescue Exception => err
   $stderr.print 'E'
   error err.message, message
+  false
 end
 
 def assert_finish(timeout_seconds, testsrc, message = '')

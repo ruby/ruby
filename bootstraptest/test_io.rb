@@ -73,3 +73,22 @@ assert_equal 'ok', %q{
 assert_normal_exit %q{
   ARGF.set_encoding "foo"
 }
+
+50.times do
+  assert_normal_exit %q{
+    at_exit { p :foo }
+
+    megacontent = "abc" * 12345678
+    File.open("megasrc", "w") {|f| f << megacontent }
+
+    Thread.new { sleep rand*0.2; Process.kill(:INT, $$) }
+
+    r1, w1 = IO.pipe
+    r2, w2 = IO.pipe
+    t1 = Thread.new { w1 << megacontent; w1.close }
+    t2 = Thread.new { r2.read }
+    IO.copy_stream(r1, w2) rescue nil
+    r2.close; w2.close
+    r1.close; w1.close
+  }, '', ["INT"] or break
+end

@@ -1,3 +1,10 @@
+Fri Jul 11 20:51:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_wait_readable, rb_io_wait_writable): check if the file
+	  descriptor is closed.
+
+	* thread.c (rb_thread_wait_fd_rw): ditto.
+
 Fri Jul 11 16:16:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_accept, rb_w32_socket, rb_w32_socketpair):
