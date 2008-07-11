@@ -1,3 +1,8 @@
+Fri Jul 11 16:16:43 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_accept, rb_w32_socket, rb_w32_socketpair):
+	  prohibit inheritance of sockets, too. [experimental]
+
 Fri Jul 11 14:39:49 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): the measures for Vista is no longer
@@ -36,9 +41,11 @@ Thu Jul 10 21:15:49 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* test/win32ole/test_win32ole_method.rb: ditto.
 
 Thu Jul 10 19:38:35 2008  wanabe  <s.wanabe@gmail.com>
+
 	* test/ruby/envutil.rb (assert_normal_exit): r17993 revert.
 
 Thu Jul 10 18:29:41 2008  wanabe  <s.wanabe@gmail.com>
+
 	* test/ruby/envutil.rb (assert_normal_exit): finish writing script
 	  before spawn("ruby") to avoid blocking in win32.
 
