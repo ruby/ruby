@@ -2150,6 +2150,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     fd_set cons_rd;
     fd_set else_rd;
     fd_set else_wr;
+    fd_set except;
     int nonsock = 0;
 
     if (nfds < 0 || (timeout && (timeout->tv_sec < 0 || timeout->tv_usec < 0))) {
@@ -2177,6 +2178,9 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 
     else_wr.fd_count = 0;
     nonsock += extract_fd(&else_wr, wr, is_not_socket);
+
+    except.fd_count = 0;
+    extract_fd(&except, ex, is_not_socket); // drop only
 
     r = 0;
     if (rd && rd->fd_count > r) r = rd->fd_count;
