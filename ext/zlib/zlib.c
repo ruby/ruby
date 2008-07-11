@@ -1293,6 +1293,7 @@ rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
     level = ARG_LEVEL(v_level);
     strategy = ARG_STRATEGY(v_strategy);
 
+    zstream_run(z, (Bytef*)"", 0, Z_SYNC_FLUSH);
     err = deflateParams(&z->stream, level, strategy);
     while (err == Z_BUF_ERROR) {
 	rb_warning("deflateParams() returned Z_BUF_ERROR");
