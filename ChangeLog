@@ -1,3 +1,8 @@
+Fri Jul 11 22:09:01 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/setup.rb, win32/Makefile.sub (PLATFORM): use $(PLATFORM)
+	  instead of $(OS) because ENV["OS"] is used in test-all (drb).
+
 Fri Jul 11 20:51:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_wait_readable, rb_io_wait_writable): check if the file

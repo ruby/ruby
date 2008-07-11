@@ -101,14 +101,14 @@ OPTFLAGS = -O2b2xg-
 OPTFLAGS = -O2b2xty-
 !endif
 !endif
-!if !defined(OS)
-OS = mswin32
+!if !defined(PLATFORM)
+PLATFORM = mswin32
 !endif
 !if !defined(RT)
 !error RT not defined.  Retry from configure pass.
 !endif
 
-arch = $(ARCH)-$(OS)
+arch = $(ARCH)-$(PLATFORM)
 
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)$(TEENY)
@@ -459,12 +459,12 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_VENDOR_LIB "/lib/ruby/vendor_ruby"
 #define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR).$(TEENY)"
 #define RUBY_PLATFORM "$(arch)"
-#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR).$(TEENY)/$(ARCH)-$(OS)"
+#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR).$(TEENY)/$(ARCH)-$(PLATFORM)"
 #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR).$(TEENY)/$(ARCH)-$(RT)"
 #define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR).$(TEENY)/$(ARCH)-$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
 #if 0
-$(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(OS)"!="$$(ARCH)-$$(OS)"
+$(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
 config.h: nul
 $(BANG)endif
 #endif
@@ -537,21 +537,21 @@ s,@includedir@,$${prefix}/include,;t t
 s,@oldincludedir@,/usr/include,;t t
 s,@infodir@,$${prefix}/info,;t t
 s,@mandir@,$${prefix}/man,;t t
-s,@build@,$(CPU)-pc-$(OS),;t t
-s,@build_alias@,$(CPU)-$(OS),;t t
+s,@build@,$(CPU)-pc-$(PLATFORM),;t t
+s,@build_alias@,$(CPU)-$(PLATFORM),;t t
 s,@build_cpu@,$(CPU),;t t
 s,@build_vendor@,pc,;t t
-s,@build_os@,$(OS),;t t
-s,@host@,$(CPU)-pc-$(OS),;t t
-s,@host_alias@,$(CPU)-$(OS),;t t
+s,@build_os@,$(PLATFORM),;t t
+s,@host@,$(CPU)-pc-$(PLATFORM),;t t
+s,@host_alias@,$(CPU)-$(PLATFORM),;t t
 s,@host_cpu@,$(CPU),;t t
 s,@host_vendor@,pc,;t t
-s,@host_os@,$(OS),;t t
-s,@target@,$(ARCH)-pc-$(OS),;t t
-s,@target_alias@,$(ARCH)-$(OS),;t t
+s,@host_os@,$(PLATFORM),;t t
+s,@target@,$(ARCH)-pc-$(PLATFORM),;t t
+s,@target_alias@,$(ARCH)-$(PLATFORM),;t t
 s,@target_cpu@,$(ARCH),;t t
 s,@target_vendor@,pc,;t t
-s,@target_os@,$(OS),;t t
+s,@target_os@,$(PLATFORM),;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
 s,@CXX@,$$(CC),;t t
@@ -625,7 +625,7 @@ s,@COMMON_MACROS@,$(COMMON_MACROS),;t t
 s,@COMMON_HEADERS@,$(COMMON_HEADERS),;t t
 s,@DISTCLEANFILES@,vc*.pdb,;t t
 s,@EXPORT_PREFIX@, ,;t t
-s,@arch@,$(ARCH)-$(OS),;t t
+s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
 s,@vendordir@,$${prefix}/lib/ruby/vendor_ruby,;t t

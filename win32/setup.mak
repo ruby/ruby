@@ -123,10 +123,10 @@ runtime_name()
 #endif
     printf("!endif\n");
     if (ver) {
-	printf("OS = $$(TARGET_OS)_%s\n", ver);
+	printf("PLATFORM = $$(TARGET_OS)_%s\n", ver);
     }
     else {
-	printf("OS = $$(TARGET_OS)\n");
+	printf("PLATFORM = $$(TARGET_OS)\n");
     }
     printf("RT = %s\n", base);
     return 1;
