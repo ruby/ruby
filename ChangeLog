@@ -1,3 +1,7 @@
+Fri Jul 11 23:50:38 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/zlib/zlib.c (rb_gzfile_set_mtime): fix typo.  [ruby-core:17713]
+
 Thu Jul 10 10:20:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_string.rb (test_succ, test_succ!): reverted stale
