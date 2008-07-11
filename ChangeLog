@@ -1,3 +1,7 @@
+Fri Jul 11 23:05:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/zlib/test_zlib.rb: add a test for Zlib::Deflate#params.
+
 Fri Jul 11 22:58:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (rb_deflate_params): flush before deflateParams.
