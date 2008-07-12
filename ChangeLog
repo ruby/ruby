@@ -1,3 +1,11 @@
+Sat Jul 12 09:25:07 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_event.rb: add test
+	  for WIN32OLE_EVENT#on_event_with_outargs
+
+	* test/win32ole/test_win32ole_event.rb(teardown): calling 
+	  WIN32OLE_EVENT.message_loop
+
 Sat Jul 12 01:54:13 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): shoudn't pass non-socket handle to

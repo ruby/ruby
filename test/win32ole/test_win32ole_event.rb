@@ -69,6 +69,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event('BeforeNavigate') {|*args| handler2}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
+        WIN32OLE_EVENT.message_loop
         sleep 0.1
       end
       assert_equal("handler2", @event2)
@@ -80,6 +81,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event {|*args| handler2}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
+        WIN32OLE_EVENT.message_loop
         sleep 0.1
       end
       assert_equal("handler2", @event2)
@@ -92,6 +94,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event('NavigateComplete'){|*args| handler3(*args)}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
+        WIN32OLE_EVENT.message_loop
         sleep 0.1
       end
       assert(@event3!="")
@@ -104,6 +107,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event('NavigateComplete'){|*args| handler3(*args)}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
+        WIN32OLE_EVENT.message_loop
         sleep 0.1
       end
       assert_match(/BeforeNavigate/, @event)
@@ -116,6 +120,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event {|*args| default_handler(*args)}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
+        WIN32OLE_EVENT.message_loop
         sleep 0.1
       end
       assert_match(/BeforeNavigate/, @event)
@@ -123,6 +128,7 @@ if defined?(WIN32OLE_EVENT)
       @event = ""
       @ie.navigate("file:///#{@f}")
       while @ie.busy
+        WIN32OLE_EVENT.message_loop
         sleep 0.1
       end
       assert_equal("", @event);
@@ -141,6 +147,23 @@ if defined?(WIN32OLE_EVENT)
       }
     end
 
+    def test_on_event_with_outargs
+      ev = WIN32OLE_EVENT.new(@ie)
+      # ev.on_event_with_outargs('BeforeNavigate'){|*args|
+      #  args.last[5] = true # Cancel = true
+      # }
+      ev.on_event_with_outargs('BeforeNavigate2'){|*args|
+        args.last[6] = true # Cancel = true
+      }
+      bl = @ie.locationURL
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        sleep 0.1
+        WIN32OLE_EVENT.message_loop
+      end
+      assert_equal(bl, @ie.locationURL)
+    end
+
     def handler1
       @event2 = "handler1"
     end
@@ -155,6 +178,7 @@ if defined?(WIN32OLE_EVENT)
 
     def teardown
       @ie.quit
+      WIN32OLE_EVENT.message_loop
       @ie = nil
       File.unlink(@f)
       GC.start
