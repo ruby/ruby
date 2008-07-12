@@ -1,3 +1,10 @@
+Sun Jul 13 00:04:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (erfc): erfc of glibc comes with Debian GNU/Linux Etch
+	  on IA64 is broken.  erfc(10000.0) aborts.
+	  use missing/erf.c instead.
+	  http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
+
 Thu Jul 10 18:50:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk (SPEC_GIT_BASE): update RubySpec GIT URL.
