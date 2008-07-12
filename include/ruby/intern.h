@@ -26,7 +26,7 @@ extern "C" {
 #else
 # include <varargs.h>
 #endif
-#include <ruby/st.h>
+#include "ruby/st.h"
 
 /* 
  * Functions and variables that are used by more than one source file of

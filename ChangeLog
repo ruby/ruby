@@ -1,3 +1,12 @@
+Sat Jul 12 22:30:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (HAVE_RUBY_RUBY_H): defines macros so that
+	  extconf.rb do not need to check if headers exist under separated
+	  directory.  [ruby-dev:35437]
+
+	* include/{ruby,rubyio,rubysig}.h, include/ruby/intern.h: use
+	  "ruby/..." instead of <ruby/...>.
+
 Sat Jul 12 22:17:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (sizeof ptrdiff_t): check for size of ptrdiff_t.
