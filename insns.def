@@ -1058,7 +1058,7 @@ leave
 {
     if (OPT_CHECKED_RUN) {
 	if (reg_cfp->sp != reg_cfp->bp) {
-	    rb_bug("Stack consistency error (sp: %td, bp: %td)",
+	    rb_bug("Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")",
 		   VM_SP_CNT(th, reg_cfp->sp), VM_SP_CNT(th, reg_cfp->bp));
 	}
     }

@@ -115,17 +115,17 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	line = -1;
     }
 
-    fprintf(stderr, "c:%04td ",
-	    (rb_control_frame_t *)(th->stack + th->stack_size) - cfp);
+    fprintf(stderr, "c:%04"PRIdPTRDIFF" ",
+	    ((rb_control_frame_t *)(th->stack + th->stack_size) - cfp));
     if (pc == -1) {
 	fprintf(stderr, "p:---- ");
     }
     else {
 	fprintf(stderr, "p:%04d ", pc);
     }
-    fprintf(stderr, "s:%04td b:%04d ", cfp->sp - th->stack, bp);
-    fprintf(stderr, lfp_in_heap == ' ' ? "l:%06td " : "l:%06tx ", lfp % 10000);
-    fprintf(stderr, dfp_in_heap == ' ' ? "d:%06td " : "d:%06tx ", dfp % 10000);
+    fprintf(stderr, "s:%04"PRIdPTRDIFF" b:%04d ", (cfp->sp - th->stack), bp);
+    fprintf(stderr, lfp_in_heap == ' ' ? "l:%06"PRIdPTRDIFF" " : "l:%06"PRIxPTRDIFF" ", lfp % 10000);
+    fprintf(stderr, dfp_in_heap == ' ' ? "d:%06"PRIdPTRDIFF" " : "d:%06"PRIxPTRDIFF" ", dfp % 10000);
     fprintf(stderr, "%-6s ", magic);
     if (line) {
 	fprintf(stderr, "%s", posbuf);
@@ -308,8 +308,8 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	    else {
 		rstr = rb_inspect(*ptr);
 	    }
-	    fprintf(stderr, "  stack %2d: %8s (%td)\n", i, StringValueCStr(rstr),
-		   ptr - th->stack);
+	    fprintf(stderr, "  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
+		    (ptr - th->stack));
 	}
     }
     else if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_FINISH) {
@@ -345,8 +345,8 @@ debug_print_register(rb_thread_t *th)
 	dfp = -1;
 
     cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
-    fprintf(stderr, "  [PC] %04d, [SP] %04td, [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
-	   pc, cfp->sp - th->stack, lfp, dfp, cfpi);
+    fprintf(stderr, "  [PC] %04d, [SP] %04"PRIdPTRDIFF", [LFP] %04d, [DFP] %04d, [CFP] %04d\n",
+	    pc, (cfp->sp - th->stack), lfp, dfp, cfpi);
 }
 
 void
@@ -366,7 +366,7 @@ debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 	VALUE *seq = iseq->iseq;
 	int pc = cfp->pc - iseq->iseq_encoded;
 
-	printf("%3td ", VM_CFP_CNT(th, cfp));
+	printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp));
 	ruby_iseq_disasm_insn(0, seq, pc, iseq, 0);
     }
 

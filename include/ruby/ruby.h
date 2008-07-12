@@ -87,28 +87,51 @@ typedef unsigned long VALUE;
 typedef unsigned long ID;
 # define SIGNED_VALUE long
 # define SIZEOF_VALUE SIZEOF_LONG
-# define PRIdVALUE "ld"
-# define PRIiVALUE "li"
-# define PRIoVALUE "lo"
-# define PRIuVALUE "lu"
-# define PRIxVALUE "lx"
-# define PRIXVALUE "lX"
+# define PRI_VALUE_PREFIX "l"
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
 typedef unsigned LONG_LONG VALUE;
 typedef unsigned LONG_LONG ID;
 # define SIGNED_VALUE LONG_LONG
 # define LONG_LONG_VALUE 1
 # define SIZEOF_VALUE SIZEOF_LONG_LONG
-# define PRIdVALUE "lld"
-# define PRIiVALUE "lli"
-# define PRIoVALUE "llo"
-# define PRIuVALUE "llu"
-# define PRIxVALUE "llx"
-# define PRIXVALUE "llX"
+# define PRI_VALUE_PREFIX "ll"
 #else
 # error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
 #endif
+#define PRIdVALUE PRI_VALUE_PREFIX"d"
+#define PRIiVALUE PRI_VALUE_PREFIX"i"
+#define PRIoVALUE PRI_VALUE_PREFIX"o"
+#define PRIuVALUE PRI_VALUE_PREFIX"u"
+#define PRIxVALUE PRI_VALUE_PREFIX"x"
+#define PRIXVALUE PRI_VALUE_PREFIX"X"
 
+#if SIZEOF_PTRDIFF_T == SIZEOF_INT
+# define PRI_PTDIFF_PREFIX
+#elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
+# define PRI_PTDIFF_PREFIX "l"
+#elif SIZEOF_PTRDIFF_T == SIZEOF_LONG
+# define PRI_PTDIFF_PREFIX "ll"
+#endif
+#define PRIdPTRDIFF PRI_PTRDIFF_PREFIX"d"
+#define PRIiPTRDIFF PRI_PTRDIFF_PREFIX"i"
+#define PRIoPTRDIFF PRI_PTRDIFF_PREFIX"o"
+#define PRIuPTRDIFF PRI_PTRDIFF_PREFIX"u"
+#define PRIxPTRDIFF PRI_PTRDIFF_PREFIX"x"
+#define PRIXPTRDIFF PRI_PTRDIFF_PREFIX"X"
+
+#if SIZEOF_SIZE_T == SIZEOF_INT
+# define PRI_PTDIFF_PREFIX
+#elif SIZEOF_SIZE_T == SIZEOF_LONG
+# define PRI_PTDIFF_PREFIX "l"
+#elif SIZEOF_SIZE_T == SIZEOF_LONG
+# define PRI_PTDIFF_PREFIX "ll"
+#endif
+#define PRIdSIZE PRI_SIZE_PREFIX"d"
+#define PRIiSIZE PRI_SIZE_PREFIX"i"
+#define PRIoSIZE PRI_SIZE_PREFIX"o"
+#define PRIuSIZE PRI_SIZE_PREFIX"u"
+#define PRIxSIZE PRI_SIZE_PREFIX"x"
+#define PRIXSIZE PRI_SIZE_PREFIX"X"
 
 #ifdef __STDC__
 # include <limits.h>

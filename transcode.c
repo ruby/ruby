@@ -326,7 +326,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    my_transcoding.ruby_string_dest = dest;
 	    (*my_transcoder->preprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
 	    if (fromp != sp+slen) {
-		rb_raise(rb_eArgError, "not fully converted, %td bytes left", sp+slen-fromp);
+		rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	    }
 	    buf = (unsigned char *)RSTRING_PTR(dest);
 	    *bp = '\0';
@@ -343,7 +343,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 
 	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding, options);
 	if (fromp != sp+slen) {
-	    rb_raise(rb_eArgError, "not fully converted, %td bytes left", sp+slen-fromp);
+	    rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	}
 	buf = (unsigned char *)RSTRING_PTR(dest);
 	*bp = '\0';
@@ -358,7 +358,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    my_transcoding.ruby_string_dest = dest;
 	    (*my_transcoder->postprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
 	    if (fromp != sp+slen) {
-		rb_raise(rb_eArgError, "not fully converted, %td bytes left", sp+slen-fromp);
+		rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	    }
 	    buf = (unsigned char *)RSTRING_PTR(dest);
 	    *bp = '\0';

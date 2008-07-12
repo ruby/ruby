@@ -628,6 +628,7 @@ AC_CHECK_SIZEOF(rlim_t, 0, [
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_SIZE_T
 AC_CHECK_SIZEOF(size_t, 0)
+AC_CHECK_SIZEOF(ptrdiff_t, $ac_cv_sizeof_size_t)
 AC_STRUCT_ST_BLKSIZE
 AC_STRUCT_ST_BLOCKS
 AC_STRUCT_ST_RDEV

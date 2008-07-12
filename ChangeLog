@@ -1,3 +1,15 @@
+Sat Jul 12 22:17:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (sizeof ptrdiff_t): check for size of ptrdiff_t.
+
+	* include/ruby/ruby.h (PRI?PTRDIFF, PRI?SIZE): printf conversion
+	  specifiers for ptrdiff_t and size_t/ssize_t.
+
+	* insns.def (leave), marshal.c (long_toobig), transcode.c
+	  (str_transcode), vm_dump.c (control_frame_dump, stack_dump_each),
+	  (debug_print_register, debug_print_pre): t and z length modifiers
+	  are C99.
+
 Sat Jul 12 16:02:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client#do_rpc): requires
