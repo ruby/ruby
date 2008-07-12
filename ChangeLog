@@ -1,3 +1,9 @@
+Sun Jul 13 00:07:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ipaddr.rb (IPAddr#initialize): get rid of ArgumentError in
+	  IPAddr#to_range.  a patch from okkez <okkez000 AT gmail.com> in
+	  [ruby-dev:35091].
+
 Sun Jul 13 00:02:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (erfc): erfc of glibc comes with Debian GNU/Linux Etch
