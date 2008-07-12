@@ -1,3 +1,7 @@
+Sat Jul 12 23:24:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/socket/socket.c: use PRIuSIZE.
+
 Sat Jul 12 22:41:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (PRI_PTRDIFF_PREFIX, PRI_SIZE_PREFIX): fixed typo.

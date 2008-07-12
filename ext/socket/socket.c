@@ -883,8 +883,8 @@ host_str(VALUE host, char *hbuf, size_t len)
 	    make_inetaddr(INADDR_BROADCAST, hbuf, len);
 	}
 	else if (strlen(name) >= len) {
-	    rb_raise(rb_eArgError, "hostname too long (%"PRIuVALUE")",
-                (VALUE)strlen(name));
+	    rb_raise(rb_eArgError, "hostname too long (%"PRIuSIZE")",
+                strlen(name));
 	}
 	else {
 	    strcpy(hbuf, name);
@@ -909,8 +909,8 @@ port_str(VALUE port, char *pbuf, size_t len)
 	SafeStringValue(port);
 	serv = RSTRING_PTR(port);
 	if (strlen(serv) >= len) {
-	    rb_raise(rb_eArgError, "service name too long (%"PRIuVALUE")",
-                (VALUE)strlen(serv));
+	    rb_raise(rb_eArgError, "service name too long (%"PRIuSIZE")",
+                strlen(serv));
 	}
 	strcpy(pbuf, serv);
 	return pbuf;
