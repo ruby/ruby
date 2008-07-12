@@ -530,6 +530,27 @@ esac
 AC_FUNC_MEMCMP
 AC_FUNC_FSEEKO
 AC_CHECK_FUNCS(ftello)
+
+# http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
+# Debian GNU/Linux Etch's libc6.1 2.3.6.ds1-13etch5 has this problem.
+# Debian GNU/Linux Lenny's libc6.1 2.7-10 has no problem.
+AC_CACHE_CHECK(for broken erfc of glibc-2.3.6 on IA64, rb_broken_glibc_ia64_erfc,
+  [AC_TRY_RUN([
+#include <math.h>
+int
+main()
+{
+   erfc(10000.0);
+   return 0;
+}
+],
+	rb_broken_glibc_ia64_erfc=no,
+	rb_broken_glibc_ia64_erfc=yes,
+	rb_broken_glibc_ia64_erfc=no)])
+case $rb_broken_glibc_ia64_erfc in
+  yes) ac_cv_func_erf=no;;
+esac
+
 AC_REPLACE_FUNCS(dup2 memmove strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isnan finite isinf hypot acosh erf)

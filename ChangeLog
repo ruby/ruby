@@ -1,3 +1,10 @@
+Sun Jul 13 00:02:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (erfc): erfc of glibc comes with Debian GNU/Linux Etch
+	  on IA64 is broken.  erfc(10000.0) aborts.
+	  use missing/erf.c instead.
+	  http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
+
 Thu Jul 10 18:44:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): fix for file name with spaces.
