@@ -130,8 +130,8 @@ struct pty_info {
 
 static void
 raise_from_wait(state, info)
-    struct pty_info *info;
-    char *state;
+    const char *state;
+    const struct pty_info *info;
 {
     extern VALUE rb_last_status;
     char buf[1024];
@@ -144,9 +144,9 @@ raise_from_wait(state, info)
 }
 
 static VALUE
-pty_syswait(info)
-    struct pty_info *info;
+pty_syswait(void *arg)
 {
+    const struct pty_info *info = arg;
     int cpid, status;
 
     for (;;) {
@@ -204,7 +204,7 @@ establishShell(argc, argv, info, SlaveName)
     int			status;
 
     if (argc == 0) {
-	char *shellname;
+	const char *shellname;
 
 	if ((p = getenv("SHELL")) != NULL) {
 	    shellname = p;
@@ -372,7 +372,7 @@ get_device_once(master, slave, SlaveName, fail)
     if (!fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
     return -1;
 #else
-    char **p;
+    const char *const *p;
     char MasterName[DEVICELEN];
 
     for (p = deviceNo; *p != NULL; p++) {
