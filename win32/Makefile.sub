@@ -342,6 +342,14 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !else
 #define SIZEOF_TIME_T 4
 !endif
+#define SIZEOF_RLIM_T 0
+!if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
+#define SIZEOF_SIZE_T 8
+#define SIZEOF_PTRDIFF_T 8
+!else
+#define SIZEOF_SIZE_T 4
+#define SIZEOF_PTRDIFF_T 4
+!endif
 #define HAVE_PROTOTYPES 1
 #define TOKEN_PASTE(x,y) x##y
 #define HAVE_STDARG_PROTOTYPES 1

@@ -269,6 +269,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define SIZEOF_FLOAT 4
 \#define SIZEOF_DOUBLE 8
 \#define SIZEOF_TIME_T 4
+\#define SIZEOF_RLIM_T 0
+\#define SIZEOF_SIZE_T 4
+\#define SIZEOF_PTRDIFF_T 4
 \#define HAVE_PROTOTYPES 1
 \#define TOKEN_PASTE(x,y) x\#\#y
 \#define HAVE_STDARG_PROTOTYPES 1
