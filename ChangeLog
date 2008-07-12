@@ -1,3 +1,7 @@
+Sat Jul 12 22:41:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (PRI_PTRDIFF_PREFIX, PRI_SIZE_PREFIX): fixed typo.
+
 Sat Jul 12 22:30:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (HAVE_RUBY_RUBY_H): defines macros so that
