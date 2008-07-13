@@ -1,3 +1,8 @@
+Mon Jul 14 06:02:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#environment): requires shellwords.
+	  [ruby-dev:35466]
+
 Mon Jul 14 05:09:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (big2ulong, big2ull): constified.
