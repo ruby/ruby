@@ -1,3 +1,8 @@
+Mon Jul 14 06:02:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#environment): requires shellwords.
+	  [ruby-dev:35466]
+
 Sun Jul 13 21:23:08 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): using hash

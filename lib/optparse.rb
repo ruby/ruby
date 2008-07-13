@@ -1474,6 +1474,7 @@ class OptionParser
   #
   def environment(env = File.basename($0, '.*'))
     env = ENV[env] || ENV[env.upcase] or return
+    require 'shellwords'
     parse(*Shellwords.shellwords(env))
   end
 
