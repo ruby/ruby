@@ -1,3 +1,7 @@
+Mon Jul 14 05:09:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (big2ulong, big2ull): constified.
+
 Sun Jul 13 06:57:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (raise_from_wait, pty_syswait, get_device_once):

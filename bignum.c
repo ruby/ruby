@@ -791,7 +791,7 @@ rb_big_to_s(argc, argv, x)
 static unsigned long
 big2ulong(x, type)
     VALUE x;
-    char *type;
+    const char *type;
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
@@ -852,7 +852,7 @@ rb_big2long(x)
 static unsigned LONG_LONG
 big2ull(x, type)
     VALUE x;
-    char *type;
+    const char *type;
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
