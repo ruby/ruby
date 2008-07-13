@@ -1,3 +1,10 @@
+Sun Jul 13 21:23:08 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): using hash
+	  to set value to the reference argument of event.
+
+	* test/win32ole/test_win32ole_event.rb: ditto.
+
 Sun Jul 13 06:57:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pty/pty.c (raise_from_wait, pty_syswait, get_device_once):

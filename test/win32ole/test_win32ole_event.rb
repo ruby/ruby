@@ -164,6 +164,76 @@ if defined?(WIN32OLE_EVENT)
       assert_equal(bl, @ie.locationURL)
     end
 
+    def test_on_event_hash_return
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event('BeforeNavigate2'){|*args|
+        {:return => 1, :Cancel => true}
+      }
+      bl = @ie.locationURL
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        sleep 0.1
+        WIN32OLE_EVENT.message_loop
+      end
+      assert_equal(bl, @ie.locationURL)
+    end
+
+    def test_on_event_hash_return2
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event('BeforeNavigate2'){|*args|
+        {:Cancel => true}
+      }
+      bl = @ie.locationURL
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        sleep 0.1
+        WIN32OLE_EVENT.message_loop
+      end
+      assert_equal(bl, @ie.locationURL)
+    end
+
+    def test_on_event_hash_return3
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event('BeforeNavigate2'){|*args|
+        {'Cancel' => true}
+      }
+      bl = @ie.locationURL
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        sleep 0.1
+        WIN32OLE_EVENT.message_loop
+      end
+      assert_equal(bl, @ie.locationURL)
+    end
+    
+    def test_on_event_hash_return4
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event('BeforeNavigate2'){|*args|
+        {'return' => 2, 'Cancel' => true}
+      }
+      bl = @ie.locationURL
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        sleep 0.1
+        WIN32OLE_EVENT.message_loop
+      end
+      assert_equal(bl, @ie.locationURL)
+    end
+
+    def test_on_event_hash_return5
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event('BeforeNavigate2'){|*args|
+        {6 => true}
+      }
+      bl = @ie.locationURL
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        sleep 0.1
+        WIN32OLE_EVENT.message_loop
+      end
+      assert_equal(bl, @ie.locationURL)
+    end
+
     def handler1
       @event2 = "handler1"
     end
@@ -180,8 +250,19 @@ if defined?(WIN32OLE_EVENT)
       @ie.quit
       WIN32OLE_EVENT.message_loop
       @ie = nil
-      File.unlink(@f)
+      WIN32OLE_EVENT.message_loop
+      sleep 0.1
+      begin 
+        File.unlink(@f)
+      rescue Error::EACCESS
+        WIN32OLE_EVENT.message_loop
+        sleep 0.2
+        File.unlink(@f)
+      end
+
       GC.start
+      WIN32OLE_EVENT.message_loop
+      sleep 0.1
     end
   end
 end

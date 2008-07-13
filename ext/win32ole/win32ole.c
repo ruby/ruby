@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.3"
+#define WIN32OLE_VERSION "1.2.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -499,6 +499,8 @@ static VALUE foleparam_default(VALUE self);
 static VALUE foleparam_inspect(VALUE self);
 static long ole_search_event_at(VALUE ary, VALUE ev);
 static VALUE ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default);
+static void hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS *pdispparams);
+static VALUE hash2result(VALUE hash);
 static void ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams);
 static HRESULT find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo);
 static HRESULT find_coclass(ITypeInfo *pTypeInfo, TYPEATTR *pTypeAttr, ITypeInfo **pTypeInfo2, TYPEATTR **pTypeAttr2);
@@ -7371,6 +7373,44 @@ ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default)
     return def_event;
 }
 
+static void 
+hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS *pdispparams)
+{
+    BSTR *bstrs;
+    HRESULT hr;
+    UINT len, i;
+    VARIANT *pvar;
+    VALUE val;
+    VALUE key;
+    len = 0;
+    bstrs = ALLOCA_N(BSTR, pdispparams->cArgs + 1);
+    hr = pTypeInfo->lpVtbl->GetNames(pTypeInfo, dispid, 
+                                     bstrs, pdispparams->cArgs + 1,
+                                     &len);
+    if (FAILED(hr))
+	return;
+
+    for (i = 0; i < len - 1; i++) {
+	key = WC2VSTR(bstrs[i + 1]);
+        val = rb_hash_aref(hash, INT2FIX(i));
+	if (val == Qnil) 
+	    val = rb_hash_aref(hash, key);
+	if (val == Qnil)
+	    val = rb_hash_aref(hash, rb_str_intern(key));
+        pvar = &pdispparams->rgvarg[pdispparams->cArgs-i-1];
+        ole_val2ptr_variant(val, pvar);
+    }
+}
+
+static VALUE 
+hash2result(VALUE hash)
+{
+    VALUE ret = Qnil;
+    ret = rb_hash_aref(hash, rb_str_new2("return"));
+    if (ret == Qnil)
+	ret = rb_hash_aref(hash, rb_str_intern(rb_str_new2("return")));
+    return ret;
+}
 
 static void
 ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams)
@@ -7443,10 +7483,19 @@ STDMETHODIMP EVENTSINK_Invoke(
         argv = rb_ary_new();
         rb_ary_push(args, argv);
         result = rb_apply(handler, rb_intern("call"), args);
-        ary2ptr_dispparams(argv, pdispparams);
+	if(TYPE(result) == T_HASH) {
+	    hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
+	    result = hash2result(result);
+	} else {
+	    ary2ptr_dispparams(argv, pdispparams);
+	}
     }
     else {
         result = rb_apply(handler, rb_intern("call"), args);
+	if(TYPE(result) == T_HASH) {
+	    hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
+	    result = hash2result(result);
+	}
     }
     if (pvarResult) {
         ole_val2variant(result, pvarResult);
@@ -7829,7 +7878,6 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     IEVENTSINKOBJ *pIEV;
     DWORD dwCookie;
     struct oleeventdata *poleev;
-    VALUE events = Qnil;
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &ole, &itf);
@@ -7966,9 +8014,28 @@ ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
  * 
  *  Defines the callback event.
  *  If argument is omitted, this method defines the callback of all events.
+ *  If you want to modify reference argument in callback, return hash in
+ *  callback. If you want to return value to OLE server as result of callback
+ *  use `return' or :return.
+ *
  *    ie = WIN32OLE.new('InternetExplorer.Application')
- *    ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
+ *    ev = WIN32OLE_EVENT.new(ie)
  *    ev.on_event("NavigateComplete") {|url| puts url}
+ *    ev.on_event() {|ev, *args| puts "#{ev} fired"} 
+ *
+ *    ev.on_event("BeforeNavigate2") {|*args| 
+ *      ...
+ *      # set true to BeforeNavigate reference argument `Cancel'.
+ *      # Cancel is 7-th argument of BeforeNavigate,
+ *      # so you can use 6 as key of hash instead of 'Cancel'.
+ *      # The argument is counted from 0. 
+ *      # The hash key of 0 means first argument.)
+ *      {:Cancel => true}  # or {'Cancel' => true} or {6 => true}
+ *    }
+ *
+ *    ev.on_event(...) {|*args|
+ *      {:return => 1, :xxx => yyy}
+ *    }
  */
 static VALUE
 fev_on_event(int argc, VALUE *argv, VALUE self)
@@ -7982,7 +8049,13 @@ fev_on_event(int argc, VALUE *argv, VALUE self)
  * 
  *  Defines the callback of event.
  *  If you want modify argument in callback, 
- *  you should use this method instead of WIN32OLE_EVENT#on_event.
+ *  you could use this method instead of WIN32OLE_EVENT#on_event.
+ *
+ *    ie = WIN32OLE.new('InternetExplorer.Application')
+ *    ev = WIN32OLE_EVENT.new(ie)
+ *    ev.on_event_with_outargs('BeforeNavigate2') {|*args|
+ *      args.last[6] = true
+ *    }
  */
 static VALUE
 fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self)
