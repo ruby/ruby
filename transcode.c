@@ -15,8 +15,11 @@
 #include "transcode_data.h"
 #include <ctype.h>
 
-static VALUE sym_invalid, sym_ignore;
+static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 #define INVALID_IGNORE 0x1
+#define INVALID_REPLACE 0x2
+#define UNDEF_IGNORE 0x10
+#define UNDEF_REPLACE 0x20
 
 /*
  *  Dispatch data and logic
@@ -119,6 +122,36 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
     return (rb_transcoder *)val;
 }
 
+static const char*
+get_replacement_character(rb_encoding *enc)
+{
+    static rb_encoding *utf16be_encoding, *utf16le_encoding;
+    static rb_encoding *utf32be_encoding, *utf32le_encoding;
+    if (!utf16be_encoding) {
+	utf16be_encoding = rb_enc_find("UTF-16BE");
+	utf16le_encoding = rb_enc_find("UTF-16LE");
+	utf32be_encoding = rb_enc_find("UTF-32BE");
+	utf32le_encoding = rb_enc_find("UTF-32LE");
+    }
+    if (rb_enc_asciicompat(enc)) {
+	return "?";
+    }
+    else if (utf16be_encoding = enc) {
+	return "\x00?";
+    }
+    else if (utf16le_encoding = enc) {
+	return "?\x00";
+    }
+    else if (utf32be_encoding = enc) {
+	return "\x00\x00\x00?";
+    }
+    else if (utf32le_encoding = enc) {
+	return "?\x00\x00\x00";
+    }
+    else {
+	return "?";
+    }
+}
 
 /*
  *  Transcoding engine logic
@@ -139,6 +172,7 @@ transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
     unsigned char next_byte;
     int from_utf8 = my_transcoder->from_utf8;
     unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
+    rb_encoding *to_encoding = rb_enc_find(my_transcoder->to_encoding);
     while (in_p < in_stop) {
 	char_start = in_p;
 	next_table = conv_tree_start;
@@ -209,9 +243,7 @@ transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
 	  case INVALID:
 	    goto invalid;
 	  case UNDEF:
-	    /* todo: add code for alternate behaviors */
-	    rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe invalid byte sequence)");
-	    continue;
+	    goto undef;
 	}
 	continue;
       invalid:
@@ -220,7 +252,30 @@ transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
 	if (opt&INVALID_IGNORE) {
 	    continue;
 	}
+	else if (opt&INVALID_REPLACE) {
+	    const char *rep = get_replacement_character(to_encoding);
+	    do {
+		*out_p++ = *rep++;
+	    } while (*rep);
+	    continue;
+	}
 	rb_raise(rb_eRuntimeError /*change exception*/, "invalid byte sequence");
+	continue;
+      undef:
+	/* valid character in from encoding
+	 * but no related character(s) in to encoding */
+	/* todo: add more alternative behaviors */
+	if (opt&UNDEF_IGNORE) {
+	    continue;
+	}
+	else if (opt&UNDEF_REPLACE) {
+	    const char *rep = get_replacement_character(to_encoding);
+	    do {
+		*out_p++ = *rep++;
+	    } while (*rep);
+	    continue;
+	}
+	rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe invalid byte sequence)");
 	continue;
     }
     /* cleanup */
@@ -265,10 +320,28 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	argc--;
 	v = rb_hash_aref(opt, sym_invalid);
 	if (NIL_P(v)) {
-	    rb_raise(rb_eArgError, "unknown value for invalid: setting");
 	}
 	else if (v==sym_ignore) {
 	    options |= INVALID_IGNORE;
+	}
+	else if (v==sym_replace) {
+	    options |= INVALID_REPLACE;
+	    v = rb_hash_aref(opt, sym_replace);
+	}
+	else {
+	    rb_raise(rb_eArgError, "unknown value for invalid: setting");
+	}
+	v = rb_hash_aref(opt, sym_undef);
+	if (NIL_P(v)) {
+	}
+	else if (v==sym_ignore) {
+	    options |= UNDEF_IGNORE;
+	}
+	else if (v==sym_replace) {
+	    options |= UNDEF_REPLACE;
+	}
+	else {
+	    rb_raise(rb_eArgError, "unknown value for undef: setting");
 	}
     }
     if (argc < 1 || argc > 2) {
@@ -451,7 +524,9 @@ Init_transcode(void)
     transcoder_lib_table = st_init_strcasetable();
 
     sym_invalid = ID2SYM(rb_intern("invalid"));
+    sym_undef = ID2SYM(rb_intern("undef"));
     sym_ignore = ID2SYM(rb_intern("ignore"));
+    sym_replace = ID2SYM(rb_intern("replace"));
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);

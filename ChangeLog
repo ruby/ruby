@@ -1,3 +1,14 @@
+Mon Jul 14 15:18:30 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (get_replacement_character): temporary function,
+	  get characters for replacement mode.
+
+	* transcode.c (transcode_loop): add undef key and replace value.
+
+	* transcode.c (str_transcode): ditto.
+
+	* transcode.c (Init_transcode): define sym_undef and sym_replace.
+
 Mon Jul 14 15:16:40 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_variable.rb (TestVariable#test_global_variable_0):
