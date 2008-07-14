@@ -1,3 +1,7 @@
+Mon Jul 14 20:35:21 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_win32ole_event.rb (teardown): fix typo.
+
 Mon Jul 14 18:47:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (transcode_loop): constified.

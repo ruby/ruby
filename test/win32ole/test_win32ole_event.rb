@@ -254,9 +254,9 @@ if defined?(WIN32OLE_EVENT)
       sleep 0.1
       begin 
         File.unlink(@f)
-      rescue Error::EACCESS
+      rescue Errno::EACCES
         WIN32OLE_EVENT.message_loop
-        sleep 0.2
+        sleep 0.1
         File.unlink(@f)
       end
 
