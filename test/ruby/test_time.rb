@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'rational'
+require 'timeout'
 
 class TestTime < Test::Unit::TestCase
   def test_time_add()
@@ -217,7 +218,11 @@ class TestTime < Test::Unit::TestCase
 
   def test_time_interval
     m = Mutex.new.lock
-    assert_nothing_raised { m.sleep(0) }
+    assert_nothing_raised {
+      Timeout.timeout(10) {
+        m.sleep(0)
+      }
+    }
     assert_raise(ArgumentError) { m.sleep(-1) }
   end
 

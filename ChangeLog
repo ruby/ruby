@@ -1,3 +1,8 @@
+Mon Jul 14 17:37:01 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_time.rb (TestTime#test_time_interval): add timeout
+	  to avoid stopping tests.
+
 Mon Jul 14 15:18:30 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (get_replacement_character): temporary function,
