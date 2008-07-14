@@ -1,3 +1,8 @@
+Mon Jul 14 15:16:40 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_variable.rb (TestVariable#test_global_variable_0):
+	  add test of $0.
+
 Mon Jul 14 13:36:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/extconf.rb: initialize winsock on win32 to avoid error

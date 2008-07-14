@@ -1,4 +1,5 @@
 require 'test/unit'
+require_relative 'envutil'
 
 class TestVariable < Test::Unit::TestCase
   class Gods
@@ -74,5 +75,13 @@ class TestVariable < Test::Unit::TestCase
         assert_equal([:x, :y, :z], local_variables.sort)
       end
     end.call
+  end
+
+  def test_global_variable_0
+    EnvUtil.rubyexec("-e", "$0='t'*1000;print $0") do |w, r, e|
+      w.close
+      assert_equal("", e.read)
+      assert_match(/\At+\z/, r.read)
+    end
   end
 end
