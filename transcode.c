@@ -157,22 +157,24 @@ get_replacement_character(rb_encoding *enc)
  *  Transcoding engine logic
  */
 static void
-transcode_loop(unsigned char **in_pos, unsigned char **out_pos,
-	       unsigned char *in_stop, unsigned char *out_stop,
+transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
+	       const unsigned char *in_stop, unsigned char *out_stop,
 	       const rb_transcoder *my_transcoder,
 	       rb_transcoding *my_transcoding,
 	       const int opt)
 {
-    unsigned char *in_p = *in_pos, *out_p = *out_pos;
+    const unsigned char *in_p = *in_pos;
+    unsigned char *out_p = *out_pos;
     const BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
     const BYTE_LOOKUP *next_table;
-    unsigned char *char_start;
+    const unsigned char *char_start;
     unsigned int next_offset;
     VALUE next_info;
     unsigned char next_byte;
     int from_utf8 = my_transcoder->from_utf8;
     unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
     rb_encoding *to_encoding = rb_enc_find(my_transcoder->to_encoding);
+
     while (in_p < in_stop) {
 	char_start = in_p;
 	next_table = conv_tree_start;
@@ -302,7 +304,8 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     VALUE dest;
     VALUE str = *self;
     long blen, slen;
-    unsigned char *buf, *bp, *sp, *fromp;
+    unsigned char *buf, *bp, *sp;
+    const unsigned char *fromp;
     rb_encoding *from_enc, *to_enc;
     const char *from_e, *to_e;
     int from_encidx, to_encidx;
@@ -401,9 +404,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    if (fromp != sp+slen) {
 		rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	    }
-	    buf = (unsigned char *)RSTRING_PTR(dest);
-	    *bp = '\0';
-	    rb_str_set_len(dest, bp - buf);
+	    rb_str_set_len(dest, (char *)bp - RSTRING_PTR(dest));
 	    str = dest;
 	}
 	fromp = sp = (unsigned char *)RSTRING_PTR(str);
@@ -434,7 +435,6 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 		rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	    }
 	    buf = (unsigned char *)RSTRING_PTR(dest);
-	    *bp = '\0';
 	    rb_str_set_len(dest, bp - buf);
 	}
 

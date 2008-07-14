@@ -1,45 +1,13 @@
-Mon Jul 14 17:37:01 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+Mon Jul 14 18:47:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* test/ruby/test_time.rb (TestTime#test_time_interval): add timeout
-	  to avoid stopping tests.
+	* transcode.c (transcode_loop): constified.
 
-Mon Jul 14 15:18:30 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+	* transcode.c (str_transcode): rb_str_set_len() sets a delimiter.
 
-	* transcode.c (get_replacement_character): temporary function,
-	  get characters for replacement mode.
+	* transcode_data.h (rb_transcoder): constified preprocessor and
+	  postprocessor input.
 
-	* transcode.c (transcode_loop): add undef key and replace value.
-
-	* transcode.c (str_transcode): ditto.
-
-	* transcode.c (Init_transcode): define sym_undef and sym_replace.
-
-Mon Jul 14 15:16:40 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
-
-	* test/ruby/test_variable.rb (TestVariable#test_global_variable_0):
-	  add test of $0.
-
-Mon Jul 14 13:36:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
-
-	* ext/socket/extconf.rb: initialize winsock on win32 to avoid error
-	  dialog of OS.
-
-Mon Jul 14 06:02:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* lib/optparse.rb (OptionParser#environment): requires shellwords.
-	  [ruby-dev:35466]
-
-Sun Jul 13 21:23:08 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
-
-	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): using hash
-	  to set value to the reference argument of event.
-
-	* test/win32ole/test_win32ole_event.rb: ditto.
-
-Sun Jul 13 06:57:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* ext/pty/pty.c (raise_from_wait, pty_syswait, get_device_once):
-	  constified.
+	* enc/trans/japanese.c: ditto.
 
 Sun Jul 13 05:37:50 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
