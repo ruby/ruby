@@ -1,3 +1,10 @@
+Tue Jul 15 18:12:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.c (ubf_handle): cancel blocking IO if it can (only
+	  Vista). see [ruby-dev:35446]
+
+	* win32/win32.c (errmap): add ERROR_OPERATION_ABORTED as EINTR.
+
 Mon Jul 14 20:35:21 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_event.rb (teardown): fix typo.
