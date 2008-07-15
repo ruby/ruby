@@ -1,3 +1,10 @@
+Tue Jul 15 21:58:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/{,tkutil/}extconf.rb: ruby/ruby.h no longer needs to be
+	  checked.
+
+	* ext/tk/{tcltklib.c,tkutil/tkutil.c}: check macros for each headers.
+
 Tue Jul 15 21:49:21 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/tk/extconf.rb, ext/tk/tcltklib.c, ext/tk/tkutil/tkutil.c: Do

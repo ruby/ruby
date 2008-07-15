@@ -10,12 +10,13 @@
 
 #ifdef HAVE_RUBY_SIGNAL_H
 #include "ruby/signal.h"
+#else
+#include "rubysig.h"
+#endif
 #ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
 #endif
-#else
-/* #include "ruby.h" */
-#include "rubysig.h"
+#ifndef HAVE_RUBY_RUBY_H
 #include "version.h"
 #endif
 
