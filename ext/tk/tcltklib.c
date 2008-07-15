@@ -8,8 +8,7 @@
 
 #include "ruby.h"
 
-#ifdef HAVE_RUBY_RUBY_H
-/* #include "ruby/ruby.h" */
+#ifdef HAVE_RUBY_SIGNAL_H
 #include "ruby/signal.h"
 #ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
