@@ -11,6 +11,10 @@ OS = bccwin32
 !error RT not defined.  Retry from configure pass.
 !endif
 
+!if !defined(ruby_version)
+ruby_version = $(MAJOR).$(MINOR)
+!endif
+
 ## variables may be overridden by $(compile_dir)/Makefile
 !ifndef srcdir
 srcdir = ..
@@ -105,7 +109,7 @@ datadir = /share
 EXTOUT = .ext
 !endif
 !ifndef RIDATADIR
-RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
+RIDATADIR = $(DESTDIR)$(datadir)/ri/$(ruby_version)/system
 !endif
 !ifndef TESTUI
 TESTUI = console
@@ -295,15 +299,15 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define STACK_GROW_DIRECTION -1
 \#define DEFAULT_KCODE KCODE_NONE
 \#define DLEXT ".so"
-\#define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR)"
+\#define RUBY_LIB "/lib/ruby/$(ruby_version)"
 \#define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-\#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)"
+\#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(ruby_version)"
 \#define RUBY_VENDOR_LIB "/lib/ruby/vendor_ruby"
-\#define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR)"
+\#define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(ruby_version)"
 \#define RUBY_PLATFORM "$(ARCH)-$(OS)"
-\#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
-\#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
-\#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
+\#define RUBY_ARCHLIB "/lib/ruby/$(ruby_version)/$(ARCH)-$(OS)"
+\#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(ruby_version)/$(ARCH)-$(OS)"
+\#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(ruby_version)/$(ARCH)-$(OS)"
 |
 	@exit > $@
 
@@ -414,6 +418,7 @@ s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
 s,@TRY_LINK@,$$(CC) -oconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(LIBPATH) $$(LDFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS),;t t
 s,@EXPORT_PREFIX@,_,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
+s,@ruby_version@,$(ruby_version),;t t
 s,@sitearch@,$(ARCH)-$(OS),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
 s,@vendordir@,$${prefix}/lib/ruby/vendor_ruby,;t t

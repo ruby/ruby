@@ -1,3 +1,8 @@
+Tue Jul 15 23:00:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32}/Makefile.sub (ruby_version): follow changes in
+	  configure.in.
+
 Tue Jul 15 21:58:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/{,tkutil/}extconf.rb: ruby/ruby.h no longer needs to be

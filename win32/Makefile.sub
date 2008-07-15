@@ -98,6 +98,9 @@ OS = mswin32
 !endif
 
 arch = $(ARCH)-$(OS)
+!if !defined(ruby_version)
+ruby_version = $(MAJOR).$(MINOR)
+!endif
 
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = $(RT)-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)
@@ -122,7 +125,7 @@ datadir = /share
 EXTOUT = .ext
 !endif
 !ifndef RIDATADIR
-RIDATADIR = $(DESTDIR)$(datadir)/ri/$(MAJOR).$(MINOR)/system
+RIDATADIR = $(DESTDIR)$(datadir)/ri/$(ruby_version)/system
 !endif
 !ifndef TESTUI
 TESTUI = console
@@ -397,15 +400,15 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
-#define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR)"
+#define RUBY_LIB "/lib/ruby/$(ruby_version)"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)"
+#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(ruby_version)"
 #define RUBY_VENDOR_LIB "/lib/ruby/vendor_ruby"
-#define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR)"
+#define RUBY_VENDOR_LIB2 "/lib/ruby/vendor_ruby/$(ruby_version)"
 #define RUBY_PLATFORM "$(arch)"
-#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
-#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
-#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
+#define RUBY_ARCHLIB "/lib/ruby/$(ruby_version)/$(ARCH)-$(OS)"
+#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(ruby_version)/$(ARCH)-$(RT)"
+#define RUBY_VENDOR_ARCHLIB "/lib/ruby/vendor_ruby/$(ruby_version)/$(ARCH)-$(RT)"
 #define LIBRUBY_SO "$(LIBRUBY_SO)"
 #if 0
 $(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(OS)"!="$$(ARCH)-$$(OS)"
@@ -552,6 +555,7 @@ s,@DISTCLEANFILES@,vc*.pdb,;t t
 s,@EXPORT_PREFIX@, ,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
+s,@ruby_version@,$(ruby_version),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
 s,@vendordir@,$${prefix}/lib/ruby/vendor_ruby,;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
