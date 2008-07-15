@@ -1142,16 +1142,18 @@ struct connect_arg {
     socklen_t len;
 };
 
-static int
-connect0(struct connect_arg *arg)
+static VALUE
+connect_blocking(void *data)
 {
+    struct connect_arg *arg = data;
     return connect(arg->fd, arg->sockaddr, arg->len);
 }
 
 #if defined(SOCKS) && !defined(SOCKS5)
-static int
-socks_connect0(struct connect_arg *arg)
+static VALUE
+socks_connect_blocking(void *data)
 {
+    struct connect_arg *arg = data;
     return Rconnect(arg->fd, arg->sockaddr, arg->len);
 }
 #endif
@@ -1160,7 +1162,7 @@ static int
 ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 {
     int status;
-    int (*func)(struct connect_arg *) = connect0;
+    rb_blocking_function_t *func = connect_blocking;
     struct connect_arg arg;
 #if WAIT_IN_PROGRESS > 0
     int wait_in_progress = -1;
@@ -1172,11 +1174,11 @@ ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
     arg.sockaddr = sockaddr;
     arg.len = len;
 #if defined(SOCKS) && !defined(SOCKS5)
-    if (socks) func = socks_connect0;
+    if (socks) func = socks_connect_blocking;
 #endif
     for (;;) {
 	rb_thread_fd_writable(fd);
-	status = func(&arg);
+	status = BLOCKING_REGION(func, &arg);
 	if (status < 0) {
 	    switch (errno) {
 	      case EAGAIN:
@@ -1526,16 +1528,33 @@ s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen
     return init_sock(rb_obj_alloc(klass), fd2);
 }
 
+struct accept_arg {
+    int fd;
+    struct sockaddr *sockaddr;
+    socklen_t *len;
+};
+
+static VALUE
+accept_blocking(void *data)
+{
+    struct accept_arg *arg = data;
+    return (VALUE)accept(arg->fd, arg->sockaddr, arg->len);
+}
+
 static VALUE
 s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
     int retry = 0;
+    struct accept_arg arg;
 
     rb_secure(3);
+    arg.fd = fd;
+    arg.sockaddr = sockaddr;
+    arg.len = len;
   retry:
     rb_thread_wait_fd(fd);
-    fd2 = accept(fd, sockaddr, len);
+    fd2 = BLOCKING_REGION(accept_blocking, &arg);
     if (fd2 < 0) {
 	switch (errno) {
 	  case EMFILE:
