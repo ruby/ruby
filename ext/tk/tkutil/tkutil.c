@@ -11,8 +11,7 @@
 
 #include "ruby.h"
 
-#ifdef HAVE_RUBY_RUBY_H
-/* #include "ruby/ruby.h" */
+#ifdef HAVE_RUBY_SIGNAL_H
 #include "ruby/signal.h"
 #include "ruby/st.h"
 #else

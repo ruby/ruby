@@ -1,3 +1,9 @@
+Tue Jul 15 21:45:41 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/tk/extconf.rb, ext/tk/tcltklib.c, ext/tk/tkutil/tkutil.c: Do
+	  not test ruby/ruby.h, which makes OS X's gcc pick the wrong
+	  header file from Ruby.framework.
+
 Tue Jul 15 21:31:26 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in (--with-ruby-version): Add a new option to specify
