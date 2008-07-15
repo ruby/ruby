@@ -5,360 +5,213 @@ require 'tempfile'
 require_relative 'envutil'
 
 class TestRubyOptions < Test::Unit::TestCase
-  def ruby(*r, &b)
-    EnvUtil.rubyexec(*r, &b)
-  end
-
   def test_source_file
-    ruby('') do |w, r, e|
-      w.close
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
+    assert_in_out_err([], "", [], [])
   end
 
   def test_usage
-    ruby('-h') do |w, r, e|
-      w.close
-      assert(r.readlines.size <= 24)
+    assert_in_out_err(%w(-h)) do |r, e|
+      assert_operator(r.size, :<=, 24)
+      assert_equal([], e)
     end
 
-    ruby('--help') do |w, r, e|
-      w.close
-      assert(r.readlines.size <= 24)
+    assert_in_out_err(%w(--help)) do |r, e|
+      assert_operator(r.size, :<=, 24)
+      assert_equal([], e)
     end
   end
 
   def test_option_variables
-    ruby('-e', 'p [$-p, $-l, $-a]') do |w, r, e|
-      assert_equal('[false, false, false]', r.read.chomp)
+    assert_in_out_err(["-e", 'p [$-p, $-l, $-a]']) do |r, e|
+      assert_equal(["[false, false, false]"], r)
+      assert_equal([], e)
     end
 
-    ruby('-p', '-l', '-a', '-e', 'p [$-p, $-l, $-a]') do |w, r, e|
-      w.puts 'foo'
-      w.puts 'bar'
-      w.puts 'baz'
-      w.close_write
-      r = r.readlines.map {|l| l.chomp }
+    assert_in_out_err(%w(-p -l -a -e) + ['p [$-p, $-l, $-a]'],
+                      "foo\nbar\nbaz\n") do |r, e|
       assert_equal(
         [ '[true, true, true]', 'foo',
           '[true, true, true]', 'bar',
           '[true, true, true]', 'baz' ], r)
+      assert_equal([], e)
     end
   end
 
   def test_warning
-    ruby('-W0', '-e', 'p $-W') do |w, r, e|
-      assert_equal('0', r.read.chomp)
-    end
-    ruby('-W1', '-e', 'p $-W') do |w, r, e|
-      assert_equal('1', r.read.chomp)
-    end
-    ruby('-Wx', '-e', 'p $-W') do |w, r, e|
-      assert_equal('1', r.read.chomp)
-    end
-    ruby('-W', '-e', 'p $-W') do |w, r, e|
-      assert_equal('2', r.read.chomp)
-    end
+    assert_in_out_err(%w(-W0 -e) + ['p $-W'], "", %w(0), [])
+    assert_in_out_err(%w(-W1 -e) + ['p $-W'], "", %w(1), [])
+    assert_in_out_err(%w(-Wx -e) + ['p $-W'], "", %w(1), [])
+    assert_in_out_err(%w(-W -e) + ['p $-W'], "", %w(2), [])
   end
 
   def test_safe_level
-    ruby('-T', '-e', '') do |w, r, e|
-      assert_match(/no -e allowed in tainted mode \(SecurityError\)/, e.read)
-    end
+    assert_in_out_err(%w(-T -e) + [""], "", [],
+                      /no -e allowed in tainted mode \(SecurityError\)/)
 
-    ruby('-T4', '-S', 'foo.rb') do |w, r, e|
-      assert_match(/no -S allowed in tainted mode \(SecurityError\)/, e.read)
-    end
+    assert_in_out_err(%w(-T4 -S foo.rb), "", [],
+                      /no -S allowed in tainted mode \(SecurityError\)/)
   end
 
   def test_debug
-    ruby('-de', 'p $DEBUG') do |w, r, e|
-      assert_equal('true', r.read.chomp)
-    end
+    assert_in_out_err(%w(-de) + ["p $DEBUG"], "", %w(true), [])
 
-    ruby('--debug', '-e', 'p $DEBUG') do |w, r, e|
-      assert_equal('true', r.read.chomp)
-    end
+    assert_in_out_err(%w(--debug -e) + ["p $DEBUG"], "", %w(true), [])
   end
 
   def test_verbose
-    ruby('-vve', '') do |w, r, e|
-      description = r.read
-      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, description)
-      assert_equal RUBY_DESCRIPTION, description.chomp
+    assert_in_out_err(%w(-vve) + [""]) do |r, e|
+      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, r.join)
+      assert_equal RUBY_DESCRIPTION, r.join.chomp
+      assert_equal([], e)
     end
 
-    ruby('--verbose', '-e', 'p $VERBOSE') do |w, r, e|
-      assert_equal('true', r.read.chomp)
-    end
+    assert_in_out_err(%w(--verbose -e) + ["p $VERBOSE"], "", %w(true), [])
 
-    ruby('--verbose') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
+    assert_in_out_err(%w(--verbose), "", [], [])
   end
 
   def test_copyright
-    ruby('--copyright') do |w, r, e|
-      assert_match(/^ruby - Copyright \(C\) 1993-\d+ Yukihiro Matsumoto$/, r.read)
-    end
+    assert_in_out_err(%w(--copyright), "",
+                      /^ruby - Copyright \(C\) 1993-\d+ Yukihiro Matsumoto$/, [])
 
-    ruby('--verbose', '-e', 'p $VERBOSE') do |w, r, e|
-      assert_equal('true', r.read.chomp)
-    end
+    assert_in_out_err(%w(--verbose -e) + ["p $VERBOSE"], "", %w(true), [])
   end
 
   def test_enable
-    ruby('--enable', 'all', '-e', '') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
-
-    ruby('--enable-all', '-e', '') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
-
-    ruby('--enable=all', '-e', '') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
-
-    ruby('--enable', 'foobarbazqux', '-e', '') do |w, r, e|
-      assert_match(/unknown argument for --enable: `foobarbazqux'/, e.read) #`
-    end
-
-    ruby('--enable') do |w, r, e|
-      assert_match(/missing argument for --enable/, e.read)
-    end
+    assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
+    assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
+    assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
+    assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
+                      /unknown argument for --enable: `foobarbazqux'/)
+    assert_in_out_err(%w(--enable), "", [], /missing argument for --enable/)
   end
 
   def test_disable
-    ruby('--disable', 'all', '-e', '') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
-
-    ruby('--disable-all', '-e', '') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
-
-    ruby('--disable=all', '-e', '') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
-
-    ruby('--disable', 'foobarbazqux', '-e', '') do |w, r, e|
-      assert_match(/unknown argument for --disable: `foobarbazqux'/, e.read) #`
-    end
-
-    ruby('--disable') do |w, r, e|
-      assert_match(/missing argument for --disable/, e.read)
-    end
+    assert_in_out_err(%w(--disable all -e) + [""], "", [], [])
+    assert_in_out_err(%w(--disable-all -e) + [""], "", [], [])
+    assert_in_out_err(%w(--disable=all -e) + [""], "", [], [])
+    assert_in_out_err(%w(--disable foobarbazqux -e) + [""], "", [],
+                      /unknown argument for --disable: `foobarbazqux'/)
+    assert_in_out_err(%w(--disable), "", [], /missing argument for --disable/)
   end
 
   def test_kanji
-    ruby('-KU') do |w, r, e|
-      w.puts "p '\u3042'"
-      w.close
-      assert_equal("\"\u3042\"", r.read.chomp.force_encoding(Encoding.find('utf-8')))
+    assert_in_out_err(%w(-KU), "p '\u3042'") do |r, e|
+      assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
     end
-
-    ruby('-KE', '-e', '') do |w, r, e|
-      assert_equal("", r.read)
-      assert_equal("", e.read)
-    end
-
-    ruby('-KS', '-e', '') do |w, r, e|
-      assert_equal("", r.read)
-      assert_equal("", e.read)
-    end
-
-    ruby('-KN', '-e', '') do |w, r, e|
-      assert_equal("", r.read)
-      assert_equal("", e.read)
-    end
+    assert_in_out_err(%w(-KE -e) + [""], "", [], [])
+    assert_in_out_err(%w(-KS -e) + [""], "", [], [])
+    assert_in_out_err(%w(-KN -e) + [""], "", [], [])
   end
 
   def test_version
-    ruby('--version') do |w, r, e|
-      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, r.read)
+    assert_in_out_err(%w(--version)) do |r, e|
+      assert_match(/^ruby #{RUBY_VERSION} .*? \[#{RUBY_PLATFORM}\]$/, r.join)
+      assert_equal RUBY_DESCRIPTION, r.join.chomp
+      assert_equal([], e)
     end
   end
 
   def test_eval
-    ruby('-e') do |w, r, e|
-      assert_match(/no code specified for -e \(RuntimeError\)/, e.read)
-    end
+    assert_in_out_err(%w(-e), "", [], /no code specified for -e \(RuntimeError\)/)
   end
 
   def test_require
-    ruby('-r', 'pp', '-e', 'pp 1') do |w, r, e|
-      assert_equal('1', r.read.chomp)
-    end
-    ruby('-rpp', '-e', 'pp 1') do |w, r, e|
-      w.close
-      assert_equal('1', r.read.chomp)
-    end
+    require "pp"
+    assert_in_out_err(%w(-r pp -e) + ["pp 1"], "", %w(1), [])
+    assert_in_out_err(%w(-rpp -e) + ["pp 1"], "", %w(1), [])
+  rescue LoadError
   end
 
   def test_include
     d = Dir.tmpdir
-    ruby('-I' + d, '-e', '') do |w, r, e|
-      assert_equal('', e.read.chomp)
-      assert_equal('', r.read.chomp)
-    end
-
-    d = Dir.tmpdir
-    ruby('-I', d, '-e', '') do |w, r, e|
-      assert_equal('', e.read.chomp)
-      assert_equal('', r.read.chomp)
-    end
+    assert_in_out_err(["-I" + d, "-e", ""], "", [], [])
+    assert_in_out_err(["-I", d, "-e", ""], "", [], [])
   end
 
   def test_separator
-    ruby('-000', '-e', 'print gets') do |w, r, e|
-      w.write "foo\nbar\0baz"
-      w.close
-      assert_equal('', e.read)
-      assert_equal("foo\nbar\0baz", r.read)
-    end
+    assert_in_out_err(%w(-000 -e) + ["print gets"], "foo\nbar\0baz", %W(foo bar\0baz), [])
 
-    ruby('-0141', '-e', 'print gets') do |w, r, e|
-      w.write "foo\nbar\0baz"
-      w.close
-      assert_equal('', e.read)
-      assert_equal("foo\nba", r.read)
-    end
+    assert_in_out_err(%w(-0141 -e) + ["print gets"], "foo\nbar\0baz", %w(foo ba), [])
 
-    ruby('-0e', 'print gets') do |w, r, e|
-      w.write "foo\nbar\0baz"
-      w.close
-      assert_equal('', e.read)
-      assert_equal("foo\nbar\0", r.read)
-    end
+    assert_in_out_err(%w(-0e) + ["print gets"], "foo\nbar\0baz", %W(foo bar\0), [])
   end
 
   def test_autosplit
-    ruby('-an', '-F:', '-e', 'p $F') do |w, r, e|
-      w.puts "foo:bar:baz"
-      w.puts "qux:quux:quuux"
-      w.close
-      r = r.readlines.map {|l| l.chomp }
-      assert_equal(['["foo", "bar", "baz\n"]', '["qux", "quux", "quuux\n"]'], r)
-    end
+    assert_in_out_err(%w(-an -F: -e) + ["p $F"], "foo:bar:baz\nqux:quux:quuux\n",
+                      ['["foo", "bar", "baz\n"]', '["qux", "quux", "quuux\n"]'], [])
   end
 
   def test_chdir
-    ruby('-C') do |w, r, e|
-      assert_match(/Can't chdir/, e.read)
-    end
+    assert_in_out_err(%w(-C), "", [], /Can't chdir/)
 
-    ruby('-C', 'test_ruby_test_rubyoptions_foobarbazqux') do |w, r, e|
-      assert_match(/Can't chdir/, e.read)
-    end
+    assert_in_out_err(%w(-C test_ruby_test_rubyoptions_foobarbazqux), "", [], /Can't chdir/)
 
     d = Dir.tmpdir
-    ruby('-C', d, '-e', 'puts Dir.pwd') do |w, r, e|
-      assert_equal('', e.read)
-      assert(File.identical?(r.read.chomp, d))
+    assert_in_out_err(["-C", d, "-e", "puts Dir.pwd"]) do |r, e|
+      assert(File.identical?(r.join, d))
+      assert_equal([], e)
     end
   end
 
   def test_yydebug
-    ruby('-ye', '') do |w, r, e|
-      assert_equal("", r.read)
-      assert_nothing_raised { e.read }
+    assert_in_out_err(["-ye", ""]) do |r, e|
+      assert_equal([], r)
+      assert_not_equal([], e)
     end
 
-    ruby('--yydebug', '-e', '') do |w, r, e|
-      assert_equal("", r.read)
-      assert_nothing_raised { e.read }
+    assert_in_out_err(%w(--yydebug -e) + [""]) do |r, e|
+      assert_equal([], r)
+      assert_not_equal([], e)
     end
   end
 
   def test_encoding
-    ruby('-Eutf-8') do |w, r, e|
-      w.puts "p '\u3042'"
-      w.close
-      assert_match(/invalid multibyte char/, e.read)
-    end
+    assert_in_out_err(%w(-Eutf-8), "p '\u3042'", [], /invalid multibyte char/)
 
-    ruby('--encoding') do |w, r, e|
-      assert_match(/missing argument for --encoding/, e.read)
-    end
+    assert_in_out_err(%w(--encoding), "", [], /missing argument for --encoding/)
 
-    ruby('--encoding', 'test_ruby_test_rubyoptions_foobarbazqux') do |w, r, e|
-      assert_match(/unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/, e.read)
-    end
+    assert_in_out_err(%w(--encoding test_ruby_test_rubyoptions_foobarbazqux), "", [],
+                      /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
 
-    ruby('--encoding', 'utf-8') do |w, r, e|
-      w.puts "p '\u3042'"
-      w.close
-      assert_match(/invalid multibyte char/, e.read)
-    end
+    assert_in_out_err(%w(--encoding utf-8), "p '\u3042'", [], /invalid multibyte char/)
   end
 
   def test_syntax_check
-    ruby('-c', '-e', '1+1') do |w, r, e|
-      assert_equal('Syntax OK', r.read.chomp)
-    end
+    assert_in_out_err(%w(-c -e 1+1), "", ["Syntax OK"], [])
   end
 
   def test_invalid_option
-    ruby('--foobarbazqux') do |w, r, e|
-      assert_match(/invalid option --foobarbazqux/, e.read)
-    end
+    assert_in_out_err(%w(--foobarbazqux), "", [], /invalid option --foobarbazqux/)
 
-    ruby("-\r", '-e', '') do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
+    assert_in_out_err(%W(-\r -e) + [""], "", [], [])
 
-    ruby("-\rx") do |w, r, e|
-      assert_match(/invalid option -\\x0D  \(-h will show valid options\) \(RuntimeError\)/, e.read)
-    end
+    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\x0D  \(-h will show valid options\) \(RuntimeError\)/)
 
-    ruby("-\x01") do |w, r, e|
-      assert_match(/invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/, e.read)
-    end
+    assert_in_out_err(%W(-\x01), "", [], /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
 
-    ruby('-Z') do |w, r, e|
-      assert_match(/invalid option -Z  \(-h will show valid options\) \(RuntimeError\)/, e.read)
-    end
+    assert_in_out_err(%w(-Z), "", [], /invalid option -Z  \(-h will show valid options\) \(RuntimeError\)/)
   end
 
   def test_rubyopt
     rubyopt_orig = ENV['RUBYOPT']
 
     ENV['RUBYOPT'] = ' - -'
-    ruby do |w, r, e|
-      w.close
-      assert_equal('', e.read)
-      assert_equal('', r.read)
-    end
+    assert_in_out_err([], "", [], [])
 
     ENV['RUBYOPT'] = '-e "p 1"'
-    ruby do |w, r, e|
-      assert_match(/invalid switch in RUBYOPT: -e \(RuntimeError\)/, e.read)
-    end
+    assert_in_out_err([], "", [], /invalid switch in RUBYOPT: -e \(RuntimeError\)/)
 
     ENV['RUBYOPT'] = '-T1'
-    ruby do |w, r, e|
-      assert_match(/no program input from stdin allowed in tainted mode \(SecurityError\)/, e.read)
-    end
+    assert_in_out_err([], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
 
     ENV['RUBYOPT'] = '-T4'
-    ruby do |w, r, e|
-    end
+    assert_in_out_err([], "", [], /no program input from stdin allowed in tainted mode \(SecurityError\)/)
 
     ENV['RUBYOPT'] = '-KN -Eus-ascii'
-    ruby('-KU', '-Eutf-8') do |w, r, e|
-      w.puts "p '\u3042'"
-      w.close
-      assert_equal("\"\u3042\"", r.read.chomp.force_encoding(Encoding.find('utf-8')))
+    assert_in_out_err(%w(-KU -Eutf-8), "p '\u3042'") do |r, e|
+      assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
+      assert_equal([], e)
     end
 
   ensure
@@ -382,17 +235,11 @@ class TestRubyOptions < Test::Unit::TestCase
 
     ENV['PATH'] = File.dirname(t.path)
 
-    ruby('-S', File.basename(t.path)) do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('1', r.read.chomp)
-    end
+    assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
 
     ENV['RUBYPATH'] = File.dirname(t.path)
 
-    ruby('-S', File.basename(t.path)) do |w, r, e|
-      assert_equal('', e.read)
-      assert_equal('1', r.read.chomp)
-    end
+    assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
 
   ensure
     if rubypath_orig
@@ -410,48 +257,27 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_shebang
-    ruby do |w, r, e|
-      w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux\r\np 1\r\n"
-      w.close
-      assert_match(/Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
-      assert_equal('', r.read.chomp)
-    end
+    assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux\r\np 1\r\n",
+                      [], /Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/)
 
-    ruby do |w, r, e|
-      w.print "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n"
-      w.close
-      assert_match(/Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/, e.read) #'
-      assert_equal('', r.read.chomp)
-    end
+    assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n",
+                      [], /Can't exec [\/\\]test_r_u_b_y_test_r_u_b_y_options_foobarbazqux \(fatal\)/)
 
-    ruby do |w, r, e|
-      w.print "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n"
-      w.close
-      assert_equal('', e.read.chomp)
-      assert_equal("\"\u3042\"", r.read.chomp.force_encoding(Encoding.find('utf-8')))
+    assert_in_out_err([], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n") do |r, e|
+      assert_equal("\"\u3042\"", r.join.force_encoding(Encoding::UTF_8))
+      assert_equal([], e)
     end
   end
 
   def test_sflag
-    ruby('-', '-abc', '-def=foo', '-ghi-jkl', '--', '-xyz') do |w, r, e|
-      w.print "#!ruby -s\np [$abc, $def, $ghi_jkl, $xyz]\n"
-      w.close
-      assert_equal('', e.read)
-      assert_equal('[true, "foo", true, nil]', r.read.chomp)
-    end
+    assert_in_out_err(%w(- -abc -def=foo -ghi-jkl -- -xyz),
+                      "#!ruby -s\np [$abc, $def, $ghi_jkl, $xyz]\n",
+                      ['[true, "foo", true, nil]'], [])
 
-    ruby('-', '-#') do |w, r, e|
-      w.print "#!ruby -s\n"
-      w.close
-      assert_match(/invalid name for global variable - -# \(NameError\)/, e.read)
-      assert_equal('', r.read.chomp)
-    end
+    assert_in_out_err(%w(- -#), "#!ruby -s\n", [],
+                      /invalid name for global variable - -# \(NameError\)/)
 
-    ruby('-', '-#=foo') do |w, r, e|
-      w.print "#!ruby -s\n"
-      w.close
-      assert_match(/invalid name for global variable - -# \(NameError\)/, e.read)
-      assert_equal('', r.read.chomp)
-    end
+    assert_in_out_err(%w(- -#=foo), "#!ruby -s\n", [],
+                      /invalid name for global variable - -# \(NameError\)/)
   end
 end

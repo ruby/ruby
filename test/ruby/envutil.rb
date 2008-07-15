@@ -113,6 +113,63 @@ module Test
         out_c.close if out_c && !out_c.closed?
         out_p.close if out_p && !out_p.closed?
       end
+
+      LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
+      def assert_in_out_err(args, test_stdin = "", test_stdout = "", test_stderr = "", message = nil)
+        in_c, in_p = IO.pipe
+        out_p, out_c = IO.pipe
+        err_p, err_c = IO.pipe
+        c = "C"
+        env = {}
+        LANG_ENVS.each {|lc| env[lc], ENV[lc] = ENV[lc], c}
+        pid = spawn(EnvUtil.rubybin, *args, STDIN=>in_c, STDOUT=>out_c, STDERR=>err_c)
+        in_c.close
+        out_c.close
+        err_c.close
+        in_p.write test_stdin
+        in_p.close
+        th_stdout = Thread.new { out_p.read }
+        th_stderr = Thread.new { err_p.read }
+        if th_stdout.join(10) && th_stderr.join(10)
+          stdout = th_stdout.value
+          stderr = th_stderr.value
+        else
+          flunk("timeout")
+        end
+        out_p.close
+        err_p.close
+        Process.wait pid
+        if block_given?
+          yield(stdout.lines.map {|l| l.chomp }, stderr.lines.map {|l| l.chomp })
+        else
+          if test_stdout.is_a?(Regexp)
+            assert_match(test_stdout, stdout, message)
+          else
+            assert_equal(test_stdout, stdout.lines.map {|l| l.chomp }, message)
+          end
+          if test_stderr.is_a?(Regexp)
+            assert_match(test_stderr, stderr, message)
+          else
+            assert_equal(test_stderr, stderr.lines.map {|l| l.chomp }, message)
+          end
+        end
+      ensure
+        env.each_pair {|lc, v|
+          if v
+            ENV[lc] = v
+          else
+            ENV.delete(lc)
+          end
+        } if env
+        in_c.close if in_c && !in_c.closed?
+        in_p.close if in_p && !in_p.closed?
+        out_c.close if out_c && !out_c.closed?
+        out_p.close if out_p && !out_p.closed?
+        err_c.close if err_c && !err_c.closed?
+        err_p.close if err_p && !err_p.closed?
+        (th_stdout.kill; th_stdout.join) if th_stdout
+        (th_stderr.kill; th_stderr.join) if th_stderr
+      end
     end
   end
 end

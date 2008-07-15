@@ -78,10 +78,6 @@ class TestVariable < Test::Unit::TestCase
   end
 
   def test_global_variable_0
-    EnvUtil.rubyexec("-e", "$0='t'*1000;print $0") do |w, r, e|
-      w.close
-      assert_equal("", e.read)
-      assert_match(/\At+\z/, r.read)
-    end
+    assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end
 end

@@ -30,10 +30,6 @@ class TestModule < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
-  def ruby(*r, &b)
-    EnvUtil.rubyexec(*r, &b)
-  end
-
   def test_LT_0
     assert_equal true, String < Object
     assert_equal false, Object < String
@@ -476,20 +472,17 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_attr
-    ruby do |w, r, e|
-      w.puts "$VERBOSE = true"
-      w.puts "c = Class.new"
-      w.puts "c.instance_eval do"
-      w.puts "  private"
-      w.puts "  attr_reader :foo"
-      w.puts "end"
-      w.puts "o = c.new"
-      w.puts "o.foo rescue p(:ok)"
-      w.puts "p(o.instance_eval { foo })"
-      w.close
-      assert_equal(":ok\nnil", r.read.chomp)
-      assert_match(/warning: private attribute\?$/, e.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok nil), /warning: private attribute\?$/)
+      $VERBOSE = true
+      c = Class.new
+      c.instance_eval do
+        private
+        attr_reader :foo
+      end
+      o = c.new
+      o.foo rescue p(:ok)
+      p(o.instance_eval { foo })
+    INPUT
 
     c = Class.new
     assert_raise(NameError) do
@@ -521,13 +514,10 @@ class TestModule < Test::Unit::TestCase
     end
 
     %w(object_id __send__ initialize).each do |m|
-      ruby do |w, r, e|
-        w.puts "$VERBOSE = false"
-        w.puts "Class.new.instance_eval { undef_method(:#{m}) }"
-        w.close
-        assert_equal("", r.read.chomp)
-        assert_match(/warning: undefining `#{m}' may cause serious problem$/, e.read.chomp)
-      end
+      assert_in_out_err([], <<-INPUT, [], /warning: undefining `#{m}' may cause serious problem$/)
+        $VERBOSE = false
+        Class.new.instance_eval { undef_method(:#{m}) }
+      INPUT
     end
   end
 
@@ -537,19 +527,16 @@ class TestModule < Test::Unit::TestCase
       m.class_eval { alias foo bar }
     end
 
-    ruby do |w, r, e|
-      w.puts "$VERBOSE = true"
-      w.puts "c = Class.new"
-      w.puts "c.class_eval do"
-      w.puts "  def foo; 1; end"
-      w.puts "  def bar; 2; end"
-      w.puts "end"
-      w.puts "c.class_eval { alias foo bar }"
-      w.puts "p c.new.foo"
-      w.close
-      assert_equal("2", r.read.chomp)
-      assert_match(/warning: discarding old foo$/, e.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(2), /warning: discarding old foo$/)
+      $VERBOSE = true
+      c = Class.new
+      c.class_eval do
+        def foo; 1; end
+        def bar; 2; end
+      end
+      c.class_eval { alias foo bar }
+      p c.new.foo
+    INPUT
   end
 
   def test_mod_constants
@@ -618,17 +605,14 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_top_public_private
-    ruby do |w, r, e|
-      w.puts "private"
-      w.puts "def foo; :foo; end"
-      w.puts "public"
-      w.puts "def bar; :bar; end"
-      w.puts "p self.private_methods.grep(/^foo$|^bar$/)"
-      w.puts "p self.methods.grep(/^foo$|^bar$/)"
-      w.close
-      assert_equal("[:foo]\n[:bar]", r.read.chomp)
-      assert_equal("", e.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w([:foo] [:bar]), [])
+      private
+      def foo; :foo; end
+      public
+      def bar; :bar; end
+      p self.private_methods.grep(/^foo$|^bar$/)
+      p self.methods.grep(/^foo$|^bar$/)
+    INPUT
   end
 
   def test_append_features

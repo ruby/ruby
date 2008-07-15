@@ -4,37 +4,28 @@ require 'tempfile'
 require_relative 'envutil'
 
 class TestRequire < Test::Unit::TestCase
-  def ruby(*r, &b)
-    EnvUtil.rubyexec(*r, &b)
-  end
-
   def test_require_invalid_shared_object
     t = Tempfile.new(["test_ruby_test_require", ".so"])
     t.puts "dummy"
     t.close
 
-    ruby do |w, r, e|
-      w.puts "begin"
-      w.puts "  require \"#{ t.path }\""
-      w.puts "rescue LoadError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      begin
+        require \"#{ t.path }\"
+      rescue LoadError
+        p :ok
+      end
+    INPUT
   end
 
   def test_require_too_long_filename
-    ruby do |w, r, e|
-      w.puts "begin"
-      w.puts "  require '#{ "foo/" * 10000 }foo'"
-      w.puts "rescue LoadError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      e.read
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), /^.+$/)
+      begin
+        require '#{ "foo/" * 10000 }foo'
+      rescue LoadError
+        p :ok
+      end
+    INPUT
   end
 
   def test_require_path_home
@@ -42,30 +33,18 @@ class TestRequire < Test::Unit::TestCase
 
     ENV["RUBYPATH"] = "~"
     ENV["HOME"] = "/foo" * 10000
-    ruby("-S", "test_ruby_test_require") do |w, r, e|
-      w.close
-      e.read
-      assert_equal("", r.read)
-    end
+    assert_in_out_err(%w(-S test_ruby_test_require), "", [], /^.+$/)
 
     ENV["RUBYPATH"] = "~" + "/foo" * 10000
     ENV["HOME"] = "/foo"
-    ruby("-S", "test_ruby_test_require") do |w, r, e|
-      w.close
-      e.read
-      assert_equal("", r.read)
-    end
+    assert_in_out_err(%w(-S test_ruby_test_require), "", [], /^.+$/)
 
     t = Tempfile.new(["test_ruby_test_require", ".rb"])
     t.puts "p :ok"
     t.close
     ENV["RUBYPATH"] = "~"
     ENV["HOME"], name = File.split(t.path)
-    ruby("-S", name) do |w, r, e|
-      w.close
-      assert_equal(":ok", r.read.chomp)
-      assert_equal("", e.read)
-    end
+    assert_in_out_err(["-S", name], "", %w(:ok), [])
 
   ensure
     env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
@@ -79,44 +58,35 @@ class TestRequire < Test::Unit::TestCase
       return
     end
 
-    ruby do |w, r, e|
-      w.puts "BasicSocket = 1"
-      w.puts "begin"
-      w.puts "  require 'socket'"
-      w.puts "  p :ng"
-      w.puts "rescue TypeError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      BasicSocket = 1
+      begin
+        require 'socket'
+        p :ng
+      rescue TypeError
+        p :ok
+      end
+    INPUT
 
-    ruby do |w, r, e|
-      w.puts "class BasicSocket; end"
-      w.puts "begin"
-      w.puts "  require 'socket'"
-      w.puts "  p :ng"
-      w.puts "rescue NameError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      class BasicSocket; end
+      begin
+        require 'socket'
+        p :ng
+      rescue NameError
+        p :ok
+      end
+    INPUT
 
-    ruby do |w, r, e|
-      w.puts "class BasicSocket < IO; end"
-      w.puts "begin"
-      w.puts "  require 'socket'"
-      w.puts "  p :ok"
-      w.puts "rescue Exception"
-      w.puts "  p :ng"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      class BasicSocket < IO; end
+      begin
+        require 'socket'
+        p :ok
+      rescue Exception
+        p :ng
+      end
+    INPUT
   end
 
   def test_define_class_under
@@ -126,47 +96,38 @@ class TestRequire < Test::Unit::TestCase
       return
     end
 
-    ruby do |w, r, e|
-      w.puts "module Zlib; end"
-      w.puts "Zlib::Error = 1"
-      w.puts "begin"
-      w.puts "  require 'zlib'"
-      w.puts "  p :ng"
-      w.puts "rescue TypeError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      module Zlib; end
+      Zlib::Error = 1
+      begin
+        require 'zlib'
+        p :ng
+      rescue TypeError
+        p :ok
+      end
+    INPUT
 
-    ruby do |w, r, e|
-      w.puts "module Zlib; end"
-      w.puts "class Zlib::Error; end"
-      w.puts "begin"
-      w.puts "  require 'zlib'"
-      w.puts "  p :ng"
-      w.puts "rescue NameError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      module Zlib; end
+      class Zlib::Error; end
+      begin
+        require 'zlib'
+        p :ng
+      rescue NameError
+        p :ok
+      end
+    INPUT
 
-    ruby do |w, r, e|
-      w.puts "module Zlib; end"
-      w.puts "class Zlib::Error < StandardError; end"
-      w.puts "begin"
-      w.puts "  require 'zlib'"
-      w.puts "  p :ok"
-      w.puts "rescue Exception"
-      w.puts "  p :ng"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      module Zlib; end
+      class Zlib::Error < StandardError; end
+      begin
+        require 'zlib'
+        p :ok
+      rescue Exception
+        p :ng
+      end
+    INPUT
   end
 
   def test_define_module
@@ -176,18 +137,15 @@ class TestRequire < Test::Unit::TestCase
       return
     end
 
-    ruby do |w, r, e|
-      w.puts "Zlib = 1"
-      w.puts "begin"
-      w.puts "  require 'zlib'"
-      w.puts "  p :ng"
-      w.puts "rescue TypeError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      Zlib = 1
+      begin
+        require 'zlib'
+        p :ng
+      rescue TypeError
+        p :ok
+      end
+    INPUT
   end
 
   def test_define_module_under
@@ -197,20 +155,17 @@ class TestRequire < Test::Unit::TestCase
       return
     end
 
-    ruby do |w, r, e|
-      w.puts "class BasicSocket < IO; end"
-      w.puts "class Socket < BasicSocket; end"
-      w.puts "Socket::Constants = 1"
-      w.puts "begin"
-      w.puts "  require 'socket'"
-      w.puts "  p :ng"
-      w.puts "rescue TypeError"
-      w.puts "  p :ok"
-      w.puts "end"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":ok", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
+      class BasicSocket < IO; end
+      class Socket < BasicSocket; end
+      Socket::Constants = 1
+      begin
+        require 'socket'
+        p :ng
+      rescue TypeError
+        p :ok
+      end
+    INPUT
   end
 
   def test_load
@@ -221,14 +176,11 @@ class TestRequire < Test::Unit::TestCase
     t.puts "p :ok"
     t.close
 
-    ruby do |w, r, e|
-      w.puts "load(#{ t.path.dump }, true)"
-      w.puts "GC.start"
-      w.puts "p :end"
-      w.close
-      assert_match(/error in at_exit test/, e.read)
-      assert_equal(":ok\n:end\n:wrap_end", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:ok :end :wrap_end), /error in at_exit test/)
+      load(#{ t.path.dump }, true)
+      GC.start
+      p :end
+    INPUT
 
     assert_raise(ArgumentError) { at_exit }
   end

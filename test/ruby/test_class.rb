@@ -2,10 +2,6 @@ require 'test/unit'
 require_relative 'envutil'
 
 class TestClass < Test::Unit::TestCase
-  def ruby(*r, &b)
-    EnvUtil.rubyexec(*r, &b)
-  end
-
   # ------------------
   # Various test classes
   # ------------------
@@ -133,18 +129,15 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { 1.extend(Module.new) }
     assert_raise(TypeError) { :foo.extend(Module.new) }
 
-    ruby do |w, r, e|
-      w.puts "module Foo; def foo; :foo; end; end"
-      w.puts "false.extend(Foo)"
-      w.puts "true.extend(Foo)"
-      w.puts "p false.foo"
-      w.puts "p true.foo"
-      w.puts "p FalseClass.include?(Foo)"
-      w.puts "p TrueClass.include?(Foo)"
-      w.close
-      assert_equal("", e.read)
-      assert_equal(":foo\n:foo\ntrue\ntrue", r.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(:foo :foo true true), [])
+      module Foo; def foo; :foo; end; end
+      false.extend(Foo)
+      true.extend(Foo)
+      p false.foo
+      p true.foo
+      p FalseClass.include?(Foo)
+      p TrueClass.include?(Foo)
+    INPUT
   end
 
   def test_uninitialized

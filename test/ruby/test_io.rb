@@ -1080,12 +1080,7 @@ class TestIO < Test::Unit::TestCase
   def test_print
     t = make_tempfile
 
-    EnvUtil.rubyexec("-", t.path) do |w, r, e|
-      w.puts "print while $<.gets"
-      w.close
-      assert_equal("", e.read)
-      assert_equal("foo\nbar\nbaz\n", r.read)
-    end
+    assert_in_out_err(["-", t.path], "print while $<.gets", %w(foo bar baz), [])
   end
 
   def test_putc
@@ -1097,12 +1092,7 @@ class TestIO < Test::Unit::TestCase
       assert_equal("ABD", r.read)
     end
 
-    EnvUtil.rubyexec do |w, r, e|
-      w.puts "putc 65"
-      w.close
-      assert_equal("", e.read)
-      assert_equal("A", r.read)
-    end
+    assert_in_out_err([], "putc 65", %w(A), [])
   end
 
   def test_puts_recursive_array
@@ -1122,24 +1112,13 @@ class TestIO < Test::Unit::TestCase
       assert_equal("foo", r.read)
     end
 
-    EnvUtil.rubyexec do |w, r, e|
-      w.puts "'foo'.display"
-      w.close
-      assert_equal("", e.read)
-      assert_equal("foo", r.read)
-    end
+    assert_in_out_err([], "'foo'.display", %w(foo), [])
   end
 
   def test_set_stdout
     assert_raise(TypeError) { $> = Object.new }
 
-    EnvUtil.rubyexec do |w, r, e|
-      w.puts "$> = $stderr"
-      w.puts "puts 'foo'"
-      w.close
-      assert_equal("foo\n", e.read)
-      assert_equal("", r.read)
-    end
+    assert_in_out_err([], "$> = $stderr\nputs 'foo'", [], %w(foo))
   end
 
   def test_initialize
@@ -1183,17 +1162,11 @@ class TestIO < Test::Unit::TestCase
   end
   
   def test_new_with_block
-    EnvUtil.rubyexec do |w, r, e|
-      w.puts "r, w = IO.pipe"
-      w.puts "IO.new(r) {}"
-      w.close
-      assert_not_equal("", e.read)
-      assert_equal("", r.read)
-    end
+    assert_in_out_err([], "r, w = IO.pipe; IO.new(r) {}", [], /^.+$/)
   end
 
   def test_readline2
-    EnvUtil.rubyexec("-e", <<-SRC) do |w, r, e|
+    assert_in_out_err(["-e", <<-SRC], "foo\nbar\nbaz\n", %w(foo bar baz end), [])
       puts readline
       puts readline
       puts readline
@@ -1203,24 +1176,11 @@ class TestIO < Test::Unit::TestCase
         puts "end"
       end
     SRC
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-      assert_equal("", e.read)
-      assert_equal("foo\nbar\nbaz\nend\n", r.read)
-    end
   end
 
   def test_readlines
-    EnvUtil.rubyexec("-e", "p readlines") do |w, r, e|
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-      assert_equal("", e.read)
-      assert_equal("[\"foo\\n\", \"bar\\n\", \"baz\\n\"]\n", r.read)
-    end
+    assert_in_out_err(["-e", "p readlines"], "foo\nbar\nbaz\n",
+                      ["[\"foo\\n\", \"bar\\n\", \"baz\\n\"]"], [])
   end
 
   def test_s_read

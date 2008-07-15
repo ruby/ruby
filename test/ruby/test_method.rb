@@ -11,10 +11,6 @@ class TestMethod < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
-  def ruby(*r, &b)
-    EnvUtil.rubyexec(*r, &b)
-  end
-
   def m0() end
   def m1(a) end
   def m2(a, b) end
@@ -209,12 +205,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_callee_top_level
-    ruby do |w, r, e|
-      w.puts "p __callee__"
-      w.close
-      assert_equal("nil", r.read.chomp)
-      assert_match("", e.read.chomp)
-    end
+    assert_in_out_err([], "p __callee__", %w(nil), [])
   end
 
   def test_caller_negative_level

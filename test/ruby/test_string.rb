@@ -687,9 +687,10 @@ class TestString < Test::Unit::TestCase
     str = 'abc'
     a = [str.hash.to_s]
     3.times {
-      EnvUtil.rubyexec("-e", "print #{str.dump}.hash") {|i,o,e|
-        a << o.read
-      }
+      assert_in_out_err(["-e", "print #{str.dump}.hash"], "") do |r, e|
+        a += r
+        assert_equal([], e)
+      end
     }
     assert_not_equal([str.hash.to_s], a.uniq)
   end

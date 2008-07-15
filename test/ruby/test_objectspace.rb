@@ -56,16 +56,12 @@ End
   end
 
   def test_finalizer
-    EnvUtil.rubyexec("-e", <<-END) do |w, r, e|
+    assert_in_out_err(["-e", <<-END], "", %w(:ok :ok :ok :ok), [])
       a = []
       ObjectSpace.define_finalizer(a) { p :ok }
       b = a.dup
       ObjectSpace.define_finalizer(a) { p :ok }
     END
-      assert_equal("", e.read)
-      assert_equal(":ok\n:ok\n:ok\n:ok\n", r.read)
-
-      assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
-    end
+    assert_raise(ArgumentError) { ObjectSpace.define_finalizer([], Object.new) }
   end
 end

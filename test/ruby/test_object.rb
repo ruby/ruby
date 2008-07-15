@@ -11,10 +11,6 @@ class TestObject < Test::Unit::TestCase
     $VERBOSE = @verbose
   end
 
-  def ruby(*r, &b)
-    EnvUtil.rubyexec(*r, &b)
-  end
-
   def test_dup
     assert_raise(TypeError) { 1.dup }
     assert_raise(TypeError) { true.dup }
@@ -220,34 +216,25 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_redefine_method_under_verbose
-    ruby do |w, r, e|
-      w.puts "$VERBOSE = true"
-      w.puts "o = Object.new"
-      w.puts "def o.foo; 1; end"
-      w.puts "def o.foo; 2; end"
-      w.puts "p o.foo"
-      w.close
-      assert_equal("2", r.read.chomp)
-      assert_match(/warning: method redefined; discarding old foo$/, e.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, %w(2), /warning: method redefined; discarding old foo$/)
+      $VERBOSE = true
+      o = Object.new
+      def o.foo; 1; end
+      def o.foo; 2; end
+      p o.foo
+    INPUT
   end
 
   def test_redefine_method_which_may_case_serious_problem
-    ruby do |w, r, e|
-      w.puts "$VERBOSE = false"
-      w.puts "def (Object.new).object_id; end"
-      w.close
-      assert_equal("", r.read.chomp)
-      assert_match(/warning: redefining `object_id' may cause serious problem$/, e.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, [], /warning: redefining `object_id' may cause serious problem$/)
+      $VERBOSE = false
+      def (Object.new).object_id; end
+    INPUT
 
-    ruby do |w, r, e|
-      w.puts "$VERBOSE = false"
-      w.puts "def (Object.new).__send__; end"
-      w.close
-      assert_equal("", r.read.chomp)
-      assert_match(/warning: redefining `__send__' may cause serious problem$/, e.read.chomp)
-    end
+    assert_in_out_err([], <<-INPUT, [], /warning: redefining `__send__' may cause serious problem$/)
+      $VERBOSE = false
+      def (Object.new).__send__; end
+    INPUT
   end
 
   def test_remove_method
@@ -272,17 +259,14 @@ class TestObject < Test::Unit::TestCase
     end
 
     %w(object_id __send__ initialize).each do |m|
-      ruby do |w, r, e|
-        w.puts "$VERBOSE = false"
-        w.puts "begin"
-        w.puts "  Class.new.instance_eval { remove_method(:#{m}) }"
-        w.puts "rescue NameError"
-        w.puts "  p :ok"
-        w.puts "end"
-        w.close
-        assert_equal(":ok", r.read.chomp)
-        assert_match(/warning: removing `#{m}' may cause serious problem$/, e.read.chomp)
-      end
+      assert_in_out_err([], <<-INPUT, %w(:ok), /warning: removing `#{m}' may cause serious problem$/)
+        $VERBOSE = false
+        begin
+          Class.new.instance_eval { remove_method(:#{m}) }
+        rescue NameError
+          p :ok
+        end
+      INPUT
     end
   end
 
