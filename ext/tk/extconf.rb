@@ -5,8 +5,6 @@ require 'mkmf'
 is_win32 = (/mswin|mingw|cygwin|bccwin|wince/ =~ RUBY_PLATFORM)
 #is_macosx = (/darwin/ =~ RUBY_PLATFORM)
 
-have_header("ruby/signal.h")
-have_header("ruby/encoding.h")
 have_func("ruby_native_thread_p", "ruby.h")
 have_func("rb_errinfo", "ruby.h")
 have_func("rb_safe_level", "ruby.h")
