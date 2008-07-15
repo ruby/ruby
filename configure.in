@@ -1751,6 +1751,19 @@ case "$target_os" in
 esac
 RUBY_LIB_PREFIX=`eval echo \\"${libdir}/ruby\\"`
 
+AC_ARG_WITH(ruby-version,
+	    [  --with-ruby-version=STR ruby version string for version specific directories [[minor]] (full|minor|STR)],
+            [ruby_version=$withval],
+            [ruby_version=minor])
+case "$ruby_version" in
+  full)
+    ruby_version="${MAJOR}.${MINOR}.${TEENY}"
+    ;;
+  minor)
+    ruby_version="${MAJOR}.${MINOR}"
+    ;;
+esac
+
 AC_ARG_WITH(sitedir,
 	    [  --with-sitedir=DIR      site libraries in DIR [[LIBDIR/ruby/site_ruby]]],
             [sitedir=$withval],
@@ -1767,8 +1780,8 @@ case "$target_os" in
     RUBY_SITE_LIB_PATH="`eval echo \\"$SITE_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     ;;
 esac
-RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
-RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${MAJOR}.${MINOR}"
+RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${ruby_version}"
+RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${ruby_version}"
 
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${RUBY_SITE_LIB_PATH}")
@@ -1787,13 +1800,14 @@ case "$target_os" in
     RUBY_VENDOR_LIB_PATH="`eval echo \\"$VENDOR_DIR\\" | sed 's|^NONE/|'"$prefix"'/|'`"
     ;;
 esac
-RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${MAJOR}.${MINOR}"
+RUBY_VENDOR_LIB_PATH2="${RUBY_VENDOR_LIB_PATH}/${ruby_version}"
 
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB, "${RUBY_VENDOR_LIB_PATH}")
 AC_DEFINE_UNQUOTED(RUBY_VENDOR_LIB2, "${RUBY_VENDOR_LIB_PATH2}")
 
 AC_SUBST(arch)dnl
 AC_SUBST(sitearch)dnl
+AC_SUBST(ruby_version)dnl
 AC_SUBST(sitedir)dnl
 AC_SUBST(vendordir)dnl
 

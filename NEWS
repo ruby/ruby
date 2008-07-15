@@ -9,6 +9,15 @@ with all sufficient information, see the ChangeLog file.
 
 == Changes since the 1.8.7 release
 
+=== Configuration changes
+
+* version specific directories
+
+  A new configure option --with-ruby-version is added, which allows
+  user to specify the version string (defaulted to "1.8") for version
+  specific directories such as library directories, ri directories and
+  gem directories.
+
 === Library updates (outstanding ones only)
 
 * set

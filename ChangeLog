@@ -1,3 +1,12 @@
+Tue Jul 15 21:34:13 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* configure.in (--with-ruby-version): Add a new option to specify
+	  the ruby version string for version specific directories.
+	  [ruby-dev:35490]
+
+	* mkconfig.rb: Definition of ruby_version is now determined by the
+	  configure script.
+
 Mon Jul 14 06:02:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#environment): requires shellwords.
