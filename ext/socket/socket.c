@@ -551,7 +551,8 @@ bsock_send(int argc, VALUE *argv, VALUE sock)
     GetOpenFile(sock, fptr);
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
-    while ((n = (int)BLOCKING_REGION(func, &arg)) < 0) {
+    while (rb_thread_fd_writable(arg.fd),
+	   (n = (int)BLOCKING_REGION(func, &arg)) < 0) {
 	if (rb_io_wait_writable(arg.fd)) {
 	    continue;
 	}
@@ -640,6 +641,7 @@ s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     RBASIC(str)->klass = 0;
 
     while (rb_io_check_closed(fptr),
+	   rb_thread_wait_fd(arg.fd),
 	   (slen = BLOCKING_REGION(recvfrom_blocking, &arg)) < 0) {
 	if (RBASIC(str)->klass || RSTRING_LEN(str) != buflen) {
 	    rb_raise(rb_eRuntimeError, "buffer string modified");
@@ -1140,19 +1142,17 @@ struct connect_arg {
     socklen_t len;
 };
 
-static VALUE
-connect_blocking(void *data)
+static int
+connect0(struct connect_arg *arg)
 {
-    struct connect_arg *arg = data;
-    return (VALUE)connect(arg->fd, arg->sockaddr, arg->len);
+    return connect(arg->fd, arg->sockaddr, arg->len);
 }
 
 #if defined(SOCKS) && !defined(SOCKS5)
-static VALUE
-socks_connect_blocking(void *data)
+static int
+socks_connect0(struct connect_arg *arg)
 {
-    struct connect_arg *arg = data;
-    return (VALUE)Rconnect(arg->fd, arg->sockaddr, arg->len);
+    return Rconnect(arg->fd, arg->sockaddr, arg->len);
 }
 #endif
 
@@ -1160,7 +1160,7 @@ static int
 ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 {
     int status;
-    rb_blocking_function_t *func = connect_blocking;
+    int (*func)(struct connect_arg *) = connect0;
     struct connect_arg arg;
 #if WAIT_IN_PROGRESS > 0
     int wait_in_progress = -1;
@@ -1172,10 +1172,11 @@ ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
     arg.sockaddr = sockaddr;
     arg.len = len;
 #if defined(SOCKS) && !defined(SOCKS5)
-    if (socks) func = socks_connect_blocking;
+    if (socks) func = socks_connect0;
 #endif
     for (;;) {
-	status = (int)BLOCKING_REGION(func, &arg);
+	rb_thread_fd_writable(fd);
+	status = func(&arg);
 	if (status < 0) {
 	    switch (errno) {
 	      case EAGAIN:
@@ -1525,32 +1526,16 @@ s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen
     return init_sock(rb_obj_alloc(klass), fd2);
 }
 
-struct accept_arg {
-    int fd;
-    struct sockaddr *sockaddr;
-    socklen_t *len;
-};
-
-static VALUE
-accept_blocking(void *data)
-{
-    struct accept_arg *arg = data;
-    return (VALUE)accept(arg->fd, arg->sockaddr, arg->len);
-}
-
 static VALUE
 s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
     int retry = 0;
-    struct accept_arg arg;
 
     rb_secure(3);
-    arg.fd = fd;
-    arg.sockaddr = sockaddr;
-    arg.len = len;
   retry:
-    fd2 = (int)BLOCKING_REGION(accept_blocking, &arg);
+    rb_thread_wait_fd(fd);
+    fd2 = accept(fd, sockaddr, len);
     if (fd2 < 0) {
 	switch (errno) {
 	  case EMFILE:
@@ -1852,6 +1837,7 @@ udp_send(int argc, VALUE *argv, VALUE sock)
       retry:
 	arg.to = res->ai_addr;
 	arg.tolen = res->ai_addrlen;
+	rb_thread_fd_writable(arg.fd);
 	n = (int)BLOCKING_REGION(sendto_blocking, &arg);
 	if (n >= 0) {
 	    freeaddrinfo(res0);
@@ -2036,6 +2022,7 @@ unix_send_io(VALUE sock, VALUE val)
 #endif
 
     arg.fd = fptr->fd;
+    rb_thread_fd_writable(arg.fd);
     if ((int)BLOCKING_REGION(sendmsg_blocking, &arg) == -1)
 	rb_sys_fail("sendmsg(2)");
 
@@ -2102,6 +2089,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 #endif
 
     arg.fd = fptr->fd;
+    rb_thread_wait_fd(arg.fd);
     if ((int)BLOCKING_REGION(recvmsg_blocking, &arg) == -1)
 	rb_sys_fail("recvmsg(2)");
 

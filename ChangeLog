@@ -1,3 +1,13 @@
+Tue Jul 15 18:14:20 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect, s_accept): no need to wrap by
+	  blocking region if checked before readable/writable by select.
+
+	* ext/socket/socket.c (bsock_send, s_recvfrom, udp_send, unix_send_io,
+	  unix_recv_io): should check readable/writable before blocking calling
+	  blocking functions.
+	  see [ruby-dev:35446]
+
 Tue Jul 15 18:12:02 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.c (ubf_handle): cancel blocking IO if it can (only
