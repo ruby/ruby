@@ -1762,7 +1762,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 	    }
 	    if (limit > 0 && limit == pending) {
 		char *p = fptr->rbuf+fptr->rbuf_off;
-		char *pp = p + limit;
+		char *pp = p + limit - 1;
 		char *pl = rb_enc_left_char_head(p, pp, enc);
 
 		if (pl < pp) {
