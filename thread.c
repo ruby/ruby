@@ -105,7 +105,7 @@ static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_call
 
 #define BLOCKING_REGION(exec, ubf, ubfarg) do { \
     rb_thread_t *__th = GET_THREAD(); \
-    int __prev_status = __th->status; \
+    enum rb_thread_status __prev_status = __th->status; \
     struct rb_unblock_callback __oldubf; \
     set_unblock_function(__th, ubf, ubfarg, &__oldubf); \
     __th->status = THREAD_STOPPED; \
@@ -413,6 +413,11 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	while (join_th) {
 	    if (join_th == main_th) errinfo = Qnil;
 	    rb_thread_interrupt(join_th);
+	    switch (join_th->status) {
+	      case THREAD_STOPPED: case THREAD_STOPPED_FOREVER:
+		join_th->status = THREAD_RUNNABLE;
+	      default: break;
+	    }
 	    join_th = join_th->join_list_next;
 	}
 	if (th != main_th) rb_check_deadlock(th->vm);
@@ -714,7 +719,21 @@ double2timeval(double d)
 static void
 sleep_forever(rb_thread_t *th, int deadlockable)
 {
-    native_sleep(th, 0, deadlockable);
+    enum rb_thread_status prev_status = th->status;
+
+    th->status = deadlockable ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
+    do {
+	if (deadlockable) {
+	    th->vm->sleeper++;
+	    rb_check_deadlock(th->vm);
+	}
+	native_sleep(th, 0);
+	if (deadlockable) {
+	    th->vm->sleeper--;
+	}
+	RUBY_VM_CHECK_INTS();
+    } while (th->status == THREAD_STOPPED_FOREVER);
+    th->status = prev_status;
 }
 
 static void
@@ -736,7 +755,33 @@ getclockofday(struct timeval *tp)
 static void
 sleep_timeval(rb_thread_t *th, struct timeval tv)
 {
-    native_sleep(th, &tv, 0);
+    struct timeval to, tvn;
+    enum rb_thread_status prev_status = th->status;
+
+    getclockofday(&to);
+    to.tv_sec += tv.tv_sec;
+    if ((to.tv_usec += tv.tv_usec) >= 1000000) {
+	to.tv_sec++;
+	to.tv_usec -= 1000000;
+    }
+
+    th->status = THREAD_STOPPED;
+    do {
+	native_sleep(th, &tv);
+	RUBY_VM_CHECK_INTS();
+	getclockofday(&tvn);
+	if (to.tv_sec < tvn.tv_sec) break;
+	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
+	thread_debug("sleep_timeval: %ld.%.6ld > %ld.%.6ld\n",
+		     (long)to.tv_sec, to.tv_usec,
+		     (long)tvn.tv_sec, tvn.tv_usec);
+	tv.tv_sec = to.tv_sec - tvn.tv_sec;
+	if ((tv.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
+	    --tv.tv_sec;
+	    tv.tv_usec += 1000000;
+	}
+    } while (th->status == THREAD_STOPPED);
+    th->status = prev_status;
 }
 
 void
@@ -789,29 +834,7 @@ void
 rb_thread_wait_for(struct timeval time)
 {
     rb_thread_t *th = GET_THREAD();
-    struct timeval to, tvn;
-
-    getclockofday(&to);
-    to.tv_sec += time.tv_sec;
-    if ((to.tv_usec += time.tv_usec) >= 1000000) {
-	to.tv_sec++;
-	to.tv_usec -= 1000000;
-    }
-
-    for (;;) {
-	sleep_timeval(th, time);
-	getclockofday(&tvn);
-	if (to.tv_sec < tvn.tv_sec) break;
-	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
-	thread_debug("sleep_timeval: %ld.%.6ld > %ld.%.6ld\n",
-		     (long)to.tv_sec, to.tv_usec,
-		     (long)tvn.tv_sec, tvn.tv_usec);
-	time.tv_sec = to.tv_sec - tvn.tv_sec;
-	if ((time.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
-	    --time.tv_sec;
-	    time.tv_usec += 1000000;
-	}
-    }
+    sleep_timeval(th, time);
 }
 
 void
@@ -913,7 +936,7 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 {
     if (th->raised_flag) return;
     while (th->interrupt_flag) {
-	int status = th->status;
+	enum rb_thread_status status = th->status;
 	th->status = THREAD_RUNNABLE;
 	th->interrupt_flag = 0;
 
@@ -1161,6 +1184,9 @@ rb_thread_wakeup(VALUE thread)
 	rb_raise(rb_eThreadError, "killed thread");
     }
     rb_thread_ready(th);
+    if (th->status != THREAD_TO_KILL) {
+	th->status = THREAD_RUNNABLE;
+    }
     return thread;
 }
 
@@ -2114,10 +2140,15 @@ timer_thread_function(void *arg)
 
     /* check signal */
     if (vm->buffered_signal_size && vm->main_thread->exec_signal == 0) {
-	vm->main_thread->exec_signal = rb_get_next_signal(vm);
+	rb_thread_t *mth = vm->main_thread;
+	enum rb_thread_status prev_status = mth->status;
+	mth->exec_signal = rb_get_next_signal(vm);
+	thread_debug("main_thread: %s\n", thread_status_name(prev_status));
 	thread_debug("buffered_signal_size: %ld, sig: %d\n",
 		     (long)vm->buffered_signal_size, vm->main_thread->exec_signal);
-	rb_thread_interrupt(vm->main_thread);
+	if (mth->status != THREAD_KILLED) mth->status = THREAD_RUNNABLE;
+	rb_thread_interrupt(mth);
+	mth->status = prev_status;
     }
 
 #if 0
@@ -2635,7 +2666,7 @@ rb_mutex_lock(VALUE self)
 
 	while (mutex->th != th) {
 	    int interrupted;
-	    int prev_status = th->status;
+	    enum rb_thread_status prev_status = th->status;
 	    int last_thread = 0;
 	    struct rb_unblock_callback oldubf;
 

@@ -1,3 +1,13 @@
+Thu Jul 17 04:19:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): wake up joining threads.
+
+	* thread.c (sleep_forever, sleep_timeval): return when interrupted.
+	  [ruby-dev:35542]
+
+	* thread.c (timer_thread_function): restore main thread status.
+	  [ruby-core:17270]
+
 Thu Jul 17 01:27:38 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (appendline): remove invalid access.
