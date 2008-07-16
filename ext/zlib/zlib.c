@@ -2491,7 +2491,7 @@ rb_gzfile_set_mtime(obj, mtime)
 	rb_raise(cGzError, "header is already written");
     }
 
-    if (FIXNUM_P(time)) {
+    if (FIXNUM_P(mtime)) {
 	gz->mtime = FIX2INT(mtime);
     }
     else {

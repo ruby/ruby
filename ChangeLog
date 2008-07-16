@@ -1,3 +1,7 @@
+Thu Jul 17 01:36:02 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/zlib/zlib.c (rb_gzfile_set_mtime): fix typo.  [ruby-core:17713]
+
 Sun Jul 13 00:07:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/ipaddr.rb (IPAddr#initialize): get rid of ArgumentError in
