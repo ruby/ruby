@@ -1,3 +1,8 @@
+Thu Jul 17 02:05:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client#do_rpc): requires
+	  webrick/cookie.  [ ruby-Bugs-21139 ]
+
 Thu Jul 17 01:38:31 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (rb_gzfile_set_mtime): fix typo.  [ruby-core:17713]
