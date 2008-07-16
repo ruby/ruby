@@ -146,8 +146,8 @@ class TestSignal < Test::Unit::TestCase
 
       Signal.trap(:INT, "EXIT")
 
-      assert_raise(ArgumentError) { Signal.trap(:INT, "xxxxxx") }
-      assert_raise(ArgumentError) { Signal.trap(:INT, "xxxx") }
+      Signal.trap(:INT, "xxxxxx")
+      Signal.trap(:INT, "xxxx")
 
       Signal.trap(SignalException.new(:INT).signo, "SIG_DFL")
 
