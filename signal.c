@@ -391,6 +391,7 @@ rb_f_kill(int argc, VALUE *argv)
 
 static struct {
     VALUE cmd;
+    int safe;
 } trap_list[NSIG];
 static rb_atomic_t trap_pending_list[NSIG];
 #if 0
@@ -578,6 +579,11 @@ signal_exec(VALUE cmd, int sig)
 {
     rb_proc_t *proc;
     VALUE signum = INT2FIX(sig);
+
+    if (TYPE(cmd) == T_STRING) {
+	rb_eval_cmd(cmd, rb_ary_new3(1, signum), trap_list[sig].safe);
+	return;
+    }
     GetProcPtr(cmd, proc);
     vm_invoke_proc(GET_THREAD(), proc, proc->block.self, 1, &signum, 0);
 }
@@ -713,15 +719,10 @@ default_handler(int sig)
     return func;
 }
 
-static RETSIGTYPE
-wrong_trap(int sig)
-{
-}
-
 static sighandler_t
 trap_handler(VALUE *cmd, int sig)
 {
-    sighandler_t func = wrong_trap;
+    sighandler_t func = sighandler;
     VALUE command;
 
     if (NIL_P(*cmd)) {
@@ -731,6 +732,7 @@ trap_handler(VALUE *cmd, int sig)
 	command = rb_check_string_type(*cmd);
 	if (!NIL_P(command)) {
 	    SafeStringValue(command);	/* taint check */
+	    *cmd = command;
 	    switch (RSTRING_LEN(command)) {
 	      case 0:
                 goto sig_ign;
@@ -763,19 +765,14 @@ sig_dfl:
 		break;
 	      case 4:
 		if (strncmp(RSTRING_PTR(command), "EXIT", 4) == 0) {
-		    func = sighandler;
 		    *cmd = Qundef;
 		}
 		break;
-	    }
-	    if (func == wrong_trap) {
-		rb_raise(rb_eArgError, "wrong trap - %s", RSTRING_PTR(command));
 	    }
 	}
 	else {
 	    rb_proc_t *proc;
 	    GetProcPtr(*cmd, proc);
-	    func = sighandler;
 	}
     }
 
@@ -835,6 +832,7 @@ trap(struct trap_arg *arg)
     }
 
     trap_list[sig].cmd = command;
+    trap_list[sig].safe = rb_safe_level();
     /* enable at least specified signal. */
 #if USE_TRAP_MASK
 #ifdef HAVE_SIGPROCMASK

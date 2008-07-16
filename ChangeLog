@@ -1,3 +1,8 @@
+Wed Jul 16 18:04:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (signal_exec, trap_handler): trap accepts a string as
+	  command.  [ruby-dev:35533]
+
 Wed Jul 16 00:04:30 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/envutil.rb (Test::Unit::Assertions#assert_in_out_err): new
