@@ -1,3 +1,7 @@
+Thu Jul 17 23:45:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/rdoc/test_rdoc_c_parser.rb (teardown): close tempfile.
+
 Thu Jul 17 21:08:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_process.rb (test_getpriority, test_setpriority): use
