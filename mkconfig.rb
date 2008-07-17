@@ -17,7 +17,8 @@ unless File.directory?(dir = File.dirname(rbconfig_rb))
 end
 
 version = RUBY_VERSION
-def (config = "").write(arg)
+config = ""
+def config.write(arg)
   concat(arg.to_s)
 end
 $stdout = config

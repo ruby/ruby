@@ -1,3 +1,7 @@
+Thu Jul 17 10:55:24 2008  Eric Hodel  <drbrain@segment7.net>
+
+	* mkconfig.rb: Simplify expression for RDoc.
+
 Thu Jul 17 10:21:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): strict check.
