@@ -1,3 +1,8 @@
+Thu Jul 17 21:29:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#environment): requires shellwords.
+	  [ruby-dev:35466]
+
 Thu Jul 17 01:36:02 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/zlib/zlib.c (rb_gzfile_set_mtime): fix typo.  [ruby-core:17713]
