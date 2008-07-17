@@ -1177,7 +1177,6 @@ ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
     if (socks) func = socks_connect_blocking;
 #endif
     for (;;) {
-	rb_thread_fd_writable(fd);
 	status = BLOCKING_REGION(func, &arg);
 	if (status < 0) {
 	    switch (errno) {
