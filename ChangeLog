@@ -1,3 +1,8 @@
+Thu Jul 17 20:41:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* pack.c (pack_unpack): fix v and V with big endian.
+	  [1].pack("V").unpack("V") was [4294967296].
+
 Thu Jul 17 20:35:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* pack.c (pack_pack): fix i! with big endian.  [1].pack("i!") was
