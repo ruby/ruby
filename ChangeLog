@@ -1,3 +1,8 @@
+Thu Jul 17 21:30:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#environment): requires shellwords.
+	  [ruby-dev:35466]
+
 Thu Jul 17 02:05:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/xmlrpc/client.rb (XMLRPC::Client#do_rpc): requires
