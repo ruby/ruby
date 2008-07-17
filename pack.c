@@ -691,11 +691,11 @@ pack_pack(VALUE ary, VALUE fmt)
 	  case 'i':		/* signed int */
 	  case 'I':		/* unsigned int */
 	    while (len-- > 0) {
-		long i;
+		int i;
 
 		from = NEXTFROM;
 		i = num2i32(from);
-		rb_str_buf_cat(res, OFF32(&i), NATINT_LEN(int,4));
+		rb_str_buf_cat(res, (char*)&i, sizeof(int));
 	    }
 	    break;
 
