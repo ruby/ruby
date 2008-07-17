@@ -455,7 +455,7 @@ static VALUE
 rb_str_format_m(str, arg)
     VALUE str, arg;
 {
-    VALUE tmp = rb_check_array_type(arg);
+    volatile VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
 	return rb_str_format(RARRAY_LEN(tmp), RARRAY_PTR(tmp), str);

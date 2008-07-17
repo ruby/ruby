@@ -1,3 +1,8 @@
+Thu Jul 17 21:31:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_format_m): make tmp volatile to avoid possible GC
+	  problem.
+
 Thu Jul 17 21:29:34 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#environment): requires shellwords.
