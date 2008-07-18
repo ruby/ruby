@@ -1585,25 +1585,26 @@ check_int(SIGNED_VALUE num)
 }
 
 static void
-check_uint(VALUE num)
+check_uint(VALUE num, VALUE sign)
 {
     static const VALUE mask = ~(VALUE)UINT_MAX;
-    static const VALUE msb =
-#if SIZEOF_LONG == SIZEOF_VALUE
-	~LONG_MAX;
-#elif SIZEOF_LONG_LONG == SIZEOF_VALUE
-	~LLONG_MAX;
-#endif
     const char *s;
 
-    if ((num & mask) != 0 &&
-	((num & mask) != mask || (num & ~mask) <= INT_MAX + 1UL)) {
-	if ((num & msb) == 0)
+    if (RTEST(sign)) {
+	/* minus */
+	if ((num & mask) != mask || (num & ~mask) <= INT_MAX + 1UL)
+	    s = "small";
+	else
+	    return;
+    }
+    else {
+	/* plus */
+	if ((num & mask) != 0)
 	    s = "big";
 	else
-	    s = "small";
-	rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `unsigned int'", num, s);
+	    return;
     }
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `unsigned int'", num, s);
 }
 
 long
@@ -1629,7 +1630,7 @@ rb_num2uint(VALUE val)
 {
     unsigned long num = rb_num2ulong(val);
 
-    check_uint(num);
+    check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
     return num;
 }
 
@@ -1643,7 +1644,7 @@ rb_fix2uint(VALUE val)
     }
     num = FIX2ULONG(val);
 
-    check_uint(num);
+    check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
     return num;
 }
 #else

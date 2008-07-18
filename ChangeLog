@@ -1,3 +1,8 @@
+Sat Jul 19 00:27:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): fixed wrong check
+	  about 64bit positive value.
+
 Fri Jul 18 23:23:37 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): avoid cfp consistency
