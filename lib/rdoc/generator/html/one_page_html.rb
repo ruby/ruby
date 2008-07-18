@@ -17,7 +17,7 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 <% unless requires["aref"] then %>
 <li><%= requires["name"] %></li>
 <% end %>
-<% end # files["requires"] %>
+<% end %><%# files["requires"] %>
 </ul>
 <% end %>
 
@@ -31,7 +31,7 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 <% unless includes["aref"] then %>
 <li><%= includes["name"] %></li>
 <% end %>
-<% end # classes["includes"] %>
+<% end %><%# classes["includes"] %>
 </ul>
 <% end %>
 
@@ -42,7 +42,7 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 <table>
 <% sections["attributes"].each do |attributes| %>
 <tr><td><%= attributes["name"] %></td><td><%= attributes["rw"] %></td><td><%= attributes["a_desc"] %></td></tr>
-<% end # sections["attributes"] %>
+<% end %><%# sections["attributes"] %>
 </table>
 <% end %>
 
@@ -68,11 +68,11 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 <%= methods["sourcecode"] %>
 </pre></blockquote>
 <% end %>
-<% end # method_list["methods"] %>
+<% end %><%# method_list["methods"] %>
 <% end %>
-<% end # sections["method_list"] %>
+<% end %><%# sections["method_list"] %>
 <% end %>
-<% end # classes["sections"] %>
+<% end %><%# classes["sections"] %>
 <% end %>
   EOF
 
@@ -91,7 +91,7 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
   <tr><td>Modified:</td><td><%= files["dtm_modified"] %></td></tr>
 </table>
 } + CONTENTS_XML + %{
-<% end # values["files"] %>
+<% end %><%# values["files"] %>
 
 <% if values["classes"] then %>
 <h2>Classes</h2>
@@ -107,11 +107,11 @@ module RDoc::Generator::HTML::ONE_PAGE_HTML
 (in files
 <% classes["infiles"].each do |infiles| %>
 <%= href infiles["full_path_url"], infiles["full_path"] %>
-<% end # classes["infiles"] %>
+<% end %><%# classes["infiles"] %>
 )
 <% end %>
 } + CONTENTS_XML + %{
-<% end # values["classes"] %>
+<% end %><%# values["classes"] %>
 <% end %>
 </body>
 </html>

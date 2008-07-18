@@ -6,8 +6,8 @@ require 'rdoc/tokenstream'
 module RDoc
 
   ##
-  # We contain the common stuff for contexts (which are containers)
-  # and other elements (methods, attributes and so on)
+  # We contain the common stuff for contexts (which are containers) and other
+  # elements (methods, attributes and so on)
 
   class CodeObject
 
@@ -30,6 +30,13 @@ module RDoc
     # do we document ourselves?
 
     attr_reader :document_self
+
+    def initialize
+      @document_self = true
+      @document_children = true
+      @force_documentation = false
+      @done_documenting = false
+    end
 
     def document_self=(val)
       @document_self = val
@@ -72,13 +79,6 @@ module RDoc
     def remove_methods_etc
     end
 
-    def initialize
-      @document_self = true
-      @document_children = true
-      @force_documentation = false
-      @done_documenting = false
-    end
-
     # Access the code object's comment
     attr_reader :comment
 
@@ -106,15 +106,24 @@ module RDoc
 
   end
 
-  # A Context is something that can hold modules, classes, methods, 
-  # attributes, aliases, requires, and includes. Classes, modules, and
-  # files are all Contexts.
+  ##
+  # A Context is something that can hold modules, classes, methods,
+  # attributes, aliases, requires, and includes. Classes, modules, and files
+  # are all Contexts.
 
   class Context < CodeObject
-    attr_reader   :name, :method_list, :attributes, :aliases, :constants
-    attr_reader   :requires, :includes, :in_files, :visibility
 
-    attr_reader   :sections
+    attr_reader :aliases
+    attr_reader :attributes
+    attr_reader :constants
+    attr_reader :current_section
+    attr_reader :in_files
+    attr_reader :includes
+    attr_reader :method_list
+    attr_reader :name
+    attr_reader :requires
+    attr_reader :sections
+    attr_reader :visibility
 
     class Section
       attr_reader :title, :comment, :sequence
@@ -129,12 +138,22 @@ module RDoc
         set_comment(comment)
       end
 
-      private
+      def ==(other)
+        self.class === other and @sequence == other.sequence
+      end
 
-      # Set the comment for this section from the original comment block
-      # If the first line contains :section:, strip it and use the rest. Otherwise
-      # remove lines up to the line containing :section:, and look for 
-      # those lines again at the end and remove them. This lets us write
+      def inspect
+        "#<%s:0x%x %s %p>" % [
+          self.class, object_id,
+          @sequence, title
+        ]
+      end
+
+      ##
+      # Set the comment for this section from the original comment block If
+      # the first line contains :section:, strip it and use the rest.
+      # Otherwise remove lines up to the line containing :section:, and look
+      # for those lines again at the end and remove them. This lets us write
       #
       #   # ---------------------
       #   # :SECTION: The title
@@ -144,9 +163,10 @@ module RDoc
       def set_comment(comment)
         return unless comment
 
-        if comment =~ /^.*?:section:.*$/
+        if comment =~ /^#[ \t]*:section:.*\n/
           start = $`
           rest = $'
+
           if start.empty?
             @comment = rest
           else
@@ -157,13 +177,13 @@ module RDoc
         end
         @comment = nil if @comment.empty?
       end
+
     end
 
-
     def initialize
-      super()
+      super
 
-      @in_files    = []
+      @in_files = []
 
       @name    ||= "unknown"
       @comment ||= ""
@@ -177,29 +197,37 @@ module RDoc
       initialize_classes_and_modules
     end
 
+    ##
     # map the class hash to an array externally
+
     def classes
       @classes.values
     end
 
+    ##
     # map the module hash to an array externally
+
     def modules
       @modules.values
     end
 
+    ##
     # Change the default visibility for new methods
+
     def ongoing_visibility=(vis)
       @visibility = vis
     end
 
-    # Given an array +methods+ of method names, set the
-    # visibility of the corresponding AnyMethod object
+    ##
+    # Yields Method and Attr entries matching the list of names in +methods+.
+    # Attributes are only returned when +singleton+ is false.
 
-    def set_visibility_for(methods, vis, singleton=false)
+    def methods_matching(methods, singleton = false)
       count = 0
+
       @method_list.each do |m|
-        if methods.include?(m.name) && m.singleton == singleton
-          m.visibility = vis
+        if methods.include? m.name and m.singleton == singleton then
+          yield m
           count += 1
         end
       end
@@ -209,14 +237,23 @@ module RDoc
       # perhaps we need to look at attributes
 
       @attributes.each do |a|
-        if methods.include?(a.name)
-          a.visibility = vis
-          count += 1
-        end
+        yield a if methods.include? a.name
       end
     end
 
+    ##
+    # Given an array +methods+ of method names, set the visibility of the
+    # corresponding AnyMethod object
+
+    def set_visibility_for(methods, vis, singleton = false)
+      methods_matching methods, singleton do |m|
+        m.visibility = vis
+      end
+    end
+
+    ##
     # Record the file that we happen to find it in
+
     def record_location(toplevel)
       @in_files << toplevel unless @in_files.include?(toplevel)
     end
@@ -269,10 +306,10 @@ module RDoc
 
     # Requires always get added to the top-level (file) context
     def add_require(a_require)
-      if self.kind_of? TopLevel
-        add_to(@requires, a_require)
+      if TopLevel === self then
+        add_to @requires, a_require
       else
-        parent.add_require(a_require)
+        parent.add_require a_require
       end
     end
 
@@ -292,7 +329,7 @@ module RDoc
     end
 
     def add_to(array, thing)
-      array <<  thing if @document_self  && !@done_documenting
+      array << thing if @document_self and not @done_documenting
       thing.parent = self
       thing.section = @current_section
     end
@@ -371,26 +408,30 @@ module RDoc
       name <=> other.name
     end
 
-    # Look up the given symbol. If method is non-nil, then
-    # we assume the symbol references a module that
-    # contains that method
-    def find_symbol(symbol, method=nil)
+    ##
+    # Look up +symbol+.  If +method+ is non-nil, then we assume the symbol
+    # references a module that contains that method.
+
+    def find_symbol(symbol, method = nil)
       result = nil
+
       case symbol
-      when /^::(.*)/
+      when /^::(.*)/ then
         result = toplevel.find_symbol($1)
-      when /::/
+      when /::/ then
         modules = symbol.split(/::/)
-        unless modules.empty?
+
+        unless modules.empty? then
           module_name = modules.shift
           result = find_module_named(module_name)
-          if result
+          if result then
             modules.each do |name|
               result = result.find_module_named(name)
               break unless result
             end
           end
         end
+
       else
         # if a method is specified, then we're definitely looking for
         # a module, otherwise it could be any symbol
@@ -408,22 +449,21 @@ module RDoc
           end
         end
       end
-      if result && method
-        if !result.respond_to?(:find_local_symbol)
-          #p result.name
-          #p method
-          fail
-        end
+
+      if result and method then
+        fail unless result.respond_to? :find_local_symbol
         result = result.find_local_symbol(method)
       end
+
       result
     end
-           
+
     def find_local_symbol(symbol)
       res = find_method_named(symbol) ||
             find_constant_named(symbol) ||
             find_attribute_named(symbol) ||
-            find_module_named(symbol) 
+            find_module_named(symbol) ||
+            find_file_named(symbol)
     end
 
     # Handle sections
@@ -454,7 +494,14 @@ module RDoc
     def find_attribute_named(name)
       @attributes.find {|m| m.name == name}
     end
-    
+
+    ##
+    # Find a named file, or return nil
+
+    def find_file_named(name)
+      toplevel.class.find_file_named(name)
+    end
+
   end
 
   ##
@@ -465,22 +512,29 @@ module RDoc
     attr_accessor :file_relative_name
     attr_accessor :file_absolute_name
     attr_accessor :diagram
-    
+
     @@all_classes = {}
     @@all_modules = {}
+    @@all_files   = {}
 
     def self.reset
       @@all_classes = {}
       @@all_modules = {}
+      @@all_files   = {}
     end
 
     def initialize(file_name)
       super()
       @name = "TopLevel"
-      @file_relative_name = file_name
-      @file_absolute_name = file_name
-      @file_stat          = File.stat(file_name)
-      @diagram            = nil
+      @file_relative_name    = file_name
+      @file_absolute_name    = file_name
+      @file_stat             = File.stat(file_name)
+      @diagram               = nil
+      @@all_files[file_name] = self
+    end
+
+    def file_base_name
+      File.basename @file_absolute_name
     end
 
     def full_name
@@ -497,7 +551,7 @@ module RDoc
       cls = collection[name]
 
       if cls
-        puts "Reusing class/module #{name}" if $DEBUG_RDOC
+        puts "Reusing class/module #{name}" #if $DEBUG_RDOC
       else
         if class_type == NormalModule
           all = @@all_modules
@@ -534,6 +588,10 @@ module RDoc
       nil
     end
 
+    def self.find_file_named(name)
+      @@all_files[name]
+    end
+
     def find_local_symbol(symbol)
       find_class_or_module_named(symbol) || super
     end
@@ -553,8 +611,9 @@ module RDoc
 
   end
 
-  # ClassModule is the base class for objects representing either a
-  # class or a module.
+  ##
+  # ClassModule is the base class for objects representing either a class or a
+  # module.
 
   class ClassModule < Context
 
@@ -603,29 +662,63 @@ module RDoc
     end
   end
 
+  ##
   # Anonymous classes
+
   class AnonClass < ClassModule
   end
 
+  ##
   # Normal classes
+
   class NormalClass < ClassModule
+
+    def inspect
+      superclass = @superclass ? " < #{@superclass}" : nil
+      "<%s:0x%x class %s%s includes: %p attributes: %p methods: %p aliases: %p>" % [
+        self.class, object_id,
+        @name, superclass, @includes, @attributes, @method_list, @aliases
+      ]
+    end
+
   end
 
+  ##
   # Singleton classes
+
   class SingleClass < ClassModule
   end
 
+  ##
   # Module
+
   class NormalModule < ClassModule
+
+    def comment=(comment)
+      return if comment.empty?
+      comment = @comment << "# ---\n" << comment unless @comment.empty?
+
+      super
+    end
+
+    def inspect
+      "#<%s:0x%x module %s includes: %p attributes: %p methods: %p aliases: %p>" % [
+        self.class, object_id,
+        @name, @includes, @attributes, @method_list, @aliases
+      ]
+    end
+
     def is_module?
       true
     end
+
   end
 
   ##
   # AnyMethod is the base class for objects representing methods
 
   class AnyMethod < CodeObject
+
     attr_accessor :name
     attr_accessor :visibility
     attr_accessor :block_params
@@ -663,10 +756,20 @@ module RDoc
       @name <=> other.name
     end
 
-    def to_s
-      res = self.class.name + ": " + @name + " (" + @text + ")\n"
-      res << @comment.to_s
-      res
+    def add_alias(method)
+      @aliases << method
+    end
+
+    def inspect
+      alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
+      "#<%s:0x%x %s%s%s (%s)%s>" % [
+        self.class, object_id,
+        @parent.name,
+        singleton ? '::' : '#',
+        name,
+        visibility,
+        alias_for,
+      ]
     end
 
     def param_seq
@@ -691,16 +794,34 @@ $stderr.puts p
       p
     end
 
-    def add_alias(method)
-      @aliases << method
+    def to_s
+      res = self.class.name + ": " + @name + " (" + @text + ")\n"
+      res << @comment.to_s
+      res
     end
+
   end
 
-  # Represent an alias, which is an old_name/ new_name pair associated
-  # with a particular context
+  ##
+  # GhostMethod represents a method referenced only by a comment
+
+  class GhostMethod < AnyMethod
+  end
+
+  ##
+  # MetaMethod represents a meta-programmed method
+
+  class MetaMethod < AnyMethod
+  end
+
+  ##
+  # Represent an alias, which is an old_name/ new_name pair associated with a
+  # particular context
+
   class Alias < CodeObject
+
     attr_accessor :text, :old_name, :new_name, :comment
-    
+
     def initialize(text, old_name, new_name, comment)
       super()
       @text = text
@@ -709,12 +830,22 @@ $stderr.puts p
       self.comment = comment
     end
 
+    def inspect
+      "#<%s:0x%x %s.alias_method %s, %s>" % [
+        self.class, object_id,
+        parent.name, @old_name, @new_name,
+      ]
+    end
+
     def to_s
       "alias: #{self.old_name} ->  #{self.new_name}\n#{self.comment}"
     end
+
   end
 
+  ##
   # Represent a constant
+
   class Constant < CodeObject
     attr_accessor :name, :value
 
@@ -726,7 +857,9 @@ $stderr.puts p
     end
   end
 
+  ##
   # Represent attributes
+
   class Attr < CodeObject
     attr_accessor :text, :name, :rw, :visibility
 
@@ -739,16 +872,33 @@ $stderr.puts p
       self.comment = comment
     end
 
+    def <=>(other)
+      self.name <=> other.name
+    end
+
+    def inspect
+      attr = case rw
+             when 'RW' then :attr_accessor
+             when 'R'  then :attr_reader
+             when 'W'  then :attr_writer
+             else
+               " (#{rw})"
+             end
+
+      "#<%s:0x%x %s.%s :%s>" % [
+        self.class, object_id,
+        @parent.name, attr, @name,
+      ]
+    end
+
     def to_s
       "attr: #{self.name} #{self.rw}\n#{self.comment}"
     end
 
-    def <=>(other)
-      self.name <=> other.name
-    end
   end
 
-  # a required file
+  ##
+  # A required file
 
   class Require < CodeObject
     attr_accessor :name
@@ -759,16 +909,38 @@ $stderr.puts p
       self.comment = comment
     end
 
+    def inspect
+      "#<%s:0x%x require '%s' in %s>" % [
+        self.class,
+        object_id,
+        @name,
+        @parent.file_base_name,
+      ]
+    end
+
   end
 
-  # an included module
+  ##
+  # An included module
+
   class Include < CodeObject
+
     attr_accessor :name
 
     def initialize(name, comment)
       super()
       @name = name
       self.comment = comment
+
+    end
+
+    def inspect
+      "#<%s:0x%x %s.include %s>" % [
+        self.class,
+        object_id,
+        @parent.name,
+        @name,
+      ]
     end
 
   end

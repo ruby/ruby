@@ -7,8 +7,8 @@ require 'rdoc/generator/html/one_page_html'
 # This is a template for RDoc that uses XHTML 1.0 Transitional and dictates a
 # bit more of the appearance of the output to cascading stylesheets than the
 # default. It was designed for clean inline code display, and uses DHTMl to
-# toggle the visibility of each method's source with each click on the
-# '[source]' link.
+# toggle the visbility of each method's source with each click on the '[source]'
+# link.
 #
 # == Authors
 #
@@ -16,41 +16,61 @@ require 'rdoc/generator/html/one_page_html'
 #
 # Copyright (c) 2002, 2003 The FaerieMUD Consortium. Some rights reserved.
 #
-# This work is licensed under the Creative Commons Attribution License. To
-# view a copy of this license, visit
-# http://creativecommons.org/licenses/by/1.0/ or send a letter to Creative
-# Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+# This work is licensed under the Creative Commons Attribution License. To view
+# a copy of this license, visit http://creativecommons.org/licenses/by/1.0/ or
+# send a letter to Creative Commons, 559 Nathan Abbott Way, Stanford, California
+# 94305, USA.
 
-module RDoc::Generator::HTML::HTML
+module RDoc::Generator::HTML::FRAMELESS
+
+  FRAMELESS = true
 
   FONTS = "Verdana,Arial,Helvetica,sans-serif"
 
   STYLE = <<-EOF
 body {
-    font-family: Verdana,Arial,Helvetica,sans-serif;
-    font-size:   90%;
-    margin: 0;
-    margin-left: 40px;
-    padding: 0;
-    background: white;
+  font-family: #{FONTS};
+  font-size: 90%;
+  margin: 0;
+  margin-left: 40px;
+  padding: 0;
+  background: white;
 }
 
-h1,h2,h3,h4 { margin: 0; color: #efefef; background: transparent; }
-h1 { font-size: 150%; }
-h2,h3,h4 { margin-top: 1em; }
+h1, h2, h3, h4 {
+  margin: 0;
+  color: #efefef;
+  background: transparent;
+}
 
-a { background: #eef; color: #039; text-decoration: none; }
-a:hover { background: #039; color: #eef; }
+h1 {
+  font-size: 150%;
+}
+
+h2,h3,h4 {
+  margin-top: 1em;
+}
+
+:link, :visited {
+  background: #eef;
+  color: #039;
+  text-decoration: none;
+}
+
+:link:hover, :visited:hover {
+  background: #039;
+  color: #eef;
+}
 
 /* Override the base stylesheet's Anchor inside a table cell */
-td > a {
+td > :link, td > :visited {
   background: transparent;
   color: #039;
   text-decoration: none;
 }
 
 /* and inside a section title */
-.section-title > a {
+.section-title > :link, .section-title > :visited {
   background: transparent;
   color: #eee;
   text-decoration: none;
@@ -58,187 +78,255 @@ td > a {
 
 /* === Structural elements =================================== */
 
-div#index {
-    margin: 0;
-    margin-left: -40px;
-    padding: 0;
-    font-size: 90%;
+.index {
+  margin: 0;
+  margin-left: -40px;
+  padding: 0;
+  font-size: 90%;
 }
 
-
-div#index a {
-    margin-left: 0.7em;
+.index :link, .index :visited {
+  margin-left: 0.7em;
 }
 
-div#index .section-bar {
-   margin-left: 0px;
-   padding-left: 0.7em;
-   background: #ccc;
-   font-size: small;
+.index .section-bar {
+  margin-left: 0px;
+  padding-left: 0.7em;
+  background: #ccc;
+  font-size: small;
 }
 
-
-div#classHeader, div#fileHeader {
-    width: auto;
-    color: white;
-    padding: 0.5em 1.5em 0.5em 1.5em;
-    margin: 0;
-    margin-left: -40px;
-    border-bottom: 3px solid #006;
+#classHeader, #fileHeader {
+  width: auto;
+  color: white;
+  padding: 0.5em 1.5em 0.5em 1.5em;
+  margin: 0;
+  margin-left: -40px;
+  border-bottom: 3px solid #006;
 }
 
-div#classHeader a, div#fileHeader a {
-    background: inherit;
-    color: white;
+#classHeader :link, #fileHeader :link,
+#classHeader :visited, #fileHeader :visited {
+  background: inherit;
+  color: white;
 }
 
-div#classHeader td, div#fileHeader td {
-    background: inherit;
-    color: white;
+#classHeader td, #fileHeader td {
+  background: inherit;
+  color: white;
 }
 
-
-div#fileHeader {
-    background: #057;
+#fileHeader {
+  background: #057;
 }
 
-div#classHeader {
-    background: #048;
+#classHeader {
+  background: #048;
 }
-
 
 .class-name-in-header {
   font-size:  180%;
   font-weight: bold;
 }
 
-
-div#bodyContent {
-    padding: 0 1.5em 0 1.5em;
+#bodyContent {
+  padding: 0 1.5em 0 1.5em;
 }
 
-div#description {
-    padding: 0.5em 1.5em;
-    background: #efefef;
-    border: 1px dotted #999;
+#description {
+  padding: 0.5em 1.5em;
+  background: #efefef;
+  border: 1px dotted #999;
 }
 
-div#description h1,h2,h3,h4,h5,h6 {
-    color: #125;;
-    background: transparent;
+#description h1, #description h2, #description h3,
+#description h4, #description h5, #description h6 {
+  color: #125;
+  background: transparent;
 }
 
-div#validator-badges {
-    text-align: center;
+#copyright {
+  color: #333;
+  background: #efefef;
+  font: 0.75em sans-serif;
+  margin-top: 5em;
+  margin-bottom: 0;
+  padding: 0.5em 2em;
 }
-div#validator-badges img { border: 0; }
-
-div#copyright {
-    color: #333;
-    background: #efefef;
-    font: 0.75em sans-serif;
-    margin-top: 5em;
-    margin-bottom: 0;
-    padding: 0.5em 2em;
-}
-
 
 /* === Classes =================================== */
 
 table.header-table {
-    color: white;
-    font-size: small;
+  color: white;
+  font-size: small;
 }
 
 .type-note {
-    font-size: small;
-    color: #DEDEDE;
+  font-size: small;
+  color: #dedede;
 }
 
 .xxsection-bar {
-    background: #eee;
-    color: #333;
-    padding: 3px;
+  background: #eee;
+  color: #333;
+  padding: 3px;
 }
 
 .section-bar {
-   color: #333;
-   border-bottom: 1px solid #999;
-    margin-left: -20px;
+  color: #333;
+  border-bottom: 1px solid #999;
+  margin-left: -20px;
 }
-
 
 .section-title {
-    background: #79a;
-    color: #eee;
-    padding: 3px;
-    margin-top: 2em;
-    margin-left: -30px;
-    border: 1px solid #999;
+  background: #79a;
+  color: #eee;
+  padding: 3px;
+  margin-top: 2em;
+  margin-left: -30px;
+  border: 1px solid #999;
 }
 
-.top-aligned-row {  vertical-align: top }
-.bottom-aligned-row { vertical-align: bottom }
+.top-aligned-row {
+  vertical-align: top
+}
+
+.bottom-aligned-row {
+  vertical-align: bottom
+}
 
 /* --- Context section classes ----------------------- */
 
 .context-row { }
-.context-item-name { font-family: monospace; font-weight: bold; color: black; }
-.context-item-value { font-size: small; color: #448; }
-.context-item-desc { color: #333; padding-left: 2em; }
+
+.context-item-name {
+  font-family: monospace;
+  font-weight: bold;
+  color: black;
+}
+
+.context-item-value {
+  font-size: small;
+  color: #448;
+}
+
+.context-item-desc {
+  color: #333;
+  padding-left: 2em;
+}
 
 /* --- Method classes -------------------------- */
+
 .method-detail {
-    background: #efefef;
-    padding: 0;
-    margin-top: 0.5em;
-    margin-bottom: 1em;
-    border: 1px dotted #ccc;
+  background: #efefef;
+  padding: 0;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+  border: 1px dotted #ccc;
 }
+
 .method-heading {
   color: black;
   background: #ccc;
   border-bottom: 1px solid #666;
   padding: 0.2em 0.5em 0 0.5em;
 }
-.method-signature { color: black; background: inherit; }
-.method-name { font-weight: bold; }
-.method-args { font-style: italic; }
-.method-description { padding: 0 0.5em 0 0.5em; }
+
+.method-signature {
+  color: black;
+  background: inherit;
+}
+
+.method-name {
+  font-weight: bold;
+}
+
+.method-args {
+  font-style: italic;
+}
+
+.method-description {
+  padding: 0 0.5em 0 0.5em;
+}
 
 /* --- Source code sections -------------------- */
 
-a.source-toggle { font-size: 90%; }
-div.method-source-code {
-    background: #262626;
-    color: #ffdead;
-    margin: 1em;
-    padding: 0.5em;
-    border: 1px dashed #999;
-    overflow: hidden;
+:link.source-toggle, :visited.source-toggle {
+  font-size: 90%;
 }
 
-div.method-source-code pre { color: #ffdead; overflow: hidden; }
+div.method-source-code {
+  background: #262626;
+  color: #ffdead;
+  margin: 1em;
+  padding: 0.5em;
+  border: 1px dashed #999;
+  overflow: hidden;
+}
+
+div.method-source-code pre {
+  color: #ffdead;
+  overflow: hidden;
+}
 
 /* --- Ruby keyword styles --------------------- */
 
-.standalone-code { background: #221111; color: #ffdead; overflow: hidden; }
+.standalone-code {
+  background: #221111;
+  color: #ffdead;
+  overflow: hidden;
+}
 
-.ruby-constant  { color: #7fffd4; background: transparent; }
-.ruby-keyword { color: #00ffff; background: transparent; }
-.ruby-ivar    { color: #eedd82; background: transparent; }
-.ruby-operator  { color: #00ffee; background: transparent; }
-.ruby-identifier { color: #ffdead; background: transparent; }
-.ruby-node    { color: #ffa07a; background: transparent; }
-.ruby-comment { color: #b22222; font-weight: bold; background: transparent; }
-.ruby-regexp  { color: #ffa07a; background: transparent; }
-.ruby-value   { color: #7fffd4; background: transparent; }
+.ruby-constant {
+  color: #7fffd4;
+  background: transparent;
+}
+
+.ruby-keyword {
+  color: #00ffff;
+  background: transparent;
+}
+
+.ruby-ivar {
+  color: #eedd82;
+  background: transparent;
+}
+
+.ruby-operator {
+  color: #00ffee;
+  background: transparent;
+}
+
+.ruby-identifier {
+  color: #ffdead;
+  background: transparent;
+}
+
+.ruby-node {
+  color: #ffa07a;
+  background: transparent;
+}
+
+.ruby-comment {
+  color: #b22222;
+  font-weight: bold;
+  background: transparent;
+}
+
+.ruby-regexp {
+  color: #ffa07a;
+  background: transparent;
+}
+
+.ruby-value {
+  color: #7fffd4;
+  background: transparent;
+}
+
 EOF
 
-
-#####################################################################
-### H E A D E R   T E M P L A T E
-#####################################################################
+  ##
+  # Header template
 
   XHTML_PREAMBLE = <<-EOF
 <?xml version="1.0" encoding="<%= values["charset"] %>"?>
@@ -290,34 +378,55 @@ EOF
 <body>
 EOF
 
-#####################################################################
-### C O N T E X T   C O N T E N T   T E M P L A T E
-#####################################################################
+  ##
+  # Context content template
 
   CONTEXT_CONTENT = %{
 }
 
-#####################################################################
-### F O O T E R   T E M P L A T E
-#####################################################################
+  ##
+  # Footer template
 
   FOOTER = <<-EOF
-<div id="validator-badges">
-  <p><small><a href="http://validator.w3.org/check/referer">[Validate]</a></small></p>
-</div>
+  <div id="popupmenu" class="index">
+    <ul>
+    <li class="index-entries section-bar">Classes
+      <ul>
+<% values["class_list"].each do |klass| %>
+        <li><a href="<%= klass["href"] %>"><%= klass["name"] %></a>
+<% end %>
+      </ul>
+    </li>
+
+    <li class="index-entries section-bar">Methods
+      <ul>
+<% values["method_list"].each do |file| %>
+        <li><a href="<%= file["href"] %>"><%= file["name"] %></a>
+<% end %>
+      </ul>
+    </li>
+
+    <li class="index-entries section-bar">Files
+      <ul>
+<% values["file_list"].each do |file| %>
+        <li><a href="<%= file["href"] %>"><%= file["name"] %></a>
+<% end %>
+      </ul>
+    </li>
+    </ul>
+  </li>
 
 </body>
 </html>
   EOF
 
-
-#####################################################################
-### F I L E   P A G E   H E A D E R   T E M P L A T E
-#####################################################################
+  ##
+  # File page header template
 
   FILE_PAGE = <<-EOF
   <div id="fileHeader">
     <h1><%= values["short_name"] %></h1>
+
     <table class="header-table">
     <tr class="top-aligned-row">
       <td><strong>Path:</strong></td>
@@ -327,6 +436,7 @@ EOF
 <% end %>
       </td>
     </tr>
+
     <tr class="top-aligned-row">
       <td><strong>Last Update:</strong></td>
       <td><%= values["dtm_modified"] %></td>
@@ -335,73 +445,73 @@ EOF
   </div>
   EOF
 
-#####################################################################
-### C L A S S   P A G E   H E A D E R   T E M P L A T E
-#####################################################################
+  ##
+  # Class page header template
 
   CLASS_PAGE = <<-EOF
     <div id="classHeader">
-        <table class="header-table">
-        <tr class="top-aligned-row">
-          <td><strong><%= values["classmod"] %></strong></td>
-          <td class="class-name-in-header"><%= values["full_name"] %></td>
-        </tr>
-        <tr class="top-aligned-row">
-            <td><strong>In:</strong></td>
-            <td>
+      <table class="header-table">
+      <tr class="top-aligned-row">
+        <td><strong><%= values["classmod"] %></strong></td>
+        <td class="class-name-in-header"><%= values["full_name"] %></td>
+      </tr>
+
+      <tr class="top-aligned-row">
+        <td><strong>In:</strong></td>
+        <td>
 <% values["infiles"].each do |infiles| %>
 <% if infiles["full_path_url"] then %>
-                <a href="<%= infiles["full_path_url"] %>">
+          <a href="<%= infiles["full_path_url"] %>">
 <% end %>
-                <%= infiles["full_path"] %>
+            <%= infiles["full_path"] %>
 <% if infiles["full_path_url"] then %>
-                </a>
+          </a>
 <% end %>
 <% if infiles["cvsurl"] then %>
-        &nbsp;(<a href="<%= infiles["cvsurl"] %>"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
+          &nbsp;(<a href="<%= infiles["cvsurl"] %>"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 <% end %>
-        <br />
+          <br />
 <% end %><%# values["infiles"] %>
-            </td>
-        </tr>
+        </td>
+      </tr>
 
 <% if values["parent"] then %>
-        <tr class="top-aligned-row">
-            <td><strong>Parent:</strong></td>
-            <td>
+      <tr class="top-aligned-row">
+        <td><strong>Parent:</strong></td>
+        <td>
 <% if values["par_url"] then %>
-                <a href="<%= values["par_url"] %>">
+          <a href="<%= values["par_url"] %>">
 <% end %>
-                <%= values["parent"] %>
+            <%= values["parent"] %>
 <% if values["par_url"] then %>
-               </a>
+          </a>
 <% end %>
-            </td>
-        </tr>
+        </td>
+      </tr>
 <% end %>
-        </table>
-    </div>
+    </table>
+  </div>
   EOF
 
-#####################################################################
-### M E T H O D   L I S T   T E M P L A T E
-#####################################################################
+  ##
+  # Method list template
 
   METHOD_LIST = <<-EOF
+
   <div id="contextContent">
 <% if values["diagram"] then %>
     <div id="diagram">
       <%= values["diagram"] %>
     </div>
-<% end
+<% end %>
 
-   if values["description"] then %>
+<% if values["description"] then %>
     <div id="description">
       <%= values["description"] %>
     </div>
-<% end
+<% end %>
 
-   if values["requires"] then %>
+<% if values["requires"] then %>
     <div id="requires-list">
       <h3 class="section-bar">Required files</h3>
 
@@ -411,14 +521,14 @@ EOF
 <% end %><%# values["requires"] %>
       </div>
     </div>
-<% end
+<% end %>
 
-   if values["toc"] then %>
+<% if values["toc"] then %>
     <div id="contents-list">
       <h3 class="section-bar">Contents</h3>
       <ul>
 <% values["toc"].each do |toc| %>
-      <li><a href="#<%= toc["href"] %>"><%= toc["secname"] %></a></li>
+      <li><a href="#<%= values["href"] %>"><%= values["secname"] %></a></li>
 <% end %><%# values["toc"] %>
      </ul>
 <% end %>
@@ -429,13 +539,15 @@ EOF
       <h3 class="section-bar">Methods</h3>
 
       <div class="name-list">
-<%   values["methods"].each do |methods| %>
+<% values["methods"].each do |methods| %>
         <%= href methods["aref"], methods["name"] %>&nbsp;&nbsp;
-<%   end %><%# values["methods"] %>
+<% end %><%# values["methods"] %>
       </div>
     </div>
 <% end %>
+
   </div>
+
 
     <!-- if includes -->
 <% if values["includes"] then %>
@@ -448,134 +560,135 @@ EOF
 <% end %><%# values["includes"] %>
       </div>
     </div>
-<% end
+<% end %>
 
-   values["sections"].each do |sections| %>
+<% values["sections"].each do |sections| %>
     <div id="section">
-<%   if sections["sectitle"] then %>
+<% if sections["sectitle"] then %>
       <h2 class="section-title"><a name="<%= sections["secsequence"] %>"><%= sections["sectitle"] %></a></h2>
-<%     if sections["seccomment"] then %>
+<% if sections["seccomment"] then %>
       <div class="section-comment">
         <%= sections["seccomment"] %>
       </div>
-<%     end
-     end
+<% end %>
+<% end %>
 
-     if sections["classlist"] then %>
+<% if values["classlist"] then %>
     <div id="class-list">
       <h3 class="section-bar">Classes and Modules</h3>
 
-      <%= sections["classlist"] %>
+      <%= values["classlist"] %>
     </div>
-<%   end
+<% end %>
 
-     if sections["constants"] then %>
+<% if values["constants"] then %>
     <div id="constants-list">
       <h3 class="section-bar">Constants</h3>
 
       <div class="name-list">
         <table summary="Constants">
-<%     sections["constants"].each do |constants| %>
+<% values["constants"].each do |constants| %>
         <tr class="top-aligned-row context-row">
           <td class="context-item-name"><%= constants["name"] %></td>
           <td>=</td>
           <td class="context-item-value"><%= constants["value"] %></td>
-<%       if sections["desc"] then %>
+<% if values["desc"] then %>
           <td width="3em">&nbsp;</td>
           <td class="context-item-desc"><%= constants["desc"] %></td>
-<%       end %>
+<% end %>
         </tr>
-<%     end %><%# sections["constants"] %>
+<% end %><%# values["constants"] %>
         </table>
       </div>
     </div>
-<%   end
+<% end %>
 
-     if sections["aliases"] then %>
+<% if values["aliases"] then %>
     <div id="aliases-list">
       <h3 class="section-bar">External Aliases</h3>
 
       <div class="name-list">
-      <table summary="aliases">
-<%     sections["aliases"].each do |aliases| %>
+                        <table summary="aliases">
+<% values["aliases"].each do |aliases| $stderr.puts({ :aliases => aliases }.inspect) %>
         <tr class="top-aligned-row context-row">
-          <td class="context-item-name"><%= aliases["old_name"] %></td>
+          <td class="context-item-name"><%= values["old_name"] %></td>
           <td>-&gt;</td>
-          <td class="context-item-value"><%= aliases["new_name"] %></td>
+          <td class="context-item-value"><%= values["new_name"] %></td>
         </tr>
-<%       if aliases["desc"] then %>
+<% if values["desc"] then %>
       <tr class="top-aligned-row context-row">
         <td>&nbsp;</td>
-        <td colspan="2" class="context-item-desc"><%= aliases["desc"] %></td>
+        <td colspan="2" class="context-item-desc"><%= values["desc"] %></td>
       </tr>
-<%       end
-       end %><%# sections["aliases"] %>
+<% end %>
+<% end %><%# values["aliases"] %>
         </table>
       </div>
     </div>
-<%   end %>
+<% end %>
 
-<%   if sections["attributes"] then %>
+
+<% if values["attributes"] then %>
     <div id="attribute-list">
       <h3 class="section-bar">Attributes</h3>
 
       <div class="name-list">
         <table>
-<%     sections["attributes"].each do |attribute| %>
+<% values["attributes"].each do |attributes| $stderr.puts({ :attributes => attributes }.inspect) %>
         <tr class="top-aligned-row context-row">
-          <td class="context-item-name"><%= attribute["name"] %></td>
-<%       if attribute["rw"] then %>
-          <td class="context-item-value">&nbsp;[<%= attribute["rw"] %>]&nbsp;</td>
-<%       end
-         unless attribute["rw"] then %>
+          <td class="context-item-name"><%= values["name"] %></td>
+<% if values["rw"] then %>
+          <td class="context-item-value">&nbsp;[<%= values["rw"] %>]&nbsp;</td>
+<% end %>
+<% unless values["rw"] then %>
           <td class="context-item-value">&nbsp;&nbsp;</td>
-<%       end %>
-          <td class="context-item-desc"><%= attribute["a_desc"] %></td>
+<% end %>
+          <td class="context-item-desc"><%= values["a_desc"] %></td>
         </tr>
-<%     end %><%# sections["attributes"] %>
+<% end %><%# values["attributes"] %>
         </table>
       </div>
     </div>
-<%   end %>
+<% end %>
 
     <!-- if method_list -->
-<%   if sections["method_list"] then %>
+<% if sections["method_list"] then %>
     <div id="methods">
-<%     sections["method_list"].each do |method_list|
-         if method_list["methods"] then %>
+<% sections["method_list"].each do |method_list| %>
+<% if method_list["methods"] then %>
       <h3 class="section-bar"><%= method_list["type"] %> <%= method_list["category"] %> methods</h3>
 
-<%         method_list["methods"].each do |methods| %>
+<% method_list["methods"].each do |methods| %>
       <div id="method-<%= methods["aref"] %>" class="method-detail">
         <a name="<%= methods["aref"] %>"></a>
 
         <div class="method-heading">
-<%           if methods["codeurl"] then %>
+<% if methods["codeurl"] then %>
           <a href="<%= methods["codeurl"] %>" target="Code" class="method-signature"
             onclick="popupCode('<%= methods["codeurl"] %>');return false;">
-<%           end
-             if methods["sourcecode"] then %>
+<% end %>
+<% if methods["sourcecode"] then %>
           <a href="#<%= methods["aref"] %>" class="method-signature">
-<%           end
-             if methods["callseq"] then %>
+<% end %>
+<% if methods["callseq"] then %>
           <span class="method-name"><%= methods["callseq"] %></span>
-<%           end
-             unless methods["callseq"] then %>
+<% end %>
+<% unless methods["callseq"] then %>
           <span class="method-name"><%= methods["name"] %></span><span class="method-args"><%= methods["params"] %></span>
-<%           end
-             if methods["codeurl"] then %>
+<% end %>
+<% if methods["codeurl"] then %>
           </a>
-<%           end
-             if methods["sourcecode"] then %>
+<% end %>
+<% if methods["sourcecode"] then %>
           </a>
-<%           end %>
+<% end %>
         </div>
 
         <div class="method-description">
-<%           if methods["m_desc"] then %>
+<% if methods["m_desc"] then %>
           <%= methods["m_desc"] %>
-<%           end
-               if methods["sourcecode"] then %>
+<% end %>
+<% if methods["sourcecode"] then %>
           <p><a class="source-toggle" href="#"
             onclick="toggleCode('<%= methods["aref"] %>-source');return false;">[Source]</a></p>
           <div class="method-source-code" id="<%= methods["aref"] %>-source">
@@ -583,22 +696,21 @@ EOF
 <%= methods["sourcecode"] %>
 </pre>
           </div>
-<%           end %>
+<% end %>
         </div>
       </div>
 
-<%         end %><%# method_list["methods"] %><%
-         end
-       end %><%# sections["method_list"] %>
+<% end %><%# method_list["methods"] %>
+<% end %>
+<% end %><%# sections["method_list"] %>
 
     </div>
-<%   end %>
+<% end %>
 <% end %><%# values["sections"] %>
   EOF
 
-#####################################################################
-### B O D Y   T E M P L A T E
-#####################################################################
+  ##
+  # Body template
 
   BODY = HEADER + %{
 
@@ -612,9 +724,8 @@ EOF
 
 } + FOOTER
 
-#####################################################################
-### S O U R C E   C O D E   T E M P L A T E
-#####################################################################
+  ##
+  # Source code template
 
   SRC_PAGE = XHTML_PREAMBLE + <<-EOF
 <html>
@@ -629,21 +740,14 @@ EOF
 </html>
   EOF
 
-
-#####################################################################
-### I N D E X   F I L E   T E M P L A T E S
-#####################################################################
+  ##
+  # Index file templates
 
   FR_INDEX_BODY = %{
 <%= template_include %>
 }
 
   FILE_INDEX = XHTML_PREAMBLE + <<-EOF
-<!--
-
-    <%= values["list_title"] %>
-
-  -->
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title><%= values["list_title"] %></title>
@@ -652,12 +756,12 @@ EOF
   <base target="docwin" />
 </head>
 <body>
-<div id="index">
+<div class="index">
   <h1 class="section-bar"><%= values["list_title"] %></h1>
-  <div id="index-entries">
+  <div class="index-entries">
 <% values["entries"].each do |entries| %>
     <a href="<%= entries["href"] %>"><%= entries["name"] %></a><br />
-<% end %><%#  values["entries"] %>
+<% end %><%# values["entries"] %>
   </div>
 </div>
 </body>
@@ -672,24 +776,17 @@ EOF
 <!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN"
      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">
-
-<!--
-
-    <%= values["title"] %>
-
-  -->
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <title><%= values["title"] %></title>
   <meta http-equiv="Content-Type" content="text/html; charset=<%= values["charset"] %>" />
 </head>
 <frameset rows="20%, 80%">
-    <frameset cols="25%,35%,45%">
-        <frame src="fr_file_index.html"   title="Files" name="Files" />
-        <frame src="fr_class_index.html"  name="Classes" />
-        <frame src="fr_method_index.html" name="Methods" />
-    </frameset>
-    <frame src="<%= values["initial_page"] %>" name="docwin" />
+  <frameset cols="45%,55%">
+    <frame src="fr_class_index.html"  name="Classes" />
+    <frame src="fr_method_index.html" name="Methods" />
+  </frameset>
+  <frame src="<%= values["initial_page"] %>" name="docwin" />
 </frameset>
 </html>
   EOF

@@ -4,7 +4,7 @@ require 'rdoc/ri/formatter'
 require 'rdoc/ri/display'
 require 'rdoc/ri/driver'
 
-class TestRDocRIDefaultDisplay < Test::Unit::TestCase
+class TestRdocRiDefaultDisplay < Test::Unit::TestCase
 
   def setup
     @output = StringIO.new
@@ -14,7 +14,7 @@ class TestRDocRIDefaultDisplay < Test::Unit::TestCase
     @dd = RDoc::RI::DefaultDisplay.new RDoc::RI::Formatter, @width, true,
                                        @output
 
-    @some_method = {
+    @some_method = h \
       'aliases' => [{'name' => 'some_method_alias'}],
       'block_params' => 'block_param',
       'comment' => [RDoc::Markup::Flow::P.new('some comment')],
@@ -23,13 +23,12 @@ class TestRDocRIDefaultDisplay < Test::Unit::TestCase
       'name' => 'some_method',
       'params' => '(arg1, arg2) {|block_param| ...}',
       'source_path' => '/nonexistent',
-      'visibility' => 'public',
-    }
+      'visibility' => 'public'
   end
 
   def test_display_class_info
     ri_reader = nil
-    klass = {
+    klass = h \
       'attributes' => [
         { 'name' => 'attribute', 'rw' => 'RW',
           'comment' => [RDoc::Markup::Flow::P.new('attribute comment')] },
@@ -58,8 +57,7 @@ class TestRDocRIDefaultDisplay < Test::Unit::TestCase
       'instance_method_extensions' => [
         { 'name' => 'instance_method_extension' },
       ],
-      'superclass_string' => 'Object',
-    }
+      'superclass_string' => 'Object'
 
     @dd.display_class_info klass, ri_reader
 
@@ -154,7 +152,7 @@ Attributes:
   end
 
   def test_display_method_info_singleton
-    method = {
+    method = RDoc::RI::Driver::Hash.new.update \
       'aliases' => [],
       'block_params' => nil,
       'comment' => nil,
@@ -162,8 +160,7 @@ Attributes:
       'is_singleton' => true,
       'name' => 'some_method',
       'params' => '(arg1, arg2)',
-      'visibility' => 'public',
-    }
+      'visibility' => 'public'
 
     @dd.display_method_info method
 
@@ -179,7 +176,7 @@ Attributes:
 
   def test_display_method_list
     methods = [
-      {
+      RDoc::RI::Driver::Hash.new.update(
         "aliases" => [],
         "block_params" => nil,
         "comment" =>  nil,
@@ -187,9 +184,9 @@ Attributes:
         "is_singleton" => false,
         "name" => "some_method",
         "params" => "()",
-        "visibility" => "public",
-      },
-      {
+        "visibility" => "public"
+      ),
+      RDoc::RI::Driver::Hash.new.update(
         "aliases" => [],
         "block_params" => nil,
         "comment" => nil,
@@ -197,8 +194,8 @@ Attributes:
         "is_singleton" => false,
         "name" => "some_other_method",
         "params" => "()",
-        "visibility" => "public",
-      },
+        "visibility" => "public"
+      ),
     ]
 
     @dd.display_method_list methods
@@ -289,6 +286,10 @@ install an additional package, or ask the packager to enable ri generation.
     EOF
 
     assert_equal expected, @output.string
+  end
+
+  def h(hash)
+    RDoc::RI::Driver::Hash.convert hash
   end
 
 end

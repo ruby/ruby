@@ -119,7 +119,7 @@ body,td,p { font-family: <%= values["fonts"] %>;
 <div class="name-list">
 <% values["requires"].each do |requires| %>
 <%= href requires["aref"], requires["name"] %>
-<% end # values["requires"] %>
+<% end %><%# values["requires"] %>
 <% end %>
 </div>
 
@@ -130,7 +130,7 @@ body,td,p { font-family: <%= values["fonts"] %>;
 <div class="name-list">
 <% values["methods"].each do |methods| %>
 <%= href methods["aref"], methods["name"] %>,
-<% end # values["methods"] %>
+<% end %><%# values["methods"] %>
 </div>
 <% end %>
 
@@ -162,7 +162,7 @@ body,td,p { font-family: <%= values["fonts"] %>;
        <td class="attr-name"><%= attributes["name"] %></td>
        <td><%= attributes["a_desc"] %></td>
      </tr>
-<% end # sections["attributes"] %>
+<% end %><%# sections["attributes"] %>
 </table>
 <% end %>
 
@@ -175,7 +175,7 @@ body,td,p { font-family: <%= values["fonts"] %>;
 
   <%= template_include %>  <!-- method descriptions -->
 
-<% end # values["sections"] %>
+<% end %><%# values["sections"] %>
 
 </body>
 </html>
@@ -221,7 +221,7 @@ body,td,p { font-family: <%= values["fonts"] %>;
 <% if infiles["cvsurl"] then %>
 &nbsp;(<a href="<%= infiles["cvsurl"] %>"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 <% end %>
-<% end # values["infiles"] %>
+<% end %><%# values["infiles"] %>
       </td>
      </tr>
 <% if values["parent"] then %>
@@ -250,7 +250,7 @@ body,td,p { font-family: <%= values["fonts"] %>;
 <div class="name-list">
 <% values["includes"].each do |includes| %>
     <span class="method-name"><%= href includes["aref"], includes["name"] %></span>
-<% end # values["includes"] %>
+<% end %><%# values["includes"] %>
 </div>
 <% end %>
 
@@ -285,7 +285,7 @@ body,td,p { font-family: <%= values["fonts"] %>;
 This method is also aliased as
 <% values["aka"].each do |aka| $stderr.puts({ :aka => aka }.inspect) %>
 <a href="<%= values["aref"] %>"><%= values["name"] %></a>
-<% end # values["aka"] %>
+<% end %><%# values["aka"] %>
 </div>
 <% end %>
 <% if values["sourcecode"] then %>
@@ -293,9 +293,9 @@ This method is also aliased as
 <%= values["sourcecode"] %>
 </pre>
 <% end %>
-<% end # values["methods"] %>
+<% end %><%# values["methods"] %>
 <% end %>
-<% end # values["method_list"] %>
+<% end %><%# values["method_list"] %>
 <% end %>
   EOF
 
@@ -364,7 +364,7 @@ div.banner {
 <div class="banner"><%= values["list_title"] %></div>
 <% values["entries"].each do |entries| %>
 <a href="<%= entries["href"] %>"><%= entries["name"] %></a><br />
-<% end # values["entries"] %>
+<% end %><%# values["entries"] %>
 </body></html>
   EOF
 

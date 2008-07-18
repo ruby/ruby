@@ -141,7 +141,7 @@ td { font-family: Verdana, Arial, Helvetica, sans-serif;
 <div class="name-list">
 <% values["requires"].each do |requires| %>
 <%= href requires["aref"], requires["name"] %>
-<% end # values["requires"] %>
+<% end %><%# values["requires"] %>
 <% end %>
 </div>
 
@@ -156,10 +156,10 @@ td { font-family: Verdana, Arial, Helvetica, sans-serif;
 <div class="name-list">
 <% method_list["methods"].each do |methods| %>
 <a href="<%= methods["codeurl"] %>" target="source"><%= methods["name"] %></a>
-<% end # values["methods"] %>
+<% end %><%# values["methods"] %>
 </div>
 <% end %>
-<% end # values["method_list"] %>
+<% end %><%# values["method_list"] %>
 <% end %>
 
 <% if sections["attributes"] then %>
@@ -178,10 +178,10 @@ td { font-family: Verdana, Arial, Helvetica, sans-serif;
        <td class="attr-name"><%= attributes["name"] %></td>
        <td><%= attributes["a_desc"] %></td>
      </tr>
-<% end # values["attributes"] %>
+<% end %><%# values["attributes"] %>
 </table>
 <% end %>
-<% end # values["sections"] %>
+<% end %><%# values["sections"] %>
 <% end %>
 
 <% if values["classlist"] then %>
@@ -237,7 +237,7 @@ td { font-family: Verdana, Arial, Helvetica, sans-serif;
 <% if infiles["cvsurl"] then %>
 &nbsp;(<a href="<%= infiles["cvsurl"] %>"><acronym title="Concurrent Versioning System">CVS</acronym></a>)
 <% end %>
-<% end # values["infiles"] %>
+<% end %><%# values["infiles"] %>
       </td>
      </tr>
 <% if values["parent"] then %>
@@ -266,7 +266,7 @@ td { font-family: Verdana, Arial, Helvetica, sans-serif;
 <div class="name-list">
 <% values["includes"].each do |includes| %>
     <span class="method-name"><%= href includes["aref"], includes["name"] %></span>
-<% end # values["includes"] %>
+<% end %><%# values["includes"] %>
 </div>
 <% end %>
 
@@ -293,11 +293,11 @@ td { font-family: Verdana, Arial, Helvetica, sans-serif;
 <%= method_list["m_desc"] %>
 </div>
 <% end %>
-<% end # method_list["methods"] %>
+<% end %><%# method_list["methods"] %>
 <% end %>
-<% end # sections["method_list"] %>
+<% end %><%# sections["method_list"] %>
 <% end %>
-<% end # values["sections"] %>
+<% end %><%# values["sections"] %>
 <% end %>
   EOF
 
@@ -365,7 +365,7 @@ div.banner {
 <div class="banner"><%= values["list_title"] %></div>
 <% values["entries"].each do |entries| %>
 <a href="<%= entries["href"] %>"><%= entries["name"] %></a><br />
-<% end # values["entries"] %>
+<% end %><%# values["entries"] %>
 </body></html>
   EOF
 

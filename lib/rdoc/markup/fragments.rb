@@ -11,8 +11,8 @@ class RDoc::Markup
     attr_reader   :level, :param, :txt
     attr_accessor :type
 
-    ######
-    # This is a simple factory system that lets us associate fragment
+    ##
+    # This is a simple factory system that lets us associate fragement
     # types (a string) with a subclass of fragment
 
     TYPE_MAP = {}

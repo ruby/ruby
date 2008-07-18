@@ -2,11 +2,10 @@ require 'yaml'
 require 'rdoc/markup/fragments'
 require 'rdoc/ri'
 
-#--
+##
 # Descriptions are created by RDoc (in ri_generator) and written out in
 # serialized form into the documentation tree. ri then reads these to generate
 # the documentation
-#++
 
 class RDoc::RI::NamedThing
   attr_reader :name

@@ -22,27 +22,6 @@ module RDoc::Generator
   CSS_NAME  = "rdoc-style.css"
 
   ##
-  # Converts a target url to one that is relative to a given path
-
-  def self.gen_url(path, target)
-    from          = ::File.dirname path
-    to, to_file   = ::File.split target
-
-    from = from.split "/"
-    to   = to.split "/"
-
-    while from.size > 0 and to.size > 0 and from[0] == to[0] do
-      from.shift
-      to.shift
-    end
-
-    from.fill ".."
-    from.concat to
-    from << to_file
-    ::File.join(*from)
-  end
-
-  ##
   # Build a hash of all items that can be cross-referenced.  This is used when
   # we output required and included names: if the names appear in this hash,
   # we can generate an html cross reference to the appropriate description.
@@ -80,11 +59,6 @@ module RDoc::Generator
     def markup(str, remove_para = false)
       return '' unless str
 
-      unless defined? @formatter then
-        @formatter = RDoc::Markup::ToHtmlCrossref.new(path, self,
-                                                       @options.show_hash)
-      end
-
       # Convert leading comment markers to spaces, but only if all non-blank
       # lines have them
       if str =~ /^(?>\s*)[^\#]/ then
@@ -93,7 +67,7 @@ module RDoc::Generator
         content = str.gsub(/^\s*(#+)/) { $1.tr '#', ' ' }
       end
 
-      res = @formatter.convert content
+      res = formatter.convert content
 
       if remove_para then
         res.sub!(/^<p>/, '')
@@ -114,7 +88,7 @@ module RDoc::Generator
       if %r{^(https?:/)?/} =~ css_name
         css_name
       else
-        RDoc::Generator.gen_url path, css_name
+        RDoc::Markup::ToHtml.gen_relative_url path, css_name
       end
     end
 
@@ -186,6 +160,11 @@ module RDoc::Generator
       @template = options.template_class
     end
 
+    def formatter
+      @formatter ||= @options.formatter ||
+        RDoc::Markup::ToHtmlCrossref.new(path, self, @options.show_hash)
+    end
+
     ##
     # convenience method to build a hyperlink
 
@@ -201,7 +180,7 @@ module RDoc::Generator
       if @options.all_one_file
         "#" + path
       else
-        RDoc::Generator.gen_url from_path, path
+        RDoc::Markup::ToHtml.gen_relative_url from_path, path
       end
     end
 
@@ -215,7 +194,7 @@ module RDoc::Generator
       list = @context.method_list
 
       unless @options.show_all then
-        list = list.find_all do |m|
+        list = list.select do |m|
           m.visibility == :public or
             m.visibility == :protected or
             m.force_documentation
@@ -230,17 +209,15 @@ module RDoc::Generator
     ##
     # Build a summary list of all the methods in this context
 
-    def build_method_summary_list(path_prefix="")
+    def build_method_summary_list(path_prefix = "")
       collect_methods unless @methods
-      meths = @methods.sort
-      res = []
-      meths.each do |meth|
-        res << {
+
+      @methods.sort.map do |meth|
+        {
           "name" => CGI.escapeHTML(meth.name),
           "aref" => "#{path_prefix}\##{meth.aref}"
         }
       end
-      res
     end
 
     ##
@@ -248,36 +225,40 @@ module RDoc::Generator
     # corresponding method
 
     def build_alias_summary_list(section)
-      values = []
-      @context.aliases.each do |al|
+      @context.aliases.map do |al|
         next unless al.section == section
+
         res = {
           'old_name' => al.old_name,
           'new_name' => al.new_name,
         }
-        if al.comment && !al.comment.empty?
-          res['desc'] = markup(al.comment, true)
+
+        if al.comment and not al.comment.empty? then
+          res['desc'] = markup al.comment, true
         end
-        values << res
-      end
-      values
+
+        res
+      end.compact
     end
 
     ##
     # Build a list of constants
 
     def build_constants_summary_list(section)
-      values = []
-      @context.constants.each do |co|
+      @context.constants.map do |co|
         next unless co.section == section
+
         res = {
           'name'  => co.name,
           'value' => CGI.escapeHTML(co.value)
         }
-        res['desc'] = markup(co.comment, true) if co.comment && !co.comment.empty?
-        values << res
-      end
-      values
+
+        if co.comment and not co.comment.empty? then
+          res['desc'] = markup co.comment, true
+        end
+
+        res
+      end.compact
     end
 
     def build_requires_list(context)
@@ -339,54 +320,58 @@ module RDoc::Generator
     def build_method_detail_list(section)
       outer = []
 
-      methods = @methods.sort
+      methods = @methods.sort.select do |m|
+        m.document_self and m.section == section
+      end
+
       for singleton in [true, false]
         for vis in [ :public, :protected, :private ]
           res = []
           methods.each do |m|
-            if m.section == section and
-                m.document_self and
-                m.visibility == vis and
-                m.singleton == singleton
-              row = {}
-              if m.call_seq
-                row["callseq"] = m.call_seq.gsub(/->/, '&rarr;')
-              else
-                row["name"]        = CGI.escapeHTML(m.name)
-                row["params"]      = m.params
-              end
-              desc = m.description.strip
-              row["m_desc"]      = desc unless desc.empty?
-              row["aref"]        = m.aref
-              row["visibility"]  = m.visibility.to_s
+            next unless m.visibility == vis and m.singleton == singleton
 
-              alias_names = []
-              m.aliases.each do |other|
-                if other.viewer   # won't be if the alias is private
-                  alias_names << {
-                    'name' => other.name,
-                    'aref'  => other.viewer.as_href(path)
-                  }
-                end
-              end
-              unless alias_names.empty?
-                row["aka"] = alias_names
-              end
+            row = {}
 
-              if @options.inline_source
-                code = m.source_code
-                row["sourcecode"] = code if code
-              else
-                code = m.src_url
-                if code
-                  row["codeurl"] = code
-                  row["imgurl"]  = m.img_url
-                end
-              end
-              res << row
+            if m.call_seq then
+              row["callseq"] = m.call_seq.gsub(/->/, '&rarr;')
+            else
+              row["name"]        = CGI.escapeHTML(m.name)
+              row["params"]      = m.params
             end
+
+            desc = m.description.strip
+            row["m_desc"]      = desc unless desc.empty?
+            row["aref"]        = m.aref
+            row["visibility"]  = m.visibility.to_s
+
+            alias_names = []
+
+            m.aliases.each do |other|
+              if other.viewer then # won't be if the alias is private
+                alias_names << {
+                  'name' => other.name,
+                  'aref'  => other.viewer.as_href(path)
+                }
+              end
+            end
+
+            row["aka"] = alias_names unless alias_names.empty?
+
+            if @options.inline_source then
+              code = m.source_code
+              row["sourcecode"] = code if code
+            else
+              code = m.src_url
+              if code then
+                row["codeurl"] = code
+                row["imgurl"]  = m.img_url
+              end
+            end
+
+            res << row
           end
-          if res.size > 0
+
+          if res.size > 0 then
             outer << {
               "type"     => vis.to_s.capitalize,
               "category" => singleton ? "Class" : "Instance",
@@ -395,6 +380,7 @@ module RDoc::Generator
           end
         end
       end
+
       outer
     end
 
@@ -403,8 +389,8 @@ module RDoc::Generator
     # in this context.
 
     def build_class_list(level, from, section, infile=nil)
-      res = ""
-      prefix = "&nbsp;&nbsp;::" * level;
+      prefix = '&nbsp;&nbsp;::' * level;
+      res = ''
 
       from.modules.sort.each do |mod|
         next unless mod.section == section
@@ -412,8 +398,8 @@ module RDoc::Generator
         if mod.document_self
           res <<
             prefix <<
-            "Module " <<
-            href(url(mod.viewer.path), "link", mod.full_name) <<
+            'Module ' <<
+            href(url(mod.viewer.path), 'link', mod.full_name) <<
             "<br />\n" <<
             build_class_list(level + 1, mod, section, infile)
         end
@@ -421,12 +407,13 @@ module RDoc::Generator
 
       from.classes.sort.each do |cls|
         next unless cls.section == section
-        next if infile && !cls.defined_in?(infile)
+        next if infile and not cls.defined_in?(infile)
+
         if cls.document_self
-          res      <<
+          res <<
             prefix <<
-            "Class " <<
-            href(url(cls.viewer.path), "link", cls.full_name) <<
+            'Class ' <<
+            href(url(cls.viewer.path), 'link', cls.full_name) <<
             "<br />\n" <<
             build_class_list(level + 1, cls, section, infile)
         end
@@ -436,7 +423,7 @@ module RDoc::Generator
     end
 
     def url(target)
-      RDoc::Generator.gen_url path, target
+      RDoc::Markup::ToHtml.gen_relative_url path, target
     end
 
     def aref_to(target)
@@ -475,7 +462,7 @@ module RDoc::Generator
     def add_table_of_sections
       toc = []
       @context.sections.each do |section|
-        if section.title
+        if section.title then
           toc << {
             'secname' => section.title,
             'href'    => section.sequence
@@ -495,11 +482,13 @@ module RDoc::Generator
 
     attr_reader :methods
     attr_reader :path
+    attr_reader :values
 
     def initialize(context, html_file, prefix, options)
-      super(context, options)
+      super context, options
 
       @html_file = html_file
+      @html_class = self
       @is_module = context.is_module?
       @values    = {}
 
@@ -540,11 +529,19 @@ module RDoc::Generator
       name
     end
 
-    def write_on(f)
+    def write_on(f, file_list, class_list, method_list, overrides = {})
       value_hash
+
+      @values['file_list'] = file_list
+      @values['class_list'] = class_list
+      @values['method_list'] = method_list
+
+      @values.update overrides
+
       template = RDoc::TemplatePage.new(@template::BODY,
                                         @template::CLASS_PAGE,
                                         @template::METHOD_LIST)
+
       template.write_html_on(f, @values)
     end
 
@@ -561,30 +558,29 @@ module RDoc::Generator
       ml = build_method_summary_list @path
       @values["methods"] = ml unless ml.empty?
 
-      il = build_include_list(@context)
+      il = build_include_list @context
       @values["includes"] = il unless il.empty?
 
       @values["sections"] = @context.sections.map do |section|
-
         secdata = {
           "sectitle" => section.title,
           "secsequence" => section.sequence,
-          "seccomment" => markup(section.comment)
+          "seccomment" => markup(section.comment),
         }
 
-        al = build_alias_summary_list(section)
+        al = build_alias_summary_list section
         secdata["aliases"] = al unless al.empty?
 
-        co = build_constants_summary_list(section)
+        co = build_constants_summary_list section
         secdata["constants"] = co unless co.empty?
 
-        al = build_attribute_list(section)
+        al = build_attribute_list section
         secdata["attributes"] = al unless al.empty?
 
-        cl = build_class_list(0, @context, section)
+        cl = build_class_list 0, @context, section
         secdata["classlist"] = cl unless cl.empty?
 
-        mdl = build_method_detail_list(section)
+        mdl = build_method_detail_list section
         secdata["method_list"] = mdl unless mdl.empty?
 
         secdata
@@ -594,23 +590,25 @@ module RDoc::Generator
     end
 
     def build_attribute_list(section)
-      atts = @context.attributes.sort
-      res = []
-      atts.each do |att|
+      @context.attributes.sort.map do |att|
         next unless att.section == section
-        if att.visibility == :public || att.visibility == :protected || @options.show_all
+
+        if att.visibility == :public or att.visibility == :protected or
+           @options.show_all then
+
           entry = {
             "name"   => CGI.escapeHTML(att.name),
             "rw"     => att.rw,
             "a_desc" => markup(att.comment, true)
           }
-          unless att.visibility == :public || att.visibility == :protected
+
+          unless att.visibility == :public or att.visibility == :protected then
             entry["rw"] << "-"
           end
-          res << entry
+
+          entry
         end
-      end
-      res
+      end.compact
     end
 
     def class_attribute_values
@@ -680,9 +678,10 @@ module RDoc::Generator
 
     attr_reader :path
     attr_reader :name
+    attr_reader :values
 
     def initialize(context, options, file_dir)
-      super(context, options)
+      super context, options
 
       @values = {}
 
@@ -755,7 +754,7 @@ module RDoc::Generator
         }
 
         cl = build_class_list(0, @context, section, file_context)
-        @values["classlist"] = cl unless cl.empty?
+        secdata["classlist"] = cl unless cl.empty?
 
         mdl = build_method_detail_list(section)
         secdata["method_list"] = mdl unless mdl.empty?
@@ -764,7 +763,7 @@ module RDoc::Generator
         secdata["aliases"] = al unless al.empty?
 
         co = build_constants_summary_list(section)
-        @values["constants"] = co unless co.empty?
+        secdata["constants"] = co unless co.empty?
 
         secdata
       end
@@ -772,8 +771,14 @@ module RDoc::Generator
       @values
     end
 
-    def write_on(f)
+    def write_on(f, file_list, class_list, method_list, overrides = {})
       value_hash
+
+      @values['file_list'] = file_list
+      @values['class_list'] = class_list
+      @values['method_list'] = method_list
+
+      @values.update overrides
 
       template = RDoc::TemplatePage.new(@template::BODY,
                                         @template::FILE_PAGE,
@@ -829,15 +834,17 @@ module RDoc::Generator
     end
 
     def initialize(context, html_class, options)
+      # TODO: rethink the class hierarchy here...
       @context    = context
       @html_class = html_class
       @options    = options
 
+      @@seq       = @@seq.succ
+      @seq        = @@seq
+
       # HACK ugly
       @template = options.template_class
 
-      @@seq       = @@seq.succ
-      @seq        = @@seq
       @@all_methods << self
 
       context.viewer = self
@@ -846,7 +853,7 @@ module RDoc::Generator
         @source_code = markup_code(ts)
         unless @options.inline_source
           @src_url = create_source_code_file(@source_code)
-          @img_url = RDoc::Generator.gen_url path, 'source.png'
+          @img_url = RDoc::Markup::ToHtml.gen_relative_url path, 'source.png'
         end
       end
 
@@ -861,8 +868,30 @@ module RDoc::Generator
       if @options.all_one_file
         "#" + path
       else
-        RDoc::Generator.gen_url from_path, path
+        RDoc::Markup::ToHtml.gen_relative_url from_path, path
       end
+    end
+
+    def formatter
+      @formatter ||= @options.formatter ||
+        RDoc::Markup::ToHtmlCrossref.new(path, self, @options.show_hash)
+    end
+
+    def inspect
+      alias_for = if @context.is_alias_for then
+                    " (alias_for #{@context.is_alias_for})"
+                  else
+                    nil
+                  end
+
+      "#<%s:0x%x %s%s%s (%s)%s>" % [
+        self.class, object_id,
+        @context.parent.name,
+        @context.singleton ? '::' : '#',
+        name,
+        @context.visibility,
+        alias_for
+      ]
     end
 
     def name
@@ -961,7 +990,7 @@ module RDoc::Generator
         template.write_html_on(f, values)
       end
 
-      RDoc::Generator.gen_url path, file_path
+      RDoc::Markup::ToHtml.gen_relative_url path, file_path
     end
 
     def <=>(other)
@@ -976,19 +1005,18 @@ module RDoc::Generator
       src = ""
       tokens.each do |t|
         next unless t
-        #    p t.class
 #        style = STYLE_MAP[t.class]
         style = case t
-                when RubyToken::TkCONSTANT then "ruby-constant"
-                when RubyToken::TkKW       then "ruby-keyword kw"
-                when RubyToken::TkIVAR     then "ruby-ivar"
-                when RubyToken::TkOp       then "ruby-operator"
-                when RubyToken::TkId       then "ruby-identifier"
-                when RubyToken::TkNode     then "ruby-node"
-                when RubyToken::TkCOMMENT  then "ruby-comment cmt"
-                when RubyToken::TkREGEXP   then "ruby-regexp re"
-                when RubyToken::TkSTRING   then "ruby-value str"
-                when RubyToken::TkVal      then "ruby-value"
+                when RDoc::RubyToken::TkCONSTANT then "ruby-constant"
+                when RDoc::RubyToken::TkKW       then "ruby-keyword kw"
+                when RDoc::RubyToken::TkIVAR     then "ruby-ivar"
+                when RDoc::RubyToken::TkOp       then "ruby-operator"
+                when RDoc::RubyToken::TkId       then "ruby-identifier"
+                when RDoc::RubyToken::TkNode     then "ruby-node"
+                when RDoc::RubyToken::TkCOMMENT  then "ruby-comment cmt"
+                when RDoc::RubyToken::TkREGEXP   then "ruby-regexp re"
+                when RDoc::RubyToken::TkSTRING   then "ruby-value str"
+                when RDoc::RubyToken::TkVal      then "ruby-value"
                 else
                     nil
                 end

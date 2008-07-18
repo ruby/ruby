@@ -82,7 +82,7 @@ class RDoc::Generator::HTML
     @classes    = []
 
     write_style_sheet
-    gen_sub_directories()
+    gen_sub_directories
     build_indices
     generate_html
   end
@@ -157,6 +157,7 @@ class RDoc::Generator::HTML
     # the individual descriptions for files and classes
     gen_into(@files)
     gen_into(@classes)
+
     # and the index files
     gen_file_index
     gen_class_index
@@ -168,14 +169,21 @@ class RDoc::Generator::HTML
   end
 
   def gen_into(list)
+    @file_list ||= index_to_links @files
+    @class_list ||= index_to_links @classes
+    @method_list ||= index_to_links RDoc::Generator::Method.all_methods
+
     list.each do |item|
-      if item.document_self
-        op_file = item.path
-        FileUtils.mkdir_p(File.dirname(op_file))
-        open(op_file, "w") { |file| item.write_on(file) }
+      next unless item.document_self
+
+      op_file = item.path
+
+      FileUtils.mkdir_p File.dirname(op_file)
+
+      open op_file, 'w' do |io|
+        item.write_on io, @file_list, @class_list, @method_list
       end
     end
-
   end
 
   def gen_file_index
@@ -221,9 +229,23 @@ class RDoc::Generator::HTML
   # line.
 
   def gen_main_index
-    template = RDoc::TemplatePage.new @template::INDEX
+    if @template.const_defined? :FRAMELESS then
+      main = @files.find do |file|
+        @main_page == file.name
+      end
+
+      if main.nil? then
+        main = @classes.find do |klass|
+          main_page == klass.context.full_name
+        end
+      end
+    else
+      main = RDoc::TemplatePage.new @template::INDEX
+    end
 
     open 'index.html', 'w'  do |f|
+      style_url = style_url '', @options.css
+
       classes = @classes.sort.map { |klass| klass.value_hash }
 
       values = {
@@ -237,8 +259,19 @@ class RDoc::Generator::HTML
 
       values['inline_source'] = @options.inline_source
 
-      template.write_html_on f, values
+      if main.respond_to? :write_on then
+        main.write_on f, @file_list, @class_list, @method_list, values
+      else
+        main.write_html_on f, values
+      end
     end
+  end
+
+  def index_to_links(collection)
+    collection.sort.map do |f|
+      next unless f.document_self
+      { "href" => f.path, "name" => f.index_name }
+    end.compact
   end
 
   ##
@@ -247,8 +280,10 @@ class RDoc::Generator::HTML
   def main_url
     @main_page = @options.main_page
     @main_page_ref = nil
-    if @main_page
+
+    if @main_page then
       @main_page_ref = RDoc::Generator::AllReferences[@main_page]
+
       if @main_page_ref then
         @main_page_path = @main_page_ref.path
       else
@@ -351,20 +386,12 @@ class RDoc::Generator::HTMLInOne < RDoc::Generator::HTML
   end
 
   def gen_an_index(collection, title)
-    res = []
-    collection.sort.each do |f|
-      if f.document_self
-        res << { "href" => f.path, "name" => f.index_name }
-      end
-    end
-
     return {
-      "entries" => res,
+      "entries" => index_to_links(collection),
       'list_title' => title,
       'index_url'  => main_url,
     }
   end
 
 end
-
 

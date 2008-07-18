@@ -1,4 +1,8 @@
 require 'rdoc'
 
-module RDoc::RI; end
+module RDoc::RI
+
+  class Error < RDoc::Error; end
+
+end
 

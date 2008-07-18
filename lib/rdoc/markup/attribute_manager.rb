@@ -144,8 +144,6 @@ class RDoc::Markup::AttributeManager
     add_html("b",  :BOLD)
     add_html("tt",   :TT)
     add_html("code", :TT)
-
-    add_special(/<!--(.*?)-->/, :COMMENT)
   end
 
   def add_word_pair(start, stop, name)

@@ -1,0 +1,28 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename <%= @v['filename'] %>
+@settitle <%= @v['title'] %>
+@c %**end of header
+
+@contents @c TODO: whitespace is a mess... =\
+
+@ifnottex
+@node Top
+
+@top <%= @v['title'] %>
+@end ifnottex
+
+<% if @f = @v['files'].detect { |f| f.name =~ /Readme/i }  %>
+<%= @f.values['description'] %><% end %>
+
+@menu
+<% @v['classes'].each do |klass| %>
+* <%= klass.name.gsub(/::/, '-') %>::<% end %>
+@c TODO: add files
+@end menu
+
+<% (@v['classes'] || []).each_with_index do |klass, i| %>
+<%= TexinfoTemplate.new(@v.merge('class' => klass.values), 
+                        'class.texinfo.erb').render %><% end %>
+
+@bye

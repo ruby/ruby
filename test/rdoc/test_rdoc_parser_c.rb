@@ -1,15 +1,16 @@
 require 'stringio'
 require 'tempfile'
 require 'test/unit'
-require 'rdoc/parsers/parse_c'
+require 'rdoc/options'
+require 'rdoc/parser/c'
 
-class RDoc::C_Parser
+class RDoc::Parser::C
   attr_accessor :classes
 
   public :do_classes, :do_constants
 end
 
-class TestRdocC_Parser < Test::Unit::TestCase
+class TestRdocParserC < Test::Unit::TestCase
 
   def setup
     @tempfile = Tempfile.new self.class.name
@@ -252,7 +253,7 @@ Init_Foo(void) {
   end
 
   def util_parser(content)
-    parser = RDoc::C_Parser.new @top_level, @fn, content, @options, @stats
+    parser = RDoc::Parser::C.new @top_level, @fn, content, @options, @stats
     parser.progress = @progress
     parser
   end

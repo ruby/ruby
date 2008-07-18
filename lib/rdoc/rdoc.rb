@@ -1,9 +1,12 @@
 require 'rdoc'
 
-require 'rdoc/parsers/parse_rb.rb'
-require 'rdoc/parsers/parse_c.rb'
-require 'rdoc/parsers/parse_f95.rb'
-require 'rdoc/parsers/parse_simple.rb'
+require 'rdoc/parser'
+
+# Simple must come first
+require 'rdoc/parser/simple'
+require 'rdoc/parser/ruby'
+require 'rdoc/parser/c'
+require 'rdoc/parser/f95'
 
 require 'rdoc/stats'
 require 'rdoc/options'
@@ -146,7 +149,10 @@ module RDoc
         case type = stat.ftype
         when "file"
           next if @last_created and stat.mtime < @last_created
-          file_list << rel_file_name.sub(/^\.\//, '') if force_doc || ParserFactory.can_parse(rel_file_name)
+
+          if force_doc or ::RDoc::Parser.can_parse(rel_file_name) then
+            file_list << rel_file_name.sub(/^\.\//, '')
+          end
         when "directory"
           next if rel_file_name == "CVS" || rel_file_name == ".svn"
           dot_doc = File.join(rel_file_name, DOT_DOC_FILENAME)
@@ -198,14 +204,18 @@ module RDoc
                     File.read fn
                   end
 
-        if /coding:\s*(\S+)/ =~ content[/\A(?:.*\n){0,2}/]
-          if enc = Encoding.find($1)
-            content.force_encoding(enc)
+        if defined? Encoding then
+          if /coding:\s*(\S+)/ =~ content[/\A(?:.*\n){0,2}/]
+            if enc = ::Encoding.find($1)
+              content.force_encoding(enc)
+            end
           end
         end
 
-        top_level = TopLevel.new(fn)
-        parser = ParserFactory.parser_for(top_level, fn, content, options, @stats)
+        top_level = ::RDoc::TopLevel.new fn
+
+        parser = ::RDoc::Parser.for top_level, fn, content, options, @stats
+
         file_info << parser.scan
         @stats.num_files += 1
       end
@@ -241,17 +251,19 @@ module RDoc
 
       file_info = parse_files @options
 
+      @options.title = "RDoc Documentation"
+
       if file_info.empty?
         $stderr.puts "\nNo newer files." unless @options.quiet
       else
-        gen = @options.generator
+        @gen = @options.generator
 
-        $stderr.puts "\nGenerating #{gen.key.upcase}..." unless @options.quiet
+        $stderr.puts "\nGenerating #{@gen.key.upcase}..." unless @options.quiet
 
-        require gen.file_name
+        require @gen.file_name
 
-        gen_class = ::RDoc::Generator.const_get gen.class_name
-        gen = gen_class.for @options
+        gen_class = ::RDoc::Generator.const_get @gen.class_name
+        @gen = gen_class.for @options
 
         pwd = Dir.pwd
 
@@ -259,7 +271,7 @@ module RDoc
 
         begin
           Diagram.new(file_info, @options).draw if @options.diagram
-          gen.generate(file_info)
+          @gen.generate(file_info)
           update_output_dir(".", start_time)
         ensure
           Dir.chdir(pwd)

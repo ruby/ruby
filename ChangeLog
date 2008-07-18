@@ -1,3 +1,7 @@
+Fri Jul 18 09:44:30 2008
+
+	* lib/rdoc/*: Import RDoc r101.
+
 Thu Jul 17 23:45:55 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/rdoc/test_rdoc_c_parser.rb (teardown): close tempfile.

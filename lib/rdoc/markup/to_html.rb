@@ -1,7 +1,6 @@
 require 'rdoc/markup/formatter'
 require 'rdoc/markup/fragments'
 require 'rdoc/markup/inline'
-require 'rdoc/generator'
 
 require 'cgi'
 
@@ -21,6 +20,11 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   def initialize
     super
 
+    # @in_tt - tt nested levels count
+    # @tt_bit - cache
+    @in_tt = 0
+    @tt_bit = RDoc::Markup::Attribute.bitmap_for :TT
+
     # external hyperlinks
     @markup.add_special(/((link:|https?:|mailto:|ftp:|www\.)\S+\w)/, :HYPERLINK)
 
@@ -28,6 +32,27 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @markup.add_special(/(((\{.*?\})|\b\S+?)\[\S+?\.\S+?\])/, :TIDYLINK)
 
     init_tags
+  end
+
+  ##
+  # Converts a target url to one that is relative to a given path
+
+  def self.gen_relative_url(path, target)
+    from        = File.dirname path
+    to, to_file = File.split target
+
+    from = from.split "/"
+    to   = to.split "/"
+
+    while from.size > 0 and to.size > 0 and from[0] == to[0] do
+      from.shift
+      to.shift
+    end
+
+    from.fill ".."
+    from.concat to
+    from << to_file
+    File.join(*from)
   end
 
   ##
@@ -48,7 +73,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
       url = if path[0, 1] == '#' then # is this meaningful?
               path
             else
-              RDoc::Generator.gen_url @from_path, path
+              self.class.gen_relative_url @from_path, path
             end
     end
 
@@ -85,6 +110,20 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     label = $1
     url   = $2
     gen_url url, label
+  end
+
+  ##
+  # are we currently inside <tt> tags?
+
+  def in_tt?
+    @in_tt > 0
+  end
+
+  ##
+  # is +tag+ a <tt> tag?
+
+  def tt?(tag)
+    tag.bit == @tt_bit
   end
 
   ##
@@ -216,6 +255,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     @attr_tags.each do |tag|
       if attr_mask & tag.bit != 0
         res << annotate(tag.on)
+        @in_tt += 1 if tt?(tag)
       end
     end
   end
@@ -226,6 +266,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
     @attr_tags.reverse_each do |tag|
       if attr_mask & tag.bit != 0
+        @in_tt -= 1 if tt?(tag)
         res << annotate(tag.off)
       end
     end
@@ -251,27 +292,33 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     res
   end
 
+  def convert_string(item)
+    in_tt? ? convert_string_simple(item) : convert_string_fancy(item)
+  end
+
+  def convert_string_simple(item)
+    CGI.escapeHTML item
+  end
+
   ##
   # some of these patterns are taken from SmartyPants...
 
-  def convert_string(item)
-    CGI.escapeHTML(item).
-
+  def convert_string_fancy(item)
     # convert -- to em-dash, (-- to en-dash)
-      gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
+    item.gsub(/---?/, '&#8212;'). #gsub(/--/, '&#8211;').
 
     # convert ... to elipsis (and make sure .... becomes .<elipsis>)
       gsub(/\.\.\.\./, '.&#8230;').gsub(/\.\.\./, '&#8230;').
 
     # convert single closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\'}, '\1&#8217;').
+      gsub(%r{([^ \t\r\n\[\{\(])\'}, '\1&#8217;'). # }
       gsub(%r{\'(?=\W|s\b)}, '&#8217;').
 
     # convert single opening quote
       gsub(/'/, '&#8216;').
 
     # convert double closing quote
-      gsub(%r{([^ \t\r\n\[\{\(])\'(?=\W)}, '\1&#8221;').
+      gsub(%r{([^ \t\r\n\[\{\(])\'(?=\W)}, '\1&#8221;'). # }
 
     # convert double opening quote
       gsub(/'/, '&#8220;').
@@ -281,7 +328,6 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
     # convert and registered trademark
       gsub(/\(r\)/, '&#174;')
-
   end
 
   def convert_special(special)

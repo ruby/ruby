@@ -14,6 +14,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # correct relative paths for any hyperlinks that we find
 
   def initialize(from_path, context, show_hash)
+    raise ArgumentError, 'from_path cannot be nil' if from_path.nil?
     super()
 
     # class names, variable names, or instance variables
@@ -47,27 +48,42 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   def handle_special_CROSSREF(special)
     name = special.text
 
+    return name if name =~ /\A[a-z]*\z/
+
     return @seen[name] if @seen.include? name
 
-    if name[0,1] == '#' then
+    if name[0, 1] == '#' then
       lookup = name[1..-1]
       name = lookup unless @show_hash
     else
       lookup = name
     end
 
+
     # Find class, module, or method in class or module.
-    if /([A-Z]\w*)[.\#](\w+[!?=]?)/ =~ lookup then
+    #
+    # Do not, however, use an if/elsif/else chain to do so.  Instead, test
+    # each possible pattern until one matches.  The reason for this is that a
+    # string like "YAML.txt" could be the txt() class method of class YAML (in
+    # which case it would match the first pattern, which splits the string
+    # into container and method components and looks up both) or a filename
+    # (in which case it would match the last pattern, which just checks
+    # whether the string as a whole is a known symbol).
+
+    if /([A-Z][\w:]*)[.\#](\w+[!?=]?)/ =~ lookup then
       container = $1
       method = $2
       ref = @context.find_symbol container, method
-    elsif /([A-Za-z]\w*)[.\#](\w+(\([\.\w+\*\/\+\-\=\<\>]+\))?)/ =~ lookup then
-      container = $1
-      method = $2
-      ref = @context.find_symbol container, method
-    else
-      ref = @context.find_symbol lookup
     end
+
+    if !ref and
+       /([A-Za-z][\w:]*)[.\#](\w+(\([\.\w+\*\/\+\-\=\<\>]+\))?)/ =~ lookup then
+      container = $1
+      method = $2
+      ref = @context.find_symbol container, method
+    end
+
+    ref = @context.find_symbol lookup unless ref
 
     out = if lookup =~ /^\\/ then
             $'

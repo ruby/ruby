@@ -45,7 +45,7 @@ class RDoc::Generator::RI
   def process_class(from_class)
     generate_class_info(from_class)
 
-    # now recurse into this classes constituent classes
+    # now recurse into this class' constituent classes
     from_class.each_classmodule do |mod|
       process_class(mod)
     end
