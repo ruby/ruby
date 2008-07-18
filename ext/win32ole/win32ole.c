@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.4"
+#define WIN32OLE_VERSION "1.2.5"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -502,6 +502,8 @@ static VALUE ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default);
 static void hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS *pdispparams);
 static VALUE hash2result(VALUE hash);
 static void ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams);
+static VALUE exec_callback(VALUE arg);
+static VALUE rescue_callback(VALUE arg);
 static HRESULT find_iid(VALUE ole, char *pitf, IID *piid, ITypeInfo **ppTypeInfo);
 static HRESULT find_coclass(ITypeInfo *pTypeInfo, TYPEATTR *pTypeAttr, ITypeInfo **pTypeInfo2, TYPEATTR **pTypeAttr2);
 static HRESULT find_default_source_from_typeinfo(ITypeInfo *pTypeInfo, TYPEATTR *pTypeAttr, ITypeInfo **ppTypeInfo);
@@ -7425,6 +7427,32 @@ ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams)
     }
 }
 
+static VALUE
+exec_callback(VALUE arg)
+{
+    VALUE handler = rb_ary_entry(arg, 0);
+    VALUE args = rb_ary_entry(arg, 1);
+    return rb_apply(handler, rb_intern("call"), args);
+}
+
+static VALUE
+rescue_callback(VALUE arg)
+{
+    
+    VALUE e = rb_errinfo();
+    VALUE c = rb_funcall(e, rb_intern("class"), 0);
+    VALUE bt = rb_funcall(e, rb_intern("backtrace"), 0);
+    VALUE msg = rb_funcall(e, rb_intern("message"), 0);
+    c = rb_funcall(c, rb_intern("to_s"), 0);
+    bt = rb_ary_entry(bt, 0);
+    fprintf(stdout, "%s: %s (%s)\n", StringValuePtr(bt), StringValuePtr(msg), StringValuePtr(c));
+    rb_backtrace();
+    ruby_finalize();
+    exit(-1);
+    
+    return Qnil;
+}
+
 STDMETHODIMP EVENTSINK_Invoke(
     PEVENTSINK pEventSink,
     DISPID dispid,
@@ -7444,6 +7472,8 @@ STDMETHODIMP EVENTSINK_Invoke(
     ITypeInfo *pTypeInfo;
     VARIANT *pvar;
     VALUE ary, obj, event, handler, args, argv, ev, result;
+    VALUE arg;
+    VALUE is_outarg;
     BOOL is_default_handler = FALSE;
 
     PIEVENTSINKOBJ pEV = (PIEVENTSINKOBJ)pEventSink;
@@ -7478,25 +7508,24 @@ STDMETHODIMP EVENTSINK_Invoke(
         rb_ary_push(args, ole_variant2val(pvar));
     }
     handler = rb_ary_entry(event, 0);
-
-    if (rb_ary_entry(event, 3) == Qtrue) {
+    is_outarg = rb_ary_entry(event, 3);
+    if (is_outarg == Qtrue) {
         argv = rb_ary_new();
         rb_ary_push(args, argv);
-        result = rb_apply(handler, rb_intern("call"), args);
-	if(TYPE(result) == T_HASH) {
-	    hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
-	    result = hash2result(result);
-	} else {
-	    ary2ptr_dispparams(argv, pdispparams);
-	}
     }
-    else {
-        result = rb_apply(handler, rb_intern("call"), args);
-	if(TYPE(result) == T_HASH) {
-	    hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
-	    result = hash2result(result);
-	}
+    arg = rb_ary_new();
+    rb_ary_push(arg, handler);
+    rb_ary_push(arg, args);
+    result = rb_rescue2(exec_callback, arg,
+	                rescue_callback, Qnil,
+			rb_eException, (VALUE)0);
+    if(TYPE(result) == T_HASH) {
+	hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
+	result = hash2result(result);
+    }else if (is_outarg == Qtrue) {
+	ary2ptr_dispparams(argv, pdispparams);
     }
+
     if (pvarResult) {
         ole_val2variant(result, pvarResult);
     }
