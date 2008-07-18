@@ -1,3 +1,29 @@
+Fri Jul 18 14:52:14 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (socklist): table for registering socket options
+	  (currently only O_NONBLOCK).
+
+	* win32/win32.c (StartSockets, exit_handler): alloc/free socklist.
+
+	* win32/win32.c (is_socket): use socklist.
+
+	* win32/win32.c (rb_w32_accept, rb_w32_socket, rb_w32_socketpair):
+	  register new socket to socklist.
+
+	* win32/win32.c (rb_w32_close): remove closing socket from socklist.
+
+	* win32/win32.c (fcntl): register socket options.
+
+	* win32/win32.c (overlapped_socket_io): send to/recv from socket with
+	  overlapped operation if the socket is not nonblocking mode.
+	  [experimental]
+
+	* win32/win32.c (rb_w32_send, rb_w32_sendto, rb_w32_recv,
+	  rb_w32_recvfrom): use overlapped_socket_io().
+
+	* win32/win32.c (open_ifs_socket): set overlapped mode. this is the
+	  default mode of winsock's socket(), so lacking it is an old bug.
+
 Fri Jul 18 09:44:30 2008
 
 	* lib/rdoc/*: Import RDoc r101.

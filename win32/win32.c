@@ -67,7 +67,6 @@
 
 static struct ChildRecord *CreateChild(const char *, const char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static int has_redirection(const char *);
-static void StartSockets(void);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 #if !defined(_WIN32_WCE)
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
@@ -419,20 +418,45 @@ static void invalid_parameter(const wchar_t *expr, const wchar_t *func, const wc
 #endif
 
 static CRITICAL_SECTION select_mutex;
-static BOOL fWinsock;
+static int NtSocketsInitialized = 0;
+static st_table *socklist = NULL;
 static char *envarea;
+
 static void
 exit_handler(void)
 {
-    if (fWinsock) {
+    if (NtSocketsInitialized) {
 	WSACleanup();
-	fWinsock = FALSE;
+	xfree(socklist);
+	socklist = NULL;
+	NtSocketsInitialized = 0;
     }
     if (envarea) {
 	FreeEnvironmentStrings(envarea);
 	envarea = NULL;
     }
     DeleteCriticalSection(&select_mutex);
+}
+
+static void
+StartSockets(void)
+{
+    WORD version;
+    WSADATA retdata;
+
+    //
+    // initalize the winsock interface and insure that it's
+    // cleaned up at exit.
+    //
+    version = MAKEWORD(2, 0);
+    if (WSAStartup(version, &retdata))
+	rb_fatal ("Unable to locate winsock library!\n");
+    if (LOBYTE(retdata.wVersion) != 2)
+	rb_fatal("could not find version 2 of winsock dll\n");
+
+    socklist = st_init_numtable();
+
+    NtSocketsInitialized = 1;
 }
 
 //
@@ -1785,27 +1809,10 @@ rb_w32_open_osfhandle(intptr_t osfhandle, int flags)
 static int
 is_socket(SOCKET sock)
 {
-    char sockbuf[80];
-    int optlen;
-    int retval;
-    int result = TRUE;
-
-    optlen = sizeof(sockbuf);
-    RUBY_CRITICAL({
-	retval = getsockopt(sock, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
-	if (retval == SOCKET_ERROR) {
-	    int iRet;
-	    iRet = WSAGetLastError();
-	    if (iRet == WSAENOTSOCK || iRet == WSANOTINITIALISED)
-		result = FALSE;
-	}
-    });
-
-    //
-    // If we get here, then sock is actually a socket.
-    //
-
-    return result;
+    if (st_lookup(socklist, (st_data_t)sock, NULL))
+	return TRUE;
+    else
+	return FALSE;
 }
 
 int
@@ -1981,8 +1988,6 @@ rb_w32_fdisset(int fd, fd_set *set)
 //
 
 #undef select
-
-static int NtSocketsInitialized = 0;
 
 static int
 extract_fd(fd_set *dst, fd_set *src, int (*func)(SOCKET))
@@ -2236,27 +2241,6 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     return r;
 }
 
-static void
-StartSockets(void)
-{
-    WORD version;
-    WSADATA retdata;
-
-    //
-    // initalize the winsock interface and insure that it's
-    // cleaned up at exit.
-    //
-    version = MAKEWORD(2, 0);
-    if (WSAStartup(version, &retdata))
-	rb_fatal ("Unable to locate winsock library!\n");
-    if (LOBYTE(retdata.wVersion) != 2)
-	rb_fatal("could not find version 2 of winsock dll\n");
-
-    fWinsock = TRUE;
-
-    NtSocketsInitialized = 1;
-}
-
 #undef accept
 
 int WSAAPI
@@ -2274,6 +2258,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 	    s = -1;
 	}
 	else {
+	    st_insert(socklist, (st_data_t)r, (st_data_t)0);
 	    s = rb_w32_open_osfhandle(r, O_RDWR|O_BINARY|O_NOINHERIT);
 	}
     });
@@ -2407,74 +2392,142 @@ rb_w32_listen(int s, int backlog)
     return r;
 }
 
+typedef BOOL (WINAPI *cancel_io_t)(HANDLE);
+static inline void
+cancel_io(HANDLE f)
+{
+    static cancel_io_t func = NULL;
+    if (!func) {
+	func = (cancel_io_t)GetProcAddress(GetModuleHandle("kernel32"),
+					   "CancelIo");
+	if (!func)
+	    func = (cancel_io_t)-1;
+    }
+    else if (func != (cancel_io_t)-1)
+	func(f);
+    /* Win9x and NT3.x doesn't have CancelIo().
+       We expect to cancel the I/O by close or ending the thread */
+}
+
 #undef recv
-
-int WSAAPI
-rb_w32_recv(int s, char *buf, int len, int flags)
-{
-    int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
-    RUBY_CRITICAL({
-	r = recv(TO_SOCKET(s), buf, len, flags);
-	if (r == SOCKET_ERROR)
-	    errno = map_errno(WSAGetLastError());
-    });
-    return r;
-}
-
 #undef recvfrom
-
-int WSAAPI
-rb_w32_recvfrom(int s, char *buf, int len, int flags,
-		 struct sockaddr *from, int *fromlen)
-{
-    int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
-    RUBY_CRITICAL({
-	r = recvfrom(TO_SOCKET(s), buf, len, flags, from, fromlen);
-	if (r == SOCKET_ERROR)
-	    errno = map_errno(WSAGetLastError());
-    });
-    return r;
-}
-
 #undef send
-
-int WSAAPI
-rb_w32_send(int s, const char *buf, int len, int flags)
-{
-    int r;
-    if (!NtSocketsInitialized) {
-	StartSockets();
-    }
-    RUBY_CRITICAL({
-	r = send(TO_SOCKET(s), buf, len, flags);
-	if (r == SOCKET_ERROR)
-	    errno = map_errno(WSAGetLastError());
-    });
-    return r;
-}
-
 #undef sendto
 
-int WSAAPI
-rb_w32_sendto(int s, const char *buf, int len, int flags, 
-	      const struct sockaddr *to, int tolen)
+static int
+overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
+		     struct sockaddr *addr, int *addrlen)
 {
     int r;
-    if (!NtSocketsInitialized) {
+    int ret;
+    int mode;
+    int flg;
+    WSAOVERLAPPED wol;
+    WSABUF wbuf;
+    int err;
+    SOCKET s;
+
+    if (!NtSocketsInitialized)
 	StartSockets();
+
+    s = TO_SOCKET(fd);
+    st_lookup(socklist, (st_data_t)s, (st_data_t *)&mode);
+    if (mode & O_NONBLOCK) {
+	RUBY_CRITICAL({
+	    if (input) {
+		if (addr && addrlen)
+		    r = recvfrom(s, buf, len, flags, addr, addrlen);
+		else
+		    r = recv(s, buf, len, flags);
+	    }
+	    else {
+		if (addr && addrlen)
+		    r = sendto(s, buf, len, flags, addr, *addrlen);
+		else
+		    r = send(s, buf, len, flags);
+	    }
+	    if (r == SOCKET_ERROR)
+		errno = map_errno(WSAGetLastError());
+	});
     }
-    RUBY_CRITICAL({
-	r = sendto(TO_SOCKET(s), buf, len, flags, to, tolen);
-	if (r == SOCKET_ERROR)
-	    errno = map_errno(WSAGetLastError());
-    });
+    else {
+	wbuf.len = len;
+	wbuf.buf = buf;
+	memset(&wol, 0, sizeof(wol));
+	RUBY_CRITICAL({
+	    wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	    if (input) {
+		flg = flags;
+		if (addr && addrlen)
+		    ret = WSARecvFrom(s, &wbuf, 1, &r, &flg, addr, addrlen, &wol,
+				      NULL);
+		else
+		    ret = WSARecv(s, &wbuf, 1, &r, &flg, &wol, NULL);
+	    }
+	    else {
+		if (addr && addrlen)
+		    ret = WSASendTo(s, &wbuf, 1, &r, flags, addr, *addrlen, &wol,
+				    NULL);
+		else
+		    ret = WSASend(s, &wbuf, 1, &r, flags, &wol, NULL);
+	    }
+	    err = WSAGetLastError();
+	});
+
+	if (ret == SOCKET_ERROR && err == WSA_IO_PENDING) {
+	    switch (rb_w32_wait_events_blocking(&wol.hEvent, 1, INFINITE)) {
+	      case WAIT_OBJECT_0:
+		RUBY_CRITICAL(
+		    ret = WSAGetOverlappedResult(s, &wol, &r, TRUE, &flg)
+		    );
+		if (ret)
+		    break;
+		/* thru */
+	      default:
+		errno = map_errno(err);
+		/* thru */
+	      case WAIT_OBJECT_0 + 1:
+		/* interrupted */
+		r = -1;
+		cancel_io((HANDLE)s);
+		break;
+	    }
+	}
+	else if (ret == SOCKET_ERROR) {
+	    errno = map_errno(err);
+	    r = -1;
+	}
+	CloseHandle(&wol.hEvent);
+    }
+
     return r;
+}
+
+int WSAAPI
+rb_w32_recv(int fd, char *buf, int len, int flags)
+{
+    return overlapped_socket_io(TRUE, fd, buf, len, flags, NULL, NULL);
+}
+
+int WSAAPI
+rb_w32_recvfrom(int fd, char *buf, int len, int flags,
+		struct sockaddr *from, int *fromlen)
+{
+    return overlapped_socket_io(TRUE, fd, buf, len, flags, from, fromlen);
+}
+
+int WSAAPI
+rb_w32_send(int fd, const char *buf, int len, int flags)
+{
+    return overlapped_socket_io(FALSE, fd, (char *)buf, len, flags, NULL, NULL);
+}
+
+int WSAAPI
+rb_w32_sendto(int fd, const char *buf, int len, int flags, 
+	      const struct sockaddr *to, int tolen)
+{
+    return overlapped_socket_io(FALSE, fd, (char *)buf, len, flags,
+				(struct sockaddr *)to, &tolen);
 }
 
 #undef setsockopt
@@ -2543,7 +2596,8 @@ open_ifs_socket(int af, int type, int protocol)
 		    if ((proto_buffers[i].dwServiceFlags1 & XP1_IFS_HANDLES) == 0)
 			continue;
 
-		    out = WSASocket(af, type, protocol, &(proto_buffers[i]), 0, 0);
+		    out = WSASocket(af, type, protocol, &(proto_buffers[i]), 0,
+				    WSA_FLAG_OVERLAPPED);
 		    break;
 		}
 	    }
@@ -2573,6 +2627,7 @@ rb_w32_socket(int af, int type, int protocol)
 	    fd = -1;
 	}
 	else {
+	    st_insert(socklist, (st_data_t)s, (st_data_t)0);
 	    fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY|O_NOINHERIT);
 	}
     });
@@ -2793,6 +2848,8 @@ rb_w32_socketpair(int af, int type, int protocol, int *sv)
 
     if (socketpair_internal(af, type, protocol, pair) < 0)
 	return -1;
+    st_insert(socklist, (st_data_t)pair[0], (st_data_t)0);
+    st_insert(socklist, (st_data_t)pair[1], (st_data_t)0);
     sv[0] = rb_w32_open_osfhandle(pair[0], O_RDWR|O_BINARY|O_NOINHERIT);
     sv[1] = rb_w32_open_osfhandle(pair[1], O_RDWR|O_BINARY|O_NOINHERIT);
 
@@ -2833,6 +2890,7 @@ fcntl(int fd, int cmd, ...)
     va_list va;
     int arg;
     int ret;
+    int flag = 0;
     u_long ioctlArg;
 
     if (!is_socket(sock)) {
@@ -2847,17 +2905,21 @@ fcntl(int fd, int cmd, ...)
     va_start(va, cmd);
     arg = va_arg(va, int);
     va_end(va);
+    st_lookup(socklist, (st_data_t)sock, (st_data_t*)&flag);
     if (arg & O_NONBLOCK) {
+	flag |= O_NONBLOCK;
 	ioctlArg = 1;
     }
     else {
+	flag &= ~O_NONBLOCK;
 	ioctlArg = 0;
     }
     RUBY_CRITICAL({
 	ret = ioctlsocket(sock, FIONBIO, &ioctlArg);
-	if (ret == -1) {
+	if (ret == 0)
+	    st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
+	else
 	    errno = map_errno(WSAGetLastError());
-	}
     });
 
     return ret;
@@ -3901,6 +3963,7 @@ rb_w32_close(int fd)
 	return _close(fd);
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
+    st_delete(socklist, (st_data_t *)&sock, NULL);
     _close(fd);
     errno = save_errno;
     if (closesocket(sock) == SOCKET_ERROR) {
