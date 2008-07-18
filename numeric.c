@@ -1588,23 +1588,17 @@ static void
 check_uint(VALUE num, VALUE sign)
 {
     static const VALUE mask = ~(VALUE)UINT_MAX;
-    const char *s;
 
     if (RTEST(sign)) {
 	/* minus */
 	if ((num & mask) != mask || (num & ~mask) <= INT_MAX + 1UL)
-	    s = "small";
-	else
-	    return;
+	    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too small to convert to `unsigned int'", num);
     }
     else {
 	/* plus */
 	if ((num & mask) != 0)
-	    s = "big";
-	else
-	    return;
+	    rb_raise(rb_eRangeError, "integer %"PRIuVALUE " too big to convert to `unsigned int'", num);
     }
-    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `unsigned int'", num, s);
 }
 
 long
