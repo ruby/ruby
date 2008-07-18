@@ -540,8 +540,10 @@ class RDoc::RubyLex
       begin
         tk = @OP.match(self)
         @space_seen = TkSPACE === tk
-      rescue SyntaxError
-        abort if @exception_on_syntax_error
+      rescue SyntaxError => e
+        raise RDoc::Error, "syntax error: #{e.message}" if
+          @exception_on_syntax_error
+
         tk = TkError.new(line_no, char_no)
       end
     end while @skip_space and TkSPACE === tk

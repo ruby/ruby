@@ -53,10 +53,13 @@ class RDoc::Parser
   # "new_ext" will be parsed using the same parser as "old_ext"
 
   def self.alias_extension(old_ext, new_ext)
+    old_ext = old_ext.sub(/^\.(.*)/, '\1')
+    new_ext = new_ext.sub(/^\.(.*)/, '\1')
+
     parser = can_parse "xxx.#{old_ext}"
     return false unless parser
 
-    RDoc::Parser.parsers.unshift [/\.#{new_ext}$/, parser.last]
+    RDoc::Parser.parsers.unshift [/\.#{new_ext}$/, parser]
 
     true
   end

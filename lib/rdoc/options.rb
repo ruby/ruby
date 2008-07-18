@@ -154,7 +154,7 @@ class RDoc::Options
 
   attr_reader :webcvs
 
-  def initialize(generators) # :nodoc:
+  def initialize(generators = {}) # :nodoc:
     @op_dir = "doc"
     @op_name = nil
     @show_all = false
@@ -613,8 +613,8 @@ Usage: #{opt.program_name} [options] [names...]
 
   def check_files
     @files.each do |f|
-      stat = File.stat f rescue abort("File not found: #{f}")
-      abort("File '#{f}' not readable") unless stat.readable?
+      stat = File.stat f
+      raise RDoc::Error, "file '#{f}' not readable" unless stat.readable?
     end
   end
 
