@@ -1,3 +1,9 @@
+Sat Jul 19 09:31:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): little refactoring.
+
+	* ext/win32ole/win32ole.c: add document of inspect methods.
+
 Sat Jul 19 06:08:43 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc*:  Import RDoc r104.  Various make test-all fixes.

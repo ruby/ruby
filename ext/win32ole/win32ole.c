@@ -4630,7 +4630,7 @@ fole_method_help(VALUE self, VALUE cmdname)
  *  created with MFC should be initialized by calling 
  *  IPersistXXX::InitNew.
  *
- *  If and only if you recieved the exception "HRESULT error code:
+ *  If and only if you received the exception "HRESULT error code:
  *  0x8000ffff catastrophic failure", try this method before
  *  invoking any ole_method.
  *
@@ -5304,6 +5304,15 @@ foletypelib_ole_types(VALUE self)
     return classes;
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPELIB#inspect -> String
+ *
+ *  Returns the type library name with class name.
+ *
+ *     tlib = WIN32OLE_TYPELIB.new('Microsoft Excel 9.0 Object Library')
+ *     tlib.inspect # => "<#WIN32OLE_TYPELIB:Microsoft Excel 9.0 Object Library>"
+ */
 static VALUE
 foletypelib_inspect(VALUE self)
 {
@@ -5875,6 +5884,15 @@ foletype_default_ole_types(VALUE self)
     return ole_type_impl_ole_types(ptype->pTypeInfo, IMPLTYPEFLAG_FDEFAULT);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPE#inspect -> String
+ *
+ *  Returns the type name with class name.
+ *
+ *     ie = WIN32OLE.new('InternetExplorer.Application')
+ *     ie.ole_type.inspect => #<WIN32OLE_TYPE:IWebBrowser2>
+ */
 static VALUE
 foletype_inspect(VALUE self)
 {
@@ -6267,6 +6285,13 @@ folevariable_varkind(VALUE self)
     return ole_variable_varkind(pvar->pTypeInfo, pvar->index);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_VARIABLE#inspect -> String
+ *
+ *  Returns the OLE variable name and the value with class name. 
+ *
+ */
 static VALUE
 folevariable_inspect(VALUE self)
 {
@@ -6979,6 +7004,13 @@ folemethod_params(VALUE self)
     return ole_method_params(pmethod->pTypeInfo, pmethod->index);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_METHOD#inspect -> String
+ *
+ *  Returns the method name with class name.
+ *
+ */
 static VALUE
 folemethod_inspect(VALUE self)
 {
@@ -7233,6 +7265,14 @@ static VALUE foleparam_default(VALUE self)
                              pparam->index);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_PARAM#inspect -> String
+ *
+ *  Returns the parameter name with class name. If the parameter has default value,
+ *  then returns name=value string with class name.
+ *
+ */
 static VALUE
 foleparam_inspect(VALUE self)
 {
@@ -7471,7 +7511,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     unsigned int i;
     ITypeInfo *pTypeInfo;
     VARIANT *pvar;
-    VALUE ary, obj, event, handler, args, argv, ev, result;
+    VALUE ary, obj, event, handler, args, outargv, ev, result;
     VALUE arg;
     VALUE is_outarg;
     BOOL is_default_handler = FALSE;
@@ -7509,21 +7549,30 @@ STDMETHODIMP EVENTSINK_Invoke(
     }
     handler = rb_ary_entry(event, 0);
     is_outarg = rb_ary_entry(event, 3);
+    outargv = Qnil;
     if (is_outarg == Qtrue) {
-        argv = rb_ary_new();
-        rb_ary_push(args, argv);
+	outargv = rb_ary_new();
+        rb_ary_push(args, outargv);
     }
     arg = rb_ary_new();
     rb_ary_push(arg, handler);
     rb_ary_push(arg, args);
+
+    /*
+     * if exception raised in event callback,
+     * then you receive cfp consistency error. 
+     * to avoid this error we use begin rescue end.
+     * and the exception raised then error message print
+     * and exit ruby process by Win32OLE itself.
+     */
     result = rb_rescue2(exec_callback, arg,
 	                rescue_callback, Qnil,
 			rb_eException, (VALUE)0);
     if(TYPE(result) == T_HASH) {
 	hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
 	result = hash2result(result);
-    }else if (is_outarg == Qtrue) {
-	ary2ptr_dispparams(argv, pdispparams);
+    }else if (is_outarg == Qtrue && outargv != Qnil) {
+	ary2ptr_dispparams(outargv, pdispparams);
     }
 
     if (pvarResult) {
@@ -8092,6 +8141,21 @@ fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self)
     return ev_on_event(argc, argv, self, Qtrue);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_EVENT#unadvise -> nil
+ *
+ *  disconnects OLE server. If this method called, then the WIN32OLE_EVENT object
+ *  does not receive the OLE server event any more.
+ *  This method is trial implementation.
+ *
+ *      ie = WIN32OLE.new('InternetExplorer.Application')
+ *      ev = WIN32OLE_EVENT.new(ie)
+ *      ev.on_event() {...}
+ *         ...
+ *      ev.unadvise
+ *
+ */
 static VALUE 
 fev_unadvise(VALUE self)
 {
