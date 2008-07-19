@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.5"
+#define WIN32OLE_VERSION "1.2.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -7353,13 +7353,19 @@ STDMETHODIMP EVENTSINK_GetTypeInfo(
 }
 
 STDMETHODIMP EVENTSINK_GetIDsOfNames(
-    PEVENTSINK pEV,
+    PEVENTSINK pEventSink,
     REFIID riid,
     OLECHAR **szNames,
     UINT cNames,
     LCID lcid,
     DISPID *pDispID
     ) {
+    ITypeInfo *pTypeInfo;
+    PIEVENTSINKOBJ pEV = (PIEVENTSINKOBJ)pEventSink;
+    pTypeInfo = pEV->pTypeInfo;
+    if (pTypeInfo) {
+	return pTypeInfo->lpVtbl->GetIDsOfNames(pTypeInfo, szNames, cNames, pDispID);
+    }
     return DISP_E_UNKNOWNNAME;
 }
 
@@ -7470,8 +7476,9 @@ ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams)
 static VALUE
 exec_callback(VALUE arg)
 {
-    VALUE handler = rb_ary_entry(arg, 0);
-    VALUE args = rb_ary_entry(arg, 1);
+    VALUE *parg = (VALUE *)arg;
+    VALUE handler = parg[0];
+    VALUE args = parg[1];
     return rb_apply(handler, rb_intern("call"), args);
 }
 
@@ -7512,7 +7519,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     ITypeInfo *pTypeInfo;
     VARIANT *pvar;
     VALUE ary, obj, event, handler, args, outargv, ev, result;
-    VALUE arg;
+    VALUE arg[2];
     VALUE is_outarg;
     BOOL is_default_handler = FALSE;
 
@@ -7554,9 +7561,6 @@ STDMETHODIMP EVENTSINK_Invoke(
 	outargv = rb_ary_new();
         rb_ary_push(args, outargv);
     }
-    arg = rb_ary_new();
-    rb_ary_push(arg, handler);
-    rb_ary_push(arg, args);
 
     /*
      * if exception raised in event callback,
@@ -7565,7 +7569,9 @@ STDMETHODIMP EVENTSINK_Invoke(
      * and the exception raised then error message print
      * and exit ruby process by Win32OLE itself.
      */
-    result = rb_rescue2(exec_callback, arg,
+    arg[0] = handler;
+    arg[1] = args;
+    result = rb_rescue2(exec_callback, (VALUE)arg,
 	                rescue_callback, Qnil,
 			rb_eException, (VALUE)0);
     if(TYPE(result) == T_HASH) {

@@ -1,3 +1,10 @@
+Sun Jul 20 01:23:24 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): little refactoring.
+
+	* ext/win32ole/win32ole.c (EVENTSINK_GetIDsOfNames): return
+	  ITypeInfo::GetIDsOfNames().
+
 Sat Jul 19 09:31:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): little refactoring.
