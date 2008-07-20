@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.6"
+#define WIN32OLE_VERSION "1.2.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -7522,6 +7522,7 @@ STDMETHODIMP EVENTSINK_Invoke(
     VALUE arg[2];
     VALUE is_outarg;
     BOOL is_default_handler = FALSE;
+    int state;
 
     PIEVENTSINKOBJ pEV = (PIEVENTSINKOBJ)pEventSink;
     pTypeInfo = pEV->pTypeInfo;
@@ -7571,13 +7572,14 @@ STDMETHODIMP EVENTSINK_Invoke(
      */
     arg[0] = handler;
     arg[1] = args;
-    result = rb_rescue2(exec_callback, (VALUE)arg,
-	                rescue_callback, Qnil,
-			rb_eException, (VALUE)0);
+    result = rb_protect(exec_callback, (VALUE)arg, &state);
+    if (state != 0) {
+	rescue_callback(Qnil);
+    }
     if(TYPE(result) == T_HASH) {
 	hash2ptr_dispparams(result, pTypeInfo, dispid, pdispparams);
 	result = hash2result(result);
-    }else if (is_outarg == Qtrue && outargv != Qnil) {
+    }else if (is_outarg == Qtrue && TYPE(outargv) == T_ARRAY) {
 	ary2ptr_dispparams(outargv, pdispparams);
     }
 
