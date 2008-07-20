@@ -1,3 +1,10 @@
+Mon Jul 21 04:55:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* dir.c (dir_initialize): use rb_convert_type instead of
+	  rb_check_convert_type to prevent SEGV by Dir.new(".", true).
+	  (dir_initialize): use FilePathValue before rb_enc_get(dirname) to
+	  prevent SEGV by Dir.new(0).
+
 Mon Jul 21 04:42:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_s_union): useless rb_enc_get call removed to prevent

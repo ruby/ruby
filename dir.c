@@ -348,7 +348,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 
     if (!NIL_P(opt)) {
         VALUE v, extenc=Qnil, intenc=Qnil;
-        opt = rb_check_convert_type(opt, T_HASH, "Hash", "to_hash");
+        opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
 
         v = rb_hash_aref(opt, sym_intenc);
         if (!NIL_P(v)) intenc = v;
@@ -372,6 +372,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	}
     }
 
+    FilePathValue(dirname);
     {
 	rb_encoding  *dirname_encoding = rb_enc_get(dirname);
 	if (rb_usascii_encoding() != dirname_encoding
@@ -384,7 +385,6 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	    dirname = rb_str_transcode(dirname, rb_enc_from_encoding(extencoding));
 	}
     }
-    FilePathValue(dirname);
 
     Data_Get_Struct(dir, struct dir_data, dp);
     if (dp->dir) closedir(dp->dir);
