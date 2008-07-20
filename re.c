@@ -3018,7 +3018,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
 		v = rb_reg_to_s(v);
 	    }
 	    else {
-                rb_encoding *enc = rb_enc_get(e);
+                rb_encoding *enc;
                 StringValue(e);
                 enc = rb_enc_get(e);
                 if (!rb_enc_str_asciicompat_p(e)) {
