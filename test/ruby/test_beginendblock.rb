@@ -14,6 +14,21 @@ class TestBeginEndBlock < Test::Unit::TestCase
     target = File.join(DIR, 'beginmainend.rb')
     result = IO.popen([ruby, target]){|io|io.read}
     assert_equal(%w(b1 b2-1 b2 main b3-1 b3 b4 e1 e4 e3 e2 e4-2 e4-1 e1-1 e4-1-1), result.split)
+
+    input = Tempfile.new(self.class.name)
+    inputpath = input.path
+    input.close
+    result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+    assert_equal(%w(:begin), result.split)
+    result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+    assert_equal(%w(:begin), result.split)
+    input.open
+    input.puts "foo\nbar"
+    input.close
+    result = IO.popen([ruby, "-n", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+    assert_equal(%w(:begin :end), result.split)
+    result = IO.popen([ruby, "-p", "-eBEGIN{p :begin}", "-eEND{p :end}", inputpath]){|io|io.read}
+    assert_equal(%w(:begin foo bar :end), result.split)
   end
 
   def test_begininmethod

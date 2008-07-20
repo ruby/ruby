@@ -1,3 +1,8 @@
+Sun Jul 20 22:50:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): NODE_POSTEXE should set each end
+	  procs only once.  [ruby-dev:35596]
+
 Sun Jul 20 16:00:37 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (EVENTSINK_Invoke): use rb_protect
