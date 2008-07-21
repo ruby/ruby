@@ -190,9 +190,14 @@ listed below:
     Appends len bytes of data from ptr to the Ruby string.
 
   rb_sprintf(const char *format, ...)
-  rb_vsprintf(const char *format, ...)
+  rb_vsprintf(const char *format, va_list ap)
 
     Creates a new Ruby string with printf(3) format.
+
+  rb_str_cat2(VALUE str, const char* ptr)
+
+    Appends C string ptr to Ruby string str.  This function is
+    equivalent to rb_str_cat(str, ptr, strlen(ptr)).
 
  Array functions
 

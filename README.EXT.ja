@@ -217,9 +217,14 @@ Rubyが用意している関数を用いてください．
     Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
   rb_sprintf(const char *format, ...)
-  rb_vsprintf(const char *format, ...)
+  rb_vsprintf(const char *format, va_list ap)
 
     printf(3)のフォーマットにしたがって，Rubyの文字列を生成する．
+
+  rb_str_cat2(VALUE str, const char* ptr)
+
+    Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
+    rb_str_cat(str, ptr, strlen(ptr))と同等である．
 
  配列に対する関数
 

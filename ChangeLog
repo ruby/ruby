@@ -1,3 +1,8 @@
+Tue Jul 22 02:50:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja (1.5 Manipulating Ruby data): fix the
+	  prototype of rb_vsprintf, and added rb_str_cat2.  [ruby-dev:35622]
+
 Mon Jul 21 17:15:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* encoding.c (rb_filesystem_encoding): use locale encoding on Unix.
