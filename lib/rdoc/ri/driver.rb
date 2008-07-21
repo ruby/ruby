@@ -303,6 +303,9 @@ Options may also be set in the 'RI' environment variable.
                      populate_class_cache class_cache, classes, true
                      write_cache class_cache, class_cache_file_path
                    end
+
+    @class_cache = RDoc::RI::Driver::Hash.convert @class_cache
+    @class_cache
   end
 
   def class_cache_file_path
@@ -335,13 +338,13 @@ Options may also be set in the 'RI' environment variable.
 
     if File.exist? path and
        File.mtime(path) >= File.mtime(class_cache_file_path) then
-      File.open path, 'rb' do |fp|
+      open path, 'rb' do |fp|
         cache = Marshal.load fp.read
       end
     else
       class_cache = nil
 
-      File.open class_cache_file_path, 'rb' do |fp|
+      open class_cache_file_path, 'rb' do |fp|
         class_cache = Marshal.load fp.read
       end
 
@@ -373,16 +376,33 @@ Options may also be set in the 'RI' environment variable.
   end
 
   ##
+  # Finds the next ancestor of +orig_klass+ after +klass+.
+
+  def lookup_ancestor(klass, orig_klass)
+    cache = class_cache[orig_klass]
+
+    return nil unless cache
+
+    ancestors = [orig_klass]
+    ancestors.push(*cache.includes.map { |inc| inc['name'] })
+    ancestors << cache.superclass
+
+    ancestor = ancestors[ancestors.index(klass) + 1]
+
+    return ancestor if ancestor
+
+    lookup_ancestor klass, cache.superclass
+  end
+
+  ##
   # Finds the method
 
   def lookup_method(name, klass)
     cache = load_cache_for klass
-    raise NotFoundError, name unless cache
+    return nil unless cache
 
     method = cache[name.gsub('.', '#')]
     method = cache[name.gsub('.', '::')] unless method
-    raise NotFoundError, name unless method
-
     method
   end
 
@@ -435,6 +455,8 @@ Options may also be set in the 'RI' environment variable.
           desc["class_method_extensions"] = desc.delete "class_methods"
         end
 
+        klass = RDoc::RI::Driver::Hash.convert klass
+
         klass.merge_enums desc
         klass["sources"] << cdesc
       end
@@ -459,11 +481,25 @@ Options may also be set in the 'RI' environment variable.
           if class_cache.key? name then
             display_class name
           else
-            meth = nil
+            klass, = parse_name name
 
-            klass, meth = parse_name name
+            orig_klass = klass
+            orig_name = name
 
-            method = lookup_method name, klass
+            until klass == 'Kernel' do
+              method = lookup_method name, klass
+
+              break method if method
+
+              ancestor = lookup_ancestor klass, orig_klass
+
+              break unless ancestor
+
+              name = name.sub klass, ancestor
+              klass = ancestor
+            end
+
+            raise NotFoundError, orig_name unless method
 
             @display.display_method_info method
           end
@@ -472,6 +508,7 @@ Options may also be set in the 'RI' environment variable.
             display_class name
           else
             methods = select_methods(/^#{name}/)
+
             if methods.size == 0
               raise NotFoundError, name
             elsif methods.size == 1

@@ -46,8 +46,6 @@ class RDoc::Parser
     attr_reader :parsers
   end
 
-  attr_writer :progress
-
   ##
   # Alias an extension to another extension. After this call, files ending
   # "new_ext" will be parsed using the same parser as "old_ext"
@@ -103,7 +101,6 @@ class RDoc::Parser
     @content = content
     @options = options
     @stats = stats
-    @progress = $stderr unless options.quiet
   end
 
 end

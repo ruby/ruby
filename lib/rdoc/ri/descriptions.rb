@@ -93,8 +93,12 @@ class RDoc::RI::ModuleDescription < RDoc::RI::Description
       @comment = old.comment
     else
       unless old.comment.nil? or old.comment.empty? then
-        @comment << RDoc::Markup::Flow::RULE.new
-        @comment.concat old.comment
+        if @comment.nil? or @comment.empty? then
+          @comment = old.comment
+        else
+          @comment << RDoc::Markup::Flow::RULE.new
+          @comment.concat old.comment
+        end
       end
     end
   end

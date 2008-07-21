@@ -71,6 +71,14 @@ module RDoc
     # Do we _force_ documentation, even is we wouldn't normally show the entity
     attr_accessor :force_documentation
 
+    def parent_file_name
+      @parent ? @parent.file_base_name : '(unknown)'
+    end
+
+    def parent_name
+      @parent ? @parent.name : '(unknown)'
+    end
+
     # Default callbacks to nothing, but this is overridden for classes
     # and modules
     def remove_classes_and_modules
@@ -264,7 +272,7 @@ module RDoc
     end
 
     def add_class(class_type, name, superclass)
-      add_class_or_module(@classes, class_type, name, superclass)
+      add_class_or_module @classes, class_type, name, superclass
     end
 
     def add_module(class_type, name)
@@ -272,7 +280,6 @@ module RDoc
     end
 
     def add_method(a_method)
-      puts "Adding #@visibility method #{a_method.name} to #@name" if $DEBUG_RDOC
       a_method.visibility = @visibility
       add_to(@method_list, a_method)
     end
@@ -283,7 +290,8 @@ module RDoc
 
     def add_alias(an_alias)
       meth = find_instance_method_named(an_alias.old_name)
-      if meth
+
+      if meth then
         new_meth = AnyMethod.new(an_alias.text, an_alias.new_name)
         new_meth.is_alias_for = meth
         new_meth.singleton    = meth.singleton
@@ -294,6 +302,8 @@ module RDoc
       else
         add_to(@aliases, an_alias)
       end
+
+      an_alias
     end
 
     def add_include(an_include)
@@ -315,11 +325,12 @@ module RDoc
 
     def add_class_or_module(collection, class_type, name, superclass=nil)
       cls = collection[name]
-      if cls
+
+      if cls then
+        cls.superclass = superclass unless cls.module?
         puts "Reusing class/module #{name}" if $DEBUG_RDOC
       else
         cls = class_type.new(name, superclass)
-        puts "Adding class/module #{name} to #@name" if $DEBUG_RDOC
 #        collection[name] = cls if @document_self  && !@done_documenting
         collection[name] = cls if !@done_documenting
         cls.parent = self
@@ -550,10 +561,11 @@ module RDoc
     def add_class_or_module(collection, class_type, name, superclass)
       cls = collection[name]
 
-      if cls
-        puts "Reusing class/module #{name}" #if $DEBUG_RDOC
+      if cls then
+        cls.superclass = superclass unless cls.module?
+        puts "Reusing class/module #{cls.full_name}" if $DEBUG_RDOC
       else
-        if class_type == NormalModule
+        if class_type == NormalModule then
           all = @@all_modules
         else
           all = @@all_classes
@@ -561,12 +573,10 @@ module RDoc
 
         cls = all[name]
 
-        if !cls
-          cls = class_type.new(name, superclass)
+        unless cls then
+          cls = class_type.new name, superclass
           all[name] = cls unless @done_documenting
         end
-
-        puts "Adding class/module #{name} to #{@name}" if $DEBUG_RDOC
 
         collection[name] = cls unless @done_documenting
 
@@ -609,6 +619,15 @@ module RDoc
       find_class_or_module_named(name) || find_enclosing_module_named(name)
     end
 
+    def inspect
+      "#<%s:0x%x %p modules: %p classes: %p>" % [
+        self.class, object_id,
+        file_base_name,
+        @modules.map { |n,m| m },
+        @classes.map { |n,c| c }
+      ]
+    end
+
   end
 
   ##
@@ -617,7 +636,6 @@ module RDoc
 
   class ClassModule < Context
 
-    attr_reader   :superclass
     attr_accessor :diagram
 
     def initialize(name, superclass = nil)
@@ -628,7 +646,15 @@ module RDoc
       super()
     end
 
+    def find_class_named(name)
+      return self if full_name == name
+      @classes.each_value {|c| return c if c.find_class_named(name) }
+      nil
+    end
+
+    ##
     # Return the fully qualified name of this class or module
+
     def full_name
       if @parent && @parent.full_name
         @parent.full_name + "::" + @name
@@ -642,24 +668,47 @@ module RDoc
       File.join(prefix, *path) + ".html"
     end
 
-    # Return +true+ if this object represents a module
-    def is_module?
+    ##
+    # Does this object represent a module?
+
+    def module?
       false
     end
 
-    # to_s is simply for debugging
-    def to_s
-      res = self.class.name + ": " + @name 
-      res << @comment.to_s
-      res << super
-      res
+    ##
+    # Get the superclass of this class.  Attempts to retrieve the superclass'
+    # real name by following module nesting.
+
+    def superclass
+      raise NoMethodError, "#{full_name} is a module" if module?
+
+      scope = self
+
+      begin
+        superclass = scope.classes.find { |c| c.name == @superclass }
+
+        return superclass.full_name if superclass
+        scope = scope.parent
+      end until scope.nil? or TopLevel === scope
+
+      @superclass
     end
 
-    def find_class_named(name)
-      return self if full_name == name
-      @classes.each_value {|c| return c if c.find_class_named(name) }
-      nil
+    ##
+    # Set the superclass of this class
+
+    def superclass=(superclass)
+      raise NoMethodError, "#{full_name} is a module" if module?
+
+      if @superclass.nil? or @superclass == 'Object' then
+        @superclass = superclass 
+      end
     end
+
+    def to_s
+      "#{self.class}: #{@name} #{@comment} #{super}"
+    end
+
   end
 
   ##
@@ -708,7 +757,7 @@ module RDoc
       ]
     end
 
-    def is_module?
+    def module?
       true
     end
 
@@ -764,7 +813,7 @@ module RDoc
       alias_for = @is_alias_for ? " (alias for #{@is_alias_for.name})" : nil
       "#<%s:0x%x %s%s%s (%s)%s>" % [
         self.class, object_id,
-        @parent.name,
+        parent_name,
         singleton ? '::' : '#',
         name,
         visibility,
@@ -773,25 +822,24 @@ module RDoc
     end
 
     def param_seq
-      p = params.gsub(/\s*\#.*/, '')
-      p = p.tr("\n", " ").squeeze(" ")
-      p = "(" + p + ")" unless p[0] == ?(
+      params = params.gsub(/\s*\#.*/, '')
+      params = params.tr("\n", " ").squeeze(" ")
+      params = "(#{params})" unless p[0] == ?(
 
-      if (block = block_params)
-        # If this method has explicit block parameters, remove any
-        # explicit &block
-$stderr.puts p
-        p.sub!(/,?\s*&\w+/)
-$stderr.puts p
+      if block = block_params then # yes, =
+        # If this method has explicit block parameters, remove any explicit
+        # &block
+        params.sub!(/,?\s*&\w+/)
 
         block.gsub!(/\s*\#.*/, '')
         block = block.tr("\n", " ").squeeze(" ")
         if block[0] == ?(
           block.sub!(/^\(/, '').sub!(/\)/, '')
         end
-        p << " {|#{block}| ...}"
+        params << " { |#{block}| ... }"
       end
-      p
+
+      params
     end
 
     def to_s
@@ -887,7 +935,7 @@ $stderr.puts p
 
       "#<%s:0x%x %s.%s :%s>" % [
         self.class, object_id,
-        @parent.name, attr, @name,
+        parent_name, attr, @name,
       ]
     end
 
@@ -914,7 +962,7 @@ $stderr.puts p
         self.class,
         object_id,
         @name,
-        @parent.file_base_name,
+        parent_file_name,
       ]
     end
 
@@ -938,8 +986,7 @@ $stderr.puts p
       "#<%s:0x%x %s.include %s>" % [
         self.class,
         object_id,
-        @parent.name,
-        @name,
+        parent_name, @name,
       ]
     end
 

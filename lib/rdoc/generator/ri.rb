@@ -16,12 +16,8 @@ class RDoc::Generator::RI
     new(options)
   end
 
-  class << self
-    protected :new
-  end
-
   ##
-  # Set up a new RDoc::Generator::RI.
+  # Set up a new ri generator
 
   def initialize(options) #:not-new:
     @options   = options
@@ -52,11 +48,12 @@ class RDoc::Generator::RI
   end
 
   def generate_class_info(cls)
-    if cls === RDoc::NormalModule
+    case cls
+    when RDoc::NormalModule then
       cls_desc = RDoc::RI::ModuleDescription.new
     else
       cls_desc = RDoc::RI::ClassDescription.new
-      cls_desc.superclass  = cls.superclass
+      cls_desc.superclass = cls.superclass
     end
 
     cls_desc.name        = cls.name

@@ -1,3 +1,7 @@
+Tue Jul 22 03:34:01 2008  Eric Hodel <drbrain@segment7.net>
+
+	* lib/rdoc*: Update to RDoc 2.1.0 r112.
+
 Tue Jul 22 02:51:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_buf_cat2, rb_str_cat2): optimization

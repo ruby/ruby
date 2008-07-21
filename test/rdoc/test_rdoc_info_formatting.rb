@@ -1,29 +1,25 @@
-$LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib/'
 require 'fileutils'
+require 'tmpdir'
 require 'test/unit'
+
 require 'rdoc/generator/texinfo'
-require 'yaml'
 
 # From chapter 18 of the Pickaxe 3rd ed. and the TexInfo manual.
 class TestRdocInfoFormatting < Test::Unit::TestCase
-  OUTPUT_DIR = "/tmp/rdoc-#{$$}"
-
   def setup
-    # supress stdout
-    $stdout = File.new('/dev/null','w')
-    $stderr = File.new('/dev/null','w')
+    @output_dir = File.join Dir.tmpdir, "test_rdoc_info_formatting_#{$$}"
+    @output_file = File.join @output_dir, 'rdoc.texinfo'
 
-    RDoc::RDoc.new.document(['--fmt=texinfo',
+    RDoc::RDoc.new.document(['--fmt=texinfo', '--quiet',
                              File.expand_path(__FILE__),
-                             "--op=#{OUTPUT_DIR}"])
-    @text = File.read(OUTPUT_DIR + '/rdoc.texinfo')
+                             "--op=#{@output_dir}"])
+    @text = File.read @output_file
+
     # File.open('rdoc.texinfo', 'w') { |f| f.puts @text }
   end
 
   def teardown
-    $stdout = STDOUT
-    $stderr = STDERR
-    FileUtils.rm_rf OUTPUT_DIR
+    FileUtils.rm_rf @output_dir
   end
 
   # Make sure tags like *this* do not make HTML

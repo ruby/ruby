@@ -108,11 +108,6 @@ class RDoc::Options
   attr_reader :promiscuous
 
   ##
-  # Don't display progress as we process the files
-
-  attr_accessor :quiet
-
-  ##
   # Array of directories to search for files to satisfy an :include:
 
   attr_reader :rdoc_include
@@ -150,6 +145,11 @@ class RDoc::Options
   attr_reader :title
 
   ##
+  # Verbosity, zero means quiet
+
+  attr_accessor :verbosity
+
+  ##
   # URL of web cvs frontend
 
   attr_reader :webcvs
@@ -161,7 +161,6 @@ class RDoc::Options
     @main_page = nil
     @merge = false
     @exclude = []
-    @quiet = false
     @generators = generators
     @generator_name = 'html'
     @generator = @generators[@generator_name]
@@ -180,6 +179,7 @@ class RDoc::Options
     @extra_accessor_flags = {}
     @promiscuous = false
     @force_update = false
+    @verbosity = 1
 
     @css = nil
     @webcvs = nil
@@ -424,8 +424,14 @@ Usage: #{opt.program_name} [options] [names...]
 
       opt.on("--quiet", "-q",
              "Don't show progress as we parse.") do |value|
-        @quiet = value
+        @verbosity = 0
       end
+
+      opt.on("--verbose", "-v",
+             "Display extra progress as we parse.") do |value|
+        @verbosity = 2
+      end
+
 
       opt.separator nil
 
@@ -557,6 +563,17 @@ Usage: #{opt.program_name} [options] [names...]
 
   def title=(string)
     @title ||= string
+  end
+
+  ##
+  # Don't display progress as we process the files
+
+  def quiet
+    @verbosity.zero?
+  end
+
+  def quiet=(bool)
+    @verbosity = bool ? 0 : 1
   end
 
   private

@@ -174,20 +174,15 @@ class RDoc::Markup::AttributeManager
   def flow(str)
     @str = str
 
-    puts("Before flow, str='#{@str.dump}'") if $DEBUG_RDOC
     mask_protected_sequences
 
     @attrs = RDoc::Markup::AttrSpan.new @str.length
-
-    puts("After protecting, str='#{@str.dump}'") if $DEBUG_RDOC
 
     convert_attrs(@str, @attrs)
     convert_html(@str, @attrs)
     convert_specials(str, @attrs)
 
     unmask_protected_sequences
-
-    puts("After flow, str='#{@str.dump}'") if $DEBUG_RDOC
 
     return split_into_flow
   end
@@ -215,8 +210,6 @@ class RDoc::Markup::AttributeManager
   end
 
   def split_into_flow
-    display_attributes if $DEBUG_RDOC
-
     res = []
     current_attr = 0
     str = ""

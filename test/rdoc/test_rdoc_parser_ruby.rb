@@ -13,11 +13,9 @@ class TestRdocParserRuby < Test::Unit::TestCase
     @filename = @tempfile.path
 
     util_toplevel
-    @options = RDoc::Options.new Hash.new
+    @options = RDoc::Options.new
     @options.quiet = true
-    @stats = RDoc::Stats.new
-
-    @progress = StringIO.new
+    @stats = RDoc::Stats.new 0
   end
 
   def teardown
@@ -130,6 +128,84 @@ class TestRdocParserRuby < Test::Unit::TestCase
     assert_equal "# :unhandled: \n", comment
 
     assert_equal 'hi', @options.title
+  end
+
+  def test_parse_class
+    comment = "##\n# my method\n"
+
+    util_parser 'class Foo; end'
+
+    tk = @parser.get_tk
+
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+    assert_equal comment, foo.comment
+  end
+
+  def test_parse_class_nested_superclass
+    foo = RDoc::NormalModule.new 'Foo'
+    foo.parent = @top_level
+
+    util_parser "class Bar < Super\nend"
+
+    tk = @parser.get_tk
+
+    @parser.parse_class foo, RDoc::Parser::Ruby::NORMAL, tk, ''
+
+    bar = foo.classes.first
+    assert_equal 'Super', bar.superclass
+  end
+
+  def test_parse_comment
+    content = <<-EOF
+class Foo
+  ##
+  # :method: my_method
+  # my method comment
+
+end
+    EOF
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = "##\n# :method: foo\n# my method\n"
+
+    util_parser "\n"
+
+    tk = @parser.get_tk
+
+    @parser.parse_comment klass, tk, comment
+
+    foo = klass.method_list.first
+    assert_equal 'foo',     foo.name
+    assert_equal comment,   foo.comment
+
+    assert_equal [],        foo.aliases
+    assert_equal nil,       foo.block_params
+    assert_equal nil,       foo.call_seq
+    assert_equal nil,       foo.is_alias_for
+    assert_equal nil,       foo.viewer
+    assert_equal true,      foo.document_children
+    assert_equal true,      foo.document_self
+    assert_equal '',        foo.params
+    assert_equal false,     foo.done_documenting
+    assert_equal false,     foo.dont_rename_initialize
+    assert_equal false,     foo.force_documentation
+    assert_equal klass,     foo.parent
+    assert_equal false,     foo.singleton
+    assert_equal :public,   foo.visibility
+    assert_equal "\n",      foo.text
+    assert_equal klass.current_section, foo.section
+
+    stream = [
+      tk(:COMMENT, 1, 1, nil, "# File #{@top_level.file_absolute_name}, line 1"),
+      RDoc::Parser::Ruby::NEWLINE_TOKEN,
+      tk(:SPACE,      1, 1,  nil,   ''),
+    ]
+
+    assert_equal stream, foo.token_stream
   end
 
   def test_parse_meta_method
@@ -301,54 +377,19 @@ class TestRdocParserRuby < Test::Unit::TestCase
     assert_equal stream, foo.token_stream
   end
 
-  def test_parse_statements_comment
-    content = <<-EOF
-class Foo
-  ##
-  # :method: my_method
-  # my method comment
+  def test_parse_statements_class_nested
+    comment = "##\n# my method\n"
 
-end
-    EOF
-    klass = RDoc::NormalClass.new 'Foo'
-    klass.parent = @top_level
+    util_parser "module Foo\n#{comment}class Bar\nend\nend"
 
-    comment = "##\n# :method: foo\n# my method\n"
+    @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil, ''
 
-    util_parser "\n"
+    foo = @top_level.modules.first
+    assert_equal 'Foo', foo.full_name, 'module Foo'
 
-    tk = @parser.get_tk
-
-    @parser.parse_comment klass, tk, comment
-
-    foo = klass.method_list.first
-    assert_equal 'foo',     foo.name
-    assert_equal comment,   foo.comment
-
-    assert_equal [],        foo.aliases
-    assert_equal nil,       foo.block_params
-    assert_equal nil,       foo.call_seq
-    assert_equal nil,       foo.is_alias_for
-    assert_equal nil,       foo.viewer
-    assert_equal true,      foo.document_children
-    assert_equal true,      foo.document_self
-    assert_equal '',        foo.params
-    assert_equal false,     foo.done_documenting
-    assert_equal false,     foo.dont_rename_initialize
-    assert_equal false,     foo.force_documentation
-    assert_equal klass,     foo.parent
-    assert_equal false,     foo.singleton
-    assert_equal :public,   foo.visibility
-    assert_equal "\n",      foo.text
-    assert_equal klass.current_section, foo.section
-
-    stream = [
-      tk(:COMMENT, 1, 1, nil, "# File #{@top_level.file_absolute_name}, line 1"),
-      RDoc::Parser::Ruby::NEWLINE_TOKEN,
-      tk(:SPACE,      1, 1,  nil,   ''),
-    ]
-
-    assert_equal stream, foo.token_stream
+    bar = foo.classes.first
+    assert_equal 'Foo::Bar', bar.full_name, 'class Foo::Bar'
+    assert_equal comment, bar.comment
   end
 
   def test_parse_statements_identifier_meta_method
@@ -487,8 +528,6 @@ end
   def util_parser(content)
     @parser = RDoc::Parser::Ruby.new @top_level, @filename, content, @options,
                                      @stats
-    @parser.progress = @progress
-    @parser
   end
 
   def util_toplevel

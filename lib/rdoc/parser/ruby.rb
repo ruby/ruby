@@ -1847,8 +1847,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     nest = 0
 
     loop do
-      puts("Call param: #{tk}, #{@scanner.continue} " +
-        "#{@scanner.lex_state} #{nest}") if $DEBUG_RDOC
         case tk
         when TkSEMICOLON
           break
@@ -1872,11 +1870,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     res
   end
 
-  def parse_class(container, single, tk, comment, &block)
-    progress("c")
-
-    @stats.num_classes += 1
-
+  def parse_class(container, single, tk, comment)
     container, name_t = get_class_or_module(container)
 
     case name_t
@@ -1891,22 +1885,21 @@ class RDoc::Parser::Ruby < RDoc::Parser
         superclass = "<unknown>" if superclass.empty?
       end
 
-      if single == SINGLE
-        cls_type = RDoc::SingleClass
-      else
-        cls_type = RDoc::NormalClass
-      end
-
+      cls_type = single == SINGLE ? RDoc::SingleClass : RDoc::NormalClass
       cls = container.add_class cls_type, name, superclass
+
+      @stats.add_class cls
+
       read_documentation_modifiers cls, RDoc::CLASS_MODIFIERS
-      cls.record_location(@top_level)
-      parse_statements(cls)
+      cls.record_location @top_level
+
+      parse_statements cls
       cls.comment = comment
 
     when TkLSHFT
       case name = get_class_specification
       when "self", container.name
-        parse_statements(container, SINGLE, &block)
+        parse_statements(container, SINGLE)
       else
         other = RDoc::TopLevel.find_class_named(name)
         unless other
@@ -1915,8 +1908,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
           #            other.comment = comment
           other = RDoc::NormalClass.new "Dummy", nil
         end
+
+        @stats.add_class other
+
         read_documentation_modifiers other, RDoc::CLASS_MODIFIERS
-        parse_statements(other, SINGLE, &block)
+        parse_statements(other, SINGLE)
       end
 
     else
@@ -1946,9 +1942,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     end
 
     loop do
-      puts "Param: %p, %s %s %s" %
-        [tk.text, @scanner.continue, @scanner.lex_state, nest] if $DEBUG_RDOC
-
         case tk
         when TkSEMICOLON
           break
@@ -1982,8 +1975,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   def parse_comment(container, tk, comment)
-    progress(".")
-    @stats.num_methods += 1
     line_no = tk.line_no
     column  = tk.char_no
 
@@ -1997,6 +1988,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     meth = RDoc::GhostMethod.new get_tkread, name
     meth.singleton = singleton
+
+    @stats.add_method meth
 
     meth.start_collecting_tokens
     indent = TkSPACE.new 1, 1
@@ -2030,8 +2023,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Parses a meta-programmed method
 
   def parse_meta_method(container, single, tk, comment)
-    progress(".")
-    @stats.num_methods += 1
     line_no = tk.line_no
     column  = tk.char_no
 
@@ -2062,6 +2053,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     meth = RDoc::MetaMethod.new get_tkread, name
     meth.singleton = singleton
+
+    @stats.add_method meth
 
     remove_token_listener self
 
@@ -2105,8 +2098,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Parses a method
 
   def parse_method(container, single, tk, comment)
-    progress(".")
-    @stats.num_methods += 1
     line_no = tk.line_no
     column  = tk.char_no
 
@@ -2175,6 +2166,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
       meth.singleton = (single == SINGLE)
     end
 
+    @stats.add_method meth
+
     remove_token_listener self
 
     meth.start_collecting_tokens
@@ -2239,8 +2232,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     nest = 0
 
     loop do
-      puts "Param: %p, %s %s %s" %
-        [tk.text, @scanner.continue, @scanner.lex_state, nest] if $DEBUG_RDOC
         case tk
         when TkSEMICOLON
           break
@@ -2290,14 +2281,15 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   def parse_module(container, single, tk, comment)
-    progress("m")
-    @stats.num_modules += 1
     container, name_t = get_class_or_module(container)
-#      skip_tkspace
+
     name = name_t.name
 
     mod = container.add_module RDoc::NormalModule, name
     mod.record_location @top_level
+
+    @stats.add_module mod
+
     read_documentation_modifiers mod, RDoc::CLASS_MODIFIERS
     parse_statements(mod)
     mod.comment = comment
@@ -2422,22 +2414,16 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       when  TkUNTIL, TkWHILE then
         nest += 1
-        puts "Found #{tk.class} in #{container.name}, nest = #{nest}, " +
-             "line #{tk.line_no}" if $DEBUG_RDOC
         skip_optional_do_after_expression
 
       # 'for' is trickier
       when TkFOR then
         nest += 1
-        puts "Found #{tk.class} in #{container.name}, nest = #{nest}, " +
-             "line #{tk.line_no}" if $DEBUG_RDOC
         skip_for_variable
         skip_optional_do_after_expression
 
       when TkCASE, TkDO, TkIF, TkUNLESS, TkBEGIN then
         nest += 1
-        puts "Found #{tk.class} in #{container.name}, nest = #{nest}, " +
-             "line #{tk.line_no}" if $DEBUG_RDOC
 
       when TkIDENTIFIER then
         if nest == 1 and current_method.nil? then
@@ -2470,8 +2456,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
       when TkEND then
         nest -= 1
-        puts "Found 'end' in #{container.name}, nest = #{nest}, line #{tk.line_no}" if $DEBUG_RDOC
-        puts "Method = #{current_method.name}" if $DEBUG_RDOC and current_method
         if nest == 0 then
           read_documentation_modifiers container, RDoc::CLASS_MODIFIERS
           container.ongoing_visibility = save_visibility
@@ -2641,13 +2625,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     tk
   end
 
-  def progress(char)
-    unless @options.quiet
-      @progress.print(char)
-      @progress.flush
-    end
-  end
-
   ##
   # Directives are modifier comments that can appear after class, module, or
   # method names. For example:
@@ -2662,7 +2639,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def read_directive(allowed)
     tk = get_tk
-    puts "directive: #{tk.text.inspect}" if $DEBUG_RDOC
     result = nil
     if TkCOMMENT === tk
       if tk.text =~ /\s*:?(\w+):\s*(.*)/
@@ -2769,8 +2745,6 @@ The internal error was:
     @scanner.instance_eval{@continue = false}
 
     loop do
-      puts("\nWhile: #{tk.text.inspect}, #{@scanner.continue} " \
-           "#{@scanner.lex_state} #{nest}") if $DEBUG_RDOC
       case tk
       when TkSEMICOLON
         break

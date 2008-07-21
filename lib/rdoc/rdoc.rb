@@ -20,20 +20,23 @@ require 'time'
 module RDoc
 
   ##
-  # Encapsulate the production of rdoc documentation. Basically
-  # you can use this as you would invoke rdoc from the command
-  # line:
+  # Encapsulate the production of rdoc documentation. Basically you can use
+  # this as you would invoke rdoc from the command line:
   #
-  #    rdoc = RDoc::RDoc.new
-  #    rdoc.document(args)
+  #   rdoc = RDoc::RDoc.new
+  #   rdoc.document(args)
   #
-  # where _args_ is an array of strings, each corresponding to
-  # an argument you'd give rdoc on the command line. See rdoc/rdoc.rb
-  # for details.
+  # Where +args+ is an array of strings, each corresponding to an argument
+  # you'd give rdoc on the command line. See rdoc/rdoc.rb for details.
 
   class RDoc
 
     Generator = Struct.new(:file_name, :class_name, :key)
+
+    ##
+    # Accessor for statistics.  Available after each call to parse_files
+
+    attr_reader :stats
 
     ##
     # This is the list of output generator that we support
@@ -57,7 +60,7 @@ module RDoc
     end
 
     def initialize
-      @stats = Stats.new
+      @stats = nil
     end
 
     ##
@@ -185,6 +188,8 @@ module RDoc
     # Parse each file on the command line, recursively entering directories.
 
     def parse_files(options)
+      @stats = Stats.new options.verbosity
+      
       files = options.files
       files = ["."] if files.empty?
 
@@ -193,15 +198,14 @@ module RDoc
       return [] if file_list.empty?
 
       file_info = []
-      width = file_list.map { |name| name.length }.max + 1
 
-      file_list.each do |fn|
-        $stderr.printf("\n%*s: ", width, fn) unless options.quiet
+      file_list.each do |filename|
+        @stats.add_file filename
 
         content = if RUBY_VERSION >= '1.9' then
-                    File.open(fn, "r:ascii-8bit") { |f| f.read }
+                    File.open(filename, "r:ascii-8bit") { |f| f.read }
                   else
-                    File.read fn
+                    File.read filename
                   end
 
         if defined? Encoding then
@@ -212,12 +216,12 @@ module RDoc
           end
         end
 
-        top_level = ::RDoc::TopLevel.new fn
+        top_level = ::RDoc::TopLevel.new filename
 
-        parser = ::RDoc::Parser.for top_level, fn, content, options, @stats
+        parser = ::RDoc::Parser.for top_level, filename, content, options,
+                                    @stats
 
         file_info << parser.scan
-        @stats.num_files += 1
       end
 
       file_info

@@ -95,8 +95,6 @@ class RDoc::Parser::C < RDoc::Parser
 
   parse_files_matching(/\.(?:([CcHh])\1?|c([+xp])\2|y)\z/)
 
-  attr_writer :progress
-
   @@enclosure_classes = {}
   @@known_bodies = {}
 
@@ -115,11 +113,12 @@ class RDoc::Parser::C < RDoc::Parser
   def do_aliases
     @content.scan(%r{rb_define_alias\s*\(\s*(\w+),\s*"([^"]+)",\s*"([^"]+)"\s*\)}m) do
       |var_name, new_name, old_name|
-      @stats.num_methods += 1
       class_name = @known_classes[var_name] || var_name
       class_obj  = find_class(var_name, class_name)
 
-      class_obj.add_alias RDoc::Alias.new("", old_name, new_name, "")
+      as = class_obj.add_alias RDoc::Alias.new("", old_name, new_name, "")
+
+      @stats.add_alias as
     end
  end
 
@@ -306,7 +305,7 @@ class RDoc::Parser::C < RDoc::Parser
       meth_obj.comment = mangle_comment(comment) + meth_obj.comment
     when %r{^\s*\#\s*define\s+#{meth_name}\s+(\w+)}m
       unless find_body($1, meth_obj, body, true)
-        warn "No definition for #{meth_name}" unless quiet
+        warn "No definition for #{meth_name}" unless @options.quiet
         return false
       end
     else
@@ -318,7 +317,7 @@ class RDoc::Parser::C < RDoc::Parser
         find_modifiers(comment, meth_obj)
         meth_obj.comment = mangle_comment(comment)
       else
-        warn "No definition for #{meth_name}" unless quiet
+        warn "No definition for #{meth_name}" unless @options.quiet
         return false
       end
     end
@@ -460,8 +459,6 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
   def handle_class_module(var_name, class_mod, class_name, parent, in_module)
-    progress(class_mod[0, 1])
-
     parent_name = @known_classes[parent] || parent
 
     if in_module
@@ -482,13 +479,14 @@ class RDoc::Parser::C < RDoc::Parser
       enclosure = @top_level
     end
 
-    if class_mod == "class"
+    if class_mod == "class" then
       cm = enclosure.add_class RDoc::NormalClass, class_name, parent_name
-      @stats.num_classes += 1
+      @stats.add_class cm
     else
       cm = enclosure.add_module RDoc::NormalModule, class_name
-      @stats.num_modules += 1
+      @stats.add_module cm
     end
+
     cm.record_location(enclosure.toplevel)
 
     find_class_comment(cm.full_name, cm)
@@ -560,9 +558,6 @@ class RDoc::Parser::C < RDoc::Parser
 
   def handle_method(type, var_name, meth_name, meth_body, param_count,
                     source_file = nil)
-    progress(".")
-
-    @stats.num_methods += 1
     class_name = @known_classes[var_name]
 
     return unless class_name
@@ -577,6 +572,8 @@ class RDoc::Parser::C < RDoc::Parser
       meth_obj = RDoc::AnyMethod.new("", meth_name)
       meth_obj.singleton =
   %w{singleton_method module_function}.include?(type)
+
+      @stats.add_method meth_obj
 
       p_count = (Integer(param_count) rescue -1)
 
@@ -620,13 +617,6 @@ class RDoc::Parser::C < RDoc::Parser
     comment.sub!(%r{\*+/}) { " " * $&.length }
     comment.gsub!(/^[ \t]*\*/m) { " " * $&.length }
     comment
-  end
-
-  def progress(char)
-    unless @options.quiet
-      @progress.print(char)
-      @progress.flush
-    end
   end
 
   ##

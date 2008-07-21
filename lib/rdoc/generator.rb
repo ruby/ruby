@@ -489,7 +489,7 @@ module RDoc::Generator
 
       @html_file = html_file
       @html_class = self
-      @is_module = context.is_module?
+      @is_module = context.module?
       @values    = {}
 
       context.viewer = self
@@ -619,16 +619,16 @@ module RDoc::Generator
       @values["title"]     = "#{@values['classmod']}: #{h_name}"
 
       c = @context
-      c = c.parent while c and !c.diagram
-      if c && c.diagram
+      c = c.parent while c and not c.diagram
+
+      if c and c.diagram then
         @values["diagram"] = diagram_reference(c.diagram)
       end
 
       @values["full_name"] = h_name
 
-      parent_class = @context.superclass
-
-      if parent_class
+      if not @context.module? and @context.superclass then
+        parent_class = @context.superclass
         @values["parent"] = CGI.escapeHTML(parent_class)
 
         if parent_name

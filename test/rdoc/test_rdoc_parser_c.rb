@@ -18,10 +18,8 @@ class TestRdocParserC < Test::Unit::TestCase
 
     @top_level = RDoc::TopLevel.new filename
     @fn = filename
-    @options = RDoc::Options.new Hash.new
-    @stats = RDoc::Stats.new
-
-    @progress = StringIO.new
+    @options = RDoc::Options.new
+    @stats = RDoc::Stats.new 0
   end
 
   def teardown
@@ -253,9 +251,7 @@ Init_Foo(void) {
   end
 
   def util_parser(content)
-    parser = RDoc::Parser::C.new @top_level, @fn, content, @options, @stats
-    parser.progress = @progress
-    parser
+    RDoc::Parser::C.new @top_level, @fn, content, @options, @stats
   end
 
 end

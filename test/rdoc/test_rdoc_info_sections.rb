@@ -76,8 +76,8 @@ class TestRdocInfoSections < Test::Unit::TestCase
 
 #   if system "makeinfo --version > /dev/null"
 #     def test_compiles_to_info
-#       makeinfo_output = `cd #{OUTPUT_DIR} && makeinfo rdoc.texinfo`
-#       assert(File.exist?(File.join(OUTPUT_DIR, 'rdoc.info')),
+#       makeinfo_output = `cd #{@output_dir} && makeinfo rdoc.texinfo`
+#       assert(File.exist?(File.join(@output_dir, 'rdoc.info')),
 #              "Info file was not compiled: #{makeinfo_output}")
 #     end
 #   end

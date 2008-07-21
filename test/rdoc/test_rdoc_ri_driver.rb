@@ -41,11 +41,7 @@ class TestRDocRIDriver < Test::Unit::TestCase
   def test_lookup_method_class_missing
     def @driver.load_cache_for(klassname) end
 
-    e = assert_raise RDoc::RI::Driver::NotFoundError do
-      @driver.lookup_method 'Foo#bar', 'Foo'
-    end
-
-    assert_equal 'Nothing known about Foo#bar', e.message
+    assert_nil @driver.lookup_method('Foo#bar', 'Foo')
   end
 
   def test_lookup_method_dot_instance
@@ -67,11 +63,7 @@ class TestRDocRIDriver < Test::Unit::TestCase
   def test_lookup_method_method_missing
     def @driver.load_cache_for(klassname) {} end
 
-    e = assert_raise RDoc::RI::Driver::NotFoundError do
-      @driver.lookup_method 'Foo#bar', 'Foo'
-    end
-
-    assert_equal 'Nothing known about Foo#bar', e.message
+    assert_nil @driver.lookup_method('Foo#bar', 'Foo')
   end
 
   def test_parse_name

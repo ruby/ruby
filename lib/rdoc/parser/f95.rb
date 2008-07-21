@@ -289,10 +289,11 @@ class RDoc::Parser::F95 < RDoc::Parser
         module_name = module_program_name
         module_code = module_program_code
         module_trailing = module_program_trailing
-        progress "m"
-        @stats.num_modules += 1
+
         f9x_module = @top_level.add_module NormalClass, module_name
         f9x_module.record_location @top_level
+
+        @stats.add_module f9x_module
 
         f9x_comment = COMMENTS_ARE_UPPER ? 
           find_comments(pre_comment.join("\n"))  + "\n" + module_trailing :
@@ -318,7 +319,7 @@ class RDoc::Parser::F95 < RDoc::Parser
         program_name = module_program_name
         program_code = module_program_code
         program_trailing = module_program_trailing
-        progress "p"
+        # progress "p" # HACK what stats thingy does this correspond to?
         program_comment = COMMENTS_ARE_UPPER ? 
           find_comments(pre_comment.join("\n")) + "\n" + program_trailing : 
             program_trailing + "\n" + find_comments(program_code.sub(/^.*$\n/i, ''))
@@ -396,7 +397,7 @@ class RDoc::Parser::F95 < RDoc::Parser
       used_trailing = $3 || ""
       next if used_trailing =~ /!:nodoc:/
       if !container.include_includes?(used_mod_name, @options.ignore_case)
-        progress "."
+        # progress "." # HACK what stats thingy does this correspond to?
         container.add_include Include.new(used_mod_name, "")
       end
       if ! (used_list =~ /\,\s*?only\s*?:/i )
@@ -460,7 +461,7 @@ class RDoc::Parser::F95 < RDoc::Parser
       used_trailing = $3 || ""
       next if used_trailing =~ /!:nodoc:/
       if !container.include_includes?(used_mod_name, @options.ignore_case)
-        progress "."
+        # progress "." # HACK what stats thingy does this correspond to?
         container.add_include Include.new(used_mod_name, "")
       end
     end
@@ -532,8 +533,9 @@ class RDoc::Parser::F95 < RDoc::Parser
       type.comment = "<b><em> Derived Type </em></b> :: <tt></tt>\n"
       type.comment << args_comment if args_comment
       type.comment << type_comment if type_comment
-      progress "t"
-      @stats.num_methods += 1
+
+      @stats.add_method type
+
       container.add_method type
 
       set_visibility(container, typename, visibility_default, @@public_methods)
@@ -607,8 +609,9 @@ class RDoc::Parser::F95 < RDoc::Parser
       self_comment = find_arguments([defitem.varname], before_contains_code)
       const_or_var.comment = "<b><em>" + const_or_var_type + "</em></b> :: <tt></tt>\n"
       const_or_var.comment << self_comment if self_comment
-      progress const_or_var_progress
-      @stats.num_methods += 1
+
+      @stats.add_method const_or_var_progress
+
       container.add_method const_or_var
 
       set_visibility(container, defitem.varname, visibility_default, @@public_methods)
@@ -737,8 +740,9 @@ class RDoc::Parser::F95 < RDoc::Parser
         parse_subprogram(subroutine, subroutine_params,
                          subroutine_comment, subroutine_code,
                          before_contains_code, nil, subroutine_prefix)
-        progress "s"
-        @stats.num_methods += 1
+
+        @stats.add_method subroutine
+
         container.add_method subroutine
         subroutine_function = subroutine
 
@@ -774,8 +778,8 @@ class RDoc::Parser::F95 < RDoc::Parser
         function.start_collecting_tokens
         function.add_token Token.new(1,1).set_text(function_code_org)
 
-        progress "f"
-        @stats.num_methods += 1
+        @stats.add_method function
+
         container.add_method function
         subroutine_function = function
 
@@ -875,8 +879,8 @@ class RDoc::Parser::F95 < RDoc::Parser
                                         true, nolink)
           new_meth.singleton = old_meth.singleton
 
-          progress "i"
-          @stats.num_methods += 1
+          @stats.add_method new_meth
+
           container.add_method new_meth
 
           set_visibility(container, generic_name, visibility_default, @@public_methods)
@@ -939,8 +943,8 @@ class RDoc::Parser::F95 < RDoc::Parser
                                        indicated_file, 
                                        indicated_method.comment)
 
-          progress "e"
-          @stats.num_methods += 1
+          @stats.add_method external_method
+
           container.add_method external_method
           set_visibility(container, generic_name, visibility_default, @@public_methods)
           if !container.include_requires?(indicated_file, @options.ignore_case)
@@ -982,8 +986,9 @@ class RDoc::Parser::F95 < RDoc::Parser
                 if pub_meth["local_name"]
                   new_meth.name = pub_meth["local_name"]
                 end
-                progress "e"
-                @stats.num_methods += 1
+
+                @stats.add_method new_meth
+
                 container.add_method new_meth
               end
             }
@@ -1162,13 +1167,6 @@ EOF
     nice_lines.shift
   end
 
-  def progress(char)
-    unless @options.quiet
-      @progress.print(char)
-      @progress.flush
-    end
-  end
-
   ##
   # Create method for internal alias
 
@@ -1332,8 +1330,8 @@ EOF
                                               comment)
         new_meth.visibility = alias_item["visibility"]
 
-        progress "e"
-        @stats.num_methods += 1
+        @stats.add_method new_meth
+
         alias_item["file_or_module"].add_method(new_meth)
 
         if !alias_item["file_or_module"].include_requires?(@file_name, @options.ignore_case)
@@ -1368,8 +1366,8 @@ EOF
           new_meth.name = alias_item["local_name"]
         end
 
-        progress "e"
-        @stats.num_methods += 1
+        @stats.add_method new_meth
+
         alias_item["file_or_module"].add_method new_meth
       end
     }
