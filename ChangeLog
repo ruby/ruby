@@ -1,3 +1,8 @@
+Mon Jul 21 13:55:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja (1.5 Manipulating Ruby data): mentioned
+	  rb_sprintf and rb_vsprintf.  [ruby-dev:35611]
+
 Mon Jul 21 10:25:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (prepare_getline_args): check if rs is a string when non-nil

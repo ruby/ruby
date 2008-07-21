@@ -216,6 +216,11 @@ Rubyが用意している関数を用いてください．
 
     Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
+  rb_sprintf(const char *format, ...)
+  rb_vsprintf(const char *format, ...)
+
+    printf(3)のフォーマットにしたがって，Rubyの文字列を生成する．
+
  配列に対する関数
 
   rb_ary_new()

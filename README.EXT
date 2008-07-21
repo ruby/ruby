@@ -189,6 +189,11 @@ listed below:
 
     Appends len bytes of data from ptr to the Ruby string.
 
+  rb_sprintf(const char *format, ...)
+  rb_vsprintf(const char *format, ...)
+
+    Creates a new Ruby string with printf(3) format.
+
  Array functions
 
   rb_ary_new()
