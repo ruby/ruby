@@ -1043,7 +1043,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     VALUE result = (VALUE)fp->_bf._base;
     char *buf = (char*)fp->_p;
     size_t len, n;
-    int blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
+    size_t blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
 
     if (RBASIC(result)->klass) {
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");

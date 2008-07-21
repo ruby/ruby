@@ -132,7 +132,7 @@
 /* stdio buffers */
 struct __sbuf {
 	unsigned char *_base;
-	int	_size;
+	size_t	_size;
 };
 
 
@@ -165,13 +165,13 @@ struct __sbuf {
 typedef	struct __sFILE {
 	unsigned char *_p;	/* current position in (some) buffer */
 #if 0
-	int	_r;		/* read space left for getc() */
+	size_t	_r;		/* read space left for getc() */
 #endif
-	int	_w;		/* write space left for putc() */
+	size_t	_w;		/* write space left for putc() */
 	short	_flags;		/* flags, below; this FILE is free if 0 */
 	short	_file;		/* fileno, if Unix descriptor, else -1 */
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
-	int	_lbfsize;	/* 0 or -_bf._size, for inline putc */
+	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
 } FILE;
 
@@ -622,6 +622,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	uio.uio_resid = 0;
 	uio.uio_iovcnt = 0;
 	ret = 0;
+	xdigs = 0;
 
 	/*
 	 * Scan the format for conversions (`%' character).
