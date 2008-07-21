@@ -1892,7 +1892,10 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
     }
     else {
 	rb_scan_args(argc, argv, "11", &rs, &lim);
-	if (NIL_P(lim) && !NIL_P(rs) && TYPE(rs) != T_STRING) {
+	if (!NIL_P(lim)) {
+	    StringValue(rs);
+	}
+	else if (!NIL_P(rs) && TYPE(rs) != T_STRING) {
 	    VALUE tmp = rb_check_string_type(rs);
 
 	    if (NIL_P(tmp)) {

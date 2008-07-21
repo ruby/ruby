@@ -1,3 +1,8 @@
+Mon Jul 21 10:25:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (prepare_getline_args): check if rs is a string when non-nil
+	  lim is given.  [ruby-dev:35610]
+
 Mon Jul 21 04:55:20 2008  Tanaka Akira  <akr@fsij.org>
 
 	* dir.c (dir_initialize): use rb_convert_type instead of
