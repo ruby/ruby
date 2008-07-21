@@ -967,7 +967,7 @@ rb_filesystem_encoding(void)
 #elif defined __APPLE__
 	enc = rb_enc_find("UTF8-MAC");
 #else
-	enc = rb_ascii8bit_encoding();
+	enc = rb_locale_encoding();
 #endif
     }
     return enc;

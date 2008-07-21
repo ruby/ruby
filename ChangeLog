@@ -1,3 +1,8 @@
+Mon Jul 21 17:15:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_filesystem_encoding): use locale encoding on Unix.
+	  [ruby-dev:35617]
+
 Mon Jul 21 15:29:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/vsnprintf.c (struct __sbuf, FILE): use size_t.
