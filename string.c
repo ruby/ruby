@@ -28,6 +28,7 @@
 #undef rb_str_new2
 #undef rb_tainted_str_new2
 #undef rb_usascii_str_new2
+#undef rb_str_buf_new2
 #undef rb_str_buf_cat2
 #undef rb_str_cat2
 
@@ -1400,7 +1401,7 @@ rb_str_resize(VALUE str, long len)
     return str;
 }
 
-static long
+static VALUE
 str_buf_cat(VALUE str, const char *ptr, long len)
 {
     long capa, total, off = -1;
@@ -3746,7 +3747,7 @@ rb_str_inspect(VALUE str)
 {
     rb_encoding *enc = STR_ENC_GET(str);
     char *p, *pend;
-    VALUE result = rb_str_buf_new2("");
+    VALUE result = rb_str_buf_new(0);
 
     if (!rb_enc_asciicompat(enc)) enc = rb_usascii_encoding();
     rb_enc_associate(result, enc);

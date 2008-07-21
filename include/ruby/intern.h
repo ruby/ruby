@@ -597,6 +597,13 @@ VALUE rb_str_length(VALUE);
 	rb_usascii_str_new(str, strlen(str)) : \
 	rb_usascii_str_new2(str);	       \
 })
+#define rb_str_buf_new2(str) __extension__ ( \
+{						\
+    (__builtin_constant_p(str)) ?		\
+	rb_str_buf_cat(rb_str_buf_new(strlen(str)), \
+		       str, strlen(str)) :	\
+	rb_str_buf_new2(str);			\
+})
 #define rb_str_buf_cat2(str, ptr) __extension__ ( \
 {						\
     (__builtin_constant_p(ptr)) ?	        \
