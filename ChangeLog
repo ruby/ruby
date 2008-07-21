@@ -1,3 +1,8 @@
+Tue Jul 22 02:51:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_str_buf_cat2, rb_str_cat2): optimization
+	  for literals.
+
 Tue Jul 22 02:50:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* README.EXT, README.EXT.ja (1.5 Manipulating Ruby data): fix the
