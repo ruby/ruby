@@ -491,6 +491,8 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
 #if 0
     rb_define_method(rb_cEnumerator, "with_object", enumerator_with_object, 1);
+#else
+    (void)enumerator_with_object;
 #endif
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
