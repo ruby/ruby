@@ -15,7 +15,7 @@
  * String to HEXString conversion
  */
 int
-string2hex(char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
+string2hex(const unsigned char *buf, int buf_len, char **hexbuf, int *hexbuf_len)
 {
     static const char hex[]="0123456789abcdef";
     int i, len = 2 * buf_len;
@@ -446,7 +446,7 @@ Init_openssl()
     /*
      * Verify callback Proc index for ext-data
      */
-    if ((ossl_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, "ossl_verify_cb_idx", 0, 0, 0)) < 0)
+    if ((ossl_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, (void *)"ossl_verify_cb_idx", 0, 0, 0)) < 0)
         ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
 
     /*

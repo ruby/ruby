@@ -137,15 +137,17 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
     X509 *x509;
     STACK_OF(X509) *x509s = NULL;
     int st = 0;
+    PKCS12 *pkcs = DATA_PTR(self);
 
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) return self;
     passphrase = NIL_P(pass) ? NULL : StringValuePtr(pass);
     in = ossl_obj2bio(arg);
-    d2i_PKCS12_bio(in, (PKCS12 **)&DATA_PTR(self));
+    d2i_PKCS12_bio(in, &pkcs);
+    DATA_PTR(self) = pkcs;
     BIO_free(in);
 
     pkey = cert = ca = Qnil;
-    if(!PKCS12_parse((PKCS12*)DATA_PTR(self), passphrase, &key, &x509, &x509s))
+    if(!PKCS12_parse(pkcs, passphrase, &key, &x509, &x509s))
 	ossl_raise(ePKCS12Error, "PKCS12_parse");
     pkey = rb_protect((VALUE(*)_((VALUE)))ossl_pkey_new, (VALUE)key,
 		      &st); /* NO DUP */
@@ -181,7 +183,7 @@ ossl_pkcs12_to_der(VALUE self)
     if((len = i2d_PKCS12(p12, NULL)) <= 0)
 	ossl_raise(ePKCS12Error, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_PKCS12(p12, &p) <= 0)
 	ossl_raise(ePKCS12Error, NULL);
     ossl_str_adjust(str, p);

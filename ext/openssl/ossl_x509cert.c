@@ -134,7 +134,7 @@ static VALUE
 ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
-    X509 *x509;
+    X509 *x509, *x = DATA_PTR(self);
     VALUE arg;
 
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
@@ -143,10 +143,12 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
     }
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(arg);
-    x509 = PEM_read_bio_X509(in, (X509 **)&DATA_PTR(self), NULL, NULL);
+    x509 = PEM_read_bio_X509(in, &x, NULL, NULL);
+    DATA_PTR(self) = x;
     if (!x509) {
-	BIO_reset(in);
-	x509 = d2i_X509_bio(in, (X509 **)&DATA_PTR(self));
+	(void)BIO_reset(in);
+	x509 = d2i_X509_bio(in, &x);
+	DATA_PTR(self) = x;
     }
     BIO_free(in);
     if (!x509) ossl_raise(eX509CertError, NULL);
@@ -190,7 +192,7 @@ ossl_x509_to_der(VALUE self)
     if ((len = i2d_X509(x509, NULL)) <= 0)
 	ossl_raise(eX509CertError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_X509(x509, &p) <= 0)
 	ossl_raise(eX509CertError, NULL);
     ossl_str_adjust(str, p);
@@ -690,7 +692,7 @@ static VALUE
 ossl_x509_inspect(VALUE self)
 {
     VALUE str;
-    char *cname = rb_class2name(rb_obj_class(self));
+    const char *cname = rb_class2name(rb_obj_class(self));
 
     str = rb_str_new2("#<");
     rb_str_cat2(str, cname);

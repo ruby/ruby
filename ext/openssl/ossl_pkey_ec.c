@@ -186,15 +186,15 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 
             ec = PEM_read_bio_ECPrivateKey(in, NULL, NULL, NULL);
             if (!ec) {
-                BIO_reset(in);
+                (void)BIO_reset(in);
                 ec = PEM_read_bio_EC_PUBKEY(in, NULL, NULL, NULL);
             }
             if (!ec) {
-                BIO_reset(in);
+                (void)BIO_reset(in);
                 ec = d2i_ECPrivateKey_bio(in, NULL);
             }
             if (!ec) {
-                BIO_reset(in);
+                (void)BIO_reset(in);
                 ec = d2i_EC_PUBKEY_bio(in, NULL);
             }
 
@@ -767,7 +767,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
             group = PEM_read_bio_ECPKParameters(in, NULL, NULL, NULL);
             if (!group) {
-                BIO_reset(in);
+                (void)BIO_reset(in);
                 group = d2i_ECPKParameters_bio(in, NULL);
             }
 
@@ -1081,7 +1081,7 @@ static VALUE ossl_ec_group_get_seed(VALUE self)
     if (seed_len == 0)
         return Qnil;
 
-    return rb_str_new(EC_GROUP_get0_seed(group), seed_len);
+    return rb_str_new((const char *)EC_GROUP_get0_seed(group), seed_len);
 }
 
 /*  call-seq:
@@ -1096,7 +1096,7 @@ static VALUE ossl_ec_group_set_seed(VALUE self, VALUE seed)
     Require_EC_GROUP(self, group);
     StringValue(seed);
 
-    if (EC_GROUP_set_seed(group, RSTRING_PTR(seed), RSTRING_LEN(seed)) != RSTRING_LEN(seed))
+    if (EC_GROUP_set_seed(group, (unsigned char *)RSTRING_PTR(seed), RSTRING_LEN(seed)) != RSTRING_LEN(seed))
         ossl_raise(eEC_GROUP, "EC_GROUP_set_seed");
 
     return seed;

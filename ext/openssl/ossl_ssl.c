@@ -297,7 +297,7 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 static VALUE
 ossl_call_session_get_cb(VALUE ary)
 {
-    VALUE ssl_obj, sslctx_obj, cb, ret;
+    VALUE ssl_obj, sslctx_obj, cb;
     
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
@@ -325,7 +325,7 @@ ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
     ssl_obj = (VALUE)ptr;
     ary = rb_ary_new2(2);
     rb_ary_push(ary, ssl_obj);
-    rb_ary_push(ary, rb_str_new(buf, len));
+    rb_ary_push(ary, rb_str_new((const char *)buf, len));
 
     ret_obj = rb_protect((VALUE(*)_((VALUE)))ossl_call_session_get_cb, ary, &state);
     if (state) {
@@ -344,7 +344,7 @@ ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
 static VALUE
 ossl_call_session_new_cb(VALUE ary)
 {
-    VALUE ssl_obj, sslctx_obj, cb, ret;
+    VALUE ssl_obj, sslctx_obj, cb;
     
     Check_Type(ary, T_ARRAY);
     ssl_obj = rb_ary_entry(ary, 0);
@@ -387,10 +387,11 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
     return RTEST(ret_obj) ? 1 : 0;
 }
 
+#if 0				/* unused */
 static VALUE
 ossl_call_session_remove_cb(VALUE ary)
 {
-    VALUE sslctx_obj, cb, ret;
+    VALUE sslctx_obj, cb;
     
     Check_Type(ary, T_ARRAY);
     sslctx_obj = rb_ary_entry(ary, 0);
@@ -400,6 +401,7 @@ ossl_call_session_remove_cb(VALUE ary)
 
     return rb_funcall(cb, rb_intern("call"), 1, ary);
 }
+#endif
 
 static void
 ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
@@ -563,7 +565,7 @@ ossl_sslctx_setup(VALUE self)
     val = ossl_sslctx_get_sess_id_ctx(self);
     if (!NIL_P(val)){
 	StringValue(val);
-	if (!SSL_CTX_set_session_id_context(ctx, RSTRING_PTR(val),
+	if (!SSL_CTX_set_session_id_context(ctx, (unsigned char *)RSTRING_PTR(val),
 					    RSTRING_LEN(val))){
 	    ossl_raise(eSSLError, "SSL_CTX_set_session_id_context:");
 	}
@@ -815,7 +817,6 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
     VALUE arg1;
     SSL_CTX *ctx;
     time_t tm = 0;
-    int cb_state;
 
     rb_scan_args(argc, argv, "01", &arg1);
 
@@ -1344,13 +1345,13 @@ Init_ossl_ssl()
 
     ID_callback_state = rb_intern("@callback_state");
 
-    ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,"ossl_ssl_ex_vcb_idx",0,0,0);
-    ossl_ssl_ex_store_p = SSL_get_ex_new_index(0,"ossl_ssl_ex_store_p",0,0,0);
-    ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0,"ossl_ssl_ex_ptr_idx",0,0,0);
+    ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_vcb_idx",0,0,0);
+    ossl_ssl_ex_store_p = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_store_p",0,0,0);
+    ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_ptr_idx",0,0,0);
     ossl_ssl_ex_client_cert_cb_idx =
-	SSL_get_ex_new_index(0,"ossl_ssl_ex_client_cert_cb_idx",0,0,0);
+	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_client_cert_cb_idx",0,0,0);
     ossl_ssl_ex_tmp_dh_callback_idx =
-	SSL_get_ex_new_index(0,"ossl_ssl_ex_tmp_dh_callback_idx",0,0,0);
+	SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_tmp_dh_callback_idx",0,0,0);
 
     mSSL = rb_define_module_under(mOSSL, "SSL");
     eSSLError = rb_define_class_under(mSSL, "SSLError", eOSSLError);

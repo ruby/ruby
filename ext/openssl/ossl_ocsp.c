@@ -103,15 +103,15 @@ static VALUE
 ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
-    unsigned char *p;
+    const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
+	OCSP_REQUEST *req = DATA_PTR(self);
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
 	p = (unsigned char*)RSTRING_PTR(arg);
-	if(!d2i_OCSP_REQUEST((OCSP_REQUEST**)&DATA_PTR(self), &p,
-			     RSTRING_LEN(arg))){
+	if(!d2i_OCSP_REQUEST(&req, &p, RSTRING_LEN(arg)) && (DATA_PTR(self) = req, 1)){
 	    ossl_raise(eOCSPError, "cannot load DER encoded request");
 	}
     }
@@ -134,7 +134,7 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
     else{
 	StringValue(val);
 	GetOCSPReq(self, req);
-	ret = OCSP_request_add1_nonce(req, RSTRING_PTR(val), RSTRING_LEN(val));
+	ret = OCSP_request_add1_nonce(req, (unsigned char *)RSTRING_PTR(val), RSTRING_LEN(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 
@@ -265,7 +265,7 @@ ossl_ocspreq_to_der(VALUE self)
     if((len = i2d_OCSP_REQUEST(req, NULL)) <= 0)
 	ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_OCSP_REQUEST(req, &p) <= 0)
 	ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
@@ -310,15 +310,16 @@ static VALUE
 ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
-    unsigned char *p;
+    const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
+	OCSP_RESPONSE *res = DATA_PTR(self);
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
-	p = RSTRING_PTR(arg);
-	if(!d2i_OCSP_RESPONSE((OCSP_RESPONSE**)&DATA_PTR(self), &p,
-			      RSTRING_LEN(arg))){
+	p = (unsigned char *)RSTRING_PTR(arg);
+	if(!d2i_OCSP_RESPONSE(&res, &p, RSTRING_LEN(arg)) &&
+	   (DATA_PTR(self) = res, 1)){
 	    ossl_raise(eOCSPError, "cannot load DER encoded response");
 	}
     }
@@ -377,7 +378,7 @@ ossl_ocspres_to_der(VALUE self)
     if((len = i2d_OCSP_RESPONSE(res, NULL)) <= 0)
 	ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_OCSP_RESPONSE(res, NULL) <= 0)
 	ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
@@ -436,7 +437,7 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
     else{
 	StringValue(val);
 	GetOCSPBasicRes(self, bs);
-	ret = OCSP_basic_add1_nonce(bs, RSTRING_PTR(val), RSTRING_LEN(val));
+	ret = OCSP_basic_add1_nonce(bs, (unsigned char *)RSTRING_PTR(val), RSTRING_LEN(val));
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
 

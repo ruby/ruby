@@ -161,19 +161,19 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	in = ossl_obj2bio(arg);
 	dsa = PEM_read_bio_DSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
 	if (!dsa) {
-	    BIO_reset(in);
+	    (void)BIO_reset(in);
 	    dsa = PEM_read_bio_DSAPublicKey(in, NULL, NULL, NULL);
 	}
 	if (!dsa) {
-	    BIO_reset(in);
+	    (void)BIO_reset(in);
 	    dsa = PEM_read_bio_DSA_PUBKEY(in, NULL, NULL, NULL);
 	}
 	if (!dsa) {
-	    BIO_reset(in);
+	    (void)BIO_reset(in);
 	    dsa = d2i_DSAPrivateKey_bio(in, NULL);
 	}
 	if (!dsa) {
-	    BIO_reset(in);
+	    (void)BIO_reset(in);
 	    dsa = d2i_DSA_PUBKEY_bio(in, NULL);
 	}
 	BIO_free(in);
@@ -289,7 +289,7 @@ ossl_dsa_to_der(VALUE self)
     if((len = i2d_func(pkey->pkey.dsa, NULL)) <= 0)
 	ossl_raise(eDSAError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_func(pkey->pkey.dsa, &p) < 0)
 	ossl_raise(eDSAError, NULL);
     ossl_str_adjust(str, p);
@@ -387,7 +387,7 @@ static VALUE
 ossl_dsa_sign(VALUE self, VALUE data)
 {
     EVP_PKEY *pkey;
-    int buf_len;
+    unsigned int buf_len;
     VALUE str;
 
     GetPKeyDSA(self, pkey);
@@ -396,7 +396,8 @@ ossl_dsa_sign(VALUE self, VALUE data)
 	ossl_raise(eDSAError, "Private DSA key needed!");
     }
     str = rb_str_new(0, ossl_dsa_buf_size(pkey));
-    if (!DSA_sign(0, RSTRING_PTR(data), RSTRING_LEN(data), RSTRING_PTR(str),
+    if (!DSA_sign(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LEN(data),
+		  (unsigned char *)RSTRING_PTR(str),
 		  &buf_len, pkey->pkey.dsa)) { /* type is ignored (0) */
 	ossl_raise(eDSAError, NULL);
     }
@@ -420,8 +421,8 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
     StringValue(digest);
     StringValue(sig);
     /* type is ignored (0) */
-    ret = DSA_verify(0, RSTRING_PTR(digest), RSTRING_LEN(digest),
-		     RSTRING_PTR(sig), RSTRING_LEN(sig), pkey->pkey.dsa);
+    ret = DSA_verify(0, (unsigned char *)RSTRING_PTR(digest), RSTRING_LEN(digest),
+		     (unsigned char *)RSTRING_PTR(sig), RSTRING_LEN(sig), pkey->pkey.dsa);
     if (ret < 0) {
 	ossl_raise(eDSAError, NULL);
     }

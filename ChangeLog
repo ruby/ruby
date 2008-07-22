@@ -1,3 +1,11 @@
+Wed Jul 23 04:16:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl: suppress warnings.
+
+Wed Jul 23 00:34:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl: suppress warnings.
+
 Tue Jul 22 09:51:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el: fix here-doc strings with inner quotes.  patches
