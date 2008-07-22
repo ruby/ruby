@@ -258,8 +258,8 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(RuntimeError) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
     assert_equal("\uff71\uff72\uff73\uff74\uff75",
-                 "\x1b(I12345\x1b(B".force_encoding("iso-2022-jp").encode("utf-8"))
-    assert_equal("\u9299", "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp"))
+                 "\x1b(I12345\x1b(B".force_encoding("iso-2022-jp").encode("utf-8")) # JIS X 0201 ｧｨｩｪｫ
+    assert_equal("\u9299", "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp")) # JIS X 0212 区68 点01 銙
     assert_raise(RuntimeError) { "\x1b$C".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x1e".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x80".encode("utf-8", "iso-2022-jp") }
