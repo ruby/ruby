@@ -188,7 +188,7 @@ syck_yaml2byte_handler(p, n)
             for ( i = 0; i < n->data.list->idx; i++ )
             {
                 oid = syck_seq_read( n, i );
-                syck_lookup_sym( p, oid, (char **)&sav );
+                syck_lookup_sym( p, oid, &sav );
                 bytestring_extend(val, sav);
             }
             bytestring_append(val,YAMLBYTE_END_BRANCH,NULL,NULL);
@@ -198,10 +198,10 @@ syck_yaml2byte_handler(p, n)
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
                 oid = syck_map_read( n, map_key, i );
-                syck_lookup_sym( p, oid, (char **)&sav );
+                syck_lookup_sym( p, oid, &sav );
                 bytestring_extend(val, sav);
                 oid = syck_map_read( n, map_value, i );
-                syck_lookup_sym( p, oid, (char **)&sav );
+                syck_lookup_sym( p, oid, &sav );
                 bytestring_extend(val, sav);
             }
             bytestring_append(val,YAMLBYTE_END_BRANCH,NULL,NULL);
@@ -227,7 +227,7 @@ syck_yaml2byte(char *yamlstr)
     syck_parser_taguri_expansion( parser, 1 );
     oid = syck_parse( parser );
 
-    if ( syck_lookup_sym( parser, oid, (char **)&sav ) == 1 ) {
+    if ( syck_lookup_sym( parser, oid, &sav ) == 1 ) {
         ret = S_ALLOC_N( char, strlen( sav->buffer ) + 3 );
         ret[0] = '\0';
         strcat( ret, "D\n" );

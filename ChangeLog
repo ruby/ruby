@@ -1,3 +1,9 @@
+Tue Jul 22 23:01:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/syck/rubyext.c, ext/syck/yaml2byte.c, ext/syck/emitter.c,
+	  ext/syck/syck.c, ext/syck/handler.c, ext/syck/syck.h: suppress GCC
+	  warning.
+
 Tue Jul 22 20:42:24 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): BigDecimal#<=> should

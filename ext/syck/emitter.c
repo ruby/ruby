@@ -391,7 +391,7 @@ syck_emit( SyckEmitter *e, st_data_t n )
     /* Look for anchor */
     if ( e->anchors != NULL &&
         st_lookup( e->markers, n, (st_data_t *)&oid ) &&
-        st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
+        st_lookup( e->anchors, (st_data_t)oid, (void *)&anchor_name ) )
     {
         if ( e->anchored == NULL )
         {
@@ -1217,7 +1217,7 @@ syck_emitter_mark_node( SyckEmitter *e, st_data_t n )
             e->anchors = st_init_numtable();
         }
 
-        if ( ! st_lookup( e->anchors, (st_data_t)oid, (st_data_t *)&anchor_name ) )
+        if ( ! st_lookup( e->anchors, (st_data_t)oid, (void *)&anchor_name ) )
         {
             int idx = 0;
             const char *anc = ( e->anchor_format == NULL ? DEFAULT_ANCHOR_FORMAT : e->anchor_format );

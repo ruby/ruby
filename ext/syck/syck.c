@@ -190,10 +190,10 @@ syck_add_sym( SyckParser *p, char *data )
 }
 
 int
-syck_lookup_sym( SyckParser *p, SYMID id, char **data )
+syck_lookup_sym( SyckParser *p, SYMID id, void *data )
 {
     if ( p->syms == NULL ) return 0;
-    return st_lookup( p->syms, id, (st_data_t *)data );
+    return st_lookup( p->syms, id, data );
 }
 
 int

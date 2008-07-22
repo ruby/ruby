@@ -112,7 +112,7 @@ rb_syck_compile(VALUE self, VALUE port)
     syck_parser_implicit_typing( parser, 0 );
     syck_parser_taguri_expansion( parser, 0 );
     oid = syck_parse( parser );
-    syck_lookup_sym( parser, oid, (char **)&sav );
+    syck_lookup_sym( parser, oid, &sav );
 
     ret = S_ALLOCA_N( char, strlen( sav->buffer ) + 3 );
     ret[0] = '\0';
@@ -927,7 +927,7 @@ VALUE
 syck_resolver_node_import(VALUE self, VALUE node)
 {
     SyckNode *n;
-    VALUE obj;
+    VALUE obj = Qnil;
     int i = 0;
     Data_Get_Struct(node, SyckNode, n);
 
@@ -1376,6 +1376,10 @@ syck_node_mark(SyckNode *n)
                 rb_gc_mark( syck_map_read( n, map_value, i ) );
             }
         break;
+
+	case syck_str_kind:
+	    /* nothing */
+	break;
     }
 #if 0 /* maybe needed */
     if ( n->shortcut ) syck_node_mark( n->shortcut ); /* caution: maybe cyclic */
@@ -1729,7 +1733,7 @@ VALUE
 syck_node_transform(VALUE self)
 {
     VALUE t;
-    SyckNode *n;
+    SyckNode *n = NULL;
     SyckNode *orig_n;
     Data_Get_Struct(self, SyckNode, orig_n);
     t = Data_Wrap_Struct( cNode, syck_node_mark, syck_free_node, 0 );

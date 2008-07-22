@@ -349,7 +349,7 @@ char *syck_xprivate( char *, int );
 char *syck_taguri( const char *, const char *, int );
 int syck_tagcmp( const char *, const char * );
 int syck_add_sym( SyckParser *, char * );
-int syck_lookup_sym( SyckParser *, SYMID, char ** );
+int syck_lookup_sym( SyckParser *, SYMID, void * );
 int syck_try_implicit( SyckNode * );
 char *syck_type_id_to_uri( char * );
 void try_tag_implicit( SyckNode *, int );
