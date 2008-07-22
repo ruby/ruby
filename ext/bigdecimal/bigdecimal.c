@@ -730,11 +730,11 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
     if(!b) {
-	ID f;
+	ID f = 0;
 
 	switch(op)
 	{
-	  case '*': return   INT2FIX(e); /* any op */
+	  case '*': return Qnil; /* any op */
 	  case '=': f = rb_intern("=="); break;
 	  case '!': f = rb_intern("!="); break;
 	  case 'G': f = rb_intern(">="); break;
@@ -2196,12 +2196,14 @@ VpGetDoubleNegZero(void) /* Returns the value of -0 */
     return nzero;
 }
 
+#if 0  /* unused */
 VP_EXPORT int
 VpIsNegDoubleZero(double v)
 {
     double z = VpGetDoubleNegZero();
     return MemCmp(&v,&z,sizeof(v))==0;
 }
+#endif
 
 VP_EXPORT int
 VpException(unsigned short f, const char *str,int always)
@@ -4173,6 +4175,7 @@ Exit:
 /*
  *  m <- ival
  */
+#if 0  /* unused */
 VP_EXPORT void
 VpItoV(Real *m, S_INT ival)
 {
@@ -4230,6 +4233,7 @@ Exit:
 #endif /* _DEBUG */
     return;
 }
+#endif
 
 /*
  * y = SQRT(x),  y*y - x =>0
