@@ -93,8 +93,12 @@ respectively.  They are singletons for the data type.
 
 The T_FIXNUM data is a 31bit length fixed integer (63bit length on
 some machines), which can be converted to a C integer by using the
-FIX2INT() macro.  There is also NUM2INT() which converts any Ruby
-numbers into C integers.  The NUM2INT() macro includes a type check,
+FIX2INT() macro or FIX2LONG().  Though you have to check that the
+data is really FIXNUM before using them, they are faster.  FIX2LONG()
+never raises exceptions, but FIX2INT() raises RangeError if the
+result is bigger or smaller than the size of int.
+There are also NUM2INT() and NUM2LONG() which converts any Ruby
+numbers into C integers.  These macros includes a type check,
 so an exception will be raised if the conversion failed.  NUM2DBL()
 can be used to retrieve the double float value in the same way.
 
@@ -827,8 +831,10 @@ void Check_SafeStr(VALUE value)
 ** Data type conversion
 
 FIX2INT(value)
+FIX2LONG(value)
 INT2FIX(i)
 NUM2INT(value)
+NUM2LONG(value)
 INT2NUM(i)
 NUM2DBL(value)
 rb_float_new(f)

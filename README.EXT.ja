@@ -95,19 +95,24 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 
 1.3 VALUEをCのデータに変換する
 
-データタイプがT_NIL, T_FALSE, T_TRUEである時，データはそれぞ
-れnil, false, trueです．このデータタイプのオブジェクトはひと
+データタイプがT_NIL，T_FALSE，T_TRUEである時，データはそれぞ
+れnil，false，trueです．このデータタイプのオブジェクトはひと
 つずつしか存在しません．
 
 データタイプがT_FIXNUMの時，これは31bitまたは63bitのサイズを
 持つ整数です．longのサイズが32bitのプラットフォームであれば
-31bitに, longのサイズが64bitのプラットフォームであれば63bit
+31bitに，longのサイズが64bitのプラットフォームであれば63bit
 になります. FIXNUM を C の整数に変換するためにはマクロ
-「FIX2INT()」を使います．それから，FIXNUMに限らずRubyのデー
-タを整数に変換する「NUM2INT()」というマクロがあります．この
-マクロはデータタイプのチェック無しで使えます(整数に変換でき
-ない場合には例外が発生する)．同様にチェック無しで使える変換
-マクロはdoubleを取り出す「NUM2DBL()」があります．
+「FIX2INT()」または「FIX2LONG()」を使います．これらのマクロ
+を使用する際には事前にデータタイプがFIXNUMであることを確認す
+る必要がありますが、比較的高速に変換を行うことができます．ま
+た、「FIX2LONG()」は例外を発生しませんが、「FIX2INT()」は変
+換結果がintのサイズに収まらない場合には例外を発生します。
+それから，FIXNUMに限らずRubyのデータを整数に変換する
+「NUM2INT()」および「NUM2LONG()」というマクロがあります．こ
+れらのマクロはマクロはデータタイプのチェック無しで使えます
+(整数に変換できない場合には例外が発生する)．同様にチェック無
+で使える変換マクロはdoubleを取り出す「NUM2DBL()」があります．
 
 char* を取り出す場合，version 1.6 以前では「STR2CSTR()」とい
 うマクロを使っていましたが，これは to_str() による暗黙の型変
@@ -940,8 +945,10 @@ void Check_SafeStr(VALUE value)
 ** 型変換
 
 FIX2INT(value)
+FIX2LONG(value)
 INT2FIX(i)
 NUM2INT(value)
+NUM2LONG(value)
 INT2NUM(i)
 NUM2DBL(value)
 rb_float_new(f)

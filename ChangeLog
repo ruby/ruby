@@ -1,3 +1,8 @@
+Tue Jul 22 18:08:34 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja: mention about FIX2LONG and NUM2LONG.
+	  see [ruby-dev:35197]
+
 Tue Jul 22 17:53:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (insn_data_to_s_detail), file.c (rb_stat_inspect),
