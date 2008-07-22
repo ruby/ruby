@@ -408,6 +408,18 @@ init_env(void)
     NTLoginName = strdup(env);
 }
 
+
+typedef BOOL (WINAPI *cancel_io_t)(HANDLE);
+static cancel_io_t cancel_io = NULL;
+
+static void
+init_func(void)
+{
+    if (!cancel_io)
+	cancel_io = (cancel_io_t)GetProcAddress(GetModuleHandle("kernel32"),
+						"CancelIo");
+}
+
 static void init_stdhandle(void);
 
 #if _MSC_VER >= 1400
@@ -484,6 +496,8 @@ rb_w32_sysinit(int *argc, char ***argv)
     tzset();
 
     init_env();
+
+    init_func();
 
     init_stdhandle();
 
@@ -2392,23 +2406,6 @@ rb_w32_listen(int s, int backlog)
     return r;
 }
 
-typedef BOOL (WINAPI *cancel_io_t)(HANDLE);
-static inline void
-cancel_io(HANDLE f)
-{
-    static cancel_io_t func = NULL;
-    if (!func) {
-	func = (cancel_io_t)GetProcAddress(GetModuleHandle("kernel32"),
-					   "CancelIo");
-	if (!func)
-	    func = (cancel_io_t)-1;
-    }
-    else if (func != (cancel_io_t)-1)
-	func(f);
-    /* Win9x and NT3.x doesn't have CancelIo().
-       We expect to cancel the I/O by close or ending the thread */
-}
-
 #undef recv
 #undef recvfrom
 #undef send
@@ -2432,7 +2429,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 
     s = TO_SOCKET(fd);
     st_lookup(socklist, (st_data_t)s, (st_data_t *)&mode);
-    if (mode & O_NONBLOCK) {
+    if (!cancel_io || (mode & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if (input) {
 		if (addr && addrlen)
