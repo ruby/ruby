@@ -1117,7 +1117,7 @@ Directive:
 #line 1117 "<stdout>"
 {
 	YYCTYPE yych;
-	unsigned int yyaccept;
+	unsigned int yyaccept = 0;
 	goto yy94;
 	++YYCURSOR;
 yy94:

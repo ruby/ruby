@@ -19,11 +19,11 @@ void syck_parser_pop_level( SyckParser * );
  * Custom assert
  */
 void 
-syck_assert( char *file_name, unsigned line_num )
+syck_assert( const char *file_name, unsigned line_num, const char *expr )
 {
     fflush( NULL );
-    fprintf( stderr, "\nAssertion failed: %s, line %u\n",
-             file_name, line_num );
+    fprintf( stderr, "\nAssertion failed: %s, line %u: %s\n",
+             file_name, line_num, expr );
     fflush( stderr );
     abort();
 }

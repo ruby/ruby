@@ -104,7 +104,7 @@ rb_syck_compile(self, port)
     int taint;
     char *ret;
     VALUE bc;
-    bytestring_t *sav;
+    bytestring_t *sav = NULL;
     void *data;
 
     SyckParser *parser = syck_new_parser();
@@ -2146,9 +2146,7 @@ syck_out_scalar( argc, argv, self )
     VALUE self;
 {
     VALUE type_id, str, style, scalar;
-    if (rb_scan_args(argc, argv, "21", &type_id, &str, &style) == 2) {
-        style = Qnil;
-    }
+    rb_scan_args(argc, argv, "21", &type_id, &str, &style);
     scalar = rb_funcall( cScalar, s_new, 3, type_id, str, style );
     syck_out_mark( rb_ivar_get( self, s_emitter ), scalar );
     return scalar;

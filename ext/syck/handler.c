@@ -145,7 +145,7 @@ syck_add_transfer( char *uri, SyckNode *n, int taguri )
 }
 
 char *
-syck_xprivate( char *type_id, int type_len )
+syck_xprivate( const char *type_id, int type_len )
 {
     char *uri = S_ALLOC_N( char, type_len + 14 );
     uri[0] = '\0';
