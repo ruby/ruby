@@ -813,7 +813,7 @@ extern int  onig_is_code_in_cc_len P_((int enclen, OnigCodePoint code, CClassNod
 /* strend hash */
 typedef void hash_table_type;
 #ifdef RUBY
-#include <ruby/st.h>
+#include "ruby/st.h"
 typedef st_data_t hash_data_type;
 #else
 typedef unsigned long hash_data_type;
