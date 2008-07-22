@@ -10,7 +10,7 @@ Tue Jul 22 04:26:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_buf_cat): returns VALUE.
 
-Tue Jul 22 03:34:01 2008  Eric Hodel <drbrain@segment7.net>
+Tue Jul 22 03:34:01 2008  Eric Hodel  <drbrain@segment7.net>
 
 	* lib/rdoc*: Update to RDoc 2.1.0 r112.
 
@@ -82,7 +82,7 @@ Sat Jul 19 09:31:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Sat Jul 19 06:08:43 2008  Eric Hodel  <drbrain@segment7.net>
 
-	* lib/rdoc*:  Import RDoc r104.  Various make test-all fixes.
+	* lib/rdoc*: Import RDoc r104.  Various make test-all fixes.
 
 Sat Jul 19 00:27:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -276,7 +276,7 @@ Sat Jul 12 23:54:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (LIBRUBY_DLDFLAGS): import library which created
 	  with DLL is broken. save import library which created by lib.exe and
-	  install it. 
+	  install it.
 	  fixed the problem mentioned at the postscript of [ruby-dev:35448]
 
 Sat Jul 12 23:24:21 2008  Tanaka Akira  <akr@fsij.org>
@@ -318,7 +318,7 @@ Sat Jul 12 09:25:07 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* test/win32ole/test_win32ole_event.rb: add test
 	  for WIN32OLE_EVENT#on_event_with_outargs
 
-	* test/win32ole/test_win32ole_event.rb(teardown): calling 
+	* test/win32ole/test_win32ole_event.rb(teardown): calling
 	  WIN32OLE_EVENT.message_loop
 
 Sat Jul 12 01:54:13 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -380,13 +380,13 @@ Thu Jul 10 21:15:49 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_win32ole_typelib.rb: add some illegal argument
 	  test.
-	
+
 	* test/win32ole/test_win32ole_type.rb: ditto.
 
 	* test/win32ole/test_win32ole_event.rb: ditto.
 
-	* test/win32ole/test_win32ole_param.rb: ditto. 
-	
+	* test/win32ole/test_win32ole_param.rb: ditto.
+
 	* test/win32ole/test_win32ole_method.rb: ditto.
 
 Thu Jul 10 19:38:35 2008  wanabe  <s.wanabe@gmail.com>
@@ -517,7 +517,7 @@ Tue Jul  8 21:45:22 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 Tue Jul  8 19:55:40 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (find_default_source): try to
-	  find COCLASS when WIN32OLE object is not COCLASS. 
+	  find COCLASS when WIN32OLE object is not COCLASS.
 
 	* test/win32ole/test_win32ole_event.rb: ditto
 
@@ -585,7 +585,7 @@ Sun Jul  6 23:48:06 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun Jul  6 18:34:35 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* test/win32ole/test_win32ole_type.rb (test_initialize): add 
+	* test/win32ole/test_win32ole_type.rb (test_initialize): add
 	  more assertions.
 
 Sun Jul  6 10:12:21 2008  Kouhei Sutou  <kou@cozmixng.org>
@@ -656,9 +656,9 @@ Sat Jul  5 08:29:47 2008  Tanaka Akira  <akr@fsij.org>
 
 Fri Jul  4 23:12:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE 
+	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE
 	  to String conversion when negative value.
-	  
+
 	* test/win32ole/test_win32ole_variant.rb: ditto.
 
 Fri Jul  4 22:15:29 2008  Tanaka Akira  <akr@fsij.org>
@@ -824,19 +824,19 @@ Thu Jul  3 00:18:00 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 Thu Jul  3 00:09:31 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* gc.c: add rb_during_gc(). based on a patch from arton <artonx AT
-	  yahoo.co.jp> at [ruby-dev:35313].   
+	  yahoo.co.jp> at [ruby-dev:35313].
 
 	* include/ruby/intern.h: ditto.
 
 Wed Jul  2 09:49:10 2008  Narihiro Nakamura  <authorNari@gmail.com>
 
-	* gc.c (gc_lazy_sweep) : use lazy sweep algorithm for response
+	* gc.c (gc_lazy_sweep): use lazy sweep algorithm for response
 	  performance gain.
 
-	* gc.c (garbage_collect_force) : mark and lazysweep invoke, after
+	* gc.c (garbage_collect_force): mark and lazysweep invoke, after
 	  erasing all mark.
 
-	* gc.c (GC_NOT_LAZY_SWEEP) : not lazy sweep flag. for debug.
+	* gc.c (GC_NOT_LAZY_SWEEP): not lazy sweep flag. for debug.
 
 Wed Jul  2 03:42:44 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -1093,7 +1093,7 @@ Tue Jul  1 03:28:16 2008  Eric Hodel  <drbrain@segment7.net>
 	* test/rubygems/test_ext_configure_builder.rb:  Apply locale-free
 	  patch by Yusuke ENDOH.  [ruby-core:17444].
 
-	* runruby.rb:  Set ENV['rake'].  Patch by Yusuke ENDOH
+	* runruby.rb: Set ENV['rake'].  Patch by Yusuke ENDOH
 	  [ruby-core:17442].
 
 Tue Jul  1 01:07:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
