@@ -1115,3 +1115,38 @@ rb_sprintf(const char *format, ...)
 
     return result;
 }
+
+VALUE
+rb_str_vcatf(VALUE str, const char *fmt, va_list ap)
+{
+    rb_printf_buffer f;
+    VALUE klass;
+
+    StringValue(str);
+    rb_str_modify(str);
+    f._flags = __SWR | __SSTR;
+    f._bf._size = 0;
+    f._w = rb_str_capacity(str);
+    f._bf._base = (unsigned char *)str;
+    f._p = (unsigned char *)RSTRING_END(str);
+    klass = RBASIC(str)->klass;
+    RBASIC(str)->klass = 0;
+    f.vwrite = ruby__sfvwrite;
+    BSD_vfprintf(&f, fmt, ap);
+    RBASIC(str)->klass = klass;
+    rb_str_resize(str, (char *)f._p - RSTRING_PTR(str));
+
+    return str;
+}
+
+VALUE
+rb_str_catf(VALUE str, const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    str = rb_str_vcatf(str, format, ap);
+    va_end(ap);
+
+    return str;
+}

@@ -107,25 +107,25 @@ FIXNUMとNILに関してはより高速な判別マクロが用意されています．
 タを整数に変換する「NUM2INT()」というマクロがあります．この
 マクロはデータタイプのチェック無しで使えます(整数に変換でき
 ない場合には例外が発生する)．同様にチェック無しで使える変換
-マクロはdoubleを取り出す「NUM2DBL()」があります。
+マクロはdoubleを取り出す「NUM2DBL()」があります．
 
-char* を取り出す場合、version 1.6 以前では「STR2CSTR()」とい
-うマクロを使っていましたが、これは to_str() による暗黙の型変
-換結果が GC される可能性があるため、version 1.7 以降では
-obsolete となり、代わりに StringValue() と StringValuePtr() 
-を使う事を推奨しています。StringValue(var) は var が String 
-であれば何もせず、そうでなければ var を var.to_str() の結果
-に置き換えるマクロ、StringValuePtr(var) は同様に var を
+char* を取り出す場合，version 1.6 以前では「STR2CSTR()」とい
+うマクロを使っていましたが，これは to_str() による暗黙の型変
+換結果が GC される可能性があるため，version 1.7 以降では
+obsolete となり，代わりに StringValue() と StringValuePtr() 
+を使う事を推奨しています．StringValue(var) は var が String 
+であれば何もせず，そうでなければ var を var.to_str() の結果
+に置き換えるマクロ，StringValuePtr(var) は同様に var を
 String に置き換えてから var のバイト列表現に対する char* を
-返すマクロです。var の内容を直接置き換える処理が入るので、
-var は lvalue である必要があります。
-また、StringValuePtr() に類似した StringValueCStr() というマ
-クロもあります。StringValueCStr(var) は var を String に置き
-換えてから var の文字列表現に対する char* を返します。返され
-る文字列の末尾には nul 文字が付加されます。なお、途中に nul
-文字が含まれる場合は ArgumentError が発生します。
-一方、StringValuePtr() では、末尾に nul 文字がある保証はなく、
-途中に nul 文字が含まれている可能性もあります。
+返すマクロです．var の内容を直接置き換える処理が入るので，
+var は lvalue である必要があります．
+また，StringValuePtr() に類似した StringValueCStr() というマ
+クロもあります．StringValueCStr(var) は var を String に置き
+換えてから var の文字列表現に対する char* を返します．返され
+る文字列の末尾には nul 文字が付加されます．なお，途中に nul
+文字が含まれる場合は ArgumentError が発生します．
+一方，StringValuePtr() では，末尾に nul 文字がある保証はなく，
+途中に nul 文字が含まれている可能性もあります．
 
 それ以外のデータタイプは対応するCの構造体があります．対応す
 る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
@@ -138,7 +138,7 @@ var は lvalue である必要があります。
 ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
 字にしたもの)という名前で提供されています(例: RSTRING())．
 
-構造体からデータを取り出すマクロが提供されています。文字列
+構造体からデータを取り出すマクロが提供されています．文字列
 strの長さを得るためには「RSTRING_LEN(str)」とし，文字列strを
 char*として得るためには「RSTRING_PTR(str)」とします．配列の
 場合には，それぞれ「RARRAY_LEN(ary)」，「RARRAY_PTR(ary)」と
@@ -212,19 +212,28 @@ Rubyが用意している関数を用いてください．
 
     Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
-  rb_str_cat(VALUE str, const char *ptr, long len)
-
-    Rubyの文字列strにlenバイトの文字列ptrを追加する．
-
   rb_sprintf(const char *format, ...)
   rb_vsprintf(const char *format, va_list ap)
 
-    printf(3)のフォーマットにしたがって，Rubyの文字列を生成する．
+    Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
+    整形し，Rubyの文字列を生成する．
+
+  rb_str_cat(VALUE str, const char *ptr, long len)
+
+    Rubyの文字列strにlenバイトの文字列ptrを追加する．
 
   rb_str_cat2(VALUE str, const char* ptr)
 
     Rubyの文字列strにCの文字列ptrを追加する．この関数の機能は
     rb_str_cat(str, ptr, strlen(ptr))と同等である．
+
+  rb_str_catf(VALUE str, const char* format, ...)
+  rb_str_vcatf(VALUE str, const char* format, va_list ap)
+
+    Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
+    整形し，Rubyの文字列strに追加する．この関数の機能は，それぞれ
+    rb_str_cat2(str, rb_sprintf(format, ...)) や
+    rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
  配列に対する関数
 
@@ -348,20 +357,20 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
   void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
 
 
-メソッドの別名を定義するための関数は以下の通りです。
+メソッドの別名を定義するための関数は以下の通りです．
 
   void rb_define_alias(VALUE module, const char* new, const char* old);
 
 クラスメソッドallocateを定義したり削除したりするための関数は
-以下の通りです。
+以下の通りです．
 
   void rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE klass));
   void rb_undef_alloc_func(VALUE klass);
 
-funcはクラスを引数として受け取って、新しく割り当てられたイン
-スタンスを返さなくてはなりません。このインスタンスは、外部リ
-ソースなどを含まない、できるだけ「空」のままにしておいたほう
-がよいでしょう。
+funcはクラスを引数として受け取って，新しく割り当てられたイン
+スタンスを返さなくてはなりません．このインスタンスは，外部リ
+ソースなどを含まない，できるだけ「空」のままにしておいたほう
+がよいでしょう．
 
 2.1.3 定数定義
 
@@ -748,9 +757,9 @@ Makefileを作る場合の雛型になるextconf.rbというファイルを作り
   $LDFLAGS: リンク時に追加的に指定するフラグ(-Lなど)
   $objs: リンクされるオブジェクトファイル名のリスト
 
-オブジェクトファイルのリストは、通常はソースファイルを検索し
-て自動的に生成されますが、makeの途中でソースを生成するような
-場合は明示的に指定する必要があります。
+オブジェクトファイルのリストは，通常はソースファイルを検索し
+て自動的に生成されますが，makeの途中でソースを生成するような
+場合は明示的に指定する必要があります．
 
 ライブラリをコンパイルする条件が揃わず，そのライブラリをコン
 パイルしない時にはcreate_makefileを呼ばなければMakefileは生
@@ -778,7 +787,7 @@ Makefileを実際に生成するためには
 
 としてください．
 
-site_ruby ディレクトリでなく、
+site_ruby ディレクトリでなく，
 vendor_ruby ディレクトリにインストールする場合には
 以下のように --vendor オプションを加えてください．
 
@@ -1075,7 +1084,7 @@ char *rb_class2name(VALUE klass)
 
 int rb_respond_to(VALUE obj, ID id)
 
-  objがidで示されるメソッドを持つかどうかを返す。
+  objがidで示されるメソッドを持つかどうかを返す．
 
 ** インスタンス変数
 

@@ -523,6 +523,8 @@ void ruby_default_signal(int);
 VALUE rb_f_sprintf(int, const VALUE*);
 PRINTF_ARGS(VALUE rb_sprintf(const char*, ...), 1, 2);
 VALUE rb_vsprintf(const char*, va_list);
+PRINTF_ARGS(VALUE rb_str_catf(VALUE, const char*, ...), 2, 3);
+VALUE rb_str_vcatf(VALUE, const char*, va_list);
 VALUE rb_str_format(int, const VALUE *, VALUE);
 /* string.c */
 VALUE rb_str_new(const char*, long);
@@ -578,6 +580,7 @@ void rb_str_setter(VALUE, ID, VALUE*);
 VALUE rb_str_intern(VALUE);
 VALUE rb_sym_to_s(VALUE);
 VALUE rb_str_length(VALUE);
+size_t rb_str_capacity(VALUE);
 #if defined __GNUC__
 #define rb_str_new2(str) __extension__ (	\
 {						\
