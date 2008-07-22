@@ -1,3 +1,8 @@
+Wed Jul 23 04:17:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (struct input_code.name, input_codename),
+	  (options): constified.
+
 Wed Jul 23 04:16:38 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl: suppress warnings.

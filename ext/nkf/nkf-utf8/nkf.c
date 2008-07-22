@@ -320,7 +320,7 @@ extern POINT _BufferSize;
 #endif
 
 struct input_code{
-    char *name;
+    const char *name;
     nkf_char stat;
     nkf_char score;
     nkf_char index;
@@ -330,7 +330,7 @@ struct input_code{
     int _file_stat;
 };
 
-static char *input_codename = "";
+static const char *input_codename = "";
 
 #ifndef PERL_XS
 static const char *CopyRight = COPY_RIGHT;
@@ -436,7 +436,7 @@ static  void    mimeout_addchar(nkf_char c);
 static  void    usage(void);
 static  void    version(void);
 #endif
-static  void    options(unsigned char *c);
+static  void    options(const unsigned char *c);
 #if defined(PERL_XS) || defined(WIN32DLL)
 static  void    reinit(void);
 #endif
@@ -538,7 +538,7 @@ static int guess_f = FALSE;
 #if !defined PERL_XS
 static  void    print_guessed_code(char *filename);
 #endif
-static  void    set_input_codename(char *codename);
+static  void    set_input_codename(const char *codename);
 static int is_inputcode_mixed = FALSE;
 static int is_inputcode_set   = FALSE;
 
@@ -1153,11 +1153,11 @@ struct {
 
 static int option_mode = 0;
 
-void options(unsigned char *cp)
+void options(const unsigned char *cp)
 {
     nkf_char i, j;
-    unsigned char *p;
-    unsigned char *cp_back = NULL;
+    const unsigned char *p;
+    const unsigned char *cp_back = NULL;
     char codeset[32];
 
     if (option_mode==1)
@@ -4588,7 +4588,7 @@ void z_conv(nkf_char c2, nkf_char c1)
            c1 = fv[c1-0x20];
            c2 =  0;
            if (alpha_f&0x8) {
-               char *entity = 0;
+               const char *entity = 0;
                switch (c1){
                  case '>': entity = "&gt;"; break;
                  case '<': entity = "&lt;"; break;
@@ -4925,7 +4925,7 @@ void debug(const char *str)
 }
 #endif
 
-void set_input_codename(char *codename)
+void set_input_codename(const char *codename)
 {
     if (guess_f && 
         is_inputcode_set &&

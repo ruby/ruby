@@ -82,7 +82,7 @@ int nkf_split_options(arg)
     const char* arg;
 {
     int count = 0;
-    char option[256];
+    unsigned char option[256];
     int i = 0, j = 0;
     int is_escaped = FALSE;
     int is_single_quoted = FALSE;
