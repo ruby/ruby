@@ -284,7 +284,7 @@ void
 syck_emitter_write( SyckEmitter *e, const char *str, long len )
 {
     long at;
-    ASSERT( str != NULL )
+    ASSERT( str != NULL );
     if ( e->buffer == NULL )
     {
         syck_emitter_clear( e );

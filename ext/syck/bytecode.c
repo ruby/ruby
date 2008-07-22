@@ -164,7 +164,7 @@ sycklex_bytecode_utf8( YYSTYPE *sycklval, SyckParser *parser )
 #line 165 "<stdout>"
 {
 	YYCTYPE yych;
-	unsigned int yyaccept;
+	unsigned int yyaccept = 0;
 	goto yy0;
 	++YYCURSOR;
 yy0:
@@ -542,7 +542,7 @@ Directive:
 #line 543 "<stdout>"
 {
 	YYCTYPE yych;
-	unsigned int yyaccept;
+	unsigned int yyaccept = 0;
 	goto yy45;
 	++YYCURSOR;
 yy45:

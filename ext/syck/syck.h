@@ -32,14 +32,11 @@ extern "C" {
 #endif
 
 #if DEBUG
-  void syck_assert( char *, unsigned );
+void syck_assert( const char *, unsigned, const char * );
 # define ASSERT(f) \
-    if ( f ) \
-        {}   \
-    else     \
-        syck_assert( __FILE__, __LINE__ )
+    (( f ) ? (void)0 syck_assert( __FILE__, __LINE__, #f )
 #else
-# define ASSERT(f)
+# define ASSERT(f) ((void)0)
 #endif
 
 #ifndef NULL
@@ -345,13 +342,13 @@ SyckNode *syck_hdlr_add_anchor( SyckParser *, char *, SyckNode * );
 void syck_hdlr_remove_anchor( SyckParser *, char * );
 SyckNode *syck_hdlr_get_anchor( SyckParser *, char * );
 void syck_add_transfer( char *, SyckNode *, int );
-char *syck_xprivate( char *, int );
+char *syck_xprivate( const char *, int );
 char *syck_taguri( const char *, const char *, int );
 int syck_tagcmp( const char *, const char * );
 int syck_add_sym( SyckParser *, void * );
 int syck_lookup_sym( SyckParser *, SYMID, void ** );
 int syck_try_implicit( SyckNode * );
-char *syck_type_id_to_uri( char * );
+char *syck_type_id_to_uri( const char * );
 void try_tag_implicit( SyckNode *, int );
 const char *syck_match_implicit( const char *, size_t );
 
