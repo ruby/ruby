@@ -277,7 +277,6 @@ pst_pid(VALUE st)
 static void
 pst_message(VALUE str, rb_pid_t pid, int status)
 {
-    char buf[256];
     rb_str_catf(str, "pid %ld", (long)pid);
     if (WIFSTOPPED(status)) {
 	int stopsig = WSTOPSIG(status);
