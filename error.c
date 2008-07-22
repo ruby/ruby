@@ -621,13 +621,11 @@ rb_name_error(ID id, const char *fmt, ...)
 {
     VALUE exc, argv[2];
     va_list args;
-    char buf[BUFSIZ];
 
     va_start(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    argv[0] = rb_vsprintf(fmt, args);
     va_end(args);
 
-    argv[0] = rb_str_new2(buf);
     argv[1] = ID2SYM(id);
     exc = rb_class_new_instance(2, argv, rb_eNameError);
     rb_exc_raise(exc);
@@ -1074,24 +1072,24 @@ void
 rb_raise(VALUE exc, const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE mesg;
 
-    va_start(args,fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    va_start(args, fmt);
+    mesg = rb_vsprintf(fmt, args);
     va_end(args);
-    rb_exc_raise(rb_exc_new2(exc, buf));
+    rb_exc_raise(rb_exc_new3(exc, mesg));
 }
 
 void
 rb_loaderror(const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE mesg;
 
     va_start(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    mesg = rb_vsprintf(fmt, args);
     va_end(args);
-    rb_exc_raise(rb_exc_new2(rb_eLoadError, buf));
+    rb_exc_raise(rb_exc_new3(rb_eLoadError, mesg));
 }
 
 void
@@ -1106,13 +1104,13 @@ void
 rb_fatal(const char *fmt, ...)
 {
     va_list args;
-    char buf[BUFSIZ];
+    VALUE mesg;
 
     va_start(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    mesg = rb_vsprintf(fmt, args);
     va_end(args);
 
-    rb_exc_fatal(rb_exc_new2(rb_eFatal, buf));
+    rb_exc_fatal(rb_exc_new3(rb_eFatal, mesg));
 }
 
 void

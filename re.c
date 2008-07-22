@@ -1806,9 +1806,7 @@ match_inspect(VALUE match)
             if (names[i].name)
                 rb_str_buf_cat(str, (const char *)names[i].name, names[i].len);
             else {
-                char buf[sizeof(i)*3+1];
-                snprintf(buf, sizeof(buf), "%d", i);
-                rb_str_buf_cat2(str, buf);
+                rb_str_catf(str, "%d", i);
             }
             rb_str_buf_cat2(str, ":");
         }

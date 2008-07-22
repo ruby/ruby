@@ -278,33 +278,29 @@ static void
 pst_message(VALUE str, rb_pid_t pid, int status)
 {
     char buf[256];
-    snprintf(buf, sizeof(buf), "pid %ld", (long)pid);
-    rb_str_cat2(str, buf);
+    rb_str_catf(str, "pid %ld", (long)pid);
     if (WIFSTOPPED(status)) {
 	int stopsig = WSTOPSIG(status);
 	const char *signame = ruby_signal_name(stopsig);
 	if (signame) {
-	    snprintf(buf, sizeof(buf), " stopped SIG%s (signal %d)", signame, stopsig);
+	    rb_str_catf(str, " stopped SIG%s (signal %d)", signame, stopsig);
 	}
 	else {
-	    snprintf(buf, sizeof(buf), " stopped signal %d", stopsig);
+	    rb_str_catf(str, " stopped signal %d", stopsig);
 	}
-	rb_str_cat2(str, buf);
     }
     if (WIFSIGNALED(status)) {
 	int termsig = WTERMSIG(status);
 	const char *signame = ruby_signal_name(termsig);
 	if (signame) {
-	    snprintf(buf, sizeof(buf), " SIG%s (signal %d)", signame, termsig);
+	    rb_str_catf(str, " SIG%s (signal %d)", signame, termsig);
 	}
 	else {
-	    snprintf(buf, sizeof(buf), " signal %d", termsig);
+	    rb_str_catf(str, " signal %d", termsig);
 	}
-	rb_str_cat2(str, buf);
     }
     if (WIFEXITED(status)) {
-	snprintf(buf, sizeof(buf), " exit %d", WEXITSTATUS(status));
-	rb_str_cat2(str, buf);
+	rb_str_catf(str, " exit %d", WEXITSTATUS(status));
     }
 #ifdef WCOREDUMP
     if (WCOREDUMP(status)) {

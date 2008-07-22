@@ -4679,10 +4679,8 @@ insn_data_to_s_detail(INSN *iobj)
 	    switch (type) {
 	      case TS_OFFSET:	/* label(destination position) */
 		{
-		    char buff[0x100];
 		    LABEL *lobj = (LABEL *)OPERAND_AT(iobj, j);
-		    snprintf(buff, sizeof(buff), "<L%03d>", lobj->label_no);
-		    rb_str_concat(str, rb_str_new2(buff));
+		    rb_str_catf(str, "<L%03d>", lobj->label_no);
 		    break;
 		}
 		break;

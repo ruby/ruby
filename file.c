@@ -687,16 +687,10 @@ rb_stat_inspect(VALUE self)
 	rb_str_buf_cat2(str, "=");
 	v = (*member[i].func)(self);
 	if (i == 2) {		/* mode */
-	    char buf[32];
-
-	    sprintf(buf, "0%lo", NUM2ULONG(v));
-	    rb_str_buf_cat2(str, buf);
+	    rb_str_catf(str, "0%lo", NUM2ULONG(v));
 	}
 	else if (i == 0 || i == 6) { /* dev/rdev */
-	    char buf[32];
-
-	    sprintf(buf, "0x%lx", NUM2ULONG(v));
-	    rb_str_buf_cat2(str, buf);
+	    rb_str_catf(str, "0x%lx", NUM2ULONG(v));
 	}
 	else {
 	    rb_str_append(str, rb_inspect(v));

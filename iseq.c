@@ -545,13 +545,10 @@ iseq_eval(VALUE self)
 static VALUE
 iseq_inspect(VALUE self)
 {
-    char buff[0x100];
     rb_iseq_t *iseq = iseq_check(self);
 
-    snprintf(buff, sizeof(buff), "<ISeq:%s@%s>",
-	     RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
-
-    return rb_str_new2(buff);
+    return rb_sprintf("<ISeq:%s@%s>",
+		      RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
 }
 
 VALUE iseq_data_to_ary(rb_iseq_t *iseq);
@@ -622,17 +619,14 @@ insn_operand_intern(rb_iseq_t *iseq,
     const char *types = insn_op_types(insn);
     char type = types[op_no];
     VALUE ret;
-    char buff[0x100];
 
     switch (type) {
       case TS_OFFSET:		/* LONG */
-	snprintf(buff, sizeof(buff), "%ld", pos + len + op);
-	ret = rb_str_new2(buff);
+	ret = rb_sprintf("%ld", pos + len + op);
 	break;
 
       case TS_NUM:		/* ULONG */
-	snprintf(buff, sizeof(buff), "%lu", op);
-	ret = rb_str_new2(buff);
+	ret = rb_sprintf("%lu", op);
 	break;
 
       case TS_LINDEX:
@@ -728,23 +722,19 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
 {
     int insn = iseq[pos];
     int len = insn_len(insn);
-    int i, j;
+    int j;
     const char *types = insn_op_types(insn);
     VALUE str = rb_str_new(0, 0);
-    char buff[0x100];
-    char insn_name_buff[0x100];
+    const char *insn_name_buff;
 
-    strcpy(insn_name_buff, insn_name(insn));
-    if (0) {
-	for (i = 0; insn_name_buff[i]; i++) {
-	    if (insn_name_buff[i] == '_') {
-		insn_name_buff[i] = 0;
-	    }
-	}
+    insn_name_buff = insn_name(insn);
+    if (1) {
+	rb_str_catf(str, "%04d %-16s ", pos, insn_name_buff);
     }
-
-    snprintf(buff, sizeof(buff), "%04d %-16s ", pos, insn_name_buff);
-    rb_str_cat2(str, buff);
+    else {
+	rb_str_catf(str, "%04d %-16.*s ", pos,
+		    strcspn(insn_name_buff, "_"), insn_name_buff);
+    }
 
     for (j = 0; types[j]; j++) {
 	const char *types = insn_op_types(insn);
@@ -762,17 +752,18 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
 	int line_no = find_line_no(iseqdat, pos);
 	int prev = find_prev_line_no(iseqdat, pos);
 	if (line_no && line_no != prev) {
-	    snprintf(buff, sizeof(buff), "%-70s(%4d)", RSTRING_PTR(str),
-		     line_no);
-	    str = rb_str_new2(buff);
+	    long slen = RSTRING_LEN(str);
+	    slen = (slen > 70) ? 0 : (70 - slen);
+	    str = rb_str_catf(str, "%*s(%4d)", (int)slen, "", line_no);
 	}
     }
     else {
 	/* for debug */
 	struct iseq_insn_info_entry *entry = get_insn_info(iseqdat, pos);
-	snprintf(buff, sizeof(buff), "%-60s(line: %d, sp: %d)",
-		 RSTRING_PTR(str), entry->line_no, entry->sp);
-	str = rb_str_new2(buff);
+	long slen = RSTRING_LEN(str);
+	slen = (slen > 60) ? 0 : (60 - slen);
+	str = rb_str_catf(str, "%*s(line: %d, sp: %d)",
+			  (int)slen, "", entry->line_no, entry->sp);
     }
 
     if (ret) {
@@ -817,7 +808,6 @@ ruby_iseq_disasm(VALUE self)
     unsigned long size;
     int i;
     ID *tbl;
-    char buff[0x200];
     enum {header_minlen = 72};
 
     rb_secure(1);
@@ -840,11 +830,10 @@ ruby_iseq_disasm(VALUE self)
     }
     for (i = 0; i < iseqdat->catch_table_size; i++) {
 	struct iseq_catch_table_entry *entry = &iseqdat->catch_table[i];
-	sprintf(buff,
-		"| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
-		catch_type((int)entry->type), (int)entry->start,
-		(int)entry->end, (int)entry->sp, (int)entry->cont);
-	rb_str_cat2(str, buff);
+	rb_str_catf(str,
+		    "| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
+		    catch_type((int)entry->type), (int)entry->start,
+		    (int)entry->end, (int)entry->sp, (int)entry->cont);
 	if (entry->iseq) {
 	    rb_str_concat(str, ruby_iseq_disasm(entry->iseq));
 	}
@@ -858,14 +847,13 @@ ruby_iseq_disasm(VALUE self)
     tbl = iseqdat->local_table;
 
     if (tbl) {
-	snprintf(buff, sizeof(buff),
-		 "local table (size: %d, argc: %d "
-		 "[opts: %d, rest: %d, post: %d, block: %d] s%d)\n",
-		 iseqdat->local_size, iseqdat->argc,
-		 iseqdat->arg_opts, iseqdat->arg_rest,
-		 iseqdat->arg_post_len, iseqdat->arg_block,
-		 iseqdat->arg_simple);
-	rb_str_cat2(str, buff);
+	rb_str_catf(str,
+		    "local table (size: %d, argc: %d "
+		    "[opts: %d, rest: %d, post: %d, block: %d] s%d)\n",
+		    iseqdat->local_size, iseqdat->argc,
+		    iseqdat->arg_opts, iseqdat->arg_rest,
+		    iseqdat->arg_post_len, iseqdat->arg_block,
+		    iseqdat->arg_simple);
 
 	for (i = 0; i < iseqdat->local_table_size; i++) {
 	    const char *name = rb_id2name(tbl[i]);
@@ -893,10 +881,7 @@ ruby_iseq_disasm(VALUE self)
 	    snprintf(info, sizeof(info), "%s%s%s%s", name ? name : "?",
 		     *argi ? "<" : "", argi, *argi ? ">" : "");
 
-	    snprintf(buff, sizeof(buff), "[%2d] %-11s",
-		     iseqdat->local_size - i, info);
-
-	    rb_str_cat2(str, buff);
+	    rb_str_catf(str, "[%2d] %-11s", iseqdat->local_size - i, info);
 	}
 	rb_str_cat2(str, "\n");
     }
@@ -954,9 +939,9 @@ static VALUE
 register_label(struct st_table *table, int idx)
 {
     VALUE sym;
-    char buff[0x20];
+    char buff[8 + (sizeof(idx) * CHAR_BIT * 32 / 100)];
 
-    snprintf(buff, 0x20, "label_%u", idx);
+    snprintf(buff, sizeof(buff), "label_%u", idx);
     sym = ID2SYM(rb_intern(buff));
     st_insert(table, idx, sym);
     return sym;
