@@ -1,3 +1,9 @@
+Tue Jul 22 09:51:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el: fix here-doc strings with inner quotes.  patches
+	  by Nathan Weizenbaum <nex342 AT gmail.com> from [ruby-core:17615]
+	  through [ruby-core:17910].
+
 Sat Jul 19 00:27:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): fixed wrong check
