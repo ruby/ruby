@@ -155,7 +155,7 @@ typedef struct _syck_str SyckIoStr;
 typedef struct _syck_level SyckLevel;
 
 typedef SYMID (*SyckNodeHandler)(SyckParser *, SyckNode *);
-typedef void (*SyckErrorHandler)(SyckParser *, char *);
+typedef void (*SyckErrorHandler)(SyckParser *, const char *);
 typedef SyckNode * (*SyckBadAnchorHandler)(SyckParser *, char *);
 typedef long (*SyckIoFileRead)(char *, SyckIoFile *, long, long); 
 typedef long (*SyckIoStrRead)(char *, SyckIoStr *, long, long);
@@ -348,12 +348,12 @@ void syck_add_transfer( char *, SyckNode *, int );
 char *syck_xprivate( char *, int );
 char *syck_taguri( const char *, const char *, int );
 int syck_tagcmp( const char *, const char * );
-int syck_add_sym( SyckParser *, char * );
-int syck_lookup_sym( SyckParser *, SYMID, void * );
+int syck_add_sym( SyckParser *, void * );
+int syck_lookup_sym( SyckParser *, SYMID, void ** );
 int syck_try_implicit( SyckNode * );
 char *syck_type_id_to_uri( char * );
 void try_tag_implicit( SyckNode *, int );
-char *syck_match_implicit( char *, size_t );
+const char *syck_match_implicit( const char *, size_t );
 
 /*
  * API prototypes
@@ -371,17 +371,17 @@ void syck_emitter_handler( SyckEmitter *, SyckEmitterHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
 void syck_emitter_write( SyckEmitter *, const char *, long );
-void syck_emitter_escape( SyckEmitter *, char *, long );
+void syck_emitter_escape( SyckEmitter *, const char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
 void syck_emit( SyckEmitter *, st_data_t );
-void syck_emit_scalar( SyckEmitter *, char *, enum scalar_style, int, int, char, char *, long );
-void syck_emit_1quoted( SyckEmitter *, int, char *, long );
-void syck_emit_2quoted( SyckEmitter *, int, char *, long );
-void syck_emit_folded( SyckEmitter *, int, char, char *, long );
-void syck_emit_literal( SyckEmitter *, char, char *, long );
-void syck_emit_seq( SyckEmitter *, char *, enum seq_style );
+void syck_emit_scalar( SyckEmitter *, const char *, enum scalar_style, int, int, char, const char *, long );
+void syck_emit_1quoted( SyckEmitter *, int, const char *, long );
+void syck_emit_2quoted( SyckEmitter *, int, const char *, long );
+void syck_emit_folded( SyckEmitter *, int, char, const char *, long );
+void syck_emit_literal( SyckEmitter *, char, const char *, long );
+void syck_emit_seq( SyckEmitter *, const char *, enum seq_style );
 void syck_emit_item( SyckEmitter *, st_data_t );
-void syck_emit_map( SyckEmitter *, char *, enum map_style );
+void syck_emit_map( SyckEmitter *, const char *, enum map_style );
 void syck_emit_end( SyckEmitter * );
 void syck_emit_tag( SyckEmitter *, const char *, const char * );
 void syck_emit_indent( SyckEmitter * );
@@ -395,7 +395,7 @@ void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );
 void syck_parser_implicit_typing( SyckParser *, int );
 void syck_parser_taguri_expansion( SyckParser *, int );
-int syck_scan_scalar( int, char *, long );
+int syck_scan_scalar( int, const char *, long );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_error_handler( SyckParser *, SyckErrorHandler );
 void syck_parser_bad_anchor_handler( SyckParser *, SyckBadAnchorHandler );
@@ -410,7 +410,7 @@ void free_any_io( SyckParser * );
 long syck_parser_read( SyckParser * );
 long syck_parser_readlen( SyckParser *, long );
 SYMID syck_parse( SyckParser * );
-void syck_default_error_handler( SyckParser *, char * );
+void syck_default_error_handler( SyckParser *, const char * );
 SYMID syck_yaml2byte_handler( SyckParser *, SyckNode * );
 char *syck_yaml2byte( char * );
 
@@ -445,7 +445,7 @@ long syck_seq_count( SyckNode * );
 /*
  * Lexer prototypes
  */
-void syckerror( char * );
+void syckerror( const char * );
 int syckparse( void * );
 union YYSTYPE;
 int sycklex( union YYSTYPE *, SyckParser * );

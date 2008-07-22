@@ -177,7 +177,7 @@ syck_new_parser(void)
 }
 
 int
-syck_add_sym( SyckParser *p, char *data )
+syck_add_sym( SyckParser *p, void *data )
 {
     SYMID id = 0;
     if ( p->syms == NULL )
@@ -190,10 +190,14 @@ syck_add_sym( SyckParser *p, char *data )
 }
 
 int
-syck_lookup_sym( SyckParser *p, SYMID id, void *data )
+syck_lookup_sym( SyckParser *p, SYMID id, void **datap )
 {
+    st_data_t data = (st_data_t)*datap;
+    int ret;
     if ( p->syms == NULL ) return 0;
-    return st_lookup( p->syms, id, data );
+    ret = st_lookup( p->syms, id, &data );
+    *datap = (void *)data;
+    return ret;
 }
 
 int
@@ -493,7 +497,7 @@ syck_parse( SyckParser *p )
 }
 
 void
-syck_default_error_handler( SyckParser *p, char *msg )
+syck_default_error_handler( SyckParser *p, const char *msg )
 {
     printf( "Error at [Line %d, Col %d]: %s\n", 
         p->linect,

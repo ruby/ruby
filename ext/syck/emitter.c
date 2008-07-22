@@ -538,7 +538,7 @@ void syck_emit_indent( SyckEmitter *e )
  * Basic printable test for LATIN-1 characters.
  */
 int
-syck_scan_scalar( int req_width, char *cursor, long len )
+syck_scan_scalar( int req_width, const char *cursor, long len )
 {
     long i = 0, start = 0;
     int flags = SCAN_NONE;
@@ -638,13 +638,14 @@ syck_scan_scalar( int req_width, char *cursor, long len )
  * All scalars should be emitted through this function, which determines an appropriate style,
  * tag and indent.
  */
-void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style, int force_indent, int force_width,
-                       char keep_nl, char *str, long len )
+void syck_emit_scalar( SyckEmitter *e, const char *tag, enum scalar_style force_style, int force_indent, int force_width,
+                       char keep_nl, const char *str, long len )
 {
     enum scalar_style favor_style = scalar_literal;
     SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
     int scan = 0;
+    const char *match_implicit;
     char *implicit;
     
     if ( str == NULL ) str = "";
@@ -658,10 +659,10 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     }
 
     scan = syck_scan_scalar( force_width, str, len );
-    implicit = syck_match_implicit( str, len );
+    match_implicit = syck_match_implicit( str, len );
 
     /* quote strings which default to implicits */
-    implicit = syck_taguri( YAML_DOMAIN, implicit, strlen( implicit ) );
+    implicit = syck_taguri( YAML_DOMAIN, match_implicit, strlen( match_implicit ) );
     if ( syck_tagcmp( tag, implicit ) != 0 && syck_tagcmp( tag, "tag:yaml.org,2002:str" ) == 0 ) {
         force_style = scalar_2quote;
     } else {
@@ -772,7 +773,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
 }
 
 void
-syck_emitter_escape( SyckEmitter *e, char *src, long len )
+syck_emitter_escape( SyckEmitter *e, const char *src, long len )
 {
     int i;
     for( i = 0; i < len; i++ )
@@ -801,12 +802,13 @@ syck_emitter_escape( SyckEmitter *e, char *src, long len )
 /*
  * Outputs a single-quoted block.
  */
-void syck_emit_1quoted( SyckEmitter *e, int width, char *str, long len )
+void
+syck_emit_1quoted( SyckEmitter *e, int width, const char *str, long len )
 {
     char do_indent = 0;
-    char *mark = str;
-    char *start = str;
-    char *end = str;
+    const char *mark = str;
+    const char *start = str;
+    const char *end = str;
     syck_emitter_write( e, "'", 1 );
     while ( mark < str + len ) {
         if ( do_indent ) {
@@ -848,12 +850,13 @@ void syck_emit_1quoted( SyckEmitter *e, int width, char *str, long len )
 /*
  * Outputs a double-quoted block.
  */
-void syck_emit_2quoted( SyckEmitter *e, int width, char *str, long len )
+void
+syck_emit_2quoted( SyckEmitter *e, int width, const char *str, long len )
 {
     char do_indent = 0;
-    char *mark = str;
-    char *start = str;
-    char *end = str;
+    const char *mark = str;
+    const char *start = str;
+    const char *end = str;
     syck_emitter_write( e, "\"", 1 );
     while ( mark < str + len ) {
         if ( do_indent > 0 ) {
@@ -908,11 +911,12 @@ void syck_emit_2quoted( SyckEmitter *e, int width, char *str, long len )
 /*
  * Outputs a literal block.
  */
-void syck_emit_literal( SyckEmitter *e, char keep_nl, char *str, long len )
+void
+syck_emit_literal( SyckEmitter *e, char keep_nl, const char *str, long len )
 {
-    char *mark = str;
-    char *start = str;
-    char *end = str;
+    const char *mark = str;
+    const char *start = str;
+    const char *end = str;
     syck_emitter_write( e, "|", 1 );
     if ( keep_nl == NL_CHOMP ) {
         syck_emitter_write( e, "-", 1 );
@@ -943,11 +947,12 @@ void syck_emit_literal( SyckEmitter *e, char keep_nl, char *str, long len )
 /*
  * Outputs a folded block.
  */
-void syck_emit_folded( SyckEmitter *e, int width, char keep_nl, char *str, long len )
+void
+syck_emit_folded( SyckEmitter *e, int width, char keep_nl, const char *str, long len )
 {
-    char *mark = str;
-    char *start = str;
-    char *end = str;
+    const char *mark = str;
+    const char *start = str;
+    const char *end = str;
     syck_emitter_write( e, ">", 1 );
     if ( keep_nl == NL_CHOMP ) {
         syck_emitter_write( e, "-", 1 );
@@ -992,7 +997,7 @@ void syck_emit_folded( SyckEmitter *e, int width, char keep_nl, char *str, long 
 /*
  * Begins emission of a sequence.
  */
-void syck_emit_seq( SyckEmitter *e, char *tag, enum seq_style style )
+void syck_emit_seq( SyckEmitter *e, const char *tag, enum seq_style style )
 {
     SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
@@ -1013,7 +1018,8 @@ void syck_emit_seq( SyckEmitter *e, char *tag, enum seq_style style )
 /*
  * Begins emission of a mapping.
  */
-void syck_emit_map( SyckEmitter *e, char *tag, enum map_style style )
+void
+syck_emit_map( SyckEmitter *e, const char *tag, enum map_style style )
 {
     SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );

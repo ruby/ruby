@@ -1,3 +1,7 @@
+Wed Jul 23 03:02:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck: suppress warnings.
+
 Wed Jul 23 00:34:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl: suppress warnings.

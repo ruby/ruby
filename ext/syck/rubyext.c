@@ -71,7 +71,7 @@ static VALUE syck_node_transform( VALUE );
  * handler prototypes
  */
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
-void rb_syck_err_handler _((SyckParser *, char *));
+void rb_syck_err_handler _((SyckParser *, const char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
 void rb_syck_emitter_handler _((SyckEmitter *, st_data_t));
@@ -103,7 +103,8 @@ rb_syck_compile(VALUE self, VALUE port)
     int taint;
     char *ret;
     VALUE bc;
-    bytestring_t *sav; 
+    bytestring_t *sav;
+    void *data;
 
     SyckParser *parser = syck_new_parser();
     taint = syck_parser_assign_io(parser, &port);
@@ -112,7 +113,7 @@ rb_syck_compile(VALUE self, VALUE port)
     syck_parser_implicit_typing( parser, 0 );
     syck_parser_taguri_expansion( parser, 0 );
     oid = syck_parse( parser );
-    syck_lookup_sym( parser, oid, &sav );
+    if (syck_lookup_sym( parser, oid, &data )) sav = data;
 
     ret = S_ALLOCA_N( char, strlen( sav->buffer ) + 3 );
     ret[0] = '\0';
@@ -634,7 +635,7 @@ rb_syck_load_handler(SyckParser *p, SyckNode *n)
  * friendly errors.
  */
 void
-rb_syck_err_handler(SyckParser *p, char *msg)
+rb_syck_err_handler(SyckParser *p, const char *msg)
 {
     char *endl = p->cursor;
 
@@ -1189,7 +1190,7 @@ syck_resolver_tagurize(VALUE self, VALUE val)
 VALUE
 syck_defaultresolver_detect_implicit(VALUE self, VALUE val)
 {
-    char *type_id;
+    const char *type_id;
     VALUE tmp = rb_check_string_type(val);
 
     if ( !NIL_P(tmp) )
