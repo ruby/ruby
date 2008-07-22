@@ -1,3 +1,7 @@
+Wed Jul 23 04:18:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck: suppress warnings.
+
 Wed Jul 23 04:17:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf-utf8/nkf.c (struct input_code.name, input_codename),

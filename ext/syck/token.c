@@ -2714,7 +2714,7 @@ syckwrap()
 }
 
 void 
-syckerror( char *msg )
+syckerror( const char *msg )
 {
     if ( syck_parser_ptr->error_handler == NULL )
         syck_parser_ptr->error_handler = syck_default_error_handler;

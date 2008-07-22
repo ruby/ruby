@@ -37,7 +37,7 @@ syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
     if ( p->bad_anchors != NULL )
     {
         SyckNode *bad;
-        if ( st_lookup( p->bad_anchors, (st_data_t)a, (st_data_t *)&bad ) )
+        if ( st_lookup( p->bad_anchors, (st_data_t)a, (void *)&bad ) )
         {
             if ( n->kind != syck_str_kind )
             {
@@ -50,7 +50,7 @@ syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
     {
         p->anchors = st_init_strtable();
     }
-    if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&ntmp ) )
+    if ( st_lookup( p->anchors, (st_data_t)a, (void *)&ntmp ) )
     {
         if ( ntmp != (void *)1 )
         {
@@ -70,7 +70,7 @@ syck_hdlr_remove_anchor( SyckParser *p, char *a )
     {
         p->anchors = st_init_strtable();
     }
-    if ( st_delete( p->anchors, (st_data_t *)&atmp, (st_data_t *)&ntmp ) )
+    if ( st_delete( p->anchors, (void *)&atmp, (void *)&ntmp ) )
     {
         if ( ntmp != (void *)1 )
         {
@@ -87,7 +87,7 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
 
     if ( p->anchors != NULL )
     {
-        if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&n ) )
+        if ( st_lookup( p->anchors, (st_data_t)a, (void *)&n ) )
         {
             if ( n != (void *)1 )
             {    
@@ -100,7 +100,7 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
                 {
                     p->bad_anchors = st_init_strtable();
                 }
-                if ( ! st_lookup( p->bad_anchors, (st_data_t)a, (st_data_t *)&n ) )
+                if ( ! st_lookup( p->bad_anchors, (st_data_t)a, (void *)&n ) )
                 {
                     n = (p->bad_anchor_handler)( p, a );
                     st_insert( p->bad_anchors, (st_data_t)a, (st_data_t)n );
@@ -155,7 +155,7 @@ syck_xprivate( char *type_id, int type_len )
 }
 
 char *
-syck_taguri( char *domain, char *type_id, int type_len )
+syck_taguri( const char *domain, const char *type_id, int type_len )
 {
     char *uri = S_ALLOC_N( char, strlen( domain ) + type_len + 14 );
     uri[0] = '\0';

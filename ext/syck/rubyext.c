@@ -50,7 +50,7 @@ typedef struct {
  * symbols and constants
  */
 static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_haskey, s_match, s_keys, s_unpack, s_tr_bang, s_default_set, s_tag_read_class, s_tag_subclasses, s_resolver, s_push, s_emitter, s_level, s_detect_implicit, s_node_import, s_out, s_input, s_intern, s_transform, s_yaml_new, s_yaml_initialize, s_node_export, s_to_yaml, s_write, s_set_resolver;
-static ID s_tags, s_domain, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
+static ID s_tags, s_kind, s_name, s_options, s_type_id, s_type_id_set, s_style, s_style_set, s_value, s_value_set;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 static VALUE sym_1quote, sym_2quote, sym_fold, sym_literal, sym_plain, sym_inline;
@@ -71,7 +71,7 @@ static VALUE syck_node_transform( VALUE );
  * handler prototypes
  */
 SYMID rb_syck_load_handler _((SyckParser *, SyckNode *));
-void rb_syck_err_handler _((SyckParser *, char *));
+void rb_syck_err_handler _((SyckParser *, const char *));
 SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
 void rb_syck_emitter_handler _((SyckEmitter *, st_data_t));
@@ -104,7 +104,8 @@ rb_syck_compile(self, port)
     int taint;
     char *ret;
     VALUE bc;
-    bytestring_t *sav; 
+    bytestring_t *sav;
+    void *data;
 
     SyckParser *parser = syck_new_parser();
     taint = syck_parser_assign_io(parser, &port);
@@ -113,7 +114,7 @@ rb_syck_compile(self, port)
     syck_parser_implicit_typing( parser, 0 );
     syck_parser_taguri_expansion( parser, 0 );
     oid = syck_parse( parser );
-    syck_lookup_sym( parser, oid, (char **)&sav );
+    if (syck_lookup_sym( parser, oid, &data )) sav = data;
 
     ret = S_ALLOCA_N( char, strlen( sav->buffer ) + 3 );
     ret[0] = '\0';
@@ -646,7 +647,7 @@ rb_syck_load_handler(p, n)
 void
 rb_syck_err_handler(p, msg)
     SyckParser *p;
-    char *msg;
+    const char *msg;
 {
     char *endl = p->cursor;
 
@@ -962,7 +963,7 @@ syck_resolver_node_import( self, node )
     VALUE self, node;
 {
     SyckNode *n;
-    VALUE obj;
+    VALUE obj = Qnil;
     int i = 0;
     Data_Get_Struct(node, SyckNode, n);
 
@@ -1229,7 +1230,7 @@ VALUE
 syck_defaultresolver_detect_implicit( self, val )
     VALUE self, val;
 {
-    char *type_id;
+    const char *type_id;
     VALUE tmp = rb_check_string_type(val);
 
     if ( !NIL_P(tmp) )
@@ -1423,6 +1424,10 @@ syck_node_mark( n )
                 rb_gc_mark( syck_map_read( n, map_value, i ) );
             }
         break;
+
+	case syck_str_kind:
+	    /* nothing */
+	break;
     }
 #if 0 /* maybe needed */
     if ( n->shortcut ) syck_node_mark( n->shortcut ); /* caution: maybe cyclic */
@@ -1793,7 +1798,7 @@ syck_node_transform( self )
     VALUE self;
 {
     VALUE t;
-    SyckNode *n;
+    SyckNode *n = NULL;
     SyckNode *orig_n;
     Data_Get_Struct(self, SyckNode, orig_n);
     t = Data_Wrap_Struct( cNode, syck_node_mark, syck_free_node, 0 );

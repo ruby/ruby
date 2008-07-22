@@ -21,7 +21,7 @@
 void
 try_tag_implicit( SyckNode *n, int taguri )
 {
-    char *tid = "";
+    const char *tid = "";
     switch ( n->kind )
     {
         case syck_str_kind:
@@ -45,9 +45,10 @@ try_tag_implicit( SyckNode *n, int taguri )
     }
 }
 
-char *syck_match_implicit( char *str, size_t len )
+const char *
+syck_match_implicit( const char *str, size_t len )
 {
-    char *cursor, *limit, *marker;
+    const char *cursor, *limit, *marker;
     cursor = str;
     limit = str + len;
 
@@ -1585,7 +1586,7 @@ yy201:	++YYCURSOR;
 
 /* Remove ending fragment and compare types */
 int
-syck_tagcmp( char *tag1, char *tag2 )
+syck_tagcmp( const char *tag1, const char *tag2 )
 {
     if ( tag1 == tag2 ) return 1;
     if ( tag1 == NULL || tag2 == NULL ) return 0;
