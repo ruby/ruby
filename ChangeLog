@@ -1,3 +1,8 @@
+Wed Jul 23 03:19:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (struct input_code.name, input_codename):
+	  constified.
+
 Wed Jul 23 03:02:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck: suppress warnings.
