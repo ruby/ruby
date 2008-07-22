@@ -1,3 +1,7 @@
+Tue Jul 22 20:33:54 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/rdoc/test_rdoc_parser_ruby.rb (teardown): close tempfile.
+
 Tue Jul 22 19:38:38 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: added two comments
