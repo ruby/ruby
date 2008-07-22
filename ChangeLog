@@ -1,3 +1,9 @@
+Tue Jul 22 11:05:08 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_dir.rb: use realpath of tmpdir. [ruby-dev:35481]
+
+	* test/ruby/test_process.rb: ditto.
+
 Tue Jul 22 09:51:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el: fix here-doc strings with inner quotes.  patches

@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'tmpdir'
+require 'pathname'
 require_relative 'envutil'
 
 class TestProcess < Test::Unit::TestCase
@@ -21,6 +22,7 @@ class TestProcess < Test::Unit::TestCase
 
   def with_tmpchdir
     Dir.mktmpdir {|d|
+      d = Pathname.new(d).realpath.to_s
       Dir.chdir(d) {
         yield d
       }
