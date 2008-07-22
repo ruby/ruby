@@ -309,7 +309,7 @@ ossl_pkcs7_alloc(VALUE klass)
 static VALUE
 ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 {
-    PKCS7 *p7;
+    PKCS7 *p7, *pkcs = DATA_PTR(self);
     BIO *in;
     VALUE arg;
 
@@ -317,10 +317,12 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(arg);
-    p7 = PEM_read_bio_PKCS7(in, (PKCS7 **)&DATA_PTR(self), NULL, NULL);
+    p7 = PEM_read_bio_PKCS7(in, &pkcs, NULL, NULL);
+    DATA_PTR(self) = pkcs;
     if (!p7) {
-	BIO_reset(in);
-        p7 = d2i_PKCS7_bio(in, (PKCS7 **)&DATA_PTR(self));
+	(void)BIO_reset(in);
+        p7 = d2i_PKCS7_bio(in, &pkcs);
+	DATA_PTR(self) = pkcs;
     }
     BIO_free(in);
     ossl_pkcs7_set_data(self, Qnil);
@@ -778,7 +780,7 @@ ossl_pkcs7_to_der(VALUE self)
     if((len = i2d_PKCS7(pkcs7, NULL)) <= 0)
 	ossl_raise(ePKCS7Error, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_PKCS7(pkcs7, &p) <= 0)
 	ossl_raise(ePKCS7Error, NULL);
     ossl_str_adjust(str, p);

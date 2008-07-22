@@ -36,8 +36,6 @@ static VALUE ossl_ssl_session_alloc(VALUE klass)
 static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 {
 	SSL_SESSION *ctx = NULL;
-	VALUE obj;
-	unsigned char *p;
 
 	if (RDATA(self)->data)
 		ossl_raise(eSSLSession, "SSL Session already initialized");
@@ -55,7 +53,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
 
 		if (!ctx) {
-			BIO_reset(in);
+			(void)BIO_reset(in);
 			ctx = d2i_SSL_SESSION_bio(in, NULL);
 		}
 

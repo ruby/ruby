@@ -1,3 +1,7 @@
+Wed Jul 23 00:34:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl: suppress warnings.
+
 Tue Jul 22 23:01:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/syck/rubyext.c, ext/syck/yaml2byte.c, ext/syck/emitter.c,

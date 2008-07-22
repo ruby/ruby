@@ -106,7 +106,7 @@ extern VALUE eOSSLError;
 /*
  * String to HEXString conversion
  */
-int string2hex(char *, int, char **, int *);
+int string2hex(const unsigned char *, int, char **, int *);
 
 /*
  * Data Conversion

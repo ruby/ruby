@@ -91,7 +91,7 @@ static VALUE
 ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 {
     BIO *in;
-    X509_CRL *crl;
+    X509_CRL *crl, *x = DATA_PTR(self);
     VALUE arg;
 
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
@@ -99,10 +99,12 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
     }
     arg = ossl_to_der_if_possible(arg);
     in = ossl_obj2bio(arg);
-    crl = PEM_read_bio_X509_CRL(in, (X509_CRL **)&DATA_PTR(self), NULL, NULL);
+    crl = PEM_read_bio_X509_CRL(in, &x, NULL, NULL);
+    DATA_PTR(self) = x;
     if (!crl) {
-	BIO_reset(in);
-	crl = d2i_X509_CRL_bio(in, (X509_CRL **)&DATA_PTR(self));
+	(void)BIO_reset(in);
+	crl = d2i_X509_CRL_bio(in, &x);
+	DATA_PTR(self) = x;
     }
     BIO_free(in);
     if (!crl) ossl_raise(eX509CRLError, NULL);

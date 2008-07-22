@@ -274,16 +274,15 @@ static VALUE
 ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE oid, value, critical;
-    unsigned char *p;
-    X509_EXTENSION *ext;
+    const unsigned char *p;
+    X509_EXTENSION *ext, *x = DATA_PTR(self);
 
     GetX509Ext(self, ext);
     if(rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1){
 	oid = ossl_to_der_if_possible(oid);
 	StringValue(oid);
-	p  = RSTRING_PTR(oid);
-	if(!d2i_X509_EXTENSION((X509_EXTENSION**)&DATA_PTR(self),
-			       &p, RSTRING_LEN(oid)))
+	p = (unsigned char *)RSTRING_PTR(oid);
+	if(!d2i_X509_EXTENSION(&x, &p, RSTRING_LEN(oid)) && (DATA_PTR(self) = x, 1))
 	    ossl_raise(eX509ExtError, NULL);
 	return self;
     }
@@ -410,7 +409,7 @@ ossl_x509ext_to_der(VALUE obj)
     if((len = i2d_X509_EXTENSION(ext, NULL)) <= 0)
 	ossl_raise(eX509ExtError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_X509_EXTENSION(ext, &p) < 0)
 	ossl_raise(eX509ExtError, NULL);
     ossl_str_adjust(str, p);

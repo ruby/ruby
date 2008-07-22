@@ -56,14 +56,14 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 {
     NETSCAPE_SPKI *spki;
     VALUE buffer;
-    unsigned char *p;
+    const unsigned char *p;
 	
     if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 	return self;
     }
     StringValue(buffer);
     if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING_PTR(buffer), -1))) {
-	p = RSTRING_PTR(buffer);
+	p = (unsigned char *)RSTRING_PTR(buffer);
 	if (!(spki = d2i_NETSCAPE_SPKI(NULL, &p, RSTRING_LEN(buffer)))) {
 	    ossl_raise(eSPKIError, NULL);
 	}
@@ -87,7 +87,7 @@ ossl_spki_to_der(VALUE self)
     if ((len = i2d_NETSCAPE_SPKI(spki, NULL)) <= 0)
         ossl_raise(eX509CertError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if (i2d_NETSCAPE_SPKI(spki, &p) <= 0)
         ossl_raise(eX509CertError, NULL);
     ossl_str_adjust(str, p);
@@ -172,7 +172,7 @@ ossl_spki_get_challenge(VALUE self)
 	return rb_str_new(0, 0);
     }
 
-    return rb_str_new(spki->spkac->challenge->data,
+    return rb_str_new((const char *)spki->spkac->challenge->data,
 		      spki->spkac->challenge->length);
 }
 

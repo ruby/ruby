@@ -96,7 +96,6 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_MD_CTX *ctx;
     const EVP_MD *md;
-    char *name;
     VALUE type, data;
 
     rb_scan_args(argc, argv, "11", &type, &data);
@@ -182,7 +181,7 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
         rb_str_resize(str, EVP_MD_CTX_size(ctx));
     }
 
-    EVP_DigestFinal_ex(ctx, RSTRING_PTR(str), NULL);
+    EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL);
 
     return str;
 }

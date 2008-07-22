@@ -135,11 +135,12 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	    rb_block_call(tmp, rb_intern("each"), 0, 0, ossl_x509name_init_i, args);
 	}
 	else{
-	    unsigned char *p;
+	    const unsigned char *p;
 	    VALUE str = ossl_to_der_if_possible(arg);
+	    X509_NAME *x = DATA_PTR(self);
 	    StringValue(str);
-	    p = RSTRING_PTR(str);
-	    if(!d2i_X509_NAME((X509_NAME**)&DATA_PTR(self), &p, RSTRING_LEN(str))){
+	    p = (unsigned char *)RSTRING_PTR(str);
+	    if(!d2i_X509_NAME(&x, &p, RSTRING_LEN(str)) && (DATA_PTR(self) = x, 1)){
 		ossl_raise(eX509NameError, NULL);
 	    }
 	}
@@ -164,7 +165,7 @@ VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
     if(NIL_P(type)) type = rb_aref(OBJECT_TYPE_TEMPLATE, oid);
     GetX509Name(self, name);
     if (!X509_NAME_add_entry_by_txt(name, RSTRING_PTR(oid), NUM2INT(type),
-		RSTRING_PTR(value), RSTRING_LEN(value), -1, 0)) {
+		(const unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value), -1, 0)) {
 	ossl_raise(eX509NameError, NULL);
     }
 
@@ -245,7 +246,7 @@ ossl_x509name_to_a(VALUE self)
 	}
 	short_name = OBJ_nid2sn(OBJ_ln2nid(long_name));
 	ary = rb_ary_new3(3, rb_str_new2(short_name),
-        		  rb_str_new(entry->value->data, entry->value->length),
+        		  rb_str_new((const char *)entry->value->data, entry->value->length),
         		  INT2FIX(entry->value->type));
 	rb_ary_push(ret, ary);
     }
@@ -319,7 +320,7 @@ ossl_x509name_to_der(VALUE self)
     if((len = i2d_X509_NAME(name, NULL)) <= 0)
 	ossl_raise(eX509NameError, NULL);
     str = rb_str_new(0, len);
-    p = RSTRING_PTR(str);
+    p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_X509_NAME(name, &p) <= 0)
 	ossl_raise(eX509NameError, NULL);
     ossl_str_adjust(str, p);
