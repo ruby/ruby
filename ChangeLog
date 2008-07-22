@@ -1,4 +1,4 @@
-Wed Jul 23 06:11:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 23 06:25:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck: suppress warnings more.
 
