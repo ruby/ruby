@@ -1146,7 +1146,7 @@ static VALUE
 connect_blocking(void *data)
 {
     struct connect_arg *arg = data;
-    return connect(arg->fd, arg->sockaddr, arg->len);
+    return (VALUE)connect(arg->fd, arg->sockaddr, arg->len);
 }
 
 #if defined(SOCKS) && !defined(SOCKS5)
@@ -1154,7 +1154,7 @@ static VALUE
 socks_connect_blocking(void *data)
 {
     struct connect_arg *arg = data;
-    return Rconnect(arg->fd, arg->sockaddr, arg->len);
+    return (VALUE)Rconnect(arg->fd, arg->sockaddr, arg->len);
 }
 #endif
 
@@ -1177,7 +1177,7 @@ ruby_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
     if (socks) func = socks_connect_blocking;
 #endif
     for (;;) {
-	status = BLOCKING_REGION(func, &arg);
+	status = (int)BLOCKING_REGION(func, &arg);
 	if (status < 0) {
 	    switch (errno) {
 	      case EAGAIN:
