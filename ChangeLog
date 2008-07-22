@@ -1,3 +1,9 @@
+Tue Jul 22 09:51:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el: fix here-doc strings with inner quotes.  patches
+	  by Nathan Weizenbaum <nex342 AT gmail.com> from [ruby-core:17615]
+	  through [ruby-core:17910].
+
 Tue Jul 22 04:26:16 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_str_buf_new2): optimization for literals.
