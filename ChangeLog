@@ -1,3 +1,7 @@
+Wed Jul 23 13:53:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/curses/extconf.rb: use try_static_assert.
+
 Wed Jul 23 06:25:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck: suppress warnings more.
