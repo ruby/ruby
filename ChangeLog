@@ -1,3 +1,8 @@
+Wed Jul 23 18:27:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/{stubs,tcltklib}.c, ext/tk/tkutil/tkutil.c: fix warnings
+	  about constness and signedness.
+
 Wed Jul 23 17:04:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/openssl_missing.h (d2i_of_void): define for older

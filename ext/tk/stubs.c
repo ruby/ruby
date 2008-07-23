@@ -318,7 +318,7 @@ ruby_tk_stubs_init(tcl_ip)
         if ((*p_Tk_Init)(tcl_ip) == TCL_ERROR)
             return FAIL_Tk_Init;
 
-        if (!Tk_InitStubs(tcl_ip, "8.1", 0))
+        if (!Tk_InitStubs(tcl_ip, (char *)"8.1", 0))
             return FAIL_Tk_InitStubs;
 
 #ifdef __MACOS__
@@ -357,7 +357,7 @@ ruby_tk_stubs_safeinit(tcl_ip)
         if ((*p_Tk_SafeInit)(tcl_ip) == TCL_ERROR)
             return FAIL_Tk_Init;
 
-        if (!Tk_InitStubs(tcl_ip, "8.1", 0))
+        if (!Tk_InitStubs(tcl_ip, (char *)"8.1", 0))
             return FAIL_Tk_InitStubs;
 
 #ifdef __MACOS__
