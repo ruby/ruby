@@ -1,3 +1,8 @@
+Wed Jul 23 23:19:15 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/socket/test_tcp.rb (test_recvfrom): replace an irrelevant test
+	  for old behavior.
+
 Wed Jul 23 21:38:16 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_marshal.rb: suppress warning during test.
