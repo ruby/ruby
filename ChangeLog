@@ -1,4 +1,6 @@
-Wed Jul 23 18:03:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 23 18:04:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/digest/digest.c (rb_digest_instance_inspect): consitifed.
 
 	* ext/dl/dl.c (rb_ary_to_ptr), ext/dl/ptr.c (rb_dlmem_delete):
 	  suppress warnings.
