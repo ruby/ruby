@@ -1,4 +1,12 @@
-Wed Jul 23 17:51:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 23 18:03:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/dl/dl.c (rb_ary_to_ptr), ext/dl/ptr.c (rb_dlmem_delete):
+	  suppress warnings.
+
+	* ext/dl/ptr.c (rb_dlptr_inspect), ext/dl/sym.c (rb_dlsym_inspect):
+	  use %p conversion.
+
+	* ext/dl/sym.c (rb_dlsym_guardcall): prevent guard from optimization.
 
 	* ext/nkf/nkf-utf8/nkf.c (options): operators without any effect.
 

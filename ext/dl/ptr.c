@@ -18,8 +18,9 @@ static st_table* st_memory_table;
 static void
 rb_dlmem_delete(void *ptr)
 {
+  st_data_t data = (st_data_t)ptr;
   rb_secure(4);
-  st_delete(st_memory_table, (st_data_t*)&ptr, NULL);
+  st_delete(st_memory_table, &data, NULL);
 }
 
 static void
@@ -458,7 +459,7 @@ rb_dlptr_inspect(VALUE self)
   char str[1024];
 
   Data_Get_Struct(self, struct ptr_data, data);
-  snprintf(str, 1023, "#<%s:0x%lx ptr=0x%lx size=%ld free=0x%lx>",
+  snprintf(str, 1023, "#<%s:%p ptr=%p size=%ld free=0x%lx>",
 	   rb_class2name(CLASS_OF(self)), data, data->ptr, data->size,
 	   (long)data->free);
   return rb_str_new2(str);

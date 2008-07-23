@@ -268,7 +268,7 @@ rb_dlsym_inspect(VALUE self)
   str_size = RSTRING(proto)->len + 100;
   str = dlmalloc(str_size);
   snprintf(str, str_size - 1,
-          "#<DL::Symbol:0x%lx func=0x%lx '%s'>",
+          "#<DL::Symbol:%p func=%p '%s'>",
 	   sym, sym->func, RSTRING(proto)->ptr);
   val = rb_tainted_str_new2(str);
   dlfree(str);
@@ -430,6 +430,7 @@ rb_dlsym_guardcall(char type, ANY_TYPE *ret, long *stack, void *func)
   default:
     return 0;
   }
+  (void)guard;
   return 1;
 }
 # ifdef __MSVC_RUNTIME_CHECKS

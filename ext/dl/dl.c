@@ -547,6 +547,8 @@ rb_ary_to_ptr(int argc, VALUE argv[], VALUE self)
   case 0:
     ptr = rb_ary2cary(0, self, &size);
     break;
+  default:
+    return Qnil;
   }
   if (ptr) {
       VALUE p = rb_dlptr_new(ptr, size, dlfree);
