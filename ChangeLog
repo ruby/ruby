@@ -1,4 +1,6 @@
-Wed Jul 23 18:04:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 23 18:05:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.{c,h} (VpIsNegDoubleZero, VpItoV): unused.
 
 	* ext/digest/digest.c (rb_digest_instance_inspect): consitifed.
 

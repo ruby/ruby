@@ -2180,12 +2180,14 @@ VpGetDoubleNegZero(void) /* Returns the value of -0 */
     return nzero;
 }
 
+#if 0
 VP_EXPORT int
 VpIsNegDoubleZero(double v)
 {
     double z = VpGetDoubleNegZero();
     return MemCmp(&v,&z,sizeof(v))==0;
 }
+#endif
 
 VP_EXPORT int
 VpException(unsigned short f, const char *str,int always)
@@ -4154,6 +4156,7 @@ Exit:
     return;
 }
 
+#if 0
 /*
  *  m <- ival
  */
@@ -4214,6 +4217,7 @@ Exit:
 #endif /* _DEBUG */
     return;
 }
+#endif
 
 /*
  * y = SQRT(x),  y*y - x =>0
