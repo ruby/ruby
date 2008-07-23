@@ -1,11 +1,11 @@
-Wed Jul 23 17:48:37 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 23 17:51:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (options): operators without any effect.
 
 	* ext/socket/socket.c (init_inetsock_internal): suppress warnings.
 
 	* ext/socket/socket.c (unixpath, sock_s_unpack_sockaddr_un),
 	  (sock_define_const): constified.
-
-Wed Jul 23 17:37:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c: suppress warnings.  backported r9918 and r10358.
 

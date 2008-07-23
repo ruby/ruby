@@ -1651,7 +1651,7 @@ void options(const unsigned char *cp)
             if (*cp=='1') {
 		/* alias of -t */
 		nop_f = TRUE;
-		*cp++;
+		cp++;
 	    } else if (*cp=='2') {
 		/*
 		 * -t with put/get
@@ -1660,7 +1660,7 @@ void options(const unsigned char *cp)
 		 *
 		 */
 		nop_f = 2;
-		*cp++;
+		cp++;
             } else
 		nop_f = TRUE;
             continue;
