@@ -1,3 +1,7 @@
+Wed Jul 23 17:37:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/zlib/zlib.c: suppress warnings.  backported r9918 and r10358.
+
 Wed Jul 23 17:04:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/openssl_missing.h (d2i_of_void): define for older
