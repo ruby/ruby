@@ -1,4 +1,7 @@
-Wed Jul 23 18:05:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 23 18:27:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/{stubs,tcltklib}.c, ext/tk/tkutil/tkutil.c: fix warnings
+	  about constness and signedness.
 
 	* ext/bigdecimal/bigdecimal.{c,h} (VpIsNegDoubleZero, VpItoV): unused.
 
