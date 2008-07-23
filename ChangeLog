@@ -1,3 +1,8 @@
+Wed Jul 23 10:06:19 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/zlib/test_zlib.rb (TestZlibDeflate#test_params): suppress a
+	  finalizer warning.
+
 Wed Jul 23 06:25:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck: suppress warnings more.

@@ -140,6 +140,7 @@ if defined? Zlib
 
       z = Zlib::Deflate.new
       assert_raise(Zlib::StreamError) { z.params(10000, 10000) }
+      z.close # without this, outputs `zlib(finalizer): the stream was freed prematurely.'
     end
 
     def test_set_dictionary
