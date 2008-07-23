@@ -1,3 +1,7 @@
+Thu Jul 24 07:01:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c: got rid of improper casts.
+
 Wed Jul 23 18:27:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/tk/{stubs,tcltklib}.c, ext/tk/tkutil/tkutil.c: fix warnings
