@@ -4,6 +4,15 @@ require_relative 'marshaltestlib'
 class TestMarshal < Test::Unit::TestCase
   include MarshalTestLib
 
+  def setup
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
+  end
+
   def encode(o)
     Marshal.dump(o)
   end
