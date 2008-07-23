@@ -1224,7 +1224,7 @@ init_inetsock_internal(arg)
     int type = arg->type;
     struct addrinfo *res;
     int fd, status = 0;
-    char *syscall;
+    const char *syscall = 0;
 
     arg->remote.res = sock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
 				    (type == INET_SERVER) ? AI_PASSIVE : 0);
@@ -1907,7 +1907,7 @@ unix_init(sock, path)
     return init_unixsock(sock, path, 0);
 }
 
-static char *
+static const char *
 unixpath(struct sockaddr_un *sockaddr, socklen_t len)
 {
     if (sockaddr->sun_path < (char*)sockaddr + len)
@@ -3846,7 +3846,7 @@ sock_s_unpack_sockaddr_un(self, addr)
     VALUE self, addr;
 {
     struct sockaddr_un * sockaddr;
-    char *sun_path;
+    const char *sun_path;
     VALUE path;
 
     sockaddr = (struct sockaddr_un*)StringValuePtr(addr);
@@ -3873,7 +3873,7 @@ static VALUE mConst;
 
 static void
 sock_define_const(name, value)
-    char *name;
+    const char *name;
     int value;
 {
     rb_define_const(rb_cSocket, name, INT2FIX(value));
