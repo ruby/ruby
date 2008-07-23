@@ -30506,7 +30506,7 @@ Sat Aug 27 20:13:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Thu Aug 25 15:48:58 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/win32ole/win32ole.c: supress warnings. (win32)
+	* ext/win32ole/win32ole.c: suppress warnings. (win32)
 
 Wed Aug 24 11:01:26 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
