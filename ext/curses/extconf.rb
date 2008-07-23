@@ -24,8 +24,7 @@ if make
     have_func(f) || (have_macro(f, curses) && $defs.push(format("-DHAVE_%s", f.upcase)))
   end
   flag = "-D_XOPEN_SOURCE_EXTENDED"
-  src = "int test_var[(sizeof(char*)>sizeof(int))*2-1];"
-  if try_compile(cpp_include(%w[stdio.h stdlib.h]+curses)+src , flag)
+  if try_static_assert("sizeof(char*)>sizeof(int)", %w[stdio.h stdlib.h]+curses , flag)
     $defs << flag
   end
   create_makefile("curses")
