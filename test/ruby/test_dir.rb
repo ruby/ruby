@@ -7,6 +7,8 @@ require 'pathname'
 class TestDir < Test::Unit::TestCase
 
   def setup
+    @verbose = $VERBOSE
+    $VERBOSE = nil
     @root = Pathname.new(Dir.mktmpdir('__test_dir__')).realpath.to_s
     @nodir = File.join(@root, "dummy")
     for i in ?a..?z
@@ -19,6 +21,7 @@ class TestDir < Test::Unit::TestCase
   end
 
   def teardown
+    $VERBOSE = @verbose
     FileUtils.remove_entry_secure @root if File.directory?(@root)
   end
 
