@@ -993,7 +993,7 @@ ole_cp2encoding(UINT cp)
 	  case CP_MACCP:
 	  case CP_THREAD_ACP:
 	    if (!pGetCPInfoEx) {
-		pGetCPInfoEx = (BOOL (*)(UINT, DWORD, LPVOID))
+		pGetCPInfoEx = (BOOL (*)(UINT, DWORD, struct myCPINFOEX *))
 		    GetProcAddress(GetModuleHandle("kernel32"), "GetCPInfoEx");
 		if (!pGetCPInfoEx) {
 		    pGetCPInfoEx = (void*)-1;
@@ -1289,7 +1289,8 @@ ole_ary_m_entry(VALUE val, long *pid)
     return obj;
 }
 
-static void * get_ptr_of_variant(VARIANT *pvar)
+static void *
+get_ptr_of_variant(VARIANT *pvar)
 {
     switch(V_VT(pvar)) {
     case VT_UI1:
@@ -1766,13 +1767,13 @@ ole_val2olevariantdata(VALUE val, VARTYPE vt, struct olevariantdata *pvar)
 
     if (((vt & ~VT_BYREF) ==  (VT_ARRAY | VT_UI1)) && TYPE(val) == T_STRING) {
         long len = RSTRING_LEN(val);
-        char *pdest = NULL;
+        void *pdest = NULL;
         SAFEARRAY *p = NULL;
         SAFEARRAY *psa = SafeArrayCreateVector(VT_UI1, 0, len);
         if (!psa) {
             rb_raise(rb_eRuntimeError, "fail to SafeArrayCreateVector");
         }
-        hr = SafeArrayAccessData(psa, (void **)&pdest);
+        hr = SafeArrayAccessData(psa, &pdest);
         if (SUCCEEDED(hr)) {
             memcpy(pdest, RSTRING_PTR(val), len);
             SafeArrayUnaccessData(psa);
@@ -2150,10 +2151,10 @@ ole_variant2val(VARIANT *pvar)
 
     case VT_UNKNOWN:
     {
-
         /* get IDispatch interface from IUnknown interface */
         IUnknown *punk;
         IDispatch *pDispatch;
+        void *p;
         HRESULT hr;
 
         if (V_ISBYREF(pvar))
@@ -2162,9 +2163,9 @@ ole_variant2val(VARIANT *pvar)
             punk = V_UNKNOWN(pvar);
 
         if(punk != NULL) {
-           hr = punk->lpVtbl->QueryInterface(punk, &IID_IDispatch,
-                                             (void **)&pDispatch);
+           hr = punk->lpVtbl->QueryInterface(punk, &IID_IDispatch, &p);
            if(SUCCEEDED(hr)) {
+               pDispatch = p;
                obj = create_win32ole_object(cWIN32OLE, pDispatch, 0, 0);
            }
         }
@@ -2529,6 +2530,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
     IBindCtx *pBindCtx;
     IMoniker *pMoniker;
     IDispatch *pDispatch;
+    void *p;
     HRESULT hr;
     OLECHAR *pbuf;
     ULONG eaten = 0;
@@ -2551,8 +2553,8 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
                   StringValuePtr(moniker));
     }
     hr = pMoniker->lpVtbl->BindToObject(pMoniker, pBindCtx, NULL, 
-                                        &IID_IDispatch,
-                                        (void**)&pDispatch);
+                                        &IID_IDispatch, &p);
+    pDispatch = p;
     OLE_RELEASE(pMoniker);
     OLE_RELEASE(pBindCtx);
 
@@ -2582,6 +2584,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
     CLSID   clsid;
     OLECHAR *pBuf;
     IDispatch *pDispatch;
+    void *p;
     IUnknown *pUnknown;
 
     rb_secure(4);
@@ -2610,8 +2613,8 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
         ole_raise(hr, eWIN32OLERuntimeError, 
                   "OLE server `%s' not running", StringValuePtr(svr_name));
     }
-    hr = pUnknown->lpVtbl->QueryInterface(pUnknown, &IID_IDispatch,
-                                             (void **)&pDispatch);
+    hr = pUnknown->lpVtbl->QueryInterface(pUnknown, &IID_IDispatch, &p);
+    pDispatch = p;
     if(FAILED(hr)) {
         OLE_RELEASE(pUnknown);
         ole_raise(hr, eWIN32OLERuntimeError, 
@@ -3085,6 +3088,7 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     CLSID   clsid;
     OLECHAR *pBuf;
     IDispatch *pDispatch;
+    void *p;
 
     rb_secure(4);
     rb_call_super(0, 0);
@@ -3117,13 +3121,14 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
 
     /* get IDispatch interface */
     hr = CoCreateInstance(&clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
-                          &IID_IDispatch, (void**)&pDispatch);
+                          &IID_IDispatch, &p);
+    pDispatch = p;
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
                   "failed to create WIN32OLE object from `%s'",
                   StringValuePtr(svr_name));
     }
-    
+
     ole_set_member(self, pDispatch);
     return self;
 }
@@ -3863,6 +3868,7 @@ fole_each(VALUE self)
     VARIANT result;
     HRESULT hr;
     IEnumVARIANT *pEnum = NULL;
+    void *p;
 
     RETURN_ENUMERATOR(self, 0, 0);
 
@@ -3885,14 +3891,17 @@ fole_each(VALUE self)
         ole_raise(hr, eWIN32OLERuntimeError, "failed to get IEnum Interface");
     }
 
-    if (V_VT(&result) == VT_UNKNOWN)
+    if (V_VT(&result) == VT_UNKNOWN) {
         hr = V_UNKNOWN(&result)->lpVtbl->QueryInterface(V_UNKNOWN(&result),
                                                         &IID_IEnumVARIANT,
-                                                        (void**)&pEnum);
-    else if (V_VT(&result) == VT_DISPATCH)
+                                                        &p);
+        pEnum = p;
+    } else if (V_VT(&result) == VT_DISPATCH) {
         hr = V_DISPATCH(&result)->lpVtbl->QueryInterface(V_DISPATCH(&result),
                                                          &IID_IEnumVARIANT,
-                                                         (void**)&pEnum);
+                                                         &p);
+        pEnum = p;
+    }
     if (FAILED(hr) || !pEnum) {
         VariantClear(&result);
         ole_raise(hr, rb_eRuntimeError, "failed to get IEnum Interface");
@@ -4358,6 +4367,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
     IID iid;
     struct oledata *pole;
     IDispatch *pDispatch;
+    void *p;
          
     pBuf  = ole_vstr2wc(str_iid);
     hr = CLSIDFromString(pBuf, &iid);
@@ -4374,13 +4384,14 @@ fole_query_interface(VALUE self, VALUE str_iid)
     }
 
     hr = pole->pDispatch->lpVtbl->QueryInterface(pole->pDispatch, &iid,
-                                                 (void **)&pDispatch);
+                                                 &p);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError, 
                   "failed to get interface `%s'", 
                   StringValuePtr(str_iid));
     }
 
+    pDispatch = p;
     return create_win32ole_object(cWIN32OLE, pDispatch, 0, 0);
 }
 
@@ -4644,13 +4655,14 @@ fole_activex_initialize(VALUE self)
 {
     struct oledata *pole;
     IPersistMemory *pPersistMemory;
+    void *p;
 
     HRESULT hr = S_OK;
 
     OLEData_Get_Struct(self, pole);
 
-    hr = pole->pDispatch->lpVtbl->QueryInterface(pole->pDispatch, &IID_IPersistMemory,
-                                                 (void **)&pPersistMemory);
+    hr = pole->pDispatch->lpVtbl->QueryInterface(pole->pDispatch, &IID_IPersistMemory, &p);
+    pPersistMemory = p;
     if (SUCCEEDED(hr)) {
         hr = pPersistMemory->lpVtbl->InitNew(pPersistMemory);
         OLE_RELEASE(pPersistMemory);
@@ -7851,6 +7863,7 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
     HRESULT hr;
     IProvideClassInfo2 *pProvideClassInfo2;
     IProvideClassInfo *pProvideClassInfo;
+    void *p;
 
     IDispatch *pDispatch;
     ITypeInfo *pTypeInfo;
@@ -7864,8 +7877,9 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
     pDispatch = pole->pDispatch;
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IProvideClassInfo2,
-                                           (void**)&pProvideClassInfo2);
+                                           &p);
     if (SUCCEEDED(hr)) {
+        pProvideClassInfo2 = p;
         hr = pProvideClassInfo2->lpVtbl->GetGUID(pProvideClassInfo2,
                                                  GUIDKIND_DEFAULT_SOURCE_DISP_IID,
                                                  piid);
@@ -7879,9 +7893,9 @@ find_default_source(VALUE ole, IID *piid, ITypeInfo **ppTypeInfo)
     }
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IProvideClassInfo,
-                                           (void**)&pProvideClassInfo);
+					   &p);
     if (SUCCEEDED(hr)) {
-
+        pProvideClassInfo = p;
         hr = pProvideClassInfo->lpVtbl->GetClassInfo(pProvideClassInfo,
                                                      &pTypeInfo);
         OLE_RELEASE(pProvideClassInfo);
@@ -7964,6 +7978,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     IEVENTSINKOBJ *pIEV;
     DWORD dwCookie;
     struct oleeventdata *poleev;
+    void *p;
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &ole, &itf);
@@ -7992,12 +8007,13 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     pDispatch = pole->pDispatch;
     hr = pDispatch->lpVtbl->QueryInterface(pDispatch,
                                            &IID_IConnectionPointContainer,
-                                           (void **)&pContainer);
+                                           &p);
     if (FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
         ole_raise(hr, rb_eRuntimeError,
                   "failed to query IConnectionPointContainer");
     }
+    pContainer = p;
 
     hr = pContainer->lpVtbl->FindConnectionPoint(pContainer,
                                                  &iid,
