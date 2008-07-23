@@ -1,3 +1,8 @@
+Wed Jul 23 17:04:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/openssl_missing.h (d2i_of_void): define for older
+	  versions.  [ruby-dev:35637]
+
 Wed Jul 23 13:53:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/curses/extconf.rb: use try_static_assert.
