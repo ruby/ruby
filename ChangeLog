@@ -1,3 +1,7 @@
+Fri Jul 25 04:12:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf.c (rb_nkf_convert): output of mime encode is US-ASCII.
+
 Fri Jul 25 02:43:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* sample/coverage.rb: move from lib/coverage.rb because this remains in

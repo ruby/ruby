@@ -169,7 +169,10 @@ rb_nkf_convert(VALUE obj, VALUE opt, VALUE src)
     rb_str_set_len(result, output_ctr);
     OBJ_INFECT(result, src);
 
-    rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
+    if (mimeout_f)
+	rb_enc_associate(result, rb_usascii_encoding());
+    else
+	rb_enc_associate(result, rb_nkf_enc_get(nkf_enc_name(output_encoding)));
 
     return result;
 }
