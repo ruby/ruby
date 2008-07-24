@@ -1,3 +1,8 @@
+Fri Jul 25 00:10:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext, rb_find_file): converts Windows style path
+	  to Cygwin path.  [ruby-dev:35647]
+
 Thu Jul 24 16:30:21 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (exit_handler): use st_free_table() to free socklist.
