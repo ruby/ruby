@@ -4388,6 +4388,25 @@ file_load_ok(file)
     return 1;
 }
 
+#ifdef __CYGWIN__
+static void
+intern_cygwin_path(volatile VALUE *path)
+{
+    char rubylib[MAXPATHLEN];
+    VALUE str = *path;
+    const char *p = RSTRING_PTR(str);
+
+    if (*p == '\\' || has_drive_letter(p)) {
+	if (cygwin_conv_to_posix_path(p, rubylib) == 0) {
+	    *path = rb_str_new2(rubylib);
+	}
+    }
+}
+#define intern_path(str) intern_cygwin_path(&(str))
+#else
+#define intern_path(str) (void)(str)
+#endif
+
 extern VALUE rb_load_path;
 
 int
@@ -4431,6 +4450,7 @@ rb_find_file_ext(filep, ext)
 
 	SafeStringValue(str);
 	if (RSTRING(str)->len == 0) continue;
+	intern_path(str);
 	path = RSTRING(str)->ptr;
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);
@@ -4492,6 +4512,7 @@ rb_find_file(path)
 	    VALUE str = RARRAY(rb_load_path)->ptr[i];
 	    SafeStringValue(str);
 	    if (RSTRING(str)->len > 0) {
+		intern_path(str);
 		rb_ary_push(tmp, str);
 	    }
 	}
@@ -4551,6 +4572,7 @@ define_filetest_function(name, func, argc)
  *  file:
  *     
  *  The permission bits <code>0644</code> (in octal) would thus be
+		intern_path(str);
  *  interpreted as read/write for owner, and read-only for group and
  *  other. Higher-order bits may also be used to indicate the type of
  *  file (plain, directory, pipe, socket, and so on) and various other
