@@ -2448,6 +2448,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	});
     }
     else {
+	DWORD size;
 	wbuf.len = len;
 	wbuf.buf = buf;
 	memset(&wol, 0, sizeof(wol));
@@ -2456,29 +2457,33 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	    if (input) {
 		flg = flags;
 		if (addr && addrlen)
-		    ret = WSARecvFrom(s, &wbuf, 1, &r, &flg, addr, addrlen, &wol,
-				      NULL);
+		    ret = WSARecvFrom(s, &wbuf, 1, &size, &flg, addr, addrlen,
+				      &wol, NULL);
 		else
-		    ret = WSARecv(s, &wbuf, 1, &r, &flg, &wol, NULL);
+		    ret = WSARecv(s, &wbuf, 1, &size, &flg, &wol, NULL);
 	    }
 	    else {
 		if (addr && addrlen)
-		    ret = WSASendTo(s, &wbuf, 1, &r, flags, addr, *addrlen, &wol,
-				    NULL);
+		    ret = WSASendTo(s, &wbuf, 1, &size, flags, addr, *addrlen,
+				    &wol, NULL);
 		else
-		    ret = WSASend(s, &wbuf, 1, &r, flags, &wol, NULL);
+		    ret = WSASend(s, &wbuf, 1, &size, flags, &wol, NULL);
 	    }
-	    err = WSAGetLastError();
 	});
 
-	if (ret == SOCKET_ERROR && err == WSA_IO_PENDING) {
+	if (ret != SOCKET_ERROR) {
+	    r = size;
+	}
+	else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
 	    switch (rb_w32_wait_events_blocking(&wol.hEvent, 1, INFINITE)) {
 	      case WAIT_OBJECT_0:
 		RUBY_CRITICAL(
-		    ret = WSAGetOverlappedResult(s, &wol, &r, TRUE, &flg)
+		    ret = WSAGetOverlappedResult(s, &wol, &size, TRUE, &flg)
 		    );
-		if (ret)
+		if (ret) {
+		    r = size;
 		    break;
+		}
 		/* thru */
 	      default:
 		errno = map_errno(err);
@@ -2490,7 +2495,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 		break;
 	    }
 	}
-	else if (ret == SOCKET_ERROR) {
+	else {
 	    errno = map_errno(err);
 	    r = -1;
 	}
