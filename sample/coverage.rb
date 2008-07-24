@@ -1,5 +1,7 @@
 require "coverage.so"
 
+Coverage.start
+
 ext = ENV["COVERUBY_EXT"] || ".cov"
 accum = ENV["COVERUBY_ACCUM"]
 accum = !accum || accum == "" || !(%w(f n 0).include?(accum[0]))

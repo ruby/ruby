@@ -1,3 +1,8 @@
+Fri Jul 25 02:43:11 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* sample/coverage.rb: move from lib/coverage.rb because this remains in
+	  an early phase of development.
+
 Fri Jul 25 00:10:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext, rb_find_file): converts Windows style path
