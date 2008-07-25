@@ -1,3 +1,9 @@
+Fri Jul 25 23:35:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils#split_header_value):
+	  reduce backtrack.  based on a fix by Christian Neukirchen
+	  <chneukirchen AT gmail.com>.
+
 Fri Jul 25 21:55:38 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/enc/test_koi8.rb: move from test/ruby/test_koi8.rb.
