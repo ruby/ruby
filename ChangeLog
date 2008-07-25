@@ -1,3 +1,7 @@
+Fri Jul 25 21:55:38 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/enc/test_koi8.rb: move from test/ruby/test_koi8.rb.
+
 Fri Jul 25 21:09:32 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke, add_event_callback,
