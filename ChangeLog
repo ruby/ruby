@@ -1,3 +1,8 @@
+Fri Jul 25 21:09:32 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke, add_event_callback,
+	  rescue_callback): refactoring.
+
 Fri Jul 25 20:52:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/err_in_callback.rb : add test of raising

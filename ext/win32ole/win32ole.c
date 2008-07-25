@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.8"
+#define WIN32OLE_VERSION "1.2.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3229,7 +3229,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     if (is_bracket) {
         DispID = DISPID_VALUE;
         argc += 1;
-        rb_funcall(paramS, rb_intern("unshift"), 1, cmd);
+	rb_ary_unshift(paramS, cmd);
     } else {
         wcmdname = ole_vstr2wc(cmd);
         hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
@@ -7511,12 +7511,10 @@ rescue_callback(VALUE arg)
 {
     
     VALUE e = rb_errinfo();
-    VALUE c = rb_funcall(e, rb_intern("class"), 0);
     VALUE bt = rb_funcall(e, rb_intern("backtrace"), 0);
     VALUE msg = rb_funcall(e, rb_intern("message"), 0);
-    c = rb_funcall(c, rb_intern("to_s"), 0);
     bt = rb_ary_entry(bt, 0);
-    fprintf(stdout, "%s: %s (%s)\n", StringValuePtr(bt), StringValuePtr(msg), StringValuePtr(c));
+    fprintf(stdout, "%s: %s (%s)\n", StringValuePtr(bt), StringValuePtr(msg), rb_obj_classname(e));
     rb_backtrace();
     ruby_finalize();
     exit(-1);
@@ -8097,10 +8095,7 @@ add_event_call_back(VALUE obj, VALUE event, VALUE data)
         events = rb_ary_new();
         rb_ivar_set(obj, id_events, events);
     }
-    at = ole_search_event_at(events, event);
-    if (at >= 0) {
-        rb_ary_delete_at(events, at);
-    }
+    ole_delete_event(events, event);
     rb_ary_push(events, data);
 }
 
