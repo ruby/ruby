@@ -1,3 +1,9 @@
+Fri Jul 25 23:35:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils#split_header_value):
+	  reduce backtrack.  based on a fix by Christian Neukirchen
+	  <chneukirchen AT gmail.com>.
+
 Fri Jul 25 19:45:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regex.c (xmalloc, xrealloc, xfree): not to use ruby managed memory.
