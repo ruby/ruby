@@ -1,3 +1,8 @@
+Fri Jul 25 15:52:40 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (vm_invoke_proc): skip setting safe_level if
+	  it from bmethod.  This change makes test/ruby/test_proc.rb pass.
+
 Fri Jul 25 10:00:00 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: refactoring/cleanup of

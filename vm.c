@@ -513,7 +513,9 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
-	th->safe_level = proc->safe_level;
+	if (!proc->is_from_method) {
+	    th->safe_level = proc->safe_level;
+	}
 	val = invoke_block_from_c(th, &proc->block, self, argc, argv, blockptr, 0);
     }
     TH_POP_TAG();
