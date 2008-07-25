@@ -1,3 +1,8 @@
+Fri Jul 25 10:00:00 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/test_transcode.rb: refactoring/cleanup of
+	  test_iso_2022_jp(_1)
+
 Fri Jul 25 04:12:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_convert): output of mime encode is US-ASCII.
