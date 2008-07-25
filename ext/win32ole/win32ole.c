@@ -8089,7 +8089,6 @@ fev_s_msg_loop(VALUE klass)
 static void
 add_event_call_back(VALUE obj, VALUE event, VALUE data)
 {
-    long at = -1;
     VALUE events = rb_ivar_get(obj, id_events);
     if (NIL_P(events) || TYPE(events) != T_ARRAY) {
         events = rb_ary_new();

@@ -1,3 +1,8 @@
+Sat Jul 26 07:44:14 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (add_event_call_back): remove unused 
+	  variable.
+
 Fri Jul 25 23:48:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_sweep, obj_free, run_final): defer finalizers of IO and
