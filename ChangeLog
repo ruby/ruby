@@ -1,3 +1,8 @@
+Fri Jul 25 23:48:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_sweep, obj_free, run_final): defer finalizers of IO and
+	  Data.  [ruby-dev:35578]
+
 Fri Jul 25 23:35:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils#split_header_value):

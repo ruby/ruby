@@ -1316,6 +1316,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	}
 	break;
 
+      case T_UNDEF:
+	break;
+
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%lx(%p) %s",
 	       obj->as.basic.flags & T_MASK, obj,
@@ -1323,7 +1326,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
     }
 }
 
-static void obj_free(rb_objspace_t *, VALUE);
+static int obj_free(rb_objspace_t *, VALUE);
 
 static void
 finalize_list(rb_objspace_t *objspace, RVALUE *p)
@@ -1401,11 +1404,9 @@ gc_sweep(rb_objspace_t *objspace)
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
-		if (p->as.basic.flags) {
-		    obj_free(objspace, (VALUE)p);
-		}
-		if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
-		    p->as.free.flags = FL_MARK; /* remain marked */
+		if (p->as.basic.flags && obj_free(objspace, (VALUE)p) ||
+		    need_call_final && FL_TEST(p, FL_FINALIZE)) {
+		    p->as.free.flags |= FL_MARK; /* remain marked */
 		    p->as.free.next = final_list;
 		    final_list = p;
 		}
@@ -1469,7 +1470,7 @@ rb_gc_force_recycle(VALUE p)
     freelist = RANY(p);
 }
 
-static void
+static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
     switch (RANY(obj)->as.basic.flags & T_MASK) {
@@ -1526,7 +1527,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 		xfree(DATA_PTR(obj));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
-		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+		RANY(obj)->as.basic.flags &= ~T_MASK;
+		RANY(obj)->as.basic.flags |= T_UNDEF;
+		return 1;
 	    }
 	}
 	break;
@@ -1541,7 +1544,12 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
-	    rb_io_fptr_finalize(RANY(obj)->as.file.fptr);
+	    rb_io_t *fptr = RANY(obj)->as.file.fptr;
+	    RANY(obj)->as.basic.flags &= ~T_MASK;
+	    RANY(obj)->as.basic.flags |= T_UNDEF;
+	    RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
+	    RDATA(obj)->data = fptr;
+	    return 1;
 	}
 	break;
       case T_RATIONAL:
@@ -1570,7 +1578,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    xfree(RANY(obj)->as.node.u1.node);
 	    break;
 	}
-	return;			/* no need to free iv_tbl */
+	break;			/* no need to free iv_tbl */
 
       case T_STRUCT:
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
@@ -1579,10 +1587,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	break;
 
+      case T_UNDEF:
+	break;
+
       default:
 	rb_bug("gc_sweep(): unknown data type 0x%lx(%p)",
 	       RANY(obj)->as.basic.flags & T_MASK, (void*)obj);
     }
+    RANY(obj)->as.basic.flags &= ~T_MASK;
+    return 0;
 }
 
 #ifdef __GNUC__
@@ -1854,6 +1867,7 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 		  case T_NONE:
 		  case T_ICLASS:
 		  case T_NODE:
+		  case T_UNDEF:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
@@ -2009,6 +2023,9 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 
     objid = rb_obj_id(obj);	/* make obj into id */
     rb_thread_critical = Qtrue;
+    if ((RANY(obj)->as.basic.flags & T_MASK) == T_UNDEF) {
+	(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+    }
     args[1] = 0;
     args[2] = (VALUE)rb_safe_level();
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
