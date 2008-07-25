@@ -4572,7 +4572,6 @@ define_filetest_function(name, func, argc)
  *  file:
  *     
  *  The permission bits <code>0644</code> (in octal) would thus be
-		intern_path(str);
  *  interpreted as read/write for owner, and read-only for group and
  *  other. Higher-order bits may also be used to indicate the type of
  *  file (plain, directory, pipe, socket, and so on) and various other
