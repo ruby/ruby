@@ -1,10 +1,17 @@
+Fri Jul 25 20:52:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/err_in_callback.rb : add test of raising
+	  exception in WIN32OLE_EVENT callback.
+
+	* test/win32ole/test_err_in_callback.rb : ditto.
+
 Fri Jul 25 20:43:57 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (Init_win32ole): add
 	  WIN32OLE_EVENT#off_event.
 
 	* test/win32ole/test_win32ole_event.rb: ditto.
-	
+
 	* test/win32ole/test_win32ole_event.rb: some refactoring.
 
 Fri Jul 25 19:50:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
