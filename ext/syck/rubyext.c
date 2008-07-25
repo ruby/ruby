@@ -1379,6 +1379,7 @@ syck_node_mark(SyckNode *n)
         break;
 
 	case syck_str_kind:
+	default:
 	    /* nothing */
 	break;
     }
