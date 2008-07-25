@@ -1,3 +1,7 @@
+Fri Jul 25 18:04:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big2str0, bigsqr): made interruptible.  [ruby-Bugs-20622]
+
 Fri Jul 25 00:10:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext, rb_find_file): converts Windows style path
