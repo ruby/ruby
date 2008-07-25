@@ -17,9 +17,17 @@ if defined?(WIN32OLE_EVENT)
       dummy_path
     end
 
+    def message_loop
+      WIN32OLE_EVENT.message_loop
+      sleep 0.1
+    end
+
     def setup
+      WIN32OLE_EVENT.message_loop
       @ie = WIN32OLE.new("InternetExplorer.Application")
+      message_loop
       @ie.visible = true
+      message_loop
       @event = ""
       @event2 = ""
       @event3 = ""
@@ -43,8 +51,7 @@ if defined?(WIN32OLE_EVENT)
       while @ie.busy
         WIN32OLE_EVENT.new(@ie)
         GC.start  
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
+        message_loop
       end
       assert_match(/BeforeNavigate/, @event)
       assert_match(/NavigateComplete/, @event)
@@ -57,7 +64,7 @@ if defined?(WIN32OLE_EVENT)
       while @ie.busy
         WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents') 
         GC.start  
-        sleep 0.1
+        message_loop
       end
       assert_match(/BeforeNavigate/, @event)
       assert_match(/NavigateComplete/, @event)
@@ -69,8 +76,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event('BeforeNavigate') {|*args| handler2}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
+        message_loop
       end
       assert_equal("handler2", @event2)
     end
@@ -81,8 +87,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event {|*args| handler2}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
+        message_loop
       end
       assert_equal("handler2", @event2)
     end
@@ -94,8 +99,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event('NavigateComplete'){|*args| handler3(*args)}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
+        message_loop
       end
       assert(@event3!="")
       assert("handler2", @event2)
@@ -107,8 +111,7 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event('NavigateComplete'){|*args| handler3(*args)}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
+        message_loop
       end
       assert_match(/BeforeNavigate/, @event)
       assert(/NavigateComplete/ !~ @event)
@@ -120,16 +123,14 @@ if defined?(WIN32OLE_EVENT)
       ev.on_event {|*args| default_handler(*args)}
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
+        message_loop
       end
       assert_match(/BeforeNavigate/, @event)
       ev.unadvise
       @event = ""
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
+        message_loop
       end
       assert_equal("", @event);
       assert_raise(WIN32OLERuntimeError) {
@@ -158,8 +159,7 @@ if defined?(WIN32OLE_EVENT)
       bl = @ie.locationURL
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        sleep 0.1
-        WIN32OLE_EVENT.message_loop
+        message_loop
       end
       assert_equal(bl, @ie.locationURL)
     end
@@ -172,8 +172,7 @@ if defined?(WIN32OLE_EVENT)
       bl = @ie.locationURL
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        sleep 0.1
-        WIN32OLE_EVENT.message_loop
+        message_loop
       end
       assert_equal(bl, @ie.locationURL)
     end
@@ -186,8 +185,7 @@ if defined?(WIN32OLE_EVENT)
       bl = @ie.locationURL
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        sleep 0.1
-        WIN32OLE_EVENT.message_loop
+        message_loop
       end
       assert_equal(bl, @ie.locationURL)
     end
@@ -200,8 +198,7 @@ if defined?(WIN32OLE_EVENT)
       bl = @ie.locationURL
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        sleep 0.1
-        WIN32OLE_EVENT.message_loop
+        message_loop
       end
       assert_equal(bl, @ie.locationURL)
     end
@@ -214,8 +211,7 @@ if defined?(WIN32OLE_EVENT)
       bl = @ie.locationURL
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        sleep 0.1
-        WIN32OLE_EVENT.message_loop
+        message_loop
       end
       assert_equal(bl, @ie.locationURL)
     end
@@ -228,10 +224,33 @@ if defined?(WIN32OLE_EVENT)
       bl = @ie.locationURL
       @ie.navigate("file:///#{@f}")
       while @ie.busy
-        sleep 0.1
-        WIN32OLE_EVENT.message_loop
+        message_loop
       end
       assert_equal(bl, @ie.locationURL)
+    end
+
+    def test_off_event
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event{handler1}
+      ev.off_event
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        message_loop
+      end
+      WIN32OLE_EVENT.message_loop
+      assert_equal("", @event2)
+    end
+
+    def test_off_event_arg
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event('BeforeNavigate2'){handler1}
+      ev.off_event('BeforeNavigate2')
+      @ie.navigate("file:///#{@f}")
+      while @ie.busy
+        message_loop
+      end
+      WIN32OLE_EVENT.message_loop
+      assert_equal("", @event2)
     end
 
     def handler1
@@ -248,21 +267,18 @@ if defined?(WIN32OLE_EVENT)
 
     def teardown
       @ie.quit
-      WIN32OLE_EVENT.message_loop
       @ie = nil
-      WIN32OLE_EVENT.message_loop
-      sleep 0.1
+      i = 0
       begin 
-        File.unlink(@f)
+        i += 1
+        File.unlink(@f) if i < 10
       rescue Errno::EACCES
-        WIN32OLE_EVENT.message_loop
-        sleep 0.1
-        File.unlink(@f)
+        message_loop
+        retry
       end
-
+      message_loop
       GC.start
-      WIN32OLE_EVENT.message_loop
-      sleep 0.1
+      message_loop
     end
   end
 end

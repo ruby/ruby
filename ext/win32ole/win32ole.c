@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.7"
+#define WIN32OLE_VERSION "1.2.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -499,6 +499,7 @@ static VALUE foleparam_default(VALUE self);
 static VALUE foleparam_inspect(VALUE self);
 static long ole_search_event_at(VALUE ary, VALUE ev);
 static VALUE ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default);
+static void ole_delete_event(VALUE ary, VALUE ev);
 static void hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS *pdispparams);
 static VALUE hash2result(VALUE hash);
 static void ary2ptr_dispparams(VALUE ary, DISPPARAMS *pdispparams);
@@ -517,6 +518,7 @@ static void add_event_call_back(VALUE obj, VALUE event, VALUE data);
 static VALUE ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg);
 static VALUE fev_on_event(int argc, VALUE *argv, VALUE self);
 static VALUE fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self);
+static VALUE fev_off_event(int argc, VALUE *argv, VALUE self);
 static VALUE fev_unadvise(VALUE self);
 static VALUE evs_push(VALUE ev);
 static VALUE evs_delete(long i);
@@ -7433,6 +7435,16 @@ ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default)
     return def_event;
 }
 
+static void
+ole_delete_event(VALUE ary, VALUE ev)
+{
+    long at = -1;
+    at = ole_search_event_at(ary, ev);
+    if (at >= 0) {
+        rb_ary_delete_at(ary, at);
+    }
+}
+
 static void 
 hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS *pdispparams)
 {
@@ -8167,6 +8179,40 @@ fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *     WIN32OLE_EVENT#off_event([event])
+ * 
+ *  removes the callback of event.
+ *
+ *    ie = WIN32OLE.new('InternetExplorer.Application')
+ *    ev = WIN32OLE_EVENT.new(ie)
+ *    ev.on_event('BeforeNavigate2') {|*args|
+ *      args.last[6] = true
+ *    }
+ *      ...
+ *    ev.off_event('BeforeNavigate2')
+ *      ...
+ */
+static VALUE
+fev_off_event(int argc, VALUE *argv, VALUE self)
+{
+    VALUE event = Qnil;
+    VALUE events;
+
+    rb_secure(4);
+    rb_scan_args(argc, argv, "01", &event);
+    if(!NIL_P(event)) {
+        Check_SafeStr(event);
+    }
+    events = rb_ivar_get(self, id_events);
+    if (NIL_P(events)) {
+	return Qnil;
+    }
+    ole_delete_event(events, event);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     WIN32OLE_EVENT#unadvise -> nil
  *
  *  disconnects OLE server. If this method called, then the WIN32OLE_EVENT object
@@ -8854,6 +8900,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_EVENT, "initialize", fev_initialize, -1);
     rb_define_method(cWIN32OLE_EVENT, "on_event", fev_on_event, -1);
     rb_define_method(cWIN32OLE_EVENT, "on_event_with_outargs", fev_on_event_with_outargs, -1);
+    rb_define_method(cWIN32OLE_EVENT, "off_event", fev_off_event, -1);
     rb_define_method(cWIN32OLE_EVENT, "unadvise", fev_unadvise, 0);
 
     cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
