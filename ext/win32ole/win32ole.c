@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.2.9"
+#define WIN32OLE_VERSION "1.3.0"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -499,6 +499,7 @@ static VALUE foleparam_default(VALUE self);
 static VALUE foleparam_inspect(VALUE self);
 static long ole_search_event_at(VALUE ary, VALUE ev);
 static VALUE ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default);
+static VALUE ole_search_handler_method(VALUE handler, VALUE ev, BOOL *is_default_handler);
 static void ole_delete_event(VALUE ary, VALUE ev);
 static void hash2ptr_dispparams(VALUE hash, ITypeInfo *pTypeInfo, DISPID dispid, DISPPARAMS *pdispparams);
 static VALUE hash2result(VALUE hash);
@@ -520,6 +521,8 @@ static VALUE fev_on_event(int argc, VALUE *argv, VALUE self);
 static VALUE fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self);
 static VALUE fev_off_event(int argc, VALUE *argv, VALUE self);
 static VALUE fev_unadvise(VALUE self);
+static VALUE fev_set_handler(VALUE self, VALUE val);
+static VALUE fev_get_handler(VALUE self);
 static VALUE evs_push(VALUE ev);
 static VALUE evs_delete(long i);
 static VALUE evs_entry(long i);
@@ -7434,6 +7437,23 @@ ole_search_event(VALUE ary, VALUE ev, BOOL  *is_default)
     }
     return def_event;
 }
+static VALUE
+ole_search_handler_method(VALUE handler, VALUE ev, BOOL *is_default_handler)
+{
+    VALUE mid;
+
+    *is_default_handler = FALSE;
+    mid = rb_to_id(rb_sprintf("on%s", StringValuePtr(ev)));
+    if (rb_respond_to(handler, mid)) {
+	return mid;
+    }
+    mid = rb_intern("method_missing");
+    if (rb_respond_to(handler, mid)) {
+	*is_default_handler = TRUE;
+	return mid;
+    }
+    return Qnil;
+}
 
 static void
 ole_delete_event(VALUE ary, VALUE ev)
@@ -7502,8 +7522,9 @@ exec_callback(VALUE arg)
 {
     VALUE *parg = (VALUE *)arg;
     VALUE handler = parg[0];
-    VALUE args = parg[1];
-    return rb_apply(handler, rb_intern("call"), args);
+    VALUE mid = parg[1];
+    VALUE args = parg[2];
+    return rb_apply(handler, mid, args);
 }
 
 static VALUE
@@ -7540,9 +7561,11 @@ STDMETHODIMP EVENTSINK_Invoke(
     unsigned int i;
     ITypeInfo *pTypeInfo;
     VARIANT *pvar;
-    VALUE ary, obj, event, handler, args, outargv, ev, result;
-    VALUE arg[2];
-    VALUE is_outarg;
+    VALUE ary, obj, event, args, outargv, ev, result;
+    VALUE handler = Qnil;
+    VALUE arg[3];
+    VALUE mid;
+    VALUE is_outarg = Qfalse;
     BOOL is_default_handler = FALSE;
     int state;
 
@@ -7564,9 +7587,21 @@ STDMETHODIMP EVENTSINK_Invoke(
     }
     ev = WC2VSTR(bstr);
     event = ole_search_event(ary, ev, &is_default_handler);
-    if (NIL_P(event)) {
-        return NOERROR;
+    if (TYPE(event) == T_ARRAY) {
+	handler = rb_ary_entry(event, 0);
+	mid = rb_intern("call");
+	is_outarg = rb_ary_entry(event, 3);
+    } else {
+	handler = rb_ivar_get(obj, rb_intern("handler"));
+	if (handler == Qnil) {
+	    return NOERROR;
+	}
+	mid = ole_search_handler_method(handler, ev, &is_default_handler);
     }
+    if (handler == Qnil || mid == Qnil) {
+	return NOERROR;
+    }
+
     args = rb_ary_new();
     if (is_default_handler) {
         rb_ary_push(args, ev);
@@ -7577,8 +7612,6 @@ STDMETHODIMP EVENTSINK_Invoke(
         pvar = &pdispparams->rgvarg[pdispparams->cArgs-i-1];
         rb_ary_push(args, ole_variant2val(pvar));
     }
-    handler = rb_ary_entry(event, 0);
-    is_outarg = rb_ary_entry(event, 3);
     outargv = Qnil;
     if (is_outarg == Qtrue) {
 	outargv = rb_ary_new();
@@ -7593,7 +7626,8 @@ STDMETHODIMP EVENTSINK_Invoke(
      * and exit ruby process by Win32OLE itself.
      */
     arg[0] = handler;
-    arg[1] = args;
+    arg[1] = mid;
+    arg[2] = args;
     result = rb_protect(exec_callback, (VALUE)arg, &state);
     if (state != 0) {
 	rescue_callback(Qnil);
@@ -8260,6 +8294,64 @@ evs_length()
     return rb_funcall(ary_ole_event, rb_intern("length"), 0);
 }
 
+/*
+ *  call-seq:
+ *     WIN32OLE_EVENT#handler=
+ *
+ *  sets event handler object. If handler object has onXXX
+ *  method according to XXX event, then onXXX method is called 
+ *  when XXX event occurs.
+ *  
+ *  If handler object has method_missing and there is no
+ *  method according to the event, then method_missing
+ *  called and 1-st argument is event name.
+ *
+ *  If handler object has onXXX method and there is block
+ *  defined by WIN32OLE_EVENT#on_event('XXX'){},
+ *  then block is executed but handler object method is not called
+ *  when XXX event occurs.
+ *
+ *      class Handler
+ *        def onStatusTextChange(text)
+ *          puts "StatusTextChanged"
+ *        end
+ *        def onPropertyChange(prop)
+ *          puts "PropertyChanged"
+ *        end
+ *        def method_missing(ev, *arg)
+ *          puts "other event #{ev}"
+ *        end
+ *      end
+ *      
+ *      handler = Handler.new
+ *      ie = WIN32OLE.new('InternetExplorer.Application')
+ *      ev = WIN32OLE_EVENT.new(ie)
+ *      ev.on_event("StatusTextChange") {|*args|
+ *        puts "this block executed."
+ *        puts "handler.onStatusTextChange method is not called."
+ *      }
+ *      ev.handler = handler
+ *
+ */
+static VALUE
+fev_set_handler(VALUE self, VALUE val)
+{
+    return rb_ivar_set(self, rb_intern("handler"), val);
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_EVENT#handler
+ *
+ *  returns handler object. 
+ *  
+ */
+static VALUE
+fev_get_handler(VALUE self)
+{
+    return rb_ivar_get(self, rb_intern("handler"));
+}
+
 static void 
 olevariant_free(struct olevariantdata *pvar)
 {
@@ -8896,6 +8988,8 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_EVENT, "on_event_with_outargs", fev_on_event_with_outargs, -1);
     rb_define_method(cWIN32OLE_EVENT, "off_event", fev_off_event, -1);
     rb_define_method(cWIN32OLE_EVENT, "unadvise", fev_unadvise, 0);
+    rb_define_method(cWIN32OLE_EVENT, "handler=", fev_set_handler, 1);
+    rb_define_method(cWIN32OLE_EVENT, "handler", fev_get_handler, 0);
 
     cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);

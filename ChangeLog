@@ -1,3 +1,10 @@
+Sat Jul 26 21:17:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (Init_win32ole): add
+	  WIN32OLE_EVENT#handler=, WIN32OLE_EVENT#handler
+
+	* test/win32ole/test_win32ole_event.rb: ditto.
+
 Sat Jul 26 07:44:14 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (add_event_call_back): remove unused 
