@@ -1,3 +1,9 @@
+Sat Jul 26 22:45:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* sample/exyacc.rb: fixed NoMethodError(Kernel#sub!).
+	  replaced use of special variables with explicit IO 
+	  operations.
+
 Sat Jul 26 21:17:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (Init_win32ole): add
