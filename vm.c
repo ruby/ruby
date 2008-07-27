@@ -1551,6 +1551,7 @@ rb_thread_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(th->last_status);
 
 	RUBY_MARK_UNLESS_NULL(th->locking_mutex);
+	RUBY_MARK_UNLESS_NULL(th->keeping_mutexes);
 
 	rb_mark_tbl(th->local_storage);
 

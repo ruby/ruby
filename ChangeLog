@@ -1,3 +1,18 @@
+Sun Jul 27 14:48:37 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/ruby.h: add a type T_DEFERRED.
+
+	* gc.c: fix deferred finalizer system.  finalize processes of
+	  T_DATA and T_FILE are executed after gc process.
+	  And fix to use BUILTIN_TYPE() instead of seeing flag.
+
+	* thread.c, vm_core.h: add RUBY_VM_SET_FINALIZER_INTERRUPT()
+	  and check intterupt_flag at rb_thread_execute_interrupts().
+
+	* thread.c (mutex_mark): fix to mark next_mutex.
+
+	* vm.c (rb_thread_mark): fix to mark keeping_mutexes.
+
 Sun Jul 27 09:15:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.h (dln_find_exe, dln_find_file): deprecated, use reentrant

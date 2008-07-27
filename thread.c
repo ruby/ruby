@@ -935,8 +935,12 @@ void
 rb_thread_execute_interrupts(rb_thread_t *th)
 {
     if (th->raised_flag) return;
+
     while (th->interrupt_flag) {
 	enum rb_thread_status status = th->status;
+	int timer_interrupt = th->interrupt_flag & 0x01;
+	int finalizer_interrupt = th->interrupt_flag & 0x04;
+
 	th->status = THREAD_RUNNABLE;
 	th->interrupt_flag = 0;
 
@@ -963,10 +967,15 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 	}
 	th->status = status;
 
-	/* thread pass */
-	rb_thread_schedule();
+	if (finalizer_interrupt) {
+	    rb_gc_finalize_deferred();
+	}
+
+	if (timer_interrupt) {
+	    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
+	    rb_thread_schedule();
+	}
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
 }
 
 
@@ -2494,6 +2503,7 @@ mutex_mark(void *ptr)
 {
     if (ptr) {
 	mutex_t *mutex = ptr;
+	rb_gc_mark(mutex->next_mutex);
 	if (mutex->th) {
 	    rb_gc_mark(mutex->th->self);
 	}

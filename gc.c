@@ -578,7 +578,6 @@ assign_heap_slot(rb_objspace_t *objspace)
 	    objs--;
 	}
     }
-    	
 
     lo = 0;
     hi = heaps_used;
@@ -1081,7 +1080,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	rb_mark_generic_ivar(ptr);
     }
 
-    switch (obj->as.basic.flags & T_MASK) {
+    switch (BUILTIN_TYPE(obj)) {
       case T_NIL:
       case T_FIXNUM:
 	rb_bug("rb_gc_mark() called for broken object");
@@ -1224,7 +1223,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
     }
 
     gc_mark(objspace, obj->as.basic.klass, lev);
-    switch (obj->as.basic.flags & T_MASK) {
+    switch (BUILTIN_TYPE(obj)) {
       case T_ICLASS:
       case T_CLASS:
       case T_MODULE:
@@ -1316,17 +1315,26 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	}
 	break;
 
-      case T_UNDEF:
+      case T_DEFERRED:
 	break;
 
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%lx(%p) %s",
-	       obj->as.basic.flags & T_MASK, obj,
+	       BUILTIN_TYPE(obj), obj,
 	       is_pointer_to_heap(objspace, obj) ? "corrupted object" : "non object");
     }
 }
 
 static int obj_free(rb_objspace_t *, VALUE);
+
+static inline void
+add_freelist(rb_objspace_t *objspace, RVALUE *p)
+{
+    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
+    p->as.free.flags = 0;
+    p->as.free.next = freelist;
+    freelist = p;
+}
 
 static void
 finalize_list(rb_objspace_t *objspace, RVALUE *p)
@@ -1335,10 +1343,7 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	RVALUE *tmp = p->as.free.next;
 	run_final(objspace, (VALUE)p);
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
-            VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-	    p->as.free.flags = 0;
-	    p->as.free.next = freelist;
-	    freelist = p;
+	    add_freelist(objspace, p);
 	}
 	p = tmp;
     }
@@ -1388,6 +1393,7 @@ gc_sweep(rb_objspace_t *objspace)
 
     do_heap_free = (heaps_used * HEAP_OBJ_LIMIT) * 0.65;
     free_min = (heaps_used * HEAP_OBJ_LIMIT)  * 0.2;
+
     if (free_min < FREE_MIN) {
 	do_heap_free = heaps_used * HEAP_OBJ_LIMIT;
         free_min = FREE_MIN;
@@ -1400,25 +1406,28 @@ gc_sweep(rb_objspace_t *objspace)
 	int n = 0;
 	RVALUE *free = freelist;
 	RVALUE *final = final_list;
+	int deferred;
 
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
-		if (p->as.basic.flags && obj_free(objspace, (VALUE)p) ||
-		    need_call_final && FL_TEST(p, FL_FINALIZE)) {
-		    p->as.free.flags |= FL_MARK; /* remain marked */
+		if (p->as.basic.flags &&
+		    ((deferred = obj_free(objspace, (VALUE)p)) ||
+		     ((FL_TEST(p, FL_FINALIZE)) && need_call_final))) {
+		    if (!deferred) {
+			p->as.free.flags = T_DEFERRED;
+			RDATA(p)->dfree = 0;
+		    }
+		    p->as.free.flags |= FL_MARK;
 		    p->as.free.next = final_list;
 		    final_list = p;
 		}
 		else {
-                    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-		    p->as.free.flags = 0;
-		    p->as.free.next = freelist;
-		    freelist = p;
+		    add_freelist(objspace, p);
 		}
 		n++;
 	    }
-	    else if (RBASIC(p)->flags == FL_MARK) {
+	    else if (BUILTIN_TYPE(p) == T_DEFERRED) {
 		/* objects to be finalized */
 		/* do nothing remain marked */
 	    }
@@ -1455,25 +1464,24 @@ gc_sweep(rb_objspace_t *objspace)
     /* clear finalization list */
     if (final_list) {
 	deferred_final_list = final_list;
-	return;
+	RUBY_VM_SET_FINALIZER_INTERRUPT(GET_THREAD());
     }
-    free_unused_heaps(objspace);
+    else{
+	free_unused_heaps(objspace);
+    }
 }
 
 void
 rb_gc_force_recycle(VALUE p)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    VALGRIND_MAKE_MEM_UNDEFINED((void*)p, sizeof(RVALUE));
-    RANY(p)->as.free.flags = 0;
-    RANY(p)->as.free.next = freelist;
-    freelist = RANY(p);
+    add_freelist(objspace, (RVALUE *)p);
 }
 
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
-    switch (RANY(obj)->as.basic.flags & T_MASK) {
+    switch (BUILTIN_TYPE(obj)) {
       case T_NIL:
       case T_FIXNUM:
       case T_TRUE:
@@ -1486,7 +1494,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	rb_free_generic_ivar((VALUE)obj);
     }
 
-    switch (RANY(obj)->as.basic.flags & T_MASK) {
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
 	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
             RANY(obj)->as.object.as.heap.ivptr) {
@@ -1527,9 +1535,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 		xfree(DATA_PTR(obj));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
-		RANY(obj)->as.basic.flags &= ~T_MASK;
-		RANY(obj)->as.basic.flags |= T_UNDEF;
-		return 1;
+		if (1) {
+		    RANY(obj)->as.basic.flags &= ~T_MASK;
+		    RANY(obj)->as.basic.flags |= T_DEFERRED;
+		    return 1;
+		}
+		else {
+		    (*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+		}
 	    }
 	}
 	break;
@@ -1545,11 +1558,16 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
 	    rb_io_t *fptr = RANY(obj)->as.file.fptr;
-	    RANY(obj)->as.basic.flags &= ~T_MASK;
-	    RANY(obj)->as.basic.flags |= T_UNDEF;
-	    RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
-	    RDATA(obj)->data = fptr;
-	    return 1;
+	    if (1) {
+		RANY(obj)->as.basic.flags &= ~T_MASK;
+		RANY(obj)->as.basic.flags |= T_DEFERRED;
+		RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
+		RDATA(obj)->data = fptr;
+		return 1;
+	    }
+	    else {
+		rb_io_fptr_finalize(fptr);
+	    }
 	}
 	break;
       case T_RATIONAL:
@@ -1587,14 +1605,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	}
 	break;
 
-      case T_UNDEF:
+      case T_DEFERRED:
 	break;
 
       default:
 	rb_bug("gc_sweep(): unknown data type 0x%lx(%p)",
-	       RANY(obj)->as.basic.flags & T_MASK, (void*)obj);
+	       BUILTIN_TYPE(obj), (void*)obj);
     }
-    RANY(obj)->as.basic.flags &= ~T_MASK;
+
     return 0;
 }
 
@@ -1867,7 +1885,7 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 		  case T_NONE:
 		  case T_ICLASS:
 		  case T_NODE:
-		  case T_UNDEF:
+		  case T_DEFERRED:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
@@ -2018,17 +2036,19 @@ static void
 run_final(rb_objspace_t *objspace, VALUE obj)
 {
     long i;
-    int status, critical_save = rb_thread_critical;
+    int status;
     VALUE args[3], table, objid;
 
     objid = rb_obj_id(obj);	/* make obj into id */
-    rb_thread_critical = Qtrue;
-    if ((RANY(obj)->as.basic.flags & T_MASK) == T_UNDEF) {
-	(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+
+    if (RDATA(obj)->dfree) {
+	(*RDATA(obj)->dfree)(DATA_PTR(obj));
     }
-    args[1] = 0;
-    args[2] = (VALUE)rb_safe_level();
-    if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
+
+    if (finalizer_table &&
+	st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
+	args[1] = 0;
+	args[2] = (VALUE)rb_safe_level();
 	if (!args[1] && RARRAY_LEN(table) > 0) {
 	    args[1] = rb_obj_freeze(rb_ary_new3(1, objid));
 	}
@@ -2039,15 +2059,14 @@ run_final(rb_objspace_t *objspace, VALUE obj)
 	    rb_protect(run_single_final, (VALUE)args, &status);
 	}
     }
-    rb_thread_critical = critical_save;
 }
 
 static void
 gc_finalize_deferred(rb_objspace_t *objspace)
 {
     RVALUE *p = deferred_final_list;
-
     deferred_final_list = 0;
+
     if (p) {
 	finalize_list(objspace, p);
     }
@@ -2065,7 +2084,10 @@ chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 {
     RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
     if (p->as.basic.flags & FL_FINALIZE) {
-	p->as.free.flags = FL_MARK; /* remain marked */
+	if (BUILTIN_TYPE(p) != T_DEFERRED) {
+	    p->as.free.flags = FL_MARK | T_DEFERRED; /* remain marked */
+	    RDATA(p)->dfree = 0;
+	}
 	p->as.free.next = *final_list;
 	*final_list = p;
     }
@@ -2345,6 +2367,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 	    COUNT_TYPE(T_UNDEF);
 	    COUNT_TYPE(T_NODE);
 	    COUNT_TYPE(T_ICLASS);
+	    COUNT_TYPE(T_DEFERRED);
 #undef COUNT_TYPE
           default:              type = INT2NUM(i); break;
         }
