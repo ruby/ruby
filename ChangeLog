@@ -1,3 +1,9 @@
+Sun Jul 27 09:02:32 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb: merged from 1.8.
+
+	* test/rinda/test_rinda.rb: merged from 1.8.
+
 Sat Jul 26 22:45:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* sample/exyacc.rb: fixed NoMethodError(Kernel#sub!).

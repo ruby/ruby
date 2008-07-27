@@ -12,14 +12,14 @@ class MockClock
   include Singleton
 
   class MyTS < Rinda::TupleSpace
-    def keeper
+    def keeper_thread
       nil
     end
   end
   
   def initialize
     @now = 2
-    @reso = 0.1
+    @reso = 1
     @ts = MyTS.new
     @ts.write([2, :now])
     @inf = 2**31 - 1
@@ -33,17 +33,18 @@ class MockClock
     n
   end
     
-  def _forward(n=@reso)
+  def _forward(n=nil)
     now ,= @ts.take([nil, :now])
     @now = now + n
     n = @reso if n.nil?
     @ts.write([@now, :now])
   end
 
-  def forward(n=@reso)
+  def forward(n)
     while n > 0
       _forward(@reso)
       n -= @reso
+      Thread.pass
     end
   end
 
@@ -55,20 +56,10 @@ class MockClock
     @ts.write([2, :now])
   end
 
-  def sleep(n=@reso)
-    while will_deadlock? 
-      n -= @reso
-      forward
-      return 0 if n <= 0
-    end
+  def sleep(n=nil)
     now ,= @ts.read([nil, :now])
     @ts.read([(now + n)..@inf, :now])
     0
-  end
-
-  def will_deadlock?
-    sz = Thread.current.group.list.find_all {|x| x.status != 'sleep'}.size
-    sz <= 1
   end
 end
 
@@ -114,6 +105,14 @@ module TupleSpaceTestModule
     else
       Time.sleep(n)
     end
+  end
+
+  def thread_join(th)
+    while th.alive?
+      Kernel.sleep(0.1)
+      sleep(1)
+    end
+    th.value
   end
   
   def test_00_tuple
@@ -240,6 +239,28 @@ module TupleSpaceTestModule
     end
   end
 
+  def test_ruby_talk_264062
+    th = Thread.new { @ts.take([:empty], 1) }
+    sleep(10)
+    assert_raises(Rinda::RequestExpiredError) do
+      thread_join(th)
+    end
+
+    th = Thread.new { @ts.read([:empty], 1) }
+    sleep(10)
+    assert_raises(Rinda::RequestExpiredError) do
+      thread_join(th)
+    end
+  end
+
+  def test_symbol_tuple
+    @ts.write([:symbol, :symbol])
+    @ts.write(['string', :string])
+    assert_equal([[:symbol, :symbol]], @ts.read_all([:symbol, nil]))
+    assert_equal([[:symbol, :symbol]], @ts.read_all([Symbol, nil]))
+    assert_equal([], @ts.read_all([:nil, nil]))
+  end
+
   def test_core_01
     5.times do |n|
       @ts.write([:req, 2])
@@ -252,7 +273,7 @@ module TupleSpaceTestModule
       s = 0
       while true
 	begin
-	  tuple = @ts.take([:req, Integer], 0.5)
+	  tuple = @ts.take([:req, Integer], 1)
 	  assert_equal(2, tuple[1])
 	  s += tuple[1]
 	rescue Rinda::RequestExpiredError
@@ -263,10 +284,9 @@ module TupleSpaceTestModule
       s
     end
     
-    sleep(20)
+    assert_equal(10, thread_join(taker))
     tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
-    assert_equal(10, taker.value)
   end
 
   def test_core_02
@@ -274,7 +294,7 @@ module TupleSpaceTestModule
       s = 0
       while true
 	begin
-	  tuple = @ts.take([:req, Integer], 1.0)
+	  tuple = @ts.take([:req, Integer], 1)
 	  assert_equal(2, tuple[1])
 	  s += tuple[1]
 	rescue Rinda::RequestExpiredError
@@ -289,10 +309,9 @@ module TupleSpaceTestModule
       @ts.write([:req, 2])
     end
 
-    sleep(20)
+    assert_equal(10, thread_join(taker))
     tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
-    assert_equal(10, taker.value)
     assert_equal([], @ts.read_all([nil, nil]))
   end
   
@@ -349,7 +368,7 @@ module TupleSpaceTestModule
       s = 0
       while true
 	begin
-	  tuple = @ts.take([:req, Integer], 1.0)
+	  tuple = @ts.take([:req, Integer], 1)
 	  s += tuple[1]
 	rescue Rinda::RequestExpiredError
 	  break
@@ -359,26 +378,23 @@ module TupleSpaceTestModule
       s
     end
 
-    writer = Thread.new do
-      5.times do |n|
-	@ts.write([:req, 2])
-	sleep 0.1
-      end
+    5.times do |n|
+      @ts.write([:req, 2])
     end
 
     @ts.take({"message"=>"first", "name"=>"3"})
 
     sleep(4)
+    assert_equal(10, thread_join(taker))
     tuple = @ts.take([:ans, nil])
     assert_equal(10, tuple[1])
-    assert_equal(10, taker.value)
     assert_equal([], @ts.read_all([nil, nil]))
     
     notify1.cancel
     sleep(3) # notify2 expired
     
-    assert_equal([0, 11], listener1.value)
-    assert_equal([0, 3], listener2.value)
+    assert_equal([0, 11], thread_join(listener1))
+    assert_equal([0, 3], thread_join(listener2))
 
     ary = []
     ary.push(["write", {"message"=>"first", "name"=>"3"}])
@@ -403,22 +419,23 @@ module TupleSpaceTestModule
     
     template = nil
     taker = Thread.new do
-      @ts.take([:take, nil], 10) do |template|
+      @ts.take([:take, nil], 10) do |t|
+        template = t
 	Thread.new do
-	  sleep 0.2
 	  template.cancel
 	end
       end
     end
     
-    sleep(1)
+    sleep(2)
+
+    assert_raises(Rinda::RequestCanceledError) do
+      assert_nil(thread_join(taker))
+    end
+
     assert(template.canceled?)
     
     @ts.write([:take, 1])
-
-    assert_raises(Rinda::RequestCanceledError) do
-      assert_nil(taker.value)
-    end
 
     assert_equal([[:take, 1]], @ts.read_all([nil, nil]))
   end
@@ -431,22 +448,23 @@ module TupleSpaceTestModule
 
     template = nil
     reader = Thread.new do
-      @ts.read([:take, nil], 10) do |template|
+      @ts.read([:take, nil], 10) do |t|
+        template = t
 	Thread.new do
-	  sleep 0.2
 	  template.cancel
 	end
       end
     end
 
-    sleep(1)
+    sleep(2)
+
+    assert_raises(Rinda::RequestCanceledError) do
+      assert_nil(thread_join(reader))
+    end
+
     assert(template.canceled?)
     
     @ts.write([:take, 1])
-
-    assert_raises(Rinda::RequestCanceledError) do
-      assert_nil(reader.value)
-    end
 
     assert_equal([[:take, 1]], @ts.read_all([nil, nil]))
   end
@@ -478,28 +496,20 @@ module TupleSpaceTestModule
     assert(tuple.expired?)
     assert(!tuple.alive?)
 
-    tuple = Rinda::TupleEntry.new([1,2,3], SimpleRenewer.new(1,2))
+    @renewer = SimpleRenewer.new(1,2)
+    tuple = Rinda::TupleEntry.new([1,2,3], @renewer)
     assert(!tuple.canceled?)
     assert(!tuple.expired?)
     assert(tuple.alive?)
-    sleep(1.5)
+    sleep(1)
     assert(!tuple.canceled?)
     assert(!tuple.expired?)
     assert(tuple.alive?)
-    sleep(1.5)
+    sleep(2)
     assert(tuple.expired?)
     assert(!tuple.alive?)
   end
 end
-
-class TupleSpaceTest < Test::Unit::TestCase
-  def test_message
-    flunk("YARV doesn't support Rinda")
-  end
-end
-
-end
-__END__
 
 class TupleSpaceTest < Test::Unit::TestCase
   include TupleSpaceTestModule
@@ -520,13 +530,9 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_remote_array_and_hash
-    ary = [1, 2, 3]
-    @ts.write(DRbObject.new(ary))
-    GC.start
+    @ts.write(DRbObject.new([1, 2, 3]))
     assert_equal([1, 2, 3], @ts.take([1, 2, 3], 0))
-    hash = {'head' => 1, 'tail' => 2}
-    @ts.write(DRbObject.new(hash))
-    GC.start
+    @ts.write(DRbObject.new({'head' => 1, 'tail' => 2}))
     assert_equal({'head' => 1, 'tail' => 2},
                  @ts.take({'head' => 1, 'tail' => 2}, 0))
   end
