@@ -1,3 +1,8 @@
+Sun Jul 27 23:32:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/openssl/test_ssl.rb (server_loop): rescue Errno::EINVAL and
+	  Errno::ECONNABORTED.
+
 Sun Jul 27 22:11:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bootstraptests/method.rb: increase RLIMIT_STACK size to 4M+8Kbytes

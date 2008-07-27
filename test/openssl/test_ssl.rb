@@ -86,7 +86,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         server_proc.call(ctx, ssl)
       end
     end
-  rescue Errno::EBADF, IOError
+  rescue Errno::EBADF, IOError, Errno::EINVAL, Errno::ECONNABORTED
   end
 
   def start_server(port0, verify_mode, start_immediately, args = {}, &block)
@@ -128,8 +128,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
       block.call(server, port.to_i)
     ensure
-      tcps.shutdown if (tcps)
       begin
+        tcps.shutdown if (tcps)
         if (server)
           server.join(5)
           if server.alive?
@@ -138,7 +138,6 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
             flunk("TCPServer was closed and SSLServer is still alive") unless $!
           end
         end
-      rescue Errno::EINVAL, Errno::EBADF
       ensure
         tcps.close if (tcps)
       end
