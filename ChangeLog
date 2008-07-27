@@ -1,3 +1,11 @@
+Mon Jul 28 00:18:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_core.h, thread.c: It is now prohibited to use Data_Get_Struct in
+	  *_free against an object that is going to be free'ed.  So, change type
+	  of thread_t#keeping_mutexes from VALUE to mutex_t.
+
+	* vm.c: remove mark to keeping_mutexes.
+
 Sun Jul 27 23:32:42 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/openssl/test_ssl.rb (server_loop): rescue Errno::EINVAL and

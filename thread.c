@@ -62,7 +62,9 @@ static double timeofday(void);
 struct timeval rb_time_interval(VALUE);
 static int rb_thread_dead(rb_thread_t *th);
 
-static void rb_mutex_unlock_all(VALUE);
+typedef struct rb_mutex_struct mutex_t;
+
+static void rb_mutex_unlock_all(mutex_t *mutex);
 static void rb_check_deadlock(rb_vm_t *vm);
 
 void rb_signal_exec(rb_thread_t *th, int sig);
@@ -402,7 +404,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	/* unlock all locking mutexes */
 	if (th->keeping_mutexes) {
 	    rb_mutex_unlock_all(th->keeping_mutexes);
-	    th->keeping_mutexes = Qfalse;
+	    th->keeping_mutexes = NULL;
 	}
 
 	/* delete self from living_threads */
@@ -2485,30 +2487,10 @@ thgroup_add(VALUE group, VALUE thread)
  *
  */
 
-typedef struct mutex_struct {
-    rb_thread_lock_t lock;
-    rb_thread_cond_t cond;
-    rb_thread_t volatile *th;
-    volatile int cond_waiting, cond_notified;
-    VALUE next_mutex;
-} mutex_t;
-
 #define GetMutexPtr(obj, tobj) \
   Data_Get_Struct(obj, mutex_t, tobj)
 
 static const char *mutex_unlock(mutex_t *mutex);
-
-static void
-mutex_mark(void *ptr)
-{
-    if (ptr) {
-	mutex_t *mutex = ptr;
-	rb_gc_mark(mutex->next_mutex);
-	if (mutex->th) {
-	    rb_gc_mark(mutex->th->self);
-	}
-    }
-}
 
 static void
 mutex_free(void *ptr)
@@ -2531,7 +2513,7 @@ mutex_alloc(VALUE klass)
     VALUE volatile obj;
     mutex_t *mutex;
 
-    obj = Data_Make_Struct(klass, mutex_t, mutex_mark, mutex_free, mutex);
+    obj = Data_Make_Struct(klass, mutex_t, NULL, mutex_free, mutex);
     native_mutex_initialize(&mutex->lock);
     native_cond_initialize(&mutex->cond);
     return obj;
@@ -2572,12 +2554,13 @@ rb_mutex_locked_p(VALUE self)
 static void
 mutex_locked(rb_thread_t *th, VALUE self)
 {
+    mutex_t *mutex;
+    GetMutexPtr(self, mutex);
+
     if (th->keeping_mutexes) {
-	mutex_t *mutex;
-	GetMutexPtr(self, mutex);
 	mutex->next_mutex = th->keeping_mutexes;
     }
-    th->keeping_mutexes = self;
+    th->keeping_mutexes = mutex;
 }
 
 /*
@@ -2743,14 +2726,14 @@ mutex_unlock(mutex_t *mutex)
     native_mutex_unlock(&mutex->lock);
 
     if (!err) {
-	GetMutexPtr(th->keeping_mutexes, th_mutex);
+	th_mutex = th->keeping_mutexes;
 	if (th_mutex == mutex) {
 	    th->keeping_mutexes = mutex->next_mutex;
 	}
 	else {
 	    while (1) {
 		mutex_t *tmp_mutex;
-		GetMutexPtr(th_mutex->next_mutex, tmp_mutex);
+		tmp_mutex = th_mutex->next_mutex;
 		if (tmp_mutex == mutex) {
 		    th_mutex->next_mutex = tmp_mutex->next_mutex;
 		    break;
@@ -2785,13 +2768,13 @@ rb_mutex_unlock(VALUE self)
 }
 
 static void
-rb_mutex_unlock_all(VALUE mutexes)
+rb_mutex_unlock_all(mutex_t *mutexes)
 {
     const char *err;
     mutex_t *mutex;
 
     while (mutexes) {
-	GetMutexPtr(mutexes, mutex);
+	mutex = mutexes;
 	/* rb_warn("mutex #<%s:%p> remains to be locked by terminated thread",
 		rb_obj_classname(mutexes), (void*)mutexes); */
 	mutexes = mutex->next_mutex;

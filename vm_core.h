@@ -396,6 +396,8 @@ struct rb_unblock_callback {
     void *arg;
 };
 
+struct rb_mutex_struct;
+
 struct rb_thread_struct
 {
     VALUE self;
@@ -443,7 +445,7 @@ struct rb_thread_struct
     rb_thread_lock_t interrupt_lock;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
-    VALUE keeping_mutexes;
+    struct rb_mutex_struct *keeping_mutexes;
     int transition_for_lock;
 
     struct rb_vm_tag *tag;
@@ -494,6 +496,15 @@ struct rb_thread_struct
     /* misc */
     int method_missing_reason;
     int abort_on_exception;
+};
+
+struct rb_mutex_struct
+{
+    rb_thread_lock_t lock;
+    rb_thread_cond_t cond;
+    struct rb_thread_struct volatile *th;
+    volatile int cond_waiting, cond_notified;
+    struct rb_mutex_struct *next_mutex;
 };
 
 /* iseq.c */
