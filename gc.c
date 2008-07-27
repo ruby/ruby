@@ -1315,9 +1315,6 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	}
 	break;
 
-      case T_DEFERRED:
-	break;
-
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%lx(%p) %s",
 	       BUILTIN_TYPE(obj), obj,
@@ -1344,6 +1341,10 @@ finalize_list(rb_objspace_t *objspace, RVALUE *p)
 	run_final(objspace, (VALUE)p);
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
 	    add_freelist(objspace, p);
+	}
+	else {
+	    struct heaps_slot *slot = (struct heaps_slot *)RDATA(p)->dmark;
+	    slot->limit--;
 	}
 	p = tmp;
     }
@@ -1439,11 +1440,15 @@ gc_sweep(rb_objspace_t *objspace)
 	}
 	if (n == heaps[i].limit && freed > do_heap_free) {
 	    RVALUE *pp;
+	    int f_count = 0;
 
-	    heaps[i].limit = 0;
 	    for (pp = final_list; pp != final; pp = pp->as.free.next) {
-		p->as.free.flags |= FL_SINGLETON; /* freeing page mark */
+		f_count++;
+		RDATA(pp)->dmark = (void *)&heaps[i];
+		pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
 	    }
+	    heaps[i].limit = f_count;
+
 	    freelist = free;	/* cancel this page from freelist */
 	}
 	else {
@@ -1603,9 +1608,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    RANY(obj)->as.rstruct.as.heap.ptr) {
 	    xfree(RANY(obj)->as.rstruct.as.heap.ptr);
 	}
-	break;
-
-      case T_DEFERRED:
 	break;
 
       default:
