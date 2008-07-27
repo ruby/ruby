@@ -997,12 +997,13 @@ assert_equal 'ok', %q{
 
 assert_normal_exit %q{
   begin
-    Process.setrlimit(Process::RLIMIT_STACK, 1024*1024)
+    Process.setrlimit(Process::RLIMIT_STACK, 4_202_496)
+    # FreeBSD fails this less than 4M + 8K bytes.
   rescue Exception
     exit
   end
   class C
-    attr "a" * (2*1024*1024)
+    attr "a" * (10*1024*1024)
   end
 }, '[ruby-dev:31818]'
 

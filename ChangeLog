@@ -1,3 +1,8 @@
+Sun Jul 27 22:11:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bootstraptests/method.rb: increase RLIMIT_STACK size to 4M+8Kbytes
+	  because FreeBSD fails this less than that.
+
 Sun Jul 27 21:45:59 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_children, obj_free): T_DEFERRED should not be appear.
