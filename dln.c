@@ -348,14 +348,14 @@ sym_hash(struct exec *hdrp, struct nlist *syms)
 static int
 dln_init(const char *prog)
 {
-    char *file;
+    char *file, fbuf[MAXPATHLEN];
     int fd;
     struct exec hdr;
     struct nlist *syms;
 
     if (dln_init_p == 1) return 0;
 
-    file = dln_find_exe(prog, NULL);
+    file = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf));
     if (file == NULL || (fd = open(file, O_RDONLY)) < 0) {
 	dln_errno = errno;
 	return -1;

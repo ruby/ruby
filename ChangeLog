@@ -1,3 +1,8 @@
+Sun Jul 27 09:15:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.h (dln_find_exe, dln_find_file): deprecated, use reentrant
+	  versions instead.
+
 Sun Jul 27 09:02:32 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb: merged from 1.8.

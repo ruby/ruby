@@ -928,6 +928,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     const char *shell;
     struct ChildRecord *child;
     char *p = NULL;
+    char fbuf[MAXPATHLEN];
 
     if (!cmd && !prog) {
 	errno = EFAULT;
@@ -975,7 +976,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
     if (prog) {
-	if (!(p = dln_find_exe(prog, NULL))) {
+	if (!(p = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
 	    shell = prog;
 	}
     }
