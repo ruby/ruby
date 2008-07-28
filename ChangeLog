@@ -1,3 +1,8 @@
+Mon Jul 28 18:15:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext, rb_find_file): not to split load path with
+	  path separator.  [ruby-Bugs-21356]
+
 Mon Jul 28 18:14:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (overlapped_socket_io, fcntl, rb_w32_close): must not
