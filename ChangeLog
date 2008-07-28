@@ -1,3 +1,7 @@
+Mon Jul 28 21:32:17 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/: use PNG instead of zlib as binary data.
+
 Mon Jul 28 21:24:33 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread_win32.[ch] (cond_every_entry, rb_thread_cond_struct): reverted

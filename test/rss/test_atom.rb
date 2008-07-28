@@ -641,24 +641,19 @@ module RSS
 
     def assert_atom_content_inline_other_base64_to_s(target_class)
       _wrap_assertion do
-        require "zlib"
-
-        text = ""
-        char = "a"
-        100.times do |i|
-          text << char
-          char.succ!
+        type = "image/png"
+        png_file = File.join(File.dirname(__FILE__), "dot.png")
+        original_content = File.open(png_file, "rb") do |file|
+          file.read.force_encoding("binary")
         end
-
-        type = "application/zip"
-        original_content = Zlib::Deflate.deflate(text)
 
         content = target_class.new
         content.type = type
         content.content = original_content
         xml = REXML::Document.new(content.to_s).root
         assert_rexml_element([], {"type" => type},
-                             [original_content].pack("m").delete("\n"), xml)
+                             [original_content].pack("m").delete("\n"),
+                             xml)
       end
     end
 
