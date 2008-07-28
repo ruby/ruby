@@ -4388,25 +4388,6 @@ file_load_ok(file)
     return 1;
 }
 
-#ifdef __CYGWIN__
-static void
-intern_cygwin_path(volatile VALUE *path)
-{
-    char rubylib[MAXPATHLEN];
-    VALUE str = *path;
-    const char *p = RSTRING_PTR(str);
-
-    if (*p == '\\' || has_drive_letter(p)) {
-	if (cygwin_conv_to_posix_path(p, rubylib) == 0) {
-	    *path = rb_str_new2(rubylib);
-	}
-    }
-}
-#define intern_path(str) intern_cygwin_path(&(str))
-#else
-#define intern_path(str) (void)(str)
-#endif
-
 extern VALUE rb_load_path;
 
 int
@@ -4414,10 +4395,9 @@ rb_find_file_ext(filep, ext)
     VALUE *filep;
     const char * const *ext;
 {
-    const char *path, *found;
     const char *f = RSTRING(*filep)->ptr;
-    VALUE fname;
-    long i, j;
+    VALUE fname, tmp;
+    long i, j, fnlen;
 
     if (f[0] == '~') {
 	fname = rb_file_expand_path(*filep, Qnil);
@@ -4443,24 +4423,26 @@ rb_find_file_ext(filep, ext)
     }
 
     if (!rb_load_path) return 0;
-
     Check_Type(rb_load_path, T_ARRAY);
+
+    tmp = rb_str_tmp_new(MAXPATHLEN + 2);
     for (i=0;i<RARRAY(rb_load_path)->len;i++) {
 	VALUE str = RARRAY(rb_load_path)->ptr[i];
 
 	SafeStringValue(str);
 	if (RSTRING(str)->len == 0) continue;
-	intern_path(str);
-	path = RSTRING(str)->ptr;
+	file_expand_path(*filep, str, tmp);
+	fnlen = RSTRING_LEN(tmp);
 	for (j=0; ext[j]; j++) {
-	    fname = rb_str_dup(*filep);
-	    rb_str_cat2(fname, ext[j]);
-	    OBJ_FREEZE(fname);
-	    found = dln_find_file(StringValueCStr(fname), path);
-	    if (found && file_load_ok(found)) {
+	    rb_str_cat2(tmp, ext[j]);
+	    if (file_load_ok(RSTRING_PTR(tmp))) {
+		fname = rb_str_dup(*filep);
+		rb_str_cat2(fname, ext[j]);
+		OBJ_FREEZE(fname);
 		*filep = fname;
 		return j+1;
 	    }
+	    rb_str_set_len(tmp, fnlen);
 	}
     }
     return 0;
@@ -4472,7 +4454,6 @@ rb_find_file(path)
 {
     VALUE tmp;
     const char *f = StringValueCStr(path);
-    const char *lpath;
 
     if (f[0] == '~') {
 	path = rb_file_expand_path(path, Qnil);
@@ -4489,6 +4470,7 @@ rb_find_file(path)
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
 	if (file_load_ok(f)) return path;
+	return 0;
     }
 #endif
 
@@ -4497,6 +4479,7 @@ rb_find_file(path)
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
 	if (file_load_ok(f)) return path;
+	return 0;
     }
 
     if (rb_safe_level() >= 4) {
@@ -4507,42 +4490,30 @@ rb_find_file(path)
 	long i;
 
 	Check_Type(rb_load_path, T_ARRAY);
-	tmp = rb_ary_new();
+	tmp = rb_str_tmp_new(MAXPATHLEN + 2);
 	for (i=0;i<RARRAY(rb_load_path)->len;i++) {
 	    VALUE str = RARRAY(rb_load_path)->ptr[i];
 	    SafeStringValue(str);
 	    if (RSTRING(str)->len > 0) {
-		intern_path(str);
-		rb_ary_push(tmp, str);
+		file_expand_path(path, str, tmp);
+		f = RSTRING_PTR(tmp);
+		if (file_load_ok(f)) goto found;
 	    }
 	}
-	tmp = rb_ary_join(tmp, rb_str_new2(PATH_SEP));
-	if (RSTRING(tmp)->len == 0) {
-	    lpath = 0;
-	}
-	else {
-	    lpath = RSTRING(tmp)->ptr;
-	}
+	return 0;
+      found:
+	RBASIC(tmp)->klass = RBASIC(path)->klass;
+	OBJ_FREEZE(tmp);
     }
     else {
-	lpath = 0;
-    }
-
-    if (!lpath) {
 	return 0;		/* no path, no load */
     }
-    if (!(f = dln_find_file(f, lpath))) {
-	return 0;
-    }
+
     if (rb_safe_level() >= 1 && !fpath_check(f)) {
 	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
     }
-    if (file_load_ok(f)) {
-	tmp = rb_str_new2(f);
-	OBJ_FREEZE(tmp);
-	return tmp;
-    }
-    return 0;
+
+    return tmp;
 }
 
 static void
