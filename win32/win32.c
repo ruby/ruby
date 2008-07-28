@@ -916,6 +916,12 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     return rb_w32_spawn(mode, rb_w32_join_argv(cmd, argv), prog);
 }
 
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#else
+# define MAXPATHLEN 512
+#endif
+
 static struct ChildRecord *
 CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	    HANDLE hInput, HANDLE hOutput, HANDLE hError)
@@ -1106,12 +1112,6 @@ insert(const char *path, VALUE vinfo, void *enc)
 
     return 0;
 }
-
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#else
-# define MAXPATHLEN 512
-#endif
 
 
 static NtCmdLineElement **
