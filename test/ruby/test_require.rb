@@ -19,13 +19,20 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_require_too_long_filename
-    assert_in_out_err([], <<-INPUT, %w(:ok), /^.+$/)
+    assert_in_out_err([], <<-INPUT, %w(:ok), [])
       begin
         require '#{ "foo/" * 10000 }foo'
       rescue LoadError
         p :ok
       end
     INPUT
+
+    assert_in_out_err(["-S", "foo/" * 10000 + "foo"], "") do |r, e|
+      assert_equal([], r)
+      assert_operator(2, :<=, e.size)
+      assert_equal("openpath: pathname too long (ignored)", e.first)
+      assert_match(/\(LoadError\)/, e.last)
+    end
   end
 
   def test_require_path_home

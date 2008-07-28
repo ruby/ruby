@@ -1,3 +1,8 @@
+Mon Jul 28 21:00:10 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_require.rb (test_require_too_long_filename):
+	  Kernel#require does not use dln_find_file_r (at r18242).
+
 Mon Jul 28 20:17:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_core.h: move the definition of struct rb_mutex_struct.
