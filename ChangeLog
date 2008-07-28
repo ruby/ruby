@@ -1,3 +1,15 @@
+Tue Jul 29 02:39:46 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* math.c (math_atanh): raise EDOM on FreeBSD when atanh(1).
+
+	* math.c (math_log): ditto.
+
+	* math.c (math_log2): ditto.
+
+	* math.c (math_log10): ditto.
+
+	* test/ruby/test_math.rb: test for above.
+
 Tue Jul 29 01:41:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* dir.c (struct dir_data): intenc field removed.

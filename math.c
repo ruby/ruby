@@ -53,6 +53,24 @@ domain_check(double x, const char *msg)
     }
 }
 
+static void
+infinity_check(VALUE arg, double res, const char *msg)
+{
+    while(1) {
+	if (errno) {
+	    rb_sys_fail(msg);
+	}
+	if (isinf(res) && !isinf(RFLOAT_VALUE(arg))) {
+#if defined(EDOM)
+	    errno = EDOM;
+#elif defined(ERANGE)
+	    errno = ERANGE;
+#endif
+	    continue;
+	}
+	break;
+    }
+}
 
 /*
  *  call-seq:
@@ -288,6 +306,7 @@ math_atanh(VALUE obj, VALUE x)
     errno = 0;
     d = atanh(RFLOAT_VALUE(x));
     domain_check(d, "atanh");
+    infinity_check(x, d, "atanh");
     return DOUBLE2NUM(d);
 }
 
@@ -339,6 +358,7 @@ math_log(int argc, VALUE *argv)
 	d /= log(RFLOAT_VALUE(base));
     }
     domain_check(d, "log");
+    infinity_check(x, d, "log");
     return DOUBLE2NUM(d);
 }
 
@@ -369,9 +389,8 @@ math_log2(VALUE obj, VALUE x)
     Need_Float(x);
     errno = 0;
     d = log2(RFLOAT_VALUE(x));
-    if (errno) {
-	rb_sys_fail("log2");
-    }
+    domain_check(d, "log2");
+    infinity_check(x, d, "log2");
     return DOUBLE2NUM(d);
 }
 
@@ -391,6 +410,7 @@ math_log10(VALUE obj, VALUE x)
     errno = 0;
     d = log10(RFLOAT_VALUE(x));
     domain_check(d, "log10");
+    infinity_check(x, d, "log10");
     return DOUBLE2NUM(d);
 }
 
