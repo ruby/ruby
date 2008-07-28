@@ -333,16 +333,6 @@ native_mutex_destroy(rb_thread_lock_t *lock)
 #endif
 }
 
-struct cond_event_entry {
-    struct cond_event_entry* next;
-    HANDLE event;
-};
-
-struct rb_thread_cond_struct {
-    struct cond_event_entry *next;
-    struct cond_event_entry *last;
-};
-
 static void
 native_cond_signal(rb_thread_cond_t *cond)
 {
