@@ -62,7 +62,14 @@ static double timeofday(void);
 struct timeval rb_time_interval(VALUE);
 static int rb_thread_dead(rb_thread_t *th);
 
-typedef struct rb_mutex_struct mutex_t;
+typedef struct rb_mutex_struct
+{
+    rb_thread_lock_t lock;
+    rb_thread_cond_t cond;
+    struct rb_thread_struct volatile *th;
+    volatile int cond_waiting, cond_notified;
+    struct rb_mutex_struct *next_mutex;
+} mutex_t;
 
 static void rb_mutex_unlock_all(mutex_t *mutex);
 static void rb_check_deadlock(rb_vm_t *vm);

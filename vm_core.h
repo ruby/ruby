@@ -498,15 +498,6 @@ struct rb_thread_struct
     int abort_on_exception;
 };
 
-struct rb_mutex_struct
-{
-    rb_thread_lock_t lock;
-    rb_thread_cond_t cond;
-    struct rb_thread_struct volatile *th;
-    volatile int cond_waiting, cond_notified;
-    struct rb_mutex_struct *next_mutex;
-};
-
 /* iseq.c */
 VALUE rb_iseq_new(NODE*, VALUE, VALUE, VALUE, VALUE);
 VALUE rb_iseq_new_with_bopt(NODE*, VALUE, VALUE, VALUE, VALUE, VALUE);
