@@ -557,20 +557,14 @@ EOA
 
     def assert_atom_content_inline_other_text(generator)
       _wrap_assertion do
-        require "zlib"
-
-        type = "application/zip"
+        type = "image/png"
         assert_parse(generator.call(<<-EOA), :nothing_raised)
   <content type="#{type}"/>
 EOA
 
-        text = ""
-        char = "a"
-        100.times do |i|
-          text << char
-          char.succ!
-        end
-        base64_content = [Zlib::Deflate.deflate(text)].pack("m").delete("\n")
+        png_file = File.join(File.dirname(__FILE__), "dot.png")
+        png = File.open(png_file, "rb") {|file| file.read}
+        base64_content = [png].pack("m").delete("\n")
 
         [false, true].each do |with_space|
           xml_content = base64_content
@@ -591,7 +585,7 @@ EOA
           assert(content.inline_other_base64?)
           assert(!content.out_of_line?)
           assert(!content.have_xml_content?)
-          assert_equal(text, Zlib::Inflate.inflate(content.content))
+          assert_equal(png, content.content)
 
           xml = REXML::Document.new(content.to_s).root
           assert_rexml_element([], {"type" => type}, base64_content, xml)

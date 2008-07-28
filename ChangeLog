@@ -1,3 +1,7 @@
+Mon Jul 28 20:46:39 2008  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/: use PNG instead of zlib as binary data. [ruby-dev:35666]
+
 Mon Jul 28 18:15:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext, rb_find_file): not to split load path with
