@@ -62,16 +62,6 @@ static double timeofday(void);
 struct timeval rb_time_interval(VALUE);
 static int rb_thread_dead(rb_thread_t *th);
 
-typedef struct rb_mutex_struct
-{
-    rb_thread_lock_t lock;
-    rb_thread_cond_t cond;
-    struct rb_thread_struct volatile *th;
-    volatile int cond_waiting, cond_notified;
-    struct rb_mutex_struct *next_mutex;
-} mutex_t;
-
-static void rb_mutex_unlock_all(mutex_t *mutex);
 static void rb_check_deadlock(rb_vm_t *vm);
 
 void rb_signal_exec(rb_thread_t *th, int sig);
@@ -283,6 +273,17 @@ terminate_i(st_data_t key, st_data_t val, rb_thread_t *main_thread)
     }
     return ST_CONTINUE;
 }
+
+typedef struct rb_mutex_struct
+{
+    rb_thread_lock_t lock;
+    rb_thread_cond_t cond;
+    struct rb_thread_struct volatile *th;
+    volatile int cond_waiting, cond_notified;
+    struct rb_mutex_struct *next_mutex;
+} mutex_t;
+
+static void rb_mutex_unlock_all(mutex_t *mutex);
 
 void
 rb_thread_terminate_all(void)

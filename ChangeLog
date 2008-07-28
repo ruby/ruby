@@ -1,3 +1,11 @@
+Mon Jul 28 21:24:33 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread_win32.[ch] (cond_every_entry, rb_thread_cond_struct): reverted
+	  r18239 because r18245 made the changes unnecessary.
+
+	* thread.c (rb_mutex_struct): define after including thread_{pthread,
+	  win32}.c.
+
 Mon Jul 28 21:00:10 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_require.rb (test_require_too_long_filename):
@@ -34,9 +42,9 @@ Mon Jul 28 16:06:36 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Jul 28 16:01:12 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* thread_win32.[ch]: moved definitions of cond_every_entry and
-	  rb_thread_cond_struct from .c to .h because rb_thread_cond_struct
-	  is used in vm_core.h.
+	* thread_win32.[ch] (cond_every_entry, rb_thread_cond_struct): moved
+	  the definitions from .c to .h because rb_thread_cond_struct is used
+	  in vm_core.h.
 
 Mon Jul 28 14:29:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1913,8 +1921,8 @@ Fri Jun 20 03:26:00 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Fri Jun 20 03:19:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* test/testunit/collector/test_dir.rb: r15825 made it unnecessary to change
-	  String to Symbol.
+	* test/testunit/collector/test_dir.rb: r15825 made it unnecessary to
+	  change String to Symbol.
 
 	* test/testunit/collector/test_objectspace.rb: ditto.
 
