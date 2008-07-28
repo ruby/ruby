@@ -2432,6 +2432,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
     int r;
     int ret;
     int mode;
+    st_data_t data;
     DWORD flg;
     WSAOVERLAPPED wol;
     WSABUF wbuf;
@@ -2442,7 +2443,8 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
 	StartSockets();
 
     s = TO_SOCKET(fd);
-    st_lookup(socklist, (st_data_t)s, (st_data_t *)&mode);
+    st_lookup(socklist, (st_data_t)s, &data);
+    mode = (int)data;
     if (!cancel_io || (mode & O_NONBLOCK)) {
 	RUBY_CRITICAL({
 	    if (input) {
@@ -2920,6 +2922,7 @@ fcntl(int fd, int cmd, ...)
     int arg;
     int ret;
     int flag = 0;
+    st_data_t data;
     u_long ioctlArg;
 
     if (!is_socket(sock)) {
@@ -2934,7 +2937,8 @@ fcntl(int fd, int cmd, ...)
     va_start(va, cmd);
     arg = va_arg(va, int);
     va_end(va);
-    st_lookup(socklist, (st_data_t)sock, (st_data_t*)&flag);
+    st_lookup(socklist, (st_data_t)sock, &data);
+    flag = (int)data;
     if (arg & O_NONBLOCK) {
 	flag |= O_NONBLOCK;
 	ioctlArg = 1;
@@ -3584,7 +3588,7 @@ truncate(const char *path, off_t length)
     HANDLE h;
     int ret;
     if (IsWin95()) {
-	int fd = open(path, O_WRONLY), e;
+	int fd = open(path, O_WRONLY), e = 0;
 	if (fd == -1) return -1;
 	ret = chsize(fd, (unsigned long)length);
 	if (ret == -1) e = errno;
@@ -3986,13 +3990,16 @@ rb_w32_close(int fd)
 {
     SOCKET sock = TO_SOCKET(fd);
     int save_errno = errno;
+    st_data_t key;
 
     if (!is_socket(sock)) {
 	UnlockFile((HANDLE)sock, 0, 0, LK_LEN, LK_LEN);
 	return _close(fd);
     }
     _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
-    st_delete(socklist, (st_data_t *)&sock, NULL);
+    key = (st_data_t)sock;
+    st_delete(socklist, &key, NULL);
+    sock = (SOCKET)key;
     _close(fd);
     errno = save_errno;
     if (closesocket(sock) == SOCKET_ERROR) {

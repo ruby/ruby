@@ -1,3 +1,8 @@
+Mon Jul 28 18:14:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (overlapped_socket_io, fcntl, rb_w32_close): must not
+	  pass a pointer to int which is smaller than st_data_t on mswin64.
+
 Mon Jul 28 16:49:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (CreateChild, overlapped_socket_io): suppress
