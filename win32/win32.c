@@ -1021,7 +1021,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 	    prog = cmd;
 	    for (;;) {
 		if (!*prog) {
-		    p = dln_find_exe(cmd, NULL);
+		    p = dln_find_exe_r(cmd, NULL, fbuf, sizeof(fbuf));
 		    break;
 		}
 		if (strchr(".:*?\"/\\", *prog)) {
@@ -1038,7 +1038,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 		    p = ALLOCA_N(char, len + 1);
 		    memcpy(p, cmd, len);
 		    p[len] = 0;
-		    p = dln_find_exe(p, NULL);
+		    p = dln_find_exe_r(p, NULL, fbuf, sizeof(fbuf));
 		    break;
 		}
 		prog++;
@@ -2432,7 +2432,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
     int r;
     int ret;
     int mode;
-    int flg;
+    DWORD flg;
     WSAOVERLAPPED wol;
     WSABUF wbuf;
     int err;

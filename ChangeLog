@@ -1,3 +1,8 @@
+Mon Jul 28 16:49:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (CreateChild, overlapped_socket_io): suppress
+	  warnings.
+
 Mon Jul 28 16:06:36 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (MAXPATHLEN): define before use.
