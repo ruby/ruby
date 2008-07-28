@@ -1,3 +1,8 @@
+Tue Jul 29 05:37:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext, rb_find_file): converts Windows style path
+	  to Cygwin path.  [ruby-dev:35647]
+
 Tue Jul 29 02:39:46 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* math.c (math_atanh): raise EDOM on FreeBSD when atanh(1).
