@@ -2741,7 +2741,7 @@ mutex_unlock(mutex_t *mutex)
 		th_mutex = tmp_mutex;
 	    }
 	}
-	mutex->next_mutex = Qfalse;
+	mutex->next_mutex = NULL;
     }
 
     return err;

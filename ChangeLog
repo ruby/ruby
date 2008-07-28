@@ -1,3 +1,7 @@
+Mon Jul 28 18:58:46 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* thread.c (mutex_unlock): fix typo.
+
 Mon Jul 28 18:15:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext, rb_find_file): not to split load path with
