@@ -291,7 +291,6 @@ VALUE rb_cDir;
 struct dir_data {
     DIR *dir;
     char *path;
-    rb_encoding *intenc;
     rb_encoding *extenc;
 };
 
@@ -315,7 +314,6 @@ dir_s_alloc(VALUE klass)
 
     dirp->dir = NULL;
     dirp->path = NULL;
-    dirp->intenc = NULL;
     dirp->extenc = NULL;
 
     return obj;
@@ -332,66 +330,37 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 {
     struct dir_data *dp;
     static rb_encoding *fs_encoding;
-    rb_encoding  *intencoding, *extencoding;
+    rb_encoding  *extencoding;
     VALUE dirname, opt;
-    static VALUE sym_intenc, sym_extenc;
+    static VALUE sym_extenc;
 
-    if (!sym_intenc) {
-	sym_intenc = ID2SYM(rb_intern("internal_encoding"));
+    if (!sym_extenc) {
 	sym_extenc = ID2SYM(rb_intern("external_encoding"));
 	fs_encoding = rb_filesystem_encoding();
     }
 
-    intencoding = NULL;
     extencoding = fs_encoding;
     rb_scan_args(argc, argv, "11", &dirname, &opt);
 
     if (!NIL_P(opt)) {
-        VALUE v, extenc=Qnil, intenc=Qnil;
+        VALUE v, extenc=Qnil;
         opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
 
-        v = rb_hash_aref(opt, sym_intenc);
-        if (!NIL_P(v)) intenc = v;
         v = rb_hash_aref(opt, sym_extenc);
         if (!NIL_P(v)) extenc = v;
 
 	if (!NIL_P(extenc)) {
 	    extencoding = rb_to_encoding(extenc);
-	    if (!NIL_P(intenc)) {
-		intencoding = rb_to_encoding(intenc);
-		if (extencoding == intencoding) {
-		    rb_warn("Ignoring internal encoding '%s': it is identical to external encoding '%s'",
-			    RSTRING_PTR(rb_inspect(intenc)),
-			    RSTRING_PTR(rb_inspect(extenc)));
-		    intencoding = NULL;
-		}
-	    }
-	}
-	else if (!NIL_P(intenc)) {
-	    rb_raise(rb_eArgError, "External encoding must be specified when internal encoding is given");
 	}
     }
 
     FilePathValue(dirname);
-    {
-	rb_encoding  *dirname_encoding = rb_enc_get(dirname);
-	if (rb_usascii_encoding() != dirname_encoding
-	    && rb_ascii8bit_encoding() != dirname_encoding
-#if defined __APPLE__
-	    && rb_utf8_encoding() != dirname_encoding
-#endif
-	    && extencoding != dirname_encoding) {
-	    if (!intencoding) intencoding = dirname_encoding;
-	    dirname = rb_str_transcode(dirname, rb_enc_from_encoding(extencoding));
-	}
-    }
 
     Data_Get_Struct(dir, struct dir_data, dp);
     if (dp->dir) closedir(dp->dir);
     if (dp->path) xfree(dp->path);
     dp->dir = NULL;
     dp->path = NULL;
-    dp->intenc = intencoding;
     dp->extenc = extencoding;
     dp->dir = opendir(RSTRING_PTR(dirname));
     if (dp->dir == NULL) {
@@ -457,9 +426,6 @@ static VALUE
 dir_enc_str(VALUE str, struct dir_data *dirp)
 {
     rb_enc_associate(str, dirp->extenc);
-    if (dirp->intenc) {
-        str = rb_str_transcode(str, rb_enc_from_encoding(dirp->intenc));
-    }
     return str;
 }
 

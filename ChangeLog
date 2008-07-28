@@ -1,3 +1,12 @@
+Tue Jul 29 01:41:15 2008  Tanaka Akira  <akr@fsij.org>
+
+	* dir.c (struct dir_data): intenc field removed.
+	  (dir_s_alloc): intenc initialization removed.
+	  (dir_initialize): :internal_encoding option removed.  dirname code
+	  conversion removed.
+	  (dir_enc_str): code conversion removed.
+	  [ruby-dev:35661]
+
 Mon Jul 28 21:32:17 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/: use PNG instead of zlib as binary data.
