@@ -4388,6 +4388,15 @@ file_load_ok(file)
     return 1;
 }
 
+static int
+is_explicit_relative(path)
+    const char *path;
+{
+    if (*path++ != '.') return 0;
+    if (*path == '.') path++;
+    return isdirsep(*path);
+}
+
 extern VALUE rb_load_path;
 
 int
@@ -4399,6 +4408,8 @@ rb_find_file_ext(filep, ext)
     VALUE fname, tmp;
     long i, j, fnlen;
 
+    if (!ext[0]) return 0;
+
     if (f[0] == '~') {
 	fname = rb_file_expand_path(*filep, Qnil);
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
@@ -4409,15 +4420,18 @@ rb_find_file_ext(filep, ext)
 	*filep = fname;
     }
 
-    if (is_absolute_path(f)) {
+    if (is_absolute_path(f) || is_explicit_relative(f)) {
+	fname = rb_str_dup(*filep);
+	fnlen = RSTRING_LEN(fname);
 	for (i=0; ext[i]; i++) {
-	    fname = rb_str_dup(*filep);
 	    rb_str_cat2(fname, ext[i]);
-	    OBJ_FREEZE(fname);
 	    if (file_load_ok(StringValueCStr(fname))) {
+		if (!is_absolute_path(f)) fname = rb_file_expand_path(fname, Qnil);
+		OBJ_FREEZE(fname);
 		*filep = fname;
 		return i+1;
 	    }
+	    rb_str_set_len(fname, fnlen);
 	}
 	return 0;
     }
@@ -4474,11 +4488,13 @@ rb_find_file(path)
     }
 #endif
 
-    if (is_absolute_path(f)) {
+    if (is_absolute_path(f) || is_explicit_relative(f)) {
 	if (rb_safe_level() >= 1 && !fpath_check(f)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
-	if (file_load_ok(f)) return path;
+	if (!file_load_ok(f)) return 0;
+	if (!is_absolute_path(f)) path = rb_file_expand_path(path, Qnil);
+	return path;
 	return 0;
     }
 

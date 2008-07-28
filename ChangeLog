@@ -1,3 +1,8 @@
+Tue Jul 29 05:37:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_find_file_ext, rb_find_file): converts Windows style path
+	  to Cygwin path.  [ruby-dev:35647]
+
 Mon Jul 28 20:46:39 2008  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/: use PNG instead of zlib as binary data. [ruby-dev:35666]
