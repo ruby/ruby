@@ -1,3 +1,7 @@
+Mon Jul 28 14:29:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (load_lib): use dln_find_file_r instead of dln_find_file.
+
 Mon Jul 28 00:18:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_core.h, thread.c: It is now prohibited to use Data_Get_Struct in

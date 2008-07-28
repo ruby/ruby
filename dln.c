@@ -911,7 +911,7 @@ char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
 static int
 load_lib(const char *lib)
 {
-    char *path, *file;
+    char *path, *file, fbuf[MAXPATHLEN];
     char armagic[SARMAG];
     int fd, size;
     struct ar_hdr ahdr;
@@ -942,7 +942,7 @@ load_lib(const char *lib)
     path = getenv("DLN_LIBRARY_PATH");
     if (path == NULL) path = dln_librrb_ary_path;
 
-    file = dln_find_file(lib, path);
+    file = dln_find_file_r(lib, path, fbuf, sizeof(fbuf));
     fd = open(file, O_RDONLY);
     if (fd == -1) goto syserr;
     size = read(fd, armagic, SARMAG);
