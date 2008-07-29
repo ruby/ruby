@@ -1,3 +1,7 @@
+Tue Jul 29 21:38:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (Init_bigdecimal): fix typo.
+
 Tue Jul 29 21:35:59 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/etc/test_etc.rb (test_passwd): age field may be string under

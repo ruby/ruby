@@ -1844,7 +1844,7 @@ Init_bigdecimal(void)
 
     /* 
      * 0x01: Determines what happens when the result of a computation is an
-     * underflow (a result too large to be represented). See BigDecimal.mode.
+     * overflow (a result too large to be represented). See BigDecimal.mode.
      */
     rb_define_const(rb_cBigDecimal, "EXCEPTION_OVERFLOW",INT2FIX(VP_EXCEPTION_OVERFLOW));
 
