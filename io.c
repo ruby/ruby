@@ -323,10 +323,16 @@ io_unread(rb_io_t *fptr)
     return;
 }
 
+static rb_encoding *io_input_encoding(rb_io_t *fptr);
+
 static void
 io_ungetc(VALUE str, rb_io_t *fptr)
 {
     int len = RSTRING_LEN(str);
+
+    if (rb_enc_dummy_p(io_input_encoding(fptr))) {
+	rb_raise(rb_eNotImpError, "ungetc against dummy encoding is not currently supported");
+    }
 
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
@@ -1950,6 +1956,9 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    if (rb_enc_dummy_p(io_input_encoding(fptr)) && rs != rb_default_rs) {
+	rb_raise(rb_eNotImpError, "gets with delimiter against dummy encoding is not currently supported");
+    }
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
@@ -2264,6 +2273,10 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 {
     int r, n, cr = 0;
     VALUE str;
+
+    if (rb_enc_dummy_p(enc)) {
+	rb_raise(rb_eNotImpError, "getc against dummy encoding is not currently supported");
+    }
 
     if (io_fillbuf(fptr) < 0) {
 	return Qnil;

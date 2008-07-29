@@ -1,3 +1,16 @@
+Tue Jul 29 23:37:37 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* io.c (io_ungetc): raise NotImplementedError when ungetc is called
+	  against dummy encoding IO.
+
+	* io.c (rb_io_getline_1): ditto when gets with delimiter is called.
+
+	* io.c (io_getc): ditto when getc is called.
+
+	* test/ruby/test_io_m17n.rb (test_terminator_stateful_conversion,
+	  test_getc_stateful_conversion, test_ungetc_stateful_conversion):
+	  these tests should raise NotImplementedError.
+
 Tue Jul 29 22:55:34 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_io.rb (pipe): run reader thread and writer thread.
