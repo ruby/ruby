@@ -1,3 +1,7 @@
+Tue Jul 29 17:54:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (char_casecmp): fix: return 0 if either of characters is NUL.
+
 Tue Jul 29 13:17:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/etc/test_etc.rb (test_getpwuid): fix for users whose uid is

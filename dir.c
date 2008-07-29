@@ -89,8 +89,7 @@ char_casecmp(const char *p1, const char *p2, rb_encoding *enc, const int nocase)
     const char *p1end, *p2end;
     int c1, c2;
 
-    if (!*p1) return *p1;
-    if (!*p2) return -*p2;
+    if (!*p1 || !*p2) return !!*p1 - !!*p2;
     p1end = p1 + strlen(p1);
     p2end = p2 + strlen(p2);
     c1 = rb_enc_codepoint(p1, p1end, enc);
