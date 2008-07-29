@@ -557,14 +557,16 @@ class TestIO < Test::Unit::TestCase
     end.join
   end
 
-  def pipe
+  def pipe(wp, rp)
     r, w = IO.pipe
-    Timeout.timeout(10) do
-      yield(r, w)
-    end
+    rt = Thread.new { rp.call(r) }
+    wt = Thread.new { wp.call(w) }
+    flunk("timeout") unless rt.join(10) && wt.join(10)
   ensure
     r.close unless !r || r.closed?
     w.close unless !w || w.closed?
+    (rt.kill; rt.join) if rt
+    (wt.kill; wt.join) if wt
   end
 
   def pipe2(&b)
@@ -594,16 +596,20 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_ungetc2
-    pipe do |r, w|
-      r.ungetc("0" * 10000)
+    f = false
+    pipe(proc do |w|
+      0 until f
       w.write("1" * 10000)
       w.close
+    end, proc do |r|
+      r.ungetc("0" * 10000)
+      f = true
       assert_equal("0" * 10000 + "1" * 10000, r.read)
-    end
+    end)
   end
 
   def test_write_non_writable
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(IOError) do
         r.write "foobarbaz"
       end
@@ -629,7 +635,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_inspect
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert(r.inspect =~ /^#<IO:0x[0-9a-f]+>$/)
       assert_raise(SecurityError) do
         safe_4 { r.inspect }
@@ -638,18 +644,19 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_readpartial
-    pipe do |r, w|
+    pipe(proc do |w|
       w.write "foobarbaz"
       w.close
+    end, proc do |r|
       assert_raise(ArgumentError) { r.readpartial(-1) }
       assert_equal("fooba", r.readpartial(5))
       r.readpartial(5, s = "")
       assert_equal("rbaz", s)
-    end
+    end)
   end
 
   def test_readpartial_error
-    pipe do |r, w|
+    with_pipe do |r, w|
       s = ""
       t = Thread.new { r.readpartial(5, s) }
       0 until s.size == 5
@@ -661,18 +668,19 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_read
-    pipe do |r, w|
+    pipe(proc do |w|
       w.write "foobarbaz"
       w.close
+    end, proc do |r|
       assert_raise(ArgumentError) { r.read(-1) }
       assert_equal("fooba", r.read(5))
       r.read(nil, s = "")
       assert_equal("rbaz", s)
-    end
+    end)
   end
 
   def test_read_error
-    pipe do |r, w|
+    with_pipe do |r, w|
       s = ""
       t = Thread.new { r.read(5, s) }
       0 until s.size == 5
@@ -684,20 +692,22 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_write_nonblock
-    pipe do |r, w|
+    pipe(proc do |w|
       w.write_nonblock(1)
       w.close
+    end, proc do |r|
       assert_equal("1", r.read)
-    end
+    end)
   end
 
   def test_gets
-    pipe do |r, w|
+    pipe(proc do |w|
       w.write "foobarbaz"
       w.close
+    end, proc do |r|
       assert_equal("", r.gets(0))
-      assert_equal("foobarbaz", r.gets(9))
-    end
+      assert_equal("foobarbaz", s = r.gets(9))
+    end)
   end
 
   def test_close_read
@@ -709,14 +719,14 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_read_pipe
-    pipe do |r, w|
+    with_pipe do |r, w|
       r.close_read
       assert_raise(Errno::EPIPE) { w.write "foobarbaz" }
     end
   end
 
   def test_close_read_security_error
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(SecurityError) do
         safe_4 { r.close_read }
       end
@@ -724,7 +734,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_read_non_readable
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(IOError) do
         w.close_read
       end
@@ -740,7 +750,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_write_security_error
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(SecurityError) do
         safe_4 { r.close_write }
       end
@@ -748,7 +758,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_write_non_readable
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(IOError) do
         r.close_write
       end
@@ -802,111 +812,119 @@ class TestIO < Test::Unit::TestCase
       assert_equal("nil,1,2,2,1001,1001,1001,1,2,3,3", f.read.chomp.gsub("\n", ","))
     end
 
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       r.gets; assert_equal(1, $.)
       r.gets; assert_equal(2, $.)
       r.lineno = 1000; assert_equal(2, $.)
       r.gets; assert_equal(1001, $.)
       r.gets; assert_equal(1001, $.)
-    end
+    end)
   end
 
   def test_readline
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       r.readline; assert_equal(1, $.)
       r.readline; assert_equal(2, $.)
       r.lineno = 1000; assert_equal(2, $.)
       r.readline; assert_equal(1001, $.)
       assert_raise(EOFError) { r.readline }
-    end
+    end)
   end
 
   def test_each_char
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       a = []
       r.each_char {|c| a << c }
       assert_equal(%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"], a)
-    end
+    end)
   end
 
   def test_lines
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       e = r.lines
       assert_equal("foo\n", e.next)
       assert_equal("bar\n", e.next)
       assert_equal("baz\n", e.next)
       assert_raise(StopIteration) { e.next }
-    end
+    end)
   end
 
   def test_bytes
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       e = r.bytes
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c.ord, e.next)
       end
       assert_raise(StopIteration) { e.next }
-    end
+    end)
   end
 
   def test_chars
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       e = r.chars
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c, e.next)
       end
       assert_raise(StopIteration) { e.next }
-    end
+    end)
   end
 
   def test_readbyte
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c.ord, r.readbyte)
       end
       assert_raise(EOFError) { r.readbyte }
-    end
+    end)
   end
 
   def test_readchar
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
       (%w(f o o) + ["\n"] + %w(b a r) + ["\n"] + %w(b a z) + ["\n"]).each do |c|
         assert_equal(c, r.readchar)
       end
       assert_raise(EOFError) { r.readchar }
-    end
+    end)
   end
 
   def test_close_on_exec
@@ -919,7 +937,7 @@ class TestIO < Test::Unit::TestCase
       assert_equal(false, f.close_on_exec?)
     end
 
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_equal(false, r.close_on_exec?)
       r.close_on_exec = true
       assert_equal(true, r.close_on_exec?)
@@ -935,7 +953,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_close_security_error
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(SecurityError) do
         safe_4 { r.close }
       end
@@ -1034,7 +1052,7 @@ class TestIO < Test::Unit::TestCase
   def test_reopen
     t = make_tempfile
 
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(SecurityError) do
         safe_4 { r.reopen(t.path) }
       end
@@ -1070,11 +1088,12 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_printf
-    pipe do |r, w|
+    pipe(proc do |w|
       printf(w, "foo %s baz\n", "bar")
       w.close_write
+    end, proc do |r|
       assert_equal("foo bar baz\n", r.read)
-    end
+    end)
   end
 
   def test_print
@@ -1084,13 +1103,14 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_putc
-    pipe do |r, w|
+    pipe(proc do |w|
       w.putc "A"
       w.putc "BC"
       w.putc 68
       w.close_write
+    end, proc do |r|
       assert_equal("ABD", r.read)
-    end
+    end)
 
     assert_in_out_err([], "putc 65", %w(A), [])
   end
@@ -1098,19 +1118,21 @@ class TestIO < Test::Unit::TestCase
   def test_puts_recursive_array
     a = ["foo"]
     a << a
-    pipe do |r, w|
+    pipe(proc do |w|
       w.puts a
       w.close
+    end, proc do |r|
       assert_equal("foo\n[...]\n", r.read)
-    end
+    end)
   end
 
   def test_display
-    pipe do |r, w|
+    pipe(proc do |w|
       "foo".display(w)
       w.close
+    end, proc do |r|
       assert_equal("foo", r.read)
-    end
+    end)
 
     assert_in_out_err([], "'foo'.display", %w(foo), [])
   end
@@ -1132,7 +1154,7 @@ class TestIO < Test::Unit::TestCase
 
     assert_equal("foo\nbar\nbaz\n", File.read(t.path))
 
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(RuntimeError) do
         o = Object.new
         class << o; self; end.instance_eval do
@@ -1142,16 +1164,18 @@ class TestIO < Test::Unit::TestCase
       end
     end
 
-    pipe do |r, w|
-      r, w = IO.new(r), IO.new(w)
+    pipe(proc do |w|
+      w = IO.new(w)
       w.puts "foo"
       w.puts "bar"
       w.puts "baz"
       w.close
+    end, proc do |r|
+      r = IO.new(r)
       assert_equal("foo\nbar\nbaz\n", r.read)
-    end
+    end)
 
-    pipe do |r, w|
+    with_pipe do |r, w|
       assert_raise(ArgumentError) { IO.new(r, "r+") }
     end
 
