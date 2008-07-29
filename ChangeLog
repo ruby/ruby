@@ -1,3 +1,8 @@
+Tue Jul 29 21:35:59 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/etc/test_etc.rb (test_passwd): age field may be string under
+	  some environments.
+
 Tue Jul 29 17:54:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (char_casecmp): fix: return 0 if either of characters is NUL.
