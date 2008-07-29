@@ -1,3 +1,8 @@
+Tue Jul 29 13:17:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/etc/test_etc.rb (test_getpwuid): fix for users whose uid is
+	  shared. 
+
 Tue Jul 29 05:37:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file_ext, rb_find_file): converts Windows style path
