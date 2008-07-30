@@ -1,6 +1,10 @@
+Wed Jul 30 21:32:52 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ChangeLog: fix wrong method name and add reference.
+
 Wed Jul 30 21:30:08 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
-	* regparse.c (parse_exp): fix memory leak.
+	* regparse.c (name_add): fix memory leak.
 
 Wed Jul 30 21:08:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -14,7 +18,7 @@ Wed Jul 30 17:48:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Jul 29 23:37:37 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (io_ungetc): raise NotImplementedError when ungetc is called
-	  against dummy encoding IO.
+	  against dummy encoding IO.  [ruby-dev:35686]
 
 	* io.c (rb_io_getline_1): ditto when gets with delimiter is called.
 
