@@ -536,7 +536,7 @@ rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
     }
 
     return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			  argc, argv, &pass_proc->block);
+			  argc, argv, (pass_proc ? &pass_proc->block : 0));
 }
 
 /*
