@@ -6334,7 +6334,7 @@ sym_equal(VALUE sym1, VALUE sym2)
 static VALUE
 sym_inspect(VALUE sym)
 {
-    VALUE str, klass = Qundef;
+    VALUE str;
     ID id = SYM2ID(sym);
     rb_encoding *enc;
 
@@ -6347,10 +6347,6 @@ sym_inspect(VALUE sym)
 	!rb_enc_symname_p(RSTRING_PTR(sym), enc)) {
 	str = rb_str_inspect(str);
 	strncpy(RSTRING_PTR(str), ":\"", 2);
-    }
-    if (klass != Qundef) {
-	rb_str_cat2(str, "/");
-	rb_str_append(str, rb_inspect(klass));
     }
     return str;
 }
