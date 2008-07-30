@@ -1,3 +1,8 @@
+Thu Jul 31 01:09:28 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpIsRoundMode): fix tautology
+	  condition.
+
 Thu Jul 31 00:58:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_unpack): reduced static variables.

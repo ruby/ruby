@@ -2095,9 +2095,9 @@ VpGetRoundMode(void)
 VP_EXPORT int
 VpIsRoundMode(unsigned long n)
 {
-    if(n==VP_ROUND_UP      || n!=VP_ROUND_DOWN      ||
-       n==VP_ROUND_HALF_UP || n!=VP_ROUND_HALF_DOWN ||
-       n==VP_ROUND_CEIL    || n!=VP_ROUND_FLOOR     ||
+    if(n==VP_ROUND_UP      || n==VP_ROUND_DOWN      ||
+       n==VP_ROUND_HALF_UP || n==VP_ROUND_HALF_DOWN ||
+       n==VP_ROUND_CEIL    || n==VP_ROUND_FLOOR     ||
        n==VP_ROUND_HALF_EVEN
       ) return 1;
     return 0;
