@@ -1,3 +1,9 @@
+Thu Jul 31 02:21:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/syck/rubyext.c (rb_syck_compile): remove meaningless branch
+	  that misleads into thinking that the variable sav may be
+	  uninitialized.
+
 Thu Jul 31 01:25:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_mutex_unlock_all): mutex is no longer a ruby object.
