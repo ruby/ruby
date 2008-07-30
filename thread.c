@@ -1957,7 +1957,7 @@ cmp_tv(const struct timeval *a, const struct timeval *b)
 }
 
 static int
-subst(struct timeval *rest, const struct timeval *wait)
+subtract_tv(struct timeval *rest, const struct timeval *wait)
 {
     while (rest->tv_usec < wait->tv_usec) {
 	if (rest->tv_sec <= wait->tv_sec) {
@@ -1982,10 +1982,18 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 #ifndef linux
     double limit = 0;
     struct timeval wait_rest;
+# if defined(__CYGWIN__) || defined(_WIN32)
+    struct timeval start_time;
+# endif
 
     if (timeout) {
-	limit = timeofday() +
-	  (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
+# if defined(__CYGWIN__) || defined(_WIN32)
+	gettimeofday(&start_time, NULL);
+	limit = (double)start_time.tv_sec + (double)start_time.tv_usec*1e-6;
+# else
+	limit = timeofday();
+# endif
+	limit += (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
 	wait_rest = *timeout;
 	timeout = &wait_rest;
     }
@@ -2000,6 +2008,7 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 
 #if defined(__CYGWIN__) || defined(_WIN32)
     {
+	int finish = 0;
 	/* polling duration: 100ms */
 	struct timeval wait_100ms, *wait;
 	wait_100ms.tv_sec = 0;
@@ -2017,9 +2026,19 @@ do_select(int n, fd_set *read, fd_set *write, fd_set *except,
 		    if (write) *write = orig_write;
 		    if (except) *except = orig_except;
 		    wait = &wait_100ms;
-		} while (__th->interrupt_flag == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
+		    if (timeout) {
+			struct timeval elapsed;
+			gettimeofday(&elapsed, NULL);
+			subtract_tv(&elapsed, &start_time);
+			if (!subtract_tv(timeout, &elapsed)) {
+			    finish = 1;
+			    break;
+			}
+			if (cmp_tv(&wait_100ms, timeout) < 0) wait = timeout;
+		    }
+		} while (__th->interrupt_flag == 0);
 	    }, 0, 0);
-	} while (result == 0 && (timeout == 0 || subst(timeout, &wait_100ms)));
+	} while (result == 0 && !finish);
     }
 #else
     BLOCKING_REGION({

@@ -2143,7 +2143,7 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 }
 
 static inline int
-subst(struct timeval *rest, const struct timeval *wait)
+subtract(struct timeval *rest, const struct timeval *wait)
 {
     while (rest->tv_usec < wait->tv_usec) {
 	if (rest->tv_sec <= wait->tv_sec) {
@@ -2174,7 +2174,7 @@ compare(const struct timeval *t1, const struct timeval *t2)
 #undef Sleep
 int WSAAPI
 rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
-	       struct timeval *timeout)
+	      struct timeval *timeout)
 {
     int r;
     fd_set pipe_rd;
@@ -2183,11 +2183,29 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     fd_set else_wr;
     fd_set except;
     int nonsock = 0;
+    struct timeval limit;
 
     if (nfds < 0 || (timeout && (timeout->tv_sec < 0 || timeout->tv_usec < 0))) {
 	errno = EINVAL;
 	return -1;
     }
+
+    if (timeout) {
+	if (timeout->tv_sec < 0 ||
+	    timeout->tv_usec < 0 ||
+	    timeout->tv_usec >= 1000000) {
+	    errno = EINVAL;
+	    return -1;
+	}
+	gettimeofday(&limit, NULL);
+	limit.tv_sec += timeout->tv_sec;
+	limit.tv_usec += timeout->tv_usec;
+	if (limit.tv_usec >= 1000000) {
+	    limit.tv_usec -= 1000000;
+	    limit.tv_sec++;
+	}
+    }
+
     if (!NtSocketsInitialized) {
 	StartSockets();
     }
@@ -2223,10 +2241,9 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	struct timeval rest;
 	struct timeval wait;
 	struct timeval zero;
-	if (timeout) rest = *timeout;
 	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
 	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
-	do {
+	for (;;) {
 	    if (nonsock) {
 		// modifying {else,pipe,cons}_rd is safe because
 		// if they are modified, function returns immediately.
@@ -2242,8 +2259,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		break;
 	    }
 	    else {
-		struct timeval *dowait =
-		    compare(&rest, &wait) < 0 ? &rest : &wait;
+		struct timeval *dowait = &wait;
 
 		fd_set orig_rd;
 		fd_set orig_wr;
@@ -2257,10 +2273,16 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		if (wr) *wr = orig_wr;
 		if (ex) *ex = orig_ex;
 
-		// XXX: should check the time select spent
+		if (timeout) {
+		    struct timeval now;
+		    gettimeofday(&now, NULL);
+		    rest = limit;
+		    if (!subtract(&rest, &now)) break;
+		    if (compare(&rest, &wait) < 0) dowait = &rest;
+		}
 		Sleep(dowait->tv_sec * 1000 + dowait->tv_usec / 1000);
 	    }
-	} while (!timeout || subst(&rest, &wait));
+	}
     }
 
     return r;

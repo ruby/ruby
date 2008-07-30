@@ -1,3 +1,8 @@
+Wed Jul 30 17:48:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_select): recalc the rest of timeout for each
+	  iterations.  [ruby-core:18015]
+
 Tue Jul 29 23:37:37 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* io.c (io_ungetc): raise NotImplementedError when ungetc is called
