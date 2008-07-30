@@ -2802,8 +2802,8 @@ rb_mutex_unlock_all(mutex_t *mutexes)
 
     while (mutexes) {
 	mutex = mutexes;
-	/* rb_warn("mutex #<%s:%p> remains to be locked by terminated thread",
-		rb_obj_classname(mutexes), (void*)mutexes); */
+	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
+		mutexes); */
 	mutexes = mutex->next_mutex;
 	err = mutex_unlock(mutex);
 	if (err) rb_bug("invalid keeping_mutexes: %s", err);
