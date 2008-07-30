@@ -5805,7 +5805,7 @@ typedef void (*rb_magic_comment_setter_t)(struct parser_params *parser, const ch
 static void
 magic_comment_encoding(struct parser_params *parser, const char *name, const char *val)
 {
-    if (parser && parser->line_count != (parser->has_shebang ? 2 : 1))
+    if (parser->line_count != (parser->has_shebang ? 2 : 1))
 	return;
     parser_set_encode(parser, val);
 }
