@@ -1,3 +1,7 @@
+Wed Jul 30 21:08:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* regparse.c (parse_exp): fix memory leak at Regexp.new("x{1,1}").
+
 Wed Jul 30 17:48:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): recalc the rest of timeout for each

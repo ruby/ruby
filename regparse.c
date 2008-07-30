@@ -5392,6 +5392,9 @@ parse_exp(Node** np, OnigToken* tok, int term,
       if (r == 0) {
 	*targetp = qn;
       }
+      else if (r == 1) {
+        onig_node_free(qn);
+      }
       else if (r == 2) { /* split case: /abc+/ */
 	Node *tmp;
 
