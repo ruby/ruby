@@ -1787,33 +1787,31 @@ pack_unpack(VALUE str, VALUE fmt)
 		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
 		char *ptr = RSTRING_PTR(buf);
 		int a = -1,b = -1,c = 0,d;
-		static int first = 1;
-		static int b64_xtable[256];
+		static signed char b64_xtable[256];
 
-		if (first) {
+		if (b64_xtable['/'] <= 0) {
 		    int i;
-		    first = 0;
 
 		    for (i = 0; i < 256; i++) {
 			b64_xtable[i] = -1;
 		    }
 		    for (i = 0; i < 64; i++) {
-			b64_xtable[(int)b64_table[i]] = i;
+			b64_xtable[(unsigned char)b64_table[i]] = i;
 		    }
 		}
 		while (s < send) {
 		    a = b = c = d = -1;
-		    while((a = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { s++; }
-		    if( s >= send ) break;
+		    while ((a = b64_xtable[(unsigned char)*s]) == -1 && s < send) {s++;}
+		    if (s >= send) break;
 		    s++;
-		    while((b = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { s++; }
-		    if( s >= send ) break;
+		    while ((b = b64_xtable[(unsigned char)*s]) == -1 && s < send) {s++;}
+		    if (s >= send) break;
 		    s++;
-		    while((c = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { if( *s == '=' ) break; s++; }
-		    if( *s == '=' || s >= send ) break;
+		    while ((c = b64_xtable[(unsigned char)*s]) == -1 && s < send) {if (*s == '=') break; s++;}
+		    if (*s == '=' || s >= send) break;
 		    s++;
-		    while((d = b64_xtable[(int)(*(unsigned char*)s)]) == -1 && s < send) { if( *s == '=' ) break; s++; }
-		    if( *s == '=' || s >= send ) break;
+		    while ((d = b64_xtable[(unsigned char)*s]) == -1 && s < send) {if (*s == '=') break; s++;}
+		    if (*s == '=' || s >= send) break;
 		    s++;
 		    *ptr++ = a << 2 | b >> 4;
 		    *ptr++ = b << 4 | c >> 2;

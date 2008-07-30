@@ -1,3 +1,7 @@
+Thu Jul 31 00:58:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_unpack): reduced static variables.
+
 Thu Jul 31 00:10:20 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (rb_proc_call_with_block): prevent null reference.
