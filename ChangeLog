@@ -1,3 +1,15 @@
+Wed Jul 30 22:08:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* dir.c (struct dir_data): change path field char * to VALUE.
+	  (mark_dir): new function for mark path field.
+	  (free_dir): follow the path field change.
+	  (dir_s_alloc): ditto.
+	  (dir_initialize): ditto.
+	  (dir_s_open): ditto.
+	  (dir_inspect): ditto.
+	  (dir_path): return (duplicate of) the path field to preserve
+	  encoding.  [ruby-dev:35685]
+
 Wed Jul 30 22:06:56 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (sym_inspect): remove dead code.

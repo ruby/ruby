@@ -289,16 +289,21 @@ VALUE rb_cDir;
 
 struct dir_data {
     DIR *dir;
-    char *path;
+    VALUE path;
     rb_encoding *extenc;
 };
+
+static void
+mark_dir(struct dir_data *dir)
+{
+    rb_gc_mark(dir->path);
+}
 
 static void
 free_dir(struct dir_data *dir)
 {
     if (dir) {
 	if (dir->dir) closedir(dir->dir);
-	if (dir->path) xfree(dir->path);
     }
     xfree(dir);
 }
@@ -309,10 +314,10 @@ static VALUE
 dir_s_alloc(VALUE klass)
 {
     struct dir_data *dirp;
-    VALUE obj = Data_Make_Struct(klass, struct dir_data, 0, free_dir, dirp);
+    VALUE obj = Data_Make_Struct(klass, struct dir_data, mark_dir, free_dir, dirp);
 
     dirp->dir = NULL;
-    dirp->path = NULL;
+    dirp->path = Qnil;
     dirp->extenc = NULL;
 
     return obj;
@@ -357,9 +362,8 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 
     Data_Get_Struct(dir, struct dir_data, dp);
     if (dp->dir) closedir(dp->dir);
-    if (dp->path) xfree(dp->path);
     dp->dir = NULL;
-    dp->path = NULL;
+    dp->path = Qnil;
     dp->extenc = extencoding;
     dp->dir = opendir(RSTRING_PTR(dirname));
     if (dp->dir == NULL) {
@@ -371,7 +375,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	    rb_sys_fail(RSTRING_PTR(dirname));
 	}
     }
-    dp->path = strdup(RSTRING_PTR(dirname));
+    dp->path = rb_str_dup_frozen(dirname);
 
     return dir;
 }
@@ -391,7 +395,7 @@ static VALUE
 dir_s_open(int argc, VALUE *argv, VALUE klass)
 {
     struct dir_data *dp;
-    VALUE dir = Data_Make_Struct(klass, struct dir_data, 0, free_dir, dp);
+    VALUE dir = Data_Make_Struct(klass, struct dir_data, mark_dir, free_dir, dp);
 
     dir_initialize(argc, argv, dir);
     if (rb_block_given_p()) {
@@ -440,9 +444,9 @@ dir_inspect(VALUE dir)
     struct dir_data *dirp;
 
     Data_Get_Struct(dir, struct dir_data, dirp);
-    if (dirp->path) {
+    if (!NIL_P(dirp->path)) {
 	const char *c = rb_obj_classname(dir);
-	return rb_sprintf("#<%s:%s>", c, dirp->path);
+	return rb_sprintf("#<%s:%s>", c, RSTRING_PTR(dirp->path));
     }
     return rb_funcall(dir, rb_intern("to_s"), 0, 0);
 }
@@ -462,8 +466,8 @@ dir_path(VALUE dir)
     struct dir_data *dirp;
 
     Data_Get_Struct(dir, struct dir_data, dirp);
-    if (!dirp->path) return Qnil;
-    return dir_enc_str(rb_str_new2(dirp->path), dirp);
+    if (NIL_P(dirp->path)) return Qnil;
+    return rb_str_dup(dirp->path);
 }
 
 /*
