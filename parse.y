@@ -155,9 +155,7 @@ vtable_free(struct vtable *tbl)
         if (tbl->tbl) {
             xfree(tbl->tbl);
         }
-        if (tbl) {
-            xfree(tbl);
-        }
+        xfree(tbl);
     }
 }
 
