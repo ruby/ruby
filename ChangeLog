@@ -1,3 +1,7 @@
+Thu Jul 31 11:31:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/syck.h (ASSERT): fix typo at r18176.
+
 Wed Jul 30 17:48:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_select): recalc the rest of timeout for each
