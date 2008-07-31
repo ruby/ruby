@@ -1304,7 +1304,7 @@ static VALUE
 pack_unpack(str, fmt)
     VALUE str, fmt;
 {
-    static const char hexdigits[] = "0123456789abcdef0123456789ABCDEFx";
+    static const char hexdigits[] = "0123456789abcdef";
     char *s, *send;
     char *p, *pend;
     VALUE ary;

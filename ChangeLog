@@ -1,3 +1,7 @@
+Thu Jul 31 12:23:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_unpack): upper half of hexdigits has never been used.
+
 Thu Jul 31 11:31:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/syck/syck.h (ASSERT): fix typo at r18176.
