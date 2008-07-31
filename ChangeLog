@@ -1,3 +1,8 @@
+Thu Jul 31 17:00:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (get_replacement_character): fix: invalid byte sequence
+	  is always replaced "\x00?".
+
 Thu Jul 31 16:37:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/rubygems/test_gem_ext_configure_builder.rb
