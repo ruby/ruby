@@ -515,7 +515,7 @@ struct RString {
 		VALUE shared;
 	    } aux;
 	} heap;
-	char ary[RSTRING_EMBED_LEN_MAX];
+	char ary[RSTRING_EMBED_LEN_MAX + 1];
     } as;
 };
 #define RSTRING_NOEMBED FL_USER1

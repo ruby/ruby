@@ -1,3 +1,8 @@
+Thu Jul 31 13:18:30 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* include/ruby/ruby.h (struct RString): size of ary must be
+	  RSTRING_EMBED_LEN_MAX + 1.
+
 Thu Jul 31 12:23:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_unpack): upper half of hexdigits has never been used.
