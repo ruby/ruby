@@ -3164,7 +3164,10 @@ VpMult(Real *c, Real *a, Real *b)
     /* set LHSV c info */
 
     c->exponent = a->exponent;    /* set exponent */
-    if(!AddExponent(c,b->exponent)) return 0;
+    if(!AddExponent(c,b->exponent)) {
+	VpFree(c);
+	return 0;
+    }
     VpSetSign(c,VpGetSign(a)*VpGetSign(b));    /* set sign  */
     Carry = 0;
     nc = ind_c = MxIndAB;

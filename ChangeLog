@@ -1,3 +1,7 @@
+Thu Jul 31 22:17:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpMult): prevent memory leak.
+
 Thu Jul 31 20:05:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/test_transcode.rb (test_unicode_public_review_issue_121):
