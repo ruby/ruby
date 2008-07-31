@@ -733,7 +733,7 @@ ruby_iseq_disasm_insn(VALUE ret, VALUE *iseq, int pos,
     }
     else {
 	rb_str_catf(str, "%04d %-16.*s ", pos,
-		    strcspn(insn_name_buff, "_"), insn_name_buff);
+		    (int)strcspn(insn_name_buff, "_"), insn_name_buff);
     }
 
     for (j = 0; types[j]; j++) {

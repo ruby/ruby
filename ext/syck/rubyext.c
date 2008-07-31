@@ -644,7 +644,7 @@ rb_syck_err_handler(SyckParser *p, const char *msg)
         endl++;
 
     endl[0] = '\0';
-    rb_raise(rb_eArgError, "%s on line %d, col %d: `%s'",
+    rb_raise(rb_eArgError, "%s on line %d, col %"PRIdPTRDIFF": `%s'",
            msg,
            p->linect,
            p->cursor - p->lineptr, 

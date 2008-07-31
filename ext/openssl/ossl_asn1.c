@@ -495,7 +495,7 @@ ossl_asn1_get_asn1type(VALUE obj)
     value = ossl_asn1_get_value(obj);
     switch(tag){
     case V_ASN1_BOOLEAN:
-	ptr = (void*)obj_to_asn1bool(value);
+	ptr = (void*)(VALUE)obj_to_asn1bool(value);
 	free_func = NULL;
 	break;
     case V_ASN1_INTEGER:         /* FALLTHROUGH */

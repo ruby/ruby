@@ -1,3 +1,13 @@
+Thu Jul 31 10:51:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (ruby_iseq_disasm_insn): suppress warnings on platforms which
+	  int size differs from pointer size.
+
+	* ext/openssl/ossl_asn1.c (ossl_asn1_get_asn1type): ditto
+
+	* ext/syck/rubyext.c (rb_syck_err_handler),
+	  (syck_default_error_handler): ditto.
+
 Thu Jul 31 02:21:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/syck/rubyext.c (rb_syck_compile): remove meaningless branch
