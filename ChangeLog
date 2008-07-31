@@ -1,4 +1,6 @@
-Thu Jul 31 11:30:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 31 11:31:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/syck/syck.h (ASSERT): fix typo at r18176.
 
 	* ext/syck/rubyext.c (rb_syck_compile): expression in ASSERT() has no
 	  effect unless debug mode.

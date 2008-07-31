@@ -34,7 +34,7 @@ extern "C" {
 #if DEBUG
 void syck_assert( const char *, unsigned, const char * );
 # define ASSERT(f) \
-    (( f ) ? (void)0 syck_assert( __FILE__, __LINE__, #f )
+    (( f ) ? (void)0 : syck_assert( __FILE__, __LINE__, #f ))
 #else
 # define ASSERT(f) ((void)0)
 #endif
