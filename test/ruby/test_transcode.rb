@@ -313,13 +313,13 @@ class TestTranscode < Test::Unit::TestCase
   end
   
   def test_unicode_public_review_issue_121 # see http://www.unicode.org/review/pr-121.html
-    # assert_equal("\x00\x61\x00?\x00\x62".force_encoding('UTF-16BE'),
+    # assert_equal("\x00\x61\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
     #   "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 1
     assert_equal("\x00\x61\xFF\xFD\xFF\xFD\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
       "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 2
     assert_equal("\x61\x00\xFD\xFF\xFD\xFF\xFD\xFF\x62\x00".force_encoding('UTF-16LE'),
       "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16LE', 'UTF-8', invalid: :replace)) # option 2
-    # assert_equal("\x00\x61\x00?\x00?\x00?\x00?\x00?\x00?\x00\x62".force_encoding('UTF-16BE'),
+    # assert_equal("\x00\x61\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
     # "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 3
   end
 end

@@ -1,3 +1,8 @@
+Thu Jul 31 20:05:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_transcode.rb (test_unicode_public_review_issue_121):
+	  fix option1 and 3.
+
 Thu Jul 31 19:54:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (get_replacement_character): use U+FFFD as replacement
@@ -17,7 +22,7 @@ Thu Jul 31 17:00:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Jul 31 16:37:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/rubygems/test_gem_ext_configure_builder.rb
-	  (test_self_build_fail): remove extra newline.
+	  (test_self_build_fail): remove extra newline. [ruby-dev:35704]
 
 Thu Jul 31 15:11:11 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
