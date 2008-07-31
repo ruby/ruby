@@ -528,15 +528,18 @@ rb_proc_call(VALUE self, VALUE args)
 VALUE
 rb_proc_call_with_block(VALUE self, int argc, VALUE *argv, VALUE pass_procval)
 {
-    rb_proc_t *proc, *pass_proc = 0;
+    rb_proc_t *proc;
+    rb_block_t *block = 0;
     GetProcPtr(self, proc);
 
     if (!NIL_P(pass_procval)) {
+	rb_proc_t *pass_proc;
 	GetProcPtr(pass_procval, pass_proc);
+	block = &pass_proc->block;
     }
 
     return vm_invoke_proc(GET_THREAD(), proc, proc->block.self,
-			  argc, argv, (pass_proc ? &pass_proc->block : 0));
+			  argc, argv, block);
 }
 
 /*
