@@ -229,6 +229,22 @@ syck_st_free( SyckParser *p )
     }
 }
 
+typedef struct {
+   long hash;
+   char *buffer;
+   long length;
+   long remaining;
+   int  printed;
+} bytestring_t;
+
+int
+syck_st_free_syms( void *key, bytestring_t *sav, void *dummy )
+{
+    S_FREE(sav->buffer);
+    S_FREE(sav);
+    return ST_CONTINUE;
+}
+
 void
 syck_free_parser( SyckParser *p )
 {
@@ -237,6 +253,7 @@ syck_free_parser( SyckParser *p )
      */
     if ( p->syms != NULL )
     {
+        st_foreach( p->syms, syck_st_free_syms, 0 );
         st_free_table( p->syms );
         p->syms = NULL;
     }

@@ -1,3 +1,8 @@
+Wed Jul 30 21:08:06 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/syck/syck.c (syck_free_parser): fix memory leak by
+	  YAML::Syck.compile.
+
 Thu Jul 31 22:17:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpMult): prevent memory leak.
