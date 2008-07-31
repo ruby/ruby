@@ -1,3 +1,14 @@
+Thu Jul 31 19:54:57 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (get_replacement_character): use U+FFFD as replacement
+	  character when convert to Unicode.
+
+	* test/ruby/test_transcode.rb (test_unicode_public_review_issue_121):
+	  rename from test_public_review_issue_121.
+
+	* test/ruby/test_transcode.rb (test_unicode_public_review_issue_121):
+	  enable option2.
+
 Thu Jul 31 17:00:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (get_replacement_character): fix: invalid byte sequence
@@ -11,9 +22,9 @@ Thu Jul 31 16:37:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Thu Jul 31 15:11:11 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: added test_shift_jis
-          (contributed by Yoshihiro Kambayashi) and
-          test_public_review_issue_121
-          (see http://www.unicode.org/review/pr-121.html)
+	  (contributed by Yoshihiro Kambayashi) and
+	  test_public_review_issue_121
+	  (see http://www.unicode.org/review/pr-121.html)
 
 Thu Jul 31 13:18:30 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 

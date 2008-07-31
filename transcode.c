@@ -137,16 +137,16 @@ get_replacement_character(rb_encoding *enc)
 	return "?";
     }
     else if (utf16be_encoding == enc) {
-	return "\x00?";
+	return "\xFF\xFD";
     }
     else if (utf16le_encoding == enc) {
-	return "?\x00";
+	return "\xFD\xFF";
     }
     else if (utf32be_encoding == enc) {
-	return "\x00\x00\x00?";
+	return "\x00\x00\xFF\xFD";
     }
     else if (utf32le_encoding == enc) {
-	return "?\x00\x00\x00";
+	return "\xFD\xFF\x00\x00";
     }
     else {
 	return "?";
