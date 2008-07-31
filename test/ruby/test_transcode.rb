@@ -254,6 +254,48 @@ class TestTranscode < Test::Unit::TestCase
       "\x82\xAB".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
   end
 
+  def test_shift_jis
+    check_both_ways("\u3000", "\x81\x40", 'shift_jis') # full-width space
+    check_both_ways("\u00D7", "\x81\x7E", 'shift_jis') # ~
+    check_both_ways("\u00F7", "\x81\x80", 'shift_jis') # 
+    check_both_ways("\u25C7", "\x81\x9E", 'shift_jis') # 
+    check_both_ways("\u25C6", "\x81\x9F", 'shift_jis') # 
+    check_both_ways("\u25EF", "\x81\xFC", 'shift_jis') # 
+    check_both_ways("\u6A97", "\x9F\x40", 'shift_jis') # @
+    check_both_ways("\u6BEF", "\x9F\x7E", 'shift_jis') # ~
+    check_both_ways("\u9EBE", "\x9F\x80", 'shift_jis') # 
+    check_both_ways("\u6CBE", "\x9F\x9E", 'shift_jis') # 
+    check_both_ways("\u6CBA", "\x9F\x9F", 'shift_jis') # 
+    check_both_ways("\u6ECC", "\x9F\xFC", 'shift_jis') # 
+    check_both_ways("\u6F3E", "\xE0\x40", 'shift_jis') # @
+    check_both_ways("\u70DD", "\xE0\x7E", 'shift_jis') # ~
+    check_both_ways("\u70D9", "\xE0\x80", 'shift_jis') # 
+    check_both_ways("\u71FC", "\xE0\x9E", 'shift_jis') # 
+    check_both_ways("\u71F9", "\xE0\x9F", 'shift_jis') # 
+    check_both_ways("\u73F1", "\xE0\xFC", 'shift_jis') # 
+    assert_raise(RuntimeError) { "\xEF\x40".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xEF\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xEF\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xEF\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xEF\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xEF\xFC".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xF0\x40".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xF0\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xF0\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
+    check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # @
+    assert_raise(RuntimeError) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xFC\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xFC\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(RuntimeError) { "\xFC\xFC".encode("utf-8", 'shift_jis') }
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # {sO
+    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\x90\xC2\x8E\x52\x8A\x77\x89\x40\x91\xE5\x8A\x77", 'shift_jis') # Rw@w
+    check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # _ы`
+  end
+
   def test_iso_2022_jp
     assert_raise(RuntimeError) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
@@ -268,5 +310,19 @@ class TestTranscode < Test::Unit::TestCase
   
   def test_iso_2022_jp_1
     # check_both_ways("\u9299", "\x1b$(Dd!\x1b(B", "iso-2022-jp-1") # JIS X 0212 区68 点01 銙
+  end
+  
+  def test_public_review_issue_121 # see http://www.unicode.org/review/pr-121.html
+    # assert_equal("\x00\x61\x00?\x00\x62".force_encoding('UTF-16BE'),
+    #   "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 1
+    assert_equal("\x00\x61\x00?\x00?\x00?\x00\x62".force_encoding('UTF-16BE'),
+      "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 2
+    # The next test doesn't work because of a bug in the implementation
+    # but we currently don't plan to fix that bug because we'll rewrite
+    # this stuff a bit anyway.
+    # assert_equal("\x61\x00?\x00?\x00?\x00\x62\x00".force_encoding('UTF-16LE'),
+    #  "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16LE', 'UTF-8', invalid: :replace)) # option 2
+    # assert_equal("\x00\x61\x00?\x00?\x00?\x00?\x00?\x00?\x00\x62".force_encoding('UTF-16BE'),
+    # "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 3
   end
 end
