@@ -254,6 +254,21 @@ class TestTranscode < Test::Unit::TestCase
       "\x82\xAB".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
   end
 
+  def test_invalid_replace
+    # arguments only
+    assert_nothing_raised { 'abc'.encode('UTF-8', invalid: :replace) }
+    assert_equal("\xEF\xBF\xBD".force_encoding("UTF-8"),
+      "\x80".encode("UTF-8", "UTF-16BE", invalid: :replace))
+    assert_equal("\xFF\xFD".force_encoding("UTF-16BE"),
+      "\x80".encode("UTF-16BE", "UTF-8", invalid: :replace))
+    assert_equal("\xFD\xFF".force_encoding("UTF-16LE"),
+      "\x80".encode("UTF-16LE", "UTF-8", invalid: :replace))
+    assert_equal("\x00\x00\xFF\xFD".force_encoding("UTF-32BE"),
+      "\x80".encode("UTF-32BE", "UTF-8", invalid: :replace))
+    assert_equal("\xFD\xFF\x00\x00".force_encoding("UTF-32LE"),
+      "\x80".encode("UTF-32LE", "UTF-8", invalid: :replace))
+  end
+
   def test_shift_jis
     check_both_ways("\u3000", "\x81\x40", 'shift_jis') # full-width space
     check_both_ways("\u00D7", "\x81\x7E", 'shift_jis') # ~

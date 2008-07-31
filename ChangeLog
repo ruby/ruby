@@ -1,3 +1,16 @@
+Fri Aug  1 05:31:08 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* transcode.c (output_replacement_character):
+	  rename from _get_replacement_character.
+
+	* transcode.c (output_replacement_character):
+	  fix replacement on UTF-32{BE,LE}. [ruby-dev:35705]
+
+	* transcode.c (transcode_loop): ditto.
+
+	* test/ruby/test_transcode.rb (test_invalid_replace):
+	  add for above.
+
 Fri Aug  1 01:01:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* proc.c (rb_proc_call_with_block): reduce comparison.

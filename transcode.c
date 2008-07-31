@@ -91,7 +91,7 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
 
 static const rb_transcoder *
-transcode_dispatch(const char* from_encoding, const char* to_encoding)
+transcode_dispatch(const char *from_encoding, const char *to_encoding)
 {
     char *const key = transcoder_key(from_encoding, to_encoding);
     st_data_t k, val = 0;
@@ -122,9 +122,10 @@ transcode_dispatch(const char* from_encoding, const char* to_encoding)
     return (rb_transcoder *)val;
 }
 
-static const char*
-get_replacement_character(rb_encoding *enc)
+static void
+output_replacement_character(unsigned char **out_pp, rb_encoding *enc)
 {
+    unsigned char *out_p = *out_pp;
     static rb_encoding *utf16be_encoding, *utf16le_encoding;
     static rb_encoding *utf32be_encoding, *utf32le_encoding;
     if (!utf16be_encoding) {
@@ -133,24 +134,36 @@ get_replacement_character(rb_encoding *enc)
 	utf32be_encoding = rb_enc_find("UTF-32BE");
 	utf32le_encoding = rb_enc_find("UTF-32LE");
     }
-    if (rb_enc_asciicompat(enc)) {
-	return "?";
+    if (rb_utf8_encoding() == enc) {
+	*out_p++ = 0xEF;
+	*out_p++ = 0xBF;
+	*out_p++ = 0xBD;
     }
     else if (utf16be_encoding == enc) {
-	return "\xFF\xFD";
+	*out_p++ = 0xFF;
+	*out_p++ = 0xFD;
     }
     else if (utf16le_encoding == enc) {
-	return "\xFD\xFF";
+	*out_p++ = 0xFD;
+	*out_p++ = 0xFF;
     }
     else if (utf32be_encoding == enc) {
-	return "\x00\x00\xFF\xFD";
+	*out_p++ = 0x00;
+	*out_p++ = 0x00;
+	*out_p++ = 0xFF;
+	*out_p++ = 0xFD;
     }
     else if (utf32le_encoding == enc) {
-	return "\xFD\xFF\x00\x00";
+	*out_p++ = 0xFD;
+	*out_p++ = 0xFF;
+	*out_p++ = 0x00;
+	*out_p++ = 0x00;
     }
     else {
-	return "?";
+	*out_p++ = '?';
     }
+    *out_pp = out_p;
+    return;
 }
 
 /*
@@ -255,10 +268,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	    continue;
 	}
 	else if (opt&INVALID_REPLACE) {
-	    const char *rep = get_replacement_character(to_encoding);
-	    do {
-		*out_p++ = *rep++;
-	    } while (*rep);
+	    output_replacement_character(&out_p, to_encoding);
 	    continue;
 	}
 	rb_raise(rb_eRuntimeError /*change exception*/, "invalid byte sequence");
@@ -271,10 +281,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	    continue;
 	}
 	else if (opt&UNDEF_REPLACE) {
-	    const char *rep = get_replacement_character(to_encoding);
-	    do {
-		*out_p++ = *rep++;
-	    } while (*rep);
+	    output_replacement_character(&out_p, to_encoding);
 	    continue;
 	}
 	rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe invalid byte sequence)");
