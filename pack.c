@@ -1291,7 +1291,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
 static VALUE
 pack_unpack(VALUE str, VALUE fmt)
 {
-    static const char *hexdigits = "0123456789abcdef0123456789ABCDEFx";
+    static const char hexdigits[] = "0123456789abcdef";
     char *s, *send;
     char *p, *pend;
     VALUE ary;
