@@ -555,7 +555,10 @@ allocate_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
 		      p = heaps = (struct heaps_slot *)malloc(size);
 		  }
 		  );
-    if (p == 0) rb_memerror();
+    if (p == 0) {
+	during_gc = 0;
+	rb_memerror();
+    }
     heaps_length = next_heaps_length;
 }
 
@@ -568,8 +571,10 @@ assign_heap_slot(rb_objspace_t *objspace)
 	
     objs = HEAP_OBJ_LIMIT;
     RUBY_CRITICAL(p = (RVALUE*)malloc(HEAP_SIZE));
-    if (p == 0)
+    if (p == 0) {
+	during_gc = 0;
 	rb_memerror();
+    }
 
     membase = p;
     if ((VALUE)p % sizeof(RVALUE) != 0) {
@@ -663,6 +668,7 @@ rb_newobj_from_heap(rb_objspace_t *objspace)
 	
     if ((ruby_gc_stress && !ruby_disable_gc_stress) || !freelist) {
     	if (!heaps_increment(objspace) && !garbage_collect(objspace)) {
+	    during_gc = 0;
 	    rb_memerror();
 	}
     }
