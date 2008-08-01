@@ -1,3 +1,24 @@
+Fri Aug  1 23:49:44 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/extconf.rb: checked to have clear_history in
+	  readline library.
+	* ext/readline/readline.c (hist_get, hist_each, Init_readline): 
+	  The offset specified for the argument of history_get() might be
+	  different in GNU Readline and libedit. If use libedit, it was
+	  corrected that the computational method of the offset specified
+	  for the argument of history_get() when the Readline module was
+	  initialized was decided.
+	  (hist_get, hist_set): If use libedit, accesses first an input
+	  content in history when specifies the negative offset for the
+	  argument of history_get() or replace_history_entry(). Then
+	  checks the offset is negative in ruby.
+	  (rb_remove_history): When compiling, it corrects it to warning
+	  when libedit is used.
+	  (hist_clear, Init_readline): added Readline::HISTORY.clear
+	  method. [ruby-dev:35551]
+	* test/readline/test_readline_history.rb: added unit test for
+	  Readline::HISTORY.
+	
 Fri Aug  1 23:26:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (transcode_loop): undefined character is replaced with

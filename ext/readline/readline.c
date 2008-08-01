@@ -29,6 +29,8 @@
 
 static VALUE mReadline;
 
+#define EDIT_LINE_LIBRARY_VERSION "EditLine wrapper"
+
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"
 static ID completion_proc, completion_case_fold;
@@ -42,6 +44,8 @@ static ID completion_proc, completion_case_fold;
 #ifndef HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches
 #endif
+
+static int (*history_get_offset_func)(int);
 
 static char **readline_attempted_completion_function(const char *text,
                                                      int start, int end);
@@ -505,10 +509,22 @@ hist_to_s(VALUE self)
     return rb_str_new2("HISTORY");
 }
 
+static int
+history_get_offset_history_base(int offset)
+{
+    return history_base + offset;
+}
+
+static int
+history_get_offset_0(int offset)
+{
+    return offset;
+}
+
 static VALUE
 hist_get(VALUE self, VALUE index)
 {
-    HIST_ENTRY *entry;
+    HIST_ENTRY *entry = NULL;
     int i;
 
     rb_secure(4);
@@ -516,7 +532,9 @@ hist_get(VALUE self, VALUE index)
     if (i < 0) {
         i += history_length;
     }
-    entry = history_get(history_base + i);
+    if (i >= 0) {
+	entry = history_get(history_get_offset_func(i));
+    }
     if (entry == NULL) {
 	rb_raise(rb_eIndexError, "invalid index");
     }
@@ -527,7 +545,7 @@ static VALUE
 hist_set(VALUE self, VALUE index, VALUE str)
 {
 #ifdef HAVE_REPLACE_HISTORY_ENTRY
-    HIST_ENTRY *entry;
+    HIST_ENTRY *entry = NULL;
     int i;
 
     rb_secure(4);
@@ -536,7 +554,9 @@ hist_set(VALUE self, VALUE index, VALUE str)
     if (i < 0) {
         i += history_length;
     }
-    entry = replace_history_entry(i, RSTRING_PTR(str), NULL);
+    if (i >= 0) {
+	entry = replace_history_entry(i, RSTRING_PTR(str), NULL);
+    }
     if (entry == NULL) {
 	rb_raise(rb_eIndexError, "invalid index");
     }
@@ -581,7 +601,7 @@ rb_remove_history(int index)
     entry = remove_history(index);
     if (entry) {
         val = rb_tainted_str_new2(entry->line);
-        free(entry->line);
+        free((void *) entry->line);
         free(entry);
         return val;
     }
@@ -624,7 +644,7 @@ hist_each(VALUE self)
 
     rb_secure(4);
     for (i = 0; i < history_length; i++) {
-        entry = history_get(history_base + i);
+        entry = history_get(history_get_offset_func(i));
         if (entry == NULL)
             break;
 	rb_yield(rb_tainted_str_new2(entry->line));
@@ -659,6 +679,19 @@ hist_delete_at(VALUE self, VALUE index)
 	rb_raise(rb_eIndexError, "invalid index");
     }
     return rb_remove_history(i);
+}
+
+static VALUE
+hist_clear(VALUE self)
+{
+#ifdef HAVE_CLEAR_HISTORY
+    rb_secure(4);
+    clear_history();
+    return self;
+#else
+    rb_notimplement();
+    return Qnil; /* not reached */
+#endif
 }
 
 static VALUE
@@ -782,6 +815,7 @@ Init_readline()
     rb_define_singleton_method(history,"size", hist_length, 0);
     rb_define_singleton_method(history,"empty?", hist_empty_p, 0);
     rb_define_singleton_method(history,"delete_at", hist_delete_at, 1);
+    rb_define_singleton_method(history,"clear", hist_clear, 0);
     rb_define_const(mReadline, "HISTORY", history);
 
     fcomp = rb_obj_alloc(rb_cObject);
@@ -793,8 +827,19 @@ Init_readline()
     rb_define_singleton_method(ucomp, "call",
 			       username_completion_proc_call, 1);
     rb_define_const(mReadline, "USERNAME_COMPLETION_PROC", ucomp);
+    history_get_offset_func = history_get_offset_history_base;
 #if defined HAVE_RL_LIBRARY_VERSION
     rb_define_const(mReadline, "VERSION", rb_str_new2(rl_library_version));
+#if defined HAVE_CLEAR_HISTORY
+    if (strncmp(rl_library_version, EDIT_LINE_LIBRARY_VERSION, 
+		strlen(EDIT_LINE_LIBRARY_VERSION)) == 0) {
+	add_history("1");
+	if (history_get(history_get_offset_func(0)) == NULL) {
+	    history_get_offset_func = history_get_offset_0;
+	}
+	clear_history();
+    }
+#endif
 #else
     rb_define_const(mReadline, "VERSION", rb_str_new2("2.0 or prior version"));
 #endif
