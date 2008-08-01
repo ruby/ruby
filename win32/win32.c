@@ -1628,7 +1628,7 @@ rb_w32_telldir(DIR *dirp)
 void
 rb_w32_seekdir(DIR *dirp, off_t loc)
 {
-    rb_w32_rewinddir(dirp);
+    if (dirp->loc > loc) rb_w32_rewinddir(dirp);
 
     while (dirp->curr && dirp->loc < loc) {
 	move_to_next_entry(dirp);
