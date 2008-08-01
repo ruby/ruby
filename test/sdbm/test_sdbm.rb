@@ -525,5 +525,39 @@ class TestSDBM < Test::Unit::TestCase
       assert_equal(key.to_i, val.to_i)
     }
   end
+
+  def test_closed
+    assert_equal(false, @sdbm.closed?)
+    @sdbm.close
+    assert_equal(true, @sdbm.closed?)
+    @sdbm = SDBM.new(@path)
+  end
+
+  def test_index
+    assert_equal(nil, @sdbm.index("foo"))
+    @sdbm["bar"] = "foo"
+    assert_equal("bar", @sdbm.index("foo"))
+  end
+
+  def test_readonly
+    @sdbm["bar"] = "baz"
+    @sdbm.close
+    File.chmod(0444, @path + ".dir")
+    File.chmod(0444, @path + ".pag")
+    @sdbm = SDBM.new(@path)
+    assert_raise(SDBMError) { @sdbm["bar"] = "foo" }
+    assert_raise(SDBMError) { @sdbm.delete("bar") }
+    assert_raise(SDBMError) { @sdbm.delete_if { true } }
+    assert_raise(SDBMError) { @sdbm.clear }
+    assert_nil(@sdbm.store("bar", nil))
+  end
+
+  def test_update2
+    obj = Object.new
+    def obj.each_pair
+      yield []
+    end
+    assert_raise(ArgumentError) { @sdbm.update(obj) }
+  end
 end
 

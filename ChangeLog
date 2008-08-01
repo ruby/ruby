@@ -1,3 +1,7 @@
+Fri Aug  1 21:49:41 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/sdbm/test_sdbm.rb: add some tests.
+
 Fri Aug  1 21:36:00 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* gc.c (allocate_heaps, assign_heap_slot, rb_newobj_from_heap):
