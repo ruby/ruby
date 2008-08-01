@@ -1,3 +1,10 @@
+Fri Aug  1 14:45:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_telldir): just returns loc.
+
+	* win32/win32.c (rb_w32_rewinddir): needs to intialize loc.
+	  [ruby-core:18041]
+
 Thu Jul 31 12:23:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* pack.c (pack_unpack): upper half of hexdigits has never been used.
