@@ -1,4 +1,6 @@
-Fri Aug  1 14:45:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  1 14:54:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_seekdir): no need to rewind to seek forward.
 
 	* win32/win32.c (rb_w32_telldir): just returns loc.
 
