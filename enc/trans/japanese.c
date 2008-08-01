@@ -13307,14 +13307,15 @@ static const unsigned char
 to_SHIFT_JIS_EF_BF_offsets[64] = {
   /* used from to_SHIFT_JIS_EF_BF */
   /* used from to_EUC_JP_EF_BF */
-      3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
-      3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
-      0,  1,  2,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
-      3,  3,  3,  3,  3,  3,  3,  3,    3,  3,  3,  3,  3,  3,  3,  3,
+      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
+      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
+      0,  1,  2,  3,  4,  5,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
+      6,  6,  6,  6,  6,  6,  6,  6,    6,  6,  6,  6,  6,  6,  6,  6,
 };
 static const struct byte_lookup* const
 to_SHIFT_JIS_EF_BF_infos[33] = {
-     o2(0x81,0x91), o2(0x81,0x92), o2(0x81,0xCA), UNDEF,
+     o2(0x81,0x91), o2(0x81,0x92), o2(0x81,0xCA), o2(0x81,0x50),
+     o2(0xFA,0x55), o2(0x81,0x8F), UNDEF,
 };
 static const BYTE_LOOKUP
 to_SHIFT_JIS_EF_BF = {
@@ -23639,9 +23640,20 @@ to_EUC_JP_EF_BE = {
 };
 
 static const struct byte_lookup* const
-to_EUC_JP_EF_infos[7] = {
+to_EUC_JP_EF_BF_infos[33] = {
+     o2(0xA1,0xF1), o2(0xA1,0xF2), o2(0xA2,0xCC), o2(0xA1,0xB1),
+     o2(0xFC,0xFC), o2(0xA1,0xEF), UNDEF,
+};
+static const BYTE_LOOKUP
+to_EUC_JP_EF_BF = {
+    to_SHIFT_JIS_EF_BF_offsets,
+    to_EUC_JP_EF_BF_infos
+};
+
+static const struct byte_lookup* const
+to_EUC_JP_EF_infos[8] = {
      &to_EUC_JP_EF_A4, &to_EUC_JP_EF_A7, &to_EUC_JP_EF_A8, &to_EUC_JP_EF_BC,
-     &to_EUC_JP_EF_BD, &to_EUC_JP_EF_BE,            UNDEF,
+     &to_EUC_JP_EF_BD, &to_EUC_JP_EF_BE, &to_EUC_JP_EF_BF,            UNDEF,
 };
 static const BYTE_LOOKUP
 to_EUC_JP_EF = {

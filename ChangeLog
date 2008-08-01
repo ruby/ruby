@@ -1,3 +1,18 @@
+Fri Aug  1 20:55:27 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	
+	* enc/trans/japanese.c (to_SHIFT_JIS_EF_BF_offsets): add U+FFF3,
+	  U+FFF4, U+FFF5.
+
+	* enc/trans/japanese.c (to_SHIFT_JIS_EF_BF_infos): ditto.
+
+	* enc/trans/japanese.c (to_EUC_JP_EF_BF_infos): added.
+
+	* enc/trans/japanese.c (to_EUC_JP_EF_BF): added.
+
+	* enc/trans/japanese.c (to_EUC_JP_EF_infos): change size.
+	  [ruby-dev:35714]
+
 Fri Aug 01 18:27:15 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* parse.y (parser_yylex): removed an useless conditional, and magic
