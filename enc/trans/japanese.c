@@ -18163,6 +18163,11 @@ rb_from_EUC_JP = {
     "EUC-JP", "UTF-8", &from_EUC_JP, 3, 0,
     NULL, NULL,
 };
+static const rb_transcoder
+rb_from_CP51932 = {
+    "CP51932", "UTF-8", &from_EUC_JP, 3, 0,
+    NULL, NULL,
+};
 
 static const struct byte_lookup* const
 to_EUC_JP_C2_infos[14] = {
@@ -23679,6 +23684,11 @@ rb_to_EUC_JP = {
     "UTF-8", "EUC-JP", &to_EUC_JP, 2, 1,
     NULL, NULL,
 };
+static const rb_transcoder
+rb_to_CP51932 = {
+    "UTF-8", "CP51932", &to_EUC_JP, 2, 1,
+    NULL, NULL,
+};
 
 #define ISO_2022_ENCODING(escseq, byte) ((escseq<<8)|byte)
 enum ISO_2022_ESCSEQ {
@@ -23907,9 +23917,11 @@ Init_japanese(void)
     rb_register_transcoder(&rb_from_SHIFT_JIS);
     rb_register_transcoder(&rb_from_Windows_31J);
     rb_register_transcoder(&rb_from_EUC_JP);
+    rb_register_transcoder(&rb_from_CP51932);
     rb_register_transcoder(&rb_to_SHIFT_JIS);
     rb_register_transcoder(&rb_to_Windows_31J);
     rb_register_transcoder(&rb_to_EUC_JP);
+    rb_register_transcoder(&rb_to_CP51932);
     rb_register_transcoder(&rb_from_ISO_2022_JP);
     rb_register_transcoder(&rb_to_ISO_2022_JP);
 }
