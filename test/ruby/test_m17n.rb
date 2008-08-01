@@ -1192,6 +1192,24 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(Encoding::ASCII_8BIT, eval("# -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
   end
 
+  def test_magic_comment_vim
+    assert_equal(Encoding::US_ASCII, eval("# vim: filetype=ruby, fileencoding: US-ASCII, ts=3, sw=3\n__ENCODING__".force_encoding("ASCII-8BIT")))
+    assert_equal(Encoding::ASCII_8BIT, eval("# vim: filetype=ruby, fileencoding: ASCII-8BIT, ts=3, sw=3\n__ENCODING__".force_encoding("US-ASCII")))
+  end
+
+  def test_magic_comment_at_various_positions
+    # after shebang
+    assert_equal(Encoding::US_ASCII, eval("#!/usr/bin/ruby\n# -*- encoding: US-ASCII -*-\n__ENCODING__".force_encoding("ASCII-8BIT")))
+    assert_equal(Encoding::ASCII_8BIT, eval("#!/usr/bin/ruby\n# -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
+    # wrong position
+    assert_equal(Encoding::ASCII_8BIT, eval("\n# -*- encoding: US-ASCII -*-\n__ENCODING__".force_encoding("ASCII-8BIT")))
+    assert_equal(Encoding::US_ASCII, eval("\n# -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
+
+    # leading expressions
+    assert_equal(Encoding::ASCII_8BIT, eval("1+1 # -*- encoding: US-ASCII -*-\n__ENCODING__".force_encoding("ASCII-8BIT")))
+    assert_equal(Encoding::US_ASCII, eval("1+1 # -*- encoding: ASCII-8BIT -*-\n__ENCODING__".force_encoding("US-ASCII")))
+  end
+
   def test_regexp_usascii
     assert_regexp_usascii_literal('//', Encoding::US_ASCII)
     assert_regexp_usascii_literal('/#{}/', Encoding::US_ASCII)

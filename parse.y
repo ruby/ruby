@@ -6076,12 +6076,11 @@ parser_yylex(struct parser_params *parser)
 	goto retry;
 
       case '#':		/* it's a comment */
-	if (!parser->has_shebang || parser->line_count != 1) {
-	    /* no magic_comment in shebang line */
+	/* no magic_comment in shebang line */
+	if (parser->line_count == (parser->has_shebang ? 2 : 1) 
+	    && (lex_p - lex_pbeg) == 1) {
 	    if (!parser_magic_comment(parser, lex_p, lex_pend - lex_p)) {
-		if (parser->line_count == (parser->has_shebang ? 2 : 1)) {
-		    set_file_encoding(parser, lex_p, lex_pend);
-		}
+		set_file_encoding(parser, lex_p, lex_pend);
 	    }
 	}
 	lex_p = lex_pend;
