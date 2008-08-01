@@ -206,3 +206,20 @@ distclean-local::
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
+
+update-rubyspec: 
+	if [ -d $(srcdir)/rubyspec ]; then \
+	  cd $(srcdir)/rubyspec/mspec; \
+	  git pull; \
+	  cd ../spec/rubyspec; \
+	  git pull; \
+	else \
+	  mkdir $(srcdir)/rubyspec; \
+	  mkdir $(srcdir)/rubyspec/spec; \
+	  git clone $(MSPEC_GIT_URL) $(srcdir)/rubyspec/mspec; \
+	  git clone $(RUBYSPEC_GIT_URL) $(srcdir)/rubyspec/spec/rubyspec; \
+	fi
+
+test-rubyspec:
+	@if [ ! -d $(srcdir)/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
+	$(RUNRUBY) $(srcdir)/rubyspec/mspec/bin/mspec $(srcdir)/rubyspec/spec/rubyspec/$(MAJOR).$(MINOR)

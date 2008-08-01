@@ -1,3 +1,12 @@
+Fri Aug 01 23:26:22 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	Merged r16430(akr), r16431(akr), r16433(akr), r16469(nobu), and
+	r17874(akr) from ruby_1_8.
+
+	* Makefile.in (update-rubyspec): added
+
+	* Makefile.in (test-rubyspec): added
+
 Fri Aug  1 23:16:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/japanese.c: add support for CP51932,

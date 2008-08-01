@@ -7,6 +7,10 @@ dll: $(LIBRUBY_SO)
 RUBYLIB       = -
 RUBYOPT       = -
 
+SPEC_GIT_BASE = git://github.com/rubyspec
+MSPEC_GIT_URL = $(SPEC_GIT_BASE)/mspec.git
+RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE)/rubyspec.git
+
 STATIC_RUBY   = static-ruby
 
 EXTCONF       = extconf.rb
