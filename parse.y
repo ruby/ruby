@@ -3969,7 +3969,8 @@ yylex()
 			    nondigit = c;
 			    continue;
 			}
-			if (c < '0' || c > '7') break;
+			if (c < '0' || c > '9') break;
+			if (c > '7') goto invalid_octal;
 			nondigit = 0;
 			tokadd(c);
 		    } while ((c = nextc()) != -1);
@@ -3986,6 +3987,7 @@ yylex()
 		    }
 		}
 		if (c > '7' && c <= '9') {
+		  invalid_octal:
 		    yyerror("Illegal octal digit");
 		}
 		else if (c == '.' || c == 'e' || c == 'E') {

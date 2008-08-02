@@ -1,3 +1,8 @@
+Sat Aug  2 15:51:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yylex): 8 and 9 in octal integer should cause compile
+	  error.  [ruby-dev:35729]
+
 Sat Aug  2 11:51:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rubysig.h (CHECK_INTS): gives the chance to perform to deferred
