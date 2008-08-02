@@ -1,3 +1,8 @@
+Sat Aug  2 22:55:41 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_err_in_callback.rb: remove temporary files.
+	  some refactoring.
+
 Sat Aug  2 15:51:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yylex): 8 and 9 in octal integer should cause compile

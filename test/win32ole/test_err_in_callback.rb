@@ -15,7 +15,8 @@ if defined?(WIN32OLE)
     def setup
       @ruby = nil
       if File.exist?("./" + CONFIG["RUBY_INSTALL_NAME"] + CONFIG["EXEEXT"])
-        @ruby = "./" + CONFIG["RUBY_INSTALL_NAME"]
+        sep = File::ALT_SEPARATOR || "/"
+        @ruby = "." + sep + CONFIG["RUBY_INSTALL_NAME"]
         @iopt = $:.map {|e|
           " -I " + e
         }.join("")
@@ -33,14 +34,20 @@ if defined?(WIN32OLE)
       f = cfolder.CreateTextFile(dummy_file)
       f.writeLine("<html><body><div id='str'>#{@str}</div></body></html>")
       f.close
+      @f = dummy_file
       dummy_path = cfolder.path + "\\" + dummy_file
       dummy_path
     end
 
     def test_err_in_callback
       if @ruby
-        r = `#{@ruby} #{@iopt} #{@script} #{@param}`
-        assert_match(/NameError/, r)
+        cmd = "#{@ruby} -v #{@iopt} #{@script} #{@param} > test_err_in_callback.log 2>&1"
+        system(cmd)
+        str = ""
+        open("test_err_in_callback.log") {|ifs|
+          str = ifs.read
+        }
+        assert_match(/NameError/, str)
       end
     end
 
@@ -68,6 +75,8 @@ if defined?(WIN32OLE)
     def teardown
       WIN32OLE_EVENT.message_loop
       ie_quit
+      File.unlink(@f)
+      File.unlink("test_err_in_callback.log")
     end
   end
 end
