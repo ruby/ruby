@@ -1197,6 +1197,7 @@ gc_sweep()
     /* clear finalization list */
     if (final_list) {
 	deferred_final_list = final_list;
+	rb_thread_pending = 1;
 	return;
     }
     free_unused_heaps();

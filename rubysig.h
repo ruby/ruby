@@ -78,13 +78,11 @@ RUBY_EXTERN rb_atomic_t rb_trap_pending;
 void rb_trap_restore_mask _((void));
 
 RUBY_EXTERN int rb_thread_critical;
-void rb_thread_schedule _((void));
-void rb_gc_finalize_deferred _((void));
-#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
 RUBY_EXTERN int rb_thread_pending;
+void rb_thread_schedule _((void));
+#if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
 # define CHECK_INTS do {\
     if (!(rb_prohibit_interrupt || rb_thread_critical)) {\
-	rb_gc_finalize_deferred();\
 	if (rb_thread_pending) rb_thread_schedule();\
 	if (rb_trap_pending) rb_trap_exec();\
     }\
@@ -95,8 +93,7 @@ RUBY_EXTERN int rb_thread_tick;
 #define THREAD_TICK 500
 #define CHECK_INTS do {\
     if (!(rb_prohibit_interrupt || rb_thread_critical)) {\
-	rb_gc_finalize_deferred();\
-	if (rb_thread_tick-- <= 0) {\
+	if (rb_thread_pending || rb_thread_tick-- <= 0) {\
 	    rb_thread_tick = THREAD_TICK;\
 	    rb_thread_schedule();\
 	}\

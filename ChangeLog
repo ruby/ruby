@@ -1,13 +1,16 @@
+Sat Aug  2 16:08:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): runs deferred finalizers.
+
+	* gc.c (gc_sweep): sets rb_thread_pending to run deferred finalizers.
+
+	* rubysig.h (CHECK_INTS): now checks rb_thread_pending even on
+	  platforms where setitimer is not available.  [ruby-core:18045]
+
 Sat Aug  2 15:51:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (yylex): 8 and 9 in octal integer should cause compile
 	  error.  [ruby-dev:35729]
-
-Sat Aug  2 11:51:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* rubysig.h (CHECK_INTS): gives the chance to perform to deferred
-	  finalizers before explicit GC.start or the process termination.
-	  [ruby-core:18045]
 
 Fri Aug  1 14:54:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
