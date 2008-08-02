@@ -1,3 +1,8 @@
+Sat Aug  2 15:51:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (yylex): 8 and 9 in octal integer should cause compile
+	  error.  [ruby-dev:35729]
+
 Sat Aug  2 01:06:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/japanese.c: add U+FF5E to EUC-JP.

@@ -6656,7 +6656,8 @@ parser_yylex(struct parser_params *parser)
 			    nondigit = c;
 			    continue;
 			}
-			if (c < '0' || c > '7') break;
+			if (c < '0' || c > '9') break;
+			if (c > '7') goto invalid_octal;
 			nondigit = 0;
 			tokadd(c);
 		    } while ((c = nextc()) != -1);
@@ -6673,6 +6674,7 @@ parser_yylex(struct parser_params *parser)
 		    }
 		}
 		if (c > '7' && c <= '9') {
+		  invalid_octal:
 		    yyerror("Invalid octal digit");
 		}
 		else if (c == '.' || c == 'e' || c == 'E') {
