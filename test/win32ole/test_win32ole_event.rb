@@ -76,6 +76,16 @@ if defined?(WIN32OLE_EVENT)
       assert_match(/NavigateComplete/, @event)
     end
 
+    def test_on_event_symbol
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event(:BeforeNavigate2) {|*args|
+        handler1
+      }
+      @ie.navigate("file:///#{@f}")
+      wait_ie
+      assert_equal("handler1", @event2)
+    end
+
     def test_on_event2
       ev = WIN32OLE_EVENT.new(@ie, 'DWebBrowserEvents')
       ev.on_event('BeforeNavigate') {|*args| handler1}
@@ -224,6 +234,15 @@ if defined?(WIN32OLE_EVENT)
       ev = WIN32OLE_EVENT.new(@ie)
       ev.on_event('BeforeNavigate2'){handler1}
       ev.off_event('BeforeNavigate2')
+      @ie.navigate("file:///#{@f}")
+      wait_ie
+      assert_equal("", @event2)
+    end
+
+    def test_off_event_sym_arg
+      ev = WIN32OLE_EVENT.new(@ie)
+      ev.on_event('BeforeNavigate2'){handler1}
+      ev.off_event(:BeforeNavigate2)
       @ie.navigate("file:///#{@f}")
       wait_ie
       assert_equal("", @event2)

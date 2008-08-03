@@ -118,7 +118,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "1.3.0"
+#define WIN32OLE_VERSION "1.3.1"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -3162,7 +3162,7 @@ hash2named_arg(VALUE pair, struct oleparam* pOp)
         rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
     }
     if (TYPE(key) == T_SYMBOL) {
-        key = rb_str_new2(rb_id2name(SYM2ID(key)));
+	key = rb_sym_to_s(key);
     }
 
     /* pNamedArgs[0] is <method name>, so "index + 1" */
@@ -3225,6 +3225,12 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     op.dp.cArgs = 0;
 
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
+    if(TYPE(cmd) != T_STRING && TYPE(cmd) != T_SYMBOL) {
+	rb_raise(rb_eTypeError, "method is wrong type (expected String or Symbol)");
+    }
+    if (TYPE(cmd) == T_SYMBOL) {
+	cmd = rb_sym_to_s(cmd);
+    }
     OLEData_Get_Struct(self, pole);
     if(!pole->pDispatch) {
         rb_raise(rb_eRuntimeError, "failed to get dispatch interface");
@@ -4417,7 +4423,12 @@ fole_respond_to(VALUE self, VALUE method)
     DISPID DispID;
     HRESULT hr;
     rb_secure(4);
-    Check_SafeStr(method);
+    if(TYPE(method) != T_STRING && TYPE(method) != T_SYMBOL) {
+	rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
+    }
+    if (TYPE(method) == T_SYMBOL) {
+	method = rb_sym_to_s(method);
+    }
     OLEData_Get_Struct(self, pole);
     wcmdname = ole_vstr2wc(method);
     hr = pole->pDispatch->lpVtbl->GetIDsOfNames( pole->pDispatch, &IID_NULL,
@@ -8143,7 +8154,12 @@ ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
     }
     rb_scan_args(argc, argv, "01*", &event, &args);
     if(!NIL_P(event)) {
-        Check_SafeStr(event);
+	if(TYPE(event) != T_STRING && TYPE(event) != T_SYMBOL) {
+	    rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
+	}
+	if (TYPE(event) == T_SYMBOL) {
+	    event = rb_sym_to_s(event);
+	}
     }
     data = rb_ary_new3(4, rb_block_proc(), event, args, is_ary_arg);
     add_event_call_back(self, event, data);
@@ -8229,7 +8245,12 @@ fev_off_event(int argc, VALUE *argv, VALUE self)
     rb_secure(4);
     rb_scan_args(argc, argv, "01", &event);
     if(!NIL_P(event)) {
-        Check_SafeStr(event);
+	if(TYPE(event) != T_STRING && TYPE(event) != T_SYMBOL) {
+	    rb_raise(rb_eTypeError, "wrong argument type (expected String or Symbol)");
+	}
+	if (TYPE(event) == T_SYMBOL) {
+	    event = rb_sym_to_s(event);
+	}
     }
     events = rb_ivar_get(self, id_events);
     if (NIL_P(events)) {

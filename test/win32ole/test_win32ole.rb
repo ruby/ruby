@@ -250,10 +250,17 @@ if defined?(WIN32OLE)
       fso = WIN32OLE.new('Scripting.FileSystemObject')
       assert(fso.ole_respond_to?('getFolder'))
       assert(fso.ole_respond_to?('GETFOLDER'))
+      assert(fso.ole_respond_to?(:getFolder))
       assert(!fso.ole_respond_to?('XXXXX'))
       assert_raise(TypeError) {
         assert_raise(fso.ole_respond_to?(1))
       }
+    end
+
+    def test_invoke
+      fso = WIN32OLE.new('Scripting.FileSystemObject')
+      assert(fso.invoke(:getFolder, "."))
+      assert(fso.invoke('getFolder', "."))
     end
 
     def test_s_const_load

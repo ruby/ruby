@@ -1,3 +1,14 @@
+Sun Aug  3 19:32:52 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (hash2named_arg): refactoring.
+
+	* ext/win32ole/win32ole.c (ole_invoke, fole_respond_to, ev_on_event,
+	  fev_off_event): accepts Symbol argument.
+
+	* test/win32ole/test_win32ole.rb: ditto.
+
+	* test/win32ole/test_win32ole_event.rb: ditto.
+
 Sun Aug  3 10:41:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_shared_replace): fixed memory leak.  a patch from
