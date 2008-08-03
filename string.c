@@ -616,7 +616,10 @@ rb_str_shared_replace(VALUE str, VALUE str2)
     enc = STR_ENC_GET(str2);
     cr = ENC_CODERANGE(str2);
     rb_str_modify(str);
-    if (OBJ_TAINTED(str2)) OBJ_TAINT(str);
+    OBJ_INFECT(str, str2);
+    if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
+	xfree(RSTRING_PTR(str));
+    }
     if (RSTRING_LEN(str2) <= RSTRING_EMBED_LEN_MAX) {
 	STR_SET_EMBED(str);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
@@ -624,9 +627,6 @@ rb_str_shared_replace(VALUE str, VALUE str2)
         rb_enc_associate(str, enc);
         ENC_CODERANGE_SET(str, cr);
 	return;
-    }
-    if (!STR_SHARED_P(str) && !STR_EMBED_P(str)) {
-	xfree(RSTRING_PTR(str));
     }
     STR_SET_NOEMBED(str);
     STR_UNSET_NOCAPA(str);

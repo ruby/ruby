@@ -1,3 +1,8 @@
+Sun Aug  3 10:41:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_shared_replace): fixed memory leak.  a patch from
+	  shinichiro.h <shinichiro.hamaji AT gmail.com> at [ruby-dev:35742]
+
 Sat Aug  2 22:55:41 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_err_in_callback.rb: remove temporary files.
