@@ -837,7 +837,7 @@ module Net
 
     def rcptto(to_addr)
       if $SAFE > 0
-        raise SecurityError, 'tainted to_addr' if to.tainted?
+        raise SecurityError, 'tainted to_addr' if to_addr.tainted?
       end
       getok("RCPT TO:<#{to_addr}>")
     end
