@@ -1,3 +1,10 @@
+Mon Aug  4 14:13:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regex.c (xmalloc, xrealloc, xfree): not to use ruby managed memory.
+
+	* regex.c (DOUBLE_STACK, re_compile_fastmap0, re_adjust_startpos),
+	  (re_search, re_match_exec): check if failed to allocate memory.
+
 Mon Aug  4 13:53:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bignum.c (rb_big2str0, bigsqr): made interruptible.  [ruby-Bugs-20622]
