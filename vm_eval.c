@@ -148,12 +148,21 @@ vm_call_super(rb_thread_t * const th, const int argc, const VALUE * const argv)
 	body = body->nd_body;
     }
     else {
-	VALUE *argv_m = ALLOCA_N(VALUE, argc+1);
+	VALUE *argv_m, result, argv_ary = 0;
+	if (argc < 0x100) {
+	    argv_m = ALLOCA_N(VALUE, argc+1);
+	}
+	else {
+	    argv_ary = rb_ary_tmp_new(argc+1);
+	    argv_m = RARRAY_PTR(argv_ary);
+	}
 	MEMCPY(argv_m + 1, argv, VALUE, argc);
 	argv_m[0] = ID2SYM(id);
 	th->method_missing_reason = 0;
 	th->passed_block = 0;
-	return rb_funcall2(recv, idMethodMissing, argc + 1, argv);
+	result = rb_funcall2(recv, idMethodMissing, argc + 1, argv_m);
+	if (argv_ary) rb_ary_clear(argv_ary);
+	return result;
     }
 
     return vm_call0(th, klass, recv, id, id, argc, argv, body, CALL_SUPER);

@@ -1,3 +1,8 @@
+Mon Aug  4 17:37:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (vm_call_super): fixed typo, and get rid of too large
+	  alloca.  [ruby-core:17922]
+
 Mon Aug  4 16:48:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (deferred_nodes, compstmt, arg, fixup_nodes, range_op): fix
