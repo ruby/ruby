@@ -9992,13 +9992,15 @@ Init_Proc()
     rb_define_method(rb_eLocalJumpError, "reason", localjump_reason, 0);
 
     rb_global_variable(&exception_error);
-    exception_error = rb_exc_new2(rb_eFatal, "exception reentered");
+    exception_error = rb_exc_new3(rb_eFatal,
+				  rb_obj_freeze(rb_str_new2("exception reentered")));
     OBJ_TAINT(exception_error);
     OBJ_FREEZE(exception_error);
 
     rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
     rb_global_variable(&sysstack_error);
-    sysstack_error = rb_exc_new2(rb_eSysStackError, "stack level too deep");
+    sysstack_error = rb_exc_new3(rb_eSysStackError,
+				 rb_obj_freeze(rb_str_new2("stack level too deep")));
     OBJ_TAINT(sysstack_error);
     OBJ_FREEZE(sysstack_error);
 
