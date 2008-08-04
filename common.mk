@@ -362,7 +362,8 @@ array.$(OBJEXT): {$(VPATH)}array.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}util.h {$(VPATH)}st.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+  {$(VPATH)}rubysig.h
 class.$(OBJEXT): {$(VPATH)}class.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}rubysig.h {$(VPATH)}node.h {$(VPATH)}st.h

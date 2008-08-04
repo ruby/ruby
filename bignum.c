@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "rubysig.h"
 
 #include <math.h>
 #include <float.h>
@@ -720,6 +721,7 @@ rb_big2str0(x, base, trim)
     s = RSTRING(ss)->ptr;
 
     s[0] = RBIGNUM(x)->sign ? '+' : '-';
+    TRAP_BEG;
     while (i && j > 1) {
 	long k = i;
 	BDIGIT_DBL num = 0;
@@ -749,6 +751,7 @@ rb_big2str0(x, base, trim)
 	RSTRING(ss)->len = i;
     }
     s[RSTRING(ss)->len] = '\0';
+    TRAP_END;
 
     return ss;
 }
@@ -1735,11 +1738,13 @@ bigsqr(x)
     RBIGNUM(z)->len = len;
     a2 = bigtrunc(rb_big_mul0(a, b));
     len = RBIGNUM(a2)->len;
+    TRAP_BEG;
     for (i = 0, num = 0; i < len; i++) {
 	num += (BDIGIT_DBL)BDIGITS(z)[i + k] + ((BDIGIT_DBL)BDIGITS(a2)[i] << 1);
 	BDIGITS(z)[i + k] = BIGLO(num);
 	num = BIGDN(num);
     }
+    TRAP_END;
     if (num) {
 	len = RBIGNUM(z)->len;
 	for (i += k; i < len && num; ++i) {

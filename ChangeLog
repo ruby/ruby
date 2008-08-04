@@ -1,3 +1,7 @@
+Mon Aug  4 13:53:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big2str0, bigsqr): made interruptible.  [ruby-Bugs-20622]
+
 Mon Aug  4 13:31:41 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): fixed wrong check
