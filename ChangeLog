@@ -1,3 +1,8 @@
+Mon Aug  4 15:04:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (timeofday): use monotonic clock.  based on a patch
+	  from zimbatm <zimbatm@oree.ch> in [ruby-core:16627].
+
 Mon Aug  4 14:39:06 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP::rcptto): fix a typo. a patch from

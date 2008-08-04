@@ -541,6 +541,7 @@ esac
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
+AC_CHECK_LIB(rt, clock_gettime)	# GNU/Linux
 
 case "$target_cpu" in
 alpha*)		case "$target_os"::"$GCC" in
