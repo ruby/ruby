@@ -15,6 +15,10 @@
 extern "C" {
 #endif
 
+#ifndef TYPEDEF_D2I_OF
+typedef char *d2i_of_void();
+#endif
+
 /*
  * These functions are not included in headers of OPENSSL <= 0.9.6b
  */
