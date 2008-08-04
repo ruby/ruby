@@ -1,3 +1,9 @@
+Mon Aug  4 14:39:06 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP::rcptto): fix a typo. a patch from
+	  Masao Takaku <masao at nii.ac.jp>
+	  fix [ruby-dev:35489].
+
 Sat Aug  2 16:08:07 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_schedule): runs deferred finalizers.
