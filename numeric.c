@@ -1600,11 +1600,21 @@ check_int(num)
 }
 
 static void
-check_uint(num)
+check_uint(num, sign)
     unsigned long num;
+    VALUE sign;
 {
-    if (num > UINT_MAX) {
-	rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
+    static const unsigned long mask = ~(unsigned long)UINT_MAX;
+
+    if (RTEST(sign)) {
+	/* minus */
+	if ((num & mask) != mask || (num & ~mask) <= INT_MAX + 1UL)
+	    rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned int'", num);
+    }
+    else {
+	/* plus */
+	if ((num & mask) != 0)
+	    rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
     }
 }
 
@@ -1634,9 +1644,7 @@ rb_num2uint(val)
 {
     unsigned long num = rb_num2ulong(val);
 
-    if (RTEST(rb_funcall(INT2FIX(0), '<', 1, val))) {
-	check_uint(num);
-    }
+    check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
     return num;
 }
 
@@ -1650,9 +1658,8 @@ rb_fix2uint(val)
         return rb_num2uint(val);
     }
     num = FIX2ULONG(val);
-    if (FIX2LONG(val) > 0) {
-	check_uint(num);
-    }
+
+    check_uint(num, rb_funcall(val, '<', 1, INT2FIX(0)));
     return num;
 }
 #else
