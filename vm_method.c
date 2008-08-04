@@ -1044,6 +1044,15 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+int
+rb_method_basic_definition_p(VALUE klass, ID id)
+{
+    NODE *node = rb_method_node(klass, id);
+    if (node && (node->nd_noex & NOEX_BASIC))
+	return 1;
+    return 0;
+}
+
 /*
  *  call-seq:
  *     obj.respond_to?(symbol, include_private=false) => true or false
@@ -1053,14 +1062,12 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
  *  optional second parameter evaluates to +true+.
  */
 
-static NODE *basic_respond_to = 0;
-
 int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
     VALUE klass = CLASS_OF(obj);
 
-    if (rb_method_node(klass, idRespond_to) == basic_respond_to) {
+    if (rb_method_basic_definition_p(klass, idRespond_to)) {
 	return rb_method_boundp(klass, id, !priv);
     }
     else {
@@ -1108,8 +1115,6 @@ Init_eval_method(void)
 #undef rb_intern
 
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
-    basic_respond_to = rb_method_node(rb_cObject, idRespond_to);
-    rb_register_mark_object((VALUE)basic_respond_to);
 
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);

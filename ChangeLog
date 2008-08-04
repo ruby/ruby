@@ -1,3 +1,16 @@
+Tue Aug  5 03:29:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): respect overridden <=> for String and
+	  Fixnum.  [ruby-core:17708]
+
+	* include/ruby/node.h (NOEX_BASIC): basic definition method flag.
+
+	* include/ruby/intern.h, vm_method.c (rb_method_basic_definition_p):
+	  new function to check if the method is not redefined after the
+	  initialization.
+
+	* vm_method.c (rb_obj_respond_to): use rb_method_basic_definition_p.
+
 Mon Aug  4 20:39:06 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Makefile.in (update-rubyspec): renamed the rubyspec directory

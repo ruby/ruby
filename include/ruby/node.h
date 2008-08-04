@@ -463,7 +463,8 @@ typedef struct RNode {
 #define NOEX_NOSUPER   0x01
 #define NOEX_PRIVATE   0x02
 #define NOEX_PROTECTED 0x04
-#define NOEX_MASK      0x06 /* 1110 */
+#define NOEX_MASK      0x06 /* 0110 */
+#define NOEX_BASIC     0x08
 
 #define NOEX_UNDEF     NOEX_NOSUPER
 
@@ -472,7 +473,7 @@ typedef struct RNode {
 #define NOEX_VCALL     0x40
 
 #define NOEX_SAFE(n) (((n) >> 8) & 0x0F)
-#define NOEX_WITH(n, s) ((s << 8) | n)
+#define NOEX_WITH(n, s) ((s << 8) | (n) | (ruby_running ? 0 : NOEX_BASIC))
 #define NOEX_WITH_SAFE(n) NOEX_WITH(n, rb_safe_level())
 
 #define CALL_PUBLIC 0

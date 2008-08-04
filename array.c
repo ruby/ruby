@@ -1452,10 +1452,32 @@ rb_ary_reverse_m(VALUE ary)
     return rb_ary_reverse(rb_ary_dup(ary));
 }
 
+struct ary_sort_data {
+    VALUE ary;
+    int opt_methods;
+    int opt_inited;
+};
+
+enum {
+    sort_opt_Fixnum,
+    sort_opt_String,
+    sort_optimizable_count
+};
+
+#define STRING_P(s) (TYPE(s) == T_STRING && CLASS_OF(s) == rb_cString)
+
+#define SORT_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(sort_opt_,type))
+#define SORT_OPTIMIZABLE(data, type) \
+    ((data->opt_inited & SORT_OPTIMIZABLE_BIT(type)) ? \
+     (data->opt_methods & SORT_OPTIMIZABLE_BIT(type)) : \
+     ((data->opt_inited |= SORT_OPTIMIZABLE_BIT(type)), \
+      rb_method_basic_definition_p(TOKEN_PASTE(rb_c,type), id_cmp) && \
+      (data->opt_methods |= SORT_OPTIMIZABLE_BIT(type))))
+
 static VALUE
-sort_reentered(VALUE *klass)
+sort_reentered(VALUE ary)
 {
-    if (*klass) {
+    if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort reentered");
     }
     return Qnil;
@@ -1464,35 +1486,37 @@ sort_reentered(VALUE *klass)
 static int
 sort_1(const void *ap, const void *bp, void *dummy)
 {
-    VALUE retval = sort_reentered(dummy);
+    struct ary_sort_data *data = dummy;
+    VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
     retval = rb_yield_values(2, a, b);
     n = rb_cmpint(retval, a, b);
-    sort_reentered(dummy);
+    sort_reentered(data->ary);
     return n;
 }
 
 static int
 sort_2(const void *ap, const void *bp, void *dummy)
 {
-    VALUE retval = sort_reentered(dummy);
+    struct ary_sort_data *data = dummy;
+    VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
-    if (FIXNUM_P(a) && FIXNUM_P(b)) {
+    if (FIXNUM_P(a) && FIXNUM_P(b) && SORT_OPTIMIZABLE(data, Fixnum)) {
 	if ((long)a > (long)b) return 1;
 	if ((long)a < (long)b) return -1;
 	return 0;
     }
-    if (TYPE(a) == T_STRING) {
-	if (TYPE(b) == T_STRING) return rb_str_cmp(a, b);
+    if (STRING_P(a) && STRING_P(b) && SORT_OPTIMIZABLE(data, String)) {
+	return rb_str_cmp(a, b);
     }
 
     retval = rb_funcall(a, id_cmp, 1, b);
     n = rb_cmpint(retval, a, b);
-    sort_reentered(dummy);
+    sort_reentered(data->ary);
 
     return n;
 }
@@ -1519,10 +1543,14 @@ rb_ary_sort_bang(VALUE ary)
     rb_ary_modify(ary);
     if (RARRAY_LEN(ary) > 1) {
 	VALUE tmp = ary_make_shared(ary);
+	struct ary_sort_data data;
 
 	RBASIC(tmp)->klass = 0;
+	data.ary = tmp;
+	data.opt_methods = 0;
+	data.opt_inited = 0;
 	ruby_qsort(RARRAY_PTR(tmp), RARRAY_LEN(tmp), sizeof(VALUE),
-		   rb_block_given_p()?sort_1:sort_2, &RBASIC(tmp)->klass);
+		   rb_block_given_p()?sort_1:sort_2, &data);
 	if (RARRAY(ary)->ptr != RARRAY(tmp)->ptr) {
 	    if (!ARY_SHARED_P(ary)) xfree(RARRAY(ary)->ptr);
 	    RARRAY(ary)->ptr = RARRAY(tmp)->ptr;

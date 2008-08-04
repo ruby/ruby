@@ -250,6 +250,7 @@ void rb_clear_cache_by_class(VALUE);
 void rb_alias(VALUE, ID, ID);
 void rb_attr(VALUE,ID,int,int,int);
 int rb_method_boundp(VALUE, ID, int);
+int rb_method_basic_definition_p(VALUE, ID);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
