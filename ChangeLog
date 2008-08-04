@@ -1,3 +1,12 @@
+Mon Aug  4 12:25:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): fixed wrong check
+	  about 64bit positive value.
+Mon Aug  4 12:25:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): strict check.
+	  fixed [ruby-dev:33683]
+
 Mon Aug  4 12:11:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* gc.c (Init_GC): fix syntax error.
