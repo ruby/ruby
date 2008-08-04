@@ -1,3 +1,9 @@
+Mon Aug  4 14:41:25 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* lib/net/smtp.rb (Net::SMTP::rcptto): fix a typo. a patch from
+	  Masao Takaku <masao at nii.ac.jp>
+	  fix [ruby-dev:35489].
+
 Mon Aug  4 14:08:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* marshal.c (dump_ensure), process.c (run_exec_dup2),
