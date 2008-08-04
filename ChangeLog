@@ -1,3 +1,14 @@
+Mon Aug  4 12:11:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* gc.c (Init_GC): fix syntax error.
+
+Mon Aug  4 12:11:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_exc_new3): keeps the given string itself.
+
+	* eval.c (Init_Proc), gc.c (Init_GC): freeze messages of preallocated
+	  special exceptions also.
+
 Thu Jul 17 21:37:39 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP::start): revert to avoid RFC2821
