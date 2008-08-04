@@ -803,6 +803,7 @@ dump_ensure(struct dump_arg *arg)
     st_free_table(arg->symbols);
     st_free_table(arg->data);
     st_free_table(arg->compat_tbl);
+    if (arg->encodings) st_free_table(arg->encodings);
     DATA_PTR(arg->wrapper) = 0;
     arg->wrapper = 0;
     if (arg->taint) {

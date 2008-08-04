@@ -3424,10 +3424,10 @@ rb_str_replace(VALUE str, VALUE str2)
     if (STR_ASSOC_P(str2)) {
 	str2 = rb_str_new4(str2);
     }
+    if (str_independent(str) && !STR_EMBED_P(str)) {
+	xfree(RSTRING_PTR(str));
+    }
     if (STR_SHARED_P(str2)) {
-	if (str_independent(str) && !STR_EMBED_P(str)) {
-	    xfree(RSTRING_PTR(str));
-	}
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.len = len;
 	RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
@@ -3436,7 +3436,6 @@ rb_str_replace(VALUE str, VALUE str2)
 	RSTRING(str)->as.heap.aux.shared = RSTRING(str2)->as.heap.aux.shared;
     }
     else {
-	rb_str_modify(str);
 	str_replace_shared(str, rb_str_new4(str2));
     }
 

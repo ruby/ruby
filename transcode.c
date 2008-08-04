@@ -110,6 +110,7 @@ transcode_dispatch(const char *from_encoding, const char *to_encoding)
     }
     if (!val) {
 	if (!st_lookup(transcoder_table, (st_data_t)key, &val)) {
+	    xfree(key);
 	    /* multistep logic, via UTF-8 */
 	    if (!encoding_equal(from_encoding, "UTF-8") &&
 		!encoding_equal(to_encoding, "UTF-8") &&
@@ -119,6 +120,7 @@ transcode_dispatch(const char *from_encoding, const char *to_encoding)
 	    return NULL;
 	}
     }
+    xfree(key);
     return (rb_transcoder *)val;
 }
 

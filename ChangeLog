@@ -1,3 +1,10 @@
+Mon Aug  4 14:08:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* marshal.c (dump_ensure), process.c (run_exec_dup2),
+	  string.c (rb_str_replace), transcode.c (transcode_dispatch): fixed
+	  memory leaks.  based on patches from shinichiro.h <shinichiro.hamaji
+	  AT gmail.com> at [ruby-dev:35751].
+
 Sun Aug  3 19:32:52 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (hash2named_arg): refactoring.

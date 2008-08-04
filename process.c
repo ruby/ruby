@@ -1953,11 +1953,11 @@ run_exec_dup2(VALUE ary, VALUE save)
             goto fail;
     }
 
+    xfree(pairs);
     return 0;
 
-fail:
-    if (pairs)
-        xfree(pairs);
+  fail:
+    xfree(pairs);
     return -1;
 }
 
