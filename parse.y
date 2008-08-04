@@ -229,6 +229,7 @@ struct parser_params {
     const char *parser_lex_pend;
     int parser_heredoc_end;
     int parser_command_start;
+    NODE *parser_deferred_nodes;
     int parser_lex_gets_ptr;
     VALUE (*parser_lex_gets)(struct parser_params*,VALUE);
     struct local_vars *parser_lvtbl;
@@ -309,6 +310,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define lex_pend		(parser->parser_lex_pend)
 #define heredoc_end		(parser->parser_heredoc_end)
 #define command_start		(parser->parser_command_start)
+#define deferred_nodes		(parser->parser_deferred_nodes)
 #define lex_gets_ptr		(parser->parser_lex_gets_ptr)
 #define lex_gets		(parser->parser_lex_gets)
 #define lvtbl			(parser->parser_lvtbl)
@@ -433,6 +435,8 @@ static int dvar_defined_gen(struct parser_params*,ID);
 #define dvar_defined(id) dvar_defined_gen(parser, id)
 static int dvar_curr_gen(struct parser_params*,ID);
 #define dvar_curr(id) dvar_curr_gen(parser, id)
+
+static void fixup_nodes(NODE **);
 
 extern int rb_dvar_defined(ID);
 extern int rb_local_defined(ID);
@@ -807,6 +811,7 @@ compstmt	: stmts opt_terms
 		    {
 		    /*%%%*/
 			void_stmts($1);
+			fixup_nodes(&deferred_nodes);
 		    /*%
 		    %*/
 			$$ = $1;
@@ -1969,13 +1974,10 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			value_expr($1);
 			value_expr($3);
+			$$ = NEW_DOT2($1, $3);
 			if (nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
 			    nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
-			    $1->nd_lit = rb_range_new($1->nd_lit, $3->nd_lit, Qfalse);
-			    $$ = $1;
-			}
-			else {
-			    $$ = NEW_DOT2($1, $3);
+			    deferred_nodes = list_append(deferred_nodes, $$);
 			}
 		    /*%
 			$$ = dispatch2(dot2, $1, $3);
@@ -1986,13 +1988,10 @@ arg		: lhs '=' arg
 		    /*%%%*/
 			value_expr($1);
 			value_expr($3);
+			$$ = NEW_DOT3($1, $3);
 			if (nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
 			    nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
-			    $1->nd_lit = rb_range_new($1->nd_lit, $3->nd_lit, Qtrue);
-			    $$ = $1;
-			}
-			else {
-			    $$ = NEW_DOT3($1, $3);
+			    deferred_nodes = list_append(deferred_nodes, $$);
 			}
 		    /*%
 			$$ = dispatch2(dot3, $1, $3);
@@ -4716,6 +4715,7 @@ yycompile0(VALUE arg, int tracing)
     }
 
     parser_prepare(parser);
+    deferred_nodes = 0;
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
     ruby_coverage = 0;
@@ -8173,6 +8173,35 @@ warning_unless_e_option(struct parser_params *parser, NODE *node, const char *st
     if (!e_option_supplied(parser)) parser_warning(node, str);
 }
 
+static void
+fixup_nodes(NODE **rootnode)
+{
+    NODE *node, *next, *head;
+
+    for (node = *rootnode; node; node = next) {
+	enum node_type type;
+	VALUE val;
+
+	next = node->nd_next;
+	head = node->nd_head;
+	rb_gc_force_recycle((VALUE)node);
+	*rootnode = next;
+	switch (type = nd_type(head)) {
+	  case NODE_DOT2:
+	  case NODE_DOT3:
+	    val = rb_range_new(head->nd_beg->nd_lit, head->nd_end->nd_lit,
+			       type == NODE_DOT3 ? Qtrue : Qfalse);
+	    rb_gc_force_recycle((VALUE)head->nd_beg);
+	    rb_gc_force_recycle((VALUE)head->nd_end);
+	    nd_set_type(head, NODE_LIT);
+	    head->nd_lit = val;
+	    break;
+	  default:
+	    break;
+	}
+    }
+}
+
 static NODE *cond0(struct parser_params*,NODE*);
 
 static NODE*
@@ -8180,17 +8209,15 @@ range_op(struct parser_params *parser, NODE *node)
 {
     enum node_type type;
 
-    if (!e_option_supplied(parser)) return node;
     if (node == 0) return 0;
 
-    value_expr(node);
-    node = cond0(parser, node);
     type = nd_type(node);
+    value_expr(node);
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
 	warn_unless_e_option(parser, node, "integer literal in conditional range");
 	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."))));
     }
-    return node;
+    return cond0(parser, node);
 }
 
 static int
@@ -9296,6 +9323,7 @@ parser_initialize(struct parser_params *parser)
     parser->parser_toksiz = 0;
     parser->parser_heredoc_end = 0;
     parser->parser_command_start = Qtrue;
+    parser->parser_deferred_nodes = 0;
     parser->parser_lex_pbeg = 0;
     parser->parser_lex_p = 0;
     parser->parser_lex_pend = 0;
@@ -9332,6 +9360,7 @@ parser_mark(void *ptr)
     struct parser_params *p = (struct parser_params*)ptr;
 
     rb_gc_mark((VALUE)p->parser_lex_strterm);
+    rb_gc_mark((VALUE)p->parser_deferred_nodes);
     rb_gc_mark(p->parser_lex_input);
     rb_gc_mark(p->parser_lex_lastline);
     rb_gc_mark(p->parser_lex_nextline);

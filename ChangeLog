@@ -1,3 +1,9 @@
+Mon Aug  4 16:48:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (deferred_nodes, compstmt, arg, fixup_nodes, range_op): fix
+	  up fixnum range literal in conditional as automagical line number
+	  comparison.  [ruby-core:12124], [ruby-dev:35731]
+
 Mon Aug  4 14:41:25 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP::rcptto): fix a typo. a patch from
