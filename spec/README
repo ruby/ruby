@@ -1,0 +1,24 @@
+= RubySpec
+
+RubySpec (http://rubyspec.org) provides the Ruby langauge specification in an
+executable format. The make task `update-rubyspec' retrieves the specification
+and put it into this directory.
+
+ spec
+  +-- mspec            driver library for executing the specification.
+  +-- rubyspec
+       +-- 1.8
+       |    +-- core
+       |    +-- ...
+       |
+       +-- 1.9
+            +-- core        specification for core libraries 
+            |    +-- array 
+            |    +-- bignum
+            |    +-- ...
+            |
+            +-- fixtures    
+            +-- language    specification for Ruby language itself
+            +-- library     specification for standard libraries.
+                 +-- addrev
+                 +-- ...

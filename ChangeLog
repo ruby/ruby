@@ -1,3 +1,14 @@
+Mon Aug  4 20:39:06 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Makefile.in (update-rubyspec): renamed the rubyspec directory
+	  "spec". Changed directory structure.
+
+	* Makefile.in (test-rubyspec): ditto.
+
+	* spec/README: described the structure of "spec" directory.
+
+	* spec/default.mspec: configured for Matz's Ruby Implementation.
+
 Mon Aug  4 19:21:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_tmp_new): added.
