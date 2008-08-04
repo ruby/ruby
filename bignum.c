@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "rubysig.h"
 
 #include <math.h>
 #include <ctype.h>
@@ -709,6 +710,7 @@ rb_big2str0(x, base, trim)
     s = RSTRING(ss)->ptr;
 
     s[0] = RBIGNUM(x)->sign ? '+' : '-';
+    TRAP_BEG;
     while (i && j > 1) {
 	long k = i;
 	BDIGIT_DBL num = 0;
@@ -738,6 +740,7 @@ rb_big2str0(x, base, trim)
 	RSTRING(ss)->len = i;
     }
     s[RSTRING(ss)->len] = '\0';
+    TRAP_END;
 
     return ss;
 }

@@ -1,3 +1,7 @@
+Mon Aug  4 13:49:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big2str0, bigsqr): made interruptible.  [ruby-Bugs-20622]
+
 Mon Aug  4 13:39:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/openssl_missing.h (d2i_of_void): define for older
