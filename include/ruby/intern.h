@@ -43,6 +43,7 @@ VALUE rb_ary_new(void);
 VALUE rb_ary_new2(long);
 VALUE rb_ary_new3(long,...);
 VALUE rb_ary_new4(long, const VALUE *);
+VALUE rb_ary_tmp_new(long);
 void rb_ary_free(VALUE);
 VALUE rb_ary_freeze(VALUE);
 VALUE rb_ary_aref(int, VALUE*, VALUE);

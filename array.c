@@ -174,6 +174,12 @@ rb_ary_new4(long n, const VALUE *elts)
     return ary;
 }
 
+VALUE
+rb_ary_tmp_new(long len)
+{
+    return ary_new(0, len);
+}
+
 void
 rb_ary_free(VALUE ary)
 {

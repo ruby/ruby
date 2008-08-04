@@ -1,4 +1,6 @@
-Mon Aug  4 17:37:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug  4 19:21:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_tmp_new): added.
 
 	* vm_eval.c (vm_call_super): fixed typo, and get rid of too large
 	  alloca.  [ruby-core:17922]
