@@ -3724,7 +3724,7 @@ io_reopen(io, nfile)
 	rb_io_binmode(io);
     }
 
-    RBASIC(io)->klass = RBASIC(nfile)->klass;
+    RBASIC(io)->klass = rb_obj_class(nfile);
     return io;
 }
 

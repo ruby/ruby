@@ -4432,6 +4432,7 @@ rb_find_file_ext(filep, ext)
 	for (j=0; ext[j]; j++) {
 	    rb_str_cat2(tmp, ext[j]);
 	    if (file_load_ok(RSTRING_PTR(tmp))) {
+		rb_str_resize(tmp, 0);
 		fname = rb_str_dup(*filep);
 		rb_str_cat2(fname, ext[j]);
 		OBJ_FREEZE(fname);
@@ -4500,7 +4501,7 @@ rb_find_file(path)
 	}
 	return 0;
       found:
-	RBASIC(tmp)->klass = RBASIC(path)->klass;
+	RBASIC(tmp)->klass = rb_obj_class(path);
 	OBJ_FREEZE(tmp);
     }
     else {
