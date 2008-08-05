@@ -1,3 +1,11 @@
+Wed Aug  6 05:08:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang): reset to real class.
+
+	* file.c (rb_find_file_ext, rb_find_file): ditto.
+
+	* io.c (io_reopen): ditto.
+
 Wed Aug  6 03:56:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (transcodes), tool/build-transcode: generates transcode

@@ -4506,7 +4506,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 	    if (RSTRING_LEN(str) == 0) continue;
 	    file_expand_path(fname, str, tmp);
 	    if (file_load_ok(RSTRING_PTR(tmp))) {
-		RBASIC(tmp)->klass = RBASIC(*filep)->klass;
+		RBASIC(tmp)->klass = rb_obj_class(*filep);
 		OBJ_FREEZE(tmp);
 		*filep = tmp;
 		return j+1;
@@ -4572,7 +4572,7 @@ rb_find_file(VALUE path)
 	}
 	return 0;
       found:
-	RBASIC(tmp)->klass = RBASIC(path)->klass;
+	RBASIC(tmp)->klass = rb_obj_class(path);
 	OBJ_FREEZE(tmp);
     }
     else {

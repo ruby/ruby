@@ -1562,7 +1562,7 @@ rb_ary_sort_bang(VALUE ary)
 	RARRAY(tmp)->ptr = 0;
 	RARRAY(tmp)->len = 0;
 	RARRAY(tmp)->aux.capa = 0;
-	RBASIC(tmp)->klass = RBASIC(ary)->klass;
+	RBASIC(tmp)->klass = rb_cArray;
     }
     return ary;
 }
