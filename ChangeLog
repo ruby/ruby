@@ -1,3 +1,9 @@
+Tue Aug  5 16:33:20 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (disconnect): do not refer SSL::SSLSocket for
+	  environments without OpenSSL.  backported from trunk.
+	  fixed [ruby-dev:35755].
+
 Tue Aug  5 14:19:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_stat_mode): generalized st_mode mask.
