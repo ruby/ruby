@@ -1,3 +1,7 @@
+Wed Aug  6 07:59:02 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (ActionMap#eql?): use == to compare @map.
+
 Wed Aug  6 07:45:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: show generating tables in verbose mode.

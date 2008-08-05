@@ -156,7 +156,7 @@ class ActionMap
 
   def eql?(other)
     self.class == other.class &&
-    @map.eql?(other.instance_eval { @map })
+    @map == other.instance_eval { @map }
   end
 
   alias == eql?
