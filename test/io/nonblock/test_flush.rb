@@ -24,7 +24,11 @@ class TestIONonblock < Test::Unit::TestCase
           result << s
         end
       }
-      w.flush # assert_raise(IOError, "[ruby-dev:24985]") {w.flush}
+      begin
+        w.flush # assert_raise(IOError, "[ruby-dev:24985]") {w.flush}
+      rescue Errno::EBADF, IOError
+        # ignore [ruby-dev:35638]
+      end
       assert_nothing_raised {t.join}
     }
     assert_equal(4097, result.size)
