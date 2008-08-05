@@ -83,4 +83,6 @@ typedef struct rb_transcoder {
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);
 void rb_register_transcoder(const rb_transcoder *);
 
+#define TRANSCODE_ERROR rb_eRuntimeError /*change exception*/
+
 #endif /* RUBY_TRANSCODE_DATA_H */

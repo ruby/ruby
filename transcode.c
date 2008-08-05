@@ -274,7 +274,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	    output_replacement_character(&out_p, to_encoding);
 	    continue;
 	}
-	rb_raise(rb_eRuntimeError /*change exception*/, "invalid byte sequence");
+	rb_raise(TRANSCODE_ERROR, "invalid byte sequence");
 	continue;
       undef:
 	/* valid character in from encoding
@@ -291,7 +291,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	    output_replacement_character(&out_p, to_encoding);
 	    continue;
 	}
-	rb_raise(rb_eRuntimeError /*@@@change exception*/, "conversion undefined for byte sequence (maybe invalid byte sequence)");
+	rb_raise(TRANSCODE_ERROR, "conversion undefined for byte sequence (maybe invalid byte sequence)");
 	continue;
     }
     /* cleanup */

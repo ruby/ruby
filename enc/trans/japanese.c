@@ -23723,48 +23723,46 @@ enum ISO_2022_ESCSEQ {
 #define ISO_2022_GZ_JIS_X_0213_2000_2           ISO_2022_ENCODING(ISO_2022_GZDM4,'P')
 #define ISO_2022_GZ_JIS_X_0213_2004_1           ISO_2022_ENCODING(ISO_2022_GZDM4,'Q')
 
+#define UNSUPPORTED_MODE TRANSCODE_ERROR
+
 static int
 get_iso_2022_mode(const unsigned char **in_pos)
 {
     int new_mode;
     const unsigned char *in_p = *in_pos;
-    switch (*in_p++)
-    {
-    case '(':
-	switch (*in_p++)
-	{
-	case 'B': case 'I': case 'J':
+    switch (*in_p++) {
+      case '(':
+	switch (*in_p++) {
+	  case 'B': case 'I': case 'J':
 	    new_mode = ISO_2022_ENCODING(ISO_2022_GZD4, *(in_p-1));
 	    break;
-	default:
-	    rb_raise(rb_eRuntimeError /*change exception*/, "this mode is not supported (ESC ( %c)", *(in_p-1));
+	  default:
+	    rb_raise(UNSUPPORTED_MODE, "this mode is not supported (ESC ( %c)", *(in_p-1));
 	    break;
 	}
 	break;
-    case '$':
-	switch (*in_p++)
-	{
-	case '@': case 'A': case 'B':
+      case '$':
+	switch (*in_p++) {
+	  case '@': case 'A': case 'B':
 	    new_mode = ISO_2022_ENCODING(ISO_2022_GZDM4, *(in_p-1));
 	    break;
-	case '(':
-	    switch (*in_p++)
-	    {
-	    case 'D': case 'O': case 'P': case 'Q':
+	  case '(':
+	    switch (*in_p++) {
+	      case 'D': case 'O': case 'P': case 'Q':
 		new_mode = ISO_2022_ENCODING(ISO_2022_GZDM4, *(in_p-1));
 		break;
-	    default:
-		rb_raise(rb_eRuntimeError /*change exception*/, "this mode is not supported (ESC $ ( %c)", *(in_p-1));
+	      default:
+		rb_raise(UNSUPPORTED_MODE, "this mode is not supported (ESC $ ( %c)", *(in_p-1));
 		break;
 	    }
 	    break;
-	default:
-	    rb_raise(rb_eRuntimeError /*change exception*/, "this mode is not supported (ESC $ %c)", *(in_p-1));
+	  default:
+	    rb_raise(UNSUPPORTED_MODE, "this mode is not supported (ESC $ %c)", *(in_p-1));
 	    break;
 	}
 	break;
-    default:
-	    rb_raise(rb_eRuntimeError /*change exception*/, "this mode is not supported (ESC %c)", *(in_p-1));
+      default:
+	rb_raise(UNSUPPORTED_MODE, "this mode is not supported (ESC %c)", *(in_p-1));
 	break;
     }
     *in_pos = in_p;
@@ -23793,25 +23791,28 @@ from_iso_2022_jp_transcoder_preprocessor(const unsigned char **in_pos, unsigned 
 	c1 = *in_p++;
 	if (c1 == 0x1B) {
 	    cur_mode = get_iso_2022_mode(&in_p);
-	} else if (c1 == 0x1E || c1 == 0x1F) {
+	}
+	else if (c1 == 0x1E || c1 == 0x1F) {
 	    /* SHIFT */
-	    rb_raise(rb_eRuntimeError /*change exception*/, "shift is not supported");
-	} else if (c1 >= 0x80) {
-	    rb_raise(rb_eRuntimeError /*change exception*/, "invalid byte sequence");
-	} else {
+	    rb_raise(UNSUPPORTED_MODE, "shift is not supported");
+	}
+	else if (c1 >= 0x80) {
+	    rb_raise(TRANSCODE_ERROR, "invalid byte sequence");
+	}
+	else {
 	    switch (cur_mode) {
-	    case ISO_2022_GZ_ASCII:
-	    case ISO_2022_GZ_JIS_X_0201_Roman:
+	      case ISO_2022_GZ_ASCII:
+	      case ISO_2022_GZ_JIS_X_0201_Roman:
 		*out_p++ = c1;
 		break;
-	    case ISO_2022_GZ_JIS_X_0201_Katakana:
+	      case ISO_2022_GZ_JIS_X_0201_Katakana:
 		*out_p++ = 0x8E;
 		*out_p++ = c1 | 0x80;
 		break;
-	    case ISO_2022_GZ_JIS_X_0212_1990:
+	      case ISO_2022_GZ_JIS_X_0212_1990:
 		*out_p++ = 0x8F;
-	    case ISO_2022_GZ_JIS_C_6226_1978:
-	    case ISO_2022_GZ_JIS_X_0208_1983:
+	      case ISO_2022_GZ_JIS_C_6226_1978:
+	      case ISO_2022_GZ_JIS_X_0208_1983:
 		*out_p++ = c1 | 0x80;
 		*out_p++ = *in_p++ | 0x80;
 		break;
@@ -23828,13 +23829,12 @@ select_iso_2022_mode(unsigned char **out_pos, int new_mode)
 {
     unsigned char *out_p = *out_pos;
     *out_p++ = '\x1b';
-    switch (new_mode>>8)
-    {
-    case ISO_2022_GZD4:
+    switch (new_mode>>8) {
+      case ISO_2022_GZD4:
 	*out_p++ = new_mode >> 8;
 	*out_p++ = new_mode & 0x7F;
 	break;
-    case ISO_2022_GZDM4:
+      case ISO_2022_GZDM4:
 	*out_p++ = new_mode >> 16;
 	if ((new_mode & 0x7F) != '@' &&
 	    (new_mode & 0x7F) != 'A' &&
@@ -23844,8 +23844,8 @@ select_iso_2022_mode(unsigned char **out_pos, int new_mode)
 	}
 	*out_p++ = new_mode & 0x7F;
 	break;
-    default:
-	rb_raise(rb_eRuntimeError /*change exception*/, "this mode is not supported.");
+      default:
+	rb_raise(UNSUPPORTED_MODE, "this mode is not supported.");
 	break;
     }
     *out_pos = out_p;
@@ -23874,20 +23874,24 @@ to_iso_2022_jp_transcoder_postprocessor(const unsigned char **in_pos, unsigned c
 	next_byte = *in_p++;
 	if (next_byte < 0x80) {
 	    new_mode = ISO_2022_GZ_ASCII;
-	} else if (next_byte == 0x8E) {
+	}
+	else if (next_byte == 0x8E) {
 	    new_mode = ISO_2022_GZ_JIS_X_0201_Katakana;
 	    next_byte = *in_p++;
-	} else if (next_byte == 0x8F) {
+	}
+	else if (next_byte == 0x8F) {
 	    new_mode = ISO_2022_GZ_JIS_X_0212_1990;
 	    next_byte = *in_p++;
-	} else {
+	}
+	else {
 	    new_mode = ISO_2022_GZ_JIS_X_0208_1983;
 	}
 	if (cur_mode != new_mode)
 	    cur_mode = select_iso_2022_mode(&out_p, new_mode);
 	if (cur_mode < 0xFFFF) {
 	    *out_p++ = next_byte & 0x7F;
-	} else {
+	}
+	else {
 	    *out_p++ = next_byte & 0x7F;
 	    *out_p++ = *in_p++ & 0x7F;
 	}

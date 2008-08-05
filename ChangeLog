@@ -1,3 +1,11 @@
+Tue Aug  5 12:34:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode_data.h (TRANSCODE_ERROR): common transcode failure
+	  exception, would be changed later.
+
+	* enc/trans/japanese.c (UNSUPPORTED_MODE): unsupported mode transition
+	  exception.
+
 Tue Aug  5 03:29:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): respect overridden <=> for String and
