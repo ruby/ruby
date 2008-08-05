@@ -3,7 +3,17 @@
 % encs.each {|e| e.chomp!(".c")}
 % alphanumeric_order = proc {|e| e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten}
 % encs = encs.sort_by(&alphanumeric_order)
-% trans = Dir.open($srcdir+"/trans") {|d| d.select {|e| e.chomp!('.c') && /\.erb\z/ !~ e }}
+% atrans = []
+% trans = Dir.open($srcdir+"/trans") {|d|
+%   d.select {|e|
+%     if e.chomp!('.c')
+%       atrans << e if e.chomp!(".erb")
+%       true
+%     end
+%   }
+% }
+% trans.uniq!
+% atrans = atrans.sort_by(&alphanumeric_order)
 % trans = trans.sort_by(&alphanumeric_order)
 % trans.map! {|e| "trans/#{e}"}
 % dependencies = encs + trans
@@ -33,6 +43,13 @@ $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
 %   end
 %   unless trans.empty?
 $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h
+%   end
+%   atrans.each do |e|
+%     src = "#{e}.erb.c"
+%     src = [src, *IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|e|e+".rb"}]
+
+$(srcdir)/enc/trans/<%=e%>.c: <%= src.map {|e| "$(srcdir)/enc/trans/#{e}"}.join(" ")%>
+	$(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
 %   end
 
 % end

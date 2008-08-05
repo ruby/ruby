@@ -42,8 +42,11 @@ ldflags  = $(LDFLAGS)
 dldflags = @DLDFLAGS@
 archflag = @ARCH_FLAG@
 DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
+BASERUBY = @BASERUBY@
 
 RM = @RM@
+
+.SUFFIXES: .erb.c
 
 all:
 
