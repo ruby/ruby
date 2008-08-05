@@ -70,7 +70,7 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <io.h>
 #include <malloc.h>
-#ifdef __MINGW32__
+#if defined __MINGW32__ || __BORLANDC__ >= 0x0580
 # include <stdint.h>
 #else
 # if !defined(_INTPTR_T_DEFINED)

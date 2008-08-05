@@ -50,7 +50,9 @@ BASERUBY = $(BASERUBY)
 !if !defined(BASERUBY)
 	@for %I in (ruby.exe) do @echo BASERUBY = "%~$$PATH:I" >> $(MAKEFILE)
 !endif
-	@$(APPEND) $(BANG)endif
+	@type >> $(MAKEFILE) &&|
+$(BANG)endif
+|
 !if exist(confargs.mk)
 	@type confargs.mk >> $(MAKEFILE)
 	@del confargs.mk

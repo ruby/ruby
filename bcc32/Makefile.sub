@@ -287,25 +287,27 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define rb_pid_t int
 \#define HAVE_STRUCT_STAT_ST_RDEV 1
 \#define HAVE_ST_RDEV 1
+!if $(BORLANDC) < 0x0580
 \#define int8_t signed char
-\#define HAVE_UINT8_T 1
 \#define uint8_t unsigned char
-\#define HAVE_INT16_T 1
 \#define int16_t short
-\#define HAVE_UINT16_T 1
 \#define uint16_t unsigned short
-\#define HAVE_INT32_T 1
 \#define int32_t int
-\#define HAVE_UINT32_T 1
 \#define uint32_t unsigned int
-\#define HAVE_INT64_T HAVE_LONG_LONG
 \#define int64_t __int64
-\#define HAVE_UINT64_T HAVE_LONG_LONG
 \#define uint64_t unsigned __int64
+\#define ssize_t int
+!endif
+\#define HAVE_UINT8_T 1
+\#define HAVE_INT16_T 1
+\#define HAVE_UINT16_T 1
+\#define HAVE_INT32_T 1
+\#define HAVE_UINT32_T 1
+\#define HAVE_INT64_T HAVE_LONG_LONG
+\#define HAVE_UINT64_T HAVE_LONG_LONG
 \#define HAVE_INTPTR_T 1
 \#define HAVE_UINTPTR_T 1
 \#define HAVE_SSIZE_T 1
-\#define ssize_t int
 \#define GETGROUPS_T int
 \#define RETSIGTYPE void
 \#define HAVE_ALLOCA 1
@@ -345,7 +347,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/bcc32/Makefile.sub
 \#define RSHIFT(x,y) ((x)>>(int)y)
 \#define FILE_COUNT level
 \#define FILE_READPTR curp
-\#define RUBY_SETJMP(env) _setjmp(env)
+\#define RUBY_SETJMP(env) setjmp(env)
 \#define RUBY_LONGJMP(env,val) longjmp(env,val)
 \#define RUBY_JMP_BUF jmp_buf
 \#define inline __inline

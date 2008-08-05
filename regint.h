@@ -217,13 +217,7 @@
 
 #include <ctype.h>
 #ifdef HAVE_SYS_TYPES_H
-#ifndef __BORLANDC__
 #include <sys/types.h>
-#endif
-#endif
-
-#ifdef __BORLANDC__
-#include <malloc.h>
 #endif
 
 #ifdef ONIG_DEBUG

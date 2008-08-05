@@ -1,3 +1,8 @@
+Tue Aug  5 16:38:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h, bcc32/Makefile.sub (config.h): bcc 5.8 has
+	  stdint.h.
+
 Tue Aug  5 16:13:05 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (disconnect): do not refer SSL::SSLSocket for
