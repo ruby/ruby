@@ -380,6 +380,7 @@ end
 TRANSCODERS = []
 
 def transcode_tblgen(from, to, map)
+  STDERR.puts "converter for #{from} to #{to}" if VERBOSE_MODE
   id_from = from.tr('^0-9A-Za-z', '_')
   id_to = to.tr('^0-9A-Za-z', '_')
   if from == "UTF-8"
@@ -403,6 +404,11 @@ static const rb_transcoder
 };
 End
   tree_code + "\n" + transcoder_code
+end
+
+def transcode_generate_node(am, code, name_hint=nil, ranges=[])
+  STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
+  am.generate_node(code, name_hint, ranges)
 end
 
 def transcode_register_code
@@ -499,6 +505,8 @@ op.def_option("--force", "force table generation") { force_mode = true }
 op.def_option("--output=FILE", "specify output file") {|arg| output_filename = arg }
 op.parse!
 
+VERBOSE_MODE = verbose_mode
+
 arg = ARGV.shift
 dir = File.dirname(arg)
 $:.unshift dir unless $:.include? dir
@@ -523,14 +531,14 @@ if !force_mode && output_filename && File.readable?(output_filename)
   if old_signature == chk_signature
     now = Time.now
     File.utime(now, now, output_filename)
-    STDERR.puts "#{output_filename} is already up-to-date." if verbose_mode
+    STDERR.puts "already up-to-date: #{output_filename}" if VERBOSE_MODE
     exit
   end
 end
 
-if verbose_mode
+if VERBOSE_MODE
   if output_filename
-    STDERR.print "generate #{output_filename} ..."
+    STDERR.puts "generating #{output_filename} ..."
   end
 end
 
@@ -559,7 +567,7 @@ if output_filename
   new_filename = output_filename + ".new"
   File.open(new_filename, "w") {|f| f << result }
   File.rename(new_filename, output_filename)
-  STDERR.puts " done." if verbose_mode
+  STDERR.puts "done." if VERBOSE_MODE
 else
   print result
 end

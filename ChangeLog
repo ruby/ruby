@@ -1,3 +1,11 @@
+Wed Aug  6 07:45:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: show generating tables in verbose mode.
+	  (transcode_generate_node): call ActionMap#generate_node with showing
+	  table name.
+	
+	* enc/trans/utf_16_32.erb.c: use transcode_generate_node.
+
 Wed Aug  6 06:55:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): propagates fatal error and system
