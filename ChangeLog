@@ -1,4 +1,7 @@
-Wed Aug  6 05:26:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Aug  6 05:31:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* encoding.c (rb_to_encoding_index, rb_to_encoding): check if the name
+	  is ascii compatible as well as Encoding.find.
 
 	* transcode.c (str_encode): no need to duplicate first.
 

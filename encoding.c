@@ -121,22 +121,33 @@ rb_to_encoding_index(VALUE enc)
     else if (NIL_P(enc = rb_check_string_type(enc))) {
 	return -1;
     }
-    else {
-	return rb_enc_find_index(StringValueCStr(enc));
+    if (!rb_enc_asciicompat(rb_enc_get(enc))) {
+	return -1;
     }
+    return rb_enc_find_index(StringValueCStr(enc));
+}
+
+static rb_encoding *
+to_encoding(VALUE enc)
+{
+    int idx;
+
+    StringValue(enc);
+    if (!rb_enc_asciicompat(rb_enc_get(enc))) {
+	rb_raise(rb_eArgError, "invalid name encoding (non ASCII)");
+    }
+    idx = rb_enc_find_index(StringValueCStr(enc));
+    if (idx < 0) {
+	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
+    }
+    return rb_enc_from_index(idx);
 }
 
 rb_encoding *
 rb_to_encoding(VALUE enc)
 {
-    int idx;
-
-    idx = enc_check_encoding(enc);
-    if (idx >= 0) return RDATA(enc)->data;
-    if ((idx = rb_enc_find_index(StringValueCStr(enc))) < 0) {
-	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
-    }
-    return rb_enc_from_index(idx);
+    if (enc_check_encoding(enc) >= 0) return RDATA(enc)->data;
+    return to_encoding(enc);
 }
 
 void
@@ -838,17 +849,7 @@ enc_list(VALUE klass)
 static VALUE
 enc_find(VALUE klass, VALUE enc)
 {
-    int idx;
-
-    StringValue(enc);
-    if (!rb_enc_asciicompat(rb_enc_get(enc))) {
-	rb_raise(rb_eArgError, "invalid name encoding (non ASCII)");
-    }
-    idx = rb_enc_find_index(StringValueCStr(enc));
-    if (idx < 0) {
-	rb_raise(rb_eArgError, "unknown encoding name - %s", RSTRING_PTR(enc));
-    }
-    return rb_enc_from_encoding(rb_enc_from_index(idx));
+    return rb_enc_from_encoding(to_encoding(enc));
 }
 
 /*
