@@ -469,6 +469,24 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     return to_encidx;
 }
 
+static inline VALUE
+str_encode_associate(VALUE str, int encidx)
+{
+    int cr = 0;
+
+    rb_enc_associate_index(str, encidx);
+
+    /* transcoded string never be broken. */
+    if (rb_enc_asciicompat(rb_enc_from_index(encidx))) {
+	rb_str_coderange_scan_restartable(RSTRING_PTR(str), RSTRING_END(str), 0, &cr);
+    }
+    else {
+	cr = ENC_CODERANGE_VALID;
+    }
+    ENC_CODERANGE_SET(str, cr);
+    return str;
+}
+
 /*
  *  call-seq:
  *     str.encode!(encoding [, options] )   => str
@@ -488,21 +506,10 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE newstr = str;
     int encidx = str_transcode(argc, argv, &newstr);
-    int cr = 0;
 
     if (encidx < 0) return str;
     rb_str_shared_replace(str, newstr);
-    rb_enc_associate_index(str, encidx);
-
-    /* transcoded string never be broken. */
-    if (rb_enc_asciicompat(rb_enc_from_index(encidx))) {
-	rb_str_coderange_scan_restartable(RSTRING_PTR(str), RSTRING_END(str), 0, &cr);
-    }
-    else {
-	cr = ENC_CODERANGE_VALID;
-    }
-    ENC_CODERANGE_SET(str, cr);
-    return str;
+    return str_encode_associate(str, encidx);
 }
 
 /*
@@ -521,8 +528,12 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_encode(int argc, VALUE *argv, VALUE str)
 {
-    str = rb_str_dup(str);
-    return str_encode_bang(argc, argv, str);
+    VALUE newstr = str;
+    int encidx = str_transcode(argc, argv, &newstr);
+
+    if (encidx < 0) return rb_str_dup(str);
+    RBASIC(newstr)->klass = rb_obj_class(str);
+    return str_encode_associate(newstr, encidx);
 }
 
 VALUE

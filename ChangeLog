@@ -1,3 +1,7 @@
+Wed Aug  6 05:26:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_encode): no need to duplicate first.
+
 Wed Aug  6 05:08:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang): reset to real class.
