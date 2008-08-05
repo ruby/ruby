@@ -1,6 +1,16 @@
 #!/bin/sh
 
-ruby tool/transcode-tblgen.rb -vo enc/trans/single_byte.c enc/trans/single_byte.erb.c
-ruby tool/transcode-tblgen.rb -vo enc/trans/utf_16_32.c enc/trans/utf_16_32.erb.c
-ruby tool/transcode-tblgen.rb -vo enc/trans/japanese.c enc/trans/japanese.erb.c
-ruby tool/transcode-tblgen.rb -vo enc/trans/korean.c enc/trans/korean.erb.c
+[ "$1" -a -d "$1" ] && { cd "$1" || exit $?; } && shift
+[ "$#" = 0 ] && set enc/trans/*.erb.c
+for erb; do
+    case "$erb" in
+    *.erb.c)
+	src=`expr "$erb" | sed 's/\.erb\.c$/.c/'`
+	${BASERUBY-ruby} tool/transcode-tblgen.rb -vo "$src" "$erb"
+	;;
+    *)
+	echo "$0: don' know how to deal with $erb"
+	continue
+	;;
+    esac
+done
