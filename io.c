@@ -6590,9 +6590,16 @@ retry_sendfile:
         }
     }
     if (ss == -1) {
-        if (errno == EINVAL || errno == ENOSYS)
+        switch (errno) {
+	  case EINVAL:
+#ifdef ENOSYS
+	  case ENOSYS:
+#endif
             return 0;
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+	  case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	  case EWOULDBLOCK:
+#endif
             if (copy_stream_wait_write(stp) == -1)
                 return -1;
             if (RUBY_VM_INTERRUPTED(stp->th))
@@ -6626,12 +6633,17 @@ retry_read:
         return 0;
     }
     if (ss == -1) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        switch (errno) {
+	  case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	  case EWOULDBLOCK:
+#endif
             if (copy_stream_wait_read(stp) == -1)
                 return -1;
             goto retry_read;
-        }
-        if (errno == ENOSYS) {
+#ifdef ENOSYS
+	  case ENOSYS:
+#endif
             stp->notimp = "pread";
             return -1;
         }

@@ -1,3 +1,8 @@
+Tue Aug  5 12:43:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (retry_sendfile, retry_read): ENOSYS and EWOULDBLOCK are not
+	  defined on every platforms.
+
 Tue Aug  5 12:34:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode_data.h (TRANSCODE_ERROR): common transcode failure
