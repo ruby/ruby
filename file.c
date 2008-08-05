@@ -233,6 +233,8 @@ rb_stat_cmp(VALUE self, VALUE other)
     return Qnil;
 }
 
+#define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
+
 /*
  *  call-seq:
  *     stat.dev    => fixnum
@@ -330,11 +332,7 @@ rb_stat_ino(VALUE self)
 static VALUE
 rb_stat_mode(VALUE self)
 {
-#ifdef __BORLANDC__
-    return UINT2NUM((unsigned short)(get_stat(self)->st_mode));
-#else
-    return UINT2NUM(get_stat(self)->st_mode);
-#endif
+    return UINT2NUM(ST2UINT(get_stat(self)->st_mode));
 }
 
 /*
@@ -4034,10 +4032,10 @@ rb_stat_wr(VALUE obj)
 {
 #ifdef S_IROTH
     if ((get_stat(obj)->st_mode & (S_IROTH)) == S_IROTH) {
-      return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+	return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
     else {
-      return Qnil;
+	return Qnil;
     }
 #endif
 }
@@ -4126,10 +4124,10 @@ rb_stat_ww(VALUE obj)
 {
 #ifdef S_IROTH
     if ((get_stat(obj)->st_mode & (S_IWOTH)) == S_IWOTH) {
-      return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
+	return UINT2NUM(get_stat(obj)->st_mode & (S_IRUGO|S_IWUGO|S_IXUGO));
     }
     else {
-      return Qnil;
+	return Qnil;
     }
 #endif
 }
