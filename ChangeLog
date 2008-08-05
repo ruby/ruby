@@ -1,3 +1,8 @@
+Wed Aug  6 06:55:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (thread_start_func_2): propagates fatal error and system
+	  exit to the main thread.
+
 Wed Aug  6 05:31:54 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* encoding.c (rb_to_encoding_index, rb_to_encoding): check if the name

@@ -382,11 +382,25 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    });
 	}
 	else {
-	    if (th->safe_level < 4 &&
-		(th->vm->thread_abort_on_exception ||
-		 th->abort_on_exception || RTEST(ruby_debug))) {
-		errinfo = th->errinfo;
-		if (NIL_P(errinfo)) errinfo = rb_errinfo();
+	    errinfo = th->errinfo;
+	    if (NIL_P(errinfo)) errinfo = rb_errinfo();
+	    if (state == TAG_FATAL) {
+		/* fatal error within this thread, need to stop whole script */
+	    }
+	    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+		if (th->safe_level >= 4) {
+		    th->errinfo = rb_exc_new3(rb_eSecurityError,
+					      rb_sprintf("Insecure exit at level %d", th->safe_level));
+		    errinfo = Qnil;
+		}
+	    }
+	    else if (th->safe_level < 4 &&
+		     (th->vm->thread_abort_on_exception ||
+		      th->abort_on_exception || RTEST(ruby_debug))) {
+		/* exit on main_thread */
+	    }
+	    else {
+		errinfo = Qnil;
 	    }
 	    th->value = Qnil;
 	}
