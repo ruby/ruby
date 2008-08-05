@@ -1,0 +1,6 @@
+#!/bin/sh
+
+ruby tool/transcode-tblgen.rb -vo enc/trans/single_byte.c enc/trans/single_byte.erb.c
+ruby tool/transcode-tblgen.rb -vo enc/trans/utf_16_32.c enc/trans/utf_16_32.erb.c
+ruby tool/transcode-tblgen.rb -vo enc/trans/japanese.c enc/trans/japanese.erb.c
+ruby tool/transcode-tblgen.rb -vo enc/trans/korean.c enc/trans/korean.erb.c

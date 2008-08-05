@@ -3,7 +3,7 @@
 % encs.each {|e| e.chomp!(".c")}
 % alphanumeric_order = proc {|e| e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten}
 % encs = encs.sort_by(&alphanumeric_order)
-% trans = Dir.open($srcdir+"/trans") {|d| d.select {|e| e.chomp!('.c')}}
+% trans = Dir.open($srcdir+"/trans") {|d| d.select {|e| e.chomp!('.c') && /\.erb\z/ !~ e }}
 % trans = trans.sort_by(&alphanumeric_order)
 % trans.map! {|e| "trans/#{e}"}
 % dependencies = encs + trans

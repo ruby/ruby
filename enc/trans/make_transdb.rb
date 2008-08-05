@@ -10,7 +10,7 @@ count = 0
 converters = {}
 transdir = ARGV[0]
 outhdr = ARGV[1] || 'transdb.h'
-Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
+Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/).reject {|n| /\.erb\.c\z/ =~ n }}.sort_by {|e|
   e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
 }.each do |fn|
   open(File.join(transdir,fn)) do |f|

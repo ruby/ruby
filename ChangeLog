@@ -1,3 +1,63 @@
+Tue Aug  5 20:46:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/build-transcode: new file.
+
+	* tool/transcode-tblgen.rb: new file.
+
+	* enc/trans/make_transdb.rb: exclude *.erb.c.
+
+	* enc/depend: exclude *.erb.c.
+
+	* enc/trans/utf_16_32.erb.c: new file.
+
+	* enc/trans/single_byte.erb.c: new file.
+
+	* enc/trans/japanese.erb.c: new file.
+
+	* enc/trans/korean.erb.c: new file.
+
+	* enc/trans/iso-8859-2-tbl.rb: new file.
+
+	* enc/trans/iso-8859-3-tbl.rb: new file.
+
+	* enc/trans/iso-8859-4-tbl.rb: new file.
+
+	* enc/trans/iso-8859-5-tbl.rb: new file.
+
+	* enc/trans/iso-8859-6-tbl.rb: new file.
+
+	* enc/trans/iso-8859-7-tbl.rb: new file.
+
+	* enc/trans/iso-8859-8-tbl.rb: new file.
+
+	* enc/trans/iso-8859-9-tbl.rb: new file.
+
+	* enc/trans/iso-8859-10-tbl.rb: new file.
+
+	* enc/trans/iso-8859-11-tbl.rb: new file.
+
+	* enc/trans/iso-8859-13-tbl.rb: new file.
+
+	* enc/trans/iso-8859-14-tbl.rb: new file.
+
+	* enc/trans/iso-8859-15-tbl.rb: new file.
+
+	* enc/trans/eucjp-tbl.rb: new file.
+
+	* enc/trans/sjis-tbl.rb: new file.
+
+	* enc/trans/euckr-tbl.rb: new file.
+
+	* enc/trans/utf_16_32.c: regenerated.
+
+	* enc/trans/single_byte.c: regenerated.
+
+	* enc/trans/japanese.c: regenerated.
+
+	* enc/trans/korean.c: regenerated.
+
+	[ruby-dev:35730]
+
 Tue Aug  5 18:02:53 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/io/nonblock/test_flush.rb (TestIONonblock#test_flush):
