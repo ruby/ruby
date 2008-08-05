@@ -225,6 +225,8 @@ static VALUE rb_stat_atime _((VALUE));
 static VALUE rb_stat_mtime _((VALUE));
 static VALUE rb_stat_ctime _((VALUE));
 
+#define ST2UINT(val) ((val) & ~(~1UL << (sizeof(val) * CHAR_BIT - 1)))
+
 /*
  *  call-seq:
  *     stat.dev    => fixnum
@@ -327,11 +329,7 @@ static VALUE
 rb_stat_mode(self)
     VALUE self;
 {
-#ifdef __BORLANDC__
-    return UINT2NUM((unsigned short)(get_stat(self)->st_mode));
-#else
-    return UINT2NUM(get_stat(self)->st_mode);
-#endif
+    return UINT2NUM(ST2UINT(get_stat(self)->st_mode));
 }
 
 /*
@@ -979,14 +977,6 @@ test_l(obj, fname)
 #ifndef S_ISLNK
 #  ifdef _S_ISLNK
 #    define S_ISLNK(m) _S_ISLNK(m)
-#  elif defined __BORLANDC__
-#    ifdef _S_IFLNK
-#      define S_ISLNK(m) (((unsigned short)(m) & S_IFMT) == _S_IFLNK)
-#    else
-#      ifdef S_IFLNK
-#        define S_ISLNK(m) (((unsigned short)(m) & S_IFMT) == S_IFLNK)
-#      endif
-#    endif
 #  else
 #    ifdef _S_IFLNK
 #      define S_ISLNK(m) ((m & S_IFMT) == _S_IFLNK)
@@ -1023,14 +1013,6 @@ test_S(obj, fname)
 #ifndef S_ISSOCK
 #  ifdef _S_ISSOCK
 #    define S_ISSOCK(m) _S_ISSOCK(m)
-#  elif defined __BORLANDC__
-#    ifdef _S_IFSOCK
-#      define S_ISSOCK(m) (((unsigned short)(m) & S_IFMT) == _S_IFSOCK)
-#    else
-#      ifdef S_IFSOCK
-#        define S_ISSOCK(m) (((unsigned short)(m) & S_IFMT) == S_IFSOCK)
-#      endif
-#    endif
 #  else
 #    ifdef _S_IFSOCK
 #      define S_ISSOCK(m) ((m & S_IFMT) == _S_IFSOCK)

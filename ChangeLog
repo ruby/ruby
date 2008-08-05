@@ -1,3 +1,7 @@
+Tue Aug  5 14:19:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_stat_mode): generalized st_mode mask.
+
 Mon Aug  4 16:48:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (deferred_nodes, compstmt, arg, fixup_nodes, range_op): fix
