@@ -1,3 +1,10 @@
+Wed Aug  6 20:44:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: distinguish UNDEF and INVALID.
+	  [ruby-dev:35709]
+
+	* transcode.c (transcode_loop): don't need rb_enc_mbclen now.
+
 Wed Aug  6 14:40:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (transdb.h): requires transcoders.

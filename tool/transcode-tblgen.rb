@@ -17,6 +17,9 @@ end
 
 class StrSet
   def self.parse(pattern)
+    if /\A\s*(([0-9a-f][0-9a-f]|\{([0-9a-f][0-9a-f]|[0-9a-f][0-9a-f]-[0-9a-f][0-9a-f])(,([0-9a-f][0-9a-f]|[0-9a-f][0-9a-f]-[0-9a-f][0-9a-f]))*\})+(\s+|\z))*\z/i !~ pattern
+      raise ArgumentError, "invalid pattern: #{pattern.inspect}"
+    end
     result = []
     pattern.scan(/\S+/) {|seq|
       seq_result = []
@@ -69,25 +72,27 @@ class StrSet
   def to_s
     if @pat.empty?
       "(empset)"
-    elsif @pat == [[]]
-      "(empstr)"
     else
       @pat.map {|seq|
-        seq.map {|byteset|
-          if byteset.length == 1 && byteset[0].begin == byteset[0].end
-            "%02x" % byteset[0].begin
-          else
-            "{" + 
-            byteset.map {|range|
-              if range.begin == range.end
-                "%02x" % range.begin
-              else
-                "%02x-%02x" % [range.begin, range.end]
-              end
-            }.join(',') +
-            "}"
-          end
-        }.join('')
+        if seq.empty?
+          "(empstr)"
+        else
+          seq.map {|byteset|
+            if byteset.length == 1 && byteset[0].begin == byteset[0].end
+              "%02x" % byteset[0].begin
+            else
+              "{" + 
+              byteset.map {|range|
+                if range.begin == range.end
+                  "%02x" % range.begin
+                else
+                  "%02x-%02x" % [range.begin, range.end]
+                end
+              }.join(',') +
+              "}"
+            end
+          }.join('')
+        end
       }.join(' ')
     end
   end
@@ -142,9 +147,7 @@ class ActionMap
 
   def initialize(h)
     @map = h
-    @default_action = :undef
   end
-  attr_accessor :default_action
 
   def hash
     hash = 0
@@ -174,7 +177,7 @@ class ActionMap
     nil
   end
 
-  def each_firstbyte
+  def each_firstbyte(valid_encoding=nil)
     h = {}
     @map.each {|ss, action|
       if ss.emptyable?
@@ -184,17 +187,27 @@ class ActionMap
           h[byte] ||= {}
           if h[byte][rest]
             raise "ambiguous"
-          else
-            h[byte][rest] = action
           end
+          h[byte][rest] = action
         }
       end
     }
-    h.keys.sort.each {|byte|
-      am = ActionMap.new(h[byte])
-      am.default_action = @default_action
-      yield byte, am
-    }
+    if valid_encoding
+      valid_encoding.each_firstbyte {|byte, rest|
+        if h[byte]
+          am = ActionMap.new(h[byte])
+          yield byte, am, rest
+        else
+          am = ActionMap.new(rest => :undef)
+          yield byte, am, nil
+        end
+      }
+    else
+      h.keys.sort.each {|byte|
+        am = ActionMap.new(h[byte])
+        yield byte, am, nil
+      }
+    end
   end
 
   OffsetsMemo = {}
@@ -257,24 +270,14 @@ class ActionMap
     offsets = []
     infos = []
     infomap = {}
-    noaction_bytes = []
     table.each_with_index {|action, byte|
-      if !action
-        noaction_bytes << byte
-        next
-      end
+      action ||= :invalid
       unless o = infomap[action]
         infomap[action] = o = infos.length
         infos[o] = action
       end
       offsets[byte] = o
     }
-    if !noaction_bytes.empty?
-      noaction_bytes.each {|byte|
-        offsets[byte] = infos.length
-      }
-      infos << @default_action
-    end
 
     if n = OffsetsMemo[offsets]
       offsets_name = n
@@ -315,15 +318,15 @@ End
   PostMemo = {}
   NextName = "a"
 
-  def generate_node(code, name_hint=nil, ranges=[])
+  def generate_node(code, name_hint=nil, ranges=[], valid_encoding=nil)
     ranges = [0x00..0xff] if ranges.empty?
     range = ranges.first
-    if n = PreMemo[self]
+    if n = PreMemo[[self,valid_encoding]]
       return n
     end
 
     table = Array.new(range.end - range.begin + 1)
-    each_firstbyte {|byte, rest|
+    each_firstbyte(valid_encoding) {|byte, rest, rest_valid_encoding|
       unless range === byte
         raise "byte not in range"
       end
@@ -332,7 +335,7 @@ End
       else
         name_hint2 = nil
         name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte-range.begin] = "&" + rest.generate_node(code, name_hint2, ranges[1..-1])
+        table[byte-range.begin] = "&" + rest.generate_node(code, name_hint2, ranges[1..-1], rest_valid_encoding)
       end
     }
 
@@ -345,7 +348,7 @@ End
       NextName.succ!
     end
 
-    PreMemo[self] = PostMemo[table] = name_hint
+    PreMemo[[self,valid_encoding]] = PostMemo[table] = name_hint
 
     code << generate_lookup_node(name_hint, table)
     name_hint
@@ -371,9 +374,15 @@ def transcode_compile_tree(name, from, map)
   }
   am = ActionMap.parse(h)
 
+  if ValidEncoding[from]
+    valid_encoding = StrSet.parse(ValidEncoding[from])
+  else
+    valid_encoding = nil
+  end
+
   ranges = from == "UTF-8" ? [0x00..0xff, 0x80..0xbf, 0x80..0xbf, 0x80..0xbf] : []
   code = ''
-  defined_name = am.generate_node(code, name, ranges)
+  defined_name = am.generate_node(code, name, ranges, valid_encoding)
   return defined_name, code
 end
 
@@ -419,75 +428,72 @@ def transcode_register_code
   code
 end
 
-Universe = {
-  "singlebyte" => "{00-ff}",
-  "doublebyte" => "{00-ff}{00-ff}",
-  "quadruplebyte" => "{00-ff}{00-ff}{00-ff}{00-ff}",
-  "US-ASCII" => "{00-7f}",
-  "EUC-JP" => <<-End,
-    {00-7f}
-    {a1-fe}{a1-fe}
-    8e{a1-fe}
-    8f{a1-fe}{a1-fe}
-  End
-  "EUC-KR" => <<-End,
-    {00-7f}
-    {a1-fe}{a1-fe}
-  End
-  "EUC-TW" => <<-End,
-    {00-7f}
-    {a1-fe}{a1-fe}
-    8e{a1-b0}{a1-fe}{a1-fe}
-  End
-  "Shift_JIS" => <<-End,
-    {00-7f}
-    {81-9f,e0-fc}{40-7e,80-fc}
-    {a1-df}
-  End
-  "Big5" => <<-End,
-    {00-7f}
-    {a1-fe}{40-7e,a1-fe}
-  End
-  "GBK" => <<-End,
-    {00-80}
-    {81-fe}{40-7e,80-fe}
-  End
-  "CP949" => <<-End,
-    {00-80}
-    {81-fe}{41-5a,61-7a,81-fe}
-  End
-  "UTF-8" => <<-End,
-    {00-7f}
-    {c2-df}{80-bf}
-         e0{a0-bf}{80-bf}
-    {e1-ec}{80-bf}{80-bf}
-         ed{80-9f}{80-bf}
-    {ee-ef}{80-bf}{80-bf}
-         f0{90-bf}{80-bf}{80-bf}
-    {f1-f3}{80-bf}{80-bf}{80-bf}
-         f4{80-8f}{80-bf}{80-bf}
-  End
-  "GB18030" => <<-End,
-    {00-7f}
-    {81-fe}{40-7e,80-fe}
-    {81-fe}{30-93}{81-fe}{30-93}
-  End
-  "UTF-16BE" => <<-End,
-    {00-d7,e0-ff}{00-ff}
-    {d8-db}{00-ff}{dc-df}{00-ff}
-  End
-  "UTF-16LE" => <<-End,
-    {00-ff}{00-d7,e0-ff}
-    {00-ff}{d8-db}{00-ff}{dc-df}
-  End
-  "UTF-32BE" => <<-End,
-    0000{00-d7,e0-ff}{00-ff}
-    00{01-10}{00-ff}{00-ff}
-  End
-  "UTF-32LE" => <<-End,
-    {00-ff}{00-d7,e0-ff}0000
-    {00-ff}{00-ff}{01-10}00
-  End
+ValidEncoding = {
+  '1byte'       => '{00-ff}',
+  '2byte'       => '{00-ff}{00-ff}',
+  '4byte'       => '{00-ff}{00-ff}{00-ff}{00-ff}',
+  'US-ASCII'    => '{00-7f}',
+  'UTF-8'       => '{00-7f}
+                    {c2-df}{80-bf}
+                         e0{a0-bf}{80-bf}
+                    {e1-ec}{80-bf}{80-bf}
+                         ed{80-9f}{80-bf}
+                    {ee-ef}{80-bf}{80-bf}
+                         f0{90-bf}{80-bf}{80-bf}
+                    {f1-f3}{80-bf}{80-bf}{80-bf}
+                         f4{80-8f}{80-bf}{80-bf}',
+  'UTF-16BE'    => '{00-d7,e0-ff}{00-ff}
+                    {d8-db}{00-ff}{dc-df}{00-ff}',
+  'UTF-16LE'    => '{00-ff}{00-d7,e0-ff}
+                    {00-ff}{d8-db}{00-ff}{dc-df}',
+  'UTF-32BE'    => '0000{00-d7,e0-ff}{00-ff}
+                    00{01-10}{00-ff}{00-ff}',
+  'UTF-32LE'    => '{00-ff}{00-d7,e0-ff}0000
+                    {00-ff}{00-ff}{01-10}00',
+  'EUC-JP'      => '{00-7f}
+                    {a1-fe}{a1-fe}
+                    8e{a1-fe}
+                    8f{a1-fe}{a1-fe}',
+  'CP51932'     => '{00-7f}
+                    {a1-fe}{a1-fe}
+                    8e{a1-fe}',
+  'Shift_JIS'   => '{00-7f}
+                    {81-9f,e0-fc}{40-7e,80-fc}
+                    {a1-df}',
+  'EUC-KR'      => '{00-7f}
+                    {a1-fe}{a1-fe}',
+  'CP949'       => '{00-7f}
+                    {81-fe}{41-5a,61-7a,81-fe}',
+  'Big5'        => '{00-7f}
+                    {81-fe}{40-7e,a1-fe}',
+  'EUC-TW'      => '{00-7f}
+                    {a1-fe}{a1-fe}
+                    8e{a1-b0}{a1-fe}{a1-fe}',
+  'GBK'         => '{00-80}
+                    {81-fe}{40-7e,80-fe}',
+  'GB18030'     => '{00-7f}
+                    {81-fe}{40-7e,80-fe}
+                    {81-fe}{30-39}{81-fe}{30-39}',
+}
+
+{
+  'ISO-8859-1'  => '1byte',
+  'ISO-8859-2'  => '1byte',
+  'ISO-8859-3'  => '1byte',
+  'ISO-8859-4'  => '1byte',
+  'ISO-8859-5'  => '1byte',
+  'ISO-8859-6'  => '1byte',
+  'ISO-8859-7'  => '1byte',
+  'ISO-8859-8'  => '1byte',
+  'ISO-8859-9'  => '1byte',
+  'ISO-8859-10' => '1byte',
+  'ISO-8859-11' => '1byte',
+  'ISO-8859-13' => '1byte',
+  'ISO-8859-14' => '1byte',
+  'ISO-8859-15' => '1byte',
+  'Windows-31J' => 'Shift_JIS',
+}.each {|k, v|
+  ValidEncoding[k] = ValidEncoding.fetch(v)
 }
 
 def make_signature(filename, src)
@@ -528,7 +534,7 @@ if !force_mode && output_filename && File.readable?(output_filename)
       end
     end
   }
-  if old_signature == chk_signature
+  if old_signature == chk_signature && File.mtime(__FILE__) < File.mtime(output_filename)
     now = Time.now
     File.utime(now, now, output_filename)
     STDERR.puts "already up-to-date: #{output_filename}" if VERBOSE_MODE

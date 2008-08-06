@@ -188,7 +188,6 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     unsigned char next_byte;
     int from_utf8 = my_transcoder->from_utf8;
     unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
-    rb_encoding *from_encoding = rb_enc_find(my_transcoder->from_encoding);
     rb_encoding *to_encoding = rb_enc_find(my_transcoder->to_encoding);
 
     while (in_p < in_stop) {
@@ -280,10 +279,6 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	/* valid character in from encoding
 	 * but no related character(s) in to encoding */
 	/* todo: add more alternative behaviors */
-	{
-	    int len = rb_enc_mbclen((const char *)char_start, (const char *)in_stop, from_encoding);
-	    while (in_p < char_start + len) in_p++;
-	}
 	if (opt&UNDEF_IGNORE) {
 	    continue;
 	}
