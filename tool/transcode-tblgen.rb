@@ -415,9 +415,11 @@ End
   tree_code + "\n" + transcoder_code
 end
 
-def transcode_generate_node(am, code, name_hint=nil, ranges=[])
+def transcode_generate_node(am, name_hint=nil, ranges=[])
   STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
+  code = ''
   am.generate_node(code, name_hint, ranges)
+  code
 end
 
 def transcode_register_code

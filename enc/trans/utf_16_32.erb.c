@@ -185,9 +185,7 @@ fun_so_to_utf_32le(const unsigned char* s, unsigned char* o)
   map["{d8-db}{00-ff}{dc-df}{00-ff}"] = :func_so
   map["{dc-df}{00-ff}"] = :invalid
   map["{d8-db}{00-ff}{00-db,e0-ff}{00-ff}"] = :invalid
-  code = ''
-  transcode_generate_node(ActionMap.parse(map), code, "from_UTF_16BE", [])
-  code
+  transcode_generate_node(ActionMap.parse(map), "from_UTF_16BE", [])
 %>
 
 static const rb_transcoder
@@ -212,10 +210,8 @@ rb_from_UTF_16BE = {
   map["ed{a0-bf}"] = :invalid
   map["f0{80-8f}"] = :invalid
   map["f4{90-bf}"] = :invalid
-  code = ''
   am = ActionMap.parse(map)
-  transcode_generate_node(am, code, "to_UTF_16BE", [0x00..0xff, 0x80..0xbf, 0x80..0xbf, 0x80..0xbf])
-  code
+  transcode_generate_node(am, "to_UTF_16BE", [0x00..0xff, 0x80..0xbf, 0x80..0xbf, 0x80..0xbf])
 %>
 
 static const rb_transcoder
@@ -230,9 +226,7 @@ rb_to_UTF_16BE = {
   map["{00-ff}{d8-db}{00-ff}{dc-df}"] = :func_so
   map["{00-ff}{dc-df}"] = :invalid
   map["{00-ff}{d8-db}{00-ff}{00-db,e0-ff}"] = :invalid
-  code = ''
-  transcode_generate_node(ActionMap.parse(map), code, "from_UTF_16LE", [])
-  code
+  transcode_generate_node(ActionMap.parse(map), "from_UTF_16LE", [])
 %>
 
 static const rb_transcoder
@@ -254,9 +248,7 @@ rb_to_UTF_16LE = {
   map["00{11-ff}{00-ff}{00-ff}"] = :invalid
   map["0000{d8-df}{00-ff}"] = :invalid
   map["{01-ff}{00-ff}{00-ff}{00-ff}"] = :invalid
-  code = ''
-  transcode_generate_node(ActionMap.parse(map), code, "from_UTF_32BE", [])
-  code
+  transcode_generate_node(ActionMap.parse(map), "from_UTF_32BE", [])
 %>
 
 static const rb_transcoder
@@ -278,9 +270,7 @@ rb_to_UTF_32BE = {
   map["{00-ff}{00-ff}{00-ff}{01-ff}"] = :invalid
   map["{00-ff}{00-ff}{11-ff}00"] = :invalid
   map["{00-ff}{d8-df}0000"] = :invalid
-  code = ''
-  transcode_generate_node(ActionMap.parse(map), code, "from_UTF_32LE", [])
-  code
+  transcode_generate_node(ActionMap.parse(map), "from_UTF_32LE", [])
 %>
 
 static const rb_transcoder
