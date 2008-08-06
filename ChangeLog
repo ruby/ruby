@@ -1,3 +1,8 @@
+Thu Aug  7 06:31:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/process.rb (test_popen_fork): skip a test which is
+	  freeze in FreeBSD.
+
 Thu Aug  7 06:05:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* config.guess: add powerpc-apple-haiku, i586-pc-haiku.
