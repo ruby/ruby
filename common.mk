@@ -673,8 +673,8 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c transcodes
 
-transcodes:
-	$(srcdir)/tool/build-transcode "$(srcdir)"
+transcodes: enc.mk
+	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(srcdir)/revision.h
 
@@ -687,7 +687,7 @@ encdb.h: $(PREP)
 	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@.new
 	$(IFCHANGE) "$@" "$@.new"
 
-transdb.h: $(PREP)
+transdb.h: $(PREP) transcodes
 	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans $@.new
 	$(IFCHANGE) "$@" "$@.new"
 

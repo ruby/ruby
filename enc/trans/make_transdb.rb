@@ -18,7 +18,6 @@ Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/).reject {|n| /\.erb\.c\z/ =~ n }}.so
       if (/^static const rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)
         if $1 && $2
 	  from_to = "%s to %s" % [$1, $2]
-          converters[from_to]
           if converters[from_to]
 	    raise ArgumentError, '%s:%d: transcode "%s" is already registered (%s:%d)' %
 	      [fn, $., from_to, *converters[from_to].values_at(2, 3)]
