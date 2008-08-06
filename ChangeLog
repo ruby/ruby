@@ -1,3 +1,7 @@
+Thu Aug  7 04:43:14 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/depend: for build in other than srcdir.
+
 Wed Aug  6 22:40:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (transcode_generate_node): code

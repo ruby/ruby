@@ -6,7 +6,7 @@
 % atrans = []
 % trans = Dir.open($srcdir+"/trans") {|d|
 %   d.select {|e|
-%     if e.chomp!('.c')
+%     if e != 'transdb.c' && e.chomp!('.c')
 %       atrans << e if e.chomp!(".erb")
 %       true
 %     end
@@ -51,7 +51,7 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 %     src = "#{e}.erb.c"
 %     src = [src, *IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
 
-$(srcdir)/enc/trans/<%=e%>.c: <%= src.map {|e| "$(srcdir)/enc/trans/#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
+enc/trans/<%=e%>.c: <%= src.map {|e| "$(srcdir)/enc/trans/#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
 	$(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" <%= src.map {|e| %'"$(srcdir)/enc/trans/#{e}"'}.join(" ")%>
 %   end
 
@@ -70,8 +70,8 @@ $(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
 
 % end
 % dependencies.each do |e|
-enc/<%=e%>.$(OBJEXT): $(srcdir)/enc/<%=e%>.c
-	<%=COMPILE_C.sub(/\$(?:<|\(<(?:.*)\))/) {"$(srcdir)/enc/#{e}.c"}%>
+enc/<%=e%>.$(OBJEXT): enc/<%=e%>.c
+	<%=COMPILE_C.sub(/\$(?:<|\(<(?:.*)\))/) {"enc/#{e}.c"}%>
 % end
 
 enc/encdb.$(OBJEXT): encdb.h
