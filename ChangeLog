@@ -1,3 +1,8 @@
+Thu Aug  7 06:05:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* config.guess: add powerpc-apple-haiku, i586-pc-haiku.
+	  see [ruby-core:18110]
+
 Thu Aug  7 05:51:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* eval_intern.h: Add support to Haiku. see [ruby-core:18110]
