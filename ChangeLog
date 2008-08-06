@@ -1,3 +1,10 @@
+Thu Aug  7 05:05:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (run_final): runs finalizers with the object terminated.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): ObjectSpace::finalizers needs
+	  to scan whole object space, although deprecated.
+
 Wed Aug  6 21:25:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (chain_finalized_object): deletes finalizers to be invoked from
