@@ -51,7 +51,7 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 %     src = "#{e}.erb.c"
 %     src = [src, *IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
 
-$(srcdir)/enc/trans/<%=e%>.c: <%= src.map {|e| "$(srcdir)/enc/trans/#{e}"}.join(" ")%>
+$(srcdir)/enc/trans/<%=e%>.c: <%= src.map {|e| "$(srcdir)/enc/trans/#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
 	$(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" <%= src.map {|e| %'"$(srcdir)/enc/trans/#{e}"'}.join(" ")%>
 %   end
 

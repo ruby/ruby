@@ -1,3 +1,8 @@
+Wed Aug  6 20:56:43 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/depend: transcode table generation depends on
+	  tool/transcode-tblgen.rb.
+
 Wed Aug  6 20:48:27 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): self-referencing finalizers
