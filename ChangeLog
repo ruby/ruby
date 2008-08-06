@@ -1,3 +1,10 @@
+Thu Aug  7 05:06:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (run_final): runs finalizers with the object terminated.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): keeps finalized objects from
+	  linking to freelist.
+
 Thu Aug  7 04:43:14 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/depend: for build in other than srcdir.

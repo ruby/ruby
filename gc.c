@@ -1509,6 +1509,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_free_generic_ivar((VALUE)obj);
+	FL_UNSET(obj, FL_EXIVAR);
     }
 
     switch (BUILTIN_TYPE(obj)) {
@@ -2042,6 +2043,7 @@ run_final(rb_objspace_t *objspace, VALUE obj)
     VALUE args[3], table, objid;
 
     objid = rb_obj_id(obj);	/* make obj into id */
+    RBASIC(obj)->klass = 0;
 
     if (RDATA(obj)->dfree) {
 	(*RDATA(obj)->dfree)(DATA_PTR(obj));
@@ -2085,16 +2087,18 @@ static int
 chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 {
     RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
-    if ((p->as.basic.flags & (FL_FINALIZE|FL_MARK)) == FL_FINALIZE) {
+    if (p->as.basic.flags & FL_FINALIZE) {
 	if (BUILTIN_TYPE(p) != T_DEFERRED) {
 	    p->as.free.flags = FL_MARK | T_DEFERRED; /* remain marked */
 	    RDATA(p)->dfree = 0;
 	}
 	p->as.free.next = *final_list;
 	*final_list = p;
+	return ST_CONTINUE;
+    }
+    else {
 	return ST_DELETE;
     }
-    return ST_CONTINUE;
 }
 
 void
@@ -2105,21 +2109,22 @@ rb_gc_call_finalizer_at_exit(void)
     size_t i;
 
     /* run finalizers */
-    if (need_call_final) {
-	do {
-	    p = deferred_final_list;
-	    deferred_final_list = 0;
-	    finalize_list(objspace, p);
-	    mark_tbl(objspace, finalizer_table, 0);
+    if (finalizer_table) {
+	p = deferred_final_list;
+	deferred_final_list = 0;
+	finalize_list(objspace, p);
+	while (finalizer_table->num_entries > 0) {
+	    RVALUE *final_list = 0;
 	    st_foreach(finalizer_table, chain_finalized_object,
-		       (st_data_t)&deferred_final_list);
-	} while (deferred_final_list);
-	if (finalizer_table->num_entries) {
-	    rb_warning("%d finalizer%s left not-invoked due to self-reference",
-		       finalizer_table->num_entries,
-		       finalizer_table->num_entries > 1 ? "s" : "");
+		       (st_data_t)&final_list);
+	    if (!(p = final_list)) break;
+	    do {
+		final_list = p->as.free.next;
+		run_final(objspace, (VALUE)p);
+	    } while ((p = final_list) != 0);
 	}
 	st_free_table(finalizer_table);
+	finalizer_table = 0;
     }
     /* finalizers are part of garbage collection */
     during_gc++;
