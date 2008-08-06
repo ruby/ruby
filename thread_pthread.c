@@ -119,7 +119,11 @@ native_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
+#ifdef __HAIKU__
+#define native_thread_yield() /* not available under Haiku */
+#else
 #define native_thread_yield() sched_yield()
+#endif
 
 #ifndef __CYGWIN__
 static void add_signal_thread_list(rb_thread_t *th);
@@ -409,7 +413,9 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setstacksize(&attr, stack_size));
 #endif
 
+#ifndef __HAIKU__  /* not yet available under Haiku */
 	CHECK_ERR(pthread_attr_setinheritsched(&attr, PTHREAD_INHERIT_SCHED));
+#endif
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
 	err = pthread_create(&th->thread_id, &attr, thread_start_func_1, th);

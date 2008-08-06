@@ -1,3 +1,27 @@
+Thu Aug  7 05:51:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* eval_intern.h: Add support to Haiku. see [ruby-core:18110]
+
+	* include/ruby/defines.h: ditto.
+
+	* configure.in: ditto.
+
+	* thread_pthread.c: ditto.
+
+	* io.c: ditto.
+
+	* lib/mkmf.rb: ditto.
+
+	* ext/socket/getaddrinfo.c: ditto.
+
+	* ext/socket/extconf.rb: ditto.
+
+	* ext/socket/socket.c: ditto.
+
+	* ext/socket/addrinfo.h: ditto.
+
+	* ext/socket/getnameinfo.c: ditto.
+
 Thu Aug  7 05:43:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: mkdir enc/trans before build tables.

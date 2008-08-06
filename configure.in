@@ -512,7 +512,12 @@ hpux*)		LIBS="-lm $LIBS"
 human*)		ac_cv_func_getpgrp_void=yes
 		ac_cv_func_setitimer=no
 		;;
-beos*)		ac_cv_func_link=no;;
+beos*)	ac_cv_func_link=no
+		LIBS="$LIBS" # m lib is include in root under BeOS
+		;;
+haiku*)	ac_cv_func_link=no
+		LIBS="$LIBS" # m lib is include in root under Haiku
+		;;
 cygwin*)	;;
 mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_header_a_out_h=no
@@ -1098,7 +1103,7 @@ int main()
 AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
 
 if test x"$enable_pthread" = xyes; then
-    for pthread_lib in thr pthread pthreads c c_r; do
+    for pthread_lib in thr pthread pthreads c c_r root; do
  	AC_CHECK_LIB($pthread_lib, pthread_kill,
 		     rb_with_pthread=yes, rb_with_pthread=no)
 	if test "$rb_with_pthread" = "yes"; then break; fi
@@ -1110,6 +1115,8 @@ if test x"$enable_pthread" = xyes; then
 	case $pthread_lib in
 	c)
 	    ;;
+	root)
+		;;
 	c_r)
 	    MAINLIBS="-pthread $MAINLIBS"
 	    ;;
@@ -1271,7 +1278,7 @@ if test "$with_dln_a_out" != yes; then
     openstep*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
     rhapsody*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
     darwin*)	CCDLFLAGS="$CCDLFLAGS -fno-common";;
-    human*|bsdi*|beos*|cygwin*|mingw*|aix*|interix*) ;;
+    human*|bsdi*|beos*|haiku*|cygwin*|mingw*|aix*|interix*) ;;
     *) CCDLFLAGS="$CCDLFLAGS -fPIC";;
     esac
   else
@@ -1382,6 +1389,18 @@ if test "$with_dln_a_out" != yes; then
 			: ${LINK_SO='ar cru $@ $(OBJS)'}
 			rb_cv_dlopen=yes ;;
 	beos*) 		case "$target_cpu" in
+			  powerpc*)
+			    : ${LDSHARED="ld -xms"}
+			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
+                            ;;
+			  i586*)
+			    : ${LDSHARED="ld -shared"}
+			    DLDFLAGS="$DLDFLAGS -L/boot/develop/lib/x86 -lbe -lroot"
+			    ;;
+			esac
+			: ${LIBPATHENV=LIBRARY_PATH}
+			rb_cv_dlopen=yes ;;
+	haiku*) 		case "$target_cpu" in
 			  powerpc*)
 			    : ${LDSHARED="ld -xms"}
 			    DLDFLAGS="$DLDFLAGS "'-export Init_$(TARGET) -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o'
@@ -1605,7 +1624,7 @@ LIBRUBYARG='$(LIBRUBYARG_STATIC)'
 SOLIBS=
 
 case "$target_os" in
-  cygwin*|mingw*|beos*|openstep*|nextstep*|rhapsody*|darwin*|os2-emx*)
+  cygwin*|mingw*|beos*|haiku*|openstep*|nextstep*|rhapsody*|darwin*|os2-emx*)
     : ${DLDLIBS=""}
     ;;
   *)

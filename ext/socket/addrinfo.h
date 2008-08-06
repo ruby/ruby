@@ -108,7 +108,9 @@
 #define	AI_CANONNAME	0x00000002 /* fill ai_canonname */
 #define	AI_NUMERICHOST	0x00000004 /* prevent name resolution */
 /* valid flags for addrinfo */
+#ifndef __HAIKU__
 #define	AI_MASK		(AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST)
+#endif
 
 #define	AI_ALL		0x00000100 /* IPv6 and IPv4-mapped (with AI_V4MAPPED) */
 #define	AI_V4MAPPED_CFG	0x00000200 /* accept IPv4-mapped if kernel supports */
@@ -164,7 +166,9 @@ extern void freeaddrinfo __P((struct addrinfo *));
 #if defined __UCLIBC__
 const
 #endif
+#ifndef __HAIKU__
 extern char *gai_strerror __P((int));
+#endif
 
 /* In case there is no definition of offsetof() provided - though any proper
 Standard C system should have one. */

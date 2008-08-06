@@ -29,7 +29,7 @@
 #endif
 
 #ifndef _WIN32
-#if defined(__BEOS__)
+#if defined(__BEOS__) && !defined(__HAIKU__)  
 # include <net/socket.h>
 #else
 # include <sys/socket.h>

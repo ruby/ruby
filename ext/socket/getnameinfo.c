@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #ifndef _WIN32
-#if defined(__BEOS__)
+#if defined(__BEOS__) && !defined(__HAIKU__)  
 # include <net/socket.h>
 #else
 # include <sys/socket.h>
@@ -110,6 +110,9 @@ static struct afd {
 #define ENI_FAMILY	5
 #define ENI_SALEN	6
 
+#ifdef __HAIKU__
+#define HAVE_INET_NTOP
+#endif
 #ifndef HAVE_INET_NTOP
 static const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)

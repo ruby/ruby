@@ -198,7 +198,7 @@ void xfree(void*);
 #include "vms/vms.h"
 #endif
 
-#if defined(__BEOS__)
+#if defined(__BEOS__) && !defined(__HAIKU__)
 #include <net/socket.h> /* intern.h needs fd_set definition */
 #endif
 

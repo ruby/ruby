@@ -26,7 +26,7 @@
 
 #include <sys/types.h>
 #if !defined(_WIN32) && !defined(__DJGPP__)
-# if defined(__BEOS__)
+#if defined(__BEOS__) && !defined(__HAIKU__)
 #  include <net/socket.h>
 # else
 #  include <sys/socket.h>
@@ -90,7 +90,6 @@ extern void Init_File(void);
 # ifndef NOFILE
 #  define NOFILE (OPEN_MAX)
 # endif
-#include <net/socket.h>
 #endif
 
 #include "ruby/util.h"
@@ -200,6 +199,10 @@ static int max_file_descriptor = NOFILE;
 #      endif
 #    endif
 #  endif
+#endif
+
+#if defined(__HAIKU__)
+#define shutdown(a,b)	0
 #endif
 
 #if defined(_WIN32)

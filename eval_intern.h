@@ -75,7 +75,7 @@ char *strrchr(const char *, const char);
 #include <unistd.h>
 #endif
 
-#ifdef __BEOS__
+#if defined(__BEOS__) && !defined(__HAIKU__)
 #include <net/socket.h>
 #endif
 
