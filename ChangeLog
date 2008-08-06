@@ -1,3 +1,9 @@
+Wed Aug  6 13:54:30 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (config.status): export BASERUBY.
+
+	* enc/depend: avoid GNU make'ism.
+
 Wed Aug  6 07:59:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (ActionMap#eql?): use == to compare @map.
