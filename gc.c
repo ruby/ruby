@@ -1489,6 +1489,12 @@ rb_gc_force_recycle(VALUE p)
     add_freelist(objspace, (RVALUE *)p);
 }
 
+static inline void
+make_deferred(RVALUE *p)
+{
+    p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_DEFERRED;
+}
+
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
@@ -1546,14 +1552,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 		xfree(DATA_PTR(obj));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
-		if (1) {
-		    RANY(obj)->as.basic.flags &= ~T_MASK;
-		    RANY(obj)->as.basic.flags |= T_DEFERRED;
-		    return 1;
-		}
-		else {
-		    (*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
-		}
+		make_deferred(RANY(obj));
+		return 1;
 	    }
 	}
 	break;
@@ -1562,23 +1562,17 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             struct rmatch *rm = RANY(obj)->as.match.rmatch;
 	    onig_region_free(&rm->regs, 0);
             if (rm->char_offset)
-	      xfree(rm->char_offset);
+		xfree(rm->char_offset);
 	    xfree(rm);
 	}
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
 	    rb_io_t *fptr = RANY(obj)->as.file.fptr;
-	    if (1) {
-		RANY(obj)->as.basic.flags &= ~T_MASK;
-		RANY(obj)->as.basic.flags |= T_DEFERRED;
-		RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
-		RDATA(obj)->data = fptr;
-		return 1;
-	    }
-	    else {
-		rb_io_fptr_finalize(fptr);
-	    }
+	    make_deferred(RANY(obj));
+	    RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
+	    RDATA(obj)->data = fptr;
+	    return 1;
 	}
 	break;
       case T_RATIONAL:
@@ -2091,7 +2085,7 @@ static int
 chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 {
     RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
-    if (p->as.basic.flags & FL_FINALIZE) {
+    if ((p->as.basic.flags & (FL_FINALIZE|FL_MARK)) == FL_FINALIZE) {
 	if (BUILTIN_TYPE(p) != T_DEFERRED) {
 	    p->as.free.flags = FL_MARK | T_DEFERRED; /* remain marked */
 	    RDATA(p)->dfree = 0;
@@ -2115,6 +2109,7 @@ rb_gc_call_finalizer_at_exit(void)
 	    p = deferred_final_list;
 	    deferred_final_list = 0;
 	    finalize_list(objspace, p);
+	    mark_tbl(objspace, finalizer_table, 0);
 	    st_foreach(finalizer_table, chain_finalized_object,
 		       (st_data_t)&deferred_final_list);
 	} while (deferred_final_list);
