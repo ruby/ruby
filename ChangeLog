@@ -1,3 +1,9 @@
+Thu Aug  7 05:14:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regenc.c (code_to_mbc): raise RangeError Integer#chr
+	  when more than 255 is given with single byte encoding.
+	  [ruby-dev:35789]
+
 Thu Aug  7 05:06:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_final): runs finalizers with the object terminated.
