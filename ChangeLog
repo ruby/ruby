@@ -1,3 +1,7 @@
+Thu Aug  7 05:18:30 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/depend: enc/*.c is source but enc/trans/*.c is generated.
+
 Thu Aug  7 05:14:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regenc.c (code_to_mbc): raise RangeError Integer#chr

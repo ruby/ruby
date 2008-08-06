@@ -70,8 +70,9 @@ $(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
 
 % end
 % dependencies.each do |e|
-enc/<%=e%>.$(OBJEXT): enc/<%=e%>.c
-	<%=COMPILE_C.sub(/\$(?:<|\(<(?:.*)\))/) {"enc/#{e}.c"}%>
+%   ee = (/^trans/ =~ e ? 'enc/' : '$srcdir/enc/') + e
+<%=ee%>.$(OBJEXT): enc/<%=e%>.c
+	<%=COMPILE_C.sub(/\$(?:<|\(<(?:.*)\))/) {"#{ee}.c"}%>
 % end
 
 enc/encdb.$(OBJEXT): encdb.h
