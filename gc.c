@@ -2092,6 +2092,7 @@ chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 	}
 	p->as.free.next = *final_list;
 	*final_list = p;
+	return ST_DELETE;
     }
     return ST_CONTINUE;
 }
@@ -2113,6 +2114,12 @@ rb_gc_call_finalizer_at_exit(void)
 	    st_foreach(finalizer_table, chain_finalized_object,
 		       (st_data_t)&deferred_final_list);
 	} while (deferred_final_list);
+	if (finalizer_table->num_entries) {
+	    rb_warning("%d finalizer%s left not-invoked due to self-reference",
+		       finalizer_table->num_entries,
+		       finalizer_table->num_entries > 1 ? "s" : "");
+	}
+	st_free_table(finalizer_table);
     }
     /* finalizers are part of garbage collection */
     during_gc++;

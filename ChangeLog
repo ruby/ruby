@@ -1,3 +1,11 @@
+Wed Aug  6 21:25:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (chain_finalized_object): deletes finalizers to be invoked from
+	  finalizer_table.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): warns when could not invoke
+	  finalizers.
+
 Wed Aug  6 20:56:43 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/depend: transcode table generation depends on
