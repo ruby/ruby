@@ -267,6 +267,12 @@ class TestTranscode < Test::Unit::TestCase
       "\x80".encode("UTF-32BE", "UTF-8", invalid: :replace))
     assert_equal("\xFD\xFF\x00\x00".force_encoding("UTF-32LE"),
       "\x80".encode("UTF-32LE", "UTF-8", invalid: :replace))
+    assert_equal("\uFFFD!",
+      "\x01\x00\x00\x00\x00\x00\x00\x21".encode("utf-8", "utf-32be", :invalid=>:replace), "[ruby-dev:35726]")
+  end
+
+  def test_undef_replace
+    assert_equal("?", "\u20AC".encode("EUC-JP", :undef=>:replace), "[ruby-dev:35709]")
   end
 
   def test_shift_jis
