@@ -1,3 +1,7 @@
+Thu Aug  7 05:43:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: mkdir enc/trans before build tables.
+
 Thu Aug  7 05:18:30 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/depend: enc/*.c is source but enc/trans/*.c is generated.

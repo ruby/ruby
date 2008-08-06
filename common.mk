@@ -382,7 +382,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
 encs: enc.mk $(LIBRUBY) $(PREP)
-	$(MINIRUBY) -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc/trans" enc/trans
+	$(MINIRUBY) -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc" enc
 	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
@@ -674,6 +674,7 @@ vm.inc: $(srcdir)/template/vm.inc.tmpl
 srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c transcodes
 
 transcodes: enc.mk
+	$(MINIRUBY) -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc/trans" enc/trans
 	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(srcdir)/revision.h
