@@ -253,7 +253,6 @@ rb_to_UTF_16LE = {
   map["00{01-10}{00-ff}{00-ff}"] = :func_so
   map["00{11-ff}{00-ff}{00-ff}"] = :invalid
   map["0000{d8-df}{00-ff}"] = :invalid
-  #map["{01-ff}"] = :invalid
   map["{01-ff}{00-ff}{00-ff}{00-ff}"] = :invalid
   code = ''
   transcode_generate_node(ActionMap.parse(map), code, "from_UTF_32BE", [])
