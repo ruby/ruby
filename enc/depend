@@ -68,7 +68,7 @@ $(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
 % end
 % dependencies.each do |e|
 enc/<%=e%>.$(OBJEXT): $(srcdir)/enc/<%=e%>.c
-	<%=COMPILE_C.sub(/\$\(<(?:.*)\)/) {"$(srcdir)/enc/#{e}.c"}%>
+	<%=COMPILE_C.sub(/\$(?:<|\(<(?:.*)\))/) {"$(srcdir)/enc/#{e}.c"}%>
 % end
 
 enc/encdb.$(OBJEXT): encdb.h
