@@ -1,3 +1,11 @@
+Wed Aug  6 20:52:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_sweep, obj_free, run_final): defer finalizers of IO and
+	  Data.  [ruby-dev:35578]
+
+	* gc.c (rb_gc_call_finalizer_at_exit): self-referencing finalizers
+	  cannot be invoked.  [ruby-dev:35681]
+
 Wed Aug  6 05:10:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_find_file): reset to real class.

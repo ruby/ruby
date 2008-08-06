@@ -1062,7 +1062,16 @@ gc_mark_children(ptr, lev)
     }
 }
 
-static void obj_free _((VALUE));
+static int obj_free _((VALUE));
+
+static inline void
+add_freelist(p)
+    RVALUE *p;
+{
+    p->as.free.flags = 0;
+    p->as.free.next = freelist;
+    freelist = p;
+}
 
 static void
 finalize_list(p)
@@ -1072,9 +1081,7 @@ finalize_list(p)
 	RVALUE *tmp = p->as.free.next;
 	run_final((VALUE)p);
 	if (!FL_TEST(p, FL_SINGLETON)) { /* not freeing page */
-	    p->as.free.flags = 0;
-	    p->as.free.next = freelist;
-	    freelist = p;
+	    add_freelist(p);
 	}
 	p = tmp;
     }
@@ -1098,6 +1105,8 @@ free_unused_heaps()
 	}
     }
 }
+
+#define T_DEFERRED 0x3a
 
 void rb_gc_abort_threads(void);
 
@@ -1142,26 +1151,28 @@ gc_sweep()
 	int n = 0;
 	RVALUE *free = freelist;
 	RVALUE *final = final_list;
+	int deferred;
 
 	p = heaps[i].slot; pend = p + heaps[i].limit;
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
-		if (p->as.basic.flags) {
-		    obj_free((VALUE)p);
-		}
-		if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
-		    p->as.free.flags = FL_MARK; /* remain marked */
+		if (p->as.basic.flags &&
+		    ((deferred = obj_free((VALUE)p)) ||
+		     ((FL_TEST(p, FL_FINALIZE)) && need_call_final))) {
+		    if (!deferred) {
+			p->as.free.flags = T_DEFERRED;
+			RDATA(p)->dfree = 0;
+		    }
+		    p->as.free.flags |= FL_MARK;
 		    p->as.free.next = final_list;
 		    final_list = p;
 		}
 		else {
-		    p->as.free.flags = 0;
-		    p->as.free.next = freelist;
-		    freelist = p;
+		    add_freelist(p);
 		}
 		n++;
 	    }
-	    else if (RBASIC(p)->flags == FL_MARK) {
+	    else if (BUILTIN_TYPE(p) == T_DEFERRED) {
 		/* objects to be finalized */
 		/* do nothing remain marked */
 	    }
@@ -1207,16 +1218,21 @@ void
 rb_gc_force_recycle(p)
     VALUE p;
 {
-    RANY(p)->as.free.flags = 0;
-    RANY(p)->as.free.next = freelist;
-    freelist = RANY(p);
+    add_freelist(p);
 }
 
-static void
+static inline void
+make_deferred(p)
+    RVALUE *p;
+{
+    p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_DEFERRED;
+}
+
+static int
 obj_free(obj)
     VALUE obj;
 {
-    switch (RANY(obj)->as.basic.flags & T_MASK) {
+    switch (BUILTIN_TYPE(obj)) {
       case T_NIL:
       case T_FIXNUM:
       case T_TRUE:
@@ -1229,7 +1245,7 @@ obj_free(obj)
 	rb_free_generic_ivar((VALUE)obj);
     }
 
-    switch (RANY(obj)->as.basic.flags & T_MASK) {
+    switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
 	if (RANY(obj)->as.object.iv_tbl) {
 	    st_free_table(RANY(obj)->as.object.iv_tbl);
@@ -1272,7 +1288,8 @@ obj_free(obj)
 		RUBY_CRITICAL(free(DATA_PTR(obj)));
 	    }
 	    else if (RANY(obj)->as.data.dfree) {
-		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+		make_deferred(RANY(obj));
+		return 1;
 	    }
 	}
 	break;
@@ -1284,8 +1301,11 @@ obj_free(obj)
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
-	    rb_io_fptr_finalize(RANY(obj)->as.file.fptr);
-	    RUBY_CRITICAL(free(RANY(obj)->as.file.fptr));
+	    struct rb_io_t *fptr = RANY(obj)->as.file.fptr;
+	    make_deferred(RANY(obj));
+	    RDATA(obj)->dfree = (void (*)(void*))rb_io_fptr_finalize;
+	    RDATA(obj)->data = fptr;
+	    return 1;
 	}
 	break;
       case T_ICLASS:
@@ -1313,7 +1333,7 @@ obj_free(obj)
 	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.node));
 	    break;
 	}
-	return;			/* no need to free iv_tbl */
+	break;			/* no need to free iv_tbl */
 
       case T_SCOPE:
 	if (RANY(obj)->as.scope.local_vars &&
@@ -1336,6 +1356,8 @@ obj_free(obj)
 	rb_bug("gc_sweep(): unknown data type 0x%lx(0x%lx)",
 	       RANY(obj)->as.basic.flags & T_MASK, obj);
     }
+
+    return 0;
 }
 
 void
@@ -1681,6 +1703,7 @@ os_obj_of(of)
 		  case T_VARMAP:
 		  case T_SCOPE:
 		  case T_NODE:
+		  case T_DEFERRED:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
@@ -1928,6 +1951,21 @@ rb_gc_finalize_deferred()
     }
 }
 
+static int
+chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
+{
+    RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
+    if ((p->as.basic.flags & (FL_FINALIZE|FL_MARK)) == FL_FINALIZE) {
+	if (BUILTIN_TYPE(p) != T_DEFERRED) {
+	    p->as.free.flags = FL_MARK | T_DEFERRED; /* remain marked */
+	    RDATA(p)->dfree = 0;
+	}
+	p->as.free.next = *final_list;
+	*final_list = p;
+    }
+    return ST_CONTINUE;
+}
+
 void
 rb_gc_call_finalizer_at_exit()
 {
@@ -1936,20 +1974,14 @@ rb_gc_call_finalizer_at_exit()
 
     /* run finalizers */
     if (need_call_final) {
-	p = deferred_final_list;
-	deferred_final_list = 0;
-	finalize_list(p);
-	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i].slot; pend = p + heaps[i].limit;
-	    while (p < pend) {
-		if (FL_TEST(p, FL_FINALIZE)) {
-		    FL_UNSET(p, FL_FINALIZE);
-		    p->as.basic.klass = 0;
-		    run_final((VALUE)p);
-		}
-		p++;
-	    }
-	}
+	do {
+	    p = deferred_final_list;
+	    deferred_final_list = 0;
+	    finalize_list(p);
+	    mark_tbl(finalizer_table, 0);
+	    st_foreach(finalizer_table, chain_finalized_object,
+		       (st_data_t)&deferred_final_list);
+	} while (deferred_final_list);
     }
     /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
@@ -2010,7 +2042,7 @@ id2ref(obj, objid)
     }
 
     if (!is_pointer_to_heap((void *)ptr)||
-	(type = BUILTIN_TYPE(ptr)) >= T_BLKTAG || type == T_ICLASS) {
+	(type = BUILTIN_TYPE(ptr)) > T_SYMBOL || type == T_ICLASS) {
 	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {
