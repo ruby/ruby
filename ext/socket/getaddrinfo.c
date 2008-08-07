@@ -194,7 +194,7 @@ if (pai->ai_flags & AI_CANONNAME) {\
 
 #define ERR(err) { error = (err); goto bad; }
 
-/*
+#ifndef __HAIKU__
 #if defined __UCLIBC__
 const
 #endif
@@ -205,7 +205,7 @@ gai_strerror(int ecode)
 		ecode = EAI_MAX;
 	return (char *)ai_errlist[ecode];
 }
-*/
+#endif
 
 void
 freeaddrinfo(struct addrinfo *ai)

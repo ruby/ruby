@@ -1,3 +1,8 @@
+Thu Aug  7 13:12:30 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/getaddrinfo.c (gai_strerror): ignore only on Haiku.
+	  a patch from <znz at mbf.nifty.com>, [ruby-dev:35796].
+
 Thu Aug  7 06:31:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/process.rb (test_popen_fork): skip a test which is
