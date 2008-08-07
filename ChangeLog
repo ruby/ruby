@@ -1,3 +1,13 @@
+Fri Aug  8 00:05:02 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/.document: added readline/readline.c.
+
+	* ext/readline/readline.c: changed Copyright. added RDoc.
+	
+	* ext/readline/README.ja: fixed typo.
+
+	* ext/readline/README: contents was moved RDoc.
+
 Thu Aug  7 23:43:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoding): new field "stateful".

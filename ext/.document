@@ -8,6 +8,7 @@ iconv/iconv.c
 io/wait/wait.c
 nkf/lib/kconv.rb
 nkf/nkf.c
+readline/readline.c
 socket/socket.c
 stringio/stringio.c
 strscan/strscan.c

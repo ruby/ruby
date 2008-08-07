@@ -1,62 +1,10 @@
-Extension for GNU Readline Library
+The Readline module provides interface for GNU Readline.
+This module defines a number of methods to facilitate completion
+and accesses input history from the Ruby interpreter.
+This module supported Edit Line(libedit) too.
+libedit is compatible with GNU Readline.
 
-Example:
+GNU Readline:: http://www.gnu.org/directory/readline.html
+libedit::      http://www.thrysoee.dk/editline/
 
-  require "readline"
-  include Readline
-
-  line = readline("Prompt> ", true)
-
-[Readline]
-
-<module function>
-
-readline(prompt, add_history=nil)
-
-  Reads one line with line editing.  The inputted line is added to the
-  history if add_history is true.
-
-<class methods>
-
-completion_proc = proc
-
-  Specifies a Proc object to determine completion behavior.  It
-  should take input-string, and return an array of completion
-  candidates.
-
-completion_proc
-
-  Returns the completion Proc object.
-
-completion_case_fold = bool
-
-  Sets whether or not to ignore case on completion.
-
-completion_case_fold
-
-  Returns true if completion ignores case.
-
-completion_append_character = char
-
-  Specifies a character to be appended on completion.
-  Nothing will be appended if an empty string ("") or nil is
-  specified.
-
-completion_append_character
-
-  Returns a string containing a character to be appended on
-  completion.  The default is a space (" ").
-
-vi_editing_mode
-
-  Specifies VI editing mode.
-
-emacs_editing_mode
-
-  Specifies Emacs editing mode.
-
-<class constants>
-
-HISTORY
-
-The history buffer.  It behaves just like an array.
+See RDoc for Readline module.

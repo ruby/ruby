@@ -309,7 +309,7 @@ Readline.completer_quote_characters = string
 
   ユーザの入力の補完を行う際、スペースなどの単語の区切りを
   クオートするための複数の文字で構成される文字列 string を指定します。
-  指定した文字の間では、Readline::completer_word_break_characters=
+  指定した文字の間では、Readline.completer_word_break_characters=
   で指定した文字列に含まれる文字も、普通の文字列として扱われます。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
