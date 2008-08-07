@@ -552,6 +552,14 @@ distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
+clean-ext distclean-ext realclean-ext::
+		@for /R ext %I in (.) do @if exist %I\Makefile ( \
+		    echo $(@:-ext=)ing %~nI & \
+		    cd %I & \
+		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
+		    cd %CD% \
+		)
+
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
