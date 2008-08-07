@@ -1,3 +1,7 @@
+Thu Aug  7 22:55:44 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/README.ja: updated API document for Readline module.
+
 Thu Aug  7 20:52:08 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (login): raise FTPReplyError if passwd or acct
