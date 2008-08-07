@@ -234,6 +234,12 @@ class ActionMap
       "UNDEF"
     when :invalid
       "INVALID"
+    when :func_ii
+      "FUNii"
+    when :func_si
+      "FUNsi"
+    when :func_io
+      "FUNio"
     when :func_so
       "FUNso"
     when /\A([0-9a-f][0-9a-f])\z/i

@@ -25,53 +25,78 @@ static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
  *  Dispatch data and logic
  */
 
-static st_table *transcoder_table, *transcoder_lib_table;
+typedef struct {
+    const char *from;
+    const char *to;
+    const char *lib; /* maybe null.  it means that don't load the library. */
+    const rb_transcoder *transcoder;
+} transcoder_entry_t;
 
-#define TRANSCODER_INTERNAL_SEPARATOR '\t'
+static st_table *transcoder_table;
 
-static char *
-transcoder_key(const char *from_e, const char *to_e)
+static transcoder_entry_t *
+make_transcoder_entry(const char *from, const char *to)
 {
-    int to_len = strlen(to_e);
-    int from_len = strlen(from_e);
-    char *const key = xmalloc(to_len + from_len + 2);
+    st_data_t val;
+    st_table *table2;
 
-    memcpy(key, to_e, to_len);
-    memcpy(key + to_len + 1, from_e, from_len + 1);
-    key[to_len] = TRANSCODER_INTERNAL_SEPARATOR;
-    return key;
+    if (!st_lookup(transcoder_table, (st_data_t)from, &val)) {
+        val = (st_data_t)st_init_strcasetable();
+        st_add_direct(transcoder_table, (st_data_t)from, val);
+    }
+    table2 = (st_table *)val;
+    if (!st_lookup(table2, (st_data_t)to, &val)) {
+        transcoder_entry_t *entry = ALLOC(transcoder_entry_t);
+        entry->from = from;
+        entry->to = to;
+        entry->lib = NULL;
+        entry->transcoder = NULL;
+        val = (st_data_t)entry;
+        st_add_direct(table2, (st_data_t)to, val);
+    }
+    return (transcoder_entry_t *)val;
+}
+
+static transcoder_entry_t *
+get_transcoder_entry(const char *from, const char *to)
+{
+    st_data_t val;
+    st_table *table2;
+
+    if (!st_lookup(transcoder_table, (st_data_t)from, &val)) {
+        return NULL;
+    }
+    table2 = (st_table *)val;
+    if (!st_lookup(table2, (st_data_t)to, &val)) {
+        return NULL;
+    }
+    return (transcoder_entry_t *)val;
 }
 
 void
 rb_register_transcoder(const rb_transcoder *tr)
 {
-    st_data_t k, val = 0;
     const char *const from_e = tr->from_encoding;
     const char *const to_e = tr->to_encoding;
-    char *const key = transcoder_key(from_e, to_e);
 
-    if (st_lookup(transcoder_table, (st_data_t)key, &val)) {
-	xfree(key);
+    transcoder_entry_t *entry;
+
+    entry = make_transcoder_entry(from_e, to_e);
+    if (entry->transcoder) {
 	rb_raise(rb_eArgError, "transcoder from %s to %s has been already registered",
 		 from_e, to_e);
     }
-    k = (st_data_t)key;
-    if (st_delete(transcoder_lib_table, &k, &val)) {
-	xfree((char *)k);
-    }
-    st_insert(transcoder_table, (st_data_t)key, (st_data_t)tr);
+
+    entry->transcoder = tr;
 }
 
 static void
 declare_transcoder(const char *to, const char *from, const char *lib)
 {
-    const char *const key = transcoder_key(to, from);
-    st_data_t k = (st_data_t)key, val;
+    transcoder_entry_t *entry;
 
-    if (st_delete(transcoder_lib_table, &k, &val)) {
-	xfree((char *)k);
-    }
-    st_insert(transcoder_lib_table, (st_data_t)key, (st_data_t)lib);
+    entry = make_transcoder_entry(from, to);
+    entry->lib = lib;
 }
 
 #define MAX_TRANSCODER_LIBNAME_LEN 64
@@ -90,38 +115,166 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
 
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
 
+typedef struct search_path_queue_tag {
+    struct search_path_queue_tag *next;
+    const char *enc;
+} search_path_queue_t;
+
+typedef struct {
+    st_table *visited;
+    search_path_queue_t *queue;
+    search_path_queue_t **queue_last_ptr;
+    const char *base_enc;
+} search_path_bfs_t;
+
+static int
+transcode_search_path_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    const char *to = (const char *)key;
+    search_path_bfs_t *bfs = (search_path_bfs_t *)arg;
+    search_path_queue_t *q;
+
+    if (st_lookup(bfs->visited, (st_data_t)to, &val)) {
+        return ST_CONTINUE;
+    }
+
+    q = ALLOC(search_path_queue_t);
+    q->enc = to;
+    q->next = NULL;
+    *bfs->queue_last_ptr = q;
+    bfs->queue_last_ptr = &q->next;
+
+    st_add_direct(bfs->visited, (st_data_t)to, (st_data_t)bfs->base_enc);
+    return ST_CONTINUE;
+}
+
+static int
+transcode_search_path(const char *from, const char *to,
+    void (*callback)(const char *from, const char *to, int depth, void *arg),
+    void *arg)
+{
+    search_path_bfs_t bfs;
+    search_path_queue_t *q;
+    st_data_t val;
+    st_table *table2;
+    int found;
+
+    q = ALLOC(search_path_queue_t);
+    q->enc = from;
+    q->next = NULL;
+    bfs.queue_last_ptr = &q->next;
+    bfs.queue = q;
+
+    bfs.visited = st_init_strcasetable();
+    st_add_direct(bfs.visited, (st_data_t)from, (st_data_t)NULL);
+
+    while (bfs.queue) {
+        q = bfs.queue;
+        bfs.queue = q->next;
+        if (!bfs.queue)
+            bfs.queue_last_ptr = &bfs.queue;
+
+        if (!st_lookup(transcoder_table, (st_data_t)q->enc, &val)) {
+            xfree(q);
+            continue;
+        }
+        table2 = (st_table *)val;
+
+        if (st_lookup(table2, (st_data_t)to, &val)) {
+            st_add_direct(bfs.visited, (st_data_t)to, (st_data_t)q->enc);
+            xfree(q);
+            found = 1;
+            goto cleanup;
+        }
+
+        bfs.base_enc = q->enc;
+        st_foreach(table2, transcode_search_path_i, (st_data_t)&bfs);
+        bfs.base_enc = NULL;
+
+        xfree(q);
+    }
+    found = 0;
+
+cleanup:
+    while (bfs.queue) {
+        q = bfs.queue;
+        bfs.queue = q->next;
+        xfree(q);
+    }
+
+    if (found) {
+        const char *enc = to;
+        int depth = 0;
+        while (1) {
+            st_lookup(bfs.visited, (st_data_t)enc, &val);
+            if (!val)
+                break;
+            depth++;
+            enc = (const char *)val;
+        }
+        enc = to;
+        while (1) {
+            st_lookup(bfs.visited, (st_data_t)enc, &val);
+            if (!val)
+                break;
+            callback((const char *)val, enc, --depth, arg);
+            enc = (const char *)val;
+        }
+    }
+
+    st_free_table(bfs.visited);
+
+    return found;
+}
+
+static void
+transcode_dispatch_cb(const char *from, const char *to, int depth, void *arg)
+{
+    const rb_transcoder **first_transcoder_ptr = (const rb_transcoder **)arg;
+
+    transcoder_entry_t *entry;
+
+    if (!*first_transcoder_ptr)
+        return;
+
+    entry = get_transcoder_entry(from, to);
+    if (!entry)
+        goto failed;
+
+    if (!entry->transcoder && entry->lib) {
+        const char *lib = entry->lib;
+        int len = strlen(lib);
+        char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
+
+        entry->lib = NULL;
+
+        if (len > MAX_TRANSCODER_LIBNAME_LEN) goto failed;
+        memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
+        memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len + 1);
+        if (!rb_require(path)) goto failed;
+    }
+    if (!entry->transcoder)
+        goto failed;
+
+    if (depth == 0)
+        *first_transcoder_ptr = entry->transcoder;
+
+    return;
+
+failed:
+    *first_transcoder_ptr = NULL;
+    return;
+}
+
 static const rb_transcoder *
 transcode_dispatch(const char *from_encoding, const char *to_encoding)
 {
-    char *const key = transcoder_key(from_encoding, to_encoding);
-    st_data_t k, val = 0;
+    const rb_transcoder *first_transcoder = (rb_transcoder *)1;
 
-    while (!st_lookup(transcoder_table, (k = (st_data_t)key), &val) &&
-	   st_delete(transcoder_lib_table, &k, &val)) {
-	const char *const lib = (const char *)val;
-	int len = strlen(lib);
-	char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
-
-	xfree((char *)k);
-	if (len > MAX_TRANSCODER_LIBNAME_LEN) return NULL;
-	memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
-	memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len + 1);
-	if (!rb_require(path)) return NULL;
+    if (transcode_search_path(from_encoding, to_encoding, transcode_dispatch_cb, (void *)&first_transcoder)) {
+        return first_transcoder;
     }
-    if (!val) {
-	if (!st_lookup(transcoder_table, (st_data_t)key, &val)) {
-	    xfree(key);
-	    /* multistep logic, via UTF-8 */
-	    if (!encoding_equal(from_encoding, "UTF-8") &&
-		!encoding_equal(to_encoding, "UTF-8") &&
-		transcode_dispatch("UTF-8", to_encoding)) {  /* check that we have a second step */
-		return transcode_dispatch(from_encoding, "UTF-8"); /* return first step */
-	    }
-	    return NULL;
-	}
-    }
-    xfree(key);
-    return (rb_transcoder *)val;
+    return NULL;
 }
 
 static void
@@ -245,17 +398,17 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	    *out_p++ = getBT3(next_info);
 	    continue;
 	  case FUNii:
-	    next_info = (VALUE)(*my_transcoder->func_ii)(next_info);
+	    next_info = (VALUE)(*my_transcoder->func_ii)(my_transcoding, next_info);
 	    goto follow_info;
 	  case FUNsi:
-	    next_info = (VALUE)(*my_transcoder->func_si)(char_start);
+	    next_info = (VALUE)(*my_transcoder->func_si)(my_transcoding, char_start, (size_t)(in_p-char_start));
 	    goto follow_info;
 	    break;
 	  case FUNio:
-	    out_p += (VALUE)(*my_transcoder->func_io)(next_info, out_p);
+	    out_p += (VALUE)(*my_transcoder->func_io)(my_transcoding, next_info, out_p);
 	    break;
 	  case FUNso:
-	    out_p += (VALUE)(*my_transcoder->func_so)(char_start, out_p);
+	    out_p += (VALUE)(*my_transcoder->func_so)(my_transcoding, char_start, (size_t)(in_p-char_start), out_p);
 	    break;
 	  case INVALID:
 	    goto invalid;
@@ -290,6 +443,16 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	continue;
     }
     /* cleanup */
+    if (my_transcoder->finish_func) {
+	if (out_p >= out_s) {
+	    int len = (out_p - *out_pos);
+	    int new_len = (len + my_transcoder->max_output) * 2;
+	    *out_pos = (*my_transcoding->flush_func)(my_transcoding, len, new_len);
+	    out_p = *out_pos + len;
+	    out_s = *out_pos + new_len - my_transcoder->max_output;
+	}
+        out_p += my_transcoder->finish_func(my_transcoding, out_p);
+    }
     *in_pos  = in_p;
     *out_pos = out_p;
 }
@@ -401,21 +564,8 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	}
 
 	my_transcoding.transcoder = my_transcoder;
+        memset(my_transcoding.stateful, 0, sizeof(my_transcoding.stateful));
 
-	if (my_transcoder->preprocessor) {
-	    fromp = sp = (unsigned char *)RSTRING_PTR(str);
-	    slen = RSTRING_LEN(str);
-	    blen = slen + 30; /* len + margin */
-	    dest = rb_str_tmp_new(blen);
-	    bp = (unsigned char *)RSTRING_PTR(dest);
-	    my_transcoding.ruby_string_dest = dest;
-	    (*my_transcoder->preprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
-	    if (fromp != sp+slen) {
-		rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
-	    }
-	    rb_str_set_len(dest, (char *)bp - RSTRING_PTR(dest));
-	    str = dest;
-	}
 	fromp = sp = (unsigned char *)RSTRING_PTR(str);
 	slen = RSTRING_LEN(str);
 	blen = slen + 30; /* len + margin */
@@ -431,21 +581,6 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	buf = (unsigned char *)RSTRING_PTR(dest);
 	*bp = '\0';
 	rb_str_set_len(dest, bp - buf);
-	if (my_transcoder->postprocessor) {
-	    str = dest;
-	    fromp = sp = (unsigned char *)RSTRING_PTR(str);
-	    slen = RSTRING_LEN(str);
-	    blen = slen + 30; /* len + margin */
-	    dest = rb_str_tmp_new(blen);
-	    bp = (unsigned char *)RSTRING_PTR(dest);
-	    my_transcoding.ruby_string_dest = dest;
-	    (*my_transcoder->postprocessor)(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding);
-	    if (fromp != sp+slen) {
-		rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
-	    }
-	    buf = (unsigned char *)RSTRING_PTR(dest);
-	    rb_str_set_len(dest, bp - buf);
-	}
 
 	if (encoding_equal(my_transcoder->to_encoding, to_e)) {
 	    final_encoding = 1;
@@ -541,7 +676,6 @@ void
 Init_transcode(void)
 {
     transcoder_table = st_init_strcasetable();
-    transcoder_lib_table = st_init_strcasetable();
 
     sym_invalid = ID2SYM(rb_intern("invalid"));
     sym_undef = ID2SYM(rb_intern("undef"));

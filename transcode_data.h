@@ -63,6 +63,8 @@ typedef struct rb_transcoding {
     VALUE ruby_string_dest; /* the String used as the conversion destination,
 			       or NULL if something else is being converted */
     unsigned char *(*flush_func)(struct rb_transcoding*, int, int);
+
+    unsigned char stateful[256]; /* opaque data for stateful encoding */
 } rb_transcoding;
 
 /* static structure, one per supported encoding pair */
@@ -72,12 +74,11 @@ typedef struct rb_transcoder {
     const BYTE_LOOKUP *conv_tree_start;
     int max_output;
     int from_utf8;
-    void (*preprocessor)(const unsigned char**, unsigned char**, const unsigned char*, unsigned char*, struct rb_transcoding *);
-    void (*postprocessor)(const unsigned char**, unsigned char**, const unsigned char*, unsigned char*, struct rb_transcoding *);
-    VALUE (*func_ii)(VALUE); /* info  -> info   */
-    VALUE (*func_si)(const unsigned char *); /* start -> info   */
-    int (*func_io)(VALUE, const unsigned char*); /* info  -> output */
-    int (*func_so)(const unsigned char*, unsigned char*); /* start -> output */
+    VALUE (*func_ii)(rb_transcoding*, VALUE); /* info  -> info   */
+    VALUE (*func_si)(rb_transcoding*, const unsigned char*, size_t); /* start -> info   */
+    int (*func_io)(rb_transcoding*, VALUE, const unsigned char*); /* info  -> output */
+    int (*func_so)(rb_transcoding*, const unsigned char*, size_t, unsigned char*); /* start -> output */
+    int (*finish_func)(rb_transcoding*, unsigned char*); /* -> output */
 } rb_transcoder;
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);

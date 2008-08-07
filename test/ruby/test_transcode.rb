@@ -321,12 +321,13 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(RuntimeError) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x1b$C".encode("utf-8", "iso-2022-jp") }
-    assert_raise(RuntimeError) { "\x1e".encode("utf-8", "iso-2022-jp") }
+    assert_raise(RuntimeError) { "\x0e".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x80".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp") }
     assert_raise(RuntimeError) { "\u9299".encode("iso-2022-jp") }
-    #@@@@ TODO: the next test should actually fail, because iso-2022-jp does not include half-width kana
-    check_both_ways("\uff71\uff72\uff73\uff74\uff75", "\x1b(I12345\x1b(B", "iso-2022-jp") # JIS X 0201 ｧｨｩｪｫ
+    assert_raise(RuntimeError) { "\u9299".encode("iso-2022-jp") }
+    assert_raise(RuntimeError) { "\uff71\uff72\uff73\uff74\uff75".encode("iso-2022-jp") }
+    assert_raise(RuntimeError) { "\x1b(I12345\x1b(B".encode("utf-8", "iso-2022-jp") }
   end
   
   def test_iso_2022_jp_1

@@ -1,7 +1,7 @@
 #include "transcode_data.h"
 
 static int
-fun_so_from_utf_16be(const unsigned char* s, unsigned char* o)
+fun_so_from_utf_16be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     if (!s[0] && s[1]<0x80) {
         o[0] = s[1];
@@ -29,7 +29,7 @@ fun_so_from_utf_16be(const unsigned char* s, unsigned char* o)
 }
 
 static int
-fun_so_to_utf_16be(const unsigned char* s, unsigned char* o)
+fun_so_to_utf_16be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     if (!(s[0]&0x80)) {
         o[0] = 0x00;
@@ -57,7 +57,7 @@ fun_so_to_utf_16be(const unsigned char* s, unsigned char* o)
 }
 
 static int
-fun_so_from_utf_16le(const unsigned char* s, unsigned char* o)
+fun_so_from_utf_16le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     if (!s[1] && s[0]<0x80) {
         o[0] = s[0];
@@ -85,7 +85,7 @@ fun_so_from_utf_16le(const unsigned char* s, unsigned char* o)
 }
 
 static int
-fun_so_to_utf_16le(const unsigned char* s, unsigned char* o)
+fun_so_to_utf_16le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     if (!(s[0]&0x80)) {
         o[1] = 0x00;
@@ -113,7 +113,7 @@ fun_so_to_utf_16le(const unsigned char* s, unsigned char* o)
 }
 
 static int
-fun_so_from_utf_32be(const unsigned char* s, unsigned char* o)
+fun_so_from_utf_32be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     if (!s[1]) {
         if (s[2]==0 && s[3]<0x80) {
@@ -142,7 +142,7 @@ fun_so_from_utf_32be(const unsigned char* s, unsigned char* o)
 }
 
 static int
-fun_so_to_utf_32be(const unsigned char* s, unsigned char* o)
+fun_so_to_utf_32be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     o[0] = 0;
     if (!(s[0]&0x80)) {
@@ -168,13 +168,13 @@ fun_so_to_utf_32be(const unsigned char* s, unsigned char* o)
 }
 
 static int
-fun_so_from_utf_32le(const unsigned char* s, unsigned char* o)
+fun_so_from_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     return 1;
 }
 
 static int
-fun_so_to_utf_32le(const unsigned char* s, unsigned char* o)
+fun_so_to_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
     return 4;
 }
@@ -191,7 +191,7 @@ fun_so_to_utf_32le(const unsigned char* s, unsigned char* o)
 static const rb_transcoder
 rb_from_UTF_16BE = {
     "UTF-16BE", "UTF-8", &from_UTF_16BE, 4, 0,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_16be
+    NULL, NULL, NULL, &fun_so_from_utf_16be
 };
 
 <%=
@@ -217,7 +217,7 @@ rb_from_UTF_16BE = {
 static const rb_transcoder
 rb_to_UTF_16BE = {
     "UTF-8", "UTF-16BE", &to_UTF_16BE, 4, 1,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_16be
+    NULL, NULL, NULL, &fun_so_to_utf_16be
 };
 
 <%=
@@ -232,13 +232,13 @@ rb_to_UTF_16BE = {
 static const rb_transcoder
 rb_from_UTF_16LE = {
     "UTF-16LE", "UTF-8", &from_UTF_16LE, 4, 0,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_16le
+    NULL, NULL, NULL, &fun_so_from_utf_16le
 };
 
 static const rb_transcoder
 rb_to_UTF_16LE = {
     "UTF-8", "UTF-16LE", &to_UTF_16BE, 4, 1,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_16le
+    NULL, NULL, NULL, &fun_so_to_utf_16le
 };
 
 <%=
@@ -254,13 +254,13 @@ rb_to_UTF_16LE = {
 static const rb_transcoder
 rb_from_UTF_32BE = {
     "UTF-32BE", "UTF-8", &from_UTF_32BE, 4, 0,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_32be
+    NULL, NULL, NULL, &fun_so_from_utf_32be
 };
 
 static const rb_transcoder
 rb_to_UTF_32BE = {
     "UTF-8", "UTF-32BE", &to_UTF_16BE, 4, 1,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_32be
+    NULL, NULL, NULL, &fun_so_to_utf_32be
 };
 
 <%=
@@ -276,13 +276,13 @@ rb_to_UTF_32BE = {
 static const rb_transcoder
 rb_from_UTF_32LE = {
     "UTF-32LE", "UTF-8", &from_UTF_32LE, 4, 0,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_from_utf_32le
+    NULL, NULL, NULL, &fun_so_from_utf_32le
 };
 
 static const rb_transcoder
 rb_to_UTF_32LE = {
     "UTF-8", "UTF-32LE", &to_UTF_16BE, 4, 1,
-    NULL, NULL, NULL, NULL, NULL, &fun_so_to_utf_32le
+    NULL, NULL, NULL, &fun_so_to_utf_32le
 };
 
 void

@@ -1,3 +1,37 @@
+Thu Aug  7 23:43:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): new field "stateful".
+	  (rb_transcoder): preprocessor and postprocessor field removed.
+	  change arguments of func_ii, func_si, func_io and func_so.
+	  new field "finish_func".
+
+	* tool/transcode-tblgen.rb: make FUNii, FUNsi and FUNio
+	  generatable.
+
+	* transcode.c (transcoder_lib_table): removed.
+	  (transcoder_table): change structure.
+	  (transcoder_key): removed because the above structure change.
+	  (make_transcoder_entry): new function.
+	  (get_transcoder_entry): ditto.
+	  (rb_register_transcoder): follow the structure change.
+	  (declare_transcoder): ditto.
+	  (transcode_search_path): new function for breadth first search to
+	  find a list of converters.
+	  (transcode_search_path_i): new function.
+	  (transcode_dispatch_cb): ditto.
+	  (transcode_dispatch): use transcode_search_path.
+	  (transcode_loop): follow the argument change.
+	  (str_transcode): preprocessor and postprocessor stuff removed.
+
+	* enc/trans/iso2022.erb.c: new file.  ISO-2022-JP conversion
+	  re-implemented.
+
+	* enc/trans/japanese.erb.c: ISO-2022-JP stuff removed.
+
+	* enc/trans/utf_16_32.erb.c: follow argument change of FUNso.
+
+	[ruby-dev:35798]
+
 Thu Aug  7 22:55:44 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/README.ja: updated API document for Readline module.
