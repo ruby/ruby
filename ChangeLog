@@ -1,3 +1,8 @@
+Thu Aug  7 14:16:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb, {bcc32,win32}/Makefile.sub (CLEANLIBS, CLEANOBJS):
+	  moved clean targets to platfrom makefiles.
+
 Thu Aug  7 05:05:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_final): runs finalizers with the object terminated.

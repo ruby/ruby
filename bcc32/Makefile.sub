@@ -415,6 +415,8 @@ s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
 s,@COMMON_LIBS@,m advapi32 avicap32 avifil32 cap comctl32 comdlg32 dlcapi gdi32 glu32 imagehlp imm32 inetmib1 kernel32 loadperf lsapi32 lz32 mapi32 mgmtapi mpr msacm32 msvfw32 nddeapi netapi32 ole32 oleaut32 oledlg olepro32 opengl32 pdh pkpd32 rasapi32 rasdlg rassapi rpcrt4 setupapi shell32 shfolder snmpapi sporder tapi32 url user32 vdmdbg version win32spl winmm wintrust wsock32,;t t
 s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN WIN32,;t t
 s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
+s,@cleanlibs@,$$*.tds,;t t
+s,@cleanobjs@,$$*-$$(arch).def $$*.il? $$*.lib,;t t
 s,@TRY_LINK@,$$(CC) -oconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(LIBPATH) $$(LDFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS),;t t
 s,@EXPORT_PREFIX@,_,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
