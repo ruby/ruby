@@ -629,12 +629,13 @@ s,@LINK_SO@,@$$(RM) $$(@:/=\).manifest,;t t
 !endif
 s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tp$$(<:\=/),;t t
-s,@COMPILE_RULES@,{$$(hdrdir)}.%s{}.%s: {$$(topdir)}.%s{}.%s: {$$(srcdir)}.%s{}.%s: .%s.%s:,;t t
+s,@COMPILE_RULES@,{$$(hdrdir)}.%s.%s: {$$(topdir)}.%s.%s: {$$(srcdir)}.%s.%s: .%s.%s:,;t t
 s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
 s,@COMMON_LIBS@,$(COMMON_LIBS),;t t
 s,@COMMON_MACROS@,$(COMMON_MACROS),;t t
 s,@COMMON_HEADERS@,$(COMMON_HEADERS),;t t
+s,@cleanobjs@,$$*.exp $$*.lib $$*.pdb,;t t
 s,@DISTCLEANFILES@,vc*.pdb,;t t
 s,@EXPORT_PREFIX@, ,;t t
 s,@arch@,$(ARCH)-$(PLATFORM),;t t
