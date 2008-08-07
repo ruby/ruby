@@ -3,10 +3,11 @@
 % encs.each {|e| e.chomp!(".c")}
 % alphanumeric_order = proc {|e| e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten}
 % encs = encs.sort_by(&alphanumeric_order)
+% encs.unshift(encs.delete("encdb"))
 % atrans = []
 % trans = Dir.open($srcdir+"/trans") {|d|
 %   d.select {|e|
-%     if e != 'transdb.c' && e.chomp!('.c')
+%     if e.chomp!('.c')
 %       atrans << e if e.chomp!(".erb")
 %       true
 %     end
@@ -15,6 +16,7 @@
 % trans.uniq!
 % atrans = atrans.sort_by(&alphanumeric_order)
 % trans = trans.sort_by(&alphanumeric_order)
+% trans.unshift(trans.delete("transdb"))
 % trans.map! {|e| "trans/#{e}"}
 % dependencies = encs + trans
 % cleanlibs = Shellwords.shellwords(CONFIG["cleanlibs"] || "")

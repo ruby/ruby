@@ -1,3 +1,7 @@
+Thu Aug  7 17:47:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend: add transdb.c.
+
 Thu Aug  7 16:28:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, common.mk, {bcc,win}32/Makefile.sub (clean-ext): do not
