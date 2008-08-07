@@ -1,3 +1,8 @@
+Thu Aug  7 16:28:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, common.mk, {bcc,win}32/Makefile.sub (clean-ext): do not
+	  use miniruby.
+
 Thu Aug  7 14:16:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb, {bcc32,win32}/Makefile.sub (CLEANLIBS, CLEANOBJS):

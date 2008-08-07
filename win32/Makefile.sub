@@ -619,6 +619,14 @@ distclean-local::
 		@$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		@$(RM) $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 
+clean-ext distclean-ext realclean-ext::
+		@for /R ext %I in (.) do @if exist %I\Makefile ( \
+		    echo $(@:-ext=)ing %~nI & \
+		    cd %I & \
+		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
+		    cd %CD% \
+		)
+
 $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: $(RBCONFIG)
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \

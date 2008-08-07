@@ -284,22 +284,19 @@ clean-local::
 	@$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	@$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) $(ARCHFILE) .*.time
 	@$(RM) y.tab.c y.output
-clean-ext:
-	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) clean
+clean-ext::
 
 distclean: distclean-ext distclean-local
 distclean-local:: clean-local
 	@$(RM) $(MKFILES) config.h rbconfig.rb
 	@$(RM) config.cache config.log config.status
 	@$(RM) *~ *.bak *.stackdump core *.core gmon.out $(PREP)
-distclean-ext:
-	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) distclean
+distclean-ext::
 
 realclean:: realclean-ext realclean-local
 realclean-local:: distclean-local
 	@$(RM) parse.c lex.c
 realclean-ext::
-	@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" $(EXTMK_ARGS) realclean
 
 check: test test-all
 

@@ -183,6 +183,14 @@ clean-local::
 
 distclean-local::
 	@$(RM) ext/config.cache $(RBCONFIG)
+	-$(RM) $(INSTALLED_LIST)
+
+clean-ext distclean-ext realclean-ext::
+	@find ext -name Makefile | sort | while read mk; do \
+	    dir=`dirname "$$mk"`; \
+	    echo $(@:-ext=)ing `expr "$$dir" : 'ext/\(.*\)'`; \
+	    (cd "$$dir"; $(MAKE) $(MFLAGS) $(@:-ext=)); \
+	done
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ -c ext/extinit.c
