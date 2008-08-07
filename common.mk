@@ -684,7 +684,7 @@ encdb.h: $(PREP)
 	$(IFCHANGE) "$@" "$@.new"
 
 transdb.h: $(PREP) transcodes
-	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $(srcdir)/enc/trans $@.new
+	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $@.new $(srcdir)/enc/trans enc/trans
 	$(IFCHANGE) "$@" "$@.new"
 
 miniprelude.c: $(srcdir)/tool/compile_prelude.rb $(srcdir)/prelude.rb

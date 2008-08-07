@@ -1,3 +1,9 @@
+Fri Aug  8 04:20:14 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: see both $(srcdir)/enc/trans and enc/trans.
+
+	* enc/trans/make_transdb.rb: ditto.
+
 Fri Aug  8 00:05:02 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/.document: added readline/readline.c.
