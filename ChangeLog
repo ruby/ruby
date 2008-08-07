@@ -1,3 +1,8 @@
+Thu Aug  7 20:52:08 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (login): raise FTPReplyError if passwd or acct
+	  is not supplied.  fixed [ruby-core:18058].
+
 Thu Aug  7 18:01:44 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-mode.el (ruby-imenu-create-index-in-block): Fix the
