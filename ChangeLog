@@ -23,7 +23,7 @@ Thu Aug  7 14:17:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Aug  7 13:12:30 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/getaddrinfo.c (gai_strerror): ignore only on Haiku.
-	  a patch from <znz at mbf.nifty.com>, [ruby-dev:35796].
+	  a patch from <zn at mbf.nifty.com>, [ruby-dev:35796].
 
 Thu Aug  7 06:31:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
