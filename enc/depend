@@ -17,24 +17,45 @@
 % trans = trans.sort_by(&alphanumeric_order)
 % trans.map! {|e| "trans/#{e}"}
 % dependencies = encs + trans
+% cleanlibs = Shellwords.shellwords(CONFIG["cleanlibs"] || "")
+% cleanobjs = Shellwords.shellwords(CONFIG["cleanobjs"] || "")
+% rule_subst = CONFIG["RULE_SUBST"] || "%s"
+% if File::ALT_SEPARATOR
+%   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\((\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
+% else
+%   pathrep = proc {|path| path}
+% end
 
 VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(srcdir) $(encsrcdir)].join(CONFIG["PATH_SEPARATOR"])%>
 LIBPATH = <%=libpathflag($DEFLIBPATH)%>
 
 ENCOBJS = <%=encs.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if encs.size>1%>
-ENCDEFS = <%=encs.map {|e|"enc/#{e}.def"}.join(" \\\n\t  ") if deffile%><%="\n" if encs.size>1%>
-ENCSOS = <%=encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%>
+ENCSOS = <%=encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%><%="\n" if encs.size>1%>
+ENCCLEANLIBS = <%=cleanlibs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+ENCCLEANOBJS = <%=cleanobjs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
 
-TRANSCSRCS = <%=atrans.map {|e|"enc/trans/#{e}.c"}.join(" \\\n\t    ")%><%="\n" if trans.size>1%>
+TRANSCSRCS = <%=atrans.map {|e|"enc/trans/#{e}.c"}.join(" \\\n\t     ")%><%="\n" if trans.size>1%>
 TRANSOBJS = <%=trans.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if trans.size>1%>
-TRANSDEFS = <%=trans.map {|e|"enc/#{e}.def"}.join(" \\\n\t    ") if deffile%><%="\n" if trans.size>1%>
-TRANSSOS = <%=trans.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%>
+TRANSSOS = <%=trans.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%><%="\n" if trans.size>1%>
+TRANSCLEANLIBS = <%=cleanlibs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
 
-all: srcs $(ENCSOS) $(TRANSSOS)
+all: $(ENCSOS) $(TRANSSOS)
 
 srcs: $(TRANSCSRCS)
 
-% COMPILE_RULES.each do |rule|
+% if rule = (compile_rules = COMPILE_RULES).find(&/\$\(srcdir\)/.method(:=~))
+%   compile_rules = [rule.sub(/\$\(srcdir\)/, '\&/enc'), rule.sub(/\$\(srcdir\)/, '\&/enc/trans')] + compile_rules
+% end
+% compile_rules.each do |rule|
 <%=  rule % %w[c $(OBJEXT)] %>
 	<%=COMPILE_C%>
 
@@ -51,8 +72,8 @@ $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.
 %     src = "#{e}.erb.c"
 %     src = [src, *IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
 
-enc/trans/<%=e%>.c: <%= src.map {|e| "$(srcdir)/enc/trans/#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
-	$(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" <%= src.map {|e| %'"$(srcdir)/enc/trans/#{e}"'}.join(" ")%>
+<%=rule_subst % "enc/trans/#{e}.c"%>: <%= src.map {|e| rule_subst % "enc/trans/#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
+	$(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" <%= src.map {|e| %'"$(srcdir)/enc/trans/#{e}"'}.join(" ")%>
 %   end
 
 % end
@@ -70,17 +91,16 @@ $(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
 
 % end
 % dependencies.each do |e|
-%   ee = (/^trans/ =~ e ? 'enc/' : '$srcdir/enc/') + e
-<%=ee%>.$(OBJEXT): enc/<%=e%>.c
-	<%=COMPILE_C.sub(/\$(?:<|\(<(?:.*)\))/) {"#{ee}.c"}%>
+<%=rule_subst % "enc/#{e}.$(OBJEXT)"%>: <%=rule_subst % "enc/#{e}.c"%>
 % end
 
 enc/encdb.$(OBJEXT): encdb.h
 enc/trans/transdb.$(OBJEXT): transdb.h
 
 clean:
-	@$(RM) $(ENCSOS) $(ENCDEFS) $(ENCOBJS) $(TRANSSOS) $(TRANSDEFS) $(TRANSOBJS) $(TRANSCSRCS)
+% %w[$(ENCSOS) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS) $(TRANSCSRCS)].each do |clean|
+	@$(RM) <%=pathrep[clean]%>
+% end
 % %w[$(ENCSODIR)/trans $(ENCSODIR) enc/trans enc].each do|dir|
-%   dir = dir.gsub('/', File::ALT_SEPARATOR) if File::ALT_SEPARATOR
-	@-rmdir <%=dir%>
+	@-rmdir <%=pathrep[dir]%>
 % end

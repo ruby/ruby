@@ -1,4 +1,6 @@
-Thu Aug  7 14:16:24 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug  7 14:17:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend: removed needless explicit commands.
 
 	* lib/mkmf.rb, {bcc32,win32}/Makefile.sub (CLEANLIBS, CLEANOBJS):
 	  moved clean targets to platfrom makefiles.
