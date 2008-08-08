@@ -9,7 +9,8 @@
 count = 0
 converters = {}
 outhdr = ARGV[0] || 'transdb.h'
-transdirs = ARGV[1..-1] || 'enc/trans'
+transdirs = ARGV[1..-1]
+transdirs << 'enc/trans' if transdirs.empty?
 files = {}
 transdirs.each do |transdir|
   Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/).reject {|n| /\.erb\.c\z/ =~ n }}.sort_by {|e|
