@@ -286,6 +286,13 @@ class TestTranscode < Test::Unit::TestCase
       "\x00\x00\xd8\x00\x00\x00\x00!".encode("utf-8", "utf-32be", :invalid=>:replace))
 
     assert_equal("\uFFFD!",
+      "\x00\x00\x00\xff!\x00\x00\x00".encode("utf-8", "utf-32le", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\x00\x00\xff\x00!\x00\x00\x00".encode("utf-8", "utf-32le", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\x00\xd8\x00\x00!\x00\x00\x00".encode("utf-8", "utf-32le", :invalid=>:replace))
+
+    assert_equal("\uFFFD!",
       "\xff!".encode("utf-8", "euc-jp", :invalid=>:replace))
     assert_equal("\uFFFD!",
       "\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
