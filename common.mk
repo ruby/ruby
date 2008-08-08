@@ -377,7 +377,7 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
 encs: enc.mk $(LIBRUBY) $(PREP)
-	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" $(MFLAGS)
+	$(MAKE) -f enc.mk MINIRUBY="$(MINIRUBY)" $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
