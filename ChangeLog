@@ -1,3 +1,10 @@
+Fri Aug  8 17:03:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (shutdown, sched_yield, pthread_attr_setinheritsched):
+	  check for Haiku.
+
+	* eval_intern.h, io.c, thread_pthread.c: use autoconfisticated results.
+
 Fri Aug  8 16:52:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (enc.mk): mkmf.rb requires rbconfig.rb.
