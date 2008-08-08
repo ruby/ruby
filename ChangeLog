@@ -1,3 +1,9 @@
+Fri Aug  8 22:47:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (opt_eq_func): large function to make inline.
+
+	* bcc32/Makefile.sub (config.h): cannot compile a big inline function.
+
 Fri Aug  8 21:09:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (enk.mk): give not RUBY but MINIRUBY.

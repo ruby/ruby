@@ -1412,7 +1412,11 @@ check_cfunc(const NODE *mn, const void *func)
     }
 }
 
-static inline VALUE
+static
+#ifndef NO_BIG_INLINE
+inline
+#endif
+VALUE
 opt_eq_func(VALUE recv, VALUE obj, IC ic)
 {
     VALUE val = Qundef;
