@@ -1,3 +1,11 @@
+Fri Aug  8 10:53:52 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: randomize source port and transaction id.
+	  CVE-2008-1447.
+
+	* lib/resolv-replace.rb (UDPSocket#bind): don't resolv host if host is
+	  "".
+
 Thu Aug  7 20:55:49 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (login): raise FTPReplyError if passwd or acct
