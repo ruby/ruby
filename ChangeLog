@@ -1,3 +1,11 @@
+Fri Aug  8 10:53:52 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: randomize source port and transaction id.
+	  CVE-2008-1447.
+
+	* lib/resolv-replace.rb (UDPSocket#bind): don't resolv host if host is
+	  "".
+
 Mon Aug  4 14:15:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils#split_header_value):
