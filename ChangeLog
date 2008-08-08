@@ -1,4 +1,6 @@
-Fri Aug  8 23:27:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  8 23:29:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (TRANSCSRCS): needs rule_subst to apply.
 
 	* io.c (shutdown): not define if defined already.
 

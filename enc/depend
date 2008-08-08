@@ -40,7 +40,7 @@ ENCCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
 
-TRANSCSRCS = <%=atrans.map {|e|"enc/trans/#{e}.c"}.join(" \\\n\t     ")%><%="\n" if trans.size>1%>
+TRANSCSRCS = <%=atrans.map {|e| rule_subst % "enc/trans/#{e}.c"}.join(" \\\n\t     ")%><%="\n" if trans.size>1%>
 TRANSOBJS = <%=trans.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if trans.size>1%>
 TRANSSOS = <%=trans.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%><%="\n" if trans.size>1%>
 TRANSCLEANLIBS = <%=cleanlibs.map {|clean|
