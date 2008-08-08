@@ -1,3 +1,11 @@
+Fri Aug  8 10:53:52 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: randomize source port and transaction id.
+	  CVE-2008-1447.
+
+	* lib/resolv-replace.rb (UDPSocket#bind): don't resolv host if host is
+	  "".
+
 Fri Aug  8 04:20:14 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: see both $(srcdir)/enc/trans and enc/trans.

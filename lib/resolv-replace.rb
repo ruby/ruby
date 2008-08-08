@@ -23,7 +23,8 @@ end
 class UDPSocket
   alias original_resolv_bind bind
   def bind(host, port)
-    original_resolv_bind(IPSocket.getaddress(host), port)
+    host = IPSocket.getaddress(host) if host != ""
+    original_resolv_bind(host, port)
   end
 
   alias original_resolv_connect connect
