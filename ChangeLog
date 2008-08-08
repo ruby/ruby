@@ -1,3 +1,9 @@
+Sat Aug  9 01:07:51 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/utf_16_32.erb.c (fun_so_from_utf_32le): implemented.
+	  (fun_so_to_utf_32le): implemented.
+	  [ruby-dev:35777]
+
 Sat Aug  9 00:42:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder): from_unit_length field added.

@@ -170,12 +170,55 @@ fun_so_to_utf_32be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned
 static int
 fun_so_from_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
-    return 1;
+    if (!s[2]) {
+        if (s[1]==0 && s[0]<0x80) {
+            o[0] = s[0];
+            return 1;
+        }
+        else if (s[1]<0x08) {
+            o[0] = 0xC0 | (s[1]<<2) | (s[0]>>6);
+            o[1] = 0x80 | (s[0]&0x3F);
+            return 2;
+        }
+        else {
+            o[0] = 0xE0 | (s[1]>>4);
+            o[1] = 0x80 | ((s[1]&0x0F)<<2) | (s[0]>>6);
+            o[2] = 0x80 | (s[0]&0x3F);
+            return 3;
+        }
+    }
+    else {
+        o[0] = 0xF0 | (s[2]>>2);
+        o[1] = 0x80 | ((s[2]&0x03)<<4) | (s[1]>>4);
+        o[2] = 0x80 | ((s[1]&0x0F)<<2) | (s[0]>>6);
+        o[3] = 0x80 | (s[0]&0x3F);
+        return 4;
+    }
 }
 
 static int
 fun_so_to_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
 {
+    o[3] = 0;
+    if (!(s[0]&0x80)) {
+        o[2] = o[1] = 0x00;
+        o[0] = s[0];
+    }
+    else if ((s[0]&0xE0)==0xC0) {
+        o[2] = 0x00;
+        o[1] = (s[0]>>2)&0x07;
+        o[0] = ((s[0]&0x03)<<6) | (s[1]&0x3F);
+    }
+    else if ((s[0]&0xF0)==0xE0) {
+        o[2] = 0x00;
+        o[1] = (s[0]<<4) | ((s[1]>>2)^0x20);
+        o[0] = (s[1]<<6) | (s[2]^0x80);
+    }
+    else {
+        o[2] = ((s[0]&0x07)<<2) | ((s[1]>>4)&0x03);
+        o[1] = ((s[1]&0x0F)<<4) | ((s[2]>>2)&0x0F);
+        o[0] = ((s[2]&0x03)<<6) | (s[3]&0x3F);
+    }
     return 4;
 }
 
