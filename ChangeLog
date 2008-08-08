@@ -1,3 +1,21 @@
+Sat Aug  9 00:42:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoder): from_unit_length field added.
+	  from_utf8 field removed.
+
+	* tool/transcode-tblgen.rb: generate offsets range.
+	  follow rb_transcoder change.
+
+	* transcode.c (transcode_loop): don't use from_utf8.
+	  make invalid region from_unit_length wise.
+
+	* enc/trans/iso2022.erb.c: follow rb_transcoder and
+	  transcode_generate_node change.
+
+	* enc/trans/utf_16_32.erb.c: follow rb_transcoder and
+	  transcode_generate_node change.
+	  explicit :invalid map removed.
+
 Fri Aug  8 23:29:44 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend (TRANSCSRCS): needs rule_subst to apply.

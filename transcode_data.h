@@ -72,8 +72,8 @@ typedef struct rb_transcoder {
     const char *from_encoding;
     const char *to_encoding;
     const BYTE_LOOKUP *conv_tree_start;
+    int from_unit_length;
     int max_output;
-    int from_utf8;
     VALUE (*func_ii)(rb_transcoding*, VALUE); /* info  -> info   */
     VALUE (*func_si)(rb_transcoding*, const unsigned char*, size_t); /* start -> info   */
     int (*func_io)(rb_transcoding*, VALUE, const unsigned char*); /* info  -> output */

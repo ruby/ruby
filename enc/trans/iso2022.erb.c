@@ -12,8 +12,8 @@
   map_jisx0208_rest["{21-7e}"] = :func_so
 %>
 
-<%= transcode_generate_node(ActionMap.parse(map), "iso2022jp_to_eucjp", []) %>
-<%= transcode_generate_node(ActionMap.parse(map_jisx0208_rest), "iso2022jp_to_eucjp_jisx0208_rest", []) %>
+<%= transcode_generate_node(ActionMap.parse(map), "iso2022jp_to_eucjp") %>
+<%= transcode_generate_node(ActionMap.parse(map_jisx0208_rest), "iso2022jp_to_eucjp_jisx0208_rest") %>
 
 static VALUE
 fun_si_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l)
@@ -57,7 +57,7 @@ fun_so_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l, u
 
 static const rb_transcoder
 rb_ISO_2022_JP_to_EUC_JP = {
-    "ISO-2022-JP", "EUC-JP", &iso2022jp_to_eucjp, 3, 0,
+    "ISO-2022-JP", "EUC-JP", &iso2022jp_to_eucjp, 1, 3,
     NULL, fun_si_iso2022jp_to_eucjp, NULL, fun_so_iso2022jp_to_eucjp
 };
 
@@ -71,7 +71,7 @@ rb_ISO_2022_JP_to_EUC_JP = {
   }
 %>
 
-<%= transcode_generate_node(ActionMap.parse(map_eucjp), "eucjp_to_iso2022jp", []) %>
+<%= transcode_generate_node(ActionMap.parse(map_eucjp), "eucjp_to_iso2022jp") %>
 
 static int
 fun_so_eucjp_to_iso2022jp(rb_transcoding *t, const unsigned char *s, size_t l, unsigned char *o)
@@ -129,7 +129,7 @@ finish_eucjp_to_iso2022jp(rb_transcoding *t, unsigned char *o)
 
 static const rb_transcoder
 rb_EUC_JP_to_ISO_2022_JP = {
-    "EUC-JP", "ISO-2022-JP", &eucjp_to_iso2022jp, 5, 0,
+    "EUC-JP", "ISO-2022-JP", &eucjp_to_iso2022jp, 1, 5,
     NULL, NULL, NULL, fun_so_eucjp_to_iso2022jp, finish_eucjp_to_iso2022jp
 };
 

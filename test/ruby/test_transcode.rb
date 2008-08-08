@@ -267,8 +267,30 @@ class TestTranscode < Test::Unit::TestCase
       "\x80".encode("UTF-32BE", "UTF-8", invalid: :replace))
     assert_equal("\xFD\xFF\x00\x00".force_encoding("UTF-32LE"),
       "\x80".encode("UTF-32LE", "UTF-8", invalid: :replace))
+
     assert_equal("\uFFFD!",
-      "\x01\x00\x00\x00\x00\x00\x00\x21".encode("utf-8", "utf-32be", :invalid=>:replace), "[ruby-dev:35726]")
+      "\xdc\x00\x00!".encode("utf-8", "utf-16be", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\xd8\x00\x00!".encode("utf-8", "utf-16be", :invalid=>:replace))
+
+    assert_equal("\uFFFD!",
+      "\x00\xdc!\x00".encode("utf-8", "utf-16le", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\x00\xd8!\x00".encode("utf-8", "utf-16le", :invalid=>:replace))
+
+    assert_equal("\uFFFD!",
+      "\x01\x00\x00\x00\x00\x00\x00!".encode("utf-8", "utf-32be", :invalid=>:replace), "[ruby-dev:35726]")
+    assert_equal("\uFFFD!",
+      "\x00\xff\x00\x00\x00\x00\x00!".encode("utf-8", "utf-32be", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\x00\x00\xd8\x00\x00\x00\x00!".encode("utf-8", "utf-32be", :invalid=>:replace))
+
+    assert_equal("\uFFFD!",
+      "\xff!".encode("utf-8", "euc-jp", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
+    assert_equal("\uFFFD!",
+      "\x8f\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
   end
 
   def test_undef_replace

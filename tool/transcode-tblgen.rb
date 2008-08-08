@@ -213,13 +213,16 @@ class ActionMap
   OffsetsMemo = {}
   InfosMemo = {}
 
-  def format_offsets(offsets)
-    code = "{\n"
+  def format_offsets(min, max, offsets)
+    offsets = offsets[min..max]
+    code = "{ %d, %d,\n" % [min, max]
     0.step(offsets.length-1,16) {|i|
       code << "    "
       code << offsets[i,8].map {|off| "%3d," % off.to_s }.join('')
-      code << "  "
-      code << offsets[i+8,8].map {|off| "%3d," % off.to_s }.join('')
+      if i+8 < offsets.length
+        code << "  "
+        code << offsets[i+8,8].map {|off| "%3d," % off.to_s }.join('')
+      end
       code << "\n"
     }
     code << '}'
@@ -276,14 +279,22 @@ class ActionMap
     offsets = []
     infos = []
     infomap = {}
+    min = max = nil
     table.each_with_index {|action, byte|
       action ||= :invalid
+      if action != :invalid
+        min = byte if !min
+        max = byte
+      end
       unless o = infomap[action]
         infomap[action] = o = infos.length
         infos[o] = action
       end
       offsets[byte] = o
     }
+    if !min
+      min = max = 0
+    end
 
     if n = OffsetsMemo[offsets]
       offsets_name = n
@@ -292,7 +303,7 @@ class ActionMap
       offsets_name = "#{name}_offsets"
       offsets_code = <<"End"
 static const unsigned char
-#{offsets_name}[#{offsets.length}] = #{format_offsets(offsets)};
+#{offsets_name}[#{2+max-min+1}] = #{format_offsets(min,max,offsets)};
 End
       OffsetsMemo[offsets] = offsets_name
     end
@@ -324,24 +335,19 @@ End
   PostMemo = {}
   NextName = "a"
 
-  def generate_node(code, name_hint=nil, ranges=[], valid_encoding=nil)
-    ranges = [0x00..0xff] if ranges.empty?
-    range = ranges.first
+  def generate_node(code, name_hint=nil, valid_encoding=nil)
     if n = PreMemo[[self,valid_encoding]]
       return n
     end
 
-    table = Array.new(range.end - range.begin + 1)
+    table = Array.new(0x100, :invalid)
     each_firstbyte(valid_encoding) {|byte, rest, rest_valid_encoding|
-      unless range === byte
-        raise "byte not in range"
-      end
       if a = rest.empty_action
-        table[byte-range.begin] = a
+        table[byte] = a
       else
         name_hint2 = nil
         name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte-range.begin] = "&" + rest.generate_node(code, name_hint2, ranges[1..-1], rest_valid_encoding)
+        table[byte] = "&" + rest.generate_node(code, name_hint2, rest_valid_encoding)
       end
     }
 
@@ -386,9 +392,8 @@ def transcode_compile_tree(name, from, map)
     valid_encoding = nil
   end
 
-  ranges = from == "UTF-8" ? [0x00..0xff, 0x80..0xbf, 0x80..0xbf, 0x80..0xbf] : []
   code = ''
-  defined_name = am.generate_node(code, name, ranges, valid_encoding)
+  defined_name = am.generate_node(code, name, valid_encoding)
   return defined_name, code
 end
 
@@ -409,22 +414,22 @@ def transcode_tblgen(from, to, map)
   real_tree_name, tree_code = transcode_compile_tree(tree_name, from, map)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
-  from_utf8 = from == 'UTF-8' ? 1 : 0
+  from_unit_length = UnitLength[from]
   max_output = map.map {|k,v| String === v ? v.length/2 : 1 }.max
   transcoder_code = <<"End"
 static const rb_transcoder
 #{transcoder_name} = {
-    #{c_esc from}, #{c_esc to}, &#{real_tree_name}, #{max_output}, #{from_utf8},
+    #{c_esc from}, #{c_esc to}, &#{real_tree_name}, #{from_unit_length}, #{max_output},
     NULL, NULL,
 };
 End
   tree_code + "\n" + transcoder_code
 end
 
-def transcode_generate_node(am, name_hint=nil, ranges=[])
+def transcode_generate_node(am, name_hint=nil)
   STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
   code = ''
-  am.generate_node(code, name_hint, ranges)
+  am.generate_node(code, name_hint)
   code
 end
 
@@ -435,6 +440,14 @@ def transcode_register_code
   }
   code
 end
+
+UnitLength = {
+  'UTF-16BE'    => 2,
+  'UTF-16LE'    => 2,
+  'UTF-32BE'    => 4,
+  'UTF-32LE'    => 4,
+}
+UnitLength.default = 1
 
 ValidEncoding = {
   '1byte'       => '{00-ff}',

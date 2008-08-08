@@ -336,10 +336,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     const BYTE_LOOKUP *conv_tree_start = my_transcoder->conv_tree_start;
     const BYTE_LOOKUP *next_table;
     const unsigned char *char_start;
-    unsigned int next_offset;
     VALUE next_info;
     unsigned char next_byte;
-    int from_utf8 = my_transcoder->from_utf8;
     unsigned char *out_s = out_stop - my_transcoder->max_output + 1;
     rb_encoding *to_encoding = rb_enc_find(my_transcoder->to_encoding);
 
@@ -355,8 +353,12 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	}
 	next_byte = (unsigned char)*in_p++;
       follow_byte:
-	next_offset = next_table->base[next_byte];
-	next_info = (VALUE)next_table->info[next_offset];
+        if (next_byte < next_table->base[0] || next_table->base[1] < next_byte)
+            next_info = INVALID;
+        else {
+            unsigned int next_offset = next_table->base[2+next_byte-next_table->base[0]];
+            next_info = (VALUE)next_table->info[next_offset];
+        }
       follow_info:
 	switch (next_info & 0x1F) {
 	  case NOMAP:
@@ -370,14 +372,6 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 		goto invalid;
 	    }
 	    next_byte = (unsigned char)*in_p++;
-	    if (from_utf8) {
-		if ((next_byte&0xC0) == 0x80)
-		    next_byte -= 0x80;
-		else {
-		    in_p--; /* may need to add more code later to revert other things */
-		    goto invalid;
-		}
-	    }
 	    next_table = (const BYTE_LOOKUP *)next_info;
 	    goto follow_byte;
 	    /* maybe rewrite the following cases to use fallthrough???? */
@@ -411,7 +405,16 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	    out_p += (VALUE)(*my_transcoder->func_so)(my_transcoding, char_start, (size_t)(in_p-char_start), out_p);
 	    break;
 	  case INVALID:
-	    goto invalid;
+            {
+                int unitlen = my_transcoder->from_unit_length;
+                if (in_stop - char_start <= unitlen)
+                    in_p = in_stop;
+                else if (in_p - char_start <= unitlen)
+                    in_p = char_start + unitlen;
+                else
+                    in_p = char_start + ((in_p - char_start - 1) / unitlen) * unitlen;
+                goto invalid;
+            }
 	  case UNDEF:
 	    goto undef;
 	}
