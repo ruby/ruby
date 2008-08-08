@@ -1,3 +1,7 @@
+Fri Aug  8 23:27:03 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (shutdown): not define if defined already.
+
 Fri Aug  8 22:47:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (opt_eq_func): large function to make inline.

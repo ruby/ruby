@@ -199,7 +199,7 @@ static int max_file_descriptor = NOFILE;
 #  endif
 #endif
 
-#ifndef HAVE_SHUTDOWN
+#if !defined HAVE_SHUTDOWN && !defined shutdown
 #define shutdown(a,b)	0
 #endif
 
