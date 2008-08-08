@@ -1,3 +1,11 @@
+Fri Aug  8 10:53:52 2008  Tanaka Akira  <akr@fsij.org>
+
+	* lib/resolv.rb: randomize source port and transaction id.
+	  CVE-2008-1447.
+
+	* lib/resolv-replace.rb (UDPSocket#bind): don't resolv host if host is
+	  "".
+
 Mon Aug  4 14:49:35 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* lib/net/smtp.rb (Net::SMTP::rcptto): fix a typo. a patch from
