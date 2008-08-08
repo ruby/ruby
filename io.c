@@ -25,12 +25,10 @@
 #endif
 
 #include <sys/types.h>
-#if !defined(_WIN32) && !defined(__DJGPP__)
-#if defined(__BEOS__) && !defined(__HAIKU__)
-#  include <net/socket.h>
-# else
-#  include <sys/socket.h>
-# endif
+#if defined HAVE_NET_SOCKET_H
+# include <net/socket.h>
+#elif defined HAVE_SYS_SOCKET_H
+# include <sys/socket.h>
 #endif
 
 #if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__) || defined(__BEOS__)
@@ -201,7 +199,7 @@ static int max_file_descriptor = NOFILE;
 #  endif
 #endif
 
-#if defined(__HAIKU__)
+#ifndef HAVE_SHUTDOWN
 #define shutdown(a,b)	0
 #endif
 
@@ -209,7 +207,6 @@ static int max_file_descriptor = NOFILE;
 #define is_socket(fd, path)	rb_w32_is_socket(fd)
 #elif !defined(S_ISSOCK)
 #define is_socket(fd, path)	0
-#define shutdown(a,b)	0
 #else
 static int
 is_socket(int fd, const char *path)

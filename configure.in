@@ -512,11 +512,14 @@ hpux*)		LIBS="-lm $LIBS"
 human*)		ac_cv_func_getpgrp_void=yes
 		ac_cv_func_setitimer=no
 		;;
-beos*)	ac_cv_func_link=no
-		LIBS="$LIBS" # m lib is include in root under BeOS
-		;;
-haiku*)	ac_cv_func_link=no
-		LIBS="$LIBS" # m lib is include in root under Haiku
+beos*|haiku*)	ac_cv_func_link=no
+		ac_cv_func_sched_yield=no
+		ac_cv_func_pthread_attr_setinheritsched=no
+		case "$target_os" in
+		beos*) ac_cv_header_net_socket_h=yes;;
+		haiku*) ac_cv_func_shutdown=no;;
+		esac
+		LIBS="$LIBS" # m lib is include in root under BeOS/Haiku
 		;;
 cygwin*)	;;
 mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
@@ -529,6 +532,7 @@ mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_header_sys_select_h=no
 		ac_cv_header_sys_time_h=no
 		ac_cv_header_sys_times_h=no
+		ac_cv_header_sys_socket_h=no
 		ac_cv_func_times=yes
 		ac_cv_func_waitpid=yes
 		ac_cv_func_fsync=yes
@@ -560,6 +564,7 @@ msdosdjgpp*)	LIBS="-lm $LIBS"
 		ac_cv_sizeof_rlim_t=4
 		ac_cv_func_fork=no
 		ac_cv_func_setrlimit=no
+		ac_cv_header_sys_socket_h=no
 		;;
 bsdi*)          LIBS="-lm $LIBS"
 		AC_DEFINE(BROKEN_SETREUID, 1)
@@ -603,6 +608,13 @@ alpha*)		case "$target_os"::"$GCC" in
 		esac ;;
 esac
 
+ac_cv_header_net_socket_h=${ac_cv_header_net_socket_h=no}
+if test "$ac_cv_header_net_socket_h" = yes; then
+    ac_cv_header_sys_socket_h=${ac_cv_header_sys_socket_h=no}
+else
+    ac_cv_header_sys_socket_h=${ac_cv_header_sys_socket_h=yes}
+fi
+
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
@@ -611,7 +623,8 @@ AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h sys/
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
 		 syscall.h pwd.h grp.h a.out.h utime.h memory.h direct.h sys/resource.h \
 		 sys/mkdev.h sys/utime.h xti.h netinet/in_systm.h float.h ieeefp.h pthread.h \
-		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h)
+		 ucontext.h intrinsics.h langinfo.h locale.h sys/sendfile.h time.h \
+		 net/socket.h sys/socket.h)
 
 dnl Check additional types.
 AC_CHECK_SIZEOF(rlim_t, 0, [
@@ -751,7 +764,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      setsid telldir seekdir fchmod cosh sinh tanh log2 round signbit\
 	      setuid setgid daemon select_large_fdset setenv unsetenv\
               mktime timegm clock_gettime gettimeofday\
-              pread sendfile)
+              pread sendfile shutdown)
 
 AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 [AC_TRY_LINK([@%:@include <setjmp.h>
@@ -1127,7 +1140,7 @@ if test x"$enable_pthread" = xyes; then
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
     fi
-    AC_CHECK_FUNCS(nanosleep)
+    AC_CHECK_FUNCS(nanosleep sched_yield pthread_attr_setinheritsched)
     if test x"$ac_cv_func_nanosleep" = xno; then
        AC_CHECK_LIB(rt, nanosleep)
        if test x"$ac_cv_lib_rt_nanosleep" = xyes; then
