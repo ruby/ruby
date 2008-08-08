@@ -680,7 +680,7 @@ node_name.inc: {$(VPATH)}node.h
 	$(BASERUBY) -n $(srcdir)/tool/node_name.rb $? > $@
 
 encdb.h: $(PREP)
-	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $(srcdir)/enc $@.new
+	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $@.new $(srcdir)/enc enc
 	$(IFCHANGE) "$@" "$@.new"
 
 transdb.h: $(PREP) transcodes
