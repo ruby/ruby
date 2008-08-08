@@ -380,7 +380,7 @@ encs: enc.mk $(LIBRUBY) $(PREP)
 	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
-	$(srcdir)/lib/mkmf.rb $(PREP)
+	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" $@
 
 .PRECIOUS: $(MKFILES)

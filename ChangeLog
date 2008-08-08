@@ -1,4 +1,6 @@
-Fri Aug  8 16:44:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  8 16:52:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (enc.mk): mkmf.rb requires rbconfig.rb.
 
 	* common.mk (srcs-enc): renamed from transcodes.
 
