@@ -1,4 +1,8 @@
-Fri Aug  8 16:15:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  8 16:44:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (srcs-enc): renamed from transcodes.
+
+	* enc/Makefile.in (make-workdir): creates object directories.
 
 	* common.mk (encdb.h): see both $(srcdir)/enc and enc.
 

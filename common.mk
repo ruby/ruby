@@ -377,7 +377,6 @@ $(RBCONFIG): $(srcdir)/mkconfig.rb config.status $(PREP)
 		-so_name=$(RUBY_SO_NAME) rbconfig.rb
 
 encs: enc.mk $(LIBRUBY) $(PREP)
-	$(MINIRUBY) -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc" enc
 	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" $(MFLAGS)
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
@@ -666,10 +665,9 @@ vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
 
 vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c transcodes
+srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c $(srcdir)/ext/ripper/ripper.c srcs-enc
 
-transcodes: enc.mk
-	$(MINIRUBY) -run -e mkdir -- -p "$(EXTOUT)/$(arch)/enc/trans" enc/trans
+srcs-enc: enc.mk
 	$(MAKE) -f enc.mk RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}encdb.h {$(VPATH)}transdb.h $(srcdir)/revision.h
@@ -683,7 +681,7 @@ encdb.h: $(PREP)
 	$(MINIRUBY) $(srcdir)/enc/make_encdb.rb $@.new $(srcdir)/enc enc
 	$(IFCHANGE) "$@" "$@.new"
 
-transdb.h: $(PREP) transcodes
+transdb.h: $(PREP) srcs-enc
 	$(MINIRUBY) $(srcdir)/enc/trans/make_transdb.rb $@.new $(srcdir)/enc/trans enc/trans
 	$(IFCHANGE) "$@" "$@.new"
 

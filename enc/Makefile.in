@@ -43,11 +43,16 @@ dldflags = @DLDFLAGS@
 archflag = @ARCH_FLAG@
 DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
 
+WORKDIRS = $(ENCSODIR) $(TRANSSODIR) enc enc/trans
+
 RM = @RM@
 
 .SUFFIXES: .erb.c
 
-all:
+all srcs: make-workdir
+
+make-workdir:
+	$(MINIRUBY) -run -e mkdir -- -p $(WORKDIRS)
 
 clean:
 
