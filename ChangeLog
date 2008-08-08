@@ -1,4 +1,8 @@
-Fri Aug  8 16:09:01 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  8 16:15:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (encdb.h): see both $(srcdir)/enc and enc.
+
+	* enc/make_encdb.rb: ditto.
 
 	* enc/trans/make_transdb.rb: fix for the case no transdirs are given.
 

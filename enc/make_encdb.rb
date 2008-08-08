@@ -22,42 +22,48 @@ count = 0
 lines = []
 encodings = []
 defs = {}
-encdir = ARGV[0]
-outhdr = ARGV[1] || 'encdb.h'
-Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
-  e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
-}.each do |fn|
-  open(File.join(encdir,fn)) do |f|
-    orig = nil
-    name = nil
-    f.each_line do |line|
-      if (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
-        if $1
-          check_duplication(defs, $1, fn, $.)
-          encodings << $1
-          count += 1
-        end
-      else
-        case line
-        when /^\s*rb_enc_register\(\s*"([^"]+)"/
-          count += 1
-          line = nil
-        when /^ENC_REPLICATE\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
-          raise ArgumentError,
-          '%s:%d: ENC_REPLICATE: %s is not defined yet. (replica %s)' %
-            [fn, $., $2, $1] unless defs[$2.upcase]
-          count += 1
-        when /^ENC_ALIAS\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
-          raise ArgumentError,
-          '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
-            [fn, $., $2, $1] unless defs[$2.upcase]
-        when /^ENC_DUMMY\(\s*"([^"]+)"/
-          count += 1
+encdirs = ARGV.dup
+outhdr = encdirs.shift || 'encdb.h'
+encdirs << 'enc' if encdirs.empty?
+files = {}
+encdirs.each do |encdir|
+  Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
+    e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
+  }.each do |fn|
+    next if files[fn]
+    files[fn] = true
+    open(File.join(encdir,fn)) do |f|
+      orig = nil
+      name = nil
+      f.each_line do |line|
+        if (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
+          if $1
+            check_duplication(defs, $1, fn, $.)
+            encodings << $1
+            count += 1
+          end
         else
-          next
+          case line
+          when /^\s*rb_enc_register\(\s*"([^"]+)"/
+            count += 1
+            line = nil
+          when /^ENC_REPLICATE\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
+            raise ArgumentError,
+            '%s:%d: ENC_REPLICATE: %s is not defined yet. (replica %s)' %
+              [fn, $., $2, $1] unless defs[$2.upcase]
+            count += 1
+          when /^ENC_ALIAS\(\s*"([^"]+)"\s*,\s*"([^"]+)"/
+            raise ArgumentError,
+            '%s:%d: ENC_ALIAS: %s is not defined yet. (alias %s)' %
+              [fn, $., $2, $1] unless defs[$2.upcase]
+          when /^ENC_DUMMY\(\s*"([^"]+)"/
+            count += 1
+          else
+            next
+          end
+          check_duplication(defs, $1, fn, $.)
+          lines << line.sub(/;.*/m, "").chomp + ";\n" if line
         end
-        check_duplication(defs, $1, fn, $.)
-        lines << line.sub(/;.*/m, "").chomp + ";\n" if line
       end
     end
   end

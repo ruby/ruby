@@ -8,8 +8,8 @@
 
 count = 0
 converters = {}
-outhdr = ARGV[0] || 'transdb.h'
-transdirs = ARGV[1..-1]
+transdirs = ARGV.dup
+outhdr = transdirs.shift || 'transdb.h'
 transdirs << 'enc/trans' if transdirs.empty?
 files = {}
 transdirs.each do |transdir|
