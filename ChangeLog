@@ -1,3 +1,8 @@
+Sat Aug  9 06:37:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/make_encdb.rb, enc/trans/make_transdb.rb: skip nonexistent
+	  directory.  [ruby-dev:35802]
+
 Sat Aug  9 01:07:51 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/utf_16_32.erb.c (fun_so_from_utf_32le): implemented.

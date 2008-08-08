@@ -27,6 +27,7 @@ outhdr = encdirs.shift || 'encdb.h'
 encdirs << 'enc' if encdirs.empty?
 files = {}
 encdirs.each do |encdir|
+  next unless File.directory?(encdir)
   Dir.open(encdir) {|d| d.grep(/.+\.[ch]\z/)}.sort_by {|e|
     e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
   }.each do |fn|
