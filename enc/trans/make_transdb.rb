@@ -10,10 +10,13 @@ count = 0
 converters = {}
 outhdr = ARGV[0] || 'transdb.h'
 transdirs = ARGV[1..-1] || 'enc/trans'
+files = {}
 transdirs.each do |transdir|
   Dir.open(transdir) {|d| d.grep(/.+\.[ch]\z/).reject {|n| /\.erb\.c\z/ =~ n }}.sort_by {|e|
     e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten
   }.each do |fn|
+    next if files[fn]
+    files[fn] = true
     open(File.join(transdir,fn)) do |f|
       f.each_line do |line|
         if (/^static const rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)

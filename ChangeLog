@@ -1,3 +1,8 @@
+Fri Aug  8 16:03:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/make_transdb.rb: converts only one transcoders for each
+	  basename.
+
 Fri Aug  8 10:53:52 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: randomize source port and transaction id.
