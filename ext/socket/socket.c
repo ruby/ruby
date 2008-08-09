@@ -920,10 +920,10 @@ port_str(VALUE port, char *pbuf, size_t len)
 }
 
 #ifndef NI_MAXHOST
-# define 1025
+# define NI_MAXHOST 1025
 #endif
 #ifndef NI_MAXSERV
-# define 32
+# define NI_MAXSERV 32
 #endif
 
 static struct addrinfo*

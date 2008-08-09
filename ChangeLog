@@ -1,3 +1,9 @@
+Sat Aug  9 13:35:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* stable/ext/socket/socket.c (NI_MAXHOST, NI_MAXSERV): fixed invalid
+	  preprocessor directives.  a patch from Peter Bowen at
+	  [ruby-core:18211].
+
 Sat Aug  9 06:37:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/make_encdb.rb, enc/trans/make_transdb.rb: skip nonexistent
