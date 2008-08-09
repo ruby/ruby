@@ -101,6 +101,22 @@ class StrSet
     "\#<#{self.class}: #{self.to_s}>"
   end
 
+  def min_length
+    if @pat.empty?
+      nil
+    else
+      @pat.map {|seq| seq.length }.min
+    end
+  end
+
+  def max_length
+    if @pat.empty?
+      nil
+    else
+      @pat.map {|seq| seq.length }.max
+    end
+  end
+
   def emptyable?
     @pat.any? {|seq|
       seq.empty?
@@ -168,6 +184,10 @@ class ActionMap
     "\#<#{self.class}:" + 
     @map.map {|k, v| " [" + k.to_s + "]=>" + v.inspect }.join('') +
     ">"
+  end
+
+  def max_input_length
+    @map.keys.map {|k| k.max_length }.max
   end
 
   def empty_action
@@ -386,6 +406,8 @@ def transcode_compile_tree(name, from, map)
   }
   am = ActionMap.parse(h)
 
+  max_input = am.max_input_length
+
   if ValidEncoding[from]
     valid_encoding = StrSet.parse(ValidEncoding[from])
   else
@@ -394,7 +416,7 @@ def transcode_compile_tree(name, from, map)
 
   code = ''
   defined_name = am.generate_node(code, name, valid_encoding)
-  return defined_name, code
+  return defined_name, code, max_input
 end
 
 TRANSCODERS = []
@@ -411,16 +433,19 @@ def transcode_tblgen(from, to, map)
     tree_name = "from_#{id_from}_to_#{id_to}"
   end
   map = encode_utf8(map)
-  real_tree_name, tree_code = transcode_compile_tree(tree_name, from, map)
+  real_tree_name, tree_code, max_input = transcode_compile_tree(tree_name, from, map)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
-  from_unit_length = UnitLength[from]
+  input_unit_length = UnitLength[from]
   max_output = map.map {|k,v| String === v ? v.length/2 : 1 }.max
   transcoder_code = <<"End"
 static const rb_transcoder
 #{transcoder_name} = {
-    #{c_esc from}, #{c_esc to}, &#{real_tree_name}, #{from_unit_length}, #{max_output},
-    NULL, NULL,
+    #{c_esc from}, #{c_esc to}, &#{real_tree_name},
+    #{input_unit_length}, /* input_unit_length */
+    #{max_input}, /* max_input */
+    #{max_output}, /* max_output */
+    NULL, NULL, NULL, NULL, NULL
 };
 End
   tree_code + "\n" + transcoder_code

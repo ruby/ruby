@@ -64,15 +64,28 @@ typedef struct rb_transcoding {
 			       or NULL if something else is being converted */
     unsigned char *(*flush_func)(struct rb_transcoding*, int, int);
 
+    int resume_position;
+    const BYTE_LOOKUP *next_table;
+    int readlen;
+    union {
+        unsigned char ary[8]; /* max_input <= sizeof(ary) */
+        unsigned char *ptr; /* length is max_input */
+    } readbuf;
+
     unsigned char stateful[256]; /* opaque data for stateful encoding */
 } rb_transcoding;
+#define TRANSCODING_READBUF(tc) \
+    ((tc)->transcoder->max_input <= sizeof((tc)->readbuf.ary) ? \
+     (tc)->readbuf.ary : \
+     (tc)->readbuf.ptr)
 
 /* static structure, one per supported encoding pair */
 typedef struct rb_transcoder {
     const char *from_encoding;
     const char *to_encoding;
     const BYTE_LOOKUP *conv_tree_start;
-    int from_unit_length;
+    int input_unit_length;
+    int max_input;
     int max_output;
     VALUE (*func_ii)(rb_transcoding*, VALUE); /* info  -> info   */
     VALUE (*func_si)(rb_transcoding*, const unsigned char*, size_t); /* start -> info   */

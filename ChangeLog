@@ -1,3 +1,23 @@
+Sat Aug  9 14:39:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): add fields for restartable
+	  transcoding.
+	  (rb_transcoder): add max_input field.
+	  from_unit_length field is renamed to input_unit_length.
+
+	* tool/transcode-tblgen.rb: generate max_input field.
+
+	* enc/trans/iso2022.erb.c: follow rb_transcoder change.
+
+	* enc/trans/utf_16_32.erb.c: ditto.
+
+	* transcode.c (PARTIAL_INPUT): new constant.
+	  (transcode_char_start): new function.
+	  (transcode_result_t): new type.
+	  (transcode_restartable): new function.
+	  (more_output_buffer): new function.
+	  (transcode_loop): use transcode_restartable.
+
 Sat Aug  9 13:35:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* stable/ext/socket/socket.c (NI_MAXHOST, NI_MAXSERV): fixed invalid

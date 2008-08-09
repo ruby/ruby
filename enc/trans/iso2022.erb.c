@@ -57,7 +57,10 @@ fun_so_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l, u
 
 static const rb_transcoder
 rb_ISO_2022_JP_to_EUC_JP = {
-    "ISO-2022-JP", "EUC-JP", &iso2022jp_to_eucjp, 1, 3,
+    "ISO-2022-JP", "EUC-JP", &iso2022jp_to_eucjp,
+    1, /* input_unit_length */
+    3, /* max_input */
+    3, /* max_output */
     NULL, fun_si_iso2022jp_to_eucjp, NULL, fun_so_iso2022jp_to_eucjp
 };
 
@@ -129,7 +132,10 @@ finish_eucjp_to_iso2022jp(rb_transcoding *t, unsigned char *o)
 
 static const rb_transcoder
 rb_EUC_JP_to_ISO_2022_JP = {
-    "EUC-JP", "ISO-2022-JP", &eucjp_to_iso2022jp, 1, 5,
+    "EUC-JP", "ISO-2022-JP", &eucjp_to_iso2022jp,
+    1, /* input_unit_length */
+    3, /* max_input */
+    5, /* max_output */
     NULL, NULL, NULL, fun_so_eucjp_to_iso2022jp, finish_eucjp_to_iso2022jp
 };
 
