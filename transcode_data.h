@@ -60,9 +60,6 @@ typedef struct byte_lookup {
 /* may carry conversion state (e.g. for iso-2022-jp) */
 typedef struct rb_transcoding {
     const struct rb_transcoder *transcoder;
-    VALUE ruby_string_dest; /* the String used as the conversion destination,
-			       or NULL if something else is being converted */
-    unsigned char *(*flush_func)(struct rb_transcoding*, int, int);
 
     int resume_position;
     const BYTE_LOOKUP *next_table;

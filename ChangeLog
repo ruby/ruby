@@ -1,3 +1,16 @@
+Sat Aug  9 22:05:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (transcode_loop): take destination and resize function
+	  as parameters.
+	  (more_output_buffer): ditto.
+	  (str_transcoding_resize): argument changed from rb_transcoding* to
+	  VALUE.
+	  (str_transcode): call transcode_loop with destination string and its
+	  resize function.
+
+	* transcode_data.h (rb_transcoding): move ruby_string_dest and
+	  flush_func to transcode_loop parameters.
+
 Sat Aug  9 21:29:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: encs depend on transdb.h

@@ -559,6 +559,8 @@ transcode_restartable(rb_transcoding *tc,
 
 static void
 more_output_buffer(
+        VALUE destination,
+        unsigned char *(*resize_destination)(VALUE, int, int),
         rb_transcoding *my_transcoding,
         unsigned char **out_start_ptr,
         unsigned char **out_pos,
@@ -566,7 +568,7 @@ more_output_buffer(
 {
     size_t len = (*out_pos - *out_start_ptr);
     size_t new_len = (len + my_transcoding->transcoder->max_output) * 2;
-    *out_start_ptr = (*my_transcoding->flush_func)(my_transcoding, len, new_len);
+    *out_start_ptr = resize_destination(destination, len, new_len);
     *out_pos = *out_start_ptr + len;
     *out_stop_ptr = *out_start_ptr + new_len;
 }
@@ -575,6 +577,8 @@ more_output_buffer(
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
+               VALUE destination,
+               unsigned char *(*resize_destination)(VALUE, int, int),
 	       rb_transcoding *my_transcoding,
 	       const int opt)
 {
@@ -606,7 +610,7 @@ resume:
 	}
 	else if (opt&INVALID_REPLACE) {
             if (out_stop - *out_pos < my_transcoder->max_output)
-                more_output_buffer(my_transcoding, &out_start, out_pos, &out_stop);
+                more_output_buffer(destination, resize_destination, my_transcoding, &out_start, out_pos, &out_stop);
 	    output_replacement_character(out_pos, rb_enc_find(my_transcoder->to_encoding));
             goto resume;
 	}
@@ -622,7 +626,7 @@ resume:
 	}
 	else if (opt&UNDEF_REPLACE) {
             if (out_stop - *out_pos < my_transcoder->max_output)
-                more_output_buffer(my_transcoding, &out_start, out_pos, &out_stop);
+                more_output_buffer(destination, resize_destination, my_transcoding, &out_start, out_pos, &out_stop);
 	    output_replacement_character(out_pos, rb_enc_find(my_transcoder->to_encoding));
 	    goto resume;
 	}
@@ -630,7 +634,7 @@ resume:
         rb_raise(TRANSCODE_ERROR, "conversion undefined for byte sequence (maybe invalid byte sequence)");
     }
     if (ret == transcode_obuf_full) {
-        more_output_buffer(my_transcoding, &out_start, out_pos, &out_stop);
+        more_output_buffer(destination, resize_destination, my_transcoding, &out_start, out_pos, &out_stop);
         goto resume;
     }
 
@@ -643,6 +647,8 @@ resume:
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
+               VALUE destination,
+               unsigned char *(*resize_destination)(VALUE, struct rb_transcoding*, int, int),
 	       rb_transcoding *my_transcoding,
 	       const int opt)
 {
@@ -694,7 +700,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             }
             else if (opt&INVALID_REPLACE) {
                 if (out_stop - *out_pos < my_transcoder->max_output)
-                    more_output_buffer(my_transcoding, &out_start, out_pos, &out_stop);
+                    more_output_buffer(destination, resize_destination, my_transcoding, &out_start, out_pos, &out_stop);
                 output_replacement_character(out_pos, rb_enc_find(my_transcoder->to_encoding));
                 break;
             }
@@ -711,7 +717,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             }
             else if (opt&UNDEF_REPLACE) {
                 if (out_stop - *out_pos < my_transcoder->max_output)
-                    more_output_buffer(my_transcoding, &out_start, out_pos, &out_stop);
+                    more_output_buffer(destination, resize_destination, my_transcoding, &out_start, out_pos, &out_stop);
                 output_replacement_character(out_pos, rb_enc_find(my_transcoder->to_encoding));
                 break;
             }
@@ -720,7 +726,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             break;
 
           case transcode_obuf_full:
-            more_output_buffer(my_transcoding, &out_start, out_pos, &out_stop);
+            more_output_buffer(destination, resize_destination, my_transcoding, &out_start, out_pos, &out_stop);
             break;
 
           case transcode_ibuf_empty:
@@ -743,11 +749,10 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
  */
 
 static unsigned char *
-str_transcoding_resize(rb_transcoding *my_transcoding, int len, int new_len)
+str_transcoding_resize(VALUE destination, int len, int new_len)
 {
-    VALUE dest_string = my_transcoding->ruby_string_dest;
-    rb_str_resize(dest_string, new_len);
-    return (unsigned char *)RSTRING_PTR(dest_string);
+    rb_str_resize(destination, new_len);
+    return (unsigned char *)RSTRING_PTR(destination);
 }
 
 static int
@@ -851,10 +856,8 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	blen = slen + 30; /* len + margin */
 	dest = rb_str_tmp_new(blen);
 	bp = (unsigned char *)RSTRING_PTR(dest);
-	my_transcoding.ruby_string_dest = dest;
-	my_transcoding.flush_func = str_transcoding_resize;
 
-	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding, options);
+	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, &my_transcoding, options);
 	if (fromp != sp+slen) {
 	    rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	}
