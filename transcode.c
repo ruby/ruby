@@ -328,20 +328,20 @@ output_replacement_character(unsigned char **out_pp, rb_encoding *enc)
 
 static const unsigned char *
 transcode_char_start(rb_transcoding *my_transcoding,
-                         const unsigned char **in_pos,
-                         const unsigned char *in_p,
-                         int readlen)
+                         const unsigned char *in_start,
+                         ssize_t char_start,
+                         ssize_t pos)
 {
     const unsigned char *ptr;
-    if (in_p - *in_pos < readlen) {
-        int restlen = readlen - my_transcoding->readlen;
+    if (char_start < 0) {
+        /* -char_start == my_transcoding->readlen */
+        int restlen = pos-char_start - my_transcoding->readlen;
         MEMCPY(TRANSCODING_READBUF(my_transcoding) + my_transcoding->readlen,
-               in_p - restlen, unsigned char, restlen);
-        my_transcoding->readlen = readlen;
+               in_start, unsigned char, restlen);
         ptr = TRANSCODING_READBUF(my_transcoding);
     }
     else {
-        ptr = in_p - readlen;
+        ptr = in_start + char_start;
     }
     return ptr;
 }
@@ -355,61 +355,67 @@ typedef enum {
 } transcode_result_t;
 
 static transcode_result_t
-transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
-                      const unsigned char *in_stop, unsigned char *out_stop,
-                      rb_transcoding *my_transcoding,
+transcode_restartable(rb_transcoding *tc,
+                      const unsigned char *in_start,
+                      const unsigned char *in_stop,
+                      ssize_t *in_moved_ret,
+                      unsigned char **out_pos,
+                      unsigned char *out_stop,
                       const int opt)
 
 {
-    const rb_transcoder *my_transcoder = my_transcoding->transcoder;
-    int unitlen = my_transcoder->input_unit_length;
+    const rb_transcoder *tr = tc->transcoder;
+    int unitlen = tr->input_unit_length;
 
-    const unsigned char *in_p;
+    ssize_t char_start;
+    ssize_t pos;
+    size_t in_size;
+
     unsigned char *out_p;
-    int readlen;
-    const BYTE_LOOKUP *next_table;
-    VALUE next_info;
-    unsigned char next_byte;
 
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
 
-    if (!in_pos) {
-        in_pos = (const unsigned char **)&empty_ptr;
-        in_stop = empty_ptr;
-    }
+    const BYTE_LOOKUP *next_table;
+    VALUE next_info;
+    unsigned char next_byte;
+
+    if (!in_start)
+        in_start = in_stop = empty_ptr;
+    char_start = -tc->readlen;
+    pos = 0;
+    in_size = in_stop - in_start;
 
     if (!out_pos) {
         out_pos = &empty_ptr;
         out_stop = empty_ptr;
     }
-
-    in_p = *in_pos;
     out_p = *out_pos;
-    readlen = my_transcoding->readlen;
-    next_table = my_transcoding->next_table;
-    next_info = my_transcoding->next_info;
-    next_byte = my_transcoding->next_byte;
+
+    next_table = tc->next_table;
+    next_info = tc->next_info;
+    next_byte = tc->next_byte;
 
 #define SUSPEND(ret, num) \
     do { \
-        my_transcoding->resume_position = (num); \
-        if (my_transcoding->readlen < readlen) \
-            MEMCPY(TRANSCODING_READBUF(my_transcoding)+my_transcoding->readlen, \
-                   in_p - (readlen-my_transcoding->readlen), \
+        tc->resume_position = (num); \
+        if (tc->readlen < pos-char_start) \
+            MEMCPY(TRANSCODING_READBUF(tc)+tc->readlen, \
+                   in_start+(char_start+tc->readlen), \
                    unsigned char, \
-                   readlen-my_transcoding->readlen); \
-        *in_pos = in_p; \
+                   pos-char_start - tc->readlen); \
         *out_pos = out_p; \
-        my_transcoding->readlen = readlen; \
-        my_transcoding->next_table = next_table; \
-        my_transcoding->next_info = next_info; \
-        my_transcoding->next_byte = next_byte; \
+        tc->readlen = pos-char_start; \
+        tc->next_table = next_table; \
+        tc->next_info = next_info; \
+        tc->next_byte = next_byte; \
+        if (in_moved_ret) \
+            *in_moved_ret = pos; \
         return ret; \
         resume_label ## num:; \
     } while (0)
 
-    switch (my_transcoding->resume_position) {
+    switch (tc->resume_position) {
       case 0: break;
       case 1: goto resume_label1;
       case 2: goto resume_label2;
@@ -428,17 +434,18 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
     }
 
     while (1) {
-        if (in_stop <= in_p) {
+        if (in_size <= pos) {
             if (!(opt & PARTIAL_INPUT))
                 break;
             SUSPEND(transcode_ibuf_empty, 7);
             continue;
         }
 
-        my_transcoding->readlen = readlen = 0;
-	next_table = my_transcoder->conv_tree_start;
-	next_byte = (unsigned char)*in_p++;
-        readlen++;
+        tc->readlen = 0;
+        char_start = pos;
+	next_table = tr->conv_tree_start;
+	next_byte = (unsigned char)in_start[pos];
+        pos++;
       follow_byte:
         if (next_byte < next_table->base[0] || next_table->base[1] < next_byte)
             next_info = INVALID;
@@ -454,13 +461,13 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
 	    continue;
 	  case 0x00: case 0x04: case 0x08: case 0x0C:
 	  case 0x10: case 0x14: case 0x18: case 0x1C:
-	    while (in_p >= in_stop) {
+	    while (in_size <= pos) {
                 if (!(opt & PARTIAL_INPUT))
                     goto invalid;
                 SUSPEND(transcode_ibuf_empty, 5);
 	    }
-	    next_byte = (unsigned char)*in_p++;
-            readlen++;
+	    next_byte = (unsigned char)in_start[pos];
+            pos++;
 	    next_table = (const BYTE_LOOKUP *)next_info;
 	    goto follow_byte;
 	  case ZERObt: /* drop input */
@@ -488,58 +495,42 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
 	    *out_p++ = getBT3(next_info);
 	    continue;
 	  case FUNii:
-	    next_info = (VALUE)(*my_transcoder->func_ii)(my_transcoding, next_info);
+	    next_info = (VALUE)(*tr->func_ii)(tc, next_info);
 	    goto follow_info;
 	  case FUNsi:
             {
-                const unsigned char *char_start;
-                char_start = transcode_char_start(my_transcoding, in_pos, in_p, readlen);
-                next_info = (VALUE)(*my_transcoder->func_si)(my_transcoding, char_start, (size_t)readlen);
+                const unsigned char *char_start_ptr;
+                char_start_ptr = transcode_char_start(tc, in_start, char_start, pos);
+                next_info = (VALUE)(*tr->func_si)(tc, char_start_ptr, (size_t)(pos-char_start));
                 break;
             }
 	  case FUNio:
-            while (out_stop - out_p < my_transcoder->max_output) { SUSPEND(transcode_obuf_full, 13); }
-	    out_p += (VALUE)(*my_transcoder->func_io)(my_transcoding, next_info, out_p);
+            while (out_stop - out_p < tr->max_output) { SUSPEND(transcode_obuf_full, 13); }
+	    out_p += (VALUE)(*tr->func_io)(tc, next_info, out_p);
 	    break;
 	  case FUNso:
             {
-                const unsigned char *char_start;
-                while (out_stop - out_p < my_transcoder->max_output) { SUSPEND(transcode_obuf_full, 14); }
-                char_start = transcode_char_start(my_transcoding, in_pos, in_p, readlen);
-                out_p += (VALUE)(*my_transcoder->func_so)(my_transcoding, char_start, (size_t)readlen, out_p);
+                const unsigned char *char_start_ptr;
+                while (out_stop - out_p < tr->max_output) { SUSPEND(transcode_obuf_full, 14); }
+                char_start_ptr = transcode_char_start(tc, in_start, char_start, pos);
+                out_p += (VALUE)(*tr->func_so)(tc, char_start_ptr, (size_t)(pos-char_start), out_p);
                 break;
             }
 	  case INVALID:
-            {
-                int step;
-                if (readlen <= unitlen) {
-                    while ((opt & PARTIAL_INPUT) && readlen + (in_stop - in_p) < unitlen) {
-                        step = in_stop - in_p;
-                        readlen += step;
-                        in_p = in_stop;
-                        SUSPEND(transcode_ibuf_empty, 8);
-                    }
-                    if (readlen + (in_stop - in_p) <= unitlen) {
-                        step = in_stop - in_p;
-                        readlen += step;
-                        in_p = in_stop;
-                    }
-                    else {
-                        step = unitlen - readlen;
-                        readlen = unitlen;
-                        in_p += step;
-                    }
+            if (pos-char_start <= unitlen) {
+                while ((opt & PARTIAL_INPUT) && in_size - char_start < unitlen) {
+                    pos = in_size;
+                    SUSPEND(transcode_ibuf_empty, 8);
                 }
-                else {
-                    /* xxx: step may be negative.
-                     * possibly in_p is lesser than *in_pos.
-                     * caller may want to access readbuf.  */
-                    step = ((readlen - 1) / unitlen) * unitlen - readlen;
-                    in_p += step;
-                    readlen += step;
-                }
-                goto invalid;
+                if (in_size - char_start <= unitlen)
+                    pos = in_size;
+                else
+                    pos = char_start + unitlen;
             }
+            else {
+                pos = char_start + ((pos-char_start-1) / unitlen) * unitlen;
+            }
+            goto invalid;
 	  case UNDEF:
 	    goto undef;
 	}
@@ -555,11 +546,11 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
     }
 
     /* cleanup */
-    if (my_transcoder->finish_func) {
-	while (out_stop - out_p < my_transcoder->max_output) {
+    if (tr->finish_func) {
+	while (out_stop - out_p < tr->max_output) {
             SUSPEND(transcode_obuf_full, 4);
 	}
-        out_p += my_transcoder->finish_func(my_transcoding, out_p);
+        out_p += tr->finish_func(tc, out_p);
     }
     while (1)
         SUSPEND(transcode_finished, 6);
@@ -590,6 +581,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     const rb_transcoder *my_transcoder = my_transcoding->transcoder;
     transcode_result_t ret;
     unsigned char *out_start = *out_pos;
+    ssize_t in_moved;
 
     my_transcoding->resume_position = 0;
     my_transcoding->readlen = 0;
@@ -604,7 +596,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     } while(0)
 
 resume:
-    ret = transcode_restartable(in_pos, out_pos, in_stop, out_stop, my_transcoding, opt);
+    ret = transcode_restartable(my_transcoding, *in_pos, in_stop, &in_moved, out_pos, out_stop, opt);
+    *in_pos += in_moved;
     if (ret == transcode_invalid_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
@@ -657,6 +650,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     transcode_result_t ret;
     unsigned char *out_start = *out_pos;
     const unsigned char *ptr;
+    ssize_t in_moved;
 
     my_transcoding->resume_position = 0;
     my_transcoding->readlen = 0;
@@ -679,14 +673,15 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (ret == transcode_ibuf_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
-                ret = transcode_restartable(&p, out_pos, p+1, out_stop, my_transcoding, opt|PARTIAL_INPUT);
+                ret = transcode_restartable(my_transcoding, p, p+1, &in_moved, out_pos, out_stop, opt|PARTIAL_INPUT);
+                p += in_moved;
             }
             else {
-                ret = transcode_restartable(NULL, out_pos, NULL, out_stop, my_transcoding, opt);
+                ret = transcode_restartable(my_transcoding, NULL, NULL, NULL, out_pos, out_stop, opt);
             }
         }
         else {
-            ret = transcode_restartable(NULL, out_pos, NULL, out_stop, my_transcoding, opt|PARTIAL_INPUT);
+            ret = transcode_restartable(my_transcoding, NULL, NULL, NULL, out_pos, out_stop, opt|PARTIAL_INPUT);
         }
         if (&input_byte != p)
             ptr += p - &input_byte;
