@@ -1,3 +1,9 @@
+Sat Aug  9 13:35:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* stable/ext/socket/socket.c (NI_MAXHOST, NI_MAXSERV): fixed invalid
+	  preprocessor directives.  a patch from Peter Bowen at
+	  [ruby-core:18211].
+
 Fri Aug  8 10:53:52 2008  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb: randomize source port and transaction id.
