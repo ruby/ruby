@@ -60,6 +60,7 @@
  * A.5 of RFC 1321, reproduced below.
  */
 #include <string.h>
+int
 main()
 {
     static const char *const test[7*2] = {
@@ -100,6 +101,7 @@ main()
  */
 #ifdef COMPUTE_T_VALUES
 #include <math.h>
+int
 main()
 {
     int i;

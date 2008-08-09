@@ -1,3 +1,13 @@
+Sun Aug 10 08:15:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_missing__dtos18, rb_cv_missing_fconvert),
+	  ext/digest/md5/md5.c, ext/openssl/ossl.c (main),
+	  ext/socket/extconf.rb (ipv6, wide-getaddrinfo): main should be int.
+
+	* main.c (main), win32/winmain.c, wince/wincemain.c (WinMain): envp is
+	  no longer used so long time.  based on a patch from Peter Bowen at
+	  [ruby-core:18208]
+
 Sat Aug  9 22:05:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (transcode_loop): take destination and resize function
