@@ -1,3 +1,8 @@
+Sat Aug  9 15:10:15 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (transcode_restartable): my_transcoder argument removed.
+	  (transcode_loop): my_transcoder argument removed.
+
 Sat Aug  9 14:39:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoding): add fields for restartable

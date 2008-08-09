@@ -357,11 +357,11 @@ typedef enum {
 static transcode_result_t
 transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
                       const unsigned char *in_stop, unsigned char *out_stop,
-                      const rb_transcoder *my_transcoder,
                       rb_transcoding *my_transcoding,
                       const int opt)
 
 {
+    const rb_transcoder *my_transcoder = my_transcoding->transcoder;
     int unitlen = my_transcoder->input_unit_length;
 
     const unsigned char *in_p;
@@ -571,10 +571,10 @@ more_output_buffer(
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
-	       const rb_transcoder *my_transcoder,
 	       rb_transcoding *my_transcoding,
 	       const int opt)
 {
+    const rb_transcoder *my_transcoder = my_transcoding->transcoder;
     transcode_result_t ret;
     unsigned char *out_start = *out_pos;
 
@@ -591,7 +591,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     } while(0)
 
 resume:
-    ret = transcode_restartable(in_pos, out_pos, in_stop, out_stop, my_transcoder, my_transcoding, opt);
+    ret = transcode_restartable(in_pos, out_pos, in_stop, out_stop, my_transcoding, opt);
     if (ret == transcode_invalid_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
@@ -637,10 +637,10 @@ resume:
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
-	       const rb_transcoder *my_transcoder,
 	       rb_transcoding *my_transcoding,
 	       const int opt)
 {
+    const rb_transcoder *my_transcoder = my_transcoding->transcoder;
     transcode_result_t ret;
     unsigned char *out_start = *out_pos;
     const unsigned char *ptr;
@@ -666,14 +666,14 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (ret == transcode_ibuf_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
-                ret = transcode_restartable(&p, out_pos, p+1, out_stop, my_transcoder, my_transcoding, opt|PARTIAL_INPUT);
+                ret = transcode_restartable(&p, out_pos, p+1, out_stop, my_transcoding, opt|PARTIAL_INPUT);
             }
             else {
-                ret = transcode_restartable(NULL, out_pos, NULL, out_stop, my_transcoder, my_transcoding, opt);
+                ret = transcode_restartable(NULL, out_pos, NULL, out_stop, my_transcoding, opt);
             }
         }
         else {
-            ret = transcode_restartable(NULL, out_pos, NULL, out_stop, my_transcoder, my_transcoding, opt|PARTIAL_INPUT);
+            ret = transcode_restartable(NULL, out_pos, NULL, out_stop, my_transcoding, opt|PARTIAL_INPUT);
         }
         if (&input_byte != p)
             ptr += p - &input_byte;
@@ -846,7 +846,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	my_transcoding.ruby_string_dest = dest;
 	my_transcoding.flush_func = str_transcoding_resize;
 
-	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), my_transcoder, &my_transcoding, options);
+	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), &my_transcoding, options);
 	if (fromp != sp+slen) {
 	    rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	}
