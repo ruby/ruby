@@ -1,3 +1,11 @@
+Sat Aug  9 16:33:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): new fields: next_info and next_byte.
+
+	* transcode.c (transcode_restartable): save/restore next_info and
+	  next_byte.
+	  sync readlen and in_p when invalid.
+
 Sat Aug  9 15:10:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (transcode_restartable): my_transcoder argument removed.

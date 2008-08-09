@@ -66,6 +66,8 @@ typedef struct rb_transcoding {
 
     int resume_position;
     const BYTE_LOOKUP *next_table;
+    VALUE next_info;
+    unsigned char next_byte;
     int readlen;
     union {
         unsigned char ary[8]; /* max_input <= sizeof(ary) */

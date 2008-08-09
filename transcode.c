@@ -368,6 +368,8 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
     unsigned char *out_p;
     int readlen;
     const BYTE_LOOKUP *next_table;
+    VALUE next_info;
+    unsigned char next_byte;
 
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
@@ -386,6 +388,8 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
     out_p = *out_pos;
     readlen = my_transcoding->readlen;
     next_table = my_transcoding->next_table;
+    next_info = my_transcoding->next_info;
+    next_byte = my_transcoding->next_byte;
 
 #define SUSPEND(ret, num) \
     do { \
@@ -399,6 +403,8 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
         *out_pos = out_p; \
         my_transcoding->readlen = readlen; \
         my_transcoding->next_table = next_table; \
+        my_transcoding->next_info = next_info; \
+        my_transcoding->next_byte = next_byte; \
         return ret; \
         resume_label ## num:; \
     } while (0)
@@ -422,9 +428,6 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
     }
 
     while (1) {
-        unsigned char next_byte;
-        VALUE next_info;
-
         if (in_stop <= in_p) {
             if (!(opt & PARTIAL_INPUT))
                 break;
@@ -460,7 +463,6 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
             readlen++;
 	    next_table = (const BYTE_LOOKUP *)next_info;
 	    goto follow_byte;
-	    /* maybe rewrite the following cases to use fallthrough???? */
 	  case ZERObt: /* drop input */
 	    continue;
 	  case ONEbt:
@@ -509,21 +511,32 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
             }
 	  case INVALID:
             {
+                int step;
                 if (readlen <= unitlen) {
                     while ((opt & PARTIAL_INPUT) && readlen + (in_stop - in_p) < unitlen) {
-                        readlen += in_stop - in_p;
+                        step = in_stop - in_p;
+                        readlen += step;
                         in_p = in_stop;
                         SUSPEND(transcode_ibuf_empty, 8);
                     }
-                    if (readlen + (in_stop - in_p) <= unitlen)
+                    if (readlen + (in_stop - in_p) <= unitlen) {
+                        step = in_stop - in_p;
+                        readlen += step;
                         in_p = in_stop;
-                    else
-                        in_p += unitlen - readlen;
+                    }
+                    else {
+                        step = unitlen - readlen;
+                        readlen = unitlen;
+                        in_p += step;
+                    }
                 }
                 else {
-                    /* xxx: possibly in_p is lesser than *in_pos
+                    /* xxx: step may be negative.
+                     * possibly in_p is lesser than *in_pos.
                      * caller may want to access readbuf.  */
-                    in_p += ((readlen - 1) / unitlen) * unitlen - readlen;
+                    step = ((readlen - 1) / unitlen) * unitlen - readlen;
+                    in_p += step;
+                    readlen += step;
                 }
                 goto invalid;
             }
