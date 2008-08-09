@@ -30,12 +30,6 @@ Sat Aug  9 21:10:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* configure.in (rb_cv_rshift_sign, rb_cv_binary_elf): get rid of
 	  AC_TRY_RUN.
 
-Sat Aug  9 19:28:50 2008  Tanaka Akira  <akr@fsij.org>
-
-	* transcode.c (transcode_char_start): arguments changed.
-	  (transcode_restartable): arguments changed to avoid *in_pos points
-	  out of buffer by decreasing *in_pos.
-
 Sat Aug  9 16:33:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoding): new fields: next_info and next_byte.
