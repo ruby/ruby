@@ -1,3 +1,7 @@
+Sat Aug  9 21:29:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: encs depend on transdb.h
+
 Sat Aug  9 21:10:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_rshift_sign, rb_cv_binary_elf): get rid of
