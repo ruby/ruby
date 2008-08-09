@@ -1,3 +1,8 @@
+Sat Aug  9 21:10:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_rshift_sign, rb_cv_binary_elf): get rid of
+	  AC_TRY_RUN.
+
 Sat Aug  9 19:28:50 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (transcode_char_start): arguments changed.

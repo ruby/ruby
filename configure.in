@@ -979,18 +979,9 @@ if test x"$target_cpu" = xia64; then
 fi
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
-    [AC_TRY_RUN([
-int
-main()
-{
-  if (-1==(-1>>1))
-    return 0;
-  return 1;
-}
-],
+    [AC_COMPILE_IFELSE(AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))]),
 	rb_cv_rshift_sign=yes,
-	rb_cv_rshift_sign=no,
-	rb_cv_rshift_sign=yes)])
+	rb_cv_rshift_sign=no)])
 if test "$rb_cv_rshift_sign" = yes; then
   AC_DEFINE(RSHIFT(x,y), ((x)>>(int)y))
 else
@@ -1232,26 +1223,16 @@ AC_ARG_WITH(dln-a-out,
 	esac], [with_dln_a_out=no])
 
 AC_CACHE_CHECK(whether ELF binaries are produced, rb_cv_binary_elf,
-[AC_TRY_RUN([
-/* Test for whether ELF binaries are produced */
-#include <fcntl.h>
-#include <stdlib.h>
-main() {
-	char buffer[4];
-	int i=open("conftest",O_RDONLY);
-	if(i==-1)
-		exit(1); /* fail */
-	if(read(i,&buffer[0],4)<4)
-		exit(1); /* fail */
-	if(buffer[0] != 127 || buffer[1] != 'E' ||
-           buffer[2] != 'L' || buffer[3] != 'F')
-		exit(1); /* fail */
-	exit(0); /* succeed (yes, it's ELF) */
-}
-],
-rb_cv_binary_elf=yes,
-rb_cv_binary_elf=no,
-rb_cv_binary_elf=yes)])
+[AC_TRY_LINK([],[], [
+case "`head -1 conftest$EXEEXT | cat -e`" in
+dnl (
+'^?ELF'*)
+    rb_cv_binary_elf=yes;;
+dnl (
+*)
+    rb_cv_binary_elf=no;;
+esac],
+rb_cv_binary_elf=no)])
 
 if test "$rb_cv_binary_elf" = yes; then
   AC_DEFINE(USE_ELF)
