@@ -815,7 +815,7 @@ ruby_get_stack_grow_direction(VALUE *addr)
 
 #define GC_WATER_MARK 512
 
-int
+size_t
 ruby_stack_length(VALUE **p)
 {
     rb_thread_t *th = GET_THREAD();
