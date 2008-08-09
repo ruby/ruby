@@ -1379,11 +1379,12 @@ case "$target_os" in
 changequote(<<, >>)dnl
 <<
 #include <stdio.h>
-main ()
+int
+main()
 {
    char buf[256];
-   sprintf (buf, "%g", 1e+300);
-   exit (strcmp (buf, "1e+300") ? 0 : 1);
+   sprintf(buf, "%g", 1e+300);
+   return (strcmp (buf, "1e+300") ? 0 : 1);
 }
 >>,
 changequote([, ])dnl
@@ -1398,11 +1399,12 @@ changequote(<<, >>)dnl
 <<
 #include <stdio.h>
 #include <math.h>
-main ()
+int
+main()
 {
   char buf[256];
-  sprintf (buf, "%f", log(exp(1.0)));
-  exit (strcmp (buf, "1.000000") ? 0 : 1);
+  sprintf(buf, "%f", log(exp(1.0)));
+  return (strcmp (buf, "1.000000") ? 0 : 1);
 }
 >>,
 changequote([, ])dnl

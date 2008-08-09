@@ -30,9 +30,9 @@ static void objcdummyfunction( void ) { objc_msgSend(); }
 #endif
 
 int
-main(argc, argv, envp)
+main(argc, argv)
     int argc;
-    char **argv, **envp;
+    char **argv;
 {
 #ifdef _WIN32
     NtInitialize(&argc, &argv);

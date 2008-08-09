@@ -488,7 +488,7 @@ Init_openssl()
  * Check if all symbols are OK with 'make LDSHARED=gcc all'
  */
 int
-main(int argc, char *argv[], char *env[])
+main(int argc, char *argv[])
 {
     return 0;
 }
