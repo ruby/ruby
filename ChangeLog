@@ -1,4 +1,7 @@
-Sun Aug 10 12:29:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Aug 10 12:34:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* config.guess ({powerpc-apple,i586-pc}-haiku): re-applied r18403.
+	  [ruby-core:18110]
 
 	* config.{guess,sub}: updated to automake-1.10.1.
 
