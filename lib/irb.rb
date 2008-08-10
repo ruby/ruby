@@ -308,7 +308,7 @@ module IRB
     def inspect
       ary = []
       for iv in instance_variables
-	case iv
+	case (iv = iv.to_s)
 	when "@signal_status"
 	  ary.push format("%s=:%s", iv, @signal_status.id2name)
 	when "@context"
