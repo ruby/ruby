@@ -1,3 +1,8 @@
+Sun Aug 10 18:09:16 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: record checksum of
+	  transcode-tblgen.rb itself.
+
 Sun Aug 10 12:34:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* config.guess ({powerpc-apple,i586-pc}-haiku): re-applied r18403.
