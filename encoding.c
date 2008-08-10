@@ -16,6 +16,7 @@
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
 #endif
+#include "ruby/util.h"
 
 static ID id_encoding, id_base_encoding;
 VALUE rb_cEncoding;

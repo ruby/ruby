@@ -1,3 +1,9 @@
+Sun Aug 10 22:24:24 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* encoding.c: include util.h.  [ruby-dev:35715]
+
+	* common.mk: ditto.
+
 Sun Aug 10 20:59:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoding): new field: flags.
