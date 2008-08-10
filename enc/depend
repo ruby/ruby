@@ -23,7 +23,7 @@
 % cleanobjs = Shellwords.shellwords(CONFIG["cleanobjs"] || "")
 % rule_subst = CONFIG["RULE_SUBST"] || "%s"
 % if File::ALT_SEPARATOR
-%   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\((\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
+%   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
 % else
 %   pathrep = proc {|path| path}
 % end
@@ -59,6 +59,7 @@ srcs: $(TRANSCSRCS)
 % end
 % compile_rules.each do |rule|
 <%=  rule % %w[c $(OBJEXT)] %>
+	@$(MAKEDIRS) "$(@D)"
 	<%=COMPILE_C%>
 
 % end
@@ -89,6 +90,7 @@ $(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
 	echo EXPORTS > <%=df%>
 	echo <%=EXPORT_PREFIX%>Init_<%=File.basename(e)%> >> <%=df%>
 %   end
+	@$(MAKEDIRS) "$(@D)"
 	<%=link_so.sub(/\$\(OBJS\)/) {obj}.sub(/\$\(DEFFILE\)/) {df}.gsub(/-(?:implib|pdb):/) {|s|"#{s}enc/#{e.sub(/[^\/]+\z/, '')}"}%>
 
 % end

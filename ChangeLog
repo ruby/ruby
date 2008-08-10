@@ -1,3 +1,11 @@
+Sun Aug 10 11:45:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/Makefile.in (make-workdir): use MAKEDIRS.
+
+	* enc/depend: makes target directory before compile/link.
+
+	* tool/transcode-tblgen.rb: creates target directory.
+
 Sun Aug 10 11:30:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c: rename my_transcoding to tc and my_transcoder to tr.

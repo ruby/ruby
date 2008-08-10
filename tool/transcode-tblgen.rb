@@ -1,5 +1,6 @@
 require 'optparse'
 require 'erb'
+require 'fileutils'
 
 C_ESC = {
   "\\" => "\\\\",
@@ -617,7 +618,8 @@ result << "\n"
 
 if output_filename
   new_filename = output_filename + ".new"
-  File.open(new_filename, "w") {|f| f << result }
+  FileUtils.mkdir_p(File.dirname(output_filename))
+  File.open(new_filename, "wb") {|f| f << result }
   File.rename(new_filename, output_filename)
   STDERR.puts "done." if VERBOSE_MODE
 else
