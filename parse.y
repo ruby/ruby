@@ -4918,7 +4918,7 @@ parser_nextc(struct parser_params *parser)
 		return -1;
 	    }
 	}
-	{	
+	{
 #ifdef RIPPER
 	    if (parser->tokp < lex_pend) {
 		if (NIL_P(parser->delayed)) {
@@ -5036,7 +5036,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
      * If string_literal is true, then we allow multiple codepoints
      * in \u{}, and add the codepoints to the current token.
      * Otherwise we're parsing a character literal and return a single
-     * codepoint without adding it 
+     * codepoint without adding it
      */
 
     int codepoint;
@@ -6077,7 +6077,7 @@ parser_yylex(struct parser_params *parser)
 
       case '#':		/* it's a comment */
 	/* no magic_comment in shebang line */
-	if (parser->line_count == (parser->has_shebang ? 2 : 1) 
+	if (parser->line_count == (parser->has_shebang ? 2 : 1)
 	    && (lex_p - lex_pbeg) == 1) {
 	    if (!parser_magic_comment(parser, lex_p, lex_pend - lex_p)) {
 		set_file_encoding(parser, lex_p, lex_pend);
@@ -8650,7 +8650,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     }
     var = rb_intern3(s, len, enc);
     if (dvar_defined(var) || local_id(var)) {
-        rb_warningS("named capture conflicts a local variable - %s", 
+        rb_warningS("named capture conflicts a local variable - %s",
                     rb_id2name(var));
     }
     arg->succ_block = block_append(arg->succ_block,
@@ -8680,7 +8680,7 @@ reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp, NODE *m
     if (arg.num == 0)
         return match;
 
-    return 
+    return
         block_append(
             newline_node(match),
             NEW_IF(gettable(rb_intern("$~")),
@@ -9014,7 +9014,7 @@ rb_enc_symname2_p(const char *name, int len, rb_encoding *enc)
 	  default: return Qfalse;
 	}
 	break;
-	    
+
       default:
 	localid = !rb_enc_isupper(*m, enc);
       id:
