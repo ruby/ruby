@@ -533,40 +533,26 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
 	  case INVALID:
-            {
-                if (tc->readlen + (in_p - inchar_start) <= unitlen) {
-                    while ((opt & PARTIAL_INPUT) && tc->readlen + (in_stop - inchar_start) < unitlen) {
-                        in_p = in_stop;
-                        SUSPEND(transcode_ibuf_empty, 8);
-                    }
-                    if (tc->readlen + (in_stop - inchar_start) <= unitlen) {
-                        in_p = in_stop;
-                    }
-                    else {
-                        in_p = inchar_start + (unitlen - tc->readlen);
-                    }
+            if (tc->readlen + (in_p - inchar_start) <= unitlen) {
+                while ((opt & PARTIAL_INPUT) && tc->readlen + (in_stop - inchar_start) < unitlen) {
+                    in_p = in_stop;
+                    SUSPEND(transcode_ibuf_empty, 8);
+                }
+                if (tc->readlen + (in_stop - inchar_start) <= unitlen) {
+                    in_p = in_stop;
                 }
                 else {
-                    int found_len; /* including the last byte which cuases invalid */
-                    int invalid_len;
-                    int step;
-                    found_len = tc->readlen + (in_p - inchar_start);
-                    invalid_len = ((found_len - 1) / unitlen) * unitlen;
-                    step = invalid_len - found_len;
-                    if (step < -1) {
-                        if (-step <= in_p - *in_pos) {
-                            in_p += step;
-                        }
-                        else {
-                            feedlen = -step;
-                        }
-                    }
-                    else {
-                        in_p += step;
-                    }
+                    in_p = inchar_start + (unitlen - tc->readlen);
                 }
-                goto invalid;
             }
+            else {
+                int invalid_len; /* including the last byte which causes invalid */
+                int discard_len;
+                invalid_len = tc->readlen + (in_p - inchar_start);
+                discard_len = ((invalid_len - 1) / unitlen) * unitlen;
+                feedlen = invalid_len - discard_len;
+            }
+            goto invalid;
 	  case UNDEF:
 	    goto undef;
 	}
@@ -608,7 +594,7 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
         MEMCPY(feed_buf, TRANSCODING_READBUF(tc) + tc->readlen,
                unsigned char, tc->feedlen);
         tc->feedlen = 0;
-        res = transcode_restartable0(&feed_pos, out_pos, feed_stop, out_stop, tc, opt);
+        res = transcode_restartable0(&feed_pos, out_pos, feed_stop, out_stop, tc, opt|PARTIAL_INPUT);
         if (res != transcode_ibuf_empty) {
             MEMCPY(TRANSCODING_READBUF(tc) + tc->readlen + tc->feedlen,
                    feed_pos, unsigned char, feed_stop - feed_pos);

@@ -1,3 +1,9 @@
+Sun Aug 10 22:34:55 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (transcode_restartable0): invalid handling simplified.
+	  (transcode_restartable): use PARTIAL_INPUT for converting buffered
+	  input.
+
 Sun Aug 10 22:24:24 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* encoding.c: include util.h.  [ruby-dev:35715]
