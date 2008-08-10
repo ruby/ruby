@@ -703,7 +703,7 @@ fi
 AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
   [AC_TRY_LINK([#include <time.h>
   int i;],
-  	[i = daylight;],
+	[i = daylight;],
 	rb_cv_have_daylight=yes,
 	rb_cv_have_daylight=no)])
 if test "$rb_cv_have_daylight" = yes; then
@@ -849,7 +849,7 @@ fi
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_COMPILE_IFELSE(AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))]),
-    	rb_cv_rshift_sign=yes,
+	rb_cv_rshift_sign=yes,
 	rb_cv_rshift_sign=no,
 	rb_cv_rshift_sign=yes)])
 if test "$rb_cv_rshift_sign" = yes; then
@@ -910,9 +910,9 @@ else
     ; do
         AC_TRY_COMPILE([#include <stdio.h>
     ],
-  	[FILE *f = stdin; char buf[256]; f->$frend = buf;],
-  	rb_cv_frend="$frend"; break,
-  	rb_cv_frend="not found")
+	[FILE *f = stdin; char buf[256]; f->$frend = buf;],
+	rb_cv_frend="$frend"; break,
+	rb_cv_frend="not found")
     done])
     if test "$rb_cv_frend" = "not found"; then
       AC_MSG_RESULT([not found])
@@ -1041,7 +1041,7 @@ AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $rb_cv_stack_grow_dir)
 
 if test x"$enable_pthread" = xyes; then
     for pthread_lib in pthread pthreads c c_r; do
- 	AC_CHECK_LIB($pthread_lib, pthread_kill,
+	AC_CHECK_LIB($pthread_lib, pthread_kill,
 		     rb_with_pthread=yes, rb_with_pthread=no)
 	if test "$rb_with_pthread" = "yes"; then break; fi
     done
@@ -1056,7 +1056,7 @@ if test x"$enable_pthread" = xyes; then
 	    MAINLIBS="-pthread $MAINLIBS"
 	    ;;
 	*)
-      	    LIBS="-l$pthread_lib $LIBS"
+	    LIBS="-l$pthread_lib $LIBS"
 	    ;;
 	esac
     else
@@ -1181,7 +1181,7 @@ if test "$with_dln_a_out" != yes; then
 	solaris*) 	if test "$GCC" = yes; then
                           : ${LDSHARED='$(CC) -shared'}
 			   if test "$rb_cv_prog_gnu_ld" = yes; then
-	 		       LDFLAGS="$LDFLAGS -Wl,-E"
+			       LDFLAGS="$LDFLAGS -Wl,-E"
 			   fi
 			else
 			   : ${LDSHARED='ld -G'}
@@ -1517,7 +1517,7 @@ if test "$enable_shared" = 'yes'; then
 	else	# a.out platforms
 	   LIBRUBY_ALIASES=""
 	fi
- 	;;
+	;;
     openbsd*)
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
@@ -1530,7 +1530,7 @@ if test "$enable_shared" = 'yes'; then
 	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-Wl,-h,$(@F)'
 	fi
 	XLDFLAGS="$XLDFLAGS "'-R${libdir}'
- 	;;
+	;;
     hpux*)
 	XLDFLAGS="$XLDFLAGS "'-Wl,+s,+b,$(libdir)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
@@ -1582,7 +1582,7 @@ case "$target_os" in
     linux*)
 	;;
     netbsd*)
-    	CFLAGS="$CFLAGS -pipe"
+	CFLAGS="$CFLAGS -pipe"
 	;;
     nextstep*|openstep*)
 	# The -fno-common is needed if we wish to embed the Ruby interpreter
@@ -1592,18 +1592,18 @@ case "$target_os" in
 	# fails to consult /usr/local/include by default.  This causes
 	# mkmf.rb's have_header() to fail if the desired resource happens to be
 	# installed in the /usr/local tree.
-    	CFLAGS="$CFLAGS -pipe -fno-common"
+	CFLAGS="$CFLAGS -pipe -fno-common"
 	CPPFLAGS="$CPPFLAGS -I/usr/local/include"
 	;;
     rhapsody*)
-    	CFLAGS="$CFLAGS -pipe -no-precomp -fno-common"
+	CFLAGS="$CFLAGS -pipe -no-precomp -fno-common"
 	;;
     darwin*)
-    	CFLAGS="$CFLAGS -pipe -fno-common"
+	CFLAGS="$CFLAGS -pipe -fno-common"
 	MINIOBJS=dmydln.o
 	;;
     os2-emx)
-    	CFLAGS="$CFLAGS -DOS2 -Zmts"
+	CFLAGS="$CFLAGS -DOS2 -Zmts"
 	LIBRUBY_A=`echo $LIBRUBY_A | sed 's/^lib//'`
 	LIBRUBY_SO=`echo $LIBRUBY_SO | sed 's/^lib//'`
 	LIBRUBY_ALIASES=`for i in $LIBRUBY_ALIASES; do echo "$i"; done | sed 's/^lib//'`

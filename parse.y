@@ -6282,15 +6282,15 @@ symbols_i(key, value, ary)
 /*
  *  call-seq:
  *     Symbol.all_symbols    => array
- *  
+ *
  *  Returns an array of all the symbols currently in Ruby's symbol
  *  table.
- *     
+ *
  *     Symbol.all_symbols.size    #=> 903
  *     Symbol.all_symbols[1,20]   #=> [:floor, :ARGV, :Binding, :symlink,
- *                                     :chown, :EOFError, :$;, :String, 
- *                                     :LOCK_SH, :"setuid?", :$<, 
- *                                     :default_proc, :compact, :extend, 
+ *                                     :chown, :EOFError, :$;, :String,
+ *                                     :LOCK_SH, :"setuid?", :$<,
+ *                                     :default_proc, :compact, :extend,
  *                                     :Tms, :getwd, :$=, :ThreadGroup,
  *                                     :wait2, :$>]
  */
