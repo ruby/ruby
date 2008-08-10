@@ -88,6 +88,7 @@ AS            = @AS@
 ASFLAGS       = @ASFLAGS@
 SET_LC_MESSAGES = env LC_MESSAGES=C
 
+MAKEDIRS      = @MAKEDIRS@
 OBJEXT        = @OBJEXT@
 MANTYPE	      = @MANTYPE@
 

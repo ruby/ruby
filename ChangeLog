@@ -1,3 +1,7 @@
+Sun Aug 10 11:02:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (extconf): use MAKEDIRS.
+
 Sun Aug 10 08:56:14 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (STACK_LEVEL_MAX, ruby_stack_length): returns size_t.
