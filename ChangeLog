@@ -1,3 +1,7 @@
+Sun Aug 10 11:02:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (extconf): use MAKEDIRS.
+
 Sun Aug 10 09:35:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb.rb (IRB::Irb#inspect): instance_variables returns symbols
