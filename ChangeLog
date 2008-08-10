@@ -1,3 +1,17 @@
+Sun Aug 10 11:15:55 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): add feedlen field.
+
+	* transcode.c (transcode_restartable0): renamed from
+	  transcode_restartable.
+	  save input buffer into feed buffer if next character is started the
+	  point before input buffer.  for example, "\x00\xd8\x01" then "\x02"
+	  in UTF-16LE.  \x02 causes invalid and next character is started from
+	  \x01.
+	  (transcode_restartable): new function to call
+	  transcode_restartable0.   if feed buffer is not empty, convert it at
+	  first.
+
 Sun Aug 10 11:02:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (extconf): use MAKEDIRS.

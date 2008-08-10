@@ -65,11 +65,12 @@ typedef struct rb_transcoding {
     const BYTE_LOOKUP *next_table;
     VALUE next_info;
     unsigned char next_byte;
-    int readlen;
+    int readlen; /* already interpreted */
+    int feedlen; /* not yet interpreted */
     union {
         unsigned char ary[8]; /* max_input <= sizeof(ary) */
         unsigned char *ptr; /* length is max_input */
-    } readbuf;
+    } readbuf; /* readlen + feedlen used */
 
     unsigned char stateful[256]; /* opaque data for stateful encoding */
 } rb_transcoding;
