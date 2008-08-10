@@ -228,6 +228,33 @@ cleanup:
     return found;
 }
 
+static const rb_transcoder *
+load_transcoder(transcoder_entry_t *entry)
+{
+    if (entry->transcoder)
+        return entry->transcoder;
+
+    if (entry->lib) {
+        const char *lib = entry->lib;
+        int len = strlen(lib);
+        char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
+
+        entry->lib = NULL;
+
+        if (len > MAX_TRANSCODER_LIBNAME_LEN)
+            return NULL;
+        memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
+        memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len + 1);
+        if (!rb_require(path))
+            return NULL;
+    }
+
+    if (entry->transcoder)
+        return entry->transcoder;
+
+    return NULL;
+}
+
 static void
 transcode_dispatch_cb(const char *from, const char *to, int depth, void *arg)
 {
@@ -243,16 +270,7 @@ transcode_dispatch_cb(const char *from, const char *to, int depth, void *arg)
         goto failed;
 
     if (!entry->transcoder && entry->lib) {
-        const char *lib = entry->lib;
-        int len = strlen(lib);
-        char path[sizeof(transcoder_lib_prefix) + MAX_TRANSCODER_LIBNAME_LEN];
-
-        entry->lib = NULL;
-
-        if (len > MAX_TRANSCODER_LIBNAME_LEN) goto failed;
-        memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
-        memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len + 1);
-        if (!rb_require(path)) goto failed;
+        load_transcoder(entry);
     }
     if (!entry->transcoder)
         goto failed;
@@ -352,9 +370,9 @@ typedef enum {
     transcode_obuf_full,
     transcode_ibuf_empty,
     transcode_finished,
-} transcode_result_t;
+} rb_transcoding_result_t;
 
-static transcode_result_t
+static rb_transcoding_result_t
 transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                       const unsigned char *in_stop, unsigned char *out_stop,
                       rb_transcoding *tc,
@@ -575,7 +593,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 #undef SUSPEND
 }
 
-static transcode_result_t
+static rb_transcoding_result_t
 transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
                       const unsigned char *in_stop, unsigned char *out_stop,
                       rb_transcoding *tc,
@@ -585,7 +603,7 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
         unsigned char *feed_buf = ALLOCA_N(unsigned char, tc->feedlen);
         const unsigned char *feed_pos = feed_buf;
         const unsigned char *feed_stop = feed_buf + tc->feedlen;
-        transcode_result_t res;
+        rb_transcoding_result_t res;
 
         MEMCPY(feed_buf, TRANSCODING_READBUF(tc) + tc->readlen,
                unsigned char, tc->feedlen);
@@ -599,6 +617,65 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
         }
     }
     return transcode_restartable0(in_pos, out_pos, in_stop, out_stop, tc, opt);
+}
+
+static rb_transcoding *
+rb_transcoding_open(const char *from, const char *to, int flags)
+{
+    rb_transcoding *tc;
+    const rb_transcoder *tr;
+
+    st_data_t val;
+    st_table *table2;
+    transcoder_entry_t *entry;
+
+    /* xxx: support multistep conversion */
+
+    if (!st_lookup(transcoder_table, (st_data_t)from, &val)) {
+        return NULL;
+    }
+    table2 = (st_table *)val;
+
+    if (!st_lookup(table2, (st_data_t)to, &val)) {
+        return NULL;
+    }
+    entry = (transcoder_entry_t *)val;
+    tr = load_transcoder(entry);
+    if (!tr)
+        return NULL;
+
+    tc = ALLOC(rb_transcoding);
+    tc->transcoder = tr;
+    tc->flags = flags;
+    memset(tc->stateful, 0, sizeof(tc->stateful));
+    tc->resume_position = 0;
+    tc->readlen = 0;
+    tc->feedlen = 0;
+    if (sizeof(tc->readbuf.ary) < tr->max_input) {
+        tc->readbuf.ptr = xmalloc(tr->max_input);
+    }
+    return tc;
+}
+
+static rb_transcoding_result_t
+rb_transcoding_convert(rb_transcoding *tc,
+  const unsigned char **input_ptr, const unsigned char *input_stop,
+  unsigned char **output_ptr, unsigned char *output_stop,
+  int flags)
+{
+    return transcode_restartable(
+                input_ptr, output_ptr,
+                input_stop, output_stop,
+                tc, flags);
+}
+
+static void
+rb_transcoding_close(rb_transcoding *tc)
+{
+    const rb_transcoder *tr = tc->transcoder;
+    if (sizeof(tc->readbuf.ary) < tr->max_input)
+        xfree(tc->readbuf.ptr);
+    xfree(tc);
 }
 
 static void
@@ -623,28 +700,17 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
                unsigned char *(*resize_destination)(VALUE, int, int),
-	       rb_transcoding *tc,
+               const rb_transcoder *tr,
 	       const int opt)
 {
-    const rb_transcoder *tr = tc->transcoder;
-    transcode_result_t ret;
+    rb_transcoding *tc;
+    rb_transcoding_result_t ret;
     unsigned char *out_start = *out_pos;
 
-    tc->resume_position = 0;
-    tc->readlen = 0;
-    tc->feedlen = 0;
-
-    if (sizeof(tc->readbuf.ary) < tr->max_input) {
-        tc->readbuf.ptr = xmalloc(tr->max_input);
-    }
-#define CLEANUP \
-    do { \
-        if (sizeof(tc->readbuf.ary) < tr->max_input) \
-            xfree(tc->readbuf.ptr); \
-    } while(0)
+    tc = rb_transcoding_open(tr->from_encoding, tr->to_encoding, 0);
 
 resume:
-    ret = transcode_restartable(in_pos, out_pos, in_stop, out_stop, tc, opt);
+    ret = rb_transcoding_convert(tc, in_pos, in_stop, out_pos, out_stop, opt);
     if (ret == transcode_invalid_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
@@ -657,7 +723,7 @@ resume:
 	    output_replacement_character(out_pos, rb_enc_find(tr->to_encoding));
             goto resume;
 	}
-        CLEANUP;
+        rb_transcoding_close(tc);
 	rb_raise(TRANSCODE_ERROR, "invalid byte sequence");
     }
     if (ret == transcode_undefined_conversion) {
@@ -673,7 +739,7 @@ resume:
 	    output_replacement_character(out_pos, rb_enc_find(tr->to_encoding));
 	    goto resume;
 	}
-        CLEANUP;
+        rb_transcoding_close(tc);
         rb_raise(TRANSCODE_ERROR, "conversion undefined for byte sequence (maybe invalid byte sequence)");
     }
     if (ret == transcode_obuf_full) {
@@ -681,9 +747,8 @@ resume:
         goto resume;
     }
 
-    CLEANUP;
+    rb_transcoding_close(tc);
     return;
-#undef CLEANUP
 }
 #else
 /* sample transcode_loop implementation in byte-by-byte stream style */
@@ -692,26 +757,15 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
                unsigned char *(*resize_destination)(VALUE, int, int),
-	       rb_transcoding *tc,
+               const rb_transcoder *tr,
 	       const int opt)
 {
-    const rb_transcoder *tr = tc->transcoder;
-    transcode_result_t ret;
+    rb_transcoding *tc;
+    rb_transcoding_result_t ret;
     unsigned char *out_start = *out_pos;
     const unsigned char *ptr;
 
-    tc->resume_position = 0;
-    tc->readlen = 0;
-    tc->feedlen = 0;
-
-    if (sizeof(tc->readbuf.ary) < tr->max_input) {
-        tc->readbuf.ptr = xmalloc(tr->max_input);
-    }
-#define CLEANUP \
-    do { \
-        if (sizeof(tc->readbuf.ary) < tr->max_input) \
-            xfree(tc->readbuf.ptr); \
-    } while(0)
+    tc = rb_transcoding_open(tr->from_encoding, tr->to_encoding, 0);
 
     ret = transcode_ibuf_empty;
     ptr = *in_pos;
@@ -722,14 +776,14 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (ret == transcode_ibuf_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
-                ret = transcode_restartable(&p, out_pos, p+1, out_stop, tc, opt|PARTIAL_INPUT);
+                ret = rb_transcoding_convert(tc, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
             }
             else {
-                ret = transcode_restartable(NULL, out_pos, NULL, out_stop, tc, opt);
+                ret = rb_transcoding_convert(tc, NULL, NULL, out_pos, out_stop, 0);
             }
         }
         else {
-            ret = transcode_restartable(NULL, out_pos, NULL, out_stop, tc, opt|PARTIAL_INPUT);
+            ret = rb_transcoding_convert(tc, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
         }
         if (&input_byte != p)
             ptr += p - &input_byte;
@@ -746,7 +800,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 output_replacement_character(out_pos, rb_enc_find(tr->to_encoding));
                 break;
             }
-            CLEANUP;
+            rb_transcoding_close(tc);
             rb_raise(TRANSCODE_ERROR, "invalid byte sequence");
             break;
 
@@ -763,7 +817,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 output_replacement_character(out_pos, rb_enc_find(tr->to_encoding));
                 break;
             }
-            CLEANUP;
+            rb_transcoding_close(tc);
             rb_raise(TRANSCODE_ERROR, "conversion undefined for byte sequence (maybe invalid byte sequence)");
             break;
 
@@ -778,10 +832,9 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             break;
         }
     }
-    CLEANUP;
+    rb_transcoding_close(tc);
     *in_pos = in_stop;
     return;
-#undef CLEANUP
 }
 #endif
 
@@ -810,7 +863,6 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     int from_encidx, to_encidx;
     VALUE from_encval, to_encval;
     const rb_transcoder *tr;
-    rb_transcoding tc;
     int final_encoding = 0;
     VALUE opt;
     int options = 0;
@@ -890,16 +942,13 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_e, to_e);
 	}
 
-	tc.transcoder = tr;
-        memset(tc.stateful, 0, sizeof(tc.stateful));
-
 	fromp = sp = (unsigned char *)RSTRING_PTR(str);
 	slen = RSTRING_LEN(str);
 	blen = slen + 30; /* len + margin */
 	dest = rb_str_tmp_new(blen);
 	bp = (unsigned char *)RSTRING_PTR(dest);
 
-	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, &tc, options);
+	transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, tr, options);
 	if (fromp != sp+slen) {
 	    rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
 	}

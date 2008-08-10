@@ -1,3 +1,16 @@
+Sun Aug 10 20:59:54 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): new field: flags.
+
+	* transcode.c (load_transcoder): extracted from transcode_dispatch_cb.
+	  (rb_transcoding_result_t): renamed from transcode_result_t.
+	  (rb_transcoding_open): new function.
+	  (rb_transcoding_convert): ditto.
+	  (rb_transcoding_close): ditto.
+	  (transcode_loop): use rb_transcoding_open, rb_transcoding_convert
+	  and rb_transcoding_close.
+	  (str_transcode): don't need rb_transcoding.
+
 Sun Aug 10 18:09:16 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: record checksum of

@@ -61,6 +61,8 @@ typedef struct byte_lookup {
 typedef struct rb_transcoding {
     const struct rb_transcoder *transcoder;
 
+    int flags;
+
     int resume_position;
     const BYTE_LOOKUP *next_table;
     VALUE next_info;
