@@ -1,3 +1,8 @@
+Mon Aug 11 18:57:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_sample): rename #choice to #sample.  in
+	  addition, sample takes optional argument, a la #first.
+
 Mon Aug 11 18:28:02 2008  Narihiro Nakamura  <authorNari@gmail.com>
 
 	* gc.c: added GC::Profiler.

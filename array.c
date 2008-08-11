@@ -2998,21 +2998,48 @@ rb_ary_shuffle(VALUE ary)
 
 /*
  *  call-seq:
- *     array.choice        -> obj
+ *     array.sample        -> obj
+ *     array.sample(n)     -> an_array
  *  
- *  Choose a random element from an array.
+ *  Choose a random element, or the random +n+ elements, fron the array.
+ *  If the array is empty, the first form returns <code>nil</code>, and the
+ *  second form returns an empty array.
+ *  
  */
 
 
 static VALUE
-rb_ary_choice(VALUE ary)
+rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 {
-    long i, j;
+    VALUE nv, result;
+    int n, len, i, j;
 
-    i = RARRAY_LEN(ary);
-    if (i == 0) return Qnil;
-    j = rb_genrand_real()*i;
-    return RARRAY_PTR(ary)[j];
+    len = RARRAY_LEN(ary); 
+    if (argc == 0) {
+	if (len == 0) return Qnil;
+	i = rb_genrand_real()*len;
+	return RARRAY_PTR(ary)[i];
+    }
+    rb_scan_args(argc, argv, "1", &nv);
+    if (len == 0) return rb_ary_new2(0);
+    n = NUM2INT(nv);
+    result = rb_ary_new2(n);
+    for (i=0; i<n; i++) {
+      retry:
+	j = rb_genrand_real()*len;
+	nv = LONG2NUM(j);
+	for (j=0; j<i; j++) {
+	    if (RARRAY_PTR(result)[j] == nv)
+		goto retry;
+	}
+	RARRAY_PTR(result)[i] = nv;
+	ARY_SET_LEN(result, i+1);
+    }
+    for (i=0; i<n; i++) {
+	nv = RARRAY_PTR(result)[i];
+	RARRAY_PTR(result)[i] = RARRAY_PTR(ary)[NUM2LONG(nv)];
+    }
+    return result;
 }
 
 
@@ -3526,7 +3553,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "count", rb_ary_count, -1);
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
-    rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
+    rb_define_method(rb_cArray, "sample", rb_ary_sample, -1);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, -1);
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);
