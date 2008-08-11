@@ -1,3 +1,12 @@
+Mon Aug 11 14:39:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (clone_method): should copy cbase in cref as well.
+	  [ruby-dev:35116]
+
+	* node.h (NEW_CREF): new NEW_ macro.
+
+	* eval.c (PUSH_CREF): use NEW_CREF().
+
 Sun Aug 10 12:29:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* config.{guess,sub}: updated to automake-1.10.1.
