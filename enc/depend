@@ -7,8 +7,10 @@
 % atrans = []
 % trans = Dir.open($srcdir+"/trans") {|d|
 %   d.select {|e|
-%     if e.chomp!('.c')
-%       atrans << e if e.chomp!(".erb")
+%     if e.chomp!('.trans')
+%       atrans << e
+%       true
+%     elsif e.chomp!('.c')
 %       true
 %     end
 %   }
@@ -72,7 +74,7 @@ $(ENCOBJS): regenc.h oniguruma.h config.h defines.h
 $(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h
 %   end
 %   atrans.each do |e|
-%     src = "#{e}.erb.c"
+%     src = "#{e}.trans"
 %     src = [src, *IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
 
 <%=rule_subst % "enc/trans/#{e}.c"%>: <%= src.map {|e| rule_subst % "enc/trans/#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb

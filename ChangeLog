@@ -1,3 +1,19 @@
+Mon Aug 11 16:34:48 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/iso2022.trans: renamed from iso2022.erb.c.
+
+	* enc/trans/single_byte.trans: ditto.
+
+	* enc/trans/utf_16_32.trans: ditto.
+
+	* enc/trans/korean.trans: ditto.
+
+	* enc/trans/japanese.trans: ditto.
+
+	* enc/depend: follow the renaming.
+
+	* tool/build-transcode: ditto.
+
 Mon Aug 11 15:09:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (rb_cv_broken_glibc_ia64_erfc): renamed from
