@@ -252,6 +252,13 @@ class TestTranscode < Test::Unit::TestCase
       "\xF0\x80\x80\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
     assert_equal(''.force_encoding('UTF-16BE'),
       "\x82\xAB".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+
+    assert_equal("\e$B!!\e(B".force_encoding("ISO-2022-JP"),
+      "\xA1\xA1\xFF".encode("ISO-2022-JP", "EUC-JP", invalid: :ignore))
+    assert_equal("\e$B\x24\x22\x24\x24\e(B".force_encoding("ISO-2022-JP"),
+      "\xA4\xA2\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :ignore))
+    assert_equal("\e$B\x24\x22\x24\x24\e(B".force_encoding("ISO-2022-JP"),
+      "\xA4\xA2\xFF\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :ignore))
   end
 
   def test_invalid_replace
@@ -306,6 +313,10 @@ class TestTranscode < Test::Unit::TestCase
 
     assert_equal("\e$B!!\e(B?".force_encoding("ISO-2022-JP"),
       "\xA1\xA1\xFF".encode("ISO-2022-JP", "EUC-JP", invalid: :replace))
+    assert_equal("\e$B\x24\x22\e(B?\e$B\x24\x24\e(B".force_encoding("ISO-2022-JP"),
+      "\xA4\xA2\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :replace))
+    assert_equal("\e$B\x24\x22\e(B??\e$B\x24\x24\e(B".force_encoding("ISO-2022-JP"),
+      "\xA4\xA2\xFF\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :replace))
   end
 
   def test_undef_replace
