@@ -1246,6 +1246,9 @@ rb_iseq_clone(VALUE iseqval, VALUE newcbase)
     }
     if (newcbase) {
 	iseq1->cref_stack = NEW_BLOCK(newcbase);
+	if (iseq0->cref_stack->nd_next) {
+	    iseq1->cref_stack->nd_next = iseq0->cref_stack->nd_next;
+	}
     }
 
     return newiseq;

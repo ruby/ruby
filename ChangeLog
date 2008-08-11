@@ -1,3 +1,7 @@
+Mon Aug 11 20:37:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* iseq.c (rb_iseq_clone): should preserve cref_stack link.
+
 Mon Aug 11 20:27:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/cfunc.c (rb_dlcfunc_call): add taint check.
