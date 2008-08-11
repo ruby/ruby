@@ -1,3 +1,8 @@
+Tue Aug 12 07:19:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (get_replacement_character): extracted from
+	  output_replacement_character.
+
 Tue Aug 12 07:00:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder): typedef at first.

@@ -255,10 +255,9 @@ load_transcoder(transcoder_entry_t *entry)
     return NULL;
 }
 
-static void
-output_replacement_character(unsigned char **out_pp, rb_encoding *enc)
+static const char*
+get_replacement_character(rb_encoding *enc, int *len_ret)
 {
-    unsigned char *out_p = *out_pp;
     static rb_encoding *utf16be_encoding, *utf16le_encoding;
     static rb_encoding *utf32be_encoding, *utf32le_encoding;
     if (!utf16be_encoding) {
@@ -268,34 +267,41 @@ output_replacement_character(unsigned char **out_pp, rb_encoding *enc)
 	utf32le_encoding = rb_enc_find("UTF-32LE");
     }
     if (rb_utf8_encoding() == enc) {
-	*out_p++ = 0xEF;
-	*out_p++ = 0xBF;
-	*out_p++ = 0xBD;
+        *len_ret = 3;
+        return "\xEF\xBF\xBD";
     }
     else if (utf16be_encoding == enc) {
-	*out_p++ = 0xFF;
-	*out_p++ = 0xFD;
+        *len_ret = 2;
+        return "\xFF\xFD";
     }
     else if (utf16le_encoding == enc) {
-	*out_p++ = 0xFD;
-	*out_p++ = 0xFF;
+        *len_ret = 2;
+        return "\xFD\xFF";
     }
     else if (utf32be_encoding == enc) {
-	*out_p++ = 0x00;
-	*out_p++ = 0x00;
-	*out_p++ = 0xFF;
-	*out_p++ = 0xFD;
+        *len_ret = 4;
+        return "\x00\x00\xFF\xFD";
     }
     else if (utf32le_encoding == enc) {
-	*out_p++ = 0xFD;
-	*out_p++ = 0xFF;
-	*out_p++ = 0x00;
-	*out_p++ = 0x00;
+        *len_ret = 4;
+        return "\xFD\xFF\x00\x00";
     }
     else {
-	*out_p++ = '?';
+        *len_ret = 1;
+        return "?";
     }
-    *out_pp = out_p;
+}
+
+static void
+output_replacement_character(unsigned char **out_pp, rb_encoding *enc)
+{
+    const char *replacement;
+    int len;
+    replacement = get_replacement_character(enc, &len);
+
+    memcpy(*out_pp, replacement, len);
+
+    *out_pp += len;
     return;
 }
 
