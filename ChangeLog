@@ -1,3 +1,9 @@
+Mon Aug 11 15:09:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (rb_cv_broken_glibc_ia64_erfc): renamed from
+	  rb_broken_glibc_ia64_erfc.
+	  [ruby-core:18228]
+
 Mon Aug 11 10:04:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoding): rename fields.

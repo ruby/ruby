@@ -732,7 +732,7 @@ AC_FUNC_MEMCMP
 # http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
 # Debian GNU/Linux Etch's libc6.1 2.3.6.ds1-13etch5 has this problem.
 # Debian GNU/Linux Lenny's libc6.1 2.7-10 has no problem.
-AC_CACHE_CHECK(for broken erfc of glibc-2.3.6 on IA64, rb_broken_glibc_ia64_erfc,
+AC_CACHE_CHECK(for broken erfc of glibc-2.3.6 on IA64, rb_cv_broken_glibc_ia64_erfc,
   [AC_TRY_RUN([
 #include <math.h>
 int
@@ -742,10 +742,10 @@ main()
    return 0;
 }
 ],
-	rb_broken_glibc_ia64_erfc=no,
-	rb_broken_glibc_ia64_erfc=yes,
-	rb_broken_glibc_ia64_erfc=no)])
-case $rb_broken_glibc_ia64_erfc in
+	rb_cv_broken_glibc_ia64_erfc=no,
+	rb_cv_broken_glibc_ia64_erfc=yes,
+	rb_cv_broken_glibc_ia64_erfc=no)])
+case $rb_cv_broken_glibc_ia64_erfc in
   yes) ac_cv_func_erf=no;;
 esac
 
