@@ -1,7 +1,7 @@
 Mon Aug 11 17:26:16 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/README.ja: added API document for
-	Readline.vi_editing_mode? and Readline.emacs_editing_mode?.
+	  Readline.vi_editing_mode? and Readline.emacs_editing_mode?.
 
 	* ext/readline/extconf.rb: checked rl_editing_mode variable in
 	  Readline library.
