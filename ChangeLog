@@ -31,6 +31,15 @@ Mon Aug  4 13:39:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Aug  4 12:25:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (check_uint, rb_num2uint, rb_fix2uint): fixed wrong check
+Mon Aug 11 09:34:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dl/dl.c (rb_str_to_ptr): should propagate taint to dlptr.
+
+	* ext/dl/dl.c (rb_ary_to_ptr): ditto.
+
+	* ext/dl/sym.c (rb_dlsym_call): should check taint of DLPtrData as
+	  well.
+
 	  about 64bit positive value.
 Mon Aug  4 12:25:08 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 

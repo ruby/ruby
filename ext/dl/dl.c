@@ -522,12 +522,15 @@ rb_str_to_ptr(VALUE self)
 {
   char *ptr;
   int  len;
+  VALUE p;
 
   len = RSTRING(self)->len;
   ptr = (char*)dlmalloc(len + 1);
   memcpy(ptr, RSTRING(self)->ptr, len);
   ptr[len] = '\0';
-  return rb_dlptr_new((void*)ptr,len,dlfree);
+  p = rb_dlptr_new((void*)ptr,len,dlfree);
+  OBJ_INFECT(p, self);
+  return p;
 }
 
 VALUE
@@ -545,7 +548,12 @@ rb_ary_to_ptr(int argc, VALUE argv[], VALUE self)
     ptr = rb_ary2cary(0, self, &size);
     break;
   }
-  return ptr ? rb_dlptr_new(ptr, size, dlfree) : Qnil;
+  if (ptr) {
+      VALUE p = rb_dlptr_new(ptr, size, dlfree);
+      OBJ_INFECT(p, self);
+      return p;
+  }
+  return Qnil;
 }
 
 VALUE
@@ -563,7 +571,7 @@ rb_io_to_ptr(VALUE self)
 VALUE
 rb_dl_dlopen(int argc, VALUE argv[], VALUE self)
 {
-  rb_secure(4);
+  rb_secure(2);
   return rb_class_new_instance(argc, argv, rb_cDLHandle);
 }
 
