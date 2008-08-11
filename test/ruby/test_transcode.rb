@@ -298,6 +298,11 @@ class TestTranscode < Test::Unit::TestCase
       "\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
     assert_equal("\uFFFD!",
       "\x8f\xa1!".encode("utf-8", "euc-jp", :invalid=>:replace))
+
+    assert_equal("?",
+      "\xdc\x00".encode("EUC-JP", "UTF-16BE", :invalid=>:replace), "[ruby-dev:35776]")
+    assert_equal("ab?cd?ef",
+      "\0a\0b\xdc\x00\0c\0d\xdf\x00\0e\0f".encode("EUC-JP", "UTF-16BE", :invalid=>:replace))
   end
 
   def test_undef_replace

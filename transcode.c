@@ -736,7 +736,7 @@ rb_trans_conv(rb_trans_t *ts,
     int flags)
 {
     int i;
-    int start, err_index;
+    int start, err_index, no_error;
 
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
@@ -751,12 +751,20 @@ rb_trans_conv(rb_trans_t *ts,
         output_stop = empty_ptr;
     }
 
+    no_error = 1;
     err_index = -1;
-    for (i = ts->num_trans-2; 0 <= i; i--) {
+    for (i = ts->num_trans-1; 0 <= i; i--) {
         if (ts->elems[i].last_result == transcode_invalid_input ||
             ts->elems[i].last_result == transcode_undefined_conversion) {
-            err_index = i;
-            break;
+            if (no_error) {
+                /* last error */
+                no_error = 0;
+            }
+            else {
+                /* second last error */
+                err_index = i;
+                break;
+            }
         }
     }
 

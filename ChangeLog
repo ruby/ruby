@@ -1,3 +1,7 @@
+Tue Aug 12 06:48:35 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_trans_conv): find second last error.
+
 Tue Aug 12 00:43:44 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_trans_result_t): new type.
