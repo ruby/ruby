@@ -136,7 +136,8 @@ rb_EUC_JP_to_ISO_2022_JP = {
     1, /* input_unit_length */
     3, /* max_input */
     5, /* max_output */
-    NULL, NULL, NULL, fun_so_eucjp_to_iso2022jp, finish_eucjp_to_iso2022jp
+    NULL, NULL, NULL, fun_so_eucjp_to_iso2022jp,
+    finish_eucjp_to_iso2022jp, finish_eucjp_to_iso2022jp
 };
 
 void

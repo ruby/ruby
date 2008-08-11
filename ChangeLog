@@ -1,3 +1,16 @@
+Tue Aug 12 07:41:13 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoder): add resetstate_func field for
+	  resetting a state of stateful encoding.
+
+	* enc/trans/iso2022.trans (rb_EUC_JP_to_ISO_2022_JP): specify
+	  finish_eucjp_to_iso2022jp for resetstate_func.
+
+	* tool/transcode-tblgen.rb: specify NULL for resetstate_func.
+
+	* transcode.c (output_replacement_character): call resetstate_func
+	  before appending the replacement character.
+
 Tue Aug 12 07:19:24 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (get_replacement_character): extracted from

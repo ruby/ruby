@@ -292,19 +292,6 @@ get_replacement_character(rb_encoding *enc, int *len_ret)
     }
 }
 
-static void
-output_replacement_character(unsigned char **out_pp, rb_encoding *enc)
-{
-    const char *replacement;
-    int len;
-    replacement = get_replacement_character(enc, &len);
-
-    memcpy(*out_pp, replacement, len);
-
-    *out_pp += len;
-    return;
-}
-
 /*
  *  Transcoding engine logic
  */
@@ -818,6 +805,62 @@ more_output_buffer(
     *out_stop_ptr = *out_start_ptr + new_len;
 }
 
+static void
+output_replacement_character(
+        VALUE destination,
+        unsigned char *(*resize_destination)(VALUE, int, int),
+        rb_trans_t *ts,
+        unsigned char **out_start_ptr,
+        unsigned char **out_pos,
+        unsigned char **out_stop_ptr)
+
+{
+    rb_transcoding *tc;
+    const rb_transcoder *tr;
+    int max_output;
+    rb_encoding *enc;
+    const char *replacement;
+    int len;
+
+    tc = ts->elems[ts->num_trans-1].tc;
+    tr = tc->transcoder;
+    max_output = tr->max_output;
+    enc = rb_enc_find(tr->to_encoding);
+
+    /*
+     * Assumption for stateful encoding:
+     *
+     * - The replacement character can be output on resetted state and doesn't
+     *   change the state.
+     * - it is acceptable that extra state changing sequence if the replacement
+     *   character contains a state changing sequence.
+     *
+     * Currently the replacement character for stateful encoding such as
+     * ISO-2022-JP is "?" and it has no state changing sequence.
+     * So the extra state changing sequence don't occur.
+     *
+     * Thease assumption may be removed in future.
+     * It needs to scan the replacement character to check
+     * state changing sequences in the replacement character.
+     */
+
+    if (tr->resetstate_func) {
+        if (*out_stop_ptr - *out_pos < max_output)
+            more_output_buffer(destination, resize_destination, ts, out_start_ptr, out_pos, out_stop_ptr);
+        *out_pos += tr->resetstate_func(tc, *out_pos);
+    }
+
+    if (*out_stop_ptr - *out_pos < max_output)
+        more_output_buffer(destination, resize_destination, ts, out_start_ptr, out_pos, out_stop_ptr);
+
+    replacement = get_replacement_character(enc, &len);
+
+    memcpy(*out_pos, replacement, len);
+
+    *out_pos += len;
+    return;
+}
+
 #if 1
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
@@ -848,9 +891,7 @@ resume:
             goto resume;
 	}
 	else if (opt&INVALID_REPLACE) {
-            if (out_stop - *out_pos < max_output)
-                more_output_buffer(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
-	    output_replacement_character(out_pos, rb_enc_find(to_encoding));
+	    output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
             goto resume;
 	}
         rb_trans_close(ts);
@@ -864,9 +905,7 @@ resume:
 	    goto resume;
 	}
 	else if (opt&UNDEF_REPLACE) {
-            if (out_stop - *out_pos < max_output)
-                more_output_buffer(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
-	    output_replacement_character(out_pos, rb_enc_find(to_encoding));
+	    output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
 	    goto resume;
 	}
         rb_trans_close(ts);
@@ -931,9 +970,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             else if (opt&INVALID_REPLACE) {
-                if (out_stop - *out_pos < max_output)
-                    more_output_buffer(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
-                output_replacement_character(out_pos, rb_enc_find(to_encoding));
+                output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
                 break;
             }
             rb_trans_close(ts);
@@ -948,9 +985,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             else if (opt&UNDEF_REPLACE) {
-                if (out_stop - *out_pos < max_output)
-                    more_output_buffer(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
-                output_replacement_character(out_pos, rb_enc_find(to_encoding));
+                output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
                 break;
             }
             rb_trans_close(ts);

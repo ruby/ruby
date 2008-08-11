@@ -303,6 +303,9 @@ class TestTranscode < Test::Unit::TestCase
       "\xdc\x00".encode("EUC-JP", "UTF-16BE", :invalid=>:replace), "[ruby-dev:35776]")
     assert_equal("ab?cd?ef",
       "\0a\0b\xdc\x00\0c\0d\xdf\x00\0e\0f".encode("EUC-JP", "UTF-16BE", :invalid=>:replace))
+
+    assert_equal("\e$B!!\e(B?".force_encoding("ISO-2022-JP"),
+      "\xA1\xA1\xFF".encode("ISO-2022-JP", "EUC-JP", invalid: :replace))
   end
 
   def test_undef_replace
