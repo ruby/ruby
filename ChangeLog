@@ -1,3 +1,26 @@
+Tue Aug 12 00:43:44 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_trans_result_t): new type.
+	  (rb_trans_elem_t): new type.
+	  (rb_trans_t): new type.
+
+	* transcode.c (transcode_dispatch_cb): removed.
+	  (transcode_dispatch): removed.
+	  (rb_transcoding_result_t): moved to rb_trans_result_t in
+	  transcode_data.h.
+	  (transcode_restartable0): goto follow_info when FUNsi.
+	  (rb_transcoding_open): use get_transcoder_entry.
+	  (rb_trans_open): new function.
+	  (rb_trans_conv): ditto.
+	  (rb_trans_close): ditto.
+	  (trans_open_i): ditto.
+	  (trans_sweep): ditto.
+	  (more_output_buffer): take rb_trans_t instead of rb_transcoding as
+	  an argument.
+	  (transcode_loop): take from_encoding and to_encoding instead of tr
+	  as arguments.  use rb_trans_open/rb_trans_conv/rb_trans_close.
+	  (str_transcode): don't use transcode_dispatch.
+
 Mon Aug 11 20:37:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* iseq.c (rb_iseq_clone): should preserve cref_stack link.

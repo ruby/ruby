@@ -357,6 +357,10 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(RuntimeError) { "\u9299".encode("iso-2022-jp") }
     assert_raise(RuntimeError) { "\uff71\uff72\uff73\uff74\uff75".encode("iso-2022-jp") }
     assert_raise(RuntimeError) { "\x1b(I12345\x1b(B".encode("utf-8", "iso-2022-jp") }
+    assert_equal("\xA1\xA1".force_encoding("euc-jp"),
+                 "\e$B!!\e(B".encode("EUC-JP", "ISO-2022-JP"))
+    assert_equal("\e$B!!\e(B".force_encoding("ISO-2022-JP"),
+                 "\xA1\xA1".encode("ISO-2022-JP", "EUC-JP"))
   end
   
   def test_iso_2022_jp_1

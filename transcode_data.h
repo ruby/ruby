@@ -96,6 +96,29 @@ typedef struct rb_transcoder {
     int (*finish_func)(rb_transcoding*, unsigned char*); /* -> output */
 } rb_transcoder;
 
+typedef enum {
+    transcode_invalid_input,
+    transcode_undefined_conversion,
+    transcode_obuf_full,
+    transcode_ibuf_empty,
+    transcode_finished,
+} rb_trans_result_t;
+
+typedef struct {
+    rb_transcoding *tc;
+    unsigned char *out_buf_start;
+    unsigned char *out_data_start;
+    unsigned char *out_data_end;
+    unsigned char *out_buf_end;
+    rb_trans_result_t last_result;
+} rb_trans_elem_t;
+
+typedef struct {
+    rb_trans_elem_t *elems;
+    int num_trans;
+    int num_finished;
+} rb_trans_t;
+
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);
 void rb_register_transcoder(const rb_transcoder *);
 
