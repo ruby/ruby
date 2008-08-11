@@ -261,6 +261,7 @@ struct rb_iseq_struct {
     /****************/
 
     VALUE self;
+    VALUE orig;			/* non-NULL if its data have origin */
 
     /* block inlining */
     /* 

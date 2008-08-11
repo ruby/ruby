@@ -48,20 +48,22 @@ iseq_free(void *ptr)
 
     if (ptr) {
 	iseq = ptr;
-	/* It's possible that strings are freed
-         * GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name),
-         *                      RSTRING_PTR(iseq->filename));
-	 */
-	if (iseq->iseq != iseq->iseq_encoded) {
-	    RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
-	}
+	if (!iseq->orig) {
+	    /* It's possible that strings are freed
+	     * GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->name),
+	     *                      RSTRING_PTR(iseq->filename));
+	     */
+	    if (iseq->iseq != iseq->iseq_encoded) {
+		RUBY_FREE_UNLESS_NULL(iseq->iseq_encoded);
+	    }
 
-	RUBY_FREE_UNLESS_NULL(iseq->iseq);
-	RUBY_FREE_UNLESS_NULL(iseq->insn_info_table);
-	RUBY_FREE_UNLESS_NULL(iseq->local_table);
-	RUBY_FREE_UNLESS_NULL(iseq->catch_table);
-	RUBY_FREE_UNLESS_NULL(iseq->arg_opt_table);
-	compile_data_free(iseq->compile_data);
+	    RUBY_FREE_UNLESS_NULL(iseq->iseq);
+	    RUBY_FREE_UNLESS_NULL(iseq->insn_info_table);
+	    RUBY_FREE_UNLESS_NULL(iseq->local_table);
+	    RUBY_FREE_UNLESS_NULL(iseq->catch_table);
+	    RUBY_FREE_UNLESS_NULL(iseq->arg_opt_table);
+	    compile_data_free(iseq->compile_data);
+	}
 	ruby_xfree(ptr);
     }
     RUBY_FREE_LEAVE("iseq");
@@ -84,6 +86,7 @@ iseq_mark(void *ptr)
 	RUBY_MARK_UNLESS_NULL(iseq->coverage);
 /* 	RUBY_MARK_UNLESS_NULL((VALUE)iseq->node); */
 /*	RUBY_MARK_UNLESS_NULL(iseq->cached_special_block); */
+	RUBY_MARK_UNLESS_NULL(iseq->orig);
 
 	if (iseq->compile_data != 0) {
 	    RUBY_MARK_UNLESS_NULL(iseq->compile_data->mark_ary);
@@ -910,7 +913,7 @@ iseq_s_disasm(VALUE klass, VALUE body)
 
     if ((node = rb_method_body(body)) != 0) {
 	if (nd_type(node) == RUBY_VM_METHOD_NODE) {
-	    VALUE iseqval = (VALUE)node->nd_body;
+ 	    VALUE iseqval = (VALUE)node->nd_body;
 	    ret = ruby_iseq_disasm(iseqval);
 	}
     }
@@ -1225,6 +1228,27 @@ insn_make_insn_table(void)
     }
 
     return table;
+}
+
+VALUE
+rb_iseq_clone(VALUE iseqval, VALUE newcbase)
+{
+    VALUE newiseq = iseq_alloc(rb_cISeq);
+    rb_iseq_t *iseq0, *iseq1;
+
+    GetISeqPtr(iseqval, iseq0);
+    GetISeqPtr(newiseq, iseq1);
+
+    *iseq1 = *iseq0;
+    iseq1->self = newiseq;
+    if (!iseq1->orig) {
+	iseq1->orig = iseqval;
+    }
+    if (newcbase) {
+	iseq1->cref_stack = NEW_BLOCK(newcbase);
+    }
+
+    return newiseq;
 }
 
 /* ruby2cext */

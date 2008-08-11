@@ -3,6 +3,18 @@ Mon Aug 11 16:56:40 2008  TAKAO Kouji  <kouji@takao7.net>
 	* test/readline/test_readline.rb: added test for Readline's class
 	  methods.
 
+Mon Aug 11 16:39:23 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (clone_method): should copy cbase in cref as well.
+	  [ruby-dev:35116]
+
+	* iseq.c (iseq_mark): mark original iseq object.
+
+	* iseq.c (iseq_free): do not free internal data if they have
+	  original iseq to belong.
+
+	* iseq.c (rb_iseq_clone): a new function to clone iseq value.
+
 Mon Aug 11 16:34:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/iso2022.trans: renamed from iso2022.erb.c.

@@ -13,6 +13,7 @@
 #include "ruby/signal.h"
 #include "ruby/node.h"
 #include "ruby/st.h"
+#include "vm_core.h"
 #include <ctype.h>
 
 extern st_table *rb_class_tbl;
@@ -78,10 +79,17 @@ clone_method(ID mid, NODE *body, struct clone_method_data *data)
 	st_insert(data->tbl, mid, 0);
     }
     else {
+	NODE *fbody = body->nd_body->nd_body;
+
+	if (nd_type(fbody) == RUBY_VM_METHOD_NODE) {
+	    fbody = NEW_NODE(RUBY_VM_METHOD_NODE, 0, 
+			     rb_iseq_clone((VALUE)fbody->nd_body, data->klass),
+			     0);
+	}
 	st_insert(data->tbl, mid,
 		  (st_data_t)
 		  NEW_FBODY(
-		      NEW_METHOD(body->nd_body->nd_body,
+		      NEW_METHOD(fbody,
 				 data->klass, /* TODO */
 				 body->nd_body->nd_noex),
 		      0));
