@@ -1,3 +1,10 @@
+Mon Aug 11 20:11:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (getrusage_time): works only if RUSAGE_SELF is defined right
+	  now.
+
+	* gc.c (gc_profile_result): C99.
+
 Mon Aug 11 18:57:38 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_sample): rename #choice to #sample.  in
