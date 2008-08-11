@@ -1,3 +1,11 @@
+Mon Aug 11 10:04:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): rename fields.
+	  readlen -> recognized_len.
+	  feedlen -> readagain_len.
+
+	* transcode.c: follow the field renaming.
+
 Sun Aug 10 22:34:55 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (transcode_restartable0): invalid handling simplified.

@@ -352,15 +352,15 @@ transcode_char_start(rb_transcoding *tc,
                          size_t *char_len_ptr)
 {
     const unsigned char *ptr;
-    if (inchar_start - in_start < tc->readlen) {
-        MEMCPY(TRANSCODING_READBUF(tc) + tc->readlen,
+    if (inchar_start - in_start < tc->recognized_len) {
+        MEMCPY(TRANSCODING_READBUF(tc) + tc->recognized_len,
                inchar_start, unsigned char, in_p - inchar_start);
         ptr = TRANSCODING_READBUF(tc);
     }
     else {
-        ptr = inchar_start - tc->readlen;
+        ptr = inchar_start - tc->recognized_len;
     }
-    *char_len_ptr = tc->readlen + (in_p - inchar_start);
+    *char_len_ptr = tc->recognized_len + (in_p - inchar_start);
     return ptr;
 }
 
@@ -381,7 +381,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 {
     const rb_transcoder *tr = tc->transcoder;
     int unitlen = tr->input_unit_length;
-    int feedlen = 0;
+    int readagain_len = 0;
 
     const unsigned char *inchar_start;
     const unsigned char *in_p;
@@ -415,14 +415,14 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     do { \
         tc->resume_position = (num); \
         if (0 < in_p - inchar_start) \
-            MEMMOVE(TRANSCODING_READBUF(tc)+tc->readlen, \
+            MEMMOVE(TRANSCODING_READBUF(tc)+tc->recognized_len, \
                    inchar_start, unsigned char, in_p - inchar_start); \
         *in_pos = in_p; \
         *out_pos = out_p; \
-        tc->readlen += in_p - inchar_start; \
-        if (feedlen) { \
-            tc->readlen -= feedlen; \
-            tc->feedlen = feedlen; \
+        tc->recognized_len += in_p - inchar_start; \
+        if (readagain_len) { \
+            tc->recognized_len -= readagain_len; \
+            tc->readagain_len = readagain_len; \
         } \
         tc->next_table = next_table; \
         tc->next_info = next_info; \
@@ -457,7 +457,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             continue;
         }
 
-        tc->readlen = 0;
+        tc->recognized_len = 0;
         inchar_start = in_p;
 	next_table = tr->conv_tree_start;
 	next_byte = (unsigned char)*in_p++;
@@ -533,24 +533,24 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
 	  case INVALID:
-            if (tc->readlen + (in_p - inchar_start) <= unitlen) {
-                while ((opt & PARTIAL_INPUT) && tc->readlen + (in_stop - inchar_start) < unitlen) {
+            if (tc->recognized_len + (in_p - inchar_start) <= unitlen) {
+                while ((opt & PARTIAL_INPUT) && tc->recognized_len + (in_stop - inchar_start) < unitlen) {
                     in_p = in_stop;
                     SUSPEND(transcode_ibuf_empty, 8);
                 }
-                if (tc->readlen + (in_stop - inchar_start) <= unitlen) {
+                if (tc->recognized_len + (in_stop - inchar_start) <= unitlen) {
                     in_p = in_stop;
                 }
                 else {
-                    in_p = inchar_start + (unitlen - tc->readlen);
+                    in_p = inchar_start + (unitlen - tc->recognized_len);
                 }
             }
             else {
                 int invalid_len; /* including the last byte which causes invalid */
                 int discard_len;
-                invalid_len = tc->readlen + (in_p - inchar_start);
+                invalid_len = tc->recognized_len + (in_p - inchar_start);
                 discard_len = ((invalid_len - 1) / unitlen) * unitlen;
-                feedlen = invalid_len - discard_len;
+                readagain_len = invalid_len - discard_len;
             }
             goto invalid;
 	  case UNDEF:
@@ -585,20 +585,20 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
                       rb_transcoding *tc,
                       const int opt)
 {
-    if (tc->feedlen) {
-        unsigned char *feed_buf = ALLOCA_N(unsigned char, tc->feedlen);
-        const unsigned char *feed_pos = feed_buf;
-        const unsigned char *feed_stop = feed_buf + tc->feedlen;
+    if (tc->readagain_len) {
+        unsigned char *readagain_buf = ALLOCA_N(unsigned char, tc->readagain_len);
+        const unsigned char *readagain_pos = readagain_buf;
+        const unsigned char *readagain_stop = readagain_buf + tc->readagain_len;
         rb_transcoding_result_t res;
 
-        MEMCPY(feed_buf, TRANSCODING_READBUF(tc) + tc->readlen,
-               unsigned char, tc->feedlen);
-        tc->feedlen = 0;
-        res = transcode_restartable0(&feed_pos, out_pos, feed_stop, out_stop, tc, opt|PARTIAL_INPUT);
+        MEMCPY(readagain_buf, TRANSCODING_READBUF(tc) + tc->recognized_len,
+               unsigned char, tc->readagain_len);
+        tc->readagain_len = 0;
+        res = transcode_restartable0(&readagain_pos, out_pos, readagain_stop, out_stop, tc, opt|PARTIAL_INPUT);
         if (res != transcode_ibuf_empty) {
-            MEMCPY(TRANSCODING_READBUF(tc) + tc->readlen + tc->feedlen,
-                   feed_pos, unsigned char, feed_stop - feed_pos);
-            tc->feedlen += feed_stop - feed_pos;
+            MEMCPY(TRANSCODING_READBUF(tc) + tc->recognized_len + tc->readagain_len,
+                   readagain_pos, unsigned char, readagain_stop - readagain_pos);
+            tc->readagain_len += readagain_stop - readagain_pos;
             return res;
         }
     }
@@ -635,8 +635,8 @@ rb_transcoding_open(const char *from, const char *to, int flags)
     tc->flags = flags;
     memset(tc->stateful, 0, sizeof(tc->stateful));
     tc->resume_position = 0;
-    tc->readlen = 0;
-    tc->feedlen = 0;
+    tc->recognized_len = 0;
+    tc->readagain_len = 0;
     if (sizeof(tc->readbuf.ary) < tr->max_input) {
         tc->readbuf.ptr = xmalloc(tr->max_input);
     }
