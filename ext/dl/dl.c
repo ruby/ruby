@@ -22,6 +22,7 @@ rb_dl_malloc(VALUE self, VALUE size)
 {
     void *ptr;
 
+    rb_secure(4);
     ptr = (void*)ruby_xmalloc(NUM2INT(size));
     return PTR2NUM(ptr);
 }
@@ -31,6 +32,7 @@ rb_dl_realloc(VALUE self, VALUE addr, VALUE size)
 {
     void *ptr = NUM2PTR(addr);
 
+    rb_secure(4);
     ptr = (void*)ruby_xrealloc(ptr, NUM2INT(size));
     return PTR2NUM(ptr);
 }
@@ -39,6 +41,8 @@ VALUE
 rb_dl_free(VALUE self, VALUE addr)
 {
     void *ptr = NUM2PTR(addr);
+
+    rb_secure(4);
     ruby_xfree(ptr);
     return Qnil;
 }
@@ -46,6 +50,7 @@ rb_dl_free(VALUE self, VALUE addr)
 VALUE
 rb_dl_ptr2value(VALUE self, VALUE addr)
 {
+    rb_secure(4);
     return (VALUE)NUM2PTR(addr);
 }
 

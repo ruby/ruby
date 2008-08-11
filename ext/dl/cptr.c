@@ -416,29 +416,33 @@ rb_dlptr_size(int argc, VALUE argv[], VALUE self)
 VALUE
 rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 {
-    if( rb_obj_is_kind_of(val, rb_cIO) == Qtrue ){
+    VALUE ptr;
+
+    if (rb_obj_is_kind_of(val, rb_cIO) == Qtrue){
 	rb_io_t *fptr;
 	FILE *fp;
 	GetOpenFile(val, fptr);
 	fp = rb_io_stdio_file(fptr);
-	return rb_dlptr_new(fp, 0, NULL);
+	ptr = rb_dlptr_new(fp, 0, NULL);
     }
-    else if( rb_obj_is_kind_of(val, rb_cString) == Qtrue ){
+    else if (rb_obj_is_kind_of(val, rb_cString) == Qtrue){
         char *ptr = StringValuePtr(val);
-        return rb_dlptr_new(ptr, RSTRING_LEN(val), NULL); 
+        ptr = rb_dlptr_new(ptr, RSTRING_LEN(val), NULL); 
     }
-    else if( rb_respond_to(val, id_to_ptr) ){
+    else if (rb_respond_to(val, id_to_ptr)){
 	VALUE vptr = rb_funcall(val, id_to_ptr, 0);
-	if( rb_obj_is_kind_of(vptr, rb_cDLCPtr) ){
-	    return vptr;
+	if (rb_obj_is_kind_of(vptr, rb_cDLCPtr)){
+	    ptr = vptr;
 	}
 	else{
 	    rb_raise(rb_eDLError, "to_ptr should return a CPtr object");
 	}
     }
     else{
-	return rb_dlptr_new(NUM2PTR(rb_Integer(val)), 0, NULL);
+	ptr = rb_dlptr_new(NUM2PTR(rb_Integer(val)), 0, NULL);
     }
+    OBJ_INFECT(ptr, val);
+    return ptr;
 }
 
 void
