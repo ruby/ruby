@@ -1,3 +1,7 @@
+Mon Aug 11 18:28:02 2008  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c: added GC::Profiler.
+
 Mon Aug 11 17:26:16 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/README.ja: added API document for
