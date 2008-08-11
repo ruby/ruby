@@ -457,6 +457,28 @@ readline_s_vi_editing_mode(VALUE self)
 
 /*
  * call-seq:
+ *   Readline.vi_editing_mode? -> bool
+ *
+ * Returns true if vi mode is active. Returns false if not.
+ *
+ * Raises NotImplementedError if the using readline library does not support.
+ *
+ * Raises SecurityError exception if $SAFE is 4.
+ */
+static VALUE
+readline_s_vi_editing_mode_p(VALUE self)
+{
+#ifdef HAVE_RL_EDITING_MODE
+    rb_secure(4);
+    return rl_editing_mode == 0 ? Qtrue : Qfalse;
+#else
+    rb_notimplement();
+    return Qnil; /* not reached */
+#endif /* HAVE_RL_EDITING_MODE */
+}
+
+/*
+ * call-seq:
  *   Readline.emacs_editing_mode -> nil
  *
  * Specifies Emacs editing mode. The default is this mode. See the
@@ -477,6 +499,28 @@ readline_s_emacs_editing_mode(VALUE self)
     rb_notimplement();
     return Qnil; /* not reached */
 #endif /* HAVE_RL_EMACS_EDITING_MODE */
+}
+
+/*
+ * call-seq:
+ *   Readline.emacs_editing_mode? -> bool
+ *
+ * Returns true if emacs mode is active. Returns false if not.
+ *
+ * Raises NotImplementedError if the using readline library does not support.
+ *
+ * Raises SecurityError exception if $SAFE is 4.
+ */
+static VALUE
+readline_s_emacs_editing_mode_p(VALUE self)
+{
+#ifdef  HAVE_RL_EDITING_MODE
+    rb_secure(4);
+    return rl_editing_mode == 1 ? Qtrue : Qfalse;
+#else
+    rb_notimplement();
+    return Qnil; /* not reached */
+#endif /* HAVE_RL_EDITING_MODE */
 }
 
 /*
@@ -1154,8 +1198,12 @@ Init_readline()
 			       readline_s_get_completion_case_fold, 0);
     rb_define_singleton_method(mReadline, "vi_editing_mode",
 			       readline_s_vi_editing_mode, 0);
+    rb_define_singleton_method(mReadline, "vi_editing_mode?",
+			       readline_s_vi_editing_mode_p, 0);
     rb_define_singleton_method(mReadline, "emacs_editing_mode",
 			       readline_s_emacs_editing_mode, 0);
+    rb_define_singleton_method(mReadline, "emacs_editing_mode?",
+			       readline_s_emacs_editing_mode_p, 0);
     rb_define_singleton_method(mReadline, "completion_append_character=",
 			       readline_s_set_completion_append_character, 1);
     rb_define_singleton_method(mReadline, "completion_append_character",

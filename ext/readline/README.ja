@@ -186,11 +186,29 @@ Readline.vi_editing_mode -> nil
 
   $SAFE が 4 の場合、例外 SecurityError が発生します。
 
+Readline.vi_editing_mode? -> bool
+
+  編集モードが vi モードの場合、true を返します。そうでなければ false
+  を返します。
+
+  サポートしていない環境では、例外 NotImplementedError が発生します。
+
+  $SAFE が 4 の場合、例外 SecurityError が発生します。
+
 Readline.emacs_editing_mode -> nil
 
   編集モードを Emacs モードにします。
   デフォルトは Emacs モードです。
   Emacs モードの詳細は、GNU Readline のマニュアルを参照してください。
+
+  サポートしていない環境では、例外 NotImplementedError が発生します。
+
+  $SAFE が 4 の場合、例外 SecurityError が発生します。
+
+Readline.emacs_editing_mode? -> bool
+
+  編集モードが Emacs モードの場合、true を返します。そうでなければ false
+  を返します。
 
   サポートしていない環境では、例外 NotImplementedError が発生します。
 

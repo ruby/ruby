@@ -58,6 +58,7 @@ have_readline_var("rl_completer_quote_characters")
 have_readline_var("rl_filename_quote_characters")
 have_readline_var("rl_attempted_completion_over")
 have_readline_var("rl_library_version")
+have_readline_var("rl_editing_mode")
 # workaround for native windows.
 /mswin|bccwin|mingw/ !~ RUBY_PLATFORM && have_readline_var("rl_event_hook")
 have_readline_func("rl_cleanup_after_signal")

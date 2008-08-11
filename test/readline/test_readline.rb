@@ -138,6 +138,30 @@ class TestReadline < Test::Unit::TestCase
     end
   end
 
+  # vi_editing_mode
+  # emacs_editing_mode
+  def test_editing_mode
+    begin
+      assert_equal(false, Readline.vi_editing_mode?)
+      assert_equal(true, Readline.emacs_editing_mode?)
+
+      assert_equal(nil, Readline.vi_editing_mode)
+      assert_equal(true, Readline.vi_editing_mode?)
+      assert_equal(false, Readline.emacs_editing_mode?)
+      assert_equal(nil, Readline.vi_editing_mode)
+      assert_equal(true, Readline.vi_editing_mode?)
+      assert_equal(false, Readline.emacs_editing_mode?)
+
+      assert_equal(nil, Readline.emacs_editing_mode)
+      assert_equal(false, Readline.vi_editing_mode?)
+      assert_equal(true, Readline.emacs_editing_mode?)
+      assert_equal(nil, Readline.emacs_editing_mode)
+      assert_equal(false, Readline.vi_editing_mode?)
+      assert_equal(true, Readline.emacs_editing_mode?)
+    rescue NotImplementedError
+    end
+  end
+
   def test_completion_append_character
     begin
       Readline.completion_append_character = "x"

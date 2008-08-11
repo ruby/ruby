@@ -1,3 +1,17 @@
+Mon Aug 11 17:26:16 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* ext/readline/README.ja: added API document for
+	Readline.vi_editing_mode? and Readline.emacs_editing_mode?.
+
+	* ext/readline/extconf.rb: checked rl_editing_mode variable in
+	  Readline library.
+
+	* ext/readline/readline.c (readline_s_emacs_editing_mode_p): added
+	  Readline.emacs_editing_mode? method.
+	  (readline_s_vi_editing_mode_p): added Readline.vi_editing_mode?
+	  method.
+	  (Init_readline): ditto.
+
 Mon Aug 11 16:56:40 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* test/readline/test_readline.rb: added test for Readline's class
