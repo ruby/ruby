@@ -1,3 +1,7 @@
+Tue Aug 12 07:00:02 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoder): typedef at first.
+
 Tue Aug 12 06:48:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_trans_conv): find second last error.

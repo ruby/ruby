@@ -56,10 +56,12 @@ typedef struct byte_lookup {
 #define TWOTRAIL       /* legal but undefined if two more trailing UTF-8 */
 #define THREETRAIL     /* legal but undefined if three more trailing UTF-8 */
 
+typedef struct rb_transcoder rb_transcoder;
+
 /* dynamic structure, one per conversion (similar to iconv_t) */
 /* may carry conversion state (e.g. for iso-2022-jp) */
 typedef struct rb_transcoding {
-    const struct rb_transcoder *transcoder;
+    const rb_transcoder *transcoder;
 
     int flags;
 
@@ -82,7 +84,7 @@ typedef struct rb_transcoding {
      (tc)->readbuf.ptr)
 
 /* static structure, one per supported encoding pair */
-typedef struct rb_transcoder {
+struct rb_transcoder {
     const char *from_encoding;
     const char *to_encoding;
     const BYTE_LOOKUP *conv_tree_start;
@@ -94,7 +96,7 @@ typedef struct rb_transcoder {
     int (*func_io)(rb_transcoding*, VALUE, const unsigned char*); /* info  -> output */
     int (*func_so)(rb_transcoding*, const unsigned char*, size_t, unsigned char*); /* start -> output */
     int (*finish_func)(rb_transcoding*, unsigned char*); /* -> output */
-} rb_transcoder;
+};
 
 typedef enum {
     transcode_invalid_input,
