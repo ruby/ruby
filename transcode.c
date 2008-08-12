@@ -608,7 +608,6 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
     rb_trans_t **tsp = (rb_trans_t **)arg;
     rb_trans_t *ts;
     int i;
-    rb_transcoding *tc;
 
     if (!*tsp) {
         ts = *tsp = ALLOC(rb_trans_t);
@@ -616,6 +615,8 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
         ts->elems = ALLOC_N(rb_trans_elem_t, ts->num_trans);
         ts->num_finished = 0;
         for (i = 0; i < ts->num_trans; i++) {
+            ts->elems[i].from = NULL;
+            ts->elems[i].to = NULL;
             ts->elems[i].tc = NULL;
             ts->elems[i].out_buf_start = NULL;
             ts->elems[i].out_data_start = NULL;
@@ -627,31 +628,40 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
     else {
         ts = *tsp;
     }
+    ts->elems[depth].from = from;
+    ts->elems[depth].to = to;
 
-    ts->elems[depth].tc = tc = rb_transcoding_open(from, to, 0);
-    if (!tc) {
-        rb_raise(rb_eArgError, "transcoding open failed (from %s to %s)", from, to);
-    }
-    if (depth < ts->num_trans-1) {
-        int bufsize = 4096;
-        unsigned char *p;
-        p = xmalloc(bufsize);
-        ts->elems[depth].out_buf_start = p;
-        ts->elems[depth].out_buf_end = p + bufsize;
-        ts->elems[depth].out_data_start = p;
-        ts->elems[depth].out_data_end = p;
-    }
 }
 
 static rb_trans_t *
 rb_trans_open(const char *from, const char *to, int flags)
 {
     rb_trans_t *ts = NULL;
+    int i;
+    rb_transcoding *tc;
 
     transcode_search_path(from, to, trans_open_i, (void *)&ts);
 
     if (!ts)
         return NULL;
+
+    for (i = 0; i < ts->num_trans; i++) {
+        tc = rb_transcoding_open(ts->elems[i].from, ts->elems[i].to, 0);
+        if (!tc) {
+            rb_raise(rb_eArgError, "converter open failed (from %s to %s)", from, to);
+        }
+        ts->elems[i].tc = tc;
+    }
+
+    for (i = 0; i < ts->num_trans-1; i++) {
+        int bufsize = 4096;
+        unsigned char *p;
+        p = xmalloc(bufsize);
+        ts->elems[i].out_buf_start = p;
+        ts->elems[i].out_buf_end = p + bufsize;
+        ts->elems[i].out_data_start = p;
+        ts->elems[i].out_data_end = p;
+    }
 
     return ts;
 }

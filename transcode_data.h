@@ -108,6 +108,8 @@ typedef enum {
 } rb_trans_result_t;
 
 typedef struct {
+    const char *from;
+    const char *to;
     rb_transcoding *tc;
     unsigned char *out_buf_start;
     unsigned char *out_data_start;
