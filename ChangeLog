@@ -1,3 +1,11 @@
+Tue Aug 12 14:25:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/Makefile.in (.SUFFIXES): renamed to .trans.
+
+	* enc/make_encmake.rb: added --encs and --no-encs options.
+
+	* enc/depend (TRANSVPATH): fix for nmake.
+
 Tue Aug 12 14:19:53 2008  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/https.rb: supress syntax warning.

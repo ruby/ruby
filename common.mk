@@ -381,7 +381,7 @@ encs: enc.mk $(LIBRUBY) $(PREP) transdb.h
 
 enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/depend \
 	$(srcdir)/lib/mkmf.rb $(RBCONFIG)
-	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" $@
+	$(MINIRUBY) $(srcdir)/enc/make_encmake.rb --builtin-encs="$(BUILTIN_ENCOBJS)" $@ $(ENCS)
 
 .PRECIOUS: $(MKFILES)
 

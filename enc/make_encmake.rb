@@ -3,15 +3,32 @@
 dir = File.expand_path("../..", __FILE__)
 $:.unshift(dir)
 $:.unshift(".")
-$" << "mkmf.rb"
-load File.expand_path("lib/mkmf.rb", dir)
+if $".grep(/mkmf/).empty?
+  $" << "mkmf.rb"
+  load File.expand_path("lib/mkmf.rb", dir)
+end
 require 'erb'
 
-if /--builtin-encs=/ =~ ARGV[0]
-  BUILTIN_ENCS = $'.split.map {|e| File.basename(e, '.*') << '.c'}
-  ARGV.shift
-else
-  BUILTIN_ENCS = []
+CONFIG["MAKEDIRS"] ||= '@$(MINIRUBY) -run -e mkdir -- -p'
+
+BUILTIN_ENCS = []
+ENC_PATTERNS = []
+NOENC_PATTERNS = []
+
+until ARGV.empty?
+  case ARGV[0]
+  when /\A--builtin-encs=/
+    BUILTIN_ENCS.concat $'.split.map {|e| File.basename(e, '.*') << '.c'}
+    ARGV.shift
+  when /\A--encs=/
+    ENC_PATTERNS.concat $'.split
+    ARGV.shift
+  when /\A--no-encs=/
+    NOENC_PATTERNS.concat $'.split
+    ARGV.shift
+  else
+    break
+  end
 end
 
 if File.exist?(depend = File.join($srcdir, "depend"))
