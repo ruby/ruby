@@ -3351,6 +3351,27 @@ rb_ary_sample(argc, argv, ary)
 
 /*
  *  call-seq:
+ *     array.choice        -> obj
+ *  
+ *  Choose a random element from an array.  NOTE: This method will be
+ *  deprecated in future.  Use #sample instead.
+ */
+ 
+static VALUE
+rb_ary_choice(ary)
+    VALUE ary;
+{
+    long i, j;
+
+    i = RARRAY(ary)->len;
+    if (i == 0) return Qnil;
+    j = rb_genrand_real()*i;
+    return RARRAY(ary)->ptr[j];
+}
+
+
+/*
+ *  call-seq:
  *     ary.cycle {|obj| block }
  *     ary.cycle(n) {|obj| block }
  *  
@@ -3882,6 +3903,7 @@ Init_Array()
     rb_define_method(rb_cArray, "shuffle!", rb_ary_shuffle_bang, 0);
     rb_define_method(rb_cArray, "shuffle", rb_ary_shuffle, 0);
     rb_define_method(rb_cArray, "sample", rb_ary_sample, -1);
+    rb_define_method(rb_cArray, "choice", rb_ary_choice, 0);
     rb_define_method(rb_cArray, "cycle", rb_ary_cycle, -1);
     rb_define_method(rb_cArray, "permutation", rb_ary_permutation, -1);
     rb_define_method(rb_cArray, "combination", rb_ary_combination, 1);

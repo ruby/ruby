@@ -1,3 +1,8 @@
+Tue Aug 12 14:53:33 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_choice): Resurrect #choice.  Let me think about
+	  it for a while.
+
 Tue Aug 12 13:57:11 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-mode.el (ruby-imenu-create-index-in-block): Fix the
