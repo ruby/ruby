@@ -1747,12 +1747,16 @@ rb_ary_select(VALUE ary)
 VALUE
 rb_ary_delete(VALUE ary, VALUE item)
 {
+    VALUE v = item;
     long i1, i2;
 
     for (i1 = i2 = 0; i1 < RARRAY_LEN(ary); i1++) {
 	VALUE e = RARRAY_PTR(ary)[i1];
 
-	if (rb_equal(e, item)) continue;
+	if (rb_equal(e, item)) {
+	    v = e;
+	    continue;
+	}
 	if (i1 != i2) {
 	    rb_ary_store(ary, i2, e);
 	}
@@ -1774,7 +1778,7 @@ rb_ary_delete(VALUE ary, VALUE item)
 	}
     }
 
-    return item;
+    return v;
 }
 
 VALUE

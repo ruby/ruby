@@ -70,6 +70,10 @@ Tue Aug 12 14:15:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): fixed shadowing variable.
 
+Tue Aug 12 10:25:14 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_delete): Array#delete to return deleted element.
+
 Tue Aug 12 10:18:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/win32ole/test_err_in_callback.rb: do not require 'mkmf'
