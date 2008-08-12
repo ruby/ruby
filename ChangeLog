@@ -4,6 +4,13 @@ Tue Aug 12 13:57:11 2008  Akinori MUSHA  <knu@iDaemons.org>
 	  regexp to only pick definition lines properly.  `module_funtion'
 	  is not a definition of a module named `_function'.
 
+Tue Aug 12 11:19:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_sample): rename #choice to #sample.  in
+	  addition, sample takes optional argument, a la #first.
+
+	* random.c (Init_Random): always initialize seed.
+
 Mon Aug 11 14:39:46 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (clone_method): should copy cbase in cref as well.
