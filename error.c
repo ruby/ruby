@@ -328,6 +328,7 @@ VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
 VALUE rb_cNameErrorMesg;
+VALUE rb_eEncCompatError;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
@@ -1032,6 +1033,7 @@ Init_Exception(void)
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
+    rb_eEncCompatError = rb_define_class("EncodingCompatibilityError", rb_eStandardError);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);

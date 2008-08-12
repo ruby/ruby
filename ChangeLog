@@ -1,3 +1,19 @@
+Wed Aug 13 02:46:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* error.c (rb_eEncCompatError): add Exception.
+
+	* include/ruby/ruby.h: ditto.
+	
+	* encoding.c (rb_enc_check): use rb_eEncCompatError.
+
+	* string.c (rb_enc_cr_str_buf_cat): ditto.
+
+	* string.c (rb_str_sub_bang): ditto.
+
+	* string.c (rb_str_hex): ditto.
+
+	* string.c (rb_str_oct): ditto.
+
 Wed Aug 13 02:36:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (str_transcode): fix error message.

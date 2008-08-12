@@ -1575,7 +1575,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
         str_cr != ENC_CODERANGE_7BIT &&
         ptr_cr != ENC_CODERANGE_7BIT) {
       incompatible:
-        rb_raise(rb_eArgError, "append incompatible encoding strings: %s and %s",
+        rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
             rb_enc_name(rb_enc_from_index(str_encindex)),
             rb_enc_name(rb_enc_from_index(ptr_encindex)));
     }
@@ -3218,7 +3218,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
             if (coderange_scan(RSTRING_PTR(str), beg0, str_enc) != ENC_CODERANGE_7BIT ||
                 coderange_scan(RSTRING_PTR(str)+end0,
 			       RSTRING_LEN(str)-end0, str_enc) != ENC_CODERANGE_7BIT) {
-                rb_raise(rb_eArgError, "character encodings differ: %s and %s",
+                rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
 			 rb_enc_name(str_enc),
 			 rb_enc_name(STR_ENC_GET(repl)));
             }
@@ -5813,7 +5813,7 @@ rb_str_hex(VALUE str)
     rb_encoding *enc = rb_enc_get(str);
 
     if (!rb_enc_asciicompat(enc)) {
-	rb_raise(rb_eArgError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
+	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
     return rb_str_to_inum(str, 16, Qfalse);
 }
@@ -5839,7 +5839,7 @@ rb_str_oct(VALUE str)
     rb_encoding *enc = rb_enc_get(str);
 
     if (!rb_enc_asciicompat(enc)) {
-	rb_raise(rb_eArgError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
+	rb_raise(rb_eEncCompatError, "ASCII incompatible encoding: %s", rb_enc_name(enc));
     }
     return rb_str_to_inum(str, -8, Qfalse);
 }

@@ -600,7 +600,7 @@ rb_enc_check(VALUE str1, VALUE str2)
 {
     rb_encoding *enc = rb_enc_compatible(str1, str2);
     if (!enc)
-	rb_raise(rb_eArgError, "character encodings differ: %s and %s",
+	rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
 		 rb_enc_name(rb_enc_get(str1)),
 		 rb_enc_name(rb_enc_get(str2)));
     return enc;
@@ -743,7 +743,7 @@ rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
     if (MBCLEN_CHARFOUND_P(r))
         return rb_enc_mbc_to_codepoint(p, e, enc);
     else
-	rb_raise(rb_eArgError, "invalid mbstring sequence");
+	rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
 }
 
 int
@@ -751,7 +751,7 @@ rb_enc_codelen(int c, rb_encoding *enc)
 {
     int n = ONIGENC_CODE_TO_MBCLEN(enc,c);
     if (n == 0) {
-	rb_raise(rb_eArgError, "invalid codepoint 0x%x", c);
+	rb_raise(rb_eArgError, "invalid codepoint 0x%x in %s", c, rb_enc_name(enc));
     }
     return n;
 }
