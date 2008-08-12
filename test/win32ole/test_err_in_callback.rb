@@ -8,9 +8,9 @@ begin
 rescue LoadError
 end
 require 'rbconfig'
-require 'mkmf'
-require 'test/unit'
 if defined?(WIN32OLE)
+  require 'mkmf'
+  require 'test/unit'
   class TestErrInCallBack < Test::Unit::TestCase
     def setup
       @ruby = nil

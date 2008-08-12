@@ -1,3 +1,8 @@
+Tue Aug 12 10:18:01 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/win32ole/test_err_in_callback.rb: do not require 'mkmf'
+	  unless WIN32OLE is defined.
+
 Tue Aug 12 07:41:13 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder): add resetstate_func field for
