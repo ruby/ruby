@@ -873,6 +873,8 @@ module Net
       @apop_stamp = res.slice(/<.+>/)
     end
 
+    attr_reader :socket
+
     def inspect
       "#<#{self.class} socket=#{@socket}>"
     end

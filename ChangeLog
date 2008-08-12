@@ -1,3 +1,8 @@
+Tue Aug 12 16:08:51 2008  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: POP3Command should export @socket since POP
+	  calls #socket.
+
 Tue Aug 12 16:06:28 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c, util.c (quorem, nrv_alloc, dtoa): enabled floating point
