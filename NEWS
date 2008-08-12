@@ -20,6 +20,12 @@ with all sufficient information, see the ChangeLog file.
 
 === Library updates (outstanding ones only)
 
+* builtin classes
+
+  * Array#sample
+
+    New method with which replaces #choice.
+
 * set
 
   Set#classify
