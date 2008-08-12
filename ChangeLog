@@ -1,3 +1,7 @@
+Tue Aug 12 16:23:32 2008  Narihiro Nakamura  <authorNari@gmail.com>
+
+	* gc.c (gc_profile_result): use rb_str_catf.
+
 Tue Aug 12 16:13:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (TRANSCODE_ERROR): removed.
