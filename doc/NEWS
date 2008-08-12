@@ -9,6 +9,7 @@ Incompatible (Severe)
           o Block local variables
     * Array
           o Array#nitems was removed (use count {|i| !i.nil?})
+          o Array#choice was removed (use sample)
     * String
           o No longer an Enumerable
           o ?c semantics
@@ -111,6 +112,8 @@ Compatible
           o Regexp#match, String#match
     * Fiber: coroutines/micro-threads
     * Array
+          o Array#delete returns a deleted element rather than a given
+            object
           o Array#to_s is equivalent to Array#inspect
           o Array.try_convert
     * Hash
