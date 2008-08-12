@@ -1,3 +1,8 @@
+Wed Aug 13 07:41:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_trans_conv): report last transcode_obuf_full.
+	  (econv_max_output): new method Encoding::Converter#max_output.
+
 Wed Aug 13 02:46:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* error.c (rb_eEncCompatError): add Exception.

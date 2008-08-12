@@ -749,7 +749,7 @@ rb_trans_conv(rb_trans_t *ts,
     int flags)
 {
     int i;
-    int start, err_index, no_error;
+    int start, err_index;
 
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
@@ -764,20 +764,11 @@ rb_trans_conv(rb_trans_t *ts,
         output_stop = empty_ptr;
     }
 
-    no_error = 1;
     err_index = -1;
     for (i = ts->num_trans-1; 0 <= i; i--) {
-        if (ts->elems[i].last_result == transcode_invalid_input ||
-            ts->elems[i].last_result == transcode_undefined_conversion) {
-            if (no_error) {
-                /* last error */
-                no_error = 0;
-            }
-            else {
-                /* second last error */
-                err_index = i;
-                break;
-            }
+        if (ts->elems[i].last_result != transcode_ibuf_empty) {
+            err_index = i;
+            break;
         }
     }
 
@@ -786,12 +777,14 @@ rb_trans_conv(rb_trans_t *ts,
         err_index = trans_sweep(ts, input_ptr, input_stop, output_ptr, output_stop, flags, start);
     } while (err_index != -1 && err_index != ts->num_trans-1);
 
-    if (err_index == ts->num_trans-1)
-        return ts->elems[ts->num_trans-1].last_result;
-    else if (start == 0)
-        return ts->elems[ts->num_trans-1].last_result;
-    else
-        return ts->elems[start-1].last_result;
+    for (i = ts->num_trans-1; 0 <= i; i--) {
+        if (ts->elems[i].last_result != transcode_ibuf_empty) {
+            rb_trans_result_t res = ts->elems[i].last_result;
+            ts->elems[i].last_result = transcode_ibuf_empty;
+            return res;
+        }
+    }
+    return transcode_ibuf_empty;
 }
 
 static void
@@ -1303,6 +1296,16 @@ econv_primitive_convert(VALUE self, VALUE input, VALUE output, VALUE flags_v)
     }
 }
 
+static VALUE
+econv_max_output(VALUE self)
+{
+    rb_trans_t *ts = check_econv(self);
+    int n;
+    n = ts->elems[ts->num_trans-1].tc->transcoder->max_output;
+
+    return INT2FIX(n);
+}
+
 void
 Init_transcode(void)
 {
@@ -1323,5 +1326,6 @@ Init_transcode(void)
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, 2);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, 3);
+    rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
 }
