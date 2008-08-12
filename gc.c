@@ -2709,39 +2709,42 @@ gc_profile_result(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE record = gc_profile_record_get();
-    VALUE result;
+    VALUE result = rb_str_new2("");
     int i;
+    char buf[1024];
     
-    if (objspace->profile.run && objspace->profile.count) {
-	result = rb_sprintf("GC %1$d invokes.\n", NUM2INT(gc_count(0)));
+    if(objspace->profile.run && objspace->profile.count) {
+	sprintf(buf, "GC %d invokes.\n", NUM2INT(gc_count(0)));
+	rb_str_cat2(result, buf);
 	rb_str_cat2(result, "Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n");
-	for (i = 0; i < (int)RARRAY_LEN(record); i++) {
+	for(i = 0; i < (int)RARRAY_LEN(record); i++) {
 	    VALUE r = RARRAY_PTR(record)[i];
-	    rb_str_catf(result, "%1$5d %2$19.3f %3$20d %4$20d %5$20d %6$30.20f\n",
-			i+1, NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_INVOKE_TIME")))),
-			NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_USE_SIZE")))),
-			NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")))),
-			NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")))),
-			NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_TIME"))))*100);
+	    memset(buf, 0, 1024);
+	    sprintf(buf, "%5d %19.3f %20d %20d %20d %30.20f\n",
+	    		i+1, NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_INVOKE_TIME")))),
+	    		NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_USE_SIZE")))),
+	    		NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")))),
+	    		NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")))),
+	    		NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_TIME"))))*100);
+	    rb_str_cat2(result, buf);
 	}
 #if GC_PROFILE_MORE_DETAIL
-	rb_str_concat(result, rb_str_new2("\n\n"));
-	rb_str_concat(result, rb_str_new2("More detail.\n"));
-	rb_str_concat(result, rb_str_new2("Index Allocate Increase    Allocate Limit  Use Slot  Have Finalize             Mark Time(ms)            Sweep Time(ms)\n"));
+	rb_str_cat2(result, "\n\n");
+	rb_str_cat2(result, "More detail.\n");
+	rb_str_cat2(result, "Index Allocate Increase    Allocate Limit  Use Slot  Have Finalize             Mark Time(ms)            Sweep Time(ms)\n");
 	for (i = 0; i < (int)RARRAY_LEN(record); i++) {
 	    VALUE r = RARRAY_PTR(record)[i];
-	    rb_str_catf(result, "%1$5d %2$17d %3$17d %4$9d %5$14s %6$25.20f %7$25.20f\n",
+	    memset(buf, 0, 1024);
+	    sprintf(buf, "%5d %17d %17d %9d %14s %25.20f %25.20f\n",
 			i+1, NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("ALLOCATE_INCREASE")))),
 			NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("ALLOCATE_LIMIT")))),
 			NUM2INT(rb_hash_aref(r, ID2SYM(rb_intern("HEAP_USE_SLOTS")))),
 			rb_hash_aref(r, ID2SYM(rb_intern("HAVE_FINALIZE")))? "true" : "false",
 			NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_MARK_TIME"))))*100,
 			NUM2DBL(rb_hash_aref(r, ID2SYM(rb_intern("GC_SWEEP_TIME"))))*100);
+	    rb_str_cat2(result, buf);
 	}
 #endif
-    }
-    else {
-	result = rb_str_new2("");
     }
     return result;
 }
