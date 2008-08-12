@@ -1,3 +1,7 @@
+Tue Aug 12 18:43:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/make_transdb.rb: *.erb.c is not used anymore.
+
 Tue Aug 12 18:32:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_trans_elem_t): new field: from and to.
