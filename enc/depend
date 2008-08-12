@@ -28,7 +28,7 @@
 % cleanobjs = Shellwords.shellwords(CONFIG["cleanobjs"] || "")
 % rule_subst = CONFIG["RULE_SUBST"] || "%s"
 % transvpath = rule_subst.dup.sub!(/\{[^{}]+\}/, '$(TRANSVPATH)/') || "enc/trans/%s"
-% transvpath_prefix = rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || ""
+% transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "") % ""
 % if File::ALT_SEPARATOR
 %   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
 % else
