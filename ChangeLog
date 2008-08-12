@@ -1,3 +1,13 @@
+Tue Aug 12 23:42:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_cEncodingConverter): new class Encoding::Converter.
+	  (econv_free): new function.
+	  (econv_s_allocate): ditto.
+	  (econv_init): ditto.
+	  (check_econv): ditto.
+	  (econv_primitive_convert): new method.
+	  (Init_transcode): define Encoding::Converter.
+
 Tue Aug 12 23:16:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_splice_0): call rb_str_drop_bytes, not rb_str_drop.

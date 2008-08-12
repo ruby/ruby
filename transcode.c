@@ -18,6 +18,8 @@
 VALUE rb_eConversionUndefined;
 VALUE rb_eInvalidByteSequence;
 
+VALUE rb_cEncodingConverter;
+
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 #define INVALID_IGNORE 0x1
 #define INVALID_REPLACE 0x2
@@ -1219,6 +1221,88 @@ rb_str_transcode(VALUE str, VALUE to)
     return str_encode(1, &to, str);
 }
 
+static void
+econv_free(rb_trans_t *ts)
+{
+    rb_trans_close(ts);
+}
+
+static VALUE
+econv_s_allocate(VALUE klass)
+{
+    return Data_Wrap_Struct(klass, NULL, econv_free, NULL);
+}
+
+static VALUE
+econv_init(VALUE self, VALUE from_encoding, VALUE to_encoding)
+{
+    const char *from_e, *to_e;
+    rb_trans_t *ts;
+
+    from_e = StringValueCStr(from_encoding);
+    to_e = StringValueCStr(to_encoding);
+
+    if (DATA_PTR(self)) {
+        rb_raise(rb_eTypeError, "already initialized");
+    }
+
+    ts = rb_trans_open(from_e, to_e, 0);
+    if (!ts) {
+        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", from_e, to_e);
+    }
+
+    DATA_PTR(self) = ts;
+
+    return self;
+}
+
+#define IS_ECONV(obj) (RDATA(obj)->dfree == (RUBY_DATA_FUNC)econv_free)
+
+static rb_trans_t *
+check_econv(VALUE self)
+{
+    Check_Type(self, T_DATA);
+    if (!IS_ECONV(self)) {
+        rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding::Converter)",
+                 rb_class2name(CLASS_OF(self)));
+    }
+    return DATA_PTR(self);
+}
+
+static VALUE
+econv_primitive_convert(VALUE self, VALUE input, VALUE output, VALUE flags_v)
+{
+    rb_trans_t *ts = check_econv(self);
+    rb_trans_result_t res;
+    const unsigned char *ip, *is;
+    unsigned char *op, *os;
+    int flags;
+
+    StringValue(input);
+    StringValue(output);
+    rb_str_modify(output);
+    flags = NUM2INT(flags_v);
+
+    ip = (const unsigned char *)RSTRING_PTR(input);
+    is = ip + RSTRING_LEN(input);
+
+    op = (unsigned char *)RSTRING_PTR(output);
+    os = op + RSTRING_LEN(output);
+
+    res = rb_trans_conv(ts, &ip, is, &op, os, flags);
+    rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
+    rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
+
+    switch (res) {
+      case transcode_invalid_input: return ID2SYM(rb_intern("invalid_input"));
+      case transcode_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));
+      case transcode_obuf_full: return ID2SYM(rb_intern("obuf_full"));
+      case transcode_ibuf_empty: return ID2SYM(rb_intern("ibuf_empty"));
+      case transcode_finished: return ID2SYM(rb_intern("finished"));
+      default: return INT2NUM(res);
+    }
+}
+
 void
 Init_transcode(void)
 {
@@ -1234,4 +1318,10 @@ Init_transcode(void)
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);
+
+    rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
+    rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
+    rb_define_method(rb_cEncodingConverter, "initialize", econv_init, 2);
+    rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, 3);
+    rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
 }
