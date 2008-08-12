@@ -530,16 +530,23 @@ VALUE rb_str_vcatf(VALUE, const char*, va_list);
 VALUE rb_str_format(int, const VALUE *, VALUE);
 /* string.c */
 VALUE rb_str_new(const char*, long);
+VALUE rb_str_new_cstr(const char*);
 VALUE rb_str_new2(const char*);
+VALUE rb_str_new_shared(VALUE);
 VALUE rb_str_new3(VALUE);
+VALUE rb_str_new_frozen(VALUE);
 VALUE rb_str_new4(VALUE);
+VALUE rb_str_new_with_class(VALUE, const char*, long);
 VALUE rb_str_new5(VALUE, const char*, long);
+VALUE rb_tainted_str_new_cstr(const char*);
 VALUE rb_tainted_str_new(const char*, long);
 VALUE rb_tainted_str_new2(const char*);
 VALUE rb_str_buf_new(long);
+VALUE rb_str_buf_new_cstr(const char*);
 VALUE rb_str_buf_new2(const char*);
 VALUE rb_str_tmp_new(long);
 VALUE rb_usascii_str_new(const char*, long);
+VALUE rb_usascii_str_new_cstr(const char*);
 VALUE rb_usascii_str_new2(const char*);
 void rb_str_free(VALUE);
 void rb_str_shared_replace(VALUE, VALUE);
@@ -553,6 +560,7 @@ VALUE rb_str_dup(VALUE);
 VALUE rb_str_locktmp(VALUE);
 VALUE rb_str_unlocktmp(VALUE);
 VALUE rb_str_dup_frozen(VALUE);
+#define rb_str_dup_frozen rb_str_new_frozen
 VALUE rb_str_plus(VALUE, VALUE);
 VALUE rb_str_times(VALUE, VALUE);
 long rb_str_sublen(VALUE, long);
@@ -584,30 +592,30 @@ VALUE rb_sym_to_s(VALUE);
 VALUE rb_str_length(VALUE);
 size_t rb_str_capacity(VALUE);
 #if defined __GNUC__
-#define rb_str_new2(str) __extension__ (	\
+#define rb_str_new_cstr(str) __extension__ (	\
 {						\
     (__builtin_constant_p(str)) ?		\
 	rb_str_new(str, strlen(str)) :		\
-	rb_str_new2(str);			\
+	rb_str_new_cstr(str);			\
 })
-#define rb_tainted_str_new2(str) __extension__ ( \
+#define rb_tainted_str_new_cstr(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
 	rb_tainted_str_new(str, strlen(str)) : \
-	rb_tainted_str_new2(str);	       \
+	rb_tainted_str_new_cstr(str);	       \
 })
-#define rb_usascii_str_new2(str) __extension__ ( \
+#define rb_usascii_str_new_cstr(str) __extension__ ( \
 {					       \
     (__builtin_constant_p(str)) ?	       \
 	rb_usascii_str_new(str, strlen(str)) : \
-	rb_usascii_str_new2(str);	       \
+	rb_usascii_str_new_cstr(str);	       \
 })
-#define rb_str_buf_new2(str) __extension__ ( \
+#define rb_str_buf_new_cstr(str) __extension__ ( \
 {						\
     (__builtin_constant_p(str)) ?		\
 	rb_str_buf_cat(rb_str_buf_new(strlen(str)), \
 		       str, strlen(str)) :	\
-	rb_str_buf_new2(str);			\
+	rb_str_buf_new_cstr(str);		\
 })
 #define rb_str_buf_cat2(str, ptr) __extension__ ( \
 {						\
@@ -622,6 +630,13 @@ size_t rb_str_capacity(VALUE);
 	rb_str_cat2(str, ptr);			\
 })
 #endif
+#define rb_str_new2 rb_str_new_cstr
+#define rb_str_new3 rb_str_new_shared
+#define rb_str_new4 rb_str_new_frozen
+#define rb_str_new5 rb_str_new_with_class
+#define rb_tainted_str_new2 rb_tainted_str_new_cstr
+#define rb_str_buf_new2 rb_str_buf_new_cstr
+#define rb_usascii_str_new2 rb_usascii_str_new_cstr
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
 VALUE rb_struct_define(const char*, ...);

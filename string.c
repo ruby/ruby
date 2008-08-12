@@ -25,15 +25,31 @@
 #include <unistd.h>
 #endif
 
+#undef rb_str_new_cstr
+#undef rb_tainted_str_new_cstr
+#undef rb_usascii_str_new_cstr
 #undef rb_str_new2
+#undef rb_str_new3
+#undef rb_str_new4
+#undef rb_str_new5
 #undef rb_tainted_str_new2
 #undef rb_usascii_str_new2
+#undef rb_str_dup_frozen
+#undef rb_str_buf_new_cstr
 #undef rb_str_buf_new2
 #undef rb_str_buf_cat2
 #undef rb_str_cat2
 
 VALUE rb_cString;
 VALUE rb_cSymbol;
+
+#ifdef __GNUC__
+#define alias_func(old_prot, new_name, args) \
+VALUE old_prot __attribute__((alias(#new_name)));
+#else
+#define alias_func(old_prot, new_name, args) \
+VALUE old_prot {return new_name args;}
+#endif
 
 #define STR_TMPLOCK FL_USER7
 #define STR_NOEMBED FL_USER1
@@ -416,7 +432,7 @@ rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 }
 
 VALUE
-rb_str_new2(const char *ptr)
+rb_str_new_cstr(const char *ptr)
 {
     if (!ptr) {
 	rb_raise(rb_eArgError, "NULL pointer given");
@@ -424,13 +440,19 @@ rb_str_new2(const char *ptr)
     return rb_str_new(ptr, strlen(ptr));
 }
 
+alias_func(rb_str_new2(const char *ptr), rb_str_new_cstr, (ptr))
+#define rb_str_new2 rb_str_new_cstr
+
 VALUE
-rb_usascii_str_new2(const char *ptr)
+rb_usascii_str_new_cstr(const char *ptr)
 {
     VALUE str = rb_str_new2(ptr);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
+
+alias_func(rb_usascii_str_new2(const char *ptr), rb_usascii_str_new_cstr, (ptr))
+#define rb_usascii_str_new2 rb_usascii_str_new_cstr
 
 VALUE
 rb_tainted_str_new(const char *ptr, long len)
@@ -442,13 +464,16 @@ rb_tainted_str_new(const char *ptr, long len)
 }
 
 VALUE
-rb_tainted_str_new2(const char *ptr)
+rb_tainted_str_new_cstr(const char *ptr)
 {
     VALUE str = rb_str_new2(ptr);
 
     OBJ_TAINT(str);
     return str;
 }
+
+alias_func(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cstr, (ptr))
+#define rb_tainted_str_new2 rb_tainted_str_new_cstr
 
 static VALUE
 str_replace_shared(VALUE str2, VALUE str)
@@ -483,13 +508,16 @@ str_new3(VALUE klass, VALUE str)
 }
 
 VALUE
-rb_str_new3(VALUE str)
+rb_str_new_shared(VALUE str)
 {
     VALUE str2 = str_new3(rb_obj_class(str), str);
 
     OBJ_INFECT(str2, str);
     return str2;
 }
+
+alias_func(rb_str_new3(VALUE str), rb_str_new_shared, (str))
+#define rb_str_new3 rb_str_new_shared
 
 static VALUE
 str_new4(VALUE klass, VALUE str)
@@ -514,7 +542,7 @@ str_new4(VALUE klass, VALUE str)
 }
 
 VALUE
-rb_str_new4(VALUE orig)
+rb_str_new_frozen(VALUE orig)
 {
     VALUE klass, str;
 
@@ -551,11 +579,18 @@ rb_str_new4(VALUE orig)
     return str;
 }
 
+alias_func(rb_str_new4(VALUE orig), rb_str_new_frozen, (orig))
+#define rb_str_new4 rb_str_new_frozen
+
 VALUE
-rb_str_new5(VALUE obj, const char *ptr, long len)
+rb_str_new_with_class(VALUE obj, const char *ptr, long len)
 {
     return str_new(rb_obj_class(obj), ptr, len);
 }
+
+alias_func(rb_str_new5(VALUE obj, const char *ptr, long len),
+	   rb_str_new_with_class, (obj, ptr, len))
+#define rb_str_new5 rb_str_new_with_class
 
 #define STR_BUF_MIN_SIZE 128
 
@@ -576,7 +611,7 @@ rb_str_buf_new(long capa)
 }
 
 VALUE
-rb_str_buf_new2(const char *ptr)
+rb_str_buf_new_cstr(const char *ptr)
 {
     VALUE str;
     long len = strlen(ptr);
@@ -586,6 +621,9 @@ rb_str_buf_new2(const char *ptr)
 
     return str;
 }
+
+alias_func(rb_str_buf_new2(const char *ptr), rb_str_buf_new_cstr, (ptr))
+#define rb_str_buf_new2 rb_str_buf_new_cstr
 
 VALUE
 rb_str_tmp_new(long len)
@@ -1327,21 +1365,8 @@ rb_str_freeze(VALUE str)
     return rb_obj_freeze(str);
 }
 
-VALUE
-rb_str_dup_frozen(VALUE str)
-{
-    if (STR_SHARED_P(str) && RSTRING(str)->as.heap.aux.shared) {
-	VALUE shared = RSTRING(str)->as.heap.aux.shared;
-	if (RSTRING_LEN(shared) == RSTRING_LEN(str)) {
-	    OBJ_FREEZE(shared);
-	    return shared;
-	}
-    }
-    if (OBJ_FROZEN(str)) return str;
-    str = rb_str_dup(str);
-    OBJ_FREEZE(str);
-    return str;
-}
+alias_func(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
+#define rb_str_dup_frozen rb_str_new_frozen
 
 VALUE
 rb_str_locktmp(VALUE str)

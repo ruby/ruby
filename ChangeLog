@@ -1,3 +1,9 @@
+Tue Aug 12 18:56:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_str_new2, rb_tainted_str_new2,
+	  rb_usascii_str_new2): use with-length versions with strlen to
+	  optimize strlen, if optimized.
+
 Tue Aug 12 18:51:29 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* gc.c (getrusage_time): Returned effective value on Windows.
