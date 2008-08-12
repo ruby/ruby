@@ -486,6 +486,11 @@ module Net   #:nodoc:
       @enable_post_connection_check = true
       @compression = nil
       @sspi_enabled = false
+      if defined?(SSL_ATTRIBUTES)
+        SSL_ATTRIBUTES.each do |name|
+          instance_variable_set "@#{name}", nil
+        end
+      end
     end
 
     def inspect
