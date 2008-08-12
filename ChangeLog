@@ -1,3 +1,7 @@
+Wed Aug 13 08:03:02 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_primitive_convert): add output_size argument.
+
 Wed Aug 13 07:41:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_trans_conv): report last transcode_obuf_full.

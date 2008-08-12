@@ -1263,24 +1263,29 @@ check_econv(VALUE self)
 }
 
 static VALUE
-econv_primitive_convert(VALUE self, VALUE input, VALUE output, VALUE flags_v)
+econv_primitive_convert(VALUE self, VALUE input, VALUE output, VALUE output_size_v, VALUE flags_v)
 {
     rb_trans_t *ts = check_econv(self);
     rb_trans_result_t res;
     const unsigned char *ip, *is;
     unsigned char *op, *os;
+    long output_size;
     int flags;
 
-    StringValue(input);
-    StringValue(output);
-    rb_str_modify(output);
+    output_size = NUM2LONG(output_size_v);
     flags = NUM2INT(flags_v);
+    StringValue(output);
+    StringValue(input);
+    rb_str_modify(output);
+
+    if (rb_str_capacity(output) < output_size)
+        rb_str_resize(output, output_size);
 
     ip = (const unsigned char *)RSTRING_PTR(input);
     is = ip + RSTRING_LEN(input);
 
     op = (unsigned char *)RSTRING_PTR(output);
-    os = op + RSTRING_LEN(output);
+    os = op + output_size;
 
     res = rb_trans_conv(ts, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
@@ -1325,7 +1330,7 @@ Init_transcode(void)
     rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, 2);
-    rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, 3);
+    rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, 4);
     rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
 }

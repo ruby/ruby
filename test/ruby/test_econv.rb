@@ -7,7 +7,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new(from, to)
     dst = ''
     while true
-      ret = ec.primitive_convert(src, dst2=" "*opt[:obuf_len], 0)
+      ret = ec.primitive_convert(src, dst2="", opt[:obuf_len], 0)
       dst << dst2
       #p [ret, dst, src]
       break if ret != :obuf_full
@@ -37,15 +37,15 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_errors
     ec = Encoding::Converter.new("UTF-16BE", "EUC-JP")
     src = "\xFF\xFE\x00A\xDC\x00"
-    ret = ec.primitive_convert(src, dst=" "*10, 0)
+    ret = ec.primitive_convert(src, dst="", 10, 0)
     assert_equal("", src)
     assert_equal("", dst)
-    assert_equal(:undefined_conversion, ret)
-    ret = ec.primitive_convert(src, dst=" "*10, 0)
+    assert_equal(:undefined_conversion, ret) # \xFF\xFE is not representable in EUC-JP
+    ret = ec.primitive_convert(src, dst="", 10, 0)
     assert_equal("", src)
     assert_equal("A", dst)
-    assert_equal(:invalid_input, ret)
-    ret = ec.primitive_convert(src, dst=" "*10, 0)
+    assert_equal(:invalid_input, ret) # \xDC\x00 is invalid as UTF-16BE
+    ret = ec.primitive_convert(src, dst="", 10, 0)
     assert_equal("", src)
     assert_equal("", dst)
     assert_equal(:finished, ret)
