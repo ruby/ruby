@@ -178,7 +178,7 @@ Also ignores spaces after parenthesis when 'space."
   (let ((index-alist '())
         name next pos decl sing)
     (goto-char beg)
-    (while (re-search-forward "^\\s *\\(\\(class\\>\\(\\s *<<\\)?\\|module\\>\\)\\s *\\([^\(<\n ]+\\)\\|\\(def\\|alias\\)\\>\\s *\\([^\(\n ]+\\)\\)" end t)
+    (while (re-search-forward "^\\s *\\(\\(class\\s +\\|\\(class\\s *<<\\s *\\)\\|module\\s +\\)\\([^\(<\n ]+\\)\\|\\(def\\|alias\\)\\s +\\([^\(\n ]+\\)\\)" end t)
       (setq sing (match-beginning 3))
       (setq decl (match-string 5))
       (setq next (match-end 0))
