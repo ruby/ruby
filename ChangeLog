@@ -1,3 +1,8 @@
+Tue Aug 12 15:03:43 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* test/readline/test_readline.rb (TestReadline#test_safe_level_4):
+	  tested Readline.vi_editing_mode? and Readline.emacs_editing_mode?.
+
 Tue Aug 12 14:25:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/Makefile.in (.SUFFIXES): renamed to .trans.
