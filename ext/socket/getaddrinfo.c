@@ -376,7 +376,7 @@ getaddrinfo(const char *hostname, const char *servname, const struct addrinfo *h
 			port = htons((unsigned short)atoi(servname));
 		} else {
 			struct servent *sp;
-			char *proto;
+			const char *proto;
 
 			proto = NULL;
 			switch (pai->ai_socktype) {
