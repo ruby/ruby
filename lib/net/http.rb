@@ -1648,7 +1648,7 @@ module Net   #:nodoc:
     private
 
     def send_request_with_body(sock, ver, path, body)
-      self.content_length = body.length
+      self.content_length = body.bytesize
       delete 'Transfer-Encoding'
       supply_default_content_type
       write_header sock, ver, path
