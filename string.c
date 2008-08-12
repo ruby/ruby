@@ -5847,7 +5847,7 @@ rb_str_intern(VALUE s)
     sym = ID2SYM(id);
     id2 = SYM2ID(sym);
     if (id != id2) {
-	char *name = rb_id2name(id2);
+	const char *name = rb_id2name(id2);
 
 	if (name) {
 	    rb_raise(rb_eRuntimeError, "symbol table overflow (%s given for %s)",
