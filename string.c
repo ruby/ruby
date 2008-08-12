@@ -2861,7 +2861,7 @@ static void
 rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 {
     if (beg == 0 && RSTRING_LEN(val) == 0) {
-	rb_str_drop(str, len);
+	rb_str_drop_bytes(str, len);
 	OBJ_INFECT(str, val);
 	return;
     }
