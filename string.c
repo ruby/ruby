@@ -2830,7 +2830,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 }
 
 VALUE
-rb_str_drop(VALUE str, long len)
+rb_str_drop_bytes(VALUE str, long len)
 {
     char *ptr = RSTRING_PTR(str);
     long olen = RSTRING_LEN(str), nlen;
