@@ -1,3 +1,13 @@
+Tue Aug 12 16:13:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (TRANSCODE_ERROR): removed.
+
+	* tool/transcode-tblgen.rb: 8bit byte of ASCII-8BIT is a valid
+	  (but unique to ASCII-8BIT) character.
+
+	* transcode.c (rb_eConversionUndefined): new error.
+	  (rb_eInvalidByteSequence): ditto.
+
 Tue Aug 12 16:08:51 2008  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: POP3Command should export @socket since POP

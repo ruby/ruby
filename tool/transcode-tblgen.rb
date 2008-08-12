@@ -317,7 +317,8 @@ class ActionMap
       min = max = 0
     end
 
-    if n = OffsetsMemo[offsets]
+    offsets_key = [min, max, offsets[min..max]]
+    if n = OffsetsMemo[offsets_key]
       offsets_name = n
       offsets_code = ''
     else
@@ -326,7 +327,7 @@ class ActionMap
 static const unsigned char
 #{offsets_name}[#{2+max-min+1}] = #{format_offsets(min,max,offsets)};
 End
-      OffsetsMemo[offsets] = offsets_name
+      OffsetsMemo[offsets_key] = offsets_name
     end
 
     if n = InfosMemo[infos]
@@ -524,6 +525,7 @@ ValidEncoding = {
 }
 
 {
+  'ASCII-8BIT'  => '1byte',
   'ISO-8859-1'  => '1byte',
   'ISO-8859-2'  => '1byte',
   'ISO-8859-3'  => '1byte',

@@ -25,9 +25,9 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(ArgumentError) { 'abc'.encode!('foo', 'bar') }
     assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode('foo') }
     assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode!('foo') }
-    assert_raise(RuntimeError) { "\x80".encode('utf-8','ASCII-8BIT') }
-    assert_raise(RuntimeError) { "\x80".encode('utf-8','US-ASCII') }
-    assert_raise(RuntimeError) { "\xA5".encode('utf-8','iso-8859-3') }
+    assert_raise(Encoding::ConversionUndefined) { "\x80".encode('utf-8','ASCII-8BIT') }
+    assert_raise(Encoding::InvalidByteSequence) { "\x80".encode('utf-8','US-ASCII') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA5".encode('utf-8','iso-8859-3') }
   end
 
   def test_arguments
@@ -342,40 +342,39 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u71FC", "\xE0\x9E", 'shift_jis') # 
     check_both_ways("\u71F9", "\xE0\x9F", 'shift_jis') # 
     check_both_ways("\u73F1", "\xE0\xFC", 'shift_jis') # 
-    assert_raise(RuntimeError) { "\xEF\x40".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xEF\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xEF\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xEF\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xEF\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xEF\xFC".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xF0\x40".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xF0\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xF0\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xEF\x40".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xEF\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xEF\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xEF\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xEF\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xEF\xFC".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xF0\x40".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xF0\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xF0\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
     check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # @
-    assert_raise(RuntimeError) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xFC\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xFC\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(RuntimeError) { "\xFC\xFC".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xFC\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xFC\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefined) { "\xFC\xFC".encode("utf-8", 'shift_jis') }
     check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # {sO
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\x90\xC2\x8E\x52\x8A\x77\x89\x40\x91\xE5\x8A\x77", 'shift_jis') # Rw@w
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # _ы`
   end
 
   def test_iso_2022_jp
-    assert_raise(RuntimeError) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
-    assert_raise(RuntimeError) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
-    assert_raise(RuntimeError) { "\x1b$C".encode("utf-8", "iso-2022-jp") }
-    assert_raise(RuntimeError) { "\x0e".encode("utf-8", "iso-2022-jp") }
-    assert_raise(RuntimeError) { "\x80".encode("utf-8", "iso-2022-jp") }
-    assert_raise(RuntimeError) { "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp") }
-    assert_raise(RuntimeError) { "\u9299".encode("iso-2022-jp") }
-    assert_raise(RuntimeError) { "\u9299".encode("iso-2022-jp") }
-    assert_raise(RuntimeError) { "\uff71\uff72\uff73\uff74\uff75".encode("iso-2022-jp") }
-    assert_raise(RuntimeError) { "\x1b(I12345\x1b(B".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequence) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequence) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequence) { "\x1b$C".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequence) { "\x0e".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequence) { "\x80".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequence) { "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::ConversionUndefined) { "\u9299".encode("iso-2022-jp") }
+    assert_raise(Encoding::ConversionUndefined) { "\uff71\uff72\uff73\uff74\uff75".encode("iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequence) { "\x1b(I12345\x1b(B".encode("utf-8", "iso-2022-jp") }
     assert_equal("\xA1\xA1".force_encoding("euc-jp"),
                  "\e$B!!\e(B".encode("EUC-JP", "ISO-2022-JP"))
     assert_equal("\e$B!!\e(B".force_encoding("ISO-2022-JP"),

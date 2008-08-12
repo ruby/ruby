@@ -15,6 +15,9 @@
 #include "transcode_data.h"
 #include <ctype.h>
 
+VALUE rb_eConversionUndefined;
+VALUE rb_eInvalidByteSequence;
+
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 #define INVALID_IGNORE 0x1
 #define INVALID_REPLACE 0x2
@@ -895,7 +898,7 @@ resume:
             goto resume;
 	}
         rb_trans_close(ts);
-	rb_raise(TRANSCODE_ERROR, "invalid byte sequence");
+	rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
     }
     if (ret == transcode_undefined_conversion) {
 	/* valid character in from encoding
@@ -909,7 +912,7 @@ resume:
 	    goto resume;
 	}
         rb_trans_close(ts);
-        rb_raise(TRANSCODE_ERROR, "conversion undefined for byte sequence (maybe invalid byte sequence)");
+        rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
     }
     if (ret == transcode_obuf_full) {
         more_output_buffer(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
@@ -974,7 +977,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             rb_trans_close(ts);
-            rb_raise(TRANSCODE_ERROR, "invalid byte sequence");
+            rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
             break;
 
           case transcode_undefined_conversion:
@@ -989,7 +992,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             rb_trans_close(ts);
-            rb_raise(TRANSCODE_ERROR, "conversion undefined for byte sequence (maybe invalid byte sequence)");
+            rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
             break;
 
           case transcode_obuf_full:
@@ -1204,6 +1207,9 @@ rb_str_transcode(VALUE str, VALUE to)
 void
 Init_transcode(void)
 {
+    rb_eConversionUndefined = rb_define_class_under(rb_cEncoding, "ConversionUndefined", rb_eStandardError);
+    rb_eInvalidByteSequence = rb_define_class_under(rb_cEncoding, "InvalidByteSequence", rb_eStandardError);
+
     transcoder_table = st_init_strcasetable();
 
     sym_invalid = ID2SYM(rb_intern("invalid"));
