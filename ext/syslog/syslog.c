@@ -67,11 +67,7 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
     if (NIL_P(ident)) {
         ident = rb_gv_get("$0"); 
     }
-#ifdef SafeStringValue
     SafeStringValue(ident);
-#else
-    Check_SafeStr(ident);
-#endif
     syslog_ident = strdup(RSTRING(ident)->ptr);
 
     if (NIL_P(opt)) {
@@ -224,12 +220,12 @@ define_syslog_shortcut_method(LOG_DEBUG, debug)
 
 static VALUE mSyslogConstants_LOG_MASK(VALUE klass, VALUE pri)
 {
-    return INT2FIX(LOG_MASK(FIX2INT(pri)));
+    return INT2FIX(LOG_MASK(NUM2INT(pri)));
 }
 
 static VALUE mSyslogConstants_LOG_UPTO(VALUE klass, VALUE pri)
 {
-    return INT2FIX(LOG_UPTO(FIX2INT(pri)));
+    return INT2FIX(LOG_UPTO(NUM2INT(pri)));
 }
 
 /* Init for package syslog */

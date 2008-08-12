@@ -1,3 +1,11 @@
+Tue Aug 12 18:50:58 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syslog/syslog.c (mSyslog_open): Use of Check_SafeStr() is
+	  deprecated.
+	  (mSyslogConstants_LOG_MASK, mSyslogConstants_LOG_UPTO): Use
+	  NUM2INT() instead of FIX2INT() when the type of an given object
+	  is not determined.
+
 Tue Aug 12 14:53:33 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* array.c (rb_ary_choice): Resurrect #choice.  Let me think about
