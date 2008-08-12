@@ -648,6 +648,7 @@ rb_trans_open(const char *from, const char *to, int flags)
     for (i = 0; i < ts->num_trans; i++) {
         tc = rb_transcoding_open(ts->elems[i].from, ts->elems[i].to, 0);
         if (!tc) {
+            xfree(ts);
             rb_raise(rb_eArgError, "converter open failed (from %s to %s)", from, to);
         }
         ts->elems[i].tc = tc;

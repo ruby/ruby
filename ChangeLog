@@ -1,3 +1,7 @@
+Tue Aug 12 18:51:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_trans_open): free ts before raise.
+
 Tue Aug 12 18:46:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): should not ignore
