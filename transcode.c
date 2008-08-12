@@ -1072,7 +1072,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    v = rb_hash_aref(opt, sym_replace);
 	}
 	else {
-	    rb_raise(rb_eArgError, "unknown value for invalid: setting");
+	    rb_raise(rb_eArgError, "unknown value for invalid character option");
 	}
 	v = rb_hash_aref(opt, sym_undef);
 	if (NIL_P(v)) {
@@ -1084,7 +1084,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	    options |= UNDEF_REPLACE;
 	}
 	else {
-	    rb_raise(rb_eArgError, "unknown value for undef: setting");
+	    rb_raise(rb_eArgError, "unknown value for undefined character option");
 	}
     }
     if (argc < 1 || argc > 2) {
