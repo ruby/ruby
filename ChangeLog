@@ -1,3 +1,7 @@
+Tue Aug 12 15:37:40 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_intern): should check symbol table overflow.
+
 Tue Aug 12 15:31:04 2008  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (send_request_with_body): Content-Length should
