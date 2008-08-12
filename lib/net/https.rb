@@ -124,7 +124,7 @@ module Net
       ssl_version key cert ca_file ca_path cert_store ciphers
       verify_mode verify_callback verify_depth ssl_timeout
     )
-    attr_accessor *SSL_ATTRIBUTES
+    attr_accessor(*SSL_ATTRIBUTES)
 
     def peer_cert
       if not use_ssl? or not @socket

@@ -1,3 +1,12 @@
+Tue Aug 12 14:19:53 2008  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/https.rb: supress syntax warning.
+
+Tue Aug 12 14:15:51 2008  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (Net::HTTP#initialize): initialize net/https
+	  variables to supress syntax warning.
+
 Tue Aug 12 14:15:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/dl/cptr.c (rb_dlptr_s_to_ptr): fixed shadowing variable.
