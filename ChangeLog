@@ -1,3 +1,7 @@
+Tue Aug 12 19:11:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot: fix for enc.mk.
+
 Tue Aug 12 19:08:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_drop_bytes): new function to drop first bytes.
