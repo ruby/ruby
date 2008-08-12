@@ -580,6 +580,7 @@ int rb_str_hash_cmp(VALUE,VALUE);
 int rb_str_comparable(VALUE, VALUE);
 int rb_str_cmp(VALUE, VALUE);
 VALUE rb_str_equal(VALUE str1, VALUE str2);
+VALUE rb_str_drop(VALUE, long);
 void rb_str_update(VALUE, long, long, VALUE);
 VALUE rb_str_inspect(VALUE);
 VALUE rb_str_dump(VALUE);

@@ -2829,9 +2829,43 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
     return rb_str_aref(str, argv[0]);
 }
 
+VALUE
+rb_str_drop(VALUE str, long len)
+{
+    char *ptr = RSTRING_PTR(str);
+    long olen = RSTRING_LEN(str), nlen;
+
+    str_modifiable(str);
+    if (len > olen) len = olen;
+    nlen = olen - len;
+    if (nlen <= RSTRING_EMBED_LEN_MAX) {
+	char *oldptr = ptr;
+	int fl = (RBASIC(str)->flags & (STR_NOEMBED|ELTS_SHARED));
+	STR_SET_EMBED(str);
+	STR_SET_EMBED_LEN(str, nlen);
+	ptr = RSTRING(str)->as.ary;
+	memcpy(ptr, oldptr + len, nlen);
+	if (fl == STR_NOEMBED) xfree(oldptr);
+    }
+    else {
+	if (!STR_SHARED_P(str)) rb_str_new4(str);
+	ptr = RSTRING(str)->as.heap.ptr += len;
+	RSTRING(str)->as.heap.len = nlen;
+    }
+    ptr[nlen] = 0;
+    ENC_CODERANGE_CLEAR(str);
+    return str;
+}
+
 static void
 rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 {
+    if (beg == 0 && RSTRING_LEN(val) == 0) {
+	rb_str_drop(str, len);
+	OBJ_INFECT(str, val);
+	return;
+    }
+
     rb_str_modify(str);
     if (len < RSTRING_LEN(val)) {
 	/* expand string */

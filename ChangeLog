@@ -1,3 +1,7 @@
+Tue Aug 12 19:07:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_drop): new function to drop first bytes.
+
 Tue Aug 12 18:58:48 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, vm_insnhelper.c (vm_define_method): move 
