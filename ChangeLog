@@ -1,3 +1,11 @@
+Tue Aug 12 18:32:03 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/syslog/syslog.c (mSyslog_open): Use of Check_SafeStr() is
+	  deprecated.
+	  (mSyslogConstants_LOG_MASK, mSyslogConstants_LOG_UPTO): Use
+	  NUM2INT() instead of FIX2INT() when the type of an given object
+	  is not determined.
+
 Tue Aug 12 18:14:00 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* tool/transcode-tblgen.rb (#transcode_tblgen): slight message
