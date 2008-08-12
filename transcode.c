@@ -608,6 +608,7 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
     rb_trans_t **tsp = (rb_trans_t **)arg;
     rb_trans_t *ts;
     int i;
+    rb_transcoding *tc;
 
     if (!*tsp) {
         ts = *tsp = ALLOC(rb_trans_t);
@@ -627,7 +628,10 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
         ts = *tsp;
     }
 
-    ts->elems[depth].tc = rb_transcoding_open(from, to, 0);
+    ts->elems[depth].tc = tc = rb_transcoding_open(from, to, 0);
+    if (!tc) {
+        rb_raise(rb_eArgError, "transcoding open failed (from %s to %s)", from, to);
+    }
     if (depth < ts->num_trans-1) {
         int bufsize = 4096;
         unsigned char *p;
