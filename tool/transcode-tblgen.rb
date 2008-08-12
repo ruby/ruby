@@ -424,7 +424,7 @@ end
 TRANSCODERS = []
 
 def transcode_tblgen(from, to, map)
-  STDERR.puts "converter for #{from} to #{to}" if VERBOSE_MODE
+  STDERR.puts "converter from #{from} to #{to}" if VERBOSE_MODE
   id_from = from.tr('^0-9A-Za-z', '_')
   id_to = to.tr('^0-9A-Za-z', '_')
   if from == "UTF-8"
