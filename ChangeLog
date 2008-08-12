@@ -1,3 +1,8 @@
+Tue Aug 12 18:46:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): should not ignore
+	  <=> comparison.   [ruby-dev:35732]
+
 Tue Aug 12 18:43:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/make_transdb.rb: *.erb.c is not used anymore.

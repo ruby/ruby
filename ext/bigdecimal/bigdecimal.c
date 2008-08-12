@@ -734,7 +734,7 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
 
 	switch(op)
 	{
-	  case '*': return Qnil; /* any op */
+	  case '*': f = rb_intern("<=>");break;
 	  case '=': f = rb_intern("=="); break;
 	  case '!': f = rb_intern("!="); break;
 	  case 'G': f = rb_intern(">="); break;
