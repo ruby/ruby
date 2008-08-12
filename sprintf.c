@@ -1034,6 +1034,8 @@ fmt_setup(char *buf, int c, int flags, int width, int prec)
 #endif
 #undef vsnprintf
 #undef snprintf
+#define FLOATING_POINT 1
+#define BSD__dtoa dtoa
 #include "missing/vsnprintf.c"
 
 static int

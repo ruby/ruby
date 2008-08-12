@@ -1235,9 +1235,14 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 #endif
 #endif /* NO_LONG_LONG */
 
+#define MULTIPLE_THREADS 1
+
 #ifndef MULTIPLE_THREADS
 #define ACQUIRE_DTOA_LOCK(n)	/*nothing*/
 #define FREE_DTOA_LOCK(n)	/*nothing*/
+#else
+#define ACQUIRE_DTOA_LOCK(n)	/*unused right now*/
+#define FREE_DTOA_LOCK(n)	/*unused right now*/
 #endif
 
 #define Kmax 15
@@ -3069,7 +3074,6 @@ ret:
     return sign ? -dval(rv) : dval(rv);
 }
 
-#if 0  /* unused right now */
 static int
 quorem(Bigint *b, Bigint *S)
 {
@@ -3180,13 +3184,11 @@ quorem(Bigint *b, Bigint *S)
     }
     return q;
 }
-#endif
 
 #ifndef MULTIPLE_THREADS
 static char *dtoa_result;
 #endif
 
-#if 0  /* unused right now */
 static char *
 rv_alloc(int i)
 {
@@ -3217,7 +3219,6 @@ nrv_alloc(const char *s, char **rve, int n)
         *rve = t;
     return rv;
 }
-#endif
 
 /* freedtoa(s) must be used to free values s returned by dtoa
  * when MULTIPLE_THREADS is #defined.  It should be used in all cases,
@@ -3271,7 +3272,6 @@ freedtoa(char *s)
  *     calculation.
  */
 
-#if 0  /* unused right now */
 char *
 dtoa(double d, int mode, int ndigits, int *decpt, int *sign, char **rve)
 {
@@ -3941,7 +3941,6 @@ ret1:
         *rve = s;
     return s0;
 }
-#endif
 
 void
 ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *arg)
