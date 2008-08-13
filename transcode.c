@@ -164,6 +164,7 @@ transcode_search_path(const char *from, const char *to,
     st_data_t val;
     st_table *table2;
     int found;
+    int pathlen;
 
     q = ALLOC(search_path_queue_t);
     q->enc = from;
@@ -210,14 +211,16 @@ cleanup:
 
     if (found) {
         const char *enc = to;
-        int depth = 0;
+        pathlen = 0;
+        int depth;
         while (1) {
             st_lookup(bfs.visited, (st_data_t)enc, &val);
             if (!val)
                 break;
-            depth++;
+            pathlen++;
             enc = (const char *)val;
         }
+        depth = pathlen;
         enc = to;
         while (1) {
             st_lookup(bfs.visited, (st_data_t)enc, &val);
@@ -230,11 +233,14 @@ cleanup:
 
     st_free_table(bfs.visited);
 
-    return found;
+    if (found)
+        return pathlen;
+    else
+        return -1;
 }
 
 static const rb_transcoder *
-load_transcoder(transcoder_entry_t *entry)
+load_transcoder_entry(transcoder_entry_t *entry)
 {
     if (entry->transcoder)
         return entry->transcoder;
@@ -258,6 +264,23 @@ load_transcoder(transcoder_entry_t *entry)
         return entry->transcoder;
 
     return NULL;
+}
+
+static const rb_transcoder *
+load_transcoder(const char *from, const char *to)
+{
+    transcoder_entry_t *entry;
+    const rb_transcoder *tr;
+
+    entry = get_transcoder_entry(from, to);
+    if (!entry)
+        return NULL;
+
+    tr = load_transcoder_entry(entry);
+    if (!tr)
+        return NULL;
+
+    return tr;
 }
 
 static const char*
@@ -555,20 +578,9 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
 }
 
 static rb_transcoding *
-rb_transcoding_open(const char *from, const char *to, int flags)
+rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
 {
     rb_transcoding *tc;
-    const rb_transcoder *tr;
-
-    transcoder_entry_t *entry;
-
-    entry = get_transcoder_entry(from, to);
-    if (!entry)
-        return NULL;
-
-    tr = load_transcoder(entry);
-    if (!tr)
-        return NULL;
 
     tc = ALLOC(rb_transcoding);
     tc->transcoder = tr;
@@ -580,6 +592,19 @@ rb_transcoding_open(const char *from, const char *to, int flags)
     if (sizeof(tc->readbuf.ary) < tr->max_input) {
         tc->readbuf.ptr = xmalloc(tr->max_input);
     }
+    return tc;
+}
+
+static rb_transcoding *
+rb_transcoding_open(const char *from, const char *to, int flags)
+{
+    rb_transcoding *tc;
+    const rb_transcoder *tr;
+
+    tr = load_transcoder(from, to);
+
+    tc = rb_transcoding_open_by_transcoder(tr, flags);
+
     return tc;
 }
 
@@ -604,56 +629,33 @@ rb_transcoding_close(rb_transcoding *tc)
     xfree(tc);
 }
 
-static void
-trans_open_i(const char *from, const char *to, int depth, void *arg)
+static rb_trans_t *
+rb_trans_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
 {
-    rb_trans_t **tsp = (rb_trans_t **)arg;
     rb_trans_t *ts;
     int i;
 
-    if (!*tsp) {
-        ts = *tsp = ALLOC(rb_trans_t);
-        ts->num_trans = depth+1;
-        ts->elems = ALLOC_N(rb_trans_elem_t, ts->num_trans);
-        ts->num_finished = 0;
-        for (i = 0; i < ts->num_trans; i++) {
-            ts->elems[i].from = NULL;
-            ts->elems[i].to = NULL;
-            ts->elems[i].tc = NULL;
-            ts->elems[i].out_buf_start = NULL;
-            ts->elems[i].out_data_start = NULL;
-            ts->elems[i].out_data_end = NULL;
-            ts->elems[i].out_buf_end = NULL;
-            ts->elems[i].last_result = transcode_ibuf_empty;
-        }
+    for (i = 0; i < n; i++) {
+        const rb_transcoder *tr;
+        tr = load_transcoder_entry(entries[i]);
+        if (!tr)
+            return NULL;
     }
-    else {
-        ts = *tsp;
-    }
-    ts->elems[depth].from = from;
-    ts->elems[depth].to = to;
 
-}
-
-static rb_trans_t *
-rb_trans_open(const char *from, const char *to, int flags)
-{
-    rb_trans_t *ts = NULL;
-    int i;
-    rb_transcoding *tc;
-
-    transcode_search_path(from, to, trans_open_i, (void *)&ts);
-
-    if (!ts)
-        return NULL;
-
+    ts = ALLOC(rb_trans_t);
+    ts->num_trans = n;
+    ts->elems = ALLOC_N(rb_trans_elem_t, ts->num_trans);
+    ts->num_finished = 0;
     for (i = 0; i < ts->num_trans; i++) {
-        tc = rb_transcoding_open(ts->elems[i].from, ts->elems[i].to, 0);
-        if (!tc) {
-            xfree(ts);
-            rb_raise(rb_eArgError, "converter open failed (from %s to %s)", from, to);
-        }
-        ts->elems[i].tc = tc;
+        const rb_transcoder *tr = load_transcoder_entry(entries[i]);
+        ts->elems[i].from = tr->from_encoding;
+        ts->elems[i].to = tr->to_encoding;
+        ts->elems[i].tc = rb_transcoding_open_by_transcoder(tr, 0);
+        ts->elems[i].out_buf_start = NULL;
+        ts->elems[i].out_data_start = NULL;
+        ts->elems[i].out_data_end = NULL;
+        ts->elems[i].out_buf_end = NULL;
+        ts->elems[i].last_result = transcode_ibuf_empty;
     }
 
     for (i = 0; i < ts->num_trans-1; i++) {
@@ -666,6 +668,38 @@ rb_trans_open(const char *from, const char *to, int flags)
         ts->elems[i].out_data_end = p;
     }
 
+    return ts;
+}
+
+static void
+trans_open_i(const char *from, const char *to, int depth, void *arg)
+{
+    transcoder_entry_t ***entries_ptr = arg;
+    transcoder_entry_t **entries;
+
+    if (!*entries_ptr) {
+        entries = ALLOC_N(transcoder_entry_t *, depth+1);
+        *entries_ptr = entries;
+    }
+    else {
+        entries = *entries_ptr;
+    }
+    entries[depth] = get_transcoder_entry(from, to);
+}
+
+static rb_trans_t *
+rb_trans_open(const char *from, const char *to, int flags)
+{
+    transcoder_entry_t **entries = NULL;
+    int num_trans;
+    static rb_trans_t *ts;
+
+    num_trans = transcode_search_path(from, to, trans_open_i, (void *)&entries);
+
+    if (num_trans < 0 || !entries)
+        return NULL;
+
+    ts = rb_trans_open_by_transcoder_entries(num_trans, entries);
     return ts;
 }
 

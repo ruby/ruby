@@ -1,3 +1,18 @@
+Wed Aug 13 11:39:19 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (transcode_search_path): return the length of converter
+	  path.
+	  (load_transcoder_entry): renamed from load_transcoder.
+	  (load_transcoder): new function for loding transcoder by encoding
+	  names.
+	  (rb_transcoding_open_by_transcoder): extracted from
+	  rb_transcoding_open.
+	  (rb_transcoding_open): use load_transcoder and
+	  rb_transcoding_open_by_transcoder.
+	  (rb_trans_open_by_transcoder_entries): new function.
+	  (trans_open_i): construct entries array.
+	  (rb_trans_open): use rb_trans_open_by_transcoder_entries.
+
 Wed Aug 13 10:45:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot: try to find exported directory.
