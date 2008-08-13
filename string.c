@@ -43,14 +43,6 @@
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
-#ifdef __GNUC__
-#define alias_func(old_prot, new_name, args) \
-VALUE old_prot __attribute__((weak, alias(#new_name)));
-#else
-#define alias_func(old_prot, new_name, args) \
-VALUE old_prot {return new_name args;}
-#endif
-
 #define STR_TMPLOCK FL_USER7
 #define STR_NOEMBED FL_USER1
 #define STR_SHARED  FL_USER2 /* = ELTS_SHARED */
@@ -440,7 +432,7 @@ rb_str_new_cstr(const char *ptr)
     return rb_str_new(ptr, strlen(ptr));
 }
 
-alias_func(rb_str_new2(const char *ptr), rb_str_new_cstr, (ptr))
+RUBY_ALIAS_FUNCTION(rb_str_new2(const char *ptr), rb_str_new_cstr, (ptr))
 #define rb_str_new2 rb_str_new_cstr
 
 VALUE
@@ -451,7 +443,7 @@ rb_usascii_str_new_cstr(const char *ptr)
     return str;
 }
 
-alias_func(rb_usascii_str_new2(const char *ptr), rb_usascii_str_new_cstr, (ptr))
+RUBY_ALIAS_FUNCTION(rb_usascii_str_new2(const char *ptr), rb_usascii_str_new_cstr, (ptr))
 #define rb_usascii_str_new2 rb_usascii_str_new_cstr
 
 VALUE
@@ -472,7 +464,7 @@ rb_tainted_str_new_cstr(const char *ptr)
     return str;
 }
 
-alias_func(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cstr, (ptr))
+RUBY_ALIAS_FUNCTION(rb_tainted_str_new2(const char *ptr), rb_tainted_str_new_cstr, (ptr))
 #define rb_tainted_str_new2 rb_tainted_str_new_cstr
 
 static VALUE
@@ -516,7 +508,7 @@ rb_str_new_shared(VALUE str)
     return str2;
 }
 
-alias_func(rb_str_new3(VALUE str), rb_str_new_shared, (str))
+RUBY_ALIAS_FUNCTION(rb_str_new3(VALUE str), rb_str_new_shared, (str))
 #define rb_str_new3 rb_str_new_shared
 
 static VALUE
@@ -579,7 +571,7 @@ rb_str_new_frozen(VALUE orig)
     return str;
 }
 
-alias_func(rb_str_new4(VALUE orig), rb_str_new_frozen, (orig))
+RUBY_ALIAS_FUNCTION(rb_str_new4(VALUE orig), rb_str_new_frozen, (orig))
 #define rb_str_new4 rb_str_new_frozen
 
 VALUE
@@ -588,7 +580,7 @@ rb_str_new_with_class(VALUE obj, const char *ptr, long len)
     return str_new(rb_obj_class(obj), ptr, len);
 }
 
-alias_func(rb_str_new5(VALUE obj, const char *ptr, long len),
+RUBY_ALIAS_FUNCTION(rb_str_new5(VALUE obj, const char *ptr, long len),
 	   rb_str_new_with_class, (obj, ptr, len))
 #define rb_str_new5 rb_str_new_with_class
 
@@ -622,7 +614,7 @@ rb_str_buf_new_cstr(const char *ptr)
     return str;
 }
 
-alias_func(rb_str_buf_new2(const char *ptr), rb_str_buf_new_cstr, (ptr))
+RUBY_ALIAS_FUNCTION(rb_str_buf_new2(const char *ptr), rb_str_buf_new_cstr, (ptr))
 #define rb_str_buf_new2 rb_str_buf_new_cstr
 
 VALUE
@@ -1365,7 +1357,7 @@ rb_str_freeze(VALUE str)
     return rb_obj_freeze(str);
 }
 
-alias_func(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
+RUBY_ALIAS_FUNCTION(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
 #define rb_str_dup_frozen rb_str_new_frozen
 
 VALUE

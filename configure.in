@@ -445,6 +445,23 @@ RUBY_FUNC_ATTRIBUTE(stdcall)
 RUBY_FUNC_ATTRIBUTE(cdecl)
 RUBY_FUNC_ATTRIBUTE(fastcall)
 
+if test "$GCC" = yes; then
+    AC_CACHE_CHECK([for function alias], [rb_cv_gcc_function_alias],
+	[rb_cv_gcc_function_alias=no
+	for a in alias weak,alias; do
+	    AC_TRY_LINK([void foo(void) {}
+		void bar(void) __attribute__(($a("foo")));], [bar()],
+		[rb_cv_gcc_function_alias=$a; break])
+	done])
+    if test "$rb_cv_gcc_function_alias" = no; then
+	AC_DEFINE([RUBY_ALIAS_FUNCTION(old_prot, new_name, args)],
+		  [VALUE old_prot {return new_name args;}])
+    else
+	AC_DEFINE_UNQUOTED([RUBY_ALIAS_FUNCTION(old_prot, new_name, args)],
+			   [VALUE old_prot __attribute__(($rb_cv_gcc_function_alias(@%:@new_name)));])
+    fi
+fi
+
 AC_CACHE_CHECK([for RUBY_EXTERN], rb_cv_ruby_extern,
 [rb_cv_ruby_extern=no
 for mac in "__attribute__((dllimport))" "__declspec(dllimport)"; do
