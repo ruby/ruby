@@ -225,6 +225,7 @@ class TestThread < Test::Unit::TestCase
   def test_list
     assert_in_out_err([], <<-INPUT) do |r, e|
       t1 = Thread.new { sleep }
+      Thread.pass
       t2 = Thread.new { loop { } }
       t3 = Thread.new { }.join
       p [Thread.current, t1, t2].sort_by {|t| t.object_id }

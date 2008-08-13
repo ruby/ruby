@@ -1,3 +1,8 @@
+Wed Aug 13 23:15:58 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (test_list): call Thread.pass to run t1.
+	  fixed [ruby-core:18264].
+
 Wed Aug 13 23:05:51 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* string.c (alias_func): changed to 'weak, alias' from 'alias' for
@@ -9,7 +14,7 @@ Wed Aug 13 19:40:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 Wed Aug 13 18:34:22 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
-        * marshal.c (marshal_load): set arg.untrust properly.
+	* marshal.c (marshal_load): set arg.untrust properly.
 
 Wed Aug 13 17:47:09 2008  Tanaka Akira  <akr@fsij.org>
 
