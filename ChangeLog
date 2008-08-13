@@ -106,7 +106,7 @@ Wed Aug 13 16:02:14 2008  Shugo Maeda  <shugo@ruby-lang.org>
 	* array.c, debug.c, time.c, include/ruby/ruby.h, re.c, variable.c,
 	  string.c, io.c, dir.c, vm_method.c, struct.c, class.c, hash.c,
 	  ruby.c, marshal.c: fixes for Object#untrusted?.
-	
+
 	* test/ruby/test_module.rb, test/ruby/test_array.rb,
 	  test/ruby/test_object.rb, test/ruby/test_string.rb,
 	  test/ruby/test_marshal.rb, test/ruby/test_hash.rb: added tests for
@@ -239,7 +239,7 @@ Wed Aug 13 02:46:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* error.c (rb_eEncCompatError): add Exception.
 
 	* include/ruby/ruby.h: ditto.
-	
+
 	* encoding.c (rb_enc_check): use rb_eEncCompatError.
 
 	* string.c (rb_enc_cr_str_buf_cat): ditto.
@@ -278,7 +278,7 @@ Tue Aug 12 19:08:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug 12 18:58:48 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* vm.c, vm_insnhelper.c (vm_define_method): move 
+	* vm.c, vm_insnhelper.c (vm_define_method): move
 	  function place.
 
 Tue Aug 12 18:56:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -297,7 +297,7 @@ Tue Aug 12 18:51:11 2008  Tanaka Akira  <akr@fsij.org>
 Tue Aug 12 18:46:36 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimalCmp): should not ignore
-	  <=> comparison.   [ruby-dev:35732]
+	  <=> comparison.  [ruby-dev:35732]
 
 Tue Aug 12 18:43:10 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -606,7 +606,7 @@ Sun Aug 10 11:15:55 2008  Tanaka Akira  <akr@fsij.org>
 	  in UTF-16LE.  \x02 causes invalid and next character is started from
 	  \x01.
 	  (transcode_restartable): new function to call
-	  transcode_restartable0.   if feed buffer is not empty, convert it at
+	  transcode_restartable0.  if feed buffer is not empty, convert it at
 	  first.
 
 Sun Aug 10 11:02:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -616,7 +616,7 @@ Sun Aug 10 11:02:58 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Aug 10 09:35:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb.rb (IRB::Irb#inspect): instance_variables returns symbols
-	  instead of strings now.   [ruby-dev:34930]
+	  instead of strings now.  [ruby-dev:34930]
 
 Sun Aug 10 09:22:14 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -786,7 +786,7 @@ Fri Aug  8 00:05:02 2008  TAKAO Kouji  <kouji@takao7.net>
 	* ext/.document: added readline/readline.c.
 
 	* ext/readline/readline.c: changed Copyright. added RDoc.
-	
+
 	* ext/readline/README.ja: fixed typo.
 
 	* ext/readline/README: contents was moved RDoc.
@@ -975,7 +975,7 @@ Wed Aug  6 07:45:26 2008  Tanaka Akira  <akr@fsij.org>
 	* tool/transcode-tblgen.rb: show generating tables in verbose mode.
 	  (transcode_generate_node): call ActionMap#generate_node with showing
 	  table name.
-	
+
 	* enc/trans/utf_16_32.erb.c: use transcode_generate_node.
 
 Wed Aug  6 06:55:20 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1190,7 +1190,7 @@ Fri Aug  1 23:49:44 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* ext/readline/extconf.rb: checked to have clear_history in
 	  readline library.
-	* ext/readline/readline.c (hist_get, hist_each, Init_readline): 
+	* ext/readline/readline.c (hist_get, hist_each, Init_readline):
 	  The offset specified for the argument of history_get() might be
 	  different in GNU Readline and libedit. If use libedit, it was
 	  corrected that the computational method of the offset specified
@@ -1206,7 +1206,7 @@ Fri Aug  1 23:49:44 2008  TAKAO Kouji  <kouji@takao7.net>
 	  method. [ruby-dev:35551]
 	* test/readline/test_readline_history.rb: added unit test for
 	  Readline::HISTORY.
-	
+
 Fri Aug  1 23:26:45 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (transcode_loop): undefined character is replaced with
@@ -1243,7 +1243,7 @@ Fri Aug  1 21:29:56 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* vm.c (Init_BareVM): check failure of malloc().
 
 Fri Aug  1 20:55:27 2008  NARUSE, Yui  <naruse@ruby-lang.org>
-	
+
 	* enc/trans/japanese.c (to_SHIFT_JIS_EF_BF_offsets): add U+FFF3,
 	  U+FFF4, U+FFF5.
 
@@ -1452,7 +1452,7 @@ Tue Jul 29 17:54:35 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Tue Jul 29 13:17:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/etc/test_etc.rb (test_getpwuid): fix for users whose uid is
-	  shared. 
+	  shared.
 
 Tue Jul 29 05:37:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1591,7 +1591,7 @@ Sun Jul 27 09:02:32 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 Sat Jul 26 22:45:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* sample/exyacc.rb: fixed NoMethodError(Kernel#sub!).
-	  replaced use of special variables with explicit IO 
+	  replaced use of special variables with explicit IO
 	  operations.
 
 Sat Jul 26 21:17:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
@@ -1603,7 +1603,7 @@ Sat Jul 26 21:17:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Sat Jul 26 07:44:14 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (add_event_call_back): remove unused 
+	* ext/win32ole/win32ole.c (add_event_call_back): remove unused
 	  variable.
 
 Fri Jul 25 23:48:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1628,10 +1628,10 @@ Fri Jul 25 21:09:32 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Fri Jul 25 20:52:44 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* test/win32ole/err_in_callback.rb : add test of raising
+	* test/win32ole/err_in_callback.rb: add test of raising
 	  exception in WIN32OLE_EVENT callback.
 
-	* test/win32ole/test_err_in_callback.rb : ditto.
+	* test/win32ole/test_err_in_callback.rb: ditto.
 
 Fri Jul 25 20:43:57 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
@@ -3093,10 +3093,10 @@ Sat Jun 28 13:12:06 2008  Tanaka Akira  <akr@fsij.org>
 
 Sat Jun 28 08:40:18 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c : check String encoding when
+	* ext/win32ole/win32ole.c: check String encoding when
 	  converting String to VT_BSTR in OLE.
 
-	* test/win32ole/test_win32ole.rb : ditto.
+	* test/win32ole/test_win32ole.rb: ditto.
 
 Sat Jun 28 01:08:42 2008  Tanaka Akira  <akr@fsij.org>
 
