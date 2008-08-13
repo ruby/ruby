@@ -64,4 +64,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     ret = ec.primitive_convert(src="\nvwx", dst="", 50, Encoding::Converter::PARTIAL_INPUT)
     assert_equal([:ibuf_empty, "", "vwx"], [ret, src, dst])
   end
+
+  def test_crlf_newline
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CRLF_NEWLINE)
+    ret = ec.primitive_convert(src="abc\ndef", dst="", 50, 0)
+    assert_equal([:finished, "", "abc\r\ndef"], [ret, src, dst])
+  end
+
+  def test_cr_newline
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CR_NEWLINE)
+    ret = ec.primitive_convert(src="abc\ndef", dst="", 50, 0)
+    assert_equal([:finished, "", "abc\rdef"], [ret, src, dst])
+  end
 end

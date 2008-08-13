@@ -683,7 +683,7 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
     transcoder_entry_t **entries;
 
     if (!*entries_ptr) {
-        entries = ALLOC_N(transcoder_entry_t *, depth+1+1);
+        entries = ALLOC_N(transcoder_entry_t *, depth+1+2);
         *entries_ptr = entries;
     }
     else {
@@ -703,6 +703,16 @@ rb_trans_open(const char *from, const char *to, int flags)
 
     if (num_trans < 0 || !entries)
         return NULL;
+
+    if (flags & (CRLF_NEWLINE|CR_NEWLINE)) {
+        char *name = (flags & CRLF_NEWLINE) ? "crlf_newline" : "cr_newline";
+        transcoder_entry_t *e = get_transcoder_entry("", name);
+        if (!e)
+            return NULL;
+        MEMMOVE(entries+1, entries, transcoder_entry_t *, num_trans);
+        entries[0] = e;
+        num_trans++;
+    }
 
     if (flags & UNIVERSAL_NEWLINE) {
         transcoder_entry_t *e = get_transcoder_entry("universal_newline", "");
@@ -1392,4 +1402,6 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE", INT2FIX(UNIVERSAL_NEWLINE));
+    rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE", INT2FIX(CRLF_NEWLINE));
+    rb_define_const(rb_cEncodingConverter, "CR_NEWLINE", INT2FIX(CR_NEWLINE));
 }

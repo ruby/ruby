@@ -47,10 +47,45 @@ rb_universal_newline = {
     NULL, NULL, NULL, fun_so_universal_newline
 };
 
+<%
+  map_crlf = {}
+  map_crlf["{00-09,0b-ff}"] = :nomap
+  map_crlf["0a"] = "0d0a"
+%>
+
+<%= transcode_generate_node(ActionMap.parse(map_crlf), "crlf_newline") %>
+
+static const rb_transcoder
+rb_crlf_newline = {
+    "", "crlf_newline", &crlf_newline,
+    1, /* input_unit_length */
+    1, /* max_input */
+    2, /* max_output */
+    NULL, NULL, NULL, NULL
+};
+
+<%
+  map_crlf = {}
+  map_crlf["{00-09,0b-ff}"] = :nomap
+  map_crlf["0a"] = "0d"
+%>
+
+<%= transcode_generate_node(ActionMap.parse(map_crlf), "cr_newline") %>
+
+static const rb_transcoder
+rb_cr_newline = {
+    "", "cr_newline", &cr_newline,
+    1, /* input_unit_length */
+    1, /* max_input */
+    1, /* max_output */
+    NULL, NULL, NULL, NULL
+};
 
 void
 Init_newline(void)
 {
     rb_register_transcoder(&rb_universal_newline);
+    rb_register_transcoder(&rb_crlf_newline);
+    rb_register_transcoder(&rb_cr_newline);
 }
 

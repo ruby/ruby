@@ -1,3 +1,14 @@
+Wed Aug 13 14:45:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/newline.trans (rb_crlf_newline): new transcoder.
+	  (rb_cr_newline): new transcoder.
+
+	* transcode.c (trans_open_i): one more exra room for input newline
+	  converter.
+	  (rb_trans_open): crlf newline and cr newline implemented.
+	  (Init_transcode): Encoding::Converter::CRLF_NEWLINE and
+	  Encoding::Converter::LF_NEWLINE defined.
+
 Wed Aug 13 14:22:16 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/newline.trans: new file.
@@ -8,7 +19,7 @@ Wed Aug 13 14:22:16 2008  Tanaka Akira  <akr@fsij.org>
 	  (CRLF_NEWLINE): defined.
 	  (CR_NEWLINE): defined.
 	  (rb_trans_open_by_transcoder_entries): initialize last_tc.
-	  (trans_open_i): allocate one more room for newline converter.
+	  (trans_open_i): allocate one more room for output newline converter.
 	  (rb_trans_open): universal newline implemented.
 	  (more_output_buffer): take max_output argument instead ts.
 	  (output_replacement_character): take tc argument instead of ts.
