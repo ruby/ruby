@@ -5,6 +5,7 @@ require "tmpdir"
 class TestFileExhaustive < Test::Unit::TestCase
   def setup
     @dir = Dir.mktmpdir("rubytest-file")
+    File.chown(-1, Process.gid, @dir)
     @file = make_tmp_filename("file")
     @zerofile = make_tmp_filename("zerofile")
     @nofile = make_tmp_filename("nofile")

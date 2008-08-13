@@ -1,3 +1,8 @@
+Thu Aug 14 02:45:16 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_file_exhaustive.rb (TestFileExhaustive#setup):
+	  set group of tmpdir.
+
 Thu Aug 14 02:23:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_primitive_convert): add output_byteoffset
