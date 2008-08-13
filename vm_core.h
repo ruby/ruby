@@ -507,6 +507,7 @@ VALUE rb_iseq_compile(VALUE src, VALUE file, VALUE line);
 VALUE ruby_iseq_disasm(VALUE self);
 VALUE ruby_iseq_disasm_insn(VALUE str, VALUE *iseqval, int pos, rb_iseq_t *iseq, VALUE child);
 const char *ruby_node_name(int node);
+VALUE rb_iseq_clone(VALUE iseqval, VALUE newcbase);
 
 RUBY_EXTERN VALUE rb_cISeq;
 RUBY_EXTERN VALUE rb_cRubyVM;

@@ -1,3 +1,7 @@
+Wed Aug 13 11:45:51 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* vm_core.h: Declare rb_iseq_clone, which is used in class.c.
+
 Wed Aug 13 11:39:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (transcode_search_path): return the length of converter
