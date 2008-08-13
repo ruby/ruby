@@ -1015,16 +1015,13 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 	}
 
 	if (timer_interrupt) {
-#if USE_NATIVE_THREAD_PRIORITY
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
-	    rb_thread_schedule();
-#else
+
 	    if (th->slice > 0) {
 		th->slice--;
 	    }
 	    else {
 	      reschedule:
-		EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
 		rb_thread_schedule();
 		if (th->slice < 0) {
 		    th->slice++;
@@ -1034,7 +1031,6 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 		    th->slice = th->priority;
 		}
 	    }
-#endif
 	}
     }
 }
