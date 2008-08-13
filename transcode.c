@@ -1430,8 +1430,8 @@ check_econv(VALUE self)
 
 /*
  * call-seq:
- *   primitive_convert(input_buffer, output_buffer, output_bufsize) -> symbol
- *   primitive_convert(input_buffer, output_buffer, output_bufsize, flags) -> symbol
+ *   primitive_convert(input_buffer, output_buffer, output_byteoffset, output_bytesize) -> symbol
+ *   primitive_convert(input_buffer, output_buffer, output_byteoffset, output_bytesize, flags) -> symbol
  *
  * possible flags:
  *   Encoding::Converter::PARTIAL_INPUT # input buffer may be part of larger input
@@ -1446,16 +1446,23 @@ check_econv(VALUE self)
  * primitive_convert converts input_buffer into output_buffer.
  *
  * input_buffer and output_buffer should be a string.
- * output_bufsize and flags should be an integer.
+ * output_byteoffset should be an integer or nil.
+ * output_bytesize and flags should be an integer.
  *
  * primitive_convert convert the content of input_buffer from beginning
  * and store the result into output_buffer.
  *
+ * output_byteoffset and output_bytesize specify the region which
+ * the converted result is stored.
+ * output_byteoffset specifies the start position in output_buffer in bytes.
+ * If output_byteoffset is nil, output_buffer.bytesize is assumed.
+ * output_bytesize specifies maximum number of bytes.
+ * After conversion, output_buffer is resized to
+ * output_byteoffset + actually converted number of bytes.
+ *
  * primitive_convert drops the first part of input_buffer.
  * the dropped part is converted in output_buffer or
  * buffered in Encoding::Converter object.
- *
- * output_buffer is resized to output_bufsize bytes at maximum.
  *
  * primitive_convert stops conversion when one of following condition met.
  * - invalid byte sequence found in input buffer (:invalid_input)
