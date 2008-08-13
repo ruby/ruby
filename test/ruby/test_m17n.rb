@@ -746,7 +746,7 @@ class TestM17N < Test::Unit::TestCase
     #assert_raise(ArgumentError) { s("%c") % 0xc2a1 }
     assert_strenc("\u{c2a1}", 'UTF-8', u("%c") % 0xc2a1)
     assert_strenc("\u{c2}", 'UTF-8', u("%c") % 0xc2)
-    assert_raise(ArgumentError) {
+    assert_raise(EncodingCompatibilityError) {
       "%s%s" % [s("\xc2\xa1"), e("\xc2\xa1")]
     }
   end
@@ -866,22 +866,22 @@ class TestM17N < Test::Unit::TestCase
 
   def test_str_aref_substr
     assert_equal(a("\xa1\xc2"), a("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")])
-    assert_raise(ArgumentError) { a("\xc2\xa1\xc2\xa2\xc2\xa3")[e("\xa1\xc2")] }
+    assert_raise(EncodingCompatibilityError) { a("\xc2\xa1\xc2\xa2\xc2\xa3")[e("\xa1\xc2")] }
 
     assert_equal(nil, e("\xc2\xa1\xc2\xa2\xc2\xa3")[e("\xa1\xc2")])
-    assert_raise(ArgumentError) { e("\xc2\xa1\xc2\xa2\xc2\xa3")[s("\xa1\xc2")] }
+    assert_raise(EncodingCompatibilityError) { e("\xc2\xa1\xc2\xa2\xc2\xa3")[s("\xa1\xc2")] }
 
     assert_equal(s("\xa1\xc2"), s("\xc2\xa1\xc2\xa2\xc2\xa3")[s("\xa1\xc2")])
-    assert_raise(ArgumentError) { s("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")] }
+    assert_raise(EncodingCompatibilityError) { s("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")] }
 
     assert_equal(nil, u("\xc2\xa1\xc2\xa2\xc2\xa3")[u("\xa1\xc2")])
-    assert_raise(ArgumentError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
+    assert_raise(EncodingCompatibilityError) { u("\xc2\xa1\xc2\xa2\xc2\xa3")[a("\xa1\xc2")] }
     assert_nil(e("\xa1\xa2\xa3\xa4")[e("\xa2\xa3")])
   end
 
   def test_aset
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
-    assert_raise(ArgumentError){s["\xb0\xa3"] = "foo"}
+    assert_raise(EncodingCompatibilityError){s["\xb0\xa3"] = "foo"}
   end
 
   def test_str_center
@@ -917,13 +917,13 @@ class TestM17N < Test::Unit::TestCase
   def test_count
     assert_equal(0, e("\xa1\xa2").count("z"))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
-    assert_raise(ArgumentError){s.count(a("\xa3\xb0"))}
+    assert_raise(EncodingCompatibilityError){s.count(a("\xa3\xb0"))}
   end
 
   def test_delete
     assert_equal(1, e("\xa1\xa2").delete("z").length)
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
-    assert_raise(ArgumentError){s.delete(a("\xa3\xb2"))}
+    assert_raise(EncodingCompatibilityError){s.delete(a("\xa3\xb2"))}
 
     a = "\u3042\u3044\u3046\u3042\u3044\u3046"
     a.delete!("\u3042\u3044", "^\u3044")
@@ -942,7 +942,7 @@ class TestM17N < Test::Unit::TestCase
     assert_nil(e("\xa1\xa2\xa3\xa4").index(e("\xa3")))
     assert_nil(e("\xa1\xa2\xa3\xa4").rindex(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
-    assert_raise(ArgumentError){s.rindex(a("\xb1\xa3"))}
+    assert_raise(EncodingCompatibilityError){s.rindex(a("\xb1\xa3"))}
   end
 
   def test_next
@@ -985,7 +985,7 @@ class TestM17N < Test::Unit::TestCase
   def test_upto
     s1 = e("\xa1\xa2")
     s2 = s("\xa1\xa2")
-    assert_raise(ArgumentError){s1.upto(s2) {|x| break }}
+    assert_raise(EncodingCompatibilityError){s1.upto(s2) {|x| break }}
   end
 
   def test_casecmp
@@ -1005,12 +1005,12 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_plus
-    assert_raise(ArgumentError){u("\xe3\x81\x82") + a("\xa1")}
+    assert_raise(EncodingCompatibilityError){u("\xe3\x81\x82") + a("\xa1")}
   end
 
   def test_chomp
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
-    assert_raise(ArgumentError){s.chomp(s("\xa3\xb4"))}
+    assert_raise(EncodingCompatibilityError){s.chomp(s("\xa3\xb4"))}
   end
 
   def test_gsub
@@ -1023,7 +1023,7 @@ class TestM17N < Test::Unit::TestCase
     t = s.gsub(/b/, "\xa1\xa1".force_encoding("euc-jp"))
     assert_equal(Encoding::ASCII_8BIT, s.encoding)
 
-    assert_raise(ArgumentError) {
+    assert_raise(EncodingCompatibilityError) {
       "abc".gsub(/[ac]/) {
          $& == "a" ? "\xc2\xa1".force_encoding("euc-jp") :
                      "\xc2\xa1".force_encoding("utf-8")
@@ -1044,7 +1044,7 @@ class TestM17N < Test::Unit::TestCase
 
   def test_each_line
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
-    assert_raise(ArgumentError){s.each_line(a("\xa3\xb1")) {|l| }}
+    assert_raise(EncodingCompatibilityError){s.each_line(a("\xa3\xb1")) {|l| }}
     s = e("\xa4\xa2\nfoo")
 
     actual = []

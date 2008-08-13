@@ -1,3 +1,11 @@
+Wed Aug 13 16:13:58 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_m17n.rb: follow EncodingCompatibilityError.
+
+	* test/ruby/test_mixed_unicode_escapes.rb: ditto.
+
+	* test/ruby/enc/test_utf16.rb: ditto.
+
 Wed Aug 13 16:05:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* time.c (time_cmp): retry with right hand operand if its not a

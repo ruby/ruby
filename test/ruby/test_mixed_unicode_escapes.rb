@@ -18,8 +18,8 @@ class TestMixedUnicodeEscape < Test::Unit::TestCase
 
     # String interpolation turns into an expression and we get
     # a different kind of error, but we still can't mix these
-    assert_raise(ArgumentError) { eval %q("\u{1234}#{nil}é")}
-    assert_raise(ArgumentError) { eval %q("é#{nil}\u1234")}
+    assert_raise(EncodingCompatibilityError) { eval %q("\u{1234}#{nil}é")}
+    assert_raise(EncodingCompatibilityError) { eval %q("é#{nil}\u1234")}
 
   end
 end
