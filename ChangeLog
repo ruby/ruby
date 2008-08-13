@@ -1,3 +1,7 @@
+Wed Aug 13 13:09:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot: fix for clean up.
+
 Wed Aug 13 11:45:51 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* vm_core.h: Declare rb_iseq_clone, which is used in class.c.

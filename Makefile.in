@@ -181,9 +181,12 @@ $(srcdir)/configure: $(srcdir)/configure.in
 # * svn checkout generate a file with mtime as current time
 # * XFS has a mtime with fractional part
 lex.c: keywords
+	@\
 	if cmp -s $(srcdir)/lex.c.src $?; then \
+	  set -x; \
 	  cp $(srcdir)/lex.c.blt $@; \
 	else \
+	  set -x; \
 	  gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@.tmp && \
 	  mv $@.tmp $@ && \
 	  cp $? $(srcdir)/lex.c.src && \

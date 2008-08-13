@@ -646,7 +646,7 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
 $(INSNS): $(srcdir)/insns.def {$(VPATH)}vm_opts.h
-	$(RM) $(PROGRAM)
+	@$(RM) $(PROGRAM)
 	$(BASERUBY) -Ks $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
 minsns.inc: $(srcdir)/template/minsns.inc.tmpl
