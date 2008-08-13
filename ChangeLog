@@ -1,3 +1,7 @@
+Wed Aug 13 17:28:29 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* common.mk: regint.h no longer includes vm_core.h.
+
 Wed Aug 13 17:26:44 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoding): add fields: writebuf_off,

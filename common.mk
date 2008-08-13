@@ -530,45 +530,24 @@ rational.$(OBJEXT): {$(VPATH)}rational.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h
 re.$(OBJEXT): {$(VPATH)}re.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
-  {$(VPATH)}encoding.h {$(VPATH)}util.h \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
+  {$(VPATH)}encoding.h {$(VPATH)}util.h {$(VPATH)}regint.h \
   {$(VPATH)}regenc.h
 regcomp.$(OBJEXT): {$(VPATH)}regcomp.c {$(VPATH)}regparse.h \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h \
+  {$(VPATH)}regint.h {$(VPATH)}config.h {$(VPATH)}defines.h \
   {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-regenc.$(OBJEXT): {$(VPATH)}regenc.c \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
+regenc.$(OBJEXT): {$(VPATH)}regenc.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-regerror.$(OBJEXT): {$(VPATH)}regerror.c \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
+regerror.$(OBJEXT): {$(VPATH)}regerror.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-regexec.$(OBJEXT): {$(VPATH)}regexec.c \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
+regexec.$(OBJEXT): {$(VPATH)}regexec.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
 regparse.$(OBJEXT): {$(VPATH)}regparse.c {$(VPATH)}regparse.h \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
-  {$(VPATH)}config.h {$(VPATH)}defines.h \
+  {$(VPATH)}regint.h {$(VPATH)}config.h {$(VPATH)}defines.h \
   {$(VPATH)}regenc.h {$(VPATH)}oniguruma.h {$(VPATH)}st.h
-regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
+regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
 ruby.$(OBJEXT): {$(VPATH)}ruby.c $(RUBY_H_INCLUDES) \
@@ -673,10 +652,7 @@ ascii.$(OBJEXT): {$(VPATH)}ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
 us_ascii.$(OBJEXT): {$(VPATH)}us_ascii.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
   {$(VPATH)}defines.h {$(VPATH)}oniguruma.h
-unicode.$(OBJEXT): {$(VPATH)}unicode.c \
-  {$(VPATH)}regint.h {$(VPATH)}vm_core.h {$(VPATH)}debug.h \
-  {$(VPATH)}vm_opts.h {$(VPATH)}id.h {$(VPATH)}parse.c \
-  {$(VPATH)}thread_$(THREAD_MODEL).h \
+unicode.$(OBJEXT): {$(VPATH)}unicode.c {$(VPATH)}regint.h \
   {$(VPATH)}config.h {$(VPATH)}defines.h {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h {$(VPATH)}st.h
 utf_8.$(OBJEXT): {$(VPATH)}utf_8.c {$(VPATH)}regenc.h {$(VPATH)}config.h \
