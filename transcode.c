@@ -1289,6 +1289,34 @@ econv_s_allocate(VALUE klass)
     return Data_Wrap_Struct(klass, NULL, econv_free, NULL);
 }
 
+/*
+ * call-seq:
+ *   Encoding::Converter.new(input_encoding, output_encoding)
+ *   Encoding::Converter.new(input_encoding, output_encoding, flags)
+ *
+ * possible flags:
+ *   Encoding::Converter::UNIVERSAL_NEWLINE # convert CRLF and CR to LF at last
+ *   Encoding::Converter::CRLF_NEWLINE      # convert LF to CRLF at first
+ *   Encoding::Converter::CR_NEWLINE        # convert LF to CR at first
+ *
+ * Encoding::Converter.new creates an instance of Encoding::Converter.
+ *
+ * input_encoding and output_encoding should be a string.
+ * flags should be an integer.
+ *
+ * example:
+ *   # UTF-16BE to UTF-8
+ *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
+ *
+ *   # (1) convert UTF-16BE to UTF-8
+ *   # (2) convert CRLF and CR to LF
+ *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::UNIVERSAL_NEWLINE)
+ *
+ *   # (1) convert LF to CRLF
+ *   # (2) convert UTF-8 to UTF-16BE 
+ *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CRLF_NEWLINE)
+ *
+ */
 static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
@@ -1336,6 +1364,58 @@ check_econv(VALUE self)
     return DATA_PTR(self);
 }
 
+/*
+ * call-seq:
+ *   primitive_convert(input_buffer, output_buffer, output_bufsize) -> symbol
+ *   primitive_convert(input_buffer, output_buffer, output_bufsize, flags) -> symbol
+ *
+ * possible flags:
+ *   Encoding::Converter::PARTIAL_INPUT # input buffer may be part of larger input
+ *
+ * possible results:
+ *    :invalid_input
+ *    :undefined_conversion
+ *    :obuf_full
+ *    :ibuf_empty
+ *    :finished
+ *
+ * primitive_convert converts input_buffer into output_buffer.
+ *
+ * input_buffer and output_buffer should be a string.
+ * output_bufsize and flags should be an integer.
+ *
+ * output_bufsize should be greater than or equal to the value of
+ * Encoding::Converter#max_output.
+ *
+ * primitive_convert convert the content of input_buffer from beginning
+ * and store the result into output_buffer.
+ *
+ * primitive_convert drops the first part of input_buffer.
+ * the dropped part is converted in output_buffer or
+ * buffered in Encoding::Converter object.
+ *
+ * output_buffer is resized to output_bufsize bytes at maximum.
+ *
+ * primitive_convert stops conversion when one of following condition met.
+ * - invalid byte sequence found in input buffer (:invalid_input)
+ * - character not representable in output encoding (:undefined_conversion)
+ * - output buffer is full (:obuf_full)
+ * - input buffer is empty (:ibuf_empty)
+ *   this occur only when PARTIAL_INPUT is specified.
+ * - conversion is finished (:finished)
+ *
+ * example:
+ *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE")
+ *   ret = ec.primitive_convert(src="pi", dst="", 100)
+ *   p [ret, src, dst] #=> [:finished, "", "\x00p\x00i"]
+ *
+ *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE")
+ *   ret = ec.primitive_convert(src="pi", dst="", 4)
+ *   p [ret, src, dst] # [:obuf_full, "", "\x00p"]
+ *   ret = ec.primitive_convert(src, dst="", 4)
+ *   p [ret, src, dst] # [:finished, "", "\x00i"]
+ *
+ */
 static VALUE
 econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 {
@@ -1381,6 +1461,14 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     }
 }
 
+/*
+ * call-seq:
+ *   max_output -> int
+ *
+ * returns the maximum length of output unit in bytes.
+ *
+ * This value is the minimum value of output_bufsize argument of primitive_convert.
+ */
 static VALUE
 econv_max_output(VALUE self)
 {
