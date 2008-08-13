@@ -7,7 +7,7 @@ Wed Aug 13 14:45:37 2008  Tanaka Akira  <akr@fsij.org>
 	  converter.
 	  (rb_trans_open): crlf newline and cr newline implemented.
 	  (Init_transcode): Encoding::Converter::CRLF_NEWLINE and
-	  Encoding::Converter::LF_NEWLINE defined.
+	  Encoding::Converter::CR_NEWLINE defined.
 
 Wed Aug 13 14:22:16 2008  Tanaka Akira  <akr@fsij.org>
 
