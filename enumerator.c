@@ -16,7 +16,7 @@
 #include "debug.h"
 
 /*
- * Document-class: Enumerable::Enumerator
+ * Document-class: Enumerator
  *
  * A class which provides a method `each' to be used as an Enumerable
  * object.
@@ -67,7 +67,7 @@ enumerator_ptr(VALUE obj)
  *    obj.to_enum(method = :each, *args)
  *    obj.enum_for(method = :each, *args)
  *
- *  Returns Enumerable::Enumerator.new(self, method, *args).
+ *  Returns Enumerator.new(self, method, *args).
  *
  *  e.g.:
  *
@@ -241,11 +241,11 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *    Enumerable::Enumerator.new(obj, method = :each, *args)
+ *    Enumerator.new(obj, method = :each, *args)
  *
- *  Creates a new Enumerable::Enumerator object, which is to be
- *  used as an Enumerable object using the given object's given
- *  method with the given arguments.
+ *  Creates a new Enumerator object, which is to be used as an
+ *  Enumerable object using the given object's given method with the
+ *  given arguments.
  *
  *  Use of this method is discouraged.  Use Kernel#enum_for() instead.
  */
@@ -480,7 +480,7 @@ Init_Enumerator(void)
     rb_define_method(rb_mEnumerable, "each_slice", enum_each_slice, 1);
     rb_define_method(rb_mEnumerable, "each_cons", enum_each_cons, 1);
 
-    rb_cEnumerator = rb_define_class_under(rb_mEnumerable, "Enumerator", rb_cObject);
+    rb_cEnumerator = rb_define_class("Enumerator", rb_cObject);
     rb_include_module(rb_cEnumerator, rb_mEnumerable);
 
     rb_define_alloc_func(rb_cEnumerator, enumerator_allocate);
