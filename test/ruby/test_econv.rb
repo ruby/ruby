@@ -4,10 +4,10 @@ class TestEncodingConverter < Test::Unit::TestCase
   def assert_econv(ret_expected, dst_expected, src_expected, to, from, src, opt={})
     opt[:obuf_len] ||= 100
     src = src.dup
-    ec = Encoding::Converter.new(from, to, 0)
+    ec = Encoding::Converter.new(from, to)
     dst = ''
     while true
-      ret = ec.primitive_convert(src, dst2="", opt[:obuf_len], 0)
+      ret = ec.primitive_convert(src, dst2="", opt[:obuf_len])
       dst << dst2
       #p [ret, dst, src]
       break if ret != :obuf_full
@@ -35,17 +35,17 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_errors
-    ec = Encoding::Converter.new("UTF-16BE", "EUC-JP", 0)
+    ec = Encoding::Converter.new("UTF-16BE", "EUC-JP")
     src = "\xFF\xFE\x00A\xDC\x00"
-    ret = ec.primitive_convert(src, dst="", 10, 0)
+    ret = ec.primitive_convert(src, dst="", 10)
     assert_equal("", src)
     assert_equal("", dst)
     assert_equal(:undefined_conversion, ret) # \xFF\xFE is not representable in EUC-JP
-    ret = ec.primitive_convert(src, dst="", 10, 0)
+    ret = ec.primitive_convert(src, dst="", 10)
     assert_equal("", src)
     assert_equal("A", dst)
     assert_equal(:invalid_input, ret) # \xDC\x00 is invalid as UTF-16BE
-    ret = ec.primitive_convert(src, dst="", 10, 0)
+    ret = ec.primitive_convert(src, dst="", 10)
     assert_equal("", src)
     assert_equal("", dst)
     assert_equal(:finished, ret)
@@ -67,13 +67,13 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_crlf_newline
     ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CRLF_NEWLINE)
-    ret = ec.primitive_convert(src="abc\ndef", dst="", 50, 0)
+    ret = ec.primitive_convert(src="abc\ndef", dst="", 50)
     assert_equal([:finished, "", "abc\r\ndef"], [ret, src, dst])
   end
 
   def test_cr_newline
     ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CR_NEWLINE)
-    ret = ec.primitive_convert(src="abc\ndef", dst="", 50, 0)
+    ret = ec.primitive_convert(src="abc\ndef", dst="", 50)
     assert_equal([:finished, "", "abc\rdef"], [ret, src, dst])
   end
 end

@@ -1290,15 +1290,21 @@ econv_s_allocate(VALUE klass)
 }
 
 static VALUE
-econv_init(VALUE self, VALUE from_encoding, VALUE to_encoding, VALUE flags_v)
+econv_init(int argc, VALUE *argv, VALUE self)
 {
+    VALUE from_encoding, to_encoding, flags_v;
     const char *from_e, *to_e;
     rb_trans_t *ts;
     int flags;
 
+    rb_scan_args(argc, argv, "21", &from_encoding, &to_encoding, &flags_v);
+
     StringValue(from_encoding);
     StringValue(to_encoding);
-    flags = NUM2INT(flags_v);
+    if (flags_v == Qnil)
+        flags = 0;
+    else
+        flags = NUM2INT(flags_v);
 
     from_e = RSTRING_PTR(from_encoding);
     to_e = RSTRING_PTR(to_encoding);
@@ -1331,8 +1337,9 @@ check_econv(VALUE self)
 }
 
 static VALUE
-econv_primitive_convert(VALUE self, VALUE input, VALUE output, VALUE output_size_v, VALUE flags_v)
+econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 {
+    VALUE input, output, output_size_v, flags_v;
     rb_trans_t *ts = check_econv(self);
     rb_trans_result_t res;
     const unsigned char *ip, *is;
@@ -1340,8 +1347,13 @@ econv_primitive_convert(VALUE self, VALUE input, VALUE output, VALUE output_size
     long output_size;
     int flags;
 
+    rb_scan_args(argc, argv, "31", &input, &output, &output_size_v, &flags_v);
+
     output_size = NUM2LONG(output_size_v);
-    flags = NUM2INT(flags_v);
+    if (flags_v == Qnil)
+        flags = 0;
+    else
+        flags = NUM2INT(flags_v);
     StringValue(output);
     StringValue(input);
     rb_str_modify(output);
@@ -1397,8 +1409,8 @@ Init_transcode(void)
 
     rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
-    rb_define_method(rb_cEncodingConverter, "initialize", econv_init, 3);
-    rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, 4);
+    rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
+    rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
     rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE", INT2FIX(UNIVERSAL_NEWLINE));
