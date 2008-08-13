@@ -1,3 +1,7 @@
+Wed Aug 13 19:40:12 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: count only freed object as freelist size.
+
 Wed Aug 13 18:34:22 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
         * marshal.c (marshal_load): set arg.untrust properly.

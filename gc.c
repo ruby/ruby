@@ -1636,7 +1636,7 @@ gc_sweep(rb_objspace_t *objspace)
     final_list = deferred_final_list;
     deferred_final_list = 0;
     for (i = 0; i < heaps_used; i++) {
-	int n = 0;
+	int free_num = 0, final_num = 0;
 	RVALUE *free = freelist;
 	RVALUE *final = final_list;
 	int deferred;
@@ -1654,11 +1654,12 @@ gc_sweep(rb_objspace_t *objspace)
 		    p->as.free.flags |= FL_MARK;
 		    p->as.free.next = final_list;
 		    final_list = p;
+		    final_num++;
 		}
 		else {
 		    add_freelist(objspace, p);
+		    free_num++;
 		}
-		n++;
 	    }
 	    else if (BUILTIN_TYPE(p) == T_DEFERRED) {
 		/* objects to be finalized */
@@ -1670,21 +1671,19 @@ gc_sweep(rb_objspace_t *objspace)
 	    }
 	    p++;
 	}
-	if (n == heaps[i].limit && freed > do_heap_free) {
+	if (final_num + free_num == heaps[i].limit && freed > do_heap_free) {
 	    RVALUE *pp;
-	    int f_count = 0;
 
 	    for (pp = final_list; pp != final; pp = pp->as.free.next) {
-		f_count++;
 		RDATA(pp)->dmark = (void *)&heaps[i];
 		pp->as.free.flags |= FL_SINGLETON; /* freeing page mark */
 	    }
-	    heaps[i].limit = f_count;
+	    heaps[i].limit = final_num;
 
 	    freelist = free;	/* cancel this page from freelist */
 	}
 	else {
-	    freed += n;
+	    freed += free_num;
 	}
     }
     GC_PROF_SET_MALLOC_INFO;
