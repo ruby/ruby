@@ -221,7 +221,7 @@ caller_setup_args(const rb_thread_t *th, rb_control_frame_t *cfp, VALUE flag,
 	    if (proc != Qnil) {
 		if (!rb_obj_is_proc(proc)) {
 		    VALUE b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
-		    if (NIL_P(b)) {
+		    if (NIL_P(b) || !rb_obj_is_proc(b)) {
 			rb_raise(rb_eTypeError,
 				 "wrong argument type %s (expected Proc)",
 				 rb_obj_classname(proc));

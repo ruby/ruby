@@ -1,3 +1,8 @@
+Wed Aug 13 17:31:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* vm_insnhelper.c (caller_setup_args): should ensure if the value
+	  from to_proc is a real Proc.
+
 Wed Aug 13 17:28:29 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* common.mk: regint.h no longer includes vm_core.h.
