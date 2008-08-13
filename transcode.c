@@ -405,6 +405,13 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         return ret; \
         resume_label ## num:; \
     } while (0)
+#define SUSPEND_OBUF(num) \
+    do { \
+        while (out_stop - out_p < 1) { SUSPEND(transcode_obuf_full, num); } \
+    } while (0)
+
+#define writebuf_len (tc->writebuf_len)
+#define writebuf_off (tc->writebuf_off)
 
     switch (tc->resume_position) {
       case 0: break;
@@ -422,6 +429,15 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       case 12: goto resume_label12;
       case 13: goto resume_label13;
       case 14: goto resume_label14;
+      case 15: goto resume_label15;
+      case 16: goto resume_label16;
+      case 17: goto resume_label17;
+      case 18: goto resume_label18;
+      case 19: goto resume_label19;
+      case 20: goto resume_label20;
+      case 21: goto resume_label21;
+      case 22: goto resume_label22;
+      case 23: goto resume_label23;
     }
 
     while (1) {
@@ -446,8 +462,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       follow_info:
 	switch (next_info & 0x1F) {
           case NOMAP: /* xxx: copy last byte only? */
-            while (out_stop - out_p < 1) { SUSPEND(transcode_obuf_full, 3); }
-	    *out_p++ = next_byte;
+            SUSPEND_OBUF(3); *out_p++ = next_byte;
 	    continue;
 	  case 0x00: case 0x04: case 0x08: case 0x0C:
 	  case 0x10: case 0x14: case 0x18: case 0x1C:
@@ -462,26 +477,22 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	  case ZERObt: /* drop input */
 	    continue;
 	  case ONEbt:
-            while (out_stop - out_p < 1) { SUSPEND(transcode_obuf_full, 9); }
-	    *out_p++ = getBT1(next_info);
+            SUSPEND_OBUF(9); *out_p++ = getBT1(next_info);
 	    continue;
 	  case TWObt:
-            while (out_stop - out_p < 2) { SUSPEND(transcode_obuf_full, 10); }
-	    *out_p++ = getBT1(next_info);
-	    *out_p++ = getBT2(next_info);
+            SUSPEND_OBUF(10); *out_p++ = getBT1(next_info);
+            SUSPEND_OBUF(21); *out_p++ = getBT2(next_info);
 	    continue;
 	  case THREEbt:
-            while (out_stop - out_p < 3) { SUSPEND(transcode_obuf_full, 11); }
-	    *out_p++ = getBT1(next_info);
-	    *out_p++ = getBT2(next_info);
-	    *out_p++ = getBT3(next_info);
+            SUSPEND_OBUF(11); *out_p++ = getBT1(next_info);
+            SUSPEND_OBUF(15); *out_p++ = getBT2(next_info);
+            SUSPEND_OBUF(16); *out_p++ = getBT3(next_info);
 	    continue;
 	  case FOURbt:
-            while (out_stop - out_p < 4) { SUSPEND(transcode_obuf_full, 12); }
-	    *out_p++ = getBT0(next_info);
-	    *out_p++ = getBT1(next_info);
-	    *out_p++ = getBT2(next_info);
-	    *out_p++ = getBT3(next_info);
+            SUSPEND_OBUF(12); *out_p++ = getBT0(next_info);
+            SUSPEND_OBUF(17); *out_p++ = getBT1(next_info);
+            SUSPEND_OBUF(18); *out_p++ = getBT2(next_info);
+            SUSPEND_OBUF(19); *out_p++ = getBT3(next_info);
 	    continue;
 	  case FUNii:
 	    next_info = (VALUE)(*tr->func_ii)(tc, next_info);
@@ -495,16 +506,36 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 goto follow_info;
             }
 	  case FUNio:
-            while (out_stop - out_p < tr->max_output) { SUSPEND(transcode_obuf_full, 13); }
-	    out_p += (VALUE)(*tr->func_io)(tc, next_info, out_p);
+            SUSPEND_OBUF(13);
+            if (tr->max_output <= out_stop - out_p)
+                out_p += (VALUE)(*tr->func_io)(tc, next_info, out_p);
+            else {
+                writebuf_len = (VALUE)(*tr->func_io)(tc, next_info, TRANSCODING_WRITEBUF(tc));
+                writebuf_off = 0;
+                while (writebuf_off < writebuf_len) {
+                    SUSPEND_OBUF(20);
+                    *out_p++ = TRANSCODING_WRITEBUF(tc)[writebuf_off++];
+                }
+            }
 	    break;
 	  case FUNso:
             {
                 const unsigned char *char_start;
                 size_t char_len;
-                while (out_stop - out_p < tr->max_output) { SUSPEND(transcode_obuf_full, 14); }
-                char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
-                out_p += (VALUE)(*tr->func_so)(tc, char_start, (size_t)char_len, out_p);
+                SUSPEND_OBUF(14);
+                if (tr->max_output <= out_stop - out_p) {
+                    char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
+                    out_p += (VALUE)(*tr->func_so)(tc, char_start, (size_t)char_len, out_p);
+                }
+                else {
+                    char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
+                    writebuf_len = (VALUE)(*tr->func_so)(tc, char_start, (size_t)char_len, TRANSCODING_WRITEBUF(tc));
+                    writebuf_off = 0;
+                    while (writebuf_off < writebuf_len) {
+                        SUSPEND_OBUF(22);
+                        *out_p++ = TRANSCODING_WRITEBUF(tc)[writebuf_off++];
+                    }
+                }
                 break;
             }
 	  case INVALID:
@@ -544,14 +575,24 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 
     /* cleanup */
     if (tr->finish_func) {
-	while (out_stop - out_p < tr->max_output) {
-            SUSPEND(transcode_obuf_full, 4);
-	}
-        out_p += tr->finish_func(tc, out_p);
+        SUSPEND_OBUF(4);
+        if (tr->max_output <= out_stop - out_p) {
+            out_p += tr->finish_func(tc, out_p);
+        }
+        else {
+            writebuf_len = tr->finish_func(tc, TRANSCODING_WRITEBUF(tc));
+            writebuf_off = 0;
+            while (writebuf_off < writebuf_len) {
+                SUSPEND_OBUF(23);
+                *out_p++ = TRANSCODING_WRITEBUF(tc)[writebuf_off++];
+            }
+        }
     }
     while (1)
         SUSPEND(transcode_finished, 6);
 #undef SUSPEND
+#undef writebuf_len
+#undef writebuf_off
 }
 
 static rb_trans_result_t
@@ -592,8 +633,13 @@ rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
     tc->resume_position = 0;
     tc->recognized_len = 0;
     tc->readagain_len = 0;
+    tc->writebuf_len = 0;
+    tc->writebuf_off = 0;
     if (sizeof(tc->readbuf.ary) < tr->max_input) {
         tc->readbuf.ptr = xmalloc(tr->max_input);
+    }
+    if (sizeof(tc->writebuf.ary) < tr->max_output) {
+        tc->writebuf.ptr = xmalloc(tr->max_output);
     }
     return tc;
 }
@@ -629,6 +675,8 @@ rb_transcoding_close(rb_transcoding *tc)
     const rb_transcoder *tr = tc->transcoder;
     if (sizeof(tc->readbuf.ary) < tr->max_input)
         xfree(tc->readbuf.ptr);
+    if (sizeof(tc->writebuf.ary) < tr->max_output)
+        xfree(tc->writebuf.ptr);
     xfree(tc);
 }
 
@@ -1384,9 +1432,6 @@ check_econv(VALUE self)
  * input_buffer and output_buffer should be a string.
  * output_bufsize and flags should be an integer.
  *
- * output_bufsize should be greater than or equal to the value of
- * Encoding::Converter#max_output.
- *
  * primitive_convert convert the content of input_buffer from beginning
  * and store the result into output_buffer.
  *
@@ -1410,10 +1455,14 @@ check_econv(VALUE self)
  *   p [ret, src, dst] #=> [:finished, "", "\x00p\x00i"]
  *
  *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE")
- *   ret = ec.primitive_convert(src="pi", dst="", 4)
- *   p [ret, src, dst] # [:obuf_full, "", "\x00p"]
- *   ret = ec.primitive_convert(src, dst="", 4)
- *   p [ret, src, dst] # [:finished, "", "\x00i"]
+ *   ret = ec.primitive_convert(src="pi", dst="", 1)
+ *   p [ret, src, dst] #=> [:obuf_full, "i", "\x00"]
+ *   ret = ec.primitive_convert(src, dst="", 1)
+ *   p [ret, src, dst] #=> [:obuf_full, "", "p"]
+ *   ret = ec.primitive_convert(src, dst="", 1)
+ *   p [ret, src, dst] #=> [:obuf_full, "", "\x00"]
+ *   ret = ec.primitive_convert(src, dst="", 1)
+ *   p [ret, src, dst] #=> [:finished, "", "i"]
  *
  */
 static VALUE
@@ -1466,8 +1515,6 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  *   max_output -> int
  *
  * returns the maximum length of output unit in bytes.
- *
- * This value is the minimum value of output_bufsize argument of primitive_convert.
  */
 static VALUE
 econv_max_output(VALUE self)

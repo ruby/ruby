@@ -69,12 +69,20 @@ typedef struct rb_transcoding {
     const BYTE_LOOKUP *next_table;
     VALUE next_info;
     unsigned char next_byte;
+
     int recognized_len; /* already interpreted */
     int readagain_len; /* not yet interpreted */
     union {
         unsigned char ary[8]; /* max_input <= sizeof(ary) */
-        unsigned char *ptr; /* length is max_input */
+        unsigned char *ptr; /* length: max_input */
     } readbuf; /* recognized_len + readagain_len used */
+
+    int writebuf_off;
+    int writebuf_len;
+    union {
+        unsigned char ary[8]; /* max_output <= sizeof(ary) */
+        unsigned char *ptr; /* length: max_output */
+    } writebuf;
 
     unsigned char stateful[256]; /* opaque data for stateful encoding */
 } rb_transcoding;
@@ -82,6 +90,10 @@ typedef struct rb_transcoding {
     ((tc)->transcoder->max_input <= sizeof((tc)->readbuf.ary) ? \
      (tc)->readbuf.ary : \
      (tc)->readbuf.ptr)
+#define TRANSCODING_WRITEBUF(tc) \
+    ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
+     (tc)->writebuf.ary : \
+     (tc)->writebuf.ptr)
 
 /* static structure, one per supported encoding pair */
 struct rb_transcoder {

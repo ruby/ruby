@@ -1,3 +1,15 @@
+Wed Aug 13 17:26:44 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): add fields: writebuf_off,
+	  writebuf_len and writebuf.
+	  (TRANSCODING_WRITEBUF): new macro.
+
+	* transcode.c (transcode_restartable0): output until output buffer is
+	  really full.
+	  (rb_transcoding_open_by_transcoder): initialize writebuf_len,
+	  writebuf_off and writebuf.
+	  (rb_transcoding_close): finalize writebuf.
+
 Wed Aug 13 17:18:37 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_check_ints): added.  please note that
