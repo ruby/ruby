@@ -43,7 +43,7 @@
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !(defined(__APPLE__) && (defined(__MACH__) || defined(__DARWIN__)))
 #define alias_func(old_prot, new_name, args) \
 VALUE old_prot __attribute__((alias(#new_name)));
 #else
