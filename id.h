@@ -12,28 +12,34 @@
 #ifndef RUBY_ID_H
 #define RUBY_ID_H
 
+#include "parse.h"
+
 extern VALUE symIFUNC;
 extern VALUE symCFUNC;
 
-extern ID idPLUS;
-extern ID idMINUS;
-extern ID idMULT;
-extern ID idDIV;
-extern ID idMOD;
-extern ID idLT;
-extern ID idLTLT;
-extern ID idLE;
-extern ID idGT;
-extern ID idGE;
-extern ID idEq;
-extern ID idEqq;
-extern ID idNeq;
-extern ID idNot;
-extern ID idBackquote;
-extern ID idEqTilde;
+enum ruby_method_ids {
+    idPLUS = '+',
+    idMINUS = '-',
+    idMULT = '*',
+    idDIV = '/',
+    idMOD = '%',
+    idLT = '<',
+    idLTLT = tLSHFT,
+    idLE = tLEQ,
+    idGT = '>',
+    idGE = tGEQ,
+    idEq = tEQ,
+    idEqq = tEQQ,
+    idNeq = tNEQ,
+    idNot = '!',
+    idBackquote = '`',
+    idEqTilde = tMATCH,
+    idAREF = tAREF,
+    idASET = tASET,
+    idDummy
+};
+
 extern ID idThrowState;
-extern ID idAREF;
-extern ID idASET;
 extern ID idIntern;
 extern ID idMethodMissing;
 extern ID idLength;

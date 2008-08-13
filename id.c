@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 
+#define YYSTYPE_IS_DECLARED
 #define extern
 #include "id.h"
 #undef extern
@@ -25,26 +26,6 @@ Init_id(void)
     symCFUNC = ID2SYM(rb_intern("<CFUNC>"));
 
     /* IDs */
-    idPLUS = rb_intern("+");
-    idMINUS = rb_intern("-");
-    idMULT = rb_intern("*");
-    idDIV = rb_intern("/");
-    idMOD = rb_intern("%");
-    idLT = rb_intern("<");
-    idLTLT = rb_intern("<<");
-    idLE = rb_intern("<=");
-    idGT = rb_intern(">");
-    idGE = rb_intern(">=");
-    idEq = rb_intern("==");
-    idEqq = rb_intern("===");
-    idBackquote = rb_intern("`");
-    idEqTilde = rb_intern("=~");
-    idNot = rb_intern("!");
-    idNeq = rb_intern("!=");
-
-    idAREF = rb_intern("[]");
-    idASET = rb_intern("[]=");
-
     idEach = rb_intern("each");
     idTimes = rb_intern("times");
     idLength = rb_intern("length");

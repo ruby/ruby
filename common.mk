@@ -392,10 +392,12 @@ PHONY:
 {$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed
 
 {$(srcdir)}.y.c:
-	$(YACC) $(YFLAGS) -o y.tab.c $<
+	$(YACC) -d $(YFLAGS) -o y.tab.c $<
 	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
-	@$(RM) $@ y.tab.c
 	@$(MV) $@.new $@
+	sed -e "/^#/s!y\.tab\.h!$(@:.c=.h)!" y.tab.h > $(@:.c=.h).new
+	@$(MV) $(@:.c=.h).new $(@:.c=.h)
+	@$(RM) y.tab.c y.tab.h
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
