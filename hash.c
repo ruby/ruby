@@ -11,6 +11,7 @@
 
 **********************************************************************/
 
+#include "eval_intern.h"
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
@@ -621,6 +622,37 @@ rb_hash_default_proc(VALUE hash)
 	return RHASH(hash)->ifnone;
     }
     return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     hsh.default_proc = proc_obj     => proc_obj
+ *
+ *  Sets the default proc to be executed on each key lookup.
+ *
+ *     h.default_proc = proc do |hash, key|
+ *       hash[key] = key + key
+ *     end
+ *     h[2]       #=> 4
+ *     h["cat"]   #=> "catcat"
+ */
+
+static VALUE
+rb_hash_set_default_proc(VALUE hash, VALUE proc)
+{
+    VALUE b;
+
+    rb_hash_modify(hash);
+    b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+    if (NIL_P(b) || !rb_obj_is_proc(b)) {
+	rb_raise(rb_eTypeError,
+		 "wrong default_proc type %s (expected Proc)",
+		 rb_obj_classname(proc));
+    }
+    proc = b;
+    RHASH(hash)->ifnone = proc;
+    FL_SET(hash, HASH_PROC_DEFAULT);
+    return proc;
 }
 
 static int
@@ -2596,6 +2628,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"default", rb_hash_default, -1);
     rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash,"default_proc", rb_hash_default_proc, 0);
+    rb_define_method(rb_cHash,"default_proc=", rb_hash_set_default_proc, 1);
     rb_define_method(rb_cHash,"key", rb_hash_key, 1);
     rb_define_method(rb_cHash,"index", rb_hash_index, 1);
     rb_define_method(rb_cHash,"size", rb_hash_size, 0);
