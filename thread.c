@@ -48,6 +48,12 @@
 #include "vm.h"
 #include "gc.h"
 
+#ifndef USE_NATIVE_THREAD_PRIORITY
+#define USE_NATIVE_THREAD_PRIORITY 0
+#define RUBY_THREAD_PRIORITY_MAX 3
+#define RUBY_THREAD_PRIORITY_MIN -3
+#endif
+
 #ifndef THREAD_DEBUG
 #define THREAD_DEBUG 0
 #endif
@@ -996,8 +1002,26 @@ rb_thread_execute_interrupts(rb_thread_t *th)
 	}
 
 	if (timer_interrupt) {
+#if USE_NATIVE_THREAD_PRIORITY
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
 	    rb_thread_schedule();
+#else
+	    if (th->slice > 0) {
+		th->slice--;
+	    }
+	    else {
+	      reschedule:
+		EXEC_EVENT_HOOK(th, RUBY_EVENT_SWITCH, th->cfp->self, 0, 0);
+		rb_thread_schedule();
+		if (th->slice < 0) {
+		    th->slice++;
+		    goto reschedule;
+		}
+		else {
+		    th->slice = th->priority;
+		}
+	    }
+#endif
 	}
     }
 }
@@ -1847,12 +1871,25 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
 {
     rb_thread_t *th;
     GetThreadPtr(thread, th);
+    int priority;
 
     rb_secure(4);
 
+#if USE_NATIVE_THREAD_PRIORITY
     th->priority = NUM2INT(prio);
     native_thread_apply_priority(th);
-    return prio;
+#else
+    priority = NUM2INT(prio);
+    if (priority > RUBY_THREAD_PRIORITY_MAX) {
+	priority = RUBY_THREAD_PRIORITY_MAX;
+    }
+    else if (priority < RUBY_THREAD_PRIORITY_MIN) {
+	priority = RUBY_THREAD_PRIORITY_MIN;
+    }
+    th->priority = priority;
+    th->slice = priority;
+#endif
+    return INT2NUM(th->priority);
 }
 
 /* for IO */

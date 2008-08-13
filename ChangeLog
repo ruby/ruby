@@ -1,3 +1,13 @@
+Wed Aug 13 16:40:57 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c, vm_core.h: add manual priority support
+	  using time slice.  if you enable USE_NATIVE_THREAD_PRIORITY
+	  macro, this mechanism is ignored.  [ruby-dev:33124]
+
+	* thread_pthread.c, thread_win32.c: ditto.
+
+	* test/ruby/test_thread.rb: fix test parameter.
+
 Wed Aug 13 16:02:14 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* object.c (rb_obj_untrusted): new method Object#untrusted?.

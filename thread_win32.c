@@ -499,6 +499,8 @@ native_thread_join(HANDLE th)
     w32_wait_events(&th, 1, 0, 0);
 }
 
+#if USE_NATIVE_THREAD_PRIORITY
+
 static void
 native_thread_apply_priority(rb_thread_t *th)
 {
@@ -515,6 +517,8 @@ native_thread_apply_priority(rb_thread_t *th)
 
     SetThreadPriority(th->thread_id, priority);
 }
+
+#endif /* USE_NATIVE_THREAD_PRIORITY */
 
 static void
 ubf_handle(void *ptr)

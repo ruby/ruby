@@ -443,6 +443,9 @@ native_thread_join(pthread_t th)
     }
 }
 
+
+#if USE_NATIVE_THREAD_PRIORITY
+
 static void
 native_thread_apply_priority(rb_thread_t *th)
 {
@@ -468,6 +471,8 @@ native_thread_apply_priority(rb_thread_t *th)
     /* not touched */
 #endif
 }
+
+#endif /* USE_NATIVE_THREAD_PRIORITY */
 
 static void
 ubf_pthread_cond_signal(void *ptr)

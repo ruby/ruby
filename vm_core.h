@@ -432,6 +432,7 @@ struct rb_thread_struct
     rb_thread_id_t thread_id;
     enum rb_thread_status status;
     int priority;
+    int slice;
 
     native_thread_data_t native_thread_data;
 
