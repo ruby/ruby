@@ -1,3 +1,7 @@
+Wed Aug 13 10:45:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot: try to find exported directory.
+
 Wed Aug 13 10:16:35 2008  TAKAO Kouji  <kouji@takao7.net>
 
 	* doc/NEWS: Mention the Readline.vi_editing_mode?,

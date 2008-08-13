@@ -84,9 +84,11 @@ def package(rev, destdir)
     end
   end
 
-  v = "ruby-#{version}-#{tag}"
-  File.directory?(v) or File.rename "ruby", v
-  system("patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
+  if !File.directory(v = "ruby")
+    v = Dir.glob("ruby-*").select(&File.method(:directory?))
+    v.size == 1 or abort "not exported"
+    v = v[0]
+  end
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version or return
@@ -97,6 +99,9 @@ def package(rev, destdir)
   else
     tag = "r#{revision}"
   end
+  v = "ruby-#{version}-#{tag}"
+  File.directory?(v) or File.rename "ruby", v
+  system("patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
   Dir.chdir(v) do
     File.open("cross.rb", "w") {|f| f.puts "CROSS_COMPILING=true"}
     unless File.exist?("configure")
