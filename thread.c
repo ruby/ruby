@@ -877,6 +877,19 @@ rb_thread_polling(void)
     }
 }
 
+/*
+ * CAUTION: This function causes thread switching.
+ *          rb_thread_check_ints() check ruby's interrupts.
+ *          some interrupt needs thread switching/invoke handlers,
+ *          and so on.
+ */
+
+void
+rb_thread_check_ints(void)
+{
+    RUBY_VM_CHECK_INTS();
+}
+
 struct timeval rb_time_timeval();
 
 void

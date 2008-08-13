@@ -1,3 +1,13 @@
+Wed Aug 13 17:18:37 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_check_ints): added.  please note that
+	  this function may cause ruby's thread switching.
+
+	* include/ruby/intern.h: ditto.
+
+	* regint.h: use rb_thread_check_ints() instead of
+	  RUBY_CHECK_INTS() directly.
+
 Wed Aug 13 17:01:36 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* golf_prelude.rb, lib/set.rb (TC_Set#test_each),
