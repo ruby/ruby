@@ -385,7 +385,7 @@ HISTORY
   * HISTORY << string -> self
   * HISTORY.pop -> string
   * HISTORY.shift -> string
-  * HISTORY.each -> Enumerable::Enumerator
+  * HISTORY.each -> Enumerator
   * HISTORY.each { |i| } -> [string]
   * HISTORY.length -> Integer
   * HISTORY.empty? -> true or false

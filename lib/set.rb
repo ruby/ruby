@@ -941,7 +941,7 @@ class TC_Set < Test::Unit::TestCase
     assert_same(set, ret)
 
     e = set.each
-    assert_instance_of(Enumerable::Enumerator, e)
+    assert_instance_of(Enumerator, e)
 
     assert_nothing_raised {
       set.each { |o|

@@ -219,7 +219,7 @@ class Readline::TestHistory < Test::Unit::TestCase
 
   def test_each__enumerator
     e = HISTORY.each
-    assert_instance_of(Enumerable::Enumerator, e)
+    assert_instance_of(Enumerator, e)
   end
 
   def test_length

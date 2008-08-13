@@ -1,3 +1,14 @@
+Wed Aug 13 17:01:36 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* golf_prelude.rb, lib/set.rb (TC_Set#test_each),
+	  test/readline/test_readline_history.rb (Readline#test_each__enumerator),
+	  test/ruby/test_array.rb (TestArray#test_collect),
+	  test/ruby/test_enumerator.rb (TestEnumerator#test_initialize):
+	  Enumerable::Enumerator is now called Enumerator.
+
+	* lib/rinda/tuplespace.rb (Rinda::TupleBag#initialize): Use
+	  enum_for instead of hardcoding Enumerable::Enumerator.
+
 Wed Aug 13 16:40:57 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c, vm_core.h: add manual priority support

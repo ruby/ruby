@@ -479,7 +479,7 @@ class TestArray < Test::Unit::TestCase
     # Ruby 1.9 feature change:
     # Enumerable#collect without block returns an Enumerator.
     #assert_equal([1, 2, 3], @cls[1, 2, 3].collect)
-    assert_kind_of Enumerable::Enumerator, @cls[1, 2, 3].collect
+    assert_kind_of Enumerator, @cls[1, 2, 3].collect
   end
 
   # also update map!
