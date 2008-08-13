@@ -1,3 +1,21 @@
+Wed Aug 13 14:22:16 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/newline.trans: new file.
+
+	* transcode_data.h (rb_trans_t): add last_tc field.
+
+	* transcode.c (UNIVERSAL_NEWLINE): defined.
+	  (CRLF_NEWLINE): defined.
+	  (CR_NEWLINE): defined.
+	  (rb_trans_open_by_transcoder_entries): initialize last_tc.
+	  (trans_open_i): allocate one more room for newline converter.
+	  (rb_trans_open): universal newline implemented.
+	  (more_output_buffer): take max_output argument instead ts.
+	  (output_replacement_character): take tc argument instead of ts.
+	  (transcode_loop): use last_tc field.
+	  (econv_init): add flags argument for rb_trans_open.
+	  (Init_transcode): Encoding::Converter::UNIVERSAL_NEWLINE defined.
+
 Wed Aug 13 14:00:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (parse.c): generates parse.h together.

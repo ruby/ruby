@@ -122,6 +122,7 @@ typedef struct {
     rb_trans_elem_t *elems;
     int num_trans;
     int num_finished;
+    rb_transcoding *last_tc;
 } rb_trans_t;
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);

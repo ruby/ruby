@@ -1,0 +1,56 @@
+#include "transcode_data.h"
+
+<%
+  map_normalize = {}
+  map_normalize["{00-ff}"] = :func_so
+%>
+
+<%= transcode_generate_node(ActionMap.parse(map_normalize), "universal_newline") %>
+
+static int
+fun_so_universal_newline(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+{
+    int len;
+    /*
+      t->stateful[0] == 0       : normal
+      t->stateful[0] == 1       : just after '\r'
+    */
+    if (s[0] == '\n') {
+        if (t->stateful[0] == 0) {
+            o[0] = '\n';
+            len = 1;
+        }
+        else {
+            len = 0;
+        }
+        t->stateful[0] = 0;
+    }
+    else if (s[0] == '\r') {
+        o[0] = '\n';
+        len = 1;
+        t->stateful[0] = 1;
+    }
+    else {
+        o[0] = s[0];
+        len = 1;
+        t->stateful[0] = 0;
+    }
+    return len;
+}
+
+static const rb_transcoder
+rb_universal_newline = {
+    "universal_newline", "", &universal_newline,
+    1, /* input_unit_length */
+    1, /* max_input */
+    1, /* max_output */
+    NULL, NULL, NULL, fun_so_universal_newline
+};
+
+
+void
+Init_newline(void)
+{
+    rb_register_transcoder(&rb_universal_newline);
+}
+

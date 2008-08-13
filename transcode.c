@@ -25,7 +25,10 @@ static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 #define INVALID_REPLACE 0x2
 #define UNDEF_IGNORE 0x10
 #define UNDEF_REPLACE 0x20
-#define PARTIAL_INPUT 0x100
+#define PARTIAL_INPUT           0x100
+#define UNIVERSAL_NEWLINE       0x200
+#define CRLF_NEWLINE            0x400
+#define CR_NEWLINE              0x800
 
 /*
  *  Dispatch data and logic
@@ -646,6 +649,7 @@ rb_trans_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ts->num_trans = n;
     ts->elems = ALLOC_N(rb_trans_elem_t, ts->num_trans);
     ts->num_finished = 0;
+    ts->last_tc = NULL;
     for (i = 0; i < ts->num_trans; i++) {
         const rb_transcoder *tr = load_transcoder_entry(entries[i]);
         ts->elems[i].from = tr->from_encoding;
@@ -657,6 +661,7 @@ rb_trans_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
         ts->elems[i].out_buf_end = NULL;
         ts->elems[i].last_result = transcode_ibuf_empty;
     }
+    ts->last_tc = ts->elems[ts->num_trans-1].tc;
 
     for (i = 0; i < ts->num_trans-1; i++) {
         int bufsize = 4096;
@@ -678,7 +683,7 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
     transcoder_entry_t **entries;
 
     if (!*entries_ptr) {
-        entries = ALLOC_N(transcoder_entry_t *, depth+1);
+        entries = ALLOC_N(transcoder_entry_t *, depth+1+1);
         *entries_ptr = entries;
     }
     else {
@@ -699,7 +704,19 @@ rb_trans_open(const char *from, const char *to, int flags)
     if (num_trans < 0 || !entries)
         return NULL;
 
+    if (flags & UNIVERSAL_NEWLINE) {
+        transcoder_entry_t *e = get_transcoder_entry("universal_newline", "");
+        if (!e)
+            return NULL;
+        entries[num_trans++] = e;
+    }
+
     ts = rb_trans_open_by_transcoder_entries(num_trans, entries);
+
+    if (flags & UNIVERSAL_NEWLINE) {
+        ts->last_tc = ts->elems[ts->num_trans-2].tc;
+    }
+
     return ts;
 }
 
@@ -840,13 +857,13 @@ static void
 more_output_buffer(
         VALUE destination,
         unsigned char *(*resize_destination)(VALUE, int, int),
-        rb_trans_t *ts,
+        int max_output,
         unsigned char **out_start_ptr,
         unsigned char **out_pos,
         unsigned char **out_stop_ptr)
 {
     size_t len = (*out_pos - *out_start_ptr);
-    size_t new_len = (len + ts->elems[ts->num_trans-1].tc->transcoder->max_output) * 2;
+    size_t new_len = (len + max_output) * 2;
     *out_start_ptr = resize_destination(destination, len, new_len);
     *out_pos = *out_start_ptr + len;
     *out_stop_ptr = *out_start_ptr + new_len;
@@ -856,20 +873,18 @@ static void
 output_replacement_character(
         VALUE destination,
         unsigned char *(*resize_destination)(VALUE, int, int),
-        rb_trans_t *ts,
+        rb_transcoding *tc,
         unsigned char **out_start_ptr,
         unsigned char **out_pos,
         unsigned char **out_stop_ptr)
 
 {
-    rb_transcoding *tc;
     const rb_transcoder *tr;
     int max_output;
     rb_encoding *enc;
     const char *replacement;
     int len;
 
-    tc = ts->elems[ts->num_trans-1].tc;
     tr = tc->transcoder;
     max_output = tr->max_output;
     enc = rb_enc_find(tr->to_encoding);
@@ -893,12 +908,12 @@ output_replacement_character(
 
     if (tr->resetstate_func) {
         if (*out_stop_ptr - *out_pos < max_output)
-            more_output_buffer(destination, resize_destination, ts, out_start_ptr, out_pos, out_stop_ptr);
+            more_output_buffer(destination, resize_destination, max_output, out_start_ptr, out_pos, out_stop_ptr);
         *out_pos += tr->resetstate_func(tc, *out_pos);
     }
 
     if (*out_stop_ptr - *out_pos < max_output)
-        more_output_buffer(destination, resize_destination, ts, out_start_ptr, out_pos, out_stop_ptr);
+        more_output_buffer(destination, resize_destination, max_output, out_start_ptr, out_pos, out_stop_ptr);
 
     replacement = get_replacement_character(enc, &len);
 
@@ -919,6 +934,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const int opt)
 {
     rb_trans_t *ts;
+    rb_transcoding *last_tc;
     rb_trans_result_t ret;
     unsigned char *out_start = *out_pos;
     int max_output;
@@ -927,7 +943,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     if (!ts)
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
-    max_output = ts->elems[ts->num_trans-1].tc->transcoder->max_output;
+    last_tc = ts->last_tc;
+    max_output = last_tc->transcoder->max_output;
 
 resume:
     ret = rb_trans_conv(ts, in_pos, in_stop, out_pos, out_stop, opt);
@@ -938,7 +955,7 @@ resume:
             goto resume;
 	}
 	else if (opt&INVALID_REPLACE) {
-	    output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
+	    output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
             goto resume;
 	}
         rb_trans_close(ts);
@@ -952,14 +969,14 @@ resume:
 	    goto resume;
 	}
 	else if (opt&UNDEF_REPLACE) {
-	    output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
+	    output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
 	    goto resume;
 	}
         rb_trans_close(ts);
         rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
     }
     if (ret == transcode_obuf_full) {
-        more_output_buffer(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
+        more_output_buffer(destination, resize_destination, max_output, &out_start, out_pos, &out_stop);
         goto resume;
     }
 
@@ -978,6 +995,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const int opt)
 {
     rb_trans_t *ts;
+    rb_transcoding *last_tc;
     rb_trans_result_t ret;
     unsigned char *out_start = *out_pos;
     const unsigned char *ptr;
@@ -987,6 +1005,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     if (!ts)
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
+    last_tc = ts->last_tc;
     max_output = ts->elems[ts->num_trans-1].tc->transcoder->max_output;
 
     ret = transcode_ibuf_empty;
@@ -1017,7 +1036,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             else if (opt&INVALID_REPLACE) {
-                output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
+                output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
                 break;
             }
             rb_trans_close(ts);
@@ -1032,7 +1051,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             else if (opt&UNDEF_REPLACE) {
-                output_replacement_character(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
+                output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
                 break;
             }
             rb_trans_close(ts);
@@ -1040,7 +1059,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             break;
 
           case transcode_obuf_full:
-            more_output_buffer(destination, resize_destination, ts, &out_start, out_pos, &out_stop);
+            more_output_buffer(destination, resize_destination, max_output, &out_start, out_pos, &out_stop);
             break;
 
           case transcode_ibuf_empty:
@@ -1261,19 +1280,24 @@ econv_s_allocate(VALUE klass)
 }
 
 static VALUE
-econv_init(VALUE self, VALUE from_encoding, VALUE to_encoding)
+econv_init(VALUE self, VALUE from_encoding, VALUE to_encoding, VALUE flags_v)
 {
     const char *from_e, *to_e;
     rb_trans_t *ts;
+    int flags;
 
-    from_e = StringValueCStr(from_encoding);
-    to_e = StringValueCStr(to_encoding);
+    StringValue(from_encoding);
+    StringValue(to_encoding);
+    flags = NUM2INT(flags_v);
+
+    from_e = RSTRING_PTR(from_encoding);
+    to_e = RSTRING_PTR(to_encoding);
 
     if (DATA_PTR(self)) {
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    ts = rb_trans_open(from_e, to_e, 0);
+    ts = rb_trans_open(from_e, to_e, flags);
     if (!ts) {
         rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", from_e, to_e);
     }
@@ -1363,8 +1387,9 @@ Init_transcode(void)
 
     rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
-    rb_define_method(rb_cEncodingConverter, "initialize", econv_init, 2);
+    rb_define_method(rb_cEncodingConverter, "initialize", econv_init, 3);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, 4);
     rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
+    rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE", INT2FIX(UNIVERSAL_NEWLINE));
 }
