@@ -1,7 +1,7 @@
 Thu Aug 14 02:45:16 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_file_exhaustive.rb (TestFileExhaustive#setup):
-	  set group of tmpdir.
+	  set group of tmpdir.  [ruby-dev:35633]
 
 Thu Aug 14 02:23:31 2008  Tanaka Akira  <akr@fsij.org>
 
