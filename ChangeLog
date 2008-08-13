@@ -1,3 +1,9 @@
+Wed Aug 13 10:16:35 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* doc/NEWS: Mention the Readline.vi_editing_mode?,
+	  Readline.emacs_editing_mode?, Readline::HISTORY[] and
+	  Readline::HISTORY.clear change.
+
 Wed Aug 13 08:03:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_primitive_convert): add output_size argument.

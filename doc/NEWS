@@ -63,6 +63,8 @@ Incompatible (Trivial)
           o New format in Time#to_s
           o Timezone information preserved on Marshal.dump/load
     * Symbols: restriction on literal symbols
+    * Readline
+          o If Readline uses libedit, Readline::HISTORY[0] returns the first of the history.
     * $SAFE and bound methods
     * Deprecation
           o VERSION and friends
@@ -153,6 +155,10 @@ Compatible
           o New methods
     * Process
           o Process.daemon
+    * Readline
+          o Readline.vi_editing_mode?
+          o Readline.emacs_editing_mode?
+          o Readline.HISTORY::clear
     * Misc. new methods
           o public_send
           o GC.count
