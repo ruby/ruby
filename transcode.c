@@ -1396,6 +1396,20 @@ econv_init(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+econv_inspect(VALUE self)
+{
+    const char *cname = rb_obj_classname(self);
+    rb_trans_t *ts = DATA_PTR(self);
+
+    if (!ts)
+        return rb_sprintf("#<%s: uninitialized>", cname);
+    else
+        return rb_sprintf("#<%s: %s to %s>", cname,
+            ts->elems[0].from,
+            ts->last_tc->transcoder->to_encoding);
+}
+
 #define IS_ECONV(obj) (RDATA(obj)->dfree == (RUBY_DATA_FUNC)econv_free)
 
 static rb_trans_t *
@@ -1405,6 +1419,9 @@ check_econv(VALUE self)
     if (!IS_ECONV(self)) {
         rb_raise(rb_eTypeError, "wrong argument type %s (expected Encoding::Converter)",
                  rb_class2name(CLASS_OF(self)));
+    }
+    if (!DATA_PTR(self)) {
+        rb_raise(rb_eTypeError, "uninitialized encoding converter");
     }
     return DATA_PTR(self);
 }
@@ -1542,6 +1559,7 @@ Init_transcode(void)
     rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
+    rb_define_method(rb_cEncodingConverter, "inspect", econv_inspect, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
     rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
