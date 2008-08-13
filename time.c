@@ -1087,8 +1087,18 @@ time_cmp(VALUE time1, VALUE time2)
 	if (tobj1->ts.tv_sec > tobj2->ts.tv_sec) return INT2FIX(1);
 	return INT2FIX(-1);
     }
+    else {
+	VALUE cmp;
+	int n;
 
-    return Qnil;
+	cmp = rb_funcall(time2, rb_intern("<=>"), 1, time1);
+	if (NIL_P(cmp)) return Qnil;
+
+	n = rb_cmpint(cmp, time1, time2);
+	if (n == 0) return INT2FIX(0);
+	if (n > 0) return INT2FIX(1);
+	return INT2FIX(-1);
+    }
 }
 
 /*

@@ -1,3 +1,8 @@
+Wed Aug 13 16:05:50 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_cmp): retry with right hand operand if its not a
+	  time object.  [ruby-dev:35011]
+
 Wed Aug 13 15:51:22 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* string.c: Apply a temporary fix to fix build on OS X.  A real
