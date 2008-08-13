@@ -1,3 +1,7 @@
+Wed Aug 13 23:42:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (parse.h): fake rule.
+
 Wed Aug 13 23:15:58 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_thread.rb (test_list): call Thread.pass to run t1.
