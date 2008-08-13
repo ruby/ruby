@@ -1633,35 +1633,15 @@ rb_thread_alloc(VALUE klass)
     return self;
 }
 
-static VALUE
-m_core_set_method_alias(VALUE self, VALUE cbase, VALUE sym1, VALUE sym2)
-{
-    rb_alias(cbase, SYM2ID(sym1), SYM2ID(sym2));
-    return Qnil;
-}
-
-static VALUE
-m_core_set_variable_alias(VALUE self, VALUE sym1, VALUE sym2)
-{
-    rb_alias_variable(SYM2ID(sym1), SYM2ID(sym2));
-    return Qnil;
-}
-
-static VALUE
-m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
-{
-    rb_undef(cbase, SYM2ID(sym));
-    INC_VM_STATE_VERSION();
-    return Qnil;
-}
-
 static void
-vm_define_method(rb_thread_t *th, VALUE obj, ID id, rb_iseq_t *miseq,
+vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 		 rb_num_t is_singleton, NODE *cref)
 {
     NODE *newbody;
     VALUE klass = cref->nd_clss;
     int noex = cref->nd_visi;
+    rb_iseq_t *miseq;
+    GetISeqPtr(iseqval, miseq);
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class/module to add method");
@@ -1695,43 +1675,77 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, rb_iseq_t *miseq,
     INC_VM_STATE_VERSION();
 }
 
+#define REWIND_CFP(expr) do { \
+    rb_thread_t *th__ = GET_THREAD(); \
+    th__->cfp++; (expr); th__->cfp--; \
+} while (0)
+
 static VALUE
 m_core_define_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
 {
-    rb_iseq_t *iseq;
-    GetISeqPtr(iseqval, iseq);
-    vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseq, 0, vm_cref());
+    REWIND_CFP({
+	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 0, vm_cref());
+    });
     return Qnil;
 }
 
 static VALUE
 m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
 {
-    rb_iseq_t *iseq;
-    GetISeqPtr(iseqval, iseq);
-    vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseq, 1, vm_cref());
+    REWIND_CFP({
+	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, 1, vm_cref());
+    });
+    return Qnil;
+}
+
+static VALUE
+m_core_set_method_alias(VALUE self, VALUE cbase, VALUE sym1, VALUE sym2)
+{
+    REWIND_CFP({
+	rb_alias(cbase, SYM2ID(sym1), SYM2ID(sym2));
+    });
+    return Qnil;
+}
+
+static VALUE
+m_core_set_variable_alias(VALUE self, VALUE sym1, VALUE sym2)
+{
+    REWIND_CFP({
+	rb_alias_variable(SYM2ID(sym1), SYM2ID(sym2));
+    });
+    return Qnil;
+}
+
+static VALUE
+m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
+{
+    REWIND_CFP({
+	rb_undef(cbase, SYM2ID(sym));
+	INC_VM_STATE_VERSION();
+    });
     return Qnil;
 }
 
 static VALUE
 m_core_set_postexe(VALUE self, VALUE iseqval)
 {
-    rb_iseq_t *blockiseq;
-    rb_block_t *blockptr;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
-    VALUE proc;
-    extern void rb_call_end_proc(VALUE data);
+    REWIND_CFP({
+	rb_iseq_t *blockiseq;
+	rb_block_t *blockptr;
+	rb_thread_t *th = GET_THREAD();
+	rb_control_frame_t *cfp = vm_get_ruby_level_next_cfp(th, th->cfp);
+	VALUE proc;
+	extern void rb_call_end_proc(VALUE data);
 
-    GetISeqPtr(iseqval, blockiseq);
+	GetISeqPtr(iseqval, blockiseq);
 
-    blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
-    blockptr->iseq = blockiseq;
-    blockptr->proc = 0;
+	blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(cfp);
+	blockptr->iseq = blockiseq;
+	blockptr->proc = 0;
 
-    proc = vm_make_proc(th, cfp, blockptr);
-    rb_set_end_proc(rb_call_end_proc, proc);
-
+	proc = vm_make_proc(th, cfp, blockptr);
+	rb_set_end_proc(rb_call_end_proc, proc);
+    });
     return Qnil;
 }
 

@@ -1,3 +1,8 @@
+Wed Aug 13 13:47:05 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: rewind cfp to show proper backtrace.
+	  [ruby-dev:35820]
+
 Wed Aug 13 13:09:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot: fix for clean up.
