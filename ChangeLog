@@ -1,3 +1,8 @@
+Thu Aug 14 02:23:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_primitive_convert): add output_byteoffset
+	  argument.
+
 Thu Aug 14 00:43:53 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (rb_cv_gcc_function_alias): checks alias attribute.

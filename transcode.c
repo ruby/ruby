@@ -1484,33 +1484,60 @@ check_econv(VALUE self)
 static VALUE
 econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 {
-    VALUE input, output, output_size_v, flags_v;
+    VALUE input, output, output_byteoffset_v, output_bytesize_v, flags_v;
     rb_trans_t *ts = check_econv(self);
     rb_trans_result_t res;
     const unsigned char *ip, *is;
     unsigned char *op, *os;
-    long output_size;
+    long output_byteoffset, output_bytesize;
+    unsigned long output_byteend;
     int flags;
 
-    rb_scan_args(argc, argv, "31", &input, &output, &output_size_v, &flags_v);
+    rb_scan_args(argc, argv, "41", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v);
 
-    output_size = NUM2LONG(output_size_v);
+    if (output_byteoffset_v == Qnil)
+        output_byteoffset = 0;
+    else
+        output_byteoffset = NUM2LONG(output_byteoffset_v);
+
+    output_bytesize = NUM2LONG(output_bytesize_v);
+
     if (flags_v == Qnil)
         flags = 0;
     else
         flags = NUM2INT(flags_v);
+
     StringValue(output);
     StringValue(input);
     rb_str_modify(output);
 
-    if (rb_str_capacity(output) < output_size)
-        rb_str_resize(output, output_size);
+    if (output_byteoffset_v == Qnil)
+        output_byteoffset = RSTRING_LEN(output);
+
+    if (output_byteoffset < 0)
+        rb_raise(rb_eArgError, "negative output_byteoffset");
+
+    if (RSTRING_LEN(output) < output_byteoffset)
+        rb_raise(rb_eArgError, "output_byteoffset too big");
+
+    if (output_bytesize < 0)
+        rb_raise(rb_eArgError, "negative output_bytesize");
+
+    output_byteend = (unsigned long)output_byteoffset +
+                     (unsigned long)output_bytesize;
+
+    if (output_byteend < (unsigned long)output_byteoffset ||
+        LONG_MAX < output_byteend)
+        rb_raise(rb_eArgError, "output_byteoffset+output_bytesize too big");
+
+    if (rb_str_capacity(output) < output_byteend)
+        rb_str_resize(output, output_byteend);
 
     ip = (const unsigned char *)RSTRING_PTR(input);
     is = ip + RSTRING_LEN(input);
 
-    op = (unsigned char *)RSTRING_PTR(output);
-    os = op + output_size;
+    op = (unsigned char *)RSTRING_PTR(output) + output_byteoffset;
+    os = op + output_bytesize;
 
     res = rb_trans_conv(ts, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
@@ -1522,7 +1549,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
       case transcode_obuf_full: return ID2SYM(rb_intern("obuf_full"));
       case transcode_ibuf_empty: return ID2SYM(rb_intern("ibuf_empty"));
       case transcode_finished: return ID2SYM(rb_intern("finished"));
-      default: return INT2NUM(res);
+      default: return INT2NUM(res); /* should not be reached */
     }
 }
 
