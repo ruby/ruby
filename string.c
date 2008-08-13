@@ -43,9 +43,9 @@
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
-#if defined(__GNUC__) && !(defined(__APPLE__) && (defined(__MACH__) || defined(__DARWIN__)))
+#ifdef __GNUC__
 #define alias_func(old_prot, new_name, args) \
-VALUE old_prot __attribute__((alias(#new_name)));
+VALUE old_prot __attribute__((weak, alias(#new_name)));
 #else
 #define alias_func(old_prot, new_name, args) \
 VALUE old_prot {return new_name args;}

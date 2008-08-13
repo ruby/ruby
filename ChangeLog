@@ -1,3 +1,8 @@
+Wed Aug 13 23:05:51 2008  TAKAO Kouji  <kouji@takao7.net>
+
+	* string.c (alias_func): changed to 'weak, alias' from 'alias' for
+	  Mac OSX. (closes #429)
+
 Wed Aug 13 19:40:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: count only freed object as freelist size.
