@@ -362,9 +362,6 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     const unsigned char *in_p;
 
     unsigned char *out_p;
-    const BYTE_LOOKUP *next_table;
-    VALUE next_info;
-    unsigned char next_byte;
 
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
@@ -382,9 +379,6 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     in_p = inchar_start = *in_pos;
 
     out_p = *out_pos;
-    next_table = tc->next_table;
-    next_info = tc->next_info;
-    next_byte = tc->next_byte;
 
 #define SUSPEND(ret, num) \
     do { \
@@ -399,9 +393,6 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             tc->recognized_len -= readagain_len; \
             tc->readagain_len = readagain_len; \
         } \
-        tc->next_table = next_table; \
-        tc->next_info = next_info; \
-        tc->next_byte = next_byte; \
         return ret; \
         resume_label ## num:; \
     } while (0)
@@ -410,6 +401,9 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         while (out_stop - out_p < 1) { SUSPEND(transcode_obuf_full, num); } \
     } while (0)
 
+#define next_table (tc->next_table)
+#define next_info (tc->next_info)
+#define next_byte (tc->next_byte)
 #define writebuf_len (tc->writebuf_len)
 #define writebuf_off (tc->writebuf_off)
 
@@ -591,6 +585,9 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     while (1)
         SUSPEND(transcode_finished, 6);
 #undef SUSPEND
+#undef next_table
+#undef next_info
+#undef next_byte
 #undef writebuf_len
 #undef writebuf_off
 }
