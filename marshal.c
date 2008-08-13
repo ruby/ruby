@@ -1623,6 +1623,7 @@ marshal_load(int argc, VALUE *argv)
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");
     }
+    arg.untrust = OBJ_UNTRUSTED(port);
     arg.src = port;
     arg.offset = 0;
     arg.compat_tbl = st_init_numtable();

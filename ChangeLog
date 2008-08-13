@@ -1,3 +1,7 @@
+Wed Aug 13 18:34:22 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+        * marshal.c (marshal_load): set arg.untrust properly.
+
 Wed Aug 13 17:47:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_inspect): new method.
