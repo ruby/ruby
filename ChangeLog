@@ -1,3 +1,10 @@
+Wed Aug 13 18:18:16 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* hash.c (rb_hash_set_default_proc): Add Hash#default_proc=;
+	  submitted by Giuseppe Bilotta.  #420
+
+	* eval.c (rb_obj_is_proc), intern.h: Export rb_obj_is_proc().
+
 Tue Aug 12 18:50:58 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c (mSyslog_open): Use of Check_SafeStr() is

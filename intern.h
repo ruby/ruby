@@ -174,6 +174,7 @@ void rb_dvar_asgn _((ID, VALUE));
 void rb_dvar_push _((ID, VALUE));
 VALUE *rb_svar _((int));
 VALUE rb_eval_cmd _((VALUE, VALUE, int));
+VALUE rb_obj_is_proc _((VALUE));
 int rb_obj_respond_to _((VALUE, ID, int));
 int rb_respond_to _((VALUE, ID));
 void rb_interrupt _((void));

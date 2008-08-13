@@ -2555,7 +2555,7 @@ static int handle_rescue _((VALUE,NODE*));
 
 static void blk_free();
 
-static VALUE
+VALUE
 rb_obj_is_proc(proc)
     VALUE proc;
 {

@@ -26,6 +26,10 @@ with all sufficient information, see the ChangeLog file.
 
     New method with which replaces #choice.
 
+  * Hash#default_proc=
+
+    New method.
+
 * set
 
   Set#classify
