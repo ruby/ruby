@@ -35,6 +35,7 @@ static const union {
         RUBY_FL_RESERVED    = FL_RESERVED,
         RUBY_FL_FINALIZE    = FL_FINALIZE,
         RUBY_FL_TAINT       = FL_TAINT,
+        RUBY_FL_UNTRUSTED   = FL_UNTRUSTED,
         RUBY_FL_EXIVAR      = FL_EXIVAR,
         RUBY_FL_FREEZE      = FL_FREEZE,
         RUBY_FL_SINGLETON   = FL_SINGLETON,
@@ -57,7 +58,6 @@ static const union {
         RUBY_FL_USER16      = FL_USER16,
         RUBY_FL_USER17      = FL_USER17,
         RUBY_FL_USER18      = FL_USER18,
-        RUBY_FL_USER19      = FL_USER19,
         RUBY_FL_USHIFT      = FL_USHIFT,
         RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT,
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
@@ -67,7 +67,7 @@ static const union {
     } various;
 } dummy_gdb_enums;
 
-const VALUE RUBY_FL_USER20    = FL_USER20;
+const VALUE RUBY_FL_USER19    = FL_USER19;
 
 int
 ruby_debug_print_indent(int level, int debug_level, int indent_level)

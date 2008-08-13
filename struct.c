@@ -144,7 +144,7 @@ static void
 rb_struct_modify(VALUE s)
 {
     if (OBJ_FROZEN(s)) rb_error_frozen("Struct");
-    if (!OBJ_TAINTED(s) && rb_safe_level() >= 4)
+    if (!OBJ_UNTRUSTED(s) && rb_safe_level() >= 4)
        rb_raise(rb_eSecurityError, "Insecure: can't modify Struct");
 }
 

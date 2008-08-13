@@ -247,7 +247,7 @@ static void
 rb_hash_modify_check(VALUE hash)
 {
     if (OBJ_FROZEN(hash)) rb_error_frozen("hash");
-    if (!OBJ_TAINTED(hash) && rb_safe_level() >= 4)
+    if (!OBJ_UNTRUSTED(hash) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify hash");
 }
 
@@ -1166,7 +1166,7 @@ rb_hash_to_a(VALUE hash)
 
     ary = rb_ary_new();
     rb_hash_foreach(hash, to_a_i, ary);
-    if (OBJ_TAINTED(hash)) OBJ_TAINT(ary);
+    OBJ_INFECT(ary, hash);
 
     return ary;
 }

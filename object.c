@@ -161,7 +161,7 @@ init_copy(VALUE dest, VALUE obj)
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
-    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED);
     rb_copy_generic_ivar(dest, obj);
     rb_gc_copy_finalizer(dest, obj);
     switch (TYPE(obj)) {
@@ -234,7 +234,7 @@ rb_obj_clone(VALUE obj)
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
     RBASIC(clone)->klass = rb_singleton_class_clone(obj);
-    RBASIC(clone)->flags = (RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT)) & ~(FL_FREEZE|FL_FINALIZE);
+    RBASIC(clone)->flags = (RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT) | FL_TEST(clone, FL_UNTRUSTED)) & ~(FL_FREEZE|FL_FINALIZE);
     init_copy(clone, obj);
     RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
 
@@ -302,7 +302,7 @@ rb_any_to_s(VALUE obj)
     VALUE str;
 
     str = rb_sprintf("#<%s:%p>", cname, (void*)obj);
-    if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
+    OBJ_INFECT(str, obj);
 
     return str;
 }
@@ -692,6 +692,62 @@ rb_obj_untaint(VALUE obj)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     obj.untrusted?    => true or false
+ *  
+ *  Returns <code>true</code> if the object is untrusted.
+ */
+
+VALUE
+rb_obj_untrusted(VALUE obj)
+{
+    if (OBJ_UNTRUSTED(obj))
+	return Qtrue;
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     obj.untrust -> obj
+ *  
+ *  Marks <i>obj</i> as untrusted.
+ */
+
+VALUE
+rb_obj_untrust(VALUE obj)
+{
+    rb_secure(4);
+    if (!OBJ_UNTRUSTED(obj)) {
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
+	OBJ_UNTRUST(obj);
+    }
+    return obj;
+}
+
+
+/*
+ *  call-seq:
+ *     obj.trust    => obj
+ *  
+ *  Removes the untrusted mark from <i>obj</i>.
+ */
+
+VALUE
+rb_obj_trust(VALUE obj)
+{
+    rb_secure(3);
+    if (OBJ_UNTRUSTED(obj)) {
+	if (OBJ_FROZEN(obj)) {
+	    rb_error_frozen("object");
+	}
+	FL_UNSET(obj, FL_UNTRUSTED);
+    }
+    return obj;
+}
+
 void
 rb_obj_infect(VALUE obj1, VALUE obj2)
 {
@@ -723,7 +779,7 @@ VALUE
 rb_obj_freeze(VALUE obj)
 {
     if (!OBJ_FROZEN(obj)) {
-	if (rb_safe_level() >= 4 && !OBJ_TAINTED(obj)) {
+	if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(obj)) {
 	    rb_raise(rb_eSecurityError, "Insecure: can't freeze object");
 	}
 	OBJ_FREEZE(obj);
@@ -2419,6 +2475,9 @@ Init_Object(void)
     rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
     rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
     rb_define_method(rb_mKernel, "untaint", rb_obj_untaint, 0);
+    rb_define_method(rb_mKernel, "untrust", rb_obj_untrust, 0);
+    rb_define_method(rb_mKernel, "untrusted?", rb_obj_untrusted, 0);
+    rb_define_method(rb_mKernel, "trust", rb_obj_trust, 0);
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
     rb_define_method(rb_mKernel, "frozen?", rb_obj_frozen_p, 0);
 

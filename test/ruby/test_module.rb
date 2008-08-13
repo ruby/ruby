@@ -699,4 +699,22 @@ class TestModule < Test::Unit::TestCase
     assert_equal(true, c2.include?(m))
     assert_equal(false, m.include?(m))
   end
+
+  def test_include_under_safe4
+    m = Module.new
+    c1 = Class.new
+    assert_raise(SecurityError) do
+      lambda {
+        $SAFE = 4
+        c1.instance_eval { include(m) }
+      }.call
+    end
+    assert_nothing_raised do
+      lambda {
+        $SAFE = 4
+        c2 = Class.new
+        c2.instance_eval { include(m) }
+      }.call
+    end
+  end
 end

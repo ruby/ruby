@@ -451,16 +451,20 @@ class TestArray < Test::Unit::TestCase
 
   def test_clone
     for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @cls[*(0..99).to_a]
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.clone
+      for untrust in [ false, true ]
+        for frozen in [ false, true ]
+          a = @cls[*(0..99).to_a]
+          a.taint  if taint
+          a.untrust  if untrust
+          a.freeze if frozen
+          b = a.clone
 
-        assert_equal(a, b)
-        assert(a.__id__ != b.__id__)
-        assert_equal(a.frozen?, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
+          assert_equal(a, b)
+          assert(a.__id__ != b.__id__)
+          assert_equal(a.frozen?, b.frozen?)
+          assert_equal(a.untrusted?, b.untrusted?)
+          assert_equal(a.tainted?, b.tainted?)
+        end
       end
     end
   end
@@ -708,6 +712,13 @@ class TestArray < Test::Unit::TestCase
                  @cls[@cls[@cls[@cls[],@cls[]],@cls[@cls[]],@cls[]],@cls[@cls[@cls[]]]].flatten)
 
     assert_raise(TypeError, "[ruby-dev:31197]") { [[]].flatten("") }
+
+    a6 = @cls[[1, 2], 3]
+    a6.taint
+    a6.untrust
+    a7 = a6.flatten
+    assert_equal(true, a7.tainted?)
+    assert_equal(true, a7.untrusted?)
   end
 
   def test_flatten!
@@ -797,6 +808,12 @@ class TestArray < Test::Unit::TestCase
     assert_equal("1,2,3", a.join(','))
 
     $, = ""
+    a = @cls[1, 2, 3]
+    a.taint
+    a.untrust
+    s = a.join
+    assert_equal(true, s.tainted?)
+    assert_equal(true, s.untrusted?)
   end
 
   def test_last
@@ -1573,5 +1590,14 @@ class TestArray < Test::Unit::TestCase
 
   def test_array_subclass
     assert_equal(Array2, Array2[1,2,3].uniq.class, "[ruby-dev:34581]")
+  end
+
+  def test_inspect
+    a = @cls[1, 2, 3]
+    a.taint
+    a.untrust
+    s = a.inspect
+    assert_equal(true, s.tainted?)
+    assert_equal(true, s.untrusted?)
   end
 end

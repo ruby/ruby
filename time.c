@@ -60,7 +60,7 @@ static void
 time_modify(VALUE time)
 {
     rb_check_frozen(time);
-    if (!OBJ_TAINTED(time) && rb_safe_level() >= 4)
+    if (!OBJ_UNTRUSTED(time) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
 }
 

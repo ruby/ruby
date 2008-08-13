@@ -206,16 +206,20 @@ class TestHash < Test::Unit::TestCase
 
   def test_clone
     for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @h.clone
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.clone
+      for untrust in [ false, true ]
+        for frozen in [ false, true ]
+          a = @h.clone
+          a.taint  if taint
+          a.untrust if untrust
+          a.freeze if frozen
+          b = a.clone
 
-        assert_equal(a, b)
-        assert(a.__id__ != b.__id__)
-        assert_equal(a.frozen?, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
+          assert_equal(a, b)
+          assert(a.__id__ != b.__id__)
+          assert_equal(a.frozen?, b.frozen?)
+          assert_equal(a.untrusted?, b.untrusted?)
+          assert_equal(a.tainted?, b.tainted?)
+        end
       end
     end
   end
@@ -288,16 +292,19 @@ class TestHash < Test::Unit::TestCase
 
   def test_dup
     for taint in [ false, true ]
-      for frozen in [ false, true ]
-        a = @h.dup
-        a.taint  if taint
-        a.freeze if frozen
-        b = a.dup
+      for untrust in [ false, true ]
+        for frozen in [ false, true ]
+          a = @h.dup
+          a.taint  if taint
+          a.freeze if frozen
+          b = a.dup
 
-        assert_equal(a, b)
-        assert(a.__id__ != b.__id__)
-        assert_equal(false, b.frozen?)
-        assert_equal(a.tainted?, b.tainted?)
+          assert_equal(a, b)
+          assert(a.__id__ != b.__id__)
+          assert_equal(false, b.frozen?)
+          assert_equal(a.tainted?, b.tainted?)
+          assert_equal(a.untrusted?, b.untrusted?)
+        end
       end
     end
   end
@@ -599,6 +606,13 @@ class TestHash < Test::Unit::TestCase
     assert_equal([3,4], a.delete([3,4]))
     assert_equal([5,6], a.delete([5,6]))
     assert_equal(0, a.length)
+
+    h = @cls[ 1=>2, 3=>4, 5=>6 ]
+    h.taint
+    h.untrust
+    a = h.to_a
+    assert_equal(true, a.tainted?)
+    assert_equal(true, a.untrusted?)
   end
 
   def test_to_hash

@@ -383,7 +383,7 @@ rb_include_module(VALUE klass, VALUE module)
     int changed = 0;
 
     rb_frozen_class_p(klass);
-    if (!OBJ_TAINTED(klass)) {
+    if (!OBJ_UNTRUSTED(klass)) {
 	rb_secure(4);
     }
     
@@ -832,6 +832,12 @@ rb_singleton_class(VALUE obj)
     }
     else {
 	FL_UNSET(klass, FL_TAINT);
+    }
+    if (OBJ_UNTRUSTED(obj)) {
+	OBJ_UNTRUST(klass);
+    }
+    else {
+	FL_UNSET(klass, FL_UNTRUSTED);
     }
     if (OBJ_FROZEN(obj)) OBJ_FREEZE(klass);
     ALLOW_INTS;

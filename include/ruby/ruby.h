@@ -432,7 +432,7 @@ VALUE rb_newobj(void);
 #define OBJSETUP(obj,c,t) do {\
     RBASIC(obj)->flags = (t);\
     RBASIC(obj)->klass = (c);\
-    if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT);\
+    if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT | FL_UNTRUSTED);\
 } while (0)
 #define CLONESETUP(clone,obj) do {\
     OBJSETUP(clone,rb_singleton_class_clone((VALUE)obj),RBASIC(obj)->flags);\
@@ -440,7 +440,7 @@ VALUE rb_newobj(void);
     if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)clone,(VALUE)obj);\
 } while (0)
 #define DUPSETUP(dup,obj) do {\
-    OBJSETUP(dup,rb_obj_class(obj),(RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT));\
+    OBJSETUP(dup,rb_obj_class(obj),(RBASIC(obj)->flags)&(T_MASK|FL_EXIVAR|FL_TAINT|FL_UNTRUSTED));\
     if (FL_TEST(obj, FL_EXIVAR)) rb_copy_generic_ivar((VALUE)dup,(VALUE)obj);\
 } while (0)
 
@@ -693,10 +693,11 @@ struct RBignum {
 #define FL_RESERVED  (((VALUE)1)<<6) /* will be used in the future GC */
 #define FL_FINALIZE  (((VALUE)1)<<7)
 #define FL_TAINT     (((VALUE)1)<<8)
-#define FL_EXIVAR    (((VALUE)1)<<9)
-#define FL_FREEZE    (((VALUE)1)<<10)
+#define FL_UNTRUSTED (((VALUE)1)<<9)
+#define FL_EXIVAR    (((VALUE)1)<<10)
+#define FL_FREEZE    (((VALUE)1)<<11)
 
-#define FL_USHIFT    11
+#define FL_USHIFT    12
 
 #define FL_USER0     (((VALUE)1)<<(FL_USHIFT+0))
 #define FL_USER1     (((VALUE)1)<<(FL_USHIFT+1))
@@ -718,7 +719,6 @@ struct RBignum {
 #define FL_USER17    (((VALUE)1)<<(FL_USHIFT+17))
 #define FL_USER18    (((VALUE)1)<<(FL_USHIFT+18))
 #define FL_USER19    (((VALUE)1)<<(FL_USHIFT+19))
-#define FL_USER20    (((VALUE)1)<<(FL_USHIFT+20))
 
 #define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))
 
@@ -732,7 +732,9 @@ struct RBignum {
 
 #define OBJ_TAINTED(x) FL_TEST((x), FL_TAINT)
 #define OBJ_TAINT(x) FL_SET((x), FL_TAINT)
-#define OBJ_INFECT(x,s) do {if (FL_ABLE(x) && FL_ABLE(s)) RBASIC(x)->flags |= RBASIC(s)->flags & FL_TAINT;} while (0)
+#define OBJ_UNTRUSTED(x) FL_TEST((x), FL_UNTRUSTED)
+#define OBJ_UNTRUST(x) FL_SET((x), FL_UNTRUSTED)
+#define OBJ_INFECT(x,s) do {if (FL_ABLE(x) && FL_ABLE(s)) RBASIC(x)->flags |= RBASIC(s)->flags & (FL_TAINT | FL_UNTRUSTED);} while (0)
 
 #define OBJ_FROZEN(x) FL_TEST((x), FL_FREEZE)
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)

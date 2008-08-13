@@ -414,8 +414,8 @@ dir_closed(void)
 static void
 dir_check(VALUE dir)
 {
-    if (!OBJ_TAINTED(dir) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: operation on untainted Dir");
+    if (!OBJ_UNTRUSTED(dir) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: operation on trusted Dir");
     rb_check_frozen(dir);
 }
 
@@ -630,7 +630,7 @@ dir_rewind(VALUE dir)
 {
     struct dir_data *dirp;
 
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(dir)) {
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(dir)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetDIR(dir, dirp);

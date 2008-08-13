@@ -179,4 +179,16 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.dump((0..1000).map {|x| C4.new(x % 50 == 25) })
     end
   end
+
+  def test_taint_and_untrust
+    x = Object.new
+    x.taint
+    x.untrust
+    s = Marshal.dump(x)
+    assert_equal(true, s.tainted?)
+    assert_equal(true, s.untrusted?)
+    y = Marshal.load(s)
+    assert_equal(true, y.tainted?)
+    assert_equal(true, y.untrusted?)
+  end
 end

@@ -1027,7 +1027,7 @@ str_modifiable(VALUE str)
 	rb_raise(rb_eRuntimeError, "can't modify string; temporarily locked");
     }
     if (OBJ_FROZEN(str)) rb_error_frozen("string");
-    if (!OBJ_TAINTED(str) && rb_safe_level() >= 4)
+    if (!OBJ_UNTRUSTED(str) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
 }
 
@@ -3170,6 +3170,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
     VALUE pat, repl, hash = Qnil;
     int iter = 0;
     int tainted = 0;
+    int untrusted = 0;
     long plen;
 
     if (argc == 1 && rb_block_given_p()) {
@@ -3182,6 +3183,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	    StringValue(repl);
 	}
 	if (OBJ_TAINTED(repl)) tainted = 1;
+	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
     }
     else {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
@@ -3227,6 +3229,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	rb_str_modify(str);
 	rb_enc_associate(str, enc);
 	if (OBJ_TAINTED(repl)) tainted = 1;
+	if (OBJ_UNTRUSTED(repl)) untrusted = 1;
 	if (ENC_CODERANGE_UNKNOWN < cr && cr < ENC_CODERANGE_BROKEN) {
 	    int cr2 = ENC_CODERANGE(repl);
 	    if (cr2 == ENC_CODERANGE_UNKNOWN || cr2 > cr) cr = cr2;
@@ -3246,6 +3249,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
 	ENC_CODERANGE_SET(str, cr);
 	if (tainted) OBJ_TAINT(str);
+	if (untrusted) OBJ_UNTRUST(str);
 
 	return str;
     }

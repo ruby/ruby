@@ -1,3 +1,18 @@
+Wed Aug 13 16:02:14 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* object.c (rb_obj_untrusted): new method Object#untrusted?.
+	  (rb_obj_untrust): new method Object#untrust.
+	  (rb_obj_trust): new method Object#trust.
+
+	* array.c, debug.c, time.c, include/ruby/ruby.h, re.c, variable.c,
+	  string.c, io.c, dir.c, vm_method.c, struct.c, class.c, hash.c,
+	  ruby.c, marshal.c: fixes for Object#untrusted?.
+	
+	* test/ruby/test_module.rb, test/ruby/test_array.rb,
+	  test/ruby/test_object.rb, test/ruby/test_string.rb,
+	  test/ruby/test_marshal.rb, test/ruby/test_hash.rb: added tests for
+	  Object#untrusted?.
+
 Wed Aug 13 16:13:58 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/test_m17n.rb: follow EncodingCompatibilityError.

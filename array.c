@@ -54,7 +54,7 @@ static inline void
 rb_ary_modify_check(VALUE ary)
 {
     if (OBJ_FROZEN(ary)) rb_error_frozen("array");
-    if (!OBJ_TAINTED(ary) && rb_safe_level() >= 4)
+    if (!OBJ_UNTRUSTED(ary) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify array");
 }
 
@@ -1263,10 +1263,12 @@ rb_ary_join(VALUE ary, VALUE sep)
 {
     long len = 1, i;
     int taint = Qfalse;
+    int untrust = Qfalse;
     VALUE result, tmp;
 
     if (RARRAY_LEN(ary) == 0) return rb_str_new(0, 0);
     if (OBJ_TAINTED(ary) || OBJ_TAINTED(sep)) taint = Qtrue;
+    if (OBJ_UNTRUSTED(ary) || OBJ_UNTRUSTED(sep)) untrust = Qtrue;
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = rb_check_string_type(RARRAY_PTR(ary)[i]);
@@ -1298,9 +1300,11 @@ rb_ary_join(VALUE ary, VALUE sep)
 	    rb_str_buf_append(result, sep);
 	rb_str_buf_append(result, tmp);
 	if (OBJ_TAINTED(tmp)) taint = Qtrue;
+	if (OBJ_UNTRUSTED(tmp)) untrust = Qtrue;
     }
 
     if (taint) OBJ_TAINT(result);
+    if (untrust) OBJ_UNTRUST(result);
     return result;
 }
 
@@ -1330,6 +1334,7 @@ static VALUE
 inspect_ary(VALUE ary, VALUE dummy, int recur)
 {
     int tainted = OBJ_TAINTED(ary);
+    int untrust = OBJ_UNTRUSTED(ary);
     long i;
     VALUE s, str;
 
@@ -1338,11 +1343,13 @@ inspect_ary(VALUE ary, VALUE dummy, int recur)
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	s = rb_inspect(RARRAY_PTR(ary)[i]);
 	if (OBJ_TAINTED(s)) tainted = Qtrue;
+	if (OBJ_UNTRUSTED(s)) untrust = Qtrue;
 	if (i > 0) rb_str_buf_cat2(str, ", ");
 	rb_str_buf_append(str, s);
     }
     rb_str_buf_cat2(str, "]");
     if (tainted) OBJ_TAINT(str);
+    if (untrust) OBJ_UNTRUST(str);
     return str;
 }
 
@@ -2952,7 +2959,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     if (level == 0) return ary;
 
     result = flatten(ary, level, &mod);
-    if (OBJ_TAINTED(ary)) OBJ_TAINT(result);
+    OBJ_INFECT(result, ary);
 
     return result;
 }

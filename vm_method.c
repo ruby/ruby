@@ -108,7 +108,8 @@ rb_add_method(VALUE klass, ID mid, NODE * node, int noex)
     if (NIL_P(klass)) {
 	klass = rb_cObject;
     }
-    if (rb_safe_level() >= 4 && (klass == rb_cObject || !OBJ_TAINTED(klass))) {
+    if (rb_safe_level() >= 4 &&
+       	(klass == rb_cObject || !OBJ_UNTRUSTED(klass))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't define method");
     }
     if (!FL_TEST(klass, FL_SINGLETON) &&
@@ -307,7 +308,7 @@ remove_method(VALUE klass, ID mid)
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't remove method");
     }
     if (OBJ_FROZEN(klass))
@@ -474,7 +475,7 @@ rb_undef(VALUE klass, ID id)
     if (rb_vm_cbase() == rb_cObject && klass == rb_cObject) {
 	rb_secure(4);
     }
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't undef `%s'",
 		 rb_id2name(id));
     }
@@ -810,7 +811,7 @@ rb_mod_alias_method(VALUE mod, VALUE newname, VALUE oldname)
 static void
 secure_visibility(VALUE self)
 {
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(self)) {
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(self)) {
 	rb_raise(rb_eSecurityError,
 		 "Insecure: can't change method visibility");
     }

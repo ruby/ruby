@@ -320,4 +320,82 @@ class TestObject < Test::Unit::TestCase
       1.extend
     end
   end
+
+  def test_untrusted
+    obj = lambda {
+      $SAFE = 4
+      x = Object.new
+      x.instance_eval { @foo = 1 }
+      x
+    }.call
+    assert_equal(true, obj.untrusted?)
+    assert_equal(true, obj.tainted?)
+
+    x = Object.new
+    assert_equal(false, x.untrusted?)
+    assert_raise(SecurityError) do
+      lambda {
+        $SAFE = 4
+        x.instance_eval { @foo = 1 }
+      }.call
+    end
+
+    x = Object.new
+    x.taint
+    assert_raise(SecurityError) do
+      lambda {
+        $SAFE = 4
+        x.instance_eval { @foo = 1 }
+      }.call
+    end
+
+    x.untrust
+    assert_equal(true, x.untrusted?)
+    assert_nothing_raised do
+      lambda {
+        $SAFE = 4
+        x.instance_eval { @foo = 1 }
+      }.call
+    end
+
+    x.trust
+    assert_equal(false, x.untrusted?)
+    assert_raise(SecurityError) do
+      lambda {
+        $SAFE = 4
+        x.instance_eval { @foo = 1 }
+      }.call
+    end
+
+    a = Object.new
+    a.untrust
+    assert_equal(true, a.untrusted?)
+    b = a.dup
+    assert_equal(true, b.untrusted?)
+    c = a.clone
+    assert_equal(true, c.untrusted?)
+
+    a = Object.new
+    b = lambda {
+      $SAFE = 4
+      a.dup
+    }.call
+    assert_equal(true, b.untrusted?)
+
+    a = Object.new
+    b = lambda {
+      $SAFE = 4
+      a.clone
+    }.call
+    assert_equal(true, b.untrusted?)
+  end
+
+  def test_to_s
+    x = Object.new
+    x.taint
+    x.untrust
+    s = x.to_s
+    assert_equal(true, s.untrusted?)
+    assert_equal(true, s.tainted?)
+  end
 end

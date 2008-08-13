@@ -227,8 +227,8 @@ rb_eof_error(void)
 VALUE
 rb_io_taint_check(VALUE io)
 {
-    if (!OBJ_TAINTED(io) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: operation on untainted IO");
+    if (!OBJ_UNTRUSTED(io) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: operation on trusted IO");
     rb_check_frozen(io);
     return io;
 }
@@ -2819,7 +2819,7 @@ rb_io_close(VALUE io)
 static VALUE
 rb_io_close_m(VALUE io)
 {
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     rb_io_check_closed(RFILE(io)->fptr);
@@ -2902,7 +2902,7 @@ rb_io_close_read(VALUE io)
     rb_io_t *fptr;
     VALUE write_io;
 
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetOpenFile(io, fptr);
@@ -2962,7 +2962,7 @@ rb_io_close_write(VALUE io)
     rb_io_t *fptr;
     VALUE write_io;
 
-    if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
+    if (rb_safe_level() >= 4 && !OBJ_UNTRUSTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     write_io = GetWriteIO(io);
@@ -4430,7 +4430,8 @@ io_reopen(VALUE io, VALUE nfile)
     off_t pos = 0;
 
     nfile = rb_io_get_io(nfile);
-    if (rb_safe_level() >= 4 && (!OBJ_TAINTED(io) || !OBJ_TAINTED(nfile))) {
+    if (rb_safe_level() >= 4 &&
+       	(!OBJ_UNTRUSTED(io) || !OBJ_UNTRUSTED(nfile))) {
 	rb_raise(rb_eSecurityError, "Insecure: can't reopen");
     }
     GetOpenFile(io, fptr);
