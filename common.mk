@@ -390,9 +390,7 @@ enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/de
 PHONY:
 
 {$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed
-{$(VPATH)}parse.c: {$(VPATH)}parse.h
-parse.h:
-	@$(NULLCMD)
+{$(VPATH)}parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
 	$(YACC) -d $(YFLAGS) -o y.tab.c $<
@@ -490,6 +488,7 @@ gc.$(OBJEXT): {$(VPATH)}gc.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}thread_$(THREAD_MODEL).h \
   {$(VPATH)}gc.h {$(VPATH)}eval_intern.h
 hash.$(OBJEXT): {$(VPATH)}hash.c $(RUBY_H_INCLUDES) \
+  $(ID_H_INCLUDES) \
   {$(VPATH)}st.h {$(VPATH)}util.h {$(VPATH)}signal.h
 inits.$(OBJEXT): {$(VPATH)}inits.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h

@@ -1,3 +1,9 @@
+Thu Aug 14 05:36:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: parse.h depends on parse.c.
+
+	* common.mk: hash.o depends on $(ID_H_INCLUDES).
+
 Thu Aug 14 02:45:16 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_file_exhaustive.rb (TestFileExhaustive#setup):
