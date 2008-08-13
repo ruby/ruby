@@ -641,6 +641,7 @@ rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
     return tc;
 }
 
+#if 0
 static rb_transcoding *
 rb_transcoding_open(const char *from, const char *to, int flags)
 {
@@ -653,6 +654,7 @@ rb_transcoding_open(const char *from, const char *to, int flags)
 
     return tc;
 }
+#endif
 
 static rb_trans_result_t
 rb_transcoding_convert(rb_transcoding *tc,
@@ -750,7 +752,7 @@ rb_trans_open(const char *from, const char *to, int flags)
         return NULL;
 
     if (flags & (CRLF_NEWLINE|CR_NEWLINE)) {
-        char *name = (flags & CRLF_NEWLINE) ? "crlf_newline" : "cr_newline";
+        const char *name = (flags & CRLF_NEWLINE) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
         if (!e)
             return NULL;
