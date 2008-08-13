@@ -1,3 +1,10 @@
+Wed Aug 13 14:55:27 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* common.mk (realclean-local): Remove parse.h as well.
+
+	* common.mk: Add missing dependencies regarding vm_core.h, id.h,
+	  parse.c (parse.h), etc..
+
 Wed Aug 13 14:45:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/newline.trans (rb_crlf_newline): new transcoder.
