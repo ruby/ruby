@@ -573,7 +573,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.default = obj     => hsh
+ *     hsh.default = obj     => obj
  *
  *  Sets the default value, the value returned for a key that does not
  *  exist in the hash. It is not possible to set the a default to a
