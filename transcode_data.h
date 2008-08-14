@@ -112,13 +112,13 @@ struct rb_transcoder {
 };
 
 typedef enum {
-    transcode_invalid_input,
+    transcode_invalid_byte_sequence,
     transcode_undefined_conversion,
-    transcode_obuf_full,
-    transcode_ibuf_empty,
+    transcode_destination_buffer_full,
+    transcode_source_buffer_empty,
     transcode_finished,
     transcode_output_followed_by_input,
-} rb_trans_result_t;
+} rb_econv_result_t;
 
 typedef struct {
     const char *from;
@@ -128,15 +128,15 @@ typedef struct {
     unsigned char *out_data_start;
     unsigned char *out_data_end;
     unsigned char *out_buf_end;
-    rb_trans_result_t last_result;
-} rb_trans_elem_t;
+    rb_econv_result_t last_result;
+} rb_econv_elem_t;
 
 typedef struct {
-    rb_trans_elem_t *elems;
+    rb_econv_elem_t *elems;
     int num_trans;
     int num_finished;
     rb_transcoding *last_tc;
-} rb_trans_t;
+} rb_econv_t;
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);
 void rb_register_transcoder(const rb_transcoder *);

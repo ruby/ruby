@@ -1,3 +1,20 @@
+Thu Aug 14 20:25:52 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (transcode_invalid_byte_sequence): renamed from
+	  transcode_invalid_input.
+	  (transcode_destination_buffer_full): renamed from transcode_obuf_full.
+	  (transcode_source_buffer_empty): renamed from transcode_ibuf_empty.
+	  (rb_econv_result_t): renamed from rb_trans_result_t.
+	  (rb_econv_elem_t): renamed from rb_trans_elem_t.
+	  (rb_econv_t): renamed from rb_trans_t.
+
+	* transcode.c (UNIVERSAL_NEWLINE_DECODER): renamed from
+	  UNIVERSAL_NEWLINE.
+	  (CRLF_NEWLINE_ENCODER): renamed from CRLF_NEWLINE.
+	  (CR_NEWLINE_ENCODER): renamed from CR_NEWLINE.
+	  (rb_econv_open): renamed from rb_trans_open.
+	  (rb_econv_close): renamed from rb_trans_close.
+
 Thu Aug 14 19:41:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (load_transcoder): unused function removed.

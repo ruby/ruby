@@ -42,7 +42,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_partial_input
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     ret = ec.primitive_convert(src="", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)
-    assert_equal(:ibuf_empty, ret)
+    assert_equal(:source_buffer_empty, ret)
     ret = ec.primitive_convert(src="", dst="", nil, 10)
     assert_equal(:finished, ret)
   end
@@ -50,22 +50,22 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_accumulate_dst1
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     a =     ["", "abc\u{3042}def", ec, nil, 1]
-    check_ec("a",  "c\u{3042}def", :obuf_full, *a)
-    check_ec("ab",  "\u{3042}def", :obuf_full, *a)
-    check_ec("abc",         "def", :obuf_full, *a)
-    check_ec("abc\xA4",     "def", :obuf_full, *a)
-    check_ec("abc\xA4\xA2",  "ef", :obuf_full, *a)
-    check_ec("abc\xA4\xA2d",  "f", :obuf_full, *a)
-    check_ec("abc\xA4\xA2de",  "", :obuf_full, *a)
+    check_ec("a",  "c\u{3042}def", :destination_buffer_full, *a)
+    check_ec("ab",  "\u{3042}def", :destination_buffer_full, *a)
+    check_ec("abc",         "def", :destination_buffer_full, *a)
+    check_ec("abc\xA4",     "def", :destination_buffer_full, *a)
+    check_ec("abc\xA4\xA2",  "ef", :destination_buffer_full, *a)
+    check_ec("abc\xA4\xA2d",  "f", :destination_buffer_full, *a)
+    check_ec("abc\xA4\xA2de",  "", :destination_buffer_full, *a)
     check_ec("abc\xA4\xA2def", "", :finished,  *a)
   end
 
   def test_accumulate_dst2
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     a =     ["", "abc\u{3042}def", ec, nil, 2]
-    check_ec("ab",  "\u{3042}def", :obuf_full, *a)
-    check_ec("abc\xA4",     "def", :obuf_full, *a)
-    check_ec("abc\xA4\xA2d",  "f", :obuf_full, *a)
+    check_ec("ab",  "\u{3042}def", :destination_buffer_full, *a)
+    check_ec("abc\xA4",     "def", :destination_buffer_full, *a)
+    check_ec("abc\xA4\xA2d",  "f", :destination_buffer_full, *a)
     check_ec("abc\xA4\xA2def", "", :finished,  *a)
   end
 
@@ -81,40 +81,40 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_iso2022jp_outstream
     ec = Encoding::Converter.new("EUC-JP", "ISO-2022-JP")
     a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
-    src << "a";        check_ec("a",                           "", :ibuf_empty, *a)
-    src << "\xA2";     check_ec("a",                           "", :ibuf_empty, *a)
-    src << "\xA4";     check_ec("a\e$B\"$",                    "", :ibuf_empty, *a)
-    src << "\xA1";     check_ec("a\e$B\"$",                    "", :ibuf_empty, *a)
-    src << "\xA2";     check_ec("a\e$B\"$!\"",                 "", :ibuf_empty, *a)
-    src << "b";        check_ec("a\e$B\"$!\"\e(Bb",            "", :ibuf_empty, *a)
-    src << "\xA2\xA6"; check_ec("a\e$B\"$!\"\e(Bb\e$B\"&",     "", :ibuf_empty, *a)
+    src << "a";        check_ec("a",                           "", :source_buffer_empty, *a)
+    src << "\xA2";     check_ec("a",                           "", :source_buffer_empty, *a)
+    src << "\xA4";     check_ec("a\e$B\"$",                    "", :source_buffer_empty, *a)
+    src << "\xA1";     check_ec("a\e$B\"$",                    "", :source_buffer_empty, *a)
+    src << "\xA2";     check_ec("a\e$B\"$!\"",                 "", :source_buffer_empty, *a)
+    src << "b";        check_ec("a\e$B\"$!\"\e(Bb",            "", :source_buffer_empty, *a)
+    src << "\xA2\xA6"; check_ec("a\e$B\"$!\"\e(Bb\e$B\"&",     "", :source_buffer_empty, *a)
     a[-1] = 0;         check_ec("a\e$B\"$!\"\e(Bb\e$B\"&\e(B", "", :finished, *a)
   end
 
   def test_invalid
-    assert_econv("", :invalid_input,    100, ["UTF-8", "EUC-JP"], "\x80", "")
-    assert_econv("a", :invalid_input,   100, ["UTF-8", "EUC-JP"], "a\x80", "")
-    assert_econv("a", :invalid_input,   100, ["UTF-8", "EUC-JP"], "a\x80", "\x80")
-    assert_econv("abc", :invalid_input, 100, ["UTF-8", "EUC-JP"], "abc\xFF", "def")
-    assert_econv("abc", :invalid_input, 100, ["Shift_JIS", "EUC-JP"], "abc\xFF", "def")
-    assert_econv("abc", :invalid_input, 100, ["ISO-2022-JP", "EUC-JP"], "abc\xFF", "def")
+    assert_econv("", :invalid_byte_sequence,    100, ["UTF-8", "EUC-JP"], "\x80", "")
+    assert_econv("a", :invalid_byte_sequence,   100, ["UTF-8", "EUC-JP"], "a\x80", "")
+    assert_econv("a", :invalid_byte_sequence,   100, ["UTF-8", "EUC-JP"], "a\x80", "\x80")
+    assert_econv("abc", :invalid_byte_sequence, 100, ["UTF-8", "EUC-JP"], "abc\xFF", "def")
+    assert_econv("abc", :invalid_byte_sequence, 100, ["Shift_JIS", "EUC-JP"], "abc\xFF", "def")
+    assert_econv("abc", :invalid_byte_sequence, 100, ["ISO-2022-JP", "EUC-JP"], "abc\xFF", "def")
   end
 
   def test_invalid2
     ec = Encoding::Converter.new("Shift_JIS", "EUC-JP")
     a =     ["", "abc\xFFdef", ec, nil, 1]
-    check_ec("a",  "c\xFFdef", :obuf_full, *a)
-    check_ec("ab",  "\xFFdef", :obuf_full, *a)
-    check_ec("abc",     "def", :invalid_input, *a)
-    check_ec("abcd",      "f", :obuf_full, *a)
-    check_ec("abcde",      "", :obuf_full, *a)
+    check_ec("a",  "c\xFFdef", :destination_buffer_full, *a)
+    check_ec("ab",  "\xFFdef", :destination_buffer_full, *a)
+    check_ec("abc",     "def", :invalid_byte_sequence, *a)
+    check_ec("abcd",      "f", :destination_buffer_full, *a)
+    check_ec("abcde",      "", :destination_buffer_full, *a)
     check_ec("abcdef",     "", :finished, *a)
   end
 
   def test_invalid3
     ec = Encoding::Converter.new("Shift_JIS", "EUC-JP")
     a =     ["", "abc\xFFdef", ec, nil, 10]
-    check_ec("abc",     "def", :invalid_input, *a)
+    check_ec("abc",     "def", :invalid_byte_sequence, *a)
     check_ec("abcdef",     "", :finished, *a)
   end
 
@@ -124,7 +124,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     check_ec("a", "bc\xFFdef", :output_followed_by_input, *a)
     check_ec("ab", "c\xFFdef", :output_followed_by_input, *a)
     check_ec("abc", "\xFFdef", :output_followed_by_input, *a)
-    check_ec("abc",     "def", :invalid_input, *a)
+    check_ec("abc",     "def", :invalid_byte_sequence, *a)
     check_ec("abcd",     "ef", :output_followed_by_input, *a)
     check_ec("abcde",     "f", :output_followed_by_input, *a)
     check_ec("abcdef",     "", :output_followed_by_input, *a)
@@ -135,7 +135,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("UTF-16BE", "EUC-JP")
     a =     ["", "\xFF\xFE\x00A\xDC\x00\x00B", ec, nil, 10]
     check_ec("",         "\x00A\xDC\x00\x00B", :undefined_conversion, *a)
-    check_ec("A",                     "\x00B", :invalid_input, *a) # \xDC\x00 is invalid as UTF-16BE
+    check_ec("A",                     "\x00B", :invalid_byte_sequence, *a) # \xDC\x00 is invalid as UTF-16BE
     check_ec("AB",                         "", :finished, *a)
   end
 
@@ -144,29 +144,29 @@ class TestEncodingConverter < Test::Unit::TestCase
     a =     ["", "\xFF\xFE\x00A\xDC\x00\x00B", ec, nil, 10, Encoding::Converter::OUTPUT_FOLLOWED_BY_INPUT]
     check_ec("",         "\x00A\xDC\x00\x00B", :undefined_conversion, *a)
     check_ec("A",             "\xDC\x00\x00B", :output_followed_by_input, *a)
-    check_ec("A",                     "\x00B", :invalid_input, *a)
+    check_ec("A",                     "\x00B", :invalid_byte_sequence, *a)
     check_ec("AB",                         "", :output_followed_by_input, *a)
     check_ec("AB",                         "", :finished, *a)
   end
 
   def test_universal_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::UNIVERSAL_NEWLINE)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
     a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
-    src << "abc\r\ndef"; check_ec("abc\ndef",                             "", :ibuf_empty, *a)
-    src << "ghi\njkl";   check_ec("abc\ndefghi\njkl",                     "", :ibuf_empty, *a)
-    src << "mno\rpqr";   check_ec("abc\ndefghi\njklmno\npqr",             "", :ibuf_empty, *a)
-    src << "stu\r";      check_ec("abc\ndefghi\njklmno\npqrstu\n",        "", :ibuf_empty, *a)
-    src << "\nvwx";      check_ec("abc\ndefghi\njklmno\npqrstu\nvwx",     "", :ibuf_empty, *a)
-    src << "\nyz";       check_ec("abc\ndefghi\njklmno\npqrstu\nvwx\nyz", "", :ibuf_empty, *a)
+    src << "abc\r\ndef"; check_ec("abc\ndef",                             "", :source_buffer_empty, *a)
+    src << "ghi\njkl";   check_ec("abc\ndefghi\njkl",                     "", :source_buffer_empty, *a)
+    src << "mno\rpqr";   check_ec("abc\ndefghi\njklmno\npqr",             "", :source_buffer_empty, *a)
+    src << "stu\r";      check_ec("abc\ndefghi\njklmno\npqrstu\n",        "", :source_buffer_empty, *a)
+    src << "\nvwx";      check_ec("abc\ndefghi\njklmno\npqrstu\nvwx",     "", :source_buffer_empty, *a)
+    src << "\nyz";       check_ec("abc\ndefghi\njklmno\npqrstu\nvwx\nyz", "", :source_buffer_empty, *a)
   end
 
   def test_crlf_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CRLF_NEWLINE)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CRLF_NEWLINE_ENCODER)
     assert_econv("abc\r\ndef", :finished, 50, ec, "abc\ndef", "")
   end
 
   def test_cr_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CR_NEWLINE)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CR_NEWLINE_ENCODER)
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
