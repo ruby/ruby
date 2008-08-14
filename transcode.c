@@ -205,7 +205,7 @@ transcode_search_path(const char *from, const char *to,
     }
     found = 0;
 
-cleanup:
+  cleanup:
     while (bfs.queue) {
         q = bfs.queue;
         bfs.queue = q->next;
@@ -214,8 +214,8 @@ cleanup:
 
     if (found) {
         const char *enc = to;
-        pathlen = 0;
         int depth;
+        pathlen = 0;
         while (1) {
             st_lookup(bfs.visited, (st_data_t)enc, &val);
             if (!val)

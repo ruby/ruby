@@ -1879,8 +1879,8 @@ static VALUE
 rb_thread_priority_set(VALUE thread, VALUE prio)
 {
     rb_thread_t *th;
-    GetThreadPtr(thread, th);
     int priority;
+    GetThreadPtr(thread, th);
 
     rb_secure(4);
 

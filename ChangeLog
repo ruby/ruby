@@ -1,4 +1,8 @@
-Thu Aug 14 14:54:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 14 14:56:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_priority_set): get rid of C99 feature.
+
+	* transcode.c (transcode_search_path): ditto.
 
 	* vm.c (REWIND_CFP): get rid of statement expressions.
 
