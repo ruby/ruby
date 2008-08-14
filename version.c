@@ -22,6 +22,7 @@ const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
+const char ruby_engine[] = "ruby";
 
 void
 Init_version(void)
@@ -33,6 +34,7 @@ Init_version(void)
     rb_define_global_const("RUBY_REVISION", INT2FIX(RUBY_REVISION));
     rb_define_global_const("RUBY_DESCRIPTION", MKSTR(description));
     rb_define_global_const("RUBY_COPYRIGHT", MKSTR(copyright));
+    rb_define_global_const("RUBY_ENGINE", MKSTR(engine));
 }
 
 void

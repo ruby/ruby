@@ -1,3 +1,7 @@
+Thu Aug 14 17:27:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* version.c (Init_version): add RUBY_ENGINE constant.
+
 Thu Aug 14 15:34:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_conv): new function.  it don't consume input
