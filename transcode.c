@@ -663,7 +663,7 @@ rb_transcoding_close(rb_transcoding *tc)
 static rb_econv_t *
 rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
 {
-    rb_econv_t *ts;
+    rb_econv_t *ec;
     int i;
 
     for (i = 0; i < n; i++) {
@@ -673,37 +673,37 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
             return NULL;
     }
 
-    ts = ALLOC(rb_econv_t);
-    ts->num_trans = n;
-    ts->elems = ALLOC_N(rb_econv_elem_t, ts->num_trans);
-    ts->num_finished = 0;
-    ts->last_tc = NULL;
-    ts->source_encoding = NULL;
-    ts->destination_encoding = NULL;
-    for (i = 0; i < ts->num_trans; i++) {
+    ec = ALLOC(rb_econv_t);
+    ec->num_trans = n;
+    ec->elems = ALLOC_N(rb_econv_elem_t, ec->num_trans);
+    ec->num_finished = 0;
+    ec->last_tc = NULL;
+    ec->source_encoding = NULL;
+    ec->destination_encoding = NULL;
+    for (i = 0; i < ec->num_trans; i++) {
         const rb_transcoder *tr = load_transcoder_entry(entries[i]);
-        ts->elems[i].from = tr->from_encoding;
-        ts->elems[i].to = tr->to_encoding;
-        ts->elems[i].tc = rb_transcoding_open_by_transcoder(tr, 0);
-        ts->elems[i].out_buf_start = NULL;
-        ts->elems[i].out_data_start = NULL;
-        ts->elems[i].out_data_end = NULL;
-        ts->elems[i].out_buf_end = NULL;
-        ts->elems[i].last_result = econv_source_buffer_empty;
+        ec->elems[i].from = tr->from_encoding;
+        ec->elems[i].to = tr->to_encoding;
+        ec->elems[i].tc = rb_transcoding_open_by_transcoder(tr, 0);
+        ec->elems[i].out_buf_start = NULL;
+        ec->elems[i].out_data_start = NULL;
+        ec->elems[i].out_data_end = NULL;
+        ec->elems[i].out_buf_end = NULL;
+        ec->elems[i].last_result = econv_source_buffer_empty;
     }
-    ts->last_tc = ts->elems[ts->num_trans-1].tc;
+    ec->last_tc = ec->elems[ec->num_trans-1].tc;
 
-    for (i = 0; i < ts->num_trans-1; i++) {
+    for (i = 0; i < ec->num_trans-1; i++) {
         int bufsize = 4096;
         unsigned char *p;
         p = xmalloc(bufsize);
-        ts->elems[i].out_buf_start = p;
-        ts->elems[i].out_buf_end = p + bufsize;
-        ts->elems[i].out_data_start = p;
-        ts->elems[i].out_data_end = p;
+        ec->elems[i].out_buf_start = p;
+        ec->elems[i].out_buf_end = p + bufsize;
+        ec->elems[i].out_data_start = p;
+        ec->elems[i].out_data_end = p;
     }
 
-    return ts;
+    return ec;
 }
 
 static void
@@ -727,7 +727,7 @@ rb_econv_open(const char *from, const char *to, int flags)
 {
     transcoder_entry_t **entries = NULL;
     int num_trans;
-    static rb_econv_t *ts;
+    static rb_econv_t *ec;
 
     num_trans = transcode_search_path(from, to, trans_open_i, (void *)&entries);
 
@@ -751,17 +751,17 @@ rb_econv_open(const char *from, const char *to, int flags)
         entries[num_trans++] = e;
     }
 
-    ts = rb_econv_open_by_transcoder_entries(num_trans, entries);
+    ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
 
     if (flags & UNIVERSAL_NEWLINE_DECODER) {
-        ts->last_tc = ts->elems[ts->num_trans-2].tc;
+        ec->last_tc = ec->elems[ec->num_trans-2].tc;
     }
 
-    return ts;
+    return ec;
 }
 
 static int
-trans_sweep(rb_econv_t *ts,
+trans_sweep(rb_econv_t *ec,
     const unsigned char **input_ptr, const unsigned char *input_stop,
     unsigned char **output_ptr, unsigned char *output_stop,
     int flags,
@@ -777,15 +777,15 @@ trans_sweep(rb_econv_t *ts,
     try = 1;
     while (try) {
         try = 0;
-        for (i = start; i < ts->num_trans; i++) {
-            rb_econv_elem_t *te = &ts->elems[i];
+        for (i = start; i < ec->num_trans; i++) {
+            rb_econv_elem_t *te = &ec->elems[i];
 
             if (i == 0) {
                 ipp = input_ptr;
                 is = input_stop;
             }
             else {
-                rb_econv_elem_t *prev_te = &ts->elems[i-1];
+                rb_econv_elem_t *prev_te = &ec->elems[i-1];
                 ipp = (const unsigned char **)&prev_te->out_data_start;
                 is = prev_te->out_data_end;
             }
@@ -807,7 +807,7 @@ trans_sweep(rb_econv_t *ts,
             }
 
             f = flags;
-            if (ts->num_finished != i)
+            if (ec->num_finished != i)
                 f |= PARTIAL_INPUT;
             if (i == 0 && (flags & OUTPUT_FOLLOWED_BY_INPUT)) {
                 start = 1;
@@ -832,7 +832,7 @@ trans_sweep(rb_econv_t *ts,
                 break;
 
               case econv_finished:
-                ts->num_finished = i+1;
+                ec->num_finished = i+1;
                 break;
             }
         }
@@ -841,7 +841,7 @@ trans_sweep(rb_econv_t *ts,
 }
 
 static rb_econv_result_t
-rb_trans_conv(rb_econv_t *ts,
+rb_trans_conv(rb_econv_t *ec,
     const unsigned char **input_ptr, const unsigned char *input_stop,
     unsigned char **output_ptr, unsigned char *output_stop,
     int flags)
@@ -863,12 +863,12 @@ rb_trans_conv(rb_econv_t *ts,
         output_stop = empty_ptr;
     }
 
-    if (ts->elems[0].last_result == econv_output_followed_by_input)
-        ts->elems[0].last_result = econv_source_buffer_empty;
+    if (ec->elems[0].last_result == econv_output_followed_by_input)
+        ec->elems[0].last_result = econv_source_buffer_empty;
 
     needreport_index = -1;
-    for (i = ts->num_trans-1; 0 <= i; i--) {
-        switch (ts->elems[i].last_result) {
+    for (i = ec->num_trans-1; 0 <= i; i--) {
+        switch (ec->elems[i].last_result) {
           case econv_invalid_byte_sequence:
           case econv_undefined_conversion:
           case econv_output_followed_by_input:
@@ -888,11 +888,11 @@ rb_trans_conv(rb_econv_t *ts,
 
     /* /^[io]+$/ is confirmed.  but actually /^i*o*$/. */
 
-    if (ts->elems[ts->num_trans-1].last_result == econv_destination_buffer_full &&
+    if (ec->elems[ec->num_trans-1].last_result == econv_destination_buffer_full &&
         (flags & OUTPUT_FOLLOWED_BY_INPUT)) {
         rb_econv_result_t res;
 
-        res = rb_trans_conv(ts, NULL, NULL, output_ptr, output_stop,
+        res = rb_trans_conv(ec, NULL, NULL, output_ptr, output_stop,
                 (flags & ~OUTPUT_FOLLOWED_BY_INPUT)|PARTIAL_INPUT);
 
         if (res == econv_source_buffer_empty)
@@ -905,17 +905,17 @@ rb_trans_conv(rb_econv_t *ts,
 found_needreport:
 
     do {
-        needreport_index = trans_sweep(ts, input_ptr, input_stop, output_ptr, output_stop, flags, sweep_start);
+        needreport_index = trans_sweep(ec, input_ptr, input_stop, output_ptr, output_stop, flags, sweep_start);
         sweep_start = needreport_index + 1;
-    } while (needreport_index != -1 && needreport_index != ts->num_trans-1);
+    } while (needreport_index != -1 && needreport_index != ec->num_trans-1);
 
-    for (i = ts->num_trans-1; 0 <= i; i--) {
-        if (ts->elems[i].last_result != econv_source_buffer_empty) {
-            rb_econv_result_t res = ts->elems[i].last_result;
+    for (i = ec->num_trans-1; 0 <= i; i--) {
+        if (ec->elems[i].last_result != econv_source_buffer_empty) {
+            rb_econv_result_t res = ec->elems[i].last_result;
             if (res == econv_invalid_byte_sequence ||
                 res == econv_undefined_conversion ||
                 res == econv_output_followed_by_input) {
-                ts->elems[i].last_result = econv_source_buffer_empty;
+                ec->elems[i].last_result = econv_source_buffer_empty;
             }
             return res;
         }
@@ -924,7 +924,7 @@ found_needreport:
 }
 
 rb_econv_result_t
-rb_econv_convert(rb_econv_t *ts,
+rb_econv_convert(rb_econv_t *ec,
     const unsigned char **input_ptr, const unsigned char *input_stop,
     unsigned char **output_ptr, unsigned char *output_stop,
     int flags)
@@ -932,29 +932,29 @@ rb_econv_convert(rb_econv_t *ts,
     rb_econv_result_t res;
 
     if ((flags & OUTPUT_FOLLOWED_BY_INPUT) ||
-        ts->num_trans == 1)
-        return rb_trans_conv(ts, input_ptr, input_stop, output_ptr, output_stop, flags);
+        ec->num_trans == 1)
+        return rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
 
     flags |= OUTPUT_FOLLOWED_BY_INPUT;
     do {
-        res = rb_trans_conv(ts, input_ptr, input_stop, output_ptr, output_stop, flags);
+        res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
     } while (res == econv_output_followed_by_input);
     return res;
 }
 
 void
-rb_econv_close(rb_econv_t *ts)
+rb_econv_close(rb_econv_t *ec)
 {
     int i;
 
-    for (i = 0; i < ts->num_trans; i++) {
-        rb_transcoding_close(ts->elems[i].tc);
-        if (ts->elems[i].out_buf_start)
-            xfree(ts->elems[i].out_buf_start);
+    for (i = 0; i < ec->num_trans; i++) {
+        rb_transcoding_close(ec->elems[i].tc);
+        if (ec->elems[i].out_buf_start)
+            xfree(ec->elems[i].out_buf_start);
     }
 
-    xfree(ts->elems);
-    xfree(ts);
+    xfree(ec->elems);
+    xfree(ec);
 }
 
 static void
@@ -1037,21 +1037,21 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                const char *to_encoding,
 	       const int opt)
 {
-    rb_econv_t *ts;
+    rb_econv_t *ec;
     rb_transcoding *last_tc;
     rb_econv_result_t ret;
     unsigned char *out_start = *out_pos;
     int max_output;
 
-    ts = rb_econv_open(from_encoding, to_encoding, 0);
-    if (!ts)
+    ec = rb_econv_open(from_encoding, to_encoding, 0);
+    if (!ec)
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
-    last_tc = ts->last_tc;
+    last_tc = ec->last_tc;
     max_output = last_tc->transcoder->max_output;
 
 resume:
-    ret = rb_econv_convert(ts, in_pos, in_stop, out_pos, out_stop, opt);
+    ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, opt);
     if (ret == econv_invalid_byte_sequence) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
@@ -1062,7 +1062,7 @@ resume:
 	    output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
             goto resume;
 	}
-        rb_econv_close(ts);
+        rb_econv_close(ec);
 	rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
     }
     if (ret == econv_undefined_conversion) {
@@ -1076,7 +1076,7 @@ resume:
 	    output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
 	    goto resume;
 	}
-        rb_econv_close(ts);
+        rb_econv_close(ec);
         rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
     }
     if (ret == econv_destination_buffer_full) {
@@ -1084,7 +1084,7 @@ resume:
         goto resume;
     }
 
-    rb_econv_close(ts);
+    rb_econv_close(ec);
     return;
 }
 #else
@@ -1098,19 +1098,19 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                const char *to_encoding,
 	       const int opt)
 {
-    rb_econv_t *ts;
+    rb_econv_t *ec;
     rb_transcoding *last_tc;
     rb_econv_result_t ret;
     unsigned char *out_start = *out_pos;
     const unsigned char *ptr;
     int max_output;
 
-    ts = rb_econv_open(from_encoding, to_encoding, 0);
-    if (!ts)
+    ec = rb_econv_open(from_encoding, to_encoding, 0);
+    if (!ec)
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
-    last_tc = ts->last_tc;
-    max_output = ts->elems[ts->num_trans-1].tc->transcoder->max_output;
+    last_tc = ec->last_tc;
+    max_output = ec->elems[ec->num_trans-1].tc->transcoder->max_output;
 
     ret = econv_source_buffer_empty;
     ptr = *in_pos;
@@ -1121,14 +1121,14 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (ret == econv_source_buffer_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
-                ret = rb_econv_convert(ts, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
+                ret = rb_econv_convert(ec, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
             }
             else {
-                ret = rb_econv_convert(ts, NULL, NULL, out_pos, out_stop, 0);
+                ret = rb_econv_convert(ec, NULL, NULL, out_pos, out_stop, 0);
             }
         }
         else {
-            ret = rb_econv_convert(ts, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
+            ret = rb_econv_convert(ec, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
         }
         if (&input_byte != p)
             ptr += p - &input_byte;
@@ -1143,7 +1143,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
                 break;
             }
-            rb_econv_close(ts);
+            rb_econv_close(ec);
             rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
             break;
 
@@ -1158,7 +1158,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
                 break;
             }
-            rb_econv_close(ts);
+            rb_econv_close(ec);
             rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
             break;
 
@@ -1173,7 +1173,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             break;
         }
     }
-    rb_econv_close(ts);
+    rb_econv_close(ec);
     *in_pos = in_stop;
     return;
 }
@@ -1372,9 +1372,9 @@ rb_str_transcode(VALUE str, VALUE to)
 }
 
 static void
-econv_free(rb_econv_t *ts)
+econv_free(rb_econv_t *ec)
 {
-    rb_econv_close(ts);
+    rb_econv_close(ec);
 }
 
 static VALUE
@@ -1464,14 +1464,14 @@ static VALUE
 econv_inspect(VALUE self)
 {
     const char *cname = rb_obj_classname(self);
-    rb_econv_t *ts = DATA_PTR(self);
+    rb_econv_t *ec = DATA_PTR(self);
 
-    if (!ts)
+    if (!ec)
         return rb_sprintf("#<%s: uninitialized>", cname);
     else
         return rb_sprintf("#<%s: %s to %s>", cname,
-            ts->elems[0].from,
-            ts->last_tc->transcoder->to_encoding);
+            ec->elems[0].from,
+            ec->last_tc->transcoder->to_encoding);
 }
 
 #define IS_ECONV(obj) (RDATA(obj)->dfree == (RUBY_DATA_FUNC)econv_free)
@@ -1589,7 +1589,7 @@ static VALUE
 econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 {
     VALUE input, output, output_byteoffset_v, output_bytesize_v, flags_v;
-    rb_econv_t *ts = check_econv(self);
+    rb_econv_t *ec = check_econv(self);
     rb_econv_result_t res;
     const unsigned char *ip, *is;
     unsigned char *op, *os;
@@ -1643,7 +1643,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     op = (unsigned char *)RSTRING_PTR(output) + output_byteoffset;
     os = op + output_bytesize;
 
-    res = rb_econv_convert(ts, &ip, is, &op, os, flags);
+    res = rb_econv_convert(ec, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
     rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
 
