@@ -1,4 +1,6 @@
-Thu Aug 14 14:56:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 14 14:57:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (getrusage_time): should return the value.
 
 	* thread.c (rb_thread_priority_set): get rid of C99 feature.
 

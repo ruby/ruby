@@ -140,6 +140,7 @@ getrusage_time(void)
     t += (double)(DWORD)(q >> 16) * (1 << 16);
     t += (DWORD)q & ~(~0 << 16);
 #endif
+    return t;
 #else
     return 0.0;
 #endif
