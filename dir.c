@@ -333,17 +333,15 @@ static VALUE
 dir_initialize(int argc, VALUE *argv, VALUE dir)
 {
     struct dir_data *dp;
-    static rb_encoding *fs_encoding;
     rb_encoding  *extencoding;
     VALUE dirname, opt;
     static VALUE sym_extenc;
 
     if (!sym_extenc) {
 	sym_extenc = ID2SYM(rb_intern("external_encoding"));
-	fs_encoding = rb_filesystem_encoding();
     }
+    extencoding = rb_filesystem_encoding();
 
-    extencoding = fs_encoding;
     rb_scan_args(argc, argv, "11", &dirname, &opt);
 
     if (!NIL_P(opt)) {

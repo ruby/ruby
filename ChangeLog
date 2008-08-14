@@ -1,3 +1,10 @@
+Thu Aug 14 21:10:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_filesystem_encoding): use default external encoding
+	  for Unix.
+
+	* dir.c (dir_initialize): don't cache fs_encoding.
+
 Thu Aug 14 20:58:57 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open_by_transcoder_entries): renamed from

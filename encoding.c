@@ -962,16 +962,14 @@ rb_locale_encoding(void)
 rb_encoding *
 rb_filesystem_encoding(void)
 {
-    static rb_encoding *enc;
-    if (!enc) {
+    rb_encoding *enc;
 #if defined _WIN32
-	enc = rb_locale_encoding();
+    enc = rb_locale_encoding();
 #elif defined __APPLE__
-	enc = rb_enc_find("UTF8-MAC");
+    enc = rb_enc_find("UTF8-MAC");
 #else
-	enc = rb_locale_encoding();
+    enc = rb_default_external_encoding();
 #endif
-    }
     return enc;
 }
 
