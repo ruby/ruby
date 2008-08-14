@@ -112,12 +112,12 @@ struct rb_transcoder {
 };
 
 typedef enum {
-    transcode_invalid_byte_sequence,
-    transcode_undefined_conversion,
-    transcode_destination_buffer_full,
-    transcode_source_buffer_empty,
-    transcode_finished,
-    transcode_output_followed_by_input,
+    econv_invalid_byte_sequence,
+    econv_undefined_conversion,
+    econv_destination_buffer_full,
+    econv_source_buffer_empty,
+    econv_finished,
+    econv_output_followed_by_input,
 } rb_econv_result_t;
 
 typedef struct {

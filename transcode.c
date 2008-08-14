@@ -382,12 +382,12 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     } while (0)
 #define SUSPEND_OBUF(num) \
     do { \
-        while (out_stop - out_p < 1) { SUSPEND(transcode_destination_buffer_full, num); } \
+        while (out_stop - out_p < 1) { SUSPEND(econv_destination_buffer_full, num); } \
     } while (0)
 
 #define SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(num) \
     if ((opt & OUTPUT_FOLLOWED_BY_INPUT) && *out_pos != out_p) { \
-        SUSPEND(transcode_output_followed_by_input, num); \
+        SUSPEND(econv_output_followed_by_input, num); \
     }
 
 #define next_table (tc->next_table)
@@ -431,7 +431,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         if (in_stop <= in_p) {
             if (!(opt & PARTIAL_INPUT))
                 break;
-            SUSPEND(transcode_source_buffer_empty, 7);
+            SUSPEND(econv_source_buffer_empty, 7);
             continue;
         }
 
@@ -457,7 +457,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	    while (in_p >= in_stop) {
                 if (!(opt & PARTIAL_INPUT))
                     goto invalid;
-                SUSPEND(transcode_source_buffer_empty, 5);
+                SUSPEND(econv_source_buffer_empty, 5);
 	    }
 	    next_byte = (unsigned char)*in_p++;
 	    next_table = (const BYTE_LOOKUP *)next_info;
@@ -532,7 +532,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                     SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(26);
                 while ((opt & PARTIAL_INPUT) && tc->recognized_len + (in_stop - inchar_start) < unitlen) {
                     in_p = in_stop;
-                    SUSPEND(transcode_source_buffer_empty, 8);
+                    SUSPEND(econv_source_buffer_empty, 8);
                 }
                 if (tc->recognized_len + (in_stop - inchar_start) <= unitlen) {
                     in_p = in_stop;
@@ -555,11 +555,11 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	continue;
 
       invalid:
-        SUSPEND(transcode_invalid_byte_sequence, 1);
+        SUSPEND(econv_invalid_byte_sequence, 1);
         continue;
 
       undef:
-        SUSPEND(transcode_undefined_conversion, 2);
+        SUSPEND(econv_undefined_conversion, 2);
         continue;
     }
 
@@ -579,7 +579,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         }
     }
     while (1)
-        SUSPEND(transcode_finished, 6);
+        SUSPEND(econv_finished, 6);
 #undef SUSPEND
 #undef next_table
 #undef next_info
@@ -604,7 +604,7 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
                unsigned char, tc->readagain_len);
         tc->readagain_len = 0;
         res = transcode_restartable0(&readagain_pos, out_pos, readagain_stop, out_stop, tc, opt|PARTIAL_INPUT);
-        if (res != transcode_source_buffer_empty) {
+        if (res != econv_source_buffer_empty) {
             MEMCPY(TRANSCODING_READBUF(tc) + tc->recognized_len + tc->readagain_len,
                    readagain_pos, unsigned char, readagain_stop - readagain_pos);
             tc->readagain_len += readagain_stop - readagain_pos;
@@ -687,7 +687,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
         ts->elems[i].out_data_start = NULL;
         ts->elems[i].out_data_end = NULL;
         ts->elems[i].out_buf_end = NULL;
-        ts->elems[i].last_result = transcode_source_buffer_empty;
+        ts->elems[i].last_result = econv_source_buffer_empty;
     }
     ts->last_tc = ts->elems[ts->num_trans-1].tc;
 
@@ -820,16 +820,16 @@ trans_sweep(rb_econv_t *ts,
                 try = 1;
 
             switch (res) {
-              case transcode_invalid_byte_sequence:
-              case transcode_undefined_conversion:
-              case transcode_output_followed_by_input:
+              case econv_invalid_byte_sequence:
+              case econv_undefined_conversion:
+              case econv_output_followed_by_input:
                 return i;
 
-              case transcode_destination_buffer_full:
-              case transcode_source_buffer_empty:
+              case econv_destination_buffer_full:
+              case econv_source_buffer_empty:
                 break;
 
-              case transcode_finished:
+              case econv_finished:
                 ts->num_finished = i+1;
                 break;
             }
@@ -861,22 +861,22 @@ rb_trans_conv(rb_econv_t *ts,
         output_stop = empty_ptr;
     }
 
-    if (ts->elems[0].last_result == transcode_output_followed_by_input)
-        ts->elems[0].last_result = transcode_source_buffer_empty;
+    if (ts->elems[0].last_result == econv_output_followed_by_input)
+        ts->elems[0].last_result = econv_source_buffer_empty;
 
     needreport_index = -1;
     for (i = ts->num_trans-1; 0 <= i; i--) {
         switch (ts->elems[i].last_result) {
-          case transcode_invalid_byte_sequence:
-          case transcode_undefined_conversion:
-          case transcode_output_followed_by_input:
-          case transcode_finished:
+          case econv_invalid_byte_sequence:
+          case econv_undefined_conversion:
+          case econv_output_followed_by_input:
+          case econv_finished:
             sweep_start = i+1;
             needreport_index = i;
             goto found_needreport;
 
-          case transcode_destination_buffer_full:
-          case transcode_source_buffer_empty:
+          case econv_destination_buffer_full:
+          case econv_source_buffer_empty:
             break;
 
           default:
@@ -886,15 +886,15 @@ rb_trans_conv(rb_econv_t *ts,
 
     /* /^[io]+$/ is confirmed.  but actually /^i*o*$/. */
 
-    if (ts->elems[ts->num_trans-1].last_result == transcode_destination_buffer_full &&
+    if (ts->elems[ts->num_trans-1].last_result == econv_destination_buffer_full &&
         (flags & OUTPUT_FOLLOWED_BY_INPUT)) {
         rb_econv_result_t res;
 
         res = rb_trans_conv(ts, NULL, NULL, output_ptr, output_stop,
                 (flags & ~OUTPUT_FOLLOWED_BY_INPUT)|PARTIAL_INPUT);
 
-        if (res == transcode_source_buffer_empty)
-            return transcode_output_followed_by_input;
+        if (res == econv_source_buffer_empty)
+            return econv_output_followed_by_input;
         return res;
     }
 
@@ -908,17 +908,17 @@ found_needreport:
     } while (needreport_index != -1 && needreport_index != ts->num_trans-1);
 
     for (i = ts->num_trans-1; 0 <= i; i--) {
-        if (ts->elems[i].last_result != transcode_source_buffer_empty) {
+        if (ts->elems[i].last_result != econv_source_buffer_empty) {
             rb_econv_result_t res = ts->elems[i].last_result;
-            if (res == transcode_invalid_byte_sequence ||
-                res == transcode_undefined_conversion ||
-                res == transcode_output_followed_by_input) {
-                ts->elems[i].last_result = transcode_source_buffer_empty;
+            if (res == econv_invalid_byte_sequence ||
+                res == econv_undefined_conversion ||
+                res == econv_output_followed_by_input) {
+                ts->elems[i].last_result = econv_source_buffer_empty;
             }
             return res;
         }
     }
-    return transcode_source_buffer_empty;
+    return econv_source_buffer_empty;
 }
 
 static rb_econv_result_t
@@ -936,7 +936,7 @@ rb_econv_conv(rb_econv_t *ts,
     flags |= OUTPUT_FOLLOWED_BY_INPUT;
     do {
         res = rb_trans_conv(ts, input_ptr, input_stop, output_ptr, output_stop, flags);
-    } while (res == transcode_output_followed_by_input);
+    } while (res == econv_output_followed_by_input);
     return res;
 }
 
@@ -1050,7 +1050,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 
 resume:
     ret = rb_econv_conv(ts, in_pos, in_stop, out_pos, out_stop, opt);
-    if (ret == transcode_invalid_byte_sequence) {
+    if (ret == econv_invalid_byte_sequence) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
 	if (opt&INVALID_IGNORE) {
@@ -1063,7 +1063,7 @@ resume:
         rb_econv_close(ts);
 	rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
     }
-    if (ret == transcode_undefined_conversion) {
+    if (ret == econv_undefined_conversion) {
 	/* valid character in from encoding
 	 * but no related character(s) in to encoding */
 	/* todo: add more alternative behaviors */
@@ -1077,7 +1077,7 @@ resume:
         rb_econv_close(ts);
         rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
     }
-    if (ret == transcode_destination_buffer_full) {
+    if (ret == econv_destination_buffer_full) {
         more_output_buffer(destination, resize_destination, max_output, &out_start, out_pos, &out_stop);
         goto resume;
     }
@@ -1110,13 +1110,13 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     last_tc = ts->last_tc;
     max_output = ts->elems[ts->num_trans-1].tc->transcoder->max_output;
 
-    ret = transcode_source_buffer_empty;
+    ret = econv_source_buffer_empty;
     ptr = *in_pos;
-    while (ret != transcode_finished) {
+    while (ret != econv_finished) {
         unsigned char input_byte;
         const unsigned char *p = &input_byte;
 
-        if (ret == transcode_source_buffer_empty) {
+        if (ret == econv_source_buffer_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
                 ret = rb_econv_conv(ts, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
@@ -1131,7 +1131,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (&input_byte != p)
             ptr += p - &input_byte;
         switch (ret) {
-          case transcode_invalid_byte_sequence:
+          case econv_invalid_byte_sequence:
             /* deal with invalid byte sequence */
             /* todo: add more alternative behaviors */
             if (opt&INVALID_IGNORE) {
@@ -1145,7 +1145,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
             break;
 
-          case transcode_undefined_conversion:
+          case econv_undefined_conversion:
             /* valid character in from encoding
              * but no related character(s) in to encoding */
             /* todo: add more alternative behaviors */
@@ -1160,14 +1160,14 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
             break;
 
-          case transcode_destination_buffer_full:
+          case econv_destination_buffer_full:
             more_output_buffer(destination, resize_destination, max_output, &out_start, out_pos, &out_stop);
             break;
 
-          case transcode_source_buffer_empty:
+          case econv_source_buffer_empty:
             break;
 
-          case transcode_finished:
+          case econv_finished:
             break;
         }
     }
@@ -1617,12 +1617,12 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
 
     switch (res) {
-      case transcode_invalid_byte_sequence: return ID2SYM(rb_intern("invalid_byte_sequence"));
-      case transcode_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));
-      case transcode_destination_buffer_full: return ID2SYM(rb_intern("destination_buffer_full"));
-      case transcode_source_buffer_empty: return ID2SYM(rb_intern("source_buffer_empty"));
-      case transcode_finished: return ID2SYM(rb_intern("finished"));
-      case transcode_output_followed_by_input: return ID2SYM(rb_intern("output_followed_by_input"));
+      case econv_invalid_byte_sequence: return ID2SYM(rb_intern("invalid_byte_sequence"));
+      case econv_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));
+      case econv_destination_buffer_full: return ID2SYM(rb_intern("destination_buffer_full"));
+      case econv_source_buffer_empty: return ID2SYM(rb_intern("source_buffer_empty"));
+      case econv_finished: return ID2SYM(rb_intern("finished"));
+      case econv_output_followed_by_input: return ID2SYM(rb_intern("output_followed_by_input"));
       default: return INT2NUM(res); /* should not be reached */
     }
 }
