@@ -278,6 +278,11 @@ void rb_ia64_flushrs(void);
 #define RUBY_PLATFORM "unknown-unknown"
 #endif
 
+#ifndef RUBY_ALIAS_FUNCTION
+#define RUBY_ALIAS_FUNCTION(old_prot, new_name, args) \
+    VALUE old_prot {return new_name args;}
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

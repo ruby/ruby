@@ -1,3 +1,7 @@
+Thu Aug 14 15:27:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/defines.h (RUBY_ALIAS_FUNCTION): fallback definition.
+
 Thu Aug 14 15:08:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_trans_result_t): new enumeration constant:
