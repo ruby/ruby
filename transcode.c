@@ -1611,22 +1611,6 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     }
 }
 
-/*
- * call-seq:
- *   max_output -> int
- *
- * returns the maximum length of output unit in bytes.
- */
-static VALUE
-econv_max_output(VALUE self)
-{
-    rb_econv_t *ts = check_econv(self);
-    int n;
-    n = ts->elems[ts->num_trans-1].tc->transcoder->max_output;
-
-    return INT2FIX(n);
-}
-
 void
 Init_transcode(void)
 {
@@ -1648,7 +1632,6 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
     rb_define_method(rb_cEncodingConverter, "inspect", econv_inspect, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
-    rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(OUTPUT_FOLLOWED_BY_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(UNIVERSAL_NEWLINE_DECODER));
