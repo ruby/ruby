@@ -1849,13 +1849,39 @@ case "$target_os" in
 	esac
         MINIDLNOBJ=dmydln.o
 	;;
+    *msdosdjgpp*)
+	FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in
+	;;
     *)
 	;;
 esac
 MINIOBJS="$MINIDLNOBJ"
 
-case "$build_os" in
-  *msdosdjgpp*) FIRSTMAKEFILE=GNUmakefile:djgpp/GNUmakefile.in;;
+case "$FIRSTMAKEFILE" in
+dnl (
+*GNUmakefile:*)
+    gnumake=yes
+    ;;
+dnl (
+*)
+    AC_MSG_CHECKING([for if ${MAKE-make} is GNU make])
+    mkdir conftest.dir
+    echo "all:; @echo yes" > conftest.dir/GNUmakefile
+    echo "all:; @echo no" > conftest.dir/Makefile
+    gnumake=`(cd conftest.dir; ${MAKE-make})`
+    rm -fr conftest.dir
+    case "$gnumake" in
+    dnl (
+    *yes*)
+	echo "include Makefile" > GNUmakefile
+	echo "include uncommon.mk" >> GNUmakefile
+	gnumake=yes;;
+    dnl (
+    *)
+	gnumake=no;;
+    esac
+    AC_MSG_RESULT($gnumake)
+    ;;
 esac
 
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
@@ -2069,7 +2095,10 @@ AC_CONFIG_FILES(Makefile, [{
 	sed '/^MISSING/s/\$U\././g' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
 	test "$RUBY_INSTALL_NAME$EXEEXT" = ruby || echo 'ruby: $(PROGRAM);'
-	sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
+	if test "$gnumake" != yes; then
+	    echo ['$(MKFILES): $(srcdir)/common.mk']
+	    sed ['s/{\$([^(){}]*)[^{}]*}//g'] ${srcdir}/common.mk
+	fi
       } >> confmk$$.tmp && mv -f confmk$$.tmp Makefile],
-[RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT])
+[RUBY_INSTALL_NAME=$RUBY_INSTALL_NAME EXEEXT=$EXEEXT gnumake=$gnumake])
 AC_OUTPUT

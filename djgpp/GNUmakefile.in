@@ -1,2 +1,3 @@
 include Makefile
 VPATH = $(srcdir) $(srcdir)/missing
+include uncommon.mk

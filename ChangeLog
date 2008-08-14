@@ -1,4 +1,8 @@
-Thu Aug 14 11:45:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 14 12:01:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (gnumake): check for GNU make.
+
+	* Makefile.in (uncommon.mk): includes filtered common.mk.
 
 	* common.mk (parse.h): workaround for nmake.
 
