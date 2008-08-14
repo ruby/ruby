@@ -143,6 +143,7 @@ int rb_enc_codelen(int code, rb_encoding *enc);
 #define rb_enc_isalpha(c,enc) ONIGENC_IS_CODE_ALPHA(enc,c)
 #define rb_enc_islower(c,enc) ONIGENC_IS_CODE_LOWER(enc,c)
 #define rb_enc_isupper(c,enc) ONIGENC_IS_CODE_UPPER(enc,c)
+#define rb_enc_ispunct(c,enc) ONIGENC_IS_CODE_PUNCT(enc,c)
 #define rb_enc_isalnum(c,enc) ONIGENC_IS_CODE_ALNUM(enc,c)
 #define rb_enc_isprint(c,enc) ONIGENC_IS_CODE_PRINT(enc,c)
 #define rb_enc_isspace(c,enc) ONIGENC_IS_CODE_SPACE(enc,c)

@@ -79,7 +79,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		cont.$(OBJEXT) \
-		id.$(OBJEXT) \
 		$(BUILTIN_ENCOBJS) \
 		$(MISSING)
 

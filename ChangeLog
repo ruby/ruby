@@ -1,3 +1,17 @@
+Thu Aug 14 17:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/encoding.h (rb_enc_ispunct): added.
+
+	* common.mk (COMMONOBJS), inits.c (rb_call_inits): id.c is now
+	  included from parse.c.
+
+	* id.c (Init_id), id.h (ruby_method_ids): added IDs used by VM.
+
+	* parse.y (global_symbols): added rooms for VM IDs.
+
+	* parse.y (rb_intern3, rb_id2str): single puctuation symbol is now
+	  same as char code.
+
 Thu Aug 14 17:46:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (union tmpyystype): no longer needed, since YYSTYPE is

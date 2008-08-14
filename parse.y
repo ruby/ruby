@@ -35,16 +35,11 @@
 #define calloc	YYCALLOC
 #define free	YYFREE
 
-#define ID_SCOPE_SHIFT 3
-#define ID_SCOPE_MASK 0x07
-#define ID_LOCAL      0x00
-#define ID_INSTANCE   0x01
-#define ID_GLOBAL     0x03
-#define ID_ATTRSET    0x04
-#define ID_CONST      0x05
-#define ID_CLASS      0x06
-#define ID_JUNK       0x07
-#define ID_INTERNAL   ID_JUNK
+#ifndef RIPPER
+static ID register_symid(ID, const char *, long, rb_encoding *);
+#define REGISTER_SYMID(id, name) register_symid(id, name, strlen(name), enc)
+#include "id.c"
+#endif
 
 #define is_notop_id(id) ((id)>tLAST_TOKEN)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
@@ -495,6 +490,10 @@ static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,V
 
 static VALUE ripper_intern(const char*);
 static VALUE ripper_id2sym(ID);
+#ifdef __GNUC__
+#define ripper_id2sym(id) ((id) < 256 && rb_ispunct(id) ? \
+			   ID2SYM(id) : ripper_id2sym(id))
+#endif
 
 #define arg_new() dispatch0(args_new)
 #define arg_add(l,a) dispatch2(args_add, l, a)
@@ -731,6 +730,18 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 %right tUMINUS_NUM tUMINUS
 %right tPOW
 %right '!' '~' tUPLUS
+
+%nonassoc idNULL
+%nonassoc idRespond_to
+%nonassoc idIFUNC
+%nonassoc idCFUNC
+%nonassoc idThrowState
+%nonassoc id_core_set_method_alias
+%nonassoc id_core_set_variable_alias
+%nonassoc id_core_undef_method
+%nonassoc id_core_define_method
+%nonassoc id_core_define_singleton_method
+%nonassoc id_core_set_postexe
 
 %token tLAST_TOKEN
 
@@ -8796,40 +8807,27 @@ static const struct {
 } op_tbl[] = {
     {tDOT2,	".."},
     {tDOT3,	"..."},
-    {'+',	"+"},
-    {'-',	"-"},
     {'+',	"+(binary)"},
     {'-',	"-(binary)"},
-    {'*',	"*"},
-    {'/',	"/"},
-    {'%',	"%"},
     {tPOW,	"**"},
     {tUPLUS,	"+@"},
     {tUMINUS,	"-@"},
-    {'|',	"|"},
-    {'^',	"^"},
-    {'&',	"&"},
-    {'!',	"!"},
     {tCMP,	"<=>"},
-    {'>',	">"},
     {tGEQ,	">="},
-    {'<',	"<"},
     {tLEQ,	"<="},
     {tEQ,	"=="},
     {tEQQ,	"==="},
     {tNEQ,	"!="},
     {tMATCH,	"=~"},
     {tNMATCH,	"!~"},
-    {'~',	"~"},
-    {'!',	"!"},
     {tAREF,	"[]"},
     {tASET,	"[]="},
     {tLSHFT,	"<<"},
     {tRSHFT,	">>"},
     {tCOLON2,	"::"},
-    {'`',	"`"},
-    {0,	0}
 };
+
+#define op_tbl_count (sizeof(op_tbl) / sizeof(op_tbl[0]))
 
 static struct symbols {
     ID last_id;
@@ -8838,7 +8836,7 @@ static struct symbols {
     st_table *ivar2_id;
     st_table *id_ivar2;
     VALUE op_sym[tLAST_TOKEN];
-} global_symbols = {tLAST_TOKEN >> ID_SCOPE_SHIFT};
+} global_symbols = {tLAST_ID};
 
 static const struct st_hash_type symhash = {
     rb_str_hash_cmp,
@@ -8877,7 +8875,8 @@ Init_sym(void)
     global_symbols.id_str = st_init_numtable_with_size(1000);
     global_symbols.ivar2_id = st_init_table_with_size(&ivar2_hash_type, 1000);
     global_symbols.id_ivar2 = st_init_numtable_with_size(1000);
-    rb_intern2("", 0);
+
+    Init_id();
 }
 
 void
@@ -9022,11 +9021,22 @@ rb_enc_symname2_p(const char *name, int len, rb_encoding *enc)
     return *m ? Qfalse : Qtrue;
 }
 
+static ID
+register_symid(ID id, const char *name, long len, rb_encoding *enc)
+{
+    VALUE str = rb_enc_str_new(name, len, enc);
+    OBJ_FREEZE(str);
+    st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
+    st_add_direct(global_symbols.id_str, id, (st_data_t)str);
+    return id;
+}
+
 ID
 rb_intern3(const char *name, long len, rb_encoding *enc)
 {
     const char *m = name;
     const char *e = m + len;
+    unsigned char c;
     VALUE str;
     ID id;
     int last;
@@ -9068,12 +9078,16 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 	m++;
 	break;
       default:
-	if (m[0] != '_' && rb_enc_isascii((unsigned char)m[0], enc)
-	    && !rb_enc_isalnum(m[0], enc)) {
+	c = m[0];
+	if (c != '_' && rb_enc_isascii(c, enc) && rb_enc_ispunct(c, enc)) {
 	    /* operators */
 	    int i;
 
-	    for (i=0; op_tbl[i].token; i++) {
+	    if (len == 1) {
+		id = c;
+		goto id_register;
+	    }
+	    for (i = 0; i < op_tbl_count; i++) {
 		if (*op_tbl[i].name == *m &&
 		    strcmp(op_tbl[i].name, m) == 0) {
 		    id = op_tbl[i].token;
@@ -9129,11 +9143,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
   new_id:
     id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_register:
-    str = rb_enc_str_new(name, len, enc);
-    OBJ_FREEZE(str);
-    st_add_direct(global_symbols.sym_id, (st_data_t)str, id);
-    st_add_direct(global_symbols.id_str, id, (st_data_t)str);
-    return id;
+    return register_symid(id, name, len, enc);
 }
 
 ID
@@ -9174,7 +9184,19 @@ rb_id2str(ID id)
     if (id < tLAST_TOKEN) {
 	int i = 0;
 
-	for (i=0; op_tbl[i].token; i++) {
+	if (rb_ispunct(id)) {
+	    VALUE str = global_symbols.op_sym[i = (int)id];
+	    if (!str) {
+		char name[2];
+		name[0] = (char)id;
+		name[1] = 0;
+		str = rb_usascii_str_new(name, 1);
+		OBJ_FREEZE(str);
+		global_symbols.op_sym[i] = str;
+	    }
+	    return str;
+	}
+	for (i = 0; i < op_tbl_count; i++) {
 	    if (op_tbl[i].token == id) {
 		VALUE str = global_symbols.op_sym[i];
 		if (!str) {
@@ -9694,6 +9716,7 @@ keyword_id_to_str(ID id)
     return NULL;
 }
 
+#undef ripper_id2sym
 static VALUE
 ripper_id2sym(ID id)
 {

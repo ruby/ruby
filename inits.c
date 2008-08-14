@@ -36,7 +36,6 @@ void Init_Object(void);
 void Init_pack(void);
 void Init_Precision(void);
 void Init_sym(void);
-void Init_id(void);
 void Init_process(void);
 void Init_RandomSeed(void);
 void Init_Random(void);
@@ -61,7 +60,6 @@ rb_call_inits()
 {
     Init_RandomSeed();
     Init_sym();
-    Init_id();
     Init_var_tables();
     Init_Object();
     Init_top_self();

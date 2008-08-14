@@ -12,10 +12,21 @@
 #ifndef RUBY_ID_H
 #define RUBY_ID_H
 
+#define ID_SCOPE_SHIFT 3
+#define ID_SCOPE_MASK 0x07
+#define ID_LOCAL      0x00
+#define ID_INSTANCE   0x01
+#define ID_GLOBAL     0x03
+#define ID_ATTRSET    0x04
+#define ID_CONST      0x05
+#define ID_CLASS      0x06
+#define ID_JUNK       0x07
+#define ID_INTERNAL   ID_JUNK
+
 #include "parse.h"
 
-extern VALUE symIFUNC;
-extern VALUE symCFUNC;
+#define symIFUNC ID2SYM(idIFUNC)
+#define symCFUNC ID2SYM(idCFUNC)
 
 enum ruby_method_ids {
     idPLUS = '+',
@@ -36,34 +47,37 @@ enum ruby_method_ids {
     idEqTilde = tMATCH,
     idAREF = tAREF,
     idASET = tASET,
-    idDummy
+    idLAST_TOKEN = tLAST_TOKEN >> ID_SCOPE_SHIFT,
+    tIntern,
+    tMethodMissing,
+    tLength,
+    tGets,
+    tSucc,
+    tEach,
+    tLambda,
+    tSend,
+    t__send__,
+    tInitialize,
+#if SUPPORT_JOKE
+    tBitblt,
+    tAnswer,
+#endif
+    tLAST_ID
 };
 
-extern ID idThrowState;
-extern ID idIntern;
-extern ID idMethodMissing;
-extern ID idLength;
-extern ID idGets;
-extern ID idSucc;
-extern ID idEach;
-extern ID idLambda;
-extern ID idRangeEachLT;
-extern ID idRangeEachLE;
-extern ID idArrayEach;
-extern ID idTimes;
-extern ID idEnd;
-extern ID idBitblt;
-extern ID idAnswer;
-extern ID idSend;
-extern ID id__send__;
-extern ID idRespond_to;
-extern ID idInitialize;
-
-extern ID id_core_set_method_alias;
-extern ID id_core_set_variable_alias;
-extern ID id_core_undef_method;
-extern ID id_core_define_method;
-extern ID id_core_define_singleton_method;
-extern ID id_core_set_postexe;
+#define idIntern ((tIntern<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idMethodMissing ((tMethodMissing<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idLength ((tLength<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idGets ((tGets<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idSucc ((tSucc<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idEach ((tEach<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idLambda ((tLambda<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idSend ((tSend<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define id__send__ ((t__send__<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idInitialize ((tInitialize<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#if SUPPORT_JOKE
+#define idBitblt ((tBitblt<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#define idAnswer ((tAnswer<<ID_SCOPE_SHIFT)|ID_LOCAL)
+#endif
 
 #endif /* RUBY_ID_H */
