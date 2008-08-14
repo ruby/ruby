@@ -955,6 +955,25 @@ found_needreport:
     return transcode_ibuf_empty;
 }
 
+static rb_trans_result_t
+rb_econv_conv(rb_trans_t *ts,
+    const unsigned char **input_ptr, const unsigned char *input_stop,
+    unsigned char **output_ptr, unsigned char *output_stop,
+    int flags)
+{
+    rb_trans_result_t res;
+
+    if ((flags & OUTPUT_FOLLOWED_BY_INPUT) ||
+        ts->num_trans == 1)
+        return rb_trans_conv(ts, input_ptr, input_stop, output_ptr, output_stop, flags);
+
+    flags |= OUTPUT_FOLLOWED_BY_INPUT;
+    do {
+        res = rb_trans_conv(ts, input_ptr, input_stop, output_ptr, output_stop, flags);
+    } while (res == transcode_output_followed_by_input);
+    return res;
+}
+
 static void
 rb_trans_close(rb_trans_t *ts)
 {
@@ -1064,7 +1083,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     max_output = last_tc->transcoder->max_output;
 
 resume:
-    ret = rb_trans_conv(ts, in_pos, in_stop, out_pos, out_stop, opt);
+    ret = rb_econv_conv(ts, in_pos, in_stop, out_pos, out_stop, opt);
     if (ret == transcode_invalid_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
@@ -1134,14 +1153,14 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (ret == transcode_ibuf_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
-                ret = rb_trans_conv(ts, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
+                ret = rb_econv_conv(ts, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
             }
             else {
-                ret = rb_trans_conv(ts, NULL, NULL, out_pos, out_stop, 0);
+                ret = rb_econv_conv(ts, NULL, NULL, out_pos, out_stop, 0);
             }
         }
         else {
-            ret = rb_trans_conv(ts, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
+            ret = rb_econv_conv(ts, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
         }
         if (&input_byte != p)
             ptr += p - &input_byte;
@@ -1495,10 +1514,12 @@ check_econv(VALUE self)
  *
  * possible flags:
  *   Encoding::Converter::PARTIAL_INPUT # input buffer may be part of larger input
+ *   Encoding::Converter::OUTPUT_FOLLOWED_BY_INPUT # stop conversion after output before input
  *
  * possible results:
  *    :invalid_input
  *    :undefined_conversion
+ *    :output_followed_by_input
  *    :obuf_full
  *    :ibuf_empty
  *    :finished
@@ -1527,6 +1548,8 @@ check_econv(VALUE self)
  * primitive_convert stops conversion when one of following condition met.
  * - invalid byte sequence found in input buffer (:invalid_input)
  * - character not representable in output encoding (:undefined_conversion)
+ * - after some output is generated, before any input is consumed (:output_followed_by_input)
+ *   this occur only when OUTPUT_FOLLOWED_BY_INPUT is specified.
  * - output buffer is full (:obuf_full)
  * - input buffer is empty (:ibuf_empty)
  *   this occur only when PARTIAL_INPUT is specified.
@@ -1606,7 +1629,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     op = (unsigned char *)RSTRING_PTR(output) + output_byteoffset;
     os = op + output_bytesize;
 
-    res = rb_trans_conv(ts, &ip, is, &op, os, flags);
+    res = rb_econv_conv(ts, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
     rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
 

@@ -95,18 +95,38 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_invalid2
     ec = Encoding::Converter.new("Shift_JIS", "EUC-JP")
     a =     ["", "abc\xFFdef", ec, nil, 1]
-    check_ec("a",       "def", :obuf_full, *a)
-    check_ec("ab",      "def", :obuf_full, *a)
+    check_ec("a",  "c\xFFdef", :obuf_full, *a)
+    check_ec("ab",  "\xFFdef", :obuf_full, *a)
     check_ec("abc",     "def", :invalid_input, *a)
-    check_ec("abcd",       "", :obuf_full, *a)
+    check_ec("abcd",      "f", :obuf_full, *a)
     check_ec("abcde",      "", :obuf_full, *a)
+    check_ec("abcdef",     "", :finished, *a)
+  end
+
+  def test_invalid3
+    ec = Encoding::Converter.new("Shift_JIS", "EUC-JP")
+    a =     ["", "abc\xFFdef", ec, nil, 10]
+    check_ec("abc",     "def", :invalid_input, *a)
+    check_ec("abcdef",     "", :finished, *a)
+  end
+
+  def test_invalid4
+    ec = Encoding::Converter.new("Shift_JIS", "EUC-JP")
+    a =     ["", "abc\xFFdef", ec, nil, 10, Encoding::Converter::OUTPUT_FOLLOWED_BY_INPUT]
+    check_ec("a", "bc\xFFdef", :output_followed_by_input, *a)
+    check_ec("ab", "c\xFFdef", :output_followed_by_input, *a)
+    check_ec("abc", "\xFFdef", :output_followed_by_input, *a)
+    check_ec("abc",     "def", :invalid_input, *a)
+    check_ec("abcd",     "ef", :output_followed_by_input, *a)
+    check_ec("abcde",     "f", :output_followed_by_input, *a)
+    check_ec("abcdef",     "", :output_followed_by_input, *a)
     check_ec("abcdef",     "", :finished, *a)
   end
 
   def test_errors
     ec = Encoding::Converter.new("UTF-16BE", "EUC-JP")
     a =     ["", "\xFF\xFE\x00A\xDC\x00\x00B", ec, nil, 10]
-    check_ec("",                      "\x00B", :undefined_conversion, *a)
+    check_ec("",         "\x00A\xDC\x00\x00B", :undefined_conversion, *a)
     check_ec("A",                     "\x00B", :invalid_input, *a) # \xDC\x00 is invalid as UTF-16BE
     check_ec("AB",                         "", :finished, *a)
   end

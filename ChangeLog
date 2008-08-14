@@ -1,3 +1,10 @@
+Thu Aug 14 15:34:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_conv): new function.  it don't consume input
+	  too much, even for multilevel conversion.
+	  (transcode_loop): use rb_econv_conv.
+	  (econv_primitive_convert): ditto.
+
 Thu Aug 14 15:27:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/defines.h (RUBY_ALIAS_FUNCTION): fallback definition.
