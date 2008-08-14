@@ -274,8 +274,10 @@ class ActionMap
       "o3(0x#$1,0x#$2,0x#$3)"
     when /\A([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
-    else
+    when /\A&/ # pointer to BYTE_LOOKUP structure
       info.to_s
+    else
+      raise "unexpected action: #{info.inspect}"
     end
   end
 
