@@ -661,7 +661,7 @@ rb_transcoding_close(rb_transcoding *tc)
 }
 
 static rb_econv_t *
-rb_trans_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
+rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
 {
     rb_econv_t *ts;
     int i;
@@ -749,7 +749,7 @@ rb_econv_open(const char *from, const char *to, int flags)
         entries[num_trans++] = e;
     }
 
-    ts = rb_trans_open_by_transcoder_entries(num_trans, entries);
+    ts = rb_econv_open_by_transcoder_entries(num_trans, entries);
 
     if (flags & UNIVERSAL_NEWLINE_DECODER) {
         ts->last_tc = ts->elems[ts->num_trans-2].tc;

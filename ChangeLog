@@ -1,3 +1,8 @@
+Thu Aug 14 20:58:57 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_open_by_transcoder_entries): renamed from
+	  rb_trans_open_by_transcoder_entries.
+
 Thu Aug 14 20:56:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_max_output): removed.
