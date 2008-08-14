@@ -678,6 +678,8 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ts->elems = ALLOC_N(rb_econv_elem_t, ts->num_trans);
     ts->num_finished = 0;
     ts->last_tc = NULL;
+    ts->source_encoding = NULL;
+    ts->destination_encoding = NULL;
     for (i = 0; i < ts->num_trans; i++) {
         const rb_transcoder *tr = load_transcoder_entry(entries[i]);
         ts->elems[i].from = tr->from_encoding;
@@ -720,7 +722,7 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
     entries[depth] = get_transcoder_entry(from, to);
 }
 
-static rb_econv_t *
+rb_econv_t *
 rb_econv_open(const char *from, const char *to, int flags)
 {
     transcoder_entry_t **entries = NULL;
@@ -921,8 +923,8 @@ found_needreport:
     return econv_source_buffer_empty;
 }
 
-static rb_econv_result_t
-rb_econv_conv(rb_econv_t *ts,
+rb_econv_result_t
+rb_econv_convert(rb_econv_t *ts,
     const unsigned char **input_ptr, const unsigned char *input_stop,
     unsigned char **output_ptr, unsigned char *output_stop,
     int flags)
@@ -940,7 +942,7 @@ rb_econv_conv(rb_econv_t *ts,
     return res;
 }
 
-static void
+void
 rb_econv_close(rb_econv_t *ts)
 {
     int i;
@@ -1049,7 +1051,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     max_output = last_tc->transcoder->max_output;
 
 resume:
-    ret = rb_econv_conv(ts, in_pos, in_stop, out_pos, out_stop, opt);
+    ret = rb_econv_convert(ts, in_pos, in_stop, out_pos, out_stop, opt);
     if (ret == econv_invalid_byte_sequence) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
@@ -1119,14 +1121,14 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (ret == econv_source_buffer_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
-                ret = rb_econv_conv(ts, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
+                ret = rb_econv_convert(ts, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
             }
             else {
-                ret = rb_econv_conv(ts, NULL, NULL, out_pos, out_stop, 0);
+                ret = rb_econv_convert(ts, NULL, NULL, out_pos, out_stop, 0);
             }
         }
         else {
-            ret = rb_econv_conv(ts, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
+            ret = rb_econv_convert(ts, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
         }
         if (&input_byte != p)
             ptr += p - &input_byte;
@@ -1381,6 +1383,20 @@ econv_s_allocate(VALUE klass)
     return Data_Wrap_Struct(klass, NULL, econv_free, NULL);
 }
 
+static rb_encoding *
+make_encoding(VALUE encoding)
+{
+    int idx = rb_to_encoding_index(encoding);
+    rb_encoding *enc;
+    if (0 <= idx)
+        enc = rb_enc_from_index(idx);
+    else {
+	idx = rb_define_dummy_encoding(StringValueCStr(encoding));
+        enc = rb_enc_from_index(idx);
+    }
+    return enc;
+}
+
 /*
  * call-seq:
  *   Encoding::Converter.new(source_encoding, destination_encoding)
@@ -1414,7 +1430,6 @@ econv_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE source_encoding, destination_encoding, flags_v;
     rb_encoding *senc, *denc;
-    const char *sname, *dname;
     rb_econv_t *ec;
     int flags;
 
@@ -1425,34 +1440,20 @@ econv_init(int argc, VALUE *argv, VALUE self)
     else
         flags = NUM2INT(flags_v);
 
-    senc = NULL;
-    if (TYPE(source_encoding) != T_STRING) {
-        senc = rb_to_encoding(source_encoding);
-    }
-
-    denc = NULL;
-    if (TYPE(destination_encoding) != T_STRING) {
-        denc = rb_to_encoding(destination_encoding);
-    }
-
-    if (senc)
-        sname = senc->name;
-    else
-        sname = RSTRING_PTR(source_encoding);
-
-    if (denc)
-        dname = denc->name;
-    else
-        dname = RSTRING_PTR(destination_encoding);
+    senc = make_encoding(source_encoding);
+    denc = make_encoding(destination_encoding);
 
     if (DATA_PTR(self)) {
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    ec = rb_econv_open(sname, dname, flags);
+    ec = rb_econv_open(senc->name, denc->name, flags);
     if (!ec) {
-        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", sname, dname);
+        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", senc->name, denc->name);
     }
+
+    ec->source_encoding = senc;
+    ec->destination_encoding = denc;
 
     DATA_PTR(self) = ec;
 
@@ -1487,6 +1488,36 @@ check_econv(VALUE self)
         rb_raise(rb_eTypeError, "uninitialized encoding converter");
     }
     return DATA_PTR(self);
+}
+
+/*
+ * call-seq:
+ *   source_encoding -> encoding
+ *
+ * returns source encoding as Encoding object.
+ */
+static VALUE
+econv_source_encoding(VALUE self)
+{
+    rb_econv_t *ec = check_econv(self);
+    if (!ec->source_encoding) 
+        return Qnil;
+    return rb_enc_from_encoding(ec->source_encoding);
+}
+
+/*
+ * call-seq:
+ *   destination_encoding -> encoding
+ *
+ * returns destination encoding as Encoding object.
+ */
+static VALUE
+econv_destination_encoding(VALUE self)
+{
+    rb_econv_t *ec = check_econv(self);
+    if (!ec->destination_encoding) 
+        return Qnil;
+    return rb_enc_from_encoding(ec->destination_encoding);
 }
 
 /*
@@ -1612,7 +1643,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     op = (unsigned char *)RSTRING_PTR(output) + output_byteoffset;
     os = op + output_bytesize;
 
-    res = rb_econv_conv(ts, &ip, is, &op, os, flags);
+    res = rb_econv_convert(ts, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
     rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
 
@@ -1647,6 +1678,8 @@ Init_transcode(void)
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
     rb_define_method(rb_cEncodingConverter, "inspect", econv_inspect, 0);
+    rb_define_method(rb_cEncodingConverter, "source_encoding", econv_source_encoding, 0);
+    rb_define_method(rb_cEncodingConverter, "destination_encoding", econv_destination_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(OUTPUT_FOLLOWED_BY_INPUT));

@@ -196,4 +196,45 @@ rb_enc_dummy_p(rb_encoding *enc)
 
 VALUE rb_str_transcode(VALUE str, VALUE to);
 
+/* econv stuff */
+
+typedef enum {
+    econv_invalid_byte_sequence,
+    econv_undefined_conversion,
+    econv_destination_buffer_full,
+    econv_source_buffer_empty,
+    econv_finished,
+    econv_output_followed_by_input,
+} rb_econv_result_t;
+
+typedef struct {
+    const char *from;
+    const char *to;
+    struct rb_transcoding *tc;
+    unsigned char *out_buf_start;
+    unsigned char *out_data_start;
+    unsigned char *out_data_end;
+    unsigned char *out_buf_end;
+    rb_econv_result_t last_result;
+} rb_econv_elem_t;
+
+typedef struct {
+    rb_econv_elem_t *elems;
+    int num_trans;
+    int num_finished;
+    struct rb_transcoding *last_tc;
+
+    /* The following fields are only for Encoding::Converter.
+     * rb_econv_open set them NULL. */
+    rb_encoding *source_encoding;
+    rb_encoding *destination_encoding;
+} rb_econv_t;
+
+rb_econv_t *rb_econv_open(const char *from, const char *to, int flags);
+rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
+    const unsigned char **input_ptr, const unsigned char *input_stop,
+    unsigned char **output_ptr, unsigned char *output_stop,
+    int flags);
+void rb_econv_close(rb_econv_t *ec);
+
 #endif /* RUBY_ENCODING_H */

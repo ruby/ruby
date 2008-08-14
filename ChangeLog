@@ -1,3 +1,27 @@
+Thu Aug 14 23:22:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_result_t): moved from
+	  transcode_data.h.
+	  (rb_econv_elem_t): ditto.
+	  (rb_econv_t): ditto.  source_encoding and destination_encoding field
+	  is added.
+	  (rb_econv_open): declared.
+	  (rb_econv_convert): ditto.
+	  (rb_econv_close): ditto.
+
+	* transcode.c (rb_econv_open_by_transcoder_entries): initialize
+	  source_encoding and destination_encoding field as NULL.
+	  (rb_econv_open): make it external linkage.
+	  (rb_econv_close): ditto.
+	  (rb_econv_convert): ditto.  renamed from rb_econv_conv.
+	  (make_encoding): new function.
+	  (econv_init): use make_encoding and store rb_encoding* in
+	  rb_econv_t.
+	  (econv_source_encoding): new method
+	  Encoding::Converter#source_encoding.
+	  (econv_destination_encoding): new method
+	  Encoding::Converter#destination_encoding.
+
 Thu Aug 14 22:44:32 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_econv_result_t): change enumeration
