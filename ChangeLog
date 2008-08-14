@@ -1,3 +1,9 @@
+Thu Aug 14 12:20:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (load_transcoder): suppress warning.
+
+	* missing/vsnprintf.c (BSD_vfprintf): ditto.
+
 Thu Aug 14 12:01:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (gnumake): check for GNU make.

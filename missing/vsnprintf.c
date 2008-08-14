@@ -535,10 +535,10 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	char sign;		/* sign prefix (' ', '+', '-', or \0) */
 #ifdef FLOATING_POINT
 	char softsign;		/* temporary negative sign for floats */
-	double _double;		/* double precision arguments %[eEfgG] */
+	double _double = 0;	/* double precision arguments %[eEfgG] */
 	int expt;		/* integer value of exponent */
-	int expsize;		/* character count for expstr */
-	int ndig;		/* actual number of digits returned by cvt */
+	int expsize = 0;	/* character count for expstr */
+	int ndig = 0;		/* actual number of digits returned by cvt */
 	char expstr[7];		/* buffer for exponent string */
 #endif
 	u_long	ulval;		/* integer arguments %[diouxX] */

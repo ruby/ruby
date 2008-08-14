@@ -269,6 +269,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
     return NULL;
 }
 
+#if USE_TRANSCODING_OPEN
 static const rb_transcoder *
 load_transcoder(const char *from, const char *to)
 {
@@ -285,6 +286,7 @@ load_transcoder(const char *from, const char *to)
 
     return tr;
 }
+#endif
 
 static const char*
 get_replacement_character(rb_encoding *enc, int *len_ret)
@@ -641,7 +643,7 @@ rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
     return tc;
 }
 
-#if 0
+#if USE_TRANSCODING_OPEN
 static rb_transcoding *
 rb_transcoding_open(const char *from, const char *to, int flags)
 {
