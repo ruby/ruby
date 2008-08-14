@@ -1583,6 +1583,7 @@ econv_destination_encoding(VALUE self)
  * destination_bytesize specifies maximum number of bytes.
  * After conversion, destination_buffer is resized to
  * destination_byteoffset + actually converted number of bytes.
+ * Also destination_buffer's encoding is set to destination_encoding.
  *
  * primitive_convert drops the first part of source_buffer.
  * the dropped part is converted in destination_buffer or
