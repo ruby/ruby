@@ -1,3 +1,7 @@
+Thu Aug 14 14:54:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (REWIND_CFP): get rid of statement expressions.
+
 Thu Aug 14 14:13:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (Init_VM): hide FrozenCore.

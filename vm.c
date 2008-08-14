@@ -1677,7 +1677,7 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval,
 
 #define REWIND_CFP(expr) do { \
     rb_thread_t *th__ = GET_THREAD(); \
-    th__->cfp++; (expr); th__->cfp--; \
+    th__->cfp++; expr; th__->cfp--; \
 } while (0)
 
 static VALUE
