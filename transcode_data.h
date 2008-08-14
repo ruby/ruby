@@ -117,6 +117,7 @@ typedef enum {
     transcode_obuf_full,
     transcode_ibuf_empty,
     transcode_finished,
+    transcode_output_followed_by_input,
 } rb_trans_result_t;
 
 typedef struct {

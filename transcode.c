@@ -29,6 +29,7 @@ static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 #define UNIVERSAL_NEWLINE       0x200
 #define CRLF_NEWLINE            0x400
 #define CR_NEWLINE              0x800
+#define OUTPUT_FOLLOWED_BY_INPUT   0x1000
 
 /*
  *  Dispatch data and logic
@@ -403,6 +404,11 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         while (out_stop - out_p < 1) { SUSPEND(transcode_obuf_full, num); } \
     } while (0)
 
+#define SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(num) \
+    if ((opt & OUTPUT_FOLLOWED_BY_INPUT) && *out_pos != out_p) { \
+        SUSPEND(transcode_output_followed_by_input, num); \
+    }
+
 #define next_table (tc->next_table)
 #define next_info (tc->next_info)
 #define next_byte (tc->next_byte)
@@ -434,9 +440,13 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       case 21: goto resume_label21;
       case 22: goto resume_label22;
       case 23: goto resume_label23;
+      case 24: goto resume_label24;
+      case 25: goto resume_label25;
+      case 26: goto resume_label26;
     }
 
     while (1) {
+        SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(24);
         if (in_stop <= in_p) {
             if (!(opt & PARTIAL_INPUT))
                 break;
@@ -462,6 +472,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	    continue;
 	  case 0x00: case 0x04: case 0x08: case 0x0C:
 	  case 0x10: case 0x14: case 0x18: case 0x1C:
+            SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(25);
 	    while (in_p >= in_stop) {
                 if (!(opt & PARTIAL_INPUT))
                     goto invalid;
@@ -536,6 +547,8 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             }
 	  case INVALID:
             if (tc->recognized_len + (in_p - inchar_start) <= unitlen) {
+                if (tc->recognized_len + (in_p - inchar_start) < unitlen)
+                    SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(26);
                 while ((opt & PARTIAL_INPUT) && tc->recognized_len + (in_stop - inchar_start) < unitlen) {
                     in_p = in_stop;
                     SUSPEND(transcode_ibuf_empty, 8);
@@ -828,6 +841,12 @@ trans_sweep(rb_trans_t *ts,
             f = flags;
             if (ts->num_finished != i)
                 f |= PARTIAL_INPUT;
+            if (i == 0 && (flags & OUTPUT_FOLLOWED_BY_INPUT)) {
+                start = 1;
+                flags &= ~OUTPUT_FOLLOWED_BY_INPUT;
+            }
+            if (i != 0)
+                f &= ~OUTPUT_FOLLOWED_BY_INPUT;
             iold = *ipp;
             oold = *opp;
             te->last_result = res = rb_transcoding_convert(te->tc, ipp, is, opp, os, f);
@@ -837,6 +856,7 @@ trans_sweep(rb_trans_t *ts,
             switch (res) {
               case transcode_invalid_input:
               case transcode_undefined_conversion:
+              case transcode_output_followed_by_input:
                 return i;
 
               case transcode_obuf_full:
@@ -859,7 +879,8 @@ rb_trans_conv(rb_trans_t *ts,
     int flags)
 {
     int i;
-    int start, err_index;
+    int needreport_index;
+    int sweep_start;
 
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
@@ -874,23 +895,60 @@ rb_trans_conv(rb_trans_t *ts,
         output_stop = empty_ptr;
     }
 
-    err_index = -1;
+    if (ts->elems[0].last_result == transcode_output_followed_by_input)
+        ts->elems[0].last_result = transcode_ibuf_empty;
+
+    needreport_index = -1;
     for (i = ts->num_trans-1; 0 <= i; i--) {
-        if (ts->elems[i].last_result != transcode_ibuf_empty) {
-            err_index = i;
+        switch (ts->elems[i].last_result) {
+          case transcode_invalid_input:
+          case transcode_undefined_conversion:
+          case transcode_output_followed_by_input:
+          case transcode_finished:
+            sweep_start = i+1;
+            needreport_index = i;
+            goto found_needreport;
+
+          case transcode_obuf_full:
+          case transcode_ibuf_empty:
             break;
+
+          default:
+            rb_bug("unexpected transcode last result");
         }
     }
 
+    /* /^[io]+$/ is confirmed.  but actually /^i*o*$/. */
+
+    if (ts->elems[ts->num_trans-1].last_result == transcode_obuf_full &&
+        (flags & OUTPUT_FOLLOWED_BY_INPUT)) {
+        rb_trans_result_t res;
+
+        res = rb_trans_conv(ts, NULL, NULL, output_ptr, output_stop,
+                (flags & ~OUTPUT_FOLLOWED_BY_INPUT)|PARTIAL_INPUT);
+
+        if (res == transcode_ibuf_empty)
+            return transcode_output_followed_by_input;
+        return res;
+    }
+
+    sweep_start = 0;
+
+found_needreport:
+
     do {
-        start = err_index + 1;
-        err_index = trans_sweep(ts, input_ptr, input_stop, output_ptr, output_stop, flags, start);
-    } while (err_index != -1 && err_index != ts->num_trans-1);
+        needreport_index = trans_sweep(ts, input_ptr, input_stop, output_ptr, output_stop, flags, sweep_start);
+        sweep_start = needreport_index + 1;
+    } while (needreport_index != -1 && needreport_index != ts->num_trans-1);
 
     for (i = ts->num_trans-1; 0 <= i; i--) {
         if (ts->elems[i].last_result != transcode_ibuf_empty) {
             rb_trans_result_t res = ts->elems[i].last_result;
-            ts->elems[i].last_result = transcode_ibuf_empty;
+            if (res == transcode_invalid_input ||
+                res == transcode_undefined_conversion ||
+                res == transcode_output_followed_by_input) {
+                ts->elems[i].last_result = transcode_ibuf_empty;
+            }
             return res;
         }
     }
@@ -1558,6 +1616,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
       case transcode_obuf_full: return ID2SYM(rb_intern("obuf_full"));
       case transcode_ibuf_empty: return ID2SYM(rb_intern("ibuf_empty"));
       case transcode_finished: return ID2SYM(rb_intern("finished"));
+      case transcode_output_followed_by_input: return ID2SYM(rb_intern("output_followed_by_input"));
       default: return INT2NUM(res); /* should not be reached */
     }
 }
@@ -1601,6 +1660,7 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
     rb_define_method(rb_cEncodingConverter, "max_output", econv_max_output, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
+    rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(OUTPUT_FOLLOWED_BY_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE", INT2FIX(UNIVERSAL_NEWLINE));
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE", INT2FIX(CRLF_NEWLINE));
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE", INT2FIX(CR_NEWLINE));

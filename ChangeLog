@@ -1,3 +1,16 @@
+Thu Aug 14 15:08:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_trans_result_t): new enumeration constant:
+	  transcode_output_followed_by_input.
+
+	* transcode.c (OUTPUT_FOLLOWED_BY_INPUT): new flag.
+	  (transcode_restartable0): suspend when output followed by input if
+	  OUTPUT_FOLLOWED_BY_INPUT is specified.
+	  (trans_sweep): check OUTPUT_FOLLOWED_BY_INPUT.
+	  (rb_trans_conv): support OUTPUT_FOLLOWED_BY_INPUT.
+	  (econv_primitive_convert): return :output_followed_by_input for
+	  transcode_output_followed_by_input.
+
 Thu Aug 14 14:57:46 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (getrusage_time): should return the value.
