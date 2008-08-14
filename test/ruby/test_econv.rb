@@ -20,7 +20,7 @@ class TestEncodingConverter < Test::Unit::TestCase
                  [o,            ret,           i])
   end
 
-  def test_output_area
+  def test_output_region
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     ec.primitive_convert(src="a", dst="b", nil, 1, Encoding::Converter::PARTIAL_INPUT)
     assert_equal("ba", dst)
@@ -37,6 +37,14 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       ec.primitive_convert(src="a", dst="b", 1, -1, Encoding::Converter::PARTIAL_INPUT)
     }
+  end
+
+  def test_partial_input
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP")
+    ret = ec.primitive_convert(src="", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)
+    assert_equal(:ibuf_empty, ret)
+    ret = ec.primitive_convert(src="", dst="", nil, 10)
+    assert_equal(:finished, ret)
   end
 
   def test_accumulate_dst1
