@@ -59,7 +59,6 @@ RC = brcc32
 !endif
 !ifndef YACC
 YACC = bison
-YFLAGS = -o y.tab.c
 !endif
 !ifndef AR
 AR = tlib

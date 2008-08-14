@@ -390,10 +390,10 @@ enc.mk: $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc/de
 PHONY:
 
 {$(VPATH)}parse.c: {$(VPATH)}parse.y $(srcdir)/tool/ytab.sed
-{$(VPATH)}parse.h: {$(VPATH)}parse.c
+parse.h {$(VPATH)}parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
-	$(YACC) -d $(YFLAGS) -o y.tab.c $<
+	$(YACC) -d $(YFLAGS) -o y.tab.c $(<:\=/)
 	sed -e "/^#/s!y\.tab\.h!$(@:.c=.h)!" y.tab.h > $(@:.c=.h).new
 	@$(MV) $(@:.c=.h).new $(@:.c=.h)
 	sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new

@@ -1,3 +1,7 @@
+Thu Aug 14 11:45:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (parse.h): workaround for nmake.
+
 Thu Aug 14 06:09:12 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_execute_interrupts): switch event
