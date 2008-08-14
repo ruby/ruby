@@ -1,3 +1,13 @@
+Thu Aug 14 23:47:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_UNIVERSAL_NEWLINE_DECODER): defined.
+	  (ECONV_CRLF_NEWLINE_ENCODER): ditto.
+	  (ECONV_CR_NEWLINE_ENCODER): ditto.
+	  (ECONV_PARTIAL_INPUT): ditto.
+	  (ECONV_OUTPUT_FOLLOWED_BY_INPUT): ditto.
+
+	* transcode.c: use ECONV_* defined as above.
+
 Thu Aug 14 23:35:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c: local variable renamed.

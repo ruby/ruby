@@ -25,11 +25,6 @@ static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 #define INVALID_REPLACE                 0x2
 #define UNDEF_IGNORE                    0x10
 #define UNDEF_REPLACE                   0x20
-#define PARTIAL_INPUT                   0x100
-#define UNIVERSAL_NEWLINE_DECODER       0x200
-#define CRLF_NEWLINE_ENCODER            0x400
-#define CR_NEWLINE_ENCODER              0x800
-#define OUTPUT_FOLLOWED_BY_INPUT        0x1000
 
 /*
  *  Dispatch data and logic
@@ -386,7 +381,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     } while (0)
 
 #define SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(num) \
-    if ((opt & OUTPUT_FOLLOWED_BY_INPUT) && *out_pos != out_p) { \
+    if ((opt & ECONV_OUTPUT_FOLLOWED_BY_INPUT) && *out_pos != out_p) { \
         SUSPEND(econv_output_followed_by_input, num); \
     }
 
@@ -429,7 +424,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     while (1) {
         SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(24);
         if (in_stop <= in_p) {
-            if (!(opt & PARTIAL_INPUT))
+            if (!(opt & ECONV_PARTIAL_INPUT))
                 break;
             SUSPEND(econv_source_buffer_empty, 7);
             continue;
@@ -455,7 +450,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	  case 0x10: case 0x14: case 0x18: case 0x1C:
             SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(25);
 	    while (in_p >= in_stop) {
-                if (!(opt & PARTIAL_INPUT))
+                if (!(opt & ECONV_PARTIAL_INPUT))
                     goto invalid;
                 SUSPEND(econv_source_buffer_empty, 5);
 	    }
@@ -530,7 +525,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             if (tc->recognized_len + (in_p - inchar_start) <= unitlen) {
                 if (tc->recognized_len + (in_p - inchar_start) < unitlen)
                     SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(26);
-                while ((opt & PARTIAL_INPUT) && tc->recognized_len + (in_stop - inchar_start) < unitlen) {
+                while ((opt & ECONV_PARTIAL_INPUT) && tc->recognized_len + (in_stop - inchar_start) < unitlen) {
                     in_p = in_stop;
                     SUSPEND(econv_source_buffer_empty, 8);
                 }
@@ -603,7 +598,7 @@ transcode_restartable(const unsigned char **in_pos, unsigned char **out_pos,
         MEMCPY(readagain_buf, TRANSCODING_READBUF(tc) + tc->recognized_len,
                unsigned char, tc->readagain_len);
         tc->readagain_len = 0;
-        res = transcode_restartable0(&readagain_pos, out_pos, readagain_stop, out_stop, tc, opt|PARTIAL_INPUT);
+        res = transcode_restartable0(&readagain_pos, out_pos, readagain_stop, out_stop, tc, opt|ECONV_PARTIAL_INPUT);
         if (res != econv_source_buffer_empty) {
             MEMCPY(TRANSCODING_READBUF(tc) + tc->recognized_len + tc->readagain_len,
                    readagain_pos, unsigned char, readagain_stop - readagain_pos);
@@ -734,8 +729,8 @@ rb_econv_open(const char *from, const char *to, int flags)
     if (num_trans < 0 || !entries)
         return NULL;
 
-    if (flags & (CRLF_NEWLINE_ENCODER|CR_NEWLINE_ENCODER)) {
-        const char *name = (flags & CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
+    if (flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
+        const char *name = (flags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
         if (!e)
             return NULL;
@@ -744,7 +739,7 @@ rb_econv_open(const char *from, const char *to, int flags)
         num_trans++;
     }
 
-    if (flags & UNIVERSAL_NEWLINE_DECODER) {
+    if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
         transcoder_entry_t *e = get_transcoder_entry("universal_newline", "");
         if (!e)
             return NULL;
@@ -753,7 +748,7 @@ rb_econv_open(const char *from, const char *to, int flags)
 
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
 
-    if (flags & UNIVERSAL_NEWLINE_DECODER) {
+    if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
         ec->last_tc = ec->elems[ec->num_trans-2].tc;
     }
 
@@ -808,13 +803,13 @@ trans_sweep(rb_econv_t *ec,
 
             f = flags;
             if (ec->num_finished != i)
-                f |= PARTIAL_INPUT;
-            if (i == 0 && (flags & OUTPUT_FOLLOWED_BY_INPUT)) {
+                f |= ECONV_PARTIAL_INPUT;
+            if (i == 0 && (flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT)) {
                 start = 1;
-                flags &= ~OUTPUT_FOLLOWED_BY_INPUT;
+                flags &= ~ECONV_OUTPUT_FOLLOWED_BY_INPUT;
             }
             if (i != 0)
-                f &= ~OUTPUT_FOLLOWED_BY_INPUT;
+                f &= ~ECONV_OUTPUT_FOLLOWED_BY_INPUT;
             iold = *ipp;
             oold = *opp;
             te->last_result = res = rb_transcoding_convert(te->tc, ipp, is, opp, os, f);
@@ -889,11 +884,11 @@ rb_trans_conv(rb_econv_t *ec,
     /* /^[io]+$/ is confirmed.  but actually /^i*o*$/. */
 
     if (ec->elems[ec->num_trans-1].last_result == econv_destination_buffer_full &&
-        (flags & OUTPUT_FOLLOWED_BY_INPUT)) {
+        (flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT)) {
         rb_econv_result_t res;
 
         res = rb_trans_conv(ec, NULL, NULL, output_ptr, output_stop,
-                (flags & ~OUTPUT_FOLLOWED_BY_INPUT)|PARTIAL_INPUT);
+                (flags & ~ECONV_OUTPUT_FOLLOWED_BY_INPUT)|ECONV_PARTIAL_INPUT);
 
         if (res == econv_source_buffer_empty)
             return econv_output_followed_by_input;
@@ -931,11 +926,11 @@ rb_econv_convert(rb_econv_t *ec,
 {
     rb_econv_result_t res;
 
-    if ((flags & OUTPUT_FOLLOWED_BY_INPUT) ||
+    if ((flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT) ||
         ec->num_trans == 1)
         return rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
 
-    flags |= OUTPUT_FOLLOWED_BY_INPUT;
+    flags |= ECONV_OUTPUT_FOLLOWED_BY_INPUT;
     do {
         res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
     } while (res == econv_output_followed_by_input);
@@ -1121,14 +1116,14 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (ret == econv_source_buffer_empty) {
             if (ptr < in_stop) {
                 input_byte = *ptr;
-                ret = rb_econv_convert(ec, &p, p+1, out_pos, out_stop, PARTIAL_INPUT);
+                ret = rb_econv_convert(ec, &p, p+1, out_pos, out_stop, ECONV_PARTIAL_INPUT);
             }
             else {
                 ret = rb_econv_convert(ec, NULL, NULL, out_pos, out_stop, 0);
             }
         }
         else {
-            ret = rb_econv_convert(ec, NULL, NULL, out_pos, out_stop, PARTIAL_INPUT);
+            ret = rb_econv_convert(ec, NULL, NULL, out_pos, out_stop, ECONV_PARTIAL_INPUT);
         }
         if (&input_byte != p)
             ptr += p - &input_byte;
@@ -1681,9 +1676,9 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "source_encoding", econv_source_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "destination_encoding", econv_destination_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
-    rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(PARTIAL_INPUT));
-    rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(OUTPUT_FOLLOWED_BY_INPUT));
-    rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(UNIVERSAL_NEWLINE_DECODER));
-    rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(CRLF_NEWLINE_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(CR_NEWLINE_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
+    rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
+    rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
+    rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
 }

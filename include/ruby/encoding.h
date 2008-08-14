@@ -237,4 +237,13 @@ rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     int flags);
 void rb_econv_close(rb_econv_t *ec);
 
+/* flags for rb_econv_open */
+#define ECONV_UNIVERSAL_NEWLINE_DECODER       0x100
+#define ECONV_CRLF_NEWLINE_ENCODER            0x200
+#define ECONV_CR_NEWLINE_ENCODER              0x400
+
+/* flags for rb_econv_convert */
+#define ECONV_PARTIAL_INPUT                   0x10000
+#define ECONV_OUTPUT_FOLLOWED_BY_INPUT        0x20000
+
 #endif /* RUBY_ENCODING_H */
