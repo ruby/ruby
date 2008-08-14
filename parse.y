@@ -94,15 +94,6 @@ typedef unsigned long stack_type;
 #define CMDARG_LEXPOP()	BITSTACK_LEXPOP(cmdarg_stack)
 #define CMDARG_P()	BITSTACK_SET_P(cmdarg_stack)
 
-/* must sync with real YYSTYPE */
-union tmpyystype {
-    VALUE val;
-    NODE *node;
-    unsigned long id;
-    int num;
-    struct RVarmap *vars;
-};
-
 struct vtable {
     ID *tbl;
     int pos;
@@ -203,7 +194,7 @@ struct parser_params {
     int is_ripper;
     NODE *heap;
 
-    union tmpyystype *parser_yylval;   /* YYSTYPE not defined yet */
+    YYSTYPE *parser_yylval;
     VALUE eofp;
 
     NODE *parser_lex_strterm;
@@ -7310,7 +7301,7 @@ yylex(void *p)
     int t;
 
 #if YYPURE
-    parser->parser_yylval = (union tmpyystype*)lval;
+    parser->parser_yylval = lval;
     parser->parser_yylval->val = Qundef;
 #endif
     t = parser_yylex(parser);

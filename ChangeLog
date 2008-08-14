@@ -1,3 +1,8 @@
+Thu Aug 14 17:46:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (union tmpyystype): no longer needed, since YYSTYPE is
+	  defined in parse.h now.
+
 Thu Aug 14 17:27:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* version.c (Init_version): add RUBY_ENGINE constant.
