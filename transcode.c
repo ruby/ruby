@@ -1412,33 +1412,49 @@ econv_s_allocate(VALUE klass)
 static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
-    VALUE from_encoding, to_encoding, flags_v;
-    const char *from_e, *to_e;
-    rb_econv_t *ts;
+    VALUE source_encoding, destination_encoding, flags_v;
+    rb_encoding *senc, *denc;
+    const char *sname, *dname;
+    rb_econv_t *ec;
     int flags;
 
-    rb_scan_args(argc, argv, "21", &from_encoding, &to_encoding, &flags_v);
+    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &flags_v);
 
-    StringValue(from_encoding);
-    StringValue(to_encoding);
     if (flags_v == Qnil)
         flags = 0;
     else
         flags = NUM2INT(flags_v);
 
-    from_e = RSTRING_PTR(from_encoding);
-    to_e = RSTRING_PTR(to_encoding);
+    senc = NULL;
+    if (TYPE(source_encoding) != T_STRING) {
+        senc = rb_to_encoding(source_encoding);
+    }
+
+    denc = NULL;
+    if (TYPE(destination_encoding) != T_STRING) {
+        denc = rb_to_encoding(destination_encoding);
+    }
+
+    if (senc)
+        sname = senc->name;
+    else
+        sname = RSTRING_PTR(source_encoding);
+
+    if (denc)
+        dname = denc->name;
+    else
+        dname = RSTRING_PTR(destination_encoding);
 
     if (DATA_PTR(self)) {
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    ts = rb_econv_open(from_e, to_e, flags);
-    if (!ts) {
-        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", from_e, to_e);
+    ec = rb_econv_open(sname, dname, flags);
+    if (!ec) {
+        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", sname, dname);
     }
 
-    DATA_PTR(self) = ts;
+    DATA_PTR(self) = ec;
 
     return self;
 }

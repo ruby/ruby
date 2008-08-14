@@ -20,6 +20,11 @@ class TestEncodingConverter < Test::Unit::TestCase
                  [o,            ret,           i])
   end
 
+  def test_new
+    assert_kind_of(Encoding::Converter, Encoding::Converter.new("UTF-8", "EUC-JP"))
+    assert_kind_of(Encoding::Converter, Encoding::Converter.new(Encoding::UTF_8, Encoding::EUC_JP))
+  end
+
   def test_output_region
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     ec.primitive_convert(src="a", dst="b", nil, 1, Encoding::Converter::PARTIAL_INPUT)
