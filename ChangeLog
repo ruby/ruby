@@ -1,3 +1,7 @@
+Thu Aug 14 14:13:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (Init_VM): hide FrozenCore.
+
 Thu Aug 14 12:20:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (load_transcoder): suppress warning.

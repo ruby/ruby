@@ -1793,20 +1793,25 @@ void
 Init_VM(void)
 {
     VALUE opts;
+    VALUE klass;
+    VALUE fcore;
 
     /* ::VM */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
 
     /* ::VM::FrozenCore */
-    rb_mRubyVMFrozenCore = rb_define_module_under(rb_cRubyVM, "FrozenCore");
-    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_set_method_alias", m_core_set_method_alias, 3);
-    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_set_variable_alias", m_core_set_variable_alias, 2);
-    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_undef_method", m_core_undef_method, 2);
-    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_define_method", m_core_define_method, 3);
-    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_define_singleton_method", m_core_define_singleton_method, 3);
-    rb_define_singleton_method(rb_mRubyVMFrozenCore, "core_set_postexe", m_core_set_postexe, 1);
-    rb_obj_freeze(rb_mRubyVMFrozenCore);
+    fcore = rb_module_new();
+    RBASIC(fcore)->flags = T_ICLASS;
+    klass = rb_singleton_class(fcore);
+    rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
+    rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
+    rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
+    rb_define_method_id(klass, id_core_define_method, m_core_define_method, 3);
+    rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
+    rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 1);
+    rb_obj_freeze(fcore);
+    rb_mRubyVMFrozenCore = fcore;
 
     /* ::VM::Env */
     rb_cEnv = rb_define_class_under(rb_cRubyVM, "Env", rb_cObject);
