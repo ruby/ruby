@@ -1,3 +1,8 @@
+Fri Aug 15 01:05:39 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_primitive_convert): set destination_buffer
+	  encoding.
+
 Fri Aug 15 00:52:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_output): declared.

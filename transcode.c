@@ -1676,6 +1676,10 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
     rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
 
+    if (ec->destination_encoding) {
+        rb_enc_associate(output, ec->destination_encoding);
+    }
+
     switch (res) {
       case econv_invalid_byte_sequence: return ID2SYM(rb_intern("invalid_byte_sequence"));
       case econv_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));

@@ -31,6 +31,14 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal(Encoding::EUC_JP, ec.destination_encoding)
   end
 
+  def test_result_encoding
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP")
+    dst = "".force_encoding("ASCII-8BIT")
+    assert_equal(Encoding::ASCII_8BIT, dst.encoding)
+    ec.primitive_convert("\u{3042}", dst, nil, 10)
+    assert_equal(Encoding::EUC_JP, dst.encoding)
+  end
+
   def test_output_region
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     ec.primitive_convert(src="a", dst="b", nil, 1, Encoding::Converter::PARTIAL_INPUT)
