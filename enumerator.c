@@ -432,6 +432,7 @@ Init_Enumerator()
 
     rb_cEnumerator = rb_define_class_under(rb_mEnumerable, "Enumerator", rb_cObject);
     rb_include_module(rb_cEnumerator, rb_mEnumerable);
+    rb_define_global_const("Enumerator", rb_cEnumerator);
 
     rb_define_alloc_func(rb_cEnumerator, enumerator_allocate);
     rb_define_method(rb_cEnumerator, "initialize", enumerator_initialize, -1);

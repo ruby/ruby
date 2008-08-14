@@ -1,3 +1,11 @@
+Thu Aug 14 12:43:09 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (Init_Enumerator): Define ::Enumerator as alias for
+	  Enumerable::Enumerator for forward compatibility.
+
+	* lib/rinda/tuplespace.rb (Rinda::TupleBag#initialize): Use
+	  enum_for instead of hardcoding Enumerable::Enumerator.
+
 Wed Aug 13 18:18:16 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* hash.c (rb_hash_set_default_proc): Add Hash#default_proc=;

@@ -315,7 +315,7 @@ module Rinda
 
     def initialize # :nodoc:
       @hash = {}
-      @enum = Enumerable::Enumerator.new(self, :each_entry)
+      @enum = enum_for(:each_entry)
     end
 
     ##
