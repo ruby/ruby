@@ -1,3 +1,8 @@
+Thu Aug 14 19:41:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (load_transcoder): unused function removed.
+	  (rb_transcoding_open): ditto.
+
 Thu Aug 14 17:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h (rb_enc_ispunct): added.

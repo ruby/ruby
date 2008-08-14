@@ -270,25 +270,6 @@ load_transcoder_entry(transcoder_entry_t *entry)
     return NULL;
 }
 
-#if USE_TRANSCODING_OPEN
-static const rb_transcoder *
-load_transcoder(const char *from, const char *to)
-{
-    transcoder_entry_t *entry;
-    const rb_transcoder *tr;
-
-    entry = get_transcoder_entry(from, to);
-    if (!entry)
-        return NULL;
-
-    tr = load_transcoder_entry(entry);
-    if (!tr)
-        return NULL;
-
-    return tr;
-}
-#endif
-
 static const char*
 get_replacement_character(rb_encoding *enc, int *len_ret)
 {
@@ -655,21 +636,6 @@ rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
     }
     return tc;
 }
-
-#if USE_TRANSCODING_OPEN
-static rb_transcoding *
-rb_transcoding_open(const char *from, const char *to, int flags)
-{
-    rb_transcoding *tc;
-    const rb_transcoder *tr;
-
-    tr = load_transcoder(from, to);
-
-    tc = rb_transcoding_open_by_transcoder(tr, flags);
-
-    return tc;
-}
-#endif
 
 static rb_trans_result_t
 rb_transcoding_convert(rb_transcoding *tc,
