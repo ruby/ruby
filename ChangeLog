@@ -23,8 +23,8 @@ Thu Aug 14 17:27:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Aug 14 15:34:10 2008  Tanaka Akira  <akr@fsij.org>
 
-	* transcode.c (rb_econv_conv): new function.  it don't consume input
-	  too much, even for multilevel conversion.
+	* transcode.c (rb_econv_conv): new function.  it doesn't consume
+	  input too much, even for multilevel conversion.
 	  (transcode_loop): use rb_econv_conv.
 	  (econv_primitive_convert): ditto.
 
