@@ -230,11 +230,15 @@ typedef struct {
     rb_encoding *destination_encoding;
 } rb_econv_t;
 
-rb_econv_t *rb_econv_open(const char *from, const char *to, int flags);
+rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_encoding, int flags);
 rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
-    const unsigned char **input_ptr, const unsigned char *input_stop,
-    unsigned char **output_ptr, unsigned char *output_stop,
+    const unsigned char **source_buffer_ptr, const unsigned char *source_buffer_end,
+    unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     int flags);
+int rb_econv_output(rb_econv_t *ec,
+    const unsigned char *str, size_t len,
+    unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
+    size_t *required_size);
 void rb_econv_close(rb_econv_t *ec);
 
 /* flags for rb_econv_open */

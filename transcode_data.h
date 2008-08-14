@@ -107,8 +107,9 @@ struct rb_transcoder {
     VALUE (*func_si)(rb_transcoding*, const unsigned char*, size_t); /* start -> info   */
     int (*func_io)(rb_transcoding*, VALUE, const unsigned char*); /* info  -> output */
     int (*func_so)(rb_transcoding*, const unsigned char*, size_t, unsigned char*); /* start -> output */
-    int (*resetstate_func)(rb_transcoding*, unsigned char*); /* -> output */
     int (*finish_func)(rb_transcoding*, unsigned char*); /* -> output */
+    int (*resetsize_func)(rb_transcoding*); /* -> len */
+    int (*resetstate_func)(rb_transcoding*, unsigned char*); /* -> output */
 };
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);

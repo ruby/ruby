@@ -449,7 +449,8 @@ static const rb_transcoder
     #{input_unit_length}, /* input_unit_length */
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */
-    NULL, NULL, NULL, NULL, NULL, NULL
+    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL
 };
 End
   tree_code + "\n" + transcoder_code

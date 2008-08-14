@@ -1,3 +1,19 @@
+Fri Aug 15 00:52:40 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_output): declared.
+
+	* transcode_data.h (rb_transcoder): add resetsize_func field.
+
+	* enc/trans/iso2022.trans (iso2022jp_reset_sequence_size): defined.
+	  (rb_EUC_JP_to_ISO_2022_JP): provede resetsize_func.
+
+	* tool/transcode-tblgen.rb: set NULL for resetsize_func.
+
+	* transcode.c (rb_econv_output): new function for inserting output.
+	  (output_replacement_character): use rb_econv_output.
+	  (transcode_loop): check return value of
+	  output_replacement_character.
+
 Thu Aug 14 23:47:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_UNIVERSAL_NEWLINE_DECODER): defined.

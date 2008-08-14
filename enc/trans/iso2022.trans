@@ -83,7 +83,7 @@ fun_so_eucjp_to_iso2022jp(rb_transcoding *t, const unsigned char *s, size_t l, u
 
     if (t->stateful[0] == 0) {
         t->stateful[0] = 1; /* initialized flag */
-        t->stateful[1] = 1; /* ASCII mode */
+        t->stateful[1] = 1; /* G0 = ASCII */
     }
 
     if (l != t->stateful[1]) {
@@ -91,13 +91,13 @@ fun_so_eucjp_to_iso2022jp(rb_transcoding *t, const unsigned char *s, size_t l, u
             *o++ = 0x1b;
             *o++ = '(';
             *o++ = 'B';
-            t->stateful[1] = 1;
+            t->stateful[1] = 1; /* G0 = ASCII */
         }
         else {
             *o++ = 0x1b;
             *o++ = '$';
             *o++ = 'B';
-            t->stateful[1] = 2;
+            t->stateful[1] = 2; /* G0 = JIS X 0208 1983 */
         }
     }
 
@@ -110,6 +110,14 @@ fun_so_eucjp_to_iso2022jp(rb_transcoding *t, const unsigned char *s, size_t l, u
     }
 
     return o - output0;
+}
+
+static int
+iso2022jp_reset_sequence_size(rb_transcoding *t)
+{
+    if (t->stateful[1] == 2)
+        return 3;
+    return 0;
 }
 
 static int
@@ -137,7 +145,8 @@ rb_EUC_JP_to_ISO_2022_JP = {
     3, /* max_input */
     5, /* max_output */
     NULL, NULL, NULL, fun_so_eucjp_to_iso2022jp,
-    finish_eucjp_to_iso2022jp, finish_eucjp_to_iso2022jp
+    finish_eucjp_to_iso2022jp,
+    iso2022jp_reset_sequence_size, finish_eucjp_to_iso2022jp
 };
 
 void

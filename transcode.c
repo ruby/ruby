@@ -937,6 +937,58 @@ rb_econv_convert(rb_econv_t *ec,
     return res;
 }
 
+int
+rb_econv_output(rb_econv_t *ec,
+    const unsigned char *str, size_t len, /* string in destination encoding */
+    unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
+    size_t *required_size)
+{
+    size_t reset_len, total_len;
+    rb_transcoding *tc = ec->last_tc;
+    const rb_transcoder *tr = tc->transcoder;
+
+    /*
+     * Assumption for stateful encoding:
+     *
+     * - str can be output on resetted state and doesn't change the state.
+     * - it is acceptable that extra state changing sequence if str contains
+     *   a state changing sequence.
+     *
+     * Currently the replacement character for stateful encoding such as
+     * ISO-2022-JP is "?" and it has no state changing sequence.
+     * So the extra state changing sequence don't occur when
+     * rb_econv_output is used for replacement characters.
+     *
+     * Thease assumption may be removed in future.
+     * It needs to scan str to check state changing sequences in it.
+     */
+
+    reset_len = 0;
+    if (tr->resetsize_func) {
+        reset_len = tr->resetsize_func(tc);
+    }
+
+    total_len = reset_len + len;
+    if (total_len < len)
+        return -1;
+
+    if (required_size) {
+        *required_size = total_len;
+    }
+
+    if (destination_buffer_end - *destination_buffer_ptr < total_len)
+        return -1;
+
+    if (reset_len) {
+        *destination_buffer_ptr += tr->resetstate_func(tc, *destination_buffer_ptr);
+    }
+
+    memcpy(*destination_buffer_ptr, str, len);
+    *destination_buffer_ptr += len;
+
+    return 0;
+}
+
 void
 rb_econv_close(rb_econv_t *ec)
 {
@@ -968,58 +1020,40 @@ more_output_buffer(
     *out_stop_ptr = *out_start_ptr + new_len;
 }
 
-static void
+static int
 output_replacement_character(
         VALUE destination,
         unsigned char *(*resize_destination)(VALUE, int, int),
-        rb_transcoding *tc,
+        rb_econv_t *ec,
         unsigned char **out_start_ptr,
         unsigned char **out_pos,
         unsigned char **out_stop_ptr)
 
 {
+    rb_transcoding *tc = ec->last_tc;
     const rb_transcoder *tr;
-    int max_output;
     rb_encoding *enc;
-    const char *replacement;
+    const unsigned char *replacement;
     int len;
+    size_t required_size;
 
     tr = tc->transcoder;
-    max_output = tr->max_output;
     enc = rb_enc_find(tr->to_encoding);
 
-    /*
-     * Assumption for stateful encoding:
-     *
-     * - The replacement character can be output on resetted state and doesn't
-     *   change the state.
-     * - it is acceptable that extra state changing sequence if the replacement
-     *   character contains a state changing sequence.
-     *
-     * Currently the replacement character for stateful encoding such as
-     * ISO-2022-JP is "?" and it has no state changing sequence.
-     * So the extra state changing sequence don't occur.
-     *
-     * Thease assumption may be removed in future.
-     * It needs to scan the replacement character to check
-     * state changing sequences in the replacement character.
-     */
+    replacement = (const unsigned char *)get_replacement_character(enc, &len);
 
-    if (tr->resetstate_func) {
-        if (*out_stop_ptr - *out_pos < max_output)
-            more_output_buffer(destination, resize_destination, max_output, out_start_ptr, out_pos, out_stop_ptr);
-        *out_pos += tr->resetstate_func(tc, *out_pos);
-    }
+    if (rb_econv_output(ec, replacement, len, out_pos, *out_stop_ptr, &required_size) == 0)
+        return 0;
 
-    if (*out_stop_ptr - *out_pos < max_output)
-        more_output_buffer(destination, resize_destination, max_output, out_start_ptr, out_pos, out_stop_ptr);
+    if (required_size < len)
+        return -1; /* overflow */
 
-    replacement = get_replacement_character(enc, &len);
+    more_output_buffer(destination, resize_destination, required_size, out_start_ptr, out_pos, out_stop_ptr);
 
-    memcpy(*out_pos, replacement, len);
+    if (rb_econv_output(ec, replacement, len, out_pos, *out_stop_ptr, &required_size) == 0)
+        return 0;
 
-    *out_pos += len;
-    return;
+    return -1;
 }
 
 #if 1
@@ -1054,8 +1088,8 @@ resume:
             goto resume;
 	}
 	else if (opt&INVALID_REPLACE) {
-	    output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
-            goto resume;
+	    if (output_replacement_character(destination, resize_destination, ec, &out_start, out_pos, &out_stop) == 0)
+                goto resume;
 	}
         rb_econv_close(ec);
 	rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
@@ -1068,8 +1102,8 @@ resume:
 	    goto resume;
 	}
 	else if (opt&UNDEF_REPLACE) {
-	    output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
-	    goto resume;
+	    if (output_replacement_character(destination, resize_destination, ec, &out_start, out_pos, &out_stop) == 0)
+                goto resume;
 	}
         rb_econv_close(ec);
         rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
@@ -1135,8 +1169,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             else if (opt&INVALID_REPLACE) {
-                output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
-                break;
+                if (output_replacement_character(destination, resize_destination, ec, &out_start, out_pos, &out_stop) == 0)
+                    break;
             }
             rb_econv_close(ec);
             rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
@@ -1150,8 +1184,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 break;
             }
             else if (opt&UNDEF_REPLACE) {
-                output_replacement_character(destination, resize_destination, last_tc, &out_start, out_pos, &out_stop);
-                break;
+                if (output_replacement_character(destination, resize_destination, ec, &out_start, out_pos, &out_stop) == 0)
+                    break;
             }
             rb_econv_close(ec);
             rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
