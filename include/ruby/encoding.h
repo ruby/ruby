@@ -227,6 +227,7 @@ typedef struct {
     /* last error */
     struct {
         rb_econv_result_t result;
+        struct rb_transcoding *error_tc;
         const char *source_encoding;
         const char *destination_encoding;
         const unsigned char *error_bytes_start;

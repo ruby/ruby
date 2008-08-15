@@ -950,11 +950,13 @@ rb_econv_convert(rb_econv_t *ec,
     ec->last_error.partial_input = flags & ECONV_PARTIAL_INPUT;
     if (res == econv_invalid_byte_sequence ||
         res == econv_undefined_conversion) {
-        ec->last_error.source_encoding = ec->elems[result_position].tc->transcoder->from_encoding;
-        ec->last_error.destination_encoding = ec->elems[result_position].tc->transcoder->to_encoding;
-        ec->last_error.error_bytes_start = TRANSCODING_READBUF(ec->elems[result_position].tc);
-        ec->last_error.error_bytes_len = ec->elems[result_position].tc->recognized_len;
-        ec->last_error.readagain_len = ec->elems[result_position].tc->readagain_len;
+        rb_transcoding *error_tc = ec->elems[result_position].tc;
+        ec->last_error.error_tc = error_tc;
+        ec->last_error.source_encoding = error_tc->transcoder->from_encoding;
+        ec->last_error.destination_encoding = error_tc->transcoder->to_encoding;
+        ec->last_error.error_bytes_start = TRANSCODING_READBUF(error_tc);
+        ec->last_error.error_bytes_len = error_tc->recognized_len;
+        ec->last_error.readagain_len = error_tc->readagain_len;
     }
 
     return res;
