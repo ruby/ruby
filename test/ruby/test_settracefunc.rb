@@ -54,13 +54,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 4, :core_define_method, RubyVM::FrozenCore],
-                 events.shift)
     assert_equal(["c-call", 4, :method_added, Module],
                  events.shift)
     assert_equal(["c-return", 4, :method_added, Module],
-                 events.shift)
-    assert_equal(["c-return", 4, :core_define_method, RubyVM::FrozenCore],
                  events.shift)
     assert_equal(["line", 7, __method__, self.class],
                  events.shift)
@@ -106,13 +102,9 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 5, nil, nil],
                  events.shift)
-    assert_equal(["c-call", 5, :core_define_method, RubyVM::FrozenCore],
-                 events.shift)
     assert_equal(["c-call", 5, :method_added, Module],
                  events.shift)
     assert_equal(["c-return", 5, :method_added, Module],
-                 events.shift)
-    assert_equal(["c-return", 5, :core_define_method, RubyVM::FrozenCore],
                  events.shift)
     assert_equal(["end", 7, nil, nil],
                  events.shift)
