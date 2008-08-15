@@ -1801,7 +1801,7 @@ Init_VM(void)
     rb_undef_alloc_func(rb_cRubyVM);
 
     /* ::VM::FrozenCore */
-    fcore = rb_module_new();
+    fcore = rb_class_new(rb_cBasicObject);
     RBASIC(fcore)->flags = T_ICLASS;
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);

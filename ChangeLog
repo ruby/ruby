@@ -1,3 +1,7 @@
+Fri Aug 15 15:30:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (Init_VM): get rid of SEGV in a trace proc.
+
 Fri Aug 15 09:33:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (conv_init): check empty name.
