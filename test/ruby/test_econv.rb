@@ -163,6 +163,44 @@ class TestEncodingConverter < Test::Unit::TestCase
     check_ec("abcdef",     "", :finished, *a)
   end
 
+  def test_invalid_utf16le
+    ec = Encoding::Converter.new("UTF-16LE", "UTF-8")
+    a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
+    src << "A";         check_ec("",                            "", :source_buffer_empty, *a)
+    src << "\x00";      check_ec("A",                           "", :source_buffer_empty, *a)
+    src << "\x00";      check_ec("A",                           "", :source_buffer_empty, *a)
+    src << "\xd8";      check_ec("A",                           "", :source_buffer_empty, *a)
+    src << "\x01";      check_ec("A",                           "", :source_buffer_empty, *a)
+    src << "\x02";      check_ec("A",                           "", :invalid_byte_sequence, *a)
+    src << "\x03";      check_ec("A\u{0201}",                   "", :source_buffer_empty, *a)
+    src << "\x04";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\x00";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\xd8";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\x00";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\xd8";      check_ec("A\u{0201}\u{0403}",           "", :invalid_byte_sequence, *a)
+    src << "\x00";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\xdc";      check_ec("A\u{0201}\u{0403}\u{10000}",  "", :source_buffer_empty, *a)
+  end
+
+  def test_invalid_utf16be
+    ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
+    a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
+    src << "\x00";      check_ec("",                            "", :source_buffer_empty, *a)
+    src << "A";         check_ec("A",                           "", :source_buffer_empty, *a)
+    src << "\xd8";      check_ec("A",                           "", :source_buffer_empty, *a)
+    src << "\x00";      check_ec("A",                           "", :source_buffer_empty, *a)
+    src << "\x02";      check_ec("A",                           "", :invalid_byte_sequence, *a)
+    src << "\x01";      check_ec("A\u{0201}",                   "", :source_buffer_empty, *a)
+    src << "\x04";      check_ec("A\u{0201}",                   "", :source_buffer_empty, *a)
+    src << "\x03";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\xd8";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\x00";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\xd8";      check_ec("A\u{0201}\u{0403}",           "", :invalid_byte_sequence, *a)
+    src << "\x00";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\xdc";      check_ec("A\u{0201}\u{0403}",           "", :source_buffer_empty, *a)
+    src << "\x00";      check_ec("A\u{0201}\u{0403}\u{10000}",  "", :source_buffer_empty, *a)
+  end
+
   def test_errors
     ec = Encoding::Converter.new("UTF-16BE", "EUC-JP")
     a =     ["", "\xFF\xFE\x00A\xDC\x00\x00B", ec, nil, 10]
