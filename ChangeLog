@@ -1,3 +1,17 @@
+Sat Aug 16 08:11:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoder_stateful_type_t): defined.
+	  (rb_transcoder): add field: stateful_type.
+
+	* tool/transcode-tblgen.rb: generate stateful_type field as
+	  stateless_converter.
+
+	* enc/trans/iso2022.trans: follow rb_transcoder change.
+
+	* enc/trans/newline.trans: ditto.
+
+	* enc/trans/utf_16_32.trans: ditto.
+	  
 Fri Aug 15 23:07:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_just_convert): extracted from rb_econv_output.

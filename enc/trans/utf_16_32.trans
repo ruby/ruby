@@ -235,6 +235,7 @@ rb_from_UTF_16BE = {
     2, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_from_utf_16be
 };
 
@@ -259,6 +260,7 @@ rb_to_UTF_16BE = {
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_to_utf_16be
 };
 
@@ -275,6 +277,7 @@ rb_from_UTF_16LE = {
     2, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_from_utf_16le
 };
 
@@ -284,6 +287,7 @@ rb_to_UTF_16LE = {
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_to_utf_16le
 };
 
@@ -300,6 +304,7 @@ rb_from_UTF_32BE = {
     4, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_from_utf_32be
 };
 
@@ -309,6 +314,7 @@ rb_to_UTF_32BE = {
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_to_utf_32be
 };
 
@@ -325,6 +331,7 @@ rb_from_UTF_32LE = {
     4, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_from_utf_32le
 };
 
@@ -334,6 +341,7 @@ rb_to_UTF_32LE = {
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, &fun_so_to_utf_32le
 };
 

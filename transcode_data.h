@@ -56,6 +56,13 @@ typedef struct byte_lookup {
 #define TWOTRAIL       /* legal but undefined if two more trailing UTF-8 */
 #define THREETRAIL     /* legal but undefined if three more trailing UTF-8 */
 
+typedef enum {
+  stateless_converter,  /* stateless -> stateless */
+  stateful_decoder,     /* stateful -> stateless */
+  stateful_encoder      /* stateless -> stateful */
+  /* stateful -> stateful is intentionally ommitted. */
+} rb_transcoder_stateful_type_t;
+
 typedef struct rb_transcoder rb_transcoder;
 
 /* dynamic structure, one per conversion (similar to iconv_t) */
@@ -103,6 +110,7 @@ struct rb_transcoder {
     int input_unit_length;
     int max_input;
     int max_output;
+    rb_transcoder_stateful_type_t stateful_type;
     VALUE (*func_ii)(rb_transcoding*, VALUE); /* info  -> info   */
     VALUE (*func_si)(rb_transcoding*, const unsigned char*, size_t); /* start -> info   */
     int (*func_io)(rb_transcoding*, VALUE, const unsigned char*); /* info  -> output */

@@ -61,6 +61,7 @@ rb_ISO_2022_JP_to_EUC_JP = {
     1, /* input_unit_length */
     3, /* max_input */
     3, /* max_output */
+    stateful_decoder, /* stateful_type */
     NULL, fun_si_iso2022jp_to_eucjp, NULL, fun_so_iso2022jp_to_eucjp
 };
 
@@ -144,6 +145,7 @@ rb_EUC_JP_to_ISO_2022_JP = {
     1, /* input_unit_length */
     3, /* max_input */
     5, /* max_output */
+    stateful_encoder, /* stateful_type */
     NULL, NULL, NULL, fun_so_eucjp_to_iso2022jp,
     finish_eucjp_to_iso2022jp,
     iso2022jp_reset_sequence_size, finish_eucjp_to_iso2022jp
