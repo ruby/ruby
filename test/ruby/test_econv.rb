@@ -110,7 +110,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_econv("", :finished, 100, ["Shift_JIS", "ISO-2022-JP"], "", "")
   end
 
-  def test_iso2022jp_outstream
+  def test_iso2022jp_encode
     ec = Encoding::Converter.new("EUC-JP", "ISO-2022-JP")
     a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
     src << "a";        check_ec("a",                           "", :source_buffer_empty, *a)
@@ -121,6 +121,25 @@ class TestEncodingConverter < Test::Unit::TestCase
     src << "b";        check_ec("a\e$B\"$!\"\e(Bb",            "", :source_buffer_empty, *a)
     src << "\xA2\xA6"; check_ec("a\e$B\"$!\"\e(Bb\e$B\"&",     "", :source_buffer_empty, *a)
     a[-1] = 0;         check_ec("a\e$B\"$!\"\e(Bb\e$B\"&\e(B", "", :finished, *a)
+  end
+
+  def test_iso2022jp_decode
+    ec = Encoding::Converter.new("ISO-2022-JP", "EUC-JP")
+    a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
+    src << "a";         check_ec("a",                   "", :source_buffer_empty, *a)
+    src << "\e";        check_ec("a",                   "", :source_buffer_empty, *a)
+    src << "$";         check_ec("a",                   "", :source_buffer_empty, *a)
+    src << "B";         check_ec("a",                   "", :source_buffer_empty, *a)
+    src << "\x21";      check_ec("a",                   "", :source_buffer_empty, *a)
+    src << "\x22";      check_ec("a\xA1\xA2",           "", :source_buffer_empty, *a)
+    src << "\n";        check_ec("a\xA1\xA2",           "", :invalid_byte_sequence, *a)
+    src << "\x23";      check_ec("a\xA1\xA2",           "", :source_buffer_empty, *a)
+    src << "\x24";      check_ec("a\xA1\xA2\xA3\xA4",   "", :source_buffer_empty, *a)
+    src << "\e";        check_ec("a\xA1\xA2\xA3\xA4",   "", :source_buffer_empty, *a)
+    src << "(";         check_ec("a\xA1\xA2\xA3\xA4",   "", :source_buffer_empty, *a)
+    src << "B";         check_ec("a\xA1\xA2\xA3\xA4",   "", :source_buffer_empty, *a)
+    src << "c";         check_ec("a\xA1\xA2\xA3\xA4c",  "", :source_buffer_empty, *a)
+    src << "\n";        check_ec("a\xA1\xA2\xA3\xA4c\n","", :source_buffer_empty, *a)
   end
 
   def test_invalid
