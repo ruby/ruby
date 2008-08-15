@@ -1021,6 +1021,47 @@ rb_econv_output_with_destination_encoding(rb_econv_t *ec,
     return 0;
 }
 
+static ssize_t
+econv_just_convert(const char *src_enc, const char *dst_enc,
+                   const unsigned char *source_string, size_t source_len,
+                   unsigned char *buf, size_t bufsize)
+{
+    rb_econv_t *ec;
+    const unsigned char *src_ptr;
+    unsigned char *dst_ptr;
+    size_t dst_len;
+    rb_econv_result_t res;
+    const unsigned char *source_end = source_string + source_len;
+
+    ec = rb_econv_open(src_enc, dst_enc, 0);
+    if (!ec)
+        return -1;
+
+    src_ptr = source_string;
+    dst_len = 0;
+    do {
+        dst_ptr = buf;
+        res = rb_econv_convert(ec, &src_ptr, source_end, &dst_ptr, buf+bufsize, 0);
+        if (dst_len + (dst_ptr - buf) < dst_len)
+            goto convfail;
+        dst_len += dst_ptr - buf;
+        if (SSIZE_MAX < dst_len)
+            goto convfail;
+    } while (res == econv_destination_buffer_full);
+
+    if (res != econv_finished)
+        goto convfail;
+
+    rb_econv_close(ec);
+
+    return dst_len;
+
+convfail:
+    if (ec)
+        rb_econv_close(ec);
+    return -1;
+}
+
 /* result: 0:success -1:failure -2:conversion-failure-to-destination-encoding */
 int
 rb_econv_output(rb_econv_t *ec,
@@ -1028,12 +1069,9 @@ rb_econv_output(rb_econv_t *ec,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     size_t *required_size)
 {
-    rb_econv_t *from_ascii = NULL;;
-    unsigned char buf[1024], *buf2;
-    size_t dst_len;
-    const unsigned char *src_ptr;
-    unsigned char *dst_ptr;
-    rb_econv_result_t res;
+    const char *dst_enc;
+    unsigned char buf[1024], *buf2 = NULL;
+    ssize_t dst_len;
     int ret;
 
     if (encoding_equal(str_encoding, ec->last_tc->transcoder->to_encoding)) {
@@ -1043,52 +1081,34 @@ rb_econv_output(rb_econv_t *ec,
     if (required_size)
         *required_size = 0;
 
-    from_ascii = rb_econv_open(str_encoding, ec->last_tc->transcoder->to_encoding, 0);
-    if (!from_ascii)
+    dst_enc = ec->last_tc->transcoder->to_encoding;
+
+    dst_len = econv_just_convert(str_encoding, dst_enc,
+                                 str, str_len, buf, sizeof(buf));
+    if (dst_len < 0)
         return -2;
 
-    src_ptr = str;
-    dst_len = 0;
-    do {
-        dst_ptr = buf;
-        res = rb_econv_convert(from_ascii, &src_ptr, str+str_len, &dst_ptr, buf+sizeof(buf), 0);
-        if (dst_len + (dst_ptr - buf) < dst_len)
-            goto convfail;
-        dst_len += dst_ptr - buf;
-    } while (res == econv_destination_buffer_full);
-
-    if (res != econv_finished)
-        goto convfail;
-
-    rb_econv_close(from_ascii);
-    from_ascii = NULL;
-
     if (dst_len <= sizeof(buf)) {
-        return rb_econv_output_with_destination_encoding(ec, buf, dst_len, destination_buffer_ptr, destination_buffer_end, required_size);
+        return rb_econv_output_with_destination_encoding(ec, buf, dst_len,
+                destination_buffer_ptr, destination_buffer_end, required_size);
     }
 
     buf2 = xmalloc(dst_len);
 
-    from_ascii = rb_econv_open(str_encoding, ec->last_tc->transcoder->to_encoding, 0);
-    if (!from_ascii)
+    dst_len = econv_just_convert(str_encoding, dst_enc,
+                                 str, str_len, buf2, dst_len);
+    if (dst_len < 0)
         goto convfail;
 
-    src_ptr = str;
-    dst_ptr = buf2;
-    res = rb_econv_convert(from_ascii, &src_ptr, str+str_len, &dst_ptr, buf2+dst_len, 0);
-    if (res != econv_finished)
-        goto convfail;
-    rb_econv_close(from_ascii);
-    from_ascii = NULL;
-
-    ret = rb_econv_output_with_destination_encoding(ec, buf2, dst_len, destination_buffer_ptr, destination_buffer_end, required_size);
+    ret = rb_econv_output_with_destination_encoding(ec, buf2, dst_len,
+            destination_buffer_ptr, destination_buffer_end, required_size);
 
     xfree(buf2);
     return ret;
 
 convfail:
-    if (from_ascii)
-        rb_econv_close(from_ascii);
+    if (buf2)
+        xfree(buf2);
     return -2;
 }
 
@@ -1934,6 +1954,84 @@ econv_primitive_errinfo(VALUE self)
     return ary;
 }
 
+static VALUE
+econv_primitive_output(int argc, VALUE *argv, VALUE self)
+{
+    volatile VALUE string, output;
+    VALUE output_byteoffset_v, output_bytesize_v;
+    long output_byteoffset, output_bytesize;
+    unsigned long output_byteend;
+
+    unsigned char *dst_start, *dst_ptr;
+    int ret;
+    size_t required_size;
+
+    rb_econv_t *ec = check_econv(self);
+
+    rb_scan_args(argc, argv, "22", &string, &output, &output_byteoffset_v, &output_bytesize_v);
+
+    StringValue(string);
+    string = rb_str_transcode(string, rb_enc_from_encoding(ec->destination_encoding));
+
+    if (NIL_P(output_byteoffset_v))
+        output_byteoffset = 0;
+    else
+        output_byteoffset = NUM2LONG(output_byteoffset_v);
+
+    if (NIL_P(output_bytesize_v))
+        output_bytesize = 0;
+    else
+        output_bytesize = NUM2LONG(output_bytesize_v);
+
+    StringValue(output);
+    StringValue(string);
+    rb_str_modify(output);
+
+    if (output_byteoffset_v == Qnil)
+        output_byteoffset = RSTRING_LEN(output);
+
+    if (output_byteoffset < 0)
+        rb_raise(rb_eArgError, "negative output_byteoffset");
+
+    if (RSTRING_LEN(output) < output_byteoffset)
+        rb_raise(rb_eArgError, "output_byteoffset too big");
+
+    if (output_bytesize < 0)
+        rb_raise(rb_eArgError, "negative output_bytesize");
+
+    if (output_bytesize == 0) {
+        output_byteend = ec->last_tc->transcoder->max_output;
+        output_byteend += (unsigned long)RSTRING_LEN(string);
+        if (output_byteend < (unsigned long)RSTRING_LEN(string) ||
+            LONG_MAX < output_byteend)
+            rb_raise(rb_eArgError, "max_output + string.bytesize too big");
+    }
+    else {
+        output_byteend = (unsigned long)output_bytesize;
+    }
+
+    output_byteend += (unsigned long)output_byteoffset;
+    if (output_byteend < (unsigned long)output_byteoffset ||
+        LONG_MAX < output_byteend)
+        rb_raise(rb_eArgError, "output_byteoffset+output_bytesize too big");
+
+    if (rb_str_capacity(output) < output_byteend)
+        rb_str_resize(output, output_byteend);
+
+    dst_start = dst_ptr = (unsigned char *)RSTRING_PTR(output)+output_byteoffset;
+    ret = rb_econv_output_with_destination_encoding(ec,
+            (unsigned char *)RSTRING_PTR(string), RSTRING_LEN(string),
+            &dst_ptr, (unsigned char *)RSTRING_PTR(output)+output_byteend,
+            &required_size);
+
+    rb_str_set_len(output, dst_ptr - (unsigned char *)RSTRING_PTR(output));
+
+    if (ret == 0)
+        return Qtrue;
+
+    return Qfalse;
+}
+
 void
 Init_transcode(void)
 {
@@ -1958,6 +2056,7 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "destination_encoding", econv_destination_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
     rb_define_method(rb_cEncodingConverter, "primitive_errinfo", econv_primitive_errinfo, 0);
+    rb_define_method(rb_cEncodingConverter, "primitive_output", econv_primitive_output, -1);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
