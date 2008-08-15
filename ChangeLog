@@ -1,3 +1,7 @@
+Fri Aug 15 17:39:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (parse.{c,h}): creates in the dependency order.
+
 Fri Aug 15 16:59:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (exec_event_hooks): skips RubyVM::FrozenCore.
