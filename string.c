@@ -2836,7 +2836,7 @@ rb_str_drop_bytes(VALUE str, long len)
 	STR_SET_EMBED(str);
 	STR_SET_EMBED_LEN(str, nlen);
 	ptr = RSTRING(str)->as.ary;
-	memcpy(ptr, oldptr + len, nlen);
+	memmove(ptr, oldptr + len, nlen);
 	if (fl == STR_NOEMBED) xfree(oldptr);
     }
     else {

@@ -1,3 +1,7 @@
+Fri Aug 15 19:33:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_drop_bytes): use memmove.
+
 Fri Aug 15 18:33:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_t): add error_tc in last_error.
