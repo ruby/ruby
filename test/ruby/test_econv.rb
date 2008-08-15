@@ -25,6 +25,19 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_kind_of(Encoding::Converter, Encoding::Converter.new(Encoding::UTF_8, Encoding::EUC_JP))
   end
 
+  def test_new_fail
+    name1 = "encoding-which-is-not-exist-1"
+    name2 = "encoding-which-is-not-exist-2"
+
+    assert_raise(ArgumentError) {
+      Encoding::Converter.new(name1, name2)
+    }
+
+    encoding_list = Encoding.list.map {|e| e.name }
+    assert(!encoding_list.include?(name1))
+    assert(!encoding_list.include?(name2))
+  end
+
   def test_get_encoding
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     assert_equal(Encoding::UTF_8, ec.source_encoding)

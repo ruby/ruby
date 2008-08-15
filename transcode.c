@@ -1413,16 +1413,12 @@ econv_s_allocate(VALUE klass)
 }
 
 static rb_encoding *
-make_encoding(VALUE encoding)
+make_dummy_encoding(const char *name)
 {
-    int idx = rb_to_encoding_index(encoding);
     rb_encoding *enc;
-    if (0 <= idx)
-        enc = rb_enc_from_index(idx);
-    else {
-	idx = rb_define_dummy_encoding(StringValueCStr(encoding));
-        enc = rb_enc_from_index(idx);
-    }
+    int idx;
+    idx = rb_define_dummy_encoding(name);
+    enc = rb_enc_from_index(idx);
     return enc;
 }
 
@@ -1458,6 +1454,8 @@ static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE source_encoding, destination_encoding, flags_v;
+    int sidx, didx;
+    const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
     int flags;
@@ -1469,17 +1467,40 @@ econv_init(int argc, VALUE *argv, VALUE self)
     else
         flags = NUM2INT(flags_v);
 
-    senc = make_encoding(source_encoding);
-    denc = make_encoding(destination_encoding);
+    senc = NULL;
+    sidx = rb_to_encoding_index(source_encoding);
+    if (0 <= sidx) {
+        senc = rb_enc_from_index(sidx);
+    }
+    else {
+        StringValue(source_encoding);
+    }
+
+    denc = NULL;
+    didx = rb_to_encoding_index(destination_encoding);
+    if (0 <= didx) {
+        denc = rb_enc_from_index(didx);
+    }
+    else {
+        StringValue(destination_encoding);
+    }
+
+    sname = senc ? senc->name : StringValueCStr(source_encoding);
+    dname = denc ? denc->name : StringValueCStr(destination_encoding);
 
     if (DATA_PTR(self)) {
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    ec = rb_econv_open(senc->name, denc->name, flags);
+    ec = rb_econv_open(sname, dname, flags);
     if (!ec) {
-        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", senc->name, denc->name);
+        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", sname, dname);
     }
+
+    if (!senc)
+        senc = make_dummy_encoding(sname);
+    if (!denc)
+        denc = make_dummy_encoding(dname);
 
     ec->source_encoding = senc;
     ec->destination_encoding = denc;
