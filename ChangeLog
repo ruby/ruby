@@ -1,3 +1,8 @@
+Sat Aug 16 08:52:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (SSIZET2NUM, NUM2SSIZET, SSIZE_MAX, SSIZE_MIN):
+	  macros for ssize_t.
+
 Sat Aug 16 08:11:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder_stateful_type_t): defined.

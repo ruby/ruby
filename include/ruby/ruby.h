@@ -210,10 +210,28 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 
 #if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
 # define SIZET2NUM(v) ULL2NUM(v)
+# define SSIZET2NUM(v) LL2NUM(v)
 #elif SIZEOF_SIZE_T == SIZEOF_LONG
 # define SIZET2NUM(v) ULONG2NUM(v)
+# define SSIZET2NUM(v) LONG2NUM(v)
 #else
 # define SIZET2NUM(v) UINT2NUM(v)
+# define SSIZET2NUM(v) INT2NUM(v)
+#endif
+
+#ifndef SSIZE_MAX
+# if SIZEOF_SIZE_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
+#   define SSIZE_MAX LLONG_MAX
+#   define SSIZE_MIN LLONG_MIN
+# elif SIZEOF_SIZE_T == SIZEOF_LONG
+#   define SSIZE_MAX LONG_MAX
+#   define SSIZE_MIN LONG_MIN
+# elif SIZEOF_SIZE_T == SIZEOF_INT
+#   define SSIZE_MAX INT_MAX
+#   define SSIZE_MIN INT_MIN
+# else
+#   define SSIZE_MAX SHRT_MAX
+#   define SSIZE_MIN SHRT_MIN
 #endif
 
 #ifndef PIDT2NUM
@@ -411,8 +429,10 @@ unsigned LONG_LONG rb_num2ull(VALUE);
 
 #if defined(HAVE_LONG_LONG) && SIZEOF_SIZE_T > SIZEOF_LONG
 # define NUM2SIZET(x) ((size_t)NUM2ULL(x))
+# define NUM2SSIZET(x) ((size_t)NUM2LL(x))
 #else
 # define NUM2SIZET(x) NUM2ULONG(x)
+# define NUM2SSIZET(x) NUM2LONG(x)
 #endif
 
 double rb_num2dbl(VALUE);
