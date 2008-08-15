@@ -1497,10 +1497,12 @@ econv_init(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", sname, dname);
     }
 
-    if (!senc)
-        senc = make_dummy_encoding(sname);
-    if (!denc)
-        denc = make_dummy_encoding(dname);
+    if (*sname && *dname) { /* check "" to "universal_newline" */
+        if (!senc)
+            senc = make_dummy_encoding(sname);
+        if (!denc)
+            denc = make_dummy_encoding(dname);
+    }
 
     ec->source_encoding = senc;
     ec->destination_encoding = denc;
