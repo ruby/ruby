@@ -714,6 +714,7 @@ void rb_thread_execute_interrupts(rb_thread_t *);
 static inline void
 exec_event_hooks(rb_event_hook_t *hook, rb_event_flag_t flag, VALUE self, ID id, VALUE klass)
 {
+    if (self == rb_mRubyVMFrozenCore) return;
     while (hook) {
 	if (flag & hook->flag) {
 	    (*hook->func)(flag, hook->data, self, id, klass);

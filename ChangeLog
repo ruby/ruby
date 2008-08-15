@@ -1,4 +1,6 @@
-Fri Aug 15 15:30:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug 15 16:59:30 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (exec_event_hooks): skips RubyVM::FrozenCore.
 
 	* vm.c (Init_VM): get rid of SEGV in a trace proc.
 
