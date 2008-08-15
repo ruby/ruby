@@ -398,5 +398,13 @@ class TestEncodingConverter < Test::Unit::TestCase
 
     assert_equal(true, ec.primitive_output("\u3042", dst))
     assert_equal("\e$B!!\e(B???\e$B!\"\e(B\e$B!!\e(B\e$B!\#\e(B\e$B$\"\e(B".force_encoding("ISO-2022-JP"), dst)
+
+    assert_raise(Encoding::ConversionUndefined) {
+      ec.primitive_output("\uFFFD", dst)
+    }
+
+    assert_equal("\e$B!!\e(B???\e$B!\"\e(B\e$B!!\e(B\e$B!\#\e(B\e$B$\"\e(B".force_encoding("ISO-2022-JP"), dst)
   end
+
+
 end
