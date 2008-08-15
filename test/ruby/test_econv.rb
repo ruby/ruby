@@ -20,6 +20,14 @@ class TestEncodingConverter < Test::Unit::TestCase
                  [o,            ret,           i])
   end
 
+  def assert_errinfo(e_res, e_enc1, e_enc2, e_error_bytes, e_readagain_bytes, e_partial_input, ec)
+    assert_equal([e_res, e_enc1, e_enc2,
+                  e_error_bytes && e_error_bytes.dup.force_encoding("ASCII-8BIT"), 
+                  e_readagain_bytes && e_readagain_bytes.dup.force_encoding("ASCII-8BIT"), 
+                  e_partial_input],
+                 ec.primitive_errinfo)
+  end
+
   def test_new
     assert_kind_of(Encoding::Converter, Encoding::Converter.new("UTF-8", "EUC-JP"))
     assert_kind_of(Encoding::Converter, Encoding::Converter.new(Encoding::UTF_8, Encoding::EUC_JP))
@@ -318,5 +326,43 @@ class TestEncodingConverter < Test::Unit::TestCase
     check_ec("abc\xA4\xA2de",  "f", :output_followed_by_input, *a)
     check_ec("abc\xA4\xA2def",  "", :output_followed_by_input, *a)
     check_ec("abc\xA4\xA2def",  "", :finished, *a)
+  end
+
+  def test_errinfo_invalid_euc_jp
+    ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
+    ec.primitive_convert(src="\xff", dst="", nil, 10)                       
+    assert_errinfo(:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", "", nil, ec)
+  end
+
+  def test_errinfo_undefined_hiragana
+    ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+    ec.primitive_convert(src="\xa4\xa2", dst="", nil, 10)
+    assert_errinfo(:undefined_conversion, "UTF-8", "ISO-8859-1", "\xE3\x81\x82", "", nil, ec)
+  end
+
+  def test_errinfo_invalid_partial_character
+    ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+    ec.primitive_convert(src="\xa4", dst="", nil, 10)
+    assert_errinfo(:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xA4", "", nil, ec)
+  end
+
+  def test_errinfo_valid_partial_character
+    ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+    ec.primitive_convert(src="\xa4", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)
+    assert_errinfo(:source_buffer_empty, nil, nil, nil, nil, :partial_input, ec)
+  end
+
+  def test_errinfo_invalid_utf16be
+    ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
+    ec.primitive_convert(src="\xd8\x00\x00@", dst="", nil, 10)
+    assert_errinfo(:invalid_byte_sequence, "UTF-16BE", "UTF-8", "\xD8\x00", "\x00", nil, ec)
+    assert_equal("@", src)
+  end
+
+  def test_errinfo_invalid_utf16le
+    ec = Encoding::Converter.new("UTF-16LE", "UTF-8")
+    ec.primitive_convert(src="\x00\xd8@\x00", dst="", nil, 10)
+    assert_errinfo(:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "@\x00", nil, ec)
+    assert_equal("", src)
   end
 end

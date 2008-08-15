@@ -1,3 +1,12 @@
+Fri Aug 15 18:10:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_t): new field: last_error.
+
+	* transcode.c (rb_trans_conv): new argument: result_position_ptr.
+	  (rb_econv_convert): fill last_error.
+	  (econv_result_to_symbol): extracted from econv_primitive_convert.
+	  (econv_primitive_errinfo): new method.
+
 Fri Aug 15 17:39:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (parse.{c,h}): creates in the dependency order.

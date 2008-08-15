@@ -224,6 +224,17 @@ typedef struct {
     int num_finished;
     struct rb_transcoding *last_tc;
 
+    /* last error */
+    struct {
+        rb_econv_result_t result;
+        const char *source_encoding;
+        const char *destination_encoding;
+        const unsigned char *error_bytes_start;
+        size_t error_bytes_len;
+        size_t readagain_len;
+        int partial_input;
+    } last_error;
+
     /* The following fields are only for Encoding::Converter.
      * rb_econv_open set them NULL. */
     rb_encoding *source_encoding;

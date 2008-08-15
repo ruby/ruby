@@ -839,7 +839,8 @@ static rb_econv_result_t
 rb_trans_conv(rb_econv_t *ec,
     const unsigned char **input_ptr, const unsigned char *input_stop,
     unsigned char **output_ptr, unsigned char *output_stop,
-    int flags)
+    int flags,
+    int *result_position_ptr)
 {
     int i;
     int needreport_index;
@@ -888,7 +889,8 @@ rb_trans_conv(rb_econv_t *ec,
         rb_econv_result_t res;
 
         res = rb_trans_conv(ec, NULL, NULL, output_ptr, output_stop,
-                (flags & ~ECONV_OUTPUT_FOLLOWED_BY_INPUT)|ECONV_PARTIAL_INPUT);
+                (flags & ~ECONV_OUTPUT_FOLLOWED_BY_INPUT)|ECONV_PARTIAL_INPUT,
+                result_position_ptr);
 
         if (res == econv_source_buffer_empty)
             return econv_output_followed_by_input;
@@ -912,9 +914,13 @@ found_needreport:
                 res == econv_output_followed_by_input) {
                 ec->elems[i].last_result = econv_source_buffer_empty;
             }
+            if (result_position_ptr)
+                *result_position_ptr = i;
             return res;
         }
     }
+    if (result_position_ptr)
+        *result_position_ptr = -1;
     return econv_source_buffer_empty;
 }
 
@@ -925,15 +931,32 @@ rb_econv_convert(rb_econv_t *ec,
     int flags)
 {
     rb_econv_result_t res;
+    int result_position;
+
+    memset(&ec->last_error, 0, sizeof(ec->last_error));
 
     if ((flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT) ||
-        ec->num_trans == 1)
-        return rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
+        ec->num_trans == 1) {
+        res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags, &result_position);
+    }
+    else {
+        flags |= ECONV_OUTPUT_FOLLOWED_BY_INPUT;
+        do {
+            res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags, &result_position);
+        } while (res == econv_output_followed_by_input);
+    }
 
-    flags |= ECONV_OUTPUT_FOLLOWED_BY_INPUT;
-    do {
-        res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
-    } while (res == econv_output_followed_by_input);
+    ec->last_error.result = res;
+    ec->last_error.partial_input = flags & ECONV_PARTIAL_INPUT;
+    if (res == econv_invalid_byte_sequence ||
+        res == econv_undefined_conversion) {
+        ec->last_error.source_encoding = ec->elems[result_position].tc->transcoder->from_encoding;
+        ec->last_error.destination_encoding = ec->elems[result_position].tc->transcoder->to_encoding;
+        ec->last_error.error_bytes_start = TRANSCODING_READBUF(ec->elems[result_position].tc);
+        ec->last_error.error_bytes_len = ec->elems[result_position].tc->recognized_len;
+        ec->last_error.readagain_len = ec->elems[result_position].tc->readagain_len;
+    }
+
     return res;
 }
 
@@ -1572,6 +1595,20 @@ econv_destination_encoding(VALUE self)
     return rb_enc_from_encoding(ec->destination_encoding);
 }
 
+static VALUE
+econv_result_to_symbol(rb_econv_result_t res)
+{
+    switch (res) {
+      case econv_invalid_byte_sequence: return ID2SYM(rb_intern("invalid_byte_sequence"));
+      case econv_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));
+      case econv_destination_buffer_full: return ID2SYM(rb_intern("destination_buffer_full"));
+      case econv_source_buffer_empty: return ID2SYM(rb_intern("source_buffer_empty"));
+      case econv_finished: return ID2SYM(rb_intern("finished"));
+      case econv_output_followed_by_input: return ID2SYM(rb_intern("output_followed_by_input"));
+      default: return INT2NUM(res); /* should not be reached */
+    }
+}
+
 /*
  * call-seq:
  *   primitive_convert(source_buffer, destination_buffer, destination_byteoffset, destination_bytesize) -> symbol
@@ -1704,15 +1741,113 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
         rb_enc_associate(output, ec->destination_encoding);
     }
 
-    switch (res) {
-      case econv_invalid_byte_sequence: return ID2SYM(rb_intern("invalid_byte_sequence"));
-      case econv_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));
-      case econv_destination_buffer_full: return ID2SYM(rb_intern("destination_buffer_full"));
-      case econv_source_buffer_empty: return ID2SYM(rb_intern("source_buffer_empty"));
-      case econv_finished: return ID2SYM(rb_intern("finished"));
-      case econv_output_followed_by_input: return ID2SYM(rb_intern("output_followed_by_input"));
-      default: return INT2NUM(res); /* should not be reached */
+    return econv_result_to_symbol(res);
+}
+
+/*
+ * call-seq:
+ *   primitive_errinfo -> array
+ *
+ * primitive_errinfo returns a precious information of last error result
+ * as a 6-elements array:
+ *
+ *   [result, enc1, enc2, error_bytes, readagain_bytes, partial_input]
+ *
+ * result is the last result of primitive_convert.
+ *
+ * partial_input is :partial_input or nil.
+ * :partial_input means that Encoding::Converter::PARTIAL_INPUT is specified
+ * for primitive_convert.
+ *
+ * Other elements are only meaningful when result is
+ * :invalid_byte_sequence or :undefined_conversion.
+ *
+ * enc1 and enc2 indicats a conversion step as pair of strings.
+ * For example, EUC-JP to ISO-8859-1 is
+ * converted as EUC-JP -> UTF-8 -> ISO-8859-1.
+ * So [enc1, enc2] is ["EUC-JP", "UTF-8"] or ["UTF-8", "ISO-8859-1"].
+ *
+ * error_bytes and readagain_bytes indicats the byte sequences which causes the error.
+ * error_bytes is discarded portion.
+ * readagain_bytes is buffered portion which is read again on next conversion.
+ *
+ * Example:
+ *
+ *   # \xff is invalid as EUC-JP.
+ *   ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
+ *   ec.primitive_convert(src="\xff", dst="", nil, 10)                       
+ *   p ec.primitive_errinfo
+ *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", "", nil]
+ *
+ *   # HIRAGANA LETTER A (\xa4\xa2 in EUC-JP) is not representable in ISO-8859-1.
+ *   # Since this error is occur in UTF-8 to ISO-8859-1 conversion,
+ *   # error_bytes is HIRAGANA LETTER A in UTF-8 (\xE3\x81\x82).
+ *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+ *   ec.primitive_convert(src="\xa4\xa2", dst="", nil, 10)
+ *   p ec.primitive_errinfo
+ *   #=> [:undefined_conversion, "UTF-8", "ISO-8859-1", "\xE3\x81\x82", "", nil]
+ *
+ *   # partial character is invalid
+ *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+ *   ec.primitive_convert(src="\xa4", dst="", nil, 10)
+ *   p ec.primitive_errinfo
+ *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xA4", "", nil]
+ *
+ *   # Encoding::Converter::PARTIAL_INPUT prevents invalid errors by
+ *   # partial characters.
+ *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+ *   ec.primitive_convert(src="\xa4", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)                 
+ *   p ec.primitive_errinfo
+ *   #=> [:source_buffer_empty, nil, nil, nil, nil, :partial_input]
+ *
+ *   # \xd8\x00\x00@ is invalid as UTF-16BE because
+ *   # no low surrogate after high surrogate (\xd8\x00).
+ *   # It is detected by 3rd byte (\00) which is part of next character.
+ *   # So the high surrogate (\xd8\x00) is discarded and
+ *   # the 3rd byte is read again later.
+ *   # Since the byte is buffered in ec, it is dropped from src.
+ *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
+ *   ec.primitive_convert(src="\xd8\x00\x00@", dst="", nil, 10)
+ *   p ec.primitive_errinfo
+ *   #=> [:invalid_byte_sequence, "UTF-16BE", "UTF-8", "\xD8\x00", "\x00", nil]
+ *   p src
+ *   #=> "@"
+ *
+ *   # Similar to UTF-16BE, \x00\xd8@\x00 is invalid as UTF-16LE.
+ *   # The problem is detected by 4th byte.
+ *   ec = Encoding::Converter.new("UTF-16LE", "UTF-8")
+ *   ec.primitive_convert(src="\x00\xd8@\x00", dst="", nil, 10)
+ *   p ec.primitive_errinfo
+ *   #=> [:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "@\x00", nil]
+ *   p src
+ *   #=> ""
+ *
+ */
+static VALUE
+econv_primitive_errinfo(VALUE self)
+{
+    rb_econv_t *ec = check_econv(self);
+
+    VALUE ary;
+
+    ary = rb_ary_new2(6);
+
+    rb_ary_store(ary, 0, econv_result_to_symbol(ec->last_error.result));
+
+    if (ec->last_error.source_encoding)
+        rb_ary_store(ary, 1, rb_str_new2(ec->last_error.source_encoding));
+
+    if (ec->last_error.destination_encoding)
+        rb_ary_store(ary, 2, rb_str_new2(ec->last_error.destination_encoding));
+
+    if (ec->last_error.error_bytes_start) {
+        rb_ary_store(ary, 3, rb_str_new((const char *)ec->last_error.error_bytes_start, ec->last_error.error_bytes_len));
+        rb_ary_store(ary, 4, rb_str_new((const char *)ec->last_error.error_bytes_start + ec->last_error.error_bytes_len, ec->last_error.readagain_len));
     }
+
+    rb_ary_store(ary, 5, ec->last_error.partial_input ? ID2SYM(rb_intern("partial_input")) : Qnil);
+
+    return ary;
 }
 
 void
@@ -1738,6 +1873,7 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "source_encoding", econv_source_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "destination_encoding", econv_destination_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
+    rb_define_method(rb_cEncodingConverter, "primitive_errinfo", econv_primitive_errinfo, 0);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
