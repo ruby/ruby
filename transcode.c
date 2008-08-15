@@ -266,7 +266,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
 }
 
 static const char*
-get_replacement_character(rb_encoding *enc, int *len_ret)
+get_replacement_character(rb_encoding *enc, int *len_ret, const char **repl_enc_ptr)
 {
     static rb_encoding *utf16be_encoding, *utf16le_encoding;
     static rb_encoding *utf32be_encoding, *utf32le_encoding;
@@ -278,26 +278,32 @@ get_replacement_character(rb_encoding *enc, int *len_ret)
     }
     if (rb_utf8_encoding() == enc) {
         *len_ret = 3;
+        *repl_enc_ptr = "UTF-8";
         return "\xEF\xBF\xBD";
     }
     else if (utf16be_encoding == enc) {
         *len_ret = 2;
+        *repl_enc_ptr = "UTF-16BE";
         return "\xFF\xFD";
     }
     else if (utf16le_encoding == enc) {
         *len_ret = 2;
+        *repl_enc_ptr = "UTF-16LE";
         return "\xFD\xFF";
     }
     else if (utf32be_encoding == enc) {
         *len_ret = 4;
+        *repl_enc_ptr = "UTF-32BE";
         return "\x00\x00\xFF\xFD";
     }
     else if (utf32le_encoding == enc) {
         *len_ret = 4;
+        *repl_enc_ptr = "UTF-32LE";
         return "\xFD\xFF\x00\x00";
     }
     else {
         *len_ret = 1;
+        *repl_enc_ptr = "US-ASCII";
         return "?";
     }
 }
@@ -962,8 +968,9 @@ rb_econv_convert(rb_econv_t *ec,
     return res;
 }
 
-int
-rb_econv_output(rb_econv_t *ec,
+/* result: 0:success -1:failure */
+static int
+rb_econv_output_with_destination_encoding(rb_econv_t *ec,
     const unsigned char *str, size_t len, /* string in destination encoding */
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     size_t *required_size)
@@ -982,7 +989,7 @@ rb_econv_output(rb_econv_t *ec,
      * Currently the replacement character for stateful encoding such as
      * ISO-2022-JP is "?" and it has no state changing sequence.
      * So the extra state changing sequence don't occur when
-     * rb_econv_output is used for replacement characters.
+     * rb_econv_output_with_destination_encoding is used for replacement characters.
      *
      * Thease assumption may be removed in future.
      * It needs to scan str to check state changing sequences in it.
@@ -1012,6 +1019,77 @@ rb_econv_output(rb_econv_t *ec,
     *destination_buffer_ptr += len;
 
     return 0;
+}
+
+/* result: 0:success -1:failure -2:conversion-failure-to-destination-encoding */
+int
+rb_econv_output(rb_econv_t *ec,
+    const unsigned char *str, size_t str_len, const char *str_encoding,
+    unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
+    size_t *required_size)
+{
+    rb_econv_t *from_ascii = NULL;;
+    unsigned char buf[1024], *buf2;
+    size_t dst_len;
+    const unsigned char *src_ptr;
+    unsigned char *dst_ptr;
+    rb_econv_result_t res;
+    int ret;
+
+    if (encoding_equal(str_encoding, ec->last_tc->transcoder->to_encoding)) {
+        return rb_econv_output_with_destination_encoding(ec, str, str_len, destination_buffer_ptr, destination_buffer_end, required_size);
+    }
+
+    if (required_size)
+        *required_size = 0;
+
+    from_ascii = rb_econv_open(str_encoding, ec->last_tc->transcoder->to_encoding, 0);
+    if (!from_ascii)
+        return -2;
+
+    src_ptr = str;
+    dst_len = 0;
+    do {
+        dst_ptr = buf;
+        res = rb_econv_convert(from_ascii, &src_ptr, str+str_len, &dst_ptr, buf+sizeof(buf), 0);
+        if (dst_len + (dst_ptr - buf) < dst_len)
+            goto convfail;
+        dst_len += dst_ptr - buf;
+    } while (res == econv_destination_buffer_full);
+
+    if (res != econv_finished)
+        goto convfail;
+
+    rb_econv_close(from_ascii);
+    from_ascii = NULL;
+
+    if (dst_len <= sizeof(buf)) {
+        return rb_econv_output_with_destination_encoding(ec, buf, dst_len, destination_buffer_ptr, destination_buffer_end, required_size);
+    }
+
+    buf2 = xmalloc(dst_len);
+
+    from_ascii = rb_econv_open(str_encoding, ec->last_tc->transcoder->to_encoding, 0);
+    if (!from_ascii)
+        goto convfail;
+
+    src_ptr = str;
+    dst_ptr = buf2;
+    res = rb_econv_convert(from_ascii, &src_ptr, str+str_len, &dst_ptr, buf2+dst_len, 0);
+    if (res != econv_finished)
+        goto convfail;
+    rb_econv_close(from_ascii);
+    from_ascii = NULL;
+
+    ret = rb_econv_output_with_destination_encoding(ec, buf2, dst_len, destination_buffer_ptr, destination_buffer_end, required_size);
+
+    xfree(buf2);
+    return ret;
+
+convfail:
+    if (from_ascii)
+        rb_econv_close(from_ascii);
+    return -2;
 }
 
 void
@@ -1059,15 +1137,18 @@ output_replacement_character(
     const rb_transcoder *tr;
     rb_encoding *enc;
     const unsigned char *replacement;
+    const char *repl_enc;
     int len;
     size_t required_size;
+    int ret;
 
     tr = tc->transcoder;
     enc = rb_enc_find(tr->to_encoding);
 
-    replacement = (const unsigned char *)get_replacement_character(enc, &len);
+    replacement = (const unsigned char *)get_replacement_character(enc, &len, &repl_enc);
 
-    if (rb_econv_output(ec, replacement, len, out_pos, *out_stop_ptr, &required_size) == 0)
+    ret = rb_econv_output(ec, replacement, len, repl_enc, out_pos, *out_stop_ptr, &required_size);
+    if (ret == 0)
         return 0;
 
     if (required_size < len)
@@ -1075,7 +1156,8 @@ output_replacement_character(
 
     more_output_buffer(destination, resize_destination, required_size, out_start_ptr, out_pos, out_stop_ptr);
 
-    if (rb_econv_output(ec, replacement, len, out_pos, *out_stop_ptr, &required_size) == 0)
+    ret = rb_econv_output(ec, replacement, len, repl_enc, out_pos, *out_stop_ptr, &required_size);
+    if (ret == 0)
         return 0;
 
     return -1;

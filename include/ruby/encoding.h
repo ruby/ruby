@@ -247,10 +247,13 @@ rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     const unsigned char **source_buffer_ptr, const unsigned char *source_buffer_end,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     int flags);
+
+/* result: 0:success -1:failure -2:conversion-failure-to-destination-encoding */
 int rb_econv_output(rb_econv_t *ec,
-    const unsigned char *str, size_t len,
+    const unsigned char *str, size_t len, const char *str_encoding,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     size_t *required_size);
+
 void rb_econv_close(rb_econv_t *ec);
 
 /* flags for rb_econv_open */

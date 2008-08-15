@@ -1,3 +1,15 @@
+Fri Aug 15 19:57:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_output): add str_encoding
+	  argument.
+
+	* transcode.c (get_replacement_character): add repl_enc_ptr argument.
+	  (rb_econv_output_with_destination_encoding): renamed from
+	  rb_econv_output and make it static.
+	  (rb_econv_output): convert str and call
+	  rb_econv_output_with_destination_encoding.
+	  (output_replacement_character): follow above interface change.
+
 Fri Aug 15 19:33:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_drop_bytes): use memmove.
