@@ -420,7 +420,7 @@ Sat Jul  5 00:33:08 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Sat Jul  5 00:31:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE 
+	* ext/win32ole/win32ole.c (d2time): fix the bug of VT_DATE
 	  to String conversion when negative value.
 
 Fri Jul  4 20:31:33 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -548,7 +548,7 @@ Thu Jul  3 05:09:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Thu Jul  3 02:47:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* gc.c: add rb_during_gc(). based on a patch from arton <artonx AT
-	  yahoo.co.jp> at [ruby-dev:35313].   
+	  yahoo.co.jp> at [ruby-dev:35313].
 
 	* intern.h: ditto.
 
@@ -676,7 +676,7 @@ Thu Jun 26 22:07:54 2008  Tanaka Akira  <akr@fsij.org>
 
 Thu Jun 26 17:43:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* variable.c (rb_f_trace_var): should not be allowed at safe level 4.  
+	* variable.c (rb_f_trace_var): should not be allowed at safe level 4.
 	  a patch from Keita Yamaguchi <keita.yamaguchi at gmail.com>.
 
 	* eval.c (rb_call0): wrong condition to check insecure method.
@@ -1023,10 +1023,10 @@ Tue Jun  3 10:34:42 2008  Tanaka Akira  <akr@fsij.org>
 
 Tue Jun  3 03:52:41 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/erb.rb (ERB::Compiler::TrimScanner#explicit_trim_line): Fix 
+	* lib/erb.rb (ERB::Compiler::TrimScanner#explicit_trim_line): Fix
 	  without strscan problems. [ruby_core:17028].
 
-	* test/erb/test_erb.rb (TestERBCoreWOStrScan): Add test class for 
+	* test/erb/test_erb.rb (TestERBCoreWOStrScan): Add test class for
 	  without strscan.
 
 Mon Jun  2 16:30:17 2008  Akinori MUSHA  <knu@iDaemons.org>
@@ -1501,7 +1501,7 @@ Fri May 16 16:22:40 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Fri May 16 14:54:56 2008  Tanaka Akira  <akr@fsij.org>
 
-	* Makefile.in (update-rubyspec): move rubyspec to srcdir. 
+	* Makefile.in (update-rubyspec): move rubyspec to srcdir.
 	  (test-rubyspec): ditto.
 
 Fri May 16 14:25:22 2008  Tanaka Akira  <akr@fsij.org>
@@ -1555,34 +1555,34 @@ Wed May 14 17:15:11 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Wed May 14 09:52:02 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tkutil/tkutil.c: improve handling callback-subst-keys. 
+	* ext/tk/tkutil/tkutil.c: improve handling callback-subst-keys.
 	  Now, support longnam-keys (e.g. '%CTT' on tkdnd-2.0; however, still
-	  not support tkdnd-2.0 on tkextlib), and symbols of parameters (e.g. 
-	  :widget=>'%W', :keycode=>'%k', '%x'=>:x, '%X'=>:root_x, and so on; 
+	  not support tkdnd-2.0 on tkextlib), and symbols of parameters (e.g.
+	  :widget=>'%W', :keycode=>'%k', '%x'=>:x, '%X'=>:root_x, and so on;
 	  those are attributes of event object). It means that Ruby/Tk accepts
-	  not only "widget.bind(ev, '%W', '%k', ...){|w, k, ...| ... }", but 
-	  also "widget.bind(ev, :widget, :keycode, ...){|w, k, ...| ... }". 
+	  not only "widget.bind(ev, '%W', '%k', ...){|w, k, ...| ... }", but
+	  also "widget.bind(ev, :widget, :keycode, ...){|w, k, ...| ... }".
 	  It is potentially incompatible, when user passes symbols to the
 	  arguments of the callback block (the block receives the symbols as
 	  strings). I think that is very rare case (probably, used by Ruby/Tk
 	  experts only). When causes such trouble, please give strings instead
 	  of such symbol parameters (e.g. call Symbol#to_s method).
 
-	* ext/tk/lib/tk/event.rb, ext/tk/lib/tk/validation.rb, 
-	  ext/tk/lib/tkextlib/blt/treeview.rb, 
+	* ext/tk/lib/tk/event.rb, ext/tk/lib/tk/validation.rb,
+	  ext/tk/lib/tkextlib/blt/treeview.rb,
 	  ext/tk/lib/tkextlib/winico/winico.rb: ditto.
 
-	* ext/tk/tkutil/tkutil.c: strings are available on subst_tables on 
-	  TkUtil::CallbackSubst class (it is useful on Ruby 1.9). 
+	* ext/tk/tkutil/tkutil.c: strings are available on subst_tables on
+	  TkUtil::CallbackSubst class (it is useful on Ruby 1.9).
 
-	* ext/tk/lib/tk/spinbox.rb, ext/tk/lib/tkextlib/iwidgets/hierarchy.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/spinner.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/entryfield.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/calendar.rb, 
-	  ext/tk/lib/tkextlib/blt/dragdrop.rb, 
-	  ext/tk/lib/tkextlib/tkDND/tkdnd.rb, 
-	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb, 
-	  ext/tk/lib/tkextlib/tktable/tktable.rb: disable code piece became 
+	* ext/tk/lib/tk/spinbox.rb, ext/tk/lib/tkextlib/iwidgets/hierarchy.rb,
+	  ext/tk/lib/tkextlib/iwidgets/spinner.rb,
+	  ext/tk/lib/tkextlib/iwidgets/entryfield.rb,
+	  ext/tk/lib/tkextlib/iwidgets/calendar.rb,
+	  ext/tk/lib/tkextlib/blt/dragdrop.rb,
+	  ext/tk/lib/tkextlib/tkDND/tkdnd.rb,
+	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb,
+	  ext/tk/lib/tkextlib/tktable/tktable.rb: disable code piece became
 	  unnecessary by reason of the changes of ext/tk/tkutil/tkutil.c.
 
 Tue May 13 15:10:50 2008  Akinori MUSHA  <knu@iDaemons.org>
@@ -1644,7 +1644,7 @@ Sun May 11 10:36:10 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Sun May 11 02:48:13 2008    <nagai@orca16.orcabay.ddo.jp>
 
-	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: fail to do pack/grid 
+	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: fail to do pack/grid
 	  without options.
 
 	* ext/tk/lib/tk.rb: add TkWindow#grid_anchor, grid_column, grid_row.
@@ -1661,7 +1661,7 @@ Sat May 10 13:17:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Sat May 10 09:16:13 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* util.c (ruby_strtod): backported from 1.9.  a patch from Satoshi
-	  Nakagawa <psychs at limechat.net> in [ruby-dev:34625]. 
+	  Nakagawa <psychs at limechat.net> in [ruby-dev:34625].
 	  fixed: [ruby-dev:34623]
 
 Fri May  9 23:33:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -1673,10 +1673,10 @@ Fri May  9 23:33:25 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tile.rb: lack of autoload definitions.
 
-	* ext/tk/lib/tkextlib/tile/tnotebook.rb: cannot use kanji (not UTF-8) 
+	* ext/tk/lib/tkextlib/tile/tnotebook.rb: cannot use kanji (not UTF-8)
 	  characters for headings.
 
-	* ext/tk/tcltklib.c: maybe a little more stable about @encoding value 
+	* ext/tk/tcltklib.c: maybe a little more stable about @encoding value
 	  of TclTkIp object.
 
 Wed May  7 08:46:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1697,8 +1697,8 @@ Sun May  4 09:35:51 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Sat May  3 22:52:48 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb, 
-	  ext/tk/sample/ttk_wrapper.rb: improve treating and control themes. 
+	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb,
+	  ext/tk/sample/ttk_wrapper.rb: improve treating and control themes.
 	  add Tk::Tile.themes and Tk::Tile.set_theme(theme).
 
 Fri May  2 14:52:33 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1722,7 +1722,7 @@ Thu May  1 23:57:06 2008  James Edward Gray II  <jeg2@ruby-lang.org>
 	Merged 16257 from trunk.
 
 	* lib/net/telnet.rb:  This patch from Brian Candler adds a FailEOF mode which
-	  can be activated to have net/telnet raise EOFError exceptions when the 
+	  can be activated to have net/telnet raise EOFError exceptions when the
 	  remote connection is closed.  The default behavior remains unchanged though.
 
 Thu May  1 23:43:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1981,7 +1981,7 @@ Fri Apr 18 18:54:57 2008  Akinori MUSHA  <knu@iDaemons.org>
 Fri Apr 18 16:36:16 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/rexml/node.rb (REXML::Node::indent): should initialize rv
-	  variable.  a patch from Tadayoshi Funaba <tadf AT dotrb.org> in 
+	  variable.  a patch from Tadayoshi Funaba <tadf AT dotrb.org> in
 	  [ruby-dev:32783].
 
 Fri Apr 18 16:01:37 2008  Akinori MUSHA  <knu@iDaemons.org>
@@ -1992,7 +1992,7 @@ Fri Apr 18 16:01:37 2008  Akinori MUSHA  <knu@iDaemons.org>
 Fri Apr 18 07:56:18 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tk/scrollbar.rb, ext/tk/lib/tk/scale.rb:
-	  improve unknonw-option check when create a widget. 
+	  improve unknonw-option check when create a widget.
 
 	* ext/tk/lib/tkextlib/blt/unix_dnd.rb, ext/tk/lib/tkextlib/blt/ted.rb,
 	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix on 'cget'.
@@ -2048,7 +2048,7 @@ Tue Apr 15 17:06:12 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Tue Apr 15 16:58:55 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/menuspec.rb: option check will fail when 
+	* ext/tk/lib/tk/menuspec.rb: option check will fail when
 	  TkConfigMethod.__IGNORE_UNKNOWN_CONFIGURE_OPTION__ is true.
 
 	* ext/tk/lib/tk/palette.rb: bug fix.
@@ -2079,16 +2079,16 @@ Tue Apr 15 00:15:29 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tktextio.rb: add binding for 'Ctrl-u' at console mode.
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/tk/itemfont.rb, ext/tk/lib/font.rb: 
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/itemfont.rb, ext/tk/lib/font.rb:
 	  support __IGNORE_UNKNOWN_CONFIGURE_OPTION__ about font options.
 
-	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: bug fix. 
+	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb,
+	  ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb,
+	  ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: bug fix.
 
 	* ext/tk/lib/tkextlib/tile/tpaned.rb: improve TPaned#add.
 
-	* ext/tk/lib/tk/timer.rb: add TkTimer#at_end(proc) to register the 
+	* ext/tk/lib/tk/timer.rb: add TkTimer#at_end(proc) to register the
 	  procedure which called at end of the timer.
 
 Mon Apr 14 19:54:21 2008  Akinori MUSHA  <knu@iDaemons.org>
@@ -2228,20 +2228,20 @@ Fri Apr 11 18:58:09 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Fri Apr 11 12:43:56 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb, 
+	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb,
 	  ext/tk/sample/tkextlib/tile/demo.rb: previous patch is not complete.
 
 Fri Apr 11 10:22:54 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tile.rb:
-	  __define_LoadImages_proc_for_compatibility__! do nothing when the 
+	  __define_LoadImages_proc_for_compatibility__! do nothing when the
 	  Tcl command exists.
 
 	* ext/tk/lib/tkextlib/tile/style.rb:
 	  __define_wrapper_proc_for_compatibility__! do nothing when the Tcl
 	  command exists.
 
-	* ext/tk/sample/tkextlib/tile/demo.rb: don't create 'step' theme if 
+	* ext/tk/sample/tkextlib/tile/demo.rb: don't create 'step' theme if
 	  it already exists.
 
 Fri Apr 11 08:05:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -2302,9 +2302,9 @@ Wed Apr  9 23:12:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/README.tcltklib: add document about --with-tcltkversion
 
-	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget, 
-	  ext/tk/sample/demos-jp/style.rb, ext/tk/sample/demos-en/style.rb, 
-	  ext/tk/sample/demos-jp/bind.rb, ext/tk/sample/demos-en/bind.rb: 
+	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget,
+	  ext/tk/sample/demos-jp/style.rb, ext/tk/sample/demos-en/style.rb,
+	  ext/tk/sample/demos-jp/bind.rb, ext/tk/sample/demos-en/bind.rb:
 	  bug fix.
 
 Wed Apr  9 21:54:45 2008  Akinori MUSHA  <knu@iDaemons.org>
@@ -2417,53 +2417,53 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/*: full update Ruby/Tk to support Ruby(1.9|1.8) and Tc/Tk8.5.
 
-	* ext/tk/lib/tkextlib/tile.rb: [incompatible] remove TileWidgets' 
+	* ext/tk/lib/tkextlib/tile.rb: [incompatible] remove TileWidgets'
 	  instate/state/identify method to avoid the conflict with standard
 	  widget options. Those methods are renamed to ttk_instate/ttk_state/
-	  ttk_identify (tile_instate/tile_state/tile_identify are available 
-	  too). Although I don't recommend, if you realy need old methods, 
-	  please define "Tk::USE_OBSOLETE_TILE_STATE_METHOD = true" before 
+	  ttk_identify (tile_instate/tile_state/tile_identify are available
+	  too). Although I don't recommend, if you realy need old methods,
+	  please define "Tk::USE_OBSOLETE_TILE_STATE_METHOD = true" before
 	  "require 'tkextlib/tile'".
 
 	* ext/tk/lib/tkextlib/tile.rb: "Tk::Tile::__Import_Tile_Widgets__!"
-	  is obsolete. It outputs warning. To control default widget set, 
+	  is obsolete. It outputs warning. To control default widget set,
 	  use "Tk.default_widget_set = :Ttk".
 
-	* ext/tk/lib/tk.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ method and 
-	  __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method are defind 
-	  as module methods of TkConfigMethod. It may help users to wrap old 
+	* ext/tk/lib/tk.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ method and
+	  __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method are defind
+	  as module methods of TkConfigMethod. It may help users to wrap old
 	  Ruby/Tk scripts (use standard widgets) to force to use Ttk widgets.
-	  Ttk widgets don't have some options of standard widgets which are 
-	  control the view of widgets. When set ignore-mode true, configure 
-	  method tries to ignoure such unknown options with no exception. 
-	  Of course, it may raise other troubles on the GUI design. 
-	  So, those are a little danger methods. 
+	  Ttk widgets don't have some options of standard widgets which are
+	  control the view of widgets. When set ignore-mode true, configure
+	  method tries to ignoure such unknown options with no exception.
+	  Of course, it may raise other troubles on the GUI design.
+	  So, those are a little danger methods.
 
-	* ext/tk/lib/tk/itemconfig.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__ 
-	  method and __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method 
-	  are defind as module methods of TkItemConfigMethod as the same 
+	* ext/tk/lib/tk/itemconfig.rb: __IGNORE_UNKNOWN_CONFIGURE_OPTION__
+	  method and __set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode) method
+	  are defind as module methods of TkItemConfigMethod as the same
 	  purpose as TkConfigMethod's ones.
 
-	* ext/tk/sample/ttk_wrapper.rb: A new example. This is a tool for 
-	  wrapping old Ruby/Tk scripts (which use standard widgets) to use 
+	* ext/tk/sample/ttk_wrapper.rb: A new example. This is a tool for
+	  wrapping old Ruby/Tk scripts (which use standard widgets) to use
 	  Ttk (Tile) widgets as default.
 
-	* ext/tk/sample/tkextlib/tile/demo.rb: use ttk_instate/ttk_state 
+	* ext/tk/sample/tkextlib/tile/demo.rb: use ttk_instate/ttk_state
 	  method instead of instate/state method.
 
 	* ext/tk/lib/tk/root, ext/tk/lib/tk/namespace.rb,
-	  ext/tk/lib/tk/text.rb, ext/tk/lib/tkextlib/*: some 'instance_eval's  
+	  ext/tk/lib/tk/text.rb, ext/tk/lib/tkextlib/*: some 'instance_eval's
 	  are replaced to "instance_exec(self)".
 
-	* ext/tk/lib/tk/event.rb: bug fix on KEY_TBL and PROC_TBL (?x is not 
+	* ext/tk/lib/tk/event.rb: bug fix on KEY_TBL and PROC_TBL (?x is not
 	  a character code on Ruby1.9).
 
-	* ext/tk/lib/tk/variable.rb: support new style of operation argument 
-	  on Tcl/Tk's 'trace' command for variables. 
+	* ext/tk/lib/tk/variable.rb: support new style of operation argument
+	  on Tcl/Tk's 'trace' command for variables.
 
 	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget: bug fix
 
-	* ext/tk/sammple/demos-jp/textpeer.rb, 
+	* ext/tk/sammple/demos-jp/textpeer.rb,
 	  ext/tk/sammple/demos-en/textpeer.rb: new widget demo.
 
 	* ext/tk/tcltklib.c: decrase SEGV troubles (probably)
@@ -2472,27 +2472,27 @@ Sat Mar 29 14:18:41 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/multi-tk.rb: support Ruby1.9 (probably)
 
-	* ext/tk/lib/tkextlib/tile.rb: add method to define Tcl/Tk command 
-	  to make Tcl/Tk theme sources (based on different version of Tile 
-	  extension) available. 
+	* ext/tk/lib/tkextlib/tile.rb: add method to define Tcl/Tk command
+	  to make Tcl/Tk theme sources (based on different version of Tile
+	  extension) available.
 	  (Tk::Tile::__define_LoadImages_proc_for_comaptibility__)
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tk/wm.rb: support dockable frames
-	  (Tcl/Tk8.5 feature). 'wm' command can treat many kinds of widgets 
+	  (Tcl/Tk8.5 feature). 'wm' command can treat many kinds of widgets
 	  as toplevel widgets.
 
 	* ext/tk/lib/tkextlib/tile/style.rb: ditto.
 	  (Tk::Tile::Style.__define_wrapper_proc_for_compatibility__)
 
-	* ext/tk/lib/tk/font.rb: add actual_hash and metrics_hash to get 
-	  properties as a hash. metrics_hash method returns a boolean value 
-	  for 'fixed' option. But metrics method returns numeric value 
-	  (0 or 1) for 'fixed' option, because of backward compatibility. 
+	* ext/tk/lib/tk/font.rb: add actual_hash and metrics_hash to get
+	  properties as a hash. metrics_hash method returns a boolean value
+	  for 'fixed' option. But metrics method returns numeric value
+	  (0 or 1) for 'fixed' option, because of backward compatibility.
 
 	* ext/tk/lib/tk/timer.rb: somtimes fail to set callback procedure.
 
-	* ext/tk/lib/tk.rb: add Tk.sleep and Tk.wakeup method. Tk.sleep 
-	  doesn't block the eventloop. It will be better to use the method 
+	* ext/tk/lib/tk.rb: add Tk.sleep and Tk.wakeup method. Tk.sleep
+	  doesn't block the eventloop. It will be better to use the method
 	  in event callbacks.
 
 	* ext/tk/sample/tksleep_sample.rb: sample script about Tk.sleep.
