@@ -59,7 +59,7 @@ Sat Aug 16 08:11:04 2008  Tanaka Akira  <akr@fsij.org>
 	* enc/trans/newline.trans: ditto.
 
 	* enc/trans/utf_16_32.trans: ditto.
-	  
+
 Fri Aug 15 23:07:48 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_just_convert): extracted from rb_econv_output.
@@ -3499,7 +3499,7 @@ Thu Jun 26 23:58:29 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Thu Jun 26 17:43:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* variable.c (rb_f_trace_var): should not be allowed at safe level 4.  
+	* variable.c (rb_f_trace_var): should not be allowed at safe level 4.
 	  a patch from Keita Yamaguchi <keita.yamaguchi at gmail.com>.
 
 Thu Jun 26 11:04:30 2008  Eric Hodel  <drbrain@segment7.net>
@@ -3578,7 +3578,7 @@ Tue Jun 24 00:21:53 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	  Adam Strzelecki <ono@java.pl> in [ruby-core:17220].
 
 Tue Jun 24 00:10:53 2008  wanabe  <s.wanabe@gmail.com>
-	* compile.c (iseq_build_from_ary): fix expression to obtain 
+	* compile.c (iseq_build_from_ary): fix expression to obtain
 	  iseq->local_size and iseq->local_table_size.  [ruby-dev:35205]
 
 Mon Jun 23 11:31:41 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -3935,7 +3935,7 @@ Wed Jun 18 04:24:20 2008  Koichi Sasada  <ko1@atdot.net>
 Wed Jun 18 01:51:10 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: cannot access class variable from
-	  singleton method. 
+	  singleton method.
 
 Wed Jun 18 00:03:33 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -4283,33 +4283,33 @@ Wed Jun 11 05:55:31 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/README.tcltklib: add document about --with-tcltkversion
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/multi-tk.rb, ext/tk/lib/remote-tk.rb: 
+	* ext/tk/lib/tk.rb, ext/tk/lib/multi-tk.rb, ext/tk/lib/remote-tk.rb:
 	  not work on $SAFE==4
 
 	* ext/tk/lib/multi-tk.rb: Object#methods returns Symbols on Ruby1.9.
 
-	* ext/tk/lib/tk/timer.rb: add TkTimer#at_end(proc) to register the 
+	* ext/tk/lib/tk/timer.rb: add TkTimer#at_end(proc) to register the
 	  procedure which called at end of the timer.
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/tk/itemfont.rb, ext/tk/lib/font.rb: 
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/itemfont.rb, ext/tk/lib/font.rb:
 	  support __IGNORE_UNKNOWN_CONFIGURE_OPTION__ about font options.
 
 	* ext/tk/lib/*: treat __IGNORE_UNKNOWN_CONFIGURE_OPTION__
 
-	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: bug fix. 
+	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb,
+	  ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb,
+	  ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: bug fix.
 
 	* ext/tk/lib/tk/text.rb: typo. call a wrong method.
 
 	* ext/tk/lib/tk/itemconfig.rb: ditto.
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/tk/itemconfig.rb, 
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/itemconfig.rb,
 	  ext/tk/lib/tk/canvas.rb: support alias names of option keys.
 
 	* ext/tk/lib/tk/grid.rb: lack of module-method definitions.
 
-	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: increase supported 
+	* ext/tk/lib/tk/pack.rb, ext/tk/lib/tk/grid.rb: increase supported
 	  parameter patterns of configure method.
 
 	* ext/tk/lib/tk.rb: add TkWindow#grid_anchor, grid_column, grid_row.
@@ -4317,7 +4317,7 @@ Wed Jun 11 05:55:31 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk/wm.rb: methods of Tk::Wm_for_General module cannot
 	  pass the given block to methods of Tk::Wm module.
 
-	* ext/tk/lib/tk/wm.rb: Wm#overrideredirect overwrites argument to 
+	* ext/tk/lib/tk/wm.rb: Wm#overrideredirect overwrites argument to
 	  an invalid value.
 
 	* ext/tk/lib/tk.rb: fix memory (object) leak bug.
@@ -4327,15 +4327,15 @@ Wed Jun 11 05:55:31 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/sample/demos-jp/aniwave.rb, ext/tk/sample/demos-en/aniwave.rb:
 	  bug fix.
 
-	* ext/tk/lib/tkextlib/blt/component.rb, 
-	  ext/tk/lib/tkextlib/tile/tentry.rb, 
+	* ext/tk/lib/tkextlib/blt/component.rb,
+	  ext/tk/lib/tkextlib/tile/tentry.rb,
 	  ext/tk/lib/tkextlib/tile/treeview.rb: ditto.
 
 	* ext/tk/lib/tkextlib/tile/tpaned.rb: improve TPaned#add.
 
-	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget, 
-	  ext/tk/sample/demos-jp/style.rb, ext/tk/sample/demos-en/style.rb, 
-	  ext/tk/sample/demos-jp/bind.rb, ext/tk/sample/demos-en/bind.rb: 
+	* ext/tk/sample/demos-jp/widget, ext/tk/sample/demos-en/widget,
+	  ext/tk/sample/demos-jp/style.rb, ext/tk/sample/demos-en/style.rb,
+	  ext/tk/sample/demos-jp/bind.rb, ext/tk/sample/demos-en/bind.rb:
 	  bug fix.
 
 	* ext/tk/sample/ttk_wrapper.rb: ditto.
@@ -4344,45 +4344,45 @@ Wed Jun 11 05:55:31 2008  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tktextio.rb: add binding for 'Ctrl-u' at console mode.
 
-	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb, 
-	  ext/tk/sample/ttk_wrapper.rb: improve treating and control themes. 
+	* ext/tk/lib/tkextlib/tile.rb, ext/tk/lib/tkextlib/tile/style.rb,
+	  ext/tk/sample/ttk_wrapper.rb: improve treating and control themes.
 	  add Tk::Tile.themes and Tk::Tile.set_theme(theme).
 
 	* ext/tk/lib/tkextlib/tile.rb: lack of autoload definitions.
 
-	* ext/tk/lib/tkextlib/tile/tnotebook.rb: cannot use kanji (not UTF-8) 
+	* ext/tk/lib/tkextlib/tile/tnotebook.rb: cannot use kanji (not UTF-8)
 	  characters for headings.
 
 	* ext/tk/lib/tkextlib/tkDND/shape.rb: wrong package name.
 
-	* ext/tk/tkutil/tkutil.c: improve handling callback-subst-keys. 
+	* ext/tk/tkutil/tkutil.c: improve handling callback-subst-keys.
 	  Now, support longnam-keys (e.g. '%CTT' on tkdnd-2.0; however, still
-	  not support tkdnd-2.0 on tkextlib), and symbols of parameters (e.g. 
-	  :widget=>'%W', :keycode=>'%k', '%x'=>:x, '%X'=>:root_x, and so on; 
+	  not support tkdnd-2.0 on tkextlib), and symbols of parameters (e.g.
+	  :widget=>'%W', :keycode=>'%k', '%x'=>:x, '%X'=>:root_x, and so on;
 	  those are attributes of event object). It means that Ruby/Tk accepts
-	  not only "widget.bind(ev, '%W', '%k', ...){|w, k, ...| ... }", but 
-	  also "widget.bind(ev, :widget, :keycode, ...){|w, k, ...| ... }". 
+	  not only "widget.bind(ev, '%W', '%k', ...){|w, k, ...| ... }", but
+	  also "widget.bind(ev, :widget, :keycode, ...){|w, k, ...| ... }".
 	  It is potentially incompatible, when user passes symbols to the
 	  arguments of the callback block (the block receives the symbols as
 	  strings). I think that is very rare case (probably, used by Ruby/Tk
 	  experts only). When causes such trouble, please give strings instead
 	  of such symbol parameters (e.g. call Symbol#to_s method).
 
-	* ext/tk/lib/tk/event.rb, ext/tk/lib/tk/validation.rb, 
-	  ext/tk/lib/tkextlib/blt/treeview.rb, 
+	* ext/tk/lib/tk/event.rb, ext/tk/lib/tk/validation.rb,
+	  ext/tk/lib/tkextlib/blt/treeview.rb,
 	  ext/tk/lib/tkextlib/winico/winico.rb: ditto.
 
-	* ext/tk/tkutil/tkutil.c: strings are available on subst_tables on 
-	  TkUtil::CallbackSubst class (it is useful on Ruby 1.9). 
+	* ext/tk/tkutil/tkutil.c: strings are available on subst_tables on
+	  TkUtil::CallbackSubst class (it is useful on Ruby 1.9).
 
-	* ext/tk/lib/tk/spinbox.rb, ext/tk/lib/tkextlib/iwidgets/hierarchy.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/spinner.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/entryfield.rb, 
-	  ext/tk/lib/tkextlib/iwidgets/calendar.rb, 
-	  ext/tk/lib/tkextlib/blt/dragdrop.rb, 
-	  ext/tk/lib/tkextlib/tkDND/tkdnd.rb, 
-	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb, 
-	  ext/tk/lib/tkextlib/tktable/tktable.rb: disable code piece became 
+	* ext/tk/lib/tk/spinbox.rb, ext/tk/lib/tkextlib/iwidgets/hierarchy.rb,
+	  ext/tk/lib/tkextlib/iwidgets/spinner.rb,
+	  ext/tk/lib/tkextlib/iwidgets/entryfield.rb,
+	  ext/tk/lib/tkextlib/iwidgets/calendar.rb,
+	  ext/tk/lib/tkextlib/blt/dragdrop.rb,
+	  ext/tk/lib/tkextlib/tkDND/tkdnd.rb,
+	  ext/tk/lib/tkextlib/treectrl/tktreectrl.rb,
+	  ext/tk/lib/tkextlib/tktable/tktable.rb: disable code piece became
 	  unnecessary by reason of the changes of ext/tk/tkutil/tkutil.c.
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/multi-tk.rb: change strategy to define
@@ -4400,7 +4400,7 @@ Wed Jun 11 01:28:12 2008  Koichi Sasada  <ko1@atdot.net>
 	* include/ruby/intern.h, proc.c: revert rb_proc_call() and
 	  create rb_proc_call_with_block() instead.
 
-	* include/ruby/ruby.h, eval_jump.c, thread.c, vm_insnhelper.c: 
+	* include/ruby/ruby.h, eval_jump.c, thread.c, vm_insnhelper.c:
 	  rb_blockptr should not be exposed.
 
 Tue Jun 10 21:07:19 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
@@ -4593,7 +4593,7 @@ Sun Jun  8 20:12:47 2008  wanabe  <s.wanabe@gmail.com>
 Sun Jun  8 19:17:59 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c: add a build option "CALC_EXACT_MALLOC_SIZE".
-	  This option enables to calculate exact size of current 
+	  This option enables to calculate exact size of current
 	  allocated size by malloc().  You can access these information
 	  with GC.malloc_allocated_size and GC.malloc_allocations.
 	  This option consume additional memory as a header of each memory
@@ -4612,8 +4612,8 @@ Sun Jun  8 18:15:38 2008  Koichi Sasada  <ko1@atdot.net>
 	  allocated memory objects by xmalloc (ruby_xmalloc) should be
 	  freed by xfree (ruby_xfree).
 
-	* ext/curses/curses.c, ext/dbm/dbm.c, ext/digest/digest.c, 
-	  ext/gdbm/gdbm.c, ext/json/ext/parser/parser.c, 
+	* ext/curses/curses.c, ext/dbm/dbm.c, ext/digest/digest.c,
+	  ext/gdbm/gdbm.c, ext/json/ext/parser/parser.c,
 	  ext/json/ext/parser/unicode.c, ext/openssl/ossl_cipher.c,
 	  ext/openssl/ossl_hmac.c, ext/openssl/ossl_pkey_ec.c,
 	  ext/sdbm/init.c, ext/strscan/strscan.c, ext/zlib/zlib.c:
@@ -5397,7 +5397,7 @@ Fri May 23 12:23:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri May 23 08:47:02 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* error.c (exc_equal): == operator should be transitional.  
+	* error.c (exc_equal): == operator should be transitional.
 	  [ruby-dev:34808]
 
 	* error.c (syserr_eqq): === should be able to handle delegated
@@ -5570,7 +5570,7 @@ Tue May 20 20:59:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	  reverted. nkf-utf8/nkf.c should be independent of ruby.
 
 	* ext/nkf/nkf.c (options):
-	  moved from nkf-utf8/nkf.c. 
+	  moved from nkf-utf8/nkf.c.
 	  override nkf's original settings for Unicode BOM.
 
 Tue May 20 13:20:51 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -5638,7 +5638,7 @@ Mon May 19 23:19:35 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 Mon May 19 21:07:48 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* thread_pthread.c (native_thread_apply_priority): 
+	* thread_pthread.c (native_thread_apply_priority):
 	  fix argument range check.  [ruby-dev:33124]
 
 Mon May 19 18:22:35 2008  Akinori MUSHA  <knu@iDaemons.org>
@@ -5668,7 +5668,7 @@ Mon May 19 17:23:55 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  already have MatchData.
 
 	* re.c (match_init_copy): avoid unnecessary onig_region_free()
-	  before onig_region_copy. 
+	  before onig_region_copy.
 
 	* encoding.c (rb_enc_get_index): remove implicit enc_capable check
 	  each time.
