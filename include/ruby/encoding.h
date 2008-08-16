@@ -219,9 +219,14 @@ typedef struct {
 } rb_econv_elem_t;
 
 typedef struct {
+    unsigned char *in_buf_start;
+    unsigned char *in_data_start;
+    unsigned char *in_data_end;
+    unsigned char *in_buf_end;
     rb_econv_elem_t *elems;
     int num_trans;
     int num_finished;
+    int last_trans_index; /* last trans, not including universal newline */
     struct rb_transcoding *last_tc;
 
     /* last error */
@@ -248,11 +253,13 @@ rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     int flags);
 
-/* result: 0:success -1:failure -2:conversion-failure-to-destination-encoding */
-int rb_econv_output(rb_econv_t *ec,
-    const unsigned char *str, size_t len, const char *str_encoding,
-    unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
-    size_t *required_size);
+
+/* result: 0:success -1:failure */
+int rb_econv_insert_output(rb_econv_t *ec,
+    const unsigned char *str, size_t len, const char *str_encoding);
+
+/* encoding that rb_econv_insert_output doesn't need conversion */
+const char *rb_econv_encoding_to_insert_output(rb_econv_t *ec);
 
 void rb_econv_close(rb_econv_t *ec);
 

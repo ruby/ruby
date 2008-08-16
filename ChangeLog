@@ -1,3 +1,32 @@
+Sat Aug 16 14:22:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_t): add fields: in_buf_start,
+	  in_data_start, in_data_end, in_buf_end and last_trans_index.
+	  (rb_econv_output): removed.
+	  (rb_econv_insert_output): declared.
+	  (rb_econv_encoding_to_insert_output): declared.
+
+	* enc/trans/newline.trans (rb_universal_newline): stateful_type
+	  changed.
+
+	* transcode.c (transcode_restartable0): initialize inchar_start,
+	  tc->recognized_len and next_table at beginning of the loop.
+	  (rb_econv_open_by_transcoder_entries): initialize new fields.
+	  (rb_econv_open): setup last_trans_index.
+	  (trans_sweep): last out_buf_start can be non-NULL now.
+	  (rb_econv_convert): check last out_buf_start and in_buf_start at
+	  first.
+	  (rb_econv_output_with_destination_encoding): removed.
+	  (econv_just_convert): removed.
+	  (rb_econv_output): removed.
+	  (econv_primitive_output): method removed.
+	  (rb_econv_encoding_to_insert_output): new function.
+	  (allocate_converted_string): new function.
+	  (rb_econv_insert_output): new function.
+	  (econv_primitive_insert_output): new method.
+	  (output_replacement_character): use rb_econv_insert_output.  unused
+	  arguments removed.
+
 Sat Aug 16 09:20:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_intern_const): tiny optimization.

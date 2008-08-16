@@ -44,7 +44,7 @@ rb_universal_newline = {
     1, /* input_unit_length */
     1, /* max_input */
     1, /* max_output */
-    stateful_decoder, /* stateful_type */
+    stateless_converter, /* stateful_type */
     NULL, NULL, NULL, fun_so_universal_newline
 };
 
