@@ -36,17 +36,26 @@ typedef struct rb_io_t {
     char *path;			/* pathname for file */
     void (*finalize)(struct rb_io_t*,int); /* finalize proc */
     long refcnt;
+
     char *wbuf;                 /* wbuf_off + wbuf_len <= wbuf_capa */
     int wbuf_off;
     int wbuf_len;
     int wbuf_capa;
+
     char *rbuf;                 /* rbuf_off + rbuf_len <= rbuf_capa */
     int rbuf_off;
     int rbuf_len;
     int rbuf_capa;
+
     VALUE tied_io_for_writing;
-    rb_encoding *enc;
-    rb_encoding *enc2;
+    rb_encoding *enc;   /* int_enc if enc2.  ext_enc otherwise. */
+    rb_encoding *enc2;  /* ext_enc if not NULL. */
+
+    rb_econv_t *readconv;
+    char *crbuf;                /* crbuf_off + crbuf_len <= crbuf_capa */
+    int crbuf_off;
+    int crbuf_len;
+    int crbuf_capa;
 } rb_io_t;
 
 #define HAVE_RB_IO_T 1
@@ -89,6 +98,11 @@ typedef struct rb_io_t {
     fp->rbuf_off = 0;\
     fp->rbuf_len = 0;\
     fp->rbuf_capa = 0;\
+    fp->readconv = NULL;\
+    fp->crbuf = NULL;\
+    fp->crbuf_off = 0;\
+    fp->crbuf_len = 0;\
+    fp->crbuf_capa = 0;\
     fp->tied_io_for_writing = 0;\
     fp->enc = 0;\
     fp->enc2 = 0;\

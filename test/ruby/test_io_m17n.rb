@@ -220,12 +220,10 @@ EOT
     with_tmpdir {
       src = "\e$B\x23\x30\x23\x31\e(B".force_encoding("iso-2022-jp")
       generate_file('tmp', src)
-      assert_raise(NotImplementedError) do
-        open("tmp", "r:iso-2022-jp:euc-jp") {|f|
-          assert_equal("\xa3\xb0".force_encoding("euc-jp"), f.getc)
-          assert_equal("\xa3\xb1".force_encoding("euc-jp"), f.getc)
-        }
-      end
+      open("tmp", "r:iso-2022-jp:euc-jp") {|f|
+        assert_equal("\xa3\xb0".force_encoding("euc-jp"), f.getc)
+        assert_equal("\xa3\xb1".force_encoding("euc-jp"), f.getc)
+      }
     }
   end
 
