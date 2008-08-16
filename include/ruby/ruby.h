@@ -232,6 +232,7 @@ VALUE rb_ull2inum(unsigned LONG_LONG);
 # else
 #   define SSIZE_MAX SHRT_MAX
 #   define SSIZE_MIN SHRT_MIN
+# endif
 #endif
 
 #ifndef PIDT2NUM
