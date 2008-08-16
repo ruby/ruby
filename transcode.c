@@ -1202,6 +1202,32 @@ rb_econv_close(rb_econv_t *ec)
     xfree(ec);
 }
 
+static VALUE
+make_econv_exception(rb_econv_t *ec)
+{
+    VALUE mesg;
+    if (ec->last_error.result == econv_invalid_byte_sequence) {
+        VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
+                                 ec->last_error.error_bytes_len);
+        bytes = rb_str_dump(bytes);
+        mesg = rb_sprintf("invalid byte sequence: %s on %s",
+                StringValueCStr(bytes),
+                ec->last_error.source_encoding);
+        return rb_exc_new3(rb_eInvalidByteSequence, mesg);
+    }
+    if (ec->last_error.result == econv_undefined_conversion) {
+        VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
+                                 ec->last_error.error_bytes_len);
+        bytes = rb_str_dump(bytes);
+        mesg = rb_sprintf("conversion undefined: %s from %s to %s",
+                StringValueCStr(bytes),
+                ec->last_error.source_encoding,
+                ec->last_error.destination_encoding);
+        return rb_exc_new3(rb_eConversionUndefined, mesg);
+    }
+    return Qnil;
+}
+
 static void
 more_output_buffer(
         VALUE destination,
@@ -1256,6 +1282,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     rb_econv_result_t ret;
     unsigned char *out_start = *out_pos;
     int max_output;
+    VALUE exc;
 
     ec = rb_econv_open(from_encoding, to_encoding, 0);
     if (!ec)
@@ -1276,8 +1303,9 @@ resume:
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
+        exc = make_econv_exception(ec);
         rb_econv_close(ec);
-	rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
+	rb_exc_raise(exc);
     }
     if (ret == econv_undefined_conversion) {
 	/* valid character in from encoding
@@ -1290,8 +1318,9 @@ resume:
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
+        exc = make_econv_exception(ec);
         rb_econv_close(ec);
-        rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
+	rb_exc_raise(exc);
     }
     if (ret == econv_destination_buffer_full) {
         more_output_buffer(destination, resize_destination, max_output, &out_start, out_pos, &out_stop);
@@ -1318,6 +1347,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     unsigned char *out_start = *out_pos;
     const unsigned char *ptr;
     int max_output;
+    VALUE exc;
 
     ec = rb_econv_open(from_encoding, to_encoding, 0);
     if (!ec)
@@ -1357,8 +1387,9 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 if (output_replacement_character(ec) == 0)
                     break;
             }
+            exc = make_econv_exception(ec);
             rb_econv_close(ec);
-            rb_raise(rb_eInvalidByteSequence, "invalid byte sequence");
+            rb_exc_raise(exc);
             break;
 
           case econv_undefined_conversion:
@@ -1372,8 +1403,9 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 if (output_replacement_character(ec) == 0)
                     break;
             }
+            exc = make_econv_exception(ec);
             rb_econv_close(ec);
-            rb_raise(rb_eConversionUndefined, "conversion undefined for byte sequence (maybe invalid byte sequence)");
+            rb_exc_raise(exc);
             break;
 
           case econv_destination_buffer_full:
@@ -2033,6 +2065,17 @@ econv_primitive_insert_output(VALUE self, VALUE string)
     if (ret == -1)
         return Qfalse;
     return Qtrue;
+}
+
+void
+rb_econv_check_error(rb_econv_t *ec)
+{
+    VALUE exc;
+
+    exc = make_econv_exception(ec);
+    if (NIL_P(exc))
+        return;
+    rb_exc_raise(exc);
 }
 
 void

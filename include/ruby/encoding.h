@@ -254,13 +254,15 @@ rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     int flags);
 
-
 /* result: 0:success -1:failure */
 int rb_econv_insert_output(rb_econv_t *ec,
     const unsigned char *str, size_t len, const char *str_encoding);
 
 /* encoding that rb_econv_insert_output doesn't need conversion */
 const char *rb_econv_encoding_to_insert_output(rb_econv_t *ec);
+
+/* raise an error if the last rb_econv_convert is error */
+void rb_econv_check_error(rb_econv_t *ec);
 
 void rb_econv_close(rb_econv_t *ec);
 
