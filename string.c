@@ -6611,6 +6611,7 @@ void
 Init_String(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     rb_cString  = rb_define_class("String", rb_cObject);
     rb_include_module(rb_cString, rb_mComparable);

@@ -3106,6 +3106,7 @@ void
 Init_Numeric(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
 #if defined(__FreeBSD__) && __FreeBSD__ < 4
     /* allow divide by zero -- Inf */

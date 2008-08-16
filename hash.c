@@ -2597,6 +2597,7 @@ void
 Init_Hash(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     id_hash = rb_intern("hash");
     id_yield = rb_intern("yield");

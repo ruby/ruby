@@ -125,6 +125,7 @@ void
 Init_Precision(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     rb_mPrecision = rb_define_module("Precision");
     rb_define_singleton_method(rb_mPrecision, "included", prec_included, 1);

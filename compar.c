@@ -199,6 +199,7 @@ void
 Init_Comparable(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     rb_mComparable = rb_define_module("Comparable");
     rb_define_method(rb_mComparable, "==", cmp_equal, 1);

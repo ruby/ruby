@@ -1689,6 +1689,7 @@ void
 Init_marshal(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     VALUE rb_mMarshal = rb_define_module("Marshal");
 

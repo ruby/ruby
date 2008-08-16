@@ -830,6 +830,12 @@ VALUE rb_id2str(ID);
     (__builtin_constant_p(str) ? \
         __extension__ (CONST_ID_CACHE(/**/, str)) : \
         rb_intern(str))
+#define rb_intern_const(str) \
+    (__builtin_constant_p(str) ? \
+     __extension__ (rb_intern2(str, strlen(str))) :	\
+     (rb_intern)(str))
+#else
+#define rb_intern_const(str) rb_intern2(str, strlen(str))
 #endif
 
 const char *rb_class2name(VALUE);

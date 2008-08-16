@@ -4806,6 +4806,7 @@ static VALUE
 get_exception_sym2type(VALUE sym)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
     static VALUE symRescue, symEnsure, symRetry;
     static VALUE symBreak, symRedo, symNext;
 

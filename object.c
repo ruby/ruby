@@ -2428,6 +2428,7 @@ void
 Init_Object(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     VALUE metaclass;
 

@@ -1114,6 +1114,7 @@ void
 Init_eval_method(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
 

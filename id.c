@@ -17,6 +17,7 @@ static void
 Init_id(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 #define rb_intern(str) rb_intern2(str, strlen(str))
     rb_encoding *enc = rb_usascii_encoding();
 

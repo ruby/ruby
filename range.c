@@ -897,6 +897,7 @@ void
 Init_Range(void)
 {
 #undef rb_intern
+#define rb_intern(str) rb_intern_const(str)
 
     id_cmp = rb_intern("<=>");
     id_succ = rb_intern("succ");

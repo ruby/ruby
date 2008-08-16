@@ -1,4 +1,6 @@
-Sat Aug 16 08:52:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 16 09:20:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_intern_const): tiny optimization.
 
 	* include/ruby/ruby.h (SSIZET2NUM, NUM2SSIZET, SSIZE_MAX, SSIZE_MIN):
 	  macros for ssize_t.
