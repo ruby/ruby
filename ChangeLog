@@ -1,3 +1,15 @@
+Sat Aug 16 15:23:16 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_elem_t): fields removed: from and
+	  to.
+	  (rb_econv_t): new fields: source_encoding_name and
+	  destination_encoding_name.
+
+	* transcode.c (rb_econv_open_by_transcoder_entries): initialize the
+	  new fields.
+	  (rb_econv_open): set up the new fields.
+	  (econv_inspect): use the new fields.
+
 Sat Aug 16 14:22:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_t): add fields: in_buf_start,

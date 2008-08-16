@@ -677,6 +677,8 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     }
 
     ec = ALLOC(rb_econv_t);
+    ec->source_encoding_name = NULL;
+    ec->destination_encoding_name = NULL;
     ec->in_buf_start = NULL;
     ec->in_data_start = NULL;
     ec->in_data_end = NULL;
@@ -690,8 +692,6 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->destination_encoding = NULL;
     for (i = 0; i < ec->num_trans; i++) {
         const rb_transcoder *tr = load_transcoder_entry(entries[i]);
-        ec->elems[i].from = tr->from_encoding;
-        ec->elems[i].to = tr->to_encoding;
         ec->elems[i].tc = rb_transcoding_open_by_transcoder(tr, 0);
         ec->elems[i].out_buf_start = NULL;
         ec->elems[i].out_data_start = NULL;
@@ -761,6 +761,11 @@ rb_econv_open(const char *from, const char *to, int flags)
     }
 
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
+    if (!ec)
+        rb_raise(rb_eArgError, "encoding conversion not supported (from %s to %s)", from, to);
+
+    ec->source_encoding_name = from;
+    ec->destination_encoding_name = to;
 
     if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
         ec->last_tc = ec->elems[ec->num_trans-2].tc;
@@ -1687,6 +1692,9 @@ econv_init(int argc, VALUE *argv, VALUE self)
     ec->source_encoding = senc;
     ec->destination_encoding = denc;
 
+    ec->source_encoding_name = ec->elems[0].tc->transcoder->from_encoding;
+    ec->destination_encoding_name = ec->last_tc->transcoder->to_encoding;
+
     DATA_PTR(self) = ec;
 
     return self;
@@ -1702,8 +1710,8 @@ econv_inspect(VALUE self)
         return rb_sprintf("#<%s: uninitialized>", cname);
     else
         return rb_sprintf("#<%s: %s to %s>", cname,
-            ec->elems[0].from,
-            ec->last_tc->transcoder->to_encoding);
+            ec->source_encoding_name,
+            ec->destination_encoding_name);
 }
 
 #define IS_ECONV(obj) (RDATA(obj)->dfree == (RUBY_DATA_FUNC)econv_free)

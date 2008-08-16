@@ -208,8 +208,6 @@ typedef enum {
 } rb_econv_result_t;
 
 typedef struct {
-    const char *from;
-    const char *to;
     struct rb_transcoding *tc;
     unsigned char *out_buf_start;
     unsigned char *out_data_start;
@@ -219,6 +217,9 @@ typedef struct {
 } rb_econv_elem_t;
 
 typedef struct {
+    const char *source_encoding_name;
+    const char *destination_encoding_name;
+
     unsigned char *in_buf_start;
     unsigned char *in_data_start;
     unsigned char *in_data_end;
