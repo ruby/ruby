@@ -1,3 +1,10 @@
+Sun Aug 17 08:38:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/iconv/test_option.rb (test_ignore_option): skip if iconv
+	  doesn't have transliterate.
+
+	* test/iconv/test_option.rb (test_translit_option): ditto.
+
 Sun Aug 17 01:29:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): new fields: readconv, crbuf, crbuf_off,
