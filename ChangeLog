@@ -194,7 +194,7 @@ Fri Aug 15 00:52:40 2008  Tanaka Akira  <akr@fsij.org>
 	* transcode_data.h (rb_transcoder): add resetsize_func field.
 
 	* enc/trans/iso2022.trans (iso2022jp_reset_sequence_size): defined.
-	  (rb_EUC_JP_to_ISO_2022_JP): provede resetsize_func.
+	  (rb_EUC_JP_to_ISO_2022_JP): provide resetsize_func.
 
 	* tool/transcode-tblgen.rb: set NULL for resetsize_func.
 
@@ -306,7 +306,7 @@ Thu Aug 14 17:57:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (global_symbols): added rooms for VM IDs.
 
-	* parse.y (rb_intern3, rb_id2str): single puctuation symbol is now
+	* parse.y (rb_intern3, rb_id2str): single punctuation symbol is now
 	  same as char code.
 
 Thu Aug 14 17:46:21 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -549,7 +549,7 @@ Wed Aug 13 14:45:37 2008  Tanaka Akira  <akr@fsij.org>
 	* enc/trans/newline.trans (rb_crlf_newline): new transcoder.
 	  (rb_cr_newline): new transcoder.
 
-	* transcode.c (trans_open_i): one more exra room for input newline
+	* transcode.c (trans_open_i): one more extra room for input newline
 	  converter.
 	  (rb_trans_open): crlf newline and cr newline implemented.
 	  (Init_transcode): Encoding::Converter::CRLF_NEWLINE and
@@ -597,7 +597,7 @@ Wed Aug 13 11:39:19 2008  Tanaka Akira  <akr@fsij.org>
 	* transcode.c (transcode_search_path): return the length of converter
 	  path.
 	  (load_transcoder_entry): renamed from load_transcoder.
-	  (load_transcoder): new function for loding transcoder by encoding
+	  (load_transcoder): new function for loading transcoder by encoding
 	  names.
 	  (rb_transcoding_open_by_transcoder): extracted from
 	  rb_transcoding_open.
@@ -776,12 +776,12 @@ Tue Aug 12 14:25:09 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug 12 14:19:53 2008  Minero Aoki  <aamine@loveruby.net>
 
-	* lib/net/https.rb: supress syntax warning.
+	* lib/net/https.rb: suppress syntax warning.
 
 Tue Aug 12 14:15:51 2008  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (Net::HTTP#initialize): initialize net/https
-	  variables to supress syntax warning.
+	  variables to suppress syntax warning.
 
 Tue Aug 12 14:15:13 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1229,7 +1229,7 @@ Thu Aug  7 20:52:08 2008  Shugo Maeda  <shugo@ruby-lang.org>
 Thu Aug  7 18:01:44 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* misc/ruby-mode.el (ruby-imenu-create-index-in-block): Fix the
-	  regexp to only pick definition lines properly.  `module_funtion'
+	  regexp to only pick definition lines properly.  `module_function'
 	  is not a definition of a module named `_function'.
 
 Thu Aug  7 17:47:55 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1246,7 +1246,7 @@ Thu Aug  7 14:17:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* enc/depend: removed needless explicit commands.
 
 	* lib/mkmf.rb, {bcc32,win32}/Makefile.sub (CLEANLIBS, CLEANOBJS):
-	  moved clean targets to platfrom makefiles.
+	  moved clean targets to platform makefiles.
 
 Thu Aug  7 13:12:30 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -1655,7 +1655,7 @@ Fri Aug 01 18:27:15 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/ruby/test_m17n.rb (test_magic_comment_vim): added.
 
-	* test/ruby/test_m17n.rb (test_magic_comment_at_variaous_positions):
+	* test/ruby/test_m17n.rb (test_magic_comment_at_various_positions):
 	  added.
 
 Fri Aug  1 14:54:42 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -1963,7 +1963,7 @@ Sun Jul 27 14:48:37 2008  Koichi Sasada  <ko1@atdot.net>
 	  And fix to use BUILTIN_TYPE() instead of seeing flag.
 
 	* thread.c, vm_core.h: add RUBY_VM_SET_FINALIZER_INTERRUPT()
-	  and check intterupt_flag at rb_thread_execute_interrupts().
+	  and check interrupt_flag at rb_thread_execute_interrupts().
 
 	* thread.c (mutex_mark): fix to mark next_mutex.
 
@@ -2520,7 +2520,7 @@ Sat Jul 12 09:25:07 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Sat Jul 12 01:54:13 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/win32.c (rb_w32_select): shoudn't pass non-socket handle to
+	* win32/win32.c (rb_w32_select): shouldn't pass non-socket handle to
 	  original select().
 
 Fri Jul 11 23:05:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -2699,7 +2699,7 @@ Tue Jul  8 22:56:23 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 	* thread.c (rb_coverage_result): restore klass of coverage array
 	  and return it.
 
-	* theaad.c (update_coverage): chcek whether its klass is 0.
+	* thread.c (update_coverage): check whether its klass is 0.
 
 Tue Jul  8 22:28:25 2008  Koichi Sasada  <ko1@atdot.net>
 
@@ -2724,7 +2724,7 @@ Tue Jul  8 13:38:22 2008  Koichi Sasada  <ko1@atdot.net>
 
 Tue Jul  8 11:41:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* dir.c: shoudn't use ruby object in globbing, because glob service
+	* dir.c: shouldn't use ruby object in globbing, because glob service
 	  routines are called before initializing ruby on some platforms (ex.
 	  windows).
 
@@ -2860,7 +2860,7 @@ Fri Jul  4 23:12:53 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 Fri Jul  4 22:15:29 2008  Tanaka Akira  <akr@fsij.org>
 
-	* lib/test/unit/testcase.rb: collect decendants of
+	* lib/test/unit/testcase.rb: collect descendants of
 	  Test::Unit::TestCase using inherited.
 
 	* lib/test/unit/autorunner.rb: don't use ObjectSpace.each_object.
@@ -3070,7 +3070,7 @@ Wed Jul  2 01:53:40 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* parse.y (coverage): create and initialize coverage array.
 
-	* compile.h (ADD_TRACE): add trace instruction to update covearge
+	* compile.h (ADD_TRACE): add trace instruction to update coverage
 	  array.
 
 	* thread.c (clear_coverage): delete coverage array when forking.
@@ -3250,7 +3250,7 @@ Tue Jul  1 16:57:44 2008  URABE Shyouhei  <shyouhei@ruby-lang.org>
 	* include/ruby/st.h (struct st_table): type of bit-field
 	  'num_entries' is a GCC extension
 
-	* include/ruby/ruby.h (rb_intern): prefix __extnsion__ for
+	* include/ruby/ruby.h (rb_intern): prefix __extension__ for
 	  braced-groups within expressions.
 
 	* include/ruby/intern.h (rb_usascii_str_new2): ditto.
@@ -31870,7 +31870,7 @@ Mon Sep 19 03:17:48 2005  Tanaka Akira  <akr@m17n.org>
 	  which is full.  [ruby-dev:27132]
 
 	* io.c (rb_io_syswrite): wrap the write system call by
-	  TRAP_BEG/TRAP_END to run signal hander in syswrite method.
+	  TRAP_BEG/TRAP_END to run signal handler in syswrite method.
 	  [ruby-dev:27134]
 
 Mon Sep 19 01:07:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -32031,7 +32031,7 @@ Fri Sep 16 22:45:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  fixed: [ruby-core:05706]
 
 	* gc.c (rb_memerror, ruby_xmalloc, ruby_xrealloc, rb_newobj): just
-	  abondon if no memory available, when interpreter is not running.
+	  abandon if no memory available, when interpreter is not running.
 	  [ruby-dev:27104]
 
 	* gc.c (garbage_collect): return whether GC could run.
@@ -32084,10 +32084,10 @@ Thu Sep 15 23:25:21 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 		  TemporaryNamespace
 		@client.do_proc(...)
 
-	    * let SOAP request XML indent space configuable.  see
+	    * let SOAP request XML indent space configurable.  see
 	      "soap.envelope.no_indent" option. (#130)
 
-	    * let external CES configuable.
+	    * let external CES configurable.
 	      ex. client["soap.mapping.external_ces"] = 'SJIS'.  $KCODE is used
 	      by default. (#133)
 		external CES ::= CES used in Ruby object of client and server
@@ -32096,7 +32096,7 @@ Thu Sep 15 23:25:21 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 	    * add iso-8859-1 external CES support. (#106)
 
 	    * fixed illegal 'qualified' handling of elements.  it caused
-	      ASP.NET inteoperability problem. (#144)
+	      ASP.NET interoperability problem. (#144)
 
 	    * added 'soap.envelope.use_numeric_character_reference' (boolean)
 	      option to let query XML use numeric character reference in XML,
