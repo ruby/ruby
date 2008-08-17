@@ -1757,7 +1757,9 @@ def init_mkmf(config = CONFIG)
   $ARCH_FLAG = with_config("arch_flag", arg_config("ARCH_FLAG", config["ARCH_FLAG"])).dup
   $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", config["CPPFLAGS"])).dup
   $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", config["LDFLAGS"])).dup
-  $INCFLAGS = "-I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir)"
+  $INCFLAGS = "-I$(arch_hdrdir)"
+  $INCFLAGS << " -I$(hdrdir)/ruby/backward" unless $extmk
+  $INCFLAGS << " -I$(hdrdir) -I$(srcdir)"
   $DLDFLAGS = with_config("dldflags", arg_config("DLDFLAGS", config["DLDFLAGS"])).dup
   $LIBEXT = config['LIBEXT'].dup
   $OBJEXT = config["OBJEXT"].dup

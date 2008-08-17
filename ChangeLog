@@ -1,3 +1,10 @@
+Sun Aug 17 15:58:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (init_mkmf): add include/ruby/backward to $INCFLAGS.
+
+	* include/ruby/backward/{st,util}.h: added for backward compatibility.
+	  [ruby-dev:35811]
+
 Sun Aug 17 13:40:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_primitive_putback): new method.
