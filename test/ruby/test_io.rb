@@ -44,6 +44,15 @@ class TestIO < Test::Unit::TestCase
     r.close
   end
 
+  def test_gets_limit_extra_arg
+    with_pipe {|r, w|
+      r, w = IO.pipe
+      w << "0123456789"
+      w.close
+      assert_raise(TypeError) { r.gets(3,nil) }
+    }
+  end
+
   # This test cause SEGV.
   def test_ungetc
     r, w = IO.pipe

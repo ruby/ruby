@@ -1889,29 +1889,23 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
 static void
 prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
 {
-    VALUE lim, rs;
+    VALUE rs = rb_rs, lim = Qnil;
     rb_io_t *fptr;
 
-    if (argc == 0) {
-	rs = rb_rs;
-	lim = Qnil;
-    }
-    else {
-	rb_scan_args(argc, argv, "11", &rs, &lim);
-	if (!NIL_P(lim)) {
-	    StringValue(rs);
-	}
-	else if (!NIL_P(rs) && TYPE(rs) != T_STRING) {
-	    VALUE tmp = rb_check_string_type(rs);
+    if (argc == 1) {
+        VALUE tmp = Qnil;
 
-	    if (NIL_P(tmp)) {
-		lim = rs;
-		rs = rb_rs;
-	    }
-	    else {
-		rs = tmp;
-	    }
-	}
+        if (NIL_P(argv[0]) || !NIL_P(tmp = rb_check_string_type(argv[0]))) {
+            rs = tmp;
+        }
+        else {
+            lim = argv[0];
+        }
+    }
+    else if (2 <= argc) {
+        rb_scan_args(argc, argv, "2", &rs, &lim);
+        if (!NIL_P(rs))
+            StringValue(rs);
     }
     if (!NIL_P(rs)) {
 	rb_encoding *enc_rs, *enc_io;

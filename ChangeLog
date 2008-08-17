@@ -1,3 +1,7 @@
+Sun Aug 17 21:50:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (prepare_getline_args): io.gets(10,nil) should cause TypeError.
+
 Sun Aug 17 15:58:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: not check config.h.
