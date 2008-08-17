@@ -1,4 +1,6 @@
-Sun Aug 17 15:58:08 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Aug 17 15:58:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: not check config.h.
 
 	* lib/mkmf.rb (init_mkmf): add include/ruby/backward to $INCFLAGS.
 
