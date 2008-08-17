@@ -3,9 +3,9 @@ require File.join(File.dirname(__FILE__), "utils.rb")
 require "test/unit"
 
 class TestWEBrickCGI < Test::Unit::TestCase
-  def test_cgi
-    accepted = started = stopped = 0
-    requested0 = requested1 = 0
+  CRLF = "\r\n"
+
+  def start_cgi_server(&block)
     config = {
       :CGIInterpreter => TestWEBrick::RubyBin,
       :DocumentRoot => File.dirname(__FILE__),
@@ -15,6 +15,12 @@ class TestWEBrickCGI < Test::Unit::TestCase
       config[:CGIPathEnv] = ENV['PATH'] # runtime dll may not be in system dir.
     end
     TestWEBrick.start_httpserver(config){|server, addr, port|
+       block.call(server, addr, port)
+    }
+  end
+
+  def test_cgi
+    start_cgi_server{|server, addr, port|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/webrick.cgi")
       http.request(req){|res| assert_equal("/webrick.cgi", res.body)}
@@ -66,6 +72,23 @@ class TestWEBrickCGI < Test::Unit::TestCase
                      "Part_Number=Rocket_Launcher_0001\n" +
                      "Shipping=FedEx\n", res.body)
       }
+    }
+  end
+
+  def test_bad_request
+    start_cgi_server{|server, addr, port|
+      sock = TCPSocket.new(addr, port)
+      begin
+        sock << "POST /webrick.cgi HTTP/1.0" << CRLF
+        sock << "Content-Type: application/x-www-form-urlencoded" << CRLF
+        sock << "Content-Length: 1024" << CRLF
+        sock << CRLF
+        sock << "a=1&a=2&b=x"
+        sock.close_write
+        assert_match(%r{\AHTTP/\d.\d 400 Bad Request}, sock.read)
+      ensure
+        sock.close
+      end
     }
   end
 end

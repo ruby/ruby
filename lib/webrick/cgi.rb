@@ -208,6 +208,10 @@ module WEBrick
       def each
         input.each{|line| yield(line) }
       end
+
+      def eof?
+        input.eof?
+      end
   
       def <<(data)
         @out_port << data
