@@ -1202,6 +1202,20 @@ rb_econv_close(rb_econv_t *ec)
     xfree(ec);
 }
 
+int
+rb_econv_putbackable(rb_econv_t *ec)
+{
+    return ec->elems[0].tc->readagain_len;
+}
+
+void
+rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n)
+{
+    rb_transcoding *tc = ec->elems[0].tc;
+    memcpy(p, TRANSCODING_READBUF(tc) + tc->recognized_len, n);
+    tc->readagain_len -= n;
+}
+
 static VALUE
 make_econv_exception(rb_econv_t *ec)
 {

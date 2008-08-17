@@ -2308,6 +2308,7 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
             const unsigned char *ss, *sp, *se;
             unsigned char *ds, *dp, *de;
             rb_econv_result_t res;
+            int putbackable;
             if (fptr->crbuf_len) {
                 r = rb_enc_precise_mbclen(fptr->crbuf+fptr->crbuf_off, fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len, fptr->enc);
                 if (!MBCLEN_NEEDMORE_P(r))
@@ -2332,6 +2333,12 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
             fptr->rbuf_off += sp - ss;
             fptr->rbuf_len -= sp - ss;
             fptr->crbuf_len += dp - ds;
+            putbackable = rb_econv_putbackable(fptr->readconv);
+            if (putbackable) {
+                rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf + fptr->rbuf_off - putbackable, putbackable);
+                fptr->rbuf_off -= putbackable;
+                fptr->rbuf_len += putbackable;
+            }
             rb_econv_check_error(fptr->readconv);
         }
         if (MBCLEN_INVALID_P(r)) {

@@ -1,3 +1,13 @@
+Sun Aug 17 13:23:53 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_putbackable): declared.
+	  (rb_econv_putback): ditto.
+
+	* transcode.c (rb_econv_putbackable): implemented.
+	  (rb_econv_putback): ditto.
+
+	* io.c (io_getc): put back bytes if possible.
+
 Sun Aug 17 12:00:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (make_econv_exception): add several instance variables

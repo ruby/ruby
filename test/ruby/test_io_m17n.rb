@@ -216,6 +216,16 @@ EOT
     }
   end
 
+  def test_getc_invalid
+    with_pipe("euc-jp:utf-8") {|r, w|
+      w << "\xa1xyz"
+      w.close
+      err = assert_raise(Encoding::InvalidByteSequence) { r.getc }
+      assert_equal("\xA1".force_encoding("ascii-8bit"), err.error_bytes)
+      assert_equal("xyz", r.read(10))
+    }
+  end
+
   def test_getc_stateful_conversion
     with_tmpdir {
       src = "\e$B\x23\x30\x23\x31\e(B".force_encoding("iso-2022-jp")

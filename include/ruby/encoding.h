@@ -253,6 +253,7 @@ rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     const unsigned char **source_buffer_ptr, const unsigned char *source_buffer_end,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     int flags);
+void rb_econv_close(rb_econv_t *ec);
 
 /* result: 0:success -1:failure */
 int rb_econv_insert_output(rb_econv_t *ec,
@@ -264,7 +265,8 @@ const char *rb_econv_encoding_to_insert_output(rb_econv_t *ec);
 /* raise an error if the last rb_econv_convert is error */
 void rb_econv_check_error(rb_econv_t *ec);
 
-void rb_econv_close(rb_econv_t *ec);
+int rb_econv_putbackable(rb_econv_t *ec);
+void rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n);
 
 /* flags for rb_econv_open */
 #define ECONV_UNIVERSAL_NEWLINE_DECODER       0x100
