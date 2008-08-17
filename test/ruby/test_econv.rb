@@ -415,4 +415,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("\u{3042}", err.error_char)
   end
 
+  def test_putback
+    ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+    ret = ec.primitive_convert(src="abc\xa1def", dst="", nil, 10)
+    assert_equal(:invalid_byte_sequence, ret)
+    assert_equal(["abc", "ef"], [dst, src])
+    src = ec.primitive_putback(nil) + src
+    assert_equal(["abc", "def"], [dst, src])
+    ret = ec.primitive_convert(src, dst, nil, 10)
+    assert_equal(:finished, ret)
+    assert_equal(["abcdef", ""], [dst, src])
+  end
+
 end

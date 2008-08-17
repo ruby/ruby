@@ -2096,6 +2096,29 @@ econv_primitive_insert_output(VALUE self, VALUE string)
     return Qtrue;
 }
 
+static VALUE
+econv_primitive_putback(VALUE self, VALUE max)
+{
+    rb_econv_t *ec = check_econv(self);
+    int n;
+    int putbackable;
+    VALUE str;
+
+    if (NIL_P(max))
+        n = rb_econv_putbackable(ec);
+    else {
+        n = NUM2INT(max);
+        putbackable = rb_econv_putbackable(ec);
+        if (putbackable < n)
+            n = putbackable;
+    }
+
+    str = rb_str_new(NULL, n);
+    rb_econv_putback(ec, (unsigned char *)RSTRING_PTR(str), n);
+
+    return str;
+}
+
 void
 rb_econv_check_error(rb_econv_t *ec)
 {
@@ -2156,6 +2179,7 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
     rb_define_method(rb_cEncodingConverter, "primitive_errinfo", econv_primitive_errinfo, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_insert_output", econv_primitive_insert_output, 1);
+    rb_define_method(rb_cEncodingConverter, "primitive_putback", econv_primitive_putback, 1);
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
