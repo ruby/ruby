@@ -1,3 +1,7 @@
+Mon Aug 18 06:10:08 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk: config.h depends config.status.
+
 Mon Aug 18 03:59:43 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (appendline): appendline cannot check character boundary.

@@ -429,6 +429,7 @@ win32.$(OBJEXT): {$(VPATH)}win32.c
 
 ###
 
+$(VPATH)config.h: config.status
 RUBY_H_INCLUDES = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 		  {$(VPATH)}intern.h {$(VPATH)}missing.h
 ID_H_INCLUDES = {$(VPATH)}id.h {$(VPATH)}parse.h
