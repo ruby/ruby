@@ -1,3 +1,7 @@
+Mon Aug 18 02:25:11 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#eof?): added lacked method.
+
 Sun Aug 17 21:50:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (prepare_getline_args): io.gets(10,nil) should cause TypeError.
