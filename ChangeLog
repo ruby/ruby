@@ -1,3 +1,9 @@
+Sun Aug 17 11:43:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (struct MT): packed Mersenne Twister staffs.
+
+	* random.c (struct RandSeed): packed random seed staffs.
+
 Sun Aug 17 08:38:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/iconv/test_option.rb (test_ignore_option): skip if iconv
