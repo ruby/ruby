@@ -1205,25 +1205,40 @@ rb_econv_close(rb_econv_t *ec)
 static VALUE
 make_econv_exception(rb_econv_t *ec)
 {
-    VALUE mesg;
+    VALUE mesg, exc;
     if (ec->last_error.result == econv_invalid_byte_sequence) {
         VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
                                  ec->last_error.error_bytes_len);
-        bytes = rb_str_dump(bytes);
+        VALUE dumped;
+        dumped = rb_str_dump(bytes);
         mesg = rb_sprintf("invalid byte sequence: %s on %s",
-                StringValueCStr(bytes),
+                StringValueCStr(dumped),
                 ec->last_error.source_encoding);
-        return rb_exc_new3(rb_eInvalidByteSequence, mesg);
+        exc = rb_exc_new3(rb_eInvalidByteSequence, mesg);
+        rb_ivar_set(exc, rb_intern("source_encoding"), rb_str_new2(ec->last_error.source_encoding));
+        rb_ivar_set(exc, rb_intern("destination_encoding"), rb_str_new2(ec->last_error.destination_encoding));
+        rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
+        return exc;
     }
     if (ec->last_error.result == econv_undefined_conversion) {
         VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
                                  ec->last_error.error_bytes_len);
-        bytes = rb_str_dump(bytes);
+        VALUE dumped;
+        int idx;
+        dumped = rb_str_dump(bytes);
         mesg = rb_sprintf("conversion undefined: %s from %s to %s",
-                StringValueCStr(bytes),
+                StringValueCStr(dumped),
                 ec->last_error.source_encoding,
                 ec->last_error.destination_encoding);
-        return rb_exc_new3(rb_eConversionUndefined, mesg);
+        exc = rb_exc_new3(rb_eConversionUndefined, mesg);
+        idx = rb_enc_find_index(ec->last_error.source_encoding);
+        rb_ivar_set(exc, rb_intern("source_encoding"), rb_str_new2(ec->last_error.source_encoding));
+        rb_ivar_set(exc, rb_intern("destination_encoding"), rb_str_new2(ec->last_error.destination_encoding));
+        idx = rb_enc_find_index(ec->last_error.source_encoding);
+        if (0 <= idx)
+            rb_enc_associate_index(bytes, idx);
+        rb_ivar_set(exc, rb_intern("error_char"), bytes);
+        return exc;
     }
     return Qnil;
 }
@@ -2078,6 +2093,30 @@ rb_econv_check_error(rb_econv_t *ec)
     rb_exc_raise(exc);
 }
 
+static VALUE
+ecerr_source_encoding(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("source_encoding"));
+}
+
+static VALUE
+ecerr_destination_encoding(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("destination_encoding"));
+}
+
+static VALUE
+ecerr_error_char(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("error_char"));
+}
+
+static VALUE
+ecerr_error_bytes(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("error_bytes"));
+}
+
 void
 Init_transcode(void)
 {
@@ -2108,4 +2147,12 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
+
+    rb_define_method(rb_eConversionUndefined, "source_encoding", ecerr_source_encoding, 0);
+    rb_define_method(rb_eConversionUndefined, "destination_encoding", ecerr_destination_encoding, 0);
+    rb_define_method(rb_eConversionUndefined, "error_char", ecerr_error_char, 0);
+
+    rb_define_method(rb_eInvalidByteSequence, "source_encoding", ecerr_source_encoding, 0);
+    rb_define_method(rb_eInvalidByteSequence, "destination_encoding", ecerr_destination_encoding, 0);
+    rb_define_method(rb_eInvalidByteSequence, "error_bytes", ecerr_error_bytes, 0);
 }

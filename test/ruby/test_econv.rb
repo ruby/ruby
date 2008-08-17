@@ -396,4 +396,23 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec.primitive_convert("", dst, nil, 10)
     assert_equal("\e$B!!\e(B???\e$B!\"!!!\#$\"\e(B".force_encoding("ISO-2022-JP"), dst)
   end
+
+  def test_exc_invalid
+    err = assert_raise(Encoding::InvalidByteSequence) {
+      "abc\xa4def".encode("ISO-8859-1", "EUC-JP")
+    }
+    assert_equal("EUC-JP", err.source_encoding)
+    assert_equal("UTF-8", err.destination_encoding)
+    assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
+  end
+
+  def test_exc_undef
+    err = assert_raise(Encoding::ConversionUndefined) {
+      "abc\xa4\xa2def".encode("ISO-8859-1", "EUC-JP")
+    }
+    assert_equal("UTF-8", err.source_encoding)
+    assert_equal("ISO-8859-1", err.destination_encoding)
+    assert_equal("\u{3042}", err.error_char)
+  end
+
 end

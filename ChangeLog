@@ -1,3 +1,18 @@
+Sun Aug 17 12:00:18 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_econv_exception): add several instance variables
+	  to exception object.
+	  (ecerr_source_encoding): new method:
+	  Encoding::ConversionUndefined#source_encoding and 
+	  Encoding::InvalidByteSequence#source_encoding.
+	  (ecerr_destination_encoding): new method:
+	  Encoding::ConversionUndefined#destination_encoding and 
+	  Encoding::InvalidByteSequence#destination_encoding.
+	  (econverr_error_char): new method:
+	  Encoding::ConversionUndefined#error_char.
+	  (econverr_error_bytes): new method:
+	  Encoding::ConversionUndefined#error_bytes.
+
 Sun Aug 17 11:43:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (struct MT): packed Mersenne Twister staffs.
