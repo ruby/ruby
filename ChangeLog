@@ -1,3 +1,7 @@
+Mon Aug 18 08:27:44 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* common.mk: fix error in uncommon.mk.
+
 Mon Aug 18 06:10:08 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: config.h depends config.status.
