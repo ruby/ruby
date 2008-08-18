@@ -473,6 +473,77 @@ EOT
     }
   end
 
+  def test_gets_invalid
+    with_pipe("utf-8:euc-jp") {|r, w|
+      before = "\u{3042}\u{3044}"
+      invalid = "\x80".force_encoding("utf-8")
+      after = "\u{3046}\u{3048}"
+      w << before + invalid + after
+      w.close
+      err = assert_raise(Encoding::InvalidByteSequence) { r.gets }
+      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+      assert_equal(after.encode("euc-jp"), r.gets)
+    }
+  end
+
+  def test_getc_invalid
+    with_pipe("utf-8:euc-jp") {|r, w|
+      before1 = "\u{3042}"
+      before2 = "\u{3044}"
+      invalid = "\x80".force_encoding("utf-8")
+      after1 = "\u{3046}"
+      after2 = "\u{3048}"
+      w << before1 + before2 + invalid + after1 + after2
+      w.close
+      assert_equal(before1.encode("euc-jp"), r.getc)
+      assert_equal(before2.encode("euc-jp"), r.getc)
+      err = assert_raise(Encoding::InvalidByteSequence) { r.getc }
+      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+      assert_equal(after1.encode("euc-jp"), r.getc)
+      assert_equal(after2.encode("euc-jp"), r.getc)
+    }
+  end
+
+  def test_getc_invalid2
+    with_pipe("utf-16le:euc-jp") {|r, w|
+      before1 = "\x42\x30".force_encoding("utf-16le")
+      before2 = "\x44\x30".force_encoding("utf-16le")
+      invalid = "\x00\xd8".force_encoding("utf-16le")
+      after1 = "\x46\x30".force_encoding("utf-16le")
+      after2 = "\x48\x30".force_encoding("utf-16le")
+      w << before1 + before2 + invalid + after1 + after2
+      w.close
+      assert_equal(before1.encode("euc-jp"), r.getc)
+      assert_equal(before2.encode("euc-jp"), r.getc)
+      err = assert_raise(Encoding::InvalidByteSequence) { r.getc }
+      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+      assert_equal(after1.encode("euc-jp"), r.getc)
+      assert_equal(after2.encode("euc-jp"), r.getc)
+    }
+  end
+
+  def test_read_all
+    with_pipe("utf-8:euc-jp") {|r, w|
+      str = "\u3042\u3044"
+      w << str
+      w.close
+      assert_equal(str.encode("euc-jp"), r.read)
+    }
+  end
+
+  def test_read_all_invalid
+    with_pipe("utf-8:euc-jp") {|r, w|
+      before = "\u{3042}\u{3044}"
+      invalid = "\x80".force_encoding("utf-8")
+      after = "\u{3046}\u{3048}"
+      w << before + invalid + after
+      w.close
+      err = assert_raise(Encoding::InvalidByteSequence) { r.read }
+      assert_equal(invalid.force_encoding("ascii-8bit"), err.error_bytes)
+      assert_equal(after.encode("euc-jp"), r.read)
+    }
+  end
+
   def test_file_foreach
     with_tmpdir {
       generate_file('tst', 'a' * 8191 + "\xa1\xa1")
