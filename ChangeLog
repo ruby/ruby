@@ -1,3 +1,9 @@
+Mon Aug 18 23:27:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_ungetbyte): renamed from io_ungetc.
+	  (rb_io_ungetbyte): new method.
+	  (rb_io_ungetc): push back into character buffer if enc2 is set.
+
 Mon Aug 18 22:41:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (id_encode): removed.

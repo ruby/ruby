@@ -326,13 +326,9 @@ io_unread(rb_io_t *fptr)
 static rb_encoding *io_input_encoding(rb_io_t *fptr);
 
 static void
-io_ungetc(VALUE str, rb_io_t *fptr)
+io_ungetbyte(VALUE str, rb_io_t *fptr)
 {
     int len = RSTRING_LEN(str);
-
-    if (rb_enc_dummy_p(io_input_encoding(fptr))) {
-	rb_raise(rb_eNotImpError, "ungetc against dummy encoding is not currently supported");
-    }
 
     if (fptr->rbuf == NULL) {
         fptr->rbuf_off = 0;
@@ -344,7 +340,7 @@ io_ungetc(VALUE str, rb_io_t *fptr)
         fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
     }
     if (fptr->rbuf_capa < len + fptr->rbuf_len) {
-	rb_raise(rb_eIOError, "ungetc failed");
+	rb_raise(rb_eIOError, "ungetbyte failed");
     }
     if (fptr->rbuf_off < len) {
         MEMMOVE(fptr->rbuf+fptr->rbuf_capa-fptr->rbuf_len,
@@ -2715,6 +2711,42 @@ rb_io_readbyte(VALUE io)
 
 /*
  *  call-seq:
+ *     ios.ungetbyte(string)   => nil
+ *     ios.ungetbyte(integer)   => nil
+ *
+ *  Pushes back bytes (passed as a parameter) onto <em>ios</em>,
+ *  such that a subsequent buffered read will return it. Only one byte
+ *  may be pushed back before a subsequent read operation (that is,
+ *  you will be able to read only the last of several bytes that have been pushed
+ *  back). Has no effect with unbuffered reads (such as <code>IO#sysread</code>).
+ *
+ *     f = File.new("testfile")   #=> #<File:testfile>
+ *     b = f.getbyte              #=> 0x38
+ *     f.ungetbyte(b)             #=> nil
+ *     f.getbyte                  #=> 0x38
+ */
+
+VALUE
+rb_io_ungetbyte(VALUE io, VALUE b)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    if (NIL_P(b)) return Qnil;
+    if (FIXNUM_P(b)) {
+	char cc = FIX2INT(b);
+	b = rb_str_new(&cc, 1);
+    }
+    else {
+	SafeStringValue(b);
+    }
+    io_ungetbyte(b, fptr);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     ios.ungetc(string)   => nil
  *
  *  Pushes back one character (passed as a parameter) onto <em>ios</em>,
@@ -2733,6 +2765,7 @@ VALUE
 rb_io_ungetc(VALUE io, VALUE c)
 {
     rb_io_t *fptr;
+    long len;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
@@ -2747,7 +2780,24 @@ rb_io_ungetc(VALUE io, VALUE c)
     else {
 	SafeStringValue(c);
     }
-    io_ungetc(c, fptr);
+    if (fptr->enc2) {
+        make_readconv(fptr);
+        len = RSTRING_LEN(c);
+        if (fptr->crbuf_capa - fptr->crbuf_len < len)
+            rb_raise(rb_eIOError, "ungetc failed");
+        if (fptr->crbuf_off < len) {
+            MEMMOVE(fptr->crbuf+fptr->crbuf_capa-fptr->crbuf_len,
+                    fptr->crbuf+fptr->crbuf_off,
+                    char, fptr->crbuf_len);
+            fptr->crbuf_off = fptr->crbuf_capa-fptr->crbuf_len;
+        }
+        fptr->crbuf_off -= len;
+        fptr->crbuf_len += len;
+        MEMMOVE(fptr->crbuf+fptr->crbuf_off, RSTRING_PTR(c), char, len);
+    }
+    else {
+        io_ungetbyte(c, fptr);
+    }
     return Qnil;
 }
 
@@ -8019,6 +8069,7 @@ Init_IO(void)
     rb_define_method(rb_cIO, "getbyte",  rb_io_getbyte, 0);
     rb_define_method(rb_cIO, "readchar",  rb_io_readchar, 0);
     rb_define_method(rb_cIO, "readbyte",  rb_io_readbyte, 0);
+    rb_define_method(rb_cIO, "ungetbyte",rb_io_ungetbyte, 1);
     rb_define_method(rb_cIO, "ungetc",rb_io_ungetc, 1);
     rb_define_method(rb_cIO, "<<",    rb_io_addstr, 1);
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);

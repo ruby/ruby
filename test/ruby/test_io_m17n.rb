@@ -239,14 +239,30 @@ EOT
     with_tmpdir {
       src = "before \e$B\x23\x30\x23\x31\e(B after".force_encoding("iso-2022-jp")
       generate_file('tmp', src)
-      assert_raise(NotImplementedError) do
-        s = open("tmp", "r:iso-2022-jp:euc-jp") {|f|
-          f.ungetc("0".force_encoding("euc-jp"))
-          f.read
-        }
-        assert_equal(Encoding.find("euc-jp"), s.encoding)
-        assert_str_equal(("0" + src).encode("euc-jp"), s)
-      end
+      s = open("tmp", "r:iso-2022-jp:euc-jp") {|f|
+        f.ungetc("0".force_encoding("euc-jp"))
+        f.read
+      }
+      assert_equal(Encoding.find("euc-jp"), s.encoding)
+      assert_str_equal("0" + src.encode("euc-jp"), s)
+    }
+  end
+
+  def test_ungetc_stateful_conversion2
+    with_tmpdir {
+      src =    "before \e$B\x23\x30\x23\x31\e(B after".force_encoding("iso-2022-jp")
+      former = "before \e$B\x23\x30\e(B".force_encoding("iso-2022-jp")
+      rs =            "\e$B\x23\x30\e(B".force_encoding("iso-2022-jp")
+      latter =                "\e$B\x23\x31\e(B after".force_encoding("iso-2022-jp")
+      generate_file('tmp', src)
+      s = open("tmp", "r:iso-2022-jp:euc-jp") {|f|
+        assert_equal(former.encode("euc-jp", "iso-2022-jp"),
+                     f.gets(rs.encode("euc-jp", "iso-2022-jp")))
+        f.ungetc("0")
+        f.read
+      }
+      assert_equal(Encoding.find("euc-jp"), s.encoding)
+      assert_str_equal("0" + latter.encode("euc-jp"), s)
     }
   end
 
