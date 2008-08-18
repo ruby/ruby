@@ -1,3 +1,8 @@
+Tue Aug 19 01:02:19 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_open_file): don't access argv[-1] by 
+	  File.allocate.instance_eval { initialize }.
+
 Tue Aug 19 00:56:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_inspect): don't raise for uninitialized Regexp.
