@@ -446,19 +446,33 @@ EOT
   end
 
   def test_gets_limit
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\xa4\xa8\xa4\xaa"; w.close
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
       assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.gets(1))
     }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\xa4\xa8\xa4\xaa"; w.close
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
       assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.gets(2))
     }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\xa4\xa8\xa4\xaa"; w.close
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
       assert_equal("\xa4\xa2\xa4\xa4".force_encoding("euc-jp"), r.gets(3))
     }
-    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\xa4\xa8\xa4\xaa"; w.close
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
       assert_equal("\xa4\xa2\xa4\xa4".force_encoding("euc-jp"), r.gets(4))
     }
-
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
+      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6".force_encoding("euc-jp"), r.gets(5))
+    }
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
+      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6".force_encoding("euc-jp"), r.gets(6))
+    }
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
+      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(7))
+    }
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
+      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(8))
+    }
+    with_pipe("euc-jp") {|r, w| w << "\xa4\xa2\xa4\xa4\xa4\xa6\n\xa4\xa8\xa4\xaa"; w.close
+      assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(9))
+    }
   end
 
   def test_file_foreach
