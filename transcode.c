@@ -165,6 +165,9 @@ transcode_search_path(const char *from, const char *to,
     int found;
     int pathlen;
 
+    if (encoding_equal(from, to))
+        return -1;
+
     q = ALLOC(search_path_queue_t);
     q->enc = from;
     q->next = NULL;
