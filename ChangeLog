@@ -1,3 +1,7 @@
+Mon Aug 18 22:41:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (id_encode): removed.
+
 Mon Aug 18 22:30:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (make_writeconv): if enc and enc2 is set, convert

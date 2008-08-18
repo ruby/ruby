@@ -123,7 +123,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_encode, id_readpartial;
+static ID id_write, id_read, id_getc, id_flush, id_readpartial;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 
 struct timeval rb_time_interval(VALUE);
@@ -7924,7 +7924,6 @@ Init_IO(void)
     id_read = rb_intern("read");
     id_getc = rb_intern("getc");
     id_flush = rb_intern("flush");
-    id_encode = rb_intern("encode");
     id_readpartial = rb_intern("readpartial");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
