@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'tmpdir'
 require 'timeout'
+require_relative 'envutil'
 
 class TestIO_M17N < Test::Unit::TestCase
   ENCS = [
@@ -659,6 +660,24 @@ EOT
       w << "\x82\xa2".force_encoding("sjis")
       w.close
       assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"), t.value)
+    }
+  end
+
+  def test_stdin_external_encoding_with_reopen
+    with_tmpdir {
+      open("tst", "w+") {|f|
+        pid = spawn(EnvUtil.rubybin, '-e', <<-'End', 10=>f)
+          io = IO.new(10, "r+")
+          STDIN.reopen(io)
+          STDIN.external_encoding
+          STDIN.write "\u3042"
+          STDIN.flush 
+        End
+        Process.wait pid
+        f.rewind
+        result = f.read.force_encoding("ascii-8bit")
+        assert_equal("\u3042".force_encoding("ascii-8bit"), result)
+      }
     }
   end
 

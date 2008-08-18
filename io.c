@@ -388,9 +388,6 @@ rb_io_check_readable(rb_io_t *fptr)
 	GetOpenFile(fptr->tied_io_for_writing, wfptr);
 	io_fflush(wfptr);
     }
-    if (!fptr->enc && fptr->fd == 0) {
-	fptr->enc = rb_default_external_encoding();
-    }
 }
 
 static rb_encoding*
@@ -7358,9 +7355,6 @@ rb_io_external_encoding(VALUE io)
     GetOpenFile(io, fptr);
     if (fptr->enc2) {
 	return rb_enc_from_encoding(fptr->enc2);
-    }
-    if (!fptr->enc && fptr->fd == 0) {
-	fptr->enc = rb_default_external_encoding();
     }
     if (fptr->mode & FMODE_WRITABLE) {
 	if (fptr->enc)

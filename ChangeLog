@@ -1,3 +1,8 @@
+Tue Aug 19 00:34:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_check_readable): side effect for STDIN removed.
+	  (rb_io_external_encoding): ditto.
+
 Mon Aug 18 23:27:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_ungetbyte): renamed from io_ungetc.
