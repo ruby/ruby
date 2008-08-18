@@ -917,7 +917,7 @@ module FileUtils
     if args.length > 1 then
       sh(*([RUBY] + args + [options]), &block)
     else
-      sh("#{RUBY} #{args.first}", options, &block)
+      sh("#{RUBY.sub(/.*\s.*/m, '"\&"')} #{args.first}", options, &block)
     end
   end
 
