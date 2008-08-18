@@ -1,3 +1,8 @@
+Tue Aug 19 01:32:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_open_file): encoding in mode string was ignored if perm is
+	  specified.
+
 Tue Aug 19 01:02:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_open_file): don't access argv[-1] by 

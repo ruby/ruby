@@ -4506,6 +4506,12 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 	fmode = NIL_P(perm) ? 0666 :  NUM2UINT(perm);
 
 	rb_file_sysopen_internal(io, RSTRING_PTR(fname), flags, fmode);
+
+        if (!FIXNUM_P(vmode)) {
+            rb_io_t *fptr;
+            GetOpenFile(io, fptr);
+            rb_io_mode_enc(fptr, StringValueCStr(vmode));
+        }
     }
     else {
 	mode = NIL_P(vmode) ? "r" : StringValueCStr(vmode);

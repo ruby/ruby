@@ -121,6 +121,15 @@ EOT
     }
   end
 
+  def test_open_w_enc_enc_perm
+    with_tmpdir {
+      open("tmp", "w:euc-jp:utf-8", 0600) {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
   def test_stdin
     assert_equal(Encoding.default_external, STDIN.external_encoding)
     assert_equal(nil, STDIN.internal_encoding)
