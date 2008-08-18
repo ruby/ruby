@@ -1,3 +1,7 @@
+Tue Aug 19 00:56:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* re.c (rb_reg_inspect): don't raise for uninitialized Regexp.
+
 Tue Aug 19 00:34:24 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_check_readable): side effect for STDIN removed.

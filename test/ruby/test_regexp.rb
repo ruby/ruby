@@ -686,7 +686,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_nil(~Regexp.allocate)
     assert_raise(TypeError) { Regexp.allocate.match("") }
     assert_raise(TypeError) { Regexp.allocate.to_s }
-    assert_raise(TypeError) { Regexp.allocate.inspect }
+    assert_match(/^#<Regexp:.*>$/, Regexp.allocate.inspect)
     assert_raise(TypeError) { Regexp.allocate.source }
     assert_raise(TypeError) { Regexp.allocate.casefold? }
     assert_raise(TypeError) { Regexp.allocate.options }

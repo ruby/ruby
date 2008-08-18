@@ -435,7 +435,9 @@ rb_reg_source(VALUE re)
 static VALUE
 rb_reg_inspect(VALUE re)
 {
-    rb_reg_check(re);
+    if (!RREGEXP(re)->ptr || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
+        return rb_any_to_s(re);
+    }
     return rb_reg_desc(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), re);
 }
 
