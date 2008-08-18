@@ -1,3 +1,11 @@
+Mon Aug 18 17:23:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (clear_readconv): extracted from rb_io_fptr_finalize.
+	  (mode_enc): call clear_readconv.
+	  (io_set_encoding): ditto.
+	  (argf_next_argv): ditto.
+	  (io_encoding_set): ditto.
+
 Mon Aug 18 16:54:06 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (mode_enc): modify enc and enc2 consistently.

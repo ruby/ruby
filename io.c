@@ -2894,6 +2894,19 @@ rb_io_fptr_cleanup(rb_io_t *fptr, int noraise)
     }
 }
 
+static void
+clear_readconv(rb_io_t *fptr)
+{
+    if (fptr->readconv) {
+        rb_econv_close(fptr->readconv);
+        fptr->readconv = NULL;
+    }
+    if (fptr->crbuf) {
+        free(fptr->crbuf);
+        fptr->crbuf = NULL;
+    }
+}
+
 int
 rb_io_fptr_finalize(rb_io_t *fptr)
 {
@@ -2913,14 +2926,7 @@ rb_io_fptr_finalize(rb_io_t *fptr)
         free(fptr->wbuf);
         fptr->wbuf = 0;
     }
-    if (fptr->readconv) {
-        rb_econv_close(fptr->readconv);
-        fptr->readconv = NULL;
-    }
-    if (fptr->crbuf) {
-        free(fptr->crbuf);
-        fptr->crbuf = NULL;
-    }
+    clear_readconv(fptr);
     free(fptr);
     return 1;
 }
@@ -3529,6 +3535,7 @@ mode_enc(rb_io_t *fptr, const char *estr)
 
     fptr->enc = 0;
     fptr->enc2 = 0;
+    clear_readconv(fptr);
 
     p0 = strrchr(estr, ':');
     if (!p0) p1 = estr;
@@ -4258,6 +4265,7 @@ io_set_encoding(VALUE io, VALUE opt)
 	GetOpenFile(io, fptr);
         fptr->enc = 0;
         fptr->enc2 = 0;
+        clear_readconv(fptr);
 	if (!NIL_P(encoding)) {
 	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
 		    RSTRING_PTR(encoding));
@@ -5604,6 +5612,7 @@ argf_next_argv(VALUE argf)
 		GetOpenFile(current_file, fptr);
 		fptr->enc = argf_enc;
 		fptr->enc2 = argf_enc2;
+                clear_readconv(fptr);
 	    }
 	}
 	else {
@@ -6331,11 +6340,13 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
     if (argc == 2) {
 	fptr->enc2 = rb_to_encoding(v1);
 	fptr->enc = rb_to_encoding(v2);
+        clear_readconv(fptr);
     }
     else if (argc == 1) {
 	if (NIL_P(v1)) {
 	    fptr->enc = 0;
 	    fptr->enc2 = 0;
+            clear_readconv(fptr);
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(v1);
@@ -6345,6 +6356,7 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 	    else {
 		fptr->enc = rb_to_encoding(v1);
 		fptr->enc2 = 0;
+                clear_readconv(fptr);
 	    }
 	}
     }
