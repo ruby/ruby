@@ -63,6 +63,11 @@ typedef struct rb_io_t {
     int crbuf_off;
     int crbuf_len;
     int crbuf_capa;
+
+    rb_econv_t *writeconv;
+    VALUE writeconv_stateless;
+    int writeconv_initialized;
+
 } rb_io_t;
 
 #define HAVE_RB_IO_T 1
@@ -110,6 +115,9 @@ typedef struct rb_io_t {
     fp->crbuf_off = 0;\
     fp->crbuf_len = 0;\
     fp->crbuf_capa = 0;\
+    fp->writeconv = NULL;\
+    fp->writeconv_stateless = Qnil;\
+    fp->writeconv_initialized = 0;\
     fp->tied_io_for_writing = 0;\
     fp->enc = 0;\
     fp->enc2 = 0;\

@@ -1507,8 +1507,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
 	break;
 
       case T_FILE:
-        if (obj->as.file.fptr)
+        if (obj->as.file.fptr) {
             gc_mark(objspace, obj->as.file.fptr->tied_io_for_writing, lev);
+            gc_mark(objspace, obj->as.file.fptr->writeconv_stateless, lev);
+        }
         break;
 
       case T_REGEXP:

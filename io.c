@@ -689,6 +689,38 @@ rb_io_wait_writable(int f)
     }
 }
 
+static void
+make_writeconv(rb_io_t *fptr)
+{
+    if (!fptr->writeconv_initialized) {
+        const char *senc, *denc;
+        fptr->writeconv_stateless = Qnil;
+        if (fptr->enc2) {
+            senc = fptr->enc->name;
+            denc = fptr->enc2->name;
+        }
+        else {
+            senc = rb_econv_stateless_encoding(fptr->enc->name);
+            if (senc) {
+                denc = fptr->enc->name;
+                fptr->writeconv_stateless = rb_str_new2(senc);
+            }
+            else {
+                denc = NULL;
+            }
+        }
+        if (senc) {
+            fptr->writeconv = rb_econv_open(senc, denc, 0);
+            if (!fptr->writeconv)
+                rb_raise(rb_eIOError, "code converter open failed (%s to %s)", senc, denc);
+        }
+        else {
+            fptr->writeconv = NULL;
+        }
+        fptr->writeconv_initialized = 1;
+    }
+}
+
 /* writing functions */
 static long
 io_fwrite(VALUE str, rb_io_t *fptr)
@@ -701,17 +733,18 @@ io_fwrite(VALUE str, rb_io_t *fptr)
      * We must also transcode if two encodings were specified
      */
     if (fptr->enc) {
-	/* transcode str before output */
-	/* the methods in transcode.c are static, so call indirectly */
-	/* Can't use encode! because puts writes a frozen newline */
+        make_writeconv(fptr);
 	if (fptr->enc2) {
-	    str = rb_funcall(str, id_encode, 2,
-			     rb_enc_from_encoding(fptr->enc2),
-			     rb_enc_from_encoding(fptr->enc));
+            str = rb_econv_string(fptr->writeconv, str, 0, RSTRING_LEN(str), Qnil, ECONV_PARTIAL_INPUT);
 	}
 	else {
-	    str = rb_funcall(str, id_encode, 1,
-			     rb_enc_from_encoding(fptr->enc));
+            if (fptr->writeconv) {
+                str = rb_str_transcode(str, fptr->writeconv_stateless);
+                str = rb_econv_string(fptr->writeconv, str, 0, RSTRING_LEN(str), Qnil, ECONV_PARTIAL_INPUT);
+            }
+            else {
+                str = rb_str_transcode(str, rb_enc_from_encoding(fptr->enc));
+            }
 	}
     }
 
@@ -1394,7 +1427,7 @@ make_readconv(rb_io_t *fptr)
     if (!fptr->readconv) {
         fptr->readconv = rb_econv_open(fptr->enc2->name, fptr->enc->name, 0);
         if (!fptr->readconv)
-            rb_raise(rb_eIOError, "code converter open failed (%s to %s)", fptr->enc->name, fptr->enc2->name);
+            rb_raise(rb_eIOError, "code converter open failed (%s to %s)", fptr->enc2->name, fptr->enc->name);
         fptr->crbuf_off = 0;
         fptr->crbuf_len = 0;
         fptr->crbuf_capa = 1024;
@@ -2845,9 +2878,77 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
 #define PREP_STDIO_NAME(f) ((f)->path)
 
 static void
+finish_writeconv(rb_io_t *fptr, int noraise)
+{
+    unsigned char *ds, *dp, *de;
+    rb_econv_result_t res;
+
+    if (!fptr->wbuf) {
+        unsigned char buf[1024];
+        int r;
+
+        res = econv_destination_buffer_full;
+        while (res == econv_destination_buffer_full) {
+            ds = dp = buf;
+            de = buf + sizeof(buf);
+            res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
+            while (dp-ds) {
+retry:
+                r = rb_write_internal(fptr->fd, ds, dp-ds);
+                if (r == dp-ds)
+                    break;
+                if (0 <= r) {
+                    ds += r;
+                }
+                if (rb_io_wait_writable(fptr->fd)) {
+                    if (!noraise)
+                        rb_io_check_closed(fptr);
+                    else if (fptr->fd < 0)
+                        return;
+                    goto retry;
+                }
+                return;
+            }
+            if (!noraise) {
+                rb_econv_check_error(fptr->writeconv);
+            }
+            if (res == econv_invalid_byte_sequence ||
+                res == econv_undefined_conversion) {
+                break;
+            }
+        }
+
+        return;
+    }
+
+    res = econv_destination_buffer_full;
+    while (res == econv_destination_buffer_full) {
+        if (fptr->wbuf_len == fptr->wbuf_capa) {
+            io_fflush(fptr);
+        }
+
+        ds = dp = (unsigned char *)fptr->wbuf + fptr->wbuf_off + fptr->wbuf_len;
+        de = (unsigned char *)fptr->wbuf + fptr->wbuf_capa;
+        res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
+        fptr->wbuf_len += dp - ds;
+        if (!noraise) {
+            rb_econv_check_error(fptr->writeconv);
+        }
+        if (res == econv_invalid_byte_sequence ||
+            res == econv_undefined_conversion) {
+            break;
+        }
+    }
+
+}
+
+static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
     int ebadf = 0;
+    if (fptr->writeconv) {
+        finish_writeconv(fptr, noraise);
+    }
     if (fptr->wbuf_len) {
         io_fflush(fptr);
     }
@@ -2907,6 +3008,23 @@ clear_readconv(rb_io_t *fptr)
     }
 }
 
+static void
+clear_writeconv(rb_io_t *fptr)
+{
+    if (fptr->writeconv) {
+        rb_econv_close(fptr->writeconv);
+        fptr->writeconv = NULL;
+    }
+    fptr->writeconv_initialized = 0;
+}
+
+static void
+clear_codeconv(rb_io_t *fptr)
+{
+    clear_readconv(fptr);
+    clear_writeconv(fptr);
+}
+
 int
 rb_io_fptr_finalize(rb_io_t *fptr)
 {
@@ -2926,7 +3044,7 @@ rb_io_fptr_finalize(rb_io_t *fptr)
         free(fptr->wbuf);
         fptr->wbuf = 0;
     }
-    clear_readconv(fptr);
+    clear_codeconv(fptr);
     free(fptr);
     return 1;
 }
@@ -3535,7 +3653,7 @@ mode_enc(rb_io_t *fptr, const char *estr)
 
     fptr->enc = 0;
     fptr->enc2 = 0;
-    clear_readconv(fptr);
+    clear_codeconv(fptr);
 
     p0 = strrchr(estr, ':');
     if (!p0) p1 = estr;
@@ -4265,7 +4383,7 @@ io_set_encoding(VALUE io, VALUE opt)
 	GetOpenFile(io, fptr);
         fptr->enc = 0;
         fptr->enc2 = 0;
-        clear_readconv(fptr);
+        clear_codeconv(fptr);
 	if (!NIL_P(encoding)) {
 	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
 		    RSTRING_PTR(encoding));
@@ -5612,7 +5730,7 @@ argf_next_argv(VALUE argf)
 		GetOpenFile(current_file, fptr);
 		fptr->enc = argf_enc;
 		fptr->enc2 = argf_enc2;
-                clear_readconv(fptr);
+                clear_codeconv(fptr);
 	    }
 	}
 	else {
@@ -6340,13 +6458,13 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
     if (argc == 2) {
 	fptr->enc2 = rb_to_encoding(v1);
 	fptr->enc = rb_to_encoding(v2);
-        clear_readconv(fptr);
+        clear_codeconv(fptr);
     }
     else if (argc == 1) {
 	if (NIL_P(v1)) {
 	    fptr->enc = 0;
 	    fptr->enc2 = 0;
-            clear_readconv(fptr);
+            clear_codeconv(fptr);
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(v1);
@@ -6356,7 +6474,7 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 	    else {
 		fptr->enc = rb_to_encoding(v1);
 		fptr->enc2 = 0;
-                clear_readconv(fptr);
+                clear_codeconv(fptr);
 	    }
 	}
     }

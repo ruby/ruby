@@ -268,6 +268,11 @@ void rb_econv_check_error(rb_econv_t *ec);
 int rb_econv_putbackable(rb_econv_t *ec);
 void rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n);
 
+/* returns corresponding stateless encoding, or NULL if not stateful. */
+const char *rb_econv_stateless_encoding(const char *stateful_enc);
+
+VALUE rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags);
+
 /* flags for rb_econv_open */
 #define ECONV_UNIVERSAL_NEWLINE_DECODER       0x100
 #define ECONV_CRLF_NEWLINE_ENCODER            0x200

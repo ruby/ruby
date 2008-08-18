@@ -1219,6 +1219,78 @@ rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n)
     tc->readagain_len -= n;
 }
 
+struct stateless_encoding_t {
+    const char *stateless_enc;
+    const char *stateful_enc;
+};
+
+static int
+stateless_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    struct stateless_encoding_t *data = (struct stateless_encoding_t *)arg;
+    st_table *table2 = (st_table *)val;
+    st_data_t v;
+
+    if (st_lookup(table2, (st_data_t)data->stateful_enc, &v)) {
+        transcoder_entry_t *entry = (transcoder_entry_t *)v;
+        const rb_transcoder *tr = load_transcoder_entry(entry);
+        if (tr && tr->stateful_type == stateful_encoder) {
+            data->stateless_enc = tr->from_encoding;
+            return ST_STOP;
+        }
+    }
+    return ST_CONTINUE;
+}
+
+const char *
+rb_econv_stateless_encoding(const char *stateful_enc)
+{
+    struct stateless_encoding_t data;
+    data.stateful_enc = stateful_enc;
+    data.stateless_enc = NULL;
+    st_foreach(transcoder_table, stateless_encoding_i, (st_data_t)&data);
+    if (data.stateless_enc)
+        return data.stateless_enc;
+    return NULL;
+}
+
+VALUE
+rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags)
+{
+    unsigned const char *ss, *sp, *se;
+    unsigned char *ds, *dp, *de;
+    rb_econv_result_t res;
+
+    if (NIL_P(dst)) {
+        dst = rb_str_buf_new(len);
+    }
+
+    res = econv_destination_buffer_full;
+    while (res == econv_destination_buffer_full) {
+        long dlen = RSTRING_LEN(dst);
+        int max_output = ec->last_tc->transcoder->max_output;
+        if (rb_str_capacity(dst) - dlen < (size_t)len + max_output) {
+            unsigned long new_capa = (unsigned long)dlen + len + max_output;
+            if (LONG_MAX < new_capa)
+                rb_raise(rb_eArgError, "too long string");
+            rb_str_resize(dst, new_capa);
+            rb_str_set_len(dst, dlen);
+        }
+        ss = sp = (const unsigned char *)RSTRING_PTR(src) + off;
+        se = ss + len;
+        ds = dp = (unsigned char *)RSTRING_PTR(dst) + dlen;
+        de = ds + rb_str_capacity(dst);
+        res = rb_econv_convert(ec, &sp, se, &dp, de, flags);
+        off += sp - ss;
+        len -= sp - ss;
+        rb_str_set_len(dst, dlen + (dp - ds));
+        rb_econv_check_error(ec);
+    }
+
+    return dst;
+}
+
+
 static VALUE
 make_econv_exception(rb_econv_t *ec)
 {

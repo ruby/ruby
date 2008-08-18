@@ -601,5 +601,50 @@ EOT
     }
   end
 
+  def test_write_conversion_fixenc
+    with_pipe {|r, w|
+      w.set_encoding("iso-2022-jp:utf-8")
+      t = Thread.new { r.read.force_encoding("ascii-8bit") }
+      w << "\u3042"
+      w << "\u3044"
+      w.close
+      assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"), t.value)
+    }
+  end
+
+  def test_write_conversion_anyenc_stateful
+    with_pipe {|r, w|
+      w.set_encoding("iso-2022-jp")
+      t = Thread.new { r.read.force_encoding("ascii-8bit") }
+      w << "\u3042"
+      w << "\x82\xa2".force_encoding("sjis")
+      w.close
+      assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"), t.value)
+    }
+  end
+
+  def test_write_conversion_anyenc_stateless
+    with_pipe {|r, w|
+      w.set_encoding("euc-jp")
+      t = Thread.new { r.read.force_encoding("ascii-8bit") }
+      w << "\u3042"
+      w << "\x82\xa2".force_encoding("sjis")
+      w.close
+      assert_equal("\xa4\xa2\xa4\xa4".force_encoding("ascii-8bit"), t.value)
+    }
+  end
+
+  def test_write_conversion_anyenc_stateful_nosync
+    with_pipe {|r, w|
+      w.sync = false
+      w.set_encoding("iso-2022-jp")
+      t = Thread.new { r.read.force_encoding("ascii-8bit") }
+      w << "\u3042"
+      w << "\x82\xa2".force_encoding("sjis")
+      w.close
+      assert_equal("\e$B$\"$$\e(B".force_encoding("ascii-8bit"), t.value)
+    }
+  end
+
 end
 

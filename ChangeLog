@@ -1,3 +1,33 @@
+Mon Aug 18 21:02:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): new fields: writeconv,
+	  writeconv_stateless and writeconv_initialized.
+	  (MakeOpenFile): initialize them.
+
+	* include/ruby/encoding.h (rb_econv_stateless_encoding): declared.
+	  (rb_econv_string): declared.
+
+	* io.c (make_writeconv): new function.
+	  (io_fwrite): use econv.
+	  (make_readconv): fix error message.
+	  (finish_writeconv): new function.
+	  (fptr_finalize): call finish_writeconv.
+	  (clear_writeconv): new function.
+	  (clear_codeconv): new function to call both clear_readconv and
+	  clear_writeconv.
+	  (rb_io_fptr_finalize): call clear_codeconv instead of
+	  clear_readconv.
+	  (mode_enc): ditto.
+	  (io_set_encoding): ditto.
+	  (argf_next_argv): ditto.
+	  (io_encoding_set): ditto.
+
+	* gc.c (gc_mark_children): mark writeconv_stateless in T_FILE.
+
+	* transcode.c (stateless_encoding_i): new function.
+	  (rb_econv_stateless_encoding): ditto.
+	  (rb_econv_string): ditto.
+
 Mon Aug 18 17:23:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (clear_readconv): extracted from rb_io_fptr_finalize.
