@@ -1,3 +1,9 @@
+Mon Aug 18 16:54:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (mode_enc): modify enc and enc2 consistently.
+	  (io_set_encoding): ditto.
+	  (io_encoding_set): ditto.
+
 Mon Aug 18 13:21:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (transcode_search_path): prevent infinite loop by

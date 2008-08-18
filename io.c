@@ -3527,6 +3527,9 @@ mode_enc(rb_io_t *fptr, const char *estr)
 
     /* parse estr as "enc" or "enc2:enc" */
 
+    fptr->enc = 0;
+    fptr->enc2 = 0;
+
     p0 = strrchr(estr, ':');
     if (!p0) p1 = estr;
     else     p1 = p0 + 1;
@@ -3538,7 +3541,7 @@ mode_enc(rb_io_t *fptr, const char *estr)
 	rb_warn("Unsupported encoding %s ignored", p1);
     }
 
-    if (p0) {
+    if (fptr->enc && p0) {
 	int n = p0 - estr;
 	if (n > ENCODING_MAXNAMELEN) {
 	    idx2 = -1;
@@ -4253,6 +4256,8 @@ io_set_encoding(VALUE io, VALUE opt)
     if (!NIL_P(extenc)) {
 	rb_encoding *extencoding = rb_to_encoding(extenc);
 	GetOpenFile(io, fptr);
+        fptr->enc = 0;
+        fptr->enc2 = 0;
 	if (!NIL_P(encoding)) {
 	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
 		    RSTRING_PTR(encoding));
@@ -6330,6 +6335,7 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
     else if (argc == 1) {
 	if (NIL_P(v1)) {
 	    fptr->enc = 0;
+	    fptr->enc2 = 0;
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(v1);
@@ -6338,6 +6344,7 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 	    }
 	    else {
 		fptr->enc = rb_to_encoding(v1);
+		fptr->enc2 = 0;
 	    }
 	}
     }
