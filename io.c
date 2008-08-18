@@ -1384,24 +1384,6 @@ static VALUE
 io_enc_str(VALUE str, rb_io_t *fptr)
 {
     OBJ_TAINT(str);
-    if (fptr->enc2) {
-	/* two encodings, so transcode from enc2 to enc */
-	/* the methods in transcode.c are static, so call indirectly */
-	str = rb_funcall(str, id_encode, 2,
-			 rb_enc_from_encoding(fptr->enc),
-			 rb_enc_from_encoding(fptr->enc2));
-    }
-    else {
-	/* just one encoding, so associate it with the string */
-	rb_enc_associate(str, io_read_encoding(fptr));
-    }
-    return str;
-}
-
-static VALUE
-io_enc_str_converted(VALUE str, rb_io_t *fptr)
-{
-    OBJ_TAINT(str);
     rb_enc_associate(str, io_read_encoding(fptr));
     return str;
 }
@@ -1526,7 +1508,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
                 io_shift_crbuf(fptr, fptr->crbuf_len, &str);
             }
             if (more_char(fptr) == -1) {
-                return io_enc_str_converted(str, fptr);
+                return io_enc_str(str, fptr);
             }
         }
     }
@@ -2147,7 +2129,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    }
 	}
 	if (!NIL_P(str))
-            str = io_enc_str_converted(str, fptr);
+            str = io_enc_str(str, fptr);
     }
 
     if (!NIL_P(str)) {

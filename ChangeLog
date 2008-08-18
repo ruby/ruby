@@ -1,3 +1,9 @@
+Mon Aug 18 12:45:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_enc_str): code conversion removed.
+	  (io_enc_str_converted): removed because it is identical to
+	  io_enc_str now.
+
 Mon Aug 18 12:12:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_shift_crbuf): add strp argument to append into existing
