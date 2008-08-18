@@ -1399,6 +1399,14 @@ io_enc_str(VALUE str, rb_io_t *fptr)
 }
 
 static VALUE
+io_enc_str_converted(VALUE str, rb_io_t *fptr)
+{
+    OBJ_TAINT(str);
+    rb_enc_associate(str, io_read_encoding(fptr));
+    return str;
+}
+
+static VALUE
 read_all(rb_io_t *fptr, long siz, VALUE str)
 {
     long bytes = 0;
@@ -1736,11 +1744,130 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 	rb_raise(rb_eRuntimeError, "rs modified");
 }
 
+static void
+make_readconv(rb_io_t *fptr)
+{
+    if (!fptr->readconv) {
+        fptr->readconv = rb_econv_open(fptr->enc2->name, fptr->enc->name, 0);
+        if (!fptr->readconv)
+            rb_raise(rb_eIOError, "code converter open failed (%s to %s)", fptr->enc->name, fptr->enc2->name);
+        fptr->crbuf_off = 0;
+        fptr->crbuf_len = 0;
+        fptr->crbuf_capa = 1024;
+        fptr->crbuf = ALLOC_N(char, fptr->crbuf_capa);
+    }
+}
+
+static int
+more_char(rb_io_t *fptr)
+{
+    const unsigned char *ss, *sp, *se;
+    unsigned char *ds, *dp, *de;
+    rb_econv_result_t res;
+    int putbackable;
+    int crbuf_len0;
+
+    if (fptr->crbuf_len == fptr->crbuf_capa)
+        return 0; /* crbuf full */
+    if (fptr->crbuf_len == 0)
+        fptr->crbuf_off = 0;
+    else if (fptr->crbuf_off + fptr->crbuf_len == fptr->crbuf_capa) {
+        memmove(fptr->crbuf, fptr->crbuf+fptr->crbuf_off, fptr->crbuf_len);
+        fptr->crbuf_off = 0;
+    }
+
+    crbuf_len0 = fptr->crbuf_len;
+
+    while (1) {
+        ss = sp = (const unsigned char *)fptr->rbuf + fptr->rbuf_off;
+        se = sp + fptr->rbuf_len;
+        ds = dp = (unsigned char *)fptr->crbuf + fptr->crbuf_off + fptr->crbuf_len;
+        de = (unsigned char *)fptr->crbuf + fptr->crbuf_capa;
+        res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_OUTPUT_FOLLOWED_BY_INPUT);
+        fptr->rbuf_off += sp - ss;
+        fptr->rbuf_len -= sp - ss;
+        fptr->crbuf_len += dp - ds;
+
+        putbackable = rb_econv_putbackable(fptr->readconv);
+        if (putbackable) {
+            rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf + fptr->rbuf_off - putbackable, putbackable);
+            fptr->rbuf_off -= putbackable;
+            fptr->rbuf_len += putbackable;
+        }
+
+        rb_econv_check_error(fptr->readconv);
+
+        if (crbuf_len0 != fptr->crbuf_len)
+            return 0;
+
+        if (res == econv_finished)
+            return -1;
+
+        if (res == econv_source_buffer_empty) {
+            if (fptr->rbuf_len == 0) {
+                rb_thread_wait_fd(fptr->fd);
+                rb_io_check_closed(fptr);
+                if (io_fillbuf(fptr) == -1) {
+                    ds = dp = (unsigned char *)fptr->crbuf + fptr->crbuf_off + fptr->crbuf_len;
+                    de = (unsigned char *)fptr->crbuf + fptr->crbuf_capa;
+                    res = rb_econv_convert(fptr->readconv, NULL, NULL, &dp, de, 0);
+                    fptr->crbuf_len += dp - ds;
+                    rb_econv_check_error(fptr->readconv);
+                }
+            }
+        }
+    }
+}
+
 static int
 appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
 {
     VALUE str = *strp;
     long limit = *lp;
+
+    if (fptr->enc2) {
+        make_readconv(fptr);
+        while (1) {
+            const char *p, *e;
+            int searchlen;
+            if (fptr->crbuf_len) {
+                p = fptr->crbuf+fptr->crbuf_off;
+                searchlen = fptr->crbuf_len;
+                if (0 < limit && limit < searchlen)
+                    searchlen = limit;
+                e = memchr(p, delim, searchlen);
+                if (e) {
+                    if (NIL_P(str))
+                        *strp = str = rb_str_new(p, e-p+1);
+                    else
+                        rb_str_buf_cat(str, p, e-p+1);
+                    fptr->crbuf_off += e-p+1;
+                    fptr->crbuf_len -= e-p+1;
+                    limit -= e-p+1;
+                    *lp = limit;
+                    return delim;
+                }
+
+                if (NIL_P(str))
+                    *strp = str = rb_str_new(p, searchlen);
+                else
+                    rb_str_buf_cat(str, p, searchlen);
+                fptr->crbuf_off += searchlen;
+                fptr->crbuf_len -= searchlen;
+                limit -= searchlen;
+
+                if (limit == 0) {
+                    *lp = limit;
+                    return (unsigned char)RSTRING_PTR(str)[RSTRING_LEN(str)-1];
+                }
+            }
+
+            if (more_char(fptr) == -1) {
+                *lp = limit;
+                return EOF;
+            }
+        }
+    }
 
     while (1) {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
@@ -1887,15 +2014,6 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
                          rb_enc_name(enc_rs));
             }
 	}
-	if (fptr->enc2) {
-            VALUE rs2;
-	    rs2 = rb_funcall(rs, id_encode, 2,
-			    rb_enc_from_encoding(fptr->enc2),
-			    rb_enc_from_encoding(fptr->enc));
-            if (!RTEST(rb_str_equal(rs, rs2))) {
-                rs = rs2;
-            }
-	}
     }
     *rsp = rs;
     *limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
@@ -1911,9 +2029,6 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    if (rb_enc_dummy_p(io_input_encoding(fptr)) && rs != rb_default_rs) {
-	rb_raise(rb_eNotImpError, "gets with delimiter against dummy encoding is not currently supported");
-    }
     if (NIL_P(rs)) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
@@ -1921,7 +2036,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     else if (limit == 0) {
 	return rb_enc_str_new(0, 0, io_read_encoding(fptr));
     }
-    else if (rs == rb_default_rs && limit < 0 &&
+    else if (rs == rb_default_rs && limit < 0 && !fptr->enc2 &&
              rb_enc_asciicompat(enc = io_read_encoding(fptr))) {
 	return rb_io_getline_fast(fptr, enc);
     }
@@ -1945,7 +2060,10 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 	newline = (unsigned char)rsptr[rslen - 1];
 
-	enc = io_input_encoding(fptr);
+        if (fptr->enc2)
+            enc = fptr->enc;
+        else
+            enc = io_input_encoding(fptr);
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
             const char *s, *p, *pp;
 
@@ -1981,7 +2099,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 		swallow(fptr, '\n');
 	    }
 	}
-	if (!NIL_P(str)) str = io_enc_str(str, fptr);
+	if (!NIL_P(str))
+            str = io_enc_str_converted(str, fptr);
     }
 
     if (!NIL_P(str)) {
@@ -2263,54 +2382,32 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 
     if (fptr->enc2) {
         if (!fptr->readconv) {
-            fptr->readconv = rb_econv_open(fptr->enc2->name, fptr->enc->name, 0);
-            if (!fptr->readconv)
-                rb_raise(rb_eIOError, "code converter open failed (%s to %s)", fptr->enc->name, fptr->enc2->name);
-            fptr->crbuf_off = 0;
-            fptr->crbuf_len = 0;
-            fptr->crbuf_capa = 1024;
-            fptr->crbuf = ALLOC_N(char, fptr->crbuf_capa);
+            make_readconv(fptr);
         }
 
         while (1) {
-            const unsigned char *ss, *sp, *se;
-            unsigned char *ds, *dp, *de;
-            rb_econv_result_t res;
-            int putbackable;
             if (fptr->crbuf_len) {
-                r = rb_enc_precise_mbclen(fptr->crbuf+fptr->crbuf_off, fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len, fptr->enc);
+                r = rb_enc_precise_mbclen(fptr->crbuf+fptr->crbuf_off,
+                                          fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
+                                          fptr->enc);
                 if (!MBCLEN_NEEDMORE_P(r))
                     break;
                 if (fptr->crbuf_len == fptr->crbuf_capa) {
                     rb_raise(rb_eIOError, "too long character");
                 }
             }
-            if (fptr->rbuf_len == 0) {
-                if (io_fillbuf(fptr) == -1) {
-                    if (fptr->crbuf_len == 0)
-                        return Qnil;
-                    /* return an incomplete character just before EOF */
-                    return io_shift_crbuf(fptr, fptr->crbuf_len);
-                }
+
+            if (more_char(fptr) == -1) {
+                if (fptr->crbuf_len == 0)
+                    return Qnil;
+                /* return an incomplete character just before EOF */
+                return io_shift_crbuf(fptr, fptr->crbuf_len);
             }
-            ss = sp = (const unsigned char *)fptr->rbuf + fptr->rbuf_off;
-            se = sp + fptr->rbuf_len;
-            ds = dp = (unsigned char *)fptr->crbuf + fptr->crbuf_off + fptr->crbuf_len;
-            de = (unsigned char *)fptr->crbuf + fptr->crbuf_capa;
-            res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_OUTPUT_FOLLOWED_BY_INPUT);
-            fptr->rbuf_off += sp - ss;
-            fptr->rbuf_len -= sp - ss;
-            fptr->crbuf_len += dp - ds;
-            putbackable = rb_econv_putbackable(fptr->readconv);
-            if (putbackable) {
-                rb_econv_putback(fptr->readconv, (unsigned char *)fptr->rbuf + fptr->rbuf_off - putbackable, putbackable);
-                fptr->rbuf_off -= putbackable;
-                fptr->rbuf_len += putbackable;
-            }
-            rb_econv_check_error(fptr->readconv);
         }
         if (MBCLEN_INVALID_P(r)) {
-            r = rb_enc_mbclen(fptr->crbuf+fptr->crbuf_off, fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len, fptr->enc);
+            r = rb_enc_mbclen(fptr->crbuf+fptr->crbuf_off,
+                              fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
+                              fptr->enc);
             return io_shift_crbuf(fptr, r);
         }
         return io_shift_crbuf(fptr, MBCLEN_CHARFOUND_LEN(r));

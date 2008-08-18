@@ -1,3 +1,14 @@
+Mon Aug 18 10:35:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_enc_str_converted): new function.
+	  (make_readconv): extracted from io_getc.
+	  (more_char): ditto.
+	  (appendline): use econv via make_readconv and more_char for code
+	  conversion.
+	  (prepare_getline_args): don't convert record separator.
+	  (rb_io_getline_1): don't use rb_io_getline_fast if enc2 is set.
+	  (io_getc): use make_readconv and more_char.
+
 Mon Aug 18 08:27:44 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* common.mk: fix error in uncommon.mk.
