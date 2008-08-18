@@ -53,7 +53,7 @@ typedef struct rb_io_t {
      * enc  enc2 read action                      write action
      * NULL NULL force_encoding(default_external) write the byte sequence of str
      * e1   NULL force_encoding(e1)               convert str.encoding to e1
-     * e1   e2   convert from e2 to e1            convert from e1 to e2
+     * e1   e2   convert from e2 to e1            convert str.encoding to e2
      */
     rb_encoding *enc;
     rb_encoding *enc2;

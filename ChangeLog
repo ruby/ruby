@@ -1,3 +1,10 @@
+Mon Aug 18 22:30:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (make_writeconv): if enc and enc2 is set, convert
+	  string.encoding to enc2.
+
+	* include/ruby/io.h: comment changed.
+
 Mon Aug 18 21:02:08 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): new fields: writeconv,

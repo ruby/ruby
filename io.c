@@ -694,20 +694,17 @@ make_writeconv(rb_io_t *fptr)
 {
     if (!fptr->writeconv_initialized) {
         const char *senc, *denc;
-        fptr->writeconv_stateless = Qnil;
-        if (fptr->enc2) {
-            senc = fptr->enc->name;
-            denc = fptr->enc2->name;
+        rb_encoding *enc;
+
+        enc = fptr->enc2 ? fptr->enc2 : fptr->enc;
+        senc = rb_econv_stateless_encoding(enc->name);
+        if (senc) {
+            denc = enc->name;
+            fptr->writeconv_stateless = rb_str_new2(senc);
         }
         else {
-            senc = rb_econv_stateless_encoding(fptr->enc->name);
-            if (senc) {
-                denc = fptr->enc->name;
-                fptr->writeconv_stateless = rb_str_new2(senc);
-            }
-            else {
-                denc = NULL;
-            }
+            denc = NULL;
+            fptr->writeconv_stateless = Qnil;
         }
         if (senc) {
             fptr->writeconv = rb_econv_open(senc, denc, 0);
@@ -730,22 +727,19 @@ io_fwrite(VALUE str, rb_io_t *fptr)
     /*
      * If an external encoding was specified and it differs from
      * the strings encoding then we must transcode before writing.
-     * We must also transcode if two encodings were specified
      */
     if (fptr->enc) {
         make_writeconv(fptr);
-	if (fptr->enc2) {
+        if (fptr->writeconv) {
+            str = rb_str_transcode(str, fptr->writeconv_stateless);
             str = rb_econv_string(fptr->writeconv, str, 0, RSTRING_LEN(str), Qnil, ECONV_PARTIAL_INPUT);
-	}
-	else {
-            if (fptr->writeconv) {
-                str = rb_str_transcode(str, fptr->writeconv_stateless);
-                str = rb_econv_string(fptr->writeconv, str, 0, RSTRING_LEN(str), Qnil, ECONV_PARTIAL_INPUT);
-            }
-            else {
+        }
+        else {
+            if (fptr->enc2)
+                str = rb_str_transcode(str, rb_enc_from_encoding(fptr->enc2));
+            else
                 str = rb_str_transcode(str, rb_enc_from_encoding(fptr->enc));
-            }
-	}
+        }
     }
 
     len = RSTRING_LEN(str);
