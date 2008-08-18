@@ -4456,7 +4456,7 @@ io_set_encoding(VALUE io, VALUE opt)
 static VALUE
 rb_open_file(int argc, VALUE *argv, VALUE io)
 {
-    VALUE opt, fname, vmode, perm;
+    VALUE opt=Qnil, fname, vmode, perm;
     const char *mode;
     int flags;
     unsigned int fmode;
