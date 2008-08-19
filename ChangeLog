@@ -1,3 +1,8 @@
+Tue Aug 19 21:14:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (FMODE_READWRITE): define as
+	  FMODE_READABLE|FMODE_WRITABLE.
+
 Tue Aug 19 21:13:08 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_flags_mode): use hexadecimal in error message.

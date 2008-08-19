@@ -74,8 +74,7 @@ typedef struct rb_io_t {
 
 #define FMODE_READABLE                  0x0001
 #define FMODE_WRITABLE                  0x0002
-#define FMODE_READWRITE                 0x0003
-
+#define FMODE_READWRITE                 (FMODE_READABLE|FMODE_WRITABLE)
 #define FMODE_BINMODE                   0x0004
 #define FMODE_SYNC                      0x0008
 #define FMODE_TTY                       0x0010
