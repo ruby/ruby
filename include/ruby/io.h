@@ -72,17 +72,18 @@ typedef struct rb_io_t {
 
 #define HAVE_RB_IO_T 1
 
-#define FMODE_READABLE  1
-#define FMODE_WRITABLE  2
-#define FMODE_READWRITE 3
-#define FMODE_APPEND   64
-#define FMODE_CREATE  128
-#define FMODE_BINMODE   4
-#define FMODE_SYNC      8
-#define FMODE_TTY      16
-#define FMODE_DUPLEX   32
-#define FMODE_WSPLIT  0x200
-#define FMODE_WSPLIT_INITIALIZED  0x400
+#define FMODE_READABLE                  0x0001
+#define FMODE_WRITABLE                  0x0002
+#define FMODE_READWRITE                 0x0003
+
+#define FMODE_BINMODE                   0x0004
+#define FMODE_SYNC                      0x0008
+#define FMODE_TTY                       0x0010
+#define FMODE_DUPLEX                    0x0020
+#define FMODE_APPEND                    0x0040
+#define FMODE_CREATE                    0x0080
+#define FMODE_WSPLIT                    0x0200
+#define FMODE_WSPLIT_INITIALIZED        0x0400
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
