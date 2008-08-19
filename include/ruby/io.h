@@ -81,6 +81,7 @@ typedef struct rb_io_t {
 #define FMODE_DUPLEX                    0x0020
 #define FMODE_APPEND                    0x0040
 #define FMODE_CREATE                    0x0080
+#define FMODE_TRUNC                     0x0100
 #define FMODE_WSPLIT                    0x0200
 #define FMODE_WSPLIT_INITIALIZED        0x0400
 

@@ -1,3 +1,13 @@
+Wed Aug 20 03:36:45 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (FMODE_TRUNC): new constant.
+
+	* io.c (rb_io_mode_flags): set FMODE_TRUNC for "w".
+	  (rb_io_modenum_flags): set FMODE_TRUNC for O_TRUNC.
+	  (rb_io_flags_modenum): new function.
+	  (rb_io_mode_modenum): just use rb_io_mode_flags and
+	  rb_io_flags_modenum.
+
 Wed Aug 20 02:36:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (fopen): macro for vms removed.  fopen is not used now.

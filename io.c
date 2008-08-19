@@ -3553,7 +3553,7 @@ rb_io_mode_flags(const char *mode)
 	flags |= FMODE_READABLE;
 	break;
       case 'w':
-	flags |= FMODE_WRITABLE | FMODE_CREATE;
+	flags |= FMODE_WRITABLE | FMODE_TRUNC | FMODE_CREATE;
 	break;
       case 'a':
 	flags |= FMODE_WRITABLE | FMODE_APPEND | FMODE_CREATE;
@@ -3601,6 +3601,9 @@ rb_io_modenum_flags(int mode)
     if (mode & O_APPEND) {
 	flags |= FMODE_APPEND;
     }
+    if (mode & O_TRUNC) {
+	flags |= FMODE_TRUNC;
+    }
     if (mode & O_CREAT) {
 	flags |= FMODE_CREATE;
     }
@@ -3614,44 +3617,44 @@ rb_io_modenum_flags(int mode)
 }
 
 int
+rb_io_flags_modenum(int flags)
+{
+    int mode = 0;
+
+    switch (flags & FMODE_READWRITE) {
+      case FMODE_READABLE:
+        mode |= O_RDONLY;
+        break;
+      case FMODE_WRITABLE:
+        mode |= O_WRONLY;
+        break;
+      case FMODE_READWRITE:
+        mode |= O_RDWR;
+        break;
+    }
+
+    if (flags & FMODE_APPEND) {
+        mode |= O_APPEND;
+    }
+    if (flags & FMODE_TRUNC) {
+        mode |= O_TRUNC;
+    }
+    if (flags & FMODE_CREATE) {
+        mode |= O_CREAT;
+    }
+#ifdef O_BINARY
+    if (flags & FMODE_BINMODE) {
+        mode |= O_BINARY;
+    }
+#endif
+
+    return mode;
+}
+
+int
 rb_io_mode_modenum(const char *mode)
 {
-    int flags = 0;
-    const char *m = mode;
-
-    switch (*m++) {
-      case 'r':
-	flags |= O_RDONLY;
-	break;
-      case 'w':
-	flags |= O_WRONLY | O_CREAT | O_TRUNC;
-	break;
-      case 'a':
-	flags |= O_WRONLY | O_CREAT | O_APPEND;
-	break;
-      default:
-      error:
-	rb_raise(rb_eArgError, "invalid access mode %s", mode);
-    }
-
-    while (*m) {
-        switch (*m++) {
-	  case 'b':
-#ifdef O_BINARY
-            flags |= O_BINARY;
-#endif
-            break;
-	  case '+':
-            flags = (flags & ~O_ACCMODE) | O_RDWR;
-            break;
-	  default:
-            goto error;
-	  case ':':
-	    return flags;
-        }
-    }
-
-    return flags;
+    return rb_io_flags_modenum(rb_io_mode_flags(mode));
 }
 
 #define MODENUM_MAX 4
