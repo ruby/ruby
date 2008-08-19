@@ -3539,7 +3539,7 @@ rb_io_flags_mode(int flags)
 	}
 	return MODE_BINMODE("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "invalid access modenum 0%o", flags);
+    rb_raise(rb_eArgError, "invalid access modenum 0x%x", flags);
     return NULL;		/* not reached */
 }
 
@@ -3679,7 +3679,7 @@ rb_io_modenum_mode(int flags)
       case O_RDWR:
 	return MODE_BINARY("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "invalid access modenum 0%o", flags);
+    rb_raise(rb_eArgError, "invalid access modenum 0x%x", flags);
     return NULL;		/* not reached */
 }
 
@@ -5459,7 +5459,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	    fmode = rb_io_modenum_flags(flags);
 	    if ((ofp->mode ^ fmode) & (FMODE_READWRITE|FMODE_BINMODE)) {
 		if (FIXNUM_P(mode)) {
-		    rb_raise(rb_eArgError, "incompatible mode 0%o", flags);
+		    rb_raise(rb_eArgError, "incompatible mode 0x%x", flags);
 		}
 		else {
 		    rb_raise(rb_eArgError, "incompatible mode \"%s\"", RSTRING_PTR(mode));

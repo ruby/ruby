@@ -1,3 +1,9 @@
+Tue Aug 19 21:13:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_flags_mode): use hexadecimal in error message.
+	  (rb_io_modenum_mode): ditto.
+	  (rb_io_initialize): ditto.
+
 Tue Aug 19 18:23:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_flags_mode): add a prefix 0 to octal in error message.
