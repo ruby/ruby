@@ -1,3 +1,13 @@
+Tue Aug 19 20:32:48 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (Init_Enumerator): Rename Enumerable::Enumerator to
+	  just Enumerator and redefine the former as an alias for backward
+	  compatibility.
+
+	* lib/set.rb (TC_Set#test_each),
+	  test/ruby/test_enumerator.rb (TestEnumerator#test_initialize):
+	  Enumerable::Enumerator is now called Enumerator.
+
 Mon Aug 18 02:25:11 2008  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#eof?): added lacked method.
