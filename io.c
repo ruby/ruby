@@ -3686,7 +3686,7 @@ rb_io_modenum_mode(int flags)
 }
 
 static void
-mode_enc(rb_io_t *fptr, const char *estr)
+parse_mode_enc(const char *estr, rb_encoding **enc_p, rb_encoding **enc2_p)
 {
     const char *p0, *p1;
     char *enc2name;
@@ -3694,22 +3694,21 @@ mode_enc(rb_io_t *fptr, const char *estr)
 
     /* parse estr as "enc" or "enc2:enc" */
 
-    fptr->enc = 0;
-    fptr->enc2 = 0;
-    clear_codeconv(fptr);
+    *enc_p = 0;
+    *enc2_p = 0;
 
     p0 = strrchr(estr, ':');
     if (!p0) p1 = estr;
     else     p1 = p0 + 1;
     idx = rb_enc_find_index(p1);
     if (idx >= 0) {
-	fptr->enc = rb_enc_from_index(idx);
+	*enc_p = rb_enc_from_index(idx);
     }
     else {
 	rb_warn("Unsupported encoding %s ignored", p1);
     }
 
-    if (fptr->enc && p0) {
+    if (*enc_p && p0) {
 	int n = p0 - estr;
 	if (n > ENCODING_MAXNAMELEN) {
 	    idx2 = -1;
@@ -3729,9 +3728,17 @@ mode_enc(rb_io_t *fptr, const char *estr)
 		    n, estr, p1);
 	}
 	else {
-	    fptr->enc2 = rb_enc_from_index(idx2);
+	    *enc2_p = rb_enc_from_index(idx2);
 	}
     }
+}
+
+static void
+mode_enc(rb_io_t *fptr, const char *estr)
+{
+    clear_codeconv(fptr);
+
+    parse_mode_enc(estr, &fptr->enc, &fptr->enc2);
 }
 
 void
@@ -3741,6 +3748,54 @@ rb_io_mode_enc(rb_io_t *fptr, const char *mode)
     if (p) {
 	mode_enc(fptr, p+1);
     }
+}
+
+static int
+io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
+{
+    VALUE encoding=Qnil, extenc=Qnil, intenc=Qnil;
+    int extracted = 0;
+    if (!NIL_P(opt)) {
+	VALUE v;
+	v = rb_hash_aref(opt, sym_encoding);
+	if (!NIL_P(v)) encoding = v;
+	v = rb_hash_aref(opt, sym_extenc);
+	if (!NIL_P(v)) extenc = v;
+	v = rb_hash_aref(opt, sym_intenc);
+	if (!NIL_P(v)) intenc = v;
+    }
+    if (!NIL_P(extenc)) {
+	rb_encoding *extencoding = rb_to_encoding(extenc);
+        extracted = 1;
+        *enc_p = 0;
+        *enc2_p = 0;
+	if (!NIL_P(encoding)) {
+	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
+		    RSTRING_PTR(encoding));
+	}
+	if (!NIL_P(intenc)) {
+	    rb_encoding *intencoding = rb_to_encoding(intenc);
+	    if (extencoding == intencoding) {
+		rb_warn("Ignoring internal encoding '%s': it is identical to external encoding '%s'",
+			RSTRING_PTR(rb_inspect(intenc)),
+			RSTRING_PTR(rb_inspect(extenc)));
+	    }
+	    else {
+		*enc2_p = intencoding;
+	    }
+	}
+	*enc_p = extencoding;
+    }
+    else {
+	if (!NIL_P(intenc)) {
+	    rb_raise(rb_eArgError, "External encoding must be specified when internal encoding is given");
+	}
+	if (!NIL_P(encoding)) {
+            extracted = 1;
+            parse_mode_enc(StringValueCStr(encoding), enc_p, enc2_p);
+	}
+    }
+    return extracted;
 }
 
 struct sysopen_struct {
@@ -4386,47 +4441,13 @@ static void
 io_set_encoding(VALUE io, VALUE opt)
 {
     rb_io_t *fptr;
-    VALUE encoding=Qnil, extenc=Qnil, intenc=Qnil;
-    if (!NIL_P(opt)) {
-	VALUE v;
-	v = rb_hash_aref(opt, sym_encoding);
-	if (!NIL_P(v)) encoding = v;
-	v = rb_hash_aref(opt, sym_extenc);
-	if (!NIL_P(v)) extenc = v;
-	v = rb_hash_aref(opt, sym_intenc);
-	if (!NIL_P(v)) intenc = v;
-    }
-    if (!NIL_P(extenc)) {
-	rb_encoding *extencoding = rb_to_encoding(extenc);
-	GetOpenFile(io, fptr);
-        fptr->enc = 0;
-        fptr->enc2 = 0;
+    rb_encoding *enc, *enc2;
+
+    if (io_extract_encoding_option(opt, &enc, &enc2)) {
+        GetOpenFile(io, fptr);
+        fptr->enc = enc;
+        fptr->enc2 = enc2;
         clear_codeconv(fptr);
-	if (!NIL_P(encoding)) {
-	    rb_warn("Ignoring encoding parameter '%s': external_encoding is used",
-		    RSTRING_PTR(encoding));
-	}
-	if (!NIL_P(intenc)) {
-	    rb_encoding *intencoding = rb_to_encoding(intenc);
-	    if (extencoding == intencoding) {
-		rb_warn("Ignoring internal encoding '%s': it is identical to external encoding '%s'",
-			RSTRING_PTR(rb_inspect(intenc)),
-			RSTRING_PTR(rb_inspect(extenc)));
-	    }
-	    else {
-		fptr->enc2 = intencoding;
-	    }
-	}
-	fptr->enc = extencoding;
-    }
-    else {
-	if (!NIL_P(intenc)) {
-	    rb_raise(rb_eArgError, "External encoding must be specified when internal encoding is given");
-	}
-	if (!NIL_P(encoding)) {
-	    GetOpenFile(io, fptr);
-	    mode_enc(fptr, StringValueCStr(encoding));
-	}
     }
 }
 

@@ -1,3 +1,8 @@
+Wed Aug 20 05:19:40 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (parse_mode_enc): extracted from mode_enc.
+	  (io_extract_encoding_option): extracted from io_set_encoding.
+
 Wed Aug 20 04:17:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_flags_modenum): make it static.
