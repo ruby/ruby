@@ -125,7 +125,6 @@ typedef struct rb_io_t {
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);
 
-FILE *rb_fopen(const char*, const char*);
 FILE *rb_fdopen(int, const char*);
 int  rb_io_mode_flags(const char*);
 int  rb_io_modenum_flags(int);

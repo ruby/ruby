@@ -3784,31 +3784,6 @@ rb_sysopen(char *fname, int flags, unsigned int mode)
 }
 
 FILE *
-rb_fopen(const char *fname, const char *mode)
-{
-    FILE *file;
-
-    file = fopen(fname, mode);
-    if (!file) {
-	if (errno == EMFILE || errno == ENFILE) {
-	    rb_gc();
-	    file = fopen(fname, mode);
-	}
-	if (!file) {
-	    rb_sys_fail(fname);
-	}
-    }
-#ifdef USE_SETVBUF
-    if (setvbuf(file, NULL, _IOFBF, 0) != 0)
-	rb_warn("setvbuf() can't be honoured for %s", fname);
-#endif
-#ifdef __human68k__
-    setmode(fileno(file), O_TEXT);
-#endif
-    return file;
-}
-
-FILE *
 rb_fdopen(int fd, const char *mode)
 {
     FILE *file;

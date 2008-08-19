@@ -1,3 +1,9 @@
+Tue Aug 19 21:50:43 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_fopen): declaration removed.
+
+	* io.c (rb_fopen): unused function removed.
+
 Tue Aug 19 21:14:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (FMODE_READWRITE): define as
