@@ -1,3 +1,8 @@
+Tue Aug 19 18:23:40 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_flags_mode): add a prefix 0 to octal in error message.
+	  (rb_io_modenum_mode): ditto.
+
 Tue Aug 19 18:05:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (FMODE_*): sorted and describe the values in

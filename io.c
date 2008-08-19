@@ -3539,7 +3539,7 @@ rb_io_flags_mode(int flags)
 	}
 	return MODE_BINMODE("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "invalid access modenum %o", flags);
+    rb_raise(rb_eArgError, "invalid access modenum 0%o", flags);
     return NULL;		/* not reached */
 }
 
@@ -3679,7 +3679,7 @@ rb_io_modenum_mode(int flags)
       case O_RDWR:
 	return MODE_BINARY("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "invalid access modenum %o", flags);
+    rb_raise(rb_eArgError, "invalid access modenum 0%o", flags);
     return NULL;		/* not reached */
 }
 
