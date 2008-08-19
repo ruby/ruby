@@ -167,7 +167,6 @@ static int max_file_descriptor = NOFILE;
 #endif
 
 #if defined(__VMS)
-#define fopen(file_spec, mode)  fopen(file_spec, mode, "rfm=stmlf")
 #define open(file_spec, flags, mode)  open(file_spec, flags, mode, "rfm=stmlf")
 #endif
 
