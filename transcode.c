@@ -743,14 +743,18 @@ rb_econv_open(const char *from, const char *to, int flags)
 
     num_trans = transcode_search_path(from, to, trans_open_i, (void *)&entries);
 
-    if (num_trans < 0 || !entries)
+    if (num_trans < 0 || !entries) {
+        xfree(entries);
         return NULL;
+    }
 
     if (flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
         const char *name = (flags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
-        if (!e)
+        if (!e) {
+            xfree(entries);
             return NULL;
+        }
         MEMMOVE(entries+1, entries, transcoder_entry_t *, num_trans);
         entries[0] = e;
         num_trans++;
@@ -758,12 +762,15 @@ rb_econv_open(const char *from, const char *to, int flags)
 
     if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
         transcoder_entry_t *e = get_transcoder_entry("universal_newline", "");
-        if (!e)
+        if (!e) {
+            xfree(entries);
             return NULL;
+        }
         entries[num_trans++] = e;
     }
 
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
+    xfree(entries);
     if (!ec)
         rb_raise(rb_eArgError, "encoding conversion not supported (from %s to %s)", from, to);
 
@@ -1200,7 +1207,7 @@ rb_econv_close(rb_econv_t *ec)
         if (ec->elems[i].out_buf_start)
             xfree(ec->elems[i].out_buf_start);
     }
-
+    xfree(ec->in_buf_start);
     xfree(ec->elems);
     xfree(ec);
 }

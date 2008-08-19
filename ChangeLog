@@ -1,3 +1,9 @@
+Wed Aug 20 02:27:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_open): fix memory leak.
+	  (rb_econv_close): ditto.
+	  fixed by shinichiro.h.  [ruby-dev:35880]
+
 Tue Aug 19 21:50:43 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_fopen): declaration removed.
