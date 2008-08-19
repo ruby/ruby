@@ -108,7 +108,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
 
       content = "foobar"
       File.open("src", "w") {|f| f << content }
@@ -322,7 +322,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_rbuf
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
       with_pipe {|r, w|
         File.open("foo", "w") {|f| f << "abcd" }
         File.open("foo") {|f|
@@ -347,7 +347,7 @@ class TestIO < Test::Unit::TestCase
 
   def test_copy_stream_socket
     return unless defined? UNIXSocket
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
 
       content = "foobar"
       File.open("src", "w") {|f| f << content }
@@ -450,7 +450,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_fname_to_strio
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
       File.open("foo", "w") {|f| f << "abcd" }
       src = "foo"
       dst = StringIO.new
@@ -461,7 +461,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_strio_to_fname
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
       # StringIO to filename
       src = StringIO.new("abcd")
       ret = IO.copy_stream(src, "fooo", 3)
@@ -472,7 +472,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_io_to_strio
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
       # IO to StringIO
       File.open("bar", "w") {|f| f << "abcd" }
       File.open("bar") {|src|
@@ -486,7 +486,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_strio_to_io
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
       # StringIO to IO
       src = StringIO.new("abcd")
       ret = File.open("baz", "w") {|dst|
@@ -524,7 +524,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_src_wbuf
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
       with_pipe {|r, w|
         File.open("foe", "w+") {|f|
           f.write "abcd\n"
@@ -541,7 +541,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_dst_rbuf
-    mkcdtmpdir {|d|
+    mkcdtmpdir {
       with_pipe {|r, w|
         w << "xyz"
         w.close
