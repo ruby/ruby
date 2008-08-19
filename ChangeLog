@@ -1,3 +1,7 @@
+Wed Aug 20 04:17:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_flags_modenum): make it static.
+
 Wed Aug 20 03:36:45 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (FMODE_TRUNC): new constant.

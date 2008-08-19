@@ -3616,7 +3616,7 @@ rb_io_modenum_flags(int mode)
     return flags;
 }
 
-int
+static int
 rb_io_flags_modenum(int flags)
 {
     int mode = 0;
