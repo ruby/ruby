@@ -143,6 +143,7 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	    if(!d2i_X509_NAME(&x, &p, RSTRING_LEN(str)) && (DATA_PTR(self) = x, 1)){
 		ossl_raise(eX509NameError, NULL);
 	    }
+            DATA_PTR(self) = x;
 	}
     }
 

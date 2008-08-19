@@ -1,3 +1,8 @@
+Tue Aug 19 17:32:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): store the
+	  result of d2i_X509_NAME into DATA_PTR(self).
+
 Tue Aug 19 04:54:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rake.rb (FileUtils#ruby): takes care of space containing path.
