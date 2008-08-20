@@ -1,3 +1,9 @@
+Wed Aug 20 22:30:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_file_open_internal): use rb_io_flags_modenum.
+	  (rb_io_reopen): use rb_io_flags_modenum and rb_io_modenum_mode.
+	  (rb_io_stdio_file): ditto.
+
 Wed Aug 20 22:28:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (proc_new): use the given class.

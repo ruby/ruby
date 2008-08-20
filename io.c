@@ -3976,7 +3976,7 @@ rb_file_open_internal(VALUE io, const char *fname, const char *mode)
 
     flags = rb_io_mode_flags(mode);
     return rb_file_open_generic(io, fname,
-            rb_io_mode_modenum(rb_io_flags_mode(flags)),
+            rb_io_flags_modenum(flags),
             flags,
             &convconfig,
             0666);
@@ -4917,7 +4917,7 @@ static VALUE
 rb_io_reopen(int argc, VALUE *argv, VALUE file)
 {
     VALUE fname, nmode;
-    const char *mode;
+    int modenum;
     rb_io_t *fptr;
 
     rb_secure(4);
@@ -4956,9 +4956,9 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     }
 
     fptr->path = strdup(StringValueCStr(fname));
-    mode = rb_io_flags_mode(fptr->mode);
+    modenum = rb_io_flags_modenum(fptr->mode);
     if (fptr->fd < 0) {
-        fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(mode), 0666);
+        fptr->fd = rb_sysopen(fptr->path, modenum, 0666);
 	fptr->stdio_file = 0;
 	return file;
     }
@@ -4969,7 +4969,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     fptr->rbuf_off = fptr->rbuf_len = 0;
 
     if (fptr->stdio_file) {
-        if (freopen(fptr->path, mode, fptr->stdio_file) == 0) {
+        if (freopen(fptr->path, rb_io_modenum_mode(modenum), fptr->stdio_file) == 0) {
             rb_sys_fail(fptr->path);
         }
         fptr->fd = fileno(fptr->stdio_file);
@@ -4982,7 +4982,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
         if (close(fptr->fd) < 0)
             rb_sys_fail(fptr->path);
         fptr->fd = -1;
-        fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(mode), 0666);
+        fptr->fd = rb_sysopen(fptr->path, modenum, 0666);
     }
 
     return file;
@@ -5442,7 +5442,8 @@ FILE *
 rb_io_stdio_file(rb_io_t *fptr)
 {
     if (!fptr->stdio_file) {
-        fptr->stdio_file = rb_fdopen(fptr->fd, rb_io_flags_mode(fptr->mode));
+        int modenum = rb_io_flags_modenum(fptr->mode);
+        fptr->stdio_file = rb_fdopen(fptr->fd, rb_io_modenum_mode(modenum));
     }
     return fptr->stdio_file;
 }
