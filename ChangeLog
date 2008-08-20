@@ -1,3 +1,10 @@
+Wed Aug 20 23:53:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_set_encoding): removed.
+	  (rb_io_open): set up encoding using new argument opt.
+	  (open_key_args): call rb_io_open with opt.  don't call
+	  io_set_encoding.
+
 Wed Aug 20 22:30:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_file_open_internal): use rb_io_flags_modenum.

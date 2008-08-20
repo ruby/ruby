@@ -4510,20 +4510,6 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 }
 
 static void
-io_set_encoding(VALUE io, VALUE opt)
-{
-    rb_io_t *fptr;
-    rb_encoding *enc, *enc2;
-
-    if (io_extract_encoding_option(opt, &enc, &enc2)) {
-        GetOpenFile(io, fptr);
-        fptr->enc = enc;
-        fptr->enc2 = enc2;
-        clear_codeconv(fptr);
-    }
-}
-
-static void
 rb_scan_open_args(int argc, VALUE *argv,
         VALUE *fname_p, int *modenum_p, int *flags_p,
         convconfig_t *convconfig_p, unsigned int *fmode_p)
@@ -4793,14 +4779,19 @@ rb_f_open(int argc, VALUE *argv)
 }
 
 static VALUE
-rb_io_open(const char *fname, const char *mode)
+rb_io_open(const char *fname, VALUE mode, VALUE opt)
 {
+    int modenum, flags;
+    convconfig_t convconfig;
+    rb_io_extract_modeenc(mode, opt, &modenum, &flags, &convconfig);
+
     if (fname[0] == '|') {
 	VALUE cmd = rb_str_new2(fname+1);
-	return pipe_open_s(cmd, mode);
+	return pipe_open_s(cmd, rb_io_modenum_mode(modenum));
     }
     else {
-        return rb_file_open_internal(io_alloc(rb_cFile), fname, mode);
+        return rb_file_open_generic(io_alloc(rb_cFile), fname,
+                modenum, flags, &convconfig, 0666);
     }
 }
 
@@ -6691,7 +6682,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     arg->argv = argv + 1;
     if (argc == 1) {
       no_key:
-	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
+	arg->io = rb_io_open(RSTRING_PTR(argv[0]), INT2NUM(O_RDONLY), Qnil);
 	return;
     }
     opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
@@ -6713,13 +6704,11 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     }
     v = rb_hash_aref(opt, sym_mode);
     if (!NIL_P(v)) {
-	arg->io = rb_io_open(RSTRING_PTR(argv[0]), StringValueCStr(v));
+	arg->io = rb_io_open(RSTRING_PTR(argv[0]), v, opt);
     }
     else {
-	arg->io = rb_io_open(RSTRING_PTR(argv[0]), "r");
+	arg->io = rb_io_open(RSTRING_PTR(argv[0]), INT2NUM(O_RDONLY), opt);
     }
-
-    io_set_encoding(arg->io, opt);
 }
 
 static VALUE
