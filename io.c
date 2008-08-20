@@ -6666,7 +6666,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 
     FilePathValue(argv[0]);
     arg->io = 0;
-    arg->argc = argc > 1 ? 1 : 0;
+    arg->argc = argc - 1;
     arg->argv = argv + 1;
     if (argc == 1) {
       no_key:
@@ -6675,8 +6675,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     }
     opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
     if (NIL_P(opt)) goto no_key;
-    if (argc > 2) arg->argc = 1;
-    else arg->argc = 0;
+    arg->argc--;
 
     v = rb_hash_aref(opt, sym_open_args);
     if (!NIL_P(v)) {

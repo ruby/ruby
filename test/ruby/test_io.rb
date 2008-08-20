@@ -1084,6 +1084,10 @@ class TestIO < Test::Unit::TestCase
     t = make_tempfile
 
     a = []
+    IO.foreach(t.path) {|x| a << x }
+    assert_equal(["foo\n", "bar\n", "baz\n"], a)
+
+    a = []
     IO.foreach(t.path, {:mode => "r" }) {|x| a << x }
     assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
@@ -1094,6 +1098,28 @@ class TestIO < Test::Unit::TestCase
     a = []
     IO.foreach(t.path, {:open_args => ["r"] }) {|x| a << x }
     assert_equal(["foo\n", "bar\n", "baz\n"], a)
+
+    a = []
+    IO.foreach(t.path, "b") {|x| a << x }
+    assert_equal(["foo\nb", "ar\nb", "az\n"], a)
+
+    a = []
+    IO.foreach(t.path, 3) {|x| a << x }
+    assert_equal(["foo", "\n", "bar", "\n", "baz", "\n"], a)
+
+    a = []
+    IO.foreach(t.path, "b", 3) {|x| a << x }
+    assert_equal(["foo", "\nb", "ar\n", "b", "az\n"], a)
+
+  end
+
+  def test_s_readlines
+    t = make_tempfile
+
+    assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
+    assert_equal(["foo\nb", "ar\nb", "az\n"], IO.readlines(t.path, "b"))
+    assert_equal(["fo", "o\n", "ba", "r\n", "ba", "z\n"], IO.readlines(t.path, 2))
+    assert_equal(["fo", "o\n", "b", "ar", "\nb", "az", "\n"], IO.readlines(t.path, "b", 2))
   end
 
   def test_printf
@@ -1219,6 +1245,8 @@ class TestIO < Test::Unit::TestCase
   def test_s_read
     t = make_tempfile
 
+    assert_equal("foo\nbar\nbaz\n", File.read(t.path))
+    assert_equal("foo\nba", File.read(t.path, 6))
     assert_equal("bar\n", File.read(t.path, 4, 4))
   end
 
