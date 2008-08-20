@@ -57,7 +57,9 @@
 #endif
 #if defined(TM_IN_SYS_TIME) || !defined(GAWK) && !defined(_WIN32_WCE)
 #include <sys/types.h>
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #endif
 
 /* defaults: season to taste */
@@ -94,13 +96,11 @@
 
 #undef strchr	/* avoid AIX weirdness */
 
-#ifndef __STDC__
+#if !defined __STDC__ && !defined _WIN32
 #define const	/**/
-extern void tzset();
 static int weeknumber();
 adddecl(static int iso8601wknum();)
 #else
-extern void tzset(void);
 static int weeknumber(const struct tm *timeptr, int firstweekday);
 adddecl(static int iso8601wknum(const struct tm *timeptr);)
 #endif
@@ -117,10 +117,7 @@ extern char *strchr();
 
 #define range(low, item, hi)	max(low, min(item, hi))
 
-#ifdef __CYGWIN__
-#define DLL_IMPORT __declspec(dllimport)
-#endif
-#ifdef __WIN32__
+#if defined __CYGWIN__ || defined __WIN32__ || defined _WIN32
 #define DLL_IMPORT __declspec(dllimport)
 #endif
 #ifndef DLL_IMPORT
@@ -191,7 +188,9 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 #ifndef HAVE_TM_ZONE
 #ifndef HAVE_TM_NAME
 	struct timeval tv;
+#ifdef HAVE_TIMEZONE
 	struct timezone zone;
+#endif /* HAVE_TIMEZONE */
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
 
