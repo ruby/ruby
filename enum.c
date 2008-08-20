@@ -1585,8 +1585,8 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 static VALUE
 take_i(VALUE i, VALUE *arg, int argc, VALUE *argv)
 {
-    if (arg[1]-- == 0) rb_iter_break();
     rb_ary_push(arg[0], enum_values_pack(argc, argv));
+    if (--arg[1] == 0) rb_iter_break();
     return Qnil;
 }
 
@@ -1611,8 +1611,9 @@ enum_take(VALUE obj, VALUE n)
 	rb_raise(rb_eArgError, "attempt to take negative size");
     }
 
-    args[1] = len;
+    if (len == 0) return rb_ary_new2(0);
     args[0] = rb_ary_new();
+    args[1] = len;
     rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)args);
     return args[0];
 }
