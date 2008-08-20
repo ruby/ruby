@@ -64,6 +64,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		signal.$(OBJEXT) \
 		sprintf.$(OBJEXT) \
 		st.$(OBJEXT) \
+		strftime.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		time.$(OBJEXT) \
@@ -568,6 +569,7 @@ sprintf.$(OBJEXT): {$(VPATH)}sprintf.c $(RUBY_H_INCLUDES) {$(VPATH)}st.h \
   {$(VPATH)}encoding.h {$(VPATH)}vsnprintf.c
 st.$(OBJEXT): {$(VPATH)}st.c {$(VPATH)}config.h {$(VPATH)}defines.h \
   {$(VPATH)}st.h
+strftime.$(OBJEXT): {$(VPATH)}strftime.c {$(VPATH)}config.h
 string.$(OBJEXT): {$(VPATH)}string.c $(RUBY_H_INCLUDES) \
   {$(VPATH)}st.h {$(VPATH)}re.h {$(VPATH)}regex.h {$(VPATH)}oniguruma.h \
   {$(VPATH)}encoding.h

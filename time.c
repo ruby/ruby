@@ -2016,9 +2016,14 @@ time_to_a(VALUE time)
 		    time_zone(time));
 }
 
+size_t
+rb_strftime(char *s, size_t maxsize, const char *format,
+	    const struct tm *timeptr, const struct timespec *ts, int gmt);
+
 #define SMALLBUF 100
 static int
-rb_strftime(char **buf, const char *format, struct tm *time)
+rb_strftime_alloc(char **buf, const char *format,
+		  struct tm *time, struct timespec *ts, int gmt)
 {
     int size, len, flen;
 
@@ -2028,12 +2033,12 @@ rb_strftime(char **buf, const char *format, struct tm *time)
 	return 0;
     }
     errno = 0;
-    len = strftime(*buf, SMALLBUF, format, time);
+    len = rb_strftime(*buf, SMALLBUF, format, time, ts, gmt);
     if (len != 0 || (**buf == '\0' && errno != ERANGE)) return len;
     for (size=1024; ; size*=2) {
 	*buf = xmalloc(size);
 	(*buf)[0] = '\0';
-	len = strftime(*buf, size, format, time);
+	len = rb_strftime(*buf, size, format, time, ts, gmt);
 	/*
 	 * buflen can be zero EITHER because there's not enough
 	 * room in the string, or because the control command
@@ -2065,8 +2070,10 @@ rb_strftime(char **buf, const char *format, struct tm *time)
  *    %H - Hour of the day, 24-hour clock (00..23)
  *    %I - Hour of the day, 12-hour clock (01..12)
  *    %j - Day of the year (001..366)
+ *    %L - Millisecond of the second (000..999)
  *    %m - Month of the year (01..12)
  *    %M - Minute of the hour (00..59)
+ *    %N - Nanosecond of the second (000000000..999999999)
  *    %p - Meridian indicator (``AM''  or  ``PM'')
  *    %S - Second of the minute (00..60)
  *    %U - Week  number  of the current year,
@@ -2118,7 +2125,7 @@ time_strftime(VALUE time, VALUE format)
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
-	    len = rb_strftime(&buf, p, &tobj->tm);
+	    len = rb_strftime_alloc(&buf, p, &tobj->tm, &tobj->ts, tobj->gmt);
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p);
 	    if (buf != buffer) {
@@ -2131,7 +2138,8 @@ time_strftime(VALUE time, VALUE format)
 	return str;
     }
     else {
-	len = rb_strftime(&buf, RSTRING_PTR(format), &tobj->tm);
+	len = rb_strftime_alloc(&buf, RSTRING_PTR(format),
+			       	&tobj->tm, &tobj->ts, tobj->gmt);
     }
     str = rb_str_new(buf, len);
     if (buf != buffer) xfree(buf);

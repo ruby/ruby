@@ -1,3 +1,14 @@
+Thu Aug 21 00:20:05 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* strftime.c: new file.
+
+	* common.mk (COMMONOBJS): added strftime.$(OBJEXT).
+
+	* time.c (time_strftime): do not use strftime(3).  supported
+	  %L(millisecond) and %N(nanosecond).
+
+	* test/ruby/test_time.rb: added tests for %L and %N.
+
 Wed Aug 20 23:53:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_set_encoding): removed.
