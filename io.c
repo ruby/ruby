@@ -3852,7 +3852,7 @@ rb_io_extract_modeenc(VALUE mode, VALUE opthash,
 struct sysopen_struct {
     char *fname;
     int flag;
-    unsigned int mode;
+    mode_t mode;
 };
 
 static VALUE
@@ -3863,7 +3863,7 @@ sysopen_func(void *ptr)
 }
 
 static int
-rb_sysopen_internal(char *fname, int flags, unsigned int mode)
+rb_sysopen_internal(char *fname, int flags, mode_t mode)
 {
     struct sysopen_struct data;
     data.fname = fname;
@@ -3873,7 +3873,7 @@ rb_sysopen_internal(char *fname, int flags, unsigned int mode)
 }
 
 static int
-rb_sysopen(char *fname, int flags, unsigned int mode)
+rb_sysopen(char *fname, int flags, mode_t mode)
 {
     int fd;
 
@@ -3938,7 +3938,7 @@ io_check_tty(rb_io_t *fptr)
 }
 
 static VALUE
-rb_file_open_generic(VALUE io, const char *fname, int modenum, int flags, convconfig_t *convconfig, int perm)
+rb_file_open_generic(VALUE io, const char *fname, int modenum, int flags, convconfig_t *convconfig, mode_t perm)
 {
     rb_io_t *fptr;
 
@@ -3989,13 +3989,13 @@ rb_file_open(const char *fname, const char *mode)
 }
 
 static VALUE
-rb_file_sysopen_internal(VALUE io, const char *fname, int modenum, int perm)
+rb_file_sysopen_internal(VALUE io, const char *fname, int modenum, mode_t perm)
 {
     return rb_file_open_generic(io, fname, modenum, rb_io_modenum_flags(modenum), NULL, perm);
 }
 
 VALUE
-rb_file_sysopen(const char *fname, int modenum, int perm)
+rb_file_sysopen(const char *fname, int modenum, mode_t perm)
 {
     return rb_file_sysopen_internal(io_alloc(rb_cFile), fname, modenum, perm);
 }
@@ -4512,11 +4512,11 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 static void
 rb_scan_open_args(int argc, VALUE *argv,
         VALUE *fname_p, int *modenum_p, int *flags_p,
-        convconfig_t *convconfig_p, unsigned int *fmode_p)
+        convconfig_t *convconfig_p, mode_t *perm_p)
 {
-    VALUE opt=Qnil, fname, vmode, perm;
+    VALUE opt=Qnil, fname, vmode, vperm;
     int modenum, flags;
-    unsigned int fmode;
+    mode_t perm;
 
     if (0 < argc) {
         opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
@@ -4525,7 +4525,7 @@ rb_scan_open_args(int argc, VALUE *argv,
         }
     }
 
-    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+    rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
 #if defined _WIN32 || defined __APPLE__
     {
 	static rb_encoding *fs_encoding;
@@ -4549,12 +4549,12 @@ rb_scan_open_args(int argc, VALUE *argv,
  
     rb_io_extract_modeenc(vmode, opt, &modenum, &flags, convconfig_p);
 
-    fmode = NIL_P(perm) ? 0666 :  NUM2UINT(perm);
+    perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
 
     *fname_p = fname;
     *modenum_p = modenum;
     *flags_p = flags;
-    *fmode_p = fmode;
+    *perm_p = perm;
 }
 
 static VALUE
@@ -4563,10 +4563,10 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
     VALUE fname;
     int modenum, flags;
     convconfig_t convconfig;
-    unsigned int fmode;
+    mode_t perm;
 
-    rb_scan_open_args(argc, argv, &fname, &modenum, &flags, &convconfig, &fmode);
-    rb_file_open_generic(io, RSTRING_PTR(fname), modenum, flags, &convconfig, fmode);
+    rb_scan_open_args(argc, argv, &fname, &modenum, &flags, &convconfig, &perm);
+    rb_file_open_generic(io, RSTRING_PTR(fname), modenum, flags, &convconfig, perm);
 
     return io;
 }
@@ -4610,12 +4610,12 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_io_s_sysopen(int argc, VALUE *argv)
 {
-    VALUE fname, vmode, perm;
+    VALUE fname, vmode, vperm;
     int flags, fd;
-    unsigned int fmode;
+    mode_t perm;
     char *path;
 
-    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+    rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
 
     if (NIL_P(vmode)) flags = O_RDONLY;
@@ -4624,12 +4624,12 @@ rb_io_s_sysopen(int argc, VALUE *argv)
 	SafeStringValue(vmode);
 	flags = rb_io_mode_modenum(StringValueCStr(vmode));
     }
-    if (NIL_P(perm)) fmode = 0666;
-    else             fmode = NUM2UINT(perm);
+    if (NIL_P(vperm)) perm = 0666;
+    else              perm = NUM2UINT(vperm);
 
     RB_GC_GUARD(fname) = rb_str_new4(fname);
     path = RSTRING_PTR(fname);
-    fd = rb_sysopen(path, flags, fmode);
+    fd = rb_sysopen(path, flags, perm);
     return INT2NUM(fd);
 }
 
@@ -5465,17 +5465,17 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 {
     VALUE fnum, mode, orig;
     rb_io_t *fp, *ofp = NULL;
-    int fd, fmode, flags = O_RDONLY;
+    int fd, flags, modenum = O_RDONLY;
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
     if (argc == 2) {
 	if (FIXNUM_P(mode)) {
-	    flags = FIX2LONG(mode);
+	    modenum = FIX2LONG(mode);
 	}
 	else {
 	    SafeStringValue(mode);
-	    flags = rb_io_mode_modenum(StringValueCStr(mode));
+	    modenum = rb_io_mode_modenum(StringValueCStr(mode));
 	}
     }
     orig = rb_io_check_io(fnum);
@@ -5484,13 +5484,13 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
         UPDATE_MAXFD(fd);
 	if (argc != 2) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
-	    flags = fcntl(fd, F_GETFL);
-	    if (flags == -1) rb_sys_fail(0);
+	    modenum = fcntl(fd, F_GETFL);
+	    if (modenum == -1) rb_sys_fail(0);
 #endif
 	}
 	MakeOpenFile(io, fp);
         fp->fd = fd;
-	fp->mode = rb_io_modenum_flags(flags);
+	fp->mode = rb_io_modenum_flags(modenum);
         io_check_tty(fp);
     }
     else if (RFILE(io)->fptr) {
@@ -5503,10 +5503,10 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValueCStr(s));
 	}
 	if (argc == 2) {
-	    fmode = rb_io_modenum_flags(flags);
-	    if ((ofp->mode ^ fmode) & (FMODE_READWRITE|FMODE_BINMODE)) {
+	    flags = rb_io_modenum_flags(modenum);
+	    if ((ofp->mode ^ flags) & (FMODE_READWRITE|FMODE_BINMODE)) {
 		if (FIXNUM_P(mode)) {
-		    rb_raise(rb_eArgError, "incompatible mode 0x%x", flags);
+		    rb_raise(rb_eArgError, "incompatible mode 0x%x", modenum);
 		}
 		else {
 		    rb_raise(rb_eArgError, "incompatible mode \"%s\"", RSTRING_PTR(mode));

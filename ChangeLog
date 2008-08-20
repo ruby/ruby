@@ -1,3 +1,7 @@
+Thu Aug 21 01:09:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: use mode_t for the 3rd argument, permission, of open(2).
+
 Thu Aug 21 00:51:42 2008  Shugo Maeda  <shugo@netlab.jp>
 
 	* configure.in: removed strftime from AC_REPLACE_FUNCS().
