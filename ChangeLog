@@ -1,3 +1,8 @@
+Thu Aug 21 06:12:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/scanf.rb (Scanf::FormatSpecifier#initialize): %i should accept
+	  single digit decimal.  [ruby-core:18355]
+
 Thu Aug 21 06:02:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (range_initialize_copy): Range is now a Struct.
