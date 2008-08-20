@@ -6649,7 +6649,6 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	args = rb_ary_new2(RARRAY_LEN(v)+1);
 	rb_ary_push(args, argv[0]);
 	rb_ary_concat(args, v);
-	MEMCPY(RARRAY_PTR(args)+1, RARRAY_PTR(v), VALUE, RARRAY_LEN(v));
 
 	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;

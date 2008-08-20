@@ -1,3 +1,7 @@
+Wed Aug 20 18:37:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (open_key_args): meaningless MEMCPY removed.
+
 Wed Aug 20 18:30:58 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (prep_io) [cygwin]: use FMODE_BINMODE instead of O_BINARY.
