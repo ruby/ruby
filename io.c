@@ -3988,18 +3988,6 @@ rb_file_open(const char *fname, const char *mode)
     return rb_file_open_internal(io_alloc(rb_cFile), fname, mode);
 }
 
-static VALUE
-rb_file_sysopen_internal(VALUE io, const char *fname, int modenum, mode_t perm)
-{
-    return rb_file_open_generic(io, fname, modenum, rb_io_modenum_flags(modenum), NULL, perm);
-}
-
-VALUE
-rb_file_sysopen(const char *fname, int modenum, mode_t perm)
-{
-    return rb_file_sysopen_internal(io_alloc(rb_cFile), fname, modenum, perm);
-}
-
 #if defined(__CYGWIN__) || !defined(HAVE_FORK)
 static struct pipe_list {
     rb_io_t *fptr;
@@ -4787,7 +4775,7 @@ rb_io_open(const char *fname, VALUE mode, VALUE opt)
 
     if (fname[0] == '|') {
 	VALUE cmd = rb_str_new2(fname+1);
-	return pipe_open_s(cmd, rb_io_modenum_mode(modenum));
+	return pipe_open_s(cmd, rb_io_modenum_mode(modenum)); /* xxx: convconfig ignored */
     }
     else {
         return rb_file_open_generic(io_alloc(rb_cFile), fname,
