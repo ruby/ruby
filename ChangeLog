@@ -1,3 +1,10 @@
+Thu Aug 21 06:02:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (range_initialize_copy): Range is now a Struct.
+	  [ruby-core:18353]
+
+	* struct.c (rb_struct_init_copy): made public.
+
 Thu Aug 21 03:09:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_extract_encoding_option): enc2 is external encoding if
