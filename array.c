@@ -3032,8 +3032,9 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	return RARRAY_PTR(ary)[i];
     }
     rb_scan_args(argc, argv, "1", &nv);
-    if (len == 0) return rb_ary_new2(0);
     n = NUM2INT(nv);
+    if (n > len) n = len;
+    if (n == 0) return rb_ary_new2(0);
     result = rb_ary_new2(n);
     for (i=0; i<n; i++) {
       retry:

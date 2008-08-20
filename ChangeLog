@@ -1,3 +1,7 @@
+Wed Aug 20 12:28:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sample): get rid of infinite loop.  #455
+
 Wed Aug 20 06:09:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (FMODE_TRUNC): value changed because 0x100 is used
