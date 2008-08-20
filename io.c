@@ -4807,19 +4807,11 @@ rb_io_open(const char *fname, const char *mode)
 static VALUE
 rb_io_open_with_args(int argc, VALUE *argv)
 {
-    const char *mode;
-    VALUE pname, pmode;
+    VALUE io;
 
-    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
-	mode = "r";
-    }
-    else if (FIXNUM_P(pmode)) {
-	mode = rb_io_modenum_mode(FIX2INT(pmode));
-    }
-    else {
-	mode = StringValueCStr(pmode);
-    }
-    return rb_io_open(StringValueCStr(pname), mode);
+    io = io_alloc(rb_cFile);
+    rb_open_file(argc, argv, io);
+    return io;
 }
 
 static VALUE

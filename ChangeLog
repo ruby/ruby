@@ -1,3 +1,7 @@
+Wed Aug 20 20:32:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_open_with_args): use rb_open_file instead of rb_io_open.
+
 Wed Aug 20 20:16:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_scan_open_args): extracted from rb_open_file.

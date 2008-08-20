@@ -1225,4 +1225,22 @@ class TestIO < Test::Unit::TestCase
   def test_uninitialized
     assert_raise(IOError) { IO.allocate.print "" }
   end
+
+  def test_nofollow
+    return unless defined? File::NOFOLLOW
+    mkcdtmpdir {
+      open("file", "w") {|f| f << "content" }
+      begin
+        File.symlink("file", "slnk")
+      rescue NotImplementedError
+        return
+      end
+      assert_raise(Errno::ELOOP) {
+        open("slnk", File::RDONLY|File::NOFOLLOW) {}
+      }
+      assert_raise(Errno::ELOOP) {
+        File.foreach("slnk", :open_args=>[File::RDONLY|File::NOFOLLOW]) {}
+      }
+    }
+  end
 end
