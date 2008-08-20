@@ -1,3 +1,7 @@
+Wed Aug 20 18:30:58 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (prep_io) [cygwin]: use FMODE_BINMODE instead of O_BINARY.
+
 Wed Aug 20 16:39:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sample): performance improvement for huge array.

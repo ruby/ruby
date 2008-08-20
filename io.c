@@ -5349,7 +5349,7 @@ prep_io(int fd, int mode, VALUE klass, const char *path)
     fp->fd = fd;
 #ifdef __CYGWIN__
     if (!isatty(fd)) {
-	mode |= O_BINARY;
+        mode |= FMODE_BINMODE;
 	setmode(fd, O_BINARY);
     }
 #endif
