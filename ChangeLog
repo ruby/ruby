@@ -1,3 +1,8 @@
+Wed Aug 20 19:15:35 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (Init_IO): new constants: File::DSYNC, File::RSYNC and
+	  File::NOFOLLOW.
+
 Wed Aug 20 18:41:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_open_file): don't lookup :mode and :perm in opt.  it is

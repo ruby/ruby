@@ -8220,6 +8220,15 @@ Init_IO(void)
 #ifdef O_SYNC
     rb_file_const("SYNC", INT2FIX(O_SYNC));
 #endif
+#ifdef O_DSYNC
+    rb_file_const("DSYNC", INT2FIX(O_DSYNC));
+#endif
+#ifdef O_RSYNC
+    rb_file_const("RSYNC", INT2FIX(O_RSYNC));
+#endif
+#ifdef O_NOFOLLOW
+    rb_file_const("NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
+#endif
 
     sym_mode = ID2SYM(rb_intern("mode"));
     sym_perm = ID2SYM(rb_intern("perm"));
