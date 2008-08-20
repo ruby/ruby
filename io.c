@@ -3798,6 +3798,57 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
     return extracted;
 }
 
+typedef struct convconfig_t {
+  rb_encoding *enc;
+  rb_encoding *enc2;
+} convconfig_t;
+
+static void
+rb_io_extract_modeenc(VALUE mode, VALUE opthash,
+        int *modenum_p, int *flags_p, convconfig_t *convconfig_p)
+{
+    int modenum, flags;
+    rb_encoding *enc, *enc2;
+    int has_enc = 0;
+
+    enc = NULL;
+    enc2 = NULL;
+
+    if (NIL_P(mode)) {
+        flags = FMODE_READABLE;
+        modenum = O_RDONLY;
+    }
+    else if (FIXNUM_P(mode)) {
+        modenum = FIX2INT(mode);
+        flags = rb_io_modenum_flags(modenum);
+    }
+    else { /* xxx: Bignum, to_int */
+        const char *p;
+        SafeStringValue(mode);
+        p = StringValueCStr(mode);
+        flags = rb_io_mode_flags(p);
+        modenum = rb_io_flags_modenum(flags);
+        p = strchr(p, ':');
+        if (p) {
+            has_enc = 1;
+            parse_mode_enc(p+1, &enc, &enc2);
+        }
+    }
+
+    if (!NIL_P(opthash)) {
+        if (io_extract_encoding_option(opthash, &enc, &enc2)) {
+            if (has_enc) {
+                rb_raise(rb_eArgError, "encoding sepecified twice");
+            }
+        }
+    }
+
+    *modenum_p = modenum;
+    *flags_p = flags;
+    convconfig_p->enc = enc;
+    convconfig_p->enc2 = enc2;
+}
+
 struct sysopen_struct {
     char *fname;
     int flag;
@@ -3887,18 +3938,48 @@ io_check_tty(rb_io_t *fptr)
 }
 
 static VALUE
-rb_file_open_internal(VALUE io, const char *fname, const char *mode)
+rb_file_open_generic(VALUE io, const char *fname, int modenum, int flags, convconfig_t *convconfig, int perm)
 {
     rb_io_t *fptr;
 
     MakeOpenFile(io, fptr);
-    fptr->mode = rb_io_mode_flags(mode);
-    rb_io_mode_enc(fptr, mode);
+    fptr->mode = flags;
+    if (convconfig) {
+        fptr->enc = convconfig->enc;
+        fptr->enc2 = convconfig->enc2;
+    }
+    else {
+        fptr->enc = NULL;
+        fptr->enc2 = NULL;
+    }
     fptr->path = strdup(fname);
-    fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(rb_io_flags_mode(fptr->mode)), 0666);
+    fptr->fd = rb_sysopen(fptr->path, modenum, perm);
     io_check_tty(fptr);
 
     return io;
+}
+
+static VALUE
+rb_file_open_internal(VALUE io, const char *fname, const char *mode)
+{
+    int flags;
+
+    const char *p = strchr(mode, ':');
+    convconfig_t convconfig;
+    if (p) {
+        parse_mode_enc(p+1, &convconfig.enc, &convconfig.enc2);
+    }
+    else {
+        convconfig.enc = NULL;
+        convconfig.enc2 = NULL;
+    }
+
+    flags = rb_io_mode_flags(mode);
+    return rb_file_open_generic(io, fname,
+            rb_io_mode_modenum(rb_io_flags_mode(flags)),
+            flags,
+            &convconfig,
+            0666);
 }
 
 VALUE
@@ -3908,24 +3989,15 @@ rb_file_open(const char *fname, const char *mode)
 }
 
 static VALUE
-rb_file_sysopen_internal(VALUE io, const char *fname, int flags, int mode)
+rb_file_sysopen_internal(VALUE io, const char *fname, int modenum, int perm)
 {
-    rb_io_t *fptr;
-
-    MakeOpenFile(io, fptr);
-
-    fptr->path = strdup(fname);
-    fptr->mode = rb_io_modenum_flags(flags);
-    fptr->fd = rb_sysopen(fptr->path, flags, mode);
-    io_check_tty(fptr);
-
-    return io;
+    return rb_file_open_generic(io, fname, modenum, rb_io_modenum_flags(modenum), NULL, perm);
 }
 
 VALUE
-rb_file_sysopen(const char *fname, int flags, int mode)
+rb_file_sysopen(const char *fname, int modenum, int perm)
 {
-    return rb_file_sysopen_internal(io_alloc(rb_cFile), fname, flags, mode);
+    return rb_file_sysopen_internal(io_alloc(rb_cFile), fname, modenum, perm);
 }
 
 #if defined(__CYGWIN__) || !defined(HAVE_FORK)
@@ -4455,9 +4527,9 @@ static VALUE
 rb_open_file(int argc, VALUE *argv, VALUE io)
 {
     VALUE opt=Qnil, fname, vmode, perm;
-    const char *mode;
-    int flags;
+    int modenum, flags;
     unsigned int fmode;
+    convconfig_t convconfig = { NULL, NULL };
 
     if (0 < argc) {
         opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
@@ -4487,31 +4559,13 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
     }
 #endif
     FilePathValue(fname);
+ 
+    rb_io_extract_modeenc(vmode, opt, &modenum, &flags, &convconfig);
 
-    if (FIXNUM_P(vmode) || !NIL_P(perm)) {
-	if (FIXNUM_P(vmode)) {
-	    flags = FIX2INT(vmode);
-	}
-	else {
-	    SafeStringValue(vmode);
-	    flags = rb_io_mode_modenum(StringValueCStr(vmode));
-	}
-	fmode = NIL_P(perm) ? 0666 :  NUM2UINT(perm);
+    fmode = NIL_P(perm) ? 0666 :  NUM2UINT(perm);
 
-	rb_file_sysopen_internal(io, RSTRING_PTR(fname), flags, fmode);
+    rb_file_open_generic(io, RSTRING_PTR(fname), modenum, flags, &convconfig, fmode);
 
-        if (!FIXNUM_P(vmode)) {
-            rb_io_t *fptr;
-            GetOpenFile(io, fptr);
-            rb_io_mode_enc(fptr, StringValueCStr(vmode));
-        }
-    }
-    else {
-	mode = NIL_P(vmode) ? "r" : StringValueCStr(vmode);
-	rb_file_open_internal(io, RSTRING_PTR(fname), mode);
-    }
-
-    io_set_encoding(io, opt);
     return io;
 }
 
@@ -4730,7 +4784,7 @@ rb_io_open(const char *fname, const char *mode)
 	return pipe_open_s(cmd, mode);
     }
     else {
-	return rb_file_open(fname, mode);
+        return rb_file_open_internal(io_alloc(rb_cFile), fname, mode);
     }
 }
 

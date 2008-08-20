@@ -1,3 +1,13 @@
+Wed Aug 20 19:22:32 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (convconfig_t): new type.
+	  (rb_io_extract_modeenc): new function.
+	  (rb_file_open_generic): new function.
+	  (rb_file_open_internal): use rb_file_open_generic.
+	  (rb_file_sysopen_internal): use rb_file_open_generic.
+	  (rb_open_file): use rb_io_extract_modeenc and rb_file_open_generic.
+	  (rb_io_open): call rb_file_open_internal instead of rb_file_open.
+
 Wed Aug 20 19:15:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (Init_IO): new constants: File::DSYNC, File::RSYNC and
