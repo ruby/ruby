@@ -1,3 +1,9 @@
+Wed Aug 20 22:28:15 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_new): use the given class.
+
+	* vm.c (vm_make_proc): added an argument for the class.
+
 Wed Aug 20 22:24:48 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_take): get rid of extraneous iteration.

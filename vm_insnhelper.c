@@ -188,7 +188,7 @@ vm_callee_setup_arg_complex(rb_thread_t *th, const rb_iseq_t * iseq,
 	    if (blockptr->proc == 0) {
 		rb_proc_t *proc;
 
-		blockval = vm_make_proc(th, th->cfp, blockptr);
+		blockval = vm_make_proc(th, th->cfp, blockptr, rb_cProc);
 
 		GetProcPtr(blockval, proc);
 		*block = &proc->block;
@@ -662,7 +662,7 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block,
     }
 
     if (blockptr) {
-	blockarg = vm_make_proc(th, th->cfp, blockptr);
+	blockarg = vm_make_proc(th, th->cfp, blockptr, rb_cProc);
     }
     else {
 	blockarg = Qnil;

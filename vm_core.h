@@ -668,7 +668,7 @@ int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
 
 VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 		     int argc, const VALUE *argv, rb_block_t *blockptr);
-VALUE vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, const rb_block_t *block);
+VALUE vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp, const rb_block_t *block, VALUE klass);
 VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
 
 NOINLINE(void rb_gc_save_machine_context(rb_thread_t *));

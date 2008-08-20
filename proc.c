@@ -379,11 +379,12 @@ proc_new(VALUE klass, int is_lambda)
 	}
     }
 
-    if (block->proc) {
-	return block->proc;
+    procval = block->proc;
+    if (procval && RBASIC(procval)->klass == klass) {
+	return procval;
     }
 
-    procval = vm_make_proc(th, cfp, block);
+    procval = vm_make_proc(th, cfp, block, klass);
 
     if (is_lambda) {
 	rb_proc_t *proc;

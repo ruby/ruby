@@ -373,25 +373,27 @@ vm_stack_to_heap(rb_thread_t * const th)
 
 static VALUE
 vm_make_proc_from_block(rb_thread_t *th, rb_control_frame_t *cfp,
-			rb_block_t *block)
+			rb_block_t *block, VALUE klass)
 {
     VALUE procval;
     rb_control_frame_t *bcfp;
     VALUE *bdfp;		/* to gc mark */
 
-    if (block->proc) {
-	return block->proc;
+    procval = block->proc;
+    if (procval && RBASIC(procval)->klass == klass) {
+	return procval;
     }
 
     bcfp = RUBY_VM_GET_CFP_FROM_BLOCK_PTR(block);
     bdfp = bcfp->dfp;
-    block->proc = procval = vm_make_proc(th, bcfp, block);
+    procval = vm_make_proc(th, bcfp, block, klass);
+    if (!block->proc) block->proc = procval;
     return procval;
 }
 
 VALUE
-vm_make_proc(rb_thread_t *th,
-	     rb_control_frame_t *cfp, const rb_block_t *block)
+vm_make_proc(rb_thread_t *th, rb_control_frame_t *cfp,
+	     const rb_block_t *block, VALUE klass)
 {
     VALUE procval, envval, blockprocval = 0;
     rb_proc_t *proc;
@@ -401,7 +403,7 @@ vm_make_proc(rb_thread_t *th,
 	    rb_proc_t *p;
 
 	    blockprocval = vm_make_proc_from_block(
-		th, cfp, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp));
+		th, cfp, (rb_block_t *)GC_GUARDED_PTR_REF(*cfp->lfp), klass);
 
 	    GetProcPtr(blockprocval, p);
 	    *cfp->lfp = GC_GUARDED_PTR(&p->block);
@@ -412,7 +414,7 @@ vm_make_proc(rb_thread_t *th,
     if (PROCDEBUG) {
 	check_env_value(envval);
     }
-    procval = rb_proc_alloc(rb_cProc);
+    procval = rb_proc_alloc(klass);
     GetProcPtr(procval, proc);
     proc->blockprocval = blockprocval;
     proc->block.self = block->self;
@@ -1743,7 +1745,7 @@ m_core_set_postexe(VALUE self, VALUE iseqval)
 	blockptr->iseq = blockiseq;
 	blockptr->proc = 0;
 
-	proc = vm_make_proc(th, cfp, blockptr);
+	proc = vm_make_proc(th, cfp, blockptr, rb_cProc);
 	rb_set_end_proc(rb_call_end_proc, proc);
     });
     return Qnil;
