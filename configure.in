@@ -886,18 +886,16 @@ if test "[$rb_cv_var_]$1" != no; then
 fi])
 RUBY_CHECK_VARTYPE(timezone, [@%:@include <time.h>], [long int])
 RUBY_CHECK_VARTYPE(altzone, [@%:@include <time.h>], [long int])
-if test "$rb_cv_var_timezone" = no; then
-  AC_CHECK_FUNCS(timezone)
-  if test "$ac_cv_func_timezone" = yes; then
-    AC_CACHE_CHECK([whether timezone requires zero arguments], rb_cv_func_timezone_void,
-      [AC_TRY_COMPILE([@%:@include <time.h>],
-	[(void)timezone(0, 0);],
-	[rb_cv_func_timezone_void=no],
-	[rb_cv_func_timezone_void=yes])]
-    )
-    if test $rb_cv_func_timezone_void = yes; then
-      AC_DEFINE(TIMEZONE_VOID)
-    fi
+AC_CHECK_FUNCS(timezone)
+if test "$ac_cv_func_timezone" = yes; then
+  AC_CACHE_CHECK([whether timezone requires zero arguments], rb_cv_func_timezone_void,
+    [AC_TRY_COMPILE([@%:@include <time.h>],
+      [(void)timezone(0, 0);],
+      [rb_cv_func_timezone_void=no],
+      [rb_cv_func_timezone_void=yes])]
+  )
+  if test $rb_cv_func_timezone_void = yes; then
+    AC_DEFINE(TIMEZONE_VOID)
   fi
 fi
 

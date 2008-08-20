@@ -1,3 +1,11 @@
+Thu Aug 21 01:58:59 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* configure.in: always check timezone().
+
+	* strftime.c (rb_strftime): prefer timezone/altzone rather than
+	  gettimeofday().  The second argument to gettimeofday() is ignored
+	  on Solaris.
+
 Thu Aug 21 02:03:08 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (open_key_args): simplified.

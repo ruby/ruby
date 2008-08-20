@@ -420,18 +420,18 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			 */
 			off = timeptr->tm_gmtoff / 60;
 #else /* !HAVE_TM_ZONE */
-#ifdef HAVE_GETTIMEOFDAY
-			gettimeofday(&tv, &zone);
-			off = -zone.tz_minuteswest;
-#else
 #if HAVE_VAR_TIMEZONE
 #if HAVE_VAR_ALTZONE
 			off = -(daylight ? timezone : altzone) / 60;
 #else
 			off = -timezone / 60;
 #endif
+#else /* !HAVE_TIMEZONE */
+#ifdef HAVE_GETTIMEOFDAY
+			gettimeofday(&tv, &zone);
+			off = -zone.tz_minuteswest;
 #endif
-#endif
+#endif /* !HAVE_TIMEZONE */
 #endif /* !HAVE_TM_ZONE */
 #endif /* !HAVE_TM_NAME */
 			if (off < 0) {
