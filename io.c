@@ -6690,12 +6690,9 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	return;
     }
     v = rb_hash_aref(opt, sym_mode);
-    if (!NIL_P(v)) {
-	arg->io = rb_io_open(RSTRING_PTR(argv[0]), v, opt);
-    }
-    else {
-	arg->io = rb_io_open(RSTRING_PTR(argv[0]), INT2NUM(O_RDONLY), opt);
-    }
+    if (NIL_P(v))
+        v = INT2NUM(O_RDONLY);
+    arg->io = rb_io_open(RSTRING_PTR(argv[0]), v, opt);
 }
 
 static VALUE

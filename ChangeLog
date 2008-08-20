@@ -1,3 +1,7 @@
+Thu Aug 21 02:03:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (open_key_args): simplified.
+
 Thu Aug 21 01:57:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (open_key_args): IO.foreach(path, rs, limit) didn't work.
