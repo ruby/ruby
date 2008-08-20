@@ -1,3 +1,7 @@
+Wed Aug 20 16:39:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sample): performance improvement for huge array.
+
 Wed Aug 20 12:28:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sample): get rid of infinite loop.  #455

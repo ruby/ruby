@@ -3022,35 +3022,71 @@ rb_ary_shuffle(VALUE ary)
 static VALUE
 rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE nv, result;
-    int n, len, i, j;
+    VALUE nv, result, *ptr;
+    long n, len, i, j, k, idx[10];
 
     len = RARRAY_LEN(ary); 
     if (argc == 0) {
 	if (len == 0) return Qnil;
-	i = rb_genrand_real()*len;
+	i = len == 1 ? 0 : rb_genrand_real()*len;
 	return RARRAY_PTR(ary)[i];
     }
     rb_scan_args(argc, argv, "1", &nv);
-    n = NUM2INT(nv);
+    n = NUM2LONG(nv);
+    ptr = RARRAY_PTR(ary); 
+    len = RARRAY_LEN(ary); 
     if (n > len) n = len;
-    if (n == 0) return rb_ary_new2(0);
-    result = rb_ary_new2(n);
-    for (i=0; i<n; i++) {
-      retry:
-	j = rb_genrand_real()*len;
-	nv = LONG2NUM(j);
-	for (j=0; j<i; j++) {
-	    if (RARRAY_PTR(result)[j] == nv)
-		goto retry;
+    switch (n) {
+      case 0: return rb_ary_new2(0);
+      case 1:
+	return rb_ary_new4(1, &ptr[(long)(rb_genrand_real()*len)]);
+      case 2:
+	i = rb_genrand_real()*len;
+	j = rb_genrand_real()*(len-1);
+	if (j == i) j++;
+	return rb_ary_new3(2, ptr[i], ptr[j]);
+      case 3:
+	i = rb_genrand_real()*len;
+	j = rb_genrand_real()*(len-1);
+	k = rb_genrand_real()*(len-2);
+	if (j == i) j++;
+	if ((k == i) ? (++k == j) : (k == j) ? (++k == i): 0) ++k;
+	return rb_ary_new3(3, ptr[i], ptr[j], ptr[k]);
+    }
+    if (n < sizeof(idx)/sizeof(idx[0])) {
+	idx[0] = rb_genrand_real()*len;
+	for (i=1; i<n; i++) {
+	    long p = i;
+	    k = rb_genrand_real()*--len;
+	  retry:
+	    j = 0;
+	    do {
+		if (idx[j] == k) {
+		    ++k;
+		    if (p < j) goto retry;
+		}
+		else if (idx[j] > k) {
+		    if (p > j) p = j;
+		}
+	    } while (++j < i);
+	    idx[i] = k;
 	}
-	RARRAY_PTR(result)[i] = nv;
-	ARY_SET_LEN(result, i+1);
+	result = rb_ary_new2(n);
+	for (i=0; i<n; i++) {
+	    RARRAY_PTR(result)[i] = RARRAY_PTR(ary)[idx[i]];
+	}
     }
-    for (i=0; i<n; i++) {
-	nv = RARRAY_PTR(result)[i];
-	RARRAY_PTR(result)[i] = RARRAY_PTR(ary)[NUM2LONG(nv)];
+    else {
+	result = rb_ary_new4(len, ptr);
+	RB_GC_GUARD(ary);
+	for (i=0; i<n; i++) {
+	    j = (long)(rb_genrand_real()*(len-i)) + i;
+	    nv = RARRAY_PTR(result)[j];
+	    RARRAY_PTR(result)[j] = RARRAY_PTR(result)[i];
+	    RARRAY_PTR(result)[i] = nv;
+	}
     }
+
     return result;
 }
 
