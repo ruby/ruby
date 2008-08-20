@@ -5376,7 +5376,7 @@ stdout_setter(VALUE val, ID id, VALUE *variable)
 }
 
 static VALUE
-prep_io(int fd, int mode, VALUE klass, const char *path)
+prep_io(int fd, int flags, VALUE klass, const char *path)
 {
     rb_io_t *fp;
     VALUE io = io_alloc(klass);
@@ -5385,11 +5385,11 @@ prep_io(int fd, int mode, VALUE klass, const char *path)
     fp->fd = fd;
 #ifdef __CYGWIN__
     if (!isatty(fd)) {
-        mode |= FMODE_BINMODE;
+        flags |= FMODE_BINMODE;
 	setmode(fd, O_BINARY);
     }
 #endif
-    fp->mode = mode;
+    fp->mode = flags;
     io_check_tty(fp);
     if (path) fp->path = strdup(path);
 
@@ -5397,19 +5397,19 @@ prep_io(int fd, int mode, VALUE klass, const char *path)
 }
 
 VALUE
-rb_io_fdopen(int fd, int mode, const char *path)
+rb_io_fdopen(int fd, int modenum, const char *path)
 {
     VALUE klass = rb_cIO;
 
     if (path && strcmp(path, "-")) klass = rb_cFile;
-    return prep_io(fd, rb_io_modenum_flags(mode), klass, path);
+    return prep_io(fd, rb_io_modenum_flags(modenum), klass, path);
 }
 
 static VALUE
-prep_stdio(FILE *f, int mode, VALUE klass, const char *path)
+prep_stdio(FILE *f, int flags, VALUE klass, const char *path)
 {
     rb_io_t *fptr;
-    VALUE io = prep_io(fileno(f), mode|FMODE_PREP, klass, path);
+    VALUE io = prep_io(fileno(f), flags|FMODE_PREP, klass, path);
 
     GetOpenFile(io, fptr);
     fptr->stdio_file = f;
