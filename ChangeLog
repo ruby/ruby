@@ -1,3 +1,10 @@
+Thu Aug 21 07:59:04 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/iconv/test_option.rb (test_ignore_option): skip if iconv
+	  doesn't have transliterate.
+
+	* test/iconv/test_option.rb (test_translit_option): ditto.
+
 Thu Aug 21 06:12:56 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/scanf.rb (Scanf::FormatSpecifier#initialize): %i should accept
