@@ -4523,13 +4523,14 @@ io_set_encoding(VALUE io, VALUE opt)
     }
 }
 
-static VALUE
-rb_open_file(int argc, VALUE *argv, VALUE io)
+static void
+rb_scan_open_args(int argc, VALUE *argv,
+        VALUE *fname_p, int *modenum_p, int *flags_p,
+        convconfig_t *convconfig_p, unsigned int *fmode_p)
 {
     VALUE opt=Qnil, fname, vmode, perm;
     int modenum, flags;
     unsigned int fmode;
-    convconfig_t convconfig = { NULL, NULL };
 
     if (0 < argc) {
         opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
@@ -4560,10 +4561,25 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 #endif
     FilePathValue(fname);
  
-    rb_io_extract_modeenc(vmode, opt, &modenum, &flags, &convconfig);
+    rb_io_extract_modeenc(vmode, opt, &modenum, &flags, convconfig_p);
 
     fmode = NIL_P(perm) ? 0666 :  NUM2UINT(perm);
 
+    *fname_p = fname;
+    *modenum_p = modenum;
+    *flags_p = flags;
+    *fmode_p = fmode;
+}
+
+static VALUE
+rb_open_file(int argc, VALUE *argv, VALUE io)
+{
+    VALUE fname;
+    int modenum, flags;
+    convconfig_t convconfig;
+    unsigned int fmode;
+
+    rb_scan_open_args(argc, argv, &fname, &modenum, &flags, &convconfig, &fmode);
     rb_file_open_generic(io, RSTRING_PTR(fname), modenum, flags, &convconfig, fmode);
 
     return io;
