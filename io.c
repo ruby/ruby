@@ -3781,10 +3781,10 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
 			RSTRING_PTR(rb_inspect(extenc)));
 	    }
 	    else {
-		*enc2_p = intencoding;
+		*enc_p = intencoding;
 	    }
 	}
-	*enc_p = extencoding;
+	*enc2_p = extencoding;
     }
     else {
 	if (!NIL_P(intenc)) {
@@ -4165,9 +4165,8 @@ popen_exec(void *pp)
 #endif
 
 static VALUE
-pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
+pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode, int flags, convconfig_t *convconfig)
 {
-    int modef = rb_io_mode_flags(mode);
     int pid = 0;
     rb_io_t *fptr;
     VALUE port;
@@ -4210,10 +4209,10 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
 
 #if defined(HAVE_FORK)
     arg.execp = eargp;
-    arg.modef = modef;
+    arg.modef = flags;
     arg.pair[0] = arg.pair[1] = -1;
     arg.write_pair[0] = arg.write_pair[1] = -1;
-    switch (modef & (FMODE_READABLE|FMODE_WRITABLE)) {
+    switch (flags & (FMODE_READABLE|FMODE_WRITABLE)) {
       case FMODE_READABLE|FMODE_WRITABLE:
         if (rb_pipe(arg.write_pair) < 0)
             rb_sys_fail(cmd);
@@ -4266,20 +4265,20 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
 	int e = errno;
 	close(arg.pair[0]);
 	close(arg.pair[1]);
-        if ((modef & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
+        if ((flags & (FMODE_READABLE|FMODE_WRITABLE)) == (FMODE_READABLE|FMODE_WRITABLE)) {
             close(arg.write_pair[0]);
             close(arg.write_pair[1]);
         }
 	errno = e;
 	rb_sys_fail(cmd);
     }
-    if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
+    if ((flags & FMODE_READABLE) && (flags & FMODE_WRITABLE)) {
         close(arg.pair[1]);
         fd = arg.pair[0];
         close(arg.write_pair[0]);
         write_fd = arg.write_pair[1];
     }
-    else if (modef & FMODE_READABLE) {
+    else if (flags & FMODE_READABLE) {
         close(arg.pair[1]);
         fd = arg.pair[0];
     }
@@ -4349,15 +4348,18 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
     MakeOpenFile(port, fptr);
     fptr->fd = fd;
     fptr->stdio_file = fp;
-    fptr->mode = modef | FMODE_SYNC|FMODE_DUPLEX;
-    rb_io_mode_enc(fptr, mode);
+    fptr->mode = flags | FMODE_SYNC|FMODE_DUPLEX;
+    if (convconfig) {
+        fptr->enc = convconfig->enc;
+        fptr->enc2 = convconfig->enc2;
+    }
     fptr->pid = pid;
 
     if (0 <= write_fd) {
         write_port = io_alloc(rb_cIO);
         MakeOpenFile(write_port, write_fptr);
         write_fptr->fd = write_fd;
-        write_fptr->mode = (modef & ~FMODE_READABLE)| FMODE_SYNC|FMODE_DUPLEX;
+        write_fptr->mode = (flags & ~FMODE_READABLE)| FMODE_SYNC|FMODE_DUPLEX;
         fptr->mode &= ~FMODE_WRITABLE;
         fptr->tied_io_for_writing = write_port;
         rb_ivar_set(port, rb_intern("@tied_io_for_writing"), write_port);
@@ -4371,16 +4373,16 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode)
 }
 
 static VALUE
-pipe_open_v(int argc, VALUE *argv, const char *mode)
+pipe_open_v(int argc, VALUE *argv, const char *mode, int flags, convconfig_t *convconfig)
 {
     VALUE prog;
     struct rb_exec_arg earg;
     prog = rb_exec_arg_init(argc, argv, Qfalse, &earg);
-    return pipe_open(&earg, prog, mode);
+    return pipe_open(&earg, prog, mode, flags, convconfig);
 }
 
 static VALUE
-pipe_open_s(VALUE prog, const char *mode)
+pipe_open_s(VALUE prog, const char *mode, int flags, convconfig_t *convconfig)
 {
     const char *cmd = RSTRING_PTR(prog);
     int argc = 1;
@@ -4392,11 +4394,25 @@ pipe_open_s(VALUE prog, const char *mode)
 	rb_raise(rb_eNotImpError,
 		 "fork() function is unimplemented on this machine");
 #endif
-        return pipe_open(0, 0, mode);
+        return pipe_open(0, 0, mode, flags, convconfig);
     }
 
     rb_exec_arg_init(argc, argv, Qtrue, &earg);
-    return pipe_open(&earg, prog, mode);
+    return pipe_open(&earg, prog, mode, flags, convconfig);
+}
+
+static VALUE
+pop_last_hash(int *argc_p, VALUE **argv_p)
+{
+    VALUE last, tmp;
+    if (*argc_p == 0)
+        return Qnil;
+    last = (*argv_p)[*argc_p-1];
+    tmp = rb_check_convert_type(last, T_HASH, "Hash", "to_hash");
+    if (NIL_P(tmp))
+        return Qnil;
+    (*argc_p)--;
+    return tmp;
 }
 
 /*
@@ -4458,27 +4474,26 @@ static VALUE
 rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 {
     const char *mode;
-    VALUE pname, pmode, port, tmp;
+    VALUE pname, pmode, port, tmp, opt;
+    int modenum, flags;
+    convconfig_t convconfig;
 
-    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
-	mode = "r";
-    }
-    else if (FIXNUM_P(pmode)) {
-	mode = rb_io_modenum_mode(FIX2INT(pmode));
-    }
-    else {
-	mode = StringValueCStr(pmode);
-    }
+    opt = pop_last_hash(&argc, &argv);
+    rb_scan_args(argc, argv, "11", &pname, &pmode);
+
+    rb_io_extract_modeenc(pmode, opt, &modenum, &flags, &convconfig);
+    mode = rb_io_modenum_mode(modenum);
+
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
 	tmp = rb_ary_dup(tmp);
 	RBASIC(tmp)->klass = 0;
-	port = pipe_open_v(RARRAY_LEN(tmp), RARRAY_PTR(tmp), mode);
+	port = pipe_open_v(RARRAY_LEN(tmp), RARRAY_PTR(tmp), mode, flags, &convconfig);
 	rb_ary_clear(tmp);
     }
     else {
 	SafeStringValue(pname);
-	port = pipe_open_s(pname, mode);
+	port = pipe_open_s(pname, mode, flags, &convconfig);
     }
     if (NIL_P(port)) {
 	/* child */
@@ -4775,7 +4790,7 @@ rb_io_open(const char *fname, VALUE mode, VALUE opt)
 
     if (fname[0] == '|') {
 	VALUE cmd = rb_str_new2(fname+1);
-	return pipe_open_s(cmd, rb_io_modenum_mode(modenum)); /* xxx: convconfig ignored */
+	return pipe_open_s(cmd, rb_io_modenum_mode(modenum), flags, &convconfig);
     }
     else {
         return rb_file_open_generic(io_alloc(rb_cFile), fname,
@@ -6051,7 +6066,7 @@ rb_f_backquote(VALUE obj, VALUE str)
     rb_io_t *fptr;
 
     SafeStringValue(str);
-    port = pipe_open_s(str, "r");
+    port = pipe_open_s(str, "r", FMODE_READABLE, NULL);
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);

@@ -1,3 +1,17 @@
+Thu Aug 21 03:09:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_extract_encoding_option): enc2 is external encoding if
+	  external encoding and internal encoding is given.
+	  (pipe_open): add flags and convconfig argument to initialize
+	  fptr->{mode,enc,enc2}.
+	  (pipe_open_v): pass flags and convconfig from caller to pipe_open.
+	  (pipe_open_s): ditto.
+	  (pop_last_hash): new function.
+	  (rb_io_s_popen): use last hash as option to specify code conversion.
+	  (rb_io_open): specify flags and convconfig arguments for
+	  pipe_open_s.
+	  (rb_f_backquote): ditto.
+
 Thu Aug 21 02:27:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (prep_io): local variable renamed.
