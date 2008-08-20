@@ -4462,11 +4462,6 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
     if (0 < argc) {
         opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
         if (!NIL_P(opt)) {
-            VALUE v;
-            v = rb_hash_aref(opt, sym_mode);
-            if (!NIL_P(v)) vmode = v;
-            v = rb_hash_aref(opt, sym_perm);
-            if (!NIL_P(v)) perm = v;
             argc -= 1;
         }
     }

@@ -1,3 +1,9 @@
+Wed Aug 20 18:41:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_open_file): don't lookup :mode and :perm in opt.  it is
+	  useless because vmode and perm is overwritten by rb_scan_args
+	  anyway.
+
 Wed Aug 20 18:37:20 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (open_key_args): meaningless MEMCPY removed.
