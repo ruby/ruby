@@ -1353,6 +1353,10 @@ time_asctime(VALUE time)
     return rb_str_new2(s);
 }
 
+size_t
+rb_strftime(char *s, size_t maxsize, const char *format,
+	    const struct tm *timeptr, const struct timespec *ts, int gmt);
+
 /*
  *  call-seq:
  *     time.inspect => string
@@ -1381,24 +1385,12 @@ time_to_s(VALUE time)
 	time_get_tm(time, tobj->gmt);
     }
     if (tobj->gmt == 1) {
-	len = strftime(buf, 128, "%Y-%m-%d %H:%M:%S UTC", &tobj->tm);
+	len = rb_strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S UTC",
+			  &tobj->tm, &tobj->ts, tobj->gmt);
     }
     else {
-	long off;
-	char sign = '+';
-#if defined(HAVE_STRUCT_TM_TM_GMTOFF)
-	off = tobj->tm.tm_gmtoff;
-#else
-	VALUE tmp = time_utc_offset(time);
-	off = NUM2INT(tmp);
-#endif
-	if (off < 0) {
-	    sign = '-';
-	    off = -off;
-	}
-	len = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S ", &tobj->tm);
-        len += snprintf(buf+len, sizeof(buf)-len, "%c%02d%02d", sign,
-                        (int)(off/3600), (int)(off%3600/60));
+	len = rb_strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %z",
+			  &tobj->tm, &tobj->ts, tobj->gmt);
     }
     return rb_str_new(buf, len);
 }
@@ -1918,7 +1910,8 @@ time_zone(VALUE time)
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
     return rb_str_new2(tzname[daylight && tobj->tm.tm_isdst]);
 #else
-    len = strftime(buf, 64, "%Z", &tobj->tm);
+    len = rb_strftime(buf, sizeof(buf), "%Z",
+		      &tobj->tm, &tobj->ts, tobj->gmt);
     return rb_str_new(buf, len);
 #endif
 }
@@ -2015,10 +2008,6 @@ time_to_a(VALUE time)
 		    tobj->tm.tm_isdst?Qtrue:Qfalse,
 		    time_zone(time));
 }
-
-size_t
-rb_strftime(char *s, size_t maxsize, const char *format,
-	    const struct tm *timeptr, const struct timespec *ts, int gmt);
 
 #define SMALLBUF 100
 static int

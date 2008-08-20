@@ -130,10 +130,6 @@ extern char *strrchr(const char *, int);
 extern char *strerror(int);
 #endif
 
-#ifndef HAVE_STRFTIME
-extern size_t strftime(char *, size_t, const char *, const struct tm *);
-#endif
-
 #ifndef HAVE_STRSTR
 extern char *strstr(const char *, const char *);
 #endif
