@@ -1,3 +1,12 @@
+Fri Aug 22 05:10:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_file_open_generic): take filename as a VALUE.
+	  (rb_file_open_internal): ditto.
+	  (rb_io_open): ditto.
+	  (rb_file_open): pass filename as a VALUE to rb_file_open_internal.
+	  (rb_open_file): pass filename as a VALUE to rb_file_open_generic.
+	  (open_key_args): pass filename as a VALUE to rb_io_open.
+
 Fri Aug 22 04:33:56 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h: fix previous change for LP64.

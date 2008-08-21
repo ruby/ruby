@@ -3948,7 +3948,7 @@ io_check_tty(rb_io_t *fptr)
 }
 
 static VALUE
-rb_file_open_generic(VALUE io, const char *fname, int modenum, int flags, convconfig_t *convconfig, mode_t perm)
+rb_file_open_generic(VALUE io, VALUE filename, int modenum, int flags, convconfig_t *convconfig, mode_t perm)
 {
     rb_io_t *fptr;
 
@@ -3962,7 +3962,7 @@ rb_file_open_generic(VALUE io, const char *fname, int modenum, int flags, convco
         fptr->enc = NULL;
         fptr->enc2 = NULL;
     }
-    fptr->path = strdup(fname);
+    fptr->path = strdup(RSTRING_PTR(filename));
     fptr->fd = rb_sysopen(fptr->path, modenum, perm);
     io_check_tty(fptr);
 
@@ -3970,7 +3970,7 @@ rb_file_open_generic(VALUE io, const char *fname, int modenum, int flags, convco
 }
 
 static VALUE
-rb_file_open_internal(VALUE io, const char *fname, const char *mode)
+rb_file_open_internal(VALUE io, VALUE filename, const char *mode)
 {
     int flags;
 
@@ -3985,7 +3985,7 @@ rb_file_open_internal(VALUE io, const char *fname, const char *mode)
     }
 
     flags = rb_io_mode_flags(mode);
-    return rb_file_open_generic(io, fname,
+    return rb_file_open_generic(io, filename,
             rb_io_flags_modenum(flags),
             flags,
             &convconfig,
@@ -3995,7 +3995,7 @@ rb_file_open_internal(VALUE io, const char *fname, const char *mode)
 VALUE
 rb_file_open(const char *fname, const char *mode)
 {
-    return rb_file_open_internal(io_alloc(rb_cFile), fname, mode);
+    return rb_file_open_internal(io_alloc(rb_cFile), rb_str_new_cstr(fname), mode);
 }
 
 #if defined(__CYGWIN__) || !defined(HAVE_FORK)
@@ -4579,7 +4579,7 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
     mode_t perm;
 
     rb_scan_open_args(argc, argv, &fname, &modenum, &flags, &convconfig, &perm);
-    rb_file_open_generic(io, RSTRING_PTR(fname), modenum, flags, &convconfig, perm);
+    rb_file_open_generic(io, fname, modenum, flags, &convconfig, perm);
 
     return io;
 }
@@ -4795,8 +4795,9 @@ rb_f_open(int argc, VALUE *argv)
 }
 
 static VALUE
-rb_io_open(const char *fname, VALUE mode, VALUE opt)
+rb_io_open(VALUE filename, VALUE mode, VALUE opt)
 {
+    char *fname = RSTRING_PTR(filename);
     int modenum, flags;
     convconfig_t convconfig;
     rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
@@ -4806,7 +4807,7 @@ rb_io_open(const char *fname, VALUE mode, VALUE opt)
 	return pipe_open_s(cmd, rb_io_modenum_mode(modenum), flags, &convconfig);
     }
     else {
-        return rb_file_open_generic(io_alloc(rb_cFile), fname,
+        return rb_file_open_generic(io_alloc(rb_cFile), filename,
                 modenum, flags, &convconfig, 0666);
     }
 }
@@ -6700,7 +6701,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     arg->argv = argv + 1;
     if (argc == 1) {
       no_key:
-	arg->io = rb_io_open(RSTRING_PTR(argv[0]), INT2NUM(O_RDONLY), Qnil);
+	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), Qnil);
 	return;
     }
     opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
@@ -6722,7 +6723,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     v = rb_hash_aref(opt, sym_mode);
     if (NIL_P(v))
         v = INT2NUM(O_RDONLY);
-    arg->io = rb_io_open(RSTRING_PTR(argv[0]), v, opt);
+    arg->io = rb_io_open(argv[0], v, opt);
 }
 
 static VALUE
