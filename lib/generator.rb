@@ -165,7 +165,7 @@ class Generator
   end
 end
 
-class Enumerable::Enumerator
+class Enumerator
   def __generator
     @generator ||= Generator.new(self)
   end

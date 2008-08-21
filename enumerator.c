@@ -52,7 +52,7 @@ enumerator_ptr(obj)
     Data_Get_Struct(obj, struct enumerator, ptr);
     if (RDATA(obj)->dmark != enumerator_mark) {
 	rb_raise(rb_eTypeError,
-		 "wrong argument type %s (expected Enumerable::Enumerator)",
+		 "wrong argument type %s (expected Enumerator)",
 		 rb_obj_classname(obj));
     }
     if (!ptr || ptr->obj == Qundef) {
