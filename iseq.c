@@ -548,9 +548,14 @@ iseq_eval(VALUE self)
 static VALUE
 iseq_inspect(VALUE self)
 {
-    rb_iseq_t *iseq = iseq_check(self);
+    rb_iseq_t *iseq;
+    GetISeqPtr(self, iseq);
+    if (!iseq->name) {
+        return rb_sprintf("#<%s: uninitialized>", rb_obj_classname(self));
+    }
 
-    return rb_sprintf("<ISeq:%s@%s>",
+    return rb_sprintf("<%s:%s@%s>",
+                      rb_obj_classname(self),
 		      RSTRING_PTR(iseq->name), RSTRING_PTR(iseq->filename));
 }
 

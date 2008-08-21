@@ -1,3 +1,8 @@
+Fri Aug 22 02:25:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* iseq.c (iseq_inspect): don't raise on uninitialized object.
+	  show real class name.
+
 Fri Aug 22 02:08:58 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_initialize): accept hash argument.
