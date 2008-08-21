@@ -1,3 +1,8 @@
+Thu Aug 21 20:23:26 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_m17n_comb.rb (TestM17NComb#test_str_crypt): add
+	  key and salt to error message.
+
 Thu Aug 21 19:20:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* file.c (rb_stat_inspect): don't raise if self is not initialized.

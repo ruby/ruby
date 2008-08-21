@@ -797,7 +797,7 @@ class TestM17NComb < Test::Unit::TestCase
         next
       end
       t = str.crypt(salt)
-      assert_equal(a(str).crypt(a(salt)), t)
+      assert_equal(a(str).crypt(a(salt)), t, "#{encdump(str)}.crypt(#{encdump(salt)})")
       assert_encoding('ASCII-8BIT', t.encoding)
     }
   end
