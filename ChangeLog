@@ -1,3 +1,8 @@
+Fri Aug 22 05:29:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (INT2NUM): just use a simple macro on LP64.
+	  (UINT2NUM): ditto.
+
 Fri Aug 22 05:10:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_file_open_generic): take filename as a VALUE.

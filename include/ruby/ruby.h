@@ -451,30 +451,35 @@ double rb_num2dbl(VALUE);
 
 VALUE rb_uint2big(VALUE);
 VALUE rb_int2big(SIGNED_VALUE);
+
+#if SIZEOF_INT < SIZEOF_VALUE
+# define INT2NUM(v) INT2FIX((int)(v))
+# define UINT2NUM(v) LONG2FIX((unsigned int)(v))
+#else
 static inline VALUE
 INT2NUM(int v)
 {
-# if SIZEOF_VALUE <= SIZEOF_INT
     if (!FIXABLE(v))
 	return rb_int2big(v);
-# endif
     return INT2FIX(v);
 }
+
+static inline VALUE
+UINT2NUM(unsigned int v)
+{
+    if (!POSFIXABLE(v))
+	return rb_uint2big(v);
+    return LONG2FIX(v);
+}
+#endif
+
 static inline VALUE
 LONG2NUM(long v)
 {
     if (FIXABLE(v)) return LONG2FIX(v);
     return rb_int2big(v);
 }
-static inline VALUE
-UINT2NUM(unsigned int v)
-{
-# if SIZEOF_VALUE <= SIZEOF_INT
-    if (!POSFIXABLE(v))
-	return rb_uint2big(v);
-# endif
-    return LONG2FIX(v);
-}
+
 static inline VALUE
 ULONG2NUM(unsigned long v)
 {
