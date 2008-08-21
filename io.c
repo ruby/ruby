@@ -3813,6 +3813,7 @@ rb_io_extract_modeenc(VALUE mode, VALUE opthash,
     int modenum, flags;
     rb_encoding *enc, *enc2;
     int has_enc = 0;
+    VALUE intmode;
 
     enc = NULL;
     enc2 = NULL;
@@ -3821,11 +3822,11 @@ rb_io_extract_modeenc(VALUE mode, VALUE opthash,
         flags = FMODE_READABLE;
         modenum = O_RDONLY;
     }
-    else if (FIXNUM_P(mode)) {
-        modenum = FIX2INT(mode);
+    else if (!NIL_P(intmode = rb_check_to_integer(mode, "to_int"))) {
+        modenum = NUM2INT(intmode);
         flags = rb_io_modenum_flags(modenum);
     }
-    else { /* xxx: Bignum, to_int */
+    else {
         const char *p;
         SafeStringValue(mode);
         p = StringValueCStr(mode);
