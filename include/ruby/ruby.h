@@ -403,13 +403,13 @@ NUM2LONG(VALUE x)
 #define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
+long rb_fix2int(VALUE);
+#define FIX2INT(x) ((int)rb_fix2int((VALUE)x))
 static inline int
 NUM2INT(VALUE x)
 {
     return FIXNUM_P(x) ? FIX2INT(x) : rb_num2int(x);
 }
-long rb_fix2int(VALUE);
-#define FIX2INT(x) ((int)rb_fix2int((VALUE)x))
 unsigned long rb_num2uint(VALUE);
 #define NUM2UINT(x) ((unsigned int)rb_num2uint(x))
 unsigned long rb_fix2uint(VALUE);
@@ -454,7 +454,9 @@ VALUE rb_int2big(SIGNED_VALUE);
 static inline VALUE
 INT2NUM(int v)
 {
+# if SIZEOF_VALUE <= SIZEOF_INT
     if (FIXABLE(v)) return INT2FIX(v);
+# endif
     return rb_int2big(v);
 }
 static inline VALUE
@@ -466,7 +468,9 @@ LONG2NUM(long v)
 static inline VALUE
 UINT2NUM(unsigned int v)
 {
+# if SIZEOF_VALUE <= SIZEOF_INT
     if (POSFIXABLE(v)) return LONG2FIX(v);
+# endif
     return rb_uint2big(v);
 }
 static inline VALUE

@@ -1,3 +1,7 @@
+Fri Aug 22 04:33:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h: fix previous change for LP64.
+
 Fri Aug 22 03:19:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (NUM2LONG): make it inline function to evaluete
