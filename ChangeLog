@@ -1,3 +1,8 @@
+Fri Aug 22 02:57:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_extract_modeenc): notify coerced to caller.
+	  (rb_io_initialize): mode may be a Bignum.
+
 Fri Aug 22 02:42:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_extract_modeenc): use rb_check_to_integer to test

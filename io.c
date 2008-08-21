@@ -3807,13 +3807,16 @@ typedef struct convconfig_t {
 } convconfig_t;
 
 static void
-rb_io_extract_modeenc(VALUE mode, VALUE opthash,
+rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
         int *modenum_p, int *flags_p, convconfig_t *convconfig_p)
 {
+    VALUE mode;
     int modenum, flags;
     rb_encoding *enc, *enc2;
     int has_enc = 0;
     VALUE intmode;
+
+    mode = *mode_p;
 
     enc = NULL;
     enc2 = NULL;
@@ -3823,6 +3826,7 @@ rb_io_extract_modeenc(VALUE mode, VALUE opthash,
         modenum = O_RDONLY;
     }
     else if (!NIL_P(intmode = rb_check_to_integer(mode, "to_int"))) {
+        mode = intmode;
         modenum = NUM2INT(intmode);
         flags = rb_io_modenum_flags(modenum);
     }
@@ -3846,6 +3850,8 @@ rb_io_extract_modeenc(VALUE mode, VALUE opthash,
             }
         }
     }
+
+    *mode_p = mode;
 
     *modenum_p = modenum;
     *flags_p = flags;
@@ -4485,7 +4491,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &pname, &pmode);
 
-    rb_io_extract_modeenc(pmode, opt, &modenum, &flags, &convconfig);
+    rb_io_extract_modeenc(&pmode, opt, &modenum, &flags, &convconfig);
     mode = rb_io_modenum_mode(modenum);
 
     tmp = rb_check_array_type(pname);
@@ -4554,7 +4560,7 @@ rb_scan_open_args(int argc, VALUE *argv,
 #endif
     FilePathValue(fname);
  
-    rb_io_extract_modeenc(vmode, opt, &modenum, &flags, convconfig_p);
+    rb_io_extract_modeenc(&vmode, opt, &modenum, &flags, convconfig_p);
 
     perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
 
@@ -4790,7 +4796,7 @@ rb_io_open(const char *fname, VALUE mode, VALUE opt)
 {
     int modenum, flags;
     convconfig_t convconfig;
-    rb_io_extract_modeenc(mode, opt, &modenum, &flags, &convconfig);
+    rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
 
     if (fname[0] == '|') {
 	VALUE cmd = rb_str_new2(fname+1);
@@ -5480,7 +5486,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
-    rb_io_extract_modeenc(mode, opt, &modenum, &flags, &convconfig);
+    rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
     orig = rb_io_check_io(fnum);
     if (NIL_P(orig)) {
 	fd = NUM2INT(fnum);
@@ -5511,7 +5517,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	}
 	if (!NIL_P(mode)) {
 	    if ((ofp->mode ^ flags) & (FMODE_READWRITE|FMODE_BINMODE)) {
-		if (FIXNUM_P(mode)) {
+                if (TYPE(mode) != T_STRING) {
 		    rb_raise(rb_eArgError, "incompatible mode 0x%x", modenum);
 		}
 		else {
