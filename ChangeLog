@@ -1,3 +1,16 @@
+Fri Aug 22 03:19:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/ruby.h (NUM2LONG): make it inline function to evaluete
+	  the argument only once.
+	  `t = Object.new; def t.*(x) p x; 0 end; p Time.at(0, t)' did print x
+	  twice.
+	  (NUM2INT): ditto.
+	  (NUM2LL): ditto.
+	  (INT2NUM): make it inline function.
+	  (LONG2NUM): ditto.
+	  (UINT2NUM): ditto.
+	  (ULONG2NUM): ditto.
+
 Fri Aug 22 03:03:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_s_sysopen): mode can be a Bignum.

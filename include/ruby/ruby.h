@@ -185,12 +185,10 @@ typedef unsigned LONG_LONG ID;
 #define LONG2FIX(i) INT2FIX(i)
 #define rb_fix_new(v) INT2FIX(v)
 VALUE rb_int2inum(SIGNED_VALUE);
-#define INT2NUM(v) rb_int2inum(v)
-#define LONG2NUM(v) INT2NUM(v)
+
 #define rb_int_new(v) rb_int2inum(v)
 VALUE rb_uint2inum(VALUE);
-#define UINT2NUM(v) rb_uint2inum(v)
-#define ULONG2NUM(v) UINT2NUM(v)
+
 #define rb_uint_new(v) rb_uint2inum(v)
 
 #ifdef HAVE_LONG_LONG
@@ -397,11 +395,19 @@ void rb_set_errinfo(VALUE);
 
 SIGNED_VALUE rb_num2long(VALUE);
 VALUE rb_num2ulong(VALUE);
-#define NUM2LONG(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2long((VALUE)x))
+static inline long
+NUM2LONG(VALUE x)
+{
+    return FIXNUM_P(x) ? FIX2LONG(x) : rb_num2long(x);
+}
 #define NUM2ULONG(x) rb_num2ulong((VALUE)x)
 #if SIZEOF_INT < SIZEOF_LONG
 long rb_num2int(VALUE);
-#define NUM2INT(x) ((int)(FIXNUM_P(x)?FIX2INT(x):rb_num2int((VALUE)x)))
+static inline int
+NUM2INT(VALUE x)
+{
+    return FIXNUM_P(x) ? FIX2INT(x) : rb_num2int(x);
+}
 long rb_fix2int(VALUE);
 #define FIX2INT(x) ((int)rb_fix2int((VALUE)x))
 unsigned long rb_num2uint(VALUE);
@@ -418,7 +424,11 @@ unsigned long rb_fix2uint(VALUE);
 #ifdef HAVE_LONG_LONG
 LONG_LONG rb_num2ll(VALUE);
 unsigned LONG_LONG rb_num2ull(VALUE);
-# define NUM2LL(x) (FIXNUM_P(x)?FIX2LONG(x):rb_num2ll((VALUE)x))
+static inline LONG_LONG
+NUM2LL(VALUE x)
+{
+    return FIXNUM_P(x) ? FIX2LONG(x) : rb_num2ll(x);
+}
 # define NUM2ULL(x) rb_num2ull((VALUE)x)
 #endif
 
@@ -438,6 +448,33 @@ unsigned LONG_LONG rb_num2ull(VALUE);
 
 double rb_num2dbl(VALUE);
 #define NUM2DBL(x) rb_num2dbl((VALUE)(x))
+
+VALUE rb_uint2big(VALUE);
+VALUE rb_int2big(SIGNED_VALUE);
+static inline VALUE
+INT2NUM(int v)
+{
+    if (FIXABLE(v)) return INT2FIX(v);
+    return rb_int2big(v);
+}
+static inline VALUE
+LONG2NUM(long v)
+{
+    if (FIXABLE(v)) return LONG2FIX(v);
+    return rb_int2big(v);
+}
+static inline VALUE
+UINT2NUM(unsigned int v)
+{
+    if (POSFIXABLE(v)) return LONG2FIX(v);
+    return rb_uint2big(v);
+}
+static inline VALUE
+ULONG2NUM(unsigned long v)
+{
+    if (POSFIXABLE(v)) return LONG2FIX(v);
+    return rb_uint2big(v);
+}
 
 /* obsolete API - use StringValue() */
 char *rb_str2cstr(VALUE,long*);
