@@ -1,3 +1,7 @@
+Fri Aug 22 03:03:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_s_sysopen): mode can be a Bignum.
+
 Fri Aug 22 02:57:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_extract_modeenc): notify coerced to caller.

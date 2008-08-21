@@ -4624,25 +4624,28 @@ static VALUE
 rb_io_s_sysopen(int argc, VALUE *argv)
 {
     VALUE fname, vmode, vperm;
-    int flags, fd;
+    VALUE intmode;
+    int modenum, fd;
     mode_t perm;
     char *path;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
     FilePathValue(fname);
 
-    if (NIL_P(vmode)) flags = O_RDONLY;
-    else if (FIXNUM_P(vmode)) flags = FIX2INT(vmode);
+    if (NIL_P(vmode))
+        modenum = O_RDONLY;
+    else if (!NIL_P(intmode = rb_check_to_integer(vmode, "to_int")))
+        modenum = NUM2INT(intmode);
     else {
 	SafeStringValue(vmode);
-	flags = rb_io_mode_modenum(StringValueCStr(vmode));
+	modenum = rb_io_mode_modenum(StringValueCStr(vmode));
     }
     if (NIL_P(vperm)) perm = 0666;
     else              perm = NUM2UINT(vperm);
 
     RB_GC_GUARD(fname) = rb_str_new4(fname);
     path = RSTRING_PTR(fname);
-    fd = rb_sysopen(path, flags, perm);
+    fd = rb_sysopen(path, modenum, perm);
     return INT2NUM(fd);
 }
 
