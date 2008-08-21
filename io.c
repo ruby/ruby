@@ -5472,31 +5472,31 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     VALUE fnum, mode, orig;
     rb_io_t *fp, *ofp = NULL;
     int fd, flags, modenum = O_RDONLY;
+    convconfig_t convconfig;
+    VALUE opt;
 
     rb_secure(4);
+
+    opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
-    if (argc == 2) {
-	if (FIXNUM_P(mode)) {
-	    modenum = FIX2LONG(mode);
-	}
-	else {
-	    SafeStringValue(mode);
-	    modenum = rb_io_mode_modenum(StringValueCStr(mode));
-	}
-    }
+    rb_io_extract_modeenc(mode, opt, &modenum, &flags, &convconfig);
     orig = rb_io_check_io(fnum);
     if (NIL_P(orig)) {
 	fd = NUM2INT(fnum);
         UPDATE_MAXFD(fd);
-	if (argc != 2) {
+	if (NIL_P(mode)) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
 	    modenum = fcntl(fd, F_GETFL);
 	    if (modenum == -1) rb_sys_fail(0);
+            flags = rb_io_modenum_flags(modenum);
 #endif
 	}
 	MakeOpenFile(io, fp);
         fp->fd = fd;
-	fp->mode = rb_io_modenum_flags(modenum);
+	fp->mode = flags;
+        fp->enc = convconfig.enc;
+        fp->enc2 = convconfig.enc2;
+        clear_codeconv(fp);
         io_check_tty(fp);
     }
     else if (RFILE(io)->fptr) {
@@ -5508,8 +5508,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	    VALUE s = rb_inspect(orig);
 	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValueCStr(s));
 	}
-	if (argc == 2) {
-	    flags = rb_io_modenum_flags(modenum);
+	if (!NIL_P(mode)) {
 	    if ((ofp->mode ^ flags) & (FMODE_READWRITE|FMODE_BINMODE)) {
 		if (FIXNUM_P(mode)) {
 		    rb_raise(rb_eArgError, "incompatible mode 0x%x", modenum);
@@ -5519,6 +5518,9 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 		}
 	    }
 	}
+        if (convconfig.enc || convconfig.enc2) {
+            rb_raise(rb_eArgError, "encoding specified for shared IO");
+        }
 	ofp->refcnt++;
 	RFILE(io)->fptr = ofp;
     }

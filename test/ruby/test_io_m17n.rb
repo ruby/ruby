@@ -206,6 +206,19 @@ EOT
     }
   end
 
+  def test_io_new_enc
+    with_tmpdir {
+      generate_file("tmp", "\xa1")
+      fd = IO.sysopen("tmp")
+      f = IO.new(fd, "r:sjis")
+      begin
+        assert_equal(Encoding::Shift_JIS, f.read.encoding)
+      ensure
+        f.close
+      end
+    }
+  end
+
   def test_stdin
     assert_equal(Encoding.default_external, STDIN.external_encoding)
     assert_equal(nil, STDIN.internal_encoding)
