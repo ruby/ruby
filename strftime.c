@@ -446,7 +446,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 
 		case 'Z':	/* time zone name or abbrevation */
 			if (gmt) {
-			    strcpy(tbuf, "GMT");
+			    strcpy(tbuf, "UTC");
 			    break;
 			}
 #ifdef HAVE_TZNAME

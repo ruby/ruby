@@ -371,7 +371,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("00:00:00", T2000.strftime("%X"))
     assert_equal("00", T2000.strftime("%y"))
     assert_equal("2000", T2000.strftime("%Y"))
-    assert(["GMT", "UTC"].include?(T2000.strftime("%Z")))
+    assert_equal("UTC", T2000.strftime("%Z"))
     assert_equal("%", T2000.strftime("%%"))
 
     assert_equal("", T2000.strftime(""))

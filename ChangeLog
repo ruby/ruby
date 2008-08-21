@@ -1,3 +1,9 @@
+Thu Aug 21 09:29:01 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* strftime.c (rb_strftime): return "UTC" instead of "GMT".
+
+	* test/ruby/test_time.rb (test_strftime): ditto.
+
 Thu Aug 21 07:59:04 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/iconv/test_option.rb (test_ignore_option): skip if iconv
