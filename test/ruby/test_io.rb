@@ -1255,6 +1255,8 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_nofollow
+    # O_NOFOLLOW is not standard.
+    return if /freebsd|linux/ !~ RUBY_PLATFORM
     return unless defined? File::NOFOLLOW
     mkcdtmpdir {
       open("file", "w") {|f| f << "content" }
@@ -1263,10 +1265,10 @@ class TestIO < Test::Unit::TestCase
       rescue NotImplementedError
         return
       end
-      assert_raise(Errno::ELOOP) {
+      assert_raise(Errno::EMLINK, Errno::ELOOP) {
         open("slnk", File::RDONLY|File::NOFOLLOW) {}
       }
-      assert_raise(Errno::ELOOP) {
+      assert_raise(Errno::EMLINK, Errno::ELOOP) {
         File.foreach("slnk", :open_args=>[File::RDONLY|File::NOFOLLOW]) {}
       }
     }
