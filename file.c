@@ -671,6 +671,12 @@ rb_stat_inspect(VALUE self)
 	{"ctime",   rb_stat_ctime},
     };
 
+    struct stat* st;
+    Data_Get_Struct(self, struct stat, st);
+    if (!st) {
+        return rb_sprintf("#<%s: uninitialized>", rb_obj_classname(self));
+    }
+
     str = rb_str_buf_new2("#<");
     rb_str_buf_cat2(str, rb_obj_classname(self));
     rb_str_buf_cat2(str, " ");

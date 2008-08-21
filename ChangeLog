@@ -1,3 +1,7 @@
+Thu Aug 21 19:20:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (rb_stat_inspect): don't raise if self is not initialized.
+
 Thu Aug 21 19:17:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* process.c (pst_pid): use rb_attr_get to avoid warning on
