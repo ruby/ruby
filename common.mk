@@ -413,7 +413,6 @@ mkdir.$(OBJEXT): {$(VPATH)}mkdir.c
 strchr.$(OBJEXT): {$(VPATH)}strchr.c
 strdup.$(OBJEXT): {$(VPATH)}strdup.c
 strerror.$(OBJEXT): {$(VPATH)}strerror.c
-strftime.$(OBJEXT): {$(VPATH)}strftime.c
 strstr.$(OBJEXT): {$(VPATH)}strstr.c
 strtod.$(OBJEXT): {$(VPATH)}strtod.c
 strtol.$(OBJEXT): {$(VPATH)}strtol.c

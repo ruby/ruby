@@ -1,3 +1,9 @@
+Thu Aug 21 14:22:50 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* strftime.c: include ruby/config.h instead of ruby/ruby.h.
+
+	* common.mk: removed the old rule for missing/strftime.c.
+
 Thu Aug 21 09:29:01 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* strftime.c (rb_strftime): return "UTC" instead of "GMT".
