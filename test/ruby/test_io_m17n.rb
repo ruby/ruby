@@ -75,10 +75,50 @@ EOT
     }
   end
 
+  def test_open_r_enc_in_opt
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r", encoding: "euc-jp") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_enc_in_opt2
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r", external_encoding: "euc-jp") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
   def test_open_r_enc_enc
     with_tmpdir {
       generate_file('tmp', "")
       open("tmp", "r:euc-jp:utf-8") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_enc_enc_in_opt
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r", encoding: "euc-jp:utf-8") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_r_enc_enc_in_opt2
+    with_tmpdir {
+      generate_file('tmp', "")
+      open("tmp", "r", external_encoding: "euc-jp", internal_encoding: "utf-8") {|f|
         assert_equal(Encoding::EUC_JP, f.external_encoding)
         assert_equal(Encoding::UTF_8, f.internal_encoding)
       }
@@ -112,9 +152,45 @@ EOT
     }
   end
 
+  def test_open_w_enc_in_opt
+    with_tmpdir {
+      open("tmp", "w", encoding: "euc-jp") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_w_enc_in_opt2
+    with_tmpdir {
+      open("tmp", "w", external_encoding: "euc-jp") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+      }
+    }
+  end
+
   def test_open_w_enc_enc
     with_tmpdir {
       open("tmp", "w:euc-jp:utf-8") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_w_enc_enc_in_opt
+    with_tmpdir {
+      open("tmp", "w", encoding: "euc-jp:utf-8") {|f|
+        assert_equal(Encoding::EUC_JP, f.external_encoding)
+        assert_equal(Encoding::UTF_8, f.internal_encoding)
+      }
+    }
+  end
+
+  def test_open_w_enc_enc_in_opt2
+    with_tmpdir {
+      open("tmp", "w", external_encoding: "euc-jp", internal_encoding: "utf-8") {|f|
         assert_equal(Encoding::EUC_JP, f.external_encoding)
         assert_equal(Encoding::UTF_8, f.internal_encoding)
       }
@@ -512,7 +588,7 @@ EOT
     }
   end
 
-  def test_getc_invalid
+  def test_getc_invalid2
     with_pipe("utf-8:euc-jp") {|r, w|
       before1 = "\u{3042}"
       before2 = "\u{3044}"
@@ -530,7 +606,7 @@ EOT
     }
   end
 
-  def test_getc_invalid2
+  def test_getc_invalid3
     with_pipe("utf-16le:euc-jp") {|r, w|
       before1 = "\x42\x30".force_encoding("utf-16le")
       before2 = "\x44\x30".force_encoding("utf-16le")
@@ -686,6 +762,206 @@ EOT
         f.rewind
         result = f.read.force_encoding("ascii-8bit")
         assert_equal("\u3042".force_encoding("ascii-8bit"), result)
+      }
+    }
+  end
+
+  def test_popen_r_enc
+    IO.popen("#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+      assert_equal(nil, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::ASCII_8BIT, s.encoding)
+      assert_equal("\xff".force_encoding("ascii-8bit"), s)
+    }
+  end
+
+  def test_popen_r_enc_in_opt
+    IO.popen("#{EnvUtil.rubybin} -e 'putc 255'", "r", encoding: "ascii-8bit") {|f|
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+      assert_equal(nil, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::ASCII_8BIT, s.encoding)
+      assert_equal("\xff".force_encoding("ascii-8bit"), s)
+    }
+  end
+
+  def test_popen_r_enc_in_opt2
+    IO.popen("#{EnvUtil.rubybin} -e 'putc 255'", "r", external_encoding: "ascii-8bit") {|f|
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+      assert_equal(nil, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::ASCII_8BIT, s.encoding)
+      assert_equal("\xff".force_encoding("ascii-8bit"), s)
+    }
+  end
+
+  def test_popen_r_enc_enc
+    IO.popen("#{EnvUtil.rubybin} -e 'putc 0xa1'", "r:shift_jis:euc-jp") {|f|
+      assert_equal(Encoding::Shift_JIS, f.external_encoding)
+      assert_equal(Encoding::EUC_JP, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::EUC_JP, s.encoding)
+      assert_equal("\x8e\xa1".force_encoding("euc-jp"), s)
+    }
+  end
+
+  def test_popen_r_enc_enc_in_opt
+    IO.popen("#{EnvUtil.rubybin} -e 'putc 0xa1'", "r", encoding: "shift_jis:euc-jp") {|f|
+      assert_equal(Encoding::Shift_JIS, f.external_encoding)
+      assert_equal(Encoding::EUC_JP, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::EUC_JP, s.encoding)
+      assert_equal("\x8e\xa1".force_encoding("euc-jp"), s)
+    }
+  end
+
+  def test_popen_r_enc_enc_in_opt2
+    IO.popen("#{EnvUtil.rubybin} -e 'putc 0xa1'", "r", external_encoding: "shift_jis", internal_encoding: "euc-jp") {|f|
+      assert_equal(Encoding::Shift_JIS, f.external_encoding)
+      assert_equal(Encoding::EUC_JP, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::EUC_JP, s.encoding)
+      assert_equal("\x8e\xa1".force_encoding("euc-jp"), s)
+    }
+  end
+
+  def test_popenv_r_enc_enc_in_opt2
+    IO.popen([EnvUtil.rubybin, "-e", "putc 0xa1"], "r", external_encoding: "shift_jis", internal_encoding: "euc-jp") {|f|
+      assert_equal(Encoding::Shift_JIS, f.external_encoding)
+      assert_equal(Encoding::EUC_JP, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::EUC_JP, s.encoding)
+      assert_equal("\x8e\xa1".force_encoding("euc-jp"), s)
+    }
+  end
+
+  def test_open_pipe_r_enc
+    open("|#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+      assert_equal(nil, f.internal_encoding)
+      s = f.read
+      assert_equal(Encoding::ASCII_8BIT, s.encoding)
+      assert_equal("\xff".force_encoding("ascii-8bit"), s)
+    }
+  end
+
+  def test_s_foreach_enc
+    with_tmpdir {
+      generate_file("t", "\xff")
+      IO.foreach("t", :mode => "r:ascii-8bit") {|s|
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_enc_in_opt
+    with_tmpdir {
+      generate_file("t", "\xff")
+      IO.foreach("t", :encoding => "ascii-8bit") {|s|
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_enc_in_opt2
+    with_tmpdir {
+      generate_file("t", "\xff")
+      IO.foreach("t", :external_encoding => "ascii-8bit") {|s|
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_enc_enc
+    with_tmpdir {
+      generate_file("t", "\u3042")
+      IO.foreach("t", :mode => "r:utf-8:euc-jp") {|s|
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_enc_enc_in_opt
+    with_tmpdir {
+      generate_file("t", "\u3042")
+      IO.foreach("t", :mode => "r", :encoding => "utf-8:euc-jp") {|s|
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_enc_enc_in_opt2
+    with_tmpdir {
+      generate_file("t", "\u3042")
+      IO.foreach("t", :mode => "r", :external_encoding => "utf-8", :internal_encoding => "euc-jp") {|s|
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_open_args_enc
+    with_tmpdir {
+      generate_file("t", "\xff")
+      IO.foreach("t", :open_args => ["r:ascii-8bit"]) {|s|
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_open_args_enc_in_opt
+    with_tmpdir {
+      generate_file("t", "\xff")
+      IO.foreach("t", :open_args => ["r", encoding: "ascii-8bit"]) {|s|
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_open_args_enc_in_opt2
+    with_tmpdir {
+      generate_file("t", "\xff")
+      IO.foreach("t", :open_args => ["r", external_encoding: "ascii-8bit"]) {|s|
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_open_args_enc_enc
+    with_tmpdir {
+      generate_file("t", "\u3042")
+      IO.foreach("t", :open_args => ["r:utf-8:euc-jp"]) {|s|
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_open_args_enc_enc_in_opt
+    with_tmpdir {
+      generate_file("t", "\u3042")
+      IO.foreach("t", :open_args => ["r", encoding: "utf-8:euc-jp"]) {|s|
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
+      }
+    }
+  end
+
+  def test_s_foreach_open_args_enc_enc_in_opt2
+    with_tmpdir {
+      generate_file("t", "\u3042")
+      IO.foreach("t", :open_args => ["r", external_encoding: "utf-8", internal_encoding: "euc-jp"]) {|s|
+        assert_equal(Encoding::EUC_JP, s.encoding)
+        assert_equal("\xa4\xa2".force_encoding("euc-jp"), s)
       }
     }
   end

@@ -3782,9 +3782,12 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
 	    }
 	    else {
 		*enc_p = intencoding;
+                *enc2_p = extencoding;
 	    }
 	}
-	*enc2_p = extencoding;
+        else {
+            *enc_p = extencoding;
+        }
     }
     else {
 	if (!NIL_P(intenc)) {
