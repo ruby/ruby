@@ -455,9 +455,10 @@ static inline VALUE
 INT2NUM(int v)
 {
 # if SIZEOF_VALUE <= SIZEOF_INT
-    if (FIXABLE(v)) return INT2FIX(v);
+    if (!FIXABLE(v))
+	return rb_int2big(v);
 # endif
-    return rb_int2big(v);
+    return INT2FIX(v);
 }
 static inline VALUE
 LONG2NUM(long v)
@@ -469,9 +470,10 @@ static inline VALUE
 UINT2NUM(unsigned int v)
 {
 # if SIZEOF_VALUE <= SIZEOF_INT
-    if (POSFIXABLE(v)) return LONG2FIX(v);
+    if (!POSFIXABLE(v))
+	return rb_uint2big(v);
 # endif
-    return rb_uint2big(v);
+    return LONG2FIX(v);
 }
 static inline VALUE
 ULONG2NUM(unsigned long v)
