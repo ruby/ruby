@@ -2056,13 +2056,17 @@ rb_strftime_alloc(char **buf, const char *format,
  *    %B - The  full  month  name (``January'')
  *    %c - The preferred local date and time representation
  *    %d - Day of the month (01..31)
+ *    %F - Equivalent to %Y-%m-%d (the ISO 8601 date format)
  *    %H - Hour of the day, 24-hour clock (00..23)
  *    %I - Hour of the day, 12-hour clock (01..12)
  *    %j - Day of the year (001..366)
  *    %L - Millisecond of the second (000..999)
  *    %m - Month of the year (01..12)
  *    %M - Minute of the hour (00..59)
- *    %N - Nanosecond of the second (000000000..999999999)
+ *    %N - Fractional seconds digits, default is 9 digits (nanosecond)
+ *            %3N  millisecond (3 digits)
+ *            %6N  microsecond (6 digits)
+ *            %9N  nanosecond (9 digits)
  *    %p - Meridian indicator (``AM''  or  ``PM'')
  *    %S - Second of the minute (00..60)
  *    %U - Week  number  of the current year,

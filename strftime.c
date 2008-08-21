@@ -45,7 +45,7 @@
  * January 1996
  */
 
-#include "ruby/config.h"
+#include "ruby/ruby.h"
 
 #ifndef GAWK
 #include <stdio.h>
@@ -61,6 +61,7 @@
 #include <sys/time.h>
 #endif
 #endif
+#include <math.h>
 
 /* defaults: season to taste */
 #define SYSV_EXT	1	/* stuff in System V ascftime routine */
@@ -193,6 +194,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 #endif /* HAVE_TIMEZONE */
 #endif /* HAVE_TM_NAME */
 #endif /* HAVE_TM_ZONE */
+	int precision = -1;
 
 	/* various tables, useful in North America */
 	static const char *days_a[] = {
@@ -264,6 +266,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			*s++ = *format;
 			continue;
 		}
+		precision = -1;
 	again:
 		switch (*++format) {
 		case '\0':
@@ -587,11 +590,49 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			sprintf(tbuf, "%03ld", ts->tv_nsec / 1000000);
 			break;
 
-		case 'N':	/* nanosecond, 000000000 - 999999999 */
-			sprintf(tbuf, "%09ld", ts->tv_nsec);
+		case 'N':
+			/*
+			 * fractional second digits. default is 9 digits
+			 * (nanosecond).
+			 *
+			 * %3N  millisecond (3 digits)
+			 * %6N  microsecond (6 digits)
+			 * %9N  nanosecond (9 digits)
+			 */
+			{
+				char fmt[10];
+				long n = ts->tv_nsec;
+
+				if (precision < 0 || precision > 9) {
+				    precision = 9;
+				}
+				if (precision == 0) break;
+				n /= pow(10, 9 - precision);
+				sprintf(fmt, "%%0%dld", precision);
+				sprintf(tbuf, fmt, n);
+			}
+			break;
+
+		case 'F':	/*  Equivalent to %Y-%m-%d */
+			{
+				int mon, mday;
+				mon = range(0, timeptr->tm_mon, 11) + 1;
+				mday = range(1, timeptr->tm_mday, 31);
+				sprintf(tbuf, "%ld-%02d-%02d",
+					1900L + timeptr->tm_year, mon, mday);
+			}
 			break;
 
 		default:
+			if (isdigit(*format)) {
+			    const char *p = format;
+			    while (isdigit(*p)) p++;
+			    if (*p == 'N') {
+				precision = atoi(format);
+				format = p - 1;
+				goto again;
+			    }
+			}
 			tbuf[0] = '%';
 			tbuf[1] = *format;
 			tbuf[2] = '\0';

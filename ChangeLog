@@ -1,3 +1,13 @@
+Thu Aug 21 23:51:51 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* strftime.c (rb_strftime): supported %F and %<precision>N.
+	  reverted config.h to ruby.h for Windows.
+
+	* test/ruby/test_time.rb (TestTime::test_strftime): added tests
+	  for %F and %N.
+
+	* time.c: documented %F and %N.
+
 Thu Aug 21 20:23:26 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_m17n_comb.rb (TestM17NComb#test_str_crypt): add
