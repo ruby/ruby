@@ -271,7 +271,7 @@ pst_to_i(VALUE st)
 static VALUE
 pst_pid(VALUE st)
 {
-    return rb_iv_get(st, "pid");
+    return rb_attr_get(st, rb_intern("pid"));
 }
 
 static void
@@ -344,9 +344,13 @@ pst_inspect(VALUE st)
 {
     rb_pid_t pid;
     int status;
-    VALUE str;
+    VALUE vpid, str;
 
-    pid = NUM2LONG(pst_pid(st));
+    vpid = pst_pid(st);
+    if (NIL_P(vpid)) {
+        return rb_sprintf("#<%s: uninitialized>", rb_class2name(CLASS_OF(st)));
+    }
+    pid = NUM2LONG(vpid);
     status = PST2INT(st);
 
     str = rb_sprintf("#<%s: ", rb_class2name(CLASS_OF(st)));

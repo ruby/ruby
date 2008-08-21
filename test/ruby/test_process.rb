@@ -1001,4 +1001,7 @@ class TestProcess < Test::Unit::TestCase
     assert(true == r || false == r)
   end
 
+  def test_pst_inspect
+    assert_nothing_raised { Process::Status.allocate.inspect }
+  end
 end

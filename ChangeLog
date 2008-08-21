@@ -1,3 +1,9 @@
+Thu Aug 21 19:17:02 2008  Tanaka Akira  <akr@fsij.org>
+
+	* process.c (pst_pid): use rb_attr_get to avoid warning on
+	  Process::Status.allocate.pid.
+	  (pst_inspect): don't raise if self is not initialized.
+
 Thu Aug 21 19:05:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_extract_encoding_option): if internal encoding is not
