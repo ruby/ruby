@@ -12,7 +12,7 @@ Fri Aug 22 21:18:40 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (rb_complex_polar): new.
 
-	* rational.c (nurat_to_s): did not canonicalize.
+	* rational.c (nurat_to_s): do not canonicalize.
 	
 	* rational.c (nurat_inspect): adopts new form.
 	
