@@ -1,3 +1,11 @@
+Fri Aug 22 14:28:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime): supported flags and precision for most
+	  conversions.  [ruby-dev:35906]
+
+	* lib/date/format.rb (Date#strftime): left-justifies %L and %N.
+	  [ruby-dev:35909]
+
 Fri Aug 22 14:04:04 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: test_shift_jis:
