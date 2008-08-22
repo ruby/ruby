@@ -1,3 +1,13 @@
+Fri Aug 22 11:30:38 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (dir_enc_str_new): renamed from dir_enc_str.
+
+	* dir.c (dir_read): use dir_enc_str_new.
+
+	* dir.c (dir_each): ditto.
+
+	* dir.c (push_pattern): ditto.
+
 Fri Aug 22 11:29:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk: remove config.h dependency.
