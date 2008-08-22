@@ -427,6 +427,9 @@ static VALUE
 dir_enc_str_new(const char *p, long len, rb_encoding *enc)
 {
     VALUE path = rb_tainted_str_new(p, len);
+    if (rb_enc_asciicompat(enc) && rb_enc_str_asciionly_p(path)) {
+	enc = rb_usascii_encoding();
+    }
     rb_enc_associate(path, enc);
     return path;
 }
@@ -1533,6 +1536,7 @@ push_glob(VALUE ary, VALUE str, int flags)
     struct glob_args args;
     rb_encoding *enc = rb_enc_get(str);
 
+    if (enc == rb_usascii_encoding()) enc = rb_filesystem_encoding();
     args.func = push_pattern;
     args.value = ary;
     args.enc = enc;

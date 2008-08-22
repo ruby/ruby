@@ -1,3 +1,11 @@
+Fri Aug 22 11:36:31 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (dir_enc_str_new): set US-ASCII to the path
+	  when the path is 7bit string and encoding is ASCII compatible.
+
+	* dir.c (push_glob): set file system encoding when argument encoding
+	  is US-ASCII.
+
 Fri Aug 22 11:30:38 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* dir.c (dir_enc_str_new): renamed from dir_enc_str.
