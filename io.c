@@ -1262,7 +1262,7 @@ rb_io_pid(VALUE io)
     GetOpenFile(io, fptr);
     if (!fptr->pid)
 	return Qnil;
-    return INT2FIX(fptr->pid);
+    return PIDT2NUM(fptr->pid);
 }
 
 
