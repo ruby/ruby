@@ -730,7 +730,7 @@ class CGI
       end
     end
 
-    options["length"] = content.length.to_s
+    options["length"] = content.bytesize.to_s
     output = stdoutput
     output.binmode if defined? output.binmode
     output.print header(options)
@@ -990,7 +990,7 @@ class CGI
 
       # start multipart/form-data
       stdinput.binmode if defined? stdinput.binmode
-      boundary_size = boundary.size + EOL.size
+      boundary_size = boundary.bytesize + EOL.bytesize
       content_length -= boundary_size
       status = stdinput.read(boundary_size)
       if nil == status
@@ -1012,9 +1012,9 @@ class CGI
             next
           end
 
-          if head and ( (EOL + boundary + EOL).size < buf.size )
-            body.print buf[0 ... (buf.size - (EOL + boundary + EOL).size)]
-            buf[0 ... (buf.size - (EOL + boundary + EOL).size)] = ""
+          if head and ( (EOL + boundary + EOL).bytesize < buf.bytesize )
+            body.print buf[0 ... (buf.bytesize - (EOL + boundary + EOL).bytesize)]
+            buf[0 ... (buf.bytesize - (EOL + boundary + EOL).bytesize)] = ""
           end
 
           c = if bufsize < content_length
@@ -1026,7 +1026,7 @@ class CGI
             raise EOFError, "bad content body"
           end
           buf.concat(c)
-          content_length -= c.size
+          content_length -= c.bytesize
         end
 
         buf = buf.sub(/\A((?:.|\n)*?)(?:[\r\n]{1,2})?#{quoted_boundary}([\r\n]{1,2}|--)/n) do
@@ -1065,7 +1065,7 @@ class CGI
         else
           params[name] = [body]
         end
-        break if buf.size == 0
+        break if buf.bytesize == 0
         break if content_length == -1
       end
       raise EOFError, "bad boundary end of body part" unless boundary_end=~/--/
@@ -1122,7 +1122,7 @@ class CGI
       end
 
       def print(data)
-        if @morph_check && (@cur_size + data.size > @threshold)
+        if @morph_check && (@cur_size + data.bytesize > @threshold)
           convert_body
         end
         @body.print data
@@ -1503,12 +1503,12 @@ class CGI
         if value.kind_of?(String)
           checkbox(name, value) + value
         else
-          if value[value.size - 1] == true
+          if value[value.bytesize - 1] == true
             checkbox(name, value[0], true) +
-            value[value.size - 2]
+            value[value.bytesize - 2]
           else
             checkbox(name, value[0]) +
-            value[value.size - 1]
+            value[value.bytesize - 1]
           end
         end
       }.join
@@ -1879,13 +1879,13 @@ class CGI
           if value.kind_of?(String)
             option({ "VALUE" => value }){ value }
           else
-            if value[value.size - 1] == true
+            if value[value.bytesize - 1] == true
               option({ "VALUE" => value[0], "SELECTED" => true }){
-                value[value.size - 2]
+                value[value.bytesize - 2]
               }
             else
               option({ "VALUE" => value[0] }){
-                value[value.size - 1]
+                value[value.bytesize - 1]
               }
             end
           end
@@ -1958,12 +1958,12 @@ class CGI
         if value.kind_of?(String)
           radio_button(name, value) + value
         else
-          if value[value.size - 1] == true
+          if value[value.bytesize - 1] == true
             radio_button(name, value[0], true) +
-            value[value.size - 2]
+            value[value.bytesize - 2]
           else
             radio_button(name, value[0]) +
-            value[value.size - 1]
+            value[value.bytesize - 1]
           end
         end
       }.join
