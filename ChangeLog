@@ -1,3 +1,13 @@
+Fri Aug 22 20:06:46 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#shutdown):
+	  rescue Errno::ENOTCONN and close. [ruby-dev:35896]
+
+	* test/openssl/test_ssl.rb (OpenSSL#start_server): ditto.
+	  [ruby-dev:35897]
+
+	* lib/net/imap.rb (Net::IMAP#disconnect): ditto. [ruby-dev:35898]
+
 Fri Aug 22 19:58:27 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date.rb: no need to require the "lib/rational.rb" any more.

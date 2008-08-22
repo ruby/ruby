@@ -129,7 +129,14 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       block.call(server, port.to_i)
     ensure
       begin
-        tcps.shutdown if (tcps)
+        begin
+          tcps.shutdown
+        rescue Errno::ENOTCONN
+          # when `Errno::ENOTCONN: Socket is not connected' on some platforms,
+          # call #close instead of #shutdown.
+          tcps.close
+          tcps = nil
+        end if (tcps)
         if (server)
           server.join(5)
           if server.alive?
