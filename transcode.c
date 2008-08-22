@@ -680,6 +680,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     }
 
     ec = ALLOC(rb_econv_t);
+    ec->flags = 0;
     ec->source_encoding_name = NULL;
     ec->destination_encoding_name = NULL;
     ec->in_buf_start = NULL;
@@ -741,7 +742,13 @@ rb_econv_open(const char *from, const char *to, int flags)
     int num_trans;
     static rb_econv_t *ec;
 
-    num_trans = transcode_search_path(from, to, trans_open_i, (void *)&entries);
+    if (*from == '\0' && *to == '\0') {
+        num_trans = 0;
+        entries = ALLOC_N(transcoder_entry_t *, 1+2);
+    }
+    else {
+        num_trans = transcode_search_path(from, to, trans_open_i, (void *)&entries);
+    }
 
     if (num_trans < 0 || !entries) {
         xfree(entries);
@@ -751,6 +758,10 @@ rb_econv_open(const char *from, const char *to, int flags)
     if (flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
         const char *name = (flags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
+        if (flags & ECONV_CRLF_NEWLINE_ENCODER)
+            flags &= ~ECONV_CR_NEWLINE_ENCODER;
+        else
+            flags &= ~ECONV_CRLF_NEWLINE_ENCODER;
         if (!e) {
             xfree(entries);
             return NULL;
@@ -774,12 +785,19 @@ rb_econv_open(const char *from, const char *to, int flags)
     if (!ec)
         rb_raise(rb_eArgError, "encoding conversion not supported (from %s to %s)", from, to);
 
+    ec->flags = flags;
     ec->source_encoding_name = from;
     ec->destination_encoding_name = to;
 
     if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
-        ec->last_tc = ec->elems[ec->num_trans-2].tc;
-        ec->last_trans_index = ec->num_trans-2;
+        if (ec->num_trans == 1) {
+            ec->last_tc = NULL;
+            ec->last_trans_index = -1;
+        }
+        else {
+            ec->last_tc = ec->elems[ec->num_trans-2].tc;
+            ec->last_trans_index = ec->num_trans-2;
+        }
     }
 
     return ec;
@@ -1037,7 +1055,12 @@ const char *
 rb_econv_encoding_to_insert_output(rb_econv_t *ec)
 {
     rb_transcoding *tc = ec->last_tc;
-    const rb_transcoder *tr = tc->transcoder;
+    const rb_transcoder *tr;
+
+    if (tc == NULL)
+        return "";
+
+    tr = tc->transcoder;
 
     if (tr->stateful_type == stateful_encoder)
         return tr->from_encoding;
@@ -1103,7 +1126,6 @@ rb_econv_insert_output(rb_econv_t *ec,
     size_t insert_len;
 
     rb_transcoding *tc;
-    const rb_transcoder *tr;
 
     unsigned char **buf_start_p;
     unsigned char **data_start_p;
@@ -1125,11 +1147,16 @@ rb_econv_insert_output(rb_econv_t *ec,
             return -1;
     }
 
-    tc = ec->last_tc;
-    tr = tc->transcoder;
-
     need = insert_len;
-    if (tr->stateful_type == stateful_encoder) {
+
+    tc = ec->last_tc;
+    if (!tc) {
+        buf_start_p = &ec->in_buf_start;
+        data_start_p = &ec->in_data_start;
+        data_end_p = &ec->in_data_end;
+        buf_end_p = &ec->in_buf_end;
+    }
+    else if (tc->transcoder->stateful_type == stateful_encoder) {
         need += tc->readagain_len;
         if (need < insert_len)
             goto fail;
@@ -1179,7 +1206,7 @@ rb_econv_insert_output(rb_econv_t *ec,
         }
     }
 
-    if (tr->stateful_type == stateful_encoder) {
+    if (tc && tc->transcoder->stateful_type == stateful_encoder) {
         memcpy(*data_end_p, TRANSCODING_READBUF(tc)+tc->recognized_len, tc->readagain_len);
         *data_end_p += tc->readagain_len;
         tc->readagain_len = 0;
@@ -1267,15 +1294,20 @@ rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int fl
     unsigned const char *ss, *sp, *se;
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
+    int max_output;
 
     if (NIL_P(dst)) {
         dst = rb_str_buf_new(len);
     }
 
+    if (ec->last_tc)
+        max_output = ec->last_tc->transcoder->max_output;
+    else
+        max_output = 1;
+
     res = econv_destination_buffer_full;
     while (res == econv_destination_buffer_full) {
         long dlen = RSTRING_LEN(dst);
-        int max_output = ec->last_tc->transcoder->max_output;
         if (rb_str_capacity(dst) - dlen < (size_t)len + max_output) {
             unsigned long new_capa = (unsigned long)dlen + len + max_output;
             if (LONG_MAX < new_capa)
@@ -1297,6 +1329,27 @@ rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int fl
     return dst;
 }
 
+void
+rb_econv_binmode(rb_econv_t *ec)
+{
+    if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
+        int i = ec->num_trans-1;
+        rb_transcoding_close(ec->elems[i].tc);
+        xfree(ec->elems[i].out_buf_start);
+        ec->elems[i].tc = NULL;
+        ec->elems[i].out_buf_start = NULL;
+        ec->elems[i].out_data_start = NULL;
+        ec->elems[i].out_data_end = NULL;
+        ec->elems[i].out_buf_end = NULL;
+        ec->num_trans--;
+    }
+    if (ec->flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
+        rb_transcoding_close(ec->elems[0].tc);
+        xfree(ec->elems[0].out_buf_start);
+        MEMMOVE(&ec->elems[0], &ec->elems[1], rb_econv_elem_t, ec->num_trans-1);
+        ec->num_trans--;
+    }
+}
 
 static VALUE
 make_econv_exception(rb_econv_t *ec)
@@ -1358,7 +1411,7 @@ more_output_buffer(
 static int
 output_replacement_character(rb_econv_t *ec)
 {
-    rb_transcoding *tc = ec->last_tc;
+    rb_transcoding *tc;
     const rb_transcoder *tr;
     rb_encoding *enc;
     const unsigned char *replacement;
@@ -1366,10 +1419,17 @@ output_replacement_character(rb_econv_t *ec)
     int len;
     int ret;
 
-    tr = tc->transcoder;
-    enc = rb_enc_find(tr->to_encoding);
-
-    replacement = (const unsigned char *)get_replacement_character(enc, &len, &repl_enc);
+    tc = ec->last_tc;
+    if (tc) {
+        tr = tc->transcoder;
+        enc = rb_enc_find(tr->to_encoding);
+        replacement = (const unsigned char *)get_replacement_character(enc, &len, &repl_enc);
+    }
+    else {
+        replacement = (unsigned char *)"?";
+        len = 1;
+        repl_enc = "";
+    }
 
     ret = rb_econv_insert_output(ec, replacement, len, repl_enc);
     if (ret == -1)
@@ -1400,7 +1460,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
     last_tc = ec->last_tc;
-    max_output = last_tc->transcoder->max_output;
+    max_output = last_tc ? last_tc->transcoder->max_output : 1;
 
 resume:
     ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, opt);
@@ -1465,7 +1525,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
     last_tc = ec->last_tc;
-    max_output = ec->elems[ec->num_trans-1].tc->transcoder->max_output;
+    max_output = last_tc ? last_tc->transcoder->max_output : 1;
 
     ret = econv_source_buffer_empty;
     ptr = *in_pos;
@@ -1835,8 +1895,14 @@ econv_init(int argc, VALUE *argv, VALUE self)
     ec->source_encoding = senc;
     ec->destination_encoding = denc;
 
-    ec->source_encoding_name = ec->elems[0].tc->transcoder->from_encoding;
-    ec->destination_encoding_name = ec->last_tc->transcoder->to_encoding;
+    if (ec->last_tc) {
+        ec->source_encoding_name = ec->elems[0].tc->transcoder->from_encoding;
+        ec->destination_encoding_name = ec->last_tc->transcoder->to_encoding;
+    }
+    else {
+        ec->source_encoding_name = "";
+        ec->destination_encoding_name = "";
+    }
 
     DATA_PTR(self) = ec;
 
@@ -1851,10 +1917,13 @@ econv_inspect(VALUE self)
 
     if (!ec)
         return rb_sprintf("#<%s: uninitialized>", cname);
-    else
-        return rb_sprintf("#<%s: %s to %s>", cname,
-            ec->source_encoding_name,
-            ec->destination_encoding_name);
+    else {
+        const char *sname = ec->source_encoding_name;
+        const char *dname = ec->destination_encoding_name;
+        if (*sname == '\0') sname = "(none)";
+        if (*dname == '\0') dname = "(none)";
+        return rb_sprintf("#<%s: %s to %s>", cname, sname, dname);
+    }
 }
 
 #define IS_ECONV(obj) (RDATA(obj)->dfree == (RUBY_DATA_FUNC)econv_free)

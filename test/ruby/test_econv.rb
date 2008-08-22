@@ -305,13 +305,34 @@ class TestEncodingConverter < Test::Unit::TestCase
     src << "\nyz";       check_ec("abc\ndefghi\njklmno\npqrstu\nvwx\nyz", "", :source_buffer_empty, *a)
   end
 
+  def test_universal_newline2
+    ec = Encoding::Converter.new("", "", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+    a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
+    src << "abc\r\ndef"; check_ec("abc\ndef",                             "", :source_buffer_empty, *a)
+    src << "ghi\njkl";   check_ec("abc\ndefghi\njkl",                     "", :source_buffer_empty, *a)
+    src << "mno\rpqr";   check_ec("abc\ndefghi\njklmno\npqr",             "", :source_buffer_empty, *a)
+    src << "stu\r";      check_ec("abc\ndefghi\njklmno\npqrstu\n",        "", :source_buffer_empty, *a)
+    src << "\nvwx";      check_ec("abc\ndefghi\njklmno\npqrstu\nvwx",     "", :source_buffer_empty, *a)
+    src << "\nyz";       check_ec("abc\ndefghi\njklmno\npqrstu\nvwx\nyz", "", :source_buffer_empty, *a)
+  end
+
   def test_crlf_newline
     ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CRLF_NEWLINE_ENCODER)
     assert_econv("abc\r\ndef", :finished, 50, ec, "abc\ndef", "")
   end
 
+  def test_crlf_newline2
+    ec = Encoding::Converter.new("", "", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+    assert_econv("abc\r\ndef", :finished, 50, ec, "abc\ndef", "")
+  end
+
   def test_cr_newline
     ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CR_NEWLINE_ENCODER)
+    assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
+  end
+
+  def test_cr_newline2
+    ec = Encoding::Converter.new("", "", Encoding::Converter::CR_NEWLINE_ENCODER)
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 

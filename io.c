@@ -300,17 +300,6 @@ io_unread(rb_io_t *fptr)
     if (fptr->rbuf_len == 0 || fptr->mode & FMODE_DUPLEX)
         return;
     /* xxx: target position may be negative if buffer is filled by ungetc */
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
-    if (!(fptr->mode & FMODE_BINMODE)) {
-	int len = fptr->rbuf_len;
-	while (fptr->rbuf_len-- > 0) {
-	    if (fptr->rbuf[fptr->rbuf_len] == '\n')
-		++len;
-	}
-	r = lseek(fptr->fd, -len, SEEK_CUR);
-    }
-    else
-#endif
     r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
     if (r < 0) {
         if (errno == ESPIPE)
@@ -681,12 +670,41 @@ rb_io_wait_writable(int f)
     }
 }
 
+/* xxx: better way to determine the newline of the platform? */
+#if defined(O_BINARY) && O_BINARY != 0
+/* Windows */
+# define NEED_NEWLINE_DECODER(fptr) (!(fptr->mode & FMODE_BINMODE))
+# define NEED_NEWLINE_ENCODER(fptr) (!(fptr->mode & FMODE_BINMODE))
+# define TEXTMODE_NEWLINE_ENCODER ECONV_CRLF_NEWLINE_ENCODER
+#else
+/* Unix */
+# define NEED_NEWLINE_DECODER(fptr) (fptr->mode & FMODE_TEXTMODE)
+# define NEED_NEWLINE_ENCODER(fptr) 0
+#endif
+#define NEED_READCONV(fptr) (fptr->enc2 != NULL || NEED_NEWLINE_DECODER(fptr))
+#define NEED_WRITECONV(fptr) (fptr->enc != NULL || NEED_NEWLINE_ENCODER(fptr))
+
 static void
 make_writeconv(rb_io_t *fptr)
 {
     if (!fptr->writeconv_initialized) {
         const char *senc, *denc;
         rb_encoding *enc;
+        int ecflags;
+
+        fptr->writeconv_initialized = 1;
+
+        ecflags = 0;
+#ifdef TEXTMODE_NEWLINE_ENCODER
+        if (NEED_NEWLINE_ENCODER(fptr))
+            ecflags |= TEXTMODE_NEWLINE_ENCODER;
+
+        if (!fptr->enc) {
+            fptr->writeconv = rb_econv_open("", "", ecflags);
+            fptr->writeconv_stateless = Qnil;
+            return;
+        }
+#endif
 
         enc = fptr->enc2 ? fptr->enc2 : fptr->enc;
         senc = rb_econv_stateless_encoding(enc->name);
@@ -699,14 +717,13 @@ make_writeconv(rb_io_t *fptr)
             fptr->writeconv_stateless = Qnil;
         }
         if (senc) {
-            fptr->writeconv = rb_econv_open(senc, denc, 0);
+            fptr->writeconv = rb_econv_open(senc, denc, ecflags);
             if (!fptr->writeconv)
                 rb_raise(rb_eIOError, "code converter open failed (%s to %s)", senc, denc);
         }
         else {
             fptr->writeconv = NULL;
         }
-        fptr->writeconv_initialized = 1;
     }
 }
 
@@ -716,14 +733,12 @@ io_fwrite(VALUE str, rb_io_t *fptr)
 {
     long len, n, r, l, offset = 0;
 
-    /*
-     * If an external encoding was specified and it differs from
-     * the strings encoding then we must transcode before writing.
-     */
-    if (fptr->enc) {
+    if (NEED_WRITECONV(fptr)) {
         make_writeconv(fptr);
         if (fptr->writeconv) {
-            str = rb_str_transcode(str, fptr->writeconv_stateless);
+            if (!NIL_P(fptr->writeconv_stateless)) {
+                str = rb_str_transcode(str, fptr->writeconv_stateless);
+            }
             str = rb_econv_string(fptr->writeconv, str, 0, RSTRING_LEN(str), Qnil, ECONV_PARTIAL_INPUT);
         }
         else {
@@ -1411,9 +1426,20 @@ static void
 make_readconv(rb_io_t *fptr)
 {
     if (!fptr->readconv) {
-        fptr->readconv = rb_econv_open(fptr->enc2->name, fptr->enc->name, 0);
+        int ecflags = 0;
+        const char *sname, *dname;
+        if (NEED_NEWLINE_DECODER(fptr))
+            ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
+        if (fptr->enc2) {
+            sname = fptr->enc2->name;
+            dname = fptr->enc->name;
+        }
+        else {
+            sname = dname = "";
+        }
+        fptr->readconv = rb_econv_open(sname, dname, ecflags);
         if (!fptr->readconv)
-            rb_raise(rb_eIOError, "code converter open failed (%s to %s)", fptr->enc2->name, fptr->enc->name);
+            rb_raise(rb_eIOError, "code converter open failed (%s to %s)", sname, dname);
         fptr->crbuf_off = 0;
         fptr->crbuf_len = 0;
         fptr->crbuf_capa = 1024;
@@ -1519,7 +1545,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     rb_encoding *enc;
     int cr;
 
-    if (fptr->enc2) {
+    if (NEED_READCONV(fptr)) {
         VALUE str = rb_str_new(NULL, 0);
         make_readconv(fptr);
         while (1) {
@@ -1873,7 +1899,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
     VALUE str = *strp;
     long limit = *lp;
 
-    if (fptr->enc2) {
+    if (NEED_READCONV(fptr)) {
         make_readconv(fptr);
         while (1) {
             const char *p, *e;
@@ -2084,7 +2110,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
     else if (limit == 0) {
 	return rb_enc_str_new(0, 0, io_read_encoding(fptr));
     }
-    else if (rs == rb_default_rs && limit < 0 && !fptr->enc2 &&
+    else if (rs == rb_default_rs && limit < 0 && !NEED_READCONV(fptr) &&
              rb_enc_asciicompat(enc = io_read_encoding(fptr))) {
 	return rb_io_getline_fast(fptr, enc);
     }
@@ -2409,18 +2435,19 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
     int r, n, cr = 0;
     VALUE str;
 
-    if (fptr->enc2) {
+    if (NEED_READCONV(fptr)) {
         VALUE str = Qnil;
 
-        if (!fptr->readconv) {
-            make_readconv(fptr);
-        }
+        make_readconv(fptr);
 
         while (1) {
             if (fptr->crbuf_len) {
-                r = rb_enc_precise_mbclen(fptr->crbuf+fptr->crbuf_off,
-                                          fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
-                                          fptr->enc);
+                if (fptr->enc)
+                    r = rb_enc_precise_mbclen(fptr->crbuf+fptr->crbuf_off,
+                                              fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
+                                              fptr->enc);
+                else
+                    r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
                 if (!MBCLEN_NEEDMORE_P(r))
                     break;
                 if (fptr->crbuf_len == fptr->crbuf_capa) {
@@ -2776,7 +2803,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     else {
 	SafeStringValue(c);
     }
-    if (fptr->enc2) {
+    if (NEED_READCONV(fptr)) {
         make_readconv(fptr);
         len = RSTRING_LEN(c);
         if (fptr->crbuf_capa - fptr->crbuf_len < len)
@@ -3462,14 +3489,12 @@ rb_io_binmode(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
-    if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr)) {
-	rb_raise(rb_eIOError, "buffer already filled with text-mode content");
-    }
-    if (0 <= fptr->fd && setmode(fptr->fd, O_BINARY) == -1)
-	rb_sys_fail(fptr->path);
-#endif
+    if (fptr->readconv)
+        rb_econv_binmode(fptr->readconv);
+    if (fptr->writeconv)
+        rb_econv_binmode(fptr->writeconv);
     fptr->mode |= FMODE_BINMODE;
+    fptr->mode &= ~FMODE_TEXTMODE;
     return io;
 }
 
@@ -3485,17 +3510,13 @@ rb_io_binmode(VALUE io)
 static VALUE
 rb_io_binmode_m(VALUE io)
 {
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     VALUE write_io;
-#endif
 
     rb_io_binmode(io);
 
-#if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     write_io = GetWriteIO(io);
     if (write_io != io)
         rb_io_binmode(write_io);
-#endif
     return io;
 }
 
@@ -3516,27 +3537,24 @@ rb_io_binmode_p(VALUE io)
 static const char*
 rb_io_flags_mode(int flags)
 {
-#ifdef O_BINARY
-# define MODE_BINMODE(a,b) ((flags & FMODE_BINMODE) ? (b) : (a))
-#else
-# define MODE_BINMODE(a,b) (a)
-#endif
+# define MODE_BTMODE(a,b,c) ((flags & FMODE_BINMODE) ? (b) : \
+                             (flags & FMODE_TEXTMODE) ? (c) : (a))
     if (flags & FMODE_APPEND) {
 	if ((flags & FMODE_READWRITE) == FMODE_READWRITE) {
-	    return MODE_BINMODE("a+", "ab+");
+	    return MODE_BTMODE("a+", "ab+", "at+");
 	}
-	return MODE_BINMODE("a", "ab");
+	return MODE_BTMODE("a", "ab", "at");
     }
     switch (flags & FMODE_READWRITE) {
       case FMODE_READABLE:
-	return MODE_BINMODE("r", "rb");
+	return MODE_BTMODE("r", "rb", "rt");
       case FMODE_WRITABLE:
-	return MODE_BINMODE("w", "wb");
+	return MODE_BTMODE("w", "wb", "wt");
       case FMODE_READWRITE:
 	if (flags & FMODE_CREATE) {
-	    return MODE_BINMODE("w+", "wb+");
+	    return MODE_BTMODE("w+", "wb+", "wt+");
 	}
-	return MODE_BINMODE("r+", "rb+");
+	return MODE_BTMODE("r+", "rb+", "rt+");
     }
     rb_raise(rb_eArgError, "invalid access modenum 0x%x", flags);
     return NULL;		/* not reached */
@@ -3568,15 +3586,22 @@ rb_io_mode_flags(const char *mode)
 	  case 'b':
             flags |= FMODE_BINMODE;
             break;
+	  case 't':
+            flags |= FMODE_TEXTMODE;
+            break;
 	  case '+':
             flags |= FMODE_READWRITE;
             break;
 	  default:
             goto error;
 	  case ':':
-	    return flags;
+            goto finished;
         }
     }
+
+finished:
+    if ((flags & FMODE_BINMODE) && (flags & FMODE_TEXTMODE))
+        goto error;
 
     return flags;
 }
@@ -3886,6 +3911,10 @@ static int
 rb_sysopen(char *fname, int flags, mode_t mode)
 {
     int fd;
+
+#ifdef O_BINARY
+    flags |= O_BINARY;
+#endif
 
     fd = rb_sysopen_internal(fname, flags, mode);
     if (fd < 0) {

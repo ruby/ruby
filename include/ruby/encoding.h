@@ -217,6 +217,7 @@ typedef struct {
 } rb_econv_elem_t;
 
 typedef struct {
+    int flags;
     const char *source_encoding_name;
     const char *destination_encoding_name;
 
@@ -272,6 +273,8 @@ void rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n);
 const char *rb_econv_stateless_encoding(const char *stateful_enc);
 
 VALUE rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags);
+
+void rb_econv_binmode(rb_econv_t *ec);
 
 /* flags for rb_econv_open */
 #define ECONV_UNIVERSAL_NEWLINE_DECODER       0x100

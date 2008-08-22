@@ -85,6 +85,7 @@ typedef struct rb_io_t {
 #define FMODE_WSPLIT                    0x0200
 #define FMODE_WSPLIT_INITIALIZED        0x0400
 #define FMODE_TRUNC                     0x0800
+#define FMODE_TEXTMODE                  0x1000
 /* #define FMODE_PREP                  0x10000 */
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)

@@ -979,5 +979,179 @@ EOT
     }
   end
 
+  def test_textmode_decode_universal_newline_read
+    with_tmpdir {
+      generate_file("t.crlf", "a\r\nb\r\nc\r\n")
+      assert_equal("a\nb\nc\n", File.read("t.crlf", mode:"rt:euc-jp:utf-8"))
+      assert_equal("a\nb\nc\n", File.read("t.crlf", mode:"rt"))
+
+      generate_file("t.cr", "a\rb\rc\r")
+      assert_equal("a\nb\nc\n", File.read("t.cr", mode:"rt:euc-jp:utf-8"))
+      assert_equal("a\nb\nc\n", File.read("t.cr", mode:"rt"))
+
+      generate_file("t.lf", "a\nb\nc\n")
+      assert_equal("a\nb\nc\n", File.read("t.cr", mode:"rt:euc-jp:utf-8"))
+      assert_equal("a\nb\nc\n", File.read("t.cr", mode:"rt"))
+    }
+  end
+
+  def test_textmode_decode_universal_newline_getc
+    with_tmpdir {
+      generate_file("t.crlf", "a\r\nb\r\nc\r\n")
+      open("t.crlf", "rt") {|f|
+        assert_equal("a", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("b", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("c", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal(nil, f.getc)
+      }
+
+      generate_file("t.cr", "a\rb\rc\r")
+      open("t.cr", "rt") {|f|
+        assert_equal("a", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("b", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("c", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal(nil, f.getc)
+      }
+
+      generate_file("t.lf", "a\nb\nc\n")
+      open("t.lf", "rt") {|f|
+        assert_equal("a", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("b", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("c", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal(nil, f.getc)
+      }
+    }
+  end
+
+  def test_textmode_decode_universal_newline_gets
+    with_tmpdir {
+      generate_file("t.crlf", "a\r\nb\r\nc\r\n")
+      open("t.crlf", "rt") {|f|
+        assert_equal("a\n", f.gets)
+        assert_equal("b\n", f.gets)
+        assert_equal("c\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+
+      generate_file("t.cr", "a\rb\rc\r")
+      open("t.cr", "rt") {|f|
+        assert_equal("a\n", f.gets)
+        assert_equal("b\n", f.gets)
+        assert_equal("c\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+
+      generate_file("t.lf", "a\nb\nc\n")
+      open("t.lf", "rt") {|f|
+        assert_equal("a\n", f.gets)
+        assert_equal("b\n", f.gets)
+        assert_equal("c\n", f.gets)
+        assert_equal(nil, f.gets)
+      }
+    }
+  end
+
+  def test_textmode_decode_universal_newline_utf16
+    with_tmpdir {
+      generate_file("t.utf16be.crlf", "\0a\0\r\0\n\0b\0\r\0\n\0c\0\r\0\n")
+      assert_equal("a\nb\nc\n", File.read("t.utf16be.crlf", mode:"rt:utf-16be:utf-8"))
+
+      generate_file("t.utf16le.crlf", "a\0\r\0\n\0b\0\r\0\n\0c\0\r\0\n\0")
+      assert_equal("a\nb\nc\n", File.read("t.utf16le.crlf", mode:"rt:utf-16le:utf-8"))
+
+      generate_file("t.utf16be.cr", "\0a\0\r\0b\0\r\0c\0\r")
+      assert_equal("a\nb\nc\n", File.read("t.utf16be.cr", mode:"rt:utf-16be:utf-8"))
+
+      generate_file("t.utf16le.cr", "a\0\r\0b\0\r\0c\0\r\0")
+      assert_equal("a\nb\nc\n", File.read("t.utf16le.cr", mode:"rt:utf-16le:utf-8"))
+
+      generate_file("t.utf16be.lf", "\0a\0\n\0b\0\n\0c\0\n")
+      assert_equal("a\nb\nc\n", File.read("t.utf16be.lf", mode:"rt:utf-16be:utf-8"))
+
+      generate_file("t.utf16le.lf", "a\0\n\0b\0\n\0c\0\n\0")
+      assert_equal("a\nb\nc\n", File.read("t.utf16le.lf", mode:"rt:utf-16le:utf-8"))
+    }
+  end
+
+  def system_newline
+    File::BINARY == 0 ? "\n" : "\r\n"
+  end
+
+  def test_textmode_encode_newline
+    with_tmpdir {
+      open("t.txt", "wt") {|f|
+        f.puts "abc"
+        f.puts "def"
+      }
+      content = File.read("t.txt", :mode=>"rb")
+      nl = system_newline
+      assert_equal("abc#{nl}def#{nl}", content)
+    }
+  end
+
+  def test_binary
+    with_tmpdir {
+      src = "a\nb\rc\r\nd\n"
+      generate_file("t.txt", src)
+      open("t.txt", "rb") {|f|
+        assert_equal(src, f.read)
+      }
+      if File::BINARY == 0
+        open("t.txt", "r") {|f|
+          assert_equal(src, f.read)
+        }
+      end
+    }
+  end
+
+  def test_binmode
+    with_tmpdir {
+      src = "a\r\nb\r\nc\r\n"
+      generate_file("t.txt", src)
+      open("t.txt", "rt") {|f|
+        assert_equal("a", f.getc)
+        assert_equal("\n", f.getc)
+        f.binmode
+        assert_equal("\n", f.getc)
+        assert_equal("b", f.getc)
+        assert_equal("\r", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("c", f.getc)
+        assert_equal("\r", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal(nil, f.getc)
+      }
+    }
+  end
+
+  def test_binmode2
+    with_tmpdir {
+      src = "a\r\nb\r\nc\r\n"
+      generate_file("t.txt", src)
+      open("t.txt", "rt:euc-jp:utf-8") {|f|
+        assert_equal("a", f.getc)
+        assert_equal("\n", f.getc)
+        f.binmode
+        assert_equal("\n", f.getc)
+        assert_equal("b", f.getc)
+        assert_equal("\r", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal("c", f.getc)
+        assert_equal("\r", f.getc)
+        assert_equal("\n", f.getc)
+        assert_equal(nil, f.getc)
+      }
+    }
+  end
+
 end
 

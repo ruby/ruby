@@ -1,3 +1,46 @@
+Sat Aug 23 01:42:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (FMODE_TEXTMODE): defined.
+
+	* include/ruby/encoding.h (rb_econv_t): new field: flags.
+	  (rb_econv_binmode): declared.
+
+	* io.c (io_unread): text mode hack removed.
+	  (NEED_NEWLINE_DECODER): defined.
+	  (NEED_NEWLINE_ENCODER): defined.
+	  (NEED_READCONV): defined.
+	  (NEED_WRITECONV): defined.
+	  (TEXTMODE_NEWLINE_ENCODER): defined for windows.
+	  (make_writeconv): setup converter with TEXTMODE_NEWLINE_ENCODER for
+	  text mode.
+	  (io_fwrite): use NEED_WRITECONV.  character code conversion is
+	  disabled if fptr->writeconv_stateless is nil.
+	  (make_readconv): setup converter with
+	  ECONV_UNIVERSAL_NEWLINE_DECODER for text mode.
+	  (read_all): use NEED_READCONV.
+	  (appendline): use NEED_READCONV.
+	  (rb_io_getline_1): use NEED_READCONV.
+	  (io_getc): use NEED_READCONV.
+	  (rb_io_ungetc): use NEED_READCONV.
+	  (rb_io_binmode): OS-level text mode test removed.  call
+	  rb_econv_binmode.
+	  (rb_io_binmode_m): call rb_io_binmode_m with write_io as well.
+	  (rb_io_flags_mode): return mode string including "t".
+	  (rb_io_mode_flags): detect "t" for text mode.
+	  (rb_sysopen): always specify O_BINARY.
+
+	* transcode.c (rb_econv_open_by_transcoder_entries): initialize flags.
+	  (rb_econv_open): if source and destination encoding is
+	  both empty string, open newline converter.  last_tc will be NULL in
+	  this case.
+	  (rb_econv_encoding_to_insert_output): last_tc may be NULL now.
+	  (rb_econv_string): ditto.
+	  (output_replacement_character): ditto.
+	  (transcode_loop): ditto.
+	  (econv_init): ditto.
+	  (econv_inspect): ditto.
+	  (rb_econv_binmode): new function.
+
 Fri Aug 22 21:18:40 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_div): now behaves as quo.
