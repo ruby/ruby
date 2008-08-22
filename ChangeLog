@@ -1,3 +1,8 @@
+Fri Aug 22 14:04:04 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/test_transcode.rb: test_shift_jis:
+	  fixed comment strings (see r18291)
+
 Fri Aug 22 12:41:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_pid): use PIDT2NUM.

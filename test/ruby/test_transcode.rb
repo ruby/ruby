@@ -325,23 +325,23 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_shift_jis
     check_both_ways("\u3000", "\x81\x40", 'shift_jis') # full-width space
-    check_both_ways("\u00D7", "\x81\x7E", 'shift_jis') # ~
-    check_both_ways("\u00F7", "\x81\x80", 'shift_jis') # 
-    check_both_ways("\u25C7", "\x81\x9E", 'shift_jis') # 
-    check_both_ways("\u25C6", "\x81\x9F", 'shift_jis') # 
-    check_both_ways("\u25EF", "\x81\xFC", 'shift_jis') # 
-    check_both_ways("\u6A97", "\x9F\x40", 'shift_jis') # @
-    check_both_ways("\u6BEF", "\x9F\x7E", 'shift_jis') # ~
-    check_both_ways("\u9EBE", "\x9F\x80", 'shift_jis') # 
-    check_both_ways("\u6CBE", "\x9F\x9E", 'shift_jis') # 
-    check_both_ways("\u6CBA", "\x9F\x9F", 'shift_jis') # 
-    check_both_ways("\u6ECC", "\x9F\xFC", 'shift_jis') # 
-    check_both_ways("\u6F3E", "\xE0\x40", 'shift_jis') # @
-    check_both_ways("\u70DD", "\xE0\x7E", 'shift_jis') # ~
-    check_both_ways("\u70D9", "\xE0\x80", 'shift_jis') # 
-    check_both_ways("\u71FC", "\xE0\x9E", 'shift_jis') # 
-    check_both_ways("\u71F9", "\xE0\x9F", 'shift_jis') # 
-    check_both_ways("\u73F1", "\xE0\xFC", 'shift_jis') # 
+    check_both_ways("\u00D7", "\x81\x7E", 'shift_jis') # ×
+    check_both_ways("\u00F7", "\x81\x80", 'shift_jis') # ÷
+    check_both_ways("\u25C7", "\x81\x9E", 'shift_jis') # ◇
+    check_both_ways("\u25C6", "\x81\x9F", 'shift_jis') # ◆
+    check_both_ways("\u25EF", "\x81\xFC", 'shift_jis') # ◯
+    check_both_ways("\u6A97", "\x9F\x40", 'shift_jis') # 檗
+    check_both_ways("\u6BEF", "\x9F\x7E", 'shift_jis') # 毯
+    check_both_ways("\u9EBE", "\x9F\x80", 'shift_jis') # 麾
+    check_both_ways("\u6CBE", "\x9F\x9E", 'shift_jis') # 沾
+    check_both_ways("\u6CBA", "\x9F\x9F", 'shift_jis') # 沺
+    check_both_ways("\u6ECC", "\x9F\xFC", 'shift_jis') # 滌
+    check_both_ways("\u6F3E", "\xE0\x40", 'shift_jis') # 漾
+    check_both_ways("\u70DD", "\xE0\x7E", 'shift_jis') # 烝
+    check_both_ways("\u70D9", "\xE0\x80", 'shift_jis') # 烙
+    check_both_ways("\u71FC", "\xE0\x9E", 'shift_jis') # 燼
+    check_both_ways("\u71F9", "\xE0\x9F", 'shift_jis') # 燹
+    check_both_ways("\u73F1", "\xE0\xFC", 'shift_jis') # 珱
     assert_raise(Encoding::ConversionUndefined) { "\xEF\x40".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xEF\x7E".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xEF\x80".encode("utf-8", 'shift_jis') }
@@ -354,15 +354,15 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::ConversionUndefined) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
-    check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # @
+    check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # 髜
     assert_raise(Encoding::ConversionUndefined) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xFC\x80".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xFC\x9F".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xFC\xFC".encode("utf-8", 'shift_jis') }
-    check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # {sO
-    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\x90\xC2\x8E\x52\x8A\x77\x89\x40\x91\xE5\x8A\x77", 'shift_jis') # Rw@w
-    check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # _ы`
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # 松本行弘
+    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\x90\xC2\x8E\x52\x8A\x77\x89\x40\x91\xE5\x8A\x77", 'shift_jis') # 青山学院大学
+    check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # 神林義博
   end
 
   def test_iso_2022_jp
