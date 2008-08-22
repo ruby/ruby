@@ -1117,9 +1117,6 @@ static VALUE
 nurat_to_s(VALUE self)
 {
     get_dat1(self);
-
-    if (f_one_p(dat->den))
-	return f_to_s(dat->num);
     return rb_funcall(rb_mKernel, id_format, 3,
 		      rb_str_new2("%d/%d"), dat->num, dat->den);
 }
@@ -1129,7 +1126,7 @@ nurat_inspect(VALUE self)
 {
     get_dat1(self);
     return rb_funcall(rb_mKernel, id_format, 3,
-		      rb_str_new2("Rational(%d, %d)"), dat->num, dat->den);
+		      rb_str_new2("(%d/%d)"), dat->num, dat->den);
 }
 
 static VALUE
@@ -1234,7 +1231,7 @@ static VALUE rat_pat, an_e_pat, a_dot_pat, underscores_pat, an_underscore;
 
 #define DIGITS "(?:\\d(?:_\\d|\\d)*)"
 #define NUMERATOR "(?:" DIGITS "?\\.)?" DIGITS "(?:[eE][-+]?" DIGITS ")?"
-#define DENOMINATOR "[-+]?" DIGITS
+#define DENOMINATOR DIGITS
 #define PATTERN "\\A([-+])?(" NUMERATOR ")(?:\\/(" DENOMINATOR "))?"
 
 static void

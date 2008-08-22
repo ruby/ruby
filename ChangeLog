@@ -1,3 +1,29 @@
+Fri Aug 22 21:18:40 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_div): now behaves as quo.
+
+	* complex.c (nucomp_s_generic_p): has been removed.
+
+	* complex.c (nucomp_to_s): adopts new form.
+
+	* complex.c (nucomp_inspect): ditto.
+
+	* complex.c (string_to_c_internal): ditto and supports polar form.
+
+	* complex.c (rb_complex_polar): new.
+
+	* rational.c (nurat_to_s): did not canonicalize.
+	
+	* rational.c (nurat_inspect): adopts new form.
+	
+	* rational.c (string_to_r_internal): ditto.
+
+	* include/ruby/intern.h: added a declaration.
+
+	* lib/complex.rb: added an obsolate class method.
+
+	* lib/cmath.rb: use scalar? instead of generic?.
+
 Fri Aug 22 20:06:46 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#shutdown):
