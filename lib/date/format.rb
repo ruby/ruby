@@ -153,8 +153,8 @@ class Date
       s[0,0] = sign
     end
 
-    if f[:w]
-      s = f[:n] ? s.ljust(f[:w], f[:p]) : s.rjust(f[:w], f[:p])
+    if f[:p] != '-'
+      s = s.rjust(f[:w], f[:p])
     end
 
     if f[:s] && f[:p] != "\s"
@@ -257,18 +257,12 @@ class Date
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
-        f[:n] = true
-        w = f[:w]
-        s = emit_n((sec_fraction / MILLISECONDS_IN_SECOND).floor, 3, f)
-        w ? s[0, w] : s
+	emit_n((sec_fraction / MILLISECONDS_IN_SECOND).floor, 3, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
       when 'M', 'OM'; emit_n(min, 2, f)
       when 'm', 'Om'; emit_n(mon, 2, f)
       when 'N'
-        f[:n] = true
-        w = f[:w]
-        s = emit_n((sec_fraction / NANOSECONDS_IN_SECOND).floor, 9, f)
-        w ? s[0, w] : s
+	emit_n((sec_fraction / NANOSECONDS_IN_SECOND).floor, 9, f)
       when 'n'; "\n"
       when 'P'; emit_ad(strftime('%p').downcase, 0, f)
       when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
