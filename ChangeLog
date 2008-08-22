@@ -1,3 +1,10 @@
+Fri Aug 22 10:52:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (gmtime_r): check if reentrant versions are available.
+
+	* time.c (IF_HAVE_GMTIME_R, ASCTIME, GMTIME, LOCALTIME): use reentrant
+	  versions if available.
+
 Fri Aug 22 05:29:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/ruby.h (INT2NUM): just use a simple macro on LP64.

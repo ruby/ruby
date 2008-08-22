@@ -483,6 +483,18 @@ static VALUE time_gmtime(VALUE);
 static VALUE time_localtime(VALUE);
 static VALUE time_get_tm(VALUE, int);
 
+#ifdef HAVE_GMTIME_R
+#define IF_HAVE_GMTIME_R(x) x
+#define ASCTIME(tm, buf) asctime_r(tm, buf)
+#define GMTIME(tm, result) gmtime_r(tm, &result)
+#define LOCALTIME(tm, result) localtime_r(tm, &result)
+#else
+#define IF_HAVE_GMTIME_R(x) 	/* nothing */
+#define ASCTIME(tm, buf) asctime(tm)
+#define GMTIME(tm, result) gmtime(tm)
+#define LOCALTIME(tm, result) localtime(tm)
+#endif
+
 static int
 leap_year_p(long y)
 {
@@ -582,6 +594,8 @@ search_time_t(struct tm *tptr, int utc_p)
     struct tm *tm, tm_lo, tm_hi;
     int d, have_guess;
     int find_dst;
+    IF_HAVE_GMTIME_R(struct tm result);
+#define GUESS(p) (utc_p ? GMTIME(p, result) : LOCALTIME(p, result))
 
     find_dst = 0 < tptr->tm_isdst;
 
@@ -595,7 +609,7 @@ search_time_t(struct tm *tptr, int utc_p)
 	       ~(time_t)0;
 
     guess = timegm_noleapsecond(tptr);
-    tm = (utc_p ? gmtime : localtime)(&guess);
+    tm = GUESS(&guess);
     if (tm) {
 	d = tmcmp(tptr, tm);
 	if (d == 0) return guess;
@@ -607,8 +621,7 @@ search_time_t(struct tm *tptr, int utc_p)
 	    guess_lo = guess;
 	    guess += 24 * 60 * 60;
 	}
-	if (guess_lo < guess && guess < guess_hi &&
-	    (tm = (utc_p ? gmtime : localtime)(&guess)) != NULL) {
+	if (guess_lo < guess && guess < guess_hi && (tm = GUESS(&guess)) != NULL) {
 	    d = tmcmp(tptr, tm);
 	    if (d == 0) return guess;
 	    if (d < 0)
@@ -618,14 +631,14 @@ search_time_t(struct tm *tptr, int utc_p)
 	}
     }
 
-    tm = (utc_p ? gmtime : localtime)(&guess_lo);
+    tm = GUESS(&guess_lo);
     if (!tm) goto error;
     d = tmcmp(tptr, tm);
     if (d < 0) goto out_of_range;
     if (d == 0) return guess_lo;
     tm_lo = *tm;
 
-    tm = (utc_p ? gmtime : localtime)(&guess_hi);
+    tm = GUESS(&guess_hi);
     if (!tm) goto error;
     d = tmcmp(tptr, tm);
     if (d > 0) goto out_of_range;
@@ -722,7 +735,7 @@ search_time_t(struct tm *tptr, int utc_p)
 	    range = 0;
 	}
 
-	tm = (utc_p ? gmtime : localtime)(&guess);
+	tm = GUESS(&guess);
 	if (!tm) goto error;
 	have_guess = 0;
 	
@@ -753,7 +766,7 @@ search_time_t(struct tm *tptr, int utc_p)
 		time_t guess2;
 		if (find_dst) {
 		    guess2 = guess - 2 * 60 * 60;
-		    tm = localtime(&guess2);
+		    tm = LOCALTIME(&guess2, result);
 		    if (tm) {
 			if (tptr->tm_hour != (tm->tm_hour + 2) % 24 ||
 			    tptr->tm_min != tm->tm_min ||
@@ -765,7 +778,7 @@ search_time_t(struct tm *tptr, int utc_p)
 			    if (tptr->tm_mday != tm->tm_mday)
 				guess2 += 24 * 60 * 60;
 			    if (guess != guess2) {
-				tm = localtime(&guess2);
+				tm = LOCALTIME(&guess2, result);
 				if (tmcmp(tptr, tm) == 0) {
 				    if (guess < guess2)
 					return guess;
@@ -778,7 +791,7 @@ search_time_t(struct tm *tptr, int utc_p)
 		}
 		else {
 		    guess2 = guess + 2 * 60 * 60;
-		    tm = localtime(&guess2);
+		    tm = LOCALTIME(&guess2, result);
 		    if (tm) {
 			if ((tptr->tm_hour + 2) % 24 != tm->tm_hour ||
 			    tptr->tm_min != tm->tm_min ||
@@ -790,7 +803,7 @@ search_time_t(struct tm *tptr, int utc_p)
 			    if (tptr->tm_mday != tm->tm_mday)
 				guess2 -= 24 * 60 * 60;
 			    if (guess != guess2) {
-				tm = localtime(&guess2);
+				tm = LOCALTIME(&guess2, result);
 				if (tmcmp(tptr, tm) == 0) {
 				    if (guess < guess2)
 					return guess2;
@@ -837,13 +850,15 @@ make_time_t(struct tm *tptr, int utc_p)
     struct tm *tmp;
 #endif
     struct tm buf;
+    IF_HAVE_GMTIME_R(struct tm result);
+
     buf = *tptr;
     if (utc_p) {
 #if defined(HAVE_TIMEGM)
 	if ((t = timegm(&buf)) != -1)
 	    return t;
 #ifdef NEGATIVE_TIME_T
-	if ((tmp = gmtime(&t)) &&
+	if ((tmp = GMTIME(&t, result)) &&
 	    tptr->tm_year == tmp->tm_year &&
 	    tptr->tm_mon == tmp->tm_mon &&
 	    tptr->tm_mday == tmp->tm_mday &&
@@ -861,7 +876,7 @@ make_time_t(struct tm *tptr, int utc_p)
 	if ((t = mktime(&buf)) != -1)
 	    return t;
 #ifdef NEGATIVE_TIME_T
-	if ((tmp = localtime(&t)) &&
+	if ((tmp = LOCALTIME(&t, result)) &&
 	    tptr->tm_year == tmp->tm_year &&
 	    tptr->tm_mon == tmp->tm_mon &&
 	    tptr->tm_mday == tmp->tm_mday &&
@@ -1217,6 +1232,7 @@ time_localtime(VALUE time)
     struct time_object *tobj;
     struct tm *tm_tmp;
     time_t t;
+    IF_HAVE_GMTIME_R(struct tm result);
 
     GetTimeval(time, tobj);
     if (!tobj->gmt) {
@@ -1227,7 +1243,7 @@ time_localtime(VALUE time)
 	time_modify(time);
     }
     t = tobj->ts.tv_sec;
-    tm_tmp = localtime(&t);
+    tm_tmp = LOCALTIME(&t, result);
     if (!tm_tmp)
 	rb_raise(rb_eArgError, "localtime error");
     tobj->tm = *tm_tmp;
@@ -1260,6 +1276,7 @@ time_gmtime(VALUE time)
     struct time_object *tobj;
     struct tm *tm_tmp;
     time_t t;
+    IF_HAVE_GMTIME_R(struct tm result);
 
     GetTimeval(time, tobj);
     if (tobj->gmt) {
@@ -1270,7 +1287,7 @@ time_gmtime(VALUE time)
 	time_modify(time);
     }
     t = tobj->ts.tv_sec;
-    tm_tmp = gmtime(&t);
+    tm_tmp = GMTIME(&t, result);
     if (!tm_tmp)
 	rb_raise(rb_eArgError, "gmtime error");
     tobj->tm = *tm_tmp;
@@ -1342,12 +1359,13 @@ time_asctime(VALUE time)
 {
     struct time_object *tobj;
     char *s;
+    IF_HAVE_GMTIME_R(char buf[32]);
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
 	time_get_tm(time, tobj->gmt);
     }
-    s = asctime(&tobj->tm);
+    s = ASCTIME(&tobj->tm, buf);
     if (s[24] == '\n') s[24] = '\0';
 
     return rb_str_new2(s);
@@ -1951,9 +1969,10 @@ time_utc_offset(VALUE time)
 	struct tm *u, *l;
 	time_t t;
 	long off;
+	IF_HAVE_GMTIME_R(struct tm result);
 	l = &tobj->tm;
 	t = tobj->ts.tv_sec;
-	u = gmtime(&t);
+	u = GMTIME(&t, result);
 	if (!u)
 	    rb_raise(rb_eArgError, "gmtime error");
 	if (l->tm_year != u->tm_year)
@@ -2155,11 +2174,12 @@ time_mdump(VALUE time)
     int nsec;
     int i;
     VALUE str;
+    IF_HAVE_GMTIME_R(struct tm result);
 
     GetTimeval(time, tobj);
 
     t = tobj->ts.tv_sec;
-    tm = gmtime(&t);
+    tm = GMTIME(&t, result);
 
     if ((tm->tm_year & 0xffff) != tm->tm_year)
         rb_raise(rb_eArgError, "year too big to marshal: %ld", (long)tm->tm_year);
