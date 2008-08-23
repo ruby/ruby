@@ -714,22 +714,6 @@ class CGI
 
     options = { "type" => options } if options.kind_of?(String)
     content = yield
-
-    if options.has_key?("charset")
-      require "nkf"
-      case options["charset"]
-      when /iso-2022-jp/ni
-        content = NKF::nkf('-j -m0 -x', content)
-        options["language"] = "ja" unless options.has_key?("language")
-      when /euc-jp/ni
-        content = NKF::nkf('-e -m0 -x', content)
-        options["language"] = "ja" unless options.has_key?("language")
-      when /shift_jis/ni
-        content = NKF::nkf('-s -m0 -x', content)
-        options["language"] = "ja" unless options.has_key?("language")
-      end
-    end
-
     options["length"] = content.bytesize.to_s
     output = stdoutput
     output.binmode if defined? output.binmode

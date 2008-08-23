@@ -1,3 +1,8 @@
+Sat Aug 23 23:25:47 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#out): remove auto encoding conversion and set
+	  LANGUAGE. [ruby-dev:35922]
+
 Sat Aug 23 20:01:29 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_process.rb (TestProcess#test_rlimit_value):
