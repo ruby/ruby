@@ -240,7 +240,7 @@ Fri Aug 22 04:33:56 2008  Tanaka Akira  <akr@fsij.org>
 
 Fri Aug 22 03:19:41 2008  Tanaka Akira  <akr@fsij.org>
 
-	* include/ruby/ruby.h (NUM2LONG): make it inline function to evaluete
+	* include/ruby/ruby.h (NUM2LONG): make it inline function to evaluate
 	  the argument only once.
 	  `t = Object.new; def t.*(x) p x; 0 end; p Time.at(0, t)' did print x
 	  twice.
