@@ -4927,7 +4927,8 @@ iseq_build_body(rb_iseq_t *iseq, LINK_ANCHOR *anchor,
 		      case TS_LINDEX:
 		      case TS_DINDEX:
 		      case TS_NUM:
-			argv[j] = (NUM2INT(op), op);
+			(void)NUM2INT(op);
+			argv[j] = op;
 			break;
 		      case TS_VALUE:
 			argv[j] = op;
