@@ -170,8 +170,8 @@ rb_file_path(VALUE obj)
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     rb_io_check_initialized(fptr);
-    if (!fptr->path) return Qnil;
-    return rb_tainted_str_new2(fptr->path);
+    if (NIL_P(fptr->pathv)) return Qnil;
+    return rb_obj_taint(rb_str_dup(fptr->pathv));
 }
 
 static VALUE
@@ -800,9 +800,10 @@ rb_io_stat(VALUE obj)
     rb_io_t *fptr;
     struct stat st;
 
+#define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
     GetOpenFile(obj, fptr);
     if (fstat(fptr->fd, &st) == -1) {
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
     }
     return stat_new(&st);
 }
@@ -862,9 +863,9 @@ rb_file_lstat(VALUE obj)
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
-    if (!fptr->path) return Qnil;
-    if (lstat(fptr->path, &st) == -1) {
-	rb_sys_fail(fptr->path);
+    if (NIL_P(fptr->pathv)) return Qnil;
+    if (lstat(RSTRING_PTR(fptr->pathv), &st) == -1) {
+	rb_sys_fail_path(fptr->pathv);
     }
     return stat_new(&st);
 #else
@@ -1704,7 +1705,7 @@ rb_file_atime(VALUE obj)
 
     GetOpenFile(obj, fptr);
     if (fstat(fptr->fd, &st) == -1) {
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
     }
     return stat_atime(&st);
 }
@@ -1747,7 +1748,7 @@ rb_file_mtime(VALUE obj)
 
     GetOpenFile(obj, fptr);
     if (fstat(fptr->fd, &st) == -1) {
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
     }
     return stat_mtime(&st);
 }
@@ -1793,7 +1794,7 @@ rb_file_ctime(VALUE obj)
 
     GetOpenFile(obj, fptr);
     if (fstat(fptr->fd, &st) == -1) {
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
     }
     return stat_ctime(&st);
 }
@@ -1859,11 +1860,11 @@ rb_file_chmod(VALUE obj, VALUE vmode)
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
     if (fchmod(fptr->fd, mode) == -1)
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
 #else
-    if (!fptr->path) return Qnil;
-    if (chmod(fptr->path, mode) == -1)
-	rb_sys_fail(fptr->path);
+    if (NIL_P(fptr->pathv)) return Qnil;
+    if (chmod(RSTRING_PTR(fptr->pathv), mode) == -1)
+	rb_sys_fail_path(fptr->pathv);
 #endif
 
     return INT2FIX(0);
@@ -1990,12 +1991,12 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
     g = NIL_P(group) ? -1 : NUM2INT(group);
     GetOpenFile(obj, fptr);
 #if defined(DJGPP) || defined(__CYGWIN32__) || defined(_WIN32) || defined(__EMX__)
-    if (!fptr->path) return Qnil;
-    if (chown(fptr->path, o, g) == -1)
-	rb_sys_fail(fptr->path);
+    if (NIL_P(fptr->pathv)) return Qnil;
+    if (chown(RSTRING_PTR(fptr->pathv), o, g) == -1)
+	rb_sys_fail_path(fptr->pathv);
 #else
     if (fchown(fptr->fd, o, g) == -1)
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
 #endif
 
     return INT2FIX(0);
@@ -2274,7 +2275,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
     }
     if (rv < 0) {
 	xfree(buf);
-	rb_sys_fail(RSTRING_PTR(path));
+	rb_sys_fail_path(path);
     }
     v = rb_tainted_str_new(buf, rv);
     xfree(buf);
@@ -3347,11 +3348,11 @@ rb_file_truncate(VALUE obj, VALUE len)
     rb_io_flush(obj);
 #ifdef HAVE_FTRUNCATE
     if (ftruncate(fptr->fd, pos) < 0)
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
 #else
 # ifdef HAVE_CHSIZE
     if (chsize(fptr->fd, pos) < 0)
-	rb_sys_fail(fptr->path);
+	rb_sys_fail(fptr->pathv);
 # else
     rb_notimplement();
 # endif
@@ -3457,7 +3458,7 @@ rb_file_flock(VALUE obj, VALUE operation)
 	    break;
 
 	  default:
-	    rb_sys_fail(fptr->path);
+	    rb_sys_fail_path(fptr->pathv);
 	}
     }
 #endif

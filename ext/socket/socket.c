@@ -403,9 +403,11 @@ bsock_setsockopt(VALUE sock, VALUE lev, VALUE optname, VALUE val)
 	break;
     }
 
+#define rb_sys_fail_path(path) rb_sys_fail(NIL_P(path) ? 0 : RSTRING_PTR(path))
+
     GetOpenFile(sock, fptr);
     if (setsockopt(fptr->fd, level, option, v, vlen) < 0)
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
 
     return INT2FIX(0);
 }
@@ -466,7 +468,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 
     GetOpenFile(sock, fptr);
     if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
-	rb_sys_fail(fptr->path);
+	rb_sys_fail_path(fptr->pathv);
 
     return rb_str_new(buf, len);
 #else
@@ -1700,7 +1702,7 @@ init_unixsock(VALUE sock, VALUE path, int server)
     init_sock(sock, fd);
     if (server) {
 	GetOpenFile(sock, fptr);
-        fptr->path = strdup(RSTRING_PTR(path));
+        fptr->pathv = rb_str_new_frozen(path);
     }
 
     return sock;
@@ -1938,14 +1940,14 @@ unix_path(VALUE sock)
     rb_io_t *fptr;
 
     GetOpenFile(sock, fptr);
-    if (fptr->path == 0) {
+    if (NIL_P(fptr->pathv)) {
 	struct sockaddr_un addr;
 	socklen_t len = sizeof(addr);
 	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
-	fptr->path = strdup(unixpath(&addr, len));
+	fptr->pathv = rb_obj_freeze(rb_str_new_cstr(unixpath(&addr, len)));
     }
-    return rb_str_new2(fptr->path);
+    return rb_str_dup(fptr->pathv);
 }
 
 static VALUE

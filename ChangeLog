@@ -1,3 +1,16 @@
+Sat Aug 23 09:45:35 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): remove path field and add pathv field.
+	  (MakeOpenFile): initialize pathv as Qnil.
+
+	* gc.c: mark pathv field in T_FILE.
+
+	* io.c: follow the rb_io_t field change.
+
+	* file.c: ditto.
+
+	* ext/socket/socket.c: ditto.
+
 Sat Aug 23 01:42:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (FMODE_TEXTMODE): defined.

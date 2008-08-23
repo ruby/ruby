@@ -33,7 +33,7 @@ typedef struct rb_io_t {
     int mode;			/* mode flags */
     rb_pid_t pid;		/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
-    char *path;			/* pathname for file */
+    VALUE pathv;			/* pathname for file */
     void (*finalize)(struct rb_io_t*,int); /* finalize proc */
     long refcnt;
 
@@ -103,7 +103,7 @@ typedef struct rb_io_t {
     fp->mode = 0;\
     fp->pid = 0;\
     fp->lineno = 0;\
-    fp->path = NULL;\
+    fp->pathv = Qnil;\
     fp->finalize = 0;\
     fp->refcnt = 1;\
     fp->wbuf = NULL;\
