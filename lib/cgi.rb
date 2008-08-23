@@ -375,6 +375,19 @@ class CGI
   #      # => "Usage: foo \"bar\" <baz>"
   def CGI::unescapeHTML(string)
     enc = string.encoding
+    if [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(enc)
+      return string.gsub(Regexp.new('&(amp|quot|gt|lt|#[0-9]+|#x[0-9A-Fa-f]+);'.encode(enc))) do
+	case $1.encode("US-ASCII")
+	when 'amp'                 then '&'.encode(enc)
+	when 'quot'                then '"'.encode(enc)
+	when 'gt'                  then '>'.encode(enc)
+	when 'lt'                  then '<'.encode(enc)
+	when /\A#0*(\d+)\z/        then $1.to_i.chr(enc)
+	when /\A#x([0-9a-f]+)\z/i  then $1.hex.chr(enc)
+	end
+      end
+    end
+    asciicompat = Encoding.compatible?(string, "a")
     string.gsub(/&(amp|quot|gt|lt|\#[0-9]+|\#x[0-9A-Fa-f]+);/) do
       match = $1.dup
       case match
@@ -382,20 +395,24 @@ class CGI
       when 'quot'                then '"'
       when 'gt'                  then '>'
       when 'lt'                  then '<'
-      when /\A#0*(\d+)\z/        then
-        if Integer($1) < 256
-          Integer($1).chr.force_encoding(enc)
-        else
-          "&##{$1};"
-        end
-      when /\A#x([0-9a-f]+)\z/i then
-        if $1.hex < 256
-          $1.hex.chr.force_encoding(enc)
-        else
-          "&#x#{$1};"
-        end
+      when /\A#0*(\d+)\z/
+	if enc == Encoding::UTF_8
+	  $1.to_i.chr(enc)
+	elsif $1.to_i < 128 && asciicompat
+	  $1.to_i.chr
+	else
+	  "&##{$1};"
+	end
+      when /\A#x([0-9a-f]+)\z/i
+	if enc == Encoding::UTF_8
+	  $1.hex.chr(enc)
+	elsif $1.hex < 128 && asciicompat
+	  $1.hex.chr
+	else
+	  "&#x#{$1};"
+	end
       else
-        "&#{match};"
+	"&#{match};"
       end
     end
   end
