@@ -1163,5 +1163,44 @@ EOT
     }
   end
 
+  def test_invalid_r
+    with_tmpdir {
+      generate_file("t.txt", "a\x80b")
+      open("t.txt", "r:utf-8:euc-jp", :invalid => :replace) {|f|
+        assert_equal("a?b", f.read)
+      }
+      open("t.txt", "r:utf-8:euc-jp", :invalid => :ignore) {|f|
+        assert_equal("ab", f.read)
+      }
+      open("t.txt", "r:utf-8:euc-jp", :undef => :replace) {|f|
+        assert_raise(Encoding::InvalidByteSequence) { f.read }
+        assert_equal("b", f.read)
+      }
+      open("t.txt", "r:utf-8:euc-jp", :undef => :ignore) {|f|
+        assert_raise(Encoding::InvalidByteSequence) { f.read }
+        assert_equal("b", f.read)
+      }
+    }
+  end
+
+  def test_undef_r
+    with_tmpdir {
+      generate_file("t.txt", "a\uFFFDb")
+      open("t.txt", "r:utf-8:euc-jp", :undef => :replace) {|f|
+        assert_equal("a?b", f.read)
+      }
+      open("t.txt", "r:utf-8:euc-jp", :undef => :ignore) {|f|
+        assert_equal("ab", f.read)
+      }
+      open("t.txt", "r:utf-8:euc-jp", :invalid => :replace) {|f|
+        assert_raise(Encoding::ConversionUndefined) { f.read }
+        assert_equal("b", f.read)
+      }
+      open("t.txt", "r:utf-8:euc-jp", :invalid => :ignore) {|f|
+        assert_raise(Encoding::ConversionUndefined) { f.read }
+        assert_equal("b", f.read)
+      }
+    }
+  end
 end
 

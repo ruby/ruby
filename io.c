@@ -126,6 +126,7 @@ static VALUE argf;
 static ID id_write, id_read, id_getc, id_flush, id_readpartial;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode;
+static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 
 struct timeval rb_time_interval(VALUE);
 
@@ -1433,6 +1434,10 @@ make_readconv(rb_io_t *fptr)
         const char *sname, *dname;
         if (NEED_NEWLINE_DECODER(fptr))
             ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
+        if (fptr->mode & FMODE_INVALID_MASK)
+            ecflags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
+        if (fptr->mode & FMODE_UNDEF_MASK)
+            ecflags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
         if (fptr->enc2) {
             sname = fptr->enc2->name;
             dname = fptr->enc->name;
@@ -3875,6 +3880,32 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
 #ifdef O_BINARY
             modenum |= O_BINARY;
 #endif
+        }
+        v = rb_hash_aref(opthash, sym_invalid);
+        if (!NIL_P(v)) {
+            if (v == sym_replace) {
+                flags |= FMODE_INVALID_REPLACE;
+            }
+            else if (v == sym_ignore) {
+                flags |= FMODE_INVALID_IGNORE;
+            }
+            else {
+                v = rb_inspect(v);
+                rb_raise(rb_eArgError, "unexpected action for invalid byte sequence: %s", StringValueCStr(v));
+            }
+        }
+        v = rb_hash_aref(opthash, sym_undef);
+        if (!NIL_P(v)) {
+            if (v == sym_replace) {
+                flags |= FMODE_UNDEF_REPLACE;
+            }
+            else if (v == sym_ignore) {
+                flags |= FMODE_UNDEF_IGNORE;
+            }
+            else {
+                v = rb_inspect(v);
+                rb_raise(rb_eArgError, "unexpected action for undefined conversion: %s", StringValueCStr(v));
+            }
         }
 
         if (io_extract_encoding_option(opthash, &enc, &enc2)) {
@@ -8353,4 +8384,8 @@ Init_IO(void)
     sym_open_args = ID2SYM(rb_intern("open_args"));
     sym_textmode = ID2SYM(rb_intern("textmode"));
     sym_binmode = ID2SYM(rb_intern("binmode"));
+    sym_invalid = ID2SYM(rb_intern("invalid"));
+    sym_undef = ID2SYM(rb_intern("undef"));
+    sym_ignore = ID2SYM(rb_intern("ignore"));
+    sym_replace = ID2SYM(rb_intern("replace"));
 }

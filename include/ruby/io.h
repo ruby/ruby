@@ -72,21 +72,27 @@ typedef struct rb_io_t {
 
 #define HAVE_RB_IO_T 1
 
-#define FMODE_READABLE                  0x0001
-#define FMODE_WRITABLE                  0x0002
-#define FMODE_READWRITE                 (FMODE_READABLE|FMODE_WRITABLE)
-#define FMODE_BINMODE                   0x0004
-#define FMODE_SYNC                      0x0008
-#define FMODE_TTY                       0x0010
-#define FMODE_DUPLEX                    0x0020
-#define FMODE_APPEND                    0x0040
-#define FMODE_CREATE                    0x0080
-/* #define FMODE_NOREVLOOKUP            0x0100 */
-#define FMODE_WSPLIT                    0x0200
-#define FMODE_WSPLIT_INITIALIZED        0x0400
-#define FMODE_TRUNC                     0x0800
-#define FMODE_TEXTMODE                  0x1000
-/* #define FMODE_PREP                  0x10000 */
+#define FMODE_READABLE              0x00000001
+#define FMODE_WRITABLE              0x00000002
+#define FMODE_READWRITE             (FMODE_READABLE|FMODE_WRITABLE)
+#define FMODE_BINMODE               0x00000004
+#define FMODE_SYNC                  0x00000008
+#define FMODE_TTY                   0x00000010
+#define FMODE_DUPLEX                0x00000020
+#define FMODE_APPEND                0x00000040
+#define FMODE_CREATE                0x00000080
+/* #define FMODE_NOREVLOOKUP        0x00000100 */
+#define FMODE_WSPLIT                0x00000200
+#define FMODE_WSPLIT_INITIALIZED    0x00000400
+#define FMODE_TRUNC                 0x00000800
+#define FMODE_TEXTMODE              0x00001000
+/* #define FMODE_PREP               0x00010000 */
+#define FMODE_INVALID_MASK          0x00f00000
+#define FMODE_INVALID_IGNORE        0x00100000
+#define FMODE_INVALID_REPLACE       0x00200000
+#define FMODE_UNDEF_MASK            0x0f000000
+#define FMODE_UNDEF_IGNORE          0x01000000
+#define FMODE_UNDEF_REPLACE         0x02000000
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 

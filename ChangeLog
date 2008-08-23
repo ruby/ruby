@@ -1,3 +1,21 @@
+Sat Aug 23 16:59:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (FMODE_INVALID_MASK): defined.
+	  (FMODE_INVALID_IGNORE): defined.
+	  (FMODE_INVALID_REPLACE): defined.
+	  (FMODE_UNDEF_MASK): defined.
+	  (FMODE_UNDEF_IGNORE): defined.
+	  (FMODE_UNDEF_REPLACE): defined.
+
+	* io.c (sym_invalid): defined.
+	  (sym_undef): defined.
+	  (sym_ignore): defined.
+	  (sym_replace): defined.
+	  (make_readconv): specify ECONV_INVALID_* and ECONV_UNDEF_* if
+	  FMODE_INVALID_* and FMODE_UNDEF_* is set.
+	  (rb_io_extract_modeenc): check {:invalid, :undef} => {:replace,
+	  :ignore} for FMODE_INVALID_* and FMODE_UNDEF_*.
+
 Sat Aug 23 17:06:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (rb_strftime): support more flags.
