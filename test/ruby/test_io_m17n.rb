@@ -979,11 +979,18 @@ EOT
     }
   end
 
+  def test_both_textmode_binmode
+    assert_raise(ArgumentError) { open("not-exist", "r", :textmode=>true, :binmode=>true) }
+  end
+
   def test_textmode_decode_universal_newline_read
     with_tmpdir {
       generate_file("t.crlf", "a\r\nb\r\nc\r\n")
       assert_equal("a\nb\nc\n", File.read("t.crlf", mode:"rt:euc-jp:utf-8"))
       assert_equal("a\nb\nc\n", File.read("t.crlf", mode:"rt"))
+      open("t.crlf", "rt:euc-jp:utf-8") {|f| assert_equal("a\nb\nc\n", f.read) }
+      open("t.crlf", "rt") {|f| assert_equal("a\nb\nc\n", f.read) }
+      open("t.crlf", "r", :textmode=>true) {|f| assert_equal("a\nb\nc\n", f.read) }
 
       generate_file("t.cr", "a\rb\rc\r")
       assert_equal("a\nb\nc\n", File.read("t.cr", mode:"rt:euc-jp:utf-8"))
@@ -1103,6 +1110,9 @@ EOT
       src = "a\nb\rc\r\nd\n"
       generate_file("t.txt", src)
       open("t.txt", "rb") {|f|
+        assert_equal(src, f.read)
+      }
+      open("t.txt", "r", :binmode=>true) {|f|
         assert_equal(src, f.read)
       }
       if File::BINARY == 0

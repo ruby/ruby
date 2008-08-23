@@ -1,3 +1,8 @@
+Sat Aug 23 11:23:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_extract_modeenc): check :textmode and :binmode in option
+	  hash.
+
 Sat Aug 23 10:48:56 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pty/pty.c (pty_getpty): follow rb_io_t's path -> pathv change.

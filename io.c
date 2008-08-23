@@ -125,6 +125,7 @@ static VALUE argf;
 
 static ID id_write, id_read, id_getc, id_flush, id_readpartial;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
+static VALUE sym_textmode, sym_binmode;
 
 struct timeval rb_time_interval(VALUE);
 
@@ -3864,12 +3865,27 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
     }
 
     if (!NIL_P(opthash)) {
+	VALUE v;
+	v = rb_hash_aref(opthash, sym_textmode);
+	if (RTEST(v))
+            flags |= FMODE_TEXTMODE;
+	v = rb_hash_aref(opthash, sym_binmode);
+	if (RTEST(v)) {
+            flags |= FMODE_BINMODE;
+#ifdef O_BINARY
+            modenum |= O_BINARY;
+#endif
+        }
+
         if (io_extract_encoding_option(opthash, &enc, &enc2)) {
             if (has_enc) {
                 rb_raise(rb_eArgError, "encoding sepecified twice");
             }
         }
     }
+
+    if ((flags & FMODE_BINMODE) && (flags & FMODE_TEXTMODE))
+        rb_raise(rb_eArgError, "both textmode and binmode specified");
 
     *mode_p = mode;
 
@@ -8335,4 +8351,6 @@ Init_IO(void)
     sym_intenc = ID2SYM(rb_intern("internal_encoding"));
     sym_encoding = ID2SYM(rb_intern("encoding"));
     sym_open_args = ID2SYM(rb_intern("open_args"));
+    sym_textmode = ID2SYM(rb_intern("textmode"));
+    sym_binmode = ID2SYM(rb_intern("binmode"));
 }
