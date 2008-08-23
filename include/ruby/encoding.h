@@ -277,9 +277,17 @@ VALUE rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, 
 void rb_econv_binmode(rb_econv_t *ec);
 
 /* flags for rb_econv_open */
-#define ECONV_UNIVERSAL_NEWLINE_DECODER       0x100
-#define ECONV_CRLF_NEWLINE_ENCODER            0x200
-#define ECONV_CR_NEWLINE_ENCODER              0x400
+#define ECONV_INVALID_MASK                      0x000f
+#define ECONV_INVALID_IGNORE                    0x0001
+#define ECONV_INVALID_REPLACE                   0x0002
+
+#define ECONV_UNDEF_MASK                        0x00f0
+#define ECONV_UNDEF_IGNORE                      0x0010
+#define ECONV_UNDEF_REPLACE                     0x0020
+
+#define ECONV_UNIVERSAL_NEWLINE_DECODER         0x0100
+#define ECONV_CRLF_NEWLINE_ENCODER              0x0200
+#define ECONV_CR_NEWLINE_ENCODER                0x0400
 
 /* flags for rb_econv_convert */
 #define ECONV_PARTIAL_INPUT                   0x10000

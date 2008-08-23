@@ -21,10 +21,6 @@ VALUE rb_eInvalidByteSequence;
 VALUE rb_cEncodingConverter;
 
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
-#define INVALID_IGNORE                  0x1
-#define INVALID_REPLACE                 0x2
-#define UNDEF_IGNORE                    0x10
-#define UNDEF_REPLACE                   0x20
 
 /*
  *  Dispatch data and logic
@@ -972,8 +968,8 @@ found_needreport:
     return econv_source_buffer_empty;
 }
 
-rb_econv_result_t
-rb_econv_convert(rb_econv_t *ec,
+static rb_econv_result_t
+rb_econv_convert0(rb_econv_t *ec,
     const unsigned char **input_ptr, const unsigned char *input_stop,
     unsigned char **output_ptr, unsigned char *output_stop,
     int flags)
@@ -1049,6 +1045,47 @@ gotresult:
     }
 
     return res;
+}
+
+static int output_replacement_character(rb_econv_t *ec);
+
+rb_econv_result_t
+rb_econv_convert(rb_econv_t *ec,
+    const unsigned char **input_ptr, const unsigned char *input_stop,
+    unsigned char **output_ptr, unsigned char *output_stop,
+    int flags)
+{
+    rb_econv_result_t ret;
+
+resume:
+    ret = rb_econv_convert0(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
+
+    if (ret == econv_invalid_byte_sequence) {
+	/* deal with invalid byte sequence */
+	/* todo: add more alternative behaviors */
+	if (ec->flags&ECONV_INVALID_IGNORE) {
+            goto resume;
+	}
+	else if (ec->flags&ECONV_INVALID_REPLACE) {
+	    if (output_replacement_character(ec) == 0)
+                goto resume;
+	}
+    }
+
+    if (ret == econv_undefined_conversion) {
+	/* valid character in source encoding
+	 * but no related character(s) in destination encoding */
+	/* todo: add more alternative behaviors */
+	if (ec->flags&ECONV_UNDEF_IGNORE) {
+	    goto resume;
+	}
+	else if (ec->flags&ECONV_UNDEF_REPLACE) {
+	    if (output_replacement_character(ec) == 0)
+                goto resume;
+	}
+    }
+
+    return ret;
 }
 
 const char *
@@ -1455,7 +1492,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
 
-    ec = rb_econv_open(from_encoding, to_encoding, 0);
+    ec = rb_econv_open(from_encoding, to_encoding, opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK));
     if (!ec)
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
@@ -1464,35 +1501,18 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 
 resume:
     ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, opt);
+
     if (ret == econv_invalid_byte_sequence) {
-	/* deal with invalid byte sequence */
-	/* todo: add more alternative behaviors */
-	if (opt&INVALID_IGNORE) {
-            goto resume;
-	}
-	else if (opt&INVALID_REPLACE) {
-	    if (output_replacement_character(ec) == 0)
-                goto resume;
-	}
         exc = make_econv_exception(ec);
         rb_econv_close(ec);
 	rb_exc_raise(exc);
     }
     if (ret == econv_undefined_conversion) {
-	/* valid character in from encoding
-	 * but no related character(s) in to encoding */
-	/* todo: add more alternative behaviors */
-	if (opt&UNDEF_IGNORE) {
-	    goto resume;
-	}
-	else if (opt&UNDEF_REPLACE) {
-	    if (output_replacement_character(ec) == 0)
-                goto resume;
-	}
         exc = make_econv_exception(ec);
         rb_econv_close(ec);
 	rb_exc_raise(exc);
     }
+
     if (ret == econv_destination_buffer_full) {
         more_output_buffer(destination, resize_destination, max_output, &out_start, out_pos, &out_stop);
         goto resume;
@@ -1520,7 +1540,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
 
-    ec = rb_econv_open(from_encoding, to_encoding, 0);
+    ec = rb_econv_open(from_encoding, to_encoding, opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK));
     if (!ec)
         rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
 
@@ -1549,31 +1569,12 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             ptr += p - &input_byte;
         switch (ret) {
           case econv_invalid_byte_sequence:
-            /* deal with invalid byte sequence */
-            /* todo: add more alternative behaviors */
-            if (opt&INVALID_IGNORE) {
-                break;
-            }
-            else if (opt&INVALID_REPLACE) {
-                if (output_replacement_character(ec) == 0)
-                    break;
-            }
             exc = make_econv_exception(ec);
             rb_econv_close(ec);
             rb_exc_raise(exc);
             break;
 
           case econv_undefined_conversion:
-            /* valid character in from encoding
-             * but no related character(s) in to encoding */
-            /* todo: add more alternative behaviors */
-            if (opt&UNDEF_IGNORE) {
-                break;
-            }
-            else if (opt&UNDEF_REPLACE) {
-                if (output_replacement_character(ec) == 0)
-                    break;
-            }
             exc = make_econv_exception(ec);
             rb_econv_close(ec);
             rb_exc_raise(exc);
@@ -1632,10 +1633,10 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	if (NIL_P(v)) {
 	}
 	else if (v==sym_ignore) {
-	    options |= INVALID_IGNORE;
+	    options |= ECONV_INVALID_IGNORE;
 	}
 	else if (v==sym_replace) {
-	    options |= INVALID_REPLACE;
+	    options |= ECONV_INVALID_REPLACE;
 	    v = rb_hash_aref(opt, sym_replace);
 	}
 	else {
@@ -1645,10 +1646,10 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	if (NIL_P(v)) {
 	}
 	else if (v==sym_ignore) {
-	    options |= UNDEF_IGNORE;
+	    options |= ECONV_UNDEF_IGNORE;
 	}
 	else if (v==sym_replace) {
-	    options |= UNDEF_REPLACE;
+	    options |= ECONV_UNDEF_REPLACE;
 	}
 	else {
 	    rb_raise(rb_eArgError, "unknown value for undefined character option");
@@ -2331,6 +2332,12 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "primitive_errinfo", econv_primitive_errinfo, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_insert_output", econv_primitive_insert_output, 1);
     rb_define_method(rb_cEncodingConverter, "primitive_putback", econv_primitive_putback, 1);
+    rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
+    rb_define_const(rb_cEncodingConverter, "INVALID_IGNORE", INT2FIX(ECONV_INVALID_IGNORE));
+    rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
+    rb_define_const(rb_cEncodingConverter, "UNDEF_MASK", INT2FIX(ECONV_UNDEF_MASK));
+    rb_define_const(rb_cEncodingConverter, "UNDEF_IGNORE", INT2FIX(ECONV_UNDEF_IGNORE));
+    rb_define_const(rb_cEncodingConverter, "UNDEF_REPLACE", INT2FIX(ECONV_UNDEF_REPLACE));
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
