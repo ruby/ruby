@@ -1564,7 +1564,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     pos = 0;
 
     enc = io_read_encoding(fptr);
-    cr = fptr->enc2 ? ENC_CODERANGE_BROKEN : 0;
+    cr = 0;
 
     if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
@@ -1588,9 +1588,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     }
     if (bytes != siz) rb_str_resize(str, bytes);
     str = io_enc_str(str, fptr);
-    if (!fptr->enc2) {
-	ENC_CODERANGE_SET(str, cr);
-    }
+    ENC_CODERANGE_SET(str, cr);
     return str;
 }
 
@@ -2008,7 +2006,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
     VALUE str = Qnil;
     int len = 0;
     long pos = 0;
-    int cr = fptr->enc2 ? ENC_CODERANGE_BROKEN : 0;
+    int cr = 0;
 
     for (;;) {
 	long pending = READ_DATA_PENDING_COUNT(fptr);
@@ -2044,7 +2042,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
     }
 
     str = io_enc_str(str, fptr);
-    if (!fptr->enc2) ENC_CODERANGE_SET(str, cr);
+    ENC_CODERANGE_SET(str, cr);
     fptr->lineno++;
     ARGF.lineno = INT2FIX(fptr->lineno);
     return str;
@@ -2516,9 +2514,7 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
     }
     if (!cr) cr = ENC_CODERANGE_BROKEN;
     str = io_enc_str(str, fptr);
-    if (!fptr->enc2) {
-	ENC_CODERANGE_SET(str, cr);
-    }
+    ENC_CODERANGE_SET(str, cr);
     return str;
 }
 

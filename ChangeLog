@@ -1,3 +1,9 @@
+Sat Aug 23 10:13:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (read_all): fptr->enc2 is 0 if no conversion.
+	  (rb_io_getline_fast): ditto.
+	  (io_getc): ditto.
+
 Sat Aug 23 09:45:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): remove path field and add pathv field.
