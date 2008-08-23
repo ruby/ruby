@@ -4602,12 +4602,7 @@ rb_scan_open_args(int argc, VALUE *argv,
     int modenum, flags;
     mode_t perm;
 
-    if (0 < argc) {
-        opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
-        if (!NIL_P(opt)) {
-            argc -= 1;
-        }
-    }
+    opt = pop_last_hash(&argc, &argv);
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
 #if defined _WIN32 || defined __APPLE__

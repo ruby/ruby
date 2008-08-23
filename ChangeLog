@@ -1,3 +1,7 @@
+Sat Aug 23 18:29:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_scan_open_args): use pop_last_hash.
+
 Sat Aug 23 16:59:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (FMODE_INVALID_MASK): defined.
