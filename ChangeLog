@@ -1,3 +1,8 @@
+Sat Aug 23 20:01:29 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_process.rb (TestProcess#test_rlimit_value):
+	  add Errno::EINVAL. [ruby-dev:35900]
+
 Sat Aug 23 18:29:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_scan_open_args): use pop_last_hash.

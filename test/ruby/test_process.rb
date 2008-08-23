@@ -108,8 +108,8 @@ class TestProcess < Test::Unit::TestCase
   def test_rlimit_value
     return unless rlimit_exist?
     assert_raise(ArgumentError) { Process.setrlimit(:CORE, :FOO) }
-    assert_raise(Errno::EPERM) { Process.setrlimit(:NOFILE, :INFINITY) }
-    assert_raise(Errno::EPERM) { Process.setrlimit(:NOFILE, "INFINITY") }
+    assert_raise(Errno::EPERM, Errno::EINVAL) { Process.setrlimit(:NOFILE, :INFINITY) }
+    assert_raise(Errno::EPERM, Errno::EINVAL) { Process.setrlimit(:NOFILE, "INFINITY") }
   end
 
   TRUECOMMAND = [RUBY, '-e', '']
