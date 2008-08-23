@@ -1,3 +1,7 @@
+Sat Aug 23 17:06:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime): support more flags.
+
 Sat Aug 23 15:14:10 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_opts.h: enable "OPT_TRACE_INSTRUCTION" on default.
@@ -145,9 +149,6 @@ Fri Aug 22 14:28:05 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* strftime.c (rb_strftime): supported flags and precision for most
 	  conversions.  [ruby-dev:35906]
-
-	* lib/date/format.rb (Date#strftime): left-justifies %L and %N.
-	  [ruby-dev:35909]
 
 Fri Aug 22 14:04:04 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
