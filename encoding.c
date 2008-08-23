@@ -876,6 +876,8 @@ enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
 {
     rb_encoding *enc;
 
+    if (enc_check_encoding(str1) > 0 || enc_check_encoding(str2) > 0)
+       rb_raise(rb_eTypeError, "wrong argument type Encoding (expected String)");
     if (!enc_capable(str1)) return Qnil;
     if (!enc_capable(str2)) return Qnil;
     enc = rb_enc_compatible(str1, str2);
