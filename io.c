@@ -4673,6 +4673,22 @@ rb_io_s_sysopen(int argc, VALUE *argv)
     return INT2NUM(fd);
 }
 
+static VALUE
+check_pipe_command(VALUE filename_or_command)
+{
+    char *s = RSTRING_PTR(filename_or_command);
+    long l = RSTRING_LEN(filename_or_command);
+    char *e = s + l;
+    int chlen;
+
+    if (rb_enc_ascget(s, e, &chlen, rb_enc_get(filename_or_command)) == '|') {
+        VALUE cmd = rb_str_new(s+chlen, l-chlen);
+        OBJ_INFECT(cmd, filename_or_command);
+        return cmd;
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     open(path [, mode_enc [, perm]] )                => io or nil
@@ -4798,10 +4814,9 @@ rb_f_open(int argc, VALUE *argv)
 		redirect = Qtrue;
 	    }
 	    else {
-		char *str = StringValuePtr(tmp);
-		if (str && str[0] == '|') {
-		    argv[0] = rb_str_new(str+1, RSTRING_LEN(tmp)-1);
-		    OBJ_INFECT(argv[0], tmp);
+                VALUE cmd = check_pipe_command(tmp);
+                if (!NIL_P(cmd)) {
+		    argv[0] = cmd;
 		    return rb_io_s_popen(argc, argv, rb_cIO);
 		}
 	    }
@@ -4821,13 +4836,12 @@ rb_f_open(int argc, VALUE *argv)
 static VALUE
 rb_io_open(VALUE filename, VALUE mode, VALUE opt)
 {
-    char *fname = RSTRING_PTR(filename);
+    VALUE cmd;
     int modenum, flags;
     convconfig_t convconfig;
     rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
 
-    if (fname[0] == '|') {
-	VALUE cmd = rb_str_new2(fname+1);
+    if (!NIL_P(cmd = check_pipe_command(filename))) {
 	return pipe_open_s(cmd, rb_io_modenum_mode(modenum), flags, &convconfig);
     }
     else {

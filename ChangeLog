@@ -1,3 +1,9 @@
+Sat Aug 23 10:42:52 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (check_pipe_command): extracted from rb_f_open and rb_io_open.
+	  (rb_f_open): use check_pipe_command.
+	  (rb_io_open): ditto.
+
 Sat Aug 23 10:13:00 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (read_all): fptr->enc2 is 0 if no conversion.
