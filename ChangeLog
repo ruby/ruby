@@ -1,3 +1,7 @@
+Sat Aug 23 15:14:10 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_opts.h: enable "OPT_TRACE_INSTRUCTION" on default.
+
 Sat Aug 23 14:59:32 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_INVALID_MASK): defined.

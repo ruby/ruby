@@ -18,7 +18,7 @@
  * Following definitions are default values.
  */
 
-#define OPT_TRACE_INSTRUCTION        0
+#define OPT_TRACE_INSTRUCTION        1
 #define OPT_TAILCALL_OPTIMIZATION    0
 #define OPT_PEEPHOLE_OPTIMIZATION    1
 #define OPT_SPECIALISED_INSTRUCTION  1
