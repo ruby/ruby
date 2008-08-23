@@ -120,7 +120,7 @@ extern char *strchr();
 
 #define range(low, item, hi)	max(low, min(item, hi))
 
-#if defined __CYGWIN__ || defined __WIN32__ || defined _WIN32
+#if defined __WIN32__ || defined _WIN32
 #define DLL_IMPORT __declspec(dllimport)
 #endif
 #ifndef DLL_IMPORT
