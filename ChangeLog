@@ -1,3 +1,7 @@
+Sun Aug 24 19:07:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_reopen): initialize fptr->encs.opts.
+
 Sun Aug 24 18:37:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_s_pipe): accept optional hash.

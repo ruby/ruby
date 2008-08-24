@@ -5020,6 +5020,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	}
 	fptr->mode = flags;
 	rb_io_mode_enc(fptr, StringValueCStr(nmode));
+        rb_econv_opts(Qnil, &fptr->encs.opts);
     }
 
     fptr->pathv = rb_str_new_frozen(fname);
