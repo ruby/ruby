@@ -694,25 +694,25 @@ make_writeconv(rb_io_t *fptr)
     if (!fptr->writeconv_initialized) {
         const char *senc, *denc;
         rb_encoding *enc;
-        int ecflags;
+        rb_econv_option_t ecopts;
 
         fptr->writeconv_initialized = 1;
 
-        ecflags = 0;
+        ecopts.flags = 0;
 
         if (fptr->mode & FMODE_INVALID_MASK)
-            ecflags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
+            ecopts.flags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
         if (fptr->mode & FMODE_UNDEF_MASK)
-            ecflags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
+            ecopts.flags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
 
 #ifdef TEXTMODE_NEWLINE_ENCODER
         if (NEED_NEWLINE_ENCODER(fptr))
-            ecflags |= TEXTMODE_NEWLINE_ENCODER;
+            ecopts.flags |= TEXTMODE_NEWLINE_ENCODER;
 
         if (!fptr->enc) {
-            fptr->writeconv = rb_econv_open("", "", ecflags);
+            fptr->writeconv = rb_econv_open("", "", &ecopts);
             if (!fptr->writeconv)
-                rb_exc_raise(rb_econv_open_exc("", "", ecflags));
+                rb_exc_raise(rb_econv_open_exc("", "", &ecopts));
             fptr->writeconv_stateless = Qnil;
             return;
         }
@@ -729,9 +729,9 @@ make_writeconv(rb_io_t *fptr)
             fptr->writeconv_stateless = Qnil;
         }
         if (senc) {
-            fptr->writeconv = rb_econv_open(senc, denc, ecflags);
+            fptr->writeconv = rb_econv_open(senc, denc, &ecopts);
             if (!fptr->writeconv)
-                rb_exc_raise(rb_econv_open_exc(senc, denc, ecflags));
+                rb_exc_raise(rb_econv_open_exc(senc, denc, &ecopts));
         }
         else {
             fptr->writeconv = NULL;
@@ -1451,14 +1451,15 @@ static void
 make_readconv(rb_io_t *fptr)
 {
     if (!fptr->readconv) {
-        int ecflags = 0;
+        rb_econv_option_t ecopts;
         const char *sname, *dname;
+        ecopts.flags = 0;
         if (NEED_NEWLINE_DECODER(fptr))
-            ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
+            ecopts.flags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
         if (fptr->mode & FMODE_INVALID_MASK)
-            ecflags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
+            ecopts.flags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
         if (fptr->mode & FMODE_UNDEF_MASK)
-            ecflags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
+            ecopts.flags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
         if (fptr->enc2) {
             sname = fptr->enc2->name;
             dname = fptr->enc->name;
@@ -1466,9 +1467,9 @@ make_readconv(rb_io_t *fptr)
         else {
             sname = dname = "";
         }
-        fptr->readconv = rb_econv_open(sname, dname, ecflags);
+        fptr->readconv = rb_econv_open(sname, dname, &ecopts);
         if (!fptr->readconv)
-            rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+            rb_exc_raise(rb_econv_open_exc(sname, dname, &ecopts));
         fptr->crbuf_off = 0;
         fptr->crbuf_len = 0;
         fptr->crbuf_capa = 1024;

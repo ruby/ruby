@@ -1,3 +1,16 @@
+Sun Aug 24 16:06:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_option_t): defined.
+	  (rb_econv_open): 3rd arg changed.
+	  (rb_econv_open_exc): ditto.
+
+	* io.c (make_writeconv): use rb_econv_option_t.
+	  (make_readconv): ditto.
+	  (rb_econv_open): take rb_econv_option_t for options.
+	  (rb_econv_open_exc): ditto.
+	  (transcode_loop): use rb_econv_option_t.
+	  (econv_init): use rb_econv_option_t.
+
 Sun Aug 24 15:43:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_substr_append): associate dst with destination

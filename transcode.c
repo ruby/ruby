@@ -733,11 +733,12 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
 }
 
 rb_econv_t *
-rb_econv_open(const char *from, const char *to, int flags)
+rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
 {
     transcoder_entry_t **entries = NULL;
     int num_trans;
     static rb_econv_t *ec;
+    int flags = opts ? opts->flags : 0;
 
     if (*from == '\0' && *to == '\0') {
         num_trans = 0;
@@ -1123,7 +1124,7 @@ allocate_converted_string(const char *str_encoding, const char *insert_encoding,
     if (dst_bufsize == 0)
         dst_bufsize += 1;
 
-    ec = rb_econv_open(str_encoding, insert_encoding, 0);
+    ec = rb_econv_open(str_encoding, insert_encoding, NULL);
     if (ec == NULL)
         return NULL;
     dst_str = xmalloc(dst_bufsize);
@@ -1410,8 +1411,9 @@ rb_econv_binmode(rb_econv_t *ec)
 }
 
 VALUE
-rb_econv_open_exc(const char *senc, const char *denc, int flags)
+rb_econv_open_exc(const char *senc, const char *denc, rb_econv_option_t *opts)
 {
+    int flags = opts ? opts->flags : 0;
     VALUE mesg, exc;
     int noenc = 0;
     mesg = rb_str_new_cstr("code converter open failed (");
@@ -1553,12 +1555,12 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     unsigned char *out_start = *out_pos;
     int max_output;
     VALUE exc;
-    int ecflags;
+    rb_econv_option_t ecopts;
 
-    ecflags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
-    ec = rb_econv_open(from_encoding, to_encoding, ecflags);
+    ecopts.flags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
+    ec = rb_econv_open(from_encoding, to_encoding, &ecopts);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, &ecopts));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1604,11 +1606,12 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
     int ecflags;
+    rb_econv_option_t ecopts;
 
-    ecflags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
-    ec = rb_econv_open(from_encoding, to_encoding, ecflags);
+    ecopts.flags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
+    ec = rb_econv_open(from_encoding, to_encoding, &ecopts);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, &ecopts));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1955,14 +1958,14 @@ econv_init(int argc, VALUE *argv, VALUE self)
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
-    int flags;
+    rb_econv_option_t ecopts;
 
     rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &flags_v);
 
     if (flags_v == Qnil)
-        flags = 0;
+        ecopts.flags = 0;
     else
-        flags = NUM2INT(flags_v);
+        ecopts.flags = NUM2INT(flags_v);
 
     senc = NULL;
     sidx = rb_to_encoding_index(source_encoding);
@@ -1989,9 +1992,9 @@ econv_init(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    ec = rb_econv_open(sname, dname, flags);
+    ec = rb_econv_open(sname, dname, &ecopts);
     if (!ec) {
-        rb_exc_raise(rb_econv_open_exc(sname, dname, flags));
+        rb_exc_raise(rb_econv_open_exc(sname, dname, &ecopts));
     }
 
     if (*sname && *dname) { /* check "" to "universal_newline" */

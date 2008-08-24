@@ -249,14 +249,18 @@ typedef struct {
     rb_encoding *destination_encoding;
 } rb_econv_t;
 
-rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_encoding, int flags);
+typedef struct {
+    int flags;
+} rb_econv_option_t;
+
+rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_encoding, rb_econv_option_t *opts);
 rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     const unsigned char **source_buffer_ptr, const unsigned char *source_buffer_end,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,
     int flags);
 void rb_econv_close(rb_econv_t *ec);
 
-VALUE rb_econv_open_exc(const char *senc, const char *denc, int flags);
+VALUE rb_econv_open_exc(const char *senc, const char *denc, rb_econv_option_t *opts);
 
 /* result: 0:success -1:failure */
 int rb_econv_insert_output(rb_econv_t *ec,
