@@ -1,3 +1,9 @@
+Sun Aug 24 19:48:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_t): use rb_econv_option_t.
+
+	* transcode.c: follow the rb_econv_t change.
+
 Sun Aug 24 19:40:13 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_init_copy): copy encs.

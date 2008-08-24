@@ -216,6 +216,11 @@ typedef struct {
 
 typedef struct {
     int flags;
+    /* replacement character, etc. */
+} rb_econv_option_t;
+
+typedef struct {
+    rb_econv_option_t opts;
     const char *source_encoding_name;
     const char *destination_encoding_name;
 
@@ -246,11 +251,6 @@ typedef struct {
     rb_encoding *source_encoding;
     rb_encoding *destination_encoding;
 } rb_econv_t;
-
-typedef struct {
-    int flags;
-    /* replacement character, etc. */
-} rb_econv_option_t;
 
 VALUE rb_str_transcode(VALUE str, VALUE to, rb_econv_option_t *ecopts);
 

@@ -677,7 +677,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     }
 
     ec = ALLOC(rb_econv_t);
-    ec->flags = 0;
+    ec->opts.flags = 0;
     ec->source_encoding_name = NULL;
     ec->destination_encoding_name = NULL;
     ec->in_buf_start = NULL;
@@ -783,7 +783,10 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
     if (!ec)
         return NULL;
 
-    ec->flags = flags;
+    if (!opts)
+        ec->opts.flags = 0;
+    else
+        ec->opts = *opts;
     ec->source_encoding_name = from;
     ec->destination_encoding_name = to;
 
@@ -1065,10 +1068,10 @@ resume:
     if (ret == econv_invalid_byte_sequence) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
-	if (ec->flags&ECONV_INVALID_IGNORE) {
+	if (ec->opts.flags&ECONV_INVALID_IGNORE) {
             goto resume;
 	}
-	else if (ec->flags&ECONV_INVALID_REPLACE) {
+	else if (ec->opts.flags&ECONV_INVALID_REPLACE) {
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
@@ -1078,10 +1081,10 @@ resume:
 	/* valid character in source encoding
 	 * but no related character(s) in destination encoding */
 	/* todo: add more alternative behaviors */
-	if (ec->flags&ECONV_UNDEF_IGNORE) {
+	if (ec->opts.flags&ECONV_UNDEF_IGNORE) {
 	    goto resume;
 	}
-	else if (ec->flags&ECONV_UNDEF_REPLACE) {
+	else if (ec->opts.flags&ECONV_UNDEF_REPLACE) {
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
@@ -1391,7 +1394,7 @@ rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags)
 void
 rb_econv_binmode(rb_econv_t *ec)
 {
-    if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
+    if (ec->opts.flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
         int i = ec->num_trans-1;
         rb_transcoding_close(ec->elems[i].tc);
         xfree(ec->elems[i].out_buf_start);
@@ -1402,7 +1405,7 @@ rb_econv_binmode(rb_econv_t *ec)
         ec->elems[i].out_buf_end = NULL;
         ec->num_trans--;
     }
-    if (ec->flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
+    if (ec->opts.flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
         rb_transcoding_close(ec->elems[0].tc);
         xfree(ec->elems[0].out_buf_start);
         MEMMOVE(&ec->elems[0], &ec->elems[1], rb_econv_elem_t, ec->num_trans-1);
