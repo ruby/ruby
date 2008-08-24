@@ -3876,7 +3876,7 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
     }
 
     if (NIL_P(opthash)) {
-        ecopts.flags = 0;
+        rb_econv_opts(Qnil, &ecopts);
     }
     else {
 	VALUE v;
@@ -4016,7 +4016,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int modenum, int flags, convconfi
     else {
         fptr->encs.enc = NULL;
         fptr->encs.enc2 = NULL;
-        fptr->encs.opts.flags = 0;
+        rb_econv_opts(Qnil, &fptr->encs.opts);
     }
     fptr->pathv = rb_str_new_frozen(filename);
     fptr->fd = rb_sysopen(RSTRING_PTR(fptr->pathv), modenum, perm);
@@ -4038,7 +4038,7 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *mode)
     else {
         convconfig.enc = NULL;
         convconfig.enc2 = NULL;
-        convconfig.opts.flags = 0;
+        rb_econv_opts(Qnil, &convconfig.opts);
     }
 
     flags = rb_io_mode_flags(mode);
@@ -6627,31 +6627,32 @@ io_new_instance(VALUE args)
 }
 
 static void
-io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
+io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2, VALUE opt)
 {
     if (NIL_P(v2)) argc = 1;
     if (argc == 2) {
 	fptr->encs.enc2 = rb_to_encoding(v1);
 	fptr->encs.enc = rb_to_encoding(v2);
-	fptr->encs.opts.flags = 0; /* xxx */
+        rb_econv_opts(opt, &fptr->encs.opts);
         clear_codeconv(fptr);
     }
     else if (argc == 1) {
 	if (NIL_P(v1)) {
 	    fptr->encs.enc = NULL;
 	    fptr->encs.enc2 = NULL;
-            fptr->encs.opts.flags = 0;
+            rb_econv_opts(Qnil, &fptr->encs.opts);
             clear_codeconv(fptr);
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(v1);
 	    if (!NIL_P(tmp)) {
 		mode_enc(fptr, StringValueCStr(tmp));
+                rb_econv_opts(opt, &fptr->encs.opts);
 	    }
 	    else {
 		fptr->encs.enc = rb_to_encoding(v1);
 		fptr->encs.enc2 = NULL;
-                fptr->encs.opts.flags = 0;
+                rb_econv_opts(Qnil, &fptr->encs.opts);
                 clear_codeconv(fptr);
 	    }
 	}
@@ -6716,8 +6717,10 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 #else
     int pipes[2], state;
     VALUE r, w, args[3], v1, v2;
+    VALUE opt;
     rb_io_t *fptr;
 
+    opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "02", &v1, &v2);
     if (rb_pipe(pipes) == -1)
         rb_sys_fail(0);
@@ -6732,7 +6735,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 	rb_jump_tag(state);
     }
     GetOpenFile(r, fptr);
-    io_encoding_set(fptr, argc, v1, v2);
+    io_encoding_set(fptr, argc, v1, v2, opt);
     args[1] = INT2NUM(pipes[1]);
     args[2] = INT2FIX(O_WRONLY);
     w = rb_protect(io_new_instance, (VALUE)args, &state);
@@ -7531,11 +7534,12 @@ static VALUE
 rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    VALUE v1, v2;
+    VALUE v1, v2, opt;
 
+    opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &v1, &v2);
     GetOpenFile(io, fptr);
-    io_encoding_set(fptr, argc, v1, v2);
+    io_encoding_set(fptr, argc, v1, v2, opt);
     return io;
 }
 
@@ -7569,7 +7573,7 @@ argf_set_encoding(int argc, VALUE *argv, VALUE argf)
     GetOpenFile(current_file, fptr);
     argf_enc = fptr->encs.enc;
     argf_enc2 = fptr->encs.enc2;
-    argf_ecopts.flags = 0; /* xxx */
+    argf_ecopts = fptr->encs.opts;
     return argf;
 }
 

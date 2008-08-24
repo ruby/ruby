@@ -219,6 +219,26 @@ EOT
     }
   end
 
+  def test_s_pipe_invalid
+    r, w = IO.pipe("utf-8", "euc-jp", :invalid=>:replace)
+    w << "\x80"
+    w.close
+    assert_equal("?", r.read)
+  ensure
+    r.close if r && !r.closed?
+    w.close if w && !w.closed?
+  end
+
+  def test_s_pipe_undef
+    r, w = IO.pipe("utf-8:euc-jp", :undef=>:replace)
+    w << "\ufffd"
+    w.close
+    assert_equal("?", r.read)
+  ensure
+    r.close if r && !r.closed?
+    w.close if w && !w.closed?
+  end
+
   def test_stdin
     assert_equal(Encoding.default_external, STDIN.external_encoding)
     assert_equal(nil, STDIN.internal_encoding)
@@ -713,6 +733,24 @@ EOT
       assert_equal("\xa4\xa2".force_encoding("euc-jp"), r.getc)
       r.set_encoding(Encoding::Shift_JIS)
       assert_equal("\x82\xa0".force_encoding(Encoding::Shift_JIS), r.getc)
+    }
+  end
+
+  def test_set_encoding_invalid
+    with_pipe {|r, w|
+      w << "\x80"
+      w.close
+      r.set_encoding("utf-8:euc-jp", :invalid=>:replace)
+      assert_equal("?", r.read)
+    }
+  end
+
+  def test_set_encoding_undef
+    with_pipe {|r, w|
+      w << "\ufffd"
+      w.close
+      r.set_encoding("utf-8", "euc-jp", :undef=>:replace)
+      assert_equal("?", r.read)
     }
   end
 

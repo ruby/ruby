@@ -1,3 +1,16 @@
+Sun Aug 24 18:37:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_s_pipe): accept optional hash.
+	  (rb_io_set_encoding): ditto.
+	  (rb_io_extract_modeenc): use rb_econv_opts to initialize
+	  ecopts.
+	  (rb_file_open_generic): ditto.
+	  (rb_file_open_internal): ditto.
+	  (io_encoding_set): new argument: opt.
+	  (argf_set_encoding): copy fptr->encs.opts to argf_ecopts.
+
+	* transcode.c (rb_econv_opts): accept Qnil for initialization.
+
 Sun Aug 24 18:10:08 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_enc_t): add opts field.

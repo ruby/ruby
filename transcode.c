@@ -1709,7 +1709,10 @@ econv_opts(VALUE opt)
 void
 rb_econv_opts(VALUE hash, rb_econv_option_t *opts)
 {
-    opts->flags = econv_opts(hash);
+    if (NIL_P(hash))
+        opts->flags = 0;
+    else
+        opts->flags = econv_opts(hash);
 }
 
 static int
