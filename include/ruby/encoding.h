@@ -256,6 +256,8 @@ rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     int flags);
 void rb_econv_close(rb_econv_t *ec);
 
+VALUE rb_econv_open_exc(const char *senc, const char *denc, int flags);
+
 /* result: 0:success -1:failure */
 int rb_econv_insert_output(rb_econv_t *ec,
     const unsigned char *str, size_t len, const char *str_encoding);

@@ -37,7 +37,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     name1 = "encoding-which-is-not-exist-1"
     name2 = "encoding-which-is-not-exist-2"
 
-    assert_raise(ArgumentError) {
+    assert_raise(Encoding::NoConverter) {
       Encoding::Converter.new(name1, name2)
     }
 

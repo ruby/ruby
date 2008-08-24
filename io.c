@@ -705,6 +705,8 @@ make_writeconv(rb_io_t *fptr)
 
         if (!fptr->enc) {
             fptr->writeconv = rb_econv_open("", "", ecflags);
+            if (!fptr->writeconv)
+                rb_exc_raise(rb_econv_open_exc("", "", ecflags));
             fptr->writeconv_stateless = Qnil;
             return;
         }
@@ -723,7 +725,7 @@ make_writeconv(rb_io_t *fptr)
         if (senc) {
             fptr->writeconv = rb_econv_open(senc, denc, ecflags);
             if (!fptr->writeconv)
-                rb_raise(rb_eIOError, "code converter open failed (%s to %s)", senc, denc);
+                rb_exc_raise(rb_econv_open_exc(senc, denc, ecflags));
         }
         else {
             fptr->writeconv = NULL;
@@ -1447,7 +1449,7 @@ make_readconv(rb_io_t *fptr)
         }
         fptr->readconv = rb_econv_open(sname, dname, ecflags);
         if (!fptr->readconv)
-            rb_raise(rb_eIOError, "code converter open failed (%s to %s)", sname, dname);
+            rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
         fptr->crbuf_off = 0;
         fptr->crbuf_len = 0;
         fptr->crbuf_capa = 1024;

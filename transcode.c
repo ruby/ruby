@@ -17,6 +17,7 @@
 
 VALUE rb_eConversionUndefined;
 VALUE rb_eInvalidByteSequence;
+VALUE rb_eNoConverter;
 
 VALUE rb_cEncodingConverter;
 
@@ -1388,6 +1389,47 @@ rb_econv_binmode(rb_econv_t *ec)
     }
 }
 
+VALUE
+rb_econv_open_exc(const char *senc, const char *denc, int flags)
+{
+    VALUE mesg, exc;
+    int noenc = 0;
+    mesg = rb_str_new_cstr("code converter open failed (");
+    if (*senc == '\0' || *denc == '\0') {
+        if (*senc != '\0')
+            rb_str_cat2(mesg, senc);
+        else if (*denc != '\0')
+            rb_str_cat2(mesg, denc);
+        else
+            noenc = 1;
+    }
+    else {
+        rb_str_catf(mesg, "%s to %s", senc, denc);
+    }
+    if (flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
+                 ECONV_CRLF_NEWLINE_ENCODER|
+                 ECONV_CR_NEWLINE_ENCODER)) {
+        char *pre = "";
+        if (!noenc)
+            rb_str_cat2(mesg, " with ");
+        if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER)  {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "Universal-newline");
+        }
+        if (flags & ECONV_CRLF_NEWLINE_ENCODER) {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "CRLF-newline");
+        }
+        if (flags & ECONV_CR_NEWLINE_ENCODER) {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "CR-newline");
+        }
+    }
+    rb_str_cat2(mesg, ")");
+    exc = rb_exc_new3(rb_eNoConverter, mesg);
+    return exc;
+}
+
 static VALUE
 make_econv_exception(rb_econv_t *ec)
 {
@@ -1491,10 +1533,12 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     unsigned char *out_start = *out_pos;
     int max_output;
     VALUE exc;
+    int ecflags;
 
-    ec = rb_econv_open(from_encoding, to_encoding, opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK));
+    ecflags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
+    ec = rb_econv_open(from_encoding, to_encoding, ecflags);
     if (!ec)
-        rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1539,10 +1583,12 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     const unsigned char *ptr;
     int max_output;
     VALUE exc;
+    int ecflags;
 
-    ec = rb_econv_open(from_encoding, to_encoding, opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK));
+    ecflags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
+    ec = rb_econv_open(from_encoding, to_encoding, ecflags);
     if (!ec)
-        rb_raise(rb_eArgError, "transcoding not supported (from %s to %s)", from_encoding, to_encoding);
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1883,7 +1929,7 @@ econv_init(int argc, VALUE *argv, VALUE self)
 
     ec = rb_econv_open(sname, dname, flags);
     if (!ec) {
-        rb_raise(rb_eArgError, "encoding convewrter not supported (from %s to %s)", sname, dname);
+        rb_exc_raise(rb_econv_open_exc(sname, dname, flags));
     }
 
     if (*sname && *dname) { /* check "" to "universal_newline" */
@@ -2242,9 +2288,9 @@ econv_primitive_insert_output(VALUE self, VALUE string)
     string = rb_str_transcode(string, rb_enc_from_encoding(rb_enc_find(insert_enc)));
 
     ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(string), RSTRING_LEN(string), insert_enc);
-
     if (ret == -1)
         return Qfalse;
+
     return Qtrue;
 }
 
@@ -2311,6 +2357,7 @@ Init_transcode(void)
 {
     rb_eConversionUndefined = rb_define_class_under(rb_cEncoding, "ConversionUndefined", rb_eStandardError);
     rb_eInvalidByteSequence = rb_define_class_under(rb_cEncoding, "InvalidByteSequence", rb_eStandardError);
+    rb_eNoConverter = rb_define_class_under(rb_cEncoding, "NoConverter", rb_eStandardError);
 
     transcoder_table = st_init_strcasetable();
 

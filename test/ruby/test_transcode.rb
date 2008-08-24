@@ -21,10 +21,10 @@ class TestTranscode < Test::Unit::TestCase
   def test_errors
     assert_raise(ArgumentError) { 'abc'.encode }
     assert_raise(ArgumentError) { 'abc'.encode! }
-    assert_raise(ArgumentError) { 'abc'.encode('foo', 'bar') }
-    assert_raise(ArgumentError) { 'abc'.encode!('foo', 'bar') }
-    assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode('foo') }
-    assert_raise(ArgumentError) { 'abc'.force_encoding('utf-8').encode!('foo') }
+    assert_raise(Encoding::NoConverter) { 'abc'.encode('foo', 'bar') }
+    assert_raise(Encoding::NoConverter) { 'abc'.encode!('foo', 'bar') }
+    assert_raise(Encoding::NoConverter) { 'abc'.force_encoding('utf-8').encode('foo') }
+    assert_raise(Encoding::NoConverter) { 'abc'.force_encoding('utf-8').encode!('foo') }
     assert_raise(Encoding::ConversionUndefined) { "\x80".encode('utf-8','ASCII-8BIT') }
     assert_raise(Encoding::InvalidByteSequence) { "\x80".encode('utf-8','US-ASCII') }
     assert_raise(Encoding::ConversionUndefined) { "\xA5".encode('utf-8','iso-8859-3') }

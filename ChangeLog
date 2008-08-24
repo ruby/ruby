@@ -1,3 +1,14 @@
+Sun Aug 24 11:40:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_open_exc): declared.
+
+	* transcode.c (rb_eNoConverter): new exception.
+	  (rb_econv_open_exc): new function.
+	  (transcode_loop): use rb_econv_open_exc.
+
+	* io.c (make_writeconv): use rb_econv_open_exc.
+	  (make_readconv): ditto.
+
 Sun Aug 24 11:26:54 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::unescapeHTML): consider ISO-8859-1.
