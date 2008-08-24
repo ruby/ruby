@@ -4482,8 +4482,8 @@ pop_last_hash(int *argc_p, VALUE **argv_p)
 
 /*
  *  call-seq:
- *     IO.popen(cmd, mode="r")               => io
- *     IO.popen(cmd, mode="r") {|io| block } => obj
+ *     IO.popen(cmd, mode="r" [, opt])               => io
+ *     IO.popen(cmd, mode="r" [, opt]) {|io| block } => obj
  *
  *  Runs the specified command as a subprocess; the subprocess's
  *  standard input and output will be connected to the returned
@@ -4636,8 +4636,8 @@ rb_open_file(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.open(fd, mode_string="r" )               => io
- *     IO.open(fd, mode_string="r" ) {|io| block } => obj
+ *     IO.open(fd, mode_string="r" [, opt] )               => io
+ *     IO.open(fd, mode_string="r" [, opt] ) {|io| block } => obj
  *
  *  With no associated block, <code>open</code> is a synonym for
  *  <code>IO::new</code>. If the optional code block is given, it will
@@ -4717,8 +4717,8 @@ check_pipe_command(VALUE filename_or_command)
 
 /*
  *  call-seq:
- *     open(path [, mode_enc [, perm]] )                => io or nil
- *     open(path [, mode_enc [, perm]] ) {|io| block }  => obj
+ *     open(path [, mode_enc [, perm]] [, opt] )                => io or nil
+ *     open(path [, mode_enc [, perm]] [, opt] ) {|io| block }  => obj
  *
  *  Creates an <code>IO</code> object connected to the given stream,
  *  file, or subprocess.
@@ -5520,7 +5520,7 @@ rb_io_stdio_file(rb_io_t *fptr)
 
 /*
  *  call-seq:
- *     IO.new(fd, mode)   => io
+ *     IO.new(fd [, mode] [, opt])   => io
  *
  *  Returns a new <code>IO</code> object (a stream) for the given
  *  <code>IO</code> object or integer file descriptor and mode
@@ -5603,8 +5603,8 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     File.new(filename, mode="r")            => file
- *     File.new(filename [, mode [, perm]])    => file
+ *     File.new(filename, mode="r" [, opt])            => file
+ *     File.new(filename [, mode [, perm]] [, opt])    => file
  *
 
  *  Opens the file named by _filename_ according to
@@ -5643,7 +5643,7 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.new(fd, mode_string)   => io
+ *     IO.new(fd, mode_string [, opt])   => io
  *
  *  Returns a new <code>IO</code> object (a stream) for the given
  *  integer file descriptor and mode string. See also
@@ -5674,7 +5674,7 @@ rb_io_s_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     IO.for_fd(fd, mode)    => io
+ *     IO.for_fd(fd, mode [, opt])    => io
  *
  *  Synonym for <code>IO::new</code>.
  *
@@ -6664,10 +6664,10 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2, VALUE opt)
 
 /*
  *  call-seq:
- *     IO.pipe                    -> [read_io, write_io]
- *     IO.pipe(ext_enc)           -> [read_io, write_io]
- *     IO.pipe("ext_enc:int_enc") -> [read_io, write_io]
- *     IO.pipe(ext_enc, int_enc)  -> [read_io, write_io]
+ *     IO.pipe                            -> [read_io, write_io]
+ *     IO.pipe(ext_enc)                   -> [read_io, write_io]
+ *     IO.pipe("ext_enc:int_enc" [, opt]) -> [read_io, write_io]
+ *     IO.pipe(ext_enc, int_enc [, opt])  -> [read_io, write_io]
  *
  *  Creates a pair of pipe endpoints (connected to each other) and
  *  returns them as a two-element array of <code>IO</code> objects:
@@ -6683,6 +6683,8 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2, VALUE opt)
  *  encoding objects or encoding names,
  *  and the first one is the external encoding,
  *  and the second one is the internal encoding.
+ *  If the external encoding and the internal encoding is specified,
+ *  optional hash argument specify the conversion option.
  *
  *  In the example below, the two processes close the ends of the pipe
  *  that they are not using. This is not just a cosmetic nicety. The
@@ -6814,9 +6816,9 @@ io_s_foreach(struct foreach_arg *arg)
 
 /*
  *  call-seq:
- *     IO.foreach(name, sep=$/) {|line| block }     => nil
- *     IO.foreach(name, limit) {|line| block }      => nil
- *     IO.foreach(name, sep, limit) {|line| block } => nil
+ *     IO.foreach(name, sep=$/ [, open_args]) {|line| block }     => nil
+ *     IO.foreach(name, limit [, open_args]) {|line| block }      => nil
+ *     IO.foreach(name, sep, limit [, open_args]) {|line| block } => nil
  *
  *  Executes the block for every line in the named I/O port, where lines
  *  are separated by <em>sep</em>.
@@ -6855,9 +6857,9 @@ io_s_readlines(struct foreach_arg *arg)
 
 /*
  *  call-seq:
- *     IO.readlines(name, sep=$/)     => array
- *     IO.readlines(name, limit)      => array
- *     IO.readlines(name, sep, limit) => array
+ *     IO.readlines(name, sep=$/ [, open_args])     => array
+ *     IO.readlines(name, limit [, open_args])      => array
+ *     IO.readlines(name, sep, limit [, open_args]) => array
  *
  *  Reads the entire file specified by <i>name</i> as individual
  *  lines, and returns those lines in an array. Lines are separated by
@@ -6891,7 +6893,7 @@ io_s_read(struct foreach_arg *arg)
 /*
  *  call-seq:
  *     IO.read(name, [length [, offset]] )   => string
- *     IO.read(name, [length [, offset]], opt)   => string
+ *     IO.read(name, [length [, offset]], open_args)   => string
  *
  *  Opens the file, optionally seeks to the given offset, then returns
  *  <i>length</i> bytes (defaulting to the rest of the file).
@@ -7526,9 +7528,11 @@ rb_io_internal_encoding(VALUE io)
 
 /*
  *  call-seq:
- *     io.set_encoding(ext_enc)           => io
- *     io.set_encoding("ext_enc:int_enc") => io
- *     io.set_encoding(ext_enc, int_enc)  => io
+ *     io.set_encoding(ext_enc)                => io
+ *     io.set_encoding("ext_enc:int_enc")      => io
+ *     io.set_encoding(ext_enc, int_enc)       => io
+ *     io.set_encoding("ext_enc:int_enc", opt) => io
+ *     io.set_encoding(ext_enc, int_enc, opt)  => io
  *
  *  If single argument is specified, read string from io is tagged
  *  with the encoding specified.  If encoding is a colon separated two
@@ -7537,6 +7541,8 @@ rb_io_internal_encoding(VALUE io)
  *  with B.  If two arguments are specified, those must be encoding
  *  objects or encoding names, and the first one is the external encoding, and the
  *  second one is the internal encoding.
+ *  If the external encoding and the internal encoding is specified,
+ *  optional hash argument specify the conversion option.
  */
 
 static VALUE
@@ -8076,6 +8082,9 @@ rb_get_argv(void)
  *    -----+--------------------------------------------------------
  *     "b" |  (DOS/Windows only) Binary file mode (may appear with
  *         |  any of the key letters listed above).
+ *    -----+--------------------------------------------------------
+ *     "t" |  Text file mode (may appear with
+ *         |  any of the key letters listed above except "b").
  *
  *
  *  The global constant ARGF (also accessible as $<) provides an
