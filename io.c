@@ -4860,19 +4860,22 @@ rb_f_open(int argc, VALUE *argv)
 }
 
 static VALUE
-rb_io_open(VALUE filename, VALUE mode, VALUE opt)
+rb_io_open(VALUE filename, VALUE mode, VALUE vperm, VALUE opt)
 {
     VALUE cmd;
     int modenum, flags;
     convconfig_t convconfig;
+    mode_t perm;
+
     rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
+    perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
 
     if (!NIL_P(cmd = check_pipe_command(filename))) {
 	return pipe_open_s(cmd, rb_io_modenum_mode(modenum), flags, &convconfig);
     }
     else {
         return rb_file_open_generic(io_alloc(rb_cFile), filename,
-                modenum, flags, &convconfig, 0666);
+                modenum, flags, &convconfig, perm);
     }
 }
 
@@ -6760,6 +6763,7 @@ static void
 open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 {
     VALUE opt, v;
+    VALUE mode, perm;
 
     FilePathValue(argv[0]);
     arg->io = 0;
@@ -6767,7 +6771,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
     arg->argv = argv + 1;
     if (argc == 1) {
       no_key:
-	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), Qnil);
+	arg->io = rb_io_open(argv[0], INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
 	return;
     }
     opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
@@ -6786,10 +6790,15 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;
     }
+    mode = Qnil;
+    perm = INT2NUM(O_RDONLY);
     v = rb_hash_aref(opt, sym_mode);
-    if (NIL_P(v))
-        v = INT2NUM(O_RDONLY);
-    arg->io = rb_io_open(argv[0], v, opt);
+    if (!NIL_P(v))
+        mode = v;
+    v = rb_hash_aref(opt, sym_perm);
+    if (!NIL_P(v))
+        perm = v;
+    arg->io = rb_io_open(argv[0], mode, perm, opt);
 }
 
 static VALUE

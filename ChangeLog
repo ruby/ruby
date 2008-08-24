@@ -1,3 +1,8 @@
+Sun Aug 24 19:17:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_open): add an argument: vperm.
+	  (open_key_args): call rb_io_open with perm.
+
 Sun Aug 24 19:11:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (sym_invalid): removed.
