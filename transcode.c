@@ -1687,7 +1687,10 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     VALUE opt;
     int options = 0;
 
-    opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+    if (0 < argc)
+        opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+    else
+        opt = Qnil;
     if (!NIL_P(opt)) {
 	VALUE v;
 

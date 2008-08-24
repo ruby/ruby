@@ -1,3 +1,7 @@
+Sun Aug 24 13:27:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (str_transcode): check last hash only if 0 < argc.
+
 Sun Aug 24 12:22:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_substr_append): renamed from
