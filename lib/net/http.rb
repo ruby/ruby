@@ -1526,7 +1526,7 @@ module Net   #:nodoc:
     private :encode_kvpair
 
     def urlencode(str)
-      str.gsub(/[^a-zA-Z0-9_\.\-]/n) { sprintf('%%%02x', $&[0]) }
+      str.dup.force_encoding('ASCII-8BIT').gsub(/[^a-zA-Z0-9_\.\-]/){'%%%02x' % $&.ord}
     end
     private :urlencode
 
