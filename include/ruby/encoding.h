@@ -251,6 +251,7 @@ typedef struct {
 
 typedef struct {
     int flags;
+    /* replacement character, etc. */
 } rb_econv_option_t;
 
 void rb_econv_opts(VALUE hash, rb_econv_option_t *opts);
