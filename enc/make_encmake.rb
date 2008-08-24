@@ -12,6 +12,7 @@ require 'erb'
 CONFIG["MAKEDIRS"] ||= '@$(MINIRUBY) -run -e mkdir -- -p'
 
 BUILTIN_ENCS = []
+BUILTIN_TRANSES = []
 ENC_PATTERNS = []
 NOENC_PATTERNS = []
 
@@ -19,6 +20,9 @@ until ARGV.empty?
   case ARGV[0]
   when /\A--builtin-encs=/
     BUILTIN_ENCS.concat $'.split.map {|e| File.basename(e, '.*') << '.c'}
+    ARGV.shift
+  when /\A--builtin-transes=/
+    BUILTIN_TRANSES.concat $'.split.map {|e| File.basename(e, '.*') }
     ARGV.shift
   when /\A--encs=/
     ENC_PATTERNS.concat $'.split

@@ -17,6 +17,8 @@ OBJEXT = @OBJEXT@
 BUILTIN_ENCS	= ascii.c us_ascii.c\
 		  unicode.c utf_8.c
 
+BUILTIN_TRANSES	= newline.trans
+
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@
 LIBRUBYARG_SHARED = @LIBRUBYARG_SHARED@

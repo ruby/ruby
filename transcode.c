@@ -2424,6 +2424,8 @@ ecerr_error_bytes(VALUE self)
     return rb_attr_get(self, rb_intern("error_bytes"));
 }
 
+extern void Init_newline(void);
+
 void
 Init_transcode(void)
 {
@@ -2470,4 +2472,6 @@ Init_transcode(void)
     rb_define_method(rb_eInvalidByteSequence, "source_encoding", ecerr_source_encoding, 0);
     rb_define_method(rb_eInvalidByteSequence, "destination_encoding", ecerr_destination_encoding, 0);
     rb_define_method(rb_eInvalidByteSequence, "error_bytes", ecerr_error_bytes, 0);
+
+    Init_newline();
 }

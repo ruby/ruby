@@ -2088,6 +2088,18 @@ BUILTIN_ENCOBJS=
 for e in $BUILTIN_ENCS; do BUILTIN_ENCOBJS="$BUILTIN_ENCOBJS `basename $e .c`"'.$(OBJEXT)'; done
 AC_SUBST(BUILTIN_ENCOBJS)
 
+BUILTIN_TRANSES=["`sed -n -e '/^BUILTIN_TRANSES[ 	]*=/{' \
+	-e s/// -e :l -e '/\\\\$/N' -e 's/\\\\\\n/ /' -e 't l' -e p \
+	-e '}' "${srcdir}/enc/Makefile.in"`"]
+BUILTIN_TRANSSRCS=
+BUILTIN_TRANSOBJS=
+for e in $BUILTIN_TRANSES; do
+  BUILTIN_TRANSSRCS="$BUILTIN_TRANSSRCS `basename $e .trans`"'.c';
+  BUILTIN_TRANSOBJS="$BUILTIN_TRANSOBJS `basename $e .trans`"'.$(OBJEXT)';
+done
+AC_SUBST(BUILTIN_TRANSSRCS)
+AC_SUBST(BUILTIN_TRANSOBJS)
+
 AC_CONFIG_FILES($FIRSTMAKEFILE)
 AC_CONFIG_FILES(Makefile, [{
 	sed '/^MISSING/s/\$U\././g' Makefile

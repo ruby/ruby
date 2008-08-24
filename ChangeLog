@@ -1,3 +1,25 @@
+Mon Aug 25 00:52:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* configure.in (BUILTIN_TRANSSRCS): defined.
+	  (BUILTIN_TRANSOBJS): defined.
+
+	* enc/Makefile.in (BUILTIN_TRANSES): defined.
+
+	* enc/make_encmake.rb (BUILTIN_TRANSES): defined.
+
+	* enc/depend: don't generate rules for builtin transcoders.
+
+	* common.mk (COMMONOBJS): add BUILTIN_TRANSOBJS.
+	  (enc.mk): pass BUILTIN_TRANSOBJS.
+	  (newline.c): new rule.
+	  (newline.$(OBJEXT)): new ru.e
+	  (srcs): newline.c added.
+
+	* Makefile.in (BUILTIN_TRANSSRCS): defined.
+	  (BUILTIN_TRANSOBJS): defined.
+
+	* transcode.c (Init_transcode): call Init_newline.
+
 Mon Aug 25 00:11:02 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (declare_transcoder): arguments order changed.

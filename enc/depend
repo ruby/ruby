@@ -17,6 +17,8 @@
 %     end
 %   }
 % }
+% trans -= BUILTIN_TRANSES
+% atrans -= BUILTIN_TRANSES
 % trans.uniq!
 % atrans = atrans.sort_by(&alphanumeric_order)
 % trans = trans.sort_by(&alphanumeric_order)
