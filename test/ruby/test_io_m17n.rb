@@ -19,8 +19,8 @@ class TestIO_M17N < Test::Unit::TestCase
     }
   end
 
-  def with_pipe(enc=nil)
-    r, w = IO.pipe(enc)
+  def with_pipe(*args)
+    r, w = IO.pipe(*args)
     begin
       yield r, w
     ensure
@@ -237,6 +237,33 @@ EOT
   ensure
     r.close if r && !r.closed?
     w.close if w && !w.closed?
+  end
+
+  def test_dup
+    with_pipe("utf-8:euc-jp") {|r, w|
+      w << "\u3042"
+      w.close
+      r2 = r.dup
+      begin
+        assert_equal("\xA4\xA2".force_encoding("euc-jp"), r2.read)
+      ensure
+        r2.close
+      end
+
+    }
+  end
+
+  def test_dup_undef
+    with_pipe("utf-8:euc-jp", :undef=>:replace) {|r, w|
+      w << "\uFFFD"
+      w.close
+      r2 = r.dup
+      begin
+        assert_equal("?", r2.read)
+      ensure
+        r2.close
+      end
+    }
   end
 
   def test_stdin

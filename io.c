@@ -5075,6 +5075,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
 
     /* copy rb_io_t structure */
     fptr->mode = orig->mode & ~FMODE_PREP;
+    fptr->encs = orig->encs;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;

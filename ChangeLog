@@ -1,3 +1,7 @@
+Sun Aug 24 19:40:13 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_init_copy): copy encs.
+
 Sun Aug 24 19:17:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_open): add an argument: vperm.
