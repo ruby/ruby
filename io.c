@@ -126,7 +126,6 @@ static VALUE argf;
 static ID id_write, id_read, id_getc, id_flush, id_readpartial;
 static VALUE sym_mode, sym_perm, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode;
-static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 
 struct timeval rb_time_interval(VALUE);
 
@@ -8374,8 +8373,4 @@ Init_IO(void)
     sym_open_args = ID2SYM(rb_intern("open_args"));
     sym_textmode = ID2SYM(rb_intern("textmode"));
     sym_binmode = ID2SYM(rb_intern("binmode"));
-    sym_invalid = ID2SYM(rb_intern("invalid"));
-    sym_undef = ID2SYM(rb_intern("undef"));
-    sym_ignore = ID2SYM(rb_intern("ignore"));
-    sym_replace = ID2SYM(rb_intern("replace"));
 }
