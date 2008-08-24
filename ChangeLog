@@ -1,3 +1,8 @@
+Sun Aug 24 15:43:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_substr_append): associate dst with destination
+	  encoding when dst is created.
+
 Sun Aug 24 15:21:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_str_transcode): add ecflags argument.

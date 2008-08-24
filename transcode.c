@@ -1334,8 +1334,11 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
     rb_econv_result_t res;
     int max_output;
 
-    if (NIL_P(dst))
+    if (NIL_P(dst)) {
         dst = rb_str_buf_new(len);
+        if (ec->destination_encoding)
+            rb_enc_associate(dst, ec->destination_encoding);
+    }
 
     if (ec->last_tc)
         max_output = ec->last_tc->transcoder->max_output;
