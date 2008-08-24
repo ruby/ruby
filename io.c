@@ -745,7 +745,7 @@ io_fwrite(VALUE str, rb_io_t *fptr)
             if (!NIL_P(fptr->writeconv_stateless)) {
                 str = rb_str_transcode(str, fptr->writeconv_stateless);
             }
-            str = rb_econv_string(fptr->writeconv, str, 0, RSTRING_LEN(str), Qnil, ECONV_PARTIAL_INPUT);
+            str = rb_econv_str_convert(fptr->writeconv, str, ECONV_PARTIAL_INPUT);
         }
         else {
             if (fptr->enc2)

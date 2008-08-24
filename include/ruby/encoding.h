@@ -274,7 +274,10 @@ void rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n);
 /* returns corresponding stateless encoding, or NULL if not stateful. */
 const char *rb_econv_stateless_encoding(const char *stateful_enc);
 
-VALUE rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags);
+VALUE rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags);
+VALUE rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags);
+VALUE rb_econv_str_append(rb_econv_t *ec, VALUE src, VALUE dst, int flags);
+VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, VALUE dst, int flags);
 
 void rb_econv_binmode(rb_econv_t *ec);
 

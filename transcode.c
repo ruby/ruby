@@ -1327,16 +1327,15 @@ rb_econv_stateless_encoding(const char *stateful_enc)
 }
 
 VALUE
-rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags)
+rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags)
 {
     unsigned const char *ss, *sp, *se;
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
     int max_output;
 
-    if (NIL_P(dst)) {
+    if (NIL_P(dst))
         dst = rb_str_buf_new(len);
-    }
 
     if (ec->last_tc)
         max_output = ec->last_tc->transcoder->max_output;
@@ -1365,6 +1364,24 @@ rb_econv_string(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int fl
     }
 
     return dst;
+}
+
+VALUE
+rb_econv_str_append(rb_econv_t *ec, VALUE src, VALUE dst, int flags)
+{
+    return rb_econv_substr_append(ec, src, 0, RSTRING_LEN(src), dst, flags);
+}
+
+VALUE
+rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags)
+{
+    return rb_econv_substr_append(ec, src, byteoff, bytesize, Qnil, flags);
+}
+
+VALUE
+rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags)
+{
+    return rb_econv_substr_append(ec, src, 0, RSTRING_LEN(src), Qnil, flags);
 }
 
 void
