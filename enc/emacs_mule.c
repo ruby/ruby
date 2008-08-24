@@ -284,7 +284,7 @@ mbc_case_fold(OnigCaseFoldType flag,
   else {
     int i;
 
-    len = enclen(enc, p, end);
+    len = mbc_enc_len(p, end, enc);
     for (i = 0; i < len; i++) {
       *lower++ = *p++;
     }
@@ -296,118 +296,22 @@ mbc_case_fold(OnigCaseFoldType flag,
 static UChar*
 left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
 {
-  /* In this encoding
-     mb-trail bytes doesn't mix with single bytes.
-  */
   const UChar *p;
-  int len;
 
   if (s <= start) return (UChar* )s;
   p = s;
 
   while (!emacsmule_islead(*p) && p > start) p--;
-  len = enclen(enc, p, s);
-  if (p + len > s) return (UChar* )p;
-  p += len;
-  return (UChar* )(p + ((s - p) & ~1));
-}
-
-static int
-is_allowed_reverse_match(const UChar* s, const UChar* end, OnigEncoding enc ARG_UNUSED)
-{
-  return TRUE;
-}
-
-
-static int PropertyInited = 0;
-static const OnigCodePoint** PropertyList;
-static int PropertyListNum;
-static int PropertyListSize;
-static hash_table_type* PropertyNameTable;
-
-static const OnigCodePoint CR_Hiragana[] = {
-  1,
-  0xa4a1, 0xa4f3
-}; /* CR_Hiragana */
-
-static const OnigCodePoint CR_Katakana[] = {
-  3,
-  0xa5a1, 0xa5f6,
-  0xaaa6, 0xaaaf,
-  0xaab1, 0xaadd
-}; /* CR_Katakana */
-
-static int
-init_property_list(void)
-{
-  int r;
-
-  PROPERTY_LIST_ADD_PROP("Hiragana", CR_Hiragana);
-  PROPERTY_LIST_ADD_PROP("Katakana", CR_Katakana);
-  PropertyInited = 1;
-
- end:
-  return r;
-}
-
-static int
-property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
-{
-  st_data_t ctype;
-
-  PROPERTY_LIST_INIT_CHECK;
-
-  if (onig_st_lookup_strend(PropertyNameTable, p, end, &ctype) == 0) {
-    return onigenc_minimum_property_name_to_ctype(enc, p, end);
-  }
-
-  return ctype;
+  return (UChar* )p;
 }
 
 static int
 is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
 {
-  if (ctype <= ONIGENC_MAX_STD_CTYPE) {
-    if (code < 128)
-      return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
-    else {
-      if (CTYPE_IS_WORD_GRAPH_PRINT(ctype)) {
-	return (code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
-      }
-    }
-  }
-  else {
-    PROPERTY_LIST_INIT_CHECK;
-
-    ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
-    if (ctype >= (unsigned int )PropertyListNum)
-      return ONIGERR_TYPE_BUG;
-
-    return onig_is_in_code_range((UChar* )PropertyList[ctype], code);
-  }
-
-  return FALSE;
-}
-
-static int
-get_ctype_code_range(OnigCtype ctype, OnigCodePoint* sb_out,
-		     const OnigCodePoint* ranges[], OnigEncoding enc ARG_UNUSED)
-{
-  if (ctype <= ONIGENC_MAX_STD_CTYPE) {
-    return ONIG_NO_SUPPORT_CONFIG;
-  }
-  else {
-    *sb_out = 0x80;
-
-    PROPERTY_LIST_INIT_CHECK;
-
-    ctype -= (ONIGENC_MAX_STD_CTYPE + 1);
-    if (ctype >= (OnigCtype )PropertyListNum)
-      return ONIGERR_TYPE_BUG;
-
-    *ranges = PropertyList[ctype];
-    return 0;
-  }
+  if (code < 128)
+    return ONIGENC_IS_ASCII_CODE_CTYPE(code, ctype);
+  else
+    return (code_to_mbclen(code, enc) > 1 ? TRUE : FALSE);
 }
 
 /*
@@ -426,11 +330,11 @@ OnigEncodingDefine(emacs_mule, Emacs_Mule) = {
   mbc_case_fold,
   onigenc_ascii_apply_all_case_fold,
   onigenc_ascii_get_case_fold_codes_by_str,
-  property_name_to_ctype,
+  onigenc_minimum_property_name_to_ctype,
   is_code_ctype,
-  get_ctype_code_range,
+  onigenc_not_support_get_ctype_code_range,
   left_adjust_char_head,
-  is_allowed_reverse_match,
+  onigenc_always_true_is_allowed_reverse_match,
   0
 };
 

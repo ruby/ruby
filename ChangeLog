@@ -1,3 +1,7 @@
+Mon Aug 25 07:10:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/emacs_mule.c: fix ctype.
+
 Mon Aug 25 00:52:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* configure.in (BUILTIN_TRANSSRCS): defined.
