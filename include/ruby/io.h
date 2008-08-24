@@ -55,8 +55,10 @@ typedef struct rb_io_t {
      * e1   NULL force_encoding(e1)               convert str.encoding to e1
      * e1   e2   convert from e2 to e1            convert str.encoding to e2
      */
-    rb_encoding *enc;
-    rb_encoding *enc2;
+    struct rb_io_enc_t {
+        rb_encoding *enc;
+        rb_encoding *enc2;
+    } encs;
 
     rb_econv_t *readconv;
     char *crbuf;                /* crbuf_off + crbuf_len <= crbuf_capa */
@@ -129,8 +131,8 @@ typedef struct rb_io_t {
     fp->writeconv_stateless = Qnil;\
     fp->writeconv_initialized = 0;\
     fp->tied_io_for_writing = 0;\
-    fp->enc = 0;\
-    fp->enc2 = 0;\
+    fp->encs.enc = NULL;\
+    fp->encs.enc2 = NULL;\
 } while (0)
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);

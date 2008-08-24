@@ -1,3 +1,11 @@
+Sun Aug 24 16:47:32 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): make enc and enc2 as struct
+	  rb_io_enc_t;
+
+	* io.c: follow the structure change.
+	  (convconfig_t): defined by rb_io_enc_t.
+
 Sun Aug 24 16:19:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_opts): declared.

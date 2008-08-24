@@ -385,8 +385,8 @@ rb_io_check_readable(rb_io_t *fptr)
 static rb_encoding*
 io_read_encoding(rb_io_t *fptr)
 {
-    if (fptr->enc) {
-	return fptr->enc;
+    if (fptr->encs.enc) {
+	return fptr->encs.enc;
     }
     return rb_default_external_encoding();
 }
@@ -394,8 +394,8 @@ io_read_encoding(rb_io_t *fptr)
 static rb_encoding*
 io_input_encoding(rb_io_t *fptr)
 {
-    if (fptr->enc2) {
-	return fptr->enc2;
+    if (fptr->encs.enc2) {
+	return fptr->encs.enc2;
     }
     return io_read_encoding(fptr);
 }
@@ -685,8 +685,8 @@ rb_io_wait_writable(int f)
 # define NEED_NEWLINE_DECODER(fptr) (fptr->mode & FMODE_TEXTMODE)
 # define NEED_NEWLINE_ENCODER(fptr) 0
 #endif
-#define NEED_READCONV(fptr) (fptr->enc2 != NULL || NEED_NEWLINE_DECODER(fptr))
-#define NEED_WRITECONV(fptr) (fptr->enc != NULL || NEED_NEWLINE_ENCODER(fptr))
+#define NEED_READCONV(fptr) (fptr->encs.enc2 != NULL || NEED_NEWLINE_DECODER(fptr))
+#define NEED_WRITECONV(fptr) (fptr->encs.enc != NULL || NEED_NEWLINE_ENCODER(fptr))
 
 static void
 make_writeconv(rb_io_t *fptr)
@@ -709,7 +709,7 @@ make_writeconv(rb_io_t *fptr)
         if (NEED_NEWLINE_ENCODER(fptr))
             ecopts.flags |= TEXTMODE_NEWLINE_ENCODER;
 
-        if (!fptr->enc) {
+        if (!fptr->encs.enc) {
             fptr->writeconv = rb_econv_open("", "", &ecopts);
             if (!fptr->writeconv)
                 rb_exc_raise(rb_econv_open_exc("", "", &ecopts));
@@ -718,7 +718,7 @@ make_writeconv(rb_io_t *fptr)
         }
 #endif
 
-        enc = fptr->enc2 ? fptr->enc2 : fptr->enc;
+        enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
         senc = rb_econv_stateless_encoding(enc->name);
         if (senc) {
             denc = enc->name;
@@ -754,10 +754,10 @@ io_fwrite(VALUE str, rb_io_t *fptr)
                 common_encoding = fptr->writeconv_stateless;
         }
         else {
-            if (fptr->enc2)
-                common_encoding = rb_enc_from_encoding(fptr->enc2);
+            if (fptr->encs.enc2)
+                common_encoding = rb_enc_from_encoding(fptr->encs.enc2);
             else
-                common_encoding = rb_enc_from_encoding(fptr->enc);
+                common_encoding = rb_enc_from_encoding(fptr->encs.enc);
         }
 
         if (!NIL_P(common_encoding)) {
@@ -1460,9 +1460,9 @@ make_readconv(rb_io_t *fptr)
             ecopts.flags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
         if (fptr->mode & FMODE_UNDEF_MASK)
             ecopts.flags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
-        if (fptr->enc2) {
-            sname = fptr->enc2->name;
-            dname = fptr->enc->name;
+        if (fptr->encs.enc2) {
+            sname = fptr->encs.enc2->name;
+            dname = fptr->encs.enc->name;
         }
         else {
             sname = dname = "";
@@ -1555,7 +1555,7 @@ io_shift_crbuf(rb_io_t *fptr, int len, VALUE *strp)
     fptr->crbuf_off += len;
     fptr->crbuf_len -= len;
     OBJ_TAINT(str);
-    rb_enc_associate(str, fptr->enc);
+    rb_enc_associate(str, fptr->encs.enc);
     /* xxx: set coderange */
     if (fptr->crbuf_len == 0)
         fptr->crbuf_off = 0;
@@ -2162,8 +2162,8 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	}
 	newline = (unsigned char)rsptr[rslen - 1];
 
-        if (fptr->enc2)
-            enc = fptr->enc;
+        if (fptr->encs.enc2)
+            enc = fptr->encs.enc;
         else
             enc = io_input_encoding(fptr);
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
@@ -2470,10 +2470,10 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
 
         while (1) {
             if (fptr->crbuf_len) {
-                if (fptr->enc)
+                if (fptr->encs.enc)
                     r = rb_enc_precise_mbclen(fptr->crbuf+fptr->crbuf_off,
                                               fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
-                                              fptr->enc);
+                                              fptr->encs.enc);
                 else
                     r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
                 if (!MBCLEN_NEEDMORE_P(r))
@@ -2493,7 +2493,7 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
         if (MBCLEN_INVALID_P(r)) {
             r = rb_enc_mbclen(fptr->crbuf+fptr->crbuf_off,
                               fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
-                              fptr->enc);
+                              fptr->encs.enc);
             return io_shift_crbuf(fptr, r, &str);
         }
         return io_shift_crbuf(fptr, MBCLEN_CHARFOUND_LEN(r), &str);
@@ -3786,7 +3786,7 @@ mode_enc(rb_io_t *fptr, const char *estr)
 {
     clear_codeconv(fptr);
 
-    parse_mode_enc(estr, &fptr->enc, &fptr->enc2);
+    parse_mode_enc(estr, &fptr->encs.enc, &fptr->encs.enc2);
 }
 
 void
@@ -3849,10 +3849,7 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
     return extracted;
 }
 
-typedef struct convconfig_t {
-    rb_encoding *enc;
-    rb_encoding *enc2;
-} convconfig_t;
+typedef struct rb_io_enc_t convconfig_t;
 
 static void
 rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
@@ -4028,12 +4025,11 @@ rb_file_open_generic(VALUE io, VALUE filename, int modenum, int flags, convconfi
     MakeOpenFile(io, fptr);
     fptr->mode = flags;
     if (convconfig) {
-        fptr->enc = convconfig->enc;
-        fptr->enc2 = convconfig->enc2;
+        fptr->encs = *convconfig;
     }
     else {
-        fptr->enc = NULL;
-        fptr->enc2 = NULL;
+        fptr->encs.enc = NULL;
+        fptr->encs.enc2 = NULL;
     }
     fptr->pathv = rb_str_new_frozen(filename);
     fptr->fd = rb_sysopen(RSTRING_PTR(fptr->pathv), modenum, perm);
@@ -4433,8 +4429,7 @@ pipe_open(struct rb_exec_arg *eargp, VALUE prog, const char *mode, int flags, co
     fptr->stdio_file = fp;
     fptr->mode = flags | FMODE_SYNC|FMODE_DUPLEX;
     if (convconfig) {
-        fptr->enc = convconfig->enc;
-        fptr->enc2 = convconfig->enc2;
+        fptr->encs = *convconfig;
     }
     fptr->pid = pid;
 
@@ -5581,8 +5576,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 	MakeOpenFile(io, fp);
         fp->fd = fd;
 	fp->mode = flags;
-        fp->enc = convconfig.enc;
-        fp->enc2 = convconfig.enc2;
+        fp->encs = convconfig;
         clear_codeconv(fp);
         io_check_tty(fp);
     }
@@ -5919,8 +5913,8 @@ argf_next_argv(VALUE argf)
 		rb_io_t *fptr;
 
 		GetOpenFile(current_file, fptr);
-		fptr->enc = argf_enc;
-		fptr->enc2 = argf_enc2;
+		fptr->encs.enc = argf_enc;
+		fptr->encs.enc2 = argf_enc2;
                 clear_codeconv(fptr);
 	    }
 	}
@@ -6647,14 +6641,14 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 {
     if (NIL_P(v2)) argc = 1;
     if (argc == 2) {
-	fptr->enc2 = rb_to_encoding(v1);
-	fptr->enc = rb_to_encoding(v2);
+	fptr->encs.enc2 = rb_to_encoding(v1);
+	fptr->encs.enc = rb_to_encoding(v2);
         clear_codeconv(fptr);
     }
     else if (argc == 1) {
 	if (NIL_P(v1)) {
-	    fptr->enc = 0;
-	    fptr->enc2 = 0;
+	    fptr->encs.enc = NULL;
+	    fptr->encs.enc2 = NULL;
             clear_codeconv(fptr);
 	}
 	else {
@@ -6663,8 +6657,8 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2)
 		mode_enc(fptr, StringValueCStr(tmp));
 	    }
 	    else {
-		fptr->enc = rb_to_encoding(v1);
-		fptr->enc2 = 0;
+		fptr->encs.enc = rb_to_encoding(v1);
+		fptr->encs.enc2 = NULL;
                 clear_codeconv(fptr);
 	    }
 	}
@@ -7496,12 +7490,12 @@ rb_io_external_encoding(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    if (fptr->enc2) {
-	return rb_enc_from_encoding(fptr->enc2);
+    if (fptr->encs.enc2) {
+	return rb_enc_from_encoding(fptr->encs.enc2);
     }
     if (fptr->mode & FMODE_WRITABLE) {
-	if (fptr->enc)
-	    return rb_enc_from_encoding(fptr->enc);
+	if (fptr->encs.enc)
+	    return rb_enc_from_encoding(fptr->encs.enc);
 	return Qnil;
     }
     return rb_enc_from_encoding(io_read_encoding(fptr));
@@ -7521,7 +7515,7 @@ rb_io_internal_encoding(VALUE io)
     rb_io_t *fptr;
 
     GetOpenFile(io, fptr);
-    if (!fptr->enc2) return Qnil;
+    if (!fptr->encs.enc2) return Qnil;
     return rb_enc_from_encoding(io_read_encoding(fptr));
 }
 
@@ -7580,8 +7574,8 @@ argf_set_encoding(int argc, VALUE *argv, VALUE argf)
     }
     rb_io_set_encoding(argc, argv, current_file);
     GetOpenFile(current_file, fptr);
-    argf_enc = fptr->enc;
-    argf_enc2 = fptr->enc2;
+    argf_enc = fptr->encs.enc;
+    argf_enc2 = fptr->encs.enc2;
     return argf;
 }
 
