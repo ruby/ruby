@@ -396,18 +396,20 @@ class CGI
       when 'gt'                  then '>'
       when 'lt'                  then '<'
       when /\A#0*(\d+)\z/
-	if enc == Encoding::UTF_8
-	  $1.to_i.chr(enc)
-	elsif $1.to_i < 128 && asciicompat
-	  $1.to_i.chr
+        n = $1.to_i
+	if enc == Encoding::UTF_8 or
+          enc == Encoding::ISO_8859_1 && n < 256 or
+          asciicompat && n < 128
+	  n.chr(enc)
 	else
 	  "&##{$1};"
 	end
       when /\A#x([0-9a-f]+)\z/i
-	if enc == Encoding::UTF_8
-	  $1.hex.chr(enc)
-	elsif $1.hex < 128 && asciicompat
-	  $1.hex.chr
+        n = $1.hex
+	if enc == Encoding::UTF_8 or
+          enc == Encoding::ISO_8859_1 && n < 256 or
+          asciicompat && n < 128
+	  n.chr(enc)
 	else
 	  "&#x#{$1};"
 	end
