@@ -761,12 +761,13 @@ io_fwrite(VALUE str, rb_io_t *fptr)
         }
 
         if (!NIL_P(common_encoding)) {
-            int ecflags = 0;
+            rb_econv_option_t ecopts;
+            ecopts.flags = 0;
             if (fptr->mode & FMODE_INVALID_MASK)
-                ecflags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
+                ecopts.flags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
             if (fptr->mode & FMODE_UNDEF_MASK)
-                ecflags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
-            str = rb_str_transcode(str, common_encoding, ecflags);
+                ecopts.flags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
+            str = rb_str_transcode(str, common_encoding, &ecopts);
         }
 
         if (fptr->writeconv) {

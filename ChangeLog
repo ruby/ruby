@@ -1,3 +1,16 @@
+Sun Aug 24 17:36:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_str_transcode): make 3rd argument
+	  rb_econv_option_t*.
+
+	* transcode.c (transcode_loop): take rb_econv_option_t* as a argument.
+	  (str_transcode0): ditto.
+	  (str_transcode): make rb_econv_option_t and call str_transcode0 with
+	  it.
+	  (rb_str_transcode): take rb_econv_option_t*.
+
+	* io.c (io_fwrite): follow the rb_str_transcode change.
+
 Sun Aug 24 16:47:32 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): make enc and enc2 as struct

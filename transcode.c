@@ -1547,7 +1547,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                unsigned char *(*resize_destination)(VALUE, int, int),
                const char *from_encoding,
                const char *to_encoding,
-	       const int opt)
+               rb_econv_option_t *ecopts)
 {
     rb_econv_t *ec;
     rb_transcoding *last_tc;
@@ -1555,18 +1555,16 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     unsigned char *out_start = *out_pos;
     int max_output;
     VALUE exc;
-    rb_econv_option_t ecopts;
 
-    ecopts.flags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
-    ec = rb_econv_open(from_encoding, to_encoding, &ecopts);
+    ec = rb_econv_open(from_encoding, to_encoding, ecopts);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, &ecopts));
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecopts));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
 
 resume:
-    ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, opt);
+    ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, 0);
 
     if (ret == econv_invalid_byte_sequence) {
         exc = make_econv_exception(ec);
@@ -1596,7 +1594,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                unsigned char *(*resize_destination)(VALUE, int, int),
                const char *from_encoding,
                const char *to_encoding,
-	       const int opt)
+               rb_econv_option_t *ecopts)
 {
     rb_econv_t *ec;
     rb_transcoding *last_tc;
@@ -1605,13 +1603,10 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     const unsigned char *ptr;
     int max_output;
     VALUE exc;
-    int ecflags;
-    rb_econv_option_t ecopts;
 
-    ecopts.flags = opt & (ECONV_INVALID_MASK|ECONV_UNDEF_MASK);
-    ec = rb_econv_open(from_encoding, to_encoding, &ecopts);
+    ec = rb_econv_open(from_encoding, to_encoding, ecopts);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, &ecopts));
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecopts));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1758,7 +1753,7 @@ str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
 }
 
 static int
-str_transcode0(int argc, VALUE *argv, VALUE *self, int options)
+str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts)
 {
     VALUE dest;
     VALUE str = *self;
@@ -1793,7 +1788,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int options)
     dest = rb_str_tmp_new(blen);
     bp = (unsigned char *)RSTRING_PTR(dest);
 
-    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, from_e, to_e, options);
+    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, from_e, to_e, ecopts);
     if (fromp != sp+slen) {
         rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
     }
@@ -1814,16 +1809,17 @@ static int
 str_transcode(int argc, VALUE *argv, VALUE *self)
 {
     VALUE opt;
-    int options = 0;
+    rb_econv_option_t ecopts;
+    ecopts.flags = 0;
 
     if (0 < argc) {
         opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
         if (!NIL_P(opt)) {
             argc--;
-            options = econv_opts(opt);
+            rb_econv_opts(opt, &ecopts);
         }
     }
-    return str_transcode0(argc, argv, self, options);
+    return str_transcode0(argc, argv, self, &ecopts);
 }
 
 static inline VALUE
@@ -1894,12 +1890,12 @@ str_encode(int argc, VALUE *argv, VALUE str)
 }
 
 VALUE
-rb_str_transcode(VALUE str, VALUE to, int flags)
+rb_str_transcode(VALUE str, VALUE to, rb_econv_option_t *ecopts)
 {
     int argc = 1;
     VALUE *argv = &to;
     VALUE newstr = str;
-    int encidx = str_transcode0(argc, argv, &newstr, flags);
+    int encidx = str_transcode0(argc, argv, &newstr, ecopts);
 
     if (encidx < 0) return rb_str_dup(str);
     RBASIC(newstr)->klass = rb_obj_class(str);

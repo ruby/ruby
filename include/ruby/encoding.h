@@ -194,8 +194,6 @@ rb_enc_dummy_p(rb_encoding *enc)
     return ENC_DUMMY_P(enc) != 0;
 }
 
-VALUE rb_str_transcode(VALUE str, VALUE to, int ecflags);
-
 /* econv stuff */
 
 typedef enum {
@@ -253,6 +251,8 @@ typedef struct {
     int flags;
     /* replacement character, etc. */
 } rb_econv_option_t;
+
+VALUE rb_str_transcode(VALUE str, VALUE to, rb_econv_option_t *ecopts);
 
 void rb_econv_opts(VALUE hash, rb_econv_option_t *opts);
 
