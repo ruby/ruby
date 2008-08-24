@@ -138,7 +138,7 @@ struct argf {
     VALUE argv;
     char *inplace;
     int binmode;
-    rb_encoding *enc, *enc2;
+    struct rb_io_enc_t encs;
 };
 
 static int max_file_descriptor = NOFILE;
@@ -5743,8 +5743,8 @@ argf_alloc(VALUE klass)
 #define lineno            ARGF.lineno
 #define ruby_inplace_mode ARGF.inplace
 #define argf_binmode      ARGF.binmode
-#define argf_enc          ARGF.enc
-#define argf_enc2         ARGF.enc2
+#define argf_enc          ARGF.encs.enc
+#define argf_enc2         ARGF.encs.enc2
 #define rb_argv           ARGF.argv
 
 static VALUE

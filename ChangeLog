@@ -1,3 +1,9 @@
+Sun Aug 24 18:02:14 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (struct argf): use struct rb_io_enc_t.
+	  (argf_enc): follow the struct argf change.
+	  (argf_enc2): ditto.
+
 Sun Aug 24 17:36:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_str_transcode): make 3rd argument
