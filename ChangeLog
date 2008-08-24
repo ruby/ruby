@@ -1,3 +1,7 @@
+Sun Aug 24 12:02:39 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_open): return NULL on error.
+
 Sun Aug 24 11:40:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_open_exc): declared.

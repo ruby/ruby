@@ -780,7 +780,7 @@ rb_econv_open(const char *from, const char *to, int flags)
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
     xfree(entries);
     if (!ec)
-        rb_raise(rb_eArgError, "encoding conversion not supported (from %s to %s)", from, to);
+        return NULL;
 
     ec->flags = flags;
     ec->source_encoding_name = from;
