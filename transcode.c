@@ -93,7 +93,7 @@ rb_register_transcoder(const rb_transcoder *tr)
 }
 
 static void
-declare_transcoder(const char *to, const char *from, const char *lib)
+declare_transcoder(const char *from, const char *to, const char *lib)
 {
     transcoder_entry_t *entry;
 
@@ -112,7 +112,6 @@ rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib)
 		 lib ? lib : "(null)");
     }
     declare_transcoder(enc1, enc2, lib);
-    declare_transcoder(enc2, enc1, lib);
 }
 
 #define encoding_equal(enc1, enc2) (STRCASECMP(enc1, enc2) == 0)
