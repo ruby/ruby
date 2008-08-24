@@ -10,6 +10,7 @@ Sun Aug 24 08:03:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Aug 24 06:39:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::unescapeHTML): more encoding sensible unescaping.
+	  [ruby-dev:35936]
 
 Sun Aug 24 04:23:19 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
