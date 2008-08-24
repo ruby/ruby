@@ -1,3 +1,25 @@
+Sun Aug 24 18:10:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_enc_t): add opts field.
+	  (FMODE_INVALID_MASK): removed.
+	  (FMODE_INVALID_IGNORE): ditto.
+	  (FMODE_INVALID_REPLACE): ditto.
+	  (FMODE_UNDEF_MASK): ditto.
+	  (FMODE_UNDEF_IGNORE): ditto.
+	  (FMODE_UNDEF_REPLACE): ditto.
+	  (MakeOpenFile): initialize the opts field.
+
+	* io.c (make_writeconv): use the opts field.
+	  (io_fwrite): ditto.
+	  (make_readconv): ditto.
+	  (argf_ecopts): new macro.
+	  (rb_io_extract_modeenc): fill the opts field.
+	  (argf_next_argv): ditto.
+	  (rb_file_open_generic): initialize the opts field.
+	  (rb_file_open_internal): ditto.
+	  (io_encoding_set): ditto.
+	  (argf_set_encoding): ditto.
+
 Sun Aug 24 18:02:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (struct argf): use struct rb_io_enc_t.

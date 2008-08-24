@@ -58,6 +58,7 @@ typedef struct rb_io_t {
     struct rb_io_enc_t {
         rb_encoding *enc;
         rb_encoding *enc2;
+        rb_econv_option_t opts;
     } encs;
 
     rb_econv_t *readconv;
@@ -89,12 +90,6 @@ typedef struct rb_io_t {
 #define FMODE_TRUNC                 0x00000800
 #define FMODE_TEXTMODE              0x00001000
 /* #define FMODE_PREP               0x00010000 */
-#define FMODE_INVALID_MASK          0x00f00000
-#define FMODE_INVALID_IGNORE        0x00100000
-#define FMODE_INVALID_REPLACE       0x00200000
-#define FMODE_UNDEF_MASK            0x0f000000
-#define FMODE_UNDEF_IGNORE          0x01000000
-#define FMODE_UNDEF_REPLACE         0x02000000
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
@@ -133,6 +128,7 @@ typedef struct rb_io_t {
     fp->tied_io_for_writing = 0;\
     fp->encs.enc = NULL;\
     fp->encs.enc2 = NULL;\
+    fp->encs.opts.flags = 0;\
 } while (0)
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);
