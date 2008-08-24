@@ -194,7 +194,7 @@ rb_enc_dummy_p(rb_encoding *enc)
     return ENC_DUMMY_P(enc) != 0;
 }
 
-VALUE rb_str_transcode(VALUE str, VALUE to);
+VALUE rb_str_transcode(VALUE str, VALUE to, int ecflags);
 
 /* econv stuff */
 

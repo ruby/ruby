@@ -1,3 +1,21 @@
+Sun Aug 24 15:21:28 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_str_transcode): add ecflags argument.
+
+	* transcode.c (econv_opts): extracted from str_transcode.
+	  (str_transcode_enc_args): extracted from str_transcode.
+	  (str_transcode0): extracted from str_transcode.
+	  (str_transcode): use econv_opts, str_transcode_enc_args,
+	  str_transcode0.
+	  (rb_str_transcode): call str_transcode0.
+	  (econv_primitive_insert_output): give the additional argument for
+	  rb_str_transcode.
+
+	* io.c (make_writeconv): use invalid/undef flags.
+	  (io_fwrite): ditto.
+	  (rb_scan_open_args): give the additional argument for
+	  rb_str_transcode.
+
 Sun Aug 24 13:27:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (str_transcode): check last hash only if 0 < argc.

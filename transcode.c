@@ -1673,58 +1673,49 @@ str_transcoding_resize(VALUE destination, int len, int new_len)
 }
 
 static int
-str_transcode(int argc, VALUE *argv, VALUE *self)
+econv_opts(VALUE opt)
 {
-    VALUE dest;
-    VALUE str = *self;
-    long blen, slen;
-    unsigned char *buf, *bp, *sp;
-    const unsigned char *fromp;
+    VALUE v;
+    int options = 0;
+    v = rb_hash_aref(opt, sym_invalid);
+    if (NIL_P(v)) {
+    }
+    else if (v==sym_ignore) {
+        options |= ECONV_INVALID_IGNORE;
+    }
+    else if (v==sym_replace) {
+        options |= ECONV_INVALID_REPLACE;
+        v = rb_hash_aref(opt, sym_replace);
+    }
+    else {
+        rb_raise(rb_eArgError, "unknown value for invalid character option");
+    }
+    v = rb_hash_aref(opt, sym_undef);
+    if (NIL_P(v)) {
+    }
+    else if (v==sym_ignore) {
+        options |= ECONV_UNDEF_IGNORE;
+    }
+    else if (v==sym_replace) {
+        options |= ECONV_UNDEF_REPLACE;
+    }
+    else {
+        rb_raise(rb_eArgError, "unknown value for undefined character option");
+    }
+    return options;
+}
+
+static int
+str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
+        const char **sname, rb_encoding **senc,
+        const char **dname, rb_encoding **denc)
+{
     rb_encoding *from_enc, *to_enc;
     const char *from_e, *to_e;
     int from_encidx, to_encidx;
     VALUE from_encval, to_encval;
-    VALUE opt;
-    int options = 0;
 
-    if (0 < argc)
-        opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
-    else
-        opt = Qnil;
-    if (!NIL_P(opt)) {
-	VALUE v;
-
-	argc--;
-	v = rb_hash_aref(opt, sym_invalid);
-	if (NIL_P(v)) {
-	}
-	else if (v==sym_ignore) {
-	    options |= ECONV_INVALID_IGNORE;
-	}
-	else if (v==sym_replace) {
-	    options |= ECONV_INVALID_REPLACE;
-	    v = rb_hash_aref(opt, sym_replace);
-	}
-	else {
-	    rb_raise(rb_eArgError, "unknown value for invalid character option");
-	}
-	v = rb_hash_aref(opt, sym_undef);
-	if (NIL_P(v)) {
-	}
-	else if (v==sym_ignore) {
-	    options |= ECONV_UNDEF_IGNORE;
-	}
-	else if (v==sym_replace) {
-	    options |= ECONV_UNDEF_REPLACE;
-	}
-	else {
-	    rb_raise(rb_eArgError, "unknown value for undefined character option");
-	}
-    }
-    if (argc < 1 || argc > 2) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
-    }
-    if ((to_encidx = rb_to_encoding_index(to_encval = argv[0])) < 0) {
+    if ((to_encidx = rb_to_encoding_index(to_encval = arg1)) < 0) {
 	to_enc = 0;
 	to_encidx = 0;
 	to_e = StringValueCStr(to_encval);
@@ -1733,12 +1724,12 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	to_enc = rb_enc_from_index(to_encidx);
 	to_e = rb_enc_name(to_enc);
     }
-    if (argc==1) {
+    if (NIL_P(arg2)) {
 	from_encidx = rb_enc_get_index(str);
 	from_enc = rb_enc_from_index(from_encidx);
 	from_e = rb_enc_name(from_enc);
     }
-    else if ((from_encidx = rb_to_encoding_index(from_encval = argv[1])) < 0) {
+    else if ((from_encidx = rb_to_encoding_index(from_encval = arg2)) < 0) {
 	from_enc = 0;
 	from_e = StringValueCStr(from_encval);
     }
@@ -1746,6 +1737,31 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
 	from_enc = rb_enc_from_index(from_encidx);
 	from_e = rb_enc_name(from_enc);
     }
+
+    *sname = from_e;
+    *senc = from_enc;
+    *dname = to_e;
+    *denc = to_enc;
+    return to_encidx;
+}
+
+static int
+str_transcode0(int argc, VALUE *argv, VALUE *self, int options)
+{
+    VALUE dest;
+    VALUE str = *self;
+    long blen, slen;
+    unsigned char *buf, *bp, *sp;
+    const unsigned char *fromp;
+    rb_encoding *from_enc, *to_enc;
+    const char *from_e, *to_e;
+    int to_encidx;
+
+    if (argc < 1 || argc > 2) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
+    }
+
+    to_encidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &from_e, &from_enc, &to_e, &to_enc);
 
     if (from_enc && from_enc == to_enc) {
 	return -1;
@@ -1780,6 +1796,22 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     *self = dest;
 
     return to_encidx;
+}
+
+static int
+str_transcode(int argc, VALUE *argv, VALUE *self)
+{
+    VALUE opt;
+    int options = 0;
+
+    if (0 < argc) {
+        opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
+        if (!NIL_P(opt)) {
+            argc--;
+            options = econv_opts(opt);
+        }
+    }
+    return str_transcode0(argc, argv, self, options);
 }
 
 static inline VALUE
@@ -1850,9 +1882,16 @@ str_encode(int argc, VALUE *argv, VALUE str)
 }
 
 VALUE
-rb_str_transcode(VALUE str, VALUE to)
+rb_str_transcode(VALUE str, VALUE to, int flags)
 {
-    return str_encode(1, &to, str);
+    int argc = 1;
+    VALUE *argv = &to;
+    VALUE newstr = str;
+    int encidx = str_transcode0(argc, argv, &newstr, flags);
+
+    if (encidx < 0) return rb_str_dup(str);
+    RBASIC(newstr)->klass = rb_obj_class(str);
+    return str_encode_associate(newstr, encidx);
 }
 
 static void
@@ -2305,7 +2344,7 @@ econv_primitive_insert_output(VALUE self, VALUE string)
 
     StringValue(string);
     insert_enc = rb_econv_encoding_to_insert_output(ec);
-    string = rb_str_transcode(string, rb_enc_from_encoding(rb_enc_find(insert_enc)));
+    string = rb_str_transcode(string, rb_enc_from_encoding(rb_enc_find(insert_enc)), 0);
 
     ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(string), RSTRING_LEN(string), insert_enc);
     if (ret == -1)

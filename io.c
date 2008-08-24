@@ -699,6 +699,12 @@ make_writeconv(rb_io_t *fptr)
         fptr->writeconv_initialized = 1;
 
         ecflags = 0;
+
+        if (fptr->mode & FMODE_INVALID_MASK)
+            ecflags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
+        if (fptr->mode & FMODE_UNDEF_MASK)
+            ecflags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
+
 #ifdef TEXTMODE_NEWLINE_ENCODER
         if (NEED_NEWLINE_ENCODER(fptr))
             ecflags |= TEXTMODE_NEWLINE_ENCODER;
@@ -740,18 +746,31 @@ io_fwrite(VALUE str, rb_io_t *fptr)
     long len, n, r, l, offset = 0;
 
     if (NEED_WRITECONV(fptr)) {
+        VALUE common_encoding = Qnil;
         make_writeconv(fptr);
+
         if (fptr->writeconv) {
-            if (!NIL_P(fptr->writeconv_stateless)) {
-                str = rb_str_transcode(str, fptr->writeconv_stateless);
-            }
-            str = rb_econv_str_convert(fptr->writeconv, str, ECONV_PARTIAL_INPUT);
+            if (!NIL_P(fptr->writeconv_stateless))
+                common_encoding = fptr->writeconv_stateless;
         }
         else {
             if (fptr->enc2)
-                str = rb_str_transcode(str, rb_enc_from_encoding(fptr->enc2));
+                common_encoding = rb_enc_from_encoding(fptr->enc2);
             else
-                str = rb_str_transcode(str, rb_enc_from_encoding(fptr->enc));
+                common_encoding = rb_enc_from_encoding(fptr->enc);
+        }
+
+        if (!NIL_P(common_encoding)) {
+            int ecflags = 0;
+            if (fptr->mode & FMODE_INVALID_MASK)
+                ecflags |= (fptr->mode / (FMODE_INVALID_MASK/ECONV_INVALID_MASK)) & ECONV_INVALID_MASK;
+            if (fptr->mode & FMODE_UNDEF_MASK)
+                ecflags |= (fptr->mode / (FMODE_UNDEF_MASK/ECONV_UNDEF_MASK)) & ECONV_UNDEF_MASK;
+            str = rb_str_transcode(str, common_encoding, ecflags);
+        }
+
+        if (fptr->writeconv) {
+            str = rb_econv_str_convert(fptr->writeconv, str, ECONV_PARTIAL_INPUT);
         }
     }
 
@@ -4622,7 +4641,7 @@ rb_scan_open_args(int argc, VALUE *argv,
 	    static VALUE fs_enc;
 	    if (!fs_enc)
 		fs_enc = rb_enc_from_encoding(fs_encoding);
-	    fname = rb_str_transcode(fname, fs_enc);
+	    fname = rb_str_transcode(fname, fs_enc, 0);
 	}
     }
 #endif

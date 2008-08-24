@@ -1202,5 +1202,68 @@ EOT
       }
     }
   end
+
+  def test_invalid_w
+    with_tmpdir {
+      invalid_utf8 = "a\x80b".force_encoding("utf-8")
+      open("t.txt", "w:euc-jp", :invalid => :replace) {|f|
+        assert_nothing_raised { f.write invalid_utf8 }
+      }
+      assert_equal("a?b", File.read("t.txt"))
+
+      open("t.txt", "w:euc-jp", :invalid => :ignore) {|f|
+        assert_nothing_raised { f.write invalid_utf8 }
+      }
+      assert_equal("ab", File.read("t.txt"))
+
+      open("t.txt", "w:euc-jp", :undef => :replace) {|f|
+        assert_raise(Encoding::InvalidByteSequence) { f.write invalid_utf8 }
+      }
+      open("t.txt", "w:euc-jp", :undef => :ignore) {|f|
+        assert_raise(Encoding::InvalidByteSequence) { f.write invalid_utf8 }
+      }
+    }
+  end
+
+  def test_undef_w_stateless
+    with_tmpdir {
+      generate_file("t.txt", "a\uFFFDb")
+      open("t.txt", "w:euc-jp:utf-8", :undef => :replace) {|f|
+        assert_nothing_raised { f.write "a\uFFFDb" }
+      }
+      assert_equal("a?b", File.read("t.txt"))
+      open("t.txt", "w:euc-jp:utf-8", :undef => :ignore) {|f|
+        assert_nothing_raised { f.write "a\uFFFDb" }
+      }
+      assert_equal("ab", File.read("t.txt"))
+      open("t.txt", "w:euc-jp:utf-8", :invalid => :replace) {|f|
+        assert_raise(Encoding::ConversionUndefined) { f.write "a\uFFFDb" }
+      }
+      open("t.txt", "w:euc-jp:utf-8", :invalid => :ignore) {|f|
+        assert_raise(Encoding::ConversionUndefined) { f.write "a\uFFFDb" }
+      }
+    }
+  end
+
+  def test_undef_w_stateful
+    with_tmpdir {
+      generate_file("t.txt", "a\uFFFDb")
+      open("t.txt", "w:iso-2022-jp:utf-8", :undef => :replace) {|f|
+        assert_nothing_raised { f.write "a\uFFFDb" }
+      }
+      assert_equal("a?b", File.read("t.txt"))
+      open("t.txt", "w:iso-2022-jp:utf-8", :undef => :ignore) {|f|
+        assert_nothing_raised { f.write "a\uFFFDb" }
+      }
+      assert_equal("ab", File.read("t.txt"))
+      open("t.txt", "w:iso-2022-jp:utf-8", :invalid => :replace) {|f|
+        assert_raise(Encoding::ConversionUndefined) { f.write "a\uFFFDb" }
+      }
+      open("t.txt", "w:iso-2022-jp:utf-8", :invalid => :ignore) {|f|
+        assert_raise(Encoding::ConversionUndefined) { f.write "a\uFFFDb" }
+      }
+    }
+  end
+
 end
 
