@@ -3850,8 +3850,8 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
 }
 
 typedef struct convconfig_t {
-  rb_encoding *enc;
-  rb_encoding *enc2;
+    rb_encoding *enc;
+    rb_encoding *enc2;
 } convconfig_t;
 
 static void
@@ -3893,6 +3893,7 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
 
     if (!NIL_P(opthash)) {
 	VALUE v;
+        rb_econv_option_t ecopts;
 	v = rb_hash_aref(opthash, sym_textmode);
 	if (RTEST(v))
             flags |= FMODE_TEXTMODE;
@@ -3903,32 +3904,11 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
             modenum |= O_BINARY;
 #endif
         }
-        v = rb_hash_aref(opthash, sym_invalid);
-        if (!NIL_P(v)) {
-            if (v == sym_replace) {
-                flags |= FMODE_INVALID_REPLACE;
-            }
-            else if (v == sym_ignore) {
-                flags |= FMODE_INVALID_IGNORE;
-            }
-            else {
-                v = rb_inspect(v);
-                rb_raise(rb_eArgError, "unexpected action for invalid byte sequence: %s", StringValueCStr(v));
-            }
-        }
-        v = rb_hash_aref(opthash, sym_undef);
-        if (!NIL_P(v)) {
-            if (v == sym_replace) {
-                flags |= FMODE_UNDEF_REPLACE;
-            }
-            else if (v == sym_ignore) {
-                flags |= FMODE_UNDEF_IGNORE;
-            }
-            else {
-                v = rb_inspect(v);
-                rb_raise(rb_eArgError, "unexpected action for undefined conversion: %s", StringValueCStr(v));
-            }
-        }
+        rb_econv_opts(opthash, &ecopts);
+        if (ecopts.flags & ECONV_INVALID_REPLACE) flags |= FMODE_INVALID_REPLACE;
+        if (ecopts.flags & ECONV_INVALID_IGNORE) flags |= FMODE_INVALID_IGNORE;
+        if (ecopts.flags & ECONV_UNDEF_REPLACE) flags |= FMODE_UNDEF_REPLACE;
+        if (ecopts.flags & ECONV_UNDEF_IGNORE) flags |= FMODE_UNDEF_IGNORE;
 
         if (io_extract_encoding_option(opthash, &enc, &enc2)) {
             if (has_enc) {

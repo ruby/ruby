@@ -1,3 +1,11 @@
+Sun Aug 24 16:19:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_opts): declared.
+
+	* transcode.c (rb_econv_opts): defined.
+
+	* io.c (rb_io_extract_modeenc): use rb_econv_opts.
+
 Sun Aug 24 16:06:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_option_t): defined.

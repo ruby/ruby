@@ -1711,6 +1711,12 @@ econv_opts(VALUE opt)
     return options;
 }
 
+void
+rb_econv_opts(VALUE hash, rb_econv_option_t *opts)
+{
+    opts->flags = econv_opts(hash);
+}
+
 static int
 str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
         const char **sname, rb_encoding **senc,

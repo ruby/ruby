@@ -253,6 +253,8 @@ typedef struct {
     int flags;
 } rb_econv_option_t;
 
+void rb_econv_opts(VALUE hash, rb_econv_option_t *opts);
+
 rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_encoding, rb_econv_option_t *opts);
 rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     const unsigned char **source_buffer_ptr, const unsigned char *source_buffer_end,
