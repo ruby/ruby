@@ -2213,11 +2213,7 @@ rb_io_getline(int argc, VALUE *argv, VALUE io)
 VALUE
 rb_io_gets(VALUE io)
 {
-    rb_io_t *fptr;
-
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
-    return rb_io_getline_fast(fptr, io_read_encoding(fptr));
+    return rb_io_getline_1(rb_default_rs, -1, io);
 }
 
 /*

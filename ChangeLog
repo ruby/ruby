@@ -1,4 +1,10 @@
-Mon Aug 25 17:35:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug 25 17:36:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_io_ungetbyte): added prototype.
+
+	* io.c (rb_io_gets): use rb_io_getline_1 for unget buffer.
+
+	* ruby.c (load_file): use rb_io_ungetbyte.
 
 	* transcode.c (rb_econv_substr_append): fix for buffer overrun.
 

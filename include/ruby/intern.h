@@ -374,6 +374,7 @@ VALUE rb_io_write(VALUE, VALUE);
 VALUE rb_io_gets(VALUE);
 VALUE rb_io_getbyte(VALUE);
 VALUE rb_io_ungetc(VALUE, VALUE);
+VALUE rb_io_ungetbyte(VALUE, VALUE);
 VALUE rb_io_close(VALUE);
 VALUE rb_io_flush(VALUE);
 VALUE rb_io_eof(VALUE);
