@@ -745,6 +745,7 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
 {
     transcoder_entry_t **entries = NULL;
     int num_trans;
+    int num_additional;
     static rb_econv_t *ec;
     int flags = opts ? opts->flags : 0;
 
@@ -761,6 +762,7 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
         return NULL;
     }
 
+    num_additional = 0;
     if (flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
         const char *name = (flags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
@@ -775,6 +777,7 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
         MEMMOVE(entries+1, entries, transcoder_entry_t *, num_trans);
         entries[0] = e;
         num_trans++;
+        num_additional++;
     }
 
     if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
@@ -784,6 +787,7 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
             return NULL;
         }
         entries[num_trans++] = e;
+        num_additional++;
     }
 
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
@@ -798,15 +802,13 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
     ec->source_encoding_name = from;
     ec->destination_encoding_name = to;
 
-    if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
-        if (ec->num_trans == 1) {
-            ec->last_tc = NULL;
-            ec->last_trans_index = -1;
-        }
-        else {
-            ec->last_tc = ec->elems[ec->num_trans-2].tc;
-            ec->last_trans_index = ec->num_trans-2;
-        }
+    if (num_trans == num_additional) {
+        ec->last_tc = NULL;
+        ec->last_trans_index = -1;
+    }
+    else if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
+        ec->last_tc = ec->elems[ec->num_trans-2].tc;
+        ec->last_trans_index = ec->num_trans-2;
     }
 
     return ec;
@@ -1483,29 +1485,30 @@ rb_econv_binmode(rb_econv_t *ec)
     }
 }
 
-VALUE
-rb_econv_open_exc(const char *senc, const char *denc, rb_econv_option_t *opts)
+static VALUE
+econv_description(const char *senc, const char *denc, rb_econv_option_t *opts, VALUE mesg)
 {
     int flags = opts ? opts->flags : 0;
-    VALUE mesg, exc;
-    int noenc = 0;
-    mesg = rb_str_new_cstr("code converter open failed (");
-    if (*senc == '\0' || *denc == '\0') {
-        if (*senc != '\0')
-            rb_str_cat2(mesg, senc);
-        else if (*denc != '\0')
+    int has_description = 0;
+
+    if (NIL_P(mesg))
+        mesg = rb_str_new(NULL, 0);
+
+    if (*senc != '\0' || *denc != '\0') {
+        if (*senc == '\0')
             rb_str_cat2(mesg, denc);
+        else if (*denc == '\0')
+            rb_str_cat2(mesg, senc);
         else
-            noenc = 1;
+            rb_str_catf(mesg, "%s to %s", senc, denc);
+        has_description = 1;
     }
-    else {
-        rb_str_catf(mesg, "%s to %s", senc, denc);
-    }
+
     if (flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
                  ECONV_CRLF_NEWLINE_ENCODER|
                  ECONV_CR_NEWLINE_ENCODER)) {
         const char *pre = "";
-        if (!noenc)
+        if (has_description)
             rb_str_cat2(mesg, " with ");
         if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER)  {
             rb_str_cat2(mesg, pre); pre = ",";
@@ -1519,7 +1522,21 @@ rb_econv_open_exc(const char *senc, const char *denc, rb_econv_option_t *opts)
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "CR-newline");
         }
+        has_description = 1;
     }
+    if (!has_description) {
+        rb_str_cat2(mesg, "no-conversion");
+    }
+
+    return mesg;
+}
+
+VALUE
+rb_econv_open_exc(const char *senc, const char *denc, rb_econv_option_t *opts)
+{
+    VALUE mesg, exc;
+    mesg = rb_str_new_cstr("code converter open failed (");
+    econv_description(senc, denc, opts, mesg);
     rb_str_cat2(mesg, ")");
     exc = rb_exc_new3(rb_eNoConverter, mesg);
     return exc;
@@ -2110,9 +2127,11 @@ econv_inspect(VALUE self)
     else {
         const char *sname = ec->source_encoding_name;
         const char *dname = ec->destination_encoding_name;
-        if (*sname == '\0') sname = "(none)";
-        if (*dname == '\0') dname = "(none)";
-        return rb_sprintf("#<%s: %s to %s>", cname, sname, dname);
+        VALUE str;
+        str = rb_sprintf("#<%s: ", cname);
+        econv_description(sname, dname, &ec->opts, str);
+        rb_str_cat2(str, ">");
+        return str;
     }
 }
 
