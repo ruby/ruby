@@ -1,6 +1,8 @@
-Mon Aug 25 17:34:10 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Aug 25 17:35:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_econv_substr_append): fix for buffer overrun.
+
+	* win32/enc-setup.mak (BUILTIN_TRANSOBJS): added.
 
 Mon Aug 25 14:22:21 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 

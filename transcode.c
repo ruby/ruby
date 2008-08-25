@@ -1360,8 +1360,9 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
         }
         ss = sp = (const unsigned char *)RSTRING_PTR(src) + off;
         se = ss + len;
-        ds = dp = (unsigned char *)RSTRING_PTR(dst) + dlen;
+        ds = (unsigned char *)RSTRING_PTR(dst);
         de = ds + rb_str_capacity(dst);
+        dp = ds += dlen;
         res = rb_econv_convert(ec, &sp, se, &dp, de, flags);
         off += sp - ss;
         len -= sp - ss;
