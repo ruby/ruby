@@ -1547,17 +1547,32 @@ make_econv_exception(rb_econv_t *ec)
 {
     VALUE mesg, exc;
     if (ec->last_error.result == econv_invalid_byte_sequence) {
-        VALUE bytes = rb_str_new((const char *)ec->last_error.error_bytes_start,
-                                 ec->last_error.error_bytes_len);
-        VALUE dumped;
-        dumped = rb_str_dump(bytes);
-        mesg = rb_sprintf("invalid byte sequence: %s on %s",
-                StringValueCStr(dumped),
-                ec->last_error.source_encoding);
+        const char *err = (const char *)ec->last_error.error_bytes_start;
+        size_t error_len = ec->last_error.error_bytes_len;
+        VALUE bytes = rb_str_new(err, error_len);
+        VALUE dumped = rb_str_dump(bytes);
+        size_t readagain_len = ec->last_error.readagain_len;
+        VALUE bytes2 = Qnil;
+        VALUE dumped2;
+        if (readagain_len) {
+            bytes2 = rb_str_new(err+error_len, readagain_len);
+            dumped2 = rb_str_dump(bytes2);
+            mesg = rb_sprintf("invalid byte sequence: %s followed by %s on %s",
+                    StringValueCStr(dumped),
+                    StringValueCStr(dumped2),
+                    ec->last_error.source_encoding);
+        }
+        else {
+            mesg = rb_sprintf("invalid byte sequence: %s on %s",
+                    StringValueCStr(dumped),
+                    ec->last_error.source_encoding);
+        }
+
         exc = rb_exc_new3(rb_eInvalidByteSequence, mesg);
         rb_ivar_set(exc, rb_intern("source_encoding"), rb_str_new2(ec->last_error.source_encoding));
         rb_ivar_set(exc, rb_intern("destination_encoding"), rb_str_new2(ec->last_error.destination_encoding));
         rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
+        rb_ivar_set(exc, rb_intern("readagain_bytes"), bytes2);
         return exc;
     }
     if (ec->last_error.result == econv_undefined_conversion) {
@@ -2514,6 +2529,12 @@ ecerr_error_bytes(VALUE self)
     return rb_attr_get(self, rb_intern("error_bytes"));
 }
 
+static VALUE
+ecerr_readagain_bytes(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("readagain_bytes"));
+}
+
 extern void Init_newline(void);
 
 void
@@ -2562,6 +2583,7 @@ Init_transcode(void)
     rb_define_method(rb_eInvalidByteSequence, "source_encoding", ecerr_source_encoding, 0);
     rb_define_method(rb_eInvalidByteSequence, "destination_encoding", ecerr_destination_encoding, 0);
     rb_define_method(rb_eInvalidByteSequence, "error_bytes", ecerr_error_bytes, 0);
+    rb_define_method(rb_eInvalidByteSequence, "readagain_bytes", ecerr_readagain_bytes, 0);
 
     Init_newline();
 }

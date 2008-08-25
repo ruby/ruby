@@ -1,3 +1,9 @@
+Tue Aug 26 00:24:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_econv_exception): show readagain part for invalid
+	  byte sequence exception.  store the part as an instance variable.
+	  (ecerr_readagain_bytes): new method to access the readagain part.
+
 Tue Aug 26 00:02:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpMult): fix double free.

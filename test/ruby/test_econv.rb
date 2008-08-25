@@ -425,6 +425,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("EUC-JP", err.source_encoding)
     assert_equal("UTF-8", err.destination_encoding)
     assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
+    assert_equal("d", err.readagain_bytes)
   end
 
   def test_exc_undef
