@@ -696,21 +696,24 @@ make_writeconv(rb_io_t *fptr)
 
         fptr->writeconv_initialized = 1;
 
-        rb_econv_opts(Qnil, &fptr->writeconv_pre_opts);
-
+        /* ECONV_INVALID_XXX and ECONV_UNDEF_XXX should be set both.
+         * But ECONV_CRLF_NEWLINE_ENCODER should be set only for the first. */
+        fptr->writeconv_pre_opts = fptr->encs.opts;
         ecopts = fptr->encs.opts;
 
 #ifdef TEXTMODE_NEWLINE_ENCODER
-        if (NEED_NEWLINE_ENCODER(fptr))
-            ecopts.flags |= TEXTMODE_NEWLINE_ENCODER;
-
         if (!fptr->encs.enc) {
+            if (NEED_NEWLINE_ENCODER(fptr))
+                ecopts.flags |= TEXTMODE_NEWLINE_ENCODER;
             fptr->writeconv = rb_econv_open("", "", &ecopts);
             if (!fptr->writeconv)
                 rb_exc_raise(rb_econv_open_exc("", "", &ecopts));
             fptr->writeconv_stateless = Qnil;
             return;
         }
+
+        if (NEED_NEWLINE_ENCODER(fptr))
+            fptr->writeconv_pre_opts.flags |= TEXTMODE_NEWLINE_ENCODER;
 #endif
 
         enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
@@ -726,10 +729,6 @@ make_writeconv(rb_io_t *fptr)
             denc = NULL;
             fptr->writeconv_stateless = Qnil;
             fptr->writeconv = NULL;
-#ifdef TEXTMODE_NEWLINE_ENCODER
-            if (NEED_NEWLINE_ENCODER(fptr))
-                fptr->writeconv_pre_opts.flags |= TEXTMODE_NEWLINE_ENCODER;
-#endif
         }
     }
 }
