@@ -69,7 +69,7 @@ module IRB
     end    
 
     def search(key)
-      case key
+      job = case key
       when Integer
 	@jobs[key]
       when Irb
@@ -77,10 +77,10 @@ module IRB
       when Thread
 	@jobs.assoc(key)
       else
-	assoc = @jobs.find{|k, v| v.context.main.equal?(key)}
-	IRB.fail NoSuchJob, key if assoc.nil?
-	assoc
+	@jobs.find{|k, v| v.context.main.equal?(key)}
       end
+      IRB.fail NoSuchJob, key if job.nil?
+      job
     end
 
     def delete(key)

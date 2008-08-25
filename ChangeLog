@@ -1,3 +1,11 @@
+Mon Aug 25 22:39:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/irb/extend-command.rb (def_extend_command): check number of
+	  arguments.  [ruby-dev:35074]
+
+	* lib/irb/ext/multi-irb.rb (search): check if a corresponding job is
+	  found.  [ruby-dev:35074]
+
 Mon Aug 25 22:29:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_io.rb (test_dup): fix typo.  see [ruby-dev:35958]
