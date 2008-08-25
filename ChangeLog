@@ -1,3 +1,8 @@
+Mon Aug 25 23:01:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compile.c (defined_expr): default defined? should return
+	  "expression" without evaluating the expression.  [ruby-dev:35967] 
+
 Mon Aug 25 22:46:01 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/ruby/test_thread.rb (test_status_and_stop_p): reduce the risk

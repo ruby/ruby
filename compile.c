@@ -2336,6 +2336,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_ZARRAY:
       case NODE_AND:
       case NODE_OR:
+      default:
 	estr = "expression";
 	break;
 
@@ -2478,33 +2479,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_CVASGN:
 	estr = "assignment";
 	break;
-
-      default:{
-	LABEL *lstart = NEW_LABEL(nd_line(node));
-	LABEL *lend = NEW_LABEL(nd_line(node));
-	VALUE ensure = NEW_CHILD_ISEQVAL(NEW_NIL(),
-					 rb_str_concat(rb_str_new2
-						       ("defined guard in "),
-						       iseq->name),
-					 ISEQ_TYPE_DEFINED_GUARD);
-
-	ADD_LABEL(ret, lstart);
-	COMPILE(ret, "defined expr (others)", node);
-	if (!lfinish[1]) {
-	    lfinish[1] = NEW_LABEL(nd_line(node));
-	}
-	ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
-	if (needstr) {
-	    ADD_INSN1(ret, nd_line(node), putstring, rb_str_new2("expression"));
-	}
-	else {
-	    ADD_INSN1(ret, nd_line(node), putobject, Qtrue);
-	}
-	ADD_LABEL(ret, lend);
-
-	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, ensure, lfinish[1]);
-	return 1;
-      } /* end of default */
     }
 
     if (estr != 0) {
