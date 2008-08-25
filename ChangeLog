@@ -1,3 +1,11 @@
+Mon Aug 25 23:38:17 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date/format.rb(strftime): can print with given arbitrary
+	  precision.
+
+	* lib/date/format.rb(strftime): optional flags and filed width
+	  should also affect %[nt].
+
 Mon Aug 25 23:01:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (defined_expr): default defined? should return
