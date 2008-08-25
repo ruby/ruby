@@ -1861,7 +1861,7 @@ str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
 }
 
 static int
-str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts)
+str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts_arg)
 {
     VALUE dest;
     VALUE str = *self;
@@ -1871,6 +1871,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts)
     rb_encoding *from_enc, *to_enc;
     const char *from_e, *to_e;
     int to_encidx;
+    rb_econv_option_t ecopts;
 
     if (argc < 1 || argc > 2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
@@ -1878,9 +1879,25 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts)
 
     to_encidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &from_e, &from_enc, &to_e, &to_enc);
 
-    if ((ecopts->flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
-                          ECONV_CRLF_NEWLINE_ENCODER|
-                          ECONV_CR_NEWLINE_ENCODER)) == 0) {
+    if (ecopts_arg)
+        ecopts = *ecopts_arg;
+    else
+        rb_econv_opts(Qnil, &ecopts);
+
+    /* disable newline conversion for ascii incompatible encoding.
+     * xxx: convert newline in ascii-compatible encoding?
+     * ex. UTF-16BE -> UTF-8 -> newline conversion -> UTF-8 -> UTF-16BE.
+     */
+    if (!from_enc || !rb_enc_asciicompat(from_enc)) {
+        ecopts.flags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
+    }
+    if (!to_enc || !rb_enc_asciicompat(to_enc)) {
+        ecopts.flags &= ~ECONV_UNIVERSAL_NEWLINE_DECODER;
+    }
+
+    if ((ecopts.flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
+                         ECONV_CRLF_NEWLINE_ENCODER|
+                         ECONV_CR_NEWLINE_ENCODER)) == 0) {
         if (from_enc && from_enc == to_enc) {
             return -1;
         }
@@ -1895,8 +1912,6 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts)
     }
     else {
         if (encoding_equal(from_e, to_e)) {
-            /* newline conversion only.
-             * xxx: this assumes ascii compatible encoding. */
             from_e = "";
             to_e = "";
         }
@@ -1908,7 +1923,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts)
     dest = rb_str_tmp_new(blen);
     bp = (unsigned char *)RSTRING_PTR(dest);
 
-    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, from_e, to_e, ecopts);
+    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, from_e, to_e, &ecopts);
     if (fromp != sp+slen) {
         rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
     }

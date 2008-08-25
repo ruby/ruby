@@ -1,3 +1,8 @@
+Tue Aug 26 01:26:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (str_transcode0): disable newline conversion for ASCII
+	  incompatible encoding.
+
 Tue Aug 26 00:55:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (str_transcode0): don't short cut for newline conversion.
