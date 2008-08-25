@@ -1,3 +1,10 @@
+Tue Aug 26 02:43:50 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): new field: writeconv_pre_opts.
+
+	* io.c (make_writeconv): initialize writeconv_pre_opts.
+	  (io_fwrite): use writeconv_pre_opts.
+
 Tue Aug 26 01:48:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: test _WIN32 for CRLF platform.  (cygwin defines O_BINARY.)

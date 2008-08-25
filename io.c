@@ -696,6 +696,8 @@ make_writeconv(rb_io_t *fptr)
 
         fptr->writeconv_initialized = 1;
 
+        rb_econv_opts(Qnil, &fptr->writeconv_pre_opts);
+
         ecopts = fptr->encs.opts;
 
 #ifdef TEXTMODE_NEWLINE_ENCODER
@@ -716,18 +718,18 @@ make_writeconv(rb_io_t *fptr)
         if (senc) {
             denc = enc->name;
             fptr->writeconv_stateless = rb_str_new2(senc);
-        }
-        else {
-            denc = NULL;
-            fptr->writeconv_stateless = Qnil;
-        }
-        if (senc) {
             fptr->writeconv = rb_econv_open(senc, denc, &ecopts);
             if (!fptr->writeconv)
                 rb_exc_raise(rb_econv_open_exc(senc, denc, &ecopts));
         }
         else {
+            denc = NULL;
+            fptr->writeconv_stateless = Qnil;
             fptr->writeconv = NULL;
+#ifdef TEXTMODE_NEWLINE_ENCODER
+            if (NEED_NEWLINE_ENCODER(fptr))
+                fptr->writeconv_pre_opts.flags |= TEXTMODE_NEWLINE_ENCODER;
+#endif
         }
     }
 }
@@ -754,12 +756,7 @@ io_fwrite(VALUE str, rb_io_t *fptr)
         }
 
         if (!NIL_P(common_encoding)) {
-            rb_econv_option_t ecopts = fptr->encs.opts;
-#ifdef TEXTMODE_NEWLINE_ENCODER
-            if (NEED_NEWLINE_ENCODER(fptr))
-                ecopts.flags |= TEXTMODE_NEWLINE_ENCODER;
-#endif
-            str = rb_str_transcode(str, common_encoding, &ecopts);
+            str = rb_str_transcode(str, common_encoding, &fptr->writeconv_pre_opts);
         }
 
         if (fptr->writeconv) {

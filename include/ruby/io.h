@@ -69,6 +69,7 @@ typedef struct rb_io_t {
 
     rb_econv_t *writeconv;
     VALUE writeconv_stateless;
+    rb_econv_option_t writeconv_pre_opts;
     int writeconv_initialized;
 
 } rb_io_t;
