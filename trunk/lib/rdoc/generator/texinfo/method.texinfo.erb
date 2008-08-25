@@ -1,6 +1,0 @@
-@node <%= @v['class']['full_name'].gsub(/::/, '-') %><%= method_prefix @v['list'] %><%= @v['method']['name'] %>
-@section <%= @v['class']["classmod"] %> <%= @v['class']['full_name'] %><%= method_prefix @v['list'] %><%= @v['method']['name'] %>
-<%= @v['method']["type"] %> <%= @v['method']["category"] %> method:
-<%= target @v['method']["aref"], @v['method']['callseq'] ||
-                                 @v['method']["name"] + @v['method']["params"] %>
-<%= @v['method']["m_desc"] %>

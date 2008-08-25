@@ -51,6 +51,7 @@ Incompatible (Trivial)
           o Dir.exist?
     * IO operations
           o Non-blocking IO
+          o Kernel#open takes "t" for newline conversion
           o Kernel#open takes encoding specified
           o IO#initialize now accepts an IO argument
           o StringIO#readpartial
@@ -112,6 +113,8 @@ Compatible
             an enumerator.
     * Regexp#match, String#match
           o Regexp#match, String#match
+    * Encoding
+    * Encoding::Converter
     * Fiber: coroutines/micro-threads
     * Array
           o Array#delete returns a deleted element rather than a given

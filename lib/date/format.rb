@@ -257,13 +257,17 @@ class Date
       when 'j'; emit_n(yday, 3, f)
       when 'k'; emit_a(hour, 2, f)
       when 'L'
-	emit_n((sec_fraction / MILLISECONDS_IN_SECOND).floor, 3, f)
+	w = f[:w] || 3
+	u = 10**w
+	emit_n((sec_fraction * u).floor, w, f)
       when 'l'; emit_a((hour % 12).nonzero? || 12, 2, f)
       when 'M', 'OM'; emit_n(min, 2, f)
       when 'm', 'Om'; emit_n(mon, 2, f)
       when 'N'
-	emit_n((sec_fraction / NANOSECONDS_IN_SECOND).floor, 9, f)
-      when 'n'; "\n"
+	w = f[:w] || 9
+	u = 10**w
+	emit_n((sec_fraction * u).floor, w, f)
+      when 'n'; emit_a("\n", 0, f)
       when 'P'; emit_ad(strftime('%p').downcase, 0, f)
       when 'p'; emit_au(if hour < 12 then 'AM' else 'PM' end, 0, f)
       when 'Q'
@@ -281,7 +285,7 @@ class Date
 	else
 	  emit_a(strftime('%H:%M:%S'), 0, f)
 	end
-      when 't'; "\t"
+      when 't'; emit_a("\t", 0, f)
       when 'U', 'W', 'OU', 'OW'
 	emit_n(if c[-1,1] == 'U' then wnum0 else wnum1 end, 2, f)
       when 'u', 'Ou'; emit_n(cwday, 1, f)

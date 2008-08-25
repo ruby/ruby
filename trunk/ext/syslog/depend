@@ -1,2 +1,0 @@
-syslog.o: syslog.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h \
-  $(hdrdir)/intern.h

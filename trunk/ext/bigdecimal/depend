@@ -1,1 +1,0 @@
-bigdecimal.o: bigdecimal.c bigdecimal.h $(hdrdir)/ruby.h

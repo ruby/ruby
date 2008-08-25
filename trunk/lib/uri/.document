@@ -1,7 +1,0 @@
-common.rb
-ftp.rb
-generic.rb
-http.rb
-https.rb
-ldap.rb
-mailto.rb
