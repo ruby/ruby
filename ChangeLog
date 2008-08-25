@@ -1,3 +1,7 @@
+Tue Aug 26 00:02:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpMult): fix double free.
+
 Mon Aug 25 23:59:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open): make last_tc NULL if there are only

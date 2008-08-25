@@ -3165,7 +3165,7 @@ VpMult(Real *c, Real *a, Real *b)
 
     c->exponent = a->exponent;    /* set exponent */
     if(!AddExponent(c,b->exponent)) {
-	VpFree(c);
+	if(w) VpFree(c);
 	return 0;
     }
     VpSetSign(c,VpGetSign(a)*VpGetSign(b));    /* set sign  */
