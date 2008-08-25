@@ -1,3 +1,12 @@
+Mon Aug 25 22:02:35 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_open_by_transcoder_entries): initialize
+	  last_error.  num_trans may be zero.
+	  (rb_econv_convert0): num_trans may be zero.
+	  (rb_econv_putbackable): ditto.
+	  (rb_econv_putback): ditto.
+	  (rb_econv_convert): input_ptr and output_ptr may be NULL.
+
 Mon Aug 25 19:05:27 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (defined_expr): should handle NODE_{AND,OR} as

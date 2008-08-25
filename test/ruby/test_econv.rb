@@ -480,5 +480,45 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("abcdef", dst)
   end
 
+  def test_noconv
+    ec = Encoding::Converter.new("", "")
+    assert_equal(nil, ec.source_encoding)
+    assert_equal(nil, ec.destination_encoding)
+    assert_equal([:source_buffer_empty, nil, nil, nil, nil, nil], ec.primitive_errinfo)
+    a =     ["", "abcdefg", ec, nil, 2]
+    check_ec("ab", "cdefg", :destination_buffer_full, *a)
+    check_ec("abcd", "efg", :destination_buffer_full, *a)
+    check_ec("abcdef", "g", :destination_buffer_full, *a)
+    check_ec("abcdefg", "", :finished, *a)
+  end
 
+  def test_noconv_partial
+    ec = Encoding::Converter.new("", "")
+    a =     ["", "abcdefg", ec, nil, 2, Encoding::Converter::PARTIAL_INPUT]
+    check_ec("ab", "cdefg", :destination_buffer_full, *a)
+    check_ec("abcd", "efg", :destination_buffer_full, *a)
+    check_ec("abcdef", "g", :destination_buffer_full, *a)
+    check_ec("abcdefg", "", :source_buffer_empty, *a)
+  end
+
+  def test_noconv_output_followed_by_input
+    ec = Encoding::Converter.new("", "")
+    a =     ["", "abcdefg", ec, nil, 2, Encoding::Converter::OUTPUT_FOLLOWED_BY_INPUT]
+    check_ec("a", "bcdefg", :output_followed_by_input, *a)
+    check_ec("ab", "cdefg", :output_followed_by_input, *a)
+    check_ec("abc", "defg", :output_followed_by_input, *a)
+    check_ec("abcd", "efg", :output_followed_by_input, *a)
+    check_ec("abcde", "fg", :output_followed_by_input, *a)
+    check_ec("abcdef", "g", :output_followed_by_input, *a)
+    check_ec("abcdefg", "", :output_followed_by_input, *a)
+    check_ec("abcdefg", "", :finished, *a)
+  end
+
+  def test_noconv_insert_output
+    ec = Encoding::Converter.new("", "")
+    ec.primitive_insert_output("xyz")
+    ret = ec.primitive_convert(src="abc", dst="", nil, 20)
+    assert_equal(:finished, ret)
+    assert_equal(["xyzabc", ""], [dst, src])
+  end
 end
