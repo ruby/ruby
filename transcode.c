@@ -1878,16 +1878,28 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts)
 
     to_encidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &from_e, &from_enc, &to_e, &to_enc);
 
-    if (from_enc && from_enc == to_enc) {
-	return -1;
+    if ((ecopts->flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
+                          ECONV_CRLF_NEWLINE_ENCODER|
+                          ECONV_CR_NEWLINE_ENCODER)) == 0) {
+        if (from_enc && from_enc == to_enc) {
+            return -1;
+        }
+        if (from_enc && to_enc && rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
+            if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+                return to_encidx;
+            }
+        }
+        if (encoding_equal(from_e, to_e)) {
+            return -1;
+        }
     }
-    if (from_enc && to_enc && rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
-	if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
-	    return to_encidx;
-	}
-    }
-    if (encoding_equal(from_e, to_e)) {
-	return -1;
+    else {
+        if (encoding_equal(from_e, to_e)) {
+            /* newline conversion only.
+             * xxx: this assumes ascii compatible encoding. */
+            from_e = "";
+            to_e = "";
+        }
     }
 
     fromp = sp = (unsigned char *)RSTRING_PTR(str);

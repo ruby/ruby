@@ -1,3 +1,7 @@
+Tue Aug 26 00:55:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (str_transcode0): don't short cut for newline conversion.
+
 Tue Aug 26 00:36:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_fwrite): add TEXTMODE_NEWLINE_ENCODER to option for
