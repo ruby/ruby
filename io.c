@@ -674,7 +674,7 @@ rb_io_wait_writable(int f)
 }
 
 /* xxx: better way to determine the newline of the platform? */
-#if defined(O_BINARY) && O_BINARY != 0
+#if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(O_BINARY) && O_BINARY != 0
 /* Windows */
 # define NEED_NEWLINE_DECODER(fptr) (!(fptr->mode & FMODE_BINMODE))
 # define NEED_NEWLINE_ENCODER(fptr) (!(fptr->mode & FMODE_BINMODE))

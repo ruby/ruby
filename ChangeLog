@@ -1,3 +1,8 @@
+Tue Aug 26 01:29:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c: force CRLF handling if RUBY_TEST_CRLF_ENVIRONMENT is defined.
+	  This is only for testing.
+
 Tue Aug 26 01:26:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (str_transcode0): disable newline conversion for ASCII
