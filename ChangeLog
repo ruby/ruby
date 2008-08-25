@@ -1,3 +1,9 @@
+Mon Aug 25 14:22:21 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* parse.y (YYSTYPE): struct RVarmap has been no longer 
+	  defnied.
+	  see also r11717 by matz.
+
 Mon Aug 25 10:42:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (rb_econv_open_exc): constified.  

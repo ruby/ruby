@@ -586,7 +586,6 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
     NODE *node;
     ID id;
     int num;
-    struct RVarmap *vars;
 }
 
 /*%%%*/
