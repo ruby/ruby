@@ -12,13 +12,13 @@ Mon Aug 25 17:36:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Aug 25 14:22:21 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* parse.y (YYSTYPE): struct RVarmap has been no longer 
+	* parse.y (YYSTYPE): struct RVarmap has been no longer
 	  defnied.
 	  see also r11717 by matz.
 
 Mon Aug 25 10:42:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* transcode.c (rb_econv_open_exc): constified.  
+	* transcode.c (rb_econv_open_exc): constified.
 
 Mon Aug 25 07:10:21 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -38,7 +38,7 @@ Mon Aug 25 00:52:31 2008  Tanaka Akira  <akr@fsij.org>
 	* common.mk (COMMONOBJS): add BUILTIN_TRANSOBJS.
 	  (enc.mk): pass BUILTIN_TRANSOBJS.
 	  (newline.c): new rule.
-	  (newline.$(OBJEXT)): new ru.e
+	  (newline.$(OBJEXT)): new rule.
 	  (srcs): newline.c added.
 
 	* Makefile.in (BUILTIN_TRANSSRCS): defined.
