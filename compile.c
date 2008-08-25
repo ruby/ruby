@@ -2334,6 +2334,8 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *ret,
       case NODE_STR:
       case NODE_LIT:
       case NODE_ZARRAY:
+      case NODE_AND:
+      case NODE_OR:
 	estr = "expression";
 	break;
 
