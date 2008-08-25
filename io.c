@@ -755,7 +755,12 @@ io_fwrite(VALUE str, rb_io_t *fptr)
         }
 
         if (!NIL_P(common_encoding)) {
-            str = rb_str_transcode(str, common_encoding, &fptr->encs.opts);
+            rb_econv_option_t ecopts = fptr->encs.opts;
+#ifdef TEXTMODE_NEWLINE_ENCODER
+            if (NEED_NEWLINE_ENCODER(fptr))
+                ecopts.flags |= TEXTMODE_NEWLINE_ENCODER;
+#endif
+            str = rb_str_transcode(str, common_encoding, &ecopts);
         }
 
         if (fptr->writeconv) {
