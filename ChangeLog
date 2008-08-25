@@ -1,3 +1,7 @@
+Mon Aug 25 22:29:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_io.rb (test_dup): fix typo.  see [ruby-dev:35958]
+
 Mon Aug 25 22:02:35 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open_by_transcoder_entries): initialize

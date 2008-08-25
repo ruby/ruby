@@ -637,7 +637,7 @@ class TestIO < Test::Unit::TestCase
     end
 
     pipe2 do |r, w|
-      assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::NOMEM) do
+      assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
         r2, w2 = r.dup, w.dup
       end
     end
