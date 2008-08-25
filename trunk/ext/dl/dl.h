@@ -1,0 +1,190 @@
+#ifndef RUBY_DL_H
+#define RUBY_DL_H
+
+#include <ruby.h>
+
+#if !defined(FUNC_CDECL)
+#  define FUNC_CDECL(x) x
+#endif
+#if !defined(FUNC_STDCALL)
+#  define FUNC_STDCALL(x) x
+#endif
+
+#if defined(HAVE_DLFCN_H)
+# include <dlfcn.h>
+# /* some stranger systems may not define all of these */
+#ifndef RTLD_LAZY
+#define RTLD_LAZY 0
+#endif
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+#else
+# if defined(HAVE_WINDOWS_H)
+#   include <windows.h>
+#   define dlclose(ptr) FreeLibrary((HINSTANCE)ptr)
+#   define dlopen(name,flag) ((void*)LoadLibrary(name))
+#   define dlerror()    "unknown error"
+#   define dlsym(handle,name) ((void*)GetProcAddress(handle,name))
+#   define RTLD_LAZY -1
+#   define RTLD_NOW  -1
+#   define RTLD_GLOBAL -1
+# endif
+#endif
+
+#define MAX_CALLBACK 5
+#define DLSTACK_TYPE long
+#define DLSTACK_SIZE (20)
+#define DLSTACK_PROTO \
+    DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,\
+    DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,\
+    DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,\
+    DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE,DLSTACK_TYPE
+#define DLSTACK_ARGS(stack) \
+    stack[0],stack[1],stack[2],stack[3],stack[4],\
+    stack[5],stack[6],stack[7],stack[8],stack[9],\
+    stack[10],stack[11],stack[12],stack[13],stack[14],\
+    stack[15],stack[16],stack[17],stack[18],stack[19]
+
+#define DLSTACK_PROTO0 
+#define DLSTACK_PROTO1 DLSTACK_TYPE
+#define DLSTACK_PROTO2 DLSTACK_PROTO1, DLSTACK_TYPE
+#define DLSTACK_PROTO3 DLSTACK_PROTO2, DLSTACK_TYPE
+#define DLSTACK_PROTO4 DLSTACK_PROTO3, DLSTACK_TYPE
+#define DLSTACK_PROTO4 DLSTACK_PROTO3, DLSTACK_TYPE
+#define DLSTACK_PROTO5 DLSTACK_PROTO4, DLSTACK_TYPE
+#define DLSTACK_PROTO6 DLSTACK_PROTO5, DLSTACK_TYPE
+#define DLSTACK_PROTO7 DLSTACK_PROTO6, DLSTACK_TYPE
+#define DLSTACK_PROTO8 DLSTACK_PROTO7, DLSTACK_TYPE
+#define DLSTACK_PROTO9 DLSTACK_PROTO8, DLSTACK_TYPE
+#define DLSTACK_PROTO10 DLSTACK_PROTO9, DLSTACK_TYPE
+#define DLSTACK_PROTO11 DLSTACK_PROTO10, DLSTACK_TYPE
+#define DLSTACK_PROTO12 DLSTACK_PROTO11, DLSTACK_TYPE
+#define DLSTACK_PROTO13 DLSTACK_PROTO12, DLSTACK_TYPE
+#define DLSTACK_PROTO14 DLSTACK_PROTO13, DLSTACK_TYPE
+#define DLSTACK_PROTO14 DLSTACK_PROTO13, DLSTACK_TYPE
+#define DLSTACK_PROTO15 DLSTACK_PROTO14, DLSTACK_TYPE
+#define DLSTACK_PROTO16 DLSTACK_PROTO15, DLSTACK_TYPE
+#define DLSTACK_PROTO17 DLSTACK_PROTO16, DLSTACK_TYPE
+#define DLSTACK_PROTO18 DLSTACK_PROTO17, DLSTACK_TYPE
+#define DLSTACK_PROTO19 DLSTACK_PROTO18, DLSTACK_TYPE
+#define DLSTACK_PROTO20 DLSTACK_PROTO19, DLSTACK_TYPE
+
+#define DLSTACK_ARGS0(stack)
+#define DLSTACK_ARGS1(stack) stack[0]
+#define DLSTACK_ARGS2(stack) DLSTACK_ARGS1(stack), stack[1]
+#define DLSTACK_ARGS3(stack) DLSTACK_ARGS2(stack), stack[2]
+#define DLSTACK_ARGS4(stack) DLSTACK_ARGS3(stack), stack[3]
+#define DLSTACK_ARGS5(stack) DLSTACK_ARGS4(stack), stack[4]
+#define DLSTACK_ARGS6(stack) DLSTACK_ARGS5(stack), stack[5]
+#define DLSTACK_ARGS7(stack) DLSTACK_ARGS6(stack), stack[6]
+#define DLSTACK_ARGS8(stack) DLSTACK_ARGS7(stack), stack[7]
+#define DLSTACK_ARGS9(stack) DLSTACK_ARGS8(stack), stack[8]
+#define DLSTACK_ARGS10(stack) DLSTACK_ARGS9(stack), stack[9]
+#define DLSTACK_ARGS11(stack) DLSTACK_ARGS10(stack), stack[10]
+#define DLSTACK_ARGS12(stack) DLSTACK_ARGS11(stack), stack[11]
+#define DLSTACK_ARGS13(stack) DLSTACK_ARGS12(stack), stack[12]
+#define DLSTACK_ARGS14(stack) DLSTACK_ARGS13(stack), stack[13]
+#define DLSTACK_ARGS15(stack) DLSTACK_ARGS14(stack), stack[14]
+#define DLSTACK_ARGS16(stack) DLSTACK_ARGS15(stack), stack[15]
+#define DLSTACK_ARGS17(stack) DLSTACK_ARGS16(stack), stack[16]
+#define DLSTACK_ARGS18(stack) DLSTACK_ARGS17(stack), stack[17]
+#define DLSTACK_ARGS19(stack) DLSTACK_ARGS18(stack), stack[18]
+#define DLSTACK_ARGS20(stack) DLSTACK_ARGS19(stack), stack[19]
+
+extern VALUE rb_mDL;
+extern VALUE rb_cDLHandle;
+extern VALUE rb_cDLSymbol;
+extern VALUE rb_eDLError;
+extern VALUE rb_eDLTypeError;
+
+typedef struct { char c; void *x; } s_voidp;
+typedef struct { char c; short x; } s_short;
+typedef struct { char c; int x; } s_int;
+typedef struct { char c; long x; } s_long;
+typedef struct { char c; float x; } s_float;
+typedef struct { char c; double x; } s_double;
+#if HAVE_LONG_LONG
+typedef struct { char c; LONG_LONG x; } s_long_long;
+#endif
+
+#define ALIGN_VOIDP  (sizeof(s_voidp) - sizeof(void *))
+#define ALIGN_SHORT  (sizeof(s_short) - sizeof(short))
+#define ALIGN_CHAR   (1)
+#define ALIGN_INT    (sizeof(s_int) - sizeof(int))
+#define ALIGN_LONG   (sizeof(s_long) - sizeof(long))
+#if HAVE_LONG_LONG
+#define ALIGN_LONG_LONG (sizeof(s_long_long) - sizeof(LONG_LONG))
+#endif
+#define ALIGN_FLOAT  (sizeof(s_float) - sizeof(float))
+#define ALIGN_DOUBLE (sizeof(s_double) - sizeof(double))
+
+#define DLALIGN(ptr,offset,align) {\
+  while( (((unsigned long)((char *)ptr + offset)) % align) != 0 ) offset++;\
+}
+
+
+#define DLTYPE_VOID  0
+#define DLTYPE_VOIDP 1
+#define DLTYPE_CHAR  2
+#define DLTYPE_SHORT 3
+#define DLTYPE_INT   4
+#define DLTYPE_LONG  5
+#if HAVE_LONG_LONG
+#define DLTYPE_LONG_LONG 6
+#endif
+#define DLTYPE_FLOAT 7
+#define DLTYPE_DOUBLE 8
+#define MAX_DLTYPE 9
+
+#if SIZEOF_VOIDP == SIZEOF_LONG
+# define PTR2NUM(x)   (ULONG2NUM((unsigned long)(x)))
+# define NUM2PTR(x)   ((void*)(NUM2ULONG(x)))
+#else
+/* # error --->> Ruby/DL2 requires sizeof(void*) == sizeof(long) to be compiled. <<--- */
+# define PTR2NUM(x)   (ULL2NUM((unsigned long long)(x)))
+# define NUM2PTR(x)   ((void*)(NUM2ULL(x)))
+#endif
+
+#define BOOL2INT(x)  ((x == Qtrue)?1:0)
+#define INT2BOOL(x)  (x?Qtrue:Qfalse)
+
+typedef void (*freefunc_t)(void*);
+
+struct dl_handle {
+    void *ptr;
+    int  open;
+    int  enable_close;
+};
+
+
+struct cfunc_data {
+    void *ptr;
+    char *name;
+    int  type;
+    ID   calltype;
+};
+extern ID rbdl_id_cdecl;
+extern ID rbdl_id_stdcall;
+#define CFUNC_CDECL   (rbdl_id_cdecl)
+#define CFUNC_STDCALL (rbdl_id_stdcall)
+
+struct ptr_data {
+    void *ptr;
+    long size;
+    freefunc_t free;
+};
+
+#define RDL_HANDLE(obj) ((struct dl_handle *)(DATA_PTR(obj)))
+#define RCFUNC_DATA(obj) ((struct cfunc_data *)(DATA_PTR(obj)))
+#define RPTR_DATA(obj) ((struct ptr_data *)(DATA_PTR(obj)))
+
+VALUE rb_dlcfunc_new(void (*func)(), int dltype, const char * name, ID calltype);
+VALUE rb_dlptr_new(void *ptr, long size, freefunc_t func);
+VALUE rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func);
+VALUE rb_dlptr_malloc(long size, freefunc_t func);
+
+#endif

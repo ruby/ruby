@@ -1,0 +1,47 @@
+# -*- makefile -*-
+
+CROSS_COMPILING = 1
+LARGEFILE_SUPPORT = 0
+
+!ifndef win_srcdir
+win_srcdir = $(srcdir)/wince
+!endif
+
+!if !defined(OS) || !defined(RT)
+OS = mswince
+RT = $(OS)
+!endif
+
+!if !defined(WARNFLAGS)
+WARNFLAGS = -w
+!endif
+ARCHDEFS  = $(CECPUDEF) -DUNDER_CE -D_WIN32_WCE=$(SUBSYSVERSION:.=) \
+           -DFILENAME_MAX=MAX_PATH -DTLS_OUT_OF_INDEXES=0xFFFFFFFF \
+           -DBUFSIZ=512 -D_UNICODE -DUNICODE
+!if !defined(LDFLAGS)
+LDFLAGS = -link -incremental:yes -pdb:none -machine:$(MACHINE) -subsystem:$(SUBSYSTEM)
+!endif
+!if !defined(XLDFLAGS)
+XLDFLAGS = -stack:$(STACK) -subsystem:$(SUBSYSTEM)
+!endif
+LIBS = coredll.lib ceshell.lib winsock.lib  $(EXTLIBS)
+MISSING = acosh.obj cbrt.obj crypt.obj dup2.obj erf.obj hypot.obj \
+          isinf.obj isnan.obj lgamma.obj strftime.obj strlcat.obj strlcpy.obj
+          tgamma.obj win32.obj \
+          assert.obj direct.obj errno.obj io_wce.obj process_wce.obj \
+          signal_wce.obj stdio.obj stdlib.obj string_wce.obj \
+          time_wce.obj wince.obj winsock2.obj \
+          stat.obj timeb.obj utime.obj
+LIBOBJS      = isinf.obj isnan.obj
+COMMON_LIBS  = coredll winsock
+COMMON_MACROS = WIN32_LEAN_AND_MEAN
+COMMON_HEADERS = winsock.h windows.h
+
+XCFLAGS = -I$(srcdir)/wince
+
+!if !defined(STACK_COMMIT)
+STACK_COMMIT = 0x10000
+!endif
+WINMAINOBJ    = wincemain.$(OBJEXT)
+
+!include $(srcdir)/win32/Makefile.sub

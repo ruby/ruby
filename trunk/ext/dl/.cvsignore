@@ -1,0 +1,10 @@
+Makefile
+mkmf.log
+dlconfig.h
+dlconfig.rb
+callback.h
+*.func
+*.o
+*~
+*.def
+extconf.h

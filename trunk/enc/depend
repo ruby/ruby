@@ -1,0 +1,125 @@
+% deffile = (true if /\$\(DEFFILE\)/ =~ CONFIG["LINK_SO"])
+% encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS
+% encs.each {|e| e.chomp!(".c")}
+% encs.reject! {|e| !ENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !ENC_PATTERNS.empty?
+% encs.reject! {|e| NOENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
+% alphanumeric_order = proc {|e| e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten}
+% encs = encs.sort_by(&alphanumeric_order)
+% encs.unshift(encs.delete("encdb"))
+% atrans = []
+% trans = Dir.open($srcdir+"/trans") {|d|
+%   d.select {|e|
+%     if e.chomp!('.trans')
+%       atrans << e
+%       true
+%     elsif e.chomp!('.c')
+%       true
+%     end
+%   }
+% }
+% trans -= BUILTIN_TRANSES
+% atrans -= BUILTIN_TRANSES
+% trans.uniq!
+% atrans = atrans.sort_by(&alphanumeric_order)
+% trans = trans.sort_by(&alphanumeric_order)
+% trans.unshift(trans.delete("transdb"))
+% trans |= atrans
+% trans.map! {|e| "trans/#{e}"}
+% dependencies = encs + trans
+% cleanlibs = Shellwords.shellwords(CONFIG["cleanlibs"] || "")
+% cleanobjs = Shellwords.shellwords(CONFIG["cleanobjs"] || "")
+% rule_subst = CONFIG["RULE_SUBST"] || "%s"
+% transvpath = rule_subst.dup.sub!(/\{[^{}]+\}/, '$(TRANSVPATH)/') || "enc/trans/%s"
+% transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "") % ""
+% if File::ALT_SEPARATOR
+%   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
+% else
+%   pathrep = proc {|path| path}
+% end
+
+VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(srcdir) $(encsrcdir)].join(CONFIG["PATH_SEPARATOR"])%>
+LIBPATH = <%=libpathflag($DEFLIBPATH)%>
+
+ENCOBJS = <%=encs.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if encs.size>1%>
+ENCSOS = <%=encs.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%><%="\n" if encs.size>1%>
+ENCCLEANLIBS = <%=cleanlibs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+ENCCLEANOBJS = <%=cleanobjs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+
+TRANSVPATH = $(srcdir)/enc/trans
+
+TRANSCSRCS = <%=atrans.map {|e| transvpath % "#{e}.c"}.join(" \\\n\t     ")%><%="\n" if trans.size>1%>
+TRANSOBJS = <%=trans.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if trans.size>1%>
+TRANSSOS = <%=trans.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%><%="\n" if trans.size>1%>
+TRANSCLEANLIBS = <%=cleanlibs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+
+all: $(ENCSOS) $(TRANSSOS)
+
+srcs: $(TRANSCSRCS)
+
+% if rule = (compile_rules = COMPILE_RULES).find(&/\$\(srcdir\)/.method(:=~))
+%   compile_rules = [rule.sub(/\$\(srcdir\)/, '\&/enc'), rule.sub(/\$\(srcdir\)/, '\&/enc/trans')] + compile_rules
+% end
+% compile_rules.each do |rule|
+<%=  rule % %w[c $(OBJEXT)] %>
+	-@$(MAKEDIRS) "$(@D)"
+	<%=COMPILE_C%>
+
+% end
+
+<%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
+	$(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
+
+% unless encs.empty? or trans.empty?
+
+%   unless encs.empty?
+$(ENCOBJS): regenc.h oniguruma.h config.h defines.h
+%   end
+%   unless trans.empty?
+$(TRANSOBJS): ruby.h intern.h config.h defines.h missing.h encoding.h oniguruma.h st.h transcode_data.h
+%   end
+%   atrans.each do |e|
+%     src = "#{e}.trans"
+
+<%=transvpath % "#{e}.c"%>: <%= transvpath % "#{e}.trans"%>
+%     src = [*IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
+<%=transvpath % "#{e}.c"%>: <%= src.map {|e| transvpath % "#{e}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
+%   end
+
+% end
+% link_so = LINK_SO.gsub(/\n/, "\n\t")
+% link_so.gsub!(/(-(?:implib|pdb):\S+)-\$\(arch\)\./, '\1.')
+% dependencies.each do |e|
+%   obj = "enc/#{e}.$(OBJEXT)"
+%   df = ("enc/#{e}.def" if deffile)
+$(ENCSODIR)/<%=e%>.$(DLEXT): <%=obj%>
+%   if df
+	echo> <%=df%> EXPORTS
+	echo>> <%=df%> <%=EXPORT_PREFIX%>Init_<%=File.basename(e)%>
+%   end
+	@$(MAKEDIRS) "$(@D)"
+	<%=link_so.sub(/\$\(OBJS\)/) {obj}.sub(/\$\(DEFFILE\)/) {df}.gsub(/-(?:implib|pdb):/) {|s|"#{s}enc/#{e.sub(/[^\/]+\z/, '')}"}%>
+
+% end
+% dependencies.each do |e|
+<%=rule_subst % "enc/#{e}.$(OBJEXT)"%>: <%=rule_subst % "enc/#{e}.c"%>
+% end
+
+enc/encdb.$(OBJEXT): encdb.h
+enc/trans/transdb.$(OBJEXT): transdb.h
+
+clean:
+% %w[$(ENCSOS) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS) $(TRANSCSRCS)].each do |clean|
+	@$(RM) <%=pathrep[clean]%>
+% end
+% %w[$(ENCSODIR)/trans $(ENCSODIR) enc/trans enc].each do|dir|
+	@-rmdir <%=pathrep[dir]%>
+% end
