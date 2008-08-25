@@ -58,8 +58,8 @@ Mon Aug 25 23:56:42 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Mon Aug 25 23:38:17 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* lib/date/format.rb(strftime): can print with given arbitrary
-	  precision.
+	* lib/date/format.rb(strftime): %[LN] can print with given
+	  arbitrary precision.
 
 	* lib/date/format.rb(strftime): optional flags and filed width
 	  should also affect %[nt].
