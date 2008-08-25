@@ -53,9 +53,10 @@ def package(rev, destdir)
   when /\Astable\z/
     url = SVNURL + "branches/"
     url = url + `svn ls #{url}`[/.*^(ruby_\d+_\d+)\//m, 1]
-  when /\A\(.*\..*\..*\)-/
-    patchlevel = true
-    url = SVNURL + "tags/v#{rev.sub(/-p?/, '_').tr('.', '_')}"
+  when /\A(.*)\.(.*)\.(.*)-(p)?(.*)/
+    patchlevel = !!$4
+    tag = "#{$4}#{$5}"
+    url = SVNURL + "tags/v#{$1}_#{$2}_#{$3}_#{$5}"
   when /\./
     url = SVNURL + "branches/ruby_#{rev.tr('.', '_')}"
   else
@@ -97,7 +98,7 @@ def package(rev, destdir)
     patchlevel = versionhdr[/^\#define\s+RUBY_PATCHLEVEL\s+(\d+)/, 1]
     tag = (patchlevel ? "p#{patchlevel}" : "r#{revision}")
   else
-    tag = "r#{revision}"
+    tag ||= "r#{revision}"
   end
   v = "ruby-#{version}-#{tag}"
   File.directory?(v) or File.rename "ruby", v

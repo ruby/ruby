@@ -797,7 +797,7 @@ vtune: miniruby$(EXEEXT)
 	vtl view -ha -mn miniruby$(EXEEXT) -sum -sort -cd | $(RUNRUBY) $(srcdir)/tool/vtlh.rb > ha.lines
 
 dist: $(PREP) $(PROGRAM)
-	$(SHELL) $(srcdir)/tool/make-snapshot . $(TARNAME)
+	$(srcdir)/tool/make-snapshot . $(TARNAME)
 
 up:
 	@$(VCS) up "$(srcdir)"

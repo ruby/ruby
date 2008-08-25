@@ -1,3 +1,9 @@
+Tue Aug 26 02:47:08 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* common.mk (dist): tool/make-snapshot is executable.
+
+	* tool/make-snapshot (package): supported release numbers 1.9.0-x.
+
 Tue Aug 26 02:43:50 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): new field: writeconv_pre_opts.
