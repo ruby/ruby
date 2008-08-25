@@ -1,3 +1,8 @@
+Mon Aug 25 22:46:01 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_thread.rb (test_status_and_stop_p): reduce the risk
+	  of race condition.
+
 Mon Aug 25 22:39:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* lib/irb/extend-command.rb (def_extend_command): check number of

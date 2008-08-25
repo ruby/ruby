@@ -299,19 +299,22 @@ class TestThread < Test::Unit::TestCase
     d = Thread.new { sleep }
     e = Thread.current
     sleep 0.5
-    d.kill
 
     assert_equal(nil, a.status)
+    assert(a.stop?)
+
     assert_equal("sleep", b.status)
+    assert(b.stop?)
+
     assert_equal(false, c.status)
     assert_match(/^#<TestThread::Thread:.* dead>$/, c.inspect)
-    assert_equal("aborting", d.status)
-    assert_equal("run", e.status)
-
-    assert(a.stop?)
-    assert(b.stop?)
     assert(c.stop?)
+
+    d.kill
+    assert_equal("aborting", d.status)
     assert(!d.stop?)
+
+    assert_equal("run", e.status)
     assert(!e.stop?)
 
   ensure
