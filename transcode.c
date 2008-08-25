@@ -1433,7 +1433,7 @@ rb_econv_open_exc(const char *senc, const char *denc, rb_econv_option_t *opts)
     if (flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
                  ECONV_CRLF_NEWLINE_ENCODER|
                  ECONV_CR_NEWLINE_ENCODER)) {
-        char *pre = "";
+        const char *pre = "";
         if (!noenc)
             rb_str_cat2(mesg, " with ");
         if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER)  {
