@@ -466,6 +466,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       case 24: goto resume_label24;
       case 25: goto resume_label25;
       case 26: goto resume_label26;
+      case 27: goto resume_label27;
     }
 
     while (1) {
@@ -500,7 +501,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(25);
 	    while (in_p >= in_stop) {
                 if (!(opt & ECONV_PARTIAL_INPUT))
-                    goto invalid;
+                    goto incomplete;
                 SUSPEND(econv_source_buffer_empty, 5);
 	    }
 	    next_byte = (unsigned char)*in_p++;
@@ -600,6 +601,10 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 
       invalid:
         SUSPEND(econv_invalid_byte_sequence, 1);
+        continue;
+
+      incomplete:
+        SUSPEND(econv_incomplete_input, 27);
         continue;
 
       undef:
@@ -949,6 +954,7 @@ trans_sweep(rb_econv_t *ec,
 
             switch (res) {
               case econv_invalid_byte_sequence:
+              case econv_incomplete_input:
               case econv_undefined_conversion:
               case econv_output_followed_by_input:
                 return i;
@@ -997,6 +1003,7 @@ rb_trans_conv(rb_econv_t *ec,
     for (i = ec->num_trans-1; 0 <= i; i--) {
         switch (ec->elems[i].last_result) {
           case econv_invalid_byte_sequence:
+          case econv_incomplete_input:
           case econv_undefined_conversion:
           case econv_output_followed_by_input:
           case econv_finished:
@@ -1030,7 +1037,7 @@ rb_trans_conv(rb_econv_t *ec,
 
     sweep_start = 0;
 
-found_needreport:
+  found_needreport:
 
     do {
         needreport_index = trans_sweep(ec, input_ptr, input_stop, output_ptr, output_stop, flags, sweep_start);
@@ -1041,6 +1048,7 @@ found_needreport:
         if (ec->elems[i].last_result != econv_source_buffer_empty) {
             rb_econv_result_t res = ec->elems[i].last_result;
             if (res == econv_invalid_byte_sequence ||
+                res == econv_incomplete_input ||
                 res == econv_undefined_conversion ||
                 res == econv_output_followed_by_input) {
                 ec->elems[i].last_result = econv_source_buffer_empty;
@@ -1160,10 +1168,11 @@ rb_econv_convert0(rb_econv_t *ec,
         } while (res == econv_output_followed_by_input);
     }
 
-gotresult:
+  gotresult:
     ec->last_error.result = res;
     ec->last_error.partial_input = flags & ECONV_PARTIAL_INPUT;
     if (res == econv_invalid_byte_sequence ||
+        res == econv_incomplete_input ||
         res == econv_undefined_conversion) {
         rb_transcoding *error_tc = ec->elems[result_position].tc;
         ec->last_error.error_tc = error_tc;
@@ -1200,10 +1209,11 @@ rb_econv_convert(rb_econv_t *ec,
         output_stop = empty_ptr;
     }
 
-resume:
+  resume:
     ret = rb_econv_convert0(ec, input_ptr, input_stop, output_ptr, output_stop, flags);
 
-    if (ret == econv_invalid_byte_sequence) {
+    if (ret == econv_invalid_byte_sequence ||
+        ret == econv_incomplete_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
 	if (ec->opts.flags&ECONV_INVALID_IGNORE) {
@@ -1398,7 +1408,7 @@ rb_econv_insert_output(rb_econv_t *ec,
         xfree((void*)insert_str);
     return 0;
 
-fail:
+  fail:
     if (insert_str != str)
         xfree((void*)insert_str);
     return -1;
@@ -1620,7 +1630,8 @@ static VALUE
 make_econv_exception(rb_econv_t *ec)
 {
     VALUE mesg, exc;
-    if (ec->last_error.result == econv_invalid_byte_sequence) {
+    if (ec->last_error.result == econv_invalid_byte_sequence ||
+        ec->last_error.result == econv_incomplete_input) {
         const char *err = (const char *)ec->last_error.error_bytes_start;
         size_t error_len = ec->last_error.error_bytes_len;
         VALUE bytes = rb_str_new(err, error_len);
@@ -1628,7 +1639,12 @@ make_econv_exception(rb_econv_t *ec)
         size_t readagain_len = ec->last_error.readagain_len;
         VALUE bytes2 = Qnil;
         VALUE dumped2;
-        if (readagain_len) {
+        if (ec->last_error.result == econv_incomplete_input) {
+            mesg = rb_sprintf("incomplete input: %s on %s",
+                    StringValueCStr(dumped),
+                    ec->last_error.source_encoding);
+        }
+        else if (readagain_len) {
             bytes2 = rb_str_new(err+error_len, readagain_len);
             dumped2 = rb_str_dump(bytes2);
             mesg = rb_sprintf("invalid byte sequence: %s followed by %s on %s",
@@ -1647,6 +1663,7 @@ make_econv_exception(rb_econv_t *ec)
         rb_ivar_set(exc, rb_intern("destination_encoding"), rb_str_new2(ec->last_error.destination_encoding));
         rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
         rb_ivar_set(exc, rb_intern("readagain_bytes"), bytes2);
+        rb_ivar_set(exc, rb_intern("incomplete_input"), ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
         return exc;
     }
     if (ec->last_error.result == econv_undefined_conversion) {
@@ -1742,10 +1759,11 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
 
-resume:
+  resume:
     ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, 0);
 
-    if (ret == econv_invalid_byte_sequence) {
+    if (ret == econv_invalid_byte_sequence ||
+        ret == econv_incomplete_input) {
         exc = make_econv_exception(ec);
         rb_econv_close(ec);
 	rb_exc_raise(exc);
@@ -1812,6 +1830,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
             ptr += p - &input_byte;
         switch (ret) {
           case econv_invalid_byte_sequence:
+          case econv_incomplete_input:
             exc = make_econv_exception(ec);
             rb_econv_close(ec);
             rb_exc_raise(exc);
@@ -2291,6 +2310,7 @@ econv_result_to_symbol(rb_econv_result_t res)
 {
     switch (res) {
       case econv_invalid_byte_sequence: return ID2SYM(rb_intern("invalid_byte_sequence"));
+      case econv_incomplete_input: return ID2SYM(rb_intern("incomplete_input"));
       case econv_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));
       case econv_destination_buffer_full: return ID2SYM(rb_intern("destination_buffer_full"));
       case econv_source_buffer_empty: return ID2SYM(rb_intern("source_buffer_empty"));
@@ -2311,6 +2331,7 @@ econv_result_to_symbol(rb_econv_result_t res)
  *
  * possible results:
  *    :invalid_byte_sequence
+ *    :incomplete_input
  *    :undefined_conversion
  *    :output_followed_by_input
  *    :destination_buffer_full
@@ -2342,6 +2363,8 @@ econv_result_to_symbol(rb_econv_result_t res)
  *
  * primitive_convert stops conversion when one of following condition met.
  * - invalid byte sequence found in source buffer (:invalid_byte_sequence)
+ * - unexpected end of source buffer (:incomplete_input)
+ *   this occur only when PARTIAL_INPUT is not specified.
  * - character not representable in output encoding (:undefined_conversion)
  * - after some output is generated, before input is done (:output_followed_by_input)
  *   this occur only when OUTPUT_FOLLOWED_BY_INPUT is specified.
@@ -2451,7 +2474,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  * for primitive_convert.
  *
  * Other elements are only meaningful when result is
- * :invalid_byte_sequence or :undefined_conversion.
+ * :invalid_byte_sequence, :incomplete_input or :undefined_conversion.
  *
  * enc1 and enc2 indicats a conversion step as pair of strings.
  * For example, EUC-JP to ISO-8859-1 is
@@ -2482,7 +2505,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
  *   ec.primitive_convert(src="\xa4", dst="", nil, 10)
  *   p ec.primitive_errinfo
- *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xA4", "", nil]
+ *   #=> [:incomplete_input, "EUC-JP", "UTF-8", "\xA4", "", nil]
  *
  *   # Encoding::Converter::PARTIAL_INPUT prevents invalid errors by
  *   # partial characters.
@@ -2625,6 +2648,12 @@ ecerr_readagain_bytes(VALUE self)
     return rb_attr_get(self, rb_intern("readagain_bytes"));
 }
 
+static VALUE
+ecerr_incomplete_input(VALUE self)
+{
+    return rb_attr_get(self, rb_intern("incomplete_input"));
+}
+
 extern void Init_newline(void);
 
 void
@@ -2674,6 +2703,7 @@ Init_transcode(void)
     rb_define_method(rb_eInvalidByteSequence, "destination_encoding", ecerr_destination_encoding, 0);
     rb_define_method(rb_eInvalidByteSequence, "error_bytes", ecerr_error_bytes, 0);
     rb_define_method(rb_eInvalidByteSequence, "readagain_bytes", ecerr_readagain_bytes, 0);
+    rb_define_method(rb_eInvalidByteSequence, "incomplete_input?", ecerr_incomplete_input, 0);
 
     Init_newline();
 }

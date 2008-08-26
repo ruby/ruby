@@ -364,7 +364,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_errinfo_invalid_partial_character
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
     ec.primitive_convert(src="\xa4", dst="", nil, 10)
-    assert_errinfo(:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xA4", "", nil, ec)
+    assert_errinfo(:incomplete_input, "EUC-JP", "UTF-8", "\xA4", "", nil, ec)
   end
 
   def test_errinfo_valid_partial_character
@@ -426,6 +426,18 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("UTF-8", err.destination_encoding)
     assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
     assert_equal("d", err.readagain_bytes)
+    assert_equal(false, err.incomplete_input?)
+  end
+
+  def test_exc_incomplete
+    err = assert_raise(Encoding::InvalidByteSequence) {
+      "abc\xa4".encode("ISO-8859-1", "EUC-JP")
+    }
+    assert_equal("EUC-JP", err.source_encoding)
+    assert_equal("UTF-8", err.destination_encoding)
+    assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
+    assert_equal(nil, err.readagain_bytes)
+    assert_equal(true, err.incomplete_input?)
   end
 
   def test_exc_undef

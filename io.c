@@ -2967,7 +2967,7 @@ finish_writeconv(rb_io_t *fptr, int noraise)
             de = buf + sizeof(buf);
             res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
             while (dp-ds) {
-retry:
+              retry:
                 r = rb_write_internal(fptr->fd, ds, dp-ds);
                 if (r == dp-ds)
                     break;
@@ -2987,6 +2987,7 @@ retry:
                 rb_econv_check_error(fptr->writeconv);
             }
             if (res == econv_invalid_byte_sequence ||
+                res == econv_incomplete_input ||
                 res == econv_undefined_conversion) {
                 break;
             }
@@ -3009,6 +3010,7 @@ retry:
             rb_econv_check_error(fptr->writeconv);
         }
         if (res == econv_invalid_byte_sequence ||
+            res == econv_incomplete_input ||
             res == econv_undefined_conversion) {
             break;
         }
@@ -3603,7 +3605,7 @@ rb_io_mode_flags(const char *mode)
         }
     }
 
-finished:
+  finished:
     if ((flags & FMODE_BINMODE) && (flags & FMODE_TEXTMODE))
         goto error;
 
@@ -7051,7 +7053,7 @@ copy_stream_sendfile(struct copy_stream_struct *stp)
         }
     }
 
-retry_sendfile:
+  retry_sendfile:
     if (use_pread) {
         ss = simple_sendfile(stp->dst_fd, stp->src_fd, &src_offset, copy_length);
     }
@@ -7095,7 +7097,7 @@ static ssize_t
 copy_stream_read(struct copy_stream_struct *stp, char *buf, int len, off_t offset)
 {
     ssize_t ss;
-retry_read:
+  retry_read:
     if (offset == (off_t)-1)
         ss = read(stp->src_fd, buf, len);
     else {
@@ -7231,7 +7233,7 @@ copy_stream_func(void *arg)
     copy_stream_read_write(stp);
 
 #ifdef USE_SENDFILE
-finish:
+  finish:
 #endif
     return Qnil;
 }
