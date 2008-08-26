@@ -1,7 +1,7 @@
 Tue Aug 26 14:43:10 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Activate Enumerator#with_object and add
-	  Enumerable#each_with_object.
+	  Enumerable#each_with_object. [experimental]
 
 Tue Aug 26 14:38:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
