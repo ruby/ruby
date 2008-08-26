@@ -365,6 +365,60 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # 神林義博
   end
 
+  def test_euc_jp
+    check_both_ways("\u3000", "\xA1\xA1", 'euc-jp') # full-width space
+    check_both_ways("\u00D7", "\xA1\xDF", 'euc-jp') # ×
+    check_both_ways("\u00F7", "\xA1\xE0", 'euc-jp') # ÷
+    check_both_ways("\u25C7", "\xA1\xFE", 'euc-jp') # ◇
+    check_both_ways("\u25C6", "\xA2\xA1", 'euc-jp') # ◆
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xAF".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xB9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xC2".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xC9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xD1".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xDB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xEB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xF1".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xFA".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA2\xFD".encode("utf-8", 'euc-jp') }
+    check_both_ways("\u25EF", "\xA2\xFE", 'euc-jp') # ◯
+    assert_raise(Encoding::ConversionUndefined) { "\xA3\xAF".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA3\xBA".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA3\xC0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA3\xDB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA3\xE0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA3\xFB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA4\xF4".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA5\xF7".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA6\xB9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA6\xC0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA6\xD9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA7\xC2".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA7\xD0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA7\xF2".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xA8\xC1".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xCF\xD4".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefined) { "\xCF\xFE".encode("utf-8", 'euc-jp') }
+    check_both_ways("\u6A97", "\xDD\xA1", 'euc-jp') # 檗
+    check_both_ways("\u6BEF", "\xDD\xDF", 'euc-jp') # 毯
+    check_both_ways("\u9EBE", "\xDD\xE0", 'euc-jp') # 麾
+    check_both_ways("\u6CBE", "\xDD\xFE", 'euc-jp') # 沾
+    check_both_ways("\u6CBA", "\xDE\xA1", 'euc-jp') # 沺
+    check_both_ways("\u6ECC", "\xDE\xFE", 'euc-jp') # 滌
+    check_both_ways("\u6F3E", "\xDF\xA1", 'euc-jp') # 漾
+    check_both_ways("\u70DD", "\xDF\xDF", 'euc-jp') # 烝
+    check_both_ways("\u70D9", "\xDF\xE0", 'euc-jp') # 烙
+    check_both_ways("\u71FC", "\xDF\xFE", 'euc-jp') # 燼
+    check_both_ways("\u71F9", "\xE0\xA1", 'euc-jp') # 燹
+    check_both_ways("\u73F1", "\xE0\xFE", 'euc-jp') # 珱
+    assert_raise(Encoding::ConversionUndefined) { "\xF4\xA7".encode("utf-8", 'euc-jp') }
+    check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜
+    
+    check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jp') # 松本行弘
+    check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC0\xC4\xBB\xB3\xB3\xD8\xB1\xA1\xC2\xE7\xB3\xD8", 'euc-jp') # 青山学院大学
+    check_both_ways("\u795E\u6797\u7FA9\u535A", "\xBF\xC0\xCE\xD3\xB5\xC1\xC7\xEE", 'euc-jp') # 神林義博
+  end
+
   def test_iso_2022_jp
     assert_raise(Encoding::InvalidByteSequence) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
     assert_raise(Encoding::InvalidByteSequence) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
