@@ -1,3 +1,11 @@
+Tue Aug 26 23:52:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_elem_t): move to transcode.c
+	  (rb_econv_t): defined as an incomplete type.
+
+	* transcode.c (rb_econv_elem_t): moved from encoding.h.
+	  (rb_econv_t): complete type defined.
+
 Tue Aug 26 22:44:12 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* time.c (time_asctime): workaround for MSVCRT's bug.

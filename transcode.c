@@ -23,6 +23,48 @@ VALUE rb_cEncodingConverter;
 
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 
+typedef struct {
+    struct rb_transcoding *tc;
+    unsigned char *out_buf_start;
+    unsigned char *out_data_start;
+    unsigned char *out_data_end;
+    unsigned char *out_buf_end;
+    rb_econv_result_t last_result;
+} rb_econv_elem_t;
+
+struct rb_econv_t {
+    rb_econv_option_t opts;
+    const char *source_encoding_name;
+    const char *destination_encoding_name;
+
+    unsigned char *in_buf_start;
+    unsigned char *in_data_start;
+    unsigned char *in_data_end;
+    unsigned char *in_buf_end;
+    rb_econv_elem_t *elems;
+    int num_trans;
+    int num_finished;
+    int last_trans_index; /* last trans, not including universal newline */
+    struct rb_transcoding *last_tc;
+
+    /* last error */
+    struct {
+        rb_econv_result_t result;
+        struct rb_transcoding *error_tc;
+        const char *source_encoding;
+        const char *destination_encoding;
+        const unsigned char *error_bytes_start;
+        size_t error_bytes_len;
+        size_t readagain_len;
+        int partial_input;
+    } last_error;
+
+    /* The following fields are only for Encoding::Converter.
+     * rb_econv_open set them NULL. */
+    rb_encoding *source_encoding;
+    rb_encoding *destination_encoding;
+};
+
 /*
  *  Dispatch data and logic
  */
