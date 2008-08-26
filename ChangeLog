@@ -1,3 +1,11 @@
+Tue Aug 26 22:44:12 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (time_asctime): workaround for MSVCRT's bug.
+	  based on a patch from wanabe <s.wanabe AT gmail.com> at
+	  [ruby-dev:35831] and a suggestion by KIMURA Koichi
+	  <kbk AT kt.rim.or.jp> at [ruby-dev:35832]
+	  fixed [ruby-dev:35555]
+
 Tue Aug 26 21:53:56 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open): disable newline conversion for ASCII
