@@ -1763,12 +1763,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     ret = rb_econv_convert(ec, in_pos, in_stop, out_pos, out_stop, 0);
 
     if (ret == econv_invalid_byte_sequence ||
-        ret == econv_incomplete_input) {
-        exc = make_econv_exception(ec);
-        rb_econv_close(ec);
-	rb_exc_raise(exc);
-    }
-    if (ret == econv_undefined_conversion) {
+        ret == econv_incomplete_input ||
+        ret == econv_undefined_conversion) {
         exc = make_econv_exception(ec);
         rb_econv_close(ec);
 	rb_exc_raise(exc);
@@ -1831,11 +1827,6 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         switch (ret) {
           case econv_invalid_byte_sequence:
           case econv_incomplete_input:
-            exc = make_econv_exception(ec);
-            rb_econv_close(ec);
-            rb_exc_raise(exc);
-            break;
-
           case econv_undefined_conversion:
             exc = make_econv_exception(ec);
             rb_econv_close(ec);
