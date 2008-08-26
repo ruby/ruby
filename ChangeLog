@@ -1,3 +1,8 @@
+Tue Aug 26 16:16:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/cgi/test_cgi_tag_helper.rb: add more tests for html3.
+	  Patch by Takeyuki Fujioka. [ruby-dev:35975]
+
 Tue Aug 26 14:43:10 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c: Activate Enumerator#with_object and add
