@@ -1283,6 +1283,7 @@ class CGI
     #   - O EMPTY
     def nOE_element_def(element, append = nil)
       s = <<-END
+          attributes={attributes=>nil} if attributes.kind_of?(String)
           "<#{element.upcase}" + attributes.collect{|name, value|
             next unless value
             " " + CGI::escapeHTML(name) +
@@ -1389,11 +1390,11 @@ class CGI
     #
     #   blockquote("http://www.example.com/quotes/foo.html") { "Foo!" }
     #     #=> "<BLOCKQUOTE CITE=\"http://www.example.com/quotes/foo.html\">Foo!</BLOCKQUOTE>
-    def blockquote(cite = nil)  # :yield:
+    def blockquote(cite = {})  # :yield:
       attributes = if cite.kind_of?(String)
                      { "CITE" => cite }
                    else
-                     cite or ""
+                     cite
                    end
       if block_given?
         super(attributes){ yield }
@@ -1413,11 +1414,11 @@ class CGI
     #
     #   caption("left") { "Capital Cities" }
     #     # => <CAPTION ALIGN=\"left\">Capital Cities</CAPTION>
-    def caption(align = nil) # :yield:
+    def caption(align = {}) # :yield:
       attributes = if align.kind_of?(String)
                      { "ALIGN" => align }
                    else
-                     align or ""
+                     align
                    end
       if block_given?
         super(attributes){ yield }
