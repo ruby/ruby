@@ -111,6 +111,8 @@ Compatible
     * Enumerable and Enumerator
           o Enumerable#map,collect_all called without a block returns
             an enumerator.
+          o Enumerable#each_with_object [experimental]
+          o Enumerator#with_object [experimental]
           o Enumerator.new { ... } [experimental]
     * Regexp#match, String#match
           o Regexp#match, String#match

@@ -217,6 +217,37 @@ enum_each_cons(VALUE obj, VALUE n)
 }
 
 static VALUE
+each_with_object_i(VALUE val, VALUE memo)
+{
+    return rb_yield_values(2, val, memo);
+}
+
+/*
+ *  call-seq:
+ *    each_with_object(obj) {|(*args), memo_obj| ... }
+ *    each_with_object(obj)
+ *
+ *  Iterates the given block for each element with an arbitrary
+ *  object given, and returns the initially given object.
+
+ *  If no block is given, returns an enumerator.
+ *
+ *  e.g.:
+ *      evens = (1..10).each_with_object([]) {|i, a| a << i*2 }
+ *      # => [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+ *
+ */
+static VALUE
+enum_each_with_object(VALUE obj, VALUE memo)
+{
+    RETURN_ENUMERATOR(obj, 1, &memo);
+
+    rb_block_call(obj, SYM2ID(sym_each), 0, 0, each_with_object_i, memo);
+
+    return memo;
+}
+
+static VALUE
 enumerator_allocate(VALUE klass)
 {
     struct enumerator *ptr;
@@ -412,7 +443,7 @@ enumerator_with_object_i(VALUE val, VALUE memo)
  *    e.with_object(obj)
  *
  *  Iterates the given block for each element with an arbitrary
- *  object given, and returns memo object.
+ *  object given, and returns the initially given object.
  *
  *  If no block is given, returns an enumerator.
  *
@@ -424,7 +455,7 @@ enumerator_with_object(VALUE obj, VALUE memo)
     int argc = 0;
     VALUE *argv = 0;
 
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_ENUMERATOR(obj, 1, &memo);
     e = enumerator_ptr(obj);
     if (e->args) {
 	argc = RARRAY_LEN(e->args);
@@ -734,6 +765,7 @@ Init_Enumerator(void)
 
     rb_define_method(rb_mEnumerable, "each_slice", enum_each_slice, 1);
     rb_define_method(rb_mEnumerable, "each_cons", enum_each_cons, 1);
+    rb_define_method(rb_mEnumerable, "each_with_object", enum_each_with_object, 1);
 
     rb_cEnumerator = rb_define_class("Enumerator", rb_cObject);
     rb_include_module(rb_cEnumerator, rb_mEnumerable);
@@ -743,12 +775,9 @@ Init_Enumerator(void)
     rb_define_method(rb_cEnumerator, "initialize_copy", enumerator_init_copy, 1);
     rb_define_method(rb_cEnumerator, "each", enumerator_each, 0);
     rb_define_method(rb_cEnumerator, "each_with_index", enumerator_with_index, 0);
+    rb_define_method(rb_cEnumerator, "each_with_object", enumerator_with_object, 1);
     rb_define_method(rb_cEnumerator, "with_index", enumerator_with_index, 0);
-#if 0
     rb_define_method(rb_cEnumerator, "with_object", enumerator_with_object, 1);
-#else
-    (void)enumerator_with_object;
-#endif
     rb_define_method(rb_cEnumerator, "next", enumerator_next, 0);
     rb_define_method(rb_cEnumerator, "rewind", enumerator_rewind, 0);
 
