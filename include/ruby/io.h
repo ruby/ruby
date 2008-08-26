@@ -62,10 +62,10 @@ typedef struct rb_io_t {
     } encs;
 
     rb_econv_t *readconv;
-    char *crbuf;                /* crbuf_off + crbuf_len <= crbuf_capa */
-    int crbuf_off;
-    int crbuf_len;
-    int crbuf_capa;
+    char *cbuf;                /* cbuf_off + cbuf_len <= cbuf_capa */
+    int cbuf_off;
+    int cbuf_len;
+    int cbuf_capa;
 
     rb_econv_t *writeconv;
     VALUE writeconv_stateless;
@@ -119,10 +119,10 @@ typedef struct rb_io_t {
     fp->rbuf_len = 0;\
     fp->rbuf_capa = 0;\
     fp->readconv = NULL;\
-    fp->crbuf = NULL;\
-    fp->crbuf_off = 0;\
-    fp->crbuf_len = 0;\
-    fp->crbuf_capa = 0;\
+    fp->cbuf = NULL;\
+    fp->cbuf_off = 0;\
+    fp->cbuf_len = 0;\
+    fp->cbuf_capa = 0;\
     fp->writeconv = NULL;\
     fp->writeconv_stateless = Qnil;\
     fp->writeconv_initialized = 0;\

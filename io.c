@@ -1455,10 +1455,10 @@ make_readconv(rb_io_t *fptr)
         fptr->readconv = rb_econv_open(sname, dname, &ecopts);
         if (!fptr->readconv)
             rb_exc_raise(rb_econv_open_exc(sname, dname, &ecopts));
-        fptr->crbuf_off = 0;
-        fptr->crbuf_len = 0;
-        fptr->crbuf_capa = 1024;
-        fptr->crbuf = ALLOC_N(char, fptr->crbuf_capa);
+        fptr->cbuf_off = 0;
+        fptr->cbuf_len = 0;
+        fptr->cbuf_capa = 1024;
+        fptr->cbuf = ALLOC_N(char, fptr->cbuf_capa);
     }
 }
 
@@ -1469,28 +1469,28 @@ more_char(rb_io_t *fptr)
     unsigned char *ds, *dp, *de;
     rb_econv_result_t res;
     int putbackable;
-    int crbuf_len0;
+    int cbuf_len0;
 
-    if (fptr->crbuf_len == fptr->crbuf_capa)
-        return 0; /* crbuf full */
-    if (fptr->crbuf_len == 0)
-        fptr->crbuf_off = 0;
-    else if (fptr->crbuf_off + fptr->crbuf_len == fptr->crbuf_capa) {
-        memmove(fptr->crbuf, fptr->crbuf+fptr->crbuf_off, fptr->crbuf_len);
-        fptr->crbuf_off = 0;
+    if (fptr->cbuf_len == fptr->cbuf_capa)
+        return 0; /* cbuf full */
+    if (fptr->cbuf_len == 0)
+        fptr->cbuf_off = 0;
+    else if (fptr->cbuf_off + fptr->cbuf_len == fptr->cbuf_capa) {
+        memmove(fptr->cbuf, fptr->cbuf+fptr->cbuf_off, fptr->cbuf_len);
+        fptr->cbuf_off = 0;
     }
 
-    crbuf_len0 = fptr->crbuf_len;
+    cbuf_len0 = fptr->cbuf_len;
 
     while (1) {
         ss = sp = (const unsigned char *)fptr->rbuf + fptr->rbuf_off;
         se = sp + fptr->rbuf_len;
-        ds = dp = (unsigned char *)fptr->crbuf + fptr->crbuf_off + fptr->crbuf_len;
-        de = (unsigned char *)fptr->crbuf + fptr->crbuf_capa;
+        ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
+        de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
         res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_OUTPUT_FOLLOWED_BY_INPUT);
         fptr->rbuf_off += sp - ss;
         fptr->rbuf_len -= sp - ss;
-        fptr->crbuf_len += dp - ds;
+        fptr->cbuf_len += dp - ds;
 
         putbackable = rb_econv_putbackable(fptr->readconv);
         if (putbackable) {
@@ -1501,7 +1501,7 @@ more_char(rb_io_t *fptr)
 
         rb_econv_check_error(fptr->readconv);
 
-        if (crbuf_len0 != fptr->crbuf_len)
+        if (cbuf_len0 != fptr->cbuf_len)
             return 0;
 
         if (res == econv_finished)
@@ -1512,10 +1512,10 @@ more_char(rb_io_t *fptr)
                 rb_thread_wait_fd(fptr->fd);
                 rb_io_check_closed(fptr);
                 if (io_fillbuf(fptr) == -1) {
-                    ds = dp = (unsigned char *)fptr->crbuf + fptr->crbuf_off + fptr->crbuf_len;
-                    de = (unsigned char *)fptr->crbuf + fptr->crbuf_capa;
+                    ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
+                    de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
                     res = rb_econv_convert(fptr->readconv, NULL, NULL, &dp, de, 0);
-                    fptr->crbuf_len += dp - ds;
+                    fptr->cbuf_len += dp - ds;
                     rb_econv_check_error(fptr->readconv);
                 }
             }
@@ -1524,29 +1524,29 @@ more_char(rb_io_t *fptr)
 }
 
 static VALUE
-io_shift_crbuf(rb_io_t *fptr, int len, VALUE *strp)
+io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 {
     VALUE str;
     if (NIL_P(*strp)) {
-        *strp = str = rb_str_new(fptr->crbuf+fptr->crbuf_off, len);
+        *strp = str = rb_str_new(fptr->cbuf+fptr->cbuf_off, len);
     }
     else {
         size_t slen;
         str = *strp;
         slen = RSTRING_LEN(str);
         rb_str_resize(str, RSTRING_LEN(str) + len);
-        memcpy(RSTRING_PTR(str)+slen, fptr->crbuf+fptr->crbuf_off, len);
+        memcpy(RSTRING_PTR(str)+slen, fptr->cbuf+fptr->cbuf_off, len);
     }
-    fptr->crbuf_off += len;
-    fptr->crbuf_len -= len;
+    fptr->cbuf_off += len;
+    fptr->cbuf_len -= len;
     OBJ_TAINT(str);
     rb_enc_associate(str, fptr->encs.enc);
     /* xxx: set coderange */
-    if (fptr->crbuf_len == 0)
-        fptr->crbuf_off = 0;
-    if (fptr->crbuf_off < fptr->crbuf_capa/2) {
-        memmove(fptr->crbuf, fptr->crbuf+fptr->crbuf_off, fptr->crbuf_len);
-        fptr->crbuf_off = 0;
+    if (fptr->cbuf_len == 0)
+        fptr->cbuf_off = 0;
+    if (fptr->cbuf_off < fptr->cbuf_capa/2) {
+        memmove(fptr->cbuf, fptr->cbuf+fptr->cbuf_off, fptr->cbuf_len);
+        fptr->cbuf_off = 0;
     }
     return str;
 }
@@ -1564,8 +1564,8 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
         VALUE str = rb_str_new(NULL, 0);
         make_readconv(fptr);
         while (1) {
-            if (fptr->crbuf_len) {
-                io_shift_crbuf(fptr, fptr->crbuf_len, &str);
+            if (fptr->cbuf_len) {
+                io_shift_cbuf(fptr, fptr->cbuf_len, &str);
             }
             if (more_char(fptr) == -1) {
                 return io_enc_str(str, fptr);
@@ -1917,9 +1917,9 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
         while (1) {
             const char *p, *e;
             int searchlen;
-            if (fptr->crbuf_len) {
-                p = fptr->crbuf+fptr->crbuf_off;
-                searchlen = fptr->crbuf_len;
+            if (fptr->cbuf_len) {
+                p = fptr->cbuf+fptr->cbuf_off;
+                searchlen = fptr->cbuf_len;
                 if (0 < limit && limit < searchlen)
                     searchlen = limit;
                 e = memchr(p, delim, searchlen);
@@ -1928,8 +1928,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                         *strp = str = rb_str_new(p, e-p+1);
                     else
                         rb_str_buf_cat(str, p, e-p+1);
-                    fptr->crbuf_off += e-p+1;
-                    fptr->crbuf_len -= e-p+1;
+                    fptr->cbuf_off += e-p+1;
+                    fptr->cbuf_len -= e-p+1;
                     limit -= e-p+1;
                     *lp = limit;
                     return delim;
@@ -1939,8 +1939,8 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp)
                     *strp = str = rb_str_new(p, searchlen);
                 else
                     rb_str_buf_cat(str, p, searchlen);
-                fptr->crbuf_off += searchlen;
-                fptr->crbuf_len -= searchlen;
+                fptr->cbuf_off += searchlen;
+                fptr->cbuf_len -= searchlen;
                 limit -= searchlen;
 
                 if (limit == 0) {
@@ -2450,34 +2450,34 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
         make_readconv(fptr);
 
         while (1) {
-            if (fptr->crbuf_len) {
+            if (fptr->cbuf_len) {
                 if (fptr->encs.enc)
-                    r = rb_enc_precise_mbclen(fptr->crbuf+fptr->crbuf_off,
-                                              fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
+                    r = rb_enc_precise_mbclen(fptr->cbuf+fptr->cbuf_off,
+                                              fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
                                               fptr->encs.enc);
                 else
                     r = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
                 if (!MBCLEN_NEEDMORE_P(r))
                     break;
-                if (fptr->crbuf_len == fptr->crbuf_capa) {
+                if (fptr->cbuf_len == fptr->cbuf_capa) {
                     rb_raise(rb_eIOError, "too long character");
                 }
             }
 
             if (more_char(fptr) == -1) {
-                if (fptr->crbuf_len == 0)
+                if (fptr->cbuf_len == 0)
                     return Qnil;
                 /* return an incomplete character just before EOF */
-                return io_shift_crbuf(fptr, fptr->crbuf_len, &str);
+                return io_shift_cbuf(fptr, fptr->cbuf_len, &str);
             }
         }
         if (MBCLEN_INVALID_P(r)) {
-            r = rb_enc_mbclen(fptr->crbuf+fptr->crbuf_off,
-                              fptr->crbuf+fptr->crbuf_off+fptr->crbuf_len,
+            r = rb_enc_mbclen(fptr->cbuf+fptr->cbuf_off,
+                              fptr->cbuf+fptr->cbuf_off+fptr->cbuf_len,
                               fptr->encs.enc);
-            return io_shift_crbuf(fptr, r, &str);
+            return io_shift_cbuf(fptr, r, &str);
         }
-        return io_shift_crbuf(fptr, MBCLEN_CHARFOUND_LEN(r), &str);
+        return io_shift_cbuf(fptr, MBCLEN_CHARFOUND_LEN(r), &str);
     }
 
     if (io_fillbuf(fptr) < 0) {
@@ -2813,17 +2813,17 @@ rb_io_ungetc(VALUE io, VALUE c)
     if (NEED_READCONV(fptr)) {
         make_readconv(fptr);
         len = RSTRING_LEN(c);
-        if (fptr->crbuf_capa - fptr->crbuf_len < len)
+        if (fptr->cbuf_capa - fptr->cbuf_len < len)
             rb_raise(rb_eIOError, "ungetc failed");
-        if (fptr->crbuf_off < len) {
-            MEMMOVE(fptr->crbuf+fptr->crbuf_capa-fptr->crbuf_len,
-                    fptr->crbuf+fptr->crbuf_off,
-                    char, fptr->crbuf_len);
-            fptr->crbuf_off = fptr->crbuf_capa-fptr->crbuf_len;
+        if (fptr->cbuf_off < len) {
+            MEMMOVE(fptr->cbuf+fptr->cbuf_capa-fptr->cbuf_len,
+                    fptr->cbuf+fptr->cbuf_off,
+                    char, fptr->cbuf_len);
+            fptr->cbuf_off = fptr->cbuf_capa-fptr->cbuf_len;
         }
-        fptr->crbuf_off -= len;
-        fptr->crbuf_len += len;
-        MEMMOVE(fptr->crbuf+fptr->crbuf_off, RSTRING_PTR(c), char, len);
+        fptr->cbuf_off -= len;
+        fptr->cbuf_len += len;
+        MEMMOVE(fptr->cbuf+fptr->cbuf_off, RSTRING_PTR(c), char, len);
     }
     else {
         io_ungetbyte(c, fptr);
@@ -3076,9 +3076,9 @@ clear_readconv(rb_io_t *fptr)
         rb_econv_close(fptr->readconv);
         fptr->readconv = NULL;
     }
-    if (fptr->crbuf) {
-        free(fptr->crbuf);
-        fptr->crbuf = NULL;
+    if (fptr->cbuf) {
+        free(fptr->cbuf);
+        fptr->cbuf = NULL;
     }
 }
 

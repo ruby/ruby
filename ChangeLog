@@ -1,3 +1,9 @@
+Wed Aug 27 00:05:55 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): rename crbuf to cbuf.
+
+	* io.c: follow the renaming.
+
 Tue Aug 26 23:52:24 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_elem_t): move to transcode.c
