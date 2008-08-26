@@ -196,6 +196,16 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal({"cat"=>0, "wombat"=>2, "dog"=>1}, hash)
   end
 
+  def test_each_with_object
+    obj = [0, 1]
+    ret = (1..10).each_with_object(obj) {|i, memo|
+      memo[0] += i
+      memo[1] *= i
+    }
+    assert_same(obj, ret)
+    assert_equal([55, 3628800], ret)
+  end
+
   def test_zip
     assert_equal([[1,1],[2,2],[3,3],[1,1],[2,2]], @obj.zip(@obj))
     a = []

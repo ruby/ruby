@@ -1,7 +1,12 @@
+Tue Aug 26 19:27:54 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_enum.rb (TestEnumerable#test_each_with_object):
+	  Add a test for Enumerable#each_with_object.
+
 Tue Aug 26 19:25:44 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/test_enumerator.rb (TestEnumerator#test_with_object):
-	  Add (back) the test for Enumerable#with_object.
+	  Add (back) the test for Enumerator#with_object.
 
 Tue Aug 26 16:16:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
