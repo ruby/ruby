@@ -1,3 +1,7 @@
+Tue Aug 26 21:44:39 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_binmode): binmode is effective only once.
+
 Tue Aug 26 19:27:54 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* test/ruby/test_enum.rb (TestEnumerable#test_each_with_object):

@@ -1476,12 +1476,14 @@ rb_econv_binmode(rb_econv_t *ec)
         ec->elems[i].out_data_end = NULL;
         ec->elems[i].out_buf_end = NULL;
         ec->num_trans--;
+        ec->opts.flags &= ~ECONV_UNIVERSAL_NEWLINE_DECODER;
     }
     if (ec->opts.flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
         rb_transcoding_close(ec->elems[0].tc);
         xfree(ec->elems[0].out_buf_start);
         MEMMOVE(&ec->elems[0], &ec->elems[1], rb_econv_elem_t, ec->num_trans-1);
         ec->num_trans--;
+        ec->opts.flags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
     }
 }
 
