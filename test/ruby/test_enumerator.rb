@@ -96,16 +96,18 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[1,0],[2,1],[3,2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
   end
 
-  def test_with_memo
-    r = 1..10
-    return unless r.each.respond_to? :with_memo
-    assert_equal([55, 3628800], (1..10).each.with_memo([0,1]) {|i, memo|
-        memo[0] += i
-        memo[1] *= i
-      })
+  def test_with_object
+    obj = [0, 1]
+    ret = (1..10).each.with_object(obj) {|i, memo|
+      memo[0] += i
+      memo[1] *= i
+    }
+    assert_same(obj, ret)
+    assert_equal([55, 3628800], ret)
 
     a = [2,5,2,1,5,3,4,2,1,0]
-    a.delete_if.with_memo({}) {|i, seen|
+    obj = {}
+    ret = a.delete_if.with_object(obj) {|i, seen|
       if seen.key?(i)
         true
       else
@@ -113,6 +115,7 @@ class TestEnumerator < Test::Unit::TestCase
         false
       end
     }
+    assert_same(obj, ret)
     assert_equal([2, 5, 1, 3, 4, 0], a)
   end
 

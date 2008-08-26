@@ -1,3 +1,8 @@
+Tue Aug 26 19:25:44 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* test/ruby/test_enumerator.rb (TestEnumerator#test_with_object):
+	  Add (back) the test for Enumerable#with_object.
+
 Tue Aug 26 16:16:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_tag_helper.rb: add more tests for html3.
