@@ -58,12 +58,17 @@ class TestEnumerator < Test::Unit::TestCase
   def test_initialize
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).to_a)
     assert_equal([1, 2, 3], Enumerator.new(@obj, :foo, 1, 2, 3).to_a)
+    assert_equal([1, 2, 3], Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.take(3))
     assert_raise(ArgumentError) { Enumerator.new }
   end
 
   def test_initialize_copy
     assert_equal([1, 2, 3], @obj.to_enum(:foo, 1, 2, 3).dup.to_a)
     e = @obj.to_enum(:foo, 1, 2, 3)
+    assert_nothing_raised { assert_equal(1, e.next) }
+    assert_raise(TypeError) { e.dup }
+
+    e = Enumerator.new { |y| i = 0; loop { y << (i += 1) } }.dup
     assert_nothing_raised { assert_equal(1, e.next) }
     assert_raise(TypeError) { e.dup }
   end

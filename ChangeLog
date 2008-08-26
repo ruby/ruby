@@ -1,3 +1,9 @@
+Tue Aug 26 14:38:32 2008  Akinori MUSHA  <knu@iDaemons.org>
+
+	* enumerator.c (enumerator_initialize),
+	  test/ruby/test_enumerator.rb: Add an ability to generate an
+	  enumerator from a block. [experimental] [ruby-dev:35903]
+
 Tue Aug 26 13:25:25 2008  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_transcode.rb: added test_euc_jp
