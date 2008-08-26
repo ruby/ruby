@@ -297,12 +297,18 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_UNDEF_IGNORE                      0x0010
 #define ECONV_UNDEF_REPLACE                     0x0020
 
+/* effective only if output is ascii compatible */
 #define ECONV_UNIVERSAL_NEWLINE_DECODER         0x0100
+
+/* effective only if input is ascii compatible */
 #define ECONV_CRLF_NEWLINE_ENCODER              0x0200
 #define ECONV_CR_NEWLINE_ENCODER                0x0400
+
+/* end of flags for rb_econv_open */
 
 /* flags for rb_econv_convert */
 #define ECONV_PARTIAL_INPUT                   0x10000
 #define ECONV_OUTPUT_FOLLOWED_BY_INPUT        0x20000
+/* end of flags for rb_econv_convert */
 
 #endif /* RUBY_ENCODING_H */

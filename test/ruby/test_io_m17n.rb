@@ -1154,8 +1154,18 @@ EOT
     }
   end
 
+  SYSTEM_NEWLINE = []
   def system_newline
-    File::BINARY == 0 ? "\n" : "\r\n"
+    return SYSTEM_NEWLINE.first if !SYSTEM_NEWLINE.empty?
+    with_tmpdir {
+      open("newline", "wt") {|f|
+        f.print "\n"
+      }
+      open("newline", "rb") {|f|
+        SYSTEM_NEWLINE << f.read
+      }
+    }
+    SYSTEM_NEWLINE.first
   end
 
   def test_textmode_encode_newline
@@ -1170,6 +1180,41 @@ EOT
     }
   end
 
+  def test_textmode_encode_newline_enc
+    with_tmpdir {
+      open("t.txt", "wt:euc-jp") {|f|
+        f.puts "abc\u3042"
+        f.puts "def\u3044"
+      }
+      content = File.read("t.txt", :mode=>"rb:ascii-8bit")
+      nl = system_newline
+      assert_equal("abc\xA4\xA2#{nl}def\xA4\xA4#{nl}", content)
+    }
+  end
+
+  def test_textmode_read_ascii_incompat_internal
+    with_tmpdir {
+      generate_file("t.utf8.crlf", "a\r\nb\r\n")
+      open("t.utf8.crlf", "rt:utf-8:utf-16be") {|f|
+        content = f.read
+        # textmode doesn't affect for ascii incompatible internal encoding.
+        assert_equal("\0a\0\r\0\n\0b\0\r\0\n".force_encoding("UTF-16BE"),
+                     content)
+      }
+    }
+  end
+
+  def test_textmode_write_ascii_incompat_internal
+    with_tmpdir {
+      open("t.utf8.lf", "wt:utf-8:utf-16be") {|f|
+        f.print "\0a\0\n\0b\0\n".force_encoding("UTF-16BE")
+      }
+      content = File.read("t.utf8.lf", :mode=>"rb:ascii-8bit")
+      # textmode doesn't affect for ascii incompatible internal encoding.
+      assert_equal("a\nb\n", content)
+    }
+  end
+
   def test_binary
     with_tmpdir {
       src = "a\nb\rc\r\nd\n"
@@ -1180,7 +1225,7 @@ EOT
       open("t.txt", "r", :binmode=>true) {|f|
         assert_equal(src, f.read)
       }
-      if File::BINARY == 0
+      if system_newline == "\n"
         open("t.txt", "r") {|f|
           assert_equal(src, f.read)
         }

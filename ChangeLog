@@ -1,3 +1,9 @@
+Tue Aug 26 21:53:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_open): disable newline conversion for ASCII
+	  incompatible encodings.
+	  (str_transcode0): don't need disable newline conversion here.
+
 Tue Aug 26 21:44:39 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_binmode): binmode is effective only once.
