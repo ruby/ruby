@@ -1,3 +1,7 @@
+Thu Aug 28 00:07:59 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_initialize): don't accept IO object.  [ruby-dev:35895]
+
 Wed Aug 27 23:28:51 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_invoke): WIN32OLE#[] and WIN32OLE#[]=

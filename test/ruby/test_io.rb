@@ -1189,31 +1189,6 @@ class TestIO < Test::Unit::TestCase
 
     assert_equal("foo\nbar\nbaz\n", File.read(t.path))
 
-    with_pipe do |r, w|
-      assert_raise(RuntimeError) do
-        o = Object.new
-        class << o; self; end.instance_eval do
-          define_method(:to_io) { r }
-        end
-        w.instance_eval { initialize(o) }
-      end
-    end
-
-    pipe(proc do |w|
-      w = IO.new(w)
-      w.puts "foo"
-      w.puts "bar"
-      w.puts "baz"
-      w.close
-    end, proc do |r|
-      r = IO.new(r)
-      assert_equal("foo\nbar\nbaz\n", r.read)
-    end)
-
-    with_pipe do |r, w|
-      assert_raise(ArgumentError) { IO.new(r, "r+") }
-    end
-
     f = open(t.path)
     assert_raise(RuntimeError) do
       f.instance_eval { initialize }

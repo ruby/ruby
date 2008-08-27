@@ -5541,8 +5541,8 @@ rb_io_stdio_file(rb_io_t *fptr)
 static VALUE
 rb_io_initialize(int argc, VALUE *argv, VALUE io)
 {
-    VALUE fnum, mode, orig;
-    rb_io_t *fp, *ofp = NULL;
+    VALUE fnum, mode;
+    rb_io_t *fp;
     int fd, flags, modenum = O_RDONLY;
     convconfig_t convconfig;
     VALUE opt;
@@ -5552,49 +5552,22 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
     rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
-    orig = rb_io_check_io(fnum);
-    if (NIL_P(orig)) {
-	fd = NUM2INT(fnum);
-        UPDATE_MAXFD(fd);
-	if (NIL_P(mode)) {
+
+    fd = NUM2INT(fnum);
+    UPDATE_MAXFD(fd);
+    if (NIL_P(mode)) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
-	    modenum = fcntl(fd, F_GETFL);
-	    if (modenum == -1) rb_sys_fail(0);
-            flags = rb_io_modenum_flags(modenum);
+        modenum = fcntl(fd, F_GETFL);
+        if (modenum == -1) rb_sys_fail(0);
+        flags = rb_io_modenum_flags(modenum);
 #endif
-	}
-	MakeOpenFile(io, fp);
-        fp->fd = fd;
-	fp->mode = flags;
-        fp->encs = convconfig;
-        clear_codeconv(fp);
-        io_check_tty(fp);
     }
-    else if (RFILE(io)->fptr) {
-	rb_raise(rb_eRuntimeError, "reinitializing IO");
-    }
-    else {
-	GetOpenFile(orig, ofp);
-	if (ofp->refcnt == LONG_MAX) {
-	    VALUE s = rb_inspect(orig);
-	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValueCStr(s));
-	}
-	if (!NIL_P(mode)) {
-	    if ((ofp->mode ^ flags) & (FMODE_READWRITE|FMODE_BINMODE)) {
-                if (TYPE(mode) != T_STRING) {
-		    rb_raise(rb_eArgError, "incompatible mode 0x%x", modenum);
-		}
-		else {
-		    rb_raise(rb_eArgError, "incompatible mode \"%s\"", RSTRING_PTR(mode));
-		}
-	    }
-	}
-        if (convconfig.enc || convconfig.enc2) {
-            rb_raise(rb_eArgError, "encoding specified for shared IO");
-        }
-	ofp->refcnt++;
-	RFILE(io)->fptr = ofp;
-    }
+    MakeOpenFile(io, fp);
+    fp->fd = fd;
+    fp->mode = flags;
+    fp->encs = convconfig;
+    clear_codeconv(fp);
+    io_check_tty(fp);
 
     return io;
 }
