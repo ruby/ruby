@@ -826,6 +826,14 @@ EOT
     }
   end
 
+  def test_read_stateful
+    with_pipe("euc-jp:iso-2022-jp") {|r, w|
+      w << "\xA4\xA2"
+      w.close
+      assert_equal("\e$B$\"\e(B".force_encoding("iso-2022-jp"), r.read)
+    }
+  end
+
   def test_stdin_external_encoding_with_reopen
     with_tmpdir {
       open("tst", "w+") {|f|
