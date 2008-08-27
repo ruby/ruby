@@ -1,8 +1,10 @@
 Wed Aug 27 10:34:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::Cookie): remove delagate.
+	  Patch by Takeyuki Fujioka. [ruby-dev:35995]
 
 	* test/cgi/test_cgi_cookie.rb: added for above.
+	  Patch by Takeyuki Fujioka. [ruby-dev:35996]
 
 Wed Aug 27 01:13:54 2008  Tanaka Akira  <akr@fsij.org>
 
