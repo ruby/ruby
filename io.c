@@ -3105,7 +3105,6 @@ int
 rb_io_fptr_finalize(rb_io_t *fptr)
 {
     if (!fptr) return 0;
-    if (fptr->refcnt <= 0 || --fptr->refcnt) return 0;
     fptr->pathv = Qnil;
     if (0 <= fptr->fd)
 	rb_io_fptr_cleanup(fptr, Qtrue);
@@ -3275,11 +3274,9 @@ rb_io_close_read(VALUE io)
 	rb_io_t *wfptr;
         fptr_finalize(fptr, Qfalse);
 	GetOpenFile(write_io, wfptr);
-	if (fptr->refcnt < LONG_MAX) {
-	    wfptr->refcnt++;
-	    RFILE(io)->fptr = wfptr;
-	    rb_io_fptr_finalize(fptr);
-	}
+        RFILE(io)->fptr = wfptr;
+        RFILE(write_io)->fptr = NULL;
+        rb_io_fptr_finalize(fptr);
         return Qnil;
     }
 

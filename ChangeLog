@@ -1,3 +1,11 @@
+Thu Aug 28 02:16:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): refcnt field removed.
+	  (MakeOpenFile): refcnt initialization removed.
+
+	* io.c (rb_io_fptr_finalize): don't check refcnt.
+	  (rb_io_close_read): don't use refcnt.
+
 Thu Aug 28 00:07:59 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_initialize): don't accept IO object.  [ruby-dev:35895]

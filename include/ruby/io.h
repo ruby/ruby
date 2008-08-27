@@ -35,7 +35,6 @@ typedef struct rb_io_t {
     int lineno;			/* number of lines read */
     VALUE pathv;			/* pathname for file */
     void (*finalize)(struct rb_io_t*,int); /* finalize proc */
-    long refcnt;
 
     char *wbuf;                 /* wbuf_off + wbuf_len <= wbuf_capa */
     int wbuf_off;
@@ -109,7 +108,6 @@ typedef struct rb_io_t {
     fp->lineno = 0;\
     fp->pathv = Qnil;\
     fp->finalize = 0;\
-    fp->refcnt = 1;\
     fp->wbuf = NULL;\
     fp->wbuf_off = 0;\
     fp->wbuf_len = 0;\
