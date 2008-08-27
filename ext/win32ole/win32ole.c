@@ -3225,7 +3225,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
     op.dp.cArgs = 0;
 
     rb_scan_args(argc, argv, "1*", &cmd, &paramS);
-    if(TYPE(cmd) != T_STRING && TYPE(cmd) != T_SYMBOL) {
+    if(TYPE(cmd) != T_STRING && TYPE(cmd) != T_SYMBOL && !is_bracket) {
 	rb_raise(rb_eTypeError, "method is wrong type (expected String or Symbol)");
     }
     if (TYPE(cmd) == T_SYMBOL) {

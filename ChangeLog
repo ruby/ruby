@@ -1,3 +1,10 @@
+Wed Aug 27 23:28:51 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_invoke): WIN32OLE#[] and WIN32OLE#[]=
+	  accepts number argument.
+
+	* test/win32ole/test_win32ole.rb: ditto.
+
 Wed Aug 27 14:45:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_core.rb: add core test.

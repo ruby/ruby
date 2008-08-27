@@ -119,6 +119,14 @@ if defined?(WIN32OLE)
       assert_equal("BAR", @dict1["foo"])
     end
 
+    def test_bracket_with_numkey
+      @dict1.add(1, "ONE")
+      @dict1.add(2, "two")
+      assert_equal("ONE", @dict1[1])
+      @dict1[2] = "TWO"
+      assert_equal("TWO", @dict1[2])
+    end
+
     def test_invoke_with_array
       @dict1.add("ary1", [1,2,3])
       assert_equal([1,2,3], @dict1["ary1"])
