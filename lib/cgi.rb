@@ -749,6 +749,7 @@ class CGI
     stdoutput.print(*options)
   end
 
+  # Class representing an HTTP cookie.
   #
   # In addition to its specific fields and methods, a Cookie instance
   # is a delegator to the array of its values.
