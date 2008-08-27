@@ -749,9 +749,6 @@ class CGI
     stdoutput.print(*options)
   end
 
-  require "delegate"
-
-  # Class representing an HTTP cookie.
   #
   # In addition to its specific fields and methods, a Cookie instance
   # is a delegator to the array of its values.
@@ -784,7 +781,7 @@ class CGI
   #   cookie1.domain  = 'domain'
   #   cookie1.expires = Time.now + 30
   #   cookie1.secure  = true
-  class Cookie < DelegateClass(Array)
+  class Cookie < Array
 
     # Create a new CGI::Cookie object.
     #
