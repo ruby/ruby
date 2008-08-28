@@ -568,4 +568,17 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal(:finished, ret)
     assert_raise(ArgumentError) { ec.convert("a") }
   end
+
+  def test_finish_iso2022jp
+     ec = Encoding::Converter.new("utf-8", "iso-2022-jp")
+     assert_equal("\e$B$\"".force_encoding("iso-2022-jp"), ec.convert("\u3042"))
+     assert_equal("\e(B".force_encoding("iso-2022-jp"), ec.finish)
+
+  end
+
+  def test_finish_incomplete_error
+    ec = Encoding::Converter.new("utf-8", "euc-jp")
+    ec.convert("\xEF")
+    assert_raise(Encoding::InvalidByteSequence) { ec.finish }
+  end
 end
