@@ -2342,11 +2342,12 @@ econv_result_to_symbol(rb_econv_result_t res)
  * source_buffer should be a string or nil.
  * nil means a empty string.
  *
- * adestination_buffer should be a string.
+ * destination_buffer should be a string.
  *
  * destination_byteoffset should be an integer or nil.
  *
- * destination_bytesize and flags should be an integer.
+ * destination_bytesize and flags should be an integer or nil.
+ * nil means that unlimited.
  *
  * primitive_convert convert the content of source_buffer from beginning
  * and store the result into destination_buffer.
@@ -2357,6 +2358,8 @@ econv_result_to_symbol(rb_econv_result_t res)
  * If destination_byteoffset is nil,
  * destination_buffer.bytesize is used for appending the result.
  * destination_bytesize specifies maximum number of bytes.
+ * If destination_bytesize is nil,
+ * destination size is unlimited.
  * After conversion, destination_buffer is resized to
  * destination_byteoffset + actually converted number of bytes.
  * Also destination_buffer's encoding is set to destination_encoding.
@@ -2407,14 +2410,17 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "41", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v);
 
-    if (output_byteoffset_v == Qnil)
-        output_byteoffset = 0;
+    if (NIL_P(output_byteoffset_v))
+        output_byteoffset = 0; /* dummy */
     else
         output_byteoffset = NUM2LONG(output_byteoffset_v);
 
-    output_bytesize = NUM2LONG(output_bytesize_v);
+    if (NIL_P(output_bytesize_v))
+        output_bytesize = 0; /* dummy */
+    else
+        output_bytesize = NUM2LONG(output_bytesize_v);
 
-    if (flags_v == Qnil)
+    if (NIL_P(flags_v))
         flags = 0;
     else
         flags = NUM2INT(flags_v);
@@ -2424,7 +2430,15 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
         StringValue(input);
     rb_str_modify(output);
 
-    if (output_byteoffset_v == Qnil)
+    if (NIL_P(output_bytesize_v)) {
+        output_bytesize = RSTRING_EMBED_LEN_MAX;
+        if (!NIL_P(input) && output_bytesize < RSTRING_LEN(input))
+            output_bytesize = RSTRING_LEN(input);
+    }
+
+  retry:
+
+    if (NIL_P(output_byteoffset_v))
         output_byteoffset = RSTRING_LEN(output);
 
     if (output_byteoffset < 0)
@@ -2461,6 +2475,14 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
     if (!NIL_P(input))
         rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
+
+    if (NIL_P(output_bytesize_v) && res == econv_destination_buffer_full) {
+        if (LONG_MAX / 2 < output_bytesize)
+            rb_raise(rb_eArgError, "too long conversion result");
+        output_bytesize *= 2;
+        output_byteoffset_v = Qnil;
+        goto retry;
+    }
 
     if (ec->destination_encoding) {
         rb_enc_associate(output, ec->destination_encoding);

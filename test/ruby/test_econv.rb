@@ -79,10 +79,29 @@ class TestEncodingConverter < Test::Unit::TestCase
     }
   end
 
-  def test_nil_input
+  def test_nil_source_buffer
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     ret = ec.primitive_convert(nil, dst="", nil, 10)
     assert_equal(:finished, ret)
+  end
+
+  def test_nil_destination_bytesize
+    ec = Encoding::Converter.new("Shift_JIS", "UTF-8")
+    n = 10000
+    src = "\xa1".force_encoding("Shift_JIS") * n
+    ret = ec.primitive_convert(src, dst="", nil, nil)
+    assert_equal(:finished, ret)
+    assert_equal("\xEF\xBD\xA1".force_encoding("UTF-8") * n, dst)
+  end
+
+  def test_nil_destination_bytesize_with_nonnli_byteoffset
+    ec = Encoding::Converter.new("Shift_JIS", "UTF-8")
+    n = 2000
+    src = "\xa1".force_encoding("Shift_JIS") * n
+    dst = "abcd" * 2000
+    ret = ec.primitive_convert(src, dst, 3, nil)
+    assert_equal(:finished, ret)
+    assert_equal("abc" + "\xEF\xBD\xA1".force_encoding("UTF-8") * n, dst)
   end
 
   def test_partial_input
