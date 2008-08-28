@@ -382,6 +382,7 @@ class TestTime < Test::Unit::TestCase
     assert_equal("2000", T2000.strftime("%Y"))
     assert_equal("UTC", T2000.strftime("%Z"))
     assert_equal("%", T2000.strftime("%%"))
+    assert_equal("0", T2000.strftime("%-S"))
 
     assert_equal("", T2000.strftime(""))
     assert_equal("foo\0bar\x0000\x0000\x0000", T2000.strftime("foo\0bar\0%H\0%M\0%S"))

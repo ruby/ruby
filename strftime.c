@@ -275,7 +275,7 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 		do { \
 			int l; \
 			if (precision <= 0) precision = (def_prec); \
-			if (flags & BIT_OF(LEFT)) precision = 0; \
+			if (flags & BIT_OF(LEFT)) precision = 1; \
 			l = snprintf(s, endp - s, \
 				     ((!padding || padding == (def_pad)) ? "%.*"fmt : "%*"fmt), \
 				     precision, val); \
