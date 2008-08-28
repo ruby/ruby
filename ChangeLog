@@ -1,3 +1,8 @@
+Thu Aug 28 23:50:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/ruby/test_time.rb (test_strftime): make test for %a independent
+	  from local timezone.  [ruby-dev:35992]
+
 Thu Aug 28 23:39:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* string.c (rb_str_shared_replace): remove corrupt noembed string

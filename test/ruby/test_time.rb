@@ -378,7 +378,8 @@ class TestTime < Test::Unit::TestCase
     assert_equal("foo\0bar\x0000\x0000\x0000", T2000.strftime("foo\0bar\0%H\0%M\0%S"))
     assert_equal("foo" * 1000, T2000.strftime("foo" * 1000))
 
-    assert_equal("Sat", Time.at(946684800).strftime("%a"))
+    t = Time.mktime(2000, 1, 1)
+    assert_equal("Sat", t.strftime("%a"))
 
     t = Time.at(946684800, 123456.789)
     assert_equal("123", t.strftime("%3N"))
