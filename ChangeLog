@@ -1,3 +1,15 @@
+Fri Aug 29 01:57:58 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (sym_invalid_byte_sequence): new variable.
+	  (sym_undefined_conversion): ditto.
+	  (sym_destination_buffer_full): ditto.
+	  (sym_source_buffer_empty): ditto.
+	  (sym_finished): ditto.
+	  (sym_output_followed_by_input): ditto.
+	  (sym_incomplete_input): ditto.
+	  (econv_result_to_symbol): use above variables.
+	  (Init_transcode): initialize above variables.
+
 Fri Aug 29 00:53:40 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* strftime.c (rb_strftime): fixed a bug of padding.

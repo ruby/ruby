@@ -23,6 +23,14 @@ VALUE rb_cEncodingConverter;
 
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 
+static VALUE sym_invalid_byte_sequence;
+static VALUE sym_undefined_conversion;
+static VALUE sym_destination_buffer_full;
+static VALUE sym_source_buffer_empty;
+static VALUE sym_finished;
+static VALUE sym_output_followed_by_input;
+static VALUE sym_incomplete_input;
+
 typedef struct {
     struct rb_transcoding *tc;
     unsigned char *out_buf_start;
@@ -2300,13 +2308,13 @@ static VALUE
 econv_result_to_symbol(rb_econv_result_t res)
 {
     switch (res) {
-      case econv_invalid_byte_sequence: return ID2SYM(rb_intern("invalid_byte_sequence"));
-      case econv_incomplete_input: return ID2SYM(rb_intern("incomplete_input"));
-      case econv_undefined_conversion: return ID2SYM(rb_intern("undefined_conversion"));
-      case econv_destination_buffer_full: return ID2SYM(rb_intern("destination_buffer_full"));
-      case econv_source_buffer_empty: return ID2SYM(rb_intern("source_buffer_empty"));
-      case econv_finished: return ID2SYM(rb_intern("finished"));
-      case econv_output_followed_by_input: return ID2SYM(rb_intern("output_followed_by_input"));
+      case econv_invalid_byte_sequence: return sym_invalid_byte_sequence;
+      case econv_incomplete_input: return sym_incomplete_input;
+      case econv_undefined_conversion: return sym_undefined_conversion;
+      case econv_destination_buffer_full: return sym_destination_buffer_full;
+      case econv_source_buffer_empty: return sym_source_buffer_empty;
+      case econv_finished: return sym_finished;
+      case econv_output_followed_by_input: return sym_output_followed_by_input;
       default: return INT2NUM(res); /* should not be reached */
     }
 }
@@ -2660,6 +2668,14 @@ Init_transcode(void)
     sym_undef = ID2SYM(rb_intern("undef"));
     sym_ignore = ID2SYM(rb_intern("ignore"));
     sym_replace = ID2SYM(rb_intern("replace"));
+
+    sym_invalid_byte_sequence = ID2SYM(rb_intern("invalid_byte_sequence"));
+    sym_undefined_conversion = ID2SYM(rb_intern("undefined_conversion"));
+    sym_destination_buffer_full = ID2SYM(rb_intern("destination_buffer_full"));
+    sym_source_buffer_empty = ID2SYM(rb_intern("source_buffer_empty"));
+    sym_finished = ID2SYM(rb_intern("finished"));
+    sym_output_followed_by_input = ID2SYM(rb_intern("output_followed_by_input"));
+    sym_incomplete_input = ID2SYM(rb_intern("incomplete_input"));
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);
