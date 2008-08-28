@@ -2091,6 +2091,8 @@ rb_strftime_alloc(char **buf, const char *format,
  *            %6N  microsecond (6 digits)
  *            %9N  nanosecond (9 digits)
  *    %p - Meridian indicator (``AM''  or  ``PM'')
+ *    %P - Meridian indicator (``am''  or  ``pm'')
+ *    %s - Number of seconds since 1970-01-01 00:00:00 UTC.
  *    %S - Second of the minute (00..60)
  *    %U - Week  number  of the current year,
  *            starting with the first Sunday as the first

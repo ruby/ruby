@@ -376,8 +376,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 			FMT('0', 2, "d", i);
 			continue;
 
-		case 'p':	/* am or pm based on 12-hour clock */
-			if (flags & BIT_OF(CHCASE)) {
+		case 'p':	/* AM or PM based on 12-hour clock */
+		case 'P':	/* am or pm based on 12-hour clock */
+			if ((*format == 'p' && (flags & BIT_OF(CHCASE))) ||
+			    (*format == 'P' && !(flags & BIT_OF(CHCASE)))) {
 				flags &= ~(BIT_OF(UPPER)|BIT_OF(CHCASE));
 				flags |= BIT_OF(LOWER);
 			}
@@ -388,6 +390,10 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 				tp = ampm[1];
 			i = 2;
 			break;
+
+		case 's':
+			FMT(' ', 1, "d", (int) ts->tv_sec);
+			continue;
 
 		case 'S':	/* second, 00 - 60 */
 			i = range(0, timeptr->tm_sec, 60);

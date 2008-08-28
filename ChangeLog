@@ -1,3 +1,11 @@
+Fri Aug 29 02:03:56 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* strftime.c (rb_strftime): supported %s and %P.
+
+	* time.c (time_strftime): ditto.
+
+	* test/ruby/test_time.rb (test_strftime): ditto.
+
 Fri Aug 29 01:57:58 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (sym_invalid_byte_sequence): new variable.
