@@ -704,6 +704,7 @@ vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
 	int i;
 	int argc = orig_argc;
 	const int m = iseq->argc;
+	VALUE ary;
 
 	th->mark_stack_len = argc;
 
@@ -714,8 +715,7 @@ vm_yield_setup_args(rb_thread_t * const th, const rb_iseq_t *iseq,
 	 */
 	if (!(iseq->arg_simple & 0x02) &&
 	    (m + iseq->arg_post_len) > 0 &&
-	    argc == 1 && TYPE(argv[0]) == T_ARRAY) {
-	    VALUE ary = argv[0];
+	    argc == 1 && !NIL_P(ary = rb_check_array_type(argv[0]))) {
 	    th->mark_stack_len = argc = RARRAY_LEN(ary);
 
 	    CHECK_STACK_OVERFLOW(th->cfp, argc);
