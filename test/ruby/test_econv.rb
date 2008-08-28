@@ -559,4 +559,13 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal(:finished, ret)
     assert_equal(["xyzabc", ""], [dst, src])
   end
+
+  def test_convert
+    ec = Encoding::Converter.new("utf-8", "euc-jp")
+    assert_raise(Encoding::InvalidByteSequence) { ec.convert("a\x80") }
+    assert_raise(Encoding::ConversionUndefined) { ec.convert("\ufffd") }
+    ret = ec.primitive_convert(nil, "", nil, nil)
+    assert_equal(:finished, ret)
+    assert_raise(ArgumentError) { ec.convert("a") }
+  end
 end

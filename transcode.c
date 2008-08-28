@@ -2493,6 +2493,59 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *   convert(source_string) -> destination_string
+ *
+ * convert source_string and return destination_string.
+ *
+ * source_string is assumed as a part of source.
+ * i.e.  Encoding::Converter::PARTIAL_INPUT is used internally.
+ *
+ * If a conversion error occur,
+ * Encoding::ConversionUndefined or
+ * Encoding::InvalidByteSequence is raised.
+ *
+ */
+static VALUE
+econv_convert(VALUE self, VALUE source_string)
+{
+    VALUE ret, dst;
+    VALUE av[5];
+    int ac;
+    rb_econv_t *ec = check_econv(self);
+
+    StringValue(source_string);
+
+    dst = rb_str_new(NULL, 0);
+
+    av[0] = rb_str_dup(source_string);
+    av[1] = dst;
+    av[2] = Qnil;
+    av[3] = Qnil;
+    av[4] = INT2NUM(ECONV_PARTIAL_INPUT);
+    ac = 5;
+
+    ret = econv_primitive_convert(ac, av, self);
+
+    if (ret == sym_invalid_byte_sequence ||
+        ret == sym_undefined_conversion ||
+        ret == sym_incomplete_input) {
+        VALUE exc = make_econv_exception(ec);
+        rb_exc_raise(exc);
+    }
+
+    if (ret == sym_finished) {
+        rb_raise(rb_eArgError, "converter already finished");
+    }
+
+    if (ret != sym_source_buffer_empty) {
+        rb_bug("unexpected result of econv_primitive_convert");
+    }
+
+    return dst;
+}
+
+/*
+ * call-seq:
  *   primitive_errinfo -> array
  *
  * primitive_errinfo returns a precious information of last error result
@@ -2721,6 +2774,7 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "source_encoding", econv_source_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "destination_encoding", econv_destination_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
+    rb_define_method(rb_cEncodingConverter, "convert", econv_convert, 1);
     rb_define_method(rb_cEncodingConverter, "primitive_errinfo", econv_primitive_errinfo, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_insert_output", econv_primitive_insert_output, 1);
     rb_define_method(rb_cEncodingConverter, "primitive_putback", econv_primitive_putback, 1);

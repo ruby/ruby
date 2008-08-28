@@ -1,3 +1,7 @@
+Fri Aug 29 02:45:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_convert): new method.
+
 Fri Aug 29 02:38:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_primitive_convert): accept nil as
