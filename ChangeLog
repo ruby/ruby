@@ -1,3 +1,7 @@
+Thu Aug 28 23:36:15 2008  Tanaka Akira  <akr@fsij.org>
+
+	* common.mk: dependency updated.
+
 Thu Aug 28 23:28:57 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* KNOWNBUGS.rb: add a test.  see [ruby-dev:36028]
