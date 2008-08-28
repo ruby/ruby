@@ -1,3 +1,8 @@
+Thu Aug 28 23:39:49 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* string.c (rb_str_shared_replace): remove corrupt noembed string
+	  which causes SEGV.  [ruby-dev:35989]
+
 Thu Aug 28 23:36:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* common.mk: dependency updated.

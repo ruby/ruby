@@ -669,10 +669,9 @@ rb_str_shared_replace(VALUE str, VALUE str2)
     else {
 	RSTRING(str)->as.heap.aux.capa = RSTRING(str2)->as.heap.aux.capa;
     }
-    RSTRING(str2)->as.heap.ptr = 0;	/* abandon str2 */
-    RSTRING(str2)->as.heap.len = 0;
-    RSTRING(str2)->as.heap.aux.capa = 0;
-    STR_UNSET_NOCAPA(str2);
+    STR_SET_EMBED(str2);	/* abandon str2 */
+    RSTRING_PTR(str2)[0] = 0;
+    STR_SET_EMBED_LEN(str2, 0);
     rb_enc_associate(str, enc);
     ENC_CODERANGE_SET(str, cr);
 }
