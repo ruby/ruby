@@ -1960,12 +1960,36 @@ rb_mod_cvar_defined(VALUE obj, VALUE iv)
     return rb_cvar_defined(obj, id);
 }
 
+static struct conv_method_tbl {
+    const char *method;
+    ID id;
+} conv_method_names[] = {
+    {"to_int", 0},
+    {"to_ary", 0},
+    {"to_str", 0},
+    {"to_sym", 0},
+    {"to_hash", 0},
+    {"to_proc", 0},
+    {"to_io", 0},
+    {"to_a", 0},
+    {"to_s", 0},
+    {NULL, 0}
+};
+
 static VALUE
 convert_type(VALUE val, const char *tname, const char *method, int raise)
 {
-    ID m;
+    ID m = 0;
+    int i;
 
-    m = rb_intern(method);
+    for (i=0; conv_method_names[i].method; i++) {
+	if (conv_method_names[i].method[0] == method[0] &&
+	    strcmp(conv_method_names[i].method, method) == 0) {
+	    m = conv_method_names[i].id;
+	    break;
+	}
+    }
+    if (!m) m = rb_intern(method);
     if (!rb_respond_to(val, m)) {
 	if (raise) {
 	    rb_raise(rb_eTypeError, "can't convert %s into %s",
@@ -2427,6 +2451,8 @@ boot_defclass(const char *name, VALUE super)
 void
 Init_Object(void)
 {
+    int i;
+
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
@@ -2606,4 +2632,8 @@ Init_Object(void)
     id_match = rb_intern("=~");
     id_inspect = rb_intern("inspect");
     id_init_copy = rb_intern("initialize_copy");
+
+    for (i=0; conv_method_names[i].method; i++) {
+	conv_method_names[i].id = rb_intern(conv_method_names[i].method);
+    }
 }
