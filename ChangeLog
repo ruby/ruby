@@ -1,3 +1,7 @@
+Fri Aug 29 00:19:54 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (set_pioinfo_extra): use MSVCRT's open() and close().
+
 Fri Aug 29 00:03:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* file.c (file_expand_path): check invalid access.

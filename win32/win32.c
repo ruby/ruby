@@ -1715,13 +1715,13 @@ set_pioinfo_extra(void)
 {
     int fd;
 
-    fd = open("NUL", O_RDONLY);
+    fd = _open("NUL", O_RDONLY);
     for (pioinfo_extra = 0; pioinfo_extra <= 64; pioinfo_extra += sizeof(void *)) {
 	if (_osfhnd(fd) == _get_osfhandle(fd)) {
 	    break;
 	}
     }
-    close(fd);
+    _close(fd);
 
     if (pioinfo_extra > 64) {
 	/* not found, maybe something wrong... */
