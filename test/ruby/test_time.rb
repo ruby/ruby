@@ -3,6 +3,15 @@ require 'rational'
 require 'timeout'
 
 class TestTime < Test::Unit::TestCase
+  def setup
+    @verbose = $VERBOSE
+    $VERBOSE = nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose
+  end
+
   def test_time_add()
     assert_equal(Time.utc(2000, 3, 21, 3, 30) + 3 * 3600,
                  Time.utc(2000, 3, 21, 6, 30))
