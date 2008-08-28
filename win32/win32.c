@@ -4367,7 +4367,9 @@ rb_w32_read(int fd, void *buf, size_t size)
 	if (pol) {
 	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
 	    if (wait != WAIT_OBJECT_0) {
-		if (errno != EINTR)
+		if (wait == WAIT_OBJECT_0 + 1)
+		    errno = EINTR;
+		else
 		    errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
@@ -4471,7 +4473,9 @@ rb_w32_write(int fd, const void *buf, size_t size)
 	if (pol) {
 	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
 	    if (wait != WAIT_OBJECT_0) {
-		if (errno != EINTR)
+		if (wait == WAIT_OBJECT_0 + 1)
+		    errno = EINTR;
+		else
 		    errno = map_errno(GetLastError());
 		CloseHandle(ol.hEvent);
 		cancel_io((HANDLE)_osfhnd(fd));
