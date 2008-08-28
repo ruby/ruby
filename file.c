@@ -2597,7 +2597,7 @@ ntfs_tail(const char *path)
 static int is_absolute_path(const char*);
 
 static VALUE
-file_expand_path(VALUE fname, VALUE dname, VALUE result)
+file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 {
     const char *s, *b;
     char *buf, *p, *pend, *root;
@@ -2610,7 +2610,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
     BUFINIT();
     tainted = OBJ_TAINTED(fname);
 
-    if (s[0] == '~') {
+    if (s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    const char *dir = getenv("HOME");
 
@@ -2672,7 +2672,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 	    /* specified drive, but not full path */
 	    int same = 0;
 	    if (!NIL_P(dname)) {
-		file_expand_path(dname, Qnil, result);
+		file_expand_path(dname, Qnil, abs_mode, result);
 		BUFINIT();
 		if (has_drive_letter(p) && TOLOWER(p[0]) == TOLOWER(s[0])) {
 		    /* ok, same drive */
@@ -2696,7 +2696,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 #endif
     else if (!is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
-	    file_expand_path(dname, Qnil, result);
+	    file_expand_path(dname, Qnil, abs_mode, result);
 	    BUFINIT();
 	}
 	else {
@@ -2888,7 +2888,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
 VALUE
 rb_file_expand_path(VALUE fname, VALUE dname)
 {
-    return file_expand_path(fname, dname, rb_usascii_str_new(0, MAXPATHLEN + 2));
+    return file_expand_path(fname, dname, 0, rb_usascii_str_new(0, MAXPATHLEN + 2));
 }
 
 /*
@@ -2919,6 +2919,40 @@ rb_file_s_expand_path(int argc, VALUE *argv)
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     return rb_file_expand_path(fname, dname);
+}
+
+VALUE
+rb_file_absolute_path(VALUE fname, VALUE dname)
+{
+    return file_expand_path(fname, dname, 1, rb_usascii_str_new(0, MAXPATHLEN + 2));
+}
+
+/*
+ *  call-seq:
+ *     File.absolute_path(file_name [, dir_string] ) -> abs_file_name
+ *  
+ *  Converts a pathname to an absolute pathname. Relative paths are
+ *  referenced from the current working directory of the process unless
+ *  <i>dir_string</i> is given, in which case it will be used as the
+ *  starting point. If the given pathname starts with a ``<code>~</code>''
+ *  it is NOT expanded, it is treated as a normal directory name.
+ *     
+ *     File.absolute_path("~oracle/bin")       #=> "<relative_path>/~oracle/bin"
+ */
+
+VALUE
+rb_file_s_absolute_path(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE fname, dname;
+
+    if (argc == 1) {
+	return rb_file_absolute_path(argv[0], Qnil);
+    }
+    rb_scan_args(argc, argv, "11", &fname, &dname);
+
+    return rb_file_absolute_path(fname, dname);
 }
 
 static int
@@ -4511,7 +4545,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 
 	    FilePathValue(str);
 	    if (RSTRING_LEN(str) == 0) continue;
-	    file_expand_path(fname, str, tmp);
+	    file_expand_path(fname, str, 0, tmp);
 	    if (file_load_ok(RSTRING_PTR(tmp))) {
 		RBASIC(tmp)->klass = rb_obj_class(*filep);
 		OBJ_FREEZE(tmp);
@@ -4572,7 +4606,7 @@ rb_find_file(VALUE path)
 	    VALUE str = RARRAY_PTR(load_path)[i];
 	    FilePathValue(str);
 	    if (RSTRING_LEN(str) > 0) {
-		file_expand_path(path, str, tmp);
+		file_expand_path(path, str, 0, tmp);
 		f = RSTRING_PTR(tmp);
 		if (file_load_ok(f)) goto found;
 	    }
@@ -4694,6 +4728,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "umask", rb_file_s_umask, -1);
     rb_define_singleton_method(rb_cFile, "truncate", rb_file_s_truncate, 2);
     rb_define_singleton_method(rb_cFile, "expand_path", rb_file_s_expand_path, -1);
+    rb_define_singleton_method(rb_cFile, "absolute_path", rb_file_s_absolute_path, -1);
     rb_define_singleton_method(rb_cFile, "basename", rb_file_s_basename, -1);
     rb_define_singleton_method(rb_cFile, "dirname", rb_file_s_dirname, 1);
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
