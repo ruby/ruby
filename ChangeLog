@@ -2,16 +2,19 @@ Thu Aug 28 09:26:53 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_multipart.rb: add test for multipart.
 	  Patch by Takeyuki Fujioka. [ruby-dev:36014]
+	  From CGIAlt http://cgialt.rubyforge.org/
 
 Thu Aug 28 09:22:01 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_modruby.rb: add test for mod_ruby adaptor.
 	  Patch by Takeyuki Fujioka. [ruby-dev:36013]
+	  From CGIAlt http://cgialt.rubyforge.org/
 
 Thu Aug 28 09:17:10 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_header.rb: add test for CGI::Header.
 	  Patch by Takeyuki Fujioka. [ruby-dev:36010] [ruby-dev:36011]
+	  From CGIAlt http://cgialt.rubyforge.org/
 
 Thu Aug 28 02:16:49 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -36,6 +39,7 @@ Wed Aug 27 14:45:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_core.rb: add core test.
 	  Patch by Takeyuki Fujioka. [ruby-dev:36001] [ruby-dev:36002]
+	  From CGIAlt http://cgialt.rubyforge.org/
 
 Wed Aug 27 10:34:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -44,6 +48,7 @@ Wed Aug 27 10:34:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_cookie.rb: added for above.
 	  Patch by Takeyuki Fujioka. [ruby-dev:35996]
+	  From CGIAlt http://cgialt.rubyforge.org/
 
 Wed Aug 27 01:13:54 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -114,6 +119,7 @@ Tue Aug 26 16:16:43 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/cgi/test_cgi_tag_helper.rb: add more tests for html3.
 	  Patch by Takeyuki Fujioka. [ruby-dev:35975]
+	  From CGIAlt http://cgialt.rubyforge.org/
 
 Tue Aug 26 14:43:10 2008  Akinori MUSHA  <knu@iDaemons.org>
 
