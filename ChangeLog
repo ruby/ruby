@@ -1,3 +1,9 @@
+Fri Aug 29 00:53:40 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* strftime.c (rb_strftime): fixed a bug of padding.
+
+	* test/ruby/test_time.rb: ditto.
+
 Fri Aug 29 00:19:54 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (set_pioinfo_extra): use MSVCRT's open() and close().
