@@ -1736,6 +1736,8 @@ set_pioinfo_extra(void)
 #define _set_osflags(fh, flags) (_osfile(fh) = (flags))
 
 #define FOPEN			0x01	/* file handle open */
+#define FEOFLAG			0x02	/* end of file has been encountered */
+#define FPIPE			0x08	/* file handle refers to a pipe */
 #define FNOINHERIT		0x10	/* file handle opened O_NOINHERIT */
 #define FAPPEND			0x20	/* file handle opened O_APPEND */
 #define FDEV			0x40	/* file handle refers to device */
@@ -3995,6 +3997,167 @@ rb_w32_getppid(void)
 }
 
 int
+rb_w32_open(const char *file, int oflag, ...)
+{
+    char flags = 0;
+    int fd;
+    DWORD access;
+    DWORD create;
+    DWORD attr = FILE_ATTRIBUTE_NORMAL;
+    SECURITY_ATTRIBUTES sec;
+    HANDLE h;
+
+    sec.nLength = sizeof(sec);
+    sec.lpSecurityDescriptor = NULL;
+    if (oflag & O_NOINHERIT) {
+	sec.bInheritHandle = FALSE;
+	flags |= FNOINHERIT;
+    }
+    else {
+	sec.bInheritHandle = TRUE;
+    }
+    oflag &= ~O_NOINHERIT;
+
+    /* always open with binary mode */
+    oflag &= ~(O_BINARY | O_TEXT);
+
+    switch (oflag & (O_RDWR | O_RDONLY | O_WRONLY)) {
+      case O_RDWR:
+	access = GENERIC_READ | GENERIC_WRITE;
+	break;
+      case O_RDONLY:
+	access = GENERIC_READ;
+	break;
+      case O_WRONLY:
+	access = GENERIC_WRITE;
+	break;
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+    oflag &= ~(O_RDWR | O_RDONLY | O_WRONLY);
+
+    switch (oflag & (O_CREAT | O_EXCL | O_TRUNC)) {
+      case O_CREAT:
+	create = OPEN_ALWAYS;
+	break;
+      case 0:
+      case O_EXCL:
+	create = OPEN_EXISTING;
+	break;
+      case O_CREAT | O_EXCL:
+      case O_CREAT | O_EXCL | O_TRUNC:
+	create = CREATE_NEW;
+	break;
+      case O_TRUNC:
+      case O_TRUNC | O_EXCL:
+	create = TRUNCATE_EXISTING;
+	break;
+      case O_CREAT | O_TRUNC:
+	create = CREATE_ALWAYS;
+	break;
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+    if (oflag & O_CREAT) {
+	va_list arg;
+	int pmode;
+	va_start(arg, oflag);
+	pmode = va_arg(arg, int);
+	va_end(arg);
+	/* TODO: we need to check umask here, but it's not exported... */
+	if (!(pmode & S_IWRITE))
+	    attr = FILE_ATTRIBUTE_READONLY;
+    }
+    oflag &= ~(O_CREAT | O_EXCL | O_TRUNC);
+
+    if (oflag & O_TEMPORARY) {
+	attr |= FILE_FLAG_DELETE_ON_CLOSE;
+	access |= DELETE;
+    }
+    oflag &= ~O_TEMPORARY;
+
+    if (oflag & _O_SHORT_LIVED)
+	attr |= FILE_ATTRIBUTE_TEMPORARY;
+    oflag &= ~_O_SHORT_LIVED;
+
+    switch (oflag & (O_SEQUENTIAL | O_RANDOM)) {
+      case 0:
+	break;
+      case O_SEQUENTIAL:
+	attr |= FILE_FLAG_SEQUENTIAL_SCAN;
+	break;
+      case O_RANDOM:
+	attr |= FILE_FLAG_RANDOM_ACCESS;
+	break;
+      default:
+	errno = EINVAL;
+	return -1;
+    }
+    oflag &= ~(O_SEQUENTIAL | O_RANDOM);
+
+    if (oflag & ~O_APPEND) {
+	errno = EINVAL;
+	return -1;
+    }
+
+    /* allocate a C Runtime file handle */
+    RUBY_CRITICAL({
+	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+	fd = _open_osfhandle((long)h, 0);
+	CloseHandle(h);
+    });
+    if (fd == -1) {
+	errno = EMFILE;
+	return -1;
+    }
+    RUBY_CRITICAL({
+	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+	_set_osfhnd(fd, (long)INVALID_HANDLE_VALUE);
+	_set_osflags(fd, 0);
+
+	/* open with FILE_FLAG_OVERLAPPED if have CancelIo */
+	if (cancel_io)
+	    attr |= FILE_FLAG_OVERLAPPED;
+	h = CreateFile(file, access, FILE_SHARE_READ | FILE_SHARE_WRITE, &sec,
+		       create, attr, NULL);
+	if (h == INVALID_HANDLE_VALUE) {
+	    errno = map_errno(GetLastError());
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    fd = -1;
+	    goto quit;
+	}
+
+	switch (GetFileType(h)) {
+	  case FILE_TYPE_CHAR:
+	    flags |= FDEV;
+	    break;
+	  case FILE_TYPE_PIPE:
+	    flags |= FPIPE;
+	    break;
+	  case FILE_TYPE_UNKNOWN:
+	    errno = map_errno(GetLastError());
+	    CloseHandle(h);
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    fd = -1;
+	    goto quit;
+	}
+	if (!(flags & (FDEV | FPIPE)) && (oflag & O_APPEND))
+	    flags |= FAPPEND;
+
+	_set_osfhnd(fd, (long)h);
+	_osfile(fd) = flags | FOPEN;
+
+	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+      quit:
+	;
+    });
+
+    return fd;
+}
+
+int
 rb_w32_fclose(FILE *fp)
 {
     int fd = fileno(fp);
@@ -4013,6 +4176,98 @@ rb_w32_fclose(FILE *fp)
 	errno = map_errno(WSAGetLastError());
 	return -1;
     }
+    return 0;
+}
+
+int
+rb_w32_pipe(int fds[2])
+{
+    static DWORD serial = 0;
+    char name[] = "\\\\.\\pipe\\ruby0000000000000000-0000000000000000";
+    char *p;
+    SECURITY_ATTRIBUTES sec;
+    HANDLE hRead, hWrite, h;
+    int fdRead, fdWrite;
+    int ret;
+
+    /* if doesn't have CancelIo, use default pipe function */
+    if (!cancel_io)
+	return _pipe(fds, 65536L, _O_NOINHERIT);
+
+    p = strchr(name, '0');
+    snprintf(p, strlen(p) + 1, "%x-%x", rb_w32_getpid(), serial++);
+
+    sec.nLength = sizeof(sec);
+    sec.lpSecurityDescriptor = NULL;
+    sec.bInheritHandle = FALSE;
+
+    RUBY_CRITICAL({
+	hRead = CreateNamedPipe(name, PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+				0, 2, 65536, 65536, 0, &sec);
+    });
+    if (hRead == INVALID_HANDLE_VALUE) {
+	DWORD err = GetLastError();
+	if (err == ERROR_PIPE_BUSY)
+	    errno = EMFILE;
+	else
+	    errno = map_errno(GetLastError());
+	return -1;
+    }
+
+    RUBY_CRITICAL({
+	hWrite = CreateFile(name, GENERIC_READ | GENERIC_WRITE, 0, &sec,
+			    OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+    });
+    if (hWrite == INVALID_HANDLE_VALUE) {
+	errno = map_errno(GetLastError());
+	CloseHandle(hRead);
+	return -1;
+    }
+
+    RUBY_CRITICAL(do {
+	ret = 0;
+	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+	fdRead = _open_osfhandle((long)h, 0);
+	CloseHandle(h);
+	if (fdRead == -1) {
+	    errno = EMFILE;
+	    CloseHandle(hWrite);
+	    CloseHandle(hRead);
+	    ret = -1;
+	    break;
+	}
+
+	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fdRead)->lock)));
+	_set_osfhnd(fdRead, (long)hRead);
+	_set_osflags(fdRead, FOPEN | FPIPE | FNOINHERIT);
+	MTHREAD_ONLY(LeaveCriticalSection(&(_pioinfo(fdRead)->lock)));
+    } while (0));
+    if (ret)
+	return ret;
+
+    RUBY_CRITICAL(do {
+	h = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+	fdWrite = _open_osfhandle((long)h, 0);
+	CloseHandle(h);
+	if (fdWrite == -1) {
+	    errno = EMFILE;
+	    CloseHandle(hWrite);
+	    ret = -1;
+	    break;
+	}
+	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fdWrite)->lock)));
+	_set_osfhnd(fdWrite, (long)hWrite);
+	_set_osflags(fdWrite, FOPEN | FPIPE | FNOINHERIT);
+	MTHREAD_ONLY(LeaveCriticalSection(&(_pioinfo(fdWrite)->lock)));
+    } while (0));
+    if (ret) {
+	rb_w32_close(fdRead);
+	return ret;
+    }
+
+    fds[0] = fdRead;
+    fds[1] = fdWrite;
+
     return 0;
 }
 
@@ -4045,11 +4300,107 @@ size_t
 rb_w32_read(int fd, void *buf, size_t size)
 {
     SOCKET sock = TO_SOCKET(fd);
+    DWORD read;
+    DWORD wait;
+    DWORD err;
+    OVERLAPPED ol, *pol = NULL;
 
-    if (!is_socket(sock))
-	return read(fd, buf, size);
-    else
+    if (is_socket(sock))
 	return rb_w32_recv(fd, buf, size, 0);
+
+    if (!(_osfile(fd) & FOPEN)) {
+	errno = EBADF;
+	return -1;
+    }
+
+    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+
+    if (!size || _osfile(fd) & FEOFLAG) {
+	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	return 0;
+    }
+
+    /* if have cancel_io, use Overlapped I/O */
+    if (cancel_io) {
+	memset(&ol, 0, sizeof(ol));
+	if (!(_osfile(fd) & (FDEV | FPIPE))) {
+	    LONG high = 0;
+	    DWORD low = SetFilePointer((HANDLE)_osfhnd(fd), 0, &high,
+				       FILE_CURRENT);
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
+	    if (low == INVALID_SET_FILE_POINTER) {
+		errno = map_errno(GetLastError());
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		return -1;
+	    }
+	    ol.Offset = low;
+	    ol.OffsetHigh = high;
+	}
+	ol.hEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
+	if (!ol.hEvent) {
+	    errno = map_errno(GetLastError());
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    return -1;
+	}
+
+	pol = &ol;
+    }
+
+    if (!ReadFile((HANDLE)_osfhnd(fd), buf, size, &read, pol)) {
+	err = GetLastError();
+	if (err != ERROR_IO_PENDING) {
+	    if (err == ERROR_ACCESS_DENIED)
+		errno = EBADF;
+	    else if (err == ERROR_BROKEN_PIPE) {
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		return 0;
+	    }
+	    else
+		errno = map_errno(err);
+
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    return -1;
+	}
+
+	if (pol) {
+	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+	    if (wait != WAIT_OBJECT_0) {
+		if (errno != EINTR)
+		    errno = map_errno(GetLastError());
+		CloseHandle(ol.hEvent);
+		cancel_io((HANDLE)_osfhnd(fd));
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		return -1;
+	    }
+
+	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &read, TRUE) &&
+		(err = GetLastError()) != ERROR_HANDLE_EOF) {
+		errno = map_errno(err);
+		CloseHandle(ol.hEvent);
+		cancel_io((HANDLE)_osfhnd(fd));
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		return -1;
+	    }
+	}
+    }
+
+    if (pol) {
+	CloseHandle(ol.hEvent);
+
+	if (!(_osfile(fd) & (FDEV | FPIPE))) {
+	    LONG high = ol.OffsetHigh;
+	    LONG low = ol.Offset + read;
+	    if (low < ol.Offset)
+		++high;
+	    SetFilePointer((HANDLE)_osfhnd(fd), low, &high, FILE_BEGIN);
+	}
+    }
+
+    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+
+    return read;
 }
 
 #undef write
@@ -4057,15 +4408,103 @@ size_t
 rb_w32_write(int fd, const void *buf, size_t size)
 {
     SOCKET sock = TO_SOCKET(fd);
+    DWORD written;
+    DWORD wait;
+    DWORD err;
+    OVERLAPPED ol, *pol = NULL;
 
-    if (!is_socket(sock)) {
-	size_t ret = write(fd, buf, size);
-	if ((int)ret < 0 && errno == EINVAL)
-	    errno = map_errno(GetLastError());
-	return ret;
-    }
-    else
+    if (is_socket(sock))
 	return rb_w32_send(fd, buf, size, 0);
+
+    if (!(_osfile(fd) & FOPEN)) {
+	errno = EBADF;
+	return -1;
+    }
+
+    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
+
+    if (!size || _osfile(fd) & FEOFLAG) {
+	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	return 0;
+    }
+
+    /* if have cancel_io, use Overlapped I/O */
+    if (cancel_io) {
+	memset(&ol, 0, sizeof(ol));
+	if (!(_osfile(fd) & (FDEV | FPIPE))) {
+	    LONG high = 0;
+	    DWORD low = SetFilePointer((HANDLE)_osfhnd(fd), 0, &high,
+				       FILE_CURRENT);
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
+	    if (low == INVALID_SET_FILE_POINTER) {
+		errno = map_errno(GetLastError());
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		return -1;
+	    }
+	    ol.Offset = low;
+	    ol.OffsetHigh = high;
+	}
+	ol.hEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
+	if (!ol.hEvent) {
+	    errno = map_errno(GetLastError());
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    return -1;
+	}
+
+	pol = &ol;
+    }
+
+    if (!WriteFile((HANDLE)_osfhnd(fd), buf, size, &written, pol)) {
+	err = GetLastError();
+	if (err != ERROR_IO_PENDING) {
+	    if (err == ERROR_ACCESS_DENIED)
+		errno = EBADF;
+	    else
+		errno = map_errno(err);
+
+	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+	    return -1;
+	}
+
+	if (pol) {
+	    wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+	    if (wait != WAIT_OBJECT_0) {
+		if (errno != EINTR)
+		    errno = map_errno(GetLastError());
+		CloseHandle(ol.hEvent);
+		cancel_io((HANDLE)_osfhnd(fd));
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		return -1;
+	    }
+
+	    if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written,
+				     TRUE)) {
+		errno = map_errno(err);
+		CloseHandle(ol.hEvent);
+		cancel_io((HANDLE)_osfhnd(fd));
+		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+		return -1;
+	    }
+	}
+    }
+
+    if (pol) {
+	CloseHandle(ol.hEvent);
+
+	if (!(_osfile(fd) & (FDEV | FPIPE))) {
+	    LONG high = ol.OffsetHigh;
+	    LONG low = ol.Offset + written;
+	    if (low < ol.Offset)
+		++high;
+	    SetFilePointer((HANDLE)_osfhnd(fd), low, &high, FILE_BEGIN);
+	}
+    }
+
+    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
+
+    return written;
 }
 
 static int

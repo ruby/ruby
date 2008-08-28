@@ -524,17 +524,8 @@ static void
 ubf_handle(void *ptr)
 {
     typedef BOOL (WINAPI *cancel_io_func_t)(HANDLE);
-    static cancel_io_func_t cancel_func = NULL;
     rb_thread_t *th = (rb_thread_t *)ptr;
     thread_debug("ubf_handle: %p\n", th);
-
-    if (!cancel_func) {
-	cancel_func = (cancel_io_func_t)GetProcAddress(GetModuleHandle("kernel32"), "CancelSynchronousIo");
-	if (!cancel_func)
-	    cancel_func = (cancel_io_func_t)-1;
-    }
-    if (cancel_func != (cancel_io_func_t)-1)
-	cancel_func((HANDLE)th->thread_id);
 
     w32_set_event(th->native_thread_data.interrupt_event);
 }
