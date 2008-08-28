@@ -79,7 +79,7 @@ assert_normal_exit %q{
     at_exit { p :foo }
 
     megacontent = "abc" * 12345678
-    File.open("megasrc", "w") {|f| f << megacontent }
+    #File.open("megasrc", "w") {|f| f << megacontent }
 
     Thread.new { sleep rand*0.2; Process.kill(:INT, $$) }
 
