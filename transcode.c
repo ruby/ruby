@@ -2376,6 +2376,7 @@ econv_result_to_symbol(rb_econv_result_t res)
  * - after some output is generated, before input is done (:output_followed_by_input)
  *   this occur only when OUTPUT_FOLLOWED_BY_INPUT is specified.
  * - destination buffer is full (:destination_buffer_full)
+ *   this occur only when destination_bytesize is non-nil.
  * - source buffer is empty (:source_buffer_empty)
  *   this occur only when PARTIAL_INPUT is specified.
  * - conversion is finished (:finished)
