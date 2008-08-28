@@ -2339,8 +2339,13 @@ econv_result_to_symbol(rb_econv_result_t res)
  *
  * primitive_convert converts source_buffer into destination_buffer.
  *
- * source_buffer and destination_buffer should be a string.
+ * source_buffer should be a string or nil.
+ * nil means a empty string.
+ *
+ * adestination_buffer should be a string.
+ *
  * destination_byteoffset should be an integer or nil.
+ *
  * destination_bytesize and flags should be an integer.
  *
  * primitive_convert convert the content of source_buffer from beginning
@@ -2415,7 +2420,8 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
         flags = NUM2INT(flags_v);
 
     StringValue(output);
-    StringValue(input);
+    if (!NIL_P(input))
+        StringValue(input);
     rb_str_modify(output);
 
     if (output_byteoffset_v == Qnil)
@@ -2440,15 +2446,21 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     if (rb_str_capacity(output) < output_byteend)
         rb_str_resize(output, output_byteend);
 
-    ip = (const unsigned char *)RSTRING_PTR(input);
-    is = ip + RSTRING_LEN(input);
+    if (NIL_P(input)) {
+        ip = is = NULL;
+    }
+    else {
+        ip = (const unsigned char *)RSTRING_PTR(input);
+        is = ip + RSTRING_LEN(input);
+    }
 
     op = (unsigned char *)RSTRING_PTR(output) + output_byteoffset;
     os = op + output_bytesize;
 
     res = rb_econv_convert(ec, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
-    rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
+    if (!NIL_P(input))
+        rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
 
     if (ec->destination_encoding) {
         rb_enc_associate(output, ec->destination_encoding);

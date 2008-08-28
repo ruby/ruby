@@ -1,3 +1,8 @@
+Fri Aug 29 02:11:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_primitive_convert): accept nil as input for empty
+	  input.
+
 Fri Aug 29 02:03:56 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* strftime.c (rb_strftime): supported %s and %P.

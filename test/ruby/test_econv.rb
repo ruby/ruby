@@ -79,6 +79,12 @@ class TestEncodingConverter < Test::Unit::TestCase
     }
   end
 
+  def test_nil_input
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP")
+    ret = ec.primitive_convert(nil, dst="", nil, 10)
+    assert_equal(:finished, ret)
+  end
+
   def test_partial_input
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     ret = ec.primitive_convert(src="", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)
