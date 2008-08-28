@@ -292,8 +292,9 @@ rb_method_node(VALUE klass, ID id)
     struct cache_entry *ent;
 
     ent = cache + EXPR1(klass, id);
-    if (ent->mid == id && ent->klass == klass && ent->method) {
-	return ent->method;
+    if (ent->mid == id && ent->klass == klass) {
+	if (ent->method) return ent->method;
+	return 0;
     }
 
     return rb_get_method_body(klass, id, 0);
