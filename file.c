@@ -2734,6 +2734,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
 	*p = '/';
     }
 
+    BUFCHECK(bdiff + 1 >= buflen);
     p[1] = 0;
     root = skipprefix(buf);
 

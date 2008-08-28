@@ -1,3 +1,7 @@
+Fri Aug 29 00:03:13 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* file.c (file_expand_path): check invalid access.
+
 Thu Aug 28 23:55:50 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* strftime.c (rb_strftime): Time.mktime(2000).strftime("%-S") should
