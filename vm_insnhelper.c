@@ -518,9 +518,10 @@ vm_call_method(rb_thread_t * const th, rb_control_frame_t * const cfp,
 		break;
 	      }
 	      case NODE_BMETHOD:{
-		VALUE *argv = cfp->sp - num;
-		val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv, blockptr);
+		VALUE *argv = ALLOCA_N(VALUE, num);
+		MEMCPY(argv, cfp->sp - num, VALUE, num);
 		cfp->sp += - num - 1;
+		val = vm_call_bmethod(th, id, node->nd_cval, recv, klass, num, argv, blockptr);
 		break;
 	      }
 	      case NODE_ZSUPER:{

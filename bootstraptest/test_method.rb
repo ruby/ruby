@@ -1058,3 +1058,14 @@ assert_equal '[false, false, false, false, true, true]', %q{
   D.new.bar{}
   [C.new.foo, C.new.foo{}, D.new.m1, D.new.m1{}, D.new.m2, D.new.m2{}]
 }, '[ruby-core:14813]'
+
+assert_equal 'ok', %q{
+  class Foo
+    define_method(:foo) do |&b|
+      b.call
+    end
+  end
+  Foo.new.foo do
+    break :ok
+  end
+}, '[ruby-dev:36028]'
