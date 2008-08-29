@@ -1,3 +1,7 @@
+Fri Aug 29 19:46:02 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, include/ruby/ruby.h: rename T_DEFERRED to T_ZOMBIE.
+
 Fri Aug 29 18:22:27 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_compatible_p): raise TypeError when argument is not

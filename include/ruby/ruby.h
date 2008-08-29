@@ -319,7 +319,7 @@ enum ruby_value_type {
     RUBY_T_UNDEF  = 0x1b,
     RUBY_T_NODE   = 0x1c,
     RUBY_T_ICLASS = 0x1d,
-    RUBY_T_DEFERRED = 0x1e,
+    RUBY_T_ZOMBIE = 0x1e,
 
     RUBY_T_MASK   = 0x1f
 };
@@ -348,7 +348,7 @@ enum ruby_value_type {
 #define T_COMPLEX RUBY_T_COMPLEX
 #define T_UNDEF  RUBY_T_UNDEF
 #define T_NODE   RUBY_T_NODE
-#define T_DEFERRED RUBY_T_DEFERRED
+#define T_ZOMBIE RUBY_T_ZOMBIE
 #define T_MASK   RUBY_T_MASK
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)

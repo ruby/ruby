@@ -1652,7 +1652,7 @@ gc_sweep(rb_objspace_t *objspace)
 		    ((deferred = obj_free(objspace, (VALUE)p)) ||
 		     ((FL_TEST(p, FL_FINALIZE)) && need_call_final))) {
 		    if (!deferred) {
-			p->as.free.flags = T_DEFERRED;
+			p->as.free.flags = T_ZOMBIE;
 			RDATA(p)->dfree = 0;
 		    }
 		    p->as.free.flags |= FL_MARK;
@@ -1665,7 +1665,7 @@ gc_sweep(rb_objspace_t *objspace)
 		    free_num++;
 		}
 	    }
-	    else if (BUILTIN_TYPE(p) == T_DEFERRED) {
+	    else if (BUILTIN_TYPE(p) == T_ZOMBIE) {
 		/* objects to be finalized */
 		/* do nothing remain marked */
 	    }
@@ -1724,7 +1724,7 @@ rb_gc_force_recycle(VALUE p)
 static inline void
 make_deferred(RVALUE *p)
 {
-    p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_DEFERRED;
+    p->as.basic.flags = (p->as.basic.flags & ~T_MASK) | T_ZOMBIE;
 }
 
 static int
@@ -2127,7 +2127,7 @@ os_obj_of(rb_objspace_t *objspace, VALUE of)
 		  case T_NONE:
 		  case T_ICLASS:
 		  case T_NODE:
-		  case T_DEFERRED:
+		  case T_ZOMBIE:
 		    continue;
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
@@ -2327,8 +2327,8 @@ chain_finalized_object(st_data_t key, st_data_t val, st_data_t arg)
 {
     RVALUE *p = (RVALUE *)key, **final_list = (RVALUE **)arg;
     if (p->as.basic.flags & FL_FINALIZE) {
-	if (BUILTIN_TYPE(p) != T_DEFERRED) {
-	    p->as.free.flags = FL_MARK | T_DEFERRED; /* remain marked */
+	if (BUILTIN_TYPE(p) != T_ZOMBIE) {
+	    p->as.free.flags = FL_MARK | T_ZOMBIE; /* remain marked */
 	    RDATA(p)->dfree = 0;
 	}
 	p->as.free.next = *final_list;
@@ -2622,7 +2622,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
 	    COUNT_TYPE(T_UNDEF);
 	    COUNT_TYPE(T_NODE);
 	    COUNT_TYPE(T_ICLASS);
-	    COUNT_TYPE(T_DEFERRED);
+	    COUNT_TYPE(T_ZOMBIE);
 #undef COUNT_TYPE
           default:              type = INT2NUM(i); break;
         }
