@@ -137,13 +137,14 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	else{
 	    const unsigned char *p;
 	    VALUE str = ossl_to_der_if_possible(arg);
-	    X509_NAME *x = DATA_PTR(self);
+	    X509_NAME *x;
 	    StringValue(str);
 	    p = (unsigned char *)RSTRING_PTR(str);
-	    if(!d2i_X509_NAME(&x, &p, RSTRING_LEN(str)) && (DATA_PTR(self) = x, 1)){
+	    x = d2i_X509_NAME(&name, &p, RSTRING_LEN(str));
+	    DATA_PTR(self) = name;
+	    if(!x){
 		ossl_raise(eX509NameError, NULL);
 	    }
-            DATA_PTR(self) = x;
 	}
     }
 

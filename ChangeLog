@@ -1,3 +1,12 @@
+Fri Aug 29 12:19:12 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_initialize): fix for
+	  initialization of r18168.
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_initialize): ditto.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): ditto.
+
 Fri Aug 29 11:04:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): ASCII compatible string and US-ASCII

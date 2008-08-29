@@ -92,7 +92,7 @@ static VALUE
 ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE oid, value;
-    X509_ATTRIBUTE *attr;
+    X509_ATTRIBUTE *attr, *x;
     const unsigned char *p;
 
     GetX509Attr(self, attr);
@@ -100,7 +100,9 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 	oid = ossl_to_der_if_possible(oid);
 	StringValue(oid);
 	p = (unsigned char *)RSTRING_PTR(oid);
-	if(!d2i_X509_ATTRIBUTE(&attr, &p, RSTRING_LEN(oid)) && (DATA_PTR(self) = attr, 1)){
+	x = d2i_X509_ATTRIBUTE(&attr, &p, RSTRING_LEN(oid));
+	DATA_PTR(self) = attr;
+	if(!x){
 	    ossl_raise(eX509AttrError, NULL);
 	}
 	return self;
