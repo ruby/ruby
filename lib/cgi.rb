@@ -2298,11 +2298,6 @@ class CGI
       Apache.request.setup_cgi_env
     end
 
-      (class << self; self; end).class_eval do
-        const_set(:CGI_PARAMS,  [1])
-        const_set(:CGI_COOKIES, [2])
-      end
-
     extend QueryExtension
     @multipart = false
 

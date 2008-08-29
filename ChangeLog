@@ -1,3 +1,8 @@
+Sat Aug 30 01:37:20 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#initialize): remove unused constants.  a patch
+	  from Takeyuki Fujioka in [ruby-dev:36046].
+
 Fri Aug 29 22:29:41 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c ({nucomp,numeric}_rect): new.
