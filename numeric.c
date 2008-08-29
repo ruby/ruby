@@ -3142,6 +3142,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "modulo", num_modulo, 1);
     rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
     rb_define_method(rb_cNumeric, "abs", num_abs, 0);
+    rb_define_method(rb_cNumeric, "magnitude", num_abs, 0);
     rb_define_method(rb_cNumeric, "to_int", num_to_int, 0);
 
     rb_define_method(rb_cNumeric, "scalar?", num_scalar_p, 0);
@@ -3203,6 +3204,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "**", fix_pow, 1);
 
     rb_define_method(rb_cFixnum, "abs", fix_abs, 0);
+    rb_define_method(rb_cFixnum, "magnitude", fix_abs, 0);
 
     rb_define_method(rb_cFixnum, "==", fix_equal, 1);
     rb_define_method(rb_cFixnum, "<=>", fix_cmp, 1);
@@ -3270,6 +3272,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "hash", flo_hash, 0);
     rb_define_method(rb_cFloat, "to_f", flo_to_f, 0);
     rb_define_method(rb_cFloat, "abs", flo_abs, 0);
+    rb_define_method(rb_cFloat, "magnitude", flo_abs, 0);
     rb_define_method(rb_cFloat, "zero?", flo_zero_p, 0);
 
     rb_define_method(rb_cFloat, "to_i", flo_truncate, 0);

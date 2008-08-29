@@ -7,6 +7,10 @@ class Rational_Test < Test::Unit::TestCase
   def test_ratsub
     c = RationalSub.__send__(:new, 1)
     cc = RationalSub.__send__(:convert, 1)
+
+    assert_kind_of(Numeric, c)
+    assert_kind_of(Numeric, cc)
+
     if defined?(RationalSub::Unify)
       assert_instance_of(Fixnum, c)
       assert_instance_of(Fixnum, cc)
@@ -26,6 +30,21 @@ class Rational_Test < Test::Unit::TestCase
       c5 = Marshal.load(s)
       assert_equal(c, c5)
       assert_instance_of(RationalSub, c5)
+    end
+  end
+
+  def test_eql_p
+    c = Rational(0)
+    c2 = Rational(0)
+    c3 = Rational(1)
+
+    assert_equal(true, c.eql?(c2))
+    assert_equal(false, c.eql?(c3))
+
+    if defined?(Rational::Unify)
+      assert_equal(true, c.eql?(0))
+    else
+      assert_equal(false, c.eql?(0))
     end
   end
 
@@ -180,10 +199,16 @@ class Rational_Test < Test::Unit::TestCase
     c = Rational(Rational(1,2),Rational(1,2))
     assert_equal(Rational.__send__(:new, 1), c)
 
-    assert_equal(Rational.__send__(:new, 1),Rational(1))
-    assert_equal(1.1.to_r,Rational(1.1))
-    assert_equal(Rational.__send__(:new, 1),Rational('1'))
+    assert_equal(Rational.__send__(:new, 3),Rational(3))
+    assert_equal(Rational.__send__(:new, 1),Rational(3,3))
+    assert_equal(3.3.to_r,Rational(3.3))
+    assert_equal(1,Rational(3.3,3.3))
+    assert_equal(Rational.__send__(:new, 3),Rational('3'))
+    assert_equal(Rational.__send__(:new, 1),Rational('3.0','3.0'))
+    assert_equal(Rational.__send__(:new, 1),Rational('3/3','3/3'))
     assert_raise(ArgumentError){Rational(nil)}
+    assert_raise(ArgumentError){Rational('')}
+    assert_raise(ArgumentError){Rational(Object.new)}
   end
 
   def test_attr
@@ -335,6 +360,9 @@ class Rational_Test < Test::Unit::TestCase
 
     assert_equal(Rational(1,4), c / 2)
     assert_equal(0.25, c / 2.0)
+
+    assert_raise(ZeroDivisionError){Rational(1, 3) / 0}
+    assert_raise(ZeroDivisionError){Rational(1, 3) / Rational(0)}
   end
 
   def assert_eql(exp, act, *args)
@@ -384,6 +412,41 @@ class Rational_Test < Test::Unit::TestCase
       assert_equal(-4, c.div(-c2))
       assert_equal(-4, (-c).div(c2))
       assert_equal(3, (-c).div(-c2))
+    end
+  end
+
+  def test_modulo
+    c = Rational(1,2)
+    c2 = Rational(2,3)
+
+    assert_eql(Rational(1,2), c.modulo(c2))
+    assert_eql(Rational(1,2), c.modulo(2))
+    assert_eql(0.5, c.modulo(2.0))
+
+    c = Rational(301,100)
+    c2 = Rational(7,5)
+
+    assert_equal(Rational(21,100), c.modulo(c2))
+    assert_equal(Rational(-119,100), c.modulo(-c2))
+    assert_equal(Rational(119,100), (-c).modulo(c2))
+    assert_equal(Rational(-21,100), (-c).modulo(-c2))
+
+    c = Rational(301,100)
+    c2 = Rational(2)
+
+    assert_equal(Rational(101,100), c.modulo(c2))
+    assert_equal(Rational(-99,100), c.modulo(-c2))
+    assert_equal(Rational(99,100), (-c).modulo(c2))
+    assert_equal(Rational(-101,100), (-c).modulo(-c2))
+
+    unless defined?(Rational::Unify)
+      c = Rational(11)
+      c2 = Rational(3)
+
+      assert_equal(2, c.modulo(c2))
+      assert_equal(-1, c.modulo(-c2))
+      assert_equal(1, (-c).modulo(c2))
+      assert_equal(-2, (-c).modulo(-c2))
     end
   end
 
@@ -457,7 +520,44 @@ class Rational_Test < Test::Unit::TestCase
       assert_equal(3, (-c).quot(-c2))
     end
   end
+=end
 
+  def test_remainder
+    c = Rational(1,2)
+    c2 = Rational(2,3)
+
+    assert_eql(Rational(1,2), c.remainder(c2))
+    assert_eql(Rational(1,2), c.remainder(2))
+    assert_eql(0.5, c.remainder(2.0))
+
+    c = Rational(301,100)
+    c2 = Rational(7,5)
+
+    assert_equal(Rational(21,100), c.remainder(c2))
+    assert_equal(Rational(21,100), c.remainder(-c2))
+    assert_equal(Rational(-21,100), (-c).remainder(c2))
+    assert_equal(Rational(-21,100), (-c).remainder(-c2))
+
+    c = Rational(301,100)
+    c2 = Rational(2)
+
+    assert_equal(Rational(101,100), c.remainder(c2))
+    assert_equal(Rational(101,100), c.remainder(-c2))
+    assert_equal(Rational(-101,100), (-c).remainder(c2))
+    assert_equal(Rational(-101,100), (-c).remainder(-c2))
+
+    unless defined?(Rational::Unify)
+      c = Rational(11)
+      c2 = Rational(3)
+
+      assert_equal(2, c.remainder(c2))
+      assert_equal(2, c.remainder(-c2))
+      assert_equal(-2, (-c).remainder(c2))
+      assert_equal(-2, (-c).remainder(-c2))
+    end
+  end
+
+=begin
   def test_quotrem
     c = Rational(1,2)
     c2 = Rational(2,3)
@@ -696,6 +796,33 @@ class Rational_Test < Test::Unit::TestCase
     end
   end
 
+  def test_math
+    assert_equal(Rational(1,2), Rational(1,2).abs)
+    assert_equal(Rational(1,2), Rational(-1,2).abs)
+    if defined?(Complex) && !Complex.instance_variable_get('@RCS_ID')
+      assert_equal(Rational(1,2), Rational(1,2).magnitude)
+      assert_equal(Rational(1,2), Rational(-1,2).magnitude)
+    end
+
+    assert_equal(1, Rational(1,2).numerator)
+    assert_equal(2, Rational(1,2).denominator)
+  end
+
+  def test_trunc
+    [[Rational(13, 5),  [ 2,  3,  2,  3]], #  2.6
+     [Rational(5, 2),   [ 2,  3,  2,  3]], #  2.5
+     [Rational(12, 5),  [ 2,  3,  2,  2]], #  2.4
+     [Rational(-12,5),  [-3, -2, -2, -2]], # -2.4
+     [Rational(-5, 2),  [-3, -2, -2, -3]], # -2.5
+     [Rational(-13, 5), [-3, -2, -2, -3]], # -2.6
+    ].each do |i, a|
+      assert_equal(a[0], i.floor)
+      assert_equal(a[1], i.ceil)
+      assert_equal(a[2], i.truncate)
+      assert_equal(a[3], i.round)
+    end
+  end
+
   def test_to_s
     c = Rational(1,2)
 
@@ -739,6 +866,7 @@ class Rational_Test < Test::Unit::TestCase
   def test_parse
     assert_equal(Rational(0), ''.to_r)
     assert_equal(Rational(0), ' '.to_r)
+    assert_equal(Rational(5), "\f\n\r\t\v5\0".to_r)
     assert_equal(Rational(5), '5'.to_r)
     assert_equal(Rational(-5), '-5'.to_r)
     assert_equal(Rational(5,3), '5/3'.to_r)
@@ -816,6 +944,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ArgumentError){ Rational('5/3_')}
     assert_raise(ArgumentError){ Rational('5/3.3')}
     assert_raise(ArgumentError){ Rational('5/3x')}
+    assert_raise(ArgumentError){ Rational("5\0")}
   end
 
 =begin
@@ -885,47 +1014,26 @@ class Rational_Test < Test::Unit::TestCase
     assert_eql(c, c.prec(Rational))
   end
 
+  def test_gcdlcm
+    assert_equal(7, 91.gcd(-49))
+    assert_equal(5, 5.gcd(0))
+    assert_equal(5, 0.gcd(5))
+    assert_equal(70, 14.lcm(35))
+    assert_equal(0, 5.lcm(0))
+    assert_equal(0, 0.lcm(5))
+    assert_equal([5,0], 0.gcdlcm(5))
+    assert_equal([5,0], 5.gcdlcm(0))
+
+    assert_equal(1, 1073741827.gcd(1073741789))
+    assert_equal(1152921470247108503, 1073741827.lcm(1073741789))
+
+    assert_equal(1, 1073741789.gcd(1073741827))
+    assert_equal(1152921470247108503, 1073741789.lcm(1073741827))
+  end
+
   def test_supp
     assert_equal(true, 1.scalar?)
     assert_equal(true, 1.1.scalar?)
-
-    if defined?(Complex)
-      assert_equal(1, 1.real)
-      assert_equal(0, 1.image)
-      assert_equal(0, 1.imag)
-
-      assert_equal(1.1, 1.1.real)
-      assert_equal(0, 1.1.image)
-      assert_equal(0, 1.1.imag)
-
-      assert_equal(0, 1.arg)
-      assert_equal(0, 1.angle)
-
-      assert_equal(0, 1.0.arg)
-      assert_equal(0, 1.0.angle)
-
-      assert_equal(Math::PI, -1.arg)
-      assert_equal(Math::PI, -1.angle)
-
-      assert_equal(Math::PI, -1.0.arg)
-      assert_equal(Math::PI, -1.0.angle)
-
-      assert_equal([1,0], 1.polar)
-      assert_equal([1, Math::PI], -1.polar)
-
-      assert_equal([1.0,0], 1.0.polar)
-      assert_equal([1.0, Math::PI], -1.0.polar)
-
-      assert_equal(1, 1.conjugate)
-      assert_equal(-1, -1.conjugate)
-      assert_equal(1, 1.conj)
-      assert_equal(-1, -1.conj)
-
-      assert_equal(1.1, 1.1.conjugate)
-      assert_equal(-1.1, -1.1.conjugate)
-      assert_equal(1.1, 1.1.conj)
-      assert_equal(-1.1, -1.1.conj)
-    end
 
     assert_equal(1, 1.numerator)
     assert_equal(9, 9.numerator)

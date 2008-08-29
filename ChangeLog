@@ -1,3 +1,24 @@
+Fri Aug 29 22:29:41 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c ({nucomp,numeric}_rect): new.
+
+	* complex.c: added some aliases
+	  (::rectangular, ::rect, #rectangular, #rect, #phase,
+	  #magnitude).
+
+	* complex.c (string_to_c_internal): should not strip any null
+	  bytes.
+
+	* rational.c (string_to_r_internal): ditto.
+
+	* rational.c (i_gcd): reverted to nurat 0.0.2's one.
+
+	* numeric.c: added an alias (#magnitude).
+
+	* test/ruby/test_complex.rb: added assertions.
+
+	* test/ruby/test_rational.rb: ditto.
+
 Fri Aug 29 19:46:02 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, include/ruby/ruby.h: rename T_DEFERRED to T_ZOMBIE.
