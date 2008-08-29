@@ -1794,9 +1794,8 @@ bigdivmod(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 	if (divp) *divp = bigadd(*divp, rb_int2big(1), 0);
 	if (modp) *modp = bigadd(mod, y, 1);
     }
-    else {
-	if (divp) *divp = *divp;
-	if (modp) *modp = mod;
+    else if (modp) {
+	*modp = mod;
     }
 }
 

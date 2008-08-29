@@ -1,3 +1,8 @@
+Sat Aug 30 01:55:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivmod): remove redundant code.  a patch from
+	  TOYOFUKU Chikanobu <nobu_toyofuku at nifty.com> in [ruby-dev:36044].
+
 Sat Aug 30 01:37:20 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#initialize): remove unused constants.  a patch
