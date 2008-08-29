@@ -2942,9 +2942,7 @@ rb_file_absolute_path(VALUE fname, VALUE dname)
  */
 
 VALUE
-rb_file_s_absolute_path(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_absolute_path(int argc, VALUE *argv)
 {
     VALUE fname, dname;
 

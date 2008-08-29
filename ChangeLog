@@ -1,3 +1,8 @@
+Sat Aug 30 08:59:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_file_s_absolute_path),
+	  (rb_file_absolute_path): prototyped.
+
 Sat Aug 30 08:09:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_compatible_p): use TYPE not BUILTIN_TYPE.
@@ -262,7 +267,7 @@ Wed Aug 27 01:13:54 2008  Tanaka Akira  <akr@fsij.org>
 Wed Aug 27 01:03:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_result_t): enumeration constant:
-	  econv_incomplete_input. 
+	  econv_incomplete_input.
 
 	* io.c (finish_writeconv): check econv_incomplete_input.
 
@@ -438,7 +443,7 @@ Mon Aug 25 23:38:17 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 Mon Aug 25 23:01:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* compile.c (defined_expr): default defined? should return
-	  "expression" without evaluating the expression.  [ruby-dev:35967] 
+	  "expression" without evaluating the expression.  [ruby-dev:35967]
 
 Mon Aug 25 22:46:01 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
@@ -869,9 +874,9 @@ Fri Aug 22 21:18:40 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 	* complex.c (rb_complex_polar): new.
 
 	* rational.c (nurat_to_s): do not canonicalize.
-	
+
 	* rational.c (nurat_inspect): adopts new form.
-	
+
 	* rational.c (string_to_r_internal): ditto.
 
 	* include/ruby/intern.h: added a declaration.
@@ -1273,7 +1278,7 @@ Tue Aug 19 01:32:37 2008  Tanaka Akira  <akr@fsij.org>
 
 Tue Aug 19 01:02:19 2008  Tanaka Akira  <akr@fsij.org>
 
-	* io.c (rb_open_file): don't access argv[-1] by 
+	* io.c (rb_open_file): don't access argv[-1] by
 	  File.allocate.instance_eval { initialize }.
 
 Tue Aug 19 00:56:01 2008  Tanaka Akira  <akr@fsij.org>
@@ -1424,10 +1429,10 @@ Sun Aug 17 12:00:18 2008  Tanaka Akira  <akr@fsij.org>
 	* transcode.c (make_econv_exception): add several instance variables
 	  to exception object.
 	  (ecerr_source_encoding): new method:
-	  Encoding::ConversionUndefined#source_encoding and 
+	  Encoding::ConversionUndefined#source_encoding and
 	  Encoding::InvalidByteSequence#source_encoding.
 	  (ecerr_destination_encoding): new method:
-	  Encoding::ConversionUndefined#destination_encoding and 
+	  Encoding::ConversionUndefined#destination_encoding and
 	  Encoding::InvalidByteSequence#destination_encoding.
 	  (econverr_error_char): new method:
 	  Encoding::ConversionUndefined#error_char.
