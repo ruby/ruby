@@ -880,13 +880,11 @@ enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
 {
     rb_encoding *enc;
 
-    if (SPECIAL_CONST_P(str1) || 
-	    BUILTIN_TYPE(str1) != T_STRING && BUILTIN_TYPE(str1) != T_REGEXP) {
+    if (SPECIAL_CONST_P(str1) || TYPE(str1) != T_STRING && TYPE(str1) != T_REGEXP) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected String or Regexp)",
 		rb_obj_classname(str1));
     }
-    if (SPECIAL_CONST_P(str2) || 
-	    BUILTIN_TYPE(str2) != T_STRING && BUILTIN_TYPE(str2) != T_REGEXP) {
+    if (SPECIAL_CONST_P(str2) || TYPE(str2) != T_STRING && TYPE(str2) != T_REGEXP) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected String or Regexp)",
 		rb_obj_classname(str2));
     }

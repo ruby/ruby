@@ -1,6 +1,12 @@
+Sat Aug 30 08:09:36 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (enc_compatible_p): use TYPE not BUILTIN_TYPE.
+	  [ruby-dev:36048]
+
 Sat Aug 30 07:48:48 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (enc_compatible_p): add SPECIAL_CONST_P check.
+	  [ruby-dev:36048]
 
 	* test/ruby/test_m17n.rb (test_compatible): fix test.
 
