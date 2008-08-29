@@ -2506,6 +2506,17 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  *   puts ec.convert("\u3042").dump     #=> "\xA4\xA2"
  *   puts ec.finish.dump                #=> ""
  *
+ *   ec = Encoding::Converter.new("euc-jp", "utf-8")
+ *   puts ec.convert("\xA4").dump       #=> ""
+ *   puts ec.convert("\xA2").dump       #=> "\xE3\x81\x82"
+ *   puts ec.finish.dump                #=> ""
+ *
+ *   ec = Encoding::Converter.new("utf-8", "iso-2022-jp")
+ *   puts ec.convert("\xE3").dump       #=> "".force_encoding("ISO-2022-JP")
+ *   puts ec.convert("\x81").dump       #=> "".force_encoding("ISO-2022-JP")
+ *   puts ec.convert("\x82").dump       #=> "\e$B$\"".force_encoding("ISO-2022-JP")
+ *   puts ec.finish.dump                #=> "\e(B".force_encoding("ISO-2022-JP")
+ *
  * If a conversion error occur,
  * Encoding::ConversionUndefined or
  * Encoding::InvalidByteSequence is raised.
