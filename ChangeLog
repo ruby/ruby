@@ -1,3 +1,9 @@
+Fri Aug 29 18:20:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_index_m): only regexp uses byte offset.
+
+	* string.c (rb_str_rindex_m): ditto.
+
 Fri Aug 29 16:48:34 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c (vm_call_method): copy arguments to allocated
