@@ -761,7 +761,7 @@ static st_table *immediate_frozen_tbl = 0;
  *     obj.freeze    => obj
  *  
  *  Prevents further modifications to <i>obj</i>. A
- *  <code>TypeError</code> will be raised if modification is attempted.
+ *  <code>RuntimeError</code> will be raised if modification is attempted.
  *  There is no way to unfreeze a frozen object. See also
  *  <code>Object#frozen?</code>.
  *     
@@ -771,7 +771,7 @@ static st_table *immediate_frozen_tbl = 0;
  *     
  *  <em>produces:</em>
  *     
- *     prog.rb:3:in `<<': can't modify frozen array (TypeError)
+ *     prog.rb:3:in `<<': can't modify frozen array (RuntimeError)
  *     	from prog.rb:3
  */
 

@@ -1,3 +1,8 @@
+Sat Aug 30 02:48:11 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_freeze): update rdoc to mention RuntimeError
+	  (not TypeError any longer) would be raised.  [ruby-dev:35982]
+
 Sat Aug 30 01:55:30 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bigdivmod): remove redundant code.  a patch from
