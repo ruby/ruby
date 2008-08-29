@@ -1280,7 +1280,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_compatible
-    assert_equal(nil, Encoding.compatible?("",0), "moved from btest/knownbug")
+    assert_raise(TypeError) {Encoding.compatible?("",0)}
   end
 
   def test_force_encoding
