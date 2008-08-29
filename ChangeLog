@@ -1,3 +1,13 @@
+Fri Aug 29 11:04:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): ASCII compatible string and US-ASCII
+	  regexp is compatible. [ruby-dev:36033]
+
+	* string.c (rb_str_index_m): second argument is position of character.
+	  by usa. [ruby-dev:36033]
+
+	* string.c (rb_str_rindex_m): ditto.
+
 Fri Aug 29 04:47:49 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_read, rb_w32_write): more accurate handling

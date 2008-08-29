@@ -2167,6 +2167,9 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	}
     }
 
+    pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
+	    rb_enc_check(str, sub), single_byte_optimizable(str));
+
     switch (TYPE(sub)) {
       case T_REGEXP:
 	pos = rb_reg_adjust_startpos(sub, str, pos, 0);
@@ -2276,6 +2279,9 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
     else {
 	pos = len;
     }
+
+    pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
+	    rb_enc_check(str, sub), single_byte_optimizable(str));
 
     switch (TYPE(sub)) {
       case T_REGEXP:

@@ -631,6 +631,10 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
     }
+    if (BUILTIN_TYPE(str2) == T_REGEXP && idx2 == ENCINDEX_US_ASCII)
+	return enc1;
+    if (BUILTIN_TYPE(str1) == T_REGEXP && idx1 == ENCINDEX_US_ASCII)
+	return enc2;
 
     if (BUILTIN_TYPE(str1) != T_STRING) {
 	VALUE tmp = str1;
@@ -652,7 +656,7 @@ rb_enc_compatible(VALUE str1, VALUE str2)
 		if (cr2 == ENC_CODERANGE_7BIT) return enc1;
 	    }
 	    if (cr2 == ENC_CODERANGE_7BIT) {
-		if (idx1 == 0) return enc2;
+		if (idx1 == ENCINDEX_ASCII) return enc2;
 		return enc1;
 	    }
 	}
