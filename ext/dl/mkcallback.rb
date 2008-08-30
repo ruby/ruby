@@ -1,4 +1,5 @@
-$out  ||= $stdout
+$out = open("callback.h", "w")
+
 $dl_h = ARGV[0] || "dl.h"
 
 # import DLSTACK_SIZE, DLSTACK_ARGS and so on
@@ -94,7 +95,7 @@ VALUE rb_DLCdeclCallbackAddrs, rb_DLCdeclCallbackProcs;
 VALUE rb_DLStdcallCallbackAddrs, rb_DLStdcallCallbackProcs;
 /*static void *cdecl_callbacks[MAX_DLTYPE][MAX_CALLBACK];*/
 /*static void *stdcall_callbacks[MAX_DLTYPE][MAX_CALLBACK];*/
-static ID   cb_call;
+ID   rb_dl_cb_call;
 EOS
 
 def foreach_proc_entry
@@ -124,7 +125,7 @@ FUNC_#{calltype.upcase}(#{func_name(ty,argc,n,calltype)})(#{(0...argc).collect{|
       }.join("\n")
 }
     cb = rb_ary_entry(rb_ary_entry(#{proc_entry}, #{ty}), #{(n * DLSTACK_SIZE) + argc});
-    ret = rb_funcall2(cb, cb_call, #{argc}, #{argc > 0 ? 'args' : 'NULL'});
+    ret = rb_funcall2(cb, rb_dl_cb_call, #{argc}, #{argc > 0 ? 'args' : 'NULL'});
     return #{DLTYPE[ty][:conv] ? DLTYPE[ty][:conv] % "ret" : ""};
 }
 
@@ -149,14 +150,42 @@ def gen_push_addr_ary(ty, aryname, calltype)
           }.join(","))
 end
 
-foreach_proc_entry do |calltype, proc_entry|
-  for ty in 0..(MAX_DLTYPE-1)
-    for argc in 0..(DLSTACK_SIZE-1)
-      for n in 0..(MAX_CALLBACK-1)
-        $out << gencallback(ty, calltype, proc_entry, argc, n)
+def gen_callback_file(ty)
+  filename = "callback-#{ty}.c"
+  initname = "rb_dl_init_callbacks_#{ty}"
+  open(filename, "w") {|f|
+    f.puts <<-EOS
+#include "dl.h"
+extern VALUE rb_DLCdeclCallbackAddrs, rb_DLCdeclCallbackProcs;
+extern VALUE rb_DLStdcallCallbackAddrs, rb_DLStdcallCallbackProcs;
+extern ID   rb_dl_cb_call;
+    EOS
+    yield f
+    f.puts <<-EOS
+void
+#{initname}()
+{
+#{gen_push_proc_ary(ty, "rb_DLCdeclCallbackProcs")}
+#{gen_push_addr_ary(ty, "rb_DLCdeclCallbackAddrs", CDECL)}
+#{gen_push_proc_ary(ty, "rb_DLStdcallCallbackProcs")}
+#{gen_push_addr_ary(ty, "rb_DLStdcallCallbackAddrs", STDCALL)}
+}
+    EOS
+  }
+  initname
+end
+
+for ty in 0...MAX_DLTYPE
+  initname = gen_callback_file(ty) {|f|
+    foreach_proc_entry do |calltype, proc_entry|
+      for argc in 0...DLSTACK_SIZE
+        for n in 0...MAX_CALLBACK
+          f << gencallback(ty, calltype, proc_entry, argc, n)
+        end
       end
     end
-  end
+  }
+  $out << "void #{initname}();\n"
 end
 
 $out << (<<EOS)
@@ -164,7 +193,7 @@ static void
 rb_dl_init_callbacks()
 {
     VALUE tmp;
-    cb_call = rb_intern("call");		       
+    rb_dl_cb_call = rb_intern("call");		       
 
     tmp = rb_DLCdeclCallbackProcs = rb_ary_new();
     rb_define_const(rb_mDL, "CdeclCallbackProcs", tmp);
@@ -180,23 +209,8 @@ rb_dl_init_callbacks()
 
 #{
     (0...MAX_DLTYPE).collect{|ty|
-      gen_push_proc_ary(ty, "rb_DLCdeclCallbackProcs")
-    }.join("\n")
-}
-#{
-    (0...MAX_DLTYPE).collect{|ty|
-      gen_push_addr_ary(ty, "rb_DLCdeclCallbackAddrs", CDECL)
-    }.join("\n")
-}
-#{
-    (0...MAX_DLTYPE).collect{|ty|
-      gen_push_proc_ary(ty, "rb_DLStdcallCallbackProcs")
-    }.join("\n")
-}
-#{
-    (0...MAX_DLTYPE).collect{|ty|
-      gen_push_addr_ary(ty, "rb_DLStdcallCallbackAddrs", STDCALL)
-    }.join("\n")
+      "rb_dl_init_callbacks_#{ty}();\n"
+    }.join("")
 }
 }
 EOS

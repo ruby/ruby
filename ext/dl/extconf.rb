@@ -25,6 +25,13 @@ else
   check = false
 end
 
+$objs = %w[
+  cfunc.o dl.o cptr.o handle.o
+  callback-0.o callback-1.o callback-2.o callback-3.o
+  callback-4.o callback-5.o callback-6.o callback-7.o
+  callback-8.o
+]
+
 if check
   $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
   create_makefile("dl")

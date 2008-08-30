@@ -1,3 +1,10 @@
+Sun Aug 31 01:53:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/mkcallback.rb: split callback.h to callback-[0-9].c to reduce
+	  memory consumption on compilation.  [ruby-dev:31898]
+
+	* ext/dl/depend: add dependency for callback-[0-9].[co].
+
 Sun Aug 31 01:27:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dl/mkcallback.rb (foreach_proc_entry): extracted.
