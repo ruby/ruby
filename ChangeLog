@@ -1,3 +1,10 @@
+Sun Aug 31 01:27:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/mkcallback.rb (foreach_proc_entry): extracted.
+	  (gencallback): ditto.
+	  (gen_push_proc_ary): ditto.
+	  (gen_push_addr_ary): ditto.
+
 Sat Aug 30 23:51:01 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_tuplebag.rb (test_has_expires_eh): fix failures
