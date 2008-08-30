@@ -1452,7 +1452,7 @@ rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n)
     if (ec->num_trans == 0 || n == 0)
         return;
     tc = ec->elems[0].tc;
-    memcpy(p, TRANSCODING_READBUF(tc) + tc->recognized_len, n);
+    memcpy(p, TRANSCODING_READBUF(tc) + tc->recognized_len + tc->readagain_len - n, n);
     tc->readagain_len -= n;
 }
 

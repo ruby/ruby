@@ -485,6 +485,15 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal(["abcdef", ""], [dst, src])
   end
 
+  def test_putback2
+    ec = Encoding::Converter.new("utf-16le", "euc-jp")
+    ret = ec.primitive_convert(src="\x00\xd8\x21\x00", dst="", nil, nil)
+    assert_equal(:invalid_byte_sequence, ret)
+    assert_equal("\x00", ec.putback(1))
+    assert_equal("\x21", ec.putback(1))
+    assert_equal("", ec.putback(1))
+  end
+
   def test_invalid_replace
     ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::INVALID_REPLACE)
     ret = ec.primitive_convert(src="abc\x80def", dst="", nil, 100)

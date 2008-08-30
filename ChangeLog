@@ -1,3 +1,7 @@
+Sun Aug 31 04:35:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_putback): putback from last byte.
+
 Sun Aug 31 04:27:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_putback): renamed from econv_primitive_putback.
