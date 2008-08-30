@@ -1,3 +1,14 @@
+Sat Aug 30 14:59:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_initialize): fix for
+	  initialization of r18168.
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_initialize): ditto.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_initialize): ditto.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): ditto.
+
 Thu Aug 21 17:30:32 2008  Akinori MUSHA  <knu@iDaemons.org>
 
 	* enumerator.c (enumerator_ptr), lib/generator.rb:
