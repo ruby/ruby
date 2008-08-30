@@ -1020,6 +1020,8 @@ i_ilog2(VALUE x)
     return q + r;
 }
 
+static long ml;
+
 static VALUE
 nurat_to_f(VALUE self)
 {
@@ -1464,6 +1466,8 @@ Init_Rational(void)
     id_to_i = rb_intern("to_i");
     id_to_s = rb_intern("to_s");
     id_truncate = rb_intern("truncate");
+
+    ml = (long)(log(DBL_MAX) / log(2.0) - 1);
 
     rb_cRational = rb_define_class(RATIONAL_NAME, rb_cNumeric);
 

@@ -1,3 +1,7 @@
+Sat Aug 30 22:23:31 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c: added a static variable for nurat_to_f.
+
 Sat Aug 30 20:05:41 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_open, rb_w32_read, rb_w32_write): fallback to
