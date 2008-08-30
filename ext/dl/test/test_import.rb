@@ -95,11 +95,11 @@ module DL
     def test_struct()
       s = LIBC::MyStruct.malloc()
       s.num = [0,1,2,3,4]
-      s.c = ?a
+      s.c = ?a.ord
       s.buff = "012345\377"
       assert_equal([0,1,2,3,4], s.num)
-      assert_equal(?a, s.c)
-      assert_equal([?0,?1,?2,?3,?4,?5,?\377], s.buff)
+      assert_equal(?a.ord, s.c)
+      assert_equal([?0.ord,?1.ord,?2.ord,?3.ord,?4.ord,?5.ord,?\377.ord], s.buff)
     end
 
     def test_gettimeofday()
@@ -120,9 +120,9 @@ module DL
     end
 
     def test_isdigit()
-      r1 = LIBC.isdigit(?1)
-      r2 = LIBC.isdigit(?2)
-      rr = LIBC.isdigit(?r)
+      r1 = LIBC.isdigit(?1.ord)
+      r2 = LIBC.isdigit(?2.ord)
+      rr = LIBC.isdigit(?r.ord)
       assert_positive(r1)
       assert_positive(r2)
       assert_zero(rr)

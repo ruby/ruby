@@ -15,9 +15,9 @@ module DL
     def test_isdigit()
       f = Function.new(CFunc.new(@libc['isdigit'], TYPE_INT, 'isdigit'),
                        [TYPE_INT])
-      r1 = f.call(?1)
-      r2 = f.call(?2)
-      rr = f.call(?r)
+      r1 = f.call(?1.ord)
+      r2 = f.call(?2.ord)
+      rr = f.call(?r.ord)
       assert_positive(r1)
       assert_positive(r2)
       assert_zero(rr)

@@ -1,3 +1,9 @@
+Sat Aug 30 23:38:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/test/test_import.rb: fix character code.
+
+	* ext/dl/test/test_func.rb: ditto.
+
 Sat Aug 30 22:23:31 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: added a static variable for nurat_to_f.
