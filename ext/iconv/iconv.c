@@ -18,7 +18,6 @@
 #include <iconv.h>
 #include <assert.h>
 #include "ruby/st.h"
-#include "ruby/intern.h"
 #include "ruby/encoding.h"
 
 /*

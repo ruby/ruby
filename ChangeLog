@@ -1,3 +1,7 @@
+Sat Aug 30 10:46:44 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* ext/iconv/iconv.c: remove include pragma for "ruby/intern.h".
+
 Sat Aug 30 10:43:03 2008 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: remove include pragma for "ruby/intern.h".
