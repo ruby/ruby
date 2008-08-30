@@ -1,3 +1,8 @@
+Sat Aug 30 10:41:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rake.rb (Rake::Application#help): fix for OPTIONAL_ARGUMENT and
+	  multiple short options.  [ruby-dev:36051]
+
 Sat Aug 30 08:59:25 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/intern.h (rb_file_s_absolute_path),
