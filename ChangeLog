@@ -1,3 +1,8 @@
+Sat Aug 30 23:51:01 2008  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_tuplebag.rb (test_has_expires_eh): fix failures
+	  [ruby-dev:35937].
+
 Sat Aug 30 23:38:00 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dl/test/test_import.rb: fix character code.

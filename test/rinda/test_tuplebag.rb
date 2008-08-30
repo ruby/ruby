@@ -134,16 +134,16 @@ class TestTupleBag < Test::Unit::TestCase
   end
 
   def test_has_expires_eh
-    assert_equal false, @tb.has_expires?
+    assert !@tb.has_expires?
 
     t = tup(:val, 1)
     @tb.push t
 
-    assert_equal true, @tb.has_expires?
+    assert @tb.has_expires?
 
     t.renew Object.new
 
-    assert_equal false, @tb.has_expires?
+    assert !@tb.has_expires?
   end
 
   def test_push
