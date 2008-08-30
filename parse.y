@@ -173,6 +173,15 @@ vtable_included(const struct vtable * tbl, ID id)
     }
     return 0;
 }
+
+
+typedef struct token_info {
+    char *token;
+    int linenum;
+    int column;
+    int nonspc;
+    struct token_info *next;
+} token_info;
 #endif
 
 /*
@@ -235,6 +244,8 @@ struct parser_params {
     VALUE debug_lines;
     VALUE coverage;
     int nerr;
+
+    token_info *parser_token_info;
 #else
     /* Ripper only */
     VALUE parser_ruby_sourcefile_string;
@@ -575,6 +586,10 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 #endif
 #endif
 
+#ifndef RIPPER
+static void token_info_push(struct parser_params*, char *token);
+static void token_info_pop(struct parser_params*, char *token);
+#endif
 %}
 
 %pure_parser
@@ -2491,7 +2506,7 @@ primary		: literal
 			$$ = method_arg(dispatch1(fcall, $1), arg_new());
 		    %*/
 		    }
-		| keyword_begin
+		| k_begin
 		    {
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
@@ -2499,7 +2514,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			if ($3 == NULL) {
@@ -2655,10 +2670,10 @@ primary		: literal
 		    {
 			$$ = $2;
 		    }
-		| keyword_if expr_value then
+		| k_if expr_value then
 		  compstmt
 		  if_tail
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_IF(cond($2), $4, $5);
@@ -2667,10 +2682,10 @@ primary		: literal
 			$$ = dispatch3(if, $2, $4, escape_Qundef($5));
 		    %*/
 		    }
-		| keyword_unless expr_value then
+		| k_unless expr_value then
 		  compstmt
 		  opt_else
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_UNLESS(cond($2), $4, $5);
@@ -2679,9 +2694,9 @@ primary		: literal
 			$$ = dispatch3(unless, $2, $4, escape_Qundef($5));
 		    %*/
 		    }
-		| keyword_while {COND_PUSH(1);} expr_value do {COND_POP();}
+		| k_while {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_WHILE(cond($3), $6, 1);
@@ -2690,9 +2705,9 @@ primary		: literal
 			$$ = dispatch2(while, $3, $6);
 		    %*/
 		    }
-		| keyword_until {COND_PUSH(1);} expr_value do {COND_POP();}
+		| k_until {COND_PUSH(1);} expr_value do {COND_POP();}
 		  compstmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_UNTIL(cond($3), $6, 1);
@@ -2701,9 +2716,9 @@ primary		: literal
 			$$ = dispatch2(until, $3, $6);
 		    %*/
 		    }
-		| keyword_case expr_value opt_terms
+		| k_case expr_value opt_terms
 		  case_body
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE($2, $4);
@@ -2712,7 +2727,7 @@ primary		: literal
 			$$ = dispatch2(case, $2, $4);
 		    %*/
 		    }
-		| keyword_case opt_terms case_body keyword_end
+		| k_case opt_terms case_body k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE(0, $3);
@@ -2720,12 +2735,12 @@ primary		: literal
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/
 		    }
-		| keyword_for for_var keyword_in
+		| k_for for_var keyword_in
 		  {COND_PUSH(1);}
 		  expr_value do
 		  {COND_POP();}
 		  compstmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			/*
@@ -2775,7 +2790,7 @@ primary		: literal
 			$$ = dispatch3(for, $2, $5, $8);
 		    %*/
 		    }
-		| keyword_class cpath superclass
+		| k_class cpath superclass
 		    {
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
@@ -2786,7 +2801,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3);
@@ -2796,7 +2811,7 @@ primary		: literal
 			$$ = dispatch3(class, $2, $3, $5);
 		    %*/
 		    }
-		| keyword_class tLSHFT expr
+		| k_class tLSHFT expr
 		    {
 		    /*%%%*/
 			$<num>$ = in_def;
@@ -2817,7 +2832,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $7);
@@ -2831,7 +2846,7 @@ primary		: literal
 			in_single = $<val>6;
 		    %*/
 		    }
-		| keyword_module cpath
+		| k_module cpath
 		    {
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
@@ -2842,7 +2857,7 @@ primary		: literal
 		    %*/
 		    }
 		  bodystmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4);
@@ -2852,7 +2867,7 @@ primary		: literal
 			$$ = dispatch2(module, $2, $4);
 		    %*/
 		    }
-		| keyword_def fname
+		| k_def fname
 		    {
 			$<id>$ = cur_mid;
 			cur_mid = $2;
@@ -2864,7 +2879,7 @@ primary		: literal
 		    }
 		  f_arglist
 		  bodystmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			NODE *body = remove_begin($5);
@@ -2880,7 +2895,7 @@ primary		: literal
 			cur_mid = $<id>3;
 		    %*/
 		    }
-		| keyword_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
+		| k_def singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
 			in_single++;
 			lex_state = EXPR_END; /* force for args */
@@ -2891,7 +2906,7 @@ primary		: literal
 		    }
 		  f_arglist
 		  bodystmt
-		  keyword_end
+		  k_end
 		    {
 		    /*%%%*/
 			NODE *body = remove_begin($8);
@@ -2950,6 +2965,83 @@ primary_value	: primary
 		    %*/
 		    }
 		;
+
+k_begin		: keyword_begin
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "begin");
+#endif
+		    }
+
+k_if		: keyword_if
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "if");
+#endif
+		    }
+
+k_unless	: keyword_unless
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "unless");
+#endif
+		    }
+
+k_while		: keyword_while
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "while");
+#endif
+		    }
+
+k_until		: keyword_until
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "until");
+#endif
+		    }
+
+k_case		: keyword_case
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "case");
+#endif
+		    }
+
+k_for		: keyword_for
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "for");
+#endif
+		    }
+
+k_class		: keyword_class
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "class");
+#endif
+		    }
+
+k_module	: keyword_module
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "module");
+#endif
+		    }
+
+k_def		: keyword_def
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_push(parser, "def");
+#endif
+		    }
+
+k_end		: keyword_end
+		    {
+#ifndef RIPPER
+			if (RTEST(ruby_verbose)) token_info_pop(parser, "end");  /* POP */
+#endif
+		    }
 
 then		: term
 		    /*%c%*/
@@ -4584,6 +4676,72 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 #define parser_is_identchar() (!parser->eofp && is_identchar((lex_p-1),lex_pend,parser->enc))
 
 #define parser_isascii() ISASCII(*(lex_p-1))
+
+#ifndef RIPPER
+static int
+token_info_get_column(struct parser_params *parser, char *token)
+{
+    int column = 1;
+    const char *p, *pend = lex_p - strlen(token);
+    for (p = lex_pbeg; p < pend; p++) {
+	if (*p == '\t') {
+	    column = (((column - 1) / 8) + 1) * 8;
+	}
+	column++;
+    }
+    return column;
+}
+
+static int
+token_info_has_nonspaces(struct parser_params *parser, char *token)
+{
+    const char *p, *pend = lex_p - strlen(token);
+    for (p = lex_pbeg; p < pend; p++) {
+	if (*p != ' ' && *p != '\t') {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+static void
+token_info_push(struct parser_params *parser, char *token)
+{
+    token_info *ptinfo = ALLOC(token_info);
+
+    ptinfo->token = token;
+    ptinfo->linenum = ruby_sourceline;
+    ptinfo->column = token_info_get_column(parser, token);
+    ptinfo->nonspc = token_info_has_nonspaces(parser, token);
+    ptinfo->next = parser->parser_token_info;
+
+    parser->parser_token_info = ptinfo;
+}
+
+static void
+token_info_pop(struct parser_params *parser, char *token)
+{
+    int linenum;
+    token_info *ptinfo = parser->parser_token_info;
+
+    parser->parser_token_info = ptinfo->next;
+    if (token_info_get_column(parser, token) == ptinfo->column) { /* OK */
+	goto finish;
+    }
+    linenum = ruby_sourceline;
+    if (linenum == ptinfo->linenum) { /* SKIP */
+	goto finish;
+    }
+    if (token_info_has_nonspaces(parser, token) || ptinfo->nonspc) { /* SKIP */
+	goto finish;
+    }
+    rb_warning("mismatched indentations: line %d:'%s' and line %d:'%s'",
+	       ptinfo->linenum, ptinfo->token, linenum, token);
+
+  finish:
+    xfree(ptinfo);
+}
+#endif	/* RIPPER */
 
 static int
 parser_yyerror(struct parser_params *parser, const char *msg)

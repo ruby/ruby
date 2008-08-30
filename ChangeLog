@@ -21,6 +21,13 @@ Sat Aug 30 14:39:51 2008  Tanaka Akira  <akr@fsij.org>
 	* ext/dl/mkcallback.rb (rb_dl_init_callbacks): avoid GC problem which
 	  is caused by 'GC.stress=true; require "dl"'.
 
+Sat Aug 30 11:54:17 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (token_info_push): -w warns indentation level mismatch.
+	  based on a patch from Yukina Yamano presented at RubyKaigi'07.
+	  See <http://jp.rubyist.net/RubyKaigi2007/Log0609-LT06.html> and
+	  <http://www.logic-junction.com/products/rubyend.html> (Japanese).
+
 Sat Aug 30 10:46:44 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/iconv/iconv.c: remove include pragma for "ruby/intern.h".
