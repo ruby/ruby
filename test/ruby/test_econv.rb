@@ -478,7 +478,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     ret = ec.primitive_convert(src="abc\xa1def", dst="", nil, 10)
     assert_equal(:invalid_byte_sequence, ret)
     assert_equal(["abc", "ef"], [dst, src])
-    src = ec.primitive_putback(nil) + src
+    src = ec.putback(nil) + src
     assert_equal(["abc", "def"], [dst, src])
     ret = ec.primitive_convert(src, dst, nil, 10)
     assert_equal(:finished, ret)
