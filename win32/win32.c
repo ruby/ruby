@@ -4353,7 +4353,7 @@ rb_w32_read(int fd, void *buf, size_t size)
 	if (err != ERROR_IO_PENDING) {
 	    if (err == ERROR_ACCESS_DENIED)
 		errno = EBADF;
-	    else if (err == ERROR_BROKEN_PIPE) {
+	    else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
 		MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fd)->lock));
 		return 0;
 	    }

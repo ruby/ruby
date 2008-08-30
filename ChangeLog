@@ -1,3 +1,8 @@
+Sat Aug 30 19:49:38 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_read): EOF is not error.
+	  ref [ruby-dev:36050]
+
 Sat Aug 30 18:17:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (struct token_info): constified.
