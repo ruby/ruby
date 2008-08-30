@@ -1,3 +1,8 @@
+Sat Aug 30 14:39:51 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/mkcallback.rb (rb_dl_init_callbacks): avoid GC problem which
+	  is caused by 'GC.stress=true; require "dl"'.
+
 Sat Aug 30 10:46:44 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/iconv/iconv.c: remove include pragma for "ruby/intern.h".
