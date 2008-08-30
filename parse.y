@@ -176,7 +176,7 @@ vtable_included(const struct vtable * tbl, ID id)
 
 
 typedef struct token_info {
-    char *token;
+    const char *token;
     int linenum;
     int column;
     int nonspc;

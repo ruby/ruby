@@ -1,4 +1,6 @@
-Sat Aug 30 18:16:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Aug 30 18:17:40 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct token_info): constified.
 
 	* parse.y (token_info_get_column, token_info_has_nonspaces),
 	  (token_info_push, token_info_pop): constified.
