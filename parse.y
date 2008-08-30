@@ -587,8 +587,8 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 #endif
 
 #ifndef RIPPER
-static void token_info_push(struct parser_params*, char *token);
-static void token_info_pop(struct parser_params*, char *token);
+static void token_info_push(struct parser_params*, const char *token);
+static void token_info_pop(struct parser_params*, const char *token);
 #endif
 %}
 
@@ -4679,7 +4679,7 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 
 #ifndef RIPPER
 static int
-token_info_get_column(struct parser_params *parser, char *token)
+token_info_get_column(struct parser_params *parser, const char *token)
 {
     int column = 1;
     const char *p, *pend = lex_p - strlen(token);
@@ -4693,7 +4693,7 @@ token_info_get_column(struct parser_params *parser, char *token)
 }
 
 static int
-token_info_has_nonspaces(struct parser_params *parser, char *token)
+token_info_has_nonspaces(struct parser_params *parser, const char *token)
 {
     const char *p, *pend = lex_p - strlen(token);
     for (p = lex_pbeg; p < pend; p++) {
@@ -4705,7 +4705,7 @@ token_info_has_nonspaces(struct parser_params *parser, char *token)
 }
 
 static void
-token_info_push(struct parser_params *parser, char *token)
+token_info_push(struct parser_params *parser, const char *token)
 {
     token_info *ptinfo = ALLOC(token_info);
 
@@ -4719,7 +4719,7 @@ token_info_push(struct parser_params *parser, char *token)
 }
 
 static void
-token_info_pop(struct parser_params *parser, char *token)
+token_info_pop(struct parser_params *parser, const char *token)
 {
     int linenum;
     token_info *ptinfo = parser->parser_token_info;

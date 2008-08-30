@@ -1,3 +1,8 @@
+Sat Aug 30 18:16:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (token_info_get_column, token_info_has_nonspaces),
+	  (token_info_push, token_info_pop): constified.
+
 Sat Aug 30 15:43:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c (Init_ossl_config): memory leak fixed.
