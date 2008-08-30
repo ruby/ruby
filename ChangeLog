@@ -1,3 +1,7 @@
+Sat Aug 30 10:43:03 2008 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* parse.y: remove include pragma for "ruby/intern.h".
+
 Sat Aug 30 10:41:57 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rake.rb (Rake::Application#help): fix for OPTIONAL_ARGUMENT and

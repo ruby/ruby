@@ -16,7 +16,6 @@
 #define YYSTACK_USE_ALLOCA 0
 
 #include "ruby/ruby.h"
-#include "ruby/intern.h"
 #include "ruby/node.h"
 #include "ruby/st.h"
 #include "ruby/encoding.h"
