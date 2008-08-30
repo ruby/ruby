@@ -1,3 +1,8 @@
+Sat Aug 30 14:58:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_initialize): fix for
+	  initialization of r18168.
+
 Sat Aug 30 14:47:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dl/mkcallback.rb: fix continuation line detection.
