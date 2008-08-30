@@ -4007,6 +4007,15 @@ rb_w32_open(const char *file, int oflag, ...)
     SECURITY_ATTRIBUTES sec;
     HANDLE h;
 
+    if ((oflag & O_TEXT) || !(oflag & ~O_BINARY)) {
+	va_list arg;
+	int pmode;
+	va_start(arg, oflag);
+	pmode = va_arg(arg, int);
+	va_end(arg);
+	return _open(file, oflag, pmode);
+    }
+
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;
     if (oflag & O_NOINHERIT) {
@@ -4313,6 +4322,10 @@ rb_w32_read(int fd, void *buf, size_t size)
 	return -1;
     }
 
+    if (_osfile(fd) & FTEXT) {
+	return _read(fd, buf, size);
+    }
+
     MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
 
     if (!size || _osfile(fd) & FEOFLAG) {
@@ -4421,6 +4434,10 @@ rb_w32_write(int fd, const void *buf, size_t size)
     if (!(_osfile(fd) & FOPEN)) {
 	errno = EBADF;
 	return -1;
+    }
+
+    if (_osfile(fd) & FTEXT) {
+	return _write(fd, buf, size);
     }
 
     MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fd)->lock)));
