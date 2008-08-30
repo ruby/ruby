@@ -1,3 +1,12 @@
+Sat Aug 30 15:43:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/openssl/ossl_config.c (Init_ossl_config): memory leak fixed.
+	  a patch <shinichiro.hamaji at gmail.com> in [ruby-dev:35880].
+ 
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): ditto.
+
+	* ext/strscan/strscan.c (strscan_do_scan): ditto.
+
 Sat Aug 30 14:58:32 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_x509ext.c (ossl_x509ext_initialize): fix for

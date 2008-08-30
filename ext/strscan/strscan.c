@@ -407,6 +407,7 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
     struct strscanner *p;
     regex_t *re;
     int ret;
+    int tmpreg;
 
     Check_Type(regex, T_REGEXP);
     GET_SCANNER(self, p);
@@ -416,6 +417,9 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
         return Qnil;
     }
     re = rb_reg_prepare_re(regex, p->str);
+    tmpreg = re != RREGEXP(regex)->ptr;
+    if (!tmpreg) RREGEXP(regex)->usecnt++;
+
     if (headonly) {
         ret = onig_match(re, (UChar* )CURPTR(p),
                          (UChar* )(CURPTR(p) + S_RESTLEN(p)),
@@ -426,6 +430,16 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
                           (UChar* )CURPTR(p), (UChar* )(CURPTR(p) + S_RESTLEN(p)),
                           (UChar* )CURPTR(p), (UChar* )(CURPTR(p) + S_RESTLEN(p)),
                           &(p->regs), ONIG_OPTION_NONE);
+    }
+    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (tmpreg) {
+        if (RREGEXP(regex)->usecnt) {
+            onig_free(re);
+        }
+        else {
+            onig_free(RREGEXP(regex)->ptr);
+            RREGEXP(regex)->ptr = re;
+        }
     }
 
     if (ret == -2) rb_raise(ScanError, "regexp buffer overflow");

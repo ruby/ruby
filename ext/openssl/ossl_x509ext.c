@@ -333,6 +333,7 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
 	ASN1_OCTET_STRING_free(asn1s);
 	ossl_raise(eX509ExtError, NULL);
     }
+    free(s);
     GetX509Ext(self, ext);
     X509_EXTENSION_set_data(ext, asn1s);
 
