@@ -1,3 +1,7 @@
+Sat Aug 30 14:47:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/mkcallback.rb: fix continuation line detection.
+
 Sat Aug 30 14:39:51 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dl/mkcallback.rb (rb_dl_init_callbacks): avoid GC problem which

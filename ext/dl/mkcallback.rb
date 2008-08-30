@@ -6,7 +6,7 @@ File.open($dl_h){|f|
   pre = ""
   f.each{|line|
     line.chop!
-    if( line[-1] == ?\ )
+    if( line[-1] == ?\\ )
       line.chop!
       line.concat(" ")
       pre += line
