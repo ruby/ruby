@@ -1,3 +1,8 @@
+Sun Aug 31 03:44:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_primitive_errinfo): 5th element (partial_input)
+	  removed from result.
+
 Sun Aug 31 01:53:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/dl/mkcallback.rb: split callback.h to callback-[0-9].c to reduce

@@ -2610,15 +2610,11 @@ econv_finish(VALUE self)
  *   primitive_errinfo -> array
  *
  * primitive_errinfo returns a precious information of last error result
- * as a 6-elements array:
+ * as a 5-elements array:
  *
- *   [result, enc1, enc2, error_bytes, readagain_bytes, partial_input]
+ *   [result, enc1, enc2, error_bytes, readagain_bytes]
  *
  * result is the last result of primitive_convert.
- *
- * partial_input is :partial_input or nil.
- * :partial_input means that Encoding::Converter::PARTIAL_INPUT is specified
- * for primitive_convert.
  *
  * Other elements are only meaningful when result is
  * :invalid_byte_sequence, :incomplete_input or :undefined_conversion.
@@ -2638,7 +2634,7 @@ econv_finish(VALUE self)
  *   ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
  *   ec.primitive_convert(src="\xff", dst="", nil, 10)                       
  *   p ec.primitive_errinfo
- *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", "", nil]
+ *   #=> [:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", ""]
  *
  *   # HIRAGANA LETTER A (\xa4\xa2 in EUC-JP) is not representable in ISO-8859-1.
  *   # Since this error is occur in UTF-8 to ISO-8859-1 conversion,
@@ -2646,20 +2642,20 @@ econv_finish(VALUE self)
  *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
  *   ec.primitive_convert(src="\xa4\xa2", dst="", nil, 10)
  *   p ec.primitive_errinfo
- *   #=> [:undefined_conversion, "UTF-8", "ISO-8859-1", "\xE3\x81\x82", "", nil]
+ *   #=> [:undefined_conversion, "UTF-8", "ISO-8859-1", "\xE3\x81\x82", ""]
  *
  *   # partial character is invalid
  *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
  *   ec.primitive_convert(src="\xa4", dst="", nil, 10)
  *   p ec.primitive_errinfo
- *   #=> [:incomplete_input, "EUC-JP", "UTF-8", "\xA4", "", nil]
+ *   #=> [:incomplete_input, "EUC-JP", "UTF-8", "\xA4", ""]
  *
  *   # Encoding::Converter::PARTIAL_INPUT prevents invalid errors by
  *   # partial characters.
  *   ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
  *   ec.primitive_convert(src="\xa4", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)                 
  *   p ec.primitive_errinfo
- *   #=> [:source_buffer_empty, nil, nil, nil, nil, :partial_input]
+ *   #=> [:source_buffer_empty, nil, nil, nil, nil]
  *
  *   # \xd8\x00\x00@ is invalid as UTF-16BE because
  *   # no low surrogate after high surrogate (\xd8\x00).
@@ -2670,7 +2666,7 @@ econv_finish(VALUE self)
  *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
  *   ec.primitive_convert(src="\xd8\x00\x00@", dst="", nil, 10)
  *   p ec.primitive_errinfo
- *   #=> [:invalid_byte_sequence, "UTF-16BE", "UTF-8", "\xD8\x00", "\x00", nil]
+ *   #=> [:invalid_byte_sequence, "UTF-16BE", "UTF-8", "\xD8\x00", "\x00"]
  *   p src
  *   #=> "@"
  *
@@ -2679,7 +2675,7 @@ econv_finish(VALUE self)
  *   ec = Encoding::Converter.new("UTF-16LE", "UTF-8")
  *   ec.primitive_convert(src="\x00\xd8@\x00", dst="", nil, 10)
  *   p ec.primitive_errinfo
- *   #=> [:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "@\x00", nil]
+ *   #=> [:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "@\x00"]
  *   p src
  *   #=> ""
  *
@@ -2691,9 +2687,10 @@ econv_primitive_errinfo(VALUE self)
 
     VALUE ary;
 
-    ary = rb_ary_new2(6);
+    ary = rb_ary_new2(5);
 
     rb_ary_store(ary, 0, econv_result_to_symbol(ec->last_error.result));
+    rb_ary_store(ary, 4, Qnil);
 
     if (ec->last_error.source_encoding)
         rb_ary_store(ary, 1, rb_str_new2(ec->last_error.source_encoding));
@@ -2705,8 +2702,6 @@ econv_primitive_errinfo(VALUE self)
         rb_ary_store(ary, 3, rb_str_new((const char *)ec->last_error.error_bytes_start, ec->last_error.error_bytes_len));
         rb_ary_store(ary, 4, rb_str_new((const char *)ec->last_error.error_bytes_start + ec->last_error.error_bytes_len, ec->last_error.readagain_len));
     }
-
-    rb_ary_store(ary, 5, ec->last_error.partial_input ? ID2SYM(rb_intern("partial_input")) : Qnil);
 
     return ary;
 }
