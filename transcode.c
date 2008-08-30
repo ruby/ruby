@@ -2727,12 +2727,14 @@ econv_insert_output(VALUE self, VALUE string)
 }
 
 static VALUE
-econv_putback(VALUE self, VALUE max)
+econv_putback(int argc, VALUE *argv, VALUE self)
 {
     rb_econv_t *ec = check_econv(self);
     int n;
     int putbackable;
-    VALUE str;
+    VALUE str, max;
+
+    rb_scan_args(argc, argv, "01", &max);
 
     if (NIL_P(max))
         n = rb_econv_putbackable(ec);
@@ -2834,7 +2836,7 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "finish", econv_finish, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_errinfo", econv_primitive_errinfo, 0);
     rb_define_method(rb_cEncodingConverter, "insert_output", econv_insert_output, 1);
-    rb_define_method(rb_cEncodingConverter, "putback", econv_putback, 1);
+    rb_define_method(rb_cEncodingConverter, "putback", econv_putback, -1);
     rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
     rb_define_const(rb_cEncodingConverter, "INVALID_IGNORE", INT2FIX(ECONV_INVALID_IGNORE));
     rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
