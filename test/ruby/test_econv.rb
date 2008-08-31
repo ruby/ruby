@@ -498,8 +498,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("utf-16le", "euc-jp")
     ret = ec.primitive_convert(src="\x00\xd8\x21\x00", dst="", nil, nil)
     assert_equal(:invalid_byte_sequence, ret)
-    assert_equal("\x00", ec.putback(1))
-    assert_equal("\x21", ec.putback(1))
+    assert_equal("\x00".force_encoding("utf-16le"), ec.putback(1))
+    assert_equal("\x21".force_encoding("utf-16le"), ec.putback(1))
     assert_equal("", ec.putback(1))
   end
 

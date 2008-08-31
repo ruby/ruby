@@ -1,3 +1,7 @@
+Sun Aug 31 16:57:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_putback): associate encoding to the result.
+
 Sun Aug 31 16:43:56 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/intern.h: rename RB_UBF_DFL to

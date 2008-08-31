@@ -2751,6 +2751,30 @@ econv_insert_output(VALUE self, VALUE string)
     return Qnil;
 }
 
+/*
+ * call-seq
+ *   putback                    => string
+ *   putback(max_numbytes)      => string
+ *
+ * put back the bytes which will be converted.
+ *
+ * The bytes are caused by invalid_byte_sequence error.
+ * When invalid_byte_sequence error, some bytes are discarded and
+ * some bytes may be converted again.
+ * The latter bytes can be put back.
+ * It can be observed by
+ * Encoding::InvalidByteSequence#readagain_bytes and
+ * Encoding::Converter#primitive_errinfo.
+ *
+ *   ec = Encoding::Converter.new("utf-16le", "iso-8859-1")
+ *   src = "\x00\xd8\x61\x00"
+ *   dst = ""
+ *   p ec.primitive_convert(src, dst)   #=> :invalid_byte_sequence
+ *   p ec.primitive_errinfo     #=> [:invalid_byte_sequence, "UTF-16LE", "UTF-8", "\x00\xD8", "a\x00"]
+ *   p ec.putback               #=> "a\x00"
+ *   p ec.putback               #=> ""          # no more bytes to put back
+ *
+ */
 static VALUE
 econv_putback(int argc, VALUE *argv, VALUE self)
 {
@@ -2772,6 +2796,10 @@ econv_putback(int argc, VALUE *argv, VALUE self)
 
     str = rb_str_new(NULL, n);
     rb_econv_putback(ec, (unsigned char *)RSTRING_PTR(str), n);
+
+    if (ec->source_encoding) {
+        rb_enc_associate(str, ec->source_encoding);
+    }
 
     return str;
 }
