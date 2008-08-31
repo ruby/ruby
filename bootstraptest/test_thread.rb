@@ -361,3 +361,7 @@ assert_equal 'ok', %q{
   t.join
   $? ? :ng : :ok
 }, '[ruby-dev:35414]'
+
+assert_equal 'ok', %q{
+  10000.times { Thread.new(true) {|x| x == false } }; :ok
+}

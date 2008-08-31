@@ -1,3 +1,7 @@
+Sun Aug 31 16:39:17 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* bootstraptest/test_thread.rb: add a test.
+
 Sun Aug 31 16:34:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/single_byte.trans (us_ascii_map): don't define 8bit bytes.
