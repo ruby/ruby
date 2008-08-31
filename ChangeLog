@@ -1,3 +1,9 @@
+Mon Sep  1 01:24:09 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/eucjp-tbl.rb: replace by previous Citrus maps.
+
+	* enc/trans/sjis-tble.rb: ditto.
+
 Mon Sep  1 01:18:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/transcode-tblgen.rb: add table generator from Citrus maps.
