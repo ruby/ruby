@@ -340,7 +340,21 @@ def create_tmpsrc(src)
   src
 end
 
+def have_devel?
+  unless defined? $have_devel
+    $have_devel = true
+    $have_devel = try_link(MAIN_DOES_NOTHING)
+  end
+  $have_devel
+end
+
 def try_do(src, command, &b)
+  unless have_devel?
+    raise <<MSG
+The complier failed to generate an executable file.
+You have to install development tools first.
+MSG
+  end
   src = create_tmpsrc(src, &b)
   xsystem(command)
 ensure
@@ -448,7 +462,6 @@ end
 def try_static_assert(expr, headers = nil, opt = "", &b)
   headers = cpp_include(headers)
   try_compile(<<SRC, opt, &b)
-#{COMMON_HEADERS}
 #{headers}
 /*top*/
 int conftest_const[(#{expr}) ? 1 : -1];
@@ -487,8 +500,7 @@ def try_constant(const, headers = nil, opt = "", &b)
     upper = -upper if neg
     return upper
   else
-    src = %{#{COMMON_HEADERS}
-#{includes}
+    src = %{#{includes}
 #include <stdio.h>
 /*top*/
 int conftest_const = (int)(#{const});
@@ -506,7 +518,6 @@ end
 def try_func(func, libs, headers = nil, &b)
   headers = cpp_include(headers)
   try_link(<<"SRC", libs, &b) or try_link(<<"SRC", libs, &b)
-#{COMMON_HEADERS}
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -522,7 +533,6 @@ end
 def try_var(var, headers = nil, &b)
   headers = cpp_include(headers)
   try_compile(<<"SRC", &b)
-#{COMMON_HEADERS}
 #{headers}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -840,7 +850,6 @@ end
 def have_struct_member(type, member, headers = nil, &b)
   checking_for checking_message("#{type}.#{member}", headers) do
     if try_compile(<<"SRC", &b)
-#{COMMON_HEADERS}
 #{cpp_include(headers)}
 /*top*/
 #{MAIN_DOES_NOTHING}
@@ -857,7 +866,6 @@ end
 
 def try_type(type, headers = nil, opt = "", &b)
   if try_compile(<<"SRC", opt, &b)
-#{COMMON_HEADERS}
 #{cpp_include(headers)}
 /*top*/
 typedef #{type} conftest_type;
@@ -912,7 +920,6 @@ end
 def try_const(const, headers = nil, opt = "", &b)
   const, type = *const
   if try_compile(<<"SRC", opt, &b)
-#{COMMON_HEADERS}
 #{cpp_include(headers)}
 /*top*/
 typedef #{type || 'int'} conftest_type;
@@ -977,7 +984,6 @@ end
 # pointer.
 def scalar_ptr_type?(type, member = nil, headers = nil, &b)
   try_compile(<<"SRC", &b)   # pointer
-#{COMMON_HEADERS}
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
@@ -990,7 +996,6 @@ end
 # pointer.
 def scalar_type?(type, member = nil, headers = nil, &b)
   try_compile(<<"SRC", &b)   # pointer
-#{COMMON_HEADERS}
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
