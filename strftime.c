@@ -477,6 +477,15 @@ rb_strftime(char *s, size_t maxsize, const char *format, const struct tm *timept
 #ifdef HAVE_GETTIMEOFDAY
 				gettimeofday(&tv, &zone);
 				off = -zone.tz_minuteswest;
+#else
+				/* no timezone info, then calc by myself */
+				{
+					struct tm utc;
+					time_t now;
+					time(&now);
+					utc = *gmtime(&now);
+					off = (now - mktime(&utc)) / 60;
+				}
 #endif
 #endif /* !HAVE_TIMEZONE */
 #endif /* !HAVE_TM_ZONE */
