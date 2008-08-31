@@ -424,20 +424,20 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("EUC-JP", "ISO-2022-JP")
     ec.primitive_convert(src="\xa1\xa1", dst="", nil, 10, Encoding::Converter::PARTIAL_INPUT)
     assert_equal("\e$B!!".force_encoding("ISO-2022-JP"), dst)
-    assert_equal(true, ec.insert_output("???"))
+    assert_equal(nil, ec.insert_output("???"))
     ec.primitive_convert("", dst, nil, 10, Encoding::Converter::PARTIAL_INPUT)
     assert_equal("\e$B!!\e(B???".force_encoding("ISO-2022-JP"), dst)
     ec.primitive_convert(src="\xa1\xa2", dst, nil, 10, Encoding::Converter::PARTIAL_INPUT)
     assert_equal("\e$B!!\e(B???\e$B!\"".force_encoding("ISO-2022-JP"), dst)
 
-    assert_equal(true, ec.insert_output("\xA1\xA1".force_encoding("EUC-JP")))
+    assert_equal(nil, ec.insert_output("\xA1\xA1".force_encoding("EUC-JP")))
     ec.primitive_convert("", dst, nil, 10, Encoding::Converter::PARTIAL_INPUT)
     assert_equal("\e$B!!\e(B???\e$B!\"!!".force_encoding("ISO-2022-JP"), dst) 
 
     ec.primitive_convert(src="\xa1\xa3", dst, nil, 10, Encoding::Converter::PARTIAL_INPUT)
     assert_equal("\e$B!!\e(B???\e$B!\"!!!\#".force_encoding("ISO-2022-JP"), dst)
 
-    assert_equal(true, ec.insert_output("\u3042"))
+    assert_equal(nil, ec.insert_output("\u3042"))
     ec.primitive_convert("", dst, nil, 10, Encoding::Converter::PARTIAL_INPUT)
     assert_equal("\e$B!!\e(B???\e$B!\"!!!\#$\"".force_encoding("ISO-2022-JP"), dst)
 

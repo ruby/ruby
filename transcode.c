@@ -2711,6 +2711,25 @@ econv_primitive_errinfo(VALUE self)
     return ary;
 }
 
+/*
+ * call-seq:
+ *   insert_output(string) -> nil
+ *
+ * inserts string into the encoding converter.
+ * The string will be output on next conversion.
+ *
+ * This method should be used only when a conversion error is occur.
+ *
+ *  ec = Encoding::Converter.new("utf-8", "iso-8859-1")
+ *  src = "HIRAGANA LETTER A is \u{3042}."
+ *  dst = ""
+ *  p ec.primitive_convert(src, dst)    #=> :undefined_conversion
+ *  puts "[#{dst.dump}, #{src.dump}]"   #=> ["HIRAGANA LETTER A is ", "."]
+ *  ec.insert_output("<err>")
+ *  p ec.primitive_convert(src, dst)    #=> :finished
+ *  puts "[#{dst.dump}, #{src.dump}]"   #=> ["HIRAGANA LETTER A is <err>.", ""]
+ *
+ */
 static VALUE
 econv_insert_output(VALUE self, VALUE string)
 {
@@ -2725,10 +2744,11 @@ econv_insert_output(VALUE self, VALUE string)
     string = rb_str_transcode(string, rb_enc_from_encoding(rb_enc_find(insert_enc)), 0);
 
     ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(string), RSTRING_LEN(string), insert_enc);
-    if (ret == -1)
-        return Qfalse;
+    if (ret == -1) {
+	rb_raise(rb_eArgError, "too big string");
+    }
 
-    return Qtrue;
+    return Qnil;
 }
 
 static VALUE
