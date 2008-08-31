@@ -1648,20 +1648,20 @@ make_econv_exception(rb_econv_t *ec)
         VALUE bytes2 = Qnil;
         VALUE dumped2;
         if (ec->last_error.result == econv_incomplete_input) {
-            mesg = rb_sprintf("incomplete input: %s on %s",
+            mesg = rb_sprintf("incomplete %s on %s",
                     StringValueCStr(dumped),
                     ec->last_error.source_encoding);
         }
         else if (readagain_len) {
             bytes2 = rb_str_new(err+error_len, readagain_len);
             dumped2 = rb_str_dump(bytes2);
-            mesg = rb_sprintf("invalid byte sequence: %s followed by %s on %s",
+            mesg = rb_sprintf("%s followed by %s on %s",
                     StringValueCStr(dumped),
                     StringValueCStr(dumped2),
                     ec->last_error.source_encoding);
         }
         else {
-            mesg = rb_sprintf("invalid byte sequence: %s on %s",
+            mesg = rb_sprintf("%s on %s",
                     StringValueCStr(dumped),
                     ec->last_error.source_encoding);
         }
@@ -1680,7 +1680,7 @@ make_econv_exception(rb_econv_t *ec)
         VALUE dumped;
         int idx;
         dumped = rb_str_dump(bytes);
-        mesg = rb_sprintf("conversion undefined: %s from %s to %s",
+        mesg = rb_sprintf("%s from %s to %s",
                 StringValueCStr(dumped),
                 ec->last_error.source_encoding,
                 ec->last_error.destination_encoding);

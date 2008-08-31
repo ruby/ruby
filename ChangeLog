@@ -1,3 +1,7 @@
+Sun Aug 31 14:12:06 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_econv_exception): error message simplified.
+
 Sun Aug 31 13:47:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/coverage/coverage.c (rb_mCoverage): removed unneeded static variable.
