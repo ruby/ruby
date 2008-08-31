@@ -1,3 +1,10 @@
+Sun Aug 31 18:06:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (transcode.c): set source_encoding and
+	  destination_encoding as encoding object.
+	  (ecerr_source_encoding): new method.
+	  (ecerr_destination_encoding): ditto.
+
 Sun Aug 31 17:58:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (Logging.log_open): opens in binary mode to get rid of

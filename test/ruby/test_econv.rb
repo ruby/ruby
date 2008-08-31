@@ -457,6 +457,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     }
     assert_equal("EUC-JP", err.source_encoding_name)
     assert_equal("UTF-8", err.destination_encoding_name)
+    assert_equal(Encoding::EUC_JP, err.source_encoding)
+    assert_equal(Encoding::UTF_8, err.destination_encoding)
     assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
     assert_equal("d", err.readagain_bytes)
     assert_equal(false, err.incomplete_input?)
@@ -468,6 +470,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     }
     assert_equal("EUC-JP", err.source_encoding_name)
     assert_equal("UTF-8", err.destination_encoding_name)
+    assert_equal(Encoding::EUC_JP, err.source_encoding)
+    assert_equal(Encoding::UTF_8, err.destination_encoding)
     assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
     assert_equal(nil, err.readagain_bytes)
     assert_equal(true, err.incomplete_input?)
@@ -479,6 +483,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     }
     assert_equal("UTF-8", err.source_encoding_name)
     assert_equal("ISO-8859-1", err.destination_encoding_name)
+    assert_equal(Encoding::UTF_8, err.source_encoding)
+    assert_equal(Encoding::ISO_8859_1, err.destination_encoding)
     assert_equal("\u{3042}", err.error_char)
   end
 
