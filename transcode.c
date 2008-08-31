@@ -2321,6 +2321,8 @@ econv_result_to_symbol(rb_econv_result_t res)
 
 /*
  * call-seq:
+ *   primitive_convert(source_buffer, destination_buffer) -> symbol
+ *   primitive_convert(source_buffer, destination_buffer, destination_byteoffset) -> symbol
  *   primitive_convert(source_buffer, destination_buffer, destination_byteoffset, destination_bytesize) -> symbol
  *   primitive_convert(source_buffer, destination_buffer, destination_byteoffset, destination_bytesize, flags) -> symbol
  *
@@ -2345,9 +2347,12 @@ econv_result_to_symbol(rb_econv_result_t res)
  * destination_buffer should be a string.
  *
  * destination_byteoffset should be an integer or nil.
+ * nil means the end of destination_buffer.
+ * If it is omitted, nil is assumed.
  *
  * destination_bytesize and flags should be an integer or nil.
  * nil means that unlimited.
+ * If it is omitted, nil is assumed.
  *
  * primitive_convert convert the content of source_buffer from beginning
  * and store the result into destination_buffer.
@@ -2409,7 +2414,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     unsigned long output_byteend;
     int flags;
 
-    rb_scan_args(argc, argv, "41", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v);
+    rb_scan_args(argc, argv, "23", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v);
 
     if (NIL_P(output_byteoffset_v))
         output_byteoffset = 0; /* dummy */

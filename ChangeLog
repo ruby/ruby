@@ -1,3 +1,8 @@
+Sun Aug 31 14:17:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_primitive_convert): make two arguments,
+	  destination_byteoffset and destination_bytesize, optional.
+
 Sun Aug 31 14:12:06 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (make_econv_exception): error message simplified.

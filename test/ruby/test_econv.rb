@@ -93,7 +93,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("\xEF\xBD\xA1".force_encoding("UTF-8") * n, dst)
   end
 
-  def test_nil_destination_bytesize_with_nonnli_byteoffset
+  def test_nil_destination_bytesize2
+    ec = Encoding::Converter.new("Shift_JIS", "UTF-8")
+    n = 10000
+    src = "\xa1".force_encoding("Shift_JIS") * n
+    ret = ec.primitive_convert(src, dst="")
+    assert_equal(:finished, ret)
+    assert_equal("\xEF\xBD\xA1".force_encoding("UTF-8") * n, dst)
+  end
+
+  def test_nil_destination_bytesize_with_nonnil_byteoffset
     ec = Encoding::Converter.new("Shift_JIS", "UTF-8")
     n = 2000
     src = "\xa1".force_encoding("Shift_JIS") * n
