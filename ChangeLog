@@ -1,3 +1,8 @@
+Sun Aug 31 13:45:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspres_initialize): fix for
+	  initialization of r18168.
+
 Sun Aug 31 13:42:39 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/eventids2.c (ripper_init_eventids2): use rb_intern_const.
