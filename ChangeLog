@@ -1,3 +1,9 @@
+Sun Aug 31 18:02:41 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* Temporarily uses git://github.com/yugui/rubyspec.git
+	  until specs for 1.9 is merged into 
+	  git://github.com/rubyspec/rubyspec.git.
+
 Sun Aug 31 18:06:49 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (transcode.c): set source_encoding and
