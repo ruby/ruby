@@ -856,6 +856,11 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(1, 1.0.magnitude)
     assert_equal(1, -1.0.magnitude)
 
+    assert_equal(4, 2.abs2)
+    assert_equal(4, -2.abs2)
+    assert_equal(4.0, 2.0.abs2)
+    assert_equal(4.0, -2.0.abs2)
+
     assert_equal(0, 1.arg)
     assert_equal(0, 1.angle)
     assert_equal(0, 1.phase)

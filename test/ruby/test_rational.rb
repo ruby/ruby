@@ -953,6 +953,10 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(9,1), Rational(1,9).reciprocal)
     assert_equal(Rational(-1,9), Rational(-9,1).reciprocal)
     assert_equal(Rational(-9,1), Rational(-1,9).reciprocal)
+    assert_equal(Rational(1,9), Rational(9,1).inverse)
+    assert_equal(Rational(9,1), Rational(1,9).inverse)
+    assert_equal(Rational(-1,9), Rational(-9,1).inverse)
+    assert_equal(Rational(-9,1), Rational(-1,9).inverse)
   end
 =end
 
@@ -1047,9 +1051,9 @@ class Rational_Test < Test::Unit::TestCase
 
 =begin
     assert_equal(Rational(1,9), 9.reciprocal)
-    assert_equal(Rational(1,9), 9.0.reciprocal)
+    assert_in_delta(0.1111, 9.0.reciprocal, 0.001)
     assert_equal(Rational(1,9), 9.inverse)
-    assert_equal(Rational(1,9), 9.0.inverse)
+    assert_in_delta(0.1111, 9.0.inverse, 0.001)
 =end
 
     assert_equal(Rational(1,2), 1.quo(2))

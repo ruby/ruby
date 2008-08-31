@@ -1,3 +1,7 @@
+Sun Aug 31 20:49:42 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (numeric_abs2): new.
+
 Sun Aug 31 18:22:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_devel?): checks if the compiler works.

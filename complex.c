@@ -1291,6 +1291,12 @@ numeric_image(VALUE self)
     return INT2FIX(0);
 }
 
+static VALUE
+numeric_abs2(VALUE self)
+{
+    return f_mul(self, self);
+}
+
 #define id_PI rb_intern("PI")
 
 static VALUE
@@ -1473,6 +1479,7 @@ Init_Complex(void)
     rb_define_method(rb_cNumeric, "real", numeric_real, 0);
     rb_define_method(rb_cNumeric, "image", numeric_image, 0);
     rb_define_method(rb_cNumeric, "imag", numeric_image, 0);
+    rb_define_method(rb_cNumeric, "abs2", numeric_abs2, 0);
     rb_define_method(rb_cNumeric, "arg", numeric_arg, 0);
     rb_define_method(rb_cNumeric, "angle", numeric_arg, 0);
     rb_define_method(rb_cNumeric, "phase", numeric_arg, 0);
