@@ -1,3 +1,22 @@
+Mon Sep  1 02:31:16 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (transcode_generated_code): defined for
+	  generating table at once.
+	  (transcode_tblgen): returns an empty string.
+	  (transcode_generate_node): ditto.
+
+	* enc/trans/newline.trans: use transcode_generated_code.
+
+	* enc/trans/iso2022.trans: ditto.
+
+	* enc/trans/single_byte.trans: ditto.
+
+	* enc/trans/utf_16_32.trans: ditto.
+
+	* enc/trans/japanese.trans: ditto.
+
+	* enc/trans/korean.trans: ditto.
+
 Mon Sep  1 02:10:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (citrus_decode_mapsrc): print logging

@@ -10,10 +10,22 @@
 
   map_jisx0208_rest = {}
   map_jisx0208_rest["{21-7e}"] = :func_so
+
+  transcode_generate_node(ActionMap.parse(map), "iso2022jp_to_eucjp")
+  transcode_generate_node(ActionMap.parse(map_jisx0208_rest), "iso2022jp_to_eucjp_jisx0208_rest")
+
+  map_eucjp = {
+    "{0e,0f,1b}" => :undef,
+    "{00-0d,10-1a,1c-7f}" => :func_so,
+    "{a1-fe}{a1-fe}" => :func_so,
+    "8e{a1-fe}" => :undef,
+    "8f{a1-fe}{a1-fe}" => :undef,
+  }
+
+  transcode_generate_node(ActionMap.parse(map_eucjp), "eucjp_to_iso2022jp")
 %>
 
-<%= transcode_generate_node(ActionMap.parse(map), "iso2022jp_to_eucjp") %>
-<%= transcode_generate_node(ActionMap.parse(map_jisx0208_rest), "iso2022jp_to_eucjp_jisx0208_rest") %>
+<%= transcode_generated_code %>
 
 static VALUE
 fun_si_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l)
@@ -64,18 +76,6 @@ rb_ISO_2022_JP_to_EUC_JP = {
     stateful_decoder, /* stateful_type */
     NULL, fun_si_iso2022jp_to_eucjp, NULL, fun_so_iso2022jp_to_eucjp
 };
-
-<%
-  map_eucjp = {
-    "{0e,0f,1b}" => :undef,
-    "{00-0d,10-1a,1c-7f}" => :func_so,
-    "{a1-fe}{a1-fe}" => :func_so,
-    "8e{a1-fe}" => :undef,
-    "8f{a1-fe}{a1-fe}" => :undef,
-  }
-%>
-
-<%= transcode_generate_node(ActionMap.parse(map_eucjp), "eucjp_to_iso2022jp") %>
 
 static int
 fun_so_eucjp_to_iso2022jp(rb_transcoding *t, const unsigned char *s, size_t l, unsigned char *o)

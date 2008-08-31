@@ -3,9 +3,23 @@
 <%
   map_normalize = {}
   map_normalize["{00-ff}"] = :func_so
+
+  transcode_generate_node(ActionMap.parse(map_normalize), "universal_newline")
+
+  map_crlf = {}
+  map_crlf["{00-09,0b-ff}"] = :nomap
+  map_crlf["0a"] = "0d0a"
+
+  transcode_generate_node(ActionMap.parse(map_crlf), "crlf_newline")
+
+  map_cr = {}
+  map_cr["{00-09,0b-ff}"] = :nomap
+  map_cr["0a"] = "0d"
+
+  transcode_generate_node(ActionMap.parse(map_cr), "cr_newline")
 %>
 
-<%= transcode_generate_node(ActionMap.parse(map_normalize), "universal_newline") %>
+<%= transcode_generated_code %>
 
 static int
 fun_so_universal_newline(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
@@ -48,14 +62,6 @@ rb_universal_newline = {
     NULL, NULL, NULL, fun_so_universal_newline
 };
 
-<%
-  map_crlf = {}
-  map_crlf["{00-09,0b-ff}"] = :nomap
-  map_crlf["0a"] = "0d0a"
-%>
-
-<%= transcode_generate_node(ActionMap.parse(map_crlf), "crlf_newline") %>
-
 static const rb_transcoder
 rb_crlf_newline = {
     "", "crlf_newline", &crlf_newline,
@@ -65,14 +71,6 @@ rb_crlf_newline = {
     stateless_converter, /* stateful_type */
     NULL, NULL, NULL, NULL
 };
-
-<%
-  map_cr = {}
-  map_cr["{00-09,0b-ff}"] = :nomap
-  map_cr["0a"] = "0d"
-%>
-
-<%= transcode_generate_node(ActionMap.parse(map_cr), "cr_newline") %>
 
 static const rb_transcoder
 rb_cr_newline = {

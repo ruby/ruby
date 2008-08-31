@@ -389,6 +389,12 @@ End
     code << generate_lookup_node(name_hint, table)
     name_hint
   end
+
+  def gennode(name_hint=nil, valid_encoding=nil)
+    code = ''
+    name = generate_node(code, name_hint, valid_encoding)
+    return name, code
+  end
 end
 
 def citrus_mskanji_cstomb(csid, index)
@@ -529,12 +535,12 @@ def transcode_compile_tree(name, from, map)
     valid_encoding = nil
   end
 
-  code = ''
-  defined_name = am.generate_node(code, name, valid_encoding)
+  defined_name, code = am.gennode(name, valid_encoding)
   return defined_name, code, max_input
 end
 
 TRANSCODERS = []
+TRANSCODE_GENERATED_CODE = ''
 
 def transcode_tblgen(from, to, map)
   STDERR.puts "converter from #{from} to #{to}" if VERBOSE_MODE
@@ -565,14 +571,19 @@ static const rb_transcoder
     NULL, NULL, NULL
 };
 End
-  tree_code + "\n" + transcoder_code
+  TRANSCODE_GENERATED_CODE << tree_code + "\n" + transcoder_code
+  ''
 end
 
 def transcode_generate_node(am, name_hint=nil)
   STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
-  code = ''
-  am.generate_node(code, name_hint)
-  code
+  name, code = am.gennode(name_hint)
+  TRANSCODE_GENERATED_CODE << code
+  ''
+end
+
+def transcode_generated_code
+  TRANSCODE_GENERATED_CODE
 end
 
 def transcode_register_code
