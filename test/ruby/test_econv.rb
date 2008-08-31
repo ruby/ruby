@@ -613,4 +613,19 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_kind_of(Encoding::InvalidByteSequence, ec.last_error)
   end
 
+  def test_us_ascii
+    ec = Encoding::Converter.new("UTF-8", "US-ASCII")
+    ec.primitive_convert(src="\u{3042}", dst="")
+    err = ec.last_error
+    assert_kind_of(Encoding::ConversionUndefined, err)
+    assert_equal("\u{3042}", err.error_char)
+  end
+
+  def test_88591
+    ec = Encoding::Converter.new("UTF-8", "ISO-8859-1")
+    ec.primitive_convert(src="\u{3042}", dst="")
+    err = ec.last_error
+    assert_kind_of(Encoding::ConversionUndefined, err)
+    assert_equal("\u{3042}", err.error_char)
+  end
 end

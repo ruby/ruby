@@ -1,3 +1,7 @@
+Sun Aug 31 16:34:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/single_byte.trans (us_ascii_map): don't define 8bit bytes.
+
 Sun Aug 31 14:27:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_last_error): new method.

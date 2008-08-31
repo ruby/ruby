@@ -1,7 +1,7 @@
 #include "transcode_data.h"
 
 <%
-  us_ascii_map = [["{00-7f}", :nomap], ["{80-ff}", :undef]]
+  us_ascii_map = [["{00-7f}", :nomap]]
 
   ISO_8859_1_TO_UCS_TBL = (0x80..0xff).map {|c| ["%02X" % c, c] }
   CONTROL1_TO_UCS_TBL = (0x80..0x9f).map {|c| ["%02X" % c, c] }
