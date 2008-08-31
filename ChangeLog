@@ -1,3 +1,7 @@
+Mon Sep  1 02:48:28 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: change "illegal" to "invalid".
+
 Mon Sep  1 02:31:16 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (transcode_generated_code): defined for

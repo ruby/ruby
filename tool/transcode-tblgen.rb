@@ -405,21 +405,21 @@ def citrus_mskanji_cstomb(csid, index)
     index + 0x80
   when 2, 3
     row = index >> 8
-    raise "illegal byte sequence" if row < 0x21
+    raise "invalid byte sequence" if row < 0x21
     if csid == 3
       if row <= 0x2F
         offset = (row == 0x22 || row >= 0x26) ? 0xED : 0xF0
       elsif row >= 0x4D && row <= 0x7E
         offset = 0xCE
       else
-        raise "illegal byte sequence"
+        raise "invalid byte sequence"
       end
     else
-      raise "illegal byte sequence" if row > 0x97
+      raise "invalid byte sequence" if row > 0x97
       offset = (row < 0x5F) ? 0x81 : 0xC1
     end
     col = index & 0xFF
-    raise "illegal byte sequence" if (col < 0x21 || col > 0x7E)
+    raise "invalid byte sequence" if (col < 0x21 || col > 0x7E)
 
     row -= 0x21
     col -= 0x21
