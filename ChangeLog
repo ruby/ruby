@@ -1,3 +1,8 @@
+Sun Aug 31 13:45:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspres_initialize): fix for
+	  initialization of r18168.
+
 Sat Aug 30 14:59:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_x509attr.c (ossl_x509attr_initialize): fix for
