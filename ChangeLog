@@ -1,3 +1,8 @@
+Mon Sep  1 02:10:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (citrus_decode_mapsrc): print logging
+	  message on STDERR.
+
 Mon Sep  1 01:24:09 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/eucjp-tbl.rb: replace by previous Citrus maps.
