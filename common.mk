@@ -736,9 +736,6 @@ prereq: incs srcs preludes
 preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
-docs:
-	$(BASERUBY) -I$(srcdir) $(srcdir)/tool/makedocs.rb $(INSNS2VMOPT)
-
 $(srcdir)/revision.h: $(REVISION_FORCE)
 	@set LC_MESSAGES=C
 	-@$(SET_LC_MESSAGES) $(VCS) info "$(@D)" | \
