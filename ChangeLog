@@ -1,3 +1,12 @@
+Sun Aug 31 17:52:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_func, try_var, have_struct_member),
+	  (scalar_ptr_type?, scalar_type?): use MAIN_DOES_NOTHING.
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): defaults to ordinary main.
+
+	* win32/Makefile.sub (config): for MAIN_DOES_NOTHING for wince.
+
 Sun Aug 31 17:30:35 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/README (How to run): added.

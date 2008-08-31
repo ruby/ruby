@@ -506,12 +506,12 @@ def try_func(func, libs, headers = nil, &b)
 #{COMMON_HEADERS}
 #{headers}
 /*top*/
-int main() { return 0; }
+#{MAIN_DOES_NOTHING}
 int t() { void ((*volatile p)()); p = (void ((*)()))#{func}; return 0; }
 SRC
 #{headers}
 /*top*/
-int main() { return 0; }
+#{MAIN_DOES_NOTHING}
 int t() { #{func}(); return 0; }
 SRC
 end
@@ -522,7 +522,7 @@ def try_var(var, headers = nil, &b)
 #{COMMON_HEADERS}
 #{headers}
 /*top*/
-int main() { return 0; }
+#{MAIN_DOES_NOTHING}
 int t() { const volatile void *volatile p; p = &(&#{var})[0]; return 0; }
 SRC
 end
@@ -840,7 +840,7 @@ def have_struct_member(type, member, headers = nil, &b)
 #{COMMON_HEADERS}
 #{cpp_include(headers)}
 /*top*/
-int main() { return 0; }
+#{MAIN_DOES_NOTHING}
 int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
 SRC
       $defs.push(format("-DHAVE_%s_%s", type.tr_cpp, member.tr_cpp))
@@ -978,7 +978,7 @@ def scalar_ptr_type?(type, member = nil, headers = nil, &b)
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-int main() { return 0; }
+#{MAIN_DOES_NOTHING}
 int t() {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
@@ -991,7 +991,7 @@ def scalar_type?(type, member = nil, headers = nil, &b)
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
-int main() { return 0; }
+#{MAIN_DOES_NOTHING}
 int t() {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
 SRC
 end
@@ -1875,6 +1875,7 @@ LINK_SO = config_string('LINK_SO') ||
 LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L"%s"'
 RPATHFLAG = config_string('RPATHFLAG') || ''
 LIBARG = config_string('LIBARG') || '-l%s'
+MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || 'int main() {return 0;}'
 
 sep = config_string('BUILD_FILE_SEPARATOR') {|s| ":/=#{s}" if sep != "/"} || ""
 CLEANINGS = "
