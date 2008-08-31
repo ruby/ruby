@@ -209,7 +209,7 @@ rb_dl_init_callbacks()
 
 #{
     (0...MAX_DLTYPE).collect{|ty|
-      "rb_dl_init_callbacks_#{ty}();\n"
+      "    rb_dl_init_callbacks_#{ty}();\n"
     }.join("")
 }
 }

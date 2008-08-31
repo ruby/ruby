@@ -1,3 +1,7 @@
+Sun Aug 31 12:56:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/dl/mkcallback.rb (rb_dl_init_callbacks): fix indent.
+
 Sun Aug 31 11:39:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/strscan/strscan.c (strscan_do_scan): fix usecnt decrement.
