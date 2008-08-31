@@ -22,3 +22,11 @@ and put it into this directory.
             +-- library     specification for standard libraries.
                  +-- addrev
                  +-- ...
+
+= How to run
+:make target
+  verifies all specs.
+   $ make test-rubyspec
+:mspec command
+  verifies the specified spec.
+   $ mspec spec/path/to/some_spec.rb
