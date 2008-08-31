@@ -1,4 +1,7 @@
-Sun Aug 31 17:52:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Aug 31 17:58:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (Logging.log_open): opens in binary mode to get rid of
+	  extra CR.
 
 	* lib/mkmf.rb (try_func, try_var, have_struct_member),
 	  (scalar_ptr_type?, scalar_type?): use MAIN_DOES_NOTHING.

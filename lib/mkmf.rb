@@ -232,9 +232,13 @@ module Logging
   @postpone = 0
   @quiet = $extmk
 
-  def self::open
-    @log ||= File::open(@logfile, 'w')
+  def self::log_open
+    @log ||= File::open(@logfile, 'wb')
     @log.sync = true
+  end
+
+  def self::open
+    log_open
     $stderr.reopen(@log)
     $stdout.reopen(@log)
     yield
@@ -244,8 +248,7 @@ module Logging
   end
 
   def self::message(*s)
-    @log ||= File::open(@logfile, 'w')
-    @log.sync = true
+    log_open
     @log.printf(*s)
   end
 
