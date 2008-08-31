@@ -446,6 +446,9 @@ config.status: $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.su
 	@exit <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
+!if defined(WIN32_WCE)
+s,@MAIN_DOES_NOTHING@,int WinMain(HINSTANCE h, HINSTANCE hp, LPWSTR s, int n) {return 0;},;t t
+!endif
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t

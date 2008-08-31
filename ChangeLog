@@ -1,3 +1,12 @@
+Sun Aug 31 17:52:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (try_func, try_var, have_struct_member),
+	  (scalar_ptr_type?, scalar_type?): use MAIN_DOES_NOTHING.
+
+	* lib/mkmf.rb (MAIN_DOES_NOTHING): defaults to ordinary main.
+
+	* win32/Makefile.sub (config): for MAIN_DOES_NOTHING for wince.
+
 Sun Aug 31 13:45:41 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspres_initialize): fix for
