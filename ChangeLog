@@ -1,3 +1,7 @@
+Sun Aug 31 18:22:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_devel?): checks if the compiler works.
+
 Sun Aug 31 17:52:45 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (try_func, try_var, have_struct_member),
