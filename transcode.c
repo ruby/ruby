@@ -1667,8 +1667,8 @@ make_econv_exception(rb_econv_t *ec)
         }
 
         exc = rb_exc_new3(rb_eInvalidByteSequence, mesg);
-        rb_ivar_set(exc, rb_intern("source_encoding"), rb_str_new2(ec->last_error.source_encoding));
-        rb_ivar_set(exc, rb_intern("destination_encoding"), rb_str_new2(ec->last_error.destination_encoding));
+        rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
+        rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
         rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
         rb_ivar_set(exc, rb_intern("readagain_bytes"), bytes2);
         rb_ivar_set(exc, rb_intern("incomplete_input"), ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
@@ -1686,8 +1686,8 @@ make_econv_exception(rb_econv_t *ec)
                 ec->last_error.destination_encoding);
         exc = rb_exc_new3(rb_eConversionUndefined, mesg);
         idx = rb_enc_find_index(ec->last_error.source_encoding);
-        rb_ivar_set(exc, rb_intern("source_encoding"), rb_str_new2(ec->last_error.source_encoding));
-        rb_ivar_set(exc, rb_intern("destination_encoding"), rb_str_new2(ec->last_error.destination_encoding));
+        rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
+        rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
         idx = rb_enc_find_index(ec->last_error.source_encoding);
         if (0 <= idx)
             rb_enc_associate_index(bytes, idx);
@@ -2849,15 +2849,15 @@ rb_econv_check_error(rb_econv_t *ec)
 }
 
 static VALUE
-ecerr_source_encoding(VALUE self)
+ecerr_source_encoding_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("source_encoding"));
+    return rb_attr_get(self, rb_intern("source_encoding_name"));
 }
 
 static VALUE
-ecerr_destination_encoding(VALUE self)
+ecerr_destination_encoding_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("destination_encoding"));
+    return rb_attr_get(self, rb_intern("destination_encoding_name"));
 }
 
 static VALUE
@@ -2936,12 +2936,12 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
 
-    rb_define_method(rb_eConversionUndefined, "source_encoding", ecerr_source_encoding, 0);
-    rb_define_method(rb_eConversionUndefined, "destination_encoding", ecerr_destination_encoding, 0);
+    rb_define_method(rb_eConversionUndefined, "source_encoding_name", ecerr_source_encoding_name, 0);
+    rb_define_method(rb_eConversionUndefined, "destination_encoding_name", ecerr_destination_encoding_name, 0);
     rb_define_method(rb_eConversionUndefined, "error_char", ecerr_error_char, 0);
 
-    rb_define_method(rb_eInvalidByteSequence, "source_encoding", ecerr_source_encoding, 0);
-    rb_define_method(rb_eInvalidByteSequence, "destination_encoding", ecerr_destination_encoding, 0);
+    rb_define_method(rb_eInvalidByteSequence, "source_encoding_name", ecerr_source_encoding_name, 0);
+    rb_define_method(rb_eInvalidByteSequence, "destination_encoding_name", ecerr_destination_encoding_name, 0);
     rb_define_method(rb_eInvalidByteSequence, "error_bytes", ecerr_error_bytes, 0);
     rb_define_method(rb_eInvalidByteSequence, "readagain_bytes", ecerr_readagain_bytes, 0);
     rb_define_method(rb_eInvalidByteSequence, "incomplete_input?", ecerr_incomplete_input, 0);

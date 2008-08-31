@@ -455,8 +455,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     err = assert_raise(Encoding::InvalidByteSequence) {
       "abc\xa4def".encode("ISO-8859-1", "EUC-JP")
     }
-    assert_equal("EUC-JP", err.source_encoding)
-    assert_equal("UTF-8", err.destination_encoding)
+    assert_equal("EUC-JP", err.source_encoding_name)
+    assert_equal("UTF-8", err.destination_encoding_name)
     assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
     assert_equal("d", err.readagain_bytes)
     assert_equal(false, err.incomplete_input?)
@@ -466,8 +466,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     err = assert_raise(Encoding::InvalidByteSequence) {
       "abc\xa4".encode("ISO-8859-1", "EUC-JP")
     }
-    assert_equal("EUC-JP", err.source_encoding)
-    assert_equal("UTF-8", err.destination_encoding)
+    assert_equal("EUC-JP", err.source_encoding_name)
+    assert_equal("UTF-8", err.destination_encoding_name)
     assert_equal("\xA4".force_encoding("ASCII-8BIT"), err.error_bytes)
     assert_equal(nil, err.readagain_bytes)
     assert_equal(true, err.incomplete_input?)
@@ -477,8 +477,8 @@ class TestEncodingConverter < Test::Unit::TestCase
     err = assert_raise(Encoding::ConversionUndefined) {
       "abc\xa4\xa2def".encode("ISO-8859-1", "EUC-JP")
     }
-    assert_equal("UTF-8", err.source_encoding)
-    assert_equal("ISO-8859-1", err.destination_encoding)
+    assert_equal("UTF-8", err.source_encoding_name)
+    assert_equal("ISO-8859-1", err.destination_encoding_name)
     assert_equal("\u{3042}", err.error_char)
   end
 

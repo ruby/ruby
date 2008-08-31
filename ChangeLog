@@ -1,3 +1,10 @@
+Sun Aug 31 17:16:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_econv_exception): rename instance variable names
+	  for storing encoding names.
+	  (ecerr_source_encoding_name): method renamed.
+	  (ecerr_destination_encoding_name): ditto.
+
 Sun Aug 31 16:57:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_putback): associate encoding to the result.
