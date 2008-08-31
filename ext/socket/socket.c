@@ -2149,11 +2149,10 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     if (klass == Qnil)
 	return INT2FIX(fd);
     else {
-	static ID for_fd = 0;
+	ID for_fd;
 	int ff_argc;
 	VALUE ff_argv[2];
-	if (!for_fd)
-	    for_fd = rb_intern("for_fd");
+	CONST_ID(for_fd, "for_fd");
 	ff_argc = mode == Qnil ? 1 : 2;
 	ff_argv[0] = INT2FIX(fd);
 	ff_argv[1] = mode;
@@ -3561,14 +3560,13 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
 }
 #endif
 
-static VALUE mConst;
-
 static void
-sock_define_const(const char *name, int value)
+sock_define_const(const char *name, int value, VALUE mConst)
 {
     rb_define_const(rb_cSocket, name, INT2FIX(value));
     rb_define_const(mConst, name, INT2FIX(value));
 }
+#define sock_define_const(name, value) sock_define_const(name, value, mConst)
 
 /*
  * Class +Socket+ provides access to the underlying operating system
@@ -3598,6 +3596,8 @@ sock_define_const(const char *name, int value)
 void
 Init_socket()
 {
+    VALUE mConst;
+
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
 
     rb_cBasicSocket = rb_define_class("BasicSocket", rb_cIO);

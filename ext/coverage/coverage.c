@@ -10,8 +10,6 @@
 
 #include "ruby.h"
 
-static VALUE rb_mCoverage;
-
 extern VALUE rb_get_coverages(void);
 extern void rb_set_coverages(VALUE);
 extern void rb_reset_coverages(void);
@@ -97,7 +95,7 @@ rb_coverage_result(VALUE klass)
 void
 Init_coverage(void)
 {
-    rb_mCoverage = rb_define_module("Coverage");
+    VALUE rb_mCoverage = rb_define_module("Coverage");
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, 0);
     rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, 0);
 }
