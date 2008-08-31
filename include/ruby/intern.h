@@ -661,7 +661,8 @@ typedef VALUE rb_blocking_function_t(void *);
 void rb_thread_check_ints(void);
 VALUE rb_thread_blocking_region(rb_blocking_function_t *func, void *data1,
 				rb_unblock_function_t *ubf, void *data2);
-#define RB_UBF_DFL ((rb_unblock_function_t *)-1)
+#define RUBY_UBF_IO ((rb_unblock_function_t *)-1)
+#define RUBY_UBF_PROCESS ((rb_unblock_function_t *)-1)
 VALUE rb_mutex_new(void);
 VALUE rb_mutex_locked_p(VALUE mutex);
 VALUE rb_mutex_try_lock(VALUE mutex);

@@ -931,8 +931,8 @@ rb_thread_blocking_region(
     VALUE val;
     rb_thread_t *th = GET_THREAD();
 
-    if (ubf == RB_UBF_DFL) {
-	ubf = ubf_select;
+    if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
+	ubf = ubf_select;n
 	data2 = th;
     }
 

@@ -3472,7 +3472,7 @@ rb_file_flock(VALUE obj, VALUE operation)
     if (fptr->mode & FMODE_WRITABLE) {
 	rb_io_flush(obj);
     }
-    while ((int)rb_thread_blocking_region(rb_thread_flock, op, RB_UBF_DFL, 0) < 0) {
+    while ((int)rb_thread_blocking_region(rb_thread_flock, op, RUBY_UBF_IO, 0) < 0) {
 	switch (errno) {
 	  case EAGAIN:
 	  case EACCES:

@@ -102,7 +102,7 @@ int Rconnect();
 #endif
 #endif
 
-#define BLOCKING_REGION(func, arg) (long)rb_thread_blocking_region((func), (arg), RB_UBF_DFL, 0)
+#define BLOCKING_REGION(func, arg) (long)rb_thread_blocking_region((func), (arg), RUBY_UBF_IO, 0)
 
 #define INET_CLIENT 0
 #define INET_SERVER 1

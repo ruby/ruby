@@ -633,7 +633,7 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     arg.st = st;
     arg.flags = flags;
     result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking, &arg,
-						 RB_UBF_DFL, 0);
+						 RUBY_UBF_PROCESS, 0);
     if (result < 0) {
 #if 0
 	if (errno == EINTR) {
@@ -656,7 +656,7 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 
     for (;;) {
 	result = (rb_pid_t)rb_thread_blocking_region(rb_waitpid_blocking,
-						     st, RB_UBF_DFL);
+						     st, RUBY_UBF_PROCESS);
 	if (result < 0) {
 	    if (errno == EINTR) {
 		rb_thread_schedule();

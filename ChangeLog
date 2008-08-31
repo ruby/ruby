@@ -1,3 +1,11 @@
+Sun Aug 31 16:43:56 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/intern.h: rename RB_UBF_DFL to
+	  RUBY_UBF_IO and RUBY_UBF_PROCESS.
+	  Because there is no default (universal) unblocking function.
+
+	* ext/socket/socket.c, file.c, io.c, process.c, thread.c: ditto.
+
 Sun Aug 31 16:42:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_insert_output): raise ArgumentError on failure.
