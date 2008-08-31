@@ -3888,7 +3888,7 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
 
         if (io_extract_encoding_option(opthash, &enc, &enc2)) {
             if (has_enc) {
-                rb_raise(rb_eArgError, "encoding sepecified twice");
+                rb_raise(rb_eArgError, "encoding specified twice");
             }
         }
     }

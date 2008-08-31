@@ -2640,12 +2640,12 @@ econv_finish(VALUE self)
  * Other elements are only meaningful when result is
  * :invalid_byte_sequence, :incomplete_input or :undefined_conversion.
  *
- * enc1 and enc2 indicats a conversion step as pair of strings.
+ * enc1 and enc2 indicates a conversion step as pair of strings.
  * For example, EUC-JP to ISO-8859-1 is
  * converted as EUC-JP -> UTF-8 -> ISO-8859-1.
  * So [enc1, enc2] is ["EUC-JP", "UTF-8"] or ["UTF-8", "ISO-8859-1"].
  *
- * error_bytes and readagain_bytes indicats the byte sequences which causes the error.
+ * error_bytes and readagain_bytes indicates the byte sequences which causes the error.
  * error_bytes is discarded portion.
  * readagain_bytes is buffered portion which is read again on next conversion.
  *
