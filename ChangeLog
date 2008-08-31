@@ -1,3 +1,7 @@
+Sun Aug 31 14:27:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_last_error): new method.
+
 Sun Aug 31 14:17:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_primitive_convert): make two arguments,

@@ -2756,6 +2756,39 @@ econv_putback(int argc, VALUE *argv, VALUE self)
     return str;
 }
 
+/*
+ * call-seq:
+ *   last_error -> exception or nil
+ *
+ * returns an exception object for the last conversion.
+ * it returns nil if the last conversion is not an error. 
+ *
+ * "error" means that
+ * Encoding::InvalidByteSequence and Encoding::ConversionUndefined for
+ * Encoding::Converter#convert and
+ * :invalid_byte_sequence, :incomplete_input and :undefined_conversion for
+ * Encoding::Converter#primitive_convert.
+ *
+ * ec = Encoding::Converter.new("utf-8", "iso-8859-1")
+ * p ec.primitive_convert(src="\xf1abcd", dst="")       #=> :invalid_byte_sequence
+ * p ec.last_error      #=> #<Encoding::InvalidByteSequence: "\xF1" followed by "a" on UTF-8>
+ * p ec.primitive_convert(src, dst, nil, 1)             #=> :destination_buffer_full
+ * p ec.last_error      #=> nil
+ *
+ */
+
+static VALUE
+econv_last_error(VALUE self)
+{
+    rb_econv_t *ec = check_econv(self);
+    VALUE exc;
+
+    exc = make_econv_exception(ec);
+    if (NIL_P(exc))
+        return Qnil;
+    return exc;
+}
+
 void
 rb_econv_check_error(rb_econv_t *ec)
 {
@@ -2842,6 +2875,7 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "primitive_errinfo", econv_primitive_errinfo, 0);
     rb_define_method(rb_cEncodingConverter, "insert_output", econv_insert_output, 1);
     rb_define_method(rb_cEncodingConverter, "putback", econv_putback, -1);
+    rb_define_method(rb_cEncodingConverter, "last_error", econv_last_error, 0);
     rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
     rb_define_const(rb_cEncodingConverter, "INVALID_IGNORE", INT2FIX(ECONV_INVALID_IGNORE));
     rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));

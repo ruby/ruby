@@ -598,4 +598,19 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec.convert("\xEF")
     assert_raise(Encoding::InvalidByteSequence) { ec.finish }
   end
+
+  def test_last_error1
+    ec = Encoding::Converter.new("sjis", "euc-jp")
+    assert_equal(nil, ec.last_error)
+    assert_equal(:incomplete_input, ec.primitive_convert(src="fo\x81", dst="", nil, nil))
+    assert_kind_of(Encoding::InvalidByteSequence, ec.last_error)
+  end
+
+  def test_last_error2
+    ec = Encoding::Converter.new("sjis", "euc-jp")
+    assert_equal("fo", ec.convert(src="fo\x81"))
+    assert_raise(Encoding::InvalidByteSequence) { ec.finish }
+    assert_kind_of(Encoding::InvalidByteSequence, ec.last_error)
+  end
+
 end
