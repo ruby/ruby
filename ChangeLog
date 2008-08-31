@@ -1,3 +1,16 @@
+Mon Sep  1 01:18:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/transcode-tblgen.rb: add table generator from Citrus maps.
+
+	* enc/trans/japanese.trans: use Citrus maps.
+
+	* enc/trans/CP: add maps from Citrus.
+
+	* enc/trans/JIS: ditto.
+
+	* test/ruby/test_transcode.rb: Shift_JIS and EUC-JP doesn't support
+	  IBM extended characters.
+
 Mon Sep  1 00:19:45 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (docs): removed a useless make target.

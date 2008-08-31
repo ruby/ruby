@@ -1,21 +1,64 @@
 #include "transcode_data.h"
 
-<%
-  require 'sjis-tbl'
-  require 'eucjp-tbl'
-%>
+<%= transcode_tblgen "Shift_JIS", "UTF-8", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("mskanji", 1, "JISX0201-KANA/UCS"),
+  *citrus_decode_mapsrc("mskanji", 2, "JISX0208:1990/UCS"),
+  ] %>
+<%= transcode_tblgen "Windows-31J", "UTF-8", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("mskanji", 1, "JISX0201-KANA/UCS"),
+  *citrus_decode_mapsrc("mskanji", 2,
+    "JISX0208VDC:NEC/UCS,CP932VDC:NEC_IBM/UCS,CP932VDC:IBM/UCS,CP932UDA/UCS,JISX0208:MS/UCS"),
+  ] %>
 
-<%= transcode_tblgen "Shift_JIS", "UTF-8", [["{00-7f}", :nomap], *SJIS_TO_UCS_TBL] %>
-<%= transcode_tblgen "Windows-31J", "UTF-8", [["{00-7f}", :nomap], *SJIS_TO_UCS_TBL] %>
+<%= transcode_tblgen "UTF-8", "Shift_JIS", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("mskanji", 1, "UCS/JISX0201-KANA"),
+  *citrus_decode_mapsrc("mskanji", 2, "UCS/JISX0208:1990"),
+  ] %>
+<%= transcode_tblgen "UTF-8", "Windows-31J", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("mskanji", 1, "UCS/JISX0201-KANA"),
+  *citrus_decode_mapsrc("mskanji", 2,
+    "UCS/JISX0208VDC:NEC,UCS/CP932VDC:NEC_IBM,UCS/CP932VDC:IBM,UCS/CP932UDA,UCS/JISX0208:MS"),
+  ] %>
 
-<%= transcode_tblgen "UTF-8", "Shift_JIS", [["{00-7f}", :nomap], *UCS_TO_SJIS_TBL] %>
-<%= transcode_tblgen "UTF-8", "Windows-31J", [["{00-7f}", :nomap], *UCS_TO_SJIS_TBL] %>
+<%= transcode_tblgen "EUC-JP", "UTF-8", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("euc", 0x8080, "JISX0208:1990/UCS"),
+  *citrus_decode_mapsrc("euc", 0x0080, "JISX0201-KANA/UCS"),
+  *citrus_decode_mapsrc("euc", 0x8000, "JISX0212/UCS"),
+  ] %>
+<%= transcode_tblgen "EUC-JP-MS", "UTF-8", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("euc", 0x8080, "JISX0208VDC:NEC/UCS,JISX0208UDC/UCS,JISX0208:MS/UCS"),
+  *citrus_decode_mapsrc("euc", 0x0080, "JISX0201-KANA/UCS"),
+  *citrus_decode_mapsrc("euc", 0x8000, "JISX0212VDC:IBM/UCS,JISX0212UDC/UCS,JISX0212:MS/UCS"),
+  ] %>
+<%= transcode_tblgen "CP51932", "UTF-8", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("euc", 0x8080, "JISX0208VDC:NEC/UCS,CP932VDC:NEC_IBM/UCS,JISX0208:MS/UCS"),
+  *citrus_decode_mapsrc("euc", 0x0080, "JISX0201-KANA/UCS"),
+  ] %>
 
-<%= transcode_tblgen "EUC-JP", "UTF-8", [["{00-7f}", :nomap], *EUCJP_TO_UCS_TBL] %>
-<%= transcode_tblgen "CP51932", "UTF-8", [["{00-7f}", :nomap], *EUCJP_TO_UCS_TBL] %>
-
-<%= transcode_tblgen "UTF-8", "EUC-JP", [["{00-7f}", :nomap], *UCS_TO_EUCJP_TBL] %>
-<%= transcode_tblgen "UTF-8", "CP51932", [["{00-7f}", :nomap], *UCS_TO_EUCJP_TBL] %>
+<%= transcode_tblgen "UTF-8", "EUC-JP", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("euc", 0x8080, "UCS/JISX0208:1990"),
+  *citrus_decode_mapsrc("euc", 0x0080, "UCS/JISX0201-KANA"),
+  *citrus_decode_mapsrc("euc", 0x8000, "UCS/JISX0212"),
+  ] %>
+<%= transcode_tblgen "UTF-8", "EUC-JP-MS", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("euc", 0x8080, "UCS/JISX0208VDC:NEC,UCS/JISX0208UDC,UCS/JISX0208:MS"),
+  *citrus_decode_mapsrc("euc", 0x0080, "UCS/JISX0201-KANA"),
+  *citrus_decode_mapsrc("euc", 0x8000, "UCS/JISX0212VDC:IBM,UCS/JISX0212UDC,UCS/JISX0212:MS"),
+  ] %>
+<%= transcode_tblgen "UTF-8", "CP51932", [
+  ["{00-7f}", :nomap],
+  *citrus_decode_mapsrc("euc", 0x8080, "UCS/JISX0208VDC:NEC,UCS/CP932VDC:NEC_IBM,UCS/JISX0208:MS"),
+  *citrus_decode_mapsrc("euc", 0x0080, "UCS/JISX0201-KANA"),
+  ] %>
 
 void
 Init_japanese(void)

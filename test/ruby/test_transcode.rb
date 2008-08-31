@@ -354,7 +354,7 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::ConversionUndefined) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
-    check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # 髜
+    #check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # 髜 (IBM extended)
     assert_raise(Encoding::ConversionUndefined) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xFC\x80".encode("utf-8", 'shift_jis') }
     assert_raise(Encoding::ConversionUndefined) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
@@ -412,7 +412,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u71F9", "\xE0\xA1", 'euc-jp') # 燹
     check_both_ways("\u73F1", "\xE0\xFE", 'euc-jp') # 珱
     assert_raise(Encoding::ConversionUndefined) { "\xF4\xA7".encode("utf-8", 'euc-jp') }
-    check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜
+    #check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜 (IBM extended)
     
     check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jp') # 松本行弘
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC0\xC4\xBB\xB3\xB3\xD8\xB1\xA1\xC2\xE7\xB3\xD8", 'euc-jp') # 青山学院大学
