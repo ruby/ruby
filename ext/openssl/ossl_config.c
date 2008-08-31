@@ -440,10 +440,11 @@ ossl_config_inspect(VALUE self)
 void
 Init_ossl_config()
 {
+    char *default_config_file;
     eConfigError = rb_define_class_under(mOSSL, "ConfigError", eOSSLError);
     cConfig = rb_define_class_under(mOSSL, "Config", rb_cObject);
 
-    const char *default_config_file = CONF_get1_default_config_file();
+    default_config_file = CONF_get1_default_config_file();
     rb_define_const(cConfig, "DEFAULT_CONFIG_FILE",
 		    rb_str_new2(default_config_file));
     OPENSSL_free(default_config_file);
