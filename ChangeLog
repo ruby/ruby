@@ -1,3 +1,7 @@
+Sun Aug 31 11:39:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/strscan/strscan.c (strscan_do_scan): fix usecnt decrement.
+
 Sun Aug 31 04:38:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_putback): make max argument optional.
@@ -304,7 +308,7 @@ Thu Aug 28 21:43:05 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c, include/ruby/win32.h (rb_w32_pipe): overlapped pipe
 	  I/O support.
 
-	* wn32/win32.c (rb_w32_read, rb_w32_write): overlapped I/O support to
+	* win32/win32.c (rb_w32_read, rb_w32_write): overlapped I/O support to
 	  enable canceling I/O.
 
 	* thread_win32.c (ubf_handle): remove workaround.
@@ -369,7 +373,7 @@ Wed Aug 27 14:45:34 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Wed Aug 27 10:34:42 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* lib/cgi.rb (CGI::Cookie): remove delagate.
+	* lib/cgi.rb (CGI::Cookie): remove delegate.
 	  Patch by Takeyuki Fujioka. [ruby-dev:35995]
 
 	* test/cgi/test_cgi_cookie.rb: added for above.
@@ -607,7 +611,7 @@ Mon Aug 25 17:36:26 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Aug 25 14:22:21 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* parse.y (YYSTYPE): struct RVarmap has been no longer
-	  defnied.
+	  defined.
 	  see also r11717 by matz.
 
 Mon Aug 25 10:42:18 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -828,7 +832,7 @@ Sun Aug 24 10:55:00 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Sun Aug 24 08:03:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* strftime.c (daylight, timezone): not provied as dllexport on cygwin,
+	* strftime.c (daylight, timezone): not provided as dllexport on cygwin,
 	  right now.
 
 Sun Aug 24 06:39:05 2008  NARUSE, Yui  <naruse@ruby-lang.org>
@@ -997,7 +1001,7 @@ Fri Aug 22 21:18:40 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* include/ruby/intern.h: added a declaration.
 
-	* lib/complex.rb: added an obsolate class method.
+	* lib/complex.rb: added an obsolete class method.
 
 	* lib/cmath.rb: use scalar? instead of generic?.
 

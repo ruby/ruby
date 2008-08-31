@@ -431,7 +431,7 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
                           (UChar* )CURPTR(p), (UChar* )(CURPTR(p) + S_RESTLEN(p)),
                           &(p->regs), ONIG_OPTION_NONE);
     }
-    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (!tmpreg) RREGEXP(regex)->usecnt--;
     if (tmpreg) {
         if (RREGEXP(regex)->usecnt) {
             onig_free(re);
