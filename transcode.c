@@ -2158,7 +2158,9 @@ make_dummy_encoding(const char *name)
  *
  * Encoding::Converter.new creates an instance of Encoding::Converter.
  *
- * source_encoding and destination_encoding should be a string.
+ * source_encoding and destination_encoding should be a string or
+ * Encoding object.
+ *
  * flags should be an integer.
  *
  * example:
@@ -2294,7 +2296,7 @@ check_econv(VALUE self)
  * call-seq:
  *   ec.source_encoding -> encoding
  *
- * returns source encoding as Encoding object.
+ * returns the source encoding as an Encoding object.
  */
 static VALUE
 econv_source_encoding(VALUE self)
@@ -2309,7 +2311,7 @@ econv_source_encoding(VALUE self)
  * call-seq:
  *   ec.destination_encoding -> encoding
  *
- * returns destination encoding as Encoding object.
+ * returns the destination encoding as an Encoding object.
  */
 static VALUE
 econv_destination_encoding(VALUE self)
@@ -2366,11 +2368,15 @@ econv_result_to_symbol(rb_econv_result_t res)
  * nil means the end of destination_buffer.
  * If it is omitted, nil is assumed.
  *
- * destination_bytesize and flags should be an integer or nil.
- * nil means that unlimited.
+ * destination_bytesize should be an integer or nil.
+ * nil means unlimited.
  * If it is omitted, nil is assumed.
  *
- * primitive_convert convert the content of source_buffer from beginning
+ * flags should be an integer or nil.
+ * nil means no flags.
+ * If it is omitted, nil is assumed.
+ *
+ * primitive_convert converts the content of source_buffer from beginning
  * and store the result into destination_buffer.
  *
  * destination_byteoffset and destination_bytesize specify the region which
@@ -2382,10 +2388,10 @@ econv_result_to_symbol(rb_econv_result_t res)
  * If destination_bytesize is nil,
  * destination size is unlimited.
  * After conversion, destination_buffer is resized to
- * destination_byteoffset + actually converted number of bytes.
+ * destination_byteoffset + actually produced number of bytes.
  * Also destination_buffer's encoding is set to destination_encoding.
  *
- * primitive_convert drops the first part of source_buffer.
+ * primitive_convert drops the converted part of source_buffer.
  * the dropped part is converted in destination_buffer or
  * buffered in Encoding::Converter object.
  *
@@ -2630,7 +2636,7 @@ econv_finish(VALUE self)
  * call-seq:
  *   ec.primitive_errinfo -> array
  *
- * primitive_errinfo returns a precious information of last error result
+ * primitive_errinfo returns a precious information of the last error result
  * as a 5-elements array:
  *
  *   [result, enc1, enc2, error_bytes, readagain_bytes]
@@ -2641,8 +2647,8 @@ econv_finish(VALUE self)
  * :invalid_byte_sequence, :incomplete_input or :undefined_conversion.
  *
  * enc1 and enc2 indicates a conversion step as pair of strings.
- * For example, EUC-JP to ISO-8859-1 is
- * converted as EUC-JP -> UTF-8 -> ISO-8859-1.
+ * For example, a converter from EUC-JP to ISO-8859-1 converters
+ * a string as EUC-JP -> UTF-8 -> ISO-8859-1.
  * So [enc1, enc2] is ["EUC-JP", "UTF-8"] or ["UTF-8", "ISO-8859-1"].
  *
  * error_bytes and readagain_bytes indicates the byte sequences which causes the error.
@@ -2732,7 +2738,11 @@ econv_primitive_errinfo(VALUE self)
  *   ec.insert_output(string) -> nil
  *
  * inserts string into the encoding converter.
- * The string will be output on next conversion.
+ * The string will be converted into the destination encoding and
+ * outputed on later conversions.
+ *
+ * If the destination encoding is stateful,
+ * string is converted according to the state and update the state.
  *
  * This method should be used only when a conversion error is occur.
  *
@@ -2744,6 +2754,15 @@ econv_primitive_errinfo(VALUE self)
  *  ec.insert_output("<err>")
  *  p ec.primitive_convert(src, dst)    #=> :finished
  *  puts "[#{dst.dump}, #{src.dump}]"   #=> ["HIRAGANA LETTER A is <err>.", ""]
+ *
+ *  ec = Encoding::Converter.new("utf-8", "iso-2022-jp")
+ *  src = "\u{306F 3041 3068 2661 3002}" # U+2661 is not representable in iso-2022-jp
+ *  dst = ""
+ *  p ec.primitive_convert(src, dst)    #=> :undefined_conversion
+ *  puts "[#{dst.dump}, #{src.dump}]"   #=> ["\e$B$O$!$H".force_encoding("ISO-2022-JP"), "\xE3\x80\x82"]
+ *  ec.insert_output "?"                # state change required to output "?".
+ *  p ec.primitive_convert(src, dst)    #=> :finished
+ *  puts "[#{dst.dump}, #{src.dump}]"   #=> ["\e$B$O$!$H\e(B?\e$B!#\e(B".force_encoding("ISO-2022-JP"), ""]
  *
  */
 static VALUE
@@ -2776,7 +2795,7 @@ econv_insert_output(VALUE self, VALUE string)
  *
  * The bytes are caused by invalid_byte_sequence error.
  * When invalid_byte_sequence error, some bytes are discarded and
- * some bytes may be converted again.
+ * some bytes are buffered to be converted later.
  * The latter bytes can be put back.
  * It can be observed by
  * Encoding::InvalidByteSequence#readagain_bytes and
@@ -2825,7 +2844,7 @@ econv_putback(int argc, VALUE *argv, VALUE self)
  *   ec.last_error -> exception or nil
  *
  * returns an exception object for the last conversion.
- * it returns nil if the last conversion is not an error. 
+ * It returns nil if the last conversion is not an error. 
  *
  * "error" means that
  * Encoding::InvalidByteSequence and Encoding::ConversionUndefined for
