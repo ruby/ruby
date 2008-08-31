@@ -1,3 +1,13 @@
+Sun Aug 31 17:28:25 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* spec/default.mspec (config): added.
+	
+	* spec/default.mspec (target): replaced the built ruby 
+	  to runruby.rb. 
+	  Improved $LOAD_PATH on running specs.
+
+	* spec/default.mspec (flags): ditto.
+
 Sun Aug 31 17:16:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (make_econv_exception): rename instance variable names
