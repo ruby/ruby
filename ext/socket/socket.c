@@ -132,8 +132,8 @@ struct sockaddr_storage {
 #endif
 
 #if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET6))
-#define LOOKUP_ORDERS		3
-static int lookup_order_table[LOOKUP_ORDERS] = {
+#define LOOKUP_ORDERS (sizeof(lookup_order_table) / sizeof(lookup_order_table[0]))
+static const int lookup_order_table[] = {
 #if defined(LOOKUP_ORDER_HACK_INET)
     PF_INET, PF_INET6, PF_UNSPEC,
 #elif defined(LOOKUP_ORDER_HACK_INET6)
