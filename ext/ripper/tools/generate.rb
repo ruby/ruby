@@ -79,13 +79,13 @@ def generate_eventids1(ids)
   buf << %Q[    VALUE h;\n]
   buf << %Q[    ID id;\n]
   ids.each do |id, arity|
-    buf << %Q[    ripper_id_#{id} = rb_intern("on_#{id}");\n]
+    buf << %Q[    ripper_id_#{id} = rb_intern_const("on_#{id}");\n]
   end
   buf << %Q[\n]
   buf << %Q[    h = rb_hash_new();\n]
   buf << %Q[    rb_define_const(self, "PARSER_EVENT_TABLE", h);\n]
   ids.each do |id, arity|
-    buf << %Q[    id = rb_intern("#{id}");\n]
+    buf << %Q[    id = rb_intern_const("#{id}");\n]
     buf << %Q[    rb_hash_aset(h, ID2SYM(id), INT2NUM(#{arity}));\n]
   end
   buf << %Q[}\n]
@@ -101,7 +101,7 @@ def generate_eventids2_table(ids)
   buf << %Q[    ID id;\n]
   buf << %Q[    rb_define_const(self, "SCANNER_EVENT_TABLE", h);\n]
   ids.each do |id|
-    buf << %Q[    id = rb_intern("#{id}");\n]
+    buf << %Q[    id = rb_intern_const("#{id}");\n]
     buf << %Q[    rb_hash_aset(h, ID2SYM(id), INT2NUM(1));\n]
   end
   buf << %Q[}\n]
