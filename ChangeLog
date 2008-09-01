@@ -1,3 +1,7 @@
+Mon Sep  1 21:46:18 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: gather offsets array at top.
+
 Mon Sep  1 21:09:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* ./: removed rubyspec from svn:ignore subversion property.

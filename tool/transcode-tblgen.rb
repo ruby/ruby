@@ -298,7 +298,7 @@ class ActionMap
     code
   end
 
-  def generate_lookup_node(name, table)
+  def generate_lookup_node(bytes_code, code, name, table)
     offsets = []
     infos = []
     infomap = {}
@@ -330,6 +330,7 @@ static const unsigned char
 #{offsets_name}[#{2+max-min+1}] = #{format_offsets(min,max,offsets)};
 End
       OffsetsMemo[offsets_key] = offsets_name
+      bytes_code << offsets_code
     end
 
     if n = InfosMemo[infos]
@@ -344,7 +345,7 @@ End
       InfosMemo[infos] = infos_name
     end
 
-    r = offsets_code + infos_code + <<"End"
+    r = infos_code + <<"End"
 static const BYTE_LOOKUP
 #{name} = {
     #{offsets_name},
@@ -352,14 +353,14 @@ static const BYTE_LOOKUP
 };
 
 End
-    r
+    code << r
   end
 
   PreMemo = {}
   PostMemo = {}
   NextName = "a"
 
-  def generate_node(code, name_hint=nil, valid_encoding=nil)
+  def generate_node(bytes_code, code, name_hint=nil, valid_encoding=nil)
     if n = PreMemo[[self,valid_encoding]]
       return n
     end
@@ -371,7 +372,7 @@ End
       else
         name_hint2 = nil
         name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte] = "&" + rest.generate_node(code, name_hint2, rest_valid_encoding)
+        table[byte] = "&" + rest.generate_node(bytes_code, code, name_hint2, rest_valid_encoding)
       end
     }
 
@@ -386,13 +387,13 @@ End
 
     PreMemo[[self,valid_encoding]] = PostMemo[table] = name_hint
 
-    code << generate_lookup_node(name_hint, table)
+    generate_lookup_node(bytes_code, code, name_hint, table)
     name_hint
   end
 
-  def gennode(name_hint=nil, valid_encoding=nil)
+  def gennode(bytes_code, name_hint=nil, valid_encoding=nil)
     code = ''
-    name = generate_node(code, name_hint, valid_encoding)
+    name = generate_node(bytes_code, code, name_hint, valid_encoding)
     return name, code
   end
 end
@@ -535,11 +536,12 @@ def transcode_compile_tree(name, from, map)
     valid_encoding = nil
   end
 
-  defined_name, code = am.gennode(name, valid_encoding)
+  defined_name, code = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, name, valid_encoding)
   return defined_name, code, max_input
 end
 
 TRANSCODERS = []
+TRANSCODE_GENERATED_BYTES_CODE = ''
 TRANSCODE_GENERATED_CODE = ''
 
 def transcode_tblgen(from, to, map)
@@ -577,13 +579,13 @@ end
 
 def transcode_generate_node(am, name_hint=nil)
   STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
-  name, code = am.gennode(name_hint)
+  name, code = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, name_hint)
   TRANSCODE_GENERATED_CODE << code
   ''
 end
 
 def transcode_generated_code
-  TRANSCODE_GENERATED_CODE
+  TRANSCODE_GENERATED_BYTES_CODE + TRANSCODE_GENERATED_CODE
 end
 
 def transcode_register_code
