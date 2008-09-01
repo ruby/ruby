@@ -479,29 +479,29 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
     STDERR.puts 'load mapsrc %s' % path if VERBOSE_MODE
     open(path) do |f|
       f.each_line do |l|
-	break if /^BEGIN_MAP/ =~ l
+        break if /^BEGIN_MAP/ =~ l
       end
       f.each_line do |l|
-	next if /^\s*(?:#|$)/ =~ l
-	break if /^END_MAP/ =~ l
-	case mode
-	when :from_ucs
-	  case l
-	  when /0x(\w+)\s*-\s*0x(\w+)\s*=\s*INVALID/
-	    #	  table.push << ["{#$1-#$2}", :invalid]
-	  when /(0x\w+)\s*=\s*(0x\w+)/
-	    table.push << [$1.hex, citrus_cstomb(ces, csid, $2.hex)]
-	  else
-	    raise "unknown notation '%s'"% l
-	  end
-	when :to_ucs
-	  case l
-	  when /(0x\w+)\s*=\s*(0x\w+)/
-	    table.push << [citrus_cstomb(ces, csid, $1.hex), $2.hex]
-	  else
-	    raise "unknown notation '%s'"% l
-	  end
-	end
+        next if /^\s*(?:#|$)/ =~ l
+          break if /^END_MAP/ =~ l
+        case mode
+        when :from_ucs
+          case l
+          when /0x(\w+)\s*-\s*0x(\w+)\s*=\s*INVALID/
+            # Citrus OOB_MODE
+          when /(0x\w+)\s*=\s*(0x\w+)/
+            table.push << [$1.hex, citrus_cstomb(ces, csid, $2.hex)]
+          else
+            raise "unknown notation '%s'"% l
+          end
+        when :to_ucs
+          case l
+          when /(0x\w+)\s*=\s*(0x\w+)/
+            table.push << [citrus_cstomb(ces, csid, $1.hex), $2.hex]
+          else
+            raise "unknown notation '%s'"% l
+          end
+        end
       end
     end
   end
@@ -523,7 +523,7 @@ def transcode_compile_tree(name, from, map)
   map = encode_utf8(map)
   h = {}
   map.each {|k, v|
-    h[k] = v
+    h[k] = v unless h[k] # use first mapping
   }
   am = ActionMap.parse(h)
 
