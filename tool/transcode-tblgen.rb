@@ -667,6 +667,7 @@ ValidEncoding = {
   'ISO-8859-14' => '1byte',
   'ISO-8859-15' => '1byte',
   'Windows-31J' => 'Shift_JIS',
+  'eucJP-ms'    => 'EUC-JP'
 }.each {|k, v|
   ValidEncoding[k] = ValidEncoding.fetch(v)
 }
