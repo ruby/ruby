@@ -236,7 +236,7 @@ class ActionMap
 
   def format_offsets(min, max, offsets)
     offsets = offsets[min..max]
-    code = "{ %d, %d,\n" % [min, max]
+    code = "%d, %d,\n" % [min, max]
     0.step(offsets.length-1,16) {|i|
       code << "    "
       code << offsets[i,8].map {|off| "%3d," % off.to_s }.join('')
@@ -246,7 +246,6 @@ class ActionMap
       end
       code << "\n"
     }
-    code << '}'
     code
   end
 
@@ -322,15 +321,24 @@ class ActionMap
     offsets_key = [min, max, offsets[min..max]]
     if n = OffsetsMemo[offsets_key]
       offsets_name = n
-      offsets_code = ''
     else
       offsets_name = "#{name}_offsets"
-      offsets_code = <<"End"
-static const unsigned char
-#{offsets_name}[#{2+max-min+1}] = #{format_offsets(min,max,offsets)};
-End
       OffsetsMemo[offsets_key] = offsets_name
-      bytes_code << offsets_code
+      if bytes_code.empty?
+        bytes_code << <<"End"
+static const unsigned char
+byte_array[0] = {
+};
+End
+      end
+      size = bytes_code[/\[\d+\]/][1...-1].to_i
+      bytes_code.sub!(/^(\};\n\z)/) {
+        "\#define #{offsets_name} (byte_array+#{size})\n" +
+        format_offsets(min,max,offsets) + "\n" +
+        $1
+      }
+      size += 2+max-min+1
+      bytes_code.sub!(/\[\d+\]/) { "[#{size}]" }
     end
 
     if n = InfosMemo[infos]

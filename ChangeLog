@@ -1,3 +1,7 @@
+Mon Sep  1 22:20:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: make offsets arrays into single array.
+
 Mon Sep  1 21:46:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: gather offsets array at top.
