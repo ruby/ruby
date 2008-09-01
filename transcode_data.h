@@ -21,6 +21,9 @@ typedef struct byte_lookup {
     const struct byte_lookup *const *info;
 } BYTE_LOOKUP;
 
+#define BYTE_LOOKUP_BASE(bl) ((bl)->base)
+#define BYTE_LOOKUP_INFO(bl) ((bl)->info)
+
 #ifndef PType
 /* data file needs to treat this as a pointer, to remove warnings */
 #define PType (const BYTE_LOOKUP *)

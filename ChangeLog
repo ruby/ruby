@@ -1,3 +1,12 @@
+Mon Sep  1 23:32:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (BYTE_LOOKUP_BASE): abstract accessor for
+	  BYTE_LOOKUP.
+	  (BYTE_LOOKUP_INFO): ditto.
+
+	* transcode.c (transcode_restartable0): use BYTE_LOOKUP_BASE and
+	  BYTE_LOOKUP_INFO.
+
 Mon Sep  1 23:14:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: gather infos arrays and BYTE_LOOKUPs.

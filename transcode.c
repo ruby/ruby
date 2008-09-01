@@ -493,11 +493,11 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 
 	next_byte = (unsigned char)*in_p++;
       follow_byte:
-        if (next_byte < next_table->base[0] || next_table->base[1] < next_byte)
+        if (next_byte < BYTE_LOOKUP_BASE(next_table)[0] || BYTE_LOOKUP_BASE(next_table)[1] < next_byte)
             next_info = INVALID;
         else {
-            unsigned int next_offset = next_table->base[2+next_byte-next_table->base[0]];
-            next_info = (VALUE)next_table->info[next_offset];
+            unsigned int next_offset = BYTE_LOOKUP_BASE(next_table)[2+next_byte-BYTE_LOOKUP_BASE(next_table)[0]];
+            next_info = (VALUE)BYTE_LOOKUP_INFO(next_table)[next_offset];
         }
       follow_info:
 	switch (next_info & 0x1F) {
