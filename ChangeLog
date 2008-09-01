@@ -1,3 +1,9 @@
+Mon Sep  1 14:25:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/japanese.trans: fix Ruby 1.8 compatibility.
+
+	* enc/trans/japanese.trans: fix mapping priority. [ruby-dev:36068]
+
 Mon Sep  1 14:24:14 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* test/ruby/test_transcode.rb (test_windows_31j): added.
