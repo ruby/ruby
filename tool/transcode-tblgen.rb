@@ -370,7 +370,7 @@ End
     words_code.sub!(/^(\};\n\z)/) {
       "\#define #{name} ((uintptr_t)(word_array+#{size}))\n" +
       <<"End" + "\n" + $1
-    (uintptr_t)#{offsets_name},
+    #{offsets_name},
     #{infos_name},
 End
     }
