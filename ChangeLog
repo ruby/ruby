@@ -1,3 +1,11 @@
+Mon Sep  1 22:37:06 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/rexml/document.rb: limit entity expansion.
+
+	* lib/rexml/entity.rb: ditto.
+
+	* test/rexml/test_document.rb: ditto.
+
 Mon Sep  1 22:20:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: make offsets arrays into single array.
