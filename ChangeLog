@@ -1,3 +1,9 @@
+Mon Sep  1 22:42:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/mkmf.rb (distclean): added RM_RF conftest.dSYM.
+	  Fixes distclean-ext problem on Mac OS X.
+	  (RM_RF): added.
+
 Mon Sep  1 22:37:06 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/rexml/document.rb: limit entity expansion.

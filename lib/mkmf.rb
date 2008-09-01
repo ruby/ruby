@@ -1380,6 +1380,7 @@ ruby_version = #{RbConfig::CONFIG['ruby_version']}
 ruby = #{$ruby}
 RUBY = $(ruby#{sep})
 RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
+RM_RF = #{'$(RUBY) -run -e rm -- -rf'}
 MAKEDIRS = #{config_string('MAKEDIRS') || '@$(RUBY) -run -e mkdir -- -p'}
 INSTALL = #{config_string('INSTALL') || '@$(RUBY) -run -e install -- -vp'}
 INSTALL_PROG = #{config_string('INSTALL_PROG') || '$(INSTALL) -m 0755'}
@@ -1891,6 +1892,7 @@ clean:
 		@-$(RM) $(CLEANLIBS#{sep}) $(CLEANOBJS#{sep}) $(CLEANFILES#{sep})
 
 distclean:	clean
+		@-$(RM_RF) conftest.dSYM
 		@-$(RM) Makefile $(RUBY_EXTCONF_H) conftest.* mkmf.log
 		@-$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES#{sep})
 
