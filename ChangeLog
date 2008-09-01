@@ -2,6 +2,7 @@ Mon Sep  1 18:27:51 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (gettimeofday): shouldn't use mktime(2) because it's
 	  buggy about handling summer time.
+	  reported by Yoshikawa <yoshixool AT gmail.com> at [ruby-dev:36071]
 
 Mon Sep  1 17:07:23 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
