@@ -1,3 +1,7 @@
+Tue Sep  2 03:26:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: comment removed in generated code.
+
 Tue Sep  2 03:16:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: define TRANSCODE_TABLE_INFO in generated
