@@ -345,7 +345,7 @@ distclean-enc: clean-enc
 
 realclean:: realclean-ext realclean-local realclean-enc
 realclean-local:: distclean-local
-	@$(RM) parse.c parse.h lex.c revision.h
+	@$(RM) parse.c parse.h lex.c newline.c revision.h
 realclean-ext::
 realclean-enc:: distclean-enc
 
