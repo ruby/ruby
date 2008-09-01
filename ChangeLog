@@ -1,3 +1,10 @@
+Mon Sep  1 21:09:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* ./: removed rubyspec from svn:ignore subversion property.
+	  rubyspec directory is no longer used.
+
+	* spec: added mspec and rubyspec to svn:ignore.
+
 Mon Sep  1 19:37:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: ValidEncoding['eucJP-ms'] defined.
