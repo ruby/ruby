@@ -2,6 +2,8 @@ require 'optparse'
 require 'erb'
 require 'fileutils'
 
+NUM_ELEM_BYTELOOKUP = 2
+
 C_ESC = {
   "\\" => "\\\\",
   '"' => '\"',
@@ -284,7 +286,7 @@ class ActionMap
     infos = infos.map {|info| generate_info(info) }
     maxlen = infos.map {|info| info.length }.max
     columns = maxlen <= 16 ? 4 : 2
-    code = "{\n"
+    code = ""
     0.step(infos.length-1, columns) {|i|
       code << "    "
       is = infos[i,columns]
@@ -293,7 +295,6 @@ class ActionMap
       }
       code << "\n"
     }
-    code << "}"
     code
   end
 
@@ -341,29 +342,40 @@ End
       bytes_code.sub!(/\[\d+\]/) { "[#{size}]" }
     end
 
-    if n = InfosMemo[infos]
-      infos_name = n
-      infos_code = ''
-    else
-      infos_name = "#{name}_infos"
-      infos_code = <<"End"
+    if words_code.empty?
+      words_code << <<"End"
 static const uintptr_t
-#{infos_name}[#{infos.length}] = #{format_infos(infos)};
-\#define #{infos_name} ((uintptr_t)#{infos_name})
+word_array[0] = {
+};
 End
-      InfosMemo[infos] = infos_name
     end
 
-    r = infos_code + <<"End"
-static const BYTE_LOOKUP
-#{name} = {
-    (uintptr_t)#{offsets_name},
-    #{infos_name}
-};
-\#define #{name} ((uintptr_t)#{name})
+    if n = InfosMemo[infos]
+      infos_name = n
+    else
+      infos_name = "#{name}_infos"
+      InfosMemo[infos] = infos_name
 
+      size = words_code[/\[\d+\]/][1...-1].to_i
+      words_code.sub!(/^(\};\n\z)/) {
+        "\#define #{infos_name} (((uintptr_t)word_array)+sizeof(uintptr_t)*#{size})\n" +
+        format_infos(infos) + "\n" +
+        $1
+      }
+      size += infos.length
+      words_code.sub!(/\[\d+\]/) { "[#{size}]" }
+    end
+
+    size = words_code[/\[\d+\]/][1...-1].to_i
+    words_code.sub!(/^(\};\n\z)/) {
+      "\#define #{name} ((uintptr_t)(word_array+#{size}))\n" +
+      <<"End" + "\n" + $1
+    (uintptr_t)#{offsets_name},
+    #{infos_name},
 End
-    words_code << r
+    }
+    size += NUM_ELEM_BYTELOOKUP
+    words_code.sub!(/\[\d+\]/) { "[#{size}]" }
   end
 
   PreMemo = {}

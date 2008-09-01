@@ -1,3 +1,8 @@
+Tue Sep  2 02:05:14 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: make infos arrays and BYTE_LOOKUPs into
+	  single array.
+
 Tue Sep  2 01:47:44 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* common.mk (clean-golf): added.
