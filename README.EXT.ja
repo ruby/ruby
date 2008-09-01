@@ -35,10 +35,12 @@ Rubyにはユーザが使う可能性のある以下のタイプがあります．
 	T_STRING	文字列
 	T_REGEXP	正規表現
 	T_ARRAY		配列
-	T_FIXNUM	Fixnum(31bitまたは63bit長整数)
 	T_HASH		連想配列
 	T_STRUCT	(Rubyの)構造体
 	T_BIGNUM	多倍長整数
+	T_FIXNUM	Fixnum(31bitまたは63bit長整数)
+	T_COMPLEX	複素数
+	T_RATIONAL	有理数
 	T_FILE		入出力
 	T_TRUE		真
 	T_FALSE		偽
@@ -50,9 +52,8 @@ Rubyにはユーザが使う可能性のある以下のタイプがあります．
 	T_ICLASS
 	T_MATCH
 	T_UNDEF
-	T_VARMAP
-	T_SCOPE
 	T_NODE
+	T_ZOMBIE
 
 ほとんどのタイプはCの構造体で実装されています．
 
@@ -203,11 +204,13 @@ Rubyが用意している関数を用いてください．
     新しいRubyの文字列を生成する．
 
   rb_str_new2(const char *ptr)
+  rb_str_new_cstr(const char *ptr)
 
     Cの文字列からRubyの文字列を生成する．この関数の機能は
     rb_str_new(ptr, strlen(ptr))と同等である．
 
   rb_tainted_str_new(const char *ptr, long len)
+  rb_tainted_str_new_cstr(const char *ptr)
 
     汚染マークが付加された新しいRubyの文字列を生成する．外部
     からのデータに基づく文字列には汚染マークが付加されるべき
@@ -240,6 +243,16 @@ Rubyが用意している関数を用いてください．
     rb_str_cat2(str, rb_sprintf(format, ...)) や
     rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
 
+  rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+  
+    指定されたエンコーディングでRubyの文字列を生成する.
+     
+  rb_usascii_str_new(const char *ptr, long len)
+  rb_usascii_str_new_cstr(const char *ptr)
+
+    エンコーディングがUS-ASCIIのRubyの文字列を生成する.
+
+
  配列に対する関数
 
   rb_ary_new()
@@ -259,13 +272,31 @@ Rubyが用意している関数を用いてください．
 
     配列で与えたn要素の配列を生成する．
 
+  rb_ary_to_ary(VALUE obj)
+
+    オブジェクトを配列に変換する.
+    Object#to_aryと同等である.
+
+ 他にも配列を操作する関数が多数ある. これらは
+ 引数aryに配列を渡さなければならない. さもないと
+ コアを吐く.
+
+  rb_ary_aref(argc, VALUE *argv, VALUE ary)
+
+    Array#[]と同等.
+
+  rb_ary_entry(VALUE ary, long offset)
+
+    ary[offset]
+
+  rb_ary_subseq(VALUE ary, long beg, long len)
+
+    ary[beg, len]
+
   rb_ary_push(VALUE ary, VALUE val)
   rb_ary_pop(VALUE ary)
   rb_ary_shift(VALUE ary)
   rb_ary_unshift(VALUE ary, VALUE val)
-
-    Arrayの同名のメソッドと同じ働きをする関数．第1引数は必ず
-    配列でなければならない．
 
 2．Rubyの機能を使う
 
@@ -329,19 +360,26 @@ argcが負の時は引数の数ではなく，形式を指定したことになります．
 argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
 数はRubyの配列として渡されます．
 
-メソッドを定義する関数はもう二つあります．ひとつはprivateメ
-ソッドを定義する関数で，引数はrb_define_method()と同じです．
+メソッドを定義する関数はまだいくつかあります. ひとつはメソッド
+名としてIDを取ります. IDについては2.2.2を参照.
+
+  void rb_define_method_id(VALUE klass, ID name, 
+                           VALUE (*func)(ANYARGS), int argc)
+
+private/protectedなメソッドを定義するふたつの関数があります.
 
   void rb_define_private_method(VALUE klass, const char *name, 
 				VALUE (*func)(), int argc)
+  void rb_define_protected_method(VALUE klass, const char *name, 
+			          VALUE (*func)(), int argc)
 
 privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 ドです．
 
-もうひとつはモジュール関数を定義するものです．モジュール関数
-とはモジュールの特異メソッドであり，同時にprivateメソッドで
-もあるものです．例をあげるとMathモジュールのsqrt()などがあげ
-られます．このメソッドは
+最後に、 rb_define_module関数はモジュール関数を定義します。
+モジュール関数とはモジュールの特異メソッドであり，同時に
+privateメソッドでもあるものです．例をあげるとMathモジュール
+のsqrt()などがあげられます．このメソッドは
 
   Math.sqrt(4)
 
@@ -365,6 +403,10 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 メソッドの別名を定義するための関数は以下の通りです．
 
   void rb_define_alias(VALUE module, const char* new, const char* old);
+
+属性の取得・設定メソッドを定義するには
+
+  void rb_define_attr(VALUE klass, const char *name, int read, int write)
 
 クラスメソッドallocateを定義したり削除したりするための関数は
 以下の通りです．
@@ -409,6 +451,15 @@ CからRubyの機能を呼び出すもっとも簡単な方法として，文字列で
 この評価は現在の環境で行われます．つまり，現在のローカル変数
 などを受け継ぎます．
 
+評価は例外を発生するかもしれないことに注意しましょう. より安全
+な関数もあります.
+
+  VALUE rb_eval_string_protect(const char *str, int *state)
+
+この関数はエラーが発生するとnilを返します。そして、成功時には
+*stateはゼロに、さもなくば非ゼロになります。
+
+
 2.2.2 IDまたはシンボル
 
 Cから文字列を経由せずにRubyのメソッドを呼び出すこともできま
@@ -418,6 +469,8 @@ Cから文字列を経由せずにRubyのメソッドを呼び出すこともできま
 IDとは変数名，メソッド名を表す整数です．Rubyの中では
 
  :識別子
+または
+ :"任意の文字列"
 
 でアクセスできます．Cからこの整数を得るためには関数
 
@@ -509,11 +562,17 @@ CとRubyで大域変数を使って情報を共有できます．共有できる大域
 す．変数が参照された時には関数getterが，変数に値がセットされ
 た時には関数setterが呼ばれる．hookを指定しない場合はgetterや
 setterに0を指定します．
-
 # getterもsetterも0ならばrb_define_variable()と同じになる．
 
-それから，Cの関数によって実現されるRubyの大域変数を定義する
-関数があります．
+getterとsetterの仕様は次の通りです。
+
+  VALUE (*getter)(ID id, VALUE *var);
+  void (*setter)(VALUE val, ID id, VALUE *var);
+
+
+それから，対応するCの変数を持たないRubyの大域変数を定義する
+こともできます. その変数の値はフック関数のみによって取得・設定
+されます.
 
   void rb_define_virtual_variable(const char *name,
 				  VALUE (*getter)(), void (*setter)())
@@ -523,8 +582,8 @@ getterが，変数に値がセットされた時にはsetterが呼ばれます．
 
 getterとsetterの仕様は以下の通りです．
 
-  (*getter)(ID id, void *data, struct global_entry* entry);
-  (*setter)(VALUE val, ID id, void *data, struct global_entry* entry);
+  (*getter)(ID id);
+  (*setter)(VALUE val, ID id);
 
 3.3 CのデータをRubyオブジェクトにする
 
@@ -840,53 +899,117 @@ Rubyのソースはいくつかに分類することが出来ます．このうちクラ
 
 Ruby言語のコア
 
-  class.c
-  error.c
+  class.c         : クラスとモジュール
+  error.c         : 例外クラスと例外機構
+  gc.c            : 記憶領域管理
+  load.c          : ライブラリのロード
+  object.c        : オブジェクト
+  variable.c      : 変数と定数
+
+Rubyの構文解析器
+  parse.y         : 字句解析器と構文定義
+    -> parse.c    : 自動生成
+  keywords        : 予約語
+    -> lex.c      : 自動生成
+
+Rubyの評価器(通称YARV)
+  blockinlining.c
+  compile.c
   eval.c
-  gc.c
-  object.c
-  parse.y
-  variable.c
+  eval_error.c
+  eval_jump.c
+  eval_safe.c
+  insns.def           : 仮想機械語の定義
+  iseq.c              : VM::ISeqの実装
+  thread.c            : スレッド管理とコンテキスト切り替え
+  thread_win32.c      : スレッド実装
+  thread_pthread.c    : 同上
+  vm.c
+  vm_dump.c
+  vm_eval.c
+  vm_evalbody.c
+  vm_insnhelper.c
+  vm_method.c
+
+  opt_insns_unif.def  : 命令融合
+  opt_operand.def     : 最適化のための定義
+
+    -> insn*.inc      : 自動生成
+    -> opt*.inc       : 自動生成
+    -> vm.inc         : 自動生成
+
+正規表現エンジン (鬼車)
+  regex.c
+  regcomp.c
+  regenc.c
+  regerror.c
+  regexec.c
+  regparse.c
+  regsyntax.c
 
 ユーティリティ関数
 
-  dln.c
-  regex.c
-  st.c
-  util.c
+  debug.c       : Cデバッガ用のデバッグシンボル
+  dln.c         : 動的ローディング
+  st.c          : 汎用ハッシュ表
+  strftime.c    : 時刻整形
+  util.c        : その他のユーティリティ
 
 Rubyコマンドの実装
 
   dmyext.c
+  dmydln.c
+  dmyencoding.c
+  id.c
   inits.c
   main.c
   ruby.c
   version.c
 
+  gem_prelude.rb
+  prelude.rb
+
 クラスライブラリ
 
-  array.c
-  bignum.c
-  compar.c
-  dir.c
-  enum.c
-  file.c
-  hash.c
-  io.c
-  marshal.c
-  math.c
-  numeric.c
-  pack.c
-  prec.c
-  process.c
-  random.c
-  range.c
-  re.c
-  signal.c
-  sprintf.c
-  string.c
-  struct.c
-  time.c
+  array.c       : Array
+  bignum.c      : Bignum
+  compar.c      : Comparable
+  complex.c     : Complex
+  cont.c        : Fiber, Continuation
+  dir.c         : Dir
+  enum.c        : Enumerable
+  enumerator.c  : Enumerable::Enumerator
+  file.c        : File
+  hash.c        : Hash
+  io.c          : IO
+  marshal.c     : Marshal
+  math.c        : Math
+  numeric.c     : Numeric, Integer, Fixnum, Float
+  pack.c        : Array#pack, String#unpack
+  prec.c        : Precision
+  proc.c        : Binding, Proc
+  process.c     : Process
+  random.c      : random number
+  range.c       : Range
+  rational.c    : Rational
+  re.c          : Regexp, MatchData
+  signal.c      : Signal
+  sprintf.c     : 
+  string.c      : String
+  struct.c      : Struct
+  time.c        : Time
+
+多言語化
+  encoding.c    : Encoding
+  transcode.c   : Encoding::Converter
+  enc/*.c       : エンコーディングクラス群
+  enc/trans/*   : コードポイント対応表
+
+gorubyコマンドの実装
+  
+  goruby.c
+  golf_prelude.rb
+
 
 Appendix B. 拡張用関数リファレンス
 

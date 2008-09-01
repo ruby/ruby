@@ -31,10 +31,12 @@ The Ruby interpreter has the following data types:
 	T_STRING	string
 	T_REGEXP	regular expression
 	T_ARRAY		array
-	T_FIXNUM	Fixnum(31bit or 63bit integer)
 	T_HASH		associative array
 	T_STRUCT	(Ruby) structure
 	T_BIGNUM	multi precision integer
+	T_FIXNUM	Fixnum(31bit or 63bit integer)
+	T_COMPLEX       complex number
+	T_RATIONAL      rational number
 	T_FILE		IO
 	T_TRUE		true
 	T_FALSE		false
@@ -46,9 +48,8 @@ In addition, there are several other types used internally:
 	T_ICLASS
 	T_MATCH
 	T_UNDEF
-	T_VARMAP
-	T_SCOPE
 	T_NODE
+	T_ZOMBIE
 
 Most of the types are represented by C structures.
 
@@ -176,6 +177,7 @@ listed below:
     Creates a new Ruby string.
 
   rb_str_new2(const char *ptr)
+  rb_str_new_cstr(const char *ptr)
 
     Creates a new Ruby string from a C string.  This is equivalent to
     rb_str_new(ptr, strlen(ptr)).
@@ -186,6 +188,7 @@ listed below:
     sources should be tainted.
 
   rb_tainted_str_new2(const char *ptr)
+  rb_tainted_str_new_cstr(const char *ptr)
 
     Creates a new tainted Ruby string from a C string.
 
@@ -211,6 +214,15 @@ listed below:
     equivalent to rb_str_cat2(str, rb_sprintf(format, ...)) and
     rb_str_cat2(str, rb_vsprintf(format, ap)), respectively.
 
+  rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+  
+    Creates a new Ruby string with the specified encoding.
+     
+  rb_usascii_str_new(const char *ptr, long len)
+  rb_usascii_str_new_cstr(const char *ptr)
+
+    Creates a new Ruby string with encoding US-ASCII.
+
  Array functions
 
   rb_ary_new()
@@ -230,13 +242,31 @@ listed below:
 
     Creates an n-element array from a C array.
 
+  rb_ary_to_ary(VALUE obj)
+
+    Converts the object into an array.
+    Equivalent to Object#to_ary.
+
+ There are many functions to operate an array.
+ They may dump core if other types are given.
+
+  rb_ary_aref(argc, VALUE *argv, VALUE ary)
+
+    Equivaelent to Array#[].
+
+  rb_ary_entry(VALUE ary, long offset)
+
+    ary[offset]
+
+  rb_ary_subseq(VALUE ary, long beg, long len)
+
+    ary[beg, len]
+
   rb_ary_push(VALUE ary, VALUE val)
   rb_ary_pop(VALUE ary)
   rb_ary_shift(VALUE ary)
   rb_ary_unshift(VALUE ary, VALUE val)
 
-    Array operations.  The first argument to each functions must be an 
-    array.  They may dump core if other types are given.
 
 2. Extending Ruby with C
 
@@ -295,15 +325,23 @@ will be called like:
 where obj is the receiver, and args is the Ruby array containing
 actual arguments.
 
-There are two more functions to define methods.  One is to define
-private methods:
+There are some more functions to define methods. One takes an ID
+as the name of method to be defined. See 2.2.2 for IDs.
+
+  void rb_define_method_id(VALUE klass, ID name, 
+                           VALUE (*func)(ANYARGS), int argc)
+
+There are two functions to define private/protected methods:
 
   void rb_define_private_method(VALUE klass, const char *name, 
 			        VALUE (*func)(), int argc)
+  void rb_define_protected_method(VALUE klass, const char *name, 
+			          VALUE (*func)(), int argc)
 
-The other is to define module functions, which are private AND singleton
-methods of the module.  For example, sqrt is the module function
-defined in Math module.  It can be called in the following way:
+At last, rb_define_module_funcion defines a module functions, 
+which are private AND singleton methods of the module.
+For example, sqrt is the module function defined in Math module.
+It can be called in the following way:
 
   Math.sqrt(4)
 
@@ -325,6 +363,10 @@ in the Kernel module, can be defined using:
 To define an alias for the method,
 
   void rb_define_alias(VALUE module, const char* new, const char* old);
+
+To define an reader/writer to an attribute,
+
+  void rb_define_attr(VALUE klass, const char *name, int read, int write)
 
 To define and undefine the `allocate' class method,
 
@@ -359,6 +401,15 @@ evaluate the string as Ruby program.  This function will do the job:
 Evaluation is done under the current context, thus current local variables
 of the innermost method (which is defined by Ruby) can be accessed.
 
+Note that the evaluation can raise an exception. There is a safer 
+function:
+
+  VALUE rb_eval_string_protect(const char *str, int *state)
+
+It returns nil when an error occur. And *state is zero if str was 
+successfully evaluated, or nonzero otherwise.
+
+
 2.2.2 ID or Symbol
 
 You can invoke methods directly, without parsing the string.  First I
@@ -368,6 +419,8 @@ corresponding to ID is Symbol.  It can be accessed from Ruby in the
 form:
 
  :Identifier
+or
+ :"any kind of string"
 
 You can get the ID value from a string within C code by using
 
@@ -448,23 +501,30 @@ function below.
 You can defined hooked variables.  The accessor functions (getter and
 setter) are called on access to the hooked variables.
 
-  void rb_define_hooked_variable(constchar *name, VALUE *var,
+  void rb_define_hooked_variable(const char *name, VALUE *var,
 				 VALUE (*getter)(), void (*setter)())
 
 If you need to supply either setter or getter, just supply 0 for the
 hook you don't need.  If both hooks are 0, rb_define_hooked_variable()
 works just like rb_define_variable().
 
+The prototypes of the getter and setter functions are as follows:
+
+  VALUE (*getter)(ID id, VALUE *var);
+  void (*setter)(VALUE val, ID id, VALUE *var);
+
+
+Also you can define a Ruby global variable without a corresponding C
+variable.  The value of the variable will be set/get only by hooks.
+
   void rb_define_virtual_variable(const char *name,
 				  VALUE (*getter)(), void (*setter)())
 
-This function defines a Ruby global variable without a corresponding C
-variable.  The value of the variable will be set/get only by hooks.
-
 The prototypes of the getter and setter functions are as follows:
 
-  (*getter)(ID id, void *data, struct global_entry* entry);
-  (*setter)(VALUE val, ID id, void *data, struct global_entry* entry);
+  VALUE (*getter)(ID id);
+  void (*setter)(VALUE val, ID id);
+
 
 3.3 Encapsulate C data into a Ruby object
 
@@ -728,53 +788,118 @@ Appendix A. Ruby source files overview
 
 ruby language core
 
-  class.c
-  error.c
-  eval.c
-  gc.c
-  object.c
+  class.c         : classes and modules
+  error.c         : exception classes and exception mechanism
+  gc.c            : memory management
+  load.c          : library loading
+  object.c        : objects
+  variable.c      : variables and constants
+
+ruby syntax parser
   parse.y
-  variable.c
+    -> parse.c    : automatically generated
+  keywords        : reserved keywords
+    -> lex.c      : automatically generated
+
+ruby evaluator (a.k.a. YARV)
+  blockinlining.c
+  compile.c
+  eval.c
+  eval_error.c
+  eval_jump.c
+  eval_safe.c
+  insns.def           : definition of VM instructions
+  iseq.c              : implementation of VM::ISeq
+  thread.c            : thread management and context swiching
+  thread_win32.c      : thread implementation
+  thread_pthread.c    : ditto
+  vm.c
+  vm_dump.c
+  vm_eval.c
+  vm_evalbody.c
+  vm_insnhelper.c
+  vm_method.c
+
+  opt_insns_unif.def  : instruction unification
+  opt_operand.def     : definitions for optimization
+
+    -> insn*.inc      : automatically generated
+    -> opt*.inc       : automatically generated
+    -> vm.inc         : automatically generated
+
+regular expression engine (oniguruma)
+  regex.c
+  regcomp.c
+  regenc.c
+  regerror.c
+  regexec.c
+  regparse.c
+  regsyntax.c
 
 utility functions
 
-  dln.c
-  regex.c
-  st.c
-  util.c
+  debug.c       : debug symbols for C debuggger
+  dln.c         : dynamic loading
+  st.c          : general purpose hash table
+  strftime.c    : formatting times
+  util.c        : misc utilities
 
 ruby interpreter implementation
 
   dmyext.c
+  dmydln.c 
+  dmyencoding.c
+  id.c
   inits.c
   main.c
   ruby.c
   version.c
 
+  gem_prelude.rb
+  prelude.rb
+
+
 class library
 
-  array.c
-  bignum.c
-  compar.c
-  dir.c
-  enum.c
-  file.c
-  hash.c
-  io.c
-  marshal.c
-  math.c
-  numeric.c
-  pack.c
-  prec.c
-  process.c
-  random.c
-  range.c
-  re.c
-  signal.c
-  sprintf.c
-  string.c
-  struct.c
-  time.c
+  array.c       : Array
+  bignum.c      : Bignum
+  compar.c      : Comparable
+  complex.c     : Complex
+  cont.c        : Fiber, Continuation
+  dir.c         : Dir
+  enum.c        : Enumerable
+  enumerator.c  : Enumerable::Enumerator
+  file.c        : File
+  hash.c        : Hash
+  io.c          : IO
+  marshal.c     : Marshal
+  math.c        : Math
+  numeric.c     : Numeric, Integer, Fixnum, Float
+  pack.c        : Array#pack, String#unpack
+  prec.c        : Precision
+  proc.c        : Binding, Proc
+  process.c     : Process
+  random.c      : random number
+  range.c       : Range
+  rational.c    : Rational
+  re.c          : Regexp, MatchData
+  signal.c      : Signal
+  sprintf.c     : 
+  string.c      : String
+  struct.c      : Struct
+  time.c        : Time
+
+multilingualization
+  encoding.c    : Encoding
+  transcode.c   : Encoding::Converter
+  enc/*.c       : encoding classes
+  enc/trans/*   : codepoint mapping tables
+
+goruby interpreter implementation
+  
+  goruby.c
+  golf_prelude.rb
+
 
 Appendix B. Ruby extension API reference
 

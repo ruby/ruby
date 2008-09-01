@@ -1,3 +1,14 @@
+Mon Sep  1 14:00:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* README.EXT (Data-types): fixed for current status.
+	  (Manipulating Ruby data): mentioned some more functions.
+	  (Class/module definition): ditto.
+	  (Global variables shared between C and Ruby): 
+	    fixed prototypes for the getter/setter's of global variables.
+	  (Appendix A): mentioned some more files.
+
+	* README.EXT.ja: ditto.
+
 Mon Sep  1 11:31:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (copy_stream, fu_copy_stream0, copy_file): use
