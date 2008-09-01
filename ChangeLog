@@ -1,3 +1,11 @@
+Mon Sep  1 14:40:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* README.EXT (Appendix A): fixed the name of class
+	  Enumerator. Enumerable::Enumerator was renamed just 
+	  Enumerator at revision 18564.
+
+	* README.EXT (Appendix A): ditto.
+
 Mon Sep  1 14:37:58 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/transcode-tblgen.rb: set ERB source filename for error message.

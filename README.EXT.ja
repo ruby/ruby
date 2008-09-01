@@ -978,7 +978,7 @@ Rubyコマンドの実装
   cont.c        : Fiber, Continuation
   dir.c         : Dir
   enum.c        : Enumerable
-  enumerator.c  : Enumerable::Enumerator
+  enumerator.c  : Enumerator
   file.c        : File
   hash.c        : Hash
   io.c          : IO
