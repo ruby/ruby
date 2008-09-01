@@ -1,3 +1,8 @@
+Tue Sep  2 04:00:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (o3): prevent sign extension on 64bit environment.
+	  (o4): ditto.
+
 Tue Sep  2 03:26:24 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: comment removed in generated code.

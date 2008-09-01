@@ -41,8 +41,8 @@ typedef uintptr_t BYTE_LOOKUP[2];
 
 #define o1(b1)		(PType((((unsigned char)(b1))<<8)|ONEbt))
 #define o2(b1,b2)	(PType((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|TWObt))
-#define o3(b1,b2,b3)	(PType((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|THREEbt))
-#define o4(b0,b1,b2,b3)	(PType((((unsigned char)(b1))<< 8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt))
+#define o3(b1,b2,b3)	(PType(((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|THREEbt)&0xffffffffU))
+#define o4(b0,b1,b2,b3)	(PType(((((unsigned char)(b1))<< 8)|(((unsigned char)(b2))<<16)|(((unsigned char)(b3))<<24)|((((unsigned char)(b0))&0x07)<<5)|FOURbt)&0xffffffffU))
 
 #define getBT1(a)	(((a)>> 8)&0xFF)
 #define getBT2(a)	(((a)>>16)&0xFF)
