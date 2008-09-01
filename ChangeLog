@@ -1,3 +1,21 @@
+Tue Sep  2 01:19:15 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (BYTE_LOOKUP): change to uintptr_t array.
+	  (BYTE_LOOKUP_BASE): follow the type change.
+	  (BYTE_LOOKUP_INFO): ditto.
+	  (PType): ditto.
+	  (rb_transcoding): ditto.
+
+	* tool/transcode-tblgen.rb: follow the type change.
+
+	* transcode.c: ditto.
+
+	* enc/trans/newline.trans: ditto.
+
+	* enc/trans/iso2022.trans: ditto.
+
+	* enc/trans/utf_16_32.trans: ditto.
+
 Mon Sep  1 23:32:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (BYTE_LOOKUP_BASE): abstract accessor for

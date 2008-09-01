@@ -16,17 +16,14 @@
 
 typedef unsigned char base_element;
 
-typedef struct byte_lookup {
-    const base_element *base;
-    const struct byte_lookup *const *info;
-} BYTE_LOOKUP;
+typedef uintptr_t BYTE_LOOKUP[2];
 
-#define BYTE_LOOKUP_BASE(bl) ((bl)->base)
-#define BYTE_LOOKUP_INFO(bl) ((bl)->info)
+#define BYTE_LOOKUP_BASE(bl) ((const base_element *)(((uintptr_t *)(bl))[0]))
+#define BYTE_LOOKUP_INFO(bl) ((const struct byte_lookup *const *)(((uintptr_t *)(bl))[1]))
 
 #ifndef PType
 /* data file needs to treat this as a pointer, to remove warnings */
-#define PType (const BYTE_LOOKUP *)
+#define PType (uintptr_t)
 #endif
 
 #define NOMAP	(PType 0x01)	/* single byte direct map */
@@ -76,7 +73,7 @@ typedef struct rb_transcoding {
     int flags;
 
     int resume_position;
-    const BYTE_LOOKUP *next_table;
+    uintptr_t next_table;
     VALUE next_info;
     unsigned char next_byte;
 
@@ -109,7 +106,7 @@ typedef struct rb_transcoding {
 struct rb_transcoder {
     const char *from_encoding;
     const char *to_encoding;
-    const BYTE_LOOKUP *conv_tree_start;
+    uintptr_t conv_tree_start;
     int input_unit_length;
     int max_input;
     int max_output;

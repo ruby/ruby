@@ -273,7 +273,7 @@ class ActionMap
       "o3(0x#$1,0x#$2,0x#$3)"
     when /\A([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
-    when /\A&/ # pointer to BYTE_LOOKUP structure
+    when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
       info.to_s
     else
       raise "unexpected action: #{info.inspect}"
@@ -347,8 +347,9 @@ End
     else
       infos_name = "#{name}_infos"
       infos_code = <<"End"
-static const struct byte_lookup* const
+static const uintptr_t
 #{infos_name}[#{infos.length}] = #{format_infos(infos)};
+\#define #{infos_name} ((uintptr_t)#{infos_name})
 End
       InfosMemo[infos] = infos_name
     end
@@ -356,9 +357,10 @@ End
     r = infos_code + <<"End"
 static const BYTE_LOOKUP
 #{name} = {
-    #{offsets_name},
+    (uintptr_t)#{offsets_name},
     #{infos_name}
 };
+\#define #{name} ((uintptr_t)#{name})
 
 End
     words_code << r
@@ -380,7 +382,7 @@ End
       else
         name_hint2 = nil
         name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte] = "&" + rest.generate_node(bytes_code, words_code, name_hint2, rest_valid_encoding)
+        table[byte] = "/*BYTE_LOOKUP*/" + rest.generate_node(bytes_code, words_code, name_hint2, rest_valid_encoding)
       end
     }
 
@@ -572,7 +574,7 @@ def transcode_tblgen(from, to, map)
   transcoder_code = <<"End"
 static const rb_transcoder
 #{transcoder_name} = {
-    #{c_esc from}, #{c_esc to}, &#{real_tree_name},
+    #{c_esc from}, #{c_esc to}, #{real_tree_name},
     #{input_unit_length}, /* input_unit_length */
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */

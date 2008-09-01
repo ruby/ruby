@@ -513,7 +513,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 SUSPEND(econv_source_buffer_empty, 5);
 	    }
 	    next_byte = (unsigned char)*in_p++;
-	    next_table = (const BYTE_LOOKUP *)next_info;
+	    next_table = next_info;
 	    goto follow_byte;
 	  case ZERObt: /* drop input */
 	    continue;
