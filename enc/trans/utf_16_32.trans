@@ -262,7 +262,7 @@ fun_so_to_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned
 static const rb_transcoder
 rb_from_UTF_16BE = {
     "UTF-16BE", "UTF-8", from_UTF_16BE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     2, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
@@ -273,7 +273,7 @@ rb_from_UTF_16BE = {
 static const rb_transcoder
 rb_to_UTF_16BE = {
     "UTF-8", "UTF-16BE", to_UTF_16BE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
@@ -284,7 +284,7 @@ rb_to_UTF_16BE = {
 static const rb_transcoder
 rb_from_UTF_16LE = {
     "UTF-16LE", "UTF-8", from_UTF_16LE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     2, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
@@ -295,7 +295,7 @@ rb_from_UTF_16LE = {
 static const rb_transcoder
 rb_to_UTF_16LE = {
     "UTF-8", "UTF-16LE", to_UTF_16BE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
@@ -306,7 +306,7 @@ rb_to_UTF_16LE = {
 static const rb_transcoder
 rb_from_UTF_32BE = {
     "UTF-32BE", "UTF-8", from_UTF_32BE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     4, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
@@ -317,7 +317,7 @@ rb_from_UTF_32BE = {
 static const rb_transcoder
 rb_to_UTF_32BE = {
     "UTF-8", "UTF-32BE", to_UTF_16BE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
@@ -328,7 +328,7 @@ rb_to_UTF_32BE = {
 static const rb_transcoder
 rb_from_UTF_32LE = {
     "UTF-32LE", "UTF-8", from_UTF_32LE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     4, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */
@@ -339,7 +339,7 @@ rb_from_UTF_32LE = {
 static const rb_transcoder
 rb_to_UTF_32LE = {
     "UTF-8", "UTF-32LE", to_UTF_16BE,
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
     4, /* max_output */

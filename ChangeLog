@@ -1,3 +1,14 @@
+Tue Sep  2 03:16:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: define TRANSCODE_TABLE_INFO in generated
+	  code.  use it in rb_transcoder.
+
+	* enc/trans/newline.trans: use TRANSCODE_TABLE_INFO.
+
+	* enc/trans/iso2022.trans: ditto.
+
+	* enc/trans/utf_16_32.trans: ditto.
+
 Tue Sep  2 03:04:33 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: record infos and BYTE_LOOKUPs as index of

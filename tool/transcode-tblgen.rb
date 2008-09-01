@@ -587,7 +587,7 @@ def transcode_tblgen(from, to, map)
 static const rb_transcoder
 #{transcoder_name} = {
     #{c_esc from}, #{c_esc to}, #{real_tree_name},
-    byte_array, word_array, sizeof(uintptr_t),
+    TRANSCODE_TABLE_INFO,
     #{input_unit_length}, /* input_unit_length */
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */
@@ -607,7 +607,10 @@ def transcode_generate_node(am, name_hint=nil)
 end
 
 def transcode_generated_code
-  TRANSCODE_GENERATED_BYTES_CODE + TRANSCODE_GENERATED_WORDS_CODE + TRANSCODE_GENERATED_TRANSCODER_CODE
+  TRANSCODE_GENERATED_BYTES_CODE +
+    TRANSCODE_GENERATED_WORDS_CODE +
+    "\#define TRANSCODE_TABLE_INFO byte_array, word_array, sizeof(uintptr_t)\n" +
+    TRANSCODE_GENERATED_TRANSCODER_CODE
 end
 
 def transcode_register_code
