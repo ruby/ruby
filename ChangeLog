@@ -1,3 +1,8 @@
+Mon Sep  1 11:31:49 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (copy_stream, fu_copy_stream0, copy_file): use
+	  IO.copy_stream to get rid of extraneous conversion.
+
 Mon Sep  1 02:55:15 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* strftime.c (rb_strftime): calc timezone offset by myself if system

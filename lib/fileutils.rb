@@ -470,7 +470,7 @@ module FileUtils
   # +dest+ must respond to #write(str).
   #
   def copy_stream(src, dest)
-    fu_copy_stream0 src, dest, fu_stream_blksize(src, dest)
+    IO.copy_stream(src, dest)
   end
   module_function :copy_stream
 
@@ -1044,11 +1044,8 @@ module FileUtils
       /mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM
     end
 
-    def fu_copy_stream0(src, dest, blksize)   #:nodoc:
-      # FIXME: readpartial?
-      while s = src.read(blksize)
-        dest.write s
-      end
+    def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
+      IO.copy_stream(src, dest)
     end
 
     def fu_stream_blksize(*streams)
@@ -1254,12 +1251,7 @@ module FileUtils
     end
 
     def copy_file(dest)
-      st = stat()
-      File.open(path(),  'rb') {|r|
-        File.open(dest, 'wb', st.mode) {|w|
-          fu_copy_stream0 r, w, (fu_blksize(st) || fu_default_blksize())
-        }
-      }
+      IO.copy_stream(path(),  dest)
     end
 
     def copy_metadata(path)
