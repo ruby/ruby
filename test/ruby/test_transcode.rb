@@ -427,6 +427,13 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xBF\xC0\xCE\xD3\xB5\xC1\xC7\xEE", 'euc-jp') # 神林義博
   end
 
+  def test_eucjp_ms
+    check_both_ways("\u2116", "\xAD\xE2", 'eucJP-ms') # NUMERO SIGN
+    check_both_ways("\u221A", "\xA2\xE5", 'eucJP-ms') # SQUARE ROOT
+    check_both_ways("\u3231", "\xAD\xEA", 'eucJP-ms') # PARENTHESIZED IDEOGRAPH STOCK
+    check_both_ways("\uFF5E", "\xA1\xC1", 'eucJP-ms') # WAVE DASH
+  end
+
   def test_iso_2022_jp
     assert_raise(Encoding::InvalidByteSequence) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
     assert_raise(Encoding::InvalidByteSequence) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }

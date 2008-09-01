@@ -377,7 +377,7 @@ ENC_ALIAS("eucJP", "EUC-JP") /* UI-OSF Application Platform Profile for Japanese
  * Link: http://ja.wikipedia.org/wiki/EUC-JP
  */
 ENC_REPLICATE("eucJP-ms", "EUC-JP") /* TOG/JVC CDE/Motif Technical WG */
-ENC_ALIAS("euc-jp-ms", "EUC-JP")
+ENC_ALIAS("euc-jp-ms", "eucJP-ms")
 
 /*
  * Name: CP51932

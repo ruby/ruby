@@ -31,7 +31,7 @@
   citrus_decode_mapsrc("euc", 0x0080, "JISX0201-KANA/UCS") +
   citrus_decode_mapsrc("euc", 0x8000, "JISX0212/UCS")
 
-  transcode_tblgen "EUC-JP-MS", "UTF-8",
+  transcode_tblgen "eucJP-ms", "UTF-8",
   [["{00-7f}", :nomap]] +
   citrus_decode_mapsrc("euc", 0x8080, "JISX0208VDC:NEC/UCS,JISX0208UDC/UCS,JISX0208:MS/UCS") +
   citrus_decode_mapsrc("euc", 0x0080, "JISX0201-KANA/UCS") +
@@ -49,7 +49,7 @@
   citrus_decode_mapsrc("euc", 0x0080, "UCS/JISX0201-KANA") +
   citrus_decode_mapsrc("euc", 0x8000, "UCS/JISX0212")
 
-  transcode_tblgen "UTF-8", "EUC-JP-MS",
+  transcode_tblgen "UTF-8", "eucJP-ms",
   [["{00-7f}", :nomap]] +
   citrus_decode_mapsrc("euc", 0x8080, "UCS/JISX0208:MS,UCS/JISX0208VDC:NEC,UCS/JISX0208UDC") +
   citrus_decode_mapsrc("euc", 0x0080, "UCS/JISX0201-KANA") +

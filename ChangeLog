@@ -1,3 +1,11 @@
+Mon Sep  1 17:07:23 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/euc_jp.c (euc-jp-ms): euc-jp-ms is not EUC-JP not an alias of
+	  eucJP-ms.
+
+	* enc/trans/japanese.trans (eucJP-ms): eucJP-ms is the correct
+	  name of the encoding in Ruby.
+
 Mon Sep  1 16:48:50 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/md5/md5init.c (md5), ext/digest/rmd160/rmd160init.c
