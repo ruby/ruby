@@ -6,7 +6,8 @@ Mon Sep  1 22:42:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Mon Sep  1 22:37:06 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/rexml/document.rb: limit entity expansion.
+	* lib/rexml/document.rb: limit entity expansion.  Thanks, Luka
+	  Treiber, Mitja Kolsek, and Michael Koziarski.
 
 	* lib/rexml/entity.rb: ditto.
 
