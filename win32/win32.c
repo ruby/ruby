@@ -3089,19 +3089,10 @@ int _cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {
     SYSTEMTIME st;
-    time_t t;
     struct tm tm;
 
-    GetLocalTime(&st);
-    tm.tm_sec = st.wSecond;
-    tm.tm_min = st.wMinute;
-    tm.tm_hour = st.wHour;
-    tm.tm_mday = st.wDay;
-    tm.tm_mon = st.wMonth - 1;
-    tm.tm_year = st.wYear - 1900;
-    tm.tm_isdst = -1;
-    t = mktime(&tm);
-    tv->tv_sec = t;
+    GetSystemTime(&st);
+    time(&tv->tv_sec);
     tv->tv_usec = st.wMilliseconds * 1000;
 
     return 0;
