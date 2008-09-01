@@ -1,3 +1,14 @@
+Tue Sep  2 03:04:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: record infos and BYTE_LOOKUPs as index of
+	  word_array to avoid relocation.
+
+	* transcode.c (transcode_restartable0): add word_array to get infos
+	  and BYTE_LOOKUPs.
+
+	* transcode_data.h (BYTE_LOOKUP_INFO): change return type to
+	  uintptr_t.
+
 Tue Sep  2 02:48:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: don't need to cast offsets array.

@@ -19,7 +19,7 @@ typedef unsigned char base_element;
 typedef uintptr_t BYTE_LOOKUP[2];
 
 #define BYTE_LOOKUP_BASE(bl) (((uintptr_t *)(bl))[0])
-#define BYTE_LOOKUP_INFO(bl) ((const struct byte_lookup *const *)(((uintptr_t *)(bl))[1]))
+#define BYTE_LOOKUP_INFO(bl) (((uintptr_t *)(bl))[1])
 
 #ifndef PType
 /* data file needs to treat this as a pointer, to remove warnings */

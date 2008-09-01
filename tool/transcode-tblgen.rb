@@ -358,7 +358,7 @@ End
 
       size = words_code[/\[\d+\]/][1...-1].to_i
       words_code.sub!(/^(\};\n\z)/) {
-        "\#define #{infos_name} (((uintptr_t)word_array)+sizeof(uintptr_t)*#{size})\n" +
+        "\#define #{infos_name} (sizeof(uintptr_t)*#{size})\n" +
         format_infos(infos) + "\n" +
         $1
       }
@@ -368,7 +368,7 @@ End
 
     size = words_code[/\[\d+\]/][1...-1].to_i
     words_code.sub!(/^(\};\n\z)/) {
-      "\#define #{name} ((uintptr_t)(word_array+#{size}))\n" +
+      "\#define #{name} (sizeof(uintptr_t)*#{size})\n" +
       <<"End" + "\n" + $1
     #{offsets_name},
     #{infos_name},
