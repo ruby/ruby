@@ -1,3 +1,7 @@
+Mon Sep  1 23:14:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: gather infos arrays and BYTE_LOOKUPs.
+
 Mon Sep  1 22:42:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/mkmf.rb (distclean): added RM_RF conftest.dSYM.
@@ -19,7 +23,7 @@ Mon Sep  1 22:20:22 2008  Tanaka Akira  <akr@fsij.org>
 
 Mon Sep  1 21:46:18 2008  Tanaka Akira  <akr@fsij.org>
 
-	* tool/transcode-tblgen.rb: gather offsets array at top.
+	* tool/transcode-tblgen.rb: gather offsets arrays at top.
 
 Mon Sep  1 21:09:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 

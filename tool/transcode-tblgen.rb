@@ -297,7 +297,7 @@ class ActionMap
     code
   end
 
-  def generate_lookup_node(bytes_code, code, name, table)
+  def generate_lookup_node(bytes_code, words_code, name, table)
     offsets = []
     infos = []
     infomap = {}
@@ -361,14 +361,14 @@ static const BYTE_LOOKUP
 };
 
 End
-    code << r
+    words_code << r
   end
 
   PreMemo = {}
   PostMemo = {}
   NextName = "a"
 
-  def generate_node(bytes_code, code, name_hint=nil, valid_encoding=nil)
+  def generate_node(bytes_code, words_code, name_hint=nil, valid_encoding=nil)
     if n = PreMemo[[self,valid_encoding]]
       return n
     end
@@ -380,7 +380,7 @@ End
       else
         name_hint2 = nil
         name_hint2 = "#{name_hint}_#{'%02X' % byte}" if name_hint
-        table[byte] = "&" + rest.generate_node(bytes_code, code, name_hint2, rest_valid_encoding)
+        table[byte] = "&" + rest.generate_node(bytes_code, words_code, name_hint2, rest_valid_encoding)
       end
     }
 
@@ -395,14 +395,13 @@ End
 
     PreMemo[[self,valid_encoding]] = PostMemo[table] = name_hint
 
-    generate_lookup_node(bytes_code, code, name_hint, table)
+    generate_lookup_node(bytes_code, words_code, name_hint, table)
     name_hint
   end
 
-  def gennode(bytes_code, name_hint=nil, valid_encoding=nil)
-    code = ''
-    name = generate_node(bytes_code, code, name_hint, valid_encoding)
-    return name, code
+  def gennode(bytes_code, words_code, name_hint=nil, valid_encoding=nil)
+    name = generate_node(bytes_code, words_code, name_hint, valid_encoding)
+    return name
   end
 end
 
@@ -544,13 +543,14 @@ def transcode_compile_tree(name, from, map)
     valid_encoding = nil
   end
 
-  defined_name, code = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, name, valid_encoding)
-  return defined_name, code, max_input
+  defined_name = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name, valid_encoding)
+  return defined_name, max_input
 end
 
 TRANSCODERS = []
 TRANSCODE_GENERATED_BYTES_CODE = ''
-TRANSCODE_GENERATED_CODE = ''
+TRANSCODE_GENERATED_WORDS_CODE = ''
+TRANSCODE_GENERATED_TRANSCODER_CODE = ''
 
 def transcode_tblgen(from, to, map)
   STDERR.puts "converter from #{from} to #{to}" if VERBOSE_MODE
@@ -564,7 +564,7 @@ def transcode_tblgen(from, to, map)
     tree_name = "from_#{id_from}_to_#{id_to}"
   end
   map = encode_utf8(map)
-  real_tree_name, tree_code, max_input = transcode_compile_tree(tree_name, from, map)
+  real_tree_name, max_input = transcode_compile_tree(tree_name, from, map)
   transcoder_name = "rb_#{tree_name}"
   TRANSCODERS << transcoder_name
   input_unit_length = UnitLength[from]
@@ -581,19 +581,18 @@ static const rb_transcoder
     NULL, NULL, NULL
 };
 End
-  TRANSCODE_GENERATED_CODE << tree_code + "\n" + transcoder_code
+  TRANSCODE_GENERATED_TRANSCODER_CODE << transcoder_code
   ''
 end
 
 def transcode_generate_node(am, name_hint=nil)
   STDERR.puts "converter for #{name_hint}" if VERBOSE_MODE
-  name, code = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, name_hint)
-  TRANSCODE_GENERATED_CODE << code
+  name = am.gennode(TRANSCODE_GENERATED_BYTES_CODE, TRANSCODE_GENERATED_WORDS_CODE, name_hint)
   ''
 end
 
 def transcode_generated_code
-  TRANSCODE_GENERATED_BYTES_CODE + TRANSCODE_GENERATED_CODE
+  TRANSCODE_GENERATED_BYTES_CODE + TRANSCODE_GENERATED_WORDS_CODE + TRANSCODE_GENERATED_TRANSCODER_CODE
 end
 
 def transcode_register_code
