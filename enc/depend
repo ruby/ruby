@@ -23,6 +23,7 @@
 % atrans = atrans.sort_by(&alphanumeric_order)
 % trans = trans.sort_by(&alphanumeric_order)
 % trans.unshift(trans.delete("transdb"))
+% trans.compact!
 % trans |= atrans
 % trans.map! {|e| "trans/#{e}"}
 % dependencies = encs + trans
