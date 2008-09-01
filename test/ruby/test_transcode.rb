@@ -365,6 +365,14 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # 神林義博
   end
 
+  def test_windows_31j
+    check_both_ways("\u222A", "\x81\xBE", 'Windows-31J') # Union
+    check_both_ways("\uFFE2", "\x81\xCA", 'Windows-31J') # Fullwidth Not Sign
+    check_both_ways("\u2235", "\x81\xE6", 'Windows-31J') # Because
+    check_both_ways("\u2160", "\x87\x54", 'Windows-31J') # Roman Numeral One
+    check_both_ways("\u2170", "\xFA\x40", 'Windows-31J') # Small Roman Numeral One
+  end
+
   def test_euc_jp
     check_both_ways("\u3000", "\xA1\xA1", 'euc-jp') # full-width space
     check_both_ways("\u00D7", "\xA1\xDF", 'euc-jp') # ×
