@@ -728,7 +728,9 @@ if VERBOSE_MODE
 end
 
 libs1 = $".dup
-erb_result = ERB.new(src, nil, '%').result(binding)
+erb = ERB.new(src, nil, '%')
+erb.filename = arg
+erb_result = erb.result(binding)
 libs2 = $".dup
 
 libs = libs2 - libs1
