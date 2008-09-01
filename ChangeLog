@@ -1,3 +1,21 @@
+Tue Sep  2 02:36:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: record offsets array as index of
+	  byte_array to avoid relocation.
+
+	* transcode.c (transcode_restartable0): add byte_array to get offsets
+	  array.
+
+	* transcode_data.h (BYTE_LOOKUP_BASE): change return type to
+	  uintptr_t.
+	  (rb_transcoder): add fields: byte_array, word_array and word_size.
+
+	* enc/trans/newline.trans: follow rb_transcoder change.
+
+	* enc/trans/iso2022.trans: ditto.
+
+	* enc/trans/utf_16_32.trans: ditto.
+
 Tue Sep  2 02:05:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: make infos arrays and BYTE_LOOKUPs into

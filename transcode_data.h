@@ -18,7 +18,7 @@ typedef unsigned char base_element;
 
 typedef uintptr_t BYTE_LOOKUP[2];
 
-#define BYTE_LOOKUP_BASE(bl) ((const base_element *)(((uintptr_t *)(bl))[0]))
+#define BYTE_LOOKUP_BASE(bl) (((uintptr_t *)(bl))[0])
 #define BYTE_LOOKUP_INFO(bl) ((const struct byte_lookup *const *)(((uintptr_t *)(bl))[1]))
 
 #ifndef PType
@@ -107,6 +107,9 @@ struct rb_transcoder {
     const char *from_encoding;
     const char *to_encoding;
     uintptr_t conv_tree_start;
+    const unsigned char *byte_array;
+    const uintptr_t *word_array;
+    int word_size;
     int input_unit_length;
     int max_input;
     int max_output;

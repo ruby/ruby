@@ -334,7 +334,7 @@ End
       end
       size = bytes_code[/\[\d+\]/][1...-1].to_i
       bytes_code.sub!(/^(\};\n\z)/) {
-        "\#define #{offsets_name} (byte_array+#{size})\n" +
+        "\#define #{offsets_name} #{size}\n" +
         format_offsets(min,max,offsets) + "\n" +
         $1
       }
@@ -587,6 +587,7 @@ def transcode_tblgen(from, to, map)
 static const rb_transcoder
 #{transcoder_name} = {
     #{c_esc from}, #{c_esc to}, #{real_tree_name},
+    byte_array, word_array, sizeof(uintptr_t),
     #{input_unit_length}, /* input_unit_length */
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */

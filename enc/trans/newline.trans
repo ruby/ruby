@@ -55,6 +55,7 @@ fun_so_universal_newline(rb_transcoding* t, const unsigned char* s, size_t l, un
 static const rb_transcoder
 rb_universal_newline = {
     "universal_newline", "", universal_newline,
+    byte_array, word_array, sizeof(uintptr_t),
     1, /* input_unit_length */
     1, /* max_input */
     1, /* max_output */
@@ -65,6 +66,7 @@ rb_universal_newline = {
 static const rb_transcoder
 rb_crlf_newline = {
     "", "crlf_newline", crlf_newline,
+    byte_array, word_array, sizeof(uintptr_t),
     1, /* input_unit_length */
     1, /* max_input */
     2, /* max_output */
@@ -75,6 +77,7 @@ rb_crlf_newline = {
 static const rb_transcoder
 rb_cr_newline = {
     "", "cr_newline", cr_newline,
+    byte_array, word_array, sizeof(uintptr_t),
     1, /* input_unit_length */
     1, /* max_input */
     1, /* max_output */
