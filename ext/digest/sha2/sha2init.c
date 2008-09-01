@@ -7,7 +7,7 @@
 #define FOREACH_BITLEN(func)	func(256) func(384) func(512)
 
 #define DEFINE_ALGO_METADATA(bitlen) \
-static rb_digest_metadata_t sha##bitlen = { \
+static const rb_digest_metadata_t sha##bitlen = { \
     RUBY_DIGEST_API_VERSION, \
     SHA##bitlen##_DIGEST_LENGTH, \
     SHA##bitlen##_BLOCK_LENGTH, \
@@ -46,7 +46,7 @@ Init_sha2()
     cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
 \
     rb_ivar_set(cDigest_SHA##bitlen, id_metadata, \
-      Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen));
+      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&sha##bitlen));
 
     FOREACH_BITLEN(DEFINE_ALGO_CLASS)
 }

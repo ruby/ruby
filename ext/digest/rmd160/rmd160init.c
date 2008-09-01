@@ -8,7 +8,7 @@
 #include "rmd160.h"
 #endif
 
-static rb_digest_metadata_t rmd160 = {
+static const rb_digest_metadata_t rmd160 = {
     RUBY_DIGEST_API_VERSION,
     RMD160_DIGEST_LENGTH,
     RMD160_BLOCK_LENGTH,
@@ -36,5 +36,5 @@ Init_rmd160()
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
 
     rb_ivar_set(cDigest_RMD160, rb_intern("metadata"),
-      Data_Wrap_Struct(rb_cObject, 0, 0, &rmd160));
+      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&rmd160));
 }

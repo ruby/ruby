@@ -8,7 +8,7 @@
 #include "sha1.h"
 #endif
 
-static rb_digest_metadata_t sha1 = {
+static const rb_digest_metadata_t sha1 = {
     RUBY_DIGEST_API_VERSION,
     SHA1_DIGEST_LENGTH,
     SHA1_BLOCK_LENGTH,
@@ -36,5 +36,5 @@ Init_sha1()
     cDigest_SHA1 = rb_define_class_under(mDigest, "SHA1", cDigest_Base);
 
     rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
-      Data_Wrap_Struct(rb_cObject, 0, 0, &sha1));
+      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&sha1));
 }

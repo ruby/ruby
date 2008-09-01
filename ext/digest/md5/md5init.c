@@ -8,7 +8,7 @@
 #include "md5.h"
 #endif
 
-static rb_digest_metadata_t md5 = {
+static const rb_digest_metadata_t md5 = {
     RUBY_DIGEST_API_VERSION,
     MD5_DIGEST_LENGTH,
     MD5_BLOCK_LENGTH,
@@ -36,5 +36,5 @@ Init_md5()
     cDigest_MD5 = rb_define_class_under(mDigest, "MD5", cDigest_Base);
 
     rb_ivar_set(cDigest_MD5, rb_intern("metadata"),
-      Data_Wrap_Struct(rb_cObject, 0, 0, &md5));
+      Data_Wrap_Struct(rb_cObject, 0, 0, (void *)&md5));
 }
