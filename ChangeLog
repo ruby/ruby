@@ -1,3 +1,8 @@
+Mon Sep  1 15:15:40 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/japanese.trans: fix mapping priority.
+	  IBM extended is prior than NEC selected IBM.
+
 Mon Sep  1 14:44:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/transcode-tblgen.rb (transcode_compile_tree): use the first
