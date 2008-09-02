@@ -328,7 +328,7 @@ class ActionMap
       if bytes_code.empty?
         bytes_code << <<"End"
 static const unsigned char
-byte_array[0] = {
+#{OUTPUT_PREFIX}byte_array[0] = {
 };
 End
       end
@@ -345,7 +345,7 @@ End
     if words_code.empty?
       words_code << <<"End"
 static const uintptr_t
-word_array[0] = {
+#{OUTPUT_PREFIX}word_array[0] = {
 };
 End
     end
@@ -609,7 +609,7 @@ end
 def transcode_generated_code
   TRANSCODE_GENERATED_BYTES_CODE +
     TRANSCODE_GENERATED_WORDS_CODE +
-    "\#define TRANSCODE_TABLE_INFO byte_array, word_array, sizeof(uintptr_t)\n" +
+    "\#define TRANSCODE_TABLE_INFO #{OUTPUT_PREFIX}byte_array, #{OUTPUT_PREFIX}word_array, sizeof(uintptr_t)\n" +
     TRANSCODE_GENERATED_TRANSCODER_CODE
 end
 
@@ -715,6 +715,11 @@ op.def_option("--output=FILE", "specify output file") {|arg| output_filename = a
 op.parse!
 
 VERBOSE_MODE = verbose_mode
+
+OUTPUT_FILENAME = output_filename
+OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : ""
+OUTPUT_PREFIX.sub!(/\A_+/, '')
+OUTPUT_PREFIX.sub!(/_*\z/, '_')
 
 arg = ARGV.shift
 $srcdir = File.dirname(arg)

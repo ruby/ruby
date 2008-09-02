@@ -1,3 +1,7 @@
+Tue Sep  2 21:22:22 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: add prefix for byte_array and word_array.
+
 Tue Sep  2 20:57:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/make_transdb.rb: check foo.c only if foo.trans exists.
