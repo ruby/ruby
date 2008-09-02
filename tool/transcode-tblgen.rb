@@ -344,7 +344,7 @@ End
 
     if words_code.empty?
       words_code << <<"End"
-static const uintptr_t
+static const unsigned int
 #{OUTPUT_PREFIX}word_array[0] = {
 };
 End
@@ -358,7 +358,7 @@ End
 
       size = words_code[/\[\d+\]/][1...-1].to_i
       words_code.sub!(/^(\};\n\z)/) {
-        "\#define #{infos_name} (sizeof(uintptr_t)*#{size})\n" +
+        "\#define #{infos_name} (sizeof(unsigned int)*#{size})\n" +
         format_infos(infos) + "\n" +
         $1
       }
@@ -368,7 +368,7 @@ End
 
     size = words_code[/\[\d+\]/][1...-1].to_i
     words_code.sub!(/^(\};\n\z)/) {
-      "\#define #{name} (sizeof(uintptr_t)*#{size})\n" +
+      "\#define #{name} (sizeof(unsigned int)*#{size})\n" +
       <<"End" + "\n" + $1
     #{offsets_name},
     #{infos_name},
@@ -609,7 +609,7 @@ end
 def transcode_generated_code
   TRANSCODE_GENERATED_BYTES_CODE +
     TRANSCODE_GENERATED_WORDS_CODE +
-    "\#define TRANSCODE_TABLE_INFO #{OUTPUT_PREFIX}byte_array, #{OUTPUT_PREFIX}word_array, sizeof(uintptr_t)\n" +
+    "\#define TRANSCODE_TABLE_INFO #{OUTPUT_PREFIX}byte_array, #{OUTPUT_PREFIX}word_array, sizeof(unsigned int)\n" +
     TRANSCODE_GENERATED_TRANSCODER_CODE
 end
 

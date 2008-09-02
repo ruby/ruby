@@ -1,3 +1,18 @@
+Tue Sep  2 22:20:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (base_element): removed.
+	  (BYTE_LOOKUP): removed.
+	  (BYTE_LOOKUP_BASE): don't cast.
+	  (BYTE_LOOKUP_INFO): ditto.
+	  (PType): unsigned int, instead of uintptr_t.
+	  (rb_transcoding): change type of next_field, conv_tree_start and
+	  word_array.
+
+	* tool/transcode-tblgen.rb: generate word_array as array of unsigned
+	  int.
+
+	* transcode.c (transcode_restartable0): follow the above type change.
+
 Tue Sep  2 21:22:22 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: add prefix for byte_array and word_array.

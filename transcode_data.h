@@ -14,16 +14,12 @@
 #ifndef RUBY_TRANSCODE_DATA_H
 #define RUBY_TRANSCODE_DATA_H 1
 
-typedef unsigned char base_element;
-
-typedef uintptr_t BYTE_LOOKUP[2];
-
-#define BYTE_LOOKUP_BASE(bl) (((uintptr_t *)(bl))[0])
-#define BYTE_LOOKUP_INFO(bl) (((uintptr_t *)(bl))[1])
+#define BYTE_LOOKUP_BASE(bl) ((bl)[0])
+#define BYTE_LOOKUP_INFO(bl) ((bl)[1])
 
 #ifndef PType
 /* data file needs to treat this as a pointer, to remove warnings */
-#define PType (uintptr_t)
+#define PType (unsigned int)
 #endif
 
 #define NOMAP	(PType 0x01)	/* single byte direct map */
@@ -73,7 +69,7 @@ typedef struct rb_transcoding {
     int flags;
 
     int resume_position;
-    uintptr_t next_table;
+    unsigned int next_table;
     VALUE next_info;
     unsigned char next_byte;
 
@@ -106,9 +102,9 @@ typedef struct rb_transcoding {
 struct rb_transcoder {
     const char *from_encoding;
     const char *to_encoding;
-    uintptr_t conv_tree_start;
+    unsigned int conv_tree_start;
     const unsigned char *byte_array;
-    const uintptr_t *word_array;
+    const unsigned int *word_array;
     int word_size;
     int input_unit_length;
     int max_input;
