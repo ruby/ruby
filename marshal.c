@@ -609,13 +609,14 @@ w_object(obj, arg, limit)
 	    w_uclass(obj, rb_cArray, arg);
 	    w_byte(TYPE_ARRAY, arg);
 	    {
-		long len = RARRAY(obj)->len;
-		VALUE *ptr = RARRAY(obj)->ptr;
+		long i, len = RARRAY_LEN(obj);
 
 		w_long(len, arg);
-		while (len--) {
-		    w_object(*ptr, arg, limit);
-		    ptr++;
+		for (i=0; i<RARRAY_LEN(obj); i++) {
+		    w_object(RARRAY_PTR(obj)[i], arg, limit);
+		    if (len != RARRAY_LEN(obj)) {
+			rb_raise(rb_eRuntimeError, "array modified during dump");
+		    }
 		}
 	    }
 	    break;

@@ -1,3 +1,8 @@
+Tue Sep  2 23:39:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* marshal.c (w_object): add a check for modification of array during
+	  its dump, backported r16761.
+
 Tue Sep  2 14:48:55 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (gettimeofday): tv_usec is usec, not msec.
