@@ -92,7 +92,8 @@ OBJS          = dln.$(OBJEXT) \
 GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
 
 PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(srcdir)/gem_prelude.rb
-PRELUDES      = prelude.c miniprelude.c golf_prelude.c
+PRELUDES      = prelude.c miniprelude.c
+GOLFPRELUDES = golf_prelude.c
 
 SCRIPT_ARGS   =	--dest-dir="$(DESTDIR)" \
 		--extout="$(EXTOUT)" \
@@ -345,6 +346,7 @@ distclean-ext::
 distclean-enc: clean-enc
 	@-$(MAKE) -f enc.mk $(MFLAGS) distclean
 distclean-golf: clean-golf
+	@$(RM) $(GOLFPRELUDES)
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf
 realclean-local:: distclean-local
