@@ -1,3 +1,8 @@
+Wed Sep  3 00:23:25 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* vm_insnhelper.c (vm_method_missing): copy arguments to allocated
+	  memory from machine stack.  [ruby-dev:36064]
+
 Tue Sep  2 22:20:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (base_element): removed.
