@@ -2991,11 +2991,11 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
        convert it into UNIX time (since 1970/01/01 00:00:00 UTC).
        the first leap second is at 1972/06/30, so we doesn't need to think
        about it. */
-    lt /= 10000;	/* to msec */
-    lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * 1000;
+    lt /= 10;	/* to usec */
+    lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * 1000 * 1000;
 
-    tv->tv_sec = lt / 1000;
-    tv->tv_usec = lt % 1000;
+    tv->tv_sec = lt / (1000 * 1000);
+    tv->tv_usec = lt % (1000 * 1000);
 
     return 0;
 }
