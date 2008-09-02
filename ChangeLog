@@ -2323,7 +2323,7 @@ Fri Apr 11 08:05:12 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* marshal.c (w_object): add volatile to avoid potential GC bug.  a
 	  patch from Tomoyuki Chikanaga <chikanag at nippon-control-system.co.jp>
-	  in [ruby-dev:34311].
+	  in [ruby-dev:34312].
 
 Thu Apr 10 20:29:13 2008  Akinori MUSHA  <knu@iDaemons.org>
 
