@@ -3088,12 +3088,24 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 int _cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {
-    SYSTEMTIME st;
-    struct tm tm;
+    FILETIME ft;
+    ULARGE_INTEGER tmp;
+    unsigned LONG_LONG lt;
 
-    GetSystemTime(&st);
-    time(&tv->tv_sec);
-    tv->tv_usec = st.wMilliseconds * 1000;
+    GetSystemTimeAsFileTime(&ft);
+    tmp.LowPart = ft.dwLowDateTime;
+    tmp.HighPart = ft.dwHighDateTime;
+    lt = tmp.QuadPart;
+
+    /* lt is now 100-nanosec intervals since 1601/01/01 00:00:00 UTC,
+       convert it into UNIX time (since 1970/01/01 00:00:00 UTC).
+       the first leap second is at 1972/06/30, so we doesn't need to think
+       about it. */
+    lt /= 10000;	/* to msec */
+    lt -= (LONG_LONG)(369 * 365 + 24 * 3 + 17) * 24 * 60 * 60 * 1000;
+
+    tv->tv_sec = lt / 1000;
+    tv->tv_usec = lt % 1000;
 
     return 0;
 }

@@ -1,3 +1,8 @@
+Tue Sep  2 10:09:17 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (gettimeofday): calc tv_sec and tv_usec from system
+	  time by myself. [ruby-dev:36084]
+
 Tue Sep  2 04:00:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (o3): prevent sign extension on 64bit environment.
