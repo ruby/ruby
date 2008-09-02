@@ -19,17 +19,16 @@ transdirs.each do |transdir|
   }.each do |fn|
     next if files[fn]
     files[fn] = true
-    path = File.join(transdir,fn)
-    open(path) do |f|
+    open(File.join(transdir,fn)) do |f|
       f.each_line do |line|
         if (/^static const rb_transcoder/ =~ line)..(/"(.*?)"\s*,\s*"(.*?)"/ =~ line)
           if $1 && $2
             from_to = "%s to %s" % [$1, $2]
             if converters[from_to]
-              raise ArgumentError, '%s:%d: transcode "%s" is already registered at %s:%d' %
-              [path, $., from_to, *converters[from_to].values_at(2, 3)]
+              raise ArgumentError, '%s:%d: transcode "%s" is already registered (%s:%d)' %
+              [fn, $., from_to, *converters[from_to].values_at(2, 3)]
             else
-              converters[from_to] = [$1, $2, path, $.]
+              converters[from_to] = [$1, $2, fn[0..-3], $.]
             end
           end
         end
