@@ -2,6 +2,11 @@
 
 <%
   map = {}
+  map["{00-ff}{00-d7,e0-ff}"] = :func_so
+  map["{00-ff}{d8-db}{00-ff}{dc-df}"] = :func_so
+  transcode_generate_node(ActionMap.parse(map), "from_UTF_16LE")
+
+  map = {}
   map["{00-ff}{00-d7,e0-ff}0000"] = :func_so
   map["{00-ff}{00-ff}{01-10}00"] = :func_so
   transcode_generate_node(ActionMap.parse(map), "from_UTF_32LE")
@@ -10,6 +15,11 @@
   map["{00-d7,e0-ff}{00-ff}"] = :func_so
   map["{d8-db}{00-ff}{dc-df}{00-ff}"] = :func_so
   transcode_generate_node(ActionMap.parse(map), "from_UTF_16BE")
+
+  map = {}
+  map["0000{00-d7,e0-ff}{00-ff}"] = :func_so
+  map["00{01-10}{00-ff}{00-ff}"] = :func_so
+  transcode_generate_node(ActionMap.parse(map), "from_UTF_32BE")
 
   map = {}
   map["{00-7f}"] = :func_so
@@ -22,17 +32,7 @@
   map["{f1-f3}{80-bf}{80-bf}{80-bf}"] = :func_so
   map["f4{80-8f}{80-bf}{80-bf}"] = :func_so
   am = ActionMap.parse(map)
-  transcode_generate_node(am, "to_UTF_16BE")
-
-  map = {}
-  map["{00-ff}{00-d7,e0-ff}"] = :func_so
-  map["{00-ff}{d8-db}{00-ff}{dc-df}"] = :func_so
-  transcode_generate_node(ActionMap.parse(map), "from_UTF_16LE")
-
-  map = {}
-  map["0000{00-d7,e0-ff}{00-ff}"] = :func_so
-  map["00{01-10}{00-ff}{00-ff}"] = :func_so
-  transcode_generate_node(ActionMap.parse(map), "from_UTF_32BE")
+  transcode_generate_node(am, "from_UTF_8")
 %>
 
 <%= transcode_generated_code %>
@@ -272,7 +272,7 @@ rb_from_UTF_16BE = {
 
 static const rb_transcoder
 rb_to_UTF_16BE = {
-    "UTF-8", "UTF-16BE", to_UTF_16BE,
+    "UTF-8", "UTF-16BE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
@@ -294,7 +294,7 @@ rb_from_UTF_16LE = {
 
 static const rb_transcoder
 rb_to_UTF_16LE = {
-    "UTF-8", "UTF-16LE", to_UTF_16BE,
+    "UTF-8", "UTF-16LE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
@@ -316,7 +316,7 @@ rb_from_UTF_32BE = {
 
 static const rb_transcoder
 rb_to_UTF_32BE = {
-    "UTF-8", "UTF-32BE", to_UTF_16BE,
+    "UTF-8", "UTF-32BE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
@@ -338,7 +338,7 @@ rb_from_UTF_32LE = {
 
 static const rb_transcoder
 rb_to_UTF_32LE = {
-    "UTF-8", "UTF-32LE", to_UTF_16BE,
+    "UTF-8", "UTF-32LE", from_UTF_8,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     4, /* max_input */
