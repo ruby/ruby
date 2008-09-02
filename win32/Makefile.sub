@@ -654,6 +654,8 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 <<KEEP
 
+miniruby: miniruby$(EXEEXT)
+
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
 		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(DMYEXT) $(LIBS) -Fe$@ $(LDFLAGS)
