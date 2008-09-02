@@ -2992,7 +2992,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
        the first leap second is at 1972/06/30, so we doesn't need to think
        about it. */
     lt /= 10000;	/* to msec */
-    lt -= (LONG_LONG)(369 * 365 + 24 * 3 + 17) * 24 * 60 * 60 * 1000;
+    lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * 1000;
 
     tv->tv_sec = lt / 1000;
     tv->tv_usec = lt % 1000;
