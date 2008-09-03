@@ -12,11 +12,27 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/signal.h"
 #include "ruby/node.h"
 #include "vm_core.h"
 #include <signal.h>
 #include <stdio.h>
+
+#ifdef _WIN32
+typedef LONG rb_atomic_t;
+
+# define ATOMIC_TEST(var) InterlockedExchange(&(var), 0)
+# define ATOMIC_SET(var, val) InterlockedExchange(&(var), (val))
+# define ATOMIC_INC(var) InterlockedIncrement(&(var))
+# define ATOMIC_DEC(var) InterlockedDecrement(&(var))
+
+#else
+typedef int rb_atomic_t;
+
+# define ATOMIC_TEST(var) ((var) ? ((var) = 0, 1) : 0)
+# define ATOMIC_SET(var, val) ((var) = (val))
+# define ATOMIC_INC(var) (++(var))
+# define ATOMIC_DEC(var) (--(var))
+#endif
 
 #ifdef __BEOS__
 #undef SIGBUS
@@ -393,13 +409,6 @@ static struct {
     VALUE cmd;
     int safe;
 } trap_list[NSIG];
-static rb_atomic_t trap_pending_list[NSIG];
-#if 0
-static char rb_trap_accept_nativethreads[NSIG];
-#endif
-rb_atomic_t rb_trap_pending;
-rb_atomic_t rb_trap_immediate;
-int rb_prohibit_interrupt = 1;
 
 VALUE
 rb_get_trap_cmd(int sig)
@@ -639,22 +648,6 @@ rb_signal_exec(rb_thread_t *th, int sig)
     else {
 	signal_exec(cmd, sig);
     }
-}
-
-void
-rb_trap_exec(void)
-{
-#ifndef MACOS_UNUSE_SIGNAL
-    int i;
-
-    for (i=0; i<NSIG; i++) {
-	if (trap_pending_list[i]) {
-	    trap_pending_list[i] = 0;
-	    rb_signal_exec(GET_THREAD(), i);
-	}
-    }
-#endif /* MACOS_UNUSE_SIGNAL */
-    rb_trap_pending = 0;
 }
 
 struct trap_arg {

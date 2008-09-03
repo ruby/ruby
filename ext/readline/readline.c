@@ -35,7 +35,6 @@
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
-#include "ruby/signal.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

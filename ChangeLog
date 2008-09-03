@@ -1,3 +1,17 @@
+Wed Sep  3 16:54:46 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* include/ruby/signal.h: removed.
+
+	* common.mk, class.c, eval.c, eval_intern.h, file.c, gc.c, hash.c,
+	  io.c, process.c, signal.c: vm_core.h: ditto.
+	  Some unused external global variables are also removed.
+	 (rb_prohibit_interrupt, rb_trap_immediate, rb_trap_pending,
+	  rb_thread_critical)
+
+	* ext/openssl/ossl_ssl.c, ext/openssl/ossl_x509store.c,
+	  ext/readline/readline.c, ext/socket/depend, 
+	  ext/socket/socket.c: ditto.
+
 Wed Sep  3 00:23:25 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* vm_insnhelper.c (vm_method_missing): copy arguments to allocated

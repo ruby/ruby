@@ -18,7 +18,6 @@
 
 #include "ruby/ruby.h"
 #include "ruby/mvm.h"
-#include "ruby/signal.h"
 #include "ruby/st.h"
 #include "ruby/node.h"
 
@@ -324,8 +323,8 @@ struct rb_vm_struct
     struct st_table *loading_table;
     
     /* signal */
-    rb_atomic_t signal_buff[RUBY_NSIG];
-    rb_atomic_t buffered_signal_size;
+    int signal_buff[RUBY_NSIG];
+    int buffered_signal_size;
 
     /* hook */
     rb_event_hook_t *event_hooks;

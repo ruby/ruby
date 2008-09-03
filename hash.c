@@ -15,7 +15,6 @@
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
-#include "ruby/signal.h"
 
 #ifdef __APPLE__
 #include <crt_externs.h>
@@ -37,12 +36,6 @@ VALUE rb_cHash;
 static VALUE envtbl;
 static ID id_hash, id_yield, id_default;
 
-static VALUE
-eql(VALUE *args)
-{
-    return (VALUE)rb_eql(args[0], args[1]);
-}
-
 static int
 rb_any_cmp(VALUE a, VALUE b)
 {
@@ -63,7 +56,7 @@ rb_any_cmp(VALUE a, VALUE b)
 
     args[0] = a;
     args[1] = b;
-    return !rb_with_disable_interrupt(eql, (VALUE)args);
+    return !rb_eql(a, b);
 }
 
 VALUE

@@ -13,7 +13,6 @@
 
 #include "ruby/ruby.h"
 #include "ruby/io.h"
-#include "ruby/signal.h"
 #include "vm_core.h"
 #include <ctype.h>
 #include <errno.h>
@@ -557,7 +556,6 @@ io_fflush(rb_io_t *fptr)
     wbuf_len = fptr->wbuf_len;
     l = wbuf_len;
     if (PIPE_BUF < l &&
-        !rb_thread_critical &&
         !rb_thread_alone() &&
         wsplit_p(fptr)) {
         l = PIPE_BUF;
@@ -795,7 +793,6 @@ io_fwrite(VALUE str, rb_io_t *fptr)
       retry:
         l = n;
         if (PIPE_BUF < l &&
-            !rb_thread_critical &&
             !rb_thread_alone() &&
             wsplit_p(fptr)) {
             l = PIPE_BUF;
@@ -2653,9 +2650,7 @@ rb_getc(FILE *f)
     int c;
 
     rb_read_check(f);
-    TRAP_BEG;
     c = getc(f);
-    TRAP_END;
 
     return c;
 }
@@ -3412,9 +3407,8 @@ rb_io_syswrite(VALUE io, VALUE str)
     if (!rb_thread_fd_writable(fptr->fd)) {
         rb_io_check_closed(fptr);
     }
-    TRAP_BEG;
+
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
-    TRAP_END;
 
     if (n == -1) rb_sys_fail_path(fptr->pathv);
 
@@ -6329,20 +6323,16 @@ io_cntl(int fd, int cmd, long narg, int io_p)
     int retval;
 
 #ifdef HAVE_FCNTL
-    TRAP_BEG;
 # if defined(__CYGWIN__)
     retval = io_p?ioctl(fd, cmd, (void*)narg):fcntl(fd, cmd, narg);
 # else
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
 # endif
-    TRAP_END;
 #else
     if (!io_p) {
 	rb_notimplement();
     }
-    TRAP_BEG;
     retval = ioctl(fd, cmd, narg);
-    TRAP_END;
 #endif
     return retval;
 }
@@ -6529,7 +6519,7 @@ rb_f_syscall(int argc, VALUE *argv)
 	argv++;
 	i++;
     }
-    TRAP_BEG;
+
     switch (argc) {
       case 1:
 	retval = syscall(arg[0]);
@@ -6583,7 +6573,7 @@ rb_f_syscall(int argc, VALUE *argv)
 	break;
 #endif /* atarist */
     }
-    TRAP_END;
+
     if (retval < 0) rb_sys_fail(0);
     return INT2NUM(retval);
 #else

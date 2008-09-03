@@ -75,7 +75,6 @@ ruby_init(void)
 #endif
 
 	ruby_prog_init();
-	ALLOW_INTS;
     }
     POP_TAG();
 
@@ -728,31 +727,6 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     (*e_proc) (data2);
     if (state)
 	JUMP_TAG(state);
-    return result;
-}
-
-VALUE
-rb_with_disable_interrupt(VALUE (*proc)(ANYARGS), VALUE data)
-{
-    VALUE result = Qnil;	/* OK */
-    int status;
-
-    DEFER_INTS;
-    {
-	int thr_critical = rb_thread_critical;
-
-	rb_thread_critical = Qtrue;
-	PUSH_TAG();
-	if ((status = EXEC_TAG()) == 0) {
-	    result = (*proc) (data);
-	}
-	POP_TAG();
-	rb_thread_critical = thr_critical;
-    }
-    ENABLE_INTS;
-    if (status)
-	JUMP_TAG(status);
-
     return result;
 }
 

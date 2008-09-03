@@ -12,7 +12,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/signal.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
 #include "vm_core.h"
@@ -610,7 +609,6 @@ rb_waitpid_blocking(void *data)
     struct waitpid_arg *arg = data;
 #endif
 
-    TRAP_BEG;
 #if defined NO_WAITPID
     result = wait(data);
 #elif defined HAVE_WAITPID
@@ -618,7 +616,7 @@ rb_waitpid_blocking(void *data)
 #else  /* HAVE_WAIT4 */
     result = wait4(arg->pid, arg->st, arg->flags, NULL);
 #endif
-    TRAP_END;
+
     return (VALUE)result;
 }
 

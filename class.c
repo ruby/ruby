@@ -10,7 +10,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/signal.h"
 #include "ruby/node.h"
 #include "ruby/st.h"
 #include "vm_core.h"
@@ -819,7 +818,6 @@ rb_singleton_class(VALUE obj)
 	rb_bug("unknown immediate %ld", obj);
     }
 
-    DEFER_INTS;
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
 	rb_iv_get(RBASIC(obj)->klass, "__attached__") == obj) {
 	klass = RBASIC(obj)->klass;
@@ -840,7 +838,6 @@ rb_singleton_class(VALUE obj)
 	FL_UNSET(klass, FL_UNTRUSTED);
     }
     if (OBJ_FROZEN(obj)) OBJ_FREEZE(klass);
-    ALLOW_INTS;
 
     return klass;
 }

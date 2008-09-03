@@ -12,7 +12,6 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
-#include "ruby/signal.h"
 #include "ruby/st.h"
 #include "ruby/node.h"
 #include "ruby/re.h"
@@ -553,10 +552,10 @@ vm_xmalloc(rb_objspace_t *objspace, size_t size)
 	(malloc_increase+size) > malloc_limit) {
 	garbage_collect(objspace);
     }
-    RUBY_CRITICAL(mem = malloc(size));
+    mem = malloc(size);
     if (!mem) {
 	if (garbage_collect(objspace)) {
-	    RUBY_CRITICAL(mem = malloc(size));
+	    mem = malloc(size);
 	}
 	if (!mem) {
 	    rb_memerror();
@@ -592,10 +591,10 @@ vm_xrealloc(rb_objspace_t *objspace, void *ptr, size_t size)
     ptr = (size_t *)ptr - 1;
 #endif
 
-    RUBY_CRITICAL(mem = realloc(ptr, size));
+    mem = realloc(ptr, size);
     if (!mem) {
 	if (garbage_collect(objspace)) {
-	    RUBY_CRITICAL(mem = realloc(ptr, size));
+	    mem = realloc(ptr, size);
 	}
 	if (!mem) {
 	    rb_memerror();
@@ -623,7 +622,7 @@ vm_xfree(rb_objspace_t *objspace, void *ptr)
     objspace->malloc_params.allocations--;
 #endif
 
-    RUBY_CRITICAL(free(ptr));
+    free(ptr);
 }
 
 void *
@@ -772,15 +771,15 @@ allocate_heaps(rb_objspace_t *objspace, size_t next_heaps_length)
     size_t size;
 
     size = next_heaps_length*sizeof(struct heaps_slot);
-    RUBY_CRITICAL(
-		  if (heaps_used > 0) {
-		      p = (struct heaps_slot *)realloc(heaps, size);
-		      if (p) heaps = p;
-		  }
-		  else {
-		      p = heaps = (struct heaps_slot *)malloc(size);
-		  }
-		  );
+
+    if (heaps_used > 0) {
+	p = (struct heaps_slot *)realloc(heaps, size);
+	if (p) heaps = p;
+    }
+    else {
+	p = heaps = (struct heaps_slot *)malloc(size);
+    }
+
     if (p == 0) {
 	during_gc = 0;
 	rb_memerror();
@@ -796,7 +795,8 @@ assign_heap_slot(rb_objspace_t *objspace)
     int objs;
 	
     objs = HEAP_OBJ_LIMIT;
-    RUBY_CRITICAL(p = (RVALUE*)malloc(HEAP_SIZE));
+    p = (RVALUE*)malloc(HEAP_SIZE);
+
     if (p == 0) {
 	during_gc = 0;
 	rb_memerror();
