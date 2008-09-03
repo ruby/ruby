@@ -127,7 +127,7 @@ Wed Sep  3 21:31:59 2008  Tanaka Akira  <akr@fsij.org>
 
 Wed Sep  3 21:19:51 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
-	* golf_prelude.rb: suppress warning when goruby -v.
+	* golf_prelude.rb: suppress warnings when goruby -v.
 
 Wed Sep  3 21:07:30 2008  Tanaka Akira  <akr@fsij.org>
 
