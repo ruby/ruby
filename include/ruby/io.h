@@ -57,7 +57,7 @@ typedef struct rb_io_t {
     struct rb_io_enc_t {
         rb_encoding *enc;
         rb_encoding *enc2;
-        rb_econv_option_t opts;
+        int flags;
     } encs;
 
     rb_econv_t *readconv;
@@ -68,7 +68,7 @@ typedef struct rb_io_t {
 
     rb_econv_t *writeconv;
     VALUE writeconv_stateless;
-    rb_econv_option_t writeconv_pre_opts;
+    int writeconv_pre_flags;
     int writeconv_initialized;
 
 } rb_io_t;
@@ -127,7 +127,7 @@ typedef struct rb_io_t {
     fp->tied_io_for_writing = 0;\
     fp->encs.enc = NULL;\
     fp->encs.enc2 = NULL;\
-    fp->encs.opts.flags = 0;\
+    fp->encs.flags = 0;\
 } while (0)
 
 FILE *rb_io_stdio_file(rb_io_t *fptr);

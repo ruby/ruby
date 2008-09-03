@@ -83,7 +83,7 @@ typedef struct {
 } rb_econv_elem_t;
 
 struct rb_econv_t {
-    rb_econv_option_t opts;
+    int flags;
     const char *source_encoding_name;
     const char *destination_encoding_name;
 
@@ -790,7 +790,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     }
 
     ec = ALLOC(rb_econv_t);
-    ec->opts.flags = 0;
+    ec->flags = 0;
     ec->source_encoding_name = NULL;
     ec->destination_encoding_name = NULL;
     ec->in_buf_start = NULL;
@@ -855,13 +855,12 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
 }
 
 rb_econv_t *
-rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
+rb_econv_open(const char *from, const char *to, int ecflags)
 {
     transcoder_entry_t **entries = NULL;
     int num_trans;
     int num_additional;
     static rb_econv_t *ec;
-    int flags = opts ? opts->flags : 0;
     int universal_newline_decoder_added = 0;
 
     rb_encoding *senc, *denc;
@@ -898,13 +897,13 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
 
     num_additional = 0;
     if ((!*from || (senc && rb_enc_asciicompat(senc))) &&
-        (flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER))) {
-        const char *name = (flags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
+        (ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER))) {
+        const char *name = (ecflags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
-        if (flags & ECONV_CRLF_NEWLINE_ENCODER)
-            flags &= ~ECONV_CR_NEWLINE_ENCODER;
+        if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
+            ecflags &= ~ECONV_CR_NEWLINE_ENCODER;
         else
-            flags &= ~ECONV_CRLF_NEWLINE_ENCODER;
+            ecflags &= ~ECONV_CRLF_NEWLINE_ENCODER;
         if (!e) {
             xfree(entries);
             return NULL;
@@ -915,11 +914,11 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
         num_additional++;
     }
     else {
-        flags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
+        ecflags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
     }
 
     if ((!*to || (denc && rb_enc_asciicompat(denc))) &&
-        (flags & ECONV_UNIVERSAL_NEWLINE_DECODER)) {
+        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)) {
         transcoder_entry_t *e = get_transcoder_entry("universal_newline", "");
         if (!e) {
             xfree(entries);
@@ -930,7 +929,7 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
         universal_newline_decoder_added = 1;
     }
     else {
-        flags &= ~ECONV_UNIVERSAL_NEWLINE_DECODER;
+        ecflags &= ~ECONV_UNIVERSAL_NEWLINE_DECODER;
     }
 
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
@@ -938,11 +937,7 @@ rb_econv_open(const char *from, const char *to, rb_econv_option_t *opts)
     if (!ec)
         return NULL;
 
-    if (!opts)
-        ec->opts.flags = 0;
-    else
-        ec->opts = *opts;
-    ec->opts.flags = flags;
+    ec->flags = ecflags;
     ec->source_encoding_name = from;
     ec->destination_encoding_name = to;
 
@@ -1283,10 +1278,10 @@ rb_econv_convert(rb_econv_t *ec,
         ret == econv_incomplete_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
-	if (ec->opts.flags&ECONV_INVALID_IGNORE) {
+	if (ec->flags&ECONV_INVALID_IGNORE) {
             goto resume;
 	}
-	else if (ec->opts.flags&ECONV_INVALID_REPLACE) {
+	else if (ec->flags&ECONV_INVALID_REPLACE) {
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
@@ -1296,10 +1291,10 @@ rb_econv_convert(rb_econv_t *ec,
 	/* valid character in source encoding
 	 * but no related character(s) in destination encoding */
 	/* todo: add more alternative behaviors */
-	if (ec->opts.flags&ECONV_UNDEF_IGNORE) {
+	if (ec->flags&ECONV_UNDEF_IGNORE) {
 	    goto resume;
 	}
-	else if (ec->opts.flags&ECONV_UNDEF_REPLACE) {
+	else if (ec->flags&ECONV_UNDEF_REPLACE) {
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
@@ -1342,7 +1337,7 @@ allocate_converted_string(const char *str_encoding, const char *insert_encoding,
     if (dst_bufsize == 0)
         dst_bufsize += 1;
 
-    ec = rb_econv_open(str_encoding, insert_encoding, NULL);
+    ec = rb_econv_open(str_encoding, insert_encoding, 0);
     if (ec == NULL)
         return NULL;
     dst_str = xmalloc(dst_bufsize);
@@ -1615,7 +1610,7 @@ rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags)
 void
 rb_econv_binmode(rb_econv_t *ec)
 {
-    if (ec->opts.flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
+    if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
         int i = ec->num_trans-1;
         rb_transcoding_close(ec->elems[i].tc);
         xfree(ec->elems[i].out_buf_start);
@@ -1625,21 +1620,20 @@ rb_econv_binmode(rb_econv_t *ec)
         ec->elems[i].out_data_end = NULL;
         ec->elems[i].out_buf_end = NULL;
         ec->num_trans--;
-        ec->opts.flags &= ~ECONV_UNIVERSAL_NEWLINE_DECODER;
+        ec->flags &= ~ECONV_UNIVERSAL_NEWLINE_DECODER;
     }
-    if (ec->opts.flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
+    if (ec->flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
         rb_transcoding_close(ec->elems[0].tc);
         xfree(ec->elems[0].out_buf_start);
         MEMMOVE(&ec->elems[0], &ec->elems[1], rb_econv_elem_t, ec->num_trans-1);
         ec->num_trans--;
-        ec->opts.flags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
+        ec->flags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
     }
 }
 
 static VALUE
-econv_description(const char *senc, const char *denc, rb_econv_option_t *opts, VALUE mesg)
+econv_description(const char *senc, const char *denc, int ecflags, VALUE mesg)
 {
-    int flags = opts ? opts->flags : 0;
     int has_description = 0;
 
     if (NIL_P(mesg))
@@ -1655,21 +1649,21 @@ econv_description(const char *senc, const char *denc, rb_econv_option_t *opts, V
         has_description = 1;
     }
 
-    if (flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
-                 ECONV_CRLF_NEWLINE_ENCODER|
-                 ECONV_CR_NEWLINE_ENCODER)) {
+    if (ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
+                   ECONV_CRLF_NEWLINE_ENCODER|
+                   ECONV_CR_NEWLINE_ENCODER)) {
         const char *pre = "";
         if (has_description)
             rb_str_cat2(mesg, " with ");
-        if (flags & ECONV_UNIVERSAL_NEWLINE_DECODER)  {
+        if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)  {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "Universal-newline");
         }
-        if (flags & ECONV_CRLF_NEWLINE_ENCODER) {
+        if (ecflags & ECONV_CRLF_NEWLINE_ENCODER) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "CRLF-newline");
         }
-        if (flags & ECONV_CR_NEWLINE_ENCODER) {
+        if (ecflags & ECONV_CR_NEWLINE_ENCODER) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "CR-newline");
         }
@@ -1683,11 +1677,11 @@ econv_description(const char *senc, const char *denc, rb_econv_option_t *opts, V
 }
 
 VALUE
-rb_econv_open_exc(const char *senc, const char *denc, rb_econv_option_t *opts)
+rb_econv_open_exc(const char *senc, const char *denc, int ecflags)
 {
     VALUE mesg, exc;
     mesg = rb_str_new_cstr("code converter open failed (");
-    econv_description(senc, denc, opts, mesg);
+    econv_description(senc, denc, ecflags, mesg);
     rb_str_cat2(mesg, ")");
     exc = rb_exc_new3(rb_eNoConverter, mesg);
     return exc;
@@ -1816,7 +1810,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                unsigned char *(*resize_destination)(VALUE, int, int),
                const char *from_encoding,
                const char *to_encoding,
-               rb_econv_option_t *ecopts)
+               int ecflags)
 {
     rb_econv_t *ec;
     rb_transcoding *last_tc;
@@ -1825,9 +1819,9 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
 
-    ec = rb_econv_open(from_encoding, to_encoding, ecopts);
+    ec = rb_econv_open(from_encoding, to_encoding, ecflags);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecopts));
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1860,7 +1854,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                unsigned char *(*resize_destination)(VALUE, int, int),
                const char *from_encoding,
                const char *to_encoding,
-               rb_econv_option_t *ecopts)
+               int ecflags)
 {
     rb_econv_t *ec;
     rb_transcoding *last_tc;
@@ -1870,9 +1864,9 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
 
-    ec = rb_econv_open(from_encoding, to_encoding, ecopts);
+    ec = rb_econv_open(from_encoding, to_encoding, ecflags);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecopts));
+        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1968,13 +1962,13 @@ econv_opts(VALUE opt)
     return options;
 }
 
-void
-rb_econv_opts(VALUE hash, rb_econv_option_t *opts)
+int
+rb_econv_flags(VALUE hash)
 {
     if (NIL_P(hash))
-        opts->flags = 0;
+        return 0;
     else
-        opts->flags = econv_opts(hash);
+        return econv_opts(hash);
 }
 
 static int
@@ -2018,7 +2012,7 @@ str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
 }
 
 static int
-str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts_arg)
+str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags)
 {
     VALUE dest;
     VALUE str = *self;
@@ -2028,7 +2022,6 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts_arg
     rb_encoding *from_enc, *to_enc;
     const char *from_e, *to_e;
     int to_encidx;
-    rb_econv_option_t ecopts;
 
     if (argc < 1 || argc > 2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
@@ -2036,14 +2029,9 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts_arg
 
     to_encidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &from_e, &from_enc, &to_e, &to_enc);
 
-    if (ecopts_arg)
-        ecopts = *ecopts_arg;
-    else
-        rb_econv_opts(Qnil, &ecopts);
-
-    if ((ecopts.flags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
-                         ECONV_CRLF_NEWLINE_ENCODER|
-                         ECONV_CR_NEWLINE_ENCODER)) == 0) {
+    if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
+                    ECONV_CRLF_NEWLINE_ENCODER|
+                    ECONV_CR_NEWLINE_ENCODER)) == 0) {
         if (from_enc && from_enc == to_enc) {
             return -1;
         }
@@ -2069,7 +2057,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, rb_econv_option_t *ecopts_arg
     dest = rb_str_tmp_new(blen);
     bp = (unsigned char *)RSTRING_PTR(dest);
 
-    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, from_e, to_e, &ecopts);
+    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, from_e, to_e, ecflags);
     if (fromp != sp+slen) {
         rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
     }
@@ -2090,17 +2078,16 @@ static int
 str_transcode(int argc, VALUE *argv, VALUE *self)
 {
     VALUE opt;
-    rb_econv_option_t ecopts;
-    ecopts.flags = 0;
+    int ecflags = 0;
 
     if (0 < argc) {
         opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
         if (!NIL_P(opt)) {
             argc--;
-            rb_econv_opts(opt, &ecopts);
+            ecflags = rb_econv_flags(opt);
         }
     }
-    return str_transcode0(argc, argv, self, &ecopts);
+    return str_transcode0(argc, argv, self, ecflags);
 }
 
 static inline VALUE
@@ -2171,12 +2158,12 @@ str_encode(int argc, VALUE *argv, VALUE str)
 }
 
 VALUE
-rb_str_transcode(VALUE str, VALUE to, rb_econv_option_t *ecopts)
+rb_str_transcode(VALUE str, VALUE to, int ecflags)
 {
     int argc = 1;
     VALUE *argv = &to;
     VALUE newstr = str;
-    int encidx = str_transcode0(argc, argv, &newstr, ecopts);
+    int encidx = str_transcode0(argc, argv, &newstr, ecflags);
 
     if (encidx < 0) return rb_str_dup(str);
     RBASIC(newstr)->klass = rb_obj_class(str);
@@ -2243,14 +2230,14 @@ econv_init(int argc, VALUE *argv, VALUE self)
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
-    rb_econv_option_t ecopts;
+    int ecflags;
 
     rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &flags_v);
 
     if (flags_v == Qnil)
-        ecopts.flags = 0;
+        ecflags = 0;
     else
-        ecopts.flags = NUM2INT(flags_v);
+        ecflags = NUM2INT(flags_v);
 
     senc = NULL;
     sidx = rb_to_encoding_index(source_encoding);
@@ -2277,9 +2264,9 @@ econv_init(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    ec = rb_econv_open(sname, dname, &ecopts);
+    ec = rb_econv_open(sname, dname, ecflags);
     if (!ec) {
-        rb_exc_raise(rb_econv_open_exc(sname, dname, &ecopts));
+        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
     }
 
     if (*sname && *dname) { /* check "" to "universal_newline" */
@@ -2329,7 +2316,7 @@ econv_inspect(VALUE self)
         const char *dname = ec->destination_encoding_name;
         VALUE str;
         str = rb_sprintf("#<%s: ", cname);
-        econv_description(sname, dname, &ec->opts, str);
+        econv_description(sname, dname, ec->flags, str);
         rb_str_cat2(str, ">");
         return str;
     }

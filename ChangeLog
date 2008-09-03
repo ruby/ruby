@@ -1,3 +1,15 @@
+Thu Sep  4 00:09:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_option_t): removed.  Since
+	  rb_econv_option_t has only one field, int flags, rb_econv_option_t is
+	  replaced by int.
+
+	* include/ruby/io.h: follow the above change.
+
+	* io.c: ditto.
+
+	* transcode.c: ditto.
+
 Thu Sep  4 00:04:59 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* win32/win32.c: fix ruby/signal.h depending codes.
