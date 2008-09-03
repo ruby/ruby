@@ -1,3 +1,11 @@
+Wed Sep  3 20:47:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoder): new field: byte_array_length and
+	  word_array_length.
+
+	* tool/transcode-tblgen.rb (transcode_generated_code): generate
+	  byte_array_length and word_array_length.
+
 Wed Sep  3 20:34:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (ArrayCode): new class.

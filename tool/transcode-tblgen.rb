@@ -607,7 +607,10 @@ end
 def transcode_generated_code
   TRANSCODE_GENERATED_BYTES_CODE.to_s +
     TRANSCODE_GENERATED_WORDS_CODE.to_s +
-    "\#define TRANSCODE_TABLE_INFO #{OUTPUT_PREFIX}byte_array, #{OUTPUT_PREFIX}word_array, sizeof(unsigned int)\n" +
+    "\#define TRANSCODE_TABLE_INFO " +
+    "#{OUTPUT_PREFIX}byte_array, #{TRANSCODE_GENERATED_BYTES_CODE.length}, " +
+    "#{OUTPUT_PREFIX}word_array, #{TRANSCODE_GENERATED_WORDS_CODE.length}, " +
+    "sizeof(unsigned int)\n" +
     TRANSCODE_GENERATED_TRANSCODER_CODE
 end
 

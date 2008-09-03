@@ -104,7 +104,9 @@ struct rb_transcoder {
     const char *to_encoding;
     unsigned int conv_tree_start;
     const unsigned char *byte_array;
+    unsigned int byte_array_length;
     const unsigned int *word_array;
+    unsigned int word_array_length;
     int word_size;
     int input_unit_length;
     int max_input;
