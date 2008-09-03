@@ -1,3 +1,7 @@
+Wed Sep  3 21:19:51 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* golf_prelude.rb: suppress warning when goruby -v.
+
 Wed Sep  3 21:07:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (BL_MIN_BYTE): defined.

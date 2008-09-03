@@ -78,7 +78,8 @@ class String
   end
 
   (Array.instance_methods-instance_methods-[:to_ary,:transpose,:flatten,:flatten!,:compact,:compact!,:assoc,:rassoc]).each{|meth|
-    eval"def #{meth}(*args, &block)
+    eval"
+    def #{meth}(*args, &block)
       a=to_a
       result = a.#{meth}(*args, &block)
       replace(a.join)
@@ -96,7 +97,8 @@ end
 class Enumerator
   alias old_to_s to_s
   (Array.instance_methods-instance_methods-[:replace]+[:to_s]).each{|meth|
-    eval"def #{meth}(*args, &block)
+    eval"
+    def #{meth}(*args, &block)
       to_a.#{meth}(*args, &block)
     end"
   }
