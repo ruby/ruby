@@ -1,3 +1,11 @@
+Wed Sep  3 23:33:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_transcoding): moved from transcode_data.h.
+	  (TRANSCODING_READBUF): ditto.
+	  (TRANSCODING_WRITEBUF): ditto.
+	  (TRANSCODING_STATE_EMBED_MAX): ditto.
+	  (TRANSCODING_STATE): ditto.
+
 Wed Sep  3 23:03:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoding): remove stateful field.
