@@ -1798,6 +1798,8 @@ io_read_nonblock(int argc, VALUE *argv, VALUE io)
  *  write(2) system call after O_NONBLOCK is set for
  *  the underlying file descriptor.
  *
+ *  It returns the number of bytes written.
+ *
  *  write_nonblock just calls write(2).
  *  It causes all errors write(2) causes: EAGAIN, EINTR, etc.
  *  The result may also be smaller than string.length (partial write).
