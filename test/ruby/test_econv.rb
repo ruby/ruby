@@ -640,4 +640,18 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_kind_of(Encoding::ConversionUndefined, err)
     assert_equal("\u{3042}", err.error_char)
   end
+
+  def test_get_replacement
+    ec = Encoding::Converter.new("euc-jp", "iso-8859-1")
+    assert_equal("?", ec.replacement)
+
+    ec = Encoding::Converter.new("euc-jp", "utf-8")
+    assert_equal("\uFFFD", ec.replacement)
+  end
+
+  def test_set_replacement
+    ec = Encoding::Converter.new("utf-8", "us-ascii", Encoding::Converter::UNDEF_REPLACE)
+    ec.replacement = "<undef>"
+    assert_equal("a <undef> b", ec.convert("a \u3042 b"))
+  end
 end

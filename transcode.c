@@ -87,6 +87,11 @@ struct rb_econv_t {
     const char *source_encoding_name;
     const char *destination_encoding_name;
 
+    const unsigned char *replacement_str;
+    size_t replacement_len;
+    const char *replacement_enc;
+    int replacement_allocated;
+
     unsigned char *in_buf_start;
     unsigned char *in_data_start;
     unsigned char *in_data_end;
@@ -357,7 +362,7 @@ load_transcoder_entry(transcoder_entry_t *entry)
 }
 
 static const char*
-get_replacement_character(rb_encoding *enc, int *len_ret, const char **repl_enc_ptr)
+get_replacement_character(rb_encoding *enc, size_t *len_ret, const char **repl_enc_ptr)
 {
     static rb_encoding *utf16be_encoding, *utf16le_encoding;
     static rb_encoding *utf32be_encoding, *utf32le_encoding;
@@ -793,6 +798,9 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->flags = 0;
     ec->source_encoding_name = NULL;
     ec->destination_encoding_name = NULL;
+    ec->replacement_str = NULL;
+    ec->replacement_len = 0;
+    ec->replacement_allocated = 0;
     ec->in_buf_start = NULL;
     ec->in_data_start = NULL;
     ec->in_data_end = NULL;
@@ -1481,6 +1489,9 @@ rb_econv_close(rb_econv_t *ec)
 {
     int i;
 
+    if (ec->replacement_allocated) {
+        xfree((void *)ec->replacement_str);
+    }
     for (i = 0; i < ec->num_trans; i++) {
         rb_transcoding_close(ec->elems[i].tc);
         if (ec->elems[i].out_buf_start)
@@ -1773,15 +1784,19 @@ more_output_buffer(
 }
 
 static int
-output_replacement_character(rb_econv_t *ec)
+make_replacement(rb_econv_t *ec)
 {
     rb_transcoding *tc;
     const rb_transcoder *tr;
     rb_encoding *enc;
     const unsigned char *replacement;
     const char *repl_enc;
-    int len;
-    int ret;
+    const char *ins_enc;
+    size_t len;
+    int allocated = 0;
+
+    if (ec->replacement_str)
+        return 0;
 
     tc = ec->last_tc;
     if (tc) {
@@ -1795,7 +1810,62 @@ output_replacement_character(rb_econv_t *ec)
         repl_enc = "";
     }
 
-    ret = rb_econv_insert_output(ec, replacement, len, repl_enc);
+    ins_enc = rb_econv_encoding_to_insert_output(ec);
+    if (*repl_enc && !encoding_equal(repl_enc, ins_enc)) {
+        replacement = allocate_converted_string(repl_enc, ins_enc, replacement, len, &len);
+        if (!replacement)
+            return -1;
+        allocated = 1;
+        repl_enc = ins_enc;
+    }
+    ec->replacement_str = replacement;
+    ec->replacement_len = len;
+    ec->replacement_enc = repl_enc;
+    ec->replacement_allocated = allocated;
+    return 0;
+}
+
+int
+rb_econv_set_replacemenet(rb_econv_t *ec,
+    const unsigned char *str, size_t len, const char *encname)
+{
+    unsigned char *str2;
+    size_t len2;
+    const char *encname2;
+
+    encname2 = rb_econv_encoding_to_insert_output(ec);
+
+    if (encoding_equal(encname, encname2)) {
+        str2 = xmalloc(len);
+        MEMCPY(str2, str, unsigned char, len); /* xxx: str may be invalid */
+        len2 = len;
+        encname2 = encname;
+    }
+    else {
+        str2 = allocate_converted_string(encname, encname2, str, len, &len2);
+        if (!str2)
+            return -1;
+    }
+
+    if (ec->replacement_allocated) {
+        xfree((void *)ec->replacement_str);
+    }
+    ec->replacement_allocated = 1;
+    ec->replacement_str = str2;
+    ec->replacement_len = len2;
+    ec->replacement_enc = encname2;
+    return 0;
+}
+
+static int
+output_replacement_character(rb_econv_t *ec)
+{
+    int ret;
+
+    if (make_replacement(ec) == -1)
+        return -1;
+
+    ret = rb_econv_insert_output(ec, ec->replacement_str, ec->replacement_len, ec->replacement_enc);
     if (ret == -1)
         return -1;
 
@@ -2898,11 +2968,11 @@ econv_putback(int argc, VALUE *argv, VALUE self)
  * :invalid_byte_sequence, :incomplete_input and :undefined_conversion for
  * Encoding::Converter#primitive_convert.
  *
- * ec = Encoding::Converter.new("utf-8", "iso-8859-1")
- * p ec.primitive_convert(src="\xf1abcd", dst="")       #=> :invalid_byte_sequence
- * p ec.last_error      #=> #<Encoding::InvalidByteSequence: "\xF1" followed by "a" on UTF-8>
- * p ec.primitive_convert(src, dst, nil, 1)             #=> :destination_buffer_full
- * p ec.last_error      #=> nil
+ *  ec = Encoding::Converter.new("utf-8", "iso-8859-1")
+ *  p ec.primitive_convert(src="\xf1abcd", dst="")       #=> :invalid_byte_sequence
+ *  p ec.last_error      #=> #<Encoding::InvalidByteSequence: "\xF1" followed by "a" on UTF-8>
+ *  p ec.primitive_convert(src, dst, nil, 1)             #=> :destination_buffer_full
+ *  p ec.last_error      #=> nil
  *
  */
 static VALUE
@@ -2915,6 +2985,68 @@ econv_last_error(VALUE self)
     if (NIL_P(exc))
         return Qnil;
     return exc;
+}
+
+/*
+ * call-seq:
+ *   ec.replacement -> string
+ *
+ * returns the replacement string.
+ *
+ *  ec = Encoding::Converter.new("euc-jp", "us-ascii")
+ *  p ec.replacement    #=> "?"
+ *
+ *  ec = Encoding::Converter.new("euc-jp", "utf-8")
+ *  p ec.replacement    #=> "\uFFFD"
+ */
+static VALUE
+econv_get_replacement(VALUE self)
+{
+    rb_econv_t *ec = check_econv(self);
+    int ret;
+    rb_encoding *enc;
+
+    ret = make_replacement(ec);
+    if (ret == -1) {
+        rb_raise(rb_eConversionUndefined, "replacement character setup failed");
+    }
+
+    enc = rb_enc_find(ec->replacement_enc);
+    return rb_enc_str_new((const char *)ec->replacement_str, (long)ec->replacement_len, enc);
+}
+
+/*
+ * call-seq:
+ *   ec.replacement = string
+ *
+ * sets the replacement string.
+ *
+ *  ec = Encoding::Converter.new("utf-8", "us-ascii", Encoding::Converter::UNDEF_REPLACE)
+ *  ec.replacement = "<undef>"
+ *  p ec.convert("a \u3042 b")      #=> "a <undef> b"
+ */
+static VALUE
+econv_set_replacement(VALUE self, VALUE arg)
+{
+    rb_econv_t *ec = check_econv(self);
+    VALUE string = arg;
+    int ret;
+    rb_encoding *enc;
+
+    StringValue(string);
+    enc = rb_enc_get(string);
+
+    ret = rb_econv_set_replacemenet(ec,
+            (const unsigned char *)RSTRING_PTR(string),
+            RSTRING_LEN(string),
+            enc->name);
+
+    if (ret == -1) {
+        /* xxx: rb_eInvalidByteSequence? */
+        rb_raise(rb_eConversionUndefined, "replacement character setup failed");
+    }
+
+    return arg;
 }
 
 void
@@ -3114,6 +3246,8 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "insert_output", econv_insert_output, 1);
     rb_define_method(rb_cEncodingConverter, "putback", econv_putback, -1);
     rb_define_method(rb_cEncodingConverter, "last_error", econv_last_error, 0);
+    rb_define_method(rb_cEncodingConverter, "replacement", econv_get_replacement, 0);
+    rb_define_method(rb_cEncodingConverter, "replacement=", econv_set_replacement, 1);
     rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
     rb_define_const(rb_cEncodingConverter, "INVALID_IGNORE", INT2FIX(ECONV_INVALID_IGNORE));
     rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
