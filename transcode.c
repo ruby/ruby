@@ -535,19 +535,19 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 
 #define BYTE_ADDR(index) (tr->byte_array + (index))
 #define WORD_ADDR(index) (tr->word_array + INFO2WORDINDEX(index))
-#define BL_BASE(bl) BYTE_ADDR(BYTE_LOOKUP_BASE(WORD_ADDR(bl)))
-#define BL_INFO(bl) WORD_ADDR(BYTE_LOOKUP_INFO(WORD_ADDR(bl)))
-#define BL_MIN_BYTE(bl)     (BL_BASE(bl)[0])
-#define BL_MAX_BYTE(bl)     (BL_BASE(bl)[1])
-#define BL_OFFSET(bl, byte) (BL_BASE(bl)[2+(byte)-BL_MIN_BYTE(bl)])
-#define BL_ACTION(bl, byte) (BL_INFO(bl)[BL_OFFSET(bl, (byte))])
+#define BL_BASE BYTE_ADDR(BYTE_LOOKUP_BASE(WORD_ADDR(next_table)))
+#define BL_INFO WORD_ADDR(BYTE_LOOKUP_INFO(WORD_ADDR(next_table)))
+#define BL_MIN_BYTE     (BL_BASE[0])
+#define BL_MAX_BYTE     (BL_BASE[1])
+#define BL_OFFSET(byte) (BL_BASE[2+(byte)-BL_MIN_BYTE])
+#define BL_ACTION(byte) (BL_INFO[BL_OFFSET((byte))])
 
 	next_byte = (unsigned char)*in_p++;
       follow_byte:
-        if (next_byte < BL_MIN_BYTE(next_table) || BL_MAX_BYTE(next_table) < next_byte)
+        if (next_byte < BL_MIN_BYTE || BL_MAX_BYTE < next_byte)
             next_info = INVALID;
         else {
-            next_info = (VALUE)BL_ACTION(next_table, next_byte);
+            next_info = (VALUE)BL_ACTION(next_byte);
         }
       follow_info:
 	switch (next_info & 0x1F) {
