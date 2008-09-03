@@ -409,10 +409,10 @@ static inline VALUE
 vm_method_missing(rb_thread_t *th, ID id, VALUE recv,
 		  int num, rb_block_t *blockptr, int opt)
 {
+    VALUE val;
     rb_control_frame_t * const reg_cfp = th->cfp;
     VALUE *argv = ALLOCA_N(VALUE, num + 1);
     MEMCPY(argv, STACK_ADDR_FROM_TOP(num + 1), VALUE, num + 1);
-    VALUE val;
     argv[0] = ID2SYM(id);
     th->method_missing_reason = opt;
     th->passed_block = blockptr;
