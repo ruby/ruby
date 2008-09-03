@@ -1,3 +1,46 @@
+Wed Sep  3 22:31:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/mathn.rb (Integer): moved into prime.rb.
+	  (Prime): ditto.
+
+	* lib/prime.rb (Integer): moved from mathn.rb.
+	  (Integer.each_prime): added.
+	  (Integer#prime?): added.
+	  (Prime): moved from mathn.rb. 
+	    Its implmentation was rewritten. see [ruby-dev:35863].
+	    And patched by Keiju ISHITSUKA <keiju@ishitsuka.com>,
+	    see [ruby-dev:36128]. 
+	  (Prime.new):                     obsolete.
+	  (Prime.instance):                added.
+	  (Prime.each):                    added.
+	  (Prime.int_from_prime_division): added.
+	  (Prime.prime_division):          added.
+	  (Prime.prime?):                  added.
+	    Patch by TOYOFUKU Chikanobu 
+	    <nobu_toyofuku at nifty.com> in [ruby-dev:36067].
+	  (Prime.cache):                   removed.
+	  (Prime.primes):                  removed.
+	  (Prime.primes_so_far):           removed.
+	  (Prime#int_from_prime_division): added.
+	  (Prime#prime_division):          added.
+	  (Prime#prime?):                  added.
+	  (Prime#primes):                  removed.
+	  (Prime#primes_so_far):           removed.
+	  (Prime::PseudoPrmeGenerator):    added.
+	  (Prime::EratosthenesGenerator):  added.
+	  (Prime::TrialDivisionGenerator): added.
+	  (Prime::Generator23):            added.
+	  (Prime::TrialDivision):          added.
+	    Extracted from the previous implementation of Prime
+	    by Keiju ISHITSUKA.
+	  (Prime::EratosthenesSieve):      added.
+
+	* lib/.document (prime.rb): added
+
+	* lib/README (prime.rb): added
+
+	* test/test_prime.rb: added.
+
 Wed Sep  3 21:49:00 2008  David A. Black <dblack@rubypal.com>
 
         * lib/scanf.rb: fixed bug involving matching literal '['

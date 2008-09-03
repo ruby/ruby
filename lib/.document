@@ -59,6 +59,7 @@ pathname.rb
 ping.rb
 pp.rb
 prettyprint.rb
+prime.rb
 profile.rb
 profiler.rb
 pstore.rb

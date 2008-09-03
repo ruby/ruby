@@ -42,6 +42,7 @@ parsedate.rb	parses date string (obsolete)
 pathname.rb	Object-Oriented Pathname Class
 pp.rb		pretty print objects
 prettyprint.rb	pretty printing algorithm
+prime.rb        prime numbers and factorization
 profile.rb	runs ruby profiler
 profiler.rb	ruby profiler module
 pstore.rb	persistent object strage using marshal
