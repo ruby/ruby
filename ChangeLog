@@ -1,3 +1,8 @@
+Wed Sep  3 19:18:12 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_thread.rb: fix test.
+	   [ruby-dev:35960]
+
 Wed Sep  3 17:48:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/make_transdb.rb: check $(srcdir)/enc/trans before
