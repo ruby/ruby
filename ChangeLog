@@ -1,3 +1,12 @@
+Wed Sep  3 21:07:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (BL_MIN_BYTE): defined.
+	  (BL_MAX_BYTE): defined.
+	  (BL_OFFSET): defined.
+	  (BL_ACTION): defined.
+	  (transcode_restartable0): use BL_MIN_BYTE, BL_MAX_BYTE and
+	  BL_ACTION.
+
 Wed Sep  3 20:58:30 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (BYTE_ADDR): defined.
