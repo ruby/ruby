@@ -79,8 +79,8 @@ struct rb_transcoder {
     int max_output;
     rb_transcoder_stateful_type_t stateful_type;
     size_t state_size;
-    int (*state_init_func)(void*); /* 0:success !=0:failure(errno) */
-    int (*state_fini_func)(void*); /* 0:success !=0:failure(errno) */
+    int (*state_init_func)(void*); /* ret==0:success ret!=0:failure(errno) */
+    int (*state_fini_func)(void*); /* ret==0:success ret!=0:failure(errno) */
     VALUE (*func_ii)(void*, VALUE); /* info  -> info   */
     VALUE (*func_si)(void*, const unsigned char*, size_t); /* start -> info   */
     int (*func_io)(void*, VALUE, const unsigned char*); /* info  -> output */
