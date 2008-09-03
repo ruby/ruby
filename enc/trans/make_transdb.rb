@@ -13,7 +13,7 @@ outhdr = transdirs.shift || 'transdb.h'
 transdirs << 'enc/trans' if transdirs.empty?
 
 transdirs = transdirs.sort_by {|td|
-  td.length
+  -td.length
 }.inject([]) {|tds, td|
   next tds unless File.directory?(td)
   tds << td if tds.all? {|td2| !File.identical?(td2, td) }
@@ -21,9 +21,10 @@ transdirs = transdirs.sort_by {|td|
 }
 
 files = {}
+names_t = []
 transdirs.each do |transdir|
   names = Dir.entries(transdir)
-  names_t = names.map {|n| /(?!\A)\.trans\z/ =~ n ? $` : nil }.compact
+  names_t += names.map {|n| /(?!\A)\.trans\z/ =~ n ? $` : nil }.compact
   names_c = names.map {|n| /(?!\A)\.c\z/ =~ n ? $` : nil }.compact
   (names_t & names_c).map {|n|
     "#{n}.c"

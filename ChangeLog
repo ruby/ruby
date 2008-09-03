@@ -1,3 +1,10 @@
+Wed Sep  3 17:48:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/make_transdb.rb: check $(srcdir)/enc/trans before
+	  enc/trans.
+
+	* enc/trans/make_transdb.rb: keep names_t.
+
 Wed Sep  3 16:54:46 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* include/ruby/signal.h: removed.
