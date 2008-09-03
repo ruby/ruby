@@ -791,6 +791,21 @@ EOT
     }
   end
 
+  def test_set_encoding_undef_replace
+    with_pipe {|r, w|
+      w << "\ufffd"
+      w.close
+      r.set_encoding("utf-8", "euc-jp", :undef=>:replace, :replace=>"ZZZ")
+      assert_equal("ZZZ", r.read)
+    }
+    with_pipe {|r, w|
+      w << "\ufffd"
+      w.close
+      r.set_encoding("utf-8:euc-jp", :undef=>:replace, :replace=>"ZZZ")
+      assert_equal("ZZZ", r.read)
+    }
+  end
+
   def test_write_conversion_fixenc
     with_pipe {|r, w|
       w.set_encoding("iso-2022-jp:utf-8")
