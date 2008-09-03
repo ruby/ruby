@@ -1,3 +1,8 @@
+Wed Sep  3 23:52:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/etc/test_etc.rb: check only typical use of
+	  setpwent/getpwent/endpwent and setgrent/getgrent/endgrent.
+
 Wed Sep  3 23:33:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_transcoding): moved from transcode_data.h.

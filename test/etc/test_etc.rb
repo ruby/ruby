@@ -44,35 +44,16 @@ class TestEtc < Test::Unit::TestCase
     end
   end
 
-  def test_setpwent
-    a = []
-    Etc.passwd do |s|
-      a << s
-      Etc.setpwent if a.size == 3
-    end
-    assert_equal(a[0, 3], a[3, 3]) if a.size >= 6
-  end
-
-  def test_getpwent
+  def test_passwd_with_low_level_api
     a = []
     Etc.passwd {|s| a << s }
     b = []
-    Etc.passwd do |s|
-      b << s
-      s = Etc.getpwent
-      break unless s
+    Etc.setpwent
+    while s = Etc.getpwent
       b << s
     end
+    Etc.endpwent
     assert_equal(a, b)
-  end
-
-  def test_endpwent
-    a = []
-    Etc.passwd do |s|
-      a << s
-      Etc.endpwent if a.size == 3
-    end
-    assert_equal(a[0, 3], a[3, 3]) if a.size >= 6
   end
 
   def test_group
@@ -106,34 +87,15 @@ class TestEtc < Test::Unit::TestCase
     end
   end
 
-  def test_setgrent
-    a = []
-    Etc.group do |s|
-      a << s
-      Etc.setgrent if a.size == 3
-    end
-    assert_equal(a[0, 3], a[3, 3]) if a.size >= 6
-  end
-
-  def test_getgrent
+  def test_group_with_low_level_api
     a = []
     Etc.group {|s| a << s }
     b = []
-    Etc.group do |s|
-      b << s
-      s = Etc.getgrent
-      break unless s
+    Etc.setgrent
+    while s = Etc.getgrent
       b << s
     end
+    Etc.endgrent
     assert_equal(a, b)
-  end
-
-  def test_endgrent
-    a = []
-    Etc.group do |s|
-      a << s
-      Etc.endgrent if a.size == 3
-    end
-    assert_equal(a[0, 3], a[3, 3]) if a.size >= 6
   end
 end
