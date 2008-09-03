@@ -84,22 +84,13 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getc, s_read, s_write, s_binmode;
 
-static void
-reentrant_check(obj, sym)
-    VALUE obj;
-    ID sym;
-{
-    if (obj && RBASIC(obj)->klass) {
-        rb_raise(rb_eRuntimeError, "%s reentered", rb_id2name(sym));
-    }
-}
-
 struct dump_arg {
     VALUE obj;
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
     int taint;
+    VALUE wrapper;
 };
 
 struct dump_call_arg {
@@ -107,6 +98,27 @@ struct dump_call_arg {
     struct dump_arg *arg;
     int limit;
 };
+
+static void
+check_dump_arg(arg, sym)
+    struct dump_arg *arg;
+    ID sym;
+{
+    if (!DATA_PTR(arg->wrapper)) {
+        rb_raise(rb_eRuntimeError, "Marshal.dump reentered at %s",
+		 rb_id2name(sym));
+    }
+}
+
+static void
+mark_dump_arg(ptr)
+    void *ptr;
+{
+    struct dump_arg *p = ptr;
+    if (!ptr)
+        return;
+    rb_mark_set(p->data);
+}
 
 static VALUE
 class2path(klass)
@@ -515,7 +527,7 @@ w_object(obj, arg, limit)
 	    volatile VALUE v;
 
 	    v = rb_funcall(obj, s_mdump, 0, 0);
-	    reentrant_check(arg->str, s_mdump);
+	    check_dump_arg(arg, s_mdump);
 	    w_class(TYPE_USRMARSHAL, obj, arg, Qfalse);
 	    w_object(v, arg, limit);
 	    if (ivtbl) w_ivar(0, &c_arg);
@@ -525,7 +537,7 @@ w_object(obj, arg, limit)
 	    VALUE v;
 
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
-	    reentrant_check(arg->str, s_dump);
+	    check_dump_arg(arg, s_dump);
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump() must return string");
 	    }
@@ -671,7 +683,7 @@ w_object(obj, arg, limit)
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);
-		reentrant_check(arg->str, s_dump_data);
+		check_dump_arg(arg, s_dump_data);
 		w_class(TYPE_DATA, obj, arg, Qtrue);
 		w_object(v, arg, limit);
 	    }
@@ -704,9 +716,11 @@ static VALUE
 dump_ensure(arg)
     struct dump_arg *arg;
 {
-    if (RBASIC(arg->str)->klass) return 0; /* ignore reentrant */
+    if (!DATA_PTR(arg->wrapper)) return 0;
     st_free_table(arg->symbols);
     st_free_table(arg->data);
+    DATA_PTR(arg->wrapper) = 0;
+    arg->wrapper = 0;
     if (arg->taint) {
 	OBJ_TAINT(arg->str);
     }
@@ -773,7 +787,7 @@ marshal_dump(argc, argv)
 	arg.dest = port;
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
-	    reentrant_check(arg.str, s_dump_data);
+	    check_dump_arg(&arg, s_dump_data);
 	}
     }
     else {
@@ -783,6 +797,7 @@ marshal_dump(argc, argv)
     arg.symbols = st_init_numtable();
     arg.data    = st_init_numtable();
     arg.taint   = Qfalse;
+    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_dump_arg, 0, &arg);
     c_arg.obj   = obj;
     c_arg.arg   = &arg;
     c_arg.limit = limit;
@@ -800,10 +815,32 @@ struct load_arg {
     VALUE src;
     long offset;
     st_table *symbols;
-    VALUE data;
+    st_table *data;
     VALUE proc;
     int taint;
+    VALUE wrapper;
 };
+
+static void
+check_load_arg(arg, sym)
+    struct load_arg *arg;
+    ID sym;
+{
+    if (!DATA_PTR(arg->wrapper)) {
+        rb_raise(rb_eRuntimeError, "Marshal.load reentered at %s",
+		 rb_id2name(sym));
+    }
+}
+
+static void
+mark_load_arg(ptr)
+    void *ptr;
+{
+    struct load_arg *p = ptr;
+    if (!ptr)
+        return;
+    rb_mark_tbl(p->data);
+}
 
 static VALUE r_object _((struct load_arg *arg));
 
@@ -824,7 +861,7 @@ r_byte(arg)
     else {
 	VALUE src = arg->src;
 	VALUE v = rb_funcall2(src, s_getc, 0, 0);
-	reentrant_check(arg->data, s_getc);
+	check_load_arg(arg, s_getc);
 	if (NIL_P(v)) rb_eof_error();
 	c = (unsigned char)FIX2INT(v);
     }
@@ -905,7 +942,7 @@ r_bytes0(len, arg)
 	VALUE src = arg->src;
 	VALUE n = LONG2NUM(len);
 	str = rb_funcall2(src, s_read, 1, &n);
-	reentrant_check(arg->data, s_read);
+	check_load_arg(arg, s_read);
 	if (NIL_P(str)) goto too_short;
 	StringValue(str);
 	if (RSTRING(str)->len != len) goto too_short;
@@ -968,7 +1005,7 @@ r_entry(v, arg)
     VALUE v;
     struct load_arg *arg;
 {
-    rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
+    st_insert(arg->data, arg->data->num_entries, (st_data_t)v);
     if (arg->taint) OBJ_TAINT(v);
     return v;
 }
@@ -1024,14 +1061,15 @@ r_object0(arg, proc, ivp, extmod)
     VALUE v = Qnil;
     int type = r_byte(arg);
     long id;
+    st_data_t link;
 
     switch (type) {
       case TYPE_LINK:
 	id = r_long(arg);
-	v = rb_hash_aref(arg->data, LONG2FIX(id));
-	if (NIL_P(v)) {
+ 	if (!st_lookup(arg->data, (st_data_t)id, &link)) {
 	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
+	v = (st_data_t)link;
 	return v;
 
       case TYPE_IVAR:
@@ -1256,7 +1294,7 @@ r_object0(arg, proc, ivp, extmod)
 		*ivp = Qfalse;
 	    }
 	    v = rb_funcall(klass, s_load, 1, data);
-	    reentrant_check(arg->data, s_load);
+	    check_load_arg(arg, s_load);
 	    r_entry(v, arg);
 	}
         break;
@@ -1280,7 +1318,7 @@ r_object0(arg, proc, ivp, extmod)
 	    r_entry(v, arg);
 	    data = r_object(arg);
 	    rb_funcall(v, s_mload, 1, data);
-	    reentrant_check(arg->data, s_mload);
+	    check_load_arg(arg, s_mload);
 	}
         break;
 
@@ -1307,7 +1345,7 @@ r_object0(arg, proc, ivp, extmod)
 		   warn = Qfalse;
 	       }
 	       v = rb_funcall(klass, s_alloc, 0);
-	       reentrant_check(arg->data, s_alloc);
+	       check_load_arg(arg, s_alloc);
            }
 	   else {
 	       v = rb_obj_alloc(klass);
@@ -1322,7 +1360,7 @@ r_object0(arg, proc, ivp, extmod)
                         rb_class2name(klass));
            }
            rb_funcall(v, s_load_data, 1, r_object0(arg, 0, 0, extmod));
-	   reentrant_check(arg->data, s_load_data);
+	   check_load_arg(arg, s_load_data);
        }
        break;
 
@@ -1366,7 +1404,7 @@ r_object0(arg, proc, ivp, extmod)
     }
     if (proc) {
 	rb_funcall(proc, s_call, 1, v);
-	reentrant_check(arg->data, s_call);
+	check_load_arg(arg, s_call);
     }
     return v;
 }
@@ -1389,8 +1427,11 @@ static VALUE
 load_ensure(arg)
     struct load_arg *arg;
 {
-    if (RBASIC(arg->data)->klass) return 0; /* ignore reentrant */
+    if (!DATA_PTR(arg->wrapper)) return 0;
     st_free_table(arg->symbols);
+    st_free_table(arg->data);
+    DATA_PTR(arg->wrapper) = 0;
+    arg->wrapper = 0;
     return 0;
 }
 
@@ -1432,7 +1473,10 @@ marshal_load(argc, argv)
     }
     arg.src = port;
     arg.offset = 0;
-    arg.data = 0;
+    arg.symbols = st_init_numtable();
+    arg.data    = st_init_numtable();
+    arg.proc = 0;
+    arg.wrapper = Data_Wrap_Struct(rb_cData, mark_load_arg, 0, &arg);
 
     major = r_byte(&arg);
     minor = r_byte(&arg);
@@ -1447,11 +1491,7 @@ marshal_load(argc, argv)
 		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
     }
 
-    arg.symbols = st_init_numtable();
-    arg.data   = rb_hash_new();
-    RBASIC(arg.data)->klass = 0;
-    if (NIL_P(proc)) arg.proc = 0;
-    else             arg.proc = proc;
+    if (!NIL_P(proc)) arg.proc = proc;
     v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
     RBASIC(arg.data)->klass = rb_cHash;
 

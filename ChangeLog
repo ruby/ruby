@@ -1,3 +1,11 @@
+Wed Sep  3 16:53:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_mark_set): new function to mark keys.
+
+	* marshal.c (struct dump_arg, struct load_arg): added wrappers to mark
+	  data entries.  backport from trunk r13527,r13528,r13961,r16533.
+	  [ruby-dev:36082]
+
 Tue Sep  2 23:39:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* marshal.c (w_object): add a check for modification of array during
