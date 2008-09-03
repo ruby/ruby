@@ -4670,6 +4670,7 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 # define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
 #endif
 
+#define parser_encoding_name()  (parser->enc->name)
 #define parser_mbclen()  mbclen((lex_p-1),lex_pend,parser->enc)
 #define parser_precise_mbclen()  rb_enc_precise_mbclen((lex_p-1),lex_pend,parser->enc)
 #define is_identchar(p,e,enc) (rb_enc_isalnum(*p,enc) || (*p) == '_' || !ISASCII(*p))
@@ -5498,7 +5499,7 @@ parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
     int len = parser_precise_mbclen();
     if (!MBCLEN_CHARFOUND_P(len)) {
-	compile_error(PARSER_ARG "invalid multibyte char");
+	compile_error(PARSER_ARG "invalid multibyte char (%s)", parser_encoding_name());
 	return -1;
     }
     tokadd(c);
