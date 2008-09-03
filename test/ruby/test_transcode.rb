@@ -57,6 +57,11 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal(raw.force_encoding(encoding), utf8.encode(encoding, 'utf-8'))
   end
 
+  def check_both_ways2(str1, enc1, str2, enc2)
+    assert_equal(str1.force_encoding(enc1), str2.encode(enc1, enc2))
+    assert_equal(str2.force_encoding(enc2), str1.encode(enc2, enc1))
+  end
+
   def test_encodings
     check_both_ways("\u307E\u3064\u3082\u3068 \u3086\u304D\u3072\u308D",
         "\x82\xdc\x82\xc2\x82\xe0\x82\xc6 \x82\xe4\x82\xab\x82\xd0\x82\xeb", 'shift_jis') # まつもと ゆきひろ
@@ -432,6 +437,67 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u221A", "\xA2\xE5", 'eucJP-ms') # SQUARE ROOT
     check_both_ways("\u3231", "\xAD\xEA", 'eucJP-ms') # PARENTHESIZED IDEOGRAPH STOCK
     check_both_ways("\uFF5E", "\xA1\xC1", 'eucJP-ms') # WAVE DASH
+  end
+
+  def test_eucjp_sjis
+    check_both_ways2("\xa1\xa1", "EUC-JP", "\x81\x40", "Shift_JIS")
+    check_both_ways2("\xa1\xdf", "EUC-JP", "\x81\x7e", "Shift_JIS")
+    check_both_ways2("\xa1\xe0", "EUC-JP", "\x81\x80", "Shift_JIS")
+    check_both_ways2("\xa1\xfe", "EUC-JP", "\x81\x9e", "Shift_JIS")
+    check_both_ways2("\xa2\xa1", "EUC-JP", "\x81\x9f", "Shift_JIS")
+    check_both_ways2("\xa2\xfe", "EUC-JP", "\x81\xfc", "Shift_JIS")
+
+    check_both_ways2("\xdd\xa1", "EUC-JP", "\x9f\x40", "Shift_JIS")
+    check_both_ways2("\xdd\xdf", "EUC-JP", "\x9f\x7e", "Shift_JIS")
+    check_both_ways2("\xdd\xe0", "EUC-JP", "\x9f\x80", "Shift_JIS")
+    check_both_ways2("\xdd\xfe", "EUC-JP", "\x9f\x9e", "Shift_JIS")
+    check_both_ways2("\xde\xa1", "EUC-JP", "\x9f\x9f", "Shift_JIS")
+    check_both_ways2("\xde\xfe", "EUC-JP", "\x9f\xfc", "Shift_JIS")
+
+    check_both_ways2("\xdf\xa1", "EUC-JP", "\xe0\x40", "Shift_JIS")
+    check_both_ways2("\xdf\xdf", "EUC-JP", "\xe0\x7e", "Shift_JIS")
+    check_both_ways2("\xdf\xe0", "EUC-JP", "\xe0\x80", "Shift_JIS")
+    check_both_ways2("\xdf\xfe", "EUC-JP", "\xe0\x9e", "Shift_JIS")
+    check_both_ways2("\xe0\xa1", "EUC-JP", "\xe0\x9f", "Shift_JIS")
+    check_both_ways2("\xe0\xfe", "EUC-JP", "\xe0\xfc", "Shift_JIS")
+
+    check_both_ways2("\xf4\xa1", "EUC-JP", "\xea\x9f", "Shift_JIS")
+    check_both_ways2("\xf4\xa2", "EUC-JP", "\xea\xa0", "Shift_JIS")
+    check_both_ways2("\xf4\xa3", "EUC-JP", "\xea\xa1", "Shift_JIS")
+    check_both_ways2("\xf4\xa4", "EUC-JP", "\xea\xa2", "Shift_JIS") # end of JIS X 0208 1983
+    check_both_ways2("\xf4\xa5", "EUC-JP", "\xea\xa3", "Shift_JIS")
+    check_both_ways2("\xf4\xa6", "EUC-JP", "\xea\xa4", "Shift_JIS") # end of JIS X 0208 1990
+
+    check_both_ways2("\x8e\xa1", "EUC-JP", "\xa1", "Shift_JIS")
+    check_both_ways2("\x8e\xdf", "EUC-JP", "\xdf", "Shift_JIS")
+  end
+
+  def test_eucjp_sjis_unassigned
+    check_both_ways2("\xfd\xa1", "EUC-JP", "\xef\x40", "Shift_JIS")
+    check_both_ways2("\xfd\xa1", "EUC-JP", "\xef\x40", "Shift_JIS")
+    check_both_ways2("\xfd\xdf", "EUC-JP", "\xef\x7e", "Shift_JIS")
+    check_both_ways2("\xfd\xe0", "EUC-JP", "\xef\x80", "Shift_JIS")
+    check_both_ways2("\xfd\xfe", "EUC-JP", "\xef\x9e", "Shift_JIS")
+    check_both_ways2("\xfe\xa1", "EUC-JP", "\xef\x9f", "Shift_JIS")
+    check_both_ways2("\xfe\xfe", "EUC-JP", "\xef\xfc", "Shift_JIS")
+  end
+
+  def test_eucjp_sjis_undef
+    assert_raise(Encoding::ConversionUndefined) { "\x8e\xe0".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefined) { "\x8e\xfe".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefined) { "\x8f\xa1\xa1".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefined) { "\x8f\xa1\xfe".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefined) { "\x8f\xfe\xa1".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefined) { "\x8f\xfe\xfe".encode("Shift_JIS", "EUC-JP") }
+
+    assert_raise(Encoding::ConversionUndefined) { "\xf0\x40".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\xf0\x7e".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\xf0\x80".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\xf0\xfc".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\xfc\x40".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\xfc\x7e".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\xfc\x80".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\xfc\xfc".encode("EUC-JP", "Shift_JIS") }
   end
 
   def test_iso_2022_jp

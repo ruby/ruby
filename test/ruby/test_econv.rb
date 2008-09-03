@@ -385,6 +385,12 @@ class TestEncodingConverter < Test::Unit::TestCase
   def test_errinfo_invalid_euc_jp
     ec = Encoding::Converter.new("EUC-JP", "Shift_JIS")
     ec.primitive_convert(src="\xff", dst="", nil, 10)                       
+    assert_errinfo(:invalid_byte_sequence, "EUC-JP", "Shift_JIS", "\xFF", "", ec)
+  end
+
+  def test_errinfo_invalid_euc_jp2
+    ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1")
+    ec.primitive_convert(src="\xff", dst="", nil, 10)                       
     assert_errinfo(:invalid_byte_sequence, "EUC-JP", "UTF-8", "\xFF", "", ec)
   end
 
