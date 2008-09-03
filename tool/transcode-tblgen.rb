@@ -155,6 +155,32 @@ class StrSet
   end
 end
 
+class ArrayCode
+  def initialize(type, name)
+    @code = <<"End"
+static const #{type}
+#{name}[0] = {
+};
+End
+  end
+
+  def length
+    @code[/\[\d+\]/][1...-1].to_i
+  end
+
+  def insert_at_last(num, str)
+    newnum = self.length + num
+    @code.sub!(/^(\};\n\z)/) {
+      str + $1
+    }
+    @code.sub!(/\[\d+\]/) { "[#{newnum}]" }
+  end
+
+  def to_s
+    @code.dup
+  end
+end
+
 class ActionMap
   def self.parse(hash)
     h = {}
@@ -298,26 +324,6 @@ class ActionMap
     code
   end
 
-  def gen_array_code(type, name)
-    <<"End"
-static const #{type}
-#{name}[0] = {
-};
-End
-  end
-
-  def numelt_array_code(code)
-    code[/\[\d+\]/][1...-1].to_i
-  end
-
-  def array_code_insert_at_last(code, num, str)
-    newnum = numelt_array_code(code) + num
-    code.sub!(/^(\};\n\z)/) {
-      str + $1
-    }
-    code.sub!(/\[\d+\]/) { "[#{newnum}]" }
-  end
-
   def generate_lookup_node(bytes_code, words_code, name, table)
     offsets = []
     infos = []
@@ -345,17 +351,10 @@ End
     else
       offsets_name = "#{name}_offsets"
       OffsetsMemo[offsets_key] = offsets_name
-      if bytes_code.empty?
-        bytes_code << gen_array_code("unsigned char", "#{OUTPUT_PREFIX}byte_array")
-      end
-      size = numelt_array_code(bytes_code)
-      array_code_insert_at_last(bytes_code, 2+max-min+1,
+      size = bytes_code.length
+      bytes_code.insert_at_last(2+max-min+1,
         "\#define #{offsets_name} #{size}\n" +
         format_offsets(min,max,offsets) + "\n")
-    end
-
-    if words_code.empty?
-      words_code << gen_array_code("unsigned int", "#{OUTPUT_PREFIX}word_array")
     end
 
     if n = InfosMemo[infos]
@@ -364,14 +363,14 @@ End
       infos_name = "#{name}_infos"
       InfosMemo[infos] = infos_name
 
-      size = numelt_array_code(words_code)
-      array_code_insert_at_last(words_code, infos.length,
+      size = words_code.length
+      words_code.insert_at_last(infos.length,
         "\#define #{infos_name} (sizeof(unsigned int)*#{size})\n" +
         format_infos(infos) + "\n")
     end
 
-    size = numelt_array_code(words_code)
-    array_code_insert_at_last(words_code, NUM_ELEM_BYTELOOKUP,
+    size = words_code.length
+    words_code.insert_at_last(NUM_ELEM_BYTELOOKUP,
       "\#define #{name} (sizeof(unsigned int)*#{size})\n" +
       <<"End" + "\n")
     #{offsets_name},
@@ -563,8 +562,6 @@ def transcode_compile_tree(name, from, map)
 end
 
 TRANSCODERS = []
-TRANSCODE_GENERATED_BYTES_CODE = ''
-TRANSCODE_GENERATED_WORDS_CODE = ''
 TRANSCODE_GENERATED_TRANSCODER_CODE = ''
 
 def transcode_tblgen(from, to, map)
@@ -608,8 +605,8 @@ def transcode_generate_node(am, name_hint=nil)
 end
 
 def transcode_generated_code
-  TRANSCODE_GENERATED_BYTES_CODE +
-    TRANSCODE_GENERATED_WORDS_CODE +
+  TRANSCODE_GENERATED_BYTES_CODE.to_s +
+    TRANSCODE_GENERATED_WORDS_CODE.to_s +
     "\#define TRANSCODE_TABLE_INFO #{OUTPUT_PREFIX}byte_array, #{OUTPUT_PREFIX}word_array, sizeof(unsigned int)\n" +
     TRANSCODE_GENERATED_TRANSCODER_CODE
 end
@@ -721,6 +718,9 @@ OUTPUT_FILENAME = output_filename
 OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : ""
 OUTPUT_PREFIX.sub!(/\A_+/, '')
 OUTPUT_PREFIX.sub!(/_*\z/, '_')
+
+TRANSCODE_GENERATED_BYTES_CODE = ArrayCode.new("unsigned char", "#{OUTPUT_PREFIX}byte_array")
+TRANSCODE_GENERATED_WORDS_CODE = ArrayCode.new("unsigned int", "#{OUTPUT_PREFIX}word_array")
 
 arg = ARGV.shift
 $srcdir = File.dirname(arg)
