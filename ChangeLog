@@ -1,3 +1,13 @@
+Wed Sep  3 21:31:59 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (WORDINDEX_SHIFT_BITS): defined.
+	  (WORDINDEX2INFO): defined.
+	  (INFO2WORDINDEX): defined.
+
+	* tool/transcode-tblgen.rb: use WORDINDEX2INFO.
+
+	* transcode.c: use INFO2WORDINDEX.
+
 Wed Sep  3 21:19:51 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* golf_prelude.rb: suppress warning when goruby -v.

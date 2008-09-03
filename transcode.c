@@ -492,7 +492,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         }
 
 #define BYTE_ADDR(index) (tr->byte_array + (index))
-#define WORD_ADDR(index) (tr->word_array + (index)/sizeof(*tr->word_array))
+#define WORD_ADDR(index) (tr->word_array + INFO2WORDINDEX(index))
 #define BL_BASE(bl) BYTE_ADDR(BYTE_LOOKUP_BASE(WORD_ADDR(bl)))
 #define BL_INFO(bl) WORD_ADDR(BYTE_LOOKUP_INFO(WORD_ADDR(bl)))
 #define BL_MIN_BYTE(bl)     (BL_BASE(bl)[0])

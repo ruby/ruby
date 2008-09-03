@@ -14,6 +14,9 @@
 #ifndef RUBY_TRANSCODE_DATA_H
 #define RUBY_TRANSCODE_DATA_H 1
 
+#define WORDINDEX_SHIFT_BITS 2
+#define WORDINDEX2INFO(widx)      ((widx) << WORDINDEX_SHIFT_BITS)
+#define INFO2WORDINDEX(info)      ((info) >> WORDINDEX_SHIFT_BITS)
 #define BYTE_LOOKUP_BASE(bl) ((bl)[0])
 #define BYTE_LOOKUP_INFO(bl) ((bl)[1])
 

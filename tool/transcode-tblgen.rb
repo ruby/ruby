@@ -365,13 +365,13 @@ class ActionMap
 
       size = words_code.length
       words_code.insert_at_last(infos.length,
-        "\#define #{infos_name} (sizeof(unsigned int)*#{size})\n" +
+        "\#define #{infos_name} WORDINDEX2INFO(#{size})\n" +
         format_infos(infos) + "\n")
     end
 
     size = words_code.length
     words_code.insert_at_last(NUM_ELEM_BYTELOOKUP,
-      "\#define #{name} (sizeof(unsigned int)*#{size})\n" +
+      "\#define #{name} WORDINDEX2INFO(#{size})\n" +
       <<"End" + "\n")
     #{offsets_name},
     #{infos_name},
