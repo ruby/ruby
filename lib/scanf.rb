@@ -325,7 +325,7 @@ module Scanf
     end
 
     def count_space?
-      /(?:\A|\S)%\*?\d*c|\[/.match(@spec_string)
+      /(?:\A|\S)%\*?\d*c|%\d*\[/.match(@spec_string)
     end
 
     def initialize(str)

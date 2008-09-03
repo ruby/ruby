@@ -1,3 +1,9 @@
+Wed Sep  3 21:49:00 2008  David A. Black <dblack@rubypal.com>
+
+        * lib/scanf.rb: fixed bug involving matching literal '['
+
+        * test/scanf/test_scanf.rb: added test for scanf.rb fix
+
 Wed Sep  3 21:31:59 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (WORDINDEX_SHIFT_BITS): defined.
