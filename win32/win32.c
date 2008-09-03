@@ -11,7 +11,6 @@
  */
 
 #include "ruby/ruby.h"
-#include "ruby/signal.h"
 #include "dln.h"
 #include <fcntl.h>
 #include <process.h>
@@ -73,6 +72,8 @@ static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
 #else
 #define rb_w32_open_osfhandle(osfhandle, flags) _open_osfhandle(osfhandle, flags)
 #endif
+
+#define RUBY_CRITICAL(expr) do { expr; } while (0)
 
 /* errno mapping */
 static struct {
@@ -3766,13 +3767,11 @@ catch_interrupt(void)
 int
 read(int fd, void *buf, size_t size)
 {
-    int trap_immediate = rb_trap_immediate;
     int ret = _read(fd, buf, size);
     if ((ret < 0) && (errno == EPIPE)) {
 	errno = 0;
 	ret = 0;
     }
-    rb_trap_immediate = trap_immediate;
     catch_interrupt();
     return ret;
 }
@@ -3782,11 +3781,10 @@ read(int fd, void *buf, size_t size)
 int
 rb_w32_getc(FILE* stream)
 {
-    int c, trap_immediate = rb_trap_immediate;
+    int c;
 #ifndef _WIN32_WCE
     if (enough_to_get(stream->FILE_COUNT)) {
 	c = (unsigned char)*stream->FILE_READPTR++;
-	rb_trap_immediate = trap_immediate;
     }
     else 
 #endif
@@ -3797,7 +3795,6 @@ rb_w32_getc(FILE* stream)
 	    clearerr(stream);
         }
 #endif
-	rb_trap_immediate = trap_immediate;
 	catch_interrupt();
     }
     return c;
@@ -3807,17 +3804,14 @@ rb_w32_getc(FILE* stream)
 int
 rb_w32_putc(int c, FILE* stream)
 {
-    int trap_immediate = rb_trap_immediate;
 #ifndef _WIN32_WCE
     if (enough_to_put(stream->FILE_COUNT)) {
 	c = (unsigned char)(*stream->FILE_READPTR++ = (char)c);
-	rb_trap_immediate = trap_immediate;
     }
     else 
 #endif
     {
 	c = _flsbuf(c, stream);
-	rb_trap_immediate = trap_immediate;
 	catch_interrupt();
     }
     return c;
