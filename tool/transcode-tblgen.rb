@@ -298,6 +298,26 @@ class ActionMap
     code
   end
 
+  def gen_array_code(type, name)
+    <<"End"
+static const #{type}
+#{name}[0] = {
+};
+End
+  end
+
+  def numelt_array_code(code)
+    code[/\[\d+\]/][1...-1].to_i
+  end
+
+  def array_code_insert_at_last(code, num, str)
+    newnum = numelt_array_code(code) + num
+    code.sub!(/^(\};\n\z)/) {
+      str + $1
+    }
+    code.sub!(/\[\d+\]/) { "[#{newnum}]" }
+  end
+
   def generate_lookup_node(bytes_code, words_code, name, table)
     offsets = []
     infos = []
@@ -326,28 +346,16 @@ class ActionMap
       offsets_name = "#{name}_offsets"
       OffsetsMemo[offsets_key] = offsets_name
       if bytes_code.empty?
-        bytes_code << <<"End"
-static const unsigned char
-#{OUTPUT_PREFIX}byte_array[0] = {
-};
-End
+        bytes_code << gen_array_code("unsigned char", "#{OUTPUT_PREFIX}byte_array")
       end
-      size = bytes_code[/\[\d+\]/][1...-1].to_i
-      bytes_code.sub!(/^(\};\n\z)/) {
+      size = numelt_array_code(bytes_code)
+      array_code_insert_at_last(bytes_code, 2+max-min+1,
         "\#define #{offsets_name} #{size}\n" +
-        format_offsets(min,max,offsets) + "\n" +
-        $1
-      }
-      size += 2+max-min+1
-      bytes_code.sub!(/\[\d+\]/) { "[#{size}]" }
+        format_offsets(min,max,offsets) + "\n")
     end
 
     if words_code.empty?
-      words_code << <<"End"
-static const unsigned int
-#{OUTPUT_PREFIX}word_array[0] = {
-};
-End
+      words_code << gen_array_code("unsigned int", "#{OUTPUT_PREFIX}word_array")
     end
 
     if n = InfosMemo[infos]
@@ -356,26 +364,19 @@ End
       infos_name = "#{name}_infos"
       InfosMemo[infos] = infos_name
 
-      size = words_code[/\[\d+\]/][1...-1].to_i
-      words_code.sub!(/^(\};\n\z)/) {
+      size = numelt_array_code(words_code)
+      array_code_insert_at_last(words_code, infos.length,
         "\#define #{infos_name} (sizeof(unsigned int)*#{size})\n" +
-        format_infos(infos) + "\n" +
-        $1
-      }
-      size += infos.length
-      words_code.sub!(/\[\d+\]/) { "[#{size}]" }
+        format_infos(infos) + "\n")
     end
 
-    size = words_code[/\[\d+\]/][1...-1].to_i
-    words_code.sub!(/^(\};\n\z)/) {
+    size = numelt_array_code(words_code)
+    array_code_insert_at_last(words_code, NUM_ELEM_BYTELOOKUP,
       "\#define #{name} (sizeof(unsigned int)*#{size})\n" +
-      <<"End" + "\n" + $1
+      <<"End" + "\n")
     #{offsets_name},
     #{infos_name},
 End
-    }
-    size += NUM_ELEM_BYTELOOKUP
-    words_code.sub!(/\[\d+\]/) { "[#{size}]" }
   end
 
   PreMemo = {}

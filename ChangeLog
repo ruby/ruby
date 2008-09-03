@@ -1,3 +1,10 @@
+Wed Sep  3 20:04:33 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (ActionMap#gen_array_code): extracted from
+	  generate_lookup_node.
+	  (ActionMap#numelt_array_code): ditto.
+	  (ActionMap#array_code_insert_at_last): ditto.
+
 Wed Sep  3 20:01:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* parse.y (parser_encoding_name): defined.
