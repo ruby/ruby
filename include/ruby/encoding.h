@@ -208,11 +208,13 @@ typedef enum {
 
 typedef struct rb_econv_t rb_econv_t;
 
-VALUE rb_str_transcode(VALUE str, VALUE to, int ecflags);
+VALUE rb_str_transcode(VALUE str, VALUE to, int ecflags, VALUE ecopts);
 
-int rb_econv_flags(VALUE hash);
+int rb_econv_prepare_opts(VALUE opthash, VALUE *ecopts);
 
 rb_econv_t *rb_econv_open(const char *source_encoding, const char *destination_encoding, int ecflags);
+rb_econv_t *rb_econv_open_opts(const char *source_encoding, const char *destination_encoding, int ecflags, VALUE ecopts);
+
 rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
     const unsigned char **source_buffer_ptr, const unsigned char *source_buffer_end,
     unsigned char **destination_buffer_ptr, unsigned char *destination_buffer_end,

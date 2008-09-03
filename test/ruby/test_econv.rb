@@ -654,4 +654,11 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec.replacement = "<undef>"
     assert_equal("a <undef> b", ec.convert("a \u3042 b"))
   end
+
+  def test_econv_new_hash
+    ec = Encoding::Converter.new("utf-8", "us-ascii", :undef => :replace)  
+    assert_equal("a ? b", ec.convert("a \u3042 b"))
+    ec = Encoding::Converter.new("utf-8", "us-ascii", :undef => :replace, :replace => "X")  
+    assert_equal("a X b", ec.convert("a \u3042 b"))
+  end
 end

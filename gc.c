@@ -1511,6 +1511,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE ptr, int lev)
             gc_mark(objspace, obj->as.file.fptr->pathv, lev);
             gc_mark(objspace, obj->as.file.fptr->tied_io_for_writing, lev);
             gc_mark(objspace, obj->as.file.fptr->writeconv_stateless, lev);
+            gc_mark(objspace, obj->as.file.fptr->writeconv_pre_ecopts, lev);
+            gc_mark(objspace, obj->as.file.fptr->encs.ecopts, lev);
         }
         break;
 

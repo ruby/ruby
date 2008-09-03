@@ -1,3 +1,40 @@
+Thu Sep  4 03:10:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): new fields: encs.ecopts and
+	  writeconv_pre_ecopts.
+	  (MakeOpenFile): initialize them.
+
+	* include/ruby/encoding.h (rb_str_transcode): take ecopts argument.
+	  (rb_econv_flags): removed.
+	  (rb_econv_prepare_opts): declared.
+	  (rb_econv_open_opts): declared.
+
+	* io.c (make_writeconv): use rb_econv_open_opts.
+	  (make_readconv): ditto.
+	  (io_fwrite): follow rb_str_transcode change.
+	  (rb_io_extract_modeenc): use rb_econv_prepare_opts.
+	  (rb_file_open_generic): initialize encs.ecopts.
+	  (rb_file_open_internal): ditto.
+	  (rb_io_reopen): ditto.
+	  (argf_ecopts): defined.
+	  (argf_next_argv): set encs.ecopts.
+	  (io_encoding_set): use rb_econv_prepare_opts.
+	  (argf_set_encoding): set argf_ecopts.
+
+	* gc.c (gc_mark_children): mark encs.ecopts and writeconv_pre_ecopts
+	  in T_FILE.
+
+	* transcode.c (transcode_loop): take ecopts argument. use
+	  rb_econv_open_opts.
+	  (rb_econv_flags): removed.
+	  (rb_econv_prepare_opts): defined.
+	  (rb_econv_open_opts): defined.
+	  (str_transcode0): take ecopts.
+	  (str_transcode): use rb_econv_prepare_opts.
+	  (rb_str_transcode): take ecopts.
+	  (econv_init): accept hash argument.
+	  (econv_insert_output): follow rb_str_transcode change.
+
 Thu Sep  4 01:30:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_set_replacemenet): declared.

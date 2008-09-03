@@ -239,6 +239,16 @@ EOT
     w.close if w && !w.closed?
   end
 
+  def test_s_pipe_undef_replace_string
+    r, w = IO.pipe("utf-8:euc-jp", :undef=>:replace, :replace=>"X")
+    w << "\ufffd"
+    w.close
+    assert_equal("X", r.read)
+  ensure
+    r.close if r && !r.closed?
+    w.close if w && !w.closed?
+  end
+
   def test_dup
     with_pipe("utf-8:euc-jp") {|r, w|
       w << "\u3042"

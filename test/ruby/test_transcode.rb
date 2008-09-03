@@ -324,8 +324,16 @@ class TestTranscode < Test::Unit::TestCase
       "\xA4\xA2\xFF\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :replace))
   end
 
+  def test_invalid_replace_string
+    assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp", :invalid=>:replace, :replace=>"<x>"))
+  end
+
   def test_undef_replace
     assert_equal("?", "\u20AC".encode("EUC-JP", :undef=>:replace), "[ruby-dev:35709]")
+  end
+
+  def test_undef_replace_string
+    assert_equal("a<x>A", "a\u3042A".encode("us-ascii", :undef=>:replace, :replace=>"<x>"))
   end
 
   def test_shift_jis
