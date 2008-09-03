@@ -711,7 +711,7 @@ make_writeconv(rb_io_t *fptr)
         }
 
         if (NEED_NEWLINE_ENCODER(fptr))
-            fptr->writeconv_pre_opts.flags |= TEXTMODE_NEWLINE_ENCODER;
+            fptr->writeconv_pre_flags |= TEXTMODE_NEWLINE_ENCODER;
 #endif
 
         enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
