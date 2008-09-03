@@ -90,7 +90,7 @@ typedef struct rb_transcoding {
         unsigned char *ptr; /* length: max_output */
     } writebuf;
 
-    unsigned char stateful[256]; /* opaque data for stateful encoding */
+    void *state; /* opaque data for stateful encoding */
 } rb_transcoding;
 #define TRANSCODING_READBUF(tc) \
     ((tc)->transcoder->max_input <= sizeof((tc)->readbuf.ary) ? \
@@ -100,6 +100,11 @@ typedef struct rb_transcoding {
     ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
      (tc)->writebuf.ary : \
      (tc)->writebuf.ptr)
+#define TRANSCODING_STATE_EMBED_MAX sizeof(void *)
+#define TRANSCODING_STATE(tc) \
+    ((tc)->transcoder->state_size <= sizeof((tc)->state) ? \
+     (void *)&(tc)->state : \
+     (tc)->state)
 
 /* static structure, one per supported encoding pair */
 struct rb_transcoder {
@@ -115,13 +120,16 @@ struct rb_transcoder {
     int max_input;
     int max_output;
     rb_transcoder_stateful_type_t stateful_type;
-    VALUE (*func_ii)(rb_transcoding*, VALUE); /* info  -> info   */
-    VALUE (*func_si)(rb_transcoding*, const unsigned char*, size_t); /* start -> info   */
-    int (*func_io)(rb_transcoding*, VALUE, const unsigned char*); /* info  -> output */
-    int (*func_so)(rb_transcoding*, const unsigned char*, size_t, unsigned char*); /* start -> output */
-    int (*finish_func)(rb_transcoding*, unsigned char*); /* -> output */
-    int (*resetsize_func)(rb_transcoding*); /* -> len */
-    int (*resetstate_func)(rb_transcoding*, unsigned char*); /* -> output */
+    size_t state_size;
+    int (*state_init_func)(void*); /* 0:success !=0:failure(errno) */
+    int (*state_fini_func)(void*); /* 0:success !=0:failure(errno) */
+    VALUE (*func_ii)(void*, VALUE); /* info  -> info   */
+    VALUE (*func_si)(void*, const unsigned char*, size_t); /* start -> info   */
+    int (*func_io)(void*, VALUE, const unsigned char*); /* info  -> output */
+    int (*func_so)(void*, const unsigned char*, size_t, unsigned char*); /* start -> output */
+    int (*finish_func)(void*, unsigned char*); /* -> output */
+    int (*resetsize_func)(void*); /* -> len */
+    int (*resetstate_func)(void*, unsigned char*); /* -> output */
 };
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);

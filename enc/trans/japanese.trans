@@ -20,7 +20,7 @@
 <%= transcode_generated_code %>
 
 static int
-fun_so_eucjp2sjis(rb_transcoding *t, const unsigned char *s, size_t l, unsigned char* o)
+fun_so_eucjp2sjis(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (s[0] == 0x8e) {
         o[0] = s[1];
@@ -41,7 +41,7 @@ fun_so_eucjp2sjis(rb_transcoding *t, const unsigned char *s, size_t l, unsigned 
 }
 
 static int
-fun_so_sjis2eucjp(rb_transcoding *t, const unsigned char *s, size_t l, unsigned char* o)
+fun_so_sjis2eucjp(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (l == 1) {
         o[0] = '\x8e';
@@ -49,7 +49,7 @@ fun_so_sjis2eucjp(rb_transcoding *t, const unsigned char *s, size_t l, unsigned 
         return 2;
     }
     else {
-        int h, m, l;
+        int h, l;
         h = s[0];
         l = s[1];
         if (0xe0 <= h)
@@ -74,6 +74,7 @@ rb_eucjp2sjis = {
     3, /* max_input */
     2, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_eucjp2sjis
 };
 
@@ -85,6 +86,7 @@ rb_sjis2eucjp = {
     2, /* max_input */
     2, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_sjis2eucjp
 };
 

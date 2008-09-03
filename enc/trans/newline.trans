@@ -21,33 +21,41 @@
 
 <%= transcode_generated_code %>
 
+#define NORMAL 0
+#define JUST_AFTER_CR 1
+
 static int
-fun_so_universal_newline(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+universal_newline_init(void *statep)
 {
+    unsigned char *sp = statep;
+    *sp = NORMAL;
+    return 0;
+}
+
+static int
+fun_so_universal_newline(void *statep, const unsigned char* s, size_t l, unsigned char* o)
+{
+    unsigned char *sp = statep;
     int len;
-    /*
-      t->stateful[0] == 0       : normal
-      t->stateful[0] == 1       : just after '\r'
-    */
     if (s[0] == '\n') {
-        if (t->stateful[0] == 0) {
+        if (*sp == NORMAL) {
             o[0] = '\n';
             len = 1;
         }
-        else {
+        else { /* JUST_AFTER_CR */
             len = 0;
         }
-        t->stateful[0] = 0;
+        *sp = NORMAL;
     }
     else if (s[0] == '\r') {
         o[0] = '\n';
         len = 1;
-        t->stateful[0] = 1;
+        *sp = JUST_AFTER_CR;
     }
     else {
         o[0] = s[0];
         len = 1;
-        t->stateful[0] = 0;
+        *sp = NORMAL;
     }
     return len;
 }
@@ -60,6 +68,7 @@ rb_universal_newline = {
     1, /* max_input */
     1, /* max_output */
     stateful_decoder, /* stateful_type */
+    1, universal_newline_init, universal_newline_init, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_universal_newline
 };
 
@@ -71,6 +80,7 @@ rb_crlf_newline = {
     1, /* max_input */
     2, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, NULL
 };
 
@@ -82,6 +92,7 @@ rb_cr_newline = {
     1, /* max_input */
     1, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, NULL
 };
 

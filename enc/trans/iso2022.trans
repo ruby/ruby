@@ -27,10 +27,22 @@
 
 <%= transcode_generated_code %>
 
-static VALUE
-fun_si_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l)
+#define G0_ASCII 0
+#define G0_JISX0208 1
+
+static int
+iso2022jp_init(void *statep)
 {
-    if (t->stateful[0] == 0)
+    unsigned char *sp = statep;
+    *sp = G0_ASCII;
+    return 0;
+}
+
+static VALUE
+fun_si_iso2022jp_to_eucjp(void *statep, const unsigned char *s, size_t l)
+{
+    unsigned char *sp = statep;
+    if (*sp == G0_ASCII)
         return (VALUE)NOMAP;
     else if (0x21 <= s[0] && s[0] <= 0x7e)
         return (VALUE)iso2022jp_to_eucjp_jisx0208_rest;
@@ -39,14 +51,15 @@ fun_si_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l)
 }
 
 static int
-fun_so_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_iso2022jp_to_eucjp(void *statep, const unsigned char *s, size_t l, unsigned char* o)
 {
+    unsigned char *sp = statep;
     if (s[0] == 0x1b) {
         if (s[1] == '(') {
             switch (s[l-1]) {
               case 'B':
               case 'J':
-                t->stateful[0] = 0;
+                *sp = G0_ASCII;
                 break;
             }
         }
@@ -54,7 +67,7 @@ fun_so_iso2022jp_to_eucjp(rb_transcoding* t, const unsigned char* s, size_t l, u
             switch (s[l-1]) {
               case '@':
               case 'B':
-                t->stateful[0] = 1;
+                *sp = G0_JISX0208;
                 break;
             }
         }
@@ -75,31 +88,28 @@ rb_ISO_2022_JP_to_EUC_JP = {
     3, /* max_input */
     3, /* max_output */
     stateful_decoder, /* stateful_type */
+    1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
     NULL, fun_si_iso2022jp_to_eucjp, NULL, fun_so_iso2022jp_to_eucjp
 };
 
 static int
-fun_so_eucjp_to_iso2022jp(rb_transcoding *t, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_eucjp_to_iso2022jp(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
+    unsigned char *sp = statep;
     unsigned char *output0 = o;
 
-    if (t->stateful[0] == 0) {
-        t->stateful[0] = 1; /* initialized flag */
-        t->stateful[1] = 1; /* G0 = ASCII */
-    }
-
-    if (l != t->stateful[1]) {
+    if (*sp != (l == 1 ? G0_ASCII : G0_JISX0208)) {
         if (l == 1) {
             *o++ = 0x1b;
             *o++ = '(';
             *o++ = 'B';
-            t->stateful[1] = 1; /* G0 = ASCII */
+            *sp = G0_ASCII;
         }
         else {
             *o++ = 0x1b;
             *o++ = '$';
             *o++ = 'B';
-            t->stateful[1] = 2; /* G0 = JIS X 0208 1983 */
+            *sp = G0_JISX0208; /* JIS X 0208 1983 */
         }
     }
 
@@ -115,27 +125,27 @@ fun_so_eucjp_to_iso2022jp(rb_transcoding *t, const unsigned char *s, size_t l, u
 }
 
 static int
-iso2022jp_reset_sequence_size(rb_transcoding *t)
+iso2022jp_reset_sequence_size(void *statep)
 {
-    if (t->stateful[1] == 2)
+    unsigned char *sp = statep;
+    if (*sp == G0_JISX0208)
         return 3;
     return 0;
 }
 
 static int
-finish_eucjp_to_iso2022jp(rb_transcoding *t, unsigned char *o)
+finish_eucjp_to_iso2022jp(void *statep, unsigned char *o)
 {
+    unsigned char *sp = statep;
     unsigned char *output0 = o;
 
-    if (t->stateful[0] == 0)
+    if (*sp == G0_ASCII)
         return 0;
 
-    if (t->stateful[1] != 1) {
-        *o++ = 0x1b;
-        *o++ = '(';
-        *o++ = 'B';
-        t->stateful[1] = 1;
-    }
+    *o++ = 0x1b;
+    *o++ = '(';
+    *o++ = 'B';
+    *sp = G0_ASCII;
 
     return o - output0;
 }
@@ -148,6 +158,7 @@ rb_EUC_JP_to_ISO_2022_JP = {
     3, /* max_input */
     5, /* max_output */
     stateful_encoder, /* stateful_type */
+    1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_eucjp_to_iso2022jp,
     finish_eucjp_to_iso2022jp,
     iso2022jp_reset_sequence_size, finish_eucjp_to_iso2022jp

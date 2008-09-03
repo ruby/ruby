@@ -590,6 +590,7 @@ static const rb_transcoder
     #{max_input}, /* max_input */
     #{max_output}, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, NULL,
     NULL, NULL, NULL
 };

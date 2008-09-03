@@ -544,22 +544,22 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             SUSPEND_OBUF(19); *out_p++ = getBT3(next_info);
 	    continue;
 	  case FUNii:
-	    next_info = (VALUE)(*tr->func_ii)(tc, next_info);
+	    next_info = (VALUE)(*tr->func_ii)(TRANSCODING_STATE(tc), next_info);
 	    goto follow_info;
 	  case FUNsi:
             {
                 const unsigned char *char_start;
                 size_t char_len;
                 char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
-                next_info = (VALUE)(*tr->func_si)(tc, char_start, (size_t)char_len);
+                next_info = (VALUE)(*tr->func_si)(TRANSCODING_STATE(tc), char_start, (size_t)char_len);
                 goto follow_info;
             }
 	  case FUNio:
             SUSPEND_OBUF(13);
             if (tr->max_output <= out_stop - out_p)
-                out_p += (VALUE)(*tr->func_io)(tc, next_info, out_p);
+                out_p += (VALUE)(*tr->func_io)(TRANSCODING_STATE(tc), next_info, out_p);
             else {
-                writebuf_len = (VALUE)(*tr->func_io)(tc, next_info, TRANSCODING_WRITEBUF(tc));
+                writebuf_len = (VALUE)(*tr->func_io)(TRANSCODING_STATE(tc), next_info, TRANSCODING_WRITEBUF(tc));
                 writebuf_off = 0;
                 while (writebuf_off < writebuf_len) {
                     SUSPEND_OBUF(20);
@@ -574,11 +574,11 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 SUSPEND_OBUF(14);
                 if (tr->max_output <= out_stop - out_p) {
                     char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
-                    out_p += (VALUE)(*tr->func_so)(tc, char_start, (size_t)char_len, out_p);
+                    out_p += (VALUE)(*tr->func_so)(TRANSCODING_STATE(tc), char_start, (size_t)char_len, out_p);
                 }
                 else {
                     char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
-                    writebuf_len = (VALUE)(*tr->func_so)(tc, char_start, (size_t)char_len, TRANSCODING_WRITEBUF(tc));
+                    writebuf_len = (VALUE)(*tr->func_so)(TRANSCODING_STATE(tc), char_start, (size_t)char_len, TRANSCODING_WRITEBUF(tc));
                     writebuf_off = 0;
                     while (writebuf_off < writebuf_len) {
                         SUSPEND_OBUF(22);
@@ -632,10 +632,10 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     if (tr->finish_func) {
         SUSPEND_OBUF(4);
         if (tr->max_output <= out_stop - out_p) {
-            out_p += tr->finish_func(tc, out_p);
+            out_p += tr->finish_func(TRANSCODING_STATE(tc), out_p);
         }
         else {
-            writebuf_len = tr->finish_func(tc, TRANSCODING_WRITEBUF(tc));
+            writebuf_len = tr->finish_func(TRANSCODING_STATE(tc), TRANSCODING_WRITEBUF(tc));
             writebuf_off = 0;
             while (writebuf_off < writebuf_len) {
                 SUSPEND_OBUF(23);
@@ -687,7 +687,11 @@ rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
     tc = ALLOC(rb_transcoding);
     tc->transcoder = tr;
     tc->flags = flags;
-    memset(tc->stateful, 0, sizeof(tc->stateful));
+    if (TRANSCODING_STATE_EMBED_MAX < tr->state_size)
+        tc->state = xmalloc(tr->state_size);
+    if (tr->state_init_func) {
+        (tr->state_init_func)(TRANSCODING_STATE(tc)); /* xxx: check return value */
+    }
     tc->resume_position = 0;
     tc->recognized_len = 0;
     tc->readagain_len = 0;
@@ -718,6 +722,11 @@ static void
 rb_transcoding_close(rb_transcoding *tc)
 {
     const rb_transcoder *tr = tc->transcoder;
+    if (tr->state_fini_func) {
+        (tr->state_fini_func)(TRANSCODING_STATE(tc)); /* check return value? */
+    }
+    if (TRANSCODING_STATE_EMBED_MAX < tr->state_size)
+        xfree(tc->state);
     if (sizeof(tc->readbuf.ary) < tr->max_input)
         xfree(tc->readbuf.ptr);
     if (sizeof(tc->writebuf.ary) < tr->max_output)

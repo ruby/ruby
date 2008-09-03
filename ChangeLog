@@ -1,3 +1,58 @@
+Wed Sep  3 23:03:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoding): remove stateful field.
+	  add state field.
+	  (TRANSCODING_STATE): defined.
+	  (rb_transcoder): add fields: state_size, state_init_func,
+	  state_fini_func.
+	  change rb_transcoding* argument to void*.
+
+	* transcode.c (transcode_restartable0): use TRANSCODING_STATE for
+	  first arguments of transcoder functions.
+	  (rb_transcoding_open_by_transcoder): initialize state field.
+	  (rb_transcoding_close): finalize state field.
+
+	* tool/transcode-tblgen.rb: provide state size/init/fini.
+
+	* enc/trans/newline.trans (universal_newline_init): defined.
+	  (fun_so_universal_newline): take void* as a state pointer.
+	  (rb_universal_newline): provide state size/init/fini.
+	  (rb_crlf_newline): ditto.
+	  (rb_cr_newline): ditto.
+
+	* enc/trans/iso2022.trans (iso2022jp_init): defined.
+	  (fun_si_iso2022jp_to_eucjp): take void* as a state pointer.
+	  (fun_so_iso2022jp_to_eucjp): ditto.
+	  (fun_so_eucjp_to_iso2022jp): ditto.
+	  (iso2022jp_reset_sequence_size): ditto.
+	  (finish_eucjp_to_iso2022jp): ditto.
+	  (rb_ISO_2022_JP_to_EUC_JP): provide state size/init/fini.
+	  (rb_EUC_JP_to_ISO_2022_JP): ditto.
+
+	* enc/trans/utf_16_32.trans (fun_so_from_utf_16be): take void* as a
+	  state pointer.
+	  (fun_so_to_utf_16be): ditto.
+	  (fun_so_from_utf_16le): ditto.
+	  (fun_so_to_utf_16le): ditto.
+	  (fun_so_from_utf_32be): ditto.
+	  (fun_so_to_utf_32be): ditto.
+	  (fun_so_from_utf_32le): ditto.
+	  (fun_so_to_utf_32le): ditto.
+	  (rb_from_UTF_16BE): provide state size/init/fini.
+	  (rb_to_UTF_16BE): ditto.
+	  (rb_from_UTF_16LE): ditto.
+	  (rb_to_UTF_16LE): ditto.
+	  (rb_from_UTF_32BE): ditto.
+	  (rb_to_UTF_32BE): ditto.
+	  (rb_from_UTF_32LE): ditto.
+	  (rb_to_UTF_32LE): ditto.
+
+	* enc/trans/japanese.trans (fun_so_eucjp2sjis): take void* as a state
+	  pointer.
+	  (fun_so_sjis2eucjp): ditto.
+	  (rb_eucjp2sjis): provide state size/init/fini.
+	  (rb_sjis2eucjp): provide state size/init/fini.
+
 Wed Sep  3 22:31:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/mathn.rb (Integer): moved into prime.rb.

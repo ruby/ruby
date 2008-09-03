@@ -38,7 +38,7 @@
 <%= transcode_generated_code %>
 
 static int
-fun_so_from_utf_16be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_from_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (!s[0] && s[1]<0x80) {
         o[0] = s[1];
@@ -66,7 +66,7 @@ fun_so_from_utf_16be(rb_transcoding* t, const unsigned char* s, size_t l, unsign
 }
 
 static int
-fun_so_to_utf_16be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_to_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (!(s[0]&0x80)) {
         o[0] = 0x00;
@@ -94,7 +94,7 @@ fun_so_to_utf_16be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned
 }
 
 static int
-fun_so_from_utf_16le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_from_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (!s[1] && s[0]<0x80) {
         o[0] = s[0];
@@ -122,7 +122,7 @@ fun_so_from_utf_16le(rb_transcoding* t, const unsigned char* s, size_t l, unsign
 }
 
 static int
-fun_so_to_utf_16le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_to_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (!(s[0]&0x80)) {
         o[1] = 0x00;
@@ -150,7 +150,7 @@ fun_so_to_utf_16le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned
 }
 
 static int
-fun_so_from_utf_32be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_from_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (!s[1]) {
         if (s[2]==0 && s[3]<0x80) {
@@ -179,7 +179,7 @@ fun_so_from_utf_32be(rb_transcoding* t, const unsigned char* s, size_t l, unsign
 }
 
 static int
-fun_so_to_utf_32be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_to_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     o[0] = 0;
     if (!(s[0]&0x80)) {
@@ -205,7 +205,7 @@ fun_so_to_utf_32be(rb_transcoding* t, const unsigned char* s, size_t l, unsigned
 }
 
 static int
-fun_so_from_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_from_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     if (!s[2]) {
         if (s[1]==0 && s[0]<0x80) {
@@ -234,7 +234,7 @@ fun_so_from_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsign
 }
 
 static int
-fun_so_to_utf_32le(rb_transcoding* t, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_to_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     o[3] = 0;
     if (!(s[0]&0x80)) {
@@ -267,6 +267,7 @@ rb_from_UTF_16BE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_from_utf_16be
 };
 
@@ -278,6 +279,7 @@ rb_to_UTF_16BE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_to_utf_16be
 };
 
@@ -289,6 +291,7 @@ rb_from_UTF_16LE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_from_utf_16le
 };
 
@@ -300,6 +303,7 @@ rb_to_UTF_16LE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_to_utf_16le
 };
 
@@ -311,6 +315,7 @@ rb_from_UTF_32BE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_from_utf_32be
 };
 
@@ -322,6 +327,7 @@ rb_to_UTF_32BE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_to_utf_32be
 };
 
@@ -333,6 +339,7 @@ rb_from_UTF_32LE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_from_utf_32le
 };
 
@@ -344,6 +351,7 @@ rb_to_UTF_32LE = {
     4, /* max_input */
     4, /* max_output */
     stateless_converter, /* stateful_type */
+    0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_to_utf_32le
 };
 
