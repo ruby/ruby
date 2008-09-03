@@ -32,7 +32,7 @@ class TestEtc < Test::Unit::TestCase
     Etc.passwd {|s| passwd[s.uid] = s unless passwd[s.uid] }
     passwd.values.each do |s|
       assert_equal(s, Etc.getpwuid(s.uid))
-      assert_equal(s, Etc.getpwuid) if Etc.getlogin == s.name
+      assert_equal(s, Etc.getpwuid) if Process.euid == s.uid
     end
   end
 
@@ -73,7 +73,7 @@ class TestEtc < Test::Unit::TestCase
     end
     groups.each do |s|
       assert_equal(s, Etc.getgrgid(s.gid))
-      assert_equal(s, Etc.getgrgid) if Etc.getlogin == s.name
+      assert_equal(s, Etc.getgrgid) if Process.egid == s.gid
     end
   end
 

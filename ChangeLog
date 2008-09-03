@@ -1,3 +1,9 @@
+Thu Sep  4 00:01:45 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/etc/test_etc.rb (test_getpwuid, test_getgrgid): use
+	  Process.euid and egid instead of Etc.getlogin to identify current
+	  user which may be different from a login one (e.g., su command).
+
 Wed Sep  3 23:52:47 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/etc/test_etc.rb: check only typical use of
