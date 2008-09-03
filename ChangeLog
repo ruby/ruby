@@ -1,3 +1,10 @@
+Wed Sep  3 20:58:30 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (BYTE_ADDR): defined.
+	  (WORD_ADDR): ditto.
+	  (BL_BASE): use BYTE_ADDR and WORD_ADDR.
+	  (BL_INFO): use WORD_ADDR.
+
 Wed Sep  3 20:47:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder): new field: byte_array_length and

@@ -491,16 +491,17 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             continue;
         }
 
+#define BYTE_ADDR(index) (tr->byte_array + (index))
+#define WORD_ADDR(index) (tr->word_array + (index)/sizeof(*tr->word_array))
+#define BL_BASE(next_table) BYTE_ADDR(BYTE_LOOKUP_BASE(WORD_ADDR(next_table)))
+#define BL_INFO(next_table) WORD_ADDR(BYTE_LOOKUP_INFO(WORD_ADDR(next_table)))
+
 	next_byte = (unsigned char)*in_p++;
       follow_byte:
-#define BL_BASE(next_table) \
-        (tr->byte_array + BYTE_LOOKUP_BASE(tr->word_array + next_table/sizeof(*tr->word_array)))
         if (next_byte < BL_BASE(next_table)[0] || BL_BASE(next_table)[1] < next_byte)
             next_info = INVALID;
         else {
             unsigned int next_offset = BL_BASE(next_table)[2+next_byte-BL_BASE(next_table)[0]];
-#define BL_INFO(next_table) \
-            (tr->word_array + BYTE_LOOKUP_INFO(tr->word_array + next_table/sizeof(*tr->word_array))/sizeof(*tr->word_array))
             next_info = (VALUE)BL_INFO(next_table)[next_offset];
         }
       follow_info:
