@@ -890,6 +890,16 @@ rb_thread_check_ints(void)
     RUBY_VM_CHECK_INTS();
 }
 
+/*
+ * Hidden API for tcl/tk wrapper.
+ * There is no guarantee to perpetuate it.
+ */
+int
+rb_thread_check_trap_pending(void)
+{
+    return GET_THREAD()->exec_signal != 0;
+}
+
 struct timeval rb_time_timeval();
 
 void

@@ -1,3 +1,10 @@
+Thu Sep  4 20:57:54 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_check_trap_pending): added for compatibility.
+
+	* ext/tk/tcltklib.c, ext/tk/tkutil/tkutil.c: remove ruby/signal.h
+	  dependency.
+
 Thu Sep  4 20:30:24 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (PType): defined unconditionaly.

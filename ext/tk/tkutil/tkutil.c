@@ -11,11 +11,6 @@
 
 #include "ruby.h"
 
-#ifdef HAVE_RUBY_SIGNAL_H
-#include "ruby/signal.h"
-#else
-#include "rubysig.h"
-#endif
 #ifdef HAVE_RUBY_ST_H
 #include "ruby/st.h"
 #else
@@ -895,15 +890,12 @@ tk_conv_args(argc, argv, self)
 {
     int idx, size;
     volatile VALUE dst;
-    int thr_crit_bup;
     VALUE old_gc;
 
     if (argc < 2) {
       rb_raise(rb_eArgError, "too few arguments");
     }
 
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
     old_gc = rb_gc_disable();
 
     for(size = 0, idx = 2; idx < argc; idx++) {
@@ -928,7 +920,6 @@ tk_conv_args(argc, argv, self)
     }
 
     if (old_gc == Qfalse) rb_gc_enable();
-    rb_thread_critical = thr_crit_bup;
 
     return rb_ary_plus(argv[0], dst);
 }
@@ -1599,11 +1590,7 @@ cbsubst_scan_args(self, arg_key, val_ary)
     unsigned char type_chr;
     volatile VALUE dst = rb_ary_new2(vallen);
     volatile VALUE proc;
-    int thr_crit_bup;
     VALUE old_gc;
-
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
 
     old_gc = rb_gc_disable();
 
@@ -1632,7 +1619,6 @@ cbsubst_scan_args(self, arg_key, val_ary)
     }
 
     if (old_gc == Qfalse) rb_gc_enable();
-    rb_thread_critical = thr_crit_bup;
 
     return dst;
 }

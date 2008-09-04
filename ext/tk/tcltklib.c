@@ -8,11 +8,6 @@
 
 #include "ruby.h"
 
-#ifdef HAVE_RUBY_SIGNAL_H
-#include "ruby/signal.h"
-#else
-#include "rubysig.h"
-#endif
 #ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
 #endif
@@ -53,6 +48,9 @@
 #define TCL_BETA_RELEASE        1
 #define TCL_FINAL_RELEASE       2
 #endif
+
+static VALUE rb_thread_critical; /* dummy */
+int rb_thread_check_trap_pending();
 
 static struct {
   int major;
@@ -1623,6 +1621,28 @@ get_thread_alone_check_flag()
 }
 #endif
 
+#define TRAP_CHECK() do { \
+    if (trap_check(check_var) == 0) return 0; \
+} while (0)
+
+static int
+trap_check(int *check_var)
+{
+    DUMP1("trap check");
+
+    if (rb_thread_check_trap_pending()) {
+	if (check_var != (int*)NULL) {
+	    /* wait command */
+	    return 0;
+	}
+	else {
+	    rb_thread_check_ints();
+	}
+    }
+
+    return 1;
+}
+
 static int
 lib_eventloop_core(check_root, update_flag, check_var, interp)
     int check_root;
@@ -1755,28 +1775,12 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
               }
             }
 
-            DUMP1("trap check");
-            if (rb_trap_pending) {
-                run_timer_flag = 0;
-                if (rb_prohibit_interrupt || check_var != (int*)NULL) {
-                    /* pending or on wait command */
-                    return 0;
-                } else {
-                    rb_trap_exec();
-                }
-            }
+	    TRAP_CHECK();
 
-            DUMP1("check Root Widget");
+	    DUMP1("check Root Widget");
             if (check_root && tk_stubs_init_p() && Tk_GetNumMainWindows() == 0) {
                 run_timer_flag = 0;
-                if (rb_trap_pending) {
-                    if (rb_prohibit_interrupt || check_var != (int*)NULL) {
-                        /* pending or on wait command */
-                        return 0;
-                    } else {
-                        rb_trap_exec();
-                    }
-                }
+		TRAP_CHECK();
                 return 1;
             }
 
@@ -1886,16 +1890,7 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                         return 0;
                     }
 
-                    DUMP1("trap check");
-                    if (rb_trap_pending) {
-                        run_timer_flag = 0;
-                        if (rb_prohibit_interrupt || check_var != (int*)NULL) {
-                            /* pending or on wait command */
-                            return 0;
-                        } else {
-                            rb_trap_exec();
-                        }
-                    }
+		    TRAP_CHECK();
 
                     if (check_var != (int*)NULL 
                         && !NIL_P(rbtk_pending_exception)) {
@@ -1966,28 +1961,12 @@ lib_eventloop_core(check_root, update_flag, check_var, interp)
                     return 1;
                 }
 
-                DUMP1("trap check");
-                if (rb_trap_pending) {
-                    run_timer_flag = 0;
-                    if (rb_prohibit_interrupt || check_var != (int*)NULL) {
-                        /* pending or on wait command */
-                        return 0;
-                    } else {
-                        rb_trap_exec();
-                    }
-                }
+		TRAP_CHECK();
 
                 DUMP1("check Root Widget");
                 if (check_root && tk_stubs_init_p() && Tk_GetNumMainWindows() == 0) {
                     run_timer_flag = 0;
-                    if (rb_trap_pending) {
-                        if (rb_prohibit_interrupt || check_var != (int*)NULL) {
-                            /* pending or on wait command */
-                            return 0;
-                        } else {
-                            rb_trap_exec();
-                        }
-                    }
+		    TRAP_CHECK();
                     return 1;
                 }
 
@@ -2823,7 +2802,6 @@ tcl_protect(interp, proc, data)
     VALUE (*proc)();
     VALUE data;
 {
-    int old_trapflag = rb_trap_immediate;
     int code;
 
 #ifdef HAVE_NATIVETHREAD
@@ -2834,10 +2812,7 @@ tcl_protect(interp, proc, data)
 #endif
 #endif
 
-    rb_trap_immediate = 0;
     code = tcl_protect_core(interp, proc, data);
-    rb_trap_immediate = old_trapflag;
-
     return code;
 }
 
@@ -3404,7 +3379,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
     }
 
     /* trap check */
-    if (rb_trap_pending) {
+    if (rb_thread_check_trap_pending()) {
         Tcl_Release(interp);
 
         return TCL_RETURN;
@@ -3770,7 +3745,7 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
     }
 
     /* trap check */
-    if (rb_trap_pending) {
+    if (rb_thread_check_trap_pending()) {
 #if TCL_MAJOR_VERSION >= 8
         Tcl_DecrRefCount(objv[1]);
 #endif
@@ -4059,7 +4034,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
         }
 
         /* trap check */
-        if (rb_trap_pending) {
+        if (rb_thread_check_trap_pending()) {
             Tcl_Release(interp);
 
             return TCL_RETURN;
@@ -4119,7 +4094,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
         }
 
         /* trap check */
-        if (rb_trap_pending) {
+        if (rb_thread_check_trap_pending()) {
 #if TCL_MAJOR_VERSION >= 8
             Tcl_DecrRefCount(objv[2]);
 #endif
@@ -4214,7 +4189,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
         }
 
         /* trap check */
-        if (rb_trap_pending) {
+        if (rb_thread_check_trap_pending()) {
             Tcl_Release(interp);
 
             return TCL_RETURN;
