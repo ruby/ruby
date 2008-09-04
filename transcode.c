@@ -21,6 +21,9 @@ VALUE rb_eNoConverter;
 VALUE rb_cEncodingConverter;
 
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
+static VALUE sym_universal_newline_decoder;
+static VALUE sym_crlf_newline_encoder;
+static VALUE sym_cr_newline_encoder;
 
 static VALUE sym_invalid_byte_sequence;
 static VALUE sym_undefined_conversion;
@@ -1998,27 +2001,42 @@ static int
 econv_opts(VALUE opt)
 {
     VALUE v;
-    int options = 0;
+    int ecflags = 0;
+
     v = rb_hash_aref(opt, sym_invalid);
     if (NIL_P(v)) {
     }
     else if (v==sym_replace) {
-        options |= ECONV_INVALID_REPLACE;
+        ecflags |= ECONV_INVALID_REPLACE;
         v = rb_hash_aref(opt, sym_replace);
     }
     else {
         rb_raise(rb_eArgError, "unknown value for invalid character option");
     }
+
     v = rb_hash_aref(opt, sym_undef);
     if (NIL_P(v)) {
     }
     else if (v==sym_replace) {
-        options |= ECONV_UNDEF_REPLACE;
+        ecflags |= ECONV_UNDEF_REPLACE;
     }
     else {
         rb_raise(rb_eArgError, "unknown value for undefined character option");
     }
-    return options;
+
+    v = rb_hash_aref(opt, sym_universal_newline_decoder);
+    if (RTEST(v))
+        ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
+
+    v = rb_hash_aref(opt, sym_crlf_newline_encoder);
+    if (RTEST(v))
+        ecflags |= ECONV_CRLF_NEWLINE_ENCODER;
+
+    v = rb_hash_aref(opt, sym_cr_newline_encoder);
+    if (RTEST(v))
+        ecflags |= ECONV_CR_NEWLINE_ENCODER;
+
+    return ecflags;
 }
 
 int
@@ -2307,12 +2325,17 @@ make_dummy_encoding(const char *name)
 /*
  * call-seq:
  *   Encoding::Converter.new(source_encoding, destination_encoding)
- *   Encoding::Converter.new(source_encoding, destination_encoding, flags)
+ *   Encoding::Converter.new(source_encoding, destination_encoding, opthash)
  *
- * possible flags:
- *   Encoding::Converter::UNIVERSAL_NEWLINE_DECODER # convert CRLF and CR to LF at last
- *   Encoding::Converter::CRLF_NEWLINE_ENCODER      # convert LF to CRLF at first
- *   Encoding::Converter::CR_NEWLINE_ENCODER        # convert LF to CR at first
+ * possible opthash elements:
+ *   :universal_newline_decoder => true # convert CRLF and CR to LF at last      
+ *   :crlf_newline_encoder => true      # convert LF to CRLF at first
+ *   :cr_newline_encoder => true        # convert LF to CR at first
+ *   :invalid => nil                    # error on invalid byte sequence (default)
+ *   :invalid => :replace               # replace invalid byte sequence
+ *   :undef => nil                      # error on undefined conversion (default)
+ *   :undef => :replace                 # replace undefined conversion
+ *   :replace => string                 # replacement string ("?" or "\uFFFD" if not specified)
  *
  * Encoding::Converter.new creates an instance of Encoding::Converter.
  *
@@ -2327,38 +2350,32 @@ make_dummy_encoding(const char *name)
  *
  *   # (1) convert UTF-16BE to UTF-8
  *   # (2) convert CRLF and CR to LF
- *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+ *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8", :universal_newline_decoder => true)
  *
  *   # (1) convert LF to CRLF
  *   # (2) convert UTF-8 to UTF-16BE 
- *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+ *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE", :crlf_newline_encoder => true)
  *
  */
 static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
-    VALUE source_encoding, destination_encoding, flags_v, opt, ecopts;
+    VALUE source_encoding, destination_encoding, opthash, ecopts;
     int sidx, didx;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
     int ecflags;
 
-    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &flags_v);
+    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &opthash);
 
-    if (flags_v == Qnil) {
+    if (opthash == Qnil) {
         ecflags = 0;
         ecopts = Qnil;
     }
     else {
-        opt = rb_check_convert_type(argv[argc-1], T_HASH, "Hash", "to_hash");
-        if (!NIL_P(opt)) {
-            ecflags = rb_econv_prepare_opts(opt, &ecopts);
-        }
-        else {
-            ecflags = NUM2INT(flags_v);
-            ecopts = Qnil;
-        }
+        opthash = rb_convert_type(opthash, T_HASH, "Hash", "to_hash");
+        ecflags = rb_econv_prepare_opts(opthash, &ecopts);
     }
 
     senc = NULL;
@@ -3073,7 +3090,7 @@ econv_get_replacement(VALUE self)
  *
  * sets the replacement string.
  *
- *  ec = Encoding::Converter.new("utf-8", "us-ascii", Encoding::Converter::UNDEF_REPLACE)
+ *  ec = Encoding::Converter.new("utf-8", "us-ascii", :undef => :replace)
  *  ec.replacement = "<undef>"
  *  p ec.convert("a \u3042 b")      #=> "a <undef> b"
  */
@@ -3281,6 +3298,9 @@ Init_transcode(void)
     sym_finished = ID2SYM(rb_intern("finished"));
     sym_output_followed_by_input = ID2SYM(rb_intern("output_followed_by_input"));
     sym_incomplete_input = ID2SYM(rb_intern("incomplete_input"));
+    sym_universal_newline_decoder = ID2SYM(rb_intern("universal_newline_decoder"));
+    sym_crlf_newline_encoder = ID2SYM(rb_intern("crlf_newline_encoder"));
+    sym_cr_newline_encoder = ID2SYM(rb_intern("cr_newline_encoder"));
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);
@@ -3300,15 +3320,8 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "last_error", econv_last_error, 0);
     rb_define_method(rb_cEncodingConverter, "replacement", econv_get_replacement, 0);
     rb_define_method(rb_cEncodingConverter, "replacement=", econv_set_replacement, 1);
-    rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
-    rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
-    rb_define_const(rb_cEncodingConverter, "UNDEF_MASK", INT2FIX(ECONV_UNDEF_MASK));
-    rb_define_const(rb_cEncodingConverter, "UNDEF_REPLACE", INT2FIX(ECONV_UNDEF_REPLACE));
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
-    rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
-    rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
 
     rb_define_method(rb_eConversionUndefined, "source_encoding_name", ecerr_source_encoding_name, 0);
     rb_define_method(rb_eConversionUndefined, "destination_encoding_name", ecerr_destination_encoding_name, 0);

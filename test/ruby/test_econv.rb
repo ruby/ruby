@@ -328,7 +328,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_universal_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", universal_newline_decoder: true)
     a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
     src << "abc\r\ndef"; check_ec("abc\ndef",                             "", :source_buffer_empty, *a)
     src << "ghi\njkl";   check_ec("abc\ndefghi\njkl",                     "", :source_buffer_empty, *a)
@@ -339,7 +339,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_universal_newline2
-    ec = Encoding::Converter.new("", "", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+    ec = Encoding::Converter.new("", "", universal_newline_decoder: true)
     a = ["", src="", ec, nil, 50, Encoding::Converter::PARTIAL_INPUT]
     src << "abc\r\ndef"; check_ec("abc\ndef",                             "", :source_buffer_empty, *a)
     src << "ghi\njkl";   check_ec("abc\ndefghi\njkl",                     "", :source_buffer_empty, *a)
@@ -350,22 +350,22 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_crlf_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", crlf_newline_encoder: true)
     assert_econv("abc\r\ndef", :finished, 50, ec, "abc\ndef", "")
   end
 
   def test_crlf_newline2
-    ec = Encoding::Converter.new("", "", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+    ec = Encoding::Converter.new("", "", crlf_newline_encoder: true)
     assert_econv("abc\r\ndef", :finished, 50, ec, "abc\ndef", "")
   end
 
   def test_cr_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::CR_NEWLINE_ENCODER)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", cr_newline_encoder: true)
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
   def test_cr_newline2
-    ec = Encoding::Converter.new("", "", Encoding::Converter::CR_NEWLINE_ENCODER)
+    ec = Encoding::Converter.new("", "", cr_newline_encoder: true)
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
@@ -516,7 +516,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_invalid_replace
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::INVALID_REPLACE)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", invalid: :replace)
     ret = ec.primitive_convert(src="abc\x80def", dst="", nil, 100)
     assert_equal(:finished, ret)
     assert_equal("", src)
@@ -532,7 +532,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_undef_replace
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::UNDEF_REPLACE)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", :undef => :replace)
     ret = ec.primitive_convert(src="abc\u{fffd}def", dst="", nil, 100)
     assert_equal(:finished, ret)
     assert_equal("", src)
@@ -650,7 +650,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_set_replacement
-    ec = Encoding::Converter.new("utf-8", "us-ascii", Encoding::Converter::UNDEF_REPLACE)
+    ec = Encoding::Converter.new("utf-8", "us-ascii", :undef => :replace)
     ec.replacement = "<undef>"
     assert_equal("a <undef> b", ec.convert("a \u3042 b"))
   end
