@@ -697,9 +697,9 @@ make_writeconv(rb_io_t *fptr)
 
         /* ECONV_INVALID_XXX and ECONV_UNDEF_XXX should be set both.
          * But ECONV_CRLF_NEWLINE_ENCODER should be set only for the first. */
-        fptr->writeconv_pre_flags = fptr->encs.flags;
+        fptr->writeconv_pre_ecflags = fptr->encs.ecflags;
         fptr->writeconv_pre_ecopts = fptr->encs.ecopts;
-        ecflags = fptr->encs.flags;
+        ecflags = fptr->encs.ecflags;
         ecopts = fptr->encs.ecopts;
 
 #ifdef TEXTMODE_NEWLINE_ENCODER
@@ -714,7 +714,7 @@ make_writeconv(rb_io_t *fptr)
         }
 
         if (NEED_NEWLINE_ENCODER(fptr))
-            fptr->writeconv_pre_flags |= TEXTMODE_NEWLINE_ENCODER;
+            fptr->writeconv_pre_ecflags |= TEXTMODE_NEWLINE_ENCODER;
 #endif
 
         enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
@@ -757,7 +757,7 @@ io_fwrite(VALUE str, rb_io_t *fptr)
 
         if (!NIL_P(common_encoding)) {
             str = rb_str_transcode(str, common_encoding,
-                fptr->writeconv_pre_flags, fptr->writeconv_pre_ecopts);
+                fptr->writeconv_pre_ecflags, fptr->writeconv_pre_ecopts);
         }
 
         if (fptr->writeconv) {
@@ -1444,7 +1444,7 @@ make_readconv(rb_io_t *fptr)
         int ecflags;
         VALUE ecopts;
         const char *sname, *dname;
-        ecflags = fptr->encs.flags;
+        ecflags = fptr->encs.ecflags;
         ecopts = fptr->encs.ecopts;
         if (NEED_NEWLINE_DECODER(fptr))
             ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
@@ -3906,7 +3906,7 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
     *flags_p = flags;
     convconfig_p->enc = enc;
     convconfig_p->enc2 = enc2;
-    convconfig_p->flags = ecflags;
+    convconfig_p->ecflags = ecflags;
     convconfig_p->ecopts = ecopts;
 }
 
@@ -4015,7 +4015,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int modenum, int flags, convconfi
     else {
         fptr->encs.enc = NULL;
         fptr->encs.enc2 = NULL;
-        fptr->encs.flags = 0;
+        fptr->encs.ecflags = 0;
         fptr->encs.ecopts = Qnil;
     }
     fptr->pathv = rb_str_new_frozen(filename);
@@ -4038,7 +4038,7 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *mode)
     else {
         convconfig.enc = NULL;
         convconfig.enc2 = NULL;
-        convconfig.flags = 0;
+        convconfig.ecflags = 0;
         convconfig.ecopts = Qnil;
     }
 
@@ -5024,7 +5024,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	}
 	fptr->mode = flags;
 	rb_io_mode_enc(fptr, StringValueCStr(nmode));
-        fptr->encs.flags = 0;
+        fptr->encs.ecflags = 0;
         fptr->encs.ecopts = Qnil;
     }
 
@@ -6595,14 +6595,14 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2, VALUE opt)
     if (argc == 2) {
 	fptr->encs.enc2 = rb_to_encoding(v1);
 	fptr->encs.enc = rb_to_encoding(v2);
-        fptr->encs.flags = rb_econv_prepare_opts(opt, &fptr->encs.ecopts);
+        fptr->encs.ecflags = rb_econv_prepare_opts(opt, &fptr->encs.ecopts);
         clear_codeconv(fptr);
     }
     else if (argc == 1) {
 	if (NIL_P(v1)) {
 	    fptr->encs.enc = NULL;
 	    fptr->encs.enc2 = NULL;
-            fptr->encs.flags = 0;
+            fptr->encs.ecflags = 0;
             fptr->encs.ecopts = Qnil;
             clear_codeconv(fptr);
 	}
@@ -6610,12 +6610,12 @@ io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2, VALUE opt)
 	    VALUE tmp = rb_check_string_type(v1);
 	    if (!NIL_P(tmp)) {
 		mode_enc(fptr, StringValueCStr(tmp));
-                fptr->encs.flags = rb_econv_prepare_opts(opt, &fptr->encs.ecopts);
+                fptr->encs.ecflags = rb_econv_prepare_opts(opt, &fptr->encs.ecopts);
 	    }
 	    else {
 		fptr->encs.enc = rb_to_encoding(v1);
 		fptr->encs.enc2 = NULL;
-                fptr->encs.flags = 0;
+                fptr->encs.ecflags = 0;
                 fptr->encs.ecopts = Qnil;
                 clear_codeconv(fptr);
 	    }

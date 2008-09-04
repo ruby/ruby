@@ -1,3 +1,11 @@
+Thu Sep  4 19:20:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_enc_t): rename flags to ecflags.
+	  (rb_io_t): rename writeconv_pre_flags to writeconv_pre_ecflags.
+	  (MakeOpenFile): follow the renaming.
+
+	* io.c: follow the renaming.
+
 Thu Sep  4 19:10:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_INVALID_IGNORE): removed because
