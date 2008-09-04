@@ -1386,6 +1386,8 @@ mark_event_hooks(rb_event_hook_t *hook)
 void
 rb_vm_mark(void *ptr)
 {
+    int i;
+
     RUBY_MARK_ENTER("vm");
     RUBY_GC_INFO("-------------------------------------------------\n");
     if (ptr) {
