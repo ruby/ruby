@@ -486,13 +486,13 @@ def citrus_decode_mapsrc(ces, csid, mapsrcs)
   mapsrcs.split(',').each do |mapsrc|
     path = [$srcdir]
     mode = nil
-    if mapsrc.start_with?('UCS')
+    if mapsrc.rindex('UCS', 0)
       mode = :from_ucs
       from = mapsrc[4..-1]
-      path << SUBDIR.find{|x| from.start_with?(x) }
+      path << SUBDIR.find{|x| from.rindex(x, 0) }
     else
       mode = :to_ucs
-      path << SUBDIR.find{|x| mapsrc.start_with?(x) }
+      path << SUBDIR.find{|x| mapsrc.rindex(x, 0) }
     end
     path << mapsrc.gsub(':', '@')
     path = File.join(*path)

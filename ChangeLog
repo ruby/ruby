@@ -1,3 +1,7 @@
+Thu Sep  4 10:43:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/transcode-tblgen.rb (citrus_decode_mapsrc): support older 1.8.
+
 Thu Sep  4 10:33:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_next_argv, argf_set_encoding): copy struct wise.
