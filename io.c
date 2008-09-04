@@ -1194,19 +1194,19 @@ rb_io_sync(VALUE io)
  */
 
 static VALUE
-rb_io_set_sync(VALUE io, VALUE mode)
+rb_io_set_sync(VALUE io, VALUE sync)
 {
     rb_io_t *fptr;
 
     io = GetWriteIO(io);
     GetOpenFile(io, fptr);
-    if (RTEST(mode)) {
+    if (RTEST(sync)) {
 	fptr->mode |= FMODE_SYNC;
     }
     else {
 	fptr->mode &= ~FMODE_SYNC;
     }
-    return mode;
+    return sync;
 }
 
 /*
@@ -1611,18 +1611,18 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 void
 rb_io_set_nonblock(rb_io_t *fptr)
 {
-    int flags;
+    int modenum;
 #ifdef F_GETFL
-    flags = fcntl(fptr->fd, F_GETFL);
-    if (flags == -1) {
+    modenum = fcntl(fptr->fd, F_GETFL);
+    if (modenum == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
 #else
-    flags = 0;
+    modenum = 0;
 #endif
-    if ((flags & O_NONBLOCK) == 0) {
-        flags |= O_NONBLOCK;
-        if (fcntl(fptr->fd, F_SETFL, flags) == -1) {
+    if ((modenum & O_NONBLOCK) == 0) {
+        modenum |= O_NONBLOCK;
+        if (fcntl(fptr->fd, F_SETFL, modenum) == -1) {
             rb_sys_fail_path(fptr->pathv);
         }
     }
@@ -3612,11 +3612,11 @@ rb_io_mode_flags(const char *mode)
 }
 
 int
-rb_io_modenum_flags(int mode)
+rb_io_modenum_flags(int modenum)
 {
     int flags = 0;
 
-    switch (mode & (O_RDONLY|O_WRONLY|O_RDWR)) {
+    switch (modenum & (O_RDONLY|O_WRONLY|O_RDWR)) {
       case O_RDONLY:
 	flags = FMODE_READABLE;
 	break;
@@ -3628,17 +3628,17 @@ rb_io_modenum_flags(int mode)
 	break;
     }
 
-    if (mode & O_APPEND) {
+    if (modenum & O_APPEND) {
 	flags |= FMODE_APPEND;
     }
-    if (mode & O_TRUNC) {
+    if (modenum & O_TRUNC) {
 	flags |= FMODE_TRUNC;
     }
-    if (mode & O_CREAT) {
+    if (modenum & O_CREAT) {
 	flags |= FMODE_CREATE;
     }
 #ifdef O_BINARY
-    if (mode & O_BINARY) {
+    if (modenum & O_BINARY) {
 	flags |= FMODE_BINMODE;
     }
 #endif
@@ -3649,36 +3649,36 @@ rb_io_modenum_flags(int mode)
 static int
 rb_io_flags_modenum(int flags)
 {
-    int mode = 0;
+    int modenum = 0;
 
     switch (flags & FMODE_READWRITE) {
       case FMODE_READABLE:
-        mode |= O_RDONLY;
+        modenum |= O_RDONLY;
         break;
       case FMODE_WRITABLE:
-        mode |= O_WRONLY;
+        modenum |= O_WRONLY;
         break;
       case FMODE_READWRITE:
-        mode |= O_RDWR;
+        modenum |= O_RDWR;
         break;
     }
 
     if (flags & FMODE_APPEND) {
-        mode |= O_APPEND;
+        modenum |= O_APPEND;
     }
     if (flags & FMODE_TRUNC) {
-        mode |= O_TRUNC;
+        modenum |= O_TRUNC;
     }
     if (flags & FMODE_CREATE) {
-        mode |= O_CREAT;
+        modenum |= O_CREAT;
     }
 #ifdef O_BINARY
     if (flags & FMODE_BINMODE) {
-        mode |= O_BINARY;
+        modenum |= O_BINARY;
     }
 #endif
 
-    return mode;
+    return modenum;
 }
 
 int
@@ -3690,20 +3690,20 @@ rb_io_mode_modenum(const char *mode)
 #define MODENUM_MAX 4
 
 static const char*
-rb_io_modenum_mode(int flags)
+rb_io_modenum_mode(int modenum)
 {
 #ifdef O_BINARY
-# define MODE_BINARY(a,b) ((flags & O_BINARY) ? (b) : (a))
+# define MODE_BINARY(a,b) ((modenum & O_BINARY) ? (b) : (a))
 #else
 # define MODE_BINARY(a,b) (a)
 #endif
-    if (flags & O_APPEND) {
-	if ((flags & O_RDWR) == O_RDWR) {
+    if (modenum & O_APPEND) {
+	if ((modenum & O_RDWR) == O_RDWR) {
 	    return MODE_BINARY("a+", "ab+");
 	}
 	return MODE_BINARY("a", "ab");
     }
-    switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
+    switch (modenum & (O_RDONLY|O_WRONLY|O_RDWR)) {
       case O_RDONLY:
 	return MODE_BINARY("r", "rb");
       case O_WRONLY:
@@ -3711,7 +3711,7 @@ rb_io_modenum_mode(int flags)
       case O_RDWR:
 	return MODE_BINARY("r+", "rb+");
     }
-    rb_raise(rb_eArgError, "invalid access modenum 0x%x", flags);
+    rb_raise(rb_eArgError, "invalid access modenum 0x%x", modenum);
     return NULL;		/* not reached */
 }
 
@@ -3834,10 +3834,10 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
 typedef struct rb_io_enc_t convconfig_t;
 
 static void
-rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
+rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
         int *modenum_p, int *flags_p, convconfig_t *convconfig_p)
 {
-    VALUE mode;
+    VALUE vmode;
     int modenum, flags;
     rb_encoding *enc, *enc2;
     int ecflags;
@@ -3845,24 +3845,24 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
     int has_enc = 0;
     VALUE intmode;
 
-    mode = *mode_p;
+    vmode = *vmode_p;
 
     enc = NULL;
     enc2 = NULL;
 
-    if (NIL_P(mode)) {
+    if (NIL_P(vmode)) {
         flags = FMODE_READABLE;
         modenum = O_RDONLY;
     }
-    else if (!NIL_P(intmode = rb_check_to_integer(mode, "to_int"))) {
-        mode = intmode;
+    else if (!NIL_P(intmode = rb_check_to_integer(vmode, "to_int"))) {
+        vmode = intmode;
         modenum = NUM2INT(intmode);
         flags = rb_io_modenum_flags(modenum);
     }
     else {
         const char *p;
-        SafeStringValue(mode);
-        p = StringValueCStr(mode);
+        SafeStringValue(vmode);
+        p = StringValueCStr(vmode);
         flags = rb_io_mode_flags(p);
         modenum = rb_io_flags_modenum(flags);
         p = strchr(p, ':');
@@ -3900,7 +3900,7 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
     if ((flags & FMODE_BINMODE) && (flags & FMODE_TEXTMODE))
         rb_raise(rb_eArgError, "both textmode and binmode specified");
 
-    *mode_p = mode;
+    *vmode_p = vmode;
 
     *modenum_p = modenum;
     *flags_p = flags;
@@ -3912,41 +3912,41 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
 
 struct sysopen_struct {
     const char *fname;
-    int flag;
-    mode_t mode;
+    int modenum;
+    mode_t perm;
 };
 
 static VALUE
 sysopen_func(void *ptr)
 {
     struct sysopen_struct *data = ptr;
-    return (VALUE)open(data->fname, data->flag, data->mode);
+    return (VALUE)open(data->fname, data->modenum, data->perm);
 }
 
 static int
-rb_sysopen_internal(const char *fname, int flags, mode_t mode)
+rb_sysopen_internal(const char *fname, int modenum, mode_t perm)
 {
     struct sysopen_struct data;
     data.fname = fname;
-    data.flag = flags;
-    data.mode = mode;
+    data.modenum = modenum;
+    data.perm = perm;
     return (int)rb_thread_blocking_region(sysopen_func, &data, RUBY_UBF_IO, 0);
 }
 
 static int
-rb_sysopen(const char *fname, int flags, mode_t mode)
+rb_sysopen(const char *fname, int modenum, mode_t perm)
 {
     int fd;
 
 #ifdef O_BINARY
-    flags |= O_BINARY;
+    modenum |= O_BINARY;
 #endif
 
-    fd = rb_sysopen_internal(fname, flags, mode);
+    fd = rb_sysopen_internal(fname, modenum, perm);
     if (fd < 0) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    fd = rb_sysopen_internal(fname, flags, mode);
+	    fd = rb_sysopen_internal(fname, modenum, perm);
 	}
 	if (fd < 0) {
 	    rb_sys_fail(fname);
@@ -4862,14 +4862,14 @@ rb_f_open(int argc, VALUE *argv)
 }
 
 static VALUE
-rb_io_open(VALUE filename, VALUE mode, VALUE vperm, VALUE opt)
+rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 {
     VALUE cmd;
     int modenum, flags;
     convconfig_t convconfig;
     mode_t perm;
 
-    rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
+    rb_io_extract_modeenc(&vmode, opt, &modenum, &flags, &convconfig);
     perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
 
     if (!NIL_P(cmd = check_pipe_command(filename))) {
@@ -5546,7 +5546,7 @@ rb_io_stdio_file(rb_io_t *fptr)
 static VALUE
 rb_io_initialize(int argc, VALUE *argv, VALUE io)
 {
-    VALUE fnum, mode;
+    VALUE fnum, vmode;
     rb_io_t *fp;
     int fd, flags, modenum = O_RDONLY;
     convconfig_t convconfig;
@@ -5555,12 +5555,12 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     rb_secure(4);
 
     opt = pop_last_hash(&argc, &argv);
-    rb_scan_args(argc, argv, "11", &fnum, &mode);
-    rb_io_extract_modeenc(&mode, opt, &modenum, &flags, &convconfig);
+    rb_scan_args(argc, argv, "11", &fnum, &vmode);
+    rb_io_extract_modeenc(&vmode, opt, &modenum, &flags, &convconfig);
 
     fd = NUM2INT(fnum);
     UPDATE_MAXFD(fd);
-    if (NIL_P(mode)) {
+    if (NIL_P(vmode)) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
         modenum = fcntl(fd, F_GETFL);
         if (modenum == -1) rb_sys_fail(0);
@@ -6726,7 +6726,7 @@ static void
 open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 {
     VALUE opt, v;
-    VALUE mode, perm;
+    VALUE vmode, vperm;
 
     FilePathValue(argv[0]);
     arg->io = 0;
@@ -6753,15 +6753,15 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;
     }
-    mode = Qnil;
-    perm = INT2NUM(O_RDONLY);
+    vmode = Qnil;
+    vperm = INT2NUM(O_RDONLY);
     v = rb_hash_aref(opt, sym_mode);
     if (!NIL_P(v))
-        mode = v;
+        vmode = v;
     v = rb_hash_aref(opt, sym_perm);
     if (!NIL_P(v))
-        perm = v;
-    arg->io = rb_io_open(argv[0], mode, perm, opt);
+        vperm = v;
+    arg->io = rb_io_open(argv[0], vmode, vperm, opt);
 }
 
 static VALUE
@@ -7281,13 +7281,13 @@ copy_stream_body(VALUE arg)
         src_io = rb_check_convert_type(stp->src, T_FILE, "IO", "to_io");
         if (NIL_P(src_io)) {
             VALUE args[2];
-            int flags = O_RDONLY;
+            int modenum = O_RDONLY;
 #ifdef O_NOCTTY
-            flags |= O_NOCTTY;
+            modenum |= O_NOCTTY;
 #endif
             FilePathValue(stp->src);
             args[0] = stp->src;
-            args[1] = INT2NUM(flags);
+            args[1] = INT2NUM(modenum);
             src_io = rb_class_new_instance(2, args, rb_cFile);
             stp->src = src_io;
             stp->close_src = 1;
@@ -7309,13 +7309,13 @@ copy_stream_body(VALUE arg)
         dst_io = rb_check_convert_type(stp->dst, T_FILE, "IO", "to_io");
         if (NIL_P(dst_io)) {
             VALUE args[3];
-            int flags = O_WRONLY|O_CREAT|O_TRUNC;
+            int modenum = O_WRONLY|O_CREAT|O_TRUNC;
 #ifdef O_NOCTTY
-            flags |= O_NOCTTY;
+            modenum |= O_NOCTTY;
 #endif
             FilePathValue(stp->dst);
             args[0] = stp->dst;
-            args[1] = INT2NUM(flags);
+            args[1] = INT2NUM(modenum);
             args[2] = INT2FIX(0600);
             dst_io = rb_class_new_instance(3, args, rb_cFile);
             stp->dst = dst_io;
