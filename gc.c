@@ -2682,7 +2682,7 @@ gc_malloc_allocations(VALUE self)
 }
 #endif
 
-VALUE
+static VALUE
 gc_profile_record_get(void)
 {
     VALUE prof;
@@ -2729,14 +2729,15 @@ gc_profile_record_get(void)
  *       1               0.012               159240               212940                10647         0.00000000000001530000
  */
 
-VALUE
+static VALUE
 gc_profile_result(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    VALUE record = gc_profile_record_get();
+    VALUE record;
     VALUE result;
     int i;
     
+    record = gc_profile_record_get();
     if (objspace->profile.run && objspace->profile.count) {
 	result = rb_sprintf("GC %d invokes.\n", NUM2INT(gc_count(0)));
 	rb_str_cat2(result, "Index    Invoke Time(sec)       Use Size(byte)     Total Size(byte)         Total Object                    GC Time(ms)\n");
@@ -2780,7 +2781,7 @@ gc_profile_result(void)
  *  
  */
 
-VALUE
+static VALUE
 gc_profile_report(int argc, VALUE *argv, VALUE self)
 {
     VALUE out;
