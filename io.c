@@ -4051,6 +4051,12 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *mode)
 }
 
 VALUE
+rb_file_open_str(VALUE fname, const char *mode)
+{
+    return rb_file_open_internal(io_alloc(rb_cFile), fname, mode);
+}
+
+VALUE
 rb_file_open(const char *fname, const char *mode)
 {
     return rb_file_open_internal(io_alloc(rb_cFile), rb_str_new_cstr(fname), mode);

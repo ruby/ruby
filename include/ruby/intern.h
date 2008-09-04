@@ -387,6 +387,7 @@ VALUE rb_io_print(int, VALUE*, VALUE);
 VALUE rb_io_puts(int, VALUE*, VALUE);
 VALUE rb_io_fdopen(int, int, const char*);
 VALUE rb_file_open(const char*, const char*);
+VALUE rb_file_open_str(VALUE, const char*);
 VALUE rb_gets(void);
 void rb_write_error(const char*);
 void rb_write_error2(const char*, long);

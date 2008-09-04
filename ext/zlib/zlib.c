@@ -2294,7 +2294,7 @@ gzfile_s_open(int argc, VALUE *argv, VALUE klass, const char *mode)
     }
     filename = argv[0];
     FilePathValue(filename);
-    io = rb_file_open(RSTRING_PTR(filename), mode);
+    io = rb_file_open_str(filename, mode);
 
     argv[0] = io;
     return rb_gzfile_s_wrap(argc, argv, klass);

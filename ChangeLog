@@ -1,3 +1,12 @@
+Thu Sep  4 23:42:42 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/intern.h (rb_file_open_str): declared.
+
+	* io.c (rb_file_open_str): defined.
+
+	* ext/zlib/zlib.c (gzfile_s_open): use rb_file_open_str instead of
+	  rb_file_open.
+
 Thu Sep  4 23:18:55 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/newline.trans: record newline types met in universal
