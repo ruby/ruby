@@ -1431,8 +1431,8 @@ vm_init2(rb_vm_t *vm)
 
 #if USE_THREAD_DATA_RECYCLE
 #define RECYCLE_MAX 64
-VALUE *thread_recycle_stack_slot[RECYCLE_MAX];
-int thread_recycle_stack_count = 0;
+static VALUE *thread_recycle_stack_slot[RECYCLE_MAX];
+static int thread_recycle_stack_count = 0;
 
 static VALUE *
 thread_recycle_stack(int size)

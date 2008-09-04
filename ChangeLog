@@ -1,3 +1,8 @@
+Fri Sep  5 02:56:37 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (thread_recycle_stack_slot, thread_recycle_stack_count): 
+	  make it static.
+
 Fri Sep  5 02:40:38 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_critical): removed.
