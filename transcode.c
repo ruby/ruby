@@ -2326,24 +2326,29 @@ make_dummy_encoding(const char *name)
 /*
  * call-seq:
  *   Encoding::Converter.new(source_encoding, destination_encoding)
- *   Encoding::Converter.new(source_encoding, destination_encoding, opthash)
+ *   Encoding::Converter.new(source_encoding, destination_encoding, opt)
  *
- * possible opthash elements:
- *   :universal_newline_decoder => true # convert CRLF and CR to LF at last      
- *   :crlf_newline_encoder => true      # convert LF to CRLF at first
- *   :cr_newline_encoder => true        # convert LF to CR at first
- *   :invalid => nil                    # error on invalid byte sequence (default)
- *   :invalid => :replace               # replace invalid byte sequence
- *   :undef => nil                      # error on undefined conversion (default)
- *   :undef => :replace                 # replace undefined conversion
- *   :replace => string                 # replacement string ("?" or "\uFFFD" if not specified)
+ * possible options elements:
+ *   hash form:
+ *     :universal_newline_decoder => true # convert CRLF and CR to LF at last      
+ *     :crlf_newline_encoder => true      # convert LF to CRLF at first
+ *     :cr_newline_encoder => true        # convert LF to CR at first
+ *     :invalid => nil                    # error on invalid byte sequence (default)
+ *     :invalid => :replace               # replace invalid byte sequence
+ *     :undef => nil                      # error on undefined conversion (default)
+ *     :undef => :replace                 # replace undefined conversion
+ *     :replace => string                 # replacement string ("?" or "\uFFFD" if not specified)
+ *   integer form:
+ *     Encoding::Converter::UNIVERSAL_NEWLINE_DECODER
+ *     Encoding::Converter::CRLF_NEWLINE_ENCODER
+ *     Encoding::Converter::CR_NEWLINE_ENCODER
  *
  * Encoding::Converter.new creates an instance of Encoding::Converter.
  *
  * source_encoding and destination_encoding should be a string or
  * Encoding object.
  *
- * flags should be an integer.
+ * opt should be nil, a hash or an integer.
  *
  * example:
  *   # UTF-16BE to UTF-8
@@ -2566,7 +2571,7 @@ econv_result_to_symbol(rb_econv_result_t res)
  * nil means unlimited.
  * If it is omitted, nil is assumed.
  *
- * flags should be an integer or nil.
+ * opt should be nil, a hash or an integer.
  * nil means no flags.
  * If it is omitted, nil is assumed.
  *
@@ -2733,7 +2738,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
  * convert source_string and return destination_string.
  *
  * source_string is assumed as a part of source.
- * i.e.  Encoding::Converter::PARTIAL_INPUT is used internally.
+ * i.e.  :partial_input=>true is specified internally.
  * finish method should be used at last.
  *
  *   ec = Encoding::Converter.new("utf-8", "euc-jp")
