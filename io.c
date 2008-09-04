@@ -5679,6 +5679,7 @@ argf_mark(void *ptr)
     rb_gc_mark(p->current_file);
     rb_gc_mark(p->lineno);
     rb_gc_mark(p->argv);
+    rb_gc_mark(p->encs.ecopts);
 }
 
 static void

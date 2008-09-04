@@ -1,3 +1,7 @@
+Fri Sep  5 01:22:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (argf_mark): mark p->encs.ecopts.
+
 Fri Sep  5 00:45:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder): rename fields:
