@@ -2226,24 +2226,24 @@ rb_gc_save_machine_context(rb_thread_t *th)
  *
  */
 
-int rb_get_next_signal(rb_vm_t *vm);
+int rb_get_next_signal(void);
 
 static void
 timer_thread_function(void *arg)
 {
     rb_vm_t *vm = arg; /* TODO: fix me for Multi-VM */
+    int sig;
 
     /* for time slice */
     RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
 
     /* check signal */
-    if (vm->buffered_signal_size && vm->main_thread->exec_signal == 0) {
+    if ((sig = rb_get_next_signal()) > 0) {
 	rb_thread_t *mth = vm->main_thread;
 	enum rb_thread_status prev_status = mth->status;
-	mth->exec_signal = rb_get_next_signal(vm);
-	thread_debug("main_thread: %s\n", thread_status_name(prev_status));
-	thread_debug("buffered_signal_size: %ld, sig: %d\n",
-		     (long)vm->buffered_signal_size, vm->main_thread->exec_signal);
+	thread_debug("main_thread: %s, sig: %d\n",
+		     thread_status_name(prev_status), sig);
+	mth->exec_signal = sig;
 	if (mth->status != THREAD_KILLED) mth->status = THREAD_RUNNABLE;
 	rb_thread_interrupt(mth);
 	mth->status = prev_status;

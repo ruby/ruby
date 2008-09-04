@@ -38,6 +38,8 @@
 #ifndef NSIG
 # ifdef DJGPP
 #  define NSIG SIGMAX
+# elif defined MACOS_UNUSE_SIGNAL
+#  define NSIG 1
 # else
 #  define NSIG (_SIGMAX + 1)      /* For QNX */
 # endif
@@ -323,8 +325,10 @@ struct rb_vm_struct
     struct st_table *loading_table;
     
     /* signal */
-    int signal_buff[RUBY_NSIG];
-    int buffered_signal_size;
+    struct {
+	VALUE cmd;
+	int safe;
+    } trap_list[RUBY_NSIG];
 
     /* hook */
     rb_event_hook_t *event_hooks;
@@ -682,7 +686,7 @@ extern rb_vm_t *ruby_current_vm;
 
 #define GET_VM() ruby_current_vm
 #define GET_THREAD() ruby_current_thread
-#define rb_thread_set_current_raw(th) (ruby_current_thread = th)
+#define rb_thread_set_current_raw(th) (void)(ruby_current_thread = (th))
 #define rb_thread_set_current(th) do { \
     rb_thread_set_current_raw(th); \
     th->vm->running_thread = th; \

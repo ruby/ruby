@@ -1,3 +1,21 @@
+Thu Sep  4 13:22:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (struct rb_vm_struct): replaced signal staff with trap
+	  staff.
+
+	* signal.c (signal_buff): per process resouce now.
+
+	* signal.c (trap_list): moved to VM.
+
+	* signal.c (rb_get_next_signal): reverted.
+
+	* signal.c (rb_trap_exit): trap_pending_list was no longer used.
+
+	* thread.c (timer_thread_function): delivers buffered per-process
+	  signals to each VMs.
+
+	* vm.c (rb_vm_mark): marks trap_list.
+
 Thu Sep  4 13:01:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (struct sysopen_struct, rb_sysopen_internal, rb_sysopen):
@@ -30946,7 +30964,7 @@ Wed May 17 17:55:26 2006  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* dir.c (sys_warning): should not call a vararg function
 	  rb_sys_warning() indirectly.	[ruby-core:07886]
 
-Tue May 16 17:23:19 2006    <sinara@blade.nagaokaut.ac.jp>
+Tue May 16 17:23:19 2006  Shin-ichiro HARA  <sinara@blade.nagaokaut.ac.jp>
 
 	* numeric.c (flo_divmod): the first element of Float#divmod should
 	  be an integer. [ruby-dev:28589]

@@ -405,29 +405,10 @@ rb_f_kill(int argc, VALUE *argv)
     return INT2FIX(i-1);
 }
 
-static struct {
-    VALUE cmd;
-    int safe;
-} trap_list[NSIG];
-
-VALUE
-rb_get_trap_cmd(int sig)
-{
-    return trap_list[sig].cmd;
-}
-
-void
-rb_gc_mark_trap_list(void)
-{
-#ifndef MACOS_UNUSE_SIGNAL
-    int i;
-
-    for (i=0; i<NSIG; i++) {
-	if (trap_list[i].cmd)
-	    rb_gc_mark(trap_list[i].cmd);
-    }
-#endif /* MACOS_UNUSE_SIGNAL */
-}
+struct {
+    rb_atomic_t cnt[RUBY_NSIG];
+    rb_atomic_t size;
+} signal_buff;
 
 #ifdef __dietlibc__
 #define sighandler_t sh_t
@@ -486,10 +467,8 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 static RETSIGTYPE
 sighandler(int sig)
 {
-    rb_vm_t *vm = GET_VM(); /* fix me for Multi-VM */
-    ATOMIC_INC(vm->signal_buff[sig]);
-    ATOMIC_INC(vm->buffered_signal_size);
-
+    ATOMIC_INC(signal_buff.cnt[sig]);
+    ATOMIC_INC(signal_buff.size);
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
 #endif
@@ -530,16 +509,16 @@ rb_enable_interrupt(void)
 }
 
 int
-rb_get_next_signal(rb_vm_t *vm)
+rb_get_next_signal(void)
 {
     int i, sig = 0;
 
     for (i=1; i<RUBY_NSIG; i++) {
-	if (vm->signal_buff[i] > 0) {
+	if (signal_buff.cnt[i] > 0) {
 	    rb_disable_interrupt();
 	    {
-		ATOMIC_DEC(vm->signal_buff[i]);
-		ATOMIC_DEC(vm->buffered_signal_size);
+		ATOMIC_DEC(signal_buff.cnt[i]);
+		ATOMIC_DEC(signal_buff.size);
 	    }
 	    rb_enable_interrupt();
 	    sig = i;
@@ -584,13 +563,13 @@ sigpipe(int sig)
 #endif
 
 static void
-signal_exec(VALUE cmd, int sig)
+signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_proc_t *proc;
     VALUE signum = INT2FIX(sig);
 
     if (TYPE(cmd) == T_STRING) {
-	rb_eval_cmd(cmd, rb_ary_new3(1, signum), trap_list[sig].safe);
+	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
 	return;
     }
     GetProcPtr(cmd, proc);
@@ -600,20 +579,21 @@ signal_exec(VALUE cmd, int sig)
 void
 rb_trap_exit(void)
 {
-#ifndef MACOS_UNUSE_SIGNAL
-    if (trap_list[0].cmd) {
-	VALUE trap_exit = trap_list[0].cmd;
+    rb_vm_t *vm = GET_VM();
+    VALUE trap_exit = vm->trap_list[0].cmd;
 
-	trap_list[0].cmd = 0;
-	signal_exec(trap_exit, 0);
+    if (trap_exit) {
+	vm->trap_list[0].cmd = 0;
+	signal_exec(trap_exit, vm->trap_list[0].safe, 0);
     }
-#endif
 }
 
 void
 rb_signal_exec(rb_thread_t *th, int sig)
 {
-    VALUE cmd = rb_get_trap_cmd(sig);
+    rb_vm_t *vm = GET_VM();
+    VALUE cmd = vm->trap_list[sig].cmd;
+    int safe = vm->trap_list[sig].safe;
 
     if (cmd == 0) {
 	switch (sig) {
@@ -646,7 +626,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
 	rb_thread_signal_exit(th);
     }
     else {
-	signal_exec(cmd, sig);
+	signal_exec(cmd, safe, sig);
     }
 }
 
@@ -810,9 +790,10 @@ trap(struct trap_arg *arg)
     sighandler_t oldfunc, func = arg->func;
     VALUE oldcmd, command = arg->cmd;
     int sig = arg->sig;
+    rb_vm_t *vm = GET_VM();
 
     oldfunc = ruby_signal(sig, func);
-    oldcmd = trap_list[sig].cmd;
+    oldcmd = vm->trap_list[sig].cmd;
     switch (oldcmd) {
       case 0:
 	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
@@ -824,8 +805,8 @@ trap(struct trap_arg *arg)
 	break;
     }
 
-    trap_list[sig].cmd = command;
-    trap_list[sig].safe = rb_safe_level();
+    vm->trap_list[sig].cmd = command;
+    vm->trap_list[sig].safe = rb_safe_level();
     /* enable at least specified signal. */
 #if USE_TRAP_MASK
 #ifdef HAVE_SIGPROCMASK
@@ -992,7 +973,7 @@ init_sigchld(int sig)
     if (oldfunc != SIG_DFL && oldfunc != SIG_IGN) {
 	ruby_signal(sig, oldfunc);
     } else {
-	trap_list[sig].cmd = 0;
+	GET_VM()->trap_list[sig].cmd = 0;
     }
 
 #if USE_TRAP_MASK

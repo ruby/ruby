@@ -1986,7 +1986,6 @@ garbage_collect(rb_objspace_t *objspace)
     rb_gc_mark_global_tbl();
 
     mark_tbl(objspace, rb_class_tbl, 0);
-    rb_gc_mark_trap_list();
 
     /* mark generic instance variables for special constants */
     rb_mark_generic_ivar_tbl();

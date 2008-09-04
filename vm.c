@@ -1406,6 +1406,11 @@ rb_vm_mark(void *ptr)
 	}
 
 	mark_event_hooks(vm->event_hooks);
+
+	for (i = 0; i < RUBY_NSIG; i++) {
+	    if (vm->trap_list[i].cmd)
+		rb_gc_mark(vm->trap_list[i].cmd);
+	}
     }
 
     RUBY_MARK_LEAVE("vm");
