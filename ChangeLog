@@ -1,3 +1,9 @@
+Thu Sep  4 20:30:24 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (PType): defined unconditionaly.
+
+	* transcode.c (PType): don't define here.
+
 Thu Sep  4 20:19:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c: variables renamed for consistency.

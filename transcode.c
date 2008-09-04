@@ -11,7 +11,6 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
-#define PType (int)
 #include "transcode_data.h"
 #include <ctype.h>
 

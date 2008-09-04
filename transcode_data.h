@@ -20,10 +20,7 @@
 #define BYTE_LOOKUP_BASE(bl) ((bl)[0])
 #define BYTE_LOOKUP_INFO(bl) ((bl)[1])
 
-#ifndef PType
-/* data file needs to treat this as a pointer, to remove warnings */
 #define PType (unsigned int)
-#endif
 
 #define NOMAP	(PType 0x01)	/* single byte direct map */
 #define ONEbt	(0x02)		/* one byte payload */
