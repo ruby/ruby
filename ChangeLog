@@ -1,3 +1,9 @@
+Fri Sep  5 03:09:48 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (iseq_data_to_ary): make it static.
+
+	* thread.c (thgroup_enclose): ditto.
+
 Fri Sep  5 02:56:37 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c (thread_recycle_stack_slot, thread_recycle_stack_count): 

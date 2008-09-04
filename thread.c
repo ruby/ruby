@@ -2464,7 +2464,7 @@ thgroup_list(VALUE group)
  *     ThreadError: can't move from the enclosed thread group
  */
 
-VALUE
+static VALUE
 thgroup_enclose(VALUE group)
 {
     struct thgroup *data;
