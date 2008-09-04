@@ -1,3 +1,7 @@
+Thu Sep  4 10:33:43 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (argf_next_argv, argf_set_encoding): copy struct wise.
+
 Thu Sep  4 09:46:18 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_scan_open_args): follow rb_str_transcode change.

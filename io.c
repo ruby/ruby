@@ -5883,10 +5883,7 @@ argf_next_argv(VALUE argf)
 		rb_io_t *fptr;
 
 		GetOpenFile(current_file, fptr);
-		fptr->encs.enc = argf_enc;
-		fptr->encs.enc2 = argf_enc2;
-		fptr->encs.flags = argf_ecflags;
-		fptr->encs.ecopts = argf_ecopts;
+		fptr->encs = ARGF.encs;
                 clear_codeconv(fptr);
 	    }
 	}
@@ -7563,10 +7560,7 @@ argf_set_encoding(int argc, VALUE *argv, VALUE argf)
     }
     rb_io_set_encoding(argc, argv, current_file);
     GetOpenFile(current_file, fptr);
-    argf_enc = fptr->encs.enc;
-    argf_enc2 = fptr->encs.enc2;
-    argf_ecflags = fptr->encs.flags;
-    argf_ecopts = fptr->encs.ecopts;
+    ARGF.encs = fptr->encs;
     return argf;
 }
 
