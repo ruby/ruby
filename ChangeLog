@@ -1,3 +1,10 @@
+Thu Sep  4 23:05:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/prime.rb (Prime::OldCompatibility#each): added compatibility to 
+	    Ruby 1.8.7.
+	  (Prime#each): added more rdocs.
+	  (Prime#each): remembers the last value of the given block.
+
 Thu Sep  4 21:53:58 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_init): accept an integer as 3rd argument as well.

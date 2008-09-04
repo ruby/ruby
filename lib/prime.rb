@@ -91,19 +91,6 @@ class Prime
     warn "Prime::new is obsolete. use Prime::instance or class methods of Prime."
   end
 
-  module OldCompatibility
-    def succ
-      @generator.succ
-    end
-    alias next succ
-
-    def each(&block)
-      loop do
-	yield succ
-      end
-    end
-  end
-
   class<<self
     extend Forwardable
     include Enumerable
@@ -137,6 +124,14 @@ class Prime
   # +ubound+::
   #   Upper bound of prime numbers. The iterator stops after 
   #   yields all prime numbers p <= +ubound+.
+  #
+  # == Note
+  # +Prime+.+new+ returns a object extended by +Prime+::+OldCompatibility+
+  # in order to compatibility to Ruby 1.9, and +Prime+#each is overwritten
+  # by +Prime+::+OldCompatibility+#+each+.
+  #
+  # +Prime+.+new+ is now obsolete. Use +Prime+.+instance+.+each+ or simply
+  # +Prime+.+each+.
   def each(ubound = nil, generator = EratosthenesGenerator.new, &block)
     generator.upper_bound = ubound
     generator.each(&block)
@@ -254,18 +249,18 @@ class Prime
     end
 
     # Iterates the given block for each prime numbers.
-    # +ubound+:: 
     def each(&block)
       return self.dup unless block
       if @ubound
+	last_value = nil
 	loop do
-	  p = succ
-	  break if p > @ubound
-	  block.call p
+	  prime = succ
+	  break last_value if prime > @ubound
+	  last_value = block.call(prime)
 	end
       else
 	loop do
-	  block.call succ
+	  block.call(succ)
 	end
       end
     end
@@ -351,7 +346,7 @@ class Prime
 
 
 
-  # An implementation of prime table by trial division method.
+  # Internal use. An implementation of prime table by trial division method.
   class TrialDivision
     include Singleton
 
@@ -399,7 +394,7 @@ class Prime
     end
   end
 
-  # An implementation of eratosthenes's sieve
+  # Internal use. An implementation of eratosthenes's sieve
   class EratosthenesSieve
     include Singleton
 
@@ -440,6 +435,26 @@ class Prime
 	  i, j = n.divmod(32)
 	  @table[i] &= 0xFFFF ^ (1<<(j.div(2)))
 	end
+      end
+    end
+  end
+
+  # Provides a +Prime+ object with compatibility to Ruby 1.8 when instanciated via +Prime+.+new+.
+  module OldCompatibility
+    # Returns the next prime number and forwards internal pointer.
+    def succ
+      @generator.succ
+    end
+    alias next succ
+
+    # Overwrites Prime#each.
+    #
+    # Iterates the given block over all prime numbers. Note that enumeration starts from
+    # the current position of internal pointer, not rewinded.
+    def each(&block)
+      return @generator.dup unless block_given?
+      loop do
+	yield succ
       end
     end
   end
