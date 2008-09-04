@@ -1,3 +1,7 @@
+Thu Sep  4 21:03:28 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_dump.c: rename some debug functions.
+
 Thu Sep  4 20:57:54 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* thread.c (rb_thread_check_trap_pending): added for compatibility.

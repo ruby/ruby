@@ -184,7 +184,7 @@ vm_stack_dump_raw_current(void)
 }
 
 void
-env_dump_raw(rb_env_t *env, VALUE *lfp, VALUE *dfp)
+vm_env_dump_raw(rb_env_t *env, VALUE *lfp, VALUE *dfp)
 {
     int i;
     fprintf(stderr, "-- env --------------------\n");
@@ -212,7 +212,7 @@ env_dump_raw(rb_env_t *env, VALUE *lfp, VALUE *dfp)
 }
 
 void
-proc_dump_raw(rb_proc_t *proc)
+vm_proc_dump_raw(rb_proc_t *proc)
 {
     rb_env_t *env;
     char *selfstr;
@@ -222,11 +222,11 @@ proc_dump_raw(rb_proc_t *proc)
     fprintf(stderr, "-- proc -------------------\n");
     fprintf(stderr, "self: %s\n", selfstr);
     GetEnvPtr(proc->envval, env);
-    env_dump_raw(env, proc->block.lfp, proc->block.dfp);
+    vm_env_dump_raw(env, proc->block.lfp, proc->block.dfp);
 }
 
 void
-stack_dump_th(VALUE thval)
+vm_stack_dump_th(VALUE thval)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
@@ -234,7 +234,7 @@ stack_dump_th(VALUE thval)
 }
 
 void
-stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
+vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     int i;
 
@@ -283,7 +283,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	VALUE *ptr = dfp - local_size;
 
-	stack_dump_each(th, cfp + 1);
+	vm_stack_dump_each(th, cfp + 1);
 	control_frame_dump(th, cfp);
 
 	if (lfp != dfp) {
@@ -314,7 +314,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     }
     else if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_FINISH) {
 	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 2)) {
-	    stack_dump_each(th, cfp + 1);
+	    vm_stack_dump_each(th, cfp + 1);
 	}
 	else {
 	    /* SDR(); */
@@ -327,7 +327,7 @@ stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
 
 void
-debug_print_register(rb_thread_t *th)
+vm_debug_print_register(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
     int pc = -1;
@@ -350,15 +350,15 @@ debug_print_register(rb_thread_t *th)
 }
 
 void
-thread_dump_regs(VALUE thval)
+vm_thread_dump_regs(VALUE thval)
 {
     rb_thread_t *th;
     GetThreadPtr(thval, th);
-    debug_print_register(th);
+    vm_debug_print_register(th);
 }
 
 void
-debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
+vm_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     rb_iseq_t *iseq = cfp->iseq;
 
@@ -372,12 +372,12 @@ debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp)
 
 #if VMDEBUG > 3
     fprintf(stderr, "        (1)");
-    debug_print_register(th);
+    vm_debug_print_register(th);
 #endif
 }
 
 void
-debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
+vm_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 #if OPT_STACK_CACHING
 		 , VALUE reg_a, VALUE reg_b
 #endif
@@ -389,13 +389,13 @@ debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 
 #if VMDEBUG > 3
     fprintf(stderr, "        (2)");
-    debug_print_register(th);
+    vm_debug_print_register(th);
 #endif
     /* stack_dump_raw(th, cfp); */
 
 #if VMDEBUG > 2
     /* stack_dump_thobj(th); */
-    stack_dump_each(th, th->cfp);
+    vm_stack_dump_each(th, th->cfp);
 #if OPT_STACK_CACHING
     {
 	VALUE rstr;
@@ -550,9 +550,8 @@ vm_analysis_register(int reg, int isset)
 
 #endif
 
-
 VALUE
-thread_dump_state(VALUE self)
+vm_thread_dump_state(VALUE self)
 {
     rb_thread_t *th;
     rb_control_frame_t *cfp;
