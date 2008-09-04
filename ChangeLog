@@ -1,3 +1,10 @@
+Fri Sep  5 00:45:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoder): rename fields:
+	  from_encoding -> src_encoding, to_encoding -> dst_encoding.
+
+	* transcode.c: follow the renaming.
+
 Fri Sep  5 00:22:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c: variables renamed for consistency.

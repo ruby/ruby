@@ -178,8 +178,8 @@ get_transcoder_entry(const char *sname, const char *dname)
 void
 rb_register_transcoder(const rb_transcoder *tr)
 {
-    const char *const sname = tr->from_encoding;
-    const char *const dname = tr->to_encoding;
+    const char *const sname = tr->src_encoding;
+    const char *const dname = tr->dst_encoding;
 
     transcoder_entry_t *entry;
 
@@ -1249,8 +1249,8 @@ rb_econv_convert0(rb_econv_t *ec,
         res == econv_undefined_conversion) {
         rb_transcoding *error_tc = ec->elems[result_position].tc;
         ec->last_error.error_tc = error_tc;
-        ec->last_error.source_encoding = error_tc->transcoder->from_encoding;
-        ec->last_error.destination_encoding = error_tc->transcoder->to_encoding;
+        ec->last_error.source_encoding = error_tc->transcoder->src_encoding;
+        ec->last_error.destination_encoding = error_tc->transcoder->dst_encoding;
         ec->last_error.error_bytes_start = TRANSCODING_READBUF(error_tc);
         ec->last_error.error_bytes_len = error_tc->recognized_len;
         ec->last_error.readagain_len = error_tc->readagain_len;
@@ -1320,8 +1320,8 @@ rb_econv_encoding_to_insert_output(rb_econv_t *ec)
     tr = tc->transcoder;
 
     if (tr->stateful_type == stateful_encoder)
-        return tr->from_encoding;
-    return tr->to_encoding;
+        return tr->src_encoding;
+    return tr->dst_encoding;
 }
 
 static unsigned char *
@@ -1534,7 +1534,7 @@ stateless_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
         transcoder_entry_t *entry = (transcoder_entry_t *)v;
         const rb_transcoder *tr = load_transcoder_entry(entry);
         if (tr && tr->stateful_type == stateful_encoder) {
-            data->stateless_enc = tr->from_encoding;
+            data->stateless_enc = tr->src_encoding;
             return ST_STOP;
         }
     }
@@ -1798,7 +1798,7 @@ make_replacement(rb_econv_t *ec)
     tc = ec->last_tc;
     if (tc) {
         tr = tc->transcoder;
-        enc = rb_enc_find(tr->to_encoding);
+        enc = rb_enc_find(tr->dst_encoding);
         replacement = (const unsigned char *)get_replacement_character(enc, &len, &repl_enc);
     }
     else {
@@ -1875,8 +1875,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
                unsigned char *(*resize_destination)(VALUE, int, int),
-               const char *from_encoding,
-               const char *to_encoding,
+               const char *src_encoding,
+               const char *dst_encoding,
                int ecflags,
                VALUE ecopts)
 {
@@ -1887,9 +1887,9 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
 
-    ec = rb_econv_open_opts(from_encoding, to_encoding, ecflags, ecopts);
+    ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
+        rb_exc_raise(rb_econv_open_exc(src_encoding, dst_encoding, ecflags));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -1920,8 +1920,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
 	       const unsigned char *in_stop, unsigned char *out_stop,
                VALUE destination,
                unsigned char *(*resize_destination)(VALUE, int, int),
-               const char *from_encoding,
-               const char *to_encoding,
+               const char *src_encoding,
+               const char *dst_encoding,
                int ecflags,
                VALUE ecopts)
 {
@@ -1933,9 +1933,9 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     int max_output;
     VALUE exc;
 
-    ec = rb_econv_open_opts(from_encoding, to_encoding, ecflags, ecopts);
+    ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
-        rb_exc_raise(rb_econv_open_exc(from_encoding, to_encoding, ecflags));
+        rb_exc_raise(rb_econv_open_exc(src_encoding, dst_encoding, ecflags));
 
     last_tc = ec->last_tc;
     max_output = last_tc ? last_tc->transcoder->max_output : 1;
@@ -2242,12 +2242,12 @@ str_encode_associate(VALUE str, int encidx)
 /*
  *  call-seq:
  *     str.encode!(encoding [, options] )   => str
- *     str.encode!(to_encoding, from_encoding [, options] )   => str
+ *     str.encode!(dst_encoding, src_encoding [, options] )   => str
  *
  *  The first form transcodes the contents of <i>str</i> from
  *  str.encoding to +encoding+.
  *  The second form transcodes the contents of <i>str</i> from
- *  from_encoding to to_encoding.
+ *  src_encoding to dst_encoding.
  *  The options Hash gives details for conversion. See String#encode
  *  for details.
  *  Returns the string even if no changes were made.
@@ -2267,12 +2267,12 @@ str_encode_bang(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *     str.encode(encoding [, options] )   => str
- *     str.encode(to_encoding, from_encoding [, options] )   => str
+ *     str.encode(dst_encoding, src_encoding [, options] )   => str
  *
  *  The first form returns a copy of <i>str</i> transcoded
  *  to encoding +encoding+.
  *  The second form returns a copy of <i>str</i> transcoded
- *  from from_encoding to to_encoding.
+ *  from src_encoding to dst_encoding.
  *  The options Hash gives details for conversion. Details
  *  to be added.
  */
@@ -2429,8 +2429,8 @@ econv_init(int argc, VALUE *argv, VALUE self)
     ec->destination_encoding = denc;
 
     if (ec->last_tc) {
-        ec->source_encoding_name = ec->elems[0].tc->transcoder->from_encoding;
-        ec->destination_encoding_name = ec->last_tc->transcoder->to_encoding;
+        ec->source_encoding_name = ec->elems[0].tc->transcoder->src_encoding;
+        ec->destination_encoding_name = ec->last_tc->transcoder->dst_encoding;
     }
     else {
         ec->source_encoding_name = "";

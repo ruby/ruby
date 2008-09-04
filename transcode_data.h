@@ -63,8 +63,8 @@ typedef struct rb_transcoder rb_transcoder;
 
 /* static structure, one per supported encoding pair */
 struct rb_transcoder {
-    const char *from_encoding;
-    const char *to_encoding;
+    const char *src_encoding;
+    const char *dst_encoding;
     unsigned int conv_tree_start;
     const unsigned char *byte_array;
     unsigned int byte_array_length;
