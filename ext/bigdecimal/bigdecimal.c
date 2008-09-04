@@ -412,9 +412,15 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_INFINITY):
                            (fo&(~VP_EXCEPTION_INFINITY))));
         }
+        fo = VpGetException();
         if(f&VP_EXCEPTION_NaN) {
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_NaN):
                            (fo&(~VP_EXCEPTION_NaN))));
+        }
+        fo = VpGetException();
+        if(f&VP_EXCEPTION_UNDERFLOW) {
+            VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_UNDERFLOW):
+                           (fo&(~VP_EXCEPTION_UNDERFLOW))));
         }
         fo = VpGetException();
         return INT2FIX(fo);

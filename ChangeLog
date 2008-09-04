@@ -1,3 +1,9 @@
+Thu Sep  4 23:47:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_mode): set exception mode
+	  correctly.  In spite of BigDecimal.mode(BigDecimal::EXCEPTION_ALL,
+	  true), BigDecimal.new("NaN") did not raise an exception previously.
+
 Thu Sep  4 23:42:42 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/intern.h (rb_file_open_str): declared.
