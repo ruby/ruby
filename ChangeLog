@@ -1,3 +1,8 @@
+Fri Sep  5 00:05:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* pack.c (encodes): make buff fixed length to avoid SEGV by
+	  ruby -e '["a"*10000000].pack("m1000000000")'
+
 Thu Sep  4 23:47:05 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (BigDecimal_mode): set exception mode

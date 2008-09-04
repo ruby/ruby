@@ -1009,7 +1009,7 @@ static const char b64_table[] =
 static void
 encodes(VALUE str, const char *s, long len, int type)
 {
-    char *buff = ALLOCA_N(char, len * 4 / 3 + 6);
+    char buff[4096];
     long i = 0;
     const char *trans = type == 'u' ? uu_table : b64_table;
     int padding;
@@ -1022,13 +1022,20 @@ encodes(VALUE str, const char *s, long len, int type)
 	padding = '=';
     }
     while (len >= 3) {
-	buff[i++] = trans[077 & (*s >> 2)];
-	buff[i++] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
-	buff[i++] = trans[077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03))];
-	buff[i++] = trans[077 & s[2]];
-	s += 3;
-	len -= 3;
+        while (len >= 3 && sizeof(buff)-i >= 4) {
+            buff[i++] = trans[077 & (*s >> 2)];
+            buff[i++] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
+            buff[i++] = trans[077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03))];
+            buff[i++] = trans[077 & s[2]];
+            s += 3;
+            len -= 3;
+        }
+        if (sizeof(buff)-i < 4) {
+            rb_str_buf_cat(str, buff, i);
+            i = 0;
+        }
     }
+
     if (len == 2) {
 	buff[i++] = trans[077 & (*s >> 2)];
 	buff[i++] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
