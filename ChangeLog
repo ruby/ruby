@@ -1,3 +1,7 @@
+Thu Sep  4 09:46:18 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_scan_open_args): follow rb_str_transcode change.
+
 Thu Sep  4 08:59:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* file.c (rb_find_file): fix GC problem on Debian GNU/Linux (IA64)
