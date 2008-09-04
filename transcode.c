@@ -24,6 +24,7 @@ static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 static VALUE sym_universal_newline_decoder;
 static VALUE sym_crlf_newline_encoder;
 static VALUE sym_cr_newline_encoder;
+static VALUE sym_partial_input;
 
 static VALUE sym_invalid_byte_sequence;
 static VALUE sym_undefined_conversion;
@@ -2527,11 +2528,15 @@ econv_result_to_symbol(rb_econv_result_t res)
  *   ec.primitive_convert(source_buffer, destination_buffer) -> symbol
  *   ec.primitive_convert(source_buffer, destination_buffer, destination_byteoffset) -> symbol
  *   ec.primitive_convert(source_buffer, destination_buffer, destination_byteoffset, destination_bytesize) -> symbol
- *   ec.primitive_convert(source_buffer, destination_buffer, destination_byteoffset, destination_bytesize, flags) -> symbol
+ *   ec.primitive_convert(source_buffer, destination_buffer, destination_byteoffset, destination_bytesize, opt) -> symbol
  *
- * possible flags:
- *   Encoding::Converter::PARTIAL_INPUT # source buffer may be part of larger source
- *   Encoding::Converter::OUTPUT_FOLLOWED_BY_INPUT # stop conversion after output before input
+ * possible opt elements:
+ *   hash form:
+ *     :partial_input => true           # source buffer may be part of larger source
+ *     output_followed_by_input => true # stop conversion after output before input
+ *   integer form:
+ *     Encoding::Converter::PARTIAL_INPUT
+ *     Encoding::Converter::OUTPUT_FOLLOWED_BY_INPUT
  *
  * possible results:
  *    :invalid_byte_sequence
@@ -2583,14 +2588,14 @@ econv_result_to_symbol(rb_econv_result_t res)
  * primitive_convert stops conversion when one of following condition met.
  * - invalid byte sequence found in source buffer (:invalid_byte_sequence)
  * - unexpected end of source buffer (:incomplete_input)
- *   this occur only when PARTIAL_INPUT is not specified.
+ *   this occur only when :partial_input is not specified.
  * - character not representable in output encoding (:undefined_conversion)
  * - after some output is generated, before input is done (:output_followed_by_input)
- *   this occur only when OUTPUT_FOLLOWED_BY_INPUT is specified.
+ *   this occur only when :output_followed_by_input is specified.
  * - destination buffer is full (:destination_buffer_full)
  *   this occur only when destination_bytesize is non-nil.
  * - source buffer is empty (:source_buffer_empty)
- *   this occur only when PARTIAL_INPUT is specified.
+ *   this occur only when :partial_input is specified.
  * - conversion is finished (:finished)
  *
  * example:
@@ -2612,7 +2617,7 @@ econv_result_to_symbol(rb_econv_result_t res)
 static VALUE
 econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 {
-    VALUE input, output, output_byteoffset_v, output_bytesize_v, flags_v;
+    VALUE input, output, output_byteoffset_v, output_bytesize_v, opt, flags_v;
     rb_econv_t *ec = check_econv(self);
     rb_econv_result_t res;
     const unsigned char *ip, *is;
@@ -2621,7 +2626,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     unsigned long output_byteend;
     int flags;
 
-    rb_scan_args(argc, argv, "23", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v);
+    rb_scan_args(argc, argv, "23", &input, &output, &output_byteoffset_v, &output_bytesize_v, &opt);
 
     if (NIL_P(output_byteoffset_v))
         output_byteoffset = 0; /* dummy */
@@ -2633,10 +2638,23 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     else
         output_bytesize = NUM2LONG(output_bytesize_v);
 
-    if (NIL_P(flags_v))
+    if (NIL_P(opt)) {
         flags = 0;
-    else
+    }
+    else if (!NIL_P(flags_v = rb_check_to_integer(opt, "to_int"))) {
         flags = NUM2INT(flags_v);
+    }
+    else {
+        VALUE v;
+        opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
+        flags = 0;
+        v = rb_hash_aref(opt, sym_partial_input);
+        if (RTEST(v))
+            flags |= ECONV_PARTIAL_INPUT;
+        v = rb_hash_aref(opt, sym_output_followed_by_input);
+        if (RTEST(v))
+            flags |= ECONV_OUTPUT_FOLLOWED_BY_INPUT;
+    }
 
     StringValue(output);
     if (!NIL_P(input))
@@ -3301,6 +3319,7 @@ Init_transcode(void)
     sym_universal_newline_decoder = ID2SYM(rb_intern("universal_newline_decoder"));
     sym_crlf_newline_encoder = ID2SYM(rb_intern("crlf_newline_encoder"));
     sym_cr_newline_encoder = ID2SYM(rb_intern("cr_newline_encoder"));
+    sym_partial_input = ID2SYM(rb_intern("partial_input"));
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
     rb_define_method(rb_cString, "encode!", str_encode_bang, -1);

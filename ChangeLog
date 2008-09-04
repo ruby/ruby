@@ -1,3 +1,8 @@
+Thu Sep  4 21:46:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (sym_partial_input): new variable.
+	  (econv_primitive_convert): accept a hash as 5th argument as well.
+
 Thu Sep  4 21:04:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (sym_universal_newline_decoder): new variable.
