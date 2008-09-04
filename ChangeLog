@@ -1,3 +1,7 @@
+Fri Sep  5 00:22:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c: variables renamed for consistency.
+
 Fri Sep  5 00:05:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* pack.c (encodes): make buff fixed length to avoid SEGV by

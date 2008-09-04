@@ -128,8 +128,8 @@ struct rb_econv_t {
  */
 
 typedef struct {
-    const char *from;
-    const char *to;
+    const char *sname;
+    const char *dname;
     const char *lib; /* maybe null.  it means that don't load the library. */
     const rb_transcoder *transcoder;
 } transcoder_entry_t;
@@ -137,39 +137,39 @@ typedef struct {
 static st_table *transcoder_table;
 
 static transcoder_entry_t *
-make_transcoder_entry(const char *from, const char *to)
+make_transcoder_entry(const char *sname, const char *dname)
 {
     st_data_t val;
     st_table *table2;
 
-    if (!st_lookup(transcoder_table, (st_data_t)from, &val)) {
+    if (!st_lookup(transcoder_table, (st_data_t)sname, &val)) {
         val = (st_data_t)st_init_strcasetable();
-        st_add_direct(transcoder_table, (st_data_t)from, val);
+        st_add_direct(transcoder_table, (st_data_t)sname, val);
     }
     table2 = (st_table *)val;
-    if (!st_lookup(table2, (st_data_t)to, &val)) {
+    if (!st_lookup(table2, (st_data_t)dname, &val)) {
         transcoder_entry_t *entry = ALLOC(transcoder_entry_t);
-        entry->from = from;
-        entry->to = to;
+        entry->sname = sname;
+        entry->dname = dname;
         entry->lib = NULL;
         entry->transcoder = NULL;
         val = (st_data_t)entry;
-        st_add_direct(table2, (st_data_t)to, val);
+        st_add_direct(table2, (st_data_t)dname, val);
     }
     return (transcoder_entry_t *)val;
 }
 
 static transcoder_entry_t *
-get_transcoder_entry(const char *from, const char *to)
+get_transcoder_entry(const char *sname, const char *dname)
 {
     st_data_t val;
     st_table *table2;
 
-    if (!st_lookup(transcoder_table, (st_data_t)from, &val)) {
+    if (!st_lookup(transcoder_table, (st_data_t)sname, &val)) {
         return NULL;
     }
     table2 = (st_table *)val;
-    if (!st_lookup(table2, (st_data_t)to, &val)) {
+    if (!st_lookup(table2, (st_data_t)dname, &val)) {
         return NULL;
     }
     return (transcoder_entry_t *)val;
@@ -178,26 +178,26 @@ get_transcoder_entry(const char *from, const char *to)
 void
 rb_register_transcoder(const rb_transcoder *tr)
 {
-    const char *const from_e = tr->from_encoding;
-    const char *const to_e = tr->to_encoding;
+    const char *const sname = tr->from_encoding;
+    const char *const dname = tr->to_encoding;
 
     transcoder_entry_t *entry;
 
-    entry = make_transcoder_entry(from_e, to_e);
+    entry = make_transcoder_entry(sname, dname);
     if (entry->transcoder) {
 	rb_raise(rb_eArgError, "transcoder from %s to %s has been already registered",
-		 from_e, to_e);
+		 sname, dname);
     }
 
     entry->transcoder = tr;
 }
 
 static void
-declare_transcoder(const char *from, const char *to, const char *lib)
+declare_transcoder(const char *sname, const char *dname, const char *lib)
 {
     transcoder_entry_t *entry;
 
-    entry = make_transcoder_entry(from, to);
+    entry = make_transcoder_entry(sname, dname);
     entry->lib = lib;
 }
 
@@ -231,27 +231,27 @@ typedef struct {
 static int
 transcode_search_path_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    const char *to = (const char *)key;
+    const char *dname = (const char *)key;
     search_path_bfs_t *bfs = (search_path_bfs_t *)arg;
     search_path_queue_t *q;
 
-    if (st_lookup(bfs->visited, (st_data_t)to, &val)) {
+    if (st_lookup(bfs->visited, (st_data_t)dname, &val)) {
         return ST_CONTINUE;
     }
 
     q = ALLOC(search_path_queue_t);
-    q->enc = to;
+    q->enc = dname;
     q->next = NULL;
     *bfs->queue_last_ptr = q;
     bfs->queue_last_ptr = &q->next;
 
-    st_add_direct(bfs->visited, (st_data_t)to, (st_data_t)bfs->base_enc);
+    st_add_direct(bfs->visited, (st_data_t)dname, (st_data_t)bfs->base_enc);
     return ST_CONTINUE;
 }
 
 static int
-transcode_search_path(const char *from, const char *to,
-    void (*callback)(const char *from, const char *to, int depth, void *arg),
+transcode_search_path(const char *sname, const char *dname,
+    void (*callback)(const char *sname, const char *dname, int depth, void *arg),
     void *arg)
 {
     search_path_bfs_t bfs;
@@ -261,17 +261,17 @@ transcode_search_path(const char *from, const char *to,
     int found;
     int pathlen;
 
-    if (encoding_equal(from, to))
+    if (encoding_equal(sname, dname))
         return -1;
 
     q = ALLOC(search_path_queue_t);
-    q->enc = from;
+    q->enc = sname;
     q->next = NULL;
     bfs.queue_last_ptr = &q->next;
     bfs.queue = q;
 
     bfs.visited = st_init_strcasetable();
-    st_add_direct(bfs.visited, (st_data_t)from, (st_data_t)NULL);
+    st_add_direct(bfs.visited, (st_data_t)sname, (st_data_t)NULL);
 
     while (bfs.queue) {
         q = bfs.queue;
@@ -285,8 +285,8 @@ transcode_search_path(const char *from, const char *to,
         }
         table2 = (st_table *)val;
 
-        if (st_lookup(table2, (st_data_t)to, &val)) {
-            st_add_direct(bfs.visited, (st_data_t)to, (st_data_t)q->enc);
+        if (st_lookup(table2, (st_data_t)dname, &val)) {
+            st_add_direct(bfs.visited, (st_data_t)dname, (st_data_t)q->enc);
             xfree(q);
             found = 1;
             goto cleanup;
@@ -308,7 +308,7 @@ transcode_search_path(const char *from, const char *to,
     }
 
     if (found) {
-        const char *enc = to;
+        const char *enc = dname;
         int depth;
         pathlen = 0;
         while (1) {
@@ -319,7 +319,7 @@ transcode_search_path(const char *from, const char *to,
             enc = (const char *)val;
         }
         depth = pathlen;
-        enc = to;
+        enc = dname;
         while (1) {
             st_lookup(bfs.visited, (st_data_t)enc, &val);
             if (!val)
@@ -850,7 +850,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
 }
 
 static void
-trans_open_i(const char *from, const char *to, int depth, void *arg)
+trans_open_i(const char *sname, const char *dname, int depth, void *arg)
 {
     transcoder_entry_t ***entries_ptr = arg;
     transcoder_entry_t **entries;
@@ -862,11 +862,11 @@ trans_open_i(const char *from, const char *to, int depth, void *arg)
     else {
         entries = *entries_ptr;
     }
-    entries[depth] = get_transcoder_entry(from, to);
+    entries[depth] = get_transcoder_entry(sname, dname);
 }
 
 rb_econv_t *
-rb_econv_open(const char *from, const char *to, int ecflags)
+rb_econv_open(const char *sname, const char *dname, int ecflags)
 {
     transcoder_entry_t **entries = NULL;
     int num_trans;
@@ -878,27 +878,27 @@ rb_econv_open(const char *from, const char *to, int ecflags)
     int sidx, didx;
 
     senc = NULL;
-    if (*from) {
-        sidx = rb_enc_find_index(from);
+    if (*sname) {
+        sidx = rb_enc_find_index(sname);
         if (0 <= sidx) {
             senc = rb_enc_from_index(sidx);
         }
     }
 
     denc = NULL;
-    if (*to) {
-        didx = rb_enc_find_index(to);
+    if (*dname) {
+        didx = rb_enc_find_index(dname);
         if (0 <= didx) {
             denc = rb_enc_from_index(didx);
         }
     }
 
-    if (*from == '\0' && *to == '\0') {
+    if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
         entries = ALLOC_N(transcoder_entry_t *, 1+2);
     }
     else {
-        num_trans = transcode_search_path(from, to, trans_open_i, (void *)&entries);
+        num_trans = transcode_search_path(sname, dname, trans_open_i, (void *)&entries);
     }
 
     if (num_trans < 0 || !entries) {
@@ -907,7 +907,7 @@ rb_econv_open(const char *from, const char *to, int ecflags)
     }
 
     num_additional = 0;
-    if ((!*from || (senc && rb_enc_asciicompat(senc))) &&
+    if ((!*sname || (senc && rb_enc_asciicompat(senc))) &&
         (ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER))) {
         const char *name = (ecflags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
@@ -928,7 +928,7 @@ rb_econv_open(const char *from, const char *to, int ecflags)
         ecflags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
     }
 
-    if ((!*to || (denc && rb_enc_asciicompat(denc))) &&
+    if ((!*dname || (denc && rb_enc_asciicompat(denc))) &&
         (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)) {
         transcoder_entry_t *e = get_transcoder_entry("universal_newline", "");
         if (!e) {
@@ -949,8 +949,8 @@ rb_econv_open(const char *from, const char *to, int ecflags)
         return NULL;
 
     ec->flags = ecflags;
-    ec->source_encoding_name = from;
-    ec->destination_encoding_name = to;
+    ec->source_encoding_name = sname;
+    ec->destination_encoding_name = dname;
 
     if (num_trans == num_additional) {
         ec->last_tc = NULL;
@@ -1325,7 +1325,7 @@ rb_econv_encoding_to_insert_output(rb_econv_t *ec)
 }
 
 static unsigned char *
-allocate_converted_string(const char *str_encoding, const char *insert_encoding,
+allocate_converted_string(const char *sname, const char *dname,
         const unsigned char *str, size_t len,
         size_t *dst_len_ptr)
 {
@@ -1342,7 +1342,7 @@ allocate_converted_string(const char *str_encoding, const char *insert_encoding,
     if (dst_bufsize == 0)
         dst_bufsize += 1;
 
-    ec = rb_econv_open(str_encoding, insert_encoding, 0);
+    ec = rb_econv_open(sname, dname, 0);
     if (ec == NULL)
         return NULL;
     dst_str = xmalloc(dst_bufsize);
@@ -1640,20 +1640,20 @@ rb_econv_binmode(rb_econv_t *ec)
 }
 
 static VALUE
-econv_description(const char *senc, const char *denc, int ecflags, VALUE mesg)
+econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
 {
     int has_description = 0;
 
     if (NIL_P(mesg))
         mesg = rb_str_new(NULL, 0);
 
-    if (*senc != '\0' || *denc != '\0') {
-        if (*senc == '\0')
-            rb_str_cat2(mesg, denc);
-        else if (*denc == '\0')
-            rb_str_cat2(mesg, senc);
+    if (*sname != '\0' || *dname != '\0') {
+        if (*sname == '\0')
+            rb_str_cat2(mesg, dname);
+        else if (*dname == '\0')
+            rb_str_cat2(mesg, sname);
         else
-            rb_str_catf(mesg, "%s to %s", senc, denc);
+            rb_str_catf(mesg, "%s to %s", sname, dname);
         has_description = 1;
     }
 
@@ -1685,11 +1685,11 @@ econv_description(const char *senc, const char *denc, int ecflags, VALUE mesg)
 }
 
 VALUE
-rb_econv_open_exc(const char *senc, const char *denc, int ecflags)
+rb_econv_open_exc(const char *sname, const char *dname, int ecflags)
 {
     VALUE mesg, exc;
     mesg = rb_str_new_cstr("code converter open failed (");
-    econv_description(senc, denc, ecflags, mesg);
+    econv_description(sname, dname, ecflags, mesg);
     rb_str_cat2(mesg, ")");
     exc = rb_exc_new3(rb_eNoConverter, mesg);
     return exc;
