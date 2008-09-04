@@ -21,14 +21,22 @@
 
 <%= transcode_generated_code %>
 
+#define STATE (sp[0])
 #define NORMAL 0
 #define JUST_AFTER_CR 1
+
+/* no way to access this information, yet. */
+#define NEWLINES_MET (sp[1])
+#define MET_LF          0x01
+#define MET_CRLF        0x02
+#define MET_CR          0x04
 
 static int
 universal_newline_init(void *statep)
 {
     unsigned char *sp = statep;
-    *sp = NORMAL;
+    STATE = NORMAL;
+    NEWLINES_MET = 0;
     return 0;
 }
 
@@ -38,25 +46,32 @@ fun_so_universal_newline(void *statep, const unsigned char* s, size_t l, unsigne
     unsigned char *sp = statep;
     int len;
     if (s[0] == '\n') {
-        if (*sp == NORMAL) {
+        if (STATE == NORMAL) {
+            NEWLINES_MET |= MET_LF;
             o[0] = '\n';
             len = 1;
         }
         else { /* JUST_AFTER_CR */
+            NEWLINES_MET |= MET_CRLF;
             len = 0;
         }
-        *sp = NORMAL;
-    }
-    else if (s[0] == '\r') {
-        o[0] = '\n';
-        len = 1;
-        *sp = JUST_AFTER_CR;
+        STATE = NORMAL;
     }
     else {
-        o[0] = s[0];
-        len = 1;
-        *sp = NORMAL;
+        if (STATE == JUST_AFTER_CR)
+            NEWLINES_MET |= MET_CR;
+        if (s[0] == '\r') {
+            o[0] = '\n';
+            len = 1;
+            STATE = JUST_AFTER_CR;
+        }
+        else {
+            o[0] = s[0];
+            len = 1;
+            STATE = NORMAL;
+        }
     }
+
     return len;
 }
 
@@ -68,7 +83,7 @@ rb_universal_newline = {
     1, /* max_input */
     1, /* max_output */
     stateful_decoder, /* stateful_type */
-    1, universal_newline_init, universal_newline_init, /* state_size, state_init, state_fini */
+    2, universal_newline_init, universal_newline_init, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_universal_newline
 };
 

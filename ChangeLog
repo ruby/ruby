@@ -1,3 +1,8 @@
+Thu Sep  4 23:18:55 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/newline.trans: record newline types met in universal
+	  newline decoder.
+
 Thu Sep  4 23:05:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/prime.rb (Prime::OldCompatibility#each): added compatibility to 
