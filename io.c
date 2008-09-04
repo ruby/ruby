@@ -3911,7 +3911,7 @@ rb_io_extract_modeenc(VALUE *mode_p, VALUE opthash,
 }
 
 struct sysopen_struct {
-    char *fname;
+    const char *fname;
     int flag;
     mode_t mode;
 };
@@ -3924,7 +3924,7 @@ sysopen_func(void *ptr)
 }
 
 static int
-rb_sysopen_internal(char *fname, int flags, mode_t mode)
+rb_sysopen_internal(const char *fname, int flags, mode_t mode)
 {
     struct sysopen_struct data;
     data.fname = fname;
@@ -3934,7 +3934,7 @@ rb_sysopen_internal(char *fname, int flags, mode_t mode)
 }
 
 static int
-rb_sysopen(char *fname, int flags, mode_t mode)
+rb_sysopen(const char *fname, int flags, mode_t mode)
 {
     int fd;
 

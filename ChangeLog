@@ -1,4 +1,7 @@
-Thu Sep  4 12:33:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Sep  4 13:01:11 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (struct sysopen_struct, rb_sysopen_internal, rb_sysopen):
+	  constified.
 
 	* io.c: expanded ARGF members macros.
 
