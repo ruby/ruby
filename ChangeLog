@@ -1,3 +1,7 @@
+Thu Sep  4 21:53:58 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_init): accept an integer as 3rd argument as well.
+
 Thu Sep  4 21:46:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (sym_partial_input): new variable.

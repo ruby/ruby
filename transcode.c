@@ -2361,21 +2361,25 @@ make_dummy_encoding(const char *name)
 static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
-    VALUE source_encoding, destination_encoding, opthash, ecopts;
+    VALUE source_encoding, destination_encoding, opt, opthash, flags_v, ecopts;
     int sidx, didx;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
     int ecflags;
 
-    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &opthash);
+    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &opt);
 
-    if (opthash == Qnil) {
+    if (NIL_P(opt)) {
         ecflags = 0;
         ecopts = Qnil;
     }
+    else if (!NIL_P(flags_v = rb_check_to_integer(opt, "to_int"))) {
+        ecflags = NUM2INT(flags_v);
+        ecopts = Qnil;
+    }
     else {
-        opthash = rb_convert_type(opthash, T_HASH, "Hash", "to_hash");
+        opthash = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
         ecflags = rb_econv_prepare_opts(opthash, &ecopts);
     }
 
@@ -3339,8 +3343,15 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "last_error", econv_last_error, 0);
     rb_define_method(rb_cEncodingConverter, "replacement", econv_get_replacement, 0);
     rb_define_method(rb_cEncodingConverter, "replacement=", econv_set_replacement, 1);
+    rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
+    rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
+    rb_define_const(rb_cEncodingConverter, "UNDEF_MASK", INT2FIX(ECONV_UNDEF_MASK));
+    rb_define_const(rb_cEncodingConverter, "UNDEF_REPLACE", INT2FIX(ECONV_UNDEF_REPLACE));
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
+    rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
+    rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
 
     rb_define_method(rb_eConversionUndefined, "source_encoding_name", ecerr_source_encoding_name, 0);
     rb_define_method(rb_eConversionUndefined, "destination_encoding_name", ecerr_destination_encoding_name, 0);
