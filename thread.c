@@ -931,8 +931,6 @@ rb_thread_schedule(void)
     }
 }
 
-int rb_thread_critical; /* TODO: dummy variable */
-
 VALUE
 rb_thread_blocking_region(
     rb_blocking_function_t *func, void *data1,

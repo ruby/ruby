@@ -1,3 +1,7 @@
+Fri Sep  5 02:40:38 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (rb_thread_critical): removed.
+
 Fri Sep  5 01:22:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (argf_mark): mark p->encs.ecopts.
