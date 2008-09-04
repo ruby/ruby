@@ -1,3 +1,15 @@
+Thu Sep  4 19:10:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_INVALID_IGNORE): removed because
+	  it tend to cause security problem.  If the behaviour is really
+	  required, ECONV_INVALID_REPLACE with empty string can be used.
+	  For example, CVE-2006-2313, CVE-2008-1036, [ruby-core:15645]
+	  (ECONV_UNDEF_IGNORE): ditto.
+
+	* transcode.c (rb_econv_convert): follow the above change.
+	  (econv_opts): ditto.
+	  (Init_transcode): ditto.
+
 Thu Sep  4 13:22:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (struct rb_vm_struct): replaced signal staff with trap

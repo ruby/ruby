@@ -247,23 +247,23 @@ class TestTranscode < Test::Unit::TestCase
   
   def test_invalid_ignore
     # arguments only
-    assert_nothing_raised { 'abc'.encode('utf-8', invalid: :ignore) }
+    assert_nothing_raised { 'abc'.encode('utf-8', invalid: :replace, replace: "") }
     # check handling of UTF-8 ill-formed subsequences
     assert_equal("\x00\x41\x00\x3E\x00\x42".force_encoding('UTF-16BE'),
-      "\x41\xC2\x3E\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+      "\x41\xC2\x3E\x42".encode('UTF-16BE', 'UTF-8', invalid: :replace, replace: ""))
     assert_equal("\x00\x41\x00\xF1\x00\x42".force_encoding('UTF-16BE'),
-      "\x41\xC2\xC3\xB1\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+      "\x41\xC2\xC3\xB1\x42".encode('UTF-16BE', 'UTF-8', invalid: :replace, replace: ""))
     assert_equal("\x00\x42".force_encoding('UTF-16BE'),
-      "\xF0\x80\x80\x42".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+      "\xF0\x80\x80\x42".encode('UTF-16BE', 'UTF-8', invalid: :replace, replace: ""))
     assert_equal(''.force_encoding('UTF-16BE'),
-      "\x82\xAB".encode('UTF-16BE', 'UTF-8', invalid: :ignore))
+      "\x82\xAB".encode('UTF-16BE', 'UTF-8', invalid: :replace, replace: ""))
 
     assert_equal("\e$B!!\e(B".force_encoding("ISO-2022-JP"),
-      "\xA1\xA1\xFF".encode("ISO-2022-JP", "EUC-JP", invalid: :ignore))
+      "\xA1\xA1\xFF".encode("ISO-2022-JP", "EUC-JP", invalid: :replace, replace: ""))
     assert_equal("\e$B\x24\x22\x24\x24\e(B".force_encoding("ISO-2022-JP"),
-      "\xA4\xA2\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :ignore))
+      "\xA4\xA2\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :replace, replace: ""))
     assert_equal("\e$B\x24\x22\x24\x24\e(B".force_encoding("ISO-2022-JP"),
-      "\xA4\xA2\xFF\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :ignore))
+      "\xA4\xA2\xFF\xFF\xA4\xA4".encode("ISO-2022-JP", "EUC-JP", invalid: :replace, replace: ""))
   end
 
   def test_invalid_replace

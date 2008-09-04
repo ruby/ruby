@@ -524,7 +524,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_invalid_ignore
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::INVALID_IGNORE)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", :invalid => :replace, :replace => "")
     ret = ec.primitive_convert(src="abc\x80def", dst="", nil, 100)
     assert_equal(:finished, ret)
     assert_equal("", src)
@@ -540,7 +540,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_undef_ignore
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::UNDEF_IGNORE)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", :undef => :replace, :replace => "")
     ret = ec.primitive_convert(src="abc\u{fffd}def", dst="", nil, 100)
     assert_equal(:finished, ret)
     assert_equal("", src)

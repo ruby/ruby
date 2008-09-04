@@ -1286,10 +1286,7 @@ rb_econv_convert(rb_econv_t *ec,
         ret == econv_incomplete_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
-	if (ec->flags&ECONV_INVALID_IGNORE) {
-            goto resume;
-	}
-	else if (ec->flags&ECONV_INVALID_REPLACE) {
+	if (ec->flags&ECONV_INVALID_REPLACE) {
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
@@ -1299,10 +1296,7 @@ rb_econv_convert(rb_econv_t *ec,
 	/* valid character in source encoding
 	 * but no related character(s) in destination encoding */
 	/* todo: add more alternative behaviors */
-	if (ec->flags&ECONV_UNDEF_IGNORE) {
-	    goto resume;
-	}
-	else if (ec->flags&ECONV_UNDEF_REPLACE) {
+	if (ec->flags&ECONV_UNDEF_REPLACE) {
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
@@ -2009,9 +2003,6 @@ econv_opts(VALUE opt)
     v = rb_hash_aref(opt, sym_invalid);
     if (NIL_P(v)) {
     }
-    else if (v==sym_ignore) {
-        options |= ECONV_INVALID_IGNORE;
-    }
     else if (v==sym_replace) {
         options |= ECONV_INVALID_REPLACE;
         v = rb_hash_aref(opt, sym_replace);
@@ -2021,9 +2012,6 @@ econv_opts(VALUE opt)
     }
     v = rb_hash_aref(opt, sym_undef);
     if (NIL_P(v)) {
-    }
-    else if (v==sym_ignore) {
-        options |= ECONV_UNDEF_IGNORE;
     }
     else if (v==sym_replace) {
         options |= ECONV_UNDEF_REPLACE;
@@ -3314,10 +3302,8 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "replacement", econv_get_replacement, 0);
     rb_define_method(rb_cEncodingConverter, "replacement=", econv_set_replacement, 1);
     rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
-    rb_define_const(rb_cEncodingConverter, "INVALID_IGNORE", INT2FIX(ECONV_INVALID_IGNORE));
     rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
     rb_define_const(rb_cEncodingConverter, "UNDEF_MASK", INT2FIX(ECONV_UNDEF_MASK));
-    rb_define_const(rb_cEncodingConverter, "UNDEF_IGNORE", INT2FIX(ECONV_UNDEF_IGNORE));
     rb_define_const(rb_cEncodingConverter, "UNDEF_REPLACE", INT2FIX(ECONV_UNDEF_REPLACE));
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
