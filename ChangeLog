@@ -1,3 +1,7 @@
+Thu Sep  4 12:33:23 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c: expanded ARGF members macros.
+
 Thu Sep  4 10:43:47 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/transcode-tblgen.rb (citrus_decode_mapsrc): support older 1.8.
