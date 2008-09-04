@@ -4595,7 +4595,7 @@ rb_find_file(VALUE path)
 	rb_raise(rb_eSecurityError, "loading from non-absolute path %s", f);
     }
 
-    load_path = rb_get_load_path();
+    RB_GC_GUARD(load_path) = rb_get_load_path();
     if (load_path) {
 	long i;
 

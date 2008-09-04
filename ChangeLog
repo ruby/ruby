@@ -1,3 +1,10 @@
+Thu Sep  4 08:59:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* file.c (rb_find_file): fix GC problem on Debian GNU/Linux (IA64)
+	  with gcc (GCC) 4.1.2 20061115 (prerelease) (Debian 4.1.1-21).
+	  There is no register/memory to contain load_path.  A register (r35)
+	  contains &RARRAY_PTR(load_path), (char*)load_path + 32.
+
 Thu Sep  4 03:10:05 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): new fields: encs.ecopts and
