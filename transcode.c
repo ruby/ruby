@@ -2341,7 +2341,7 @@ make_dummy_encoding(const char *name)
  *
  * returns the corresponding stateless encoding.
  *
- * It returns nil if the argument is stateless encoding.
+ * It returns nil if the argument is not a stateful encoding.
  *
  * "corresponding stateless encoding" is a stateless encoding which
  * can represent all characters in the statefull encoding.
