@@ -34,6 +34,12 @@ static VALUE sym_finished;
 static VALUE sym_output_followed_by_input;
 static VALUE sym_incomplete_input;
 
+static unsigned char *
+allocate_converted_string(const char *sname, const char *dname,
+        const unsigned char *str, size_t len,
+        unsigned char *caller_dst_buf, size_t caller_dst_bufsize,
+        size_t *dst_len_ptr);
+
 /* dynamic structure, one per conversion (similar to iconv_t) */
 /* may carry conversion state (e.g. for iso-2022-jp) */
 typedef struct rb_transcoding {
@@ -1261,6 +1267,62 @@ rb_econv_convert0(rb_econv_t *ec,
 
 static int output_replacement_character(rb_econv_t *ec);
 
+static int
+output_hex_charref(rb_econv_t *ec)
+{
+    int ret;
+    unsigned char utfbuf[1024];
+    const unsigned char *utf;
+    size_t utf_len;
+    int utf_allocated = 0;
+    char charef_buf[16];
+    const unsigned char *p;
+
+    if (encoding_equal(ec->last_error.source_encoding, "UTF-32BE")) {
+        utf = ec->last_error.error_bytes_start;
+        utf_len = ec->last_error.error_bytes_len;
+    }
+    else {
+        utf = allocate_converted_string(ec->last_error.source_encoding, "UTF-32BE",
+                ec->last_error.error_bytes_start, ec->last_error.error_bytes_len,
+                utfbuf, sizeof(utfbuf),
+                &utf_len);
+        if (!utf)
+            return -1;
+        if (utf != utfbuf && utf != ec->last_error.error_bytes_start)
+            utf_allocated = 1;
+    }
+
+    if (utf_len % 4 != 0)
+        goto fail;
+
+    p = utf;
+    while (4 <= utf_len) {
+        unsigned int u = 0;
+        u += p[0] << 24;
+        u += p[1] << 16;
+        u += p[2] << 8;
+        u += p[3];
+        snprintf(charef_buf, sizeof(charef_buf), "&#x%x;", u);
+
+        ret = rb_econv_insert_output(ec, (unsigned char *)charef_buf, strlen(charef_buf), "US-ASCII");
+        if (ret == -1)
+            goto fail;
+
+        p += 4;
+        utf_len -= 4;
+    }
+
+    if (utf_allocated)
+        xfree((void *)utf);
+    return 0;
+
+  fail:
+    if (utf_allocated)
+        xfree((void *)utf);
+    return -1;
+}
+
 rb_econv_result_t
 rb_econv_convert(rb_econv_t *ec,
     const unsigned char **input_ptr, const unsigned char *input_stop,
@@ -1303,6 +1365,11 @@ rb_econv_convert(rb_econv_t *ec,
         switch (ec->flags & ECONV_UNDEF_MASK) {
           case ECONV_UNDEF_REPLACE:
 	    if (output_replacement_character(ec) == 0)
+                goto resume;
+            break;
+
+          case ECONV_UNDEF_HEX_CHARREF:
+            if (output_hex_charref(ec) == 0)
                 goto resume;
             break;
         }
@@ -3424,10 +3491,12 @@ Init_transcode(void)
     rb_define_method(rb_cEncodingConverter, "last_error", econv_last_error, 0);
     rb_define_method(rb_cEncodingConverter, "replacement", econv_get_replacement, 0);
     rb_define_method(rb_cEncodingConverter, "replacement=", econv_set_replacement, 1);
+
     rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
     rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
     rb_define_const(rb_cEncodingConverter, "UNDEF_MASK", INT2FIX(ECONV_UNDEF_MASK));
     rb_define_const(rb_cEncodingConverter, "UNDEF_REPLACE", INT2FIX(ECONV_UNDEF_REPLACE));
+    rb_define_const(rb_cEncodingConverter, "UNDEF_HEX_CHARREF", INT2FIX(ECONV_UNDEF_HEX_CHARREF));
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));

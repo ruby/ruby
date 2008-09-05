@@ -670,4 +670,19 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("utf-8", "us-ascii", :undef => :replace, :replace => "X")  
     assert_equal("a X b", ec.convert("a \u3042 b"))
   end
+
+  def test_hex_charref
+    ec = Encoding::Converter.new("UTF-8", "US-ASCII", Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal("&#x3042;", ec.convert("\u3042"))
+
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal("\xa4\xcf\xa4\xa1\xa4\xa4&#x2665;\xa1\xa3".force_encoding("euc-jp"),
+      ec.convert("\u{306f 3041 3044 2665 3002}"))
+
+    ec = Encoding::Converter.new("UTF-8", "ISO-2022-JP", Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal("\e$B$O$!$$\e(B&#x2665;\e$B!#".force_encoding("ISO-2022-JP"),
+      ec.convert("\u{306f 3041 3044 2665 3002}"))
+    assert_equal("\e(B".force_encoding("ISO-2022-JP"),
+      ec.finish)
+  end
 end

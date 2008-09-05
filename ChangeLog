@@ -1,3 +1,12 @@
+Sat Sep  6 05:22:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_UNDEF_HEX_CHARREF): defined.
+
+	* transcode.c (output_hex_charref): new function.
+	  (rb_econv_convert): call output_hex_charref if
+	  ECONV_UNDEF_HEX_CHARREF.
+	  (Init_transcode): Encoding::Converter::UNDEF_HEX_CHARREF added.
+	  
 Sat Sep  6 03:52:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_convert): use ECONV_INVALID_MASK and
