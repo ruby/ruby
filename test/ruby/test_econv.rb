@@ -27,6 +27,15 @@ class TestEncodingConverter < Test::Unit::TestCase
                  ec.primitive_errinfo)
   end
 
+  def test_s_stateless_encoding
+    assert_equal(Encoding::EUC_JP, Encoding::Converter.stateless_encoding("ISO-2022-JP"))
+    assert_equal(Encoding::EUC_JP, Encoding::Converter.stateless_encoding(Encoding::ISO_2022_JP))
+    assert_nil(Encoding::Converter.stateless_encoding("EUC-JP"))
+    assert_nil(Encoding::Converter.stateless_encoding("UTF-8"))
+    assert_nil(Encoding::Converter.stateless_encoding("UTF-16BE"))
+    assert_nil(Encoding::Converter.stateless_encoding(Encoding::UTF_8))
+  end
+
   def test_new
     assert_kind_of(Encoding::Converter, Encoding::Converter.new("UTF-8", "EUC-JP"))
     assert_kind_of(Encoding::Converter, Encoding::Converter.new(Encoding::UTF_8, Encoding::EUC_JP))

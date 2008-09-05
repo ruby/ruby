@@ -2336,6 +2336,47 @@ make_dummy_encoding(const char *name)
 
 /*
  * call-seq:
+ *   Encoding::Converter.stateless_encoding(string) => encoding or nil
+ *   Encoding::Converter.stateless_encoding(encoding) => encoding or nil
+ *
+ * returns the corresponding stateless encoding.
+ *
+ * It returns nil if the argument is stateless encoding.
+ *
+ * "corresponding stateless encoding" is a stateless encoding which
+ * can represent all characters in the statefull encoding.
+ *
+ * So, no conversion undefined error occur from the stateful encoding to the stateless encoding.
+ *
+ * Currently, EUC-JP is the corresponding stateless encoding of ISO-2022-JP.
+ *
+ *   Encoding::Converter.stateless_encoding("ISO-2022-JP") #=> #<Encoding:EUC-JP>
+ *
+ * (This may be changed in future because EUC-JP cannot distinguish JIS X 0208 1978 and 1983.)
+ */
+static VALUE
+econv_s_stateless_encoding(VALUE klass, VALUE arg)
+{
+    const char *stateful_name, *stateless_name;
+    rb_encoding *stateful_enc, *stateless_enc;
+
+    enc_arg(arg, &stateful_name, &stateful_enc);
+
+    stateless_name = rb_econv_stateless_encoding(stateful_name);
+
+    if (stateless_name == NULL)
+        return Qnil;
+
+    stateless_enc = rb_enc_find(stateless_name);
+
+    if (!stateless_enc)
+        stateless_enc = make_dummy_encoding(stateless_name);
+
+    return rb_enc_from_encoding(stateless_enc);
+}
+
+/*
+ * call-seq:
  *   Encoding::Converter.new(source_encoding, destination_encoding)
  *   Encoding::Converter.new(source_encoding, destination_encoding, opt)
  *
@@ -3346,6 +3387,7 @@ Init_transcode(void)
 
     rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
+    rb_define_singleton_method(rb_cEncodingConverter, "stateless_encoding", econv_s_stateless_encoding, 1);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
     rb_define_method(rb_cEncodingConverter, "inspect", econv_inspect, 0);
     rb_define_method(rb_cEncodingConverter, "source_encoding", econv_source_encoding, 0);

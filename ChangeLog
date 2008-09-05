@@ -1,3 +1,7 @@
+Sat Sep  6 02:23:18 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_s_stateless_encoding): new method.
+
 Sat Sep  6 02:01:59 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (enc_arg): extracted from str_transcode_enc_args.
