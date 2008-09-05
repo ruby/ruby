@@ -1327,11 +1327,12 @@ rb_econv_encoding_to_insert_output(rb_econv_t *ec)
 static unsigned char *
 allocate_converted_string(const char *sname, const char *dname,
         const unsigned char *str, size_t len,
+        unsigned char *caller_dst_buf, size_t caller_dst_bufsize,
         size_t *dst_len_ptr)
 {
     unsigned char *dst_str;
     size_t dst_len;
-    size_t dst_bufsize = len;
+    size_t dst_bufsize;
 
     rb_econv_t *ec;
     rb_econv_result_t res;
@@ -1339,13 +1340,20 @@ allocate_converted_string(const char *sname, const char *dname,
     const unsigned char *sp;
     unsigned char *dp;
 
-    if (dst_bufsize == 0)
-        dst_bufsize += 1;
+    if (caller_dst_buf)
+        dst_bufsize = caller_dst_bufsize;
+    else if (len == 0)
+        dst_bufsize = 1;
+    else
+        dst_bufsize = len;
 
     ec = rb_econv_open(sname, dname, 0);
     if (ec == NULL)
         return NULL;
-    dst_str = xmalloc(dst_bufsize);
+    if (caller_dst_buf)
+        dst_str = caller_dst_buf;
+    else
+        dst_str = xmalloc(dst_bufsize);
     dst_len = 0;
     sp = str;
     dp = dst_str+dst_len;
@@ -1353,24 +1361,34 @@ allocate_converted_string(const char *sname, const char *dname,
     dst_len = dp - dst_str;
     while (res == econv_destination_buffer_full) {
         if (dst_bufsize * 2 < dst_bufsize) {
-            xfree(dst_str);
-            rb_econv_close(ec);
-            return NULL;
+            goto fail;
         }
         dst_bufsize *= 2;
-        dst_str = xrealloc(dst_str, dst_bufsize);
+        if (dst_str == caller_dst_buf) {
+            unsigned char *tmp;
+            tmp = xmalloc(dst_bufsize);
+            memcpy(tmp, dst_str, dst_bufsize/2);
+            dst_str = tmp;
+        }
+        else {
+            dst_str = xrealloc(dst_str, dst_bufsize);
+        }
         dp = dst_str+dst_len;
         res = rb_econv_convert(ec, &sp, str+len, &dp, dst_str+dst_bufsize, 0);
         dst_len = dp - dst_str;
     }
     if (res != econv_finished) {
-        xfree(dst_str);
-        rb_econv_close(ec);
-        return NULL;
+        goto fail;
     }
     rb_econv_close(ec);
     *dst_len_ptr = dst_len;
     return dst_str;
+
+  fail:
+    if (dst_str != caller_dst_buf)
+        xfree(dst_str);
+    rb_econv_close(ec);
+    return NULL;
 }
 
 /* result: 0:success -1:failure */
@@ -1379,7 +1397,8 @@ rb_econv_insert_output(rb_econv_t *ec,
     const unsigned char *str, size_t len, const char *str_encoding)
 {
     const char *insert_encoding = rb_econv_encoding_to_insert_output(ec);
-    const unsigned char *insert_str;
+    unsigned char insert_buf[4096];
+    const unsigned char *insert_str = NULL;
     size_t insert_len;
 
     rb_transcoding *tc;
@@ -1399,7 +1418,8 @@ rb_econv_insert_output(rb_econv_t *ec,
         insert_len = len;
     }
     else {
-        insert_str = allocate_converted_string(str_encoding, insert_encoding, str, len, &insert_len);
+        insert_str = allocate_converted_string(str_encoding, insert_encoding,
+                str, len, insert_buf, sizeof(insert_buf), &insert_len);
         if (insert_str == NULL)
             return -1;
     }
@@ -1471,12 +1491,12 @@ rb_econv_insert_output(rb_econv_t *ec,
     memcpy(*data_end_p, insert_str, insert_len);
     *data_end_p += insert_len;
 
-    if (insert_str != str)
+    if (insert_str != str && insert_str != insert_buf)
         xfree((void*)insert_str);
     return 0;
 
   fail:
-    if (insert_str != str)
+    if (insert_str != str && insert_str != insert_buf)
         xfree((void*)insert_str);
     return -1;
 }
@@ -1809,7 +1829,7 @@ make_replacement(rb_econv_t *ec)
 
     ins_enc = rb_econv_encoding_to_insert_output(ec);
     if (*repl_enc && !encoding_equal(repl_enc, ins_enc)) {
-        replacement = allocate_converted_string(repl_enc, ins_enc, replacement, len, &len);
+        replacement = allocate_converted_string(repl_enc, ins_enc, replacement, len, NULL, 0, &len);
         if (!replacement)
             return -1;
         allocated = 1;
@@ -1839,7 +1859,7 @@ rb_econv_set_replacemenet(rb_econv_t *ec,
         encname2 = encname;
     }
     else {
-        str2 = allocate_converted_string(encname, encname2, str, len, &len2);
+        str2 = allocate_converted_string(encname, encname2, str, len, NULL, 0, &len2);
         if (!str2)
             return -1;
     }

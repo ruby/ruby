@@ -1,3 +1,10 @@
+Sat Sep  6 03:18:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (allocate_converted_string): add arguments for a buffer
+	  allocated by caller.
+	  (rb_econv_insert_output): provide caller allocated buffer to
+	  allocate_converted_string.
+
 Sat Sep  6 02:58:53 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (str_transcode_enc_args): local variables renamed.
