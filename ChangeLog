@@ -1,3 +1,8 @@
+Fri Sep  5 20:07:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_mode_modenum): moved from
+	  include/ruby/intern.h.
+
 Fri Sep  5 19:59:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (MODENUM_MAX): removed.

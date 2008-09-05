@@ -391,7 +391,6 @@ VALUE rb_file_open_str(VALUE, const char*);
 VALUE rb_gets(void);
 void rb_write_error(const char*);
 void rb_write_error2(const char*, long);
-int rb_io_mode_modenum(const char *mode);
 void rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds);
 int rb_pipe(int *pipes);
 /* marshal.c */

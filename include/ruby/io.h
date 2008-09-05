@@ -140,6 +140,7 @@ FILE *rb_io_stdio_file(rb_io_t *fptr);
 FILE *rb_fdopen(int, const char*);
 int  rb_io_mode_flags(const char*);
 int  rb_io_modenum_flags(int);
+int rb_io_mode_modenum(const char *mode);
 void rb_io_check_writable(rb_io_t*);
 void rb_io_check_readable(rb_io_t*);
 int rb_io_fptr_finalize(rb_io_t*);
