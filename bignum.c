@@ -1633,19 +1633,20 @@ bigdivrem1(void *ptr)
 {
     struct big_div_struct *bds = (struct big_div_struct*)ptr;
     long nx = bds->nx, ny = bds->ny;
-    long i, j;
+    long i, j, nyzero;
     BDIGIT *yds = bds->yds, *zds = bds->zds;
     BDIGIT_DBL t2;
     BDIGIT_DBL_SIGNED num;
     BDIGIT q;
 
     j = nx==ny?nx+1:nx;
+    for (nyzero = 0; !yds[nyzero]; nyzero++);
     do {
 	if (bds->stop) return Qnil;
 	if (zds[j] ==  yds[ny-1]) q = BIGRAD-1;
 	else q = (BDIGIT)((BIGUP(zds[j]) + zds[j-1])/yds[ny-1]);
 	if (q) {
-	    i = 0; num = 0; t2 = 0;
+           i = nyzero; num = 0; t2 = 0;
 	    do {			/* multiply and subtract */
 		BDIGIT_DBL ee;
 		t2 += (BDIGIT_DBL)yds[i] * q;
