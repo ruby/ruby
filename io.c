@@ -3898,6 +3898,9 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
     if ((fmode & FMODE_BINMODE) && (fmode & FMODE_TEXTMODE))
         rb_raise(rb_eArgError, "both textmode and binmode specified");
 
+    if (enc && !rb_enc_asciicompat(enc) && !(fmode & FMODE_BINMODE))
+        rb_raise(rb_eArgError, "ASCII incompatible encoding needs binmode");
+
     *vmode_p = vmode;
 
     *oflags_p = oflags;

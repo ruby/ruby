@@ -1227,10 +1227,34 @@ EOT
 
   def test_textmode_read_ascii_incompat_internal
     with_tmpdir {
+      # ascii incompatible internal encoding needs binmode.
+      assert_raise(ArgumentError) {
+        open("t.utf8.crlf", "rt:utf-8:utf-16be") {|f| }
+      }
+      assert_raise(ArgumentError) {
+        open("t.utf8.crlf", "r:utf-8:utf-16be") {|f| }
+      }
+      assert_raise(ArgumentError) {
+        open("t.utf16.crlf", "rt:utf-16be") {|f| }
+      }
+      assert_raise(ArgumentError) {
+        open("t.utf16.crlf", "r:utf-16be") {|f| }
+      }
+    }
+  end
+
+  def test_binmode_read_ascii_incompat_internal
+    with_tmpdir {
       generate_file("t.utf8.crlf", "a\r\nb\r\n")
-      open("t.utf8.crlf", "rt:utf-8:utf-16be") {|f|
+      generate_file("t.utf16.crlf", "\0a\0\r\0\n\0b\0\r\0\n")
+      # ascii incompatible internal encoding needs binmode.
+      open("t.utf8.crlf", "rb:utf-8:utf-16be") {|f|
         content = f.read
-        # textmode doesn't affect for ascii incompatible internal encoding.
+        assert_equal("\0a\0\r\0\n\0b\0\r\0\n".force_encoding("UTF-16BE"),
+                     content)
+      }
+      open("t.utf16.crlf", "rb:utf-16be") {|f|
+        content = f.read
         assert_equal("\0a\0\r\0\n\0b\0\r\0\n".force_encoding("UTF-16BE"),
                      content)
       }
@@ -1239,12 +1263,38 @@ EOT
 
   def test_textmode_write_ascii_incompat_internal
     with_tmpdir {
-      open("t.utf8.lf", "wt:utf-8:utf-16be") {|f|
+      # ascii incompatible internal encoding needs binmode.
+      assert_raise(ArgumentError) {
+        open("t.utf8", "wt:utf-8:utf-16be") {|f| }
+      }
+      assert_raise(ArgumentError) {
+        open("t.utf8", "w:utf-8:utf-16be") {|f| }
+      }
+      assert_raise(ArgumentError) {
+        open("t.utf8", "w:utf-8:utf-16be") {|f| }
+      }
+      assert_raise(ArgumentError) {
+        open("t.utf16", "wt:utf-16be") {|f| }
+      }
+      assert_raise(ArgumentError) {
+        open("t.utf16", "w:utf-16be") {|f| }
+      }
+    }
+  end
+
+  def test_binmode_write_ascii_incompat_internal
+    with_tmpdir {
+      open("t.utf8.lf", "wb:utf-8:utf-16be") {|f|
         f.print "\0a\0\n\0b\0\n".force_encoding("UTF-16BE")
       }
       content = File.read("t.utf8.lf", :mode=>"rb:ascii-8bit")
-      # textmode doesn't affect for ascii incompatible internal encoding.
       assert_equal("a\nb\n", content)
+
+      open("t.utf8.lf", "wb:utf-16be") {|f|
+        f.print "\0a\0\n\0b\0\n".force_encoding("UTF-16BE")
+      }
+      content = File.read("t.utf8.lf", :mode=>"rb:ascii-8bit")
+      assert_equal("\0a\0\n\0b\0\n", content)
     }
   end
 

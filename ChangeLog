@@ -1,3 +1,8 @@
+Sat Sep  6 07:24:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_extract_modeenc): raise an error for ASCII incompatible
+	  encoding without binmode.
+
 Sat Sep  6 06:28:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/escape.trans: new file.
