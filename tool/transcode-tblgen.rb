@@ -36,11 +36,11 @@ class StrSet
           seq = $'
           set_result = []
           set.scan(/[^,]+/) {|range|
-            if /\A([0-9a-f][0-9a-f])-([0-9a-f][0-9a-f])\z/ =~ range
+            if /\A([0-9a-f][0-9a-f])-([0-9a-f][0-9a-f])\z/i =~ range
               b = $1.to_i(16)
               e = $2.to_i(16)
               set_result << (b..e)
-            elsif /\A([0-9a-f][0-9a-f])\z/ =~ range
+            elsif /\A([0-9a-f][0-9a-f])\z/i =~ range
               byte = $1.to_i(16)
               set_result << (byte..byte)
             else
