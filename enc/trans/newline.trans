@@ -41,7 +41,7 @@ universal_newline_init(void *statep)
 }
 
 static int
-fun_so_universal_newline(void *statep, const unsigned char* s, size_t l, unsigned char* o)
+fun_so_universal_newline(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     unsigned char *sp = statep;
     int len;
@@ -75,6 +75,16 @@ fun_so_universal_newline(void *statep, const unsigned char* s, size_t l, unsigne
     return len;
 }
 
+static int
+universal_newline_finish(void *statep, unsigned char *o)
+{
+    unsigned char *sp = statep;
+    if (STATE == JUST_AFTER_CR)
+        NEWLINES_MET |= MET_CR;
+    STATE = NORMAL;
+    return 0;
+}
+
 static const rb_transcoder
 rb_universal_newline = {
     "universal_newline", "", universal_newline,
@@ -84,7 +94,8 @@ rb_universal_newline = {
     1, /* max_output */
     stateful_decoder, /* stateful_type */
     2, universal_newline_init, universal_newline_init, /* state_size, state_init, state_fini */
-    NULL, NULL, NULL, fun_so_universal_newline
+    NULL, NULL, NULL, fun_so_universal_newline,
+    universal_newline_finish
 };
 
 static const rb_transcoder

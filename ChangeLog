@@ -1,3 +1,7 @@
+Fri Sep  5 20:12:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/newline.trans (universal_newline_finish): new function.
+
 Fri Sep  5 20:07:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_mode_modenum): moved from
