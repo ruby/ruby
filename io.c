@@ -3687,8 +3687,6 @@ rb_io_mode_modenum(const char *mode)
     return rb_io_flags_modenum(rb_io_mode_flags(mode));
 }
 
-#define MODENUM_MAX 4
-
 static const char*
 rb_io_modenum_mode(int modenum)
 {
