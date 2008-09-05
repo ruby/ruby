@@ -170,6 +170,9 @@ fun1(negate)
 fun1(numerator)
 fun1(polar)
 fun1(scalar_p)
+
+#define f_real_p f_scalar_p
+
 fun1(to_f)
 fun1(to_i)
 fun1(to_r)
@@ -326,7 +329,7 @@ nucomp_real_check(VALUE num)
       case T_RATIONAL:
 	break;
       default:
-	if (!k_numeric_p(num) || !f_scalar_p(num))
+	if (!k_numeric_p(num) || !f_real_p(num))
 	    rb_raise(rb_eArgError, "not a real");
     }
 }
@@ -343,16 +346,16 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE image)
     if (f_zero_p(image) && f_unify_p(klass))
 	return real;
 #endif
-    else if (f_scalar_p(real) && f_scalar_p(image))
+    else if (f_real_p(real) && f_real_p(image))
 	return nucomp_s_new_internal(klass, real, image);
-    else if (f_scalar_p(real)) {
+    else if (f_real_p(real)) {
 	get_dat1(image);
 
 	return nucomp_s_new_internal(klass,
 				     f_sub(real, dat->image),
 				     f_add(ZERO, dat->real));
     }
-    else if (f_scalar_p(image)) {
+    else if (f_real_p(image)) {
 	get_dat1(real);
 
 	return nucomp_s_new_internal(klass,
@@ -455,7 +458,7 @@ m_cos(VALUE x)
 {
     get_dat1(x);
 
-    if (f_scalar_p(x))
+    if (f_real_p(x))
 	return m_cos_bang(x);
     return f_complex_new2(rb_cComplex,
 			  f_mul(m_cos_bang(dat->real),
@@ -469,7 +472,7 @@ m_sin(VALUE x)
 {
     get_dat1(x);
 
-    if (f_scalar_p(x))
+    if (f_real_p(x))
 	return m_sin_bang(x);
     return f_complex_new2(rb_cComplex,
 			  f_mul(m_sin_bang(dat->real),
@@ -481,7 +484,7 @@ m_sin(VALUE x)
 static VALUE
 m_sqrt(VALUE x)
 {
-    if (f_scalar_p(x)) {
+    if (f_real_p(x)) {
 	if (!f_negative_p(x))
 	    return m_sqrt_bang(x);
 	return f_complex_new2(rb_cComplex, ZERO, m_sqrt_bang(f_negate(x)));
@@ -543,7 +546,7 @@ nucomp_add(VALUE self, VALUE other)
 
 	return f_complex_new2(CLASS_OF(self), real, image);
     }
-    if (k_numeric_p(other) && f_scalar_p(other)) {
+    if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
 	return f_complex_new2(CLASS_OF(self),
@@ -565,7 +568,7 @@ nucomp_sub(VALUE self, VALUE other)
 
 	return f_complex_new2(CLASS_OF(self), real, image);
     }
-    if (k_numeric_p(other) && f_scalar_p(other)) {
+    if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
 	return f_complex_new2(CLASS_OF(self),
@@ -589,7 +592,7 @@ nucomp_mul(VALUE self, VALUE other)
 
 	return f_complex_new2(CLASS_OF(self), real, image);
     }
-    if (k_numeric_p(other) && f_scalar_p(other)) {
+    if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
 	return f_complex_new2(CLASS_OF(self),
@@ -619,7 +622,7 @@ nucomp_div(VALUE self, VALUE other)
 	}
 	return f_div(f_mul(self, f_conjugate(other)), f_abs2(other));
     }
-    if (k_numeric_p(other) && f_scalar_p(other)) {
+    if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
 	return f_complex_new2(CLASS_OF(self),
@@ -695,7 +698,7 @@ nucomp_expt(VALUE self, VALUE other)
 	}
 	return f_expt(f_div(f_to_r(ONE), self), f_negate(other));
     }
-    if (k_numeric_p(other) && f_scalar_p(other)) {
+    if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE a, r, theta;
 
 	a = f_polar(self);
@@ -716,7 +719,7 @@ nucomp_equal_p(VALUE self, VALUE other)
 	return f_boolcast(f_equal_p(adat->real, bdat->real) &&
 			  f_equal_p(adat->image, bdat->image));
     }
-    if (k_numeric_p(other) && f_scalar_p(other)) {
+    if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
 
 	return f_boolcast(f_equal_p(dat->real, other) && f_zero_p(dat->image));
@@ -727,7 +730,7 @@ nucomp_equal_p(VALUE self, VALUE other)
 static VALUE
 nucomp_coerce(VALUE self, VALUE other)
 {
-    if (k_numeric_p(other) && f_scalar_p(other))
+    if (k_numeric_p(other) && f_real_p(other))
 	return rb_assoc_new(f_complex_new_bang1(CLASS_OF(self), other), self);
 
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
@@ -777,13 +780,13 @@ nucomp_conjugate(VALUE self)
     return f_complex_new2(CLASS_OF(self), dat->real, f_negate(dat->image));
 }
 
-#if 0
 static VALUE
 nucomp_real_p(VALUE self)
 {
     return Qfalse;
 }
 
+#if 0
 static VALUE
 nucomp_complex_p(VALUE self)
 {
@@ -949,12 +952,6 @@ rb_Complex(VALUE x, VALUE y)
     a[0] = x;
     a[1] = y;
     return nucomp_s_convert(2, a, rb_cComplex);
-}
-
-static VALUE
-nucomp_scalar_p(VALUE self)
-{
-    return Qfalse;
 }
 
 static VALUE
@@ -1443,6 +1440,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "exact?", nucomp_exact_p, 0);
     rb_define_method(rb_cComplex, "inexact?", nucomp_inexact_p, 0);
 #endif
+    rb_define_method(rb_cComplex, "scalar?", nucomp_real_p, 0);
 
     rb_define_method(rb_cComplex, "numerator", nucomp_numerator, 0);
     rb_define_method(rb_cComplex, "denominator", nucomp_denominator, 0);
@@ -1457,7 +1455,6 @@ Init_Complex(void)
 
     /* --- */
 
-    rb_define_method(rb_cComplex, "scalar?", nucomp_scalar_p, 0);
     rb_define_method(rb_cComplex, "to_i", nucomp_to_i, 0);
     rb_define_method(rb_cComplex, "to_f", nucomp_to_f, 0);
     rb_define_method(rb_cComplex, "to_r", nucomp_to_r, 0);

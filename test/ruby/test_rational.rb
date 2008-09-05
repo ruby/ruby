@@ -209,6 +209,8 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ArgumentError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
     assert_raise(ArgumentError){Rational(Object.new)}
+    assert_raise(ArgumentError){Rational()}
+    assert_raise(ArgumentError){Rational(1,2,3)}
   end
 
   def test_attr
@@ -1065,6 +1067,11 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(5000000000.0, 10000000000.fdiv(2))
     assert_equal(0.5, 1.0.fdiv(2))
     assert_equal(0.25, Rational(1,2).fdiv(2))
+  end
+
+  def test_ruby19
+    assert_raise(NoMethodError){ Rational.new(1) }
+    assert_raise(NoMethodError){ Rational.new!(1) }
   end
 
   def test_fixed_bug

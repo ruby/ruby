@@ -105,6 +105,7 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_new
+    assert_instance_of(Complex, Complex.__send__(:new, 2,0.0))
     if defined?(Complex::Unify)
       assert_instance_of(Fixnum, Complex.__send__(:new, 2,0))
     else
@@ -172,6 +173,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex.__send__(:new, 1),Complex(1))
     assert_equal(Complex.__send__(:new, 1),Complex('1'))
     assert_raise(ArgumentError){Complex(nil)}
+    assert_raise(ArgumentError){Complex(Object.new)}
+    assert_raise(ArgumentError){Complex()}
+    assert_raise(ArgumentError){Complex(1,2,3)}
   end
 
   def test_attr
@@ -1031,6 +1035,12 @@ class Complex_Test < Test::Unit::TestCase
       assert_in_delta(1.178, c.image, 0.001)
     end
 
+  end
+
+  def test_ruby19
+    assert_raise(NoMethodError){ Complex.new(1) }
+    assert_raise(NoMethodError){ Complex.new!(1) }
+    assert_raise(NoMethodError){ Complex.reduce(1) }
   end
 
   def test_fixed_bug
