@@ -2102,6 +2102,30 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
 }
 
 static int
+enc_arg(VALUE arg, const char **name_p, rb_encoding **enc_p)
+{
+    rb_encoding *enc;
+    const char *n;
+    int encidx;
+    VALUE encval;
+
+    if ((encidx = rb_to_encoding_index(encval = arg)) < 0) {
+	enc = NULL;
+	encidx = 0;
+	n = StringValueCStr(encval);
+    }
+    else {
+	enc = rb_enc_from_index(encidx);
+	n = rb_enc_name(enc);
+    }
+
+    *name_p = n;
+    *enc_p = enc;
+
+    return encidx;
+}
+
+static int
 str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
         const char **sname, rb_encoding **senc,
         const char **dname, rb_encoding **denc)
@@ -2109,29 +2133,16 @@ str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
     rb_encoding *from_enc, *to_enc;
     const char *from_e, *to_e;
     int from_encidx, to_encidx;
-    VALUE from_encval, to_encval;
 
-    if ((to_encidx = rb_to_encoding_index(to_encval = arg1)) < 0) {
-	to_enc = 0;
-	to_encidx = 0;
-	to_e = StringValueCStr(to_encval);
-    }
-    else {
-	to_enc = rb_enc_from_index(to_encidx);
-	to_e = rb_enc_name(to_enc);
-    }
+    to_encidx = enc_arg(arg1, &to_e, &to_enc);
+
     if (NIL_P(arg2)) {
 	from_encidx = rb_enc_get_index(str);
 	from_enc = rb_enc_from_index(from_encidx);
 	from_e = rb_enc_name(from_enc);
     }
-    else if ((from_encidx = rb_to_encoding_index(from_encval = arg2)) < 0) {
-	from_enc = 0;
-	from_e = StringValueCStr(from_encval);
-    }
     else {
-	from_enc = rb_enc_from_index(from_encidx);
-	from_e = rb_enc_name(from_enc);
+        from_encidx = enc_arg(arg2, &from_e, &from_enc);
     }
 
     *sname = from_e;
