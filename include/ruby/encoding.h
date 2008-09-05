@@ -257,10 +257,10 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_UNDEF_REPLACE                     0x0020
 #define ECONV_UNDEF_HEX_CHARREF                 0x0030
 
-/* effective only if output is ascii compatible */
+/* usable only if destination encoding is ascii compatible */
 #define ECONV_UNIVERSAL_NEWLINE_DECODER         0x0100
 
-/* effective only if input is ascii compatible */
+/* usable only if source encoding is ascii compatible */
 #define ECONV_CRLF_NEWLINE_ENCODER              0x0200
 #define ECONV_CR_NEWLINE_ENCODER                0x0400
 
