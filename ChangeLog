@@ -1,3 +1,18 @@
+Fri Sep  5 20:27:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_modestr_fmode): renamed from
+	  rb_io_mode_flags.
+	  (rb_io_modestr_oflags): renamed from rb_io_mode_modenum.
+	  (rb_io_oflags_fmode): renamed from rb_io_modenum_flags.
+	  (rb_io_mode_flags): defined as a macro.
+	  (rb_io_modenum_flags): ditto.
+
+	* io.c: follow the renaming with consistency.
+
+	* process.c (check_exec_redirect): call rb_io_modestr_oflags.
+
+	* ext/pty/depend: pty.o depends on io.h.
+
 Fri Sep  5 20:12:23 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/newline.trans (universal_newline_finish): new function.

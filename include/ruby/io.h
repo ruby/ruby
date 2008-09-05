@@ -138,9 +138,9 @@ typedef struct rb_io_t {
 FILE *rb_io_stdio_file(rb_io_t *fptr);
 
 FILE *rb_fdopen(int, const char*);
-int  rb_io_mode_flags(const char*);
-int  rb_io_modenum_flags(int);
-int rb_io_mode_modenum(const char *mode);
+int rb_io_modestr_fmode(const char *modestr);
+int rb_io_modestr_oflags(const char *modestr);
+int rb_io_oflags_fmode(int oflags);
 void rb_io_check_writable(rb_io_t*);
 void rb_io_check_readable(rb_io_t*);
 int rb_io_fptr_finalize(rb_io_t*);
@@ -150,6 +150,10 @@ void rb_io_check_closed(rb_io_t*);
 int rb_io_wait_readable(int);
 int rb_io_wait_writable(int);
 void rb_io_set_nonblock(rb_io_t *fptr);
+
+/* compatibility for ruby 1.8 and older */
+#define rb_io_mode_flags(modestr) rb_io_modestr_fmode(modestr)
+#define rb_io_modenum_flags(oflags) rb_io_oflags_fmode(oflags)
 
 VALUE rb_io_taint_check(VALUE);
 NORETURN(void rb_eof_error(void));
