@@ -538,4 +538,42 @@ class TestTranscode < Test::Unit::TestCase
     # assert_equal("\x00\x61\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\xFF\xFD\x00\x62".force_encoding('UTF-16BE'),
     # "\x61\xF1\x80\x80\xE1\x80\xC2\x62".encode('UTF-16BE', 'UTF-8', invalid: :replace)) # option 3
   end
+
+  def test_yen_sign
+    check_both_ways("\u005C", "\x5C", "Shift_JIS")
+    check_both_ways("\u005C", "\x5C", "Windows-31J")
+    check_both_ways("\u005C", "\x5C", "EUC-JP")
+    check_both_ways("\u005C", "\x5C", "eucJP-ms")
+    check_both_ways("\u005C", "\x5C", "CP51932")
+    check_both_ways("\u005C", "\x5C", "ISO-2022-JP")
+    assert_equal("\u005C", "\e(J\x5C\e(B".encode("UTF-8", "ISO-2022-JP"))
+    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("Windows-31J") }
+    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("EUC-JP") }
+    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("eucJP-ms") }
+    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("CP51932") }
+
+    # FULLWIDTH REVERSE SOLIDUS
+    check_both_ways("\uFF3C", "\x81\x5F", "Shift_JIS")
+    check_both_ways("\uFF3C", "\x81\x5F", "Windows-31J")
+    check_both_ways("\uFF3C", "\xA1\xC0", "EUC-JP")
+    check_both_ways("\uFF3C", "\xA1\xC0", "eucJP-ms")
+    check_both_ways("\uFF3C", "\xA1\xC0", "CP51932")
+  end
+
+  def test_tilde_overline
+    check_both_ways("\u007E", "\x7E", "Shift_JIS")
+    check_both_ways("\u007E", "\x7E", "Windows-31J")
+    check_both_ways("\u007E", "\x7E", "EUC-JP")
+    check_both_ways("\u007E", "\x7E", "eucJP-ms")
+    check_both_ways("\u007E", "\x7E", "CP51932")
+    check_both_ways("\u007E", "\x7E", "ISO-2022-JP")
+    assert_equal("\u007E", "\e(J\x7E\e(B".encode("UTF-8", "ISO-2022-JP"))
+    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("Windows-31J") }
+    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("EUC-JP") }
+    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("eucJP-ms") }
+    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("CP51932") }
+  end
+
 end
