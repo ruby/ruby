@@ -2127,29 +2127,29 @@ enc_arg(VALUE arg, const char **name_p, rb_encoding **enc_p)
 
 static int
 str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
-        const char **sname, rb_encoding **senc,
-        const char **dname, rb_encoding **denc)
+        const char **sname_p, rb_encoding **senc_p,
+        const char **dname_p, rb_encoding **denc_p)
 {
-    rb_encoding *from_enc, *to_enc;
-    const char *from_e, *to_e;
-    int from_encidx, to_encidx;
+    rb_encoding *senc, *denc;
+    const char *sname, *dname;
+    int sencidx, dencidx;
 
-    to_encidx = enc_arg(arg1, &to_e, &to_enc);
+    dencidx = enc_arg(arg1, &dname, &denc);
 
     if (NIL_P(arg2)) {
-	from_encidx = rb_enc_get_index(str);
-	from_enc = rb_enc_from_index(from_encidx);
-	from_e = rb_enc_name(from_enc);
+	sencidx = rb_enc_get_index(str);
+	senc = rb_enc_from_index(sencidx);
+	sname = rb_enc_name(senc);
     }
     else {
-        from_encidx = enc_arg(arg2, &from_e, &from_enc);
+        sencidx = enc_arg(arg2, &sname, &senc);
     }
 
-    *sname = from_e;
-    *senc = from_enc;
-    *dname = to_e;
-    *denc = to_enc;
-    return to_encidx;
+    *sname_p = sname;
+    *senc_p = senc;
+    *dname_p = dname;
+    *denc_p = denc;
+    return dencidx;
 }
 
 static int
@@ -2160,35 +2160,35 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     long blen, slen;
     unsigned char *buf, *bp, *sp;
     const unsigned char *fromp;
-    rb_encoding *from_enc, *to_enc;
-    const char *from_e, *to_e;
-    int to_encidx;
+    rb_encoding *senc, *denc;
+    const char *sname, *dname;
+    int dencidx;
 
     if (argc < 1 || argc > 2) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
 
-    to_encidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &from_e, &from_enc, &to_e, &to_enc);
+    dencidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &sname, &senc, &dname, &denc);
 
     if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
                     ECONV_CRLF_NEWLINE_ENCODER|
                     ECONV_CR_NEWLINE_ENCODER)) == 0) {
-        if (from_enc && from_enc == to_enc) {
+        if (senc && senc == denc) {
             return -1;
         }
-        if (from_enc && to_enc && rb_enc_asciicompat(from_enc) && rb_enc_asciicompat(to_enc)) {
+        if (senc && denc && rb_enc_asciicompat(senc) && rb_enc_asciicompat(denc)) {
             if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
-                return to_encidx;
+                return dencidx;
             }
         }
-        if (encoding_equal(from_e, to_e)) {
+        if (encoding_equal(sname, dname)) {
             return -1;
         }
     }
     else {
-        if (encoding_equal(from_e, to_e)) {
-            from_e = "";
-            to_e = "";
+        if (encoding_equal(sname, dname)) {
+            sname = "";
+            dname = "";
         }
     }
 
@@ -2198,7 +2198,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     dest = rb_str_tmp_new(blen);
     bp = (unsigned char *)RSTRING_PTR(dest);
 
-    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, from_e, to_e, ecflags, ecopts);
+    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, sname, dname, ecflags, ecopts);
     if (fromp != sp+slen) {
         rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
     }
@@ -2207,12 +2207,12 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     rb_str_set_len(dest, bp - buf);
 
     /* set encoding */
-    if (!to_enc) {
-	to_encidx = rb_define_dummy_encoding(to_e);
+    if (!denc) {
+	dencidx = rb_define_dummy_encoding(dname);
     }
     *self = dest;
 
-    return to_encidx;
+    return dencidx;
 }
 
 static int
