@@ -1,3 +1,9 @@
+Fri Sep  5 18:16:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_create): strips glibc style option before
+	  charset mapping.  retris without options if they seemed causing
+	  error, and warns.  [ruby-dev:36147]
+
 Fri Sep  5 03:09:48 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (iseq_data_to_ary): make it static.
