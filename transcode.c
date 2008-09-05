@@ -1303,7 +1303,7 @@ output_hex_charref(rb_econv_t *ec)
         u += p[1] << 16;
         u += p[2] << 8;
         u += p[3];
-        snprintf(charef_buf, sizeof(charef_buf), "&#x%x;", u);
+        snprintf(charef_buf, sizeof(charef_buf), "&#x%X;", u);
 
         ret = rb_econv_insert_output(ec, (unsigned char *)charef_buf, strlen(charef_buf), "US-ASCII");
         if (ret == -1)

@@ -684,5 +684,13 @@ class TestEncodingConverter < Test::Unit::TestCase
       ec.convert("\u{306f 3041 3044 2665 3002}"))
     assert_equal("\e(B".force_encoding("ISO-2022-JP"),
       ec.finish)
+
+    ec = Encoding::Converter.new("EUC-JP", "US-ASCII", Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal("&#x4EA4;&#x63DB;&#x6CD5;&#x5247;: n&#xD7;m=m&#xD7;n".force_encoding("ISO-8859-1"),
+                 ec.convert("\xB8\xF2\xB4\xB9\xCB\xA1\xC2\xA7: n\xA1\xDFm=m\xA1\xDFn"))
+
+    ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1", Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal("&#x4EA4;&#x63DB;&#x6CD5;&#x5247;: n\xD7m=m\xD7n".force_encoding("ISO-8859-1"),
+                 ec.convert("\xB8\xF2\xB4\xB9\xCB\xA1\xC2\xA7: n\xA1\xDFm=m\xA1\xDFn"))
   end
 end

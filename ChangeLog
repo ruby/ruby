@@ -1,3 +1,7 @@
+Sat Sep  6 05:37:08 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (output_hex_charref): upcase hexadecimal digits.
+
 Sat Sep  6 05:22:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_UNDEF_HEX_CHARREF): defined.
