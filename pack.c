@@ -1649,7 +1649,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
-		UNPACK_PUSH(DOUBLE2NUM((double)tmp));
+		UNPACK_PUSH(DBL2NUM((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1663,7 +1663,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		tmp = VTOHF(tmp,ftmp);
-		UNPACK_PUSH(DOUBLE2NUM((double)tmp));
+		UNPACK_PUSH(DBL2NUM((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1677,7 +1677,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		tmp = VTOHD(tmp,dtmp);
-		UNPACK_PUSH(DOUBLE2NUM(tmp));
+		UNPACK_PUSH(DBL2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1689,7 +1689,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
-		UNPACK_PUSH(DOUBLE2NUM(tmp));
+		UNPACK_PUSH(DBL2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1703,7 +1703,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		tmp = NTOHF(tmp,ftmp);
-		UNPACK_PUSH(DOUBLE2NUM((double)tmp));
+		UNPACK_PUSH(DBL2NUM((double)tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;
@@ -1717,7 +1717,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		tmp = NTOHD(tmp,dtmp);
-		UNPACK_PUSH(DOUBLE2NUM(tmp));
+		UNPACK_PUSH(DBL2NUM(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
 	    break;

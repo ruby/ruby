@@ -1319,7 +1319,7 @@ opt_plus
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat &&
 		 BASIC_OP_UNREDEFINED_P(BOP_PLUS)) {
-	    val = DOUBLE2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+	    val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
 	}
 #endif
 
@@ -1420,7 +1420,7 @@ opt_mult
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
 		 BASIC_OP_UNREDEFINED_P(BOP_MULT)) {
-	    val = DOUBLE2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
+	    val = DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
 	}
 #endif
 	else {
@@ -1484,7 +1484,7 @@ opt_div
 	else if (HEAP_CLASS_OF(recv) == rb_cFloat &&
 		 HEAP_CLASS_OF(obj) == rb_cFloat  &&
 		 BASIC_OP_UNREDEFINED_P(BOP_DIV)) {
-	    val = DOUBLE2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
+	    val = DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
 	}
 #endif
 	else {
@@ -1564,7 +1564,7 @@ opt_mod
 		mod += y;
 		div -= 1.0;
 	    }
-	    val = DOUBLE2NUM(mod);
+	    val = DBL2NUM(mod);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);

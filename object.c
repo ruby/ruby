@@ -850,7 +850,7 @@ nil_to_i(VALUE obj)
 static VALUE
 nil_to_f(VALUE obj)
 {
-    return DOUBLE2NUM(0.0);
+    return DBL2NUM(0.0);
 }
 
 /*
@@ -2230,16 +2230,16 @@ rb_Float(VALUE val)
 {
     switch (TYPE(val)) {
       case T_FIXNUM:
-	return DOUBLE2NUM((double)FIX2LONG(val));
+	return DBL2NUM((double)FIX2LONG(val));
 
       case T_FLOAT:
 	return val;
 
       case T_BIGNUM:
-	return DOUBLE2NUM(rb_big2dbl(val));
+	return DBL2NUM(rb_big2dbl(val));
 
       case T_STRING:
-	return DOUBLE2NUM(rb_str_to_dbl(val, Qtrue));
+	return DBL2NUM(rb_str_to_dbl(val, Qtrue));
 
       case T_NIL:
 	rb_raise(rb_eTypeError, "can't convert nil into Float");

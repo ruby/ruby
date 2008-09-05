@@ -505,7 +505,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
             limit = (struct RBignum *)rb_big_minus((VALUE)limit, INT2FIX(1));
             if (FIXNUM_P((VALUE)limit)) {
                 if (FIX2LONG((VALUE)limit) == -1)
-                    return DOUBLE2NUM(genrand_real(mt));
+                    return DBL2NUM(genrand_real(mt));
                 return LONG2NUM(limited_rand(mt, FIX2LONG((VALUE)limit)));
             }
             return limited_big_rand(mt, limit);
@@ -522,7 +522,7 @@ rb_f_rand(int argc, VALUE *argv, VALUE obj)
     }
 
     if (max == 0) {
-	return DOUBLE2NUM(genrand_real(mt));
+	return DBL2NUM(genrand_real(mt));
     }
     if (max < 0) max = -max;
     val = limited_rand(mt, max-1);

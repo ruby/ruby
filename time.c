@@ -1016,7 +1016,7 @@ time_to_f(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return DOUBLE2NUM((double)tobj->ts.tv_sec+(double)tobj->ts.tv_nsec/1e9);
+    return DBL2NUM((double)tobj->ts.tv_sec+(double)tobj->ts.tv_nsec/1e9);
 }
 
 /*
@@ -1513,7 +1513,7 @@ time_minus(VALUE time1, VALUE time2)
             f = (double)(unsigned_time_t)(tobj->ts.tv_sec - tobj2->ts.tv_sec);
 	f += ((double)tobj->ts.tv_nsec - (double)tobj2->ts.tv_nsec)*1e-9;
 
-	return DOUBLE2NUM(f);
+	return DBL2NUM(f);
     }
     return time_add(tobj, time2, -1);
 }

@@ -6920,7 +6920,7 @@ parser_yylex(struct parser_params *parser)
 		    rb_warningS("Float %s out of range", tok());
 		    errno = 0;
 		}
-                set_yylval_literal(DOUBLE2NUM(d));
+                set_yylval_literal(DBL2NUM(d));
 		return tFLOAT;
 	    }
             set_yylval_literal(rb_cstr_to_inum(tok(), 10, Qfalse));

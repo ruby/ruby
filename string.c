@@ -3763,7 +3763,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_to_f(VALUE str)
 {
-    return DOUBLE2NUM(rb_str_to_dbl(str, Qfalse));
+    return DBL2NUM(rb_str_to_dbl(str, Qfalse));
 }
 
 

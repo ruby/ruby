@@ -5047,10 +5047,10 @@ rb_proc_times(VALUE obj)
 
     times(&buf);
     return rb_struct_new(rb_cProcessTms,
-			 utime = DOUBLE2NUM(buf.tms_utime / hertz),
-			 stime = DOUBLE2NUM(buf.tms_stime / hertz),
-			 cutime = DOUBLE2NUM(buf.tms_cutime / hertz),
-			 sctime = DOUBLE2NUM(buf.tms_cstime / hertz));
+			 utime = DBL2NUM(buf.tms_utime / hertz),
+			 stime = DBL2NUM(buf.tms_stime / hertz),
+			 cutime = DBL2NUM(buf.tms_cutime / hertz),
+			 sctime = DBL2NUM(buf.tms_cstime / hertz));
 #else
     rb_notimplement();
 #endif
