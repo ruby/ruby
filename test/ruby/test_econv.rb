@@ -692,5 +692,19 @@ class TestEncodingConverter < Test::Unit::TestCase
     ec = Encoding::Converter.new("EUC-JP", "ISO-8859-1", Encoding::Converter::UNDEF_HEX_CHARREF)
     assert_equal("&#x4EA4;&#x63DB;&#x6CD5;&#x5247;: n\xD7m=m\xD7n".force_encoding("ISO-8859-1"),
                  ec.convert("\xB8\xF2\xB4\xB9\xCB\xA1\xC2\xA7: n\xA1\xDFm=m\xA1\xDFn"))
+
+    ec = Encoding::Converter.new("UTF-8", "US-ASCII", Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal("&", ec.convert("&"))
+  end
+
+  def test_html_escape
+    ec = Encoding::Converter.new("", "amp-escaped")
+    assert_equal('&amp;<>"', ec.convert("&<>\""))
+
+    ec = Encoding::Converter.new("", "html-text-escaped")
+    assert_equal('&amp;&lt;&gt;"', ec.convert("&<>\""))
+
+    ec = Encoding::Converter.new("", "html-attr-escaped")
+    assert_equal('&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
   end
 end

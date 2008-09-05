@@ -1,3 +1,7 @@
+Sat Sep  6 06:28:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/escape.trans: new file.
+
 Sat Sep  6 06:23:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (StrSet.parse): accept upper case
