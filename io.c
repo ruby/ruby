@@ -7216,6 +7216,13 @@ copy_stream_fallback_body(VALUE arg)
     VALUE buf = rb_str_buf_new(buflen);
     long rest = stp->copy_length;
     off_t off = stp->src_offset;
+    ID read_method = id_readpartial;
+
+    if (stp->src_fd == -1) {
+	if (!rb_respond_to(stp->src, read_method)) {
+	    read_method = id_read;
+	}
+    }
 
     while (1) {
         long numwrote;
@@ -7229,7 +7236,7 @@ copy_stream_fallback_body(VALUE arg)
             l = buflen < rest ? buflen : rest;
         }
         if (stp->src_fd == -1) {
-            rb_funcall(stp->src, id_readpartial, 2, INT2FIX(l), buf);
+            rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
         }
         else {
             ssize_t ss;
@@ -7248,6 +7255,9 @@ copy_stream_fallback_body(VALUE arg)
         numwrote = NUM2LONG(n);
         stp->total += numwrote;
         rest -= numwrote;
+	if (read_method == id_read && RSTRING_LEN(buf) == 0) {
+	    break;
+	}
     }
 
     return Qnil;

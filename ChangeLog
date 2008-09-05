@@ -1,3 +1,8 @@
+Fri Sep  5 18:37:52 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_fallback_body): use read method unless readpartial
+	  is available.  [ruby-dev:36124]
+
 Fri Sep  5 18:16:31 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_create): strips glibc style option before

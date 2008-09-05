@@ -977,8 +977,8 @@ end
       @f = f
     end
 
-    def read(n)
-      @f.read(n)
+    def read(*args)
+      @f.read(*args)
     end
 
     def write(str)
