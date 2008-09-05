@@ -1289,7 +1289,8 @@ rb_econv_convert(rb_econv_t *ec,
         ret == econv_incomplete_input) {
 	/* deal with invalid byte sequence */
 	/* todo: add more alternative behaviors */
-	if (ec->flags&ECONV_INVALID_REPLACE) {
+        switch (ec->flags & ECONV_INVALID_MASK) {
+          case ECONV_INVALID_REPLACE:
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
 	}
@@ -1299,10 +1300,12 @@ rb_econv_convert(rb_econv_t *ec,
 	/* valid character in source encoding
 	 * but no related character(s) in destination encoding */
 	/* todo: add more alternative behaviors */
-	if (ec->flags&ECONV_UNDEF_REPLACE) {
+        switch (ec->flags & ECONV_UNDEF_MASK) {
+          case ECONV_UNDEF_REPLACE:
 	    if (output_replacement_character(ec) == 0)
                 goto resume;
-	}
+            break;
+        }
     }
 
     return ret;
