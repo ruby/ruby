@@ -913,6 +913,19 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
     }
 
     num_additional = 0;
+
+    if (*sname && (!senc || !rb_enc_asciicompat(senc)) &&
+        (ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER))) {
+        xfree(entries);
+        return NULL;
+    }
+
+    if (*dname && (!denc || !rb_enc_asciicompat(denc)) &&
+        (ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER))) {
+        xfree(entries);
+        return NULL;
+    }
+
     if ((!*sname || (senc && rb_enc_asciicompat(senc))) &&
         (ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER))) {
         const char *name = (ecflags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";

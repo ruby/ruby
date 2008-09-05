@@ -54,6 +54,28 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert(!encoding_list.include?(name2))
   end
 
+  def test_newline_converter_with_ascii_incompatible
+    assert_raise(Encoding::NoConverter) {
+      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+    }
+    assert_raise(Encoding::NoConverter) {
+      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+    }
+    assert_raise(Encoding::NoConverter) {
+      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CR_NEWLINE_ENCODER)
+    }
+
+    assert_nothing_raised {
+      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+    }
+    assert_nothing_raised {
+      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+    }
+    assert_nothing_raised {
+      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CR_NEWLINE_ENCODER)
+    }
+  end
+
   def test_get_encoding
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
     assert_equal(Encoding::UTF_8, ec.source_encoding)
