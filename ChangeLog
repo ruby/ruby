@@ -19,7 +19,7 @@ Sat Sep  6 23:03:41 2008  Tanaka Akira  <akr@fsij.org>
 
 Sat Sep  6 21:35:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ext/socket/mkconstants.rb: add some IPV6 constans.  [ruby-dev:36175]
+	* ext/socket/mkconstants.rb: add some IPV6 constants. [ruby-dev:36175]
 
 Sat Sep  6 20:10:48 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -306,7 +306,7 @@ Thu Sep  4 20:57:54 2008  Koichi Sasada  <ko1@atdot.net>
 
 Thu Sep  4 20:30:24 2008  Tanaka Akira  <akr@fsij.org>
 
-	* transcode_data.h (PType): defined unconditionaly.
+	* transcode_data.h (PType): defined unconditionally.
 
 	* transcode.c (PType): don't define here.
 
@@ -345,7 +345,7 @@ Thu Sep  4 13:22:02 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* vm_core.h (struct rb_vm_struct): replaced signal staff with trap
 	  staff.
 
-	* signal.c (signal_buff): per process resouce now.
+	* signal.c (signal_buff): per process resource now.
 
 	* signal.c (trap_list): moved to VM.
 
@@ -1269,7 +1269,7 @@ Sat Aug 30 10:46:44 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* ext/iconv/iconv.c: remove include pragma for "ruby/intern.h".
 
-Sat Aug 30 10:43:03 2008 2008  Koichi Sasada  <ko1@atdot.net>
+Sat Aug 30 10:43:03 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* parse.y: remove include pragma for "ruby/intern.h".
 
