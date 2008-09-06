@@ -94,7 +94,7 @@ escape_html_attr_init(void *statep)
     return 0;
 }
 
-static VALUE
+static int
 fun_so_escape_html_attr(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     unsigned char *sp = statep;

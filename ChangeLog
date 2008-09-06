@@ -1,3 +1,7 @@
+Sat Sep  6 13:43:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/escape.trans (fun_so_escape_html_attr): fix return type.
+
 Sat Sep  6 12:43:55 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open): needless branch removed.
