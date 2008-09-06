@@ -1790,13 +1790,15 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
 
     if (ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
                    ECONV_CRLF_NEWLINE_ENCODER|
-                   ECONV_CR_NEWLINE_ENCODER)) {
+                   ECONV_CR_NEWLINE_ENCODER|
+                   ECONV_HTML_TEXT_ENCODER|
+                   ECONV_HTML_ATTR_ENCODER)) {
         const char *pre = "";
         if (has_description)
             rb_str_cat2(mesg, " with ");
         if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)  {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "Universal-newline");
+            rb_str_cat2(mesg, "universal-newline");
         }
         if (ecflags & ECONV_CRLF_NEWLINE_ENCODER) {
             rb_str_cat2(mesg, pre); pre = ",";
@@ -1805,6 +1807,14 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
         if (ecflags & ECONV_CR_NEWLINE_ENCODER) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "CR-newline");
+        }
+        if (ecflags & ECONV_HTML_TEXT_ENCODER) {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "HTML-text");
+        }
+        if (ecflags & ECONV_HTML_ATTR_ENCODER) {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "HTML-attr");
         }
         has_description = 1;
     }
