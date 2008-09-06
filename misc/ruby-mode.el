@@ -1236,9 +1236,8 @@ buffer position `limit' or the end of the buffer."
        1 font-lock-function-name-face)
      ;; keywords
      (cons (concat
-	    "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(defined\\?\\|\\("
-	    (mapconcat
-	     'identity
+	    "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(defined\\?\\|"
+	    (regexp-opt
 	     '("alias"
 	       "and"
 	       "begin"
@@ -1275,8 +1274,8 @@ buffer position `limit' or the end of the buffer."
 	       "while"
 	       "yield"
 	       )
-	     "\\|")
-	    "\\)\\>\\)")
+             t)
+	    "\\_>\\)")
 	   2)
      ;; here-doc beginnings
      (list ruby-here-doc-beg-re 0 'font-lock-string-face)

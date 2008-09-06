@@ -8,6 +8,9 @@ Sun Sep  7 07:24:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* misc/ruby-mode.el: don't crash the whole mode if the Subversion
 	  $ keyword isn't interpolated.
 
+	* misc/ruby-mode.el: don't highlight keywords when they're the
+	  beginning of non-keyword symbols.
+
 Sun Sep  7 06:31:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (file_expand_path): applied a patch from Nobuhiro Tachino
