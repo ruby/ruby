@@ -928,8 +928,7 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         return NULL;
     }
 
-    if ((!*sname || (senc && rb_enc_asciicompat(senc))) &&
-        (ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER))) {
+    if (ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
         const char *name = (ecflags & ECONV_CRLF_NEWLINE_ENCODER) ? "crlf_newline" : "cr_newline";
         transcoder_entry_t *e = get_transcoder_entry("", name);
         if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
@@ -949,8 +948,7 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         ecflags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
     }
 
-    if ((!*dname || (denc && rb_enc_asciicompat(denc))) &&
-        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)) {
+    if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
         transcoder_entry_t *e = get_transcoder_entry("universal_newline", "");
         if (!e) {
             xfree(entries);
