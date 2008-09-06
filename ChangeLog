@@ -1,6 +1,6 @@
-Sat Sep  6 21:30:48 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat Sep  6 21:35:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* ext/socket/constants.h: add some IPV6 constans.  [ruby-dev:36175]
+	* ext/socket/mkconstants.rb: add some IPV6 constans.  [ruby-dev:36175]
 
 Sat Sep  6 20:10:48 2008  Tanaka Akira  <akr@fsij.org>
 
