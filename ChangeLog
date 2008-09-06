@@ -1,3 +1,11 @@
+Sat Sep  6 15:06:21 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (sym_html): new variable.
+	  (sym_text): ditto.
+	  (sym_attr): ditto.
+	  (econv_opts): check :html=>:text and :html=>:attr.
+	  (Init_transcode): initialize the above variables.
+
 Sat Sep  6 14:46:12 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_HTML_TEXT_ENCODER): new constant.

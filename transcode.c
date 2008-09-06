@@ -21,6 +21,7 @@ VALUE rb_eNoConverter;
 VALUE rb_cEncodingConverter;
 
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
+static VALUE sym_html, sym_text, sym_attr;
 static VALUE sym_universal_newline_decoder;
 static VALUE sym_crlf_newline_encoder;
 static VALUE sym_cr_newline_encoder;
@@ -2133,6 +2134,20 @@ econv_opts(VALUE opt)
         rb_raise(rb_eArgError, "unknown value for undefined character option");
     }
 
+    v = rb_hash_aref(opt, sym_html);
+    if (!NIL_P(v)) {
+        v = rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym");
+        if (v==sym_text) {
+            ecflags |= ECONV_HTML_TEXT_ENCODER|ECONV_UNDEF_HEX_CHARREF;
+        }
+        else if (v==sym_attr) {
+            ecflags |= ECONV_HTML_ATTR_ENCODER|ECONV_UNDEF_HEX_CHARREF;
+        }
+        else {
+            rb_raise(rb_eArgError, "unexpected value for html option: %s", rb_id2name(SYM2ID(v)));
+        }
+    }
+
     v = rb_hash_aref(opt, sym_universal_newline_decoder);
     if (RTEST(v))
         ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
@@ -3477,6 +3492,9 @@ Init_transcode(void)
     sym_undef = ID2SYM(rb_intern("undef"));
     sym_ignore = ID2SYM(rb_intern("ignore"));
     sym_replace = ID2SYM(rb_intern("replace"));
+    sym_html = ID2SYM(rb_intern("html"));
+    sym_text = ID2SYM(rb_intern("text"));
+    sym_attr = ID2SYM(rb_intern("attr"));
 
     sym_invalid_byte_sequence = ID2SYM(rb_intern("invalid_byte_sequence"));
     sym_undefined_conversion = ID2SYM(rb_intern("undefined_conversion"));

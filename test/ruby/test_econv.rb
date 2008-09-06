@@ -768,4 +768,11 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("&amp;\e$B$&\e(B&amp;".force_encoding("iso-2022-jp"), ec.convert("&\u3046&"))
     assert_equal('', ec.finish)
   end
+
+  def test_html_hasharg
+    assert_equal("&amp;\e$B$&\e(B&#x2665;&amp;\"'".force_encoding("iso-2022-jp"),
+        "&\u3046\u2665&\"'".encode("iso-2022-jp", html: :text))
+    assert_equal("\"&amp;\e$B$&\e(B&#x2661;&amp;&quot;'\"".force_encoding("iso-2022-jp"),
+      "&\u3046\u2661&\"'".encode("iso-2022-jp", html: :attr))
+  end
 end
