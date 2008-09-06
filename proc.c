@@ -466,12 +466,14 @@ proc_lambda(void)
  *  call-seq:
  *     prc.call(params,...)   => obj
  *     prc[params,...]        => obj
+ *     prc.(params,...)       => obj
  *  
  *  Invokes the block, setting the block's parameters to the values in
  *  <i>params</i> using something close to method calling semantics.
  *  Generates a warning if multiple values are passed to a proc that
  *  expects just one (previously this silently converted the parameters
- *  to an array).
+ *  to an array).  Note that prc.() invokes prc.call() with the parameters
+ *  given.  It's a syntax sugar to hide "call".
  *
  *  For procs created using <code>Kernel.proc</code>, generates an
  *  error if the wrong number of parameters
@@ -492,6 +494,14 @@ proc_lambda(void)
  *     prog.rb:5: wrong number of arguments (3 for 2) (ArgumentError)
  *     	from prog.rb:4:in `call'
  *     	from prog.rb:5
+ */
+
+/*
+ *  call-seq:
+ *     prc === obj   => obj
+ *  
+ *  Invokes the block, with <i>obj</i> as the block's parameter.  It is
+ *  to allow a proc object to be a target of when clause in the case statement.
  */
 
 static VALUE
@@ -1745,6 +1755,7 @@ Init_Proc(void)
     rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, -1);
     rb_define_method(rb_cProc, "call", proc_call, -1);
     rb_define_method(rb_cProc, "[]", proc_call, -1);
+    rb_define_method(rb_cProc, "===", proc_call, -1);
     rb_define_method(rb_cProc, "yield", proc_call, -1);
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);

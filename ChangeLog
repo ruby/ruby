@@ -140,6 +140,11 @@ Sat Sep  6 06:05:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  a patch from Tadashi Saito <shiba at mail2.accsnet.ne.jp>
 	  in [ruby-dev:36102].
 
+Sat Sep  6 04:44:06 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* proc.c (Init_Proc): add '===' operator to use procs in when
+	  clause of the case statement.  inspired by <http://www.aimred.com/news/developers/2008/08/14/unlocking_the_power_of_case_equality_proc/>.
+
 Sat Sep  6 03:18:17 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (allocate_converted_string): add arguments for a buffer
