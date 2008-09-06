@@ -5,7 +5,7 @@ Sun Sep  7 00:37:25 2008  Tanaka Akira  <akr@fsij.org>
 	  (ECONV_ENCODER_MASK): defined.
 
 	* io.c (make_writeconv): restrict ecflags for writeconv with
-	  ECONV_ERROR_HANDLER_MASK. 
+	  ECONV_ERROR_HANDLER_MASK.
 
 Sat Sep  6 23:03:41 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -137,7 +137,7 @@ Sat Sep  6 05:22:29 2008  Tanaka Akira  <akr@fsij.org>
 	  (rb_econv_convert): call output_hex_charref if
 	  ECONV_UNDEF_HEX_CHARREF.
 	  (Init_transcode): Encoding::Converter::UNDEF_HEX_CHARREF added.
-	  
+
 Sat Sep  6 03:52:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_convert): use ECONV_INVALID_MASK and
@@ -222,7 +222,7 @@ Fri Sep  5 03:09:48 2008  Koichi Sasada  <ko1@atdot.net>
 
 Fri Sep  5 02:56:37 2008  Koichi Sasada  <ko1@atdot.net>
 
-	* vm.c (thread_recycle_stack_slot, thread_recycle_stack_count): 
+	* vm.c (thread_recycle_stack_slot, thread_recycle_stack_count):
 	  make it static.
 
 Fri Sep  5 02:40:38 2008  Koichi Sasada  <ko1@atdot.net>
@@ -551,17 +551,17 @@ Wed Sep  3 22:31:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* lib/prime.rb (Integer): moved from mathn.rb.
 	  (Integer.each_prime): added.
 	  (Integer#prime?): added.
-	  (Prime): moved from mathn.rb. 
+	  (Prime): moved from mathn.rb.
 	    Its implmentation was rewritten. see [ruby-dev:35863].
 	    And patched by Keiju ISHITSUKA <keiju@ishitsuka.com>,
-	    see [ruby-dev:36128]. 
+	    see [ruby-dev:36128].
 	  (Prime.new):                     obsolete.
 	  (Prime.instance):                added.
 	  (Prime.each):                    added.
 	  (Prime.int_from_prime_division): added.
 	  (Prime.prime_division):          added.
 	  (Prime.prime?):                  added.
-	    Patch by TOYOFUKU Chikanobu 
+	    Patch by TOYOFUKU Chikanobu
 	    <nobu_toyofuku at nifty.com> in [ruby-dev:36067].
 	  (Prime.cache):                   removed.
 	  (Prime.primes):                  removed.
@@ -586,11 +586,11 @@ Wed Sep  3 22:31:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/test_prime.rb: added.
 
-Wed Sep  3 21:49:00 2008  David A. Black <dblack@rubypal.com>
+Wed Sep  3 21:49:00 2008  David A. Black  <dblack@rubypal.com>
 
-        * lib/scanf.rb: fixed bug involving matching literal '['
+	* lib/scanf.rb: fixed bug involving matching literal '['
 
-        * test/scanf/test_scanf.rb: added test for scanf.rb fix
+	* test/scanf/test_scanf.rb: added test for scanf.rb fix
 
 Wed Sep  3 21:31:59 2008  Tanaka Akira  <akr@fsij.org>
 
@@ -683,7 +683,7 @@ Wed Sep  3 16:54:46 2008  Koichi Sasada  <ko1@atdot.net>
 	  rb_thread_critical)
 
 	* ext/openssl/ossl_ssl.c, ext/openssl/ossl_x509store.c,
-	  ext/readline/readline.c, ext/socket/depend, 
+	  ext/readline/readline.c, ext/socket/depend,
 	  ext/socket/socket.c: ditto.
 
 Wed Sep  3 00:23:25 2008  Yusuke Endoh  <mame@tsg.ne.jp>
@@ -762,7 +762,7 @@ Tue Sep  2 10:49:18 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Tue Sep  2 10:33:12 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* common.mk (distclean-golf): moved golf_prelude.c here from 
+	* common.mk (distclean-golf): moved golf_prelude.c here from
 	    distclean-local.
 	  (GOLFPRELUDE): added.
 	  (distclean-local): moved golf_prelude.c into distclean-golf.
@@ -946,7 +946,7 @@ Mon Sep  1 14:44:22 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 Mon Sep  1 14:40:18 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* README.EXT (Appendix A): fixed the name of class
-	  Enumerator. Enumerable::Enumerator was renamed just 
+	  Enumerator. Enumerable::Enumerator was renamed just
 	  Enumerator at revision 18564.
 
 	* README.EXT (Appendix A): ditto.
@@ -974,7 +974,7 @@ Mon Sep  1 14:00:04 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* README.EXT (Data-types): fixed for current status.
 	  (Manipulating Ruby data): mentioned some more functions.
 	  (Class/module definition): ditto.
-	  (Global variables shared between C and Ruby): 
+	  (Global variables shared between C and Ruby):
 	    fixed prototypes for the getter/setter's of global variables.
 	  (Appendix A): mentioned some more files.
 
@@ -1053,7 +1053,7 @@ Sun Aug 31 18:22:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Sun Aug 31 18:02:41 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* Temporarily uses git://github.com/yugui/rubyspec.git
-	  until specs for 1.9 is merged into 
+	  until specs for 1.9 is merged into
 	  git://github.com/rubyspec/rubyspec.git.
 
 Sun Aug 31 18:06:49 2008  Tanaka Akira  <akr@fsij.org>
@@ -1082,9 +1082,9 @@ Sun Aug 31 17:30:35 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 Sun Aug 31 17:28:25 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* spec/default.mspec (config): added.
-	
-	* spec/default.mspec (target): replaced the built ruby 
-	  to runruby.rb. 
+
+	* spec/default.mspec (target): replaced the built ruby
+	  to runruby.rb.
 	  Improved $LOAD_PATH on running specs.
 
 	* spec/default.mspec (flags): ditto.
