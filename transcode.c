@@ -2295,7 +2295,9 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 
     if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
                     ECONV_CRLF_NEWLINE_ENCODER|
-                    ECONV_CR_NEWLINE_ENCODER)) == 0) {
+                    ECONV_CR_NEWLINE_ENCODER|
+                    ECONV_HTML_TEXT_ENCODER|
+                    ECONV_HTML_ATTR_ENCODER)) == 0) {
         if (senc && senc == denc) {
             return -1;
         }

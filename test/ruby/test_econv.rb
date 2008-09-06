@@ -774,5 +774,8 @@ class TestEncodingConverter < Test::Unit::TestCase
         "&\u3046\u2665&\"'".encode("iso-2022-jp", html: :text))
     assert_equal("\"&amp;\e$B$&\e(B&#x2661;&amp;&quot;'\"".force_encoding("iso-2022-jp"),
       "&\u3046\u2661&\"'".encode("iso-2022-jp", html: :attr))
+
+    assert_equal("&amp;\u3046\u2661&amp;\"'".force_encoding("utf-8"),
+      "&\u3046\u2661&\"'".encode("utf-8", html: :text))
   end
 end
