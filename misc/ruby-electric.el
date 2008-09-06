@@ -67,8 +67,8 @@
     (?\` . ?\`)
     (?\" . ?\")))
 
-(defcustom ruby-electric-simple-keywords-re 
-  "\\(def\\|if\\|class\\|module\\|unless\\|case\\|while\\|do\\|until\\|for\\|begin\\)"
+(defcustom ruby-electric-simple-keywords-re
+  (regexp-opt '("def" "if" "class" "module" "unless" "case" "while" "do" "until" "for" "begin") t)
   "*Regular expresion matching keywords for which closing 'end'
 is to be inserted."
   :type 'regexp :group 'ruby-electric)

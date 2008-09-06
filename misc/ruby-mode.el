@@ -13,37 +13,50 @@
        (substring ruby-mode-revision (match-beginning 0) (match-end 0)))
   "Ruby mode version number.")
 
+(defconst ruby-block-beg-keywords
+  '("class" "module" "def" "if" "unless" "case" "while" "until" "for" "begin" "do")
+  "Keywords at the beginning of blocks.")
+
 (defconst ruby-block-beg-re
-  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin\\|do"
-  "Regexp to match the beginning of blocks in ruby-mode.")
+  (regexp-opt ruby-block-beg-keywords)
+  "Regexp to match the beginning of blocks.")
 
 (defconst ruby-non-block-do-re
-  "\\(while\\|until\\|for\\|rescue\\)\\>[^_]"
+  (concat (regexp-opt '("while" "until" "for" "rescue") t) "\\_>")
   "Regexp to match")
 
 (defconst ruby-indent-beg-re
-  "\\(\\s *\\(class\\|module\\|def\\)\\)\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin"
+  (concat "\\(\\s *" (regexp-opt '("class" "module" "def") t) "\\)"
+          (regexp-opt '("if" "unless" "case" "while" "until" "for" "begin")))
   "Regexp to match where the indentation gets deeper.")
 
+(defconst ruby-modifier-beg-keywords
+  '("if" "unless" "while" "until")
+  "Modifiers that are the same as the beginning of blocks.")
+
 (defconst ruby-modifier-beg-re
-  "if\\|unless\\|while\\|until"
+  (regexp-opt ruby-modifier-beg-keywords)
   "Regexp to match modifiers same as the beginning of blocks.")
 
 (defconst ruby-modifier-re
-  (concat ruby-modifier-beg-re "\\|rescue")
+  (regexp-opt (cons "rescue" ruby-modifier-beg-keywords))
   "Regexp to match modifiers.")
 
+(defconst ruby-block-mid-keywords
+  '("then" "else" "elsif" "when" "rescue" "ensure")
+  "Keywords where the indentation gets shallower in middle of block statements.")
+
 (defconst ruby-block-mid-re
-  "then\\|else\\|elsif\\|when\\|rescue\\|ensure"
+  (regexp-opt ruby-block-mid-keywords)
   "Regexp to match where the indentation gets shallower in middle of block statements.")
 
-(defconst ruby-block-op-re
-  "and\\|or\\|not"
-  "Regexp to match ")
+(defconst ruby-block-ops
+  '("and" "or" "not")
+  "Block operators.")
 
 (defconst ruby-block-hanging-re
-  (concat ruby-modifier-beg-re "\\|" ruby-block-op-re)
-  )
+  (regexp-opt (append ruby-modifier-beg-keywords ruby-block-op-keywords))
+  "Regexp to match hanging block modifiers.")
 
 (defconst ruby-block-end-re "\\<end\\>")
 
@@ -395,9 +408,11 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (and (looking-at ruby-symbol-re)
 		 (skip-chars-backward ruby-symbol-chars)
 		 (cond
-		  ((or (looking-at (concat "\\<\\(" ruby-block-beg-re
-					   "|" ruby-block-op-re
-					   "|" ruby-block-mid-re "\\)\\>")))
+		  ((looking-at (regexp-opt
+                                (append ruby-block-beg-keywords
+                                        ruby-block-op-keywords
+                                        ruby-block-mid-keywords)
+                                'words))
 		   (goto-char (match-end 0))
 		   (not (looking-at "\\s_")))
 		  ((eq option 'expr-qstr)
@@ -556,7 +571,7 @@ The variable ruby-indent-level controls the amount of indentation.
        ((looking-at (concat "\\<\\(" ruby-block-beg-re "\\)\\>"))
 	(and
 	 (save-match-data
-	   (or (not (looking-at "do\\>[^_]"))
+	   (or (not (looking-at "do\\_>"))
 	       (save-excursion
 		 (back-to-indentation)
 		 (not (looking-at ruby-non-block-do-re)))))
