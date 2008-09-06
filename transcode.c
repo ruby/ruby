@@ -880,7 +880,6 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
     transcoder_entry_t **entries = NULL;
     int num_trans;
     static rb_econv_t *ec;
-    int universal_newline_decoder_added = 0;
 
     rb_encoding *senc, *denc;
     int sidx, didx;
@@ -977,9 +976,9 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         ec->last_tc = NULL;
         ec->last_trans_index = -1;
     }
-    else if (universal_newline_decoder_added) {
-        ec->last_tc = ec->elems[ec->num_trans-2].tc;
-        ec->last_trans_index = ec->num_trans-2;
+    else {
+        ec->last_trans_index = ec->num_trans-1-num_decoders;
+        ec->last_tc = ec->elems[ec->last_trans_index].tc;
     }
 
     return ec;

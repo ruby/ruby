@@ -1,3 +1,7 @@
+Sat Sep  6 19:54:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_open): fix last_tc.
+
 Sat Sep  6 19:36:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (rb_io_binmode): clear newline flags in writeconv_pre_ecflags.
