@@ -196,7 +196,7 @@ Also ignores spaces after parenthesis when 'space."
 
 (eval-when-compile (require 'cl))
 (defun ruby-imenu-create-index-in-block (prefix beg end)
-  (let ((index-alist '())
+  (let ((index-alist '()) (case-fold-search nil)
         name next pos decl sing)
     (goto-char beg)
     (while (re-search-forward "^\\s *\\(\\(class\\s +\\|\\(class\\s *<<\\s *\\)\\|module\\s +\\)\\([^\(<\n ]+\\)\\|\\(def\\|alias\\)\\s +\\([^\(\n ]+\\)\\)" end t)
@@ -244,7 +244,6 @@ Also ignores spaces after parenthesis when 'space."
 (defun ruby-mode-variables ()
   (set-syntax-table ruby-mode-syntax-table)
   (setq local-abbrev-table ruby-mode-abbrev-table)
-  (setq case-fold-search nil)
   (make-local-variable 'indent-line-function)
   (setq indent-line-function 'ruby-indent-line)
   (make-local-variable 'require-final-newline)
@@ -674,6 +673,7 @@ The variable ruby-indent-level controls the amount of indentation.
   (save-excursion
     (beginning-of-line)
     (let ((indent-point (point))
+          (case-fold-search nil)
           state bol eol begin op-end
           (paren (progn (skip-syntax-forward " ")
                         (and (char-after) (matching-paren (char-after)))))
@@ -1150,7 +1150,7 @@ balanced expression is found."
 
   (defun ruby-in-here-doc-p ()
     (save-excursion
-      (let ((old-point (point)))
+      (let ((old-point (point)) (case-fold-search nil))
         (beginning-of-line)
         (catch 'found-beg
           (while (re-search-backward ruby-here-doc-beg-re nil t)
@@ -1167,6 +1167,7 @@ buffer position `limit' or the end of the buffer."
       (beginning-of-line)
       (catch 'done
         (let ((eol (save-excursion (end-of-line) (point)))
+              (case-fold-search nil)
               ;; Fake match data such that (match-end 0) is at eol
               (end-match-data (progn (looking-at ".*$") (match-data)))
               beg-match-data end-re)
@@ -1193,7 +1194,7 @@ buffer position `limit' or the end of the buffer."
         (string-to-syntax "|"))))
 
   (defun ruby-here-doc-end-syntax ()
-    (let ((pss (syntax-ppss)))
+    (let ((pss (syntax-ppss)) (case-fold-search nil))
       (when (eq (syntax-ppss-context pss) 'string)
         (save-excursion
           (goto-char (nth 8 pss))
