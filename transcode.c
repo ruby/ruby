@@ -133,6 +133,8 @@ struct rb_econv_t {
  *  Dispatch data and logic
  */
 
+#define SUPPLEMENTAL_CONVERSION(sname, dname) (*(sname) == '\0' || *(dname) == '\0')
+
 typedef struct {
     const char *sname;
     const char *dname;
@@ -1635,7 +1637,11 @@ stateless_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
 
     if (st_lookup(table2, (st_data_t)data->stateful_enc, &v)) {
         transcoder_entry_t *entry = (transcoder_entry_t *)v;
-        const rb_transcoder *tr = load_transcoder_entry(entry);
+        const rb_transcoder *tr;
+        if (SUPPLEMENTAL_CONVERSION(entry->sname, entry->dname)) {
+            return ST_CONTINUE;
+        }
+        tr = load_transcoder_entry(entry);
         if (tr && tr->stateful_type == stateful_encoder) {
             data->stateless_enc = tr->src_encoding;
             return ST_STOP;

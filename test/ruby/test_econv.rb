@@ -34,6 +34,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_nil(Encoding::Converter.stateless_encoding("UTF-8"))
     assert_nil(Encoding::Converter.stateless_encoding("UTF-16BE"))
     assert_nil(Encoding::Converter.stateless_encoding(Encoding::UTF_8))
+    assert_nil(Encoding::Converter.stateless_encoding("html-attr-escaped"))
   end
 
   def test_stateless_encoding_iso2022jp

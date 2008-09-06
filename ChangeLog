@@ -1,3 +1,9 @@
+Sat Sep  6 12:25:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (stateless_encoding_i): ignore supplemental conversions.
+	  Encoding::Converter.stateless_encoding("html-attr-escaped") should be
+	  nil.
+
 Sat Sep  6 12:19:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/escape.trans (escape_html_attr_init): new function.
