@@ -250,27 +250,32 @@ VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, long byteoff, long bytes
 void rb_econv_binmode(rb_econv_t *ec);
 
 /* flags for rb_econv_open */
-#define ECONV_INVALID_MASK                      0x000f
-#define ECONV_INVALID_REPLACE                   0x0002
 
-#define ECONV_UNDEF_MASK                        0x00f0
-#define ECONV_UNDEF_REPLACE                     0x0020
-#define ECONV_UNDEF_HEX_CHARREF                 0x0030
+#define ECONV_ERROR_HANDLER_MASK                0x000000ff
+
+#define ECONV_INVALID_MASK                      0x0000000f
+#define ECONV_INVALID_REPLACE                   0x00000002
+
+#define ECONV_UNDEF_MASK                        0x000000f0
+#define ECONV_UNDEF_REPLACE                     0x00000020
+#define ECONV_UNDEF_HEX_CHARREF                 0x00000030
 
 /* usable only if destination encoding is ascii compatible */
-#define ECONV_UNIVERSAL_NEWLINE_DECODER         0x0100
+#define ECONV_DECODER_MASK                      0x00000f00
+#define ECONV_UNIVERSAL_NEWLINE_DECODER         0x00000100
 
 /* usable only if source encoding is ascii compatible */
-#define ECONV_CRLF_NEWLINE_ENCODER              0x0200
-#define ECONV_CR_NEWLINE_ENCODER                0x0400
-#define ECONV_XML_TEXT_ENCODER                  0x0800
-#define ECONV_XML_ATTR_ENCODER                  0x1000
+#define ECONV_ENCODER_MASK                      0x0000f000
+#define ECONV_CRLF_NEWLINE_ENCODER              0x00001000
+#define ECONV_CR_NEWLINE_ENCODER                0x00002000
+#define ECONV_XML_TEXT_ENCODER                  0x00004000
+#define ECONV_XML_ATTR_ENCODER                  0x00008000
 
 /* end of flags for rb_econv_open */
 
 /* flags for rb_econv_convert */
-#define ECONV_PARTIAL_INPUT                   0x10000
-#define ECONV_OUTPUT_FOLLOWED_BY_INPUT        0x20000
+#define ECONV_PARTIAL_INPUT                     0x00010000
+#define ECONV_OUTPUT_FOLLOWED_BY_INPUT          0x00020000
 /* end of flags for rb_econv_convert */
 
 #endif /* RUBY_ENCODING_H */

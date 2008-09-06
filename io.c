@@ -716,6 +716,7 @@ make_writeconv(rb_io_t *fptr)
         if (NEED_NEWLINE_ENCODER(fptr))
             fptr->writeconv_pre_ecflags |= TEXTMODE_NEWLINE_ENCODER;
 #endif
+        ecflags &= ECONV_ERROR_HANDLER_MASK;
 
         enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
         senc = rb_econv_stateless_encoding(enc->name);

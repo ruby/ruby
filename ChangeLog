@@ -1,3 +1,12 @@
+Sun Sep  7 00:37:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_ERROR_HANDLER_MASK): defined.
+	  (ECONV_DECODER_MASK): defined.
+	  (ECONV_ENCODER_MASK): defined.
+
+	* io.c (make_writeconv): restrict ecflags for writeconv with
+	  ECONV_ERROR_HANDLER_MASK. 
+
 Sat Sep  6 23:03:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_XML_TEXT_ENCODER): renamed from

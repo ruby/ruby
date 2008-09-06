@@ -1459,5 +1459,27 @@ EOT
     }
   end
 
+  def test_w_xml_attr
+    with_tmpdir {
+      open("eucjp.txt", "w:euc-jp:utf-8", xml: :attr) {|f|
+        f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212
+      }
+      content = File.read("eucjp.txt", :mode=>"rb:ascii-8bit")
+      assert_equal("\"\x8F\xB0\xA1\"".force_encoding("ascii-8bit"), content)
+
+      open("sjis.txt", "w:sjis:utf-8", xml: :attr) {|f|
+        f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212
+      }
+      content = File.read("sjis.txt", :mode=>"rb:ascii-8bit")
+      assert_equal("\"&#x4E02;\"".force_encoding("ascii-8bit"), content)
+
+      open("iso-2022-jp.txt", "w:iso-2022-jp:utf-8", xml: :attr) {|f|
+        f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212
+      }
+      content = File.read("iso-2022-jp.txt", :mode=>"rb:ascii-8bit")
+      assert_equal("\"&#x4E02;\"".force_encoding("ascii-8bit"), content)
+    }
+  end
+
 end
 
