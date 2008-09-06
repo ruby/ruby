@@ -21,7 +21,7 @@
   (save-excursion
     (back-to-indentation)
     (unless (progn (backward-up-list) (back-to-indentation)
-		   (> (point) (cdr x)))
+                   (> (point) (cdr x)))
       (goto-char (cdr x))
       (if (looking-at "\\<case\\|default\\>") '*))))
 
@@ -29,14 +29,14 @@
   (save-excursion
     (back-to-indentation)
     (unless (progn (backward-up-list) (back-to-indentation)
-		   (>= (point) (cdr x)))
+                   (>= (point) (cdr x)))
       (goto-char (cdr x))
       (condition-case ()
-	  (progn
-	    (backward-up-list)
-	    (backward-sexp 2)
-	    (if (looking-at "\\<switch\\>") '/))
-	(error)))))
+          (progn
+            (backward-up-list)
+            (backward-sexp 2)
+            (if (looking-at "\\<switch\\>") '/))
+        (error)))))
 
 (require 'cc-styles)
 (c-add-style

@@ -68,8 +68,8 @@
             (let ((match (match-string 1)))
               (if (and match (> (length match) 0))
                   (concat "\\(?:-\\([\"']?\\)\\|\\([\"']\\)" (match-string 1) "\\)"
-                          contents "\\(\\1\\|\\2\\)")
-                (concat "-?\\([\"']\\|\\)" contents "\\1"))))))
+                          contents "\\b\\(\\1\\|\\2\\)")
+                (concat "-?\\([\"']\\|\\)" contents "\\b\\1"))))))
 
 (defconst ruby-delimiter
   (concat "[?$/%(){}#\"'`.:]\\|<<\\|\\[\\|\\]\\|\\<\\("
@@ -1179,17 +1179,17 @@ buffer position `limit' or the end of the buffer."
         (string-to-syntax "|"))))
 
   (defun ruby-here-doc-end-syntax ()
-    (save-excursion
-      (goto-char (match-end 0))
-      (let ((old-point (point))
-            (beg-exists (re-search-backward (ruby-here-doc-beg-match) nil t))
-            (eol (save-excursion (end-of-line) (point))))
-        (if (and beg-exists ; If there is a heredoc that matches this line...
-                 (null (syntax-ppss-context (syntax-ppss))) ; And that's not inside a heredoc/string/comment...
-                 (progn (goto-char (match-end 0)) ; And it's the last heredoc on its line...
-                        (not (re-search-forward ruby-here-doc-beg-re eol t)))
-                 (eq old-point (ruby-here-doc-find-end old-point))) ; And it ends at this point...
-            (string-to-syntax "|")))))
+    (let ((pss (syntax-ppss)))
+      (when (eq (syntax-ppss-context pss) 'string)
+        (save-excursion
+          (goto-char (nth 8 pss))
+          (let ((eol (point)))
+            (beginning-of-line)
+            (if (and (re-search-forward (ruby-here-doc-beg-match) eol t) ; If there is a heredoc that matches this line...
+                     (null (syntax-ppss-context (syntax-ppss))) ; And that's not inside a heredoc/string/comment...
+                     (progn (goto-char (match-end 0)) ; And it's the last heredoc on its line...
+                            (not (re-search-forward ruby-here-doc-beg-re eol t))))
+                (string-to-syntax "|")))))))
 
   (if (featurep 'xemacs)
       (put 'ruby-mode 'font-lock-defaults
