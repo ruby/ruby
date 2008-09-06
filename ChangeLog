@@ -1,3 +1,8 @@
+Sun Sep  7 01:07:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): "1.upto 2 {|i| p i }" should be syntax error.
+	  [ruby-dev:36008]
+
 Sun Sep  7 00:37:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_ERROR_HANDLER_MASK): defined.
