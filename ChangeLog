@@ -1,3 +1,8 @@
+Sun Sep  7 06:31:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (file_expand_path): applied a patch from Nobuhiro Tachino
+	  in [ruby-dev:35948].  fix #491
+
 Sun Sep  7 03:37:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_block_optarg): allow default for block parameters as

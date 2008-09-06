@@ -2728,8 +2728,7 @@ file_expand_path(VALUE fname, VALUE dname, int abs_mode, VALUE result)
     if (p > buf && p[-1] == '/')
 	--p;
     else {
-	++buflen;
-	BUFCHECK(bdiff >= buflen);
+	BUFCHECK(bdiff + 1 >= buflen);
 	*p = '/';
     }
 
