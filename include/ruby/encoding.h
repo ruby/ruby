@@ -263,6 +263,8 @@ void rb_econv_binmode(rb_econv_t *ec);
 /* usable only if source encoding is ascii compatible */
 #define ECONV_CRLF_NEWLINE_ENCODER              0x0200
 #define ECONV_CR_NEWLINE_ENCODER                0x0400
+#define ECONV_HTML_TEXT_ENCODER                 0x0800
+#define ECONV_HTML_ATTR_ENCODER                 0x1000
 
 /* end of flags for rb_econv_open */
 

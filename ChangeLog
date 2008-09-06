@@ -1,3 +1,13 @@
+Sat Sep  6 14:46:12 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_HTML_TEXT_ENCODER): new constant.
+	  (ECONV_HTML_ATTR_ENCODER): ditto.
+
+	* transcode.c (rb_econv_open): check ECONV_HTML_TEXT_ENCODER and
+	  ECONV_HTML_ATTR_ENCODER.
+	  (Init_transcode): Encoding::Converter::HTML_TEXT_ENCODER and
+	  Encoding::Converter::HTML_ATTR_ENCODER defined.
+
 Sat Sep  6 14:15:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (struct trans_open_t): defined to pass num_additional.

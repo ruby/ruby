@@ -754,4 +754,18 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal('"&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
     assert_equal('"', ec.finish)
   end
+
+  def test_html_escape_with_charref
+    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::HTML_TEXT_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal('&lt;&#x2665;&gt;&amp;"&#x2661;"', ec.convert("<\u2665>&\"\u2661\""))
+    assert_equal('', ec.finish)
+
+    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::HTML_ATTR_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
+    assert_equal('"&lt;&#x2665;&gt;&amp;&quot;&#x2661;&quot;', ec.convert("<\u2665>&\"\u2661\""))
+    assert_equal('"', ec.finish)
+
+    ec = Encoding::Converter.new("utf-8", "iso-2022-jp", Encoding::Converter::HTML_TEXT_ENCODER)
+    assert_equal("&amp;\e$B$&\e(B&amp;".force_encoding("iso-2022-jp"), ec.convert("&\u3046&"))
+    assert_equal('', ec.finish)
+  end
 end

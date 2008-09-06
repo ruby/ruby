@@ -895,12 +895,22 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER))
         return NULL;
 
+    if ((ecflags & ECONV_HTML_TEXT_ENCODER) &&
+        (ecflags & ECONV_HTML_ATTR_ENCODER))
+        return NULL;
+
     num_encoders = 0;
     if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
         if (!(encoders[num_encoders++] = get_transcoder_entry("", "crlf_newline")))
             return NULL;
     if (ecflags & ECONV_CR_NEWLINE_ENCODER)
         if (!(encoders[num_encoders++] = get_transcoder_entry("", "cr_newline")))
+            return NULL;
+    if (ecflags & ECONV_HTML_TEXT_ENCODER)
+        if (!(encoders[num_encoders++] = get_transcoder_entry("", "html-text-escaped")))
+            return NULL;
+    if (ecflags & ECONV_HTML_ATTR_ENCODER)
+        if (!(encoders[num_encoders++] = get_transcoder_entry("", "html-attr-escaped")))
             return NULL;
 
     num_decoders = 0;
@@ -3510,6 +3520,8 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "HTML_TEXT_ENCODER", INT2FIX(ECONV_HTML_TEXT_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "HTML_ATTR_ENCODER", INT2FIX(ECONV_HTML_ATTR_ENCODER));
 
     rb_define_method(rb_eConversionUndefined, "source_encoding_name", ecerr_source_encoding_name, 0);
     rb_define_method(rb_eConversionUndefined, "destination_encoding_name", ecerr_destination_encoding_name, 0);
