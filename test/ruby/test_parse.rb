@@ -105,7 +105,7 @@ class TestParse < Test::Unit::TestCase
     a = nil
     assert_nothing_raised do
       t.instance_eval <<-END
-        a = bar "foo" { "bar" }
+        a = bar "foo" do "bar" end
       END
     end
     assert_equal("foobar", a)
@@ -113,7 +113,7 @@ class TestParse < Test::Unit::TestCase
     a = nil
     assert_nothing_raised do
       eval <<-END
-        a = t::bar "foo" { "bar" }
+        a = t::bar "foo" do "bar" end
       END
     end
     assert_equal("foobar", a)
@@ -260,7 +260,7 @@ class TestParse < Test::Unit::TestCase
     a = nil
     assert_nothing_raised do
       eval <<-END
-        o.foo 1 {|; a| a = 42 }
+        o.foo 1 do|; a| a = 42 end
       END
     end
     assert_nil(a)
