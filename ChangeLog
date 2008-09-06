@@ -5,6 +5,9 @@ Sun Sep  7 07:24:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/ruby-mode.el: improve here-doc performance.
 
+	* misc/ruby-mode.el: don't crash the whole mode if the Subversion
+	  $ keyword isn't interpolated.
+
 Sun Sep  7 06:31:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (file_expand_path): applied a patch from Nobuhiro Tachino

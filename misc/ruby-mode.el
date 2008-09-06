@@ -9,9 +9,8 @@
   "Ruby mode revision string.")
 
 (defconst ruby-mode-version
-  (progn
-   (string-match "[0-9.]+" ruby-mode-revision)
-   (substring ruby-mode-revision (match-beginning 0) (match-end 0)))
+  (and (string-match "[0-9.]+" ruby-mode-revision)
+       (substring ruby-mode-revision (match-beginning 0) (match-end 0)))
   "Ruby mode version number.")
 
 (defconst ruby-block-beg-re
