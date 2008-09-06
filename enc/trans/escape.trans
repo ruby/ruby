@@ -1,7 +1,7 @@
 #include "transcode_data.h"
 
 static int
-fun_so_escape_html_chref(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_escape_xml_chref(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     switch (*s) {
       case '&':
@@ -45,16 +45,16 @@ fun_so_escape_html_chref(void *statep, const unsigned char *s, size_t l, unsigne
   map_amp["26"] = :func_so
   transcode_generate_node(ActionMap.parse(map_amp), "escape_amp_as_chref")
 
-  map_html_text = {}
-  map_html_text["{00-25,27-3B,3D,3F-FF}"] = :nomap
-  map_html_text["26"] = :func_so
-  map_html_text["3C"] = :func_so
-  map_html_text["3E"] = :func_so
-  transcode_generate_node(ActionMap.parse(map_html_text), "escape_html_text")
+  map_xml_text = {}
+  map_xml_text["{00-25,27-3B,3D,3F-FF}"] = :nomap
+  map_xml_text["26"] = :func_so
+  map_xml_text["3C"] = :func_so
+  map_xml_text["3E"] = :func_so
+  transcode_generate_node(ActionMap.parse(map_xml_text), "escape_xml_text")
 
-  map_html_attr = {}
-  map_html_attr["{00-FF}"] = :func_so
-  transcode_generate_node(ActionMap.parse(map_html_attr), "escape_html_attr")
+  map_xml_attr = {}
+  map_xml_attr["{00-FF}"] = :func_so
+  transcode_generate_node(ActionMap.parse(map_xml_attr), "escape_xml_attr")
 %>
 
 <%= transcode_generated_code %>
@@ -68,26 +68,26 @@ rb_escape_amp_as_chref = {
     5, /* max_output */
     stateless_converter, /* stateful_type */
     0, NULL, NULL,
-    NULL, NULL, NULL, &fun_so_escape_html_chref
+    NULL, NULL, NULL, &fun_so_escape_xml_chref
 };
 
 static const rb_transcoder
-rb_escape_html_text = {
-    "", "html-text-escaped", escape_html_text,
+rb_escape_xml_text = {
+    "", "xml-text-escaped", escape_xml_text,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     1, /* max_input */
     5, /* max_output */
     stateless_converter, /* stateful_type */
     0, NULL, NULL,
-    NULL, NULL, NULL, &fun_so_escape_html_chref
+    NULL, NULL, NULL, &fun_so_escape_xml_chref
 };
 
 #define END 0
 #define NORMAL  1
 
 static int
-escape_html_attr_init(void *statep)
+escape_xml_attr_init(void *statep)
 {
     unsigned char *sp = statep;
     *sp = END;
@@ -95,7 +95,7 @@ escape_html_attr_init(void *statep)
 }
 
 static int
-fun_so_escape_html_attr(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_escape_xml_attr(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     unsigned char *sp = statep;
     int n = 0;
@@ -108,7 +108,7 @@ fun_so_escape_html_attr(void *statep, const unsigned char *s, size_t l, unsigned
       case '<':
       case '>':
       case '"':
-        n += fun_so_escape_html_chref(statep, s, l, o+n);
+        n += fun_so_escape_xml_chref(statep, s, l, o+n);
         break;
 
       default:
@@ -119,7 +119,7 @@ fun_so_escape_html_attr(void *statep, const unsigned char *s, size_t l, unsigned
 }
 
 static int
-escape_html_attr_finish(void *statep, unsigned char *o)
+escape_xml_attr_finish(void *statep, unsigned char *o)
 {
     unsigned char *sp = statep;
     int n = 0;
@@ -135,23 +135,23 @@ escape_html_attr_finish(void *statep, unsigned char *o)
 }
 
 static const rb_transcoder
-rb_escape_html_attr = {
-    "", "html-attr-escaped", escape_html_attr,
+rb_escape_xml_attr = {
+    "", "xml-attr-escaped", escape_xml_attr,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     1, /* max_input */
     7, /* max_output */
     stateful_encoder, /* stateful_type */
-    1, escape_html_attr_init, escape_html_attr_init,
-    NULL, NULL, NULL, fun_so_escape_html_attr,
-    escape_html_attr_finish
+    1, escape_xml_attr_init, escape_xml_attr_init,
+    NULL, NULL, NULL, fun_so_escape_xml_attr,
+    escape_xml_attr_finish
 };
 
 void
 Init_escape(void)
 {
     rb_register_transcoder(&rb_escape_amp_as_chref);
-    rb_register_transcoder(&rb_escape_html_text);
-    rb_register_transcoder(&rb_escape_html_attr);
+    rb_register_transcoder(&rb_escape_xml_text);
+    rb_register_transcoder(&rb_escape_xml_attr);
 }
 

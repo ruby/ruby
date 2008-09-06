@@ -1,3 +1,13 @@
+Sat Sep  6 23:03:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_XML_TEXT_ENCODER): renamed from
+	  ECONV_HTML_TEXT_ENCODER.
+	  (ECONV_XML_ATTR_ENCODER): renamed from ECONV_HTML_ATTR_ENCODER.
+
+	* enc/trans/escape.trans: follow the renaming.
+
+	* transcode.c: ditto.
+
 Sat Sep  6 21:35:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/mkconstants.rb: add some IPV6 constans.  [ruby-dev:36175]

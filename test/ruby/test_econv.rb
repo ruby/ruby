@@ -34,7 +34,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_nil(Encoding::Converter.stateless_encoding("UTF-8"))
     assert_nil(Encoding::Converter.stateless_encoding("UTF-16BE"))
     assert_nil(Encoding::Converter.stateless_encoding(Encoding::UTF_8))
-    assert_nil(Encoding::Converter.stateless_encoding("html-attr-escaped"))
+    assert_nil(Encoding::Converter.stateless_encoding("xml-attr-escaped"))
   end
 
   def test_stateless_encoding_iso2022jp
@@ -728,54 +728,54 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("&", ec.convert("&"))
   end
 
-  def test_html_escape_text
+  def test_xml_escape_text
     ec = Encoding::Converter.new("", "amp-escaped")
     assert_equal('&amp;<>"', ec.convert("&<>\""))
     assert_equal('', ec.finish)
 
-    ec = Encoding::Converter.new("", "html-text-escaped")
+    ec = Encoding::Converter.new("", "xml-text-escaped")
     assert_equal('&amp;&lt;&gt;"', ec.convert("&<>\""))
     assert_equal('', ec.finish)
   end
 
-  def test_html_escape_attr
-    ec = Encoding::Converter.new("", "html-attr-escaped")
+  def test_xml_escape_attr
+    ec = Encoding::Converter.new("", "xml-attr-escaped")
     assert_equal('""', ec.finish)
 
-    ec = Encoding::Converter.new("", "html-attr-escaped")
+    ec = Encoding::Converter.new("", "xml-attr-escaped")
     assert_equal('', ec.convert(""))
     assert_equal('""', ec.finish)
 
-    ec = Encoding::Converter.new("", "html-attr-escaped")
+    ec = Encoding::Converter.new("", "xml-attr-escaped")
     assert_equal('"&quot;', ec.convert('"'))
     assert_equal('"', ec.finish)
 
-    ec = Encoding::Converter.new("", "html-attr-escaped")
+    ec = Encoding::Converter.new("", "xml-attr-escaped")
     assert_equal('"&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
     assert_equal('"', ec.finish)
   end
 
-  def test_html_escape_with_charref
-    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::HTML_TEXT_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
+  def test_xml_escape_with_charref
+    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::XML_TEXT_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
     assert_equal('&lt;&#x2665;&gt;&amp;"&#x2661;"', ec.convert("<\u2665>&\"\u2661\""))
     assert_equal('', ec.finish)
 
-    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::HTML_ATTR_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
+    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::XML_ATTR_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
     assert_equal('"&lt;&#x2665;&gt;&amp;&quot;&#x2661;&quot;', ec.convert("<\u2665>&\"\u2661\""))
     assert_equal('"', ec.finish)
 
-    ec = Encoding::Converter.new("utf-8", "iso-2022-jp", Encoding::Converter::HTML_TEXT_ENCODER)
+    ec = Encoding::Converter.new("utf-8", "iso-2022-jp", Encoding::Converter::XML_TEXT_ENCODER)
     assert_equal("&amp;\e$B$&\e(B&amp;".force_encoding("iso-2022-jp"), ec.convert("&\u3046&"))
     assert_equal('', ec.finish)
   end
 
-  def test_html_hasharg
+  def test_xml_hasharg
     assert_equal("&amp;\e$B$&\e(B&#x2665;&amp;\"'".force_encoding("iso-2022-jp"),
-        "&\u3046\u2665&\"'".encode("iso-2022-jp", html: :text))
+        "&\u3046\u2665&\"'".encode("iso-2022-jp", xml: :text))
     assert_equal("\"&amp;\e$B$&\e(B&#x2661;&amp;&quot;'\"".force_encoding("iso-2022-jp"),
-      "&\u3046\u2661&\"'".encode("iso-2022-jp", html: :attr))
+      "&\u3046\u2661&\"'".encode("iso-2022-jp", xml: :attr))
 
     assert_equal("&amp;\u3046\u2661&amp;\"'".force_encoding("utf-8"),
-      "&\u3046\u2661&\"'".encode("utf-8", html: :text))
+      "&\u3046\u2661&\"'".encode("utf-8", xml: :text))
   end
 end

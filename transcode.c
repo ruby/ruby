@@ -21,7 +21,7 @@ VALUE rb_eNoConverter;
 VALUE rb_cEncodingConverter;
 
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
-static VALUE sym_html, sym_text, sym_attr;
+static VALUE sym_xml, sym_text, sym_attr;
 static VALUE sym_universal_newline_decoder;
 static VALUE sym_crlf_newline_encoder;
 static VALUE sym_cr_newline_encoder;
@@ -895,8 +895,8 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER))
         return NULL;
 
-    if ((ecflags & ECONV_HTML_TEXT_ENCODER) &&
-        (ecflags & ECONV_HTML_ATTR_ENCODER))
+    if ((ecflags & ECONV_XML_TEXT_ENCODER) &&
+        (ecflags & ECONV_XML_ATTR_ENCODER))
         return NULL;
 
     num_encoders = 0;
@@ -906,11 +906,11 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
     if (ecflags & ECONV_CR_NEWLINE_ENCODER)
         if (!(encoders[num_encoders++] = get_transcoder_entry("", "cr_newline")))
             return NULL;
-    if (ecflags & ECONV_HTML_TEXT_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "html-text-escaped")))
+    if (ecflags & ECONV_XML_TEXT_ENCODER)
+        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-text-escaped")))
             return NULL;
-    if (ecflags & ECONV_HTML_ATTR_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "html-attr-escaped")))
+    if (ecflags & ECONV_XML_ATTR_ENCODER)
+        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-attr-escaped")))
             return NULL;
 
     num_decoders = 0;
@@ -1791,8 +1791,8 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
     if (ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
                    ECONV_CRLF_NEWLINE_ENCODER|
                    ECONV_CR_NEWLINE_ENCODER|
-                   ECONV_HTML_TEXT_ENCODER|
-                   ECONV_HTML_ATTR_ENCODER)) {
+                   ECONV_XML_TEXT_ENCODER|
+                   ECONV_XML_ATTR_ENCODER)) {
         const char *pre = "";
         if (has_description)
             rb_str_cat2(mesg, " with ");
@@ -1808,13 +1808,13 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "CR-newline");
         }
-        if (ecflags & ECONV_HTML_TEXT_ENCODER) {
+        if (ecflags & ECONV_XML_TEXT_ENCODER) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "HTML-text");
+            rb_str_cat2(mesg, "XML-text");
         }
-        if (ecflags & ECONV_HTML_ATTR_ENCODER) {
+        if (ecflags & ECONV_XML_ATTR_ENCODER) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "HTML-attr");
+            rb_str_cat2(mesg, "XML-attr");
         }
         has_description = 1;
     }
@@ -2166,17 +2166,17 @@ econv_opts(VALUE opt)
         rb_raise(rb_eArgError, "unknown value for undefined character option");
     }
 
-    v = rb_hash_aref(opt, sym_html);
+    v = rb_hash_aref(opt, sym_xml);
     if (!NIL_P(v)) {
         v = rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym");
         if (v==sym_text) {
-            ecflags |= ECONV_HTML_TEXT_ENCODER|ECONV_UNDEF_HEX_CHARREF;
+            ecflags |= ECONV_XML_TEXT_ENCODER|ECONV_UNDEF_HEX_CHARREF;
         }
         else if (v==sym_attr) {
-            ecflags |= ECONV_HTML_ATTR_ENCODER|ECONV_UNDEF_HEX_CHARREF;
+            ecflags |= ECONV_XML_ATTR_ENCODER|ECONV_UNDEF_HEX_CHARREF;
         }
         else {
-            rb_raise(rb_eArgError, "unexpected value for html option: %s", rb_id2name(SYM2ID(v)));
+            rb_raise(rb_eArgError, "unexpected value for xml option: %s", rb_id2name(SYM2ID(v)));
         }
     }
 
@@ -2328,8 +2328,8 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
                     ECONV_CRLF_NEWLINE_ENCODER|
                     ECONV_CR_NEWLINE_ENCODER|
-                    ECONV_HTML_TEXT_ENCODER|
-                    ECONV_HTML_ATTR_ENCODER)) == 0) {
+                    ECONV_XML_TEXT_ENCODER|
+                    ECONV_XML_ATTR_ENCODER)) == 0) {
         if (senc && senc == denc) {
             return -1;
         }
@@ -3526,7 +3526,7 @@ Init_transcode(void)
     sym_undef = ID2SYM(rb_intern("undef"));
     sym_ignore = ID2SYM(rb_intern("ignore"));
     sym_replace = ID2SYM(rb_intern("replace"));
-    sym_html = ID2SYM(rb_intern("html"));
+    sym_xml = ID2SYM(rb_intern("xml"));
     sym_text = ID2SYM(rb_intern("text"));
     sym_attr = ID2SYM(rb_intern("attr"));
 
@@ -3572,8 +3572,8 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "HTML_TEXT_ENCODER", INT2FIX(ECONV_HTML_TEXT_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "HTML_ATTR_ENCODER", INT2FIX(ECONV_HTML_ATTR_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "XML_TEXT_ENCODER", INT2FIX(ECONV_XML_TEXT_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "XML_ATTR_ENCODER", INT2FIX(ECONV_XML_ATTR_ENCODER));
 
     rb_define_method(rb_eConversionUndefined, "source_encoding_name", ecerr_source_encoding_name, 0);
     rb_define_method(rb_eConversionUndefined, "destination_encoding_name", ecerr_destination_encoding_name, 0);
