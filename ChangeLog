@@ -1,3 +1,10 @@
+Sat Sep  6 12:19:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/escape.trans (escape_html_attr_init): new function.
+	  (fun_so_escape_html_attr): new function.
+	  (escape_html_attr_finish): new function.
+	  (rb_escape_html_attr): use them to quote the converted result.
+
 Sat Sep  6 07:54:36 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: uses f_real_p macro.

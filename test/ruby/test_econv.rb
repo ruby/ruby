@@ -727,14 +727,30 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("&", ec.convert("&"))
   end
 
-  def test_html_escape
+  def test_html_escape_text
     ec = Encoding::Converter.new("", "amp-escaped")
     assert_equal('&amp;<>"', ec.convert("&<>\""))
+    assert_equal('', ec.finish)
 
     ec = Encoding::Converter.new("", "html-text-escaped")
     assert_equal('&amp;&lt;&gt;"', ec.convert("&<>\""))
+    assert_equal('', ec.finish)
+  end
+
+  def test_html_escape_attr
+    ec = Encoding::Converter.new("", "html-attr-escaped")
+    assert_equal('""', ec.finish)
 
     ec = Encoding::Converter.new("", "html-attr-escaped")
-    assert_equal('&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
+    assert_equal('', ec.convert(""))
+    assert_equal('""', ec.finish)
+
+    ec = Encoding::Converter.new("", "html-attr-escaped")
+    assert_equal('"&quot;', ec.convert('"'))
+    assert_equal('"', ec.finish)
+
+    ec = Encoding::Converter.new("", "html-attr-escaped")
+    assert_equal('"&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
+    assert_equal('"', ec.finish)
   end
 end

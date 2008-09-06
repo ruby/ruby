@@ -53,11 +53,7 @@ fun_so_escape_html_chref(void *statep, const unsigned char *s, size_t l, unsigne
   transcode_generate_node(ActionMap.parse(map_html_text), "escape_html_text")
 
   map_html_attr = {}
-  map_html_attr["{00-21,23-25,27-3B,3D,3F-FF}"] = :nomap
-  map_html_attr["22"] = :func_so
-  map_html_attr["26"] = :func_so
-  map_html_attr["3C"] = :func_so
-  map_html_attr["3E"] = :func_so
+  map_html_attr["{00-FF}"] = :func_so
   transcode_generate_node(ActionMap.parse(map_html_attr), "escape_html_attr")
 %>
 
@@ -87,16 +83,68 @@ rb_escape_html_text = {
     NULL, NULL, NULL, &fun_so_escape_html_chref
 };
 
+#define END 0
+#define NORMAL  1
+
+static int
+escape_html_attr_init(void *statep)
+{
+    unsigned char *sp = statep;
+    *sp = END;
+    return 0;
+}
+
+static VALUE
+fun_so_escape_html_attr(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+{
+    unsigned char *sp = statep;
+    int n = 0;
+    if (*sp == END) {
+        *sp = NORMAL;
+        o[n++] = '"';
+    }
+    switch (s[0]) {
+      case '&':
+      case '<':
+      case '>':
+      case '"':
+        n += fun_so_escape_html_chref(statep, s, l, o+n);
+        break;
+
+      default:
+        o[n++] = s[0];
+        break;
+    }
+    return n;
+}
+
+static int
+escape_html_attr_finish(void *statep, unsigned char *o)
+{
+    unsigned char *sp = statep;
+    int n = 0;
+
+    if (*sp == END) {
+        o[n++] = '"';
+    }
+
+    o[n++] = '"';
+    *sp = END;
+
+    return n;
+}
+
 static const rb_transcoder
 rb_escape_html_attr = {
     "", "html-attr-escaped", escape_html_attr,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     1, /* max_input */
-    6, /* max_output */
-    stateless_converter, /* stateful_type */
-    0, NULL, NULL,
-    NULL, NULL, NULL, &fun_so_escape_html_chref
+    7, /* max_output */
+    stateful_encoder, /* stateful_type */
+    1, escape_html_attr_init, escape_html_attr_init,
+    NULL, NULL, NULL, fun_so_escape_html_attr,
+    escape_html_attr_finish
 };
 
 void
