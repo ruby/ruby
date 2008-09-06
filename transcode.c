@@ -1445,7 +1445,7 @@ allocate_converted_string(const char *sname, const char *dname,
     res = rb_econv_convert(ec, &sp, str+len, &dp, dst_str+dst_bufsize, 0);
     dst_len = dp - dst_str;
     while (res == econv_destination_buffer_full) {
-        if (dst_bufsize * 2 < dst_bufsize) {
+        if (SIZE_MAX/2 < dst_bufsize) {
             goto fail;
         }
         dst_bufsize *= 2;

@@ -1,3 +1,7 @@
+Sat Sep  6 18:38:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (allocate_converted_string): fix overflow condition.
+
 Sat Sep  6 15:06:21 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (sym_html): new variable.
