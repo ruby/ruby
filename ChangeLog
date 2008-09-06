@@ -1,3 +1,7 @@
+Sat Sep  6 19:36:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (rb_io_binmode): clear newline flags in writeconv_pre_ecflags.
+
 Sat Sep  6 18:47:40 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (str_transcode0): check ECONV_HTML_TEXT_ENCODER and
