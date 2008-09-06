@@ -1726,25 +1726,48 @@ rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags)
 void
 rb_econv_binmode(rb_econv_t *ec)
 {
+    const rb_transcoder *trs[3];
+    int n, i, j;
+    transcoder_entry_t *entry;
+
+    n = 0;
     if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
-        int i = ec->num_trans-1;
-        rb_transcoding_close(ec->elems[i].tc);
-        xfree(ec->elems[i].out_buf_start);
-        ec->elems[i].tc = NULL;
-        ec->elems[i].out_buf_start = NULL;
-        ec->elems[i].out_data_start = NULL;
-        ec->elems[i].out_data_end = NULL;
-        ec->elems[i].out_buf_end = NULL;
-        ec->num_trans--;
-        ec->flags &= ~ECONV_UNIVERSAL_NEWLINE_DECODER;
+        entry = get_transcoder_entry("universal_newline", "");
+        if (entry->transcoder)
+            trs[n++] = entry->transcoder;
     }
-    if (ec->flags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) {
-        rb_transcoding_close(ec->elems[0].tc);
-        xfree(ec->elems[0].out_buf_start);
-        MEMMOVE(&ec->elems[0], &ec->elems[1], rb_econv_elem_t, ec->num_trans-1);
-        ec->num_trans--;
-        ec->flags &= ~(ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
+    if (ec->flags & ECONV_CRLF_NEWLINE_ENCODER) {
+        entry = get_transcoder_entry("", "crlf_newline");
+        if (entry->transcoder)
+            trs[n++] = entry->transcoder;
     }
+    if (ec->flags & ECONV_CR_NEWLINE_ENCODER) {
+        entry = get_transcoder_entry("", "cr_newline");
+        if (entry->transcoder)
+            trs[n++] = entry->transcoder;
+    }
+    
+    j = 0;
+    for (i = 0; i < ec->num_trans; i++) {
+        int k;
+        for (k = 0; k < n; k++)
+            if (trs[k] == ec->elems[i].tc->transcoder)
+                break;
+        if (k == n) {
+            if (ec->last_tc == ec->elems[i].tc)
+                ec->last_trans_index = j;
+            ec->elems[j] = ec->elems[i];
+            j++;
+        }
+        else {
+            rb_transcoding_close(ec->elems[i].tc);
+            xfree(ec->elems[i].out_buf_start);
+            ec->num_trans--;
+        }
+    }
+
+    ec->flags &= ~(ECONV_UNIVERSAL_NEWLINE_DECODER|ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
+
 }
 
 static VALUE

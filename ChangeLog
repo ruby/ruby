@@ -1,3 +1,7 @@
+Sat Sep  6 20:06:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_binmode): check actual transcoders.
+
 Sat Sep  6 19:54:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open): fix last_tc.
