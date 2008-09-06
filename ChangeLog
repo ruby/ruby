@@ -17,6 +17,8 @@ Sun Sep  7 07:24:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* misc/*.el: untabify, for interal consistency and consistency
 	  with standard Emacs elisp files.
 
+	* misc/ruby-mode.el: fix a variable-name error.
+
 Sun Sep  7 06:31:51 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (file_expand_path): applied a patch from Nobuhiro Tachino
