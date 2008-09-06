@@ -1,3 +1,9 @@
+Sun Sep  7 03:37:05 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_block_optarg): allow default for block parameters as
+	  long as the value is primary.  a patch from Eric Mahurin
+	  <eric.mahurin at gmail.com> in [ruby-core:16880].
+
 Sun Sep  7 01:07:10 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): "1.upto 2 {|i| p i }" should be syntax error.
