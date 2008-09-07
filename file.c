@@ -640,10 +640,10 @@ rb_stat_ctime(VALUE self)
  *
  *   File.stat("/etc/passwd").inspect
  *      #=> "#<File::Stat dev=0xe000005, ino=1078078, mode=0100644, 
- *           nlink=1, uid=0, gid=0, rdev=0x0, size=1374, blksize=4096, 
- *           blocks=8, atime=Wed Dec 10 10:16:12 CST 2003, 
- *           mtime=Fri Sep 12 15:41:41 CDT 2003, 
- *           ctime=Mon Oct 27 11:20:27 CST 2003>"
+ *      #    nlink=1, uid=0, gid=0, rdev=0x0, size=1374, blksize=4096, 
+ *      #    blocks=8, atime=Wed Dec 10 10:16:12 CST 2003, 
+ *      #    mtime=Fri Sep 12 15:41:41 CDT 2003, 
+ *      #    ctime=Mon Oct 27 11:20:27 CST 2003>"
  */
 
 static VALUE
