@@ -277,6 +277,8 @@ class ActionMap
     code
   end
 
+  StrMemo = {}
+
   def generate_info(info)
     case info
     when :nomap
@@ -302,13 +304,19 @@ class ActionMap
     when /\A(f[0-7])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
     when /\A([0-9a-f][0-9a-f]){0,255}\z/i
-      bytes = info
-      len = info.length/2
-      size = @bytes_code.length
-      @bytes_code.insert_at_last(1 + len,
-        "\#define str1_#{size} makeSTR1(#{size})\n" +
-        "    #{len}," + info.gsub(/../, ' 0x\&,') + "\n")
-      "str1_#{size}"
+      bytes = info.upcase
+      if n = StrMemo[bytes]
+        n
+      else
+        len = info.length/2
+        size = @bytes_code.length
+        @bytes_code.insert_at_last(1 + len,
+          "\#define str1_#{size} makeSTR1(#{size})\n" +
+          "    #{len}," + info.gsub(/../, ' 0x\&,') + "\n")
+        n = "str1_#{size}"
+        StrMemo[bytes] = n
+        n
+      end
     when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
       $'.to_s
     else

@@ -1,3 +1,8 @@
+Sun Sep  7 18:28:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (ActionMap#generate_info): use a memo to
+	  avoid duplication for STR1.
+
 Sun Sep  7 18:10:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (STR1): defined for a string up to 255 bytes.
