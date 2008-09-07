@@ -21,12 +21,11 @@
 
 VALUE rb_cComplex;
 
-static ID id_Unify, id_abs, id_abs2, id_arg, id_atan2_bang, id_cmp,
-  id_conjugate, id_convert, id_cos, id_denominator, id_divmod,
-  id_equal_p, id_exact_p, id_exp_bang, id_expt, id_floor, id_format,
-  id_hypot, id_idiv, id_inspect, id_log_bang, id_negate, id_new, id_new_bang,
-  id_numerator, id_polar, id_quo, id_scalar_p, id_sin, id_sqrt, id_to_f,
-  id_to_i, id_to_r, id_to_s, id_truncate;
+static ID id_Unify, id_abs, id_abs2, id_arg, id_cmp, id_conjugate,
+  id_convert, id_denominator, id_divmod, id_equal_p, id_exact_p, id_expt,
+  id_floor, id_format, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
+  id_numerator, id_polar, id_quo, id_scalar_p, id_to_f, id_to_i, id_to_r,
+  id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -1334,23 +1333,18 @@ Init_Complex(void)
     id_abs = rb_intern("abs");
     id_abs2 = rb_intern("abs2");
     id_arg = rb_intern("arg");
-    id_atan2_bang = rb_intern("atan2!");
     id_cmp = rb_intern("<=>");
     id_conjugate = rb_intern("conjugate");
     id_convert = rb_intern("convert");
-    id_cos = rb_intern("cos");
     id_denominator = rb_intern("denominator");
     id_divmod = rb_intern("divmod");
     id_equal_p = rb_intern("==");
     id_exact_p = rb_intern("exact?");
-    id_exp_bang = rb_intern("exp!");
     id_expt = rb_intern("**");
     id_floor = rb_intern("floor");
     id_format = rb_intern("format");
-    id_hypot = rb_intern("hypot");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
-    id_log_bang = rb_intern("log!");
     id_negate = rb_intern("-@");
     id_new = rb_intern("new");
     id_new_bang = rb_intern("new!");
@@ -1358,8 +1352,6 @@ Init_Complex(void)
     id_polar = rb_intern("polar");
     id_quo = rb_intern("quo");
     id_scalar_p = rb_intern("scalar?");
-    id_sin = rb_intern("sin");
-    id_sqrt = rb_intern("sqrt");
     id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
     id_to_r = rb_intern("to_r");

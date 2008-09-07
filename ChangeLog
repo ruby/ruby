@@ -1,3 +1,9 @@
+Mon Sep  8 07:09:42 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: some adjustments.
+
+	* rational.c: ditto.
+
 Mon Sep  8 06:50:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (XLDFLAGS): added --enable-auto-import for cygwin and
