@@ -52,9 +52,18 @@ fun_so_escape_xml_chref(void *statep, const unsigned char *s, size_t l, unsigned
   map_xml_text["3E"] = :func_so
   transcode_generate_node(ActionMap.parse(map_xml_text), "escape_xml_text")
 
-  map_xml_attr = {}
-  map_xml_attr["{00-FF}"] = :func_so
-  transcode_generate_node(ActionMap.parse(map_xml_attr), "escape_xml_attr")
+  map_xml_attr_content = {}
+  map_xml_attr_content["{00-21,23-25,27-3B,3D,3F-FF}"] = :nomap
+  map_xml_attr_content["22"] = :func_so
+  map_xml_attr_content["26"] = :func_so
+  map_xml_attr_content["3C"] = :func_so
+  map_xml_attr_content["3E"] = :func_so
+  transcode_generate_node(ActionMap.parse(map_xml_attr_content), "escape_xml_attr_content")
+
+  map_xml_attr_quote = {}
+  map_xml_attr_quote["{00-FF}"] = :func_so
+  transcode_generate_node(ActionMap.parse(map_xml_attr_quote), "escape_xml_attr_quote")
+
 %>
 
 <%= transcode_generated_code %>
@@ -83,11 +92,23 @@ rb_escape_xml_text = {
     NULL, NULL, NULL, &fun_so_escape_xml_chref
 };
 
+static const rb_transcoder
+rb_escape_xml_attr_content = {
+    "", "xml-attr-content-escaped", escape_xml_attr_content,
+    TRANSCODE_TABLE_INFO,
+    1, /* input_unit_length */
+    1, /* max_input */
+    6, /* max_output */
+    stateless_converter, /* stateful_type */
+    0, NULL, NULL,
+    NULL, NULL, NULL, &fun_so_escape_xml_chref
+};
+
 #define END 0
 #define NORMAL  1
 
 static int
-escape_xml_attr_init(void *statep)
+escape_xml_attr_quote_init(void *statep)
 {
     unsigned char *sp = statep;
     *sp = END;
@@ -95,7 +116,7 @@ escape_xml_attr_init(void *statep)
 }
 
 static int
-fun_so_escape_xml_attr(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_escape_xml_attr_quote(void *statep, const unsigned char *s, size_t l, unsigned char *o)
 {
     unsigned char *sp = statep;
     int n = 0;
@@ -103,23 +124,12 @@ fun_so_escape_xml_attr(void *statep, const unsigned char *s, size_t l, unsigned 
         *sp = NORMAL;
         o[n++] = '"';
     }
-    switch (s[0]) {
-      case '&':
-      case '<':
-      case '>':
-      case '"':
-        n += fun_so_escape_xml_chref(statep, s, l, o+n);
-        break;
-
-      default:
-        o[n++] = s[0];
-        break;
-    }
+    o[n++] = s[0];
     return n;
 }
 
 static int
-escape_xml_attr_finish(void *statep, unsigned char *o)
+escape_xml_attr_quote_finish(void *statep, unsigned char *o)
 {
     unsigned char *sp = statep;
     int n = 0;
@@ -135,16 +145,16 @@ escape_xml_attr_finish(void *statep, unsigned char *o)
 }
 
 static const rb_transcoder
-rb_escape_xml_attr = {
-    "", "xml-attr-escaped", escape_xml_attr,
+rb_escape_xml_attr_quote = {
+    "", "xml-attr-quoted", escape_xml_attr_quote,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     1, /* max_input */
     7, /* max_output */
     stateful_encoder, /* stateful_type */
-    1, escape_xml_attr_init, escape_xml_attr_init,
-    NULL, NULL, NULL, fun_so_escape_xml_attr,
-    escape_xml_attr_finish
+    1, escape_xml_attr_quote_init, escape_xml_attr_quote_init,
+    NULL, NULL, NULL, fun_so_escape_xml_attr_quote,
+    escape_xml_attr_quote_finish
 };
 
 void
@@ -152,6 +162,7 @@ Init_escape(void)
 {
     rb_register_transcoder(&rb_escape_amp_as_chref);
     rb_register_transcoder(&rb_escape_xml_text);
-    rb_register_transcoder(&rb_escape_xml_attr);
+    rb_register_transcoder(&rb_escape_xml_attr_content);
+    rb_register_transcoder(&rb_escape_xml_attr_quote);
 }
 

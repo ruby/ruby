@@ -896,7 +896,7 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         return NULL;
 
     if ((ecflags & ECONV_XML_TEXT_ENCODER) &&
-        (ecflags & ECONV_XML_ATTR_ENCODER))
+        (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER))
         return NULL;
 
     num_encoders = 0;
@@ -909,8 +909,11 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
     if (ecflags & ECONV_XML_TEXT_ENCODER)
         if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-text-escaped")))
             return NULL;
-    if (ecflags & ECONV_XML_ATTR_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-attr-escaped")))
+    if (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER)
+        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-attr-content-escaped")))
+            return NULL;
+    if (ecflags & ECONV_XML_ATTR_QUOTE_ENCODER)
+        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-attr-quoted")))
             return NULL;
 
     num_decoders = 0;
@@ -1792,7 +1795,8 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
                    ECONV_CRLF_NEWLINE_ENCODER|
                    ECONV_CR_NEWLINE_ENCODER|
                    ECONV_XML_TEXT_ENCODER|
-                   ECONV_XML_ATTR_ENCODER)) {
+                   ECONV_XML_ATTR_CONTENT_ENCODER|
+                   ECONV_XML_ATTR_QUOTE_ENCODER)) {
         const char *pre = "";
         if (has_description)
             rb_str_cat2(mesg, " with ");
@@ -1812,9 +1816,13 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "XML-text");
         }
-        if (ecflags & ECONV_XML_ATTR_ENCODER) {
+        if (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "XML-attr");
+            rb_str_cat2(mesg, "XML-attr-content");
+        }
+        if (ecflags & ECONV_XML_ATTR_QUOTE_ENCODER) {
+            rb_str_cat2(mesg, pre); pre = ",";
+            rb_str_cat2(mesg, "XML-attr-quote");
         }
         has_description = 1;
     }
@@ -2173,7 +2181,7 @@ econv_opts(VALUE opt)
             ecflags |= ECONV_XML_TEXT_ENCODER|ECONV_UNDEF_HEX_CHARREF;
         }
         else if (v==sym_attr) {
-            ecflags |= ECONV_XML_ATTR_ENCODER|ECONV_UNDEF_HEX_CHARREF;
+            ecflags |= ECONV_XML_ATTR_CONTENT_ENCODER|ECONV_XML_ATTR_QUOTE_ENCODER|ECONV_UNDEF_HEX_CHARREF;
         }
         else {
             rb_raise(rb_eArgError, "unexpected value for xml option: %s", rb_id2name(SYM2ID(v)));
@@ -2329,7 +2337,8 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
                     ECONV_CRLF_NEWLINE_ENCODER|
                     ECONV_CR_NEWLINE_ENCODER|
                     ECONV_XML_TEXT_ENCODER|
-                    ECONV_XML_ATTR_ENCODER)) == 0) {
+                    ECONV_XML_ATTR_CONTENT_ENCODER|
+                    ECONV_XML_ATTR_QUOTE_ENCODER)) == 0) {
         if (senc && senc == denc) {
             return -1;
         }
@@ -3573,7 +3582,8 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
     rb_define_const(rb_cEncodingConverter, "XML_TEXT_ENCODER", INT2FIX(ECONV_XML_TEXT_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "XML_ATTR_ENCODER", INT2FIX(ECONV_XML_ATTR_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "XML_ATTR_CONTENT_ENCODER", INT2FIX(ECONV_XML_ATTR_CONTENT_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "XML_ATTR_QUOTE_ENCODER", INT2FIX(ECONV_XML_ATTR_QUOTE_ENCODER));
 
     rb_define_method(rb_eConversionUndefined, "source_encoding_name", ecerr_source_encoding_name, 0);
     rb_define_method(rb_eConversionUndefined, "destination_encoding_name", ecerr_destination_encoding_name, 0);

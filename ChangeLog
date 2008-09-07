@@ -1,3 +1,20 @@
+Sun Sep  7 12:09:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_XML_ATTR_CONTENT_ENCODER): defined.
+	  (ECONV_STATEFUL_ENCODER_MASK): defined.
+	  (ECONV_XML_ATTR_QUOTE_ENCODER): defined.
+	  (ECONV_XML_ATTR_ENCODER): removed.
+
+	* enc/trans/escape.trans (rb_escape_xml_attr_content): defined.
+	  (rb_escape_xml_attr_quote): defined.
+	  (rb_escape_xml_attr): removed.
+
+	* io.c (NEED_WRITECONV): writeconv is required if supplemental
+	  converter is used.
+	  (make_writeconv): apply stateful encoder in writeconv.
+
+	* transcode.c: follow the constant change.
+
 Sun Sep  7 07:24:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* misc/*.el:  merged the following patches from Nathan Weizenbaum

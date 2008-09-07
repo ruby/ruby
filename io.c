@@ -682,7 +682,7 @@ rb_io_wait_writable(int f)
 # define NEED_NEWLINE_ENCODER(fptr) 0
 #endif
 #define NEED_READCONV(fptr) (fptr->encs.enc2 != NULL || NEED_NEWLINE_DECODER(fptr))
-#define NEED_WRITECONV(fptr) (fptr->encs.enc != NULL || NEED_NEWLINE_ENCODER(fptr))
+#define NEED_WRITECONV(fptr) (fptr->encs.enc != NULL || NEED_NEWLINE_ENCODER(fptr) || (fptr->encs.ecflags & (ECONV_DECODER_MASK|ECONV_ENCODER_MASK|ECONV_STATEFUL_ENCODER_MASK)))
 
 static void
 make_writeconv(rb_io_t *fptr)
@@ -695,42 +695,50 @@ make_writeconv(rb_io_t *fptr)
 
         fptr->writeconv_initialized = 1;
 
-        /* ECONV_INVALID_XXX and ECONV_UNDEF_XXX should be set both.
-         * But ECONV_CRLF_NEWLINE_ENCODER should be set only for the first. */
-        fptr->writeconv_pre_ecflags = fptr->encs.ecflags;
-        fptr->writeconv_pre_ecopts = fptr->encs.ecopts;
         ecflags = fptr->encs.ecflags;
         ecopts = fptr->encs.ecopts;
-
 #ifdef TEXTMODE_NEWLINE_ENCODER
+        if (NEED_NEWLINE_ENCODER(fptr))
+            ecflags |= TEXTMODE_NEWLINE_ENCODER;
+#endif
+
         if (!fptr->encs.enc) {
-            if (NEED_NEWLINE_ENCODER(fptr))
-                ecflags |= TEXTMODE_NEWLINE_ENCODER;
+            /* no encoding conversion */
+            fptr->writeconv_pre_ecflags = 0;
+            fptr->writeconv_pre_ecopts = Qnil;
             fptr->writeconv = rb_econv_open_opts("", "", ecflags, ecopts);
             if (!fptr->writeconv)
                 rb_exc_raise(rb_econv_open_exc("", "", ecflags));
             fptr->writeconv_stateless = Qnil;
-            return;
-        }
-
-        if (NEED_NEWLINE_ENCODER(fptr))
-            fptr->writeconv_pre_ecflags |= TEXTMODE_NEWLINE_ENCODER;
-#endif
-        ecflags &= ECONV_ERROR_HANDLER_MASK;
-
-        enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
-        senc = rb_econv_stateless_encoding(enc->name);
-        if (senc) {
-            denc = enc->name;
-            fptr->writeconv_stateless = rb_str_new2(senc);
-            fptr->writeconv = rb_econv_open_opts(senc, denc, ecflags, ecopts);
-            if (!fptr->writeconv)
-                rb_exc_raise(rb_econv_open_exc(senc, denc, ecflags));
         }
         else {
-            denc = NULL;
-            fptr->writeconv_stateless = Qnil;
-            fptr->writeconv = NULL;
+            enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
+            senc = rb_econv_stateless_encoding(enc->name);
+            if (!senc && !(fptr->encs.ecflags & ECONV_STATEFUL_ENCODER_MASK)) {
+                /* single conversion */
+                fptr->writeconv_pre_ecflags = ecflags;
+                fptr->writeconv_pre_ecopts = ecopts;
+                fptr->writeconv = NULL;
+                fptr->writeconv_stateless = Qnil;
+            }
+            else {
+                /* double conversion */
+                fptr->writeconv_pre_ecflags = ecflags & ~ECONV_STATEFUL_ENCODER_MASK;
+                fptr->writeconv_pre_ecopts = ecopts;
+                if (senc) {
+                    denc = enc->name;
+                    fptr->writeconv_stateless = rb_str_new2(senc);
+                }
+                else {
+                    senc = denc = "";
+                    fptr->writeconv_stateless = rb_str_new2(enc->name);
+                }
+                ecflags = fptr->encs.ecflags & (ECONV_ERROR_HANDLER_MASK|ECONV_STATEFUL_ENCODER_MASK);
+                ecopts = fptr->encs.ecopts;
+                fptr->writeconv = rb_econv_open_opts(senc, denc, ecflags, ecopts);
+                if (!fptr->writeconv)
+                    rb_exc_raise(rb_econv_open_exc(senc, denc, ecflags));
+            }
         }
     }
 }

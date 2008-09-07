@@ -1461,6 +1461,18 @@ EOT
 
   def test_w_xml_attr
     with_tmpdir {
+      open("raw.txt", "wb", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
+      content = File.read("raw.txt", :mode=>"rb:ascii-8bit")
+      assert_equal("\"&amp;&lt;&gt;&quot;'\u4E02\u3042\n\"".force_encoding("ascii-8bit"), content)
+
+      open("ascii.txt", "wb:us-ascii", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
+      content = File.read("ascii.txt", :mode=>"rb:ascii-8bit")
+      assert_equal("\"&amp;&lt;&gt;&quot;'&#x4E02;&#x3042;\n\"".force_encoding("ascii-8bit"), content)
+
+      open("iso-2022-jp.txt", "wb:iso-2022-jp", xml: :attr) {|f| f.print '&<>"\''; f.puts "\u4E02\u3042" }
+      content = File.read("iso-2022-jp.txt", :mode=>"rb:ascii-8bit")
+      assert_equal("\"&amp;&lt;&gt;&quot;'&#x4E02;\e$B$\"\e(B\n\"".force_encoding("ascii-8bit"), content)
+
       open("eucjp.txt", "w:euc-jp:utf-8", xml: :attr) {|f|
         f.print "\u4E02" # U+4E02 is 0x3021 in JIS X 0212
       }
@@ -1480,6 +1492,5 @@ EOT
       assert_equal("\"&#x4E02;\"".force_encoding("ascii-8bit"), content)
     }
   end
-
 end
 

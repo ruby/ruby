@@ -738,20 +738,37 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal('', ec.finish)
   end
 
-  def test_xml_escape_attr
-    ec = Encoding::Converter.new("", "xml-attr-escaped")
+  def test_xml_escape_attr_content
+    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    assert_equal('', ec.finish)
+
+    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    assert_equal('', ec.convert(""))
+    assert_equal('', ec.finish)
+
+    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    assert_equal('&quot;', ec.convert('"'))
+    assert_equal('', ec.finish)
+
+    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    assert_equal('&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
+    assert_equal('', ec.finish)
+  end
+
+  def test_xml_escape_attr_quote
+    ec = Encoding::Converter.new("", "xml-attr-quoted")
     assert_equal('""', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-escaped")
+    ec = Encoding::Converter.new("", "xml-attr-quoted")
     assert_equal('', ec.convert(""))
     assert_equal('""', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-escaped")
-    assert_equal('"&quot;', ec.convert('"'))
+    ec = Encoding::Converter.new("", "xml-attr-quoted")
+    assert_equal('""', ec.convert('"'))
     assert_equal('"', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-escaped")
-    assert_equal('"&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
+    ec = Encoding::Converter.new("", "xml-attr-quoted")
+    assert_equal('"&<>"', ec.convert("&<>\""))
     assert_equal('"', ec.finish)
   end
 
@@ -760,7 +777,10 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal('&lt;&#x2665;&gt;&amp;"&#x2661;"', ec.convert("<\u2665>&\"\u2661\""))
     assert_equal('', ec.finish)
 
-    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::XML_ATTR_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
+    ec = Encoding::Converter.new("utf-8", "euc-jp",
+                                 Encoding::Converter::XML_ATTR_CONTENT_ENCODER|
+                                 Encoding::Converter::XML_ATTR_QUOTE_ENCODER|
+                                 Encoding::Converter::UNDEF_HEX_CHARREF)
     assert_equal('"&lt;&#x2665;&gt;&amp;&quot;&#x2661;&quot;', ec.convert("<\u2665>&\"\u2661\""))
     assert_equal('"', ec.finish)
 
