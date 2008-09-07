@@ -109,7 +109,7 @@ fun_so_iso2022jp_decoder(void *statep, const unsigned char *s, size_t l, unsigne
 
 static const rb_transcoder
 rb_iso2022jp_decoder = {
-    "ISO-2022-JP", "stateless-iso-2022-jp", iso2022jp_decoder,
+    "ISO-2022-JP", "stateless-ISO-2022-JP", iso2022jp_decoder,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     3, /* max_input */
@@ -191,7 +191,7 @@ finish_iso2022jp_encoder(void *statep, unsigned char *o)
 
 static const rb_transcoder
 rb_iso2022jp_encoder = {
-    "stateless-iso-2022-jp", "ISO-2022-JP", iso2022jp_encoder,
+    "stateless-ISO-2022-JP", "ISO-2022-JP", iso2022jp_encoder,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     3, /* max_input */
@@ -213,7 +213,7 @@ fun_so_stateless_iso2022jp_to_eucjp(void *statep, const unsigned char *s, size_t
 
 static const rb_transcoder
 rb_stateless_iso2022jp_to_eucjp = {
-    "stateless-iso-2022-jp", "EUC-JP", stateless_iso2022jp_to_eucjp,
+    "stateless-ISO-2022-JP", "EUC-JP", stateless_iso2022jp_to_eucjp,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     3, /* max_input */
@@ -234,7 +234,7 @@ fun_so_eucjp_to_stateless_iso2022jp(void *statep, const unsigned char *s, size_t
 
 static const rb_transcoder
 rb_eucjp_to_stateless_iso2022jp = {
-    "EUC-JP", "stateless-iso-2022-jp", eucjp_to_stateless_iso2022jp,
+    "EUC-JP", "stateless-ISO-2022-JP", eucjp_to_stateless_iso2022jp,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     3, /* max_input */
