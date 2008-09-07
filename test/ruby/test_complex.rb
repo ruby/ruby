@@ -631,9 +631,6 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_parse
-    assert_equal(Complex(0), ''.to_c)
-    assert_equal(Complex(0), ' '.to_c)
-    assert_equal(Complex(5), "\f\n\r\t\v5\0".to_c)
     assert_equal(Complex(5), '5'.to_c)
     assert_equal(Complex(-5), '-5'.to_c)
     assert_equal(Complex(5,3), '5+3i'.to_c)
@@ -673,6 +670,12 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(-5.0,-3.0), '-5e0-3e0i'.to_c)
     assert_equal(Complex(0.0,3.0), '3e0i'.to_c)
     assert_equal(Complex(0.0,-3.0), '-3e0i'.to_c)
+
+    assert_equal(Complex(0.33), '.33'.to_c)
+    assert_equal(Complex(0.33), '0.33'.to_c)
+    assert_equal(Complex(-0.33), '-.33'.to_c)
+    assert_equal(Complex(-0.33), '-0.33'.to_c)
+    assert_equal(Complex(-0.33), '-0.3_3'.to_c)
 
     assert_equal(Complex.polar(10,10), '10@10'.to_c)
     assert_equal(Complex.polar(-10,-10), '-10@-10'.to_c)
@@ -719,11 +722,20 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(0.0,3.0), Complex('3e0i'))
     assert_equal(Complex(0.0,-3.0), Complex('-3e0i'))
 
+    assert_equal(Complex(0.33), Complex('.33'))
+    assert_equal(Complex(0.33), Complex('0.33'))
+    assert_equal(Complex(-0.33), Complex('-.33'))
+    assert_equal(Complex(-0.33), Complex('-0.33'))
+    assert_equal(Complex(-0.33), Complex('-0.3_3'))
+
     assert_equal(Complex.polar(10,10), Complex('10@10'))
     assert_equal(Complex.polar(-10,-10), Complex('-10@-10'))
     assert_equal(Complex.polar(10.5,10.5), Complex('10.5@10.5'))
     assert_equal(Complex.polar(-10.5,-10.5), Complex('-10.5@-10.5'))
 
+    assert_equal(Complex(0), ''.to_c)
+    assert_equal(Complex(0), ' '.to_c)
+    assert_equal(Complex(5), "\f\n\r\t\v5\0".to_c)
     assert_equal(Complex(0), '_'.to_c)
     assert_equal(Complex(0), '_5'.to_c)
     assert_equal(Complex(5), '5_'.to_c)
@@ -734,6 +746,7 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(5,3), '5+3ix'.to_c)
     assert_raise(ArgumentError){ Complex('')}
     assert_raise(ArgumentError){ Complex('_')}
+    assert_raise(ArgumentError){ Complex("\f\n\r\t\v5\0")}
     assert_raise(ArgumentError){ Complex('_5')}
     assert_raise(ArgumentError){ Complex('5_')}
     assert_raise(ArgumentError){ Complex('5x')}
@@ -741,7 +754,6 @@ class Complex_Test < Test::Unit::TestCase
     assert_raise(ArgumentError){ Complex('5+3_i')}
     assert_raise(ArgumentError){ Complex('5+3i_')}
     assert_raise(ArgumentError){ Complex('5+3ix')}
-    assert_raise(ArgumentError){ Complex("5\0")}
 
     if defined?(Rational) && defined?(''.to_r)
       assert_equal(Complex(Rational(1,5)), '1/5'.to_c)

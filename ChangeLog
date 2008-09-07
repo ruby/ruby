@@ -1,3 +1,7 @@
+Mon Sep  8 00:58:04 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* rational.c: removed unused code.
+
 Mon Sep  8 00:04:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/iso2022.trans: upcase to iso-2022-jp.

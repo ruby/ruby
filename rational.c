@@ -1027,7 +1027,7 @@ nurat_to_f(VALUE self)
 {
     VALUE num, den;
     int minus = 0;
-    long nl, dl, ml, ne, de;
+    long nl, dl, ne, de;
     int e;
     double f;
 
@@ -1048,7 +1048,6 @@ nurat_to_f(VALUE self)
 
     nl = i_ilog2(num);
     dl = i_ilog2(den);
-    ml = (long)(log(DBL_MAX) / log(2.0) - 1); /* should be a static */
 
     ne = 0;
     if (nl > ml) {
@@ -1311,10 +1310,14 @@ string_to_r_internal(VALUE self)
 	    v = f_add(v, f_to_i(fp));
 	    v = f_div(v, l);
 	}
-	if (!NIL_P(exp))
-	    v = f_mul(v, f_expt(INT2FIX(10), f_to_i(exp)));
 	if (!NIL_P(si) && *StringValuePtr(si) == '-')
 	    v = f_negate(v);
+	if (!NIL_P(exp))
+	    v = f_mul(v, f_expt(INT2FIX(10), f_to_i(exp)));
+#if 0
+	if (!NIL_P(de) && (!NIL_P(fp) || !NIL_P(exp)))
+	    return rb_assoc_new(v, rb_str_new2("dummy"));
+#endif
 	if (!NIL_P(de))
 	    v = f_div(v, f_to_i(de));
 
