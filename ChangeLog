@@ -1,3 +1,7 @@
+Sun Sep  7 20:03:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/escape.trans (hexstr): renamed from str1.
+
 Sun Sep  7 19:45:31 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/escape.trans: use transcode_tblgen.

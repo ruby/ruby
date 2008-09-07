@@ -1,28 +1,28 @@
 #include "transcode_data.h"
 
 <%
-  def str1(str)
+  def hexstr(str)
     str.unpack("H*")[0]
   end
 
   transcode_tblgen("", "amp-escaped", [
     ["{00-25,27-FF}", :nomap], 
-    ["26", str1("&amp;")]
+    ["26", hexstr("&amp;")]
   ])
 
   transcode_tblgen("", "xml-text-escaped", [
     ["{00-25,27-3B,3D,3F-FF}", :nomap], 
-    ["26", str1("&amp;")],
-    ["3C", str1("&lt;")],
-    ["3E", str1("&gt;")]
+    ["26", hexstr("&amp;")],
+    ["3C", hexstr("&lt;")],
+    ["3E", hexstr("&gt;")]
   ])
 
   transcode_tblgen("", "xml-attr-content-escaped", [
     ["{00-21,23-25,27-3B,3D,3F-FF}", :nomap], 
-    ["22", str1("&quot;")],
-    ["26", str1("&amp;")],
-    ["3C", str1("&lt;")],
-    ["3E", str1("&gt;")]
+    ["22", hexstr("&quot;")],
+    ["26", hexstr("&amp;")],
+    ["3C", hexstr("&lt;")],
+    ["3E", hexstr("&gt;")]
   ])
 
   map_xml_attr_quote = {}
