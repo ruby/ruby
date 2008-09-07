@@ -103,7 +103,7 @@ Sun Sep  7 07:24:09 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* misc/ruby-mode.el, misc/ruby-electric.el: use regexp-opt where
 	  possible for more efficient regexps.
 
-	* misc/*.el: untabify, for interal consistency and consistency
+	* misc/*.el: untabify, for internal consistency and consistency
 	  with standard Emacs elisp files.
 
 	* misc/ruby-mode.el: fix a variable-name error.
@@ -684,7 +684,7 @@ Wed Sep  3 22:31:11 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	  (Integer.each_prime): added.
 	  (Integer#prime?): added.
 	  (Prime): moved from mathn.rb.
-	    Its implmentation was rewritten. see [ruby-dev:35863].
+	    Its implementation was rewritten. see [ruby-dev:35863].
 	    And patched by Keiju ISHITSUKA <keiju@ishitsuka.com>,
 	    see [ruby-dev:36128].
 	  (Prime.new):                     obsolete.
@@ -1154,7 +1154,7 @@ Mon Sep  1 01:24:09 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* enc/trans/eucjp-tbl.rb: replace by previous Citrus maps.
 
-	* enc/trans/sjis-tble.rb: ditto.
+	* enc/trans/sjis-tbl.rb: ditto.
 
 Mon Sep  1 01:18:26 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
