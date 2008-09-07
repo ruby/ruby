@@ -34,6 +34,10 @@
 #define FUNsi	(PType 0x0D)	/* function from start to info */
 #define FUNio	(PType 0x0E)	/* function from info to output */
 #define FUNso	(PType 0x0F)	/* function from start to output */
+#define STR1	(PType 0x11)	/* string up to 255 bytes: 1byte length + content */
+
+#define STR1_BYTEINDEX(w) ((w) >> 6)
+#define makeSTR1(bi) (((bi) << 6) | STR1)
 
 #define o1(b1)		(PType((((unsigned char)(b1))<<8)|ONEbt))
 #define o2(b1,b2)	(PType((((unsigned char)(b1))<<8)|(((unsigned char)(b2))<<16)|TWObt))

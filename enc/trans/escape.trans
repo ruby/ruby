@@ -1,69 +1,33 @@
 #include "transcode_data.h"
 
-static int
-fun_so_escape_xml_chref(void *statep, const unsigned char *s, size_t l, unsigned char *o)
-{
-    switch (*s) {
-      case '&':
-        o[0] = '&';
-        o[1] = 'a';
-        o[2] = 'm';
-        o[3] = 'p';
-        o[4] = ';';
-        return 5;
-
-      case '<':
-        o[0] = '&';
-        o[1] = 'l';
-        o[2] = 't';
-        o[3] = ';';
-        return 4;
-
-      case '>':
-        o[0] = '&';
-        o[1] = 'g';
-        o[2] = 't';
-        o[3] = ';';
-        return 4;
-
-      case '"':
-        o[0] = '&';
-        o[1] = 'q';
-        o[2] = 'u';
-        o[3] = 'o';
-        o[4] = 't';
-        o[5] = ';';
-        return 6;
-
-      default:
-        rb_bug("unexpected char");
-    }
-} 
 <%
+  def str1(str)
+    str.unpack("H*")[0]
+  end
+
   map_amp = {}
   map_amp["{00-25,27-FF}"] = :nomap
-  map_amp["26"] = :func_so
+  map_amp["26"] = str1("&amp;")
   transcode_generate_node(ActionMap.parse(map_amp), "escape_amp_as_chref")
 
   map_xml_text = {}
   map_xml_text["{00-25,27-3B,3D,3F-FF}"] = :nomap
-  map_xml_text["26"] = :func_so
-  map_xml_text["3C"] = :func_so
-  map_xml_text["3E"] = :func_so
+  map_xml_text["26"] = str1("&amp;")
+  map_xml_text["3C"] = str1("&lt;")
+  map_xml_text["3E"] = str1("&gt;")
   transcode_generate_node(ActionMap.parse(map_xml_text), "escape_xml_text")
 
   map_xml_attr_content = {}
   map_xml_attr_content["{00-21,23-25,27-3B,3D,3F-FF}"] = :nomap
-  map_xml_attr_content["22"] = :func_so
-  map_xml_attr_content["26"] = :func_so
-  map_xml_attr_content["3C"] = :func_so
-  map_xml_attr_content["3E"] = :func_so
+  map_xml_attr_content["22"] = str1("&quot;")
+  map_xml_attr_content["26"] = str1("&amp;")
+  map_xml_attr_content["3C"] = str1("&lt;")
+  map_xml_attr_content["3E"] = str1("&gt;")
   transcode_generate_node(ActionMap.parse(map_xml_attr_content), "escape_xml_attr_content")
 
   map_xml_attr_quote = {}
   map_xml_attr_quote["{00-FF}"] = :func_so
   transcode_generate_node(ActionMap.parse(map_xml_attr_quote), "escape_xml_attr_quote")
-
 %>
 
 <%= transcode_generated_code %>
@@ -77,7 +41,7 @@ rb_escape_amp_as_chref = {
     5, /* max_output */
     stateless_converter, /* stateful_type */
     0, NULL, NULL,
-    NULL, NULL, NULL, &fun_so_escape_xml_chref
+    NULL, NULL, NULL, NULL
 };
 
 static const rb_transcoder
@@ -89,7 +53,7 @@ rb_escape_xml_text = {
     5, /* max_output */
     stateless_converter, /* stateful_type */
     0, NULL, NULL,
-    NULL, NULL, NULL, &fun_so_escape_xml_chref
+    NULL, NULL, NULL, NULL
 };
 
 static const rb_transcoder
@@ -101,7 +65,7 @@ rb_escape_xml_attr_content = {
     6, /* max_output */
     stateless_converter, /* stateful_type */
     0, NULL, NULL,
-    NULL, NULL, NULL, &fun_so_escape_xml_chref
+    NULL, NULL, NULL, NULL
 };
 
 #define END 0

@@ -301,6 +301,14 @@ class ActionMap
       "o3(0x#$1,0x#$2,0x#$3)"
     when /\A(f[0-7])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
+    when /\A([0-9a-f][0-9a-f]){0,255}\z/i
+      bytes = info
+      len = info.length/2
+      size = @bytes_code.length
+      @bytes_code.insert_at_last(1 + len,
+        "\#define str1_#{size} makeSTR1(#{size})\n" +
+        "    #{len}," + info.gsub(/../, ' 0x\&,') + "\n")
+      "str1_#{size}"
     when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
       $'.to_s
     else
@@ -414,7 +422,11 @@ End
   end
 
   def gennode(bytes_code, words_code, name_hint=nil, valid_encoding=nil)
+    @bytes_code = bytes_code
+    @words_code = words_code
     name = generate_node(bytes_code, words_code, name_hint, valid_encoding)
+    @bytes_code = nil
+    @words_code = nil
     return name
   end
 end

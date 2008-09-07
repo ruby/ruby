@@ -534,6 +534,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
       case 25: goto resume_label25;
       case 26: goto resume_label26;
       case 27: goto resume_label27;
+      case 28: goto resume_label28;
     }
 
     while (1) {
@@ -602,6 +603,13 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             SUSPEND_OBUF(18); *out_p++ = getBT2(next_info);
             SUSPEND_OBUF(19); *out_p++ = getBT3(next_info);
 	    continue;
+          case STR1:
+            next_byte = 0; /* index */
+            while (next_byte < BYTE_ADDR(STR1_BYTEINDEX(next_info))[0]) {
+                SUSPEND_OBUF(28); *out_p++ = BYTE_ADDR(STR1_BYTEINDEX(next_info))[1+next_byte];
+                next_byte++;
+            }
+            continue;
 	  case FUNii:
 	    next_info = (VALUE)(*tr->func_ii)(TRANSCODING_STATE(tc), next_info);
 	    goto follow_info;
