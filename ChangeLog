@@ -1,3 +1,8 @@
+Sun Sep  7 12:44:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (make_writeconv): choose ASCII compatible encoding as
+	  intermediate encoding if stateful encoder exists.
+
 Sun Sep  7 12:09:29 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_XML_ATTR_CONTENT_ENCODER): defined.
