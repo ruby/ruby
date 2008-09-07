@@ -222,7 +222,7 @@ rb_econv_result_t rb_econv_convert(rb_econv_t *ec,
 void rb_econv_close(rb_econv_t *ec);
 
 /* result: 0:success -1:failure */
-int rb_econv_set_replacemenet(rb_econv_t *ec, const unsigned char *str, size_t len, const char *encname);
+int rb_econv_set_replacement(rb_econv_t *ec, const unsigned char *str, size_t len, const char *encname);
 
 VALUE rb_econv_open_exc(const char *senc, const char *denc, int ecflags);
 

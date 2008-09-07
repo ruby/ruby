@@ -1980,7 +1980,7 @@ make_replacement(rb_econv_t *ec)
 }
 
 int
-rb_econv_set_replacemenet(rb_econv_t *ec,
+rb_econv_set_replacement(rb_econv_t *ec,
     const unsigned char *str, size_t len, const char *encname)
 {
     unsigned char *str2;
@@ -2260,7 +2260,7 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
         int ret;
         rb_encoding *enc = rb_enc_get(replacement);
 
-        ret = rb_econv_set_replacemenet(ec,
+        ret = rb_econv_set_replacement(ec,
                 (const unsigned char *)RSTRING_PTR(replacement),
                 RSTRING_LEN(replacement),
                 enc->name);
@@ -3357,7 +3357,7 @@ econv_set_replacement(VALUE self, VALUE arg)
     StringValue(string);
     enc = rb_enc_get(string);
 
-    ret = rb_econv_set_replacemenet(ec,
+    ret = rb_econv_set_replacement(ec,
             (const unsigned char *)RSTRING_PTR(string),
             RSTRING_LEN(string),
             enc->name);

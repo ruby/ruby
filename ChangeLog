@@ -1,3 +1,10 @@
+Mon Sep  8 02:04:25 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_set_replacement): renamed from
+	  rb_econv_set_replacemenet.
+
+	* transcode.c: follow the renaming.
+
 Mon Sep  8 01:10:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (transcode_tblgen): log message refined.
