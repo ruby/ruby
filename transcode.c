@@ -2518,15 +2518,14 @@ make_dummy_encoding(const char *name)
  * It returns nil if the argument is not a stateful encoding.
  *
  * "corresponding stateless encoding" is a stateless encoding which
- * can represent all characters in the statefull encoding.
+ * represents same characters in the statefull encoding.
  *
- * So, no conversion undefined error occur from the stateful encoding to the stateless encoding.
+ * So, no conversion undefined error occur between the stateful encoding and the stateless encoding.
  *
- * Currently, EUC-JP is the corresponding stateless encoding of ISO-2022-JP.
+ * For ISO-2022-JP, the dedicated stateless encoding, stateless-ISO-2022-JP, is defined.
  *
- *   Encoding::Converter.stateless_encoding("ISO-2022-JP") #=> #<Encoding:EUC-JP>
+ *   Encoding::Converter.stateless_encoding("ISO-2022-JP") #=> #<Encoding:stateless-ISO-2022-JP>
  *
- * (This may be changed in future because EUC-JP cannot distinguish JIS X 0208 1978 and 1983.)
  */
 static VALUE
 econv_s_stateless_encoding(VALUE klass, VALUE arg)
