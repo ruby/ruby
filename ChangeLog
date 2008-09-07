@@ -1,3 +1,8 @@
+Mon Sep  8 06:50:29 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (XLDFLAGS): added --enable-auto-import for cygwin and
+	  mingw.
+
 Mon Sep  8 02:04:25 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_set_replacement): renamed from
@@ -410,7 +415,7 @@ Thu Sep  4 23:18:55 2008  Tanaka Akira  <akr@fsij.org>
 
 Thu Sep  4 23:05:54 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
-	* lib/prime.rb (Prime::OldCompatibility#each): added compatibility to 
+	* lib/prime.rb (Prime::OldCompatibility#each): added compatibility to
 	    Ruby 1.8.7.
 	  (Prime#each): added more rdocs.
 	  (Prime#each): remembers the last value of the given block.
@@ -1378,7 +1383,7 @@ Sat Aug 30 15:43:03 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/openssl/ossl_config.c (Init_ossl_config): memory leak fixed.
 	  a patch <shinichiro.hamaji at gmail.com> in [ruby-dev:35880].
- 
+
 	* ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): ditto.
 
 	* ext/strscan/strscan.c (strscan_do_scan): ditto.
