@@ -1,3 +1,8 @@
+Sun Sep  7 17:29:49 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb: o4 is usable only if the first byte is
+	  f0-f7.
+
 Sun Sep  7 12:44:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (make_writeconv): choose ASCII compatible encoding as

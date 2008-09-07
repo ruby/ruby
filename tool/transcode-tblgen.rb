@@ -299,7 +299,7 @@ class ActionMap
       "o2(0x#$1,0x#$2)"
     when /\A([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o3(0x#$1,0x#$2,0x#$3)"
-    when /\A([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
+    when /\A(f[0-7])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
     when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
       $'.to_s
