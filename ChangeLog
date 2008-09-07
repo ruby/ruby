@@ -1,3 +1,11 @@
+Sun Sep  7 23:46:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/iso2022.trans: stateless-iso-2022-jp is defined to avoid
+	  undefined conversion error between iso-2022-jp and the corresponding
+	  stateless encoding.
+
+	* enc/emacs_mule.c: replicate emacs-mule as stateless-iso-2022-jp.
+
 Sun Sep  7 20:03:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/escape.trans (hexstr): renamed from str1.

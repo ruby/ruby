@@ -28,8 +28,8 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_s_stateless_encoding
-    assert_equal(Encoding::EUC_JP, Encoding::Converter.stateless_encoding("ISO-2022-JP"))
-    assert_equal(Encoding::EUC_JP, Encoding::Converter.stateless_encoding(Encoding::ISO_2022_JP))
+    assert_equal(Encoding::STATELESS_ISO_2022_JP, Encoding::Converter.stateless_encoding("ISO-2022-JP"))
+    assert_equal(Encoding::STATELESS_ISO_2022_JP, Encoding::Converter.stateless_encoding(Encoding::ISO_2022_JP))
     assert_nil(Encoding::Converter.stateless_encoding("EUC-JP"))
     assert_nil(Encoding::Converter.stateless_encoding("UTF-8"))
     assert_nil(Encoding::Converter.stateless_encoding("UTF-16BE"))
