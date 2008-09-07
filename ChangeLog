@@ -1,3 +1,9 @@
+Sun Sep  7 19:45:31 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/escape.trans: use transcode_tblgen.
+
+	* tool/transcode-tblgen.rb: generate an empty line after str1.
+
 Sun Sep  7 19:16:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (ActionMap#str_name): new method to

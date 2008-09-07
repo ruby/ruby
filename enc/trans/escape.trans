@@ -5,25 +5,25 @@
     str.unpack("H*")[0]
   end
 
-  map_amp = {}
-  map_amp["{00-25,27-FF}"] = :nomap
-  map_amp["26"] = str1("&amp;")
-  transcode_generate_node(ActionMap.parse(map_amp), "escape_amp_as_chref")
+  transcode_tblgen("", "amp-escaped", [
+    ["{00-25,27-FF}", :nomap], 
+    ["26", str1("&amp;")]
+  ])
 
-  map_xml_text = {}
-  map_xml_text["{00-25,27-3B,3D,3F-FF}"] = :nomap
-  map_xml_text["26"] = str1("&amp;")
-  map_xml_text["3C"] = str1("&lt;")
-  map_xml_text["3E"] = str1("&gt;")
-  transcode_generate_node(ActionMap.parse(map_xml_text), "escape_xml_text")
+  transcode_tblgen("", "xml-text-escaped", [
+    ["{00-25,27-3B,3D,3F-FF}", :nomap], 
+    ["26", str1("&amp;")],
+    ["3C", str1("&lt;")],
+    ["3E", str1("&gt;")]
+  ])
 
-  map_xml_attr_content = {}
-  map_xml_attr_content["{00-21,23-25,27-3B,3D,3F-FF}"] = :nomap
-  map_xml_attr_content["22"] = str1("&quot;")
-  map_xml_attr_content["26"] = str1("&amp;")
-  map_xml_attr_content["3C"] = str1("&lt;")
-  map_xml_attr_content["3E"] = str1("&gt;")
-  transcode_generate_node(ActionMap.parse(map_xml_attr_content), "escape_xml_attr_content")
+  transcode_tblgen("", "xml-attr-content-escaped", [
+    ["{00-21,23-25,27-3B,3D,3F-FF}", :nomap], 
+    ["22", str1("&quot;")],
+    ["26", str1("&amp;")],
+    ["3C", str1("&lt;")],
+    ["3E", str1("&gt;")]
+  ])
 
   map_xml_attr_quote = {}
   map_xml_attr_quote["{00-FF}"] = :func_so
@@ -31,42 +31,6 @@
 %>
 
 <%= transcode_generated_code %>
-
-static const rb_transcoder
-rb_escape_amp_as_chref = {
-    "", "amp-escaped", escape_amp_as_chref,
-    TRANSCODE_TABLE_INFO,
-    1, /* input_unit_length */
-    1, /* max_input */
-    5, /* max_output */
-    stateless_converter, /* stateful_type */
-    0, NULL, NULL,
-    NULL, NULL, NULL, NULL
-};
-
-static const rb_transcoder
-rb_escape_xml_text = {
-    "", "xml-text-escaped", escape_xml_text,
-    TRANSCODE_TABLE_INFO,
-    1, /* input_unit_length */
-    1, /* max_input */
-    5, /* max_output */
-    stateless_converter, /* stateful_type */
-    0, NULL, NULL,
-    NULL, NULL, NULL, NULL
-};
-
-static const rb_transcoder
-rb_escape_xml_attr_content = {
-    "", "xml-attr-content-escaped", escape_xml_attr_content,
-    TRANSCODE_TABLE_INFO,
-    1, /* input_unit_length */
-    1, /* max_input */
-    6, /* max_output */
-    stateless_converter, /* stateful_type */
-    0, NULL, NULL,
-    NULL, NULL, NULL, NULL
-};
 
 #define END 0
 #define NORMAL  1
@@ -124,9 +88,7 @@ rb_escape_xml_attr_quote = {
 void
 Init_escape(void)
 {
-    rb_register_transcoder(&rb_escape_amp_as_chref);
-    rb_register_transcoder(&rb_escape_xml_text);
-    rb_register_transcoder(&rb_escape_xml_attr_content);
+<%= transcode_register_code %>
     rb_register_transcoder(&rb_escape_xml_attr_quote);
 }
 

@@ -304,7 +304,7 @@ class ActionMap
       n = str_name(bytes)
       @bytes_code.insert_at_last(1 + len,
         "\#define #{n} makeSTR1(#{size})\n" +
-        "    #{len}," + bytes.gsub(/../, ' 0x\&,') + "\n")
+        "    #{len}," + bytes.gsub(/../, ' 0x\&,') + "\n\n")
       n
     end
   end
