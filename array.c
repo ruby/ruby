@@ -3012,7 +3012,7 @@ rb_ary_shuffle(VALUE ary)
  *     array.sample        -> obj
  *     array.sample(n)     -> an_array
  *  
- *  Choose a random element, or the random +n+ elements, fron the array.
+ *  Choose a random element, or the random +n+ elements, from the array.
  *  If the array is empty, the first form returns <code>nil</code>, and the
  *  second form returns an empty array.
  *  
