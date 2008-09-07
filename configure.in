@@ -523,6 +523,26 @@ darwin*)	LIBS="-lobjc $LIBS"
 		    AC_DEFINE(BROKEN_SETREUID, 1)
 		    AC_DEFINE(BROKEN_SETREGID, 1)
 		    ])
+		ac_cv_lib_crypt_crypt=no
+                AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
+                    [AC_TRY_RUN([
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+int
+main()
+{
+   char buf[256];
+   strcpy(buf, crypt("", "\xE0\xA0"));
+   return strcmp(buf, crypt("", "\xE0\xA0"));
+}
+],
+	            rb_cv_broken_crypt=no,
+	            rb_cv_broken_crypt=yes,
+	            rb_cv_broken_crypt=yes)])
+                if test "$rb_cv_broken_crypt" = yes; then
+                  AC_DEFINE(BROKEN_CRYPT, 1)
+                fi
 		;;
 hpux*)		LIBS="-lm $LIBS"
 		ac_cv_c_inline=no;;

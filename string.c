@@ -5862,6 +5862,10 @@ rb_str_crypt(VALUE str, VALUE salt)
     extern char *crypt(const char *, const char *);
     VALUE result;
     const char *s;
+#ifdef BROKEN_CRYPT
+    VALUE salt_8bit_clean;
+    rb_encoding *enc;
+#endif
 
     StringValue(salt);
     if (RSTRING_LEN(salt) < 2)
@@ -5869,7 +5873,18 @@ rb_str_crypt(VALUE str, VALUE salt)
 
     if (RSTRING_PTR(str)) s = RSTRING_PTR(str);
     else s = "";
+#ifdef BROKEN_CRYPT
+    salt_8bit_clean = rb_str_dup(salt);
+    enc = rb_ascii8bit_encoding();
+    str_modifiable(salt_8bit_clean);
+    rb_enc_associate(salt_8bit_clean, enc);
+    salt_8bit_clean = rb_str_tr(salt_8bit_clean,
+                                rb_enc_str_new("\x80-\xFF", 3, enc),
+                                rb_usascii_str_new("\x00-\x7F", 3));
+    result = rb_str_new2(crypt(s, RSTRING_PTR(salt_8bit_clean)));
+#else
     result = rb_str_new2(crypt(s, RSTRING_PTR(salt)));
+#endif
     OBJ_INFECT(result, str);
     OBJ_INFECT(result, salt);
     return result;

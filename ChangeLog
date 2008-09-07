@@ -1,3 +1,9 @@
+Sun Sep  7 17:54:45 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* configure.in: Mac OS X's crypt(2) is broken with invalid salt.
+	  [ruby-dev:35899]
+	* string.c (rb_str_crypt): ditto.
+
 Sun Sep  7 17:29:49 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb: o4 is usable only if the first byte is
