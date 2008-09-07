@@ -277,7 +277,37 @@ class ActionMap
     code
   end
 
+  UsedName = {}
+
   StrMemo = {}
+
+  def str_name(bytes)
+    size = @bytes_code.length
+    rawbytes = [bytes].pack("H*")
+
+    n = nil
+    if !n && !(suf = rawbytes.gsub(/[^A-Za-z0-9_]/, '')).empty? && !UsedName[nn = "str1_" + suf] then n = nn end
+    if !n && !UsedName[nn = "str1_" + bytes] then n = nn end
+    n ||= "str1s_#{size}"
+
+    StrMemo[bytes] = n
+    UsedName[n] = true
+    n
+  end
+
+  def gen_str(bytes)
+    if n = StrMemo[bytes]
+      n
+    else
+      len = bytes.length/2
+      size = @bytes_code.length
+      n = str_name(bytes)
+      @bytes_code.insert_at_last(1 + len,
+        "\#define #{n} makeSTR1(#{size})\n" +
+        "    #{len}," + bytes.gsub(/../, ' 0x\&,') + "\n")
+      n
+    end
+  end
 
   def generate_info(info)
     case info
@@ -304,19 +334,7 @@ class ActionMap
     when /\A(f[0-7])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
     when /\A([0-9a-f][0-9a-f]){0,255}\z/i
-      bytes = info.upcase
-      if n = StrMemo[bytes]
-        n
-      else
-        len = info.length/2
-        size = @bytes_code.length
-        @bytes_code.insert_at_last(1 + len,
-          "\#define str1_#{size} makeSTR1(#{size})\n" +
-          "    #{len}," + info.gsub(/../, ' 0x\&,') + "\n")
-        n = "str1_#{size}"
-        StrMemo[bytes] = n
-        n
-      end
+      gen_str(info.upcase)
     when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
       $'.to_s
     else

@@ -1,3 +1,9 @@
+Sun Sep  7 19:16:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (ActionMap#str_name): new method to
+	  generate a name base on string content.
+	  (ActionMap#gen_str): extracted from generate_info and use str_name.
+
 Sun Sep  7 18:28:05 2008  Tanaka Akira  <akr@fsij.org>
 
 	* tool/transcode-tblgen.rb (ActionMap#generate_info): use a memo to
