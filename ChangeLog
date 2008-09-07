@@ -1,3 +1,7 @@
+Mon Sep  8 01:10:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (transcode_tblgen): log message refined.
+
 Mon Sep  8 00:58:04 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c: removed unused code.
