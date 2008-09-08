@@ -1,3 +1,7 @@
+Tue Sep  9 00:20:10 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_asciicompat_encoding): check decoder.
+
 Tue Sep  9 00:00:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_t): last_error.partial_input removed.

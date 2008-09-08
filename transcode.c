@@ -1639,24 +1639,15 @@ static int
 asciicompat_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
 {
     struct asciicompat_encoding_t *data = (struct asciicompat_encoding_t *)arg;
-    st_table *table2 = (st_table *)val;
-    st_data_t v;
+    transcoder_entry_t *entry = (transcoder_entry_t *)val;
+    const rb_transcoder *tr;
 
-    if (st_lookup(table2, (st_data_t)data->ascii_incompat_name, &v)) {
-        transcoder_entry_t *entry = (transcoder_entry_t *)v;
-        const rb_transcoder *tr;
-        if (SUPPLEMENTAL_CONVERSION(entry->sname, entry->dname))
-            return ST_CONTINUE;
-        tr = load_transcoder_entry(entry);
-        if (tr && tr->asciicompat_type == asciicompat_encoder) {
-            /*
-             * Assumption:
-             * There is only one transcoder for
-             * converting to ASCII incompatible encoding.
-             */
-            data->ascii_compat_name = tr->src_encoding;
-            return ST_STOP;
-        }
+    if (SUPPLEMENTAL_CONVERSION(entry->sname, entry->dname))
+        return ST_CONTINUE;
+    tr = load_transcoder_entry(entry);
+    if (tr && tr->asciicompat_type == asciicompat_decoder) {
+        data->ascii_compat_name = tr->dst_encoding;
+        return ST_STOP;
     }
     return ST_CONTINUE;
 }
@@ -1664,13 +1655,28 @@ asciicompat_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
 const char *
 rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
 {
+    st_data_t v;
+    st_table *table2;
     struct asciicompat_encoding_t data;
+
+    if (!st_lookup(transcoder_table, (st_data_t)ascii_incompat_name, &v))
+        return NULL;
+    table2 = (st_table *)v;
+
+    /*
+     * Assumption:
+     * There are at most one transcoder for
+     * converting from ASCII incompatible encoding.
+     *
+     * For ISO-2022-JP, there is ISO-2022-JP -> stateless-ISO-2022-JP and no others.
+     */
+    if (table2->num_entries != 1)
+        return NULL;
+
     data.ascii_incompat_name = ascii_incompat_name;
     data.ascii_compat_name = NULL;
-    st_foreach(transcoder_table, asciicompat_encoding_i, (st_data_t)&data);
-    if (data.ascii_compat_name)
-        return data.ascii_compat_name;
-    return NULL;
+    st_foreach(table2, asciicompat_encoding_i, (st_data_t)&data);
+    return data.ascii_compat_name;
 }
 
 VALUE
