@@ -3440,7 +3440,6 @@ rb_w32_fstati64(int fd, struct stati64 *st)
 static time_t
 filetime_to_unixtime(const FILETIME *ft)
 {
-    FILETIME loc;
     struct timeval tv;
 
     if (filetime_to_timeval(ft, &tv) == (time_t)-1)

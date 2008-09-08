@@ -1,3 +1,8 @@
+Mon Sep  8 17:46:09 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (filetime_to_unixtime): remove unused variable.
+	  [ruby-dev:36191]
+
 Mon Sep  8 13:47:39 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_io.rb (TestIO#test_dup): add open in block.
