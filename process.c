@@ -162,8 +162,8 @@ get_pid(void)
  *  call-seq:
  *     Process.ppid   => fixnum
  *
- *  Returns the process id of the parent of this process. Always
- *  returns 0 on NT. Not available on all platforms.
+ *  Returns the process id of the parent of this process. Returns
+ *  untrustworthy value on Win32/64. Not available on all platforms.
  *
  *     puts "I am #{Process.pid}"
  *     Process.fork { puts "Dad is #{Process.ppid}" }

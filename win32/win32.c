@@ -3965,21 +3965,21 @@ rb_w32_getppid(void)
 	    HANDLE hNtDll = GetModuleHandle("ntdll.dll");
 	    if (hNtDll) {
 		pNtQueryInformationProcess = (long (WINAPI *)(HANDLE, int, void *, ULONG, ULONG *))GetProcAddress(hNtDll, "NtQueryInformationProcess");
-		if (pNtQueryInformationProcess) {
-		    struct {
-			long ExitStatus;
-			void* PebBaseAddress;
-			ULONG AffinityMask;
-			ULONG BasePriority;
-			ULONG UniqueProcessId;
-			ULONG ParentProcessId;
-		    } pbi;
-		    ULONG len;
-		    long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
-		    if (!ret) {
-			ppid = pbi.ParentProcessId;
-		    }
-		}
+	    }
+	}
+	if (pNtQueryInformationProcess) {
+	    struct {
+		long ExitStatus;
+		void* PebBaseAddress;
+		ULONG AffinityMask;
+		ULONG BasePriority;
+		ULONG UniqueProcessId;
+		ULONG ParentProcessId;
+	    } pbi;
+	    ULONG len;
+	    long ret = pNtQueryInformationProcess(GetCurrentProcess(), 0, &pbi, sizeof(pbi), &len);
+	    if (!ret) {
+		ppid = pbi.ParentProcessId;
 	    }
 	}
     }
