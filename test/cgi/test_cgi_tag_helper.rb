@@ -3,7 +3,7 @@ require 'cgi'
 require 'stringio'
 
 
-class CGICoreTest < Test::Unit::TestCase
+class CGITagHelperTest < Test::Unit::TestCase
 
 
   def setup
