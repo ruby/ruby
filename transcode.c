@@ -885,7 +885,7 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
 {
     transcoder_entry_t **entries = NULL;
     int num_trans;
-    static rb_econv_t *ec;
+    rb_econv_t *ec;
 
     rb_encoding *senc, *denc;
     int sidx, didx;
