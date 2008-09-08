@@ -1578,13 +1578,13 @@ rb_econv_insert_output(rb_econv_t *ec,
         }
     }
 
+    memcpy(*data_end_p, insert_str, insert_len);
+    *data_end_p += insert_len;
     if (tc && tc->transcoder->stateful_type == stateful_encoder) {
         memcpy(*data_end_p, TRANSCODING_READBUF(tc)+tc->recognized_len, tc->readagain_len);
         *data_end_p += tc->readagain_len;
         tc->readagain_len = 0;
     }
-    memcpy(*data_end_p, insert_str, insert_len);
-    *data_end_p += insert_len;
 
     if (insert_str != str && insert_str != insert_buf)
         xfree((void*)insert_str);

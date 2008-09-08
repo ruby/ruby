@@ -798,4 +798,9 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("&amp;\u3046\u2661&amp;\"'".force_encoding("utf-8"),
       "&\u3046\u2661&\"'".encode("utf-8", xml: :text))
   end
+
+  def test_iso2022jp_invalid_replace
+    assert_equal("?x".force_encoding("iso-2022-jp"),
+      "\222\xA1x".encode("iso-2022-jp", "stateless-iso-2022-jp", :invalid => :replace))
+  end
 end
