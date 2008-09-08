@@ -819,6 +819,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->destination_encoding_name = NULL;
     ec->replacement_str = NULL;
     ec->replacement_len = 0;
+    ec->replacement_enc = NULL;
     ec->replacement_allocated = 0;
     ec->in_buf_start = NULL;
     ec->in_data_start = NULL;
@@ -851,7 +852,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
         ec->last_tc = ec->elems[ec->num_trans-1].tc;
     ec->last_trans_index = ec->num_trans-1;
 
-    for (i = 0; i < ec->num_trans-1; i++) {
+    for (i = 0; i < ec->num_trans; i++) {
         int bufsize = 4096;
         unsigned char *p;
         p = xmalloc(bufsize);
@@ -881,7 +882,7 @@ trans_open_i(const char *sname, const char *dname, int depth, void *arg)
 }
 
 rb_econv_t *
-rb_econv_open(const char *sname, const char *dname, int ecflags)
+rb_econv_open0(const char *sname, const char *dname, int ecflags)
 {
     transcoder_entry_t **entries = NULL;
     int num_trans;
@@ -891,41 +892,9 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
     int sidx, didx;
 
     int num_encoders, num_decoders;
-    transcoder_entry_t *encoders[4], *decoders[1];
-
-    if ((ecflags & ECONV_CRLF_NEWLINE_ENCODER) &&
-        (ecflags & ECONV_CR_NEWLINE_ENCODER))
-        return NULL;
-
-    if ((ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) &&
-        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER))
-        return NULL;
-
-    if ((ecflags & ECONV_XML_TEXT_ENCODER) &&
-        (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER))
-        return NULL;
 
     num_encoders = 0;
-    if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "crlf_newline")))
-            return NULL;
-    if (ecflags & ECONV_CR_NEWLINE_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "cr_newline")))
-            return NULL;
-    if (ecflags & ECONV_XML_TEXT_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-text-escaped")))
-            return NULL;
-    if (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-attr-content-escaped")))
-            return NULL;
-    if (ecflags & ECONV_XML_ATTR_QUOTE_ENCODER)
-        if (!(encoders[num_encoders++] = get_transcoder_entry("", "xml-attr-quoted")))
-            return NULL;
-
     num_decoders = 0;
-    if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)
-        if (!(decoders[num_decoders++] = get_transcoder_entry("universal_newline", "")))
-            return NULL;
 
     senc = NULL;
     if (*sname) {
@@ -943,12 +912,6 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         }
     }
 
-    if (*sname && (!senc || !rb_enc_asciicompat(senc)) && num_encoders)
-        return NULL;
-
-    if (*dname && (!denc || !rb_enc_asciicompat(denc)) && num_decoders)
-        return NULL;
-
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
         entries = ALLOC_N(transcoder_entry_t *, num_encoders+num_decoders);
@@ -965,10 +928,6 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         xfree(entries);
         return NULL;
     }
-
-    MEMMOVE(entries+num_encoders, entries, transcoder_entry_t *, num_trans);
-    MEMMOVE(entries, encoders, transcoder_entry_t *, num_encoders);
-    MEMMOVE(entries+num_encoders+num_trans, decoders, transcoder_entry_t *, num_decoders);
 
     num_trans += num_encoders + num_decoders;
 
@@ -989,6 +948,69 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         ec->last_trans_index = ec->num_trans-1-num_decoders;
         ec->last_tc = ec->elems[ec->last_trans_index].tc;
     }
+
+    return ec;
+}
+
+rb_econv_t *
+rb_econv_open(const char *sname, const char *dname, int ecflags)
+{
+    rb_econv_t *ec;
+    int num_encoders, num_decoders;
+    const char *encoders[4], *decoders[1];
+    int i;
+
+    if ((ecflags & ECONV_CRLF_NEWLINE_ENCODER) &&
+        (ecflags & ECONV_CR_NEWLINE_ENCODER))
+        return NULL;
+
+    if ((ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) &&
+        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER))
+        return NULL;
+
+    if ((ecflags & ECONV_XML_TEXT_ENCODER) &&
+        (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER))
+        return NULL;
+
+    num_encoders = 0;
+    if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
+        if (!(encoders[num_encoders++] = "crlf_newline"))
+            return NULL;
+    if (ecflags & ECONV_CR_NEWLINE_ENCODER)
+        if (!(encoders[num_encoders++] = "cr_newline"))
+            return NULL;
+    if (ecflags & ECONV_XML_TEXT_ENCODER)
+        if (!(encoders[num_encoders++] = "xml-text-escaped"))
+            return NULL;
+    if (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER)
+        if (!(encoders[num_encoders++] = "xml-attr-content-escaped"))
+            return NULL;
+    if (ecflags & ECONV_XML_ATTR_QUOTE_ENCODER)
+        if (!(encoders[num_encoders++] = "xml-attr-quoted"))
+            return NULL;
+
+    num_decoders = 0;
+    if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)
+        if (!(decoders[num_decoders++] = "universal_newline"))
+            return NULL;
+
+    ec = rb_econv_open0(sname, dname, ecflags & ECONV_ERROR_HANDLER_MASK);
+    if (!ec)
+        return NULL;
+
+    for (i = num_decoders-1; 0 <= i; i--)
+        if (rb_econv_decorate_at_last(ec, decoders[i]) == -1) {
+            rb_econv_close(ec);
+            return NULL;
+        }
+
+    for (i = num_encoders-1; 0 <= i; i--)
+        if (rb_econv_decorate_at_first(ec, encoders[i]) == -1) {
+            rb_econv_close(ec);
+            return NULL;
+        }
+
+    ec->flags |= ecflags & ~ECONV_ERROR_HANDLER_MASK;
 
     return ec;
 }
@@ -1741,12 +1763,90 @@ rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags)
     return rb_econv_substr_append(ec, src, 0, RSTRING_LEN(src), Qnil, flags);
 }
 
+static int
+rb_econv_decorate_at(rb_econv_t *ec, const char *decorator_name, int n)
+{
+    transcoder_entry_t *entry;
+    const rb_transcoder *tr;
+    rb_transcoding *tc;
+    unsigned char *p;
+    int bufsize = 4096;
+
+    if (ec->num_finished != 0)
+        return -1;
+
+    entry = get_transcoder_entry("", decorator_name);
+    if (!entry)
+        entry = get_transcoder_entry(decorator_name, "");
+    if (!entry)
+        return -1;
+
+    tr = load_transcoder_entry(entry);
+    if (!entry)
+        return -1;
+
+    tc = rb_transcoding_open_by_transcoder(tr, 0);
+
+    REALLOC_N(ec->elems, rb_econv_elem_t, ec->num_trans+1);
+    MEMMOVE(ec->elems+n+1, ec->elems+n, rb_econv_elem_t, ec->num_trans-n);
+    ec->num_trans++;
+    if (n <= ec->last_trans_index)
+        ec->last_trans_index++;
+
+    ec->elems[n].tc = tc;
+
+    bufsize = 4096;
+    p = xmalloc(bufsize);
+    ec->elems[n].out_buf_start = p;
+    ec->elems[n].out_data_start = p;
+    ec->elems[n].out_data_end = p;
+    ec->elems[n].out_buf_end = p + bufsize;
+    ec->elems[n].last_result = econv_source_buffer_empty;
+
+    return 0;
+}
+
+int
+rb_econv_decorate_at_first(rb_econv_t *ec, const char *decorator_name)
+{
+    const rb_transcoder *tr;
+
+    if (ec->num_trans == 0)
+        return rb_econv_decorate_at(ec, decorator_name, 0);
+
+    tr = ec->elems[0].tc->transcoder;
+
+    if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding) &&
+        tr->asciicompat_type == asciicompat_decoder)
+        return rb_econv_decorate_at(ec, decorator_name, 1);
+
+    return rb_econv_decorate_at(ec, decorator_name, 0);
+}
+
+int
+rb_econv_decorate_at_last(rb_econv_t *ec, const char *decorator_name)
+{
+    const rb_transcoder *tr;
+
+    if (ec->num_trans == 0)
+        return rb_econv_decorate_at(ec, decorator_name, 0);
+
+    tr = ec->elems[ec->num_trans-1].tc->transcoder;
+
+    if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding) &&
+        tr->asciicompat_type == asciicompat_encoder)
+        return rb_econv_decorate_at(ec, decorator_name, ec->num_trans-1);
+
+    return rb_econv_decorate_at(ec, decorator_name, ec->num_trans);
+}
+
 void
 rb_econv_binmode(rb_econv_t *ec)
 {
     const rb_transcoder *trs[3];
     int n, i, j;
     transcoder_entry_t *entry;
+    int num_trans;
 
     n = 0;
     if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
@@ -1765,8 +1865,9 @@ rb_econv_binmode(rb_econv_t *ec)
             trs[n++] = entry->transcoder;
     }
     
+    num_trans = ec->num_trans;
     j = 0;
-    for (i = 0; i < ec->num_trans; i++) {
+    for (i = 0; i < num_trans; i++) {
         int k;
         for (k = 0; k < n; k++)
             if (trs[k] == ec->elems[i].tc->transcoder)
@@ -2659,15 +2760,6 @@ econv_init(int argc, VALUE *argv, VALUE self)
 
     ec->source_encoding = senc;
     ec->destination_encoding = denc;
-
-    if (ec->last_tc) {
-        ec->source_encoding_name = ec->elems[0].tc->transcoder->src_encoding;
-        ec->destination_encoding_name = ec->last_tc->transcoder->dst_encoding;
-    }
-    else {
-        ec->source_encoding_name = "";
-        ec->destination_encoding_name = "";
-    }
 
     DATA_PTR(self) = ec;
 

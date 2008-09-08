@@ -1,3 +1,20 @@
+Tue Sep  9 02:18:20 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (rb_econv_decorate_at_first): declared.
+	  (rb_econv_decorate_at_last): declared.
+
+	* transcode.c (rb_econv_open_by_transcoder_entries): initialize
+	  replacement_enc.  allocate outbuf for the last transcoder.
+	  (rb_econv_open0): extracted from rb_econv_open.
+	  (rb_econv_open): use rb_econv_open0 and decorate the result using
+	  rb_econv_decorate_at_first and rb_econv_decorate_at_last.
+	  (rb_econv_decorate_at): new function.
+	  (rb_econv_decorate_at_first): ditto.
+	  (rb_econv_decorate_at_last): ditto.
+	  (rb_econv_binmode): fix iteration end condition.
+	  (econv_init): don't set source_encoding_name and
+	  destination_encoding_name because they are set in rb_econv_open0.
+
 Tue Sep  9 01:10:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open): make ec a local variable.

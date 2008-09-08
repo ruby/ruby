@@ -224,6 +224,10 @@ void rb_econv_close(rb_econv_t *ec);
 /* result: 0:success -1:failure */
 int rb_econv_set_replacement(rb_econv_t *ec, const unsigned char *str, size_t len, const char *encname);
 
+/* result: 0:success -1:failure */
+int rb_econv_decorate_at_first(rb_econv_t *ec, const char *decorator_name);
+int rb_econv_decorate_at_last(rb_econv_t *ec, const char *decorator_name);
+
 VALUE rb_econv_open_exc(const char *senc, const char *denc, int ecflags);
 
 /* result: 0:success -1:failure */

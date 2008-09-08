@@ -68,13 +68,13 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_newline_converter_with_ascii_incompatible
-    assert_raise(Encoding::NoConverter) {
+    assert_nothing_raised {
       Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
     }
-    assert_raise(Encoding::NoConverter) {
+    assert_nothing_raised {
       Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CRLF_NEWLINE_ENCODER)
     }
-    assert_raise(Encoding::NoConverter) {
+    assert_nothing_raised {
       Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CR_NEWLINE_ENCODER)
     }
 
