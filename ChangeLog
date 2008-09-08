@@ -1,3 +1,8 @@
+Mon Sep  8 13:47:39 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_io.rb (TestIO#test_dup): add open in block.
+	  see [ruby-dev:35957].
+
 Mon Sep  8 07:09:42 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: some adjustments.

@@ -636,6 +636,10 @@ class TestIO < Test::Unit::TestCase
       assert_equal("", f2.read)
     end
 
+    proc do
+      open(__FILE__) # see Bug #493 [ruby-dev:35957]
+    end.call
+
     pipe2 do |r, w|
       assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
         r2, w2 = r.dup, w.dup
