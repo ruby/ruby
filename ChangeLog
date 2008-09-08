@@ -1,3 +1,7 @@
+Tue Sep  9 00:00:47 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_t): last_error.partial_input removed.
+
 Mon Sep  8 23:24:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (rb_econv_asciicompat_encoding): renamed

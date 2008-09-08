@@ -121,7 +121,6 @@ struct rb_econv_t {
         const unsigned char *error_bytes_start;
         size_t error_bytes_len;
         size_t readagain_len;
-        int partial_input;
     } last_error;
 
     /* The following fields are only for Encoding::Converter.
@@ -837,7 +836,6 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->last_error.error_bytes_start = NULL;
     ec->last_error.error_bytes_len = 0;
     ec->last_error.readagain_len = 0;
-    ec->last_error.partial_input = 0;
     ec->source_encoding = NULL;
     ec->destination_encoding = NULL;
     for (i = 0; i < ec->num_trans; i++) {
@@ -1274,7 +1272,6 @@ rb_econv_convert0(rb_econv_t *ec,
 
   gotresult:
     ec->last_error.result = res;
-    ec->last_error.partial_input = flags & ECONV_PARTIAL_INPUT;
     if (res == econv_invalid_byte_sequence ||
         res == econv_incomplete_input ||
         res == econv_undefined_conversion) {
