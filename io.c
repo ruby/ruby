@@ -729,14 +729,6 @@ make_writeconv(rb_io_t *fptr)
                     denc = enc->name;
                     fptr->writeconv_stateless = rb_str_new2(senc);
                 }
-                else if ((fptr->encs.ecflags & ECONV_STATEFUL_ENCODER_MASK) && !rb_enc_asciicompat(enc)) {
-                    /* xxx: stateful encoder works for ASCII compatible encoding.
-                     * So we need to choose an encoding which is ASCII compatible and superset of enc.
-                     * For encodings which is superset of UTF-8, UTF-8 is not appropriate choice.  */
-                    senc = "UTF-8";
-                    denc = enc->name;
-                    fptr->writeconv_stateless = rb_str_new2("UTF-8");
-                }
                 else {
                     senc = denc = "";
                     fptr->writeconv_stateless = rb_str_new2(enc->name);
