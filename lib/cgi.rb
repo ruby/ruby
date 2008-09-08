@@ -286,7 +286,7 @@ class CGI
 
   REVISION = '$Id$' #:nodoc:
 
-  NEEDS_BINMODE = true if /WIN/ni.match(RUBY_PLATFORM) 
+  NEEDS_BINMODE = true if /WIN/i.match(RUBY_PLATFORM) 
 
   # Path separators in different environments.
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
@@ -441,7 +441,7 @@ class CGI
   def CGI::escapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
-      string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/ni) do
+      string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/i) do
         CGI::escapeHTML($&)
       end
     else
@@ -462,7 +462,7 @@ class CGI
   def CGI::unescapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
-      string.gsub(/&lt;\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?&gt;/ni) do
+      string.gsub(/&lt;\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?&gt;/i) do
         CGI::unescapeHTML($&)
       end
     else
@@ -586,7 +586,7 @@ class CGI
 
     options.delete("nph") if defined?(MOD_RUBY)
     if options.delete("nph") or
-        (/IIS\/(\d+)/n.match(env_table['SERVER_SOFTWARE']) and $1.to_i < 5)
+        (/IIS\/(\d+)/.match(env_table['SERVER_SOFTWARE']) and $1.to_i < 5)
       buf += (env_table["SERVER_PROTOCOL"] or "HTTP/1.0")  + " " +
              (HTTP_STATUS[options["status"]] or options["status"] or "200 OK") +
              EOL +
@@ -657,19 +657,19 @@ class CGI
 
     if defined?(MOD_RUBY)
       table = Apache::request.headers_out
-      buf.scan(/([^:]+): (.+)#{EOL}/n){ |name, value|
+      buf.scan(/([^:]+): (.+)#{EOL}/){ |name, value|
         warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
         case name
         when 'Set-Cookie'
           table.add(name, value)
-        when /^status$/ni
+        when /^status$/i
           Apache::request.status_line = value
           Apache::request.status = value.to_i
-        when /^content-type$/ni
+        when /^content-type$/i
           Apache::request.content_type = value
-        when /^content-encoding$/ni
+        when /^content-encoding$/i
           Apache::request.content_encoding = value
-        when /^location$/ni
+        when /^location$/i
 	  if Apache::request.status == 200
 	    Apache::request.status = 302
 	  end
@@ -911,7 +911,7 @@ class CGI
   def CGI::parse(query)
     params = Hash.new([].freeze)
 
-    query.split(/[&;]/n).each do |pairs|
+    query.split(/[&;]/).each do |pairs|
       key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
       if params.has_key?(key)
         params[key].push(value)
@@ -940,7 +940,7 @@ class CGI
   module QueryExtension
 
     %w[ CONTENT_LENGTH SERVER_PORT ].each do |env|
-      define_method(env.sub(/^HTTP_/n, '').downcase) do
+      define_method(env.sub(/^HTTP_/, '').downcase) do
         (val = env_table[env]) && Integer(val)
       end
     end
@@ -953,7 +953,7 @@ class CGI
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
         HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ].each do |env|
-      define_method(env.sub(/^HTTP_/n, '').downcase) do
+      define_method(env.sub(/^HTTP_/, '').downcase) do
         env_table[env]
       end
     end
@@ -1004,9 +1004,9 @@ class CGI
         head = nil
         body = MorphingBody.new
 
-        until head and /#{quoted_boundary}(?:#{EOL}|--)/n.match(buf)
-          if (not head) and /#{EOL}#{EOL}/n.match(buf)
-            buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/n) do
+        until head and /#{quoted_boundary}(?:#{EOL}|--)/.match(buf)
+          if (not head) and /#{EOL}#{EOL}/.match(buf)
+            buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/) do
               head = $1.dup
               ""
             end
@@ -1030,7 +1030,7 @@ class CGI
           content_length -= c.bytesize
         end
 
-        buf = buf.sub(/\A((?:.|\n)*?)(?:[\r\n]{1,2})?#{quoted_boundary}([\r\n]{1,2}|--)/n) do
+        buf = buf.sub(/\A((?:.|\n)*?)(?:[\r\n]{1,2})?#{quoted_boundary}([\r\n]{1,2}|--)/) do
           body.print $1
           if "--" == $2
             content_length = -1
@@ -1041,15 +1041,15 @@ class CGI
 
         body.rewind
 
-        /Content-Disposition:.* filename=(?:"((?:\\.|[^\"])*)"|([^;\s]*))/ni.match(head)
+        /Content-Disposition:.* filename=(?:"((?:\\.|[^\"])*)"|([^;\s]*))/i.match(head)
 	filename = ($1 or $2 or "")
-	if /Mac/ni.match(env_table['HTTP_USER_AGENT']) and
-	    /Mozilla/ni.match(env_table['HTTP_USER_AGENT']) and
-	    (not /MSIE/ni.match(env_table['HTTP_USER_AGENT']))
+	if /Mac/i.match(env_table['HTTP_USER_AGENT']) and
+	    /Mozilla/i.match(env_table['HTTP_USER_AGENT']) and
+	    (not /MSIE/i.match(env_table['HTTP_USER_AGENT']))
 	  filename = CGI::unescape(filename)
 	end
         
-        /Content-Type: ([^\s]*)/ni.match(head)
+        /Content-Type: ([^\s]*)/i.match(head)
         content_type = ($1 or "")
 
         (class << body; self; end).class_eval do
@@ -1058,7 +1058,7 @@ class CGI
           define_method(:content_type) {content_type.dup.taint}
         end
 
-        /Content-Disposition:.* name="?([^\";\s]*)"?/ni.match(head)
+        /Content-Disposition:.* name="?([^\";\s]*)"?/i.match(head)
         name = ($1 || "").dup
 
         if params.has_key?(name)
@@ -1087,12 +1087,12 @@ class CGI
             %|(offline mode: enter name=value pairs on standard input)\n|
           )
         end
-        readlines.join(' ').gsub(/\n/n, '')
-      end.gsub(/\\=/n, '%3D').gsub(/\\&/n, '%26')
+        readlines.join(' ').gsub(/\n/, '')
+      end.gsub(/\\=/, '%3D').gsub(/\\&/, '%26')
 
       words = Shellwords.shellwords(string)
 
-      if words.find{|x| /=/n.match(x) }
+      if words.find{|x| /=/.match(x) }
         words.join('&')
       else
         words.join('+')
@@ -1159,7 +1159,7 @@ class CGI
     # Reads query parameters in the @params field, and cookies into @cookies.
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
-         %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n.match(env_table['CONTENT_TYPE'])
+         %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|.match(env_table['CONTENT_TYPE'])
         boundary = $1.dup
         @multipart = true
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
@@ -1245,14 +1245,14 @@ class CGI
   #     # </HTML>
   #
   def CGI::pretty(string, shift = "  ")
-    lines = string.gsub(/(?!\A)<(?:.|\n)*?>/n, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/n, "\\0\n")
+    lines = string.gsub(/(?!\A)<(?:.|\n)*?>/, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/, "\\0\n")
     end_pos = 0
-    while end_pos = lines.index(/^<\/(\w+)/n, end_pos)
+    while end_pos = lines.index(/^<\/(\w+)/, end_pos)
       element = $1.dup
-      start_pos = lines.rindex(/^\s*<#{element}/ni, end_pos)
-      lines[start_pos ... end_pos] = "__" + lines[start_pos ... end_pos].gsub(/\n(?!\z)/n, "\n" + shift) + "__"
+      start_pos = lines.rindex(/^\s*<#{element}/i, end_pos)
+      lines[start_pos ... end_pos] = "__" + lines[start_pos ... end_pos].gsub(/\n(?!\z)/, "\n" + shift) + "__"
     end
-    lines.gsub(/^((?:#{Regexp::quote(shift)})*)__(?=<\/?\w)/n, '\1')
+    lines.gsub(/^((?:#{Regexp::quote(shift)})*)__(?=<\/?\w)/, '\1')
   end
 
 
