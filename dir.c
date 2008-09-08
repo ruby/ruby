@@ -290,7 +290,7 @@ VALUE rb_cDir;
 struct dir_data {
     DIR *dir;
     VALUE path;
-    rb_encoding *extenc;
+    rb_encoding *enc;
 };
 
 static void
@@ -318,7 +318,7 @@ dir_s_alloc(VALUE klass)
 
     dirp->dir = NULL;
     dirp->path = Qnil;
-    dirp->extenc = NULL;
+    dirp->enc = NULL;
 
     return obj;
 }
@@ -333,26 +333,26 @@ static VALUE
 dir_initialize(int argc, VALUE *argv, VALUE dir)
 {
     struct dir_data *dp;
-    rb_encoding  *extencoding;
+    rb_encoding  *fsenc;
     VALUE dirname, opt;
-    static VALUE sym_extenc;
+    static VALUE sym_enc;
 
-    if (!sym_extenc) {
-	sym_extenc = ID2SYM(rb_intern("external_encoding"));
+    if (!sym_enc) {
+	sym_enc = ID2SYM(rb_intern("encoding"));
     }
-    extencoding = rb_filesystem_encoding();
+    fsenc = rb_filesystem_encoding();
 
     rb_scan_args(argc, argv, "11", &dirname, &opt);
 
     if (!NIL_P(opt)) {
-        VALUE v, extenc=Qnil;
+        VALUE v, enc=Qnil;
         opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
 
-        v = rb_hash_aref(opt, sym_extenc);
-        if (!NIL_P(v)) extenc = v;
+        v = rb_hash_aref(opt, sym_enc);
+        if (!NIL_P(v)) enc = v;
 
-	if (!NIL_P(extenc)) {
-	    extencoding = rb_to_encoding(extenc);
+	if (!NIL_P(enc)) {
+	    fsenc = rb_to_encoding(enc);
 	}
     }
 
@@ -362,7 +362,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     if (dp->dir) closedir(dp->dir);
     dp->dir = NULL;
     dp->path = Qnil;
-    dp->extenc = extencoding;
+    dp->enc = fsenc;
     dp->dir = opendir(RSTRING_PTR(dirname));
     if (dp->dir == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
@@ -494,7 +494,7 @@ dir_read(VALUE dir)
     errno = 0;
     dp = readdir(dirp->dir);
     if (dp) {
-	return dir_enc_str_new(dp->d_name, NAMLEN(dp), dirp->extenc);
+	return dir_enc_str_new(dp->d_name, NAMLEN(dp), dirp->enc);
     }
     else if (errno == 0) {	/* end of stream */
 	return Qnil;
@@ -532,7 +532,7 @@ dir_each(VALUE dir)
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     for (dp = readdir(dirp->dir); dp != NULL; dp = readdir(dirp->dir)) {
-	rb_yield(dir_enc_str_new(dp->d_name, NAMLEN(dp), dirp->extenc));
+	rb_yield(dir_enc_str_new(dp->d_name, NAMLEN(dp), dirp->enc));
 	if (dirp->dir == NULL) dir_closed();
     }
     return dir;

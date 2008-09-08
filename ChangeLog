@@ -1,4 +1,9 @@
-Mon Sep  8 22:16:20 2008  Takeyuki FUJIOKA <xibbar@ruby-lang.org>
+Mon Sep  8 22:30:03 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* dir.c (dir_initialize): rename option name of Dir.open
+	  from :external_encoding to :encoding.
+
+Mon Sep  8 22:16:20 2008  Takeyuki FUJIOKA  <xibbar@ruby-lang.org>
 
 	* lib/cgi.rb : obsolete regex "n" option. [ruby-dev:36130] 
 
