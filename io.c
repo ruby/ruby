@@ -713,7 +713,7 @@ make_writeconv(rb_io_t *fptr)
         }
         else {
             enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
-            senc = rb_econv_stateless_encoding(enc->name);
+            senc = rb_econv_asciicompat_encoding(enc->name);
             if (!senc && !(fptr->encs.ecflags & ECONV_STATEFUL_ENCODER_MASK)) {
                 /* single conversion */
                 fptr->writeconv_pre_ecflags = ecflags;

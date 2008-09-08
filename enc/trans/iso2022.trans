@@ -114,7 +114,7 @@ rb_iso2022jp_decoder = {
     1, /* input_unit_length */
     3, /* max_input */
     3, /* max_output */
-    stateful_decoder, /* stateful_type */
+    asciicompat_decoder, /* asciicompat_type */
     1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
     NULL, fun_si_iso2022jp_decoder, NULL, fun_so_iso2022jp_decoder
 };
@@ -196,7 +196,7 @@ rb_iso2022jp_encoder = {
     1, /* input_unit_length */
     3, /* max_input */
     5, /* max_output */
-    stateful_encoder, /* stateful_type */
+    asciicompat_encoder, /* asciicompat_type */
     1, iso2022jp_init, iso2022jp_init, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_iso2022jp_encoder,
     finish_iso2022jp_encoder,
@@ -218,7 +218,7 @@ rb_stateless_iso2022jp_to_eucjp = {
     1, /* input_unit_length */
     3, /* max_input */
     2, /* max_output */
-    stateless_converter, /* stateful_type */
+    asciicompat_converter, /* asciicompat_type */
     0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_stateless_iso2022jp_to_eucjp,
 };
@@ -239,7 +239,7 @@ rb_eucjp_to_stateless_iso2022jp = {
     1, /* input_unit_length */
     3, /* max_input */
     3, /* max_output */
-    stateless_converter, /* stateful_type */
+    asciicompat_converter, /* asciicompat_type */
     0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_eucjp_to_stateless_iso2022jp,
 };

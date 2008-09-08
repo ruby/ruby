@@ -73,7 +73,7 @@ rb_eucjp2sjis = {
     1, /* input_unit_length */
     3, /* max_input */
     2, /* max_output */
-    stateless_converter, /* stateful_type */
+    asciicompat_converter, /* asciicompat_type */
     0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_eucjp2sjis
 };
@@ -85,7 +85,7 @@ rb_sjis2eucjp = {
     1, /* input_unit_length */
     2, /* max_input */
     2, /* max_output */
-    stateless_converter, /* stateful_type */
+    asciicompat_converter, /* asciicompat_type */
     0, NULL, NULL, /* state_size, state_init, state_fini */
     NULL, NULL, NULL, fun_so_sjis2eucjp
 };

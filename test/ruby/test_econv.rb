@@ -27,20 +27,24 @@ class TestEncodingConverter < Test::Unit::TestCase
                  ec.primitive_errinfo)
   end
 
-  def test_s_stateless_encoding
-    assert_equal(Encoding::STATELESS_ISO_2022_JP, Encoding::Converter.stateless_encoding("ISO-2022-JP"))
-    assert_equal(Encoding::STATELESS_ISO_2022_JP, Encoding::Converter.stateless_encoding(Encoding::ISO_2022_JP))
-    assert_nil(Encoding::Converter.stateless_encoding("EUC-JP"))
-    assert_nil(Encoding::Converter.stateless_encoding("UTF-8"))
-    assert_nil(Encoding::Converter.stateless_encoding("UTF-16BE"))
-    assert_nil(Encoding::Converter.stateless_encoding(Encoding::UTF_8))
-    assert_nil(Encoding::Converter.stateless_encoding("xml-attr-escaped"))
+  def test_s_asciicompat_encoding
+    assert_equal(Encoding::STATELESS_ISO_2022_JP, Encoding::Converter.asciicompat_encoding("ISO-2022-JP"))
+    assert_equal(Encoding::STATELESS_ISO_2022_JP, Encoding::Converter.asciicompat_encoding(Encoding::ISO_2022_JP))
+    assert_equal(Encoding::UTF_8, Encoding::Converter.asciicompat_encoding("UTF-16BE"))
+    assert_equal(Encoding::UTF_8, Encoding::Converter.asciicompat_encoding("UTF-16LE"))
+    assert_equal(Encoding::UTF_8, Encoding::Converter.asciicompat_encoding("UTF-32BE"))
+    assert_equal(Encoding::UTF_8, Encoding::Converter.asciicompat_encoding("UTF-32LE"))
+    assert_nil(Encoding::Converter.asciicompat_encoding("EUC-JP"))
+    assert_nil(Encoding::Converter.asciicompat_encoding("UTF-8"))
+    assert_nil(Encoding::Converter.asciicompat_encoding(Encoding::UTF_8))
+    assert_nil(Encoding::Converter.asciicompat_encoding("xml-attr-escaped"))
+    assert_nil(Encoding::Converter.asciicompat_encoding("encoding-not-exist"))
   end
 
-  def test_stateless_encoding_iso2022jp
-    slenc = Encoding::Converter.stateless_encoding("ISO-2022-JP")
+  def test_asciicompat_encoding_iso2022jp
+    acenc = Encoding::Converter.asciicompat_encoding("ISO-2022-JP")
     str = "\e$B~~\(B".force_encoding("iso-2022-jp")
-    str2 = str.encode(slenc)
+    str2 = str.encode(acenc)
     str3 = str.encode("ISO-2022-JP")
     assert_equal(str, str3)
   end

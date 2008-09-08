@@ -1414,7 +1414,7 @@ rb_econv_encoding_to_insert_output(rb_econv_t *ec)
 
     tr = tc->transcoder;
 
-    if (tr->stateful_type == stateful_encoder)
+    if (tr->asciicompat_type == asciicompat_encoder)
         return tr->src_encoding;
     return tr->dst_encoding;
 }
@@ -1528,7 +1528,7 @@ rb_econv_insert_output(rb_econv_t *ec,
         data_end_p = &ec->in_data_end;
         buf_end_p = &ec->in_buf_end;
     }
-    else if (tc->transcoder->stateful_type == stateful_encoder) {
+    else if (tc->transcoder->asciicompat_type == asciicompat_encoder) {
         need += tc->readagain_len;
         if (need < insert_len)
             goto fail;
@@ -1580,7 +1580,7 @@ rb_econv_insert_output(rb_econv_t *ec,
 
     memcpy(*data_end_p, insert_str, insert_len);
     *data_end_p += insert_len;
-    if (tc && tc->transcoder->stateful_type == stateful_encoder) {
+    if (tc && tc->transcoder->asciicompat_type == asciicompat_encoder) {
         memcpy(*data_end_p, TRANSCODING_READBUF(tc)+tc->recognized_len, tc->readagain_len);
         *data_end_p += tc->readagain_len;
         tc->readagain_len = 0;
@@ -1633,27 +1633,31 @@ rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n)
     tc->readagain_len -= n;
 }
 
-struct stateless_encoding_t {
-    const char *stateless_enc;
-    const char *stateful_enc;
+struct asciicompat_encoding_t {
+    const char *ascii_compat_name;
+    const char *ascii_incompat_name;
 };
 
 static int
-stateless_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
+asciicompat_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
 {
-    struct stateless_encoding_t *data = (struct stateless_encoding_t *)arg;
+    struct asciicompat_encoding_t *data = (struct asciicompat_encoding_t *)arg;
     st_table *table2 = (st_table *)val;
     st_data_t v;
 
-    if (st_lookup(table2, (st_data_t)data->stateful_enc, &v)) {
+    if (st_lookup(table2, (st_data_t)data->ascii_incompat_name, &v)) {
         transcoder_entry_t *entry = (transcoder_entry_t *)v;
         const rb_transcoder *tr;
-        if (SUPPLEMENTAL_CONVERSION(entry->sname, entry->dname)) {
+        if (SUPPLEMENTAL_CONVERSION(entry->sname, entry->dname))
             return ST_CONTINUE;
-        }
         tr = load_transcoder_entry(entry);
-        if (tr && tr->stateful_type == stateful_encoder) {
-            data->stateless_enc = tr->src_encoding;
+        if (tr && tr->asciicompat_type == asciicompat_encoder) {
+            /*
+             * Assumption:
+             * There is only one transcoder for
+             * converting to ASCII incompatible encoding.
+             */
+            data->ascii_compat_name = tr->src_encoding;
             return ST_STOP;
         }
     }
@@ -1661,14 +1665,14 @@ stateless_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
 }
 
 const char *
-rb_econv_stateless_encoding(const char *stateful_enc)
+rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
 {
-    struct stateless_encoding_t data;
-    data.stateful_enc = stateful_enc;
-    data.stateless_enc = NULL;
-    st_foreach(transcoder_table, stateless_encoding_i, (st_data_t)&data);
-    if (data.stateless_enc)
-        return data.stateless_enc;
+    struct asciicompat_encoding_t data;
+    data.ascii_incompat_name = ascii_incompat_name;
+    data.ascii_compat_name = NULL;
+    st_foreach(transcoder_table, asciicompat_encoding_i, (st_data_t)&data);
+    if (data.ascii_compat_name)
+        return data.ascii_compat_name;
     return NULL;
 }
 
@@ -2510,42 +2514,42 @@ make_dummy_encoding(const char *name)
 
 /*
  * call-seq:
- *   Encoding::Converter.stateless_encoding(string) => encoding or nil
- *   Encoding::Converter.stateless_encoding(encoding) => encoding or nil
+ *   Encoding::Converter.asciicompat_encoding(string) => encoding or nil
+ *   Encoding::Converter.asciicompat_encoding(encoding) => encoding or nil
  *
- * returns the corresponding stateless encoding.
+ * returns the corresponding ASCII compatible encoding.
  *
- * It returns nil if the argument is not a stateful encoding.
+ * It returns nil if the argument is an ASCII compatible encoding.
  *
- * "corresponding stateless encoding" is a stateless encoding which
- * represents same characters in the statefull encoding.
+ * "corresponding ASCII compatible encoding" is a ASCII compatible encoding which
+ * represents same characters in the given ASCII incompatible encoding.
  *
- * So, no conversion undefined error occur between the stateful encoding and the stateless encoding.
- *
- * For ISO-2022-JP, the dedicated stateless encoding, stateless-ISO-2022-JP, is defined.
+ * So, no conversion undefined error occur between the ASCII compatible and incompatible encoding.
  *
  *   Encoding::Converter.stateless_encoding("ISO-2022-JP") #=> #<Encoding:stateless-ISO-2022-JP>
+ *   Encoding::Converter.stateless_encoding("UTF-16BE") #=> #<Encoding:UTF-8>
+ *   Encoding::Converter.stateless_encoding("UTF-8") #=> nil
  *
  */
 static VALUE
-econv_s_stateless_encoding(VALUE klass, VALUE arg)
+econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
 {
-    const char *stateful_name, *stateless_name;
-    rb_encoding *stateful_enc, *stateless_enc;
+    const char *arg_name, *result_name;
+    rb_encoding *arg_enc, *result_enc;
 
-    enc_arg(arg, &stateful_name, &stateful_enc);
+    enc_arg(arg, &arg_name, &arg_enc);
 
-    stateless_name = rb_econv_stateless_encoding(stateful_name);
+    result_name = rb_econv_asciicompat_encoding(arg_name);
 
-    if (stateless_name == NULL)
+    if (result_name == NULL)
         return Qnil;
 
-    stateless_enc = rb_enc_find(stateless_name);
+    result_enc = rb_enc_find(result_name);
 
-    if (!stateless_enc)
-        stateless_enc = make_dummy_encoding(stateless_name);
+    if (!result_enc)
+        result_enc = make_dummy_encoding(result_name);
 
-    return rb_enc_from_encoding(stateless_enc);
+    return rb_enc_from_encoding(result_enc);
 }
 
 /*
@@ -3563,7 +3567,7 @@ Init_transcode(void)
 
     rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
-    rb_define_singleton_method(rb_cEncodingConverter, "stateless_encoding", econv_s_stateless_encoding, 1);
+    rb_define_singleton_method(rb_cEncodingConverter, "asciicompat_encoding", econv_s_asciicompat_encoding, 1);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
     rb_define_method(rb_cEncodingConverter, "inspect", econv_inspect, 0);
     rb_define_method(rb_cEncodingConverter, "source_encoding", econv_source_encoding, 0);

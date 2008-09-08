@@ -239,8 +239,9 @@ void rb_econv_check_error(rb_econv_t *ec);
 int rb_econv_putbackable(rb_econv_t *ec);
 void rb_econv_putback(rb_econv_t *ec, unsigned char *p, int n);
 
-/* returns corresponding stateless encoding, or NULL if not stateful. */
-const char *rb_econv_stateless_encoding(const char *stateful_enc);
+/* returns the corresponding ASCII compatible encoding for encname,
+ * or NULL if encname is not ASCII incompatible encoding. */
+const char *rb_econv_asciicompat_encoding(const char *encname);
 
 VALUE rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags);
 VALUE rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags);

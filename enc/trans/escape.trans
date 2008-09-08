@@ -79,7 +79,7 @@ rb_escape_xml_attr_quote = {
     1, /* input_unit_length */
     1, /* max_input */
     7, /* max_output */
-    stateful_encoder, /* stateful_type */
+    asciicompat_encoder, /* asciicompat_type */
     1, escape_xml_attr_quote_init, escape_xml_attr_quote_init,
     NULL, NULL, NULL, fun_so_escape_xml_attr_quote,
     escape_xml_attr_quote_finish

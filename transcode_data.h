@@ -57,11 +57,11 @@
 #define THREETRAIL     /* legal but undefined if three more trailing UTF-8 */
 
 typedef enum {
-  stateless_converter,  /* stateless -> stateless */
-  stateful_decoder,     /* stateful -> stateless */
-  stateful_encoder      /* stateless -> stateful */
-  /* stateful -> stateful is intentionally ommitted. */
-} rb_transcoder_stateful_type_t;
+  asciicompat_converter,        /* ASCII-compatible -> ASCII-compatible */
+  asciicompat_decoder,          /* ASCII-incompatible -> ASCII-compatible */
+  asciicompat_encoder           /* ASCII-compatible -> ASCII-incompatible */
+  /* ASCII-incompatible -> ASCII-incompatible is intentionally ommitted. */
+} rb_transcoder_asciicompat_type_t;
 
 typedef struct rb_transcoder rb_transcoder;
 
@@ -78,7 +78,7 @@ struct rb_transcoder {
     int input_unit_length;
     int max_input;
     int max_output;
-    rb_transcoder_stateful_type_t stateful_type;
+    rb_transcoder_asciicompat_type_t asciicompat_type;
     size_t state_size;
     int (*state_init_func)(void*); /* ret==0:success ret!=0:failure(errno) */
     int (*state_fini_func)(void*); /* ret==0:success ret!=0:failure(errno) */
