@@ -1,3 +1,7 @@
+Mon Sep  8 18:15:59 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (ArrayCode): less string substitutions.
+
 Mon Sep  8 18:13:13 2008  Tanaka Akira  <akr@fsij.org>
 
 	* vm.c (rb_mRubyVMFrozenCore): registered for GC.
