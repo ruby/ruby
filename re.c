@@ -2249,15 +2249,13 @@ rb_reg_preprocess_dregexp(VALUE ary)
     onig_errmsg_buffer err = "";
     int i;
     VALUE result = 0;
-    int argc = RARRAY_LEN(ary);
-    VALUE *argv = RARRAY_PTR(ary);
 
-    if (argc == 0) {
+    if (RARRAY_LEN(ary) == 0) {
         rb_raise(rb_eArgError, "no arguments given");
     }
 
-    for (i = 0; i < argc; i++) {
-        VALUE str = argv[i];
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        VALUE str = RARRAY_PTR(ary)[i];
         VALUE buf;
         char *p, *end;
         rb_encoding *src_enc;

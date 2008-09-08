@@ -1820,6 +1820,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 1);
     rb_obj_freeze(fcore);
+    rb_global_variable(&rb_mRubyVMFrozenCore);
     rb_mRubyVMFrozenCore = fcore;
 
     /* ::VM::Env */

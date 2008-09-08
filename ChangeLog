@@ -1,3 +1,11 @@
+Mon Sep  8 18:13:13 2008  Tanaka Akira  <akr@fsij.org>
+
+	* vm.c (rb_mRubyVMFrozenCore): registered for GC.
+
+	* re.c (rb_reg_preprocess_dregexp): fix GC problem on MacOS X with
+	  powerpc-apple-darwin8-gcc-4.0.1 (GCC) 4.0.1 (Apple Computer, Inc.
+	  build 5367).
+
 Mon Sep  8 18:09:07 2008  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.h): define SIZE_MAX for VC++6/7.
