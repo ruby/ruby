@@ -53,7 +53,7 @@
 				   (RBASIC(obj)->flags & ~ENC_CODERANGE_MASK) | (cr))
 #define ENC_CODERANGE_CLEAR(obj) ENC_CODERANGE_SET(obj,0)
 
-/* assumed ASCII compatiblity */
+/* assumed ASCII compatibility */
 #define ENC_CODERANGE_AND(a, b) \
     (a == ENC_CODERANGE_7BIT ? b : \
      a == ENC_CODERANGE_VALID ? (b == ENC_CODERANGE_7BIT ? ENC_CODERANGE_VALID : b) : \
