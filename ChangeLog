@@ -1,3 +1,7 @@
+Tue Sep  9 21:59:48 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi*: split cgi.rb into four files. [ruby-dev:36041]
+
 Tue Sep  9 21:17:00 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (ECONV_DECORATOR_MASK): merge
