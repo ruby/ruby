@@ -1,3 +1,9 @@
+Tue Sep  9 20:40:15 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/openssl/test_ssl.rb (OpenSSL#test_client_session):
+	  Debian's openssl 0.9.8g-13 failed at assert(ssl.session_reused?),
+	  when use default SSLContext. [ruby-dev:36167]
+
 Tue Sep  9 20:34:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_t): last_trans_index removed.
