@@ -1,3 +1,8 @@
+Wed Sep 10 01:57:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* tool/transcode-tblgen.rb (StrSet#hash): cache hash value.
+	  (ActionMap#hash): ditto.
+
 Wed Sep 10 01:26:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/encoding.h (econv_after_output): renamed from

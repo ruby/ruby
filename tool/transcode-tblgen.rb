@@ -62,7 +62,8 @@ class StrSet
   end
 
   def hash
-    @pat.hash
+    return @hash if defined? @hash
+    @hash = @pat.hash
   end
 
   def eql?(other)
@@ -196,11 +197,12 @@ class ActionMap
   end
 
   def hash
+    return @hash if defined? @hash
     hash = 0
     @map.each {|k,v|
       hash ^= k.hash ^ v.hash
     }
-    hash
+    @hash = hash
   end
 
   def eql?(other)
