@@ -202,7 +202,7 @@ typedef enum {
     econv_destination_buffer_full,
     econv_source_buffer_empty,
     econv_finished,
-    econv_output_followed_by_input,
+    econv_after_output,
     econv_incomplete_input,
 } rb_econv_result_t;
 
@@ -280,7 +280,7 @@ void rb_econv_binmode(rb_econv_t *ec);
 
 /* flags for rb_econv_convert */
 #define ECONV_PARTIAL_INPUT                     0x00010000
-#define ECONV_OUTPUT_FOLLOWED_BY_INPUT          0x00020000
+#define ECONV_AFTER_OUTPUT                      0x00020000
 /* end of flags for rb_econv_convert */
 
 #endif /* RUBY_ENCODING_H */

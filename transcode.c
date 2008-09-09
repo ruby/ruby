@@ -32,7 +32,7 @@ static VALUE sym_undefined_conversion;
 static VALUE sym_destination_buffer_full;
 static VALUE sym_source_buffer_empty;
 static VALUE sym_finished;
-static VALUE sym_output_followed_by_input;
+static VALUE sym_after_output;
 static VALUE sym_incomplete_input;
 
 static unsigned char *
@@ -464,9 +464,9 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         while (out_stop - out_p < 1) { SUSPEND(econv_destination_buffer_full, num); } \
     } while (0)
 
-#define SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(num) \
-    if ((opt & ECONV_OUTPUT_FOLLOWED_BY_INPUT) && *out_pos != out_p) { \
-        SUSPEND(econv_output_followed_by_input, num); \
+#define SUSPEND_AFTER_OUTPUT(num) \
+    if ((opt & ECONV_AFTER_OUTPUT) && *out_pos != out_p) { \
+        SUSPEND(econv_after_output, num); \
     }
 
 #define next_table (tc->next_table)
@@ -512,7 +512,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
         tc->recognized_len = 0;
 	next_table = tr->conv_tree_start;
 
-        SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(24);
+        SUSPEND_AFTER_OUTPUT(24);
 
         if (in_stop <= in_p) {
             if (!(opt & ECONV_PARTIAL_INPUT))
@@ -544,7 +544,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	    continue;
 	  case 0x00: case 0x04: case 0x08: case 0x0C:
 	  case 0x10: case 0x14: case 0x18: case 0x1C:
-            SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(25);
+            SUSPEND_AFTER_OUTPUT(25);
 	    while (in_p >= in_stop) {
                 if (!(opt & ECONV_PARTIAL_INPUT))
                     goto incomplete;
@@ -627,7 +627,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	  case INVALID:
             if (tc->recognized_len + (in_p - inchar_start) <= unitlen) {
                 if (tc->recognized_len + (in_p - inchar_start) < unitlen)
-                    SUSPEND_OUTPUT_FOLLOWED_BY_INPUT(26);
+                    SUSPEND_AFTER_OUTPUT(26);
                 while ((opt & ECONV_PARTIAL_INPUT) && tc->recognized_len + (in_stop - inchar_start) < unitlen) {
                     in_p = in_stop;
                     SUSPEND(econv_source_buffer_empty, 8);
@@ -1017,12 +1017,12 @@ trans_sweep(rb_econv_t *ec,
             f = flags;
             if (ec->num_finished != i)
                 f |= ECONV_PARTIAL_INPUT;
-            if (i == 0 && (flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT)) {
+            if (i == 0 && (flags & ECONV_AFTER_OUTPUT)) {
                 start = 1;
-                flags &= ~ECONV_OUTPUT_FOLLOWED_BY_INPUT;
+                flags &= ~ECONV_AFTER_OUTPUT;
             }
             if (i != 0)
-                f &= ~ECONV_OUTPUT_FOLLOWED_BY_INPUT;
+                f &= ~ECONV_AFTER_OUTPUT;
             iold = *ipp;
             oold = *opp;
             te->last_result = res = rb_transcoding_convert(te->tc, ipp, is, opp, os, f);
@@ -1033,7 +1033,7 @@ trans_sweep(rb_econv_t *ec,
               case econv_invalid_byte_sequence:
               case econv_incomplete_input:
               case econv_undefined_conversion:
-              case econv_output_followed_by_input:
+              case econv_after_output:
                 return i;
 
               case econv_destination_buffer_full:
@@ -1073,7 +1073,7 @@ rb_trans_conv(rb_econv_t *ec,
         output_stop = empty_ptr;
     }
 
-    if (ec->elems[0].last_result == econv_output_followed_by_input)
+    if (ec->elems[0].last_result == econv_after_output)
         ec->elems[0].last_result = econv_source_buffer_empty;
 
     needreport_index = -1;
@@ -1082,7 +1082,7 @@ rb_trans_conv(rb_econv_t *ec,
           case econv_invalid_byte_sequence:
           case econv_incomplete_input:
           case econv_undefined_conversion:
-          case econv_output_followed_by_input:
+          case econv_after_output:
           case econv_finished:
             sweep_start = i+1;
             needreport_index = i;
@@ -1100,15 +1100,15 @@ rb_trans_conv(rb_econv_t *ec,
     /* /^[sd]+$/ is confirmed.  but actually /^s*d*$/. */
 
     if (ec->elems[ec->num_trans-1].last_result == econv_destination_buffer_full &&
-        (flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT)) {
+        (flags & ECONV_AFTER_OUTPUT)) {
         rb_econv_result_t res;
 
         res = rb_trans_conv(ec, NULL, NULL, output_ptr, output_stop,
-                (flags & ~ECONV_OUTPUT_FOLLOWED_BY_INPUT)|ECONV_PARTIAL_INPUT,
+                (flags & ~ECONV_AFTER_OUTPUT)|ECONV_PARTIAL_INPUT,
                 result_position_ptr);
 
         if (res == econv_source_buffer_empty)
-            return econv_output_followed_by_input;
+            return econv_after_output;
         return res;
     }
 
@@ -1127,7 +1127,7 @@ rb_trans_conv(rb_econv_t *ec,
             if (res == econv_invalid_byte_sequence ||
                 res == econv_incomplete_input ||
                 res == econv_undefined_conversion ||
-                res == econv_output_followed_by_input) {
+                res == econv_after_output) {
                 ec->elems[i].last_result = econv_source_buffer_empty;
             }
             if (result_position_ptr)
@@ -1167,8 +1167,8 @@ rb_econv_convert0(rb_econv_t *ec,
             memcpy(*output_ptr, ec->in_data_start, len);
             *output_ptr += len;
             ec->in_data_start = ec->in_data_end = ec->in_buf_start;
-            if (flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT) {
-                res = econv_output_followed_by_input;
+            if (flags & ECONV_AFTER_OUTPUT) {
+                res = econv_after_output;
                 goto gotresult;
             }
         }
@@ -1178,9 +1178,9 @@ rb_econv_convert0(rb_econv_t *ec,
         else {
             len = input_stop - *input_ptr;
         }
-        if (0 < len && (flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT)) {
+        if (0 < len && (flags & ECONV_AFTER_OUTPUT)) {
             *(*output_ptr)++ = *(*input_ptr)++;
-            res = econv_output_followed_by_input;
+            res = econv_after_output;
             goto gotresult;
         }
         memcpy(*output_ptr, *input_ptr, len);
@@ -1221,28 +1221,28 @@ rb_econv_convert0(rb_econv_t *ec,
     if (ec->in_buf_start && 
         ec->in_data_start != ec->in_data_end) {
         res = rb_trans_conv(ec, (const unsigned char **)&ec->in_data_start, ec->in_data_end, output_ptr, output_stop,
-                (flags&~ECONV_OUTPUT_FOLLOWED_BY_INPUT)|ECONV_PARTIAL_INPUT, &result_position);
+                (flags&~ECONV_AFTER_OUTPUT)|ECONV_PARTIAL_INPUT, &result_position);
         if (res != econv_source_buffer_empty)
             goto gotresult;
     }
 
     if (has_output &&
-        (flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT) &&
+        (flags & ECONV_AFTER_OUTPUT) &&
         *input_ptr != input_stop) {
         input_stop = *input_ptr;
         res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags, &result_position);
         if (res == econv_source_buffer_empty)
-            res = econv_output_followed_by_input;
+            res = econv_after_output;
     }
-    else if ((flags & ECONV_OUTPUT_FOLLOWED_BY_INPUT) ||
+    else if ((flags & ECONV_AFTER_OUTPUT) ||
         ec->num_trans == 1) {
         res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags, &result_position);
     }
     else {
-        flags |= ECONV_OUTPUT_FOLLOWED_BY_INPUT;
+        flags |= ECONV_AFTER_OUTPUT;
         do {
             res = rb_trans_conv(ec, input_ptr, input_stop, output_ptr, output_stop, flags, &result_position);
-        } while (res == econv_output_followed_by_input);
+        } while (res == econv_after_output);
     }
 
   gotresult:
@@ -2795,7 +2795,7 @@ econv_result_to_symbol(rb_econv_result_t res)
       case econv_destination_buffer_full: return sym_destination_buffer_full;
       case econv_source_buffer_empty: return sym_source_buffer_empty;
       case econv_finished: return sym_finished;
-      case econv_output_followed_by_input: return sym_output_followed_by_input;
+      case econv_after_output: return sym_after_output;
       default: return INT2NUM(res); /* should not be reached */
     }
 }
@@ -2810,16 +2810,16 @@ econv_result_to_symbol(rb_econv_result_t res)
  * possible opt elements:
  *   hash form:
  *     :partial_input => true           # source buffer may be part of larger source
- *     output_followed_by_input => true # stop conversion after output before input
+ *     :after_output => true            # stop conversion after output before input
  *   integer form:
  *     Encoding::Converter::PARTIAL_INPUT
- *     Encoding::Converter::OUTPUT_FOLLOWED_BY_INPUT
+ *     Encoding::Converter::AFTER_OUTPUT
  *
  * possible results:
  *    :invalid_byte_sequence
  *    :incomplete_input
  *    :undefined_conversion
- *    :output_followed_by_input
+ *    :after_output
  *    :destination_buffer_full
  *    :source_buffer_empty
  *    :finished
@@ -2867,8 +2867,8 @@ econv_result_to_symbol(rb_econv_result_t res)
  * - unexpected end of source buffer (:incomplete_input)
  *   this occur only when :partial_input is not specified.
  * - character not representable in output encoding (:undefined_conversion)
- * - after some output is generated, before input is done (:output_followed_by_input)
- *   this occur only when :output_followed_by_input is specified.
+ * - after some output is generated, before input is done (:after_output)
+ *   this occur only when :after_output is specified.
  * - destination buffer is full (:destination_buffer_full)
  *   this occur only when destination_bytesize is non-nil.
  * - source buffer is empty (:source_buffer_empty)
@@ -2928,9 +2928,9 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
         v = rb_hash_aref(opt, sym_partial_input);
         if (RTEST(v))
             flags |= ECONV_PARTIAL_INPUT;
-        v = rb_hash_aref(opt, sym_output_followed_by_input);
+        v = rb_hash_aref(opt, sym_after_output);
         if (RTEST(v))
-            flags |= ECONV_OUTPUT_FOLLOWED_BY_INPUT;
+            flags |= ECONV_AFTER_OUTPUT;
     }
 
     StringValue(output);
@@ -3594,7 +3594,7 @@ Init_transcode(void)
     sym_destination_buffer_full = ID2SYM(rb_intern("destination_buffer_full"));
     sym_source_buffer_empty = ID2SYM(rb_intern("source_buffer_empty"));
     sym_finished = ID2SYM(rb_intern("finished"));
-    sym_output_followed_by_input = ID2SYM(rb_intern("output_followed_by_input"));
+    sym_after_output = ID2SYM(rb_intern("after_output"));
     sym_incomplete_input = ID2SYM(rb_intern("incomplete_input"));
     sym_universal_newline = ID2SYM(rb_intern("universal_newline"));
     sym_crlf_newline = ID2SYM(rb_intern("crlf_newline"));
@@ -3627,7 +3627,7 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "UNDEF_REPLACE", INT2FIX(ECONV_UNDEF_REPLACE));
     rb_define_const(rb_cEncodingConverter, "UNDEF_HEX_CHARREF", INT2FIX(ECONV_UNDEF_HEX_CHARREF));
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
-    rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
+    rb_define_const(rb_cEncodingConverter, "AFTER_OUTPUT", INT2FIX(ECONV_AFTER_OUTPUT));
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECORATOR", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECORATOR));
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_DECORATOR", INT2FIX(ECONV_CRLF_NEWLINE_DECORATOR));
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_DECORATOR", INT2FIX(ECONV_CR_NEWLINE_DECORATOR));

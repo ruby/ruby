@@ -1,3 +1,13 @@
+Wed Sep 10 01:26:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (econv_after_output): renamed from
+	  econv_output_followed_by_input.
+	  (ECONV_AFTER_OUTPUT): renamed from ECONV_OUTPUT_FOLLOWED_BY_INPUT.
+
+	* transcode.c: follow the renaming.
+
+	* io.c: ditto.
+
 Wed Sep 10 01:16:07 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (get_replacement_character): don't return ASCII

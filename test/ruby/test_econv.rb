@@ -256,14 +256,14 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_invalid4
     ec = Encoding::Converter.new("Shift_JIS", "EUC-JP")
-    a =     ["", "abc\xFFdef", ec, nil, 10, :output_followed_by_input=>true]
-    check_ec("a", "bc\xFFdef", :output_followed_by_input, *a)
-    check_ec("ab", "c\xFFdef", :output_followed_by_input, *a)
-    check_ec("abc", "\xFFdef", :output_followed_by_input, *a)
+    a =     ["", "abc\xFFdef", ec, nil, 10, :after_output=>true]
+    check_ec("a", "bc\xFFdef", :after_output, *a)
+    check_ec("ab", "c\xFFdef", :after_output, *a)
+    check_ec("abc", "\xFFdef", :after_output, *a)
     check_ec("abc",     "def", :invalid_byte_sequence, *a)
-    check_ec("abcd",     "ef", :output_followed_by_input, *a)
-    check_ec("abcde",     "f", :output_followed_by_input, *a)
-    check_ec("abcdef",     "", :output_followed_by_input, *a)
+    check_ec("abcd",     "ef", :after_output, *a)
+    check_ec("abcde",     "f", :after_output, *a)
+    check_ec("abcdef",     "", :after_output, *a)
     check_ec("abcdef",     "", :finished, *a)
   end
 
@@ -363,11 +363,11 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_errors2
     ec = Encoding::Converter.new("UTF-16BE", "EUC-JP")
-    a =     ["", "\xFF\xFE\x00A\xDC\x00\x00B", ec, nil, 10, :output_followed_by_input=>true]
+    a =     ["", "\xFF\xFE\x00A\xDC\x00\x00B", ec, nil, 10, :after_output=>true]
     check_ec("",         "\x00A\xDC\x00\x00B", :undefined_conversion, *a)
-    check_ec("A",             "\xDC\x00\x00B", :output_followed_by_input, *a)
+    check_ec("A",             "\xDC\x00\x00B", :after_output, *a)
     check_ec("A",                     "\x00B", :invalid_byte_sequence, *a)
-    check_ec("AB",                         "", :output_followed_by_input, *a)
+    check_ec("AB",                         "", :after_output, *a)
     check_ec("AB",                         "", :finished, *a)
   end
 
@@ -413,16 +413,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
-  def test_output_followed_by_input
+  def test_after_output
     ec = Encoding::Converter.new("UTF-8", "EUC-JP")
-    a =     ["",  "abc\u{3042}def", ec, nil, 100, :output_followed_by_input=>true]
-    check_ec("a",  "bc\u{3042}def", :output_followed_by_input, *a)
-    check_ec("ab",  "c\u{3042}def", :output_followed_by_input, *a)
-    check_ec("abc",  "\u{3042}def", :output_followed_by_input, *a)
-    check_ec("abc\xA4\xA2",  "def", :output_followed_by_input, *a)
-    check_ec("abc\xA4\xA2d",  "ef", :output_followed_by_input, *a)
-    check_ec("abc\xA4\xA2de",  "f", :output_followed_by_input, *a)
-    check_ec("abc\xA4\xA2def",  "", :output_followed_by_input, *a)
+    a =     ["",  "abc\u{3042}def", ec, nil, 100, :after_output=>true]
+    check_ec("a",  "bc\u{3042}def", :after_output, *a)
+    check_ec("ab",  "c\u{3042}def", :after_output, *a)
+    check_ec("abc",  "\u{3042}def", :after_output, *a)
+    check_ec("abc\xA4\xA2",  "def", :after_output, *a)
+    check_ec("abc\xA4\xA2d",  "ef", :after_output, *a)
+    check_ec("abc\xA4\xA2de",  "f", :after_output, *a)
+    check_ec("abc\xA4\xA2def",  "", :after_output, *a)
     check_ec("abc\xA4\xA2def",  "", :finished, *a)
   end
 
@@ -612,16 +612,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     check_ec("abcdefg", "", :source_buffer_empty, *a)
   end
 
-  def test_noconv_output_followed_by_input
+  def test_noconv_after_output
     ec = Encoding::Converter.new("", "")
-    a =     ["", "abcdefg", ec, nil, 2, :output_followed_by_input=>true]
-    check_ec("a", "bcdefg", :output_followed_by_input, *a)
-    check_ec("ab", "cdefg", :output_followed_by_input, *a)
-    check_ec("abc", "defg", :output_followed_by_input, *a)
-    check_ec("abcd", "efg", :output_followed_by_input, *a)
-    check_ec("abcde", "fg", :output_followed_by_input, *a)
-    check_ec("abcdef", "g", :output_followed_by_input, *a)
-    check_ec("abcdefg", "", :output_followed_by_input, *a)
+    a =     ["", "abcdefg", ec, nil, 2, :after_output=>true]
+    check_ec("a", "bcdefg", :after_output, *a)
+    check_ec("ab", "cdefg", :after_output, *a)
+    check_ec("abc", "defg", :after_output, *a)
+    check_ec("abcd", "efg", :after_output, *a)
+    check_ec("abcde", "fg", :after_output, *a)
+    check_ec("abcdef", "g", :after_output, *a)
+    check_ec("abcdefg", "", :after_output, *a)
     check_ec("abcdefg", "", :finished, *a)
   end
 

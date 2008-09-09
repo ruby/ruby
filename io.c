@@ -1503,7 +1503,7 @@ more_char(rb_io_t *fptr)
         se = sp + fptr->rbuf_len;
         ds = dp = (unsigned char *)fptr->cbuf + fptr->cbuf_off + fptr->cbuf_len;
         de = (unsigned char *)fptr->cbuf + fptr->cbuf_capa;
-        res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_OUTPUT_FOLLOWED_BY_INPUT);
+        res = rb_econv_convert(fptr->readconv, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
         fptr->rbuf_off += sp - ss;
         fptr->rbuf_len -= sp - ss;
         fptr->cbuf_len += dp - ds;
