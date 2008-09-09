@@ -678,6 +678,7 @@ EOT
 
   def test_getc_invalid3
     with_pipe("utf-16le:euc-jp") {|r, w|
+      w.binmode
       before1 = "\x42\x30".force_encoding("utf-16le")
       before2 = "\x44\x30".force_encoding("utf-16le")
       invalid = "\x00\xd8".force_encoding("utf-16le")
@@ -1226,34 +1227,31 @@ EOT
     }
   end
 
-  def test_textmode_read_ascii_incompat_internal
+  def test_read_newline_conversion_with_encoding_conversion
     with_tmpdir {
-      # ascii incompatible internal encoding needs binmode.
-      assert_raise(ArgumentError) {
-        open("t.utf8.crlf", "rt:utf-8:utf-16be") {|f| }
+      generate_file("t.utf8.crlf", "a\r\nb\r\n")
+      open("t.utf8.crlf", "rb:utf-8:utf-16be") {|f|
+        content = f.read
+        assert_equal("\0a\0\r\0\n\0b\0\r\0\n".force_encoding("UTF-16BE"), content)
       }
-      assert_raise(ArgumentError) {
-        open("t.utf8.crlf", "r:utf-8:utf-16be") {|f| }
+      open("t.utf8.crlf", "rt:utf-8:utf-16be") {|f|
+        content = f.read
+        assert_equal("\0a\0\n\0b\0\n".force_encoding("UTF-16BE"), content)
       }
-      assert_raise(ArgumentError) {
-        open("t.utf16.crlf", "rt:utf-16be") {|f| }
-      }
-      assert_raise(ArgumentError) {
-        open("t.utf16.crlf", "r:utf-16be") {|f| }
+      open("t.utf8.crlf", "r:utf-8:utf-16be") {|f|
+        content = f.read
+        if system_newline == "\n"
+          assert_equal("\0a\0\r\0\n\0b\0\r\0\n".force_encoding("UTF-16BE"), content)
+        else
+          assert_equal("\0a\0\n\0b\0\n".force_encoding("UTF-16BE"), content)
+        end
       }
     }
   end
 
-  def test_binmode_read_ascii_incompat_internal
+  def test_read_newline_conversion_without_encoding_conversion
     with_tmpdir {
-      generate_file("t.utf8.crlf", "a\r\nb\r\n")
       generate_file("t.utf16.crlf", "\0a\0\r\0\n\0b\0\r\0\n")
-      # ascii incompatible internal encoding needs binmode.
-      open("t.utf8.crlf", "rb:utf-8:utf-16be") {|f|
-        content = f.read
-        assert_equal("\0a\0\r\0\n\0b\0\r\0\n".force_encoding("UTF-16BE"),
-                     content)
-      }
       open("t.utf16.crlf", "rb:utf-16be") {|f|
         content = f.read
         assert_equal("\0a\0\r\0\n\0b\0\r\0\n".force_encoding("UTF-16BE"),
@@ -1262,24 +1260,179 @@ EOT
     }
   end
 
-  def test_textmode_write_ascii_incompat_internal
+  def test_read_newline_conversion_error
     with_tmpdir {
-      # ascii incompatible internal encoding needs binmode.
+      generate_file("empty.txt", "")
+      # ascii incompatible encoding without conversion needs binmode.
       assert_raise(ArgumentError) {
-        open("t.utf8", "wt:utf-8:utf-16be") {|f| }
+        open("empty.txt", "rt:utf-16be") {|f| }
       }
       assert_raise(ArgumentError) {
-        open("t.utf8", "w:utf-8:utf-16be") {|f| }
+        open("empty.txt", "r:utf-16be") {|f| }
       }
-      assert_raise(ArgumentError) {
-        open("t.utf8", "w:utf-8:utf-16be") {|f| }
+    }
+  end
+
+  def test_read_mode
+    with_tmpdir {
+      generate_file("t", "a\rb\r\nc\n\xc2\xa2")
+      generate_file("ie", "a\rb\r\nc\n\e$B\x42\x22\e(B")
+      generate_file("iu", "a\rb\r\nc\n\e$B\x21\x71\e(B")
+      generate_file("be", "\0a\0\r\0b\0\r\0\n\0c\0\n\x85\x35")
+      generate_file("bu", "\0a\0\r\0b\0\r\0\n\0c\0\n\0\xa2")
+      # "\xc2\xa2" is valid as EUC-JP and UTF-8
+      #   EUC-JP        UTF-8           Unicode
+      #   0xC2A2        0xE894B5        U+8535
+      #   0xA1F1        0xC2A2          U+00A2
+
+      open("t","rt") {|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding(Encoding.default_external), f.read) }
+      open("t","rb") {|f| assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding(Encoding.default_external), f.read) }
+
+      open("t","rt:euc-jp") {|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding("EUC-JP"), f.read) }
+      open("t","rb:euc-jp") {|f| assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("EUC-JP"), f.read) }
+      open("t","rt:utf-8") {|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding("UTF-8"), f.read) }
+      open("t","rb:utf-8") {|f| assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("UTF-8"), f.read) }
+      assert_raise(ArgumentError) { open("t", "rt:iso-2022-jp") {|f| } }
+      open("t","rb:iso-2022-jp") {|f| assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("ISO-2022-JP"), f.read) }
+
+      open("t","rt:euc-jp:utf-8") {|f| assert_equal("a\nb\nc\n\u8535", f.read) }
+      open("t","rt:utf-8:euc-jp") {|f| assert_equal("a\nb\nc\n\xa1\xf1".force_encoding("EUC-JP"), f.read) }
+      open("t","rb:euc-jp:utf-8") {|f| assert_equal("a\rb\r\nc\n\u8535", f.read) }
+      open("t","rb:utf-8:euc-jp") {|f| assert_equal("a\rb\r\nc\n\xa1\xf1".force_encoding("EUC-JP"), f.read) }
+
+      open("t","rt:euc-jp:iso-2022-jp"){|f| assert_equal("a\nb\nc\n\e$B\x42\x22\e(B".force_encoding("ISO-2022-JP"), f.read) }
+      open("t","rt:utf-8:iso-2022-jp"){|f| assert_equal("a\nb\nc\n\e$B\x21\x71\e(B".force_encoding("ISO-2022-JP"), f.read) }
+      open("t","rt:euc-jp:utf-16be"){|f| assert_equal("\0a\0\n\0b\0\n\0c\0\n\x85\x35".force_encoding("UTF-16BE"), f.read) }
+      open("t","rt:utf-8:utf-16be"){|f| assert_equal("\0a\0\n\0b\0\n\0c\0\n\0\xa2".force_encoding("UTF-16BE"), f.read) }
+      open("t","rb:euc-jp:iso-2022-jp"){|f|assert_equal("a\rb\r\nc\n\e$B\x42\x22\e(B".force_encoding("ISO-2022-JP"),f.read)}
+      open("t","rb:utf-8:iso-2022-jp"){|f|assert_equal("a\rb\r\nc\n\e$B\x21\x71\e(B".force_encoding("ISO-2022-JP"),f.read)}
+      open("t","rb:euc-jp:utf-16be"){|f|assert_equal("\0a\0\r\0b\0\r\0\n\0c\0\n\x85\x35".force_encoding("UTF-16BE"),f.read)}
+      open("t","rb:utf-8:utf-16be"){|f|assert_equal("\0a\0\r\0b\0\r\0\n\0c\0\n\0\xa2".force_encoding("UTF-16BE"),f.read)}
+
+      open("ie","rt:iso-2022-jp:euc-jp"){|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding("EUC-JP"), f.read) }
+      open("iu","rt:iso-2022-jp:utf-8"){|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding("UTF-8"), f.read) }
+      open("be","rt:utf-16be:euc-jp"){|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding("EUC-JP"), f.read) }
+      open("bu","rt:utf-16be:utf-8"){|f| assert_equal("a\nb\nc\n\xc2\xa2".force_encoding("UTF-8"), f.read) }
+      open("ie","rb:iso-2022-jp:euc-jp"){|f|assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("EUC-JP"),f.read)}
+      open("iu","rb:iso-2022-jp:utf-8"){|f|assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("UTF-8"),f.read)}
+      open("be","rb:utf-16be:euc-jp"){|f|assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("EUC-JP"),f.read)}
+      open("bu","rb:utf-16be:utf-8"){|f|assert_equal("a\rb\r\nc\n\xc2\xa2".force_encoding("UTF-8"),f.read)}
+
+      open("ie","rt:iso-2022-jp:utf-16be"){|f|assert_equal("\0a\0\n\0b\0\n\0c\0\n\x85\x35".force_encoding("UTF-16BE"),f.read)}
+      open("be","rt:utf-16be:iso-2022-jp"){|f|assert_equal("a\nb\nc\n\e$B\x42\x22\e(B".force_encoding("ISO-2022-JP"),f.read)}
+      open("ie","rb:iso-2022-jp:utf-16be"){|f|assert_equal("\0a\0\r\0b\0\r\0\n\0c\0\n\x85\x35".force_encoding("UTF-16BE"),f.read)}
+      open("be","rb:utf-16be:iso-2022-jp"){|f|assert_equal("a\rb\r\nc\n\e$B\x42\x22\e(B".force_encoding("ISO-2022-JP"),f.read)}
+    }
+  end
+
+  def assert_write(expected, mode, *args)
+    with_tmpdir {
+      open("t", mode) {|f|
+        args.each {|arg| f.print arg }
       }
-      assert_raise(ArgumentError) {
-        open("t.utf16", "wt:utf-16be") {|f| }
+      content = File.read("t", :mode=>"rb:ascii-8bit")
+      assert_equal(expected.dup.force_encoding("ascii-8bit"),
+                   content.force_encoding("ascii-8bit")) 
+    }
+  end
+
+  def test_write_mode
+    # "\xc2\xa2" is valid as EUC-JP and UTF-8
+    #   EUC-JP        UTF-8           Unicode
+    #   0xC2A2        0xE894B5        U+8535
+    #   0xA1F1        0xC2A2          U+00A2
+    a = "a\rb\r\nc\n"
+    e = "\xc2\xa2".force_encoding("euc-jp")
+    u8 = "\xc2\xa2".force_encoding("utf-8")
+    u16 = "\x85\x35\0\r\x00\xa2\0\r\0\n\0\n".force_encoding("utf-16be")
+    i = "\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n".force_encoding("iso-2022-jp")
+    n = system_newline
+    un = n.encode("utf-16be").force_encoding("ascii-8bit")
+
+    assert_write("a\rb\r#{n}c#{n}", "wt", a)
+    assert_write("\xc2\xa2", "wt", e)
+    assert_write("\xc2\xa2", "wt", u8)
+
+    assert_write("a\rb\r\nc\n", "wb", a)
+    assert_write("\xc2\xa2", "wb", e)
+    assert_write("\xc2\xa2", "wb", u8)
+
+    #assert_write("\x85\x35\0\r\x00\xa2\0\r\0\n\0\n", "wt", u16) should raise
+    #assert_write("\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n", "wt", i) should raise
+    assert_write("\x85\x35\0\r\x00\xa2\0\r\0\n\0\n", "wb", u16)
+    assert_write("\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n", "wb", i)
+
+    t_write_mode_enc
+    t_write_mode_enc(":utf-8")
+  end
+
+  def t_write_mode_enc(enc="")
+    # "\xc2\xa2" is valid as EUC-JP and UTF-8
+    #   EUC-JP        UTF-8           Unicode
+    #   0xC2A2        0xE894B5        U+8535
+    #   0xA1F1        0xC2A2          U+00A2
+    a = "a\rb\r\nc\n"
+    e = "\xc2\xa2".force_encoding("euc-jp")
+    u8 = "\xc2\xa2".force_encoding("utf-8")
+    u16 = "\x85\x35\0\r\x00\xa2\0\r\0\n\0\n".force_encoding("utf-16be")
+    i = "\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n".force_encoding("iso-2022-jp")
+    n = system_newline
+    un = n.encode("utf-16be").force_encoding("ascii-8bit")
+
+    assert_write("a\rb\r#{n}c#{n}", "wt:euc-jp#{enc}", a)
+    assert_write("\xc2\xa2", "wt:euc-jp#{enc}", e)
+    assert_write("\xa1\xf1", "wt:euc-jp#{enc}", u8)
+
+    assert_write("a\rb\r\nc\n", "wb:euc-jp#{enc}", a)
+    assert_write("\xc2\xa2", "wb:euc-jp#{enc}", e)
+    assert_write("\xa1\xf1", "wb:euc-jp#{enc}", u8)
+
+    assert_write("\xc2\xa2\r\xa1\xf1\r#{n}#{n}", "wt:euc-jp#{enc}", u16)
+    assert_write("\xc2\xa2\r\xa1\xf1\r#{n}#{n}", "wt:euc-jp#{enc}", i)
+    assert_write("\xc2\xa2\r\xa1\xf1\r\n\n", "wb:euc-jp#{enc}", u16)
+    assert_write("\xc2\xa2\r\xa1\xf1\r\n\n", "wb:euc-jp#{enc}", i)
+
+    assert_write("\0a\0\r\0b\0\r#{un}\0c#{un}", "wt:utf-16be#{enc}", a)
+    assert_write("\x85\x35", "wt:utf-16be#{enc}", e)
+    assert_write("\x00\xa2", "wt:utf-16be#{enc}", u8)
+    assert_write("a\rb\r#{n}c#{n}", "wt:iso-2022-jp#{enc}", a)
+    assert_write("\e$B\x42\x22\e(B", "wt:iso-2022-jp#{enc}", e)
+    assert_write("\e$B\x21\x71\e(B", "wt:iso-2022-jp#{enc}", u8)
+
+    assert_write("\0a\0\r\0b\0\r\0\n\0c\0\n", "wb:utf-16be#{enc}", a)
+    assert_write("\x85\x35", "wb:utf-16be#{enc}", e)
+    assert_write("\x00\xa2", "wb:utf-16be#{enc}", u8)
+    assert_write("a\rb\r\nc\n", "wb:iso-2022-jp#{enc}", a)
+    assert_write("\e$B\x42\x22\e(B", "wb:iso-2022-jp#{enc}", e)
+    assert_write("\e$B\x21\x71\e(B", "wb:iso-2022-jp#{enc}", u8)
+
+    assert_write("\x85\x35\0\r\x00\xa2\0\r#{un}#{un}", "wt:utf-16be#{enc}", u16)
+    assert_write("\x85\x35\0\r\x00\xa2\0\r#{un}#{un}", "wt:utf-16be#{enc}", i)
+    assert_write("\x85\x35\0\r\x00\xa2\0\r\0\n\0\n", "wb:utf-16be#{enc}", u16)
+    assert_write("\x85\x35\0\r\x00\xa2\0\r\0\n\0\n", "wb:utf-16be#{enc}", i)
+    assert_write("\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r#{n}#{n}", "wt:iso-2022-jp#{enc}", u16)
+    assert_write("\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r#{n}#{n}", "wt:iso-2022-jp#{enc}", i)
+    assert_write("\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n", "wb:iso-2022-jp#{enc}", u16)
+    assert_write("\e$B\x42\x22\e(B\r\e$B\x21\x71\e(B\r\n\n", "wb:iso-2022-jp#{enc}", i)
+  end
+
+  def test_write_mode_fail
+    return if system_newline == "\n"
+    with_tmpdir {
+      open("t", "wt") {|f|
+        assert_raise(ArgumentError) { f.print "\0\r\0\r\0\n\0\n".force_encoding("utf-16be") }
       }
-      assert_raise(ArgumentError) {
-        open("t.utf16", "w:utf-16be") {|f| }
-      }
+    }
+  end
+
+  def test_write_ascii_incompat
+    with_tmpdir {
+      open("t.utf8", "wb:utf-8:utf-16be") {|f| }
+      open("t.utf8", "wt:utf-8:utf-16be") {|f| }
+      open("t.utf8", "w:utf-8:utf-16be") {|f| }
+      open("t.utf16", "wb:utf-16be") {|f| }
+      open("t.utf16", "wt:utf-16be") {|f| }
+      open("t.utf16", "w:utf-16be") {|f| }
     }
   end
 

@@ -756,6 +756,10 @@ io_fwrite(VALUE str, rb_io_t *fptr)
         if (fptr->writeconv) {
             if (!NIL_P(fptr->writeconv_stateless))
                 common_encoding = fptr->writeconv_stateless;
+            else if (!rb_enc_asciicompat(rb_enc_get(str))) {
+                rb_raise(rb_eArgError, "ASCII incompatible string written for text mode IO without encoding conversion: %s",
+                         rb_enc_name(rb_enc_get(str)));
+            }
         }
         else {
             if (fptr->encs.enc2)
@@ -3908,7 +3912,10 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
     if ((fmode & FMODE_BINMODE) && (fmode & FMODE_TEXTMODE))
         rb_raise(rb_eArgError, "both textmode and binmode specified");
 
-    if (enc && !rb_enc_asciicompat(enc) && !(fmode & FMODE_BINMODE))
+    if ((fmode & FMODE_READABLE) &&
+        !enc2 &&
+        !(fmode & FMODE_BINMODE) &&
+        !rb_enc_asciicompat(enc ? enc : rb_default_external_encoding()))
         rb_raise(rb_eArgError, "ASCII incompatible encoding needs binmode");
 
     *vmode_p = vmode;

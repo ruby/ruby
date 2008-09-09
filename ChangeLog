@@ -1,3 +1,9 @@
+Tue Sep  9 23:55:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_fwrite): raise an error if ASCII incompatible string
+	  written for text mode IO without encoding conversion.
+	  (rb_io_extract_modeenc): binmode requirement changed.
+
 Tue Sep  9 21:59:48 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi*: split cgi.rb into four files. [ruby-dev:36041]
