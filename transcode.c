@@ -132,7 +132,7 @@ struct rb_econv_t {
  *  Dispatch data and logic
  */
 
-#define SUPPLEMENTAL_CONVERSION(sname, dname) (*(sname) == '\0' || *(dname) == '\0')
+#define SUPPLEMENTAL_CONVERSION(sname, dname) (*(sname) == '\0')
 
 typedef struct {
     const char *sname;
@@ -1762,8 +1762,6 @@ rb_econv_decorate_at(rb_econv_t *ec, const char *decorator_name, int n)
 
     entry = get_transcoder_entry("", decorator_name);
     if (!entry)
-        entry = get_transcoder_entry(decorator_name, "");
-    if (!entry)
         return -1;
 
     tr = load_transcoder_entry(entry);
@@ -1833,7 +1831,7 @@ rb_econv_binmode(rb_econv_t *ec)
 
     n = 0;
     if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECORATOR) {
-        entry = get_transcoder_entry("universal_newline", "");
+        entry = get_transcoder_entry("", "universal_newline");
         if (entry->transcoder)
             trs[n++] = entry->transcoder;
     }

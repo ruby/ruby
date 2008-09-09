@@ -87,7 +87,7 @@ universal_newline_finish(void *statep, unsigned char *o)
 
 static const rb_transcoder
 rb_universal_newline = {
-    "universal_newline", "", universal_newline,
+    "", "universal_newline", universal_newline,
     TRANSCODE_TABLE_INFO,
     1, /* input_unit_length */
     1, /* max_input */
@@ -129,4 +129,3 @@ Init_newline(void)
     rb_register_transcoder(&rb_crlf_newline);
     rb_register_transcoder(&rb_cr_newline);
 }
-

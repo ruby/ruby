@@ -1,3 +1,12 @@
+Wed Sep 10 01:05:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* enc/trans/newline.trans (rb_universal_newline): swap src_encoding
+	  and dst_encoding.
+
+	* transcode.c (rb_econv_decorate_at): call get_transcoder_entry only
+	  once.
+	  (rb_econv_binmode): follow universal_newline change.
+
 Wed Sep 10 00:01:36 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/io.h (rb_io_t): rename field: writeconv_stateless to
