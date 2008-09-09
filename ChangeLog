@@ -1,3 +1,8 @@
+Tue Sep  9 20:55:55 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_open0): make it static.
+	  (rb_econv_open): place decorators at last.
+
 Tue Sep  9 20:40:15 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/openssl/test_ssl.rb (OpenSSL#test_client_session):

@@ -878,7 +878,7 @@ trans_open_i(const char *sname, const char *dname, int depth, void *arg)
     toarg->entries[depth] = get_transcoder_entry(sname, dname);
 }
 
-rb_econv_t *
+static rb_econv_t *
 rb_econv_open0(const char *sname, const char *dname, int ecflags)
 {
     transcoder_entry_t **entries = NULL;
@@ -943,8 +943,8 @@ rb_econv_t *
 rb_econv_open(const char *sname, const char *dname, int ecflags)
 {
     rb_econv_t *ec;
-    int num_encoders, num_decoders;
-    const char *encoders[4], *decoders[1];
+    int num_decorators;
+    const char *decorators[6];
     int i;
 
     if ((ecflags & ECONV_CRLF_NEWLINE_ENCODER) &&
@@ -959,40 +959,34 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
         (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER))
         return NULL;
 
-    num_encoders = 0;
-    if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
-        if (!(encoders[num_encoders++] = "crlf_newline"))
-            return NULL;
-    if (ecflags & ECONV_CR_NEWLINE_ENCODER)
-        if (!(encoders[num_encoders++] = "cr_newline"))
-            return NULL;
+    num_decorators = 0;
+
     if (ecflags & ECONV_XML_TEXT_ENCODER)
-        if (!(encoders[num_encoders++] = "xml-text-escaped"))
+        if (!(decorators[num_decorators++] = "xml-text-escaped"))
             return NULL;
     if (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER)
-        if (!(encoders[num_encoders++] = "xml-attr-content-escaped"))
+        if (!(decorators[num_decorators++] = "xml-attr-content-escaped"))
             return NULL;
     if (ecflags & ECONV_XML_ATTR_QUOTE_ENCODER)
-        if (!(encoders[num_encoders++] = "xml-attr-quoted"))
+        if (!(decorators[num_decorators++] = "xml-attr-quoted"))
             return NULL;
 
-    num_decoders = 0;
+    if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
+        if (!(decorators[num_decorators++] = "crlf_newline"))
+            return NULL;
+    if (ecflags & ECONV_CR_NEWLINE_ENCODER)
+        if (!(decorators[num_decorators++] = "cr_newline"))
+            return NULL;
     if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)
-        if (!(decoders[num_decoders++] = "universal_newline"))
+        if (!(decorators[num_decorators++] = "universal_newline"))
             return NULL;
 
     ec = rb_econv_open0(sname, dname, ecflags & ECONV_ERROR_HANDLER_MASK);
     if (!ec)
         return NULL;
 
-    for (i = 0; i < num_decoders; i++)
-        if (rb_econv_decorate_at_last(ec, decoders[i]) == -1) {
-            rb_econv_close(ec);
-            return NULL;
-        }
-
-    for (i = num_encoders-1; 0 <= i; i--)
-        if (rb_econv_decorate_at_first(ec, encoders[i]) == -1) {
+    for (i = 0; i < num_decorators; i++)
+        if (rb_econv_decorate_at_last(ec, decorators[i]) == -1) {
             rb_econv_close(ec);
             return NULL;
         }
