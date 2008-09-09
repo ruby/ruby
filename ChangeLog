@@ -1,3 +1,12 @@
+Wed Sep 10 00:01:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/io.h (rb_io_t): rename field: writeconv_stateless to
+	  writeconv_asciicompat.
+
+	* io.c: follow the renaming.
+
+	* gc.c: ditto.
+
 Tue Sep  9 23:55:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_fwrite): raise an error if ASCII incompatible string

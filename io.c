@@ -709,7 +709,7 @@ make_writeconv(rb_io_t *fptr)
             fptr->writeconv = rb_econv_open_opts("", "", ecflags, ecopts);
             if (!fptr->writeconv)
                 rb_exc_raise(rb_econv_open_exc("", "", ecflags));
-            fptr->writeconv_stateless = Qnil;
+            fptr->writeconv_asciicompat = Qnil;
         }
         else {
             enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
@@ -719,7 +719,7 @@ make_writeconv(rb_io_t *fptr)
                 fptr->writeconv_pre_ecflags = ecflags;
                 fptr->writeconv_pre_ecopts = ecopts;
                 fptr->writeconv = NULL;
-                fptr->writeconv_stateless = Qnil;
+                fptr->writeconv_asciicompat = Qnil;
             }
             else {
                 /* double conversion */
@@ -727,11 +727,11 @@ make_writeconv(rb_io_t *fptr)
                 fptr->writeconv_pre_ecopts = ecopts;
                 if (senc) {
                     denc = enc->name;
-                    fptr->writeconv_stateless = rb_str_new2(senc);
+                    fptr->writeconv_asciicompat = rb_str_new2(senc);
                 }
                 else {
                     senc = denc = "";
-                    fptr->writeconv_stateless = rb_str_new2(enc->name);
+                    fptr->writeconv_asciicompat = rb_str_new2(enc->name);
                 }
                 ecflags = fptr->encs.ecflags & (ECONV_ERROR_HANDLER_MASK|ECONV_STATEFUL_DECORATOR_MASK);
                 ecopts = fptr->encs.ecopts;
@@ -754,8 +754,8 @@ io_fwrite(VALUE str, rb_io_t *fptr)
         make_writeconv(fptr);
 
         if (fptr->writeconv) {
-            if (!NIL_P(fptr->writeconv_stateless))
-                common_encoding = fptr->writeconv_stateless;
+            if (!NIL_P(fptr->writeconv_asciicompat))
+                common_encoding = fptr->writeconv_asciicompat;
             else if (!rb_enc_asciicompat(rb_enc_get(str))) {
                 rb_raise(rb_eArgError, "ASCII incompatible string written for text mode IO without encoding conversion: %s",
                          rb_enc_name(rb_enc_get(str)));

@@ -68,7 +68,7 @@ typedef struct rb_io_t {
     int cbuf_capa;
 
     rb_econv_t *writeconv;
-    VALUE writeconv_stateless;
+    VALUE writeconv_asciicompat;
     int writeconv_pre_ecflags;
     VALUE writeconv_pre_ecopts;
     int writeconv_initialized;
@@ -124,7 +124,7 @@ typedef struct rb_io_t {
     fp->cbuf_len = 0;\
     fp->cbuf_capa = 0;\
     fp->writeconv = NULL;\
-    fp->writeconv_stateless = Qnil;\
+    fp->writeconv_asciicompat = Qnil;\
     fp->writeconv_pre_ecflags = 0;\
     fp->writeconv_pre_ecopts = Qnil;\
     fp->writeconv_initialized = 0;\
