@@ -1,3 +1,13 @@
+Tue Sep  9 20:34:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_t): last_trans_index removed.
+	  (rb_econv_open_by_transcoder_entries): follow the type change.
+	  (rb_econv_open0): ditto.
+	  (rb_econv_decorate_at): ditto.
+	  (rb_econv_binmode): ditto.
+	  (rb_econv_insert_output): simplified because there are no decorators
+	  at last.
+
 Tue Sep  9 20:21:54 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open): reverse the order of decorders.

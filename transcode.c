@@ -109,7 +109,6 @@ struct rb_econv_t {
     rb_econv_elem_t *elems;
     int num_trans;
     int num_finished;
-    int last_trans_index; /* last trans, not including universal newline */
     struct rb_transcoding *last_tc;
 
     /* last error */
@@ -829,7 +828,6 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->elems = ALLOC_N(rb_econv_elem_t, ec->num_trans);
     ec->num_finished = 0;
     ec->last_tc = NULL;
-    ec->last_trans_index = -1;
     ec->last_error.result = econv_source_buffer_empty;
     ec->last_error.error_tc = NULL;
     ec->last_error.source_encoding = NULL;
@@ -850,7 +848,6 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     }
     if (ec->num_trans)
         ec->last_tc = ec->elems[ec->num_trans-1].tc;
-    ec->last_trans_index = ec->num_trans-1;
 
     for (i = 0; i < ec->num_trans; i++) {
         int bufsize = 4096;
@@ -934,11 +931,9 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
 
     if (num_trans == 0) {
         ec->last_tc = NULL;
-        ec->last_trans_index = -1;
     }
     else {
-        ec->last_trans_index = ec->num_trans-1;
-        ec->last_tc = ec->elems[ec->last_trans_index].tc;
+        ec->last_tc = ec->elems[ec->num_trans-1].tc;
     }
 
     return ec;
@@ -1507,6 +1502,7 @@ rb_econv_insert_output(rb_econv_t *ec,
     const unsigned char *insert_str = NULL;
     size_t insert_len;
 
+    int last_trans_index;
     rb_transcoding *tc;
 
     unsigned char **buf_start_p;
@@ -1532,25 +1528,27 @@ rb_econv_insert_output(rb_econv_t *ec,
 
     need = insert_len;
 
-    tc = ec->last_tc;
-    if (!tc) {
+    last_trans_index = ec->num_trans-1;
+    if (ec->num_trans == 0) {
+        tc = NULL;
         buf_start_p = &ec->in_buf_start;
         data_start_p = &ec->in_data_start;
         data_end_p = &ec->in_data_end;
         buf_end_p = &ec->in_buf_end;
     }
-    else if (tc->transcoder->asciicompat_type == asciicompat_encoder) {
+    else if (ec->elems[last_trans_index].tc->transcoder->asciicompat_type == asciicompat_encoder) {
+        tc = ec->elems[last_trans_index].tc;
         need += tc->readagain_len;
         if (need < insert_len)
             goto fail;
-        if (ec->last_trans_index == 0) {
+        if (last_trans_index == 0) {
             buf_start_p = &ec->in_buf_start;
             data_start_p = &ec->in_data_start;
             data_end_p = &ec->in_data_end;
             buf_end_p = &ec->in_buf_end;
         }
         else {
-            rb_econv_elem_t *ee = &ec->elems[ec->last_trans_index-1];
+            rb_econv_elem_t *ee = &ec->elems[last_trans_index-1];
             buf_start_p = &ee->out_buf_start;
             data_start_p = &ee->out_data_start;
             data_end_p = &ee->out_data_end;
@@ -1558,11 +1556,12 @@ rb_econv_insert_output(rb_econv_t *ec,
         }
     }
     else {
-        rb_econv_elem_t *ee = &ec->elems[ec->last_trans_index];
+        rb_econv_elem_t *ee = &ec->elems[last_trans_index];
         buf_start_p = &ee->out_buf_start;
         data_start_p = &ee->out_data_start;
         data_end_p = &ee->out_data_end;
         buf_end_p = &ee->out_buf_end;
+        tc = ec->elems[last_trans_index].tc;
     }
 
     if (*buf_start_p == NULL) {
@@ -1782,8 +1781,6 @@ rb_econv_decorate_at(rb_econv_t *ec, const char *decorator_name, int n)
     REALLOC_N(ec->elems, rb_econv_elem_t, ec->num_trans+1);
     MEMMOVE(ec->elems+n+1, ec->elems+n, rb_econv_elem_t, ec->num_trans-n);
     ec->num_trans++;
-    if (n <= ec->last_trans_index)
-        ec->last_trans_index++;
 
     ec->elems[n].tc = tc;
 
@@ -1865,8 +1862,6 @@ rb_econv_binmode(rb_econv_t *ec)
             if (trs[k] == ec->elems[i].tc->transcoder)
                 break;
         if (k == n) {
-            if (ec->last_tc == ec->elems[i].tc)
-                ec->last_trans_index = j;
             ec->elems[j] = ec->elems[i];
             j++;
         }
