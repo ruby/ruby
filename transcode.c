@@ -891,11 +891,6 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     rb_encoding *senc, *denc;
     int sidx, didx;
 
-    int num_encoders, num_decoders;
-
-    num_encoders = 0;
-    num_decoders = 0;
-
     senc = NULL;
     if (*sname) {
         sidx = rb_enc_find_index(sname);
@@ -914,22 +909,19 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
 
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
-        entries = ALLOC_N(transcoder_entry_t *, num_encoders+num_decoders);
+        entries = NULL;
     }
     else {
         struct trans_open_t toarg;
         toarg.entries = NULL;
-        toarg.num_additional = num_encoders+num_decoders;
+        toarg.num_additional = 0;
         num_trans = transcode_search_path(sname, dname, trans_open_i, (void *)&toarg);
         entries = toarg.entries;
+        if (num_trans < 0) {
+            xfree(entries);
+            return NULL;
+        }
     }
-
-    if (num_trans < 0 || !entries) {
-        xfree(entries);
-        return NULL;
-    }
-
-    num_trans += num_encoders + num_decoders;
 
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
     xfree(entries);
@@ -940,12 +932,12 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     ec->source_encoding_name = sname;
     ec->destination_encoding_name = dname;
 
-    if (num_trans == num_encoders + num_decoders) {
+    if (num_trans == 0) {
         ec->last_tc = NULL;
         ec->last_trans_index = -1;
     }
     else {
-        ec->last_trans_index = ec->num_trans-1-num_decoders;
+        ec->last_trans_index = ec->num_trans-1;
         ec->last_tc = ec->elems[ec->last_trans_index].tc;
     }
 
