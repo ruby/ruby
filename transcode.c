@@ -990,7 +990,7 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
     if (!ec)
         return NULL;
 
-    for (i = num_decoders-1; 0 <= i; i--)
+    for (i = 0; i < num_decoders; i++)
         if (rb_econv_decorate_at_last(ec, decoders[i]) == -1) {
             rb_econv_close(ec);
             return NULL;
