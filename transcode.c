@@ -372,44 +372,16 @@ load_transcoder_entry(transcoder_entry_t *entry)
 }
 
 static const char*
-get_replacement_character(rb_encoding *enc, size_t *len_ret, const char **repl_enc_ptr)
+get_replacement_character(const char *encname, size_t *len_ret, const char **repl_encname_ptr)
 {
-    static rb_encoding *utf16be_encoding, *utf16le_encoding;
-    static rb_encoding *utf32be_encoding, *utf32le_encoding;
-    if (!utf16be_encoding) {
-	utf16be_encoding = rb_enc_find("UTF-16BE");
-	utf16le_encoding = rb_enc_find("UTF-16LE");
-	utf32be_encoding = rb_enc_find("UTF-32BE");
-	utf32le_encoding = rb_enc_find("UTF-32LE");
-    }
-    if (rb_utf8_encoding() == enc) {
+    if (encoding_equal(encname, "UTF-8")) {
         *len_ret = 3;
-        *repl_enc_ptr = "UTF-8";
+        *repl_encname_ptr = "UTF-8";
         return "\xEF\xBF\xBD";
-    }
-    else if (utf16be_encoding == enc) {
-        *len_ret = 2;
-        *repl_enc_ptr = "UTF-16BE";
-        return "\xFF\xFD";
-    }
-    else if (utf16le_encoding == enc) {
-        *len_ret = 2;
-        *repl_enc_ptr = "UTF-16LE";
-        return "\xFD\xFF";
-    }
-    else if (utf32be_encoding == enc) {
-        *len_ret = 4;
-        *repl_enc_ptr = "UTF-32BE";
-        return "\x00\x00\xFF\xFD";
-    }
-    else if (utf32le_encoding == enc) {
-        *len_ret = 4;
-        *repl_enc_ptr = "UTF-32LE";
-        return "\xFD\xFF\x00\x00";
     }
     else {
         *len_ret = 1;
-        *repl_enc_ptr = "US-ASCII";
+        *repl_encname_ptr = "US-ASCII";
         return "?";
     }
 }
@@ -2034,16 +2006,17 @@ make_replacement(rb_econv_t *ec)
     const char *repl_enc;
     const char *ins_enc;
     size_t len;
-    int allocated = 0;
 
     if (ec->replacement_str)
         return 0;
 
+    ins_enc = rb_econv_encoding_to_insert_output(ec);
+
     tc = ec->last_tc;
-    if (tc) {
+    if (*ins_enc) {
         tr = tc->transcoder;
         enc = rb_enc_find(tr->dst_encoding);
-        replacement = (const unsigned char *)get_replacement_character(enc, &len, &repl_enc);
+        replacement = (const unsigned char *)get_replacement_character(ins_enc, &len, &repl_enc);
     }
     else {
         replacement = (unsigned char *)"?";
@@ -2051,18 +2024,10 @@ make_replacement(rb_econv_t *ec)
         repl_enc = "";
     }
 
-    ins_enc = rb_econv_encoding_to_insert_output(ec);
-    if (*repl_enc && !encoding_equal(repl_enc, ins_enc)) {
-        replacement = allocate_converted_string(repl_enc, ins_enc, replacement, len, NULL, 0, &len);
-        if (!replacement)
-            return -1;
-        allocated = 1;
-        repl_enc = ins_enc;
-    }
     ec->replacement_str = replacement;
     ec->replacement_len = len;
     ec->replacement_enc = repl_enc;
-    ec->replacement_allocated = allocated;
+    ec->replacement_allocated = 0;
     return 0;
 }
 

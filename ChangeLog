@@ -1,3 +1,10 @@
+Wed Sep 10 01:16:07 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (get_replacement_character): don't return ASCII
+	  incompatible replacements.
+	  (make_replacement): don't convert the result of
+	  get_replacement_character.
+
 Wed Sep 10 01:05:00 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/newline.trans (rb_universal_newline): swap src_encoding
