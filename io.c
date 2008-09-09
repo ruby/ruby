@@ -673,16 +673,16 @@ rb_io_wait_writable(int f)
 
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
 /* Windows */
-# define NEED_NEWLINE_DECODER(fptr) (!(fptr->mode & FMODE_BINMODE))
-# define NEED_NEWLINE_ENCODER(fptr) (!(fptr->mode & FMODE_BINMODE))
-# define TEXTMODE_NEWLINE_ENCODER ECONV_CRLF_NEWLINE_ENCODER
+# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) (!(fptr->mode & FMODE_BINMODE))
+# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) (!(fptr->mode & FMODE_BINMODE))
+# define TEXTMODE_NEWLINE_DECORATOR_ON_WRITE ECONV_CRLF_NEWLINE_DECORATOR
 #else
 /* Unix */
-# define NEED_NEWLINE_DECODER(fptr) (fptr->mode & FMODE_TEXTMODE)
-# define NEED_NEWLINE_ENCODER(fptr) 0
+# define NEED_NEWLINE_DECORATOR_ON_READ(fptr) (fptr->mode & FMODE_TEXTMODE)
+# define NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) 0
 #endif
-#define NEED_READCONV(fptr) (fptr->encs.enc2 != NULL || NEED_NEWLINE_DECODER(fptr))
-#define NEED_WRITECONV(fptr) (fptr->encs.enc != NULL || NEED_NEWLINE_ENCODER(fptr) || (fptr->encs.ecflags & (ECONV_DECODER_MASK|ECONV_ENCODER_MASK|ECONV_STATEFUL_ENCODER_MASK)))
+#define NEED_READCONV(fptr) (fptr->encs.enc2 != NULL || NEED_NEWLINE_DECORATOR_ON_READ(fptr))
+#define NEED_WRITECONV(fptr) (fptr->encs.enc != NULL || NEED_NEWLINE_DECORATOR_ON_WRITE(fptr) || (fptr->encs.ecflags & (ECONV_DECORATOR_MASK|ECONV_STATEFUL_DECORATOR_MASK)))
 
 static void
 make_writeconv(rb_io_t *fptr)
@@ -697,9 +697,9 @@ make_writeconv(rb_io_t *fptr)
 
         ecflags = fptr->encs.ecflags;
         ecopts = fptr->encs.ecopts;
-#ifdef TEXTMODE_NEWLINE_ENCODER
-        if (NEED_NEWLINE_ENCODER(fptr))
-            ecflags |= TEXTMODE_NEWLINE_ENCODER;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+        if (NEED_NEWLINE_DECORATOR_ON_WRITE(fptr))
+            ecflags |= TEXTMODE_NEWLINE_DECORATOR_ON_WRITE;
 #endif
 
         if (!fptr->encs.enc) {
@@ -714,7 +714,7 @@ make_writeconv(rb_io_t *fptr)
         else {
             enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
             senc = rb_econv_asciicompat_encoding(enc->name);
-            if (!senc && !(fptr->encs.ecflags & ECONV_STATEFUL_ENCODER_MASK)) {
+            if (!senc && !(fptr->encs.ecflags & ECONV_STATEFUL_DECORATOR_MASK)) {
                 /* single conversion */
                 fptr->writeconv_pre_ecflags = ecflags;
                 fptr->writeconv_pre_ecopts = ecopts;
@@ -723,7 +723,7 @@ make_writeconv(rb_io_t *fptr)
             }
             else {
                 /* double conversion */
-                fptr->writeconv_pre_ecflags = ecflags & ~ECONV_STATEFUL_ENCODER_MASK;
+                fptr->writeconv_pre_ecflags = ecflags & ~ECONV_STATEFUL_DECORATOR_MASK;
                 fptr->writeconv_pre_ecopts = ecopts;
                 if (senc) {
                     denc = enc->name;
@@ -733,7 +733,7 @@ make_writeconv(rb_io_t *fptr)
                     senc = denc = "";
                     fptr->writeconv_stateless = rb_str_new2(enc->name);
                 }
-                ecflags = fptr->encs.ecflags & (ECONV_ERROR_HANDLER_MASK|ECONV_STATEFUL_ENCODER_MASK);
+                ecflags = fptr->encs.ecflags & (ECONV_ERROR_HANDLER_MASK|ECONV_STATEFUL_DECORATOR_MASK);
                 ecopts = fptr->encs.ecopts;
                 fptr->writeconv = rb_econv_open_opts(senc, denc, ecflags, ecopts);
                 if (!fptr->writeconv)
@@ -1455,8 +1455,8 @@ make_readconv(rb_io_t *fptr)
         const char *sname, *dname;
         ecflags = fptr->encs.ecflags;
         ecopts = fptr->encs.ecopts;
-        if (NEED_NEWLINE_DECODER(fptr))
-            ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
+        if (NEED_NEWLINE_DECORATOR_ON_READ(fptr))
+            ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
         if (fptr->encs.enc2) {
             sname = fptr->encs.enc2->name;
             dname = fptr->encs.enc->name;
@@ -3509,7 +3509,7 @@ rb_io_binmode(VALUE io)
         rb_econv_binmode(fptr->writeconv);
     fptr->mode |= FMODE_BINMODE;
     fptr->mode &= ~FMODE_TEXTMODE;
-    fptr->writeconv_pre_ecflags &= ~(ECONV_UNIVERSAL_NEWLINE_DECODER|ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
+    fptr->writeconv_pre_ecflags &= ~(ECONV_UNIVERSAL_NEWLINE_DECORATOR|ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR);
     return io;
 }
 

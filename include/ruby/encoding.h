@@ -265,19 +265,16 @@ void rb_econv_binmode(rb_econv_t *ec);
 #define ECONV_UNDEF_REPLACE                     0x00000020
 #define ECONV_UNDEF_HEX_CHARREF                 0x00000030
 
-/* usable only if destination encoding is ascii compatible */
-#define ECONV_DECODER_MASK                      0x00000f00
-#define ECONV_UNIVERSAL_NEWLINE_DECODER         0x00000100
+#define ECONV_DECORATOR_MASK                    0x0000ff00
 
-/* usable only if source encoding is ascii compatible */
-#define ECONV_ENCODER_MASK                      0x0000f000
-#define ECONV_CRLF_NEWLINE_ENCODER              0x00001000
-#define ECONV_CR_NEWLINE_ENCODER                0x00002000
-#define ECONV_XML_TEXT_ENCODER                  0x00004000
-#define ECONV_XML_ATTR_CONTENT_ENCODER          0x00008000
+#define ECONV_UNIVERSAL_NEWLINE_DECORATOR       0x00000100
+#define ECONV_CRLF_NEWLINE_DECORATOR            0x00001000
+#define ECONV_CR_NEWLINE_DECORATOR              0x00002000
+#define ECONV_XML_TEXT_DECORATOR                0x00004000
+#define ECONV_XML_ATTR_CONTENT_DECORATOR        0x00008000
 
-#define ECONV_STATEFUL_ENCODER_MASK             0x00f00000
-#define ECONV_XML_ATTR_QUOTE_ENCODER            0x00100000
+#define ECONV_STATEFUL_DECORATOR_MASK           0x00f00000
+#define ECONV_XML_ATTR_QUOTE_DECORATOR          0x00100000
 
 /* end of flags for rb_econv_open */
 

@@ -69,23 +69,23 @@ class TestEncodingConverter < Test::Unit::TestCase
 
   def test_newline_converter_with_ascii_incompatible
     assert_nothing_raised {
-      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR)
     }
     assert_nothing_raised {
-      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CRLF_NEWLINE_DECORATOR)
     }
     assert_nothing_raised {
-      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CR_NEWLINE_ENCODER)
+      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::CR_NEWLINE_DECORATOR)
     }
 
     assert_nothing_raised {
-      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::UNIVERSAL_NEWLINE_DECODER)
+      Encoding::Converter.new("UTF-16BE", "UTF-8", Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR)
     }
     assert_nothing_raised {
-      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CRLF_NEWLINE_ENCODER)
+      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CRLF_NEWLINE_DECORATOR)
     }
     assert_nothing_raised {
-      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CR_NEWLINE_ENCODER)
+      Encoding::Converter.new("UTF-8", "UTF-16BE", Encoding::Converter::CR_NEWLINE_DECORATOR)
     }
   end
 
@@ -372,7 +372,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_universal_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", universal_newline_decoder: true)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", universal_newline: true)
     a = ["", src="", ec, nil, 50, :partial_input=>true]
     src << "abc\r\ndef"; check_ec("abc\ndef",                             "", :source_buffer_empty, *a)
     src << "ghi\njkl";   check_ec("abc\ndefghi\njkl",                     "", :source_buffer_empty, *a)
@@ -383,7 +383,7 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_universal_newline2
-    ec = Encoding::Converter.new("", "", universal_newline_decoder: true)
+    ec = Encoding::Converter.new("", "", universal_newline: true)
     a = ["", src="", ec, nil, 50, :partial_input=>true]
     src << "abc\r\ndef"; check_ec("abc\ndef",                             "", :source_buffer_empty, *a)
     src << "ghi\njkl";   check_ec("abc\ndefghi\njkl",                     "", :source_buffer_empty, *a)
@@ -394,22 +394,22 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_crlf_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", crlf_newline_encoder: true)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", crlf_newline: true)
     assert_econv("abc\r\ndef", :finished, 50, ec, "abc\ndef", "")
   end
 
   def test_crlf_newline2
-    ec = Encoding::Converter.new("", "", crlf_newline_encoder: true)
+    ec = Encoding::Converter.new("", "", crlf_newline: true)
     assert_econv("abc\r\ndef", :finished, 50, ec, "abc\ndef", "")
   end
 
   def test_cr_newline
-    ec = Encoding::Converter.new("UTF-8", "EUC-JP", cr_newline_encoder: true)
+    ec = Encoding::Converter.new("UTF-8", "EUC-JP", cr_newline: true)
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
   def test_cr_newline2
-    ec = Encoding::Converter.new("", "", cr_newline_encoder: true)
+    ec = Encoding::Converter.new("", "", cr_newline: true)
     assert_econv("abc\rdef", :finished, 50, ec, "abc\ndef", "")
   end
 
@@ -777,18 +777,18 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_xml_escape_with_charref
-    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::XML_TEXT_ENCODER|Encoding::Converter::UNDEF_HEX_CHARREF)
+    ec = Encoding::Converter.new("utf-8", "euc-jp", Encoding::Converter::XML_TEXT_DECORATOR|Encoding::Converter::UNDEF_HEX_CHARREF)
     assert_equal('&lt;&#x2665;&gt;&amp;"&#x2661;"', ec.convert("<\u2665>&\"\u2661\""))
     assert_equal('', ec.finish)
 
     ec = Encoding::Converter.new("utf-8", "euc-jp",
-                                 Encoding::Converter::XML_ATTR_CONTENT_ENCODER|
-                                 Encoding::Converter::XML_ATTR_QUOTE_ENCODER|
+                                 Encoding::Converter::XML_ATTR_CONTENT_DECORATOR|
+                                 Encoding::Converter::XML_ATTR_QUOTE_DECORATOR|
                                  Encoding::Converter::UNDEF_HEX_CHARREF)
     assert_equal('"&lt;&#x2665;&gt;&amp;&quot;&#x2661;&quot;', ec.convert("<\u2665>&\"\u2661\""))
     assert_equal('"', ec.finish)
 
-    ec = Encoding::Converter.new("utf-8", "iso-2022-jp", Encoding::Converter::XML_TEXT_ENCODER)
+    ec = Encoding::Converter.new("utf-8", "iso-2022-jp", Encoding::Converter::XML_TEXT_DECORATOR)
     assert_equal("&amp;\e$B$&\e(B&amp;".force_encoding("iso-2022-jp"), ec.convert("&\u3046&"))
     assert_equal('', ec.finish)
   end

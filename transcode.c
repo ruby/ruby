@@ -22,9 +22,9 @@ VALUE rb_cEncodingConverter;
 
 static VALUE sym_invalid, sym_undef, sym_ignore, sym_replace;
 static VALUE sym_xml, sym_text, sym_attr;
-static VALUE sym_universal_newline_decoder;
-static VALUE sym_crlf_newline_encoder;
-static VALUE sym_cr_newline_encoder;
+static VALUE sym_universal_newline;
+static VALUE sym_crlf_newline;
+static VALUE sym_cr_newline;
 static VALUE sym_partial_input;
 
 static VALUE sym_invalid_byte_sequence;
@@ -947,37 +947,37 @@ rb_econv_open(const char *sname, const char *dname, int ecflags)
     const char *decorators[6];
     int i;
 
-    if ((ecflags & ECONV_CRLF_NEWLINE_ENCODER) &&
-        (ecflags & ECONV_CR_NEWLINE_ENCODER))
+    if ((ecflags & ECONV_CRLF_NEWLINE_DECORATOR) &&
+        (ecflags & ECONV_CR_NEWLINE_DECORATOR))
         return NULL;
 
-    if ((ecflags & (ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER)) &&
-        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER))
+    if ((ecflags & (ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR)) &&
+        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR))
         return NULL;
 
-    if ((ecflags & ECONV_XML_TEXT_ENCODER) &&
-        (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER))
+    if ((ecflags & ECONV_XML_TEXT_DECORATOR) &&
+        (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR))
         return NULL;
 
     num_decorators = 0;
 
-    if (ecflags & ECONV_XML_TEXT_ENCODER)
+    if (ecflags & ECONV_XML_TEXT_DECORATOR)
         if (!(decorators[num_decorators++] = "xml-text-escaped"))
             return NULL;
-    if (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER)
+    if (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR)
         if (!(decorators[num_decorators++] = "xml-attr-content-escaped"))
             return NULL;
-    if (ecflags & ECONV_XML_ATTR_QUOTE_ENCODER)
+    if (ecflags & ECONV_XML_ATTR_QUOTE_DECORATOR)
         if (!(decorators[num_decorators++] = "xml-attr-quoted"))
             return NULL;
 
-    if (ecflags & ECONV_CRLF_NEWLINE_ENCODER)
+    if (ecflags & ECONV_CRLF_NEWLINE_DECORATOR)
         if (!(decorators[num_decorators++] = "crlf_newline"))
             return NULL;
-    if (ecflags & ECONV_CR_NEWLINE_ENCODER)
+    if (ecflags & ECONV_CR_NEWLINE_DECORATOR)
         if (!(decorators[num_decorators++] = "cr_newline"))
             return NULL;
-    if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)
+    if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)
         if (!(decorators[num_decorators++] = "universal_newline"))
             return NULL;
 
@@ -1832,17 +1832,17 @@ rb_econv_binmode(rb_econv_t *ec)
     int num_trans;
 
     n = 0;
-    if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECODER) {
+    if (ec->flags & ECONV_UNIVERSAL_NEWLINE_DECORATOR) {
         entry = get_transcoder_entry("universal_newline", "");
         if (entry->transcoder)
             trs[n++] = entry->transcoder;
     }
-    if (ec->flags & ECONV_CRLF_NEWLINE_ENCODER) {
+    if (ec->flags & ECONV_CRLF_NEWLINE_DECORATOR) {
         entry = get_transcoder_entry("", "crlf_newline");
         if (entry->transcoder)
             trs[n++] = entry->transcoder;
     }
-    if (ec->flags & ECONV_CR_NEWLINE_ENCODER) {
+    if (ec->flags & ECONV_CR_NEWLINE_DECORATOR) {
         entry = get_transcoder_entry("", "cr_newline");
         if (entry->transcoder)
             trs[n++] = entry->transcoder;
@@ -1866,7 +1866,7 @@ rb_econv_binmode(rb_econv_t *ec)
         }
     }
 
-    ec->flags &= ~(ECONV_UNIVERSAL_NEWLINE_DECODER|ECONV_CRLF_NEWLINE_ENCODER|ECONV_CR_NEWLINE_ENCODER);
+    ec->flags &= ~(ECONV_UNIVERSAL_NEWLINE_DECORATOR|ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR);
 
 }
 
@@ -1888,36 +1888,36 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
         has_description = 1;
     }
 
-    if (ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
-                   ECONV_CRLF_NEWLINE_ENCODER|
-                   ECONV_CR_NEWLINE_ENCODER|
-                   ECONV_XML_TEXT_ENCODER|
-                   ECONV_XML_ATTR_CONTENT_ENCODER|
-                   ECONV_XML_ATTR_QUOTE_ENCODER)) {
+    if (ecflags & (ECONV_UNIVERSAL_NEWLINE_DECORATOR|
+                   ECONV_CRLF_NEWLINE_DECORATOR|
+                   ECONV_CR_NEWLINE_DECORATOR|
+                   ECONV_XML_TEXT_DECORATOR|
+                   ECONV_XML_ATTR_CONTENT_DECORATOR|
+                   ECONV_XML_ATTR_QUOTE_DECORATOR)) {
         const char *pre = "";
         if (has_description)
             rb_str_cat2(mesg, " with ");
-        if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECODER)  {
+        if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)  {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "universal-newline");
         }
-        if (ecflags & ECONV_CRLF_NEWLINE_ENCODER) {
+        if (ecflags & ECONV_CRLF_NEWLINE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "CRLF-newline");
         }
-        if (ecflags & ECONV_CR_NEWLINE_ENCODER) {
+        if (ecflags & ECONV_CR_NEWLINE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "CR-newline");
         }
-        if (ecflags & ECONV_XML_TEXT_ENCODER) {
+        if (ecflags & ECONV_XML_TEXT_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "XML-text");
         }
-        if (ecflags & ECONV_XML_ATTR_CONTENT_ENCODER) {
+        if (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "XML-attr-content");
         }
-        if (ecflags & ECONV_XML_ATTR_QUOTE_ENCODER) {
+        if (ecflags & ECONV_XML_ATTR_QUOTE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
             rb_str_cat2(mesg, "XML-attr-quote");
         }
@@ -2275,27 +2275,27 @@ econv_opts(VALUE opt)
     if (!NIL_P(v)) {
         v = rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym");
         if (v==sym_text) {
-            ecflags |= ECONV_XML_TEXT_ENCODER|ECONV_UNDEF_HEX_CHARREF;
+            ecflags |= ECONV_XML_TEXT_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
         else if (v==sym_attr) {
-            ecflags |= ECONV_XML_ATTR_CONTENT_ENCODER|ECONV_XML_ATTR_QUOTE_ENCODER|ECONV_UNDEF_HEX_CHARREF;
+            ecflags |= ECONV_XML_ATTR_CONTENT_DECORATOR|ECONV_XML_ATTR_QUOTE_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
         else {
             rb_raise(rb_eArgError, "unexpected value for xml option: %s", rb_id2name(SYM2ID(v)));
         }
     }
 
-    v = rb_hash_aref(opt, sym_universal_newline_decoder);
+    v = rb_hash_aref(opt, sym_universal_newline);
     if (RTEST(v))
-        ecflags |= ECONV_UNIVERSAL_NEWLINE_DECODER;
+        ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
 
-    v = rb_hash_aref(opt, sym_crlf_newline_encoder);
+    v = rb_hash_aref(opt, sym_crlf_newline);
     if (RTEST(v))
-        ecflags |= ECONV_CRLF_NEWLINE_ENCODER;
+        ecflags |= ECONV_CRLF_NEWLINE_DECORATOR;
 
-    v = rb_hash_aref(opt, sym_cr_newline_encoder);
+    v = rb_hash_aref(opt, sym_cr_newline);
     if (RTEST(v))
-        ecflags |= ECONV_CR_NEWLINE_ENCODER;
+        ecflags |= ECONV_CR_NEWLINE_DECORATOR;
 
     return ecflags;
 }
@@ -2430,12 +2430,12 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 
     dencidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &sname, &senc, &dname, &denc);
 
-    if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECODER|
-                    ECONV_CRLF_NEWLINE_ENCODER|
-                    ECONV_CR_NEWLINE_ENCODER|
-                    ECONV_XML_TEXT_ENCODER|
-                    ECONV_XML_ATTR_CONTENT_ENCODER|
-                    ECONV_XML_ATTR_QUOTE_ENCODER)) == 0) {
+    if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECORATOR|
+                    ECONV_CRLF_NEWLINE_DECORATOR|
+                    ECONV_CR_NEWLINE_DECORATOR|
+                    ECONV_XML_TEXT_DECORATOR|
+                    ECONV_XML_ATTR_CONTENT_DECORATOR|
+                    ECONV_XML_ATTR_QUOTE_DECORATOR)) == 0) {
         if (senc && senc == denc) {
             return -1;
         }
@@ -2644,18 +2644,18 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
  *
  * possible options elements:
  *   hash form:
- *     :universal_newline_decoder => true # convert CRLF and CR to LF at last      
- *     :crlf_newline_encoder => true      # convert LF to CRLF at first
- *     :cr_newline_encoder => true        # convert LF to CR at first
+ *     :universal_newline => true         # convert CRLF and CR to LF
+ *     :crlf_newline => true              # convert LF to CRLF
+ *     :cr_newline => true                # convert LF to CR
  *     :invalid => nil                    # error on invalid byte sequence (default)
  *     :invalid => :replace               # replace invalid byte sequence
  *     :undef => nil                      # error on undefined conversion (default)
  *     :undef => :replace                 # replace undefined conversion
  *     :replace => string                 # replacement string ("?" or "\uFFFD" if not specified)
  *   integer form:
- *     Encoding::Converter::UNIVERSAL_NEWLINE_DECODER
- *     Encoding::Converter::CRLF_NEWLINE_ENCODER
- *     Encoding::Converter::CR_NEWLINE_ENCODER
+ *     Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR
+ *     Encoding::Converter::CRLF_NEWLINE_DECORATOR
+ *     Encoding::Converter::CR_NEWLINE_DECORATOR
  *
  * Encoding::Converter.new creates an instance of Encoding::Converter.
  *
@@ -2670,11 +2670,11 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
  *
  *   # (1) convert UTF-16BE to UTF-8
  *   # (2) convert CRLF and CR to LF
- *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8", :universal_newline_decoder => true)
+ *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8", :universal_newline => true)
  *
  *   # (1) convert LF to CRLF
  *   # (2) convert UTF-8 to UTF-16BE 
- *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE", :crlf_newline_encoder => true)
+ *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE", :crlf_newline => true)
  *
  */
 static VALUE
@@ -3633,9 +3633,9 @@ Init_transcode(void)
     sym_finished = ID2SYM(rb_intern("finished"));
     sym_output_followed_by_input = ID2SYM(rb_intern("output_followed_by_input"));
     sym_incomplete_input = ID2SYM(rb_intern("incomplete_input"));
-    sym_universal_newline_decoder = ID2SYM(rb_intern("universal_newline_decoder"));
-    sym_crlf_newline_encoder = ID2SYM(rb_intern("crlf_newline_encoder"));
-    sym_cr_newline_encoder = ID2SYM(rb_intern("cr_newline_encoder"));
+    sym_universal_newline = ID2SYM(rb_intern("universal_newline"));
+    sym_crlf_newline = ID2SYM(rb_intern("crlf_newline"));
+    sym_cr_newline = ID2SYM(rb_intern("cr_newline"));
     sym_partial_input = ID2SYM(rb_intern("partial_input"));
 
     rb_define_method(rb_cString, "encode", str_encode, -1);
@@ -3665,12 +3665,12 @@ Init_transcode(void)
     rb_define_const(rb_cEncodingConverter, "UNDEF_HEX_CHARREF", INT2FIX(ECONV_UNDEF_HEX_CHARREF));
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
     rb_define_const(rb_cEncodingConverter, "OUTPUT_FOLLOWED_BY_INPUT", INT2FIX(ECONV_OUTPUT_FOLLOWED_BY_INPUT));
-    rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECODER", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECODER));
-    rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_ENCODER", INT2FIX(ECONV_CRLF_NEWLINE_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_ENCODER", INT2FIX(ECONV_CR_NEWLINE_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "XML_TEXT_ENCODER", INT2FIX(ECONV_XML_TEXT_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "XML_ATTR_CONTENT_ENCODER", INT2FIX(ECONV_XML_ATTR_CONTENT_ENCODER));
-    rb_define_const(rb_cEncodingConverter, "XML_ATTR_QUOTE_ENCODER", INT2FIX(ECONV_XML_ATTR_QUOTE_ENCODER));
+    rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECORATOR", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECORATOR));
+    rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_DECORATOR", INT2FIX(ECONV_CRLF_NEWLINE_DECORATOR));
+    rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_DECORATOR", INT2FIX(ECONV_CR_NEWLINE_DECORATOR));
+    rb_define_const(rb_cEncodingConverter, "XML_TEXT_DECORATOR", INT2FIX(ECONV_XML_TEXT_DECORATOR));
+    rb_define_const(rb_cEncodingConverter, "XML_ATTR_CONTENT_DECORATOR", INT2FIX(ECONV_XML_ATTR_CONTENT_DECORATOR));
+    rb_define_const(rb_cEncodingConverter, "XML_ATTR_QUOTE_DECORATOR", INT2FIX(ECONV_XML_ATTR_QUOTE_DECORATOR));
 
     rb_define_method(rb_eConversionUndefined, "source_encoding_name", ecerr_source_encoding_name, 0);
     rb_define_method(rb_eConversionUndefined, "destination_encoding_name", ecerr_destination_encoding_name, 0);

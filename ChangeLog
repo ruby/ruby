@@ -1,3 +1,24 @@
+Tue Sep  9 21:17:00 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/encoding.h (ECONV_DECORATOR_MASK): merge
+	  ECONV_ENCODER_MASK and ECONV_DECORATOR_MASK.
+	  (ECONV_UNIVERSAL_NEWLINE_DECORATOR): renamed from
+	  ECONV_UNIVERSAL_NEWLINE_DECODER.
+	  (ECONV_CRLF_NEWLINE_DECORATOR): renamed from
+	  ECONV_CRLF_NEWLINE_ENCODER.
+	  (ECONV_CR_NEWLINE_DECORATOR): renamed from ECONV_CR_NEWLINE_ENCODER.
+	  (ECONV_XML_TEXT_DECORATOR): renamed from ECONV_XML_TEXT_ENCODER.
+	  (ECONV_XML_ATTR_CONTENT_DECORATOR): renamed from
+	  ECONV_XML_ATTR_CONTENT_ENCODER.
+	  (ECONV_STATEFUL_DECORATOR_MASK): renamed from
+	  ECONV_STATEFUL_ENCODER_MASK.
+	  (ECONV_XML_ATTR_QUOTE_DECORATOR): renamed from
+	  ECONV_XML_ATTR_CONTENT_DECORATOR.
+
+	* io.c: follow the renaming.
+
+	* transcode.c: ditto.
+
 Tue Sep  9 20:55:55 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_open0): make it static.
