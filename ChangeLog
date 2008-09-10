@@ -1,3 +1,11 @@
+Thu Sep 11 02:25:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (make_encoding): new function.
+	  (make_encobj): new function.
+	  (econv_s_asciicompat_encoding): use make_encoding.
+	  (rb_econv_open_exc): use SUPPLEMENTAL_CONVERSION.
+	  (econv_convpath): use encoding object in the result.
+
 Thu Sep 11 02:14:38 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_convpath): new method.

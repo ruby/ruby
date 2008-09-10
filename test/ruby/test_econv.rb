@@ -809,21 +809,28 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_convpath
+    eucjp = Encoding::EUC_JP
+    utf8 = Encoding::UTF_8
+    utf16be = Encoding::UTF_16BE
+    utf16le = Encoding::UTF_16LE
+    iso88591 = Encoding::ISO_8859_1
+    iso2022jp = Encoding::ISO_2022_JP
+    siso2022jp = Encoding::STATELESS_ISO_2022_JP
     assert_equal([], Encoding::Converter.new("", "").convpath)
-    assert_equal([["EUC-JP", "UTF-8"], ["UTF-8", "ISO-8859-1"]],
-                 Encoding::Converter.new("EUC-JP", "ISO-8859-1").convpath)
-    assert_equal([["EUC-JP", "stateless-ISO-2022-JP"], ["stateless-ISO-2022-JP", "ISO-2022-JP"]],
-                 Encoding::Converter.new("EUC-JP", "ISO-2022-JP").convpath)
-    assert_equal([["ISO-2022-JP", "stateless-ISO-2022-JP"],
-                  ["stateless-ISO-2022-JP", "EUC-JP"],
-                  ["EUC-JP", "UTF-8"],
-                  ["UTF-8", "ISO-8859-1"]],
-                 Encoding::Converter.new("ISO-2022-JP", "ISO-8859-1").convpath)
-    assert_equal(["universal_newline", ["UTF-8", "UTF-16BE"]],
-                 Encoding::Converter.new("UTF-8", "UTF-16BE", universal_newline: true).convpath)
-    assert_equal([["UTF-16BE", "UTF-8"], "universal_newline"],
-                 Encoding::Converter.new("UTF-16BE", "UTF-8", universal_newline: true).convpath)
-    assert_equal([["UTF-16BE", "UTF-8"], "universal_newline", ["UTF-8", "UTF-16LE"]],
-                 Encoding::Converter.new("UTF-16BE", "UTF-16LE", universal_newline: true).convpath)
+    assert_equal([[eucjp, utf8], [utf8, iso88591]],
+                 Encoding::Converter.new(eucjp, iso88591).convpath)
+    assert_equal([[eucjp, siso2022jp], [siso2022jp, iso2022jp]],
+                 Encoding::Converter.new(eucjp, iso2022jp).convpath)
+    assert_equal([[iso2022jp, siso2022jp],
+                  [siso2022jp, eucjp],
+                  [eucjp, utf8],
+                  [utf8, iso88591]],
+                 Encoding::Converter.new(iso2022jp, iso88591).convpath)
+    assert_equal(["universal_newline", [utf8, utf16be]],
+                 Encoding::Converter.new(utf8, utf16be, universal_newline: true).convpath)
+    assert_equal([[utf16be, utf8], "universal_newline"],
+                 Encoding::Converter.new(utf16be, utf8, universal_newline: true).convpath)
+    assert_equal([[utf16be, utf8], "universal_newline", [utf8, utf16le]],
+                 Encoding::Converter.new(utf16be, utf16le, universal_newline: true).convpath)
   end
 end

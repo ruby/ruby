@@ -2560,6 +2560,22 @@ make_dummy_encoding(const char *name)
     return enc;
 }
 
+static rb_encoding *
+make_encoding(const char *name)
+{
+    rb_encoding *enc;
+    enc = rb_enc_find(name);
+    if (!enc)
+        enc = make_dummy_encoding(name);
+    return enc;
+}
+
+static VALUE
+make_encobj(const char *name)
+{
+    return rb_enc_from_encoding(make_encoding(name));
+}
+
 /*
  * call-seq:
  *   Encoding::Converter.asciicompat_encoding(string) => encoding or nil
@@ -2592,10 +2608,7 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
     if (result_name == NULL)
         return Qnil;
 
-    result_enc = rb_enc_find(result_name);
-
-    if (!result_enc)
-        result_enc = make_dummy_encoding(result_name);
+    result_enc = make_encoding(result_name);
 
     return rb_enc_from_encoding(result_enc);
 }
@@ -2695,7 +2708,7 @@ econv_init(int argc, VALUE *argv, VALUE self)
         rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
     }
 
-    if (*sname && *dname) { /* check "" to "universal_newline" */
+    if (!SUPPLEMENTAL_CONVERSION(sname, dname)) {
         if (!senc)
             senc = make_dummy_encoding(sname);
         if (!denc)
@@ -2795,14 +2808,16 @@ econv_destination_encoding(VALUE self)
  *
  *   ec = Encoding::Converter.new("ISo-8859-1", "EUC-JP", crlf_newline: true)
  *   p ec.convpath
- *   #=> [["ISO-8859-1", "UTF-8"], ["UTF-8", "EUC-JP"], "crlf_newline"]
+ *   #=> [[#<Encoding:ISO-8859-1>, #<Encoding:UTF-8>],
+ *   #    [#<Encoding:UTF-8>, #<Encoding:EUC-JP>],
+ *   #    "crlf_newline"]
  *
- * A element of the array is a pair of string or a string.
+ * A element of the array is a pair of encodings or a string.
  * The pair means encoding conversion.
  * The string means decorator.
  *
- * In the above example, ["ISO-8859-1", "UTF-8"] means a converter from
- * ISO-8859-1 to UTF-8.
+ * In the above example, [#<Encoding:ISO-8859-1>, #<Encoding:UTF-8>] means
+ * a converter from ISO-8859-1 to UTF-8.
  * "crlf_newline" means newline converter from LF to CRLF.
  */
 static VALUE
@@ -2819,7 +2834,7 @@ econv_convpath(VALUE self)
         if (SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding))
             v = rb_str_new_cstr(tr->dst_encoding);
         else
-            v = rb_assoc_new(rb_str_new_cstr(tr->src_encoding), rb_str_new_cstr(tr->dst_encoding));
+            v = rb_assoc_new(make_encobj(tr->src_encoding), make_encobj(tr->dst_encoding));
         rb_ary_push(result, v);
     }
     return result;
