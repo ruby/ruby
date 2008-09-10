@@ -854,7 +854,6 @@ EOT
 
   def test_read_stateful
     with_pipe("euc-jp:iso-2022-jp") {|r, w|
-      r.binmode
       w << "\xA4\xA2"
       w.close
       assert_equal("\e$B$\"\e(B".force_encoding("iso-2022-jp"), r.read)
