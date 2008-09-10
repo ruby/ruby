@@ -744,39 +744,11 @@ make_writeconv(rb_io_t *fptr)
 }
 
 /* writing functions */
+
 static long
-io_fwrite(VALUE str, rb_io_t *fptr)
+io_binwrite(VALUE str, rb_io_t *fptr)
 {
     long len, n, r, l, offset = 0;
-
-    if (NEED_WRITECONV(fptr)) {
-        VALUE common_encoding = Qnil;
-        make_writeconv(fptr);
-
-        if (fptr->writeconv) {
-            if (!NIL_P(fptr->writeconv_asciicompat))
-                common_encoding = fptr->writeconv_asciicompat;
-            else if (!rb_enc_asciicompat(rb_enc_get(str))) {
-                rb_raise(rb_eArgError, "ASCII incompatible string written for text mode IO without encoding conversion: %s",
-                         rb_enc_name(rb_enc_get(str)));
-            }
-        }
-        else {
-            if (fptr->encs.enc2)
-                common_encoding = rb_enc_from_encoding(fptr->encs.enc2);
-            else
-                common_encoding = rb_enc_from_encoding(fptr->encs.enc);
-        }
-
-        if (!NIL_P(common_encoding)) {
-            str = rb_str_transcode(str, common_encoding,
-                fptr->writeconv_pre_ecflags, fptr->writeconv_pre_ecopts);
-        }
-
-        if (fptr->writeconv) {
-            str = rb_econv_str_convert(fptr->writeconv, str, ECONV_PARTIAL_INPUT);
-        }
-    }
 
     len = RSTRING_LEN(str);
     if ((n = len) <= 0) return n;
@@ -838,6 +810,41 @@ io_fwrite(VALUE str, rb_io_t *fptr)
     MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, RSTRING_PTR(str)+offset, char, len);
     fptr->wbuf_len += len;
     return len;
+}
+
+static long
+io_fwrite(VALUE str, rb_io_t *fptr)
+{
+    if (NEED_WRITECONV(fptr)) {
+        VALUE common_encoding = Qnil;
+        make_writeconv(fptr);
+
+        if (fptr->writeconv) {
+            if (!NIL_P(fptr->writeconv_asciicompat))
+                common_encoding = fptr->writeconv_asciicompat;
+            else if (!rb_enc_asciicompat(rb_enc_get(str))) {
+                rb_raise(rb_eArgError, "ASCII incompatible string written for text mode IO without encoding conversion: %s",
+                         rb_enc_name(rb_enc_get(str)));
+            }
+        }
+        else {
+            if (fptr->encs.enc2)
+                common_encoding = rb_enc_from_encoding(fptr->encs.enc2);
+            else
+                common_encoding = rb_enc_from_encoding(fptr->encs.enc);
+        }
+
+        if (!NIL_P(common_encoding)) {
+            str = rb_str_transcode(str, common_encoding,
+                fptr->writeconv_pre_ecflags, fptr->writeconv_pre_ecopts);
+        }
+
+        if (fptr->writeconv) {
+            str = rb_econv_str_convert(fptr->writeconv, str, ECONV_PARTIAL_INPUT);
+        }
+    }
+
+    return io_binwrite(str, fptr);
 }
 
 long
