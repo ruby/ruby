@@ -1,3 +1,11 @@
+Wed Sep 10 18:25:19 2008  akira yamada  <akira@rice.p.arika.org>
+
+	* lib/uri/common.rb (URI::Parser): new class.
+	
+	* lib/uri/mailto.rb, lib/uri/generic.rb: follow the above change.
+
+	* test/uri/test_parser.rb: added tests for URI::Parser.
+	
 Wed Sep 10 10:35:32 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/cookie.rb (CGI::Cookie#to_s): performance improvement

@@ -16,7 +16,6 @@ module URI
   #
   class Generic
     include URI
-    include REGEXP
 
     DEFAULT_PORT = nil
 
@@ -74,7 +73,7 @@ module URI
         if args.kind_of?(Array)
           return self.build(args.collect{|x| 
             if x
-              URI.escape(x)
+              @parser.escape(x)
             else
               x
             end
@@ -83,7 +82,7 @@ module URI
           tmp = {}
           args.each do |key, value|
             tmp[key] = if value
-                URI.escape(value)
+                @parser.escape(value)
               else
                 value
               end
@@ -122,6 +121,7 @@ module URI
         "expected Array of or Hash of components of #{self.class} (#{self.class.component.join(', ')})"
       end
 
+      tmp << DEFAULT_PARSER
       tmp << true
       return self.new(*tmp)
     end
@@ -146,6 +146,8 @@ module URI
     #   Query data
     # +fragment+::
     #   A part of URI after '#' sign
+    # +parser+::
+    #   Parser for internal use [URI::DEFAULT_PARSER by default]
     # +arg_check+::
     #   Check arguments [false by default]
     #
@@ -158,6 +160,7 @@ module URI
                    path, opaque, 
                    query, 
                    fragment,
+		   parser = DEFAULT_PARSER,
                    arg_check = false)
       @scheme = nil
       @user = nil
@@ -169,6 +172,7 @@ module URI
       @opaque = nil
       @registry = nil
       @fragment = nil
+      @parser = parser
 
       if arg_check
         self.scheme = scheme
@@ -208,6 +212,7 @@ module URI
     attr_reader :query
     attr_reader :opaque
     attr_reader :fragment
+    attr_reader :parser
 
     # replace self by other URI object
     def replace!(oth)
@@ -226,7 +231,7 @@ module URI
     end
 
     def check_scheme(v)
-      if v && SCHEME !~ v
+      if v && @parser.regexp[:SCHEME] !~ v
         raise InvalidComponentError,
           "bad component(expected scheme component): #{v}"
       end
@@ -265,7 +270,7 @@ module URI
 
       return v unless v
 
-      if USERINFO !~ v
+      if @parser.regexp[:USERINFO] !~ v
         raise InvalidComponentError,
           "bad component(expected userinfo component or user component): #{v}"
       end
@@ -286,7 +291,7 @@ module URI
           "password component depends user component"
       end
 
-      if USERINFO !~ v
+      if @parser.regexp[:USERINFO] !~ v
         raise InvalidComponentError,
           "bad component(expected user component): #{v}"
       end
@@ -351,7 +356,7 @@ module URI
     private :split_userinfo
 
     def escape_userpass(v)
-      v = URI.escape(v, /[@:\/]/o) # RFC 1738 section 3.1 #/
+      v = @parser.escape(v, /[@:\/]/o) # RFC 1738 section 3.1 #/
     end
     private :escape_userpass
 
@@ -379,7 +384,7 @@ module URI
       if @registry || @opaque
         raise InvalidURIError, 
           "can not set host with registry or opaque"
-      elsif HOST !~ v
+      elsif @parser.regexp[:HOST] !~ v
         raise InvalidComponentError,
           "bad component(expected host component): #{v}"
       end
@@ -405,7 +410,7 @@ module URI
       if @registry || @opaque
         raise InvalidURIError, 
           "can not set port with registry or opaque"
-      elsif !v.kind_of?(Fixnum) && PORT !~ v
+      elsif !v.kind_of?(Fixnum) && @parser.regexp[:PORT] !~ v
         raise InvalidComponentError,
           "bad component(expected port component): #{v}"
       end
@@ -441,7 +446,7 @@ module URI
       if @host || @port || @user # userinfo = @user + ':' + @password
         raise InvalidURIError, 
           "can not set registry with host, port, or userinfo"
-      elsif v && REGISTRY !~ v
+      elsif v && @parser.regexp[:REGISTRY] !~ v
         raise InvalidComponentError,
           "bad component(expected registry component): #{v}"
       end
@@ -471,12 +476,12 @@ module URI
       end
 
       if @scheme
-        if v && v != '' && ABS_PATH !~ v
+        if v && v != '' && @parser.regexp[:ABS_PATH] !~ v
           raise InvalidComponentError, 
             "bad component(expected absolute path component): #{v}"
         end
       else
-        if v && v != '' && ABS_PATH !~ v && REL_PATH !~ v
+        if v && v != '' && @parser.regexp[:ABS_PATH] !~ v && @parser.regexp[REL_PATH] !~ v
           raise InvalidComponentError, 
             "bad component(expected relative path component): #{v}"
         end
@@ -508,7 +513,7 @@ module URI
           "query conflicts with opaque"
       end
 
-      if v && v != '' && QUERY !~ v
+      if v && v != '' && @parser.regexp[:QUERY] !~ v
           raise InvalidComponentError, 
             "bad component(expected query component): #{v}"
         end
@@ -537,7 +542,7 @@ module URI
       if @host || @port || @user || @path  # userinfo = @user + ':' + @password
         raise InvalidURIError, 
           "can not set opaque with host, port, userinfo or path"
-      elsif v && OPAQUE !~ v
+      elsif v && @parser.regexp[:OPAQUE] !~ v
         raise InvalidComponentError,
           "bad component(expected opaque component): #{v}"
       end
@@ -560,7 +565,7 @@ module URI
     def check_fragment(v)
       return v unless v
 
-      if v && v != '' && FRAGMENT !~ v
+      if v && v != '' && @parser.regexp[:FRAGMENT] !~ v
         raise InvalidComponentError, 
           "bad component(expected fragment component): #{v}"
       end
@@ -772,7 +777,7 @@ module URI
       case oth
       when Generic
       when String
-        oth = URI.parse(oth)
+        oth = @parser.parse(oth)
       else
         raise ArgumentError,
           "bad argument(expected URI object or URI string)"
@@ -843,7 +848,7 @@ module URI
       case oth
       when Generic
       when String
-        oth = URI.parse(oth)
+        oth = @parser.parse(oth)
       else
         raise ArgumentError,
           "bad argument(expected URI object or URI string)"
@@ -864,7 +869,7 @@ module URI
       rel = URI::Generic.new(nil, # it is relative URI
                              self.userinfo, self.host, self.port, 
                              self.registry, self.path, self.opaque,
-                             self.query, self.fragment)
+                             self.query, self.fragment, @parser)
 
       if rel.userinfo != oth.userinfo ||
           rel.host.to_s.downcase != oth.host.to_s.downcase ||
@@ -955,7 +960,7 @@ module URI
       case oth
       when Generic
       when String
-        oth = URI.parse(oth)
+        oth = @parser.parse(oth)
       else
         raise ArgumentError,
           "bad argument(expected URI object or URI string)"
@@ -1054,6 +1059,7 @@ module URI
     end
 
     def eql?(oth)
+      @parser == oth.parser &&
       self.component_ary.eql?(oth.component_ary)
     end
 
@@ -1111,7 +1117,7 @@ module URI
     def coerce(oth)
       case oth
       when String
-        oth = URI.parse(oth)
+        oth = @parser.parse(oth)
       else
         super
       end

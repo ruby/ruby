@@ -38,22 +38,232 @@ module URI
       #                 "$" | "," | "[" | "]" (RFC 2732)
       RESERVED = ";/?:@&=+$,\\[\\]"
 
-      # uric          = reserved | unreserved | escaped
-      URIC = "(?:[#{UNRESERVED}#{RESERVED}]|#{ESCAPED})"
-      # uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" |
-      #                 "&" | "=" | "+" | "$" | ","
-      URIC_NO_SLASH = "(?:[#{UNRESERVED};?:@&=+$,]|#{ESCAPED})"
-      # query         = *uric
-      QUERY = "#{URIC}*"
-      # fragment      = *uric
-      FRAGMENT = "#{URIC}*"
-
       # domainlabel   = alphanum | alphanum *( alphanum | "-" ) alphanum
       DOMLABEL = "(?:[#{ALNUM}](?:[-#{ALNUM}]*[#{ALNUM}])?)"
       # toplabel      = alpha | alpha *( alphanum | "-" ) alphanum
       TOPLABEL = "(?:[#{ALPHA}](?:[-#{ALNUM}]*[#{ALNUM}])?)"
       # hostname      = *( domainlabel "." ) toplabel [ "." ]
       HOSTNAME = "(?:#{DOMLABEL}\\.)*#{TOPLABEL}\\.?"
+
+      # :startdoc:
+    end # PATTERN
+
+    # :startdoc:
+  end # REGEXP
+
+  class Parser
+    include REGEXP
+
+    #
+    # == Synopsis
+    #
+    #   URI::Parser.new([opts])
+    #
+    # == Args
+    #
+    # The constructor accepts a hash as options for parser.
+    # Keys of options are pattern names of URI components
+    # and values of options are pattern strings.
+    # The constructor generetes set of regexps for parsing URIs.
+    #
+    # You can use the following keys:
+    #
+    #   * <tt>:ESCAPED</tt> (URI::PATTERN::ESCAPED in default)
+    #   * <tt>:UNRESERVED</tt> (URI::PATTERN::UNRESERVED in default)
+    #   * <tt>:DOMLABEL</tt> (URI::PATTERN::DOMLABEL in default)
+    #   * <tt>:TOPLABEL</tt> (URI::PATTERN::TOPLABEL in default)
+    #   * <tt>:HOSTNAME</tt> (URI::PATTERN::HOSTNAME in default)
+    #
+    # == Examples
+    #
+    #   p = URI::Parser.new(:ESCPAED => "(?:%[a-fA-F0-9]{2}|%u[a-fA-F0-9]{4})"
+    #   u = p.parse("http://example.jp/%uABCD") #=> #<URI::HTTP:0xb78cf4f8 URL:http://example.jp/%uABCD>
+    #   URI.parse(u.to_s) #=> raises URI::InvalidURIError
+    #
+    #   s = "http://examle.com/ABCD"
+    #   u1 = p.parse(s) #=> #<URI::HTTP:0xb78c3220 URL:http://example.com/ABCD>
+    #   u2 = URI.parse(s) #=> #<URI::HTTP:0xb78b6d54 URL:http://example.com/ABCD>
+    #   u1 == u2 #=> true
+    #   u1.eql?(u2) #=> false
+    #
+    def initialize(opts = {})
+      @pattern = initialize_pattern(opts)
+      @pattern.each_value {|v| v.freeze}
+      @pattern.freeze
+
+      @regexp = initialize_regexp(@pattern)
+      @regexp.each_value {|v| v.freeze}
+      @regexp.freeze
+    end
+    attr_reader :pattern, :regexp
+
+    def split(uri)
+      case uri
+      when ''
+	# null uri
+
+      when @regexp[:ABS_URI]
+	scheme, opaque, userinfo, host, port, 
+	  registry, path, query, fragment = $~[1..-1]
+
+	# URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
+
+	# absoluteURI   = scheme ":" ( hier_part | opaque_part )
+	# hier_part     = ( net_path | abs_path ) [ "?" query ]
+	# opaque_part   = uric_no_slash *uric
+
+	# abs_path      = "/"  path_segments
+	# net_path      = "//" authority [ abs_path ]
+
+	# authority     = server | reg_name
+	# server        = [ [ userinfo "@" ] hostport ]
+
+	if !scheme
+	  raise InvalidURIError, 
+	    "bad URI(absolute but no scheme): #{uri}"
+	end
+	if !opaque && (!path && (!host && !registry))
+	  raise InvalidURIError,
+	    "bad URI(absolute but no path): #{uri}" 
+	end
+
+      when @regexp[:REL_URI]
+	scheme = nil
+	opaque = nil
+
+	userinfo, host, port, registry, 
+	  rel_segment, abs_path, query, fragment = $~[1..-1]
+	if rel_segment && abs_path
+	  path = rel_segment + abs_path
+	elsif rel_segment
+	  path = rel_segment
+	elsif abs_path
+	  path = abs_path
+	end
+
+	# URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
+
+	# relativeURI   = ( net_path | abs_path | rel_path ) [ "?" query ]
+
+	# net_path      = "//" authority [ abs_path ]
+	# abs_path      = "/"  path_segments
+	# rel_path      = rel_segment [ abs_path ]
+
+	# authority     = server | reg_name
+	# server        = [ [ userinfo "@" ] hostport ]
+
+      else
+	raise InvalidURIError, "bad URI(is not URI?): #{uri}"
+      end
+
+      path = '' if !path && !opaque # (see RFC2396 Section 5.2)
+      ret = [
+	scheme, 
+	userinfo, host, port,         # X
+	registry,                     # X
+	path,                         # Y
+	opaque,                       # Y
+	query,
+	fragment
+      ]
+      return ret
+    end
+
+    def parse(uri)
+      scheme, userinfo, host, port, 
+       	registry, path, opaque, query, fragment = self.split(uri)
+
+      if scheme && URI.scheme_list.include?(scheme.upcase)
+	URI.scheme_list[scheme.upcase].new(scheme, userinfo, host, port, 
+                                           registry, path, opaque, query, 
+                                           fragment, self)
+      else
+	Generic.new(scheme, userinfo, host, port, 
+	   	    registry, path, opaque, query, 
+	    	    fragment, self)
+      end
+    end
+
+    def join(*str)
+      u = self.parse(str[0])
+      str[1 .. -1].each do |x|
+	u = u.merge(x)
+      end
+      u
+    end
+
+    def extract(str, schemes = nil, &block)
+      if block_given?
+       	str.scan(make_regexp(schemes)) { yield $& }
+	nil
+      else
+	result = []
+	str.scan(make_regexp(schemes)) { result.push $& }
+	result
+      end
+    end
+
+    def make_regexp(schemes = nil)
+      unless schemes
+       	@regexp[:ABS_URI_REF]
+      else
+	/(?=#{Regexp.union(*schemes)}:)#{@pattern[:X_ABS_URI]}/x
+      end
+    end
+
+    def escape(str, unsafe = @regexp[:UNSAFE])
+      unless unsafe.kind_of?(Regexp)
+        # perhaps unsafe is String object
+        unsafe = Regexp.new("[#{Regexp.quote(unsafe)}]", false)
+      end
+      str.gsub(unsafe) do
+        us = $&
+        tmp = ''
+        us.each_byte do |uc|
+          tmp << sprintf('%%%02X', uc)
+        end
+        tmp
+      end
+    end
+
+    def unescape(str, escaped = @regexp[:ESCAPED])
+      str.gsub(escaped) { [$&.hex].pack('U') }
+    end
+
+    @@to_s = Kernel.instance_method(:to_s)
+    def inspect
+      @@to_s.bind(self).call
+    end
+
+    private
+
+    def initialize_pattern(opts = {})
+      ret = {}
+      ret[:ESCAPED] = escaped = (opts.delete(:ESCAPED) || PATTERN::ESCAPED)
+      ret[:UNRESERVED] = unreserved = opts.delete(:UNRESERVED) || PATTERN::UNRESERVED
+      ret[:RESERVED] = reserved = opts.delete(:RESERVED) || PATTERN::RESERVED
+      ret[:DOMLABEL] = domlabel = opts.delete(:DOMLABEL) || PATTERN::DOMLABEL
+      ret[:TOPLABEL] = toplabel = opts.delete(:TOPLABEL) || PATTERN::TOPLABEL
+      ret[:HOSTNAME] = hostname = opts.delete(:HOSTNAME)
+
+      # RFC 2396 (URI Generic Syntax)
+      # RFC 2732 (IPv6 Literal Addresses in URL's)
+      # RFC 2373 (IPv6 Addressing Architecture)
+
+      # uric          = reserved | unreserved | escaped
+      ret[:URIC] = uric = "(?:[#{unreserved}#{reserved}]|#{escaped})"
+      # uric_no_slash = unreserved | escaped | ";" | "?" | ":" | "@" |
+      #                 "&" | "=" | "+" | "$" | ","
+      ret[:URIC_NO_SLASH] = uric_no_slash = "(?:[#{unreserved};?:@&=+$,]|#{escaped})"
+      # query         = *uric
+      ret[:QUERY] = query = "#{uric}*"
+      # fragment      = *uric
+      ret[:FRAGMENT] = fragment = "#{uric}*"
+
+      # hostname      = *( domainlabel "." ) toplabel [ "." ]
+      unless hostname
+	ret[:HOSTNAME] = hostname = "(?:#{domlabel}\\.)*#{toplabel}\\.?"
+      end
 
       # RFC 2373, APPENDIX B:
       # IPv6address = hexpart [ ":" IPv4address ]
@@ -66,152 +276,164 @@ module URI
       # allowed too.  Here is a replacement.
       #
       # IPv4address = 1*3DIGIT "." 1*3DIGIT "." 1*3DIGIT "." 1*3DIGIT
-      IPV4ADDR = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
+      ret[:IPV4ADDR] = ipv4addr = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}"
       # hex4     = 1*4HEXDIG
-      HEX4 = "[#{HEX}]{1,4}"
+      hex4 = "[#{PATTERN::HEX}]{1,4}"
       # lastpart = hex4 | IPv4address
-      LASTPART = "(?:#{HEX4}|#{IPV4ADDR})"
+      lastpart = "(?:#{hex4}|#{ipv4addr})"
       # hexseq1  = *( hex4 ":" ) hex4
-      HEXSEQ1 = "(?:#{HEX4}:)*#{HEX4}"
+      hexseq1 = "(?:#{hex4}:)*#{hex4}"
       # hexseq2  = *( hex4 ":" ) lastpart
-      HEXSEQ2 = "(?:#{HEX4}:)*#{LASTPART}"
+      hexseq2 = "(?:#{hex4}:)*#{lastpart}"
       # IPv6address = hexseq2 | [ hexseq1 ] "::" [ hexseq2 ]
-      IPV6ADDR = "(?:#{HEXSEQ2}|(?:#{HEXSEQ1})?::(?:#{HEXSEQ2})?)"
+      ret[:IPV6ADDR] = ipv6addr = "(?:#{hexseq2}|(?:#{hexseq1})?::(?:#{hexseq2})?)"
 
       # IPv6prefix  = ( hexseq1 | [ hexseq1 ] "::" [ hexseq1 ] ) "/" 1*2DIGIT
       # unused
 
       # ipv6reference = "[" IPv6address "]" (RFC 2732)
-      IPV6REF = "\\[#{IPV6ADDR}\\]"
+      ret[:IPV6REF] = ipv6ref = "\\[#{ipv6addr}\\]"
 
       # host          = hostname | IPv4address
       # host          = hostname | IPv4address | IPv6reference (RFC 2732)
-      HOST = "(?:#{HOSTNAME}|#{IPV4ADDR}|#{IPV6REF})"
+      ret[:HOST] = host = "(?:#{hostname}|#{ipv4addr}|#{ipv6ref})"
       # port          = *digit
-      PORT = '\d*'
+      port = '\d*'
       # hostport      = host [ ":" port ]
-      HOSTPORT = "#{HOST}(?::#{PORT})?"
+      ret[:HOSTPORT] = hostport = "#{host}(?::#{port})?"
 
       # userinfo      = *( unreserved | escaped |
       #                    ";" | ":" | "&" | "=" | "+" | "$" | "," )
-      USERINFO = "(?:[#{UNRESERVED};:&=+$,]|#{ESCAPED})*"
+      ret[:USERINFO] = userinfo = "(?:[#{unreserved};:&=+$,]|#{escaped})*"
 
       # pchar         = unreserved | escaped |
       #                 ":" | "@" | "&" | "=" | "+" | "$" | ","
-      PCHAR = "(?:[#{UNRESERVED}:@&=+$,]|#{ESCAPED})"
+      pchar = "(?:[#{unreserved}:@&=+$,]|#{escaped})"
       # param         = *pchar
-      PARAM = "#{PCHAR}*"
+      param = "#{pchar}*"
       # segment       = *pchar *( ";" param )
-      SEGMENT = "#{PCHAR}*(?:;#{PARAM})*"
+      segment = "#{pchar}*(?:;#{param})*"
       # path_segments = segment *( "/" segment )
-      PATH_SEGMENTS = "#{SEGMENT}(?:/#{SEGMENT})*"
+      ret[:PATH_SEGMENTS] = path_segments = "#{segment}(?:/#{segment})*"
 
       # server        = [ [ userinfo "@" ] hostport ]
-      SERVER = "(?:#{USERINFO}@)?#{HOSTPORT}"
+      server = "(?:#{userinfo}@)?#{hostport}"
       # reg_name      = 1*( unreserved | escaped | "$" | "," |
       #                     ";" | ":" | "@" | "&" | "=" | "+" )
-      REG_NAME = "(?:[#{UNRESERVED}$,;:@&=+]|#{ESCAPED})+"
+      ret[:REG_NAME] = reg_name = "(?:[#{unreserved}$,;:@&=+]|#{escaped})+"
       # authority     = server | reg_name
-      AUTHORITY = "(?:#{SERVER}|#{REG_NAME})"
+      authority = "(?:#{server}|#{reg_name})"
 
       # rel_segment   = 1*( unreserved | escaped |
       #                     ";" | "@" | "&" | "=" | "+" | "$" | "," )
-      REL_SEGMENT = "(?:[#{UNRESERVED};@&=+$,]|#{ESCAPED})+"
+      ret[:REL_SEGMENT] = rel_segment = "(?:[#{unreserved};@&=+$,]|#{escaped})+"
 
       # scheme        = alpha *( alpha | digit | "+" | "-" | "." )
-      SCHEME = "[#{ALPHA}][-+.#{ALPHA}\\d]*"
+      ret[:SCHEME] = scheme = "[#{PATTERN::ALPHA}][-+.#{PATTERN::ALPHA}\\d]*"
 
       # abs_path      = "/"  path_segments
-      ABS_PATH = "/#{PATH_SEGMENTS}"
+      ret[:ABS_PATH] = abs_path = "/#{path_segments}"
       # rel_path      = rel_segment [ abs_path ]
-      REL_PATH = "#{REL_SEGMENT}(?:#{ABS_PATH})?"
+      ret[:REL_PATH] = rel_path = "#{rel_segment}(?:#{abs_path})?"
       # net_path      = "//" authority [ abs_path ]
-      NET_PATH   = "//#{AUTHORITY}(?:#{ABS_PATH})?"
+      ret[:NET_PATH] = net_path = "//#{authority}(?:#{abs_path})?"
 
       # hier_part     = ( net_path | abs_path ) [ "?" query ]
-      HIER_PART   = "(?:#{NET_PATH}|#{ABS_PATH})(?:\\?(?:#{QUERY}))?"
+      ret[:HIER_PART] = hier_part = "(?:#{net_path}|#{abs_path})(?:\\?(?:#{query}))?"
       # opaque_part   = uric_no_slash *uric
-      OPAQUE_PART = "#{URIC_NO_SLASH}#{URIC}*"
+      ret[:OPAQUE_PART] = opaque_part = "#{uric_no_slash}#{uric}*"
 
       # absoluteURI   = scheme ":" ( hier_part | opaque_part )
-      ABS_URI   = "#{SCHEME}:(?:#{HIER_PART}|#{OPAQUE_PART})"
+      ret[:ABS_URI] = abs_uri = "#{scheme}:(?:#{hier_part}|#{opaque_part})"
       # relativeURI   = ( net_path | abs_path | rel_path ) [ "?" query ]
-      REL_URI = "(?:#{NET_PATH}|#{ABS_PATH}|#{REL_PATH})(?:\\?#{QUERY})?"
+      ret[:REL_URI] = rel_uri = "(?:#{net_path}|#{abs_path}|#{rel_path})(?:\\?#{query})?"
 
       # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
-      URI_REF = "(?:#{ABS_URI}|#{REL_URI})?(?:##{FRAGMENT})?"
+      ret[:URI_REF] = uri_ref = "(?:#{abs_uri}|#{rel_uri})?(?:##{fragment})?"
 
-      # XXX:
-      X_ABS_URI = "
-        (#{PATTERN::SCHEME}):                     (?# 1: scheme)
+      ret[:X_ABS_URI] = "
+        (#{scheme}):                           (?# 1: scheme)
         (?:
-           (#{PATTERN::OPAQUE_PART})              (?# 2: opaque)
+           (#{opaque_part})                    (?# 2: opaque)
         |
            (?:(?:
              //(?:
-                 (?:(?:(#{PATTERN::USERINFO})@)?  (?# 3: userinfo)
-                   (?:(#{PATTERN::HOST})(?::(\\d*))?))?(?# 4: host, 5: port)
+                 (?:(?:(#{userinfo})@)?        (?# 3: userinfo)
+                   (?:(#{host})(?::(\\d*))?))? (?# 4: host, 5: port)
                |
-                 (#{PATTERN::REG_NAME})           (?# 6: registry)
+                 (#{reg_name})                 (?# 6: registry)
                )
              |
-             (?!//))                              (?# XXX: '//' is the mark for hostport)
-             (#{PATTERN::ABS_PATH})?              (?# 7: path)
-           )(?:\\?(#{PATTERN::QUERY}))?           (?# 8: query)
+             (?!//))                           (?# XXX: '//' is the mark for hostport)
+             (#{abs_path})?                    (?# 7: path)
+           )(?:\\?(#{query}))?                 (?# 8: query)
         )
-        (?:\\#(#{PATTERN::FRAGMENT}))?            (?# 9: fragment)
+        (?:\\#(#{fragment}))?                  (?# 9: fragment)
       "
-      X_REL_URI = "
+
+      ret[:X_REL_URI] = "
         (?:
           (?:
             //
             (?:
-              (?:(#{PATTERN::USERINFO})@)?       (?# 1: userinfo)
-                (#{PATTERN::HOST})?(?::(\\d*))?  (?# 2: host, 3: port)
+              (?:(#{userinfo})@)?       (?# 1: userinfo)
+                (#{host})?(?::(\\d*))?  (?# 2: host, 3: port)
             |
-              (#{PATTERN::REG_NAME})             (?# 4: registry)
+              (#{reg_name})             (?# 4: registry)
             )
           )
         |
-          (#{PATTERN::REL_SEGMENT})              (?# 5: rel_segment)
+          (#{rel_segment})              (?# 5: rel_segment)
         )?
-        (#{PATTERN::ABS_PATH})?                  (?# 6: abs_path)
-        (?:\\?(#{PATTERN::QUERY}))?              (?# 7: query)
-        (?:\\#(#{PATTERN::FRAGMENT}))?           (?# 8: fragment)
+        (#{abs_path})?                  (?# 6: abs_path)
+        (?:\\?(#{query}))?              (?# 7: query)
+        (?:\\#(#{fragment}))?           (?# 8: fragment)
       "
-      # :startdoc:
-    end # PATTERN
 
-    # :stopdoc:
+      ret
+    end
 
-    # for URI::split
-    ABS_URI = Regexp.new('^' + PATTERN::X_ABS_URI + '$', #'
-                         Regexp::EXTENDED).freeze
-    REL_URI = Regexp.new('^' + PATTERN::X_REL_URI + '$', #'
-                         Regexp::EXTENDED).freeze
+    def initialize_regexp(pattern)
+      ret = {}
 
-    # for URI::extract
-    URI_REF     = Regexp.new(PATTERN::URI_REF).freeze
-    ABS_URI_REF = Regexp.new(PATTERN::X_ABS_URI, Regexp::EXTENDED).freeze
-    REL_URI_REF = Regexp.new(PATTERN::X_REL_URI, Regexp::EXTENDED).freeze
+      # for URI::split
+      ret[:ABS_URI] = Regexp.new('^' + pattern[:X_ABS_URI] + '$', Regexp::EXTENDED)
+      ret[:REL_URI] = Regexp.new('^' + pattern[:X_REL_URI] + '$', Regexp::EXTENDED)
 
-    # for URI::escape/unescape
-    ESCAPED = Regexp.new(PATTERN::ESCAPED).freeze
-    UNSAFE  = Regexp.new("[^#{PATTERN::UNRESERVED}#{PATTERN::RESERVED}]").freeze
+      # for URI::extract
+      ret[:URI_REF]     = Regexp.new(pattern[:URI_REF])
+      ret[:ABS_URI_REF] = Regexp.new(pattern[:X_ABS_URI], Regexp::EXTENDED)
+      ret[:REL_URI_REF] = Regexp.new(pattern[:X_REL_URI], Regexp::EXTENDED)
 
-    # for Generic#initialize
-    SCHEME   = Regexp.new("^#{PATTERN::SCHEME}$").freeze #"
-    USERINFO = Regexp.new("^#{PATTERN::USERINFO}$").freeze #"
-    HOST     = Regexp.new("^#{PATTERN::HOST}$").freeze #"
-    PORT     = Regexp.new("^#{PATTERN::PORT}$").freeze #"
-    OPAQUE   = Regexp.new("^#{PATTERN::OPAQUE_PART}$").freeze #"
-    REGISTRY = Regexp.new("^#{PATTERN::REG_NAME}$").freeze #"
-    ABS_PATH = Regexp.new("^#{PATTERN::ABS_PATH}$").freeze #"
-    REL_PATH = Regexp.new("^#{PATTERN::REL_PATH}$").freeze #"
-    QUERY    = Regexp.new("^#{PATTERN::QUERY}$").freeze #"
-    FRAGMENT = Regexp.new("^#{PATTERN::FRAGMENT}$").freeze #"
-    # :startdoc:
-  end # REGEXP
+      # for URI::escape/unescape
+      ret[:ESCAPED] = Regexp.new(pattern[:ESCAPED])
+      ret[:UNSAFE]  = Regexp.new("[^#{pattern[:UNRESERVED]}#{pattern[:RESERVED]}]")
+
+      # for Generic#initialize
+      ret[:SCHEME]   = Regexp.new("^#{pattern[:SCHEME]}$")
+      ret[:USERINFO] = Regexp.new("^#{pattern[:USERINFO]}$")
+      ret[:HOST]     = Regexp.new("^#{pattern[:HOST]}$")
+      ret[:PORT]     = Regexp.new("^#{pattern[:PORT]}$")
+      ret[:OPAQUE]   = Regexp.new("^#{pattern[:OPAQUE_PART]}$")
+      ret[:REGISTRY] = Regexp.new("^#{pattern[:REG_NAME]}$")
+      ret[:ABS_PATH] = Regexp.new("^#{pattern[:ABS_PATH]}$")
+      ret[:REL_PATH] = Regexp.new("^#{pattern[:REL_PATH]}$")
+      ret[:QUERY]    = Regexp.new("^#{pattern[:QUERY]}$")
+      ret[:FRAGMENT] = Regexp.new("^#{pattern[:FRAGMENT]}$")
+
+      ret
+    end
+  end # class Parser
+
+  DEFAULT_PARSER = Parser.new
+  DEFAULT_PARSER.pattern.each_pair do |sym, str|
+    unless REGEXP::PATTERN.const_defined?(sym)
+      REGEXP::PATTERN.const_set(sym, str)
+    end
+  end
+  DEFAULT_PARSER.regexp.each_pair do |sym, str|
+    const_set(sym, str)
+  end
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
@@ -246,8 +468,6 @@ module URI
   end
 
   module Escape
-    include REGEXP
-
     #
     # == Synopsis
     #
@@ -280,19 +500,8 @@ module URI
     #   p URI.escape("@?@!", "!?")
     #   # => "@%3F@%21"
     #
-    def escape(str, unsafe = UNSAFE)
-      unless unsafe.kind_of?(Regexp)
-        # perhaps unsafe is String object
-        unsafe = Regexp.new("[#{Regexp.quote(unsafe)}]", false, 'N')
-      end
-      str.gsub(unsafe) do
-        us = $&
-        tmp = ''
-        us.each_byte do |uc|
-          tmp << sprintf('%%%02X', uc)
-        end
-        tmp
-      end
+    def escape(*arg)
+      DEFAULT_PARSER.escape(*arg)
     end
     alias encode escape
     #
@@ -316,18 +525,19 @@ module URI
     #   p URI.unescape(enc_uri)
     #   # => "http://example.com/?a=\t\r"
     #
-    def unescape(str)
-      str.gsub(ESCAPED) do
-        $&[1,2].hex.chr
-      end
+    def unescape(*arg)
+      DEFAULT_PARSER.unescape(*arg)
     end
     alias decode unescape
   end
 
-  include REGEXP
   extend Escape
+  include REGEXP
 
   @@schemes = {}
+  def self.scheme_list
+    @@schemes
+  end
   
   #
   # Base class for all URI exceptions.
@@ -378,75 +588,7 @@ module URI
   #   # => ["http", nil, "www.ruby-lang.org", nil, nil, "/", nil, nil, nil]
   #
   def self.split(uri)
-    case uri
-    when ''
-      # null uri
-
-    when ABS_URI
-      scheme, opaque, userinfo, host, port, 
-        registry, path, query, fragment = $~[1..-1]
-
-      # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
-
-      # absoluteURI   = scheme ":" ( hier_part | opaque_part )
-      # hier_part     = ( net_path | abs_path ) [ "?" query ]
-      # opaque_part   = uric_no_slash *uric
-
-      # abs_path      = "/"  path_segments
-      # net_path      = "//" authority [ abs_path ]
-
-      # authority     = server | reg_name
-      # server        = [ [ userinfo "@" ] hostport ]
-
-      if !scheme
-        raise InvalidURIError, 
-          "bad URI(absolute but no scheme): #{uri}"
-      end
-      if !opaque && (!path && (!host && !registry))
-        raise InvalidURIError,
-          "bad URI(absolute but no path): #{uri}" 
-      end
-
-    when REL_URI
-      scheme = nil
-      opaque = nil
-
-      userinfo, host, port, registry, 
-        rel_segment, abs_path, query, fragment = $~[1..-1]
-      if rel_segment && abs_path
-        path = rel_segment + abs_path
-      elsif rel_segment
-        path = rel_segment
-      elsif abs_path
-        path = abs_path
-      end
-
-      # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
-
-      # relativeURI   = ( net_path | abs_path | rel_path ) [ "?" query ]
-
-      # net_path      = "//" authority [ abs_path ]
-      # abs_path      = "/"  path_segments
-      # rel_path      = rel_segment [ abs_path ]
-
-      # authority     = server | reg_name
-      # server        = [ [ userinfo "@" ] hostport ]
-
-    else
-      raise InvalidURIError, "bad URI(is not URI?): #{uri}"
-    end
-
-    path = '' if !path && !opaque # (see RFC2396 Section 5.2)
-    ret = [
-      scheme, 
-      userinfo, host, port,         # X
-      registry,                        # X
-      path,                         # Y
-      opaque,                        # Y
-      query,
-      fragment
-    ]
-    return ret
+    DEFAULT_PARSER.split(uri)
   end
 
   #
@@ -481,18 +623,7 @@ module URI
   #   # => "www.ruby-lang.org" 
   # 
   def self.parse(uri)
-    scheme, userinfo, host, port, 
-      registry, path, opaque, query, fragment = self.split(uri)
-
-    if scheme && @@schemes.include?(scheme.upcase)
-      @@schemes[scheme.upcase].new(scheme, userinfo, host, port, 
-                                   registry, path, opaque, query, 
-                                   fragment)
-    else
-      Generic.new(scheme, userinfo, host, port, 
-                  registry, path, opaque, query, 
-                  fragment)
-    end
+    DEFAULT_PARSER.parse(uri)
   end
 
   #
@@ -517,11 +648,7 @@ module URI
   #   # => #<URI::HTTP:0x2022ac02 URL:http://localhost/main.rbx>
   #
   def self.join(*str)
-    u = self.parse(str[0])
-    str[1 .. -1].each do |x|
-      u = u.merge(x)
-    end
-    u
+    DEFAULT_PARSER.join(*str)
   end
 
   #
@@ -549,14 +676,7 @@ module URI
   #   # => ["http://foo.example.com/bla", "mailto:test@example.com"]
   #
   def self.extract(str, schemes = nil, &block)
-    if block_given?
-      str.scan(regexp(schemes)) { yield $& }
-      nil
-    else
-      result = []
-      str.scan(regexp(schemes)) { result.push $& }
-      result
-    end
+    DEFAULT_PARSER.extract(str, schemes, &block)
   end
 
   #
@@ -591,11 +711,7 @@ module URI
   #   end
   #
   def self.regexp(schemes = nil)
-    unless schemes
-      ABS_URI_REF
-    else
-      /(?=#{Regexp.union(*schemes)}:)#{PATTERN::X_ABS_URI}/xn
-    end
+    DEFAULT_PARSER.make_regexp(schemes)
   end
 
 end
