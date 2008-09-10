@@ -64,7 +64,7 @@ tmp = ERB.new(<<'EOS', nil, '%').result(binding)
 #include "vm_core.h"
 
 % preludes.zip(lines_list).each_with_index {|(prelude, (setup_lines, lines)), i|
-static const char prelude_name<%=i%>[] = <%=c_esc(File.basename(prelude))%>;
+static const char prelude_name<%=i%>[] = <%=c_esc("<internal:" + File.basename(prelude, ".rb") + ">")%>;
 static const char prelude_code<%=i%>[] =
 %   (setup_lines+lines).each {|line|
 <%=line%>
