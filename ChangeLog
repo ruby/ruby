@@ -1,3 +1,7 @@
+Thu Sep 11 02:14:38 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_convpath): new method.
+
 Wed Sep 10 23:00:43 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* tool/compile_prelude.rb: print "<internal:prelude>" instead of

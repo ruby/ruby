@@ -807,4 +807,23 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal("?x".force_encoding("iso-2022-jp"),
       "\222\xA1x".encode("iso-2022-jp", "stateless-iso-2022-jp", :invalid => :replace))
   end
+
+  def test_convpath
+    assert_equal([], Encoding::Converter.new("", "").convpath)
+    assert_equal([["EUC-JP", "UTF-8"], ["UTF-8", "ISO-8859-1"]],
+                 Encoding::Converter.new("EUC-JP", "ISO-8859-1").convpath)
+    assert_equal([["EUC-JP", "stateless-ISO-2022-JP"], ["stateless-ISO-2022-JP", "ISO-2022-JP"]],
+                 Encoding::Converter.new("EUC-JP", "ISO-2022-JP").convpath)
+    assert_equal([["ISO-2022-JP", "stateless-ISO-2022-JP"],
+                  ["stateless-ISO-2022-JP", "EUC-JP"],
+                  ["EUC-JP", "UTF-8"],
+                  ["UTF-8", "ISO-8859-1"]],
+                 Encoding::Converter.new("ISO-2022-JP", "ISO-8859-1").convpath)
+    assert_equal(["universal_newline", ["UTF-8", "UTF-16BE"]],
+                 Encoding::Converter.new("UTF-8", "UTF-16BE", universal_newline: true).convpath)
+    assert_equal([["UTF-16BE", "UTF-8"], "universal_newline"],
+                 Encoding::Converter.new("UTF-16BE", "UTF-8", universal_newline: true).convpath)
+    assert_equal([["UTF-16BE", "UTF-8"], "universal_newline", ["UTF-8", "UTF-16LE"]],
+                 Encoding::Converter.new("UTF-16BE", "UTF-16LE", universal_newline: true).convpath)
+  end
 end

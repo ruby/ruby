@@ -2785,6 +2785,46 @@ econv_destination_encoding(VALUE self)
     return rb_enc_from_encoding(ec->destination_encoding);
 }
 
+/*
+ * call-seq:
+ *   ec.convpath        -> ary
+ *
+ * returns the conversion path of ec.
+ *
+ * The result is an array of conversions.
+ *
+ *   ec = Encoding::Converter.new("ISo-8859-1", "EUC-JP", crlf_newline: true)
+ *   p ec.convpath
+ *   #=> [["ISO-8859-1", "UTF-8"], ["UTF-8", "EUC-JP"], "crlf_newline"]
+ *
+ * A element of the array is a pair of string or a string.
+ * The pair means encoding conversion.
+ * The string means decorator.
+ *
+ * In the above example, ["ISO-8859-1", "UTF-8"] means a converter from
+ * ISO-8859-1 to UTF-8.
+ * "crlf_newline" means newline converter from LF to CRLF.
+ */
+static VALUE
+econv_convpath(VALUE self)
+{
+    rb_econv_t *ec = check_econv(self);
+    VALUE result;
+    int i;
+
+    result = rb_ary_new();
+    for (i = 0; i < ec->num_trans; i++) {
+        const rb_transcoder *tr = ec->elems[i].tc->transcoder;
+        VALUE v;
+        if (SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding))
+            v = rb_str_new_cstr(tr->dst_encoding);
+        else
+            v = rb_assoc_new(rb_str_new_cstr(tr->src_encoding), rb_str_new_cstr(tr->dst_encoding));
+        rb_ary_push(result, v);
+    }
+    return result;
+}
+
 static VALUE
 econv_result_to_symbol(rb_econv_result_t res)
 {
@@ -3609,6 +3649,7 @@ Init_transcode(void)
     rb_define_singleton_method(rb_cEncodingConverter, "asciicompat_encoding", econv_s_asciicompat_encoding, 1);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
     rb_define_method(rb_cEncodingConverter, "inspect", econv_inspect, 0);
+    rb_define_method(rb_cEncodingConverter, "convpath", econv_convpath, 0);
     rb_define_method(rb_cEncodingConverter, "source_encoding", econv_source_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "destination_encoding", econv_destination_encoding, 0);
     rb_define_method(rb_cEncodingConverter, "primitive_convert", econv_primitive_convert, -1);
