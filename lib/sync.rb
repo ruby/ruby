@@ -126,9 +126,9 @@ module Sync_m
   
   # locking methods.
   def sync_try_lock(mode = EX)
-    return unlock if sync_mode == UN
+    return unlock if mode == UN
     @sync_mutex.synchronize do
-      ret = sync_try_lock_sub(sync_mode)
+      ret = sync_try_lock_sub(mode)
     end
     ret
   end
