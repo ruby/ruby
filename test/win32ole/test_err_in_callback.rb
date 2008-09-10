@@ -28,14 +28,14 @@ if defined?(WIN32OLE)
 
     def create_temp_html
       fso = WIN32OLE.new('Scripting.FileSystemObject')
-      dummy_file = fso.GetTempName + ".html"
+      @dummy_file = fso.GetTempName + ".html"
       cfolder = fso.getFolder(".")
       @str = "This is test HTML file for Win32OLE (#{Time.now})"
-      f = cfolder.CreateTextFile(dummy_file)
+      f = cfolder.CreateTextFile(@dummy_file)
       f.writeLine("<html><body><div id='str'>#{@str}</div></body></html>")
       f.close
-      @f = dummy_file
-      dummy_path = cfolder.path + "\\" + dummy_file
+      @f = @dummy_file
+      dummy_path = cfolder.path + "\\" + @dummy_file
       dummy_path
     end
 
@@ -54,26 +54,26 @@ if defined?(WIN32OLE)
     def ie_quit
       sh = WIN32OLE.new('Shell.Application')
       sh.windows.each do |w|
-        if w.ole_type.name == 'IWebBrowser2'
-          20.times do |i|
-            if w.locationURL != "" && w.document
-              break
-            end
-            WIN32OLE_EVENT.message_loop
-            sleep 1
-          end
-          e = w.document.getElementById("str")
+        i = 0
+        begin
+          i = i + 1
+          WIN32OLE_EVENT.message_loop
+          sleep 0.1
+          e = w.document.all.item("str")
           if e && e.innerHTML == @str
             w.quit
             WIN32OLE_EVENT.message_loop
             sleep 0.2
+            break
           end
+          next if i > 1000
+        rescue
+          retry
         end
       end
     end
 
     def teardown
-      WIN32OLE_EVENT.message_loop
       ie_quit
       File.unlink(@f)
       File.unlink("test_err_in_callback.log")
