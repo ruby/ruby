@@ -1,3 +1,8 @@
+Wed Sep 10 10:35:32 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi/cookie.rb (CGI::Cookie#to_s): performance improvement
+	  from http://jp.rubyist.net/magazine/?0023-Cgirb.
+
 Wed Sep 10 10:12:29 2008  akira yamada  <akira@arika.org>
 
 	* lib/sync.rb (Sync_m#sync_exclusive): fixed

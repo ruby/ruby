@@ -96,31 +96,12 @@ class CGI
 
     # Convert the Cookie to its string representation.
     def to_s
-      buf = ""
-      buf += @name + '='
-
-      if @value.kind_of?(String)
-        buf += CGI::escape(@value)
-      else
-        buf += @value.collect{|v| CGI::escape(v) }.join("&")
-      end
-
-      if @domain
-        buf += '; domain=' + @domain
-      end
-
-      if @path
-        buf += '; path=' + @path
-      end
-
-      if @expires
-        buf += '; expires=' + CGI::rfc1123_date(@expires)
-      end
-
-      if @secure == true
-        buf += '; secure'
-      end
-
+      val = @value.kind_of?(String) ? CGI::escape(@value) : @value.collect{|v| CGI::escape(v) }.join("&")
+      buf = "#{@name}=#{val}"
+      buf << "; domain=#{@domain}" if @domain
+      buf << "; path=#{@path}"     if @path
+      buf << "; expires=#{CGI::rfc1123_date(@expires)}" if @expires
+      buf << "; secure"            if @secure == true
       buf
     end
 
