@@ -52,13 +52,16 @@ if defined?(WIN32OLE)
     end
 
     def ie_quit
+      WIN32OLE_EVENT.message_loop
       sh = WIN32OLE.new('Shell.Application')
       sh.windows.each do |w|
         i = 0
         begin
           i = i + 1
+          next if i > 100
           WIN32OLE_EVENT.message_loop
           sleep 0.1
+          next if /#{@dummy_file}/ !~ w.locationURL
           e = w.document.all.item("str")
           if e && e.innerHTML == @str
             w.quit
@@ -66,7 +69,6 @@ if defined?(WIN32OLE)
             sleep 0.2
             break
           end
-          next if i > 1000
         rescue
           retry
         end

@@ -1,3 +1,8 @@
+Thu Sep 11 20:18:24 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* test/win32ole/test_err_in_callback.rb (teardown): get rid
+	  of infinite loop.
+
 Thu Sep 11 19:12:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/oniguruma.h (OnigCodePoint): unsigned long to unsigned int.
