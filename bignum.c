@@ -893,21 +893,6 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
     long lh, ll, m1;
     VALUE b, q, r;
 
-    if (FIXNUM_P(x)) {
-	VALUE str = rb_fix2str(x, base);
-	char* str_ptr = RSTRING_PTR(str);
-	long str_len = RSTRING_LEN(str);
-	if (trim) {
-	    if (FIX2INT(x) == 0) return 0;
-	    MEMCPY(ptr, str_ptr, char, str_len);
-	    return str_len;
-	}
-	else {
-	    memset(ptr, '0', len - str_len);
-	    MEMCPY(ptr + len - str_len, str_ptr, char, str_len);
-	    return len;
-	}
-    }
     if (BIGZEROP(x)) {
 	if (trim) return 0;
 	else {
@@ -922,10 +907,10 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
 
     b = power_cache_get_power(base, n1, &m1);
     bigdivmod(x, b, &q, &r);
-    lh = big2str_karatsuba(q, base, ptr,      (len - m1)/2,
+    lh = big2str_karatsuba(q, base, ptr, (len - m1)/2,
 			   len - m1, hbase, trim);
     ll = big2str_karatsuba(r, base, ptr + lh, m1/2,
-			   m1,       hbase, !lh && trim);
+			   m1, hbase, !lh && trim);
 
     return lh + ll;
 }
