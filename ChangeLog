@@ -1,3 +1,7 @@
+Fri Sep 12 01:21:22 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/syck/node.c (syck_replace_str2): fix wrong check to free ptr.
+
 Thu Sep 11 20:18:24 2008  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_err_in_callback.rb (teardown): get rid
