@@ -66,6 +66,12 @@
  * 4. Shorthand for (3).
  *
  *      Iconv.iconv(to, from, *input.to_a)
+ *
+ * == Attentions
+ *
+ * Even if some extentions of implementation dependent are useful,
+ * DON'T USE those extentions in libraries and scripts to widely distribute.
+ * If you want to use those feature, use String#encode.
  */
 
 /* Invalid value for iconv_t is -1 but 0 for VALUE, I hope VALUE is
