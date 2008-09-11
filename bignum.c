@@ -1749,6 +1749,7 @@ bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 	zds = BDIGITS(*divp);
 	j = (nx==ny ? nx+2 : nx+1) - ny;
 	for (i = 0;i < j;i++) zds[i] = zds[i+ny];
+	if (!zds[i-1]) i--;
 	RBIGNUM_SET_LEN(*divp, i);
     }
     if (modp) {			/* normalize remainder */
@@ -1764,6 +1765,7 @@ bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 		t2 = BIGUP(q);
 	    }
 	}
+	if (!zds[ny-1]) ny--;
 	RBIGNUM_SET_LEN(*modp, ny);
 	RBIGNUM_SET_SIGN(*modp, RBIGNUM_SIGN(x));
     }

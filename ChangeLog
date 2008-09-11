@@ -1,3 +1,9 @@
+Thu Sep 11 15:23:26 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bigdivrem): adjust length for division and remainder.
+	  a patch from TOYOFUKU Chikanobu <nobu_toyofuku at nifty.com> in 
+	  [ruby-dev:36231].
+
 Thu Sep 11 02:59:47 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_binwrite): extracted from io_fwrite.
