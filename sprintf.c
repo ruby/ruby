@@ -558,7 +558,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG();
 		VALUE tmp;
-		int c, n;
+		unsigned int c;
+		int n;
 
 		tmp = rb_check_string_type(val);
 		if (!NIL_P(tmp)) {

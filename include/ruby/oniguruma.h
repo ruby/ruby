@@ -104,7 +104,7 @@ extern "C" {
 #endif
 
 typedef unsigned char  OnigUChar;
-typedef unsigned long  OnigCodePoint;
+typedef unsigned int  OnigCodePoint;
 typedef unsigned int   OnigCtype;
 typedef unsigned int   OnigDistance;
 

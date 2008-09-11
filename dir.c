@@ -87,7 +87,7 @@ static int
 char_casecmp(const char *p1, const char *p2, rb_encoding *enc, const int nocase)
 {
     const char *p1end, *p2end;
-    int c1, c2;
+    unsigned int c1, c2;
 
     if (!*p1 || !*p2) return !!*p1 - !!*p2;
     p1end = p1 + strlen(p1);

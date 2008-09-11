@@ -1,3 +1,65 @@
+Thu Sep 11 19:12:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/oniguruma.h (OnigCodePoint): unsigned long to unsigned int.
+
+	* include/ruby/encoding.h (rb_enc_codepoint): ditto.
+
+	* encoding.c (rb_enc_codepoint): signed int to unsigned int.
+
+	* encoding.c (rb_enc_ascget): ditto.
+
+	* string.c (rb_str_casecmp): ditto.
+
+	* string.c (enc_succ_alnum_char): ditto.
+
+	* string.c (rb_str_inspect): ditto.
+
+	* string.c (rb_str_upcase_bang): ditto.
+
+	* string.c (rb_str_downcase_bang): ditto.
+
+	* string.c (rb_str_capitalize_bang): ditto.
+
+	* string.c (rb_str_swapcase_bang): ditto.
+
+	* string.c (struct tr): ditto.
+
+	* string.c (trnext): ditto.
+
+	* string.c (tr_trans): ditto.
+
+	* string.c (tr_setup_table): ditto.
+
+	* string.c (tr_find): ditto.
+
+	* string.c (rb_str_delete_bang): ditto.
+
+	* string.c (rb_str_squeeze_bang): ditto.
+
+	* string.c (rb_str_count): ditto.
+
+	* string.c (rb_str_split_m): ditto.
+
+	* string.c (rb_str_each_line): ditto.
+
+	* string.c (rb_str_lstrip_bang): ditto.
+
+	* string.c (rb_str_rstrip_bang): ditto.
+
+	* string.c (rb_str_intern): ditto.
+
+	* dir.c (char_casecmp): ditto.
+
+	* sprintf.c (rb_str_format): ditto.
+
+	* enc/emacs_mule.c (mbc_to_code): to be 32bit clean.
+
+	* enc/emacs_mule.c (code_to_mbc): ditto.
+
+	* enc/gb18030.c (mbc_to_code): ditto.
+
+	* enc/gb18030.c (code_to_mbc): ditto.
+
 Thu Sep 11 19:09:25 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/iconv/iconv.c: add attention for machine independent.

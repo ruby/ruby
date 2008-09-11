@@ -2066,8 +2066,8 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     p1 = RSTRING_PTR(str1); p1end = RSTRING_END(str1);
     p2 = RSTRING_PTR(str2); p2end = RSTRING_END(str2);
     while (p1 < p1end && p2 < p2end) {
-	int c1 = rb_enc_codepoint(p1, p1end, enc);
-	int c2 = rb_enc_codepoint(p2, p2end, enc);
+	unsigned int c1 = rb_enc_codepoint(p1, p1end, enc);
+	unsigned int c2 = rb_enc_codepoint(p2, p2end, enc);
 
 	if (c1 != c2) {
 	    c1 = rb_enc_toupper(c1, enc);
@@ -2472,7 +2472,7 @@ static enum neighbor_char
 enc_succ_alnum_char(char *p, int len, rb_encoding *enc, char *carry)
 {
     enum neighbor_char ret;
-    int c;
+    unsigned int c;
     int ctype;
     int range;
     char save[ONIGENC_CODE_TO_MBC_MAXLEN];
@@ -3827,9 +3827,8 @@ rb_str_inspect(VALUE str)
     str_cat_char(result, '"', enc);
     p = RSTRING_PTR(str); pend = RSTRING_END(str);
     while (p < pend) {
-	int c;
+	unsigned int c, cc;
 	int n;
-	int cc;
 
         n = rb_enc_precise_mbclen(p, pend, enc);
         if (!MBCLEN_CHARFOUND_P(n)) {
@@ -4040,7 +4039,7 @@ rb_str_upcase_bang(VALUE str)
     enc = STR_ENC_GET(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     while (s < send) {
-	int c = rb_enc_codepoint(s, send, enc);
+	unsigned int c = rb_enc_codepoint(s, send, enc);
 
 	if (rb_enc_islower(c, enc)) {
 	    /* assuming toupper returns codepoint with same size */
@@ -4098,7 +4097,7 @@ rb_str_downcase_bang(VALUE str)
     enc = STR_ENC_GET(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     while (s < send) {
-	int c = rb_enc_codepoint(s, send, enc);
+	unsigned int c = rb_enc_codepoint(s, send, enc);
 
 	if (rb_enc_isupper(c, enc)) {
 	    /* assuming toupper returns codepoint with same size */
@@ -4155,7 +4154,7 @@ rb_str_capitalize_bang(VALUE str)
     rb_encoding *enc;
     char *s, *send;
     int modify = 0;
-    int c;
+    unsigned int c;
     int cr = ENC_CODERANGE(str);
 
     rb_str_modify(str);
@@ -4227,7 +4226,7 @@ rb_str_swapcase_bang(VALUE str)
     enc = STR_ENC_GET(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
     while (s < send) {
-	int c = rb_enc_codepoint(s, send, enc);
+	unsigned int c = rb_enc_codepoint(s, send, enc);
 
 	if (rb_enc_isupper(c, enc)) {
 	    /* assuming toupper returns codepoint with same size */
@@ -4271,11 +4270,12 @@ rb_str_swapcase(VALUE str)
 typedef unsigned char *USTR;
 
 struct tr {
-    int gen, now, max;
+    int gen; 
+    unsigned int now, max;
     char *p, *pend;
 };
 
-static int
+static unsigned int
 trnext(struct tr *t, rb_encoding *enc)
 {
     for (;;) {
@@ -4289,7 +4289,7 @@ trnext(struct tr *t, rb_encoding *enc)
 	    if (t->p < t->pend - 1 && *t->p == '-') {
 		t->p++;
 		if (t->p < t->pend) {
-		    int c = rb_enc_codepoint(t->p, t->pend, enc);
+		    unsigned int c = rb_enc_codepoint(t->p, t->pend, enc);
 		    t->p += rb_enc_codelen(c, enc);
 		    if (t->now > c) continue;
 		    t->gen = 1;
@@ -4313,11 +4313,13 @@ static VALUE rb_str_delete_bang(int,VALUE*,VALUE);
 static VALUE
 tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 {
-    int trans[256];
+    const unsigned int errc = -1;
+    unsigned int trans[256];
     rb_encoding *enc, *e1, *e2;
     struct tr trsrc, trrepl;
     int cflag = 0;
-    int c, c0, last = 0, modify = 0, i, l;
+    unsigned int c, c0;
+    int last = 0, modify = 0, i, l;
     char *s, *send;
     VALUE hash = 0;
     int singlebyte = single_byte_optimizable(str);
@@ -4354,40 +4356,40 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	for (i=0; i<256; i++) {
 	    trans[i] = 1;
 	}
-	while ((c = trnext(&trsrc, enc)) >= 0) {
+	while ((c = trnext(&trsrc, enc)) != errc) {
 	    if (c < 256) {
-		trans[c] = -1;
+		trans[c] = errc;
 	    }
 	    else {
 		if (!hash) hash = rb_hash_new();
-		rb_hash_aset(hash, INT2NUM(c), Qtrue);
+		rb_hash_aset(hash, UINT2NUM(c), Qtrue);
 	    }
 	}
-	while ((c = trnext(&trrepl, enc)) >= 0)
+	while ((c = trnext(&trrepl, enc)) != errc)
 	    /* retrieve last replacer */;
 	last = trrepl.now;
 	for (i=0; i<256; i++) {
-	    if (trans[i] >= 0) {
+	    if (trans[i] != errc) {
 		trans[i] = last;
 	    }
 	}
     }
     else {
-	int r;
+	unsigned int r;
 
 	for (i=0; i<256; i++) {
-	    trans[i] = -1;
+	    trans[i] = errc;
 	}
-	while ((c = trnext(&trsrc, enc)) >= 0) {
+	while ((c = trnext(&trsrc, enc)) != errc) {
 	    r = trnext(&trrepl, enc);
-	    if (r == -1) r = trrepl.now;
+	    if (r == errc) r = trrepl.now;
 	    if (c < 256) {
 		trans[c] = r;
 		if (r > 255) singlebyte = 0;
 	    }
 	    else {
 		if (!hash) hash = rb_hash_new();
-		rb_hash_aset(hash, INT2NUM(c), INT2NUM(r));
+		rb_hash_aset(hash, UINT2NUM(c), UINT2NUM(r));
 	    }
 	}
     }
@@ -4408,18 +4410,18 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		c = trans[c];
 	    }
 	    else if (hash) {
-		VALUE tmp = rb_hash_lookup(hash, INT2NUM(c));
+		VALUE tmp = rb_hash_lookup(hash, UINT2NUM(c));
 		if (NIL_P(tmp)) {
 		    if (cflag) c = last;
-		    else c = -1;
+		    else c = errc;
 		}
-		else if (cflag) c = -1;
+		else if (cflag) c = errc;
 		else c = NUM2INT(tmp);
 	    }
 	    else {
-		c = -1;
+		c = errc;
 	    }
-	    if (c >= 0) {
+	    if (c != -1) {
 		if (save == c) continue;
 		save = c;
 		tlen = rb_enc_codelen(c, enc);
@@ -4447,7 +4449,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     else if (rb_enc_mbmaxlen(enc) == 1 || (singlebyte && !hash)) {
 	while (s < send) {
 	    c = (unsigned char)*s;
-	    if (trans[c] >= 0) {
+	    if (trans[c] != errc) {
 		if (!cflag) {
 		    c = trans[c];
 		    *s = c;
@@ -4474,18 +4476,18 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		c = trans[c];
 	    }
 	    else if (hash) {
-		VALUE tmp = rb_hash_lookup(hash, INT2NUM(c));
+		VALUE tmp = rb_hash_lookup(hash, UINT2NUM(c));
 		if (NIL_P(tmp)) {
 		    if (cflag) c = last;
-		    else c = -1;
+		    else c = errc;
 		}
-		else if (cflag) c = -1;
+		else if (cflag) c = errc;
 		else c = NUM2INT(tmp);
 	    }
 	    else {
-		c = -1;
+		c = errc;
 	    }
-	    if (c >= 0) {
+	    if (c != errc) {
 		tlen = rb_enc_codelen(c, enc);
 		modify = 1;
 	    }
@@ -4566,11 +4568,12 @@ static void
 tr_setup_table(VALUE str, char stable[256], int first, 
 	       VALUE *tablep, VALUE *ctablep, rb_encoding *enc)
 {
+    const unsigned int errc = -1;
     char buf[256];
     struct tr tr;
-    int c, l;
+    unsigned int c;
     VALUE table = 0, ptable = 0;
-    int i, cflag = 0;
+    int i, l, cflag = 0;
 
     tr.p = RSTRING_PTR(str); tr.pend = tr.p + RSTRING_LEN(str);
     tr.gen = tr.now = tr.max = 0;
@@ -4588,12 +4591,12 @@ tr_setup_table(VALUE str, char stable[256], int first,
 	buf[i] = cflag;
     }
 
-    while ((c = trnext(&tr, enc)) >= 0) {
+    while ((c = trnext(&tr, enc)) != errc) {
 	if (c < 256) {
 	    buf[c & 0xff] = !cflag;
 	}
 	else {
-	    VALUE key = INT2NUM(c);
+	    VALUE key = UINT2NUM(c);
 
 	    if (!table) {
 		table = rb_hash_new();
@@ -4618,13 +4621,13 @@ tr_setup_table(VALUE str, char stable[256], int first,
 
 
 static int
-tr_find(int c, char table[256], VALUE del, VALUE nodel)
+tr_find(unsigned int c, char table[256], VALUE del, VALUE nodel)
 {
     if (c < 256) {
 	return table[c] ? Qtrue : Qfalse;
     }
     else {
-	VALUE v = INT2NUM(c);
+	VALUE v = UINT2NUM(c);
 
 	if (del && !NIL_P(rb_hash_lookup(del, v))) {
 	    if (!nodel || NIL_P(rb_hash_lookup(nodel, v))) {
@@ -4672,7 +4675,7 @@ rb_str_delete_bang(int argc, VALUE *argv, VALUE str)
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     send = RSTRING_END(str);
     while (s < send) {
-	int c = rb_enc_codepoint(s, send, enc);
+	unsigned int c = rb_enc_codepoint(s, send, enc);
 	int clen = rb_enc_codelen(c, enc);
 
 	if (tr_find(c, squeez, del, nodel)) {
@@ -4753,7 +4756,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     send = RSTRING_END(str);
     save = -1;
     while (s < send) {
-	int c = rb_enc_codepoint(s, send, enc);
+	unsigned int c = rb_enc_codepoint(s, send, enc);
 	int clen = rb_enc_codelen(c, enc);
 
 	if (c != save || (argc > 0 && !tr_find(c, squeez, del, nodel))) {
@@ -4876,7 +4879,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     send = RSTRING_END(str);
     i = 0;
     while (s < send) {
-	int c = rb_enc_codepoint(s, send, enc);
+	unsigned int c = rb_enc_codepoint(s, send, enc);
 	int clen = rb_enc_codelen(c, enc);
 
 	if (tr_find(c, table, del, nodel)) {
@@ -4993,7 +4996,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	char *eptr = RSTRING_END(str);
 	char *bptr = ptr;
 	int skip = 1;
-	int c;
+	unsigned int c;
 
 	end = beg;
 	while (ptr < eptr) {
@@ -5145,7 +5148,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
     VALUE rs;
-    int newline;
+    unsigned int newline;
     char *p, *pend, *s, *ptr;
     long len, rslen; 
     VALUE line;
@@ -5201,7 +5204,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
     }
 
     while (p < pend) {
-	int c = rb_enc_codepoint(p, pend, enc);
+	unsigned int c = rb_enc_codepoint(p, pend, enc);
 
       again:
 	n = rb_enc_codelen(c, enc);
@@ -5552,7 +5555,7 @@ rb_str_lstrip_bang(VALUE str)
     e = t = RSTRING_END(str);
     /* remove spaces at head */
     while (s < e) {
-	int cc = rb_enc_codepoint(s, e, enc);
+	unsigned int cc = rb_enc_codepoint(s, e, enc);
 	
 	if (!rb_enc_isspace(cc, enc)) break;
 	s += rb_enc_codelen(cc, enc);
@@ -5614,7 +5617,7 @@ rb_str_rstrip_bang(VALUE str)
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     t = e = RSTRING_END(str);
     while (s < e) {
-	int cc = rb_enc_codepoint(s, e, enc);
+	unsigned int cc = rb_enc_codepoint(s, e, enc);
 
 	if (!cc || rb_enc_isspace(cc, enc)) {
 	    if (!space_seen) t = s;
@@ -5949,10 +5952,10 @@ rb_str_intern(VALUE s)
 VALUE
 rb_str_ord(VALUE s)
 {
-    int c;
+    unsigned int c;
 
     c = rb_enc_codepoint(RSTRING_PTR(s), RSTRING_END(s), STR_ENC_GET(s));
-    return INT2NUM(c);
+    return UINT2NUM(c);
 }
 /*
  *  call-seq:

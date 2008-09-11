@@ -717,7 +717,7 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
 int
 rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
 {
-    int c, l;
+    unsigned int c, l;
     if (e <= p)
         return -1;
     if (rb_enc_asciicompat(enc)) {
@@ -737,7 +737,7 @@ rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
     return c;
 }
 
-int
+unsigned int
 rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
 {
     int r;
