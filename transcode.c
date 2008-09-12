@@ -2361,17 +2361,17 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
 }
 
 static int
-enc_arg(VALUE arg, const char **name_p, rb_encoding **enc_p)
+enc_arg(volatile VALUE *arg, const char **name_p, rb_encoding **enc_p)
 {
     rb_encoding *enc;
     const char *n;
     int encidx;
     VALUE encval;
 
-    if ((encidx = rb_to_encoding_index(encval = arg)) < 0) {
+    if ((encidx = rb_to_encoding_index(encval = *arg)) < 0) {
 	enc = NULL;
 	encidx = 0;
-	n = StringValueCStr(encval);
+	n = StringValueCStr(*arg);
     }
     else {
 	enc = rb_enc_from_index(encidx);
@@ -2385,7 +2385,7 @@ enc_arg(VALUE arg, const char **name_p, rb_encoding **enc_p)
 }
 
 static int
-str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
+str_transcode_enc_args(VALUE str, volatile VALUE *arg1, volatile VALUE *arg2,
         const char **sname_p, rb_encoding **senc_p,
         const char **dname_p, rb_encoding **denc_p)
 {
@@ -2395,7 +2395,7 @@ str_transcode_enc_args(VALUE str, VALUE arg1, VALUE arg2,
 
     dencidx = enc_arg(arg1, &dname, &denc);
 
-    if (NIL_P(arg2)) {
+    if (NIL_P(*arg2)) {
 	sencidx = rb_enc_get_index(str);
 	senc = rb_enc_from_index(sencidx);
 	sname = rb_enc_name(senc);
@@ -2416,6 +2416,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 {
     VALUE dest;
     VALUE str = *self;
+    volatile VALUE arg1, arg2;
     long blen, slen;
     unsigned char *buf, *bp, *sp;
     const unsigned char *fromp;
@@ -2427,7 +2428,9 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..2)", argc);
     }
 
-    dencidx = str_transcode_enc_args(str, argv[0], argc==1 ? Qnil : argv[1], &sname, &senc, &dname, &denc);
+    arg1 = argv[0];
+    arg2 = argc==1 ? Qnil : argv[1];
+    dencidx = str_transcode_enc_args(str, &arg1, &arg2, &sname, &senc, &dname, &denc);
 
     if ((ecflags & (ECONV_UNIVERSAL_NEWLINE_DECORATOR|
                     ECONV_CRLF_NEWLINE_DECORATOR|
@@ -2637,7 +2640,7 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
     const char *arg_name, *result_name;
     rb_encoding *arg_enc, *result_enc;
 
-    enc_arg(arg, &arg_name, &arg_enc);
+    enc_arg(&arg, &arg_name, &arg_enc);
 
     result_name = rb_econv_asciicompat_encoding(arg_name);
 
