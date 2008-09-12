@@ -871,4 +871,11 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal([[iso88591,utf8], "universal_newline", [utf8,utf32be]],
                  Encoding::Converter.search_convpath("ISO-8859-1", "UTF-32BE", universal_newline: true))
   end
+
+  def test_invalid_replace
+    assert_raise(ArgumentError) {
+      broken = "\x80".force_encoding("euc-jp")
+      "".encode("euc-jp", :undef => :replace, :replace => broken)
+    }
+  end
 end

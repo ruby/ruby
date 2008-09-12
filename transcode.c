@@ -2254,7 +2254,6 @@ econv_opts(VALUE opt)
     }
     else if (v==sym_replace) {
         ecflags |= ECONV_INVALID_REPLACE;
-        v = rb_hash_aref(opt, sym_replace);
     }
     else {
         rb_raise(rb_eArgError, "unknown value for invalid character option");
@@ -2315,6 +2314,12 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
         VALUE v = rb_hash_aref(opthash, sym_replace);
         if (!NIL_P(v)) {
             StringValue(v);
+            if (rb_enc_str_coderange(v) == ENC_CODERANGE_BROKEN) {
+                VALUE dumped = rb_str_dump(v);
+                rb_raise(rb_eArgError, "replacement string is broken: %s as %s",
+                        StringValueCStr(dumped),
+                        rb_enc_name(rb_enc_get(v)));
+            }
             v = rb_str_new_frozen(v);
             newhash = rb_hash_new();
             rb_hash_aset(newhash, sym_replace, v);
