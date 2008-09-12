@@ -1,3 +1,16 @@
+Fri Sep 12 21:55:43 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_t): new field: num_allocated.
+	  (rb_econv_alloc): extracted from
+	  rb_econv_open_by_transcoder_entries.
+	  (rb_econv_add_transcoder_at): extracted from rb_econv_decorate_at
+	  and generalized 
+	  (rb_econv_open_by_transcoder_entries): use rb_econv_alloc and
+	  rb_econv_add_transcoder_at.
+	  (rb_econv_add_converter): extracted from rb_econv_decorate_at.
+	  (rb_econv_decorate_at): use rb_econv_add_converter.
+
+
 Fri Sep 12 21:22:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_t): new field: started.

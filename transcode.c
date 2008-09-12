@@ -109,6 +109,7 @@ struct rb_econv_t {
     unsigned char *in_data_end;
     unsigned char *in_buf_end;
     rb_econv_elem_t *elems;
+    int num_allocated;
     int num_trans;
     int num_finished;
     struct rb_transcoding *last_tc;
@@ -774,17 +775,12 @@ rb_transcoding_close(rb_transcoding *tc)
 }
 
 static rb_econv_t *
-rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
+rb_econv_alloc(int n_hint)
 {
     rb_econv_t *ec;
-    int i;
 
-    for (i = 0; i < n; i++) {
-        const rb_transcoder *tr;
-        tr = load_transcoder_entry(entries[i]);
-        if (!tr)
-            return NULL;
-    }
+    if (n_hint <= 0)
+        n_hint = 1;
 
     ec = ALLOC(rb_econv_t);
     ec->flags = 0;
@@ -799,8 +795,9 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->in_data_start = NULL;
     ec->in_data_end = NULL;
     ec->in_buf_end = NULL;
-    ec->num_trans = n;
-    ec->elems = ALLOC_N(rb_econv_elem_t, ec->num_trans);
+    ec->num_allocated = n_hint;
+    ec->num_trans = 0;
+    ec->elems = ALLOC_N(rb_econv_elem_t, ec->num_allocated);
     ec->num_finished = 0;
     ec->last_tc = NULL;
     ec->last_error.result = econv_source_buffer_empty;
@@ -812,26 +809,70 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->last_error.readagain_len = 0;
     ec->source_encoding = NULL;
     ec->destination_encoding = NULL;
-    for (i = 0; i < ec->num_trans; i++) {
-        const rb_transcoder *tr = load_transcoder_entry(entries[i]);
-        ec->elems[i].tc = rb_transcoding_open_by_transcoder(tr, 0);
-        ec->elems[i].out_buf_start = NULL;
-        ec->elems[i].out_data_start = NULL;
-        ec->elems[i].out_data_end = NULL;
-        ec->elems[i].out_buf_end = NULL;
-        ec->elems[i].last_result = econv_source_buffer_empty;
-    }
-    if (ec->num_trans)
-        ec->last_tc = ec->elems[ec->num_trans-1].tc;
+    return ec;
+}
 
-    for (i = 0; i < ec->num_trans; i++) {
-        int bufsize = 4096;
-        unsigned char *p;
-        p = xmalloc(bufsize);
-        ec->elems[i].out_buf_start = p;
-        ec->elems[i].out_buf_end = p + bufsize;
-        ec->elems[i].out_data_start = p;
-        ec->elems[i].out_data_end = p;
+static int
+rb_econv_add_transcoder_at(rb_econv_t *ec, const rb_transcoder *tr, int i)
+{
+    int n, j;
+    int bufsize = 4096;
+    unsigned char *p;
+
+    if (ec->num_trans == ec->num_allocated) {
+        n = ec->num_allocated * 2;
+        REALLOC_N(ec->elems, rb_econv_elem_t, n);
+        ec->num_allocated = n;
+    }
+
+    p = xmalloc(bufsize);
+
+    MEMMOVE(ec->elems+i+1, ec->elems+i, rb_econv_elem_t, ec->num_trans-i);
+
+    ec->elems[i].tc = rb_transcoding_open_by_transcoder(tr, 0);
+    ec->elems[i].out_buf_start = p;
+    ec->elems[i].out_buf_end = p + bufsize;
+    ec->elems[i].out_data_start = p;
+    ec->elems[i].out_data_end = p;
+    ec->elems[i].last_result = econv_source_buffer_empty;
+
+    ec->num_trans++;
+
+    if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding))
+        for (j = ec->num_trans-1; n <= j; j--) {
+            rb_transcoding *tc = ec->elems[j].tc;
+            const rb_transcoder *tr2 = tc->transcoder;
+            if (!SUPPLEMENTAL_CONVERSION(tr2->src_encoding, tr2->dst_encoding)) {
+                ec->last_tc = tc;
+                break;
+            }
+        }
+
+    return 0;
+}
+
+static rb_econv_t *
+rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
+{
+    rb_econv_t *ec;
+    int i, ret;
+
+    for (i = 0; i < n; i++) {
+        const rb_transcoder *tr;
+        tr = load_transcoder_entry(entries[i]);
+        if (!tr)
+            return NULL;
+    }
+
+    ec = rb_econv_alloc(n);
+
+    for (i = 0; i < n; i++) {
+        const rb_transcoder *tr = load_transcoder_entry(entries[i]);
+        ret = rb_econv_add_transcoder_at(ec, tr, ec->num_trans);
+        if (ret == -1) {
+            rb_econv_close(ec);
+            return NULL;
+        }
     }
 
     return ec;
@@ -903,13 +944,6 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     ec->flags = ecflags;
     ec->source_encoding_name = sname;
     ec->destination_encoding_name = dname;
-
-    if (num_trans == 0) {
-        ec->last_tc = NULL;
-    }
-    else {
-        ec->last_tc = ec->elems[ec->num_trans-1].tc;
-    }
 
     return ec;
 }
@@ -1728,18 +1762,15 @@ rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags)
 }
 
 static int
-rb_econv_decorate_at(rb_econv_t *ec, const char *decorator_name, int n)
+rb_econv_add_converter(rb_econv_t *ec, const char *sname, const char *dname, int n)
 {
     transcoder_entry_t *entry;
     const rb_transcoder *tr;
-    rb_transcoding *tc;
-    unsigned char *p;
-    int bufsize = 4096;
 
     if (ec->started != 0)
         return -1;
 
-    entry = get_transcoder_entry("", decorator_name);
+    entry = get_transcoder_entry(sname, dname);
     if (!entry)
         return -1;
 
@@ -1747,23 +1778,13 @@ rb_econv_decorate_at(rb_econv_t *ec, const char *decorator_name, int n)
     if (!entry)
         return -1;
 
-    tc = rb_transcoding_open_by_transcoder(tr, 0);
+    return rb_econv_add_transcoder_at(ec, tr, n);
+}
 
-    REALLOC_N(ec->elems, rb_econv_elem_t, ec->num_trans+1);
-    MEMMOVE(ec->elems+n+1, ec->elems+n, rb_econv_elem_t, ec->num_trans-n);
-    ec->num_trans++;
-
-    ec->elems[n].tc = tc;
-
-    bufsize = 4096;
-    p = xmalloc(bufsize);
-    ec->elems[n].out_buf_start = p;
-    ec->elems[n].out_data_start = p;
-    ec->elems[n].out_data_end = p;
-    ec->elems[n].out_buf_end = p + bufsize;
-    ec->elems[n].last_result = econv_source_buffer_empty;
-
-    return 0;
+static int
+rb_econv_decorate_at(rb_econv_t *ec, const char *decorator_name, int n)
+{
+    return rb_econv_add_converter(ec, "", decorator_name, n);
 }
 
 int
