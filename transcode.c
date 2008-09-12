@@ -2654,18 +2654,19 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
 
 static void
 econv_args(int argc, VALUE *argv,
+    volatile VALUE *snamev_p, volatile VALUE *dnamev_p,
     const char **sname_p, const char **dname_p,
     rb_encoding **senc_p, rb_encoding **denc_p,
     int *ecflags_p,
     VALUE *ecopts_p)
 {
-    VALUE source_encoding, destination_encoding, opt, opthash, flags_v, ecopts;
+    VALUE opt, opthash, flags_v, ecopts;
     int sidx, didx;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     int ecflags;
 
-    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &opt);
+    rb_scan_args(argc, argv, "21", snamev_p, dnamev_p, &opt);
 
     if (NIL_P(opt)) {
         ecflags = 0;
@@ -2681,25 +2682,25 @@ econv_args(int argc, VALUE *argv,
     }
 
     senc = NULL;
-    sidx = rb_to_encoding_index(source_encoding);
+    sidx = rb_to_encoding_index(*snamev_p);
     if (0 <= sidx) {
         senc = rb_enc_from_index(sidx);
     }
     else {
-        StringValue(source_encoding);
+        StringValue(*snamev_p);
     }
 
     denc = NULL;
-    didx = rb_to_encoding_index(destination_encoding);
+    didx = rb_to_encoding_index(*dnamev_p);
     if (0 <= didx) {
         denc = rb_enc_from_index(didx);
     }
     else {
-        StringValue(destination_encoding);
+        StringValue(*dnamev_p);
     }
 
-    sname = senc ? senc->name : StringValueCStr(source_encoding);
-    dname = denc ? denc->name : StringValueCStr(destination_encoding);
+    sname = senc ? senc->name : StringValueCStr(*snamev_p);
+    dname = denc ? denc->name : StringValueCStr(*dnamev_p);
 
     *sname_p = sname;
     *dname_p = dname;
@@ -2786,13 +2787,14 @@ search_convpath_i(const char *sname, const char *dname, int depth, void *arg)
 static VALUE
 econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
 {
+    volatile VALUE snamev, dnamev;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     int ecflags;
     VALUE ecopts;
     VALUE convpath;
 
-    econv_args(argc, argv, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
+    econv_args(argc, argv, &snamev, &dnamev, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
 
     convpath = Qnil;
     transcode_search_path(sname, dname, search_convpath_i, &convpath);
@@ -2850,6 +2852,7 @@ static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
     VALUE ecopts;
+    volatile VALUE snamev, dnamev;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
@@ -2859,7 +2862,7 @@ econv_init(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    econv_args(argc, argv, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
+    econv_args(argc, argv, &snamev, &dnamev, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
     ec = rb_econv_open_opts(sname, dname, ecflags, ecopts);
     if (!ec) {
         rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));

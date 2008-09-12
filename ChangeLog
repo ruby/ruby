@@ -1,6 +1,12 @@
+Sat Sep 13 01:11:14 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (econv_args): take snamev_p and dnamev_p to prevent
+	  possible GC problem.
+
 Sat Sep 13 00:38:54 2008  Tanaka Akira  <akr@fsij.org>
 
-	* transcode.c (enc_arg): take arg as VALUE * to prevent GC problem.
+	* transcode.c (enc_arg): take arg as VALUE * to prevent possible GC
+	  problem.
 
 Fri Sep 12 23:19:41 2008  Tanaka Akira  <akr@fsij.org>
 
