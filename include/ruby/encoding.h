@@ -98,10 +98,10 @@ rb_encoding* rb_enc_from_index(int idx);
 /* name -> rb_encoding */
 rb_encoding * rb_enc_find(const char *name);
 
-/* encoding -> name */
+/* rb_encoding * -> name */
 #define rb_enc_name(enc) (enc)->name
 
-/* encoding -> minlen/maxlen */
+/* rb_encoding * -> minlen/maxlen */
 #define rb_enc_mbminlen(enc) (enc)->min_enc_len
 #define rb_enc_mbmaxlen(enc) (enc)->max_enc_len
 
