@@ -807,6 +807,24 @@ EOT
     }
   end
 
+  def test_set_encoding_binmode
+    assert_raise(ArgumentError) {
+      open("/dev/null", "rt") {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_raise(ArgumentError) {
+      open("/dev/null", "r") {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_nothing_raised {
+      open("/dev/null", "rb") {|f|
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+  end
+
   def test_write_conversion_fixenc
     with_pipe {|r, w|
       w.set_encoding("iso-2022-jp:utf-8")

@@ -3853,6 +3853,16 @@ io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p)
 typedef struct rb_io_enc_t convconfig_t;
 
 static void
+validate_enc_binmode(int fmode, rb_encoding *enc, rb_encoding *enc2)
+{
+    if ((fmode & FMODE_READABLE) &&
+        !enc2 &&
+        !(fmode & FMODE_BINMODE) &&
+        !rb_enc_asciicompat(enc ? enc : rb_default_external_encoding()))
+        rb_raise(rb_eArgError, "ASCII incompatible encoding needs binmode");
+}
+
+static void
 rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
         int *oflags_p, int *fmode_p, convconfig_t *convconfig_p)
 {
@@ -3919,11 +3929,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
     if ((fmode & FMODE_BINMODE) && (fmode & FMODE_TEXTMODE))
         rb_raise(rb_eArgError, "both textmode and binmode specified");
 
-    if ((fmode & FMODE_READABLE) &&
-        !enc2 &&
-        !(fmode & FMODE_BINMODE) &&
-        !rb_enc_asciicompat(enc ? enc : rb_default_external_encoding()))
-        rb_raise(rb_eArgError, "ASCII incompatible encoding needs binmode");
+    validate_enc_binmode(fmode, enc, enc2);
 
     *vmode_p = vmode;
 
@@ -6623,36 +6629,45 @@ io_new_instance(VALUE args)
 static void
 io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2, VALUE opt)
 {
+    rb_encoding *enc, *enc2;
+    int ecflags;
+    VALUE ecopts;
+
     if (NIL_P(v2)) argc = 1;
+
     if (argc == 2) {
-	fptr->encs.enc2 = rb_to_encoding(v1);
-	fptr->encs.enc = rb_to_encoding(v2);
-        fptr->encs.ecflags = rb_econv_prepare_opts(opt, &fptr->encs.ecopts);
-        clear_codeconv(fptr);
+	enc2 = rb_to_encoding(v1);
+	enc = rb_to_encoding(v2);
+        ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
     else if (argc == 1) {
 	if (NIL_P(v1)) {
-	    fptr->encs.enc = NULL;
-	    fptr->encs.enc2 = NULL;
-            fptr->encs.ecflags = 0;
-            fptr->encs.ecopts = Qnil;
-            clear_codeconv(fptr);
+	    enc = NULL;
+	    enc2 = NULL;
+            ecflags = 0;
+            ecopts = Qnil;
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(v1);
 	    if (!NIL_P(tmp)) {
-		mode_enc(fptr, StringValueCStr(tmp));
-                fptr->encs.ecflags = rb_econv_prepare_opts(opt, &fptr->encs.ecopts);
+                parse_mode_enc(StringValueCStr(tmp), &enc, &enc2);
+                ecflags = rb_econv_prepare_opts(opt, &ecopts);
 	    }
 	    else {
-		fptr->encs.enc = rb_to_encoding(v1);
-		fptr->encs.enc2 = NULL;
-                fptr->encs.ecflags = 0;
-                fptr->encs.ecopts = Qnil;
-                clear_codeconv(fptr);
+		enc = rb_to_encoding(v1);
+		enc2 = NULL;
+                ecflags = 0;
+                ecopts = Qnil;
 	    }
 	}
     }
+    validate_enc_binmode(fptr->mode, enc, enc2);
+    fptr->encs.enc = enc;
+    fptr->encs.enc2 = enc2;
+    fptr->encs.ecflags = ecflags;
+    fptr->encs.ecopts = ecopts;
+    clear_codeconv(fptr);
+
 }
 
 /*

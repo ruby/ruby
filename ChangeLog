@@ -1,3 +1,9 @@
+Sat Sep 13 02:58:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (validate_enc_binmode): extracted from rb_io_extract_modeenc.
+	  (rb_io_extract_modeenc): use validate_enc_binmode.
+	  (io_encoding_set): call validate_enc_binmode.
+
 Sat Sep 13 02:50:34 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_prepare_opts): initialize *opt and return 0
