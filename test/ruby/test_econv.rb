@@ -816,6 +816,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     iso88591 = Encoding::ISO_8859_1
     iso2022jp = Encoding::ISO_2022_JP
     siso2022jp = Encoding::STATELESS_ISO_2022_JP
+
     assert_equal([], Encoding::Converter.new("", "").convpath)
     assert_equal([[eucjp, utf8], [utf8, iso88591]],
                  Encoding::Converter.new(eucjp, iso88591).convpath)
@@ -832,5 +833,20 @@ class TestEncodingConverter < Test::Unit::TestCase
                  Encoding::Converter.new(utf16be, utf8, universal_newline: true).convpath)
     assert_equal([[utf16be, utf8], "universal_newline", [utf8, utf16le]],
                  Encoding::Converter.new(utf16be, utf16le, universal_newline: true).convpath)
+  end
+
+  def test_search_convpath
+    eucjp = Encoding::EUC_JP
+    utf8 = Encoding::UTF_8
+    utf32be = Encoding::UTF_32BE
+    iso88591 = Encoding::ISO_8859_1
+    assert_equal([[iso88591,utf8], [utf8,eucjp]],
+                 Encoding::Converter.search_convpath("ISO-8859-1", "EUC-JP"))
+    assert_equal([[iso88591,utf8], [utf8,eucjp]],
+                 Encoding::Converter.search_convpath(iso88591, eucjp))
+    assert_equal([[iso88591,utf8], [utf8,eucjp], "universal_newline"],
+                 Encoding::Converter.search_convpath("ISO-8859-1", "EUC-JP", universal_newline: true))
+    assert_equal([[iso88591,utf8], "universal_newline", [utf8,utf32be]],
+                 Encoding::Converter.search_convpath("ISO-8859-1", "UTF-32BE", universal_newline: true))
   end
 end

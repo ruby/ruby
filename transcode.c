@@ -948,47 +948,55 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     return ec;
 }
 
+#define MAX_ECFLAGS_DECORATORS 32
+
+static int
+decorator_names(int ecflags, const char **decorators_ret)
+{
+    int num_decorators;
+
+    if ((ecflags & ECONV_CRLF_NEWLINE_DECORATOR) &&
+        (ecflags & ECONV_CR_NEWLINE_DECORATOR))
+        return -1;
+
+    if ((ecflags & (ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR)) &&
+        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR))
+        return -1;
+
+    if ((ecflags & ECONV_XML_TEXT_DECORATOR) &&
+        (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR))
+        return -1;
+
+    num_decorators = 0;
+
+    if (ecflags & ECONV_XML_TEXT_DECORATOR)
+        decorators_ret[num_decorators++] = "xml-text-escaped";
+    if (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR)
+        decorators_ret[num_decorators++] = "xml-attr-content-escaped";
+    if (ecflags & ECONV_XML_ATTR_QUOTE_DECORATOR)
+        decorators_ret[num_decorators++] = "xml-attr-quoted";
+
+    if (ecflags & ECONV_CRLF_NEWLINE_DECORATOR)
+        decorators_ret[num_decorators++] = "crlf_newline";
+    if (ecflags & ECONV_CR_NEWLINE_DECORATOR)
+        decorators_ret[num_decorators++] = "cr_newline";
+    if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)
+        decorators_ret[num_decorators++] = "universal_newline";
+
+    return num_decorators;
+}
+
 rb_econv_t *
 rb_econv_open(const char *sname, const char *dname, int ecflags)
 {
     rb_econv_t *ec;
     int num_decorators;
-    const char *decorators[6];
+    const char *decorators[MAX_ECFLAGS_DECORATORS];
     int i;
 
-    if ((ecflags & ECONV_CRLF_NEWLINE_DECORATOR) &&
-        (ecflags & ECONV_CR_NEWLINE_DECORATOR))
+    num_decorators = decorator_names(ecflags, decorators);
+    if (num_decorators == -1)
         return NULL;
-
-    if ((ecflags & (ECONV_CRLF_NEWLINE_DECORATOR|ECONV_CR_NEWLINE_DECORATOR)) &&
-        (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR))
-        return NULL;
-
-    if ((ecflags & ECONV_XML_TEXT_DECORATOR) &&
-        (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR))
-        return NULL;
-
-    num_decorators = 0;
-
-    if (ecflags & ECONV_XML_TEXT_DECORATOR)
-        if (!(decorators[num_decorators++] = "xml-text-escaped"))
-            return NULL;
-    if (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR)
-        if (!(decorators[num_decorators++] = "xml-attr-content-escaped"))
-            return NULL;
-    if (ecflags & ECONV_XML_ATTR_QUOTE_DECORATOR)
-        if (!(decorators[num_decorators++] = "xml-attr-quoted"))
-            return NULL;
-
-    if (ecflags & ECONV_CRLF_NEWLINE_DECORATOR)
-        if (!(decorators[num_decorators++] = "crlf_newline"))
-            return NULL;
-    if (ecflags & ECONV_CR_NEWLINE_DECORATOR)
-        if (!(decorators[num_decorators++] = "cr_newline"))
-            return NULL;
-    if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)
-        if (!(decorators[num_decorators++] = "universal_newline"))
-            return NULL;
 
     ec = rb_econv_open0(sname, dname, ecflags & ECONV_ERROR_HANDLER_MASK);
     if (!ec)
@@ -1932,7 +1940,7 @@ VALUE
 rb_econv_open_exc(const char *sname, const char *dname, int ecflags)
 {
     VALUE mesg, exc;
-    mesg = rb_str_new_cstr("code converter open failed (");
+    mesg = rb_str_new_cstr("code converter not found (");
     econv_description(sname, dname, ecflags, mesg);
     rb_str_cat2(mesg, ")");
     exc = rb_exc_new3(rb_eNoConverter, mesg);
@@ -2641,6 +2649,160 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
     return rb_enc_from_encoding(result_enc);
 }
 
+static void
+econv_args(int argc, VALUE *argv,
+    const char **sname_p, const char **dname_p,
+    rb_encoding **senc_p, rb_encoding **denc_p,
+    int *ecflags_p,
+    VALUE *ecopts_p)
+{
+    VALUE source_encoding, destination_encoding, opt, opthash, flags_v, ecopts;
+    int sidx, didx;
+    const char *sname, *dname;
+    rb_encoding *senc, *denc;
+    int ecflags;
+
+    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &opt);
+
+    if (NIL_P(opt)) {
+        ecflags = 0;
+        ecopts = Qnil;
+    }
+    else if (!NIL_P(flags_v = rb_check_to_integer(opt, "to_int"))) {
+        ecflags = NUM2INT(flags_v);
+        ecopts = Qnil;
+    }
+    else {
+        opthash = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
+        ecflags = rb_econv_prepare_opts(opthash, &ecopts);
+    }
+
+    senc = NULL;
+    sidx = rb_to_encoding_index(source_encoding);
+    if (0 <= sidx) {
+        senc = rb_enc_from_index(sidx);
+    }
+    else {
+        StringValue(source_encoding);
+    }
+
+    denc = NULL;
+    didx = rb_to_encoding_index(destination_encoding);
+    if (0 <= didx) {
+        denc = rb_enc_from_index(didx);
+    }
+    else {
+        StringValue(destination_encoding);
+    }
+
+    sname = senc ? senc->name : StringValueCStr(source_encoding);
+    dname = denc ? denc->name : StringValueCStr(destination_encoding);
+
+    *sname_p = sname;
+    *dname_p = dname;
+    *senc_p = senc;
+    *denc_p = denc;
+    *ecflags_p = ecflags;
+    *ecopts_p = ecopts;
+}
+
+static int
+decorate_convpath(VALUE convpath, int ecflags)
+{
+    int num_decorators;
+    const char *decorators[MAX_ECFLAGS_DECORATORS];
+    int i;
+    int n, len;
+
+    num_decorators = decorator_names(ecflags, decorators);
+    if (num_decorators == -1)
+        return -1;
+
+    len = n = RARRAY_LEN(convpath);
+    if (n != 0) {
+        VALUE pair = RARRAY_PTR(convpath)[n-1];
+        const char *sname = rb_to_encoding(RARRAY_PTR(pair)[0])->name;
+        const char *dname = rb_to_encoding(RARRAY_PTR(pair)[1])->name;
+        transcoder_entry_t *entry = get_transcoder_entry(sname, dname);
+        const rb_transcoder *tr = load_transcoder_entry(entry);
+        if (!tr)
+            return -1;
+        if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding) &&
+             tr->asciicompat_type == asciicompat_encoder) {
+            n--;
+            rb_ary_store(convpath, len + num_decorators - 1, pair);
+        }
+    }
+
+    for (i = 0; i < num_decorators; i++)
+        rb_ary_store(convpath, n + i, rb_str_new_cstr(decorators[i]));
+
+    return 0;
+}
+
+static void
+search_convpath_i(const char *sname, const char *dname, int depth, void *arg)
+{
+    VALUE *ary_p = arg;
+    VALUE v;
+
+    if (*ary_p == Qnil) {
+        *ary_p = rb_ary_new();
+    }
+
+    if (SUPPLEMENTAL_CONVERSION(sname, dname)) {
+        v = rb_str_new_cstr(dname);
+    }
+    else {
+        v = rb_assoc_new(make_encobj(sname), make_encobj(dname));
+    }
+    rb_ary_store(*ary_p, depth, v);
+}
+
+/*
+ * call-seq:
+ *   Encoding::Converter.search_convpath(source_encoding, destination_encoding)         -> ary
+ *   Encoding::Converter.search_convpath(source_encoding, destination_encoding, opt)    -> ary
+ *
+ *  returns the conversion path.
+ *
+ *   p Encoding::Converter.search_convpath("ISO-8859-1", "EUC-JP")
+ *   #=> [[#<Encoding:ISO-8859-1>, #<Encoding:UTF-8>],
+ *   #    [#<Encoding:UTF-8>, #<Encoding:EUC-JP>]]
+ *
+ *   p Encoding::Converter.search_convpath("ISO-8859-1", "EUC-JP", universal_newline: true)
+ *   #=> [[#<Encoding:ISO-8859-1>, #<Encoding:UTF-8>],
+ *   #    [#<Encoding:UTF-8>, #<Encoding:EUC-JP>],
+ *   #    "universal_newline"]
+ *
+ *   p Encoding::Converter.search_convpath("ISO-8859-1", "UTF-32BE", universal_newline: true)
+ *   #=> [[#<Encoding:ISO-8859-1>, #<Encoding:UTF-8>],
+ *   #    "universal_newline",
+ *   #    [#<Encoding:UTF-8>, #<Encoding:UTF-32BE>]]
+ */
+static VALUE
+econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
+{
+    const char *sname, *dname;
+    rb_encoding *senc, *denc;
+    int ecflags;
+    VALUE ecopts;
+    VALUE convpath;
+
+    econv_args(argc, argv, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
+
+    convpath = Qnil;
+    transcode_search_path(sname, dname, search_convpath_i, &convpath);
+
+    if (NIL_P(convpath))
+        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+
+    if (decorate_convpath(convpath, ecflags) == -1)
+        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+
+    return convpath;
+}
+
 /*
  * call-seq:
  *   Encoding::Converter.new(source_encoding, destination_encoding)
@@ -2684,53 +2846,17 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
 static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
 {
-    VALUE source_encoding, destination_encoding, opt, opthash, flags_v, ecopts;
-    int sidx, didx;
+    VALUE ecopts;
     const char *sname, *dname;
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
     int ecflags;
 
-    rb_scan_args(argc, argv, "21", &source_encoding, &destination_encoding, &opt);
-
-    if (NIL_P(opt)) {
-        ecflags = 0;
-        ecopts = Qnil;
-    }
-    else if (!NIL_P(flags_v = rb_check_to_integer(opt, "to_int"))) {
-        ecflags = NUM2INT(flags_v);
-        ecopts = Qnil;
-    }
-    else {
-        opthash = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
-        ecflags = rb_econv_prepare_opts(opthash, &ecopts);
-    }
-
-    senc = NULL;
-    sidx = rb_to_encoding_index(source_encoding);
-    if (0 <= sidx) {
-        senc = rb_enc_from_index(sidx);
-    }
-    else {
-        StringValue(source_encoding);
-    }
-
-    denc = NULL;
-    didx = rb_to_encoding_index(destination_encoding);
-    if (0 <= didx) {
-        denc = rb_enc_from_index(didx);
-    }
-    else {
-        StringValue(destination_encoding);
-    }
-
-    sname = senc ? senc->name : StringValueCStr(source_encoding);
-    dname = denc ? denc->name : StringValueCStr(destination_encoding);
-
     if (DATA_PTR(self)) {
         rb_raise(rb_eTypeError, "already initialized");
     }
 
+    econv_args(argc, argv, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
     ec = rb_econv_open_opts(sname, dname, ecflags, ecopts);
     if (!ec) {
         rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
@@ -3690,6 +3816,7 @@ Init_transcode(void)
     rb_cEncodingConverter = rb_define_class_under(rb_cEncoding, "Converter", rb_cData);
     rb_define_alloc_func(rb_cEncodingConverter, econv_s_allocate);
     rb_define_singleton_method(rb_cEncodingConverter, "asciicompat_encoding", econv_s_asciicompat_encoding, 1);
+    rb_define_singleton_method(rb_cEncodingConverter, "search_convpath", econv_s_search_convpath, -1);
     rb_define_method(rb_cEncodingConverter, "initialize", econv_init, -1);
     rb_define_method(rb_cEncodingConverter, "inspect", econv_inspect, 0);
     rb_define_method(rb_cEncodingConverter, "convpath", econv_convpath, 0);

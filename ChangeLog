@@ -1,3 +1,14 @@
+Fri Sep 12 22:39:46 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (decorator_names): extracted from rb_econv_open.
+	  (rb_econv_open): use decorator_names.
+	  (econv_args): extracted from econv_init.
+	  (econv_init): use econv_args.
+	  (decorate_convpath): new function.
+	  (search_convpath_i): new function.
+	  (econv_s_search_convpath): new method.
+	  (Init_transcode): new method defined.
+
 Fri Sep 12 21:55:43 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_t): new field: num_allocated.
