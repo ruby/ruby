@@ -4037,18 +4037,19 @@ static VALUE
 rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode, convconfig_t *convconfig, mode_t perm)
 {
     rb_io_t *fptr;
+    convconfig_t cc;
+    if (!convconfig) {
+        cc.enc = NULL;
+        cc.enc2 = NULL;
+        cc.ecflags = 0;
+        cc.ecopts = Qnil;
+        convconfig = &cc;
+    }
+    validate_enc_binmode(fmode, convconfig->enc, convconfig->enc2);
 
     MakeOpenFile(io, fptr);
     fptr->mode = fmode;
-    if (convconfig) {
-        fptr->encs = *convconfig;
-    }
-    else {
-        fptr->encs.enc = NULL;
-        fptr->encs.enc2 = NULL;
-        fptr->encs.ecflags = 0;
-        fptr->encs.ecopts = Qnil;
-    }
+    fptr->encs = *convconfig;
     fptr->pathv = rb_str_new_frozen(filename);
     fptr->fd = rb_sysopen(RSTRING_PTR(fptr->pathv), oflags, perm);
     io_check_tty(fptr);
@@ -4084,6 +4085,7 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 VALUE
 rb_file_open_str(VALUE fname, const char *modestr)
 {
+    FilePathValue(fname);
     return rb_file_open_internal(io_alloc(rb_cFile), fname, modestr);
 }
 

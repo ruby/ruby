@@ -1,3 +1,10 @@
+Sat Sep 13 03:31:05 2008  Tanaka Akira  <akr@fsij.org>
+
+	* iseq.c (iseq_s_compile_file): use rb_file_open_str.
+
+	* io.c (rb_file_open_generic): call validate_enc_binmode.
+	  (rb_file_open_str): call FilePathValue.
+
 Sat Sep 13 02:58:05 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (validate_enc_binmode): extracted from rb_io_extract_modeenc.

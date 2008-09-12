@@ -500,9 +500,10 @@ iseq_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     rb_secure(1);
     rb_scan_args(argc, argv, "11", &file, &opt);
+    FilePathValue(file);
     fname = StringValueCStr(file);
 
-    f = rb_file_open(fname, "r");
+    f = rb_file_open_str(file, "r");
 
     parser = rb_parser_new();
     node = rb_parser_compile_file(parser, fname, f, NUM2INT(line));
