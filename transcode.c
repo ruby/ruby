@@ -2304,8 +2304,10 @@ rb_econv_prepare_opts(VALUE opthash, VALUE *opts)
 {
     int ecflags;
     VALUE newhash = Qnil;
-    if (NIL_P(opthash))
-        return Qnil;
+    if (NIL_P(opthash)) {
+        *opts = Qnil;
+        return 0;
+    }
     ecflags = econv_opts(opthash);
 
     if ((ecflags & ECONV_INVALID_MASK) == ECONV_INVALID_REPLACE ||

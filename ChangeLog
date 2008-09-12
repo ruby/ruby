@@ -1,3 +1,8 @@
+Sat Sep 13 02:50:34 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_prepare_opts): initialize *opt and return 0
+	  if opthash is nil. 
+
 Sat Sep 13 02:29:19 2008  Tanaka Akira  <akr@fsij.org>
 
 	* enc/trans/escape.trans: transcoder name renamed to use underscore.
