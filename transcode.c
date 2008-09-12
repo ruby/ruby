@@ -2808,21 +2808,110 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
     return convpath;
 }
 
+struct rb_econv_init_by_convpath_t {
+    rb_econv_t *ec;
+    int index;
+    int ret;
+};
+
+void rb_econv_init_by_convpath_i(const char *sname, const char *dname, int depth, void *arg)
+{
+    struct rb_econv_init_by_convpath_t *a = (struct rb_econv_init_by_convpath_t *)arg;
+    int ret;
+
+    if (a->ret == -1)
+        return;
+
+    ret = rb_econv_add_converter(a->ec, sname, dname, a->index);
+
+    a->ret = ret;
+    return;
+}
+
+static rb_econv_t *
+rb_econv_init_by_convpath(VALUE self, VALUE convpath,
+    const char **sname_p, const char **dname_p,
+    rb_encoding **senc_p, rb_encoding**denc_p)
+{
+    rb_econv_t *ec;
+    long i;
+    int ret, first=1;
+    VALUE elt;
+    rb_encoding *senc, *denc;
+    const char *sname, *dname;
+
+    ec = rb_econv_alloc(RARRAY_LEN(convpath));
+    DATA_PTR(self) = ec;
+
+    for (i = 0; i < RARRAY_LEN(convpath); i++) {
+        volatile VALUE snamev, dnamev;
+        VALUE pair;
+        elt = rb_ary_entry(convpath, i);
+        if (!NIL_P(pair = rb_check_array_type(elt))) {
+            if (RARRAY_LEN(pair) != 2)
+                rb_raise(rb_eArgError, "not a 2-element array in convpath");
+            snamev = rb_ary_entry(pair, 0);
+            enc_arg(&snamev, &sname, &senc);
+            dnamev = rb_ary_entry(pair, 1);
+            enc_arg(&dnamev, &dname, &denc);
+        }
+        else {
+            sname = "";
+            dname = StringValueCStr(elt);
+        }
+        if (SUPPLEMENTAL_CONVERSION(sname, dname)) {
+            ret = rb_econv_add_converter(ec, sname, dname, ec->num_trans);
+            if (ret == -1)
+                rb_raise(rb_eArgError, "decoration failed: %s", dname);
+        }
+        else {
+            int j = ec->num_trans;
+            struct rb_econv_init_by_convpath_t arg;
+            arg.ec = ec;
+            arg.index = ec->num_trans;
+            arg.ret = 0;
+            ret = transcode_search_path(sname, dname, rb_econv_init_by_convpath_i, &arg);
+            if (ret == -1 || arg.ret == -1)
+                rb_raise(rb_eArgError, "conversion add failed: %s to %s", sname, dname);
+            if (first) {
+                first = 0;
+                *senc_p = senc;
+                *sname_p = ec->elems[j].tc->transcoder->src_encoding;
+            }
+            *denc_p = denc;
+            *dname_p = ec->elems[ec->num_trans-1].tc->transcoder->dst_encoding;
+        }
+    }
+
+    if (first) {
+      *senc_p = NULL;
+      *denc_p = NULL;
+      *sname_p = "";
+      *dname_p = "";
+    }
+
+    ec->source_encoding_name = *sname_p;
+    ec->destination_encoding_name = *dname_p;
+
+    return ec;
+}
+
 /*
  * call-seq:
  *   Encoding::Converter.new(source_encoding, destination_encoding)
  *   Encoding::Converter.new(source_encoding, destination_encoding, opt)
+ *   Encoding::Converter.new(convpath)
  *
  * possible options elements:
  *   hash form:
- *     :universal_newline => true         # convert CRLF and CR to LF
- *     :crlf_newline => true              # convert LF to CRLF
- *     :cr_newline => true                # convert LF to CR
  *     :invalid => nil                    # error on invalid byte sequence (default)
  *     :invalid => :replace               # replace invalid byte sequence
  *     :undef => nil                      # error on undefined conversion (default)
  *     :undef => :replace                 # replace undefined conversion
  *     :replace => string                 # replacement string ("?" or "\uFFFD" if not specified)
+ *     :universal_newline => true         # decorator for converting CRLF and CR to LF
+ *     :crlf_newline => true              # decorator for converting LF to CRLF
+ *     :cr_newline => true                # decorator for converting LF to CR
  *   integer form:
  *     Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR
  *     Encoding::Converter::CRLF_NEWLINE_DECORATOR
@@ -2835,18 +2924,31 @@ econv_s_search_convpath(int argc, VALUE *argv, VALUE klass)
  *
  * opt should be nil, a hash or an integer.
  *
+ * convpath should be an array.
+ * convpath should contains
+ * - two-element array which contains encoding or encoding name, or
+ * - a string of decorator name.
+ *
  * example:
  *   # UTF-16BE to UTF-8
  *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8")
  *
- *   # (1) convert UTF-16BE to UTF-8
- *   # (2) convert CRLF and CR to LF
+ *   # Usually, decorators such as newline conversion are inserted at last.
  *   ec = Encoding::Converter.new("UTF-16BE", "UTF-8", :universal_newline => true)
+ *   p ec.convpath #=> [[#<Encoding:UTF-16BE>, #<Encoding:UTF-8>],
+ *                 #    "universal_newline"]
  *
- *   # (1) convert LF to CRLF
- *   # (2) convert UTF-8 to UTF-16BE 
+ *   # But, if the last encoding is ASCII incompatible, 
+ *   # decorators are inserted before the last conversion.
  *   ec = Encoding::Converter.new("UTF-8", "UTF-16BE", :crlf_newline => true)
+ *   p ec.convpath #=> ["crlf_newline",
+ *                 #    [#<Encoding:UTF-8>, #<Encoding:UTF-16BE>]]
  *
+ *   # conversion path can be specified directly.
+ *   ec = Encoding::Converter.new(["universal_newline", ["EUC-JP", "UTF-8"], ["UTF-8", "UTF-16BE"]])
+ *   p ec.convpath #=> ["universal_newline",
+ *                 #    [#<Encoding:EUC-JP>, #<Encoding:UTF-8>],
+ *                 #    [#<Encoding:UTF-8>, #<Encoding:UTF-16BE>]]
  */
 static VALUE
 econv_init(int argc, VALUE *argv, VALUE self)
@@ -2857,13 +2959,22 @@ econv_init(int argc, VALUE *argv, VALUE self)
     rb_encoding *senc, *denc;
     rb_econv_t *ec;
     int ecflags;
+    VALUE convpath;
 
     if (DATA_PTR(self)) {
         rb_raise(rb_eTypeError, "already initialized");
     }
 
-    econv_args(argc, argv, &snamev, &dnamev, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
-    ec = rb_econv_open_opts(sname, dname, ecflags, ecopts);
+    if (argc == 1 && !NIL_P(convpath = rb_check_array_type(argv[0]))) {
+        ec = rb_econv_init_by_convpath(self, convpath, &sname, &dname, &senc, &denc);
+        ecflags = 0;
+        ecopts = Qnil;
+    }
+    else {
+        econv_args(argc, argv, &snamev, &dnamev, &sname, &dname, &senc, &denc, &ecflags, &ecopts);
+        ec = rb_econv_open_opts(sname, dname, ecflags, ecopts);
+    }
+
     if (!ec) {
         rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
     }

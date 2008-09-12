@@ -1,3 +1,9 @@
+Sat Sep 13 02:12:17 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_init_by_convpath_i): new function.
+	  (rb_econv_init_by_convpath): new function.
+	  (econv_init): use rb_econv_init_by_convpath.
+
 Sat Sep 13 01:11:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_args): take snamev_p and dnamev_p to prevent

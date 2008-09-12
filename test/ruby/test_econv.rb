@@ -49,12 +49,34 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_equal(str, str3)
   end
 
-  def test_new
+  def test_s_new
     assert_kind_of(Encoding::Converter, Encoding::Converter.new("UTF-8", "EUC-JP"))
     assert_kind_of(Encoding::Converter, Encoding::Converter.new(Encoding::UTF_8, Encoding::EUC_JP))
   end
 
-  def test_new_fail
+  def test_s_new_convpath
+    assert_equal([], Encoding::Converter.new([]).convpath)
+    assert_equal([[Encoding::UTF_8, Encoding::EUC_JP]],
+                 Encoding::Converter.new([["UTF-8", "EUC-JP"]]).convpath)
+    assert_equal([[Encoding::UTF_8, Encoding::WINDOWS_31J]],
+                 Encoding::Converter.new([["utf-8", "cp932"]]).convpath)
+    assert_equal([[Encoding::UTF_8, Encoding::EUC_JP]],
+                 Encoding::Converter.new([[Encoding::UTF_8, Encoding::EUC_JP]]).convpath)
+    assert_equal([[Encoding::ISO_8859_1, Encoding::UTF_8],
+                  [Encoding::UTF_8, Encoding::EUC_JP]],
+                 Encoding::Converter.new([["iso-8859-1", "euc-jp"]]).convpath)
+    assert_equal([[Encoding::ISO_8859_1, Encoding::UTF_8],
+                  [Encoding::UTF_8, Encoding::EUC_JP],
+                  "universal_newline"],
+                 Encoding::Converter.new([["iso-8859-1", "euc-jp"], "universal_newline"]).convpath)
+    assert_equal(["universal_newline",
+                  [Encoding::ISO_8859_1, Encoding::UTF_8],
+                  [Encoding::UTF_8, Encoding::EUC_JP],
+                  "universal_newline"],
+                 Encoding::Converter.new(["universal_newline", ["iso-8859-1", "euc-jp"], "universal_newline"]).convpath)
+  end
+
+  def test_s_new_fail
     name1 = "encoding-which-is-not-exist-1"
     name2 = "encoding-which-is-not-exist-2"
 
