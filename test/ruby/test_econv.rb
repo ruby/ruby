@@ -37,7 +37,7 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_nil(Encoding::Converter.asciicompat_encoding("EUC-JP"))
     assert_nil(Encoding::Converter.asciicompat_encoding("UTF-8"))
     assert_nil(Encoding::Converter.asciicompat_encoding(Encoding::UTF_8))
-    assert_nil(Encoding::Converter.asciicompat_encoding("xml-attr-escaped"))
+    assert_nil(Encoding::Converter.asciicompat_encoding("xml_attr_escape"))
     assert_nil(Encoding::Converter.asciicompat_encoding("encoding-not-exist"))
   end
 
@@ -755,45 +755,45 @@ class TestEncodingConverter < Test::Unit::TestCase
   end
 
   def test_xml_escape_text
-    ec = Encoding::Converter.new("", "amp-escaped")
+    ec = Encoding::Converter.new("", "amp_escape")
     assert_equal('&amp;<>"', ec.convert("&<>\""))
     assert_equal('', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-text-escaped")
+    ec = Encoding::Converter.new("", "xml_text_escape")
     assert_equal('&amp;&lt;&gt;"', ec.convert("&<>\""))
     assert_equal('', ec.finish)
   end
 
   def test_xml_escape_attr_content
-    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    ec = Encoding::Converter.new("", "xml_attr_content_escape")
     assert_equal('', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    ec = Encoding::Converter.new("", "xml_attr_content_escape")
     assert_equal('', ec.convert(""))
     assert_equal('', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    ec = Encoding::Converter.new("", "xml_attr_content_escape")
     assert_equal('&quot;', ec.convert('"'))
     assert_equal('', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-content-escaped")
+    ec = Encoding::Converter.new("", "xml_attr_content_escape")
     assert_equal('&amp;&lt;&gt;&quot;', ec.convert("&<>\""))
     assert_equal('', ec.finish)
   end
 
   def test_xml_escape_attr_quote
-    ec = Encoding::Converter.new("", "xml-attr-quoted")
+    ec = Encoding::Converter.new("", "xml_attr_quote")
     assert_equal('""', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-quoted")
+    ec = Encoding::Converter.new("", "xml_attr_quote")
     assert_equal('', ec.convert(""))
     assert_equal('""', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-quoted")
+    ec = Encoding::Converter.new("", "xml_attr_quote")
     assert_equal('""', ec.convert('"'))
     assert_equal('"', ec.finish)
 
-    ec = Encoding::Converter.new("", "xml-attr-quoted")
+    ec = Encoding::Converter.new("", "xml_attr_quote")
     assert_equal('"&<>"', ec.convert("&<>\""))
     assert_equal('"', ec.finish)
   end

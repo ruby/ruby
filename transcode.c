@@ -970,11 +970,11 @@ decorator_names(int ecflags, const char **decorators_ret)
     num_decorators = 0;
 
     if (ecflags & ECONV_XML_TEXT_DECORATOR)
-        decorators_ret[num_decorators++] = "xml-text-escaped";
+        decorators_ret[num_decorators++] = "xml_text_escape";
     if (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR)
-        decorators_ret[num_decorators++] = "xml-attr-content-escaped";
+        decorators_ret[num_decorators++] = "xml_attr_content_escape";
     if (ecflags & ECONV_XML_ATTR_QUOTE_DECORATOR)
-        decorators_ret[num_decorators++] = "xml-attr-quoted";
+        decorators_ret[num_decorators++] = "xml_attr_quote";
 
     if (ecflags & ECONV_CRLF_NEWLINE_DECORATOR)
         decorators_ret[num_decorators++] = "crlf_newline";
@@ -1905,27 +1905,27 @@ econv_description(const char *sname, const char *dname, int ecflags, VALUE mesg)
             rb_str_cat2(mesg, " with ");
         if (ecflags & ECONV_UNIVERSAL_NEWLINE_DECORATOR)  {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "universal-newline");
+            rb_str_cat2(mesg, "universal_newline");
         }
         if (ecflags & ECONV_CRLF_NEWLINE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "CRLF-newline");
+            rb_str_cat2(mesg, "crlf_newline");
         }
         if (ecflags & ECONV_CR_NEWLINE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "CR-newline");
+            rb_str_cat2(mesg, "cr_newline");
         }
         if (ecflags & ECONV_XML_TEXT_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "XML-text");
+            rb_str_cat2(mesg, "xml_text");
         }
         if (ecflags & ECONV_XML_ATTR_CONTENT_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "XML-attr-content");
+            rb_str_cat2(mesg, "xml_attr_content");
         }
         if (ecflags & ECONV_XML_ATTR_QUOTE_DECORATOR) {
             rb_str_cat2(mesg, pre); pre = ",";
-            rb_str_cat2(mesg, "XML-attr-quote");
+            rb_str_cat2(mesg, "xml_attr_quote");
         }
         has_description = 1;
     }
