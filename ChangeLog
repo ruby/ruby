@@ -1,3 +1,8 @@
+Fri Sep 12 20:28:59 2008  Tanaka Akira  <akr@fsij.org>
+
+	* regenc.c (onigenc_single_byte_code_to_mbc): follow OnigEncoding
+	  change.
+
 Fri Sep 12 20:00:22 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* regparse.c (parse_exp): fix resource leak.
