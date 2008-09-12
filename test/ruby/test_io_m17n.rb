@@ -823,6 +823,18 @@ EOT
         f.set_encoding("iso-2022-jp")
       }
     }
+    assert_nothing_raised {
+      open("/dev/null", "r") {|f|
+        f.binmode
+        f.set_encoding("iso-2022-jp")
+      }
+    }
+    assert_nothing_raised {
+      open("/dev/null", "rt") {|f|
+        f.binmode
+        f.set_encoding("iso-2022-jp")
+      }
+    }
   end
 
   def test_write_conversion_fixenc
