@@ -1,3 +1,11 @@
+Fri Sep 12 21:22:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_t): new field: started.
+	  (rb_econv_open_by_transcoder_entries): initialize started field.
+	  (rb_econv_convert): set started field.
+	  (rb_econv_insert_output): ditto.
+	  (rb_econv_decorate_at): check started field instead of num_finished.
+
 Fri Sep 12 20:28:59 2008  Tanaka Akira  <akr@fsij.org>
 
 	* regenc.c (onigenc_single_byte_code_to_mbc): follow OnigEncoding

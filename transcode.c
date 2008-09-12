@@ -97,6 +97,8 @@ struct rb_econv_t {
     const char *source_encoding_name;
     const char *destination_encoding_name;
 
+    int started;
+
     const unsigned char *replacement_str;
     size_t replacement_len;
     const char *replacement_enc;
@@ -788,6 +790,7 @@ rb_econv_open_by_transcoder_entries(int n, transcoder_entry_t **entries)
     ec->flags = 0;
     ec->source_encoding_name = NULL;
     ec->destination_encoding_name = NULL;
+    ec->started = 0;
     ec->replacement_str = NULL;
     ec->replacement_len = 0;
     ec->replacement_enc = NULL;
@@ -1331,6 +1334,8 @@ rb_econv_convert(rb_econv_t *ec,
     unsigned char empty_buf;
     unsigned char *empty_ptr = &empty_buf;
 
+    ec->started = 1;
+
     if (!input_ptr) {
         input_ptr = (const unsigned char **)&empty_ptr;
         input_stop = empty_ptr;
@@ -1477,6 +1482,8 @@ rb_econv_insert_output(rb_econv_t *ec,
     unsigned char **buf_end_p;
 
     size_t need;
+
+    ec->started = 1;
 
     if (len == 0)
         return 0;
@@ -1729,7 +1736,7 @@ rb_econv_decorate_at(rb_econv_t *ec, const char *decorator_name, int n)
     unsigned char *p;
     int bufsize = 4096;
 
-    if (ec->num_finished != 0)
+    if (ec->started != 0)
         return -1;
 
     entry = get_transcoder_entry("", decorator_name);
