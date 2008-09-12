@@ -839,7 +839,7 @@ rb_econv_add_transcoder_at(rb_econv_t *ec, const rb_transcoder *tr, int i)
     ec->num_trans++;
 
     if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding))
-        for (j = ec->num_trans-1; n <= j; j--) {
+        for (j = ec->num_trans-1; i <= j; j--) {
             rb_transcoding *tc = ec->elems[j].tc;
             const rb_transcoder *tr2 = tc->transcoder;
             if (!SUPPLEMENTAL_CONVERSION(tr2->src_encoding, tr2->dst_encoding)) {

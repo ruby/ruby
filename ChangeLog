@@ -1,3 +1,7 @@
+Fri Sep 12 23:19:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_econv_add_transcoder_at): fix loop condition.
+
 Fri Sep 12 22:39:46 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (decorator_names): extracted from rb_econv_open.
