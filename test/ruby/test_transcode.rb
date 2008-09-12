@@ -548,6 +548,8 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u005C", "\x5C", "ISO-2022-JP")
     assert_equal("\u005C", "\e(B\x5C\e(B".encode("UTF-8", "ISO-2022-JP"))
     assert_equal("\u005C", "\e(J\x5C\e(B".encode("UTF-8", "ISO-2022-JP"))
+    assert_equal("\u005C", "\x5C".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
+    assert_equal("\u005C", "\e(J\x5C\e(B".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
     assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("Shift_JIS") }
     assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("Windows-31J") }
     assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("EUC-JP") }
@@ -571,6 +573,8 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u007E", "\x7E", "ISO-2022-JP")
     assert_equal("\u007E", "\e(B\x7E\e(B".encode("UTF-8", "ISO-2022-JP"))
     assert_equal("\u007E", "\e(J\x7E\e(B".encode("UTF-8", "ISO-2022-JP"))
+    assert_equal("\u007E", "\x7E".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
+    assert_equal("\u007E", "\e(J\x7E\e(B".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
     assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("Shift_JIS") }
     assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("Windows-31J") }
     assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("EUC-JP") }
