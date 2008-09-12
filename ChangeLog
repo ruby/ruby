@@ -1,3 +1,7 @@
+Fri Sep 12 20:00:22 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* regparse.c (parse_exp): fix resource leak.
+
 Fri Sep 12 01:21:22 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/syck/node.c (syck_replace_str2): fix wrong check to free ptr.

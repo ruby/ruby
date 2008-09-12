@@ -5387,7 +5387,10 @@ parse_exp(Node** np, OnigToken* tok, int term,
       if (tok->u.repeat.possessive != 0) {
 	Node* en;
 	en = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
-	CHECK_NULL_RETURN_MEMERR(en);
+	if (IS_NULL(en)) {
+	  onig_node_free(qn);
+	  return ONIGERR_MEMORY;
+	}
 	NENCLOSE(en)->target = qn;
 	qn = en;
       }
