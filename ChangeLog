@@ -1,3 +1,9 @@
+Sat Sep 13 19:27:01 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (io_encoding_set): don't need argc argument.
+	  (rb_io_s_pipe): update io_encoding_set call.
+	  (rb_io_set_encoding): ditto.
+
 Sat Sep 13 18:46:41 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_transcoding): align state field.

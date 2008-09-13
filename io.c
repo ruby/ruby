@@ -6629,20 +6629,18 @@ io_new_instance(VALUE args)
 }
 
 static void
-io_encoding_set(rb_io_t *fptr, int argc, VALUE v1, VALUE v2, VALUE opt)
+io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 {
     rb_encoding *enc, *enc2;
     int ecflags;
     VALUE ecopts;
 
-    if (NIL_P(v2)) argc = 1;
-
-    if (argc == 2) {
+    if (!NIL_P(v2)) {
 	enc2 = rb_to_encoding(v1);
 	enc = rb_to_encoding(v2);
         ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
-    else if (argc == 1) {
+    else {
 	if (NIL_P(v1)) {
 	    enc = NULL;
 	    enc2 = NULL;
@@ -6750,7 +6748,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
 	rb_jump_tag(state);
     }
     GetOpenFile(r, fptr);
-    io_encoding_set(fptr, argc, v1, v2, opt);
+    io_encoding_set(fptr, v1, v2, opt);
     args[1] = INT2NUM(pipes[1]);
     args[2] = INT2FIX(O_WRONLY);
     w = rb_protect(io_new_instance, (VALUE)args, &state);
@@ -7574,7 +7572,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &v1, &v2);
     GetOpenFile(io, fptr);
-    io_encoding_set(fptr, argc, v1, v2, opt);
+    io_encoding_set(fptr, v1, v2, opt);
     return io;
 }
 
