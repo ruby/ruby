@@ -49,6 +49,15 @@ with all sufficient information, see the ChangeLog file.
     * raise an exception not returns nil for invalid feed making.
     * requires block.
 
+* REXML
+
+  * REXML::Document.entity_expansion_limit=
+
+    New method to set the entity expansion limit. By default the limit is
+    set to 10000.  See the following URL for details.
+
+    http://www.ruby-lang.org/en/news/2008/08/23/dos-vulnerability-in-rexml/
+
 == Changes since the 1.8.6 release
 
 === Configuration changes

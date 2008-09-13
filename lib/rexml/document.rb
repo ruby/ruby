@@ -203,12 +203,12 @@ module REXML
 
     @@entity_expansion_limit = 10_000
 
-    # Set the entity expansion limit. By defualt the limit is set to 10000.
+    # Set the entity expansion limit. By default the limit is set to 10000.
     def Document::entity_expansion_limit=( val )
       @@entity_expansion_limit = val
     end
 
-    # Get the entity expansion limit. By defualt the limit is set to 10000.
+    # Get the entity expansion limit. By default the limit is set to 10000.
     def Document::entity_expansion_limit
       return @@entity_expansion_limit
     end

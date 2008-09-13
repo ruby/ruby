@@ -1,3 +1,9 @@
+Sat Sep 13 11:13:18 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* NEWS: added an entry for REXML.
+
+	* lib/rexml/document.rb: fixed typo.
+
 Sat Sep 13 11:05:38 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/rexml/document.rb: limit entity expansion.  Thanks, Luka
