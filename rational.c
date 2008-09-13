@@ -9,12 +9,12 @@
 #include <math.h>
 #include <float.h>
 
-#define NDEBUG
-#include <assert.h>
-
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
+
+#define NDEBUG
+#include <assert.h>
 
 #ifndef RATIONAL_NAME
 #define RATIONAL_NAME "Rational"
@@ -27,8 +27,8 @@
 VALUE rb_cRational;
 
 static ID id_Unify, id_abs, id_cmp, id_convert, id_equal_p, id_expt,
-  id_floor, id_format, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
-  id_to_f, id_to_i, id_to_s, id_truncate;
+    id_floor, id_format, id_idiv, id_inspect, id_integer_p, id_negate,
+    id_new, id_new_bang, id_to_f, id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -56,14 +56,10 @@ f_##n(VALUE x, VALUE y)\
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y)) {
-	if (FIX2LONG(y) == 0)
-	    return x;
-    }
-    else if (FIXNUM_P(x)) {
-	if (FIX2LONG(x) == 0)
-	    return y;
-    }
+    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+	return x;
+    else if (FIXNUM_P(x) && FIX2LONG(x) == 0)
+	return y;
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -111,25 +107,21 @@ inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long _iy = FIX2LONG(y);
-	if (_iy == 0) {
-	    if (TYPE(x) == T_FLOAT)
-		return rb_float_new(0.0);
-	    else
+	long iy = FIX2LONG(y);
+	if (iy == 0) {
+	    if (FIXNUM_P(x) || TYPE(x) == T_BIGNUM)
 		return ZERO;
 	}
-	else if (_iy == 1)
+	else if (iy == 1)
 	    return x;
     }
     else if (FIXNUM_P(x)) {
-	long _ix = FIX2LONG(x);
-	if (_ix == 0) {
-	    if (TYPE(y) == T_FLOAT)
-		return rb_float_new(0.0);
-	    else
+	long ix = FIX2LONG(x);
+	if (ix == 0) {
+	    if (FIXNUM_P(y) || TYPE(y) == T_BIGNUM)
 		return ZERO;
 	}
-	else if (_ix == 1)
+	else if (ix == 1)
 	    return y;
     }
     return rb_funcall(x, '*', 1, y);
@@ -138,9 +130,8 @@ f_mul(VALUE x, VALUE y)
 inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y))
-	if (FIX2LONG(y) == 0)
-	    return x;
+    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+	return x;
     return rb_funcall(x, '-', 1, y);
 }
 
@@ -149,6 +140,7 @@ binop(xor, '^')
 fun1(abs)
 fun1(floor)
 fun1(inspect)
+fun1(integer_p)
 fun1(negate)
 fun1(to_f)
 fun1(to_i)
@@ -385,8 +377,18 @@ nurat_int_check(VALUE num)
       case T_BIGNUM:
 	break;
       default:
-	rb_raise(rb_eArgError, "not an integer");
+	if (!k_numeric_p(num) || !f_integer_p(num))
+	    rb_raise(rb_eArgError, "not an integer");
     }
+}
+
+inline static VALUE
+nurat_int_value(VALUE num)
+{
+    nurat_int_check(num);
+    if (!k_integer_p(num))
+	num = f_to_i(num);
+    return num;
 }
 
 inline static VALUE
@@ -426,7 +428,7 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 	break;
     }
 
-    if (f_equal_p(den, ONE) && f_unify_p(klass))
+    if (f_one_p(den) && f_unify_p(klass))
 	return num;
     return nurat_s_new_internal(klass, num, den);
 }
@@ -437,12 +439,16 @@ nurat_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 {
     VALUE num, den;
 
-    if (rb_scan_args(argc, argv, "11", &num, &den) == 1) {
+    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
+      case 1:
+	num = nurat_int_value(num);
 	den = ONE;
+	break;
+      default:
+	num = nurat_int_value(num);
+	den = nurat_int_value(den);
+	break;
     }
-
-    nurat_int_check(num);
-    nurat_int_check(den);
 
     return nurat_s_canonicalize_internal(klass, num, den);
 }
@@ -453,11 +459,16 @@ nurat_s_new(int argc, VALUE *argv, VALUE klass)
 {
     VALUE num, den;
 
-    if (rb_scan_args(argc, argv, "11", &num, &den) == 1)
+    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
+      case 1:
+	num = nurat_int_value(num);
 	den = ONE;
-
-    nurat_int_check(num);
-    nurat_int_check(den);
+	break;
+      default:
+	num = nurat_int_value(num);
+	den = nurat_int_value(den);
+	break;
+    }
 
     return nurat_s_canonicalize_internal(klass, num, den);
 }
@@ -1135,21 +1146,21 @@ nurat_marshal_load(VALUE self, VALUE a)
 VALUE
 rb_gcd(VALUE self, VALUE other)
 {
-    nurat_int_check(other);
+    other = nurat_int_value(other);
     return f_gcd(self, other);
 }
 
 VALUE
 rb_lcm(VALUE self, VALUE other)
 {
-    nurat_int_check(other);
+    other = nurat_int_value(other);
     return f_lcm(self, other);
 }
 
 VALUE
 rb_gcdlcm(VALUE self, VALUE other)
 {
-    nurat_int_check(other);
+    other = nurat_int_value(other);
     return rb_assoc_new(f_gcd(self, other), f_lcm(self, other));
 }
 
@@ -1477,6 +1488,7 @@ Init_Rational(void)
     id_format = rb_intern("format");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
+    id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");
     id_new = rb_intern("new");
     id_new_bang = rb_intern("new!");

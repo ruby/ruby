@@ -22,10 +22,10 @@
 VALUE rb_cComplex;
 
 static ID id_Unify, id_abs, id_abs2, id_arg, id_cmp, id_conjugate,
-  id_convert, id_denominator, id_divmod, id_equal_p, id_exact_p, id_expt,
-  id_floor, id_format, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
-  id_numerator, id_polar, id_quo, id_scalar_p, id_to_f, id_to_i, id_to_r,
-  id_to_s, id_truncate;
+    id_convert, id_denominator, id_divmod, id_equal_p, id_exact_p, id_expt,
+    id_floor, id_format, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
+    id_numerator, id_polar, id_quo, id_scalar_p, id_to_f, id_to_i, id_to_r,
+    id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -67,14 +67,10 @@ m_##n(VALUE x, VALUE y)\
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y)) {
-	if (FIX2LONG(y) == 0)
-	    return x;
-    }
-    else if (FIXNUM_P(x)) {
-	if (FIX2LONG(x) == 0)
-	    return y;
-    }
+    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+	return x;
+    else if (FIXNUM_P(x) && FIX2LONG(x) == 0)
+	return y;
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -122,25 +118,21 @@ inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long _iy = FIX2LONG(y);
-	if (_iy == 0) {
-	    if (TYPE(x) == T_FLOAT)
-		return rb_float_new(0.0);
-	    else
+	long iy = FIX2LONG(y);
+	if (iy == 0) {
+	    if (FIXNUM_P(x) || TYPE(x) == T_BIGNUM)
 		return ZERO;
 	}
-	else if (_iy == 1)
+	else if (iy == 1)
 	    return x;
     }
     else if (FIXNUM_P(x)) {
-	long _ix = FIX2LONG(x);
-	if (_ix == 0) {
-	    if (TYPE(y) == T_FLOAT)
-		return rb_float_new(0.0);
-	    else
+	long ix = FIX2LONG(x);
+	if (ix == 0) {
+	    if (FIXNUM_P(y) || TYPE(y) == T_BIGNUM)
 		return ZERO;
 	}
-	else if (_ix == 1)
+	else if (ix == 1)
 	    return y;
     }
     return rb_funcall(x, '*', 1, y);
@@ -149,9 +141,8 @@ f_mul(VALUE x, VALUE y)
 inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y))
-	if (FIX2LONG(y) == 0)
-	    return x;
+    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+	return x;
     return rb_funcall(x, '-', 1, y);
 }
 
@@ -779,19 +770,21 @@ nucomp_conjugate(VALUE self)
     return f_complex_new2(CLASS_OF(self), dat->real, f_negate(dat->image));
 }
 
+#if 0
 static VALUE
-nucomp_real_p(VALUE self)
+nucomp_true(VALUE self)
+{
+    return Qtrue;
+}
+#endif
+
+static VALUE
+nucomp_false(VALUE self)
 {
     return Qfalse;
 }
 
 #if 0
-static VALUE
-nucomp_complex_p(VALUE self)
-{
-    return Qtrue;
-}
-
 static VALUE
 nucomp_exact_p(VALUE self)
 {
@@ -1427,12 +1420,12 @@ Init_Complex(void)
 #endif
 
 #if 0
-    rb_define_method(rb_cComplex, "real?", nucomp_real_p, 0);
-    rb_define_method(rb_cComplex, "complex?", nucomp_complex_p, 0);
+    rb_define_method(rb_cComplex, "real?", nucomp_false, 0);
+    rb_define_method(rb_cComplex, "complex?", nucomp_true, 0);
     rb_define_method(rb_cComplex, "exact?", nucomp_exact_p, 0);
     rb_define_method(rb_cComplex, "inexact?", nucomp_inexact_p, 0);
 #endif
-    rb_define_method(rb_cComplex, "scalar?", nucomp_real_p, 0);
+    rb_define_method(rb_cComplex, "scalar?", nucomp_false, 0);
 
     rb_define_method(rb_cComplex, "numerator", nucomp_numerator, 0);
     rb_define_method(rb_cComplex, "denominator", nucomp_denominator, 0);

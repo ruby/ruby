@@ -1,3 +1,9 @@
+Sat Sep 13 10:53:13 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: refined.
+
+	* rational.c: ditto.
+
 Sat Sep 13 03:44:52 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (rb_econv_prepare_opts): raise ArgumentError if

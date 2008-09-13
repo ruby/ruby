@@ -603,7 +603,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(3,4), c.quo(c2))
 
     assert_equal(Rational(1,4), c.quo(2))
-    assert_equal(Rational(0.25), c.quo(2.0))
+    assert_equal(0.25, c.quo(2.0))
   end
 
   def test_fdiv
