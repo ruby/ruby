@@ -1,3 +1,13 @@
+Sat Sep 13 18:05:37 2008  Tanaka Akira  <akr@fsij.org>
+
+	* io.c (make_writeconv): use rb_enc_name.
+	  (make_readconv): ditto.
+
+	* transcode.c (rb_econv_open_opts): ditto.
+	  (econv_args): ditto.
+	  (decorate_convpath): ditto.
+	  (econv_set_replacement): ditto.
+
 Sat Sep 13 11:15:38 2008  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/rexml/document.rb: fixed typo.

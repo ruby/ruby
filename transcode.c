@@ -2358,7 +2358,7 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
         ret = rb_econv_set_replacement(ec,
                 (const unsigned char *)RSTRING_PTR(replacement),
                 RSTRING_LEN(replacement),
-                enc->name);
+                rb_enc_name(enc));
         if (ret == -1) {
             rb_econv_close(ec);
             return NULL;
@@ -2706,8 +2706,8 @@ econv_args(int argc, VALUE *argv,
         StringValue(*dnamev_p);
     }
 
-    sname = senc ? senc->name : StringValueCStr(*snamev_p);
-    dname = denc ? denc->name : StringValueCStr(*dnamev_p);
+    sname = senc ? rb_enc_name(senc) : StringValueCStr(*snamev_p);
+    dname = denc ? rb_enc_name(denc) : StringValueCStr(*dnamev_p);
 
     *sname_p = sname;
     *dname_p = dname;
@@ -2732,8 +2732,8 @@ decorate_convpath(VALUE convpath, int ecflags)
     len = n = RARRAY_LEN(convpath);
     if (n != 0) {
         VALUE pair = RARRAY_PTR(convpath)[n-1];
-        const char *sname = rb_to_encoding(RARRAY_PTR(pair)[0])->name;
-        const char *dname = rb_to_encoding(RARRAY_PTR(pair)[1])->name;
+        const char *sname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[0]));
+        const char *dname = rb_enc_name(rb_to_encoding(RARRAY_PTR(pair)[1]));
         transcoder_entry_t *entry = get_transcoder_entry(sname, dname);
         const rb_transcoder *tr = load_transcoder_entry(entry);
         if (!tr)
@@ -3736,7 +3736,7 @@ econv_set_replacement(VALUE self, VALUE arg)
     ret = rb_econv_set_replacement(ec,
             (const unsigned char *)RSTRING_PTR(string),
             RSTRING_LEN(string),
-            enc->name);
+            rb_enc_name(enc));
 
     if (ret == -1) {
         /* xxx: rb_eInvalidByteSequence? */

@@ -713,7 +713,7 @@ make_writeconv(rb_io_t *fptr)
         }
         else {
             enc = fptr->encs.enc2 ? fptr->encs.enc2 : fptr->encs.enc;
-            senc = rb_econv_asciicompat_encoding(enc->name);
+            senc = rb_econv_asciicompat_encoding(rb_enc_name(enc));
             if (!senc && !(fptr->encs.ecflags & ECONV_STATEFUL_DECORATOR_MASK)) {
                 /* single conversion */
                 fptr->writeconv_pre_ecflags = ecflags;
@@ -726,12 +726,12 @@ make_writeconv(rb_io_t *fptr)
                 fptr->writeconv_pre_ecflags = ecflags & ~ECONV_STATEFUL_DECORATOR_MASK;
                 fptr->writeconv_pre_ecopts = ecopts;
                 if (senc) {
-                    denc = enc->name;
+                    denc = rb_enc_name(enc);
                     fptr->writeconv_asciicompat = rb_str_new2(senc);
                 }
                 else {
                     senc = denc = "";
-                    fptr->writeconv_asciicompat = rb_str_new2(enc->name);
+                    fptr->writeconv_asciicompat = rb_str_new2(rb_enc_name(enc));
                 }
                 ecflags = fptr->encs.ecflags & (ECONV_ERROR_HANDLER_MASK|ECONV_STATEFUL_DECORATOR_MASK);
                 ecopts = fptr->encs.ecopts;
@@ -1469,8 +1469,8 @@ make_readconv(rb_io_t *fptr)
         if (NEED_NEWLINE_DECORATOR_ON_READ(fptr))
             ecflags |= ECONV_UNIVERSAL_NEWLINE_DECORATOR;
         if (fptr->encs.enc2) {
-            sname = fptr->encs.enc2->name;
-            dname = fptr->encs.enc->name;
+            sname = rb_enc_name(fptr->encs.enc2);
+            dname = rb_enc_name(fptr->encs.enc);
         }
         else {
             sname = dname = "";
