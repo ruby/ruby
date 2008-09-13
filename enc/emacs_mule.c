@@ -293,7 +293,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 }
 
 static UChar*
-left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc)
 {
   const UChar *p;
 

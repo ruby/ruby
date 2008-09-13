@@ -222,7 +222,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 }
 
 static UChar*
-left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc)
 {
   /* In this encoding
      mb-trail bytes doesn't mix with single bytes.
@@ -234,7 +234,7 @@ left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
   p = s;
 
   while (!eucjp_islead(*p) && p > start) p--;
-  len = enclen(enc, p, s);
+  len = enclen(enc, p, end);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

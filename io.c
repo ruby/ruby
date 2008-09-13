@@ -2177,13 +2177,14 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
         else
             enc = io_input_encoding(fptr);
 	while ((c = appendline(fptr, newline, &str, &limit)) != EOF) {
-            const char *s, *p, *pp;
+            const char *s, *p, *pp, *e;
 
 	    if (c == newline) {
 		if (RSTRING_LEN(str) < rslen) continue;
 		s = RSTRING_PTR(str);
-		p = s + RSTRING_LEN(str) - rslen;
-		pp = rb_enc_left_char_head(s, p, enc);
+                e = s + RSTRING_LEN(str);
+		p = e - rslen;
+		pp = rb_enc_left_char_head(s, p, e, enc);
 		if (pp != p) continue;
 		if (!rspara) rscheck(rsptr, rslen, rs);
 		if (memcmp(p, rsptr, rslen) == 0) break;
@@ -2191,7 +2192,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 	    if (limit == 0) {
 		s = RSTRING_PTR(str);
 		p = s + RSTRING_LEN(str);
-		pp = rb_enc_left_char_head(s, p-1, enc);
+		pp = rb_enc_left_char_head(s, p-1, p, enc);
                 if (extra_limit &&
                     MBCLEN_NEEDMORE_P(rb_enc_precise_mbclen(pp, p, enc))) {
                     /* relax the limit while incomplete character.

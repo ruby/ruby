@@ -1,3 +1,58 @@
+Sun Sep 14 04:15:16 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h (OnigEncodingTypeST): add end argument for
+	  left_adjust_char_head.
+	  (ONIGENC_LEFT_ADJUST_CHAR_HEAD): add end argument.
+	  (onigenc_get_left_adjust_char_head): ditto.
+
+	* include/ruby/encoding.h (rb_enc_left_char_head): add end argument.
+
+	* regenc.h (onigenc_single_byte_left_adjust_char_head): ditto.
+
+	* regenc.c (onigenc_get_right_adjust_char_head): follow the interface
+	  change.
+	  (onigenc_get_right_adjust_char_head_with_prev): ditto.
+	  (onigenc_get_prev_char_head): ditto.
+	  (onigenc_step_back): ditto.
+	  (onigenc_get_left_adjust_char_head): ditto.
+	  (onigenc_single_byte_code_to_mbc): ditto.
+
+	* re.c: ditto.
+
+	* string.c: ditto.
+
+	* io.c: ditto.
+
+	* regexec.c: ditto.
+
+	* enc/euc_jp.c: ditto.
+
+	* enc/cp949.c: ditto.
+
+	* enc/shift_jis.c: ditto.
+
+	* enc/gbk.c: ditto.
+
+	* enc/big5.c: ditto.
+
+	* enc/euc_tw.c: ditto.
+
+	* enc/euc_kr.c: ditto.
+
+	* enc/emacs_mule.c: ditto.
+
+	* enc/gb18030.c: ditto.
+
+	* enc/utf_8.c: ditto.
+
+	* enc/utf_16le.c: ditto.
+
+	* enc/utf_16be.c: ditto.
+
+	* enc/utf_32le.c: ditto.
+
+	* enc/utf_32be.c: ditto.
+
 Sun Sep 14 03:43:27 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h (ONIGENC_STEP_BACK): add end argument.

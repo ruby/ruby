@@ -405,7 +405,7 @@ get_ctype_code_range(OnigCtype ctype, OnigCodePoint *sb_out,
 
 
 static UChar*
-left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc ARG_UNUSED)
+left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
   const UChar *p;
 

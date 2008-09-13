@@ -165,7 +165,7 @@ static const char BIG5_CAN_BE_TRAIL_TABLE[256] = {
 #define BIG5_ISMB_TRAIL(byte)  BIG5_CAN_BE_TRAIL_TABLE[(byte)]
 
 static UChar*
-big5_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+big5_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc)
 {
   const UChar *p;
   int len;
@@ -181,7 +181,7 @@ big5_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
       }
     } 
   }
-  len = enclen(enc, p, s);
+  len = enclen(enc, p, end);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

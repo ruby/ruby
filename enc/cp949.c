@@ -165,7 +165,7 @@ cp949_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 }
 
 static UChar*
-cp949_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+cp949_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc)
 {
   const UChar *p;
   int len;
@@ -181,7 +181,7 @@ cp949_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc
       }
     } 
   }
-  len = enclen(enc, p, s);
+  len = enclen(enc, p, end);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

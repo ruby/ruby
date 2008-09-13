@@ -204,7 +204,7 @@ utf16le_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp,
 #endif
 
 static UChar*
-utf16le_left_adjust_char_head(const UChar* start, const UChar* s,
+utf16le_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end,
 			      OnigEncoding enc ARG_UNUSED)
 {
   if (s <= start) return (UChar* )s;

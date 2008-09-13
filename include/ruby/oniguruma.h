@@ -164,7 +164,7 @@ typedef struct OnigEncodingTypeST {
   int    (*property_name_to_ctype)(struct OnigEncodingTypeST* enc, OnigUChar* p, OnigUChar* end);
   int    (*is_code_ctype)(OnigCodePoint code, OnigCtype ctype, struct OnigEncodingTypeST* enc);
   int    (*get_ctype_code_range)(OnigCtype ctype, OnigCodePoint* sb_out, const OnigCodePoint* ranges[], struct OnigEncodingTypeST* enc);
-  OnigUChar* (*left_adjust_char_head)(const OnigUChar* start, const OnigUChar* p, struct OnigEncodingTypeST* enc);
+  OnigUChar* (*left_adjust_char_head)(const OnigUChar* start, const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
   int    (*is_allowed_reverse_match)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
   int ruby_encoding_index;
 } OnigEncodingType;
@@ -219,8 +219,8 @@ ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
   (enc)->mbc_case_fold(flag,(const OnigUChar** )pp,end,buf,enc)
 #define ONIGENC_IS_ALLOWED_REVERSE_MATCH(enc,s,end) \
         (enc)->is_allowed_reverse_match(s,end,enc)
-#define ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc,start,s) \
-        (enc)->left_adjust_char_head(start, s, enc)
+#define ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc,start,s,end) \
+        (enc)->left_adjust_char_head(start, s, end, enc)
 #define ONIGENC_APPLY_ALL_CASE_FOLD(enc,case_fold_flag,f,arg) \
         (enc)->apply_all_case_fold(case_fold_flag,f,arg,enc)
 #define ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc,case_fold_flag,p,end,acs) \
@@ -307,7 +307,7 @@ OnigUChar* onigenc_get_right_adjust_char_head_with_prev P_((OnigEncoding enc, co
 ONIG_EXTERN
 OnigUChar* onigenc_get_prev_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end));
 ONIG_EXTERN
-OnigUChar* onigenc_get_left_adjust_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s));
+OnigUChar* onigenc_get_left_adjust_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end));
 ONIG_EXTERN
 OnigUChar* onigenc_get_right_adjust_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end));
 ONIG_EXTERN

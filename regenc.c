@@ -64,7 +64,7 @@ onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, struct OnigEnc
 extern UChar*
 onigenc_get_right_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s, const UChar* end)
 {
-  UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
+  UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s, end);
   if (p < s) {
       p += enclen(enc, p, end);
   }
@@ -75,7 +75,7 @@ extern UChar*
 onigenc_get_right_adjust_char_head_with_prev(OnigEncoding enc,
 				   const UChar* start, const UChar* s, const UChar* end, const UChar** prev)
 {
-  UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
+  UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s, end);
 
   if (p < s) {
     if (prev) *prev = (const UChar* )p;
@@ -93,7 +93,7 @@ onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s,
   if (s <= start)
     return (UChar* )NULL;
 
-  return ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s - 1);
+  return ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s - 1, end);
 }
 
 extern UChar*
@@ -103,7 +103,7 @@ onigenc_step_back(OnigEncoding enc, const UChar* start, const UChar* s, const UC
     if (s <= start)
       return (UChar* )NULL;
 
-    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s - 1);
+    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s - 1, end);
   }
   return (UChar* )s;
 }
@@ -369,9 +369,9 @@ onigenc_set_default_caseconv_table(const UChar* table ARG_UNUSED)
 }
 
 extern UChar*
-onigenc_get_left_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
+onigenc_get_left_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s, const UChar* end)
 {
-  return ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
+  return ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s, end);
 }
 
 const OnigPairCaseFoldCodes OnigAsciiLowerMap[] = {
@@ -637,6 +637,7 @@ onigenc_single_byte_code_to_mbc(OnigCodePoint code, UChar *buf, OnigEncoding enc
 
 extern UChar*
 onigenc_single_byte_left_adjust_char_head(const UChar* start ARG_UNUSED, const UChar* s,
+                                          const UChar* end,
 					  OnigEncoding enc ARG_UNUSED)
 {
   return (UChar* )s;

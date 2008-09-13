@@ -145,7 +145,7 @@ euckr_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc)
 #define euckr_islead(c)    ((c) < 0xa1 || (c) == 0xff)
 
 static UChar*
-euckr_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc)
+euckr_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end, OnigEncoding enc)
 {
   /* Assumed in this encoding,
      mb-trail bytes don't mix with single bytes.
@@ -157,7 +157,7 @@ euckr_left_adjust_char_head(const UChar* start, const UChar* s, OnigEncoding enc
   p = s;
 
   while (!euckr_islead(*p) && p > start) p--;
-  len = enclen(enc, p, s);
+  len = enclen(enc, p, end);
   if (p + len > s) return (UChar* )p;
   p += len;
   return (UChar* )(p + ((s - p) & ~1));

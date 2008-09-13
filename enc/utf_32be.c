@@ -152,7 +152,7 @@ utf32be_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* e
 #endif
 
 static UChar*
-utf32be_left_adjust_char_head(const UChar* start, const UChar* s,
+utf32be_left_adjust_char_head(const UChar* start, const UChar* s, const UChar* end,
 			      OnigEncoding enc ARG_UNUSED)
 {
   int rem;

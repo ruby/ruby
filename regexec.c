@@ -2843,7 +2843,7 @@ slow_search_backward(OnigEncoding enc, UChar* target, UChar* target_end,
   if (s > text_start)
     s = (UChar* )text_start;
   else
-    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, adjust_text, s);
+    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, adjust_text, s, text_end);
 
   while (s >= text) {
     if (*s == *target) {
@@ -2876,7 +2876,7 @@ slow_search_backward_ic(OnigEncoding enc, int case_fold_flag,
   if (s > text_start)
     s = (UChar* )text_start;
   else
-    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, adjust_text, s);
+    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, adjust_text, s, text_end);
 
   while (s >= text) {
     if (str_lower_case_match(enc, case_fold_flag,
@@ -3018,7 +3018,7 @@ bm_search_backward(regex_t* reg, const UChar* target, const UChar* target_end,
   if (text_start < s)
     s = text_start;
   else
-    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, adjust_text, s);
+    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, adjust_text, s, text_end);
 
   while (s >= text) {
     p = s;
@@ -3030,7 +3030,7 @@ bm_search_backward(regex_t* reg, const UChar* target, const UChar* target_end,
       return (UChar* )s;
 
     s -= reg->int_map_backward[*s];
-    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, adjust_text, s);
+    s = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, adjust_text, s, text_end);
   }
 
   return (UChar* )NULL;
@@ -3523,7 +3523,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	}
 	if ((OnigDistance )(max_semi_end - start) < reg->anchor_dmin) {
 	  start = max_semi_end - reg->anchor_dmin;
-	  start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, start);
+	  start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, start, end);
 	}
 	if (range > start) goto mismatch_no_msa;
       }
@@ -3670,7 +3670,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
       UChar *low, *high, *adjrange, *sch_start;
 
       if (range < end)
-	adjrange = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, range);
+	adjrange = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc, str, range, end);
       else
 	adjrange = (UChar* )end;
 
@@ -3706,7 +3706,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	    if (sch_start > end) sch_start = (UChar* )end;
 	    else
 	      sch_start = ONIGENC_LEFT_ADJUST_CHAR_HEAD(reg->enc,
-						    start, sch_start);
+						    start, sch_start, end);
 	  }
 	}
 	if (backward_search_range(reg, str, end, sch_start, range, adjrange,

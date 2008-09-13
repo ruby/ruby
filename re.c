@@ -1267,7 +1267,7 @@ rb_reg_adjust_startpos(VALUE re, VALUE str, int pos, int reverse)
 	      p = onigenc_get_right_adjust_char_head(enc, string, string + pos, string + RSTRING_LEN(str));
 	 }
 	 else {
-	      p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, string, string + pos);
+	      p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, string, string + pos, string + RSTRING_LEN(str));
 	 }
 	 return p - string;
     }

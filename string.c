@@ -5179,7 +5179,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
 	    p = memchr(p, '\n', pend - p);
 	    if (!p) break;
-	    p0 = rb_enc_left_char_head(s, p, enc);
+	    p0 = rb_enc_left_char_head(s, p, pend, enc);
 	    if (!rb_enc_is_newline(p0, pend, enc)) {
 		p++;
 		continue;
@@ -5424,13 +5424,13 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 	    rb_str_modify(str);
 	    enc = rb_enc_get(str);
 	    if (rb_enc_mbminlen(enc) > 1) {
-		pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), enc);
+		pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
 		if (rb_enc_is_newline(pp, e, enc)) {
 		    e = pp;
 		}
 		pp = e - rb_enc_mbminlen(enc);
 		if (pp >= p) {
-		    pp = rb_enc_left_char_head(p, pp, enc);
+		    pp = rb_enc_left_char_head(p, pp, e, enc);
 		    if (rb_enc_ascget(pp, e, 0, enc) == '\r') {
 			e = pp;
 		    }
@@ -5493,7 +5493,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
     if (p[len-1] == newline &&
 	(rslen <= 1 ||
 	 memcmp(RSTRING_PTR(rs), pp, rslen) == 0)) {
-	if (rb_enc_left_char_head(p, pp, enc) != pp)
+	if (rb_enc_left_char_head(p, pp, e, enc) != pp)
 	    return Qnil;
 	rb_str_modify(str);
 	STR_SET_LEN(str, RSTRING_LEN(str) - rslen);
@@ -6284,7 +6284,7 @@ static VALUE
 rb_str_end_with(int argc, VALUE *argv, VALUE str)
 {
     int i;
-    char *p, *s;
+    char *p, *s, *e;
     rb_encoding *enc;
 
     for (i=0; i<argc; i++) {
@@ -6293,8 +6293,9 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
 	enc = rb_enc_check(str, tmp);
 	if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
 	p = RSTRING_PTR(str);
-	s = p + RSTRING_LEN(str) - RSTRING_LEN(tmp);
-	if (rb_enc_left_char_head(p, s, enc) != s)
+        e = p + RSTRING_LEN(str);
+	s = e - RSTRING_LEN(tmp);
+	if (rb_enc_left_char_head(p, s, e, enc) != s)
 	    continue;
 	if (memcmp(s, RSTRING_PTR(tmp), RSTRING_LEN(tmp)) == 0)
 	    return Qtrue;
