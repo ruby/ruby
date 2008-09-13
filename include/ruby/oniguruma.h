@@ -225,8 +225,8 @@ ONIG_EXTERN OnigEncodingType OnigEncodingASCII;
         (enc)->apply_all_case_fold(case_fold_flag,f,arg,enc)
 #define ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc,case_fold_flag,p,end,acs) \
        (enc)->get_case_fold_codes_by_str(case_fold_flag,p,end,acs,enc)
-#define ONIGENC_STEP_BACK(enc,start,s,n) \
-        onigenc_step_back((enc),(start),(s),(n))
+#define ONIGENC_STEP_BACK(enc,start,s,end,n) \
+        onigenc_step_back((enc),(start),(s),(end),(n))
 
 #define ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(n)   (n)
 #define ONIGENC_MBCLEN_CHARFOUND_P(r)           (0 < (r))
@@ -290,7 +290,7 @@ int onigenc_mbclen_approximate P_((const OnigUChar* p,const OnigUChar* e, struct
         (enc)->get_ctype_code_range(ctype,sbout,ranges,enc)
 
 ONIG_EXTERN
-OnigUChar* onigenc_step_back P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, int n));
+OnigUChar* onigenc_step_back P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end, int n));
 
 
 /* encoding API */

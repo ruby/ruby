@@ -97,7 +97,7 @@ onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s,
 }
 
 extern UChar*
-onigenc_step_back(OnigEncoding enc, const UChar* start, const UChar* s, int n)
+onigenc_step_back(OnigEncoding enc, const UChar* start, const UChar* s, const UChar* end, int n)
 {
   while (ONIG_IS_NOT_NULL(s) && n-- > 0) {
     if (s <= start)

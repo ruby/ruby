@@ -2647,7 +2647,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     case OP_LOOK_BEHIND:  MOP_IN(OP_LOOK_BEHIND);
       GET_LENGTH_INC(tlen, p);
-      s = (UChar* )ONIGENC_STEP_BACK(encode, str, s, (int )tlen);
+      s = (UChar* )ONIGENC_STEP_BACK(encode, str, s, end, (int )tlen);
       if (IS_NULL(s)) goto fail;
       sprev = (UChar* )onigenc_get_prev_char_head(encode, str, s, end);
       MOP_OUT;
@@ -2657,7 +2657,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     case OP_PUSH_LOOK_BEHIND_NOT:  MOP_IN(OP_PUSH_LOOK_BEHIND_NOT);
       GET_RELADDR_INC(addr, p);
       GET_LENGTH_INC(tlen, p);
-      q = (UChar* )ONIGENC_STEP_BACK(encode, str, s, (int )tlen);
+      q = (UChar* )ONIGENC_STEP_BACK(encode, str, s, end, (int )tlen);
       if (IS_NULL(q)) {
 	/* too short case -> success. ex. /(?<!XXX)a/.match("a")
 	   If you want to change to fail, replace following line. */
@@ -3529,14 +3529,14 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
       }
     }
     else if (reg->anchor & ANCHOR_SEMI_END_BUF) {
-      UChar* pre_end = ONIGENC_STEP_BACK(reg->enc, str, end, 1);
+      UChar* pre_end = ONIGENC_STEP_BACK(reg->enc, str, end, end, 1);
 
       max_semi_end = (UChar* )end;
       if (ONIGENC_IS_MBC_NEWLINE(reg->enc, pre_end, end)) {
 	min_semi_end = pre_end;
 
 #ifdef USE_CRNL_AS_LINE_TERMINATOR
-	pre_end = ONIGENC_STEP_BACK(reg->enc, str, pre_end, 1);
+	pre_end = ONIGENC_STEP_BACK(reg->enc, str, pre_end, end, 1);
 	if (IS_NOT_NULL(pre_end) &&
 	    ONIGENC_IS_MBC_CRNL(reg->enc, pre_end, end)) {
 	  min_semi_end = pre_end;

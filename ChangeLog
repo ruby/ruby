@@ -1,3 +1,12 @@
+Sun Sep 14 03:43:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h (ONIGENC_STEP_BACK): add end argument.
+	  (onigenc_step_back): ditto.
+
+	* regenc.c (onigenc_step_back): add end argument.
+
+	* regexec.c: follow the interface change.
+
 Sun Sep 14 03:20:03 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h (onigenc_get_prev_char_head): add end
