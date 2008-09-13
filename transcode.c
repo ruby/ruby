@@ -67,7 +67,10 @@ typedef struct rb_transcoding {
         unsigned char *ptr; /* length: max_output */
     } writebuf;
 
-    void *state; /* opaque data for stateful encoding */
+    union rb_transcoding_state_t { /* opaque data for stateful encoding */
+        void *ptr;
+        double dummy_for_alignment;
+    } state;
 } rb_transcoding;
 #define TRANSCODING_READBUF(tc) \
     ((tc)->transcoder->max_input <= sizeof((tc)->readbuf.ary) ? \
@@ -77,11 +80,11 @@ typedef struct rb_transcoding {
     ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
      (tc)->writebuf.ary : \
      (tc)->writebuf.ptr)
-#define TRANSCODING_STATE_EMBED_MAX sizeof(void *)
+#define TRANSCODING_STATE_EMBED_MAX sizeof(union rb_transcoding_state_t)
 #define TRANSCODING_STATE(tc) \
     ((tc)->transcoder->state_size <= sizeof((tc)->state) ? \
      (void *)&(tc)->state : \
-     (tc)->state)
+     (tc)->state.ptr)
 
 typedef struct {
     struct rb_transcoding *tc;
@@ -728,7 +731,7 @@ rb_transcoding_open_by_transcoder(const rb_transcoder *tr, int flags)
     tc->transcoder = tr;
     tc->flags = flags;
     if (TRANSCODING_STATE_EMBED_MAX < tr->state_size)
-        tc->state = xmalloc(tr->state_size);
+        tc->state.ptr = xmalloc(tr->state_size);
     if (tr->state_init_func) {
         (tr->state_init_func)(TRANSCODING_STATE(tc)); /* xxx: check return value */
     }
@@ -766,7 +769,7 @@ rb_transcoding_close(rb_transcoding *tc)
         (tr->state_fini_func)(TRANSCODING_STATE(tc)); /* check return value? */
     }
     if (TRANSCODING_STATE_EMBED_MAX < tr->state_size)
-        xfree(tc->state);
+        xfree(tc->state.ptr);
     if (sizeof(tc->readbuf.ary) < tr->max_input)
         xfree(tc->readbuf.ptr);
     if (sizeof(tc->writebuf.ary) < tr->max_output)

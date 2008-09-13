@@ -1,3 +1,7 @@
+Sat Sep 13 18:46:41 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (rb_transcoding): align state field.
+
 Sat Sep 13 18:21:09 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (DECORATOR_P): renamed from SUPPLEMENTAL_CONVERSION.
