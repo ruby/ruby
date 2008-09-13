@@ -1,3 +1,7 @@
+Sun Sep 14 00:43:28 2008  Tanaka Akira  <akr@fsij.org>
+
+	* ext/ripper/depend (ripper.o): it depends on ruby headers.
+
 Sat Sep 13 19:27:01 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (io_encoding_set): don't need argc argument.
