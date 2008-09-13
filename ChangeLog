@@ -1,3 +1,13 @@
+Sat Sep 13 11:05:38 2008  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/rexml/document.rb: limit entity expansion.  Thanks, Luka
+	  Treiber, Mitja Kolsek, and Michael Koziarski.  backported from
+	  trunk r19033, r19317, r19318.
+
+	* lib/rexml/entity.rb: ditto.
+
+	* test/rexml/test_document.rb: ditto.
+
 Wed Sep  3 16:53:17 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_mark_set): new function to mark keys.
