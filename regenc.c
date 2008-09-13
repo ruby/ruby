@@ -62,11 +62,11 @@ onigenc_mbclen_approximate(const OnigUChar* p,const OnigUChar* e, struct OnigEnc
 }
 
 extern UChar*
-onigenc_get_right_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
+onigenc_get_right_adjust_char_head(OnigEncoding enc, const UChar* start, const UChar* s, const UChar* end)
 {
   UChar* p = ONIGENC_LEFT_ADJUST_CHAR_HEAD(enc, start, s);
   if (p < s) {
-      p += enclen(enc, p, s);
+      p += enclen(enc, p, end);
   }
   return p;
 }

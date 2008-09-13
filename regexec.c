@@ -3348,7 +3348,7 @@ backward_search_range(regex_t* reg, const UChar* str, const UChar* end,
     if (reg->dmax != ONIG_INFINITE_DISTANCE) {
       *low  = p - reg->dmax;
       *high = p - reg->dmin;
-      *high = onigenc_get_right_adjust_char_head(reg->enc, adjrange, *high);
+      *high = onigenc_get_right_adjust_char_head(reg->enc, adjrange, *high, end);
     }
 
 #ifdef ONIG_DEBUG_SEARCH
@@ -3506,7 +3506,7 @@ onig_search(regex_t* reg, const UChar* str, const UChar* end,
 	if ((OnigDistance )(min_semi_end - start) > reg->anchor_dmax) {
 	  start = min_semi_end - reg->anchor_dmax;
 	  if (start < end)
-	    start = onigenc_get_right_adjust_char_head(reg->enc, str, start);
+	    start = onigenc_get_right_adjust_char_head(reg->enc, str, start, end);
 	  else { /* match with empty at end */
 	    start = onigenc_get_prev_char_head(reg->enc, str, end);
 	  }

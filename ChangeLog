@@ -1,3 +1,19 @@
+Sun Sep 14 01:38:26 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h (onigenc_get_right_adjust_char_head): add
+	  end argument.
+
+	* include/ruby/encoding.h (rb_enc_right_char_head): add end argument.
+
+	* regenc.c (onigenc_get_right_adjust_char_head): use end argument.
+
+	* re.c (rb_reg_adjust_startpos): follow the interface change.
+
+	* string.c (rb_str_index): ditto.
+
+	* regexec.c (backward_search_range): ditto.
+	  (onig_search): ditto.
+
 Sun Sep 14 00:43:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* ext/ripper/depend (ripper.o): it depends on ruby headers.

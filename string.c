@@ -2088,7 +2088,7 @@ static long
 rb_str_index(VALUE str, VALUE sub, long offset)
 {
     long pos;
-    char *s, *sptr;
+    char *s, *sptr, *e;
     long len, slen;
     rb_encoding *enc;
 
@@ -2104,6 +2104,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
     }
     if (len - offset < slen) return -1;
     s = RSTRING_PTR(str);
+    e = s + RSTRING_LEN(str);
     if (offset) {
 	offset = str_offset(s, RSTRING_END(str), offset, enc, single_byte_optimizable(str));
 	s += offset;
@@ -2117,7 +2118,7 @@ rb_str_index(VALUE str, VALUE sub, long offset)
 	char *t;
 	pos = rb_memsearch(sptr, slen, s, len, enc);
 	if (pos < 0) return pos;
-	t = rb_enc_right_char_head(s, s+pos, enc);
+	t = rb_enc_right_char_head(s, s+pos, e, enc);
 	if (t == s + pos) break;
 	if ((len -= t - s) <= 0) return -1;
 	offset += t - s;

@@ -309,7 +309,7 @@ OnigUChar* onigenc_get_prev_char_head P_((OnigEncoding enc, const OnigUChar* sta
 ONIG_EXTERN
 OnigUChar* onigenc_get_left_adjust_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s));
 ONIG_EXTERN
-OnigUChar* onigenc_get_right_adjust_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s));
+OnigUChar* onigenc_get_right_adjust_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end));
 ONIG_EXTERN
 int onigenc_strlen P_((OnigEncoding enc, const OnigUChar* p, const OnigUChar* end));
 ONIG_EXTERN
