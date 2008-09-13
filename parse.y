@@ -4877,11 +4877,11 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 
 	if (len > max_line_margin * 2 + 10) {
 	    if (lex_p - p > max_line_margin) {
-		p = rb_enc_prev_char(p, lex_p - max_line_margin, rb_enc_get(lex_lastline));
+		p = rb_enc_prev_char(p, lex_p - max_line_margin, pe, rb_enc_get(lex_lastline));
 		pre = "...";
 	    }
 	    if (pe - lex_p > max_line_margin) {
-		pe = rb_enc_prev_char(lex_p, lex_p + max_line_margin, rb_enc_get(lex_lastline));
+		pe = rb_enc_prev_char(lex_p, lex_p + max_line_margin, pe, rb_enc_get(lex_lastline));
 		post = "...";
 	    }
 	    len = pe - p;

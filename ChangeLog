@@ -1,3 +1,20 @@
+Sun Sep 14 03:20:03 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h (onigenc_get_prev_char_head): add end
+	  argument.
+
+	* include/ruby/encoding.h (rb_enc_prev_char): ditto.
+
+	* regenc.c (onigenc_get_prev_char_head): add end argument.
+
+	* regparse.c: follow the interface change.
+
+	* regexec.c: ditto.
+
+	* string.c: ditto.
+
+	* parse.y: ditto.
+
 Sun Sep 14 02:04:28 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h

@@ -305,7 +305,7 @@ void  onigenc_set_default_caseconv_table P_((const OnigUChar* table));
 ONIG_EXTERN
 OnigUChar* onigenc_get_right_adjust_char_head_with_prev P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end, const OnigUChar** prev));
 ONIG_EXTERN
-OnigUChar* onigenc_get_prev_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s));
+OnigUChar* onigenc_get_prev_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s, const OnigUChar* end));
 ONIG_EXTERN
 OnigUChar* onigenc_get_left_adjust_char_head P_((OnigEncoding enc, const OnigUChar* start, const OnigUChar* s));
 ONIG_EXTERN

@@ -129,9 +129,9 @@ int rb_enc_codelen(int code, rb_encoding *enc);
 /* code,ptr,encoding -> write buf */
 #define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)(buf))
 
-/* ptr, ptr, encoding -> prev_char */
-#define rb_enc_prev_char(s,p,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)(s),(UChar*)(p))
-/* ptr, ptr, encoding -> next_char */
+/* start, ptr, end, encoding -> prev_char */
+#define rb_enc_prev_char(s,p,e,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
+/* start, ptr, end, encoding -> next_char */
 #define rb_enc_left_char_head(s,p,enc) (char *)onigenc_get_left_adjust_char_head(enc,(UChar*)(s),(UChar*)(p))
 #define rb_enc_right_char_head(s,p,e,enc) (char *)onigenc_get_right_adjust_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))
 

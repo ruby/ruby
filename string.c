@@ -1291,10 +1291,10 @@ rb_str_substr(VALUE str, long beg, long len)
 	if (len > -beg) len = -beg;
 	if (-beg * rb_enc_mbmaxlen(enc) < RSTRING_LEN(str) / 8) {
 	    beg = -beg;
-	    while (beg-- > len && (e = rb_enc_prev_char(s, e, enc)) != 0);
+	    while (beg-- > len && (e = rb_enc_prev_char(s, e, e, enc)) != 0);
 	    p = e;
 	    if (!p) return Qnil;
-	    while (len-- > 0 && (p = rb_enc_prev_char(s, p, enc)) != 0);
+	    while (len-- > 0 && (p = rb_enc_prev_char(s, p, e, enc)) != 0);
 	    if (!p) return Qnil;
 	    len = e - p;
 	    goto sub;
@@ -2572,7 +2572,7 @@ rb_str_succ(VALUE orig)
     sbeg = RSTRING_PTR(str);
     s = e = sbeg + RSTRING_LEN(str);
 
-    while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
+    while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
 	if (neighbor == NEIGHBOR_NOT_CHAR && last_alnum) {
 	    if (ISALPHA(*last_alnum) ? ISDIGIT(*s) :
 		ISDIGIT(*last_alnum) ? ISALPHA(*s) : 0) {
@@ -2597,7 +2597,7 @@ rb_str_succ(VALUE orig)
     }
     if (c == -1) {		/* str contains no alnum */
 	s = e;
-	while ((s = rb_enc_prev_char(sbeg, s, enc)) != 0) {
+	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
             if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
             neighbor = enc_succ_char(s, l, enc);
@@ -5336,10 +5336,10 @@ chopped_length(VALUE str)
     beg = RSTRING_PTR(str);
     end = beg + RSTRING_LEN(str);
     if (beg > end) return 0;
-    p = rb_enc_prev_char(beg, end, enc);
+    p = rb_enc_prev_char(beg, end, end, enc);
     if (!p) return 0;
     if (p > beg && rb_enc_codepoint(p, end, enc) == '\n') {
-	p2 = rb_enc_prev_char(beg, p, enc);
+	p2 = rb_enc_prev_char(beg, p, end, enc);
 	if (p2 && rb_enc_codepoint(p2, end, enc) == '\r') p = p2;
     }
     return p - beg;

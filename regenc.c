@@ -88,7 +88,7 @@ onigenc_get_right_adjust_char_head_with_prev(OnigEncoding enc,
 }
 
 extern UChar*
-onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s)
+onigenc_get_prev_char_head(OnigEncoding enc, const UChar* start, const UChar* s, const UChar* end)
 {
   if (s <= start)
     return (UChar* )NULL;
