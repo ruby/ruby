@@ -135,7 +135,7 @@ struct rb_econv_t {
  *  Dispatch data and logic
  */
 
-#define SUPPLEMENTAL_CONVERSION(sname, dname) (*(sname) == '\0')
+#define DECORATOR_P(sname, dname) (*(sname) == '\0')
 
 typedef struct {
     const char *sname;
@@ -838,11 +838,11 @@ rb_econv_add_transcoder_at(rb_econv_t *ec, const rb_transcoder *tr, int i)
 
     ec->num_trans++;
 
-    if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding))
+    if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding))
         for (j = ec->num_trans-1; i <= j; j--) {
             rb_transcoding *tc = ec->elems[j].tc;
             const rb_transcoder *tr2 = tc->transcoder;
-            if (!SUPPLEMENTAL_CONVERSION(tr2->src_encoding, tr2->dst_encoding)) {
+            if (!DECORATOR_P(tr2->src_encoding, tr2->dst_encoding)) {
                 ec->last_tc = tc;
                 break;
             }
@@ -1670,7 +1670,7 @@ asciicompat_encoding_i(st_data_t key, st_data_t val, st_data_t arg)
     transcoder_entry_t *entry = (transcoder_entry_t *)val;
     const rb_transcoder *tr;
 
-    if (SUPPLEMENTAL_CONVERSION(entry->sname, entry->dname))
+    if (DECORATOR_P(entry->sname, entry->dname))
         return ST_CONTINUE;
     tr = load_transcoder_entry(entry);
     if (tr && tr->asciicompat_type == asciicompat_decoder) {
@@ -1805,7 +1805,7 @@ rb_econv_decorate_at_first(rb_econv_t *ec, const char *decorator_name)
 
     tr = ec->elems[0].tc->transcoder;
 
-    if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding) &&
+    if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding) &&
         tr->asciicompat_type == asciicompat_decoder)
         return rb_econv_decorate_at(ec, decorator_name, 1);
 
@@ -1822,7 +1822,7 @@ rb_econv_decorate_at_last(rb_econv_t *ec, const char *decorator_name)
 
     tr = ec->elems[ec->num_trans-1].tc->transcoder;
 
-    if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding) &&
+    if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding) &&
         tr->asciicompat_type == asciicompat_encoder)
         return rb_econv_decorate_at(ec, decorator_name, ec->num_trans-1);
 
@@ -2738,7 +2738,7 @@ decorate_convpath(VALUE convpath, int ecflags)
         const rb_transcoder *tr = load_transcoder_entry(entry);
         if (!tr)
             return -1;
-        if (!SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding) &&
+        if (!DECORATOR_P(tr->src_encoding, tr->dst_encoding) &&
              tr->asciicompat_type == asciicompat_encoder) {
             n--;
             rb_ary_store(convpath, len + num_decorators - 1, pair);
@@ -2761,7 +2761,7 @@ search_convpath_i(const char *sname, const char *dname, int depth, void *arg)
         *ary_p = rb_ary_new();
     }
 
-    if (SUPPLEMENTAL_CONVERSION(sname, dname)) {
+    if (DECORATOR_P(sname, dname)) {
         v = rb_str_new_cstr(dname);
     }
     else {
@@ -2866,7 +2866,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
             sname = "";
             dname = StringValueCStr(elt);
         }
-        if (SUPPLEMENTAL_CONVERSION(sname, dname)) {
+        if (DECORATOR_P(sname, dname)) {
             ret = rb_econv_add_converter(ec, sname, dname, ec->num_trans);
             if (ret == -1)
                 rb_raise(rb_eArgError, "decoration failed: %s", dname);
@@ -2986,7 +2986,7 @@ econv_init(int argc, VALUE *argv, VALUE self)
         rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
     }
 
-    if (!SUPPLEMENTAL_CONVERSION(sname, dname)) {
+    if (!DECORATOR_P(sname, dname)) {
         if (!senc)
             senc = make_dummy_encoding(sname);
         if (!denc)
@@ -3109,7 +3109,7 @@ econv_convpath(VALUE self)
     for (i = 0; i < ec->num_trans; i++) {
         const rb_transcoder *tr = ec->elems[i].tc->transcoder;
         VALUE v;
-        if (SUPPLEMENTAL_CONVERSION(tr->src_encoding, tr->dst_encoding))
+        if (DECORATOR_P(tr->src_encoding, tr->dst_encoding))
             v = rb_str_new_cstr(tr->dst_encoding);
         else
             v = rb_assoc_new(make_encobj(tr->src_encoding), make_encobj(tr->dst_encoding));

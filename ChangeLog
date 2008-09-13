@@ -1,3 +1,7 @@
+Sat Sep 13 18:21:09 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (DECORATOR_P): renamed from SUPPLEMENTAL_CONVERSION.
+
 Sat Sep 13 18:05:37 2008  Tanaka Akira  <akr@fsij.org>
 
 	* io.c (make_writeconv): use rb_enc_name.
