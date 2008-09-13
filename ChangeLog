@@ -1,3 +1,13 @@
+Sun Sep 14 02:04:28 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h
+	  (onigenc_get_right_adjust_char_head_with_prev): add end argument.
+
+	* regenc.c (onigenc_get_right_adjust_char_head_with_prev): use end
+	  argument.
+
+	* regexec.c (forward_search_range): follow the interface change.
+
 Sun Sep 14 01:38:26 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h (onigenc_get_right_adjust_char_head): add

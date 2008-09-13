@@ -3230,7 +3230,7 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 	*low = p - reg->dmax;
 	if (*low > s) {
 	  *low = onigenc_get_right_adjust_char_head_with_prev(reg->enc, s,
-							      *low, (const UChar** )low_prev);
+							      *low, end, (const UChar** )low_prev);
 	  if (low_prev && IS_NULL(*low_prev))
 	    *low_prev = onigenc_get_prev_char_head(reg->enc,
 						   (pprev ? pprev : s), *low);
