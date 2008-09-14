@@ -303,6 +303,16 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(-1,1), +Complex(-1,1))
     assert_equal(Complex(1,-1), +Complex(1,-1))
     assert_equal(Complex(-1,-1), +Complex(-1,-1))
+
+    if -0.0.to_s == '-0.0'
+      c = +Complex(0.0,0.0)
+      assert_equal('0.0', c.real.to_s)
+      assert_equal('0.0', c.image.to_s)
+
+      c = +Complex(-0.0,-0.0)
+      assert_equal('-0.0', c.real.to_s)
+      assert_equal('-0.0', c.image.to_s)
+    end
   end
 
   def test_negate
@@ -312,6 +322,16 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(1,-1), -Complex(-1,1))
     assert_equal(Complex(-1,1), -Complex(1,-1))
     assert_equal(Complex(1,1), -Complex(-1,-1))
+
+    if -0.0.to_s == '-0.0'
+      c = -Complex(0.0,0.0)
+      assert_equal('-0.0', c.real.to_s)
+      assert_equal('-0.0', c.image.to_s)
+
+      c = -Complex(-0.0,-0.0)
+      assert_equal('0.0', c.real.to_s)
+      assert_equal('0.0', c.image.to_s)
+    end
 
 =begin
     assert_equal(0, Complex(0).negate)

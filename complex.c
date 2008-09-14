@@ -64,13 +64,17 @@ m_##n(VALUE x, VALUE y)\
     return rb_funcall(rb_mMath, id_##n, 2, x, y);\
 }
 
+#define PRESERVE_SIGNEDZERO
+
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
+#ifndef PRESERVE_SIGNEDZERO
     if (FIXNUM_P(y) && FIX2LONG(y) == 0)
 	return x;
     else if (FIXNUM_P(x) && FIX2LONG(x) == 0)
 	return y;
+#endif
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -117,6 +121,7 @@ binop(mod, '%')
 inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
+#ifndef PRESERVE_SIGNEDZERO
     if (FIXNUM_P(y)) {
 	long iy = FIX2LONG(y);
 	if (iy == 0) {
@@ -135,14 +140,17 @@ f_mul(VALUE x, VALUE y)
 	else if (ix == 1)
 	    return y;
     }
+#endif
     return rb_funcall(x, '*', 1, y);
 }
 
 inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
+#ifndef PRESERVE_SIGNEDZERO
     if (FIXNUM_P(y) && FIX2LONG(y) == 0)
 	return x;
+#endif
     return rb_funcall(x, '-', 1, y);
 }
 
@@ -521,6 +529,14 @@ nucomp_image(VALUE self)
 {
     get_dat1(self);
     return dat->image;
+}
+
+static VALUE
+nucomp_negate(VALUE self)
+{
+  get_dat1(self);
+  return f_complex_new2(CLASS_OF(self),
+			f_negate(dat->real), f_negate(dat->image));
 }
 
 static VALUE
@@ -1393,6 +1409,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "image", nucomp_image, 0);
     rb_define_method(rb_cComplex, "imag", nucomp_image, 0);
 
+    rb_define_method(rb_cComplex, "-@", nucomp_negate, 0);
     rb_define_method(rb_cComplex, "+", nucomp_add, 1);
     rb_define_method(rb_cComplex, "-", nucomp_sub, 1);
     rb_define_method(rb_cComplex, "*", nucomp_mul, 1);
@@ -1474,3 +1491,9 @@ Init_Complex(void)
     rb_define_const(rb_cComplex, "I",
 		    f_complex_new_bang2(rb_cComplex, ZERO, ONE));
 }
+
+/*
+Local variables:
+c-file-style: "ruby"
+end:
+*/

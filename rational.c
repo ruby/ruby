@@ -1592,3 +1592,9 @@ Init_Rational(void)
     rb_define_singleton_method(rb_cRational, "induced_from",
 			       nurat_s_induced_from, 1);
 }
+
+/*
+Local variables:
+c-file-style: "ruby"
+end:
+*/
