@@ -1596,5 +1596,5 @@ Init_Rational(void)
 /*
 Local variables:
 c-file-style: "ruby"
-end:
+End:
 */

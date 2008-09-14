@@ -377,12 +377,14 @@ nucomp_s_canonicalize(int argc, VALUE *argv, VALUE klass)
 
     switch (rb_scan_args(argc, argv, "11", &real, &image)) {
       case 1:
+	nucomp_real_check(real);
 	image = ZERO;
 	break;
+      default:
+	nucomp_real_check(real);
+	nucomp_real_check(image);
+	break;
     }
-
-    nucomp_real_check(real);
-    nucomp_real_check(image);
 
     return nucomp_s_canonicalize_internal(klass, real, image);
 }
@@ -395,12 +397,14 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 
     switch (rb_scan_args(argc, argv, "11", &real, &image)) {
       case 1:
+	nucomp_real_check(real);
 	image = ZERO;
 	break;
+      default:
+	nucomp_real_check(real);
+	nucomp_real_check(image);
+	break;
     }
-
-    nucomp_real_check(real);
-    nucomp_real_check(image);
 
     return nucomp_s_canonicalize_internal(klass, real, image);
 }
@@ -1125,9 +1129,8 @@ string_to_c_internal(VALUE self)
 	}
 	if (NIL_P(m)) {
 	    m = f_match(comp_pat2, s);
-	    if (NIL_P(m)) {
+	    if (NIL_P(m))
 		return rb_assoc_new(Qnil, self);
-	    }
 	    sr = f_aref(m, INT2FIX(1));
 	    if (NIL_P(f_aref(m, INT2FIX(2))))
 		si = Qnil;
@@ -1495,5 +1498,5 @@ Init_Complex(void)
 /*
 Local variables:
 c-file-style: "ruby"
-end:
+End:
 */

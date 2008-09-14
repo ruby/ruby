@@ -1,3 +1,7 @@
+Sun Sep 14 18:33:32 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c: trivial changes.
+
 Sun Sep 14 16:15:22 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/matrix.rb (Vector#eql?): typo of the method name as "eqn?".
