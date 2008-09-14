@@ -13,24 +13,24 @@ end
 # interpreter.
 #
 # See also resolv-replace.rb to replace the libc resolver with # Resolv.
-# 
+#
 # Resolv can look up various DNS resources using the DNS module directly.
-# 
+#
 # Examples:
-# 
+#
 #   p Resolv.getaddress "www.ruby-lang.org"
 #   p Resolv.getname "210.251.121.214"
-# 
+#
 #   Resolv::DNS.open do |dns|
 #     ress = dns.getresources "www.ruby-lang.org", Resolv::DNS::Resource::IN::A
 #     p ress.map { |r| r.address }
 #     ress = dns.getresources "ruby-lang.org", Resolv::DNS::Resource::IN::MX
 #     p ress.map { |r| [r.exchange.to_s, r.preference] }
 #   end
-# 
-# 
+#
+#
 # == Bugs
-# 
+#
 # * NIS is not supported.
 # * /etc/nsswitch.conf is not supported.
 
@@ -38,14 +38,14 @@ class Resolv
 
   ##
   # Looks up the first IP address for +name+.
-  
+
   def self.getaddress(name)
     DefaultResolver.getaddress(name)
   end
 
   ##
   # Looks up all IP address for +name+.
-  
+
   def self.getaddresses(name)
     DefaultResolver.getaddresses(name)
   end
@@ -87,7 +87,7 @@ class Resolv
 
   ##
   # Looks up the first IP address for +name+.
-  
+
   def getaddress(name)
     each_address(name) {|address| return address}
     raise ResolvError.new("no address for #{name}")
@@ -95,7 +95,7 @@ class Resolv
 
   ##
   # Looks up all IP address for +name+.
-  
+
   def getaddresses(name)
     ret = []
     each_address(name) {|address| ret << address}
@@ -309,7 +309,7 @@ class Resolv
     # Creates a new DNS resolver.
     #
     # +config_info+ can be:
-    # 
+    #
     # nil:: Uses /etc/resolv.conf.
     # String:: Path to a file using /etc/resolv.conf's format.
     # Hash:: Must contain :nameserver, :search and :ndots keys.
@@ -457,7 +457,7 @@ class Resolv
     ##
     # Looks up all +typeclass+ DNS resources for +name+.  See #getresource for
     # argument details.
-  
+
     def getresources(name, typeclass)
       ret = []
       each_resource(name, typeclass) {|resource| ret << resource}
@@ -467,7 +467,7 @@ class Resolv
     ##
     # Iterates over all +typeclass+ DNS resources for +name+.  See
     # #getresource for argument details.
-  
+
     def each_resource(name, typeclass, &proc)
       lazy_initialize
       requester = make_requester
@@ -569,7 +569,7 @@ class Resolv
         h = (RequestID[[host, port]] ||= {})
         begin
           id = rangerand(0x0000..0xffff)
-        end while h[id] 
+        end while h[id]
         h[id] = true
       }
       id
@@ -1037,7 +1037,7 @@ class Resolv
     # A representation of a DNS name.
 
     class Name
-      
+
       ##
       # Creates a new DNS name from +arg+.  +arg+ can be:
       #
@@ -1460,11 +1460,11 @@ class Resolv
 
     class Query
       def encode_rdata(msg) # :nodoc:
-        raise EncodeError.new("#{self.class} is query.") 
+        raise EncodeError.new("#{self.class} is query.")
       end
 
       def self.decode_rdata(msg) # :nodoc:
-        raise DecodeError.new("#{self.class} is query.") 
+        raise DecodeError.new("#{self.class} is query.")
       end
     end
 
@@ -1939,7 +1939,7 @@ class Resolv
           def initialize(address)
             @address = IPv6.create(address)
           end
-          
+
           ##
           # The Resolv::IPv6 address for this AAAA.
 
@@ -1956,7 +1956,7 @@ class Resolv
 
         ##
         # SRV resource record defined in RFC 2782
-        # 
+        #
         # These records identify the hostname and port that a service is
         # available at.
 

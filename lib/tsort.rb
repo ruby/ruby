@@ -32,7 +32,7 @@
 # array using the user-supplied block.
 #
 #   require 'tsort'
-#   
+#
 #   class Hash
 #     include TSort
 #     alias tsort_each_node each_key
@@ -40,10 +40,10 @@
 #       fetch(node).each(&block)
 #     end
 #   end
-#   
+#
 #   {1=>[2, 3], 2=>[3], 3=>[], 4=>[]}.tsort
 #   #=> [3, 2, 1, 4]
-#   
+#
 #   {1=>[2], 2=>[3, 4], 3=>[2], 4=>[]}.strongly_connected_components
 #   #=> [[4], [2, 3], [1]]
 #
@@ -52,19 +52,19 @@
 # A very simple `make' like tool can be implemented as follows:
 #
 #   require 'tsort'
-#   
+#
 #   class Make
 #     def initialize
 #       @dep = {}
 #       @dep.default = []
 #     end
-#     
+#
 #     def rule(outputs, inputs=[], &block)
 #       triple = [outputs, inputs, block]
 #       outputs.each {|f| @dep[f] = [triple]}
 #       @dep[triple] = inputs
 #     end
-#     
+#
 #     def build(target)
 #       each_strongly_connected_component_from(target) {|ns|
 #         if ns.length != 1
@@ -88,18 +88,18 @@
 #         end
 #       }
 #     end
-#     
+#
 #     def tsort_each_child(node, &block)
 #       @dep[node].each(&block)
 #     end
 #     include TSort
 #   end
-#   
+#
 #   def command(arg)
 #     print arg, "\n"
 #     system arg
 #   end
-#   
+#
 #   m = Make.new
 #   m.rule(%w[t1]) { command 'date > t1' }
 #   m.rule(%w[t2]) { command 'date > t2' }
@@ -189,7 +189,7 @@ module TSort
   end
 
   #
-  # Iterates over strongly connected component in the subgraph reachable from 
+  # Iterates over strongly connected component in the subgraph reachable from
   # _node_.
   #
   # Return value is unspecified.
