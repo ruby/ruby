@@ -1,3 +1,12 @@
+Sun Sep 14 13:48:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* object.c (Init_Object): added metameta-class initialization for 
+	  BasicObject, Object, and Module.
+	  The metameta-classes of them are now the metaclass of Class, as the 
+	  metameta-calss of Class is. 
+
+	* object.c (boot_defmetametaclass): added.
+
 Sun Sep 14 10:10:43 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (f_{add,mul,sub}): omitted some shortcuts for preserve

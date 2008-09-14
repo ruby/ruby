@@ -2369,6 +2369,12 @@ boot_defclass(const char *name, VALUE super)
     return obj;
 }
 
+static void
+boot_defmetametaclass(VALUE klass, VALUE metametaclass)
+{
+    RBASIC(RBASIC(klass)->klass)->klass = metametaclass;
+}
+
 /*
  *  Document-class: Class
  *
@@ -2467,6 +2473,9 @@ Init_Object(void)
     metaclass = rb_make_metaclass(rb_cObject, metaclass);
     metaclass = rb_make_metaclass(rb_cModule, metaclass);
     metaclass = rb_make_metaclass(rb_cClass, metaclass);
+    boot_defmetametaclass(rb_cModule, metaclass);
+    boot_defmetametaclass(rb_cObject, metaclass);
+    boot_defmetametaclass(rb_cBasicObject, metaclass);
 
     rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_dummy, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
