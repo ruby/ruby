@@ -1,3 +1,19 @@
+Mon Sep 15 03:04:29 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h: output function takes output buffer size.
+
+	* transcode.c: give output buffer size for output functions.
+
+	* enc/trans/newline.trans: follow the type change.
+
+	* enc/trans/escape.trans: ditto.
+
+	* enc/trans/utf_16_32.trans: ditto.
+
+	* enc/trans/iso2022.trans: ditto.
+
+	* enc/trans/japanese.trans: ditto.
+
 Mon Sep 15 02:37:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_encode): returns duplicated string if nothing

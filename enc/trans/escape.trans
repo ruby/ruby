@@ -44,7 +44,7 @@ escape_xml_attr_quote_init(void *statep)
 }
 
 static int
-fun_so_escape_xml_attr_quote(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_escape_xml_attr_quote(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     unsigned char *sp = statep;
     int n = 0;
@@ -57,7 +57,7 @@ fun_so_escape_xml_attr_quote(void *statep, const unsigned char *s, size_t l, uns
 }
 
 static int
-escape_xml_attr_quote_finish(void *statep, unsigned char *o)
+escape_xml_attr_quote_finish(void *statep, unsigned char *o, size_t osize)
 {
     unsigned char *sp = statep;
     int n = 0;

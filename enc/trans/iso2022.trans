@@ -71,7 +71,7 @@ fun_si_iso2022jp_decoder(void *statep, const unsigned char *s, size_t l)
 }
 
 static int
-fun_so_iso2022jp_decoder(void *statep, const unsigned char *s, size_t l, unsigned char* o)
+fun_so_iso2022jp_decoder(void *statep, const unsigned char *s, size_t l, unsigned char* o, size_t osize)
 {
     unsigned char *sp = statep;
     if (s[0] == 0x1b) {
@@ -120,7 +120,7 @@ rb_iso2022jp_decoder = {
 };
 
 static int
-fun_so_iso2022jp_encoder(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_iso2022jp_encoder(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     unsigned char *sp = statep;
     unsigned char *output0 = o;
@@ -173,7 +173,7 @@ iso2022jp_encoder_reset_sequence_size(void *statep)
 }
 
 static int
-finish_iso2022jp_encoder(void *statep, unsigned char *o)
+finish_iso2022jp_encoder(void *statep, unsigned char *o, size_t osize)
 {
     unsigned char *sp = statep;
     unsigned char *output0 = o;
@@ -204,7 +204,7 @@ rb_iso2022jp_encoder = {
 };
 
 static int
-fun_so_stateless_iso2022jp_to_eucjp(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_stateless_iso2022jp_to_eucjp(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     o[0] = s[1];
     o[1] = s[2];
@@ -224,7 +224,7 @@ rb_stateless_iso2022jp_to_eucjp = {
 };
 
 static int
-fun_so_eucjp_to_stateless_iso2022jp(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_eucjp_to_stateless_iso2022jp(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     o[0] = EMACS_MULE_LEADING_CODE_JISX0208_1983;
     o[1] = s[0];

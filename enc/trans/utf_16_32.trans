@@ -38,7 +38,7 @@
 <%= transcode_generated_code %>
 
 static int
-fun_so_from_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_from_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[0] && s[1]<0x80) {
         o[0] = s[1];
@@ -66,7 +66,7 @@ fun_so_from_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned ch
 }
 
 static int
-fun_so_to_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_to_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!(s[0]&0x80)) {
         o[0] = 0x00;
@@ -94,7 +94,7 @@ fun_so_to_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char
 }
 
 static int
-fun_so_from_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_from_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[1] && s[0]<0x80) {
         o[0] = s[0];
@@ -122,7 +122,7 @@ fun_so_from_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned ch
 }
 
 static int
-fun_so_to_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_to_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!(s[0]&0x80)) {
         o[1] = 0x00;
@@ -150,7 +150,7 @@ fun_so_to_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char
 }
 
 static int
-fun_so_from_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_from_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[1]) {
         if (s[2]==0 && s[3]<0x80) {
@@ -179,7 +179,7 @@ fun_so_from_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned ch
 }
 
 static int
-fun_so_to_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_to_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     o[0] = 0;
     if (!(s[0]&0x80)) {
@@ -205,7 +205,7 @@ fun_so_to_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char
 }
 
 static int
-fun_so_from_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_from_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[2]) {
         if (s[1]==0 && s[0]<0x80) {
@@ -234,7 +234,7 @@ fun_so_from_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned ch
 }
 
 static int
-fun_so_to_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_to_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     o[3] = 0;
     if (!(s[0]&0x80)) {

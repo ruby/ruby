@@ -20,7 +20,7 @@
 <%= transcode_generated_code %>
 
 static int
-fun_so_eucjp2sjis(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_eucjp2sjis(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (s[0] == 0x8e) {
         o[0] = s[1];
@@ -41,7 +41,7 @@ fun_so_eucjp2sjis(void *statep, const unsigned char *s, size_t l, unsigned char 
 }
 
 static int
-fun_so_sjis2eucjp(void *statep, const unsigned char *s, size_t l, unsigned char *o)
+fun_so_sjis2eucjp(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (l == 1) {
         o[0] = '\x8e';

@@ -80,6 +80,10 @@ typedef struct rb_transcoding {
     ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
      (tc)->writebuf.ary : \
      (tc)->writebuf.ptr)
+#define TRANSCODING_WRITEBUF_SIZE(tc) \
+    ((tc)->transcoder->max_output <= sizeof((tc)->writebuf.ary) ? \
+     sizeof((tc)->writebuf.ary) : \
+     (tc)->transcoder->max_output)
 #define TRANSCODING_STATE_EMBED_MAX sizeof(union rb_transcoding_state_t)
 #define TRANSCODING_STATE(tc) \
     ((tc)->transcoder->state_size <= sizeof((tc)->state) ? \
@@ -600,9 +604,13 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	  case FUNio:
             SUSPEND_OBUF(13);
             if (tr->max_output <= out_stop - out_p)
-                out_p += (VALUE)(*tr->func_io)(TRANSCODING_STATE(tc), next_info, out_p);
+                out_p += (VALUE)(*tr->func_io)(TRANSCODING_STATE(tc),
+                    next_info,
+                    out_p, out_stop - out_p);
             else {
-                writebuf_len = (VALUE)(*tr->func_io)(TRANSCODING_STATE(tc), next_info, TRANSCODING_WRITEBUF(tc));
+                writebuf_len = (VALUE)(*tr->func_io)(TRANSCODING_STATE(tc),
+                    next_info,
+                    TRANSCODING_WRITEBUF(tc), TRANSCODING_WRITEBUF_SIZE(tc));
                 writebuf_off = 0;
                 while (writebuf_off < writebuf_len) {
                     SUSPEND_OBUF(20);
@@ -617,11 +625,15 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 SUSPEND_OBUF(14);
                 if (tr->max_output <= out_stop - out_p) {
                     char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
-                    out_p += (VALUE)(*tr->func_so)(TRANSCODING_STATE(tc), char_start, (size_t)char_len, out_p);
+                    out_p += (VALUE)(*tr->func_so)(TRANSCODING_STATE(tc),
+                        char_start, (size_t)char_len,
+                        out_p, out_stop - out_p);
                 }
                 else {
                     char_start = transcode_char_start(tc, *in_pos, inchar_start, in_p, &char_len);
-                    writebuf_len = (VALUE)(*tr->func_so)(TRANSCODING_STATE(tc), char_start, (size_t)char_len, TRANSCODING_WRITEBUF(tc));
+                    writebuf_len = (VALUE)(*tr->func_so)(TRANSCODING_STATE(tc),
+                        char_start, (size_t)char_len,
+                        TRANSCODING_WRITEBUF(tc), TRANSCODING_WRITEBUF_SIZE(tc));
                     writebuf_off = 0;
                     while (writebuf_off < writebuf_len) {
                         SUSPEND_OBUF(22);
@@ -675,10 +687,12 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
     if (tr->finish_func) {
         SUSPEND_OBUF(4);
         if (tr->max_output <= out_stop - out_p) {
-            out_p += tr->finish_func(TRANSCODING_STATE(tc), out_p);
+            out_p += tr->finish_func(TRANSCODING_STATE(tc),
+                out_p, out_stop - out_p);
         }
         else {
-            writebuf_len = tr->finish_func(TRANSCODING_STATE(tc), TRANSCODING_WRITEBUF(tc));
+            writebuf_len = tr->finish_func(TRANSCODING_STATE(tc),
+                TRANSCODING_WRITEBUF(tc), TRANSCODING_WRITEBUF_SIZE(tc));
             writebuf_off = 0;
             while (writebuf_off < writebuf_len) {
                 SUSPEND_OBUF(23);
