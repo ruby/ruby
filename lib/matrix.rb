@@ -1200,7 +1200,7 @@ class Vector
     
     other.compare_by(@elements)
   end
-  alias eqn? ==
+  alias eql? ==
   
   #
   # For internal use.
