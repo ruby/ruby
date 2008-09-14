@@ -19,7 +19,7 @@
 
 <%= transcode_generated_code %>
 
-static int
+static ssize_t
 fun_so_eucjp2sjis(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (s[0] == 0x8e) {
@@ -40,7 +40,7 @@ fun_so_eucjp2sjis(void *statep, const unsigned char *s, size_t l, unsigned char 
     }
 }
 
-static int
+static ssize_t
 fun_so_sjis2eucjp(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (l == 1) {

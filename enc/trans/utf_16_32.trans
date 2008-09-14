@@ -37,7 +37,7 @@
 
 <%= transcode_generated_code %>
 
-static int
+static ssize_t
 fun_so_from_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[0] && s[1]<0x80) {
@@ -65,7 +65,7 @@ fun_so_from_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned ch
     }
 }
 
-static int
+static ssize_t
 fun_so_to_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!(s[0]&0x80)) {
@@ -93,7 +93,7 @@ fun_so_to_utf_16be(void *statep, const unsigned char *s, size_t l, unsigned char
     }
 }
 
-static int
+static ssize_t
 fun_so_from_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[1] && s[0]<0x80) {
@@ -121,7 +121,7 @@ fun_so_from_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned ch
     }
 }
 
-static int
+static ssize_t
 fun_so_to_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!(s[0]&0x80)) {
@@ -149,7 +149,7 @@ fun_so_to_utf_16le(void *statep, const unsigned char *s, size_t l, unsigned char
     }
 }
 
-static int
+static ssize_t
 fun_so_from_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[1]) {
@@ -178,7 +178,7 @@ fun_so_from_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned ch
     }
 }
 
-static int
+static ssize_t
 fun_so_to_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     o[0] = 0;
@@ -204,7 +204,7 @@ fun_so_to_utf_32be(void *statep, const unsigned char *s, size_t l, unsigned char
     return 4;
 }
 
-static int
+static ssize_t
 fun_so_from_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     if (!s[2]) {
@@ -233,7 +233,7 @@ fun_so_from_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned ch
     }
 }
 
-static int
+static ssize_t
 fun_so_to_utf_32le(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     o[3] = 0;

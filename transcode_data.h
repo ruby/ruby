@@ -84,9 +84,9 @@ struct rb_transcoder {
     int (*state_fini_func)(void*); /* ret==0:success ret!=0:failure(errno) */
     VALUE (*func_ii)(void*, VALUE); /* info  -> info   */
     VALUE (*func_si)(void*, const unsigned char*, size_t); /* start -> info   */
-    int (*func_io)(void*, VALUE, const unsigned char*, size_t); /* info  -> output */
-    int (*func_so)(void*, const unsigned char*, size_t, unsigned char*, size_t); /* start -> output */
-    int (*finish_func)(void*, unsigned char*, size_t); /* -> output */
+    ssize_t (*func_io)(void*, VALUE, const unsigned char*, size_t); /* info  -> output */
+    ssize_t (*func_so)(void*, const unsigned char*, size_t, unsigned char*, size_t); /* start -> output */
+    ssize_t (*finish_func)(void*, unsigned char*, size_t); /* -> output */
     int (*resetsize_func)(void*); /* -> len */
     int (*resetstate_func)(void*, unsigned char*, size_t); /* -> output */
 };

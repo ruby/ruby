@@ -40,7 +40,7 @@ universal_newline_init(void *statep)
     return 0;
 }
 
-static int
+static ssize_t
 fun_so_universal_newline(void *statep, const unsigned char *s, size_t l, unsigned char *o, size_t osize)
 {
     unsigned char *sp = statep;
@@ -75,7 +75,7 @@ fun_so_universal_newline(void *statep, const unsigned char *s, size_t l, unsigne
     return len;
 }
 
-static int
+static ssize_t
 universal_newline_finish(void *statep, unsigned char *o, size_t osize)
 {
     unsigned char *sp = statep;
