@@ -1,3 +1,7 @@
+Sun Sep  14 22:09:01 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi/core.rb (CGI::parse): performance improvement
+
 Sun Sep 14 18:33:32 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: trivial changes.

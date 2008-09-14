@@ -331,17 +331,12 @@ class CGI
   #     #  "name2" => ["value1", "value2", ...], ... }
   #
   def CGI::parse(query)
-    params = Hash.new([].freeze)
-
+    params = {}
     query.split(/[&;]/).each do |pairs|
       key, value = pairs.split('=',2).collect{|v| CGI::unescape(v) }
-      if params.has_key?(key)
-        params[key].push(value)
-      else
-        params[key] = [value]
-      end
+      params.has_key?(key) ? params[key].push(value) : params[key] = [value]
     end
-
+    params.default=[].freeze
     params
   end
 
