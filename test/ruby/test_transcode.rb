@@ -582,4 +582,10 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("CP51932") }
   end
 
+  def test_nothing_changed
+    a = "James".force_encoding("US-ASCII")
+    b = a.encode("Shift_JIS")
+    assert_equal(Encoding::US_ASCII, a.encoding)
+    assert_equal(Encoding::Shift_JIS, b.encoding)
+  end
 end

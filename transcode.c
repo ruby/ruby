@@ -2570,7 +2570,12 @@ str_encode(int argc, VALUE *argv, VALUE str)
     int encidx = str_transcode(argc, argv, &newstr);
 
     if (encidx < 0) return rb_str_dup(str);
-    RBASIC(newstr)->klass = rb_obj_class(str);
+    if (newstr == str) {
+	newstr = rb_str_dup(str);
+    }
+    else {
+	RBASIC(newstr)->klass = rb_obj_class(str);
+    }
     return str_encode_associate(newstr, encidx);
 }
 

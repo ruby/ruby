@@ -1,3 +1,8 @@
+Mon Sep 15 02:37:19 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (str_encode): returns duplicated string if nothing
+	  changed.  [ruby-core:18578]
+
 Sun Sep  14 22:09:01 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/core.rb (CGI::parse): performance improvement
