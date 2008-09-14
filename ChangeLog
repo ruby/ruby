@@ -1,3 +1,8 @@
+Sun Sep 14 16:07:04 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): associates the locale encoding with $0 as
+	  well as ARGV.
+
 Sun Sep 14 13:48:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* object.c (Init_Object): added metameta-class initialization for 
