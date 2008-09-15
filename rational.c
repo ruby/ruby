@@ -27,8 +27,8 @@
 VALUE rb_cRational;
 
 static ID id_Unify, id_abs, id_cmp, id_convert, id_equal_p, id_expt,
-    id_floor, id_format, id_idiv, id_inspect, id_integer_p, id_negate,
-    id_new, id_new_bang, id_to_f, id_to_i, id_to_s, id_truncate;
+    id_floor, id_format, id_hash, id_idiv, id_inspect, id_integer_p,
+    id_negate, id_new, id_new_bang, id_to_f, id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -139,6 +139,7 @@ binop(xor, '^')
 
 fun1(abs)
 fun1(floor)
+fun1(hash)
 fun1(inspect)
 fun1(integer_p)
 fun1(negate)
@@ -1486,6 +1487,7 @@ Init_Rational(void)
     id_expt = rb_intern("**");
     id_floor = rb_intern("floor");
     id_format = rb_intern("format");
+    id_hash = rb_intern("hash");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
     id_integer_p = rb_intern("integer?");

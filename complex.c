@@ -23,7 +23,7 @@ VALUE rb_cComplex;
 
 static ID id_Unify, id_abs, id_abs2, id_arg, id_cmp, id_conjugate,
     id_convert, id_denominator, id_divmod, id_equal_p, id_exact_p, id_expt,
-    id_floor, id_format, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
+    id_floor, id_hash, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
     id_numerator, id_polar, id_quo, id_scalar_p, id_to_f, id_to_i, id_to_r,
     id_to_s, id_truncate;
 
@@ -163,6 +163,7 @@ fun1(conjugate)
 fun1(denominator)
 fun1(exact_p)
 fun1(floor)
+fun1(hash)
 fun1(inspect)
 fun1(negate)
 fun1(numerator)
@@ -847,7 +848,21 @@ static VALUE
 nucomp_hash(VALUE self)
 {
     get_dat1(self);
-    return f_xor(dat->real, dat->image);
+    return f_xor(f_hash(dat->real), f_hash(dat->image));
+}
+
+static VALUE
+nucomp_eql_p(VALUE self, VALUE other)
+{
+    if (k_complex_p(other)) {
+	get_dat2(self, other);
+
+	return f_boolcast((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
+			  (CLASS_OF(adat->image) == CLASS_OF(bdat->image)) &&
+			  f_equal_p(self, other));
+
+    }
+    return Qfalse;
 }
 
 #ifndef HAVE_SIGNBIT
@@ -1354,7 +1369,7 @@ Init_Complex(void)
     id_exact_p = rb_intern("exact?");
     id_expt = rb_intern("**");
     id_floor = rb_intern("floor");
-    id_format = rb_intern("format");
+    id_hash = rb_intern("hash");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
     id_negate = rb_intern("-@");
@@ -1451,6 +1466,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "denominator", nucomp_denominator, 0);
 
     rb_define_method(rb_cComplex, "hash", nucomp_hash, 0);
+    rb_define_method(rb_cComplex, "eql?", nucomp_eql_p, 1);
 
     rb_define_method(rb_cComplex, "to_s", nucomp_to_s, 0);
     rb_define_method(rb_cComplex, "inspect", nucomp_inspect, 0);

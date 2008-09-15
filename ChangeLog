@@ -1,3 +1,11 @@
+Mon Sep 15 13:17:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_eql_p): new.
+
+	* complex.c (nucomp_hash): should use hash values of the elements.
+
+	* rational.c (nurat_hash): ditto.
+
 Mon Sep 15 11:11:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder): resetsize_func and resetstate_func

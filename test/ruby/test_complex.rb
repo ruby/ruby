@@ -51,6 +51,7 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_hash
     assert_instance_of(Fixnum, Complex(1,2).hash)
+    assert_instance_of(Fixnum, Complex(1.0,2.0).hash)
 
     h = {}
     h[Complex(0)] = 0
@@ -63,6 +64,9 @@ class Complex_Test < Test::Unit::TestCase
 
     h[Complex(0,0)] = 9
     assert_equal(4, h.size)
+
+    h[Complex(0.0,0.0)] = 9.0
+    assert_equal(5, h.size)
   end
 
   def test_freeze

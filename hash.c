@@ -39,8 +39,6 @@ static ID id_hash, id_yield, id_default;
 static int
 rb_any_cmp(VALUE a, VALUE b)
 {
-    VALUE args[2];
-
     if (a == b) return 0;
     if (FIXNUM_P(a) && FIXNUM_P(b)) {
 	return a != b;
@@ -54,8 +52,6 @@ rb_any_cmp(VALUE a, VALUE b)
 	return a != b;
     }
 
-    args[0] = a;
-    args[1] = b;
     return !rb_eql(a, b);
 }
 
