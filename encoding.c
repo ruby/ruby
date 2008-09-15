@@ -997,11 +997,15 @@ rb_filesystem_encoding(void)
 }
 
 static int default_external_index;
+static rb_encoding *default_external;
 
 rb_encoding *
 rb_default_external_encoding(void)
 {
-    return rb_enc_from_index(default_external_index);
+    if (!default_external) {
+	default_external = rb_enc_from_index(default_external_index);
+    }
+    return default_external;
 }
 
 VALUE
@@ -1028,6 +1032,7 @@ void
 rb_enc_set_default_external(VALUE encoding)
 {
     default_external_index = rb_enc_to_index(rb_to_encoding(encoding));
+    default_external = 0;
 }
 
 /*

@@ -9,6 +9,27 @@ Mon Sep 15 23:28:28 2008  Tanaka Akira  <akr@fsij.org>
 	* io.c (rb_scan_open_args): call FilePathValue before encoding
 	  conversion.
 
+Mon Sep 15 22:11:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_squeeze_bang): specialized for 7bit characters in
+	  ASCII compatible strings.
+
+	* string.c (rb_str_count): ditto.
+
+	* string.c (tr_trans): preserve 7bit/valid coderange flag.
+
+	* string.c (rb_str_squeeze_bang): preserve previous coderange value.
+
+	* string.c (rb_str_lstrip_bang): ditto.
+
+	* string.c (rb_str_rstrip_bang): ditto.
+
+	* encoding.c (rb_default_external_encoding): preserve
+	  default_external_encoding in a static variable.
+
+	* string.c (single_byte_optimizable): check coderange first, to
+	  reduce number of calling rb_enc_from_index().
+
 Mon Sep 15 20:57:00 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/matrix.rb (Matrix#eql?): fixed [ruby-dev:36298].

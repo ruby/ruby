@@ -115,13 +115,14 @@ VALUE rb_cSymbol;
 static int
 single_byte_optimizable(VALUE str)
 {
-    rb_encoding *enc = STR_ENC_GET(str);
-
-    if (rb_enc_mbmaxlen(enc) == 1)
-        return 1;
+    rb_encoding *enc;
 
     /* Conservative.  It may be ENC_CODERANGE_UNKNOWN. */
     if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
+        return 1;
+
+    enc = STR_ENC_GET(str);
+    if (rb_enc_mbmaxlen(enc) == 1)
         return 1;
 
     /* Conservative.  Possibly single byte.
@@ -4325,6 +4326,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     char *s, *send;
     VALUE hash = 0;
     int singlebyte = single_byte_optimizable(str);
+    int cr, cr1, cr2;
 
     StringValue(src);
     StringValue(repl);
@@ -4333,6 +4335,12 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	return rb_str_delete_bang(1, &src, str);
     }
 
+    cr = ENC_CODERANGE(str);
+    cr1 = ENC_CODERANGE(src);
+    cr2 = ENC_CODERANGE(repl);
+    if (cr != cr1 || cr1 != cr2) {
+	cr = ENC_CODERANGE_UNKNOWN;
+    }
     e1 = rb_enc_check(str, src);
     e2 = rb_enc_check(str, repl);
     if (e1 == e2) {
@@ -4517,6 +4525,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	RSTRING(str)->as.heap.aux.capa = max;
     }
     
+    ENC_CODERANGE_SET(str, cr);
     if (modify) {
 	rb_enc_associate(str, enc);
 	return str;
@@ -4738,6 +4747,8 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     char *s, *send, *t;
     int save, modify = 0;
     int i;
+    int ascompat, singlebyte = single_byte_optimizable(str);
+    int cr = ENC_CODERANGE(str);
 
     if (argc == 0) {
 	enc = STR_ENC_GET(str);
@@ -4757,29 +4768,53 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     send = RSTRING_END(str);
     save = -1;
-    while (s < send) {
-	unsigned int c = rb_enc_codepoint(s, send, enc);
-	int clen = rb_enc_codelen(c, enc);
+    ascompat = rb_enc_asciicompat(enc);
 
-	if (c != save || (argc > 0 && !tr_find(c, squeez, del, nodel))) {
-	    if (t != s) rb_enc_mbcput(c, t, enc);
-	    save = c;
-	    t += clen;
+    if (singlebyte) {
+        while (s < send) {
+	    unsigned int c = *(unsigned char*)s++;
+	    if (c != save || (argc > 0 && !squeez[c])) {
+	        *t++ = save = c;
+	    }
 	}
-	s += clen;
+    } else {
+	while (s < send) {
+	    unsigned int c;
+	    int clen;
+
+	    if (ascompat && (c = *(unsigned char*)s) < 0x80) {
+		if (c != save || (argc > 0 && !squeez[c])) {
+		    *t++ = save = c;
+		}
+		s++;
+	    }
+	    else {
+		c = rb_enc_codepoint(s, send, enc);
+		clen = rb_enc_codelen(c, enc);
+
+		if (c != save || (argc > 0 && !tr_find(c, squeez, del, nodel))) {
+		    if (t != s) rb_enc_mbcput(c, t, enc);
+		    save = c;
+		    t += clen;
+		}
+		s += clen;
+	    }
+	}
     }
+
     *t = '\0';
     if (t - RSTRING_PTR(str) != RSTRING_LEN(str)) {
 	STR_SET_LEN(str, t - RSTRING_PTR(str));
 	modify = 1;
     }
 
+    ENC_CODERANGE_SET(str, cr);
     if (modify) return str;
     return Qnil;
 }
 
 
-/*
+/* 
  *  call-seq:
  *     str.squeeze([other_str]*)    => new_str
  *  
@@ -4864,6 +4899,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     VALUE del = 0, nodel = 0;
     char *s, *send;
     int i;
+    int ascompat;
 
     if (argc < 1) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
@@ -4873,22 +4909,36 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
 
 	StringValue(s);
 	enc = rb_enc_check(str, s);
-	tr_setup_table(s, table,i==0, &del, &nodel, enc);
+	tr_setup_table(s, table, i==0, &del, &nodel, enc);
     }
 
     s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return INT2FIX(0);
     send = RSTRING_END(str);
     i = 0;
-    while (s < send) {
-	unsigned int c = rb_enc_codepoint(s, send, enc);
-	int clen = rb_enc_codelen(c, enc);
+    ascompat = rb_enc_asciicompat(enc);
 
-	if (tr_find(c, table, del, nodel)) {
-	    i++;
+    while (s < send) {
+	unsigned int c;
+	int clen;
+
+	if (ascompat && (c = *(unsigned char*)s) < 0x80) {
+	    clen = 1;
+	    if (table[c]) {
+		i++;
+	    }
+	    s++;
 	}
-	s += clen;
+	else {
+	    c = rb_enc_codepoint(s, send, enc);
+	    clen = rb_enc_codelen(c, enc);
+	    if (tr_find(c, table, del, nodel)) {
+		i++;
+	    }
+	    s += clen;
+	}
     }
+
     return INT2NUM(i);
 }
 
@@ -5549,8 +5599,10 @@ rb_str_lstrip_bang(VALUE str)
 {
     rb_encoding *enc;
     char *s, *t, *e;
+    int cr = ENC_CODERANGE(str);
 
     rb_str_modify(str);
+    ENC_CODERANGE_SET(str, cr);
     enc = STR_ENC_GET(str);
     s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
@@ -5612,27 +5664,38 @@ rb_str_rstrip_bang(VALUE str)
     rb_encoding *enc;
     char *s, *t, *e;
     int space_seen = Qfalse;
+    int cr = ENC_CODERANGE(str);
 
     rb_str_modify(str);
+    ENC_CODERANGE_SET(str, cr);
     enc = STR_ENC_GET(str);
     s = RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
     t = e = RSTRING_END(str);
-    while (s < e) {
-	unsigned int cc = rb_enc_codepoint(s, e, enc);
 
-	if (!cc || rb_enc_isspace(cc, enc)) {
-	    if (!space_seen) t = s;
-	    space_seen = Qtrue;
+    if (single_byte_optimizable(str)) {
+        /* remove trailing '\0's */
+        while (s < t && t[-1] == '\0') t--;
+      
+	/* remove trailing spaces */
+	while (s < t && rb_enc_isspace(*(t-1), enc)) t--;
+    } else {
+        while (s < e) {
+	    unsigned int cc = rb_enc_codepoint(s, e, enc);
+
+	    if (!cc || rb_enc_isspace(cc, enc)) {
+	        if (!space_seen) t = s;
+		space_seen = Qtrue;
+	    }
+	    else {
+	        space_seen = Qfalse;
+	    }
+	    s += rb_enc_codelen(cc, enc);
 	}
-	else {
-	    space_seen = Qfalse;
-	}
-	s += rb_enc_codelen(cc, enc);
+	if (!space_seen) t = s;
     }
-    if (!space_seen) t = s;
+
     if (t < e) {
-	rb_str_modify(str);
 	STR_SET_LEN(str, t-RSTRING_PTR(str));
 	RSTRING_PTR(str)[RSTRING_LEN(str)] = '\0';
 	return str;
