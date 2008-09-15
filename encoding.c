@@ -18,7 +18,7 @@
 #endif
 #include "ruby/util.h"
 
-static ID id_encoding, id_base_encoding;
+static ID id_encoding;
 VALUE rb_cEncoding;
 static VALUE rb_encoding_list;
 
@@ -42,7 +42,6 @@ void rb_enc_init(void);
 #define enc_autoload_p(enc) (!rb_enc_mbmaxlen(enc))
 
 static int load_encoding(const char *name);
-static VALUE enc_base_encoding(VALUE self);
 
 static void
 enc_mark(void *ptr)
@@ -824,14 +823,6 @@ enc_name(VALUE self)
     return rb_usascii_str_new2(rb_enc_name((rb_encoding*)DATA_PTR(self)));
 }
 
-static VALUE
-enc_base_encoding(VALUE self)
-{
-    rb_encoding *base = enc_table.list[must_encoding(self)].base;
-    if (!base) return Qnil;
-    return ENC_FROM_ENCODING(base);
-}
-
 /*
  * call-seq:
  *   Encoding.list => [enc1, enc2, ...]
@@ -1204,14 +1195,11 @@ Init_Encoding(void)
     VALUE list;
     int i;
 
-    id_base_encoding = rb_intern("#base_encoding");
-
     rb_cEncoding = rb_define_class("Encoding", rb_cObject);
     rb_undef_alloc_func(rb_cEncoding);
     rb_define_method(rb_cEncoding, "to_s", enc_name, 0);
     rb_define_method(rb_cEncoding, "inspect", enc_inspect, 0);
     rb_define_method(rb_cEncoding, "name", enc_name, 0);
-    rb_define_method(rb_cEncoding, "base_encoding", enc_base_encoding, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "name_list", rb_enc_name_list, 0);
