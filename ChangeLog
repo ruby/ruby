@@ -1,3 +1,9 @@
+Mon Sep 15 14:34:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (RUBY_MAX_CHAR_LEN): defined.
+
+	* encoding.c (str_cat_char): use RUBY_MAX_CHAR_LEN.
+
 Mon Sep 15 13:53:33 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (rb_enc_compatible): accepst other than strings and

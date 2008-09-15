@@ -43,6 +43,7 @@
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
+#define RUBY_MAX_CHAR_LEN 16
 #define STR_TMPLOCK FL_USER7
 #define STR_NOEMBED FL_USER1
 #define STR_SHARED  FL_USER2 /* = ELTS_SHARED */
@@ -3790,7 +3791,7 @@ rb_str_to_s(VALUE str)
 static void
 str_cat_char(VALUE str, int c, rb_encoding *enc)
 {
-    char s[16];
+    char s[RUBY_MAX_CHAR_LEN];
     int n = rb_enc_codelen(c, enc);
 
     rb_enc_mbcput(c, s, enc);
