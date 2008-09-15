@@ -545,14 +545,30 @@ rb_id_encoding(void)
 int
 rb_enc_get_index(VALUE obj)
 {
-    int i;
+    int i = -1;
+    VALUE tmp;
 
-    i = ENCODING_GET_INLINED(obj);
-    if (i == ENCODING_INLINE_MAX) {
-	VALUE iv;
+    switch (BUILTIN_TYPE(obj)) {
+	case T_STRING:
+	case T_REGEXP:
+	    i = ENCODING_GET_INLINED(obj);
+	    if (i == ENCODING_INLINE_MAX) {
+		VALUE iv;
 
-	iv = rb_ivar_get(obj, rb_id_encoding());
-	i = NUM2INT(iv);
+		iv = rb_ivar_get(obj, rb_id_encoding());
+		i = NUM2INT(iv);
+	    }
+	    break;
+	case T_FILE:
+	    tmp = rb_funcall(obj, rb_intern("internal_encoding"), 0, 0);
+	    if (NIL_P(tmp)) obj = rb_funcall(obj, rb_intern("external_encoding"), 0, 0);
+	    else obj = tmp;
+	    if (NIL_P(obj)) break;
+	case T_DATA:
+	    if (RDATA(obj)->dmark == enc_mark) {
+		i = enc_check_encoding(obj);
+	    }
+	    break;
     }
     return i;
 }
@@ -631,9 +647,11 @@ rb_enc_compatible(VALUE str1, VALUE str2)
     if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
 	return 0;
     }
-    if (BUILTIN_TYPE(str2) == T_REGEXP && idx2 == ENCINDEX_US_ASCII)
+
+    /* objects whose encoding is the same of contents */
+    if (BUILTIN_TYPE(str2) != T_STRING && idx2 == ENCINDEX_US_ASCII)
 	return enc1;
-    if (BUILTIN_TYPE(str1) == T_REGEXP && idx1 == ENCINDEX_US_ASCII)
+    if (BUILTIN_TYPE(str1) != T_STRING && idx1 == ENCINDEX_US_ASCII)
 	return enc2;
 
     if (BUILTIN_TYPE(str1) != T_STRING) {
@@ -880,14 +898,6 @@ enc_compatible_p(VALUE klass, VALUE str1, VALUE str2)
 {
     rb_encoding *enc;
 
-    if (SPECIAL_CONST_P(str1) || TYPE(str1) != T_STRING && TYPE(str1) != T_REGEXP) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String or Regexp)",
-		rb_obj_classname(str1));
-    }
-    if (SPECIAL_CONST_P(str2) || TYPE(str2) != T_STRING && TYPE(str2) != T_REGEXP) {
-	rb_raise(rb_eTypeError, "wrong argument type %s (expected String or Regexp)",
-		rb_obj_classname(str2));
-    }
     if (!enc_capable(str1)) return Qnil;
     if (!enc_capable(str2)) return Qnil;
     enc = rb_enc_compatible(str1, str2);

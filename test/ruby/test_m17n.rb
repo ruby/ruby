@@ -1280,7 +1280,12 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_compatible
-    assert_raise(TypeError) {Encoding.compatible?("",0)}
+    assert_nil Encoding.compatible?("",0)
+    assert_equal(Encoding::UTF_8, Encoding.compatible?(Encoding::UTF_8, Encoding::UTF_8))
+    assert_equal(Encoding::UTF_8, Encoding.compatible?(Encoding::UTF_8, Encoding::US_ASCII))
+    assert_equal(Encoding::ASCII_8BIT,
+                 Encoding.compatible?(Encoding::ASCII_8BIT, Encoding::US_ASCII))
+    assert_nil Encoding.compatible?(Encoding::UTF_8, Encoding::ASCII_8BIT)
   end
 
   def test_force_encoding

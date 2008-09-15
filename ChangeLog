@@ -1,3 +1,10 @@
+Mon Sep 15 13:53:33 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* encoding.c (rb_enc_compatible): accepst other than strings and
+	  regexps. [ruby-core:18595]
+
+	* encoding.c (rb_enc_get_index): works files and encodings.
+
 Mon Sep 15 13:17:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_eql_p): new.
