@@ -1625,7 +1625,7 @@ rb_str_buf_cat_ascii(VALUE str, const char *ptr)
     else {
         char *buf = ALLOCA_N(char, rb_enc_mbmaxlen(enc));
         while (*ptr) {
-            int c = (unsigned char)*ptr;
+            unsigned int c = (unsigned char)*ptr;
             int len = rb_enc_codelen(c, enc);
             rb_enc_mbcput(c, buf, enc);
             rb_enc_cr_str_buf_cat(str, buf, len,
@@ -1697,9 +1697,9 @@ rb_str_append(VALUE str, VALUE str2)
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
 {
-    if (FIXNUM_P(str2)) {
+    if (FIXNUM_P(str2) || TYPE(str2) == T_BIGNUM) {
 	rb_encoding *enc = STR_ENC_GET(str1);
-	int c = FIX2INT(str2);
+	unsigned int c = NUM2UINT(str2);
 	int pos = RSTRING_LEN(str1);
 	int len = rb_enc_codelen(c, enc);
 	int cr = ENC_CODERANGE(str1);
@@ -3790,7 +3790,7 @@ rb_str_to_s(VALUE str)
 }
 
 static void
-str_cat_char(VALUE str, int c, rb_encoding *enc)
+str_cat_char(VALUE str, unsigned int c, rb_encoding *enc)
 {
     char s[RUBY_MAX_CHAR_LEN];
     int n = rb_enc_codelen(c, enc);
@@ -3800,7 +3800,7 @@ str_cat_char(VALUE str, int c, rb_encoding *enc)
 }
 
 static void
-prefix_escape(VALUE str, int c, rb_encoding *enc)
+prefix_escape(VALUE str, unsigned int c, rb_encoding *enc)
 {
     str_cat_char(str, '\\', enc);
     str_cat_char(str, c, enc);
