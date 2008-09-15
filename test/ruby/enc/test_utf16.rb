@@ -355,4 +355,10 @@ EOT
     assert_equal("", sl.chop)
     assert_equal("", sb.chop)
   end
+
+  def test_regexp_escape
+    s = "\0*".force_encoding("UTF-16BE")
+    r = Regexp.new(Regexp.escape(s))
+    assert(r =~ s)
+  end
 end

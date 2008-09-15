@@ -2860,34 +2860,34 @@ rb_reg_quote(VALUE str)
 	  case '*': case '.': case '\\':
 	  case '?': case '+': case '^': case '$':
 	  case '#':
-	    *t++ = '\\';
+            t += rb_enc_mbcput('\\', t, enc);
 	    break;
 	  case ' ':
-	    *t++ = '\\';
-	    *t++ = ' ';
+            t += rb_enc_mbcput('\\', t, enc);
+            t += rb_enc_mbcput(' ', t, enc);
 	    continue;
 	  case '\t':
-	    *t++ = '\\';
-	    *t++ = 't';
+            t += rb_enc_mbcput('\\', t, enc);
+            t += rb_enc_mbcput('t', t, enc);
 	    continue;
 	  case '\n':
-	    *t++ = '\\';
-	    *t++ = 'n';
+            t += rb_enc_mbcput('\\', t, enc);
+            t += rb_enc_mbcput('n', t, enc);
 	    continue;
 	  case '\r':
-	    *t++ = '\\';
-	    *t++ = 'r';
+            t += rb_enc_mbcput('\\', t, enc);
+            t += rb_enc_mbcput('r', t, enc);
 	    continue;
 	  case '\f':
-	    *t++ = '\\';
-	    *t++ = 'f';
+            t += rb_enc_mbcput('\\', t, enc);
+            t += rb_enc_mbcput('f', t, enc);
 	    continue;
 	  case '\v':
-	    *t++ = '\\';
-	    *t++ = 'v';
+            t += rb_enc_mbcput('\\', t, enc);
+            t += rb_enc_mbcput('v', t, enc);
 	    continue;
 	}
-	*t++ = c;
+        t += rb_enc_mbcput(c, t, enc);
     }
     rb_str_resize(tmp, t - RSTRING_PTR(tmp));
     OBJ_INFECT(tmp, str);
