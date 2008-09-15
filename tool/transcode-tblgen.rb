@@ -307,7 +307,7 @@ class ActionMap
       n = str_name(bytes)
       @bytes_code.insert_at_last(1 + len,
         "\#define #{n} makeSTR1(#{size})\n" +
-        "    #{len}," + bytes.gsub(/../, ' 0x\&,') + "\n\n")
+        "    makeSTR1LEN(#{len})," + bytes.gsub(/../, ' 0x\&,') + "\n\n")
       n
     end
   end
@@ -336,7 +336,7 @@ class ActionMap
       "o3(0x#$1,0x#$2,0x#$3)"
     when /\A(f[0-7])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])\z/i
       "o4(0x#$1,0x#$2,0x#$3,0x#$4)"
-    when /\A([0-9a-f][0-9a-f]){0,255}\z/i
+    when /\A([0-9a-f][0-9a-f]){4,259}\z/i
       gen_str(info.upcase)
     when /\A\/\*BYTE_LOOKUP\*\// # pointer to BYTE_LOOKUP structure
       $'.to_s

@@ -1,3 +1,14 @@
+Tue Sep 16 00:40:56 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (STR1_LENGTH): defined.
+	  (makeSTR1LEN): defined.
+
+	* tool/transcode-tblgen.rb: use makeSTR1LEN.  generate STR1 for 4 to
+	  259 bytes.
+
+	* transcode.c (rb_transcoding): new field: output_index.
+	  (transcode_restartable0): use STR1_LENGTH.
+
 Mon Sep 15 23:52:45 2008  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c, include/ruby/ruby.h: rename rb_register_mark_object()

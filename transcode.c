@@ -52,6 +52,7 @@ typedef struct rb_transcoding {
     unsigned int next_table;
     VALUE next_info;
     unsigned char next_byte;
+    unsigned int output_index;
 
     int recognized_len; /* already interpreted */
     int readagain_len; /* not yet interpreted */
@@ -584,10 +585,10 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
             SUSPEND_OBUF(19); *out_p++ = getBT3(next_info);
 	    continue;
           case STR1:
-            next_byte = 0; /* index */
-            while (next_byte < BYTE_ADDR(STR1_BYTEINDEX(next_info))[0]) {
-                SUSPEND_OBUF(28); *out_p++ = BYTE_ADDR(STR1_BYTEINDEX(next_info))[1+next_byte];
-                next_byte++;
+            tc->output_index = 0;
+            while (tc->output_index < STR1_LENGTH(BYTE_ADDR(STR1_BYTEINDEX(next_info)))) {
+                SUSPEND_OBUF(28); *out_p++ = BYTE_ADDR(STR1_BYTEINDEX(next_info))[1+tc->output_index];
+                tc->output_index++;
             }
             continue;
 	  case FUNii:
