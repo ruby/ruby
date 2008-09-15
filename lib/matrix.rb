@@ -402,17 +402,21 @@ class Matrix
     
     other.compare_by_row_vectors(@rows)
   end
-  alias eql? ==
+  def eql?(other)
+    return false unless Matrix === other
+    
+    other.compare_by_row_vectors(@rows, :eql?)
+  end
   
   #
   # Not really intended for general consumption.
   #
-  def compare_by_row_vectors(rows)
+  def compare_by_row_vectors(rows, comparison = :==)
     return false unless @rows.size == rows.size
     
     0.upto(@rows.size - 1) do
       |i|
-      return false unless @rows[i] == rows[i]
+      return false unless @rows[i].send(comparison, rows[i])
     end
     true
   end
@@ -1087,13 +1091,17 @@ class Vector
     
     other.compare_by(@elements)
   end
-  alias eql? ==
+  def eql?(other)
+    return false unless Vector === other
+    
+    other.compare_by(@elements, :eql?)
+  end
   
   #
   # For internal use.
   #
-  def compare_by(elements)
-    @elements == elements
+  def compare_by(elements, comparison = :==)
+    @elements.send(comparison, elements)
   end
   
   #
