@@ -1,3 +1,12 @@
+Mon Sep 15 10:28:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* test/matrix/test_matrix.rb (setup): typo.
+	  (test_equality): misdefinition of the expected working.
+	  Reported by an anonymous user.
+	  (test_hash): added.
+
+	* test/matrix/test_vector.rb: ditto.
+
 Mon Sep 15 03:33:10 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h: return output functions ssize_t.

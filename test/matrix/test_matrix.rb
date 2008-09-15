@@ -6,7 +6,7 @@ class TestMatrix < Test::Unit::TestCase
     @m1 = Matrix[[1,2,3], [4,5,6]]
     @m2 = Matrix[[1,2,3], [4,5,6]]
     @m3 = @m1.clone
-    @m4 = Matrix[[1,0, 2.0, 3.0], [4.0, 5.0, 6.0]]
+    @m4 = Matrix[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
     @n1 = Matrix[[2,3,4], [5,6,7]]
   end
 
@@ -22,7 +22,7 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal @m1, @m1
     assert_equal @m1, @m2
     assert_equal @m1, @m3
-    assert_not_equal @m1, @m4
+    assert_equal @m1, @m4
     assert_not_equal @m1, @n1
   end
 
@@ -39,5 +39,11 @@ class TestMatrix < Test::Unit::TestCase
     assert hash.key?(@m3)
     assert !hash.key?(@m4)
     assert !hash.key?(@n1)
+  end
+
+  def test_hash
+    assert_equal @m1.hash, @m1.hash
+    assert_equal @m1.hash, @m2.hash
+    assert_equal @m1.hash, @m3.hash
   end
 end

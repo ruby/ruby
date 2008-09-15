@@ -6,7 +6,7 @@ class TestVector < Test::Unit::TestCase
     @v1 = Vector[1,2,3]
     @v2 = Vector[1,2,3]
     @v3 = @v1.clone
-    @v4 = Vector[1,0, 2.0, 3.0]
+    @v4 = Vector[1.0, 2.0, 3.0]
     @w1 = Vector[2,3,4]
   end
 
@@ -22,7 +22,7 @@ class TestVector < Test::Unit::TestCase
     assert_equal @v1, @v1
     assert_equal @v1, @v2
     assert_equal @v1, @v3
-    assert_not_equal @v1, @v4
+    assert_equal @v1, @v4
     assert_not_equal @v1, @w1
   end
 
@@ -39,5 +39,11 @@ class TestVector < Test::Unit::TestCase
     assert hash.key?(@v3)
     assert !hash.key?(@v4)
     assert !hash.key?(@w1)
+  end
+
+  def test_hash
+    assert_equal @v1.hash, @v1.hash
+    assert_equal @v1.hash, @v2.hash
+    assert_equal @v1.hash, @v3.hash
   end
 end
