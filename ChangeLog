@@ -19,6 +19,8 @@ Mon Sep 15 13:17:21 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* rational.c (nurat_hash): ditto.
 
+	* hash.c (rb_any_cmp): removed an unused variable.
+
 Mon Sep 15 11:11:04 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode_data.h (rb_transcoder): resetsize_func and resetstate_func
