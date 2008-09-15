@@ -1,12 +1,19 @@
 require 'test/unit'
 
 class TestUTF16 < Test::Unit::TestCase
-  def encdump(str)
-    d = str.dump
-    if /\.force_encoding\("[A-Za-z0-9.:_+-]*"\)\z/ =~ d
-      d
+  def encdump(obj)
+    case obj
+    when String
+      d = obj.dump
+      if /\.force_encoding\("[A-Za-z0-9.:_+-]*"\)\z/ =~ d
+        d
+      else
+        "#{d}.force_encoding(#{obj.encoding.name.dump})"
+      end
+    when Regexp
+      "Regexp.new(#{encdump(obj.source)}, #{obj.options})"
     else
-      "#{d}.force_encoding(#{str.encoding.name.dump})"
+      raise Argument, "unexpected: #{obj.inspect}"
     end
   end
 
@@ -359,6 +366,6 @@ EOT
   def test_regexp_escape
     s = "\0*".force_encoding("UTF-16BE")
     r = Regexp.new(Regexp.escape(s))
-    assert(r =~ s)
+    assert(r =~ s, "#{encdump(r)} =~ #{encdump(s)}")
   end
 end
