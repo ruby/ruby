@@ -549,6 +549,7 @@ rb_enc_get_index(VALUE obj)
     VALUE tmp;
 
     switch (BUILTIN_TYPE(obj)) {
+        default:
 	case T_STRING:
 	case T_REGEXP:
 	    i = ENCODING_GET_INLINED(obj);

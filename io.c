@@ -4631,6 +4631,7 @@ rb_scan_open_args(int argc, VALUE *argv,
     opt = pop_last_hash(&argc, &argv);
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &vperm);
+    FilePathValue(fname);
 #if defined _WIN32 || defined __APPLE__
     {
 	static rb_encoding *fs_encoding;
@@ -4650,7 +4651,6 @@ rb_scan_open_args(int argc, VALUE *argv,
 	}
     }
 #endif
-    FilePathValue(fname);
  
     rb_io_extract_modeenc(&vmode, opt, &oflags, &fmode, convconfig_p);
 

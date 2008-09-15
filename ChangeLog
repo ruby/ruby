@@ -1,3 +1,10 @@
+Mon Sep 15 23:28:28 2008  Tanaka Akira  <akr@fsij.org>
+
+	* encoding.c (rb_enc_get_index): don't return -1.
+
+	* io.c (rb_scan_open_args): call FilePathValue before encoding
+	  conversion.
+
 Mon Sep 15 20:57:00 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* lib/matrix.rb (Matrix#eql?): fixed [ruby-dev:36298].
