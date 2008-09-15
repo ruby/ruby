@@ -1,3 +1,16 @@
+Mon Sep 15 23:52:45 2008  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c, include/ruby/ruby.h: rename rb_register_mark_object()
+	  to rb_gc_register_mark_object().
+
+	* eval.c, vm.c: initialize vm->mark_object_ary at
+	  Init_top_self().
+
+	* bignum.c, complex.c, encoding.c, ext/win32ole/win32ole.c,
+	  io.c, load.c, marshal.c, rational.c, ruby.c, vm.c: 
+	  use rb_gc_register_mark_object() instead of
+	  rb_global_variable() or rb_gc_register_address().
+
 Mon Sep 15 23:37:15 2008  Tanaka Akira  <akr@fsij.org>
 
 	* transcode.c (econv_opts): don't use to_sym.

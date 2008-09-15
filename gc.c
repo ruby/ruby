@@ -722,7 +722,7 @@ rb_gc_disable(void)
 VALUE rb_mGC;
 
 void
-rb_register_mark_object(VALUE obj)
+rb_gc_register_mark_object(VALUE obj)
 {
     VALUE ary = GET_THREAD()->vm->mark_object_ary;
     rb_ary_push(ary, obj);

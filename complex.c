@@ -1056,29 +1056,29 @@ make_patterns(void)
     if (comp_pat0) return;
 
     comp_pat0 = rb_reg_new(comp_pat0_source, sizeof comp_pat0_source - 1, 0);
-    rb_global_variable(&comp_pat0);
+    rb_gc_register_mark_object(comp_pat0);
 
     comp_pat1 = rb_reg_new(comp_pat1_source, sizeof comp_pat1_source - 1, 0);
-    rb_global_variable(&comp_pat1);
+    rb_gc_register_mark_object(comp_pat1);
 
     comp_pat2 = rb_reg_new(comp_pat2_source, sizeof comp_pat2_source - 1, 0);
-    rb_global_variable(&comp_pat2);
+    rb_gc_register_mark_object(comp_pat2);
 
     a_slash = rb_str_new2("/");
-    rb_global_variable(&a_slash);
+    rb_gc_register_mark_object(a_slash);
 
     a_dot_and_an_e = rb_str_new2(".eE");
-    rb_global_variable(&a_dot_and_an_e);
+    rb_gc_register_mark_object(a_dot_and_an_e);
 
     null_string = rb_str_new2("");
-    rb_global_variable(&null_string);
+    rb_gc_register_mark_object(null_string);
 
     underscores_pat = rb_reg_new(underscores_pat_source,
 				 sizeof underscores_pat_source - 1, 0);
-    rb_global_variable(&underscores_pat);
+    rb_gc_register_mark_object(underscores_pat);
 
     an_underscore = rb_str_new2("_");
-    rb_global_variable(&an_underscore);
+    rb_gc_register_mark_object(an_underscore);
 }
 
 #define id_match rb_intern("match")

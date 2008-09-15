@@ -1820,7 +1820,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 1);
     rb_obj_freeze(fcore);
-    rb_global_variable(&rb_mRubyVMFrozenCore);
+    rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
 
     /* ::VM::Env */
@@ -1901,7 +1901,7 @@ Init_VM(void)
 	vm->living_threads = st_init_numtable();
 	st_insert(vm->living_threads, th_self, (st_data_t) th->thread_id);
 
-	rb_register_mark_object(iseqval);
+	rb_gc_register_mark_object(iseqval);
 	GetISeqPtr(iseqval, iseq);
 	th->cfp->iseq = iseq;
 	th->cfp->pc = iseq->iseq_encoded;
@@ -1960,6 +1960,9 @@ Init_top_self(void)
 
     vm->top_self = rb_obj_alloc(rb_cObject);
     rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
+
+    /* initialize mark object array */
+    vm->mark_object_ary = rb_ary_new();
 }
 
 VALUE *

@@ -851,7 +851,7 @@ void rb_define_alias(VALUE,const char*,const char*);
 void rb_define_attr(VALUE,const char*,int,int);
 
 void rb_global_variable(VALUE*);
-void rb_register_mark_object(VALUE);
+void rb_gc_register_mark_object(VALUE);
 void rb_gc_register_address(VALUE*);
 void rb_gc_unregister_address(VALUE*);
 

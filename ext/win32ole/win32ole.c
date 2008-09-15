@@ -8797,7 +8797,7 @@ void
 Init_win32ole()
 {
     ary_ole_event = rb_ary_new();
-    rb_register_mark_object(ary_ole_event);
+    rb_gc_register_mark_object(ary_ole_event);
     id_events = rb_intern("events");
 
     com_vtbl.QueryInterface = QueryInterface;
@@ -8816,7 +8816,7 @@ Init_win32ole()
     message_filter.MessagePending = mf_MessagePending;
  
     com_hash = Data_Wrap_Struct(rb_cData, rb_mark_hash, st_free_table, st_init_numtable());
-    rb_register_mark_object(com_hash);
+    rb_gc_register_mark_object(com_hash);
 
     cWIN32OLE = rb_define_class("WIN32OLE", rb_cObject);
 

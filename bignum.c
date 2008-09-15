@@ -774,7 +774,7 @@ power_cache_get_power0(int base, int i)
 	big2str_power_cache[base - 2][i] =
 	    i == 0 ? rb_big_pow(rb_int2big(base), INT2FIX(KARATSUBA_DIGITS))
 		   : bigsqr(power_cache_get_power0(base, i - 1));
-	rb_global_variable(&big2str_power_cache[base - 2][i]);
+	rb_gc_register_mark_object(big2str_power_cache[base - 2][i]);
     }
     return big2str_power_cache[base - 2][i];
 }

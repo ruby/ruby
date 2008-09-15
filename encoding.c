@@ -1225,10 +1225,11 @@ Init_Encoding(void)
     rb_define_singleton_method(rb_cEncoding, "default_external", get_default_external, 0);
     rb_define_singleton_method(rb_cEncoding, "locale_charmap", rb_locale_charmap, 0);
 
-    rb_gc_register_address(&rb_encoding_list);
     list = rb_ary_new2(enc_table.count);
     RBASIC(list)->klass = 0;
     rb_encoding_list = list;
+    rb_gc_register_mark_object(list);
+
     for (i = 0; i < enc_table.count; ++i) {
 	rb_ary_push(list, enc_new(enc_table.list[i].enc));
     }

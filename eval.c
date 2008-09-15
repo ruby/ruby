@@ -1129,9 +1129,6 @@ rb_f_method_name(void)
 void
 Init_eval(void)
 {
-    /* TODO: fix position */
-    GET_THREAD()->vm->mark_object_ary = rb_ary_new();
-
     rb_define_virtual_variable("$@", errat_getter, errat_setter);
     rb_define_virtual_variable("$!", errinfo_getter, 0);
 

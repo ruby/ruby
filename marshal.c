@@ -1723,9 +1723,9 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
 
     compat_allocator_tbl = st_init_numtable();
-    rb_gc_register_address(&compat_allocator_tbl_wrapper);
     compat_allocator_tbl_wrapper =
 	Data_Wrap_Struct(rb_cData, mark_marshal_compat_t, 0, compat_allocator_tbl);
+    rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
 }
 
 VALUE

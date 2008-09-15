@@ -1478,7 +1478,6 @@ ruby_prog_init(void)
     rb_define_hooked_variable("$PROGRAM_NAME", &rb_progname, 0, set_arg0);
 
     rb_define_global_const("ARGV", rb_argv);
-    rb_global_variable(&rb_argv0);
 
 #ifdef MSDOS
     /*
@@ -1535,6 +1534,7 @@ ruby_process_options(int argc, char **argv)
 
     ruby_script(argv[0]);	/* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
+    rb_gc_register_mark_object(rb_argv0);
     args.argc = argc;
     args.argv = argv;
     args.opt = cmdline_options_init(&opt);
