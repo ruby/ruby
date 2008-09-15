@@ -163,7 +163,7 @@ fun_so_iso2022jp_encoder(void *statep, const unsigned char *s, size_t l, unsigne
     return o - output0;
 }
 
-static int
+static ssize_t
 iso2022jp_encoder_reset_sequence_size(void *statep)
 {
     unsigned char *sp = statep;

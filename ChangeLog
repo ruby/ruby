@@ -1,3 +1,10 @@
+Mon Sep 15 11:11:04 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode_data.h (rb_transcoder): resetsize_func and resetstate_func
+	  also returns ssize_t.
+
+	* enc/trans/iso2022.trans: follow the type change.
+
 Mon Sep 15 10:28:10 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 	* test/matrix/test_matrix.rb (setup): typo.

@@ -87,8 +87,8 @@ struct rb_transcoder {
     ssize_t (*func_io)(void*, VALUE, const unsigned char*, size_t); /* info  -> output */
     ssize_t (*func_so)(void*, const unsigned char*, size_t, unsigned char*, size_t); /* start -> output */
     ssize_t (*finish_func)(void*, unsigned char*, size_t); /* -> output */
-    int (*resetsize_func)(void*); /* -> len */
-    int (*resetstate_func)(void*, unsigned char*, size_t); /* -> output */
+    ssize_t (*resetsize_func)(void*); /* -> len */
+    ssize_t (*resetstate_func)(void*, unsigned char*, size_t); /* -> output */
 };
 
 void rb_declare_transcoder(const char *enc1, const char *enc2, const char *lib);
