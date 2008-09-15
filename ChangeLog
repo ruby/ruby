@@ -1,3 +1,15 @@
+Mon Sep 15 20:57:00 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
+
+	* lib/matrix.rb (Matrix#eql?): fixed [ruby-dev:36298].
+	  Reported by an anonymous user.
+
+	* lib/matrix.rb (Vector#eql?): ditto.
+
+	* (Matrix#compare_by_row_vectors): takes comparison
+	  strategy as an optional parameter.
+
+	* (Vector#compare_by): ditto.
+
 Mon Sep 15 14:34:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* encoding.c (RUBY_MAX_CHAR_LEN): defined.
