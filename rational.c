@@ -1103,7 +1103,7 @@ static VALUE
 nurat_hash(VALUE self)
 {
     get_dat1(self);
-    return f_xor(dat->num, dat->den);
+    return f_xor(f_hash(dat->num), f_hash(dat->den));
 }
 
 static VALUE
