@@ -1,3 +1,8 @@
+Tue Sep 16 08:35:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#test_dup): this test might fail if
+	  there are any garbage IO objects.
+
 Tue Sep 16 02:02:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_buf_cat_ascii): codepoint is unsigned int.
