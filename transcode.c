@@ -2287,15 +2287,17 @@ econv_opts(VALUE opt)
 
     v = rb_hash_aref(opt, sym_xml);
     if (!NIL_P(v)) {
-        v = rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym");
         if (v==sym_text) {
             ecflags |= ECONV_XML_TEXT_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
         else if (v==sym_attr) {
             ecflags |= ECONV_XML_ATTR_CONTENT_DECORATOR|ECONV_XML_ATTR_QUOTE_DECORATOR|ECONV_UNDEF_HEX_CHARREF;
         }
-        else {
+        else if (TYPE(v) == T_SYMBOL) {
             rb_raise(rb_eArgError, "unexpected value for xml option: %s", rb_id2name(SYM2ID(v)));
+        }
+        else {
+            rb_raise(rb_eArgError, "unexpected value for xml option");
         }
     }
 
