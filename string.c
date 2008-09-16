@@ -5506,6 +5506,59 @@ rb_str_each_char(VALUE str)
     return str;
 }
 
+/*
+ *  Document-method: codepoints
+ *  call-seq:
+ *     str.codepoints                   => anEnumerator
+ *     str.codepoints {|fixnum| block } => str
+ *  
+ *  Returns an enumerator that gives the <code>Integer</code> ordinal
+ *  of each character in the string, also known as a <i>codepoint</i>
+ *  when applied to Unicode strings. If a block is given, it iterates
+ *  over each character in the string.
+ *     
+ *     "foo\u0635".chars.to_a   #=> [102, 111, 111, 1589]
+ */
+
+/*
+ *  Document-method: each_codepoint
+ *  call-seq:
+ *     str.each_codepoint {|fixnum| block }    => str
+ *  
+ *  Passes the <code>Integer</code> ordinal of each character in <i>str</i>,
+ *  also known as a <i>codepoint</i> when applied to Unicode strings to the
+ *  given block.
+ *     
+ *     "hello\u0639".each_codepoint {|c| print c, ' ' }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     104 101 108 108 111 1593
+ */
+
+static VALUE
+rb_str_each_codepoint(VALUE str)
+{
+    int i, len, n;
+    unsigned int c;
+    const char *ptr, *end;
+    rb_encoding *enc;
+
+    if (single_byte_optimizable(str)) return rb_str_each_byte(str);
+    RETURN_ENUMERATOR(str, 0, 0);
+    ptr = RSTRING_PTR(str);
+    len = RSTRING_LEN(str);
+    end = RSTRING_END(str);
+    enc = STR_ENC_GET(str);
+    while (ptr < end) {
+	c = rb_enc_codepoint(ptr, end, enc);
+	n = rb_enc_codelen(c, enc);
+	rb_yield(INT2FIX(c));
+	ptr += n;
+    }
+    return str;
+}
+
 static long
 chopped_length(VALUE str)
 {
@@ -6883,6 +6936,7 @@ Init_String(void)
     rb_define_method(rb_cString, "lines", rb_str_each_line, -1);
     rb_define_method(rb_cString, "bytes", rb_str_each_byte, 0);
     rb_define_method(rb_cString, "chars", rb_str_each_char, 0);
+    rb_define_method(rb_cString, "codepoints", rb_str_each_codepoint, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat, 1);
@@ -6932,6 +6986,7 @@ Init_String(void)
     rb_define_method(rb_cString, "each_line", rb_str_each_line, -1);
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
     rb_define_method(rb_cString, "each_char", rb_str_each_char, 0);
+    rb_define_method(rb_cString, "each_codepoint", rb_str_each_codepoint, 0);
 
     rb_define_method(rb_cString, "sum", rb_str_sum, -1);
 
