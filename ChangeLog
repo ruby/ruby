@@ -1,3 +1,10 @@
+Tue Sep 16 19:18:40 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_marshal_{dump,load}): preserve instance
+	  variables.
+
+	* rational.c (nurat_marshal_{dump,load}): ditto.
+
 Tue Sep 16 18:28:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_gets_m): rdoc updated.  limit counts in bytes.
@@ -251,7 +258,7 @@ Sun Sep 14 13:48:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 
 Sun Sep 14 10:10:43 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
-	* complex.c (f_{add,mul,sub}): omitted some shortcuts for preserve
+	* complex.c (f_{add,mul,sub}): omitted some shortcuts for preserving
 	  signed zero anyway.
 
 	* complex.c (nucomp_negate): new.

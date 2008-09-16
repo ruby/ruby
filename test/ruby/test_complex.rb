@@ -638,10 +638,12 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_marshal
     c = Complex(1,2)
+    c.instance_eval{@ivar = 9}
 
     s = Marshal.dump(c)
     c2 = Marshal.load(s)
     assert_equal(c, c2)
+    assert_equal(9, c2.instance_variable_get(:@ivar))
     assert_instance_of(Complex, c2)
 
     if defined?(Rational)

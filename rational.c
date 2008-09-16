@@ -1125,8 +1125,12 @@ nurat_inspect(VALUE self)
 static VALUE
 nurat_marshal_dump(VALUE self)
 {
+    VALUE a;
     get_dat1(self);
-    return rb_assoc_new(dat->num, dat->den);
+
+    a = rb_assoc_new(dat->num, dat->den);
+    rb_copy_generic_ivar(a, self);
+    return a;
 }
 
 static VALUE
@@ -1135,6 +1139,7 @@ nurat_marshal_load(VALUE self, VALUE a)
     get_dat1(self);
     dat->num = RARRAY_PTR(a)[0];
     dat->den = RARRAY_PTR(a)[1];
+    rb_copy_generic_ivar(self, a);
 
     if (f_zero_p(dat->den))
 	rb_raise_zerodiv();

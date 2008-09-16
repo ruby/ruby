@@ -937,8 +937,12 @@ nucomp_inspect(VALUE self)
 static VALUE
 nucomp_marshal_dump(VALUE self)
 {
+    VALUE a;
     get_dat1(self);
-    return rb_assoc_new(dat->real, dat->image);
+
+    a = rb_assoc_new(dat->real, dat->image);
+    rb_copy_generic_ivar(a, self);
+    return a;
 }
 
 static VALUE
@@ -947,6 +951,7 @@ nucomp_marshal_load(VALUE self, VALUE a)
     get_dat1(self);
     dat->real = RARRAY_PTR(a)[0];
     dat->image = RARRAY_PTR(a)[1];
+    rb_copy_generic_ivar(self, a);
     return self;
 }
 
