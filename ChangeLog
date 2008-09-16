@@ -1,3 +1,9 @@
+Tue Sep 16 22:21:33 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_concat): fix rdoc. (codepoint is integer)
+
+	* string.c (rb_str_each_codepoint): use UINT2NUM.
+
 Tue Sep 16 21:48:55 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (rb_reg_desc): Regexp#inspect should be US-ASCII.

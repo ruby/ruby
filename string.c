@@ -1712,13 +1712,13 @@ rb_str_append(VALUE str, VALUE str2)
 
 /*
  *  call-seq:
- *     str << fixnum        => str
- *     str.concat(fixnum)   => str
+ *     str << integer       => str
+ *     str.concat(integer)  => str
  *     str << obj           => str
  *     str.concat(obj)      => str
  *  
  *  Append---Concatenates the given object to <i>str</i>. If the object is a
- *  <code>Fixnum</code>, it is considered as a codepoint, and is converted
+ *  <code>Integer</code>, it is considered as a codepoint, and is converted
  *  to a character before concatenation.
  *     
  *     a = "hello "
@@ -5523,7 +5523,7 @@ rb_str_each_char(VALUE str)
 /*
  *  Document-method: each_codepoint
  *  call-seq:
- *     str.each_codepoint {|fixnum| block }    => str
+ *     str.each_codepoint {|integer| block }    => str
  *  
  *  Passes the <code>Integer</code> ordinal of each character in <i>str</i>,
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the
@@ -5553,7 +5553,7 @@ rb_str_each_codepoint(VALUE str)
     while (ptr < end) {
 	c = rb_enc_codepoint(ptr, end, enc);
 	n = rb_enc_codelen(c, enc);
-	rb_yield(INT2FIX(c));
+	rb_yield(UINT2NUM(c));
 	ptr += n;
     }
     return str;
