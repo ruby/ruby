@@ -809,28 +809,28 @@ EOT
 
   def test_set_encoding_binmode
     assert_raise(ArgumentError) {
-      open("/dev/null", "rt") {|f|
+      open(__FILE__, "rt") {|f|
         f.set_encoding("iso-2022-jp")
       }
     }
     assert_raise(ArgumentError) {
-      open("/dev/null", "r") {|f|
+      open(__FILE__, "r") {|f|
         f.set_encoding("iso-2022-jp")
       }
     }
     assert_nothing_raised {
-      open("/dev/null", "rb") {|f|
+      open(__FILE__, "rb") {|f|
         f.set_encoding("iso-2022-jp")
       }
     }
     assert_nothing_raised {
-      open("/dev/null", "r") {|f|
+      open(__FILE__, "r") {|f|
         f.binmode
         f.set_encoding("iso-2022-jp")
       }
     }
     assert_nothing_raised {
-      open("/dev/null", "rt") {|f|
+      open(__FILE__, "rt") {|f|
         f.binmode
         f.set_encoding("iso-2022-jp")
       }

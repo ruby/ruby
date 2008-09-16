@@ -1,3 +1,8 @@
+Wed Sep 17 01:56:27 2008  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_io_m17n.rb: use __FILE__ instead of /dev/null.
+	  [ruby-dev:36327]
+
 Wed Sep 17 01:33:11 2008  Tanaka Akira  <akr@fsij.org>
 
 	* include/ruby/oniguruma.h (OnigEncodingTypeST): add precise_ret
