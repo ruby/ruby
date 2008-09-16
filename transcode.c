@@ -2389,25 +2389,10 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
 static int
 enc_arg(volatile VALUE *arg, const char **name_p, rb_encoding **enc_p)
 {
-    rb_encoding *enc;
-    const char *n;
-    int encidx;
-    VALUE encval;
-
-    if ((encidx = rb_to_encoding_index(encval = *arg)) < 0) {
-	enc = NULL;
-	encidx = 0;
-	n = StringValueCStr(*arg);
-    }
-    else {
-	enc = rb_enc_from_index(encidx);
-	n = rb_enc_name(enc);
-    }
-
-    *name_p = n;
+    rb_encoding *enc = rb_to_encoding(*arg);
+    *name_p = rb_enc_name(enc);
     *enc_p = enc;
-
-    return encidx;
+    return rb_enc_to_index(enc);
 }
 
 static int
