@@ -255,11 +255,11 @@ static OnigCodePoint mbc_to_code(const UChar* p, const UChar* end, int *precise_
 #define GRAPHEME_BIT_T               0x040
 #define GRAPHEME_BIT_LV              0x080
 #define GRAPHEME_BIT_LVT             0x100
-const struct graphme_table_t { /* codepoint_min <= c < codepoint_min+num_codepoints */
+const struct grapheme_table_t { /* codepoint_min <= c < codepoint_min+num_codepoints */
     OnigCodePoint codepoint_min;
     unsigned short num_codepoints;
     unsigned short properties;
-} graphme_table[] = {
+} grapheme_table[] = {
     {0x00000,32,0x001}, {0x0007F,33,0x001},
     {0x000AD,1,0x001}, {0x00300,112,0x002},
     {0x00483,7,0x002}, {0x00591,45,0x002},
@@ -801,8 +801,8 @@ const struct graphme_table_t { /* codepoint_min <= c < codepoint_min+num_codepoi
 static int
 grapheme_cmp(const void *p1, const void *p2)
 {
-    const struct graphme_table_t *k = p1;
-    const struct graphme_table_t *v = p2;
+    const struct grapheme_table_t *k = p1;
+    const struct grapheme_table_t *v = p2;
     OnigCodePoint c = k->codepoint_min;
     if (c < v->codepoint_min)
         return -1;
@@ -814,10 +814,10 @@ grapheme_cmp(const void *p1, const void *p2)
 static unsigned int
 get_grapheme_properties(OnigCodePoint c)
 {
-    struct graphme_table_t key, *found;
+    struct grapheme_table_t key, *found;
     key.codepoint_min = c;
-    found = bsearch(&key, graphme_table, sizeof(graphme_table)/sizeof(*graphme_table),
-                sizeof(*graphme_table), grapheme_cmp);
+    found = bsearch(&key, grapheme_table, sizeof(grapheme_table)/sizeof(*grapheme_table),
+                sizeof(*grapheme_table), grapheme_cmp);
     if (found)
         return found->properties;
     return 0;

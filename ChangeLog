@@ -31,7 +31,7 @@ Wed Sep 17 01:33:11 2008  Tanaka Akira  <akr@fsij.org>
 	* regexec.c (string_cmp_ic): add text_end argument.
 	  (match_at): check end of character after exact string matches.
 
-	* enc/utf_8.c (graphme_table): defined for extended graphme cluster
+	* enc/utf_8.c (grapheme_table): defined for extended grapheme cluster
 	  boundary.
 	  (grapheme_cmp): defined.
 	  (get_grapheme_properties): defined.
@@ -41,7 +41,7 @@ Wed Sep 17 01:33:11 2008  Tanaka Akira  <akr@fsij.org>
 	  (mbc_to_code0): extracted from mbc_to_code.
 	  (mbc_to_code): use mbc_to_code0.
 	  (left_adjust_combchar_head): defined.
-	  (utf_8): use a extended graphme cluster as a unit.
+	  (utf_8): use a extended grapheme cluster as a unit.
 	
 	* enc/unicode.c (onigenc_unicode_mbc_case_fold): use
 	  ONIGENC_MBC_PRECISE_CODEPOINT to extract codepoints.
