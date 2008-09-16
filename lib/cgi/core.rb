@@ -1,6 +1,6 @@
 class CGI
 
-  # :stopdoc:
+  $CGI_ENV = ENV    # for FCGI support
 
   # String for carriage return
   CR  = "\015"
@@ -139,128 +139,131 @@ class CGI
   #   "VARIANT_ALSO_VARIES" --> "506 Variant Also Negotiates"
   # 
   # This method does not perform charset conversion. 
-  #
-  def header(options = "text/html")
-
-    buf = ""
-
-    case options
-    when String
-      options = { "type" => options }
-    when Hash
-      options = options.dup
-    end
-
-    unless options.has_key?("type")
-      options["type"] = "text/html"
-    end
-
-    if options.has_key?("charset")
-      options["type"] += "; charset=" + options.delete("charset")
-    end
-
-    options.delete("nph") if defined?(MOD_RUBY)
-    if options.delete("nph") or
-        (/IIS\/(\d+)/.match(env_table['SERVER_SOFTWARE']) and $1.to_i < 5)
-      buf += (env_table["SERVER_PROTOCOL"] or "HTTP/1.0")  + " " +
-             (HTTP_STATUS[options["status"]] or options["status"] or "200 OK") +
-             EOL +
-             "Date: " + CGI::rfc1123_date(Time.now) + EOL
-
-      unless options.has_key?("server")
-        options["server"] = (env_table['SERVER_SOFTWARE'] or "")
+  def header(options='text/html')
+    if options.is_a?(String)
+      content_type = options
+      buf = _header_for_string(content_type)
+    elsif options.is_a?(Hash)
+      if options.size == 1 && options.has_key?('type')
+        content_type = options['type']
+        buf = _header_for_string(content_type)
+      else
+        buf = _header_for_hash(options.dup)
       end
-
-      unless options.has_key?("connection")
-        options["connection"] = "close"
-      end
-
-      options.delete("status")
+    else
+      raise ArgumentError.new("expected String or Hash but got #{options.class}")
     end
-
-    if options.has_key?("status")
-      buf += "Status: " +
-             (HTTP_STATUS[options["status"]] or options["status"]) + EOL
-      options.delete("status")
+    if defined?(MOD_RUBY)
+      _header_for_modruby(buf)
+      return ''
+    else
+      buf << EOL    # empty line of separator
+      return buf
     end
+  end # header()
 
-    if options.has_key?("server")
-      buf += "Server: " + options.delete("server") + EOL
+  def _header_for_string(content_type) #:nodoc:
+    buf = ''
+    if nph?()
+      buf << "#{$CGI_ENV['SERVER_PROTOCOL'] || 'HTTP/1.0'} 200 OK#{EOL}"
+      buf << "Date: #{CGI.rfc1123_date(Time.now)}#{EOL}"
+      buf << "Server: #{$CGI_ENV['SERVER_SOFTWARE']}#{EOL}"
+      buf << "Connection: close#{EOL}"
     end
-
-    if options.has_key?("connection")
-      buf += "Connection: " + options.delete("connection") + EOL
+    buf << "Content-Type: #{content_type}#{EOL}"
+    if @output_cookies
+      @output_cookies.each {|cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
     end
+    return buf
+  end # _header_for_string
+  private :_header_for_string
 
-    buf += "Content-Type: " + options.delete("type") + EOL
-
-    if options.has_key?("length")
-      buf += "Content-Length: " + options.delete("length").to_s + EOL
+  def _header_for_hash(options)  #:nodoc:
+    buf = ''
+    ## add charset to option['type']
+    options['type'] ||= 'text/html'
+    charset = options.delete('charset')
+    options['type'] += "; charset=#{charset}" if charset
+    ## NPH
+    options.delete('nph') if defined?(MOD_RUBY)
+    if options.delete('nph') || nph?()
+      protocol = $CGI_ENV['SERVER_PROTOCOL'] || 'HTTP/1.0'
+      status = options.delete('status')
+      status = HTTP_STATUS[status] || status || '200 OK'
+      buf << "#{protocol} #{status}#{EOL}"
+      buf << "Date: #{CGI.rfc1123_date(Time.now)}#{EOL}"
+      options['server'] ||= $CGI_ENV['SERVER_SOFTWARE'] || ''
+      options['connection'] ||= 'close'
     end
-
-    if options.has_key?("language")
-      buf += "Content-Language: " + options.delete("language") + EOL
-    end
-
-    if options.has_key?("expires")
-      buf += "Expires: " + CGI::rfc1123_date( options.delete("expires") ) + EOL
-    end
-
-    if options.has_key?("cookie")
-      if options["cookie"].kind_of?(String) or
-           options["cookie"].kind_of?(Cookie)
-        buf += "Set-Cookie: " + options.delete("cookie").to_s + EOL
-      elsif options["cookie"].kind_of?(Array)
-        options.delete("cookie").each{|cookie|
-          buf += "Set-Cookie: " + cookie.to_s + EOL
-        }
-      elsif options["cookie"].kind_of?(Hash)
-        options.delete("cookie").each_value{|cookie|
-          buf += "Set-Cookie: " + cookie.to_s + EOL
-        }
+    ## common headers
+    status = options.delete('status')
+    buf << "Status: #{HTTP_STATUS[status] || status}#{EOL}" if status
+    server = options.delete('server')
+    buf << "Server: #{server}#{EOL}" if server
+    connection = options.delete('connection')
+    buf << "Connection: #{connection}#{EOL}" if connection
+    type = options.delete('type')
+    buf << "Content-Type: #{type}#{EOL}" #if type
+    length = options.delete('length')
+    buf << "Content-Length: #{length}#{EOL}" if length
+    language = options.delete('language')
+    buf << "Content-Language: #{language}#{EOL}" if language
+    expires = options.delete('expires')
+    buf << "Expires: #{CGI.rfc1123_date(expires)}#{EOL}" if expires
+    ## cookie
+    if cookie = options.delete('cookie')
+      case cookie
+      when String, Cookie
+        buf << "Set-Cookie: #{cookie}#{EOL}"
+      when Array
+        arr = cookie
+        arr.each {|cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
+      when Hash
+        hash = cookie
+        hash.each {|name, cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
       end
     end
     if @output_cookies
-      for cookie in @output_cookies
-        buf += "Set-Cookie: " + cookie.to_s + EOL
+      @output_cookies.each {|cookie| buf << "Set-Cookie: #{cookie}#{EOL}" }
+    end
+    ## other headers
+    options.each do |key, value|
+      buf << "#{key}: #{value}#{EOL}"
+    end
+    return buf
+  end # _header_for_hash
+  private :_header_for_hash
+
+  def nph?  #:nodoc:
+    return /IIS\/(\d+)/.match($CGI_ENV['SERVER_SOFTWARE']) && $1.to_i < 5
+  end
+
+  def _header_for_modruby(buf)  #:nodoc:
+    request = Apache::request
+    buf.scan(/([^:]+): (.+)#{EOL}/o) do |name, value|
+      warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
+      case name
+      when 'Set-Cookie'
+        request.headers_out.add(name, value)
+      when /^status$/i
+        request.status_line = value
+        request.status = value.to_i
+      when /^content-type$/i
+        request.content_type = value
+      when /^content-encoding$/i
+        request.content_encoding = value
+      when /^location$/i
+        request.status = 302 if request.status == 200
+        request.headers_out[name] = value
+      else
+        request.headers_out[name] = value
       end
     end
-
-    options.each{|key, value|
-      buf += key + ": " + value.to_s + EOL
-    }
-
-    if defined?(MOD_RUBY)
-      table = Apache::request.headers_out
-      buf.scan(/([^:]+): (.+)#{EOL}/){ |name, value|
-        warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
-        case name
-        when 'Set-Cookie'
-          table.add(name, value)
-        when /^status$/i
-          Apache::request.status_line = value
-          Apache::request.status = value.to_i
-        when /^content-type$/i
-          Apache::request.content_type = value
-        when /^content-encoding$/i
-          Apache::request.content_encoding = value
-        when /^location$/i
-	  if Apache::request.status == 200
-	    Apache::request.status = 302
-	  end
-          Apache::request.headers_out[name] = value
-        else
-          Apache::request.headers_out[name] = value
-        end
-      }
-      Apache::request.send_http_header
-      ''
-    else
-      buf + EOL
-    end
-
-  end # header()
-
+    request.send_http_header
+    return ''
+  end
+  private :_header_for_modruby
+  #
 
   # Print an HTTP header and body to $DEFAULT_OUTPUT ($>)
   #
