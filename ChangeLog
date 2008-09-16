@@ -1,3 +1,8 @@
+Tue Sep 16 11:24:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/mkconstants.rb: add new constants.  a patch from
+	  IWAMURO Motonori <deenheart+ruby at gmail.com> in [ruby-dev:36309].
+
 Tue Sep 16 09:20:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#test_dup): exception should be
@@ -17,14 +22,6 @@ Tue Sep 16 02:02:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 	* string.c (str_cat_char): ditto.
 
 	* string.c (prefix_escape): ditto.
-
-Tue Sep 16 01:50:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* string.c ():
-
-Tue Sep 16 01:49:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* string.c ():
 
 Tue Sep 16 01:47:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
