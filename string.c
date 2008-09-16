@@ -5539,7 +5539,7 @@ rb_str_each_char(VALUE str)
 static VALUE
 rb_str_each_codepoint(VALUE str)
 {
-    int i, len, n;
+    int len, n;
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
@@ -6099,30 +6099,27 @@ rb_str_crypt(VALUE str, VALUE salt)
 {
     extern char *crypt(const char *, const char *);
     VALUE result;
-    const char *s;
+    const char *s, *saltp;
 #ifdef BROKEN_CRYPT
-    VALUE salt_8bit_clean;
-    rb_encoding *enc;
+    char salt_8bit_clean[3];
 #endif
 
     StringValue(salt);
     if (RSTRING_LEN(salt) < 2)
 	rb_raise(rb_eArgError, "salt too short (need >=2 bytes)");
 
-    if (RSTRING_PTR(str)) s = RSTRING_PTR(str);
-    else s = "";
+    s = RSTRING_PTR(str);
+    if (!s) s = "";
+    saltp = RSTRING_PTR(salt);
 #ifdef BROKEN_CRYPT
-    salt_8bit_clean = rb_str_dup(salt);
-    enc = rb_ascii8bit_encoding();
-    str_modifiable(salt_8bit_clean);
-    rb_enc_associate(salt_8bit_clean, enc);
-    salt_8bit_clean = rb_str_tr(salt_8bit_clean,
-                                rb_enc_str_new("\x80-\xFF", 3, enc),
-                                rb_usascii_str_new("\x00-\x7F", 3));
-    result = rb_str_new2(crypt(s, RSTRING_PTR(salt_8bit_clean)));
-#else
-    result = rb_str_new2(crypt(s, RSTRING_PTR(salt)));
+    if (!ISASCII((unsigned char)saltp[0]) || !ISASCII((unsigned char)saltp[1])) {
+	salt_8bit_clean[0] = saltp[0] & 0x7f;
+	salt_8bit_clean[1] = saltp[1] & 0x7f;
+	salt_8bit_clean[2] = '\0';
+	saltp = salt_8bit_clean;
+    }
 #endif
+    result = rb_str_new2(crypt(s, saltp));
     OBJ_INFECT(result, str);
     OBJ_INFECT(result, salt);
     return result;
