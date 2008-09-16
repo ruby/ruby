@@ -2748,7 +2748,7 @@ rb_io_getbyte(VALUE io)
  *  call-seq:
  *     ios.readbyte   => fixnum
  *
- *  Reads a character as with <code>IO#getc</code>, but raises an
+ *  Reads a byte as with <code>IO#getbyte</code>, but raises an
  *  <code>EOFError</code> on end of file.
  */
 
