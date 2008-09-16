@@ -4,7 +4,7 @@ Wed Sep 17 06:58:31 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c: follows the above change.
 
-	* lib/cmath.c: ditto.
+	* lib/cmath.rb: ditto.
 
 Wed Sep 17 01:56:27 2008  Tanaka Akira  <akr@fsij.org>
 
