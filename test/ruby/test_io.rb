@@ -632,6 +632,9 @@ class TestIO < Test::Unit::TestCase
     assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
       loop {a << IO.pipe}
     end
+    assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
+      loop {a[-1][0].dup; a[-1][1].dup}
+    end
     a.each do |r, w|
       r.close unless !r || r.closed?
       w.close unless !w || w.closed?

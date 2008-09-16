@@ -1,3 +1,8 @@
+Tue Sep 16 09:20:42 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/ruby/test_io.rb (TestIO#test_dup): exception should be
+	  raised from IO#dup.
+
 Tue Sep 16 08:35:29 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/ruby/test_io.rb (TestIO#test_dup): this test might fail if
