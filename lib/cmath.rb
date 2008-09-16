@@ -25,7 +25,7 @@ module CMath
   alias atanh! atanh
 
   def exp(z)
-    if z.scalar?
+    if z.real?
       exp!(z)
     else
       Complex(exp!(z.real) * cos!(z.image),
@@ -35,7 +35,7 @@ module CMath
 
   def log(*args)
     z, b = args
-    if z.scalar? and z >= 0 and (b.nil? or b >= 0)
+    if z.real? and z >= 0 and (b.nil? or b >= 0)
       log!(*args)
     else
       r, theta = z.polar
@@ -48,7 +48,7 @@ module CMath
   end
 
   def log10(z)
-    if z.scalar?
+    if z.real?
       log10!(z)
     else
       log(z) / log!(10)
@@ -56,7 +56,7 @@ module CMath
   end
 
   def sqrt(z)
-    if z.scalar?
+    if z.real?
       if z >= 0
 	sqrt!(z)
       else
@@ -74,7 +74,7 @@ module CMath
   end
 
   def sin(z)
-    if z.scalar?
+    if z.real?
       sin!(z)
     else
       Complex(sin!(z.real) * cosh!(z.image),
@@ -83,7 +83,7 @@ module CMath
   end
 
   def cos(z)
-    if z.scalar?
+    if z.real?
       cos!(z)
     else
       Complex(cos!(z.real) * cosh!(z.image),
@@ -92,7 +92,7 @@ module CMath
   end
 
   def tan(z)
-    if z.scalar?
+    if z.real?
       tan!(z)
     else
       sin(z)/cos(z)
@@ -100,7 +100,7 @@ module CMath
   end
 
   def sinh(z)
-    if z.scalar?
+    if z.real?
       sinh!(z)
     else
       Complex(sinh!(z.real) * cos!(z.image),
@@ -109,7 +109,7 @@ module CMath
   end
 
   def cosh(z)
-    if z.scalar?
+    if z.real?
       cosh!(z)
     else
       Complex(cosh!(z.real) * cos!(z.image),
@@ -118,7 +118,7 @@ module CMath
   end
 
   def tanh(z)
-    if z.scalar?
+    if z.real?
       tanh!(z)
     else
       sinh(z) / cosh(z)
@@ -126,7 +126,7 @@ module CMath
   end
 
   def asin(z)
-    if z.scalar? and z >= -1 and z <= 1
+    if z.real? and z >= -1 and z <= 1
       asin!(z)
     else
       -1.0.im * log(1.0.im * z + sqrt(1.0 - z * z))
@@ -134,7 +134,7 @@ module CMath
   end
 
   def acos(z)
-    if z.scalar? and z >= -1 and z <= 1
+    if z.real? and z >= -1 and z <= 1
       acos!(z)
     else
       -1.0.im * log(z + 1.0.im * sqrt(1.0 - z * z))
@@ -142,7 +142,7 @@ module CMath
   end
 
   def atan(z)
-    if z.scalar?
+    if z.real?
       atan!(z)
     else
       1.0.im * log((1.0.im + z) / (1.0.im - z)) / 2.0
@@ -150,7 +150,7 @@ module CMath
   end
 
   def atan2(y,x)
-    if y.scalar? and x.scalar?
+    if y.real? and x.real?
       atan2!(y,x)
     else
       -1.0.im * log((x + 1.0.im * y) / sqrt(x * x + y * y))
@@ -158,7 +158,7 @@ module CMath
   end
 
   def acosh(z)
-    if z.scalar? and z >= 1
+    if z.real? and z >= 1
       acosh!(z)
     else
       log(z + sqrt(z * z - 1.0))
@@ -166,7 +166,7 @@ module CMath
   end
 
   def asinh(z)
-    if z.scalar?
+    if z.real?
       asinh!(z)
     else
       log(z + sqrt(1.0 + z * z))
@@ -174,7 +174,7 @@ module CMath
   end
 
   def atanh(z)
-    if z.scalar? and z >= -1 and z <= 1
+    if z.real? and z >= -1 and z <= 1
       atanh!(z)
     else
       log((1.0 + z) / (1.0 - z)) / 2.0

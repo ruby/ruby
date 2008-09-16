@@ -385,14 +385,14 @@ num_remainder(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     num.scalar? -> true or false
+ *     num.real? -> true or false
  *
- *  Returns <code>true</code> if <i>num</i> is an <code>Scalar</code>
+ *  Returns <code>true</code> if <i>num</i> is a <code>Real</code>
  *  (i.e. non <code>Complex</code>).
  */
 
 static VALUE
-num_scalar_p(VALUE num)
+num_real_p(VALUE num)
 {
     return Qtrue;
 }
@@ -3145,7 +3145,7 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "magnitude", num_abs, 0);
     rb_define_method(rb_cNumeric, "to_int", num_to_int, 0);
 
-    rb_define_method(rb_cNumeric, "scalar?", num_scalar_p, 0);
+    rb_define_method(rb_cNumeric, "real?", num_real_p, 0);
     rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);

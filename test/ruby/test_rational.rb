@@ -249,7 +249,6 @@ class Rational_Test < Test::Unit::TestCase
     c = Rational(1)
 
     if defined?(Rational::Unify)
-      assert_equal(true, c.scalar?)
 =begin
       assert_equal(true, c.finite?)
       assert_equal(false, c.infinite?)
@@ -257,13 +256,14 @@ class Rational_Test < Test::Unit::TestCase
       assert_equal(true, c.integer?)
       assert_equal(false, c.float?)
       assert_equal(true, c.rational?)
+=end
       assert_equal(true, c.real?)
+=begin
       assert_equal(false, c.complex?)
       assert_equal(true, c.exact?)
       assert_equal(false, c.inexact?)
 =end
     else
-      assert_equal(true, c.scalar?)
 =begin
       assert_equal(true, c.finite?)
       assert_equal(false, c.infinite?)
@@ -271,7 +271,9 @@ class Rational_Test < Test::Unit::TestCase
       assert_equal(false, c.integer?)
       assert_equal(false, c.float?)
       assert_equal(true, c.rational?)
+=end
       assert_equal(true, c.real?)
+=begin
       assert_equal(false, c.complex?)
       assert_equal(true, c.exact?)
       assert_equal(false, c.inexact?)
@@ -1054,8 +1056,8 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_supp
-    assert_equal(true, 1.scalar?)
-    assert_equal(true, 1.1.scalar?)
+    assert_equal(true, 1.real?)
+    assert_equal(true, 1.1.real?)
 
     assert_equal(1, 1.numerator)
     assert_equal(9, 9.numerator)

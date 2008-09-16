@@ -243,7 +243,6 @@ class Complex_Test < Test::Unit::TestCase
     c = Complex(1)
 
     if defined?(Complex::Unify)
-      assert_equal(true, c.scalar?)
 =begin
       assert_equal(true, c.finite?)
       assert_equal(false, c.infinite?)
@@ -251,13 +250,14 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal(true, c.integer?)
       assert_equal(false, c.float?)
       assert_equal(true, c.rational?)
+=end
       assert_equal(true, c.real?)
+=begin
       assert_equal(false, c.complex?)
       assert_equal(true, c.exact?)
       assert_equal(false, c.inexact?)
 =end
     else
-      assert_equal(false, c.scalar?)
 =begin
       assert_equal(true, c.finite?)
       assert_equal(false, c.infinite?)
@@ -265,7 +265,9 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal(false, c.integer?)
       assert_equal(false, c.float?)
       assert_equal(false, c.rational?)
+=end
       assert_equal(false, c.real?)
+=begin
       assert_equal(true, c.complex?)
       assert_equal(true, c.exact?)
       assert_equal(false, c.inexact?)
@@ -882,8 +884,8 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_supp
-    assert_equal(true, 1.scalar?)
-    assert_equal(true, 1.1.scalar?)
+    assert_equal(true, 1.real?)
+    assert_equal(true, 1.1.real?)
 
     assert_equal(1, 1.real)
     assert_equal(0, 1.image)

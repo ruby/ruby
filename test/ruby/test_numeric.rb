@@ -72,8 +72,8 @@ class TestNumeric < Test::Unit::TestCase
     end
   end
 
-  def test_scalar_p
-    assert(Numeric.new.scalar?)
+  def test_real_p
+    assert(Numeric.new.real?)
   end
 
   def test_integer_p

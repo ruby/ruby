@@ -24,7 +24,7 @@ VALUE rb_cComplex;
 static ID id_Unify, id_abs, id_abs2, id_arg, id_cmp, id_conjugate,
     id_convert, id_denominator, id_divmod, id_equal_p, id_exact_p, id_expt,
     id_floor, id_hash, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
-    id_numerator, id_polar, id_quo, id_scalar_p, id_to_f, id_to_i, id_to_r,
+    id_numerator, id_polar, id_quo, id_real_p, id_to_f, id_to_i, id_to_r,
     id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -168,9 +168,7 @@ fun1(inspect)
 fun1(negate)
 fun1(numerator)
 fun1(polar)
-fun1(scalar_p)
-
-#define f_real_p f_scalar_p
+fun1(real_p)
 
 fun1(to_f)
 fun1(to_i)
@@ -1383,7 +1381,7 @@ Init_Complex(void)
     id_numerator = rb_intern("numerator");
     id_polar = rb_intern("polar");
     id_quo = rb_intern("quo");
-    id_scalar_p = rb_intern("scalar?");
+    id_real_p = rb_intern("real?");
     id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
     id_to_r = rb_intern("to_r");
@@ -1459,13 +1457,12 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "~", nucomp_conjugate, 0); /* gcc */
 #endif
 
-#if 0
     rb_define_method(rb_cComplex, "real?", nucomp_false, 0);
+#if 0
     rb_define_method(rb_cComplex, "complex?", nucomp_true, 0);
     rb_define_method(rb_cComplex, "exact?", nucomp_exact_p, 0);
     rb_define_method(rb_cComplex, "inexact?", nucomp_inexact_p, 0);
 #endif
-    rb_define_method(rb_cComplex, "scalar?", nucomp_false, 0);
 
     rb_define_method(rb_cComplex, "numerator", nucomp_numerator, 0);
     rb_define_method(rb_cComplex, "denominator", nucomp_denominator, 0);
