@@ -61,8 +61,11 @@ utf32be_is_mbc_newline(const UChar* p, const UChar* end,
 
 static OnigCodePoint
 utf32be_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
+                    int *precise_ret,
 		    OnigEncoding enc ARG_UNUSED)
 {
+  if (precise_ret)
+    *precise_ret = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(4);
   return (OnigCodePoint )(((p[0] * 256 + p[1]) * 256 + p[2]) * 256 + p[3]);
 }
 

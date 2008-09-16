@@ -1292,4 +1292,23 @@ class TestM17N < Test::Unit::TestCase
     assert(("".center(1, "\x80".force_encoding("utf-8")); true),
            "moved from btest/knownbug, [ruby-dev:33807]")
   end
+
+  def test_combchar
+    assert_equal(1, "\u{304B 3099}".length)
+    assert_equal("\u{304B 3099}", "\u{304B 3099}"[0])
+    assert_equal(nil, "\u{304B 3099}"[1])
+    assert_equal(nil, "\u{304B 3099}".index("\u3099"))
+  end
+
+  def test_combchar_regexp
+    assert_match(/\A.\z/, "\u304B\u3099")
+    assert_nil(/\u3099/ =~ "\u304B\u3099")
+    assert_nil(/a|b/ =~ "a\u3099")
+    assert_nil(/\u0100|\u0111/ =~ "\u0100\u3099")
+  end
+
+  def test_combchar_codepoint
+    assert_equal([0x30BB, 0x309A], "\u30BB\u309A".codepoints.to_a)
+  end
+
 end

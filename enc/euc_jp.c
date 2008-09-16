@@ -133,21 +133,9 @@ mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 }
 
 static OnigCodePoint
-mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
+mbc_to_code(const UChar* p, const UChar* end, int *precise_ret, OnigEncoding enc)
 {
-  int c, i, len;
-  OnigCodePoint n;
-
-  len = enclen(enc, p, end);
-  n = (OnigCodePoint )*p++;
-  if (len == 1) return n;
-
-  for (i = 1; i < len; i++) {
-    if (p >= end) break;
-    c = *p++;
-    n <<= 8;  n += c;
-  }
-  return n;
+  return onigenc_mbn_mbc_to_code(enc, p, end, precise_ret);
 }
 
 static int

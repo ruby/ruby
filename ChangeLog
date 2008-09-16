@@ -1,3 +1,81 @@
+Wed Sep 17 01:33:11 2008  Tanaka Akira  <akr@fsij.org>
+
+	* include/ruby/oniguruma.h (OnigEncodingTypeST): add precise_ret
+	  argument for mbc_to_code.
+	  (ONIGENC_MBC_TO_CODE): provide NULL for precise_ret.
+	  (ONIGENC_MBC_PRECISE_CODEPOINT): defined.
+
+	* include/ruby/encoding.h (rb_enc_mbc_precise_codepoint): defined.
+
+	* regenc.h (onigenc_single_byte_mbc_to_code): precise_ret argument
+	  added.
+	  (onigenc_mbn_mbc_to_code): ditto.
+
+	* regenc.c (onigenc_single_byte_mbc_to_code): precise_ret argument
+	  added.
+	  (onigenc_mbn_mbc_to_code): ditto.
+
+	* string.c (count_utf8_lead_bytes_with_word): removed.
+	  (str_utf8_nth): removed.
+	  (str_utf8_offset): removed.
+	  (str_strlen): UTF-8 codepoint oriented optimization removed.
+	  (rb_str_substr): ditto.
+	  (enc_succ_char): use rb_enc_mbc_precise_codepoint.
+	  (enc_pred_char): ditto.
+	  (rb_str_succ): ditto.
+
+	* encoding.c (rb_enc_ascget): check length with
+	  rb_enc_mbc_precise_codepoint.
+	  (rb_enc_codepoint): use rb_enc_mbc_precise_codepoint.
+
+	* regexec.c (string_cmp_ic): add text_end argument.
+	  (match_at): check end of character after exact string matches.
+
+	* enc/utf_8.c (graphme_table): defined for extended graphme cluster
+	  boundary.
+	  (grapheme_cmp): defined.
+	  (get_grapheme_properties): defined.
+	  (grapheme_boundary_p): defined.
+	  (MAX_BYTES_LENGTH): defined.
+	  (comb_char_enc_len): defined.
+	  (mbc_to_code0): extracted from mbc_to_code.
+	  (mbc_to_code): use mbc_to_code0.
+	  (left_adjust_combchar_head): defined.
+	  (utf_8): use a extended graphme cluster as a unit.
+	
+	* enc/unicode.c (onigenc_unicode_mbc_case_fold): use
+	  ONIGENC_MBC_PRECISE_CODEPOINT to extract codepoints.
+	  (onigenc_unicode_get_case_fold_codes_by_str): ditto.
+
+	* enc/euc_jp.c (mbc_to_code): follow mbc_to_code field change.
+	  use onigenc_mbn_mbc_to_code.
+
+	* enc/shift_jis.c (mbc_to_code): ditto.
+
+	* enc/emacs_mule.c (mbc_to_code): ditto.
+
+	* enc/gbk.c (gbk_mbc_to_code): follow mbc_to_code field and
+	  onigenc_mbn_mbc_to_code change.
+
+	* enc/cp949.c (cp949_mbc_to_code): ditto.
+
+	* enc/big5.c (big5_mbc_to_code): ditto.
+
+	* enc/euc_tw.c (euctw_mbc_to_code): ditto.
+
+	* enc/euc_kr.c (euckr_mbc_to_code): ditto.
+
+	* enc/gb18030.c (gb18030_mbc_to_code): ditto.
+
+	* enc/utf_32be.c (utf32be_mbc_to_code): follow mbc_to_code field
+	  change.
+
+	* enc/utf_16be.c (utf16be_mbc_to_code): ditto.
+
+	* enc/utf_32le.c (utf32le_mbc_to_code): ditto.
+
+	* enc/utf_16le.c (utf16le_mbc_to_code): ditto.
+
 Wed Sep 17 01:17:12 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* transcode.c (enc_arg): raise exception when unknown encoding is

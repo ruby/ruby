@@ -130,9 +130,9 @@ gbk_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 }
 
 static OnigCodePoint
-gbk_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
+gbk_mbc_to_code(const UChar* p, const UChar* end, int *precise_ret, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_to_code(enc, p, end);
+  return onigenc_mbn_mbc_to_code(enc, p, end, precise_ret);
 }
 
 static int

@@ -807,24 +807,6 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
     return c;
 }
 
-#ifdef NONASCII_MASK
-#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
-static inline VALUE
-count_utf8_lead_bytes_with_word(const VALUE *s)
-{
-    VALUE d = *s;
-    d |= ~(d>>1);
-    d >>= 6;
-    d &= NONASCII_MASK >> 7;
-    d += (d>>8);
-    d += (d>>16);
-#if SIZEOF_VALUE == 8
-    d += (d>>32);
-#endif
-    return (d&0xF);
-}
-#endif
-
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
@@ -835,32 +817,6 @@ str_strlen(VALUE str, rb_encoding *enc)
     if (!enc) enc = STR_ENC_GET(str);
     p = RSTRING_PTR(str);
     e = RSTRING_END(str);
-#ifdef NONASCII_MASK
-    if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
-        enc == rb_utf8_encoding()) {
-        VALUE len = 0;
-	if (sizeof(VALUE) * 2 < e - p) {
-	    const VALUE *s, *t;
-	    const VALUE lowbits = sizeof(VALUE) - 1;
-	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
-	    t = (const VALUE*)(~lowbits & (VALUE)e);
-	    while (p < (const char *)s) {
-		if (is_utf8_lead_byte(*p)) len++;
-		p++;
-	    }
-	    while (s < t) {
-		len += count_utf8_lead_bytes_with_word(s);
-		s++;
-	    }
-	    p = (const char *)s;
-	}
-	while (p < e) {
-	    if (is_utf8_lead_byte(*p)) len++;
-	    p++;
-	}
-	return (long)len;
-    }
-#endif
     n = rb_enc_strlen_cr(p, e, enc, &cr);
     if (cr) {
         ENC_CODERANGE_SET(str, cr);
@@ -1227,44 +1183,6 @@ str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singleby
     return pp - p;
 }
 
-#ifdef NONASCII_MASK
-static char *
-str_utf8_nth(const char *p, const char *e, int nth)
-{
-    if (sizeof(VALUE) * 2 < nth) {
-	const VALUE *s, *t;
-	const VALUE lowbits = sizeof(VALUE) - 1;
-	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
-	t = (const VALUE*)(~lowbits & (VALUE)e);
-	while (p < (const char *)s) {
-	    if (is_utf8_lead_byte(*p)) nth--;
-	    p++;
-	}
-	do {
-	    nth -= count_utf8_lead_bytes_with_word(s);
-	    s++;
-	} while (s < t && sizeof(VALUE) <= nth);
-	p = (char *)s;
-    }
-    while (p < e) {
-	if (is_utf8_lead_byte(*p)) {
-	    if (nth == 0) break;
-	    nth--;
-	}
-	p++;
-    }
-    return (char *)p;
-}
-
-static int
-str_utf8_offset(const char *p, const char *e, int nth)
-{
-    const char *pp = str_utf8_nth(p, e, nth);
-    if (!pp) return e - p;
-    return pp - p;
-}
-#endif
-
 /* byte offset to char offset */
 long
 rb_str_sublen(VALUE str, long pos)
@@ -1338,13 +1256,6 @@ rb_str_substr(VALUE str, long beg, long len)
     if (len == 0) {
 	p = 0;
     }
-#ifdef NONASCII_MASK
-    else if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
-        enc == rb_utf8_encoding()) {
-        p = str_utf8_nth(s, e, beg);
-        len = str_utf8_offset(p, e, len);
-    }
-#endif
     else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
 	int char_sz = rb_enc_mbmaxlen(enc);
 
@@ -2454,7 +2365,7 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
         if (i < 0)
             return NEIGHBOR_WRAPPED;
         ++((unsigned char*)p)[i];
-        l = rb_enc_precise_mbclen(p, p+len, enc);
+        rb_enc_mbc_precise_codepoint(p, p+len, &l, enc);
         if (MBCLEN_CHARFOUND_P(l)) {
             l = MBCLEN_CHARFOUND_LEN(l);
             if (l == len) {
@@ -2467,7 +2378,7 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
         if (MBCLEN_INVALID_P(l) && i < len-1) {
             int len2, l2;
             for (len2 = len-1; 0 < len2; len2--) {
-                l2 = rb_enc_precise_mbclen(p, p+len2, enc);
+                rb_enc_mbc_precise_codepoint(p, p+len2, &l2, enc);
                 if (!MBCLEN_INVALID_P(l2))
                     break;
             }
@@ -2486,7 +2397,7 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
         if (i < 0)
             return NEIGHBOR_WRAPPED;
         --((unsigned char*)p)[i];
-        l = rb_enc_precise_mbclen(p, p+len, enc);
+        rb_enc_mbc_precise_codepoint(p, p+len, &l, enc);
         if (MBCLEN_CHARFOUND_P(l)) {
             l = MBCLEN_CHARFOUND_LEN(l);
             if (l == len) {
@@ -2499,7 +2410,7 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
         if (MBCLEN_INVALID_P(l) && i < len-1) {
             int len2, l2;
             for (len2 = len-1; 0 < len2; len2--) {
-                l2 = rb_enc_precise_mbclen(p, p+len2, enc);
+                rb_enc_mbc_precise_codepoint(p, p+len2, &l2, enc);
                 if (!MBCLEN_INVALID_P(l2))
                     break;
             }
@@ -2606,7 +2517,7 @@ rb_str_succ(VALUE orig)
     VALUE str;
     char *sbeg, *s, *e, *last_alnum = 0;
     int c = -1;
-    long l;
+    int l;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
     int carry_pos = 0, carry_len = 1;
     enum neighbor_char neighbor = NEIGHBOR_FOUND;
@@ -2628,7 +2539,8 @@ rb_str_succ(VALUE orig)
 		break;
 	    }
 	}
-	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+        rb_enc_mbc_precise_codepoint(s, e, &l, enc);
+	if (l <= 0) continue;
         neighbor = enc_succ_alnum_char(s, l, enc, carry);
         switch (neighbor) {
 	  case NEIGHBOR_NOT_CHAR:
@@ -2647,11 +2559,14 @@ rb_str_succ(VALUE orig)
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
-            if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
+            int l2;
+            rb_enc_mbc_precise_codepoint(s, e, &l, enc);
+            if (l <= 0) continue;
             neighbor = enc_succ_char(s, l, enc);
             if (neighbor == NEIGHBOR_FOUND)
                 return str;
-            if (rb_enc_precise_mbclen(s, s+l, enc) != l) {
+            rb_enc_mbc_precise_codepoint(s, s+l, &l2, enc);
+            if (l2 != l) {
                 /* wrapped to \0...\0.  search next valid char. */
                 enc_succ_char(s, l, enc);
             }

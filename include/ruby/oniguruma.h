@@ -155,7 +155,7 @@ typedef struct OnigEncodingTypeST {
   int           max_enc_len;
   int           min_enc_len;
   int    (*is_mbc_newline)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
-  OnigCodePoint (*mbc_to_code)(const OnigUChar* p, const OnigUChar* end, struct OnigEncodingTypeST* enc);
+  OnigCodePoint (*mbc_to_code)(const OnigUChar* p, const OnigUChar* end, int *precise_ret, struct OnigEncodingTypeST* enc);
   int    (*code_to_mbclen)(OnigCodePoint code, struct OnigEncodingTypeST* enc);
   int    (*code_to_mbc)(OnigCodePoint code, OnigUChar *buf, struct OnigEncodingTypeST* enc);
   int    (*mbc_case_fold)(OnigCaseFoldType flag, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, struct OnigEncodingTypeST* enc);
@@ -249,7 +249,8 @@ int onigenc_mbclen_approximate P_((const OnigUChar* p,const OnigUChar* e, struct
 #define ONIGENC_MBC_MAXLEN_DIST(enc)           ONIGENC_MBC_MAXLEN(enc)
 #define ONIGENC_MBC_MINLEN(enc)               ((enc)->min_enc_len)
 #define ONIGENC_IS_MBC_NEWLINE(enc,p,end)      (enc)->is_mbc_newline((p),(end),enc)
-#define ONIGENC_MBC_TO_CODE(enc,p,end)         (enc)->mbc_to_code((p),(end),enc)
+#define ONIGENC_MBC_TO_CODE(enc,p,end)         (enc)->mbc_to_code((p),(end),NULL,enc)
+#define ONIGENC_MBC_PRECISE_CODEPOINT(enc,p,end,prec_ret) (enc)->mbc_to_code((p),(end),(prec_ret),enc)
 #define ONIGENC_CODE_TO_MBCLEN(enc,code)       (enc)->code_to_mbclen(code,enc)
 #define ONIGENC_CODE_TO_MBC(enc,code,buf)      (enc)->code_to_mbc(code,buf,enc)
 #define ONIGENC_PROPERTY_NAME_TO_CTYPE(enc,p,end) \

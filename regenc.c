@@ -615,8 +615,11 @@ onigenc_single_byte_mbc_enc_len(const UChar* p ARG_UNUSED, const UChar* e ARG_UN
 
 extern OnigCodePoint
 onigenc_single_byte_mbc_to_code(const UChar* p, const UChar* end ARG_UNUSED,
+                                int *precise_ret,
 				OnigEncoding enc ARG_UNUSED)
 {
+  if (precise_ret)
+    *precise_ret = ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(1);
   return (OnigCodePoint )(*p);
 }
 
@@ -668,12 +671,20 @@ onigenc_ascii_is_code_ctype(OnigCodePoint code, unsigned int ctype,
 }
 
 extern OnigCodePoint
-onigenc_mbn_mbc_to_code(OnigEncoding enc, const UChar* p, const UChar* end)
+onigenc_mbn_mbc_to_code(OnigEncoding enc, const UChar* p, const UChar* end, int *precise_ret)
 {
-  int c, i, len;
+  int c, i, len, ret;
   OnigCodePoint n;
 
-  len = enclen(enc, p, end);
+  ret = ONIGENC_PRECISE_MBC_ENC_LEN(enc, p, end);
+  if (precise_ret)
+    *precise_ret = ret;
+  if (ONIGENC_MBCLEN_CHARFOUND_P(ret))
+    len = ONIGENC_MBCLEN_CHARFOUND_LEN(ret);
+  else if (ONIGENC_MBCLEN_NEEDMORE_P(ret))
+    len = end-p+ONIGENC_MBCLEN_NEEDMORE_LEN(ret);
+  else
+    len = 1;
   n = (OnigCodePoint )(*p++);
   if (len == 1) return n;
 

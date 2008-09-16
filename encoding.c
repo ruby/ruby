@@ -735,20 +735,16 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
 int
 rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
 {
-    unsigned int c, l;
+    unsigned int c;
+    int l, l2;
     if (e <= p)
         return -1;
-    if (rb_enc_asciicompat(enc)) {
-        c = (unsigned char)*p;
-        if (!ISASCII(c))
-            return -1;
-        if (len) *len = 1;
-        return c;
-    }
     l = rb_enc_precise_mbclen(p, e, enc);
     if (!MBCLEN_CHARFOUND_P(l))
         return -1;
-    c = rb_enc_mbc_to_codepoint(p, e, enc);
+    c = rb_enc_mbc_precise_codepoint(p, e, &l2, enc);
+    if (l != l2)
+        return -1;
     if (!rb_enc_isascii(c, enc))
         return -1;
     if (len) *len = l;
@@ -759,11 +755,12 @@ unsigned int
 rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc)
 {
     int r;
+    OnigCodePoint c;
     if (e <= p)
         rb_raise(rb_eArgError, "empty string");
-    r = rb_enc_precise_mbclen(p, e, enc);
+    c = rb_enc_mbc_precise_codepoint(p, e, &r, enc);
     if (MBCLEN_CHARFOUND_P(r))
-        return rb_enc_mbc_to_codepoint(p, e, enc);
+        return c;
     else
 	rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
 }
