@@ -1,6 +1,6 @@
 Tue Sep 16 22:23:24 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
-	* lib/cgi/core.rb: performance improvement. 
+	* lib/cgi/core.rb (CGI#header): performance improvement. 
 	  From CGIAlt http://cgialt.rubyforge.org/
 
 	* test/cgi/test_cgi_header.rb: exception class fixed.
