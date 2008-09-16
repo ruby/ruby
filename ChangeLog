@@ -264,7 +264,7 @@ Mon Sep 15 14:34:32 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Sep 15 13:53:33 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* encoding.c (rb_enc_compatible): accepst other than strings and
+	* encoding.c (rb_enc_compatible): accept other than strings and
 	  regexps. [ruby-core:18595]
 
 	* encoding.c (rb_enc_get_index): works files and encodings.
@@ -362,7 +362,7 @@ Sun Sep 14 13:48:03 2008  Yuki Sonoda (Yugui)  <yugui@yugui.jp>
 	* object.c (Init_Object): added metameta-class initialization for 
 	  BasicObject, Object, and Module.
 	  The metameta-classes of them are now the metaclass of Class, as the 
-	  metameta-calss of Class is. 
+	  metameta-class of Class is. 
 
 	* object.c (boot_defmetametaclass): added.
 
