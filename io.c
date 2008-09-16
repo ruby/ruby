@@ -2257,7 +2257,7 @@ rb_io_gets(VALUE io)
  *  to <code>$_</code>. Returns <code>nil</code> if called at end of
  *  file.  If the first argument is an integer, or optional second
  *  argument is given, the returning string would not be longer than the
- *  given value.
+ *  given value in bytes.
  *
  *     File.new("testfile").gets   #=> "This is line one\n"
  *     $_                          #=> "This is line one\n"
@@ -2363,8 +2363,8 @@ rb_io_readline(int argc, VALUE *argv, VALUE io)
  *  <i>sep</i> is <code>nil</code>, the rest of the stream is returned
  *  as a single record.  If the first argument is an integer, or
  *  optional second argument is given, the returning string would not be
- *  longer than the given value. The stream must be opened for reading
- *  or an <code>IOError</code> will be raised.
+ *  longer than the given value in bytes. The stream must be opened for
+ *  reading or an <code>IOError</code> will be raised.
  *
  *     f = File.new("testfile")
  *     f.readlines[0]   #=> "This is line one\n"
@@ -5994,9 +5994,9 @@ static VALUE argf_gets(int, VALUE *, VALUE);
  *  reads the input one paragraph at a time, where paragraphs are
  *  divided by two consecutive newlines.  If the first argument is an
  *  integer, or optional second argument is given, the returning string
- *  would not be longer than the given value.  If multiple filenames are
- *  present in +ARGV+, +gets(nil)+ will read the contents one file at a
- *  time.
+ *  would not be longer than the given value in bytes.  If multiple
+ *  filenames are present in +ARGV+, +gets(nil)+ will read the contents
+ *  one file at a time.
  *
  *     ARGV << "testfile"
  *     print while gets

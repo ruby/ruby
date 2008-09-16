@@ -1,3 +1,10 @@
+Tue Sep 16 18:28:52 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_gets_m): rdoc updated.  limit counts in bytes.
+	  [ruby-core:18617]
+
+	* io.c (rb_io_readlines, rb_f_gets): ditto.
+
 Tue Sep 16 11:55:16 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_each_codepoint): add new methods, #codepoints
