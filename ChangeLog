@@ -1,3 +1,7 @@
+Tue Sep 16 21:48:55 2008  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_desc): Regexp#inspect should be US-ASCII.
+
 Tue Sep 16 21:33:22 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_crypt): orthodox crypt() sees only first two bytes
