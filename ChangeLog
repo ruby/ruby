@@ -18,6 +18,38 @@ Tue Sep 16 02:02:56 2008  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (prefix_escape): ditto.
 
+Tue Sep 16 01:50:21 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c ():
+
+Tue Sep 16 01:49:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c ():
+
+Tue Sep 16 01:47:07 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (single_byte_optimizable): make function inline.  based
+	  on a patch from Michael Selig <michael.selig at fs.com.au> in
+	  [ruby-core:18532].
+
+	* string.c (str_modify_keep_cr): new function act as
+	  rb_str_modify(), but don't clear coderange
+
+	* string.c (rb_str_casecmp): specialized for single byte strings.
+
+	* string.c (rb_str_splice): preserve coderange.
+
+	* string.c (rb_str_slice_bang, rb_str_reverse_bang,
+	  rb_str_upcase_bang, rb_str_downcase_bang, tr_trans,
+	  rb_str_capitalize_bang, rb_str_swapcase_bang,
+	  rb_str_delete_bang, rb_str_chop_bang, rb_str_chomp_bang,
+	  rb_str_lstrip_bang, rb_str_rstrip_bang): ditto.
+
+	* string.c (rb_str_clear): preset coderange.
+
+	* string.c (rb_str_split_m): specialized for splitting with a
+	  string.
+
 Tue Sep 16 00:57:56 2008  Tanaka Akira  <akr@fsij.org>
 
 	* re.c (rb_reg_quote): use rb_enc_mbcput to generate ASCII

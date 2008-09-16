@@ -1158,11 +1158,11 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_split
     combination(STRINGS, STRINGS) {|s1, s2|
       if !s2.valid_encoding?
-        assert_raise(RegexpError) { s1.split(s2) }
+        assert_raise(ArgumentError, RegexpError) { s1.split(s2) }
         next
       end
       if !s1.ascii_only? && !s2.ascii_only? && s1.encoding != s2.encoding
-        assert_raise(ArgumentError) { s1.split(s2) }
+        assert_raise(ArgumentError, EncodingCompatibilityError) { s1.split(s2) }
         next
       end
       if !s1.valid_encoding?
