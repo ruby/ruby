@@ -125,10 +125,10 @@ unsigned int rb_enc_codepoint(const char *p, const char *e, rb_encoding *enc);
 #define rb_enc_mbc_precise_codepoint(p, e, prec_ret, enc) ONIGENC_MBC_PRECISE_CODEPOINT(enc,(UChar*)(p),(UChar*)(e),(prec_ret))
 
 /* -> codelen>0 or raise exception */
-int rb_enc_codelen(int code, rb_encoding *enc);
+int rb_enc_codelen(int codepoint, rb_encoding *enc);
 
-/* code,ptr,encoding -> write buf */
-#define rb_enc_mbcput(c,buf,enc) ONIGENC_CODE_TO_MBC(enc,c,(UChar*)(buf))
+/* codepoint,ptr,encoding -> write buf */
+#define rb_enc_mbcput(codepoint,buf,enc) ONIGENC_CODE_TO_MBC((enc),(codepoint),(UChar*)(buf))
 
 /* start, ptr, end, encoding -> prev_char */
 #define rb_enc_prev_char(s,p,e,enc) (char *)onigenc_get_prev_char_head(enc,(UChar*)(s),(UChar*)(p),(UChar*)(e))

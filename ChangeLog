@@ -1,3 +1,7 @@
+Wed Sep 17 21:50:14 2008  Tanaka Akira  <akr@fsij.org>
+
+	* string.c (rb_str_casecmp): don't use rb_enc_codepoint.
+
 Wed Sep 17 19:55:33 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* complex.c (nucomp_s_convert): accepts complex

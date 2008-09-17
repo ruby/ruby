@@ -1998,7 +1998,6 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
-    long len;
     rb_encoding *enc;
     char *p1, *p1end, *p2, *p2end;
 
@@ -2013,8 +2012,8 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
 	while (p1 < p1end && p2 < p2end) {
 	    if (*p1 != *p2) {
-		unsigned int c1 = rb_enc_toupper(*p1 & 0xff, enc);
-		unsigned int c2 = rb_enc_toupper(*p2 & 0xff, enc);
+		unsigned int c1 = TOUPPER(*p1 & 0xff);
+		unsigned int c2 = TOUPPER(*p2 & 0xff);
 		if (c1 > c2) return INT2FIX(1);
 		if (c1 < c2) return INT2FIX(-1);
 	    }
@@ -2024,18 +2023,42 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     }
     else {
 	while (p1 < p1end && p2 < p2end) {
-	    unsigned int c1 = rb_enc_codepoint(p1, p1end, enc);
-	    unsigned int c2 = rb_enc_codepoint(p2, p2end, enc);
+            int l1, c1 = rb_enc_ascget(p1, p1end, &l1, enc);
+            int l2, c2 = rb_enc_ascget(p2, p1end, &l2, enc);
 
-	    if (c1 != c2) {
-		c1 = rb_enc_toupper(c1, enc);
-		c2 = rb_enc_toupper(c2, enc);
-		if (c1 > c2) return INT2FIX(1);
-		if (c1 < c2) return INT2FIX(-1);
-	    }
-	    len = rb_enc_codelen(c1, enc);
-	    p1 += len;
-	    p2 += len;
+            if (0 <= c1) {
+                if (0 <= c2) {
+                    if (c1 != c2) {
+                        c1 = TOUPPER(c1);
+                        c2 = TOUPPER(c2);
+                        if (c1 > c2) return INT2FIX(1);
+                        if (c1 < c2) return INT2FIX(-1);
+                    }
+                }
+                else {
+                    return INT2FIX(-1);
+                }
+            }
+            else {
+                if (0 <= c2) {
+                    return INT2FIX(1);
+                }
+                else {
+                    int l, r;
+                    l1 = rb_enc_mbclen(p1, p1end, enc);
+                    l2 = rb_enc_mbclen(p2, p2end, enc);
+                    l = l1;
+                    if (l2 < l)
+                        l = l2;
+                    r = memcmp(p1, p2, l);
+                    if (r != 0)
+                        return INT2FIX(r < 0 ? -1 : 1);
+                    if (l1 != l2)
+                        return INT2FIX(l1 < l2 ? -1 : 1);
+                }
+            }
+	    p1 += l1;
+	    p2 += l2;
 	}
     }
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return INT2FIX(0);
