@@ -305,6 +305,14 @@ class CGITagHelperTest < Test::Unit::TestCase
     assert_equal('<TH>foo</TH>',cgi.th{'foo'})
     assert_equal('<TD>',cgi.td)
     assert_equal('<TD>foo</TD>',cgi.td{'foo'})
+    str=cgi.checkbox_group("foo",["aa","bb"],["cc","dd"])
+    assert_match(/^<INPUT .*VALUE="aa".*>bb<INPUT .*VALUE="cc".*>dd$/,str)
+    assert_match(/^<INPUT .*TYPE="checkbox".*>bb<INPUT .*TYPE="checkbox".*>dd$/,str)
+    assert_match(/^<INPUT .*NAME="foo".*>bb<INPUT .*NAME="foo".*>dd$/,str)
+    str=cgi.radio_group("foo",["aa","bb"],["cc","dd"])
+    assert_match(/^<INPUT .*VALUE="aa".*>bb<INPUT .*VALUE="cc".*>dd$/,str)
+    assert_match(/^<INPUT .*TYPE="radio".*>bb<INPUT .*TYPE="radio".*>dd$/,str)
+    assert_match(/^<INPUT .*NAME="foo".*>bb<INPUT .*NAME="foo".*>dd$/,str)
   end
   
 =begin

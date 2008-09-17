@@ -1,3 +1,10 @@
+Wed Sep 17 13:42:59 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
+
+	* lib/cgi/html.rb (checkbox_group,radio_group): bug fix
+	  use size instead of	bytesize.
+
+	* test/cgi/test_cgi_tag_helper.rb: test for checkbox_group,radio_group.
+
 Wed Sep 17 06:58:31 2008  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* numeric.c: provides predicate real? instead of scalar?.
