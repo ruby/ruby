@@ -624,16 +624,12 @@ class TestIO < Test::Unit::TestCase
       assert_equal("", f2.read)
     end
 
-    proc do
-      open(__FILE__) # see Bug #493 [ruby-dev:35957]
-    end.call
-
     a = []
     assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
       loop {a << IO.pipe}
     end
     assert_raise(Errno::EMFILE, Errno::ENFILE, Errno::ENOMEM) do
-      loop {a[-1][0].dup; a[-1][1].dup}
+      loop {a << [a[-1][0].dup, a[-1][1].dup]}
     end
     a.each do |r, w|
       r.close unless !r || r.closed?
