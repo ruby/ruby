@@ -15,6 +15,14 @@ Wed Sep 17 19:16:47 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* test/ruby/test_io.rb (TestIO#test_dup): remove needless open.
 	  [ruby-dev:35957]
 
+Wed Sep 17 17:44:59 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_extract_modeenc): process option mode: and perm: as
+	  well.
+
+	* io.c (open_key_args): move mode: and perm: related code to
+	  rb_io_extract_modeenc().
+
 Wed Sep 17 13:42:59 2008  Takeyuki Fujioka  <xibbar@ruby-lang.org>
 
 	* lib/cgi/html.rb (checkbox_group,radio_group): bug fix

@@ -3864,7 +3864,7 @@ validate_enc_binmode(int fmode, rb_encoding *enc, rb_encoding *enc2)
 }
 
 static void
-rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
+rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         int *oflags_p, int *fmode_p, convconfig_t *convconfig_p)
 {
     VALUE vmode;
@@ -3872,7 +3872,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
     rb_encoding *enc, *enc2;
     int ecflags;
     VALUE ecopts;
-    int has_enc = 0;
+    int has_enc = 0, has_vmode = 0;
     VALUE intmode;
 
     vmode = *vmode_p;
@@ -3891,6 +3891,8 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
     }
     else {
         const char *p;
+
+      vmode_handle:
         SafeStringValue(vmode);
         p = StringValueCStr(vmode);
         fmode = rb_io_modestr_fmode(p);
@@ -3909,15 +3911,38 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE opthash,
     else {
 	VALUE v;
 	v = rb_hash_aref(opthash, sym_textmode);
-	if (RTEST(v))
+	if (!NIL_P(v))
             fmode |= FMODE_TEXTMODE;
 	v = rb_hash_aref(opthash, sym_binmode);
-	if (RTEST(v)) {
+	if (!NIL_P(v)) {
             fmode |= FMODE_BINMODE;
 #ifdef O_BINARY
             oflags |= O_BINARY;
 #endif
         }
+	if (!has_vmode) {
+	    v = rb_hash_aref(opthash, sym_mode);
+	    if (!NIL_P(v)) {
+		if (!NIL_P(vmode)) {
+		    rb_raise(rb_eArgError, "mode specified twice");
+		}
+		has_vmode = 1;
+		vmode = v;
+		goto vmode_handle;
+	    }
+	}
+	v = rb_hash_aref(opthash, sym_perm);
+	if (!NIL_P(v)) {
+	    if (vperm_p) {
+		if (!NIL_P(*vperm_p)) {
+		    rb_raise(rb_eArgError, "perm specified twice");
+		}
+		*vperm_p = v;
+	    }
+	    else {
+		/* perm no use, just ignore */
+	    }
+	}
         ecflags = rb_econv_prepare_opts(opthash, &ecopts);
 
         if (io_extract_encoding_option(opthash, &enc, &enc2)) {
@@ -4588,7 +4613,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &pname, &pmode);
 
-    rb_io_extract_modeenc(&pmode, opt, &oflags, &fmode, &convconfig);
+    rb_io_extract_modeenc(&pmode, 0, opt, &oflags, &fmode, &convconfig);
     modestr = rb_io_oflags_modestr(oflags);
 
     tmp = rb_check_array_type(pname);
@@ -4652,7 +4677,7 @@ rb_scan_open_args(int argc, VALUE *argv,
     }
 #endif
  
-    rb_io_extract_modeenc(&vmode, opt, &oflags, &fmode, convconfig_p);
+    rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, convconfig_p);
 
     perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
 
@@ -4909,7 +4934,7 @@ rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
     convconfig_t convconfig;
     mode_t perm;
 
-    rb_io_extract_modeenc(&vmode, opt, &oflags, &fmode, &convconfig);
+    rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
     perm = NIL_P(vperm) ? 0666 :  NUM2UINT(vperm);
 
     if (!NIL_P(cmd = check_pipe_command(filename))) {
@@ -5596,7 +5621,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
 
     opt = pop_last_hash(&argc, &argv);
     rb_scan_args(argc, argv, "11", &fnum, &vmode);
-    rb_io_extract_modeenc(&vmode, opt, &oflags, &fmode, &convconfig);
+    rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &fmode, &convconfig);
 
     fd = NUM2INT(fnum);
     UPDATE_MAXFD(fd);
@@ -6774,7 +6799,6 @@ static void
 open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 {
     VALUE opt, v;
-    VALUE vmode, vperm;
 
     FilePathValue(argv[0]);
     arg->io = 0;
@@ -6801,15 +6825,7 @@ open_key_args(int argc, VALUE *argv, struct foreach_arg *arg)
 	arg->io = rb_io_open_with_args(RARRAY_LEN(args), RARRAY_PTR(args));
 	return;
     }
-    vmode = Qnil;
-    vperm = INT2NUM(O_RDONLY);
-    v = rb_hash_aref(opt, sym_mode);
-    if (!NIL_P(v))
-        vmode = v;
-    v = rb_hash_aref(opt, sym_perm);
-    if (!NIL_P(v))
-        vperm = v;
-    arg->io = rb_io_open(argv[0], vmode, vperm, opt);
+    arg->io = rb_io_open(argv[0], Qnil, INT2NUM(O_RDONLY), opt);
 }
 
 static VALUE
