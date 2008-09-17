@@ -28,7 +28,7 @@ VALUE rb_cRational;
 
 static ID id_Unify, id_abs, id_cmp, id_convert, id_equal_p, id_expt,
     id_floor, id_format, id_hash, id_idiv, id_inspect, id_integer_p,
-    id_negate, id_new, id_new_bang, id_to_f, id_to_i, id_to_s, id_truncate;
+    id_negate, id_to_f, id_to_i, id_to_s, id_truncate;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -1497,8 +1497,6 @@ Init_Rational(void)
     id_inspect = rb_intern("inspect");
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");
-    id_new = rb_intern("new");
-    id_new_bang = rb_intern("new!");
     id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
     id_to_s = rb_intern("to_s");

@@ -1,3 +1,8 @@
+Wed Sep 17 19:55:33 2008  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* complex.c (nucomp_s_convert): accepts complex
+	  value (Complex(a,b) as a+bi).
+
 Wed Sep 17 19:16:47 2008  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/test_io.rb (TestIO#test_dup): avoid infinite loop.

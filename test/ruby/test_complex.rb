@@ -158,6 +158,9 @@ class Complex_Test < Test::Unit::TestCase
     c = Complex(0,Complex(1))
     assert_equal(Complex.__send__(:new, 0,1), c)
 
+    c = Complex(Complex(1,1),Complex(1))
+    assert_equal(Complex.__send__(:new, 1,2), c)
+
     c = 5.re
     assert_equal(Complex.__send__(:new, 5,0), c)
 
@@ -169,7 +172,7 @@ class Complex_Test < Test::Unit::TestCase
 
     c = Complex(2,0).im
     assert_equal(Complex.__send__(:new, 0,2), c)
-    assert_raise(ArgumentError){Complex(1,2).im}
+    assert_equal(Complex.__send__(:new, -2,1), Complex(1,2).im)
 
     c = Complex::I
     assert_equal(Complex.__send__(:new, 0,1), c)

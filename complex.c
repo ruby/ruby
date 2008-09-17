@@ -21,11 +21,10 @@
 
 VALUE rb_cComplex;
 
-static ID id_Unify, id_abs, id_abs2, id_arg, id_cmp, id_conjugate,
-    id_convert, id_denominator, id_divmod, id_equal_p, id_exact_p, id_expt,
-    id_floor, id_hash, id_idiv, id_inspect, id_negate, id_new, id_new_bang,
-    id_numerator, id_polar, id_quo, id_real_p, id_to_f, id_to_i, id_to_r,
-    id_to_s, id_truncate;
+static ID id_Unify, id_abs, id_abs2, id_arg, id_cmp, id_conj, id_convert,
+    id_denominator, id_divmod, id_equal_p, id_expt, id_floor, id_hash,
+    id_idiv, id_inspect, id_negate, id_numerator, id_polar, id_quo,
+    id_real_p, id_to_f, id_to_i, id_to_r, id_to_s;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -159,9 +158,8 @@ binop(xor, '^')
 fun1(abs)
 fun1(abs2)
 fun1(arg)
-fun1(conjugate)
+fun1(conj)
 fun1(denominator)
-fun1(exact_p)
 fun1(floor)
 fun1(hash)
 fun1(inspect)
@@ -174,7 +172,6 @@ fun1(to_f)
 fun1(to_i)
 fun1(to_r)
 fun1(to_s)
-fun1(truncate)
 
 fun2(divmod)
 
@@ -494,7 +491,7 @@ m_sqrt(VALUE x)
 	get_dat1(x);
 
 	if (f_negative_p(dat->image))
-	    return f_conjugate(m_sqrt(f_conjugate(x)));
+	    return f_conj(m_sqrt(f_conj(x)));
 	else {
 	    VALUE a = f_abs(x);
 	    return f_complex_new2(rb_cComplex,
@@ -627,9 +624,9 @@ nucomp_div(VALUE self, VALUE other)
 	    VALUE tmp = f_complex_new_bang2(CLASS_OF(self),
 					    f_div(bdat->real, magn),
 					    f_div(bdat->image, magn));
-	    return f_div(f_mul(self, f_conjugate(tmp)), magn);
+	    return f_div(f_mul(self, f_conj(tmp)), magn);
 	}
-	return f_div(f_mul(self, f_conjugate(other)), f_abs2(other));
+	return f_div(f_mul(self, f_conj(other)), f_abs2(other));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
@@ -783,7 +780,7 @@ nucomp_polar(VALUE self)
 }
 
 static VALUE
-nucomp_conjugate(VALUE self)
+nucomp_conj(VALUE self)
 {
     get_dat1(self);
     return f_complex_new2(CLASS_OF(self), dat->real, f_negate(dat->image));
@@ -1281,6 +1278,11 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 	    return a1;
     }
 
+    if ((k_numeric_p(a1) && !f_real_p(a1)) ||
+	(k_numeric_p(a2) && !f_real_p(a2)))
+	return f_add(a1,
+		     f_mul(a2, f_complex_new_bang2(rb_cComplex, ZERO, ONE)));
+
     {
 	VALUE argv2[2];
 	argv2[0] = a1;
@@ -1346,7 +1348,7 @@ numeric_polar(VALUE self)
 }
 
 static VALUE
-numeric_conjugate(VALUE self)
+numeric_conj(VALUE self)
 {
     return self;
 }
@@ -1364,20 +1366,17 @@ Init_Complex(void)
     id_abs2 = rb_intern("abs2");
     id_arg = rb_intern("arg");
     id_cmp = rb_intern("<=>");
-    id_conjugate = rb_intern("conjugate");
+    id_conj = rb_intern("conj");
     id_convert = rb_intern("convert");
     id_denominator = rb_intern("denominator");
     id_divmod = rb_intern("divmod");
     id_equal_p = rb_intern("==");
-    id_exact_p = rb_intern("exact?");
     id_expt = rb_intern("**");
     id_floor = rb_intern("floor");
     id_hash = rb_intern("hash");
     id_idiv = rb_intern("div");
     id_inspect = rb_intern("inspect");
     id_negate = rb_intern("-@");
-    id_new = rb_intern("new");
-    id_new_bang = rb_intern("new!");
     id_numerator = rb_intern("numerator");
     id_polar = rb_intern("polar");
     id_quo = rb_intern("quo");
@@ -1386,7 +1385,6 @@ Init_Complex(void)
     id_to_i = rb_intern("to_i");
     id_to_r = rb_intern("to_r");
     id_to_s = rb_intern("to_s");
-    id_truncate = rb_intern("truncate");
 
     rb_cComplex = rb_define_class(COMPLEX_NAME, rb_cNumeric);
 
@@ -1451,10 +1449,10 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "rectangular", nucomp_rect, 0);
     rb_define_method(rb_cComplex, "rect", nucomp_rect, 0);
     rb_define_method(rb_cComplex, "polar", nucomp_polar, 0);
-    rb_define_method(rb_cComplex, "conjugate", nucomp_conjugate, 0);
-    rb_define_method(rb_cComplex, "conj", nucomp_conjugate, 0);
+    rb_define_method(rb_cComplex, "conjugate", nucomp_conj, 0);
+    rb_define_method(rb_cComplex, "conj", nucomp_conj, 0);
 #if 0
-    rb_define_method(rb_cComplex, "~", nucomp_conjugate, 0); /* gcc */
+    rb_define_method(rb_cComplex, "~", nucomp_conj, 0); /* gcc */
 #endif
 
     rb_define_method(rb_cComplex, "real?", nucomp_false, 0);
@@ -1506,8 +1504,8 @@ Init_Complex(void)
     rb_define_method(rb_cNumeric, "rectangular", numeric_rect, 0);
     rb_define_method(rb_cNumeric, "rect", numeric_rect, 0);
     rb_define_method(rb_cNumeric, "polar", numeric_polar, 0);
-    rb_define_method(rb_cNumeric, "conjugate", numeric_conjugate, 0);
-    rb_define_method(rb_cNumeric, "conj", numeric_conjugate, 0);
+    rb_define_method(rb_cNumeric, "conjugate", numeric_conj, 0);
+    rb_define_method(rb_cNumeric, "conj", numeric_conj, 0);
 
     rb_define_const(rb_cComplex, "I",
 		    f_complex_new_bang2(rb_cComplex, ZERO, ONE));
