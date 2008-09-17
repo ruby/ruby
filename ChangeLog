@@ -1,3 +1,8 @@
+Sun Jun  8 21:50:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests to achieve over 90%
+	  test coverage of bigdecimal.
+
 Wed Sep 17 21:50:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* string.c (rb_str_casecmp): don't use rb_enc_codepoint.
