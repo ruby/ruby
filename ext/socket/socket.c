@@ -4374,6 +4374,33 @@ Init_socket()
 #ifdef	IPPROTO_BIP
     sock_define_const("IPPROTO_BIP", IPPROTO_BIP);
 #endif
+#ifdef IPPROTO_AH
+    sock_define_const("IPPROTO_AH", IPPROTO_AH);
+#endif
+#ifdef IPPROTO_DSTOPTS
+    sock_define_const("IPPROTO_DSTOPTS", IPPROTO_DSTOPTS);
+#endif
+#ifdef IPPROTO_ESP
+    sock_define_const("IPPROTO_ESP", IPPROTO_ESP);
+#endif
+#ifdef IPPROTO_FRAGMENT
+    sock_define_const("IPPROTO_FRAGMENT", IPPROTO_FRAGMENT);
+#endif
+#ifdef IPPROTO_HOPOPTS
+    sock_define_const("IPPROTO_HOPOPTS", IPPROTO_HOPOPTS);
+#endif
+#ifdef IPPROTO_ICMPV6
+    sock_define_const("IPPROTO_ICMPV6", IPPROTO_ICMPV6);
+#endif
+#ifdef IPPROTO_IPV6
+    sock_define_const("IPPROTO_IPV6", IPPROTO_IPV6);
+#endif
+#ifdef IPPROTO_NONE
+    sock_define_const("IPPROTO_NONE", IPPROTO_NONE);
+#endif
+#ifdef IPPROTO_ROUTING
+    sock_define_const("IPPROTO_ROUTING", IPPROTO_ROUTING);
+#endif
 /**/
 #ifdef	IPPROTO_RAW
     sock_define_const("IPPROTO_RAW", IPPROTO_RAW);
@@ -4637,6 +4664,9 @@ Init_socket()
 #ifdef EAI_NONAME
     sock_define_const("EAI_NONAME", EAI_NONAME);
 #endif
+#ifdef EAI_OVERFLOW
+    sock_define_const("EAI_OVERFLOW", EAI_OVERFLOW);
+#endif
 #ifdef EAI_SERVICE
     sock_define_const("EAI_SERVICE", EAI_SERVICE);
 #endif
@@ -4663,6 +4693,9 @@ Init_socket()
 #endif
 #ifdef AI_NUMERICHOST
     sock_define_const("AI_NUMERICHOST", AI_NUMERICHOST);
+#endif
+#ifdef AI_NUMERICSERV
+    sock_define_const("AI_NUMERICSERV", AI_NUMERICSERV);
 #endif
 #ifdef AI_MASK
     sock_define_const("AI_MASK", AI_MASK);
@@ -4717,5 +4750,92 @@ Init_socket()
     sock_define_const("SHUT_RDWR", SHUT_RDWR);
 #else
     sock_define_const("SHUT_RDWR", 2);
+#endif
+#ifdef IPV6_JOIN_GROUP
+    sock_define_const("IPV6_JOIN_GROUP", IPV6_JOIN_GROUP);
+#endif
+#ifdef IPV6_LEAVE_GROUP
+    sock_define_const("IPV6_LEAVE_GROUP", IPV6_LEAVE_GROUP);
+#endif
+#ifdef IPV6_MULTICAST_HOPS
+    sock_define_const("IPV6_MULTICAST_HOPS", IPV6_MULTICAST_HOPS);
+#endif
+#ifdef IPV6_MULTICAST_IF
+    sock_define_const("IPV6_MULTICAST_IF", IPV6_MULTICAST_IF);
+#endif
+#ifdef IPV6_MULTICAST_LOOP
+    sock_define_const("IPV6_MULTICAST_LOOP", IPV6_MULTICAST_LOOP);
+#endif
+#ifdef IPV6_UNICAST_HOPS
+    sock_define_const("IPV6_UNICAST_HOPS", IPV6_UNICAST_HOPS);
+#endif
+#ifdef IPV6_V6ONLY
+    sock_define_const("IPV6_V6ONLY", IPV6_V6ONLY);
+#endif
+#ifdef IPV6_CHECKSUM
+    sock_define_const("IPV6_CHECKSUM", IPV6_CHECKSUM);
+#endif
+#ifdef IPV6_DONTFRAG
+    sock_define_const("IPV6_DONTFRAG", IPV6_DONTFRAG);
+#endif
+#ifdef IPV6_DSTOPTS
+    sock_define_const("IPV6_DSTOPTS", IPV6_DSTOPTS);
+#endif
+#ifdef IPV6_HOPLIMIT
+    sock_define_const("IPV6_HOPLIMIT", IPV6_HOPLIMIT);
+#endif
+#ifdef IPV6_HOPOPTS
+    sock_define_const("IPV6_HOPOPTS", IPV6_HOPOPTS);
+#endif
+#ifdef IPV6_NEXTHOP
+    sock_define_const("IPV6_NEXTHOP", IPV6_NEXTHOP);
+#endif
+#ifdef IPV6_PATHMTU
+    sock_define_const("IPV6_PATHMTU", IPV6_PATHMTU);
+#endif
+#ifdef IPV6_PKTINFO
+    sock_define_const("IPV6_PKTINFO", IPV6_PKTINFO);
+#endif
+#ifdef IPV6_RECVDSTOPTS
+    sock_define_const("IPV6_RECVDSTOPTS", IPV6_RECVDSTOPTS);
+#endif
+#ifdef IPV6_RECVHOPLIMIT
+    sock_define_const("IPV6_RECVHOPLIMIT", IPV6_RECVHOPLIMIT);
+#endif
+#ifdef IPV6_RECVHOPOPTS
+    sock_define_const("IPV6_RECVHOPOPTS", IPV6_RECVHOPOPTS);
+#endif
+#ifdef IPV6_RECVPKTINFO
+    sock_define_const("IPV6_RECVPKTINFO", IPV6_RECVPKTINFO);
+#endif
+#ifdef IPV6_RECVRTHDR
+    sock_define_const("IPV6_RECVRTHDR", IPV6_RECVRTHDR);
+#endif
+#ifdef IPV6_RECVTCLASS
+    sock_define_const("IPV6_RECVTCLASS", IPV6_RECVTCLASS);
+#endif
+#ifdef IPV6_RTHDR
+    sock_define_const("IPV6_RTHDR", IPV6_RTHDR);
+#endif
+#ifdef IPV6_RTHDRDSTOPTS
+    sock_define_const("IPV6_RTHDRDSTOPTS", IPV6_RTHDRDSTOPTS);
+#endif
+#ifdef IPV6_RTHDR_TYPE_0
+    sock_define_const("IPV6_RTHDR_TYPE_0", IPV6_RTHDR_TYPE_0);
+#endif
+#ifdef IPV6_RECVPATHMTU
+    sock_define_const("IPV6_RECVPATHMTU", IPV6_RECVPATHMTU);
+#endif
+#ifdef IPV6_TCLASS
+    sock_define_const("IPV6_TCLASS", IPV6_TCLASS);
+#endif
+#ifdef IPV6_USE_MIN_MTU
+    sock_define_const("IPV6_USE_MIN_MTU", IPV6_USE_MIN_MTU);
+#endif
+#ifdef INET_ADDRSTRLEN
+    sock_define_const("INET_ADDRSTRLEN", INET_ADDRSTRLEN);
+#endif
+#ifdef INET6_ADDRSTRLEN
+    sock_define_const("INET6_ADDRSTRLEN", INET6_ADDRSTRLEN);
 #endif
 }
