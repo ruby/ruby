@@ -318,7 +318,7 @@ extern POINT _BufferSize;
 #endif
 
 struct input_code{
-    const char *name;
+    char *name;
     nkf_char stat;
     nkf_char score;
     nkf_char index;
@@ -328,11 +328,10 @@ struct input_code{
     int _file_stat;
 };
 
-static const char *input_codename = NULL; /* NULL: unestablished, "": BINARY */
+static char *input_codename = NULL; /* NULL: unestablished, "": BINARY */
 static nkf_encoding *input_encoding = NULL;
 static nkf_encoding *output_encoding = NULL;
 
-static int kanji_convert(FILE *f);
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
 /* UCS Mapping
  * 0: Shift_JIS, eucJP-ascii
@@ -439,7 +438,7 @@ static nkf_char (*iconv_for_check)(nkf_char c2,nkf_char c1,nkf_char c0) = 0;
 #endif
 
 static int guess_f = 0; /* 0: OFF, 1: ON, 2: VERBOSE */
-static  void    set_input_codename(const char *codename);
+static  void    set_input_codename(char *codename);
 
 #ifdef EXEC_IO
 static int exec_f = 0;
@@ -915,7 +914,8 @@ get_backup_filename(const char *suffix, const char *filename)
 	}
 	backup_filename[j] = '\0';
     }else{
-	backup_filename = malloc(filename_length + strlen(suffix) + 1);
+	j = filename_length + strlen(suffix);
+	backup_filename = malloc(j + 1);
 	strcpy(backup_filename, filename);
 	strcat(backup_filename, suffix);
 	backup_filename[j] = '\0';
@@ -1472,6 +1472,7 @@ s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
     nkf_char val;
 #endif
     static const char shift_jisx0213_s1a3_table[5][2] ={ { 1, 8}, { 3, 4}, { 5,12}, {13,14}, {15, 0} };
+    if (0xFC < c1) return 1;
 #ifdef SHIFTJIS_CP932
     if (!cp932inv_f && is_ibmext_in_sjis(c2)){
 	val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
@@ -1482,10 +1483,10 @@ s2e_conv(nkf_char c2, nkf_char c1, nkf_char *p2, nkf_char *p1)
     }
     if (cp932inv_f
 	&& CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
-	nkf_char c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
-	if (c){
-	    c2 = c >> 8;
-	    c1 = c & 0xff;
+	val = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
+	if (val){
+	    c2 = val >> 8;
+	    c1 = val & 0xff;
 	}
     }
 #endif /* SHIFTJIS_CP932 */
@@ -2501,6 +2502,7 @@ w_oconv16(nkf_char c2, nkf_char c1)
 	c1 = val & 0xff;
 	if (!val) return;
     }
+
     if (output_endian == ENDIAN_LITTLE){
 	(*o_putc)(c1);
 	(*o_putc)(c2);
@@ -3499,7 +3501,7 @@ z_conv(nkf_char c2, nkf_char c1)
 
     if (alpha_f&8 && c2 == 0) {
 	/* HTML Entity */
-	const char *entity = 0;
+	char *entity = 0;
 	switch (c1){
 	case '>': entity = "&gt;"; break;
 	case '<': entity = "&lt;"; break;
@@ -3982,7 +3984,7 @@ debug(const char *str)
 #endif
 
 static void
-set_input_codename(const char *codename)
+set_input_codename(char *codename)
 {
     if (!input_codename) {
 	input_codename = codename;
@@ -3991,7 +3993,7 @@ set_input_codename(const char *codename)
     }
 }
 
-static const char*
+static char*
 get_guessed_code(void)
 {
     if (input_codename && !*input_codename) {
@@ -5251,7 +5253,7 @@ kanji_convert(FILE *f)
 {
     nkf_char c1=0, c2=0, c3=0, c4=0;
     int shift_mode = 0; /* 0, 1, 2, 3 */
-    char g2 = 0;
+    int g2 = 0;
     int is_8bit = FALSE;
 
     if (input_encoding && !nkf_enc_asciicompat(input_encoding)) {
@@ -6085,9 +6087,9 @@ options(unsigned char *cp)
 		    cp++;
 		    input_endian = ENDIAN_BIG;
 		}
-		enc_idx = enc_idx == UTF_16
+		enc_idx = (enc_idx == UTF_16
 		    ? (input_endian == ENDIAN_LITTLE ? UTF_16LE : UTF_16BE)
-		    : (input_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE);
+		    : (input_endian == ENDIAN_LITTLE ? UTF_32LE : UTF_32BE));
 		input_encoding = nkf_enc_from_index(enc_idx);
 	    }
 	    continue;
