@@ -1,3 +1,10 @@
+Thu Sep 18 17:18:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* transcode.c (enc_arg): revert last change.  too early exception
+	  raising.
+
+	* transcode.c (enc_arg): need not to take pointer argument.
+
 Sun Jun  8 21:50:27 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* test/bigdecimal/test_bigdecimal.rb: add tests to achieve over 90%
