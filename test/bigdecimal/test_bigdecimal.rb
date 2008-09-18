@@ -595,7 +595,18 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal.new("-Infinity"), BigDecimal.new("-0") ** -1)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
     assert_equal(true, (BigDecimal.new("NaN") ** 1).nan?)
-    assert_equal(true, (BigDecimal.new("Infinity") ** 1).nan?) # OK?
+
+    assert_equal(BigDecimal::SIGN_POSITIVE_INFINITE, (BigDecimal.new("Infinity") ** 2).sign)
+    assert_equal(BigDecimal::SIGN_POSITIVE_INFINITE, (BigDecimal.new("Infinity") ** 1).sign)
+    assert_equal(1, BigDecimal.new("Infinity") ** 0)
+    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, (BigDecimal.new("Infinity") ** -1).sign)
+    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, (BigDecimal.new("Infinity") ** -2).sign)
+
+    assert_equal(BigDecimal::SIGN_POSITIVE_INFINITE, (BigDecimal.new("-Infinity") ** 2).sign)
+    assert_equal(BigDecimal::SIGN_NEGATIVE_INFINITE, (BigDecimal.new("-Infinity") ** 1).sign)
+    assert_equal(1, BigDecimal.new("-Infinity") ** 0)
+    assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, (BigDecimal.new("-Infinity") ** -1).sign)
+    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, (BigDecimal.new("-Infinity") ** -2).sign)
   end
 
   def test_limit
@@ -676,6 +687,10 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(10, BigDecimal.new("1E+1"))
     assert_equal(1, BigDecimal.new("+1"))
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
-    assert_equal(0, BigDecimal.new("1E1" + "0" * 100)) # OK? must it be inf?
+
+    assert_equal(BigDecimal::SIGN_POSITIVE_INFINITE, BigDecimal.new("1E1" + "0" * 10000).sign)
+    assert_equal(BigDecimal::SIGN_NEGATIVE_INFINITE, BigDecimal.new("-1E1" + "0" * 10000).sign)
+    assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, BigDecimal.new("1E-1" + "0" * 10000).sign)
+    assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, BigDecimal.new("-1E-1" + "0" * 10000).sign)
   end
 end

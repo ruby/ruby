@@ -3944,7 +3944,12 @@ VpCtoV(Real *a, const char *int_chr, U_LONG ni, const char *frac, U_LONG nf, con
             es = e*((S_INT)BASE_FIG);
             e = e * 10 + exp_chr[i] - '0';
             if(es>e*((S_INT)BASE_FIG)) {
-                return VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+                VpException(VP_EXCEPTION_INFINITY,"exponent overflow",0);
+                sign = 1;
+                if(int_chr[0] == '-') sign = -1;
+                if(signe > 0) VpSetInf(a, sign);
+                else VpSetZero(a, sign);
+                return 1;
             }
             ++i;
         }
@@ -4633,8 +4638,20 @@ VpPower(Real *y, Real *x, S_INT n)
         }
         goto Exit;
     }
-    if(!VpIsDef(x)) {
-        VpSetNaN(y); /* Not sure !!! */
+    if(VpIsNaN(x)) {
+        VpSetNaN(y);
+        goto Exit;
+    }
+    if(VpIsInf(x)) {
+        if(n==0) {
+            VpSetOne(y);
+            goto Exit;
+        }
+        if(n>0) {
+            VpSetInf(y, (n%2==0 || VpIsPosInf(x)) ? 1 : -1);
+            goto Exit;
+        }
+        VpSetZero(y, (n%2==0 || VpIsPosInf(x)) ? 1 : -1);
         goto Exit;
     }
 

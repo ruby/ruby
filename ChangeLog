@@ -1,3 +1,13 @@
+Thu Sep 18 22:35:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/bigdecimal/bigdecimal.c (VpCtoV): 1E1000...000 is interpreted as
+	  Infinity.  [ruby-dev:36159]
+
+	* ext/bigdecimal/bigdecimal.c (VpPower): Infinity ** 1 returns
+	  Infinity instead of NaN.  [ruby-dev:36159]
+
+	* test/bigdecimal/test_bigdecimal.rb: add tests for above.
+
 Thu Sep 18 21:57:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_comparable): make ascii8bit string to be
