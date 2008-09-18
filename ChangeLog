@@ -1,3 +1,8 @@
+Thu Sep 18 22:54:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_to_string): comment out
+	  fragments of unused code.
+
 Thu Sep 18 22:35:03 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/bigdecimal/bigdecimal.c (VpCtoV): 1E1000...000 is interpreted as
