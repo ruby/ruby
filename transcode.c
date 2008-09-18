@@ -2387,16 +2387,17 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
 }
 
 static int
-enc_arg(VALUE arg, const char **name_p, rb_encoding **enc_p)
+enc_arg(volatile VALUE *arg, const char **name_p, rb_encoding **enc_p)
 {
     rb_encoding *enc;
     const char *n;
     int encidx;
+    VALUE encval;
 
-    if ((encidx = rb_to_encoding_index(arg)) < 0) {
+    if ((encidx = rb_to_encoding_index(encval = *arg)) < 0) {
 	enc = NULL;
 	encidx = 0;
-	n = StringValueCStr(arg);
+	n = StringValueCStr(*arg);
     }
     else {
 	enc = rb_enc_from_index(encidx);
@@ -2418,7 +2419,7 @@ str_transcode_enc_args(VALUE str, volatile VALUE *arg1, volatile VALUE *arg2,
     const char *sname, *dname;
     int sencidx, dencidx;
 
-    dencidx = enc_arg(*arg1, &dname, &denc);
+    dencidx = enc_arg(arg1, &dname, &denc);
 
     if (NIL_P(*arg2)) {
 	sencidx = rb_enc_get_index(str);
@@ -2426,7 +2427,7 @@ str_transcode_enc_args(VALUE str, volatile VALUE *arg1, volatile VALUE *arg2,
 	sname = rb_enc_name(senc);
     }
     else {
-        sencidx = enc_arg(*arg2, &sname, &senc);
+        sencidx = enc_arg(arg2, &sname, &senc);
     }
 
     *sname_p = sname;
@@ -2670,7 +2671,7 @@ econv_s_asciicompat_encoding(VALUE klass, VALUE arg)
     const char *arg_name, *result_name;
     rb_encoding *arg_enc, *result_enc;
 
-    enc_arg(arg, &arg_name, &arg_enc);
+    enc_arg(&arg, &arg_name, &arg_enc);
 
     result_name = rb_econv_asciicompat_encoding(arg_name);
 
@@ -2881,9 +2882,9 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
             if (RARRAY_LEN(pair) != 2)
                 rb_raise(rb_eArgError, "not a 2-element array in convpath");
             snamev = rb_ary_entry(pair, 0);
-            enc_arg(snamev, &sname, &senc);
+            enc_arg(&snamev, &sname, &senc);
             dnamev = rb_ary_entry(pair, 1);
-            enc_arg(dnamev, &dname, &denc);
+            enc_arg(&dnamev, &dname, &denc);
         }
         else {
             sname = "";

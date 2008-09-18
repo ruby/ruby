@@ -1,3 +1,18 @@
+Thu Sep 18 18:23:23 2008  Tanaka Akira  <akr@fsij.org>
+
+	* transcode.c (enc_arg): must take pointer argument to avoid GC
+	  problem.  StringValueCStr modifies the argument and it should be
+	  preserved while the string StringValueCStr returns is used.
+	  Since the string is used by caller, the modified argument should be
+	  hold by caller.  Actually
+	    GC.stress = true
+	    def (o=Object.new).to_str()
+	      "universal"+"_newline"
+	    end                         
+	    "\u3042".encode(o, "")' 
+	  causes curious warning:
+	    rb_define_const: invalid name `' for constant
+
 Thu Sep 18 17:32:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* transcode.c: add "Error" suffix for Encoding exception classes.
