@@ -227,7 +227,7 @@ module URI
     end
 
     def unescape(str, escaped = @regexp[:ESCAPED])
-      str.gsub(escaped) { [$&.hex].pack('U') }
+      str.gsub(escaped) { [$&[1, 2].hex].pack('U') }
     end
 
     @@to_s = Kernel.instance_method(:to_s)

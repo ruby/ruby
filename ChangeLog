@@ -1,6 +1,12 @@
+Thu Sep 18 20:02:48 2008  Yusuke Endoh  <mame@tsg.ne.jp>
+
+	* lib/uri/common.rb (unescape): skip '%' to make String#hex work
+	  correctly.
+
 Thu Sep 18 19:43:04 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* st.c (new_size): raise RuntimeError when st_table is too big.
+	  [ruby-dev:36354]
 
 Thu Sep 18 18:23:23 2008  Tanaka Akira  <akr@fsij.org>
 
