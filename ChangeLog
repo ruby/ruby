@@ -1520,7 +1520,8 @@ Thu Sep  4 19:10:27 2008  Tanaka Akira  <akr@fsij.org>
 	* include/ruby/encoding.h (ECONV_INVALID_IGNORE): removed because
 	  it tend to cause security problem.  If the behaviour is really
 	  required, ECONV_INVALID_REPLACE with empty string can be used.
-	  For example, CVE-2006-2313, CVE-2008-1036, [ruby-core:15645]
+	  For example, CVE-2006-2313, CVE-2008-1036, [ruby-core:15645],
+	  http://unicode.org/reports/tr36/
 	  (ECONV_UNDEF_IGNORE): ditto.
 
 	* transcode.c (rb_econv_convert): follow the above change.
