@@ -6,9 +6,7 @@
 #include "regint.h"
 #include "st.h"
 #else
-#include "ruby/config.h"
-#include "ruby/defines.h"
-#include "ruby/st.h"
+#include "ruby/ruby.h"
 #endif
 
 #include <stdio.h>
@@ -135,6 +133,9 @@ new_size(int size)
 	if (newsize > size) return primes[i];
     }
     /* Ran out of polynomials */
+#ifndef NOT_RUBY
+    rb_raise(rb_eRuntimeError, "st_table too big");
+#endif
     return -1;			/* should raise exception */
 #endif
 }
