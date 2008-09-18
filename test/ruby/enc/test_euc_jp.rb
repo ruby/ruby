@@ -17,4 +17,8 @@ class TestEUC_JP < Test::Unit::TestCase
     assert_no_match(/¤¢{0}\p{Katakana}{4}/, "´Á»ú´Á»ú")
     assert_raise(RegexpError) { Regexp.new('¤¢{0}\p{foobarbaz}') }
   end
+
+  def test_charboundary
+    assert_nil(/\xA2\xA2/ =~ "\xA1\xA2\xA2\xA3")
+  end
 end

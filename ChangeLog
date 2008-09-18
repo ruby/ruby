@@ -1,3 +1,9 @@
+Fri Sep 19 01:07:36 2008  Tanaka Akira  <akr@fsij.org>
+
+	* regexec.c (string_cmp_ic): add text_end argument.
+	  (slow_search): call enclen with real string end.
+	  (map_search): add text_end argument.
+
 Thu Sep 18 22:54:39 2008  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_to_string): comment out
