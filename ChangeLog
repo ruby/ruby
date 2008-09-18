@@ -1,3 +1,11 @@
+Thu Sep 18 21:57:32 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_comparable): make ascii8bit string to be
+	  compatible with any other encoding.
+
+	* string.c (rb_str_cmp): use rb_str_comparable() instead of
+	  rb_enc_compatible() since <=> is a comparison anyway.
+
 Thu Sep 18 21:37:14 2008  Tanaka Akira  <akr@fsij.org>
 
 	* grapheme cluster implementation reverted.  [ruby-dev:36375]
