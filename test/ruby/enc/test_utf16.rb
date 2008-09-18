@@ -144,19 +144,19 @@ EOT
   end
 
   def test_hex
-    assert_raise(EncodingCompatibilityError) {
+    assert_raise(Encoding::CompatibilityError) {
       "ff".encode("utf-16le").hex
     }
-    assert_raise(EncodingCompatibilityError) {
+    assert_raise(Encoding::CompatibilityError) {
       "ff".encode("utf-16be").hex
     }
   end
 
   def test_oct
-    assert_raise(EncodingCompatibilityError) {
+    assert_raise(Encoding::CompatibilityError) {
       "77".encode("utf-16le").oct
     }
-    assert_raise(EncodingCompatibilityError) {
+    assert_raise(Encoding::CompatibilityError) {
       "77".encode("utf-16be").oct
     }
   end
@@ -164,7 +164,7 @@ EOT
   def test_count
     s1 = "aa".force_encoding("utf-16be")
     s2 = "aa"
-    assert_raise(EncodingCompatibilityError, "#{encdump s1}.count(#{encdump s2})") {
+    assert_raise(Encoding::CompatibilityError, "#{encdump s1}.count(#{encdump s2})") {
       s1.count(s2)
     }
   end
@@ -172,7 +172,7 @@ EOT
   def test_plus
     s1 = "a".force_encoding("us-ascii")
     s2 = "aa".force_encoding("utf-16be")
-    assert_raise(EncodingCompatibilityError, "#{encdump s1} + #{encdump s2}") {
+    assert_raise(Encoding::CompatibilityError, "#{encdump s1} + #{encdump s2}") {
       s1 + s2
     }
   end
@@ -185,7 +185,7 @@ EOT
 
   def test_interpolation
     s = "aa".force_encoding("utf-16be")
-    assert_raise(EncodingCompatibilityError, "\"a\#{#{encdump s}}\"") {
+    assert_raise(Encoding::CompatibilityError, "\"a\#{#{encdump s}}\"") {
       "a#{s}"
     }
   end
@@ -213,7 +213,7 @@ EOT
   def test_plus_nonempty
     s1 = "aa"
     s2 = "bb".force_encoding("utf-16be")
-    assert_raise(EncodingCompatibilityError, "#{encdump s1} << #{encdump s2}") {
+    assert_raise(Encoding::CompatibilityError, "#{encdump s1} << #{encdump s2}") {
       s1 + s2
     }
   end
@@ -237,7 +237,7 @@ EOT
   def test_concat_nonempty
     s1 = "aa"
     s2 = "bb".force_encoding("utf-16be")
-    assert_raise(EncodingCompatibilityError, "#{encdump s1} << #{encdump s2}") {
+    assert_raise(Encoding::CompatibilityError, "#{encdump s1} << #{encdump s2}") {
       s1 << s2
     }
   end
@@ -279,7 +279,7 @@ EOT
       s.gsub(Regexp.new(".".encode("utf-16be")), "xy")
     }
     s = "ab\0\ncd".force_encoding("utf-16be")
-    assert_raise(EncodingCompatibilityError) {
+    assert_raise(Encoding::CompatibilityError) {
       s.gsub(Regexp.new(".".encode("utf-16be")), "xy")
     }
   end

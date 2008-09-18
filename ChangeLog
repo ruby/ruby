@@ -1,3 +1,12 @@
+Thu Sep 18 17:32:44 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* transcode.c: add "Error" suffix for Encoding exception classes.
+	  a patch from Tadashi Saito <shiba at mail2.accsnet.ne.jp> in
+	  [ruby-dev:36346].
+
+	* encoding.c (Init_Encoding): rename EncodingCompatibilityError to
+	  Encoding::CompatibilityError.  [ruby-dev:36366]
+
 Thu Sep 18 17:18:35 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* transcode.c (enc_arg): revert last change.  too early exception

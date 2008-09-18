@@ -323,12 +323,12 @@ VALUE rb_eIndexError;
 VALUE rb_eKeyError;
 VALUE rb_eRangeError;
 VALUE rb_eNameError;
+VALUE rb_eEncCompatError;
 VALUE rb_eNoMethodError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
 VALUE rb_cNameErrorMesg;
-VALUE rb_eEncCompatError;
 
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
@@ -1033,7 +1033,6 @@ Init_Exception(void)
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
-    rb_eEncCompatError = rb_define_class("EncodingCompatibilityError", rb_eStandardError);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
@@ -1057,6 +1056,7 @@ Init_Exception(void)
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
+    rb_eEncCompatError = rb_define_class_under(rb_cEncoding, "CompatibilityError", rb_eStandardError);
 
     syserr_tbl = st_init_numtable();
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);

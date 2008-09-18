@@ -21,13 +21,13 @@ class TestTranscode < Test::Unit::TestCase
   def test_errors
     assert_raise(ArgumentError) { 'abc'.encode }
     assert_raise(ArgumentError) { 'abc'.encode! }
-    assert_raise(Encoding::NoConverter) { 'abc'.encode('foo', 'bar') }
-    assert_raise(Encoding::NoConverter) { 'abc'.encode!('foo', 'bar') }
-    assert_raise(Encoding::NoConverter) { 'abc'.force_encoding('utf-8').encode('foo') }
-    assert_raise(Encoding::NoConverter) { 'abc'.force_encoding('utf-8').encode!('foo') }
-    assert_raise(Encoding::ConversionUndefined) { "\x80".encode('utf-8','ASCII-8BIT') }
-    assert_raise(Encoding::InvalidByteSequence) { "\x80".encode('utf-8','US-ASCII') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA5".encode('utf-8','iso-8859-3') }
+    assert_raise(Encoding::NoConverterError) { 'abc'.encode('foo', 'bar') }
+    assert_raise(Encoding::NoConverterError) { 'abc'.encode!('foo', 'bar') }
+    assert_raise(Encoding::NoConverterError) { 'abc'.force_encoding('utf-8').encode('foo') }
+    assert_raise(Encoding::NoConverterError) { 'abc'.force_encoding('utf-8').encode!('foo') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\x80".encode('utf-8','ASCII-8BIT') }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x80".encode('utf-8','US-ASCII') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA5".encode('utf-8','iso-8859-3') }
   end
 
   def test_arguments
@@ -355,24 +355,24 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u71FC", "\xE0\x9E", 'shift_jis') # 燼
     check_both_ways("\u71F9", "\xE0\x9F", 'shift_jis') # 燹
     check_both_ways("\u73F1", "\xE0\xFC", 'shift_jis') # 珱
-    assert_raise(Encoding::ConversionUndefined) { "\xEF\x40".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xEF\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xEF\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xEF\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xEF\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xEF\xFC".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xF0\x40".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xF0\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xF0\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xEF\x40".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xEF\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xEF\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xEF\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xEF\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xEF\xFC".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xF0\x40".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xF0\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xF0\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
     #check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # 髜 (IBM extended)
-    assert_raise(Encoding::ConversionUndefined) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xFC\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xFC\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::ConversionUndefined) { "\xFC\xFC".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xFC\x80".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xFC\x9F".encode("utf-8", 'shift_jis') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xFC\xFC".encode("utf-8", 'shift_jis') }
     check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # 松本行弘
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\x90\xC2\x8E\x52\x8A\x77\x89\x40\x91\xE5\x8A\x77", 'shift_jis') # 青山学院大学
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # 神林義博
@@ -392,34 +392,34 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00F7", "\xA1\xE0", 'euc-jp') # ÷
     check_both_ways("\u25C7", "\xA1\xFE", 'euc-jp') # ◇
     check_both_ways("\u25C6", "\xA2\xA1", 'euc-jp') # ◆
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xAF".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xB9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xC2".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xC9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xD1".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xDB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xEB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xF1".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xFA".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA2\xFD".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xAF".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xB9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xC2".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xC9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xD1".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xDB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xEB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xF1".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xFA".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA2\xFD".encode("utf-8", 'euc-jp') }
     check_both_ways("\u25EF", "\xA2\xFE", 'euc-jp') # ◯
-    assert_raise(Encoding::ConversionUndefined) { "\xA3\xAF".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA3\xBA".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA3\xC0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA3\xDB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA3\xE0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA3\xFB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA4\xF4".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA5\xF7".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA6\xB9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA6\xC0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA6\xD9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA7\xC2".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA7\xD0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA7\xF2".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xA8\xC1".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xCF\xD4".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::ConversionUndefined) { "\xCF\xFE".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA3\xAF".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA3\xBA".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA3\xC0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA3\xDB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA3\xE0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA3\xFB".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA4\xF4".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA5\xF7".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA6\xB9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA6\xC0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA6\xD9".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA7\xC2".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA7\xD0".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA7\xF2".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xA8\xC1".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xCF\xD4".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xCF\xFE".encode("utf-8", 'euc-jp') }
     check_both_ways("\u6A97", "\xDD\xA1", 'euc-jp') # 檗
     check_both_ways("\u6BEF", "\xDD\xDF", 'euc-jp') # 毯
     check_both_ways("\u9EBE", "\xDD\xE0", 'euc-jp') # 麾
@@ -432,7 +432,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u71FC", "\xDF\xFE", 'euc-jp') # 燼
     check_both_ways("\u71F9", "\xE0\xA1", 'euc-jp') # 燹
     check_both_ways("\u73F1", "\xE0\xFE", 'euc-jp') # 珱
-    assert_raise(Encoding::ConversionUndefined) { "\xF4\xA7".encode("utf-8", 'euc-jp') }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xF4\xA7".encode("utf-8", 'euc-jp') }
     #check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜 (IBM extended)
     
     check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jp') # 松本行弘
@@ -491,33 +491,33 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_eucjp_sjis_undef
-    assert_raise(Encoding::ConversionUndefined) { "\x8e\xe0".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::ConversionUndefined) { "\x8e\xfe".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::ConversionUndefined) { "\x8f\xa1\xa1".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::ConversionUndefined) { "\x8f\xa1\xfe".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::ConversionUndefined) { "\x8f\xfe\xa1".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::ConversionUndefined) { "\x8f\xfe\xfe".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\x8e\xe0".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\x8e\xfe".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\x8f\xa1\xa1".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\x8f\xa1\xfe".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\x8f\xfe\xa1".encode("Shift_JIS", "EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\x8f\xfe\xfe".encode("Shift_JIS", "EUC-JP") }
 
-    assert_raise(Encoding::ConversionUndefined) { "\xf0\x40".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\xf0\x7e".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\xf0\x80".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\xf0\xfc".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\xfc\x40".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\xfc\x7e".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\xfc\x80".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\xfc\xfc".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xf0\x40".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xf0\x7e".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xf0\x80".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xf0\xfc".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xfc\x40".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xfc\x7e".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xfc\x80".encode("EUC-JP", "Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\xfc\xfc".encode("EUC-JP", "Shift_JIS") }
   end
 
   def test_iso_2022_jp
-    assert_raise(Encoding::InvalidByteSequence) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequence) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequence) { "\x1b$C".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequence) { "\x0e".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequence) { "\x80".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequence) { "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::ConversionUndefined) { "\u9299".encode("iso-2022-jp") }
-    assert_raise(Encoding::ConversionUndefined) { "\uff71\uff72\uff73\uff74\uff75".encode("iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequence) { "\x1b(I12345\x1b(B".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b$C".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x0e".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x80".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u9299".encode("iso-2022-jp") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\uff71\uff72\uff73\uff74\uff75".encode("iso-2022-jp") }
+    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b(I12345\x1b(B".encode("utf-8", "iso-2022-jp") }
     assert_equal("\xA1\xA1".force_encoding("euc-jp"),
                  "\e$B!!\e(B".encode("EUC-JP", "ISO-2022-JP"))
     assert_equal("\e$B!!\e(B".force_encoding("ISO-2022-JP"),
@@ -550,11 +550,11 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\u005C", "\e(J\x5C\e(B".encode("UTF-8", "ISO-2022-JP"))
     assert_equal("\u005C", "\x5C".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
     assert_equal("\u005C", "\e(J\x5C\e(B".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
-    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("Windows-31J") }
-    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("EUC-JP") }
-    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("eucJP-ms") }
-    assert_raise(Encoding::ConversionUndefined) { "\u00A5".encode("CP51932") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u00A5".encode("Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u00A5".encode("Windows-31J") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u00A5".encode("EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u00A5".encode("eucJP-ms") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u00A5".encode("CP51932") }
 
     # FULLWIDTH REVERSE SOLIDUS
     check_both_ways("\uFF3C", "\x81\x5F", "Shift_JIS")
@@ -575,11 +575,11 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\u007E", "\e(J\x7E\e(B".encode("UTF-8", "ISO-2022-JP"))
     assert_equal("\u007E", "\x7E".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
     assert_equal("\u007E", "\e(J\x7E\e(B".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
-    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("Shift_JIS") }
-    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("Windows-31J") }
-    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("EUC-JP") }
-    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("eucJP-ms") }
-    assert_raise(Encoding::ConversionUndefined) { "\u203E".encode("CP51932") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u203E".encode("Shift_JIS") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u203E".encode("Windows-31J") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u203E".encode("EUC-JP") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u203E".encode("eucJP-ms") }
+    assert_raise(Encoding::ConversionUndefinedError) { "\u203E".encode("CP51932") }
   end
 
   def test_nothing_changed
