@@ -977,24 +977,25 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   }\
 } while(0)
 
-#define STRING_CMP_IC(case_fold_flag,s1,ps2,len,text_end) do {\
-  if (string_cmp_ic(encode, case_fold_flag, s1, ps2, len, text_end) == 0) \
+#define STRING_CMP_IC(case_fold_flag,s1,ps2,len) do {\
+  if (string_cmp_ic(encode, case_fold_flag, s1, ps2, len) == 0) \
     goto fail; \
 } while(0)
 
 static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
-			 UChar* s1, UChar** ps2, int mblen, const UChar* text_end)
+			 UChar* s1, UChar** ps2, int mblen)
 {
   UChar buf1[ONIGENC_MBC_CASE_FOLD_MAXLEN];
   UChar buf2[ONIGENC_MBC_CASE_FOLD_MAXLEN];
-  UChar *p1, *p2, *end1, *s2;
+  UChar *p1, *p2, *end1, *s2, *end2;
   int len1, len2;
 
   s2   = *ps2;
   end1 = s1 + mblen;
+  end2 = s2 + mblen;
   while (s1 < end1) {
     len1 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s1, end1, buf1);
-    len2 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s2, text_end, buf2);
+    len2 = ONIGENC_MBC_CASE_FOLD(enc, case_fold_flag, &s2, end2, buf2);
     if (len1 != len2) return 0;
     p1 = buf1;
     p2 = buf2;
@@ -1018,8 +1019,8 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
   }\
 } while(0)
 
-#define STRING_CMP_VALUE_IC(case_fold_flag,s1,ps2,len,text_end,is_fail) do {\
-  if (string_cmp_ic(encode, case_fold_flag, s1, ps2, len, text_end) == 0) \
+#define STRING_CMP_VALUE_IC(case_fold_flag,s1,ps2,len,is_fail) do {\
+  if (string_cmp_ic(encode, case_fold_flag, s1, ps2, len) == 0) \
     is_fail = 1; \
   else \
     is_fail = 0; \
@@ -1125,7 +1126,7 @@ static int backref_match_at_nested_level(regex_t* reg
 
 	    if (ignore_case != 0) {
 	      if (string_cmp_ic(reg->enc, case_fold_flag,
-				pstart, &ss, (int )(pend - pstart), send) == 0)
+				pstart, &ss, (int )(pend - pstart)) == 0)
 		return 0; /* or goto next_mem; */
 	    }
 	    else {
@@ -1441,8 +1442,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       if (*p != *s++) goto fail;
       DATA_ENSURE(0);
       p++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       break;
 
@@ -1465,8 +1464,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  p++; q++;
 	}
       }
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       break;
 
@@ -1477,8 +1474,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       if (*p != *s) goto fail;
       sprev = s;
       p++; s++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1492,8 +1487,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       if (*p != *s) goto fail;
       sprev = s;
       p++; s++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1509,8 +1502,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       if (*p != *s) goto fail;
       sprev = s;
       p++; s++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1528,8 +1519,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       if (*p != *s) goto fail;
       sprev = s;
       p++; s++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1541,8 +1530,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	if (*p++ != *s++) goto fail;
       }
       sprev = s - 1;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1570,8 +1557,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  }
 	}
       }
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
+
       MOP_OUT;
       continue;
       break;
@@ -1582,8 +1568,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       p++; s++;
       if (*p != *s) goto fail;
       p++; s++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       break;
 
@@ -1598,8 +1582,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       p++; s++;
       if (*p != *s) goto fail;
       p++; s++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1619,8 +1601,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       p++; s++;
       if (*p != *s) goto fail;
       p++; s++;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1635,8 +1615,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	p++; s++;
       }
       sprev = s - 2;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1653,8 +1631,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	p++; s++;
       }
       sprev = s - 3;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -1669,8 +1645,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	p++; s++;
       }
       sprev = s - tlen;
-      if (s != end && ONIGENC_LEFT_ADJUST_CHAR_HEAD(encode, str, s, end) != s)
-        goto fail;
       MOP_OUT;
       continue;
       break;
@@ -2225,7 +2199,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	n = pend - pstart;
 	DATA_ENSURE(n);
 	sprev = s;
-	STRING_CMP_IC(case_fold_flag, pstart, &s, n, end);
+	STRING_CMP_IC(case_fold_flag, pstart, &s, n);
 	while (sprev + (len = enclen(encode, sprev, end)) < s)
 	  sprev += len;
 
@@ -2297,7 +2271,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  DATA_ENSURE(n);
 	  sprev = s;
 	  swork = s;
-	  STRING_CMP_VALUE_IC(case_fold_flag, pstart, &swork, n, end, is_fail);
+	  STRING_CMP_VALUE_IC(case_fold_flag, pstart, &swork, n, is_fail);
 	  if (is_fail) continue;
 	  s = swork;
 	  while (sprev + (len = enclen(encode, sprev, end)) < s)
@@ -2806,7 +2780,7 @@ slow_search(OnigEncoding enc, UChar* target, UChar* target_end,
       if (target_end == t || memcmp(t, p, target_end - t) == 0)
 	return s;
     }
-    s += enclen(enc, s, text_end);
+    s += enclen(enc, s, end);
   }
 
   return (UChar* )NULL;

@@ -108,9 +108,9 @@ big5_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 }
 
 static OnigCodePoint
-big5_mbc_to_code(const UChar* p, const UChar* end, int *precise_ret, OnigEncoding enc)
+big5_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc)
 {
-  return onigenc_mbn_mbc_to_code(enc, p, end, precise_ret);
+  return onigenc_mbn_mbc_to_code(enc, p, end);
 }
 
 static int

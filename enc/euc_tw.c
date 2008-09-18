@@ -150,9 +150,9 @@ euctw_mbc_enc_len(const UChar* p, const UChar* e, OnigEncoding enc ARG_UNUSED)
 }
 
 static OnigCodePoint
-euctw_mbc_to_code(const UChar* p, const UChar* end, int *precise_ret, OnigEncoding enc ARG_UNUSED)
+euctw_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
-  return onigenc_mbn_mbc_to_code(enc, p, end, precise_ret);
+  return onigenc_mbn_mbc_to_code(enc, p, end);
 }
 
 static int

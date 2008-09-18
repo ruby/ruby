@@ -10966,13 +10966,13 @@ onigenc_unicode_mbc_case_fold(OnigEncoding enc,
 {
   CodePointList3 *to;
   OnigCodePoint code;
-  int i, len, rlen, r;
+  int i, len, rlen;
   const UChar *p = *pp;
 
   if (CaseFoldInited == 0) init_case_fold_table();
 
-  code = ONIGENC_MBC_PRECISE_CODEPOINT(enc, p, end, &r);
-  len = ONIGENC_MBCLEN_CHARFOUND_LEN(r);
+  code = ONIGENC_MBC_TO_CODE(enc, p, end);
+  len = enclen(enc, p, end);
   *pp += len;
 
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
@@ -11160,7 +11160,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
     OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end,
     OnigCaseFoldCodeItem items[])
 {
-  int n, i, j, k, len, r;
+  int n, i, j, k, len;
   OnigCodePoint code, codes[3];
   CodePointList3 *to, *z3;
   CodePointList2 *z2;
@@ -11169,8 +11169,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
   n = 0;
 
-  code = ONIGENC_MBC_PRECISE_CODEPOINT(enc, p, end, &r);
-  len = ONIGENC_MBCLEN_CHARFOUND_LEN(r);
+  code = ONIGENC_MBC_TO_CODE(enc, p, end);
+  len = enclen(enc, p, end);
 
 #ifdef USE_UNICODE_CASE_FOLD_TURKISH_AZERI
   if ((flag & ONIGENC_CASE_FOLD_TURKISH_AZERI) != 0) {
@@ -11311,7 +11311,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
       int clen;
 
       codes[0] = code;
-      code = ONIGENC_MBC_PRECISE_CODEPOINT(enc, p, end, &r);
+      code = ONIGENC_MBC_TO_CODE(enc, p, end);
       if (onig_st_lookup(FoldTable, (st_data_t )code, (void* )&to) != 0
 	  && to->n == 1) {
 	codes[1] = to->code[0];
@@ -11319,7 +11319,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
       else
 	codes[1] = code;
 
-      clen = ONIGENC_MBCLEN_CHARFOUND_LEN(r);
+      clen = enclen(enc, p, end);
       len += clen;
       if (onig_st_lookup(Unfold2Table, (st_data_t )codes, (void* )&z2) != 0) {
 	for (i = 0; i < z2->n; i++) {
@@ -11332,7 +11332,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 
       p += clen;
       if (p < end) {
-        code = ONIGENC_MBC_PRECISE_CODEPOINT(enc, p, end, &r);
+	code = ONIGENC_MBC_TO_CODE(enc, p, end);
 	if (onig_st_lookup(FoldTable, (st_data_t )code, (void* )&to) != 0
 	    && to->n == 1) {
 	  codes[2] = to->code[0];
@@ -11340,7 +11340,7 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
 	else
 	  codes[2] = code;
 
-        clen = ONIGENC_MBCLEN_CHARFOUND_LEN(r);
+	clen = enclen(enc, p, end);
 	len += clen;
 	if (onig_st_lookup(Unfold3Table, (st_data_t )codes,
 			   (void* )&z2) != 0) {

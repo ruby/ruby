@@ -807,6 +807,24 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
     return c;
 }
 
+#ifdef NONASCII_MASK
+#define is_utf8_lead_byte(c) (((c)&0xC0) != 0x80)
+static inline VALUE
+count_utf8_lead_bytes_with_word(const VALUE *s)
+{
+    VALUE d = *s;
+    d |= ~(d>>1);
+    d >>= 6;
+    d &= NONASCII_MASK >> 7;
+    d += (d>>8);
+    d += (d>>16);
+#if SIZEOF_VALUE == 8
+    d += (d>>32);
+#endif
+    return (d&0xF);
+}
+#endif
+
 static long
 str_strlen(VALUE str, rb_encoding *enc)
 {
@@ -817,6 +835,32 @@ str_strlen(VALUE str, rb_encoding *enc)
     if (!enc) enc = STR_ENC_GET(str);
     p = RSTRING_PTR(str);
     e = RSTRING_END(str);
+#ifdef NONASCII_MASK
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
+        enc == rb_utf8_encoding()) {
+        VALUE len = 0;
+	if (sizeof(VALUE) * 2 < e - p) {
+	    const VALUE *s, *t;
+	    const VALUE lowbits = sizeof(VALUE) - 1;
+	    s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
+	    t = (const VALUE*)(~lowbits & (VALUE)e);
+	    while (p < (const char *)s) {
+		if (is_utf8_lead_byte(*p)) len++;
+		p++;
+	    }
+	    while (s < t) {
+		len += count_utf8_lead_bytes_with_word(s);
+		s++;
+	    }
+	    p = (const char *)s;
+	}
+	while (p < e) {
+	    if (is_utf8_lead_byte(*p)) len++;
+	    p++;
+	}
+	return (long)len;
+    }
+#endif
     n = rb_enc_strlen_cr(p, e, enc, &cr);
     if (cr) {
         ENC_CODERANGE_SET(str, cr);
@@ -1183,6 +1227,44 @@ str_offset(const char *p, const char *e, int nth, rb_encoding *enc, int singleby
     return pp - p;
 }
 
+#ifdef NONASCII_MASK
+static char *
+str_utf8_nth(const char *p, const char *e, int nth)
+{
+    if (sizeof(VALUE) * 2 < nth) {
+	const VALUE *s, *t;
+	const VALUE lowbits = sizeof(VALUE) - 1;
+	s = (const VALUE*)(~lowbits & ((VALUE)p + lowbits));
+	t = (const VALUE*)(~lowbits & (VALUE)e);
+	while (p < (const char *)s) {
+	    if (is_utf8_lead_byte(*p)) nth--;
+	    p++;
+	}
+	do {
+	    nth -= count_utf8_lead_bytes_with_word(s);
+	    s++;
+	} while (s < t && sizeof(VALUE) <= nth);
+	p = (char *)s;
+    }
+    while (p < e) {
+	if (is_utf8_lead_byte(*p)) {
+	    if (nth == 0) break;
+	    nth--;
+	}
+	p++;
+    }
+    return (char *)p;
+}
+
+static int
+str_utf8_offset(const char *p, const char *e, int nth)
+{
+    const char *pp = str_utf8_nth(p, e, nth);
+    if (!pp) return e - p;
+    return pp - p;
+}
+#endif
+
 /* byte offset to char offset */
 long
 rb_str_sublen(VALUE str, long pos)
@@ -1256,6 +1338,13 @@ rb_str_substr(VALUE str, long beg, long len)
     if (len == 0) {
 	p = 0;
     }
+#ifdef NONASCII_MASK
+    else if (ENC_CODERANGE(str) == ENC_CODERANGE_VALID &&
+        enc == rb_utf8_encoding()) {
+        p = str_utf8_nth(s, e, beg);
+        len = str_utf8_offset(p, e, len);
+    }
+#endif
     else if (rb_enc_mbmaxlen(enc) == rb_enc_mbminlen(enc)) {
 	int char_sz = rb_enc_mbmaxlen(enc);
 
@@ -1998,6 +2087,7 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
+    long len;
     rb_encoding *enc;
     char *p1, *p1end, *p2, *p2end;
 
@@ -2012,8 +2102,8 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
 	while (p1 < p1end && p2 < p2end) {
 	    if (*p1 != *p2) {
-		unsigned int c1 = TOUPPER(*p1 & 0xff);
-		unsigned int c2 = TOUPPER(*p2 & 0xff);
+		unsigned int c1 = rb_enc_toupper(*p1 & 0xff, enc);
+		unsigned int c2 = rb_enc_toupper(*p2 & 0xff, enc);
 		if (c1 > c2) return INT2FIX(1);
 		if (c1 < c2) return INT2FIX(-1);
 	    }
@@ -2023,42 +2113,18 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     }
     else {
 	while (p1 < p1end && p2 < p2end) {
-            int l1, c1 = rb_enc_ascget(p1, p1end, &l1, enc);
-            int l2, c2 = rb_enc_ascget(p2, p1end, &l2, enc);
+	    unsigned int c1 = rb_enc_codepoint(p1, p1end, enc);
+	    unsigned int c2 = rb_enc_codepoint(p2, p2end, enc);
 
-            if (0 <= c1) {
-                if (0 <= c2) {
-                    if (c1 != c2) {
-                        c1 = TOUPPER(c1);
-                        c2 = TOUPPER(c2);
-                        if (c1 > c2) return INT2FIX(1);
-                        if (c1 < c2) return INT2FIX(-1);
-                    }
-                }
-                else {
-                    return INT2FIX(-1);
-                }
-            }
-            else {
-                if (0 <= c2) {
-                    return INT2FIX(1);
-                }
-                else {
-                    int l, r;
-                    l1 = rb_enc_mbclen(p1, p1end, enc);
-                    l2 = rb_enc_mbclen(p2, p2end, enc);
-                    l = l1;
-                    if (l2 < l)
-                        l = l2;
-                    r = memcmp(p1, p2, l);
-                    if (r != 0)
-                        return INT2FIX(r < 0 ? -1 : 1);
-                    if (l1 != l2)
-                        return INT2FIX(l1 < l2 ? -1 : 1);
-                }
-            }
-	    p1 += l1;
-	    p2 += l2;
+	    if (c1 != c2) {
+		c1 = rb_enc_toupper(c1, enc);
+		c2 = rb_enc_toupper(c2, enc);
+		if (c1 > c2) return INT2FIX(1);
+		if (c1 < c2) return INT2FIX(-1);
+	    }
+	    len = rb_enc_codelen(c1, enc);
+	    p1 += len;
+	    p2 += len;
 	}
     }
     if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return INT2FIX(0);
@@ -2388,7 +2454,7 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
         if (i < 0)
             return NEIGHBOR_WRAPPED;
         ++((unsigned char*)p)[i];
-        rb_enc_mbc_precise_codepoint(p, p+len, &l, enc);
+        l = rb_enc_precise_mbclen(p, p+len, enc);
         if (MBCLEN_CHARFOUND_P(l)) {
             l = MBCLEN_CHARFOUND_LEN(l);
             if (l == len) {
@@ -2401,7 +2467,7 @@ enc_succ_char(char *p, int len, rb_encoding *enc)
         if (MBCLEN_INVALID_P(l) && i < len-1) {
             int len2, l2;
             for (len2 = len-1; 0 < len2; len2--) {
-                rb_enc_mbc_precise_codepoint(p, p+len2, &l2, enc);
+                l2 = rb_enc_precise_mbclen(p, p+len2, enc);
                 if (!MBCLEN_INVALID_P(l2))
                     break;
             }
@@ -2420,7 +2486,7 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
         if (i < 0)
             return NEIGHBOR_WRAPPED;
         --((unsigned char*)p)[i];
-        rb_enc_mbc_precise_codepoint(p, p+len, &l, enc);
+        l = rb_enc_precise_mbclen(p, p+len, enc);
         if (MBCLEN_CHARFOUND_P(l)) {
             l = MBCLEN_CHARFOUND_LEN(l);
             if (l == len) {
@@ -2433,7 +2499,7 @@ enc_pred_char(char *p, int len, rb_encoding *enc)
         if (MBCLEN_INVALID_P(l) && i < len-1) {
             int len2, l2;
             for (len2 = len-1; 0 < len2; len2--) {
-                rb_enc_mbc_precise_codepoint(p, p+len2, &l2, enc);
+                l2 = rb_enc_precise_mbclen(p, p+len2, enc);
                 if (!MBCLEN_INVALID_P(l2))
                     break;
             }
@@ -2540,7 +2606,7 @@ rb_str_succ(VALUE orig)
     VALUE str;
     char *sbeg, *s, *e, *last_alnum = 0;
     int c = -1;
-    int l;
+    long l;
     char carry[ONIGENC_CODE_TO_MBC_MAXLEN] = "\1";
     int carry_pos = 0, carry_len = 1;
     enum neighbor_char neighbor = NEIGHBOR_FOUND;
@@ -2562,8 +2628,7 @@ rb_str_succ(VALUE orig)
 		break;
 	    }
 	}
-        rb_enc_mbc_precise_codepoint(s, e, &l, enc);
-	if (l <= 0) continue;
+	if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
         neighbor = enc_succ_alnum_char(s, l, enc, carry);
         switch (neighbor) {
 	  case NEIGHBOR_NOT_CHAR:
@@ -2582,14 +2647,11 @@ rb_str_succ(VALUE orig)
 	s = e;
 	while ((s = rb_enc_prev_char(sbeg, s, e, enc)) != 0) {
             enum neighbor_char neighbor;
-            int l2;
-            rb_enc_mbc_precise_codepoint(s, e, &l, enc);
-            if (l <= 0) continue;
+            if ((l = rb_enc_precise_mbclen(s, e, enc)) <= 0) continue;
             neighbor = enc_succ_char(s, l, enc);
             if (neighbor == NEIGHBOR_FOUND)
                 return str;
-            rb_enc_mbc_precise_codepoint(s, s+l, &l2, enc);
-            if (l2 != l) {
+            if (rb_enc_precise_mbclen(s, s+l, enc) != l) {
                 /* wrapped to \0...\0.  search next valid char. */
                 enc_succ_char(s, l, enc);
             }

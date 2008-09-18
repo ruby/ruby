@@ -1,3 +1,7 @@
+Thu Sep 18 21:37:14 2008  Tanaka Akira  <akr@fsij.org>
+
+	* grapheme cluster implementation reverted.  [ruby-dev:36375]
+
 Thu Sep 18 20:50:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rake.rb (Rake::Application#standard_exception_handling):

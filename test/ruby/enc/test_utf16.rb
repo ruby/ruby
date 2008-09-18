@@ -368,16 +368,4 @@ EOT
     r = Regexp.new(Regexp.escape(s))
     assert(r =~ s, "#{encdump(r)} =~ #{encdump(s)}")
   end
-
-  def test_casecmp
-    assert_equal(0, "\0A".force_encoding("UTF-16BE").casecmp("\0a".force_encoding("UTF-16BE")))
-    assert_not_equal(0, "\0A".force_encoding("UTF-16LE").casecmp("\0a".force_encoding("UTF-16LE")))
-    assert_not_equal(0, "A\0".force_encoding("UTF-16BE").casecmp("a\0".force_encoding("UTF-16BE")))
-    assert_equal(0, "A\0".force_encoding("UTF-16LE").casecmp("a\0".force_encoding("UTF-16LE")))
-
-    ary = ["ab".force_encoding("UTF-16LE"), "ba".force_encoding("UTF-16LE")]
-    e = ary.sort {|x,y| x <=> y }
-    a = ary.sort {|x,y| x.casecmp(y) }
-    assert_equal(e, a)
-  end
 end

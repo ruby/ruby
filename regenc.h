@@ -122,7 +122,7 @@ ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((const UChar* p, const UChar* end
 /* methods for single byte encoding */
 ONIG_EXTERN int onigenc_ascii_mbc_case_fold P_((OnigCaseFoldType flag, const UChar** p, const UChar* end, UChar* lower, OnigEncoding enc));
 ONIG_EXTERN int onigenc_single_byte_mbc_enc_len P_((const UChar* p, const UChar* e, OnigEncoding enc));
-ONIG_EXTERN OnigCodePoint onigenc_single_byte_mbc_to_code P_((const UChar* p, const UChar* end, int *precise_ret, OnigEncoding enc));
+ONIG_EXTERN OnigCodePoint onigenc_single_byte_mbc_to_code P_((const UChar* p, const UChar* end, OnigEncoding enc));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbclen P_((OnigCodePoint code, OnigEncoding enc));
 ONIG_EXTERN int onigenc_single_byte_code_to_mbc P_((OnigCodePoint code, UChar *buf, OnigEncoding enc));
 ONIG_EXTERN UChar* onigenc_single_byte_left_adjust_char_head P_((const UChar* start, const UChar* s, const OnigUChar* end, OnigEncoding enc));
@@ -131,7 +131,7 @@ ONIG_EXTERN int onigenc_always_false_is_allowed_reverse_match P_((const UChar* s
 ONIG_EXTERN int onigenc_ascii_is_code_ctype P_((OnigCodePoint code, unsigned int ctype, OnigEncoding enc));
 
 /* methods for multi byte encoding */
-ONIG_EXTERN OnigCodePoint onigenc_mbn_mbc_to_code P_((OnigEncoding enc, const UChar* p, const UChar* end, int *precise_ret));
+ONIG_EXTERN OnigCodePoint onigenc_mbn_mbc_to_code P_((OnigEncoding enc, const UChar* p, const UChar* end));
 ONIG_EXTERN int onigenc_mbn_mbc_case_fold P_((OnigEncoding enc, OnigCaseFoldType flag, const UChar** p, const UChar* end, UChar* lower));
 ONIG_EXTERN int onigenc_mb2_code_to_mbclen P_((OnigCodePoint code, OnigEncoding enc));
 ONIG_EXTERN int onigenc_mb2_code_to_mbc P_((OnigEncoding enc, OnigCodePoint code, UChar *buf));
