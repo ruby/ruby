@@ -909,8 +909,10 @@ big2str_karatsuba(VALUE x, int base, char* ptr,
     bigdivmod(x, b, &q, &r);
     lh = big2str_karatsuba(q, base, ptr, (len - m1)/2,
 			   len - m1, hbase, trim);
+    rb_big_resize(q, 0);
     ll = big2str_karatsuba(r, base, ptr + lh, m1/2,
 			   m1, hbase, !lh && trim);
+    rb_big_resize(r, 0);
 
     return lh + ll;
 }
@@ -953,6 +955,7 @@ rb_big2str0(VALUE x, int base, int trim)
 	len = off + big2str_karatsuba(xx, base, ptr + off, n1,
 				      n2, hbase, trim);
     }
+    rb_big_resize(xx, 0);
 
     ptr[len] = '\0';
     rb_str_resize(ss, len);
