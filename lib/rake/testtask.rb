@@ -136,7 +136,12 @@ module Rake
     end
 
     def fix # :nodoc:
-      ''
+      case RUBY_VERSION
+      when '1.8.2'
+        find_file 'rake/ruby182_test_unit_fix'
+      else
+        nil
+      end || ''
     end
 
     def rake_loader # :nodoc:

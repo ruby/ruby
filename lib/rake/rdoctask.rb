@@ -55,7 +55,7 @@ module Rake
     # RDoc. (default is none)
     attr_accessor :main
 
-    # Name of template to be used by rdoc. (default is 'html')
+    # Name of template to be used by rdoc. (defaults to rdoc's default)
     attr_accessor :template
 
     # List of files to be included in the rdoc generation. (default is [])
@@ -74,7 +74,7 @@ module Rake
       @rdoc_dir = 'html'
       @main = nil
       @title = nil
-      @template = 'html'
+      @template = nil
       @external = false
       @options = []
       yield self if block_given?
@@ -91,18 +91,18 @@ module Rake
       task name
       
       desc "Force a rebuild of the RDOC files"
-      task paste("re", name) => [paste("clobber_", name), name]
+      task "re#{name}" => ["clobber_#{name}", name]
       
       desc "Remove rdoc products" 
-      task paste("clobber_", name) do
+      task "clobber_#{name}" do
         rm_r rdoc_dir rescue nil
       end
-
-      task :clobber => [paste("clobber_", name)]
+      
+      task :clobber => ["clobber_#{name}"]
       
       directory @rdoc_dir
       task name => [rdoc_target]
-      file rdoc_target => @rdoc_files + [$rakefile] do
+      file rdoc_target => @rdoc_files + [Rake.application.rakefile] do
         rm_r @rdoc_dir rescue nil
         args = option_list + @rdoc_files
         if @external

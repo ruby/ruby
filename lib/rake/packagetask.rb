@@ -122,6 +122,7 @@ module Rake
           task :package => ["#{package_dir}/#{file}"]
           file "#{package_dir}/#{file}" => [package_dir_path] + package_files do
             chdir(package_dir) do
+              sh %{env}
               sh %{#{@tar_command} #{flag}cvf #{file} #{package_name}}
             end
           end

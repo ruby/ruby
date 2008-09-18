@@ -7,31 +7,26 @@ module Rake
 
     # Load the makefile dependencies in +fn+.
     def load(fn)
-      buffer = ''
       open(fn) do |mf|
-        mf.each do |line|
-          next if line =~ /^\s*#/
-          buffer << line
-          if buffer =~ /\\$/
-            buffer.sub!(/\\\n/, ' ')
-            state = :append
-          else
-            process_line(buffer)
-            buffer = ''
-          end
+        lines = mf.read
+        lines.gsub!(/#[^\n]*\n/m, "")
+        lines.gsub!(/\\\n/, ' ')
+        lines.split("\n").each do |line|
+          process_line(line)
         end
       end
-      process_line(buffer) if buffer != ''
     end
 
     private
 
     # Process one logical line of makefile data.
     def process_line(line)
-      file_task, args = line.split(':')
+      file_tasks, args = line.split(':')
       return if args.nil?
       dependents = args.split
-      file file_task => dependents
+      file_tasks.strip.split.each do |file_task|
+        file file_task => dependents
+      end
     end
   end
 
