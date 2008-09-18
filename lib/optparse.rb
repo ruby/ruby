@@ -1607,6 +1607,13 @@ class OptionParser
       argv
     end
 
+    def set_backtrace(array)
+      unless $DEBUG
+        array.delete_if(&%r"\A#{Regexp.quote(__FILE__)}:"o.method(:=~))
+      end
+      super(array)
+    end
+
     def set_option(opt, eq)
       if eq
         @args[0] = opt

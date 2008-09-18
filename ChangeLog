@@ -1,3 +1,8 @@
+Thu Sep 18 20:37:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::ParseError#set_backtrace): omits
+	  OptionParser internal backtraces unless debug flag is set.
+
 Thu Sep 18 15:38:49 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (Init_socket): add new constants.  a patch from
