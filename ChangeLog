@@ -9,7 +9,7 @@ Thu Sep 18 18:23:23 2008  Tanaka Akira  <akr@fsij.org>
 	    def (o=Object.new).to_str()
 	      "universal"+"_newline"
 	    end                         
-	    "\u3042".encode(o, "")' 
+	    "\u3042".encode(o, "")
 	  causes curious warning:
 	    rb_define_const: invalid name `' for constant
 
