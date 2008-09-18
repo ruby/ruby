@@ -72,7 +72,7 @@ end # module Module
 #
 class String
   rake_extension("ext") do
-    # Replace the file extension with +newext+.  If there is no extenson on
+    # Replace the file extension with +newext+.  If there is no extension on
     # the string, append the new extension to the end.  If the new extension
     # is not given, or is the empty string, remove any existing extension.
     #
@@ -145,7 +145,7 @@ class String
     # * <b>%x</b> -- The file extension of the path.  An empty string if there
     #   is no extension.
     # * <b>%X</b> -- Everything *but* the file extension.
-    # * <b>%s</b> -- The alternate file separater if defined, otherwise use
+    # * <b>%s</b> -- The alternate file separator if defined, otherwise use
     #   the standard file separator.
     # * <b>%%</b> -- A percent sign.
     #
@@ -160,8 +160,8 @@ class String
     #   'a/b/c/d/file.txt'.pathmap("%-2d")  => 'c/d'
     #
     # Also the %d, %p, $f, $n, %x, and %X operators can take a
-    # pattern/replacement argument to perform simple string substititions on a
-    # particular part of the path.  The pattern and replacement are speparated
+    # pattern/replacement argument to perform simple string substitutions on a
+    # particular part of the path.  The pattern and replacement are separated
     # by a comma and are enclosed by curly braces.  The replacement spec comes
     # after the % character but before the operator letter.  (e.g.
     # "%{old,new}d").  Muliple replacement specs should be separated by
@@ -2047,10 +2047,10 @@ module Rake
         yield
       rescue SystemExit => ex
         # Exit silently with current status
-        exit(ex.status)
-      rescue SystemExit, OptionParser::InvalidOption => ex
+        raise
+      rescue OptionParser::InvalidOption => ex
         # Exit silently
-        exit(1)
+        exit(false)
       rescue Exception => ex
         # Exit with error message
         $stderr.puts "rake aborted!"
@@ -2061,7 +2061,7 @@ module Rake
           $stderr.puts ex.backtrace.find {|str| str =~ /#{@rakefile}/ } || ""
           $stderr.puts "(See full trace by running task with --trace)"
         end
-        exit(1)
+        exit(false)
       end
     end
 

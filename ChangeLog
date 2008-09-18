@@ -1,3 +1,8 @@
+Thu Sep 18 20:50:36 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rake.rb (Rake::Application#standard_exception_handling):
+	  replaced magic numbers for exit status.
+
 Thu Sep 18 20:37:59 2008  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::ParseError#set_backtrace): omits
