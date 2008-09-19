@@ -1951,66 +1951,6 @@ int_denominator(VALUE num)
 
 /*
  * call-seq:
- *   Fixnum.induced_from(obj)    =>  fixnum
- *
- * Convert <code>obj</code> to a Fixnum. Works with numeric parameters.
- * Also works with Symbols, but this is deprecated.
- */
-
-static VALUE
-rb_fix_induced_from(VALUE klass, VALUE x)
-{
-    return rb_num2fix(x);
-}
-
-/*
- * call-seq:
- *   Integer.induced_from(obj)    =>  fixnum, bignum
- *
- * Convert <code>obj</code> to an Integer.
- */
-
-static VALUE
-rb_int_induced_from(VALUE klass, VALUE x)
-{
-    switch (TYPE(x)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-	return x;
-      case T_FLOAT:
-      case T_RATIONAL:
-	return rb_funcall(x, id_to_i, 0);
-      default:
-	rb_raise(rb_eTypeError, "failed to convert %s into Integer",
-		 rb_obj_classname(x));
-    }
-}
-
-/*
- * call-seq:
- *   Float.induced_from(obj)    =>  float
- *
- * Convert <code>obj</code> to a float.
- */
-
-static VALUE
-rb_flo_induced_from(VALUE klass, VALUE x)
-{
-    switch (TYPE(x)) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-      case T_RATIONAL:
-	return rb_funcall(x, rb_intern("to_f"), 0);
-      case T_FLOAT:
-	return x;
-      default:
-	rb_raise(rb_eTypeError, "failed to convert %s into Float",
-		 rb_obj_classname(x));
-    }
-}
-
-/*
- * call-seq:
  *   -fix   =>  integer
  *
  * Negates <code>fix</code> (which might return a Bignum).
@@ -3172,7 +3112,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
     rb_define_method(rb_cInteger, "times", int_dotimes, 0);
-    rb_include_module(rb_cInteger, rb_mPrecision);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "pred", int_pred, 0);
@@ -3185,9 +3124,6 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "round", int_round, -1);
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
-    rb_include_module(rb_cFixnum, rb_mPrecision);
-    rb_define_singleton_method(rb_cFixnum, "induced_from", rb_fix_induced_from, 1);
-    rb_define_singleton_method(rb_cInteger, "induced_from", rb_int_induced_from, 1);
 
     rb_define_method(rb_cInteger, "numerator", int_numerator, 0);
     rb_define_method(rb_cInteger, "denominator", int_denominator, 0);
@@ -3236,9 +3172,6 @@ Init_Numeric(void)
 
     rb_undef_alloc_func(rb_cFloat);
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
-
-    rb_define_singleton_method(rb_cFloat, "induced_from", rb_flo_induced_from, 1);
-    rb_include_module(rb_cFloat, rb_mPrecision);
 
     rb_define_const(rb_cFloat, "ROUNDS", INT2FIX(FLT_ROUNDS));
     rb_define_const(rb_cFloat, "RADIX", INT2FIX(FLT_RADIX));

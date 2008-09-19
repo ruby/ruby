@@ -1470,12 +1470,6 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
     }
 }
 
-static VALUE
-nurat_s_induced_from(VALUE klass, VALUE n)
-{
-    return f_to_r(n);
-}
-
 void
 Init_Rational(void)
 {
@@ -1592,10 +1586,6 @@ Init_Rational(void)
     rb_define_singleton_method(rb_cRational, "convert", nurat_s_convert, -1);
     rb_funcall(rb_cRational, rb_intern("private_class_method"), 1,
 	       ID2SYM(rb_intern("convert")));
-
-    rb_include_module(rb_cRational, rb_mPrecision);
-    rb_define_singleton_method(rb_cRational, "induced_from",
-			       nurat_s_induced_from, 1);
 }
 
 /*

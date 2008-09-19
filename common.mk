@@ -49,7 +49,6 @@ COMMONOBJS    = array.$(OBJEXT) \
 		pack.$(OBJEXT) \
 		parse.$(OBJEXT) \
 		process.$(OBJEXT) \
-		prec.$(OBJEXT) \
 		random.$(OBJEXT) \
 		range.$(OBJEXT) \
 		rational.$(OBJEXT) \

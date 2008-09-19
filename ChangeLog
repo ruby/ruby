@@ -1,3 +1,35 @@
+Fri Sep 19 20:48:06 2008  Yuki Sonoda  <yugui@yugui.jp>
+
+	* prec.c: removed. Precision will be redesigned and be back again.
+	  c.f. [ruby-dev:36352].
+
+	* common.mk (COMMON_OBJS): removed prec.o.
+
+	* inits.c (rb_call_inits): removed Init_Precision.
+
+	* numeric.c (Init_Numeric): removed inclusion of Precision.
+	  removed #induced_from from each class.
+
+	* rational.c: ditto.
+
+	* ext/bigdecimal/bigdecimal.c: ditto.
+
+	* lib/rdoc/knwon_classes.rb: removed the entry for Precision.
+
+	* test/ruby/test_prec.rb: removed.
+
+	* test/ruby/test_integer.rb: removed tests for Precision.
+
+	* test/ruby/test_fixnum.rb: ditto.
+
+	* test/ruby/test_float.rb: ditto.
+
+	* test/ruby/test_rational.rb: ditto.
+
+	* test/ruby/test_complex.rb: ditto.
+
+	* test/bigdecimal/test_bigdecimal.rb: ditto.
+
 Fri Sep 19 19:43:40 2008  Yuki Sonoda  <yugui@yugui.jp>
 
 	* common.mk : Reverts the changeset 18994.

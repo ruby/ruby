@@ -62,7 +62,6 @@ module RDoc
     "rb_mGC"               => "GC",
     "rb_mKernel"           => "Kernel",
     "rb_mMath"             => "Math",
-    "rb_mPrecision"        => "Precision",
     "rb_mProcess"          => "Process"
   }
 

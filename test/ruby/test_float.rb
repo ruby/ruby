@@ -275,13 +275,6 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(11100.0, 11111.1.round(-2))
   end
 
-  def test_induced_from
-    assert_equal(1.0, Float.induced_from(1))
-    assert_equal(1.0, Float.induced_from(1.0))
-    assert_raise(TypeError) { Float.induced_from(nil) }
-  end
-
-
   VS = [
     18446744073709551617.0,
     18446744073709551616.0,

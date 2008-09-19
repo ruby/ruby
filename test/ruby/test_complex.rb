@@ -882,10 +882,6 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal([1, 2], [c.real, c.image])
   end
 
-  def test_prec
-    assert_equal(nil, Complex < Precision)
-  end
-
   def test_supp
     assert_equal(true, 1.real?)
     assert_equal(true, 1.1.real?)

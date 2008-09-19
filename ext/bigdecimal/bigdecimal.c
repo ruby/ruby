@@ -579,13 +579,6 @@ BigDecimal_to_i(VALUE self)
     return rb_cstr2inum(psz,10);
 }
 
-static VALUE
-BigDecimal_induced_from(VALUE self, VALUE x)
-{
-    Real *p = GetVpValue(x,1);
-    return p->obj;
-}
-
 /* Returns a new Float object having approximately the same value as the
  * BigDecimal number. Normal accuracy limits and built-in errors of binary
  * Float arithmetic apply.
@@ -1807,7 +1800,6 @@ Init_bigdecimal(void)
     rb_define_singleton_method(rb_cBigDecimal, "mode", BigDecimal_mode, -1);
     rb_define_singleton_method(rb_cBigDecimal, "limit", BigDecimal_limit, -1);
     rb_define_singleton_method(rb_cBigDecimal, "double_fig", BigDecimal_double_fig, 0);
-    rb_define_singleton_method(rb_cBigDecimal, "induced_from",BigDecimal_induced_from, 1);
     rb_define_singleton_method(rb_cBigDecimal, "_load", BigDecimal_load, 1);
     rb_define_singleton_method(rb_cBigDecimal, "ver", BigDecimal_version, 0);
 

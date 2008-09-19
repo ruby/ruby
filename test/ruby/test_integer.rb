@@ -122,12 +122,6 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(RangeError) { 0x100.chr }
   end
 
-  def test_induced_from
-    assert_equal(1, Integer.induced_from(1))
-    assert_equal(1, Integer.induced_from(1.0))
-    assert_raise(TypeError) { Integer.induced_from(nil) }
-  end
-
   def test_upto
     a = []
     1.upto(3) {|x| a << x }

@@ -1028,16 +1028,6 @@ class Rational_Test < Test::Unit::TestCase
     end
   end
 
-  def test_prec
-    assert_equal(true, Rational < Precision)
-
-    c = Rational(3,2)
-
-    assert_eql(1, c.prec(Integer))
-    assert_eql(1.5, c.prec(Float))
-    assert_eql(c, c.prec(Rational))
-  end
-
   def test_gcdlcm
     assert_equal(7, 91.gcd(-49))
     assert_equal(5, 5.gcd(0))

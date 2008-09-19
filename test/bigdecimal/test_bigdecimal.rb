@@ -245,13 +245,6 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_operator(BigDecimal.new((2**100).to_s), :==, d)
   end
 
-  def test_induced_from
-    assert_instance_of(BigDecimal, BigDecimal.induced_from(1))
-    assert_raise(TypeError) do
-      BigDecimal.induced_from(Time.now)
-    end
-  end
-
   def test_precs
     a = BigDecimal.new("1").precs
     assert_instance_of(Array, a)

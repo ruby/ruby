@@ -34,7 +34,6 @@ void Init_marshal(void);
 void Init_Numeric(void);
 void Init_Object(void);
 void Init_pack(void);
-void Init_Precision(void);
 void Init_sym(void);
 void Init_process(void);
 void Init_RandomSeed(void);
@@ -66,7 +65,6 @@ rb_call_inits()
     Init_Encoding();
     Init_Comparable();
     Init_Enumerable();
-    Init_Precision();
     Init_String();
     Init_Exception();
     Init_eval();
