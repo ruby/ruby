@@ -1,3 +1,8 @@
+Fri Sep 19 19:43:40 2008  Yuki Sonoda  <yugui@yugui.jp>
+
+	* common.mk : Reverts the changeset 18994.
+	  Uses the official repository of rubyspec again.
+
 Fri Sep 19 17:41:56 2008  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* configure.in: applied OS/2 support patch from Brendan Oakley
